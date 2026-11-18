@@ -95,7 +95,8 @@ describe("MarketResourceCard", () => {
       </MemoryRouter>
     );
 
-    expect(html).toContain("PALETTE");
+    expect(html).toContain("팔레트");
+    expect(html).not.toContain("PALETTE");
     expect(html).toContain("느와르 블라썸 팔레트");
     expect(html).toContain("테스트 작가");
     expect(html).toContain("CC BY 4.0");

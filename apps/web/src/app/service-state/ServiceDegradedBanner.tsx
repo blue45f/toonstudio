@@ -219,14 +219,14 @@ function ServiceWarmupNotice({ immersive }: { readonly immersive: boolean }) {
       aria-atomic="true"
       data-service-degraded-banner="warming"
       data-service-status-placement={immersive ? "floating" : "page-inline"}
-      className={immersive ? WARMUP_CHIP_CLASS : "flex min-w-0 items-center justify-center gap-2 border-b border-line bg-panel px-3 py-1 text-xs text-fg-2"}
+      className={immersive ? WARMUP_CHIP_CLASS : "mx-auto flex w-full max-w-[var(--site-content-max,82.5rem)] min-w-0 items-center justify-end gap-1.5 px-[var(--site-page-gutter,1rem)] pt-1.5 text-[11.5px] text-fg-3"}
     >
       <span
         aria-hidden="true"
-        className="size-2.5 shrink-0 rounded-full bg-accent motion-safe:[animation:pulse-soft_2.4s_ease-in-out_infinite]"
+        className="size-1.5 shrink-0 rounded-full bg-fg-3/70 motion-safe:[animation:pulse-soft_2.8s_ease-in-out_infinite]"
       />
       <span className="min-w-0 break-keep">
-        <strong className="font-bold text-fg">{bt("온라인 기능을 연결하는 중이에요.", "Connecting online features.")}</strong>{" "}
+        <strong className="font-normal text-fg-3">{bt("온라인 기능을 연결하는 중이에요.", "Connecting online features.")}</strong>{" "}
         <span className="sr-only">{bt("탐색과 로컬 작업은 지금 바로 할 수 있어요.", "You can browse and work locally right now.")}</span>
       </span>
     </div>

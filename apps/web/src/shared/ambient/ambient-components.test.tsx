@@ -123,7 +123,7 @@ describe("AmbientSettingsSection", () => {
     for (const name of ["자동", "맑음", "비", "눈", "벚꽃", "낙엽", "반딧불"]) {
       expect(screen.getByRole("radio", { name: new RegExp(`^${name}`) })).toBeTruthy();
     }
-    expect((screen.getByRole("radio", { name: /은은하게/ }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole("radio", { name: /^끔/ }) as HTMLInputElement).checked).toBe(true);
     expect((screen.getByRole("radio", { name: /^자동/ }) as HTMLInputElement).checked).toBe(true);
   });
 
@@ -136,6 +136,7 @@ describe("AmbientSettingsSection", () => {
   });
 
   it("효과를 고르면 즉시 저장되고 상태 줄에 반영된다", () => {
+    writeAmbientIntensity("subtle");
     render(<AmbientSettingsSection />);
     fireEvent.click(screen.getByRole("radio", { name: /^눈/ }));
     expect(localStorage.getItem(AMBIENT_STORAGE_KEYS.effect)).toBe("snow");
@@ -151,6 +152,7 @@ describe("AmbientSettingsSection", () => {
   });
 
   it("자동 모드에서는 기본 서울 날씨로 상태를 보여 주고 날씨 출처를 밝힌다", async () => {
+    writeAmbientIntensity("subtle");
     render(<AmbientSettingsSection />);
     await waitFor(() => expect(screen.getByText(/^서울 · 맑음 · /)).toBeTruthy());
     expect(screen.getByText(/배경: (햇살|별빛)/)).toBeTruthy();
@@ -168,6 +170,7 @@ describe("AmbientSettingsSection", () => {
 
   it("내 위치 날씨 사용을 켜면 저장한다", () => {
     stubGeolocation(true);
+    writeAmbientIntensity("subtle");
     render(<AmbientSettingsSection />);
     const toggle = screen.getByRole("switch", { name: "내 위치 날씨 사용" });
     expect(toggle.getAttribute("aria-checked")).toBe("false");
@@ -184,7 +187,13 @@ describe("AmbientSettingsSection", () => {
 });
 
 describe("AmbientExperienceHost", () => {
+  it("사용자가 켜기 전 기본값에서는 배경 캔버스를 그리지 않는다", () => {
+    const { container } = render(<AmbientExperienceHost />);
+    expect(container.querySelector("canvas")).toBeNull();
+  });
+
   it("콘텐츠 뒤 배경 캔버스 하나만 그린다(틴트 레이어 없음)", () => {
+    writeAmbientIntensity("subtle");
     writeAmbientEffect("rain");
     const { container } = render(<AmbientExperienceHost />);
     const canvas = container.querySelector("canvas.ambient-backdrop");
@@ -196,6 +205,7 @@ describe("AmbientExperienceHost", () => {
   });
 
   it("설정을 바꾸면 같은 탭에서 바로 장면이 바뀐다", () => {
+    writeAmbientIntensity("subtle");
     writeAmbientEffect("rain");
     const { container } = render(<AmbientExperienceHost />);
     act(() => writeAmbientEffect("petals"));
@@ -216,6 +226,7 @@ describe("AmbientExperienceHost", () => {
   });
 
   it("자동 모드는 첫 날씨 응답 전에는 비워 두었다가 날씨 장면을 그린다", async () => {
+    writeAmbientIntensity("subtle");
     const { container } = render(<AmbientExperienceHost />);
     await waitFor(() =>
       expect(container.querySelector("canvas")?.getAttribute("data-ambient-scene")).toMatch(/sunny|clear-night/),

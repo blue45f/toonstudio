@@ -102,12 +102,12 @@ describe("일러스트 리서치 표면", () => {
     expect(container.querySelector(".resource-masthead-image")).toBeNull();
     expect(screen.getByText("매일 바뀌는 장면").className).toContain("max-sm:hidden");
     // 하위 화면에서는 데스크로 돌아가는 링크, 데스크 자신은 자기 자신을 가리키는 링크를 두지 않는다.
-    expect(screen.getByRole("link", { name: /TOONSTUDIO \/ 리서치 데스크/u }).getAttribute("href")).toBe("/research");
+    expect(screen.getByRole("link", { name: "← 리서치 데스크" }).getAttribute("href")).toBe("/research");
     rerender(<MemoryRouter initialEntries={["/research"]}>
       <ResourceLayout title="데스크" intro="소개" heroAside={<aside aria-label="장면 관찰" />} menu={false}><p>본문</p></ResourceLayout>
     </MemoryRouter>);
-    expect(screen.queryByRole("link", { name: /TOONSTUDIO \/ 리서치 데스크/u })).toBeNull();
-    expect(screen.getByText(/TOONSTUDIO \/ 리서치 데스크/u)).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "← 리서치 데스크" })).toBeNull();
+    expect(screen.getByText("리서치 데스크")).toBeTruthy();
   });
 
   it("관찰 관점 선택은 기존 검색 경로를 유지하며 안내 아트를 검색 결과로 표현하지 않는다", () => {
@@ -118,7 +118,7 @@ describe("일러스트 리서치 표면", () => {
     expect(within(lenses).getByRole("button", { name: "복식과 소품" }).getAttribute("aria-pressed")).toBe("true");
     expect(within(lenses).getByRole("button", { name: "공간과 구도" }).getAttribute("aria-pressed")).toBe("false");
     expect(screen.getByRole("link", { name: "복식과 소품 레퍼런스 찾기" }).getAttribute("href")).toBe("/research/assets?q=costume&page=1");
-    expect(screen.getByText("VISUAL STUDY / CONCEPT ART")).toBeTruthy();
+    expect(screen.getByText("장면 관찰 예시 · 콘셉트 아트")).toBeTruthy();
   });
 
   it("갤러리 선택 강조와 저장·비교·상세 동작을 함께 유지한다", () => {

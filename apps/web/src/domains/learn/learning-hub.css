@@ -146,8 +146,8 @@
   min-height: 28px;
   padding: 4px 8px;
   border: 1px solid var(--learn-line);
-  border-radius: 999px;
-  background: var(--learn-bg);
+  border-radius: 6px;
+  background: var(--color-canvas);
   font-size: 12px;
   line-height: 1.4;
   color: var(--learn-muted);
@@ -156,13 +156,13 @@
   display: inline-flex;
   align-items: center;
   width: fit-content;
-  min-height: 28px;
-  padding: 4px 9px;
-  border-radius: 999px;
+  min-height: 26px;
+  padding: 3px 8px;
+  border-radius: 6px;
   background: var(--learn-accent);
   color: var(--color-on-accent);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 .learn-path-card {
   display: flex;
@@ -170,12 +170,11 @@
   min-width: 0;
   padding: 24px;
   border: 1px solid var(--learn-line);
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--learn-bg);
 }
 .learn-path-card.is-recommended {
   border-color: var(--learn-accent);
-  box-shadow: 6px 6px 0 color-mix(in srgb, var(--learn-accent) 13%, transparent);
 }
 .learn-path-card-top {
   display: flex;
@@ -317,12 +316,12 @@
 .learn-status {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
-  padding: 4px 9px;
+  min-height: 26px;
+  padding: 3px 8px;
   border: 1px solid var(--learn-line);
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: 12px;
-  font-weight: 750;
+  font-weight: 500;
 }
 .learn-status-completed { border-color: var(--learn-accent); color: var(--learn-accent); }
 .learn-status-in-progress { border-color: var(--color-warn); color: var(--color-warn); }
@@ -472,19 +471,18 @@
 .learn-process-art > img { display: block; width: 100%; aspect-ratio: 2.6; object-fit: cover; }
 .learn-process-art figcaption { position: absolute; bottom: 10px; left: 12px; padding: 4px 8px; border-radius: 6px; background: color-mix(in oklch, var(--color-canvas) 86%, transparent); color: var(--color-fg); font-size: 12px; }
 .learn-process-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--color-line); border-top: 0; border-radius: 0 0 12px 12px; overflow: hidden; }
-.learn-process-steps > button { display: flex; gap: 14px; align-items: center; text-align: left; border: 0; border-radius: 0; padding: 20px; min-height: 90px; transition: background 180ms ease-out; }
+.learn-process-steps > button { display: flex; gap: 14px; align-items: center; text-align: left; border: 0; border-radius: 0; padding: 20px; min-height: 84px; transition: background-color 180ms var(--ink-ease, ease); }
 .learn-process-steps > button + button { border-left: 1px solid var(--color-line); }
-.learn-process-steps > button[aria-pressed=true] { background: var(--color-accent-soft); box-shadow: inset 0 3px 0 var(--color-accent); }
-.learn-process-steps .learn-process-count { font-family: var(--font-display); font-size: 26px; font-weight: 500; color: var(--color-accent); }
-.learn-process-steps small { display: block; color: var(--learn-muted); font-family: var(--font-display); font-size: 12px; letter-spacing: .08em; }
-.learn-process-steps strong { display: block; font-size: 14px; margin-top: 4px; }
-.learn-process-steps > button > span:last-child { margin-left: auto; color: var(--color-accent); }
+.learn-process-steps > button[aria-pressed=true] { background: var(--color-accent-soft); box-shadow: inset 0 2px 0 var(--color-accent); }
+.learn-process-steps .learn-process-count { font-size: 22px; font-weight: 600; color: var(--color-accent); font-variant-numeric: tabular-nums; }
+.learn-process-steps small { display: block; color: var(--learn-muted); font-size: 12px; letter-spacing: 0; font-weight: 400; }
+.learn-process-steps strong { display: block; font-size: 14px; font-weight: 600; margin-top: 2px; }
 .learn-process-detail { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--color-line); }
-.learn-process-detail > p { margin: 0; max-width: 680px; color: var(--learn-muted); font-size: 13px; }
-.learn-process-detail > a { flex-shrink: 0; display: inline-flex; align-items: center; min-height: 44px; gap: 6px; color: var(--color-accent); font-size: 12px; font-weight: 700; }
-.learn-home-page .learn-path-card { transition: border-color 180ms ease-out, transform 180ms ease-out; }
-.learn-home-page .learn-path-card:hover { border-color: var(--color-line-strong); transform: translateY(-2px); }
-.learn-home-page .learn-path-card.is-recommended { box-shadow: none; background: color-mix(in oklch, var(--color-accent) 5%, var(--color-panel)); }
+.learn-process-detail > p { margin: 0; max-width: 680px; color: var(--learn-muted); font-size: 14px; }
+.learn-process-detail > a { flex-shrink: 0; display: inline-flex; align-items: center; min-height: 44px; gap: 6px; color: var(--color-accent); font-size: 13px; font-weight: 500; text-decoration: none; }
+.learn-home-page .learn-path-card { transition: border-color 180ms var(--ink-ease, ease); }
+.learn-home-page .learn-path-card:hover { border-color: var(--color-line-strong); }
+.learn-home-page .learn-path-card.is-recommended { box-shadow: none; background: var(--color-panel); border-color: var(--color-accent); }
 @media (max-width: 1023px) { .learn-home-page .learn-hub-hero { grid-template-columns: minmax(0, 1fr); } .learn-hero-art { min-height: 310px; } .learn-home-page .learn-dashboard-overview { grid-template-columns: 1fr 1fr; } .learn-dashboard-overview .learn-dashboard-next { grid-column: 1 / 3; grid-row: 3; margin-top: 14px; padding: 14px 0 0; border-left: 0; border-top: 1px solid var(--color-line); } }
 @media (max-width: 640px) { .learn-home-page .learn-hub-hero-copy { padding: 26px 20px; } .learn-hero-art { min-height: 260px; } .learn-home-page .learn-dashboard-overview { display: block; padding: 20px; } .learn-dashboard-overview > progress { margin: 12px 0 20px; } .learn-dashboard-overview .learn-dashboard-stats { display: flex; gap: 16px; justify-content: space-between; } .learn-dashboard-overview .learn-dashboard-stats > div { display: block; padding: 0; } .learn-dashboard-overview .learn-dashboard-stats dd { margin-top: 4px; } .learn-process-heading { display: block; } .learn-process-heading > p { margin-top: 10px; max-width: none; } .learn-process-art > img { aspect-ratio: 1.75; } .learn-process-steps > button { padding: 14px 8px; gap: 6px; flex-direction: column; align-items: flex-start; } .learn-process-steps .learn-process-count { font-size: 20px; } .learn-process-steps strong { font-size: 12px; } .learn-process-steps small { font-size: 8px; letter-spacing: 0; } .learn-process-steps > button > span:last-child { display: none; } .learn-process-detail { align-items: start; flex-direction: column; gap: 4px; } }
 @media (prefers-reduced-motion: reduce) { .learn-home-page .learn-path-card, .learn-process-steps > button { transition: none; } .learn-home-page .learn-path-card:hover { transform: none; } }
@@ -538,41 +536,119 @@
   .learn-home-page .learn-skill-grid button { min-height: 44px; font-size: 14px; }
 }
 
-/* ── S3-18 학습 틴트·여정선 (BLUEPRINT §6.3 학습 행) ──────────────────
- * 경로는 --domain-tint 하나만 덮어쓰고(learning-path-tints.ts가 경로 id로
- * 주입), 아래 규칙은 그 틴트만 소비한다. 틴트 미적용 표면에서는 기존
- * --learn-accent로 떨어져 개편 전과 같은 색이 된다. 틴트는 강조·경계·
- * 진행 표시에만 쓰고 본문 텍스트 색으로는 쓰지 않는다(§6.4 경계 1·2). */
-.learn-path-card { box-shadow: inset 0 3px 0 0 var(--domain-tint, var(--learn-accent)); }
-.learn-path-card.is-recommended { box-shadow: inset 0 3px 0 0 var(--domain-tint, var(--learn-accent)), 6px 6px 0 color-mix(in srgb, var(--learn-accent) 13%, transparent); }
-.learn-path-card .learn-path-index { color: var(--domain-tint, var(--learn-accent)); }
-.learn-path-card .learn-path-outcome { background: color-mix(in srgb, var(--domain-tint, var(--learn-accent)) 7%, transparent); }
-.learn-path-progress progress,
-.learn-path-hero-card progress { accent-color: var(--domain-tint, var(--learn-accent)); }
+/* ── S3-18 학습 틴트·여정선 + Ink Motion (2026-11-18) ────────────────── */
+.learn-path-card { box-shadow: none; }
+.learn-path-card.is-recommended { box-shadow: inset 0 2px 0 0 var(--domain-tint, var(--learn-accent)); }
+.learn-path-card .learn-path-index { color: var(--domain-tint, var(--learn-accent)); font-weight: 500; }
+.learn-path-card .learn-path-outcome,
+.learn-card-outcome {
+  border-radius: 0;
+  border-left: 2px solid var(--domain-tint, var(--learn-accent));
+  padding: 2px 0 2px 12px;
+  background: transparent;
+}
+.learn-meter-track {
+  position: relative;
+  height: 5px;
+  margin-top: 8px;
+  border-radius: 3px;
+  background: var(--color-raised);
+  overflow: hidden;
+}
+.learn-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--domain-tint, var(--learn-accent));
+}
+.learn-skill-meter {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-raised);
+  overflow: hidden;
+}
+.learn-skill-meter__scope {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: color-mix(in oklch, var(--learn-accent) 32%, var(--color-line-strong));
+}
+.learn-skill-meter__done {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--learn-accent);
+}
+.learn-path-step-track {
+  display: block;
+  width: 100%;
+  height: 20px;
+  margin: 4px 0 12px;
+  overflow: visible;
+}
+.learn-path-step-track__rail {
+  stroke: var(--color-line);
+  stroke-width: 1.5;
+}
+.learn-path-step-track__ink {
+  stroke: var(--domain-tint, var(--learn-accent));
+  stroke-width: 1.75;
+}
+.learn-path-step-track__node {
+  fill: var(--color-panel);
+  stroke: var(--domain-tint, var(--learn-accent));
+  stroke-width: 1.5;
+}
+.learn-path-step-track__node.is-done {
+  fill: var(--domain-tint, var(--learn-accent));
+}
+.learn-process-connector {
+  display: block;
+  width: 100%;
+  height: 6px;
+  background: var(--color-panel);
+  border-inline: 1px solid var(--color-line);
+}
+.learn-process-connector__rail {
+  stroke: var(--color-line);
+  stroke-width: 2;
+}
+.learn-process-connector__ink {
+  stroke: var(--color-accent);
+  stroke-width: 3;
+  transition: all 280ms var(--ink-ease, ease);
+}
 .learn-path-hero {
-  background: radial-gradient(circle at 6% 0%, color-mix(in srgb, var(--domain-tint, var(--learn-accent)) 13%, transparent), transparent 52%);
+  background: none;
+  border-bottom: 1px solid var(--learn-line);
+  margin-bottom: 32px;
 }
 .learn-path-hero-card {
-  border-color: color-mix(in srgb, var(--domain-tint, var(--learn-accent)) 45%, var(--learn-line));
-  background: color-mix(in srgb, var(--domain-tint, var(--learn-accent)) 7%, var(--learn-bg));
+  border-color: var(--learn-line);
+  background: var(--learn-bg);
 }
-
-/* 여정선: 강좌 목록을 세로 여정으로 읽는다. 단계 번호가 노드, 노드를 잇는
- * 선이 여정이며 완료한 구간의 선은 경로 틴트로 채워진다. 현재 강좌(다음에
- * 들을 강좌) 노드만 링으로 강조한다 — 상주 모션은 두지 않는다(§6.2 (3)). */
-.learn-path-course-list li { position: relative; }
-.learn-path-course-list li::before {
-  content: "";
+.learn-path-course-stage {
+  position: relative;
+}
+.learn-path-spine {
   position: absolute;
-  left: 26px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--learn-line);
+  left: 25px;
+  top: 64px;
+  bottom: 64px;
+  width: 4px;
+  height: calc(100% - 128px);
+  pointer-events: none;
 }
-.learn-path-course-list li:first-child::before { top: 50%; }
-.learn-path-course-list li:last-child::before { bottom: 50%; }
-.learn-path-course-list li.is-completed::before { background: var(--domain-tint, var(--learn-accent)); }
+.learn-path-spine__rail {
+  stroke: var(--learn-line);
+  stroke-width: 1.5;
+}
+.learn-path-spine__ink {
+  stroke: var(--domain-tint, var(--learn-accent));
+  stroke-width: 2;
+}
+.learn-path-course-list li { position: relative; }
 .learn-path-step {
   position: relative;
   z-index: 1;
@@ -580,20 +656,22 @@
   place-items: center;
   width: 54px;
   height: 54px;
-  border: 2px solid var(--learn-line);
+  border: 1.5px solid var(--learn-line);
   border-radius: 50%;
-  background: var(--learn-bg);
-  font-size: 20px;
+  background: var(--color-canvas);
+  font-size: 18px;
+  font-weight: 500;
 }
 .learn-path-course-list li.is-completed .learn-path-step { border-color: var(--domain-tint, var(--learn-accent)); }
 .learn-path-course-list li.is-current .learn-path-step {
   border-color: var(--domain-tint, var(--learn-accent));
-  background: color-mix(in srgb, var(--domain-tint, var(--learn-accent)) 14%, var(--learn-bg));
+  background: color-mix(in oklch, var(--domain-tint, var(--learn-accent)) 18%, var(--color-canvas));
   color: var(--learn-fg);
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--domain-tint, var(--learn-accent)) 16%, transparent);
+}
+@media (max-width: 640px) {
+  .learn-path-spine { left: 19px; }
+  .learn-path-step { width: 42px; height: 42px; font-size: 15px; }
 }
 @media (forced-colors: active) {
-  .learn-path-course-list li::before,
-  .learn-path-course-list li.is-completed::before { background: CanvasText; }
   .learn-path-step { border-color: CanvasText; box-shadow: none; }
 }

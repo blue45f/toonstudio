@@ -257,7 +257,7 @@ export function LessonSession({ lesson, store }: { lesson: Lesson; store: Learni
             aria-labelledby={`${id}-quiz`}
             tabIndex={-1}
           >
-            <p className="learn-eyebrow">CHECK YOUR UNDERSTANDING</p>
+            <p className="learn-eyebrow">이해도 점검</p>
             <h2 id={`${id}-quiz`}>확인 퀴즈</h2>
             <fieldset>
               <legend>{lesson.quiz.question}</legend>
@@ -282,7 +282,7 @@ export function LessonSession({ lesson, store }: { lesson: Lesson; store: Learni
 
           <section className="learn-finish learn-guided-finish">
             <div>
-              <p className="learn-eyebrow">COMPLETE THE LESSON</p>
+              <p className="learn-eyebrow">수업 마무리</p>
               <h2 ref={finishHeadingRef} tabIndex={-1} className="learn-focus-heading">{saved.completed ? "수업을 완료했습니다" : "배운 내용을 기록으로 남기세요"}</h2>
             </div>
             <button
@@ -305,7 +305,7 @@ export function LessonSession({ lesson, store }: { lesson: Lesson; store: Learni
             </p>
             {saved.completed && nextMission && (
               <div className="learn-mission-next">
-                <p className="learn-eyebrow">NEXT PRACTICE MISSION</p>
+                <p className="learn-eyebrow">다음 실습 미션</p>
                 <h3>다음 실습 미션 · {nextMission.title}</h3>
                 <p>목표 · {nextMission.goal}</p>
                 <Link className="learn-secondary" to={`${lessonUrlInContext(nextMission.lessonId, navigation.path)}#${nextMission.lessonId}-practice`}>
@@ -331,7 +331,7 @@ export function LessonSession({ lesson, store }: { lesson: Lesson; store: Learni
           <summary onClick={(event) => { event.preventDefault(); setNotesOpen(!notesOpen); }}>{t("실습 메모", "Practice notes")}{saved.notes ? t(" · 작성한 메모 있음", " · Notes entered") : ""}</summary>
           <section hidden={!notesOpen} id={`${lesson.id}-notes`} className="learn-notes learn-anchor-target" tabIndex={-1}>
             <div className="learn-section-heading">
-              <div><p className="learn-eyebrow">REFLECTION</p><h2><label htmlFor={`${id}-notes`}>나의 실습 메모</label></h2></div>
+              <div><p className="learn-eyebrow">실습 회고</p><h2><label htmlFor={`${id}-notes`}>나의 실습 메모</label></h2></div>
               <span className="learn-small">{store.dirty ? t("저장되지 않은 변경 있음", "Unsaved changes") : t("현재 브라우저에 자동 저장", "Autosaved in this browser")}</span>
             </div>
             <textarea

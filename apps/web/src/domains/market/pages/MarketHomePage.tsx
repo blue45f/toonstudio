@@ -1,55 +1,48 @@
 import {
   AlertTriangle,
   ArrowRight,
-  BadgeCheck,
-  Cuboid,
-  HelpCircle,
   PackageSearch,
-  Plus,
   RefreshCw,
-  ShieldCheck,
   Store,
   Upload,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocation } from "react-router-dom";
 
-import { MarketCategoryTiles } from "../components/MarketCategoryTiles";
 import { MarketGrandAtelierShowcase } from "../components/MarketGrandAtelierShowcase";
+import {
+  MarketHomeExploreBand,
+  MarketHomeGuideBand,
+  MarketHomeSellBand,
+} from "../components/MarketHomeExploreShelves";
 import { MarketHomePresets } from "../components/MarketHomePresets";
-import { MarketHomeSectionNavigation } from "../components/MarketHomeSectionNavigation";
-import { MARKET_HOME_SECTIONS, marketHomeSectionFromSearch, type MarketHomeSection } from "../components/market-home-section";
 import { MarketHomeSearch } from "../components/MarketHomeSearch";
-import { MarketNavHeader } from "../components/MarketNavHeader";
+import { MarketHomeSectionNavigation } from "../components/MarketHomeSectionNavigation";
 import { MarketMaterialPreview } from "../components/MarketMaterialPreview";
 import { MarketQuickPreviewDialog } from "../components/MarketQuickPreviewDialog";
-import { MarketRecentlyViewedStrip } from "../components/MarketRecentlyViewedStrip";
 import { MarketResourceCard } from "../components/MarketResourceCard";
-import { MarketResourceFamilyExplorer } from "../components/MarketResourceFamilyExplorer";
 import { StaleNoticeBar } from "../components/StaleNoticeBar";
+import {
+  MARKET_HOME_SECTIONS,
+  marketHomeSectionFromSearch,
+  type MarketHomeSection,
+} from "../components/market-home-section";
 import { useCommerceConfig } from "../hooks/use-commerce-config";
 import { useMarketResources } from "../hooks/use-market-resources";
-import { marketHomeJsonLd } from "../models/market-jsonld";
-import { MARKET_LICENSE_GUIDE } from "../models/market-kind";
 import { isMarketPublicKeywordTag } from "../models/market-catalog-public";
-import { MARKET_CURATED_THEMES } from "../models/market-theme";
+import { marketHomeJsonLd } from "../models/market-jsonld";
 
-import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
-import { SitePageHeader } from "@/domains/legal/public/site-page-header";
-import { SiteRail, SiteShowMoreButton } from "@/domains/legal/public/site-rail";
-import { SiteStepList } from "@/domains/legal/public/site-step-list";
+import { SiteShowMoreButton } from "@/domains/legal/public/site-rail";
 import { useMobileShowMore } from "@/domains/legal/public/site-show-more";
 import { useServiceCapabilityState } from "@/platform/service-capability-state";
-import { Container } from "@/shared/components/section";
-import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
-import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
-import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { Container } from "@/shared/components/section";
+import { buttonClass } from "@/shared/components/ui/button-utils";
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
-import {
-  type MarketEcosystemPresetId,
-} from "@/shared/navigation/webtoon-platform-router-ux-model";
+import { type MarketEcosystemPresetId } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import {
   useDocumentTitle,
   useJsonLd,
@@ -61,20 +54,28 @@ import "./market-home-visual.css";
 const MOBILE_RECENT_LIMIT = 6;
 const POPULAR_TAG_LIMIT = 8;
 
-type MarketQuickFilterId = "all" | "free-cc0" | "commercial" | "no-ai" | "team-ready" | "brush" | "space-3d";
+type MarketQuickFilterId =
+  | "all"
+  | "free-cc0"
+  | "commercial"
+  | "no-ai"
+  | "team-ready"
+  | "brush"
+  | "space-3d";
 
 const MARKET_QUICK_FILTERS: readonly {
   readonly id: MarketQuickFilterId;
   readonly ko: string;
   readonly en: string;
+  readonly dotTone: "neutral" | "good" | "accent";
 }[] = [
-  { id: "all", ko: "전체", en: "All" },
-  { id: "free-cc0", ko: "무료·CC0", en: "Free · CC0" },
-  { id: "commercial", ko: "상업용 즉시 가능", en: "Commercial ready" },
-  { id: "no-ai", ko: "No-AI 직접 제작 검증", en: "No-AI verified" },
-  { id: "team-ready", ko: "팀 공동 작업 공유 가능", en: "Team share ready" },
-  { id: "brush", ko: "펜·브러시", en: "Pens & Brushes" },
-  { id: "space-3d", ko: "3D 배경·포즈", en: "3D Spaces & Poses" },
+  { id: "all", ko: "전체", en: "All", dotTone: "neutral" },
+  { id: "free-cc0", ko: "무료·CC0", en: "Free · CC0", dotTone: "good" },
+  { id: "commercial", ko: "상업용 즉시 가능", en: "Commercial ready", dotTone: "good" },
+  { id: "no-ai", ko: "No-AI 직접 제작 검증", en: "No-AI verified", dotTone: "good" },
+  { id: "team-ready", ko: "팀 공동 작업 공유 가능", en: "Team share ready", dotTone: "accent" },
+  { id: "brush", ko: "펜·브러시", en: "Pens & Brushes", dotTone: "neutral" },
+  { id: "space-3d", ko: "3D 배경·포즈", en: "3D Spaces & Poses", dotTone: "neutral" },
 ];
 
 /** 기본 /market 진입에서는 통합 큐레이션 허브를 한눈에 펼치고, 명시적 ?section= 주소에서는 해당 구역에 집중한다. */
@@ -98,12 +99,15 @@ export function MarketHomePage() {
   const coveredByGlobalNotice = capability.status === "degraded" || capability.warmingUp === true;
   const recoveredAt = capability.recoveredAt;
   const reloadLatest = latest.reload;
+
   useEffect(() => {
     if (recoveredAt !== null && hasFatalLatestError) reloadLatest();
   }, [recoveredAt, hasFatalLatestError, reloadLatest]);
 
   const sectionInfo = MARKET_HOME_SECTIONS.find((item) => item.id === section) ?? MARKET_HOME_SECTIONS[0];
-  useDocumentTitle(section === "buy" ? t("소재 마켓", "Material Market") : t(sectionInfo.title[0], sectionInfo.title[1]));
+  useDocumentTitle(
+    section === "buy" ? t("소재 마켓", "Material Market") : t(sectionInfo.title[0], sectionInfo.title[1]),
+  );
   useMetaDescription(marketHomeDescription);
   usePageSocialMeta({
     canonicalPath: "/market",
@@ -132,6 +136,7 @@ export function MarketHomePage() {
   const [quickFilterId, setQuickFilterId] = useState<MarketQuickFilterId>("all");
   const [quickPreviewRecord, setQuickPreviewRecord] =
     useState<CreatorMarketplaceResourceRecord | null>(null);
+
   const presetFilteredItems = useMemo(() => {
     const byPreset =
       activePresetId === "all"
@@ -204,553 +209,353 @@ export function MarketHomePage() {
   return (
     <div className="market-home-front">
       <MarketHomeSectionNavigation section={section} />
-      {showBand("buy") ? <>
-      <div data-market-band="buy">
-      <section className="border-b border-line bg-ledger">
-        <Container size="wide" className="py-6 sm:py-8 lg:py-10">
-          <SitePageHeader
-            surface="plain"
-            className="market-home-masthead"
-            icon={Store}
-            eyebrow={t("소재 마켓", "Material Market")}
-            title={t("장면에 필요한 소재", "Materials for your scene")}
-            description={t(
-              "배경·브러시·템플릿을 찾고, 사용 조건을 확인하세요.",
-              "Find backgrounds, brushes and templates, then check their usage conditions.",
-            )}
-            aside={<MarketMaterialPreview />}
-            asideClassName="market-home-masthead__aside hidden lg:block"
-            actions={
-              <div className="market-home-meta">
-                <Link href="/market/browse" className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 min-w-11" })}>
-                  <Store className="h-4 w-4" aria-hidden="true" />
-                  {t("전체 소재 보기", "Browse all materials")}
-                </Link>
-                <span className="text-xs font-medium text-fg-3">
-                  {isPaidMode ? t("현재 유료 운영 모드", "Currently in paid operation mode") : t("현재 무료 운영 모드", "Currently in free operation mode")}
-                </span>
-              </div>
-            }
-          >
-            <MarketHomeSearch className="max-w-xl" queryValue={searchDraft} onQueryChange={setSearchDraft} />
-          </SitePageHeader>
-        </Container>
-      </section>
 
-      <Container size="wide" className="pt-4 sm:pt-6">
-        <MarketHomePresets activeId={activePresetId} onSelect={setActivePresetId} allButtonRef={allPresetRef} />
-        <div
-          role="group"
-          aria-label={t("빠른 라이선스·소재 필터", "Quick license and asset filters")}
-          data-testid="market-quick-license-filters"
-          className="mt-3 flex flex-wrap items-center gap-2"
-        >
-          {MARKET_QUICK_FILTERS.map((chip) => {
-            const active = quickFilterId === chip.id;
-            return (
-              <button
-                key={chip.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setQuickFilterId(chip.id)}
-                className={
-                  active
-                    ? "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-accent bg-accent/15 px-3.5 py-2 text-xs font-semibold text-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-                    : "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line bg-panel/80 px-3.5 py-2 text-xs font-medium text-fg-2 transition-colors hover:border-accent/50 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-                }
-              >
-                {t(chip.ko, chip.en)}
-              </button>
-            );
-          })}
-        </div>
-      </Container>
-
-      <Container size="wide" className="pb-6 pt-6 sm:pb-8 sm:pt-8">
-        <div className="flex items-baseline justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-fg">{t("최근 공유", "Recently shared")}</h2>
-            <p className="mt-1 text-xs leading-5 text-fg-3">{t("최근 공개된 리소스를 실제 미리보기와 함께 확인합니다.", "Browse recently published resources with real previews.")}</p>
-          </div>
-          <Link href="/market/browse" className="inline-flex min-h-11 min-w-11 shrink-0 items-center whitespace-nowrap px-2 text-sm text-accent hover:text-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
-            {t("전체 보기", "View all")} <ArrowRight size={14} aria-hidden="true" className="ml-1" />
-          </Link>
-        </div>
-        {hasFatalLatestError && coveredByGlobalNotice ? (
-          <div role="status" className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-2xl border border-line bg-panel px-5 py-4">
-            <p className="text-sm text-fg-2">{t("온라인 기능이 복구되면 최근 공유를 자동으로 다시 불러와요.", "When online features recover, recently shared resources will reload on their own.")}</p>
-            <button type="button" onClick={latest.reload} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 min-w-11 h-11" })}>
-              <RefreshCw className="mr-1.5 size-3.5" aria-hidden="true" />
-              {t("지금 다시 시도", "Retry now")}
-            </button>
-          </div>
-        ) : null}
-        {hasFatalLatestError && !coveredByGlobalNotice ? (
-          <div role="alert" className="mt-6 rounded-2xl border border-warn/30 bg-warn/5 p-8 text-center sm:p-10">
-            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-warn/10 text-warn">
-              <AlertTriangle className="size-6" aria-hidden="true" />
-            </div>
-            <h3 className="mt-3 text-base font-bold text-fg">{t("최근 공유 리소스를 불러올 수 없어요", "Recently shared resources could not be loaded")}</h3>
-            <p className="mx-auto mt-1.5 max-w-sm text-sm text-fg-2">{t("일시적인 네트워크 문제이거나 서버 장애일 수 있어요. 다시 시도해도 다른 작업에는 영향을 주지 않습니다.", "This may be a temporary network issue or a server problem. Retrying will not affect your other work.")}</p>
-            <button type="button" onClick={latest.reload} className={buttonClass({ variant: "outline", size: "sm", className: "mt-4 min-h-11 min-w-11 h-11" })}>
-              <RefreshCw className="mr-1.5 size-3.5" aria-hidden="true" />
-              {t("다시 시도", "Try again")}
-            </button>
-          </div>
-        ) : null}
-        {latest.stale ? (
-          <StaleNoticeBar
-            savedAt={latest.staleSavedAt ?? new Date().toISOString()}
-            onRetry={latest.reload}
-            className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-fg-2 [&>button]:ml-auto"
-          />
-        ) : null}
-        {hasFatalLatestError ? null : (
-          <>
-            {latest.loading ? <p role="status" className="sr-only">{t("최근 공유된 마켓 리소스를 불러오는 중입니다.", "Loading recently shared market resources.")}</p> : null}
-            <ul aria-busy={latest.loading || undefined} className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4">
-              {latest.loading && latest.items.length === 0
-                ? Array.from({ length: 8 }, (_, index) => (
-                    <li key={index} aria-hidden="true">
-                      <div className="skeleton aspect-[16/9] w-full rounded-t-xl" />
-                      <div className="space-y-2 rounded-b-xl border border-t-0 border-line bg-card p-3.5">
-                        <div className="skeleton h-4 w-4/5" />
-                        <div className="skeleton h-3 w-2/5" />
-                      </div>
-                    </li>
-                  ))
-                : presetFilteredItems.map((record, index) => (
-                    <li key={record.id} {...introItemProps(index)} className={recentMore.hiddenOnMobile(index) ? "max-sm:hidden" : undefined}>
-                      <MarketResourceCard
-                        record={record}
-                        onQuickPreview={setQuickPreviewRecord}
-                        className="h-full"
-                      />
-                    </li>
-                  ))}
-            </ul>
-            <SiteShowMoreButton
-              className="sm:hidden"
-              remaining={recentMore.remaining}
-              onClick={recentMore.expand}
-              label={t(`최근 공유 ${recentMore.remaining}개 더 보기`, `Show ${recentMore.remaining} more`)}
-            />
-            {!latest.loading && hasLatestItems && presetFilteredItems.length === 0 ? (
-              <div role="status" className="mt-6 rounded-2xl border border-dashed border-line bg-panel p-6 text-center">
-                <PackageSearch className="mx-auto size-8 text-fg-3" aria-hidden="true" />
-                <h3 className="mt-3 text-base font-bold text-fg">{t("선택한 유형의 최근 소재가 없어요", "No recent materials match this type")}</h3>
-                <p className="mt-2 text-sm text-fg-2">{t("최근 공개된 소재 안에서 찾은 결과입니다. 전체 카탈로그에서 더 찾아보거나 유형을 바꿔 보세요.", "These results cover recently published materials. Browse the full catalog or choose another type.")}</p>
-                <div className="mt-4 flex flex-wrap justify-center gap-3">
-                  <button type="button" onClick={() => { setActivePresetId("all"); setQuickFilterId("all"); allPresetRef.current?.focus({ preventScroll: true }); }} className={buttonClass({ variant: "solid", size: "md", className: "min-h-11 min-w-11" })}>{t("최근 소재 전체 보기", "Show all recent materials")}</button>
-                  <Link href="/market/browse" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11 min-w-11" })}>{t("전체 에셋 카탈로그", "Full asset catalog")}</Link>
-                </div>
-              </div>
-            ) : null}
-            {!latest.loading && latest.items.length === 0 ? (
-              <div className="mt-6 rounded-2xl border border-dashed border-line bg-panel p-8 text-center sm:p-10">
-                <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-raised text-fg-3">
-                  <PackageSearch className="size-6" aria-hidden="true" />
-                </div>
-                <h3 className="mt-3 text-base font-bold text-fg">{t("아직 공유된 리소스가 없어요", "No shared resources yet")}</h3>
-                <p className="mx-auto mt-1.5 max-w-md text-sm text-fg-2">{t("공개 마켓 소재와 별개로 기본 무료 제작 소재는 회원가입 없이 사용할 수 있습니다. 원본 파일과 사용 조건을 확인한 뒤 내 편집기로 가져오세요.", "Separately from public market materials, the built-in free production materials are available without signing up. Check the source files and terms, then bring them into your editor.")}</p>
-                <div className="mt-5 flex flex-wrap justify-center gap-3">
-                  <Link href="/studio/assets?view=essentials" className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 min-w-11" })}>{t("기본 무료 소재 사용하기", "Use built-in free materials")}</Link>
-                  <Link href="/studio?assetMarket=community&communityView=share" className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 min-w-11" })}>
-                    <Upload className="mr-1.5 size-3.5" aria-hidden="true" />
-                    {t("Studio에서 첫 리소스 공유하기", "Share your first resource from Studio")}
-                  </Link>
-                </div>
-              </div>
-            ) : null}
-          </>
-        )}
-      </Container>
-
-      <MarketGrandAtelierShowcase />
-
-      </div>
-      </> : null}
-
-      {showBand("explore") ? <div data-market-band="explore">
-      <Container size="wide">
-        <MarketCategoryTiles />
-        <MarketNavHeader />
-        <SiteArtSurfaceSpotlight cardId="nb-market-atelier" compact className="mt-4" />
-      </Container>
-
-      <Container size="wide" className="py-8 sm:py-10 lg:py-12">
-        <MarketResourceFamilyExplorer />
-      </Container>
-
-      <Container size="wide" className="pb-8 sm:pb-10">
-        <section
-          data-market-starter-guide="true"
-          aria-labelledby="market-starter-guide-heading"
-          className="rounded-2xl border border-accent/30 bg-panel/80 p-4 sm:p-5"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold text-accent">
-                {t("공정별 시작 소재", "Assets by stage")}
-              </p>
-              <h2 id="market-starter-guide-heading" className="mt-0.5 text-base font-semibold text-fg sm:text-lg">
-                {t("웹툰 5대 공정별 필수 에셋 스타터 가이드", "5-Stage Webtoon Essential Asset Starter Guide")}
-              </h2>
-              <p className="mt-0.5 text-xs text-fg-2">
-                {t(
-                  "입문 작가가 공정마다 가장 먼저 챙겨야 할 필수 소재와 원고 위 호환성 시험(Fit Lab) 동선입니다.",
-                  "Essential materials for beginners at each webtoon stage, plus direct Fit Lab testing.",
-                )}
-              </p>
-            </div>
-            <Link
-              href="/market/fit-lab"
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft/20 px-3.5 py-2 text-xs font-semibold text-accent hover:bg-accent-soft/35"
-            >
-              {t("원고 위 시험 (Fit Lab) 바로가기", "Open Fit Lab")}
-              <ArrowRight size={13} aria-hidden="true" />
-            </Link>
-          </div>
-          <ol className="mt-3.5 grid gap-2.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-            {[
-              {
-                step: "1",
-                stageKo: "콘티·연출",
-                stageEn: "Storyboard & Layout",
-                descKo: "세로 스크롤 컷 분할 템플릿·구도 가이드",
-                descEn: "Vertical scroll panel templates & framing guides",
-                href: "/market/browse?kind=template",
-              },
-              {
-                step: "2",
-                stageKo: "3D 배경",
-                stageEn: "3D Backgrounds",
-                descKo: "학교·방·거리 등 카메라 앵글 회전형 3D 공간",
-                descEn: "Orbitable 3D scenes for rooms, schools, and streets",
-                href: "/market/browse?kind=3d-asset",
-              },
-              {
-                step: "3",
-                stageKo: "선화·펜",
-                stageEn: "Line Art & Pens",
-                descKo: "필압 G펜·거친 먹선·머리카락 전용 브러시",
-                descEn: "Pressure G-pens, rough ink, and hair brushes",
-                href: "/market/browse?kind=brush",
-              },
-              {
-                step: "4",
-                stageKo: "채색·음영",
-                stageEn: "Color & Shading",
-                descKo: "캐릭터 피부·시간대별 조명 팔레트와 스크린톤",
-                descEn: "Skin palettes, time-of-day lighting, and screentones",
-                href: "/market/browse?kind=palette",
-              },
-              {
-                step: "5",
-                stageKo: "말풍선·마감",
-                stageEn: "Balloons & Finish",
-                descKo: "대사 말풍선·효과음 레터링·분위기 보정 필터",
-                descEn: "Dialogue balloons, SFX lettering, and mood filters",
-                href: "/market/browse?kind=filter",
-              },
-            ].map((item) => (
-              <li key={item.step} className="flex flex-col justify-between rounded-xl border border-line bg-card p-3">
-                <div>
-                  <span className="text-[11px] font-semibold text-accent tabular-nums">{t(`${item.step}단계`, `Step ${item.step}`)}</span>
-                  <h3 className="mt-1 text-sm font-semibold text-fg">{t(item.stageKo, item.stageEn)}</h3>
-                  <p className="mt-1 text-xs leading-5 text-fg-2">{t(item.descKo, item.descEn)}</p>
-                </div>
-                <Link
-                  href={item.href}
-                  className="mt-2 inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-accent hover:underline"
-                >
-                  {t(`${item.stageKo} 소재 보기`, `Browse ${item.stageEn}`)}
-                  <ArrowRight size={12} aria-hidden="true" />
-                </Link>
-              </li>
-            ))}
-          </ol>
-        </section>
-      </Container>
-
-      <section className="border-y border-line bg-card/40 py-8 sm:py-10">
-        <Container size="wide">
-          <div className="flex items-baseline justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold text-accent">{t("주제별 컬렉션", "Curated collections")}</p>
-              <h2 className="mt-1 text-lg font-semibold text-fg sm:text-xl">{t("장르·제작 목적 컬렉션", "Genre & purpose collections")}</h2>
-              <p className="mt-1 text-sm leading-6 text-fg-2">{t("장면 예시에서 출발해 관련 태그의 리소스를 탐색하세요. 이미지는 테마를 설명하기 위한 예시입니다.", "Start from a scene example and explore resources with related tags. Images are illustrative examples of each theme.")}</p>
-            </div>
-            <Link
-              href="/market/browse"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center px-2 text-xs font-semibold text-accent hover:text-accent-2"
-            >
-              {t("전체 보기", "View all")} <ArrowRight size={14} aria-hidden="true" className="ml-1" />
-            </Link>
-          </div>
-          <SiteRail label={t("장르·제작 목적 컬렉션", "Genre & purpose collections")} columns="sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" className="mt-4 gap-3.5" itemClassName="w-[min(78vw,17rem)]">
-            {MARKET_CURATED_THEMES.map((theme, index) => {
-              const ThemeIcon = theme.icon;
-              return (
-                <Link
-                  key={theme.id}
-                  {...introItemProps(index)}
-                  href={theme.browseHref}
-                  className="market-collection-card group relative flex w-full flex-col justify-between overflow-hidden rounded-2xl border border-line bg-card p-4 transition-colors duration-200 hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-                >
-                  <img src={theme.image} alt="" loading="lazy" width={640} height={360} className="-mx-4 -mt-4 mb-4 aspect-[1.9] max-w-none object-cover transition-transform duration-200 motion-reduce:transition-none" style={{ width: "calc(100% + 2rem)", objectPosition: theme.id === "pose-guide-3d" ? "40% 45%" : "center" }} />
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center rounded-md bg-raised px-2 py-0.5 text-xs font-semibold text-fg-2">
-                        {theme.badge}
-                      </span>
-                      <ThemeIcon className="size-4 text-fg-3 transition-colors group-hover:text-accent" aria-hidden="true" />
-                    </div>
-                    <h3 className="mt-2.5 text-base font-semibold text-fg transition-colors group-hover:text-accent">{theme.title}</h3>
-                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-fg-2">{theme.subtitle}</p>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between border-t border-line/60 pt-2.5 text-xs font-medium text-fg-2">
-                    <span className="font-semibold text-accent">{t(`#${theme.tag} 소재 찾기`, `Find #${theme.tag} materials`)}</span>
-                    <span className="flex items-center gap-1 text-fg-3">
-                      {t("보러가기", "See more")} <ArrowRight className="size-3" aria-hidden="true" />
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </SiteRail>
-        </Container>
-      </section>
-
-      {!isUnifiedHub && materials3D.length > 0 ? (
-        <Container size="wide" className="py-10 sm:py-12">
-          <div className="flex items-baseline justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <Cuboid className="size-4 text-accent" aria-hidden="true" />
-                <h2 className="text-base font-semibold text-fg sm:text-lg">{t("3D 배경·데생 추천", "Recommended 3D backgrounds & drawing guides")}</h2>
-              </div>
-              <p className="mt-1 text-xs leading-5 text-fg-3">{t("카메라를 돌려 구도를 잡고 캔버스로 가져올 수 있는 3D 리소스입니다.", "3D resources you can orbit to frame a shot, then bring onto the canvas.")}</p>
-            </div>
-            <Link href="/market/browse?kind=3d-asset" className="inline-flex min-h-11 items-center text-xs font-semibold text-accent hover:text-accent-2">
-              {t("3D 전체 보기", "View all 3D")} <ArrowRight size={14} aria-hidden="true" className="ml-1" />
-            </Link>
-          </div>
-          <ul className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4">
-            {materials3D.slice(0, 4).map((record, index) => (
-              <li key={record.id} {...introItemProps(index)}>
-                <MarketResourceCard
-                  record={record}
-                  onQuickPreview={setQuickPreviewRecord}
-                  className="h-full"
-                />
-              </li>
-            ))}
-          </ul>
-        </Container>
-      ) : null}
-
-      <Container size="wide" className="pb-10 sm:pb-12">
-        <section
-          aria-label={t("안심 연재·호환 엔진 및 배급자 스토어 탐색", "Rights-verified shelves & creator storefronts")}
-          className="rounded-2xl border border-line bg-card/75 p-4 sm:p-5"
-        >
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold text-accent">{t("사용 조건 검증 소재", "Rights-verified materials")}</p>
-              <h2 className="mt-1 text-base font-semibold text-fg sm:text-lg">
-                {t("안심 연재 조건 & 배급자 스토어 바로가기", "Commercial No-AI picks & creator storefronts")}
-              </h2>
-            </div>
-            <Link
-              href="/market/browse?containsAi=false&commercial=true"
-              className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-accent hover:underline"
-            >
-              {t("No-AI 상업 허용 전체 보기", "Browse all No-AI commercial")}
-              <ArrowRight size={13} aria-hidden="true" />
-            </Link>
-          </div>
-
-          <div className="mt-3.5 grid gap-2.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {[
-              {
-                titleKo: "AI 미포함 · 상업 연재 허용",
-                titleEn: "No-AI · Commercial serial OK",
-                descKo: "containsAi=false 및 상업 이용 허용 사용권만 선별",
-                descEn: "Manifests disclosed as No-AI with commercial rights",
-                href: "/market/browse?containsAi=false&commercial=true",
-              },
-              {
-                titleKo: "CC0 퍼블릭 도메인 소재",
-                titleEn: "CC0 1.0 Public Domain",
-                descKo: "출처 표기 부담 없이 원고에 즉시 투입 가능한 공개 소재",
-                descEn: "Zero-attribution public domain production assets",
-                href: "/market/browse?license=cc0-1.0",
-              },
-              {
-                titleKo: "Three.js 3D 회전 공간·프리셋",
-                titleEn: "Three.js 3D Orbitable Stages",
-                descKo: "카메라 구도를 자유롭게 잡아 선화·배경으로 쓰는 3D 에셋",
-                descEn: "3D environments & camera presets ready for Studio",
-                href: "/market/browse?engine=three&commercial=true",
-              },
-              {
-                titleKo: "작가 직접 창작 원본 (Original)",
-                titleEn: "Author-created Originals",
-                descKo: "배급자가 직접 제작해 서명·공개한 오리지널 패키지",
-                descEn: "Original packages authored directly by the publisher",
-                href: "/market/browse?origin=original&containsAi=false",
-              },
-            ].map((shelf) => (
-              <Link
-                key={shelf.href}
-                href={shelf.href}
-                className="group flex flex-col justify-between rounded-xl border border-line bg-panel p-3.5 transition-colors hover:border-accent/50 hover:bg-raised"
-              >
-                <div>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-fg-3">
-                    <ShieldCheck className="size-3.5" aria-hidden="true" />
-                    {t("사용 조건 표기됨", "Terms disclosed")}
-                  </span>
-                  <h3 className="mt-1 text-sm font-semibold text-fg group-hover:text-accent">
-                    {t(shelf.titleKo, shelf.titleEn)}
-                  </h3>
-                  <p className="mt-1 text-xs leading-5 text-fg-2">
-                    {t(shelf.descKo, shelf.descEn)}
+      {showBand("buy") ? (
+        <div data-market-band="buy">
+          <section>
+            <div className="border-b border-line bg-canvas">
+              <Container size="wide" className="py-7 sm:py-9 lg:py-12">
+              <div className="grid gap-7 lg:grid-cols-[minmax(0,1.06fr)_minmax(22rem,0.94fr)] lg:items-center lg:gap-12">
+                <div data-ink-enter="rise" style={{ "--ink-i": 0 } as CSSProperties}>
+                  <p className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-3">
+                    <span className="size-1.5 rounded-full bg-accent" aria-hidden="true" />
+                    {t("소재 마켓", "Material market")}
                   </p>
-                </div>
-                <span className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-accent">
-                  {t("조건으로 탐색", "Filter catalog")}
-                  <ArrowRight className="size-3" aria-hidden="true" />
-                </span>
-              </Link>
-            ))}
-          </div>
+                  <h1 className="mt-2.5 text-2xl font-semibold tracking-tight text-fg [word-break:keep-all] sm:text-3xl lg:text-4xl">
+                    {t("장면에 필요한 소재", "Materials for your scene")}
+                  </h1>
+                  <p className="mt-2.5 max-w-xl text-sm leading-6 text-fg-2 [word-break:keep-all] sm:text-base sm:leading-7">
+                    {t(
+                      "배경·브러시·템플릿을 찾고 사용 조건을 확인하세요",
+                      "Find backgrounds, brushes and templates, then check their usage conditions",
+                    )}
+                  </p>
 
-          {featuredPublishers.length > 0 ? (
-            <div className="mt-4 border-t border-line/70 pt-3.5">
-              <p className="text-xs font-semibold text-fg-3">
-                {t("최근 활동 배급자 스토어", "Active publisher storefronts")}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {featuredPublishers.map((pub) => (
-                  <Link
-                    key={pub.id}
-                    href={`/market/creator/${encodeURIComponent(pub.id)}`}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg transition-colors hover:border-accent/50 hover:text-accent"
-                  >
-                    <Store className="size-3.5 text-accent" aria-hidden="true" />
-                    <span>{pub.name}</span>
-                    <span className="numeral tnum rounded bg-raised px-1.5 py-0.5 text-[11px] text-fg-2">
-                      {t(`패키지 ${pub.count}개`, `${pub.count} pkgs`)}
+                  <MarketHomeSearch
+                    className="mt-5 max-w-xl"
+                    queryValue={searchDraft}
+                    onQueryChange={setSearchDraft}
+                  />
+
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-3">
+                    <Link
+                      href="/market/browse"
+                      className="ink-arrow inline-flex min-h-11 items-center gap-1.5 rounded-[8px] font-medium text-fg-2 transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      <Store className="size-3.5 text-fg-3" aria-hidden="true" />
+                      <span>{t("전체 소재 보기", "Browse all materials")}</span>
+                      <ArrowRight className="size-3.5" aria-hidden="true" />
+                    </Link>
+                    <span aria-hidden="true" className="text-fg-3/40">
+                      ·
                     </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </section>
+                    <span>
+                      {isPaidMode
+                        ? t("현재 유료 운영 모드", "Currently in paid operation mode")
+                        : t("현재 무료 운영 모드", "Currently in free operation mode")}
+                    </span>
+                  </div>
+                </div>
 
-        <MarketRecentlyViewedStrip className="mt-5" />
-      </Container>
-
-      {popularTags.length >= 3 ? (
-        <Container size="wide" className="pb-10 sm:pb-12">
-          <h2 className="text-xs font-semibold text-fg-3">{t("최근 공유 소재의 키워드", "Keywords from recently shared materials")}</h2>
-          <ul className="-mx-4 mt-3 flex snap-x gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
-            {popularTags.map((tag) => (
-              <li key={tag} className="shrink-0 snap-start">
-                <Link
-                  href={`/market/browse?tag=${encodeURIComponent(tag)}`}
-                  className="inline-flex min-h-11 items-center rounded-xl bg-raised px-3 py-2 text-sm text-fg-2 transition-colors duration-150 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                <div
+                  data-ink-enter="panel"
+                  style={{ "--ink-i": 1, "--ink-radius": "16px" } as CSSProperties}
                 >
-                  #{tag}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Container>
+                  <MarketMaterialPreview />
+                </div>
+              </div>
+              </Container>
+            </div>
+          </section>
+
+          <Container size="wide" className="pt-5 sm:pt-6">
+            <MarketHomePresets
+              activeId={activePresetId}
+              onSelect={setActivePresetId}
+              allButtonRef={allPresetRef}
+            />
+
+            <div
+              role="group"
+              aria-label={t("빠른 라이선스·소재 필터", "Quick license and asset filters")}
+              data-testid="market-quick-license-filters"
+              className="mt-3 flex flex-wrap items-center gap-1.5"
+            >
+              {MARKET_QUICK_FILTERS.map((chip) => {
+                const active = quickFilterId === chip.id;
+                const dotColor = active
+                  ? "bg-accent"
+                  : chip.dotTone === "good"
+                    ? "bg-good"
+                    : chip.dotTone === "accent"
+                      ? "bg-accent/70"
+                      : "bg-fg-3/60";
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setQuickFilterId(chip.id)}
+                    className={cn(
+                      "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-[8px] border px-3 py-1.5 text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+                      active
+                        ? "border-accent/65 bg-accent-soft font-medium text-fg"
+                        : "border-line bg-panel/60 font-normal text-fg-2 hover:border-line-strong hover:text-fg",
+                    )}
+                  >
+                    <span aria-hidden="true" className={cn("size-1.5 shrink-0 rounded-full", dotColor)} />
+                    <span>{t(chip.ko, chip.en)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Container>
+
+          <Container size="wide" className="pb-10 pt-7 sm:pb-12 sm:pt-8">
+            <div className="flex items-baseline justify-between gap-3">
+              <div>
+                <h2 data-ink="line" className="text-base font-semibold text-fg [word-break:keep-all] sm:text-lg">
+                  {t("최근 공유", "Recently shared")}
+                </h2>
+                <p className="mt-2 text-xs leading-5 text-fg-3 [word-break:keep-all]">
+                  {t(
+                    "최근 공개된 리소스를 실제 미리보기와 함께 확인합니다",
+                    "Browse recently published resources with real previews",
+                  )}
+                </p>
+              </div>
+              <Link
+                href="/market/browse"
+                className="ink-arrow inline-flex min-h-11 min-w-11 shrink-0 items-center gap-1 whitespace-nowrap rounded-[8px] px-2 text-xs font-medium text-accent hover:text-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              >
+                <span>{t("전체 보기", "View all")}</span>
+                <ArrowRight size={14} aria-hidden="true" />
+              </Link>
+            </div>
+
+            {hasFatalLatestError && coveredByGlobalNotice ? (
+              <div
+                role="status"
+                className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-[14px] border border-line bg-panel px-5 py-4"
+              >
+                <p className="text-sm text-fg-2">
+                  {t(
+                    "온라인 기능이 복구되면 최근 공유를 자동으로 다시 불러옵니다",
+                    "When online features recover, recently shared resources will reload automatically",
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={latest.reload}
+                  className={buttonClass({
+                    variant: "outline",
+                    size: "sm",
+                    className: "h-11 min-h-11 min-w-11 rounded-[8px]",
+                  })}
+                >
+                  <RefreshCw className="mr-1.5 size-3.5" aria-hidden="true" />
+                  {t("지금 다시 시도", "Retry now")}
+                </button>
+              </div>
+            ) : null}
+
+            {hasFatalLatestError && !coveredByGlobalNotice ? (
+              <div
+                role="alert"
+                className="mt-6 rounded-[16px] border border-warn/30 bg-warn/5 p-8 text-center sm:p-10"
+              >
+                <div className="mx-auto flex size-11 items-center justify-center rounded-[10px] bg-warn/10 text-warn">
+                  <AlertTriangle className="size-5" aria-hidden="true" />
+                </div>
+                <h3 className="mt-3 text-base font-semibold text-fg [word-break:keep-all]">
+                  {t("최근 공유 리소스를 불러올 수 없어요", "Recently shared resources could not be loaded")}
+                </h3>
+                <p className="mx-auto mt-1.5 max-w-sm text-sm text-fg-2 [word-break:keep-all]">
+                  {t(
+                    "일시적인 네트워크 문제이거나 서버 장애일 수 있어요. 다시 시도해도 다른 작업에는 영향을 주지 않습니다.",
+                    "This may be a temporary network issue or a server problem. Retrying will not affect your other work.",
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={latest.reload}
+                  className={buttonClass({
+                    variant: "outline",
+                    size: "sm",
+                    className: "mt-4 h-11 min-h-11 min-w-11 rounded-[8px]",
+                  })}
+                >
+                  <RefreshCw className="mr-1.5 size-3.5" aria-hidden="true" />
+                  {t("다시 시도", "Try again")}
+                </button>
+              </div>
+            ) : null}
+
+            {latest.stale ? (
+              <StaleNoticeBar
+                savedAt={latest.staleSavedAt ?? new Date().toISOString()}
+                onRetry={latest.reload}
+                className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-[10px] border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-fg-2 [&>button]:ml-auto"
+              />
+            ) : null}
+
+            {hasFatalLatestError ? null : (
+              <>
+                {latest.loading ? (
+                  <p role="status" className="sr-only">
+                    {t(
+                      "최근 공유된 마켓 리소스를 불러오는 중입니다.",
+                      "Loading recently shared market resources.",
+                    )}
+                  </p>
+                ) : null}
+                <ul
+                  key={`${activePresetId}-${quickFilterId}`}
+                  aria-busy={latest.loading || undefined}
+                  data-ink-stagger="panel"
+                  className="ink-cascade mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4"
+                >
+                  {latest.loading && latest.items.length === 0
+                    ? Array.from({ length: 8 }, (_, index) => (
+                        <li key={index} aria-hidden="true">
+                          <div className="skeleton aspect-[16/10] w-full rounded-t-[14px]" />
+                          <div className="space-y-2 rounded-b-[14px] border border-t-0 border-line bg-card p-3.5">
+                            <div className="skeleton h-4 w-4/5" />
+                            <div className="skeleton h-3 w-2/5" />
+                          </div>
+                        </li>
+                      ))
+                    : presetFilteredItems.map((record, index) => (
+                        <li
+                          key={record.id}
+                          {...introItemProps(index)}
+                          style={{ "--ink-radius": "14px" } as CSSProperties}
+                          className={recentMore.hiddenOnMobile(index) ? "max-sm:hidden" : undefined}
+                        >
+                          <MarketResourceCard
+                            record={record}
+                            onQuickPreview={setQuickPreviewRecord}
+                            className="h-full"
+                          />
+                        </li>
+                      ))}
+                </ul>
+                <SiteShowMoreButton
+                  className="sm:hidden"
+                  remaining={recentMore.remaining}
+                  onClick={recentMore.expand}
+                  label={t(
+                    `최근 공유 ${recentMore.remaining}개 더 보기`,
+                    `Show ${recentMore.remaining} more`,
+                  )}
+                />
+
+                {!latest.loading && hasLatestItems && presetFilteredItems.length === 0 ? (
+                  <div
+                    role="status"
+                    className="mt-6 rounded-[16px] border border-dashed border-line bg-panel p-6 text-center"
+                  >
+                    <PackageSearch className="mx-auto size-7 text-fg-3" aria-hidden="true" />
+                    <h3 className="mt-3 text-base font-semibold text-fg [word-break:keep-all]">
+                      {t("선택한 유형의 최근 소재가 없어요", "No recent materials match this type")}
+                    </h3>
+                    <p className="mt-1.5 text-sm text-fg-2 [word-break:keep-all]">
+                      {t(
+                        "최근 공개된 소재 안에서 찾은 결과입니다. 전체 카탈로그에서 더 찾아보거나 유형을 바꿔 보세요.",
+                        "These results cover recently published materials. Browse the full catalog or choose another type.",
+                      )}
+                    </p>
+                    <div className="mt-4 flex flex-wrap justify-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActivePresetId("all");
+                          setQuickFilterId("all");
+                          allPresetRef.current?.focus({ preventScroll: true });
+                        }}
+                        className={buttonClass({
+                          variant: "solid",
+                          size: "md",
+                          className: "min-h-11 min-w-11 rounded-[9px]",
+                        })}
+                      >
+                        {t("최근 소재 전체 보기", "Show all recent materials")}
+                      </button>
+                      <Link
+                        href="/market/browse"
+                        className={buttonClass({
+                          variant: "outline",
+                          size: "md",
+                          className: "min-h-11 min-w-11 rounded-[9px]",
+                        })}
+                      >
+                        {t("전체 에셋 카탈로그", "Full asset catalog")}
+                      </Link>
+                    </div>
+                  </div>
+                ) : null}
+
+                {!latest.loading && latest.items.length === 0 ? (
+                  <div className="mt-6 rounded-[16px] border border-dashed border-line bg-panel p-8 text-center sm:p-10">
+                    <div className="mx-auto flex size-11 items-center justify-center rounded-[10px] bg-raised text-fg-3">
+                      <PackageSearch className="size-5" aria-hidden="true" />
+                    </div>
+                    <h3 className="mt-3 text-base font-semibold text-fg [word-break:keep-all]">
+                      {t("아직 공유된 리소스가 없어요", "No shared resources yet")}
+                    </h3>
+                    <p className="mx-auto mt-1.5 max-w-md text-sm text-fg-2 [word-break:keep-all]">
+                      {t(
+                        "공개 마켓 소재와 별개로 기본 무료 제작 소재는 회원가입 없이 사용할 수 있습니다. 원본 파일과 사용 조건을 확인한 뒤 내 편집기로 가져오세요.",
+                        "Separately from public market materials, the built-in free production materials are available without signing up. Check the source files and terms, then bring them into your editor.",
+                      )}
+                    </p>
+                    <div className="mt-5 flex flex-wrap justify-center gap-2.5">
+                      <Link
+                        href="/studio/assets?view=essentials"
+                        className={buttonClass({
+                          variant: "solid",
+                          size: "sm",
+                          className: "min-h-11 min-w-11 rounded-[9px]",
+                        })}
+                      >
+                        {t("기본 무료 소재 사용하기", "Use built-in free materials")}
+                      </Link>
+                      <Link
+                        href="/studio?assetMarket=community&communityView=share"
+                        className={buttonClass({
+                          variant: "outline",
+                          size: "sm",
+                          className: "min-h-11 min-w-11 rounded-[9px]",
+                        })}
+                      >
+                        <Upload className="mr-1.5 size-3.5" aria-hidden="true" />
+                        {t("Studio에서 첫 리소스 공유하기", "Share your first resource from Studio")}
+                      </Link>
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </Container>
+
+          <MarketGrandAtelierShowcase />
+        </div>
       ) : null}
 
-      </div> : null}
+      {showBand("explore") ? (
+        <MarketHomeExploreBand
+          isUnifiedHub={isUnifiedHub}
+          materials3D={materials3D}
+          featuredPublishers={featuredPublishers}
+          popularTags={popularTags}
+          onQuickPreview={setQuickPreviewRecord}
+        />
+      ) : null}
 
-      {showBand("sell") ? <section data-market-band="sell" className="border-y border-line bg-panel py-6 sm:py-10" aria-labelledby="market-seller-band-title">
-        <Container size="wide" className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="max-w-2xl">
-            <p className="text-xs font-semibold text-accent">{t("소재 판매·공유", "Sell & share materials")}</p>
-            <h2 id="market-seller-band-title" className="mt-2 text-xl font-semibold text-fg sm:text-2xl">
-              {t("만든 소재를 공유하고 판매해 보세요", "Share and sell the materials you made")}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-fg-2">
-              {t("브러시·템플릿·3D 에셋을 올리면 다른 작가의 컷에 쓰여요. 안내를 따라 5분이면 시작할 수 있어요.", "List your brushes, templates and 3D assets and other artists will use them in their panels. Start in about 5 minutes.")}
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-3">
-            <Link
-              href="/market/publish"
-              className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              {t("소재 공유하기", "Share materials")}
-            </Link>
-            <Link
-              href="/studio?assetMarket=community&communityView=share"
-              className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}
-            >
-              <Upload className="h-4 w-4" aria-hidden="true" />
-              {t("Studio에서 공유", "Share from Studio")}
-            </Link>
-          </div>
-        </Container>
-      </section> : null}
+      {showBand("sell") ? <MarketHomeSellBand /> : null}
 
-      {showBand("guide") ? <div data-market-band="guide">
-      <Container size="wide" className="pb-14">
-        <SiteDisclosure
-          className="mb-10"
-          icon={HelpCircle}
-          title={t("처음이라면 종류보다 하고 싶은 작업부터 고르세요", "New here? Start from the task you want to do, not the asset type")}
-          summary={t("템플릿·에셋·브러시는 적용 방식이 서로 다릅니다.", "Templates, assets and brushes are applied differently.")}
-        >
-          <p className="text-sm leading-6 text-fg-2">{t("상세 화면에서 실제 사용 위치와 호환성을 먼저 보여드립니다.", "The detail screen shows where each is used and its compatibility first.")}</p>
-          <SiteStepList
-            className="mt-3"
-            steps={[
-              t("장면을 통째로 시작하려면 템플릿, 캔버스에 놓을 재료가 필요하면 2D·3D를 고릅니다.", "To start a whole scene, pick a template; for materials to place on the canvas, pick 2D/3D."),
-              t("선화·채색 도구는 브러시, 작품의 색감과 마감은 색·보정에서 찾습니다.", "Find line-art and coloring tools under brushes, and your work's color and finish under color/retouch."),
-              t("미리보기에서 결과와 사용권을 확인한 뒤 Studio에서 시험하거나 내 에셋에 저장합니다.", "Check the result and license in the preview, then test in Studio or save to your assets."),
-            ]}
-          />
-        </SiteDisclosure>
-        <section className="market-production-route mb-12" aria-labelledby="market-next-step-title">
-          <div><span className="text-xs font-semibold text-accent">{t("다음 작업 이어가기", "Continue to your panel")}</span><h2 id="market-next-step-title" className="mt-3">{t("재료를 골랐다면,", "Picked your materials?")}<br />{t("이제 내 원고에 맞춰보세요", "Now fit them to your manuscript")}</h2><p>{t("마음에 드는 소재를 모으고 제작 조건을 비교하세요. 선화·채색이 막히는 순간에는 학습 과정을, 장면의 근거가 필요할 때에는 리서치 데스크를 이어서 활용할 수 있습니다.", "Collect the materials you like and compare production conditions. When line art or coloring stalls, continue with learning paths; when a scene needs grounding, continue with the research desk.")}</p></div>
-          <nav aria-label={t("리소스 선택 다음 작업", "Next steps after choosing resources")}><Link href="/market/library">{t("내 에셋에서 작업 재료 정리", "Organize working materials in my assets")} <ArrowRight size={16} aria-hidden="true" /></Link><Link href="/learn/paths/visual-finish">{t("선과 색의 완성도를 높이는 실습", "Practice to polish lines and colors")} <ArrowRight size={16} aria-hidden="true" /></Link><Link href="/research/assets">{t("복식·소품·배경 레퍼런스 찾기", "Find costume, prop & background references")} <ArrowRight size={16} aria-hidden="true" /></Link><Link href="/studio">{t("ToonStudio에서 다음 컷 그리기", "Draw the next panel in ToonStudio")} <ArrowRight size={16} aria-hidden="true" /></Link></nav>
-        </section>
-        <SiteDisclosure
-          icon={BadgeCheck}
-          title={t("사용권 안내", "License guide")}
-          summary={t("무료 여부와 별개로 상업 이용, 수정, 출처 표기 조건을 확인하세요.", "Regardless of whether it's free, check the conditions for commercial use, modification, and attribution.")}
-          badge={<span className="shrink-0 rounded-full border border-line px-2.5 py-1 text-xs font-semibold text-fg-2 tabular-nums">{MARKET_LICENSE_GUIDE.length}</span>}
-        >
-          <ul className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {MARKET_LICENSE_GUIDE.map((license) => (
-              <li key={license.license} className="rounded-xl border border-line bg-card p-4 transition-colors hover:border-accent/30 hover:bg-raised/60">
-                <h3 className="text-sm font-semibold text-fg">{license.label}</h3>
-                <p className="mt-1.5 text-sm leading-6 text-fg-2">{license.summary}</p>
-                <a
-                  href={license.url ?? "/terms"}
-                  target={license.url ? "_blank" : undefined}
-                  rel={license.url ? "noreferrer" : undefined}
-                  className="mt-2 inline-flex min-h-11 items-center text-sm text-cool underline decoration-current underline-offset-2 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-                >
-                  {t("사용권 전문 보기", "Read the full license")}{license.url ? " ↗" : ""}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </SiteDisclosure>
-      </Container>
-      </div> : null}
+      {showBand("guide") ? <MarketHomeGuideBand /> : null}
+
       <MarketQuickPreviewDialog
         record={quickPreviewRecord}
         onClose={() => setQuickPreviewRecord(null)}

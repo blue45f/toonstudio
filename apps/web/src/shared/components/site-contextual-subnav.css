@@ -1,4 +1,4 @@
-/* 상시 노출 수평 발광 필 리본으로 인접 화면을 1클릭에 연결하고, 초과 목적지와 가이드는 서랍으로 정리한다. */
+/* 조용한 동심원 레일로 인접 화면을 1클릭에 연결하고, 현재 위치는 슬라이딩 잉크 밑줄로 표시한다. */
 .site-contextual-subnav {
   --subnav-accent: var(--color-accent);
   position: relative;
@@ -6,18 +6,12 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 10px;
-  padding: 6px 10px;
-  border: 1px solid color-mix(in oklch, var(--subnav-accent) 26%, var(--color-line));
-  border-radius: 16px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
   color: var(--color-fg-2);
-  background:
-    radial-gradient(90% 140% at 0% 0%, color-mix(in oklch, var(--subnav-accent) 12%, transparent), transparent 62%),
-    color-mix(in oklch, var(--color-panel) 84%, var(--color-card));
-  backdrop-filter: blur(16px) saturate(1.18);
-  -webkit-backdrop-filter: blur(16px) saturate(1.18);
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 8%, transparent),
-    0 10px 24px -18px oklch(0 0 0 / 0.48);
+  background: var(--color-panel);
+  box-shadow: none;
 }
 
 .site-contextual-subnav__ribbon {
@@ -26,29 +20,24 @@
   align-items: center;
   width: 100%;
   min-width: 0;
-  gap: 6px 8px;
+  gap: 4px 8px;
 }
 
 .site-contextual-subnav__hub-chip {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 10px 4px 5px;
-  border: 1px solid color-mix(in oklch, var(--subnav-accent) 30%, var(--color-line));
-  border-radius: 999px;
-  background: color-mix(in oklch, var(--color-card) 88%, transparent);
-  color: var(--color-fg);
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  border-right: 1px solid var(--color-line);
+  color: var(--color-fg-2);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
-.site-contextual-subnav__emblem {
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  object-fit: cover;
+.site-contextual-subnav__icon {
   flex-shrink: 0;
+  color: var(--color-fg-3);
 }
 
 .site-contextual-subnav__hub-title {
@@ -59,63 +48,71 @@
 }
 
 .site-contextual-subnav__list {
+  position: relative;
   display: flex;
   flex: 1;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
+.site-contextual-subnav__ink {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-accent);
+  pointer-events: none;
+  transform-origin: left center;
+  transform: translate3d(var(--subnav-ink-x, 0px), var(--subnav-ink-y, 0px), 0) scaleX(var(--subnav-ink-w, 16));
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms ease;
+}
+
 .site-contextual-subnav__link,
 .site-contextual-subnav__more > summary {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   min-height: var(--site-control-size, 44px);
   min-width: 2.75rem;
-  padding: 6px 12px;
+  padding: 6px 11px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: 8px;
   color: var(--color-fg-2);
   font-size: 0.8125rem;
-  font-weight: 650;
+  font-weight: 500;
   text-decoration: none;
   word-break: keep-all;
-  transition: color 170ms cubic-bezier(0.16, 1, 0.3, 1), background-color 170ms cubic-bezier(0.16, 1, 0.3, 1), border-color 170ms cubic-bezier(0.16, 1, 0.3, 1), transform 170ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 170ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: color 150ms cubic-bezier(0.22, 1, 0.36, 1), background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), border-color 150ms cubic-bezier(0.22, 1, 0.36, 1), transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .site-contextual-subnav__link:hover,
 .site-contextual-subnav__more > summary:hover {
   color: var(--color-fg);
-  border-color: color-mix(in oklch, var(--subnav-accent) 34%, var(--color-line-strong));
-  background: color-mix(in oklch, var(--color-raised) 88%, transparent);
-  transform: translateY(-1px);
+  background: var(--color-raised);
+}
+
+.site-contextual-subnav__link:active,
+.site-contextual-subnav__more > summary:active {
+  transform: scale(0.98);
 }
 
 .site-contextual-subnav__link[aria-current="page"] {
   color: var(--color-fg);
-  border-color: color-mix(in oklch, var(--subnav-accent) 62%, var(--color-accent));
-  background: color-mix(in oklch, var(--subnav-accent) 18%, var(--color-accent-soft));
-  font-weight: 750;
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 14%, transparent),
-    0 6px 16px -8px color-mix(in oklch, var(--subnav-accent) 55%, transparent);
+  background: color-mix(in oklch, var(--color-raised) 82%, transparent);
+  font-weight: 650;
+  box-shadow: inset 0 -2px 0 var(--color-accent);
 }
 
-.site-contextual-subnav__badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 6px;
-  border-radius: 999px;
-  font-size: 0.625rem;
-  font-weight: 750;
-  letter-spacing: 0.03em;
-  background: color-mix(in oklch, var(--subnav-accent) 20%, transparent);
-  color: var(--color-accent);
+.site-contextual-subnav__list--primary[data-ink-active="true"] .site-contextual-subnav__link[aria-current="page"] {
+  box-shadow: none;
 }
 
 .site-contextual-subnav__link:focus-visible,
@@ -132,8 +129,8 @@
 .site-contextual-subnav__more > summary {
   cursor: pointer;
   list-style: none;
-  border-color: color-mix(in oklch, var(--color-line-strong) 55%, var(--color-line));
-  background: color-mix(in oklch, var(--color-card) 80%, transparent);
+  color: var(--color-fg-3);
+  font-size: 0.75rem;
 }
 
 .site-contextual-subnav__more > summary::-webkit-details-marker {
@@ -148,6 +145,11 @@
 .site-contextual-subnav__more[open] > summary {
   margin-left: auto;
   width: fit-content;
+  color: var(--color-fg);
+}
+
+.site-contextual-subnav__more > summary > svg {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .site-contextual-subnav__more[open] > summary > svg {
@@ -155,11 +157,11 @@
 }
 
 .site-contextual-subnav__additional {
-  margin-top: 8px;
+  margin-top: 6px;
   padding: 10px 12px;
   border-top: 1px solid var(--color-line);
-  border-radius: 12px;
-  background: color-mix(in oklch, var(--color-card) 85%, transparent);
+  border-radius: 8px;
+  background: var(--color-card);
 }
 
 .site-contextual-subnav__additional > p {
@@ -172,9 +174,9 @@
 
 @media (max-width: 639px) {
   .site-contextual-subnav {
-    padding: 6px 8px;
+    padding: 4px 6px;
     gap: 4px;
-    border-radius: 14px;
+    border-radius: 10px;
   }
 
   .site-contextual-subnav__hub-chip {
@@ -197,7 +199,6 @@
   .site-contextual-subnav {
     border-color: CanvasText;
     background: Canvas;
-    backdrop-filter: none;
     box-shadow: none;
   }
 
@@ -208,8 +209,14 @@
 
 @media (prefers-reduced-motion: reduce) {
   .site-contextual-subnav__link,
-  .site-contextual-subnav__more > summary {
+  .site-contextual-subnav__more > summary,
+  .site-contextual-subnav__more > summary > svg,
+  .site-contextual-subnav__ink {
     transition: none;
+  }
+
+  .site-contextual-subnav__link:active,
+  .site-contextual-subnav__more > summary:active {
     transform: none;
   }
 }

@@ -228,24 +228,24 @@ export function MaterialSentencePanel({ saved, onToggleSaved, saveDisabled, refi
   return (
     <section id="material-sentence" aria-labelledby={titleId} className="scroll-mt-24 space-y-6">
       {/* 카드는 이 하나뿐이다(DESIGN.md: 중첩 카드 금지). 이해 칩은 카드 안의 평면 구역이고, 결과 카드는 아래에서 페이지 위에 놓인다. */}
-      <div className="space-y-4 rounded-2xl border border-line bg-panel p-4 sm:p-5">
+      <div className="space-y-4 rounded-xl border border-line bg-panel p-4 sm:p-5">
         <header className="space-y-1">
-          <p className="eyebrow text-accent">SENTENCE SEARCH</p>
-          <h2 id={titleId} className="text-xl font-bold sm:text-2xl">{bt("문장으로 소재 찾기", "Find materials from a sentence")}</h2>
+          <p className="text-xs font-medium text-accent">{bt("문장 해석 검색", "Sentence search")}</p>
+          <h2 id={titleId} className="text-xl font-semibold sm:text-2xl">{bt("문장으로 소재 찾기", "Find materials from a sentence")}</h2>
           <p className="max-w-3xl text-sm leading-6 text-fg-2 break-keep">
             {bt("장면을 문장 하나로 적으면 필요한 종류의 자료를 권리·출처와 함께 모아 보여 줘요. 한글 낱말은 내장 사전으로 영어 검색어에 연결하고, 사전에 없는 낱말은 지우지 않아요.", "Describe a scene in one sentence and get the kinds of material you need, with rights and sources. Korean words are mapped with a built-in vocabulary, and words outside it are never dropped.")}
           </p>
         </header>
 
         <form role="search" aria-label={bt("문장으로 소재 찾기", "Find materials from a sentence")} className="space-y-3" onSubmit={onSubmit} noValidate>
-          <label htmlFor={inputId} className="block text-sm font-semibold">{bt("찾고 싶은 장면이나 소재를 문장으로", "The scene or material, as a sentence")}</label>
+          <label htmlFor={inputId} className="block text-sm font-medium">{bt("찾고 싶은 장면이나 소재를 문장으로", "The scene or material, as a sentence")}</label>
           <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative min-w-0 flex-1">
-              <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-accent" />
+              <Search size={17} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" />
               <input
                 id={inputId}
                 type="search"
-                className={`${RESOURCE_INPUT} min-h-12 pl-10`}
+                className={`${RESOURCE_INPUT} min-h-11 pl-10`}
                 value={draft}
                 maxLength={MATERIAL_INTENT_MAX_LENGTH}
                 autoComplete="off"
@@ -259,9 +259,9 @@ export function MaterialSentencePanel({ saved, onToggleSaved, saveDisabled, refi
                 }}
               />
             </div>
-            <button type="submit" className={`${HUB_PRIMARY_BUTTON} min-h-12`}>{committed ? bt("다시 찾기", "Search again") : bt("소재 찾기", "Find")}</button>
+            <button type="submit" className={`${HUB_PRIMARY_BUTTON} min-h-11`}>{committed ? bt("다시 찾기", "Search again") : bt("소재 찾기", "Find")}</button>
             {refineSentence ? (
-              <button type="button" className={`${RESOURCE_BUTTON} min-h-12`} disabled={refine.running || !draft.trim()} onClick={() => void runRefine()}>
+              <button type="button" className={`${RESOURCE_BUTTON} min-h-11`} disabled={refine.running || !draft.trim()} onClick={() => void runRefine()}>
                 {refine.running ? bt("다듬는 중…", "Refining…") : bt("AI로 다듬기", "Refine with AI")}
               </button>
             ) : null}

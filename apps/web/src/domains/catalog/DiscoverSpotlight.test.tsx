@@ -112,4 +112,21 @@ describe("DiscoverSpotlight", () => {
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByRole("article")).toBeNull();
   });
+
+  it("supports switching sibling featured picks in place with ink-panel and tilt stage hooks", () => {
+    renderSpotlight({ snapshot: snapshot(), loading: false });
+    const card = screen.getByRole("article", { name: "작품 lead" });
+    expect(card.getAttribute("data-ink-enter")).toBe("panel");
+    expect(card.classList.contains("ink-stage-tilt")).toBe(true);
+
+    const switcher = within(card).getByRole("group", { name: "대표 추천 전환" });
+    const buttons = within(switcher).getAllByRole("button");
+    expect(buttons).toHaveLength(3);
+    expect(buttons[0]?.getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(buttons[1]!);
+    expect(buttons[1]?.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("article", { name: "작품 f1" })).toBeTruthy();
+    expect(within(card).getByRole("link", { name: "작품 f1 작품 보기" }).getAttribute("href")).toBe("/title/slug-f1");
+  });
 });

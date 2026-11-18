@@ -34,13 +34,13 @@ describe("common task frame", () => {
   ] as const)("%s compact=%s 브랜드가 %s의 전체 표시와 목적을 native 이름으로 읽는다", (locale, compact, href, destination) => {
     useI18n.getState().setLang(locale);
     render(<MemoryRouter><WorkspaceBrand href={href} compact={compact} /></MemoryRouter>);
-    const caption = `ToonStudio${compact ? "" : " STORY COMES TO LIFE"} ${destination}`;
+    const caption = `ToonStudio ${destination}`;
     const brand = screen.getByRole("link", { name: value => value.replace(/\s/gu, "") === caption.replace(/\s/gu, "") });
     expect(brand.hasAttribute("aria-label")).toBe(false);
     expect(brand.hasAttribute("aria-labelledby")).toBe(false);
     expect(brand.getAttribute("href")).toBe(href);
     expect(brand.textContent?.replace(/\s/gu, "")).toBe(caption.replace(/\s/gu, ""));
-    expect(brand.querySelector("small")?.textContent ?? null).toBe(compact ? null : "STORY COMES TO LIFE");
+    expect(brand.querySelector("small")).toBeNull();
     expect(within(brand).getByText(destination).className).toContain("sr-only");
   });
 
@@ -50,9 +50,9 @@ describe("common task frame", () => {
   ])("%s에서도 보이는 브랜드·검색·단축키를 음성 이름에 담는다", (locale, caption, destination) => {
     useI18n.getState().setLang(locale);
     render(<MemoryRouter initialEntries={["/studio/assets"]}><WorkspaceTaskFrame route={workspaceTaskRoute("/studio/assets")}><input aria-label="kept draft" /></WorkspaceTaskFrame></MemoryRouter>);
-    const brand = screen.getByRole("link", { name: value => value.replace(/\s/gu, "") === `ToonStudioSTORYCOMESTOLIFE${destination.replace(/\s/gu, "")}` });
+    const brand = screen.getByRole("link", { name: value => value.replace(/\s/gu, "") === `ToonStudio${destination.replace(/\s/gu, "")}` });
     expect(brand.hasAttribute("aria-label")).toBe(false);
-    expect(brand.textContent).toContain("STORY COMES TO LIFE");
+    expect(brand.textContent).not.toContain("STORY COMES TO LIFE");
     const search = screen.getByRole("button", { name: `${caption} ⌘ K` });
     expect(search.getAttribute("aria-label")).toContain(within(search).getByText(caption).textContent);
     expect(search.getAttribute("aria-label")).toContain(within(search).getByText("⌘ K").textContent);
@@ -91,7 +91,7 @@ describe("common task frame", () => {
     );
 
     expect(result.container.querySelector('[data-workspace-surface="task"]')).toBeTruthy();
-    expect(screen.getByRole("link", { name: value => value.replace(/\s/gu, "") === "ToonStudioSTORYCOMESTOLIFE홈" }).getAttribute("href")).toMatch(/^\/home(?:\?|$)/u);
+    expect(screen.getByRole("link", { name: value => value.replace(/\s/gu, "") === "ToonStudio홈" }).getAttribute("href")).toMatch(/^\/home(?:\?|$)/u);
     expect(screen.getAllByRole("navigation", { name: "주 메뉴" })).toHaveLength(1);
   });
 });

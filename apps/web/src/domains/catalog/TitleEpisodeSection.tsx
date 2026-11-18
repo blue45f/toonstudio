@@ -1,4 +1,4 @@
-import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, Heart } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, CalendarDays, ChevronRight, Heart } from "lucide-react";
 import { useRef, useState } from "react";
 
 import type { Title } from "@/shared/lib/types";
@@ -62,7 +62,7 @@ function EpisodeRow({
   const content = (
     <>
       {!compact ? (
-        <span className="relative block aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-lg sm:w-28">
+        <span className="ink-cover ink-sheen relative block aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-lg border border-line sm:w-28">
           {episode.thumbnailUrl ? (
             <CoverImage
               src={episode.thumbnailUrl}
@@ -76,62 +76,62 @@ function EpisodeRow({
               aria-hidden
               className="absolute inset-0"
               style={{
-                background: `linear-gradient(150deg, color-mix(in oklch, ${coverFrom} 85%, oklch(0.24 0.012 66)), color-mix(in oklch, ${coverTo} 80%, oklch(0.15 0.008 70)))`,
+                background: `linear-gradient(150deg, color-mix(in oklch, ${coverFrom} 85%, var(--color-panel)), color-mix(in oklch, ${coverTo} 80%, var(--color-canvas)))`,
               }}
             />
           )}
           <span className="absolute inset-0 bg-[linear-gradient(to_top,oklch(0.1_0.02_265/0.55),transparent_55%)]" aria-hidden />
-          <span className="numeral absolute bottom-1.5 left-2 text-sm font-bold text-white">
+          <span className="numeral absolute bottom-1.5 left-2 text-sm font-semibold tabular-nums text-white">
             {episode.number}
           </span>
         </span>
       ) : (
-        <span className="numeral grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-raised text-xs font-extrabold text-fg">
+        <span className="numeral grid size-8 shrink-0 place-items-center rounded-md border border-line bg-raised text-xs font-semibold tabular-nums text-fg">
           {episode.number}
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col justify-center gap-1">
         <span className="flex flex-wrap items-center gap-1.5">
-          <span className="truncate text-[0.95rem] font-semibold text-fg">
+          <span className="truncate text-[0.9375rem] font-medium text-fg">
             {episode.title ?? formatI18nTemplate(bi("{v0}화", "Episode {v0}"), { v0: String(episode.number) })}
           </span>
           {scheduled ? (
-            <span className="rounded-md border border-warn/40 bg-warn/10 px-1.5 py-0.5 text-[0.68rem] font-semibold text-warn">
+            <span className="rounded border border-warn/40 bg-warn/10 px-1.5 py-0.5 text-[0.68rem] font-medium text-warn">
               {bi("공개 예정", "Scheduled")}
             </span>
           ) : isNewest ? (
-            <span className="rounded-md bg-accent px-1.5 py-0.5 text-[0.68rem] font-bold text-on-accent">NEW</span>
+            <span className="rounded bg-accent px-1.5 py-0.5 text-[0.68rem] font-medium text-on-accent">NEW</span>
           ) : null}
           {readBadge && (
-            <span className="rounded-md border border-accent/40 bg-accent-soft px-1.5 py-0.5 text-[0.68rem] font-semibold text-accent">
+            <span className="rounded border border-accent/40 bg-accent-soft px-1.5 py-0.5 text-[0.68rem] font-medium text-accent">
               {readBadge}
             </span>
           )}
         </span>
         <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-fg-3">
           {episode.publishedAt && (
-            <span className="inline-flex items-center gap-1">
-              <CalendarDays size={12} aria-hidden />
+            <span className="inline-flex items-center gap-1 tabular-nums">
+              <CalendarDays size={12} strokeWidth={1.5} aria-hidden />
               {formatEpisodeDate(episode.publishedAt)}
             </span>
           )}
           {typeof episode.likes === "number" && (
             <span className="inline-flex items-center gap-1">
-              <Heart size={12} aria-hidden />
-              <span className="numeral">{formatCount(episode.likes)}</span>
+              <Heart size={12} strokeWidth={1.5} aria-hidden />
+              <span className="numeral tabular-nums">{formatCount(episode.likes)}</span>
             </span>
           )}
         </span>
       </span>
-      <ChevronRight size={18} aria-hidden className="shrink-0 self-center text-fg-3 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+      <ChevronRight size={17} strokeWidth={1.5} aria-hidden className="shrink-0 self-center text-fg-3 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" />
     </>
   );
 
   const rowClass =
-    "group flex gap-3.5 rounded-2xl border border-line bg-card p-3 transition-colors duration-150 hover:border-line-strong sm:gap-4 sm:p-3.5";
+    "ink-frame group flex gap-3.5 rounded-xl border border-line bg-card p-3 transition-colors duration-150 hover:border-line-strong hover:bg-raised sm:gap-4 sm:p-3.5";
   if (scheduled) {
     return (
-      <li className={cn(rowClass, "opacity-75 hover:border-line")} aria-label={bi("공개 예정 회차", "Scheduled episode")}>
+      <li className={cn(rowClass, "opacity-75 hover:border-line hover:bg-card")} aria-label={bi("공개 예정 회차", "Scheduled episode")}>
         {content}
       </li>
     );
@@ -145,20 +145,6 @@ function EpisodeRow({
   );
 }
 
-/**
- * 작품 상세의 회차 블록.
- *
- * 회차별 데이터(제목·공개일·썸네일)는 2026-10-05 실측으로 어떤 계약에도 없어서
- * `episodes`가 주어진 경우에만 행을 그리고, 없으면 시안의 빈 상태로 정직하게
- * 안내한다. 행 렌더링·정렬·읽음 배지는 계약이 생기면 그대로 켜지도록 완성형으로
- * 두고 단위 테스트로 고정했다(title-episodes.ts의 경계 참고).
- *
- * 빈 상태는 막다른 화면이 아니다(discover D-9): 작품의 실제 연재처인
- * `title.availability`에서 검증된 외부 링크를 빈 상태 안에 직접 버튼으로
- * 잇는다(title-episode-empty-guide). 링크가 없으면 "링크 준비 중"으로
- * 정직하게 표시하고 작가 페이지·탐색 동선으로 이어지게 한다. 빈 배열([])도
- * 행이 없는 빈 상태로 취급한다 — 예전에는 빈 <ol>만 그려져 안내가 사라졌다.
- */
 export function TitleEpisodeSection({
   title,
   episodes,
@@ -167,8 +153,6 @@ export function TitleEpisodeSection({
   episodes?: readonly TitleEpisode[];
 }) {
   useBilingualI18nRevision();
-  // 플랫폼 노출 킬스위치 — AvailabilityRouter와 같은 규칙으로, 꺼져 있으면
-  // 빈 상태에서도 외부 플랫폼 이름·링크를 노출하지 않는다.
   const { showAvailability } = useAppConfig();
   const [order, setOrder] = useState<EpisodeSortOrder>("latest");
   const [viewMode, setViewMode] = useState<EpisodeViewMode>("list");
@@ -194,7 +178,6 @@ export function TitleEpisodeSection({
   });
   const visibleExternalLinks = externalGuide.links.slice(0, 3);
   const hiddenExternalLinkCount = externalGuide.links.length - visibleExternalLinks.length;
-  // NEW 배지는 공개 예정이 아닌 가장 최신 회차에만 붙인다.
   const newestNumber = episodes
     ?.filter((episode) => episode.status !== "scheduled")
     .reduce((max, episode) => Math.max(max, episode.number), 0);
@@ -246,27 +229,26 @@ export function TitleEpisodeSection({
     <section id="episodes" aria-labelledby="title-episodes-heading" className="scroll-mt-24">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 id="title-episodes-heading" className="mt-1 flex flex-wrap items-baseline gap-2.5 text-xl font-bold tracking-tight text-fg sm:text-2xl">
+          <h2 id="title-episodes-heading" className="mt-1 flex flex-wrap items-baseline gap-2.5 text-lg font-semibold tracking-tight text-fg sm:text-xl">
             {bi("회차", "Episodes")}
             {total != null && (
-              <span className="numeral text-base font-semibold text-fg-3">
+              <span className="numeral text-sm font-medium tabular-nums text-fg-3">
                 {formatI18nTemplate(bi("총 {v0}화", "{v0} episodes"), { v0: formatCount(total) })}
               </span>
             )}
-
           </h2>
         </div>
       </div>
 
       {continueTarget && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-accent/30 bg-accent-soft/40 px-4 py-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent text-on-accent">
-            <BookOpen size={16} aria-hidden />
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-panel px-4 py-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
+            <BookOpen size={16} strokeWidth={1.5} aria-hidden />
           </span>
           <p className="min-w-0 flex-1 text-sm font-medium text-fg">{continueTarget.label}</p>
           <Link
             href={`/title/${encodeURIComponent(title.slug)}/read/${continueTarget.episode}`}
-            className="inline-flex min-h-12 [min-block-size:3rem]! items-center rounded-full bg-accent px-4 text-xs font-bold text-on-accent transition-colors hover:bg-accent/90"
+            className="inline-flex min-h-12 [min-block-size:3rem]! items-center rounded-lg bg-accent px-4 text-xs font-medium text-on-accent transition-colors hover:bg-accent-2"
           >
             {continueTarget.action}
           </Link>
@@ -285,9 +267,9 @@ export function TitleEpisodeSection({
               placeholder={bi("회차 번호·제목 검색", "Filter episode # or title")}
               aria-label={bi("회차 번호 또는 제목 검색", "Search episode number or title")}
               data-testid="episodes-search-input"
-              className="min-h-12 [min-block-size:3rem]! w-full min-w-0 rounded-xl border border-line bg-card px-3 text-base text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent sm:w-64"
+              className="min-h-12 [min-block-size:3rem]! w-full min-w-0 rounded-lg border border-line bg-card px-3 text-base text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent sm:w-64"
             />
-            <div className="flex rounded-full border border-line bg-card p-0.5" role="group" aria-label={bi("회차 정렬", "Episode order")}>
+            <div className="flex rounded-lg border border-line bg-card p-0.5" role="group" aria-label={bi("회차 정렬", "Episode order")}>
               {(
                 [
                   { value: "latest", label: bi("최신부터", "Newest first") },
@@ -300,7 +282,7 @@ export function TitleEpisodeSection({
                   aria-pressed={order === option.value}
                   onClick={() => setOrder(option.value)}
                   className={cn(
-                    "min-h-12 [min-block-size:3rem]! rounded-full px-3.5 text-xs font-semibold transition-colors duration-150",
+                    "min-h-12 [min-block-size:3rem]! rounded-md px-3.5 text-xs font-medium transition-colors duration-150",
                     order === option.value ? "bg-accent text-on-accent" : "text-fg-3 hover:text-fg",
                   )}
                 >
@@ -309,7 +291,7 @@ export function TitleEpisodeSection({
               ))}
             </div>
             <div
-              className="flex rounded-full border border-line bg-card p-0.5"
+              className="flex rounded-lg border border-line bg-card p-0.5"
               role="group"
               aria-label={bi("회차 표시 형식", "Episode view mode")}
               data-testid="episodes-rea-view-mode"
@@ -330,7 +312,7 @@ export function TitleEpisodeSection({
                     });
                   }}
                   className={cn(
-                    "min-h-12 [min-block-size:3rem]! rounded-full px-3 text-xs font-semibold transition-colors duration-150",
+                    "min-h-12 [min-block-size:3rem]! rounded-md px-3 text-xs font-medium transition-colors duration-150",
                     viewMode === option.value ? "bg-accent text-on-accent" : "text-fg-3 hover:text-fg",
                   )}
                 >
@@ -340,16 +322,15 @@ export function TitleEpisodeSection({
             </div>
           </div>
           {hasEpisodes && sorted ? (
-            <p data-testid="episodes-binge-estimate" className="pt-3 text-xs text-fg-2">
+            <p data-testid="episodes-binge-estimate" className="pt-3 text-xs tabular-nums text-fg-2">
               {formatI18nTemplate(bi("예상 정주행 약 {v0}분", "Est. binge ~{v0}m"), { v0: String(Math.max(3, sorted.length * 3)) })}
             </p>
           ) : null}
         </details>
       )}
 
-
       {hasEpisodes && filteredEpisodes?.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-line bg-card/50 p-5 sm:p-6">
+        <div className="rounded-xl border border-dashed border-line bg-card/50 p-5 sm:p-6">
           <p role="status" className="font-semibold text-fg">
             {bi("검색 결과가 없어요", "No matching episodes")}
           </p>
@@ -364,13 +345,16 @@ export function TitleEpisodeSection({
               if (tools) tools.open = true;
               episodeSearchRef.current?.focus();
             }}
-            className="mt-3 inline-flex min-h-12 [min-block-size:3rem]! items-center rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg transition-colors hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="mt-3 inline-flex min-h-12 [min-block-size:3rem]! items-center rounded-lg border border-line bg-card px-4 text-sm font-medium text-fg transition-colors hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {bi("검색 지우기", "Clear search")}
           </button>
         </div>
       ) : hasEpisodes && filteredEpisodes ? (
-        <ol className={cn("grid gap-2.5", viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1")}>
+        <ol
+          key={`${order}-${viewMode}`}
+          className={cn("ink-cascade grid gap-2.5", viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1")}
+        >
           {filteredEpisodes.map((episode) => (
             <EpisodeRow
               key={episode.number}
@@ -385,37 +369,66 @@ export function TitleEpisodeSection({
       ) : (
         <div
           data-testid="title-episodes-empty"
-          className="rounded-2xl border border-line bg-card/50 p-5 text-center sm:p-7"
+          className="overflow-hidden rounded-xl border border-line bg-card"
         >
-          <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent-soft text-accent">
-            <BookOpen size={30} aria-hidden />
-          </span>
-          <p className="mt-3.5 font-semibold text-fg">{bi("회차별 목록은 아직 제공되지 않아요", "Episode lists aren't available yet")}</p>
-          <p className="mx-auto mt-1.5 max-w-xl text-sm leading-relaxed text-fg-2">
-            {externalGuide.state === "ready"
-              ? bi(
-                  "작품은 아래 공식 연재 플랫폼에서 감상할 수 있어요. 회차별 제목과 공개일이 연결되면 이곳에 표시됩니다.",
-                  "Read this title on an official platform below. Episode titles and dates will appear here once they are connected.",
-                )
-              : externalGuide.state === "no-url"
-                ? bi(
-                    "이 작품의 회차 제목·공개일은 연재 플랫폼에서만 공개되고 있어요. 연재 플랫폼은 확인되지만 바로가기 링크가 아직 준비되지 않았어요. 아래 동선에서 작품을 계속 둘러볼 수 있어요.",
-                    "Episode titles and dates for this title are only published on its serial platforms. We know the platforms, but a direct link isn't ready yet — keep exploring from the options below.",
-                  )
-                : bi(
-                    "이 작품의 회차 제목·공개일은 아직 연결되지 않았어요. 회차별 정보가 연결되면 이 자리에 최신 회차부터 표시됩니다. 아래 동선에서 작품을 계속 둘러볼 수 있어요.",
-                    "Episode information for this title isn't connected yet. Once it is, episodes will appear here starting with the latest — keep exploring from the options below.",
-                  )}
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line bg-panel/60 p-4 sm:px-5">
+            <div className="min-w-0 max-w-2xl">
+              <p className="text-sm font-semibold text-fg [word-break:keep-all]">
+                {bi("회차별 목록은 아직 제공되지 않아요", "Episode lists aren't available yet")}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
+                {externalGuide.state === "ready"
+                  ? bi(
+                      "작품은 아래 공식 연재 플랫폼에서 감상할 수 있어요. 회차별 제목과 공개일이 연결되면 이곳에 표시됩니다.",
+                      "Read this title on an official platform below. Episode titles and dates will appear here once they are connected.",
+                    )
+                  : externalGuide.state === "no-url"
+                    ? bi(
+                        "이 작품의 회차 제목·공개일은 연재 플랫폼에서만 공개되고 있어요. 연재 플랫폼은 확인되지만 바로가기 링크가 아직 준비되지 않았어요. 아래 동선에서 작품을 계속 둘러볼 수 있어요.",
+                        "Episode titles and dates for this title are only published on its serial platforms. We know the platforms, but a direct link isn't ready yet — keep exploring from the options below.",
+                      )
+                    : bi(
+                        "이 작품의 회차 제목·공개일은 아직 연결되지 않았어요. 회차별 정보가 연결되면 이 자리에 최신 회차부터 표시됩니다. 아래 동선에서 작품을 계속 둘러볼 수 있어요.",
+                        "Episode information for this title isn't connected yet. Once it is, episodes will appear here starting with the latest — keep exploring from the options below.",
+                      )}
+              </p>
+            </div>
+            <dl className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs">
+              <div className="flex items-center gap-1.5">
+                <dt className="text-fg-3">{bi("연재 상태", "Status")}</dt>
+                <dd className="font-medium text-fg">{STATUS_LABEL[title.status]}</dd>
+              </div>
+              {title.updateDays && title.updateDays.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <dt className="text-fg-3">{bi("연재 요일", "Schedule")}</dt>
+                  <dd className="font-medium text-fg">
+                    {title.updateDays.join("·")} {bi("연재", "serial")}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </div>
 
-          <div className="mt-5 border-t border-line/70 pt-4">
-            <p className="text-sm font-semibold text-fg">
-              {bi("외부 플랫폼에서 보기", "View on an external platform")}
-            </p>
+          <div className="p-4 sm:p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2 pb-3">
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-sm font-semibold text-fg">{bi("어디서 봐", "Where to read")}</h3>
+                <p className="text-xs text-fg-3">
+                  {bi("외부 플랫폼에서 보기", "View on an external platform")}
+                </p>
+              </div>
+              {externalGuide.links.length > 0 ? (
+                <span className="numeral text-xs tabular-nums text-fg-3">
+                  {formatI18nTemplate(bi("{v0}곳 연결", "{v0} platforms"), { v0: String(externalGuide.links.length) })}
+                </span>
+              ) : null}
+            </div>
+
             {externalGuide.state === "ready" ? (
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-2.5">
+              <div className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-panel/40">
                 {visibleExternalLinks.map((link, index) => {
-                  const platformName = PLATFORMS[link.platformId]?.name ?? link.platformId;
+                  const platformMeta = PLATFORMS[link.platformId];
+                  const platformName = platformMeta?.name ?? link.platformId;
                   return (
                     <a
                       key={link.platformId}
@@ -426,44 +439,72 @@ export function TitleEpisodeSection({
                         bi("{v0}에서 보기 (새 탭)", "View on {v0} (new tab)"),
                         { v0: platformName },
                       )}
-                      className={
-                        index === 0
-                          ? "inline-flex min-h-12 [min-block-size:3rem]! items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent/90"
-                          : "inline-flex min-h-12 [min-block-size:3rem]! items-center gap-1.5 rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
-                      }
+                      className="group flex min-h-12 [min-block-size:3rem]! flex-wrap items-center justify-between gap-2.5 px-3.5 py-2.5 text-sm transition-colors duration-150 hover:bg-raised sm:flex-nowrap sm:gap-3 motion-reduce:transition-none"
                     >
-                      {formatI18nTemplate(bi("{v0}에서 보기", "View on {v0}"), { v0: platformName })}
-                      <span className="text-xs font-medium">{PRICING_FULL[link.pricing]}</span>
-                      <ArrowUpRight size={15} aria-hidden />
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span
+                          aria-hidden="true"
+                          className="size-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: platformMeta?.color ?? "var(--color-accent)" }}
+                        />
+                        <span className="truncate font-medium text-fg">
+                          {formatI18nTemplate(bi("{v0}에서 보기", "View on {v0}"), { v0: platformName })}
+                        </span>
+                        {index === 0 ? (
+                          <span className="shrink-0 whitespace-nowrap rounded border border-accent/40 bg-accent-soft px-1.5 py-0.5 text-[11px] font-medium text-accent">
+                            {bi("추천 경로", "Best entry")}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="ml-auto flex shrink-0 items-center gap-2.5 sm:gap-3">
+                        <span className="whitespace-nowrap text-xs text-fg-2">{PRICING_FULL[link.pricing]}</span>
+                        <span className="inline-flex shrink-0 whitespace-nowrap items-center gap-1 rounded-md border border-line bg-card px-2.5 py-1 text-xs font-medium text-fg transition-colors duration-150 group-hover:border-accent group-hover:text-accent">
+                          {bi("이동", "Open")}
+                          <ArrowUpRight size={13} strokeWidth={1.5} aria-hidden />
+                        </span>
+                      </span>
                     </a>
                   );
                 })}
                 {hiddenExternalLinkCount > 0 && (
-                  <a
-                    href="#title-availability"
-                    className="inline-flex min-h-12 [min-block-size:3rem]! items-center px-2 text-sm font-semibold text-accent transition-colors hover:text-accent-2"
-                  >
-                    {formatI18nTemplate(
-                      bi("다른 플랫폼 {v0}곳 더 보기", "See {v0} more platforms"),
-                      { v0: String(hiddenExternalLinkCount) },
-                    )}
-                  </a>
+                  <div className="bg-card/60 px-3.5 py-2">
+                    <a
+                      href="#title-availability"
+                      className="ink-arrow inline-flex min-h-11 items-center gap-1 text-xs font-medium text-accent transition-colors hover:text-accent-2"
+                    >
+                      {formatI18nTemplate(
+                        bi("다른 플랫폼 {v0}곳 더 보기", "See {v0} more platforms"),
+                        { v0: String(hiddenExternalLinkCount) },
+                      )}
+                      <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
+                    </a>
+                  </div>
                 )}
               </div>
             ) : externalGuide.state === "no-url" ? (
-              <ul className="mt-3 flex flex-wrap justify-center gap-2" aria-label={bi("연재 플랫폼", "Serial platforms")}>
-                {externalGuide.knownPlatformIds.map((platformId) => (
-                  <li
-                    key={platformId}
-                    className="inline-flex min-h-9 items-center gap-2 rounded-full border border-dashed border-line bg-card/60 px-3 text-xs font-medium text-fg-2"
-                  >
-                    {PLATFORMS[platformId]?.name ?? platformId}
-                    <span className="text-fg-3">{bi("링크 준비 중", "Link coming soon")}</span>
-                  </li>
-                ))}
+              <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-panel/40" aria-label={bi("연재 플랫폼", "Serial platforms")}>
+                {externalGuide.knownPlatformIds.map((platformId) => {
+                  const platformMeta = PLATFORMS[platformId];
+                  return (
+                    <li
+                      key={platformId}
+                      className="flex min-h-11 items-center justify-between gap-3 px-3.5 py-2 text-xs"
+                    >
+                      <span className="flex items-center gap-2 font-medium text-fg">
+                        <span
+                          aria-hidden="true"
+                          className="size-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: platformMeta?.color ?? "var(--color-fg-3)" }}
+                        />
+                        {platformMeta?.name ?? platformId}
+                      </span>
+                      <span className="text-fg-3">{bi("링크 준비 중", "Link coming soon")}</span>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
-              <p className="mt-2 text-sm leading-relaxed text-fg-3">
+              <p className="rounded-lg border border-dashed border-line bg-panel/30 px-3.5 py-3 text-xs leading-relaxed text-fg-3">
                 {bi(
                   "아직 연결된 연재 플랫폼이 없어요.",
                   "No serial platform is connected to this title yet.",
@@ -471,43 +512,28 @@ export function TitleEpisodeSection({
               </p>
             )}
 
-            {/* 외부로 나가지 않아도 흐름이 끊기지 않게 하는 내부 후속 동선.
-                외부 링크 유무와 무관하게 항상 제공한다. */}
-            <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2">
+            <div className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-line pt-3">
               {(() => {
                 const leadAuthor = primaryAuthorName(title.author);
                 return leadAuthor ? (
                   <Link
                     href={`/author/${encodeURIComponent(leadAuthor)}`}
-                    className="inline-flex min-h-11 items-center text-sm font-semibold text-accent transition-colors hover:text-accent-2"
+                    className="ink-arrow inline-flex min-h-11 items-center gap-1 text-xs font-medium text-fg-2 transition-colors hover:text-accent"
                   >
                     {formatI18nTemplate(bi("{v0}의 다른 작품", "More by {v0}"), { v0: leadAuthor })}
+                    <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
                   </Link>
                 ) : null;
               })()}
               <Link
                 href="/explore"
-                className="inline-flex min-h-11 items-center text-sm font-semibold text-accent transition-colors hover:text-accent-2"
+                className="ink-arrow inline-flex min-h-11 items-center gap-1 text-xs font-medium text-fg-2 transition-colors hover:text-accent"
               >
                 {bi("비슷한 작품 탐색하기", "Explore similar titles")}
+                <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
               </Link>
             </div>
           </div>
-
-          <dl className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <dt className="text-fg-3">{bi("연재 상태", "Status")}</dt>
-              <dd className="font-medium text-fg">{STATUS_LABEL[title.status]}</dd>
-            </div>
-            {title.updateDays && title.updateDays.length > 0 && (
-              <div className="flex items-center gap-2">
-                <dt className="text-fg-3">{bi("연재 요일", "Schedule")}</dt>
-                <dd className="font-medium text-fg">
-                  {title.updateDays.join("·")} {bi("연재", "serial")}
-                </dd>
-              </div>
-            )}
-          </dl>
         </div>
       )}
     </section>

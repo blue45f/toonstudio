@@ -19,7 +19,7 @@ export function CommandPaletteUnavailableStudioSection({
       forceMount
       data-unavailable-in-document="true"
       heading={
-        <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
+        <div className="px-2 py-1 text-[11px] font-medium text-accent">
           현 문서에서 바로 사용 불가 · 원고 편집기 기능 안내 ({items.length})
         </div>
       }

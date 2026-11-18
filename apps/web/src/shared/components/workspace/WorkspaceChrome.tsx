@@ -34,9 +34,9 @@ export function WorkspaceBrand({
   const destination = href.split(/[?#]/u)[0] === "/studio"
     ? (korean ? "내 프로젝트" : "My projects")
     : (korean ? "홈" : "home");
-  return <Link href={href} className="workspace-brand">
+  return <Link href={href} className="workspace-brand" data-compact={compact || undefined}>
     <ToonStudioMark className="workspace-brand-mark" />
-    <strong><ToonStudioWordmark />{compact ? null : <small>STORY COMES TO LIFE</small>}</strong>
+    <strong><ToonStudioWordmark /></strong>
     <span className="sr-only">{destination}</span>
   </Link>;
 }
@@ -59,14 +59,13 @@ export function WorkspaceSidebar({ activeId, context, children }: {
     ? ""
     : activeId;
   return <aside className="workspace-sidebar" data-slot="workspace-sidebar">
-    <p className="workspace-sidebar-caption" aria-hidden="true">WORKSPACE</p>
     <Suspense fallback={<WorkspaceNavigation activeId={resolvedActiveId} context={context} />}>
       <WorkspaceMenuNavigation activeId={resolvedActiveId} context={context} />
     </Suspense>
     {children}
     <nav className="workspace-support-nav" aria-label={korean ? "도움과 환경 설정" : "Help and preferences"}>
-      <Link href="/help" aria-current={helpCurrent ? "page" : undefined}><HelpCircle size={18} aria-hidden="true" /><span>{siteNavigationText(SITE_NAVIGATION_ITEMS.help.label, korean ? "ko" : "en")}</span></Link>
-      <Link href="/settings" aria-current={settingsCurrent ? "page" : undefined}><Settings size={18} aria-hidden="true" /><span>{siteNavigationText(SITE_NAVIGATION_ITEMS.settings.label, korean ? "ko" : "en")}</span></Link>
+      <Link href="/help" aria-current={helpCurrent ? "page" : undefined}><HelpCircle size={17} strokeWidth={1.6} aria-hidden="true" /><span>{siteNavigationText(SITE_NAVIGATION_ITEMS.help.label, korean ? "ko" : "en")}</span></Link>
+      <Link href="/settings" aria-current={settingsCurrent ? "page" : undefined}><Settings size={17} strokeWidth={1.6} aria-hidden="true" /><span>{siteNavigationText(SITE_NAVIGATION_ITEMS.settings.label, korean ? "ko" : "en")}</span></Link>
     </nav>
   </aside>;
 }
@@ -80,6 +79,6 @@ export function WorkspaceAccountAction({
   const korean = useI18n((state) => state.lang.startsWith("ko"));
   return <>
     {showCampusControls ? <CampusControls compact /> : null}
-    {account ?? <Link href="/my" aria-label={korean ? "내 프로필" : "My profile"}><UserRound size={20} aria-hidden="true" /></Link>}
+    {account ?? <Link href="/my" aria-label={korean ? "내 프로필" : "My profile"}><UserRound size={18} strokeWidth={1.6} aria-hidden="true" /></Link>}
   </>;
 }

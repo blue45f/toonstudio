@@ -6,7 +6,7 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { SITE_URL } from "@toonstudio/core/business";
-import { Bookmark, Eye, Heart, Layers, MapPin, MessageSquareText, PenLine, Star } from "lucide-react";
+import { ArrowRight, Bookmark, Eye, Heart, Layers, MapPin, MessageSquareText, PenLine, Star } from "lucide-react";
 import { useEffect } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
@@ -277,6 +277,34 @@ export function TitleDetailPage() {
         <TitleEpisodeSection title={title} episodes={episodes} />
       </div>
 
+      <section
+        aria-label={bi("창작으로 이어가기", "Start creating")}
+        data-testid="title-creator-direct-bridge"
+        data-ink="rise"
+        className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel px-4 py-3.5"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-2">
+            <PenLine size={16} strokeWidth={1.5} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-fg [word-break:keep-all]">
+              {bi("이 작품의 칸 호흡이 마음에 들었다면", "Inspired by this story's pacing?")}
+            </p>
+            <p className="text-xs text-fg-2 [word-break:keep-all]">
+              {bi("새 원고 책상에서 콘티·칸 배치를 바로 실험해 볼 수 있어요.", "Experiment with panel layout and storyboards in a fresh manuscript.")}
+            </p>
+          </div>
+        </div>
+        <Link
+          href={`/create?ref=${encodeURIComponent(title.slug)}`}
+          className="ink-arrow inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-3.5 py-2 text-xs font-medium text-fg transition-colors duration-150 hover:border-accent hover:text-accent motion-reduce:transition-none"
+        >
+          {bi("이 연출로 시작", "Start with this direction")}
+          <ArrowRight size={14} strokeWidth={1.5} aria-hidden="true" />
+        </Link>
+      </section>
+
       <details id="title-introduction" className="title-purpose-section">
         <summary>{bi("작품 소개", "About this story")}</summary>
         <div className="title-introduction-body">
@@ -336,7 +364,7 @@ export function TitleDetailPage() {
                 <button
                   type="button"
                   onClick={() => document.getElementById("review-text")?.focus()}
-                  className="inline-flex min-h-12 items-center gap-1.5 rounded-full border border-line bg-card px-3.5 py-1.5 text-xs font-medium text-fg-2 transition-colors hover:bg-raised"
+                  className="inline-flex min-h-12 items-center gap-1.5 rounded-lg border border-line bg-card px-3.5 py-1.5 text-xs font-medium text-fg-2 transition-colors hover:bg-raised"
                 >
                   <PenLine size={14} aria-hidden="true" />
                   {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "첫 리뷰 남기기")}
@@ -376,7 +404,7 @@ export function TitleDetailPage() {
                     {bi("공식 감상처", "Official reading platforms")}
                   </p>
                   <p className="text-sm font-semibold text-fg">
-                    {bi("어디서 볼 수 있나요", "Where to read")}
+                    {bi("어디서 봐", "Where to read")}
                   </p>
                 </div>
               </div>
@@ -518,7 +546,7 @@ export function TitleDetailPage() {
                     <Link
                       key={tag}
                       href={formatI18nTemplate(translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "en", "/explore?tags={v0}"), { v0: String(encodeURIComponent(tag)) })}
-                      className="inline-flex min-h-12 items-center rounded-full border border-line bg-raised/50 px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent/50 hover:bg-accent-soft/40 hover:text-accent pointer-coarse:px-3 pointer-coarse:py-1.5"
+                      className="inline-flex min-h-12 items-center rounded-lg border border-line bg-raised/50 px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg pointer-coarse:px-3 pointer-coarse:py-1.5"
                     >
                       #{tag}
                     </Link>
@@ -642,11 +670,13 @@ export function TitleDetailPage() {
           title={formatI18nTemplate(translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "{v0}의 다른 작품"), { v0: String(title.author) })}
           desc={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "같은 작가가 그린·쓴 다른 작품")}
         >
-          <Rail>
-            {byAuthor.map((item) => (
-              <TitleCard key={item.id} title={item} />
-            ))}
-          </Rail>
+          <div data-ink-stagger="panel">
+            <Rail>
+              {byAuthor.map((item, idx) => (
+                <TitleCard key={item.id} title={item} index={idx} />
+              ))}
+            </Rail>
+          </div>
         </Section>
       )}
 
@@ -656,11 +686,13 @@ export function TitleDetailPage() {
           title={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "이 작품과 비슷한")}
           desc={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "장르·태그·어댑테이션 관계로 찾은 추천")}
         >
-          <Rail>
-            {similar.map((item) => (
-              <TitleCard key={item.id} title={item} />
-            ))}
-          </Rail>
+          <div data-ink-stagger="panel">
+            <Rail>
+              {similar.map((item, idx) => (
+                <TitleCard key={item.id} title={item} index={idx} />
+              ))}
+            </Rail>
+          </div>
         </Section>
       )}
       </details>

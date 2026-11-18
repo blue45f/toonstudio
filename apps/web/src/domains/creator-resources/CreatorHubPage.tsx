@@ -1,4 +1,4 @@
-import { BookmarkCheck, ChevronDown, Compass, Gauge, NotebookPen, Search } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ChangeEvent, SyntheticEvent } from "react";
@@ -272,11 +272,11 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
   };
 
   const deskTabs: readonly SiteSectionTab<DeskTab>[] = [
-    { id: "materials", icon: Search, label: bt("장면으로 찾기", "Find a scene") },
-    { id: "overview", icon: Gauge, label: bt("진행 현황", "Progress") },
-    { id: "focus", icon: Compass, label: bt("리서치 초점", "Focus") },
-    { id: "notes", icon: NotebookPen, label: bt("판단 노트", "Notes"), badge: researchNotebook.entries.length || undefined },
-    { id: "board", icon: BookmarkCheck, label: bt("저장 보드", "Saved board"), badge: summary.savedCount || undefined },
+    { id: "materials", label: bt("장면으로 찾기", "Find a scene") },
+    { id: "overview", label: bt("진행 현황", "Progress") },
+    { id: "focus", label: bt("리서치 초점", "Focus") },
+    { id: "notes", label: bt("판단 노트", "Notes"), badge: researchNotebook.entries.length || undefined },
+    { id: "board", label: bt("저장 보드", "Saved board"), badge: summary.savedCount || undefined },
   ];
 
   return <ResourceLayout
@@ -289,108 +289,111 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
   >
     <LocalSaveNotice error={error} writable={writable} saving={saving} />
 
-    <section id="research-workspace" className="scroll-mt-24 space-y-4" aria-labelledby="research-workspace-title">
+    <section id="research-workspace" className="scroll-mt-24 space-y-5" aria-labelledby="research-workspace-title">
       <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="eyebrow text-accent">MY RESEARCH</p>
-          <h2 id="research-workspace-title" className="mt-1 text-xl font-bold sm:text-2xl">{bt("내 리서치 작업공간", "My research workspace")}</h2>
+          <h2 id="research-workspace-title" className="text-xl font-semibold sm:text-2xl">{bt("내 리서치 작업공간", "My research workspace")}</h2>
         </div>
         <p className="text-sm text-fg-2">{bt("자동 평점이 아니라 다음 행동을 고르기 위한 사실 요약입니다.", "A factual summary to pick your next step, not an automatic score.")}</p>
       </header>
-      <SiteSectionTabs tabs={deskTabs} value={activeTab} onChange={selectTab} label={bt("리서치 데스크 작업 영역", "Research desk workspace")} idPrefix={TAB_PREFIX} />
-      {briefIsEmpty && <details className="group rounded-2xl border border-accent/40 bg-panel" open={guideOpen} onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => setGuideOpen(event.currentTarget.open)}>
-        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+      <SiteSectionTabs tabs={deskTabs} value={activeTab} onChange={selectTab} label={bt("리서치 데스크 작업 영역", "Research desk workspace")} idPrefix={TAB_PREFIX} className="research-desk-tabs" />
+      {briefIsEmpty && <details className="group border-b border-line pb-1" open={guideOpen} onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => setGuideOpen(event.currentTarget.open)}>
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2 text-sm font-medium text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
           {bt("장면으로 시작하기 · 처음이면 이 3단계로", "Start from a scene · first time? Follow these 3 steps")}
-          <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-accent transition-transform motion-reduce:transition-none group-open:rotate-180" />
+          <ChevronDown size={17} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform motion-reduce:transition-none group-open:rotate-180" />
         </summary>
-        <ol data-own-control-size="" className="grid gap-3 border-t border-line p-4 sm:grid-cols-3 sm:p-5">
-          <li className="rounded-xl bg-canvas p-4">
-            <p className="text-xs font-bold text-accent">01</p>
-            <p className="mt-1 font-bold">{bt("장면 고르기", "Pick a scene")}</p>
+        <ol data-own-control-size="" className="grid gap-3 pt-2 pb-4 sm:grid-cols-3">
+          <li className="rounded-xl border border-line bg-panel p-4">
+            <p className="text-xs font-medium text-accent tabular-nums">01</p>
+            <p className="mt-1 font-semibold">{bt("장면 고르기", "Pick a scene")}</p>
             <p className="mt-1 text-sm leading-6 text-fg-2 break-keep">{bt("어떤 장면에 쓸 자료인지 먼저 정해요. 리서치 초점에 장면 이름과 핵심 질문을 적으면 검색이 흔들리지 않아요.", "Decide which scene the material is for first. Naming the scene and its key question in Research Focus keeps your searching on track.")}</p>
-            <button type="button" className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => selectTab("focus")}>{bt("리서치 초점 적기 →", "Write your research focus →")}</button>
+            <button type="button" className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => selectTab("focus")}>{bt("리서치 초점 적기 →", "Write your research focus →")}</button>
           </li>
-          <li className="rounded-xl bg-canvas p-4">
-            <p className="text-xs font-bold text-accent">02</p>
-            <p className="mt-1 font-bold">{bt("자료 찾기", "Find sources")}</p>
+          <li className="rounded-xl border border-line bg-panel p-4">
+            <p className="text-xs font-medium text-accent tabular-nums">02</p>
+            <p className="mt-1 font-semibold">{bt("자료 찾기", "Find sources")}</p>
             <p className="mt-1 text-sm leading-6 text-fg-2 break-keep">{bt("위쪽 검색이나 카테고리 타일에서 장면에 맞는 자료를 찾고, 출처와 이용조건을 확인한 것만 저장해요.", "Use the search or the category tiles above to find material for the scene, and save only what you have checked for source and usage terms.")}</p>
           </li>
-          <li className="rounded-xl bg-canvas p-4">
-            <p className="text-xs font-bold text-accent">03</p>
-            <p className="mt-1 font-bold">{bt("노트에 붙이기", "Attach it to a note")}</p>
+          <li className="rounded-xl border border-line bg-panel p-4">
+            <p className="text-xs font-medium text-accent tabular-nums">03</p>
+            <p className="mt-1 font-semibold">{bt("노트에 붙이기", "Attach it to a note")}</p>
             <p className="mt-1 text-sm leading-6 text-fg-2 break-keep">{bt("저장한 자료는 판단 노트에 붙여 왜 이 자료를 쓰는지 남겨요. 그 노트가 다음 제작의 근거가 돼요.", "Attach saved sources to a judgement note saying why you chose them. That note becomes the evidence behind your next production step.")}</p>
-            <button type="button" className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => selectTab("notes")}>{bt("판단 노트 열기 →", "Open judgement notes →")}</button>
+            <button type="button" className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => selectTab("notes")}>{bt("판단 노트 열기 →", "Open judgement notes →")}</button>
           </li>
         </ol>
       </details>}
 
       <SiteTabPanel idPrefix={TAB_PREFIX} id="materials" active={activeTab === "materials"} mounted={isMounted("materials")}>
-        <MaterialSentencePanel saved={workspace.saved} saveDisabled={!ready || !writable || saving} onToggleSaved={toggleSavedResource} refineSentence={refineMaterialSentence} />
+        <div className={activeTab === "materials" ? "ink-cascade" : undefined}>
+          <MaterialSentencePanel saved={workspace.saved} saveDisabled={!ready || !writable || saving} onToggleSaved={toggleSavedResource} refineSentence={refineMaterialSentence} />
+        </div>
       </SiteTabPanel>
-      <SiteTabPanel idPrefix={TAB_PREFIX} id="overview" active={activeTab === "overview"} mounted={isMounted("overview")} className="space-y-4">
+      <SiteTabPanel idPrefix={TAB_PREFIX} id="overview" active={activeTab === "overview"} mounted={isMounted("overview")} className="space-y-5">
+        <div className={activeTab === "overview" ? "ink-cascade space-y-5" : "space-y-5"}>
         <ResearchNextActionCard action={nextAction} summary={summary} onAnchor={openAnchor} />
-        {briefIsEmpty ? <p id="workspace-overview" className="scroll-mt-24 rounded-2xl border border-dashed border-line bg-panel/50 p-4 text-sm leading-6 text-fg-2 break-keep">
+        {briefIsEmpty ? <p id="workspace-overview" className="scroll-mt-24 rounded-xl border border-dashed border-line p-4 text-sm leading-6 text-fg-2 break-keep">
           {bt("자료를 저장하거나 리서치 초점·기획을 적으면 저장 자료·기획·마감 현황이 여기에 쌓여요.", "Save a source or write a focus or plan and your progress will build up here.")}
         </p> : <>
           <section id="workspace-overview" className="scroll-mt-24" aria-labelledby="workspace-overview-title">
             <h3 id="workspace-overview-title" className="sr-only">{tx("한눈에 보는 리서치 상태")}</h3>
-            <dl className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
-              <div className="rounded-2xl border border-line bg-panel p-4"><dt className="text-sm text-fg-2">{tx("저장한 자료")}</dt><dd className="mt-1 text-2xl font-bold">{summary.savedCount}<span className="ml-1 text-sm font-semibold">{tx("개")}</span></dd></div>
-              <div className="rounded-2xl border border-line bg-panel p-4"><dt className="text-sm text-fg-2">{tx("자료 제공처")}</dt><dd className="mt-1 text-2xl font-bold">{summary.providerCount}<span className="ml-1 text-sm font-semibold">{tx("곳")}</span></dd></div>
-              <div className="rounded-2xl border border-line bg-panel p-4"><dt className="text-sm text-fg-2">{tx("작성한 기획")}</dt><dd className="mt-1 text-2xl font-bold">{summary.storyCompleted}<span className="mx-1 text-sm font-semibold">/</span><span className="text-lg">{summary.storyTotal}</span></dd></div>
-              <div className="rounded-2xl border border-line bg-panel p-4"><dt className="text-sm text-fg-2">{tx("다가오는 마감")}</dt><dd className="mt-1 text-2xl font-bold">{summary.upcomingDeadlineCount}<span className="ml-1 text-sm font-semibold">{tx("개")}</span></dd><dd className="mt-1 truncate text-sm text-fg-2">{summary.nearestDeadline ? `${tx(deadlineLabel(summary.nearestDeadline.deadline))} · ${summary.nearestDeadline.title}` : tx("확인된 예정 마감 없음")}</dd></div>
+            <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+              <div className="rounded-xl border border-line bg-panel p-4"><dt className="text-sm text-fg-2">{tx("저장한 자료")}</dt><dd className="mt-1 text-2xl font-semibold tabular-nums">{summary.savedCount}<span className="ml-1 text-sm font-medium text-fg-2">{tx("개")}</span></dd></div>
+              <div className="rounded-xl border border-line bg-panel p-4"><dt className="text-sm text-fg-2">{tx("자료 제공처")}</dt><dd className="mt-1 text-2xl font-semibold tabular-nums">{summary.providerCount}<span className="ml-1 text-sm font-medium text-fg-2">{tx("곳")}</span></dd></div>
+              <div className="rounded-xl border border-line bg-panel p-4"><dt className="text-sm text-fg-2">{tx("작성한 기획")}</dt><dd className="mt-1 text-2xl font-semibold tabular-nums">{summary.storyCompleted}<span className="mx-1 text-sm font-medium text-fg-2">/</span><span className="text-lg text-fg-2">{summary.storyTotal}</span></dd></div>
+              <div className="rounded-xl border border-line bg-panel p-4"><dt className="text-sm text-fg-2">{tx("다가오는 마감")}</dt><dd className="mt-1 text-2xl font-semibold tabular-nums">{summary.upcomingDeadlineCount}<span className="ml-1 text-sm font-medium text-fg-2">{tx("개")}</span></dd><dd className="mt-1 truncate text-sm text-fg-2">{summary.nearestDeadline ? `${tx(deadlineLabel(summary.nearestDeadline.deadline))} · ${summary.nearestDeadline.title}` : tx("확인된 예정 마감 없음")}</dd></div>
             </dl>
           </section>
-          {recentItems.length ? <section className="space-y-3 rounded-2xl border border-line bg-panel p-4 sm:p-5" aria-labelledby="recent-research-title">
-            <header data-own-control-size="" className="flex items-end justify-between gap-4"><div><p className="text-sm font-semibold text-accent">{tx("최근 저장")}</p><h3 id="recent-research-title" className="mt-1 text-lg font-bold">{tx("다시 볼 자료")}</h3></div><button type="button" className="inline-flex min-h-11 items-center text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => selectTab("board")}>{tx("전체 보드 점검")} →</button></header>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">{recentItems.map((item) => {
+          {recentItems.length ? <section className="space-y-3 pt-2" aria-labelledby="recent-research-title">
+            <header data-own-control-size="" className="flex items-end justify-between gap-4"><div><p className="text-xs font-medium text-accent">{tx("최근 저장")}</p><h3 id="recent-research-title" className="mt-1 text-lg font-semibold">{tx("다시 볼 자료")}</h3></div><button type="button" className="inline-flex min-h-11 items-center text-sm font-medium text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => selectTab("board")}>{tx("전체 보드 점검")} →</button></header>
+            <div data-ink-stagger="panel" className="grid grid-cols-1 sm:grid-cols-3 gap-3">{recentItems.map((item) => {
               const freshness = sourceFreshness(item);
-              return <article key={item.id} className="min-w-0 overflow-hidden rounded-xl border border-line bg-canvas">
-                {item.imageUrl && <div className="aspect-[4/3] overflow-hidden border-b border-line bg-card"><img src={item.imageUrl} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" className="h-full w-full object-cover" /></div>}
-                <div className="p-2.5 sm:p-3"><p className="truncate text-xs text-accent">{tx(resourceLicenseLabel(item.license))}</p><h4 className="mt-1 line-clamp-2 break-words text-sm font-bold">{item.title}</h4><p className={`mt-1 text-xs ${freshness.needsReview ? "font-semibold text-fg" : "text-fg-2"}`}>{tx(freshness.label)}</p><a className="mt-1 inline-flex min-h-11 items-center text-xs font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" href={item.sourceUrl} target="_blank" rel="noopener noreferrer">{tx("원문 다시 보기 ↗")}</a></div>
+              return <article key={item.id} className="ink-frame min-w-0 overflow-hidden rounded-xl border border-line bg-panel">
+                {item.imageUrl && <div className="ink-cover ink-sheen aspect-[4/3] overflow-hidden border-b border-line bg-card"><img src={item.imageUrl} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" className="h-full w-full object-cover" /></div>}
+                <div className="p-3"><p className="truncate text-xs text-accent">{tx(resourceLicenseLabel(item.license))}</p><h4 className="mt-1 line-clamp-2 break-words text-sm font-semibold">{item.title}</h4><p className={`mt-1 text-xs ${freshness.needsReview ? "font-medium text-fg" : "text-fg-2"}`}>{tx(freshness.label)}</p><a className="mt-1 inline-flex min-h-11 items-center text-xs font-medium text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" href={item.sourceUrl} target="_blank" rel="noopener noreferrer">{tx("원문 다시 보기 ↗")}</a></div>
               </article>;
             })}</div>
           </section> : null}
         </>}
-        <details className="group rounded-2xl border border-line bg-panel" open={checksOpen} onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => setChecksOpen(event.currentTarget.open)}>
-          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+        <details className="group border-t border-line pt-1" open={checksOpen} onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => setChecksOpen(event.currentTarget.open)}>
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-2 text-sm font-medium text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
             {bt("리서치 흐름·근거 공백·출처 점검 자세히", "Flow, evidence gaps and source checks")}
-            <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-accent transition-transform motion-reduce:transition-none group-open:rotate-180" />
+            <ChevronDown size={17} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform motion-reduce:transition-none group-open:rotate-180" />
           </summary>
-          <div className="space-y-6 border-t border-line p-4 sm:p-5">
+          <div className="space-y-6 pt-3 pb-4">
             <SiteRail label={tx("리서치 권장 흐름")} columns="sm:grid-cols-2 xl:grid-cols-4">
-              {summary.stages.map((stage, index) => <article key={stage.id} className={`flex w-full flex-col rounded-2xl border p-4 ${stage.status === "current" ? "border-accent bg-accent-soft" : "border-line bg-canvas"}`}>
-                <div className="flex items-center justify-between gap-3"><span className="text-xs font-bold text-accent">0{index + 1}</span><span className="text-xs font-semibold text-fg-2">{stage.status === "complete" ? tx("완료") : stage.status === "current" ? tx("지금 단계") : tx("다음 단계")}</span></div>
-                <h4 className="mt-2 font-bold">{tx(stage.label)}</h4>
+              {summary.stages.map((stage, index) => <article key={stage.id} className={`flex w-full flex-col rounded-xl border p-4 ${stage.status === "current" ? "border-accent bg-accent-soft" : "border-line bg-panel"}`}>
+                <div className="flex items-center justify-between gap-3"><span className="text-xs font-medium text-accent tabular-nums">0{index + 1}</span><span className="text-xs font-medium text-fg-2">{stage.status === "complete" ? tx("완료") : stage.status === "current" ? tx("지금 단계") : tx("다음 단계")}</span></div>
+                <h4 className="mt-2 font-semibold">{tx(stage.label)}</h4>
                 <p className="mt-1 flex-1 text-sm leading-6 text-fg-2">{tx(stage.description)}</p>
-                <p className="mt-2 text-xs font-semibold text-fg">{formatI18nTemplate(tx("기준 · {v0}"), { v0: tx(stage.criterion) })}</p>
+                <p className="mt-2 text-xs font-medium text-fg">{formatI18nTemplate(tx("기준 · {v0}"), { v0: tx(stage.criterion) })}</p>
               </article>)}
             </SiteRail>
             <div id="research-coverage" className="scroll-mt-24"><ResearchCoverageMap summary={summary} onAnchor={openAnchor} /></div>
-            <section className="space-y-3" aria-labelledby="research-rights-title">
-              <header><p className="text-sm font-semibold text-accent">{tx("출처·이용조건")}</p><h3 id="research-rights-title" className="mt-1 text-lg font-bold">{tx("보드 점검")}</h3></header>
-              <dl className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
-                <div className="rounded-xl bg-canvas p-3"><dt className="text-xs text-fg-2">{tx("CC0로 확인된 자료")}</dt><dd className="mt-1 font-bold">{formatI18nTemplate(tx("{v0}개"), { v0: summary.publicDomainCount })}</dd></div>
-                <div className="rounded-xl bg-canvas p-3"><dt className="text-xs text-fg-2">{tx("원문 이용조건 확인 필요")}</dt><dd className="mt-1 font-bold">{formatI18nTemplate(tx("{v0}개"), { v0: summary.rightsReviewCount })}</dd></div>
-                <div className="rounded-xl bg-canvas p-3"><dt className="text-xs text-fg-2">{tx("조회일 재확인 권장")}</dt><dd className="mt-1 font-bold">{formatI18nTemplate(tx("{v0}개"), { v0: summary.staleCount })}</dd></div>
+            <section className="space-y-3 border-t border-line pt-5" aria-labelledby="research-rights-title">
+              <header><p className="text-xs font-medium text-accent">{tx("출처·이용조건")}</p><h3 id="research-rights-title" className="mt-1 text-lg font-semibold">{tx("보드 점검")}</h3></header>
+              <dl className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-center">
+                <div className="rounded-lg border border-line bg-panel p-3"><dt className="text-xs text-fg-2">{tx("CC0로 확인된 자료")}</dt><dd className="mt-1 font-semibold tabular-nums">{formatI18nTemplate(tx("{v0}개"), { v0: summary.publicDomainCount })}</dd></div>
+                <div className="rounded-lg border border-line bg-panel p-3"><dt className="text-xs text-fg-2">{tx("원문 이용조건 확인 필요")}</dt><dd className="mt-1 font-semibold tabular-nums">{formatI18nTemplate(tx("{v0}개"), { v0: summary.rightsReviewCount })}</dd></div>
+                <div className="rounded-lg border border-line bg-panel p-3"><dt className="text-xs text-fg-2">{tx("조회일 재확인 권장")}</dt><dd className="mt-1 font-semibold tabular-nums">{formatI18nTemplate(tx("{v0}개"), { v0: summary.staleCount })}</dd></div>
               </dl>
               <div className="flex flex-wrap gap-2" aria-label={tx("저장 자료 제공처 분포")}>
-                {summary.providerBreakdown.map((entry) => <span key={entry.provider} className="rounded-full border border-line bg-canvas px-3 py-1 text-xs">{formatI18nTemplate(tx("{v0} · {v1}"), { v0: entry.label, v1: entry.count })}</span>)}
+                {summary.providerBreakdown.map((entry) => <span key={entry.provider} className="rounded-md border border-line bg-panel px-2.5 py-1 text-xs tabular-nums">{formatI18nTemplate(tx("{v0} · {v1}"), { v0: entry.label, v1: entry.count })}</span>)}
                 {!summary.providerBreakdown.length && <span className="text-sm text-fg-2">{tx("저장 자료가 생기면 제공처 분포가 표시됩니다.")}</span>}
               </div>
               <p className="text-xs leading-5 text-fg-2">{tx("지원공고는 7일, 도서·미술 메타데이터는 제공처별 90~180일을 기준으로 재확인을 권장합니다. 이는 원문 변경 가능성을 알리는 작업 기준입니다.")}</p>
             </section>
-            <details className="rounded-xl border border-line bg-canvas p-4" onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => setProviderStatusOpen(event.currentTarget.open)}>
-              <summary className="flex min-h-11 cursor-pointer items-center font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{tx("데이터 제공처 연결 상태와 한계 확인")}</summary>
+            <details className="border-t border-line pt-3" onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => setProviderStatusOpen(event.currentTarget.open)}>
+              <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{tx("데이터 제공처 연결 상태와 한계 확인")}</summary>
               <p className="mt-2 text-sm leading-6 text-fg-2">{tx("검색 전에 인증키 설정 여부를 확인할 수 있습니다. 실제 연결 성공·이용권한·잔여 쿼터는 각 검색 결과와 원문에서 판단해야 합니다.")}</p>
               {providerStatusOpen && <div className="mt-4"><ProviderStatus /></div>}
             </details>
           </div>
         </details>
+        </div>
       </SiteTabPanel>
 
       <SiteTabPanel idPrefix={TAB_PREFIX} id="focus" active={activeTab === "focus"} mounted={isMounted("focus")}>
-        <div id="research-focus" className="scroll-mt-24">
+        <div id="research-focus" className={`scroll-mt-24 ${activeTab === "focus" ? "ink-cascade" : ""}`}>
           <ResearchFocusPanel
             session={researchSession}
             sessionReady={researchSessionReady}
@@ -403,6 +406,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
       </SiteTabPanel>
 
       <SiteTabPanel idPrefix={TAB_PREFIX} id="notes" active={activeTab === "notes"} mounted={isMounted("notes")}>
+        <div className={activeTab === "notes" ? "ink-cascade" : undefined}>
         <ResearchSynthesisBoard
           notebook={researchNotebook}
           resources={workspace.saved}
@@ -414,28 +418,30 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
           onRestore={restoreResearchNotebook}
           onInvestigate={(query) => launchSearch(researchSession.lastMode, query)}
         />
+        </div>
       </SiteTabPanel>
 
       <SiteTabPanel idPrefix={TAB_PREFIX} id="board" active={activeTab === "board"} mounted={isMounted("board")} className="space-y-6">
+        <div className={activeTab === "board" ? "ink-cascade space-y-6" : "space-y-6"}>
         <SavedBoard items={workspace.saved} disabled={!ready || !writable || saving} onRemove={(id) => {
           void updateWorkspace((value) => ({ ...value, saved: value.saved.filter((item) => item.id !== id) }));
         }} />
-        <section id="research-export" data-own-control-size="" className="scroll-mt-24 space-y-4 rounded-2xl border border-line bg-panel p-5 sm:p-6" aria-labelledby="research-export-title">
-          <header><p className="text-sm font-semibold text-accent">{tx("휴대·복구 가능한 기록")}</p><h3 id="research-export-title" className="mt-1 text-xl font-bold">{tx("내보내기와 백업")}</h3><p className="mt-2 text-sm leading-7 text-fg-2">{tx("리서치 초점·검색 기록·판단 노트·기획·출처를 읽기 쉬운 문서로 내보내거나, 자료·기획서 작업공간을 JSON으로 백업하세요.")}</p></header>
-          <div className="flex flex-wrap gap-3">
+        <section id="research-export" data-own-control-size="" className="scroll-mt-24 space-y-4 border-t border-line pt-6" aria-labelledby="research-export-title">
+          <header><p className="text-xs font-medium text-accent">{tx("휴대·복구 가능한 기록")}</p><h3 id="research-export-title" className="mt-1 text-xl font-semibold">{tx("내보내기와 백업")}</h3><p className="mt-2 text-sm leading-7 text-fg-2">{tx("리서치 초점·검색 기록·판단 노트·기획·출처를 읽기 쉬운 문서로 내보내거나, 자료·기획서 작업공간을 JSON으로 백업하세요.")}</p></header>
+          <div className="flex flex-wrap gap-2.5">
             <button type="button" className={RESOURCE_BUTTON} disabled={briefIsEmpty} onClick={exportResearchBrief}>{tx("리서치 브리프 내보내기")}</button>
             <button type="button" className={RESOURCE_BUTTON} disabled={!workspace.saved.length} onClick={() => downloadText("toonstudio-sources.md", attributionMarkdown(workspace.saved))}>{tx("출처 목록 내보내기")}</button>
             <button type="button" className={RESOURCE_BUTTON} onClick={() => downloadText("toonstudio-creator-board.json", JSON.stringify(workspace, null, 2), "application/json")}>{tx("자료·기획서 백업")}</button>
           </div>
-          <details className="rounded-xl border border-line bg-canvas p-4">
-            <summary className="cursor-pointer font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{tx("백업 가져오기 · 합치기 또는 완전 대체")}</summary>
+          <details className="rounded-xl border border-line bg-panel p-4">
+            <summary className="cursor-pointer text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{tx("백업 가져오기 · 합치기 또는 완전 대체")}</summary>
             <div className="mt-4 space-y-4 border-t border-line pt-4">
               <p className="text-sm leading-6 text-fg-2">{tx("기본값은 현재 자료와 작성한 기획을 유지하는 안전한 합치기입니다. 완전 대체는 확인 후에만 실행됩니다.")}</p>
               <label htmlFor="creator-board-replace" className="flex min-h-11 items-center gap-3 text-sm">
                 <input id="creator-board-replace" type="checkbox" disabled={!ready || !writable || restoring || saving} className="size-5" checked={restoreMode === "replace"} onChange={(event: ChangeEvent<HTMLInputElement>) => setRestoreMode(event.target.checked ? "replace" : "merge")} />
                 {tx("현재 보드를 유지하지 않고 백업으로 완전히 대체")}
               </label>
-              <label htmlFor="creator-board-import" className="block text-sm font-semibold">{restoreMode === "merge" ? tx("백업 합치기 · 현재 자료와 작성한 기획서 유지") : tx("백업 대체 · 현재 작업이 변경됩니다")}
+              <label htmlFor="creator-board-import" className="block text-sm font-medium">{restoreMode === "merge" ? tx("백업 합치기 · 현재 자료와 작성한 기획서 유지") : tx("백업 대체 · 현재 작업이 변경됩니다")}
                 <input id="creator-board-import" className="mt-2 block max-w-full text-sm" type="file" disabled={!ready || !writable || restoring || saving} accept="application/json,.json" onChange={(event: ChangeEvent<HTMLInputElement>) => {
                   void importBackup(event.target.files?.[0]);
                   event.target.value = "";
@@ -445,21 +451,22 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
             </div>
           </details>
         </section>
+        </div>
       </SiteTabPanel>
     </section>
 
-    <details className="group rounded-2xl border border-line bg-panel" data-research-tools-disclosure="true" ref={sourceToolsRef}>
-      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+    <details className="group border-t border-line pt-2" data-research-tools-disclosure="true" ref={sourceToolsRef}>
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-2 text-sm font-medium text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
         {bt("자료 도구·공정별 추천 펼치기", "Browse source tools and stage recommendations")}
-        <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-accent transition-transform motion-reduce:transition-none motion-safe:transition-transform group-open:rotate-180" />
+        <ChevronDown size={17} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform motion-reduce:transition-none motion-safe:transition-transform group-open:rotate-180" />
       </summary>
-      <div className="space-y-6 border-t border-line p-4 sm:p-5">
-        <section className="rounded-2xl border border-line bg-panel p-4 sm:p-5" aria-label={bt("리서치 표면 안내", "Which research surface am I on?")}>
+      <div className="space-y-8 pt-4 pb-2">
+        <section className="border-b border-line pb-5" aria-label={bt("리서치 표면 안내", "Which research surface am I on?")}>
           <p className="text-sm leading-6 text-fg-2 break-keep">
-            <strong className="text-fg">{bt("여기는 리서치 데스크", "This is the Research Desk")}</strong>
+            <strong className="font-semibold text-fg">{bt("여기는 리서치 데스크", "This is the Research Desk")}</strong>
             {bt(" — 장면에 쓸 자료를 출처와 함께 찾고, 저장하고, 판단 노트로 이어 가는 작업공간이에요. 수록 작품의 장르·소재 분포와 비교는 여기가 아니라 작품 리서치 랩에서 봐요.", " — the workspace for finding sources for a scene, saving them with their provenance, and carrying them into your notes. Genre and motif distribution and title comparison live in the Catalog Research Lab, not here.")}
           </p>
-          <Link to="/research/catalog" className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+          <Link to="/research/catalog" className="ink-arrow mt-2 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
             {bt("작품 메타데이터를 비교하려면 작품 리서치 랩으로 →", "Compare title metadata in the Catalog Research Lab →")}
           </Link>
         </section>
@@ -467,12 +474,12 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
           data-research-stage-recommender="true"
           data-own-control-size=""
           aria-labelledby="research-stage-recommender-heading"
-          className="rounded-2xl border border-accent/30 bg-panel p-4 sm:p-5"
+          className="border-b border-line pb-6"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-accent">STAGE-GUIDED RESOURCES</p>
-              <h2 id="research-stage-recommender-heading" className="mt-0.5 text-base font-bold text-fg sm:text-lg">
+              <p className="text-xs font-medium text-accent">{bt("작업 공정별 자료", "By production stage")}</p>
+              <h2 id="research-stage-recommender-heading" className="mt-1 text-base font-semibold text-fg sm:text-lg">
                 {bt("지금 어느 작업 단계이신가요? 공정별 맞춤 리소스 추천", "Which stage are you on? Stage-tailored resource recommendations")}
               </h2>
             </div>
@@ -491,10 +498,10 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
                     aria-pressed={active}
                     data-stage-selector={stage.id}
                     onClick={() => setSelectedStageId(stage.id)}
-                    className={`inline-flex min-h-11 items-center rounded-xl border px-3 py-1.5 text-xs font-semibold motion-safe:transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                    className={`inline-flex min-h-11 items-center rounded-lg border px-3 py-1.5 text-xs font-medium motion-safe:transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                       active
-                        ? "border-accent bg-accent-soft text-accent"
-                        : "border-line bg-canvas text-fg-2 hover:border-accent/50 hover:text-fg"
+                        ? "border-accent bg-accent-soft font-semibold text-fg"
+                        : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"
                     }`}
                   >
                     {bt(stage.labelKo, stage.labelEn)}
@@ -506,15 +513,15 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
           <p className="mt-2.5 text-xs leading-5 text-fg-2">
             {bt(activeStageRec.summaryKo, activeStageRec.summaryEn)}
           </p>
-          <div className="mt-3 grid gap-2.5 sm:grid-cols-3">
+          <div className="ink-cascade mt-3 grid gap-2.5 sm:grid-cols-3" key={activeStageRec.id}>
             {activeStageRec.links.map((linkItem) => (
               <Link
                 key={linkItem.href}
                 to={linkItem.href}
-                className="flex min-h-11 items-center justify-between gap-2 rounded-xl border border-line bg-canvas p-3 text-sm font-semibold text-fg transition-colors hover:border-accent/60 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="ink-frame flex min-h-11 items-center justify-between gap-2 rounded-lg border border-line bg-panel p-3 text-sm font-medium text-fg transition-colors hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 <span>{bt(linkItem.titleKo, linkItem.titleEn)}</span>
-                <span className="shrink-0 rounded-full border border-accent/35 bg-accent-soft/20 px-2 py-0.5 text-[11px] font-bold text-accent">
+                <span className="shrink-0 rounded-md border border-line bg-canvas px-2 py-0.5 text-xs text-fg-2">
                   {bt(linkItem.badgeKo, linkItem.badgeEn)}
                 </span>
               </Link>

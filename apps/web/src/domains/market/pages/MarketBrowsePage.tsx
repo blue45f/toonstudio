@@ -290,63 +290,118 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
       <CampusObjectSource objects={hasInvalidQuery ? [] : page.items.map((record) => ({
         id: record.id, title: record.name, href: `/market/resource/${encodeURIComponent(record.id)}`,
       }))} />
-      <section className="border-b border-line bg-ledger">
-        <Container size="wide" className="py-3 sm:py-6">
-          <h1 className="font-display text-2xl font-bold text-fg sm:text-3xl">{pageTitle}</h1>
+      <section>
+        <div className="border-b border-line bg-canvas">
+          <Container size="wide" className="py-5 sm:py-8">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:items-end lg:gap-8">
+            <div data-ink-enter="rise">
+              <p className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-3">
+                <span className="size-1.5 rounded-full bg-accent" aria-hidden="true" />
+                {t("에셋 카탈로그", "Asset catalog")}
+              </p>
+              <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-fg [word-break:keep-all] sm:text-3xl">
+                {pageTitle}
+              </h1>
+              <p className="mt-1.5 max-w-xl text-sm leading-6 text-fg-2 [word-break:keep-all]">
+                {t(
+                  "작업 목적과 사용권 조건으로 소재를 고르고 내 원고 호환성을 확인하세요",
+                  "Filter materials by stage and license, then verify manuscript compatibility",
+                )}
+              </p>
+            </div>
 
-          <form
-            role="search"
-            aria-label={t("소재 검색", "Material search")}
-            className="mt-3 grid max-w-2xl gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (composingRef.current) return;
-              cancelPendingSearchCommit();
-              const parsed = CreatorMarketplaceResourceSearchQuerySchema.safeParse(draftSearch);
-              if (parsed.success) {
-                if (parsed.data) recordRecentSearch(parsed.data);
-                patchParams({ q: parsed.data || null, ...(parsed.data ? {} : { sort: null }) });
-              }
-            }}
-          >
-            <label htmlFor={searchInputId} className="text-sm font-medium text-fg max-sm:sr-only">{t("어떤 소재가 필요한가요?", "What material do you need?")}</label>
-            <div className="flex min-w-0 items-center gap-2">
-            <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-3" aria-hidden="true" />
-              <input
-                id={searchInputId}
-                type="search"
-                value={draftSearch}
-                onCompositionStart={() => { composingRef.current = true; cancelPendingSearchCommit(); }}
-                onCompositionEnd={(event) => { composingRef.current = false; updateDraftSearch(event.currentTarget.value); }}
-                onKeyDown={(event) => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }}
-                onChange={(event) => updateDraftSearch(event.target.value)}
-                maxLength={CREATOR_MARKETPLACE_RESOURCE_QUERY_SEARCH_MAX_CHARACTERS}
-                aria-invalid={parsedUrlQuery.issues.some((issue) => issue.param === "q") || undefined}
-                aria-describedby={parsedUrlQuery.issues.some((issue) => issue.param === "q") ? "market-invalid-query" : undefined}
-                placeholder={t("예: 고백 장면, 학교 배경, G펜, 야간 보정", "e.g. confession scene, school background, G-pen, night retouch")}
-                className="h-12 w-full appearance-none rounded-2xl border border-line bg-card pl-10 pr-14 text-base text-fg placeholder:text-fg-3 outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/50 [&::-webkit-search-cancel-button]:hidden"
-              />
-              {draftSearch ? (
-                <button type="button" aria-label={t("검색어 지우기", "Clear search")} onClick={clearSearch} className="absolute right-0 top-1/2 grid size-12 -translate-y-1/2 place-items-center rounded-xl text-fg-3 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
-                  <X className="size-4" aria-hidden="true" />
+            <form
+              role="search"
+              aria-label={t("소재 검색", "Material search")}
+              className="grid w-full gap-1.5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (composingRef.current) return;
+                cancelPendingSearchCommit();
+                const parsed = CreatorMarketplaceResourceSearchQuerySchema.safeParse(draftSearch);
+                if (parsed.success) {
+                  if (parsed.data) recordRecentSearch(parsed.data);
+                  patchParams({ q: parsed.data || null, ...(parsed.data ? {} : { sort: null }) });
+                }
+              }}
+            >
+              <label htmlFor={searchInputId} className="text-xs font-medium text-fg-2 max-sm:sr-only">
+                {t("어떤 소재가 필요한가요?", "What material do you need?")}
+              </label>
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Search
+                    className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-fg-3"
+                    aria-hidden="true"
+                  />
+                  <input
+                    id={searchInputId}
+                    type="search"
+                    value={draftSearch}
+                    onCompositionStart={() => {
+                      composingRef.current = true;
+                      cancelPendingSearchCommit();
+                    }}
+                    onCompositionEnd={(event) => {
+                      composingRef.current = false;
+                      updateDraftSearch(event.currentTarget.value);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && event.nativeEvent.isComposing) {
+                        event.preventDefault();
+                      }
+                    }}
+                    onChange={(event) => updateDraftSearch(event.target.value)}
+                    maxLength={CREATOR_MARKETPLACE_RESOURCE_QUERY_SEARCH_MAX_CHARACTERS}
+                    aria-invalid={
+                      parsedUrlQuery.issues.some((issue) => issue.param === "q") || undefined
+                    }
+                    aria-describedby={
+                      parsedUrlQuery.issues.some((issue) => issue.param === "q")
+                        ? "market-invalid-query"
+                        : undefined
+                    }
+                    placeholder={t(
+                      "예: 고백 장면, 학교 배경, G펜, 야간 보정",
+                      "e.g. confession scene, school background, G-pen, night retouch",
+                    )}
+                    className="h-12 w-full appearance-none rounded-[9px] border border-line bg-card pl-10 pr-12 text-base text-fg placeholder:text-fg-3 outline-none transition-colors duration-150 focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/50 sm:text-sm [&::-webkit-search-cancel-button]:hidden"
+                  />
+                  {draftSearch ? (
+                    <button
+                      type="button"
+                      aria-label={t("검색어 지우기", "Clear search")}
+                      onClick={clearSearch}
+                      className="absolute right-0 top-1/2 grid size-12 -translate-y-1/2 place-items-center rounded-[8px] text-fg-3 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                    >
+                      <X className="size-4" aria-hidden="true" />
+                    </button>
+                  ) : null}
+                </div>
+                <button
+                  type="submit"
+                  className={buttonClass({
+                    variant: "solid",
+                    size: "md",
+                    className: "min-h-12 shrink-0 rounded-[9px] px-5 font-medium",
+                  })}
+                >
+                  {t("검색", "Search")}
                 </button>
-              ) : null}
-            </div>
-            <button type="submit" className={buttonClass({ variant: "solid", size: "md", className: "min-h-12" })}>{t("검색", "Search")}</button>
-            </div>
-          </form>
-
-        </Container>
+              </div>
+            </form>
+          </div>
+          </Container>
+        </div>
       </section>
 
       <Container size="wide" className="py-3 sm:py-6">
         {compareCount > 0 ? (
           <div
             data-market-compare-tray-banner="true"
-            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/50 bg-accent-soft/20 px-4 py-3 shadow-sm"
+            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-line-strong bg-panel px-4 py-3"
           >
-            <p className="text-sm font-bold text-fg">
+            <p className="text-sm font-medium text-fg tabular-nums">
               {t(
                 `선택한 에셋 ${compareCount}/${MARKET_COMPARE_MAX_ITEMS}개`,
                 `Selected assets ${compareCount}/${MARKET_COMPARE_MAX_ITEMS}`,
@@ -356,13 +411,13 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
               <button
                 type="button"
                 onClick={clearCompare}
-                className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12" })}
+                className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12 rounded-[8px]" })}
               >
                 {t("비교함 비우기", "Clear comparison tray")}
               </button>
               <Link
                 href="/market/compare"
-                className={buttonClass({ variant: "solid", size: "sm", className: "min-h-12" })}
+                className={buttonClass({ variant: "solid", size: "sm", className: "min-h-12 rounded-[8px]" })}
               >
                 {t("나란히 비교하기", "Compare side by side")}
               </Link>
@@ -374,40 +429,40 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
             <>
 
         <div className="flex items-end gap-2">
-          <label className="grid min-w-0 flex-1 gap-1.5 text-sm font-medium text-fg">
+          <label className="grid min-w-0 flex-1 gap-1.5 text-xs font-medium text-fg-2">
             <span className="max-sm:sr-only">{t("소재 종류", "Material kind")}</span>
             <select aria-label={t("소재 종류 필터", "Material kind filter")} value={activeFamily?.id ?? "all"}
               onChange={(event) => selectFamily(MARKET_RESOURCE_FAMILIES.find((family) => family.id === event.target.value) ?? null)}
-              className="min-h-12 min-w-0 rounded-xl border border-line bg-card px-3 text-base text-fg">
+              className="min-h-12 min-w-0 rounded-[9px] border border-line bg-card px-3 text-base text-fg sm:text-sm">
               <option value="all">{t("모든 소재", "All materials")}</option>
               {MARKET_RESOURCE_FAMILIES.map((family) => <option key={family.id} value={family.id}>{t(family.label, family.labelEn)}</option>)}
             </select>
           </label>
           <button ref={filterTrigger} type="button" aria-expanded={filtersOpen} aria-controls={filterPanelId}
             onClick={() => setFiltersOpen((value) => !value)}
-            className={buttonClass({ variant: "outline", size: "md", className: "min-h-12 gap-2" })}>
+            className={buttonClass({ variant: "outline", size: "md", className: "min-h-12 gap-2 rounded-[9px]" })}>
             <SlidersHorizontal size={16} aria-hidden="true" />{t("필터", "Filters")}
-            {activeFilterCount > 0 ? <span className="numeral tnum text-accent">{activeFilterCount}</span> : null}
+            {activeFilterCount > 0 ? <span className="numeral tnum text-accent tabular-nums">{activeFilterCount}</span> : null}
           </button>
         </div>
         <section ref={filterPanel} id={filterPanelId} data-market-filter-panel="" hidden={!filtersOpen}
           aria-label={t("소재 조건과 찾기 방법", "Material filters and search methods")}
-          className="market-browse-menu-body mt-3 rounded-xl border border-line bg-panel">
-          <label className="grid gap-2 text-sm font-semibold text-fg">
+          className="market-browse-menu-body mt-3 rounded-[12px] border border-line bg-panel">
+          <label className="grid gap-2 text-sm font-medium text-fg">
             {t("라이선스", "License")}
             <select aria-label={t("라이선스 필터", "License filter")} value={activeLicense ?? ""}
               onChange={(event) => patchParams({ license: event.target.value || null })}
-              className="min-h-12 rounded-xl border border-line bg-card px-3 text-base text-fg">
+              className="min-h-12 rounded-[9px] border border-line bg-card px-3 text-base text-fg sm:text-sm">
               <option value="">{t("전체 라이선스", "All licenses")}</option>
               {MARKET_LICENSES.map((license) => <option key={license.license} value={license.license}>{license.label}</option>)}
             </select>
           </label>
           <p className="mt-2 text-xs leading-5 text-fg-2">{t("무료 여부와 상업 이용 조건은 다릅니다. 사용하기 전에 상세 화면에서 이용 조건을 확인하세요.", "Free materials can have different commercial-use terms. Check the usage terms on the detail page before using them.")}</p>
-        <section aria-labelledby="market-work-family-title" className="max-sm:hidden">
-          <h2 id="market-work-family-title" className="text-sm font-bold text-fg">{t("어떤 리소스가 필요한가요?", "What kind of resource do you need?")}</h2>
-          <p className="mt-1 text-sm text-fg-2 max-sm:sr-only">{t("한 번 선택하면 그 작업군에 필요한 세부 카테고리만 아래에 보여줍니다.", "Once selected, only the subcategories for that work family are shown below.")}</p>
+        <section aria-labelledby="market-work-family-title" className="mt-4 max-sm:hidden">
+          <h2 id="market-work-family-title" className="text-sm font-semibold text-fg">{t("어떤 리소스가 필요한가요?", "What kind of resource do you need?")}</h2>
+          <p className="mt-1 text-xs text-fg-2 max-sm:sr-only">{t("한 번 선택하면 그 작업군에 필요한 세부 카테고리만 아래에 보여줍니다.", "Once selected, only the subcategories for that work family are shown below.")}</p>
           <MarketFamilyPicker
-            className="mt-3"
+            className="mt-2.5"
             labelledBy="market-work-family-title"
             selected={activeFamily?.id ?? (activeKind ? null : "all")}
             target={{ kind: "button", onSelect: selectFamily }}
@@ -419,11 +474,11 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
             <summary>{t("세부 소재 고르기", "Choose a subcategory")} <ChevronDown size={16} aria-hidden="true" /></summary>
             <div className="market-browse-menu-body" aria-labelledby="market-subcategory-title">
             <div className="flex items-start gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-panel text-accent">
+              <span className="grid size-9 shrink-0 place-items-center rounded-[8px] border border-line bg-panel text-accent">
                 <activeFamily.icon className="size-4" aria-hidden="true" />
               </span>
               <div>
-                <h2 id="market-subcategory-title" className="text-sm font-bold text-fg">{t(`${activeFamily.label} 세부 카테고리`, `${activeFamily.labelEn} subcategories`)}</h2>
+                <h2 id="market-subcategory-title" className="text-sm font-semibold text-fg">{t(`${activeFamily.label} 세부 카테고리`, `${activeFamily.labelEn} subcategories`)}</h2>
                 <p className="mt-0.5 text-xs leading-5 text-fg-3">{t(activeFamily.description, activeFamily.descriptionEn)}</p>
               </div>
             </div>
@@ -437,11 +492,11 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
                     onClick={() => patchParams({ kind: subcategory.kind, tag: selected ? null : subcategory.tag ?? null })}
                     aria-pressed={selected}
                     className={cn(
-                      "min-h-14 rounded-xl border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+                      "min-h-14 rounded-[10px] border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
                       selected ? "border-accent/50 bg-accent-soft" : "border-line bg-panel hover:border-line-strong hover:bg-raised",
                     )}
                   >
-                    <strong className={cn("block text-xs", selected ? "text-accent" : "text-fg")}>{t(subcategory.label, subcategory.labelEn)}</strong>
+                    <strong className={cn("block text-xs font-medium", selected ? "text-accent" : "text-fg")}>{t(subcategory.label, subcategory.labelEn)}</strong>
                     <span className="mt-0.5 block text-xs leading-5 text-fg-3">{t(subcategory.description, subcategory.descriptionEn)}</span>
                   </button>
                 );
@@ -455,10 +510,10 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
           <summary>{t("자주 쓰는 조건으로 찾기", "Find with common filters")} <ChevronDown size={16} aria-hidden="true" /></summary>
         <section
           aria-label={t("웹툰 제작 공정별 원클릭 프리셋", "Webtoon production stage presets")}
-          className="mb-4 rounded-2xl border border-line bg-card/70 p-3"
+          className="mb-4 rounded-[12px] border border-line bg-card/70 p-3"
         >
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-xs font-bold text-fg-3">
+            <span className="mr-1 text-xs font-medium text-fg-3">
               {t("공정별 프리셋:", "Stage presets:")}
             </span>
             {PROCESS_PRESET_FILTERS.map((preset) => {
@@ -482,9 +537,9 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
                     })
                   }
                   className={cn(
-                    "min-h-12 rounded-full border px-3 text-xs font-semibold transition-colors",
+                    "min-h-12 rounded-[8px] border px-3 text-xs font-medium transition-colors duration-150",
                     selected
-                      ? "border-accent bg-accent text-on-accent"
+                      ? "border-accent/60 bg-accent-soft text-fg"
                       : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg",
                   )}
                 >
@@ -529,21 +584,19 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
           ) : null}
         </section>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
           {!hasInvalidQuery && !page.loading && !page.error ? (
-            <p className="text-xs text-fg-3" aria-live="polite">
-              {t("현재", "Showing")} <span className="numeral tnum font-semibold text-fg">{page.items.length}</span>{t("개 표시", " items")}
+            <p className="text-xs text-fg-3 tabular-nums" aria-live="polite">
+              {t("현재", "Showing")} <span className="numeral tnum font-medium text-fg tabular-nums">{page.items.length}</span>{t("개 표시", " items")}
             </p>
           ) : <span />}
 
           <div className="flex flex-wrap items-center justify-end gap-2">
             <MarketViewToggle value={layout} onChange={(value) => patchParams({ layout: value })} />
 
-
-
             <label className="inline-flex min-h-11 items-center gap-2 text-xs font-medium text-fg-2">
               <span>{t("정렬", "Sort")}</span>
-              <select aria-label={t("정렬 기준", "Sort by")} value={query.sort} onChange={(event) => patchParams({ sort: event.target.value })} className="h-12 rounded-xl border border-line bg-card px-2.5 text-base text-fg outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/70">
+              <select aria-label={t("정렬 기준", "Sort by")} value={query.sort} onChange={(event) => patchParams({ sort: event.target.value })} className="h-12 rounded-[9px] border border-line bg-card px-2.5 text-base text-fg outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/70 sm:text-sm">
                 <option value="relevance" disabled={!query.search}>{t("관련도순", "By relevance")}</option>
                 <option value="newest">{t("최신순", "Newest")}</option>
               </select>
@@ -596,20 +649,25 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
           <>
             <h2 className="sr-only">{t("탐색 결과", "Browse results")}</h2>
             {page.loading ? <p role="status" className="sr-only">{t("마켓 탐색 결과를 불러오는 중입니다.", "Loading market browse results.")}</p> : null}
-            <ul aria-busy={page.loading || undefined} className={`market-browse-results market-browse-results--${layout}`}>
+            <ul
+              key={`${activeKind ?? "all"}-${activeLicense ?? "all"}-${query.tag ?? ""}-${displaySort}-${layout}`}
+              aria-busy={page.loading || undefined}
+              data-ink-stagger={layout === "grid" ? "panel" : ""}
+              className={`market-browse-results market-browse-results--${layout} ink-cascade`}
+            >
               {page.loading && page.items.length === 0
-                ? Array.from({ length: PAGE_SIZE }, (_, index) => <li key={index} aria-hidden="true"><div className="skeleton aspect-[16/9] w-full rounded-t-xl" /><div className="space-y-2 rounded-b-xl border border-t-0 border-line bg-card p-3.5"><div className="skeleton h-4 w-4/5" /><div className="skeleton h-3 w-2/5" /></div></li>)
+                ? Array.from({ length: PAGE_SIZE }, (_, index) => <li key={index} aria-hidden="true"><div className="skeleton aspect-[16/10] w-full rounded-t-[14px]" /><div className="space-y-2 rounded-b-[14px] border border-t-0 border-line bg-card p-3.5"><div className="skeleton h-4 w-4/5" /><div className="skeleton h-3 w-2/5" /></div></li>)
                 : visibleItems.map((record, index) => <li key={record.id} {...introItemProps(index)}><MarketResourceCard record={record} presentation={layout === "list" ? "row" : "card"} onQuickPreview={setQuickPreviewRecord} className="h-full" /></li>)}
             </ul>
 
             {!page.loading && page.items.length === 0 ? (
-              <div className="mt-8 rounded-2xl border border-dashed border-line bg-panel p-8 text-center sm:p-12">
+              <div className="mt-8 rounded-[16px] border border-dashed border-line bg-panel p-8 text-center sm:p-12">
                 {activeSearch ? (
-                  <><div className="mx-auto flex size-12 items-center justify-center rounded-full bg-raised text-fg-3"><SearchX className="size-6" aria-hidden="true" /></div><h2 className="mt-4 text-base font-bold text-fg">{t(`“${activeSearch}” 검색 결과가 없어요`, `No results for “${activeSearch}”`)}</h2><p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-2">{t("더 짧은 단어로 검색하거나 선택한 카테고리를 하나씩 해제해 보세요.", "Try shorter keywords or clear the selected categories one by one.")}</p><div className="mt-6 flex flex-wrap justify-center gap-2.5"><button type="button" onClick={clearSearch} className={buttonClass({ variant: "solid", size: "sm" })}>{t("검색어 초기화", "Clear search")}</button>{hasActiveFilters ? <button type="button" onClick={resetFilters} className={buttonClass({ variant: "outline", size: "sm" })}><RotateCcw className="mr-1.5 size-3.5" aria-hidden="true" />{t("모든 조건 초기화", "Reset all filters")}</button> : null}</div></>
+                  <><div className="mx-auto flex size-11 items-center justify-center rounded-[10px] bg-raised text-fg-3"><SearchX className="size-5" aria-hidden="true" /></div><h2 className="mt-4 text-base font-semibold text-fg [word-break:keep-all]">{t(`“${activeSearch}” 검색 결과가 없어요`, `No results for “${activeSearch}”`)}</h2><p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-2 [word-break:keep-all]">{t("더 짧은 단어로 검색하거나 선택한 카테고리를 하나씩 해제해 보세요.", "Try shorter keywords or clear the selected categories one by one.")}</p><div className="mt-6 flex flex-wrap justify-center gap-2.5"><button type="button" onClick={clearSearch} className={buttonClass({ variant: "solid", size: "sm", className: "rounded-[8px]" })}>{t("검색어 초기화", "Clear search")}</button>{hasActiveFilters ? <button type="button" onClick={resetFilters} className={buttonClass({ variant: "outline", size: "sm", className: "rounded-[8px]" })}><RotateCcw className="mr-1.5 size-3.5" aria-hidden="true" />{t("모든 조건 초기화", "Reset all filters")}</button> : null}</div></>
                 ) : activeKind ? (
-                  <><div className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent">{(() => { const Icon = marketKindMeta(activeKind).icon; return <Icon className="size-6" aria-hidden="true" />; })()}</div><h2 className="mt-4 text-base font-bold text-fg">{t(`아직 이 조건에 맞는 ${marketKindMeta(activeKind).label}이 없어요`, `No ${marketKindMeta(activeKind).label} matches these conditions yet`)}</h2><p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-2">{t("세부 카테고리를 바꾸거나 Studio에서 만든 리소스를 첫 번째로 공유해 보세요.", "Try a different subcategory, or be the first to share a resource you made in Studio.")}</p><div className="mt-6 flex flex-wrap justify-center gap-2.5"><Link href="/studio?assetMarket=community&communityView=share" className={buttonClass({ variant: "solid", size: "sm" })}><Upload className="mr-1.5 size-3.5" aria-hidden="true" />{t("Studio에서 공유하기", "Share from Studio")}</Link><button type="button" onClick={() => patchParams({ kind: null, tag: null })} className={buttonClass({ variant: "outline", size: "sm" })}>{t("전체 리소스 보기", "View all resources")}</button></div></>
+                  <><div className="mx-auto flex size-11 items-center justify-center rounded-[10px] bg-accent-soft text-accent">{(() => { const Icon = marketKindMeta(activeKind).icon; return <Icon className="size-5" aria-hidden="true" />; })()}</div><h2 className="mt-4 text-base font-semibold text-fg [word-break:keep-all]">{t(`아직 이 조건에 맞는 ${marketKindMeta(activeKind).label}이 없어요`, `No ${marketKindMeta(activeKind).label} matches these conditions yet`)}</h2><p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-2 [word-break:keep-all]">{t("세부 카테고리를 바꾸거나 Studio에서 만든 리소스를 첫 번째로 공유해 보세요.", "Try a different subcategory, or be the first to share a resource you made in Studio.")}</p><div className="mt-6 flex flex-wrap justify-center gap-2.5"><Link href="/studio?assetMarket=community&communityView=share" className={buttonClass({ variant: "solid", size: "sm", className: "rounded-[8px]" })}><Upload className="mr-1.5 size-3.5" aria-hidden="true" />{t("Studio에서 공유하기", "Share from Studio")}</Link><button type="button" onClick={() => patchParams({ kind: null, tag: null })} className={buttonClass({ variant: "outline", size: "sm", className: "rounded-[8px]" })}>{t("전체 리소스 보기", "View all resources")}</button></div></>
                 ) : (
-                  <><div className="mx-auto flex size-12 items-center justify-center rounded-full bg-raised text-fg-3"><PackageSearch className="size-6" aria-hidden="true" /></div><h2 className="mt-4 text-base font-bold text-fg">{t("조건에 맞는 공유 리소스가 없어요", "No shared resources match these conditions")}</h2><p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-2">{t("공개 마켓에 없는 소재는 기본 무료 제작 소재에서 찾아보세요. 회원가입 없이 원본 파일과 사용 조건을 확인할 수 있습니다.", "For materials not on the public market, try the built-in free production materials. You can check source files and terms without signing up.")}</p><div className="mt-6 flex flex-wrap justify-center gap-2.5"><Link href="/studio/assets?view=essentials" className={buttonClass({ variant: "solid", size: "sm" })}>{t("기본 무료 소재 사용하기", "Use built-in free materials")}</Link><Link href="/studio?assetMarket=community&communityView=share" className={buttonClass({ variant: "solid", size: "sm" })}><Upload className="mr-1.5 size-3.5" aria-hidden="true" />{t("Studio에서 첫 리소스 공유하기", "Share your first resource from Studio")}</Link>{hasActiveFilters ? <button type="button" onClick={resetFilters} className={buttonClass({ variant: "outline", size: "sm" })}><RotateCcw className="mr-1.5 size-3.5" aria-hidden="true" />{t("모든 조건 초기화", "Reset all filters")}</button> : null}</div></>
+                  <><div className="mx-auto flex size-11 items-center justify-center rounded-[10px] bg-raised text-fg-3"><PackageSearch className="size-5" aria-hidden="true" /></div><h2 className="mt-4 text-base font-semibold text-fg [word-break:keep-all]">{t("조건에 맞는 공유 리소스가 없어요", "No shared resources match these conditions")}</h2><p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-2 [word-break:keep-all]">{t("공개 마켓에 없는 소재는 기본 무료 제작 소재에서 찾아보세요. 회원가입 없이 원본 파일과 사용 조건을 확인할 수 있습니다.", "For materials not on the public market, try the built-in free production materials. You can check source files and terms without signing up.")}</p><div className="mt-6 flex flex-wrap justify-center gap-2.5"><Link href="/studio/assets?view=essentials" className={buttonClass({ variant: "solid", size: "sm", className: "rounded-[8px]" })}>{t("기본 무료 소재 사용하기", "Use built-in free materials")}</Link><Link href="/studio?assetMarket=community&communityView=share" className={buttonClass({ variant: "outline", size: "sm", className: "rounded-[8px]" })}><Upload className="mr-1.5 size-3.5" aria-hidden="true" />{t("Studio에서 첫 리소스 공유하기", "Share your first resource from Studio")}</Link>{hasActiveFilters ? <button type="button" onClick={resetFilters} className={buttonClass({ variant: "outline", size: "sm", className: "rounded-[8px]" })}><RotateCcw className="mr-1.5 size-3.5" aria-hidden="true" />{t("모든 조건 초기화", "Reset all filters")}</button> : null}</div></>
                 )}
               </div>
             ) : null}

@@ -36,17 +36,17 @@ export function PublicSiteNextSteps({ pathname }: { pathname: string }) {
           <h2 id={headingId}>{bi("좋은 영감은 다음 행동으로", "A good idea deserves a next step")}</h2>
           <p>{bi("발견한 것을 배우고, 나의 재료로 바꾸고, 하나의 이야기로 이어가세요.", "Learn from what you discover, make it your own and carry your story forward.")}</p>
         </div>
-        <Link className="public-site-next__directory min-h-11 [word-break:keep-all]" href="/sitemap">{bi("전체 작업 지도", "Explore the directory")}<ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" /></Link>
+        <Link className="public-site-next__directory ink-arrow min-h-11 [word-break:keep-all]" href="/sitemap">{bi("전체 작업 지도", "Explore the directory")}<ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" /></Link>
       </div>
-      <div className="public-site-next__grid">
+      <div className="public-site-next__grid" data-ink-stagger="panel">
         {destinations.map((destination) => (
-          <Link key={destination.href} href={destination.href} className="public-site-next__card min-h-11 [word-break:keep-all]" data-phase={destination.phase}>
-            <div className="public-site-next__art" aria-hidden="true"><WorkflowIllustration kind={workflowVisualForPath(destination.href)} sizes="(max-width: 767px) 96px, 130px" decorative /></div>
+          <Link key={destination.href} href={destination.href} className="public-site-next__card ink-frame min-h-11 [word-break:keep-all]" data-phase={destination.phase}>
+            <div className="public-site-next__art ink-sheen" aria-hidden="true"><WorkflowIllustration kind={workflowVisualForPath(destination.href)} sizes="(max-width: 767px) 96px, 130px" decorative /></div>
             <div className="public-site-next__copy">
               <span className="public-site-next__tag">{destination.tag}</span>
               <h3>{bi(destination.ko, destination.en)}</h3>
               <p>{bi(destination.bodyKo, destination.bodyEn)}</p>
-              <span className="public-site-next__action">{bi("이어서 둘러보기", "Explore this next")}<ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" /></span>
+              <span className="public-site-next__action ink-arrow">{bi("이어서 둘러보기", "Explore this next")}<ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" /></span>
             </div>
           </Link>
         ))}

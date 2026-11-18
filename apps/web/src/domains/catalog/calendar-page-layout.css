@@ -1,4 +1,7 @@
-/* 캘린더 전용 조건줄. 공용 컨트롤과 랭킹의 밀도는 바꾸지 않는다. */
+/* 캘린더 전용 조건줄 및 슬라이딩 요일 탭 */
+.calendar-page-heading-wrap {
+  min-width: 0;
+}
 .calendar-controls {
   display: flex;
   min-width: 0;
@@ -9,20 +12,41 @@
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--color-line);
 }
-.calendar-primary-presets { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-inline-end: auto; }
+.calendar-primary-presets {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin-inline-end: auto;
+}
 .calendar-controls :is(button, select) { min-height: 44px; }
 .calendar-controls :is(button, select):focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
-.calendar-preset, .calendar-more-select select, .calendar-filter-toggle, .calendar-platform-option {
+.calendar-preset,
+.calendar-more-select select,
+.calendar-filter-toggle,
+.calendar-platform-option {
   min-width: 0;
   border: 1px solid var(--color-line);
-  border-radius: 0.65rem;
+  border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
   background: var(--color-card);
   color: var(--color-fg-2);
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 500;
 }
-.calendar-preset[aria-pressed="true"], .calendar-platform-option[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-on-accent); }
+.calendar-preset:hover,
+.calendar-filter-toggle:hover,
+.calendar-platform-option:hover {
+  border-color: var(--color-line-strong);
+  color: var(--color-fg);
+}
+.calendar-preset[aria-pressed="true"],
+.calendar-platform-option[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
 .calendar-more-select { position: relative; min-width: 0; max-width: 100%; }
 .calendar-more-select select { max-width: 100%; padding-inline-end: 2rem; appearance: none; }
 .calendar-more-select > svg { position: absolute; inset-inline-end: 0.7rem; top: 50%; transform: translateY(-50%); color: var(--color-fg-2); pointer-events: none; }
@@ -33,26 +57,108 @@
 .calendar-controls-actions { min-width: 0; }
 .calendar-controls-actions > button { white-space: normal; }
 .calendar-filter-label-small { display: none; }
-.calendar-filter-panel { display: grid; min-width: 0; flex-basis: 100%; gap: 1rem; border: 1px solid var(--color-line); border-radius: 0.8rem; padding: 1rem; background: var(--color-panel); }
+.calendar-filter-panel {
+  display: grid;
+  min-width: 0;
+  flex-basis: 100%;
+  gap: 1rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--color-panel);
+}
 .calendar-mobile-presets { display: none; }
-.calendar-platform-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; color: var(--color-fg-2); font-size: 0.8125rem; }
+.calendar-platform-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-fg-2);
+  font-size: 0.8125rem;
+}
 .calendar-platform-heading button { padding-inline: 0.5rem; color: var(--color-accent); }
-.calendar-platform-options { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.calendar-platform-options { display: flex; flex-wrap: wrap; gap: 0.375rem; }
 .calendar-platform-option { display: inline-flex; align-items: center; gap: 0.4rem; }
 .calendar-platform-dot { width: 0.4rem; height: 0.4rem; border-radius: 50%; flex-shrink: 0; }
-.calendar-day-tabs { display: grid; grid-template-columns: repeat(7, minmax(44px, 1fr)); min-width: 0; max-width: 100%; gap: 0.25rem; overflow-x: auto; padding-block: 0.2rem; }
-.calendar-day-tabs > button { min-width: 44px; padding-inline: 0.25rem; }
+
+/* 슬라이딩 요일 탭 — 레이아웃 이동 없이 transform으로 밑줄이 미끄러진다 */
+.calendar-day-tabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(44px, 1fr));
+  min-width: 0;
+  max-width: 100%;
+  gap: 0.25rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 2px;
+}
+.calendar-day-tab {
+  position: relative;
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 3.25rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.375rem 0.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: transparent;
+  color: var(--color-fg-2);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1)), color 150ms var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+.calendar-day-tab:hover {
+  background: var(--color-panel);
+  color: var(--color-fg);
+}
+.calendar-day-tab.is-selected {
+  background: var(--color-card);
+  color: var(--color-fg);
+}
+.calendar-day-tabs:not([data-ink-ready="true"]) .calendar-day-tab.is-selected {
+  box-shadow: inset 0 -2px var(--color-accent);
+}
+.calendar-day-tab:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+.calendar-day-ink-indicator {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 2px;
+  background: var(--color-accent);
+  pointer-events: none;
+  transform-origin: left center;
+  transform: translateX(var(--ink-x, 0px)) scaleX(var(--ink-w, 0));
+}
+.calendar-day-tabs[data-ink-ready="true"] > .calendar-day-ink-indicator {
+  transition: transform 240ms var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1)), opacity 160ms var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
 @media (min-width: 640px) and (max-width: 1023px) {
   .calendar-primary-presets { flex-basis: 100%; }
 }
 @media (max-width: 639px) {
-  .calendar-primary-presets, .calendar-filter-label-wide { display: none; }
+  .calendar-primary-presets,
+  .calendar-filter-label-wide { display: none; }
   .calendar-filter-label-small { display: inline; }
   .calendar-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .calendar-controls-actions > button { width: 100%; padding-inline: 0.5rem; }
   .calendar-filter-panel { grid-column: 1 / -1; padding: 0.75rem; }
-  .calendar-mobile-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .calendar-mobile-presets { display: flex; flex-wrap: wrap; gap: 0.375rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .calendar-controls :is(button, select) { transition: none; }
+  .calendar-controls :is(button, select),
+  .calendar-day-tab,
+  .calendar-day-ink-indicator {
+    transition: none !important;
+  }
 }

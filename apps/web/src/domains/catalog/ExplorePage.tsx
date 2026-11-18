@@ -19,7 +19,7 @@ import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
 import { ExploreReaDirectoryBar } from "./ExploreReaDirectoryBar";
 import { snapshotDateLabel } from "./discover-home";
 import { filterTitlesByLocalQuery, normalizePlatformId, useLocalCatalogFallback } from "./local-catalog-fallback";
-import { genreBorder, genreColor, genreTextColor, genreTint } from "@/shared/lib/genre-color";
+import { genreColor } from "@/shared/lib/genre-color";
 import { catalogDiscoveryHref, parseCatalogDiscoveryState, writeCatalogDiscoveryState } from "@/shared/lib/catalog-discovery-state";
 import { formatI18nTemplate, useBilingual, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { useSavedTitleIds } from "@/shared/lib/store";
@@ -256,7 +256,7 @@ export function ExplorePage() {
       <Container size="wide" className="explore-page-layout">
         {/* 전역 Container 직계 header 장식을 피하고 탐색 도구를 첫 화면에 둔다. */}
         <div className="explore-page-heading-wrap">
-          <header className="explore-page-heading"><h1>{bt("조건으로 작품 찾기", "Find titles by condition")}</h1></header>
+          <header className="explore-page-heading"><h1 data-ink="line">{bt("조건으로 작품 찾기", "Find titles by condition")}</h1></header>
           <details className="explore-page-mode-menu" data-testid="explore-page-mode-menu">
             <summary onKeyDown={closeDisclosure}>{bt("다른 찾는 방법", "Other ways to find titles")}<ChevronDown size={14} aria-hidden="true" /></summary>
             <nav className="explore-page-modes" aria-label={bt("탐색 방식", "Explore modes")}>
@@ -302,12 +302,11 @@ export function ExplorePage() {
                     type="button"
                     data-no-sfx
                     onClick={(event) => {
-                      // 선택(off→on)되는 순간만 그 장르색으로 파티클 "팡" — 색을 고르는 보상감.
                       if (!active) {
                         fx.sfx("pop");
                         fx.burstAt(event.currentTarget, {
-                          count: 12,
-                          spread: 0.8,
+                          count: 10,
+                          spread: 0.7,
                           colors: [
                             genreColor(entry, 0.82),
                             genreColor(entry, 0.66),
@@ -322,20 +321,12 @@ export function ExplorePage() {
                     }}
                     aria-pressed={active}
                     className={cn(
-                      "inline-flex min-h-11 items-center whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium",
-                      "transition-[transform,background-color,border-color,box-shadow] duration-200 ease-out-expo",
-                      "hover:-translate-y-px active:scale-[0.96]",
-                      active && "ring-1",
+                      "inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3.5 py-1.5 text-xs font-medium",
+                      "transition-[transform,background-color,border-color,color] duration-150 active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none",
+                      active
+                        ? "border-accent bg-accent text-on-accent"
+                        : "border-line bg-panel text-fg-2 hover:border-line-strong hover:bg-raised hover:text-fg",
                     )}
-                    style={{
-                      color: genreTextColor(entry, active ? 0.92 : 0.82),
-                      backgroundColor: genreTint(entry, active ? 0.3 : 0.12),
-                      borderColor: genreBorder(entry, active ? 0.7 : 0.26),
-                      // 선택된 칩엔 그 장르색 글로우로 "켜진" 느낌을 강화.
-                      boxShadow: active
-                        ? `0 6px 20px -10px ${genreColor(entry, 0.62)}`
-                        : undefined,
-                    }}
                   >
                     {entry}
                   </button>
@@ -379,9 +370,9 @@ export function ExplorePage() {
                         }}
                         aria-pressed={active}
                         className={cn(
-                          "group inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 active:scale-[0.96]",
+                          "group inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-medium transition-[color,background-color,border-color,transform] duration-150 active:scale-[0.98] motion-reduce:transition-none",
                           active
-                            ? "border-accent/60 bg-accent-soft text-accent shadow-[0_4px_16px_-8px_oklch(0.72_0.185_42/0.5)]"
+                            ? "border-accent bg-accent-soft text-accent"
                             : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
                         )}
                       >
@@ -395,7 +386,7 @@ export function ExplorePage() {
                           #
                         </span>
                         {entry}
-                        <span className="tnum text-xs text-fg-3">{count}</span>
+                        <span className="tabular-nums text-xs text-fg-3">{count}</span>
                       </button>
                     );
                   })}
@@ -403,7 +394,7 @@ export function ExplorePage() {
                     <button
                       type="button"
                       onClick={() => setShowAllTags(true)}
-                      className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full border border-line bg-card px-3 text-sm font-semibold text-fg transition-colors hover:border-accent/45 hover:text-accent"
+                      className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg transition-colors hover:border-line-strong hover:text-accent"
                     >
                       {formatI18nTemplate(bt("태그 더 보기 · {v0}개", "Show more tags · {v0}"), { v0: hiddenTagCount })}
                     </button>
@@ -411,7 +402,7 @@ export function ExplorePage() {
                     <button
                       type="button"
                       onClick={() => setShowAllTags(false)}
-                      className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-3 text-sm font-semibold text-fg-3 hover:text-fg"
+                      className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-3 text-xs font-medium text-fg-3 hover:text-fg"
                     >
                       {bt("주요 태그만 보기", "Show main tags only")}
                     </button>
@@ -508,11 +499,16 @@ export function ExplorePage() {
           />
         ) : results.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
-              {shown.map((title) => (
+            <div
+              key={`${sort}-${filters.genres.join(",")}-${filters.types.join(",")}-${density}`}
+              data-ink-stagger="panel"
+              className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 ink-cascade"
+            >
+              {shown.map((title, index) => (
                 <TitleCard
                   key={title.id}
                   title={title}
+                  index={index}
                   size={density === "compact" ? "sm" : "md"}
                   className={density === "compact" ? "explore-card-compact" : undefined}
                 />
@@ -523,10 +519,10 @@ export function ExplorePage() {
                 <button
                   type="button"
                   onClick={showMore}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-5 py-2.5 text-sm font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-line bg-card px-5 py-2.5 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
                 >
                   {loading ? bt("불러오는 중…", "Loading…") : bt("더 보기", "Show more")}
-                  <span className="numeral text-fg-3">
+                  <span className="numeral tabular-nums text-fg-3">
                     {shown.length} / {results.length}
                   </span>
                 </button>

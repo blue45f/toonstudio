@@ -39,16 +39,6 @@ function toKoreanChoseong(text: string): string {
   return out;
 }
 
-const GROUP_ICON_ASSETS: Readonly<Record<string, string>> = {
-  create: "/brand/toonstudio-premium-icons/canvas.webp",
-  connect: "/brand/toonstudio-premium-icons/team.webp",
-  discover: "/brand/toonstudio-premium-icons/story.webp",
-  grow: "/brand/toonstudio-premium-icons/materials.webp",
-  publish: "/brand/toonstudio-premium-icons/projects.webp",
-  personal: "/brand/toonstudio-premium-icons/settings.webp",
-  rest: "/brand/toonstudio-premium-icons/space.webp",
-};
-
 interface ExtraProEntry {
   readonly id: string;
   readonly groupId: string;
@@ -263,16 +253,16 @@ export function SitemapPage() {
     <section
       aria-label={bt("전 기능 0클릭 도메인 그리드", "0-click domain feature grid")}
       data-testid="sitemap-zero-click-directory"
-      className="sitemap-v4-grid"
+      key={activeGroupId}
+      className="sitemap-v4-grid ink-cascade"
     >
       {filteredGroups.length > 0 ? (
         filteredGroups.map(({ group, cards }) => {
-          const iconSrc = GROUP_ICON_ASSETS[group.id] ?? "/brand/toonstudio-premium-icons/home.webp";
           return (
-            <article key={group.id} className="sitemap-v4-domain-card">
+            <article key={group.id} className="sitemap-v4-domain-card ink-frame">
               <div className="sitemap-v4-domain-head">
                 <div className="sitemap-v4-domain-title">
-                  <img src={iconSrc} alt="" aria-hidden="true" width={32} height={32} loading="lazy" decoding="async" />
+                  <SitePurposeGraphic group={group} />
                   <div>
                     <h2>{siteNavigationText(group.label, locale)}</h2>
                     <p>{siteNavigationText(group.description, locale)}</p>

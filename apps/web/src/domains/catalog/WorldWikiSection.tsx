@@ -51,18 +51,18 @@ export function WorldWikiSection({
           <BookOpen size={19} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-bold text-fg">
+          <h2 className="text-base font-semibold text-fg">
             {titleName ? `${titleName} 공식 설정 위키` : "공식 설정 위키"}
           </h2>
           <p className="mt-0.5 max-w-[72ch] text-xs leading-relaxed text-fg-3">
             작가가 직접 공개한 설정만 모았어요. 스포일러 방지를 위해{" "}
-            <strong className="font-semibold text-fg-2">
+            <strong className="font-medium text-fg-2">
               {wiki.spoilerThroughEpisode}화까지
             </strong>
             의 설정만 담고 있어요.
           </p>
         </div>
-        <span className="inline-flex min-h-7 items-center rounded-full border border-line bg-card px-2.5 text-[0.68rem] tabular-nums text-fg-3">
+        <span className="inline-flex min-h-7 items-center rounded-md border border-line bg-card px-2.5 text-[0.68rem] tabular-nums text-fg-3">
           공개 설정 {wiki.publicCount}개
         </span>
       </header>
@@ -103,8 +103,8 @@ export function WorldWikiSection({
             <div className="mt-4 space-y-6">
               {visibleSections.map((section) => (
                 <div key={section.kind}>
-                  <h3 className="text-xs font-bold uppercase tracking-wide text-fg-3">
-                    {section.label} · {section.entries.length}
+                  <h3 className="text-xs font-semibold text-fg-2">
+                    {section.label} · <span className="tabular-nums">{section.entries.length}</span>
                   </h3>
                   <ul className="mt-2 grid gap-2 sm:grid-cols-2">
                     {section.entries.map((entry) => (
@@ -113,7 +113,7 @@ export function WorldWikiSection({
                         className="rounded-lg border border-line bg-card p-3"
                       >
                         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                          <span className="text-sm font-bold text-fg">{entry.name}</span>
+                          <span className="text-sm font-semibold text-fg">{entry.name}</span>
                           {entry.aliases.map((alias) => (
                             <span key={alias} className="text-[0.68rem] text-fg-3">
                               {alias}
@@ -140,7 +140,7 @@ export function WorldWikiSection({
                             {entry.related.map((target) => (
                               <span
                                 key={target.id}
-                                className="inline-flex min-h-6 items-center rounded-full border border-line bg-panel px-2 text-[0.68rem] text-fg-2"
+                                className="inline-flex min-h-6 items-center rounded-md border border-line bg-panel px-2 text-[0.68rem] text-fg-2"
                               >
                                 {target.name}
                               </span>

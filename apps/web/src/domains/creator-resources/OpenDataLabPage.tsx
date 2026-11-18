@@ -120,9 +120,9 @@ export function OpenDataLabPage() {
       <div className="relative flex min-h-[26rem] flex-col justify-end gap-4 p-6 sm:p-8">
         <Link
           to="/research"
-          className="inline-flex min-h-8 items-center self-start text-xs font-semibold tracking-[.12em] text-white/75 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="inline-flex min-h-8 items-center self-start text-xs font-medium text-white/80 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
-          TOONSTUDIO / 리서치 데스크
+          ← 리서치 데스크
         </Link>
         <p className="eyebrow text-white/70">{txEn("OPEN DATA FOR CREATORS")}</p>
         <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">{tx("공개 데이터 창작실")}</h1>

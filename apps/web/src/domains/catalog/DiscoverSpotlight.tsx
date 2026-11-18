@@ -1,6 +1,7 @@
 import "./discover-hub-layout.css";
 
 import { ArrowRight, Star } from "lucide-react";
+import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
 
 import type { Title } from "@/shared/lib/types";
 
@@ -20,14 +21,14 @@ const STATUS_LABEL: Record<SerialStatus, readonly [string, string]> = {
   hiatus: ["휴재", "On hiatus"],
 };
 
-/** 표지를 불러오지 못했을 때 쓰는 스타라이트 토큰 그라데이션 + 첫 글자. 작품 데이터의 임의 색은 쓰지 않는다. */
+/** 표지를 불러오지 못했을 때 쓰는 테마 토큰 그라데이션 + 첫 글자. 작품 데이터의 임의 색은 쓰지 않는다. */
 function PosterFallback({ title, className }: { readonly title: Title; readonly className?: string }) {
   const glyph = title.title.replace(/[^가-힣A-Za-z0-9]/gu, "").charAt(0) || "T";
   return (
     <span
       aria-hidden="true"
       className={cn(
-        "grid size-full place-items-center bg-[linear-gradient(150deg,color-mix(in_oklch,var(--color-accent)_42%,var(--color-panel)),color-mix(in_oklch,var(--color-cool)_28%,var(--color-canvas)))] font-display font-bold text-fg/70",
+        "grid size-full place-items-center bg-[linear-gradient(150deg,color-mix(in_oklch,var(--color-accent)_32%,var(--color-panel)),color-mix(in_oklch,var(--color-cool)_18%,var(--color-canvas)))] font-display font-semibold text-fg/70",
         className,
       )}
     >
@@ -36,14 +37,25 @@ function PosterFallback({ title, className }: { readonly title: Title; readonly 
   );
 }
 
-function Poster({ title, className, glyphClassName, priority }: {
+function Poster({
+  title,
+  className,
+  glyphClassName,
+  priority,
+  zoomEnter = false,
+}: {
   readonly title: Title;
   readonly className?: string;
   readonly glyphClassName?: string;
   readonly priority?: boolean;
+  readonly zoomEnter?: boolean;
 }) {
   return (
-    <span aria-hidden="true" className={cn("relative block overflow-hidden border border-line bg-panel", className)}>
+    <span
+      aria-hidden="true"
+      data-ink-enter={zoomEnter ? "zoom" : undefined}
+      className={cn("ink-cover ink-sheen relative block overflow-hidden border border-line bg-panel", className)}
+    >
       {title.coverImage ? (
         <CoverImage
           src={title.coverImage}
@@ -69,6 +81,8 @@ export interface DiscoverSpotlightProps {
 /** 실제 대표작 이미지를 먼저 보여 주며, 회차를 추정하지 않고 작품 상세로 연결한다. */
 export function DiscoverSpotlight({ snapshot, loading }: DiscoverSpotlightProps) {
   const bt = useBilingual("DiscoverSpotlight");
+  const articleRef = useRef<HTMLElement>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const pick = snapshot ? pickDiscoverSpotlight(snapshot) : null;
 
   if (!pick) {
@@ -91,50 +105,135 @@ export function DiscoverSpotlight({ snapshot, loading }: DiscoverSpotlightProps)
   }
 
   const { lead, more } = pick;
-  const rating = lead.stats.ratingAvg;
-  const meta = [lead.author, lead.genres.slice(0, 2).join("·"), bt(...STATUS_LABEL[lead.status])].filter(Boolean).join(" · ");
+  const stageCandidates = [lead, ...more.slice(0, 2)];
+  const safeIndex = selectedIndex < stageCandidates.length ? selectedIndex : 0;
+  const active = stageCandidates[safeIndex] ?? lead;
+  const rating = active.stats.ratingAvg;
+  const meta = [
+    active.author,
+    active.genres.slice(0, 2).join("·"),
+    bt(...STATUS_LABEL[active.status]),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const handlePointerMove = (event: PointerEvent<HTMLElement>) => {
+    if (event.pointerType === "touch") return;
+    const node = articleRef.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const nx = (event.clientX - rect.left) / rect.width - 0.5;
+    const ny = (event.clientY - rect.top) / rect.height - 0.5;
+    node.style.setProperty("--tilt-rx", `${(-ny * 2.4).toFixed(2)}deg`);
+    node.style.setProperty("--tilt-ry", `${(nx * 2.8).toFixed(2)}deg`);
+  };
+
+  const handlePointerLeave = () => {
+    const node = articleRef.current;
+    if (!node) return;
+    node.style.setProperty("--tilt-rx", "0deg");
+    node.style.setProperty("--tilt-ry", "0deg");
+  };
 
   return (
     <article
+      ref={articleRef}
       aria-labelledby="discover-spotlight-title"
       data-discover-spotlight=""
-      className="discover-spotlight"
+      data-ink-enter="panel"
+      style={{ "--ink-radius": "16px" } as CSSProperties}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+      className="discover-spotlight ink-stage-tilt"
     >
       <div className="discover-spotlight-stage">
-        <Poster title={lead} priority className="discover-spotlight-art" glyphClassName="text-7xl" />
+        <Poster
+          key={active.id}
+          title={active}
+          priority
+          zoomEnter={safeIndex === 0}
+          className="discover-spotlight-art discover-spotlight-art-fade"
+          glyphClassName="text-7xl"
+        />
         <span aria-hidden="true" className="discover-spotlight-scrim" />
         <div className="discover-spotlight-copy">
-          <div className="discover-spotlight-topline">
-            <p className="discover-spotlight-kicker">{bt("오늘 만날 이야기", "Today's story")}</p>
-            {rating > 0 ? (
-              <span className="discover-spotlight-rating" aria-label={bt(`평균 평점 ${rating.toFixed(1)}`, `Average rating ${rating.toFixed(1)}`)}>
-                <Star size={13} aria-hidden="true" />{rating.toFixed(1)}
-              </span>
+          <div key={`copy-${active.id}`} className="ink-cascade flex w-full flex-col items-start">
+            <div className="discover-spotlight-topline">
+              <p className="discover-spotlight-kicker">
+                <span className="font-display tabular-nums text-fg-3">
+                  {String(safeIndex + 1).padStart(2, "0")}
+                </span>
+                <span>{bt("오늘 만날 이야기", "Today's story")}</span>
+              </p>
+              {rating > 0 ? (
+                <span
+                  className="discover-spotlight-rating tabular-nums"
+                  aria-label={bt(`평균 평점 ${rating.toFixed(1)}`, `Average rating ${rating.toFixed(1)}`)}
+                >
+                  <Star size={13} strokeWidth={1.5} aria-hidden="true" />
+                  {rating.toFixed(1)}
+                </span>
+              ) : null}
+            </div>
+            <h2 id="discover-spotlight-title">{active.title}</h2>
+            <p className="discover-spotlight-meta">{meta}</p>
+            {active.synopsis ? <p className="discover-spotlight-synopsis">{active.synopsis}</p> : null}
+          </div>
+          <div className="discover-spotlight-cta-row">
+            <Link
+              href={`/title/${active.slug}`}
+              aria-label={bt(`${active.title} 작품 보기`, `View ${active.title}`)}
+              className="discover-spotlight-action ink-arrow"
+            >
+              {bt("작품 보기", "View story")}
+              <ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" />
+            </Link>
+            {stageCandidates.length > 1 ? (
+              <div
+                role="group"
+                aria-label={bt("대표 추천 전환", "Switch featured story")}
+                className="discover-spotlight-switcher"
+              >
+                {stageCandidates.map((candidate, idx) => {
+                  const current = idx === safeIndex;
+                  return (
+                    <button
+                      key={candidate.id}
+                      type="button"
+                      aria-pressed={current}
+                      aria-label={bt(
+                        `추천 ${idx + 1}번: ${candidate.title}`,
+                        `Featured ${idx + 1}: ${candidate.title}`,
+                      )}
+                      onClick={() => setSelectedIndex(idx)}
+                      className="discover-spotlight-switch-btn font-display tabular-nums"
+                    >
+                      {String(idx + 1).padStart(2, "0")}
+                    </button>
+                  );
+                })}
+              </div>
             ) : null}
           </div>
-          <h2 id="discover-spotlight-title">{lead.title}</h2>
-          <p className="discover-spotlight-meta">{meta}</p>
-          {lead.synopsis ? <p className="discover-spotlight-synopsis">{lead.synopsis}</p> : null}
-          <Link
-            href={`/title/${lead.slug}`}
-            aria-label={bt(`${lead.title} 작품 보기`, `View ${lead.title}`)}
-            className="discover-spotlight-action"
-          >
-            {bt("작품 보기", "View story")}<ArrowRight size={18} aria-hidden="true" />
-          </Link>
         </div>
       </div>
       {more.length > 0 ? (
         <details className="discover-spotlight-more">
-          <summary>{bt("함께 추천하는 작품", "More story picks")}<span aria-hidden="true">＋</span></summary>
+          <summary>
+            {bt("함께 추천하는 작품", "More story picks")}
+            <span aria-hidden="true">＋</span>
+          </summary>
           <ul className="discover-spotlight-more-list">
             {more.map((title) => (
               <li key={title.id}>
-                <Link href={`/title/${title.slug}`} className="discover-spotlight-more-link">
+                <Link href={`/title/${title.slug}`} className="discover-spotlight-more-link ink-frame">
                   <Poster title={title} className="aspect-[3/4] w-10 shrink-0 rounded-lg" glyphClassName="text-sm" />
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-fg">{title.title}</span>
-                    <span className="block truncate text-xs text-fg-2">{(Array.isArray(title.genres) ? title.genres : []).slice(0, 2).join("·")}</span>
+                    <span className="block truncate text-sm font-medium text-fg">{title.title}</span>
+                    <span className="block truncate text-xs text-fg-2">
+                      {(Array.isArray(title.genres) ? title.genres : []).slice(0, 2).join("·")}
+                    </span>
                   </span>
                 </Link>
               </li>

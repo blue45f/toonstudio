@@ -99,6 +99,7 @@ export function TimelapseGalleryPage() {
     <Container>
       <SiteContextualSubNav pathnameOverride="/community/timelapse" className="mb-5" />
       <SitePageHeader
+        surface="plain"
         eyebrow={b("타임랩스", "Timelapse")}
         icon={Clapperboard}
         title={b("타임랩스 갤러리", "Timelapse gallery")}
@@ -110,15 +111,12 @@ export function TimelapseGalleryPage() {
           <Link
             href="/studio"
             style={{ minHeight: "44px" }}
-            className="inline-flex min-h-11 scroll-my-24 items-center gap-1.5 rounded-lg border border-accent/60 bg-accent px-3.5 py-2.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="inline-flex min-h-11 scroll-my-24 items-center gap-1.5 rounded-lg bg-accent px-3.5 py-2.5 text-xs font-medium text-on-accent transition-colors hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <Plus size={14} aria-hidden />
             {b("내 타임랩스 만들기", "Make my timelapse")}
           </Link>
         }
-        art="hero-studio"
-        artSrc="/images/hero-studio.webp"
-        artPlacement="banner"
       >
         <div
           className="mt-4 flex flex-wrap items-center gap-2"
@@ -128,14 +126,14 @@ export function TimelapseGalleryPage() {
         >
           <label
             style={{ minHeight: "44px" }}
-            className="inline-flex min-h-11 scroll-my-24 items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-2 text-xs text-fg-2 focus-within:border-accent focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent"
+            className="inline-flex min-h-11 scroll-my-24 items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-1 text-xs text-fg-2 focus-within:border-accent focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent"
           >
             <ArrowLeftRight size={13} aria-hidden />
             <span className="sr-only">{b("정렬", "Sort")}</span>
             <select
               value={sort}
               onChange={(e) => updateParam("sort", e.target.value)}
-              className="min-h-11 bg-transparent text-fg outline-none"
+              className="min-h-9 bg-transparent text-fg outline-none"
             >
               {TIMELAPSE_CLIP_SORT_OPTIONS.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -150,7 +148,7 @@ export function TimelapseGalleryPage() {
             style={{ minHeight: "44px" }}
             className={`inline-flex min-h-11 scroll-my-24 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium leading-snug break-words [overflow-wrap:anywhere] transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent ${
               mineOnly
-                ? "border-accent bg-accent/15 text-fg"
+                ? "border-accent/55 bg-accent-soft text-accent"
                 : "border-line bg-card text-fg-2 hover:border-accent/50"
             }`}
           >
@@ -164,7 +162,7 @@ export function TimelapseGalleryPage() {
           </label>
           <label
             style={{ minHeight: "44px" }}
-            className="inline-flex min-h-11 min-w-0 flex-1 items-center sm:max-w-64"
+            className="inline-flex min-h-11 min-w-0 flex-1 basis-full items-center sm:max-w-72 sm:basis-60"
           >
             <span className="sr-only">{b("클립 검색", "Search clips")}</span>
             <input
@@ -173,7 +171,7 @@ export function TimelapseGalleryPage() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder={b("제목·설명·작성자로 검색", "Search title, description, author")}
               style={{ minHeight: "44px" }}
-              className="min-h-11 scroll-my-24 w-full rounded-lg border border-line bg-card px-3 py-2 text-xs text-fg outline-none placeholder:text-fg-3 focus:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="min-h-11 scroll-my-24 w-full rounded-lg border border-line bg-canvas px-3 py-2 text-xs text-fg outline-none placeholder:text-fg-3 focus:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
           </label>
         </div>
@@ -210,7 +208,7 @@ export function TimelapseGalleryPage() {
             art="library"
           />
         ) : (
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4" data-ink-stagger="panel">
             {shown.map((clip) => (
               <TimelapseClipCard key={clip.id} clip={clip} />
             ))}
@@ -219,17 +217,17 @@ export function TimelapseGalleryPage() {
       </section>
       <SiteDisclosure title={b("영상 분석 도구", "Clip inspection tools")} className="mt-5">
       <section
-        aria-label={b("REA 타임랩스 필압 텔레메트리 및 인간 필치 증명 인스펙터", "REA Timelapse Stroke Telemetry & Human Provenance Inspector")}
+        aria-label={b("타임랩스 필압 및 공정 검증 도구", "Timelapse stroke & layer inspection")}
         data-testid="timelapse-rea-telemetry-bar"
-        className="mt-5 rounded-2xl border border-line bg-card/85 p-4"
+        className="mt-4 rounded-xl border border-line bg-panel/45 p-4"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="min-w-0 text-xs font-extrabold leading-snug text-fg break-words [overflow-wrap:anywhere]">
-            {b("Procreate · Clip Studio · ibisPaint X · Cara · C2PA 타임랩스 텔레메트리 & 인간 필치 검증기", "Procreate / Clip Studio / ibisPaint X / Cara / C2PA Timelapse Telemetry & Human-Stroke Verifier")}
+          <span className="min-w-0 text-xs font-semibold leading-snug text-fg break-words [overflow-wrap:anywhere]">
+            {b("필압 밀도 · 제작 공정 타임라인 · 창작 서명 확인", "Stroke density, layer chronology & human-stroke proof")}
           </span>
           <span
             data-testid="timelapse-rea-telemetry-status"
-            className="min-w-0 rounded-xl bg-accent/15 px-2.5 py-1 font-mono text-[11px] font-bold leading-snug text-accent break-words [overflow-wrap:anywhere]"
+            className="min-w-0 rounded-lg bg-raised px-2.5 py-1 font-mono text-[11px] font-medium leading-snug tabular-nums text-fg-2 break-words [overflow-wrap:anywhere]"
           >
             {telemetryMode === "stroke-heatmap"
               ? b(`필압 4,096단계 · 12,840 스트로크 밀도 히트맵 (${replaySpeed} 리플레이)`, `4,096-level pressure · 12,840-stroke heatmap (${replaySpeed} replay)`)
@@ -259,10 +257,10 @@ export function TimelapseGalleryPage() {
                 onClick={() => setTelemetryMode(id)}
                 onKeyDown={handleChipKeyDown}
                 style={{ minHeight: "44px", minWidth: "44px" }}
-                className={`inline-flex min-h-11 min-w-11 max-w-full scroll-my-24 items-center justify-center rounded-lg border px-3 py-2 text-left text-xs font-bold leading-snug break-words [overflow-wrap:anywhere] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                className={`inline-flex min-h-11 min-w-11 max-w-full scroll-my-24 items-center justify-center rounded-lg border px-3 py-2 text-left text-xs font-medium leading-snug break-words [overflow-wrap:anywhere] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   telemetryMode === id
                     ? "border-accent bg-accent text-on-accent"
-                    : "border-line bg-panel text-fg-2 hover:border-accent/50"
+                    : "border-line bg-card text-fg-2 hover:border-accent/50"
                 }`}
               >
                 <span className="break-words [overflow-wrap:anywhere]">{label}</span>
@@ -285,10 +283,10 @@ export function TimelapseGalleryPage() {
                 onClick={() => setReplaySpeed(spd)}
                 onKeyDown={handleChipKeyDown}
                 style={{ minHeight: "44px", minWidth: "44px" }}
-                className={`inline-flex min-h-11 min-w-11 scroll-my-24 items-center justify-center rounded-lg border px-3 py-2 text-xs font-bold leading-snug transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                className={`inline-flex min-h-11 min-w-11 scroll-my-24 items-center justify-center rounded-lg border px-3 py-2 text-xs font-medium leading-snug tabular-nums transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   replaySpeed === spd
-                    ? "border-accent bg-accent/15 text-accent"
-                    : "border-line bg-panel text-fg-3 hover:border-accent/50"
+                    ? "border-accent/55 bg-accent-soft text-accent"
+                    : "border-line bg-card text-fg-3 hover:border-accent/50"
                 }`}
               >
                 {spd}

@@ -29,7 +29,10 @@ export interface MarketFamilyPickerProps {
   readonly className?: string;
 }
 
-const CHOICES: ReadonlyArray<{ readonly id: MarketFamilyChoice; readonly family: MarketResourceFamily | null }> = [
+const CHOICES: ReadonlyArray<{
+  readonly id: MarketFamilyChoice;
+  readonly family: MarketResourceFamily | null;
+}> = [
   { id: "all", family: null },
   ...MARKET_RESOURCE_FAMILIES.map((family) => ({ id: family.id, family })),
 ];
@@ -37,21 +40,25 @@ const CHOICES: ReadonlyArray<{ readonly id: MarketFamilyChoice; readonly family:
 function chipClass(selected: boolean): string {
   return cn(
     // 좁은 화면에서는 3열 격자, sm 이상에서는 한 줄. 라벨은 줄바꿈·글자 단위 깨짐 없이 한 줄로 유지한다.
-    "inline-flex min-h-11 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border px-2 text-xs font-semibold transition-colors",
+    "inline-flex min-h-11 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-[8px] border px-2 text-xs font-medium transition-colors duration-150",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:shrink-0 sm:px-3.5 sm:text-xs",
     selected
-      ? "border-accent/50 bg-accent-soft text-accent"
+      ? "border-accent/55 bg-accent-soft text-accent"
       : "border-line bg-card text-fg-2 hover:border-line-strong hover:bg-raised hover:text-fg",
   );
 }
 
-function FamilyIcon({ family, selected }: { readonly family: MarketResourceFamily; readonly selected: boolean }) {
+function FamilyIcon({
+  family,
+  selected,
+}: {
+  readonly family: MarketResourceFamily;
+  readonly selected: boolean;
+}) {
   const Icon = family.icon;
   return (
     <Icon
-      className="size-4 shrink-0"
-      // 작업군 고유 색은 선택되지 않았을 때만 아이콘 식별용으로 쓴다(선택 상태는 액센트).
-      style={selected ? undefined : { color: `oklch(0.74 0.12 ${family.accentHue})` }}
+      className={cn("size-4 shrink-0", selected ? "text-accent" : "text-fg-3")}
       aria-hidden="true"
     />
   );
@@ -60,27 +67,49 @@ function FamilyIcon({ family, selected }: { readonly family: MarketResourceFamil
 /**
  * 마켓 작업군 선택기 — 마켓 홈(바로가기 링크)과 탐색(필터 버튼)이 같은 모양·순서·라벨을 쓰게 한다.
  */
-export function MarketFamilyPicker({ selected, target, labelledBy, className }: MarketFamilyPickerProps) {
+export function MarketFamilyPicker({
+  selected,
+  target,
+  labelledBy,
+  className,
+}: MarketFamilyPickerProps) {
   const bt = useBilingual("MarketFamilyPicker");
   return (
-    <div role="group" aria-labelledby={labelledBy} className={cn("grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap", className)}>
+    <div
+      role="group"
+      aria-labelledby={labelledBy}
+      className={cn("grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap", className)}
+    >
       {CHOICES.map(({ id, family }) => {
         const isSelected = selected === id;
         const content = (
           <>
             {family ? <FamilyIcon family={family} selected={isSelected} /> : null}
-            <span className="truncate">{family ? bt(family.label, family.labelEn) : bt("전체", "All")}</span>
+            <span className="truncate">
+              {family ? bt(family.label, family.labelEn) : bt("전체", "All")}
+            </span>
           </>
         );
         if (target.kind === "button") {
           return (
-            <button key={id} type="button" aria-pressed={isSelected} onClick={() => target.onSelect(family)} className={chipClass(isSelected)}>
+            <button
+              key={id}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => target.onSelect(family)}
+              className={chipClass(isSelected)}
+            >
               {content}
             </button>
           );
         }
         return (
-          <Link key={id} href={target.hrefFor(family)} aria-current={isSelected ? "page" : undefined} className={chipClass(isSelected)}>
+          <Link
+            key={id}
+            href={target.hrefFor(family)}
+            aria-current={isSelected ? "page" : undefined}
+            className={chipClass(isSelected)}
+          >
             {content}
           </Link>
         );

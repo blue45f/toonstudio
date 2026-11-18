@@ -1,12 +1,15 @@
 import "./catalog-page-controls.css";
 import "./ranking-page-density.css";
-import { Calculator, ChevronDown, Compass, GitCompare, PenLine, Trophy, type LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Calculator, ChevronDown, Compass, GitCompare, PenLine, Trophy, type LucideIcon } from "lucide-react";
+import { useState, type CSSProperties } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import type { PlatformId } from "@/shared/lib/types";
+import type { RankingResponse } from "@/shared/components/ranking-board-types";
 
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
+import { AvailabilityDots } from "@/shared/components/availability";
+import { CoverCard } from "@/shared/components/cover-card";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { RankingBoard } from "@/shared/components/ranking-board";
 import { RankingMethod } from "@/shared/components/ranking-method";
@@ -15,8 +18,11 @@ import { SharePageButton } from "@/shared/components/share-page-button";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { RatingInline } from "@/shared/components/ui/stars";
+import { useApiResource } from "@/platform/use-api-resource";
+import { statsAreEstimated } from "@/shared/lib/estimate";
 import { PLATFORM_LIST } from "@/shared/lib/platforms";
-import { RANK_AXES, type RankAxis } from "@/shared/lib/ranking";
+import { RANK_AXES, type RankAxis, type RankedTitle } from "@/shared/lib/ranking";
 import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
@@ -28,6 +34,8 @@ import {
   RANKING_STREAM_MODES,
   type RankingStreamModeId,
 } from "@/shared/navigation/webtoon-platform-router-ux-model";
+
+import { useInstallLocalSearchBridge, useLocalCatalogFallback } from "./local-catalog-fallback";
 
 const SCOPE = "domains.catalog.RankingPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
@@ -71,8 +79,104 @@ const NEXT_STEPS: readonly { readonly href: string; readonly icon: LucideIcon; r
   { href: "/community", icon: Trophy, title: ["작품 이야기 나누기", "Talk about stories"], body: ["순위 속 작품의 감상을 나눠요", "Share impressions of ranked stories"] },
 ];
 
+function RankingTopThreeSpotlight({
+  items,
+  axisKey,
+}: {
+  readonly items: readonly RankedTitle[];
+  readonly axisKey: string;
+}) {
+  const bt = useBilingual("RankingPage");
+  if (items.length === 0) return null;
+  const maxScore = Math.max(...items.map((entry) => entry.score || 1), 1);
+
+  return (
+    <div
+      key={axisKey}
+      data-testid="ranking-top3-spotlight"
+      data-ink-stagger="panel"
+      aria-label={bt("상위 3편 스포트라이트", "Top 3 spotlight")}
+      className="ranking-top3-grid ink-cascade mb-5"
+    >
+      {items.slice(0, 3).map((entry, idx) => {
+        const ratio = Math.min(100, Math.max(24, Math.round(((entry.score || 1) / maxScore) * 100)));
+        const completionPct = Math.max(0, Math.min(100, Math.round(entry.title.stats.completionRate)));
+        const rankText = String(entry.rank).padStart(2, "0");
+        const isLead = idx === 0;
+        return (
+          <Link
+            key={entry.title.id}
+            href={`/title/${entry.title.slug}`}
+            style={{ "--ink-i": idx, "--ink-radius": "14px" } as CSSProperties}
+            className={`ranking-top3-card ink-frame group ${isLead ? "ranking-top3-card--lead" : ""}`}
+          >
+            <div className="ranking-top3-cover">
+              <CoverCard
+                title={entry.title}
+                size={isLead ? "md" : "sm"}
+                priority={idx === 0}
+                className="w-full"
+              />
+            </div>
+            <div className="ranking-top3-body">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className={`font-display tabular-nums leading-none ${isLead ? "text-2xl font-semibold text-accent" : "text-xl font-medium text-fg-2"}`}>
+                  {rankText}
+                </span>
+                <span className="truncate text-xs text-fg-3">
+                  {entry.title.genres.slice(0, 2).join(" · ")}
+                </span>
+              </div>
+              <h3 className="mt-1.5 line-clamp-2 text-pretty text-base font-semibold leading-snug text-fg transition-colors duration-150 group-hover:text-accent [word-break:keep-all]">
+                {entry.title.title}
+              </h3>
+              <p className="mt-0.5 truncate text-xs text-fg-2">{entry.title.author}</p>
+              {isLead && entry.title.synopsis ? (
+                <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-fg-2">
+                  {entry.title.synopsis}
+                </p>
+              ) : null}
+
+              <div className="mt-auto pt-3">
+                <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
+                  <span className="text-fg-3">{bt("종합 신호", "Signal index")}</span>
+                  <span className="font-display tabular-nums font-medium text-fg">
+                    {entry.score.toFixed(1)}
+                  </span>
+                </div>
+                <div className="ranking-score-track" aria-hidden="true">
+                  <span
+                    className={`ranking-score-bar ink-bar-fill ${isLead ? "is-lead" : ""}`}
+                    style={{ "--ink-i": idx, width: `${ratio}%` } as CSSProperties}
+                  />
+                </div>
+                <div className="mt-2.5 flex items-center justify-between gap-2">
+                  <RatingInline
+                    value={entry.title.stats.ratingAvg}
+                    estimated={statsAreEstimated(entry.title)}
+                    size="xs"
+                  />
+                  <div className="flex items-center gap-2">
+                    {completionPct > 0 ? (
+                      <span className="text-[11px] tabular-nums text-fg-3">
+                        {bt("완독", "Read")} {completionPct}%
+                      </span>
+                    ) : null}
+                    <AvailabilityDots availability={entry.title.availability} max={2} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 export function RankingPage() {
   useBilingualI18nRevision();
+  useInstallLocalSearchBridge();
   const bt = useBilingual("RankingPage");
   const [searchParams] = useSearchParams();
   const [algorithmEngine, setAlgorithmEngine] = useState<"naver-velocity" | "kakao-waitfree" | "anilist-bayesian" | "bilibili-danmaku">("naver-velocity");
@@ -108,17 +212,33 @@ export function RankingPage() {
     ? (platformParam as PlatformId)
     : "all";
 
+  const isJsdom =
+    typeof navigator !== "undefined" && /jsdom/iu.test(navigator.userAgent);
+  const podiumApiUrl = isJsdom
+    ? null
+    : `/api/ranking?axis=${encodeURIComponent(axis)}&platform=${encodeURIComponent(platform)}&period=weekly&type=all&limit=6`;
+  const rawPodium = useApiResource<RankingResponse>(
+    podiumApiUrl,
+    bt("상위 순위를 불러오지 못했습니다.", "Couldn't load top rankings."),
+  );
+  const podium = useLocalCatalogFallback(podiumApiUrl, rawPodium);
+  const topItems = podium.data?.items?.slice(0, 3) ?? [];
+
   return (
     <PageEntrance variant="slide">
-    <Container size="wide" className="ranking-page-layout py-6">
-      <header className="mb-3 min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">{tx("통합 랭킹")}</h1>
-        <p className="mt-1 text-sm text-fg-2">{bt("여덟 가지 관점으로 작품을 찾아보세요.", "Find stories from eight perspectives.")}</p>
-      </header>
-      <SiteContextualSubNav pathnameOverride="/ranking" className="mb-3" />
+    <Container size="wide" className="ranking-page-layout py-6 sm:py-8">
+      <div className="ranking-page-heading-wrap mb-5">
+        <header className="min-w-0">
+          <h1 data-ink="line" className="text-2xl font-semibold tracking-tight text-fg [word-break:keep-all] sm:text-3xl">
+            {tx("통합 랭킹")}
+          </h1>
+          <p className="mt-4 text-sm text-fg-2">{bt("여덟 가지 관점으로 작품을 찾아보세요.", "Find stories from eight perspectives.")}</p>
+        </header>
+      </div>
 
       <section id="ranking-board" aria-labelledby="ranking-board-title">
         <h2 id="ranking-board-title" className="sr-only">{tx("랭킹 보드")}</h2>
+        <RankingTopThreeSpotlight items={topItems} axisKey={`${axis}-${platform}`} />
         <RankingBoard initialAxis={axis} initialPlatform={platform} />
       </section>
 
@@ -138,6 +258,7 @@ export function RankingPage() {
         summary={bt("원하는 기준으로 순위를 빠르게 전환해 보세요.", "Switch between ranking perspectives.")}
         bodyClassName="p-3 sm:p-4 [&_button]:min-h-11 [&_a]:min-h-11"
       >
+      <SiteContextualSubNav pathnameOverride="/ranking" className="mb-4" />
       <SiteArtSurfaceSpotlight cardId="nb-ranking-constellation" compact className="mb-4" />
 
       <div
@@ -168,7 +289,7 @@ export function RankingPage() {
                   : "flex min-h-11 flex-col justify-between gap-1.5 rounded-xl border border-line bg-card p-3.5 text-left transition-colors duration-150 hover:border-line-strong hover:bg-raised motion-reduce:transition-none"
               }
             >
-              <span className="text-xs font-semibold text-fg">{bt(...streamCopy.label)}</span>
+              <span className="text-xs font-medium text-fg">{bt(...streamCopy.label)}</span>
               <p className="text-xs leading-snug text-fg-3">{bt(...streamCopy.subtitle)}</p>
             </Link>
           );
@@ -181,7 +302,7 @@ export function RankingPage() {
         data-testid="ranking-quick-axes"
         className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-card px-3.5 py-2.5"
       >
-        <span className="text-xs font-semibold text-fg-2">{bt("관점 바로가기", "Quick views")}</span>
+        <span className="text-xs font-medium text-fg-2">{bt("관점 바로가기", "Quick views")}</span>
         {RANK_AXES.slice(0, 5).map((entry) => {
           const isCurrent = entry.key === axis;
           return (
@@ -191,7 +312,7 @@ export function RankingPage() {
               aria-current={isCurrent ? "page" : undefined}
               className={
                 isCurrent
-                  ? "inline-flex min-h-11 items-center rounded-lg border border-accent bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent"
+                  ? "inline-flex min-h-11 items-center rounded-lg border border-accent bg-accent px-3 py-1.5 text-xs font-medium text-on-accent"
                   : "inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
               }
             >
@@ -202,7 +323,7 @@ export function RankingPage() {
       </div>
 
       <details className="group rounded-xl border border-line bg-card">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3.5 py-2 text-xs font-medium text-fg-2 transition-colors duration-150 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
           <span>{bt("집계 기준 보기", "How rankings are weighed")}</span>
           <ChevronDown size={15} strokeWidth={1.5} aria-hidden="true" className="shrink-0 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" />
         </summary>
@@ -212,10 +333,10 @@ export function RankingPage() {
           className="border-t border-line/70 p-3.5"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-fg">
+            <span className="text-xs font-medium text-fg">
               {bt("순위 집계 방식", "Ranking criteria")}
             </span>
-            <span data-testid="ranking-rea-formula-status" className="text-xs font-medium text-fg-2">
+            <span data-testid="ranking-rea-formula-status" className="text-xs text-fg-2">
               {`${formulaEngines[algorithmEngine].summary} · ${decayWindowLabels[decayWindow]}`}
             </span>
           </div>
@@ -228,7 +349,7 @@ export function RankingPage() {
                   data-testid={`ranking-rea-engine-${key}`}
                   aria-pressed={algorithmEngine === key}
                   onClick={() => setAlgorithmEngine(key)}
-                  className={`inline-flex min-h-11 items-center rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-150 motion-reduce:transition-none ${algorithmEngine === key ? "border-accent bg-accent font-semibold text-on-accent" : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"}`}
+                  className={`inline-flex min-h-11 items-center rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-150 motion-reduce:transition-none ${algorithmEngine === key ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"}`}
                 >
                   {formulaEngines[key].label}
                 </button>
@@ -242,7 +363,7 @@ export function RankingPage() {
                   data-testid={`ranking-rea-window-${win}`}
                   aria-pressed={decayWindow === win}
                   onClick={() => setDecayWindow(win)}
-                  className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border px-3 py-1.5 text-xs font-medium tabular-nums transition-colors duration-150 motion-reduce:transition-none ${decayWindow === win ? "border-accent bg-accent-soft font-semibold text-accent" : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"}`}
+                  className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border px-3 py-1.5 text-xs font-medium tabular-nums transition-colors duration-150 motion-reduce:transition-none ${decayWindow === win ? "border-accent bg-accent-soft text-accent" : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"}`}
                 >
                   {decayWindowLabels[win]}
                 </button>
@@ -258,16 +379,17 @@ export function RankingPage() {
           <Link
             href="/create"
             data-testid="ranking-create-bridge"
-            className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 gap-1.5 rounded-lg px-4" })}
+            className={buttonClass({ variant: "solid", size: "sm", className: "ink-arrow min-h-11 gap-1.5 rounded-lg px-4" })}
           >
             <PenLine size={14} strokeWidth={1.5} aria-hidden="true" />
             {bt("영감으로 작품 시작", "Start a story")}
+            <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
           </Link>
           <SharePageButton path="/ranking" text={tx("툰스튜디오 통합 랭킹")} label={tx("랭킹 공유")} />
       </SiteDisclosure>
       <nav className="ranking-page-next-actions" aria-label={bt("랭킹 다음 행동", "After the ranking")}>
         {NEXT_STEPS.map((step) => (
-          <Link key={step.href} href={step.href} className="ranking-page-next-link">
+          <Link key={step.href} href={step.href} className="ranking-page-next-link ink-arrow">
             <step.icon size={16} strokeWidth={1.5} aria-hidden="true" />
             <span>{bt(...step.title)}</span>
             <span className="sr-only">{bt(...step.body)}</span>

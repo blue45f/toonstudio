@@ -61,25 +61,25 @@ function EventChannelCard({
   readonly cta: { readonly href: string; readonly label: string };
 }) {
   return (
-    <article className="flex flex-col rounded-2xl border border-line bg-panel p-5">
+    <article className="flex flex-col rounded-2xl border border-line bg-card/80 p-5">
       <div className="flex items-center justify-between gap-2">
-        <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${badgeTone}`}>{badge}</span>
-        <Icon size={20} className="text-accent" aria-hidden="true" />
+        <span className={`rounded-md border px-2.5 py-0.5 text-xs font-medium ${badgeTone}`}>{badge}</span>
+        <Icon size={18} className="text-fg-2" aria-hidden="true" />
       </div>
-      <h3 className="mt-3 text-base font-black">{title}</h3>
+      <h3 className="mt-3 text-base font-semibold text-fg">{title}</h3>
       <dl className="mt-3 space-y-2 text-sm">
         <div className="flex gap-2">
-          <dt className="shrink-0 font-bold text-fg-3">누가</dt>
+          <dt className="shrink-0 font-medium text-fg-3">누가</dt>
           <dd className="text-fg-2">{who}</dd>
         </div>
         <div className="flex gap-2">
-          <dt className="shrink-0 font-bold text-fg-3">무엇을</dt>
+          <dt className="shrink-0 font-medium text-fg-3">무엇을</dt>
           <dd className="text-fg-2">{what}</dd>
         </div>
       </dl>
       <Link
         to={cta.href}
-        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl border border-line px-4 text-sm font-bold hover:bg-raised"
+        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg border border-line px-4 text-sm font-medium text-fg hover:bg-raised"
       >
         {cta.label}
       </Link>
@@ -94,14 +94,14 @@ export function CommunityEventsPage() {
   return (
     <Container size="wide" className="relative py-6 sm:py-8 lg:py-10">
       <SiteContextualSubNav pathnameOverride="/community/events" className="mb-5" />
-      <header className="mb-4">
-        <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{t("이벤트 게시판", "Event board")}</h1>
-        <p className="mt-1 text-sm text-fg-2">{t("전시·공모전·팬 행사 소식을 나눠요.", "Share exhibitions, contests and fan events.")}</p>
+      <header className="mb-4 border-b border-line pb-4">
+        <h1 className="text-2xl font-semibold tracking-tight text-fg [word-break:keep-all] sm:text-3xl">{t("이벤트 게시판", "Event board")}</h1>
+        <p className="mt-1 text-sm text-fg-2">{t("전시·공모전·팬 행사 소식을 나눠요", "Share exhibitions, contests and fan events")}</p>
       </header>
 
       <CommunityEventsBoard />
 
-      <section className="mt-6 rounded-3xl border border-line bg-panel/45 p-1">
+      <section className="mt-6">
         <FanCafePanel
           scope="pencafe"
           targetId="community-events"
@@ -117,10 +117,10 @@ export function CommunityEventsPage() {
           }}
         />
       </section>
-      <SiteDisclosure title={t("게시판 이용 안내 · 다른 행사 찾기", "Board guide and other events")} className="mt-5">
-        <Link to="/ecosystem/fandom" className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-bold">{t("팬덤 · 코스프레 허브", "Fandom and cosplay hub")}</Link>
-      <section aria-label={t("공식 이벤트와 커뮤니티 게시판 비교", "Comparing official events and the community board")} className="mt-10">
-        <h2 className="text-lg font-black tracking-tight">{t("둘의 차이 한눈에 보기", "The two channels at a glance")}</h2>
+      <SiteDisclosure title={t("게시판 이용 안내 · 다른 행사 찾기", "Board guide and other events")} className="mt-6">
+        <Link to="/ecosystem/fandom" className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-medium text-fg-2 hover:text-fg">{t("팬덤 · 코스프레 허브", "Fandom and cosplay hub")}</Link>
+      <section aria-label={t("공식 이벤트와 커뮤니티 게시판 비교", "Comparing official events and the community board")} className="mt-8">
+        <h2 className="text-lg font-semibold tracking-tight text-fg">{t("둘의 차이 한눈에 보기", "The two channels at a glance")}</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <EventChannelCard
             icon={BadgeCheck}
@@ -145,12 +145,12 @@ export function CommunityEventsPage() {
 
       <section aria-label={t("게시판 이용 가이드", "Board usage guide")} className="mt-6 grid gap-4 md:grid-cols-3">
         {EVENT_GUIDE.map(({ icon: Icon, title, titleEn, summary, summaryEn, detail, detailEn }, index) => (
-          <article key={title} className="rounded-2xl border border-line bg-panel p-5" {...introItemProps(index)}>
-            <Icon size={20} className="text-accent" aria-hidden="true" />
-            <h2 className="mt-3 font-black">{t(title, titleEn)}</h2>
+          <article key={title} className="rounded-2xl border border-line bg-card/80 p-5" {...introItemProps(index)}>
+            <Icon size={18} className="text-fg-2" aria-hidden="true" />
+            <h2 className="mt-3 font-semibold text-fg">{t(title, titleEn)}</h2>
             <p className="mt-1 text-sm leading-6 text-fg-2">{t(summary, summaryEn)}</p>
-            <details className="mt-3 rounded-xl bg-raised/50 px-3 py-2 text-xs leading-6 text-fg-3">
-              <summary className="cursor-pointer font-bold text-fg-2 marker:text-accent">
+            <details className="mt-3 rounded-lg bg-raised/50 px-3 py-2 text-xs leading-6 text-fg-3">
+              <summary className="cursor-pointer font-medium text-fg-2 marker:text-accent">
                 {t("자세히", "Details")}
               </summary>
               <p className="mt-1.5 pb-1">{t(detail, detailEn)}</p>

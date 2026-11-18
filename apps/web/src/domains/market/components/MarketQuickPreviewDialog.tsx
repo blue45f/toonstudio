@@ -272,7 +272,7 @@ export function MarketQuickPreviewDialog({
             type="button"
             onClick={closeSafely}
             aria-label={t("빠른 미리보기 닫기", "Close quick preview")}
-            className="absolute right-3 top-3 z-20 inline-flex size-11 min-h-11 min-w-11 items-center justify-center rounded-full border border-line bg-canvas/95 text-fg shadow-md transition-colors motion-reduce:transition-none hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            className="absolute right-3 top-3 z-20 inline-flex size-11 min-h-11 min-w-11 items-center justify-center rounded-[8px] border border-line bg-canvas/95 text-fg transition-colors motion-reduce:transition-none hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             <X className="size-4" aria-hidden="true" />
           </button>
@@ -289,7 +289,7 @@ export function MarketQuickPreviewDialog({
                   setFailedCoverRecordId(record.id);
                 }
               }}
-              className="relative aspect-[16/9] max-h-[28vh] w-full overflow-hidden border-b border-line bg-card sm:max-h-56"
+              className="ink-sheen relative aspect-[16/9] max-h-[28vh] w-full overflow-hidden border-b border-line bg-card sm:max-h-56"
             >
               <MarketResourceCover record={record} />
               {coverImageFailed ? (
@@ -307,18 +307,18 @@ export function MarketQuickPreviewDialog({
                 </div>
               ) : null}
               <div className="absolute left-3 right-16 top-3 z-10 flex flex-wrap items-center gap-1.5">
-                <span className="rounded-md bg-canvas/95 px-2 py-1 font-display text-xs font-bold uppercase tracking-wider text-fg shadow-sm">
-                  {kind.english}
+                <span className="rounded-[6px] border border-line/70 bg-canvas/95 px-2 py-0.5 text-xs font-medium text-fg">
+                  {kind.label}
                 </span>
-                <span className="rounded-md bg-canvas/95 px-2 py-1 text-xs font-semibold text-fg shadow-sm">
+                <span className="rounded-[6px] border border-line/70 bg-canvas/95 px-2 py-0.5 text-xs font-medium text-fg">
                   {license.label}
                 </span>
                 <span
                   className={cn(
-                    "rounded-md px-2 py-1 text-xs font-semibold shadow-sm",
+                    "rounded-[6px] border px-2 py-0.5 text-xs font-medium",
                     record.containsAi
-                      ? "bg-warn/20 text-fg"
-                      : "bg-good/20 text-fg",
+                      ? "border-warn/35 bg-warn/15 text-fg"
+                      : "border-good/35 bg-good/15 text-fg",
                   )}
                 >
                   {record.containsAi

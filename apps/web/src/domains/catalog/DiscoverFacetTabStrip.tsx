@@ -27,7 +27,7 @@ export function DiscoverFacetTabStrip() {
     <nav
       aria-label={bt("스펙트럼 빠른 이동", "Spectrum quick facets")}
       data-testid="discover-facet-tab-strip"
-      className="mb-5 overflow-hidden rounded-2xl border border-line bg-card"
+      className="mb-5 overflow-hidden rounded-xl border border-line bg-card"
     >
       <div
         aria-hidden="true"
@@ -36,16 +36,16 @@ export function DiscoverFacetTabStrip() {
         style={{ background: FULL_SPECTRUM_RIBBON }}
       />
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/65 px-3.5 py-2">
-        <span className="text-xs font-semibold text-fg">
+        <span className="text-xs font-medium text-fg">
           {bt("18종 장르 스펙트럼", "18-genre spectrum")}
         </span>
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-2">
+        <span className="inline-flex items-center gap-1.5 text-xs text-fg-2">
           <Globe2 size={13} strokeWidth={1.5} className="text-fg-3" aria-hidden="true" />
           <span>{bt("공식 연재처 가격·무료 비교 · 컷츠", "Compare platforms, free episodes & Cuts")}</span>
         </span>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 p-2">
-        <ul className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none]">
+        <ul className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none]">
           {FACET_LINKS.map((item) => {
             const Icon = item.icon;
             return (
@@ -56,7 +56,7 @@ export function DiscoverFacetTabStrip() {
                   className={cn(
                     "inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-colors duration-150 motion-reduce:transition-none",
                     item.current
-                      ? "bg-accent font-semibold text-on-accent"
+                      ? "bg-accent text-on-accent"
                       : "text-fg-2 hover:bg-panel hover:text-fg",
                   )}
                 >
@@ -69,7 +69,7 @@ export function DiscoverFacetTabStrip() {
         </ul>
         <Link
           href="/create"
-          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-line-strong bg-panel px-3.5 text-xs font-semibold text-fg transition-colors duration-150 hover:border-accent hover:bg-accent hover:text-on-accent motion-reduce:transition-none"
+          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-line bg-panel px-3.5 text-xs font-medium text-fg transition-colors duration-150 hover:border-line-strong hover:bg-raised motion-reduce:transition-none"
         >
           <Brush size={14} strokeWidth={1.5} aria-hidden="true" />
           {bt("이 감성으로 3컷 창작", "Create 3-panel story")}
