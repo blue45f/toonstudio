@@ -181,7 +181,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - name: Verify mandatory CI wiring before installing dependencies
-        run: node --test scripts/ci-core-gate.test.mjs scripts/agent-harness.test.mjs scripts/deployment-preflight.test.mjs scripts/ci-core-regression-shards.test.mjs scripts/ci-executed-gates.test.mjs scripts/lint-changed-policy.test.mjs scripts/run-core-vitest.test.mjs scripts/studio-bundle-temporary-allowance.test.mjs scripts/ci-merge-reliability.test.mjs scripts/architecture-workflow-concurrency.test.mjs scripts/ci-throughput-policy.test.mjs scripts/type-coverage-gate-contract.test.mjs scripts/code-structure-gates-contract.test.mjs scripts/check-source-file-size.test.mjs scripts/ci-shared-typecheck.test.mjs scripts/ci-typecheck-receipt.test.mjs scripts/ci-typecheck-lookup.test.mjs
+        run: node --test scripts/ci-core-gate.test.mjs scripts/agent-harness.test.mjs scripts/deployment-preflight.test.mjs scripts/ci-core-regression-shards.test.mjs scripts/ci-executed-gates.test.mjs scripts/lint-changed-policy.test.mjs scripts/run-core-vitest.test.mjs scripts/studio-bundle-temporary-allowance.test.mjs scripts/ci-merge-reliability.test.mjs scripts/architecture-workflow-concurrency.test.mjs scripts/ci-throughput-policy.test.mjs scripts/type-coverage-gate-contract.test.mjs scripts/code-structure-gates-contract.test.mjs scripts/check-source-file-size.test.mjs scripts/ci-shared-typecheck.test.mjs scripts/ci-typecheck-receipt.test.mjs scripts/ci-typecheck-lookup.test.mjs scripts/onpod-admin-db-audit-payload.test.mjs scripts/run-onpod-admin-readonly-audit.test.mjs
       - name: Verify deduplicated PR workflow policy
         run: python3 scripts/verify-pr-workflow-fanout.py
       # 의존성 설치 전에 끝나는 파일 크기 래칫: 새 파일 줄 수 상한, 기록된 초과 파일 증가 금지, 새 @ts-nocheck 금지(상한 값은 기준선 한 곳에만 둔다).
@@ -637,8 +637,9 @@ jobs:
   a11y:
     name: Core accessibility smoke
     runs-on: ubuntu-24.04
-    # 접근성·제작·GPU 검사 뒤 제품 검증이 20분 상한에 닿아 비 main 수동 실행만 예산을 늘린다.
-    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && 35 || 20 }}
+    # OS 의존성 설치가 약 10분 걸린 PR에서 앞선 브라우저 검사 통과 후 안료 검사가 20분 상한 시점에 취소됐다.
+    # 모든 검사를 유지하고 기존 수동 실행의 35분 상한을 PR·main에도 적용한다. 개별 제품 검사 상한은 그대로다.
+    timeout-minutes: 35
     steps:
       - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
         shell: bash

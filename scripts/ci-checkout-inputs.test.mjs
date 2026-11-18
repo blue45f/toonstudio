@@ -16,7 +16,8 @@ test("접근성 체크아웃은 화면·글꼴·브랜드 영상과 검증 소�
   const checkout = job.steps.find((step) => step.uses?.startsWith("actions/checkout@"));
   assert.equal(checkout.with.filter, "blob:none");
   assert.equal(checkout.with["sparse-checkout-cone-mode"], false);
-  assert.equal(job["timeout-minutes"], "${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && 35 || 20 }}");
+  assert.equal(job["timeout-minutes"], 35);
+  assert.equal(job["runs-on"], "ubuntu-24.04");
   for (const command of ["pnpm run test:a11y", "pnpm exec playwright test --config playwright.production-workflows.config.ts"]) {
     assert(job.steps.some((step) => step.run === command), command);
   }

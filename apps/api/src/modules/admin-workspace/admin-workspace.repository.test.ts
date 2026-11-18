@@ -237,21 +237,41 @@ describe("사업 자료의 서버 권한과 영역별 저장", () => {
     expect(JSON.stringify(error)).not.toContain("PRIVATE_");
     expect(mutations(f.query)).toHaveLength(0);
   });
-  it("빈 비공개 영역에만 관리자의 명시적 소유권 생성과 최초 자료를 함께 기록한다", async () => {
-    const input = { ...request(createAdminWorkspace()), scope: "business" as const, claimBusinessOwnership: true };
+  it.each([
+    { title: "빈 보관함", create: createOperationsWorkspace },
+    { title: "최초 사업 자료", create: createAdminWorkspace },
+  ])("빈 비공개 영역에만 관리자의 명시적 소유권과 $title 요청을 기록한다", async ({ create }) => {
+    const input = { ...request(create()), scope: "business" as const, claimBusinessOwnership: true };
     const f = fixture();
     expect(await f.repository.save("actor", input)).toMatchObject({ scope: "business", revision: 1 });
     expect(f.query.mock.calls.find(([sql]) => sql.startsWith("UPDATE admin_workspace"))?.[1]?.[7]).toBe("actor");
     expect(f.query.mock.calls.some(([sql, values]) => sql.startsWith("INSERT INTO admin_workspace_access_audit") && values?.[3] === "claim")).toBe(true);
     const notExplicit = fixture();
     await expect(notExplicit.repository.save("actor", { ...input, claimBusinessOwnership: false })).rejects.toMatchObject({ status: 403 });
-    const operator = fixture({ role: "operator" });
-    await expect(operator.repository.save("actor", input)).rejects.toMatchObject({ status: 403 });
+    expect(mutations(notExplicit.query)).toHaveLength(0);
+    for (const role of ["operator", "user", null]) {
+      const denied = fixture({ role });
+      await expect(denied.repository.save("actor", input)).rejects.toMatchObject({ status: 403 });
+      expect(mutations(denied.query)).toHaveLength(0);
+    }
+  });
+  it("빈 보관함 소유권 생성은 기존 운영 기록과 운영 버전을 보존한다", async () => {
+    const before = operations();
+    const f = fixture({ row: stored(before, 7) });
+    const input = { ...request(createOperationsWorkspace()), scope: "business" as const, claimBusinessOwnership: true };
+    expect(await f.repository.save("actor", input)).toMatchObject({ scope: "business", revision: 1, replayed: false });
+    const update = f.query.mock.calls.find(([sql]) => sql.startsWith("UPDATE admin_workspace"));
+    expect(JSON.parse(String(update?.[1]?.[1]))).toEqual(before);
+    expect(update?.[1]).toEqual([8, JSON.stringify(before), adminWorkspaceDigest(before), "actor", "toonstudio", 7, 1, "actor"]);
+    expect(update?.[0]).not.toContain("operations_revision=");
+    expect(f.query.mock.calls.filter(([sql, values]) => sql.startsWith("INSERT INTO admin_workspace_access_audit") && values?.[3] === "claim")).toHaveLength(1);
+    expect(f.query).toHaveBeenCalledWith("COMMIT");
   });
   it("owner 없는 기존 비공개 자료의 마지막 수정자가 자동 소유권을 얻지 않는다", async () => {
     const f = fixture({ row: { ...privateRow(), business_owner_user_id: null } });
     await expect(f.repository.read("actor", "business")).rejects.toMatchObject({ status: 403 });
     await expect(f.repository.save("actor", { ...request(projectWorkspaceScope(privateWorkspace(), "business"), 8), scope: "business", claimBusinessOwnership: true })).rejects.toMatchObject({ status: 403 });
+    await expect(f.repository.save("actor", { ...request(createOperationsWorkspace(), 8), scope: "business", claimBusinessOwnership: true })).rejects.toMatchObject({ status: 403 });
     expect(mutations(f.query)).toHaveLength(0);
   });
   it("명시적 grant 회수는 과거 성공 저장의 재전송에도 적용된다", async () => {

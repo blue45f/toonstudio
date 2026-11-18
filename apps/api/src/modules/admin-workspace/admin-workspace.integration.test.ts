@@ -176,6 +176,24 @@ describe.skipIf(!target)("실제 PostgreSQL 관리자 작업 보드", () => {
     expect((await repository.read("admin")).state).toBeNull();
   });
 
+  it("빈 보관함의 명시적 생성은 운영 자료를 보존하고 재전송이나 다른 계정으로 소유권을 덮어쓰지 않는다", async () => {
+    const operations = input();
+    await repository.save("admin", operations);
+    const claim = { ...businessInput(), state: createOperationsWorkspace() };
+    expect(await repository.save("admin", claim)).toMatchObject({ scope: "business", revision: 1, replayed: false });
+    expect(await repository.save("admin", claim)).toMatchObject({ scope: "business", revision: 1, replayed: true });
+    expect((await owner.query("SELECT payload,business_owner_user_id,operations_revision,business_revision FROM admin_workspace")).rows[0]).toEqual({
+      payload: operations.state, business_owner_user_id: "admin", operations_revision: 1, business_revision: 1,
+    });
+    expect((await repository.read("admin", "business")).state).toEqual(createOperationsWorkspace());
+    for (const actor of ["admin2", "operator"]) {
+      await expect(repository.read(actor, "business")).rejects.toMatchObject({ status: 403 });
+      await expect(repository.save(actor, { ...claim, mutationId: randomUUID() })).rejects.toMatchObject({ status: 403 });
+    }
+    expect((await repository.read("admin")).state).toEqual(operations.state);
+    expect((await owner.query("SELECT count(*)::integer AS count FROM admin_workspace_access_audit WHERE action='claim'")).rows[0].count).toBe(1);
+    expect(await counts()).toEqual({ revision: 2, audits: 2, receipts: 2 });
+  });
   it("사업 소유자는 빈 자료의 명시적 첫 저장으로만 정하고 다른 관리자·운영자에게 자동 공개하지 않는다", async () => {
     const business = businessInput(); business.state.documents[0].working.content = "합성 비공개 사업 자료";
     await expect(repository.save("operator", business)).rejects.toMatchObject({ status: 403 });
@@ -230,6 +248,7 @@ describe.skipIf(!target)("실제 PostgreSQL 관리자 작업 보드", () => {
     expect((await owner.query("SELECT business_owner_user_id FROM admin_workspace")).rows[0].business_owner_user_id).toBeNull();
     await expect(repository.read("admin", "business")).rejects.toMatchObject({ status: 403 });
     await expect(repository.save("admin", businessInput())).rejects.toMatchObject({ status: 403 });
+    await expect(repository.save("admin", { ...businessInput(), state: createOperationsWorkspace() })).rejects.toMatchObject({ status: 403 });
     expect((await owner.query("SELECT payload FROM admin_workspace")).rows[0].payload).toEqual(legacy);
   });
   it("비공개 조회·내보내기·grant 감사 쓰기 실패에는 자료나 성공을 반환하지 않는다", async () => {
