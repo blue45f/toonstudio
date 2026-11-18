@@ -27,18 +27,19 @@ import {
   DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES, ViewportDuoShotControls, ViewportDuoShotOverlay,
   buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, type DuoShotState,
 } from "./viewport-duo-shot-guide";
-import {
-  DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
-} from "./viewport-manga-fx-overlay";
+import { ViewportHud, useViewportHud } from "./viewport-hud";
 import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, hudRows, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
 } from "./viewport-interactions";
+import {
+  DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
+} from "./viewport-manga-fx-overlay";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
 import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
-import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
+import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
@@ -130,7 +131,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [pivotMode, setPivotMode] = useState<ShaperPivotMode>("parent");
   const [gizmoMode, setGizmoMode] = useState<ShaperGizmoMode>(2);
   const [shaperPresetId, setShaperPresetId] = useState("");
-  const [hud, setHud] = useState<HudSample | null>(null);
   const [handles, setHandles] = useState<readonly JointDragHandle[]>([]);
   const [renderSize, setRenderSize] = useState<{ readonly width: number; readonly height: number } | null>(null);
   const [draggingBone, setDraggingBone] = useState<string | null>(null);
@@ -196,24 +196,10 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     return () => observer.disconnect();
   }, [engine]);
 
-  useEffect(() => {
-    if (!engine || !showHud) {
-      setHud(null);
-      return undefined;
-    }
-    const read = (): void => {
-      try {
-        setHud(engine.readHud());
-      } catch (error) {
-        setHud(null);
-        setNotice(failureText(error, "HUD를 읽지 못했습니다."));
-      }
-    };
-    read();
-    if (!(hudIntervalMs > 0)) return undefined;
-    const timer = window.setInterval(read, hudIntervalMs);
-    return () => window.clearInterval(timer);
-  }, [engine, showHud, hudIntervalMs]);
+  const reportHudFailure = useCallback((error: unknown): void => {
+    setNotice(failureText(error, "HUD를 읽지 못했습니다."));
+  }, []);
+  const hud = useViewportHud(engine, showHud, hudIntervalMs, reportHudFailure);
 
   const syncHandles = useCallback((target: CharacterEngine): void => {
     const next = visibleHandles(target.jointHandles(), { fingers: fingersRef.current });
@@ -801,16 +787,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         </p>
       ) : null}
 
-      {hudList.length > 0 ? (
-        <dl className="cl-viewport-hud" aria-label="성능 HUD" style={{ position: "absolute", top: 8, right: 8, margin: 0, pointerEvents: "none" }}>
-          {hudList.map((row) => (
-            <div key={row.key} className="cl-viewport-hud-row" data-key={row.key} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <dt>{row.label}</dt>
-              <dd style={{ margin: 0 }}>{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
+      <ViewportHud rows={hudList} />
       </div>
     </div>
   );
