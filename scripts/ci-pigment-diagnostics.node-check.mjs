@@ -73,11 +73,12 @@ test("static 작업 예산 40조합은 비 main 수동 editing만 40분이며 �
   assert.equal(count, 40);
 });
 
-test("접근성 작업 예산 8조합은 비 main 수동 실행만 35분이며 기본·PR·main은 20분이다", () => {
+test("접근성 작업 예산 8조합은 무료 표준 러너에서 전체 검사를 위한 35분 상한을 유지한다", () => {
+  assert.match(job("a11y"), /^ {4}runs-on: ubuntu-24\.04$/mu);
   let count = 0;
   for (const event of ["workflow_dispatch", "pull_request", "push", "merge_group"]) {
     for (const ref of ["refs/heads/main", "refs/heads/codex/test"]) {
-      const expected = event === "workflow_dispatch" && ref !== "refs/heads/main" ? 35 : 20;
+      const expected = 35;
       assert.equal(timeoutMinutes("a11y", event, ref), expected, `${event}/${ref}`);
       count += 1;
     }

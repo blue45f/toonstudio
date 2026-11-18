@@ -84,7 +84,7 @@ test("snapshot 누락·손상과 CI/checkout SHA 변경을 거절하고 기존 s
   } finally { f.dispose(); }
 });
 
-test("세 CI는 실제 types outcome 성공·생성 후 입력 확인·동일 Vite와 CSP를 유지한다", () => {
+test("CI는 실제 types outcome 성공·생성 후 입력 확인·동일 Vite와 CSP를 유지한다", () => {
   const root = new URL("../", import.meta.url);
   const read = (path) => readFileSync(new URL(path, root), "utf8");
   const scripts = JSON.parse(read("package.json")).scripts;
@@ -95,6 +95,7 @@ test("세 CI는 실제 types outcome 성공·생성 후 입력 확인·동일 Vi
   for (const [filename, jobName, typeCommand, bundleCommand] of [
     ["admin-hardening-regression.yml", "admin-regression", "pnpm run typecheck", "pnpm run build:bundle"],
     ["creator-resources.yml", "integration", "pnpm typecheck", "pnpm run build:bundle"],
+    ["creator-runtime-quality.yml", "integration", "pnpm typecheck", "pnpm run build:bundle"],
     ["feedback-community-validation.yml", "feedback-community", "node scripts/ci-shared-typecheck.mjs reuse-or-run", "pnpm run build:bundle 2>&1 | tee artifacts/feedback/production-build.log"],
   ]) {
     const workflow = parseYaml(read(".github/workflows/" + filename));

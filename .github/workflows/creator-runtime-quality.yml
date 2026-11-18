@@ -11,6 +11,8 @@ on:
       - 'apps/api/src/modules/studio-ai/**'
       - 'services/creator-inference/**'
       - 'tools/creator-runtime/**'
+      - 'scripts/verify-typechecked-build-inputs.mjs'
+      - 'scripts/verify-typechecked-build-inputs.test.mjs'
       - '.github/workflows/creator-runtime-quality.yml'
   pull_request:
     branches: [main]
@@ -25,6 +27,8 @@ on:
       - 'apps/api/src/modules/studio-ai/**'
       - 'services/creator-inference/**'
       - 'tools/creator-runtime/**'
+      - 'scripts/verify-typechecked-build-inputs.mjs'
+      - 'scripts/verify-typechecked-build-inputs.test.mjs'
       - '.github/workflows/creator-runtime-quality.yml'
   workflow_dispatch:
 permissions:
@@ -95,5 +99,19 @@ jobs:
           node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm build
+      - name: 전체 타입 검사와 빌드 입력 기록
+        id: types
+        run: |
+          set -euo pipefail
+          node --max-old-space-size=8192 scripts/verify-typechecked-build-inputs.mjs record "$RUNNER_TEMP/typechecked-build-inputs.json"
+          pnpm typecheck
+      - name: 타입 검사가 성공한 동일 입력으로 프로덕션 빌드
+        if: ${{ success() && steps.types.outcome == 'success' }}
+        env:
+          TYPECHECK_OUTCOME: ${{ steps.types.outcome }}
+        run: |
+          set -euo pipefail
+          pnpm run prebuild
+          node --max-old-space-size=8192 scripts/verify-typechecked-build-inputs.mjs verify "$RUNNER_TEMP/typechecked-build-inputs.json"
+          pnpm run build:bundle
+          node --max-old-space-size=8192 scripts/verify-typechecked-build-inputs.mjs verify "$RUNNER_TEMP/typechecked-build-inputs.json"

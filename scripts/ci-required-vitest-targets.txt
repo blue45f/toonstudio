@@ -134,6 +134,8 @@ apps/character-lab/src/app/shell/panels/ViewportPane.test.tsx
 apps/character-lab/src/app/shell/panels/viewport-backdrop-overlay.test.tsx
 apps/character-lab/src/architecture.test.ts
 apps/character-lab/src/contracts/recipe.test.ts
+apps/character-lab/src/export/webtoon-episode-batch.test.ts
+apps/character-lab/src/export/webtoon-motion-teaser-subtitles.test.ts
 apps/character-lab/src/export/webtoon-strip-composer.test.ts
 apps/character-lab/src/render/babylon-character-engine.test.ts
 apps/character-lab/src/render/babylon-hand-prop.test.ts
@@ -608,6 +610,7 @@ apps/web/src/domains/creator/production-hub/ProductionStudioRevisionBridgePanel.
 apps/web/src/domains/creator/production-hub/production-automation-execution.test.ts
 apps/web/src/domains/creator/production-hub/production-manuscript-version-share-api.ky.test.ts
 apps/web/src/domains/creator/project-graph/studio-project-graph-client.test.ts
+apps/web/src/domains/creator/publishing/StudioPublishingHandoffPersistence.test.tsx
 apps/web/src/domains/creator/render/studio-capture-diagnostics.test.ts
 apps/web/src/domains/creator/render/studio-capture-legacy-pigment.test.ts
 apps/web/src/domains/creator/render/studio-konva-image-node-boundary.test.ts
@@ -675,11 +678,13 @@ apps/web/src/domains/creator/studio-cuttoon-editor/studio-cuttoon-stage-pointers
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-pending-stroke-pointer-lifecycle.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-touch-gesture-policy.test.ts
 apps/web/src/domains/creator/studio-document-workspace.test.ts
+apps/web/src/domains/creator/studio-draft-save-center-product-boundary.test.ts
 apps/web/src/domains/creator/studio-dynamic-brush-coverage-renderer.test.ts
 apps/web/src/domains/creator/studio-editor-document-source.test.ts
 apps/web/src/domains/creator/studio-group-resize-runtime-boundary.test.ts
 apps/web/src/domains/creator/studio-history-granularity-contract.test.ts
 apps/web/src/domains/creator/studio-host-architecture-ratchet.test.ts
+apps/web/src/domains/creator/studio-inspector-focus-speed-frame-boundary.test.ts
 apps/web/src/domains/creator/studio-inspector-multi-selection-boundary.test.ts
 apps/web/src/domains/creator/studio-integration-closure.test.ts
 apps/web/src/domains/creator/studio-live-adjustment.test.ts
@@ -817,8 +822,10 @@ apps/web/src/shared/components/contract-review/LazyContractReviewChecklist.error
 apps/web/src/shared/components/contract-review/LazyContractReviewChecklist.test.tsx
 apps/web/src/shared/components/contract-review/contract-review-answer-store.test.ts
 apps/web/src/shared/components/contract-review/contract-review-checklist.test.ts
+apps/web/src/shared/components/mobile-route-density-contract.test.ts
 apps/web/src/shared/components/route-purpose-scene.contract.test.ts
 apps/web/src/shared/components/site-experience/node-resolvable-imports.contract.test.ts
+apps/web/src/shared/components/ui/chip-touch-target.test.ts
 apps/web/src/shared/components/ui/honesty-badge.test.tsx
 apps/web/src/shared/components/workspace
 apps/web/src/shared/components/workspace/WorkspaceContextPanel.test.tsx
@@ -873,6 +880,7 @@ packages/studio-project-model/src/__tests__/world-conversation.test.ts
 packages/studio-project-model/src/__tests__/world-publication.test.ts
 packages/studio-project-model/src/__tests__/world-tilemap.test.ts
 scripts/__tests__/generate-third-party-notices.test.mjs
+scripts/accessibility-sweep-20261107/route-inventory-audit.test.ts
 scripts/admin-database-contract.test.mjs
 scripts/admin-database-feature-contracts.test.mjs
 scripts/admin-nestjs-quality-database-contract.test.mjs
@@ -909,6 +917,8 @@ scripts/lib/character-psd-reference-compositor.test.mjs
 scripts/lib/compact-svg-structure.test.mjs
 scripts/lib/path-containment.test.ts
 scripts/lib/public-home-content-hrefs.test.mjs
+scripts/lib/sitewide-audit-route-inventory.test.mjs
+scripts/lib/sitewide-visual-ux-audit.test.mjs
 scripts/lib/studio-3d-production-audit-policy.test.mjs
 scripts/lib/studio-bg3d-rotation-ring.test.ts
 scripts/lib/studio-brush-first-contact-diagnostics.test.ts
@@ -931,6 +941,7 @@ scripts/lib/studio-shell-readiness.test.ts
 scripts/lib/studio-smart-shape-visible-grid.test.ts
 scripts/lib/studio-verify-shape-readiness.test.tsx
 scripts/multi-env-dynamic-deploy.test.mjs
+scripts/nonstudio-journey-contract.test.mjs
 scripts/pigment-dependency-install-policy.test.mjs
 scripts/plan-creator-bundle-deploy-cli.test.mjs
 scripts/plan-creator-bundle-deploy.test.mjs
@@ -977,6 +988,7 @@ scripts/verify-studio-hybrid-dcc-opfs-race.test.ts
 scripts/verify-studio-launch.test.ts
 scripts/verify-studio-living-ink-integration.test.ts
 scripts/verify-studio-menus.test.ts
+scripts/verify-typechecked-build-inputs.test.mjs
 scripts/verify-virtual-studio-art-manifest.test.mjs
 scripts/workflow-injection-policy.test.mjs
 scripts/workflow-secret-scope.test.mjs

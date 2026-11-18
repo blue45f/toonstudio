@@ -259,6 +259,24 @@ test("Studio 권위 패턴의 선택 문서와 surface를 펼치고 wildcard는 
   assert.deepEqual(expandAuditRoutePattern("/studio/*"), []);
 });
 
+test("최상위 poser 별칭과 괄호 안 문서·surface 선택자를 각각 온전한 URL로 펼친다", () => {
+  const paths = expandAuditRoutePattern("/studio/canvas/poser | /studio/(work/:workId|remix/:sourceWorkId)?/:surface(canvas|comic)?");
+  assert.deepEqual(paths, [
+    "/studio/canvas/poser",
+    "/studio", "/studio/canvas", "/studio/comic",
+    "/studio/work/visual-audit", "/studio/work/visual-audit/canvas", "/studio/work/visual-audit/comic",
+    "/studio/remix/visual-audit", "/studio/remix/visual-audit/canvas", "/studio/remix/visual-audit/comic",
+  ]);
+  for (const route of paths) assert.doesNotMatch(route, /[\s|]/u);
+  assert.deepEqual(expandAuditRoutePattern("/studio/canvas/poser|/studio/canvas/poser"), ["/studio/canvas/poser"]);
+});
+
+test("선택자 구분 공백과 달리 URL 안의 공백은 구체 경로로 수집하지 않는다", () => {
+  for (const pattern of ["/studio/canvas poser", "/studio/\tcanvas", "/studio/\ncanvas"]) {
+    assert.deepEqual(expandAuditRoutePattern(pattern), []);
+  }
+});
+
 test("선택 매개변수는 생략한 경로와 제공한 경로를 모두 관측한다", () => {
   assert.deepEqual(expandAuditRoutePattern("/items/:id?"), ["/items", "/items/visual-audit"]);
   assert.deepEqual(expandAuditRoutePattern("/:locale?/items/:id?"), ["/items", "/items/visual-audit", "/visual-audit/items", "/visual-audit/items/visual-audit"]);

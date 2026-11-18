@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
@@ -11,6 +12,23 @@ const metrics = read("./studio-cuttoon-editor/drawing-save/StudioDraftSaveRecord
 const center = `${adapter}\n${implementation}\n${metrics}`;
 const model = read("./studio-draft-save-center-model.ts");
 const outbox = read("./studio-draft-save-outbox.ts");
+
+function namedValueImports(source: string, moduleSpecifier: string) {
+  const file = ts.createSourceFile("component.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  return file.statements.flatMap((node) => {
+    if (!ts.isImportDeclaration(node)
+      || !ts.isStringLiteral(node.moduleSpecifier)
+      || node.moduleSpecifier.text !== moduleSpecifier
+      || !node.importClause
+      || node.importClause.isTypeOnly) return [];
+    const bindings = node.importClause.namedBindings;
+    if (!bindings || !ts.isNamedImports(bindings)) return [];
+    return bindings.elements.filter((element) => !element.isTypeOnly).map((element) => ({
+      imported: element.propertyName?.text ?? element.name.text,
+      local: element.name.text,
+    }));
+  });
+}
 
 describe("draft save center product boundary", () => {
   it("mounts one real save center in the editor render tree", () => {
@@ -73,7 +91,10 @@ describe("draft save center product boundary", () => {
     expect(center).toContain("이 기기");
     expect(center).toContain("서버 초안");
     expect(center).toContain("기기 체크포인트");
-    expect(implementation).toContain('import { StudioDraftSaveRecordMetrics } from "./studio-cuttoon-editor/drawing-save/StudioDraftSaveRecordMetrics"');
+    // 표시 카드와 import 블록을 공유해도 저장 지표의 실제 값 연결은 유지해야 한다.
+    expect(namedValueImports(implementation, "./studio-cuttoon-editor/drawing-save/StudioDraftSaveRecordMetrics")
+      .filter(({ imported }) => imported === "StudioDraftSaveRecordMetrics"))
+      .toEqual([{ imported: "StudioDraftSaveRecordMetrics", local: "StudioDraftSaveRecordMetrics" }]);
     expect(implementation).toContain("<StudioDraftSaveRecordMetrics checkpointCount={checkpointCount} serverRevision={serverRevision} serverRevisionLoading={serverRevisionLoading} serverRevisionCount={serverRevisions.length} lastServerSaveAt={lastServerSaveAt}");
     expect(metrics).toContain("서버 저장 번호");
     expect(metrics).toContain("{serverRevision ?? \"—\"}");

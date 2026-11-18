@@ -50,17 +50,16 @@ describe("칩 터치 타겟 44px 계약", () => {
       '"inline-flex min-h-11 items-center gap-1 rounded-full border px-3 text-[0.72rem] transition-colors"',
     );
     expect(panelSource).not.toContain('"inline-flex h-7 items-center');
-    expect(exploreSource).toContain(
-      '"group inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5',
-    );
+    // 2026-11-18 개편의 모서리 모양과 무관하게 실제 태그 토글의 44px 하한을 검사한다.
+    const tagClasses = /visibleTags\.map\([\s\S]*?key=\{entry\}[\s\S]*?aria-pressed=\{active\}[\s\S]*?className=\{cn\(\s*"([^"]+)"/u.exec(exploreSource)?.[1];
+    expect(tagClasses?.split(/\s+/u).filter((token) => /(?:^|:)min-h-/u.test(token))).toEqual(["min-h-11"]);
   });
 
   it("CalendarPage 주요 버튼은 44px 미만 하한을 쓰지 않는다", () => {
     expect(calendarSource).not.toContain("min-h-9");
     // "오늘 보기" 버튼과 "전체 보기" 버튼이 44px 하한을 가진다.
-    expect(calendarSource).toContain(
-      "inline-flex min-h-11 shrink-0 items-center rounded-full border border-accent/40",
-    );
+    const todayClasses = /onClick=\{jumpToToday\}\s+className="([^"]+)"/u.exec(calendarSource)?.[1];
+    expect(todayClasses?.split(/\s+/u).filter((token) => /(?:^|:)min-h-/u.test(token))).toEqual(["min-h-11"]);
     expect(calendarFilters).toContain('bt("전체 보기", "Show all")');
     expect(calendarLayout).toContain(".calendar-controls :is(button, select) { min-height: 44px; }");
   });

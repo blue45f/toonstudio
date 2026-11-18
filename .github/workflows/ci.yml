@@ -637,8 +637,9 @@ jobs:
   a11y:
     name: Core accessibility smoke
     runs-on: ubuntu-24.04
-    # 접근성·제작·GPU 검사 뒤 제품 검증이 20분 상한에 닿아 비 main 수동 실행만 예산을 늘린다.
-    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && 35 || 20 }}
+    # OS 의존성 설치가 약 10분 걸린 PR에서 앞선 브라우저 검사 통과 후 안료 검사가 20분 상한 시점에 취소됐다.
+    # 모든 검사를 유지하고 기존 수동 실행의 35분 상한을 PR·main에도 적용한다. 개별 제품 검사 상한은 그대로다.
+    timeout-minutes: 35
     steps:
       - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
         shell: bash

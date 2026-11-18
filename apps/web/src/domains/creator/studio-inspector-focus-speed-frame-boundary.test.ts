@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 interface ModuleEdges {
   readonly allImports: readonly string[];
   readonly dynamicImports: readonly string[];
+  readonly file: ts.SourceFile;
   readonly source: string;
   readonly valueImports: readonly string[];
 }
@@ -56,7 +57,17 @@ function moduleEdges(relativePath: string): ModuleEdges {
   }
 
   visit(file);
-  return { allImports, dynamicImports, source, valueImports };
+  return { allImports, dynamicImports, file, source, valueImports };
+}
+
+function descendants<T extends ts.Node>(root: ts.Node, matches: (node: ts.Node) => node is T): T[] {
+  const result: T[] = [];
+  function visit(node: ts.Node): void {
+    if (matches(node)) result.push(node);
+    ts.forEachChild(node, visit);
+  }
+  visit(root);
+  return result;
 }
 
 describe("Studio inspector focus, speed, and frame boundary", () => {
@@ -70,7 +81,6 @@ describe("Studio inspector focus, speed, and frame boundary", () => {
       )
     ).toEqual(["./StudioInspectorFocusSpeedFrameControls"]);
     expect(inspector.dynamicImports).not.toContain("./StudioInspectorFocusSpeedFrameControls");
-    expect(leaf.dynamicImports).toEqual([]);
     expect(leaf.allImports).not.toContain("./StudioInspectorAside");
     expect(leaf.allImports).not.toContain("./StudioPage");
     expect(inspector.source).toContain("<StudioInspectorFocusSpeedFrameControls");
@@ -82,14 +92,16 @@ describe("Studio inspector focus, speed, and frame boundary", () => {
     const forbiddenDependency =
       /(?:StudioPage|StudioInspectorAside|collaborat|(?:^|[-/])crdt(?:[-/]|$)|history|stores?\/|save)/iu;
 
-    for (const specifier of leaf.allImports) {
-      expect(specifier).not.toMatch(forbiddenDependency);
+    for (const controlled of [leaf, moduleEdges("./comic/StudioComicEffectV2Drawer.tsx")]) {
+      for (const specifier of [...controlled.allImports, ...controlled.dynamicImports]) {
+        expect(specifier).not.toMatch(forbiddenDependency);
+      }
+      expect(controlled.source).not.toContain("patchEl(");
+      expect(controlled.source).not.toContain("collaborationDocumentLocked");
+      expect(controlled.source).not.toContain("setPanelSplitActive");
+      expect(controlled.source).not.toContain("setSharedDocumentNotice");
+      expect(controlled.source).not.toContain("disarmAllPixelTools");
     }
-    expect(leaf.source).not.toContain("patchEl(");
-    expect(leaf.source).not.toContain("collaborationDocumentLocked");
-    expect(leaf.source).not.toContain("setPanelSplitActive");
-    expect(leaf.source).not.toContain("setSharedDocumentNotice");
-    expect(leaf.source).not.toContain("disarmAllPixelTools");
     expect(inspector).toContain("onPatch={(patch) => patchEl(selected.id, patch)}");
     expect(inspector).toContain("if (collaborationDocumentLocked) return;");
     expect(inspector).toContain("setSharedDocumentNotice(null);");
@@ -97,6 +109,51 @@ describe("Studio inspector focus, speed, and frame boundary", () => {
       "executeStudioInspectorArmedToggle(panelSplitActive, {",
     );
     expect(inspector).toContain("setActive: setPanelSplitActive");
+  });
+
+  it("만화 효과 V2는 선택한 요소의 지연 표시와 상위 변경 콜백만 사용한다", () => {
+    const leaf = moduleEdges("./StudioInspectorFocusSpeedFrameControls.tsx");
+    const drawerPath = "./comic/StudioComicEffectV2Drawer";
+
+    expect(leaf.dynamicImports).toEqual([drawerPath]);
+    expect(leaf.valueImports).not.toContain(drawerPath);
+    expect(leaf.source).toMatch(/const StudioComicEffectV2Drawer = lazy\(\(\) =>\s*import\("\.\/comic\/StudioComicEffectV2Drawer"\)/u);
+
+    const mounts = descendants(leaf.file, ts.isBinaryExpression).flatMap((node) => {
+      if (node.operatorToken.kind !== ts.SyntaxKind.AmpersandAmpersandToken
+        || !ts.isBinaryExpression(node.left)
+        || node.left.operatorToken.kind !== ts.SyntaxKind.EqualsEqualsEqualsToken
+        || node.left.left.getText(leaf.file) !== "selected.type"
+        || !ts.isStringLiteral(node.left.right)) return [];
+      const selectedType = node.left.right.text;
+      return descendants(node.right, ts.isJsxSelfClosingElement)
+        .filter((element) => element.tagName.getText(leaf.file) === "StudioComicEffectV2Drawer")
+        .map((element) => ({
+          selectedType,
+          props: Object.fromEntries(element.attributes.properties.flatMap((attribute) => {
+            if (!ts.isJsxAttribute(attribute)
+              || !attribute.initializer
+              || !ts.isJsxExpression(attribute.initializer)
+              || !attribute.initializer.expression
+              || !ts.isIdentifier(attribute.initializer.expression)) return [];
+            return [[attribute.name.getText(leaf.file), attribute.initializer.expression.text] as const];
+          })),
+        }));
+    });
+    const sharedProps = {
+      selected: "selected",
+      panelGutter: "panelGutter",
+      panelSplitRatio: "panelSplitRatio",
+      onPatch: "onPatch",
+    };
+    expect(mounts).toEqual([
+      { selectedType: "focusLines", props: sharedProps },
+      { selectedType: "speedLines", props: sharedProps },
+      { selectedType: "frame", props: { ...sharedProps, onReplaceSplitFrames: "onReplaceSplitFrames" } },
+    ]);
+    expect(descendants(leaf.file, ts.isJsxSelfClosingElement)
+      .filter((element) => element.tagName.getText(leaf.file) === "StudioComicEffectV2Drawer"))
+      .toHaveLength(mounts.length);
   });
 
   it("retains optional continuity and panel split loading in the neutral registry", () => {
