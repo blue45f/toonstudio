@@ -8,7 +8,7 @@
  * - 런타임 환경변수 동기화(`--sync-env`)는 `DATABASE_URL`을 제외한 검증된 맵만 `onpod app env set`으로 전달하며,
  *   인자·응답 원문을 로그에 절대 출력하지 않는다.
  */
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { appendFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,6 +22,7 @@ import {
   redactSensitiveText,
   validateOnpodApiEnvMap,
 } from "./lib/deploy-auth-env.mjs";
+import { parseRenderCoreOrigin, verifyRenderCoreOrigin } from "./verify-render-core-origin.mjs";
 
 const MODULE_PATH = realpathSync(fileURLToPath(import.meta.url));
 export const ROOT = resolve(dirname(MODULE_PATH), "..");
@@ -141,22 +142,133 @@ export function applyOnpodEnvJson(appName, rawJson, childEnv, execFileImpl = exe
   return { appliedKeyCount: kvPairs.length };
 }
 
-export async function verifyLiveOnpodOrigin(originUrl = ONPOD_CANONICAL_ORIGIN, fetchImpl = fetch) {
-  const probe = spawnSync("node", ["scripts/verify-render-core-origin.mjs", `--origin=${originUrl}`], {
-    cwd: ROOT,
-    stdio: "inherit",
-  });
-  if (probe.status !== 0) {
-    throw new Error(`[cloud-deploy:onpod] 원점 live/ready 상태 검증 실패 (종료 코드 ${probe.status ?? 1})`);
+export async function verifyLiveOnpodOrigin(
+  originUrl = ONPOD_CANONICAL_ORIGIN,
+  fetchImpl = fetch,
+  { onAttempt, verifyHealthImpl = verifyRenderCoreOrigin } = {},
+) {
+  const origin = parseRenderCoreOrigin(originUrl).origin;
+  const health = await verifyHealthImpl({ origin, fetchImpl, onAttempt });
+  let directRes;
+  try {
+    directRes = await fetchImpl(`${origin}/api/auth/providers`, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    throw new Error("[cloud-deploy:onpod] 원점 무인증 호출 검증에 실패했습니다. 네트워크 상태와 출처 인증 설정을 점검하세요.");
   }
-
-  const directRes = await fetchImpl(`${originUrl}/api/auth/providers`, { redirect: "manual" });
+  // 상태 코드만 검사한다. 본문 정리 지연·오류가 검증을 막거나 원문을 노출하지 않게 한다.
+  void directRes.body?.cancel().catch(() => undefined);
   if (directRes.status !== 403) {
     throw new Error(
       `[cloud-deploy:onpod] 원점 무인증 직접 호출이 403으로 차단되지 않았습니다 (HTTP ${directRes.status}). CLOUDFLARE_EDGE_ORIGIN_SECRET 설정을 점검하세요.`,
     );
   }
-  return { directAuthStatus: directRes.status };
+  return { directAuthStatus: directRes.status, health };
+}
+
+function statusEvidence(status) {
+  if (!status) return null;
+  const safeText = (value) => typeof value === "string"
+    ? redactSensitiveText(value).replace(/[\r\n]/gu, " ").slice(0, 1_024)
+    : null;
+  return {
+    state: safeText(status.state),
+    image: safeText(status.image),
+    previousImage: safeText(status.previousImage),
+    plan: safeText(status.plan),
+    freeTier: status.freeTier === true,
+  };
+}
+
+export async function verifyOnpodDeployment({
+  appName,
+  originUrl,
+  targetImage,
+  requireTargetImage,
+  beforeStatus,
+  childEnv,
+  artifactDir = join(ROOT, "artifacts/cloud-deploy"),
+  env = process.env,
+  inspectStatusImpl = inspectOnpodAppStatus,
+  verifyOriginImpl = verifyLiveOnpodOrigin,
+}) {
+  const evidence = {
+    app: appName,
+    origin: parseRenderCoreOrigin(originUrl).origin,
+    targetImage,
+    recordedAt: new Date().toISOString(),
+    result: "pending",
+    beforeStatus: statusEvidence(beforeStatus),
+    afterUpdateStatus: null,
+    finalStatus: null,
+    healthAttempts: [],
+    directAuthStatus: null,
+    failureStage: null,
+  };
+  mkdirSync(artifactDir, { recursive: true });
+  const persist = () => writeFileSync(
+    join(artifactDir, "onpod-verification.json"),
+    `${JSON.stringify({ ...evidence, updatedAt: new Date().toISOString() }, null, 2)}\n`,
+    "utf8",
+  );
+  persist();
+
+  let stage = "status_after_update";
+  let afterStatus;
+  let smoke;
+  try {
+    afterStatus = inspectStatusImpl(appName, childEnv);
+    evidence.afterUpdateStatus = statusEvidence(afterStatus);
+    persist();
+    stage = "origin_verification";
+    try {
+      smoke = await verifyOriginImpl(originUrl, globalThis.fetch, {
+        onAttempt: (attempt) => {
+          evidence.healthAttempts.push(attempt);
+          persist();
+          console.log(`[cloud-deploy:onpod] 상태 확인 ${JSON.stringify(attempt)}`);
+        },
+      });
+      evidence.directAuthStatus = smoke.directAuthStatus;
+    } finally {
+      // 기동 대기 중 상태가 바뀔 수 있으므로 성공·실패 모두 최종 상태를 다시 기록한다.
+      try {
+        afterStatus = inspectStatusImpl(appName, childEnv);
+        evidence.finalStatus = statusEvidence(afterStatus);
+      } catch {
+        evidence.finalStatusReadFailed = true;
+      }
+      persist();
+    }
+
+    stage = "final_image_identity";
+    if (!evidence.finalStatus) {
+      throw new Error("[cloud-deploy:onpod] 최종 실행 이미지 조회에 실패했습니다. onpod app status로 상태를 확인하세요.");
+    }
+    if (requireTargetImage && afterStatus.image !== targetImage) {
+      throw new Error("[cloud-deploy:onpod] 최종 실행 이미지가 대상 이미지와 일치하지 않거나 확인되지 않았습니다. onpod-verification.json을 확인하세요.");
+    }
+    evidence.result = "success";
+    persist();
+    return { afterStatus, smoke };
+  } catch (error) {
+    evidence.result = "failure";
+    evidence.failureStage = stage;
+    persist();
+    appendStepSummary([
+      "### ❌ 서울 onpod Core API 사후 검증 실패",
+      `- **대상 이미지:** \`${targetImage}\``,
+      `- **교체 직후 관측 이미지:** \`${evidence.afterUpdateStatus?.image ?? "미확인"}\``,
+      `- **최종 관측 이미지:** \`${evidence.finalStatus?.image ?? "미확인"}\``,
+      `- **실패 단계:** \`${stage}\``,
+      `- **상태 확인 횟수:** ${evidence.healthAttempts.length}회`,
+      "- **진단 기록:** `onpod-verification.json` (시각·상태·이미지·HTTP 시도 기록)",
+      "- 이미지 재교체나 롤백은 실행하지 않았습니다. 진단 기록을 확인한 뒤 복구 여부를 별도로 결정하세요.",
+    ], env);
+    throw error;
+  }
 }
 
 function writeMissingOnpodAuthSummary(env = process.env) {
@@ -180,7 +292,7 @@ async function main() {
   const options = parseOnpodDeployArgs(process.argv.slice(2));
   const releaseSha = (process.env.RELEASE_SHA || "").trim();
   const appName = (process.env.ONPOD_APP_NAME || ONPOD_CANONICAL_APP).trim();
-  const originUrl = new URL((process.env.CORE_API_ORIGIN || ONPOD_CANONICAL_ORIGIN).trim()).origin;
+  const originUrl = parseRenderCoreOrigin(process.env.CORE_API_ORIGIN || ONPOD_CANONICAL_ORIGIN).origin;
   const targetImage = `${IMAGE_REPO}:${releaseSha}`;
 
   if (options.dryRun) {
@@ -270,14 +382,16 @@ async function main() {
     }
   }
 
-  const afterStatus = inspectOnpodAppStatus(appName, childEnv);
-  const smoke = await verifyLiveOnpodOrigin(originUrl);
+  const { afterStatus, smoke } = await verifyOnpodDeployment({
+    appName, originUrl, targetImage, requireTargetImage: options.updateImage,
+    beforeStatus, childEnv,
+  });
 
   appendStepSummary(
     [
       "### ✅ 서울 onpod Core API 배포 및 원점 사후 스모크 완료",
       `- **대상 앱:** \`${appName}\` (\`${originUrl}\`, 플랜=\`${afterStatus.plan}\`, 무료=\`${afterStatus.freeTier}\`)`,
-      `- **현재 실행 이미지:** \`${afterStatus.image ?? targetImage}\``,
+      `- **현재 실행 이미지:** \`${afterStatus.image ?? "미확인"}\``,
       `- **직전 정상 롤백 대상 이미지:** \`${beforeStatus.image ?? "미기록"}\` (복구 명령: \`onpod app update ${appName} --image ${beforeStatus.image ?? "<이전-SHA-이미지>"}\`, \`onpod app rollback\` 사용 금지)`,
       ...(options.syncEnv ? [`- **동기화한 런타임 환경변수 수:** ${syncedKeyCount}개 (\`DATABASE_URL\` 보존)`] : []),
       `- **원점 사후 스모크:** \`/api/health/live\` 200, \`/api/health/ready\` 200, 원점 무인증 직접 호출 HTTP ${smoke.directAuthStatus} 차단 확인`,
