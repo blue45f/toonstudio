@@ -212,4 +212,57 @@ describe("webtoon-strip-composer", () => {
     expect(applyCalls).toHaveLength(5);
     expect((applyCalls[4]?.args[0] as { revision: number }).revision).toBe(basePlan.revision);
   });
+
+  it("dialogueLines 한국어 대사를 전달하면 1~4컷 말풍선 내부에 선명한 먹물 식자 픽셀을 합성하고 문구별 차이를 반영한다", () => {
+    const layout = clampWebtoonStripLayout(128, true);
+    const panels = WEBTOON_VERTICAL_STRIP_CUTS.map(() => ({
+      width: layout.cutWidth,
+      height: layout.cutHeight,
+      rgba: new Uint8ClampedArray(layout.cutWidth * layout.cutHeight * 4),
+    }));
+
+    const emptyBubble = composeWebtoonVerticalStrip(panels, layout, {
+      enabled: true,
+      linesKind: "none",
+      includeSpeechBubbles: true,
+      dialogueLines: ["", "", "", ""],
+    });
+    const koreanA = composeWebtoonVerticalStrip(panels, layout, {
+      enabled: true,
+      linesKind: "none",
+      includeSpeechBubbles: true,
+      dialogueLines: [
+        "황실의 검과 왕관을 거둔다.",
+        "감히 내 눈을 마주 봐.",
+        "이제 반격의 시간이야.",
+        "내 제국에 온 걸 환영해.",
+      ],
+    });
+    const koreanB = composeWebtoonVerticalStrip(panels, layout, {
+      enabled: true,
+      linesKind: "none",
+      includeSpeechBubbles: true,
+      dialogueLines: [
+        "봉인된 청운 검기가 깨어난다.",
+        "물러서라 진검승부다.",
+        "모든 검로의 빈틈이 보인다.",
+        "단 일검으로 매듭짓겠다.",
+      ],
+    });
+
+    const countDarkInkPixels = (rgba: Uint8ClampedArray): number => {
+      let dark = 0;
+      for (let i = 0; i < rgba.length; i += 4) {
+        if ((rgba[i] ?? 255) < 80 && (rgba[i + 1] ?? 255) < 80 && (rgba[i + 2] ?? 255) < 80) dark += 1;
+      }
+      return dark;
+    };
+    expect(countDarkInkPixels(koreanA.rgba)).toBeGreaterThan(countDarkInkPixels(emptyBubble.rgba) + 80);
+
+    let diffAB = 0;
+    for (let i = 0; i < koreanA.rgba.length; i += 4) {
+      if (koreanA.rgba[i] !== koreanB.rgba[i]) diffAB += 1;
+    }
+    expect(diffAB).toBeGreaterThan(20);
+  });
 });

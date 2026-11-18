@@ -41,6 +41,7 @@ import {
   HAND_PROP_PART_ID,
   HEAD_PROP_PART_ID,
   STAGE_PROP_PART_ID,
+  attachDuoPartnerToRig,
   attachHandPropToRig,
   attachHeadPropToRig,
   attachStagePropToRig,
@@ -50,7 +51,7 @@ import { createHudProbe } from "./hud";
 import { loadKitRig } from "./kit-loader";
 import { createProceduralIbl } from "./lighting/ibl";
 import { adaptLoadedMaterial, applyPresetParams, createPresetMaterial, setMaterialAlbedo } from "./materials/material-factory";
-import { createPassMaterial, setAlphaCutoff, setDepthUniform, setFlatTextures, setFlatUniforms, setIdUniform, setToonTextures, setToonUniforms, shaderLanguageFor } from "./materials/toon-shader";
+import { createPassMaterial, setAlphaCutoff, setFlatTextures, setFlatUniforms, setIdUniform, setDepthUniform, setToonTextures, setToonUniforms, shaderLanguageFor } from "./materials/toon-shader";
 import { bindProceduralModel } from "./mesh-binding";
 import { loadPackageRig } from "./package-loader";
 import { createPhysicsBridge } from "./physics-bridge";
@@ -60,7 +61,7 @@ import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
-import type { HandPropHandle, HeadPropHandle, StagePropHandle } from "./hand-prop-attachment";
+import type { DuoPartnerHandle, HandPropHandle, HeadPropHandle, StagePropHandle } from "./hand-prop-attachment";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
   ApplyPlan,
@@ -72,6 +73,7 @@ import type {
   CapturedRaster,
   CharacterEngine,
   CharacterSource,
+  DuoPartnerAttachment,
   EngineBackend,
   EngineDiagnostics,
   HandPropAttachment,
@@ -230,6 +232,8 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private headPropHandle: HeadPropHandle | null = null;
   private activeStageProp: StagePropAttachment | null = null;
   private stagePropHandle: StagePropHandle | null = null;
+  private activeDuoPartner: DuoPartnerAttachment | null = null;
+  private duoPartnerHandle: DuoPartnerHandle | null = null;
   private readonly gaze = createEyeGazeController(() => this.rig, () => this.lastPlan?.eyeGaze, () => this.viewportCamera().position);
   private disposed = false;
   private loopRunning = false;
@@ -373,13 +377,14 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     }
     this.rig = rig;
     this.kit = kit;
-    if (this.activeHandProp || this.activeHeadProp || this.activeStageProp) {
+    if (this.activeHandProp || this.activeHeadProp || this.activeStageProp || this.activeDuoPartner) {
       try {
         if (this.activeHandProp) await this.syncActiveHandPropToRig(rig);
         if (this.activeHeadProp) await this.syncActiveHeadPropToRig(rig);
         if (this.activeStageProp) await this.syncActiveStagePropToRig(rig);
+        if (this.activeDuoPartner) await this.syncActiveDuoPartnerToRig(rig);
       } catch (error) {
-        this.reportFailure(error, "scene-prop-reattach-failed", "새 캐릭터 소스에 장착 중이던 3D 소품을 다시 연결하지 못했습니다.");
+        this.reportFailure(error, "scene-prop-reattach-failed", "새 캐릭터 소스에 장착 중이던 3D 소품·듀오 파트너를 다시 연결하지 못했습니다.");
       }
     }
     this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
@@ -591,6 +596,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.detachHandPropFromRig(rig);
     this.detachHeadPropFromRig(rig);
     this.detachStagePropFromRig(rig);
+    this.detachDuoPartnerFromRig(rig);
     this.beta.releaseRig(rig);
     this.pressureOutline.release(rig);
     rig.dispose();
@@ -644,6 +650,17 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     handle.dispose();
   }
 
+  private detachDuoPartnerFromRig(rig: CharacterRig | null): void {
+    const handle = this.duoPartnerHandle;
+    if (!handle) return;
+    this.duoPartnerHandle = null;
+    for (const part of handle.parts) {
+      this.disposePassMaterials(part.partId);
+    }
+    if (rig) this.beta.releaseRig(rigWithParts(rig, handle.parts));
+    handle.dispose();
+  }
+
   private async syncActiveHandPropToRig(rig: CharacterRig): Promise<void> {
     this.detachHandPropFromRig(rig);
     if (!this.activeHandProp) return;
@@ -660,6 +677,12 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.detachStagePropFromRig(rig);
     if (!this.activeStageProp) return;
     this.stagePropHandle = await attachStagePropToRig(rig, this.activeStageProp, this.scenePropDeps());
+  }
+
+  private async syncActiveDuoPartnerToRig(rig: CharacterRig): Promise<void> {
+    this.detachDuoPartnerFromRig(rig);
+    if (!this.activeDuoPartner) return;
+    this.duoPartnerHandle = await attachDuoPartnerToRig(rig, this.activeDuoPartner, this.scenePropDeps());
   }
 
   async setHandProp(attachment: HandPropAttachment | null): Promise<void> {
@@ -694,6 +717,18 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       const rig = this.rig;
       if (!rig) return;
       await this.syncActiveStagePropToRig(rig);
+      await this.finalizeRigPropRefresh(rig);
+    });
+  }
+
+  async setDuoPartner(attachment: DuoPartnerAttachment | null): Promise<void> {
+    this.assertAlive();
+    return this.runExclusive(async () => {
+      this.assertAlive();
+      this.activeDuoPartner = attachment;
+      const rig = this.rig;
+      if (!rig) return;
+      await this.syncActiveDuoPartnerToRig(rig);
       await this.finalizeRigPropRefresh(rig);
     });
   }

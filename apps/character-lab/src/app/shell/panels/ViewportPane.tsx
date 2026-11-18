@@ -25,7 +25,7 @@ import { diagnoseSkeletonData, postSkeletonFailureOnce } from "./skeleton-bounda
 import { ViewportBackdropLayers, ViewportCompositionBar, ViewportOnboardingCard, ViewportSvgGizmoLayer, clampReferenceOpacity } from "./viewport-backdrop-overlay";
 import {
   DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES, ViewportDuoShotControls, ViewportDuoShotOverlay,
-  buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, type DuoShotState,
+  buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, toDuoPartnerAttachment, type DuoShotState,
 } from "./viewport-duo-shot-guide";
 import {
   ViewportHandPropControls, buildHandPropGripPoseCommands, findWebtoonHandPropSpec, findWebtoonHeadPropSpec, findWebtoonStagePropSpec,
@@ -35,6 +35,10 @@ import {
   DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
 } from "./viewport-manga-fx-overlay";
 import {
+  ViewportSceneDirectorControls, findWebtoonSceneDirectorPreset, getDefaultStripDirectorSession, resolveDirectorShadingProfile,
+  type WebtoonSceneDirectorPresetId,
+} from "./viewport-scene-director";
+import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, hudRows, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
 } from "./viewport-interactions";
@@ -42,7 +46,7 @@ import {
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
 import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
-import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HandPropId, HandPropSide, HeadPropId, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData, StagePropId } from "../../../contracts";
+import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, DuoPartnerStance, EngineBackend, FaceParamKey, HandPropId, HandPropSide, HeadPropId, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData, StagePropId } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
@@ -126,7 +130,14 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [activePitchDeg, setActivePitchDeg] = useState<ViewportPitchDeg | null>(null);
   const [checkerboard, setCheckerboard] = useState(false);
   const [manuscriptGuide, setManuscriptGuide] = useState(false);
+  const stripDirector = getDefaultStripDirectorSession();
+  const activeDirectorId = useSyncExternalStore(
+    stripDirector.subscribe,
+    () => stripDirector.getState().activeDirectorId,
+    () => stripDirector.getState().activeDirectorId,
+  );
   const [duoShot, setDuoShot] = useState<DuoShotState>(DEFAULT_DUO_SHOT_STATE);
+  const [duo3dBusy, setDuo3dBusy] = useState(false);
   const [mangaFx, setMangaFx] = useState<ViewportMangaFxState>(DEFAULT_MANGA_FX_STATE);
   const [handPropId, setHandPropId] = useState<HandPropId | "">("");
   const [handPropSide, setHandPropSide] = useState<HandPropSide>("rightHand");
@@ -684,6 +695,33 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     distanceMeters: DUO_SHOT_DISTANCES[duoShot.distanceKey].meters,
     side: duoShot.side,
   });
+  const syncDuoPartner3d = async (nextDuoShot: DuoShotState, prevDuoShot: DuoShotState): Promise<void> => {
+    if (!engine?.setDuoPartner) return;
+    const nextAttachment = toDuoPartnerAttachment(nextDuoShot, subjectHeight.heightCm);
+    const prevAttachment = toDuoPartnerAttachment(prevDuoShot, subjectHeight.heightCm);
+    if (!nextAttachment && !prevAttachment) return;
+    setDuo3dBusy(true);
+    try {
+      await engine.setDuoPartner(nextAttachment);
+      const partner = SHAPER_DUO_PARTNER_PROFILES.find((item) => item.id === nextDuoShot.partnerId) ?? SHAPER_DUO_PARTNER_PROFILES[0]!;
+      setNotice(
+        nextAttachment
+          ? `3D 듀오 스테이지 배치: ${partner.labelKo} (${DUO_SHOT_DISTANCES[nextDuoShot.distanceKey].labelKo})`
+          : "3D 듀오 상대역 배치를 해제했습니다.",
+      );
+    } catch (error) {
+      setNotice(failureText(error, "3D 듀오 상대역 캐릭터를 배치하지 못했습니다."));
+    } finally {
+      setDuo3dBusy(false);
+    }
+  };
+  const updateDuoShotWith3dSync = (updater: (prev: DuoShotState) => DuoShotState): void => {
+    setDuoShot((prev) => {
+      const next = updater(prev);
+      void syncDuoPartner3d(next, prev);
+      return next;
+    });
+  };
   const onApplyDuoEyeContact = (): void => {
     const cmds = buildDuoEyeContactCommands(labState.recipe.pose, duoEyeContact, duoPartner.labelKo);
     for (const cmd of cmds) dispatch(cmd);
@@ -746,6 +784,62 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       setHandPropBusy(false);
     }
   };
+  const onSelectSceneDirector = async (presetId: WebtoonSceneDirectorPresetId | ""): Promise<void> => {
+    if (!presetId) {
+      setHandPropId("");
+      setHeadPropId("");
+      setStagePropId("");
+      stripDirector.update({ activeDirectorId: "", actingArc: "none", bakeStripFx: false });
+      if (!engine) return;
+      setHandPropBusy(true);
+      try {
+        if (engine.setHandProp) await engine.setHandProp(null);
+        if (engine.setHeadProp) await engine.setHeadProp(null);
+        if (engine.setStageProp) await engine.setStageProp(null);
+        setNotice("원클릭 씬 디렉터를 해제했습니다.");
+      } catch (error) {
+        setNotice(failureText(error, "씬 디렉터 해제 중 오류가 발생했습니다."));
+      } finally {
+        setHandPropBusy(false);
+      }
+      return;
+    }
+
+    const preset = findWebtoonSceneDirectorPreset(presetId);
+    if (!preset) return;
+    setHandPropId(preset.handPropId);
+    setHandPropSide(preset.handSide);
+    setHeadPropId(preset.headPropId);
+    setStagePropId(preset.stagePropId);
+    stripDirector.update({
+      activeDirectorId: preset.id,
+      actingArc: preset.actingArc,
+      bakeStripFx: true,
+      stripFxLines: preset.fxLinesKind,
+      dialogueLines: preset.dialogueLines,
+    });
+
+    for (const cmd of buildHandPropGripPoseCommands(labState.recipe.pose, preset.handPropId, preset.handSide)) {
+      dispatch(cmd);
+    }
+    dispatch({
+      type: "shading/set",
+      profile: resolveDirectorShadingProfile(labState.recipe.shading, preset.toonShaderId),
+    });
+
+    if (!engine) return;
+    setHandPropBusy(true);
+    try {
+      if (engine.setHandProp) await engine.setHandProp(toHandPropAttachment(preset.handPropId, preset.handSide));
+      if (engine.setHeadProp) await engine.setHeadProp(toHeadPropAttachment(preset.headPropId));
+      if (engine.setStageProp) await engine.setStageProp(toStagePropAttachment(preset.stagePropId));
+      setNotice(`씬 디렉터 적용: ${preset.labelKo}`);
+    } catch (error) {
+      setNotice(failureText(error, "원클릭 씬 디렉터 소품 장착에 실패했습니다."));
+    } finally {
+      setHandPropBusy(false);
+    }
+  };
 
   return (
     <div className="cl-viewport" data-checkerboard={checkerboard ? "true" : undefined} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -780,11 +874,15 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         <ViewportDuoShotControls
           duoShot={duoShot}
           summaryKo={duoEyeContact.summaryKo}
-          onToggleDuoShot={() => setDuoShot((prev) => ({ ...prev, enabled: !prev.enabled }))}
-          onChangePartner={(partnerId) => setDuoShot((prev) => ({ ...prev, partnerId }))}
-          onChangeSide={(side) => setDuoShot((prev) => ({ ...prev, side }))}
-          onChangeDistance={(distanceKey) => setDuoShot((prev) => ({ ...prev, distanceKey }))}
+          duo3dSupported={Boolean(engine?.setDuoPartner)}
+          duo3dBusy={duo3dBusy}
+          onToggleDuoShot={() => updateDuoShotWith3dSync((prev) => ({ ...prev, enabled: !prev.enabled }))}
+          onChangePartner={(partnerId) => updateDuoShotWith3dSync((prev) => ({ ...prev, partnerId }))}
+          onChangeSide={(side) => updateDuoShotWith3dSync((prev) => ({ ...prev, side }))}
+          onChangeDistance={(distanceKey) => updateDuoShotWith3dSync((prev) => ({ ...prev, distanceKey }))}
           onApplyEyeContact={onApplyDuoEyeContact}
+          onToggleRender3dPartner={() => updateDuoShotWith3dSync((prev) => ({ ...prev, render3dPartner: !prev.render3dPartner }))}
+          onChangePartnerStance={(partnerStance: DuoPartnerStance) => updateDuoShotWith3dSync((prev) => ({ ...prev, partnerStance }))}
         />
         <ViewportMangaFxControls
           mangaFx={mangaFx}
@@ -793,6 +891,12 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           onChangeLinesPreset={(linesPreset) => setMangaFx((prev) => ({ ...prev, linesPreset }))}
           onChangeDialogueText={(dialogueText) => setMangaFx((prev) => ({ ...prev, dialogueText }))}
           onChangeIntensity={(intensity) => setMangaFx((prev) => ({ ...prev, intensity: clampMangaFxIntensity(intensity) }))}
+        />
+        <ViewportSceneDirectorControls
+          engineReady={Boolean(engine?.setHandProp)}
+          busy={handPropBusy}
+          activeDirectorId={activeDirectorId}
+          onSelectDirector={(presetId) => void onSelectSceneDirector(presetId)}
         />
         <ViewportHandPropControls
           engineReady={Boolean(engine?.setHandProp)}

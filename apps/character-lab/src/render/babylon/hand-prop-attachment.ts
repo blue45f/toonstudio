@@ -1,14 +1,15 @@
 /**
- * 캐릭터 3D 웹툰 소품 어태치먼트 로더:
+ * 캐릭터 3D 웹툰 소품 & 2인 듀오 스테이지 어태치먼트 로더:
  * - 손 소품(`partId = 250`, `extra:hand-prop`): `rightHand` / `leftHand` 본 아래 `TS_HandPropAnchor_*`
  * - 머리 액세서리(`partId = 251`, `extra:head-prop`): `head` 본 아래 `TS_HeadPropAnchor_*`
  * - 배경 스테이지 스탠드(`partId = 252`, `extra:stage-prop`): `rig.root` 아래 `TS_StagePropAnchor_*`
+ * - 3D 듀오 상대역 캐릭터(`partId = 253`, `extra:duo-partner`): `rig.root` 아래 `TS_DuoPartnerAnchor_*` (LOD0 헤어 선별 + 대화 스탠스 본 포즈 자동 적용)
  *
- * 세 슬롯 모두 `rig.root` 하위 트리에 속하고 `rig.parts`(`role = "accessory"`)에 독립 등록되므로:
- * 1) 손 소품 + 머리 액세서리 + 배경 스테이지 프롭 3종 동시 장착 지원
+ * 네 슬롯 모두 `rig.root` 하위 트리에 속하고 `rig.parts`(`role = "accessory"`)에 독립 등록되므로:
+ * 1) 손 소품 + 머리 액세서리 + 배경 스테이지 + 3D 상대역 캐릭터 4중 동시 배치 지원
  * 2) 뷰포트 PBR 및 툰 셰이딩(외곽선·림라이트·망점 스크린톤 포함) 자동 적용
  * 3) 투명 PNG · 4방향 설정시트 · 2×2 시트 · 세로 4컷 웹툰 스트립 캡처 자동 포함
- * 4) `exportGlb()` 실행 시 캐릭터 메쉬·골격과 함께 장착된 모든 3D 소품 메쉬가 단일 GLB로 직렬화 보존됨
+ * 4) `exportGlb()` 실행 시 주 캐릭터·소품·상대역 3D 캐릭터가 단일 투샷 GLB로 통합 직렬화 보존됨
  */
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader.js";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
@@ -16,7 +17,7 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
 import { GLTFLoaderAnimationStartMode, GLTFLoaderCoordinateSystemMode } from "@babylonjs/loaders/glTF/glTFFileLoader.js";
 
-import { failVisible } from "../../contracts";
+import { OUTLINE_MESH_SUFFIX, failVisible, parseAuthoredHairMeshName } from "../../contracts";
 import { sha256Hex } from "../../shared/hash";
 import { ROLE_COLOR_KEY, ROLE_DEFAULT_PRESET, resolvePartColorHex } from "../material-presets";
 
@@ -25,6 +26,8 @@ import { rigMeshMetadata } from "./mesh-binding";
 
 import type { CharacterRig, RigPart } from "./character-rig";
 import type {
+  DuoPartnerAttachment,
+  DuoPartnerStance,
   HandPropAttachment,
   HandPropId,
   HandPropSide,
@@ -35,7 +38,7 @@ import type {
 import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
-/** 기존 캐릭터 파츠(1..32)와 충돌하지 않는 씬 소품 전용 고정 partId */
+/** 기존 캐릭터 파츠(1..32)와 충돌하지 않는 씬 소품·듀오 스테이지 전용 고정 partId */
 export const HAND_PROP_PART_ID = 250;
 export const HAND_PROP_PART_KEY = "extra:hand-prop";
 
@@ -44,6 +47,9 @@ export const HEAD_PROP_PART_KEY = "extra:head-prop";
 
 export const STAGE_PROP_PART_ID = 252;
 export const STAGE_PROP_PART_KEY = "extra:stage-prop";
+
+export const DUO_PARTNER_PART_ID = 220;
+export const DUO_PARTNER_PART_KEY = "extra:duo-partner";
 
 export interface ScenePropLoadDeps {
   readonly scene: Scene;
@@ -70,6 +76,12 @@ export interface HeadPropHandle {
 export interface StagePropHandle {
   readonly attachment: StagePropAttachment;
   readonly part: RigPart;
+  dispose(): void;
+}
+
+export interface DuoPartnerHandle {
+  readonly attachment: DuoPartnerAttachment;
+  readonly parts: readonly RigPart[];
   dispose(): void;
 }
 
@@ -134,7 +146,7 @@ interface MountExtraGlbInput {
   readonly glbUrl: string;
   readonly sha256: string | undefined;
   readonly labelId: string;
-  readonly codePrefix: "hand-prop" | "head-prop" | "stage-prop";
+  readonly codePrefix: "hand-prop" | "head-prop" | "stage-prop" | "duo-partner";
   readonly anchorName: string;
   readonly parentNode: TransformNode;
   readonly localPosition: Vector3;
@@ -143,6 +155,79 @@ interface MountExtraGlbInput {
   readonly partId: number;
   readonly partKey: string;
   readonly deps: ScenePropLoadDeps;
+  readonly filterPartnerMeshes?: boolean;
+  readonly onContainerMounted?: (container: Awaited<ReturnType<typeof LoadAssetContainerAsync>>) => void;
+}
+
+const PRIMITIVE_SUFFIX = /_primitive\d+$/u;
+
+function stripPartnerBaseName(meshName: string): { readonly baseName: string; readonly isOutline: boolean } {
+  let baseName = meshName.replace(PRIMITIVE_SUFFIX, "");
+  const isOutline = baseName.endsWith(OUTLINE_MESH_SUFFIX);
+  if (isOutline) baseName = baseName.slice(0, -OUTLINE_MESH_SUFFIX.length);
+  return { baseName, isOutline };
+}
+
+function degToQuat(rxDeg: number, ryDeg: number, rzDeg: number): Quaternion {
+  return Quaternion.FromEulerAngles((rxDeg * Math.PI) / 180, (ryDeg * Math.PI) / 180, (rzDeg * Math.PI) / 180);
+}
+
+function applyDuoPartnerConversationalPose(
+  container: Awaited<ReturnType<typeof LoadAssetContainerAsync>>,
+  stance: DuoPartnerStance,
+  side: "left" | "right",
+): void {
+  const turnSign = side === "right" ? -1 : 1;
+  const poseByBone = new Map<string, Quaternion>();
+  const setBone = (names: readonly string[], rx: number, ry: number, rz: number): void => {
+    const q = degToQuat(rx, ry, rz);
+    for (const n of names) poseByBone.set(n, q);
+  };
+
+  if (stance === "arms-crossed") {
+    setBone(["mixamorig:Spine1", "chest"], -2, turnSign * 6, 0);
+    setBone(["mixamorig:Neck", "neck"], 2, turnSign * 8, 0);
+    setBone(["mixamorig:Head", "head"], 3, turnSign * 12, turnSign * 2);
+    setBone(["mixamorig:RightArm", "rightUpperArm"], 20, 26, 62);
+    setBone(["mixamorig:RightForeArm", "rightLowerArm"], 24, 76, -16);
+    setBone(["mixamorig:LeftArm", "leftUpperArm"], 18, -26, -62);
+    setBone(["mixamorig:LeftForeArm", "leftLowerArm"], 24, -76, 16);
+  } else if (stance === "attentive") {
+    setBone(["mixamorig:Spine1", "chest"], 2, turnSign * 5, 0);
+    setBone(["mixamorig:Neck", "neck"], 4, turnSign * 9, turnSign * 2);
+    setBone(["mixamorig:Head", "head"], 5, turnSign * 14, turnSign * 3);
+    setBone(["mixamorig:RightArm", "rightUpperArm"], 14, 22, 60);
+    setBone(["mixamorig:RightForeArm", "rightLowerArm"], 22, 68, -20);
+    setBone(["mixamorig:LeftArm", "leftUpperArm"], 6, -12, -68);
+    setBone(["mixamorig:LeftForeArm", "leftLowerArm"], 8, -18, 6);
+  } else {
+    // conversational: 자연스럽게 내린 양팔 + 주 캐릭터 방향 미세 시선·고개 회전
+    setBone(["mixamorig:Hips", "hips"], 0, turnSign * 4, 0);
+    setBone(["mixamorig:Spine1", "chest"], -2, turnSign * 5, 0);
+    setBone(["mixamorig:Neck", "neck"], 2, turnSign * 8, 0);
+    setBone(["mixamorig:Head", "head"], 3, turnSign * 12, turnSign * 2);
+    setBone(["mixamorig:RightArm", "rightUpperArm"], 6, 12, 66);
+    setBone(["mixamorig:RightForeArm", "rightLowerArm"], 10, 22, -8);
+    setBone(["mixamorig:RightHand", "rightHand"], 0, 8, 6);
+    setBone(["mixamorig:LeftArm", "leftUpperArm"], 6, -12, -66);
+    setBone(["mixamorig:LeftForeArm", "leftLowerArm"], 10, -22, 8);
+    setBone(["mixamorig:LeftHand", "leftHand"], 0, -8, -6);
+  }
+
+  for (const node of container.transformNodes) {
+    const rot = poseByBone.get(node.name);
+    if (rot) {
+      const rest = node.rotationQuaternion ? node.rotationQuaternion.clone() : node.rotation.toQuaternion();
+      node.rotationQuaternion = rest.multiply(rot).normalize();
+    }
+  }
+  for (const node of container.transformNodes) {
+    node.computeWorldMatrix(true);
+  }
+  for (const skeleton of container.skeletons) {
+    skeleton.useTextureToStoreBoneMatrices = true;
+    skeleton.prepare(true);
+  }
 }
 
 async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly part: RigPart; readonly dispose: () => void }> {
@@ -153,7 +238,7 @@ async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly
     if (digest !== input.sha256) {
       throw failVisible(
         `${input.codePrefix}-sha-mismatch`,
-        `3D 소품('${input.labelId}') GLB 해시가 일치하지 않습니다(${digest.slice(0, 8)}… ≠ ${input.sha256.slice(0, 8)}…).`,
+        `3D 에셋('${input.labelId}') GLB 해시가 일치하지 않습니다(${digest.slice(0, 8)}… ≠ ${input.sha256.slice(0, 8)}…).`,
         undefined,
         now,
       );
@@ -177,7 +262,7 @@ async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly
       },
     });
   } catch (error) {
-    throw failVisible(`${input.codePrefix}-glb-load-failed`, `3D 소품 GLB를 열지 못했습니다: ${input.glbUrl}`, error, now);
+    throw failVisible(`${input.codePrefix}-glb-load-failed`, `3D 에셋 GLB를 열지 못했습니다: ${input.glbUrl}`, error, now);
   }
 
   container.addAllToScene();
@@ -193,16 +278,31 @@ async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly
     }
   }
 
+  input.onContainerMounted?.(container);
+
   const meshes: Mesh[] = [];
+  const outlineMeshes: Mesh[] = [];
   for (const abstract of container.meshes) {
-    if (abstract instanceof Mesh && abstract.getTotalVertices() > 0) {
-      meshes.push(abstract);
+    if (!(abstract instanceof Mesh) || abstract.getTotalVertices() === 0) continue;
+    if (input.filterPartnerMeshes) {
+      const { baseName, isOutline } = stripPartnerBaseName(abstract.name);
+      const hair = parseAuthoredHairMeshName(baseName);
+      if (hair && hair.lod > 0) {
+        abstract.isVisible = false;
+        continue;
+      }
+      if (isOutline) {
+        abstract.isVisible = false;
+        outlineMeshes.push(abstract);
+        continue;
+      }
     }
+    meshes.push(abstract);
   }
   if (meshes.length === 0) {
     container.dispose();
     anchor.dispose(false, false);
-    throw failVisible(`${input.codePrefix}-empty-mesh`, `3D 소품('${input.labelId}') GLB에 유효한 메쉬가 없습니다.`, undefined, now);
+    throw failVisible(`${input.codePrefix}-empty-mesh`, `3D 에셋('${input.labelId}') GLB에 유효한 메쉬가 없습니다.`, undefined, now);
   }
 
   const role: PartRole = "accessory";
@@ -216,10 +316,18 @@ async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly
     mesh.metadata = rigMeshMetadata(input.partId, role, input.partId, false);
     mesh.receiveShadows = true;
   }
+  for (const outline of outlineMeshes) {
+    outline.metadata = rigMeshMetadata(input.partId, role, input.partId, true);
+  }
 
   const colorKey = ROLE_COLOR_KEY[role];
   const materialPreset = ROLE_DEFAULT_PRESET[role];
   const hasAlbedoTexture = meshPbrs.some((mat) => mat.albedoTexture !== null);
+  const untintedHex = hasAlbedoTexture
+    ? "#ffffff"
+    : pbr.albedoColor
+      ? pbr.albedoColor.toHexString().slice(0, 7).toLowerCase()
+      : resolvePartColorHex({ materialPreset, ...(colorKey !== undefined ? { colorKey } : {}) }, null);
   const part: RigPart = {
     id: input.partKey,
     partId: input.partId,
@@ -228,12 +336,12 @@ async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly
     materialPreset,
     ...(colorKey !== undefined ? { colorKey } : {}),
     meshes,
-    outlineMeshes: [],
+    outlineMeshes,
     pbr,
     meshPbrs,
     hasAlbedoTexture,
     toon: null,
-    colorHex: resolvePartColorHex({ materialPreset, ...(colorKey !== undefined ? { colorKey } : {}) }, null),
+    colorHex: untintedHex,
     visible: true,
     forceHidden: false,
   };
@@ -327,4 +435,149 @@ export async function attachStagePropToRig(
     deps,
   });
   return { attachment, part: mounted.part, dispose: mounted.dispose };
+}
+
+export async function attachDuoPartnerToRig(
+  rig: CharacterRig,
+  attachment: DuoPartnerAttachment,
+  deps: ScenePropLoadDeps,
+): Promise<DuoPartnerHandle> {
+  const now = deps.now ?? Date.now();
+  const bytes = await deps.fetchBytes(attachment.glbUrl);
+  if ((deps.verifyIntegrity ?? true) && attachment.sha256) {
+    const digest = await sha256Hex(bytes);
+    if (digest !== attachment.sha256) {
+      throw failVisible(
+        "duo-partner-sha-mismatch",
+        `3D 상대역('${attachment.characterId}') GLB 해시가 일치하지 않습니다(${digest.slice(0, 8)}… ≠ ${attachment.sha256.slice(0, 8)}…).`,
+        undefined,
+        now,
+      );
+    }
+  }
+
+  let container: Awaited<ReturnType<typeof LoadAssetContainerAsync>>;
+  try {
+    container = await LoadAssetContainerAsync(bytes, deps.scene, {
+      pluginExtension: ".glb",
+      pluginOptions: {
+        gltf: {
+          coordinateSystemMode: GLTFLoaderCoordinateSystemMode.AUTO,
+          animationStartMode: GLTFLoaderAnimationStartMode.NONE,
+          loadNodeAnimations: false,
+          compileMaterials: false,
+          createInstances: false,
+          alwaysComputeBoundingBox: true,
+          useSRGBBuffers: true,
+        },
+      },
+    });
+  } catch (error) {
+    throw failVisible("duo-partner-glb-load-failed", `3D 상대역 GLB를 열지 못했습니다: ${attachment.glbUrl}`, error, now);
+  }
+
+  container.addAllToScene();
+  const sideSign = attachment.side === "right" ? 1 : -1;
+  const safeDist = Number.isFinite(attachment.distanceMeters) ? Math.min(1.6, Math.max(0.45, attachment.distanceMeters)) : 0.95;
+  const xOffset = sideSign * Math.min(1.02, Math.max(0.54, safeDist * 0.70));
+  const yawRad = (-sideSign * 24 * Math.PI) / 180;
+  const safeScale = Number.isFinite(attachment.heightScale) ? Math.min(1.32, Math.max(0.72, attachment.heightScale)) : 1.0;
+  const stance: DuoPartnerStance = attachment.stance ?? "conversational";
+
+  const anchor = new TransformNode(`TS_DuoPartnerAnchor_${attachment.characterId}`, deps.scene);
+  anchor.parent = rig.root;
+  anchor.position = new Vector3(xOffset, 0, -0.22);
+  anchor.rotationQuaternion = Quaternion.FromEulerAngles(0, yawRad, 0);
+  anchor.scaling.setAll(safeScale);
+
+  for (const rootNode of container.rootNodes) {
+    if (rootNode instanceof TransformNode) rootNode.parent = anchor;
+  }
+
+  applyDuoPartnerConversationalPose(container, stance, attachment.side);
+
+  // 서브메시별 원본 재질·텍스처(은발·피부·적안·코트·부츠)가 툰 모드에서도 각각 정확히 보존되도록 재질 단위로 RigPart를 분리 등록한다.
+  const groupsByMat = new Map<unknown, { meshes: Mesh[]; outlines: Mesh[] }>();
+  for (const abstract of container.meshes) {
+    if (!(abstract instanceof Mesh) || abstract.getTotalVertices() === 0) continue;
+    const { baseName, isOutline } = stripPartnerBaseName(abstract.name);
+    const hair = parseAuthoredHairMeshName(baseName);
+    if (hair && hair.lod > 0) {
+      abstract.isVisible = false;
+      continue;
+    }
+    if (isOutline) {
+      abstract.isVisible = false;
+      continue;
+    }
+    const key = abstract.material ?? abstract;
+    const group = groupsByMat.get(key) ?? { meshes: [], outlines: [] };
+    group.meshes.push(abstract);
+    groupsByMat.set(key, group);
+  }
+
+  if (groupsByMat.size === 0) {
+    container.dispose();
+    anchor.dispose(false, false);
+    throw failVisible("duo-partner-empty-mesh", `3D 상대역('${attachment.characterId}') GLB에 유효한 메쉬가 없습니다.`, undefined, now);
+  }
+
+  const role: PartRole = "accessory";
+  const materialPreset = ROLE_DEFAULT_PRESET[role];
+  const createdParts: RigPart[] = [];
+  let idx = 0;
+  for (const group of groupsByMat.values()) {
+    const partId = DUO_PARTNER_PART_ID + idx;
+    const partKey = idx === 0 ? DUO_PARTNER_PART_KEY : `${DUO_PARTNER_PART_KEY}:${idx}`;
+    const firstMesh = group.meshes[0]!;
+    const pbr = deps.adaptMaterial(role, firstMesh);
+    for (const mesh of group.meshes) {
+      mesh.material = pbr;
+      mesh.metadata = rigMeshMetadata(partId, role, partId, false);
+      mesh.receiveShadows = true;
+      mesh.computeWorldMatrix(true);
+    }
+    const hasAlbedoTexture = pbr.albedoTexture !== null;
+    const colorHex = hasAlbedoTexture
+      ? "#ffffff"
+      : pbr.albedoColor
+        ? pbr.albedoColor.toHexString().slice(0, 7).toLowerCase()
+        : "#d4af37";
+    const part: RigPart = {
+      id: partKey,
+      partId,
+      materialId: partId,
+      role,
+      materialPreset,
+      meshes: group.meshes,
+      outlineMeshes: [],
+      pbr,
+      meshPbrs: group.meshes.map(() => pbr),
+      hasAlbedoTexture,
+      toon: null,
+      colorHex,
+      visible: true,
+      forceHidden: false,
+    };
+    attachExtraRigPart(rig, part);
+    createdParts.push(part);
+    idx += 1;
+  }
+  anchor.computeWorldMatrix(true);
+
+  let disposed = false;
+  return {
+    attachment,
+    parts: createdParts,
+    dispose(): void {
+      if (disposed) return;
+      disposed = true;
+      for (const p of createdParts) {
+        detachExtraRigPart(rig, p.partId);
+        p.toon?.dispose(true, false);
+      }
+      container.dispose();
+      anchor.dispose(false, false);
+    },
+  };
 }

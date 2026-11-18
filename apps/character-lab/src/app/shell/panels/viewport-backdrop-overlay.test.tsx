@@ -6,11 +6,13 @@ import { createMockEngine } from "../../../testing/mock-engine";
 import { MockLabProvider, createMockEngineSession } from "../../../testing/mock-store";
 
 import { ViewportPane } from "./ViewportPane";
+import { getDefaultStripDirectorSession } from "./viewport-scene-director";
 
 import type { LabCommand } from "../../../contracts";
 
 afterEach(() => {
   cleanup();
+  getDefaultStripDirectorSession().reset();
   vi.restoreAllMocks();
 });
 
@@ -187,18 +189,48 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     );
 
     const stageSelect = screen.getByTestId("viewport-stage-prop-select") as HTMLSelectElement;
-    expect(stageSelect.options.length).toBe(4);
-    fireEvent.change(stageSelect, { target: { value: "murim-sword-aura" } });
+    expect(stageSelect.options.length).toBe(6);
+    fireEvent.change(stageSelect, { target: { value: "rofan-throne-dais" } });
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setStageProp").at(-1)?.args[0]).toMatchObject({
-        propId: "murim-sword-aura",
-        glbUrl: "/assets/props/webtoon-stage-props-v1/murim-sword-aura.glb",
+        propId: "rofan-throne-dais",
+        glbUrl: "/assets/props/webtoon-stage-props-v1/rofan-throne-dais.glb",
       }),
     );
 
-    fireEvent.change(headSelect, { target: { value: "" } });
-    await waitFor(() => expect(engine.calls.filter((c) => c.method === "setHeadProp").at(-1)?.args[0]).toBeNull());
-    fireEvent.change(stageSelect, { target: { value: "" } });
+    // 원클릭 장르 씬 디렉터 선택 시 소품 트리오 + 그립 포즈 + 툰 셰이딩 + 4컷 연기·대사 세션이 일괄 세팅된다
+    const directorSelect = screen.getByTestId("viewport-scene-director-select") as HTMLSelectElement;
+    expect(directorSelect.options.length).toBe(5);
+    fireEvent.change(directorSelect, { target: { value: "director-noir-interrogation" } });
+    await waitFor(() =>
+      expect(engine.calls.filter((c) => c.method === "setStageProp").at(-1)?.args[0]).toMatchObject({
+        propId: "noir-interrogation-lamp",
+      }),
+    );
+    expect(dispatched.some((cmd) => cmd.type === "shading/set")).toBe(true);
+    expect(getDefaultStripDirectorSession().getState().actingArc).toBe("arc-thriller-shock");
+    expect(getDefaultStripDirectorSession().getState().dialogueLines[0]).toContain("사건 기록 14페이지");
+
+    // 3D 듀오 스테이지 동시 배치 활성화 시 setDuoPartner 호출 및 스탠스 전환 검증
+    fireEvent.click(screen.getByTestId("viewport-toggle-duo-shot"));
+    fireEvent.click(screen.getByTestId("viewport-duo-3d-toggle"));
+    await waitFor(() =>
+      expect(engine.calls.filter((c) => c.method === "setDuoPartner").at(-1)?.args[0]).toMatchObject({
+        characterId: "shaper-atelier-male-lead",
+        stance: "conversational",
+      }),
+    );
+    expect(screen.queryByTestId("viewport-duo-partner-figure")).toBeNull();
+    fireEvent.change(screen.getByTestId("viewport-duo-3d-stance"), { target: { value: "arms-crossed" } });
+    await waitFor(() =>
+      expect(engine.calls.filter((c) => c.method === "setDuoPartner").at(-1)?.args[0]).toMatchObject({
+        stance: "arms-crossed",
+      }),
+    );
+    fireEvent.click(screen.getByTestId("viewport-duo-3d-toggle"));
+    await waitFor(() => expect(engine.calls.filter((c) => c.method === "setDuoPartner").at(-1)?.args[0]).toBeNull());
+
+    fireEvent.change(directorSelect, { target: { value: "" } });
     await waitFor(() => expect(engine.calls.filter((c) => c.method === "setStageProp").at(-1)?.args[0]).toBeNull());
   });
 });
