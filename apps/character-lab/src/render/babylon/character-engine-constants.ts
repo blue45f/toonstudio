@@ -6,8 +6,6 @@ export const THUMBNAIL_LAYER_MASK = 0x10000000;
 
 /** 얼굴 SDF 임계 맵 해상도 */
 export const FACE_SDF_SIZE = 128;
-/** 툰 외곽선(hull) 폭(월드 단위, m) */
-export const TOON_OUTLINE_WIDTH = 0.004;
 /** 엣지 외곽선 각도 임계(cos) */
 export const TOON_EDGE_EPSILON = 0.95;
 

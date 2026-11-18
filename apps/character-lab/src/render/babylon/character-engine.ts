@@ -31,7 +31,7 @@ import { normalizeToonLighting } from "../toon-reference";
 import { BABYLON_SIDE_EFFECTS_LOADED } from "./babylon-side-effects";
 import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
-import { THUMBNAIL_LAYER_MASK, FACE_SDF_SIZE, TOON_OUTLINE_WIDTH, TOON_EDGE_EPSILON } from "./character-engine-constants";
+import { THUMBNAIL_LAYER_MASK, FACE_SDF_SIZE, TOON_EDGE_EPSILON } from "./character-engine-constants";
 import { CharacterOutlineController } from "./character-outline-controller";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
 import { fromQuaternion, fromVector3, toVector3 } from "./convert";
@@ -108,7 +108,9 @@ import type { Scene } from "@babylonjs/core/scene.js";
 export type { ReadbackLane } from "../readback";
 export type { BabylonCharacterEngineDeps, BoneReading } from "./character-engine-types";
 
-export { THUMBNAIL_LAYER_MASK, FACE_SDF_SIZE, TOON_OUTLINE_WIDTH, TOON_EDGE_EPSILON } from "./character-engine-constants";
+export { THUMBNAIL_LAYER_MASK, FACE_SDF_SIZE, TOON_EDGE_EPSILON } from "./character-engine-constants";
+/** 툰 외곽선(hull) 폭(월드 단위, m) */
+export const TOON_OUTLINE_WIDTH = 0.004;
 
 export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSource, ViewportCameraSource, BetaFeaturePort, ProjectionPaintHost {
   readonly backend: EngineBackend;
