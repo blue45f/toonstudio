@@ -173,6 +173,27 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-darkroom-status").textContent,
     ).toContain("ΔE 0.0");
 
+    // Wave 6 (V20): 개폐형 가동 파츠 슬라이더(0~100%) & 캐릭터 IK 스냅 소켓 & follow-3d 속도선 고정 검증
+    expect(
+      screen.getByTestId("bg3d-blender-articulated-ik-section").textContent,
+    ).toContain("5C. 개폐형 가동 파츠(V20)");
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v20-prop-scifi-iris-airlock"),
+    );
+    fireEvent.change(screen.getByTestId("bg3d-blender-v20-open-slider"), {
+      target: { value: "80" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-articulated-kinematics-readout")
+        .textContent,
+    ).toContain("SF 블래스트 에어락 V20 개폐 80%");
+    expect(
+      screen.getByTestId("bg3d-blender-ik-socket-wrist-desk").textContent,
+    ).toContain("Z 0.92m");
+    expect(
+      screen.getByTestId("bg3d-blender-ik-summary-readout").textContent,
+    ).toContain("접점 보정 0.0분");
+
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
     );
