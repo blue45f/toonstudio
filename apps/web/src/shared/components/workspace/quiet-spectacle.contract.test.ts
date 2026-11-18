@@ -71,7 +71,7 @@ describe("학습 틴트·여정선 계약 (S3-18)", () => {
   });
 
   it("여정선은 완료 구간 틴트와 현재 노드 강조를 가진다", () => {
-    expect(learningHub).toContain(".learn-path-course-list li.is-completed::before");
+    expect(learningHub).toContain(".learn-path-course-list li.is-completed .learn-path-step");
     expect(learningHub).toContain(".learn-path-course-list li.is-current .learn-path-step");
     // 여정선에는 상주 모션을 두지 않는다.
     const section = learningHub.slice(learningHub.indexOf("S3-18 학습 틴트·여정선"));

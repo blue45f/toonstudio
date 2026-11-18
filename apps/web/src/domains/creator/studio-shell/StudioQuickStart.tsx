@@ -3,7 +3,7 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { ArrowRight, PanelsTopLeft, PencilLine, Plus, Zap } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
@@ -112,20 +112,63 @@ export function StudioQuickStart({ locale, presentation = "section" }: {
 
   if (presentation === "drawing-card") {
     return (
-      <article className="create-start-choice create-start-choice-drawing">
-        <img className="create-start-choice-art" src="/brand/lobby-hq-20261003/canvas-noir-768.webp"
-          srcSet="/brand/lobby-hq-20261003/canvas-noir-480.webp 480w, /brand/lobby-hq-20261003/canvas-noir-768.webp 768w"
-          sizes="(min-width: 640px) 50vw, 56vw" alt="" aria-hidden="true" loading="eager" decoding="async" />
+      <article
+        className="create-start-choice create-start-choice-drawing ink-frame"
+        data-ink-enter="panel"
+        style={{ "--ink-i": 1, "--ink-radius": "16px" } as CSSProperties}
+        onPointerMove={(event) => {
+          if (event.pointerType !== "mouse") return;
+          const stage = event.currentTarget.querySelector<HTMLElement>("[data-tilt-stage]");
+          if (!stage) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          const nx = (event.clientX - rect.left) / Math.max(1, rect.width) - 0.5;
+          const ny = (event.clientY - rect.top) / Math.max(1, rect.height) - 0.5;
+          stage.style.setProperty("--tilt-rx", `${(-ny * 5).toFixed(2)}deg`);
+          stage.style.setProperty("--tilt-ry", `${(nx * 5).toFixed(2)}deg`);
+        }}
+        onPointerLeave={(event) => {
+          const stage = event.currentTarget.querySelector<HTMLElement>("[data-tilt-stage]");
+          stage?.style.setProperty("--tilt-rx", "0deg");
+          stage?.style.setProperty("--tilt-ry", "0deg");
+        }}
+      >
         <div className="create-start-choice-copy">
-          <p className="create-start-choice-kind"><PencilLine size={18} aria-hidden="true" />{copy("그리며 떠올리기", "Think through drawing")}</p>
-          <h2>{copy("바로 그리기", "Draw right away")}</h2>
-          <p className="create-start-choice-description">{copy("빈 캔버스에서 자유롭게.", "Create freely on a blank canvas.")}</p>
-          <button type="button" disabled={busyId !== null} onClick={() => start(QUICK_STARTS[1])}
-            className="create-start-choice-action" aria-busy={busyId !== null} aria-describedby={error ? errorId : undefined}>
-            {busyId ? copy("새 캔버스 여는 중…", "Opening a new canvas…") : copy("캔버스 열기", "Open canvas")}
-            <ArrowRight size={19} aria-hidden="true" />
-          </button>
-          {error ? <p id={errorId} role="alert" className="create-start-choice-error">{error}</p> : null}
+          <div className="create-start-choice-text">
+            <p className="create-start-choice-kind">
+              <PencilLine size={16} strokeWidth={1.6} aria-hidden="true" />
+              {copy("그리며 떠올리기", "Think through drawing")}
+            </p>
+            <h2>{copy("바로 그리기", "Draw right away")}</h2>
+            <p className="create-start-choice-description">
+              {copy("빈 캔버스에서 첫 선부터 자유롭게 시작합니다", "Start sketching freely on a blank canvas")}
+            </p>
+          </div>
+          <div>
+            <button
+              type="button"
+              disabled={busyId !== null}
+              onClick={() => start(QUICK_STARTS[1])}
+              className="create-start-choice-action ink-arrow"
+              aria-busy={busyId !== null}
+              aria-describedby={error ? errorId : undefined}
+            >
+              {busyId ? copy("새 캔버스 여는 중…", "Opening a new canvas…") : copy("캔버스 열기", "Open canvas")}
+              <ArrowRight size={16} strokeWidth={1.7} aria-hidden="true" />
+            </button>
+            {error ? <p id={errorId} role="alert" className="create-start-choice-error">{error}</p> : null}
+          </div>
+        </div>
+        <div data-tilt-stage="true" className="create-start-choice-media ink-cover ink-sheen ink-stage-tilt" aria-hidden="true">
+          <img
+            className="create-start-choice-art"
+            data-ink-enter="zoom"
+            src="/brand/lobby-hq-20261003/canvas-noir-768.webp"
+            srcSet="/brand/lobby-hq-20261003/canvas-noir-480.webp 480w, /brand/lobby-hq-20261003/canvas-noir-768.webp 768w"
+            sizes="(min-width: 640px) 24vw, 120px"
+            alt=""
+            loading="eager"
+            decoding="async"
+          />
         </div>
       </article>
     );
@@ -134,17 +177,17 @@ export function StudioQuickStart({ locale, presentation = "section" }: {
   return (
     <section
       id="quick-draw"
-      className="mt-6 rounded-2xl border border-accent/30 bg-accent-soft/20 px-4 py-5 sm:px-6"
+      className="mt-6 rounded-2xl border border-line bg-panel px-4 py-5 sm:px-6"
       aria-label={copy("빠른 시작", "Quick start")}
       data-studio-quick-start="true"
     >
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-xs font-black text-accent">
-            <Zap size={15} aria-hidden="true" />
+          <p className="flex items-center gap-2 text-xs font-medium text-fg-2">
+            <Zap size={15} strokeWidth={1.6} aria-hidden="true" />
             {copy("설정 없이 시작", "Start without setup")}
           </p>
-          <h2 className="mt-2 text-xl font-black text-fg">
+          <h2 className="mt-2 text-xl font-semibold text-fg [word-break:keep-all]">
             {copy("바로 시작하기", "Start right away")}
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-fg-2">

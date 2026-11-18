@@ -9,6 +9,8 @@
   background: var(--color-canvas);
 }
 [data-site-experience] .site-experience-ambient { position: absolute; z-index: -1; inset: 0 0 auto; height: min(1200px, 130vh); overflow: clip; pointer-events: none; }
+/* 차분한 화면(기본값)에서는 장식 장면·모자이크·리본을 그리지 않는다. 화려하게를 고른 사용자만 본다(2026-11-18). */
+[data-site-experience="calm"] .site-experience-ambient { display: none; }
 [data-site-experience="vivid"] .site-experience-ambient::before {
   content: ""; position: absolute; inset: -8%; opacity: 0.75;
   background: radial-gradient(ellipse at 12% 9%, color-mix(in srgb, var(--experience-violet) 24%, transparent), transparent 44%), radial-gradient(ellipse at 86% 26%, color-mix(in srgb, var(--experience-cyan) 18%, transparent), transparent 40%), radial-gradient(ellipse at 40% 62%, color-mix(in srgb, var(--experience-coral) 12%, transparent), transparent 38%);

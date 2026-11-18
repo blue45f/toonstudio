@@ -130,9 +130,10 @@ describe("헤더 현재 위치는 한 곳만 표시한다", () => {
     // 가상 스튜디오는 S1-2부터 제작 하위 도구라 1차 메뉴가 아니라 제작 드롭다운의 자식이다.
     ["/studio/space", "studio"],
     ["/studio/p/project-1/space", "studio"],
-    ["/production/projects/demo/overview", "collaborate"],
-    ["/team/people", "collaborate"],
-    ["/collaborate", "collaborate"],
+    // 협업은 2026-11-18부터 내 작업 패널의 "함께 만들기" 묶음이다.
+    ["/production/projects/demo/overview", "studio"],
+    ["/team/people", "studio"],
+    ["/collaborate", "studio"],
     ["/ranking", "explore"],
     ["/research/fonts", "learn"],
     ["/studio/manual", "learn"],

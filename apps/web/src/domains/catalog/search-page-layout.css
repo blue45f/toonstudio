@@ -1,4 +1,5 @@
-/* 검색 전용 배치다. 공유 SearchExplorer의 상태·필터·카드 렌더링은 바꾸지 않는다. */
+/* 검색 전용 배치다. 공유 SearchExplorer의 상태·필터·카드 계약은 유지하면서 컨트롤 반경과 무게만 단정히 정리한다.
+ * SearchPage.layout.test.tsx 계약상 이 시트에는 animation/transition 속성을 선언하지 않는다. */
 .search-page-workspace { min-width: 0; }
 .search-page-heading {
   display: flex;
@@ -23,11 +24,11 @@
   gap: .5rem;
   padding: .5rem .375rem;
   border: 1px solid var(--color-line);
-  border-radius: .75rem;
+  border-radius: .5rem;
   background: var(--color-card);
   color: var(--color-fg-2);
   font-size: .75rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.25;
   text-align: center;
   overflow-wrap: anywhere;
@@ -37,7 +38,7 @@
   background: var(--color-accent-soft);
   color: var(--color-fg);
 }
-.search-page-mode:hover { border-color: var(--color-accent); }
+.search-page-mode:hover { border-color: var(--color-line-strong); color: var(--color-fg); }
 .search-page-mode:focus-visible,
 .search-page-tools-summary:focus-visible {
   outline: 2px solid var(--color-accent);
@@ -45,7 +46,7 @@
 }
 .search-page-tools {
   border: 1px solid var(--color-line);
-  border-radius: 1rem;
+  border-radius: .75rem;
   background: var(--color-panel);
 }
 .search-page-tools-summary {
@@ -57,10 +58,10 @@
   justify-content: space-between;
   gap: .5rem .75rem;
   padding: .75rem 1rem;
-  border-radius: 1rem;
+  border-radius: .75rem;
   color: var(--color-fg-2);
   font-size: .875rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   list-style: none;
 }
@@ -68,8 +69,11 @@
 .search-page-tools-chevron { flex-shrink: 0; }
 .search-page-tools[open] > .search-page-tools-summary .search-page-tools-chevron { transform: rotate(180deg); }
 
-/* min-content 너비를 제한하되 접근 가능한 컨트롤을 잘라내지 않는다. */
+/* 공유 탐색기 크롬의 과도한 알약 반경과 무지개 패싯 칩을 차분한 책상 표면으로 다듬는다. */
 .search-page-results { min-width: 0; }
+.search-page-results [data-search-query-field] > div {
+  border-radius: .625rem;
+}
 .search-page-results [data-search-query-field] input {
   min-height: 3rem;
   font-size: 1rem;
@@ -77,6 +81,63 @@
 .search-page-results button {
   min-height: 3rem;
   min-width: 3rem;
+}
+.search-page-results > section > aside > div,
+.search-page-results > section > [data-search-results] > div:first-child {
+  border-radius: .75rem;
+}
+.search-page-results .search-facet-group button:not(:has([data-slot="badge"]))[aria-pressed="false"] {
+  border-color: var(--color-line) !important;
+  background-color: var(--color-panel) !important;
+  color: var(--color-fg-2) !important;
+  border-radius: .5rem;
+  box-shadow: none !important;
+}
+.search-page-results .search-facet-group button:not(:has([data-slot="badge"]))[aria-pressed="true"] {
+  border-color: var(--color-accent) !important;
+  background-color: var(--color-accent-soft) !important;
+  color: var(--color-accent) !important;
+  border-radius: .5rem;
+  box-shadow: none !important;
+}
+.search-page-results .search-facet-group button:has([data-slot="badge"]) {
+  min-width: 0;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.search-page-results .search-facet-group button[aria-pressed="false"] [data-slot="badge"][data-tone="genre"] {
+  border-color: var(--color-line) !important;
+  background-color: var(--color-panel) !important;
+  color: var(--color-fg-2) !important;
+  border-radius: .5rem;
+  padding: .375rem .625rem;
+  font-size: .75rem;
+}
+.search-page-results .search-facet-group button[aria-pressed="true"] [data-slot="badge"][data-tone="genre"] {
+  border-color: var(--color-accent) !important;
+  background-color: var(--color-accent-soft) !important;
+  color: var(--color-accent) !important;
+  border-radius: .5rem;
+  padding: .375rem .625rem;
+  font-size: .75rem;
+}
+.search-page-results [data-slot="tag"] {
+  border-radius: .5rem;
+}
+.search-page-results [role="tablist"] {
+  border-radius: .5rem;
+  padding: .1875rem;
+}
+.search-page-results [role="tablist"] button,
+.search-page-results [role="tablist"] [role="tab"] {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border-radius: .375rem !important;
+}
+.search-page-results [role="tablist"] span[aria-hidden="true"] {
+  border-radius: .375rem !important;
 }
 .search-page-heading > a { min-height: 3rem; }
 .search-page-results > section {
@@ -92,15 +153,14 @@
 @media (min-width: 1024px) {
   .search-page-results > section { grid-template-columns: 16rem minmax(0, 1fr); }
 }
-/* 새 동작 애니메이션은 추가하지 않는다. PageEntrance의 reduced-motion 계약을 유지한다. */
 
-/* 시안의 네 가지 유형 이동을 세부 검색 목록과 분리한다. */
-.search-other-types { min-width: 0; margin-top: 1.5rem; border-top: 1px solid var(--color-line); padding-top: 1rem; }
+/* 네 가지 유형 이동을 세부 검색 목록과 분리한다. */
+.search-other-types { min-width: 0; margin-top: 2rem; border-top: 1px solid var(--color-line); padding-top: 1.25rem; }
 .search-other-types-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-top: .75rem; }
-.search-other-types-link { display: flex; min-width: 0; min-height: 3rem; align-items: center; gap: .5rem; padding: .5rem .75rem; border: 1px solid var(--color-line); border-radius: .75rem; background: var(--color-card); color: var(--color-fg); font-size: .875rem; font-weight: 600; }
-.search-other-types-link svg { flex-shrink: 0; color: var(--color-accent); }
+.search-other-types-link { display: flex; min-width: 0; min-height: 3rem; align-items: center; gap: .5rem; padding: .5rem .75rem; border: 1px solid var(--color-line); border-radius: .625rem; background: var(--color-card); color: var(--color-fg); font-size: .875rem; font-weight: 500; }
+.search-other-types-link svg { flex-shrink: 0; color: var(--color-fg-2); }
 .search-other-types-link svg:last-child { margin-left: auto; }
-.search-other-types-link:hover { border-color: var(--color-accent); }
+.search-other-types-link:hover { border-color: var(--color-line-strong); }
 .search-other-types-link:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
 .search-other-types-details { margin-top: .75rem; }
 .search-other-types-results { min-width: 0; padding: 0 1rem 1rem; }
@@ -109,10 +169,10 @@
   .search-other-types-links { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (min-width: 1024px) {
-  /* 긴 플랫폼 목록이 작품 결과 아래 이동까지 밀어내지 않도록 필터 안에서 스크롤한다. */
   .search-page-results > section > aside > div {
     max-height: calc(100dvh - var(--site-header-sticky-offset, 5rem) - 2rem);
     overflow-y: auto;
+    overscroll-behavior: contain;
     scrollbar-gutter: stable;
   }
 }
@@ -130,10 +190,10 @@
 .search-facet-group[open] > summary svg { transform: rotate(180deg); }
 
 /* 작품 검색과 결과를 다른 탐색 방식보다 먼저 표시한다. */
-.search-page-heading-compact { position: relative; display: block; min-height: 3rem; margin-bottom: .75rem; }
-.search-page-heading-compact > h1 { display: flex; min-height: 3rem; align-items: center; padding-right: 9.5rem; }
+.search-page-heading-compact { position: relative; display: block; min-height: 3rem; margin-bottom: 1.25rem; }
+.search-page-heading-compact > h1 { display: inline-flex; min-height: 3rem; align-items: center; padding-right: 1rem; max-width: calc(100% - 9.5rem); }
 .search-page-methods { min-width: 0; }
-.search-page-methods-summary { position: absolute; top: 0; right: 0; display: flex; max-width: 9rem; min-height: 3rem; align-items: center; gap: .375rem; padding: .5rem .625rem; border: 1px solid var(--color-line); border-radius: .75rem; color: var(--color-fg-2); font-size: .875rem; cursor: pointer; list-style: none; }
+.search-page-methods-summary { position: absolute; top: 0; right: 0; display: flex; max-width: 9rem; min-height: 3rem; align-items: center; gap: .375rem; padding: .5rem .625rem; border: 1px solid var(--color-line); border-radius: .5rem; color: var(--color-fg-2); font-size: .8125rem; font-weight: 500; cursor: pointer; list-style: none; }
 .search-page-methods-summary > svg { flex-shrink: 0; }
 .search-page-methods-summary::-webkit-details-marker { display: none; }
 .search-page-methods-summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }

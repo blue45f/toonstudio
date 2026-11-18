@@ -17,13 +17,13 @@ export function SearchOtherTypes({ query }: { readonly query: string }) {
   ];
   return (
     <section className="search-other-types" aria-label={bt("다른 유형에서도 찾기", "Also in other types")}>
-      <h2 className="text-sm font-bold text-fg">{bt("다른 유형에서도 찾기", "Also in other types")}</h2>
+      <h2 className="text-sm font-semibold text-fg [word-break:keep-all]">{bt("다른 유형에서도 찾기", "Also in other types")}</h2>
       <nav className="search-other-types-links" aria-label={bt("유형별 검색 바로가기", "Search by content type")}>
         {destinations.map(({ label, icon: Icon, href }) => (
-          <Link key={href} href={href} className="search-other-types-link">
-            <Icon size={18} aria-hidden="true" />
+          <Link key={href} href={href} className="search-other-types-link ink-frame ink-arrow">
+            <Icon size={17} strokeWidth={1.5} aria-hidden="true" />
             <span>{label}</span>
-            <ChevronRight size={14} aria-hidden="true" />
+            <ChevronRight size={14} strokeWidth={1.5} aria-hidden="true" />
           </Link>
         ))}
       </nav>

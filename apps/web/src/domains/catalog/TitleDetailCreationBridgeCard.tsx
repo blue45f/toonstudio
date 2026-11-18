@@ -28,7 +28,7 @@ export function TitleDetailCreationBridgeCard({
     >
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-2 text-sm font-medium text-fg-2 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
         {bi("창작·뷰어 체험", "Create or try the viewer")}
-        <ChevronDown size={16} aria-hidden="true" className="shrink-0 group-open:rotate-180" />
+        <ChevronDown size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 group-open:rotate-180" />
       </summary>
       <nav
         aria-label={bi("창작·뷰어 체험", "Create or try the viewer")}
@@ -43,23 +43,23 @@ export function TitleDetailCreationBridgeCard({
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/create"
-            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-2 px-3" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-2 rounded-lg px-3" })}
           >
-            <Brush size={15} aria-hidden="true" />
+            <Brush size={15} strokeWidth={1.5} aria-hidden="true" />
             {bi("3컷 이야기 만들기", "Create a 3-panel story")}
           </Link>
           <Link
             href="/read/spatial"
-            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 px-3" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 rounded-lg px-3" })}
           >
-            <Layers size={15} aria-hidden="true" />
+            <Layers size={15} strokeWidth={1.5} aria-hidden="true" />
             {bi("공간 뷰어 체험", "Try the spatial viewer")}
           </Link>
           <Link
             href={`/character-chat?work=${encodeURIComponent(slug)}`}
-            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 px-3" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 rounded-lg px-3" })}
           >
-            <MessageSquareText size={15} aria-hidden="true" />
+            <MessageSquareText size={15} strokeWidth={1.5} aria-hidden="true" />
             {bi("캐릭터와 대화하기", "Chat with characters")}
           </Link>
         </div>

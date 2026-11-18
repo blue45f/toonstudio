@@ -52,19 +52,8 @@ function Curriculum({ store }: { store: LearningStore }) {
     <>
       <header className="learn-hero">
         <div>
-          <div className="flex items-center gap-3">
-            <img
-              src="/brand/luminous-atelier-20261114/icon-nav-learn-collab.webp"
-              alt=""
-              aria-hidden="true"
-              width={40}
-              height={40}
-              decoding="async"
-              className="size-10 shrink-0 rounded-xl border border-line/70 bg-panel/80 object-cover p-0.5 shadow-sm"
-            />
-            <p className="learn-eyebrow !mb-0">TOONSTUDIO LEARNING LAB</p>
-          </div>
-          <h1>읽고, 움직여 보고.<br />나만의 한 컷으로.</h1>
+          <p className="learn-eyebrow">웹툰 제작 실습실</p>
+          <h1>읽고, 움직여 보고<br />나만의 한 컷으로</h1>
           <p className="learn-intro">이야기의 첫 문장부터 완성 원고까지.<br />눈으로 이해하고 직접 실험하는 웹툰 제작 수업입니다.</p>
           <div className="learn-actions">
             <Link className="learn-primary" to={lessonUrl(next.id)}>{count ? "이어서 학습하기" : "첫 수업 시작하기"} <span aria-hidden="true">→</span></Link>
@@ -72,9 +61,9 @@ function Curriculum({ store }: { store: LearningStore }) {
           </div>
         </div>
         <aside className="learn-hero-note" aria-label="학습 방법">
-          <span className="learn-eyebrow">YOUR FIRST THREE PANELS</span>
+          <span className="learn-eyebrow">첫 세 컷의 설계</span>
           <div className="learn-mini-panels" aria-hidden="true"><span>상황<br /><b>?</b></span><span>변화<br /><b>!</b></span><span>반응<br /><b>→</b></span></div>
-          <h2>작은 콘티부터 시작하세요.</h2>
+          <h2>작은 콘티부터 시작하세요</h2>
           <p>선이 완벽하지 않아도 괜찮습니다. 독자가 무엇을, 어떤 순서로 읽을지 먼저 실험해 보세요.</p>
           <span className="learn-small">학습용 도식 · 작품 예시 아님</span>
         </aside>
@@ -91,7 +80,7 @@ function Curriculum({ store }: { store: LearningStore }) {
       </section>
       <section aria-labelledby="learn-curriculum-title">
         <div className="learn-section-heading">
-          <div><p className="learn-eyebrow">CURRICULUM</p><h2 id="learn-curriculum-title">한 편을 만드는 순서</h2></div>
+          <div><p className="learn-eyebrow">커리큘럼</p><h2 id="learn-curriculum-title">한 편을 만드는 순서</h2></div>
           <p className="learn-small">설명 → 예제 → 실습 → 확인 퀴즈</p>
         </div>
         <div className="learn-filters">
@@ -131,7 +120,7 @@ function Curriculum({ store }: { store: LearningStore }) {
           : <div className="learn-empty"><h3>{learnStatusText("learn.status.content.lessonsEmpty", "일치하는 강좌가 없습니다.")}</h3><p>다른 키워드 또는 전체 과정을 선택해 보세요.</p><button type="button" onClick={() => setParams({})}>검색 초기화</button></div>}
       </section>
       <section className="learn-banner">
-        <div><p className="learn-eyebrow">FROM LEARNING TO MAKING</p><h2>배운 것을 툰스튜디오에서.</h2><p>새 탭에서 직접 따라 하는 기본 실습부터 시작합니다. 작업 자동 생성이나 자동 채점 기능은 아닙니다.</p></div>
+        <div><p className="learn-eyebrow">학습에서 작업으로</p><h2>배운 것을 툰스튜디오에서</h2><p>새 탭에서 직접 따라 하는 기본 실습부터 시작합니다. 작업 자동 생성이나 자동 채점 기능은 아닙니다.</p></div>
         <Link className="learn-secondary" to="/learn/studio">실습 과정 살펴보기 →</Link>
       </section>
     </>
@@ -181,19 +170,8 @@ function Glossary({ store }: { store: LearningStore }) {
   return (
     <>
       <header className="learn-lesson-header">
-        <div className="flex items-center gap-3">
-          <img
-            src="/brand/luminous-atelier-20261114/icon-nav-learn-collab.webp"
-            alt=""
-            aria-hidden="true"
-            width={40}
-            height={40}
-            decoding="async"
-            className="size-10 shrink-0 rounded-xl border border-line/70 bg-panel/80 object-cover p-0.5 shadow-sm"
-          />
-          <p className="learn-eyebrow !mb-0">WEBTOON GLOSSARY</p>
-        </div>
-        <h1>알면 더 잘 보이는<br />웹툰의 언어.</h1>
+        <p className="learn-eyebrow">웹툰 용어 사전</p>
+        <h1>알면 더 잘 보이는<br />웹툰의 언어</h1>
         <p className="learn-intro">뜻만 외우지 마세요. 쓰이는 장면과 헷갈리는 개념까지 함께 익혀 보세요.</p>
       </header>
       <div className="learn-filters">
@@ -268,8 +246,8 @@ function StudioCourses({ store }: { store: LearningStore }) {
   return (
     <>
       <header className="learn-lesson-header">
-        <p className="learn-eyebrow">MAKE IT IN TOONSTUDIO</p>
-        <h1>배운 것을<br />내 작업으로 연결하기.</h1>
+        <p className="learn-eyebrow">툰스튜디오 실습 과정</p>
+        <h1>배운 것을<br />내 작업으로 연결하기</h1>
         <p className="learn-intro">툰스튜디오를 새 탭에 열어 따라 하는 자율 실습입니다.<br />종이 또는 다른 드로잉 도구에서도 기본 과제를 연습할 수 있습니다.</p>
       </header>
       <div className="learn-card-grid">

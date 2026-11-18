@@ -3,7 +3,7 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { ArrowRight, LayoutGrid, X } from "lucide-react";
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, type CSSProperties, type RefObject } from "react";
 import { useLocation } from "react-router-dom";
 
 import {
@@ -137,6 +137,9 @@ export function MobileHeaderNavigation({
   const currentGroupId = siteNavigationGroupForPath(pathname)?.id ?? null;
   const mobileTabs = [...mobileSiteTabsForPath(pathname), SITE_NAVIGATION_ITEMS.allMenu];
   const resolvedPurposeHref = currentPurposeHref === undefined ? siteMobilePurposeHref(pathname) : currentPurposeHref;
+  const activeTabIndex = mobileTabs.findIndex((item) => item.id === "all-menu"
+    ? pathname === "/sitemap" || pathname.startsWith("/sitemap/")
+    : resolvedPurposeHref === item.href);
   /** The bottom tab bar is a mobile-only surface: never render it on desktop,
    * even if the CSS media query hiding it were lost. Tabs keep the canonical
    * destinations from the navigation model (no legacy /new or /more aliases). */
@@ -337,18 +340,19 @@ export function MobileHeaderNavigation({
         <nav
           aria-label={t("nav.quickAccess")}
           data-site-product={navigationContext}
-          className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-panel min-[1180px]:hidden"
+          className="site-bottom-tabs fixed inset-x-0 bottom-0 z-50 border-t border-line bg-panel min-[1180px]:hidden"
         >
           <div
             className={cx(
-              "mx-auto grid max-w-md px-1 pb-[env(safe-area-inset-bottom)] md:max-w-2xl md:px-4",
+              "site-bottom-tabs__grid relative mx-auto grid max-w-md px-1 pb-[env(safe-area-inset-bottom)] md:max-w-2xl md:px-4",
               mobileTabs.length === 5 ? "grid-cols-5" : "grid-cols-4"
             )}
+            style={{ "--tab-count": mobileTabs.length, "--tab-index": Math.max(0, activeTabIndex) } as CSSProperties}
           >
-            {mobileTabs.map((item) => {
-              const active = item.id === "all-menu"
-                ? pathname === "/sitemap" || pathname.startsWith("/sitemap/")
-                : resolvedPurposeHref === item.href;
+            {/* 현재 탭을 가리키는 잉크 선 하나. 탭이 바뀌면 transform으로만 그 자리로 미끄러진다. */}
+            <span aria-hidden="true" className="site-bottom-tabs__ink" data-visible={activeTabIndex >= 0 ? "true" : undefined} />
+            {mobileTabs.map((item, index) => {
+              const active = index === activeTabIndex;
               const Icon = item.icon;
               const label = siteNavigationText(item.label, locale);
               return (
@@ -358,24 +362,12 @@ export function MobileHeaderNavigation({
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
                   className={cx(
-                    "relative flex min-h-[3.75rem] flex-col items-center justify-center gap-1 py-2 text-xs font-semibold outline-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent active:bg-raised/55",
-                    active ? "text-accent" : "text-fg-2 hover:text-fg"
+                    "site-bottom-tabs__link relative flex min-h-[3.75rem] flex-col items-center justify-center gap-1 py-2 text-xs font-medium outline-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent motion-reduce:transition-none",
+                    active ? "text-fg" : "text-fg-3 hover:text-fg-2"
                   )}
                 >
-                  <span className="relative grid size-8 place-items-center rounded-xl transition-colors">
-                    {active && (
-                      <>
-                        <span
-                          aria-hidden="true"
-                          className="absolute -top-2 left-1/2 h-0.5 w-7 -translate-x-1/2 rounded-full bg-accent"
-                        />
-                      </>
-                    )}
-                    <Icon
-                      size={22}
-                      strokeWidth={active ? 2.35 : 1.85}
-                      className="relative"
-                    />
+                  <span className="relative grid size-8 place-items-center">
+                    <Icon size={22} strokeWidth={1.75} className={cx("relative transition-colors duration-150 motion-reduce:transition-none", active && "text-accent")} />
                   </span>
                   <span className="min-w-0 max-w-full truncate">{label}</span>
                 </Link>

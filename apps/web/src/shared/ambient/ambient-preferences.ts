@@ -1,7 +1,7 @@
 /**
  * 앰비언트(날씨·계절 배경) 사용자 설정.
  *
- * - 강도: 끔 / 은은하게(기본) / 화려하게. 기존 키를 그대로 써서 이미 '끔'을 고른 사용자는 유지된다.
+ * - 강도: 끔(기본) / 은은하게 / 화려하게. 2026-11-18 unslop 개편부터 배경 효과는 사용자가 고를 때만 켠다. 기존 키를 그대로 써서 이미 '끔'을 고른 사용자는 유지된다.
  * - 효과: 자동(실제 날씨·계절) 또는 직접 고른 효과.
  * - 위치: '내 위치 날씨 사용' 여부. 한 번도 고르지 않았으면 null.
  *
@@ -14,8 +14,8 @@ export type AmbientIntensity = "off" | "subtle" | "vivid";
 
 export const AMBIENT_INTENSITIES: readonly AmbientIntensity[] = ["off", "subtle", "vivid"];
 
-/** 기본 강도: 은은하게(켜짐). */
-export const AMBIENT_DEFAULT_INTENSITY: AmbientIntensity = "subtle";
+/** 기본 강도: 끔. 장식 배경은 콘텐츠와 경쟁하지 않도록 사용자가 직접 켤 때만 보인다(2026-11-18). */
+export const AMBIENT_DEFAULT_INTENSITY: AmbientIntensity = "off";
 
 /** 사용자가 고를 수 있는 배경 효과. auto는 실제 날씨(없으면 계절)를 따른다. */
 export type AmbientEffectChoice =

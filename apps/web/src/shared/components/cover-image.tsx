@@ -76,7 +76,7 @@ export function CoverImage({
         }}
         className={cx(
           className,
-          !priority && "transition-opacity duration-500 ease-out",
+          !priority && "transition-opacity duration-300 ease-[var(--ink-ease)] motion-reduce:transition-none",
           !priority && !loaded && "opacity-0"
         )}
       />

@@ -1,6 +1,6 @@
 // 작품 시작 시트(/create) — 작품을 시작하는 유일한 정문(S2-6).
 import { ArrowLeft, ArrowRight, BookHeart, BookOpen, ChevronDown, Clapperboard, LayoutTemplate, MessageSquare, Plus, Upload } from "lucide-react";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 
 import type { StudioProjectLibraryEntry } from "./studio-project-library-store";
@@ -83,9 +83,9 @@ function RecentWorkThumbnail({ project }: { readonly project: StudioProjectLibra
 }
 
 const CHOICE_CARD_CLASS =
-  "fx-lift group flex h-full scroll-my-24 flex-col rounded-2xl border border-line bg-panel/45 p-5 transition-[transform,border-color,background-color,box-shadow] duration-200 hover:border-accent/55 hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none sm:p-6";
+  "ink-frame group flex h-full scroll-my-24 flex-col rounded-[14px] border border-line bg-panel p-5 transition-[border-color,background-color] duration-150 hover:border-line-strong hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none sm:p-5";
 const CHOICE_ICON_CLASS =
-  "flex size-11 items-center justify-center rounded-xl bg-accent/15 text-accent";
+  "flex size-9 items-center justify-center rounded-lg border border-line bg-card text-fg-2";
 
 const PIPELINE_MODE_EN_COPY: Readonly<
   Record<string, { readonly step: string; readonly label: string; readonly description: string; readonly ctaLabel: string }>
@@ -164,26 +164,27 @@ export function CreateStartPage() {
     <section
       aria-label={bt("웹소설 원작 · 시놉시스 → 웹툰 4단계 파이프라인", "Webnovel & Synopsis to Webtoon 4-Step Pipeline")}
       data-testid="create-rea-story-pipeline"
-      className={`${spacingClass} rounded-2xl border border-line bg-panel/60 p-4 sm:p-5`}
+      className={`${spacingClass}`}
     >
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-2 border-b border-line pb-3">
         <div>
-          <p className="text-xs font-semibold text-accent">
+          <p className="text-xs font-medium text-fg-3">
             {bt("4단계 제작 흐름", "4-step workflow")}
           </p>
-          <h2 className="mt-0.5 text-sm font-bold text-fg">
+          <h2 className="mt-1 text-base font-semibold text-fg [word-break:keep-all]">
             {bt("줄거리 정리부터 콘티 · 3D 배경 · 연재 준비까지 차례대로 이어가요", "Follow four clear steps from story notes to boards, 3D scenes, and release preparation")}
           </h2>
         </div>
         <Link
           href="/studio/ai-lab"
           style={{ minHeight: "48px" }}
-          className="inline-flex min-h-11 scroll-my-24 items-center rounded-xl border border-line bg-card px-3.5 py-2 text-xs font-semibold text-fg transition-colors hover:border-accent/55 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="ink-arrow inline-flex min-h-11 scroll-my-24 items-center gap-1.5 rounded-lg border border-line bg-card px-3.5 py-2 text-xs font-medium text-fg transition-colors hover:border-accent/55 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          {bt("AI 창작 도우미 열기 →", "Open AI Creative Helper →")}
+          <span>{bt("AI 창작 도우미 열기", "Open AI Creative Helper")}</span>
+          <ArrowRight size={14} strokeWidth={1.6} aria-hidden="true" />
         </Link>
       </div>
-      <div className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
+      <div className="ink-cascade grid gap-3 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
         {STORY_TO_WEBTOON_PIPELINE_MODES.map((mode) => {
           const enMode = PIPELINE_MODE_EN_COPY[mode.id];
           const descriptionKo = mode.id === "ink-render-publish"
@@ -193,17 +194,18 @@ export function CreateStartPage() {
             <Link
               key={mode.id}
               href={mode.targetHref}
-              className="flex min-h-11 flex-col justify-between rounded-xl border border-line/80 bg-canvas/85 p-3.5 text-left transition-colors hover:border-accent/50"
+              className="ink-frame ink-arrow flex min-h-11 flex-col justify-between rounded-[14px] border border-line bg-panel p-4 text-left transition-colors hover:border-line-strong hover:bg-raised"
             >
               <div>
-                <span className="inline-block rounded bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-accent">
+                <span className="inline-block font-mono text-[11px] font-medium tabular-nums text-fg-3">
                   {bt(mode.step, enMode?.step ?? mode.step)}
                 </span>
-                <p className="mt-2 text-xs font-bold text-fg">{bt(mode.label, enMode?.label ?? mode.label)}</p>
-                <p className="mt-1 text-xs leading-relaxed text-fg-2">{bt(descriptionKo, enMode?.description ?? descriptionKo)}</p>
+                <p className="mt-1.5 text-sm font-semibold text-fg [word-break:keep-all]">{bt(mode.label, enMode?.label ?? mode.label)}</p>
+                <p className="mt-1.5 text-xs leading-5 text-fg-2 [word-break:keep-all]">{bt(descriptionKo, enMode?.description ?? descriptionKo)}</p>
               </div>
-              <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-accent">
-                {bt(mode.ctaLabel, enMode?.ctaLabel ?? mode.ctaLabel)} →
+              <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-accent">
+                <span>{bt(mode.ctaLabel, enMode?.ctaLabel ?? mode.ctaLabel)}</span>
+                <ArrowRight size={14} strokeWidth={1.6} aria-hidden="true" />
               </span>
             </Link>
           );
@@ -247,10 +249,10 @@ export function CreateStartPage() {
 
   return (
     <Container size="wide" className="create-start-page py-6 sm:py-10">
-      <header className="create-start-heading">
+      <header className="create-start-heading" data-ink-enter="rise">
         {activeSection !== "all" ? (
           <Link href={sectionHref("all")} className="create-start-back">
-            <ArrowLeft size={18} aria-hidden />{bt("작품 시작으로 돌아가기", "Back to start")}
+            <ArrowLeft size={16} strokeWidth={1.6} aria-hidden />{bt("작품 시작으로 돌아가기", "Back to start")}
           </Link>
         ) : null}
         <h1 ref={headingRef} tabIndex={-1}>{activeSection === "lanes" ? bt("다른 시작 방법", "More ways to start")
@@ -259,50 +261,101 @@ export function CreateStartPage() {
           : activeSection === "presets" ? bt("장르 프리셋 고르기", "Choose a genre preset")
           : activeSection === "continue" ? bt("이어서 작업", "Continue your work")
           : bt("어떻게 시작할까요?", "How would you like to start?")}</h1>
+        <span className="create-start-heading-ink" data-ink-enter="line" aria-hidden="true" />
         <p>{activeSection === "all"
-          ? bt("지금 하고 싶은 것부터 선택하세요.", "Choose what you would like to do now.")
-          : bt("필요한 방법을 고르고, 하던 작업으로 이어가세요.", "Choose the next step for your work.")}</p>
+          ? bt("지금 하고 싶은 것부터 선택하세요", "Choose what you would like to do now")
+          : bt("필요한 방법을 고르고 하던 작업으로 이어가세요", "Choose the next step for your work")}</p>
       </header>
 
       {activeSection === "all" ? (
         <>
           <section className="create-start-choice-grid" data-testid="create-start-persona-guide"
             aria-label={bt("작품을 시작하는 두 가지 방법", "Two ways to start a work")}>
-            <article className="create-start-choice">
-              <img className="create-start-choice-art" src="/brand/lobby-hq-20261003/storyboard-768.webp"
-                srcSet="/brand/lobby-hq-20261003/storyboard-480.webp 480w, /brand/lobby-hq-20261003/storyboard-768.webp 768w"
-                sizes="(min-width: 640px) 50vw, 56vw" alt="" aria-hidden="true" loading="eager" decoding="async" />
+            <article
+              className="create-start-choice ink-frame"
+              data-ink-enter="panel"
+              style={{ "--ink-i": 0, "--ink-radius": "16px" } as CSSProperties}
+              onPointerMove={(event) => {
+                if (event.pointerType !== "mouse") return;
+                const stage = event.currentTarget.querySelector<HTMLElement>("[data-tilt-stage]");
+                if (!stage) return;
+                const rect = event.currentTarget.getBoundingClientRect();
+                const nx = (event.clientX - rect.left) / Math.max(1, rect.width) - 0.5;
+                const ny = (event.clientY - rect.top) / Math.max(1, rect.height) - 0.5;
+                stage.style.setProperty("--tilt-rx", `${(-ny * 5).toFixed(2)}deg`);
+                stage.style.setProperty("--tilt-ry", `${(nx * 5).toFixed(2)}deg`);
+              }}
+              onPointerLeave={(event) => {
+                const stage = event.currentTarget.querySelector<HTMLElement>("[data-tilt-stage]");
+                stage?.style.setProperty("--tilt-rx", "0deg");
+                stage?.style.setProperty("--tilt-ry", "0deg");
+              }}
+            >
               <div className="create-start-choice-copy">
-                <p className="create-start-choice-kind"><MessageSquare size={18} aria-hidden />{bt("생각부터 차근차근", "Start with an idea")}</p>
-                <h2>{bt("이야기부터 시작", "Start with a story")}</h2>
-                <p className="create-start-choice-description">{bt("인물과 이야기를 첫 장면으로.", "Bring your characters and story to a first scene.")}</p>
-                <Link href={storyHref} className="create-start-choice-action">
-                  {bt("이야기 시작하기", "Start my story")}<ArrowRight size={19} aria-hidden />
+                <div className="create-start-choice-text">
+                  <p className="create-start-choice-kind">
+                    <MessageSquare size={16} strokeWidth={1.6} aria-hidden />
+                    {bt("생각부터 차근차근", "Start with an idea")}
+                  </p>
+                  <h2>{bt("이야기부터 시작", "Start with a story")}</h2>
+                  <p className="create-start-choice-description">
+                    {bt("인물과 이야기를 정리해 첫 장면으로 풀어냅니다", "Bring your characters and story into a first scene")}
+                  </p>
+                </div>
+                <Link href={storyHref} className="create-start-choice-action ink-arrow">
+                  {bt("이야기 시작하기", "Start my story")}
+                  <ArrowRight size={16} strokeWidth={1.7} aria-hidden />
                 </Link>
+              </div>
+              <div data-tilt-stage="true" className="create-start-choice-media ink-cover ink-sheen ink-stage-tilt" aria-hidden="true">
+                <img
+                  className="create-start-choice-art"
+                  data-ink-enter="zoom"
+                  src="/brand/lobby-hq-20261003/storyboard-768.webp"
+                  srcSet="/brand/lobby-hq-20261003/storyboard-480.webp 480w, /brand/lobby-hq-20261003/storyboard-768.webp 768w"
+                  sizes="(min-width: 640px) 24vw, 120px"
+                  alt=""
+                  loading="eager"
+                  decoding="async"
+                />
               </div>
             </article>
             <StudioQuickStart locale={locale} presentation="drawing-card" />
           </section>
 
-          <section className="create-start-recent" aria-label={bt("최근 작업", "Recent work")}>
-            {recentWorkError ?? (recentProject && recentTarget ? (
-              <Link href={recentTarget.href} className="create-start-recent-link"
-                aria-label={bt(`${recentProject.title} 이어서 작업`, `Continue ${recentProject.title}`)}>
-                <RecentWorkThumbnail key={`${recentProject.id}:${recentProject.thumbnailUrl ?? ""}`} project={recentProject} />
-                <span className="create-start-recent-copy"><small>{bt("작업하던 작품이 있나요?", "Ready to pick up your work?")}</small><strong>{recentProject.title}</strong></span>
-                <span className="create-start-recent-action">{bt("이어서 작업", "Continue")}<ArrowRight size={18} aria-hidden /></span>
+          <div className="create-start-quick-grid">
+            <section className="create-start-recent ink-frame" aria-label={bt("최근 작업", "Recent work")}>
+              {recentWorkError ?? (recentProject && recentTarget ? (
+                <Link href={recentTarget.href} className="create-start-recent-link ink-arrow"
+                  aria-label={bt(`${recentProject.title} 이어서 작업`, `Continue ${recentProject.title}`)}>
+                  <RecentWorkThumbnail key={`${recentProject.id}:${recentProject.thumbnailUrl ?? ""}`} project={recentProject} />
+                  <span className="create-start-recent-copy"><small>{bt("작업하던 작품", "Recent manuscript")}</small><strong>{recentProject.title}</strong></span>
+                  <span className="create-start-recent-action">{bt("이어서 작업", "Continue")}<ArrowRight size={15} strokeWidth={1.6} aria-hidden /></span>
+                </Link>
+              ) : (
+                <div className="create-start-recent-empty"><span>{bt("아직 작업한 작품이 없어요", "No works yet")}</span><Link href="/studio" className="ink-arrow">{bt("내 작업 보기", "View my work")}<ArrowRight size={15} strokeWidth={1.6} aria-hidden /></Link></div>
+              ))}
+            </section>
+
+            <nav className="create-start-secondary" aria-label={bt("다른 자료로 시작하기", "Start with existing materials")}>
+              <Link href="/studio/templates" className="ink-frame ink-arrow">
+                <span className="create-start-secondary-label">
+                  <LayoutTemplate size={16} strokeWidth={1.6} aria-hidden />
+                  <span>{bt("템플릿 고르기", "Choose a template")}</span>
+                </span>
+                <ArrowRight size={15} strokeWidth={1.6} aria-hidden />
               </Link>
-            ) : (
-              <div className="create-start-recent-empty"><span>{bt("아직 작업한 작품이 없어요.", "No works yet.")}</span><Link href="/studio">{bt("내 작업 보기", "View my work")}<ArrowRight size={17} aria-hidden /></Link></div>
-            ))}
-          </section>
+              <Link href="/studio/import" className="ink-frame ink-arrow">
+                <span className="create-start-secondary-label">
+                  <Upload size={16} strokeWidth={1.6} aria-hidden />
+                  <span>{bt("파일 가져오기", "Import a file")}</span>
+                </span>
+                <ArrowRight size={15} strokeWidth={1.6} aria-hidden />
+              </Link>
+            </nav>
+          </div>
 
-          <nav className="create-start-secondary" aria-label={bt("다른 자료로 시작하기", "Start with existing materials")}>
-            <Link href="/studio/templates">{bt("템플릿 고르기", "Choose a template")}<ArrowRight size={18} aria-hidden /></Link>
-            <Link href="/studio/import">{bt("파일 가져오기", "Import a file")}<Upload size={18} aria-hidden /></Link>
-          </nav>
-
-          <div className="mt-6">
+          <div className="mt-8">
             <CreateStartGrandAtelierSection storyHref={storyHref} />
           </div>
 
@@ -314,18 +367,18 @@ export function CreateStartPage() {
               }
             }}
             data-testid="create-ai-blueprint-disclosure"
-            className="group/ai-composer mt-4 rounded-2xl border border-line bg-panel/45"
+            className="group/ai-composer mt-3 rounded-xl border border-line bg-panel"
           >
-            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-fg transition-colors hover:bg-card/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-medium text-fg transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
               <span className="min-w-0 [word-break:keep-all]">
                 {bt("글 한 줄로 콘티 초안 만들기", "Draft a storyboard from one line")}
               </span>
-              <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-fg-2">
+              <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-fg-3">
                 <span>{bt("선택 도구", "Optional")}</span>
-                <ChevronDown size={16} aria-hidden="true" className="transition-transform duration-150 group-open/ai-composer:rotate-180 motion-reduce:transition-none" />
+                <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" className="transition-transform duration-150 group-open/ai-composer:rotate-180 motion-reduce:transition-none" />
               </span>
             </summary>
-            <div className="border-t border-line/70 p-4 sm:p-5">
+            <div className="border-t border-line p-4 sm:p-5">
               <Suspense fallback={null}>
                 <AiQuickBlueprintComposer
                   initialIdea={initialIdea}
@@ -338,14 +391,14 @@ export function CreateStartPage() {
       ) : null}
 
       {activeSection === "all" && !isMobileViewport ? (
-        <details className="group/workflow-more mt-4 rounded-2xl border border-line bg-panel/45">
-          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-fg transition-colors hover:bg-card/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+        <details className="group/workflow-more mt-3 rounded-xl border border-line bg-panel">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-medium text-fg transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
             <span className="min-w-0 [word-break:keep-all]">
               {bt("장르 프리셋 · 4단계 제작 흐름 보기", "Browse genre presets & 4-step workflow")}
             </span>
-            <ChevronDown size={16} aria-hidden="true" className="shrink-0 text-fg-2 transition-transform duration-150 group-open/workflow-more:rotate-180 motion-reduce:transition-none" />
+            <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform duration-150 group-open/workflow-more:rotate-180 motion-reduce:transition-none" />
           </summary>
-          <div className="space-y-4 border-t border-line/70 p-4 sm:p-5">
+          <div className="space-y-6 border-t border-line p-4 sm:p-5">
             <CreateStartGenreStarterSection className="mt-0" />
             {renderStoryPipelineSection("mt-0")}
           </div>
@@ -361,8 +414,8 @@ export function CreateStartPage() {
         ] as const).map(([id, ko, en]) => (
           <Link key={id} href={sectionHref(id)} data-testid={`create-start-section-${id}`}
             style={{ minHeight: "48px", minWidth: "48px" }}
-            className="min-h-11 min-w-11 scroll-my-24 break-words [overflow-wrap:anywhere] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-            {bt(ko, en)}<ArrowRight size={18} aria-hidden />
+            className="ink-arrow min-h-11 min-w-11 scroll-my-24 break-words [overflow-wrap:anywhere] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+            <span>{bt(ko, en)}</span><ArrowRight size={15} strokeWidth={1.6} aria-hidden />
           </Link>
         ))}
       </nav> : null}
@@ -374,42 +427,42 @@ export function CreateStartPage() {
       {activeSection === "topics" ? (
       <section
         aria-labelledby="create-start-my-story-title"
-        className="mt-8 rounded-2xl border border-accent/40 bg-accent-soft p-5 sm:p-6"
+        className="mt-6 rounded-2xl border border-line bg-panel p-5 sm:p-6"
       >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0 max-w-2xl">
             <span className={CHOICE_ICON_CLASS}>
-              <BookHeart size={22} aria-hidden />
+              <BookHeart size={18} strokeWidth={1.6} aria-hidden />
             </span>
-            <h2 id="create-start-my-story-title" className="mt-4 text-lg font-bold text-fg">
+            <h2 id="create-start-my-story-title" className="mt-3 text-lg font-semibold text-fg [word-break:keep-all]">
               {bt("내 이야기로 시작하기", "Start from my story")}
             </h2>
-            <p className="mt-1.5 text-sm leading-6 text-fg-2">
+            <p className="mt-1.5 text-sm leading-6 text-fg-2 [word-break:keep-all]">
               {bt(
                 "상상한 이야기나 내 경험을 적어 보세요. 질문 6~8개에 답하면 4컷·8컷 대본 초안이 만들어져요. 답하기 어려운 건 건너뛰어도 돼요.",
                 "Start from an imagined story or a real experience. Answer 6 to 8 questions for a 4- or 8-panel script draft. You can skip any question.",
               )}
             </p>
-            <p className="mt-2 text-xs font-semibold text-fg-3">
+            <p className="mt-2 text-xs font-medium text-fg-3">
               {bt("쓰는 답변은 이 기기에만 임시 저장돼요", "Your answers are kept only on this device while you write")}
             </p>
           </div>
           <Link
             href={storyHref}
             style={{ minHeight: "48px" }}
-            className={buttonClass({ variant: "solid", size: "lg", className: "min-h-11 scroll-my-24 shrink-0 gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" })}
+            className={buttonClass({ variant: "solid", size: "lg", className: "ink-arrow min-h-11 scroll-my-24 shrink-0 gap-2 rounded-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" })}
           >
             {bt("내 이야기 풀어내기", "Tell my story")}
-            <ArrowRight size={16} aria-hidden />
+            <ArrowRight size={16} strokeWidth={1.6} aria-hidden />
           </Link>
         </div>
-        <ul aria-label={bt("이야기 주제 바로 고르기", "Pick a story topic directly")} className="mt-4 flex flex-wrap gap-2">
+        <ul aria-label={bt("이야기 주제 바로 고르기", "Pick a story topic directly")} className="ink-cascade mt-4 flex flex-wrap gap-2">
           {MY_STORY_TEMPLATE_IDS.map((topicId) => (
             <li key={topicId}>
               <Link
                 href={storyTopicHref(topicId)}
                 style={{ minHeight: "48px" }}
-                className="fx-press inline-flex min-h-11 scroll-my-24 items-center rounded-full border border-line bg-panel px-3.5 py-2 text-sm font-semibold text-fg break-words [overflow-wrap:anywhere] transition-colors hover:border-accent/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="inline-flex min-h-11 scroll-my-24 items-center rounded-lg border border-line bg-card px-3.5 py-2 text-sm font-medium text-fg break-words [overflow-wrap:anywhere] transition-colors hover:border-accent/60 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 {bt(MY_STORY_TOPIC_TITLES[topicId].ko, MY_STORY_TOPIC_TITLES[topicId].en)}
               </Link>
@@ -421,124 +474,124 @@ export function CreateStartPage() {
 
       {activeSection === "lanes" ? (
       <section aria-label={bt("다른 시작 방법 · 기획, 콘티, 템플릿, 파일", "More ways to start: plans, boards, templates and files")} className="mt-4">
-      <StaggerReveal className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5" aria-label={bt("시작 방법 고르기", "Choose how to start")}>
-        <Link href="/studio/new?lane=idea&start=idea" className={CHOICE_CARD_CLASS}>
+      <StaggerReveal className="ink-cascade mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5" aria-label={bt("시작 방법 고르기", "Choose how to start")}>
+        <Link href="/studio/new?lane=idea&start=idea" className={`${CHOICE_CARD_CLASS} ink-arrow`}>
           <span
             aria-hidden="true"
-            className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
+            className="mb-3 block h-24 w-full rounded-lg border border-line bg-cover bg-center"
             style={{ backgroundImage: "url(/assets/site-experience/site-art-v1/cards/nb-planning-storylab-640.webp)" }}
           />
           <span className={CHOICE_ICON_CLASS}>
-            <BookOpen size={22} aria-hidden />
+            <BookOpen size={17} strokeWidth={1.6} aria-hidden />
           </span>
-          <strong className="mt-4 text-lg font-bold text-fg">
+          <strong className="mt-3 text-base font-semibold text-fg [word-break:keep-all]">
             {bt("이야기부터 시작하기", "Start from the story")}
           </strong>
-          <span className="mt-1.5 text-sm leading-6 text-fg-2">
-            {bt("줄거리와 캐릭터부터 정리해 두면, 콘티와 그림이 훨씬 덜 흔들려요.", "Outline the plot and characters first, and the boards and drawings will hold together.")}
+          <span className="mt-1.5 text-sm leading-6 text-fg-2 [word-break:keep-all]">
+            {bt("줄거리와 캐릭터부터 정리해 두면 콘티와 그림이 흔들리지 않아요", "Outline the plot and characters first so the boards and drawings hold together")}
           </span>
-          <span className="mt-3 text-xs font-semibold text-fg-3">
+          <span className="mt-3 text-xs font-medium text-fg-3">
             {bt("줄거리 한 줄만 있으면 시작할 수 있어요", "All you need is one line of story")}
           </span>
-          <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
+          <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent">
             {bt("이야기로 시작", "Start with the story")}
-            <ArrowRight size={15} aria-hidden className="transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight size={15} strokeWidth={1.6} aria-hidden />
           </span>
         </Link>
 
-        <Link href="/studio/new?lane=storyboard&start=storyboard" className={CHOICE_CARD_CLASS}>
+        <Link href="/studio/new?lane=storyboard&start=storyboard" className={`${CHOICE_CARD_CLASS} ink-arrow`}>
           <span
             aria-hidden="true"
-            className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
+            className="mb-3 block h-24 w-full rounded-lg border border-line bg-cover bg-center"
             style={{ backgroundImage: "url(/assets/site-experience/site-art-v1/cards/nb-workflow-bridge-640.webp)" }}
           />
           <span className={CHOICE_ICON_CLASS}>
-            <Clapperboard size={22} aria-hidden />
+            <Clapperboard size={17} strokeWidth={1.6} aria-hidden />
           </span>
-          <strong className="mt-4 text-lg font-bold text-fg">
+          <strong className="mt-3 text-base font-semibold text-fg [word-break:keep-all]">
             {bt("콘티부터 시작하기", "Start from a storyboard")}
           </strong>
-          <span className="mt-1.5 text-sm leading-6 text-fg-2">
-            {bt("장면과 컷의 흐름부터 짜 두면, 그림은 그다음에 채워 나가면 돼요.", "Plan the flow of scenes and panels first — the drawings can follow.")}
+          <span className="mt-1.5 text-sm leading-6 text-fg-2 [word-break:keep-all]">
+            {bt("장면과 컷의 흐름부터 짜 두면 그림은 그다음에 채워 나가면 돼요", "Plan the flow of scenes and panels first and let drawings follow")}
           </span>
-          <span className="mt-3 text-xs font-semibold text-fg-3">
+          <span className="mt-3 text-xs font-medium text-fg-3">
             {bt("컷 흐름만 잡으면 시작할 수 있어요", "All you need is the panel flow")}
           </span>
-          <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
+          <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent">
             {bt("콘티로 시작", "Start with boards")}
-            <ArrowRight size={15} aria-hidden className="transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight size={15} strokeWidth={1.6} aria-hidden />
           </span>
         </Link>
 
-        <Link href="/studio/new?lane=blank" className={CHOICE_CARD_CLASS}>
+        <Link href="/studio/new?lane=blank" className={`${CHOICE_CARD_CLASS} ink-arrow`}>
           <span
             aria-hidden="true"
-            className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
+            className="mb-3 block h-24 w-full rounded-lg border border-line bg-cover bg-center"
             style={{ backgroundImage: "url(/assets/site-experience/site-art-v1/cards/nb-create-canvas-640.webp)" }}
           />
           <span className={CHOICE_ICON_CLASS}>
-            <Plus size={22} aria-hidden />
+            <Plus size={17} strokeWidth={1.6} aria-hidden />
           </span>
-          <strong className="mt-4 text-lg font-bold text-fg">
+          <strong className="mt-3 text-base font-semibold text-fg [word-break:keep-all]">
             {bt("빈 캔버스로 시작하기", "Start with a blank canvas")}
           </strong>
-          <span className="mt-1.5 text-sm leading-6 text-fg-2">
-            {bt("아무것도 없는 하얀 캔버스에서 첫 컷부터 직접 그려 나가요.", "Begin on an empty white canvas and draw from the first panel.")}
+          <span className="mt-1.5 text-sm leading-6 text-fg-2 [word-break:keep-all]">
+            {bt("하얀 캔버스에서 첫 컷부터 직접 그려 나가요", "Begin on an empty white canvas and draw from the first panel")}
           </span>
-          <span className="mt-3 text-xs font-semibold text-fg-3">
+          <span className="mt-3 text-xs font-medium text-fg-3">
             {bt("준비물 없이 바로 그릴 수 있어요", "Nothing to prepare — just draw")}
           </span>
-          <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
+          <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent">
             {bt("빈 캔버스로 시작", "Start blank")}
-            <ArrowRight size={15} aria-hidden className="transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight size={15} strokeWidth={1.6} aria-hidden />
           </span>
         </Link>
 
-        <Link href="/studio/templates" className={CHOICE_CARD_CLASS}>
+        <Link href="/studio/templates" className={`${CHOICE_CARD_CLASS} ink-arrow`}>
           <span
             aria-hidden="true"
-            className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
+            className="mb-3 block h-24 w-full rounded-lg border border-line bg-cover bg-center"
             style={{ backgroundImage: "url(/assets/site-experience/site-art-v1/cards/nb-market-atelier-640.webp)" }}
           />
           <span className={CHOICE_ICON_CLASS}>
-            <LayoutTemplate size={22} aria-hidden />
+            <LayoutTemplate size={17} strokeWidth={1.6} aria-hidden />
           </span>
-          <strong className="mt-4 text-lg font-bold text-fg">
+          <strong className="mt-3 text-base font-semibold text-fg [word-break:keep-all]">
             {bt("템플릿으로 시작하기", "Start from a template")}
           </strong>
-          <span className="mt-1.5 text-sm leading-6 text-fg-2">
-            {bt("잡혀 있는 형식에 이야기만 채우면 돼요.", "Pick a ready-made format and fill in your story.")}
+          <span className="mt-1.5 text-sm leading-6 text-fg-2 [word-break:keep-all]">
+            {bt("잡혀 있는 형식에 이야기만 채우면 돼요", "Pick a ready-made format and fill in your story")}
           </span>
-          <span className="mt-3 text-xs font-semibold text-fg-3">
+          <span className="mt-3 text-xs font-medium text-fg-3">
             {bt("형식이 잡혀 있어 채우기만 하면 돼요", "The format is ready — just fill it in")}
           </span>
-          <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
+          <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent">
             {bt("템플릿 고르기", "Browse templates")}
-            <ArrowRight size={15} aria-hidden className="transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight size={15} strokeWidth={1.6} aria-hidden />
           </span>
         </Link>
 
-        <Link href="/studio/import" className={CHOICE_CARD_CLASS}>
+        <Link href="/studio/import" className={`${CHOICE_CARD_CLASS} ink-arrow`}>
           <span
             aria-hidden="true"
-            className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
+            className="mb-3 block h-24 w-full rounded-lg border border-line bg-cover bg-center"
             style={{ backgroundImage: "url(/assets/site-experience/site-art-v1/cards/nb-production-control-640.webp)" }}
           />
           <span className={CHOICE_ICON_CLASS}>
-            <Upload size={22} aria-hidden />
+            <Upload size={17} strokeWidth={1.6} aria-hidden />
           </span>
-          <strong className="mt-4 text-lg font-bold text-fg">
+          <strong className="mt-3 text-base font-semibold text-fg [word-break:keep-all]">
             {bt("가져와서 시작하기", "Start from an import")}
           </strong>
-          <span className="mt-1.5 text-sm leading-6 text-fg-2">
-            {bt("이미지나 파일로 가진 작업을 가져와 이어서 작업해요.", "Bring in work you already have as images or files and keep going.")}
+          <span className="mt-1.5 text-sm leading-6 text-fg-2 [word-break:keep-all]">
+            {bt("이미지나 파일로 가진 작업을 가져와 이어서 작업해요", "Bring in work you already have as images or files and keep going")}
           </span>
-          <span className="mt-3 text-xs font-semibold text-fg-3">
+          <span className="mt-3 text-xs font-medium text-fg-3">
             {bt("가진 파일만 있으면 이어서 할 수 있어요", "All you need is a file you have")}
           </span>
-          <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
+          <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent">
             {bt("파일 가져오기", "Import a file")}
-            <ArrowRight size={15} aria-hidden className="transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight size={15} strokeWidth={1.6} aria-hidden />
           </span>
         </Link>
       </StaggerReveal>
@@ -554,8 +607,8 @@ export function CreateStartPage() {
             ["lanes", "다른 시작 방법", "More ways to start"],
           ] as const).filter(([id]) => id !== activeSection && !(activeSection === "pipeline" && id === "tools"))
             .map(([id, ko, en]) => (
-              <Link key={id} href={sectionHref(id)}>
-                {bt(ko, en)}<ArrowRight size={18} aria-hidden />
+              <Link key={id} href={sectionHref(id)} className="ink-arrow">
+                <span>{bt(ko, en)}</span><ArrowRight size={15} strokeWidth={1.6} aria-hidden />
               </Link>
             ))}
         </nav>

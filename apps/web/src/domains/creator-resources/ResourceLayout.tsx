@@ -1,3 +1,4 @@
+import { HardDrive } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -145,16 +146,16 @@ export function ResourceLayout({
       ) : null}
       <div className="resource-masthead-copy">
         {heroAside
-          ? <p className="inline-flex min-h-8 items-center text-xs font-semibold tracking-[.12em] text-accent">{layoutTx("TOONSTUDIO / 리서치 데스크")}</p>
-          : <Link to="/research" className="inline-flex min-h-11 items-center text-xs font-semibold tracking-[.12em] text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{layoutTx("TOONSTUDIO / 리서치 데스크")}</Link>}
-        <h1 className="font-bold">{title}</h1>
+          ? <p className="inline-flex min-h-6 items-center text-xs font-medium text-accent">{layoutTx("리서치 데스크")}</p>
+          : <Link to="/research" className="inline-flex min-h-11 items-center gap-1 text-xs font-medium text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">← {layoutTx("리서치 데스크")}</Link>}
+        <h1 className="font-semibold">{title}</h1>
         {sourceIdentity ? (
           <p className="mt-3 flex items-start gap-2.5 text-sm leading-6 text-fg-2 sm:mt-4">
             <span className="resource-source-dot mt-[.45rem] h-2.5 w-2.5 shrink-0 rounded-full" aria-hidden="true" />
-            <span><strong className="font-bold text-fg">{sourceIdentity.name}</strong> — {sourceIdentity.tagline}</span>
+            <span><strong className="font-semibold text-fg">{sourceIdentity.name}</strong> — {sourceIdentity.tagline}</span>
           </p>
         ) : null}
-        <p className={`mt-3 max-w-3xl text-base leading-7 text-fg-2 sm:mt-5 sm:leading-8 ${compact ? "max-sm:hidden" : ""}`}>{intro}</p>
+        <p className={`mt-2.5 max-w-3xl text-base leading-7 text-fg-2 sm:mt-3 sm:leading-8 ${compact ? "max-sm:hidden" : ""}`}>{intro}</p>
         {heroContent ? <div className="mt-4 sm:mt-5">{heroContent}</div> : compact || sourceIdentity ? null : <p className="resource-context">{layoutTx("복식·소품·배경을 관찰하고, 다음 웹툰 컷의 근거로")}</p>}
       </div>
       {heroAside ?? (sourceIdentity ? <ResearchSourceCover identity={sourceIdentity} /> : introArt ? <img className="resource-masthead-image" src={`/brand/illustrated-20260928/${introArt}.webp`} alt="" aria-hidden="true" width={320} height={240} /> : null)}
@@ -163,9 +164,9 @@ export function ResourceLayout({
     {menu ? <ResearchNavigation key={pathname} pathname={pathname} /> : null}
     <div className="resource-task-content">{children}</div>
     <details className="resource-follow-up group/follow-up">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-xl border border-line px-4 text-sm font-bold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{layoutTx("다음 창작 단계")}<span aria-hidden="true">⌄</span></summary>
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between border-t border-line py-3 text-sm font-medium text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">{layoutTx("다음 창작 단계")}<span aria-hidden="true">⌄</span></summary>
     <footer className="resource-next-work">
-      <div><p className="eyebrow text-accent">FROM REFERENCE TO CANVAS</p><h2>{layoutTx("찾아낸 장면을, 웹툰으로 그릴 시간.")}</h2><p className="max-sm:hidden">{layoutTx("자료에서 얻은 형태와 분위기를 내 이야기로 바꿔보세요. ToonStudio의 브러시와 레이어로 구도를 잡고, 필요한 표현은 제작 강좌에서 익힐 수 있습니다.")}</p></div>
+      <div><p className="text-xs font-medium text-accent">{layoutTx("자료에서 원고로")}</p><h2>{layoutTx("찾아낸 장면을, 웹툰으로 그릴 시간")}</h2><p className="max-sm:hidden">{layoutTx("자료에서 얻은 형태와 분위기를 내 이야기로 바꿔보세요. ToonStudio의 브러시와 레이어로 구도를 잡고, 필요한 표현은 제작 강좌에서 익힐 수 있습니다.")}</p></div>
       <div className="flex flex-wrap gap-2">
         <Link className={`${RESOURCE_BUTTON} border-accent bg-accent text-on-accent hover:bg-accent-2`} to="/studio" reloadDocument>{layoutTx("스튜디오 열기 ↗")}</Link>
         <Link className={RESOURCE_BUTTON} to="/learn">{layoutTx("제작 강좌")}</Link>
@@ -180,10 +181,13 @@ export function ResourceLayout({
 
 export function LocalSaveNotice({ error, saving = false, writable = true }: { error?: string; saving?: boolean; writable?: boolean }) {
   useBilingualI18nRevision();
-  return <div className="rounded-xl border border-line bg-panel p-4 text-sm leading-6 text-fg-2">
-    <p>{noticeTx("자료와 기획서는 이 브라우저에만 저장됩니다. 계정·다른 기기로 동기화되지 않습니다. 공용 기기에서는 개인 작업 정보를 저장하지 마세요.")}</p>
-    {saving && <p role="status">{noticeTx("다른 탭의 변경을 확인하며 저장하고 있습니다…")}</p>}
-    {!writable && <p className="mt-2">{noticeTx("이 환경에서는 안전한 동시 저장을 사용할 수 없습니다. 읽기·내보내기는 가능하며, 저장은 HTTPS의 최신 브라우저를 이용하세요.")}</p>}
-    {error && <p role="alert" className="mt-2 font-semibold text-fg">{formatI18nTemplate(noticeTx("저장 오류: {v0}"), { v0: error })}</p>}
+  return <div className="local-save-caption grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2 gap-y-1 text-xs leading-5 text-fg-3">
+    <HardDrive size={14} strokeWidth={1.5} aria-hidden="true" className="mt-0.5 shrink-0 text-fg-3" />
+    <div className="min-w-0 space-y-1">
+      <p>{noticeTx("자료와 기획서는 이 브라우저에만 저장됩니다. 계정·다른 기기로 동기화되지 않습니다. 공용 기기에서는 개인 작업 정보를 저장하지 마세요.")}</p>
+      {saving && <p role="status" className="text-fg-2">{noticeTx("다른 탭의 변경을 확인하며 저장하고 있습니다…")}</p>}
+      {!writable && <p className="text-fg-2">{noticeTx("이 환경에서는 안전한 동시 저장을 사용할 수 없습니다. 읽기·내보내기는 가능하며, 저장은 HTTPS의 최신 브라우저를 이용하세요.")}</p>}
+      {error && <p role="alert" className="font-medium text-fg">{formatI18nTemplate(noticeTx("저장 오류: {v0}"), { v0: error })}</p>}
+    </div>
   </div>;
 }

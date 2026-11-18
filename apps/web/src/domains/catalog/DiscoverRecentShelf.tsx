@@ -35,7 +35,7 @@ export function DiscoverRecentShelf() {
     <section className="discover-recent-shelf" aria-labelledby="discover-recent-title">
       <header className="discover-recent-heading">
         <h2 id="discover-recent-title">{heading}</h2>
-        <Link href="/library">{bt("내 서재", "My library")}<ArrowRight size={15} aria-hidden="true" /></Link>
+        <Link href="/library" className="ink-arrow">{bt("내 서재", "My library")}<ArrowRight size={15} strokeWidth={1.5} aria-hidden="true" /></Link>
       </header>
       {error ? (
         <div role="alert" className="discover-recent-state">
@@ -56,15 +56,15 @@ export function DiscoverRecentShelf() {
             const fallback = <span className="discover-recent-fallback">{title.title.replace(/[^가-힣A-Za-z0-9]/gu, "").charAt(0) || "T"}</span>;
             return (
               <li key={title.id}>
-                <Link href={`/title/${title.slug}`} className="discover-recent-link">
-                  <span className="discover-recent-art" aria-hidden="true">
+                <Link href={`/title/${title.slug}`} className="discover-recent-link ink-frame">
+                  <span className="discover-recent-art ink-cover ink-sheen" aria-hidden="true">
                     {title.coverImage ? (
                       <CoverImage src={title.coverImage} alt="" srcSet={coverStandardSrcSet(title.coverImage)} sizes="3.5rem" className="size-full object-cover" fallback={fallback} />
                     ) : fallback}
                   </span>
                   <span className="discover-recent-copy">
                     <strong>{title.title}</strong>
-                    <span>{bt("작품으로 돌아가기", "Return to story")}<ArrowRight size={16} aria-hidden="true" /></span>
+                    <span className="ink-arrow">{bt("작품으로 돌아가기", "Return to story")}<ArrowRight size={15} strokeWidth={1.5} aria-hidden="true" /></span>
                   </span>
                 </Link>
               </li>

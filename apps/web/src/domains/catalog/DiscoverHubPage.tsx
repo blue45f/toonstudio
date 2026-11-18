@@ -54,6 +54,7 @@ import {
   type DiscoverHomeSnapshot,
 } from "./discover-home";
 import { collectDiscoverLocalMatches } from "./local-catalog-fallback";
+import { useCatalogInkIndicator } from "./use-catalog-ink-indicator";
 
 /** 카드·트랙 안내 일러스트가 깨지거나 오프라인일 때 빈 영역 대신 토큰 배지를 표시한다. */
 function DiscoverCardArt({
@@ -258,6 +259,11 @@ export function DiscoverHubPage() {
   const isComposingRef = useRef(false);
   const [memoryFinderOpened, setMemoryFinderOpened] = useState(false);
   const [activeTrackId, setActiveTrackId] = useState<DiscoverSerializationTrackId>("all");
+  const purposeNavRef = useRef<HTMLElement>(null);
+  const purposeInk = useCatalogInkIndicator(purposeNavRef, "/discover", {
+    itemSelector: "a",
+    maxInsetPx: 8,
+  });
 
   useEffect(() => {
     setQuery(urlQuery);
@@ -335,12 +341,12 @@ export function DiscoverHubPage() {
       <div className="discover-hub-hero" data-has-spotlight={showSpotlight ? "true" : "false"}>
         <div className="discover-hub-intro">
       <header className="discover-hub-header" aria-labelledby="discover-title">
-        <h1 id="discover-title" className="discover-hub-title font-semibold tracking-tight text-fg">
+        <h1 id="discover-title" data-ink="line" className="discover-hub-title font-semibold tracking-tight text-fg">
           {bt("다음 이야기를 찾아요", "Find your next story")}
         </h1>
         <div className="discover-hub-search">
         <form onSubmit={submit} role="search" className="discover-hub-search-form grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2">
-          <label className="flex min-h-12 min-w-0 items-center gap-2.5 rounded-2xl border border-line-strong bg-card px-3.5 focus-within:border-accent/55 focus-within:ring-2 focus-within:ring-accent/25">
+          <label className="flex min-h-12 min-w-0 items-center gap-2.5 rounded-[10px] border border-line-strong bg-card px-3.5 transition-colors duration-150 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 motion-reduce:transition-none">
             <span className="sr-only">{searchLabel}</span>
             <input
               type="search"
@@ -370,17 +376,26 @@ export function DiscoverHubPage() {
               </button>
             ) : null}
           </label>
-          <button type="submit" aria-label={bt("작품 검색", "Search stories")} style={{ minInlineSize: 48, minBlockSize: 48 }} className={buttonClass({ size: "lg", className: "discover-hub-submit min-h-12 gap-2 rounded-2xl text-base font-semibold" })}>
-            <Search size={18} strokeWidth={1.5} aria-hidden="true" />
+          <button type="submit" aria-label={bt("작품 검색", "Search stories")} style={{ minInlineSize: 48, minBlockSize: 48 }} className={buttonClass({ size: "lg", className: "discover-hub-submit min-h-12 gap-2 rounded-[10px] text-sm font-medium" })}>
+            <Search size={17} strokeWidth={1.5} aria-hidden="true" />
             <span className="hidden sm:inline">{bt("검색", "Search")}</span>
           </button>
         </form>
         </div>
-        <nav aria-label={bt("작품 탐색 목적", "Story discovery destinations")} className="discover-hub-purpose-nav">
+        <nav
+          ref={purposeNavRef}
+          aria-label={bt("작품 탐색 목적", "Story discovery destinations")}
+          onPointerMove={purposeInk.onPointerMove}
+          onPointerLeave={purposeInk.onPointerLeave}
+          onFocusCapture={purposeInk.onFocusCapture}
+          onBlurCapture={purposeInk.onBlurCapture}
+          className="discover-hub-purpose-nav"
+        >
           <Link href="/discover" aria-current="page">{bt("추천", "For you")}</Link>
           <Link href="/ranking">{bt("인기", "Popular")}</Link>
           <Link href="/calendar">{bt("요일별", "By day")}</Link>
           <Link href="/explore">{bt("장르·조건", "Genres & filters")}</Link>
+          <span aria-hidden="true" className="discover-ink-indicator" style={purposeInk.style} />
         </nav>
       </header>
         </div>
@@ -401,11 +416,11 @@ export function DiscoverHubPage() {
         <section
           aria-label={bt("최근 본 작품 이어보기", "Continue reading")}
           data-testid="discover-quick-return-bar"
-          className="mb-5 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-line bg-card px-4 py-3"
+          className="discover-quick-return-bar mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line pb-3.5 pt-1"
         >
-          <div className="flex items-center gap-2 text-xs font-semibold text-fg">
-            <span>{bt("최근 본 작품 이어보기", "Continue reading")}</span>
-          </div>
+          <span className="text-xs font-medium text-fg-3">
+            {bt("최근 본 작품 이어보기", "Continue reading")}
+          </span>
           <div className="flex flex-wrap items-center gap-1.5">
             {quickReturnModel.hasHistory ? (
               <>
@@ -413,7 +428,7 @@ export function DiscoverHubPage() {
                   <Link
                     key={item.id}
                     href={`/title/${item.slug}`}
-                    className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-lg border border-accent/40 bg-accent-soft px-3.5 text-xs font-semibold text-fg transition-colors duration-150 hover:border-accent hover:text-accent motion-reduce:transition-none"
+                    className="ink-arrow inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-lg bg-panel px-3 text-xs font-medium text-fg transition-colors duration-150 hover:bg-raised hover:text-accent motion-reduce:transition-none"
                   >
                     <span>{`${item.title} ${bt("이어보기", "Resume")}`}</span>
                     <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
@@ -421,7 +436,7 @@ export function DiscoverHubPage() {
                 ))}
                 <Link
                   href="/library"
-                  className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-lg border border-line bg-panel px-3.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
+                  className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-lg px-2.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:bg-panel hover:text-fg motion-reduce:transition-none"
                 >
                   {bt("최근 열람 서재", "Recent history")}
                 </Link>
@@ -432,7 +447,7 @@ export function DiscoverHubPage() {
                   <Link
                     key={item.id}
                     href={`/title/${item.slug}`}
-                    className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-lg border border-line bg-panel px-3.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
+                    className="ink-arrow inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-lg bg-panel/75 px-3 text-xs font-medium text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg motion-reduce:transition-none"
                   >
                     <span>{`${item.title} ${bt("첫 화부터", "Start Ep. 1")}`}</span>
                     <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
@@ -440,7 +455,7 @@ export function DiscoverHubPage() {
                 ))}
                 <Link
                   href="/ranking"
-                  className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-lg border border-accent/35 bg-accent-soft px-3.5 text-xs font-semibold text-accent transition-colors duration-150 hover:border-accent motion-reduce:transition-none"
+                  className="ink-arrow inline-flex min-h-11 min-w-11 items-center gap-1 rounded-lg px-2.5 text-xs font-medium text-accent transition-colors duration-150 hover:bg-accent-soft/60 motion-reduce:transition-none"
                 >
                   {bt("추천 에피소드 바로가기", "Jump to featured episodes")}
                 </Link>
@@ -451,24 +466,24 @@ export function DiscoverHubPage() {
         {localMatches && (localMatches.titles.length > 0 || localMatches.genres.length > 0 || localMatches.tags.length > 0) ? (
           <div
             data-testid="discover-local-matches"
-            className="mb-6 rounded-2xl border border-line bg-card p-4"
+            className="mb-6 rounded-xl border border-line bg-card p-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-semibold text-accent">
+              <p className="text-xs font-medium text-accent">
                 {bt(`찾은 작품 ${localMatches.titles.length}편`, `${localMatches.titles.length} matching stories`)}
               </p>
               <Link
                 href={`/search?q=${encodeURIComponent(query.trim())}`}
-                className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-fg-2 hover:text-accent"
+                className="ink-arrow inline-flex min-h-11 items-center gap-1 text-xs font-medium text-fg-2 hover:text-accent"
               >
                 {bt("전체 검색 결과 보기", "See all search results")}
                 <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
               </Link>
             </div>
             {localMatches.titles.length > 0 ? (
-              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                {localMatches.titles.map((item) => (
-                  <TitleCard key={item.id} title={item} />
+              <div className="ink-cascade mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                {localMatches.titles.map((item, idx) => (
+                  <TitleCard key={item.id} title={item} index={idx} />
                 ))}
               </div>
             ) : null}
@@ -530,7 +545,7 @@ export function DiscoverHubPage() {
                     });
                   }}
                   className={cn(
-                    "inline-flex min-h-11 min-w-0 items-center justify-center rounded-lg border px-1 text-[10px] font-semibold transition-colors duration-150 sm:text-xs motion-reduce:transition-none",
+                    "inline-flex min-h-11 min-w-0 items-center justify-center rounded-lg border px-1 text-xs font-medium transition-colors duration-150 motion-reduce:transition-none",
                     selected
                       ? "border-accent bg-accent text-on-accent"
                       : "border-line bg-panel/70 text-fg-2 hover:border-line-strong hover:text-fg",
@@ -543,7 +558,7 @@ export function DiscoverHubPage() {
           </div>
         </div>
         {activeTrack ? (
-          <div id="discover-track-panel" role="tabpanel" aria-labelledby={`discover-track-${activeTrack.id}`} className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-3 text-xs text-fg-2">
+          <div key={activeTrack.id} id="discover-track-panel" role="tabpanel" aria-labelledby={`discover-track-${activeTrack.id}`} className="ink-cascade mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-3 text-xs text-fg-2">
             <div className="flex min-w-0 items-center gap-3">
               <DiscoverCardArt
                 src={
@@ -558,21 +573,21 @@ export function DiscoverHubPage() {
                           : "/assets/site-experience/site-art-v1/cards/nb-discover-spotlight-640.webp"
                 }
                 fallbackLabel={activeTrack.badge}
-                className="h-12 w-20 shrink-0 rounded-xl border border-line/70 object-cover"
+                className="h-12 w-20 shrink-0 rounded-lg border border-line/70 object-cover"
               />
               <p className="min-w-0 max-w-2xl break-keep [overflow-wrap:anywhere]">{bt(activeTrack.description, SERIALIZATION_TRACK_EN[activeTrack.id].description)}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={activeTrack.primaryRoute}
-                className={buttonClass({ size: "sm", className: "min-h-11 gap-1.5 rounded-lg px-4 text-xs font-semibold" })}
+                className={buttonClass({ size: "sm", className: "ink-arrow min-h-11 gap-1.5 rounded-lg px-4 text-xs font-medium" })}
               >
                 {bt(activeTrack.label, SERIALIZATION_TRACK_EN[activeTrack.id].label)} {bt("열기", "Open")}
                 <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
               </Link>
               <Link
                 href={activeTrack.secondaryRoute}
-                className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 rounded-lg px-3.5 text-xs font-semibold" })}
+                className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 rounded-lg px-3.5 text-xs font-medium" })}
               >
                 {bt(activeTrack.secondaryLabel, SERIALIZATION_TRACK_EN[activeTrack.id].secondaryLabel)}
               </Link>
@@ -583,7 +598,7 @@ export function DiscoverHubPage() {
       </SiteDisclosure>
 
       <Section
-        className="mt-8 sm:mt-10"
+        className="mt-10 sm:mt-12"
         title={bt("다른 방법으로 찾기", "More ways to find a story")}
       >
         <details className="discover-hub-genres">
@@ -594,7 +609,7 @@ export function DiscoverHubPage() {
               <li key={genre} className="discover-hub-quick-genre">
                 <Link
                   href={`/explore?genre=${encodeURIComponent(genre)}`}
-                  className="inline-flex min-h-11 items-center rounded-full border border-line bg-card/70 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                  className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card/70 px-3 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                 >
                   #{genre}
                 </Link>
@@ -603,10 +618,10 @@ export function DiscoverHubPage() {
             <li className="shrink-0">
               <Link
                 href="/explore"
-                className="inline-flex min-h-11 items-center gap-1 rounded-full border border-accent/35 bg-accent-soft/60 px-3.5 text-xs font-bold text-accent transition-colors hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                className="ink-arrow inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-panel px-3 text-xs font-medium text-accent transition-colors hover:border-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
               >
                 {bt("전체 장르", "All genres")}
-                <ArrowRight size={13} aria-hidden="true" />
+                <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
               </Link>
             </li>
           </ul>
@@ -624,7 +639,7 @@ export function DiscoverHubPage() {
               <li key={preset.href} className="shrink-0">
                 <Link
                   href={preset.href}
-                  className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line/80 bg-panel/70 px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-panel/70 px-3 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                 >
                   {bt(...preset.label)}
                 </Link>
@@ -636,7 +651,7 @@ export function DiscoverHubPage() {
             {DESTINATIONS.filter((destination) => !["/explore", "/ranking", "/calendar"].includes(destination.href)).map((destination) => (
               <SiteLinkCard key={destination.href} layout="tile" href={destination.href} icon={destination.icon}
                 title={bt(...destination.title)} description={bt(...destination.body)}
-                className={cn("h-full", destination.highlight ? "border-accent/45 bg-accent-soft/50" : undefined)} />
+                className={cn("h-full", destination.highlight ? "border-line-strong bg-panel" : undefined)} />
             ))}
           </div>
         </SiteDisclosure>

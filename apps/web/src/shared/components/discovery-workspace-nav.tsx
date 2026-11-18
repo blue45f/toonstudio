@@ -72,7 +72,7 @@ export function DiscoveryWorkspaceNav({
         className,
       )}
     >
-      <div className="grid grid-cols-3 gap-1.5 sm:min-w-0 sm:gap-2">
+      <div className="grid grid-cols-3 gap-2 sm:min-w-0">
         {DESTINATIONS.map((destination) => {
           const active = destination.id === current;
           const Icon = destination.icon;
@@ -82,28 +82,28 @@ export function DiscoveryWorkspaceNav({
               href={catalogDiscoveryHref(destination.id, params)}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "group flex min-h-[5.25rem] min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl border px-1.5 py-2 text-center transition-[border-color,background-color,transform] sm:min-h-16 sm:flex-row sm:justify-start sm:gap-3 sm:px-3 sm:py-2.5 sm:text-left",
+                "ink-frame group flex min-h-[5.25rem] min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-center transition-[border-color,background-color,color,transform] duration-150 active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none sm:min-h-16 sm:flex-row sm:justify-start sm:gap-3 sm:p-3 sm:text-left",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                 active
-                  ? "border-accent/55 bg-accent-soft text-fg"
-                  : "border-line bg-card/75 text-fg-2 hover:-translate-y-0.5 hover:border-line-strong hover:bg-card",
+                  ? "border-accent bg-accent-soft text-fg"
+                  : "border-line bg-card text-fg-2 hover:border-line-strong hover:bg-raised hover:text-fg",
               )}
             >
               <span
                 className={cn(
-                  "grid size-9 shrink-0 place-items-center rounded-xl border",
+                  "grid size-9 shrink-0 place-items-center rounded-lg border",
                   active
                     ? "border-accent/35 bg-accent/15 text-accent"
-                    : "border-line bg-panel text-fg-3 group-hover:text-accent",
+                    : "border-line bg-panel text-fg-3 group-hover:text-fg",
                 )}
               >
-                <Icon size={17} aria-hidden="true" />
+                <Icon size={16} strokeWidth={1.5} aria-hidden="true" />
               </span>
               <span className="min-w-0 max-w-full">
-                <strong className="block line-clamp-2 whitespace-normal leading-tight text-[0.68rem] font-bold sm:truncate sm:text-sm">
+                <strong className="block line-clamp-2 whitespace-normal text-xs font-medium leading-tight text-fg [word-break:keep-all] sm:truncate sm:text-sm">
                   {bi(destination.ko, destination.en)}
                 </strong>
-                <span className="mt-0.5 hidden truncate text-[0.7rem] text-fg-3 sm:block">
+                <span className="mt-0.5 hidden truncate text-xs text-fg-3 sm:block">
                   {bi(destination.koDescription, destination.enDescription)}
                 </span>
               </span>
@@ -113,16 +113,16 @@ export function DiscoveryWorkspaceNav({
       </div>
       <div
         data-testid="discovery-quick-surfaces"
-        className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs"
+        className="mt-3 flex flex-wrap items-center gap-1.5 text-xs"
       >
-        <span className="px-1 text-[0.7rem] font-bold text-fg-3">
-          {bi("목적별 바로가기:", "Quick jump:")}
+        <span className="px-1 text-xs font-medium text-fg-3">
+          {bi("목적별 바로가기", "Quick jump")}
         </span>
         {QUICK_SURFACES.map((surface) => (
           <Link
             key={surface.href}
             href={surface.href}
-            className="inline-flex min-h-11 items-center rounded-full border border-line bg-card/65 px-2.5 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-3 py-1 text-xs font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
           >
             {bi(surface.ko, surface.en)}
           </Link>

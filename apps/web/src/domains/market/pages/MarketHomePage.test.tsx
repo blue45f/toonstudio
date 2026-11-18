@@ -342,7 +342,8 @@ it("짧은 유형 이름 뒤에 상세 안내를 접어 두되 장착과 카탈�
   const section = screen.getByTestId("market-rea-ecosystem-presets");
   const details = section.querySelector("details");
   expect(details?.open).toBe(false);
-  expect(details?.textContent).toContain("ALL ASSETS");
+  expect(details?.textContent).toContain("전체 창작 소재");
+  expect(details?.textContent).not.toContain("ALL ASSETS");
   expect(within(section).getByText("브러시").getAttribute("aria-hidden")).toBe("true");
   const summary = details?.querySelector("summary");
   if (!summary) throw new Error("소재 안내 진입점이 없습니다.");

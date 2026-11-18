@@ -189,9 +189,9 @@ export function CafeDetailPage() {
   if (error || !cafe) {
     return (
       <Container size="wide" className="py-16">
-        <div className="rounded-3xl border border-bad/35 bg-bad/10 px-6 py-10 text-center">
-          <p className="text-sm font-medium text-bad">{error ?? translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "커뮤니티 정보를 불러오지 못했습니다.")}</p>
-          <button type="button" onClick={() => setRefreshTick((tick) => tick + 1)} className="mt-4 min-h-11 rounded-lg border border-bad/35 px-3 py-2 text-xs font-semibold text-bad">{translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "다시 시도")}</button>
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel/50 px-5 py-4">
+          <p className="text-sm font-medium text-fg">{error ?? translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "커뮤니티 정보를 불러오지 못했습니다.")}</p>
+          <button type="button" onClick={() => setRefreshTick((tick) => tick + 1)} className="min-h-11 rounded-lg border border-line bg-raised px-3.5 py-2 text-xs font-medium text-fg hover:border-accent/50">{translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "다시 시도")}</button>
         </div>
       </Container>
     );

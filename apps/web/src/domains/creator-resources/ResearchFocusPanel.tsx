@@ -31,15 +31,18 @@ export function ResearchNextActionCard({
 }) {
   const bt = useBilingual("ResearchNextActionCard");
   const progress = Math.round((summary.completedStages / summary.stages.length) * 100);
-  const className = `${RESOURCE_BUTTON} gap-2 border-accent bg-accent-soft text-accent`;
-  return <article className="grid gap-4 rounded-2xl border border-accent/40 bg-panel p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center" aria-labelledby="next-research-action-title">
+  const className = `${RESOURCE_BUTTON} ink-arrow gap-2 border-accent bg-accent text-on-accent hover:bg-accent-2`;
+  return <article className="grid gap-4 rounded-xl border border-line bg-panel p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center" aria-labelledby="next-research-action-title">
     <div className="min-w-0">
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent">{action.eyebrow}</p>
-      <h2 id="next-research-action-title" className="mt-1.5 text-lg font-bold break-keep">{action.title}</h2>
+      <p className="text-xs font-medium text-accent">{action.eyebrow}</p>
+      <h2 id="next-research-action-title" className="mt-1 text-lg font-semibold break-keep">{action.title}</h2>
       <p className="mt-1.5 text-sm leading-6 text-fg-2 break-keep">{action.description}</p>
       <div className="mt-3 flex items-center gap-3">
-        <progress className="h-2 w-full max-w-56" max={100} value={progress} aria-label={`리서치 흐름 ${progress}%`} />
-        <span className="shrink-0 text-xs text-fg-2">{formatI18nTemplate(bt("리서치 흐름 {v0}/{v1} 단계", "Research flow {v0}/{v1}"), { v0: summary.completedStages, v1: summary.stages.length })}</span>
+        <progress className="sr-only" max={100} value={progress} aria-label={`리서치 흐름 ${progress}%`} />
+        <div className="h-1.5 w-full max-w-56 overflow-hidden rounded-full bg-raised" aria-hidden="true">
+          <span className="ink-bar-fill block h-full rounded-full bg-accent" style={{ width: `${progress}%` }} />
+        </div>
+        <span className="shrink-0 text-xs text-fg-2 tabular-nums">{formatI18nTemplate(bt("리서치 흐름 {v0}/{v1} 단계", "Research flow {v0}/{v1}"), { v0: summary.completedStages, v1: summary.stages.length })}</span>
       </div>
     </div>
     {action.href.startsWith("#")
@@ -73,11 +76,11 @@ export function ResearchFocusPanel({
     onSessionChange((current) => updateResearchDeskFocus(current, patch));
   };
 
-  return <section className="space-y-4 rounded-2xl border border-line bg-panel p-4 sm:p-5" aria-labelledby="research-focus-title">
+  return <section className="space-y-4 rounded-xl border border-line bg-panel p-4 sm:p-5" aria-labelledby="research-focus-title">
     <header className="flex flex-wrap items-start justify-between gap-2">
       <div>
-        <p className="text-xs font-bold text-accent">{bt("이번 리서치 초점", "This research focus")}</p>
-        <h2 id="research-focus-title" className="mt-1 text-lg font-bold">{bt("질문이 흐려지지 않도록 작업 맥락 고정", "Pin the context so the question stays sharp")}</h2>
+        <p className="text-xs font-medium text-accent">{bt("이번 리서치 초점", "This research focus")}</p>
+        <h2 id="research-focus-title" className="mt-1 text-lg font-semibold">{bt("질문이 흐려지지 않도록 작업 맥락 고정", "Pin the context so the question stays sharp")}</h2>
       </div>
       <button type="button" className={RESOURCE_BUTTON} disabled={isResearchDeskSessionEmpty(session)} onClick={onSessionReset}>{bt("초점·기록 초기화", "Reset focus & history")}</button>
     </header>

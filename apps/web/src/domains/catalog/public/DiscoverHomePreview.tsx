@@ -1,7 +1,8 @@
+import "../discover-hub-layout.css";
+
 import { ArrowRight } from "lucide-react";
 
 import { useApiResource } from "@/platform/use-api-resource";
-import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 
@@ -48,16 +49,20 @@ export function DiscoverHomePreview() {
   const viewAllLabel = bt("전체 보기", "View all");
 
   return (
-    <section aria-labelledby="discover-home-preview-title" className="flex flex-col gap-8">
+    <section aria-labelledby="discover-home-preview-title" className="discover-home-preview flex flex-col gap-8">
       {/* 제목 묶음은 페이지 배너가 아니라 구간 머리글이므로 <header>를 쓰지 않는다 —
           배너 랜드마크는 사이트 크롬만의 몫이라는 홈 계약(대시보드 테스트)을 지킨다. */}
-      <div data-section-heading="" className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+      <div data-section-heading="" className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div className="min-w-0">
-          <p className="eyebrow mb-1.5 flex items-center gap-2 text-accent">DISCOVER</p>
-          <h2 id="discover-home-preview-title" data-section-title="" className="text-pretty text-xl font-bold tracking-tight text-fg sm:text-2xl">
+          <h2
+            id="discover-home-preview-title"
+            data-section-title=""
+            data-ink="line"
+            className="text-pretty text-xl font-semibold tracking-tight text-fg [word-break:keep-all] sm:text-2xl"
+          >
             {previewTitle}
           </h2>
-          <p data-section-description="" className="mt-1.5 text-sm leading-relaxed text-fg-2">
+          <p data-section-description="" className="mt-4 text-sm leading-relaxed text-fg-2 [word-break:keep-all]">
             {bt(
               "오늘의 추천과 요일 연재를 미리 보여 드려요. 전체 작품은 탐색 허브에서 이어 볼 수 있어요.",
               "A featured pick and weekday serials up front — the full catalogue continues in Discover.",
@@ -67,12 +72,12 @@ export function DiscoverHomePreview() {
         <Link
           href={DISCOVER_HUB_HREF}
           data-section-action=""
-          className={buttonClass({ size: "sm", variant: "quiet", className: "group gap-1" })}
+          className="ink-arrow inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
           aria-label={`${previewTitle} ${viewAllLabel}`}
         >
           <span className="sr-only">{previewTitle} </span>
           {viewAllLabel}
-          <ArrowRight size={14} aria-hidden="true" className="transition-transform duration-150 group-hover:translate-x-0.5" />
+          <ArrowRight size={14} strokeWidth={1.5} aria-hidden="true" />
         </Link>
       </div>
       <DiscoverSpotlight snapshot={snapshot} loading={home.loading} />

@@ -72,42 +72,28 @@ describe("WorkspaceNavigation 좌측 메뉴", () => {
     ]);
   });
 
-  it("주 메뉴와 제작 바로가기 전원에 아트 타일 이미지를 붙인다", () => {
-    renderAt("/home");
+  it("주 메뉴와 제작 바로가기 전원에 래스터 이미지 대신 단일 규격 선 아이콘(svg)을 렌더링한다", () => {
+    const view = renderAt("/home");
+    expect(view.container.querySelectorAll("img")).toHaveLength(0);
     const nav = screen.getByRole("navigation", { name: "주 메뉴" });
-    const primaryArt = within(nav).getAllByRole("link").map((link) =>
-      link.querySelector("img")?.getAttribute("src"));
-    expect(primaryArt).toEqual([
-      "/brand/toonstudio-premium-icons/home.webp",
-      "/brand/toonstudio-premium-icons/canvas.webp",
-      "/brand/toonstudio-premium-icons/assets.webp",
-      "/brand/toonstudio-premium-icons/community.webp",
-      "/brand/toonstudio-premium-icons/settings.webp",
-    ]);
+    for (const link of within(nav).getAllByRole("link")) {
+      const icons = link.querySelectorAll("svg");
+      expect(icons).toHaveLength(1);
+      expect(icons[0]?.getAttribute("width")).toBe("17");
+    }
     const shortcuts = screen.getByRole("navigation", { name: "제작 바로가기" });
-    const shortcutArt = within(shortcuts).getAllByRole("link").map((link) =>
-      link.querySelector("img")?.getAttribute("src"));
-    expect(shortcutArt).toEqual([
-      "/brand/toonstudio-premium-icons/create.webp",
-      "/brand/toonstudio-premium-icons/character.webp",
-      "/brand/toonstudio-premium-icons/background.webp",
-      "/brand/toonstudio-premium-icons/materials.webp",
-      "/brand/toonstudio-premium-icons/space.webp",
-      "/brand/toonstudio-premium-icons/team.webp",
-    ]);
+    for (const link of within(shortcuts).getAllByRole("link")) {
+      const icons = link.querySelectorAll("svg");
+      expect(icons).toHaveLength(1);
+      expect(icons[0]?.getAttribute("width")).toBe("17");
+    }
   });
 
-  it("아트 로드에 실패하면 이미지만 물러나고 줄 아이콘이 남는다", () => {
-    renderAt("/home");
-    const shortcuts = screen.getByRole("navigation", { name: "제작 바로가기" });
-    const link = within(shortcuts).getByRole("link", { name: "가상 스튜디오" });
-    const art = link.querySelector("img");
-    expect(art).not.toBeNull();
-    fireEvent.error(art as HTMLImageElement);
-    expect(link.querySelector("img")).toBeNull();
-    // 타일이 물러나도 목적지 이름과 줄 아이콘(svg)은 그대로다.
-    expect(link.textContent).toContain("가상 스튜디오");
-    expect(link.querySelector("svg")).not.toBeNull();
+  it("좌측 레일 아래에 현재 위치를 가리키는 수직 잉크 막대 슬롯을 둔다", () => {
+    const view = renderAt("/studio");
+    const ink = view.container.querySelector(".workspace-nav-ink");
+    expect(ink).not.toBeNull();
+    expect(ink?.getAttribute("aria-hidden")).toBe("true");
   });
 
   it("배경·3D 경로에서는 바로가기가 현재 위치이고 주 메뉴 제작은 물러난다", () => {

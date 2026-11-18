@@ -6,7 +6,7 @@ export type ExperienceMode = "vivid" | "calm";
 export type ExperienceLocale = string;export const EXPERIENCE_MODE_KEY = "toonstudio:site-experience:v1";
 
 export function parseExperienceMode(value: string | null): ExperienceMode {
-  return value === "calm" ? "calm" : "vivid";
+  return value === "vivid" ? "vivid" : "calm";
 }
 
 function normalizedExperiencePath(pathname: string): string {

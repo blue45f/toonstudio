@@ -1,5 +1,14 @@
-import type { CSSProperties } from "react";
-import { ChevronDown } from "lucide-react";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  Bookmark,
+  ChevronDown,
+  Compass,
+  Film,
+  MessageSquare,
+  Package,
+  PenTool,
+  type LucideIcon,
+} from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
@@ -21,13 +30,13 @@ import "./site-experience/site-art-ui.css";
 
 const MAX_PRIMARY_RIBBON_ITEMS = 16;
 
-const SUBNAV_GROUP_EMBLEMS: Readonly<Record<ContextualHubGroupId, string>> = {
-  "promo-cuts-hub": "/brand/luminous-atelier-20261114/icon-nav-discover-cuts.webp",
-  "discover-hub": "/brand/luminous-atelier-20261114/icon-nav-discover-cuts.webp",
-  "community-hub": "/brand/luminous-atelier-20261114/icon-nav-learn-collab.webp",
-  "studio-hub": "/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp",
-  "market-hub": "/brand/luminous-atelier-20261114/icon-nav-asset-market.webp",
-  "personal-library-hub": "/brand/luminous-atelier-20261114/icon-studio-layers-color.webp",
+const SUBNAV_GROUP_ICONS: Readonly<Record<ContextualHubGroupId, LucideIcon>> = {
+  "promo-cuts-hub": Film,
+  "discover-hub": Compass,
+  "community-hub": MessageSquare,
+  "studio-hub": PenTool,
+  "market-hub": Package,
+  "personal-library-hub": Bookmark,
 };
 
 function partitionSubNavItems(
@@ -68,8 +77,48 @@ export function SiteContextualSubNav({
   const pathname = canonicalSitePath(pathnameOverride ?? currentPathname);
   const lang = useI18n((state) => state.lang);
   const isKo = lang.toLowerCase().startsWith("ko");
+  const primaryListRef = useRef<HTMLUListElement>(null);
+  const [inkRect, setInkRect] = useState<{ x: number; y: number; width: number } | null>(null);
 
   const group = groupOverride ?? resolveContextualSubNavForPath(pathname);
+  const currentSearchString = pathnameOverride?.includes("?")
+    ? pathnameOverride.slice(pathnameOverride.indexOf("?"))
+    : pathname === canonicalSitePath(currentPathname) ? currentSearch : "";
+
+  useLayoutEffect(() => {
+    const list = primaryListRef.current;
+    if (!list || typeof window === "undefined") {
+      setInkRect(null);
+      return undefined;
+    }
+    const measure = () => {
+      const active = list.querySelector<HTMLElement>('[aria-current="page"]');
+      if (!active || active.getClientRects().length === 0) {
+        setInkRect(null);
+        return;
+      }
+      const listBox = list.getBoundingClientRect();
+      const activeBox = active.getBoundingClientRect();
+      const inset = Math.min(10, Math.round(activeBox.width * 0.14));
+      const width = Math.max(12, Math.round(activeBox.width - inset * 2));
+      const x = Math.round(activeBox.left - listBox.left + inset);
+      const y = Math.round(activeBox.bottom - listBox.top - 3);
+      setInkRect((prev) =>
+        prev && prev.x === x && prev.y === y && prev.width === width
+          ? prev
+          : { x, y, width },
+      );
+    };
+    measure();
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
+    observer?.observe(list);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [group?.id, pathname, currentSearchString, isKo]);
+
   if (!group) return null;
 
   const title = isKo ? group.koTitle : group.enTitle;
@@ -78,12 +127,8 @@ export function SiteContextualSubNav({
   const simplicity = resolvePageSimplicityProfile(group.id);
   const goalCopy = isKo ? simplicity.koPrimaryGoal : simplicity.enPrimaryGoal;
   const simplicityBadge = isKo ? "이곳에서 할 수 있는 일" : "What you can do here";
-  const emblemSrc = SUBNAV_GROUP_EMBLEMS[group.id];
-  const search = new URLSearchParams(
-    pathnameOverride?.includes("?")
-      ? pathnameOverride.slice(pathnameOverride.indexOf("?"))
-      : pathname === canonicalSitePath(currentPathname) ? currentSearch : "",
-  );
+  const HubIcon = SUBNAV_GROUP_ICONS[group.id];
+  const search = new URLSearchParams(currentSearchString);
   // 같은 경로의 서재 탭은 쿼리까지 비교하고, 가장 구체적인 목적지 하나만 현재 위치로 표시한다.
   const currentItem = group.items.filter((item) => {
     const itemPath = canonicalSitePath(item.href);
@@ -103,11 +148,6 @@ export function SiteContextualSubNav({
         className="site-contextual-subnav__link"
       >
         <span>{isKo ? item.koLabel : item.enLabel}</span>
-        {item.badge ? (
-          <span className="site-contextual-subnav__badge" aria-hidden="true">
-            {item.badge}
-          </span>
-        ) : null}
       </Link>
     </li>
   );
@@ -128,19 +168,29 @@ export function SiteContextualSubNav({
     >
       <div className="site-contextual-subnav__ribbon">
         <span className="site-contextual-subnav__hub-chip" aria-hidden="true">
-          <img
-            src={emblemSrc}
-            alt=""
-            width={24}
-            height={24}
-            loading="lazy"
-            decoding="async"
-            className="site-contextual-subnav__emblem"
-          />
+          <HubIcon size={14} strokeWidth={1.75} className="site-contextual-subnav__icon" />
           <span className="site-contextual-subnav__hub-title">{title}</span>
         </span>
-        <ul className="site-contextual-subnav__list site-contextual-subnav__list--primary">
+        <ul
+          ref={primaryListRef}
+          className="site-contextual-subnav__list site-contextual-subnav__list--primary"
+          data-ink-active={inkRect ? "true" : undefined}
+        >
           {primaryItems.map(renderItem)}
+          <span
+            aria-hidden="true"
+            className="site-contextual-subnav__ink"
+            style={
+              inkRect
+                ? ({
+                    "--subnav-ink-x": `${inkRect.x}px`,
+                    "--subnav-ink-y": `${inkRect.y}px`,
+                    "--subnav-ink-w": String(inkRect.width),
+                    opacity: 1,
+                  } as CSSProperties)
+                : ({ opacity: 0 } as CSSProperties)
+            }
+          />
         </ul>
         <details key={`${pathname}${search.toString()}`} className="site-contextual-subnav__more">
           <summary>

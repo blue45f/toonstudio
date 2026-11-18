@@ -48,16 +48,16 @@ export function MarketProductionProfileEditor({
   return (
     <section
       aria-labelledby={titleId}
-      className={cn("rounded-2xl border border-line bg-panel p-4 shadow-sm sm:p-5", className)}
+      className={cn("rounded-[16px] border border-line bg-panel p-4 sm:p-5", className)}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="eyebrow text-accent">Production profile</p>
+          <p className="text-xs font-medium text-accent">작업 환경 기준</p>
           <h2
             id={titleId}
-            className="mt-1 flex items-center gap-2 text-lg font-bold text-fg"
+            className="mt-1 flex items-center gap-2 text-lg font-semibold text-fg"
           >
-            <SlidersHorizontal className="size-5 text-accent" aria-hidden="true" />
+            <SlidersHorizontal className="size-4 text-accent" aria-hidden="true" />
             내 제작 조건
           </h2>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-fg-3">
@@ -68,21 +68,21 @@ export function MarketProductionProfileEditor({
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+          className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-[8px] border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
         >
           <RotateCcw className="size-3.5" aria-hidden="true" />
           기본값
         </button>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="제작 조건 프리셋">
+      <div className="mt-4 flex flex-wrap gap-1.5" role="group" aria-label="제작 조건 프리셋">
         {MARKET_PRODUCTION_PROFILE_PRESETS.map((preset) => (
           <button
             key={preset.id}
             type="button"
             title={preset.description}
             onClick={() => onChange(preset.patch)}
-            className="inline-flex min-h-11 min-w-11 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:border-accent/60 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            className="inline-flex min-h-11 min-w-11 items-center rounded-[8px] border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors duration-150 hover:border-accent/60 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             {preset.label}
           </button>

@@ -1,6 +1,6 @@
 import { ArrowRight, CheckCircle2, ChevronDown, Wand2 } from "lucide-react";
-import type { ReactNode } from "react";
 
+import { Container } from "@/shared/components/section";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 
@@ -66,7 +66,7 @@ const BUILTIN_ATELIER_PACKS = [
     badgeEn: "3D Stage · LT Line Extract",
     licenseKo: "팀 공유 허용 · CC0 호환",
     licenseEn: "Team Share · CC0 Ready",
-    titleKo: "서울 노스탤지어 카페 & 비 오는 거리 3D",
+    titleKo: "서울 노스탤지어 카페 · 비 오는 거리 3D",
     titleEn: "Seoul Nostalgia Cafe & Rainy Street 3D",
     bodyKo: "낮·노을·심야 조명 프리셋 및 문·소품 가동 지원",
     bodyEn: "Day, sunset & midnight lighting presets with articulated props",
@@ -96,7 +96,7 @@ const BUILTIN_ATELIER_PACKS = [
     badgeEn: "Vector Balloons · Speed Lines",
     licenseKo: "비파괴 편집 · No-AI 검증",
     licenseEn: "Non-destructive · No-AI",
-    titleKo: "감정선 말풍선 & 집중선·속도선 세트",
+    titleKo: "감정선 말풍선 · 집중선·속도선 세트",
     titleEn: "Emotion Speech Balloons & Speed Lines",
     bodyKo: "외곽선 두께·꼬리 각도 실시간 조절 벡터 소재",
     bodyEn: "Live-editable stroke width and tail direction vector set",
@@ -109,57 +109,61 @@ export function MarketGrandAtelierShowcase() {
   const t = useBilingual("MarketHomePage");
 
   return (
-    <ContainerWrapper>
+    <Container size="wide" className="pb-10">
       <details
         data-testid="market-grand-atelier-showcase"
-        className="group rounded-2xl border border-line bg-panel/60 px-4 py-1 open:pb-4"
+        className="group rounded-[14px] border border-line bg-panel px-4 py-1 open:pb-4"
       >
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2 text-sm font-semibold text-fg [&::-webkit-details-marker]:hidden">
-          <span className="min-w-0">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2 text-sm font-medium text-fg [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 [word-break:keep-all]">
             {t("스튜디오 기본 추천 소재 · 작업실 바로가기", "Built-in Studio starter packs & tools")}
             <span className="ml-2 text-xs font-normal text-fg-3">
               {t("브러시 · 3D 배경 · 캐릭터 셰이퍼 · 원고 시험", "Brushes · 3D stages · Character Shaper · Fit Lab")}
             </span>
           </span>
-          <ChevronDown size={16} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+          <ChevronDown
+            size={16}
+            aria-hidden="true"
+            className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
+          />
         </summary>
 
         <div className="mt-2 space-y-4 border-t border-line/70 pt-3.5">
           <nav
             aria-label={t("아틀리에 소재 빠른 리본", "Atelier material quick ribbon")}
             data-testid="market-atelier-ribbon"
-            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-card/70 p-2.5"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-line bg-card p-2"
           >
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               {ATELIER_RIBBON_ITEMS.map((item, index) => (
                 <Link
                   key={item.id}
                   href={item.href}
                   className={
                     index === 0
-                      ? "inline-flex min-h-11 items-center gap-2 rounded-xl border border-accent bg-accent/15 px-3 py-2 text-xs font-semibold text-accent"
-                      : "inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-canvas/85 px-3 py-2 text-xs font-medium text-fg-2 transition-colors hover:border-accent/50 hover:text-fg"
+                      ? "inline-flex min-h-11 items-center gap-2 rounded-[8px] border border-accent/60 bg-accent-soft px-3 py-1.5 text-xs font-medium text-fg"
+                      : "inline-flex min-h-11 items-center gap-2 rounded-[8px] border border-line bg-panel px-3 py-1.5 text-xs font-normal text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
                   }
                 >
                   <img
                     src={item.iconSrc}
                     alt=""
                     aria-hidden="true"
-                    width={24}
-                    height={24}
+                    width={20}
+                    height={20}
                     loading="lazy"
                     decoding="async"
-                    className="size-6 shrink-0 rounded-md object-cover"
+                    className="size-5 shrink-0 rounded-[5px] object-cover"
                   />
                   <span>{t(item.ko, item.en)}</span>
                 </Link>
               ))}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <Link
                 href="/market/fit"
                 data-testid="market-fit-lab-pill"
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-canvas px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
+                className="ink-arrow inline-flex min-h-11 items-center gap-1.5 rounded-[8px] border border-line bg-panel px-3 py-1.5 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
               >
                 <Wand2 size={14} aria-hidden="true" />
                 <span>{t("내 원고 위 바로 시험 (Fit Lab)", "Test on Manuscript (Fit Lab)")}</span>
@@ -167,7 +171,7 @@ export function MarketGrandAtelierShowcase() {
               </Link>
               <Link
                 href="/market/publish"
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-canvas px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
+                className="ink-arrow inline-flex min-h-11 items-center gap-1.5 rounded-[8px] border border-line bg-panel px-3 py-1.5 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
               >
                 <span>{t("내 소재 공유 · 판매 등록하기", "Publish or Sell Materials")}</span>
                 <ArrowRight size={13} aria-hidden="true" />
@@ -179,35 +183,40 @@ export function MarketGrandAtelierShowcase() {
             {BUILTIN_ATELIER_PACKS.map((pack) => (
               <article
                 key={pack.id}
-                className="group/pack flex flex-col justify-between overflow-hidden rounded-2xl border border-line bg-canvas/90 transition-colors hover:border-accent/55"
+                className="ink-frame group/pack flex flex-col justify-between overflow-hidden rounded-[12px] border border-line bg-card transition-colors hover:border-line-strong"
               >
                 <div>
-                  <div className="relative aspect-[16/10] w-full overflow-hidden border-b border-line/70 bg-panel">
+                  <div className="ink-cover ink-sheen relative aspect-[16/10] w-full overflow-hidden border-b border-line bg-panel">
                     <img
                       src={pack.artSrc}
                       alt=""
                       aria-hidden="true"
                       loading="lazy"
                       decoding="async"
-                      className="h-full w-full object-cover"
+                      className="size-full object-cover"
                     />
-                    <span className="absolute left-2 top-2 rounded-md border border-line/80 bg-canvas/90 px-2 py-0.5 text-[11px] font-semibold text-fg-2 backdrop-blur-sm">
+                    <span className="absolute left-2 top-2 z-[3] rounded-[6px] border border-line bg-canvas/90 px-2 py-0.5 text-xs font-medium text-fg-2">
                       {t(pack.badgeKo, pack.badgeEn)}
                     </span>
                   </div>
                   <div className="p-3.5">
-                    <p className="inline-flex items-center gap-1 text-[11px] font-medium text-fg-3">
+                    <p className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-3">
+                      <span className="size-1.5 rounded-full bg-good" aria-hidden="true" />
                       <CheckCircle2 size={12} aria-hidden="true" />
                       <span>{t(pack.licenseKo, pack.licenseEn)}</span>
                     </p>
-                    <h3 className="mt-1.5 text-sm font-semibold text-fg">{t(pack.titleKo, pack.titleEn)}</h3>
-                    <p className="mt-1 text-xs leading-5 text-fg-2">{t(pack.bodyKo, pack.bodyEn)}</p>
+                    <h3 className="mt-1.5 text-sm font-semibold text-fg [word-break:keep-all]">
+                      {t(pack.titleKo, pack.titleEn)}
+                    </h3>
+                    <p className="mt-1 text-xs leading-5 text-fg-2 [word-break:keep-all]">
+                      {t(pack.bodyKo, pack.bodyEn)}
+                    </p>
                   </div>
                 </div>
                 <div className="px-3.5 pb-3.5">
                   <Link
                     href={pack.href}
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg transition-colors hover:border-accent hover:text-accent"
+                    className="ink-arrow inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-[8px] border border-line bg-panel px-3 py-2 text-xs font-medium text-fg transition-colors hover:border-accent hover:text-accent"
                   >
                     <span>{t(pack.ctaKo, pack.ctaEn)}</span>
                     <ArrowRight size={14} aria-hidden="true" />
@@ -218,10 +227,6 @@ export function MarketGrandAtelierShowcase() {
           </div>
         </div>
       </details>
-    </ContainerWrapper>
+    </Container>
   );
-}
-
-function ContainerWrapper({ children }: { readonly children: ReactNode }) {
-  return <div className="mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">{children}</div>;
 }

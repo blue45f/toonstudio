@@ -31,7 +31,7 @@ const SEARCH_DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
 const MAX_SUGGESTIONS = 6;
 const MAX_RECENT = 6;
 
-const CHIP_CLASS = "inline-flex min-h-11 max-w-full shrink-0 items-center rounded-full border border-line bg-canvas px-3.5 text-sm text-fg hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
+const CHIP_CLASS = "inline-flex min-h-11 max-w-full shrink-0 items-center rounded-lg border border-line bg-panel px-3 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
 
 function searchModeLabel(mode: ResearchSearchMode): string {
   return RESEARCH_SEARCH_MODES.find((entry) => entry.id === mode)?.label ?? RESEARCH_SEARCH_MODES[0].label;
@@ -130,27 +130,27 @@ export function ResearchSearchPanel({
 
   return <section id="research-command" className="space-y-4" aria-label={bt("리서치 통합 검색", "Research search")}>
     <form className="space-y-3" onSubmit={submitSearch} noValidate role="search">
-      <div className="grid grid-cols-3 gap-2" role="group" aria-label="리서치 검색 유형">
+      <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="리서치 검색 유형">
         {RESEARCH_SEARCH_MODES.map((mode, index) => <button
           key={mode.id}
           ref={(node: HTMLButtonElement | null) => { modeButtonRefs.current[index] = node; }}
           type="button"
           aria-pressed={searchMode === mode.id}
-          className={`${RESOURCE_BUTTON} min-w-0 flex-col px-2 text-center ${searchMode === mode.id ? "border-accent bg-accent-soft text-accent" : "bg-canvas"}`}
+          className={`${RESOURCE_BUTTON} min-w-0 flex-col px-2.5 py-2 text-center ${searchMode === mode.id ? "border-accent bg-accent-soft font-semibold text-fg" : "bg-panel text-fg-2"}`}
           onClick={() => selectMode(mode.id)}
           onKeyDown={(event: ReactKeyboardEvent<HTMLButtonElement>) => moveMode(index, event)}
         >
           <span className="block break-keep">{mode.label}</span>
-          <span className="hidden text-xs font-normal text-fg-2 sm:block">{mode.description}</span>
+          <span className="hidden text-xs font-normal text-fg-3 sm:block">{mode.description}</span>
         </button>)}
       </div>
       <div className="flex items-end justify-between gap-2 max-sm:contents">
-        <label htmlFor="research-command-query" className="block text-sm font-semibold max-sm:sr-only">{currentSearchMode.label} 검색</label>
-        <span className="hidden text-xs text-fg-2 sm:inline"><kbd className="rounded border border-line bg-canvas px-1.5 py-0.5">⌘/Ctrl K</kbd> · <kbd className="rounded border border-line bg-canvas px-1.5 py-0.5">/</kbd></span>
+        <label htmlFor="research-command-query" className="block text-sm font-medium max-sm:sr-only">{currentSearchMode.label} 검색</label>
+        <span className="hidden text-xs text-fg-3 sm:inline"><kbd className="rounded border border-line bg-panel px-1.5 py-0.5 font-mono text-[11px]">⌘/Ctrl K</kbd> · <kbd className="rounded border border-line bg-panel px-1.5 py-0.5 font-mono text-[11px]">/</kbd></span>
       </div>
       <div className="flex gap-2">
         <div className="relative min-w-0 flex-1">
-          <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-accent" />
+          <Search size={17} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" />
           <input
             ref={searchInputRef}
             id="research-command-query"
@@ -160,7 +160,7 @@ export function ResearchSearchPanel({
             enterKeyHint="search"
             value={searchQuery}
             placeholder={currentSearchMode.placeholder}
-            className={`${RESOURCE_INPUT} min-h-12 pl-10`}
+            className={`${RESOURCE_INPUT} min-h-11 bg-panel pl-10`}
             aria-keyshortcuts="Control+K Meta+K /"
             aria-describedby={searchError ? "research-command-error" : "research-command-help"}
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -175,7 +175,7 @@ export function ResearchSearchPanel({
             }}
           />
         </div>
-        <button className={`${RESOURCE_BUTTON} min-h-12 shrink-0 border-accent bg-accent text-on-accent hover:bg-accent-2`} type="submit">{bt("검색", "Search")}</button>
+        <button className={`${RESOURCE_BUTTON} min-h-11 shrink-0 border-accent bg-accent font-semibold text-on-accent hover:bg-accent-2`} type="submit">{bt("검색", "Search")}</button>
       </div>
       {searchError
         ? <p id="research-command-error" role="alert" className="text-sm font-semibold text-fg">{searchError}</p>
@@ -195,25 +195,25 @@ export function ResearchSearchPanel({
     </form>
 
     {canBuildPlan ? <section className="space-y-2" aria-labelledby="cross-search-title">
-      <h3 id="cross-search-title" className="text-sm font-bold">{bt("같은 질문을 다른 근거로 확인", "Check the same question elsewhere")}</h3>
+      <h3 id="cross-search-title" className="text-sm font-semibold">{bt("같은 질문을 다른 근거로 확인", "Check the same question elsewhere")}</h3>
       <div className="grid gap-2 sm:grid-cols-3">
         {planModes.map((mode) => <button
           key={mode.id}
           type="button"
-          className={`min-h-12 rounded-xl border px-4 py-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${mode.id === searchMode ? "border-accent bg-accent-soft" : "border-line bg-canvas hover:bg-raised"}`}
+          className={`min-h-12 rounded-lg border px-3.5 py-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${mode.id === searchMode ? "border-accent bg-accent-soft" : "border-line bg-panel hover:bg-raised"}`}
           aria-label={`${mode.label}에서 ${normalizedQuery} 검색`}
           onClick={() => onSearch(mode.id, normalizedQuery)}
         >
-          <span className="block text-xs font-semibold text-accent">{mode.id === searchMode ? bt("현재 경로", "Current route") : bt("추가 근거", "Extra evidence")}</span>
-          <span className="mt-0.5 block font-bold">{mode.label} →</span>
+          <span className="block text-xs font-medium text-accent">{mode.id === searchMode ? bt("현재 경로", "Current route") : bt("추가 근거", "Extra evidence")}</span>
+          <span className="mt-0.5 block font-semibold">{mode.label} →</span>
         </button>)}
       </div>
     </section> : null}
 
     {session.history.length ? <section className="space-y-2" aria-labelledby="recent-searches-title">
       <div className="flex items-center justify-between gap-3">
-        <h3 id="recent-searches-title" className="text-sm font-bold">{bt("최근 검색 기록", "Recent searches")}</h3>
-        <button type="button" className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => onSessionChange(clearResearchSearchHistory)}>
+        <h3 id="recent-searches-title" className="text-sm font-semibold">{bt("최근 검색 기록", "Recent searches")}</h3>
+        <button type="button" className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs font-medium text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => onSessionChange(clearResearchSearchHistory)}>
           <X size={14} aria-hidden="true" />{bt("기록 지우기", "Clear")}
         </button>
       </div>
@@ -221,7 +221,7 @@ export function ResearchSearchPanel({
         {session.history.slice(0, MAX_RECENT).map((entry) => <button
           key={`${entry.mode}:${entry.query}:${entry.searchedAt}`}
           type="button"
-          className="min-h-11 max-w-[16rem] shrink-0 rounded-xl border border-line bg-canvas px-3 py-1.5 text-left hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+          className="min-h-11 max-w-[16rem] shrink-0 rounded-lg border border-line bg-panel px-3 py-1.5 text-left hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
           aria-label={`${searchModeLabel(entry.mode)} 검색어 ${entry.query} 다시 사용`}
           onClick={() => {
             setSearchQuery(entry.query);
@@ -230,8 +230,8 @@ export function ResearchSearchPanel({
             searchInputRef.current?.focus();
           }}
         >
-          <span className="block truncate text-sm font-semibold">{entry.query}</span>
-          <span className="block truncate text-xs text-fg-2">{searchModeLabel(entry.mode)} · {searchTimeLabel(entry.searchedAt)}</span>
+          <span className="block truncate text-sm font-medium">{entry.query}</span>
+          <span className="block truncate text-xs text-fg-3 tabular-nums">{searchModeLabel(entry.mode)} · {searchTimeLabel(entry.searchedAt)}</span>
         </button>)}
       </div>
     </section> : null}

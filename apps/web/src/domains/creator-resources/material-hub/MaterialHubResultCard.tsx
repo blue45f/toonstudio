@@ -62,17 +62,17 @@ export function MaterialHubResultCard({ item, saved, saveDisabled, studioAsset, 
   const credit = item.provenance?.attribution || item.credit || providerLabel;
 
   return (
-    <article data-hub-card={item.id} className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel">
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-raised">
+    <article data-hub-card={item.id} className="ink-frame flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-panel">
+      <div className="ink-cover ink-sheen relative aspect-[4/3] w-full overflow-hidden bg-raised">
         {showImage
           ? <img src={item.imageUrl} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} className="absolute inset-0 h-full w-full object-cover" />
           : <TypographicCover title={item.title} seed={item.id} className="absolute inset-0" />}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <h5 tabIndex={-1} className="break-words text-sm font-bold leading-5">{item.title}</h5>
+        <h5 tabIndex={-1} className="break-words text-sm font-semibold leading-5">{item.title}</h5>
         <p className="text-xs leading-5 text-fg-2">{item.creator || bt("저작자·기관 원문 확인", "Check the source for the creator")}{item.dateLabel ? ` · ${item.dateLabel}` : ""}</p>
         <p className="flex flex-wrap items-center gap-1.5 text-xs">
-          <span className={`inline-flex min-h-7 items-center gap-1 rounded-full border px-2.5 font-semibold text-fg ${BADGE_TONE[item.license]}`}>
+          <span className={`inline-flex min-h-7 items-center gap-1 rounded-md border px-2 font-medium text-fg ${BADGE_TONE[item.license]}`}>
             <span aria-hidden="true">{BADGE_CODE[item.license]}</span>
             <span>{bt(resourceUsageLabel(item), USAGE_LABEL_EN[item.license])}</span>
           </span>

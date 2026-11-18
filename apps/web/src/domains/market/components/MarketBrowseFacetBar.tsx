@@ -66,10 +66,10 @@ const QUICK_WORKFLOW_TAGS = [
 
 function facetPillClass(active: boolean): string {
   return cn(
-    "inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors",
+    "inline-flex min-h-8 items-center gap-1.5 rounded-[8px] border px-2.5 py-1 text-xs font-medium transition-colors duration-150",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
     active
-      ? "border-accent bg-accent text-on-accent shadow-xs"
+      ? "border-accent/60 bg-accent-soft text-fg"
       : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg",
   );
 }

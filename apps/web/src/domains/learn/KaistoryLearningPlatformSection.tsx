@@ -12,7 +12,6 @@ import {
   Flag,
   GraduationCap,
   Layers,
-  Sparkles,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -221,17 +220,17 @@ export function KaistoryLearningPlatformSection() {
 
   return (
     <section
-      className="mt-8 rounded-3xl border border-line bg-card p-4 shadow-sm sm:p-6"
+      className="mt-8 rounded-2xl border border-line bg-panel p-4 sm:p-6"
       aria-labelledby="kaistory-learning-platform-heading"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="flex items-center gap-1.5 text-[0.68rem] font-black uppercase tracking-[0.16em] text-accent">
-            <Sparkles size={14} aria-hidden="true" /> KAISTORY LEARNING PLATFORM · KAION & KAITOON
+          <p className="text-xs font-medium text-accent">
+            교과 연계 만화·문제 워크벤치
           </p>
           <h2
             id="kaistory-learning-platform-heading"
-            className="mt-1 text-xl font-black tracking-tight text-fg sm:text-2xl"
+            className="mt-1 text-xl font-semibold tracking-tight text-fg sm:text-2xl"
           >
             KAION 6단계 교육과정·문제은행 & KAITOON 만화+교육 학습관
           </h2>
@@ -241,7 +240,7 @@ export function KaistoryLearningPlatformSection() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 rounded-2xl border border-line bg-panel px-3.5 py-2 text-xs font-bold text-fg">
+        <div className="flex items-center gap-2 rounded-lg border border-line bg-canvas px-3 py-2 text-xs font-medium text-fg tabular-nums">
           <Award size={16} className="text-accent" aria-hidden="true" />
           보유 학습 포인트: <span>{studentPoints}P</span>
         </div>

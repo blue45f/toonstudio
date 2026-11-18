@@ -541,6 +541,9 @@ body:has([data-studio-beta-notice-host="true"]) > [data-beta-open-prompt="engage
   :root:has(.workspace-sidebar) :is([data-site-ost="mounted"]:has([data-site-ost-pill]), [data-beta-open-prompt="engaged"]) {
     left: calc(var(--layout-rail-icon) + 1rem);
   }
+  :root:has(.workspace-statusbar) [data-site-ost="mounted"]:has([data-site-ost-pill]) {
+    bottom: calc(max(1rem, var(--service-status-overlay-clearance, 0px)) + 4.5rem);
+  }
   [data-studio-beta-notice-host="true"] {
     justify-content: flex-start;
   }

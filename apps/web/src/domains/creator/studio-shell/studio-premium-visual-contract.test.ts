@@ -78,14 +78,14 @@ describe("ToonStudio premium visual flow contract", () => {
     expect(creatorLobby).toContain("studioLobbyArtSource(action.art)");
     expect(creatorLobbyModel).toContain("/brand/illustrated-20260928");
     expect(creatorLobby.match(/art: "[^"]+\.webp"/gu)).toHaveLength(7);
-    const navigationArt = [...workspaceNavigation.matchAll(/(?:"([\w-]+)"|(\w+)):\s*"\/brand\/toonstudio-premium-icons\/([^"]+\.webp)"/gu)];
-    // 주 메뉴 다섯 목적지와 제작 바로가기 여섯 목적지 전원이 아트 타일을 갖는다.
-    expect(navigationArt.map((entry) => entry[1] ?? entry[2]).sort())
-      .toEqual(
-        [...TOONSTUDIO_PRIMARY_NAVIGATION.map(({ id }) => id), ...WORKSPACE_SHORTCUT_IDS].sort(),
-      );
-    for (const entry of navigationArt) expect(PREMIUM_ICON_NAMES).toContain(entry[3]);
-    expect(workspaceCss).toContain(".workspace-nav-visual>img");
+    // 주 메뉴 다섯 목적지와 제작 바로가기 여섯 목적지 전원이 일관된 lucide-react 선 아이콘과 수직 잉크 레일을 갖는다.
+    const shortcutDeclarations = [...new Set([...workspaceNavigation.matchAll(/id:\s*"(shortcut-[\w-]+)"/gu)].map((entry) => entry[1]))];
+    expect(shortcutDeclarations.sort()).toEqual([...WORKSPACE_SHORTCUT_IDS].sort());
+    expect(TOONSTUDIO_PRIMARY_NAVIGATION.every((item) => Boolean(item.icon))).toBe(true);
+    expect(workspaceNavigation).toContain("workspace-nav-line-icon");
+    expect(workspaceNavigation).toContain('className="workspace-nav-ink"');
+    expect(workspaceCss).toContain(".workspace-nav-visual>.workspace-nav-line-icon");
+    expect(workspaceCss).toContain(".workspace-nav-ink");
   });
 
   it("turns the blank canvas into a mode and scene-led webtoon start flow", () => {

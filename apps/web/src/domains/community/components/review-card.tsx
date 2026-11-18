@@ -5,7 +5,6 @@ import { ReviewReplies } from "./review-replies";
 
 import type { SeedReview, Title } from "@/shared/lib/types";
 
-import { Card3D } from "@/shared/components/ui/card-3d";
 import { Badge } from "@/shared/components/ui/chip";
 import { Stars } from "@/shared/components/ui/stars";
 import { useT } from "@/shared/lib/i18n";
@@ -51,106 +50,113 @@ export function ReviewCard({
 
   const avatar = (
     <span
-      className="grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold text-[oklch(0.97_0.012_85)] ring-1 ring-[oklch(0.95_0.01_85/0.14)] shadow-[inset_0_1px_0_oklch(1_0_0/0.12)]"
-      style={{ background: `linear-gradient(140deg, ${review.avatar}, oklch(0.3 0.05 60))` }}
+      aria-hidden="true"
+      className="grid size-8 shrink-0 place-items-center rounded-full border border-line bg-raised text-xs font-semibold text-fg"
     >
       {review.author.charAt(0)}
     </span>
   );
 
   return (
-    <Card3D maxTilt={8} scale={1.015} className={className}>
-      <article className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-5 transition-colors hover:border-line-strong shadow-sm group-hover/card3d:shadow-md">
-        <header className="flex items-center gap-3">
-          {profileHref ? (
-            <Link href={profileHref} className="shrink-0 transition-opacity hover:opacity-80">
-              {avatar}
-            </Link>
-          ) : (
-            avatar
+    <article
+      className={cn(
+        "ink-frame flex flex-col gap-3.5 rounded-2xl border border-line bg-card/85 p-5 transition-colors duration-150 hover:bg-card motion-reduce:transition-none",
+        className,
+      )}
+    >
+      {showTitle && title ? (
+        <Link
+          href={`/title/${title.slug}`}
+          className="inline-flex w-fit max-w-full items-center gap-2 rounded-lg border border-line/70 bg-panel/65 px-2.5 py-1 text-xs text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
+        >
+          <span
+            aria-hidden="true"
+            className="size-3.5 shrink-0 rounded-sm border border-line/50"
+            style={{ background: title.cover[0] || "var(--color-raised)" }}
+          />
+          <span className="truncate font-medium">{title.title}</span>
+        </Link>
+      ) : null}
+
+      <blockquote className="relative border-l-2 border-accent/45 pl-3.5">
+        <p
+          aria-hidden={hideText}
+          className={cn(
+            "text-pretty text-[0.9375rem] leading-7 text-fg transition-[filter] duration-150 [word-break:keep-all] motion-reduce:transition-none",
+            hideText && "select-none blur-[6px]",
           )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              {profileHref ? (
-                <Link
-                  href={profileHref}
-                  className="truncate text-sm font-semibold text-fg transition-colors hover:text-accent"
-                >
-                  {review.author}
-                </Link>
-              ) : (
-                <span className="truncate text-sm font-semibold text-fg">{review.author}</span>
-              )}
-              {review.progress && (
-                <Badge tone={PROGRESS_TONE[review.progress] ?? "neutral"}>
-                  {t(PROGRESS_LABEL_KEY[review.progress] ?? "review.progress.unknown")}
-                </Badge>
-              )}
-            </div>
-            <span className="text-xs text-fg-3">{relativeDate(review.createdAt)}</span>
-          </div>
-          <div className="flex flex-col items-end gap-0.5">
-            <Stars value={review.rating} size="sm" />
-            <span className="numeral text-xs text-fg-2">{review.rating.toFixed(1)}</span>
-          </div>
-        </header>
-
-        {showTitle && title && (
-          <Link
-            href={`/title/${title.slug}`}
-            className="flex items-center gap-2 rounded-lg bg-raised/60 px-2.5 py-1.5 text-xs text-fg-2 transition-colors hover:text-fg"
-          >
-            <span
-              className="size-4 rounded"
-              style={{ background: `linear-gradient(140deg, ${title.cover[0]}, ${title.cover[1]})` }}
-            />
-            <span className="truncate font-medium">{title.title}</span>
-          </Link>
-        )}
-
-        <div className="relative">
-          <p
-            aria-hidden={hideText}
-            className={cn(
-              "text-pretty text-sm leading-relaxed text-fg-2 transition-[filter]",
-              hideText && "select-none blur-[6px]"
-            )}
-          >
-            {review.text}
-          </p>
-          {hideText && (
-            <button
-              onClick={() => setRevealed(true)}
-              aria-label={t("review.spoilerRevealLabel")}
-              className="absolute inset-0 flex items-center justify-center gap-1.5 text-xs font-medium text-fg-2 hover:text-fg"
-            >
-              <EyeOff size={14} />
-              {t("review.spoilerRevealLabel")}
-            </button>
-          )}
-        </div>
-
-        <footer className="flex items-center justify-between">
-          <div className="flex flex-wrap gap-1.5">
-            {review.tags.map((t) => (
-              <span key={t} className="rounded-md bg-raised px-1.5 py-0.5 text-xs text-fg-3">
-                {t}
-              </span>
-            ))}
-          </div>
+        >
+          {review.text}
+        </p>
+        {hideText ? (
           <button
-            onClick={() => toggleLike(review.id)}
-            className={cn(
-              "flex min-h-11 min-w-11 items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium transition-colors",
-              hydrated && liked ? "text-accent" : "text-fg-3 hover:text-fg-2"
-            )}
+            type="button"
+            onClick={() => setRevealed(true)}
+            aria-label={t("review.spoilerRevealLabel")}
+            className="absolute inset-0 flex items-center justify-center gap-1.5 rounded-lg bg-card/75 text-xs font-medium text-fg-2 transition-colors duration-150 hover:text-fg motion-reduce:transition-none"
           >
-            <Heart size={14} className={hydrated && liked ? "fill-accent" : ""} />
-            <span className="tnum">{likeCount.toLocaleString("ko-KR")}</span>
+            <EyeOff size={14} aria-hidden="true" />
+            {t("review.spoilerRevealLabel")}
           </button>
-        </footer>
-        {enableReplies && <ReviewReplies reviewId={review.id} />}
-      </article>
-    </Card3D>
+        ) : null}
+      </blockquote>
+
+      <header className="flex items-center gap-2.5 border-t border-line/70 pt-3">
+        {profileHref ? (
+          <Link href={profileHref} className="shrink-0 transition-opacity duration-150 hover:opacity-80 motion-reduce:transition-none">
+            {avatar}
+          </Link>
+        ) : (
+          avatar
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {profileHref ? (
+              <Link
+                href={profileHref}
+                className="truncate text-xs font-medium text-fg transition-colors duration-150 hover:text-accent motion-reduce:transition-none"
+              >
+                {review.author}
+              </Link>
+            ) : (
+              <span className="truncate text-xs font-medium text-fg">{review.author}</span>
+            )}
+            {review.progress ? (
+              <Badge tone={PROGRESS_TONE[review.progress] ?? "neutral"}>
+                {t(PROGRESS_LABEL_KEY[review.progress] ?? "review.progress.unknown")}
+              </Badge>
+            ) : null}
+          </div>
+          <span className="text-[11px] text-fg-3">{relativeDate(review.createdAt)}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Stars value={review.rating} size="sm" />
+          <span className="text-xs font-medium tabular-nums text-fg-2">{review.rating.toFixed(1)}</span>
+        </div>
+      </header>
+
+      <footer className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          {review.tags.map((tag) => (
+            <span key={tag} className="rounded-md border border-line bg-panel/60 px-1.5 py-0.5 text-xs text-fg-3">
+              {tag}
+            </span>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => toggleLike(review.id)}
+          className={cn(
+            "ml-auto flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium tabular-nums transition-colors duration-150 motion-reduce:transition-none",
+            hydrated && liked ? "text-accent" : "text-fg-3 hover:bg-raised hover:text-fg-2",
+          )}
+        >
+          <Heart size={14} className={hydrated && liked ? "fill-accent" : ""} aria-hidden="true" />
+          <span>{likeCount.toLocaleString("ko-KR")}</span>
+        </button>
+      </footer>
+
+      {enableReplies ? <ReviewReplies reviewId={review.id} /> : null}
+    </article>
   );
 }
