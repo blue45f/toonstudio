@@ -12,6 +12,7 @@ import {
 } from "../../../export/webtoon-strip-composer";
 import { SHAPER_TOON_SHADER_PRESETS, buildShaperToonShadingProfile } from "../../../presets";
 
+import type { HandPropId, HandPropSide, HeadPropId, SfxStampId, ShadingProfile, StagePropId } from "../../../contracts";
 import type {
   WebtoonSfxStampOption,
   WebtoonStripActingArcId,
@@ -24,7 +25,6 @@ import type {
   WebtoonStripSfxStamps,
 } from "../../../export/webtoon-strip-composer";
 import type { ShaperToonShaderId } from "../../../presets";
-import type { HandPropId, HandPropSide, HeadPropId, SfxStampId, ShadingProfile, StagePropId } from "../../../contracts";
 
 export type WebtoonSceneDirectorPresetId =
   | "director-rofan-coronation"
