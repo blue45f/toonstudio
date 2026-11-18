@@ -4,6 +4,7 @@ import { Pool } from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { sql } from "drizzle-orm";
 import { buildCreatorAssetObjectStorageRuntimeAclSql, buildMembershipRuntimeAclSql } from "../../../../../scripts/run-production-database-migrations.mjs";
+import { buildWorkVrmCutRuntimeAclSql, buildWorkVrmCutRuntimeAclViolationSql } from "../../../../../scripts/studio-work-vrm-cut-runtime-acl.mjs";
 import { validatePostgresIntegrationUrl } from "../../../../../scripts/run-postgres-integration-tests.mjs";
 
 import type {
@@ -214,11 +215,12 @@ describeWithDirectPostgres(
       if (!observerPool || !databaseRuntime) throw new Error("PostgreSQL 저장소가 준비되지 않았습니다.");
       const owner = observerPool, runtime = databaseRuntime, role = `work_asset_test_${randomUUID().replaceAll("-", "")}`;
       const relations = ["creator_asset_storage_object", "creator_work_asset_storage_reference", "creator_work_publication_media"];
+      const aclRelations = [...relations, "studio_work_vrm_cut"];
       const aclSnapshot = async () => (await owner.query(`SELECT r.relname,r.relowner::text AS owner,
         COALESCE((SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantee,a.privilege_type,a.is_grantable)
           FROM aclexplode(COALESCE(r.relacl,acldefault('r',r.relowner))) a),'[]'::jsonb) AS acl
         FROM pg_class r JOIN pg_namespace n ON n.oid=r.relnamespace
-        WHERE n.nspname='public' AND r.relname=ANY($1::text[]) ORDER BY r.relname`, [relations])).rows;
+        WHERE n.nspname='public' AND r.relname=ANY($1::text[]) ORDER BY r.relname`, [aclRelations])).rows;
       const beforeAcl = await aclSnapshot(), userId = randomUUID(), workId = randomUUID(), assetId = randomUUID();
       const payload = new TextEncoder().encode(randomUUID()), sha256 = createHash("sha256").update(payload).digest("hex");
       const base = imageWrite(workId, assetId, 1), source: StudioWorkAssetWrite = { ...base, payload, sha256,
@@ -238,6 +240,11 @@ describeWithDirectPostgres(
           GRANT INSERT ON TABLE public.creator_work_asset TO "${role}";`);
         await owner.query(buildMembershipRuntimeAclSql(role));
         await owner.query(buildCreatorAssetObjectStorageRuntimeAclSql(role));
+        await owner.query(buildWorkVrmCutRuntimeAclSql(role));
+        const vrmPrivileges = await owner.query(`SELECT ${buildWorkVrmCutRuntimeAclViolationSql(role)} AS invalid,
+          pg_has_role($1,r.relowner,'USAGE') AS owns, has_table_privilege($1,r.oid,'INSERT') AS unrestricted
+          FROM pg_class r WHERE r.oid='public.studio_work_vrm_cut'::regclass`, [role]);
+        expect(vrmPrivileges.rows).toEqual([{ invalid: false, owns: false, unrestricted: false }]);
         const privileges = await owner.query(`SELECT r.relname,
           pg_has_role($1,r.relowner,'USAGE') AS owns,
           has_table_privilege($1,r.oid,'INSERT') AS unrestricted,
