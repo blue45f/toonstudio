@@ -849,21 +849,17 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.assertAlive();
     const rig = this.requireRig("thumbnail-no-source", "썸네일을 그릴 캐릭터 소스가 없습니다.");
     let snapshot: ReturnType<typeof snapshotRig> | null = null;
-    let applied = false;
     const restore = (): void => {
-      if (!applied || !snapshot || this.disposed) return;
+      if (!snapshot || this.disposed) return;
       const saved = snapshot;
       snapshot = null;
-      applied = false;
       restoreRig(rig, saved, { outlinesVisible: this.outlinesVisible() });
       this.refreshToonUniforms(rig);
     };
     return captureThumbnail(this.captureDeps(rig), req.size, req.framing, {
       before: () => {
-        // 비동기 셰이더 준비(ensureReady) 도중 메인 applyLoop.applyPlan이 적용한 최신 포즈·표정을 덮어쓰지 않도록
-        // 동기 일시 적용 직전에 스냅샷을 뜬다.
+        // 비동기 셰이더 준비 중 메인 applyLoop의 최신 포즈를 덮어쓰지 않도록 동기 적용 직전에 스냅샷을 뜬다.
         snapshot = snapshotRig(rig);
-        applied = true;
         applyRigPlan(rig, req.plan, { outlinesVisible: this.outlinesVisible() });
         applyRigEyeGaze(rig, req.plan.eyeGaze, this.viewportCamera().position);
         this.refreshToonUniforms(rig);
