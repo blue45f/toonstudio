@@ -3,6 +3,7 @@ import {
   ArrowLeftRight,
   Building2,
   ChevronDown,
+  Clapperboard,
   CloudRain,
   Compass,
   DoorOpen,
@@ -12,18 +13,25 @@ import {
   Layers,
   PackageOpen,
   PersonStanding,
+  Search,
   Sun,
   Type,
   Users2,
   Wind,
+  X,
   type LucideIcon,
 } from "lucide-react";
+import { useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_HYBRID_DCC_BLENDER_V28_VRM_KIT } from "./studio-hybrid-dcc-blender-v28-kit";
 import { STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT } from "./studio-hybrid-dcc-blender-v29-kit";
+import {
+  matchesKitSearchQuery,
+  STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT,
+} from "./studio-hybrid-dcc-blender-v30-kit";
 import {
   STUDIO_HYBRID_DCC_BLENDER_V13_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
@@ -60,6 +68,14 @@ interface KitDrawerGroupSpec {
 }
 
 const BLENDER_KIT_DRAWER_GROUPS: readonly KitDrawerGroupSpec[] = [
+  {
+    key: "v30-genre",
+    summaryTestId: "studio-hybrid-dcc-v30-genre-kit-summary",
+    icon: Clapperboard,
+    titleKo: `8대 장르 확장: 학원·느와르·헌터 V30 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT.length}종)`,
+    titleEn: `Expanded genres: Academy, Noir & Hunter V30 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT.length})`,
+    items: STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT,
+  },
   {
     key: "v29-duo",
     summaryTestId: "studio-hybrid-dcc-v29-duo-kit-summary",
@@ -207,7 +223,8 @@ export interface StudioHybridDccBlenderKitDrawersProps {
 }
 
 /**
- * React TS Architecture & Codebase Hardening 원칙에 따라 분리된 데이터 기반 Blender CC0 키트 아코디언 목록.
+ * React TS Architecture & Codebase Hardening 원칙에 따라 분리된 데이터 기반 Blender CC0 18개 키트 아코디언 목록.
+ * 렌더 시점 파생(useEffect 0건) 한글 초성·키워드 통합 검색(`ㅎㅇㅁ`, `ㄴㅇㄹ`, `ㅎㅌ`, `한옥` 등)을 지원한다.
  */
 export function StudioHybridDccBlenderKitDrawers({
   disabled,
@@ -216,15 +233,102 @@ export function StudioHybridDccBlenderKitDrawers({
   onSelectKitItem,
 }: StudioHybridDccBlenderKitDrawersProps) {
   const bt = useBilingual("StudioHybridDccPrimitiveBar");
+  const [searchQuery, setSearchQuery] = useState("");
   const unavailableTitle = disabled ? disabledReason : undefined;
+
+  const trimmedQuery = searchQuery.trim();
+  const hasActiveQuery = trimmedQuery.length > 0;
+  const visibleGroups = hasActiveQuery
+    ? BLENDER_KIT_DRAWER_GROUPS.map((group) => ({
+        group,
+        matchedItems: group.items.filter((item) =>
+          matchesKitSearchQuery(trimmedQuery, [
+            group.titleKo,
+            group.titleEn,
+            item.label[0],
+            item.label[1],
+            item.hint[0],
+            item.hint[1],
+            item.id,
+          ]),
+        ),
+      })).filter(({ matchedItems }) => matchedItems.length > 0)
+    : BLENDER_KIT_DRAWER_GROUPS.map((group) => ({
+        group,
+        matchedItems: group.items,
+      }));
+
+  const totalMatchedCount = visibleGroups.reduce(
+    (sum, entry) => sum + entry.matchedItems.length,
+    0,
+  );
 
   return (
     <>
-      {BLENDER_KIT_DRAWER_GROUPS.map((group) => {
+      <div className="flex min-h-9 items-center gap-2 rounded-xl border border-line bg-canvas/45 px-3 py-1.5">
+        <Search
+          size={16}
+          strokeWidth={1.5}
+          aria-hidden="true"
+          className="shrink-0 text-fg-3"
+        />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={bt(
+            "18개 에셋 서랍 초성·키워드 검색 (예: ㅎㅇㅁ, ㄴㅇㄹ, ㅎㅌ, 한옥)",
+            "Search 18 CC0 kit drawers (e.g. academy, noir, hunter)",
+          )}
+          aria-label={bt(
+            "CC0 에셋 서랍 초성·키워드 통합 검색",
+            "Search CC0 kit drawers",
+          )}
+          data-testid="studio-hybrid-dcc-kit-search-input"
+          className="min-w-0 flex-1 bg-transparent font-mono text-xs text-fg placeholder:text-fg-3 focus:outline-none"
+        />
+        {hasActiveQuery ? (
+          <>
+            <span
+              data-testid="studio-hybrid-dcc-kit-search-count"
+              className="shrink-0 rounded-md bg-raised px-1.5 py-0.5 font-mono text-xs tabular-nums text-fg-2"
+            >
+              {bt(`${totalMatchedCount}건`, `${totalMatchedCount}`)}
+            </span>
+            <button
+              type="button"
+              data-testid="studio-hybrid-dcc-kit-search-clear"
+              aria-label={bt("검색어 지우기", "Clear search")}
+              onClick={() => setSearchQuery("")}
+              className={cn(
+                "inline-flex size-6 shrink-0 items-center justify-center rounded-md text-fg-3 hover:bg-raised hover:text-fg",
+                FOCUS_RING,
+              )}
+            >
+              <X size={14} strokeWidth={1.5} aria-hidden="true" />
+            </button>
+          </>
+        ) : null}
+      </div>
+
+      {hasActiveQuery && visibleGroups.length === 0 ? (
+        <p
+          data-testid="studio-hybrid-dcc-kit-search-empty"
+          className="rounded-xl border border-line bg-canvas/35 px-3 py-2 text-xs text-fg-3"
+        >
+          {bt(
+            "일치하는 CC0 배경·마네킹 에셋이 없습니다.",
+            "No matching CC0 kit assets found.",
+          )}
+        </p>
+      ) : null}
+
+      {visibleGroups.map(({ group, matchedItems }) => {
         const Icon = group.icon;
         return (
           <details
             key={group.key}
+            open={hasActiveQuery ? true : undefined}
             className="group rounded-xl border border-line bg-canvas/35"
           >
             <summary
@@ -253,7 +357,7 @@ export function StudioHybridDccBlenderKitDrawers({
               />
             </summary>
             <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain border-t border-line p-2">
-              {group.items.map((item) => {
+              {matchedItems.map((item) => {
                 const loading = fetchingId === item.id;
                 return (
                   <button

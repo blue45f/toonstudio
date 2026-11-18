@@ -32,6 +32,7 @@ import {
   evaluateDuoOtsRemotionAndOffline,
   filterQuickPresetCommands,
 } from "./studio-bg3d-duo-ots-remotion-offline";
+import { evaluateEpisodeMacroScenario } from "./studio-bg3d-episode-macro-scenarios";
 import { evaluateDustLodCliffhangerAndPack } from "./studio-bg3d-dust-lod-cliffhanger-pack";
 import {
   evaluateVrmPoseAndWebGpuGuard,
@@ -374,6 +375,19 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
     expect(v29DuoSafe.totalWeeklyHoursV29).toBe(38.0);
     expect(v29DuoSafe.quarterlyHoursSavedV29).toBe(494.0);
     expect(v29DuoSafe.quarterlyBankedEpisodesV29).toBe(6.18);
+
+    const v30Macro = evaluateEpisodeMacroScenario({
+      scenarioId: "hunter-srank-gate-rupture",
+      executedRunCount: 2,
+      baseV29WeeklyHoursSaved: v29DuoSafe.totalWeeklyHoursV29,
+    });
+    expect(v30Macro.totalSupportedGenres).toBe(8);
+    expect(v30Macro.scenario.kelvin).toBe(8200);
+    expect(v30Macro.scenario.recommendedInkPx).toBe(2.4);
+    expect(v30Macro.totalWeeklyHoursV30).toBe(40.0);
+    expect(v30Macro.totalWeeklyPersonDaysV30).toBe(5.0);
+    expect(v30Macro.quarterlyHoursSavedV30).toBe(520.0);
+    expect(v30Macro.quarterlyBankedEpisodesV30).toBe(6.5);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;

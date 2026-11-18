@@ -57,6 +57,11 @@ export { STUDIO_HYBRID_DCC_BLENDER_V26_AFTERMATH_KIT } from "./studio-hybrid-dcc
 export { STUDIO_HYBRID_DCC_BLENDER_V27_HEATHAZE_KIT } from "./studio-hybrid-dcc-blender-v27-kit";
 export { STUDIO_HYBRID_DCC_BLENDER_V28_VRM_KIT } from "./studio-hybrid-dcc-blender-v28-kit";
 export { STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT } from "./studio-hybrid-dcc-blender-v29-kit";
+export {
+  extractKoreanChoseong,
+  matchesKitSearchQuery,
+  STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT,
+} from "./studio-hybrid-dcc-blender-v30-kit";
 
 export type StudioHybridDccStarterPrimitiveKind =
   | "cube"

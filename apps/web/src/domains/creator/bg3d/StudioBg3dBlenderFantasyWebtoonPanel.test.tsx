@@ -408,6 +408,30 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-v29-motion-offline-readout").textContent,
     ).toContain("유실 0컷");
 
+    // Wave 16 (V30): 8대 장르 확장 세트(학원·느와르·헌터) & 원클릭 회차 마스터 자동화 시나리오 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v30-macro-scenario-bar").textContent,
+    ).toContain("8대 장르 확장 세트 V30");
+    expect(
+      screen.getByTestId("bg3d-blender-v30-genre-count-badge").textContent,
+    ).toContain("8대 장르 호환");
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v30-scenario-noir-blind-interrogation"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-v30-scenario-readout").textContent,
+    ).toContain("4100K");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v30-run-macro-btn"));
+    expect(
+      screen.getByTestId("bg3d-blender-v30-genre-count-badge").textContent,
+    ).toContain("실행 1회");
+    expect(
+      screen.getByTestId("bg3d-blender-v29-duo-readout").textContent,
+    ).toContain("182×168cm");
+    expect(
+      screen.getByTestId("bg3d-blender-v30-macro-roi-readout").textContent,
+    ).toContain("48.0h");
+
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
     );
