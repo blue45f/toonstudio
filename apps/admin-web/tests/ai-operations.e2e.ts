@@ -76,7 +76,7 @@ test("관측 기록은 명시적 서버 저장 뒤 다시 열어도 남고 완�
   await expect(dialog.getByRole("alert")).toBeVisible();
   expect(fixture.writes).toHaveLength(0);
   await dialog.getByRole("combobox", { name: "진행 상태", exact: true }).selectOption("분석 중");
-  await dialog.getByLabel("메모", { exact: true }).fill("브라우저 fixture: 운영 호출 빈도는 아직 미확인");
+  await dialog.getByRole("textbox", { name: "메모", exact: true }).fill("브라우저 fixture: 운영 호출 빈도는 아직 미확인");
   await dialog.getByRole("button", { name: "변경 적용", exact: true }).click();
   expect(fixture.writes).toHaveLength(0);
   await page.getByRole("button", { name: "서버에 저장", exact: true }).click();
@@ -86,7 +86,7 @@ test("관측 기록은 명시적 서버 저장 뒤 다시 열어도 남고 완�
   expect(fixture.saved().snapshot?.meta.snapshotAt).toBe(createAiOperationsStarter().meta.snapshotAt);
   await page.reload();
   const reloaded = await openModel(page);
-  await expect(reloaded.getByLabel("메모", { exact: true })).toHaveValue("브라우저 fixture: 운영 호출 빈도는 아직 미확인");
+  await expect(reloaded.getByRole("textbox", { name: "메모", exact: true })).toHaveValue("브라우저 fixture: 운영 호출 빈도는 아직 미확인");
   await expect(reloaded.getByRole("combobox", { name: "진행 상태", exact: true })).toHaveValue("분석 중");
   expect(fixture.mutations).toEqual(["/api/admin/ai-operations"]);
 });
@@ -95,7 +95,7 @@ test("저장 충돌은 초안을 보존하고 JSON 백업 후 명시적 폐기·
   const fixture = await boardFixture(page);
   await page.goto(boardPath);
   const dialog = await openModel(page);
-  await dialog.getByLabel("메모", { exact: true }).fill("충돌 전 미저장 기록");
+  await dialog.getByRole("textbox", { name: "메모", exact: true }).fill("충돌 전 미저장 기록");
   await dialog.getByRole("button", { name: "변경 적용", exact: true }).click();
   fixture.advance();
   await page.getByRole("button", { name: "서버에 저장", exact: true }).click();
@@ -108,7 +108,7 @@ test("저장 충돌은 초안을 보존하고 JSON 백업 후 명시적 폐기·
   await page.getByRole("dialog", { name: "최신 저장본 다시 읽기", exact: true }).getByRole("button", { name: "변경을 버리고 다시 읽기", exact: true }).click();
   await expect(page.getByText("저장본과 일치", { exact: true })).toBeVisible();
   const reloaded = await openModel(page);
-  await expect(reloaded.getByLabel("메모", { exact: true })).not.toHaveValue("충돌 전 미저장 기록");
+  await expect(reloaded.getByRole("textbox", { name: "메모", exact: true })).not.toHaveValue("충돌 전 미저장 기록");
   expect(fixture.writes).toHaveLength(1);
 });
 
@@ -141,7 +141,7 @@ test("운영자는 열람만 하며 권한 회수·저장소 장애에는 비공
   await expect(page.getByText("운영자 열람 전용", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "서버에 저장", exact: true })).toHaveCount(0);
   const dialog = await openModel(page);
-  await expect(dialog.getByLabel("메모", { exact: true })).toBeDisabled();
+  await expect(dialog.getByRole("textbox", { name: "메모", exact: true })).toBeDisabled();
   fixture.setDenied();
   await page.evaluate(() => window.dispatchEvent(new Event("toonstudio:auth-session-changed")));
   await expect(page.getByRole("alert")).toContainText("관리자 권한이 필요합니다");
