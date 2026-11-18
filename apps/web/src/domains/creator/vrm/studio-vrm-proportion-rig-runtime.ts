@@ -16,8 +16,9 @@ import {
   type StudioHumanoidBoneName,
 } from "../studio-humanoid-bones";
 
+import { allFinite, classifyProportionFrame, containsNonUniformScale, isFiniteInvertibleMatrix, isUniformPositiveScale, TRANSFORM_EPSILON } from "./studio-vrm-proportion-rig-transforms";
 import {
-  NEUTRAL_STUDIO_VRM_PROPORTIONS,
+  NEUTRAL_STUDIO_VRM_PROPORTIONS, STUDIO_VRM_PROPORTION_KEYS,
   STUDIO_VRM_PROPORTION_PRESETS,
   STUDIO_VRM_REQUIRED_HUMANOID_BONES,
   STUDIO_VRM_UNIFORM_SCALE_SUBTREE_ROOTS,
@@ -76,6 +77,8 @@ export type StudioVrmProportionRigAdapter = {
 export type StudioVrmProportionRigRuntimeOptions = {
   /** Head joint to crown distance, expressed in the root's local unit. */
   readonly headLength: number;
+  /** 공유 무대에서 원본 체형만 재생할 때 미세한 축별 배율 차이를 보존한다. */
+  readonly allowUnmodifiedSourceRig?: boolean;
   /** Optional provenance retained so UI/capture layers can distinguish measured and estimated data. */
   readonly headMeasurement?: StudioVrmProportionHeadMeasurementProvenance;
 };
@@ -222,12 +225,6 @@ type OwnedTransform = {
   readonly scale: THREE.Vector3;
 };
 
-// glTF stores transforms as float32, so an exact uniform scale can arrive 1-2 ULPs apart
-// (1 / 1.00000012 / 1). Admit that noise; keep materially non-uniform hierarchies fail-closed.
-// Non-neutral writes collapse the admitted noise back to one scalar so it is never amplified.
-const SCALE_EPSILON = 1e-6;
-const TRANSFORM_EPSILON = 1e-12;
-const QUATERNION_UNIT_EPSILON = 1e-6;
 const PRESET_RATIO_EPSILON = 1e-9;
 
 function freezeVec3(x: number, y: number, z: number): StudioVrmVec3 {
@@ -291,100 +288,6 @@ function isObject3D(value: unknown): value is THREE.Object3D {
 function isValidGeneration(value: unknown): value is StudioVrmProportionModelGeneration {
   if (typeof value === "number") return Number.isFinite(value);
   return typeof value === "string" && value.trim().length > 0;
-}
-
-function allFinite(values: readonly number[]) {
-  return values.every(Number.isFinite);
-}
-
-function isUniformPositiveScale(scale: THREE.Vector3) {
-  if (!allFinite(scale.toArray()) || scale.x <= 0 || scale.y <= 0 || scale.z <= 0) return false;
-  const magnitude = Math.max(Math.abs(scale.x), Math.abs(scale.y), Math.abs(scale.z));
-  const spread = Math.max(scale.x, scale.y, scale.z) - Math.min(scale.x, scale.y, scale.z);
-  return spread <= SCALE_EPSILON * magnitude;
-}
-
-function isUnitQuaternion(quaternion: THREE.Quaternion) {
-  if (!allFinite(quaternion.toArray())) return false;
-  return Math.abs(quaternion.lengthSq() - 1) <= QUATERNION_UNIT_EPSILON;
-}
-
-function isFiniteInvertibleMatrix(matrix: THREE.Matrix4) {
-  const determinant = matrix.determinant();
-  return (
-    allFinite(matrix.elements) &&
-    Number.isFinite(determinant) &&
-    Math.abs(determinant) > TRANSFORM_EPSILON
-  );
-}
-
-function hasAutoUpdatedInvertibleLocalMatrix(node: THREE.Object3D) {
-  if (node.matrixAutoUpdate !== true || node.matrixWorldAutoUpdate !== true) return false;
-  return isFiniteInvertibleMatrix(
-    new THREE.Matrix4().compose(node.position, node.quaternion, node.scale)
-  );
-}
-
-function hasSafeTransform(node: THREE.Object3D) {
-  return (
-    allFinite(node.position.toArray()) &&
-    isUnitQuaternion(node.quaternion) &&
-    isUniformPositiveScale(node.scale) &&
-    hasAutoUpdatedInvertibleLocalMatrix(node)
-  );
-}
-
-/**
- * True when a non-uniform scale on `node` cannot reach anything rotatable below it. Humanoid
- * membership is not the test (an accessory/spring hierarchy below a head would still inherit
- * shear from a rotation). Safety means every immediate child cancels the non-uniform part
- * **without rotating** -- what the generated avatar's inverse-scale `HairRoot` pivot does.
- * A node with no children passes vacuously.
- */
-function containsNonUniformScale(node: THREE.Object3D) {
-  if (isUniformPositiveScale(node.scale)) return true;
-  return node.children.every((child) => {
-    // The cancelling child must not rotate. `S . R . S^-1` is orthogonal only when `R` commutes with
-    // `S`, so a rotation that mixes differently scaled axes still hands shear to everything below.
-    if (!isUnitQuaternion(child.quaternion)) return false;
-    if (Math.abs(child.quaternion.w) < 1 - QUATERNION_UNIT_EPSILON) return false;
-    return isUniformPositiveScale(
-      new THREE.Vector3(
-        node.scale.x * child.scale.x,
-        node.scale.y * child.scale.y,
-        node.scale.z * child.scale.z,
-      ),
-    );
-  });
-}
-
-/**
- * A leaf bone (no humanoid bone beneath it) may carry a non-uniform rest scale -- the sculpting
- * convention (`studio-vrm-humanoid-rig.ts`): shape lives on leaves so no rotated child inherits
- * shear. Everything else must still be finite, positive and invertible.
- */
-function hasSafeLeafTransform(node: THREE.Object3D) {
-  return (
-    allFinite(node.position.toArray()) &&
-    isUnitQuaternion(node.quaternion) &&
-    allFinite(node.scale.toArray()) &&
-    node.scale.x > 0 &&
-    node.scale.y > 0 &&
-    node.scale.z > 0 &&
-    hasAutoUpdatedInvertibleLocalMatrix(node)
-  );
-}
-
-function hasSafeRootTransform(node: THREE.Object3D) {
-  return (
-    allFinite(node.position.toArray()) &&
-    isUnitQuaternion(node.quaternion) &&
-    allFinite(node.scale.toArray()) &&
-    node.scale.x > 0 &&
-    node.scale.y > 0 &&
-    node.scale.z > 0 &&
-    hasAutoUpdatedInvertibleLocalMatrix(node)
-  );
 }
 
 function expectedPresentParent(
@@ -466,11 +369,13 @@ function captureRawNodes(adapter: StudioVrmProportionRigAdapter) {
 
 function captureHierarchy(
   adapter: StudioVrmProportionRigAdapter,
-  headLength: number
+  headLength: number,
+  allowUnmodifiedSourceRig: boolean
 ):
   | {
       readonly ok: true;
       readonly captures: readonly CapturedBone[];
+      readonly sourceProportionsOnly: boolean;
       readonly snapshot: StudioVrmBoneHierarchySnapshot;
     }
   | StudioVrmProportionRigCreateFailure {
@@ -497,6 +402,7 @@ function captureHierarchy(
   }
 
   const checkedFrames = new Set<THREE.Object3D>();
+  let sourceProportionsOnly = false;
   for (const [name, node] of nodes) {
     const chain = rootChain(node, adapter.root);
     if (!chain) {
@@ -505,13 +411,9 @@ function captureHierarchy(
     for (const frame of chain) {
       if (checkedFrames.has(frame)) continue;
       checkedFrames.add(frame);
-      const safe =
-        frame === adapter.root
-          ? hasSafeRootTransform(frame)
-          : carryingFrames.has(frame)
-            ? hasSafeTransform(frame)
-            : hasSafeLeafTransform(frame) && containsNonUniformScale(frame);
-      if (!safe) {
+      const mode = classifyProportionFrame(frame, adapter.root, carryingFrames.has(frame), allowUnmodifiedSourceRig);
+      if (mode === "original") sourceProportionsOnly = true;
+      if (mode === "invalid") {
         return createFailure(
           "unsafe-transform",
           `The root-to-${name} hierarchy contains a non-finite, non-positive, or non-uniform transform.`,
@@ -572,7 +474,7 @@ function captureHierarchy(
     )
   );
   const snapshot: StudioVrmBoneHierarchySnapshot = Object.freeze({ headLength, bones });
-  return { ok: true, captures: Object.freeze(captures), snapshot };
+  return { ok: true, captures: Object.freeze(captures), snapshot, sourceProportionsOnly };
 }
 
 function captureOwnedTransforms(
@@ -653,7 +555,7 @@ function writeTargets(
       }
     }
     const scaleStaysSafe = capture.carriesHumanoidDescendant
-      ? isUniformPositiveScale(capture.node.scale)
+      ? (restoreExactRest && capture.node.scale.equals(capture.restLocalScale)) || isUniformPositiveScale(capture.node.scale)
       : allFinite(capture.node.scale.toArray()) &&
         capture.node.scale.x > 0 &&
         capture.node.scale.y > 0 &&
@@ -822,7 +724,7 @@ export function createStudioVrmProportionRigRuntime(
   if (!initialGeneration.ok) {
     return createFailure("invalid-model-generation", "The model generation is not a finite number or non-empty string.");
   }
-  const hierarchy = captureHierarchy(adapter, options.headLength);
+  const hierarchy = captureHierarchy(adapter, options.headLength, options.allowUnmodifiedSourceRig === true);
   if (!hierarchy.ok) return hierarchy;
   const { captures, snapshot } = hierarchy;
   const headMeasurement = freezeHeadMeasurementProvenance(options.headMeasurement);
@@ -935,6 +837,9 @@ export function createStudioVrmProportionRigRuntime(
     }
 
     const authoredProportions = freezeProportions(sanitizeStudioVrmProportions(proportions));
+    if (hierarchy.sourceProportionsOnly && (authoredProportions.presetId || STUDIO_VRM_PROPORTION_KEYS.some(key => authoredProportions[key] !== NEUTRAL_STUDIO_VRM_PROPORTIONS[key]))) {
+      return makeFailure(operation, "invalid-proportion-plan", "이 모델은 원래 체형에서 포즈와 채색을 사용할 수 있습니다. 체형 비율을 기본값으로 돌려 주세요.", atStart.observed);
+    }
     const runtimePreset = resolveRuntimePreset(authoredProportions);
     let runtimeProportions = authoredProportions;
     const provisionalTargets = resolveSafeTargets(runtimeProportions, snapshot, captures.length);

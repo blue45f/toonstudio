@@ -16,6 +16,10 @@ import type {
 interface StudioBg3dActionFooterProps {
   readonly frozenCut?: boolean;
   readonly teamCut?: boolean;
+  readonly sixPass?: boolean;
+  readonly onChooseSixPass?: (enabled: boolean) => void;
+  readonly sixPassUnavailableReason?: string | null;
+  readonly outputFormatLocked?: boolean;
   readonly sceneRecoveryError: string | null;
   readonly hasCloneFailure: boolean;
   readonly isRestoringScene: boolean;
@@ -46,6 +50,7 @@ interface StudioBg3dActionFooterProps {
 export function StudioBg3dActionFooter({
   frozenCut,
   teamCut,
+  sixPass, onChooseSixPass, sixPassUnavailableReason, outputFormatLocked,
   sceneRecoveryError,
   hasCloneFailure,
   isRestoringScene,
@@ -73,7 +78,7 @@ export function StudioBg3dActionFooter({
   simpleMode = false,
 }: StudioBg3dActionFooterProps) {
   const t = useT();
-  const fixedCutLabel = teamCut ? "팀에 새 컷 레이어 저장" : frozenCut ? (operation === "update" ? "고정 컷 레이어 업데이트" : "고정 컷 레이어 추가") : null;
+  const fixedCutLabel = frozenCut && sixPass ? (operation === "update" ? "고정 컷 6패스 저장" : "고정 컷 6패스 추가") : teamCut ? "팀에 새 컷 레이어 저장" : frozenCut ? (operation === "update" ? "고정 컷 레이어 업데이트" : "고정 컷 레이어 추가") : null;
   const isPreparing = isCapturing || isRestoringScene || hasPendingClone || hasPendingSharedCharacter;
 
   return (
@@ -143,6 +148,21 @@ export function StudioBg3dActionFooter({
         <div role={error ? "alert" : "status"} className="mx-4 mb-2 flex items-start gap-2 rounded-lg border border-line bg-card px-3 py-2 text-xs text-fg-2 sm:mx-5">
           <AlertTriangle className="mt-0.5 shrink-0 text-accent" size={14} aria-hidden />
           {error ?? outputUnavailableReason}
+        </div>
+      ) : null}
+
+      {frozenCut && onChooseSixPass ? (
+        <div className="mx-4 mb-2 text-xs sm:mx-5">
+          <label className="flex min-h-11 items-center justify-between gap-3 font-semibold">
+            원고 출력 형식
+            <select className="min-h-11 min-w-0 rounded-lg border border-line bg-card px-2 text-fg"
+              value={sixPass ? "six-pass" : "color"} disabled={isPreparing || outputFormatLocked}
+              onChange={event => onChooseSixPass(event.currentTarget.value === "six-pass")}>
+              <option value="color">컬러 한 장</option>
+              <option value="six-pass" disabled={!!sixPassUnavailableReason}>웹툰 6패스</option>
+            </select>
+          </label>
+          {sixPassUnavailableReason && !sixPass && <p className="mt-1 text-fg-2">{sixPassUnavailableReason}</p>}
         </div>
       ) : null}
 

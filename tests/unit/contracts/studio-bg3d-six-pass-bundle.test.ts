@@ -69,6 +69,23 @@ describe("실제 6패스 묶음 공통 계약", () => {
     const reversed = Object.fromEntries(Object.entries(f.manifest).reverse());
     expect(serializeStudioBg3dSixPassBundleManifest(parseStudioBg3dSixPassBundleManifest(reversed))).toBe(text);
   });
+  it("팀 캐릭터 6패스는 원본 영수증과 v2 reader가 있어야 열리고 캐릭터 내용을 해시로 결박한다", () => {
+    const f = fixture();
+    const linkedVrm = { version: 1, documentScope: hash(f.scene), characters: [{ elementId: "actor" }] };
+    const bytes = encoder.encode(JSON.stringify({ ...JSON.parse(new TextDecoder().decode(f.scene)), pinnedVersionedCut: { source: { linkedVrm } } }));
+    const source = { anchorId: "vrmcut-11111111-1111-4111-8111-111111111111", sceneSha256: "a".repeat(64), compositeSha256: "b".repeat(64) };
+    const legacy = { ...f.manifest, scene: { ...f.manifest.scene, byteSize: bytes.length, contentHash: hash(bytes) } };
+    const candidate = { ...legacy, version: 2, contract: "toonstudio.bg3d-sixpass-bundle.v2", minimumReaderCapability: "bg3d-sixpass-bundle.v2", workVrmCut: source };
+    const current = parseStudioBg3dSixPassBundleManifest(candidate);
+    expect(verifyStudioBg3dSixPassBundleSceneBytes(current, bytes, "work")).toBe(hashStudioBg3dSixPassCanonicalJson(linkedVrm));
+    expect(() => verifyStudioBg3dSixPassBundleSceneBytes(legacy, bytes, "work")).toThrow(/고정한 VRM/);
+    expect(() => parseStudioBg3dSixPassBundleManifest({ ...candidate, workVrmCut: undefined })).toThrow();
+    expect(() => parseStudioBg3dSixPassBundleManifest({ ...candidate, workVrmCut: { ...source, anchorId: "another-layer" } })).toThrow();
+    expect(() => verifyStudioBg3dSixPassBundleSceneBytes({ ...current, scene: f.manifest.scene }, f.scene, "work")).toThrow(/고정 원본/);
+    const retained = parseStudioBg3dSixPassBundleState(state(current, [current], null));
+    expect(hasStudioBg3dSixPassBundleStateEnvelope(retained)).toBe(true);
+    expect(studioBg3dSixPassBundleRequiredCapabilities(retained)).toEqual(["bg3d-sixpass-bundle.v1", "bg3d-sixpass-bundle.v2"]);
+  });
   it.each(["color", "tone", "shadow", "depth", "texture-line", "main-line", "scene"] as const)("%s 하나가 누락되면 완성된 묶음으로 취급하지 않는다", (role) => {
     const f = fixture(); f.bodies.delete(role);
     expect(() => verifyStudioBg3dSixPassBundleBodies(f.manifest, f.bodies)).toThrow(/모두 필요/);

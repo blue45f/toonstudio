@@ -272,6 +272,7 @@ export function useStudioVrmPoserRuntimeD(h: StudioVrmPoserHost): void {
     handleSampleLoad,
     loadModelFromLibraryEntry,
   } = useStudioVrmModelLoading({
+    cutPaintSession: h.cutPaintSession,
     activeModelId,
     activeModelIdRef,
     broadcastPreviewActive,
@@ -301,6 +302,14 @@ export function useStudioVrmPoserRuntimeD(h: StudioVrmPoserHost): void {
   useEffect(() => {
     if (!open) return;
 
+    if (h.cutPaintSession) {
+      const entry = h.cutPaintSession.entry;
+      setLibraryEntries([entry]);
+      setLibraryNextCursor(null);
+      setLibraryStatus("ready");
+      loadModelRef.current(entry);
+      return () => { loadRequestRef.current += 1; modelLoadTargetIdRef.current = null; };
+    }
     let cancelled = false;
     const controller = new AbortController();
     setLibraryStatus("loading");
@@ -416,7 +425,7 @@ export function useStudioVrmPoserRuntimeD(h: StudioVrmPoserHost): void {
       loadRequestRef.current += 1;
       modelLoadTargetIdRef.current = null;
     };
-  }, [initialSceneModelIdentity, open]);
+  }, [h.cutPaintSession, initialSceneModelIdentity, open]);
 
   const handleLoadMoreVrmLibrary = useCallback(async () => {
     if (!open || !libraryNextCursor || isLoadingLibraryPage) return;
@@ -555,7 +564,7 @@ export function useStudioVrmPoserRuntimeD(h: StudioVrmPoserHost): void {
       || texturePaintPersistenceStatus !== "ready"
       || !vrm
       || !activeLibraryEntry
-      || activeLibraryEntry.thumbnail
+      || h.cutPaintSession || activeLibraryEntry.thumbnail
       || !proportionRigCaptureIsReady()
       || !avatarForgeFaceCaptureIsReady()
       || isCapturing

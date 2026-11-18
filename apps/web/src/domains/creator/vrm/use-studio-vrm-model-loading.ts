@@ -41,6 +41,7 @@ function libraryErrorMessage(caughtError: unknown, fallback: string): string {
 type MutableRef<T> = { current: T };
 
 export type StudioVrmModelLoadingContext = {
+  cutPaintSession?: import("./studio-vrm-cut-paint-session").StudioVrmCutPaintSession;
   activeModelId: string;
   activeModelIdRef: MutableRef<string>;
   broadcastPreviewActive: boolean;
@@ -73,6 +74,7 @@ export type StudioVrmModelLoading = {
 };
 
 export function useStudioVrmModelLoading({
+  cutPaintSession,
   activeModelId,
   activeModelIdRef,
   broadcastPreviewActive,
@@ -141,6 +143,10 @@ export function useStudioVrmModelLoading({
   }
 
   function loadModelFromLibraryEntry(entry: VrmLibraryEntry) {
+    if (cutPaintSession) {
+      if (entry === cutPaintSession.entry) loadModelFromUrl(URL.createObjectURL(cutPaintSession.blob), entry.name, true, entry.id);
+      return;
+    }
     if (entry.source === "sample") {
       const sampleUrl = selectableSampleVrmUrl(entry.id);
       if (!sampleUrl) {

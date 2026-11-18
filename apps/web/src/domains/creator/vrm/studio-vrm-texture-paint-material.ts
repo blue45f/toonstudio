@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { clearStudioVrmEmissivePaint, markStudioVrmEmissivePaint } from "./studio-vrm-emissive-paint";
 import {
   STUDIO_VRM_TEXTURE_PAINT_CHANNELS,
   studioVrmTexturePaintChannelEncoding,
@@ -170,6 +171,10 @@ export class StudioVrmTexturePaintMaterialChannels {
     return source;
   }
 
+  isBound(material: THREE.Material, channel: StudioVrmTexturePaintChannel, texture: THREE.Texture): boolean {
+    return (material as PaintMaterial)[TEXTURE_PROPERTIES[channel]] === texture;
+  }
+
   set(material: THREE.Material, channel: StudioVrmTexturePaintChannel, texture: THREE.Texture | null): void {
     if (channel === "baseColor") {
       (material as PaintMaterial).map = texture;
@@ -190,6 +195,9 @@ export class StudioVrmTexturePaintMaterialChannels {
     if (channel === "roughness") state.material.roughness = 1;
     if (channel === "metalness") state.material.metalness = 1;
     if (channel === "emissive") {
+      markStudioVrmEmissivePaint(state.material, texture, {
+        emissiveColor: state.originalFactor as THREE.Color, emissiveIntensity: state.originalEmissiveIntensity,
+      });
       state.material.emissive!.setRGB(1, 1, 1);
       if (state.material.emissiveIntensity === 0) state.material.emissiveIntensity = 1;
     }
@@ -252,6 +260,7 @@ export class StudioVrmTexturePaintMaterialChannels {
     if (state.channel === "roughness") state.material.roughness = state.originalFactor as number;
     if (state.channel === "metalness") state.material.metalness = state.originalFactor as number;
     if (state.channel === "emissive") {
+      clearStudioVrmEmissivePaint(state.material);
       state.material.emissive!.copy(state.originalFactor as THREE.Color);
       if (state.originalEmissiveIntensity !== undefined) {
         state.material.emissiveIntensity = state.originalEmissiveIntensity;

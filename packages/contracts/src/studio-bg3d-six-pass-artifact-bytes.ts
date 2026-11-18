@@ -69,14 +69,17 @@ export function verifyStudioBg3dSixPassBundleBodies(manifestValue: StudioBg3dSix
 }
 /** 역할별 스트리밍 검증에서도 장면의 카메라·출력 결박을 같은 계약으로 확인한다. */
 export function verifyStudioBg3dSixPassBundleSceneBytes(manifestValue: StudioBg3dSixPassBundleManifest,
-  sceneBytes: Uint8Array, scope: "origin" | "work" = "origin"): void {
+  sceneBytes: Uint8Array, scope: "origin" | "work" = "origin"): string | null {
   const manifest = parseStudioBg3dSixPassBundleManifest(manifestValue);
   verifyStudioBg3dSixPassArtifactBytes(manifest.scene, sceneBytes);
   const scene = readScene(sceneBytes, manifest.scene.activeShotId);
   const cut = scene.pinnedVersionedCut;
-  if (scope === "work" && record(cut) && record(cut.source) && cut.source.linkedVrm !== undefined) {
+  const linked = record(cut) && record(cut.source) ? cut.source.linkedVrm : undefined;
+  if (manifest.version === 2 && (!record(linked) || linked.version !== 1 || !Array.isArray(linked.characters) || !linked.characters.length))
+    fail("팀 캐릭터의 고정 원본이 6패스 장면에 없습니다.");
+  if (manifest.version === 1 && scope === "work" && linked !== undefined)
     fail("작품의 6패스 저장 형식에는 고정한 VRM 컷의 모델과 페인트 파일을 넣을 수 없습니다.");
-  }
   if (hashStudioBg3dSixPassCanonicalJson(scene.camera) !== manifest.cameraHash
     || hashStudioBg3dSixPassCanonicalJson(scene.output) !== manifest.outputSettingsHash) fail("장면 카메라·출력 설정 hash가 다릅니다.");
+  return manifest.version === 2 ? hashStudioBg3dSixPassCanonicalJson(linked) : null;
 }

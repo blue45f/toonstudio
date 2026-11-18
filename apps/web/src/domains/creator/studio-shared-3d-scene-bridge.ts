@@ -233,7 +233,7 @@ const PREVIEW_SUPPORTED = Object.freeze([
   "옷장 레이어",
   "손에 든 소품",
   "기본 색·MToon 재질 효과",
-  "저장한 기본색 페인트",
+  "재질별 표면 채색",
 ] as const);
 
 function containsControlCharacter(value: string): boolean {
@@ -482,9 +482,6 @@ export function inspectStudioShared3dCharacterCompatibility(
   }
   if (hasCanonicalContent(scene.sceneProps)) {
     omissions.push({ code: "scene-props", label: "캐릭터 포저 장면 소품" });
-  }
-  if (scene.surfacePaint.textures.some((texture) => texture.textureSlot !== "baseColor")) {
-    omissions.push({ code: "surface-paint", label: "재질 채널 페인트" });
   }
   if (appearanceProjection.wardrobe.status === "unsupported") {
     omissions.push({ code: "wardrobe", label: "옷장 레이어 상태" });

@@ -34,6 +34,8 @@ export type StudioVrmPoserProps = {
   onInsert: (result: StudioVrmPoserInsertResult) => boolean | void | Promise<boolean | void>;
   initialDataUrl?: string;
   initialScene?: StudioVrmSceneDocument;
+  onApplyCutPaint?: (paint: StudioVrmSceneDocument["surfacePaint"], current: () => boolean) => Promise<boolean>;
+  cutPaintSession?: import("./studio-vrm-cut-paint-session").StudioVrmCutPaintSession;
   /**
    * One-shot seed from Elements 3D rail: spawn a VRM prop after open, then call
    * `onSeedObjectInsertConsumed`.

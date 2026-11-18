@@ -127,3 +127,4 @@ apps/api/src/platform/database/migrations/0126_admin_ai_operations.sql
 apps/api/src/platform/database/migrations/0127_admin_workspace_access.sql
 apps/api/src/platform/database/migrations/0128_admin_business_plan_access.sql
 apps/api/src/platform/database/migrations/0129_studio_work_vrm_cut.sql
+apps/api/src/platform/database/migrations/0130_studio_bg3d_vrm_bundle.sql

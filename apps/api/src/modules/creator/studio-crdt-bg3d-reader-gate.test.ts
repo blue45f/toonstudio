@@ -19,7 +19,7 @@ vi.mock("./studio-bg3d-bundle.repository", () => ({ STUDIO_BG3D_BUNDLE_REPOSITOR
 const services: StudioCrdtService[] = [];
 function harness() {
   const repository = new MemoryStudioCrdtRepository();
-  const bundles = { hasRetainedBundles: vi.fn(async () => true), assertReaderCapability: vi.fn(async (_workId: string, readers: readonly string[]) => {
+  const bundles = { requiredReaders: vi.fn(async (): Promise<readonly string[]> => [CAP]), assertReaderCapability: vi.fn(async (_workId: string, readers: readonly string[]) => {
     if (!readers.includes(CAP)) throw new StudioBg3dReaderUpgradeRequiredError();
   }) };
   const service = new StudioCrdtService(repository, allowStoredRasterAssetReferences, allowStoredWorkAssetReferences, new MemoryStudioCrdtClusterLoadRepository(), {}, undefined, bundles as unknown as StudioBg3dBundleService);
@@ -35,7 +35,7 @@ describe("6패스 작품 reader capability gate", () => {
     expect(h.repository.receipts.size).toBe(0); doc.destroy();
   });
   it("사전 읽기 뒤 생긴 retained feature도 실제 append transaction에서 구 reader 쓰기를 거부한다", async () => {
-    const h = harness(); h.bundles.assertReaderCapability.mockResolvedValue(undefined); h.bundles.hasRetainedBundles.mockResolvedValue(false);
+    const h = harness(); h.bundles.assertReaderCapability.mockResolvedValue(undefined); h.bundles.requiredReaders.mockResolvedValue([]);
     vi.mocked(assertStudioBg3dBundleReaderInTransaction).mockRejectedValueOnce(new ConflictException({ code: "studio_bg3d_reader_upgrade_required" }));
     const doc = new Y.Doc(); doc.getMap("metadata").set("example", true);
     await expect(h.service.applyUpdateBytes({ workId: "work-one", actorUserId: "actor", updateId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", data: Y.encodeStateAsUpdate(doc) })).rejects.toBeInstanceOf(StudioBg3dReaderUpgradeRequiredError);
@@ -72,7 +72,7 @@ const updateId = (id: number) => `70000000-0000-4000-8000-${String(id).padStart(
 function trackedDoc() { const doc = new Y.Doc(); preservedDocuments.push(doc); return doc; }
 function preservedHarness() {
   const h = harness();
-  h.bundles.hasRetainedBundles.mockResolvedValue(false);
+  h.bundles.requiredReaders.mockResolvedValue([]);
   h.bundles.assertReaderCapability.mockResolvedValue(undefined);
   return h;
 }

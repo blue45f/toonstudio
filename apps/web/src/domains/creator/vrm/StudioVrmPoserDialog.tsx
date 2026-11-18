@@ -32,6 +32,7 @@ import {
   CONTROL_BUTTON,
   ICON_BUTTON,
 } from "./StudioVrmPoserTypes";
+import { StudioVrmCutPaintApplyButton } from "./StudioVrmCutPaintApplyButton";
 import { StudioVrmPoserViewport } from "./StudioVrmPoserViewport";
 import { StudioVrmWebglRecoveryBanner } from "./StudioVrmWebglRecoveryBanner";
 import {
@@ -125,9 +126,9 @@ export function StudioVrmPoserDialog({ h }: { h: StudioVrmPoserHost }) {
               <UserRound size={14} aria-hidden />
               VRM 캐릭터 빌더
             </p>
-            <h2 id={dialogTitleId} className="mt-1 truncate text-lg font-bold tracking-tight text-fg sm:text-xl">3D 캐릭터 만들기</h2>
+            <h2 id={dialogTitleId} className="mt-1 truncate text-lg font-bold tracking-tight text-fg sm:text-xl">{h.cutPaintSession ? "팀 컷 표면 채색" : "3D 캐릭터 만들기"}</h2>
             <p id={dialogDescriptionId} className="mt-1 line-clamp-1 text-xs text-fg-3">
-              {displayModelName
+              {h.cutPaintSession ? h.cutPaintSession.entry.name : displayModelName
                 ? `${displayModelName} · ${transparentBackground ? "캐릭터만 투명 PNG로 패널에 추가" : "배경색 포함 PNG로 패널에 추가"}`
                 : "내 VRM을 불러와 패널에 추가"}
             </p>
@@ -179,7 +180,7 @@ export function StudioVrmPoserDialog({ h }: { h: StudioVrmPoserHost }) {
           </div>
         ) : null}
 
-        {!broadcastPreviewActive && recentPreferencesSnapshot.state === "memory-only" ? (
+        {!h.cutPaintSession && !broadcastPreviewActive && recentPreferencesSnapshot.state === "memory-only" ? (
           <div
             className="flex shrink-0 items-center justify-between gap-3 border-b border-warn/30 bg-warn/10 px-4 py-2 text-[0.68rem] leading-relaxed text-warn sm:px-5"
             role="status"
@@ -219,7 +220,7 @@ export function StudioVrmPoserDialog({ h }: { h: StudioVrmPoserHost }) {
               broadcastPreviewActive && "!hidden",
             )}
           >
-            <div role="tablist" aria-label="컨트롤 카테고리" className="grid shrink-0 grid-cols-5 gap-1 border-b border-line bg-panel/95 px-2 py-2 backdrop-blur sm:px-3">
+            {!h.cutPaintSession && <div role="tablist" aria-label="컨트롤 카테고리" className="grid shrink-0 grid-cols-5 gap-1 border-b border-line bg-panel/95 px-2 py-2 backdrop-blur sm:px-3">
               {PANEL_TABS.map((tab) => {
                 const TabIcon = tab.icon;
                 const isActive = activePanelTab === tab.id;
@@ -247,12 +248,12 @@ export function StudioVrmPoserDialog({ h }: { h: StudioVrmPoserHost }) {
                   </button>
                 );
               })}
-            </div>
-            <div ref={panelScrollRef} id="vrm-panel-body" role="tabpanel" aria-labelledby={`vrm-tab-${activePanelTab}`} className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-4 [scrollbar-gutter:stable] sm:px-5">
+            </div>}
+            <div ref={panelScrollRef} id="vrm-panel-body" role={h.cutPaintSession ? "region" : "tabpanel"} aria-label={h.cutPaintSession ? "표면 채색" : undefined} aria-labelledby={h.cutPaintSession ? undefined : `vrm-tab-${activePanelTab}`} className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-4 [scrollbar-gutter:stable] sm:px-5">
               <StudioVrmPoserPanelBodyA h={h} />
-              <StudioVrmPoserPanelBodyB h={h} />
+              {!h.cutPaintSession && <><StudioVrmPoserPanelBodyB h={h} />
               <StudioVrmPoserPanelBodyC h={h} />
-              <StudioVrmPoserPanelBodyD h={h} />
+              <StudioVrmPoserPanelBodyD h={h} /></>}
             </div>
             <footer className="sticky bottom-0 z-20 flex shrink-0 items-center justify-between gap-2 border-t border-line bg-panel/95 px-4 py-3 backdrop-blur sm:px-5">
               <button
@@ -267,7 +268,10 @@ export function StudioVrmPoserDialog({ h }: { h: StudioVrmPoserHost }) {
               >
                 닫기
               </button>
-              <button
+              {h.cutPaintSession && h.onApplyCutPaint ? <StudioVrmCutPaintApplyButton
+                session={h.cutPaintSession} runtime={h.texturePaintRuntime} pngSession={h.pngSessionRef?.current ?? undefined}
+                disabled={!vrm || status !== "ready" || texturePaintStrokeActive || h.texturePaintPersistenceStatus !== "ready"} onApply={h.onApplyCutPaint}
+              /> : <button
                 type="button"
                 className={cx(CONTROL_BUTTON, "min-w-36 border-accent/60 bg-accent text-on-accent hover:bg-accent/90")}
                 disabled={
@@ -291,7 +295,7 @@ export function StudioVrmPoserDialog({ h }: { h: StudioVrmPoserHost }) {
               >
                 {isCapturing ? <Loader2 className="animate-spin motion-reduce:animate-none" size={14} aria-hidden /> : <ImagePlus size={14} aria-hidden />}
                 이 포즈로 추가
-              </button>
+              </button>}
             </footer>
           </aside>
         </div>

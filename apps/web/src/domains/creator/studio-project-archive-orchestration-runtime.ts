@@ -302,7 +302,7 @@ export function createStudioProjectArchiveOrchestration({
     try {
       archiveExportController = new AbortController();
       const exportGeneration = revisionProjectGenerationRef.current;
-      const sourceProject = currentStudioProjectSnapshot();
+      const { sourceProject, currentVrmProject } = await (await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-vrm-archive")).prepareStudioSixPassVrmArchiveSnapshot(currentStudioProjectSnapshot);
       const [
         { buildStudioProjectArchiveWithVerifiedBg3dModels },
         { prepareStudioReferenceBoardArchiveExport },
@@ -378,7 +378,7 @@ export function createStudioProjectArchiveOrchestration({
         vrmUseContextReceipt = createStudioVrmProjectArchiveUseContextReceipt(attestationInput);
       }
       const currentVrmFingerprint = JSON.stringify(
-        collectStudioVrmProjectArchiveReferences(currentStudioProjectSnapshot()).map(
+        collectStudioVrmProjectArchiveReferences(currentVrmProject()).map(
           (reference) => ({
             hash: reference.hash,
             pointer: reference.pointer,
@@ -484,7 +484,7 @@ export function createStudioProjectArchiveOrchestration({
         crc32ExecutionMode: "worker", signal: archiveExportController.signal,
       });
       const downloadVrmFingerprint = JSON.stringify(
-        collectStudioVrmProjectArchiveReferences(currentStudioProjectSnapshot()).map(
+        collectStudioVrmProjectArchiveReferences(currentVrmProject()).map(
           (reference) => ({
             hash: reference.hash,
             pointer: reference.pointer,

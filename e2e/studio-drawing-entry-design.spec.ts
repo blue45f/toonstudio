@@ -35,6 +35,30 @@ for (const size of [{ width: 1440, height: 960 }, { width: 390, height: 844 }]) 
     await page.goto(manuscript, { waitUntil: "domcontentloaded" });
     await verifyEditor();
 
+    if (size.width === 1440) {
+      const bounds = await canvas.boundingBox();
+      if (!bounds) throw new Error("원고 캔버스를 찾지 못했습니다.");
+      await canvas.click({ button: "right", position: { x: Math.floor(bounds.width) - 10, y: Math.floor(bounds.height) - 10 } });
+      const menu = page.getByRole("menu", { name: "캔버스 작업" });
+      await expect(menu).toBeVisible();
+      const menuBounds = await menu.boundingBox();
+      expect(menuBounds!.x + menuBounds!.width).toBeLessThanOrEqual(size.width);
+      expect(menuBounds!.y + menuBounds!.height).toBeLessThanOrEqual(size.height);
+      const last = menu.getByRole("menuitem", { name: "스마트 도형 켜기" });
+      const hitPoints = await last.evaluate(button => {
+        const rect = button.getBoundingClientRect();
+        const y = rect.top + rect.height / 2;
+        return [rect.left + rect.width / 2, rect.right - 4].map(x => button.contains(document.elementFromPoint(x, y)));
+      });
+      expect(hitPoints).toEqual([true, true]);
+      await last.click();
+      await expect(menu).toHaveCount(0);
+      await canvas.click({ button: "right", position: { x: Math.floor(bounds.width) - 10, y: Math.floor(bounds.height) - 10 } });
+      await menu.getByRole("menuitem", { name: "펜으로 그리기" }).click();
+      await expect(menu).toHaveCount(0);
+      await expect(eraser).toHaveAttribute("aria-pressed", "false");
+    }
+
     await showStudioProjectWindowTools(page);
     await page.goto(manuscript + "?drawingShell=app&uiMode=focus&startTool=draw", { waitUntil: "domcontentloaded" });
     await expect(canvas).toBeVisible({ timeout: 60_000 });

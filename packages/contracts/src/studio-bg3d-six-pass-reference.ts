@@ -1,5 +1,6 @@
 /** 가벼운 문서·렌더 경계용 식별자. 무거운 manifest·해시·Zod 그래프를 가져오지 않는다. */
 export const STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY = "bg3d-sixpass-bundle.v1" as const;
+export const STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY = "bg3d-sixpass-bundle.v2" as const;
 export const STUDIO_BG3D_SIX_PASS_BUNDLE_MIN_PROJECT_VERSION = 5 as const;
 export const STUDIO_BG3D_SIX_PASS_ROLES = ["color", "tone", "shadow", "depth", "texture-line", "main-line"] as const;
 export type StudioBg3dSixPassRole = typeof STUDIO_BG3D_SIX_PASS_ROLES[number];
@@ -77,8 +78,10 @@ export function hasStudioBg3dSixPassBundleStateEnvelope(value: unknown): boolean
     ids.add(bundle.bundleId);
     const revisions = new Set<string>();
     for (const revision of bundle.revisions) {
-      if (!object(revision) || revision.contract !== "toonstudio.bg3d-sixpass-bundle.v1" || revision.version !== 1
-        || revision.minimumProjectVersion !== 5 || revision.minimumReaderCapability !== STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY
+      if (!object(revision)) return false;
+      const supported = (revision.version === 1 && revision.contract === "toonstudio.bg3d-sixpass-bundle.v1" && revision.minimumReaderCapability === STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY)
+        || (revision.version === 2 && revision.contract === "toonstudio.bg3d-sixpass-bundle.v2" && revision.minimumReaderCapability === STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY);
+      if (!supported || revision.minimumProjectVersion !== 5
         || revision.bundleId !== bundle.bundleId || typeof revision.renderRevisionId !== "string"
         || !ID.test(revision.renderRevisionId) || revisions.has(revision.renderRevisionId)) return false;
       revisions.add(revision.renderRevisionId);

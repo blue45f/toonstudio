@@ -211,9 +211,9 @@ export function createStudioBg3dThreeWebglCaptureAdapter(
       // 한 패스의 fence와 임시 target 정리가 끝나야 다음 패스를 할당한다.
       const rgba = await submit(() => captureStudioBg3dThreeWebglColor({ renderer, scene, camera: frozenCamera, request }));
       const depth = await submit(() => captureStudioBg3dThreeDepth({ renderer, scene, camera: frozenCamera,
-        width: request.width, height: request.height }));
+        width: request.width, height: request.height, frozenCastCoverage: request.measureFrozenCast }));
       const normalRgba = request.includeNormals ? await submit(() => captureStudioBg3dThreeNormals({ renderer, scene,
-        camera: frozenCamera, width: request.width, height: request.height })) : undefined;
+        camera: frozenCamera, width: request.width, height: request.height, frozenCastCoverage: request.measureFrozenCast })) : undefined;
       const sixPass = await withCaptureScene(() => captureStudioBg3dThreeSixPassPlanes({ renderer, scene,
         camera: frozenCamera, request, submit,
         captureColor: (passRequest) => captureStudioBg3dThreeWebglColor({ renderer, scene,

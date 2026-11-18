@@ -1,5 +1,5 @@
 import { StudioBg3dBundleService } from "./studio-bg3d-bundle.service";
-import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
+import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { assertStudioCrdtBg3dBundleAdmission, snapshotStudioCrdtBg3dBundles, STUDIO_BG3D_BUNDLE_REVISIONS_ROOT } from "./studio-crdt-bg3d-bundle";
 import { StudioBg3dReaderUpgradeRequiredError, isStudioBg3dReaderUpgradeRequired, studioReaderUpgradeRequiredCapabilities, hasStudioPreservedDrawReaderCrdt } from "./studio-bg3d-reader-capability";
 import { STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY } from "@toonstudio/contracts/studio-legacy-pigment-archive";
@@ -403,11 +403,6 @@ export class StudioCrdtService implements OnModuleDestroy {
     return this.documents.size;
   }
 
-  private hasCachedBg3dBundle(workId: string): boolean {
-    const doc = this.documents.get(workId)?.doc;
-    return Boolean(doc?.share.has(STUDIO_BG3D_BUNDLE_REVISIONS_ROOT) && doc.getMap(STUDIO_BG3D_BUNDLE_REVISIONS_ROOT).size);
-  }
-
   async assertReaderCapability(workId: string, features: readonly string[] = []): Promise<void> {
     return this.withWorkLock(workId, async () => this.assertDocumentReaderCapability(workId, (await this.getCaughtUpDocument(workId)).doc, features));
   }
@@ -424,7 +419,11 @@ export class StudioCrdtService implements OnModuleDestroy {
   }
 
   private async documentReaderCapabilities(workId: string, doc: Y.Doc): Promise<readonly string[]> {
-    const required: string[] = this.hasCachedBg3dBundle(workId) || await this.bg3dBundles?.hasRetainedBundles(workId) ? [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY] : [];
+    const required = [...(await this.bg3dBundles?.requiredReaders(workId) ?? [])];
+    const refs = doc.share.has(STUDIO_BG3D_BUNDLE_REVISIONS_ROOT) ? doc.getMap<string>(STUDIO_BG3D_BUNDLE_REVISIONS_ROOT) : null;
+    if (refs?.size && !required.includes(STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY)) required.push(STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY);
+    if (refs && !required.includes(STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY)
+      && [...refs.values()].some(raw => JSON.parse(raw).version === 2)) required.push(STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY);
     if (hasStudioPreservedDrawReaderCrdt(doc)) required.push(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY);
     return required;
   }

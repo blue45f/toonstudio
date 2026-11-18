@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import * as Y from "yjs";
 import { Pool } from "pg";
 import { validatePostgresIntegrationUrl } from "../../../../../scripts/run-postgres-integration-tests.mjs";
@@ -93,6 +93,38 @@ localIntegration("6패스 PostgreSQL 봉인·권한·quota", () => {
     return { version: 5, pagesList: [{ id: f.manifest.pageId, bg: "#fff", bgGrad: null, canvasH: 1080,
       groups: [{ id: f.manifest.groupId, name: "6패스" }], elements, bg3dLtBundles: state, linked3dRender }] };
   }
+  it("팀 6패스 v2를 작품·페이지·불변 원본의 배우에 묶고 구버전 동기화를 거절한다", async () => {
+    const f = await work();
+    const other = await work();
+    const digest = (bytes: string | Buffer) => createHash("sha256").update(bytes).digest("hex");
+    const anchor = `vrmcut-${randomUUID()}`;
+    const linkedVrm = { version: 1, characters: [{ elementId: "actor-a" }] };
+    const scene = Buffer.from(JSON.stringify({ ...JSON.parse(f.scene.toString()), pinnedVersionedCut: { source: { linkedVrm } } }));
+    const workVrmCut = { anchorId: anchor, sceneSha256: digest(scene), compositeSha256: digest(f.png) };
+    const manifest = parseStudioBg3dSixPassBundleManifest({ ...f.manifest, contract: "toonstudio.bg3d-sixpass-bundle.v2", version: 2,
+      minimumReaderCapability: "bg3d-sixpass-bundle.v2", workVrmCut, scene: { ...f.manifest.scene, byteSize: scene.length, contentHash: `sha256:${digest(scene)}` } });
+    const descriptor = { version: 1, element: { id: anchor, type: "image", x: 0, y: 0, width: 1, height: 1, rotation: 0 } };
+    await pool.query(`INSERT INTO creator_work_asset ("workId","assetId","elementType","mimeType",descriptor,payload,"byteSize",sha256,"intrinsicWidth","intrinsicHeight","decodedRgbaBytes","uploadedBy")
+      VALUES ($1,$2,'image','image/png',$3,$4,$5,$6,1,1,4,$7)`, [f.workId, anchor, descriptor, f.png, f.png.length, digest(f.png), f.owner]);
+    await pool.query(`INSERT INTO studio_work_vrm_cut ("workId","pageId","anchorId","sceneText","sceneSha256","compositeSha256","bundledModels",attachments)
+      VALUES ($1,$2,$3,$4,$5,$6,'[]','[]')`, [f.workId, manifest.pageId, anchor, scene.toString(), digest(scene), digest(f.png)]);
+    expect(await service.capabilities(f.owner, f.workId, 2)).toMatchObject({ enabled: true, readerCapability: "bg3d-sixpass-bundle.v2" });
+    await expect(service.prepare(other.owner, other.key, manifest)).rejects.toThrow(/원본 컷/);
+    await expect(service.prepare(f.owner, f.key, { ...manifest, pageId: "different-page" })).rejects.toThrow(/원본 컷/);
+    await expect(service.prepare(f.owner, f.key, { ...manifest, workVrmCut: { ...workVrmCut, compositeSha256: "c".repeat(64) } })).rejects.toThrow(/원본 컷/);
+    const changed = Buffer.from(scene.toString().replace("actor-a", "actor-b"));
+    const different = parseStudioBg3dSixPassBundleManifest({ ...manifest, bundleId: "different-source", scene: { ...manifest.scene, contentHash: `sha256:${digest(changed)}` } });
+    const wrongKey = { ...f.key, bundleId: different.bundleId };
+    await service.prepare(f.owner, wrongKey, different);
+    await expect(service.upload(f.owner, wrongKey, "scene", { buffer: changed, size: changed.length, mimetype: "application/json" })).rejects.toThrow(/확인하지 못/);
+    expect((await service.get(f.owner, wrongKey)).uploadedRoles).toEqual([]);
+    const result = await sealed({ ...f, manifest, scene });
+    expect(result.state).toBe("sealed");
+    await expect(service.assertReaderCapability(f.workId, ["bg3d-sixpass-bundle.v1"])).rejects.toThrow(/업데이트/);
+    expect(await service.requiredReaders(f.workId)).toEqual(["bg3d-sixpass-bundle.v1", "bg3d-sixpass-bundle.v2"]);
+    await expect(service.assertReaderCapability(f.workId, await service.requiredReaders(f.workId))).resolves.toBeUndefined();
+    await expect(service.get(other.owner, f.key)).rejects.toThrow();
+  });
   it("한 역할 누락은 봉인하지 않고 동일 prepare 재호출은 quota를 중복 예약하지 않는다", async () => {
     const f = await work();
     await service.prepare(f.owner, f.key, f.manifest); await service.prepare(f.owner, f.key, f.manifest);

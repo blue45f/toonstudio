@@ -8,6 +8,7 @@ import { createStudioVrmProjectArchiveUseContextReceipt, evaluateStudioVrmLicens
   prepareStudioVrmProjectArchiveAttestation, studioVrmProjectArchiveActionContext, type StudioVrmProjectArchiveAttestationPlan,
   type StudioVrmProjectArchiveUseContextInput, type StudioVrmProjectArchiveUseContextReceipt } from "../vrm/studio-vrm-license-product-gate";
 import type { StudioVrmAttachmentModel, StudioVrmSurfacePaintTexture } from "../vrm/studio-vrm-scene-document";
+import { canonicalizeStudioVrmTexturePaintChannel, studioVrmTexturePaintChannelEncoding } from "../vrm/studio-vrm-texture-paint-channel";
 import type { StudioScene3dCutLinkedVrm } from "./studio-scene3d-shot-versions";
 
 export type TeamCutAsset = { kind: "vrm"; model: StudioVrmAttachmentModel } | { kind: "image"; paint: StudioVrmSurfacePaintTexture };
@@ -34,7 +35,12 @@ export function teamCutAssetPlan(cast: StudioScene3dCutLinkedVrm) {
       if (!selectableSampleVrmUrl(model.id)) throw new Error("팀 컷에서 열 수 없는 동봉 VRM입니다.");
     } else add(model.hash, model.byteSize, { kind: "vrm", model });
     for (const paint of vrmScene.surfacePaint.textures) {
-      if (paint.textureSlot !== "baseColor") throw new Error("팀 컷은 기본색 채색만 저장할 수 있습니다. 다른 재질 채널이 있는 원본은 로컬 원고에 보관해 주세요.");
+      const channel = canonicalizeStudioVrmTexturePaintChannel(paint.textureSlot);
+      const encoding = channel && studioVrmTexturePaintChannelEncoding(channel);
+      if (!encoding || (vrmScene.surfacePaint.version === 1 ? channel !== "baseColor"
+        : paint.colorSpace !== encoding.colorSpace || paint.channelPacking !== encoding.channelPacking)) {
+        throw new Error("채색 채널의 색공간 또는 PNG 저장 형식을 확인할 수 없습니다. 캐릭터 원본에서 채색을 다시 저장해 주세요.");
+      }
       add(paint.hash, paint.byteSize, { kind: "image", paint });
     }
   }
@@ -79,6 +85,7 @@ export async function collectTeamCutUploadFiles(cast: StudioScene3dCutLinkedVrm,
   const checked = await verifyTeamCutFiles(cast, async (hash, entry) => {
     const cached = remote?.blobs.get(hash);
     if (cached) return cached;
+    if (remote) throw new Error("이 작품 편집 세션에서 원본 모델이나 채색 PNG를 찾을 수 없습니다. 원고에서 컷을 다시 열어 주세요.");
     if (entry.kind === "image") return (await getStudioVrmTexturePaintLibraryArtifact(hash, { signal })).archiveEntry.data;
     const local = await getStoredVrmModelByHash(hash);
     if (!local) throw new Error("고정 컷의 VRM 원본을 기기에서 찾을 수 없습니다. 원본 아카이브를 열어 주세요.");

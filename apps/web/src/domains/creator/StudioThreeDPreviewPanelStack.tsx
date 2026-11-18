@@ -476,9 +476,14 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
       onUseAsAiMethodReference={useBg3dFrameAsAiMethodReference}
     />
   ) : null;
-  const bg3dElement = backgroundEditor && cutWorkScope?.anchorId?.startsWith("vrmcut-") && activePageId
-    ? <StudioTeamVrmCutEditorGate key={JSON.stringify([cutWorkScope.actorId, cutWorkScope.workId, activePageId, cutWorkScope.anchorId])}
-        editor={backgroundEditor} authorized={cutWorkScope.authorized} workId={cutWorkScope.workId} pageId={activePageId} anchorId={cutWorkScope.anchorId} /> : backgroundEditor;
+  const sourceBundle = activePage?.bg3dLtBundles?.bundles.find(bundle => bundle.bundleId === bg3dTargetBundleId);
+  const sourceRevision = sourceBundle?.revisions.find(revision => revision.renderRevisionId === sourceBundle.activeRevisionId);
+  const sixPassSource = sourceRevision?.version === 2 ? sourceRevision.workVrmCut : undefined;
+  const workAnchor = sixPassSource?.anchorId ?? (cutWorkScope?.anchorId?.startsWith("vrmcut-") ? cutWorkScope.anchorId : undefined);
+  const missingTeamSeal = Boolean(bg3dInitialScene?.output.sixPassLt && bg3dInitialScene.pinnedVersionedCut?.source.linkedVrm && bg3dTargetBundleId && !sixPassSource);
+  const bg3dElement = backgroundEditor && cutWorkScope && (workAnchor || missingTeamSeal) && activePageId
+    ? <StudioTeamVrmCutEditorGate key={JSON.stringify([cutWorkScope.actorId, cutWorkScope.workId, activePageId, workAnchor, sourceRevision?.renderRevisionId])}
+        editor={backgroundEditor} authority={cutWorkScope.authority} actorId={cutWorkScope.actorId} authorized={cutWorkScope.authorized && !missingTeamSeal} workId={cutWorkScope.workId} pageId={activePageId} anchorId={workAnchor ?? ""} sixPassSource={sixPassSource} /> : backgroundEditor;
 
   return (
     <>

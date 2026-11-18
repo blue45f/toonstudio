@@ -2,6 +2,7 @@ import { useThree } from "@react-three/fiber";
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
+import { registerStudioSixPassActor } from "./studio-bg3d-six-pass-cast";
 import { studioShared3dCharacterWorldTransform } from "../studio-shared-3d-scene-bridge";
 import { disposeStudioVrmAsset } from "../vrm/studio-vrm-asset-runtime";
 import {
@@ -450,7 +451,7 @@ export default function StudioBg3dSharedVrmCharacter({
   ] as const;
 
   return (
-    <group>
+    <group ref={object => registerStudioSixPassActor(object, source)}>
       <primitive object={vrm.scene} dispose={null} />
       <StudioBg3dSharedVrmAppearanceRuntime
         key={JSON.stringify([

@@ -37,6 +37,12 @@ describe("saved work 6패스 전용 입장 서비스", () => {
     await expect(f.service.upload("owner", f.key, "color", f.file)).rejects.toBeInstanceOf(ForbiddenException);
     expect(f.prepare).not.toHaveBeenCalled(); expect(f.upload).not.toHaveBeenCalled(); expect(f.read).not.toHaveBeenCalled();
   });
+  it("기존 앱의 저장 규격을 보존하고 팀 캐릭터 v2는 지원 여부를 별도로 응답한다", async () => {
+    const f = fixture();
+    expect((await f.service.capabilities("owner", f.key.workId)).readerCapability).toBe("bg3d-sixpass-bundle.v1");
+    expect(await f.service.capabilities("owner", f.key.workId, 2)).toMatchObject({ enabled: true, readerCapability: "bg3d-sixpass-bundle.v2" });
+    expect(f.capabilities).toHaveBeenLastCalledWith("owner", f.key.workId, 2);
+  });
   it("manifest의 경로·역할·해상도·byte budget이 다르면 준비하지 않는다", async () => {
     const f = fixture();
     await expect(f.service.prepare("owner", { ...f.key, renderRevisionId: "different" }, f.manifest)).rejects.toThrow(/manifest/);
@@ -59,7 +65,7 @@ describe("saved work 6패스 전용 입장 서비스", () => {
   it("업로드 후 권한 재검사가 거부되면 문서 영수증을 성공으로 반환하지 않는다", async () => {
     const f = fixture(); f.storeArtifact.mockRejectedValueOnce(new ForbiddenException("권한 변경"));
     await expect(f.service.upload("owner", f.key, "color", f.file)).rejects.toBeInstanceOf(ForbiddenException);
-    expect(f.upload).toHaveBeenCalledTimes(1); expect(f.read).toHaveBeenCalledWith("owner", f.key, "edit", undefined);
+    expect(f.upload).toHaveBeenCalledTimes(1); expect(f.read).toHaveBeenCalledWith("owner", f.key, "edit", undefined, false);
     expect(f.seal).not.toHaveBeenCalled();
   });
   it("이미 저장한 동일 role 요청은 재업로드 없이 영수증을 반환한다", async () => {

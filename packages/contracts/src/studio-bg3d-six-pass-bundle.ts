@@ -1,8 +1,9 @@
 import { z } from "zod";
 
 import { sha256HexPortable } from "./sha256-portable";
-import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_BUNDLE_MIN_PROJECT_VERSION,
+import { STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_BUNDLE_MIN_PROJECT_VERSION,
   STUDIO_BG3D_SIX_PASS_ROLES, STUDIO_BG3D_SIX_PASS_IMAGE_BLEND_MODES } from "./studio-bg3d-six-pass-reference";
+import { WorkVrmCutAnchorSchema } from "./studio-work-vrm-cut";
 
 import type { StudioBg3dSixPassContentHash } from "./studio-bg3d-six-pass-reference";
 
@@ -11,6 +12,7 @@ export type { StudioBg3dSixPassArtifactRole } from "./studio-bg3d-six-pass-artif
 export { verifyStudioBg3dSixPassArtifactBytes, verifyStudioBg3dSixPassBundleBodies, verifyStudioBg3dSixPassBundleSceneBytes, getStudioBg3dSixPassBundleArtifacts } from "./studio-bg3d-six-pass-artifact-bytes";
 
 export const STUDIO_BG3D_SIX_PASS_BUNDLE_CONTRACT = "toonstudio.bg3d-sixpass-bundle.v1" as const;
+export const STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CONTRACT = "toonstudio.bg3d-sixpass-bundle.v2" as const;
 export const STUDIO_BG3D_SIX_PASS_BUNDLE_STATE_CONTRACT = "toonstudio.bg3d-sixpass-bundles.v1" as const;
 export const STUDIO_BG3D_SIX_PASS_PNG_MAX_BYTES = 64 * 1024 * 1024;
 export const STUDIO_BG3D_SIX_PASS_PNG_TOTAL_MAX_BYTES = 6 * STUDIO_BG3D_SIX_PASS_PNG_MAX_BYTES;
@@ -82,12 +84,22 @@ function layer<Role extends typeof STUDIO_BG3D_SIX_PASS_ROLES[number]>(role: Rol
   return StudioBg3dSixPassPresentationSchema.extend({ role: z.literal(role), elementId: ID,
     artifact: StudioBg3dSixPassPngArtifactSchema }).strict();
 }
-export const StudioBg3dSixPassBundleManifestSchema = z.object({
-  contract: z.literal(STUDIO_BG3D_SIX_PASS_BUNDLE_CONTRACT), version: z.literal(1), ...READER,
+const manifestFields = {
   bundleId: ID, renderRevisionId: ID, parentRevisionId: ID.nullable(), linePassRevision: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER).default(1), pageId: ID, groupId: ID, anchorElementId: ID,
   width: AXIS, height: AXIS, cameraHash: HASH, outputSettingsHash: HASH, scene: StudioBg3dSixPassSceneArtifactSchema,
   layers: z.tuple([layer("color"), layer("tone"), layer("shadow"), layer("depth"), layer("texture-line"), layer("main-line")]),
-}).strict().superRefine((value, context) => {
+};
+const cutDigest = z.string().regex(/^[a-f0-9]{64}$/u);
+export const StudioBg3dSixPassWorkVrmCutSchema = z.object({
+  anchorId: WorkVrmCutAnchorSchema, sceneSha256: cutDigest, compositeSha256: cutDigest,
+}).strict();
+export type StudioBg3dSixPassWorkVrmCut = z.infer<typeof StudioBg3dSixPassWorkVrmCutSchema>;
+export const StudioBg3dSixPassBundleManifestSchema = z.discriminatedUnion("version", [
+  z.object({ ...manifestFields, contract: z.literal(STUDIO_BG3D_SIX_PASS_BUNDLE_CONTRACT), version: z.literal(1), ...READER }).strict(),
+  z.object({ ...manifestFields, contract: z.literal(STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CONTRACT), version: z.literal(2),
+    minimumReaderCapability: z.literal(STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY), minimumProjectVersion: READER.minimumProjectVersion,
+    workVrmCut: StudioBg3dSixPassWorkVrmCutSchema }).strict(),
+]).superRefine((value, context) => {
   if (value.width * value.height > STUDIO_BG3D_SIX_PASS_MAX_PIXELS
     || value.layers.some(({ artifact }) => artifact.width !== value.width || artifact.height !== value.height))
     context.addIssue({ code: "custom", message: "6패스 해상도가 일치하지 않거나 픽셀 예산을 초과했습니다." });
@@ -205,6 +217,7 @@ export function parseStudioBg3dSixPassBundleState(value: unknown): StudioBg3dSix
 }
 /** 비활성 revision도 retained feature이므로 구앱 입장 요구를 낮추지 않는다. */
 export function studioBg3dSixPassBundleRequiredCapabilities(value: StudioBg3dSixPassBundleState): readonly string[] {
-  parseStudioBg3dSixPassBundleState(value);
-  return [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY];
+  const state = parseStudioBg3dSixPassBundleState(value);
+  return state.bundles.some(bundle => bundle.revisions.some(revision => revision.version === 2))
+    ? [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY] : [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY];
 }

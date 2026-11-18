@@ -1,8 +1,10 @@
+import { readSixPassWorkVrmCutActorHash } from "./studio-work-vrm-cut.store";
 import { studioCrdtWorkAdvisoryLockQuery } from "./studio-crdt.repository";
 import { buildStudioBg3dBundleSealedChain, assertStudioBg3dBundleChainByteCount, studioBg3dBundleChainFailure, type StudioBg3dBundleChainKey, type StudioBg3dBundleSealedChain } from "./studio-bg3d-bundle-chain";
 import { and, asc, eq, gt, sql } from "drizzle-orm";
 import { ConflictException, ForbiddenException, NotFoundException } from "@nestjs/common";
 import {
+  STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY,
   assertStudioBg3dSixPassBundleTransition,
   hashStudioBg3dSixPassBundleManifest,
   parseStudioBg3dSixPassBundleManifest,
@@ -27,13 +29,14 @@ export interface StudioBg3dBundleRecord {
   readonly manifestHash: StudioBg3dSixPassContentHash;
   readonly state: "prepared" | "sealed";
   readonly sealedAt: string | null;
+  readonly linkedVrmHash?: string | null;
   readonly artifacts: readonly { readonly role: StudioBg3dBundleArtifactRole; readonly object: PrivateObjectReference }[];
 }
 export interface StudioBg3dBundleRepository {
   sealedChain(actor: string, key: StudioBg3dBundleChainKey): Promise<StudioBg3dBundleSealedChain>;
-  capabilities(actor: string, workId: string): Promise<{ readonly schemaReady: boolean; readonly fileMaxBytes: number; readonly remainingStorageBytes: number; readonly remainingDailyUploadBytes: number }>;
+  capabilities(actor: string, workId: string, version?: 1 | 2): Promise<{ readonly schemaReady: boolean; readonly fileMaxBytes: number; readonly remainingStorageBytes: number; readonly remainingDailyUploadBytes: number }>;
   prepare(actor: string, workId: string, manifest: StudioBg3dSixPassBundleManifest, context?: StudioScopedWriteContext): Promise<StudioBg3dBundleRecord>;
-  read(actor: string, key: StudioBg3dBundleKey, operation?: "view" | "edit", context?: StudioScopedWriteContext): Promise<StudioBg3dBundleRecord>;
+  read(actor: string, key: StudioBg3dBundleKey, operation?: "view" | "edit", context?: StudioScopedWriteContext, checkVrm?: boolean): Promise<StudioBg3dBundleRecord>;
   storeArtifact(actor: string, key: StudioBg3dBundleKey, role: StudioBg3dBundleArtifactRole, object: PrivateObjectReference, context?: StudioScopedWriteContext): Promise<StudioBg3dBundleRecord>;
   seal(actor: string, key: StudioBg3dBundleKey, context?: StudioScopedWriteContext): Promise<StudioBg3dBundleRecord>;
 }
@@ -112,16 +115,26 @@ async function parentRecord(transaction: Transaction, workId: string, manifest: 
 }
 
 /** 호출자가 기존 work mutation lock 안에서 사용하면 reader 검사와 commit이 같은 전이에 속한다. */
-export async function hasStudioBg3dRetainedBundlesInTransaction(transaction: Transaction, workId: string): Promise<boolean> {
+export async function studioBg3dReaderRequirements(transaction: Transaction, workId: string): Promise<readonly string[]> {
   const readiness = await transaction.execute(sql`SELECT to_regclass('public.studio_bg3d_bundle_revision') IS NOT NULL AS ready`);
-  if (readiness.rows[0]?.ready !== true) return false;
-  const [row] = await transaction.select({ id: studioBg3dBundleRevisions.renderRevisionId }).from(studioBg3dBundleRevisions)
-    .where(eq(studioBg3dBundleRevisions.workId, workId)).limit(1);
-  return Boolean(row);
+  if (readiness.rows[0]?.ready !== true) return [];
+  const revisions = await transaction.selectDistinct({ version: sql<string>`${studioBg3dBundleRevisions.manifest}->>'version'` })
+    .from(studioBg3dBundleRevisions).where(eq(studioBg3dBundleRevisions.workId, workId));
+  if (!revisions.length) return [];
+  return revisions.some(row => row.version === "2") ? [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY]
+    : [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY];
+}
+export async function hasStudioBg3dRetainedBundlesInTransaction(transaction: Transaction, workId: string): Promise<boolean> {
+  return (await studioBg3dReaderRequirements(transaction, workId)).length > 0;
+}
+function assertReaderRequirements(required: readonly string[], features: readonly string[]) {
+  if (required.some(capability => !features.includes(capability)))
+    throw new ConflictException({ code: "studio_bg3d_reader_upgrade_required", requiredReaderCapabilities: required,
+      message: "이 원고의 보존된 6패스를 읽을 수 있는 앱으로 업데이트해 주세요." });
 }
 export async function assertStudioBg3dBundleReaderInTransaction(transaction: Transaction, workId: string, features: readonly string[]): Promise<void> {
-  if (!features.includes("bg3d-sixpass-bundle.v1") && await hasStudioBg3dRetainedBundlesInTransaction(transaction, workId))
-    throw new ConflictException({ code: "studio_bg3d_reader_upgrade_required", message: "이 원고의 보존된 6패스를 읽을 수 있는 앱으로 업데이트해 주세요." });
+  if (features.includes(STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY) && features.includes(STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY)) return;
+  assertReaderRequirements(await studioBg3dReaderRequirements(transaction, workId), features);
 }
 export async function verifyStudioBg3dSealedReferencesInTransaction(transaction: Transaction, workId: string, refs: readonly StudioBg3dSixPassBundleImageReference[]): Promise<void> {
   const records = new Map<string, StudioBg3dBundleRecord>();
@@ -141,11 +154,15 @@ export async function verifyStudioBg3dSealedReferencesInTransaction(transaction:
 export function assertStudioBg3dBundleAuthorizedReader(actor: string, workId: string, features: readonly string[]): Promise<readonly string[]> {
   return db.transaction(async (transaction) => {
     await authorize(transaction, actor, workId, "view");
-    const retained = await hasStudioBg3dRetainedBundlesInTransaction(transaction, workId);
-    await assertStudioBg3dBundleReaderInTransaction(transaction, workId, features);
-    return retained ? ["bg3d-sixpass-bundle.v1"] : [];
+    const required = await studioBg3dReaderRequirements(transaction, workId);
+    assertReaderRequirements(required, features);
+    return required;
   });
 }
+
+const vrmBundleSchemaReady = sql`coalesce(has_table_privilege(current_user,to_regclass('public.studio_work_vrm_cut'),'SELECT'),false)
+  AND EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.studio_bg3d_bundle_revision')
+  AND conname='studio_bg3d_bundle_manifest_check' AND convalidated AND position('toonstudio.bg3d-sixpass-bundle.v2' in pg_get_constraintdef(oid)) > 0)`;
 
 export class DrizzleStudioBg3dBundleRepository implements StudioBg3dBundleRepository {
   sealedChain(actor: string, key: StudioBg3dBundleChainKey): Promise<StudioBg3dBundleSealedChain> {
@@ -155,7 +172,7 @@ export class DrizzleStudioBg3dBundleRepository implements StudioBg3dBundleReposi
       return readStudioBg3dBundleSealedChainInTransaction(transaction, key);
     });
   }
-  capabilities(actor: string, workId: string) {
+  capabilities(actor: string, workId: string, version: 1 | 2 = 1) {
     return db.transaction(async (transaction) => {
       await authorize(transaction, actor, workId, "view");
       const [work] = await transaction.select({ owner: creatorWorks.userId }).from(creatorWorks).where(eq(creatorWorks.id, workId));
@@ -166,7 +183,7 @@ export class DrizzleStudioBg3dBundleRepository implements StudioBg3dBundleReposi
           AND coalesce(has_column_privilege(current_user,to_regclass('public.studio_bg3d_bundle_revision'),'state','UPDATE'),false)
           AND coalesce(has_column_privilege(current_user,to_regclass('public.studio_bg3d_bundle_revision'),'sealedAt','UPDATE'),false)
           AND NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid IN (to_regclass('public.studio_bg3d_bundle_revision'),to_regclass('public.studio_bg3d_bundle_artifact'))
-            AND attnum>0 AND NOT attisdropped AND NOT has_column_privilege(current_user,attrelid,attname,'INSERT')) AS ready`),
+            AND attnum>0 AND NOT attisdropped AND NOT has_column_privilege(current_user,attrelid,attname,'INSERT')) AND ${version === 2 ? vrmBundleSchemaReady : sql`true`} AS ready`),
         resolveEffectiveResourcePolicy(transaction, work.owner), readMembershipStorageUsage(transaction, work.owner), readDailyUploadBytes(transaction, work.owner),
       ]);
       return { schemaReady: readiness.rows[0]?.ready === true, fileMaxBytes: policy.fileMaxBytes,
@@ -176,6 +193,11 @@ export class DrizzleStudioBg3dBundleRepository implements StudioBg3dBundleReposi
   prepare(actor: string, workId: string, manifest: StudioBg3dSixPassBundleManifest, context?: StudioScopedWriteContext) {
     return db.transaction(async (transaction) => {
       await authorize(transaction, actor, workId, "edit", context);
+      if (manifest.version === 2) {
+        const result = await transaction.execute(sql`SELECT ${vrmBundleSchemaReady} AS ready`);
+        if (result.rows[0]?.ready !== true) throw new ConflictException("팀 캐릭터 6패스 저장소가 아직 준비되지 않았습니다.");
+        await readSixPassWorkVrmCutActorHash(transaction, workId, manifest);
+      }
       const key = { workId, bundleId: manifest.bundleId, renderRevisionId: manifest.renderRevisionId };
       const [existing] = await transaction.select().from(studioBg3dBundleRevisions).where(whereKey(key)).limit(1);
       const manifestHash = hashStudioBg3dSixPassBundleManifest(manifest);
@@ -194,8 +216,13 @@ export class DrizzleStudioBg3dBundleRepository implements StudioBg3dBundleReposi
       return readStudioBg3dBundleRecordInTransaction(transaction, key);
     });
   }
-  read(actor: string, key: StudioBg3dBundleKey, operation: "view" | "edit" = "view", context?: StudioScopedWriteContext) {
-    return db.transaction(async (transaction) => { await authorize(transaction, actor, key.workId, operation, context); return readStudioBg3dBundleRecordInTransaction(transaction, key); });
+  read(actor: string, key: StudioBg3dBundleKey, operation: "view" | "edit" = "view", context?: StudioScopedWriteContext, checkVrm = false) {
+    return db.transaction(async (transaction) => {
+      await authorize(transaction, actor, key.workId, operation, context);
+      const record = await readStudioBg3dBundleRecordInTransaction(transaction, key);
+      return checkVrm && operation === "edit" && record.manifest.version === 2
+        ? { ...record, linkedVrmHash: await readSixPassWorkVrmCutActorHash(transaction, key.workId, record.manifest) } : record;
+    });
   }
   storeArtifact(actor: string, key: StudioBg3dBundleKey, role: StudioBg3dBundleArtifactRole, object: PrivateObjectReference, context?: StudioScopedWriteContext) {
     return db.transaction(async (transaction) => {
@@ -217,6 +244,7 @@ export class DrizzleStudioBg3dBundleRepository implements StudioBg3dBundleReposi
       await authorize(transaction, actor, key.workId, "edit", context);
       const record = await readStudioBg3dBundleRecordInTransaction(transaction, key);
       if (record.state === "sealed") return record;
+      await readSixPassWorkVrmCutActorHash(transaction, key.workId, record.manifest);
       await parentRecord(transaction, key.workId, record.manifest);
       if (record.artifacts.length !== 7 || !STUDIO_BG3D_BUNDLE_ARTIFACT_ROLES.every((role) => record.artifacts.some((entry) => entry.role === role))) throw new ConflictException("장면과 여섯 PNG가 모두 저장된 뒤에만 6패스를 봉인할 수 있습니다.");
       const [work] = await transaction.select({ owner: creatorWorks.userId }).from(creatorWorks).where(eq(creatorWorks.id, key.workId));

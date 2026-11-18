@@ -11,6 +11,8 @@ vi.mock("../export/studio-export", () => ({ downloadBlob: vi.fn() }));
 afterEach(cleanup);
 
 it("clears the previous model's export failure only when the active runtime changes", async () => {
+  // 변환이 느린 CI에서도 대기 시간은 모델별 오류 상태의 반영에만 사용한다.
+  await import("./studio-vrm-texture-paint-export");
   const first = createStudioVrmTexturePaintRuntime(new THREE.Group());
   const second = createStudioVrmTexturePaintRuntime(new THREE.Group());
   const view = render(<StudioVrmTextureExportButton runtime={first} disabled={false} />);

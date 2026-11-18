@@ -37,6 +37,7 @@ export function beginStudioMToonGeometryScope(options: {
   readonly backend: StudioMToonMaterialBackend;
   readonly fallbackMaterial: Material;
   readonly createBodyPass: (source: Material) => Material;
+  readonly createCoveragePass?: (object: Object3D, source: Material) => Material | null;
 }): StudioMToonGeometryScope {
   const { scene, backend, fallbackMaterial, createBodyPass } = options;
   const previousOverride = scene.overrideMaterial;
@@ -82,10 +83,16 @@ export function beginStudioMToonGeometryScope(options: {
       submitted = true;
       try {
         // live uniform·side·clipping 입력은 제출 시점 factory가 한 번 복제한다. 준비 시점의 오래된 pass를 재사용하지 않는다.
-        const prepared = hasToon ? bindings.map((binding) => {
+        const perMaterial = hasToon || Boolean(options.createCoveragePass);
+        const prepared = perMaterial ? bindings.map((binding) => {
           const entries = binding.entries.map((material) => {
             const registration = registered.get(material);
-            if (!registration) return material.visible ? fallbackMaterial : hidden();
+            if (!registration) {
+              if (!material.visible) return hidden();
+              const coverage = options.createCoveragePass?.(binding.object, material);
+              if (coverage) { owned.add(coverage); return coverage; }
+              return fallbackMaterial;
+            }
             if (registration.outline || !material.visible) return hidden();
             let pass = replacements.get(material);
             if (!pass) {
@@ -97,11 +104,11 @@ export function beginStudioMToonGeometryScope(options: {
           });
           return { object: binding.object, replacement: Array.isArray(binding.original) ? entries : entries[0]! };
         }) : [];
-        scene.overrideMaterial = hasToon ? null : fallbackMaterial;
+        scene.overrideMaterial = perMaterial ? null : fallbackMaterial;
         for (const { object, replacement } of prepared) object.material = replacement;
         return submitSync();
       } finally {
-        if (hasToon) for (const { object, original } of bindings) object.material = original;
+        if (hasToon || options.createCoveragePass) for (const { object, original } of bindings) object.material = original;
         scene.overrideMaterial = previousOverride;
         submitting = false;
       }

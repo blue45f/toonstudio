@@ -1,3 +1,4 @@
+import { canonicalizeStudioVrmTexturePaintChannel, isStudioVrmTexturePaintScalarChannel } from "@toonstudio/contracts/studio-vrm-texture-paint-channel";
 import { isWorkVrmCutActorScene } from "@toonstudio/contracts/studio-work-vrm-cut-scene-shape";
 import { assertStudioScene3dDocument } from "@toonstudio/contracts/studio-scene3d-document";
 import { createHash } from "node:crypto";
@@ -13,6 +14,7 @@ interface RequiredAttachment extends WorkVrmCutAttachment {
   width?: number;
   height?: number;
   painted?: boolean;
+  scalar?: boolean;
 }
 
 function checkSceneBounds(root: unknown): void {
@@ -51,7 +53,8 @@ function upsertDependency(required: Map<string, RequiredAttachment>, ref: Record
   const previous = required.get(sha256);
   if (previous && (previous.elementType !== type || previous.byteSize !== byteSize || previous.width !== width || previous.height !== height))
     invalid("같은 해시를 가진 첨부의 규격이 서로 다릅니다.");
-  required.set(sha256, { sha256, byteSize, elementType: type, assetId: `vrmcut-asset-${type}-${sha256}`, width, height, painted: painted || previous?.painted });
+  const channel = canonicalizeStudioVrmTexturePaintChannel(ref.textureSlot);
+  required.set(sha256, { sha256, byteSize, elementType: type, assetId: `vrmcut-asset-${type}-${sha256}`, width, height, scalar: previous?.scalar || (channel !== null && isStudioVrmTexturePaintScalarChannel(channel)), painted: painted || previous?.painted });
   if (required.size > WORK_VRM_CUT_MAX_ATTACHMENTS) invalid("팀 컷 한 개의 첨부 파일 수를 초과했습니다.");
 }
 

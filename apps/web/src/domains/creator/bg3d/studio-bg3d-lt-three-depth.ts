@@ -1,6 +1,7 @@
 /** Engine adapter for a resource-safe Three.js depth pass used by the pure LT raster stage. */
 
 import * as THREE from "three";
+import { studioSixPassOpacityGeometry } from "./studio-bg3d-six-pass-actor-material";
 
 import { beginStudioMToonGeometryScope, type StudioMToonGeometryScope } from "../mesh-materials/studio-mtoon-geometry-scope";
 import { createStudioMToonWebGlGeometryPass } from "../mesh-materials/studio-mtoon-webgl-geometry-pass";
@@ -14,6 +15,7 @@ export interface CaptureStudioBg3dThreeDepthInput {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene: THREE.Scene;
   readonly camera: THREE.Camera;
+  readonly frozenCastCoverage?: boolean;
   readonly width: number;
   readonly height: number;
 }
@@ -90,6 +92,7 @@ export async function captureStudioBg3dThreeDepth(
         // background immediately before submission so no full-frame fake depth surface is packed.
         scene.background = null;
         geometryScope = beginStudioMToonGeometryScope({ scene, backend: "webgl", fallbackMaterial: depthMaterial,
+          ...(input.frozenCastCoverage ? { createCoveragePass: (object: THREE.Object3D, source: THREE.Material) => studioSixPassOpacityGeometry(object, source, "depth") } : {}),
           createBodyPass: (source) => createStudioMToonWebGlGeometryPass(source, "depth") });
         geometryScope.submit(() => {
           renderer.render(scene, camera);

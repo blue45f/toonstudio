@@ -1,3 +1,5 @@
+import { decode } from "image-js";
+import { guardPng } from "../../platform/images/guard-png";
 import { createHash } from "node:crypto";
 import { BadRequestException, ForbiddenException, PayloadTooLargeException } from "@nestjs/common";
 import { inspectStudioPngStructure } from "@toonstudio/contracts/studio-png-structure";
@@ -25,13 +27,27 @@ function exactFile(file: Part | undefined): Part {
   return file;
 }
 
-function admitFile(admit: Admit, file: Part, type: Write["elementType"]): AdmittedStudioWorkAssetPayload {
+function assertScalarPaint(bytes: Buffer, width: number, height: number): void {
+  const pixels = width * height;
+  const guarded = guardPng(bytes, pixels, (2 * height + 7) * (width * 8 + 1));
+  if (!guarded) throw new Error("채색 PNG를 끝까지 읽을 수 없습니다.");
+  const image = decode(guarded.sanitized);
+  for (let i = 0; i < image.size; i++) {
+    const first = image.getValueByIndex(i, 0);
+    if ((image.components === 3 && (first !== image.getValueByIndex(i, 1) || first !== image.getValueByIndex(i, 2)))
+      || (image.alpha && image.getValueByIndex(i, image.components) !== image.maxValue))
+      throw new Error("거칠기·금속성·불투명도 PNG는 불투명한 회색조로 저장해 주세요.");
+  }
+}
+
+function admitFile(admit: Admit, file: Part, type: Write["elementType"], scalar = false): AdmittedStudioWorkAssetPayload {
   try {
     const admitted = admit(type, file.mimetype, file.buffer);
     if (type === "image") {
       if (admitted.mimeType !== "image/png" || !admitted.intrinsicImage) throw new Error("컷 이미지는 PNG로 저장해 주세요.");
       inspectStudioPngStructure(file.buffer, admitted.intrinsicImage.width, admitted.intrinsicImage.height);
       assertStudioBg3dBundlePngPixels(file.buffer);
+      if (scalar) assertScalarPaint(file.buffer, admitted.intrinsicImage.width, admitted.intrinsicImage.height);
     }
     return admitted;
   } catch (error) {
@@ -72,10 +88,10 @@ export function prepareWorkVrmCutUpload(input: {
   if (composite.sha256 !== metadata.compositeSha256) throw new BadRequestException("합성 이미지 해시가 다릅니다.");
   const writes: Write[] = [{ ...composite, descriptor, assetId: anchorId, elementType: "image" }];
   const attachments: WorkVrmCutAttachment[] = [];
-  for (const { sha256, byteSize, elementType, assetId, width, height, painted } of required) {
+  for (const { sha256, byteSize, elementType, assetId, width, height, painted, scalar } of required) {
     const file = byHash.get(sha256);
     if (!file || file.size !== byteSize) throw new BadRequestException("원본 파일이 없거나 크기가 다릅니다.");
-    const payload = admitFile(admit, file, elementType);
+    const payload = admitFile(admit, file, elementType, scalar);
     if (payload.sha256 !== sha256 || payload.intrinsicImage?.width !== width || payload.intrinsicImage?.height !== height) {
       throw new BadRequestException("컷에 고정한 원본과 업로드한 파일이 다릅니다.");
     }

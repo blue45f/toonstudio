@@ -487,6 +487,11 @@
       "import": "./src/studio-work-vrm-cut.ts",
       "default": "./src/studio-work-vrm-cut.ts"
     },
+    "./studio-vrm-texture-paint-channel": {
+      "types": "./src/studio-vrm-texture-paint-channel.ts",
+      "import": "./src/studio-vrm-texture-paint-channel.ts",
+      "default": "./src/studio-vrm-texture-paint-channel.ts"
+    },
     "./studio-vrm-scene-fields": {
       "types": "./src/studio-vrm-scene-fields.ts",
       "import": "./src/studio-vrm-scene-fields.ts",

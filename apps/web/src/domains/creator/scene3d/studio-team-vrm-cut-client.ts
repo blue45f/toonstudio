@@ -124,7 +124,7 @@ export async function readTeamVrmCut(scope: TeamCutScope, signal: AbortSignal) {
       return result.blob;
     }, signal);
     signal.throwIfAborted();
-    return { scene: data.scene, sceneSha256: data.sceneSha256, resources: { ...checked.resources, bundled: bundled.files } };
+    return { scene: data.scene, sceneSha256: data.sceneSha256, compositeSha256: data.manifest.sha256, resources: { ...checked.resources, bundled: bundled.files } };
   } catch (cause) { if (signal.aborted || cause instanceof TeamVrmCutAccessError) throw cause; throw await teamCutError(cause, "팀 컷을 읽을 권한과 네트워크 연결을 확인해 주세요."); }
 }
 

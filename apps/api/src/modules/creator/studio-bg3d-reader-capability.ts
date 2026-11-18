@@ -24,6 +24,10 @@ export function studioReaderUpgradeRequiredCapabilities(error: unknown): readonl
   if (error instanceof StudioBg3dReaderUpgradeRequiredError) return error.requiredReaderCapabilities;
   if (error instanceof HttpException) {
     const response = error.getResponse();
+    if (typeof response === "object" && response !== null && "requiredReaderCapabilities" in response) {
+      const required = StudioBg3dReaderCapabilitiesSchema.safeParse(response.requiredReaderCapabilities);
+      if (required.success) return required.data;
+    }
     if (response !== null && typeof response === "object" && "code" in response
       && response.code === "studio_legacy_pigment_archive_reader_upgrade_required") return [STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY];
   }

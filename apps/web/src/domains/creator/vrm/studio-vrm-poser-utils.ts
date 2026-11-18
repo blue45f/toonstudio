@@ -7,6 +7,7 @@ import {
 import { POSER_FINGER_BONES } from "../studio-pose-presets";
 
 import { classifyMeshName } from "./studio-vrm-costume";
+import { applyStudioVrmEmissiveFx, studioVrmEmissivePaintOriginal } from "./studio-vrm-emissive-paint";
 import {
   VRM_MATERIAL_FX_SHADE_OVERRIDE,
   classifyVrmCustomColorPartForMaterial,
@@ -1789,13 +1790,14 @@ export function applyVrmMaterialFx(vrm: VRM, fx: VrmMaterialFx) {
 
       let original = mat.userData.__vrmMaterialFxOriginal as VrmMaterialFxOriginal | undefined;
       if (!original) {
+        const paint = studioVrmEmissivePaintOriginal(mat);
         original = {
           shadeColor: readVrmPristineShadeColor(mat)?.clone(),
           outlineColor: mat.outlineColorFactor?.clone(),
           rimColor: mat.parametricRimColorFactor?.clone(),
           rimIntensity: mat.rimLightingMixFactor,
-          emissiveColor: mat.emissive?.clone(),
-          emissiveIntensity: mat.emissiveIntensity,
+          emissiveColor: (paint?.emissiveColor ?? mat.emissive)?.clone(),
+          emissiveIntensity: paint?.emissiveIntensity ?? mat.emissiveIntensity,
         };
         mat.userData.__vrmMaterialFxOriginal = original;
       }
@@ -1816,13 +1818,7 @@ export function applyVrmMaterialFx(vrm: VRM, fx: VrmMaterialFx) {
       }
 
       if (guard !== "eye" && guard !== "face") {
-        if (fx.emissiveColor) {
-          mat.emissive?.set(fx.emissiveColor);
-          mat.emissiveIntensity = fx.emissiveIntensity;
-        } else {
-          if (original.emissiveColor) mat.emissive?.copy(original.emissiveColor);
-          if (original.emissiveIntensity !== undefined) mat.emissiveIntensity = original.emissiveIntensity;
-        }
+        applyStudioVrmEmissiveFx(mat, fx, original);
       }
       mat.needsUpdate = true;
     });

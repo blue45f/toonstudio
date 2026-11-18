@@ -1,5 +1,6 @@
 /** WebGL2 reference for the optional view-space geometry-normal capture contract. */
 import * as THREE from "three";
+import { studioSixPassOpacityGeometry } from "./studio-bg3d-six-pass-actor-material";
 
 import { beginStudioMToonGeometryScope, type StudioMToonGeometryScope } from "../mesh-materials/studio-mtoon-geometry-scope";
 import { createStudioMToonWebGlGeometryPass } from "../mesh-materials/studio-mtoon-webgl-geometry-pass";
@@ -11,6 +12,7 @@ export async function captureStudioBg3dThreeNormals(input: {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene: THREE.Scene;
   readonly camera: THREE.Camera;
+  readonly frozenCastCoverage?: boolean;
   readonly width: number;
   readonly height: number;
 }): Promise<Uint8ClampedArray> {
@@ -53,6 +55,7 @@ export async function captureStudioBg3dThreeNormals(input: {
         renderer.clear(true, true, true);
         scene.background = null;
         geometryScope = beginStudioMToonGeometryScope({ scene, backend: "webgl", fallbackMaterial: material,
+          ...(input.frozenCastCoverage ? { createCoveragePass: (object: THREE.Object3D, source: THREE.Material) => studioSixPassOpacityGeometry(object, source, "normal") } : {}),
           createBodyPass: (source) => createStudioMToonWebGlGeometryPass(source, "normal") });
         geometryScope.submit(() => {
           renderer.render(scene, camera);

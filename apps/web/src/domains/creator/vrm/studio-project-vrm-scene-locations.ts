@@ -28,3 +28,19 @@ export function canonicalStudioProjectVrmSceneLocations(element: unknown, pointe
     return { scene, serialized, pointer: location.pointer };
   });
 }
+
+/** 이력 모델은 편집 레이어가 아니다. archive의 각 배우 레코드가 가리키는 실제 JSON 포인터를 순회한다. */
+export function studioVrmArchiveHistoryGroups(page: unknown, pageIndex: number) {
+  if (!record(page) || page.bg3dArchiveVrmHistory === undefined) return [];
+  const invalid = () => new Error("아카이브의 6패스 VRM 이력 목록이 손상되었습니다.");
+  if (!Array.isArray(page.bg3dArchiveVrmHistory)) throw invalid();
+  return page.bg3dArchiveVrmHistory.map((revision: unknown, revisionIndex: number) => {
+    if (!record(revision) || !Array.isArray(revision.characters) || typeof revision.sceneHash !== "string"
+      || !/^sha256:[0-9a-f]{64}$/u.test(revision.sceneHash) || !revision.characters.length || revision.characters.length > 12) throw invalid();
+    const elements = revision.characters.map((actor: unknown) => {
+      if (!record(actor) || typeof actor.elementId !== "string" || !actor.vrmScene) throw invalid();
+      return { type: "image", vrmScene: actor.vrmScene };
+    });
+    return { elements, pointer: `/pagesList/${pageIndex}/bg3dArchiveVrmHistory/${revisionIndex}/characters` };
+  });
+}

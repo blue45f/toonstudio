@@ -3,6 +3,7 @@ import {
   hasStudioVrmV6Fields, hasVrmSceneFields as exact, STUDIO_VRM_HUMANOID_BONES, STUDIO_VRM_FINGER_BONES,
   normalizeCanonicalData, SAFE_DATA_KEY_PATTERN, UNSAFE_REFERENCE_KEY_PATTERN, FORBIDDEN_KEYS, containsControlCharacter, UNSAFE_REFERENCE_PATTERN,
 } from "./studio-vrm-scene-fields";
+import { canonicalizeStudioVrmTexturePaintChannel, studioVrmTexturePaintChannelEncoding } from "./studio-vrm-texture-paint-channel";
 
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -61,15 +62,21 @@ function teamSurfacePaint(v: unknown): boolean {
   let last = "", pixels = 0;
   const byHash = new Map<string, { size: number; width: number; height: number }>();
   for (const layer of v.textures) {
-    if (!exact(layer, keys) || layer.textureSlot !== "baseColor" || layer.mime !== "image/png"
-      || (v.version === 2 && (layer.colorSpace !== "srgb" || layer.channelPacking !== "rgba"))
+    if (!exact(layer, keys)) return false;
+    const slot = canonicalizeStudioVrmTexturePaintChannel(layer.textureSlot);
+    if (!slot || (v.version === 1 && slot !== "baseColor")) return false;
+    const encoding = studioVrmTexturePaintChannelEncoding(slot);
+    if (layer.mime !== "image/png"
+      || (v.version === 2 && (layer.colorSpace !== encoding.colorSpace || layer.channelPacking !== encoding.channelPacking))
       || typeof layer.bindingKey !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u.test(layer.bindingKey) || FORBIDDEN_KEYS.has(layer.bindingKey.toLowerCase())
-      || typeof layer.materialLocator !== "string" || layer.materialLocator.length > 256 || layer.materialLocator <= last
+      || typeof layer.materialLocator !== "string" || layer.materialLocator.length > 256
       || !/^(?:gltf-material:(?:0|[1-9][0-9]{0,5})|scene-path:[A-Za-z0-9][A-Za-z0-9._-]{0,63}(?:\/[A-Za-z0-9][A-Za-z0-9._-]{0,63}){0,7})$/u.test(layer.materialLocator)
       || typeof layer.hash !== "string" || !/^sha256:[a-f0-9]{64}$/u.test(layer.hash)
       || !Number.isInteger(layer.width) || !number(layer.width, 1, 4096) || !Number.isInteger(layer.height) || !number(layer.height, 1, 4096)
       || !Number.isInteger(layer.byteSize) || !number(layer.byteSize, 1, 8 * 1024 * 1024)) return false;
-    last = layer.materialLocator;
+    const identity = `${layer.materialLocator}\u0000${slot}`;
+    if (identity <= last) return false;
+    last = identity;
     const previous = byHash.get(layer.hash);
     if (previous && (previous.size !== layer.byteSize || previous.width !== layer.width || previous.height !== layer.height)) return false;
     if (!previous) {

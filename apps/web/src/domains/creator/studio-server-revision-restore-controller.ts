@@ -1,5 +1,5 @@
 import { studioServerRestoreCheckpointName } from "./studio-checkpoints";
-import { creatorWorkSnapshotToStudioProject } from "./studio-creator-work-project";
+import { readStudioCreatorWorkProject } from "./studio-creator-work-project";
 
 import type { StudioEditorMutationTicket } from "./studio-editor-scope";
 import type { StudioProjectFile } from "./studio-project-file";
@@ -230,7 +230,7 @@ export async function restoreStudioServerRevision({
       throw new Error("복원된 작품 형식은 컷툰 편집기와 호환되지 않아 자동 적용하지 않았어요.");
     }
 
-    const restoredProject = creatorWorkSnapshotToStudioProject(restoredWork);
+    const restoredProject = await readStudioCreatorWorkProject(restoredWork, restoreWorkId, restoreController.signal);
     const { hydrateStudioLinked3dPassCloudProject } = await import("./studio-linked-3d-pass-cloud-project"
     );
     documentSaveInFlightRef.current = false;

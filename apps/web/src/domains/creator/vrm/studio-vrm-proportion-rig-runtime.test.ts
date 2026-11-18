@@ -310,6 +310,25 @@ function expectVectorClose(actual: THREE.Vector3, expected: readonly number[], d
 }
 
 describe("studio-vrm-proportion-rig-runtime", () => {
+  it("오리온 대퇴의 원본 배율은 중립 재생·복원에서 보존하고 체형 변경 전 거절한다", () => {
+    const fixture = createRigFixture();
+    const leg = fixture.nodes.get("leftUpperLeg")!;
+    leg.scale.set(1.000000596, 1, 1.000030756);
+    fixture.root.updateMatrixWorld(true);
+    const original = snapshotRig(fixture.nodes);
+    const options = { headLength: fixture.headLength, allowUnmodifiedSourceRig: true };
+    const result = createStudioVrmProportionRigRuntime(fixture.adapter, options);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.runtime.apply(NEUTRAL_STUDIO_VRM_PROPORTIONS).ok).toBe(true);
+    expect(result.runtime.apply(createStudioVrmProportions("sd-chibi-3"))).toMatchObject({ ok: false, code: "invalid-proportion-plan" });
+    expect(result.runtime.restore().ok).toBe(true);
+    expect(result.runtime.dispose().ok).toBe(true);
+    expectRig(fixture.nodes, original);
+    leg.scale.set(1, 1, 1.001);
+    expect(createStudioVrmProportionRigRuntime(fixture.adapter, options)).toMatchObject({ ok: false, code: "unsafe-transform" });
+  });
+
   it("applies all 3–9 head presets to real parented bones and records their root-local world positions", () => {
     const fixture = createRigFixture();
     const runtime = runtimeFor(fixture);

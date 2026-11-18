@@ -24,7 +24,7 @@ export function snapshotStudioCrdtBg3dBundles(doc: Y.Doc): StudioCrdtBg3dBundleS
 async function verifiedRecord(transaction: StudioBg3dBundleTransaction, workId: string, ref: StudioCrdtBg3dRevisionReference): Promise<StudioBg3dBundleRecord> {
   const record = await readStudioBg3dBundleRecordInTransaction(transaction, { workId, bundleId: ref.bundleId, renderRevisionId: ref.renderRevisionId });
   if (record.state !== "sealed" || record.artifacts.length !== 7 || record.manifestHash !== ref.manifestHash
-    || record.manifest.pageId !== ref.pageId || record.manifest.parentRevisionId !== ref.parentRevisionId) failure("이 작품의 봉인된 6패스 revision과 다릅니다.");
+    || record.manifest.version !== ref.version || record.manifest.pageId !== ref.pageId || record.manifest.parentRevisionId !== ref.parentRevisionId) failure("이 작품의 봉인된 6패스 revision과 다릅니다.");
   return record;
 }
 export async function assertStudioCrdtBg3dBundleAdmission(transaction: StudioBg3dBundleTransaction, workId: string,
@@ -125,7 +125,7 @@ export async function assertStudioBg3dBundleJsonDocumentInTransaction(transactio
       const state = parseStudioBg3dSixPassBundleState(value.bg3dLtBundles);
       for (const bundle of state.bundles) for (const manifest of bundle.revisions) {
         if (manifest.pageId !== pageId) failure("6패스 manifest가 실제 원고 페이지와 다릅니다.");
-        const ref = { version: 1 as const, pageId: manifest.pageId, bundleId: manifest.bundleId,
+        const ref = { version: manifest.version, pageId: manifest.pageId, bundleId: manifest.bundleId,
           renderRevisionId: manifest.renderRevisionId, parentRevisionId: manifest.parentRevisionId,
           manifestHash: hashStudioBg3dSixPassBundleManifest(manifest) };
         manifests.set(JSON.stringify([ref.pageId, ref.bundleId, ref.renderRevisionId]), await verifiedRecord(transaction, workId, ref));

@@ -27,7 +27,7 @@ const responseSchema = z.object({ version: z.literal(1), workId: z.string(), sta
   uploadedRoles: z.array(z.enum(ROLES)).max(7) }).strict();
 const downloadSchema = z.object({ manifestHash: hash, role: z.enum(ROLES), contentHash: hash,
   signedRead: z.object({ url: z.url(), expiresAtEpochMs: z.number().int().positive() }).strict() }).strict();
-export const StudioBg3dSixPassRemoteCapabilitiesSchema = z.object({ enabled: z.boolean(), readerCapability: z.literal("bg3d-sixpass-bundle.v1"),
+export const StudioBg3dSixPassRemoteCapabilitiesSchema = z.object({ enabled: z.boolean(), readerCapability: z.enum(["bg3d-sixpass-bundle.v1", "bg3d-sixpass-bundle.v2"]),
   maximumPngBytes: z.literal(64 * 1024 * 1024), maximumPngTotalBytes: z.literal(384 * 1024 * 1024), maximumSceneBytes: z.literal(320 * 1024),
   fileMaxBytes: z.number().int().nonnegative(), remainingStorageBytes: z.number().int().nonnegative(), remainingDailyUploadBytes: z.number().int().nonnegative() }).strict();
 function path(workId: string, manifest: Pick<StudioBg3dSixPassBundleManifest, "bundleId" | "renderRevisionId">): string {
@@ -44,31 +44,50 @@ function exactResponse(value: unknown, workId: string, manifest: StudioBg3dSixPa
   } else if (response.receipt !== null || response.sealedAt !== null) throw new Error("준비 중인 6패스에 봉인 영수증이 있습니다.");
   return response;
 }
-export async function getStudioBg3dSixPassRemoteCapabilities(workId: string) {
-  const response = await api.raw.get(apiPath(`/creator/works/${encodeURIComponent(workId)}/bg3d-bundles/capabilities`));
+export async function getStudioBg3dSixPassRemoteCapabilities(workId: string, version: 1 | 2 = 1) {
+  const response = await api.raw.get(apiPath(`/creator/works/${encodeURIComponent(workId)}/bg3d-bundles/capabilities${version === 2 ? "?manifestVersion=2" : ""}`));
   return StudioBg3dSixPassRemoteCapabilitiesSchema.parse(await response.json<unknown>());
 }
 
 /** 업로드 응답을 잃으면 자동 재전송하지 않는다. 호출자가 같은 revision을 명시적으로 재개한다. */
 export async function sealStudioBg3dSixPassRemoteBundle(input: { readonly workId: string; readonly prepared: Pick<StudioBg3dSixPassPreparedBundle, "manifest">;
-  readonly authority: StudioOpfsAssetStore; readonly writeContext?: StudioScopedWriteContext }) {
+  readonly authority: StudioOpfsAssetStore; readonly writeContext?: StudioScopedWriteContext; readonly signal?: AbortSignal; readonly current?: () => boolean }) {
+  const check = () => {
+    input.signal?.throwIfAborted();
+    if (input.current && !input.current()) throw new Error("원고나 권한이 바뀌어 6패스 봉인을 중단했습니다.");
+  };
+  check();
   const manifest = parseStudioBg3dSixPassBundleManifest(input.prepared.manifest), base = path(input.workId, manifest);
-  const response = await api.raw.put(apiPath(base), { json: { manifest, ...(input.writeContext ? { writeContext: input.writeContext } : {}) }, retry: 0 });
+  const sceneBytes = await input.authority.get(manifest.scene.contentHash, { verify: true });
+  if (!sceneBytes) throw new Error("6패스 장면 원본이 없습니다.");
+  verifyStudioBg3dSixPassBundleSceneBytes(manifest, sceneBytes, "work");
+  check();
+  if (manifest.version === 2) {
+    const capabilities = await getStudioBg3dSixPassRemoteCapabilities(input.workId, 2);
+    if (!capabilities.enabled || capabilities.readerCapability !== manifest.minimumReaderCapability)
+      throw new Error("이 작품의 서버에서 아직 팀 캐릭터의 6패스 원본을 저장할 수 없습니다.");
+  }
+  check();
+  const response = await api.raw.put(apiPath(base), { json: { manifest, ...(input.writeContext ? { writeContext: input.writeContext } : {}) }, retry: 0, ...(input.signal ? { signal: input.signal } : {}) });
+  check();
   let record = exactResponse(await response.json<unknown>(), input.workId, manifest);
   if (record.state === "sealed") { rememberStudioBg3dSixPassWorkReceipt(input.workId, record.manifestHash); return parseStudioBg3dSixPassBundleReceipt(record.receipt); }
   for (const { role, artifact } of getStudioBg3dSixPassBundleArtifacts(manifest)) {
-    const bytes = await input.authority.get(artifact.contentHash, { verify: true });
+    const bytes = role === "scene" ? sceneBytes : await input.authority.get(artifact.contentHash, { verify: true });
     if (!bytes) throw new Error(`6패스 ${role}의 영속 원본이 없습니다.`);
     if (role === "scene") verifyStudioBg3dSixPassBundleSceneBytes(manifest, bytes);
     else verifyStudioBg3dSixPassArtifactBytes(artifact, bytes);
     if (record.uploadedRoles.includes(role)) continue;
     const form = new FormData(); appendStudioScopedAssetContext(form, input.writeContext);
     form.append("file", new Blob([Uint8Array.from(bytes)], { type: artifact.mimeType }), `${role}.${role === "scene" ? "json" : "png"}`);
-    const uploaded = await api.raw.put(apiPath(`${base}/artifacts/${role}`), { body: form, retry: 0 });
+    check();
+    const uploaded = await api.raw.put(apiPath(`${base}/artifacts/${role}`), { body: form, retry: 0, ...(input.signal ? { signal: input.signal } : {}) });
     record = exactResponse(await uploaded.json<unknown>(), input.workId, manifest);
     if (!record.uploadedRoles.includes(role)) throw new Error("6패스 업로드 응답에 해당 원본이 없습니다.");
   }
-  const sealed = await api.raw.put(apiPath(`${base}/seal`), { json: input.writeContext ? { writeContext: input.writeContext } : {}, retry: 0 });
+  check();
+  const sealed = await api.raw.put(apiPath(`${base}/seal`), { json: input.writeContext ? { writeContext: input.writeContext } : {}, retry: 0, ...(input.signal ? { signal: input.signal } : {}) });
+  check();
   record = exactResponse(await sealed.json<unknown>(), input.workId, manifest);
   if (record.state !== "sealed") throw new Error("6패스 원본을 모두 봉인하지 못했습니다.");
   rememberStudioBg3dSixPassWorkReceipt(input.workId, record.manifestHash);
@@ -81,7 +100,7 @@ export async function hydrateStudioBg3dSixPassRemoteBundle(input: { readonly wor
   const base = path(input.workId, input.reference), response = await api.raw.get(apiPath(base));
   const raw = responseSchema.parse(await response.json<unknown>()), manifest = parseStudioBg3dSixPassBundleManifest(raw.manifest);
   const record = exactResponse(raw, input.workId, manifest), ref = input.reference;
-  if (record.state !== "sealed" || manifest.pageId !== ref.pageId || manifest.bundleId !== ref.bundleId
+  if (record.state !== "sealed" || manifest.version !== ref.version || manifest.pageId !== ref.pageId || manifest.bundleId !== ref.bundleId
     || manifest.renderRevisionId !== ref.renderRevisionId || manifest.parentRevisionId !== ref.parentRevisionId
     || record.manifestHash !== ref.manifestHash) throw new Error("6패스 원격 봉인이 문서 참조와 다릅니다.");
   for (const { role, artifact } of getStudioBg3dSixPassBundleArtifacts(manifest)) {
@@ -148,7 +167,7 @@ export async function recoverStudioBg3dSixPassRemoteBundleState(input: {
     bundles: [...(previous?.bundles ?? []).filter(({ bundleId }) => bundleId !== input.bundleId),
       { ...remote, activeRevisionId: before?.activeRevisionId ?? null }] });
   for (const manifest of restoredManifests) {
-    await hydrateStudioBg3dSixPassRemoteBundle({ workId: input.workId, authority: input.authority, reference: { version: 1,
+    await hydrateStudioBg3dSixPassRemoteBundle({ workId: input.workId, authority: input.authority, reference: { version: manifest.version,
       pageId: manifest.pageId, bundleId: manifest.bundleId, renderRevisionId: manifest.renderRevisionId,
       parentRevisionId: manifest.parentRevisionId, manifestHash: hashStudioBg3dSixPassBundleManifest(manifest) } });
     for (const { role, artifact } of getStudioBg3dSixPassBundleArtifacts(manifest)) {

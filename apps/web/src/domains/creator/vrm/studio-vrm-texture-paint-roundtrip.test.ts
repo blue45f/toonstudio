@@ -264,6 +264,7 @@ function createCanvasHarness() {
 
 function createSharedMaterialRuntime(
   originalPixels: Uint8ClampedArray,
+  maxTargetResidentBytes?: number,
 ): Readonly<{
   runtime: StudioVrmTexturePaintRuntime;
   firstMesh: THREE.Mesh;
@@ -273,6 +274,7 @@ function createSharedMaterialRuntime(
   canvases: MemoryCanvas[];
 }> {
   const source = new THREE.Texture();
+  source.image = { width: 4, height: 4 };
   source.name = "Roundtrip source";
   const firstMaterial = new THREE.MeshBasicMaterial({ map: source });
   const secondMaterial = new THREE.MeshBasicMaterial({ map: source });
@@ -284,6 +286,7 @@ function createSharedMaterialRuntime(
   scene.add(firstMesh, secondMesh);
   const canvas = createCanvasHarness();
   const runtime = createStudioVrmTexturePaintRuntime(scene, {
+    maxTargetResidentBytes,
     createCanvas: canvas.createCanvas,
     readTextureImage: (texture) => {
       if (texture !== source) throw new Error("unexpected source");
@@ -420,6 +423,72 @@ function canonicalSceneSettings(
 }
 
 describe("VRM texture-paint persistence roundtrip", () => {
+  it("모바일에서 수신 PNG를 지연 편집해 취소한 원본 SHA와 별도 수정본을 보존한다", async () => {
+    const fixture = await createPersistedFixture(new IDBFactory());
+    const receiver = createSharedMaterialRuntime(fixture.originalPixels);
+    const { restoreStudioVrmPaintPresentation } = await import("./studio-vrm-texture-paint-presentation");
+    const presentation = await restoreStudioVrmPaintPresentation(receiver.firstMesh.parent!, fixture.settings, {
+      dependencies: fixture.deps, maxAggregateResidentBytes: 2048,
+    });
+    receiver.runtime.attachPaintPresentation(presentation, fixture.settings);
+    const receivedMap = receiver.firstMaterial.map;
+    expect(receivedMap).toBeInstanceOf(THREE.DataTexture);
+    expect(receiver.runtime.getSnapshot().residentBytes).toBe(presentation.residentBytes);
+    expect(receiver.canvases).toHaveLength(0);
+    const hit = { object: receiver.firstMesh, uv: new THREE.Vector2(0.5, 0.5) };
+    unwrap(await receiver.runtime.sampleBaseColor({ hit }));
+    expect(receiver.firstMaterial.map).toBe(receivedMap);
+    expect(receiver.canvases).toHaveLength(0);
+    const encodePng = vi.fn(fixture.deps.encodePng);
+    const persist = () => persistStudioVrmTexturePaintRuntime(receiver.runtime, { dependencies: { ...fixture.deps, encodePng } });
+    expect(await persist()).toEqual(fixture.settings);
+    const copy = vi.fn(fixture.deps.saveArtifact);
+    await persistStudioVrmTexturePaintRuntime(receiver.runtime, {
+      dependencies: { ...fixture.deps, saveArtifact: copy, encodePng }, includeRestoredArtifacts: true,
+    });
+    expect(copy).toHaveBeenCalledOnce();
+    expect(copy.mock.calls[0]![0].metadata.contentHash).toBe(fixture.settings.textures[0]!.hash);
+    unwrap(await receiver.runtime.beginStroke({ pointerId: 1, hit, style: {
+      kind: "ink", color: "#11ee44", sizeTexels: 3, opacity: 1, blend: "normal",
+      tuning: { flow: 1, hardness: 1, minSize: 1 },
+    } }));
+    unwrap(receiver.runtime.commitStroke(1));
+    expect(receiver.canvases).toHaveLength(1);
+    expect(receiver.secondMaterial.map).toBe(receiver.firstMaterial.map);
+    unwrap(receiver.runtime.undo());
+    expect(await persist()).toEqual(fixture.settings);
+    expect(encodePng).not.toHaveBeenCalled();
+    unwrap(receiver.runtime.redo());
+    const edited = await persist();
+    expect(edited.textures).toHaveLength(2);
+    expect(edited.textures[0]!.hash).not.toBe(fixture.settings.textures[0]!.hash);
+    expect(encodePng).toHaveBeenCalledOnce();
+    unwrap(receiver.runtime.resetActiveTarget());
+    expect((await persist()).textures).toEqual([]);
+    receiver.runtime.dispose();
+    expect(receiver.firstMaterial.map).toBe(receiver.source);
+    fixture.source.runtime.dispose();
+  });
+
+  it("브러시 승격이 예산을 넘으면 원래 표시와 PNG 원장을 되살린다", async () => {
+    const fixture = await createPersistedFixture(new IDBFactory());
+    const receiver = createSharedMaterialRuntime(fixture.originalPixels, 16);
+    const { restoreStudioVrmPaintPresentation } = await import("./studio-vrm-texture-paint-presentation");
+    const presentation = await restoreStudioVrmPaintPresentation(receiver.firstMesh.parent!, fixture.settings, {
+      dependencies: fixture.deps, maxAggregateResidentBytes: 2048,
+    });
+    receiver.runtime.attachPaintPresentation(presentation, fixture.settings);
+    const map = receiver.firstMaterial.map;
+    const result = await receiver.runtime.beginStroke({ pointerId: 1, hit: { object: receiver.firstMesh, uv: new THREE.Vector2(0.5, 0.5) },
+      style: { kind: "ink", color: "#ff9933", sizeTexels: 2, opacity: 1, blend: "normal", tuning: {flow: 1, hardness: 1, minSize: 1} } });
+    expect(result).toMatchObject({ok: false, error: {code: "target-rgba-budget"}});
+    expect(receiver.firstMaterial.map).toBe(map);
+    expect(receiver.canvases).toHaveLength(0);
+    expect(await persistStudioVrmTexturePaintRuntime(receiver.runtime, {dependencies: fixture.deps})).toEqual(fixture.settings);
+    receiver.runtime.dispose();
+    fixture.source.runtime.dispose();
+  });
+
   it("roundtrips real PNG bytes through IndexedDB and scene metadata into a fresh runtime", async () => {
     const factory = new IDBFactory();
     const fixture = await createPersistedFixture(factory);

@@ -102,8 +102,27 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
         throw error;
       }
     }
-    if (pinnedVrm && (!canStoreLocalVrmCut?.() || workId || scopedWriteRuntime?.authority || authorizedWorkAssetScopeId || sixPass)) {
-      setError("연결 VRM 컷은 로컬 원고의 컬러 레이어에 저장할 수 있습니다. 팀 원고와 6패스 묶음에는 모델·페인트 원본을 아직 함께 봉인할 수 없습니다.");
+    const originalTargetId = targetElementId;
+    const cutTicket = bg3dMutationTicketRef.current;
+    const cutAccessCurrent = () => Boolean(cutTicket && bg3dMutationTicketRef.current === cutTicket && canApplyStudioMutation(cutTicket)
+      && currentPageIdRef.current === activePage.id && host.activeElementsRef?.current === elements && host.readCurrentPage?.() === activePage
+      && !masterEditMode && !collaborationDocumentLocked && !pageEditLocked
+      && (workId ? studioAuthUserId && workId === authorizedWorkAssetScopeId && studioCrdtOperationSyncReady
+        : canStoreLocalVrmCut?.() && !scopedWriteRuntime?.authority && !authorizedWorkAssetScopeId));
+    if (pinnedVrm && sixPass) {
+      const previous = targetElementId ? elementById.get(targetElementId) : undefined;
+      if (!cutAccessCurrent() || (targetElementId && (previous?.type !== "image" || isEffectivelyLocked(previous, groups)))) {
+        setError("고정 컷을 저장할 원고의 편집 권한과 레이어 잠금을 확인하세요."); return false;
+      }
+      try {
+        const { assertStudioFrozenSixPassResult } = await import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-vrm-source");
+        assertStudioFrozenSixPassResult(result);
+      } catch (cause) { setError(cause instanceof Error ? cause.message : "고정 배우의 6패스를 확인하지 못했습니다."); return false; }
+      // 컬러 원본에서 분리 패스를 만들 때에는 원래 레이어와 불변 서버 앵커를 보존한다.
+      if (previous && !previous.bg3dLtBundleReference) targetElementId = undefined;
+    }
+    if (pinnedVrm && !sixPass && (!canStoreLocalVrmCut?.() || workId || scopedWriteRuntime?.authority || authorizedWorkAssetScopeId)) {
+      setError("고정 컷을 저장할 수 있는 개인 원고나 편집 권한이 있는 작품을 열어 주세요.");
       return false;
     }
     if (sixPass && (masterEditMode || result.bg3dScene.attachments.length || result.bg3dScene.nodes.some((node) => node.kind !== "primitive"))) {
@@ -179,7 +198,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       return true;
     }
 
-    if (pinnedVrm) {
+    if (pinnedVrm && !sixPass) {
       if (targetElementId && elementById.get(targetElementId)?.bg3dLtBundleId) {
         setError("고정 VRM을 기존 분리 레이어 묶음에 덮어쓸 수 없습니다. 원고에서 새 배경으로 열어 컬러 레이어로 보관하세요.");
         return false;
@@ -294,6 +313,15 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       sourceHeight: renderResult.height,
     });
     const previousManifest = previousBundle?.revisions.find((revision: { renderRevisionId: string }) => revision.renderRevisionId === previousBundle.activeRevisionId) ?? restoredManifests.at(-1);
+    const cutRevisionKey = pinnedVrm && sixPass && workId
+      ? await (await import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-vrm-source")).studioFrozenSixPassRevisionKey(result,
+          { workId, pageId: activePage.id, targetId: originalTargetId, parent: previousManifest?.renderRevisionId })
+      : undefined;
+    if (cutRevisionKey && !cutAccessCurrent()) { setError("원고나 편집 권한이 바뀌어 저장을 중단했습니다."); return false; }
+    if (cutRevisionKey && !targetElementId) {
+      const published = nativeState?.bundles.find(bundle => bundle.bundleId === cutRevisionKey && bundle.revisions.some(rev => rev.renderRevisionId === cutRevisionKey));
+      if (published) { setSelectedId(published.revisions[0].anchorElementId); setStatusNotice("이 고정 컷의 6패스를 이미 원고에 저장했습니다."); return true; }
+    }
     const plan = planStudioBg3dLtLayers<El, StudioBg3dSceneDocument>({
       elements,
       groups,
@@ -301,8 +329,8 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       targetElementId,
       pageLocked: pageEditLocked,
       allocations: {
-        bundleId: uid(),
-        groupId: uid(),
+        bundleId: cutRevisionKey ?? uid(),
+        groupId: cutRevisionKey ? `${cutRevisionKey}-group` : uid(),
         elementIds: {
           color: uid(),
           tone: uid(),
@@ -310,6 +338,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
           depth: uid(),
           "texture-line": uid(),
           "main-line": uid(),
+          ...(cutRevisionKey ? Object.fromEntries(renderResult.layers.map(layer => [layer.role, `${cutRevisionKey}-${layer.role}`])) : {}),
           ...(previousManifest ? Object.fromEntries(previousManifest.layers.map((layer: { role: string; elementId: string }) => [layer.role, layer.elementId])) : {}),
         },
       },
@@ -476,18 +505,24 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
             import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-product-authority"), import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-transaction"),
           ]);
           const bundleAuthority = await acquireStudioBg3dSixPassBundleProductAuthority();
+          const scoped = scopedWriteRuntime?.authority;
+          const writeContext = scoped && (!scoped.snapshot?.fullEdit || scoped.mappedFullEdit) ? scoped.purposeContext() : undefined;
+          const source = pinnedVrm && workId ? await (await import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-vrm-source")).sealStudioSixPassVrmSource({
+            workId, pageId: activePage.id, result, current: cutAccessCurrent, writeContext,
+            previous: previousManifest?.version === 2 ? previousManifest.workVrmCut : originalTargetId?.startsWith("vrmcut-") ? originalTargetId : undefined,
+          }) : undefined;
           const bundle = await transaction.prepareStudioBg3dSixPassBundle({ authority: bundleAuthority, result: renderResult,
             scene: linkedScene, elements: durableElements, pageId: activePage.id, bundleId: plan.bundleId,
-            groupId: plan.groupId, anchorElementId: plan.anchorElementId, renderRevisionId: uid(), linePassRevision: prepared.descriptor.revision, previousState: nativeState });
+            groupId: plan.groupId, anchorElementId: plan.anchorElementId, renderRevisionId: cutRevisionKey ?? uid(), linePassRevision: prepared.descriptor.revision, previousState: nativeState, ...(source ? { workVrmCut: source } : {}) });
           prepared = transaction.alignStudioBg3dSixPassPreparedLinePass(prepared, bundle.manifest, linkedScene);
           sealBundle = async (nextPage) => {
             await transaction.preflightStudioBg3dSixPassPageCommit({ document: studioCrdtDocumentRef?.current ?? null,
               pages: [activePage], nextPage });
             if (authorizedWorkAssetScopeId) {
               const api = await import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-api");
-              const scoped = scopedWriteRuntime?.authority;
-              const writeContext = scoped && (!scoped.snapshot?.fullEdit || scoped.mappedFullEdit) ? scoped.purposeContext() : undefined;
-              await api.sealStudioBg3dSixPassRemoteBundle({ workId: authorizedWorkAssetScopeId, prepared: bundle, authority: bundleAuthority, writeContext });
+              if (pinnedVrm && !cutAccessCurrent()) throw new Error("원고나 편집 권한이 바뀌어 저장을 중단했습니다.");
+              await api.sealStudioBg3dSixPassRemoteBundle({ workId: authorizedWorkAssetScopeId, prepared: bundle, authority: bundleAuthority, writeContext,
+                ...(pinnedVrm ? { signal: result.cutWorkSignal, current: cutAccessCurrent } : {}) });
             }
           };
           durableElements = bundle.elements; bundleState = bundle.state;
@@ -515,7 +550,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
           apply: () => {
             const mutationTicket = bg3dMutationTicketRef.current;
             if (
-              !mutationTicket
+              !mutationTicket || (pinnedVrm && !cutAccessCurrent())
               || !canApplyStudioMutation(mutationTicket)
               || currentPageIdRef.current !== activePage.id
             ) return false;
@@ -533,6 +568,11 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
         if (!accepted) return false;
         nextElements = durableElements;
       } catch (cause) {
+        if (pinnedVrm && sixPass) {
+          const error = cause instanceof Error ? cause : new Error("고정 컷의 6패스 원본을 저장하지 못했습니다.");
+          setError(error.message);
+          throw error;
+        }
         setError(
           cause instanceof Error
             ? `연결형 3D line pass를 OPFS/CAS에 저장하지 못했습니다: ${cause.message}`

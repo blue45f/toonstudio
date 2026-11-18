@@ -1,4 +1,4 @@
-import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
+import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { hasStudioPreservedDrawReaderCrdt as hasPreservedReader, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY, STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import * as Y from "yjs";
 import { studioBg3dSixPassWorkReceiptsCover } from "../studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-work-receipts";
@@ -34,12 +34,16 @@ export function studioCrdtBg3dBundleArtifactScope(document: StudioCrdtDocument, 
   return hashes.length && studioBg3dSixPassWorkReceiptsCover(workId, hashes) ? "work" : "origin";
 }
 export function studioCrdtBg3dReaderMetadata(document: StudioCrdtDocument, scope?: () => "origin" | "work"): StudioCrdtReaderMetadata {
-  const bg3d = registry(document).size > 0;
-  const required: string[] = bg3d ? [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY] : [];
+  const revisions = registry(document);
   const doc = asStudioCrdtDocumentHost(document).doc;
-  if (hasStudioPreservedDrawReaderCrdt(doc) || pendingReaderRequirements(doc).includes(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY)) required.push(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY);
-  return required.length ? { readerCapabilities: STUDIO_CRDT_READER_CAPABILITIES,
-    requiredReaderCapabilities: required, ...(bg3d ? { artifactScope: scope?.() ?? "origin" } : {}) } : {};
+  const pending = pendingReaderRequirements(doc);
+  const bg3d = revisions.size > 0 || pending.includes(STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY);
+  const workCut = pending.includes(STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY) || [...revisions.values()].some(raw => JSON.parse(raw).version === 2);
+  const required: string[] = bg3d || workCut ? [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY] : [];
+  if (workCut) required.push(STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY);
+  if (hasStudioPreservedDrawReaderCrdt(doc) || pending.includes(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY)) required.push(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY);
+  return required.length ? { readerCapabilities: STUDIO_CRDT_READER_CAPABILITIES, requiredReaderCapabilities: required,
+    ...(bg3d || workCut ? { artifactScope: workCut ? "work" : scope?.() ?? "origin" } : {}) } : {};
 }
 export function studioCrdtPeerSyncResponse(input: { document: StudioCrdtDocument; request: StudioCrdtSyncRequest;
   workId: string; transferId: string; sequence: number; scope?: () => "origin" | "work" }): StudioCrdtSyncResponse | null {
@@ -66,14 +70,14 @@ export function applyStudioCrdtBg3dReaderUpdate(document: StudioCrdtDocument, by
   const requiresPreserved = meta.requiredReaderCapabilities?.includes(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY) === true;
   const assertPendingReaders = () => {
     const required = pendingReaderRequirements(host.doc);
-    if (!authoritative && !supportsStudioCrdtReaders(meta, required)) throw new Error("획의 보존된 편집 정보를 지원하는 reader 동기화가 필요합니다.");
+    if (!authoritative && !supportsStudioCrdtReaders(meta, required)) throw new Error("원고에 보존된 편집 정보를 지원하는 reader 동기화가 필요합니다.");
   };
   assertPendingReaders();
   const applyWithReaderRequirements = () => {
     if (!application.isActive()) return;
     assertPendingReaders();
     const retained = pendingReaderRequirements(host.doc), previous = receivedPendingReaders.get(host.doc);
-    const required = [...new Set([...retained, ...(requiresPreserved ? [STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY] : [])])];
+    const required = [...new Set([...retained, ...(meta.requiredReaderCapabilities ?? [])])];
     if (!required.length) { application.apply(); return; }
     const pendingStructs = host.doc.store.pendingStructs?.update, pendingDs = host.doc.store.pendingDs;
     const incoming = { required, applying: true };

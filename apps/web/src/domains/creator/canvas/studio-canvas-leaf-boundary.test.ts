@@ -70,7 +70,9 @@ describe("Studio canvas leaf boundaries", () => {
 
     expect(page.source).toContain("const [contextMenu, setContextMenu] = useState");
     expect(page.source).toContain('globalThis.addEventListener("click", handleCloseMenu)');
-    expect(page.source).toContain("parseStudio3dTool");
+    const commands = moduleEdges("../studio-cuttoon-editor/StudioCuttoonEditorContextMenu.tsx");
+    expect(commands.valueImports).toContain("../studio-background-3d-metadata");
+    expect(commands.source).toContain("parseStudio3dTool(contextMenuEl.src)");
     expect(viewport.source).toContain("onContextMenu={(e) =>");
     expect(menu.valueImports).not.toContain("../studio-background-3d-metadata");
     expect(menu.valueImports).not.toContain("../studio-background-3d-loader");

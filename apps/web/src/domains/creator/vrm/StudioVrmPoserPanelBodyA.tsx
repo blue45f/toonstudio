@@ -244,7 +244,7 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
   );
   return (
               <>
-              {activePanelTab === "character" ? (
+              {!h.cutPaintSession && activePanelTab === "character" ? (
                 <div className="sticky -top-4 z-20 -mx-4 -mt-4 border-b border-line bg-panel/95 px-4 py-2 backdrop-blur sm:-mx-5 sm:px-5">
                   <div role="tablist" aria-label="캐릭터 빌더 단계" className="grid grid-cols-5 gap-1">
                     {CHARACTER_PANEL_SECTIONS.map((section) => {
@@ -371,8 +371,8 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                 </div>
               </section>
 
-              {!hideOnCharacterSection("surface") ? <StudioVrmTextureExportButton runtime={texturePaintRuntime}
-                disabled={texturePaintDisabledReason.length > 0 || texturePaintStrokeActive || (texturePaintSnapshot?.targets.length ?? 0) === 0} /> : null}
+              {!h.cutPaintSession && !hideOnCharacterSection("surface") ? <StudioVrmTextureExportButton runtime={texturePaintRuntime}
+                disabled={texturePaintDisabledReason.length > 0 || texturePaintStrokeActive || !texturePaintRuntime?.hasExportablePaintSurface()} /> : null}
               {!hideOnCharacterSection("surface") ? <StudioVrmPaintMaterialControls runtime={texturePaintRuntime}
                 snapshot={texturePaintSnapshot} disabled={texturePaintDisabledReason.length > 0 || texturePaintStrokeActive} /> : null}
               <StudioVrmTexturePaintPanel

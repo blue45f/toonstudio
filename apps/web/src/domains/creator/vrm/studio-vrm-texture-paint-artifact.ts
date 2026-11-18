@@ -958,14 +958,11 @@ function assertReadableImage(
   }
 }
 
-function defaultCanvas(width: number, height: number): HTMLCanvasElement {
+function defaultCanvas(): HTMLCanvasElement {
   if (typeof document !== "object" || typeof document.createElement !== "function") {
     fail("DECODE_UNAVAILABLE", "decodeEnvironmentUnavailable");
   }
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  return canvas;
+  return document.createElement("canvas");
 }
 
 async function decodeWithBrowserCanvas(
@@ -993,6 +990,7 @@ async function decodeWithBrowserCanvas(
     if (isAbortError(cause)) throw abortError();
     fail("DECODE_FAILED", "decodeFailed", undefined, cause);
   }
+  let readCanvas: HTMLCanvasElement | undefined;
   try {
     throwIfAborted(signal);
     if (
@@ -1008,6 +1006,7 @@ async function decodeWithBrowserCanvas(
     if (!(canvas instanceof HTMLCanvasElement)) {
       fail("DECODE_UNAVAILABLE", "decodeCanvasFactoryInvalid");
     }
+    readCanvas = canvas;
     canvas.width = artifact.metadata.width;
     canvas.height = artifact.metadata.height;
     const context = canvas.getContext("2d", {
@@ -1035,6 +1034,7 @@ async function decodeWithBrowserCanvas(
     fail("DECODE_FAILED", "decodedPixelsReadFailed", undefined, cause);
   } finally {
     bitmap.close();
+    if (readCanvas) readCanvas.width = readCanvas.height = 0;
   }
 }
 

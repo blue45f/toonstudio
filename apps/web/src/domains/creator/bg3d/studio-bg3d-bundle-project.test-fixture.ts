@@ -30,10 +30,10 @@ export function createBg3dBundleTestAuthority() {
   const fs = createStudioOpfsMemoryFileSystem();
   return createStudioOpfsAssetStore({ fs: { ...fs, kind: "opfs" } });
 }
-export async function createBg3dBundleProjectFixture(retainPrevious = false) {
+export async function createBg3dBundleProjectFixture(retainPrevious = false, pinnedVersionedCut?: import("./studio-bg3d-scene-document").StudioBg3dSceneDocument["pinnedVersionedCut"]) {
   const authority = createBg3dBundleTestAuthority();
   const previous = createDefaultStudioBg3dSceneDocument();
-  const scene = ensureStudioLinked3dRenderShot(normalizeStudioBg3dSceneDocument({ ...previous,
+  const scene = ensureStudioLinked3dRenderShot(normalizeStudioBg3dSceneDocument({ ...previous, ...(pinnedVersionedCut ? { pinnedVersionedCut } : {}),
     output: { ...previous.output, sixPassLt: DEFAULT_STUDIO_BG3D_SIX_PASS_LT_SETTINGS } }), { allowCreate: true });
   if (!scene?.activeShotId) throw new Error("fixture shot이 없습니다.");
   const sceneText = serializeStudioBg3dSceneDocument(scene);

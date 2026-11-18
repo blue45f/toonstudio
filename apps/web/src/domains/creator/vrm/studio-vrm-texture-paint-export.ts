@@ -13,6 +13,7 @@ export async function exportStudioVrmTexturePaintArchive(
   const entries: StudioPackageArchiveEntry[] = [];
   const settings = await persistStudioVrmTexturePaintRuntime(runtime, {
     signal: options.signal,
+    includeRestoredArtifacts: true,
     dependencies: {
       ...(options.encodePng ? { encodePng: options.encodePng } : {}),
       // An export owns its blobs until ZIP construction completes. It does not acquire a

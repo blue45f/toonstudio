@@ -2,6 +2,7 @@ import { decodeStudioBg3dSixPassPng } from "./studio-bg3d-six-pass-png-decode";
 import {
   STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_BUNDLE_CONTRACT,
   STUDIO_BG3D_SIX_PASS_BUNDLE_STATE_CONTRACT, STUDIO_BG3D_SIX_PASS_PNG_MAX_BYTES,
+  STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CONTRACT, type StudioBg3dSixPassWorkVrmCut,
   STUDIO_BG3D_SIX_PASS_ROLES, assertStudioBg3dSixPassBundleTransition,
   createStudioBg3dSixPassBundleReceipt, verifyStudioBg3dSixPassBundleReceipt, hashStudioBg3dSixPassBundleManifest,
   hashStudioBg3dSixPassCanonicalJson, parseStudioBg3dSixPassBundleManifest,
@@ -72,6 +73,7 @@ export async function prepareStudioBg3dSixPassBundle(input: {
   readonly renderRevisionId: string;
   readonly linePassRevision?: number;
   readonly previousState?: StudioBg3dSixPassBundleState;
+  readonly workVrmCut?: StudioBg3dSixPassWorkVrmCut;
 }): Promise<StudioBg3dSixPassPreparedBundle> {
   if (input.authority.kind !== "opfs") throw new Error("6패스 묶음에는 영속 OPFS가 필요합니다.");
   const sceneText = serializeStudioBg3dSceneDocument(input.scene);
@@ -112,8 +114,10 @@ export async function prepareStudioBg3dSixPassBundle(input: {
   const unchanged = parent?.scene.contentHash === scene.contentHash && previousMain?.artifact.contentHash === main?.artifact.contentHash;
   const linePassRevision = parent ? parent.linePassRevision + (unchanged ? 0 : 1) : input.linePassRevision ?? 1;
   const manifest = parseStudioBg3dSixPassBundleManifest({
-    contract: STUDIO_BG3D_SIX_PASS_BUNDLE_CONTRACT, version: 1,
-    minimumReaderCapability: STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, minimumProjectVersion: 5,
+    ...(input.workVrmCut ? { contract: STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CONTRACT, version: 2,
+      minimumReaderCapability: STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY, workVrmCut: input.workVrmCut }
+      : { contract: STUDIO_BG3D_SIX_PASS_BUNDLE_CONTRACT, version: 1, minimumReaderCapability: STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY }),
+    minimumProjectVersion: 5,
     bundleId: input.bundleId, renderRevisionId: input.renderRevisionId, parentRevisionId: parent?.renderRevisionId ?? null,
     linePassRevision,
     pageId: input.pageId, groupId: input.groupId, anchorElementId: input.anchorElementId,

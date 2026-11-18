@@ -250,7 +250,9 @@ export function StudioBg3dSharedCharacterPlacementPanel({
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-xs font-bold text-fg">{selected.label}</p>
-            <p className="mt-0.5 text-[0.64rem] text-fg-3">{statusCopy(runtimeStatus)}</p>
+            <p className="mt-0.5 text-[0.64rem] text-fg-3">{runtimeStatus === "unavailable" && selected.scene.surfacePaint.textures.length
+              ? t("studio.bg3dPanelStatus.sharedCharacterPlacement.paintUnavailable", "원본 모델과 채색 PNG를 확인해 주세요. 저장한 채널을 지원하는 재질이어야 컷을 다시 열 수 있어요.")
+              : statusCopy(runtimeStatus)}</p>
           </div>
           <span className={cn(
             "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[0.62rem] font-semibold",

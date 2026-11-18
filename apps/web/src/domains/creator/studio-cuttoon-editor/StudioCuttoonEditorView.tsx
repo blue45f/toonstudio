@@ -18,7 +18,6 @@ import { StudioWorkspaceNavigator } from "../StudioWorkspaceNavigator";
 import { Container } from "@/shared/components/container";
 import { cn } from "@/shared/lib/utils";
 import { StudioCuttoonEditorChrome } from "./StudioCuttoonEditorChrome";
-import { StudioCuttoonEditorContextMenu } from "./StudioCuttoonEditorContextMenu";
 import { StudioCuttoonEditorDialogs } from "./StudioCuttoonEditorDialogs";
 import { StudioCuttoonEditorHosts } from "./StudioCuttoonEditorHosts";
 import { StudioCuttoonEditorWorkspace } from "./StudioCuttoonEditorWorkspace";
@@ -33,6 +32,7 @@ import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSe
 import "../studio-shell/studio-visual-identity.css";
 import "../studio-shell/studio-visual-identity-v2.css";
 
+const StudioCuttoonEditorContextMenu = lazy(() => import("./StudioCuttoonEditorContextMenu").then(module => ({ default: module.StudioCuttoonEditorContextMenu })));
 const StudioDraftSaveCenter = lazy(() => import("../StudioDraftSaveCenter").then((module) => ({ default: module.StudioDraftSaveCenter })));
 const StudioSaveStatusChromeMount = lazy(() => import("../StudioSaveStatusChromeMount").then((module) => ({ default: module.StudioSaveStatusChromeMount })));
 const StudioLegacyPigmentStrokeMigration = lazy(() => import("../brush/StudioLegacyPigmentStrokeMigration"));
@@ -249,7 +249,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
         </Suspense>
         {s.scopedWriteRuntime ? <StudioScopedWriteTargetPicker runtime={s.scopedWriteRuntime} currentPageId={s.currentPageId} onPage={s.setCurrentPageId} onLayer={s.onScopedWriteLayer} onDraw={() => { s.activatePrimaryCanvasTool("draw", "pen"); }} /> : null}
         <StudioCuttoonEditorWorkspace {...s} />
-        <StudioCuttoonEditorContextMenu {...s} />
+        {s.contextMenu.visible && <Suspense fallback={null}><StudioCuttoonEditorContextMenu {...s} /></Suspense>}
       </Container>
     {canvasOnlyMode ? (
       <div className="pointer-events-none fixed inset-x-0 top-[max(0.5rem,env(safe-area-inset-top))] z-[45] flex justify-center gap-2 px-3">

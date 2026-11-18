@@ -106,7 +106,7 @@ describe("Studio VRM texture-paint production integration boundary", () => {
       "grid-rows-[minmax(0,60dvh)_minmax(0,1fr)]",
     );
     expect(poserSource).toContain(
-      'id="vrm-panel-body" role="tabpanel"',
+      'id="vrm-panel-body" role={h.cutPaintSession ? "region" : "tabpanel"}',
     );
     expect(poserSource).toContain("min-h-0 flex-1 space-y-5 overflow-y-auto");
   });

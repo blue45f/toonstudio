@@ -32,7 +32,8 @@ async function loadRevision(ref: StudioCrdtBg3dBundleRevisionReference, workId: 
   const authority = await acquireStudioBg3dSixPassBundleProductAuthority();
   const pending = pendingByAuthority.get(authority) ?? new Map<string, Promise<LoadedRevision>>();
   pendingByAuthority.set(authority, pending);
-  let operation = pending.get(cacheKey);
+  // 작품을 다시 열 때마다 현재 읽기 권한을 확인한다. 개인 원본만 재사용한다.
+  let operation = workId ? undefined : pending.get(cacheKey);
   if (!operation) {
     operation = (async () => {
       let bytes = await authority.get(ref.manifestHash, { verify: true });
@@ -43,9 +44,7 @@ async function loadRevision(ref: StudioCrdtBg3dBundleRevisionReference, workId: 
       }
       if (!bytes || bytes.byteLength > 8192) throw new Error("봉인된 6패스 manifest 본문이 없습니다.");
       const manifest = parseStudioBg3dSixPassBundleManifest(JSON.parse(decoder.decode(bytes)));
-      if (hashStudioBg3dSixPassBundleManifest(manifest) !== ref.manifestHash || manifest.pageId !== ref.pageId
-        || manifest.bundleId !== ref.bundleId || manifest.renderRevisionId !== ref.renderRevisionId
-        || manifest.parentRevisionId !== ref.parentRevisionId) throw new Error("6패스 manifest와 CRDT 영수증이 다릅니다.");
+      if (hashStudioBg3dSixPassBundleManifest(manifest) !== ref.manifestHash) throw new Error("6패스 원본 해시가 다릅니다.");
       const retained = [ref.manifestHash];
       let scene: StudioBg3dSceneDocument | null = null;
       for (const { role, artifact } of getStudioBg3dSixPassBundleArtifacts(manifest)) {
@@ -71,9 +70,14 @@ async function loadRevision(ref: StudioCrdtBg3dBundleRevisionReference, workId: 
       await runStudioBg3dSixPassBundleMutationExclusive(owner, () => authority.setOwnerRefs(owner, retained));
       return { manifest, scene };
     })().catch((error: unknown) => { pending.delete(cacheKey); throw error; });
-    pending.set(cacheKey, operation);
+    if (!workId) pending.set(cacheKey, operation);
   }
-  return operation;
+  const result = await operation;
+  const { manifest } = result;
+  if (manifest.version !== ref.version || hashStudioBg3dSixPassBundleManifest(manifest) !== ref.manifestHash || manifest.pageId !== ref.pageId
+    || manifest.bundleId !== ref.bundleId || manifest.renderRevisionId !== ref.renderRevisionId
+    || manifest.parentRevisionId !== ref.parentRevisionId) throw new Error("6패스 manifest와 CRDT 영수증이 다릅니다.");
+  return result;
 }
 function image(manifest: StudioBg3dSixPassBundleManifest, scene: StudioBg3dSceneDocument, id: string): BundleImage {
   const layer = manifest.layers.find((entry) => entry.elementId === id);

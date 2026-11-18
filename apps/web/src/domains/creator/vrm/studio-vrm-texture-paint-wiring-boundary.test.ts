@@ -109,7 +109,7 @@ describe("Studio VRM texture-paint wiring boundary", () => {
   });
 
   it("reloads changed scene models, keeps thumbnails behind restoration, and exposes retry", () => {
-    expect(poserSource).toContain("}, [initialSceneModelIdentity, open]);");
+    expect(poserSource).toContain("}, [h.cutPaintSession, initialSceneModelIdentity, open]);");
     expect(poserSource).toContain("setInstalledModelId(null);");
     expect(poserSource).toContain("setInstalledModelId(nextModelId);");
 
@@ -275,7 +275,7 @@ describe("Studio VRM texture-paint wiring boundary", () => {
     expect(identityHelper).toContain("JSON.stringify(scene.surfacePaint)");
     expect(identityHelper).not.toContain("scene.model");
     expect(poserSource).toContain(
-      "}, [texturePaintDevicePlan, texturePaintSceneIdentity, vrm]);",
+      "}, [h.cutPaintSession, texturePaintDevicePlan, texturePaintSceneIdentity, vrm]);",
     );
 
     const restoreEffect = sourceBetween(

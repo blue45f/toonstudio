@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Header, Headers, Inject, Param, Put, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, ForbiddenException, Get, Header, Headers, Inject, Param, Query, Put, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
@@ -74,5 +74,5 @@ export class StudioBg3dBundleCapabilitiesController {
   @Get("/capabilities")
   @Header("Cache-Control", "private, no-store")
   capabilities(@Param(new ZodValidationPipe(StudioBg3dBundleWorkParamsDto)) params: StudioBg3dBundleWorkParamsDto,
-    @Headers("x-user-id") userId?: string) { return this.service.capabilities(actor(userId), params.id); }
+    @Headers("x-user-id") userId?: string, @Query("manifestVersion") version?: string) { return this.service.capabilities(actor(userId), params.id, version === "2" ? 2 : 1); }
 }

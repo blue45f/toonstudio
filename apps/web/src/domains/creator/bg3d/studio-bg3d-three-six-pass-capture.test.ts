@@ -66,3 +66,61 @@ describe("6패스 LT 분리 캡처", () => {
     mesh.geometry.dispose(); material.dispose();
   });
 });
+
+it("실제 렌더 그룹만 배우로 계수하고 보이지 않는 배우·위조 표식에 픽셀을 부여하지 않는다", async () => {
+  const { registerStudioSixPassActor, assertStudioSixPassActorCoverage } = await import("./studio-bg3d-six-pass-cast");
+  const scene = new THREE.Scene();
+  const actors = ["a", "b"].map(elementId => ({ elementId, sourceHash: `sha256:${"a".repeat(64)}` as const, placementHash: `sha256:${"b".repeat(64)}` as const }));
+  const mesh = () => new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+  const meshes = [mesh(), mesh(), mesh()];
+  const [a, b, backdrop] = meshes;
+  scene.add(a, b, backdrop);
+  registerStudioSixPassActor(a, actors[0]); registerStudioSixPassActor(b, actors[1]);
+  backdrop.userData.studioSixPassActor = actors[0];
+  const renderer = { toneMapping: THREE.NoToneMapping, toneMappingExposure: 1, outputColorSpace: THREE.SRGBColorSpace,
+    shadowMap: { autoUpdate: false, needsUpdate: false } } as THREE.WebGLRenderer;
+  const original = a.material;
+  let pass = 0;
+  const planes = await captureStudioBg3dThreeSixPassPlanes({ renderer, scene, camera: new THREE.PerspectiveCamera(),
+    request: { width: 2, height: 1, includeDepth: true, includeSixPass: true, measureFrozenCast: true, background: { color: "#000000", alpha: 0 } },
+    captureColor: async () => {
+      if (++pass === 3) {
+        expect([a, b, backdrop].map(object => object.material.color.getHex())).toEqual([0xff0000, 0x00ff00, 0]);
+        return Uint8ClampedArray.from([255, 0, 0, 255, 0, 0, 0, 255]);
+      }
+      return new Uint8ClampedArray(8);
+    } });
+  expect(a.material).toBe(original);
+  expect(planes.frozenCastPixels?.map(entry => entry.pixels)).toEqual([1, 0]);
+  expect(() => assertStudioSixPassActorCoverage(actors, planes.frozenCastPixels, 2)).toThrow(/화면/);
+  meshes.forEach(object => { object.geometry.dispose(); object.material.dispose(); });
+});
+
+it("고정 배우가 칠한 투명도 텍스처와 UV를 깊이·노멀·그림자·ID에 보존한다", async () => {
+  const { studioSixPassOpacityGeometry, decodeStudioSixPassCoverageShadow } = await import("./studio-bg3d-six-pass-actor-material");
+  const { registerStudioSixPassActor } = await import("./studio-bg3d-six-pass-cast");
+  const map = new THREE.Texture(), alphaMap = new THREE.Texture();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({map, alphaMap, transparent: true, depthWrite: false}));
+  expect(studioSixPassOpacityGeometry(body, body.material, "depth")).toBeNull();
+  registerStudioSixPassActor(body, { elementId: "body", sourceHash: "sha256:a", placementHash: "sha256:b" });
+  for (const kind of ["depth", "normal"] as const) {
+    const material = studioSixPassOpacityGeometry(body, body.material, kind);
+    expect(material).toMatchObject({ map, alphaMap, alphaTest: 1 / 255 });
+    material?.dispose();
+  }
+  const scene = new THREE.Scene(); scene.add(body);
+  const renderer = { outputColorSpace: THREE.SRGBColorSpace, shadowMap: { autoUpdate: false, needsUpdate: false } } as THREE.WebGLRenderer;
+  let call = 0;
+  await captureStudioBg3dThreeSixPassPlanes({ scene, renderer, camera: new THREE.PerspectiveCamera(),
+    request: { width: 1, height: 1, background: {color: "#000000", alpha: 0}, includeDepth: true, includeSixPass: true, measureFrozenCast: true },
+    captureColor: async () => {
+      expect(body.material).toMatchObject({map, alphaMap});
+      if (++call === 3) expect(body.material).toMatchObject({alphaTest: 1 / 255, transparent: false, depthWrite: true});
+      return new Uint8ClampedArray([255, 0, 0, 255]);
+    },
+  });
+  const shadow = new Uint8ClampedArray([255, 255, 255, 127, 0, 0, 0, 255]);
+  decodeStudioSixPassCoverageShadow(shadow, THREE.SRGBColorSpace);
+  expect([...shadow]).toEqual([0, 0, 0, 127, 0, 0, 0, 0]);
+  body.geometry.dispose(); body.material.dispose(); map.dispose(); alphaMap.dispose();
+});

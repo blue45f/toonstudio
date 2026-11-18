@@ -70,6 +70,8 @@ export interface StudioVrmTexturePaintPersistenceOptions {
   readonly pngSession?: StudioVrmPngWorkerSession;
   readonly signal?: AbortSignal;
   readonly replaceDocument?: boolean;
+  /** ZIP처럼 새 목적지를 채울 때 재인코딩 없이 기존 PNG도 전달한다. */
+  readonly includeRestoredArtifacts?: boolean;
   readonly dependencies?: Partial<StudioVrmTexturePaintPersistenceDependencies>;
 }
 
@@ -224,7 +226,8 @@ function ensureSceneBudgets(textures: readonly StudioVrmSurfacePaintTexture[]): 
  * one scene record per material binding, so archive bytes remain deduplicated.
  */
 export async function persistStudioVrmTexturePaintRuntime(
-  runtime: Pick<StudioVrmTexturePaintRuntime, "exportPaintedTargets">,
+  runtime: Pick<StudioVrmTexturePaintRuntime, "exportPaintedTargets">
+    & Partial<Pick<StudioVrmTexturePaintRuntime, "getRestoredPaintBindings">>,
   options: StudioVrmTexturePaintPersistenceOptions = {},
 ): Promise<StudioVrmSurfacePaintSettings> {
   throwIfAborted(options.signal);
@@ -235,7 +238,9 @@ export async function persistStudioVrmTexturePaintRuntime(
     });
   }
   const deps = dependencies(options.dependencies);
-  const textures: StudioVrmSurfacePaintTexture[] = [];
+  const restored = runtime.getRestoredPaintBindings?.() ?? [];
+  const textures = restored.filter(entry => !entry.promoted).map(entry => entry.texture);
+  const promoted = new Map(restored.filter(entry => entry.promoted).map(entry => [bindingIdentity(entry.texture), entry.texture]));
   const artifacts = new Map<StudioVrmTexturePaintArtifactHash, StudioVrmTexturePaintArtifact>();
   const seenBindings = new Map<string, StudioVrmSurfacePaintTexture>();
   const exportedBindingCount = exported.value.reduce(
@@ -255,6 +260,18 @@ export async function persistStudioVrmTexturePaintRuntime(
       const firstBinding = target.bindings[0];
       if (!firstBinding) {
         throw new StudioVrmTexturePaintPersistenceError("binding-conflict");
+      }
+      // 원본으로 실행 취소한 버퍼의 PNG는 인코더가 달라져도 처음 받은 바이트와 SHA를 유지한다.
+      const previous = promoted.get(bindingIdentity(firstBinding));
+      if (previous && target.bindings.every(binding => promoted.get(bindingIdentity(binding))?.hash === previous.hash)) {
+        const source = await deps.getArtifact(previous.hash, { signal: options.signal });
+        assertArtifactReceiptMatchesScene(source, previous);
+        const image = await deps.decodeArtifact(receiptForTexture(previous), source.archiveEntry.data, { signal: options.signal });
+        throwIfAborted(options.signal);
+        if (image.width === target.width && image.height === target.height && pixelsEqual(image.data, target.pixels)) {
+          textures.push(...target.bindings.map(binding => promoted.get(bindingIdentity(binding))!));
+          continue;
+        }
       }
       const png = await deps.encodePng(
         target.pixels,
@@ -291,6 +308,13 @@ export async function persistStudioVrmTexturePaintRuntime(
   }
   textures.sort(compareTextures);
   ensureSceneBudgets(textures);
+  for (const [hash, entries] of groupTexturesByHash({ version: 2, textures })) {
+    if (artifacts.has(hash as StudioVrmTexturePaintArtifactHash)) continue;
+    throwIfAborted(options.signal);
+    const existing = await deps.getArtifact(hash, { signal: options.signal });
+    for (const entry of entries) assertArtifactReceiptMatchesScene(existing, entry);
+    if (options.includeRestoredArtifacts) artifacts.set(existing.metadata.contentHash, existing);
+  }
   for (const artifact of artifacts.values()) {
     throwIfAborted(options.signal);
     await deps.saveArtifact(artifact, { signal: options.signal });
@@ -417,22 +441,15 @@ async function rollbackAppliedBindings(
   }
 }
 
-/**
- * Rehydrates one decoded PNG per unique hash and applies it to every authenticated material
- * binding. Fetch, receipt verification, and decoding complete for the entire restore set before
- * the first runtime mutation. Any missing/corrupt binding therefore fails closed without partially
- * applying an earlier artifact.
- */
-export async function rehydrateStudioVrmTexturePaintRuntime(
-  runtime: StudioVrmTexturePaintRestoreRuntime,
+/** 같은 해시의 PNG는 한 번만 검증·해독한다. 다음 PNG는 소비자가 요청할 때 읽는다. */
+export async function* readStudioVrmSavedSurfacePaint(
   settings: StudioVrmSurfacePaintSettings,
   options: StudioVrmTexturePaintPersistenceOptions = {},
-): Promise<StudioVrmTexturePaintRestoreReceipt> {
+) {
   throwIfAborted(options.signal);
   ensureSceneBudgets(settings.textures);
   const deps = dependencies(options.dependencies);
   const grouped = groupTexturesByHash(settings);
-  const prepared: PreparedRestoreBinding[] = [];
   for (const [hash, textures] of grouped) {
     throwIfAborted(options.signal);
     const first = textures[0];
@@ -448,19 +465,36 @@ export async function rehydrateStudioVrmTexturePaintRuntime(
         artifact.archiveEntry.data,
         { signal: options.signal },
       );
-    for (const texture of textures) {
-      prepared.push({ texture, image });
-    }
+    yield { textures, image };
   }
   throwIfAborted(options.signal);
 
+}
+
+/**
+ * Rehydrates one decoded PNG per unique hash and applies it to every authenticated material
+ * binding. Fetch, receipt verification, and decoding complete for the entire restore set before
+ * the first runtime mutation. Any missing/corrupt binding therefore fails closed without partially
+ * applying an earlier artifact.
+ */
+export async function rehydrateStudioVrmTexturePaintRuntime(
+  runtime: StudioVrmTexturePaintRestoreRuntime,
+  settings: StudioVrmSurfacePaintSettings,
+  options: StudioVrmTexturePaintPersistenceOptions = {},
+): Promise<StudioVrmTexturePaintRestoreReceipt> {
+  const prepared: PreparedRestoreBinding[] = [];
+  let artifactCount = 0;
+  for await (const {textures, image} of readStudioVrmSavedSurfacePaint(settings, options)) {
+    artifactCount++;
+    for (const texture of textures) prepared.push({texture, image});
+  }
   if (options.replaceDocument) {
     if (typeof runtime.replaceDocumentTargets !== "function") throw new StudioVrmTexturePaintPersistenceError("restore-failed");
     const result = await runtime.replaceDocumentTargets(prepared.map(({ texture, image }) => ({
       binding: { bindingKey: texture.bindingKey, materialLocator: texture.materialLocator, textureSlot: texture.textureSlot }, image,
     })), options.signal);
     if (!result.ok) throw new StudioVrmTexturePaintPersistenceError("restore-failed", { cause: new Error(result.error.code) });
-    return Object.freeze({ artifactCount: grouped.size, bindingCount: prepared.length });
+    return Object.freeze({ artifactCount, bindingCount: prepared.length });
   }
   const alreadyRestored = preflightAlreadyRestoredBindings(runtime, prepared);
   const applied: PreparedRestoreBinding[] = [];
@@ -498,7 +532,7 @@ export async function rehydrateStudioVrmTexturePaintRuntime(
     throw new StudioVrmTexturePaintPersistenceError("restore-failed", { cause });
   }
   return Object.freeze({
-    artifactCount: grouped.size,
+    artifactCount,
     bindingCount: prepared.length,
   });
 }

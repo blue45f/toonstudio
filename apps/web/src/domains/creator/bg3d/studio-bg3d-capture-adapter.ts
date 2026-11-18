@@ -58,6 +58,7 @@ export interface StudioBg3dCaptureRequest extends StudioBg3dCaptureSize {
   /** Requires depth and an adapter with the normalProfile capability. */
   readonly includeNormals?: boolean;
   readonly includeSixPass?: boolean;
+  readonly measureFrozenCast?: boolean;
 }
 
 export interface StudioBg3dCapturedRaster extends StudioBg3dCaptureSize {
@@ -72,6 +73,7 @@ export interface StudioBg3dCapturedRaster extends StudioBg3dCaptureSize {
   /** 검정 RGB, alpha=실제 광원 shadow map의 가림률. */
   readonly shadowRgba?: Uint8Array | Uint8ClampedArray;
   /** near/far 사이의 선형 거리. 기존 depth의 장치 깊이 의미는 유지한다. */
+  readonly frozenCastPixels?: readonly import("./studio-bg3d-six-pass-cast").StudioBg3dSixPassActorPixels[];
   readonly linearDepth?: Float32Array;
   readonly linearDepthNearMeters?: number;
   readonly linearDepthFarMeters?: number;
@@ -305,6 +307,9 @@ export function assertStudioBg3dCaptureRequest(request: unknown): asserts reques
   if (candidate.includeSixPass !== undefined && typeof candidate.includeSixPass !== "boolean") {
     throw new TypeError("3D capture includeSixPass must be a boolean.");
   }
+  if (candidate.measureFrozenCast !== undefined && (typeof candidate.measureFrozenCast !== "boolean" || !candidate.includeSixPass)) {
+    throw new TypeError("고정 배우 픽셀은 6패스 캡처에서만 확인할 수 있습니다.");
+  }
   if (candidate.includeSixPass && !candidate.includeDepth) {
     throw new TypeError("6패스 LT에는 일치하는 깊이 캡처가 필요합니다.");
   }
@@ -367,6 +372,12 @@ function assertCapturedRaster(
       }
     }
   }
+  const cast = candidate.frozenCastPixels;
+  if (request.measureFrozenCast ? !Array.isArray(cast) || cast.length > 12 || cast.some(actor => !actor
+    || typeof actor.elementId !== "string" || typeof actor.sourceHash !== "string" || typeof actor.placementHash !== "string"
+    || !Number.isSafeInteger(actor.pixels) || actor.pixels < 0 || actor.pixels > pixels) : cast !== undefined) {
+    throw new TypeError("고정 배우의 픽셀 수를 확인할 수 없습니다.");
+  }
   const sixPassArrays = [candidate.flatColorRgba, candidate.shadowRgba];
   if (request.includeSixPass) {
     if (sixPassArrays.some((value) => !(value instanceof Uint8Array || value instanceof Uint8ClampedArray)
@@ -410,6 +421,7 @@ export async function captureStudioBg3dRaster(
     includeDepth: request.includeDepth,
     ...(request.includeNormals !== undefined ? { includeNormals: request.includeNormals } : {}),
     ...(request.includeSixPass !== undefined ? { includeSixPass: request.includeSixPass } : {}),
+    ...(request.measureFrozenCast ? { measureFrozenCast: true } : {}),
     background: Object.freeze({ ...request.background }),
   });
   throwIfCaptureOperationAborted(options.signal);
@@ -432,6 +444,7 @@ export async function captureStudioBg3dRaster(
     rgba: new Uint8ClampedArray(captured.rgba),
     ...(captured.depth ? { depth: new Float32Array(captured.depth) } : {}),
     ...(captured.normalRgba ? { normalRgba: new Uint8ClampedArray(captured.normalRgba) } : {}),
+    ...(captured.frozenCastPixels ? { frozenCastPixels: Object.freeze(captured.frozenCastPixels.map(actor => Object.freeze({ ...actor }))) } : {}),
     ...(captured.flatColorRgba ? { flatColorRgba: new Uint8ClampedArray(captured.flatColorRgba) } : {}),
     ...(captured.shadowRgba ? { shadowRgba: new Uint8ClampedArray(captured.shadowRgba) } : {}),
     ...(captured.linearDepth ? { linearDepth: new Float32Array(captured.linearDepth),

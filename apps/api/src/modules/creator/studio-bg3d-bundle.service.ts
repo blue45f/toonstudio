@@ -10,7 +10,7 @@ import { PrivateObjectReferenceSchema, PrivateSignedReadUrlSchema, type PrivateO
 import type { PrivateObjectStoragePort } from "../../platform/adapters/private-object-storage/private-object-storage.port";
 import { SUPABASE_OBJECT_STORAGE_PORT } from "../../platform/adapters/supabase-object-storage/supabase-object-storage.port";
 import { MembershipResourceQuotaError } from "../membership-operations/membership-resource-quota";
-import { STUDIO_BG3D_BUNDLE_ARTIFACT_ROLES, STUDIO_BG3D_BUNDLE_REPOSITORY, hasStudioBg3dRetainedBundlesInTransaction, assertStudioBg3dBundleReaderInTransaction, verifyStudioBg3dSealedReferencesInTransaction, studioBg3dBundleExpectedArtifact, studioBg3dBundleObjectMatches, type StudioBg3dBundleArtifactRole, type StudioBg3dBundleKey, type StudioBg3dBundleRecord, type StudioBg3dBundleTransaction, type StudioBg3dBundleRepository } from "./studio-bg3d-bundle.repository";
+import { STUDIO_BG3D_BUNDLE_ARTIFACT_ROLES, STUDIO_BG3D_BUNDLE_REPOSITORY, studioBg3dReaderRequirements, assertStudioBg3dBundleReaderInTransaction, verifyStudioBg3dSealedReferencesInTransaction, studioBg3dBundleExpectedArtifact, studioBg3dBundleObjectMatches, type StudioBg3dBundleArtifactRole, type StudioBg3dBundleKey, type StudioBg3dBundleRecord, type StudioBg3dBundleTransaction, type StudioBg3dBundleRepository } from "./studio-bg3d-bundle.repository";
 import type { StudioWorkAssetUploadFile } from "./studio-work-asset.service";
 
 /** 공개 영수증에는 storage bucket·provider·객체 경로·서명 URL을 섞지 않는다. */
@@ -42,9 +42,9 @@ export class StudioBg3dBundleService {
       throw error;
     }
   }
-  hasRetainedBundles(workId: string, transaction?: StudioBg3dBundleTransaction): Promise<boolean> {
-    return transaction ? hasStudioBg3dRetainedBundlesInTransaction(transaction, workId)
-      : db.transaction((current) => hasStudioBg3dRetainedBundlesInTransaction(current, workId));
+  requiredReaders(workId: string, transaction?: StudioBg3dBundleTransaction): Promise<readonly string[]> {
+    return transaction ? studioBg3dReaderRequirements(transaction, workId)
+      : db.transaction((current) => studioBg3dReaderRequirements(current, workId));
   }
   assertReaderCapability(workId: string, features: readonly string[], transaction?: StudioBg3dBundleTransaction): Promise<void> {
     return transaction ? assertStudioBg3dBundleReaderInTransaction(transaction, workId, features)
@@ -54,10 +54,10 @@ export class StudioBg3dBundleService {
     return transaction ? verifyStudioBg3dSealedReferencesInTransaction(transaction, workId, refs)
       : db.transaction((current) => verifyStudioBg3dSealedReferencesInTransaction(current, workId, refs));
   }
-  async capabilities(actor: string, workId: string) {
-    const value = await this.run(() => this.repository.capabilities(actor, workId));
+  async capabilities(actor: string, workId: string, version: 1 | 2 = 1) {
+    const value = await this.run(() => this.repository.capabilities(actor, workId, version));
     return { enabled: isStudioWorkAssetAdmissionOptedIn(process.env.STUDIO_WORK_ASSET_ADMISSION) && value.schemaReady,
-      readerCapability: "bg3d-sixpass-bundle.v1" as const, maximumPngBytes: 64 * 1024 * 1024,
+      readerCapability: version === 2 ? "bg3d-sixpass-bundle.v2" as const : "bg3d-sixpass-bundle.v1" as const, maximumPngBytes: 64 * 1024 * 1024,
       maximumPngTotalBytes: 384 * 1024 * 1024, maximumSceneBytes: 320 * 1024,
       fileMaxBytes: value.fileMaxBytes, remainingStorageBytes: value.remainingStorageBytes,
       remainingDailyUploadBytes: value.remainingDailyUploadBytes };
@@ -82,12 +82,14 @@ export class StudioBg3dBundleService {
   async upload(actor: string, key: StudioBg3dBundleKey, role: StudioBg3dBundleArtifactRole, file: StudioWorkAssetUploadFile | undefined, context?: StudioScopedWriteContext) {
     this.assertEnabled();
     // 현재 ACL/배정은 파일 검증과 원격 업로드 전, repository commit 안에서 두 번 검사한다.
-    const record = await this.run(() => this.repository.read(actor, key, "edit", context));
+    const record = await this.run(() => this.repository.read(actor, key, "edit", context, role === "scene"));
     const artifact = studioBg3dBundleExpectedArtifact(record.manifest, role);
     if (!file || !Buffer.isBuffer(file.buffer) || file.buffer.byteLength !== file.size || file.size !== artifact.byteSize || file.mimetype !== artifact.mimeType) throw new BadRequestException("6패스 출력의 크기·형식이 manifest와 다릅니다.");
     try {
-      if (role === "scene") verifyStudioBg3dSixPassBundleSceneBytes(record.manifest, file.buffer, "work");
-      else { verifyStudioBg3dSixPassArtifactBytes(artifact, file.buffer); assertStudioBg3dBundlePngPixels(file.buffer); }
+      if (role === "scene") {
+        const actors = verifyStudioBg3dSixPassBundleSceneBytes(record.manifest, file.buffer, "work");
+        if (actors !== (record.linkedVrmHash ?? null)) throw new Error("고정 캐릭터가 봉인된 원본과 다릅니다.");
+      } else { verifyStudioBg3dSixPassArtifactBytes(artifact, file.buffer); assertStudioBg3dBundlePngPixels(file.buffer); }
     }
     catch { throw new BadRequestException("6패스 출력의 픽셀·장면·SHA-256을 확인하지 못했습니다."); }
     const previous = record.artifacts.find((entry) => entry.role === role);

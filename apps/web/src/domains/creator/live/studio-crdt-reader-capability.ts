@@ -1,7 +1,7 @@
-import { STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY } from "@toonstudio/contracts/studio-legacy-pigment-archive";
+import { STUDIO_READER_CAPABILITIES } from "../../../platform/studio-reader-capabilities";
 import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 
-export const STUDIO_CRDT_READER_CAPABILITIES: readonly string[] = Object.freeze([STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY]);
+export const STUDIO_CRDT_READER_CAPABILITIES: readonly string[] = STUDIO_READER_CAPABILITIES;
 export interface StudioCrdtReaderMetadata {
   readonly readerCapabilities?: readonly string[];
   readonly requiredReaderCapabilities?: readonly string[];

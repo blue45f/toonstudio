@@ -450,7 +450,7 @@ import {
 import { useStudioCollaborationWiring } from "./live/studio-collaboration-wiring";
 import { studioDrawElementToCrdtStroke } from "./live/studio-crdt-draw-bridge";
 import { StudioCrdtLiveStrokePublisher } from "./live/studio-crdt-live-stroke-publisher";
-import { creatorWorkSnapshotToStudioProject } from "./studio-creator-work-project";
+import { readStudioCreatorWorkProject } from "./studio-creator-work-project";
 import { initialCropRect, isCropRectNoop, planCropApply } from "./studio-crop";
 import {
   STUDIO_DEFERRED_STROKE_POSTPROCESS_TIMEOUT_MS,
@@ -14515,7 +14515,7 @@ const puppetWarpArmed =
         ]);
         // Optional sidecars settle before the single hydration mutation; route teardown invalidates every result before React state.
         if (!alive || controller.signal.aborted) return;
-        const parsedProject = creatorWorkSnapshotToStudioProject(w);
+        const parsedProject = await readStudioCreatorWorkProject(w, resolvedTargetId, controller.signal);
         const hasLinked3dRender = parsedProject.pagesList.some((page) => page.linked3dRender !== undefined || page.bg3dLtBundles !== undefined);
         if (remixId && hasLinked3dRender) {
           setWorkHydrationFailed(true);
@@ -17143,7 +17143,7 @@ const puppetWarpArmed =
   const cutScopeRef = useRef(cutScope); cutScopeRef.current = cutScope;
   const canStoreLocalVrmCut = () => canStoreStudioLocalVrmCut({ ...cutScopeRef.current, peerCount: studioLiveRoomRef.current?.getPeers().length ?? 0 });
   const applyBg3dRenderedImage = bindStudioBg3dRenderedImage({
-    setError, activeElementsRef,
+    setError, activeElementsRef, readCurrentPage: () => (pagesHistoryRef.current[pagesHiRef.current] ?? pages).find(page => page.id === activePage.id),
     setStatusNotice,
     elementById,
     groups,
@@ -28233,7 +28233,7 @@ function clearSelectionForEdit() {
       bg3dSeedPrimitiveKind={bg3dSeedPrimitiveKind}
       bg3dMarketplaceModelId={bg3dMarketplaceModelId}
       bg3dSeedTemplateId={bg3dSeedTemplateId}
-      bg3dTargetBundleId={bg3dTargetBundleId} cutDocumentKey={autosaveKey} cutTeamDocument={!canStoreLocalVrmCut()} cutWorkScope={workId ? { workId, actorId: studioAuthUserId ?? null, authorized: Boolean(studioAuthUserId && authorizedWorkAssetScopeId === workId), anchorId: bg3dInitialElementId } : undefined}
+      bg3dTargetBundleId={bg3dTargetBundleId} cutDocumentKey={autosaveKey} cutTeamDocument={!canStoreLocalVrmCut()} cutWorkScope={workId ? { workId, authority: scopedWriteRuntime.authority, actorId: studioAuthUserId ?? null, authorized: Boolean(studioAuthUserId && authorizedWorkAssetScopeId === workId), anchorId: bg3dInitialElementId } : undefined}
       bgGrad={bgGrad}
       bgSceneGenreFilter={bgSceneGenreFilter}
       bgSceneSearchQuery={bgSceneSearchQuery}

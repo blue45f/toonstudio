@@ -14,7 +14,7 @@ const ID = /^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$/u;
 const CAS = /^studio-opfs-cas:(sha256:[a-f0-9]{64})$/u;
 const encoder = new TextEncoder();
 export interface StudioCrdtBg3dRevisionReference {
-  readonly version: 1; readonly pageId: string; readonly bundleId: string; readonly renderRevisionId: string;
+  readonly version: 1 | 2; readonly pageId: string; readonly bundleId: string; readonly renderRevisionId: string;
   readonly parentRevisionId: string | null; readonly manifestHash: `sha256:${string}`;
 }
 function object(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
@@ -27,11 +27,11 @@ export function parseStudioCrdtBg3dRevision(raw: unknown, failure: (message: str
   if (typeof raw !== "string" || encoder.encode(raw).byteLength > 1024) failure("6패스 CRDT 참조 예산이 올바르지 않습니다.");
   const value: unknown = JSON.parse(raw);
   if (!object(value) || Object.keys(value).sort().join(",") !== "bundleId,manifestHash,pageId,parentRevisionId,renderRevisionId,version"
-    || value.version !== 1 || !isStudioBg3dSixPassContentHash(value.manifestHash)
+    || (value.version !== 1 && value.version !== 2) || !isStudioBg3dSixPassContentHash(value.manifestHash)
     || typeof value.pageId !== "string" || !ID.test(value.pageId) || typeof value.bundleId !== "string" || !ID.test(value.bundleId)
     || typeof value.renderRevisionId !== "string" || !ID.test(value.renderRevisionId)
     || (value.parentRevisionId !== null && (typeof value.parentRevisionId !== "string" || !ID.test(value.parentRevisionId)))) failure("6패스 CRDT revision 참조가 손상되었습니다.");
-  return { version: 1, pageId: value.pageId, bundleId: value.bundleId, renderRevisionId: value.renderRevisionId,
+  return { version: value.version, pageId: value.pageId, bundleId: value.bundleId, renderRevisionId: value.renderRevisionId,
     parentRevisionId: value.parentRevisionId, manifestHash: value.manifestHash };
 }
 function props(record: Y.Map<unknown>): Record<string, unknown> {

@@ -35,7 +35,7 @@ export function bg3dTestObject(bytes: Uint8Array, contentType: "image/png" | "ap
 /** 서버 입장 검증을 통과시킬 실제 Yjs 원고를 만든다. GPU 픽셀 생성 증거는 아니다. */
 export function bg3dBundleCrdtFixture(manifest: ReturnType<typeof bg3dBundleFixture>["manifest"]) {
   const doc = new Y.Doc(), manifestHash = hashStudioBg3dSixPassBundleManifest(manifest);
-  const ref = { version: 1, pageId: manifest.pageId, bundleId: manifest.bundleId, renderRevisionId: manifest.renderRevisionId,
+  const ref = { version: manifest.version, pageId: manifest.pageId, bundleId: manifest.bundleId, renderRevisionId: manifest.renderRevisionId,
     parentRevisionId: manifest.parentRevisionId, manifestHash };
   doc.getMap("studio-bg3d-bundle-revisions-v1").set(JSON.stringify([manifest.pageId, manifest.bundleId, manifest.renderRevisionId]), JSON.stringify(ref));
   doc.getMap("studio-bg3d-bundle-active-v1").set(JSON.stringify([manifest.pageId, manifest.bundleId]), manifest.renderRevisionId);

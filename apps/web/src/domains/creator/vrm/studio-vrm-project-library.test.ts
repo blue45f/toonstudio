@@ -272,6 +272,46 @@ describe("studio VRM project library bridge", () => {
     }
   });
 
+  it("활성 레이어가 없는 6패스 이력의 업로드 VRM과 마지막 페인트를 권리 확인 후 ZIP에서 새 기기로 가져온다", async () => {
+    const { createBg3dBundleProjectFixture } = await import("../bg3d/studio-bg3d-bundle-project.test-fixture");
+    const { projectWithStudioSixPassVrmArchiveHistory } = await import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-vrm-archive");
+    const { prepareStudioBg3dSixPassProjectArchiveExport } = await import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-archive");
+    const blob = blobFrom(vrmBytes(41)), hash = await hashOf(blob), stored = storedRecord("original", blob, hash);
+    const rawPng = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNYxeDyHwAENAHuKmjE9gAAAABJRU5ErkJggg=="), char => char.charCodeAt(0));
+    const paint = await createStudioVrmTexturePaintArtifact({ bindingKey: "face", source: rawPng });
+    const base = createDefaultStudioBg3dSceneDocument();
+    const vrmScene = normalizeStudioVrmSceneDocument({ ...attachmentScene(hash, blob.size), surfacePaint: { version: 1, textures: [{
+      bindingKey: "face", materialLocator: "gltf-material:0", textureSlot: "baseColor",
+      hash: paint.metadata.contentHash, byteSize: paint.metadata.byteLength, width: 1, height: 1, mime: "image/png",
+    }] } });
+    const cut = createStudioScene3dVersionedCut({ id: "cut", name: "A", legacyBg3d: base, characters: {},
+      scene: projectStudioBg3dDocumentToScene3d({ documentId: "origin", source: base, viewportAspectRatio: 1 }),
+      linkedVrm: { version: 1, documentScope: `sha256:${"4".repeat(64)}`, characters: [{
+        elementId: "actor", label: "A", stageTransform: { position: [1, 0, 0], rotationY: 0.2 }, vrmScene }] } });
+    const fixture = await createBg3dBundleProjectFixture(true, cut);
+    const deleted = { ...fixture.project, pagesList: fixture.project.pagesList.map(page => ({ ...page, elements: [], linked3dRender: undefined, shared3dStage: undefined })) };
+    const project = await projectWithStudioSixPassVrmArchiveHistory(deleted, h => fixture.authority.get(h, { verify: true }));
+    const lookup = { getStoredByContentHash: async () => stored };
+    expect((await prepareStudioVrmProjectArchiveUseContextAttestation(project, lookup))).toMatchObject({ ok: true, modelCount: 1 });
+    expect((await prepareStudioVrmProjectArchiveExport(project, lookup)).isComplete).toBe(false);
+    const models = await prepareStudioVrmProjectArchiveExport(project, lookup, ARCHIVE_USE_CONTEXT);
+    const paints = await exportStudioVrmTexturePaintProjectLibrary({ project, canonicalProject: project, library: { resolve: () => paint.archiveEntry.data } });
+    expect(paints.status).toBe("ready");
+    vi.stubGlobal("createImageBitmap", async () => ({ width: 1, height: 1, close() {} }));
+    try {
+      const passes = await prepareStudioBg3dSixPassProjectArchiveExport({ project, authority: fixture.authority });
+      const built = await buildStudioProjectArchive({ project, attachments: [...passes, ...models.attachments, ...paints.attachments] });
+      const imported = await importStudioProjectArchive(built.blob);
+      expect(imported.isSelfContained).toBe(true);
+      expect(await imported.attachments.get(hash.slice(7))?.blob.arrayBuffer()).toEqual(await blob.arrayBuffer());
+      expect(new Uint8Array((await imported.attachments.get(paint.metadata.contentHash.slice(7))!.blob.arrayBuffer()))).toEqual(rawPng);
+      const fresh = await restoreStudioVrmProjectArchiveImport(imported, { getStoredByContentHash: async () => null });
+      expect(fresh.unresolved).toEqual([]);
+      const committed = await commitPrepared(fresh, { getStoredByContentHash: async () => null, saveVerifiedBlobWithDisposition: savedRecordFactory("restored-A", hash) });
+      expect(committed.installed).toEqual([{ hash, modelId: "restored-A" }]);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
   it("collects exact page/master hash pointers, preserves order, and skips bundled models", async () => {
     const blob = blobFrom(vrmBytes());
     const hash = await hashOf(blob);

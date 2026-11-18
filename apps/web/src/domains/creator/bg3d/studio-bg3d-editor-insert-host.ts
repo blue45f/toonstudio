@@ -3,6 +3,7 @@
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
+import { assertStudioSixPassActorCoverage } from "./studio-bg3d-six-pass-cast";
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { createStudioBg3dCaptureDocumentEnvironmentFingerprint } from "./studio-bg3d-capture-document-environment";
 import { assertStudioBg3dCaptureEnvironmentCurrent } from "./studio-bg3d-capture-environment-receipt";
@@ -386,6 +387,9 @@ export function attachStudioBg3dEditorInsertHost(h: Record<string, any>) {
       return;
     }
     const adapted = adaptation.value;
+    if (adapted.document.output.sixPassLt && sharedCharacters.length && !adapted.document.pinnedVersionedCut?.source.linkedVrm) {
+      setError("연결한 캐릭터를 컷 버전으로 고정한 뒤 6패스를 저장해 주세요."); return;
+    }
     const expectedEnvironmentFingerprint = createStudioBg3dCaptureDocumentEnvironmentFingerprint(adapted.document, deviceQuality.profile);
     if (
       adapted.diagnostics.length > 0 ||
@@ -534,18 +538,22 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
       if (!releaseCaptureFrameViewOffset) {
         throw new Error("LT capture frame could not be applied to the live camera.");
       }
+      const pinnedCut = ltSettingsSnapshot.sixPassLt && adapted.document.pinnedVersionedCut?.source.linkedVrm ? adapted.document.pinnedVersionedCut : undefined;
+      if (pinnedCut && !h.frozenCut) throw new Error("고정한 배우의 원본을 불러온 뒤 6패스를 만들 수 있습니다.");
       const captured = await captureStudioBg3dRaster(captureAdapter, {
         width: captureSize.width,
         height: captureSize.height,
         background: studioBg3dCaptureBackgroundRequestFromSnapshot(backgroundSnapshot),
         includeDepth: Boolean(ltSettingsSnapshot.sixPassLt) || studioBg3dLineNeedsDepth(ltSettingsSnapshot.line),
         ...(ltSettingsSnapshot.sixPassLt ? { includeSixPass: true } : {}),
+        ...(pinnedCut ? { measureFrozenCast: true } : {}),
         ...(captureAdapter.normalProfile && ltSettingsSnapshot.line.depthEnabled && !ltSettingsSnapshot.line.depthOutlineOnly
           ? { includeNormals: true } : {}),
       }, { signal: insertController.signal, timeoutMs: 30_000, expectedEnvironmentFingerprint })
         // 성공·실패·취소 어느 쪽이든 라이브 카메라를 원래 view 창으로 되돌린다(멱등).
         .finally(releaseCaptureFrameViewOffset);
       if (!isInsertCurrent() || captureAdapterIsStale()) return;
+      if (pinnedCut) assertStudioSixPassActorCoverage(sharedCharacters, captured.frozenCastPixels, captured.width * captured.height);
       const ltRenderInput = Object.freeze({
         width: captured.width,
         height: captured.height,
@@ -695,9 +703,11 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
         compositePngDataUrl: encoded.compositePngDataUrl,
         perspectiveGuides,
         ...(magicFilterMask ? { magicFilterMask } : {}),
-        ...(linkedCharacterCapture ? { linkedCharacterCapture } : {}),
-        sharedStageMutation: { kind: sharedStageMutationKind },
-        materialization: { kind: sharedStageMaterializationKind },
+        ...(pinnedCut && captured.frozenCastPixels ? {
+          frozenVrmSixPassCapture: { sourceHash: pinnedCut.sourceHash, actors: captured.frozenCastPixels },
+        } : linkedCharacterCapture ? { linkedCharacterCapture } : {}),
+        sharedStageMutation: { kind: pinnedCut ? "background-only" : sharedStageMutationKind },
+        materialization: { kind: pinnedCut ? "editable-lt-bundle" : sharedStageMaterializationKind },
         bg3dScene: adapted.document,
       });
       if (accepted === false) {
@@ -734,7 +744,7 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
         return;
       }
       if (!isInsertCurrent()) return;
-      if (insertPhase === "commit" && h.cutWorkId && adapted.document.pinnedVersionedCut?.source.linkedVrm && insertFailure instanceof Error) {
+      if ((insertPhase === "commit" || adapted.document.output.sixPassLt) && adapted.document.pinnedVersionedCut?.source.linkedVrm && insertFailure instanceof Error) {
         setError(insertFailure.message);
       } else if (insertPhase === "magic-object-id") {
         setError(

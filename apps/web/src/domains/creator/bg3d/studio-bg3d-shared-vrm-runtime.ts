@@ -160,6 +160,7 @@ export function createStudioBg3dLinkedVrmRuntimeOwner(
     reapplyAuthoredPose: () => reapplyAuthoredState(),
   });
   const runtimeResult = createStudioVrmProportionRigRuntime(adapter, {
+    allowUnmodifiedSourceRig: true,
     headLength: headMeasurement.value,
     headMeasurement: {
       version: headMeasurement.version,

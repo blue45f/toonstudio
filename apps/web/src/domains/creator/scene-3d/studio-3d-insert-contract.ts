@@ -1,7 +1,7 @@
 /** 지연 로드한 3D 편집기가 원고 삽입 제어기에 전달하는 타입 계약이다. 렌더러의 실행 코드는 가져오지 않는다. */
 
 import type { StudioBg3dSceneDocument } from "../bg3d/studio-bg3d-scene-document";
-import type { StudioBg3dSharedStageInsertProjection } from "../studio-shared-3d-insert-contract";
+import type { StudioBg3dSharedStageInsertProjection, StudioBg3dSixPassActorPixels } from "../studio-shared-3d-insert-contract";
 import type { StudioVrmSceneDocument } from "../vrm/studio-vrm-scene-document";
 
 export type StudioBg3dLtRasterLayerRole =
@@ -30,6 +30,7 @@ export interface StudioBackground3DMagicFilterMask {
 
 export interface StudioBackground3DInsertResult extends StudioBg3dSharedStageInsertProjection {
   /** 현재 권한으로 받은 팀 파일. 저장·공동 편집 문서로 직렬화하지 않는다. */
+  readonly frozenVrmSixPassCapture?: { readonly sourceHash: string; readonly actors: readonly StudioBg3dSixPassActorPixels[] };
   readonly cutWorkSignal?: AbortSignal;
   readonly cutWorkResources?: import("../scene3d/studio-team-vrm-cut-assets").StudioTeamVrmCutResources;
   readonly kind: "separated";

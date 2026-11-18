@@ -1,6 +1,7 @@
 "use no memo";
 
-import { useEffect, useReducer, useRef } from "react";
+import { useContext, useEffect, useReducer, useRef } from "react";
+import { TeamVrmCutPaintAction } from "./studio-team-vrm-cut-revision";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { StudioScene3dCutPanel } from "./StudioScene3dCutPanel";
 import { StudioScene3dCutSession } from "./studio-scene3d-cut-session";
@@ -32,6 +33,7 @@ export function StudioScene3dBg3dCutPanel({
   readonly host: unknown;
   readonly preferredExpanded?: boolean;
 }) {
+  const editPaint = useContext(TeamVrmCutPaintAction);
   const t = useBilingual("scene3d-cut-versions");
   const [, refresh] = useReducer((value: number) => value + 1, 0);
   const requestedRetry = useRef<StudioScene3dCutSession | null>(null);
@@ -86,6 +88,13 @@ export function StudioScene3dBg3dCutPanel({
   }
   const session = cached.session;
   return (
+    <>
+    {editPaint && host.sceneBaseDocument.pinnedVersionedCut?.source.linkedVrm?.characters.map(actor => (
+      <button type="button" key={actor.elementId} disabled={hostPreparing} onClick={() => editPaint(host, actor.elementId)}
+        className="mb-2 flex min-h-11 w-full items-center justify-between rounded-lg border border-line bg-panel px-3 text-xs text-fg">
+        <span>{actor.label}</span><span>새 버전으로 편집</span>
+      </button>
+    ))}
     <StudioScene3dCutPanel
       key={`${id}:${cached.generation}`}
       session={session}
@@ -99,5 +108,6 @@ export function StudioScene3dBg3dCutPanel({
         return true;
       }}
     />
+    </>
   );
 }

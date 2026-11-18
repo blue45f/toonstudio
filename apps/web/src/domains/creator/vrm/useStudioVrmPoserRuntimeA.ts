@@ -244,7 +244,7 @@ export function useStudioVrmPoserRuntimeA(h: StudioVrmPoserHost): void {
       }
       runtime.dispose();
     };
-  }, [texturePaintDevicePlan, texturePaintSceneIdentity, vrm]);
+  }, [h.cutPaintSession, texturePaintDevicePlan, texturePaintSceneIdentity, vrm]);
 
   // 라이브러리 썸네일처럼 모델의 본질과 무관한 필드가 바뀌어도 복원을 취소하지 않는다.
   // active id는 로드 시작 때 먼저 바뀌므로 실제로 install된 VRM id까지 함께 확인해 이전
@@ -258,7 +258,7 @@ export function useStudioVrmPoserRuntimeA(h: StudioVrmPoserHost): void {
       initialScene.model.source === "bundled"
         ? activeTexturePaintRestoreEntry?.source === "sample"
           && activeTexturePaintRestoreEntry.id === initialScene.model.id
-        : activeTexturePaintRestoreEntry?.source === "sqlite-opfs"
+        : (activeTexturePaintRestoreEntry?.source === "sqlite-opfs" || (h.cutPaintSession && activeTexturePaintRestoreEntry === h.cutPaintSession.entry))
           && canonicalizeVrmContentHash(activeTexturePaintRestoreEntry.contentHash)
             === initialScene.model.hash
     ),
@@ -290,17 +290,28 @@ export function useStudioVrmPoserRuntimeA(h: StudioVrmPoserHost): void {
       return;
     }
 
+    if (texturePaintRuntime.hasPaintPresentation()) {
+      setTexturePaintPersistenceStatus("ready");
+      return;
+    }
     const controller = new AbortController();
     texturePaintRestoreAbortRef.current = controller;
     setTexturePaintPersistenceStatus("restoring");
-    void import("./studio-vrm-texture-paint-persistence")
-      .then(({ rehydrateStudioVrmTexturePaintRuntime }) =>
-        rehydrateStudioVrmTexturePaintRuntime(
-          texturePaintRuntime,
-          initialScene.surfacePaint,
-          { signal: controller.signal },
-        )
-      )
+    const restoreOptions = { signal: controller.signal, dependencies: h.cutPaintSession?.dependencies };
+    const restore = texturePaintDevicePlan.tier === "constrained"
+      ? import("./studio-vrm-texture-paint-presentation").then(async ({ restoreStudioVrmPaintPresentation }) => {
+          const presentation = await restoreStudioVrmPaintPresentation(vrm.scene, initialScene.surfacePaint, {
+            ...restoreOptions, maxAggregateResidentBytes: texturePaintRuntime.getSnapshot().maxResidentBytes,
+          });
+          if (controller.signal.aborted || texturePaintRuntimeRef.current !== texturePaintRuntime) {
+            presentation.dispose();
+            return;
+          }
+          texturePaintRuntime.attachPaintPresentation(presentation, initialScene.surfacePaint);
+        })
+      : import("./studio-vrm-texture-paint-persistence").then(({ rehydrateStudioVrmTexturePaintRuntime }) =>
+          rehydrateStudioVrmTexturePaintRuntime(texturePaintRuntime, initialScene.surfacePaint, restoreOptions));
+    void restore
       .then(() => {
         if (
           controller.signal.aborted
@@ -334,7 +345,7 @@ export function useStudioVrmPoserRuntimeA(h: StudioVrmPoserHost): void {
     open,
     texturePaintRuntime,
     texturePaintRestoreModelMatches,
-    texturePaintRestoreRetryToken,
+    texturePaintRestoreRetryToken, h.cutPaintSession, texturePaintDevicePlan,
     vrm,
     texturePaintRuntimeSceneIdentity,
     texturePaintSceneIdentity,

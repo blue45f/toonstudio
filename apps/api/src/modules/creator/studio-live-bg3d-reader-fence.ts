@@ -1,4 +1,4 @@
-import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
+import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { studioLiveFailure } from "./studio-live-ack";
 import { STUDIO_LIVE_ADAPTER_DISCOVERY_TIMEOUT_MS } from "./studio-live-gateway-constants";
@@ -12,12 +12,14 @@ export function studioRequiredReaderRoom(room: string, required: readonly string
 /** 각 방은 서버가 확인한 capability의 교집합이다. 구 BG3D reader를 v7 방에 넣지 않는다. */
 export function studioSupportedReaderRooms(room: string, capabilities: readonly string[] = []): string[] {
   return [[STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY], [STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY],
-    [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY]]
+    [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY],
+    [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY],
+    [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY]]
     .filter((required) => required.every((capability) => capabilities.includes(capability)))
     .map((required) => studioRequiredReaderRoom(room, required));
 }
 export function studioAllReaderRooms(room: string): string[] {
-  return studioSupportedReaderRooms(room, [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY]);
+  return studioSupportedReaderRooms(room, [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY]);
 }
 
 /** 다음 작품의 방에 들어가기 전에 이전 기능 방을 반드시 비운다. */

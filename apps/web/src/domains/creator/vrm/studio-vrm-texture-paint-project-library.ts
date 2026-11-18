@@ -1,4 +1,4 @@
-import { studioProjectVrmSceneLocations } from "./studio-project-vrm-scene-locations";
+import { studioProjectVrmSceneLocations, studioVrmArchiveHistoryGroups } from "./studio-project-vrm-scene-locations";
 import { STUDIO_PROJECT_ARCHIVE_LIMITS, type StudioProjectArchiveDocumentReference, type StudioProjectArchiveImportedAttachment, type StudioProjectArchiveManifest, type StudioProjectArchiveManifestAttachment, type StudioProjectArchiveAttachmentInput, type StudioProjectArchiveLimits  } from "../studio-project-archive";
 import { parseStudioProjectFile, type StudioProjectFile } from "../studio-project-file";
 
@@ -328,7 +328,7 @@ interface MutableArtifactPlan {
 const CONTENT_HASH_PATTERN = /^sha256:[0-9a-f]{64}$/u;
 const RAW_SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const SURFACE_PAINT_POINTER_PATTERN =
-  /^\/(?:pagesList\/[0-9]+|master)\/elements\/[0-9]+\/(?:bg3dScene\/pinnedVersionedCut\/source\/linkedVrm\/characters\/[0-9]+\/)?vrmScene\/surfacePaint\/textures\/[0-9]+\/hash$/u;
+  /^\/(?:(?:pagesList\/[0-9]+|master)\/elements\/[0-9]+\/(?:bg3dScene\/pinnedVersionedCut\/source\/linkedVrm\/characters\/[0-9]+\/)?|pagesList\/[0-9]+\/bg3dArchiveVrmHistory\/[0-9]+\/characters\/[0-9]+\/)vrmScene\/surfacePaint\/textures\/[0-9]+\/hash$/u;
 const textEncoder = new TextEncoder();
 const EMPTY_RESULT_ITEMS: readonly [] = Object.freeze([]);
 const PREPARED_TEXTURE_IMPORTS = new WeakMap<object, {
@@ -420,18 +420,15 @@ function scanStrictProjectScenes(
     if (
       sceneBytes > STUDIO_PROJECT_ARCHIVE_LIMITS.maxProjectBytes
       || surfaceReferences > STUDIO_PROJECT_ARCHIVE_LIMITS.maxReferences
-    ) {
-      fail(
-        "PROJECT_LIMIT_EXCEEDED", "limit-scenes-or-refs");
-    }
+    ) fail("PROJECT_LIMIT_EXCEEDED", "limit-scenes-or-refs");
     scenes.push(scene);
   };
   for (let pageIndex = 0; pageIndex < value.pagesList.length; pageIndex += 1) {
     throwIfAborted(signal);
     const page = value.pagesList[pageIndex];
-    if (!isRecord(page) || !Array.isArray(page.elements)) {
-      fail("PROJECT_INVALID", "project-page-structure-invalid");
-    }
+    if (!isRecord(page) || !Array.isArray(page.elements)) fail("PROJECT_INVALID", "project-page-structure-invalid");
+    for (const group of studioVrmArchiveHistoryGroups(page, pageIndex))
+      for (const [actorIndex, actor] of group.elements.entries()) append(scanStrictScene(actor.vrmScene, `${group.pointer}/${actorIndex}/vrmScene`));
     for (let elementIndex = 0; elementIndex < page.elements.length; elementIndex += 1) {
       throwIfAborted(signal);
       for (const scene of studioProjectVrmSceneLocations(page.elements[elementIndex], `/pagesList/${pageIndex}/elements/${elementIndex}`))

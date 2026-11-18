@@ -1,3 +1,5 @@
+import { IEND_CHUNK, idatChunk, ihdrChunk, pngFile } from "../../../test/cover-image-fixtures";
+import { STUDIO_VRM_TEXTURE_PAINT_CHANNELS, studioVrmTexturePaintChannelEncoding } from "@toonstudio/contracts/studio-vrm-texture-paint-channel";
 import defaultActorScene from "./fixtures/studio-vrm-cut-default-scene.json";
 import { createStudioScene3dDocument } from "@toonstudio/contracts/studio-scene3d-document";
 import { createHash, randomUUID } from "node:crypto";
@@ -55,6 +57,26 @@ describe("작품 고정 VRM 컷의 원본·권리·파일 검증", () => {
     const cut = prepareWorkVrmCutUpload(request);
     expect(cut.writes.map(w => w.elementType).sort()).toEqual(["image", "image", "vrm"]);
     expect(cut.seal.attachments?.map(a => a.sha256).sort()).toEqual(request.files.attachments.map(f => digest(f.buffer)).sort());
+  });
+  it.each([
+    { rgba: [80, 80, 80, 255], valid: true },
+    { rgba: [80, 100, 80, 255], valid: false },
+    { rgba: [80, 80, 80, 160], valid: false },
+  ])("같은 PNG에 묶인 다섯 채널은 실제 회색조·알파까지 검사한다 $rgba", ({ rgba, valid }) => {
+    const f = fixture();
+    const bytes = pngFile(ihdrChunk({ width: 1, height: 1, colorType: 6 }), idatChunk(Buffer.from([0, ...rgba])), IEND_CHUNK);
+    const textures = [...STUDIO_VRM_TEXTURE_PAINT_CHANNELS].sort().map(textureSlot => ({
+      bindingKey: `eye-${textureSlot}`, textureSlot, materialLocator: "gltf-material:0", ...studioVrmTexturePaintChannelEncoding(textureSlot),
+      hash: `sha256:${digest(bytes)}`, byteSize: bytes.length, width: 1, height: 1, mime: "image/png",
+    }));
+    const actor = f.scene.pinnedVersionedCut.source.linkedVrm.characters[0]!;
+    const source = { ...f.scene.pinnedVersionedCut.source, linkedVrm: { ...f.scene.pinnedVersionedCut.source.linkedVrm,
+      characters: [{ ...actor, vrmScene: { ...actor.vrmScene, surfacePaint: { version: 2, textures } } }] } };
+    const scene = Buffer.from(JSON.stringify({ ...f.scene, pinnedVersionedCut: { ...f.scene.pinnedVersionedCut, source, sourceHash: hashStudioScene3dCutValue(source) } }));
+    const upload = () => prepareWorkVrmCutUpload({ ...f.request, metadataJson: JSON.stringify({ ...f.metadata, sceneSha256: digest(scene) }),
+      files: { ...f.request.files, scene: [part(scene, "application/json", "scene.json")], attachments: [part(bytes, "image/png", digest(bytes))] } });
+    if (valid) expect(upload().seal.attachments).toHaveLength(1);
+    else expect(upload).toThrow(/회색조/);
   });
   it("다른 작품·페이지의 원본 재사용, 누락 첨부, 중복 첨부, 다른 번들 버전을 차단한다", () => {
     const { request, metadata } = fixture();

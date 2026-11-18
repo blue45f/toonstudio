@@ -1,4 +1,4 @@
-import { canonicalStudioProjectVrmSceneLocations } from "./studio-project-vrm-scene-locations";
+import { canonicalStudioProjectVrmSceneLocations, studioVrmArchiveHistoryGroups } from "./studio-project-vrm-scene-locations";
 import { parseStudioProjectFile, type StudioProjectFile } from "../studio-project-file";
 
 import {
@@ -237,10 +237,9 @@ function snapshotProjectVrmReferences(project: unknown): ProjectVrmSnapshot {
 
   parsed.pagesList.forEach((page, pageIndex) => {
     visitElements(page.elements, `/pagesList/${pageIndex}/elements`, "page", pageIndex);
+    for (const group of studioVrmArchiveHistoryGroups(page, pageIndex)) visitElements(group.elements, group.pointer, "page", pageIndex);
   });
-  if (isRecord(parsed.master) && Array.isArray(parsed.master.elements)) {
-    visitElements(parsed.master.elements, "/master/elements", "master");
-  }
+  if (isRecord(parsed.master) && Array.isArray(parsed.master.elements)) visitElements(parsed.master.elements, "/master/elements", "master");
   return { project: parsed, references, sceneFingerprints };
 }
 

@@ -1,6 +1,6 @@
 import {
   getStudioBg3dSixPassBundleArtifacts,
-  hashStudioBg3dSixPassBundleManifest,
+  hashStudioBg3dSixPassBundleManifest, hashStudioBg3dSixPassCanonicalJson,
   serializeStudioBg3dSixPassBundleManifest,
   parseStudioBg3dSixPassBundleImageReference,
   studioBg3dSixPassArtifactSourceUri,
@@ -141,7 +141,13 @@ export async function assertStudioBg3dSixPassProjectArchiveEvidence(project: Stu
 
 /** archive writer/importer가 한 본문씩 검증한다. 전체 384 MiB 배열을 별도로 복제하지 않는다. */
 export async function verifyStudioBg3dSixPassProjectArchiveBodies(project: StudioProjectFile,
-  read: (hash: StudioBg3dSixPassContentHash) => Promise<Uint8Array | null>): Promise<void> {
+  read: (hash: StudioBg3dSixPassContentHash) => Promise<Uint8Array | null>, archive = true): Promise<void> {
+  if (archive) {
+    const { projectWithStudioSixPassVrmArchiveHistory } = await import("./studio-bg3d-six-pass-vrm-archive");
+    const expected = await projectWithStudioSixPassVrmArchiveHistory(project, read);
+    if (project.pagesList.some((page, index) => hashStudioBg3dSixPassCanonicalJson(page.bg3dArchiveVrmHistory ?? null) !== hashStudioBg3dSixPassCanonicalJson(expected.pagesList[index].bg3dArchiveVrmHistory ?? null)))
+      fail("보존한 장면의 VRM 모델·채색과 아카이브 이력 목록이 다릅니다.");
+  }
   const { references } = await planReferences(project);
   const grouped = groupReferences(references);
   for (const [hash, entries] of grouped) {
@@ -279,7 +285,7 @@ export async function restoreStudioBg3dSixPassProjectArchiveImport<T>(input: {
 export async function verifyStudioBg3dSixPassProjectNativeBodies(project: StudioProjectFile,
   authority: StudioOpfsAssetStore): Promise<void> {
   if (authority.kind !== "opfs") fail("복구에 durable OPFS 본문 저장소가 필요합니다.");
-  await verifyStudioBg3dSixPassProjectArchiveBodies(project, async (hash) => await authority.get(hash, { verify: true }));
+  await verifyStudioBg3dSixPassProjectArchiveBodies(project, async (hash) => await authority.get(hash, { verify: true }), false);
   for (const { state } of await collectStudioBg3dSixPassProjectBundles(project)) {
     for (const bundle of state.bundles) for (const manifest of bundle.revisions) {
       const bytes = await authority.get(hashStudioBg3dSixPassBundleManifest(manifest), { verify: true });

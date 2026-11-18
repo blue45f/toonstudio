@@ -3,7 +3,7 @@ import type { StudioDraftCollaborationReadiness } from "../../studio-draft-colla
 export interface StudioLocalVrmCutHostScope {
   readonly cutDocumentKey?: string;
   readonly cutTeamDocument?: boolean;
-  readonly cutWorkScope?: { readonly workId: string; readonly actorId: string | null; readonly authorized: boolean; readonly anchorId?: string };
+  readonly cutWorkScope?: { readonly workId: string; readonly actorId: string | null; readonly authorized: boolean; readonly authority?: import("../../studio-collab/studio-scoped-write-authority").StudioScopedWriteAuthority | null; readonly anchorId?: string };
 }
 
 /** 자동 생성한 소유자 룸은 기기 원고다. 다른 참여자나 작품 권한이 생기면 로컬 원본을 발행할 수 없다. */

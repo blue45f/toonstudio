@@ -100,7 +100,7 @@ export async function hydrateStudioBg3dSixPassCloudProject<T>(input: CloudInput 
   const authority = await acquireStudioBg3dSixPassBundleProductAuthority();
   for (const manifest of manifests) {
     input.signal?.throwIfAborted();
-    await hydrateStudioBg3dSixPassRemoteBundle({ workId: input.workId, authority, reference: { version: 1,
+    await hydrateStudioBg3dSixPassRemoteBundle({ workId: input.workId, authority, reference: { version: manifest.version,
       pageId: manifest.pageId, bundleId: manifest.bundleId, renderRevisionId: manifest.renderRevisionId,
       parentRevisionId: manifest.parentRevisionId, manifestHash: hashStudioBg3dSixPassBundleManifest(manifest) } });
   }

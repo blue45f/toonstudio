@@ -209,7 +209,7 @@ export function useStudioVrmPoserState({
   onClose,
   onInsert,
   initialDataUrl,
-  initialScene,
+  initialScene, cutPaintSession, onApplyCutPaint,
   seedPropId = null,
   onSeedObjectInsertConsumed,
   creativeRepository: creativeRepositoryOverride,
@@ -273,7 +273,7 @@ export function useStudioVrmPoserState({
   const [activeExpressionCategory, setActiveExpressionCategory] = useState<string>("emotion");
   const [activeCameraId, setActiveCameraId] = useState("front");
   const [activePanelTab, setActivePanelTab] = useState<PanelTab>("character");
-  const [activeCharacterSection, setActiveCharacterSection] = useState<CharacterPanelSection>("library");
+  const [activeCharacterSection, setActiveCharacterSection] = useState<CharacterPanelSection>(cutPaintSession ? "surface" : "library");
   const avatarForgeReferenceSurfaceActive =
     open && activePanelTab === "character" && activeCharacterSection === "forge";
   const avatarForgeReferenceCatalogue = useStudioVrmAvatarReferenceCatalogue({
@@ -1003,7 +1003,7 @@ export function useStudioVrmPoserState({
     onClose,
     onInsert,
     initialDataUrl,
-    initialScene,
+    initialScene, cutPaintSession, onApplyCutPaint,
     seedPropId,
     onSeedObjectInsertConsumed,
     creativeRepositoryOverride,

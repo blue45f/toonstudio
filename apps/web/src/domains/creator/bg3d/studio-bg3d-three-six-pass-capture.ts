@@ -1,3 +1,6 @@
+import { decodeStudioSixPassCoverageShadow, studioSixPassCoverageShadow, studioSixPassPaintedOpacity } from "./studio-bg3d-six-pass-actor-material";
+import { MToonMaterial } from "@pixiv/three-vrm";
+import { studioSixPassActorForObject, type StudioBg3dSixPassActorPixels } from "./studio-bg3d-six-pass-cast";
 import * as THREE from "three";
 
 import type { StudioBg3dCaptureRequest } from "./studio-bg3d-capture-adapter";
@@ -8,6 +11,7 @@ type AlbedoMaterial = THREE.MeshBasicMaterial | THREE.MeshStandardMaterial
 export interface StudioBg3dThreeSixPassPlanes {
   readonly flatColorRgba: Uint8ClampedArray;
   readonly shadowRgba: Uint8ClampedArray;
+  readonly frozenCastPixels?: readonly StudioBg3dSixPassActorPixels[];
 }
 
 function supportedMaterial(material: THREE.Material): material is AlbedoMaterial {
@@ -30,11 +34,13 @@ export function assertStudioBg3dThreeSixPassScene(scene: THREE.Scene): void {
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
       if (!material.visible) continue;
-      if (!supportedMaterial(material) || material.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile
-        || material.transparent || material.opacity !== 1 || material.alphaTest !== 0 || material.alphaMap
+      const actorToon = Boolean(studioSixPassActorForObject(object)) && material instanceof MToonMaterial;
+      if ((!actorToon && (!supportedMaterial(material) || material.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile))
+        || (actorToon && material instanceof MToonMaterial && (material.uvAnimationRotationSpeedFactor || material.uvAnimationScrollXSpeedFactor || material.uvAnimationScrollYSpeedFactor))
+        || (!studioSixPassPaintedOpacity(object, material) && (material.transparent || material.opacity !== 1 || material.alphaTest !== 0 || ("alphaMap" in material && material.alphaMap)))
         || ("displacementMap" in material && material.displacementMap)
         || (material instanceof THREE.MeshPhysicalMaterial && material.transmission > 0)) {
-        throw new Error("6패스 LT는 현재 불투명 표준 재질만 지원합니다. 사용자 셰이더·반투명·알파 컷·변위·투과 재질은 지원하지 않습니다.");
+        throw new Error("6패스 LT는 불투명 표준 재질과 고정 배우의 표면 채색을 지원합니다. 이 장면에 분리할 수 없는 셰이더·투명·알파 컷·변위 재질이 있습니다.");
       }
     }
   });
@@ -88,21 +94,52 @@ export async function captureStudioBg3dThreeSixPassPlanes(input: {
   const originalShadowAutoUpdate = renderer.shadowMap.autoUpdate;
   const originalShadowNeedsUpdate = renderer.shadowMap.needsUpdate;
   const originalOverride = scene.overrideMaterial;
-  const createMaterial = (source: THREE.Material, shadow: boolean): THREE.Material => {
+  // 끝점과 중간값을 띄워 두어 RGBA8 변환의 한 단계 반올림 오차에도 같은 배우를 찾는다.
+  const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xffffff,
+    0x800000, 0x008000, 0x000080, 0x808000, 0x800080];
+  const actors = new Map<string, { actor: Omit<StudioBg3dSixPassActorPixels, "pixels">; color: number }>();
+  let paintedOpacity = false;
+  scene.traverseVisible(object => {
+    if (object instanceof THREE.Mesh && (Array.isArray(object.material) ? object.material : [object.material]).some(material => studioSixPassPaintedOpacity(object, material))) paintedOpacity = true;
+  });
+  type Pass = "albedo" | "shadow" | "actors";
+  const createMaterial = (mesh: THREE.Mesh, source: THREE.Material, pass: Pass): THREE.Material => {
+    const actor = studioSixPassActorForObject(mesh);
+    const toon = actor && source instanceof MToonMaterial ? source : null;
     // visible=false 재질은 그리지 않지만 지원 여부와 무관하게 원래 비표시 상태를 보존한다.
-    if (!source.visible) {
+    if (!source.visible || toon?.isOutline) {
       const hidden = new THREE.MeshBasicMaterial({ visible: false });
       allocated.push(hidden);
       return hidden;
     }
-    if (!supportedMaterial(source)) throw new Error("6패스 LT 재질 지원 범위를 벗어났습니다.");
-    const material = shadow
-      ? new THREE.ShadowMaterial({ color: 0x000000, opacity: 1, side: source.side })
-      : new THREE.MeshBasicMaterial({ color: source.color, map: source.map,
-        vertexColors: source.vertexColors, side: source.side, opacity: 1 });
+    const base = supportedMaterial(source) ? source : toon;
+    if (!base) throw new Error("6패스 LT 재질 지원 범위를 벗어났습니다.");
+    let actorColor = 0;
+    if (pass === "actors" && actor) {
+      const previous = actors.get(actor.elementId);
+      if (previous && (previous.actor.sourceHash !== actor.sourceHash || previous.actor.placementHash !== actor.placementHash))
+        throw new Error("같은 배우의 서로 다른 원본이 함께 렌더되어 중단했습니다.");
+      actorColor = previous?.color ?? colors[actors.size];
+      if (!actorColor) throw new Error("한 컷에는 배우 12명까지 담을 수 있습니다.");
+      actors.set(actor.elementId, { actor, color: actorColor });
+    }
+    const material = pass === "actors"
+      ? new THREE.MeshBasicMaterial({ color: new THREE.Color().setHex(actorColor, renderer.outputColorSpace), side: source.side })
+      : pass === "shadow"
+      ? (paintedOpacity ? studioSixPassCoverageShadow(source, base.map) : new THREE.ShadowMaterial({ color: 0x000000, opacity: 1, side: source.side }))
+      : new THREE.MeshBasicMaterial({ color: base.color, map: base.map,
+        vertexColors: base.vertexColors, side: source.side, opacity: 1 });
+    if (material instanceof THREE.MeshBasicMaterial && studioSixPassPaintedOpacity(mesh, source)) {
+      material.map = source.map; material.alphaMap = source.alphaMap; material.opacity = source.opacity;
+      material.transparent = pass === "albedo" && source.transparent;
+      material.alphaTest = pass === "actors" ? Math.max(source.alphaTest, 1 / 255) : source.alphaTest;
+      if (pass === "actors") material.onBeforeCompile = shader => {
+        shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", "outgoingLight = diffuse;\n#include <opaque_fragment>");
+      };
+    }
     material.visible = source.visible;
     material.depthTest = source.depthTest;
-    material.depthWrite = source.depthWrite;
+    material.depthWrite = pass === "actors" || source.depthWrite;
     material.polygonOffset = source.polygonOffset;
     material.polygonOffsetFactor = source.polygonOffsetFactor;
     material.polygonOffsetUnits = source.polygonOffsetUnits;
@@ -111,7 +148,7 @@ export async function captureStudioBg3dThreeSixPassPlanes(input: {
     material.clipShadows = source.clipShadows;
     material.toneMapped = false;
     material.fog = false;
-    if (shadow) {
+    if (pass === "shadow" && !paintedOpacity) {
       // alpha=0인 앞쪽 표면도 뒤의 수신면 픽셀을 지워야 한다. 투명 블렌딩으로 그리면
       // 앞 물체를 관통한 바닥 그림자가 남으므로, 불투명 깊이 검사와 RGBA 직접 기록을 쓴다.
       material.transparent = false;
@@ -131,32 +168,44 @@ export async function captureStudioBg3dThreeSixPassPlanes(input: {
     renderer.shadowMap.autoUpdate = originalShadowAutoUpdate;
     renderer.shadowMap.needsUpdate = originalShadowNeedsUpdate;
   };
-  const submit = (shadow: boolean): Promise<Uint8ClampedArray> => {
+  const submit = (pass: Pass): Promise<Uint8ClampedArray> => {
     try {
       scene.traverseVisible((object) => {
         if (!(object instanceof THREE.Mesh)) return;
         const source = originals.get(object) ?? object.material;
         originals.set(object, source);
         object.material = Array.isArray(source)
-          ? source.map((material) => createMaterial(material, shadow)) : createMaterial(source, shadow);
+          ? source.map((material) => createMaterial(object, material, pass)) : createMaterial(object, source, pass);
       });
       scene.fog = null;
       scene.environment = null;
-      scene.background = shadow ? null : originalBackground;
+      scene.background = pass === "albedo" ? originalBackground : null;
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.toneMappingExposure = 1;
       // 두 패스는 같은 정본 shadow caster를 사용한다. 새 그림자 맵도 이 제출 안에서 갱신한다.
       renderer.shadowMap.autoUpdate = true;
       renderer.shadowMap.needsUpdate = true;
-      return input.captureColor({ ...request, background: shadow
+      return input.captureColor({ ...request, background: pass !== "albedo"
         ? { color: "#000000", alpha: 0 } : request.background });
     } finally { restore(); }
   };
   try {
-    const next = (shadow: boolean) => input.submit ? input.submit(() => submit(shadow)) : submit(shadow);
-    const flatColorRgba = await next(false);
-    const shadowRgba = await next(true);
-    return { flatColorRgba, shadowRgba };
+    const next = (pass: Pass) => input.submit ? input.submit(() => submit(pass)) : submit(pass);
+    const flatColorRgba = await next("albedo");
+    const shadowRgba = await next("shadow");
+    if (paintedOpacity) decodeStudioSixPassCoverageShadow(shadowRgba, renderer.outputColorSpace);
+    if (!request.measureFrozenCast) return { flatColorRgba, shadowRgba };
+    const mask = await next("actors");
+    const counts = new Map<number, number>();
+    const quantize = (v: number) => v > 248 ? 255 : v > 122 && v < 134 ? 128 : 0;
+    for (let offset = 0; offset < mask.length; offset += 4) {
+      if (!mask[offset + 3]) continue;
+      const r = mask[offset], g = mask[offset + 1], b = mask[offset + 2];
+      const color = quantize(r) * 65536 + quantize(g) * 256 + quantize(b);
+      if (color) counts.set(color, (counts.get(color) ?? 0) + 1);
+    }
+    const frozenCastPixels = [...actors.values()].map(({ actor, color }) => ({ ...actor, pixels: counts.get(color) ?? 0 }));
+    return { flatColorRgba, shadowRgba, frozenCastPixels };
   } finally {
     for (const material of allocated) material.dispose();
   }

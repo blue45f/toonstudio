@@ -1,6 +1,6 @@
 import { StudioLiveRoomTransitionCoordinator } from "./studio-live-room-transition-coordinator";
 import { describe, expect, it, vi } from "vitest";
-import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY as CAP } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
+import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY as CAP, STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY as VRM_CAP } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { broadcastStudioBg3dReaderSafe, resetStudioBg3dReaderRoom, joinStudioBg3dReaderRoom, studioRequiredReaderRoom, studioSupportedReaderRooms } from "./studio-live-bg3d-reader-fence";
 import type { StudioLiveGatewayHost } from "./studio-live-gateway-host";
 import type { StudioLiveSocket } from "./studio-live.protocol";
@@ -15,6 +15,12 @@ describe("6패스 수신 reader fence", () => {
   it("일반 v8 작품은 기존 room 전파를 유지한다", async () => {
     const h = harness(); await broadcastStudioBg3dReaderSafe(h.host, h.sender, "work-room", "update", { id: 1 }, undefined);
     expect(h.emit).toHaveBeenCalledWith("update", { id: 1 }); expect(h.fetchSockets).not.toHaveBeenCalled();
+  });
+  it("배우 원본 6패스는 v1과 v2를 모두 지원하는 방에만 전파한다", () => {
+    const requiredRoom = studioRequiredReaderRoom("work-room", [CAP, VRM_CAP]);
+    expect(studioSupportedReaderRooms("work-room", [CAP])).not.toContain(requiredRoom);
+    expect(studioSupportedReaderRooms("work-room", [VRM_CAP])).not.toContain(requiredRoom);
+    expect(studioSupportedReaderRooms("work-room", [CAP, VRM_CAP])).toContain(requiredRoom);
   });
   it("이미 참가한 구 peer에는 본문 없이 upgrade 오류만 전달하고 닫는다", async () => {
     const h = harness(), old = { id: "old", data: {}, emit: vi.fn(), disconnect: vi.fn() };

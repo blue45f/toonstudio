@@ -4,18 +4,19 @@ import { isWorkVrmCutActorScene } from "@toonstudio/contracts/studio-work-vrm-cu
 
 import { studioCutVrmDocumentScope, studioTeamCutVrmDocumentScope } from "../studio-shared-3d-scene-runtime";
 import { createStudioVrmSceneDocument, type StudioVrmSurfacePaintTexture } from "../vrm/studio-vrm-scene-document";
+import { STUDIO_VRM_TEXTURE_PAINT_CHANNELS, studioVrmTexturePaintChannelEncoding } from "../vrm/studio-vrm-texture-paint-channel";
 import { teamCutAssetPlan, verifyTeamCutFiles } from "./studio-team-vrm-cut-assets";
 import type { StudioScene3dCutLinkedVrm } from "./studio-scene3d-shot-versions";
 
 const scope = studioTeamCutVrmDocumentScope("work", "page");
-const png = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNYxeDyHwAENAHuKmjE9gAAAABJRU5ErkJggg=="), char => char.charCodeAt(0));
+const png = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGPo6Oj4DwAFzAKYMkOunAAAAABJRU5ErkJggg=="), char => char.charCodeAt(0));
 const hash = `sha256:${sha256HexPortable(png)}`;
 const texture: StudioVrmSurfacePaintTexture = { bindingKey: "face", materialLocator: "gltf-material:1", textureSlot: "baseColor", hash,
   mime: "image/png", byteSize: png.byteLength, width: 1, height: 1 };
-function cast(textures: readonly StudioVrmSurfacePaintTexture[] = [texture]): StudioScene3dCutLinkedVrm {
+function cast(textures: readonly StudioVrmSurfacePaintTexture[] = [texture], version: 1 | 2 = 1): StudioScene3dCutLinkedVrm {
   const base = createStudioVrmSceneDocument({ source: "bundled", id: "sample-vrm", name: "루미" });
   return { version: 1, documentScope: scope, characters: ["A", "B"].map(elementId => ({ elementId, label: elementId,
-    stageTransform: { position: [0, 0, 0], rotationY: 0 }, vrmScene: { ...base, surfacePaint: { version: 1, textures } } })) };
+    stageTransform: { position: [0, 0, 0], rotationY: 0 }, vrmScene: { ...base, surfacePaint: { version, textures } } })) };
 }
 
 describe("작품에 봉인하는 고정 VRM 원본", () => {
@@ -48,11 +49,23 @@ describe("작품에 봉인하는 고정 VRM 원본", () => {
     expect(resources.blobs.size).toBe(1);
   });
   it("채널·크기 위조와 실패한 PNG 해시를 저장 전에 거절한다", async () => {
-    expect(() => teamCutAssetPlan(cast([{ ...texture, textureSlot: "roughness" }]))).toThrow(/기본색/u);
+    expect(() => teamCutAssetPlan(cast([{ ...texture, textureSlot: "roughness" }]))).toThrow(/채색 채널/u);
+    expect(() => teamCutAssetPlan(cast([{ ...texture, textureSlot: "roughness", colorSpace: "srgb", channelPacking: "rgba" }], 2))).toThrow(/색공간/u);
     expect(() => teamCutAssetPlan(cast([texture, { ...texture, height: 2 }]))).toThrow(/같은 해시/u);
     const read = async () => new Blob([png], { type: "image/png" });
     await expect(verifyTeamCutFiles(cast([{ ...texture, hash: `sha256:${"0".repeat(64)}` }]), read, new AbortController().signal)).rejects.toThrow(/해시/u);
     const abort = new AbortController(); abort.abort();
     await expect(verifyTeamCutFiles(cast(), read, abort.signal)).rejects.toThrow();
+  });
+  it("서로 다른 다섯 채널이 같은 바이트를 참조해도 작품 첨부는 한 번만 검증한다", async () => {
+    const layers = [...STUDIO_VRM_TEXTURE_PAINT_CHANNELS].sort().map(textureSlot => ({
+      ...texture, bindingKey: `gltf-material-1-${textureSlot}`, textureSlot, ...studioVrmTexturePaintChannelEncoding(textureSlot),
+    }));
+    const actors = cast(layers, 2);
+    expect(isWorkVrmCutActorScene(actors.characters[0].vrmScene)).toBe(true);
+    const read = vi.fn(async () => new Blob([png], { type: "image/png" }));
+    const { resources } = await verifyTeamCutFiles(actors, read, new AbortController().signal);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(resources.paints.get(hash)?.metadata.contentHash).toBe(hash);
   });
 });

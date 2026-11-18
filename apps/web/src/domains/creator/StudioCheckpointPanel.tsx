@@ -319,10 +319,11 @@ export function StudioCheckpointPanel({
       if (getCurrentProjectGeneration() !== projectGeneration) {
         throw new Error("편집본을 캡처하는 동안 내용이 변경됐어요. 다시 비교해 주세요.");
       }
-      const [targetDetail, baseDetail, { runStudioRevisionComparison }] = await Promise.all([
+      const [targetDetail, baseDetail, { runStudioRevisionComparison }, { prepareStudioCreatorWorkSnapshot }] = await Promise.all([
         getWorkRevisionComparison(workId, targetRevision, controller.signal),
         getWorkRevisionComparison(workId, baseRevision, controller.signal),
         import("./studio-revision-compare-worker-client"),
+        import("./studio-creator-work-project"),
       ]);
       if (!requestIsCurrent()) return;
       if (targetDetail.revision !== targetRevision || baseDetail.revision !== baseRevision) {
@@ -331,8 +332,8 @@ export function StudioCheckpointPanel({
       const comparison = await runStudioRevisionComparison(
         {
           targetRevision, baseRevision,
-          targetSnapshot: targetDetail.snapshot,
-          baseSnapshot: baseDetail.snapshot,
+          targetSnapshot: await prepareStudioCreatorWorkSnapshot(targetDetail.snapshot, workId, controller.signal),
+          baseSnapshot: await prepareStudioCreatorWorkSnapshot(baseDetail.snapshot, workId, controller.signal),
           localProject,
         },
         { executionBackend: "worker", signal: controller.signal }

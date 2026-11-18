@@ -1,3 +1,11 @@
+import { createStudioScene3dDocument } from "../scene3d/studio-scene3d-document";
+import { createStudioScene3dVersionedCut } from "../scene3d/studio-scene3d-shot-versions";
+import { createStudioVrmSceneDocument } from "../vrm/studio-vrm-scene-document";
+import { createStudioShared3dSceneSession } from "../studio-shared-3d-scene-bridge";
+import { studioCutVrmDocumentScope } from "../studio-shared-3d-scene-runtime";
+import { collectStudioVrmProjectArchiveReferences } from "../vrm/studio-vrm-project-library";
+import { projectWithStudioSixPassVrmArchiveHistory } from "../scene3d/bg3d-six-pass/studio-bg3d-six-pass-vrm-archive";
+import { verifyStudioBg3dSixPassProjectArchiveBodies } from "../scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-archive";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { createStudioBg3dSixPassBundleReceipt, hashStudioBg3dSixPassBundleManifest, parseStudioBg3dSixPassBundleManifest,
   STUDIO_BG3D_SIX_PASS_ROLES, type StudioBg3dSixPassBundleManifest } from "@toonstudio/contracts/studio-bg3d-six-pass-bundle";
@@ -42,7 +50,7 @@ async function fixture(recapture = false) {
     page = { ...page, ...patch, elements }; return true;
   });
   const setError = vi.fn();
-  const bind = (realtime = true, workId?: string) => bindStudioBg3dRenderedImage({ setError, setStatusNotice: vi.fn(), elementById: new Map(page.elements.map((element) => [element.id, element])),
+  const bind = (realtime = true, workId?: string) => bindStudioBg3dRenderedImage({ canStoreLocalVrmCut: () => !workId, cutDocumentKey: "draft-A", readCurrentPage: () => page, activeElementsRef: { get current() { return page.elements; } }, setError, setStatusNotice: vi.fn(), elementById: new Map(page.elements.map((element) => [element.id, element])),
     groups: page.groups ?? [], canvasH: page.canvasH, isRealtimeTeamSession: realtime, elements: page.elements, activePage: page,
     bg3dDccSourceRef: { current: null }, commit, setSelectedId: vi.fn(), setTool: vi.fn(), announceDrawingShortcut: vi.fn(),
     masterEditMode: false, pageEditLocked: false, currentStudioDrawingAssistDocument: () => null,
@@ -206,4 +214,34 @@ it("복구 전체가 CRDT 전이 예산을 넘으면 서버 seal 전에 실제 �
     expect(f.setError).toHaveBeenLastCalledWith(expect.stringContaining("CRDT 메시지 예산"));
     expect(document.encodeStateAsUpdate()).toEqual(original);
   } finally { document.destroy(); }
+});
+
+
+it("렌더된 배우와 일치하는 개인 6패스만 커밋하고 앞선 버전의 원본 모델을 원고 레이어 삭제 후에도 ZIP에서 찾는다", async () => {
+  const f = await fixture();
+  function take(modelHash: string): StudioBackground3DInsertResult {
+    const vrmScene = createStudioVrmSceneDocument({ source: "attachment", hash: `sha256:${modelHash.repeat(64)}`, byteSize: 500, mime: "model/vrm", name: "인물" });
+    const actor = { elementId: "actor", label: "배우", stageTransform: { position: [0, 0, 0] as const, rotationY: 0 }, vrmScene };
+    const pinnedVersionedCut = createStudioScene3dVersionedCut({ id: "cut", name: "고정", scene: createStudioScene3dDocument("fixture", "2026-11-19T00:00:00Z"), characters: {},
+      linkedVrm: { version: 1, documentScope: studioCutVrmDocumentScope("draft-A", f.read().id)!, characters: [actor] } });
+    const [runtime] = createStudioShared3dSceneSession([{ ...actor, scene: vrmScene }]).characters;
+    return { ...f.result, bg3dScene: normalizeStudioBg3dSceneDocument({ ...f.result.bg3dScene, pinnedVersionedCut }),
+      frozenVrmSixPassCapture: { sourceHash: pinnedVersionedCut.sourceHash, actors: [{ elementId: actor.elementId, sourceHash: runtime.sourceHash, placementHash: runtime.placementHash, pixels: 1 }] } };
+  }
+  const a = take("a"), b = take("b");
+  expect(await f.bind(false)({ ...a, frozenVrmSixPassCapture: undefined })).toBe(false);
+  expect(await f.bind(false)({ ...b, frozenVrmSixPassCapture: a.frozenVrmSixPassCapture })).toBe(false);
+  expect(f.commit).not.toHaveBeenCalled();
+  expect(await f.bind(false)(a)).toBe(true);
+  const anchor = f.read().bg3dLtBundles!.bundles[0].revisions[0].anchorElementId;
+  expect(await f.bind(false)(b, anchor)).toBe(true);
+  expect(f.read().elements).toHaveLength(6);
+  const project = { ...f.project, pagesList: [{ ...f.read(), elements: [], shared3dStage: undefined, linked3dRender: undefined }] };
+  const read = (hash: `sha256:${string}`) => bundleAuthority.get(hash, { verify: true });
+  const archived = await projectWithStudioSixPassVrmArchiveHistory(project, read);
+  const refs = collectStudioVrmProjectArchiveReferences(archived);
+  expect(refs.map(r => r.hash)).toEqual([a, b].map(r => r.bg3dScene.pinnedVersionedCut!.source.linkedVrm!.characters[0].vrmScene.model).map(model => model.source === "attachment" && model.hash));
+  expect(refs.every(r => r.pointer.includes("bg3dArchiveVrmHistory") && r.pointer.endsWith("/model/hash"))).toBe(true);
+  await expect(verifyStudioBg3dSixPassProjectArchiveBodies(archived, read)).resolves.toBeUndefined();
+  await expect(verifyStudioBg3dSixPassProjectArchiveBodies(project, read)).rejects.toThrow(/이력/);
 });

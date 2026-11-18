@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { ConflictException, NotFoundException } from "@nestjs/common";
 import { and, eq } from "drizzle-orm";
 import type { WorkVrmCutReceipt } from "@toonstudio/contracts/studio-work-vrm-cut";
+import { hashStudioBg3dSixPassCanonicalJson, type StudioBg3dSixPassBundleManifest } from "@toonstudio/contracts/studio-bg3d-six-pass-bundle";
 import { canonicalJson } from "@toonstudio/studio-project-model";
 import { creatorWorkAssets, db } from "../../platform/database";
 import { studioWorkVrmCuts } from "../../platform/database/studio-raster-asset.schema";
@@ -43,6 +44,19 @@ export async function sealWorkVrmCut(tx: DrizzleStudioCrdtTransaction, value: St
   }
   if (!newAnchor) throw new ConflictException("이전에 다른 이미지에 사용한 레이어 ID입니다.");
   await tx.insert(studioWorkVrmCuts).values(value);
+}
+
+/** 이미 같은 작품에서 원본·이용 권한을 봉인한 컷만 6패스 revision의 의존성으로 받아들인다. */
+export async function readSixPassWorkVrmCutActorHash(tx: DrizzleStudioCrdtTransaction, workId: string, manifest: StudioBg3dSixPassBundleManifest): Promise<string | null> {
+  if (manifest.version === 1) return null;
+  const cut = manifest.workVrmCut;
+  const [source] = await tx.select({ sceneText: studioWorkVrmCuts.sceneText }).from(studioWorkVrmCuts)
+    .where(and(whereCut(workId, cut.anchorId), eq(studioWorkVrmCuts.pageId, manifest.pageId),
+      eq(studioWorkVrmCuts.sceneSha256, cut.sceneSha256), eq(studioWorkVrmCuts.compositeSha256, cut.compositeSha256)));
+  if (!source || createHash("sha256").update(source.sceneText).digest("hex") !== cut.sceneSha256)
+    throw new ConflictException("이 작품과 페이지에서 봉인한 원본 컷을 확인해 주세요.");
+  const scene = JSON.parse(source.sceneText);
+  return hashStudioBg3dSixPassCanonicalJson(scene.pinnedVersionedCut.source.linkedVrm);
 }
 
 export function readWorkVrmCut(repository: StudioWorkAssetRepository, actor: string, workId: string, anchorId: string): Promise<WorkVrmCutReceipt> {

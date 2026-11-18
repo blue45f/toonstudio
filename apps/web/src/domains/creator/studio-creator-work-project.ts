@@ -153,3 +153,17 @@ export function creatorWorkSnapshotToStudioProject(
       : {}),
   });
 }
+
+/** 서버 비교 워커도 검증한 원고와 같은 불변 장면 바이트를 받는다. 일반 원고는 추가 I/O 없이 반환한다. */
+export async function prepareStudioCreatorWorkSnapshot(value: unknown, workId: string, signal?: AbortSignal) {
+  if (!isRecord(value) || !isRecord(value.doc) || !Array.isArray(value.doc.pagesList) || !value.doc.pagesList.some(page =>
+    isRecord(page) && isRecord(page.bg3dLtBundles) && Array.isArray(page.bg3dLtBundles.bundles) && page.bg3dLtBundles.bundles.some(bundle =>
+      isRecord(bundle) && Array.isArray(bundle.revisions) && bundle.revisions.some(revision => isRecord(revision) && revision.version === 2)))) return value;
+  signal?.throwIfAborted();
+  const { restoreStudioFrozenSixPassSnapshot } = await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-work-snapshot");
+  return await restoreStudioFrozenSixPassSnapshot(value, workId, signal) ?? value;
+}
+
+export async function readStudioCreatorWorkProject(value: unknown, workId: string, signal?: AbortSignal) {
+  return creatorWorkSnapshotToStudioProject(await prepareStudioCreatorWorkSnapshot(value,workId,signal));
+}

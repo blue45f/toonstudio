@@ -11,7 +11,7 @@ export { studioCrdtBg3dManifestHash };
 export const STUDIO_BG3D_BUNDLE_REVISIONS_ROOT = "studio-bg3d-bundle-revisions-v1";
 export const STUDIO_BG3D_BUNDLE_ACTIVE_ROOT = "studio-bg3d-bundle-active-v1";
 export interface StudioCrdtBg3dBundleRevisionReference {
-  readonly version: 1; readonly pageId: string; readonly bundleId: string; readonly renderRevisionId: string;
+  readonly version: 1 | 2; readonly pageId: string; readonly bundleId: string; readonly renderRevisionId: string;
   readonly parentRevisionId: string | null; readonly manifestHash: `sha256:${string}`;
 }
 export interface StudioCrdtBg3dBundlePageReferences {
@@ -27,7 +27,7 @@ function record(value: unknown): value is Record<string, unknown> {
 }
 export function parseStudioCrdtBg3dBundleRevisionReference(value: unknown): StudioCrdtBg3dBundleRevisionReference {
   if (!record(value) || Object.keys(value).sort().join(",") !== "bundleId,manifestHash,pageId,parentRevisionId,renderRevisionId,version"
-    || value.version !== 1 || !isStudioBg3dSixPassContentHash(value.manifestHash)
+    || (value.version !== 1 && value.version !== 2) || !isStudioBg3dSixPassContentHash(value.manifestHash)
     || ![value.pageId, value.bundleId, value.renderRevisionId].every((id) => typeof id === "string" && ID.test(id))
     || (value.parentRevisionId !== null && (typeof value.parentRevisionId !== "string" || !ID.test(value.parentRevisionId)))) {
     throw new Error("6패스 CRDT revision 참조가 올바르지 않습니다.");
@@ -69,7 +69,7 @@ export function planStudioCrdtBg3dBundleDiff(doc: Y.Doc, pages: readonly { reado
     for (const bundle of page.bg3dLtBundles.bundles) {
       for (const manifest of bundle.revisions) {
         if (manifest.pageId !== page.id) throw new Error("6패스 원본 페이지가 다릅니다.");
-        const ref: StudioCrdtBg3dBundleRevisionReference = { version: 1, pageId: page.id, bundleId: bundle.bundleId,
+        const ref: StudioCrdtBg3dBundleRevisionReference = { version: manifest.version, pageId: page.id, bundleId: bundle.bundleId,
           renderRevisionId: manifest.renderRevisionId, parentRevisionId: manifest.parentRevisionId,
           manifestHash: studioCrdtBg3dManifestHash(manifest) };
         const entryKey = key(page.id, bundle.bundleId, manifest.renderRevisionId), value = JSON.stringify(ref);

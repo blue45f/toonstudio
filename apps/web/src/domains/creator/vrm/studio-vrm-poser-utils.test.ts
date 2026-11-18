@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { STUDIO_HUMANOID_BONE_NAMES } from "../studio-humanoid-bones";
 
 import { createAvatarForgeState } from "./studio-vrm-avatar-forge";
+import { StudioVrmTexturePaintMaterialChannels } from "./studio-vrm-texture-paint-material";
 import {
   STUDIO_VRM_APPLIED_HUMANOID_BONES,
   applyPoseToVrm,
@@ -711,6 +712,28 @@ describe("studio-vrm-poser-utils unified pipeline", () => {
 });
 
 describe("VRM material fx (MToon shade/outline/rim/emissive)", () => {
+  it.each([true, false])("MToon 효과의 최초 적용 순서와 관계없이 발광 채색과 원본을 복원한다 (%s)", (fxFirst) => {
+    const { vrm } = createMinimalVrm();
+    const mat = createMToonLikeMaterial();
+    addMesh(vrm.scene, "Tops", mat);
+    mat.emissive.setRGB(0, 0, 0);
+    mat.emissiveIntensity = 0;
+    const paint = new StudioVrmTexturePaintMaterialChannels();
+    if (fxFirst) applyVrmMaterialFx(vrm, DEFAULT_VRM_MATERIAL_FX);
+    expect(paint.get(mat, "emissive")).not.toBeNull();
+    paint.set(mat, "emissive", new THREE.Texture());
+    applyVrmMaterialFx(vrm, DEFAULT_VRM_MATERIAL_FX);
+    expect(mat.emissive.getHexString()).toBe("ffffff");
+    expect(mat.emissiveIntensity).toBe(1);
+    applyVrmMaterialFx(vrm, { ...DEFAULT_VRM_MATERIAL_FX, emissiveColor: "#ff00ff", emissiveIntensity: 0.4 });
+    expect(mat.emissive.getHexString()).toBe("ff00ff");
+    applyVrmMaterialFx(vrm, DEFAULT_VRM_MATERIAL_FX);
+    expect(mat.emissive.getHexString()).toBe("ffffff");
+    paint.dispose();
+    applyVrmMaterialFx(vrm, DEFAULT_VRM_MATERIAL_FX);
+    expect(mat.emissive.getHexString()).toBe("000000");
+    expect(mat.emissiveIntensity).toBe(0);
+  });
   it("hasVrmMToonMaterial is false with no meshes or only non-MToon meshes, true once an MToon mesh exists", () => {
     const { vrm } = createMinimalVrm();
     expect(hasVrmMToonMaterial(vrm)).toBe(false);

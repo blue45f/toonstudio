@@ -1,4 +1,4 @@
-import { canonicalStudioProjectVrmSceneLocations } from "./vrm/studio-project-vrm-scene-locations";
+import { canonicalStudioProjectVrmSceneLocations, studioVrmArchiveHistoryGroups } from "./vrm/studio-project-vrm-scene-locations";
 import { collectStudioBundleArchiveAttachments } from "./catalog/studio-bundle-project-archive";
 import { assertStudioPsdSourceArchiveEvidence } from "./export/studio-psd-source-archive";
 import { probableStudioProjectAssetField as probableAssetField, isStudioBundleArchiveMetadata, studioProjectArchiveReferenceMode as documentReferenceMode } from "./studio-project-archive-dependencies";
@@ -1661,10 +1661,9 @@ function collectVrmSurfacePaintArchivePlan(
   };
   parsed.pagesList.forEach((page, pageIndex) => {
     visitElements(page.elements, `/pagesList/${pageIndex}/elements`);
+    for (const group of studioVrmArchiveHistoryGroups(page, pageIndex)) visitElements(group.elements, group.pointer);
   });
-  if (isRecord(parsed.master) && Array.isArray(parsed.master.elements)) {
-    visitElements(parsed.master.elements, "/master/elements");
-  }
+  if (isRecord(parsed.master) && Array.isArray(parsed.master.elements)) visitElements(parsed.master.elements, "/master/elements");
 
   const grouped = new Map<string, VrmSurfacePaintArchiveAttachmentPlan>();
   for (const reference of references) {

@@ -3,6 +3,14 @@
  * This leaf stays type-only so the document controller never imports renderer/runtime code.
  */
 
+/** 같은 컷에서 실제로 보인 배우와 해당 배우가 차지한 화소 수. */
+export interface StudioBg3dSixPassActorPixels {
+  readonly elementId: string;
+  readonly sourceHash: `sha256:${string}`;
+  readonly placementHash: `sha256:${string}`;
+  readonly pixels: number;
+}
+
 export interface StudioBg3dSharedStageInsertProjection {
   /** Full-fidelity VRM sources baked in this capture; Studio may hide, but never delete, them. */
   readonly linkedCharacterCapture?: {
