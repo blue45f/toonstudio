@@ -60,9 +60,17 @@ function command(spawnImpl, executable, args, { root, env, input, timeout = 15_0
       cwd: root, env, input, timeout, maxBuffer: MAX_OUTPUT_BYTES, encoding: "utf8",
       stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"], shell: false,
     });
-  } catch {
-    return { status: null, stdout: "" };
+  } catch (error) {
+    return { status: null, stdout: "", error };
   }
+}
+
+function projectCommandFailure(result) {
+  return {
+    exitCode: Number.isInteger(result.status) && result.status >= 0 && result.status <= 255 ? result.status : null,
+    signal: result.signal == null ? null : choice(result.signal, ["SIGTERM", "SIGKILL", "SIGABRT", "SIGSEGV", "SIGBUS"], "unknown"),
+    spawnErrorCode: result.error == null ? null : choice(result.error.code, ["ENOENT", "EACCES", "EPERM", "ETIMEDOUT", "ENOBUFS"], "unknown"),
+  };
 }
 
 export function readAuditManifest(root = ROOT) {
@@ -242,7 +250,7 @@ export async function runOnpodAdminReadonlyAudit({
 } = {}) {
   const report = {
     schemaVersion: 1, mode: "read-only", appName: ONPOD_AUDIT_APP, releaseSha: matching(env.RELEASE_SHA, SHA),
-    status: "blocked", reason: null, app: null, audit: null, cloudflare: null,
+    status: "blocked", reason: null, app: null, appStatusFailure: null, audit: null, cloudflare: null,
   };
   try {
     if (argv.length !== 0 || env.GITHUB_EVENT_NAME !== "workflow_dispatch" || env.GITHUB_REF !== "refs/heads/main") throw new Error("MANUAL_MAIN_ONLY");
@@ -259,7 +267,10 @@ export async function runOnpodAdminReadonlyAudit({
     if (typeof env.ONPOD_DEPLOY_TOKEN !== "string" || !/^opk_[^\s]{8,508}$/u.test(env.ONPOD_DEPLOY_TOKEN)) throw new Error("APP_TOKEN_UNAVAILABLE");
     const onpodEnv = childEnvironment(env, true);
     const status = command(spawnImpl, "onpod", ["app", "status", ONPOD_AUDIT_APP, "--json"], { root, env: onpodEnv });
-    if (status.status !== 0) throw new Error("APP_STATUS_UNAVAILABLE");
+    if (status.status !== 0) {
+      report.appStatusFailure = projectCommandFailure(status);
+      throw new Error("APP_STATUS_UNAVAILABLE");
+    }
     report.app = parseOnpodAuditStatus(status.stdout);
     if (report.app.freeTier !== true) throw new Error("FREE_TIER_UNVERIFIED");
     if (report.app.state !== "running") throw new Error("APP_NOT_RUNNING");

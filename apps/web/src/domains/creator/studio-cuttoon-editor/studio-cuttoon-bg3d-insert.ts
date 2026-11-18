@@ -105,8 +105,8 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       }
     }
     const originalTargetId = targetElementId;
-    const cutTicket = bg3dMutationTicketRef.current;
-    const cutAccessCurrent = () => Boolean(cutTicket && bg3dMutationTicketRef.current === cutTicket && canApplyStudioMutation(cutTicket)
+    const cutTicket = bg3dMutationTicketRef?.current;
+    const cutAccessCurrent = () => Boolean(cutTicket && bg3dMutationTicketRef?.current === cutTicket && canApplyStudioMutation(cutTicket)
       && currentPageIdRef.current === activePage.id && host.activeElementsRef?.current === elements && host.readCurrentPage?.() === activePage
       && !masterEditMode && !collaborationDocumentLocked && !pageEditLocked
       && (workId ? studioAuthUserId && workId === authorizedWorkAssetScopeId && studioCrdtOperationSyncReady
