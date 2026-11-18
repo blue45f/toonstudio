@@ -283,7 +283,7 @@ interface NativeTouchEventSample {
 }
 
 interface NativeTouchScrollDiagnostics {
-  phase: "not-started" | "measure" | "reset-input" | "reset-wait"
+  phase: "not-started" | "measure" | "reset-input" | "reset-wait" | "reset-measure"
     | "drag-input" | "drag-wait" | "complete";
   initialGeometry: Awaited<ReturnType<typeof readNativeTouchScrollGeometry>> | null;
   finalGeometry: Awaited<ReturnType<typeof readNativeTouchScrollGeometry>> | null;
