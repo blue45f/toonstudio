@@ -2,10 +2,13 @@ import {
   CheckCircle2,
   Cpu,
   FileCheck2,
+  Gem,
   Layers,
   Link2,
   MessageSquare,
   Sparkles,
+  Swords,
+  Timer,
   Wand2,
   Wrench,
 } from "lucide-react";
@@ -31,12 +34,15 @@ import type {
   WebtoonCutArchetypeId,
 } from "./studio-bg3d-shot-continuity-linked-ink";
 
+export type BlenderGenrePlaybookBundleId = "rofan-salon" | "action-fantasy";
+
 const CUT_ARCHETYPE_OPTIONS: readonly {
   readonly id: WebtoonCutArchetypeId;
   readonly labelKo: string;
 }[] = Object.freeze([
   { id: "dialogue-medium", labelKo: "일상 대화·미디엄" },
   { id: "emotion-closeup", labelKo: "감정 클로즈업·회상" },
+  { id: "rofan-salon-closeup", labelKo: "로판 연회·1.35px 세공" },
   { id: "action-impact", labelKo: "액션 타격·클라이맥스" },
   { id: "horror-pressure", labelKo: "호러·심리적 압박" },
 ]);
@@ -70,6 +76,7 @@ export interface StudioBg3dFreshIdeasVerifyAiSectionProps {
   readonly onSelectRenderQualityTier: (tier: ToonRenderQualityTier) => void;
   readonly onApplyAutoRemediation: () => void;
   readonly onApplyArchetypePreset?: (archetypeId: WebtoonCutArchetypeId) => void;
+  readonly onRunGenrePlaybook?: (bundleId: BlenderGenrePlaybookBundleId) => void;
   readonly onSelectFreshIdeaLens?: (lensId: FreshIdeaLensId, pitchKo: string) => void;
   readonly onVerifyAiGate?: (overallScore: number, passed: boolean) => void;
   readonly onStatusChange?: (summaryKo: string) => void;
@@ -95,6 +102,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
   onSelectRenderQualityTier,
   onApplyAutoRemediation,
   onApplyArchetypePreset,
+  onRunGenrePlaybook,
   onSelectFreshIdeaLens,
   onVerifyAiGate,
   onStatusChange,
@@ -139,6 +147,43 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
       >
         {verifyAiReport.remixHeaderKo}
       </p>
+
+      {/* 원클릭 장르별 조명·프리즘·선굵기 결합 플레이북 & 정량 리드타임 벤치마크 */}
+      <div
+        data-testid="bg3d-blender-genre-playbook-bar"
+        className="flex flex-wrap items-center justify-between gap-2 rounded border border-accent/35 bg-accent/10 px-2.5 py-2 text-[0.62rem]"
+      >
+        <div
+          data-testid="bg3d-blender-cycle-time-benchmark"
+          className="flex items-center gap-1.5 font-mono text-fg"
+        >
+          <Timer className="size-3.5 shrink-0 text-accent" aria-hidden />
+          <span>{verifyAiReport.cycleTimeBenchmark.summaryKo}</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            disabled={disabled}
+            data-testid="bg3d-blender-playbook-rofan-salon-btn"
+            onClick={() => onRunGenrePlaybook?.("rofan-salon")}
+            className="inline-flex min-h-11 items-center gap-1 rounded border border-accent bg-card px-2.5 py-1 text-[0.62rem] font-bold text-accent hover:bg-raised"
+          >
+            <Gem className="size-3" aria-hidden />
+            <span>로판 살롱 4단계 원클릭 (3200K·프리즘·1.35px)</span>
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            data-testid="bg3d-blender-playbook-action-gpen-btn"
+            onClick={() => onRunGenrePlaybook?.("action-fantasy")}
+            className="inline-flex min-h-11 items-center gap-1 rounded border border-line bg-card px-2.5 py-1 text-[0.62rem] font-semibold text-fg-2 hover:bg-raised"
+          >
+            <Swords className="size-3 text-accent" aria-hidden />
+            <span>액션 전투 세트 (심연 역광·판금·2.8px G펜)</span>
+          </button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-5">
         {verifyAiReport.remixes.map((remix) => {

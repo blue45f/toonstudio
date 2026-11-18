@@ -215,6 +215,47 @@ export const STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT: readonly StudioHybridDcc
     },
   ]);
 
+/** Blender 5.3 뤼미에르 그랜드 살롱 V17(4종, CC0-1.0) — 3200K 크리스탈 샹들리에·비파괴 중공 백자 성배 다기·60° 나선 비틀림 기둥·벨벳 루비 브로치. */
+export const STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT: readonly StudioHybridDccPrecisionBgKitItem[] =
+  Object.freeze([
+    {
+      id: "webtoon-lumiere-crystal-chandelier-v17",
+      fileName: "webtoon-lumiere-crystal-chandelier-v17.glb",
+      glbUrl: "/studio-assets/blender-lumiere-salon-v17/webtoon-lumiere-crystal-chandelier-v17.glb",
+      previewUrl: "/studio-assets/blender-lumiere-salon-v17/thumbnails/webtoon-lumiere-crystal-chandelier-v17.png",
+      label: ["뤼미에르 황실 크리스탈 샹들리에", "Lumiere crystal chandelier"],
+      hint: ["8암 필리그리 골드·3200K 촛대·프리즘 드롭", "8-arm gold chandelier & dispersion prisms"],
+      triangles: 6296,
+    },
+    {
+      id: "webtoon-hollow-porcelain-prism-tea-goblet-v17",
+      fileName: "webtoon-hollow-porcelain-prism-tea-goblet-v17.glb",
+      glbUrl: "/studio-assets/blender-lumiere-salon-v17/webtoon-hollow-porcelain-prism-tea-goblet-v17.glb",
+      previewUrl: "/studio-assets/blender-lumiere-salon-v17/thumbnails/webtoon-hollow-porcelain-prism-tea-goblet-v17.png",
+      label: ["중공 백자·프리즘 성배 다기", "Hollow porcelain & prism goblet"],
+      hint: ["비파괴 Solidify+Subsurf 백자 잔·크리스탈 성배", "Non-destructive hollow teacup & crystal chalice"],
+      triangles: 4352,
+    },
+    {
+      id: "webtoon-twisted-marble-salon-spire-column-v17",
+      fileName: "webtoon-twisted-marble-salon-spire-column-v17.glb",
+      glbUrl: "/studio-assets/blender-lumiere-salon-v17/webtoon-twisted-marble-salon-spire-column-v17.glb",
+      previewUrl: "/studio-assets/blender-lumiere-salon-v17/thumbnails/webtoon-twisted-marble-salon-spire-column-v17.png",
+      label: ["60° 나선 비틀림 살롱 기둥", "Twisted marble salon column"],
+      hint: ["비파괴 SimpleDeform 60° 나선 기둥·프리즘 첨탑", "60° twisted fluted marble column & prism finial"],
+      triangles: 5104,
+    },
+    {
+      id: "webtoon-rofan-velvet-ruby-brooch-cushion-v17",
+      fileName: "webtoon-rofan-velvet-ruby-brooch-cushion-v17.glb",
+      glbUrl: "/studio-assets/blender-lumiere-salon-v17/webtoon-rofan-velvet-ruby-brooch-cushion-v17.glb",
+      previewUrl: "/studio-assets/blender-lumiere-salon-v17/thumbnails/webtoon-rofan-velvet-ruby-brooch-cushion-v17.png",
+      label: ["황실 벨벳·루비 프리즘 브로치", "Royal velvet & ruby brooch"],
+      hint: ["버건디 벨벳 쿠션·실크 레이스·루비 브로치", "Burgundy velvet cushion, lace & ruby prism brooch"],
+      triangles: 10416,
+    },
+  ]);
+
 function vec(x: number, y: number, z: number): StudioMeshVec3 {
   return { x, y, z };
 }

@@ -68,6 +68,7 @@ const FREESTYLE_EDGE_TYPES: readonly { readonly id: BlenderFreestyleEdgeType; re
 const SCENE_PRESET_THEMES: readonly { readonly id: BlenderScenePresetThemeId; readonly labelKo: string }[] =
   Object.freeze([
     { id: "fantasy-citadel", labelKo: "왕국 대성채 알현실" },
+    { id: "lumiere-rofan-salon", labelKo: "뤼미에르 황실 살롱" },
     { id: "cyberpunk-neon-alley", labelKo: "네온 사이버펑크 뒷골목" },
     { id: "arcane-astronomy-tower", labelKo: "아스트랄 마법 천문대" },
     { id: "boss-raid-altar", labelKo: "심연 보스 레이드 투기장" },

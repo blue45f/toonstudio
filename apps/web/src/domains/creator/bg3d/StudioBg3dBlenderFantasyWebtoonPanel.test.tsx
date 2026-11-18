@@ -21,7 +21,7 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     expect(fireEvent.click(link)).toBe(false);
   });
 
-  it("renders all 5 Blender 5.2 sections, 5-Lens Fresh Ideas Remix, Phase 2 S_CD/BRI/PRS, Phase 3 8-Pass PSD/Rights BOM/Auto-Remediation, Phase 4 Scroll Pacing/Live Sync, Wave 2 Cross-Labs Bridge, and Verify AI gate", () => {
+  it("renders all Blender 5.3 sections, 5-Lens Fresh Ideas Remix, Cycle-Time Benchmark, 1-Click Genre Playbooks, Phase 2~4, and Verify AI gate", () => {
     const onApplyLightingRig = vi.fn();
     const onApplyNprShader = vi.fn();
     const onApplyFreestyleInk = vi.fn();
@@ -30,6 +30,7 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     const onSimulateCrowd = vi.fn();
     const onSelectFreshIdeaLens = vi.fn();
     const onVerifyAiGate = vi.fn();
+    const onInsertScenePrimitives = vi.fn();
 
     render(
       <StudioBg3dBlenderFantasyWebtoonPanel
@@ -41,6 +42,7 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
         onSimulateCrowd={onSimulateCrowd}
         onSelectFreshIdeaLens={onSelectFreshIdeaLens}
         onVerifyAiGate={onVerifyAiGate}
+        onInsertScenePrimitives={onInsertScenePrimitives}
       />,
     );
 
@@ -113,16 +115,24 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-crowd-readout").textContent,
     ).toContain("240기");
 
-    // 5B. 5-Lens Creative Remix & Phase 2~4 & Wave 2 Cross-Labs Bridge
+    // 5B. 5-Lens Creative Remix, 정량 리드타임 벤치마크, 원클릭 로판 살롱 4단계 플레이북 검증
     expect(
-      screen.getByTestId("bg3d-blender-fresh-ideas-verify-ai-section"),
-    ).toBeTruthy();
+      screen.getByTestId("bg3d-blender-cycle-time-benchmark").textContent,
+    ).toContain("컷당 2D 리터칭");
+
+    fireEvent.click(screen.getByTestId("bg3d-blender-playbook-rofan-salon-btn"));
+    expect(onInsertScenePrimitives).toHaveBeenCalledTimes(1);
     expect(
-      screen.getByTestId("bg3d-blender-verify-ai-badge").textContent,
-    ).toContain("Verify AI PASS");
+      screen.getByTestId("bg3d-blender-eevee-lighting-section").textContent,
+    ).toContain("3200K");
     expect(
-      screen.getByTestId("bg3d-blender-preflight-summary-badge").textContent,
-    ).toContain("Preflight Hard Gate PASS");
+      screen.getByTestId("bg3d-blender-prs-readout").textContent,
+    ).toContain("65mm");
+
+    fireEvent.click(screen.getByTestId("bg3d-blender-playbook-action-gpen-btn"));
+    expect(
+      screen.getByTestId("bg3d-blender-prs-readout").textContent,
+    ).toContain("22mm");
 
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),

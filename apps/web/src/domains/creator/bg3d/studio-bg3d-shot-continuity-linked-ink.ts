@@ -10,6 +10,7 @@
 export type WebtoonCutArchetypeId =
   | "dialogue-medium"
   | "emotion-closeup"
+  | "rofan-salon-closeup"
   | "action-impact"
   | "horror-pressure";
 
@@ -296,6 +297,16 @@ const ARCHETYPE_SPECS: Readonly<
     recommendedLightingRigId: "magic-circle-arcane-upglow",
     recommendedNprShaderId: "arcane-mana-crystal-gem",
     recommendedFreestyleInkId: "fantasy-action-gpen-calligraphic",
+  },
+  "rofan-salon-closeup": {
+    archetypeId: "rofan-salon-closeup",
+    labelKo: "로판 연회 · 보석·레이스 세공",
+    recommendedFocalLengthMm: 65,
+    recommendedCameraTiltDeg: 4,
+    cameraAngleKo: "세미 클로즈업 (+4°, 2점 투시 · f/2.2 보케)",
+    recommendedLightingRigId: "lumiere-salon-chandelier-prism",
+    recommendedNprShaderId: "lumiere-rofan-velvet-brocade",
+    recommendedFreestyleInkId: "rofan-delicate-dip-pen-lace",
   },
   "action-impact": {
     archetypeId: "action-impact",

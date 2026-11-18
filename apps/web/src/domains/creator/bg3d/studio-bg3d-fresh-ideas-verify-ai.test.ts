@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   BLENDER_FANTASY_LIGHTING_RIG_PRESETS,
   evaluateBlenderFantasyLightingRig,
+  findBlenderFantasyLightingRigPreset,
 } from "../scene-3d/studio-3d-blender-eevee-lighting-rig";
 import {
   BLENDER_FANTASY_CROWD_PRESETS,
@@ -21,6 +22,7 @@ import {
 } from "../scene-3d/studio-3d-blender-npr-shader-freestyle";
 import {
   evaluateBlenderSceneWithVerifyAi,
+  evaluateBlenderWebtoonCycleTimeBenchmark,
   generateBlenderWebtoonFreshIdeasRemix,
   type BlenderSceneVerifyAiSynthesisInput,
 } from "./studio-bg3d-fresh-ideas-verify-ai";
@@ -69,9 +71,9 @@ function createSampleSynthesisInput(): BlenderSceneVerifyAiSynthesisInput {
 }
 
 describe("studio-bg3d-fresh-ideas-verify-ai", () => {
-  it("generates all 5 creative remix lenses grounded in live Blender 5.2 metrics", () => {
+  it("generates all 5 creative remix lenses grounded in live Blender 5.3 metrics and cycle-time benchmarks", () => {
     const input = createSampleSynthesisInput();
-    const { headerKo, remixes } = generateBlenderWebtoonFreshIdeasRemix(input);
+    const { headerKo, remixes, cycleTimeBenchmark } = generateBlenderWebtoonFreshIdeasRemix(input);
 
     expect(headerKo).toContain("💡 Remix:");
     expect(headerKo).toContain(input.lightingPreset.nameKo);
@@ -83,6 +85,28 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
       "practical-playbook",
       "what-they-missed",
     ]);
+
+    expect(cycleTimeBenchmark.retouchTimeSavedPercent).toBeGreaterThan(40);
+    expect(cycleTimeBenchmark.revisionLeadTimeSavedPercent).toBeGreaterThan(70);
+
+    const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
+    const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;
+    const salonInk = BLENDER_FREESTYLE_INK_PRESETS.find((p) => p.id === "rofan-delicate-dip-pen-lace")!;
+    const salonBench = evaluateBlenderWebtoonCycleTimeBenchmark({
+      lightingEval: evaluateBlenderFantasyLightingRig(salonLighting),
+      shaderPreset: salonShader,
+      shaderEval: evaluateBlenderNprShaderTree(salonShader, {
+        normal: [0.65, 0.35, 0.67],
+        lightDir: [0.3, 0.6, 0.74],
+        viewDir: [0, 0.1, 0.99],
+        edgeCurvature: 0.75,
+        cavityOcclusion: 0.2,
+      }),
+      freestylePreset: salonInk,
+      freestyleEval: evaluateFreestyleViewMapStrokes(salonInk, DEFAULT_FREESTYLE_SAMPLE_EDGES),
+      crowdEval: input.crowdEval,
+    });
+    expect(salonBench.automatedPipelineRetouchMinutes).toBeLessThan(salonBench.baselineManualRetouchMinutes);
 
     const playbook = remixes.find((r) => r.id === "practical-playbook");
     expect(playbook?.actionableStepsKo).toHaveLength(4);

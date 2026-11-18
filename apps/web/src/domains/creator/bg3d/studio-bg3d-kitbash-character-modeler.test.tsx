@@ -114,6 +114,7 @@ describe("studio-bg3d-kitbash-character-modeler & high-density background preset
   it("enriches Blender 5.2 preset scenes, Edit/Sculpt assemblies, and SketchUp urban architectural components", () => {
     for (const theme of [
       "fantasy-citadel",
+      "lumiere-rofan-salon",
       "cyberpunk-neon-alley",
       "arcane-astronomy-tower",
       "boss-raid-altar",

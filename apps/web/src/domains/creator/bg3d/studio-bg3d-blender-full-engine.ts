@@ -229,6 +229,7 @@ export interface BlenderCameraRigEvaluation {
 
 export type BlenderScenePresetThemeId =
   | "fantasy-citadel"
+  | "lumiere-rofan-salon"
   | "cyberpunk-neon-alley"
   | "arcane-astronomy-tower"
   | "boss-raid-altar";
@@ -731,6 +732,22 @@ export function buildBlenderPresetScenePrimitives(
           ...buildCrystalPyramids({ id: "bl-arcane-crystal-e", name: "Floating_Crystal_E", position: [2.9, 3.1, 0], rotation: [0, 0.2, -0.12], scale: [0.55, 1.25, 0.55], color: "#c77dff", tags: ["Blender_Arcane"] }),
           ...buildCrystalPyramids({ id: "bl-arcane-crystal-w", name: "Floating_Crystal_W", position: [-2.9, 3.1, 0], rotation: [0, -0.2, 0.12], scale: [0.55, 1.25, 0.55], color: "#c77dff", tags: ["Blender_Arcane"] }),
           { id: "bl-arcane-lectern", name: "Arcane_Grimoire_Lectern", kind: "cylinder", position: [0, 2.75, 1.65], rotation: [0, 0, 0], scale: [0.42, 0.92, 0.42], color: "#c9a876", tags: ["Blender_Arcane"] },
+        ],
+      };
+    case "lumiere-rofan-salon":
+      return {
+        labelKo: "뤼미에르 황실 연회장 살롱 & 프리즘 샹들리에 세트",
+        primitives: [
+          { id: "bl-salon-floor", name: "Salon_Parquet_Marble", kind: "cylinder", position: [0, 0.1, 0], rotation: [0, 0, 0], scale: [9.2, 0.2, 9.2], color: "#3b234a", tags: ["Blender_LumiereSalon"] },
+          { id: "bl-salon-gold-ring", name: "Salon_Gold_Inlay_Ring", kind: "torus", position: [0, 0.22, 0], rotation: [Math.PI / 2, 0, 0], scale: [6.4, 6.4, 0.18], color: "#ffd166", tags: ["Blender_LumiereSalon"] },
+          { id: "bl-salon-velvet-carpet", name: "Salon_Burgundy_Velvet_Runner", kind: "box", position: [0, 0.22, 0.4], rotation: [0, 0, 0], scale: [2.2, 0.04, 7.2], color: "#800f2f", tags: ["Blender_LumiereSalon"] },
+          { id: "bl-salon-tea-table", name: "Salon_Hollow_Porcelain_TeaTable", kind: "cylinder", position: [0, 0.62, 0.2], rotation: [0, 0, 0], scale: [1.65, 0.82, 1.65], color: "#fff1e6", tags: ["Blender_LumiereSalon"] },
+          { id: "bl-salon-goblet-l", name: "Salon_Prism_Goblet_L", kind: "cone", position: [-0.36, 1.18, 0.2], rotation: [Math.PI, 0, 0], scale: [0.24, 0.34, 0.24], color: "#bde0fe", tags: ["Blender_LumiereSalon"] },
+          { id: "bl-salon-brooch-r", name: "Salon_Ruby_Brooch_Cushion", kind: "hemisphere", position: [0.36, 1.10, 0.2], rotation: [0, 0, 0], scale: [0.38, 0.22, 0.38], color: "#c9184a", tags: ["Blender_LumiereSalon"] },
+          { id: "bl-salon-twisted-col-l", name: "Salon_Twisted_Spire_L", kind: "hexPrism", position: [-2.8, 2.05, -1.6], rotation: [0, 0.52, 0], scale: [0.68, 3.8, 0.68], color: "#f8edeb", tags: ["Blender_LumiereSalon"] },
+          { id: "bl-salon-twisted-col-r", name: "Salon_Twisted_Spire_R", kind: "hexPrism", position: [2.8, 2.05, -1.6], rotation: [0, -0.52, 0], scale: [0.68, 3.8, 0.68], color: "#f8edeb", tags: ["Blender_LumiereSalon"] },
+          { id: "bl-salon-chandelier-ring", name: "Salon_Chandelier_3200K_Ring", kind: "torus", position: [0, 3.55, -0.2], rotation: [Math.PI / 2, 0, 0], scale: [2.4, 2.4, 0.22], color: "#ffca3a", tags: ["Blender_LumiereSalon"] },
+          ...buildCrystalPyramids({ id: "bl-salon-chandelier-prism", name: "Salon_Chandelier_Dispersion_Core", position: [0, 3.35, -0.2], rotation: [0, 0.4, 0], scale: [0.52, 1.15, 0.52], color: "#caf0f8", tags: ["Blender_LumiereSalon"] }),
         ],
       };
     case "boss-raid-altar":

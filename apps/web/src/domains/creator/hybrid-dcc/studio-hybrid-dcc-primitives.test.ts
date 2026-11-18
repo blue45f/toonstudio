@@ -22,6 +22,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
@@ -191,6 +192,33 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
     for (const item of STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT) {
       expect(item.glbUrl).toMatch(/^\/studio-assets\/blender-lumiere-v16\/.+\.glb$/u);
       expect(item.previewUrl).toMatch(/^\/studio-assets\/blender-lumiere-v16\/thumbnails\/.+\.png$/u);
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      expect(imported.value.assets.length).toBeGreaterThan(0);
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 뤼미에르 그랜드 살롱 V17(4종)이 실제 디스크 GLB·썸네일과 일치하며 비파괴 수밀 하프에지 메시로 무손실 디코딩된다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT).toHaveLength(4);
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT) {
+      expect(item.glbUrl).toMatch(/^\/studio-assets\/blender-lumiere-salon-v17\/.+\.glb$/u);
+      expect(item.previewUrl).toMatch(/^\/studio-assets\/blender-lumiere-salon-v17\/thumbnails\/.+\.png$/u);
       const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
       const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
       expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);

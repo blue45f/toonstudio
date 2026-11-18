@@ -31,6 +31,7 @@ import {
   type BlenderFreestyleInkPreset,
   type BlenderNprShaderPreset,
 } from "../scene-3d/studio-3d-blender-npr-shader-freestyle";
+import { buildBlenderPresetScenePrimitives } from "./studio-bg3d-blender-full-engine";
 import { StudioBg3dBlenderFullSections } from "./StudioBg3dBlenderFullSections";
 import {
   evaluateBlenderSceneWithVerifyAi,
@@ -603,6 +604,26 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
           setSelectedShaderId(rec.recommendedNprShaderId);
           setSelectedFreestyleId(rec.recommendedFreestyleInkId);
           onStatusChange?.(rec.rationaleKo);
+        }}
+        onRunGenrePlaybook={(bundleId) => {
+          if (bundleId === "rofan-salon") {
+            setSelectedArchetypeId("rofan-salon-closeup");
+            setSelectedLightingId("lumiere-salon-chandelier-prism");
+            setCustomKelvin(3200);
+            setSelectedShaderId("lumiere-rofan-velvet-brocade");
+            setSelectedFreestyleId("rofan-delicate-dip-pen-lace");
+            const salonScene = buildBlenderPresetScenePrimitives("lumiere-rofan-salon");
+            const msg = "로판 살롱 4단계 플레이북 적용 완료 (3200K 샹들리에 · 프리즘 벨벳 · 1.35px 세공펜 · 살롱 기물 배치)";
+            onInsertScenePrimitives?.(salonScene.primitives, msg);
+            onStatusChange?.(msg);
+          } else {
+            setSelectedArchetypeId("action-impact");
+            setSelectedLightingId("dungeon-boss-abyss-backlight");
+            setCustomKelvin(8500);
+            setSelectedShaderId("paladin-gilded-plate-toon");
+            setSelectedFreestyleId("fantasy-action-gpen-calligraphic");
+            onStatusChange?.("액션 판타지 전투 세트 적용 완료 (심연 역광 · 4단 판금 · 2.8px G펜)");
+          }
         }}
         onSelectFreshIdeaLens={onSelectFreshIdeaLens}
         onVerifyAiGate={onVerifyAiGate}

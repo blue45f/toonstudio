@@ -54,6 +54,7 @@ export function evaluateVerticalScrollCutPacing(
   const baseHeightByArchetype: Record<WebtoonCutArchetypeId, number> = {
     "dialogue-medium": 960,
     "emotion-closeup": 1280,
+    "rofan-salon-closeup": 1360,
     "action-impact": 1680,
     "horror-pressure": 1520,
   };
@@ -64,6 +65,7 @@ export function evaluateVerticalScrollCutPacing(
   > = {
     "dialogue-medium": { top: 180, bottom: 200 },
     "emotion-closeup": { top: 280, bottom: 320 },
+    "rofan-salon-closeup": { top: 260, bottom: 300 },
     "action-impact": { top: 340, bottom: 420 },
     "horror-pressure": { top: 380, bottom: 360 },
   };
@@ -199,7 +201,7 @@ export function buildBlenderLiveSceneSyncBridge(
     renderEngine: "BLENDER_EEVEE",
     syncedObjectNames: BLENDER_LIVE_SCENE_OBJECTS,
     syncedObjectCount: BLENDER_LIVE_SCENE_OBJECTS.length,
-    viewportSnapshotFile: "/Users/hjunkim/Pictures/Janus/Blender/snapshot_1794932219.png",
+    viewportSnapshotFile: "/Users/hjunkim/Pictures/Janus/Blender/snapshot_1794972622.png",
     liveSyncReady: Boolean(
       lightingPresetId &&
         shaderPresetId &&

@@ -1,0 +1,64 @@
+{
+  "schema": "toonstudio.blender-lumiere-salon-assets.v17",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_lumiere_salon_v17.py · Non-Destructive Modifiers & OpenPBR Dispersion verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "externalSources": [],
+  "files": [
+    {
+      "file": "webtoon-hollow-porcelain-prism-tea-goblet-v17.glb",
+      "bytes": 130868,
+      "sha256": "4b2151e0cc21a0af00276b5f7e48e9c6ff62d3961fdf854de2075e21ffcb8df2",
+      "triangles": 4352,
+      "vertices": 2188
+    },
+    {
+      "file": "webtoon-lumiere-crystal-chandelier-v17.glb",
+      "bytes": 258668,
+      "sha256": "661c57ac075b1f612ff6fb66343e2d24c89493fd54e9c89ce1cdacaaa5cadecf",
+      "triangles": 6296,
+      "vertices": 3248
+    },
+    {
+      "file": "webtoon-rofan-velvet-ruby-brooch-cushion-v17.glb",
+      "bytes": 327856,
+      "sha256": "739cc520d62ad6e3772f21bf403725c7d0bc0014d65ec3f322b76428bb192aa5",
+      "triangles": 10416,
+      "vertices": 5230
+    },
+    {
+      "file": "webtoon-twisted-marble-salon-spire-column-v17.glb",
+      "bytes": 154400,
+      "sha256": "d5e827bb3a3a523ace74733cbfb450e5ad90d8205efb40cf71998b9c5e1ef5eb",
+      "triangles": 5104,
+      "vertices": 2562
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-hollow-porcelain-prism-tea-goblet-v17.png",
+      "bytes": 298506,
+      "sha256": "3493578fd84a0303fd5a8116df2b780abff457612a84576b029e453207d75360"
+    },
+    {
+      "file": "thumbnails/webtoon-lumiere-crystal-chandelier-v17.png",
+      "bytes": 323362,
+      "sha256": "18ee2a83e8e88f1c665078cea8356ca1c1cb409a5f24424f2b214929b543b72c"
+    },
+    {
+      "file": "thumbnails/webtoon-rofan-velvet-ruby-brooch-cushion-v17.png",
+      "bytes": 339358,
+      "sha256": "93f4459d11566e8a1ddc11500976d46830786e8ff2faa93f16e50ebb0606b374"
+    },
+    {
+      "file": "thumbnails/webtoon-twisted-marble-salon-spire-column-v17.png",
+      "bytes": 261354,
+      "sha256": "0b62998ecb357b7719ee3cc1223d8d201463aa61be580c07b159bc551972ed70"
+    }
+  ]
+}
