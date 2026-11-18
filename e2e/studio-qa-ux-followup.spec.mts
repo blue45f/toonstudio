@@ -98,13 +98,15 @@ test("모바일은 실제 더보기와 창 배치를 요청한 뒤에만 숨은 
 test("스토리보드를 정상 닫고 가려졌던 편집기 복귀 버튼으로 홈에 돌아간다", async ({ page }) => {
   await page.route("http://studio-fixture.test/**", async route => {
     const home = new URL(route.request().url()).pathname === "/studio";
-    await route.fulfill({ contentType: "text/html", body: home ? "<h1>작업 홈</h1>" : `
+    await route.fulfill({ contentType: "text/html; charset=utf-8", body: home ? "<h1>작업 홈</h1>" : `
       <button data-studio-editor-return="lane" onclick="location.assign('/studio')">이전</button>
       <div role="dialog" aria-modal="true" aria-label="스토리보드 컨트롤 룸" style="position:fixed;inset:0;background:white">
         <button aria-label="닫기" onclick="this.parentElement.remove()">×</button>
       </div>` });
   });
   await page.goto("http://studio-fixture.test/studio/comic");
+  expect(await page.evaluate(() => document.characterSet)).toBe("UTF-8");
+  await expect(page.getByRole("dialog", { name: "스토리보드 컨트롤 룸", exact: true })).toBeVisible();
   const editorReturn = page.locator("[data-studio-editor-return]");
   await expect(editorReturn.click({ trial: true, timeout: 150 })).rejects.toThrow();
   expect(await closeStudioInAppRouteModal(page, "comic")).toBe("스토리보드 컨트롤 룸");
