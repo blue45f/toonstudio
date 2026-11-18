@@ -4,7 +4,8 @@
 - 검증일: 2026-11-18.
 - 시작 기준 main: `5ea952cd44b31dd1074ab96ab251e97f84932128`.
 - 후속 확인 main: `2cfbfa55056732f67e01f0d02b648dbae35498cb`.
-- 두 main 사이 변경은 3D 기능이며 API·Admin·contracts·lockfile은 동일하다.
+- 병합 전 동기화 main: `45dbe47d7cc86b238054df608d5bff5757e8afab`.
+- 후속 main 변경은 3D·Character Lab 기능이며 API·Admin·contracts·lockfile은 동일하다.
 
 ## 확인한 결과
 
@@ -22,7 +23,8 @@
 | 관리자 스키마 정본 통합 후 회귀 | 영향 7개 파일 204개 및 실제 PostgreSQL 관리자 스키마 6개 통과 |
 | 새 보드의 실제 PostgreSQL 통합 | 9개 통과. CAS·재전송·권한 회수·원자적 감사 이력·재적용·최소 권한·저장소 오류 |
 | 기존 어댑터·socket auth·auth ticket 단위 경계 | 변경하지 않은 3개 파일, 54개 통과. 실제 API 시작·PG 전파·브라우저 연결 증거와 구분 |
-| Character Lab 관련 회귀 | root/app 설정에서 각각 동일한 140개 통과. 타입 검사·ESLint 통과 |
+| Character Lab 관련 회귀 | 최초 140개, 최신 main 반영 후 root/app 설정에서 각각 동일한 146개 통과. 타입 검사·ESLint 통과 |
+| 필수 CI 실행 배선 | 계약 58개 및 DB 없는 정적 shard의 단위·HTTP·공유 계약 64개 통과. CI 모드 실제 PostgreSQL 9개 통과 |
 | 리뷰 정책 변경 전 | review-race 67개 중 62 통과, 5 실패 |
 | 리뷰 정책 fixture 수정 후 | review-race 68개와 preview-producer 54개, 모두 통과 |
 | 공식 리뷰 DB 목록 중 16개 스위트 | 315개 통과, 실패 0. 기존 조건부 브라우저 검사 1개 미실행 |
@@ -50,6 +52,14 @@ Character Lab의 세 파일이 기존 크기 한도를 넘었고 `toon-reference
 정책 fixture에서만 편집자를 요청자로, 소유자와 viewer를 투표자로 분리했다.
 별도로 소유자의 자기 승인도 거부되고 리뷰가 open으로 남는 검사를 추가했다.
 실제 인증·인가·정책 로직은 변경하지 않았다.
+
+후속 Character Lab main의 manga FX 추가로 뷰포트가 다시 파일 한도를 넘어서,
+기존 엔진·오류·드로잉 상태 표시를 독립 컴포넌트로 분리했다. 신규 manga FX와
+표시 위치를 보존했고 페인트 설정 변경이 즉시 반영되는 회귀도 추가했다.
+
+새 보드의 DB 테스트는 필수 `database` 작업에 연결했다. DB 없는 정적 shard는
+단위·HTTP·공유 입력·ACL 계약을 실행한다. 각 테스트가 한 경로에서 실행되도록
+필수 manifest와 소유권 계약을 확인했으며, CI에서 DB 주소가 누락되면 즉시 실패한다.
 
 ## 아직 완료로 주장하지 않는 범위
 

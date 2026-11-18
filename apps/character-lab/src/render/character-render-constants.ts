@@ -10,4 +10,3 @@ export const FACE_SDF_SIZE = 128;
 export const TOON_OUTLINE_WIDTH = 0.004;
 /** 엣지 외곽선 각도 임계(cos) */
 export const TOON_EDGE_EPSILON = 0.95;
-

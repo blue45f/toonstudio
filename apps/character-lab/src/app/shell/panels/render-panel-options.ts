@@ -35,4 +35,3 @@ export function failureMessage(error: unknown): string {
   if (typeof error === "object" && error !== null && "reasonKo" in error && typeof (error as { reasonKo: unknown }).reasonKo === "string") return (error as { reasonKo: string }).reasonKo;
   return error instanceof Error ? error.message : "알 수 없는 오류";
 }
-

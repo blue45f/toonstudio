@@ -1,4 +1,4 @@
-// 기준 main 2cfbfa55056732f67e01f0d02b648dbae35498cb, 관측 2026-11-18T04:19:58Z. 실제 실행 결과와 정적 근거를 구분한다.
+// 기준 main 45dbe47d7cc86b238054df608d5bff5757e8afab, 관측 2026-11-18T04:39:54Z. 실제 실행 결과와 정적 근거를 구분한다.
 import type { Task } from "./admin-nestjs-quality";
 
 export const nestQualityRealtimeScenarios: Task[] = [
@@ -10,8 +10,8 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "scope": "API · Studio Live",
     "nextAction": "fault 주입 위치·ACK/DB/peer correlation·누락 ID·sync 반환값·최종 hash를 기록한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "격리 테스트 환경 · 실제 실행 미확인 · 운영 데이터 사용 금지",
     "result": "미확인",
@@ -26,17 +26,17 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "evidenceLinks": [
       {
         "label": "ACK와 broadcast",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/creator/studio-live-gateway-handlers-op.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/creator/studio-live-gateway-handlers-op.ts",
         "type": "코드"
       },
       {
         "label": "PG transport",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-pubsub.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-pubsub.ts",
         "type": "코드"
       },
       {
         "label": "client lifecycle",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/web/src/domains/creator/live/studio-live-socket-transport-lifecycle.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/web/src/domains/creator/live/studio-live-socket-transport-lifecycle.ts",
         "type": "코드"
       },
       {
@@ -61,8 +61,8 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "scope": "API · Studio Live",
     "nextAction": "opId/updateId·ACK trace·중복 count·DB append count·최종 문서 hash를 전후 기록한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "격리 테스트 환경 · 실제 실행 미확인 · 운영 데이터 사용 금지",
     "result": "미확인",
@@ -77,17 +77,17 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "evidenceLinks": [
       {
         "label": "op dedupe",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/creator/studio-live-gateway-handlers-op.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/creator/studio-live-gateway-handlers-op.ts",
         "type": "코드"
       },
       {
         "label": "store",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/creator/studio-live-op.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/creator/studio-live-op.ts",
         "type": "코드"
       },
       {
         "label": "FakeSocket dedupe tests",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/web/src/domains/creator/live/studio-live-socket-transport.test.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/web/src/domains/creator/live/studio-live-socket-transport.test.ts",
         "type": "코드"
       }
     ],
@@ -107,8 +107,8 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "scope": "API · Studio Live",
     "nextAction": "노드별 SHA·비밀 제외 설정·schema 버전·listener 상태·payload hash/count·RPC ACK·rollback 결과를 저장한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "격리 테스트 환경 · 실제 실행 미확인 · 운영 데이터 사용 금지",
     "result": "미확인",
@@ -124,17 +124,17 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "evidenceLinks": [
       {
         "label": "실제 PG 통합 test",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.integration.test.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.integration.test.ts",
         "type": "코드"
       },
       {
         "label": "adapter preflight",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.ts",
         "type": "코드"
       },
       {
         "label": "custom transport",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-pubsub.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-pubsub.ts",
         "type": "코드"
       },
       {
@@ -159,8 +159,8 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "scope": "API · Studio Live",
     "nextAction": "장애/복구 timestamp·ready 응답·pool active/idle/waiting·seq gap·복구 hash를 기록한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "격리 테스트 환경 · 실제 실행 미확인 · 운영 데이터 사용 금지",
     "result": "미확인",
@@ -175,17 +175,17 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "evidenceLinks": [
       {
         "label": "listener lifecycle",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-pubsub.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-pubsub.ts",
         "type": "코드"
       },
       {
         "label": "readiness",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/health/health-runtime-readiness.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/health/health-runtime-readiness.ts",
         "type": "코드"
       },
       {
         "label": "mock 회귀 테스트",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-pubsub.test.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-pubsub.test.ts",
         "type": "코드"
       }
     ],
@@ -205,8 +205,8 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "scope": "API · Studio Live",
     "nextAction": "encoded byte size·연결 상태·ACK/오류·disconnect reason·복구 trace를 전후 저장한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "격리 테스트 환경 · 실제 실행 미확인 · 운영 데이터 사용 금지",
     "result": "미확인",
@@ -222,12 +222,12 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "evidenceLinks": [
       {
         "label": "Gateway 상수",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/creator/studio-live-gateway-constants.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/creator/studio-live-gateway-constants.ts",
         "type": "코드"
       },
       {
         "label": "Gateway options",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/creator/studio-live.gateway.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/creator/studio-live.gateway.ts",
         "type": "코드"
       },
       {
@@ -257,8 +257,8 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "scope": "API · Studio Live",
     "nextAction": "후보 SHA·설정·queue count·대기/완료/거부 ID·disconnect·복구 결과를 기록한다. harness 코드 변경이 필요하면 nest-024 승인 범위에 포함한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "격리 테스트 환경 · 실제 실행 미확인 · 운영 데이터 사용 금지",
     "result": "미확인",
@@ -283,7 +283,7 @@ export const nestQualityRealtimeScenarios: Task[] = [
       },
       {
         "label": "상속 경로",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.ts",
         "type": "코드"
       },
       {
@@ -308,8 +308,8 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "scope": "API · Studio Live",
     "nextAction": "전후 pool/listener/활성 핸들 수·종료 trace·오류 로그·exit 상태를 저장한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "격리 테스트 환경 · 실제 실행 미확인 · 운영 데이터 사용 금지",
     "result": "미확인",
@@ -324,22 +324,22 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "evidenceLinks": [
       {
         "label": "close 구현",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.ts",
         "type": "코드"
       },
       {
         "label": "transport close",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-pubsub.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-pubsub.ts",
         "type": "코드"
       },
       {
         "label": "adapter 단위 test",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.test.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.test.ts",
         "type": "코드"
       },
       {
         "label": "pubsub 단위 test",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-pubsub.test.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-pubsub.test.ts",
         "type": "코드"
       }
     ],
@@ -359,8 +359,8 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "scope": "API · Studio Live",
     "nextAction": "현재 동일 SHA의 설치·타입·빌드·실제 start 및 관련 테스트 로그·실행/skip 수를 기록한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "격리 테스트 환경 · 실제 실행 미확인 · 운영 데이터 사용 금지",
     "result": "관련 import 3개 파일·54개 단위 테스트 통과 · 실제 start 미확인",
@@ -372,7 +372,7 @@ export const nestQualityRealtimeScenarios: Task[] = [
     ],
     "acceptance": "같은 후보 SHA에서 필요한 검사 모두 실제 완료하며 build만으로 런타임 검증 완료를 표시하지 않는다.",
     "beforeEvidence": "미확인 · 실행 증거 없음",
-    "afterEvidence": "main2cfbfa5의 CI production build success. main5ea952c 기반 개발 checkout에서 변경하지 않은 adapter·socket auth·auth ticket 단위 3개 파일54개 통과. 두 main의 API·lockfile 차이 없음. 실제 start·실제 PG·클라이언트 연결 검증은 별도다.",
+    "afterEvidence": "이전main2cfbfa5 CI production build success. main5ea952c 기반개발checkout의 변경하지않은 adapter·socket auth·auth ticket3개파일54개 단위통과. 최신main45dbe47까지 API·lockfile차이없음. 최신CI·실제start·PG·클라이언트연결검증은별도미확인.",
     "evidenceLinks": [
       {
         "label": "PR build success",
@@ -386,12 +386,12 @@ export const nestQualityRealtimeScenarios: Task[] = [
       },
       {
         "label": "API scripts",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
         "type": "코드"
       },
       {
         "label": "CI 정의",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/.github/workflows/ci.yml",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/.github/workflows/ci.yml",
         "type": "코드"
       }
     ],
@@ -401,6 +401,6 @@ export const nestQualityRealtimeScenarios: Task[] = [
     "revision": 0,
     "id": "nest-022",
     "title": "같은 후보 SHA의 빌드·타입·runtime import 검증",
-    "summary": "과거 API+web 빌드 성공과 runtime import 실패가 공존했다. 현재 핵심5개는 정렬됐고 main 프로덕션 빌드는 성공했다. 실제 start·실패 파일 재검증은 별도 기록한다."
+    "summary": "과거 빌드 성공과 runtime import 실패가 공존했다. 현재 핵심5개 정렬을 확인했으며 이전main2cfbfa5의 빌드 성공은 역사 근거다. 최신main45dbe47 CI결론과 실제 start는미확인."
   }
 ];

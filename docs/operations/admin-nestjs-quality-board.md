@@ -21,20 +21,21 @@ NestJS 보드는 6상태와 서버 PostgreSQL 문서를 사용한다.
 
 ## 출처와 확인 범위
 
-기본 문서의 main 기준은 `2cfbfa55056732f67e01f0d02b648dbae35498cb`이며,
-확인 시각은 **2026-11-18 13:19:58 KST**다. 이는 수동 관측 스냅샷이며 GitHub를
+기본 문서의 main 기준은 `45dbe47d7cc86b238054df608d5bff5757e8afab`이며,
+확인 시각은 **2026-11-18 13:39:54 KST**다. 이는 수동 관측 스냅샷이며 GitHub를
 자동 동기화하는 값이 아니다. 화면은 24시간 이상 지난 관측에 재확인을 안내한다.
 
 - 기준 PR: [2801](https://github.com/blue45f/toonstudio/pull/2801),
   [2798](https://github.com/blue45f/toonstudio/pull/2798),
   [2800](https://github.com/blue45f/toonstudio/pull/2800).
-- 기준 main CI: [44235319729](https://github.com/blue45f/toonstudio/actions/runs/44235319729).
+- 기준 main CI: [44237128814](https://github.com/blue45f/toonstudio/actions/runs/44237128814).
 - PostgreSQL Socket.IO 어댑터:
-  [고정 커밋의 구현](https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.ts).
+  [고정 커밋의 구현](https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.ts).
 
 위 main에서 5개 핵심 Nest 패키지의 잠금 버전은 12.5.0이고 세 기준 PR은 이미
 병합되어 있다. 해결된 버전 혼재를 현재의 미해결 장애로 다시 표시하지 않는다.
-관측 시 CI 전체는 진행 중이며 최종 결론은 미확인이다. 개별 빌드 성공과 린트·파일 크기·별도 리뷰 DB 테스트 실패를 구분하고,
+관측 시 최신 CI는 pending이며 최종 결론은 미확인이다. 앞선 main2cfbfa5의
+개별 빌드 성공과 린트·파일 크기·별도 리뷰 DB 실패는 역사 자료로만 보존하고,
 수정 중인 브랜치의 결과를 해당 main CI의 결과처럼 덮어쓰지 않는다.
 
 `nestjs-zod 5.6.0`의 공개 peer 범위가 NestJS 12를 포함하지 않는 사실은

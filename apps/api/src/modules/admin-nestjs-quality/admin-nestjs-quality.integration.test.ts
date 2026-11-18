@@ -8,7 +8,9 @@ import { validatePostgresIntegrationUrl } from "../../../../../scripts/run-postg
 import { buildAdminNestjsQualityCapabilitySql, buildAdminNestjsQualityRuntimeAclSql } from "../../../../../scripts/admin-nestjs-quality-database-contract.mjs";
 import { AdminNestjsQualityRepository } from "./admin-nestjs-quality.repository";
 
-const target = process.env.TEST_DATABASE_URL;
+const target = process.env.TEST_DATABASE_URL?.trim();
+// DB 없는 로컬 수집만 건너뛴다. CI 설정 누락은 성공으로 처리하지 않는다.
+if (process.env.CI && !target) throw new Error("CI의 NestJS 검증 보드 통합 테스트에는 TEST_DATABASE_URL이 필요합니다.");
 const suite = describe.skipIf(!target);
 const schema = `nestjs_quality_${randomUUID().replaceAll("-", "")}`;
 const role = `quality_runtime_${randomUUID().replaceAll("-", "")}`;

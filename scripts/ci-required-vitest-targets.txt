@@ -3,6 +3,7 @@ apps/api/src/config/env.test.ts
 apps/api/src/config/security-headers.test.ts
 apps/api/src/csrf-middleware.test.ts
 apps/api/src/logging/log-safe.test.ts
+apps/api/src/modules/admin-nestjs-quality
 apps/api/src/modules/admin/admin-traffic-d1-query.test.ts
 apps/api/src/modules/admin/admin-traffic-query.test.ts
 apps/api/src/modules/admin/admin-traffic.service.test.ts
@@ -805,6 +806,7 @@ deploy/cloudflare-analytics/src/index.test.ts
 deploy/cloudflare-apex-redirect/src/index.test.ts
 deploy/cloudflare-static/src/index.test.ts
 deploy/cloudflare-static/src/r2-media-assets.test.ts
+packages/contracts/src/admin-nestjs-quality.test.ts
 packages/contracts/src/production-workflow.test.ts
 packages/contracts/src/studio-legacy-pigment-archive.test.ts
 packages/contracts/src/studio-linked-3d-correction.test.ts
@@ -837,6 +839,7 @@ packages/studio-project-model/src/__tests__/world-conversation.test.ts
 packages/studio-project-model/src/__tests__/world-publication.test.ts
 packages/studio-project-model/src/__tests__/world-tilemap.test.ts
 scripts/__tests__/generate-third-party-notices.test.mjs
+scripts/admin-nestjs-quality-database-contract.test.mjs
 scripts/bg3d-preserving-acl-contract.test.mjs
 scripts/bootstrap-empty-production-database.test.mjs
 scripts/browser-core-entry-isolation.test.ts

@@ -1,14 +1,14 @@
-// 기준 main 2cfbfa55056732f67e01f0d02b648dbae35498cb, 관측 2026-11-18T04:19:58Z. 실제 실행 결과와 정적 근거를 구분한다.
+// 기준 main 45dbe47d7cc86b238054df608d5bff5757e8afab, 관측 2026-11-18T04:39:54Z. 실제 실행 결과와 정적 근거를 구분한다.
 import type { Snapshot } from "./admin-nestjs-quality";
 
 export const nestQualitySnapshot: Snapshot = {
-  "observedAt": "2026-11-18T04:19:58Z",
-  "observedKst": "2026-11-18 13:19:58 KST",
+  "observedAt": "2026-11-18T04:39:54Z",
+  "observedKst": "2026-11-18 13:39:54 KST",
   "repository": "blue45f/toonstudio",
-  "mainSha": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-  "mainUrl": "https://github.com/blue45f/toonstudio/commit/2cfbfa55056732f67e01f0d02b648dbae35498cb",
-  "mainCiUrl": "https://github.com/blue45f/toonstudio/actions/runs/44235319729",
-  "mainCiState": "in_progress · 결론 미확인 / build success · lint·파일 크기·검수 DB failure",
+  "mainSha": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+  "mainUrl": "https://github.com/blue45f/toonstudio/commit/45dbe47d7cc86b238054df608d5bff5757e8afab",
+  "mainCiUrl": "https://github.com/blue45f/toonstudio/actions/runs/44237128814",
+  "mainCiState": "pending · 최신 main의 CI 최종 결론과 개별 실행 결과 미확인",
   "releaseUrl": "https://github.com/nestjs/nest/releases/tag/v12.5.0",
   "releaseDate": "2026-11-12 22:19:45 KST",
   "packages": [
@@ -25,12 +25,12 @@ export const nestQualitySnapshot: Snapshot = {
       "links": [
         {
           "label": "현재 선언",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
           "type": "코드"
         },
         {
           "label": "잠금 버전·peer",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/pnpm-lock.yaml",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/pnpm-lock.yaml",
           "type": "코드"
         },
         {
@@ -53,12 +53,12 @@ export const nestQualitySnapshot: Snapshot = {
       "links": [
         {
           "label": "현재 선언",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
           "type": "코드"
         },
         {
           "label": "잠금 버전·peer",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/pnpm-lock.yaml",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/pnpm-lock.yaml",
           "type": "코드"
         },
         {
@@ -81,12 +81,12 @@ export const nestQualitySnapshot: Snapshot = {
       "links": [
         {
           "label": "현재 선언",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
           "type": "코드"
         },
         {
           "label": "잠금 버전·peer",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/pnpm-lock.yaml",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/pnpm-lock.yaml",
           "type": "코드"
         },
         {
@@ -109,12 +109,12 @@ export const nestQualitySnapshot: Snapshot = {
       "links": [
         {
           "label": "현재 선언",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
           "type": "코드"
         },
         {
           "label": "잠금 버전·peer",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/pnpm-lock.yaml",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/pnpm-lock.yaml",
           "type": "코드"
         },
         {
@@ -137,12 +137,12 @@ export const nestQualitySnapshot: Snapshot = {
       "links": [
         {
           "label": "현재 선언",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
           "type": "코드"
         },
         {
           "label": "잠금 버전·peer",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/pnpm-lock.yaml",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/pnpm-lock.yaml",
           "type": "코드"
         },
         {
@@ -165,7 +165,7 @@ export const nestQualitySnapshot: Snapshot = {
       "links": [
         {
           "label": "API 의존성",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
           "type": "코드"
         },
         {
@@ -188,12 +188,12 @@ export const nestQualitySnapshot: Snapshot = {
       "links": [
         {
           "label": "의존성",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
           "type": "코드"
         },
         {
           "label": "override·lock",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/pnpm-lock.yaml",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/pnpm-lock.yaml",
           "type": "코드"
         },
         {
@@ -216,12 +216,12 @@ export const nestQualitySnapshot: Snapshot = {
       "links": [
         {
           "label": "의존성",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
           "type": "코드"
         },
         {
           "label": "자체 어댑터",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.ts",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.ts",
           "type": "코드"
         },
         {
@@ -244,12 +244,12 @@ export const nestQualitySnapshot: Snapshot = {
       "links": [
         {
           "label": "의존성",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
           "type": "코드"
         },
         {
           "label": "pool·preflight",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.ts",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.ts",
           "type": "코드"
         }
       ]
@@ -267,12 +267,12 @@ export const nestQualitySnapshot: Snapshot = {
       "links": [
         {
           "label": "현재 선언",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
           "type": "코드"
         },
         {
           "label": "잠금",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/pnpm-lock.yaml",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/pnpm-lock.yaml",
           "type": "코드"
         },
         {
@@ -295,12 +295,12 @@ export const nestQualitySnapshot: Snapshot = {
       "links": [
         {
           "label": "현재 선언",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
           "type": "코드"
         },
         {
           "label": "잠금",
-          "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/pnpm-lock.yaml",
+          "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/pnpm-lock.yaml",
           "type": "코드"
         },
         {
@@ -343,11 +343,19 @@ export const nestQualitySnapshot: Snapshot = {
   "ci": [
     {
       "title": "기준 main · CI",
+      "scope": "main45dbe47",
+      "result": "pending",
+      "detail": "관측 시 conclusion null. 앞선 main의 빌드 성공·실패 결과를 새 SHA의 결과로 복사하지 않는다. 동일 SHA의 job과 최종 결론을 다시 확인해야 한다.",
+      "url": "https://github.com/blue45f/toonstudio/actions/runs/44237128814",
+      "counted": true
+    },
+    {
+      "title": "이전 main 2cfbfa5 · CI",
       "scope": "main 2cfbfa5",
       "result": "in_progress",
       "detail": "관측 시 전체 CI conclusion null. 개별 build는 성공했고 lint·파일 크기·검수 DB job은 실패했다. 남은 작업과 최종 결론은 미확인.",
       "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729",
-      "counted": true
+      "counted": false
     },
     {
       "title": "Core production build",
@@ -355,7 +363,7 @@ export const nestQualitySnapshot: Snapshot = {
       "result": "success",
       "detail": "API+web 프로덕션 빌드 작업 성공. 실제 로그인·Socket.IO 재연결·PG 2노드 시나리오 통과 여부는 미확인.",
       "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729/job/134569936119",
-      "counted": true
+      "counted": false
     },
     {
       "title": "Core preflight / 타입 검사 진입",
@@ -363,31 +371,31 @@ export const nestQualitySnapshot: Snapshot = {
       "result": "failure",
       "detail": "Source file size ratchet 단계 실패: character-lab RenderPanel·ViewportPane·character-engine. 이후 전체 타입 검사 완료 증거로 사용할 수 없다.",
       "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729/job/134569936226",
-      "counted": true
+      "counted": false
     },
     {
       "title": "Core strict lint",
-      "scope": "character-lab · 원인 분리",
+      "scope": "character-lab · 원인 분리 · 이전 main2cfbfa5",
       "result": "failure",
       "detail": "toon-reference.ts의 pat 변수 no-useless-assignment. NestJS import 실패와 다른 원인이다.",
       "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729/job/134569935779",
-      "counted": true
+      "counted": false
     },
     {
       "title": "Core review database invariants",
-      "scope": "검수 권한·동시성 테스트",
+      "scope": "검수 권한·동시성 테스트 · 이전 main2cfbfa5",
       "result": "failure",
       "detail": "17 files 중 1 failed / 16 passed. 5 failed / 314 passed / 1 skipped. studio-project-graph-review-race에서 예상 conflict/unsatisfied 대신 studio_manage_forbidden. NestJS 버전 원인 여부 미확인. 별도 개발 checkout에서 정책 fixture와 자기 승인 금지의 충돌을 재현했다. 수정 브랜치의 통과를 이 main의 완료로 기록하지 않는다.",
       "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729/job/134569936180",
-      "counted": true
+      "counted": false
     },
     {
       "title": "Core regression · product",
-      "scope": "저장소 계약 게이트",
+      "scope": "저장소 계약 게이트 · 이전 main2cfbfa5",
       "result": "failure",
       "detail": "source file size ratchet에서 중단. 과거 common/internal import 실패로 재분류하지 않는다.",
       "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729/job/134569936413",
-      "counted": true
+      "counted": false
     },
     {
       "title": "과거 PR #2798 · import 실패",
@@ -398,7 +406,7 @@ export const nestQualitySnapshot: Snapshot = {
       "counted": false
     },
     {
-      "title": "기준 main · Lighthouse",
+      "title": "이전 main 2cfbfa5 · Lighthouse",
       "scope": "Nest 실행 검증에 포함하지 않음",
       "result": "in_progress",
       "detail": "현재 main 2cfbfa5의 결론은 미확인. 이전 main 5ea952c의 Lighthouse 성공은 과거 Vello 실패를 활성 Nest 문제에서 제외한 근거로만 보존한다.",
@@ -406,7 +414,7 @@ export const nestQualitySnapshot: Snapshot = {
       "counted": false
     },
     {
-      "title": "기준 main · CodeQL",
+      "title": "이전 main 2cfbfa5 · CodeQL",
       "scope": "보안 정적 검사",
       "result": "pending",
       "detail": "관측 시 conclusion null. API 빌드·실시간 실행 근거와 별도다.",
@@ -428,7 +436,7 @@ export const nestQualitySnapshot: Snapshot = {
       "title": "API 시작",
       "subtitle": "main.ts → NestFactory → listen",
       "detail": "dev: tsx watch src/main.ts / start: node dist/apps/api/src/main.js. PORT > NEST_API_PORT > 4001, host 0.0.0.0. capability-worker는 Studio adapter 생략.",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/main.ts",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/main.ts",
       "taskId": "nest-008"
     },
     {
@@ -436,7 +444,7 @@ export const nestQualitySnapshot: Snapshot = {
       "title": "HTTP 인증·입장권",
       "subtitle": "sessionAuth → CSRF → /api",
       "detail": "POST /api/creator/studio-live/auth-ticket. middleware가 검증한 cookie principal 필요. signed x-user-id header만으로 발급하지 않는 경로.",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/creator/studio-live-auth-ticket.controller.ts",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/creator/studio-live-auth-ticket.controller.ts",
       "taskId": "nest-009"
     },
     {
@@ -444,7 +452,7 @@ export const nestQualitySnapshot: Snapshot = {
       "title": "어댑터 등록·확장",
       "subtitle": "useWebSocketAdapter → IoAdapter",
       "detail": "StudioLivePostgresIoAdapter extends IoAdapter. createIOServer → super.createIOServer → server.adapter(custom transport constructor). WsAdapter 상속 아님.",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.ts",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.ts",
       "taskId": "nest-006"
     },
     {
@@ -452,7 +460,7 @@ export const nestQualitySnapshot: Snapshot = {
       "title": "Socket admission",
       "subtitle": "/socket.io → /studio-live → studio:join",
       "detail": "HTTP /api prefix와 별도. allowed Origin / private principal / token 소비·제거. websocket-only, maxHttpBufferSize 384 KiB, perMessageDeflate false.",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/creator/studio-live.gateway.ts",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/creator/studio-live.gateway.ts",
       "taskId": "nest-010"
     },
     {
@@ -460,7 +468,7 @@ export const nestQualitySnapshot: Snapshot = {
       "title": "재연결·재참가",
       "subtitle": "connect → fresh studio:join → snapshot",
       "detail": "manager 8회 재시도 후 이미 입장한 소켓은 배경 timer 가능. 자격 refresh 1회, snapshot/binary 선택 완료 후 ready. 운영 Origin 설정은 미확인.",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/web/src/domains/creator/live/studio-live-socket-transport-lifecycle.ts",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/web/src/domains/creator/live/studio-live-socket-transport-lifecycle.ts",
       "taskId": "nest-012"
     },
     {
@@ -468,7 +476,7 @@ export const nestQualitySnapshot: Snapshot = {
       "title": "협업 이벤트",
       "subtitle": "submit → durable store → ACK → broadcast",
       "detail": "opId/seq/duplicate ACK. 새 insert만 broadcast. studio:op:sync(fromSeq)로 복구. ACK와 peer 전달은 별도 검증.",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/creator/studio-live-gateway-handlers-op.ts",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/creator/studio-live-gateway-handlers-op.ts",
       "taskId": "nest-014"
     },
     {
@@ -476,7 +484,7 @@ export const nestQualitySnapshot: Snapshot = {
       "title": "PostgreSQL 전파",
       "subtitle": "preflight → LISTEN/NOTIFY → 재구독",
       "detail": "기본 memory, 명시 postgres만 전용 pool. active→reconnecting(20초 grace)→stale→active/closed. 운영 설정·실연결은 미확인.",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-pubsub.ts",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-pubsub.ts",
       "taskId": "nest-017"
     },
     {
@@ -484,7 +492,7 @@ export const nestQualitySnapshot: Snapshot = {
       "title": "종료·자원 회수",
       "subtitle": "super.close → transport.close → pool.end",
       "detail": "WeakMap와 단일 close promise로 멱등 보호하는 코드 존재. 반복 종료·누수·실제 자원 수는 별도 실행 증거 필요.",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.ts",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.ts",
       "taskId": "nest-021"
     }
   ],
@@ -492,7 +500,7 @@ export const nestQualitySnapshot: Snapshot = {
     {
       "title": "핵심 Nest 11/12 혼재",
       "reason": "기준 main의 핵심 5개 선언과 잠금 버전 모두 12.5.0. 해결된 버전 혼재를 활성 문제로 남기지 않는다.",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json"
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json"
     },
     {
       "title": "PR #2801 재병합",
@@ -522,23 +530,28 @@ export const nestQualitySnapshot: Snapshot = {
     {
       "title": "이미 존재하는 PG 방어 코드",
       "reason": "preflight·재구독·종료 보호와 테스트 존재. 새 결함으로 단정하지 않고 실행 회귀 시나리오로 관리한다.",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.test.ts"
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.test.ts"
     }
   ],
   "sources": [
     {
+      "label": "기준 main45dbe47 CI",
+      "url": "https://github.com/blue45f/toonstudio/actions/runs/44237128814",
+      "type": "CI"
+    },
+    {
       "label": "최신 main API 의존성",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
       "type": "코드"
     },
     {
       "label": "최신 main lockfile",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/pnpm-lock.yaml",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/pnpm-lock.yaml",
       "type": "코드"
     },
     {
       "label": "CI 정의",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/.github/workflows/ci.yml",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/.github/workflows/ci.yml",
       "type": "코드"
     },
     {
@@ -563,17 +576,17 @@ export const nestQualitySnapshot: Snapshot = {
     },
     {
       "label": "StudioLivePostgresIoAdapter",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.ts",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.ts",
       "type": "코드"
     },
     {
       "label": "PostgreSQL transport",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-pubsub.ts",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-pubsub.ts",
       "type": "코드"
     },
     {
       "label": "Gateway",
-      "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/creator/studio-live.gateway.ts",
+      "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/creator/studio-live.gateway.ts",
       "type": "코드"
     },
     {
@@ -612,7 +625,7 @@ export const nestQualitySnapshot: Snapshot = {
       "type": "공식 문서"
     },
     {
-      "label": "기준 main CI",
+      "label": "이전 main2cfbfa5 CI",
       "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729",
       "type": "CI"
     },

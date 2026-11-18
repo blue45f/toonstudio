@@ -1,10 +1,10 @@
 /**
  * ViewportPane: 엔진 캔버스 + 도구 막대(4방향 시점·부감/앙각·투명 격자·원고 컷 매칭 포함) + HUD + 관절 핸들 + 형상 제어점 + 드로잉 오버레이.
  */
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
-import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
+import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible } from "../../../contracts";
 import { formatShaperInputStyleGuide } from "../../../export/recipe-file";
 import { clientToNdc, normalizePointerPressure } from "../../../paint/paint-bridge";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
@@ -13,7 +13,6 @@ import { readProjectionPaint } from "../../../render/projection-paint";
 import { readViewportCamera } from "../../../render/viewport-camera";
 import { applyCanvasShaperViewPreset, setCanvasCameraInputStyle } from "../../../render/viewport-controls";
 import { clientToRenderPixel, viewportPixelRatio } from "../../../render/viewport-math";
-import { describeEngineStatus } from "../engine-status-text";
 import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions, useUiState, useViewportRegistry } from "../lab-store-context";
 
 import { createSwitchingPaintDriver } from "./projection-paint-driver";
@@ -22,19 +21,20 @@ import {
   buildShaperPresetCommands, computeShaperBoneScaleDrag, computeShaperControlPointDrag, computeShaperControlPoints, computeShaperIkHandleDrag,
 } from "./shaper-control-points";
 import { diagnoseSkeletonData, postSkeletonFailureOnce } from "./skeleton-boundary-guard";
-import { ViewportBackdropLayers, ViewportCompositionBar, ViewportOnboardingCard, ViewportSvgGizmoLayer, clampReferenceOpacity } from "./viewport-backdrop-overlay";
+import { ViewportBackdropLayers, ViewportCompositionBar, ViewportSvgGizmoLayer, clampReferenceOpacity } from "./viewport-backdrop-overlay";
 import {
   DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES, ViewportDuoShotControls, ViewportDuoShotOverlay,
   buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, type DuoShotState,
 } from "./viewport-duo-shot-guide";
 import { ViewportHud } from "./viewport-hud";
 import {
-  DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
-} from "./viewport-manga-fx-overlay";
-import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, hudRows, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
 } from "./viewport-interactions";
+import {
+  DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
+} from "./viewport-manga-fx-overlay";
+import { ViewportStatusOverlay, failureText } from "./viewport-status-overlay";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
@@ -87,10 +87,6 @@ interface ControlPointDragSession {
   changes: ReadonlyArray<{ readonly group: "face" | "body"; readonly key: FaceParamKey | BodyParamKey; readonly value: number }>;
 }
 
-function failureText(error: unknown, fallback: string): string {
-  return isLabFailure(error) ? `${error.reasonKo} [${error.code}]` : fallback;
-}
-
 function releaseCapture(el: Element | undefined, pointerId: number): void {
   if (el && typeof el.releasePointerCapture === "function" && el.hasPointerCapture?.(pointerId)) el.releasePointerCapture(pointerId);
 }
@@ -105,13 +101,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const { setDrawingMode } = useUiActions();
   const plan = useApplyPlan();
   const paint = paintSession ?? getDefaultPaintSession();
-  const activePart = useSyncExternalStore(paint.subscribe, () => paint.getState().activePart, () => paint.getState().activePart);
-  const activeSublayer = useSyncExternalStore(paint.subscribe, () => paint.getState().activeSublayer, () => paint.getState().activeSublayer);
-  const brushRadius = useSyncExternalStore(paint.subscribe, () => Math.round(paint.getState().brush.radiusPx), () => Math.round(paint.getState().brush.radiusPx));
-  const toolMode = useSyncExternalStore(paint.subscribe, () => paint.getState().toolMode, () => paint.getState().toolMode);
-  const paintSymmetry = useSyncExternalStore(paint.subscribe, () => paint.getState().symmetry, () => paint.getState().symmetry);
-
-  const engineText = describeEngineStatus(labState.engine);
   const engine = labState.engine.phase === "ready" ? engineSession.engine() : null;
 
   const [showHandles, setShowHandles] = useState(initialOverlays?.handles ?? false);
@@ -770,11 +759,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         <ViewportDuoShotOverlay duoShot={duoShot} subjectHeightCm={subjectHeight.heightCm} subjectEyeHeightCm={subjectHeight.eyeHeightCm} subjectLabelKo={subjectHeight.labelKo} />
         <ViewportMangaFxOverlay mangaFx={mangaFx} />
 
-      {labState.engine.phase === "idle" ? <ViewportOnboardingCard onSelectBackend={selectBackend} /> : null}
-      {labState.engine.phase !== "ready" ? (
-        <p className="cl-viewport-status" role="status" data-tone={engineText.tone} style={{ position: "absolute", left: 12, right: 12, bottom: 12, margin: 0 }}>{engineText.text}</p>
-      ) : null}
-
       {engine && (showHandles || showControlPoints) ? (
         <ViewportSvgGizmoLayer
           svgRef={svgRef} gizmoMode={gizmoMode} viewBox={viewBox} ratio={ratio} showHandles={showHandles} showControlPoints={showControlPoints} skeletonCorrupted={skeletonCorrupted}
@@ -790,18 +774,15 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         <div className="cl-viewport-draw-layer" role="application" aria-label="모델 위 드로잉 영역" style={{ ...FILL, cursor: "crosshair", touchAction: "none" }} onPointerDown={onDrawDown} onPointerMove={onDrawMove} onPointerUp={onDrawUp} onPointerCancel={() => driverRef.current?.cancel()} onLostPointerCapture={() => driverRef.current?.cancel()} />
       ) : null}
 
-      {engine && ui.drawingMode ? (
-        <p className="cl-viewport-hint" style={{ position: "absolute", top: 44, left: 8, margin: 0 }}>
-          드로잉 모드({toolMode === "eraser" ? "지우개" : "브러시"}{paintSymmetry ? " · 대칭 ON" : ""}) · 레이어 {PART_ROLE_LABELS_KO[activePart]}(L{activeSublayer}) · 브러시 {brushRadius}px — 카메라 조작은 꺼져 있습니다(드로잉을 끄면 회전·확대).
-        </p>
-      ) : null}
-
-      {notice || noHandleReason ? (
-        <p className="cl-viewport-notice" role="status" style={{ position: "absolute", left: 8, right: 8, bottom: engine ? 8 : 56, margin: 0 }}>
-          {notice ?? noHandleReason}
-        </p>
-      ) : null}
-
+      <ViewportStatusOverlay
+        engineStatus={labState.engine}
+        hasEngine={Boolean(engine)}
+        onSelectBackend={selectBackend}
+        drawingMode={ui.drawingMode}
+        paint={paint}
+        notice={notice}
+        noHandleReason={noHandleReason}
+      />
       <ViewportHud rows={hudList} />
       </div>
     </div>

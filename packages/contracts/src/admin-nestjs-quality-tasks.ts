@@ -1,4 +1,4 @@
-// 기준 main 2cfbfa55056732f67e01f0d02b648dbae35498cb, 관측 2026-11-18T04:19:58Z. 실제 실행 결과와 정적 근거를 구분한다.
+// 기준 main 45dbe47d7cc86b238054df608d5bff5757e8afab, 관측 2026-11-18T04:39:54Z. 실제 실행 결과와 정적 근거를 구분한다.
 import type { Task } from "./admin-nestjs-quality";
 
 export const nestQualityTasks: Task[] = [
@@ -10,8 +10,8 @@ export const nestQualityTasks: Task[] = [
     "scope": "API 의존성·DI·HTTP·WebSocket",
     "nextAction": "해결 이력으로 보존. 연관 패키지 peer와 실제 런타임은 별도로 검증한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "2026-11-18",
     "environment": "GitHub main 파일 읽기",
     "result": "선언·잠금 버전 정렬 확인",
@@ -22,16 +22,16 @@ export const nestQualityTasks: Task[] = [
     ],
     "acceptance": "선언·lock·peer 출처가 동일 SHA와 버전을 가리키며 확인하지 못한 런타임 결론을 추가하지 않는다.",
     "beforeEvidence": "이전 스냅샷 58fe8ae: common12.5.0 + 나머지 핵심4개11.2.9.",
-    "afterEvidence": "기준 main2cfbfa5: 핵심5개 ^12.5.0 / lock12.5.0. #2798/#2800 병합 완료. 이전 main5ea952c와 API·lockfile 변경 없음.",
+    "afterEvidence": "기준 main45dbe47: 핵심5개 ^12.5.0 / lock12.5.0. #2798/#2800 병합 완료. 이후3D·Character Lab 변경에서 API·lockfile은 변경되지 않았다.",
     "evidenceLinks": [
       {
         "label": "API manifest",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
         "type": "코드"
       },
       {
         "label": "lock·peer",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/pnpm-lock.yaml",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/pnpm-lock.yaml",
         "type": "코드"
       },
       {
@@ -51,16 +51,16 @@ export const nestQualityTasks: Task[] = [
   {
     "category": "CI",
     "priority": "P0",
-    "status": "검토 필요",
+    "status": "미확인",
     "kind": "현재 CI 결과 확인",
     "scope": "API · Studio Live",
     "nextAction": "같은 SHA의 실패 원인을 분리해 추적하고 새 CI 결과가 있으면 스냅샷을 갱신한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "GitHub Actions 읽기",
-    "result": "전체 CI in_progress · 최종 결론 미확인 · 개별 실패 확인",
+    "result": "pending · 동일 SHA 최종 CI 결과 미확인",
     "steps": [
       "최신 main SHA가 바뀌었는지 확인한다.",
       "동일 SHA run의 상태·job·로그·artifact를 읽는다.",
@@ -68,37 +68,17 @@ export const nestQualityTasks: Task[] = [
     ],
     "acceptance": "완료된 동일 SHA의 필요한 job과 로그가 있을 때만 각 결과를 갱신한다.",
     "beforeEvidence": "2026-11-16 23:44 KST: pending / jobs 0 / conclusion null.",
-    "afterEvidence": "동일 SHA의 build 성공과 lint·파일 크기·검수 DB 실패 로그를 확인했다. 전체 CI 최종 결론과 실제 API·Socket.IO 전체 경로 통과는 미확인.",
+    "afterEvidence": "main45dbe47에 연결된 CI run과 conclusion null을 확인했다. 개별 작업 실행 결과·최종 결론은 미확인이다.",
     "evidenceLinks": [
       {
-        "label": "기준 main · CI",
+        "label": "최신 관측 main CI",
+        "url": "https://github.com/blue45f/toonstudio/actions/runs/44237128814",
+        "type": "CI"
+      },
+      {
+        "label": "이전 main2cfbfa5 CI",
         "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729",
-        "type": "CI"
-      },
-      {
-        "label": "Core production build",
-        "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729/job/134569936119",
-        "type": "CI"
-      },
-      {
-        "label": "Core preflight / 타입 검사 진입",
-        "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729/job/134569936226",
-        "type": "CI"
-      },
-      {
-        "label": "Core strict lint",
-        "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729/job/134569935779",
-        "type": "CI"
-      },
-      {
-        "label": "Core review database invariants",
-        "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729/job/134569936180",
-        "type": "CI"
-      },
-      {
-        "label": "Core regression · product",
-        "url": "https://github.com/blue45f/toonstudio/actions/runs/44235319729/job/134569936413",
-        "type": "CI"
+        "type": "역사 CI"
       }
     ],
     "notes": "코드·문서 열람은 실행 통과 증거가 아니다. 토큰·쿠키·접속 문자열은 증거에서 제거한다. 기준 스냅샷은 수동 관측이며 저장 시 GitHub·CI·운영 작업을 실행하지 않는다.",
@@ -107,7 +87,7 @@ export const nestQualityTasks: Task[] = [
     "revision": 0,
     "id": "nest-002",
     "title": "최신 main CI의 실제 결론 확인",
-    "summary": "기준 main2cfbfa5의 CI44235319729는 진행 중이며 전체 결론은 미확인. 개별 API+web build success, lint·파일 크기·검수 DB failure를 확인했다."
+    "summary": "최신 관측 main45dbe47의 CI44237128814는 pending이며 최종 결론은 미확인이다. 앞선2cfbfa5의 빌드 성공·실패 로그는 역사 자료로만 보존한다."
   },
   {
     "category": "CI",
@@ -118,7 +98,7 @@ export const nestQualityTasks: Task[] = [
     "nextAction": "해소된 import 실패를 활성 목록에서 제외. 실제 API 시작·인증·재연결·PG 전파는 각 시나리오에서 검증한다.",
     "owner": "미지정",
     "commit": "5ea952cd44b31dd1074ab96ab251e97f84932128",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "2026-11-18",
     "environment": "main5ea952c 기반 격리 개발 checkout · Node24 · frozen lock · 단위 테스트",
     "result": "관련 3개 파일 · 54개 단위 테스트 통과",
@@ -129,7 +109,7 @@ export const nestQualityTasks: Task[] = [
     ],
     "acceptance": "변경하지 않은 adapter·socket auth·auth ticket 단위 3개 파일의 import와 54개 테스트 통과를 확인한다. 실제 PG·서버 시작·클라이언트 재연결은 이 항목의 완료 범위가 아니다.",
     "beforeEvidence": "133285000974: common/internal module not found; 사전 통합 배치 3 files failed/25 passed, 455 tests passed/46 skipped. 133285000674: 7 files failed/418 passed, 4493 tests passed.",
-    "afterEvidence": "main5ea952c 기반 격리 개발 checkout의 frozen lock 설치 후 studio-postgres-io.adapter.test.ts, studio-live-socket-auth.service.test.ts, studio-live-auth-ticket.controller.test.ts: 3 files / 54 tests passed. 새 main2cfbfa5에서도 해당 소스와 lockfile은 동일함을 확인했다. 실제 PG·브라우저 전체 경로는 별도 미확인.",
+    "afterEvidence": "main5ea952c 기반 격리 개발 checkout의 frozen lock 설치 후 studio-postgres-io.adapter.test.ts, studio-live-socket-auth.service.test.ts, studio-live-auth-ticket.controller.test.ts: 3 files / 54 tests passed. 후속 main2cfbfa5와45dbe47에서도 해당 API 소스와 lockfile은 동일함을 확인했다. 실제 PG·브라우저 전체 경로는 별도 미확인.",
     "evidenceLinks": [
       {
         "label": "PR #2798",
@@ -169,7 +149,7 @@ export const nestQualityTasks: Task[] = [
     "nextAction": "재병합 없이 이력 보관. 실제 런타임 호환성은 별도 검증한다.",
     "owner": "미지정",
     "commit": "fa5264efc96a9bc05d11fa7d135ec35f24344ad2",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "2026-11-16",
     "environment": "GitHub PR·main 파일 읽기",
     "result": "merged=true 확인",
@@ -188,12 +168,12 @@ export const nestQualityTasks: Task[] = [
       },
       {
         "label": "main 선언",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
         "type": "코드"
       },
       {
         "label": "main lock",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/pnpm-lock.yaml",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/pnpm-lock.yaml",
         "type": "코드"
       }
     ],
@@ -213,8 +193,8 @@ export const nestQualityTasks: Task[] = [
     "scope": "API · Studio Live",
     "nextAction": "nest-006/007의 IoAdapter 변경과 nest-019/020의 실제 한계값 시나리오를 검토한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "2026-11-16T14:44:37Z",
     "environment": "현재 코드·공식 릴리스·IoAdapter 소스 읽기",
     "result": "범위 한정 확인",
@@ -229,17 +209,17 @@ export const nestQualityTasks: Task[] = [
     "evidenceLinks": [
       {
         "label": "상속 클래스",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.ts",
         "type": "코드"
       },
       {
         "label": "Gateway 옵션",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/creator/studio-live.gateway.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/creator/studio-live.gateway.ts",
         "type": "코드"
       },
       {
         "label": "384KiB 상수",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/creator/studio-live-gateway-constants.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/creator/studio-live-gateway-constants.ts",
         "type": "코드"
       },
       {
@@ -269,8 +249,8 @@ export const nestQualityTasks: Task[] = [
     "scope": "API · Studio Live",
     "nextAction": "nest-020의 격리 부하 시나리오를 설계하고 실제 결과는 미확인으로 둔다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "공식 11.2.9/12.5.0 소스·현재 클래스 읽기",
     "result": "변경 범위 확인 · 상속 후 실제 동작 미확인",
@@ -300,7 +280,7 @@ export const nestQualityTasks: Task[] = [
       },
       {
         "label": "상속 클래스",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.ts",
         "type": "코드"
       }
     ],
@@ -320,8 +300,8 @@ export const nestQualityTasks: Task[] = [
     "scope": "테스트 DI·로깅·입력 검증·전송·DB 연동",
     "nextAction": "입력 검증·직렬화·로깅의 실제 회귀를 재현하고 추가 버전 변경이 필요하면 nest-024 승인 항목으로 기록한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "정적 의존성·peer 확인 및 격리 후보 검증",
     "result": "nestjs-zod peer 범위 불일치 확인 · 요청 검증 회귀 여부 미확인",
@@ -336,7 +316,7 @@ export const nestQualityTasks: Task[] = [
     "evidenceLinks": [
       {
         "label": "현재 의존성",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
         "type": "코드"
       },
       {
@@ -366,8 +346,8 @@ export const nestQualityTasks: Task[] = [
     "scope": "의존성·lock·IoAdapter override·API 및 실시간 협업 회귀",
     "nextAction": "추가 수정의 필요성과 영향·검증 계획만 기록한다. 이 보드에는 실행 기능이 없다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "실행 전 · 대상 저장소 변경 없음",
     "result": "미확인",
@@ -392,12 +372,12 @@ export const nestQualityTasks: Task[] = [
       },
       {
         "label": "manifest",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/package.json",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/package.json",
         "type": "코드"
       },
       {
         "label": "lock",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/pnpm-lock.yaml",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/pnpm-lock.yaml",
         "type": "코드"
       },
       {
@@ -422,8 +402,8 @@ export const nestQualityTasks: Task[] = [
     "scope": "원격 PR·main 통합",
     "nextAction": "완료된 PR을 재병합 대상으로 만들지 않는다. 새 수정 PR이 필요한 경우에만 승인 메모를 추가한다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "실행 전 · PR 변경·병합 없음",
     "result": "미확인",
@@ -453,7 +433,7 @@ export const nestQualityTasks: Task[] = [
       },
       {
         "label": "현재 main",
-        "url": "https://github.com/blue45f/toonstudio/commit/2cfbfa55056732f67e01f0d02b648dbae35498cb",
+        "url": "https://github.com/blue45f/toonstudio/commit/45dbe47d7cc86b238054df608d5bff5757e8afab",
         "type": "근거"
       }
     ],
@@ -473,8 +453,8 @@ export const nestQualityTasks: Task[] = [
     "scope": "운영 API·협업 연결·인프라 설정·DB",
     "nextAction": "현재는 승인 대기로 유지. main 병합 후에도 실제 배포·설정 변경·운영 데이터 변경은 별도 실행 요청이 필요하다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "실행 전 · 운영 접속/변경/배포 없음",
     "result": "미확인",
@@ -489,17 +469,17 @@ export const nestQualityTasks: Task[] = [
     "evidenceLinks": [
       {
         "label": "API 시작 구성",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/main.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/main.ts",
         "type": "코드"
       },
       {
         "label": "PG 모드·preflight",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.ts",
         "type": "코드"
       },
       {
         "label": "Studio Live Origin",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/web/src/domains/creator/live/studio-live-socket-endpoint.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/web/src/domains/creator/live/studio-live-socket-endpoint.ts",
         "type": "코드"
       }
     ],
@@ -520,7 +500,7 @@ export const nestQualityTasks: Task[] = [
     "nextAction": "필요하면 기존 전체 CI 보드에서 추적. 이 Nest 보드에서는 제외 기록으로 유지한다.",
     "owner": "미지정",
     "commit": "35ae069878a873df646fd095c9bf241584cd0496",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "2026-11-16",
     "environment": "기존 CI 로그 읽기",
     "result": "독립 원인 확인 · Nest 범위 제외",
@@ -559,8 +539,8 @@ export const nestQualityTasks: Task[] = [
     "scope": "API · Studio Live",
     "nextAction": "전체 경로의 실제 결과가 필요한 시나리오에 환경·테스트 ID·CI 로그를 연결한다. 테스트 소스 확인을 실행 검증일로 쓰지 않는다.",
     "owner": "미지정",
-    "commit": "2cfbfa55056732f67e01f0d02b648dbae35498cb",
-    "checkedAt": "2026-11-18T04:19:58Z",
+    "commit": "45dbe47d7cc86b238054df608d5bff5757e8afab",
+    "checkedAt": "2026-11-18T04:39:54Z",
     "verificationDate": "",
     "environment": "테스트 소스 읽기 · 실행 없음",
     "result": "증명 범위 확인 · 전체 통합 실행 미확인",
@@ -575,22 +555,22 @@ export const nestQualityTasks: Task[] = [
     "evidenceLinks": [
       {
         "label": "실제 PG test 범위",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/realtime/studio-postgres-io.adapter.integration.test.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/realtime/studio-postgres-io.adapter.integration.test.ts",
         "type": "코드"
       },
       {
         "label": "FakeSocket test",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/web/src/domains/creator/live/studio-live-socket-transport.test.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/web/src/domains/creator/live/studio-live-socket-transport.test.ts",
         "type": "코드"
       },
       {
         "label": "BroadcastChannel resync test",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/web/src/domains/creator/live/studio-live-reconnect-resync.test.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/web/src/domains/creator/live/studio-live-reconnect-resync.test.ts",
         "type": "코드"
       },
       {
         "label": "auth 단위 test",
-        "url": "https://github.com/blue45f/toonstudio/blob/2cfbfa55056732f67e01f0d02b648dbae35498cb/apps/api/src/modules/creator/studio-live-socket-auth.service.test.ts",
+        "url": "https://github.com/blue45f/toonstudio/blob/45dbe47d7cc86b238054df608d5bff5757e8afab/apps/api/src/modules/creator/studio-live-socket-auth.service.test.ts",
         "type": "코드"
       }
     ],
