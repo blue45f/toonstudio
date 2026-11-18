@@ -103,6 +103,23 @@ describe("NestJS 검증 보드 HTTP 인증·CSRF 경계", () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { name: "Kelvin 문자가 포함된 요청 ID", change: (body: ReturnType<typeof command>) => { body.mutationId = "save-1234\u212A"; } },
+    { name: "NUL 문자가 포함된 메모", change: (body: ReturnType<typeof command>) => { body.document.tasks[0].notes = "검증\u0000기록"; } },
+    { name: "고립 surrogate가 포함된 메모", change: (body: ReturnType<typeof command>) => { body.document.tasks[0].notes = "검증\uD800기록"; } },
+  ])("$name 요청은 실제 HTTP 경계에서 400으로 거부하고 저장소를 호출하지 않는다", async ({ change }) => {
+    const body = command();
+    change(body);
+    const save = vi.spyOn(repository, "save");
+    try {
+      const response = await request({ ...cookie(), origin: base, "x-toonstudio-csrf": "1" }, body);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({ statusCode: 400 });
+      expect(save).not.toHaveBeenCalled();
+      expect(query).not.toHaveBeenCalled();
+    } finally { save.mockRestore(); }
+  });
+
   it("세션 회수 뒤의 요청은 이전 쿠키로 문서와 이력을 읽지 못한다", async () => {
     allowed.mockResolvedValue(false);
     for (const path of ["", "/history/1"]) {

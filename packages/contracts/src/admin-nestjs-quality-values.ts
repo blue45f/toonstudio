@@ -8,6 +8,13 @@ const MAX_JSON_DEPTH = 20;
 const MAX_JSON_NODES = 50_000;
 const RESERVED_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 
+function assertJsonText(value: string): void {
+  // Unicode 모드에서는 정상 surrogate pair를 유지하고 짝이 없는 코드 단위만 찾는다.
+  if (value.includes("\u0000") || /[\uD800-\uDFFF]/u.test(value)) {
+    throw new Error("보드 JSON 문자열의 NUL 또는 잘못된 유니코드 문자를 제거하세요.");
+  }
+}
+
 /** 파싱 전에 크기·깊이·프로토타입을 제한해 브라우저와 API에서 같은 입력 경계를 지킨다. */
 export function boundedJson(value: unknown): unknown {
   let input = value;
@@ -26,6 +33,7 @@ export function boundedJson(value: unknown): unknown {
     if (item === null || typeof item === "boolean") return;
     if (typeof item === "string") {
       if (item.length > NEST_BOARD_MAX_JSON_BYTES) throw new Error("보드 JSON 문자열이 너무 깁니다.");
+      assertJsonText(item);
       return;
     }
     if (typeof item === "number" && Number.isFinite(item)) return;
@@ -40,6 +48,7 @@ export function boundedJson(value: unknown): unknown {
     ancestors.add(item);
     for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(item))) {
       if (Array.isArray(item) && key === "length") continue;
+      assertJsonText(key);
       if (Array.isArray(item) && (!/^(?:0|[1-9]\d*)$/u.test(key) || Number(key) >= item.length)) {
         throw new Error("보드 JSON 배열에 허용하지 않는 속성이 있습니다.");
       }

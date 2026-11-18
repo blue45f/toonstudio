@@ -148,7 +148,7 @@ export function parseNestBoardDocument(value: unknown, now = Date.now()): NestBo
 export function parseNestBoardMutation(value: unknown, now = Date.now()): NestBoardMutation {
   const input = record(boundedJson(value), "보드 저장 요청");
   const mutationId = text(input.mutationId, "요청 ID", 128, true);
-  if (!/^[a-z0-9][a-z0-9._:-]{7,127}$/iu.test(mutationId)) throw new Error("재시도에 사용할 올바른 요청 ID가 필요합니다.");
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/u.test(mutationId)) throw new Error("재시도에 사용할 올바른 요청 ID가 필요합니다.");
   return {
     expectedRevision: integer(input.expectedRevision, "기대 수정 번호"), mutationId,
     document: document(input.document, now), reason: text(input.reason, "변경 사유", 1000, true),

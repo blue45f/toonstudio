@@ -173,6 +173,26 @@ describe("NestJS 관리자 검증 보드 계약", () => {
     expect(() => parseNestBoardDocument(title, NOW)).toThrow("작업 제목");
   });
 
+  it.each(["\u0000", "\uD800", "\uDC00", "😀\uD800"])("PostgreSQL에 저장할 수 없는 문자열을 값·키·JSON 가져오기에서 거부한다: %j", invalid => {
+    const document = board(); document.tasks[0].notes = invalid;
+    const request = { expectedRevision: 0, mutationId: "save-12345678", document, reason: "근거 추가" };
+    expect(() => parseNestBoardMutation(request, NOW)).toThrow("유니코드");
+    expect(() => parseNestBoardImport(JSON.stringify(document), NOW)).toThrow("유니코드");
+    expect(() => parseNestBoardImport({ document: board(), [invalid]: "외부 메타데이터" }, NOW)).toThrow("유니코드");
+  });
+
+  it("정상 surrogate pair와 한글·emoji·줄바꿈을 변경하지 않고 보존한다", () => {
+    const content = "한글 😀 🧑🏽‍💻 𐐷\n다음 기록\t🚀";
+    const document = board(); document.tasks[0].notes = content;
+    const request = { expectedRevision: 0, mutationId: "Save_ABC.12:-3", document, reason: content };
+    expect(parseNestBoardMutation(request, NOW)).toEqual(request);
+    expect(parseNestBoardImport(JSON.stringify(document), NOW).tasks[0].notes).toBe(content);
+  });
+
+  it.each(["K1234567", "ſ1234567"])("Unicode case folding으로 ASCII 요청 ID 범위를 우회할 수 없다: %s", mutationId => {
+    expect(() => parseNestBoardMutation({ expectedRevision: 0, mutationId, document: board(), reason: "근거 추가" }, NOW)).toThrow("요청 ID");
+  });
+
   it("다른 저장소·버전·빈 작업 목록은 가져오지 않는다", () => {
     expect(() => parseNestBoardImport({ ...board(), repository: "different/repo" }, NOW)).toThrow("schemaVersion 1");
     expect(() => parseNestBoardImport({ ...board(), schemaVersion: 2 }, NOW)).toThrow("schemaVersion 1");
