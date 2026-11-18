@@ -27,6 +27,7 @@ import {
   DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES, ViewportDuoShotControls, ViewportDuoShotOverlay,
   buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, type DuoShotState,
 } from "./viewport-duo-shot-guide";
+import { ViewportHud } from "./viewport-hud";
 import {
   DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
 } from "./viewport-manga-fx-overlay";
@@ -801,16 +802,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         </p>
       ) : null}
 
-      {hudList.length > 0 ? (
-        <dl className="cl-viewport-hud" aria-label="성능 HUD" style={{ position: "absolute", top: 8, right: 8, margin: 0, pointerEvents: "none" }}>
-          {hudList.map((row) => (
-            <div key={row.key} className="cl-viewport-hud-row" data-key={row.key} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <dt>{row.label}</dt>
-              <dd style={{ margin: 0 }}>{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
+      <ViewportHud rows={hudList} />
       </div>
     </div>
   );

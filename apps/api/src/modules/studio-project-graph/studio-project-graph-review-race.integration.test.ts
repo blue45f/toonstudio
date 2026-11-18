@@ -62,7 +62,7 @@ withPostgres("PostgreSQL review decision and comment serialization", () => {
     else process.env.DATABASE_URL = previousDatabase;
   });
 
-  async function fixture() {
+  async function fixture({ separateRequester = false } = {}) {
     const actor = randomUUID(), workId = randomUUID(), projectId = randomUUID(), artifactId = randomUUID();
     const initialId = randomUUID(), submissionId = randomUUID(), snapshotId = randomUUID(), reviewId = randomUUID();
     users.push(actor);
@@ -85,13 +85,14 @@ withPostgres("PostgreSQL review decision and comment serialization", () => {
       await client.query("COMMIT");
     } catch (error) { await client.query("ROLLBACK"); throw error; }
     finally { client.release(); }
-    await graph.createReview(actor, artifactId, { id: reviewId, revisionId: snapshotId,
+    const requester = separateRequester ? await member(workId, "editor") : actor;
+    await graph.createReview(requester, artifactId, { id: reviewId, revisionId: snapshotId,
       title: "Pinned review", reviewerIds: [actor] });
     const input = (severity: CreateStudioReviewComment["severity"] = "required"): CreateStudioReviewComment => ({
       id: randomUUID(), body: "Correct the final panel", severity, assigneeIds: [],
       anchor: { kind: "artifact", artifactId, revisionId: snapshotId, scope: { projectId } },
     });
-    return { actor, workId, projectId, artifactId, initialId, snapshotId, reviewId, input };
+    return { actor, requester, workId, projectId, artifactId, initialId, snapshotId, reviewId, input };
   }
   it("keeps comment resolution and reopening monotonic against exact stored PostgreSQL time", async () => {
     const f = await fixture(), input = f.input();
@@ -518,7 +519,8 @@ withPostgres("PostgreSQL review decision and comment serialization", () => {
     }
   });
   async function policyFixture(mode: "parallel" | "sequential" = "parallel") {
-    const f = await fixture(), reviewer = await member(f.workId, "viewer");
+    // 정책 검사는 편집자가 요청하고 소유자·외부 검토자가 투표하도록 주체를 분리한다.
+    const f = await fixture({ separateRequester: true }), reviewer = await member(f.workId, "viewer");
     await pool.query('INSERT INTO studio_review_reviewer ("reviewId","reviewerUserId") VALUES ($1,$2)', [f.reviewId, reviewer]);
     const repository = new (await import("./studio-review-policy.repository")).StudioReviewPolicyRepository();
     const pin = { reviewId: f.reviewId, artifactId: f.artifactId, revisionId: f.snapshotId, rootGraphHash: "a".repeat(64) };
@@ -534,6 +536,13 @@ withPostgres("PostgreSQL review decision and comment serialization", () => {
     });
     return { ...f, reviewer, repository, pin, definition, configure, vote };
   }
+  it("다른 지정 검토자가 있으면 소유자도 자신의 검토 요청을 승인할 수 없다", async () => {
+    const f = await fixture(), reviewer = await member(f.workId, "viewer");
+    await pool.query('INSERT INTO studio_review_reviewer ("reviewId","reviewerUserId") VALUES ($1,$2)', [f.reviewId, reviewer]);
+    await expect(graph.decideReview(f.actor, f.reviewId, { status: "approved" }))
+      .rejects.toMatchObject({ name: "StudioProjectForbiddenError", operation: "manage" });
+    expect((await graph.getReview(f.actor, f.reviewId)).status).toBe("open");
+  });
   it("enforces all configured group quorums in both API and database approval", async () => {
     const f = await policyFixture();
     await expect(graph.decideReview(f.actor, f.reviewId, { status: "approved" })).rejects.toMatchObject({ code: "conflict" });
