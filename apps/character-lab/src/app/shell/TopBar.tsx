@@ -163,7 +163,7 @@ export function TopBar() {
             {ENGINE_BACKEND_LABELS_KO[backend]}
           </button>
         ))}
-        <span className="cl-engine-badge" data-tone={engineText.tone} role="status">
+        <span className="cl-engine-badge" data-tone={engineText.tone} role="status" title={engineText.text}>
           {engineText.text}
         </span>
       </div>

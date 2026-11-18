@@ -424,7 +424,7 @@ export function ParamPanel() {
 
       <div className="cl-shaper-showcase-header">
         <img
-          src="/scene-character-lab-shaper-showcase.webp"
+          src="/assets/characters/shaper-atelier-protagonist/contact-sheet.png"
           alt=""
           aria-hidden="true"
           className="cl-shaper-showcase-thumb"
@@ -475,19 +475,7 @@ export function ParamPanel() {
       >
         <h3 className="cl-param-subtitle">
           VARCO 3D 웹툰 세계관 셰이퍼 프리셋 ({WEBTOON_UNIVERSE_SHAPER_PRESETS.length}){" "}
-          <span
-            style={{
-              display: "inline-block",
-              marginLeft: 6,
-              padding: "2px 6px",
-              borderRadius: 4,
-              backgroundColor: "rgba(84, 231, 250, 0.1)",
-              color: "#54e7fa",
-              fontSize: 9,
-              fontWeight: 600,
-              lineHeight: 1,
-            }}
-          >
+          <span className="cl-shaper-tech-badge">
             PBR · GLB
           </span>
         </h3>

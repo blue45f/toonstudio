@@ -576,6 +576,20 @@ describe("베타 기능 토글", () => {
     expect(screen.getByTestId("render-material-shadow-summary").textContent).toContain("cloth-silk");
     expect(screen.getByTestId("render-material-shadow-summary").textContent).toContain("CSM 3단 · PCF+PCSS");
 
+    fireEvent.click(screen.getByTestId("render-surface-preset-sanctuary-ivory-brocade"));
+    expect(store.getState().recipe.surfaces.shoes?.material).toBe("cloth-silk");
+    expect(store.getState().recipe.surfaces.accessory?.material).toBe("metal");
+    fireEvent.click(screen.getByTestId("render-lighting-preset-sanctuary-ethereal-halo"));
+    expect(store.getState().recipe.shading.ibl.intensity).toBe(1.45);
+    expect(store.getState().recipe.shading.look.rim.color).toEqual([1, 0.93, 0.72]);
+
+    fireEvent.click(screen.getByTestId("render-surface-preset-bespoke-charcoal-suit"));
+    expect(store.getState().recipe.surfaces.top?.material).toBe("cloth-cotton");
+    expect(store.getState().recipe.surfaces.shoes?.material).toBe("leather");
+    fireEvent.click(screen.getByTestId("render-lighting-preset-office-editorial-clean"));
+    expect(store.getState().recipe.shading.toon.rampSteps).toBe(2);
+    expect(store.getState().recipe.shading.postfx.sharpen).toBe(true);
+
     fireEvent.click(screen.getByTestId("render-reset-material-lighting-btn"));
     expect(store.getState().recipe.surfaces.top).toBeUndefined();
     expect(store.getState().recipe.shading.mode).toBe(DEFAULT_SHADING.mode);

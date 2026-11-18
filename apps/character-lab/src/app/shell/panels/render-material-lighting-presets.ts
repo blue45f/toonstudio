@@ -11,14 +11,26 @@ import { DEFAULT_SHADING, mergeLook } from "../../../contracts";
 import type { ChannelKey, LabCommand, LookPatch, MaterialPresetId, ShadingProfile, Surface, Surfaces } from "../../../contracts";
 
 export interface WebtoonMaterialSurfacePreset {
-  readonly id: "peach-wool-school" | "porcelain-silk-rofan" | "action-leather-armor" | "casual-knit-denim";
+  readonly id:
+    | "peach-wool-school"
+    | "porcelain-silk-rofan"
+    | "action-leather-armor"
+    | "casual-knit-denim"
+    | "sanctuary-ivory-brocade"
+    | "bespoke-charcoal-suit";
   readonly labelKo: string;
   readonly summaryKo: string;
   readonly surfaces: Readonly<Partial<Record<ChannelKey, MaterialPresetId>>>;
 }
 
 export interface WebtoonLightingShadowPreset {
-  readonly id: "daylight-cel-soft" | "sunset-rim-pcss" | "romance-soft-bloom" | "noir-hard-cascade4";
+  readonly id:
+    | "daylight-cel-soft"
+    | "sunset-rim-pcss"
+    | "romance-soft-bloom"
+    | "noir-hard-cascade4"
+    | "sanctuary-ethereal-halo"
+    | "office-editorial-clean";
   readonly labelKo: string;
   readonly summaryKo: string;
   readonly buildShading: (current: ShadingProfile) => Partial<ShadingProfile>;
@@ -77,6 +89,34 @@ export const WEBTOON_MATERIAL_SURFACE_PRESETS: readonly WebtoonMaterialSurfacePr
       top: "cloth-knit",
       bottom: "cloth-denim",
       shoes: "cloth-cotton",
+    },
+  },
+  {
+    id: "sanctuary-ivory-brocade",
+    labelKo: "성소 에테르 실크 · 금사 성물",
+    summaryKo: "투명 백자 SSS 피부 + 성소 실크 드레스/망토 + 순금 헤일로 메탈",
+    surfaces: {
+      skin: "skin-sss",
+      hair: "hair-aniso",
+      top: "cloth-silk",
+      bottom: "cloth-silk",
+      outer: "cloth-silk",
+      shoes: "cloth-silk",
+      accessory: "metal",
+    },
+  },
+  {
+    id: "bespoke-charcoal-suit",
+    labelKo: "비스포크 울 수트 · 오피스 로퍼",
+    summaryKo: "정제된 매트 울 재킷/슬랙스 + 유광 가죽 로퍼 + 메탈 타이클립/안경",
+    surfaces: {
+      skin: "skin-sss",
+      hair: "hair-aniso",
+      top: "cloth-cotton",
+      bottom: "cloth-cotton",
+      outer: "cloth-cotton",
+      shoes: "leather",
+      accessory: "metal",
     },
   },
 ] as const;
@@ -155,6 +195,44 @@ export const WEBTOON_LIGHTING_SHADOW_PRESETS: readonly WebtoonLightingShadowPres
       rim: { strength: 0.75, color: [0.49, 0.83, 0.99], edge0: 0.65, edge1: 0.9 },
       shade: { other: { kind: "multiply", rgb: [0.42, 0.48, 0.58] } },
       line: { widthMm: 3.2 },
+    },
+  },
+  {
+    id: "sanctuary-ethereal-halo",
+    labelKo: "신전 성광 3단 · 샴페인 에테르 블룸",
+    summaryKo: "성스러운 3단 셀 그라데이션 · 황금 성광 림 · 3단 PCF 그림자 + 에테르 블룸",
+    buildShading: (current) => ({
+      mode: "toon",
+      toneMapping: "khr-pbr-neutral",
+      toon: { ...current.toon, rampSteps: 3, faceSdfShadow: true, rim: true, outline: "hull", outlinePressure: true },
+      shadows: { enabled: true, cascades: 3, pcf: true, contactHardening: false },
+      postfx: { ...current.postfx, fxaa: true, bloom: true, sharpen: false },
+      ibl: { enabled: true, intensity: 1.45 },
+    }),
+    lookPatch: {
+      ramp: { softness: 0.34 },
+      rim: { strength: 0.58, color: [1, 0.93, 0.72], edge0: 0.54, edge1: 0.92 },
+      shade: { skin: { kind: "multiply", rgb: [0.96, 0.84, 0.8] } },
+      line: { widthMm: 1.9 },
+    },
+  },
+  {
+    id: "office-editorial-clean",
+    labelKo: "오피스 에디토리얼 2단 · 쿨 스틸 림",
+    summaryKo: "도회적 2단 클린 셀 음영 · 스틸 화이트 림 · 3단 정밀 PCSS 그림자",
+    buildShading: (current) => ({
+      mode: "toon",
+      toneMapping: "khr-pbr-neutral",
+      toon: { ...current.toon, rampSteps: 2, faceSdfShadow: true, rim: true, outline: "hull", outlinePressure: true },
+      shadows: { enabled: true, cascades: 3, pcf: true, contactHardening: true },
+      postfx: { ...current.postfx, fxaa: true, bloom: false, sharpen: true },
+      ibl: { enabled: true, intensity: 1.15 },
+    }),
+    lookPatch: {
+      ramp: { softness: 0.14 },
+      rim: { strength: 0.38, color: [0.84, 0.91, 1], edge0: 0.62, edge1: 0.93 },
+      shade: { other: { kind: "multiply", rgb: [0.74, 0.78, 0.86] } },
+      line: { widthMm: 2.3 },
     },
   },
 ] as const;

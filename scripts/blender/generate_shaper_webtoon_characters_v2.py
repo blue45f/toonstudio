@@ -274,6 +274,58 @@ CHARACTER_SPECS: list[dict[str, Any]] = [
         },
         "noteKo": "Blender 5.3에서 은백발 울프컷·루비 적안(赤眼)·북부대공 아리스토크라트 숄더 케이프 코트·크림슨 크라바트·금제 체인 훈장을 조형한 북부대공 패키지.",
     },
+    {
+        "id": "shaper-fantasy-saintess",
+        "displayName": "SHAPER Atelier · Holy Temple Saintess (신전 성녀 에테르 드레스)",
+        "role": "shaper-saintess",
+        "gender": "female",
+        "faceStyle": "soft",
+        "hairStyle": "hime-cut",
+        "bangStyle": "saintess-hime",
+        "kitParts": {
+            "top": ("top/shirt.glb", "TS_Top_sanctuary-mantle"),
+            "bottom": ("bottom/long-skirt.glb", "TS_Bottom_long-skirt"),
+            "shoes": ("shoes/loafers.glb", "TS_Shoes_loafers"),
+            "accessory": ("accessory/choker.glb", "TS_Accessory_halo-tiara"),
+        },
+        "hideFeet": False,
+        "couture": "fantasy-saintess",
+        "colors": {
+            "skin": "#FEF0E6", "blush": "#F9A4AE", "lip": "#E97388", "shadow": "#E7BEAE",
+            "irisTop": "#B86B14", "irisBot": "#FFF08A",
+            "hairRoot": "#CAB7A2", "hairMid": "#EDE2D4", "hairTip": "#FFFBF4", "hairHalo": "#FFFFFF",
+            "top1": "#FAF6F0", "top2": "#E5DAC8", "topAcc": "#EBC36A", "topPat": "sanctuary",
+            "bot1": "#F4EFE6", "bot2": "#DDD1BC", "botAcc": "#EAC166", "botPat": "sanctuary",
+            "shoe": "#EDE2CF", "acc": "#74E8FF", "gold": "#FFE082",
+        },
+        "noteKo": "Blender 5.3에서 샴페인 백금발 히메컷·황금 앰버 보석안·부유형 성광 헤일로 크라운·성소 케이프 스톨과 금사 브로케이드 롱 드레스를 정밀 조형한 판타지 신전 성녀 패키지.",
+    },
+    {
+        "id": "shaper-office-ceo",
+        "displayName": "SHAPER Atelier · Modern Office Director (현대 오피스 수트 본부장)",
+        "role": "shaper-office",
+        "gender": "male",
+        "faceStyle": "sharp",
+        "hairStyle": "short-layered",
+        "bangStyle": "ceo-parted",
+        "kitParts": {
+            "top": ("top/blazer.glb", "TS_Top_bespoke-suit"),
+            "bottom": ("bottom/slacks.glb", "TS_Bottom_slacks"),
+            "shoes": ("shoes/loafers.glb", "TS_Shoes_loafers"),
+            "accessory": ("accessory/glasses.glb", "TS_Accessory_glasses"),
+        },
+        "hideFeet": False,
+        "couture": "office-ceo",
+        "colors": {
+            "skin": "#F8DEC9", "blush": "#E49B90", "lip": "#C97478", "shadow": "#D9AE98",
+            "irisTop": "#1A2E4C", "irisBot": "#8CC6F2",
+            "hairRoot": "#141218", "hairMid": "#27232E", "hairTip": "#463E52", "hairHalo": "#C8C2D6",
+            "top1": "#1A2130", "top2": "#101520", "topAcc": "#C9A968", "topPat": "pinstripe",
+            "bot1": "#151B27", "bot2": "#0D111A", "botAcc": "#8B9BB4", "botPat": "pinstripe",
+            "shoe": "#1B1412", "acc": "#7C1D36", "gold": "#E5C478",
+        },
+        "noteKo": "Blender 5.3에서 7:3 가르마 시크 레이어드 헤어·스틸 블루 안구·차콜 헤링본 비스포크 수트·버건디 실크 넥타이 및 골드 타이클립·메탈 하프림 안경을 정밀 조형한 현대 로맨스 오피스 본부장 패키지.",
+    },
 ]
 
 
@@ -853,6 +905,139 @@ def _add_bespoke_couture(
         ch_obj = _new_bmesh_part("_tmp_duke_chain", bm_ch, gold_mat, arm_obj, "mixamorig:Spine2")
         _join_into(part_objs["accessory"], [ch_obj])
 
+    elif mode == "fantasy-saintess":
+        bm_halo = bmesh.new()
+        n_ring, n_tube = 36, 8
+        halo_cy, halo_cz, halo_r, tube_r = 0.028, 1.668, 0.118, 0.0048
+        h_rings = []
+        for ir in range(n_ring):
+            th = (ir / n_ring) * 2.0 * math.pi
+            cx_h = halo_r * math.cos(th)
+            cz_h = halo_cz + halo_r * 0.88 * math.sin(th)
+            cy_h = halo_cy + 0.018 * math.sin(th)
+            row_h = []
+            for it in range(n_tube):
+                ph = (it / n_tube) * 2.0 * math.pi
+                rad_off = tube_r * math.cos(ph)
+                y_off = tube_r * math.sin(ph)
+                row_h.append(bm_halo.verts.new((
+                    cx_h + rad_off * math.cos(th),
+                    cy_h + y_off,
+                    cz_h + rad_off * math.sin(th),
+                )))
+            h_rings.append(row_h)
+        for ir in range(n_ring):
+            ir_n = (ir + 1) % n_ring
+            for it in range(n_tube):
+                it_n = (it + 1) % n_tube
+                f = bm_halo.faces.new((h_rings[ir][it], h_rings[ir_n][it], h_rings[ir_n][it_n], h_rings[ir][it_n]))
+                f.smooth = True
+        for ray_deg in (-90, -35, 0, 35, 90):
+            ang_r = math.radians(ray_deg)
+            sp_c = bmesh.ops.create_cone(bm_halo, cap_ends=True, cap_tris=True, segments=6, radius1=0.0055, radius2=0.0005, depth=0.028)
+            bmesh.ops.rotate(bm_halo, cent=(0, 0, 0), matrix=Euler((0.0, ang_r, 0.0), "XYZ").to_matrix(), verts=sp_c["verts"])
+            bmesh.ops.translate(
+                bm_halo,
+                vec=((halo_r + 0.014) * math.sin(ang_r), halo_cy + 0.015, halo_cz + (halo_r * 0.88 + 0.014) * math.cos(ang_r)),
+                verts=sp_c["verts"],
+            )
+        for k in range(17):
+            ang_c = -1.05 + (k / 16.0) * 2.10
+            sp_b = bmesh.ops.create_uvsphere(bm_halo, u_segments=8, v_segments=6, radius=0.0038 if k != 8 else 0.0068)
+            bmesh.ops.translate(bm_halo, vec=(0.068 * math.sin(ang_c), -0.052 - 0.070 * math.cos(ang_c), 1.630 + 0.008 * math.exp(-((ang_c / 0.25) ** 2))), verts=sp_b["verts"])
+        halo_obj = _new_bmesh_part("_tmp_saintess_halo", bm_halo, gold_mat, arm_obj, "mixamorig:Head")
+
+        bm_sg = bmesh.new()
+        star_v = bmesh.ops.create_cone(bm_sg, cap_ends=True, cap_tris=True, segments=4, radius1=0.010, radius2=0.001, depth=0.032)
+        bmesh.ops.translate(bm_sg, vec=(0.0, -0.112, 1.334), verts=star_v["verts"])
+        star_h = bmesh.ops.create_cone(bm_sg, cap_ends=True, cap_tris=True, segments=4, radius1=0.008, radius2=0.001, depth=0.026)
+        bmesh.ops.rotate(bm_sg, cent=(0, 0, 0), matrix=Euler((0.0, math.radians(90.0), 0.0), "XYZ").to_matrix(), verts=star_h["verts"])
+        bmesh.ops.translate(bm_sg, vec=(0.0, -0.112, 1.338), verts=star_h["verts"])
+        sg_obj = _new_bmesh_part("_tmp_saintess_gem", bm_sg, gem_mat, arm_obj, "mixamorig:Spine2")
+        _join_into(halo_obj, [sg_obj])
+        _replace_accessory_object(part_objs, halo_obj)
+
+        bm_sm = bmesh.new()
+        uv_sm = bm_sm.loops.layers.uv.new("UVMap")
+        sm_rows = []
+        for iv in range(8):
+            tv = iv / 7.0
+            z = 1.376 - 0.165 * tv
+            scallop = 0.006 * abs(math.sin(tv * math.pi))
+            rx, ry = 0.076 + 0.155 * (tv ** 0.76), 0.066 + 0.078 * (tv ** 0.82)
+            sm_rows.append([
+                bm_sm.verts.new((
+                    (rx + scallop * math.sin((iu / 28.0) * 16.0 * math.pi)) * math.sin((iu / 28.0) * 2.0 * math.pi),
+                    -0.015 - (ry + scallop * math.sin((iu / 28.0) * 16.0 * math.pi)) * math.cos((iu / 28.0) * 2.0 * math.pi),
+                    z - 0.008 * tv * abs(math.sin((iu / 28.0) * 8.0 * math.pi)),
+                ))
+                for iu in range(28)
+            ])
+        for iv in range(7):
+            for iu in range(28):
+                inext = (iu + 1) % 28
+                f = bm_sm.faces.new((sm_rows[iv][iu], sm_rows[iv][inext], sm_rows[iv + 1][inext], sm_rows[iv + 1][iu]))
+                f.smooth = True
+                f.loops[0][uv_sm].uv = (iu / 28.0, 0.92 - 0.82 * (iv / 7.0))
+                f.loops[1][uv_sm].uv = ((iu + 1) / 28.0, 0.92 - 0.82 * (iv / 7.0))
+                f.loops[2][uv_sm].uv = ((iu + 1) / 28.0, 0.92 - 0.82 * ((iv + 1) / 7.0))
+                f.loops[3][uv_sm].uv = (iu / 28.0, 0.92 - 0.82 * ((iv + 1) / 7.0))
+        sm_obj = _new_bmesh_part("_tmp_sanctuary_cape", bm_sm, top_mat, arm_obj, "mixamorig:Spine2")
+        _join_into(part_objs["top"], [sm_obj])
+
+    elif mode == "office-ceo":
+        bm_tie = bmesh.new()
+        knot = bmesh.ops.create_cone(bm_tie, cap_ends=True, cap_tris=True, segments=4, radius1=0.016, radius2=0.011, depth=0.024)
+        bmesh.ops.scale(bm_tie, vec=(1.0, 0.45, 1.0), verts=knot["verts"])
+        bmesh.ops.translate(bm_tie, vec=(0.0, -0.112, 1.348), verts=knot["verts"])
+
+        blade_rows = []
+        for iv in range(8):
+            tv = iv / 7.0
+            z = 1.334 - 0.235 * tv
+            w_t = 0.011 + 0.012 * math.sin(min(1.0, tv * 1.15) * math.pi * 0.72) if tv < 0.86 else 0.021 * (1.0 - (tv - 0.86) / 0.14) + 0.002
+            y_t = -0.118 - 0.018 * math.sin(tv * math.pi * 0.65)
+            blade_rows.append((
+                bm_tie.verts.new((-w_t, y_t + 0.003, z)),
+                bm_tie.verts.new((0.0, y_t - 0.003, z)),
+                bm_tie.verts.new((w_t, y_t + 0.003, z)),
+            ))
+        for iv in range(7):
+            l0, c0, r0 = blade_rows[iv]
+            l1, c1, r1 = blade_rows[iv + 1]
+            f1 = bm_tie.faces.new((l0, c0, c1, l1))
+            f2 = bm_tie.faces.new((c0, r0, r1, c1))
+            f1.smooth = True
+            f2.smooth = True
+        bmesh.ops.solidify(bm_tie, geom=list(bm_tie.faces), thickness=0.003)
+        tie_obj = _new_bmesh_part("_tmp_ceo_tie", bm_tie, gem_mat, arm_obj, "mixamorig:Spine2")
+        tie_w = [{"mixamorig:Spine2": 0.85, "mixamorig:Spine1": 0.15} if v.co.z > 1.22 else {"mixamorig:Spine1": 0.80, "mixamorig:Spine": 0.20} for v in tie_obj.data.vertices]
+        tie_obj.vertex_groups.clear()
+        _assign_weights(tie_obj, tie_w)
+
+        bm_clip = bmesh.new()
+        bar = bmesh.ops.create_cube(bm_clip, size=1.0)
+        bmesh.ops.scale(bm_clip, vec=(0.032, 0.008, 0.0045), verts=bar["verts"])
+        bmesh.ops.translate(bm_clip, vec=(0.004, -0.136, 1.245), verts=bar["verts"])
+        psq = bmesh.ops.create_cone(bm_clip, cap_ends=True, cap_tris=True, segments=4, radius1=0.016, radius2=0.002, depth=0.020)
+        bmesh.ops.scale(bm_clip, vec=(1.1, 0.35, 1.0), verts=psq["verts"])
+        bmesh.ops.translate(bm_clip, vec=(0.072, -0.132, 1.288), verts=psq["verts"])
+        for bz in (1.09, 1.16):
+            btn = bmesh.ops.create_uvsphere(bm_clip, u_segments=10, v_segments=8, radius=0.0058)
+            bmesh.ops.scale(bm_clip, vec=(1.0, 0.45, 1.0), verts=btn["verts"])
+            bmesh.ops.translate(bm_clip, vec=(0.0, -0.136, bz), verts=btn["verts"])
+        clip_obj = _new_bmesh_part("_tmp_ceo_clip", bm_clip, gold_mat, arm_obj, "mixamorig:Spine2")
+        _join_into(part_objs["top"], [tie_obj, clip_obj])
+
+        part_objs["accessory"].data.materials.clear()
+        part_objs["accessory"].data.materials.append(gold_mat)
+        bm_pin = bmesh.new()
+        lpin = bmesh.ops.create_uvsphere(bm_pin, u_segments=12, v_segments=8, radius=0.0065)
+        bmesh.ops.scale(bm_pin, vec=(1.0, 0.42, 1.2), verts=lpin["verts"])
+        bmesh.ops.translate(bm_pin, vec=(0.048, -0.128, 1.332), verts=lpin["verts"])
+        pin_obj = _new_bmesh_part("_tmp_ceo_pin", bm_pin, gold_mat, arm_obj, "mixamorig:Spine2")
+        _join_into(part_objs["accessory"], [pin_obj])
+
 
 def _parse_glb_stats(glb_path: Path) -> dict[str, Any]:
     raw = glb_path.read_bytes()
@@ -1135,7 +1320,7 @@ def _write_slot_mapping_and_manifest(
     }
 
 
-def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int = 6) -> list[dict[str, Any]]:
+def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int = 8) -> list[dict[str, Any]]:
     for col in list(bpy.data.collections):
         if col.name.startswith("Build_"):
             for o in list(col.objects):

@@ -308,6 +308,18 @@ def bake_couture_fabric_texture(
                 col = _lerp3(col, s_c, wave * 0.18)
                 if v < 0.08:
                     col = _lerp3(col, a_c, 0.62)
+            elif pattern == "sanctuary":
+                gx = abs(((u * 5.0) % 1.0) - 0.5)
+                gy = abs(((v * 5.0) % 1.0) - 0.5)
+                if abs(gx + gy - 0.38) < 0.030 or abs(gx - gy) < 0.018:
+                    col = _lerp3(col, a_c, 0.36)
+                if v < 0.09 or (0.11 < v < 0.135) or v > 0.92:
+                    col = _lerp3(col, a_c, 0.78)
+            elif pattern == "pinstripe":
+                herring = 0.5 + 0.5 * math.sin((u * 46.0 + v * 46.0) * math.pi)
+                col = _lerp3(col, s_c, herring * 0.10)
+                if abs(((v * 20.0) % 1.0) - 0.5) < 0.024:
+                    col = _lerp3(col, a_c, 0.14)
             else:
                 if v < 0.06:
                     col = _lerp3(col, a_c, 0.42)
@@ -468,6 +480,26 @@ def build_sculpted_webtoon_bangs_bmesh(
             (-34.0, -38.0, 0.022, eye_z + 0.085, eye_z - 0.085, 0.010, -0.003),
             (34.0, 38.0, 0.022, eye_z + 0.085, eye_z - 0.085, 0.010, 0.003),
         ]
+    elif bang_style == "saintess-hime":
+        strands = [
+            (-5.0, -10.0, 0.018, eye_z + 0.104, eye_z + 0.020, 0.011, -0.002),
+            (5.0, 10.0, 0.018, eye_z + 0.104, eye_z + 0.020, 0.011, 0.002),
+            (-16.0, -24.0, 0.021, eye_z + 0.102, eye_z + 0.018, 0.011, -0.003),
+            (16.0, 24.0, 0.021, eye_z + 0.102, eye_z + 0.018, 0.011, 0.003),
+            (-29.0, -34.0, 0.020, eye_z + 0.098, eye_z + 0.015, 0.010, -0.002),
+            (29.0, 34.0, 0.020, eye_z + 0.098, eye_z + 0.015, 0.010, 0.002),
+            (-41.5, -44.5, 0.025, eye_z + 0.090, eye_z - 0.094, 0.011, 0.0),
+            (41.5, 44.5, 0.025, eye_z + 0.090, eye_z - 0.094, 0.011, 0.0),
+        ]
+    elif bang_style == "ceo-parted":
+        strands = [
+            (-6.0, -18.0, 0.024, eye_z + 0.106, eye_z + 0.022, 0.013, -0.005),
+            (-18.0, -31.0, 0.023, eye_z + 0.102, eye_z + 0.019, 0.012, -0.006),
+            (5.0, 17.0, 0.025, eye_z + 0.106, eye_z + 0.019, 0.014, 0.006),
+            (18.0, 31.0, 0.022, eye_z + 0.100, eye_z + 0.017, 0.012, 0.005),
+            (-37.0, -42.0, 0.020, eye_z + 0.088, eye_z - 0.026, 0.009, -0.002),
+            (37.0, 42.0, 0.020, eye_z + 0.088, eye_z - 0.026, 0.009, 0.002),
+        ]
     else:  # duke-wolf
         strands = [
             (-5.0, -14.0, 0.018, eye_z + 0.095, eye_z + 0.015, 0.012, -0.005),
@@ -481,15 +513,44 @@ def build_sculpted_webtoon_bangs_bmesh(
     rx_base = 0.0775 if not is_male else 0.0795
     ry_base = 0.0815
 
+    if bang_style in ("saintess-hime", "ceo-parted"):
+        cap_rows = []
+        for iv_c in range(6):
+            tv_c = iv_c / 5.0
+            z_c = eye_z + 0.098 - 0.038 * tv_c
+            t_top_c = max(0.0, min(0.96, ((z_c - (eye_z - 0.068)) / 0.179 - 0.38) / 0.62))
+            dome_c = math.sqrt(max(0.08, 1.0 - (t_top_c ** 1.95)))
+            top_tuck = 0.009 * (1.0 - _smoothstep(0.0, 0.42, tv_c))
+            rx_c = (0.0775 if not is_male else 0.0795) * dome_c + 0.004 * math.sin(tv_c * math.pi) - top_tuck * 0.5
+            ry_c = 0.0825 * dome_c + 0.006 * math.sin(tv_c * math.pi) - top_tuck
+            crow = []
+            for iu_c in range(17):
+                ang_c = math.radians(-38.0 + (iu_c / 16.0) * 76.0)
+                edge_tuck = 0.004 * (abs((iu_c / 8.0) - 1.0) ** 2.0)
+                crow.append(bm.verts.new((rx_c * math.sin(ang_c), y_cranium - (ry_c - edge_tuck) * math.cos(ang_c), z_c)))
+            cap_rows.append(crow)
+        for iv_c in range(5):
+            for iu_c in range(16):
+                fc = bm.faces.new((cap_rows[iv_c][iu_c], cap_rows[iv_c][iu_c + 1], cap_rows[iv_c + 1][iu_c + 1], cap_rows[iv_c + 1][iu_c]))
+                fc.smooth = True
+                fc.loops[0][uv_l].uv = (0.1 + 0.8 * (iu_c / 16.0), 0.96 - 0.30 * (iv_c / 5.0))
+                fc.loops[1][uv_l].uv = (0.1 + 0.8 * ((iu_c + 1) / 16.0), 0.96 - 0.30 * (iv_c / 5.0))
+                fc.loops[2][uv_l].uv = (0.1 + 0.8 * ((iu_c + 1) / 16.0), 0.96 - 0.30 * ((iv_c + 1) / 5.0))
+                fc.loops[3][uv_l].uv = (0.1 + 0.8 * (iu_c / 16.0), 0.96 - 0.30 * ((iv_c + 1) / 5.0))
+
+    full_root = bang_style in ("saintess-hime", "ceo-parted")
     n_prof = 8
     for idx_s, (a0, a1, w_half, zs, ze, bulge, cx_off) in enumerate(strands):
         n_seg = 12
-        zs_adj = zs - 0.008
+        zs_adj = zs - (0.003 if full_root else 0.008)
         rows_s: list[list[bmesh.types.BMVert]] = []
         for iseg in range(n_seg):
             t = iseg / (n_seg - 1)
             ang = math.radians(a0 + (a1 - a0) * (t ** 1.15))
-            taper = math.sin(min(1.0, t * 1.18) * math.pi * 0.5) if t < 0.25 else (1.0 - ((t - 0.25) / 0.75) ** 1.45)
+            if full_root:
+                taper = (0.76 + 0.24 * math.sin((t / 0.25) * math.pi * 0.5)) if t < 0.25 else (1.0 - ((t - 0.25) / 0.75) ** 1.45)
+            else:
+                taper = math.sin(min(1.0, t * 1.18) * math.pi * 0.5) if t < 0.25 else (1.0 - ((t - 0.25) / 0.75) ** 1.45)
             taper = max(0.035, taper)
             w = w_half * taper
             thick = 0.0036 * taper

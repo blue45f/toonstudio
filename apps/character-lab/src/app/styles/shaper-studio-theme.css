@@ -2,11 +2,11 @@
  * SHAPER Studio UI/UX 디자인 시스템 & Warm Ink Atelier 정밀 워크벤치 스타일시트.
  *
  * 9-Pass Unslop 고도화 반영:
- * 1. Spacing: 4px 그리드 리듬(4/8/12/16px)과 광학 여백 균형
+ * 1. Spacing: 4px 그리드 리듬(4/8/12/16px)과 상단 텔레메트리 배너 슬림화(뷰포트 세로 공간 극대화)
  * 2. Color: 인위적 네온 시안/퍼플 글로우를 배제하고 먹빛 다크 뉴트럴 + 웜 브라스 엠버 포인트로 정제
- * 3. Icons & Keycaps: 1px 솔리드 헤어라인과 고대비 키캡 배지
- * 4. Copy & Type: 정밀 수치 정렬(tabular-nums) 및 타이포 위계 정돈
- * 5. Layout & Details: 들썩이는 translateY 카드 호버를 제거하고 정밀 보더 루미넌스·4면도 스튜디오 프리뷰 프레임 적용
+ * 3. Icons & Keycaps: 1px 솔리드 헤어라인과 고대비 키캡·테크 배지
+ * 4. Copy & Type: 정밀 수치 정렬(tabular-nums), 장문 GPU 어댑터 한 줄 말줄임 및 타이포 위계 정돈
+ * 5. Layout & Details: 999px 알약형 탭 슬롭을 6px 아키텍처 라디우스 + 3열 정렬 탭 그리드로 개편
  * 6. Motion: 140ms cubic-bezier(0.22, 1, 0.36, 1) 물리 감쇠 전환 및 prefers-reduced-motion 존중
  */
 
@@ -34,12 +34,94 @@
   --lab-muted: var(--shaper-muted);
   --lab-line: var(--shaper-line);
   --lab-accent: oklch(0.77 0.132 74);
+  --lab-radius: 8px;
 }
 
 :root[data-studio-theme="shaper"] .cl-topbar {
+  gap: 8px 14px;
+  padding: 8px 14px;
   background: var(--shaper-panel);
   border-bottom: 1px solid color-mix(in oklab, var(--shaper-line) 86%, white 8%);
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+}
+
+:root[data-studio-theme="shaper"] .cl-topbar-group {
+  gap: 6px;
+}
+
+/* 장문 GPU/드라이버 어댑터 문자열이 2줄 알약으로 부풀어 오르지 않도록 정밀 1줄 말줄임 */
+:root[data-studio-theme="shaper"] .cl-engine-badge {
+  max-width: 28ch;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: var(--shaper-panel-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+}
+
+/* 평시 텔레메트리·슬롯 능력 배너를 한 줄 스트립으로 정돈해 중앙 3D 뷰포트 높이를 확보 */
+:root[data-studio-theme="shaper"] .cl-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 3px 14px;
+  font-size: 0.75rem;
+  background: color-mix(in oklab, var(--shaper-panel) 92%, black);
+}
+
+:root[data-studio-theme="shaper"] .cl-banner-engine {
+  max-width: min(56ch, 100%);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+}
+
+:root[data-studio-theme="shaper"] .cl-banner-caps {
+  margin-top: 0;
+}
+
+:root[data-studio-theme="shaper"] .cl-banner-caps > summary {
+  font-size: 0.74rem;
+  padding: 2px 6px;
+}
+
+:root[data-studio-theme="shaper"] .cl-banner-list {
+  flex: 1 1 100%;
+}
+
+/* 999px 알약형 슬롭 배제 → 6px 아키텍처 라디우스 + 데스크톱 3열 균등 인스펙터 탭 그리드 */
+@media (min-width: 768px) {
+  :root[data-studio-theme="shaper"] .cl-inspector-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+}
+
+:root[data-studio-theme="shaper"] .cl-inspector-tab,
+:root[data-studio-theme="shaper"] .cl-slot-tab,
+:root[data-studio-theme="shaper"] .cl-button,
+:root[data-studio-theme="shaper"] .cl-preset-chip,
+:root[data-studio-theme="shaper"] .cl-viewport-button,
+:root[data-studio-theme="shaper"] .cl-viewport-select {
+  border-radius: 6px;
+}
+
+:root[data-studio-theme="shaper"] .cl-inspector-tab {
+  padding: 4px 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: color-mix(in oklab, var(--shaper-panel-2) 72%, transparent);
+}
+
+:root[data-studio-theme="shaper"] .cl-slot-tab {
+  background: color-mix(in oklab, var(--shaper-panel-2) 60%, transparent);
 }
 
 :root[data-studio-theme="shaper"] .cl-button--primary,
@@ -72,15 +154,15 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- Warm Ink Atelier 쇼케이스 배너 & 패키지 4면도 스튜디오 프리뷰 ---------- */
+/* ---------- Warm Ink Atelier 쇼케이스 배너 & 테크 배지 & 패키지 4면도 스튜디오 프리뷰 ---------- */
 .cl-shaper-showcase-header {
   position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  margin-bottom: 12px;
-  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
   border: 1px solid color-mix(in oklab, var(--lab-line) 82%, var(--shaper-ink-rim) 18%);
   background: var(--shaper-panel-2);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
@@ -88,19 +170,38 @@
 }
 
 .cl-shaper-showcase-thumb {
-  width: 80px;
-  height: 52px;
+  width: 88px;
+  height: 54px;
   flex-shrink: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   object-fit: cover;
+  object-position: left top;
+  background: var(--shaper-canvas);
   border: 1px solid color-mix(in oklab, var(--lab-line) 76%, white 12%);
+}
+
+.cl-shaper-tech-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in oklab, var(--lab-accent) 44%, var(--lab-line));
+  background: color-mix(in oklab, var(--lab-accent) 15%, transparent);
+  color: var(--lab-accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  vertical-align: middle;
 }
 
 .cl-package-contact-thumb {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 10;
-  border-radius: 8px;
+  border-radius: 6px;
   object-fit: cover;
   background: var(--shaper-canvas);
   border: 1px solid color-mix(in oklab, var(--lab-line) 82%, white 10%);
@@ -114,7 +215,7 @@
 }
 
 .cl-shaper-blender-card {
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 12px;
   border: 1px solid color-mix(in oklab, var(--lab-accent) 34%, var(--lab-line));
   background: var(--shaper-panel-2);
@@ -311,7 +412,8 @@ input:not(input[type="range"]):user-valid {
     border-top: 1px solid ButtonBorder;
   }
 
-  .cl-shaper-keycap {
+  .cl-shaper-keycap,
+  .cl-shaper-tech-badge {
     background: Canvas;
     color: CanvasText;
     border: 1px solid ButtonBorder;

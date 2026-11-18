@@ -1,5 +1,5 @@
 /**
- * 실제 제작 패키지 9종(public/assets/characters)을 fs 포트로 끝까지 로드한다.
+ * 실제 제작 패키지 11종(public/assets/characters)을 fs 포트로 끝까지 로드한다.
  * GLB 바이트의 SHA-256을 Node crypto로 계산해 manifest·index 값과 대조하고, 규칙 판정과 Blender 레인 선언(slot-mapping.json)을 비교한다.
  */
 import { createHash } from "node:crypto";
@@ -52,7 +52,7 @@ async function loadIndexEntries(): Promise<readonly AuthoredIndexEntry[]> {
 }
 
 describe("authored/real-packages (public/assets/characters)", () => {
-  it("index.json은 Orion(primary)·reference·tripo-h31·한국형 웹툰 Shaper 6종까지 아홉 항목을 낸다", async () => {
+  it("index.json은 Orion(primary)·reference·tripo-h31·한국형 웹툰 Shaper 8종까지 열한 항목을 낸다", async () => {
     const entries = await loadIndexEntries();
     expect(entries.map((entry) => entry.characterId)).toEqual([
       "avatar-orion-authored",
@@ -64,6 +64,8 @@ describe("authored/real-packages (public/assets/characters)", () => {
       "shaper-murim-swordmaster",
       "shaper-cyber-idol",
       "shaper-noir-duke",
+      "shaper-fantasy-saintess",
+      "shaper-office-ceo",
     ]);
     expect(entries[0]?.primary).toBe(true);
     expect(entries[0]?.manifestFormat).toBe("authored-character");
@@ -231,6 +233,20 @@ describe("authored/real-packages (public/assets/characters)", () => {
       bytes: 2_466_808,
       hairStyle: "wolf-layered",
       lod: [5460, 2567, 848],
+    },
+    {
+      id: "shaper-fantasy-saintess",
+      sha: "de7e4797657b710a6bb9d743a5da13c82d21bdadef2e01a66327ee4b34390790",
+      bytes: 2_768_952,
+      hairStyle: "hime-cut",
+      lod: [5941, 3198, 991],
+    },
+    {
+      id: "shaper-office-ceo",
+      sha: "f3e7ca76e3b05c357883e49ab9f8717d9b69bd405c6cd074d5fcd8cace2c5ef9",
+      bytes: 2_475_432,
+      hairStyle: "short-layered",
+      lod: [4636, 2256, 653],
     },
   ])("$id: Blender 5.3 제작 한국형 웹툰 리깅 패키지(55본·24 의미축·12 FACS·3-LOD 헤어)가 unavailable 슬롯 0개·규칙 판정 불일치 0개로 로드된다", async ({ id, sha, bytes, hairStyle, lod }) => {
     const entries = await loadIndexEntries();

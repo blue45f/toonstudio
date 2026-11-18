@@ -345,6 +345,84 @@
           "sha256": "460de942cb19eb42a7f28ee88fc425a26a6d65f6173701c92552f4d5bcadf7a8"
         }
       }
+    },
+    {
+      "id": "shaper-fantasy-saintess",
+      "displayName": "SHAPER Atelier · Holy Temple Saintess (신전 성녀 에테르 드레스)",
+      "role": "shaper-saintess",
+      "license": "CC0-1.0",
+      "generatedAt": "2026-11-17",
+      "qualityScore": 100,
+      "skeleton": true,
+      "textures": 8,
+      "semanticShapeKeys": 24,
+      "hairLodTriangles": [
+        5941,
+        3198,
+        991
+      ],
+      "glbTriangles": 46445,
+      "files": {
+        "glb": {
+          "path": "shaper-fantasy-saintess/shaper-fantasy-saintess.glb",
+          "bytes": 2768952,
+          "sha256": "de7e4797657b710a6bb9d743a5da13c82d21bdadef2e01a66327ee4b34390790"
+        },
+        "manifest": {
+          "path": "shaper-fantasy-saintess/manifest.json",
+          "bytes": 37593,
+          "sha256": "cd5634eda16359e1b9acf33ebfd682827ed78122138b14af8d52c82902a43d00"
+        },
+        "slotMapping": {
+          "path": "shaper-fantasy-saintess/slot-mapping.json",
+          "bytes": 4268,
+          "sha256": "1058ad6954aad29aa836b3ad0deda448760f5117d124690b1febcc7510ca1dae"
+        },
+        "contactSheet": {
+          "path": "shaper-fantasy-saintess/contact-sheet.png",
+          "bytes": 1547904,
+          "sha256": "27ce7ccaa7ce6438c949ab21dc4d778b2d1907eaa0b2a436cd79efe82b0d8eb9"
+        }
+      }
+    },
+    {
+      "id": "shaper-office-ceo",
+      "displayName": "SHAPER Atelier · Modern Office Director (현대 오피스 수트 본부장)",
+      "role": "shaper-office",
+      "license": "CC0-1.0",
+      "generatedAt": "2026-11-17",
+      "qualityScore": 100,
+      "skeleton": true,
+      "textures": 8,
+      "semanticShapeKeys": 24,
+      "hairLodTriangles": [
+        4636,
+        2256,
+        653
+      ],
+      "glbTriangles": 41947,
+      "files": {
+        "glb": {
+          "path": "shaper-office-ceo/shaper-office-ceo.glb",
+          "bytes": 2475432,
+          "sha256": "f3e7ca76e3b05c357883e49ab9f8717d9b69bd405c6cd074d5fcd8cace2c5ef9"
+        },
+        "manifest": {
+          "path": "shaper-office-ceo/manifest.json",
+          "bytes": 37637,
+          "sha256": "25db437d95f52d12401c4c1db3910e72184eef37ff4230746e0e192a81c14f82"
+        },
+        "slotMapping": {
+          "path": "shaper-office-ceo/slot-mapping.json",
+          "bytes": 4250,
+          "sha256": "1301ca29e19d5690cffb36a2bdf5f187296f4879980934e75f492ea06ba8348a"
+        },
+        "contactSheet": {
+          "path": "shaper-office-ceo/contact-sheet.png",
+          "bytes": 1407261,
+          "sha256": "7bccad3716c4b4469a4186792d8caaf3b99d0fe650aed749016d2a132cd7ca0e"
+        }
+      }
     }
   ]
 }
