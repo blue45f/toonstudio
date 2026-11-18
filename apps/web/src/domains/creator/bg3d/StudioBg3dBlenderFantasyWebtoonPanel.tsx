@@ -330,7 +330,7 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
           <div className="flex items-center justify-between">
             <span className="font-semibold text-fg">2A. 툰 채색·색상 단계 설정</span>
             <span data-testid="bg3d-blender-shader-readout" className="font-mono text-[0.62rem] text-fg-2">
-              표면 {shaderEvaluation.finalSurfaceHex} · Bevel {shaderEvaluation.bevelHighlight}
+              표면 {shaderEvaluation.finalSurfaceHex} · Bevel {shaderEvaluation.bevelHighlight} · Disp +{shaderEvaluation.dispersionRgbShift[2]}
             </span>
           </div>
           <div className="flex flex-col gap-1">

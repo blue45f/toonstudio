@@ -56,7 +56,9 @@ describe("studio-3d-blender-npr-shader-freestyle", () => {
     expect(easeSample.hex).toMatch(/^#[0-9a-f]{6}$/);
   });
 
-  it("evaluates full Blender ShaderNodeTree (ShaderToRGB + AO + Bevel + Fresnel/LayerWeight)", () => {
+  it("evaluates full Blender ShaderNodeTree (ShaderToRGB + AO + Bevel + Fresnel/LayerWeight + OpenPBR Dispersion)", () => {
+    expect(BLENDER_NPR_SHADER_PRESETS).toHaveLength(6);
+
     for (const preset of BLENDER_NPR_SHADER_PRESETS) {
       const litEdge = evaluateBlenderNprShaderTree(preset, {
         normal: [0.85, 0.2, 0.48],
@@ -70,12 +72,19 @@ describe("studio-3d-blender-npr-shader-freestyle", () => {
       expect(litEdge.fresnelFactor).toBeGreaterThan(0);
       expect(litEdge.bevelHighlight).toBeGreaterThan(0);
       expect(litEdge.finalSurfaceHex).toMatch(/^#[0-9a-f]{6}$/);
+      if ((preset.dispersionStrength ?? 0) > 0) {
+        expect(litEdge.dispersionRgbShift[2]).toBeGreaterThan(0);
+      } else {
+        expect(litEdge.dispersionRgbShift).toEqual([0, 0, 0]);
+      }
     }
   });
 
-  it("evaluates Freestyle ViewMap edge detectors, LineArt occlusion, and stroke modifiers", () => {
+  it("evaluates Freestyle ViewMap edge detectors, LineArt occlusion, and stroke modifiers across 5 ink presets", () => {
+    expect(BLENDER_FREESTYLE_INK_PRESETS).toHaveLength(5);
     const gpenPreset = BLENDER_FREESTYLE_INK_PRESETS[0]!; // maxOcclusion = 0
     const xrayPreset = BLENDER_FREESTYLE_INK_PRESETS[3]!; // maxOcclusion = 2
+    const rofanDipPenPreset = BLENDER_FREESTYLE_INK_PRESETS[4]!; // maxOcclusion = 0, MATERIAL_BOUNDARY enabled
 
     const gpenResult = evaluateFreestyleViewMapStrokes(
       gpenPreset,
@@ -85,10 +94,16 @@ describe("studio-3d-blender-npr-shader-freestyle", () => {
       xrayPreset,
       DEFAULT_FREESTYLE_SAMPLE_EDGES,
     );
+    const rofanResult = evaluateFreestyleViewMapStrokes(
+      rofanDipPenPreset,
+      DEFAULT_FREESTYLE_SAMPLE_EDGES,
+    );
 
     // G-Pen filters out the occluded inner core edge (occlusionLevel: 1), whereas X-Ray keeps it
     expect(gpenResult.selectedStrokeCount).toBe(2);
     expect(xrayResult.selectedStrokeCount).toBe(3);
+    expect(rofanResult.selectedStrokeCount).toBe(2);
+    expect(rofanResult.averageThicknessPx).toBeLessThan(gpenResult.averageThicknessPx);
 
     const firstStroke = gpenResult.strokes[0]!;
     expect(firstStroke.classifiedNature).toBe("SILHOUETTE");

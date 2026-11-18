@@ -62,6 +62,7 @@ export const BLENDER_NPR_SHADER_PRESETS: readonly BlenderNprShaderPreset[] =
       bevelHighlightStrength: 1.5,
       emissionColorHex: "#72efdd",
       emissionStrength: 1.4,
+      dispersionStrength: 0.55,
     },
     {
       id: "dragon-obsidian-scale-npr",
@@ -142,10 +143,38 @@ export const BLENDER_NPR_SHADER_PRESETS: readonly BlenderNprShaderPreset[] =
       emissionColorHex: "#f72585",
       emissionStrength: 1.8,
     },
+    {
+      id: "lumiere-rofan-velvet-brocade",
+      nameKo: "뤼미에르 황실 벨벳·금사 브로케이드",
+      categoryKo: "로판 황실 드레스·보석 장신구",
+      descriptionKo:
+        "블렌더 5.3 OpenPBR 프리즘 분산과 4단 EASE 버건디 벨벳 컬러램프, 샴페인 골드 가장자리 광택으로 로판 연회 복식과 보석 브로치를 우아하게 채색합니다.",
+      toonComponent: "GLOSSY",
+      toonSize: 0.48,
+      toonSmooth: 0.24,
+      rampInterpolation: "EASE",
+      colorRampStops: [
+        { position: 0.0, colorHex: "#1f0812" },
+        { position: 0.36, colorHex: "#590d22" },
+        { position: 0.72, colorHex: "#a4133c" },
+        { position: 0.92, colorHex: "#ffccd5" },
+      ],
+      ambientOcclusionWeight: 0.45,
+      ambientOcclusionDistance: 0.35,
+      fresnelIor: 1.92,
+      layerWeightBlend: 0.68,
+      rimTintHex: "#ffe599",
+      rimStrength: 0.9,
+      bevelRadius: 0.035,
+      bevelHighlightStrength: 1.15,
+      emissionColorHex: "#ffd6a5",
+      emissionStrength: 0.25,
+      dispersionStrength: 0.42,
+    },
   ]);
 
 /**
- * 판타지 웹툰 전용 Blender `Freestyle` & `LineArt` 잉크 스트로크 프리셋 4종.
+ * 판타지 웹툰 전용 Blender `Freestyle` & `LineArt` 잉크 스트로크 프리셋 5종.
  */
 export const BLENDER_FREESTYLE_INK_PRESETS: readonly BlenderFreestyleInkPreset[] =
   Object.freeze([
@@ -242,6 +271,32 @@ export const BLENDER_FREESTYLE_INK_PRESETS: readonly BlenderFreestyleInkPreset[]
       spatialNoiseOctaves: 2,
       taperStartRatio: 0.6,
       taperEndRatio: 0.6,
+    },
+    {
+      id: "rofan-delicate-dip-pen-lace",
+      nameKo: "로판 세밀 둥근펜·레이스 금박선",
+      descriptionKo:
+        "미세한 1.35px 둥근펜 테이퍼링과 재질 경계선 검출로 티아라·레이스 프릴·찻잔 세공의 섬세한 순정·로판 펜선 디테일을 살립니다.",
+      enabledEdgeTypes: [
+        "SILHOUETTE",
+        "CREASE",
+        "BORDER",
+        "MATERIAL_BOUNDARY",
+      ],
+      creaseAngleDeg: 112,
+      suggestiveContourKrEpsilon: 0.12,
+      lineArtMaxOcclusion: 0,
+      baseThicknessPx: 1.35,
+      strokeColorHex: "#2b1924",
+      calligraphicOrientationDeg: 28,
+      calligraphicMinThicknessRatio: 0.55,
+      calligraphicMaxThicknessRatio: 1.35,
+      backboneStretchPx: 1.2,
+      spatialNoiseAmplitudePx: 0.22,
+      spatialNoiseScale: 0.8,
+      spatialNoiseOctaves: 1,
+      taperStartRatio: 0.3,
+      taperEndRatio: 0.22,
     },
   ]);
 

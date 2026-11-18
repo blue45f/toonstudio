@@ -1,5 +1,5 @@
 /**
- * Blender 5.2 NPR ShaderNodeTree (`ShaderToRGB` + `ValToRGB` + `BsdfToon` + `Fresnel`/`AO`/`Bevel`)
+ * Blender 5.3 NPR & OpenPBR Dispersion ShaderNodeTree (`ShaderToRGB` + `ValToRGB` + `BsdfToon` + `Fresnel`/`AO`/`Bevel`)
  * 및 `Freestyle` ViewMap / `LineArt` 스트로크 모디파이어 엔진.
  *
  * REA 정적 역공학 근거:
@@ -66,6 +66,8 @@ export interface BlenderNprShaderPreset {
   /** 마력·보석·룬 자체 발광 */
   readonly emissionColorHex: string;
   readonly emissionStrength: number;
+  /** Blender 5.3 OpenPBR Cauchy 스펙트럼 프리즘 분산 강도 (0.0 ~ 1.0) */
+  readonly dispersionStrength?: number;
 }
 
 export interface BlenderNprShaderSampleInput {
@@ -92,6 +94,8 @@ export interface BlenderNprShaderEvaluationResult {
   readonly layerFacingFactor: number;
   /** `ShaderNodeBevel` 모서리 하이라이트 기여도 */
   readonly bevelHighlight: number;
+  /** Blender 5.3 OpenPBR 프리즘 색분산 RGB 시프트 */
+  readonly dispersionRgbShift: readonly [number, number, number];
   /** 최종 합성 NPR 표면 색상 */
   readonly finalSurfaceRgb: readonly [number, number, number];
   readonly finalSurfaceHex: string;
@@ -352,6 +356,13 @@ export function evaluateBlenderNprShaderTree(
     (fresnelFactor * 0.5 + layerFacingFactor * 0.5) *
     clamp(preset.rimStrength, 0, 2);
   const emitWeight = clamp(preset.emissionStrength, 0, 3) * 0.25;
+  const grazingDispersion =
+    clamp(preset.dispersionStrength ?? 0, 0, 1) * Math.pow(1 - nDotV, 2);
+  const dispersionRgbShift: [number, number, number] = [
+    Number((grazingDispersion * 0.18).toFixed(4)),
+    Number((grazingDispersion * 0.03).toFixed(4)),
+    Number((grazingDispersion * 0.24).toFixed(4)),
+  ];
 
   const finalSurfaceRgb: [number, number, number] = [
     Number(
@@ -359,7 +370,8 @@ export function evaluateBlenderNprShaderTree(
         rampEval.rgb[0] +
           rimColor[0] * rimWeight +
           bevelHighlight * 0.2 +
-          emissionColor[0] * emitWeight,
+          emissionColor[0] * emitWeight +
+          dispersionRgbShift[0],
         0,
         1,
       ).toFixed(4),
@@ -369,7 +381,8 @@ export function evaluateBlenderNprShaderTree(
         rampEval.rgb[1] +
           rimColor[1] * rimWeight +
           bevelHighlight * 0.2 +
-          emissionColor[1] * emitWeight,
+          emissionColor[1] * emitWeight +
+          dispersionRgbShift[1],
         0,
         1,
       ).toFixed(4),
@@ -379,7 +392,8 @@ export function evaluateBlenderNprShaderTree(
         rampEval.rgb[2] +
           rimColor[2] * rimWeight +
           bevelHighlight * 0.2 +
-          emissionColor[2] * emitWeight,
+          emissionColor[2] * emitWeight +
+          dispersionRgbShift[2],
         0,
         1,
       ).toFixed(4),
@@ -395,6 +409,7 @@ export function evaluateBlenderNprShaderTree(
     fresnelFactor,
     layerFacingFactor,
     bevelHighlight,
+    dispersionRgbShift,
     finalSurfaceRgb,
     finalSurfaceHex: rgbNormalizedToHex(finalSurfaceRgb),
     activeRampStopIndex: rampEval.stopIndex,

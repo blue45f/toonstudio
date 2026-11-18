@@ -60,8 +60,8 @@ describe("studio-3d-blender-eevee-lighting-rig", () => {
     expect(farSample.weight).toBe(0);
   });
 
-  it("evaluates all 5 fantasy webtoon lighting rig presets with rim and volumetric glow", () => {
-    expect(BLENDER_FANTASY_LIGHTING_RIG_PRESETS).toHaveLength(5);
+  it("evaluates all 6 fantasy webtoon lighting rig presets with rim and volumetric glow", () => {
+    expect(BLENDER_FANTASY_LIGHTING_RIG_PRESETS).toHaveLength(6);
 
     for (const preset of BLENDER_FANTASY_LIGHTING_RIG_PRESETS) {
       const evaluation = evaluateBlenderFantasyLightingRig(preset);
@@ -72,6 +72,11 @@ describe("studio-3d-blender-eevee-lighting-rig", () => {
       expect(evaluation.combinedVolumetricGlow).toBeGreaterThan(0);
       expect(["S", "A", "B"]).toContain(evaluation.webtoonReadabilityGrade);
     }
+
+    const lumiereRig = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
+    const lumiereEval = evaluateBlenderFantasyLightingRig(lumiereRig);
+    expect(lumiereEval.rigId).toBe("lumiere-salon-chandelier-prism");
+    expect(["S", "A"]).toContain(lumiereEval.webtoonReadabilityGrade);
 
     // Verify spot cone attenuation on a single light
     const abyssSpot = BLENDER_FANTASY_LIGHTING_RIG_PRESETS[0]!.lights[0]!;

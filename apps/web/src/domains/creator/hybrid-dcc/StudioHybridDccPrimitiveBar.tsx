@@ -209,7 +209,12 @@ export function StudioHybridDccPrimitiveBar({
           >
             <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
               <Sparkles size={14} aria-hidden="true" className="shrink-0 text-accent" />
-              <span className="truncate">{bt("프로 비파괴 마감 레시피 (4종)", "Pro finishes (4)")}</span>
+              <span className="truncate">
+                {bt(
+                  `프로 비파괴 마감 레시피 (${STUDIO_HYBRID_DCC_MODELING_RECIPES.length}종)`,
+                  `Pro finishes (${STUDIO_HYBRID_DCC_MODELING_RECIPES.length})`,
+                )}
+              </span>
             </span>
             <span className="inline-flex shrink-0 items-center gap-1 text-[0.65rem] font-normal text-fg-3 group-open:text-accent">
               {hasActiveAsset ? bt("원클릭", "Ready") : bt("선택 필요", "Select")}

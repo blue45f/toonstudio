@@ -652,7 +652,9 @@ export type StudioHybridDccModelingRecipeId =
   | "hard-surface-chamfer"
   | "organic-subsurf"
   | "mirror-x-symmetry"
-  | "radial-array-6";
+  | "radial-array-6"
+  | "hollow-shell-vessel"
+  | "twisted-spire-column";
 
 export interface StudioHybridDccModelingRecipeSpec {
   readonly id: StudioHybridDccModelingRecipeId;
@@ -681,6 +683,16 @@ export const STUDIO_HYBRID_DCC_MODELING_RECIPES: readonly StudioHybridDccModelin
       id: "radial-array-6",
       label: ["원형 배열 ×6", "Radial ×6"],
       hint: ["기둥·톱니·장식 6각 원형 배치", "6-fold circular array"],
+    },
+    {
+      id: "hollow-shell-vessel",
+      label: ["중공 도자기·유리 셸", "Hollow vessel shell"],
+      hint: ["균일 두께 + 곡면 림 마감", "Even solidify + smooth rim"],
+    },
+    {
+      id: "twisted-spire-column",
+      label: ["나선 비틀림 첨탑", "Twisted spire"],
+      hint: ["등분할 + Y축 60° 나선 비틀기", "Subdivide + 60° Y-axis twist"],
     },
   ]);
 
@@ -716,15 +728,7 @@ export async function workspaceApplyActiveModelingRecipe(
     }
     case "organic-subsurf": {
       const subId = nextModifierId(workingStack, "subdivision");
-      added.push(
-        appendNext({
-          kind: "subdivision",
-          id: subId,
-          enabled: true,
-          levels: 2,
-          smooth: true,
-        }),
-      );
+      added.push(appendNext({ kind: "subdivision", id: subId, enabled: true, levels: 2, smooth: true }));
       break;
     }
     case "mirror-x-symmetry": {
@@ -758,6 +762,20 @@ export async function workspaceApplyActiveModelingRecipe(
           useConstantOffset: true,
         }),
       );
+      break;
+    }
+    case "hollow-shell-vessel": {
+      const solId = nextModifierId(workingStack, "solidify");
+      added.push(appendNext({ kind: "solidify", id: solId, enabled: true, thickness: 0.08, offset: 1, evenThickness: true, rim: true }));
+      const subId = nextModifierId(workingStack, "subdivision");
+      added.push(appendNext({ kind: "subdivision", id: subId, enabled: true, levels: 1, smooth: true }));
+      break;
+    }
+    case "twisted-spire-column": {
+      const subId = nextModifierId(workingStack, "subdivision");
+      added.push(appendNext({ kind: "subdivision", id: subId, enabled: true, levels: 1, smooth: false }));
+      const defId = nextModifierId(workingStack, "simple-deform");
+      added.push(appendNext({ kind: "simple-deform", id: defId, enabled: true, mode: "twist", axis: "y", angleRad: Math.PI / 3, factor: 1 }));
       break;
     }
   }
