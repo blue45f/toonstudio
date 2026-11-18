@@ -49,6 +49,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://webdex:webdex@127.0.0.1:5432/toonspectrum_admin_qa
       TEST_DATABASE_URL: postgresql://webdex:webdex@127.0.0.1:5432/toonspectrum_admin_qa
+      TEST_RUNTIME_DATABASE_ROLE: webdex_runtime
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - uses: actions/checkout@v7
@@ -85,7 +86,7 @@ jobs:
           set -euo pipefail
           export BOOTSTRAP_RUNTIME_DATABASE_PASSWORD="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("base64url"))')"
           node scripts/bootstrap-empty-production-database.mjs --execute --allow-loopback \
-            --runtime-database-role webdex_runtime --release-sha "$GITHUB_SHA" \
+            --runtime-database-role "$TEST_RUNTIME_DATABASE_ROLE" --release-sha "$GITHUB_SHA" \
             --confirmation BOOTSTRAP-EMPTY-TOONSPECTRUM-DATABASE
       - name: Actual repository admin regression suite
         if: ${{ !cancelled() && steps.bootstrap.outcome == 'success' }}

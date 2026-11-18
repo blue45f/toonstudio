@@ -1,7 +1,6 @@
 # ToonStudio 3D 공통 건축 기준선(Shared Datum) V19 · 광학 암실 워크벤치 디자인 시스템 & 주간 연재 ROI 표준 가이드
 
-작성일: `2026-11-18`
-
+작성일: `2026-11-18`  
 적용 범위: `apps/web/src/domains/creator/{bg3d,hybrid-dcc,scene-3d}`, `scripts/blender/generate_*_v16..v19.py`, `apps/web/public/studio-assets/blender-*-v16..v19`
 
 ## 1. 광학 암실(Optical Darkroom) 3D 워크벤치 디자인 시스템 표준
