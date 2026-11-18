@@ -11,8 +11,9 @@ import { ViewportSceneDirectorControls } from "./viewport-scene-director";
 import type { ShaperGizmoMode } from "./shaper-control-points";
 import type { DuoShotState } from "./viewport-duo-shot-guide";
 import type { ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
-import type { ViewportMangaFxState } from "./viewport-manga-fx-overlay";
-import type { CameraFraming, DuoPartnerStance } from "../../../contracts";
+import type { MangaSfxStampPreset, ViewportMangaFxState } from "./viewport-manga-fx-overlay";
+import type { WebtoonSceneDirectorPresetId } from "./viewport-scene-director";
+import type { CameraFraming, DuoPartnerExpressionPreset, DuoPartnerStance, HandPropId } from "../../../contracts";
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
 
 interface StateControl<T> {
@@ -34,15 +35,23 @@ interface ViewportToolbarProps {
     readonly state: DuoShotState;
     readonly update: (updater: (prev: DuoShotState) => DuoShotState) => void;
     readonly summaryKo: string;
-    readonly applyEyeContact: () => void;
     readonly duo3dSupported: boolean;
     readonly duo3dBusy: boolean;
+    readonly applyEyeContact: () => void;
   };
   readonly mangaFx: {
     readonly state: ViewportMangaFxState;
     readonly set: Dispatch<SetStateAction<ViewportMangaFxState>>;
+    readonly sfxBusy?: boolean;
+    readonly onToggle: () => void;
+    readonly onChangeSfxStamp: (stamp: MangaSfxStampPreset) => void;
   };
-  readonly sceneDirector: ComponentProps<typeof ViewportSceneDirectorControls>;
+  readonly director: {
+    readonly engineReady: boolean;
+    readonly busy: boolean;
+    readonly activeDirectorId: WebtoonSceneDirectorPresetId | "";
+    readonly onSelectDirector: (presetId: WebtoonSceneDirectorPresetId | "") => void;
+  };
   readonly handProp: ComponentProps<typeof ViewportHandPropControls>;
   readonly overlay: {
     readonly handles: StateControl<boolean>;
@@ -64,7 +73,7 @@ const FRAMING_MODES: ReadonlyArray<{ readonly mode: CameraFraming["mode"]; reado
 ];
 
 /** 도구막대 표시만 분리하고 상태·엔진 호출·명령 적용은 뷰포트에 둔다. */
-export function ViewportToolbar({ engineReady, camera, composition, duoShot, mangaFx, sceneDirector, handProp, overlay }: ViewportToolbarProps) {
+export function ViewportToolbar({ engineReady, camera, composition, duoShot, mangaFx, director, handProp, overlay }: ViewportToolbarProps) {
   return (
     <div className="cl-viewport-toolbar" role="toolbar" aria-label="뷰포트 도구" style={{ position: "relative", flexShrink: 0, padding: 8, display: "flex", flexWrap: "wrap", gap: 4, borderBottom: "1px solid var(--lab-line)" }}>
       <span className="cl-viewport-group" role="group" aria-label="카메라 프레이밍" style={{ display: "inline-flex", gap: 4 }}>
@@ -91,16 +100,25 @@ export function ViewportToolbar({ engineReady, camera, composition, duoShot, man
         onApplyEyeContact={duoShot.applyEyeContact}
         onToggleRender3dPartner={() => duoShot.update((prev) => ({ ...prev, render3dPartner: !prev.render3dPartner }))}
         onChangePartnerStance={(partnerStance: DuoPartnerStance) => duoShot.update((prev) => ({ ...prev, partnerStance }))}
+        onChangePartnerExpression={(partnerExpression: DuoPartnerExpressionPreset) => duoShot.update((prev) => ({ ...prev, partnerExpression }))}
+        onChangePartnerHandProp={(partnerHandPropId: HandPropId | "") => duoShot.update((prev) => ({ ...prev, partnerHandPropId }))}
       />
       <ViewportMangaFxControls
         mangaFx={mangaFx.state}
-        onToggleMangaFx={() => mangaFx.set((prev) => ({ ...prev, enabled: !prev.enabled }))}
+        {...(mangaFx.sfxBusy !== undefined ? { sfxBusy: mangaFx.sfxBusy } : {})}
+        onToggleMangaFx={mangaFx.onToggle}
         onChangeBubblePreset={(bubblePreset) => mangaFx.set((prev) => ({ ...prev, bubblePreset }))}
         onChangeLinesPreset={(linesPreset) => mangaFx.set((prev) => ({ ...prev, linesPreset }))}
+        onChangeSfxStamp={mangaFx.onChangeSfxStamp}
         onChangeDialogueText={(dialogueText) => mangaFx.set((prev) => ({ ...prev, dialogueText }))}
         onChangeIntensity={(intensity) => mangaFx.set((prev) => ({ ...prev, intensity: clampMangaFxIntensity(intensity) }))}
       />
-      <ViewportSceneDirectorControls {...sceneDirector} />
+      <ViewportSceneDirectorControls
+        engineReady={director.engineReady}
+        busy={director.busy}
+        activeDirectorId={director.activeDirectorId}
+        onSelectDirector={director.onSelectDirector}
+      />
       <ViewportHandPropControls {...handProp} />
       <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
         <button type="button" className="cl-viewport-button" aria-pressed={overlay.handles.value} onClick={() => overlay.handles.set((value) => !value)}>관절 핸들</button>

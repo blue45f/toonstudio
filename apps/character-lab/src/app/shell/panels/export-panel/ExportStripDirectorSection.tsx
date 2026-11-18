@@ -1,7 +1,18 @@
-/** 4컷 연출·효과선·대사 입력을 같은 디렉터 세션에 연결한다. */
-import { WEBTOON_STRIP_ACTING_ARCS } from "../../../../export/webtoon-strip-composer";
+/** 4컷 연출·효과선·말풍선 모양·폰트 배율·효과음 스탬프·한국어 대사를 디렉터 세션에 연결한다. */
+import {
+  WEBTOON_STRIP_ACTING_ARCS,
+  WEBTOON_STRIP_BUBBLE_SHAPE_LABELS_KO,
+  WEBTOON_STRIP_FONT_SCALE_LABELS_KO,
+} from "../../../../export/webtoon-strip-composer";
+import { WEBTOON_SFX_STAMPS } from "../viewport-hand-prop-controls";
 
-import type { WebtoonStripActingArcId, WebtoonStripFxLinesKind } from "../../../../export/webtoon-strip-composer";
+import type {
+  WebtoonSfxStampOption,
+  WebtoonStripActingArcId,
+  WebtoonStripBubbleFontScale,
+  WebtoonStripBubbleShape,
+  WebtoonStripFxLinesKind,
+} from "../../../../export/webtoon-strip-composer";
 import type { StripDirectorSession, StripDirectorState } from "../viewport-scene-director";
 
 interface ExportStripDirectorSectionProps {
@@ -11,7 +22,7 @@ interface ExportStripDirectorSectionProps {
 }
 
 export function ExportStripDirectorSection({ ids, state, stripDirector }: ExportStripDirectorSectionProps) {
-  const { actingArc: stripActingArc, bakeStripFx, stripFxLines, dialogueLines } = state;
+  const { actingArc: stripActingArc, bakeStripFx, stripFxLines, dialogueLines, bubbleShapes, bubbleFontScales, sfxStamps } = state;
   return (
     <div className="cl-export-strip-director" role="group" aria-label="세로 4컷 스트립 연기·연출 디렉터">
       <div className="cl-export-row">
@@ -55,20 +66,62 @@ export function ExportStripDirectorSection({ ids, state, stripDirector }: Export
           <option value="none">말풍선만 (효과선 없음)</option>
         </select>
       </div>
-      <div className="cl-export-dialogue-grid" role="group" aria-label="1~4컷 말풍선 한국어 식자 대사">
+      <div className="cl-export-dialogue-grid" role="group" aria-label="1~4컷 말풍선 모양·강조·효과음·한국어 대사">
         {([0, 1, 2, 3] as const).map((cutIdx) => (
-          <label key={cutIdx} htmlFor={`${ids}-strip-dialogue-${cutIdx}`} className="cl-export-dialogue-item">
-            <span>{`${cutIdx + 1}컷 대사`}</span>
+          <div key={cutIdx} className="cl-export-dialogue-item">
+            <label htmlFor={`${ids}-strip-dialogue-${cutIdx}`}>{`${cutIdx + 1}컷 대사·연출`}</label>
+            <div className="cl-export-cut-controls-row">
+              <select
+                aria-label={`${cutIdx + 1}컷 말풍선 모양`}
+                data-testid={`export-strip-bubble-shape-${cutIdx}`}
+                disabled={!bakeStripFx}
+                value={bubbleShapes[cutIdx]}
+                onChange={(event) => stripDirector.setBubbleShape(cutIdx, event.target.value as WebtoonStripBubbleShape)}
+              >
+                {(Object.keys(WEBTOON_STRIP_BUBBLE_SHAPE_LABELS_KO) as WebtoonStripBubbleShape[]).map((shape) => (
+                  <option key={shape} value={shape}>
+                    {WEBTOON_STRIP_BUBBLE_SHAPE_LABELS_KO[shape]}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label={`${cutIdx + 1}컷 대사 폰트 배율`}
+                data-testid={`export-strip-font-scale-${cutIdx}`}
+                disabled={!bakeStripFx || bubbleShapes[cutIdx] === "none"}
+                value={bubbleFontScales[cutIdx]}
+                onChange={(event) => stripDirector.setBubbleFontScale(cutIdx, event.target.value as WebtoonStripBubbleFontScale)}
+              >
+                {(Object.keys(WEBTOON_STRIP_FONT_SCALE_LABELS_KO) as WebtoonStripBubbleFontScale[]).map((scale) => (
+                  <option key={scale} value={scale}>
+                    {WEBTOON_STRIP_FONT_SCALE_LABELS_KO[scale]}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label={`${cutIdx + 1}컷 효과음 스탬프`}
+                data-testid={`export-strip-sfx-stamp-${cutIdx}`}
+                disabled={!bakeStripFx}
+                value={sfxStamps[cutIdx]}
+                onChange={(event) => stripDirector.setSfxStamp(cutIdx, event.target.value as WebtoonSfxStampOption)}
+              >
+                <option value="none">효과음 없음</option>
+                {WEBTOON_SFX_STAMPS.map((spec) => (
+                  <option key={spec.id} value={spec.id}>
+                    {spec.glyphKo}
+                  </option>
+                ))}
+              </select>
+            </div>
             <input
               id={`${ids}-strip-dialogue-${cutIdx}`}
               data-testid={`export-strip-dialogue-${cutIdx}`}
               type="text"
               maxLength={42}
-              disabled={!bakeStripFx}
+              disabled={!bakeStripFx || bubbleShapes[cutIdx] === "none"}
               value={dialogueLines[cutIdx]}
               onChange={(event) => stripDirector.setDialogueLine(cutIdx, event.target.value)}
             />
-          </label>
+          </div>
         ))}
       </div>
     </div>

@@ -65,6 +65,7 @@ import type {
   HandPropAttachment,
   HeadPropAttachment,
   HudSample,
+  SfxStampAttachment,
   StagePropAttachment,
   JointDragHandle,
   KitPlan,
@@ -105,20 +106,11 @@ import type { Scene } from "@babylonjs/core/scene.js";
 
 export type { ReadbackLane } from "../readback";
 
-/**
- * 썸네일 임시 리그 전용 레이어 마스크. 메인 카메라(기본 0x0fffffff)가 그리지 않으므로 캡처 중 비동기 구간에도
- * 뷰포트에 임시 리그가 보이지 않는다. 캡처 RTT는 `renderList`를 쓰므로 레이어 마스크를 검사하지 않는다.
- */
 export const THUMBNAIL_LAYER_MASK = 0x10000000;
-
-/** 얼굴 SDF 임계 맵 해상도 */
 export const FACE_SDF_SIZE = 128;
-/** 툰 외곽선(hull) 폭(월드 단위, m) */
 export const TOON_OUTLINE_WIDTH = 0.004;
-/** 엣지 외곽선 각도 임계(cos) */
 export const TOON_EDGE_EPSILON = 0.95;
 
-/** `readBone` 결과 */
 export interface BoneReading {
   readonly name: string;
   readonly humanoid: string | null;
@@ -129,38 +121,20 @@ export interface BoneReading {
 }
 
 export interface BabylonCharacterEngineDeps {
-  /** 이미 초기화된 Babylon 엔진(WebGPUEngine·Engine·NullEngine) */
   readonly engine: AbstractEngine;
   readonly lane: ReadbackLane;
   readonly diagnostics: EngineDiagnostics;
   readonly physicsProviders: PhysicsProviderFactory;
-  /** 제작 패키지 GLB 바이트 로더. 기본은 `fetch`(브라우저). 테스트는 node:fs로 주입한다. */
   readonly fetchBytes?: (url: string) => Promise<Uint8Array>;
-  /** 패키지 SHA-256을 플랜과 대조한다(기본 true). */
   readonly verifyPackageSha?: boolean;
-  /** 캡처 전에 패스 셰이더 컴파일을 기다릴지(기본: lane !== "null"). NullEngine은 컴파일하지 않으므로 하네스가 끈다. */
   readonly awaitShaderCompile?: boolean;
-  /** `engine.runRenderLoop` 구동 여부(기본: lane !== "null") */
   readonly runRenderLoop?: boolean;
-  /** 엔진 핸들 해제(기본 engine.dispose) */
   readonly disposeEngine?: () => void;
   readonly now?: () => number;
-  /**
-   * IBL 생성기(기본 `createProceduralIbl`). **엔진의 실제 장면**을 받는다 — IBL 큐브 텍스처는 만든 장면의 소유라 장면이 해제되면 같이 파괴된다.
-   * (이전에는 임시 프로브 장면에 만들어 해제하는 바람에 환경 텍스처가 죽은 채 남아 모든 PBR 재질이 영원히 isReady=false가 됐다 — 브라우저 실측.)
-   * 테스트가 장면 소유권을 검증하려고 주입한다.
-   */
   readonly createIbl?: (scene: Scene) => Promise<ProceduralIbl>;
-  /** 베타 무거운 모듈 로더(기본: 동적 import). 테스트가 가짜 IBL 파이프라인·실패 경로를 주입한다. */
   readonly betaLoaders?: BetaLoaders;
-  /** 베타 재질 준비 대기 상한(ms) 덮어쓰기. 기본은 GPU 레인 90초·NullEngine 0(기다리지 않음). 테스트가 시간 초과 경로를 짧게 검증한다. */
   readonly betaMaterialReadyTimeoutMs?: number;
-  /** 캡처 셰이더 컴파일 대기 상한(ms) 덮어쓰기. 기본 90초. 테스트가 `capture-shader-timeout` 경로를 짧게 검증한다. */
   readonly captureCompileTimeoutMs?: number;
-  /**
-   * 엔진을 계속 쓸 수 있는 비치명 실패를 앱에 알린다(프레임 중 물리 스텝 오류, 소스를 올린 뒤 물리 provider가 새 체인을 거부).
-   * 앱 팩토리는 `EngineFactoryOptions.onFailure`를 넘긴다. 없으면 물리 브리지 상태(`unavailable`)에만 남는다.
-   */
   readonly onFailure?: (failure: LabFailure) => void;
 }
 
@@ -168,7 +142,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   readonly backend: EngineBackend;
   readonly diagnostics: EngineDiagnostics;
   readonly lane: ReadbackLane;
-  /** `ThumbnailRequest.source`(지오메트리 프리셋의 임시 소스)를 처리한다: 주 리그를 건드리지 않고 임시 리그로 그린 뒤 해제. */
   readonly thumbnailSources = true;
 
   private readonly engine: AbstractEngine;
@@ -185,7 +158,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private readonly pressureOutline: CharacterOutlineController;
   private readonly clearTexture: RawTexture;
   private readonly sdfTexture: RawTexture;
-  /** 입 안 UV 섬을 어둡게 곱하는 알베도 마스크(절차 소스 `head` 파츠만, `mouth-shade.ts`) */
   private readonly mouthMask: RawTexture;
   private readonly maskedParts = new WeakSet<RigPart>();
   private readonly beta: BetaController;
@@ -195,11 +167,8 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private normalMaterial: ShaderMaterial | null = null;
   private depthMaterial: ShaderMaterial | null = null;
   private rig: CharacterRig | null = null;
-  /** 주 리그가 키트일 때의 로더 핸들(같은 베이스에서 파츠만 바뀌면 `update`로 증분 교체한다, 계약 4.11) */
   private kit: KitRigHandle | null = null;
-  /** 키트 GLB 바이트 캐시(합계 64 MiB, 최근 사용 우선). 파츠 교체·지오메트리 썸네일이 같은 파일을 다시 받지 않게 한다. */
   private readonly kitBytes = createKitBytesCache();
-  /** 키트 파일 URL → 플랜이 선언한 SHA-256. 바이트 캐시 키에 넣어, 같은 URL의 파일이 키트 갱신으로 바뀌었을 때 옛 바이트를 돌려주지 않는다. */
   private readonly kitShaByUrl = new Map<string, string>();
   private shading: ShadingProfile = DEFAULT_SHADING;
   private framing: CameraFraming = DEFAULT_FRAMING;
@@ -211,13 +180,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     loadDeps: () => this.scenePropDeps(),
     disposePassMaterials: (partId) => this.disposePassMaterials(partId),
     releasePart: (rig, part) => this.beta.releaseRig(rigWithParts(rig, [part])),
-    releaseParts: (rig, parts) => this.beta.releaseRig(rigWithParts(rig, parts)),
     refresh: (rig) => this.finalizeRigPropRefresh(rig),
   });
   private readonly gaze = createEyeGazeController(() => this.rig, () => this.lastPlan?.eyeGaze, () => this.viewportCamera().position);
   private disposed = false;
   private loopRunning = false;
-  /** 캡처(썸네일·멀티패스)는 캡처 카메라·RTT·플랜 상태를 공유하므로 한 번에 하나만 실행한다. */
   private captureChain: Promise<unknown> = Promise.resolve();
 
   private constructor(deps: BabylonCharacterEngineDeps, character: CharacterScene, ibl: ProceduralIbl) {
@@ -243,7 +210,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.clearTexture = RawTexture.CreateRGBATexture(new Uint8Array([0, 0, 0, 0]), 1, 1, scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
     this.clearTexture.name = "default:clear";
     const sdf = generateFaceSdf(FACE_SDF_SIZE);
-    // 얼굴 SDF 임계 맵: R8, 선형 보간, invertY=false(생성 행 0 = v 0)
     this.sdfTexture = RawTexture.CreateRTexture(sdf.data, sdf.size, sdf.size, scene, false, false, Constants.TEXTURE_BILINEAR_SAMPLINGMODE, Constants.TEXTURETYPE_UNSIGNED_BYTE);
     this.sdfTexture.name = "default:face-sdf";
     this.sdfTexture.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
@@ -254,25 +220,24 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.mouthMask.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
     this.beta = createBetaController(
       {
-      scene,
-      engine: this.engine,
-      lane: this.lane,
-      camera: this.character.camera,
-      sssAvailable: this.character.sssAvailable,
-      shadingMode: () => this.shading.mode,
-      iblUsable: () => this.shading.ibl.enabled && this.ibl.texture !== null,
-      rig: () => this.rig,
-      toonParams: (part, rig) => this.toonValues(part, rig),
-      toonTextures: (part) => this.toonTextures(part),
-      openPbrParams: (part) => this.openPbrParams(part),
-      openPbrAlbedoTexture: (part) => (part.hasAlbedoTexture ? part.pbr.albedoTexture : this.maskedParts.has(part) ? this.mouthMask : null),
-      materialsChanged: () => {
-        this.applyMaterialsForMode(this.rig);
-        this.beta.syncIblShadows();
-      },
-      now: this.now,
-      // GPU 레인은 셰이더 컴파일이 끝날 때까지(소프트웨어 렌더러는 PBR 한 변종에 약 10초) 기다린다. NullEngine은 컴파일하지 않는다.
-      materialReadyTimeoutMs: deps.betaMaterialReadyTimeoutMs ?? ((deps.awaitShaderCompile ?? deps.lane !== "null") ? 90_000 : 0),
+        scene,
+        engine: this.engine,
+        lane: this.lane,
+        camera: this.character.camera,
+        sssAvailable: this.character.sssAvailable,
+        shadingMode: () => this.shading.mode,
+        iblUsable: () => this.shading.ibl.enabled && this.ibl.texture !== null,
+        rig: () => this.rig,
+        toonParams: (part, rig) => this.toonValues(part, rig),
+        toonTextures: (part) => this.toonTextures(part),
+        openPbrParams: (part) => this.openPbrParams(part),
+        openPbrAlbedoTexture: (part) => (part.hasAlbedoTexture ? part.pbr.albedoTexture : this.maskedParts.has(part) ? this.mouthMask : null),
+        materialsChanged: () => {
+          this.applyMaterialsForMode(this.rig);
+          this.beta.syncIblShadows();
+        },
+        now: this.now,
+        materialReadyTimeoutMs: deps.betaMaterialReadyTimeoutMs ?? ((deps.awaitShaderCompile ?? deps.lane !== "null") ? 90_000 : 0),
       },
       deps.betaLoaders,
     );
@@ -283,10 +248,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     }
   }
 
-  /**
-   * 장면·IBL까지 준비된 엔진을 만든다(IBL 프리필터가 비동기). IBL은 **최종 장면**에 만든다: 텍스처는 만든 장면과 수명을 같이 하므로
-   * 임시 장면에 만들면 그 장면을 버릴 때 파괴돼 PBR 재질이 환경 텍스처 대기(isReady=false)에서 영원히 그려지지 않는다.
-   */
   static async create(deps: BabylonCharacterEngineDeps): Promise<BabylonCharacterEngine> {
     const character = createCharacterScene(deps.engine);
     let ibl: ProceduralIbl;
@@ -299,14 +260,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return new BabylonCharacterEngine(deps, character, ibl);
   }
 
-  /** 물리 1스텝 + 장면 1프레임 렌더(렌더 루프와 테스트가 공유) */
   renderFrame(): void {
     if (this.disposed) return;
     try {
       this.physics.step();
     } catch (error) {
-      // 브리지가 이미 물리를 중단했다(같은 예외가 프레임마다 반복되지 않는다). Babylon `_renderLoop`는 렌더 함수가 던지면 다음 프레임을
-      // 예약하지 않아 뷰포트가 멈추므로 예외를 삼켜 루프를 유지하고, 실패는 앱에 알린다.
       this.reportFailure(error, "physics-step-failed", "물리 스텝 중 오류가 나 물리를 중단했습니다.");
     }
     this.beta.tick();
@@ -314,27 +272,18 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.frameStats.push(this.engine.getDeltaTime());
   }
 
-  /** 뷰포트 카메라 조작(회전·핀치·휠·팬·키보드·더블클릭 초기화, scene-builder `attachControls`)을 캔버스에 붙인다. 드로잉 모드는 ViewportPane 오버레이가 가로챈다. */
   attachCameraControl(canvas: HTMLCanvasElement): void {
     this.character.attachControls(canvas, () => this.setCamera(this.framing));
   }
 
-
-  /**
-   * 소스 로드는 캡처와 같은 큐에서 한 번에 하나만 실행한다. 리그 교체는 unload → 비동기 빌드 → 대입이라 두 호출이 겹치면 둘 다 빈 상태에서
-   * 시작해 각자 리그를 만들고, 나중 대입이 앞 리그를 덮어써 앞 리그의 노드·메시·GPU 자원이 장면에 남는다(두 캐릭터가 겹쳐 보임).
-   * 캡처 중 리그가 해제되는 경합도 함께 막는다. 앞 작업이 실패해도 다음 작업은 실행된다.
-   */
   async loadSource(source: CharacterSource): Promise<SourceCapabilities> {
     this.assertAlive();
     return this.runExclusive(() => this.loadSourceExclusive(source));
   }
 
   private async loadSourceExclusive(source: CharacterSource): Promise<SourceCapabilities> {
-    // 큐에서 기다리는 동안 엔진이 해제됐을 수 있다.
     this.assertAlive();
     if (source.kind === "kit") this.rememberKitPlan(source.plan);
-    // 같은 키트·베이스·베이스 파일이면 리그를 부수지 않고 바뀐 파츠만 교체한다(8 MiB 베이스를 다시 파싱하지 않는다).
     if (source.kind === "kit" && this.kit !== null && this.rig === this.kit.rig && this.kit.compatible(source.plan)) return this.updateKitExclusive(this.kit, source.plan);
     this.unloadRig();
     const hooks = this.materialHooks(() => this.rig, true);
@@ -351,7 +300,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       return toFailure(error, "source-load-failed", "캐릭터 소스를 엔진에 바인딩하지 못했습니다.", this.now());
     }
     if (this.disposed) {
-      // 로드 중 엔진이 해제됐다: 장면은 이미 정리됐으므로 리그 객체만 해제하고 실패로 알린다.
       rig.dispose();
       throw failVisible("engine-disposed", "소스를 올리는 도중 엔진이 해제됐습니다. 엔진을 다시 선택하세요.", undefined, this.now());
     }
@@ -368,12 +316,9 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     try {
       this.physics.bindRig(rig);
     } catch (error) {
-      // provider가 새 리그의 체인을 거부해도 소스 로드는 끝까지 진행한다(브리지가 provider를 해제하고 비활성으로 되돌렸다).
-      // 던지면 재질·카메라·페인트 연결이 빠진 반쯤 로드된 리그가 남고 앱은 이 소스를 실패로 막아 버린다.
       this.reportFailure(error, "physics-chains-rejected", "물리 provider가 체인·캡슐 설정을 거부했습니다.");
     }
     this.reattachPaint(rig);
-    // 켜진 베타(NodeMaterial 툰·OpenPBR·IBL 그림자)의 자원을 새 리그에 맞춘다(비동기 빌드가 끝난 뒤 재질을 끼운다).
     await this.beta.reconcile();
     this.applyMaterialsForMode(rig);
     this.beta.syncIblShadows();
@@ -381,11 +326,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return readRigSourceCapabilities(rig);
   }
 
-  /**
-   * 키트 증분 교체(계약 4.11): 로더가 바뀐 파츠만 받아 합치고 빠진 파츠만 해제한다. 엔진은 자기 쪽 참조(그림자 캐스터·패스 재질·베타 재질·
-   * 페인트 데칼·물리 바인딩·재질 프리셋/틴트·마지막 플랜)를 새 파츠 구성에 맞춘다. 어느 단계든 실패하면 반쯤 바뀐 리그를 남기지 않고
-   * 키트 전체를 해제한 뒤 실패를 던진다(앱 루프가 같은 소스를 값이 바뀔 때까지 다시 시도하지 않는다).
-   */
   private async updateKitExclusive(kit: KitRigHandle, plan: KitPlan): Promise<SourceCapabilities> {
     const rig = kit.rig as CharacterRig;
     const before = [...rig.parts];
@@ -393,21 +333,18 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     try {
       report = await kit.update(plan);
     } catch (error) {
-      // 로더가 이미 키트를 해제했다. 엔진 쪽 참조(베타 재질·패스 재질·캐스터·물리)를 정리한다.
       this.beta.releaseRig(rigWithParts(rig, before));
       this.unloadRig();
       for (const part of plan.parts) this.kitBytes.delete(this.kitCacheKey(part.url));
       return toFailure(error, "source-load-failed", "캐릭터 소스를 엔진에 바인딩하지 못했습니다.", this.now());
     }
     if (this.disposed) {
-      // 교체를 기다리는 동안 엔진이 해제됐다: 장면은 이미 정리됐으므로 키트 객체만 해제하고 실패로 알린다.
       kit.dispose();
       throw failVisible("engine-disposed", "소스를 올리는 도중 엔진이 해제됐습니다. 엔진을 다시 선택하세요.", undefined, this.now());
     }
     try {
       if (report.removedRigParts.length > 0) {
         this.beta.releaseRig(rigWithParts(rig, report.removedRigParts));
-        // 패스 재질은 partId 키라 같은 역할의 새 파츠(정점 색 유무가 다를 수 있다)가 옛 재질을 물려받지 않도록 버린다(다음 캡처에서 다시 만든다).
         for (const part of report.removedRigParts) this.disposePassMaterials(part.partId);
       }
       for (const part of report.addedRigParts) this.disposePassMaterials(part.partId);
@@ -420,7 +357,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
         this.reportFailure(error, "physics-chains-rejected", "물리 provider가 체인·캡슐 설정을 거부했습니다.");
       }
       this.reattachPaint(rig);
-      // 새 타깃은 influence 0으로 시작하므로 마지막 플랜(morph·본 회전·색)을 다시 적용한다. 플랜이 아직 없으면 앱 루프가 곧 적용한다.
       if (report.needsPlanReapply && this.lastPlan) applyRigPlan(rig, this.lastPlan, { outlinesVisible: this.outlinesVisible() });
       await this.beta.reconcile();
       this.applyMaterialsForMode(rig);
@@ -435,7 +371,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return readRigSourceCapabilities(rig);
   }
 
-  /** partId를 키로 캐시한 밑색·ID 패스 재질을 해제한다(다음 캡처에서 파츠에 맞게 다시 만든다). */
   private disposePassMaterials(partId: number): void {
     this.flatMaterials.get(partId)?.dispose(true, false);
     this.flatMaterials.delete(partId);
@@ -443,19 +378,10 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.idMaterials.delete(partId);
   }
 
-  /**
-   * 키트 파츠가 올라온 직후 재질을 맞춘다. 로더가 만든 PBR의 metallic·roughness는 GLB 값이므로 재질 프리셋(역할 기본)을 즉시 적용해 첫 플랜 전에도
-   * 프리셋 값이 되게 하고, 틴트 파츠는 알베도 색(= 틴트 색)을 PBR에도 곱해 둔다. 플랜이 프리셋·색을 바꾸지 않아도 PBR이 흰색으로 남지 않는다.
-   */
   private initializeKitParts(parts: readonly RigPart[], hooks: RigMaterialHooks): void {
     for (const part of parts) hooks.applyPreset(part, part.materialPreset);
   }
 
-  /**
-   * 키트 로더로 리그를 만든다. 주 리그(핸들 보관)와 썸네일 임시 리그(리그만 쓴다)가 공유한다.
-   * `isolated`면 파일이 씬에 올라오는 순간부터 뷰포트 카메라가 보지 못하게 한다(`isolateTemporaryRig`는 조립이 끝난 뒤에야 불려 늦다 —
-   * 그 사이 비동기 GLB 로드마다 프레임이 그려져 임시 캐릭터가 주 캐릭터 위에 겹쳐 보였다).
-   */
   private async buildKit(plan: KitPlan, hooks: RigMaterialHooks, options: { readonly isolated?: boolean } = {}): Promise<KitRigHandle> {
     const materialOptions = this.materialOptions();
     let handle: KitRigHandle;
@@ -470,7 +396,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
         ...(options.isolated ? { meshLayerMask: THUMBNAIL_LAYER_MASK } : {}),
       });
     } catch (error) {
-      // 받은 바이트가 손상됐을 수 있으므로 이 키트의 캐시를 비운다(다음 시도가 다시 받는다).
       for (const part of plan.parts) this.kitBytes.delete(this.kitCacheKey(part.url));
       throw error;
     }
@@ -491,7 +416,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return `${url}|${this.kitShaByUrl.get(url) ?? ""}`;
   }
 
-  /** 키트 파일 바이트(캐시 우선, 키 = URL + 플랜 SHA-256). 검증은 키트 로더가 플랜의 bytes·SHA-256으로 한다. */
   private async fetchKitFile(url: string): Promise<Uint8Array> {
     const key = this.kitCacheKey(url);
     const cached = this.kitBytes.get(key);
@@ -501,7 +425,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return bytes;
   }
 
-  /** 소스(절차·패키지·썸네일용 키트)에서 리그를 만든다. 주 리그와 썸네일 임시 리그가 공유한다(`isolated`는 썸네일 임시 리그). */
   private async buildRig(source: CharacterSource, hooks: RigMaterialHooks, options: { readonly isolated?: boolean } = {}): Promise<CharacterRig> {
     const materialOptions = this.materialOptions();
     if (source.kind === "procedural") {
@@ -514,7 +437,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       this.applyMouthMask(rig);
       return rig;
     }
-    // 썸네일 임시 리그 경로(주 리그의 키트는 `loadSourceExclusive`가 핸들을 보관하며 직접 만든다). 리그를 해제하면 키트 전체가 해제된다.
     if (source.kind === "kit") {
       this.rememberKitPlan(source.plan);
       return (await this.buildKit(source.plan, hooks, options)).rig as CharacterRig;
@@ -522,12 +444,10 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return this.loadPackage(source.plan, materialOptions, hooks);
   }
 
-  /** 소스 로드 중 발견한 비치명 사항(규약 밖 메시·본 링크 없음 등, 한글) */
   sourceNotes(): readonly string[] {
     return this.rig?.notes ?? [];
   }
 
-  /** 리그 평문 보고(파츠·메시 이름·morph 수·본 수). 소스가 없으면 null. Babylon 객체는 노출하지 않는다. */
   inspectRig(): RigInspection | null {
     return this.rig ? inspectRig(this.rig) : null;
   }
@@ -556,7 +476,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.lastPlan = null;
     this.physics.bindRig(null);
     this.character.clearShadowCasters();
-    // 패스 재질이 참조하는 텍스처는 공유(white·clear·SDF·알베도·페인트)이므로 재질만 해제한다(forceDisposeTextures=false).
     for (const material of this.flatMaterials.values()) material.dispose(true, false);
     for (const material of this.idMaterials.values()) material.dispose(true, false);
     this.flatMaterials.clear();
@@ -603,6 +522,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   async setDuoPartner(attachment: DuoPartnerAttachment | null): Promise<void> {
     return this.sceneProps.setDuoPartner(attachment);
   }
+
+  async setSfxStamp(attachment: SfxStampAttachment | null): Promise<void> {
+    return this.sceneProps.setSfxStamp(attachment);
+  }
+
   applyPlan(plan: ApplyPlan): ApplyReceipt {
     this.assertAlive();
     const rig = this.requireRig("apply-plan-no-source", "플랜을 적용할 캐릭터 소스가 없습니다. loadSource 뒤에 호출하세요.");
@@ -619,7 +543,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.shading = profile;
     this.applyShadingToScene();
     this.applyMaterialsForMode(this.rig);
-    // 모드·IBL이 바뀌면 베타 자원(툰↔PBR 전용 재질, IBL 그림자)을 요청과 다시 맞춘다. 실패는 컨트롤러가 사유로 기록한다.
     void this.beta.reconcile().catch(() => undefined);
   }
 
@@ -655,26 +578,21 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return this.shading.mode === "toon" && this.shading.toon.outline === "hull";
   }
 
-  /** 모드(PBR/툰)에 맞춰 파츠 재질·외곽선·outline 셸 가시성을 바꾼다. */
   private applyMaterialsForMode(rig: CharacterRig | null, useBeta = true): void {
     if (!rig) return;
     const toon = this.shading.mode === "toon";
     const outline = toon ? this.shading.toon.outline : "none";
     const pressure = outline === "hull" && this.shading.toon.outlinePressure === true;
     this.pressureOutline.sync(rig, pressure, TOON_OUTLINE_WIDTH, outline === "hull" && !pressure);
-    // 키트 hull은 Babylon 기본 깊이 오프셋(카메라 쪽으로 당김)을 끈다: 몸·속옷 hull이 꽉 낀 의상·신발(남성 부츠 발끝 등)을 뚫고 어두운 얼룩으로 비쳤다(실측, 0이면 사라짐).
     if (outline === "hull" && rig.kind === "kit") {
       const renderer = this.character.scene.getOutlineRenderer();
       renderer.zOffset = 0;
       renderer.zOffsetUnits = 0;
     }
     for (const part of rig.parts) {
-      // 베타 재질(NodeMaterial 툰·OpenPBR)은 만들어져 있고 요청된 때만 끼운다. 아니면 기본 경로(ShaderMaterial 툰·PBRMaterial).
       const nodeToon = toon && useBeta ? this.beta.nodeToonMaterial(part) : null;
       const openPbr = !toon && useBeta ? this.beta.openPbrMaterial(part) : null;
-      // 기본 ShaderMaterial 툰은 `ensureToonMaterial`이 값을 넣지만 NodeMaterial 툰은 따로 넣어야 한다(램프 단계·림·얼굴 SDF 변경이 반영되도록).
       if (nodeToon) this.beta.updateNodeToon(part, this.toonValues(part, rig), this.toonTextures(part));
-      // 키트의 눈·입 안 계열·머리·속옷은 hull 외곽선을 켜지 않고 몸은 얇게 그린다(`outline-policy.ts`). 절차 소스는 모든 파츠에 켠다.
       const hull = outline === "hull" && hullOutlineAllowed(rig.kind, part.role);
       part.meshes.forEach((mesh, meshIndex) => {
         mesh.material = toon ? (nodeToon ?? this.ensureToonMaterial(part, rig)) : (openPbr ?? part.meshPbrs?.[meshIndex] ?? part.pbr);
@@ -706,7 +624,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return part.toon;
   }
 
-  /** 툰 uniform·텍스처를 ShaderMaterial 툰과 NodeMaterial 툰(있으면)에 같은 값으로 넣는다. */
   private pushToon(part: RigPart, rig: CharacterRig | null): void {
     const values = this.toonValues(part, rig);
     if (part.toon) setToonUniforms(part.toon, values);
@@ -718,18 +635,10 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     for (const part of rig.parts) this.pushToon(part, rig);
   }
 
-  /**
-   * 툰·밑색 패스가 메시의 정점 색(`COLOR_0`)을 알베도에 곱할지. 키트 파츠만이다: 키트의 `COLOR_0`은 계약상 회색 AO(R=G=B)다.
-   * 제작 패키지(Orion: 채널마다 다른 v0 의미)와 절차 소스는 툰이 정점 색을 읽지 않던 기존 거동을 그대로 둔다(PBR은 이미 곱한다).
-   */
   private usesVertexColor(part: RigPart, rig: CharacterRig | null): boolean {
     return isKitPart(rig, part) && partHasVertexColors(part);
   }
 
-  /**
-   * 알베도 텍스처 알파 컷오프. glTF `alphaMode: MASK`(키트의 눈썹·속눈썹)로 올라온 재질은 로더가 PBR을 알파 테스트(`alphaCutOff`)로 둔다 —
-   * 툰·밑색 ShaderMaterial은 알파를 쓰지 않아 컷아웃 카드가 불투명하게 그려지므로 같은 컷오프로 버린다. 알베도 텍스처가 없거나 알파 테스트가 아니면 0(끔)이다.
-   */
   private alphaCutoffOf(part: RigPart): number {
     return part.hasAlbedoTexture && part.pbr.transparencyMode === Material.MATERIAL_ALPHATEST ? part.pbr.alphaCutOff : 0;
   }
@@ -738,7 +647,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return { albedo: this.albedoTexture(part), paint: this.paintTextures.get(part.role) ?? this.clearTexture, sdf: this.sdfTexture };
   }
 
-  /** 패키지 알베도가 있거나 입 안 마스크를 쓰는 파츠(툰·flat 패스가 알베도 샘플을 곱한다) */
   private usesAlbedoTexture(part: RigPart): boolean {
     return part.hasAlbedoTexture || this.maskedParts.has(part);
   }
@@ -748,10 +656,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return this.maskedParts.has(part) ? this.mouthMask : this.whiteTexture;
   }
 
-  /**
-   * 절차 소스 `head` 파츠의 입 안 UV 섬을 어둡게 곱하는 알베도 마스크를 붙인다(PBR albedoTexture × albedoColor, 툰 albedoSampler × baseColor).
-   * 알베도 텍스처가 이미 있는 파츠(제작 패키지)는 건드리지 않는다.
-   */
   private applyMouthMask(rig: CharacterRig): void {
     if (rig.kind !== "procedural") return;
     for (const part of rig.parts) {
@@ -762,12 +666,10 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   }
 
   private openPbrParams(part: RigPart): OpenPbrParams {
-    // 키트 틴트 파츠는 텍스처가 있어도 색(= 틴트)을 곱한다.
     const albedo: readonly [number, number, number] = part.hasAlbedoTexture && part.tint === undefined ? [1, 1, 1] : hexToLinear(part.colorHex);
     return mapPresetToOpenPbr(MATERIAL_PRESETS[part.materialPreset], albedo, { sssAvailable: this.character.sssAvailable });
   }
 
-  /** 머리 본의 rest 대비 회전으로 얼굴 forward(+Z)·right(+X)를 구한다(패키지의 비항등 rest도 동일). */
   private headAxes(rig: CharacterRig | null): { readonly forward: Vec3; readonly right: Vec3 } {
     const head = rig?.humanoid.get("head");
     if (!head) return { forward: [0, 0, 1], right: [1, 0, 0] };
@@ -784,9 +686,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     const average = this.ibl.averageColor;
     const axes = this.headAxes(rig);
     const face = faceSdfUniforms(axes.forward, axes.right, this.character.sunDirection);
-    // 얼굴 SDF 그림자는 절차 머리의 정면 대칭 UV를 전제로 한 해석 맵이다. 키트 머리 UV(HBM 재전개)에는 맞지 않아 키트(v1)는 N·L 램프로 음영한다.
     const useFaceSdf = toon.faceSdfShadow && part.role === "head" && !isKitPart(rig, part);
-    // 광원 + 환경의 합이 1을 넘으면 밝은 알베도가 흰색으로 날아가므로 같은 비율로 정규화한다(툰 색에는 톤맵이 없다).
     const lighting = normalizeToonLighting(
       [key.diffuse.r * lightScale, key.diffuse.g * lightScale, key.diffuse.b * lightScale],
       [Math.min(1, average[0] * ambientScale), Math.min(1, average[1] * ambientScale), Math.min(1, average[2] * ambientScale)],
@@ -822,11 +722,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return { scene: this.character.scene, sssAvailable: this.character.sssAvailable };
   }
 
-  /**
-   * 리그 재질 훅. `rigOf`는 훅이 호출될 때의 리그를 돌려준다(주 리그는 `this.rig`, 임시 리그는 자기 자신 — 툰 얼굴 SDF 축이 리그별이다).
-   * `trackFlatPass`가 true면(주 리그만) 색 변경을 밑색 패스 재질 캐시에도 반영한다. 임시 리그는 패스 재질 캐시(partId 키)를
-   * 공유하면 주 리그와 충돌하므로 건드리지 않는다.
-   */
   private materialHooks(rigOf: () => CharacterRig | null, trackFlatPass: boolean): RigMaterialHooks {
     const options = this.materialOptions();
     return {
@@ -838,7 +733,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
         this.beta.updateOpenPbr(part);
       },
       applyColor: (part, hex) => {
-        // 알베도 텍스처가 있는 파츠는 보통 레시피 색을 곱하지 않지만, 키트 틴트 파츠(recolor·fixed)는 텍스처 × 색을 PBR에도 곱한다(툰의 baseColor × 알베도와 같다).
         if (!part.hasAlbedoTexture || part.tint !== undefined) setMaterialAlbedo(part.pbr, part.materialPreset, hex);
         this.pushToon(part, rigOf());
         this.beta.updateOpenPbr(part);
@@ -848,7 +742,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       },
     };
   }
-
 
   async setPhysicsProvider(id: PhysicsProviderId): Promise<PhysicsStatus> {
     this.assertAlive();
@@ -860,20 +753,14 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return this.physics.settle(maxSteps);
   }
 
-  /** 결정성 영수증(provider가 포트를 주면). poseHash는 호출자(export)가 레시피에서 만든다. */
   physicsReceipt(poseHash: string): Promise<PhysicsReceiptLike | null> {
     return this.physics.receipt(poseHash);
   }
 
-  /** 월드 변환이 없어 비활성인 충돌 캡슐 본(진단) */
   pendingColliderBones(): readonly string[] {
     return this.physics.pendingColliderBones();
   }
 
-  /**
-   * 캡처 계열 작업과 소스 로드를 직렬화한다: 캡처 카메라·RTT·(현재 리그의 일시 플랜 적용)을 공유하므로 겹치면 서로의 프레이밍·플랜을
-   * 오염시키고, 소스 로드는 리그를 해제·교체하므로 캡처나 다른 로드와 겹치면 안 된다. 앞선 작업이 실패해도 다음 작업은 실행된다.
-   */
   private runExclusive<T>(task: () => Promise<T>): Promise<T> {
     const result = this.captureChain.then(task);
     this.captureChain = result.then(
@@ -888,10 +775,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return this.runExclusive(() => this.gaze.freeze(() => (req.source ? this.renderTemporaryThumbnail(req, req.source) : this.renderCurrentThumbnail(req))));
   }
 
-  /**
-   * 현재 리그에 플랜을 일시 적용해 그리고 정확히 되돌린다(스냅샷 복원: 마지막 플랜 유무와 무관).
-   * 적용·렌더·readPixels 호출·복원은 한 번의 동기 구간이라(capture.ts `around`) readback을 기다리는 동안 뷰포트는 원래 상태를 그린다.
-   */
   private async renderCurrentThumbnail(req: ThumbnailRequest): Promise<CapturedRaster> {
     this.assertAlive();
     const rig = this.requireRig("thumbnail-no-source", "썸네일을 그릴 캐릭터 소스가 없습니다.");
@@ -905,7 +788,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     };
     return captureThumbnail(this.captureDeps(rig), req.size, req.framing, {
       before: () => {
-        // 비동기 셰이더 준비 중 메인 applyLoop의 최신 포즈를 덮어쓰지 않도록 동기 적용 직전에 스냅샷을 뜬다.
         snapshot = snapshotRig(rig);
         applyRigPlan(rig, req.plan, { outlinesVisible: this.outlinesVisible() });
         applyRigEyeGaze(rig, req.plan.eyeGaze, this.viewportCamera().position);
@@ -915,12 +797,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     });
   }
 
-  /**
-   * 지오메트리 프리셋 카드: `req.source`로 **임시 리그**를 만들어 `req.plan`을 적용해 그린 뒤 해제한다. 주 리그·마지막 플랜·
-   * 그림자 캐스터·물리 바인딩은 건드리지 않는다. 임시 메시는 전용 레이어 마스크로 메인 카메라에서 숨기고 그림자를 받지 않는다
-   * (주 리그의 그림자 맵이 섞이지 않도록 그림자 맵 갱신도 하지 않는다). 키트 임시 리그는 GLB를 비동기로 하나씩 올리므로 마스크를
-   * 조립이 끝난 뒤(`isolateTemporaryRig`)가 아니라 **씬에 올리기 전에** 로더가 건다(`buildKit`의 `isolated`).
-   */
   private async renderTemporaryThumbnail(req: ThumbnailRequest, source: CharacterSource): Promise<CapturedRaster> {
     this.assertAlive();
     const holder: { rig: CharacterRig | null } = { rig: null };
@@ -933,19 +809,16 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       const rig = holder.rig;
       this.assertAlive();
       this.isolateTemporaryRig(rig);
-      // 썸네일 임시 리그는 베타 재질을 만들지 않는다(기본 경로로 그린다).
       this.applyMaterialsForMode(rig, false);
       applyRigPlan(rig, req.plan, { outlinesVisible: this.outlinesVisible() });
       applyRigEyeGaze(rig, req.plan.eyeGaze, this.viewportCamera().position);
       this.refreshToonUniforms(rig);
       return await captureThumbnail({ ...this.captureDeps(rig), shadow: null }, req.size, req.framing);
     } finally {
-      // 엔진이 해제됐으면 scene.dispose가 모든 객체를 정리했으므로 다시 해제하지 않는다.
       if (holder.rig && !this.disposed) { this.pressureOutline.release(holder.rig); holder.rig.dispose(); }
     }
   }
 
-  /** 임시 리그 메시를 메인 카메라에서 숨기고(레이어 마스크) 그림자를 받지 않게 한다. */
   private isolateTemporaryRig(rig: CharacterRig): void {
     for (const part of rig.parts) {
       for (const mesh of [...part.meshes, ...part.outlineMeshes]) {
@@ -982,7 +855,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     };
   }
 
-  /** 마지막 플랜의 결정적 digest(없으면 "no-plan"). 레시피 digest는 export 측이 레시피에서 만든다. */
   planDigest(): string {
     const plan = this.lastPlan;
     if (!plan) return "no-plan";
@@ -1026,7 +898,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     };
   }
 
-
   pick(ndcX: number, ndcY: number, options?: CharacterPickOptions): PickHit | null {
     if (this.disposed || !this.rig) return null;
     return pickRig(this.character.scene, this.character.camera, this.rig, ndcX, ndcY, options);
@@ -1042,7 +913,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
 
   viewportCamera(): ViewportCameraInfo {
     const camera = this.character.camera;
-    // 위치는 구면 좌표에서 직접 계산한다(ArcRotateCamera의 globalPosition은 다음 렌더 전까지 이전 값일 수 있다).
     const target = fromVector3(camera.target);
     const sinBeta = Math.sin(camera.beta);
     const position: Vec3 = [
@@ -1052,19 +922,16 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     ];
     const direction = v3Sub(target, position);
     const forward: Vec3 = v3Length(direction) < 1e-9 ? [0, 0, -1] : v3Normalize(direction);
-    // 우수 좌표 카메라 기저: right = forward × worldUp (forward가 world up과 평행이면 +X로 대체), up = right × forward
     const crossUp = v3Cross(forward, [0, 1, 0]);
     const right: Vec3 = v3Length(crossUp) < 1e-6 ? [1, 0, 0] : v3Normalize(crossUp);
     const up: Vec3 = v3Cross(right, forward);
     return { position, forward, right, up, fovY: camera.fov, width: this.engine.getRenderWidth(), height: this.engine.getRenderHeight() };
   }
 
-  /** 관절 드래그·IK용 포즈 프레임 스켈레톤(휴머노이드 이름, 포즈 규약별 rest). 본이 없으면 null. */
   poseSkeleton(): SkeletonData | null {
     return this.rig ? rigPoseSkeleton(this.rig) : null;
   }
 
-  /** 본의 현재 월드 변환·로컬 회전(진단·테스트). 이름은 소스 이름 또는 휴머노이드 이름. */
   readBone(name: string): BoneReading | null {
     const rig = this.rig;
     if (!rig) return null;
@@ -1074,12 +941,10 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return { name: rb.name, humanoid: rb.humanoid, position: world.position, rotation: world.rotation, localRotation: fromQuaternion(rb.node.rotationQuaternion), auxiliary: rb.auxiliary };
   }
 
-  /** 부위별 페인트 텍스처 점검(크기·revision·invertY·decal 연결). 텍스처가 없으면 빈 배열. */
   inspectPaint(): readonly PaintInspection[] {
     return readPaintInspection(this.rig, this.paintTextures);
   }
 
-  /** 장면 설정 평문 보고(우수 좌표·clear 알파·톤맵·광원·그림자 생성기 등). Babylon 객체는 노출하지 않는다. */
   inspectScene(): SceneInspection {
     return inspectCharacterScene(this.character);
   }
@@ -1092,7 +957,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.bindPaint(rig, layer.part, texture);
   }
 
-  /** 새 리그에 기존 페인트 텍스처(부위별)를 다시 붙인다(소스 재로드·device lost 복원). */
   private reattachPaint(rig: CharacterRig): void {
     const roles = new Set<PartRole>(rig.parts.map((part) => part.role));
     for (const role of roles) {
@@ -1105,7 +969,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     for (const part of rig.parts) {
       if (part.role !== role) continue;
       for (const mesh of part.meshes) attachDecalToMesh(this.character.scene, mesh, texture);
-      // PBR decalMap 플러그인 getter가 지연 생성하므로 런타임에는 null이 아니다(타입만 Nullable).
       const decal = part.pbr.decalMap;
       if (decal) decal.isEnabled = true;
       if (part.toon) setToonTextures(part.toon, { albedo: this.albedoTexture(part), paint: texture, sdf: this.sdfTexture });
@@ -1115,17 +978,12 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     }
   }
 
-
   async exportGlb(): Promise<Uint8Array> {
     this.assertAlive();
     const rig = this.requireRig("glb-no-source", "GLB로 내보낼 캐릭터 소스가 없습니다.");
     const releaseGaze = this.gaze.hold();
-    // 입 안 마스크는 알베도 RawTexture라 serializer가 `readPixels`로 PNG를 만든다. GPU 레인에서는 baseColor 텍스처로 함께 내보내진다(브라우저 실측: 이미지 1장).
-    // readback이 없는 레인(NullEngine)은 그 읽기가 끝나지 않아 내보내기가 멈추므로 이때만 마스크를 잠시 떼고 내보낸다.
     const detached = this.lane === "null" ? rig.parts.filter((part) => this.maskedParts.has(part)) : [];
     for (const part of detached) part.pbr.albedoTexture = null;
-    // 툰(ShaderMaterial·NodeMaterial)·OpenPBR는 glTF 재질로 내보낼 수 없다(serializer가 "Unsupported material"로 기본 재질을 쓴다 — 브라우저 실측).
-    // 내보내기는 보는 셰이딩 모드와 무관하게 파츠의 PBR 재질로 하므로 내보내는 동안만 PBR로 바꿨다가 되돌린다(뷰포트가 그동안 PBR로 보인다).
     const swapped: Array<() => void> = [];
     for (const part of rig.parts) {
       part.meshes.forEach((mesh, meshIndex) => {
@@ -1184,7 +1042,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return this.beta.set(id, enabled);
   }
 
-  /** 투영 페인트 포트(베타가 켜져 있을 때만). 드로잉 드라이버가 스트로크마다 확인한다. */
   projectionPaint(): ProjectionPaintPort | null {
     return this.disposed ? null : this.beta.projectionPort();
   }
@@ -1221,13 +1078,12 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     else this.engine.dispose();
   }
 
-  /** 엔진을 계속 쓸 수 있는 실패를 앱에 알린다. 보고 콜백이 던져도 렌더 루프·로드를 깨지 않는다. */
   private reportFailure(error: unknown, code: string, reasonKo: string): void {
     const failure = isLabFailure(error) ? error : failVisible(code, reasonKo, error, this.now());
     try {
       this.deps.onFailure?.(failure);
     } catch {
-      // 의도적으로 무시: 알림 경로 자체의 오류로 프레임 루프를 멈추지 않는다.
+      // 알림 경로 자체의 오류로 프레임 루프를 멈추지 않는다.
     }
   }
 
