@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 
-import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
+import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible } from "../../../contracts";
 import { formatShaperInputStyleGuide } from "../../../export/recipe-file";
 import { clientToNdc, normalizePointerPressure } from "../../../paint/paint-bridge";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
@@ -31,6 +31,7 @@ import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, hudRows, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
 } from "./viewport-interactions";
+import { CANVAS_KEY_SHORTCUTS, FILL, FRAMING_MODES, failureText } from "./viewport-pane-options";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
@@ -39,7 +40,7 @@ import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBac
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 
 export interface ViewportPaneProps {
   readonly paintSession?: PaintSession;
@@ -48,13 +49,6 @@ export interface ViewportPaneProps {
 }
 
 export const DEFAULT_HUD_INTERVAL_MS = 250;
-const FRAMING_MODES: ReadonlyArray<{ readonly mode: CameraFraming["mode"]; readonly label: string }> = [
-  { mode: "full-body", label: "전신" },
-  { mode: "bust", label: "상반신" },
-  { mode: "face", label: "얼굴" },
-];
-const FILL: CSSProperties = { position: "absolute", inset: 0 };
-const CANVAS_KEY_SHORTCUTS = "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0 Home";
 
 interface DragSession {
   readonly pointerId: number;
@@ -81,10 +75,6 @@ interface ControlPointDragSession {
   readonly baseFace: ParamValues<FaceParamKey>;
   readonly baseBody: ParamValues<BodyParamKey>;
   changes: ReadonlyArray<{ readonly group: "face" | "body"; readonly key: FaceParamKey | BodyParamKey; readonly value: number }>;
-}
-
-function failureText(error: unknown, fallback: string): string {
-  return isLabFailure(error) ? `${error.reasonKo} [${error.code}]` : fallback;
 }
 
 function releaseCapture(el: Element | undefined, pointerId: number): void {
