@@ -17,15 +17,11 @@ import { stableStringify } from "../../shared/stable-json";
 import { BETA_FEATURE_IDS } from "../beta-features";
 import { faceSdfUniforms, generateFaceSdf } from "../face-sdf";
 import { createFrameStats } from "../frame-stats";
-import { describeSparseMorphReport } from "../glb-sparse-morph";
-import { summarizeJointOffsets } from "../joint-offsets";
 import { createKitBytesCache } from "../kit-bytes-cache";
 import { MATERIAL_PRESETS, hexToLinear, toonShadeTint } from "../material-presets";
-import { describeMorphTextureMode } from "../morph-limits";
 import { generateMouthMask, MOUTH_MASK_SIZE } from "../mouth-shade";
 import { mapPresetToOpenPbr } from "../openpbr-mapping";
 import { hullOutlineAllowed, hullOutlineWidthScale } from "../outline-policy";
-import { createFeatureReport, featureActive, featureOff, featureUnavailable } from "../scene-features";
 import { normalizeToonLighting } from "../toon-reference";
 
 import { BABYLON_SIDE_EFFECTS_LOADED } from "./babylon-side-effects";
@@ -35,16 +31,9 @@ import { CharacterOutlineController } from "./character-outline-controller";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
 import { fromQuaternion, fromVector3, toVector3 } from "./convert";
 import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
+import { readEngineFeatures, readEngineHud, readPaintInspection, readRigSourceCapabilities } from "./engine-reports";
 import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
 import { exportRigGlbWithReport } from "./glb-exporter";
-import {
-  HAND_PROP_PART_ID,
-  HEAD_PROP_PART_ID,
-  STAGE_PROP_PART_ID,
-  attachHandPropToRig,
-  attachHeadPropToRig,
-  attachStagePropToRig,
-} from "./hand-prop-attachment";
 import { hairLayerSupport } from "./hair-ownership";
 import { createHudProbe } from "./hud";
 import { loadKitRig } from "./kit-loader";
@@ -57,10 +46,10 @@ import { createPhysicsBridge } from "./physics-bridge";
 import { attachDecalToMesh, createPaintTextures, pickRig } from "./pick-and-paint";
 import { createPostProcessStack } from "./postprocess";
 import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
+import { createScenePropController } from "./scene-prop-controller";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
-import type { HandPropHandle, HeadPropHandle, StagePropHandle } from "./hand-prop-attachment";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
   ApplyPlan,
@@ -107,13 +96,12 @@ import type { PhysicsBridge, PhysicsReceiptLike } from "./physics-bridge";
 import type { CharacterScene } from "./scene-builder";
 import type { ReadbackLane } from "../readback";
 import type { PaintInspection, RigInspection, SceneInspection } from "../rig-inspection";
-import type { SceneFeatureSource, SceneFeatureState } from "../scene-features";
+import type { SceneFeatureSource } from "../scene-features";
 import type { ViewportCameraInfo, ViewportCameraSource } from "../viewport-camera";
 import type { ProceduralIbl } from "./lighting/ibl";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine.js";
 import type { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial.js";
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture.js";
-import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
 export type { ReadbackLane } from "../readback";
@@ -177,13 +165,6 @@ export interface BabylonCharacterEngineDeps {
   readonly onFailure?: (failure: LabFailure) => void;
 }
 
-/** 지금 influence > 0인 morph 타깃 수. `numInfluencers`는 attribute 모드에서 8개로 잘려 있어 초과분(무시되는 타깃)을 셀 수 없다. */
-function activeMorphTargets(manager: MorphTargetManager): number {
-  let active = 0;
-  for (let index = 0; index < manager.numTargets; index += 1) if (manager.getTarget(index).influence > 0) active += 1;
-  return active;
-}
-
 export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSource, ViewportCameraSource, BetaFeaturePort, ProjectionPaintHost {
   readonly backend: EngineBackend;
   readonly diagnostics: EngineDiagnostics;
@@ -224,12 +205,15 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private shading: ShadingProfile = DEFAULT_SHADING;
   private framing: CameraFraming = DEFAULT_FRAMING;
   private lastPlan: ApplyPlan | null = null;
-  private activeHandProp: HandPropAttachment | null = null;
-  private handPropHandle: HandPropHandle | null = null;
-  private activeHeadProp: HeadPropAttachment | null = null;
-  private headPropHandle: HeadPropHandle | null = null;
-  private activeStageProp: StagePropAttachment | null = null;
-  private stagePropHandle: StagePropHandle | null = null;
+  private readonly sceneProps = createScenePropController({
+    assertAlive: () => this.assertAlive(),
+    runExclusive: (operation) => this.runExclusive(operation),
+    readRig: () => this.rig,
+    loadDeps: () => this.scenePropDeps(),
+    disposePassMaterials: (partId) => this.disposePassMaterials(partId),
+    releasePart: (rig, part) => this.beta.releaseRig(rigWithParts(rig, [part])),
+    refresh: (rig) => this.finalizeRigPropRefresh(rig),
+  });
   private readonly gaze = createEyeGazeController(() => this.rig, () => this.lastPlan?.eyeGaze, () => this.viewportCamera().position);
   private disposed = false;
   private loopRunning = false;
@@ -373,11 +357,9 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     }
     this.rig = rig;
     this.kit = kit;
-    if (this.activeHandProp || this.activeHeadProp || this.activeStageProp) {
+    if (this.sceneProps.hasActive()) {
       try {
-        if (this.activeHandProp) await this.syncActiveHandPropToRig(rig);
-        if (this.activeHeadProp) await this.syncActiveHeadPropToRig(rig);
-        if (this.activeStageProp) await this.syncActiveStagePropToRig(rig);
+        await this.sceneProps.syncActive(rig);
       } catch (error) {
         this.reportFailure(error, "scene-prop-reattach-failed", "새 캐릭터 소스에 장착 중이던 3D 소품을 다시 연결하지 못했습니다.");
       }
@@ -396,16 +378,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.applyMaterialsForMode(rig);
     this.beta.syncIblShadows();
     this.setCamera(this.framing);
-    return this.sourceCapabilities(rig);
-  }
-
-  private sourceCapabilities(rig: CharacterRig): SourceCapabilities {
-    return {
-      capabilities: rig.capabilities,
-      morphNames: rig.morphNames,
-      boneNames: [...rig.bones.keys()],
-      partIdPalette: rig.partIdPalette,
-    };
+    return readRigSourceCapabilities(rig);
   }
 
   /**
@@ -459,7 +432,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       this.unloadRig();
       return toFailure(error, "source-load-failed", "키트 파츠를 엔진에 합치지 못했습니다.", this.now());
     }
-    return this.sourceCapabilities(rig);
+    return readRigSourceCapabilities(rig);
   }
 
   /** partId를 키로 캐시한 밑색·ID 패스 재질을 해제한다(다음 캡처에서 파츠에 맞게 다시 만든다). */
@@ -588,9 +561,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     for (const material of this.idMaterials.values()) material.dispose(true, false);
     this.flatMaterials.clear();
     this.idMaterials.clear();
-    this.detachHandPropFromRig(rig);
-    this.detachHeadPropFromRig(rig);
-    this.detachStagePropFromRig(rig);
+    this.sceneProps.detach(rig);
     this.beta.releaseRig(rig);
     this.pressureOutline.release(rig);
     rig.dispose();
@@ -617,85 +588,16 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.beta.syncIblShadows();
   }
 
-  private detachHandPropFromRig(rig: CharacterRig | null): void {
-    const handle = this.handPropHandle;
-    if (!handle) return;
-    this.handPropHandle = null;
-    this.disposePassMaterials(HAND_PROP_PART_ID);
-    if (rig) this.beta.releaseRig(rigWithParts(rig, [handle.part]));
-    handle.dispose();
-  }
-
-  private detachHeadPropFromRig(rig: CharacterRig | null): void {
-    const handle = this.headPropHandle;
-    if (!handle) return;
-    this.headPropHandle = null;
-    this.disposePassMaterials(HEAD_PROP_PART_ID);
-    if (rig) this.beta.releaseRig(rigWithParts(rig, [handle.part]));
-    handle.dispose();
-  }
-
-  private detachStagePropFromRig(rig: CharacterRig | null): void {
-    const handle = this.stagePropHandle;
-    if (!handle) return;
-    this.stagePropHandle = null;
-    this.disposePassMaterials(STAGE_PROP_PART_ID);
-    if (rig) this.beta.releaseRig(rigWithParts(rig, [handle.part]));
-    handle.dispose();
-  }
-
-  private async syncActiveHandPropToRig(rig: CharacterRig): Promise<void> {
-    this.detachHandPropFromRig(rig);
-    if (!this.activeHandProp) return;
-    this.handPropHandle = await attachHandPropToRig(rig, this.activeHandProp, this.scenePropDeps());
-  }
-
-  private async syncActiveHeadPropToRig(rig: CharacterRig): Promise<void> {
-    this.detachHeadPropFromRig(rig);
-    if (!this.activeHeadProp) return;
-    this.headPropHandle = await attachHeadPropToRig(rig, this.activeHeadProp, this.scenePropDeps());
-  }
-
-  private async syncActiveStagePropToRig(rig: CharacterRig): Promise<void> {
-    this.detachStagePropFromRig(rig);
-    if (!this.activeStageProp) return;
-    this.stagePropHandle = await attachStagePropToRig(rig, this.activeStageProp, this.scenePropDeps());
-  }
-
   async setHandProp(attachment: HandPropAttachment | null): Promise<void> {
-    this.assertAlive();
-    return this.runExclusive(async () => {
-      this.assertAlive();
-      this.activeHandProp = attachment;
-      const rig = this.rig;
-      if (!rig) return;
-      await this.syncActiveHandPropToRig(rig);
-      await this.finalizeRigPropRefresh(rig);
-    });
+    return this.sceneProps.setHandProp(attachment);
   }
 
   async setHeadProp(attachment: HeadPropAttachment | null): Promise<void> {
-    this.assertAlive();
-    return this.runExclusive(async () => {
-      this.assertAlive();
-      this.activeHeadProp = attachment;
-      const rig = this.rig;
-      if (!rig) return;
-      await this.syncActiveHeadPropToRig(rig);
-      await this.finalizeRigPropRefresh(rig);
-    });
+    return this.sceneProps.setHeadProp(attachment);
   }
 
   async setStageProp(attachment: StagePropAttachment | null): Promise<void> {
-    this.assertAlive();
-    return this.runExclusive(async () => {
-      this.assertAlive();
-      this.activeStageProp = attachment;
-      const rig = this.rig;
-      if (!rig) return;
-      await this.syncActiveStagePropToRig(rig);
-      await this.finalizeRigPropRefresh(rig);
-    });
+    return this.sceneProps.setStageProp(attachment);
   }
   applyPlan(plan: ApplyPlan): ApplyReceipt {
     this.assertAlive();
@@ -1179,13 +1081,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
 
   /** 부위별 페인트 텍스처 점검(크기·revision·invertY·decal 연결). 텍스처가 없으면 빈 배열. */
   inspectPaint(): readonly PaintInspection[] {
-    const rig = this.rig;
-    return this.paintTextures.describe().map((info) => {
-      const texture = this.paintTextures.get(info.part);
-      const parts = rig ? rig.parts.filter((part) => part.role === info.part) : [];
-      const decalMeshes = parts.reduce((sum, part) => sum + part.meshes.filter((mesh) => texture !== null && mesh.decalMap?.texture === texture).length, 0);
-      return { ...info, decalMeshes, decalEnabled: parts.length > 0 && parts.every((part) => part.pbr.decalMap?.isEnabled === true) };
-    });
+    return readPaintInspection(this.rig, this.paintTextures);
   }
 
   /** 장면 설정 평문 보고(우수 좌표·clear 알파·톤맵·광원·그림자 생성기 등). Babylon 객체는 노출하지 않는다. */
@@ -1257,68 +1153,30 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   }
 
   readHud(): HudSample {
-    const scene = this.character.scene;
-    const adapter = this.diagnostics.adapter;
-    const adapterLabel = this.lane === "null" ? "NullEngine" : [adapter?.vendor, adapter?.device ?? adapter?.description].filter((value): value is string => Boolean(value)).join(" ") || (this.diagnostics.renderer ?? "어댑터 정보 없음");
-    return {
-      frameMs: this.frameStats.last(),
-      frameMsP95: this.frameStats.p95(),
-      gpuFrameMs: this.hud.gpuFrameMs(),
-      drawCalls: this.hud.drawCalls(),
-      activeMeshes: scene.getActiveMeshes().length,
-      triangles: Math.floor(scene.getActiveIndices() / 3),
+    return readEngineHud({
+      scene: this.character.scene,
+      diagnostics: this.diagnostics,
+      lane: this.lane,
+      frameStats: this.frameStats,
+      hud: this.hud,
       backend: this.backend,
-      adapterLabel,
-      physicsProvider: this.physics.currentId(),
-      shadingMode: this.shading.mode,
-    };
+      physics: this.physics,
+      shading: this.shading,
+    });
   }
 
   sceneFeatures(): FullSceneFeatureReport {
-    const post = this.postfx.states();
-    const rig = this.rig;
-    const caps = this.engine.getCaps();
-    const managers = rig
-      ? rig.parts.flatMap((part) =>
-          part.meshes.flatMap((mesh) => {
-            const manager = mesh.morphTargetManager;
-            return manager
-              ? [{ name: mesh.name, targetCount: manager.numTargets, vertexCount: mesh.getTotalVertices(), supportsNormals: manager.supportsNormals, usingTexture: manager.isUsingTextureForTargets, activeTargets: activeMorphTargets(manager) }]
-              : [];
-          }),
-        )
-      : [];
-    const morphTexture = describeMorphTextureMode(managers, { maxTextureSize: caps.maxTextureSize, maxArrayLayers: caps.texture2DArrayMaxLayerCount }, rig ? "morph 타깃이 있는 파츠가 없습니다." : "소스가 없습니다.");
-    const boneTexture = !rig?.skeleton ? featureOff(rig ? "스켈레톤이 없습니다." : "소스가 없습니다.") : rig.skeleton.isUsingTextureForMatrices ? featureActive(`${rig.skeleton.bones.length}본`) : featureUnavailable("엔진이 본 행렬 텍스처를 지원하지 않아 uniform 배열 모드로 동작합니다.");
-    const base = createFeatureReport({
-      cascadedShadows: this.character.shadowState(),
-      subsurfaceScattering: this.character.sssState(),
-      imageBasedLighting: this.shading.ibl.enabled ? this.ibl.state : featureOff("프로파일에서 IBL을 껐습니다."),
-      taa: post.taa,
-      ssao: post.ssao,
-      msaa: post.msaa,
-      gpuTimer: this.hud.gpuTimerState(),
-      morphTextureMode: morphTexture,
-      boneTextureMode: boneTexture,
+    return readEngineFeatures({
+      postfx: this.postfx,
+      rig: this.rig,
+      engine: this.engine,
+      character: this.character,
+      shading: this.shading,
+      ibl: this.ibl,
+      hud: this.hud,
+      beta: this.beta,
+      lastGlbReport: this.lastGlbReport,
     });
-    return { ...base, ...this.beta.report(), jointOffsets: this.jointOffsetState(), glbMorphSparse: this.glbSparseState() };
-  }
-
-  private jointOffsetState(): SceneFeatureState {
-    const rig = this.rig;
-    if (!rig) return featureOff("소스가 없습니다.");
-    const binding = rig.jointOffsets;
-    if (!binding) return featureOff(rig.kind === "package" ? "제작 패키지에는 체형 morph 관절 오프셋이 없습니다." : "이 소스는 관절 오프셋을 주지 않아 morph만 정점에 반영됩니다.");
-    const summary = summarizeJointOffsets(binding.table);
-    const applied = binding.snapshot().size;
-    return featureActive(`morph ${summary.morphCount}개 · 관절 ${summary.boneCount}개 · 최대 ${(summary.maxOffsetM * 1000).toFixed(0)} mm · 지금 ${applied}개 본이 옮겨짐(역바인드 재생성)`);
-  }
-
-  private glbSparseState(): SceneFeatureState {
-    const report = this.lastGlbReport;
-    if (!report) return featureActive("내보낼 때마다 변경량 0 정점의 morph를 sparse accessor로 정리합니다(아직 내보내지 않음).");
-    if (report.unchanged) return report.morphAccessors === 0 ? featureOff("마지막 내보내기: morph target가 없어 정리할 것이 없습니다.") : featureUnavailable(`마지막 내보내기: ${describeSparseMorphReport(report)}`);
-    return featureActive(`마지막 내보내기: ${describeSparseMorphReport(report)}`);
   }
 
   betaFeatures(): BetaFeatureReport {
