@@ -1,0 +1,129 @@
+{
+  "schema": "toonstudio.blender-aftermath-damage.v26",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_aftermath_damage_v26.py · 3-Stage Prop Damage & Aftermath SHA-256 verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "aftermathDamageSpec": {
+    "datumTableHeightM": 0.74,
+    "stages": [
+      "intact_0pct",
+      "cracked_50pct",
+      "shattered_100pct"
+    ],
+    "debrisShardCounts": [
+      0,
+      14,
+      28
+    ]
+  },
+  "externalSources": [],
+  "sceneIsolationAudit": {
+    "activeIsolatedScene": "ToonStudio_Aftermath_Damage_V26",
+    "zeroCrossSceneMutation": true,
+    "preservedScenes": [
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene",
+        "objectCount": 1,
+        "sha256Before": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "sha256After": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene.001",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Atmospheric_Bokeh_DoF_V22",
+        "objectCount": 31,
+        "sha256Before": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "sha256After": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Weather_Motion_ColorScript_V24",
+        "objectCount": 47,
+        "sha256Before": "d01a89974611ae063a7a2e798c611efd24dff79435bed322355ed29d5bb6e21f",
+        "sha256After": "d01a89974611ae063a7a2e798c611efd24dff79435bed322355ed29d5bb6e21f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_WindDrape_HalfMirror_V25",
+        "objectCount": 53,
+        "sha256Before": "698e54317f54d8726d1a7002f93b50f32b1063459f6e9e0f65ce1009502c62e5",
+        "sha256After": "698e54317f54d8726d1a7002f93b50f32b1063459f6e9e0f65ce1009502c62e5",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_ZDepth_SFX_Crowd_ToD_V23",
+        "objectCount": 41,
+        "sha256Before": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "sha256After": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "unchanged": true
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "webtoon-aftermath-cracked-fissure-bay-v26.glb",
+      "aftermathStage": "cracked",
+      "damagePct": 50,
+      "debrisShardCount": 14,
+      "bytes": 472468,
+      "sha256": "f8016fa020c4911a32bd762ab78e97efaa4e1190363b8af4b422c895307947fb",
+      "triangles": 10720,
+      "vertices": 5570
+    },
+    {
+      "file": "webtoon-aftermath-intact-salon-table-v26.glb",
+      "aftermathStage": "intact",
+      "damagePct": 0,
+      "debrisShardCount": 0,
+      "bytes": 398064,
+      "sha256": "b6fdca522e71a28854f8c7e972f10dbed2837355c0b86392ad1febc318ebbca3",
+      "triangles": 9644,
+      "vertices": 5000
+    },
+    {
+      "file": "webtoon-aftermath-shattered-tempest-ruin-v26.glb",
+      "aftermathStage": "shattered",
+      "damagePct": 100,
+      "debrisShardCount": 28,
+      "bytes": 535776,
+      "sha256": "4492443455201cb69df3ba9f7036db2ee6ab61be7ac5288f9bb89cef873e229c",
+      "triangles": 11780,
+      "vertices": 6148
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-aftermath-cracked-fissure-bay-v26.png",
+      "bytes": 323843,
+      "sha256": "8d93bfc0bffb70250f128acee0bdabe8c858f846cf09875478a924be8ddada80"
+    },
+    {
+      "file": "thumbnails/webtoon-aftermath-intact-salon-table-v26.png",
+      "bytes": 348111,
+      "sha256": "c31059a73fc0e7f054d3b5bad4fb5e03172e56afdacd9bd2d984d00e4df40d49"
+    },
+    {
+      "file": "thumbnails/webtoon-aftermath-shattered-tempest-ruin-v26.png",
+      "bytes": 324254,
+      "sha256": "bd89393f9787cb368e910ec3c34a2253b916f68400d6bd790e7007bbc2eda5bf"
+    }
+  ]
+}

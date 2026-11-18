@@ -1,0 +1,122 @@
+{
+  "schema": "toonstudio.blender-weather-occlusion-motion.v24",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_weather_occlusion_v24.py · Datum Weather Occlusion, Dual-Focal & Motion SHA-256 verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "weatherOcclusionColliderSpec": {
+    "eavesLintelHeightM": 2.4,
+    "railingShieldHeightM": 1.1,
+    "exteriorWeatherMinYM": 0.96,
+    "indoorCeilingLeakCount": 0
+  },
+  "supportedLocalizationSlots": [
+    "KO",
+    "EN",
+    "JA"
+  ],
+  "externalSources": [],
+  "sceneIsolationAudit": {
+    "activeIsolatedScene": "ToonStudio_Weather_Motion_ColorScript_V24",
+    "zeroCrossSceneMutation": true,
+    "preservedScenes": [
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene",
+        "objectCount": 1,
+        "sha256Before": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "sha256After": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene.001",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Atmospheric_Bokeh_DoF_V22",
+        "objectCount": 31,
+        "sha256Before": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "sha256After": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_ZDepth_SFX_Crowd_ToD_V23",
+        "objectCount": 41,
+        "sha256Before": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "sha256After": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "unchanged": true
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "webtoon-weather-abyss-storm-mist-100pct-v24.glb",
+      "openRatio": 1.0,
+      "weatherMode": "storm",
+      "apertureFStop": 5.6,
+      "kelvin": 8600,
+      "indoorWetReachM": 1.04,
+      "indoorRippleCount": 10,
+      "bytes": 462816,
+      "sha256": "71a8cab9060dce9a36bcbb065f13e6138314f92f20b6cfbcac8f431c3463dcdf",
+      "triangles": 10248,
+      "vertices": 5304
+    },
+    {
+      "file": "webtoon-weather-eaves-rain-ripples-15pct-v24.glb",
+      "openRatio": 0.15,
+      "weatherMode": "rain",
+      "apertureFStop": 1.8,
+      "kelvin": 5200,
+      "indoorWetReachM": 0.38,
+      "indoorRippleCount": 4,
+      "bytes": 392552,
+      "sha256": "06099598188452a267b8eaffbac3bc565ebb10a57d5ac56116d5fd5bf83188a2",
+      "triangles": 8928,
+      "vertices": 4616
+    },
+    {
+      "file": "webtoon-weather-rofan-blossom-snow-65pct-v24.glb",
+      "openRatio": 0.65,
+      "weatherMode": "snow",
+      "apertureFStop": 2.8,
+      "kelvin": 3800,
+      "indoorWetReachM": 0.77,
+      "indoorRippleCount": 7,
+      "bytes": 414136,
+      "sha256": "5ffbf5981dd6cd3f597109046b25662251fcdd5c75876e9566123ad5741e5170",
+      "triangles": 10160,
+      "vertices": 5250
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-weather-abyss-storm-mist-100pct-v24.png",
+      "bytes": 321979,
+      "sha256": "282b2a3fa1ef8672f89db7e61cba14674624020880b9fa145ba2bdb49560d67f"
+    },
+    {
+      "file": "thumbnails/webtoon-weather-eaves-rain-ripples-15pct-v24.png",
+      "bytes": 341883,
+      "sha256": "d6e9fddef9d4a255b897077cb57ae0a6d57519b912fe2f2ddfd5e68d71d4404b"
+    },
+    {
+      "file": "thumbnails/webtoon-weather-rofan-blossom-snow-65pct-v24.png",
+      "bytes": 316863,
+      "sha256": "841dbf8219a2f0a44818fe384516de2e9b7cbdc3d28c7b82d50242916abb3976"
+    }
+  ]
+}

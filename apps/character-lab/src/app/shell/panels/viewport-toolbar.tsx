@@ -50,7 +50,9 @@ interface ViewportToolbarProps {
     readonly engineReady: boolean;
     readonly busy: boolean;
     readonly activeDirectorId: WebtoonSceneDirectorPresetId | "";
+    readonly duoPartnerActive?: boolean;
     readonly onSelectDirector: (presetId: WebtoonSceneDirectorPresetId | "") => void;
+    readonly onCastDuoPartner?: () => void;
   };
   readonly handProp: ComponentProps<typeof ViewportHandPropControls>;
   readonly overlay: {
@@ -117,7 +119,9 @@ export function ViewportToolbar({ engineReady, camera, composition, duoShot, man
         engineReady={director.engineReady}
         busy={director.busy}
         activeDirectorId={director.activeDirectorId}
+        {...(director.duoPartnerActive !== undefined ? { duoPartnerActive: director.duoPartnerActive } : {})}
         onSelectDirector={director.onSelectDirector}
+        {...(director.onCastDuoPartner ? { onCastDuoPartner: director.onCastDuoPartner } : {})}
       />
       <ViewportHandPropControls {...handProp} />
       <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>

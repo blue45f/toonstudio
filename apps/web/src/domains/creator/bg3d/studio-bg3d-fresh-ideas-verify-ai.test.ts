@@ -27,9 +27,25 @@ import {
   generateBlenderWebtoonFreshIdeasRemix,
   type BlenderSceneVerifyAiSynthesisInput,
 } from "./studio-bg3d-fresh-ideas-verify-ai";
+import { evaluateAftermathReadabilityAndVtt } from "./studio-bg3d-aftermath-readability-vtt";
+import {
+  evaluateDuoOtsRemotionAndOffline,
+  filterQuickPresetCommands,
+} from "./studio-bg3d-duo-ots-remotion-offline";
+import { evaluateEpisodeMacroScenario } from "./studio-bg3d-episode-macro-scenarios";
+import { evaluateDustLodCliffhangerAndPack } from "./studio-bg3d-dust-lod-cliffhanger-pack";
+import {
+  evaluateVrmPoseAndWebGpuGuard,
+  inspectGlbBinaryEvidence,
+} from "./studio-bg3d-glb-binary-vrm-guard";
 import { evaluateAtmosphericBokehAndQuarterlyRoi } from "./studio-bg3d-atmospheric-bokeh-dof";
 import { evaluateArticulatedPropAndIkSocketBridge } from "./studio-bg3d-articulated-ik-bridge";
 import { evaluateSlitGodRayAndShadowDrift } from "./studio-bg3d-slit-godray-sequence";
+import { evaluateWeatherMotionAndColorScript } from "./studio-bg3d-weather-motion-colorscript";
+import {
+  createContinuityLedgerSnapshot,
+  evaluateWindDrapeAndContinuity,
+} from "./studio-bg3d-wind-drape-continuity";
 import { evaluateZDepthCrowdTodCompositor } from "./studio-bg3d-zdepth-crowd-tod-compositor";
 import { evaluateBlenderSceneIsolationGuard } from "./studio-bg3d-scroll-pacing-live-sync";
 import {
@@ -210,6 +226,168 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
     expect(v23Compositor.manifest.layers).toHaveLength(6);
     expect(v23Compositor.totalWeeklyHoursV23).toBe(29.9);
     expect(v23Compositor.quarterlyBankedEpisodesV23).toBe(4.86);
+
+    const v24Motion = evaluateWeatherMotionAndColorScript({
+      openRatioPct: 100,
+      weatherId: "abyss-storm-mist",
+      backgroundFocalMm: 24,
+      characterFocalMm: 85,
+      activeActId: "act3-climax",
+      localeId: "JA",
+      baseV23WeeklyHoursSaved: v23Compositor.totalWeeklyHoursV23,
+      layers: v23Compositor.manifest.layers,
+    });
+    expect(v24Motion.weather.indoorCeilingLeakCount).toBe(0);
+    expect(v24Motion.dualFocalFacialDistortionPct).toBeLessThan(1.2);
+    expect(v24Motion.all70CutsDarkroomCompliant).toBe(true);
+    expect(v24Motion.localizedSfxSlot.backgroundReRenderCount).toBe(0);
+    expect(v24Motion.motionManifest.tracks).toHaveLength(7);
+    expect(v24Motion.totalWeeklyHoursV24).toBe(32.7);
+    expect(v24Motion.quarterlyBankedEpisodesV24).toBe(5.31);
+
+    const lockedPrevEp = createContinuityLedgerSnapshot(
+      100,
+      v24Motion.indoorWetReachM,
+      v24Motion.activeAct.kelvin,
+    );
+    const v25Match = evaluateWindDrapeAndContinuity({
+      openRatioPct: 100,
+      fabricId: "tempest-silk",
+      indoorWetReachM: v24Motion.indoorWetReachM,
+      indoorRippleCount: v24Motion.indoorRippleCount,
+      kelvin: v24Motion.activeAct.kelvin,
+      locale: v24Motion.localizedSfxSlot.locale,
+      onomatopoeiaText: v24Motion.localizedSfxSlot.onomatopoeiaText,
+      lockedLedger: lockedPrevEp,
+      tankobonFormatId: "B5",
+      baseV24WeeklyHoursSaved: v24Motion.totalWeeklyHoursV24,
+    });
+    expect(v25Match.continuityCompliant).toBe(true);
+    expect(v25Match.billowDeflectionM).toBe(0.78);
+    expect(v25Match.fresnelReflectPct).toBe(12.0);
+    expect(v25Match.tankobonSpec.printPixels350Dpi).toEqual([5098, 3624]);
+    expect(v25Match.audioManifest.cues).toHaveLength(4);
+    expect(v25Match.totalWeeklyHoursV25).toBe(34.2);
+    expect(v25Match.quarterlyHoursSavedV25).toBe(444.6);
+    expect(v25Match.quarterlyBankedEpisodesV25).toBe(5.56);
+
+    const v25DriftA5 = evaluateWindDrapeAndContinuity({
+      openRatioPct: 65,
+      fabricId: "rofan-velvet",
+      indoorWetReachM: 0.77,
+      indoorRippleCount: 7,
+      kelvin: 3200,
+      locale: "KO",
+      onomatopoeiaText: "촤르륵 · 영롱",
+      lockedLedger: lockedPrevEp,
+      tankobonFormatId: "A5",
+      baseV24WeeklyHoursSaved: v24Motion.totalWeeklyHoursV24,
+    });
+    expect(v25DriftA5.continuityCompliant).toBe(false);
+    expect(v25DriftA5.continuityStatusKo).toContain("연속성 이탈 감지");
+    expect(v25DriftA5.tankobonSpec.printPixels350Dpi).toEqual([4161, 2976]);
+
+    const v26Release = evaluateAftermathReadabilityAndVtt({
+      aftermathId: "shattered",
+      dialogueDensityPct: 80,
+      baseBgLineThicknessPx: 2.8,
+      displayModeId: "deuteranopia-safe",
+      locale: "JA",
+      onomatopoeiaText: v24Motion.localizedSfxSlot.onomatopoeiaText,
+      continuityCompliant: v25Match.continuityCompliant,
+      all70CutsDarkroomCompliant: v24Motion.all70CutsDarkroomCompliant,
+      tankobonFormatId: "B5",
+      baseV25WeeklyHoursSaved: v25Match.totalWeeklyHoursV25,
+    });
+    expect(v26Release.aftermath.debrisShardCount).toBe(28);
+    expect(v26Release.attenuatedHaloLinePx).toBe(1.5);
+    expect(v26Release.readabilityPassed).toBe(true);
+    expect(v26Release.vttContentString).toContain("WEBVTT");
+    expect(v26Release.allFourChannelsReady).toBe(true);
+    expect(v26Release.totalWeeklyHoursV26).toBe(35.2);
+    expect(v26Release.quarterlyHoursSavedV26).toBe(457.6);
+    expect(v26Release.quarterlyBankedEpisodesV26).toBe(5.72);
+
+    const v27MobileUnproxied = evaluateDustLodCliffhangerAndPack({
+      hazeId: "tempest-shockwave-haze",
+      deviceId: "mobile-midrange-60fps",
+      proxyLodEnabled: false,
+      cliffhangerBlackoutGutterPx: 780,
+      locale: "JA",
+      tankobonFormatId: "B5",
+      continuityDigestHex: v25Match.currentSnapshot.digestHex,
+      allFourChannelsReady: v26Release.allFourChannelsReady,
+      baseV26WeeklyHoursSaved: v26Release.totalWeeklyHoursV26,
+    });
+    expect(v27MobileUnproxied.budget60FpsPassed).toBe(false);
+
+    const v27MobileProxied = evaluateDustLodCliffhangerAndPack({
+      hazeId: "tempest-shockwave-haze",
+      deviceId: "mobile-midrange-60fps",
+      proxyLodEnabled: true,
+      cliffhangerBlackoutGutterPx: 780,
+      locale: "JA",
+      tankobonFormatId: "B5",
+      continuityDigestHex: v25Match.currentSnapshot.digestHex,
+      allFourChannelsReady: v26Release.allFourChannelsReady,
+      baseV26WeeklyHoursSaved: v26Release.totalWeeklyHoursV26,
+    });
+    expect(v27MobileProxied.budget60FpsPassed).toBe(true);
+    expect(v27MobileProxied.datumDriftMeters).toBe(0);
+    expect(v27MobileProxied.cliffhangerGrade).toBe("S");
+    expect(v27MobileProxied.packManifest.bundledArtifacts).toHaveLength(4);
+    expect(v27MobileProxied.totalWeeklyHoursV27).toBe(36.0);
+    expect(v27MobileProxied.quarterlyHoursSavedV27).toBe(468.0);
+    expect(v27MobileProxied.quarterlyBankedEpisodesV27).toBe(5.85);
+
+    const v28Vrm = evaluateVrmPoseAndWebGpuGuard({
+      poseId: "portal-stride-132cm",
+      chromeTier: "pro",
+      activeSceneTriangles: v27MobileProxied.activeSceneTriangles,
+      baseV27WeeklyHoursSaved: v27MobileProxied.totalWeeklyHoursV27,
+    });
+    expect(v28Vrm.anatomicalLimitsCompliant).toBe(true);
+    expect(v28Vrm.webGpuGuard.leakedResourceCount).toBe(0);
+    expect(v28Vrm.webGpuGuard.perFrameHeapAllocs).toBe(0);
+    expect(v28Vrm.totalWeeklyHoursV28).toBe(36.8);
+    expect(v28Vrm.quarterlyHoursSavedV28).toBe(478.4);
+    expect(v28Vrm.quarterlyBankedEpisodesV28).toBe(5.98);
+
+    const truncatedGlb = inspectGlbBinaryEvidence(new Uint8Array([1, 2, 3]));
+    expect(truncatedGlb.validGlb20).toBe(false);
+    expect(truncatedGlb.unknownGaps.length).toBeGreaterThan(0);
+
+    expect(filterQuickPresetCommands("ㅇㅂㄷㅅㄷ")).toHaveLength(1);
+    const v29DuoSafe = evaluateDuoOtsRemotionAndOffline({
+      duoId: "rofan-gaze-24cm",
+      cameraAxisSide: "same-side-safe",
+      hasNeutralBridgeCut: false,
+      networkOnline: false,
+      quickCommandQuery: "ㄹㅍ",
+      continuityDigestHex: v25Match.currentSnapshot.digestHex,
+      baseV28WeeklyHoursSaved: v28Vrm.totalWeeklyHoursV28,
+    });
+    expect(v29DuoSafe.duo.heightGapCm).toBe(24);
+    expect(v29DuoSafe.axis180Compliant).toBe(true);
+    expect(v29DuoSafe.motionAudit.unseededRandomCalls).toBe(0);
+    expect(v29DuoSafe.offlineQueue.unsavedCutLossCount).toBe(0);
+    expect(v29DuoSafe.matchedCommands).toHaveLength(1);
+    expect(v29DuoSafe.totalWeeklyHoursV29).toBe(38.0);
+    expect(v29DuoSafe.quarterlyHoursSavedV29).toBe(494.0);
+    expect(v29DuoSafe.quarterlyBankedEpisodesV29).toBe(6.18);
+
+    const v30Macro = evaluateEpisodeMacroScenario({
+      scenarioId: "hunter-srank-gate-rupture",
+      executedRunCount: 2,
+      baseV29WeeklyHoursSaved: v29DuoSafe.totalWeeklyHoursV29,
+    });
+    expect(v30Macro.totalSupportedGenres).toBe(8);
+    expect(v30Macro.scenario.kelvin).toBe(8200);
+    expect(v30Macro.scenario.recommendedInkPx).toBe(2.4);
+    expect(v30Macro.totalWeeklyHoursV30).toBe(40.0);
+    expect(v30Macro.totalWeeklyPersonDaysV30).toBe(5.0);
+    expect(v30Macro.quarterlyHoursSavedV30).toBe(520.0);
+    expect(v30Macro.quarterlyBankedEpisodesV30).toBe(6.5);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;

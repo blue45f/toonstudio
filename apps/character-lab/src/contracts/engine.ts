@@ -146,7 +146,15 @@ export interface JointDragHandle {
   readonly world: Vec3;
 }
 
-export const HAND_PROP_IDS = ["smartphone", "coffee-cup", "case-folder", "aether-blade"] as const;
+export const HAND_PROP_IDS = [
+  "smartphone",
+  "coffee-cup",
+  "case-folder",
+  "aether-blade",
+  "imperial-scroll",
+  "jade-folding-fan",
+  "calling-card-rose",
+] as const;
 export type HandPropId = (typeof HAND_PROP_IDS)[number];
 export type HandPropSide = "rightHand" | "leftHand";
 
@@ -157,7 +165,14 @@ export interface HandPropAttachment {
   readonly sha256?: string;
 }
 
-export const HEAD_PROP_IDS = ["wire-glasses", "rofan-tiara", "tactical-headset", "pearl-earrings-pin"] as const;
+export const HEAD_PROP_IDS = [
+  "wire-glasses",
+  "rofan-tiara",
+  "tactical-headset",
+  "pearl-earrings-pin",
+  "studio-headphones",
+  "silver-monocle",
+] as const;
 export type HeadPropId = (typeof HEAD_PROP_IDS)[number];
 
 export interface HeadPropAttachment {
@@ -172,6 +187,8 @@ export const STAGE_PROP_IDS = [
   "murim-sword-aura",
   "rofan-throne-dais",
   "noir-interrogation-lamp",
+  "rooftop-safety-railing",
+  "velvet-display-pedestal",
 ] as const;
 export type StagePropId = (typeof STAGE_PROP_IDS)[number];
 
@@ -181,7 +198,7 @@ export interface StagePropAttachment {
   readonly sha256?: string;
 }
 
-export const SFX_STAMP_IDS = ["seureung", "dugeun", "kugugung", "pat"] as const;
+export const SFX_STAMP_IDS = ["seureung", "dugeun", "kugugung", "pat", "ssaa", "beonjjeok"] as const;
 export type SfxStampId = (typeof SFX_STAMP_IDS)[number];
 
 export interface SfxStampAttachment {

@@ -33,6 +33,7 @@ import {
 import {
   DEFAULT_MANGA_FX_STATE, type ViewportMangaFxState,
 } from "./viewport-manga-fx-overlay";
+import { getDefaultStripDirectorSession } from "./viewport-scene-director";
 import { failureText, useViewportSceneProps } from "./viewport-scene-props";
 import { ViewportStage, resolveViewportDuoShot } from "./viewport-stage";
 import { ViewportToolbar } from "./viewport-toolbar";
@@ -115,6 +116,8 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [activePitchDeg, setActivePitchDeg] = useState<ViewportPitchDeg | null>(null);
   const [checkerboard, setCheckerboard] = useState(false);
   const [manuscriptGuide, setManuscriptGuide] = useState(false);
+  const [tankobonGuide, setTankobonGuide] = useState(false);
+  const stripDirector = getDefaultStripDirectorSession();
   const [duoShot, setDuoShot] = useState<DuoShotState>(DEFAULT_DUO_SHOT_STATE);
   const [duo3dBusy, setDuo3dBusy] = useState(false);
   const [mangaFx, setMangaFx] = useState<ViewportMangaFxState>(DEFAULT_MANGA_FX_STATE);
@@ -138,6 +141,12 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     onNotice: setNotice,
     mangaFx,
     setMangaFx,
+    duoShot,
+    setDuoShot,
+    duo3dBusy,
+    stripDirector,
+    getRecipe: () => store.getState().recipe,
+    syncDuoPartner3d: (next, prev) => syncDuoPartner3d(next, prev),
   });
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -691,6 +700,9 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const updateDuoShotWith3dSync = (updater: (prev: DuoShotState) => DuoShotState): void => {
     setDuoShot((prev) => {
       const next = updater(prev);
+      if (next.side !== prev.side) {
+        stripDirector.update({ partnerSide: next.side });
+      }
       void syncDuoPartner3d(next, prev);
       return next;
     });
@@ -707,9 +719,10 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         engineReady={Boolean(engine)}
         camera={{ framing, inputStyle: cameraInputStyle, onFraming, onResetView, setInputStyle: setCameraInputStyle }}
         composition={{
-          checkerboard, manuscriptGuide, activeYawDeg, activePitchDeg, referenceCut,
+          checkerboard, manuscriptGuide, tankobonGuide, activeYawDeg, activePitchDeg, referenceCut,
           onToggleCheckerboard: () => setCheckerboard((prev) => !prev),
           onToggleManuscriptGuide: () => setManuscriptGuide((prev) => !prev),
+          onToggleTankobonGuide: () => setTankobonGuide((prev) => !prev),
           onSelectTurnaround, onSelectPitch, onLoadReferenceFile, onChangeReferenceOpacity, onChangeReferencePlacement,
           onClearReference: () => { setReferenceCut(null); setNotice("원고 컷 참조를 해제했습니다."); },
         }}
@@ -740,7 +753,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       <ViewportStage
         containerRef={containerRef}
         canvas={{ generation: canvasGeneration, register: registerCanvas, keyShortcuts: CANVAS_KEY_SHORTCUTS }}
-        backdrop={{ checkerboard, manuscriptGuide, referenceCut }}
+        backdrop={{ checkerboard, manuscriptGuide, tankobonGuide, referenceCut }}
         duoShot={{ duoShot, subjectHeightCm: subjectHeight.heightCm, subjectEyeHeightCm: subjectHeight.eyeHeightCm, subjectLabelKo: subjectHeight.labelKo }}
         mangaFx={mangaFx}
         engineStatus={labState.engine} engineReady={Boolean(engine)} onSelectBackend={selectBackend}

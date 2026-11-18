@@ -19,6 +19,9 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     rerender(<StudioBg3dBlenderFantasyWebtoonPanel disabled />);
     expect(link.getAttribute("aria-disabled")).toBe("true");
     expect(fireEvent.click(link)).toBe(false);
+    expect(
+      screen.getByTestId("bg3d-blender-v28-disabled-reason").textContent,
+    ).toContain("읽기 전용 상태");
   });
 
   it("renders Unslop 9-Pass workbench UI, Genre Lock-In guardrail, Weekly 70-Cut ROI simulator, Scene Isolation badge, and Verify AI gate", () => {
@@ -253,6 +256,181 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     expect(
       screen.getByTestId("bg3d-blender-v23-manifest-json").textContent,
     ).toContain("toonstudio.toonlayers.v23");
+
+    // Wave 10 (V24): 건축 차폐 기상·듀얼 포컬(24mm×95mm)·70컷 4막 컬러 스크립트·KO/EN/JA 식자·.toonmotion.json 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v24-weather-motion-card").textContent,
+    ).toContain("건축 차폐 기상·수막 파문 V24");
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v24-weather-eaves-rain-ripples"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-v24-weather-readout").textContent,
+    ).toContain("실내 천장 누수 0건");
+    fireEvent.change(screen.getByTestId("bg3d-blender-v24-char-focal-slider"), {
+      target: { value: "95" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-v24-weather-readout").textContent,
+    ).toContain("24mm×95mm");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v24-act-act1-setup"));
+    expect(
+      screen.getByTestId("bg3d-blender-v23-tod-badge").textContent,
+    ).toContain("5600K");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v24-locale-EN"));
+    expect(
+      screen.getByTestId("bg3d-blender-v24-locale-readout").textContent,
+    ).toContain("[EN]");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v24-motion-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v24-motion-json").textContent,
+    ).toContain("toonstudio.toonmotion.v24");
+
+    // Wave 11 (V25): 기류 패브릭·하프 미러 반사창·회차 간 연속성 원장·단행본(B5/A5) 오버스캔·.toonaudio.json 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v25-wind-drape-card").textContent,
+    ).toContain("기류 연동 패브릭·하프 미러 반사창 V25");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v25-fabric-rofan-velvet"));
+    expect(
+      screen.getByTestId("bg3d-blender-v25-drape-readout").textContent,
+    ).toContain("하프 미러 Fresnel");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v25-ledger-lock-btn"));
+    expect(
+      screen.getByTestId("bg3d-blender-v25-continuity-badge").textContent,
+    ).toContain("연속성 일치");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v24-act-act3-climax"));
+    expect(
+      screen.getByTestId("bg3d-blender-v25-continuity-badge").textContent,
+    ).toContain("연속성 이탈 감지");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v25-format-A5"));
+    expect(
+      screen.getByTestId("bg3d-blender-v25-overscan-readout").textContent,
+    ).toContain("A5 펼침면 302×216mm");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v25-audio-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v25-audio-json").textContent,
+    ).toContain("toonstudio.toonaudio.v25");
+
+    // Wave 12 (V26): 3단계 파손·흔적·대사 밀도 선화 감쇠·독자 가독성(OLED/색각)·.toonsubs.vtt·4채널 출고 게이트 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v26-aftermath-card").textContent,
+    ).toContain("3단계 파손·흔적 V26");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v26-stage-shattered"));
+    expect(
+      screen.getByTestId("bg3d-blender-v26-aftermath-readout").textContent,
+    ).toContain("파편 28개");
+    fireEvent.change(screen.getByTestId("bg3d-blender-v26-dialogue-slider"), {
+      target: { value: "80" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-v26-aftermath-readout").textContent,
+    ).toContain("-46.4%");
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v26-display-oled-night-dim"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-v26-display-readout").textContent,
+    ).toContain("야간 저조도 OLED (18%)");
+    expect(
+      screen.getByTestId("bg3d-blender-v26-display-readout").textContent,
+    ).toContain("통과");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v26-vtt-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v26-vtt-preview").textContent,
+    ).toContain("WEBVTT");
+    expect(
+      screen.getByTestId("bg3d-blender-v26-vtt-preview").textContent,
+    ).toContain("toonstudio.toonsubs.v26");
+
+    // Wave 13 (V27): 잔류 연무·아지랑이·모바일 60fps 프록시 LOD 버짓 가드·절단신공 스코어러·.toonpack.json 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v27-dust-lod-card").textContent,
+    ).toContain("잔류 연무·아지랑이 V27");
+    expect(
+      screen.getByTestId("bg3d-blender-v27-lod-budget-badge").textContent,
+    ).toContain("60fps 정상");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v27-proxy-lod-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v27-lod-budget-badge").textContent,
+    ).toContain("프록시 LOD 권장");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v27-proxy-lod-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v27-lod-budget-badge").textContent,
+    ).toContain("60fps 정상");
+    fireEvent.change(screen.getByTestId("bg3d-blender-v27-cliffhanger-slider"), {
+      target: { value: "800" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-v27-cliffhanger-readout").textContent,
+    ).toContain("S등급");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v27-pack-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v27-pack-json").textContent,
+    ).toContain("toonstudio.toonpack.v27");
+
+    // Wave 14 (V28): VRM 1.0 해부학 포즈 마네킹 · 3단 크롬 밀도(Focus/Simple/Pro) · GPU 누수 0건 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v28-vrm-webgpu-card").textContent,
+    ).toContain("VRM 1.0 해부학 포즈 마네킹 V28");
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v28-pose-desk-seated-74cm"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-v28-vrm-readout").textContent,
+    ).toContain("0.74m 접지");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v28-tier-focus"));
+    expect(screen.queryByTestId("bg3d-blender-v28-webgpu-readout")).toBeNull();
+    fireEvent.click(screen.getByTestId("bg3d-blender-v28-tier-pro"));
+    expect(
+      screen.getByTestId("bg3d-blender-v28-webgpu-readout").textContent,
+    ).toContain("누수 0건");
+    expect(
+      screen.getByTestId("bg3d-blender-v28-roi-readout").textContent,
+    ).toContain("44.8h");
+
+    // Wave 15 (V29): 2인 시선·키 차이 듀오 VRM · 초성 빠른 호출(ㄹㅍ) · 180도 연출축 위반 감지 · 오프라인 복구 큐 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v29-duo-ots-card").textContent,
+    ).toContain("2인 시선 교차·키 차이 듀오 V29");
+    fireEvent.change(screen.getByTestId("bg3d-blender-v29-cmdk-input"), {
+      target: { value: "ㄹㅍ" },
+    });
+    fireEvent.click(screen.getByTestId("bg3d-blender-v29-cmdk-apply-first"));
+    expect(
+      screen.getByTestId("bg3d-blender-v29-duo-readout").textContent,
+    ).toContain("188×164cm(키 차이 24cm");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v29-axis-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v29-axis180-badge").textContent,
+    ).toContain("180도 연출축 위반 감지");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v29-offline-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v29-motion-offline-readout").textContent,
+    ).toContain("유실 0컷");
+
+    // Wave 16 (V30): 8대 장르 확장 세트(학원·느와르·헌터) & 원클릭 회차 마스터 자동화 시나리오 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v30-macro-scenario-bar").textContent,
+    ).toContain("8대 장르 확장 세트 V30");
+    expect(
+      screen.getByTestId("bg3d-blender-v30-genre-count-badge").textContent,
+    ).toContain("8대 장르 호환");
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v30-scenario-noir-blind-interrogation"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-v30-scenario-readout").textContent,
+    ).toContain("4100K");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v30-run-macro-btn"));
+    expect(
+      screen.getByTestId("bg3d-blender-v30-genre-count-badge").textContent,
+    ).toContain("실행 1회");
+    expect(
+      screen.getByTestId("bg3d-blender-v29-duo-readout").textContent,
+    ).toContain("182×168cm");
+    expect(
+      screen.getByTestId("bg3d-blender-v30-macro-roi-readout").textContent,
+    ).toContain("48.0h");
 
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),

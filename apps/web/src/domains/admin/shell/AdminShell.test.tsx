@@ -40,6 +40,14 @@ afterEach(() => {
 });
 
 describe("AdminShell sidebar preference", () => {
+  it("성장 메뉴의 사업계획서는 독립 관리자 문서로 이동한다", () => {
+    renderShell();
+    fireEvent.click(screen.getByRole("button", { name: getAdminShellCopy("ko").groups.growth }));
+    const entry = document.querySelector<HTMLAnchorElement>("[data-admin-business-plan-entry]");
+    expect(entry?.tagName).toBe("A");
+    expect(entry?.getAttribute("href")).toBe("/admin/growth/business-plan/");
+    expect(entry?.getAttribute("target")).toBeNull();
+  });
   it("opens and remains usable when localStorage access is denied", () => {
     vi.spyOn(window, "localStorage", "get").mockImplementation(() => {
       throw new DOMException("Storage access denied", "SecurityError");

@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
-import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import type { NestBoardDocument } from "@toonstudio/contracts/admin-nestjs-quality";
+import type { BusinessPlanState } from "@toonstudio/contracts/business-plan";
 
 import { users } from "./auth.schema";
 
@@ -239,6 +240,55 @@ export const adminNestjsQualityHistory = pgTable("admin_nestjs_quality_history",
   check("admin_nestjs_quality_history_after_check", sql`(jsonb_typeof(${table.afterDocument})='object'
     AND ${table.afterDocument}->'schemaVersion'='1'::jsonb AND ${table.afterDocument}->>'repository'=${table.repository}
     AND octet_length(${table.afterDocument}::text)<=4194304) IS TRUE`),
+]);
+
+const businessPlanInstant = (name: string) => timestamp(name, { mode: "date", withTimezone: true });
+
+/** 비공개 사업계획서 최신값. 미생성 보드는 조회 시 INSERT하지 않는다. */
+export const adminBusinessPlan = pgTable("admin_business_plan", {
+  id: integer("id").primaryKey(),
+  revision: integer("revision").notNull().default(0),
+  payload: jsonb("payload").$type<BusinessPlanState>(),
+  updatedAt: businessPlanInstant("updated_at"),
+}, (t) => [
+  check("admin_business_plan_singleton_check", sql`${t.id} = 1`),
+  check("admin_business_plan_revision_check", sql`${t.revision} >= 0`),
+  check("admin_business_plan_state_check", sql`(${t.revision} = 0 AND ${t.payload} IS NULL AND ${t.updatedAt} IS NULL)
+    OR (${t.revision} > 0 AND ${t.payload} IS NOT NULL AND ${t.updatedAt} IS NOT NULL
+      AND (jsonb_typeof(${t.payload}) = 'object' AND ${t.payload}->'schemaVersion' = '1'::jsonb) IS TRUE)`),
+]);
+
+/** 원문 복구용 불변 snapshot. SQL migration의 trigger가 UPDATE·DELETE를 거절한다. */
+export const adminBusinessPlanRevisions = pgTable("admin_business_plan_revision", {
+  revision: integer("revision").primaryKey(),
+  payload: jsonb("payload").$type<BusinessPlanState>().notNull(),
+  createdAt: businessPlanInstant("created_at").notNull().defaultNow(),
+}, (t) => [
+  check("admin_business_plan_snapshot_revision_check", sql`${t.revision} > 0`),
+  check("admin_business_plan_snapshot_payload_check", sql`(jsonb_typeof(${t.payload}) = 'object' AND ${t.payload}->'schemaVersion' = '1'::jsonb) IS TRUE`),
+]);
+
+/** 감사에는 본문·문서·근거 원문 대신 행위자와 digest만 기록한다. */
+export const adminBusinessPlanAudit = pgTable("admin_business_plan_audit", {
+  revision: integer("revision").primaryKey().references(() => adminBusinessPlanRevisions.revision, { onDelete: "restrict" }),
+  actorUserId: text("actor_user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  beforeDigest: text("before_digest").notNull(),
+  afterDigest: text("after_digest").notNull(),
+  occurredAt: businessPlanInstant("occurred_at").notNull().defaultNow(),
+}, (t) => [
+  check("admin_business_plan_audit_before_digest_check", sql`${t.beforeDigest} ~ '^[a-f0-9]{64}$'`),
+  check("admin_business_plan_audit_after_digest_check", sql`${t.afterDigest} ~ '^[a-f0-9]{64}$'`),
+]);
+
+export const adminBusinessPlanReceipts = pgTable("admin_business_plan_receipt", {
+  actorUserId: text("actor_user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  mutationId: uuid("mutation_id").notNull(),
+  requestDigest: text("request_digest").notNull(),
+  acceptedRevision: integer("accepted_revision").notNull().references(() => adminBusinessPlanRevisions.revision, { onDelete: "restrict" }),
+  createdAt: businessPlanInstant("created_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.actorUserId, t.mutationId] }),
+  check("admin_business_plan_receipt_digest_check", sql`${t.requestDigest} ~ '^[a-f0-9]{64}$'`),
 ]);
 
 /** 위 관리자 스키마의 읽기 전용 정합성 검사. 런타임 DDL을 실행하지 않는다. */

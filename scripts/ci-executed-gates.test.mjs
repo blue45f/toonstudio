@@ -362,6 +362,7 @@ test("review database invariants execute with real PostgreSQL and the accepted g
   for (const suite of [
     "apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts",
     "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
+    "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
     "apps/api/src/modules/creator/studio-scoped-producer-http.integration.test.ts",
     "apps/api/src/modules/creator/studio-scoped-write-rest.integration.test.ts",
     "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",

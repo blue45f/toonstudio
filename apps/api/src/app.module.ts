@@ -10,6 +10,7 @@ import { AdminNestjsQualityModule } from "./modules/admin-nestjs-quality/admin-n
 import { AdminWorkspaceModule } from "./modules/admin-workspace/admin-workspace.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BusinessInquiryModule } from "./modules/business-inquiry/business-inquiry.module";
+import { BusinessPlanModule } from "./modules/business-plan/business-plan.module";
 import { CustomerSupportModule } from "./modules/customer-support/customer-support.module";
 import { StudioVirtualSpaceDecorationModule } from "./modules/studio-virtual-space-decoration/studio-virtual-space-decoration.module";
 import { StudioProjectLibraryModule } from "./modules/studio-project-library/studio-project-library.module";
@@ -78,6 +79,7 @@ const studioRealtimeTicketModule =
     CreatorAnalyticsModule,
     FeedbackModule,
     BusinessInquiryModule,
+    BusinessPlanModule,
     CustomerSupportModule,
     StudioVirtualSpaceDecorationModule,
     StudioProjectLibraryModule,

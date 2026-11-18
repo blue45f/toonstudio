@@ -114,7 +114,8 @@ ToonStudio `user.id`로 매핑하지 않으며, 가져오기 행위자는 현재
 
 1. 운영 데이터 백업·복구 절차와 배포 커밋의 CI 결과를 확인한다.
 2. 기존 checksum manifest 기반 migration 절차로
-   `0123_admin_nestjs_quality.sql`을 적용한다. 기존 migration 순서와 ledger 검증을 유지한다.
+   `0124_admin_nestjs_quality.sql`을 적용한다. 선행 `0122_admin_workspace.sql`과
+   `0123_admin_business_plan.sql`의 기존 순서와 ledger 검증을 유지한다.
 3. 기존 migration runner가 새 테이블의 runtime ACL을 적용하고 capability를 확인했는지 확인한다.
 4. 해당 커밋의 API와 Admin 산출물을 배포하고 관리자·운영자·일반 사용자 권한 경계를 확인한다.
 5. 별도 검증 기록으로 저장·재조회, 다른 세션의 동시 수정 409, 이력 전후 문서를 확인한다.

@@ -6,10 +6,21 @@ import { AdminApp } from "./AdminApp";
 
 vi.mock("../../domains/operations/operation-policy/OperationPolicyPanel", () => ({ OperationPolicyPanel: () => <h1>운영 모드와 라이선스</h1> }));
 vi.mock("./CiQualityAccess", () => ({ CiQualityAccess: () => <p role="status">관리자 권한 확인 중</p> }));
+vi.mock("./BusinessPlanAccess", () => ({ BusinessPlanAccess: () => <p role="status">사업계획서 권한 확인 중</p> }));
 vi.mock("./WorkspaceAccess", () => ({ WorkspaceAccess: () => <p role="status">통합 작업실 권한 확인 중</p> }));
 afterEach(() => {
   cleanup();
   window.history.replaceState(null, "", "/");
+});
+
+it.each(["/admin/growth/business-plan", "/admin/growth/business-plan/", "/admin/growth/business-plan/?view=nestjs"])("사업계획서 %s 경로에서 전용 권한 확인과 메뉴를 연다", (pathname) => {
+  window.history.replaceState(null, "", pathname);
+  render(<AdminApp />);
+  expect(screen.getByRole("status").textContent).toBe("사업계획서 권한 확인 중");
+  expect(screen.getByRole("link", { name: "사업계획서·제출 준비" }).getAttribute("aria-current")).toBe("page");
+  expect(screen.getByRole("link", { name: "운영 모드·라이선스" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.queryByRole("heading", { name: "운영 모드와 라이선스" })).toBeNull();
 });
 
 it("identifies the actual policy surface and links back to existing web management", () => {
@@ -48,6 +59,7 @@ it("NestJS query 진입을 기존 품질 경로에서 구분하고 관리자 확
   expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("aria-current")).toBe("page");
   expect(screen.getByRole("link", { name: "CI·QA 검증" }).getAttribute("aria-current")).toBeNull();
   expect(screen.getByRole("link", { name: "통합 작업실" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.getByRole("link", { name: "사업계획서·제출 준비" }).getAttribute("aria-current")).toBeNull();
 });
 
 it.each(["/admin/workspace", "/admin/workspace/", "/admin/workspace/?view=nestjs"])("통합 작업실 %s 진입에서 독립 권한 확인과 현재 메뉴를 유지한다", (pathname) => {

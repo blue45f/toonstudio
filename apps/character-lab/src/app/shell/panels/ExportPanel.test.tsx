@@ -683,21 +683,42 @@ describe("ExportPanel", () => {
     fireEvent.change(dialogue0, { target: { value: "오늘 원고 클라이맥스 시작이다." } });
     expect(dialogue0.value).toBe("오늘 원고 클라이맥스 시작이다.");
 
+    fireEvent.change(screen.getByTestId("export-strip-speaker-0"), { target: { value: "protagonist" } });
+    fireEvent.change(screen.getByTestId("export-strip-speaker-1"), { target: { value: "partner" } });
     fireEvent.change(screen.getByTestId("export-strip-bubble-shape-0"), { target: { value: "monologue-box" } });
     fireEvent.change(screen.getByTestId("export-strip-bubble-shape-1"), { target: { value: "whisper-dashed" } });
     fireEvent.change(screen.getByTestId("export-strip-font-scale-2"), { target: { value: "lg" } });
     fireEvent.change(screen.getByTestId("export-strip-sfx-stamp-0"), { target: { value: "seureung" } });
     fireEvent.change(screen.getByTestId("export-strip-sfx-stamp-2"), { target: { value: "kugugung" } });
 
-    // 4컷 말풍선을 none으로 바꾸면 대사 입력과 폰트 배율이 자동 비활성화된다
+    // 4컷 말풍선을 none으로 바꾸면 발화자·대사 입력·폰트 배율이 자동 비활성화된다
     fireEvent.change(screen.getByTestId("export-strip-bubble-shape-3"), { target: { value: "none" } });
+    expect((screen.getByTestId("export-strip-speaker-3") as HTMLSelectElement).disabled).toBe(true);
     expect((screen.getByTestId("export-strip-dialogue-3") as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByTestId("export-strip-font-scale-3") as HTMLSelectElement).disabled).toBe(true);
 
+    // 컷별 카메라 구도·스크롤 호흡·시간대 원고 무드·일본어 세로쓰기(Tategaki) 로컬라이징 전환 검증
+    fireEvent.change(screen.getByTestId("export-strip-camera-1"), { target: { value: "duo-wide" } });
+    fireEvent.change(screen.getByTestId("export-strip-camera-2"), { target: { value: "dutch-left-bust" } });
+    fireEvent.change(screen.getByTestId("export-strip-mood"), { target: { value: "midnight-noir" } });
+    fireEvent.change(screen.getByTestId("export-strip-gutter-2"), { target: { value: "cliffhanger" } });
+    expect((screen.getByTestId("export-strip-ja-writing-mode") as HTMLSelectElement).disabled).toBe(true);
+    fireEvent.change(screen.getByTestId("export-strip-locale"), { target: { value: "ja" } });
+    expect((screen.getByTestId("export-strip-ja-writing-mode") as HTMLSelectElement).disabled).toBe(false);
+    fireEvent.change(screen.getByTestId("export-strip-ja-writing-mode"), { target: { value: "vertical-tategaki" } });
+    expect((screen.getByTestId("export-strip-sfx-stamp-0") as HTMLSelectElement).textContent).toContain("スッ");
+
     fireEvent.click(screen.getByTestId("export-webtoon-strip-png"));
     await waitFor(() => expect(calls).toHaveLength(4));
-    expect(calls[3]?.fileName).toMatch(/-webtoon-4cut-acting-fx-strip\.png$/u);
+    expect(calls[3]?.fileName).toMatch(/-webtoon-4cut-acting-fx-ja-tategaki-strip\.png$/u);
     expect(isPng(calls[3]?.bytes ?? new Uint8Array())).toBe(true);
+
+    // 만화 연출 분리 레이어 포함 PSD 저장 시 일본어 세로쓰기가 반영된 그룹+1, 레이어+4 8BPS 바이너리를 생성한다
+    fireEvent.click(screen.getByTestId("export-psd-manga-fx"));
+    fireEvent.click(screen.getByRole("button", { name: "레이어 PSD 저장" }));
+    await waitFor(() => expect(calls).toHaveLength(5));
+    expect(calls[4]?.fileName).toBe("character-mock-32x48.psd");
+    expect(String.fromCharCode(...(calls[4]?.bytes.subarray(0, 4) ?? []))).toBe("8BPS");
   });
 
   it("2×2 종합 설정시트 PNG 저장 및 로컬 클립보드 레시피 복사·붙여넣기 왕복이 동작하고 빈 클립보드 오류를 노출한다", async () => {

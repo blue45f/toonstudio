@@ -17,6 +17,7 @@ postgres("Managed administrator PostgreSQL schema", () => {
   let pool: Pool;
   let migration: string;
   let testAccountMigration: string;
+  let businessPlanMigration: string;
   let legacy: string;
   const schemas: string[] = [];
 
@@ -24,6 +25,7 @@ postgres("Managed administrator PostgreSQL schema", () => {
     pool = new Pool({ connectionString: integrationUrl, max: 4, statement_timeout: 10_000 });
     migration = await readFile(new URL("./migrations/0043_admin_runtime_schema.sql", import.meta.url), "utf8");
     testAccountMigration = await readFile(new URL("./migrations/0097_admin_member_test_accounts.sql", import.meta.url), "utf8");
+    businessPlanMigration = await readFile(new URL("./migrations/0123_admin_business_plan.sql", import.meta.url), "utf8");
     legacy = await readFile(new URL("./fixtures/admin-runtime-legacy.sql", import.meta.url), "utf8");
   });
   afterAll(async () => {
@@ -143,8 +145,9 @@ postgres("Managed administrator PostgreSQL schema", () => {
       await client.query(`GRANT USAGE ON SCHEMA "${schema}" TO "${role}"`);
       const inSchema = (sql: string) => sql.replaceAll("public.", `"${schema}".`)
         .replaceAll("to_regnamespace('public')", `to_regnamespace('${schema}')`);
-      // 현재 ACL은 0097도 요구한다. 과거 0043 비교 테스트와 분리해 이 격리 fixture에만 적용한다.
+      // 현재 ACL은 0097·0123도 요구한다. 과거 0043 비교 테스트와 분리해 이 격리 fixture에만 적용한다.
       await client.query(inSchema(testAccountMigration));
+      await client.query(inSchema(businessPlanMigration));
       await client.query(`INSERT INTO "user" VALUES ('classification-member')`);
       await expect(client.query(inSchema(buildAdminCapabilitySql(role)))).rejects.toThrow("administrator runtime DML privileges are incomplete");
       await client.query(inSchema(buildAdminRuntimeAclSql(role)));

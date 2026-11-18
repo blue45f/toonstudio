@@ -97,7 +97,9 @@ body {
 .admin-local-navigation { display: flex; flex-wrap: wrap; gap: 12px; width: min(1080px, 100%); }
 .admin-local-navigation a { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 16px; color: var(--admin-fg); border: 1px solid var(--admin-line); border-radius: 8px; text-decoration: none; }
 .admin-local-navigation a[aria-current=page] { border-color: var(--admin-accent); background: var(--admin-raised); }
-.admin-local-navigation a:focus-visible, .admin-quality-access button:focus-visible { outline: 3px solid var(--admin-focus); outline-offset: 3px; }
+.admin-local-navigation a:focus-visible, .admin-quality-access button:focus-visible, .admin-business-plan-access button:focus-visible { outline: 3px solid var(--admin-focus); outline-offset: 3px; }
+.admin-business-plan-access { width: min(1440px, 100%); min-width: 0; }
+.admin-business-plan-access > .policy-alert button { min-height: 44px; padding: 10px 16px; border: 1px solid var(--admin-focus); border-radius: 8px; background: var(--admin-raised); color: var(--admin-fg); font: inherit; cursor: pointer; }
 .admin-quality-access { width: min(1320px, 100%); min-width: 0; }
 .admin-quality-access > [hidden] { display: none; }
 .admin-quality-access > .policy-alert button { min-height: 44px; padding: 10px 16px; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-raised); color: var(--admin-fg); font: inherit; cursor: pointer; }

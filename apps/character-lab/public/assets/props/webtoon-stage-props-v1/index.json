@@ -48,6 +48,24 @@
       "bytes": 24044,
       "sha256": "d704492daf28d0fd448aa7b603d2cae413a9cd7897339825642fed09a76db830",
       "triangles": 240
+    },
+    {
+      "id": "rooftop-safety-railing",
+      "labelKo": "옥상 황혼 안전 난간·벤치",
+      "meshName": "TS_StageProp_rooftop-safety-railing",
+      "path": "rooftop-safety-railing.glb",
+      "bytes": 21692,
+      "sha256": "f18ff2d59f400a439d9d37efbc20110c5d1340635e4f698344e9df4fc11edb64",
+      "triangles": 296
+    },
+    {
+      "id": "velvet-display-pedestal",
+      "labelKo": "박물관 벨벳 보석 진열대·레이저",
+      "meshName": "TS_StageProp_velvet-display-pedestal",
+      "path": "velvet-display-pedestal.glb",
+      "bytes": 32824,
+      "sha256": "d01c1337934e7bc503ae1508b7dbe50019085c54bd2b598f6bd69fda69dddabd",
+      "triangles": 252
     }
   ]
 }
