@@ -62,6 +62,7 @@ export {
   matchesKitSearchQuery,
   STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT,
 } from "./studio-hybrid-dcc-blender-v30-kit";
+export { STUDIO_HYBRID_DCC_BLENDER_V31_PROPS_KIT } from "./studio-hybrid-dcc-blender-v31-kit";
 
 export type StudioHybridDccStarterPrimitiveKind =
   | "cube"

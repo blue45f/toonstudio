@@ -38,7 +38,10 @@ describe("관리자 기능 DB 연결 순서", () => {
     expect(statements[1]).toContain("admin_business_plan_immutable_guard");
     expect(statements[1]).toContain("business plan access migration");
     expect(statements[2]).toContain("CREATE POLICY admin_cloud_workboard_runtime");
+    expect(statements[2]).toContain('GRANT SELECT, INSERT ON TABLE public.admin_cloud_workboard_audit, public.admin_cloud_workboard_receipt TO "test_runtime"');
+    expect(statements[2]).not.toMatch(/GRANT[^;]*(?:DELETE|TRUNCATE)/u);
     expect(statements[3]).toContain("cloud workboard runtime privileges");
+    expect(statements[3]).toContain("administrator cloud workboard history or isolation privileges");
     expect(statements[4]).toContain("admin_nestjs_quality_board");
     expect(statements[4]).toContain("admin_nestjs_quality_history");
     expect(statements[4]).toContain("GRANT SELECT, INSERT");
@@ -55,6 +58,7 @@ describe("관리자 기능 DB 연결 순서", () => {
     expect(sql).toContain("admin_workspace_receipt");
     expect(sql).toContain("admin_business_plan_access_audit");
     expect(sql).toContain("admin_cloud_workboard_receipt");
+    expect(sql).toContain("administrator cloud workboard runtime privileges are incomplete");
     expect(sql).toContain("admin_nestjs_quality_history");
     expect(sql).toContain("' WITH GRANT OPTION'");
     expect(withoutPrivilegeLookupValues(sql)).not.toMatch(privilegeWrite);
@@ -64,9 +68,11 @@ describe("관리자 기능 DB 연결 순서", () => {
       "REVOKE GRANT OPTION FOR SELECT ON TABLE public.admin_workspace FROM test_runtime;",
     ]) expect(withoutPrivilegeLookupValues(command)).toMatch(privilegeWrite);
   });
-  it("앞선 권한 검증이 실패하면 다음 저장소 권한 변경을 실행하지 않는다", () => {
-    const execute = vi.fn().mockImplementationOnce(() => undefined).mockImplementationOnce(() => { throw new Error("verification failed"); });
+  it.each([2, 4, 6])("%i번째 권한 검증이 실패하면 다음 저장소 권한 변경을 실행하지 않는다", (failureStep) => {
+    const execute = vi.fn(() => {
+      if (execute.mock.calls.length === failureStep) throw new Error("verification failed");
+    });
     expect(() => applyAdminDatabaseFeatureContracts(execute, "test_runtime")).toThrow("verification failed");
-    expect(execute).toHaveBeenCalledTimes(2);
+    expect(execute).toHaveBeenCalledTimes(failureStep);
   });
 });

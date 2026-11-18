@@ -470,14 +470,14 @@ export const D1_TRAFFIC_PULSE_QUERY = `
     'pageViews5m', recent_totals.page_views_5m,
     'pageViews30m', recent_totals.page_views_30m,
     'latestAt', recent_totals.latest_at,
-    'series', COALESCE((
+    'series', json(COALESCE((
       SELECT json_group_array(json_object(
         'bucket', bucket,
         'pageViews', page_views,
         'visitors', visitors
       ) ORDER BY bucket)
       FROM realtime_rows
-    ), json('[]'))
+    ), json('[]')))
   ) AS pulse
   FROM active_totals CROSS JOIN recent_totals
 `;

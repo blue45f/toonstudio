@@ -201,7 +201,7 @@ export function evaluateWindDrapeAndContinuity(
 
   const tankobonSpec: TankobonSpreadOverscanSpec =
     input.tankobonFormatId === "B5"
-      ? Object.freeze({
+      ? Object.freeze<TankobonSpreadOverscanSpec>({
           formatId: "B5",
           trimSpreadMm: [364, 257],
           bleedMm: 3,
@@ -211,7 +211,7 @@ export function evaluateWindDrapeAndContinuity(
           safeWorldWidthM: 3.7,
           extraModelingMinutes: 0,
         })
-      : Object.freeze({
+      : Object.freeze<TankobonSpreadOverscanSpec>({
           formatId: "A5",
           trimSpreadMm: [296, 210],
           bleedMm: 3,

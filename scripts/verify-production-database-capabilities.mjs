@@ -41,7 +41,7 @@ const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = resolve(SCRIPT_DIRECTORY, "..");
 const HEALTH_READINESS_SOURCE = resolve(
   REPOSITORY_ROOT,
-  "apps/api/src/modules/health/health-readiness.repository.ts",
+  "apps/api/src/modules/health/health-readiness-inventory.ts",
 );
 const ADOPTION_MARKER_ID = "__managed_history_through_0019__";
 const ADOPTION_BASELINE_SEQUENCE = 19;

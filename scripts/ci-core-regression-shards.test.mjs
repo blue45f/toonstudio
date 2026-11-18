@@ -190,6 +190,31 @@ test("NestJS 검증 보드는 정적 회귀와 보호된 PostgreSQL job에서 �
   assert.equal(manifest.split(`"${integration}"`).length - 1, 1);
 });
 
+test("클라우드 보드의 계약·API·ACL은 product에서, 실제 DB는 보호된 PostgreSQL job에서 한 번 실행한다", () => {
+  const execution = executionTargetsByShard();
+  const staticByShard = Object.fromEntries(SHARD_NAMES.map((name) => {
+    const selectors = expandGlobTargets(execution[name]);
+    const args = buildShardVitestArgs(selectors);
+    const databaseOnly = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+    return [name, resolveRequiredTargets(selectors).filter((target) => !databaseOnly.includes(target))];
+  }));
+  for (const target of [
+    "apps/api/src/modules/admin/admin-cloud-workboard.test.ts",
+    "packages/contracts/src/admin-cloud-workboard.test.ts",
+    "scripts/admin-database-contract.test.mjs",
+  ]) {
+    assert.ok(REQUIRED_VITEST_TARGETS.includes(target), `클라우드 보드 필수 정적 회귀 누락: ${target}`);
+    assert.equal(shardForTarget(target), "product", target);
+    assert.deepEqual(SHARD_NAMES.filter((name) => staticByShard[name].includes(target)), ["product"],
+      `클라우드 보드 정적 회귀는 product에서 정확히 한 번 실행해야 합니다: ${target}`);
+  }
+  const integration = "apps/api/src/modules/admin/admin-cloud-workboard.integration.test.ts";
+  assert.equal(CORE_DATABASE_VITEST_TARGETS.filter((target) => target === integration).length, 1);
+  assert.ok(resolveRequiredTargets(expandGlobTargets(execution.product)).includes(integration));
+  assert.ok(SHARD_NAMES.every((name) => !staticByShard[name].includes(integration)),
+    "클라우드 보드의 실제 DB 검증을 정적 shard의 skip 성공으로 대체할 수 없습니다.");
+});
+
 test("원고 제출·귀속·승인과 잠금 회귀는 실제 product 선택에서 실행한다", () => {
   const selectors = expandGlobTargets(executionTargetsByShard().product);
   const executed = resolveRequiredTargets(selectors);

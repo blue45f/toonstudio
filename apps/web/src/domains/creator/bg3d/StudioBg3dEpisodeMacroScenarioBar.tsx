@@ -1,11 +1,18 @@
 import { Clapperboard, Play, Timer } from "lucide-react";
+import { useMemo, useState } from "react";
 
+import { StudioBg3dSubgenreHeroPropsBar } from "./StudioBg3dSubgenreHeroPropsBar";
 import {
   EPISODE_MACRO_SCENARIOS,
   type EpisodeMacroScenarioEvaluation,
   type EpisodeMacroScenarioId,
   type EpisodeMacroScenarioSpec,
 } from "./studio-bg3d-episode-macro-scenarios";
+import {
+  evaluateSubgenreHeroProp,
+  SUBGENRE_HERO_PROPS,
+  type SubgenreHeroPropId,
+} from "./studio-bg3d-subgenre-hero-props";
 
 const MOTION_PRESS =
   "transition-[background-color,border-color,color,opacity,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
@@ -20,7 +27,7 @@ export interface StudioBg3dEpisodeMacroScenarioBarProps {
 
 /**
  * Unslop 9-Pass · Editor Chrome Design · Korean Typography 규격이 결합된
- * V30 8대 웹툰 장르(학원물·느와르·헌터 게이트 포함) 원클릭 자동화 시나리오 실행 바.
+ * V30 8대 웹툰 장르 원클릭 자동화 시나리오 실행 바 및 V31 세부 장르 히어로 소품 바.
  */
 export function StudioBg3dEpisodeMacroScenarioBar({
   disabled = false,
@@ -30,6 +37,23 @@ export function StudioBg3dEpisodeMacroScenarioBar({
   onSelectScenarioId,
 }: StudioBg3dEpisodeMacroScenarioBarProps) {
   const unavailableTitle = disabled ? disabledReason : undefined;
+  const [propOverrideId, setPropOverrideId] =
+    useState<SubgenreHeroPropId | null>(null);
+
+  const resolvedPropId: SubgenreHeroPropId =
+    propOverrideId ??
+    (SUBGENRE_HERO_PROPS.find(
+      (item) => item.linkedScenarioId === evaluation.scenario.id,
+    )?.id ?? "academy-locker-letter");
+
+  const v31PropEvaluation = useMemo(
+    () =>
+      evaluateSubgenreHeroProp({
+        propId: resolvedPropId,
+        baseV30WeeklyHoursSaved: evaluation.totalWeeklyHoursV30,
+      }),
+    [resolvedPropId, evaluation.totalWeeklyHoursV30],
+  );
 
   return (
     <div
@@ -92,7 +116,10 @@ export function StudioBg3dEpisodeMacroScenarioBar({
                 disabled={disabled}
                 title={unavailableTitle}
                 data-testid={`bg3d-blender-v30-scenario-${item.id}`}
-                onClick={() => onSelectScenarioId(item.id)}
+                onClick={() => {
+                  setPropOverrideId(null);
+                  onSelectScenarioId(item.id);
+                }}
                 className={`min-h-8 rounded-lg border px-2.5 py-1 text-xs font-medium tabular-nums ${
                   active
                     ? "border-accent bg-raised text-fg"
@@ -128,6 +155,12 @@ export function StudioBg3dEpisodeMacroScenarioBar({
           </span>
         </span>
       </div>
+
+      <StudioBg3dSubgenreHeroPropsBar
+        disabled={disabled}
+        evaluation={v31PropEvaluation}
+        onSelectPropId={setPropOverrideId}
+      />
     </div>
   );
 }

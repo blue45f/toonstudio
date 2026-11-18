@@ -19,23 +19,22 @@ import { extractLineArt, extractOutlinePassLuminanceToAlpha, lineArtToRaster } f
 import { decodeIdPass } from "./raster-convert";
 import { multiplyByte, recompose, screenByte, splitTones } from "./tone-split";
 import {
-  renderTransparentActionLinesLayer,
   renderTransparentDialogueTextLayer,
-  renderTransparentSfxStampLayer,
   renderTransparentSpeechBubbleFrameLayer,
-} from "./webtoon-strip-composer";
+} from "./webtoon-strip-bubbles";
+import { renderTransparentActionLinesLayer, renderTransparentSfxStampLayer } from "./webtoon-strip-manga-fx";
 
 import type { CaptureResult, CapturedDepth, CapturedRaster, LabFailure, PaintLayer, PartRole } from "../contracts";
 import type { LineArtOptions } from "./line-extract";
 import type {
   WebtoonDialogueLocale,
-  WebtoonJaWritingMode,
   WebtoonSfxStampOption,
   WebtoonStripBubbleFontScale,
   WebtoonStripBubbleShape,
   WebtoonStripFxLinesKind,
   WebtoonStripSpeakerTarget,
-} from "./webtoon-strip-composer";
+} from "./webtoon-strip-fx-options";
+import type { WebtoonJaWritingMode } from "./webtoon-strip-pacing-tategaki";
 
 export type PsdBlendMode = "normal" | "multiply" | "screen";
 

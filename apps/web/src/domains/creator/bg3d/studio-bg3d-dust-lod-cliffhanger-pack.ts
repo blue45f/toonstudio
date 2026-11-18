@@ -216,7 +216,7 @@ export function evaluateDustLodCliffhangerAndPack(
   const checksumSeed = `${input.locale}|${input.tankobonFormatId}|${input.continuityDigestHex}|${haze.id}|${activeSceneTriangles}|${clampedGutter}|${input.allFourChannelsReady}`;
   const bundleChecksumHex = computeBundleChecksumHex(checksumSeed);
 
-  const packManifest: ToonPackArchiveBundleJson = Object.freeze({
+  const packManifest: ToonPackArchiveBundleJson = Object.freeze<ToonPackArchiveBundleJson>({
     schema: "toonstudio.toonpack.v27",
     episodeCutCount: 70,
     locale: input.locale,

@@ -135,6 +135,13 @@ describe("StudioHybridDccPanel first-screen guide", () => {
     });
 
     const searchInput = screen.getByTestId("studio-hybrid-dcc-kit-search-input");
+    fireEvent.change(searchInput, { target: { value: "ㅅㅁㅎ" } });
+    expect(
+      document.querySelector<HTMLButtonElement>(
+        '[data-studio-hybrid-dcc-kit-item="webtoon-prop-academy-locker-shoebox-bank-v31"]',
+      ),
+    ).not.toBeNull();
+
     fireEvent.change(searchInput, { target: { value: "ㄴㅇㄹ" } });
     expect(screen.getByTestId("studio-hybrid-dcc-kit-search-count").textContent).toContain("건");
     const noirButton = document.querySelector<HTMLButtonElement>(

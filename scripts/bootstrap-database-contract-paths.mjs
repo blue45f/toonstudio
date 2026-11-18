@@ -32,6 +32,7 @@ export const BOOTSTRAP_CONTRACT_PATHS = Object.freeze([
   "scripts/run-production-database-migrations.mjs", "scripts/studio-bg3d-bundle-runtime-acl.mjs", "scripts/production-database-connection.mjs",
   "scripts/validate-production-database-url.mjs",
   "scripts/verify-production-database-capabilities.mjs",
+  "apps/api/src/modules/health/health-readiness-inventory.ts",
   "scripts/customer-support-database-contract.mjs",
   "apps/api/src/modules/health/health-customer-support-acl.ts",
   "scripts/admin-database-contract.mjs",

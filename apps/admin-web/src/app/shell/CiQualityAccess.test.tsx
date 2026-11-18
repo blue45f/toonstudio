@@ -141,6 +141,24 @@ describe("CI·QA 권한 경계", () => {
 });
 
 describe("클라우드 작업 관리자 전용 경계", () => {
+  it("Nest 조회에서 클라우드로 전환하면 기존 보드를 제거하고 운영자 접근을 다시 차단한다", async () => {
+    mocks.identity.mockResolvedValue({ id: "operator-a", role: "operator" });
+    const view = render(<CiQualityAccess view="nestjs" />);
+    await screen.findByText("Nest 보드 사용자 operator-a · operator");
+    view.rerender(<CiQualityAccess view="cloud-work" />);
+    expect(screen.queryByText("Nest 보드 사용자 operator-a · operator")).toBeNull();
+    expect((await screen.findByRole("alert")).textContent).toContain("운영자 권한으로는 열 수 없습니다");
+    expect(mocks.cloudMount).not.toHaveBeenCalled();
+  });
+  it("같은 계정의 관리자 권한이 해제되면 클라우드 기록을 제거한다", async () => {
+    mocks.identity.mockResolvedValueOnce({ id: "actor-a", role: "admin" });
+    render(<CiQualityAccess view="cloud-work" />);
+    await screen.findByText("클라우드 개인 작업 기록");
+    mocks.identity.mockResolvedValueOnce({ id: "actor-a", role: "operator" });
+    fireEvent(window, new Event("toonstudio:auth-session-changed"));
+    expect((await screen.findByRole("alert")).textContent).toContain("운영자 권한으로는 열 수 없습니다");
+    expect(screen.queryByText("클라우드 개인 작업 기록")).toBeNull();
+  });
   it("운영자에게 클라우드 모듈을 열지 않는다", async () => {
     mocks.identity.mockResolvedValue({ id: "operator-a", role: "operator" });
     render(<CiQualityAccess view="cloud-work" />);

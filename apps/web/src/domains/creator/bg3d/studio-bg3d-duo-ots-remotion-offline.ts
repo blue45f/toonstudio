@@ -223,7 +223,7 @@ export function evaluateDuoOtsRemotionAndOffline(
   const frameParityDigestHex = hashHex32(
     `remotion60fps|360f|${duo.id}|${input.continuityDigestHex}|clamp`,
   );
-  const motionAudit: DeterministicMotionAudit = Object.freeze({
+  const motionAudit: DeterministicMotionAudit = Object.freeze<DeterministicMotionAudit>({
     fps: 60,
     totalFrames: 360,
     unseededRandomCalls: 0,

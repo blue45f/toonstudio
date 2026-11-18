@@ -529,6 +529,7 @@ describe("bootstrap SQL and repository contract", () => {
       "scripts/admin-nestjs-quality-database-contract.mjs",
       "apps/api/src/platform/database/schema/admin.schema.ts",
       "scripts/production-database-connection.mjs",
+      "apps/api/src/modules/health/health-readiness-inventory.ts",
       "apps/api/src/platform/database/creator-asset-platform.schema.ts",
       "apps/api/src/platform/database/creator-asset-processing.schema.ts",
       "apps/api/src/platform/database/creator-asset-rights-evidence.schema.ts",
