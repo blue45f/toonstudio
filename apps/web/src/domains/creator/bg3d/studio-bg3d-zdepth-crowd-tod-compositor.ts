@@ -134,8 +134,9 @@ export function evaluateZDepthCrowdTodCompositor(
   const seatedDatumCount =
     input.crowdCount === 4 ? 0 : input.crowdCount === 6 ? 4 : 9;
   const standingRailCount = input.crowdCount - seatedDatumCount;
-  const crowdBackCocPx = Number(
-    Math.max(4.2, (36.8 / input.apertureFStop).toFixed(1)),
+  const crowdBackCocPx = Math.max(
+    4.2,
+    Number((36.8 / input.apertureFStop).toFixed(1)),
   );
   const crowdAlignmentMinutesSavedPerCut =
     input.crowdCount === 4 ? 12.0 : input.crowdCount === 6 ? 16.5 : 22.0;

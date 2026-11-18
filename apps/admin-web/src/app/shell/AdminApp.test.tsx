@@ -20,8 +20,8 @@ it.each(["/admin/growth/business-plan", "/admin/growth/business-plan/", "/admin/
   expect(screen.getByRole("status").textContent).toBe("사업계획서 권한 확인 중");
   expect(screen.getByRole("link", { name: "사업계획서·제출 준비" }).getAttribute("aria-current")).toBe("page");
   expect(screen.getByRole("link", { name: "운영 모드·라이선스" }).getAttribute("aria-current")).toBeNull();
-  expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("aria-current")).toBeNull();
   expect(screen.queryByRole("heading", { name: "운영 모드와 라이선스" })).toBeNull();
+  expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("aria-current")).toBeNull();
 });
 
 it("identifies the actual policy surface and links back to existing web management", () => {
@@ -58,9 +58,9 @@ it.each(["/admin/workspace", "/admin/workspace/", "/admin/workspace/?view=nestjs
   expect(screen.getByRole("status").textContent).toBe("통합 작업실 권한 확인 중");
   expect(screen.getByRole("link", { name: "통합 작업실" }).getAttribute("aria-current")).toBe("page");
   expect(screen.getByRole("link", { name: "운영 모드·라이선스" }).getAttribute("aria-current")).toBeNull();
-  expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("aria-current")).toBeNull();
   expect(screen.getByRole("link", { name: "CI·QA 검증" }).getAttribute("aria-current")).toBeNull();
   expect(screen.queryByRole("heading", { name: "운영 모드와 라이선스" })).toBeNull();
+  expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("aria-current")).toBeNull();
 });
 
 it("클라우드 작업 query가 기존 품질 경로 안에서 전용 관리자 화면을 선택한다", () => {

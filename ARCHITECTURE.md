@@ -377,12 +377,11 @@ runtime-neutral contracts에 둔다. 다른 파일 수·파일 크기·앱 경�
 Drizzle 정의는 기존 `admin.schema.ts`에 둔다. 다른 소스·경계·파일 크기 예산은 올리지 않는다.
 코드 병합은 운영 DB 적용이나 배포를 실행하지 않는다.
 
-2026-11-18 통합 소스 기준은 추가형 migration 7개를 순서대로 유지한다.
+2026-11-18 통합 소스 기준은 main에 병합된 0122~0124와 후속 추가형 migration 4개를 순서대로 유지한다.
 `0122_admin_workspace.sql`, `0123_admin_business_plan.sql`,
 `0124_admin_nestjs_quality.sql`, `0125_admin_cloud_workboard.sql`,
 `0126_admin_ai_operations.sql`, `0127_admin_workspace_access.sql`,
-`0128_admin_business_plan_access.sql`이다. main에 반영된 0001~0124 SQL은 변경하지 않는다.
-미병합 전문 보드의 base migration을 먼저 두고 추가 접근 제어를 뒤에 적용한다.
-DB 파일 수는 main의 177 + 미병합 추가 SQL 4 = 181이다.
+`0128_admin_business_plan_access.sql`이다. main의 기존 0001~0124 SQL 파일명과 내용은 변경하지 않는다.
+DB 파일 수는 현재 main 177 + 후속 SQL 4 = 181이다.
 NestJS 보드가 정적 검사 SQL을 기존 `schema/admin.schema.ts`로 합친 구조를 재사용한다.
 새 유료 자원이나 운영 DB 적용은 포함하지 않는다.

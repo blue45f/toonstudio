@@ -375,6 +375,26 @@ test("review database invariants execute with real PostgreSQL and the accepted g
   assert.ok(REQUIRED_CORE_GATES.includes("database"), "database failures must block protected core");
 });
 
+test("관리자 전방 migration과 SQL 전용 이력 보호를 리뷰 DB 준비에 빠짐없이 연결한다", () => {
+  const preparation = readFileSync(new URL("./prepare-studio-review-test-db.mjs", import.meta.url), "utf8");
+  const migrationFiles = [...preparation.matchAll(/"(\d{4}_[a-z0-9_]+\.sql)"/gu)].map((match) => match[1]);
+  const adminMigrations = readFileSync(new URL("./production-database-migrations.manifest", import.meta.url), "utf8")
+    .trim().split(/\r?\n/u).map((entry) => basename(entry))
+    .filter((name) => /^\d{4}_admin_/u.test(name) && Number(name.slice(0, 4)) >= 122);
+  assert(adminMigrations.length > 0, "관리자 전방 migration 기준이 비어 있습니다.");
+  assert.deepEqual(migrationFiles.filter((name) => adminMigrations.includes(name)), adminMigrations,
+    "관리자 migration은 정본 manifest 순서대로 한 번씩 준비해야 합니다.");
+  assert.equal(new Set(migrationFiles).size, migrationFiles.length, "준비 migration의 중복 실행을 금지합니다.");
+  for (const migration of adminMigrations) {
+    const sql = readFileSync(join(repoRoot, "apps/api/src/platform/database/migrations", migration), "utf8");
+    for (const [, trigger] of sql.matchAll(/CREATE TRIGGER (admin_[a-z0-9_]+)/gu)) {
+      assert(preparation.includes(`"${trigger}"`), `SQL 전용 관리자 이력 보호의 준비 검증 누락: ${trigger}`);
+    }
+  }
+  assert.doesNotMatch(preparation, /DROP (?:TABLE|SCHEMA)|TRUNCATE\s+(?:TABLE\s+)?public\./iu,
+    "리뷰 DB 준비는 기존 테이블이나 자료를 초기화하지 않습니다.");
+});
+
 test("mandatory lanes start independently and dependency-free contracts run first", () => {
   assert.doesNotMatch(source, /^ {2}preflight:\n/m);
   for (const name of ["lint", "typecheck", "static", "serial", "build"]) {

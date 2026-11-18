@@ -5,7 +5,7 @@ import { createFeatureReport, featureActive, featureOff, featureUnavailable } fr
 
 import { readJointOffsetState } from "./joint-offset-rig";
 
-import type { EngineBackend, EngineDiagnostics, HudSample, ShadingProfile, SourceCapabilities } from "../../contracts";
+import type { EngineBackend, EngineDiagnostics, HudSample, Quat, ShadingProfile, SourceCapabilities, Vec3 } from "../../contracts";
 import type { FullSceneFeatureReport } from "../beta-features";
 import type { FrameStats } from "../frame-stats";
 import type { SparseMorphReport } from "../glb-sparse-morph";
@@ -23,6 +23,16 @@ import type { CharacterScene } from "./scene-builder";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine.js";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager.js";
 import type { Scene } from "@babylonjs/core/scene.js";
+
+/** `readBone` 결과 */
+export interface BoneReading {
+  readonly name: string;
+  readonly humanoid: string | null;
+  readonly position: Vec3;
+  readonly rotation: Quat;
+  readonly localRotation: Quat;
+  readonly auxiliary: boolean;
+}
 
 interface HudReportSource {
   readonly scene: Scene;

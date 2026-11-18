@@ -449,6 +449,8 @@ jobs:
         if: always()
         with:
           name: onpod-api-rollback-${{ needs.verify-release-gate.outputs.release_sha }}
-          path: artifacts/cloud-deploy/onpod-rollback.json
+          path: |
+            artifacts/cloud-deploy/onpod-rollback.json
+            artifacts/cloud-deploy/onpod-verification.json
           if-no-files-found: ignore
           retention-days: 14

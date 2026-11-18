@@ -53,6 +53,20 @@ describe("BabylonCharacterEngine 3D 에셋 26종 & 2인 듀오 상대역 표정/
     harness.dispose();
   });
 
+  it("해제 직전 큐에 들어간 소품·듀오 작업과 해제 뒤 요청은 engine-disposed로 거부한다", async () => {
+    const pending = [harness.engine.setHandProp(null), harness.engine.setHeadProp(null), harness.engine.setStageProp(null), harness.engine.setDuoPartner(null), harness.engine.setSfxStamp(null)];
+    harness.engine.dispose();
+    for (const outcome of await Promise.allSettled(pending)) {
+      expect(outcome).toMatchObject({ status: "rejected", reason: { code: "engine-disposed" } });
+    }
+    await expect(harness.engine.setHandProp(null)).rejects.toMatchObject({ code: "engine-disposed" });
+    await expect(harness.engine.setHeadProp(null)).rejects.toMatchObject({ code: "engine-disposed" });
+    await expect(harness.engine.setStageProp(null)).rejects.toMatchObject({ code: "engine-disposed" });
+    await expect(harness.engine.setDuoPartner(null)).rejects.toMatchObject({ code: "engine-disposed" });
+    await expect(harness.engine.setSfxStamp(null)).rejects.toMatchObject({ code: "engine-disposed" });
+    expect(harness.disposeCount()).toBe(1);
+  });
+
   it("Blender 5.3 에셋 26종(손 7·머리 6·스테이지 7·효과음 6) + SHAPER 3D 상대역(표정·황실 두루마리 손소품) 5중 동시 배치·투샷 GLB 보존·누수 없는 해제를 만족한다", async () => {
     const handManifest = JSON.parse(await readFile(resolve(HAND_PROPS_DIR, "index.json"), "utf8")) as {
       readonly props: readonly PropManifestEntry<HandPropId>[];

@@ -862,6 +862,8 @@ scripts/bootstrap-empty-production-database.test.mjs
 scripts/browser-core-entry-isolation.test.ts
 scripts/check-studio-eager-graph.test.mjs
 scripts/ci-core-regression-shards.test.mjs
+scripts/cloud-deploy-onpod.test.mjs
+scripts/cloud-deploy-runners.test.mjs
 scripts/cloudflare-static-rules.test.mjs
 scripts/creator-bundle-decor.test.mjs
 scripts/creator-bundle-pack-rights-form.test.mjs
@@ -931,6 +933,7 @@ scripts/ux-audit/rubric.test.mjs
 scripts/ux-audit/structure-analysis.test.mjs
 scripts/ux-audit/what-if.test.mjs
 scripts/verify-latent-pigment-browser.test.mjs
+scripts/verify-render-core-origin.test.mjs
 scripts/verify-studio-3d-console.test.ts
 scripts/verify-studio-canvas-entry.test.ts
 scripts/verify-studio-engine-editor-entry.test.ts

@@ -50,6 +50,7 @@ import { createScenePropController } from "./scene-prop-controller";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
+import type { BoneReading } from "./engine-reports";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
   ApplyPlan,
@@ -78,7 +79,6 @@ import type {
   PhysicsProviderId,
   PhysicsStatus,
   CharacterPickOptions, PickHit,
-  Quat,
   SettleReceipt,
   ShadingProfile,
   SkeletonData,
@@ -107,20 +107,12 @@ import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture
 import type { Scene } from "@babylonjs/core/scene.js";
 
 export type { ReadbackLane } from "../readback";
+export type { BoneReading } from "./engine-reports";
 
 export const THUMBNAIL_LAYER_MASK = 0x10000000;
 export const FACE_SDF_SIZE = 128;
 export const TOON_OUTLINE_WIDTH = 0.004;
 export const TOON_EDGE_EPSILON = 0.95;
-
-export interface BoneReading {
-  readonly name: string;
-  readonly humanoid: string | null;
-  readonly position: Vec3;
-  readonly rotation: Quat;
-  readonly localRotation: Quat;
-  readonly auxiliary: boolean;
-}
 
 export interface BabylonCharacterEngineDeps {
   readonly engine: AbstractEngine;
