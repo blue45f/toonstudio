@@ -53,6 +53,7 @@ export {
 export { STUDIO_HYBRID_DCC_BLENDER_V23_ZDEPTH_KIT } from "./studio-hybrid-dcc-blender-v23-kit";
 export { STUDIO_HYBRID_DCC_BLENDER_V24_WEATHER_KIT } from "./studio-hybrid-dcc-blender-v24-kit";
 export { STUDIO_HYBRID_DCC_BLENDER_V25_DRAPE_KIT } from "./studio-hybrid-dcc-blender-v25-kit";
+export { STUDIO_HYBRID_DCC_BLENDER_V26_AFTERMATH_KIT } from "./studio-hybrid-dcc-blender-v26-kit";
 
 export type StudioHybridDccStarterPrimitiveKind =
   | "cube"

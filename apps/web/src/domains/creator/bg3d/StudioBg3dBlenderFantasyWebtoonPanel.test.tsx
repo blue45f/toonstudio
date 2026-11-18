@@ -308,6 +308,37 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-v25-audio-json").textContent,
     ).toContain("toonstudio.toonaudio.v25");
 
+    // Wave 12 (V26): 3단계 파손·흔적·대사 밀도 선화 감쇠·독자 가독성(OLED/색각)·.toonsubs.vtt·4채널 출고 게이트 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v26-aftermath-card").textContent,
+    ).toContain("3단계 파손·흔적 V26");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v26-stage-shattered"));
+    expect(
+      screen.getByTestId("bg3d-blender-v26-aftermath-readout").textContent,
+    ).toContain("파편 28개");
+    fireEvent.change(screen.getByTestId("bg3d-blender-v26-dialogue-slider"), {
+      target: { value: "80" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-v26-aftermath-readout").textContent,
+    ).toContain("-46.4%");
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v26-display-oled-night-dim"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-v26-display-readout").textContent,
+    ).toContain("야간 저조도 OLED (18%)");
+    expect(
+      screen.getByTestId("bg3d-blender-v26-display-readout").textContent,
+    ).toContain("통과");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v26-vtt-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v26-vtt-preview").textContent,
+    ).toContain("WEBVTT");
+    expect(
+      screen.getByTestId("bg3d-blender-v26-vtt-preview").textContent,
+    ).toContain("toonstudio.toonsubs.v26");
+
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
     );

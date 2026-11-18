@@ -286,6 +286,8 @@ export function StudioBg3dWeatherMotionColorScriptCard({
 
       <StudioBg3dWindDrapeContinuityCard
         disabled={disabled}
+        onomatopoeiaText={evaluation.localizedSfxSlot.onomatopoeiaText}
+        all70CutsDarkroomCompliant={evaluation.all70CutsDarkroomCompliant}
         evaluation={v25Evaluation}
         lockedLedger={lockedLedger}
         onSelectFabricId={setFabricId}

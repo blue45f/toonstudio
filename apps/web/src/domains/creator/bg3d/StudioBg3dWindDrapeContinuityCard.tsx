@@ -5,8 +5,14 @@ import {
   Volume2,
   Wind,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { StudioBg3dAftermathReadabilityCard } from "./StudioBg3dAftermathReadabilityCard";
+import {
+  evaluateAftermathReadabilityAndVtt,
+  type AftermathDamageStageId,
+  type ReaderDisplayModeId,
+} from "./studio-bg3d-aftermath-readability-vtt";
 import {
   WIND_DRAPE_REFLECTION_PROFILES,
   type ContinuityLedgerSnapshot,
@@ -22,6 +28,8 @@ const FORMATS: readonly TankobonFormatId[] = ["B5", "A5"];
 
 export interface StudioBg3dWindDrapeContinuityCardProps {
   readonly disabled?: boolean;
+  readonly onomatopoeiaText?: string;
+  readonly all70CutsDarkroomCompliant?: boolean;
   readonly evaluation: WindDrapeContinuityEvaluation;
   readonly lockedLedger: ContinuityLedgerSnapshot | null;
   readonly onSelectFabricId: (id: WindDrapeFabricId) => void;
@@ -31,10 +39,12 @@ export interface StudioBg3dWindDrapeContinuityCardProps {
 
 /**
  * Unslop 9-Pass 정밀 워크벤치 규격이 적용된 V25 기류 연동 패브릭 · 하프 미러 반사창 ·
- * 회차 간 상태 연속성 원장(Continuity Ledger) · 단행본 B5/A5 오버스캔 · .toonaudio.json 카드.
+ * 회차 간 상태 연속성 원장(Continuity Ledger) · 단행본 B5/A5 오버스캔 · .toonaudio.json 및 V26 연결 카드.
  */
 export function StudioBg3dWindDrapeContinuityCard({
   disabled = false,
+  onomatopoeiaText = "촤르륵 · 영롱",
+  all70CutsDarkroomCompliant = true,
   evaluation,
   lockedLedger,
   onSelectFabricId,
@@ -42,6 +52,47 @@ export function StudioBg3dWindDrapeContinuityCard({
   onSelectTankobonFormatId,
 }: StudioBg3dWindDrapeContinuityCardProps) {
   const [showAudioJson, setShowAudioJson] = useState(false);
+  const [aftermathId, setAftermathId] =
+    useState<AftermathDamageStageId>("cracked");
+  const [dialogueDensityPct, setDialogueDensityPct] = useState<number>(60);
+  const [displayModeId, setDisplayModeId] =
+    useState<ReaderDisplayModeId>("standard-srgb");
+
+  useEffect(() => {
+    if (evaluation.currentSnapshot.openRatioPct <= 25) setAftermathId("intact");
+    else if (evaluation.currentSnapshot.openRatioPct <= 75)
+      setAftermathId("cracked");
+    else setAftermathId("shattered");
+  }, [evaluation.currentSnapshot.openRatioPct]);
+
+  const v26Evaluation = useMemo(
+    () =>
+      evaluateAftermathReadabilityAndVtt({
+        aftermathId,
+        dialogueDensityPct,
+        baseBgLineThicknessPx:
+          evaluation.currentSnapshot.kelvin >= 7500 ? 2.8 : 1.35,
+        displayModeId,
+        locale: evaluation.audioManifest.locale,
+        onomatopoeiaText,
+        continuityCompliant: evaluation.continuityCompliant,
+        all70CutsDarkroomCompliant,
+        tankobonFormatId: evaluation.tankobonSpec.formatId,
+        baseV25WeeklyHoursSaved: evaluation.totalWeeklyHoursV25,
+      }),
+    [
+      aftermathId,
+      dialogueDensityPct,
+      displayModeId,
+      evaluation.currentSnapshot.kelvin,
+      evaluation.audioManifest.locale,
+      evaluation.continuityCompliant,
+      evaluation.tankobonSpec.formatId,
+      evaluation.totalWeeklyHoursV25,
+      onomatopoeiaText,
+      all70CutsDarkroomCompliant,
+    ],
+  );
 
   return (
     <div
@@ -206,6 +257,14 @@ export function StudioBg3dWindDrapeContinuityCard({
           {evaluation.audioManifestJsonString}
         </pre>
       ) : null}
+
+      <StudioBg3dAftermathReadabilityCard
+        disabled={disabled}
+        evaluation={v26Evaluation}
+        onSelectAftermathId={setAftermathId}
+        onChangeDialogueDensityPct={setDialogueDensityPct}
+        onSelectDisplayModeId={setDisplayModeId}
+      />
     </div>
   );
 }

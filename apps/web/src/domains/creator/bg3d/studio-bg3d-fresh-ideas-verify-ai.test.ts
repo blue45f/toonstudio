@@ -27,6 +27,7 @@ import {
   generateBlenderWebtoonFreshIdeasRemix,
   type BlenderSceneVerifyAiSynthesisInput,
 } from "./studio-bg3d-fresh-ideas-verify-ai";
+import { evaluateAftermathReadabilityAndVtt } from "./studio-bg3d-aftermath-readability-vtt";
 import { evaluateAtmosphericBokehAndQuarterlyRoi } from "./studio-bg3d-atmospheric-bokeh-dof";
 import { evaluateArticulatedPropAndIkSocketBridge } from "./studio-bg3d-articulated-ik-bridge";
 import { evaluateSlitGodRayAndShadowDrift } from "./studio-bg3d-slit-godray-sequence";
@@ -275,6 +276,27 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
     expect(v25DriftA5.continuityCompliant).toBe(false);
     expect(v25DriftA5.continuityStatusKo).toContain("연속성 이탈 감지");
     expect(v25DriftA5.tankobonSpec.printPixels350Dpi).toEqual([4161, 2976]);
+
+    const v26Release = evaluateAftermathReadabilityAndVtt({
+      aftermathId: "shattered",
+      dialogueDensityPct: 80,
+      baseBgLineThicknessPx: 2.8,
+      displayModeId: "deuteranopia-safe",
+      locale: "JA",
+      onomatopoeiaText: v24Motion.localizedSfxSlot.onomatopoeiaText,
+      continuityCompliant: v25Match.continuityCompliant,
+      all70CutsDarkroomCompliant: v24Motion.all70CutsDarkroomCompliant,
+      tankobonFormatId: "B5",
+      baseV25WeeklyHoursSaved: v25Match.totalWeeklyHoursV25,
+    });
+    expect(v26Release.aftermath.debrisShardCount).toBe(28);
+    expect(v26Release.attenuatedHaloLinePx).toBe(1.5);
+    expect(v26Release.readabilityPassed).toBe(true);
+    expect(v26Release.vttContentString).toContain("WEBVTT");
+    expect(v26Release.allFourChannelsReady).toBe(true);
+    expect(v26Release.totalWeeklyHoursV26).toBe(35.2);
+    expect(v26Release.quarterlyHoursSavedV26).toBe(457.6);
+    expect(v26Release.quarterlyBankedEpisodesV26).toBe(5.72);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;
