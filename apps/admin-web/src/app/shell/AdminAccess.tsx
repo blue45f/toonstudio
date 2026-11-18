@@ -5,10 +5,10 @@ import { loadAdminIdentity, type AdminIdentity } from "../../platform/http/admin
 type Access = { phase: "checking" | "ready" | "denied"; actor: AdminIdentity | null; error: string };
 
 /** 서버가 확인한 계정만 전달하고 계정·역할 변경 시 이전 화면 상태를 분리한다. */
-export function AdminAccess({ label, children, adminOnly = false }: {
+export function AdminAccess({ label, authorize, children }: {
   label: string;
-  adminOnly?: boolean;
-  children: (actor: AdminIdentity, onAccessDenied: (message: string) => void) => ReactNode;
+  authorize?: (actor: AdminIdentity) => string | null;
+  children: (actor: AdminIdentity, access: { verified: boolean; deny: (error: string) => void }) => ReactNode;
 }) {
   const [access, setAccess] = useState<Access>({ phase: "checking", actor: null, error: "" });
   const [attempt, setAttempt] = useState(0);
@@ -25,9 +25,8 @@ export function AdminAccess({ label, children, adminOnly = false }: {
       setAccess((previous) => ({ ...previous, phase: "checking", error: "" }));
       void loadAdminIdentity(signal).then((actor) => {
         if (active && current === sequence.current && !signal.aborted) {
-          setAccess(adminOnly && actor.role !== "admin"
-            ? { phase: "denied", actor: null, error: "관리자 전용 화면입니다. 운영자 권한으로는 열 수 없습니다." }
-            : { phase: "ready", actor, error: "" });
+          const error = authorize?.(actor);
+          setAccess(error ? { phase: "denied", actor: null, error } : { phase: "ready", actor, error: "" });
         }
       }).catch((cause: unknown) => {
         if (active && current === sequence.current && !signal.aborted) {
@@ -56,9 +55,9 @@ export function AdminAccess({ label, children, adminOnly = false }: {
       window.removeEventListener("toonstudio:auth-session-changed", check);
       document.removeEventListener("visibilitychange", visibilityChanged);
     };
-  }, [adminOnly, attempt]);
+  }, [attempt, authorize]);
 
-  const denyAccess = useCallback((error: string) => {
+  const deny = useCallback((error: string) => {
     sequence.current += 1;
     setAccess({ phase: "denied", actor: null, error });
   }, []);
@@ -70,8 +69,8 @@ export function AdminAccess({ label, children, adminOnly = false }: {
       <p>권한 확인 전에는 보드와 저장된 기록을 표시하지 않습니다.</p>
       <button type="button" onClick={() => setAttempt((value) => value + 1)}>관리자 권한 다시 확인</button>
     </div>}
-    {access.actor && (!adminOnly || access.actor.role === "admin") && <div key={`${access.actor.id}:${access.actor.role}`} hidden={access.phase !== "ready"}>
-      {children(access.actor, denyAccess)}
+    {access.actor && <div key={`${access.actor.id}:${access.actor.role}`} hidden={access.phase !== "ready"}>
+      {children(access.actor, { verified: access.phase === "ready", deny })}
     </div>}
   </section>;
 }

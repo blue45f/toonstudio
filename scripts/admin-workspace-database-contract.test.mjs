@@ -6,10 +6,11 @@ describe("관리자 작업 보드 DB 권한 계약", () => {
   it("보드 한 행의 제한된 열만 수정하고 감사·receipt는 추가만 허용한다", () => {
     const sql = buildAdminWorkspaceRuntimeAclSql("workspace_runtime", "isolated_workspace");
     expect(sql).toContain('GRANT SELECT ON TABLE "isolated_workspace".admin_workspace TO "workspace_runtime"');
-    expect(sql).toContain('GRANT UPDATE ("revision", "payload", "payload_digest", "updated_by", "updated_at")');
-    expect(sql).toContain('GRANT SELECT, INSERT ON TABLE "isolated_workspace".admin_workspace_audit, "isolated_workspace".admin_workspace_receipt');
+    expect(sql).toContain('"operations_revision", "operations_updated_at", "business_revision", "business_updated_at", "business_owner_user_id"');
+    expect(sql).toContain('GRANT SELECT, INSERT ON TABLE "isolated_workspace".admin_workspace_audit, "isolated_workspace".admin_workspace_receipt, "isolated_workspace".admin_workspace_access_audit');
+    expect(sql).toContain('GRANT UPDATE ("can_write", "can_export", "granted_by", "updated_at", "revoked_at") ON TABLE "isolated_workspace".admin_workspace_business_grant');
     expect(sql).not.toMatch(/GRANT[^;]*(?:DELETE|TRUNCATE|REFERENCES|TRIGGER)/u);
-    expect(sql).not.toMatch(/GRANT UPDATE[^;]*(?:admin_workspace_audit|admin_workspace_receipt)/u);
+    expect(sql).not.toMatch(/GRANT UPDATE[^;]*(?:admin_workspace_audit|admin_workspace_receipt|admin_workspace_access_audit)/u);
     for (const table of ADMIN_WORKSPACE_RELATIONS) {
       expect(sql).toContain(`ALTER TABLE "isolated_workspace".${table} ENABLE ROW LEVEL SECURITY`);
       expect(sql).toContain(`CREATE POLICY ${table}_runtime`);

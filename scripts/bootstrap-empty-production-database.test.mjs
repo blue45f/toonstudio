@@ -26,6 +26,7 @@ import {
   resolveDrizzleSchemaPaths,
   validateRuntimeDatabasePassword,
 } from "./bootstrap-empty-production-database.mjs";
+import { loadMigrationManifest } from "./run-production-database-migrations.mjs";
 import { validateProductionDatabaseUrl } from "./validate-production-database-url.mjs";
 
 const RELEASE_SHA = "a".repeat(40);
@@ -308,6 +309,15 @@ describe("bootstrap SQL and repository contract", () => {
     expect(sql).not.toContain('public."user"');
   });
 
+  test("통합 관리자 보드 7개 migration의 모든 테이블을 빈 DB 전방 경계에서 다시 만든다", () => {
+    const migrations = loadMigrationManifest().filter(({ sequence }) => sequence >= 122 && sequence <= 128);
+    const tables = migrations.flatMap(({ contents }) => [...contents.matchAll(/^CREATE TABLE IF NOT EXISTS public\.(\w+)\s*\(/gmu)].map((match) => match[1]));
+    expect(migrations).toHaveLength(7);
+    expect(tables).toHaveLength(19);
+    const sql = buildForwardMigrationBoundarySql();
+    for (const table of tables) expect(sql).toMatch(new RegExp(`\\bpublic\\.${table}\\b`, "u"));
+  });
+
   test("0039 소유 테이블은 현재 Drizzle 스키마와 중복 생성하지 않는다", () => {
     const foundationSql = readFileSync(
       new URL("../apps/api/src/platform/database/migrations/0039_creator_asset_platform_foundation.sql", import.meta.url),
@@ -504,13 +514,20 @@ describe("bootstrap SQL and repository contract", () => {
       "0120_studio_role_pipeline_policy",
       "0121_studio_bg3d_six_pass_bundle",
       "0122_admin_workspace",
-      "0123_admin_cloud_workboard",
+      "0123_admin_workspace_access",
+      "0124_admin_cloud_workboard",
+      "0125_admin_business_plan",
+      "0126_admin_business_plan_access",
+      "0127_admin_ai_operations",
+      "0128_admin_nestjs_quality",
     ]);
     expect(contract.fingerprint).toMatch(/^[0-9a-f]{64}$/u);
     expect(contract.fingerprintPaths).toEqual(expect.arrayContaining([
       "scripts/bootstrap-forward-migration-boundary.mjs",
       "scripts/admin-workspace-database-contract.mjs",
       "apps/api/src/platform/database/schema/admin-workspace.schema.ts",
+      "scripts/admin-nestjs-quality-database-contract.mjs",
+      "apps/api/src/platform/database/schema/admin.schema.ts",
       "scripts/production-database-connection.mjs",
       "apps/api/src/platform/database/creator-asset-platform.schema.ts",
       "apps/api/src/platform/database/creator-asset-processing.schema.ts",

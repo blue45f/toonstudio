@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { Pool, type PoolClient } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { ADMIN_SCHEMA_COLUMNS_SQL } from "./admin-schema-contract";
+import { ADMIN_SCHEMA_COLUMNS_SQL } from "./schema/admin.schema";
 
 const integrationUrl = process.env.STUDIO_LIVE_POSTGRES_INTEGRATION_URL?.trim();
 if (process.env.CI && !integrationUrl) {
@@ -16,14 +16,18 @@ const tables = ["admin_announcements", "admin_audit_logs", "admin_banned_words",
 postgres("Managed administrator PostgreSQL schema", () => {
   let pool: Pool;
   let migration: string;
-  let testAccountMigration: string;
+  let runtimeMigrations: string[];
   let legacy: string;
   const schemas: string[] = [];
 
   beforeAll(async () => {
     pool = new Pool({ connectionString: integrationUrl, max: 4, statement_timeout: 10_000 });
     migration = await readFile(new URL("./migrations/0043_admin_runtime_schema.sql", import.meta.url), "utf8");
-    testAccountMigration = await readFile(new URL("./migrations/0097_admin_member_test_accounts.sql", import.meta.url), "utf8");
+    runtimeMigrations = await Promise.all([
+      "0097_admin_member_test_accounts.sql",
+      "0125_admin_business_plan.sql",
+      "0126_admin_business_plan_access.sql",
+    ].map((file) => readFile(new URL(`./migrations/${file}`, import.meta.url), "utf8")));
     legacy = await readFile(new URL("./fixtures/admin-runtime-legacy.sql", import.meta.url), "utf8");
   });
   afterAll(async () => {
@@ -143,8 +147,8 @@ postgres("Managed administrator PostgreSQL schema", () => {
       await client.query(`GRANT USAGE ON SCHEMA "${schema}" TO "${role}"`);
       const inSchema = (sql: string) => sql.replaceAll("public.", `"${schema}".`)
         .replaceAll("to_regnamespace('public')", `to_regnamespace('${schema}')`);
-      // 현재 ACL은 0097도 요구한다. 과거 0043 비교 테스트와 분리해 이 격리 fixture에만 적용한다.
-      await client.query(inSchema(testAccountMigration));
+      // 현재 ACL에 필요한 분류·사업 저장소만 추가한다. 과거 0043 비교 fixture는 유지한다.
+      for (const runtimeMigration of runtimeMigrations) await client.query(inSchema(runtimeMigration));
       await client.query(`INSERT INTO "user" VALUES ('classification-member')`);
       await expect(client.query(inSchema(buildAdminCapabilitySql(role)))).rejects.toThrow("administrator runtime DML privileges are incomplete");
       await client.query(inSchema(buildAdminRuntimeAclSql(role)));

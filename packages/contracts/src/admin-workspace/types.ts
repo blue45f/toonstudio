@@ -1,7 +1,12 @@
+import type { AdminWorkspaceAccess, AdminWorkspaceScope } from "./access-types";
+import type { WorkspaceChangeIdentity, WorkspaceOperationalState } from "./change-identity";
+import type { WorkspaceEvidence, WorkspaceEvidenceTarget } from "./evidence";
+
 /** 관리자 기록은 사실 확인·승인 현황만 관리하며 외부 작업을 실행하지 않는다. */
 export const WORKSPACE_STATUSES = ["초안", "검토 필요", "근거 확인 중", "보완 완료", "승인 대기", "최종 확인"] as const;
 export const WORKSPACE_FACT_STATUSES = ["미확인", "확인 중", "확인", "상충", "제외"] as const;
 export const WORKSPACE_MODULES = [
+  { id: "coordination", label: "통합 검토" },
   { id: "business", label: "사업계획·제출" },
   { id: "cloud", label: "클라우드 작업" },
   { id: "nestjs", label: "NestJS 호환성" },
@@ -59,6 +64,11 @@ export interface WorkspaceRecord {
   approvalOnly: boolean;
   approvalReason: string;
   origin: WorkspaceOrigin | null;
+  /** 옛 기록은 비어 있는 증거를 성공으로 자동 승격하지 않고 그대로 읽을 수 있다. */
+  evidence?: WorkspaceEvidence[];
+  evidenceTarget?: WorkspaceEvidenceTarget;
+  changeIdentity?: WorkspaceChangeIdentity;
+  operationalState?: WorkspaceOperationalState;
 }
 export interface WorkspaceDocumentContent { label: string; url: string; content: string; updatedAt: string }
 export interface WorkspaceMentorItem {
@@ -91,9 +101,10 @@ export interface AdminWorkspace {
 }
 export interface AdminWorkspaceView {
   boardId: "toonstudio"; revision: number; state: AdminWorkspace | null; updatedAt: string | null; canEdit: boolean;
+  scope: AdminWorkspaceScope; access: AdminWorkspaceAccess;
 }
-export interface AdminWorkspaceSave { expectedRevision: number; mutationId: string; state: AdminWorkspace }
+export interface AdminWorkspaceSave { expectedRevision: number; mutationId: string; state: AdminWorkspace; scope?: AdminWorkspaceScope; claimBusinessOwnership?: boolean }
 export interface WorkspaceGate { id: string; title: string; count: number; detail: string; tone: "good" | "warn" | "bad" }
 export interface WorkspaceFreshness { label: string; tone: "good" | "warn" | "bad" | "neutral"; ageDays: number | null }
-export interface AdminWorkspaceSaveAck { boardId: "toonstudio"; revision: number; updatedAt: string; replayed: boolean }
+export interface AdminWorkspaceSaveAck { boardId: "toonstudio"; revision: number; updatedAt: string; replayed: boolean; scope: AdminWorkspaceScope }
 export type AdminWorkspaceSaveResult = AdminWorkspaceSaveAck;

@@ -273,7 +273,7 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 | API `server` 파일 | 28 |
 | API `platform/http` 파일 | 13 |
 | API `platform/adapters` 파일 | 78 |
-| API `platform/database` 파일 | 177 |
+| API `platform/database` 파일 | 181 |
 | `packages/core` 파일 | 148 |
 | `lint:strict` 경고 예산 (`lintStrictMaxWarnings`) | 2,189 |
 
@@ -357,16 +357,31 @@ pnpm run typecheck
 이 승인은 코드·migration 파일·분리 로컬 DB 검증에 한정하며 운영 DB 적용·배포를 허가하지 않는다.
 
 2026-11-18 관리자 통합 작업실은 전용 ORM 선언 `schema/admin-workspace.schema.ts`와
-추가형 migration `0122_admin_workspace.sql` 두 파일을 더해 DB 소스 상한을 174에서 176으로 기록한다.
+추가형 migration `0122_admin_workspace.sql`·`0123_admin_workspace_access.sql`을 함께 추가한다.
 작업실의 DB 접근은 `modules/admin-workspace`가 소유하며 Admin/API가 공유하는 검증 계약만
 runtime-neutral contracts에 둔다. 다른 파일 수·파일 크기·앱 경계 검사 기준은 유지한다.
 비공개 사업·운영 원문은 공개 번들에 넣지 않고 인증된 관리자 JSON 가져오기로 전달한다.
 이 범위는 소스 구현·검증·원격 main 병합이며 운영 DB 적용·배포·계정 변경을 실행하지 않는다.
-
 2026-11-18 관리자 클라우드 작업 보드 통합은 추가형 migration
-`0123_admin_cloud_workboard.sql` 한 파일을 더해 DB 소스 상한을 176에서 177로 기록한다.
-먼저 병합된 통합 작업실의 `0122_admin_workspace.sql`을 보존해 migration 번호 중복을 피한다.
+`0124_admin_cloud_workboard.sql` 한 파일을 추가한다.
 본문·감사 이력·저장 재시도 영수증의 Drizzle 정의는 기존 `admin.schema.ts`에 포함한다.
 공통 DTO와 검증 규칙은 Admin/API의 실제 두 소비자를 위해 contracts에 두고 앱 간 소스 참조를 만들지 않는다.
 기존 사용자별 Sites 기록은 번들에 넣지 않으며 명시적 JSON 가져오기로만 전달한다.
 이번 범위는 코드 구현·검증·원격 main 머지이며 운영 DB 적용·배포·계정 변경은 승인 대기로 남긴다.
+2026-11-18 사업계획서 관리자 보드는 `apps/admin-web/src/domains/business-plan`과
+`apps/api/src/modules/business-plan`이 화면과 저장을 각각 소유한다. 두 소비자가 공유하는
+검증·DTO·빈 양식은 `@toonstudio/contracts/business-plan`의 공개 경계를 사용한다.
+실제 사업자료·개인 링크는 소스에 포함하지 않고 인증된 관리자용 서버 기록으로만 저장한다.
+추가형 `0125_admin_business_plan.sql`은 정본·불변 버전·감사·멱등 영수증을 추가하고,
+`0126_admin_business_plan_access.sql`은 명시적 소유권·grant·접근 감사를 추가한다.
+Drizzle 정의는 기존 `admin.schema.ts`에 둔다. 다른 소스·경계·파일 크기 예산은 올리지 않는다.
+코드 병합은 운영 DB 적용이나 배포를 실행하지 않는다.
+
+2026-11-18 통합 소스 기준은 추가형 migration 7개를 순서대로 유지한다.
+`0122_admin_workspace.sql`, `0123_admin_workspace_access.sql`,
+`0124_admin_cloud_workboard.sql`, `0125_admin_business_plan.sql`,
+`0126_admin_business_plan_access.sql`, `0127_admin_ai_operations.sql`,
+`0128_admin_nestjs_quality.sql`이다. 기존 0001~0121 SQL은 변경하지 않는다.
+DB 파일 수는 기존 174 + 새 SQL 7 + 작업실 schema 1 - 기존 관리자 정적 검사 파일 1 = 181이다.
+NestJS 보드가 정적 검사 SQL을 기존 `schema/admin.schema.ts`로 합친 구조를 재사용한다.
+새 유료 자원이나 운영 DB 적용은 포함하지 않는다.

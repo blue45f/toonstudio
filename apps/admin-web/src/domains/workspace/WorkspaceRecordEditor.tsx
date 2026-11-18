@@ -2,6 +2,7 @@ import { WORKSPACE_CLAIM_KINDS, WORKSPACE_FACT_STATUSES, WORKSPACE_STATUSES, wor
 import { useState } from "react";
 
 import { formDate, formText, WorkspaceBadge, WorkspaceDialog, WorkspaceField, WorkspaceFormError, WorkspaceLink, WorkspaceSection } from "./workspace-ui";
+import { WorkspaceEvidencePanel } from "./WorkspaceEvidencePanel";
 
 import type { AdminWorkspace, WorkspaceRecord } from "@toonstudio/contracts/admin-workspace";
 import type { FormEvent } from "react";
@@ -9,9 +10,10 @@ import type { FormEvent } from "react";
 interface Props {
   state: AdminWorkspace; record: WorkspaceRecord; editable: boolean; busy: boolean; isNew: boolean;
   onSave: (record: WorkspaceRecord) => Promise<string | null>; onClose: () => void;
+  onEvidence?: (record: WorkspaceRecord) => void;
 }
 
-export function WorkspaceRecordEditor({ state, record, editable, busy, isNew, onSave, onClose }: Props) {
+export function WorkspaceRecordEditor({ state, record, editable, busy, isNew, onSave, onClose, onEvidence }: Props) {
   const [error, setError] = useState("");
   const numeric = record.recordType !== "task";
   const textFields = ["title", "category", "project", "owner", "assignment", "nextAction", "notes", "text", "sourceTitle", "sourceUrl", "quote", "secondSourceTitle", "secondSourceUrl", "reviewer", "verificationNote", "unit", "period", "scope", "formula", "assumptions", "localSha", "remoteSha", "mainSha", "deployedSha"] as const;
@@ -32,6 +34,18 @@ export function WorkspaceRecordEditor({ state, record, editable, busy, isNew, on
     next.sourceDate = formDate(data, "sourceDate", record.sourceDate);
     next.verifiedAt = formDate(data, "verifiedAt", record.verifiedAt);
     next.freshnessDays = Number(formText(data, "freshnessDays"));
+    if (data.has("linkedRepository")) {
+      const repository = formText(data, "linkedRepository");
+      const pullRequest = formText(data, "linkedPr");
+      if (repository || pullRequest) next.changeIdentity = { ...record.changeIdentity, repository, pullRequest: Number(pullRequest), pullRequestState: record.changeIdentity?.pullRequestState ?? "unknown" };
+    }
+    if (data.has("workStatus")) next.operationalState = {
+      workStatus: formText(data, "workStatus") as NonNullable<WorkspaceRecord["operationalState"]>["workStatus"],
+      pullRequestStatus: record.operationalState?.pullRequestStatus ?? "unknown",
+      ciStatus: record.operationalState?.ciStatus ?? "unknown", deploymentStatus: record.operationalState?.deploymentStatus ?? "unknown",
+      approvalStatus: record.operationalState?.approvalStatus ?? (record.approvalOnly ? "pending" : "not-requested"),
+      ...(record.operationalState?.approvalEvidence ? { approvalEvidence: record.operationalState.approvalEvidence } : {}),
+    };
     if (numeric) {
       const value = formText(data, "value");
       if (value !== "" && !workspaceNumeric(value)) { setError("수치는 유효한 숫자로 입력하고, 미확인 값은 비워 두세요."); return; }
@@ -40,6 +54,7 @@ export function WorkspaceRecordEditor({ state, record, editable, busy, isNew, on
     }
     const result = await onSave(next);
     if (result) setError(result);
+    else if ((event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") === "evidence" && onEvidence) onEvidence(next);
     else onClose();
   }
   return <WorkspaceDialog title={isNew ? "새 기록 추가" : record.title} description={editable ? "원문 근거와 현재 검증을 기록합니다. 핵심 내용이 바뀌면 확인 상태가 해제됩니다." : "읽기 전용입니다. 원문과 현재 검증 기록을 확인할 수 있습니다."} busy={busy} onClose={onClose}>
@@ -62,6 +77,11 @@ export function WorkspaceRecordEditor({ state, record, editable, busy, isNew, on
             <WorkspaceField name="nextAction" label="다음 조치" value={record.nextAction} area full />
             <WorkspaceField name="notes" label="검토 메모" value={record.notes} area full />
           </WorkspaceSection>
+          {record.module === "coordination" ? <WorkspaceSection title="기존 작업 연결" help="같은 PR·원본 항목의 작업을 중복 등록하지 않습니다. PR 상태·CI·배포·승인은 각각의 근거로 확인합니다.">
+            <WorkspaceField name="linkedRepository" label="연결 저장소 (owner/repo)" value={record.changeIdentity?.repository ?? ""} />
+            <WorkspaceField name="linkedPr" label="기존 PR 번호" type="number" value={record.changeIdentity?.pullRequest ?? ""} />
+            <WorkspaceField name="workStatus" label="실제 업무 상태" value={record.operationalState?.workStatus ?? "todo"} options={[{ value: "todo", label: "할 일" }, { value: "in_progress", label: "진행 중" }, { value: "blocked", label: "차단됨" }, { value: "done", label: "업무 완료" }]} />
+          </WorkspaceSection> : null}
           <WorkspaceSection title="검증할 주장" help="진행 상태와 사실 확인은 별도로 관리합니다. 출처가 없는 수치와 비교는 미확인입니다.">
             <WorkspaceField name="text" label="검증할 원문 문장" value={record.text} area full />
             <WorkspaceField name="kind" label="주장 유형" value={record.kind} options={numeric ? WORKSPACE_CLAIM_KINDS : ["일반"]} />
@@ -93,10 +113,11 @@ export function WorkspaceRecordEditor({ state, record, editable, busy, isNew, on
             <WorkspaceField name="deployedSha" label="운영 배포 SHA (40자리)" value={record.deployedSha} />
           </WorkspaceSection> : null}
         </fieldset>
+        <WorkspaceEvidencePanel record={record} />
         <div className="workspace-inline"><WorkspaceLink url={record.sourceUrl} /><WorkspaceLink url={record.secondSourceUrl}>교차검증 원문</WorkspaceLink></div>
         {record.origin ? <details className="workspace-source-details"><summary>보존한 원본 기록 <WorkspaceBadge>가져온 자료</WorkspaceBadge></summary><p className="workspace-muted">원본 판정은 현재 사실 확인으로 자동 승격하지 않습니다.</p><pre>{JSON.stringify(record.origin.raw, null, 2)}</pre></details> : null}
       </div>
-      <footer className="workspace-dialog-footer"><button type="button" onClick={onClose} disabled={busy}>닫기</button>{editable ? <button className="workspace-primary" type="submit" disabled={busy}>{busy ? "저장 중…" : "기록 저장"}</button> : null}</footer>
+      <footer className="workspace-dialog-footer"><button type="button" onClick={onClose} disabled={busy}>닫기</button>{editable && onEvidence ? <button type="submit" value="evidence" disabled={busy}>기록 저장 후 증거 연결</button> : null}{editable ? <button className="workspace-primary" type="submit" disabled={busy}>{busy ? "저장 중…" : "기록 저장"}</button> : null}</footer>
     </form>
   </WorkspaceDialog>;
 }

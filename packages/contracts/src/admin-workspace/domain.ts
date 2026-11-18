@@ -1,3 +1,4 @@
+import { assessWorkspaceEvidenceSet } from "./evidence";
 import { WORKSPACE_APPROVAL_TYPES } from "./types";
 import { parseAdminWorkspace, workspaceDate, workspaceEvidenceIssues, workspaceDataEqual as workspaceEqual, WORKSPACE_EXECUTION_CATEGORIES } from "./validation";
 
@@ -58,10 +59,15 @@ export function workspaceFreshness(record: WorkspaceRecord, now = new Date()): W
   if (ageDays < 0) return { label: "미래 검증일", tone: "bad", ageDays };
   if (record.factStatus !== "확인") return { label: "현재 사실 미확인", tone: "neutral", ageDays };
   if (workspaceEvidenceIssues(record, now).length) return { label: "검증 근거 불완전", tone: "bad", ageDays };
+  if (record.evidence?.length) {
+    if (!record.evidenceTarget) return { label: "실행·배포 대조 대상 미입력", tone: "warn", ageDays };
+    const assessment = assessWorkspaceEvidenceSet(record.evidence, record.evidenceTarget, now);
+    if (!assessment.current) return { label: "실행·배포 증거 재확인 필요", tone: assessment.status === "failed" ? "bad" : "warn", ageDays };
+  }
   return now.getTime() - checked > record.freshnessDays * 86_400_000 ? { label: `${record.freshnessDays}일 경과 · 재확인 필요`, tone: "warn", ageDays }
     : { label: "현재 근거 확인", tone: "good", ageDays };
 }
-const MATERIAL_FIELDS: (keyof WorkspaceRecord)[] = ["title", "text", "kind", "value", "unit", "period", "scope", "category", "assignment", "sourceTitle", "sourceUrl", "sourceDate", "quote", "secondSourceTitle", "secondSourceUrl", "formula", "assumptions", "verificationNote", "localSha", "remoteSha", "mainSha", "deployedSha"];
+const MATERIAL_FIELDS: (keyof WorkspaceRecord)[] = ["title", "text", "kind", "value", "unit", "period", "scope", "category", "assignment", "sourceTitle", "sourceUrl", "sourceDate", "quote", "secondSourceTitle", "secondSourceUrl", "formula", "assumptions", "verificationNote", "localSha", "remoteSha", "mainSha", "deployedSha", "evidence", "evidenceTarget", "changeIdentity"];
 const IMMUTABLE_FIELDS: (keyof WorkspaceRecord)[] = ["id", "module", "recordType", "origin", "approvalOnly", "approvalReason"];
 function materialChanged(previous: WorkspaceRecord, next: WorkspaceRecord): boolean { return MATERIAL_FIELDS.some(key => !workspaceEqual(previous[key], next[key])); }
 function error<T>(errors: string[]): WorkspaceResult<T> { return { ok: false, value: null, errors }; }
@@ -79,6 +85,7 @@ export function validateWorkspaceTransition(previous: AdminWorkspace | null, nex
         && createAdminWorkspace().records.some(item => workspaceEqual(item, before));
       if (!initial && !workspaceEqual(before[key], record[key])) errors.push(`${record.title}: 원문 연결과 승인 제한은 변경할 수 없습니다.`);
     }
+    if (before.changeIdentity?.source && !workspaceEqual(before.changeIdentity.source, record.changeIdentity?.source)) errors.push(`${record.title}: 보존한 원본 보드·항목 참조는 변경할 수 없습니다.`);
     if ((before.factStatus === "확인" || before.status === "최종 확인") && materialChanged(before, record)
       && (record.factStatus !== "미확인" || record.verifiedAt !== "" || record.status === "최종 확인")) errors.push(`${record.title}: 주장·근거가 바뀌면 현재 검증을 해제해야 합니다.`);
     if (record.status === "최종 확인" && before.status !== "최종 확인" && workspaceFreshness(record, now).tone !== "good") errors.push(`${record.title}: 최신 검증 근거가 있어야 최종 확인할 수 있습니다.`);

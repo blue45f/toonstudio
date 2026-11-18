@@ -5,7 +5,7 @@ import path from "node:path";
 import { build } from "vite";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { ADMIN_QUALITY_BASE, adminQualityEntryPlugin } from "./vite-admin-quality-entry";
+import { ADMIN_BUSINESS_PLAN_BASE, ADMIN_QUALITY_BASE, adminQualityEntryPlugin } from "./vite-admin-quality-entry";
 
 const temporaryDirectories: string[] = [];
 afterEach(async () => {
@@ -42,12 +42,18 @@ describe("관리자 검증 보드의 독립 빌드 조립", () => {
     const webHtml = await readFile(path.join(outDir, "index.html"), "utf8");
     const adminHtml = await readFile(path.join(outDir, "admin/platform/quality/index.html"), "utf8");
     const workspaceHtml = await readFile(path.join(outDir, "admin/workspace/index.html"), "utf8");
+    const businessPlanHtml = await readFile(path.join(outDir, "admin/growth/business-plan/index.html"), "utf8");
+    const aiOperationsHtml = await readFile(path.join(outDir, "admin/platform/ai-operations/index.html"), "utf8");
     const manifest = JSON.parse(await readFile(path.join(outDir, ".vite/manifest.json"), "utf8")) as Record<string, { src?: string }>;
     expect(webHtml).toContain("Web fixture");
     expect(webHtml).not.toContain(ADMIN_QUALITY_BASE);
+    expect(webHtml).not.toContain(ADMIN_BUSINESS_PLAN_BASE);
     expect(adminHtml).toContain("Admin fixture");
     expect(adminHtml).toMatch(/src="\/admin\/platform\/quality\/assets\//u);
     expect(workspaceHtml).toBe(adminHtml);
+    expect(businessPlanHtml).toContain("Admin fixture");
+    expect(businessPlanHtml).toBe(adminHtml);
+    expect(aiOperationsHtml).toBe(adminHtml);
     expect(Object.keys(manifest)).toEqual(["index.html"]);
     expect(manifest["index.html"].src).toBe("index.html");
     await expect(readFile(path.join(outDir, "admin/platform/quality/.vite/manifest.json"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });

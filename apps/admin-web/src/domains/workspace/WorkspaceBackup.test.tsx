@@ -7,7 +7,7 @@ import { WorkspaceImportDialog } from "./WorkspaceBackup";
 
 const backup = vi.hoisted(() => vi.fn());
 vi.mock("./workspace-ui", async importOriginal => ({ ...await importOriginal<typeof import("./workspace-ui")>(), downloadWorkspace: backup }));
-beforeEach(() => { backup.mockReset(); });
+beforeEach(() => { backup.mockReset(); backup.mockResolvedValue(true); });
 afterEach(cleanup);
 function file(text: string): File {
   const value = new File([text], "synthetic-workspace.json", { type: "application/json" });
@@ -21,37 +21,51 @@ describe("작업실 JSON 가져오기", () => {
     const incoming = createAdminWorkspace();
     incoming.records[0].notes = "합성 가져오기 검토";
     const order: string[] = [];
-    backup.mockImplementation(() => { order.push("backup"); });
+    backup.mockImplementation(() => { order.push("backup"); return true; });
     const save = vi.fn(async () => { order.push("save"); return null; });
-    render(<WorkspaceImportDialog state={current} editable busy={false} onSave={save} onClose={vi.fn()} />);
+    render(<WorkspaceImportDialog state={current} scope="business" canExport backup={backup} editable busy={false} onSave={save} onClose={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("백업 JSON 파일"), { target: { files: [file(JSON.stringify(incoming))] } });
     await screen.findByRole("region", { name: "가져오기 미리보기" });
     expect(save).not.toHaveBeenCalled();
     expect(backup).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByLabelText("현재 비공개 기록을 JSON으로 먼저 내보내기"));
     fireEvent.click(screen.getByRole("button", { name: "현재 기록 백업 후 가져오기" }));
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     expect(order).toEqual(["backup", "save"]);
-    expect(backup).toHaveBeenCalledWith(current, "before-import");
+    expect(backup).toHaveBeenCalledTimes(1);
   });
 
   it("현재 편집의 백업이 실패하면 가져오기를 저장하지 않는다", async () => {
-    backup.mockImplementation(() => { throw new Error("다운로드 차단"); });
+    backup.mockResolvedValue(false);
     const save = vi.fn();
-    render(<WorkspaceImportDialog state={createAdminWorkspace()} editable busy={false} onSave={save} onClose={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText("백업 JSON 파일"), { target: { files: [file(JSON.stringify(createAdminWorkspace()))] } });
+    render(<WorkspaceImportDialog state={createAdminWorkspace()} scope="business" canExport backup={backup} editable busy={false} onSave={save} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("백업 JSON 파일"), { target: { files: [file(JSON.stringify({ ...createAdminWorkspace(), settings: { freshnessDays: 31, deadline: "", deadlineSource: "" } }))] } });
     await screen.findByRole("region", { name: "가져오기 미리보기" });
+    fireEvent.click(screen.getByLabelText("현재 비공개 기록을 JSON으로 먼저 내보내기"));
     fireEvent.click(screen.getByRole("button", { name: "현재 기록 백업 후 가져오기" }));
-    expect((await screen.findByRole("alert")).textContent).toContain("백업 파일을 만들지 못했습니다");
+    expect((await screen.findByRole("alert")).textContent).toContain("백업을 확인하지 못해");
     expect(save).not.toHaveBeenCalled();
   });
 
   it("손상된 JSON은 현재 화면과 저장본을 바꾸지 않고 오류를 알린다", async () => {
     const save = vi.fn();
-    render(<WorkspaceImportDialog state={createAdminWorkspace()} editable busy={false} onSave={save} onClose={vi.fn()} />);
+    render(<WorkspaceImportDialog state={createAdminWorkspace()} scope="business" canExport backup={backup} editable busy={false} onSave={save} onClose={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("백업 JSON 파일"), { target: { files: [file('{"broken":')] } });
     expect((await screen.findByRole("alert")).textContent).toContain("JSON 파일을 읽을 수 없습니다");
     expect(screen.queryByRole("region", { name: "가져오기 미리보기" })).toBeNull();
     expect(save).not.toHaveBeenCalled();
+    expect(backup).not.toHaveBeenCalled();
+  });
+
+  it("내보내기 허용이 없는 담당자도 비공개 자료를 내려받지 않고 허용된 가져오기를 저장한다", async () => {
+    const incoming = createAdminWorkspace(); incoming.records[0].notes = "합성 새 원문 검토";
+    const save = vi.fn(async () => null);
+    render(<WorkspaceImportDialog state={createAdminWorkspace()} scope="business" canExport={false} backup={backup} editable busy={false} onSave={save} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("백업 JSON 파일"), { target: { files: [file(JSON.stringify(incoming))] } });
+    await screen.findByRole("region", { name: "가져오기 미리보기" });
+    expect(screen.queryByLabelText("현재 비공개 기록을 JSON으로 먼저 내보내기")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "검토한 기록 가져오기" }));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     expect(backup).not.toHaveBeenCalled();
   });
 });

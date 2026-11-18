@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
-import { dbPool } from "../../platform/database";
 import { TrafficAnalyticsModule } from "../traffic-analytics/traffic-analytics.module";
+import { dbPool } from "../../platform/database";
+import { AiOperationsController } from "./ai-operations/ai-operations.controller";
+import { AI_OPERATIONS_POOL, AiOperationsRepository } from "./ai-operations/ai-operations.repository";
 
 import { AdminAnnouncementsService } from "./admin-announcements.service";
 import { AdminCloudWorkboardController } from "./admin-cloud-workboard.controller";
@@ -18,8 +20,10 @@ import { AdminService } from "./admin.service";
 
 @Module({
   imports: [TrafficAnalyticsModule],
-  controllers: [AdminController, AdminTrafficController, AdminCloudWorkboardController],
+  controllers: [AdminController, AdminTrafficController, AdminCloudWorkboardController, AiOperationsController],
   providers: [
+    { provide: AI_OPERATIONS_POOL, useValue: dbPool },
+    AiOperationsRepository,
     { provide: ADMIN_CLOUD_WORKBOARD_POOL, useValue: dbPool },
     AdminCloudWorkboardRepository,
     AdminService,

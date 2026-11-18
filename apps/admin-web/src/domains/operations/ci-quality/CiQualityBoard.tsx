@@ -32,8 +32,8 @@ function CiQualityWorkspace({ userIdentity }: { userIdentity: string }) {
   const [unsaved, setUnsaved] = useState(false);
   const [storageConflict, setStorageConflict] = useState(false);
   const [confirmReload, setConfirmReload] = useState(false);
-  const [page, setPage] = useState<WorkspacePage>("checks");
-  const [dependencyVisited, setDependencyVisited] = useState(false);
+  const [page, setPage] = useState<WorkspacePage>(() => new URLSearchParams(window.location.search).get("view") === "dependency-review" ? "dependency-review" : "checks");
+  const [dependencyVisited, setDependencyVisited] = useState(page === "dependency-review");
   const [dependencyDirty, setDependencyDirty] = useState(false);
   const [modal, setModal] = useState<QualityModal>(null);
   const [notice, setNotice] = useState("");

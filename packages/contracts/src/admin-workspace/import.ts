@@ -1,6 +1,5 @@
-import { sha256HexPortable } from "../sha256-portable";
-
 import { createAdminWorkspace, createWorkspaceRecord, validateWorkspaceTransition, workspaceEqual } from "./domain";
+import { mergeWorkspaceImportedRecords, workspaceSnapshotDigest } from "./import-review";
 import { MAX_WORKSPACE_BYTES, MAX_WORKSPACE_RECOVERY_BYTES, WORKSPACE_APPROVAL_TYPES, WORKSPACE_CLAIM_KINDS, WORKSPACE_MODULES, WORKSPACE_STATUSES } from "./types";
 import { parseAdminWorkspace, workspaceDate, workspaceJson, workspaceNumeric, workspaceObject, WORKSPACE_EXECUTION_CATEGORIES } from "./validation";
 
@@ -34,7 +33,7 @@ export function importAdminWorkspace(input: unknown, previous?: AdminWorkspace, 
     });
     const imports = [...parsed.value.imports, ...(previous?.imports.filter(item => !parsed.value.imports.some(entry => entry.id === item.id)) ?? [])];
     if (invalidated) {
-      const importId = `import-native-${sha256HexPortable(new TextEncoder().encode(JSON.stringify(data))).slice(0, 32)}`;
+      const importId = `import-native-${workspaceSnapshotDigest(data).slice(0, 32)}`;
       if (!imports.some(item => item.id === importId)) imports.push({ id: importId, label: "관리자 작업실 이전 검증 기록", importedAt: now.toISOString(), format: "native-backup", archive: json.value });
     }
     const state: AdminWorkspace = { ...parsed.value, records, imports };
@@ -51,8 +50,8 @@ export function importAdminWorkspace(input: unknown, previous?: AdminWorkspace, 
     if (!Array.isArray(business[field]) || business[field].length === 0) return failure(`${field}: 이전 보드의 필수 목록이 없습니다.`);
   }
   if (unified && (!workspaceObject(operations) || !Array.isArray(operations.records) || !operations.records.length)) return failure("운영 보드 원문 항목이 없습니다.");
-  const importId = `import-${sha256HexPortable(new TextEncoder().encode(JSON.stringify(data))).slice(0, 32)}`;
-  if (previous?.imports.some(item => item.id === importId)) return { ok: true, value: previous, errors: [] };
+  const importId = `import-${workspaceSnapshotDigest(data).slice(0, 32)}`;
+  if (previous?.imports.some(item => item.id === importId || workspaceEqual(item.archive, data))) return { ok: true, value: previous, errors: [] };
   const reader = new LegacyReader(importId, now);
   const records = [
     ...reader.list(business.tasks, "tasks").map(item => reader.record(item, "business", "task")),
@@ -93,7 +92,7 @@ export function importAdminWorkspace(input: unknown, previous?: AdminWorkspace, 
   }
   const result: AdminWorkspace = {
     ...previous,
-    records: merge(previous.records, parsed.value.records, initial.records), documents: merge(previous.documents, parsed.value.documents, initial.documents),
+    records: mergeWorkspaceImportedRecords(previous.records, parsed.value.records, initial.records), documents: merge(previous.documents, parsed.value.documents, initial.documents),
     mentor: merge(previous.mentor, parsed.value.mentor, initial.mentor), checklist: merge(previous.checklist, parsed.value.checklist, initial.checklist),
     approvals: merge(previous.approvals, parsed.value.approvals, initial.approvals), imports: [...previous.imports, ...parsed.value.imports],
     settings: workspaceEqual(previous.settings, initial.settings) ? parsed.value.settings : previous.settings,
@@ -150,6 +149,12 @@ class LegacyReader {
     if (result.approvalOnly) result.status = "승인 대기";
     const raw = workspaceJson(item); if (!raw.ok) this.errors.push(...raw.errors);
     result.origin = { importId: this.importId, sourceId: get("sourceId") || "business", sourceRecordId: get("sourceRecordId") || id, raw: raw.ok ? raw.value : null };
+    const sourceProjectId = get("sourceProjectId");
+    result.changeIdentity = { source: {
+      provider: sourceProjectId ? "sites" : "admin",
+      boardId: sourceProjectId || "legacy-import:" + result.origin.sourceId,
+      recordId: result.origin.sourceRecordId,
+    } };
     return result;
   }
   content(value: unknown, path: string): WorkspaceDocumentContent {

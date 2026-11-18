@@ -81,6 +81,8 @@
 .workspace-count { color: var(--workspace-muted); font-size: 12px; font-weight: 500; }
 .workspace-panel-body { padding: 18px 20px; }
 .workspace-panel-body > p { margin: 12px 0; }
+.workspace-evidence-entry { padding: 14px 0; border-top: 1px solid var(--workspace-line); overflow-wrap: anywhere; }
+.workspace-panel[aria-label="CI·배포 증거"] .workspace-panel-body { overflow-wrap: anywhere; }
 .workspace-panel-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--workspace-line); padding: 13px 20px; font-size: 11px; color: var(--workspace-muted); }
 .workspace-toolbar { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--workspace-line); }
 .workspace-toolbar > label { min-width: 120px; flex: 0 1 auto; }
