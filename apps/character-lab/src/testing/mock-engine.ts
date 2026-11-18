@@ -271,6 +271,9 @@ export function createMockEngine(options: MockEngineOptions = {}): MockEngine {
       record("jointHandles");
       return [];
     },
+    async setHandProp(attachment) {
+      record("setHandProp", attachment);
+    },
     updatePaintTexture(layer) {
       record("updatePaintTexture", layer);
       paintUploads.push(layer);

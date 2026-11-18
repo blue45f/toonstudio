@@ -146,6 +146,17 @@ export interface JointDragHandle {
   readonly world: Vec3;
 }
 
+export const HAND_PROP_IDS = ["smartphone", "coffee-cup", "case-folder", "aether-blade"] as const;
+export type HandPropId = (typeof HAND_PROP_IDS)[number];
+export type HandPropSide = "rightHand" | "leftHand";
+
+export interface HandPropAttachment {
+  readonly propId: HandPropId;
+  readonly hand: HandPropSide;
+  readonly glbUrl: string;
+  readonly sha256?: string;
+}
+
 export interface CharacterEngine {
   readonly backend: EngineBackend;
   readonly diagnostics: EngineDiagnostics;
@@ -179,6 +190,8 @@ export interface CharacterEngine {
   eyeGaze?(): import("./eye-gaze").EyeGazeReading;
   /** 현재 소스·재질에서 PSD 헤어 분리의 기하학적 소유권 캡처를 지원하는지 확인한다. */
   psdHairLayers?(): import("./capture").HairLayerSupport;
+  /** 캐릭터 손 본(rightHand / leftHand)에 웹툰 3D 손 소품을 장착하거나 해제(null)한다. */
+  setHandProp?(attachment: HandPropAttachment | null): Promise<void>;
   updatePaintTexture(layer: PaintLayer): void;
   exportGlb(): Promise<Uint8Array>;
   readHud(): HudSample;

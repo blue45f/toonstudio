@@ -31,6 +31,11 @@ import {
   type BlenderFreestyleInkPreset,
   type BlenderNprShaderPreset,
 } from "../scene-3d/studio-3d-blender-npr-shader-freestyle";
+import { StudioBg3dArticulatedIkBridgeCard } from "./StudioBg3dArticulatedIkBridgeCard";
+import {
+  evaluateArticulatedPropAndIkSocketBridge,
+  type ArticulatedV20PropId,
+} from "./studio-bg3d-articulated-ik-bridge";
 import { buildBlenderPresetScenePrimitives } from "./studio-bg3d-blender-full-engine";
 import { StudioBg3dBlenderFullSections } from "./StudioBg3dBlenderFullSections";
 import {
@@ -50,6 +55,11 @@ import {
   evaluateBlenderSceneIsolationGuard,
   evaluateVerticalScrollCutPacing,
 } from "./studio-bg3d-scroll-pacing-live-sync";
+import {
+  evaluateDarkroomProofingState,
+  evaluateGenreCutDensityAndRejectionRoi,
+  type CrossGenreDatumGenreId,
+} from "./studio-bg3d-shared-datum-proofing";
 import {
   evaluateGenreLockGuardrail,
   evaluateVerifyAiPreflightGates,
@@ -115,6 +125,12 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
   const [bg3dAdoptionRatioPct, setBg3dAdoptionRatioPct] = useState<number>(45);
   const [avgRevisionsPerEpisode, setAvgRevisionsPerEpisode] = useState<number>(6);
   const [lookDevGateConfirmed, setLookDevGateConfirmed] = useState<boolean>(false);
+  const [selectedDatumGenreId, setSelectedDatumGenreId] = useState<CrossGenreDatumGenreId>("murim");
+  const [darkroomProofingEnabled, setDarkroomProofingEnabled] = useState<boolean>(false);
+  const [v20PropId, setV20PropId] = useState<ArticulatedV20PropId>("murim-lattice-moongate");
+  const [v20OpenRatioPct, setV20OpenRatioPct] = useState<number>(65);
+  const [v20IkSnapEnabled, setV20IkSnapEnabled] = useState<boolean>(true);
+  const [v20Follow3dSpeedlinesEnabled, setV20Follow3dSpeedlinesEnabled] = useState<boolean>(true);
   const [selectedLightingId, setSelectedLightingId] = useState<string>(BLENDER_FANTASY_LIGHTING_RIG_PRESETS[0]!.id);
   const [customKelvin, setCustomKelvin] = useState<number>(5600);
   const [selectedShaderId, setSelectedShaderId] = useState<string>(BLENDER_NPR_SHADER_PRESETS[0]!.id);
@@ -247,6 +263,28 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
     [genreLockMode, activeFreestylePreset.baseThicknessPx, customKelvin, shaderEvaluation.dispersionRgbShift],
   );
   const sceneIsolationReport = useMemo(() => evaluateBlenderSceneIsolationGuard(), []);
+  const rejectionRoiReport = useMemo(
+    () =>
+      evaluateGenreCutDensityAndRejectionRoi({
+        genreId: selectedDatumGenreId,
+        bg3dAdoptionRatioPct,
+      }),
+    [selectedDatumGenreId, bg3dAdoptionRatioPct],
+  );
+  const darkroomProofingState = useMemo(
+    () => evaluateDarkroomProofingState(darkroomProofingEnabled, customKelvin, lightingEvaluation.contrastRatio),
+    [darkroomProofingEnabled, customKelvin, lightingEvaluation.contrastRatio],
+  );
+  const articulatedIkEval = useMemo(
+    () =>
+      evaluateArticulatedPropAndIkSocketBridge({
+        propId: v20PropId,
+        openRatioPct: v20OpenRatioPct,
+        ikSnapEnabled: v20IkSnapEnabled,
+        follow3dSpeedlinesEnabled: v20Follow3dSpeedlinesEnabled,
+      }),
+    [v20PropId, v20OpenRatioPct, v20IkSnapEnabled, v20Follow3dSpeedlinesEnabled],
+  );
 
   const multiPassPlan = useMemo(
     () => evaluateMultiPassToonPsdExportPlan({ qualityTier: renderQualityTier, webgpuComputeAvailable: true }),
@@ -287,7 +325,11 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
   );
 
   return (
-    <div data-testid="bg3d-blender-fantasy-webtoon-panel" className="flex flex-col gap-3 p-3 text-xs text-fg">
+    <div
+      data-testid="bg3d-blender-fantasy-webtoon-panel"
+      data-darkroom-proofing={darkroomProofingEnabled ? "true" : "false"}
+      className={`flex flex-col gap-3 p-3 text-xs text-fg ${darkroomProofingEnabled ? "rounded-2xl bg-[#141415] text-[#f2f2f3]" : ""}`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel px-3 py-2.5">
         <div className="inline-flex items-center gap-2 text-sm font-semibold text-fg">
           <SlidersHorizontal size={16} strokeWidth={1.5} className="shrink-0 text-fg-2" aria-hidden />
@@ -626,6 +668,17 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         bg3dAdoptionRatioPct={bg3dAdoptionRatioPct}
         avgRevisionsPerEpisode={avgRevisionsPerEpisode}
         lookDevGateConfirmed={lookDevGateConfirmed}
+        selectedDatumGenreId={selectedDatumGenreId}
+        rejectionRoiReport={rejectionRoiReport}
+        darkroomProofingState={darkroomProofingState}
+        onSelectDatumGenreId={(genreId) => {
+          setSelectedDatumGenreId(genreId);
+          onStatusChange?.(`공통 건축 기준선 전환: ${genreId}`);
+        }}
+        onToggleDarkroomProofing={(enabled) => {
+          setDarkroomProofingEnabled(enabled);
+          onStatusChange?.(enabled ? "무채색 암실 검수 모드 활성화 (ΔE 0.0)" : "표준 작업대 화면 복귀");
+        }}
         onChangeGenreLockMode={setGenreLockMode}
         onChangeBg3dAdoptionRatioPct={setBg3dAdoptionRatioPct}
         onChangeAvgRevisionsPerEpisode={setAvgRevisionsPerEpisode}
@@ -669,6 +722,18 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
           onVerifyAiGate?.(score, passed);
         }}
         onStatusChange={onStatusChange}
+      />
+
+      <StudioBg3dArticulatedIkBridgeCard
+        disabled={disabled}
+        evaluation={articulatedIkEval}
+        onSelectPropId={(propId) => {
+          setV20PropId(propId);
+          onStatusChange?.(`V20 가동 파츠 전환: ${propId}`);
+        }}
+        onChangeOpenRatioPct={setV20OpenRatioPct}
+        onToggleIkSnap={setV20IkSnapEnabled}
+        onToggleFollow3dSpeedlines={setV20Follow3dSpeedlinesEnabled}
       />
 
       <StudioBg3dBlenderFullSections

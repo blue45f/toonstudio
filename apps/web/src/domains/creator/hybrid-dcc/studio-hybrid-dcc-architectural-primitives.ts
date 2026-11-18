@@ -279,6 +279,70 @@ export const STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT: readonly StudioHybridDcc
     },
   ]);
 
+/** Blender 5.3 공통 건축 기준선(Shared Datum: 2.4m/1.1m/0.74m/0.18m) V19(3종, CC0-1.0) — 현대 펜트하우스·무협 월문 누각·SF 함교 에어락. */
+export const STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT: readonly StudioHybridDccPrecisionBgKitItem[] =
+  Object.freeze([
+    {
+      id: "webtoon-modern-penthouse-terrace-datum-bay-v19",
+      fileName: "webtoon-modern-penthouse-terrace-datum-bay-v19.glb",
+      glbUrl: "/studio-assets/blender-shared-datum-v19/webtoon-modern-penthouse-terrace-datum-bay-v19.glb",
+      previewUrl: "/studio-assets/blender-shared-datum-v19/thumbnails/webtoon-modern-penthouse-terrace-datum-bay-v19.png",
+      label: ["현대 펜트하우스 통창·데스크 베이", "Modern penthouse datum bay"],
+      hint: ["2.4m 통창·1.1m 유리 난간·0.74m 월넛 데스크", "2.4m curtain-wall, 1.1m glass rail & 0.74m desk"],
+      triangles: 2332,
+    },
+    {
+      id: "webtoon-murim-moon-gate-pavilion-datum-v19",
+      fileName: "webtoon-murim-moon-gate-pavilion-datum-v19.glb",
+      glbUrl: "/studio-assets/blender-shared-datum-v19/webtoon-murim-moon-gate-pavilion-datum-v19.glb",
+      previewUrl: "/studio-assets/blender-shared-datum-v19/thumbnails/webtoon-murim-moon-gate-pavilion-datum-v19.png",
+      label: ["무협 월문·청옥 난간 기준선 누각", "Murim Moon-Gate datum pavilion"],
+      hint: ["2.4m 원형 월문·1.1m 청옥 난간·0.74m 서안", "2.4m Moon Gate, 1.1m celadon rail & 0.74m table"],
+      triangles: 3468,
+    },
+    {
+      id: "webtoon-scifi-airlock-bridge-datum-bay-v19",
+      fileName: "webtoon-scifi-airlock-bridge-datum-bay-v19.glb",
+      glbUrl: "/studio-assets/blender-shared-datum-v19/webtoon-scifi-airlock-bridge-datum-bay-v19.glb",
+      previewUrl: "/studio-assets/blender-shared-datum-v19/thumbnails/webtoon-scifi-airlock-bridge-datum-bay-v19.png",
+      label: ["SF 함교 에어락·홀로 콘솔 베이", "Sci-Fi airlock bridge datum bay"],
+      hint: ["2.4m 티타늄 에어락·1.1m 홀로 난간·0.74m 콘솔", "2.4m airlock, 1.1m holo-rail & 0.74m console"],
+      triangles: 2716,
+    },
+  ]);
+
+/** Blender 5.3 개폐형 가동 파츠 & 캐릭터 IK 스냅 소켓 브리지 V20(3종, CC0-1.0) — 슬라이딩 통창·쌍여닫이 월문 격자창·블래스트 에어락. */
+export const STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT: readonly StudioHybridDccPrecisionBgKitItem[] =
+  Object.freeze([
+    {
+      id: "webtoon-articulated-modern-sliding-terrace-v20",
+      fileName: "webtoon-articulated-modern-sliding-terrace-v20.glb",
+      glbUrl: "/studio-assets/blender-articulated-ik-v20/webtoon-articulated-modern-sliding-terrace-v20.glb",
+      previewUrl: "/studio-assets/blender-articulated-ik-v20/thumbnails/webtoon-articulated-modern-sliding-terrace-v20.png",
+      label: ["개폐형 현대 슬라이딩 통창·IK 베이", "Articulated modern sliding terrace"],
+      hint: ["0~100% 슬라이딩 통창·손목·난간·핸들 IK 소켓", "Sliding sash leaf & character IK snap sockets"],
+      triangles: 4296,
+    },
+    {
+      id: "webtoon-articulated-murim-lattice-moongate-v20",
+      fileName: "webtoon-articulated-murim-lattice-moongate-v20.glb",
+      glbUrl: "/studio-assets/blender-articulated-ik-v20/webtoon-articulated-murim-lattice-moongate-v20.glb",
+      previewUrl: "/studio-assets/blender-articulated-ik-v20/thumbnails/webtoon-articulated-murim-lattice-moongate-v20.png",
+      label: ["개폐형 무협 월문 격자창·IK 누각", "Articulated murim Moon-Gate shutters"],
+      hint: ["쌍여닫이 한지 격자창·서안·청옥 난간 IK 소켓", "Dual-hinge lattice shutters & celadon IK sockets"],
+      triangles: 5512,
+    },
+    {
+      id: "webtoon-articulated-scifi-iris-airlock-v20",
+      fileName: "webtoon-articulated-scifi-iris-airlock-v20.glb",
+      glbUrl: "/studio-assets/blender-articulated-ik-v20/webtoon-articulated-scifi-iris-airlock-v20.glb",
+      previewUrl: "/studio-assets/blender-articulated-ik-v20/thumbnails/webtoon-articulated-scifi-iris-airlock-v20.png",
+      label: ["개폐형 SF 블래스트 에어락·IK 베이", "Articulated sci-fi blast airlock"],
+      hint: ["양방향 해치·회전 홀로코어·콘솔 IK 소켓", "Split blast doors, holo-core & helm IK sockets"],
+      triangles: 4340,
+    },
+  ]);
+
 function vec(x: number, y: number, z: number): StudioMeshVec3 {
   return { x, y, z };
 }

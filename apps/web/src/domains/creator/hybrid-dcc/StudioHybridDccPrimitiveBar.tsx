@@ -3,6 +3,8 @@ import {
   Boxes,
   Building2,
   ChevronDown,
+  Compass,
+  DoorOpen,
   Gem,
   Layers,
   PackageOpen,
@@ -24,6 +26,8 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   type StudioHybridDccBlenderKitItem,
   type StudioHybridDccPrecisionBgKitItem,
@@ -264,6 +268,64 @@ export function StudioHybridDccPrimitiveBar({
           </div>
         </details>
       ) : null}
+
+      <details className="group rounded-xl border border-line bg-canvas/35">
+        <summary
+          data-testid="studio-hybrid-dcc-v20-articulated-kit-summary"
+          className={cn(
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-medium text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            FOCUS_RING,
+          )}
+        >
+          <span className="inline-flex min-w-0 items-center gap-2 [word-break:keep-all]">
+            <DoorOpen size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-fg" />
+            <span className="truncate tabular-nums">
+              {bt(
+                `개폐형 가동 파츠·IK 소켓 V20 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT.length}종)`,
+                `Articulated props & IK sockets V20 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT.length})`,
+              )}
+            </span>
+          </span>
+          <ChevronDown
+            size={16}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="shrink-0 text-fg-3 transition-transform duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none"
+          />
+        </summary>
+        <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain border-t border-line p-2">
+          {STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT.map(renderKitItemButton)}
+        </div>
+      </details>
+
+      <details className="group rounded-xl border border-line bg-canvas/35">
+        <summary
+          data-testid="studio-hybrid-dcc-v19-datum-kit-summary"
+          className={cn(
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-medium text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            FOCUS_RING,
+          )}
+        >
+          <span className="inline-flex min-w-0 items-center gap-2 [word-break:keep-all]">
+            <Compass size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-fg" />
+            <span className="truncate tabular-nums">
+              {bt(
+                `공통 기준선 현대·무협·SF V19 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT.length}종)`,
+                `Shared datum modern/murim/sci-fi V19 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT.length})`,
+              )}
+            </span>
+          </span>
+          <ChevronDown
+            size={16}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="shrink-0 text-fg-3 transition-transform duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none"
+          />
+        </summary>
+        <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain border-t border-line p-2">
+          {STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT.map(renderKitItemButton)}
+        </div>
+      </details>
 
       <details className="group rounded-xl border border-line bg-canvas/35">
         <summary

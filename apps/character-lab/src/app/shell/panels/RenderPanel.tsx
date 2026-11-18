@@ -14,28 +14,26 @@ import { describeAdapter } from "../engine-status-text";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
 import {
+  WEBTOON_GENRE_SCENE_PRESETS,
   WEBTOON_LIGHTING_SHADOW_PRESETS,
   WEBTOON_MATERIAL_SURFACE_PRESETS,
+  buildGenreScenePresetCommands,
   buildLightingShadowCommands,
   buildMaterialSurfaceCommands,
   buildResetMaterialLightingCommands,
   isMaterialSurfacePresetActive,
   summarizeActiveMaterialAndShadowKo,
 } from "./render-material-lighting-presets";
-import { CASCADE_CHOICES, DEFAULT_RENDER_POLL_MS, OUTLINE_LABELS_KO, QUALITY_IDS, RAMP_CHOICES, TONE_LABELS_KO, describeBetaState, failureMessage, isOutline, isToneMapping } from "./render-panel-options";
+import { CASCADE_CHOICES, DEFAULT_RENDER_POLL_MS, OUTLINE_LABELS_KO, QUALITY_IDS, RAMP_CHOICES, TONE_LABELS_KO, describeBetaState, failureMessage, isOutline, isToneMapping, renderLookOptions, unavailableFeatureReason, withoutPendingBeta } from "./render-panel-options";
 import { hudRows } from "./viewport-interactions";
 
+import type { RenderPanelProps } from "./render-panel-options";
 import type { HudSample, ShadingProfile } from "../../../contracts";
 import type { BetaFeatureId, BetaFeatureReport } from "../../../render/beta-features";
 import type { SceneFeatureReport } from "../../../render/scene-features";
 import type { ChangeEvent } from "react";
 
-export interface RenderPanelProps {
-  /** HUD·기능 보고 갱신 주기(ms). 0 이하면 한 번만 읽는다. */
-  readonly pollIntervalMs?: number;
-}
-
-export { DEFAULT_RENDER_POLL_MS, describeBetaState } from "./render-panel-options";
+export { DEFAULT_RENDER_POLL_MS, describeBetaState, type RenderPanelProps } from "./render-panel-options";
 
 export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderPanelProps) {
   const state = useLabState();
@@ -73,13 +71,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
   }, [shading.ibl.intensity]);
 
   const verifyAiReport = useMemo(
-    () =>
-      evaluateCharacterLabVerifyAiGate({
-        shading,
-        lookId: tripoLookId,
-        delight: tripoDelight,
-        disableHairInline,
-      }),
+    () => evaluateCharacterLabVerifyAiGate({ shading, ...renderLookOptions(tripoLookId, tripoDelight, disableHairInline) }),
     [shading, tripoLookId, tripoDelight, disableHairInline],
   );
 
@@ -153,11 +145,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
       if (mountedRef.current) setBetaMessage(`${EXTENDED_FEATURE_LABELS_KO[id]}: 바꾸지 못했습니다 — ${failureMessage(error)}`);
     } finally {
       if (mountedRef.current) {
-        setBetaPending((previous) => {
-          const copy = new Set(previous);
-          copy.delete(id);
-          return copy;
-        });
+        setBetaPending((previous) => withoutPendingBeta(previous, id));
         poll();
       }
     }
@@ -169,10 +157,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
   const isKit = state.recipe.source.kind === "kit";
   const hudList = hud ? hudRows(hud) : [];
   const outlineAspect = resolveOutlinePressureAspect(shading.toon.outlinePressure === true);
-  const unavailable = (id: keyof SceneFeatureReport): string | null => {
-    const entry = features?.[id];
-    return entry && entry.status === "unavailable" ? (entry.reasonKo ?? "사유 없음") : null;
-  };
+  const unavailable = (id: keyof SceneFeatureReport): string | null => unavailableFeatureReason(features, id);
 
   return (
     <section className="cl-render-panel" aria-labelledby={`${ids}-title`}>
@@ -218,6 +203,22 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         <p className="cl-render-hint" data-testid="render-material-shadow-summary">
           {summarizeActiveMaterialAndShadowKo(state.recipe.surfaces, shading)}
         </p>
+        <div className="cl-render-row" role="group" aria-label="한국 웹툰 장르별 1-클릭 마스터 씬 프리셋" data-testid="render-webtoon-genre-scene-presets">
+          {WEBTOON_GENRE_SCENE_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className="cl-preset-chip"
+              data-testid={`render-genre-preset-${preset.id}`}
+              title={`[${preset.genreTagKo}] ${preset.summaryKo}`}
+              onClick={() => {
+                for (const command of buildGenreScenePresetCommands(state.recipe.surfaces, shading, preset)) dispatch(command);
+              }}
+            >
+              {preset.labelKo}
+            </button>
+          ))}
+        </div>
         <div className="cl-render-row" role="group" aria-label="피부·의상 표면 소재 프리셋" data-testid="render-surface-material-presets">
           {WEBTOON_MATERIAL_SURFACE_PRESETS.map((preset) => (
             <button
@@ -623,11 +624,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
           />
         </div>
         {(() => {
-          const spec = buildLabShaperGen3dPipelineSpec({
-            lookId: tripoLookId,
-            delight: tripoDelight,
-            disableHairInline,
-          });
+          const spec = buildLabShaperGen3dPipelineSpec(renderLookOptions(tripoLookId, tripoDelight, disableHairInline));
           return (
             <>
               <p className="cl-render-hint" data-testid="shaper-tripo-pipeline-summary">

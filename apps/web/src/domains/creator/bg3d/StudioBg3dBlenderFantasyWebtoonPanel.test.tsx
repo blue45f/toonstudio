@@ -154,6 +154,46 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-genre-lock-status").textContent,
     ).toContain("액션 전투 락인 정상");
 
+    // Wave 5: 5대 장르 공통 건축 기준선(V19) 전환 및 무채색 암실 검수 모드 검증
+    expect(
+      screen.getByTestId("bg3d-blender-shared-datum-panel").textContent,
+    ).toContain("개구부 2.40m");
+    fireEvent.click(screen.getByTestId("bg3d-blender-datum-genre-scifi"));
+    expect(
+      screen.getByTestId("bg3d-blender-rejection-roi-readout").textContent,
+    ).toContain("SF 함교 에어락(74컷) 마감 반려율 18.5%→2.3%");
+
+    fireEvent.click(screen.getByTestId("bg3d-blender-darkroom-proofing-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-fantasy-webtoon-panel").getAttribute(
+        "data-darkroom-proofing",
+      ),
+    ).toBe("true");
+    expect(
+      screen.getByTestId("bg3d-blender-darkroom-status").textContent,
+    ).toContain("ΔE 0.0");
+
+    // Wave 6 (V20): 개폐형 가동 파츠 슬라이더(0~100%) & 캐릭터 IK 스냅 소켓 & follow-3d 속도선 고정 검증
+    expect(
+      screen.getByTestId("bg3d-blender-articulated-ik-section").textContent,
+    ).toContain("5C. 개폐형 가동 파츠(V20)");
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v20-prop-scifi-iris-airlock"),
+    );
+    fireEvent.change(screen.getByTestId("bg3d-blender-v20-open-slider"), {
+      target: { value: "80" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-articulated-kinematics-readout")
+        .textContent,
+    ).toContain("SF 블래스트 에어락 V20 개폐 80%");
+    expect(
+      screen.getByTestId("bg3d-blender-ik-socket-wrist-desk").textContent,
+    ).toContain("Z 0.92m");
+    expect(
+      screen.getByTestId("bg3d-blender-ik-summary-readout").textContent,
+    ).toContain("접점 보정 0.0분");
+
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
     );
