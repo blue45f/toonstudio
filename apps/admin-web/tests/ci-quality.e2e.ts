@@ -240,14 +240,14 @@ test("의존성 탭의 두 원인·다섯 검사를 대조하고 기존 CI·QA �
   await page.getByRole("button", { name: `${build.title} 기록 열기`, exact: true }).click();
   const dialog = page.getByRole("dialog", { name: `${build.title} 기록`, exact: true });
   await dialog.getByRole("combobox", { name: "작업 관리 상태", exact: true }).selectOption("진행 중");
-  await dialog.getByLabel("메모", { exact: true }).fill("브라우저에서 저장한 수동 검토 메모");
+  await dialog.getByRole("textbox", { name: "메모", exact: true }).fill("브라우저에서 저장한 수동 검토 메모");
   await dialog.getByRole("button", { name: "검토 기록 저장", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await page.reload();
   await page.getByRole("button", { name: "의존성·회귀", exact: true }).click();
   await page.getByRole("button", { name: `${build.title} 기록 열기`, exact: true }).click();
   await expect(dialog.getByRole("combobox", { name: "작업 관리 상태", exact: true })).toHaveValue("진행 중");
-  await expect(dialog.getByLabel("메모", { exact: true })).toHaveValue("브라우저에서 저장한 수동 검토 메모");
+  await expect(dialog.getByRole("textbox", { name: "메모", exact: true })).toHaveValue("브라우저에서 저장한 수동 검토 메모");
   await dialog.getByRole("button", { name: "대화상자 닫기", exact: true }).click();
   expect(await page.evaluate(key => localStorage.getItem(key), getQualityStorageKey("quality-admin-a"))).toBe(legacyJson);
   const stored = await page.evaluate(key => JSON.parse(localStorage.getItem(key) ?? "null"), getDependencyReviewStorageKey("quality-admin-a"));
