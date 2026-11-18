@@ -25,7 +25,7 @@ import { join } from "node:path";
 import { chromium, type Browser, type Locator, type Page } from "playwright";
 
 import { DIST_DIR } from "./lib/repo-paths.mjs";
-import { openStudioAllTools, openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "./lib/studio-bg3d-ui-interactions";
+import { openStudioAllTools, openStudioBg3dEnginePanel, selectStudioBg3dTaskTab, studioBg3dSceneHistoryControl } from "./lib/studio-bg3d-ui-interactions";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
@@ -486,7 +486,7 @@ async function runDesktop(browser: Browser, url: string): Promise<string[]> {
 
     // Bake is a normal 3D edit and enters the same 400ms history timeline.
     await page.waitForTimeout(550);
-    const undo = dialog.getByRole("button", { name: "실행 취소", exact: true });
+    const undo = await studioBg3dSceneHistoryControl(dialog, "undo");
     await waitForEnabled(undo, "3D undo enabled after physics bake");
     await undo.click();
     await selectBoxForTransformRead(dialog);
@@ -497,7 +497,7 @@ async function runDesktop(browser: Browser, url: string): Promise<string[]> {
     );
     screenshots.push(await screenshot(page, "desktop-undo.png"));
 
-    const redo = dialog.getByRole("button", { name: "다시 실행", exact: true });
+    const redo = await studioBg3dSceneHistoryControl(dialog, "redo");
     await waitForEnabled(redo, "3D redo enabled after physics undo");
     await redo.click();
     await selectBoxForTransformRead(dialog);

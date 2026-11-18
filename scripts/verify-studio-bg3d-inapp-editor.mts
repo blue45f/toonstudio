@@ -27,7 +27,7 @@ import { join } from "node:path";
 
 import { chromium, type Browser, type CDPSession, type Locator, type Page } from "playwright";
 
-import { openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "./lib/studio-bg3d-ui-interactions";
+import { openStudioBg3dEnginePanel, prepareStudioBg3dViewportCapture, selectStudioBg3dTaskTab, studioBg3dSceneHistoryControl } from "./lib/studio-bg3d-ui-interactions";
 import { visibleStudioControl } from "./lib/studio-shell-interactions";
 import {
   findFreePort,
@@ -40,7 +40,6 @@ const SCRATCH =
   process.env.TOONSPECTRUM_BG3D_INAPP_VERIFY_DIR
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
   ?? mkdtempSync(join(tmpdir(), "toonstudio-bg3d-inapp-"));
-
 /** The minimum comfortable touch target this repository holds mobile controls to. */
 const MIN_TOUCH_TARGET_PX = 44;
 const INAPP_CONTEXT_OPTIONS = Object.freeze({ deviceScaleFactor: 2, isMobile: true, hasTouch: true });
@@ -222,6 +221,7 @@ async function verifyFramingProfile(
     }
     const reset = dialog.getByRole("button", { name: "시점 초기화", exact: true });
     await reset.click();
+    await prepareStudioBg3dViewportCapture(dialog);
     const viewport = page.getByTestId("studio-bg3d-viewport");
     const canvas = dialog.locator("canvas").first();
     const capture = async (phase: string): Promise<FramingFrame> => {
@@ -242,7 +242,7 @@ async function verifyFramingProfile(
     const fitted = await capture("fitted");
     fitMeanPixelDelta = await compareCompositedFrames(page, baseline, fitted);
     if (fitMeanPixelDelta <= 0.5) failures.push(`Screen fit did not visibly change the tall subject (${fitMeanPixelDelta})`);
-    await dialog.getByRole("button", { name: "실행 취소", exact: true }).click();
+    await (await studioBg3dSceneHistoryControl(dialog, "undo")).click();
     const restored = await capture("undo-restored");
     undoMeanPixelDelta = await compareCompositedFrames(page, baseline, restored);
     if (undoMeanPixelDelta > 1) failures.push(`Undo did not restore the baseline camera (${undoMeanPixelDelta} mean channel delta)`);

@@ -24,7 +24,9 @@ import {
   type StudioBrushCatalogItem,
 } from "../apps/web/src/domains/creator/brush/studio-brush-catalog";
 
-import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
+import { openStudioBrushCatalogThroughUi, selectStudioBrushCatalogItemThroughUi, waitForStudioSelectedBrushThroughUi } from "./lib/studio-brush-catalog-interactions";
+import { createStudioBrushFirstContactCpuCapture, type StudioBrushDiagnosticInputSample } from "./lib/studio-brush-first-contact-diagnostics";
+import { assertStudioEraserLatencyFixture, prepareStudioEraserLatencyFixture } from "./lib/studio-brush-latency-eraser-fixture";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import {
@@ -108,6 +110,7 @@ interface BrushLatencyResult {
   readonly competitiveExecutionCase: StudioBrushCompetitiveExecutionCase | null;
   readonly actualViewport: Readonly<{ width: number; height: number }>;
   readonly actualDeviceScaleFactor: number;
+  readonly eraserFixture: Readonly<{ strokeCount: number; sampledPoints: number; minimumChangedPixels: number }> | null;
   readonly artifacts: Readonly<{ live: string; settled: string }>;
   readonly browserErrors: BrowserErrors;
 }
@@ -230,10 +233,6 @@ async function prepareStudio(page: Page, studioUrl: string): Promise<void> {
   );
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-}
-
 async function selectBrush(
   page: Page,
   brush: Pick<StudioBrushCatalogItem, "id" | "name" | "operation">,
@@ -255,12 +254,8 @@ async function selectBrush(
     name: brush.operation === "erase" ? "지우개 선택" : "브러시 전체 라이브러리",
   });
   await catalog.waitFor({ state: "visible" });
-  const searchName = brush.operation === "erase" ? "전체 지우개 검색" : "전체 브러시 검색";
-  await catalog.getByRole("searchbox", { name: searchName }).fill(brush.id);
-  await catalog.locator(`[data-studio-brush-select="${brush.id}"]`).click();
-  await toolbar.getByRole("button", {
-    name: new RegExp(`^현재 도구 ${escapeRegExp(brush.name)},`, "u"),
-  }).waitFor({ state: "visible" });
+  await selectStudioBrushCatalogItemThroughUi(catalog, brush, brush.operation);
+  await waitForStudioSelectedBrushThroughUi(toolbar, brush, false);
   // The desktop catalogue stays open for repeated selections. Close its actual surface before
   // measuring canvas input; selecting a brush is no longer a request to dismiss the catalogue.
   if (await catalog.isVisible()) {
@@ -331,18 +326,8 @@ export async function armInputProbe(
     cssPatchSize,
     timeoutMs,
   }) => {
-    type ProbeResult = {
-      phase: "pointerdown" | "pointermove";
-      sampleIndex: number;
-      latencyMs: number | null;
-      changedPixels: number;
-      maxChannelDelta: number;
-      rafIntervalsMs: number[];
-      droppedVisualFrames: number;
-      timedOut: boolean;
-    };
     type ProbeState = {
-      result: ProbeResult | null;
+      result: StudioBrushDiagnosticInputSample | null;
       cancel: () => void;
     };
     const root = document.querySelector<HTMLElement>(".konvajs-content");
@@ -385,14 +370,15 @@ export async function armInputProbe(
     let lastRaf: number | null = null;
     let rafId = 0;
     const armedAt = performance.now();
+    let observedAt = armedAt, sampleCount = 0;
     const globalState = globalThis as typeof globalThis & {
       __studioBrushLatencyProbe?: ProbeState;
     };
     globalState.__studioBrushLatencyProbe?.cancel();
-    const finish = (result: ProbeResult): void => {
+    const finish = (result: Omit<StudioBrushDiagnosticInputSample, "clock">): void => {
       cancelAnimationFrame(rafId);
       root.removeEventListener(eventType, onInput, true);
-      state.result = result;
+      state.result = { ...result, clock: { armedAt, eventTime, observedAt, sampleCount } };
     };
     const onInput = (): void => {
       if (eventTime === null) eventTime = performance.now();
@@ -405,10 +391,11 @@ export async function armInputProbe(
       },
     };
     const tick = (now: number): void => {
-      const observedAt = performance.now();
+      observedAt = performance.now();
       if (lastRaf !== null && eventTime !== null) intervals.push(now - lastRaf);
       lastRaf = now;
       if (eventTime !== null) {
+        sampleCount += 1;
         const current = sample();
         let changedPixels = 0;
         let maxChannelDelta = 0;
@@ -480,7 +467,7 @@ export async function armInputProbe(
   });
 }
 
-async function inputProbeResult(page: Page): Promise<StudioBrushInputLatencySample> {
+async function inputProbeResult(page: Page): Promise<StudioBrushDiagnosticInputSample> {
   await page.waitForFunction(() => Boolean(
     (globalThis as typeof globalThis & {
       __studioBrushLatencyProbe?: { result?: unknown };
@@ -488,7 +475,7 @@ async function inputProbeResult(page: Page): Promise<StudioBrushInputLatencySamp
   ), undefined, { timeout: INPUT_TIMEOUT_MS + 700 });
   return page.evaluate(() => {
     const result = (globalThis as typeof globalThis & {
-      __studioBrushLatencyProbe?: { result?: StudioBrushInputLatencySample };
+      __studioBrushLatencyProbe?: { result?: StudioBrushDiagnosticInputSample };
     }).__studioBrushLatencyProbe?.result;
     if (!result) throw new Error("latency probe result is unavailable");
     return result;
@@ -670,11 +657,9 @@ async function runBrushLatency(
   const browserErrors = collectBrowserErrors(page, caseLabel, studioUrl);
   const livePath = join(SCRATCH, `studio-brush-latency-${caseLabel}-live.png`);
   const settledPath = join(SCRATCH, `studio-brush-latency-${caseLabel}-settled.png`);
-  const cpuProfiler = process.env.TOONSPECTRUM_BRUSH_LATENCY_CPU_PROFILE === "1"
-    ? await context.newCDPSession(page)
+  const cpuCapture = process.env.TOONSPECTRUM_BRUSH_LATENCY_CPU_PROFILE === "1"
+    ? await createStudioBrushFirstContactCpuCapture(page, SCRATCH, caseLabel)
     : null;
-  let cpuProfileStarted = false;
-  let cpuProfileBrowserStartMs: number | null = null;
 
   try {
     await prepareStudio(page, studioUrl);
@@ -686,26 +671,34 @@ async function runBrushLatency(
       invariant(adapterInfo && !adapterInfo.isFallbackAdapter, "hardware latency lane requires a non-fallback GPU adapter");
       writeFileSync(join(SCRATCH, `studio-brush-latency-${caseLabel}-gpu.json`), JSON.stringify({ ...adapterInfo, browserVersion: browser.version() }, null, 2));
     }
-    await selectBrush(page, brush);
+    const seedBrush = brush.operation === "erase"
+      ? STUDIO_ALL_BRUSH_CATALOG_ITEMS.find(item => item.id === "pen" && item.operation === "paint")
+      : null;
+    invariant(brush.operation !== "erase" || seedBrush, "지우개 지연 검증의 불투명 준비 펜이 없습니다.");
+    await selectBrush(page, seedBrush ?? brush);
     const stage = page.locator(".konvajs-content").first();
     const stageBox = await stage.boundingBox();
     const viewport = page.viewportSize();
     invariant(stageBox && viewport, `${id}: could not measure Studio canvas`);
     const route = latencyRoute(stageBox, viewport, brush.defaultWidth);
     await assertRouteVisible(page, route.points);
-
-    if (cpuProfiler) {
-      await cpuProfiler.send("Profiler.enable");
-      await cpuProfiler.send("Profiler.start");
-      cpuProfileBrowserStartMs = await page.evaluate(() => performance.now());
-      cpuProfileStarted = true;
+    const frameRoute = createStudioBrushFrameBudgetRoute(stageBox, viewport, brush.defaultWidth);
+    let eraserFixture: BrushLatencyResult["eraserFixture"] = null;
+    if (seedBrush) {
+      await assertStudioBrushFrameBudgetRouteVisible(page, frameRoute.points);
+      const fixture = await prepareStudioEraserLatencyFixture(page, [route.points, frameRoute.points]);
+      await selectBrush(page, brush);
+      eraserFixture = await assertStudioEraserLatencyFixture(page, fixture);
+      await assertRouteVisible(page, route.points);
     }
 
+    if (cpuCapture) await cpuCapture.start();
     const first = route.points[0]!;
     await page.mouse.move(first.x, first.y);
     await armInputProbe(page, "pointerdown", 0, first, route.patchSize);
     await page.mouse.down();
     const pointerDown = await inputProbeResult(page);
+    cpuCapture?.recordFirstInput(pointerDown);
     const pointerMoves: StudioBrushInputLatencySample[] = [];
     for (let index = 1; index < route.points.length; index += 1) {
       const previous = route.points[index - 1]!;
@@ -739,11 +732,6 @@ async function runBrushLatency(
       pointerUp,
     };
     const legacyLatencyTelemetry = evaluateStudioBrushLatencyCase(metrics);
-    const frameRoute = createStudioBrushFrameBudgetRoute(
-      stageBox,
-      viewport,
-      brush.defaultWidth,
-    );
     await assertStudioBrushFrameBudgetRouteVisible(page, frameRoute.points);
     const frameRuntime = await profileStudioBrushFrameBudget(page, frameRoute, {
       captureRenderWorkload:
@@ -813,20 +801,12 @@ async function runBrushLatency(
       competitiveExecutionCase,
       actualViewport,
       actualDeviceScaleFactor,
+      eraserFixture,
       artifacts: { live: livePath, settled: settledPath },
       browserErrors,
     };
   } finally {
-    if (cpuProfiler && cpuProfileStarted) {
-      const captured = await cpuProfiler.send("Profiler.stop").catch(() => null);
-      if (captured) {
-        writeFileSync(
-          join(SCRATCH, `studio-brush-latency-${caseLabel}.cpuprofile`),
-          JSON.stringify({ ...captured.profile, browserStartMs: cpuProfileBrowserStartMs }),
-        );
-      }
-      await cpuProfiler.detach();
-    }
+    if (cpuCapture) await cpuCapture.finish();
     await context.close();
   }
 }

@@ -30,7 +30,10 @@ describe("production engine verifier entry", () => {
     "verify-studio-living-ink-integration.mts",
   ])("%s는 현재 브러시 UI의 공통 진입을 사용하고 선택·닫힘 검증을 유지한다", (file) => {
     const source = readFileSync(new URL(file, import.meta.url), "utf8");
-    expect(source).toContain('import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions"');
+    const catalogImports = source.match(
+      /import\s*\{([^}]+)\}\s*from\s*"\.\/lib\/studio-brush-catalog-interactions"/u,
+    )?.[1]?.split(",").map((name) => name.trim()) ?? [];
+    expect(catalogImports).toContain("openStudioBrushCatalogThroughUi");
     expect(source).toContain("await openStudioBrushCatalogThroughUi(page,");
     if (file === "verify-studio-brush-media.mts") {
       expect(source).toContain('import { prepareStudioBrushDrawingUi } from "./lib/studio-brush-drawing-ui"');

@@ -17,6 +17,11 @@ const EXPECTED_HANDSHAKE_CLOSE = [
 ].join("");
 
 describe("Studio launch static-preview diagnostics", () => {
+  it("모바일 관리자 휴면 검사를 현재 셸의 요청 전·후 계약으로 수행한다", () => {
+    expect(launchHarness).toContain("await inspectStudioMobileWorkspaceMenuDormancy(page)");
+    expect(launchHarness).toContain('verifyMobileWorkspaceMenuGateDormant(page, "mobile")');
+    expect(launchHarness).toContain('await openMobileWorkspaceMenu(page, dock)');
+  });
   it("모바일 기본 여섯 도구를 스크롤 없이 모두 누를 수 있고 펼침 메뉴로 고급 기능을 연다", () => {
     expect(launchHarness).toContain('data-studio-mobile-primary-actions="true"');
     expect(launchHarness).toContain('data-studio-mobile-workspace-menu="true"');

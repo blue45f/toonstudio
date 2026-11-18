@@ -306,6 +306,8 @@ export function studio2dPathname(
   if (workId !== null) {
     return `/studio/work/${encodeURIComponent(workId)}/${surface}`;
   }
+  // /studio/poser는 독립 데생 인형이다. 문서의 VRM은 같은 editor 라우트 안에 남긴다.
+  if (surface === "poser") return "/studio/canvas/poser";
   return `/studio/${surface}`;
 }
 
@@ -506,6 +508,9 @@ function parseSurface(tail: readonly string[]): ParsedSurface | null {
   if (tail.length === 0) return { dccMode: null, surface: "canvas" };
   if (tail.length === 1 && isStudio2dWorkspaceSurface(tail[0])) {
     return { dccMode: null, surface: tail[0] };
+  }
+  if (tail.length === 2 && tail[0] === "canvas" && tail[1] === "poser") {
+    return { dccMode: null, surface: "poser" };
   }
   if (tail[0] !== "3d") return null;
   if (tail.length === 1 || (tail.length === 2 && tail[1] === "dcc")) {

@@ -42,6 +42,7 @@ describe("studio workspace routes", () => {
 
   it.each([
     ["/studio/canvas", "", "canvas", null, null, "/studio/canvas"],
+    ["/studio/canvas/poser", "", "poser", null, null, "/studio/canvas/poser"],
     ["/studio/canvas?id=legacy", "?id=legacy", "canvas", "legacy", null, "/studio/work/legacy/canvas"],
     ["/studio/work/work-1", "", "canvas", "work-1", null, "/studio/work/work-1/canvas"],
     ["/studio/work/work-1/canvas", "", "canvas", "work-1", null, "/studio/work/work-1/canvas"],
@@ -449,6 +450,23 @@ describe("canvas return preserves manuscript identity", () => {
 
 
 describe("editor surface navigation boundary", () => {
+  it("새 초안의 VRM은 독립 포저와 구분하고 canvas의 문서·room·stage key를 유지한다", () => {
+    const canvas = { pathname: "/studio/canvas", search: "?preset=illustration&room=team-a" };
+    const route = parseStudioWorkspaceRoute(canvas);
+    if (!route.valid) throw new Error("Invalid canvas fixture");
+    const href = studio2dSurfaceNavigationHref(route, "poser", canvas.search);
+    expect(href).toBe("/studio/canvas/poser?preset=illustration&room=team-a");
+    const poser = new URL(href, "https://studio.test");
+    const poserRoute = parseStudioWorkspaceRoute(poser);
+    if (!poserRoute.valid) throw new Error("Invalid poser fixture");
+    expect(poserRoute.surface).toBe("poser");
+    expect(shouldPreserveStudioRouteLifecycle(canvas, poser)).toBe(true);
+    expect(studioRouteStageKey(poser)).toBe(studioRouteStageKey(canvas));
+    expect(studioCanvasReturnHref(poserRoute, poser.search)).toBe(`${canvas.pathname}${canvas.search}`);
+    expect(parseStudioWorkspaceRoute({ pathname: "/studio/canvas/poser/extra" }).valid).toBe(false);
+    expect(parseStudioWorkspaceRoute({ pathname: "/studio/canvas/character" }).valid).toBe(false);
+  });
+
   it.each([
     "/studio/p/project-a/d/document-a?workspace=comic",
     "/studio/draft/drawing-a?workspace=comic",

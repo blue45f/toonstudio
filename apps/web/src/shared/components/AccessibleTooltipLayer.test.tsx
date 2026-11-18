@@ -86,6 +86,26 @@ afterEach(() => {
 });
 
 describe("AccessibleTooltipLayer", () => {
+  it("도구막대가 지정한 측면 배치를 따르면서 호버·Esc와 설명 연결을 유지한다", () => {
+    vi.useFakeTimers();
+    renderLayer(<nav data-app-tooltip-preferred-side="right">
+      <button type="button" title="선택 · V">선택</button>
+      <button type="button" title="펜 · B">펜</button>
+    </nav>);
+    const button = screen.getByRole("button", { name: "선택" });
+    const tooltip = revealByHover(button);
+    expect(tooltip.getAttribute("data-side")).toBe("right");
+    expect(Number.parseFloat(tooltip.style.left)).toBeGreaterThan(button.getBoundingClientRect().right);
+    expect(button.getAttribute("aria-describedby")).toContain(tooltip.id);
+    fireEvent.pointerOut(button, { relatedTarget: tooltip, pointerType: "mouse" });
+    fireEvent.pointerOver(tooltip, { relatedTarget: button, pointerType: "mouse" });
+    act(() => vi.advanceTimersByTime(500));
+    expect(screen.getByRole("tooltip")).toBe(tooltip);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(button.getAttribute("title")).toBe("선택 · V");
+  });
+
   it("adds friendly state and shortcut guidance to an icon-only accessible control", () => {
     vi.useFakeTimers();
     renderLayer(

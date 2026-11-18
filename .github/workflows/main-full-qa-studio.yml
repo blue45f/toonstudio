@@ -39,11 +39,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build exact production browser bundle
         run: pnpm run build:bundle
+      - name: Require the production import graph before transport
+        run: test -s dist/.vite/manifest.json
       - name: Preserve production bundle
         uses: actions/upload-artifact@v7
         with:
           name: main-full-qa-dist-${{ github.sha }}
           path: dist/
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
 
@@ -232,6 +235,8 @@ jobs:
         with:
           name: main-full-qa-dist-${{ github.sha }}
           path: dist
+      - name: Verify the production import graph survived transport
+        run: test -s dist/.vite/manifest.json
       - name: Run every gate in this lane without hiding later failures
         shell: bash
         env:

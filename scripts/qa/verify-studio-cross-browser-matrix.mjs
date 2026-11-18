@@ -16,6 +16,7 @@ import { preview as startVitePreview } from "vite";
 
 import { isOptionalStudioPreviewApiError } from "../lib/studio-verify-preview-errors.mts";
 import { createStudioOfflinePreviewServerFixture, installStudioOfflinePreviewFixture } from "../lib/studio-offline-preview-fixture.mjs";
+import { waitForStudioShellHydration } from "../lib/studio-shell-interactions.ts";
 
 const OUTPUT_DIR = resolve(process.env.TOONSPECTRUM_VERIFY_DIR ?? "artifacts/studio-cross-browser");
 const LOCALE = process.env.TOONSPECTRUM_VERIFY_LOCALE ?? "ko-KR";
@@ -315,7 +316,7 @@ async function main() { // NOSONAR javascript:S3776
                   : route.id === "publish" ? "input" : route.id === "home" ? "h1" : '[data-studio-app-menubar="true"]';
                 await page.locator(readySelector).filter({ visible: true }).first().waitFor({ state: "visible", timeout: 60_000 });
                 if (!["home", "lift3d", "publish"].includes(route.id)) {
-                  await page.locator('[data-studio-command-bar-settings-trigger="true"]').waitFor({ state: "attached", timeout: 60_000 });
+                  await waitForStudioShellHydration(page, 60_000);
                 }
                 await page.waitForTimeout(route.path.startsWith("/studio") ? 2_500 : 1_000);
                 // Measure the settled hit area, including reduced-motion and entrance transitions.

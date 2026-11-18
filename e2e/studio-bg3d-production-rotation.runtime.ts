@@ -1,6 +1,6 @@
 import { expect, type Page, type TestInfo } from "@playwright/test";
 
-import { openStudioBg3dEnginePanel, openStudioBg3dProfessionalMode, selectStudioBg3dTaskTab } from "../scripts/lib/studio-bg3d-ui-interactions";
+import { openStudioBg3dEnginePanel, openStudioBg3dProfessionalMode, prepareStudioBg3dViewportCapture, selectStudioBg3dTaskTab } from "../scripts/lib/studio-bg3d-ui-interactions";
 import { pinStudioRailToolInCatalog } from "../scripts/lib/studio-rail-tool-catalog-pin";
 import { showStudioProjectWindowTools, visibleStudioControl } from "../scripts/lib/studio-shell-interactions";
 import {
@@ -154,6 +154,7 @@ async function stableFrame(page: Page, info: TestInfo, label: string) {
     // Only the convergence sampler uses readback optimization. Re-decode BOTH original PNGs
     // with the default backing before comparing, so resampling differences are not scene drift.
     const referencePng = await page.locator(CANVAS).screenshot();
+    await sampler.assertUnchanged();
     await info.attach(`${label}-locator-reference.png`, { body: referencePng, contentType: "image/png" });
     const { reference, peakDelta: referenceDelta } = await compareBg3dOriginalFrames(
       current.png, referencePng, (png, optimized) => decodeFrame(page, png, optimized),
@@ -216,6 +217,7 @@ async function openReadyWebGpu(page: Page, info: TestInfo, label: string): Promi
   // Reopening a viewport is not a camera reset: controls can retain a different settled
   // presentation. Establish the same real user-selected camera before both pixel oracles.
   await page.locator(DIALOG).getByRole("button", { name: "시점 초기화", exact: true }).click();
+  await prepareStudioBg3dViewportCapture(page.locator(DIALOG));
   // Keep viewport tool hints and hovered gizmos out of both baseline captures.
   await page.mouse.move(0, 0);
   await page.waitForTimeout(1_000);

@@ -23,7 +23,6 @@ import { clampQuadSheetCellSize, exportQuadReferenceSheetPng } from "../../../ex
 import { RECIPE_FILE_SUFFIX } from "../../../export/recipe-file";
 import { clampTurnaroundPanelSize, exportTurnaroundSheetPng } from "../../../export/turnaround-sheet";
 import { WEBTOON_STRIP_ACTING_ARCS, exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
-import type { WebtoonStripActingArcId, WebtoonStripFxLinesKind } from "../../../export/webtoon-strip-composer";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { planApply } from "../../../state/apply-plan";
 import { useApplyPlan, useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
@@ -52,6 +51,7 @@ import type { StripDirectorSession } from "./viewport-scene-director";
 import type { CameraFramingMode, EngineStatus, LabFailure } from "../../../contracts";
 import type { ExportReceipt } from "../../../export/export-session";
 import type { SaveBytesFn } from "../../../export/save-bytes";
+import type { WebtoonStripActingArcId, WebtoonStripFxLinesKind } from "../../../export/webtoon-strip-composer";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { CharacterWorkBackup } from "../unsaved-work";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
@@ -729,24 +729,8 @@ export function ExportPanel({
         <button type="button" onClick={onShaperPresetSave} disabled={busy !== null}>
           SHAPER 프리셋 저장
         </button>
-        <button
-          type="button"
-          data-testid="export-copy-recipe-clipboard"
-          title="외부 서버 전송 없이 로컬 클립보드로 현재 캐릭터 레시피 JSON(다중 페인트 서브레이어 포함)을 즉시 복사합니다"
-          onClick={onCopyRecipeClipboard}
-          disabled={busy !== null}
-        >
-          레시피 클립보드 복사
-        </button>
-        <button
-          type="button"
-          data-testid="export-paste-recipe-clipboard"
-          title="클립보드에 복사된 레시피(.character.json) 또는 SHAPER 프리셋(.preset) 텍스트를 즉시 불러옵니다"
-          onClick={onPasteRecipeClipboard}
-          disabled={busy !== null}
-        >
-          클립보드 레시피 붙여넣기
-        </button>
+        <button type="button" data-testid="export-copy-recipe-clipboard" title="외부 서버 전송 없이 로컬 클립보드로 현재 캐릭터 레시피 JSON(다중 페인트 서브레이어 포함)을 즉시 복사합니다" onClick={onCopyRecipeClipboard} disabled={busy !== null}>레시피 클립보드 복사</button>
+        <button type="button" data-testid="export-paste-recipe-clipboard" title="클립보드에 복사된 레시피(.character.json) 또는 SHAPER 프리셋(.preset) 텍스트를 즉시 불러옵니다" onClick={onPasteRecipeClipboard} disabled={busy !== null}>클립보드 레시피 붙여넣기</button>
         <label className="cl-export-file" htmlFor={`${ids}-file`}>
           레시피 불러오기
           <input

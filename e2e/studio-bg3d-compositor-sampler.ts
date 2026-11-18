@@ -64,6 +64,30 @@ export async function createBg3dCompositorSampler(page: Page, selector: string) 
     const canvas = element as HTMLCanvasElement;
     if (!canvas.isConnected) throw new Error("BG3D canvas detached during capture");
     const rect = canvas.getBoundingClientRect();
+    // 창 안에 있어도 스크롤 조상 뒤에 가려진 픽셀은 장면 증거가 아니다.
+    // locator.screenshot의 자동 스크롤 전에 두 캡처가 같은 온전한 표면인지 확인한다.
+    for (let parent = canvas.parentElement; parent; parent = parent.parentElement) {
+      const style = getComputedStyle(parent);
+      const box = parent.getBoundingClientRect();
+      const borderLeft = parseFloat(style.borderLeftWidth) || 0;
+      const borderRight = parseFloat(style.borderRightWidth) || 0;
+      const borderTop = parseFloat(style.borderTopWidth) || 0;
+      const borderBottom = parseFloat(style.borderBottomWidth) || 0;
+      // clientWidth/Height는 정수이므로 소수 CSS 크기의 온전한 표면도 잘렸다고 오판한다.
+      // 실제 경계는 BCR에서 보더와 네이티브 스크롤바 폭만 제외해 구한다.
+      const scrollbarWidth = Math.max(0, parent.offsetWidth - parent.clientWidth - Math.round(borderLeft + borderRight));
+      const scrollbarHeight = Math.max(0, parent.offsetHeight - parent.clientHeight - Math.round(borderTop + borderBottom));
+      const leftScrollbar = style.direction === "rtl" ? scrollbarWidth : 0;
+      const left = box.left + borderLeft + leftScrollbar;
+      const top = box.top + borderTop;
+      const right = box.right - borderRight - scrollbarWidth + leftScrollbar;
+      const bottom = box.bottom - borderBottom - scrollbarHeight;
+      const clips = (overflow: string) => /^(hidden|auto|scroll|clip)$/u.test(overflow);
+      if ((clips(style.overflowX) && (rect.left < left - 0.01 || rect.right > right + 0.01))
+        || (clips(style.overflowY) && (rect.top < top - 0.01 || rect.bottom > bottom + 0.01))) {
+        throw new Error(`BG3D canvas is clipped by ${parent.tagName}: ${JSON.stringify({ canvas: rect.toJSON(), clip: box.toJSON() })}`);
+      }
+    }
     return {
       cssWidth: canvas.clientWidth, cssHeight: canvas.clientHeight,
       bufferWidth: canvas.width, bufferHeight: canvas.height,
@@ -78,6 +102,10 @@ export async function createBg3dCompositorSampler(page: Page, selector: string) 
   const session = await page.context().newCDPSession(page);
   let disposed = false;
   return {
+    async assertUnchanged() {
+      if (disposed) throw new Error("BG3D compositor sampler has been disposed");
+      assertBg3dSampleSurface(await read(), initial);
+    },
     async capture() {
       if (disposed) throw new Error("BG3D compositor sampler has been disposed");
       const before = await read();

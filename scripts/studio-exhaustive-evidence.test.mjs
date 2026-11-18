@@ -1,11 +1,35 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 const workflow = readFileSync(new URL("../.github/workflows/main-full-qa-studio.yml", import.meta.url), "utf8");
+
+test("생산 import graph는 숨김 디렉터리까지 전송하며 누락·빈 파일은 양쪽 경계에서 거부한다", () => {
+  const upload = workflow.match(/name: Preserve production bundle[\s\S]*?(?=\n\n)/u)?.[0];
+  assert.match(upload ?? "", /path: dist\/\n {10}include-hidden-files: true/u);
+  const checks = ["Require the production import graph before transport", "Verify the production import graph survived transport"]
+    .map(name => workflow.match(new RegExp(`name: ${name}\\n {8}run: (.+)`, "u"))?.[1]);
+  const directory = mkdtempSync(join(tmpdir(), "studio-exhaustive-manifest-"));
+  try {
+    mkdirSync(join(directory, "dist/.vite"), { recursive: true });
+    const manifest = join(directory, "dist/.vite/manifest.json");
+    for (const script of checks) {
+      assert.ok(script, "빌드 또는 복원 경계에 import graph 확인이 없습니다.");
+      rmSync(manifest, { force: true });
+      const run = () => spawnSync("bash", ["-c", script], { cwd: directory, timeout: 2_000 });
+      assert.equal(run().status, 1, "누락한 graph를 거부해야 합니다.");
+      writeFileSync(manifest, "");
+      assert.equal(run().status, 1, "빈 graph를 거부해야 합니다.");
+      writeFileSync(manifest, JSON.stringify({ "src/main.tsx": { file: "assets/main.js", isEntry: true } }));
+      assert.equal(run().status, 0);
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test("exhaustive는 실패 후에도 실행하며 각 gate의 일반·native·LivingInk 증거를 보존한다", () => {
   const runBlock = workflow.match(/name: Run every gate in this lane without hiding later failures[\s\S]*?\n {8}run: \|\n([\s\S]*?)(?=\n {6}- name:)/u)?.[1];

@@ -300,7 +300,7 @@ async function runScenario(browser: Browser, origin: string, scenario: Scenario)
       await menu("view", "template");
       const assets = activePage.locator('[data-studio-tool-popover="asset-group"]');
       await assets.waitFor();
-      await assets.getByRole("tab", { name: "내 에셋", exact: true }).click();
+      await assets.locator('[data-studio-unified-asset-workspace="true"]').waitFor({ state: "visible" });
       await assets.getByRole("button", { name: "보관함 · 마켓", exact: true }).click();
       await assets.getByRole("button", { name: "내 소재", exact: true }).click();
       await assets.getByLabel("이미지 소재 업로드", { exact: true }).setInputFiles(resolve("apps/web/public/favicon-32.png"));

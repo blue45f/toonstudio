@@ -36,7 +36,7 @@ import { studioAutosaveKey } from "../apps/web/src/domains/creator/studio-autosa
 import { STUDIO_LIVING_INK_NEW_PHYSICAL_STROKES_ENABLED } from "../apps/web/src/domains/creator/studio-living-ink-brush-admission";
 
 import { DIST_DIR } from "./lib/repo-paths.mjs";
-import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
+import { openStudioBrushCatalogThroughUi, waitForStudioSelectedBrushThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { openStudioLayerNavigator } from "./lib/studio-shell-interactions";
 import { readDurableStudioAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
@@ -1295,11 +1295,7 @@ async function activatePenAndWatercolor(
       .getByRole("button", { name: / 닫기$/u }).click();
   }
   await catalogue.waitFor({ state: "detached" });
-  await page.waitForFunction((expectedName) => (
-    document.querySelector('[data-studio-brush-active-pill="true"]')
-      ?.getAttribute("aria-label")
-      ?.includes(expectedName) === true
-  ), BRUSH.name);
+  await waitForStudioSelectedBrushThroughUi(pickerSurface, BRUSH, mobileDockVisible);
   const controls = page.locator('[data-studio-living-ink-controls="true"]');
   if (expectedState === "retired") {
     invariant(await controls.count() === 0, "retired physical controls must remain unavailable");

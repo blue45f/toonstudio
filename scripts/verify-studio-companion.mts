@@ -9,7 +9,7 @@
  * Run after `pnpm run build`:
  *   pnpm run verify:studio-companion
  */
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -22,6 +22,7 @@ import {
 import { preview, type PreviewServer } from "vite";
 
 import { createCompanionPreviewApiDiagnostics } from "./lib/studio-companion-preview-diagnostics";
+import { observeStudioPreviewNavigationRequests, type StudioNavigationSettlementReceipt } from "./lib/studio-preview-navigation-settlement";
 import { openStudioMainMenu } from "./lib/studio-shell-interactions";
 import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
@@ -30,9 +31,11 @@ const UI_DENSITY_KEY = "toonstudio-studio-ui-density:v1";
 const LANGUAGE_KEY = "toonstudio-lang";
 const SCRATCH =
   process.env.TOONSPECTRUM_COMPANION_VERIFY_DIR
+  ?? process.env.TOONSPECTRUM_VERIFY_DIR
   ?? join(tmpdir(), "toonstudio-studio-companion");
 
 type PageDiagnostics = {
+  navigationSettlements: readonly StudioNavigationSettlementReceipt[];
   consoleErrors: string[];
   failedResponses: string[];
   pageErrors: string[];
@@ -113,8 +116,10 @@ function observePage(
   page: Page,
   label: string,
   previewBaseUrl: string,
+  navigationSettlements: readonly StudioNavigationSettlementReceipt[],
 ): PageDiagnostics {
   const diagnostics: PageDiagnostics = {
+    navigationSettlements,
     consoleErrors: [],
     failedResponses: [],
     pageErrors: [],
@@ -292,6 +297,17 @@ async function verify(baseUrl: string): Promise<VerificationResult> {
   await installStudioPreferences(context);
 
   const diagnostics: Record<string, PageDiagnostics> = {};
+  const requestsByPage = new Map<Page, ReturnType<typeof observeStudioPreviewNavigationRequests>>();
+  const observe = (page: Page, label: string) => {
+    const requests = observeStudioPreviewNavigationRequests(page, baseUrl);
+    requestsByPage.set(page, requests);
+    return observePage(page, label, baseUrl, requests.receipts);
+  };
+  const settleBeforeClose = async (page: Page, phase: string) => {
+    const requests = requestsByPage.get(page);
+    if (!requests) throw new Error(`${phase}: 관측되지 않은 창은 종료 준비를 확인할 수 없습니다.`);
+    await requests.settle(phase);
+  };
   const screenshots: string[] = [];
   let companionConnected: boolean;
   let commandRoundTrip: boolean;
@@ -303,7 +319,7 @@ async function verify(baseUrl: string): Promise<VerificationResult> {
 
   try {
     const primary = await context.newPage();
-    diagnostics.primary = observePage(primary, "primary", baseUrl);
+    diagnostics.primary = observe(primary, "primary");
     await primary.goto(`${baseUrl}/studio/canvas`, {
       waitUntil: "domcontentloaded",
       timeout: 30_000,
@@ -314,7 +330,7 @@ async function verify(baseUrl: string): Promise<VerificationResult> {
     });
 
     let workspace = await openWorkspaceCompanion(primary, (popup) => {
-      diagnostics.workspace = observePage(popup, "workspace", baseUrl);
+      diagnostics.workspace = observe(popup, "workspace");
     });
     await waitForCompanionConnection(workspace, "workspace");
     companionConnected = true;
@@ -324,7 +340,7 @@ async function verify(baseUrl: string): Promise<VerificationResult> {
     commandRoundTrip = await verifyToolRoundTrip(primary, workspace);
 
     let navigator = await openNavigatorCompanion(workspace, (popup) => {
-      diagnostics.navigator = observePage(popup, "navigator", baseUrl);
+      diagnostics.navigator = observe(popup, "navigator");
     });
     await waitForCompanionConnection(navigator, "navigator");
     navigatorConnected = sessionId(navigator) === originalSessionId;
@@ -338,17 +354,19 @@ async function verify(baseUrl: string): Promise<VerificationResult> {
     await navigator.screenshot({ path: navigatorShot, fullPage: true });
     screenshots.push(primaryShot, workspaceShot, navigatorShot);
 
+    await settleBeforeClose(navigator, "navigator-reconnect-before-close");
     await navigator.close();
     navigator = await openNavigatorCompanion(workspace, (popup) => {
-      diagnostics.navigatorReopened = observePage(popup, "navigator-reopened", baseUrl);
+      diagnostics.navigatorReopened = observe(popup, "navigator-reopened");
     });
     await waitForCompanionConnection(navigator, "navigator");
     navigatorReconnected = sessionId(navigator) === originalSessionId
       && await waitForNavigatorPreview(navigator);
 
+    await settleBeforeClose(workspace, "workspace-reconnect-before-close");
     await workspace.close();
     workspace = await openWorkspaceCompanion(primary, (popup) => {
-      diagnostics.workspaceReopened = observePage(popup, "workspace-reopened", baseUrl);
+      diagnostics.workspaceReopened = observe(popup, "workspace-reopened");
     });
     await waitForCompanionConnection(workspace, "workspace");
     workspaceReconnected = true;
@@ -358,9 +376,11 @@ async function verify(baseUrl: string): Promise<VerificationResult> {
     const reopenedShot = join(SCRATCH, "studio-companion-reconnected.png");
     await workspace.screenshot({ path: reopenedShot, fullPage: true });
     screenshots.push(reopenedShot);
+    await Promise.all(context.pages().map(page => settleBeforeClose(page, "complete-before-close")));
   } finally {
     await context.close();
     await browser.close();
+    writeFileSync(join(SCRATCH, "studio-companion-diagnostics.json"), `${JSON.stringify(diagnostics, null, 2)}\n`);
   }
 
   return {
@@ -404,7 +424,9 @@ async function main(): Promise<void> {
       && result.workspaceReconnected
       && result.sessionPreserved
       && diagnosticsAreClean(result.diagnostics);
-    log(JSON.stringify(result, null, 2));
+    const report = JSON.stringify(result, null, 2);
+    writeFileSync(join(SCRATCH, "studio-companion-report.json"), `${report}\n`);
+    log(report);
     if (!ok) throw new Error("multi-window companion verification failed");
     log(`PASS · real popup transport, command round-trip, preview, and reconnect (${SCRATCH})`);
   } finally {

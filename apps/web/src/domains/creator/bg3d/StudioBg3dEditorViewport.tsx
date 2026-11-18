@@ -17,6 +17,7 @@ import { StudioBg3dViewFrameClear } from "./StudioBg3dViewFrameClear";
 import { StudioBg3dViewportReadinessOverlay } from "./StudioBg3dViewportReadinessOverlay";
 import { isStudioBg3dCanvasFactoryPending } from "./studio-bg3d-canvas-renderer-admission";
 import { createStudioBg3dPointerEvents } from "./studio-bg3d-pointer-events";
+import { useStudioBg3dProSuiteHint } from "./studio-bg3d-prosuite-hint";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 const StudioBg3dTurntableController = lazyRetry(
@@ -31,6 +32,7 @@ const StudioBg3dTurntableMotion = lazyRetry(
 );
 
 export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<string, any>; simplified?: boolean }) {
+  const proSuiteHint = useStudioBg3dProSuiteHint();
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -963,12 +965,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     </button>
                   </StudioToolHintTarget>
                   <StudioToolHintTarget
-                    hint={{
-                      id: "bg3d:viewport:prosuite",
-                      title: "웹툰 프로 툴 (20종)",
-                      description: "셰이퍼 3D 체형, 투닝 말풍선/이모트, 2.5D 집중선, 스냅툰/에이블러 웹툰 필터, 지면 착지락 등 20종 전문 제작 툴을 엽니다.",
-                      preview: "camera-orbit",
-                    }}
+                    hint={proSuiteHint}
                     preferredSide="left"
                   >
                     <button
