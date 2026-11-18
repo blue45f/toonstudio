@@ -3,12 +3,15 @@
  * 리그 루트 아래 노드(메시·본 TransformNode·Armature)만 내보내고(카메라·조명 제외) `glTF` magic을 검증한다.
  * morph target·스킨은 serializer가 포함한다(본은 TransformNode에 링크되어 있어야 export된다 — mesh-binding 규약).
  */
+import { InternalTextureSource } from "@babylonjs/core/Materials/Textures/internalTexture.js";
+
 import { failVisible } from "../../contracts";
 import { sparsifyGlbMorphTargets } from "../glb-sparse-morph";
 import { isPressureOutline } from "../pressure-outline-tag";
 
 import type { SparseMorphReport } from "../glb-sparse-morph";
 import type { CharacterRig } from "./character-rig";
+import type { InternalTexture } from "@babylonjs/core/Materials/Textures/internalTexture.js";
 import type { Node } from "@babylonjs/core/node.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
@@ -119,6 +122,30 @@ export interface RigGlbExport {
  */
 export async function exportRigGlbWithReport(scene: Scene, rig: CharacterRig, fileName = "character", now: number = Date.now()): Promise<RigGlbExport> {
   const serializers = await import("@babylonjs/serializers/glTF/2.0/index.js");
+  // GLB 바이트에서 로드된 내장 텍스처는 `_buffer`가 비워진 뒤 가짜 URL(`data:gltf_binary_buffer_*`, 쉼표 없는 비표준 URI)만 남는다.
+  // 실제 브라우저에서 GLTF2Export가 이를 XHR 재시도(지수 백오프 ~30초 + ERR_INVALID_URL)하지 않도록 내보내는 동안만 Raw 소스로 전환해 즉시 GPU readback 경로를 타게 한다.
+  const restoreSources: Array<() => void> = [];
+  if (scene.getEngine().getClassName() !== "NullEngine") {
+    const seen = new Set<InternalTexture>();
+    for (const tex of scene.textures) {
+      const internal = tex.getInternalTexture();
+      if (!internal || seen.has(internal)) continue;
+      seen.add(internal);
+      if (
+        internal.source === InternalTextureSource.Url &&
+        internal._buffer === null &&
+        typeof internal.url === "string" &&
+        internal.url.startsWith("data:") &&
+        !internal.url.includes(",")
+      ) {
+        const prevSource = internal._source;
+        internal._source = InternalTextureSource.Raw;
+        restoreSources.push(() => {
+          internal._source = prevSource;
+        });
+      }
+    }
+  }
   let data: Awaited<ReturnType<typeof serializers.GLTF2Export.GLBAsync>>;
   try {
     data = await serializers.GLTF2Export.GLBAsync(scene, fileName, {
@@ -127,6 +154,8 @@ export async function exportRigGlbWithReport(scene: Scene, rig: CharacterRig, fi
     });
   } catch (error) {
     throw failVisible("glb-export-failed", "GLB 직렬화에 실패했습니다.", error, now);
+  } finally {
+    for (const restore of restoreSources) restore();
   }
   const blob = data.glTFFiles[`${fileName}.glb`];
   if (!(blob instanceof Blob)) throw failVisible("glb-export-missing", `serializer가 ${fileName}.glb를 만들지 않았습니다.`, undefined, now);

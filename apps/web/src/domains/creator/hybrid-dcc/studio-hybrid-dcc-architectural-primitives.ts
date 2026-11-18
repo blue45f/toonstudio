@@ -256,6 +256,61 @@ export const STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT: readonly StudioHybridDccPr
     },
   ]);
 
+/** Blender 5.3 회차 내 듀얼 장르 브리지 V18(2종, CC0-1.0) — 2.4m 개구부 비례가 동기화된 던전 귀환 아치 게이트 & 황궁 연회장 테라스 알코브 아치. */
+export const STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT: readonly StudioHybridDccPrecisionBgKitItem[] =
+  Object.freeze([
+    {
+      id: "webtoon-raid-return-relic-portal-gate-v18",
+      fileName: "webtoon-raid-return-relic-portal-gate-v18.glb",
+      glbUrl: "/studio-assets/blender-episode-handoff-v18/webtoon-raid-return-relic-portal-gate-v18.glb",
+      previewUrl: "/studio-assets/blender-episode-handoff-v18/thumbnails/webtoon-raid-return-relic-portal-gate-v18.png",
+      label: ["던전 귀환 성유물 아치 게이트", "Raid return relic portal gate"],
+      hint: ["2.4m 공통 개구부·현무암 아치·부유 성검·마나 화로", "2.4m shared portal, basalt arch & greatsword"],
+      triangles: 2412,
+    },
+    {
+      id: "webtoon-imperial-banquet-alcove-arch-v18",
+      fileName: "webtoon-imperial-banquet-alcove-arch-v18.glb",
+      glbUrl: "/studio-assets/blender-episode-handoff-v18/webtoon-imperial-banquet-alcove-arch-v18.glb",
+      previewUrl: "/studio-assets/blender-episode-handoff-v18/thumbnails/webtoon-imperial-banquet-alcove-arch-v18.png",
+      label: ["황궁 연회장 테라스 알코브 아치", "Imperial banquet alcove arch"],
+      hint: ["2.4m 공통 개구부·알라바스터 열주·벨벳 드레이프", "2.4m shared arch, fluted columns & velvet swag"],
+      triangles: 5740,
+    },
+  ]);
+
+/** Blender 5.3 공통 건축 기준선(Shared Datum: 2.4m/1.1m/0.74m/0.18m) V19(3종, CC0-1.0) — 현대 펜트하우스·무협 월문 누각·SF 함교 에어락. */
+export const STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT: readonly StudioHybridDccPrecisionBgKitItem[] =
+  Object.freeze([
+    {
+      id: "webtoon-modern-penthouse-terrace-datum-bay-v19",
+      fileName: "webtoon-modern-penthouse-terrace-datum-bay-v19.glb",
+      glbUrl: "/studio-assets/blender-shared-datum-v19/webtoon-modern-penthouse-terrace-datum-bay-v19.glb",
+      previewUrl: "/studio-assets/blender-shared-datum-v19/thumbnails/webtoon-modern-penthouse-terrace-datum-bay-v19.png",
+      label: ["현대 펜트하우스 통창·데스크 베이", "Modern penthouse datum bay"],
+      hint: ["2.4m 통창·1.1m 유리 난간·0.74m 월넛 데스크", "2.4m curtain-wall, 1.1m glass rail & 0.74m desk"],
+      triangles: 2332,
+    },
+    {
+      id: "webtoon-murim-moon-gate-pavilion-datum-v19",
+      fileName: "webtoon-murim-moon-gate-pavilion-datum-v19.glb",
+      glbUrl: "/studio-assets/blender-shared-datum-v19/webtoon-murim-moon-gate-pavilion-datum-v19.glb",
+      previewUrl: "/studio-assets/blender-shared-datum-v19/thumbnails/webtoon-murim-moon-gate-pavilion-datum-v19.png",
+      label: ["무협 월문·청옥 난간 기준선 누각", "Murim Moon-Gate datum pavilion"],
+      hint: ["2.4m 원형 월문·1.1m 청옥 난간·0.74m 서안", "2.4m Moon Gate, 1.1m celadon rail & 0.74m table"],
+      triangles: 3468,
+    },
+    {
+      id: "webtoon-scifi-airlock-bridge-datum-bay-v19",
+      fileName: "webtoon-scifi-airlock-bridge-datum-bay-v19.glb",
+      glbUrl: "/studio-assets/blender-shared-datum-v19/webtoon-scifi-airlock-bridge-datum-bay-v19.glb",
+      previewUrl: "/studio-assets/blender-shared-datum-v19/thumbnails/webtoon-scifi-airlock-bridge-datum-bay-v19.png",
+      label: ["SF 함교 에어락·홀로 콘솔 베이", "Sci-Fi airlock bridge datum bay"],
+      hint: ["2.4m 티타늄 에어락·1.1m 홀로 난간·0.74m 콘솔", "2.4m airlock, 1.1m holo-rail & 0.74m console"],
+      triangles: 2716,
+    },
+  ]);
+
 function vec(x: number, y: number, z: number): StudioMeshVec3 {
   return { x, y, z };
 }

@@ -1,0 +1,44 @@
+{
+  "schema": "toonstudio.character-lab.hand-props/1",
+  "license": "CC0-1.0",
+  "generatedAt": "2026-11-18",
+  "generator": "Blender 5.3.0 ToonStudio Hand Props Pipeline",
+  "props": [
+    {
+      "id": "smartphone",
+      "labelKo": "웹툰 메신저 스마트폰",
+      "meshName": "TS_Prop_smartphone",
+      "path": "smartphone.glb",
+      "bytes": 8808,
+      "sha256": "5d3a602ec978a73f0714b9ada7c0e675683103029526b861d30a37c7b1e7de5f",
+      "triangles": 60
+    },
+    {
+      "id": "coffee-cup",
+      "labelKo": "테이크아웃 로스터리 커피컵",
+      "meshName": "TS_Prop_coffee-cup",
+      "path": "coffee-cup.glb",
+      "bytes": 19448,
+      "sha256": "97b46cc6107a5df8e18f38ac042a72eea86bcfa7735774b888f58f6f9a11de40",
+      "triangles": 504
+    },
+    {
+      "id": "case-folder",
+      "labelKo": "수사·학생회 결재 서류철",
+      "meshName": "TS_Prop_case-folder",
+      "path": "case-folder.glb",
+      "bytes": 7832,
+      "sha256": "9503a76571b6bd91ec074de5c1d067d4e7979fe993c4904b12c3da37140621ae",
+      "triangles": 24
+    },
+    {
+      "id": "aether-blade",
+      "labelKo": "청운 에테르 마력 단검",
+      "meshName": "TS_Prop_aether-blade",
+      "path": "aether-blade.glb",
+      "bytes": 32900,
+      "sha256": "d4f7cdf53d5ed31d9b20ae88935f68d94a60093481be9cb3ef48b6c314c2b9ab",
+      "triangles": 264
+    }
+  ]
+}

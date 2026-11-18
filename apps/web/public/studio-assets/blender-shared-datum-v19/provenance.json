@@ -1,0 +1,96 @@
+{
+  "schema": "toonstudio.blender-shared-datum-assets.v19",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_shared_datum_cross_genre_v19.py · Shared Architectural Datum & SHA-256 Scene Isolation verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "sharedArchitecturalDatum": {
+    "bayFootprintWidthM": 2.76,
+    "portalClearanceM": 2.4,
+    "safetyRailingHeightM": 1.1,
+    "deskConsoleHeightM": 0.74,
+    "stairRiserHeightM": 0.18
+  },
+  "externalSources": [],
+  "sceneIsolationAudit": {
+    "activeIsolatedScene": "ToonStudio_SharedDatum_TriGenre_V19",
+    "zeroCrossSceneMutation": true,
+    "preservedScenes": [
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier",
+        "objectCount": 289,
+        "sha256Before": "b2492fa9271256baf69699c96d11bc85bc571282d30c555cd7b3a7e8e6341d49",
+        "sha256After": "b2492fa9271256baf69699c96d11bc85bc571282d30c555cd7b3a7e8e6341d49",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene",
+        "objectCount": 50,
+        "sha256Before": "b1f8b1be616d243ba53419d047240137aec3a6fca3bd505c11bb457f91c200fe",
+        "sha256After": "b1f8b1be616d243ba53419d047240137aec3a6fca3bd505c11bb457f91c200fe",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_DualGenre_Handoff_V18",
+        "objectCount": 17,
+        "sha256Before": "fd5aafc438dd257233c42d64a2df3e5cfb3364ba35f27cd88cb9f0c4a4430951",
+        "sha256After": "fd5aafc438dd257233c42d64a2df3e5cfb3364ba35f27cd88cb9f0c4a4430951",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Lumiere_Salon_V17",
+        "objectCount": 32,
+        "sha256Before": "76e7b921ebf61bec84de248dc4873d191140f25b9799ca5449e70db2bc28b54f",
+        "sha256After": "76e7b921ebf61bec84de248dc4873d191140f25b9799ca5449e70db2bc28b54f",
+        "unchanged": true
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "webtoon-modern-penthouse-terrace-datum-bay-v19.glb",
+      "genre": "modern",
+      "bytes": 161484,
+      "sha256": "91ca04c1dfa8f5155dd6378198b952c03d1163fefddee6576c234aa12e6cf897",
+      "triangles": 2332,
+      "vertices": 1206
+    },
+    {
+      "file": "webtoon-murim-moon-gate-pavilion-datum-v19.glb",
+      "genre": "murim",
+      "bytes": 135076,
+      "sha256": "1a1c8b7c09355ca23705db3c669460b5a0b08624b8c904960154773745c75bf3",
+      "triangles": 3468,
+      "vertices": 1774
+    },
+    {
+      "file": "webtoon-scifi-airlock-bridge-datum-bay-v19.glb",
+      "genre": "scifi",
+      "bytes": 141696,
+      "sha256": "4a856d7b55721a5c654ed1fa43133f1db5c5175074401e0e4b1113846d27ef45",
+      "triangles": 2716,
+      "vertices": 1394
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-modern-penthouse-terrace-datum-bay-v19.png",
+      "bytes": 360954,
+      "sha256": "ce11890a39d264679651b2c27d8b9408eea0f9413b6c47a6ac8a9657e7a03a4e"
+    },
+    {
+      "file": "thumbnails/webtoon-murim-moon-gate-pavilion-datum-v19.png",
+      "bytes": 319585,
+      "sha256": "4d9dfb3eb740cb9abf7d5325b668f23e23c5197822f2069e2c19296ecb76248b"
+    },
+    {
+      "file": "thumbnails/webtoon-scifi-airlock-bridge-datum-bay-v19.png",
+      "bytes": 310748,
+      "sha256": "5232d0a50841e46370da665c663b59bfafbd8daa8dd7374545094ea7ea1eb93a"
+    }
+  ]
+}

@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 
-import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
+import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible } from "../../../contracts";
 import { formatShaperInputStyleGuide } from "../../../export/recipe-file";
 import { clientToNdc, normalizePointerPressure } from "../../../paint/paint-bridge";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
@@ -18,7 +18,7 @@ import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, 
 
 import { createSwitchingPaintDriver } from "./projection-paint-driver";
 import {
-  SHAPER_BUILTIN_ARCHETYPE_PRESETS, SHAPER_BUILTIN_PART_PRESETS, SHAPER_BUILTIN_POSE_PRESETS, SHAPER_GIZMO_MODES, WEBTOON_SIGNATURE_POSES,
+  SHAPER_GIZMO_MODES,
   buildShaperPresetCommands, computeShaperBoneScaleDrag, computeShaperControlPointDrag, computeShaperControlPoints, computeShaperIkHandleDrag,
 } from "./shaper-control-points";
 import { diagnoseSkeletonData, postSkeletonFailureOnce } from "./skeleton-boundary-guard";
@@ -28,43 +28,29 @@ import {
   buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, type DuoShotState,
 } from "./viewport-duo-shot-guide";
 import {
+  ViewportHandPropControls, buildHandPropGripPoseCommands, findWebtoonHandPropSpec, toHandPropAttachment,
+} from "./viewport-hand-prop-controls";
+import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, hudRows, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
 } from "./viewport-interactions";
+import {
+  DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
+} from "./viewport-manga-fx-overlay";
+import { CANVAS_KEY_SHORTCUTS, DEFAULT_HUD_INTERVAL_MS, FILL, FRAMING_MODES, failureText, releaseCapture } from "./viewport-pane-helpers";
+import { ViewportShaperPresetSelect } from "./viewport-shaper-preset-select";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
 import type { ControlPointDragSession, DragSession } from "./viewport-drag-types";
 import type { JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
-import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, Pose } from "../../../contracts";
+import type { ViewportPaneProps } from "./viewport-pane-helpers";
+import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HandPropId, HandPropSide, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, Pose } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
-import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 
-export interface ViewportPaneProps {
-  readonly paintSession?: PaintSession;
-  readonly hudIntervalMs?: number;
-  readonly initialOverlays?: { readonly handles?: boolean; readonly hud?: boolean; readonly controlPoints?: boolean };
-}
-
-export const DEFAULT_HUD_INTERVAL_MS = 250;
-const FRAMING_MODES: ReadonlyArray<{ readonly mode: CameraFraming["mode"]; readonly label: string }> = [
-  { mode: "full-body", label: "전신" },
-  { mode: "bust", label: "상반신" },
-  { mode: "face", label: "얼굴" },
-];
-const FILL: CSSProperties = { position: "absolute", inset: 0 };
-const CANVAS_KEY_SHORTCUTS = "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0 Home";
-
-
-function failureText(error: unknown, fallback: string): string {
-  return isLabFailure(error) ? `${error.reasonKo} [${error.code}]` : fallback;
-}
-
-function releaseCapture(el: Element | undefined, pointerId: number): void {
-  if (el && typeof el.releasePointerCapture === "function" && el.hasPointerCapture?.(pointerId)) el.releasePointerCapture(pointerId);
-}
+export { DEFAULT_HUD_INTERVAL_MS, type ViewportPaneProps } from "./viewport-pane-helpers";
 
 export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVAL_MS, initialOverlays }: ViewportPaneProps) {
   const labState = useLabState();
@@ -95,6 +81,10 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [checkerboard, setCheckerboard] = useState(false);
   const [manuscriptGuide, setManuscriptGuide] = useState(false);
   const [duoShot, setDuoShot] = useState<DuoShotState>(DEFAULT_DUO_SHOT_STATE);
+  const [mangaFx, setMangaFx] = useState<ViewportMangaFxState>(DEFAULT_MANGA_FX_STATE);
+  const [handPropId, setHandPropId] = useState<HandPropId | "">("");
+  const [handPropSide, setHandPropSide] = useState<HandPropSide>("rightHand");
+  const [handPropBusy, setHandPropBusy] = useState(false);
   const [referenceCut, setReferenceCut] = useState<ReferenceCutState | null>(null);
   const [cameraInputStyle, setCameraInputStyle] = useState<ShaperCameraInputStyle>("unity");
   const [symmetryMode, setSymmetryMode] = useState(false);
@@ -651,6 +641,33 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     for (const cmd of cmds) dispatch(cmd);
     setNotice(`투샷 아이컨택 적용: ${duoPartner.labelKo} (${duoEyeContact.summaryKo})`);
   };
+  const onApplyHandProp = async (nextPropId: HandPropId | "", nextSide: HandPropSide): Promise<void> => {
+    setHandPropId(nextPropId);
+    setHandPropSide(nextSide);
+    if (!engine?.setHandProp) return;
+    const attachment = nextPropId ? toHandPropAttachment(nextPropId, nextSide) : null;
+    setHandPropBusy(true);
+    try {
+      await engine.setHandProp(attachment);
+      const spec = nextPropId ? findWebtoonHandPropSpec(nextPropId) : null;
+      setNotice(
+        spec
+          ? `손 소품 장착: ${spec.labelKo} (${nextSide === "rightHand" ? "오른손" : "왼손"})`
+          : "손 소품을 해제했습니다.",
+      );
+    } catch (error) {
+      setNotice(failureText(error, "손 소품을 장착하지 못했습니다."));
+    } finally {
+      setHandPropBusy(false);
+    }
+  };
+  const onApplyHandPropGripPose = (): void => {
+    if (!handPropId) return;
+    const cmds = buildHandPropGripPoseCommands(labState.recipe.pose, handPropId, handPropSide);
+    for (const cmd of cmds) dispatch(cmd);
+    const spec = findWebtoonHandPropSpec(handPropId);
+    if (spec) setNotice(`소품 그립 포즈 적용: ${spec.labelKo} (${handPropSide === "rightHand" ? "오른손" : "왼손"})`);
+  };
 
   return (
     <div className="cl-viewport" data-checkerboard={checkerboard ? "true" : undefined} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -691,6 +708,23 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           onChangeDistance={(distanceKey) => setDuoShot((prev) => ({ ...prev, distanceKey }))}
           onApplyEyeContact={onApplyDuoEyeContact}
         />
+        <ViewportMangaFxControls
+          mangaFx={mangaFx}
+          onToggleMangaFx={() => setMangaFx((prev) => ({ ...prev, enabled: !prev.enabled }))}
+          onChangeBubblePreset={(bubblePreset) => setMangaFx((prev) => ({ ...prev, bubblePreset }))}
+          onChangeLinesPreset={(linesPreset) => setMangaFx((prev) => ({ ...prev, linesPreset }))}
+          onChangeDialogueText={(dialogueText) => setMangaFx((prev) => ({ ...prev, dialogueText }))}
+          onChangeIntensity={(intensity) => setMangaFx((prev) => ({ ...prev, intensity: clampMangaFxIntensity(intensity) }))}
+        />
+        <ViewportHandPropControls
+          engineReady={Boolean(engine?.setHandProp)}
+          propId={handPropId}
+          hand={handPropSide}
+          busy={handPropBusy}
+          onSelectProp={(nextPropId) => void onApplyHandProp(nextPropId, handPropSide)}
+          onChangeHand={(nextSide) => void onApplyHandProp(handPropId, nextSide)}
+          onApplyGripPose={onApplyHandPropGripPose}
+        />
         <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
           <button type="button" className="cl-viewport-button" aria-pressed={showHandles} onClick={() => setShowHandles((value) => !value)}>관절 핸들</button>
           <button type="button" className="cl-viewport-button" aria-pressed={showFingers} disabled={!showHandles} onClick={() => setShowFingers((value) => !value)}>손가락 핸들</button>
@@ -700,27 +734,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           <select className="cl-viewport-select" aria-label="기즈모 조작 모드" value={gizmoMode} disabled={!showHandles} title="SHAPER PivotManager 기즈모 모드 전환 (단축키 Q / W / E / R)" onChange={(event) => setGizmoMode(Number(event.target.value) as ShaperGizmoMode)}>
             {SHAPER_GIZMO_MODES.map((m) => <option key={m.mode} value={m.mode}>{m.shortLabelKo}</option>)}
           </select>
-          <select className="cl-viewport-select" aria-label="SHAPER 내장 프리셋" value={shaperPresetId} title="SHAPER BuiltInData 풀세트 아키타입·체형·두상·이목구비·포즈를 즉시 적용합니다" onChange={(event) => applyShaperBuiltInPreset(event.target.value)}>
-            <option value="">SHAPER 프리셋 적용…</option>
-            <optgroup label="한국 웹툰 시그니처 연기·액션 (포즈+손+시선+표정)">
-              {Object.values(WEBTOON_SIGNATURE_POSES).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
-            </optgroup>
-            <optgroup label="SHAPER 풀세트 아키타입 (헤어+의상+체형+포즈)">
-              {Object.values(SHAPER_BUILTIN_ARCHETYPE_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
-            </optgroup>
-            <optgroup label="SHAPER 정본 체형 (BuiltInData/body)">
-              {Object.values(SHAPER_BUILTIN_BODY_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
-            </optgroup>
-            <optgroup label="SHAPER 정본 두상 (BuiltInData/head)">
-              {Object.values(SHAPER_BUILTIN_FACE_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
-            </optgroup>
-            <optgroup label="SHAPER 이목구비 파츠 (BuiltInData/parts)">
-              {Object.values(SHAPER_BUILTIN_PART_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
-            </optgroup>
-            <optgroup label="SHAPER 정본 포즈 (BuiltInData/pose)">
-              {Object.values(SHAPER_BUILTIN_POSE_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
-            </optgroup>
-          </select>
+          <ViewportShaperPresetSelect value={shaperPresetId} onSelect={applyShaperBuiltInPreset} />
           <button type="button" className="cl-viewport-button" aria-pressed={showHud} onClick={() => setShowHud((value) => !value)}>HUD</button>
           <button type="button" className="cl-viewport-button" aria-pressed={ui.drawingMode} disabled={!engine} onClick={() => setDrawingMode(!ui.drawingMode)}>드로잉</button>
         </span>
@@ -730,6 +744,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         <ViewportBackdropLayers checkerboard={checkerboard} manuscriptGuide={manuscriptGuide} referenceCut={referenceCut} />
         <canvas key={canvasGeneration} ref={registerCanvas} className="cl-viewport-canvas" aria-label="캐릭터 뷰포트" aria-keyshortcuts={CANVAS_KEY_SHORTCUTS} tabIndex={0} style={{ position: "relative", zIndex: 1 }} />
         <ViewportDuoShotOverlay duoShot={duoShot} subjectHeightCm={subjectHeight.heightCm} subjectEyeHeightCm={subjectHeight.eyeHeightCm} subjectLabelKo={subjectHeight.labelKo} />
+        <ViewportMangaFxOverlay mangaFx={mangaFx} />
 
       {labState.engine.phase === "idle" ? <ViewportOnboardingCard onSelectBackend={selectBackend} /> : null}
       {labState.engine.phase !== "ready" ? (

@@ -510,3 +510,77 @@ export function evaluateVerifyAiPreflightGates(options: {
     summaryBadgeKo,
   };
 }
+
+export type GenreLockModeId = "unlocked" | "rofan-salon-lock" | "action-impact-lock";
+
+export interface GenreLockGuardrailEvaluation {
+  readonly lockMode: GenreLockModeId;
+  readonly isCompliant: boolean;
+  readonly expectedLineRangePx: readonly [number, number];
+  readonly expectedKelvinRange: readonly [number, number];
+  readonly violationReasonKo: string | null;
+  readonly summaryKo: string;
+}
+
+/**
+ * 제안 1: 어시스턴트·협업자 간 잘못된 선굵기·조명 색온도 혼용을 원천 차단하는 장르 락인 가드레일.
+ */
+export function evaluateGenreLockGuardrail(input: {
+  readonly lockMode: GenreLockModeId;
+  readonly activeLineThicknessPx: number;
+  readonly activeKelvin: number;
+  readonly activeDispersion: number;
+}): GenreLockGuardrailEvaluation {
+  const { lockMode, activeLineThicknessPx, activeKelvin, activeDispersion } = input;
+  if (lockMode === "unlocked") {
+    return {
+      lockMode,
+      isCompliant: true,
+      expectedLineRangePx: [0.8, 4.5],
+      expectedKelvinRange: [1500, 10000],
+      violationReasonKo: null,
+      summaryKo: "장르 락인 해제 (자유 실험 모드)",
+    };
+  }
+
+  if (lockMode === "rofan-salon-lock") {
+    const lineRange: readonly [number, number] = [1.1, 1.7];
+    const kelvinRange: readonly [number, number] = [2800, 4200];
+    const lineOk = activeLineThicknessPx >= lineRange[0] && activeLineThicknessPx <= lineRange[1];
+    const kelvinOk = activeKelvin >= kelvinRange[0] && activeKelvin <= kelvinRange[1];
+    const dispOk = activeDispersion > 0;
+    const isCompliant = lineOk && kelvinOk && dispOk;
+    const violationReasonKo = isCompliant
+      ? null
+      : `로판 살롱 락인 이탈 감지: 현재 선굵기 ${activeLineThicknessPx}px / ${activeKelvin}K / 분산 +${activeDispersion} (권장 1.1~1.7px · 2800~4200K · 프리즘 활성)`;
+    return {
+      lockMode,
+      isCompliant,
+      expectedLineRangePx: lineRange,
+      expectedKelvinRange: kelvinRange,
+      violationReasonKo,
+      summaryKo: isCompliant
+        ? `로판 살롱 락인 정상 (${activeLineThicknessPx}px · ${activeKelvin}K · 프리즘 활성)`
+        : violationReasonKo!,
+    };
+  }
+
+  const lineRange: readonly [number, number] = [2.4, 3.8];
+  const kelvinRange: readonly [number, number] = [6500, 9500];
+  const lineOk = activeLineThicknessPx >= lineRange[0] && activeLineThicknessPx <= lineRange[1];
+  const kelvinOk = activeKelvin >= kelvinRange[0] && activeKelvin <= kelvinRange[1];
+  const isCompliant = lineOk && kelvinOk;
+  const violationReasonKo = isCompliant
+    ? null
+    : `액션 전투 락인 이탈 감지: 현재 선굵기 ${activeLineThicknessPx}px / ${activeKelvin}K (권장 2.4~3.8px G펜 · 6500~9500K 역광)`;
+  return {
+    lockMode,
+    isCompliant,
+    expectedLineRangePx: lineRange,
+    expectedKelvinRange: kelvinRange,
+    violationReasonKo,
+    summaryKo: isCompliant
+      ? `액션 전투 락인 정상 (${activeLineThicknessPx}px G펜 · ${activeKelvin}K 역광)`
+      : violationReasonKo!,
+  };
+}

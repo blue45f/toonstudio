@@ -1,4 +1,4 @@
-import { Flame, Shield, Sparkles, Swords, Users } from "lucide-react";
+import { Flame, Shield, SlidersHorizontal, Swords, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import {
@@ -47,13 +47,24 @@ import {
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 import {
   buildBlenderLiveSceneSyncBridge,
+  evaluateBlenderSceneIsolationGuard,
   evaluateVerticalScrollCutPacing,
 } from "./studio-bg3d-scroll-pacing-live-sync";
 import {
+  evaluateDarkroomProofingState,
+  evaluateGenreCutDensityAndRejectionRoi,
+  type CrossGenreDatumGenreId,
+} from "./studio-bg3d-shared-datum-proofing";
+import {
+  evaluateGenreLockGuardrail,
   evaluateVerifyAiPreflightGates,
   recommendBlenderCutArchetypePreset,
+  type GenreLockModeId,
   type WebtoonCutArchetypeId,
 } from "./studio-bg3d-shot-continuity-linked-ink";
+
+const MOTION_PRESS =
+  "transition-[background-color,border-color,color,opacity,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
 
 export interface StudioBg3dBlenderFantasyWebtoonPanelProps {
   readonly disabled?: boolean;
@@ -105,6 +116,12 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
   const [artisticOverride, setArtisticOverride] = useState<boolean>(false);
   const [renderQualityTier, setRenderQualityTier] = useState<ToonRenderQualityTier>("final");
   const [remediationAppliedCount, setRemediationAppliedCount] = useState<number>(0);
+  const [genreLockMode, setGenreLockMode] = useState<GenreLockModeId>("unlocked");
+  const [bg3dAdoptionRatioPct, setBg3dAdoptionRatioPct] = useState<number>(45);
+  const [avgRevisionsPerEpisode, setAvgRevisionsPerEpisode] = useState<number>(6);
+  const [lookDevGateConfirmed, setLookDevGateConfirmed] = useState<boolean>(false);
+  const [selectedDatumGenreId, setSelectedDatumGenreId] = useState<CrossGenreDatumGenreId>("murim");
+  const [darkroomProofingEnabled, setDarkroomProofingEnabled] = useState<boolean>(false);
   const [selectedLightingId, setSelectedLightingId] = useState<string>(BLENDER_FANTASY_LIGHTING_RIG_PRESETS[0]!.id);
   const [customKelvin, setCustomKelvin] = useState<number>(5600);
   const [selectedShaderId, setSelectedShaderId] = useState<string>(BLENDER_NPR_SHADER_PRESETS[0]!.id);
@@ -193,6 +210,11 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         monsterEval: monsterSolveResult,
         crowdPreset: activeCrowdPreset,
         crowdEval: crowdResult,
+        weeklyRoiInput: {
+          weeklyTotalCuts: 70,
+          bg3dAdoptionRatioPct,
+          avgStoryboardRevisionsPerEpisode: avgRevisionsPerEpisode,
+        },
       }),
     [
       activeLightingRig,
@@ -207,6 +229,8 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
       monsterSolveResult,
       activeCrowdPreset,
       crowdResult,
+      bg3dAdoptionRatioPct,
+      avgRevisionsPerEpisode,
     ],
   );
 
@@ -218,6 +242,29 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         contrastRatio: lightingEvaluation.contrastRatio,
       }),
     [selectedArchetypeId, artisticOverride, lightingEvaluation.contrastRatio],
+  );
+  const genreLockReport = useMemo(
+    () =>
+      evaluateGenreLockGuardrail({
+        lockMode: genreLockMode,
+        activeLineThicknessPx: activeFreestylePreset.baseThicknessPx,
+        activeKelvin: customKelvin,
+        activeDispersion: shaderEvaluation.dispersionRgbShift[2],
+      }),
+    [genreLockMode, activeFreestylePreset.baseThicknessPx, customKelvin, shaderEvaluation.dispersionRgbShift],
+  );
+  const sceneIsolationReport = useMemo(() => evaluateBlenderSceneIsolationGuard(), []);
+  const rejectionRoiReport = useMemo(
+    () =>
+      evaluateGenreCutDensityAndRejectionRoi({
+        genreId: selectedDatumGenreId,
+        bg3dAdoptionRatioPct,
+      }),
+    [selectedDatumGenreId, bg3dAdoptionRatioPct],
+  );
+  const darkroomProofingState = useMemo(
+    () => evaluateDarkroomProofingState(darkroomProofingEnabled, customKelvin, lightingEvaluation.contrastRatio),
+    [darkroomProofingEnabled, customKelvin, lightingEvaluation.contrastRatio],
   );
 
   const multiPassPlan = useMemo(
@@ -259,29 +306,33 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
   );
 
   return (
-    <div data-testid="bg3d-blender-fantasy-webtoon-panel" className="flex flex-col gap-3 p-3 text-xs text-fg">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-raised/60 px-3 py-2">
-        <div className="flex items-center gap-1.5 font-bold text-fg">
-          <Sparkles className="size-4 text-accent" aria-hidden />
-          <span>ToonStudio 판타지 장면 설정·프리셋</span>
+    <div
+      data-testid="bg3d-blender-fantasy-webtoon-panel"
+      data-darkroom-proofing={darkroomProofingEnabled ? "true" : "false"}
+      className={`flex flex-col gap-3 p-3 text-xs text-fg ${darkroomProofingEnabled ? "rounded-2xl bg-[#141415] text-[#f2f2f3]" : ""}`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel px-3 py-2.5">
+        <div className="inline-flex items-center gap-2 text-sm font-semibold text-fg">
+          <SlidersHorizontal size={16} strokeWidth={1.5} className="shrink-0 text-fg-2" aria-hidden />
+          <span>ToonStudio 3D 장면·선화·룩데브 작업대</span>
         </div>
-        <span data-testid="bg3d-blender-summary-badge" className="rounded bg-accent/15 px-2 py-0.5 font-mono text-[0.62rem] font-semibold text-accent">
+        <span data-testid="bg3d-blender-summary-badge" className="rounded-md border border-line bg-raised px-2.5 py-1 font-mono text-xs font-medium tabular-nums text-fg-2">
           웹툰 조명 시인성 {lightingEvaluation.webtoonReadabilityGrade} · 어검 {weaponSolveResult.blades.length}자루 · 몬스터 체인 {monsterSolveResult.solvedLimbs.length}개 · 군단 {crowdResult.totalAgents}기 (VRAM -{crowdResult.vramReductionPercent}%)
         </span>
       </div>
 
-      <section data-testid="bg3d-blender-eevee-lighting-section" className="flex flex-col gap-2 rounded-lg border border-line bg-panel/50 p-2.5">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1 font-semibold text-fg">
-            <Flame className="size-3.5 text-accent" aria-hidden />
+      <section data-testid="bg3d-blender-eevee-lighting-section" className="flex flex-col gap-2 rounded-2xl border border-line bg-panel p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold text-fg">
+            <Flame size={16} strokeWidth={1.5} className="shrink-0 text-fg-2" aria-hidden />
             1. 장면 조명·배광·색온도·볼륨 설정
           </span>
-          <span data-testid="bg3d-blender-lighting-readout" className="font-mono text-[0.62rem] text-fg-2">
+          <span data-testid="bg3d-blender-lighting-readout" className="font-mono text-xs tabular-nums text-fg-2">
             합성 조도 {lightingEvaluation.combinedDiffuseHex} · 림 {lightingEvaluation.combinedRimIntensity} · 볼륨 {lightingEvaluation.combinedVolumetricGlow} · 대비율 {lightingEvaluation.contrastRatio}:1 ({lightingEvaluation.webtoonReadabilityGrade}등급)
           </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {BLENDER_FANTASY_LIGHTING_RIG_PRESETS.map((rig) => {
             const active = rig.id === activeLightingRig.id;
             return (
@@ -295,18 +346,18 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
                   const evalNext = evaluateBlenderFantasyLightingRig(rig);
                   onApplyLightingRig?.(rig, evalNext.webtoonReadabilityGrade);
                 }}
-                className={`flex flex-col items-start rounded border px-2 py-1.5 text-left transition-colors ${active ? "border-accent bg-accent/15 font-bold text-accent" : "border-line bg-card text-fg-2 hover:bg-raised"}`}
+                className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-left ${active ? "border-accent bg-raised font-medium text-fg" : "border-line bg-card text-fg-2 hover:bg-raised"} ${MOTION_PRESS}`}
               >
-                <span className="text-[0.6rem] text-fg-3">{rig.categoryKo}</span>
-                <span className="text-[0.68rem]">{rig.nameKo}</span>
+                <span className="text-xs text-fg-3">{rig.categoryKo}</span>
+                <span className="text-xs font-medium text-fg">{rig.nameKo}</span>
               </button>
             );
           })}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded bg-card px-2.5 py-1.5 text-[0.64rem]">
-          <span>
-            흑체 색온도(Kelvin): <strong>{customKelvin}K</strong> ({kelvinPreviewHex})
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-card px-3 py-2 text-xs">
+          <span className="tabular-nums">
+            흑체 색온도(Kelvin): <span className="font-medium text-fg">{customKelvin}K</span> ({kelvinPreviewHex})
           </span>
           <input
             type="range"
@@ -320,21 +371,21 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
             onChange={(e) => setCustomKelvin(Number(e.target.value))}
             className="w-40 accent-accent"
           />
-          <span className="font-mono text-fg-3">
+          <span className="font-mono tabular-nums text-fg-3">
             프로브 서펠 {lightingEvaluation.probeSample.totalSurfelCountEstimate}개 · FastGI ×{lightingEvaluation.probeSample.fastGiBounceFactor}
           </span>
         </div>
       </section>
 
-      <section data-testid="bg3d-blender-npr-freestyle-section" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div className="flex flex-col gap-2 rounded-lg border border-line bg-panel/50 p-2.5">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-fg">2A. 툰 채색·색상 단계 설정</span>
-            <span data-testid="bg3d-blender-shader-readout" className="font-mono text-[0.62rem] text-fg-2">
+      <section data-testid="bg3d-blender-npr-freestyle-section" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-2 rounded-2xl border border-line bg-panel p-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-fg">2A. 툰 채색·프리즘 분산 설정</span>
+            <span data-testid="bg3d-blender-shader-readout" className="font-mono text-xs tabular-nums text-fg-2">
               표면 {shaderEvaluation.finalSurfaceHex} · Bevel {shaderEvaluation.bevelHighlight} · Disp +{shaderEvaluation.dispersionRgbShift[2]}
             </span>
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             {BLENDER_NPR_SHADER_PRESETS.map((preset) => {
               const active = preset.id === activeShaderPreset.id;
               return (
@@ -354,10 +405,10 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
                     });
                     onApplyNprShader?.(preset, nextEval.finalSurfaceHex);
                   }}
-                  className={`flex items-center justify-between rounded border px-2 py-1 text-left ${active ? "border-accent bg-accent/15 font-bold text-accent" : "border-line bg-card text-fg-2 hover:bg-raised"}`}
+                  className={`flex min-h-10 items-center justify-between gap-2 rounded-lg border px-3 py-1.5 text-left ${active ? "border-accent bg-raised font-medium text-fg" : "border-line bg-card text-fg-2 hover:bg-raised"} ${MOTION_PRESS}`}
                 >
-                  <span className="text-[0.66rem]">{preset.nameKo}</span>
-                  <span className="font-mono text-[0.58rem] text-fg-3">
+                  <span className="text-xs">{preset.nameKo}</span>
+                  <span className="font-mono text-xs tabular-nums text-fg-3">
                     {preset.toonComponent} · {preset.rampInterpolation} ({preset.colorRampStops.length}단)
                   </span>
                 </button>
@@ -366,14 +417,14 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 rounded-lg border border-line bg-panel/50 p-2.5">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-fg">2B. 외곽선·선화 스트로크 설정</span>
-            <span data-testid="bg3d-blender-freestyle-readout" className="font-mono text-[0.62rem] text-fg-2">
+        <div className="flex flex-col gap-2 rounded-2xl border border-line bg-panel p-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-fg">2B. 외곽선·선화 스트로크 설정</span>
+            <span data-testid="bg3d-blender-freestyle-readout" className="font-mono text-xs tabular-nums text-fg-2">
               추출 {freestyleEvaluation.selectedStrokeCount}선분 · 평균 {freestyleEvaluation.averageThicknessPx}px
             </span>
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             {BLENDER_FREESTYLE_INK_PRESETS.map((preset) => {
               const active = preset.id === activeFreestylePreset.id;
               return (
@@ -387,11 +438,11 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
                     const evalNext = evaluateFreestyleViewMapStrokes(preset, DEFAULT_FREESTYLE_SAMPLE_EDGES);
                     onApplyFreestyleInk?.(preset, evalNext.selectedStrokeCount);
                   }}
-                  className={`flex items-center justify-between rounded border px-2 py-1 text-left ${active ? "border-accent bg-accent/15 font-bold text-accent" : "border-line bg-card text-fg-2 hover:bg-raised"}`}
+                  className={`flex min-h-10 items-center justify-between gap-2 rounded-lg border px-3 py-1.5 text-left ${active ? "border-accent bg-raised font-medium text-fg" : "border-line bg-card text-fg-2 hover:bg-raised"} ${MOTION_PRESS}`}
                 >
-                  <span className="text-[0.66rem]">{preset.nameKo}</span>
-                  <span className="font-mono text-[0.58rem] text-fg-3">
-                    Crease {preset.creaseAngleDeg}° · Occl {preset.lineArtMaxOcclusion}
+                  <span className="text-xs">{preset.nameKo}</span>
+                  <span className="font-mono text-xs tabular-nums text-fg-3">
+                    {preset.baseThicknessPx}px · Crease {preset.creaseAngleDeg}° · Occl {preset.lineArtMaxOcclusion}
                   </span>
                 </button>
               );
@@ -400,18 +451,18 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         </div>
       </section>
 
-      <section data-testid="bg3d-blender-weapon-forge-section" className="flex flex-col gap-2 rounded-lg border border-line bg-panel/50 p-2.5">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1 font-semibold text-fg">
-            <Swords className="size-3.5 text-accent" aria-hidden />
+      <section data-testid="bg3d-blender-weapon-forge-section" className="flex flex-col gap-2 rounded-2xl border border-line bg-panel p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold text-fg">
+            <Swords size={16} strokeWidth={1.5} className="shrink-0 text-fg-2" aria-hidden />
             3. 판타지 무기 포지 & ChildOf·FollowPath·TrackTo 어검진 리깅
           </span>
-          <span data-testid="bg3d-blender-weapon-readout" className="font-mono text-[0.62rem] text-fg-2">
+          <span data-testid="bg3d-blender-weapon-readout" className="font-mono text-xs tabular-nums text-fg-2">
             전개 {weaponSolveResult.blades.length}자루 · 룬 출력 {weaponSolveResult.totalRunePowerWatts}W · 반경 {weaponSolveResult.boundingRadiusMeters}m
           </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {BLENDER_FANTASY_WEAPON_PRESETS.map((weapon) => {
             const active = weapon.id === activeWeaponPreset.id;
             return (
@@ -425,17 +476,17 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
                   setWeaponSocket(weapon.defaultSocket);
                   onApplyWeaponRig?.(weapon, weapon.bladeCount);
                 }}
-                className={`flex flex-col items-start rounded border px-2 py-1.5 text-left ${active ? "border-accent bg-accent/15 font-bold text-accent" : "border-line bg-card text-fg-2 hover:bg-raised"}`}
+                className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-left ${active ? "border-accent bg-raised font-medium text-fg" : "border-line bg-card text-fg-2 hover:bg-raised"} ${MOTION_PRESS}`}
               >
-                <span className="text-[0.58rem] text-fg-3">{weapon.categoryKo}</span>
-                <span className="text-[0.66rem]">{weapon.nameKo}</span>
+                <span className="text-xs text-fg-3">{weapon.categoryKo}</span>
+                <span className="text-xs font-medium text-fg">{weapon.nameKo}</span>
               </button>
             );
           })}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded bg-card px-2.5 py-1.5 text-[0.64rem]">
-          <div className="flex flex-wrap items-center gap-1">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-card px-3 py-2 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span>소켓(ChildOf):</span>
             {WEAPON_SOCKET_OPTIONS.map((opt) => (
               <button
@@ -444,13 +495,13 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
                 disabled={disabled}
                 data-testid={`bg3d-blender-weapon-socket-${opt.id}`}
                 onClick={() => setWeaponSocket(opt.id)}
-                className={`rounded border px-1.5 py-0.5 text-[0.6rem] ${weaponSocket === opt.id ? "border-accent bg-accent/20 font-semibold text-accent" : "border-line bg-panel text-fg-2"}`}
+                className={`min-h-9 rounded-lg border px-2.5 py-1 text-xs ${weaponSocket === opt.id ? "border-accent bg-raised font-medium text-fg" : "border-line bg-panel text-fg-2"} ${MOTION_PRESS}`}
               >
                 {opt.labelKo}
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2 tabular-nums">
             <span>진명 각성(Action): {Math.round(weaponAwakening * 100)}%</span>
             <input
               type="range"
@@ -468,19 +519,19 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div data-testid="bg3d-blender-monster-ik-section" className="flex flex-col gap-2 rounded-lg border border-line bg-panel/50 p-2.5">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1 font-semibold text-fg">
-              <Shield className="size-3.5 text-accent" aria-hidden />
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div data-testid="bg3d-blender-monster-ik-section" className="flex flex-col gap-2 rounded-2xl border border-line bg-panel p-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold text-fg">
+              <Shield size={16} strokeWidth={1.5} className="shrink-0 text-fg-2" aria-hidden />
               4. 몬스터 다관절 iTaSC 야코비안 IK
             </span>
-            <span data-testid="bg3d-blender-monster-readout" className="font-mono text-[0.62rem] text-fg-2">
+            <span data-testid="bg3d-blender-monster-readout" className="font-mono text-xs tabular-nums text-fg-2">
               전고 {monsterSolveResult.silhouetteHeightMeters}m · 익폭 {monsterSolveResult.silhouetteWingspanMeters}m · 수렴 {monsterSolveResult.jacobianConverged ? "OK" : "WARN"}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-2">
             {BLENDER_FANTASY_MONSTER_PRESETS.map((monster) => {
               const active = monster.id === activeMonsterPreset.id;
               return (
@@ -493,16 +544,16 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
                     setSelectedMonsterId(monster.id);
                     onApplyMonsterIk?.(monster, monsterPose);
                   }}
-                  className={`flex flex-col items-start rounded border px-2 py-1 text-left ${active ? "border-accent bg-accent/15 font-bold text-accent" : "border-line bg-card text-fg-2 hover:bg-raised"}`}
+                  className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-2.5 py-1.5 text-left ${active ? "border-accent bg-raised font-medium text-fg" : "border-line bg-card text-fg-2 hover:bg-raised"} ${MOTION_PRESS}`}
                 >
-                  <span className="text-[0.58rem] text-fg-3">{monster.speciesClassKo}</span>
-                  <span className="truncate text-[0.64rem]">{monster.nameKo}</span>
+                  <span className="text-xs text-fg-3">{monster.speciesClassKo}</span>
+                  <span className="truncate text-xs font-medium text-fg">{monster.nameKo}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="flex flex-wrap items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1.5">
             {MONSTER_POSE_MODES.map((pose) => (
               <button
                 key={pose.id}
@@ -513,7 +564,7 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
                   setMonsterPose(pose.id);
                   onApplyMonsterIk?.(activeMonsterPreset, pose.id);
                 }}
-                className={`rounded border px-2 py-0.5 text-[0.6rem] ${monsterPose === pose.id ? "border-accent bg-accent/20 font-semibold text-accent" : "border-line bg-card text-fg-2"}`}
+                className={`min-h-9 rounded-lg border px-2.5 py-1 text-xs ${monsterPose === pose.id ? "border-accent bg-raised font-medium text-fg" : "border-line bg-card text-fg-2"} ${MOTION_PRESS}`}
               >
                 {pose.labelKo}
               </button>
@@ -521,18 +572,18 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
           </div>
         </div>
 
-        <div data-testid="bg3d-blender-crowd-boid-section" className="flex flex-col gap-2 rounded-lg border border-line bg-panel/50 p-2.5">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1 font-semibold text-fg">
-              <Users className="size-3.5 text-accent" aria-hidden />
+        <div data-testid="bg3d-blender-crowd-boid-section" className="flex flex-col gap-2 rounded-2xl border border-line bg-panel p-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold text-fg">
+              <Users size={16} strokeWidth={1.5} className="shrink-0 text-fg-2" aria-hidden />
               5. GeometryNodes & BoidBrain 대규모 군단
             </span>
-            <span data-testid="bg3d-blender-crowd-readout" className="font-mono text-[0.62rem] text-fg-2">
+            <span data-testid="bg3d-blender-crowd-readout" className="font-mono text-xs tabular-nums text-fg-2">
               {crowdResult.totalAgents}기 (가시 {crowdResult.visibleAgents}) · VRAM -{crowdResult.vramReductionPercent}%
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-2">
             {BLENDER_FANTASY_CROWD_PRESETS.map((crowd) => {
               const active = crowd.id === activeCrowdPreset.id;
               return (
@@ -546,16 +597,16 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
                     setCrowdAgentCount(crowd.defaultAgentCount);
                     onSimulateCrowd?.(crowd, crowd.defaultAgentCount);
                   }}
-                  className={`flex flex-col items-start rounded border px-2 py-1 text-left ${active ? "border-accent bg-accent/15 font-bold text-accent" : "border-line bg-card text-fg-2 hover:bg-raised"}`}
+                  className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-2.5 py-1.5 text-left ${active ? "border-accent bg-raised font-medium text-fg" : "border-line bg-card text-fg-2 hover:bg-raised"} ${MOTION_PRESS}`}
                 >
-                  <span className="text-[0.58rem] text-fg-3">{crowd.categoryKo}</span>
-                  <span className="truncate text-[0.64rem]">{crowd.nameKo}</span>
+                  <span className="text-xs text-fg-3">{crowd.categoryKo}</span>
+                  <span className="truncate text-xs font-medium text-fg">{crowd.nameKo}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="flex items-center justify-between rounded bg-card px-2 py-1 text-[0.6rem]">
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-card px-3 py-1.5 text-xs tabular-nums">
             <span>
               LOD0 {crowdResult.lodCounts.lod0} / LOD1 {crowdResult.lodCounts.lod1} / LOD2 {crowdResult.lodCounts.lod2} · 교전 {crowdResult.stateCounts.engagedCombat}기
             </span>
@@ -593,6 +644,25 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         remediationAppliedCount={remediationAppliedCount}
         scrollPacingPlan={scrollPacingPlan}
         liveSyncBridge={liveSyncBridge}
+        genreLockReport={genreLockReport}
+        sceneIsolationReport={sceneIsolationReport}
+        bg3dAdoptionRatioPct={bg3dAdoptionRatioPct}
+        avgRevisionsPerEpisode={avgRevisionsPerEpisode}
+        lookDevGateConfirmed={lookDevGateConfirmed}
+        selectedDatumGenreId={selectedDatumGenreId}
+        rejectionRoiReport={rejectionRoiReport}
+        darkroomProofingState={darkroomProofingState}
+        onSelectDatumGenreId={(genreId) => {
+          setSelectedDatumGenreId(genreId);
+          onStatusChange?.(`공통 건축 기준선 전환: ${genreId}`);
+        }}
+        onToggleDarkroomProofing={(enabled) => {
+          setDarkroomProofingEnabled(enabled);
+          onStatusChange?.(enabled ? "무채색 암실 검수 모드 활성화 (ΔE 0.0)" : "표준 작업대 화면 복귀");
+        }}
+        onChangeGenreLockMode={setGenreLockMode}
+        onChangeBg3dAdoptionRatioPct={setBg3dAdoptionRatioPct}
+        onChangeAvgRevisionsPerEpisode={setAvgRevisionsPerEpisode}
         onSelectLensId={setSelectedLensId}
         onSelectArchetypeId={setSelectedArchetypeId}
         onToggleArtisticOverride={setArtisticOverride}
@@ -607,26 +677,31 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         }}
         onRunGenrePlaybook={(bundleId) => {
           if (bundleId === "rofan-salon") {
+            setGenreLockMode("rofan-salon-lock");
             setSelectedArchetypeId("rofan-salon-closeup");
             setSelectedLightingId("lumiere-salon-chandelier-prism");
             setCustomKelvin(3200);
             setSelectedShaderId("lumiere-rofan-velvet-brocade");
             setSelectedFreestyleId("rofan-delicate-dip-pen-lace");
             const salonScene = buildBlenderPresetScenePrimitives("lumiere-rofan-salon");
-            const msg = "로판 살롱 4단계 플레이북 적용 완료 (3200K 샹들리에 · 프리즘 벨벳 · 1.35px 세공펜 · 살롱 기물 배치)";
+            const msg = "로판 살롱 4단계 플레이북 및 1.35px 장르 락인 적용 완료";
             onInsertScenePrimitives?.(salonScene.primitives, msg);
             onStatusChange?.(msg);
           } else {
+            setGenreLockMode("action-impact-lock");
             setSelectedArchetypeId("action-impact");
             setSelectedLightingId("dungeon-boss-abyss-backlight");
             setCustomKelvin(8500);
             setSelectedShaderId("paladin-gilded-plate-toon");
             setSelectedFreestyleId("fantasy-action-gpen-calligraphic");
-            onStatusChange?.("액션 판타지 전투 세트 적용 완료 (심연 역광 · 4단 판금 · 2.8px G펜)");
+            onStatusChange?.("액션 판타지 전투 세트 및 2.8px G펜 장르 락인 적용 완료");
           }
         }}
         onSelectFreshIdeaLens={onSelectFreshIdeaLens}
-        onVerifyAiGate={onVerifyAiGate}
+        onVerifyAiGate={(score, passed) => {
+          setLookDevGateConfirmed(passed);
+          onVerifyAiGate?.(score, passed);
+        }}
         onStatusChange={onStatusChange}
       />
 

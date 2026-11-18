@@ -1,4 +1,4 @@
-import { Aperture, Box, Camera, Cpu, Layers, PenTool, Sparkles, Waves } from "lucide-react";
+import { Aperture, Box, Camera, Cpu, Layers, PenTool, Plus, Waves } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -344,7 +344,7 @@ export function StudioBg3dBlenderFullSections({
             }}
             className="inline-flex items-center gap-1 rounded bg-accent px-2.5 py-1 text-[0.65rem] font-bold text-on-accent"
           >
-            <Sparkles className="size-3" aria-hidden />
+            <Plus size={14} strokeWidth={1.5} aria-hidden />
             <span>현재 3D 장면에 모디파이어 생성물 배치</span>
           </button>
         </div>
@@ -428,7 +428,7 @@ export function StudioBg3dBlenderFullSections({
               }}
               className="inline-flex items-center gap-1 rounded bg-accent px-2 py-1 text-[0.62rem] font-bold text-on-accent"
             >
-              <Sparkles className="size-3" aria-hidden />
+              <Plus size={14} strokeWidth={1.5} aria-hidden />
               <span>현재 3D 장면에 조형 메시 배치 ({editSculptEval.primitives.length})</span>
             </button>
           </div>
@@ -531,7 +531,7 @@ export function StudioBg3dBlenderFullSections({
             }}
             className="inline-flex items-center gap-1 rounded bg-accent px-2.5 py-1 text-[0.65rem] font-bold text-on-accent"
           >
-            <Sparkles className="size-3" aria-hidden />
+            <PenTool size={14} strokeWidth={1.5} aria-hidden />
             <span>3D 뷰포트 선화 미리보기(LineArt) 즉시 동기화</span>
           </button>
         </div>
@@ -788,7 +788,7 @@ export function StudioBg3dBlenderFullSections({
               }}
               className="inline-flex items-center gap-1 rounded bg-accent px-2.5 py-1 text-[0.65rem] font-bold text-on-accent"
             >
-              <Sparkles className="size-3" aria-hidden />
+              <Plus size={14} strokeWidth={1.5} aria-hidden />
               <span>현재 3D 장면에 배경 세트 즉시 배치</span>
             </button>
           </div>

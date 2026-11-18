@@ -31,6 +31,7 @@ import { normalizeToonLighting } from "../toon-reference";
 import { BABYLON_SIDE_EFFECTS_LOADED } from "./babylon-side-effects";
 import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
+import { FACE_SDF_SIZE, THUMBNAIL_LAYER_MASK, TOON_EDGE_EPSILON, activeMorphTargets } from "./character-engine-helpers";
 import { CharacterOutlineController } from "./character-outline-controller";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
 import { fromQuaternion, fromVector3, toVector3 } from "./convert";
@@ -38,6 +39,7 @@ import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure 
 import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
 import { exportRigGlbWithReport } from "./glb-exporter";
 import { hairLayerSupport } from "./hair-ownership";
+import { HAND_PROP_PART_ID, attachHandPropToRig } from "./hand-prop-attachment";
 import { createHudProbe } from "./hud";
 import { loadKitRig } from "./kit-loader";
 import { createProceduralIbl } from "./lighting/ibl";
@@ -53,6 +55,7 @@ import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
 import type { CaptureDeps, PassMaterialSet } from "./capture";
 import type { BabylonCharacterEngineDeps, BoneReading } from "./character-engine-types";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
+import type { HandPropHandle } from "./hand-prop-attachment";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
   ApplyPlan,
@@ -66,6 +69,7 @@ import type {
   CharacterSource,
   EngineBackend,
   EngineDiagnostics,
+  HandPropAttachment,
   HudSample,
   JointDragHandle,
   KitPlan,
@@ -99,32 +103,14 @@ import type { ProceduralIbl } from "./lighting/ibl";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine.js";
 import type { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial.js";
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture.js";
-import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
 export type { ReadbackLane } from "../readback";
 export type { BabylonCharacterEngineDeps, BoneReading } from "./character-engine-types";
+export { FACE_SDF_SIZE, THUMBNAIL_LAYER_MASK, TOON_EDGE_EPSILON } from "./character-engine-helpers";
 
-/**
- * 썸네일 임시 리그 전용 레이어 마스크. 메인 카메라(기본 0x0fffffff)가 그리지 않으므로 캡처 중 비동기 구간에도
- * 뷰포트에 임시 리그가 보이지 않는다. 캡처 RTT는 `renderList`를 쓰므로 레이어 마스크를 검사하지 않는다.
- */
-export const THUMBNAIL_LAYER_MASK = 0x10000000;
-
-/** 얼굴 SDF 임계 맵 해상도 */
-export const FACE_SDF_SIZE = 128;
 /** 툰 외곽선(hull) 폭(월드 단위, m) */
 export const TOON_OUTLINE_WIDTH = 0.004;
-/** 엣지 외곽선 각도 임계(cos) */
-export const TOON_EDGE_EPSILON = 0.95;
-
-
-/** 지금 influence > 0인 morph 타깃 수. `numInfluencers`는 attribute 모드에서 8개로 잘려 있어 초과분(무시되는 타깃)을 셀 수 없다. */
-function activeMorphTargets(manager: MorphTargetManager): number {
-  let active = 0;
-  for (let index = 0; index < manager.numTargets; index += 1) if (manager.getTarget(index).influence > 0) active += 1;
-  return active;
-}
 
 export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSource, ViewportCameraSource, BetaFeaturePort, ProjectionPaintHost {
   readonly backend: EngineBackend;
@@ -166,6 +152,8 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private shading: ShadingProfile = DEFAULT_SHADING;
   private framing: CameraFraming = DEFAULT_FRAMING;
   private lastPlan: ApplyPlan | null = null;
+  private activeHandProp: HandPropAttachment | null = null;
+  private handPropHandle: HandPropHandle | null = null;
   private readonly gaze = createEyeGazeController(() => this.rig, () => this.lastPlan?.eyeGaze, () => this.viewportCamera().position);
   private disposed = false;
   private loopRunning = false;
@@ -309,6 +297,13 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     }
     this.rig = rig;
     this.kit = kit;
+    if (this.activeHandProp) {
+      try {
+        await this.syncActiveHandPropToRig(rig);
+      } catch (error) {
+        this.reportFailure(error, "hand-prop-reattach-failed", "새 캐릭터 소스에 손 소품을 다시 부착하지 못했습니다.");
+      }
+    }
     this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
     try {
       this.physics.bindRig(rig);
@@ -515,9 +510,49 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     for (const material of this.idMaterials.values()) material.dispose(true, false);
     this.flatMaterials.clear();
     this.idMaterials.clear();
+    this.detachHandPropFromRig(rig);
     this.beta.releaseRig(rig);
     this.pressureOutline.release(rig);
     rig.dispose();
+  }
+
+  private detachHandPropFromRig(rig: CharacterRig | null): void {
+    const handle = this.handPropHandle;
+    if (!handle) return;
+    this.handPropHandle = null;
+    this.disposePassMaterials(HAND_PROP_PART_ID);
+    if (rig) this.beta.releaseRig(rigWithParts(rig, [handle.part]));
+    handle.dispose();
+  }
+
+  private async syncActiveHandPropToRig(rig: CharacterRig): Promise<void> {
+    this.detachHandPropFromRig(rig);
+    if (!this.activeHandProp) return;
+    const materialOptions = this.materialOptions();
+    this.handPropHandle = await attachHandPropToRig(rig, this.activeHandProp, {
+      scene: this.character.scene,
+      fetchBytes: (url) => (this.deps.fetchBytes ?? fetchBytesDefault)(url),
+      adaptMaterial: (role, mesh) => adaptLoadedMaterial(materialOptions, mesh.material, role, `mat:${mesh.name}`).material,
+      verifyIntegrity: this.deps.verifyPackageSha ?? true,
+      now: this.now(),
+    });
+  }
+
+  async setHandProp(attachment: HandPropAttachment | null): Promise<void> {
+    this.assertAlive();
+    return this.runExclusive(async () => {
+      this.assertAlive();
+      this.activeHandProp = attachment;
+      const rig = this.rig;
+      if (!rig) return;
+      await this.syncActiveHandPropToRig(rig);
+      this.character.clearShadowCasters();
+      this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
+      await this.beta.reconcile();
+      this.applyMaterialsForMode(rig);
+      this.refreshToonUniforms(rig);
+      this.beta.syncIblShadows();
+    });
   }
   applyPlan(plan: ApplyPlan): ApplyReceipt {
     this.assertAlive();

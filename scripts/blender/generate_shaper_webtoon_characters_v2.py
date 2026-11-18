@@ -378,6 +378,58 @@ CHARACTER_SPECS: list[dict[str, Any]] = [
         },
         "noteKo": "Blender 5.3에서 애쉬 차콜 레이어드 헤어·에메랄드 회귀자 안구·택티컬 후디드 필드 재킷과 3D 체스트 리그 탄창 파우치·비대칭 숄더 폴드론·전술 HUD 바이저 고글을 정밀 조형한 아포칼립스 회귀 스나이퍼 패키지.",
     },
+    {
+        "id": "shaper-healing-barista",
+        "displayName": "SHAPER Atelier · Cozy Campus Artist (일상 힐링 캠퍼스 아티스트)",
+        "role": "shaper-healing",
+        "gender": "female",
+        "faceStyle": "cute",
+        "hairStyle": "soft-bob",
+        "bangStyle": "barista-soft",
+        "kitParts": {
+            "top": ("top/hoodie.glb", "TS_Top_cozy-hoodie"),
+            "bottom": ("bottom/jeans.glb", "TS_Bottom_denim-jeans"),
+            "shoes": ("shoes/sneakers.glb", "TS_Shoes_sneakers"),
+            "accessory": ("accessory/ribbon.glb", "TS_Accessory_artist-beret"),
+        },
+        "hideFeet": False,
+        "couture": "healing-barista",
+        "colors": {
+            "skin": "#FDE8DC", "blush": "#F99BA0", "lip": "#EA6E7A", "shadow": "#E4B8A8",
+            "irisTop": "#7A4419", "irisBot": "#FFC978",
+            "hairRoot": "#3E241C", "hairMid": "#6E4234", "hairTip": "#B0725A", "hairHalo": "#FFE2CF",
+            "top1": "#F6EFE4", "top2": "#DFD2BE", "topAcc": "#D97854", "topPat": "knit",
+            "bot1": "#324A6E", "bot2": "#1E2F4A", "botAcc": "#D9A86C", "botPat": "denim",
+            "shoe": "#F2ECE1", "acc": "#9E3348", "gold": "#F0C674",
+        },
+        "noteKo": "Blender 5.3에서 밀크티 체스트넛 에어리 보브컷·허니 앰버 보석안·오트밀 케이블 니트 후디와 크로스바디 화구 사첼백·워시드 인디고 데님 진·버건디 울 베레모와 골드 팔레트 핀을 정밀 조형한 일상 힐링 캠퍼스 아티스트 패키지.",
+    },
+    {
+        "id": "shaper-thriller-detective",
+        "displayName": "SHAPER Atelier · Noir Detective Inspector (현대 스릴러 강력계 형사)",
+        "role": "shaper-thriller",
+        "gender": "male",
+        "faceStyle": "sharp",
+        "hairStyle": "short-layered",
+        "bangStyle": "detective-parted",
+        "kitParts": {
+            "top": ("top/shirt.glb", "TS_Top_detective-shirt"),
+            "bottom": ("bottom/slacks.glb", "TS_Bottom_slacks"),
+            "shoes": ("shoes/boots.glb", "TS_Shoes_boots"),
+            "accessory": ("accessory/earrings.glb", "TS_Accessory_detective-badge"),
+        },
+        "hideFeet": True,
+        "couture": "thriller-detective",
+        "colors": {
+            "skin": "#F5D7C4", "blush": "#DF9288", "lip": "#C16D70", "shadow": "#D4A590",
+            "irisTop": "#2B3340", "irisBot": "#F2B857",
+            "hairRoot": "#101216", "hairMid": "#1E222B", "hairTip": "#384050", "hairHalo": "#B4C0D4",
+            "top1": "#232730", "top2": "#14171D", "topAcc": "#8C5638", "topPat": "pinstripe",
+            "bot1": "#14161C", "bot2": "#0B0C10", "botAcc": "#6E7888", "botPat": "twill",
+            "shoe": "#151210", "acc": "#8C2434", "gold": "#F2C96E",
+        },
+        "noteKo": "Blender 5.3에서 차콜 레이어드 헤어·슬레이트 앰버 수사관 안구·다크 드레스 셔츠와 3D 가죽 숄더 홀스터 하네스·느슨한 크림슨 넥타이·골드 경찰 배지와 잠복 이어셋을 정밀 조형한 현대 스릴러 강력계 형사 패키지.",
+    },
 ]
 
 
@@ -1218,6 +1270,139 @@ def _add_bespoke_couture(
         hud_obj = _new_bmesh_part("_tmp_tac_hud", bm_hud, gem_mat, arm_obj, "mixamorig:Head")
         _join_into(part_objs["accessory"], [hud_obj])
 
+    elif mode == "healing-barista":
+        # Sculpted tilted Parisian wool artist beret high on crown (zero forehead/eye occlusion!) + gold star pin
+        bm_beret = bmesh.new()
+        puff = bmesh.ops.create_uvsphere(bm_beret, u_segments=24, v_segments=12, radius=0.098)
+        bmesh.ops.scale(bm_beret, vec=(1.04, 1.06, 0.34), verts=puff["verts"])
+        stem = bmesh.ops.create_cone(bm_beret, cap_ends=True, cap_tris=True, segments=8, radius1=0.005, radius2=0.002, depth=0.018)
+        bmesh.ops.translate(bm_beret, vec=(0.0, 0.0, 0.036), verts=stem["verts"])
+        bmesh.ops.rotate(bm_beret, cent=(0, 0, 0), matrix=Euler((math.radians(-8.0), math.radians(15.0), 0.0), "XYZ").to_matrix(), verts=bm_beret.verts)
+        bmesh.ops.translate(bm_beret, vec=(0.016, -0.022, 1.644), verts=bm_beret.verts)
+        beret_obj = _new_bmesh_part("_tmp_artist_beret", bm_beret, gem_mat, arm_obj, "mixamorig:Head")
+
+        bm_pin = bmesh.new()
+        star = bmesh.ops.create_uvsphere(bm_pin, u_segments=12, v_segments=8, radius=0.0085)
+        bmesh.ops.scale(bm_pin, vec=(1.1, 0.45, 1.1), verts=star["verts"])
+        bmesh.ops.translate(bm_pin, vec=(-0.052, -0.104, 1.630), verts=star["verts"])
+        pal = bmesh.ops.create_uvsphere(bm_pin, u_segments=14, v_segments=10, radius=0.012)
+        bmesh.ops.scale(bm_pin, vec=(1.15, 0.40, 0.95), verts=pal["verts"])
+        bmesh.ops.translate(bm_pin, vec=(0.056, -0.130, 1.292), verts=pal["verts"])
+        pin_obj = _new_bmesh_part("_tmp_artist_pin", bm_pin, gold_mat, arm_obj, "mixamorig:Spine2")
+        pin_w = [{"mixamorig:Head": 1.0} if v.co.z > 1.55 else {"mixamorig:Spine2": 1.0} for v in pin_obj.data.vertices]
+        pin_obj.vertex_groups.clear()
+        _assign_weights(pin_obj, pin_w)
+        _join_into(beret_obj, [pin_obj])
+        _replace_accessory_object(part_objs, beret_obj)
+
+        # Continuous contoured artist satchel hip bag + gold clasp
+        bm_strap = bmesh.new()
+        s_rows = []
+        for k in range(11):
+            t = k / 10.0
+            cx_s = -0.092 * (1.0 - t) + 0.145 * t
+            cz_s = 1.372 * (1.0 - t) + 0.945 * t
+            cy_s = -0.060 * (1.0 - t) + (-0.035) * t - 0.088 * math.sin(t * math.pi * 0.85)
+            s_rows.append((
+                bm_strap.verts.new((cx_s - 0.011, cy_s, cz_s + 0.006)),
+                bm_strap.verts.new((cx_s + 0.011, cy_s, cz_s - 0.006)),
+            ))
+        for k in range(10):
+            a0, b0 = s_rows[k]
+            a1, b1 = s_rows[k + 1]
+            fs = bm_strap.faces.new((a0, b0, b1, a1))
+            fs.smooth = True
+        bmesh.ops.solidify(bm_strap, geom=list(bm_strap.faces), thickness=0.0032)
+        satchel = bmesh.ops.create_cube(bm_strap, size=1.0)
+        bmesh.ops.scale(bm_strap, vec=(0.034, 0.088, 0.098), verts=satchel["verts"])
+        bmesh.ops.translate(bm_strap, vec=(0.154, -0.024, 0.928), verts=satchel["verts"])
+        strap_obj = _new_bmesh_part("_tmp_artist_strap", bm_strap, gold_mat, arm_obj, "mixamorig:Spine2")
+        strap_w = [
+            {"mixamorig:Spine2": 0.85, "mixamorig:Spine1": 0.15} if v.co.z > 1.22
+            else ({"mixamorig:Spine1": 0.75, "mixamorig:Spine": 0.25} if v.co.z > 1.05 else {"mixamorig:Hips": 0.85, "mixamorig:Spine": 0.15})
+            for v in strap_obj.data.vertices
+        ]
+        strap_obj.vertex_groups.clear()
+        _assign_weights(strap_obj, strap_w)
+        _join_into(part_objs["top"], [strap_obj])
+
+    elif mode == "thriller-detective":
+        # Loosened crimson noir necktie + smooth body-hugging shoulder holster ribbon + underarm sidearm pouch
+        bm_tie = bmesh.new()
+        knot = bmesh.ops.create_cone(bm_tie, cap_ends=True, cap_tris=True, segments=4, radius1=0.015, radius2=0.010, depth=0.022)
+        bmesh.ops.scale(bm_tie, vec=(1.0, 0.45, 1.0), verts=knot["verts"])
+        bmesh.ops.translate(bm_tie, vec=(0.004, -0.106, 1.338), verts=knot["verts"])
+        blade_rows = []
+        for iv in range(8):
+            tv = iv / 7.0
+            z = 1.324 - 0.230 * tv
+            w_t = 0.011 + 0.011 * math.sin(min(1.0, tv * 1.15) * math.pi * 0.72) if tv < 0.86 else 0.019 * (1.0 - (tv - 0.86) / 0.14) + 0.002
+            y_t = -0.112 - 0.014 * math.sin(tv * math.pi * 0.65)
+            sway_x = 0.007 * math.sin(tv * math.pi * 0.6)
+            blade_rows.append((
+                bm_tie.verts.new((-w_t + sway_x, y_t + 0.003, z)),
+                bm_tie.verts.new((sway_x, y_t - 0.003, z)),
+                bm_tie.verts.new((w_t + sway_x, y_t + 0.003, z)),
+            ))
+        for iv in range(7):
+            l0, c0, r0 = blade_rows[iv]
+            l1, c1, r1 = blade_rows[iv + 1]
+            f1 = bm_tie.faces.new((l0, c0, c1, l1))
+            f2 = bm_tie.faces.new((c0, r0, r1, c1))
+            f1.smooth = True
+            f2.smooth = True
+        bmesh.ops.solidify(bm_tie, geom=list(bm_tie.faces), thickness=0.0028)
+        tie_obj = _new_bmesh_part("_tmp_det_tie", bm_tie, gem_mat, arm_obj, "mixamorig:Spine2")
+        tie_w = [{"mixamorig:Spine2": 0.85, "mixamorig:Spine1": 0.15} if v.co.z > 1.22 else {"mixamorig:Spine1": 0.80, "mixamorig:Spine": 0.20} for v in tie_obj.data.vertices]
+        tie_obj.vertex_groups.clear()
+        _assign_weights(tie_obj, tie_w)
+
+        bm_hol = bmesh.new()
+        for sx in (-1.0, 1.0):
+            h_rows = []
+            for k in range(9):
+                t = k / 8.0
+                ang_h = (0.18 + 0.68 * t) * math.pi
+                z_h = 1.382 - 0.205 * math.sin(t * math.pi * 0.88)
+                x_h = sx * (0.104 + 0.024 * math.sin(t * math.pi))
+                y_h = -0.015 - 0.094 * math.sin(ang_h)
+                h_rows.append((
+                    bm_hol.verts.new((x_h - 0.009, y_h, z_h)),
+                    bm_hol.verts.new((x_h + 0.009, y_h, z_h)),
+                ))
+            for k in range(8):
+                l0, r0 = h_rows[k]
+                l1, r1 = h_rows[k + 1]
+                fh = bm_hol.faces.new((l0, r0, r1, l1) if sx > 0 else (r0, l0, l1, r1))
+                fh.smooth = True
+        bmesh.ops.solidify(bm_hol, geom=list(bm_hol.faces), thickness=0.0032)
+        pouch_l = bmesh.ops.create_cube(bm_hol, size=1.0)
+        bmesh.ops.scale(bm_hol, vec=(0.026, 0.062, 0.088), verts=pouch_l["verts"])
+        bmesh.ops.rotate(bm_hol, cent=(0, 0, 0), matrix=Euler((math.radians(14.0), 0.0, 0.0), "XYZ").to_matrix(), verts=pouch_l["verts"])
+        bmesh.ops.translate(bm_hol, vec=(0.130, -0.042, 1.165), verts=pouch_l["verts"])
+        mag_r = bmesh.ops.create_cube(bm_hol, size=1.0)
+        bmesh.ops.scale(bm_hol, vec=(0.022, 0.048, 0.068), verts=mag_r["verts"])
+        bmesh.ops.translate(bm_hol, vec=(-0.130, -0.042, 1.170), verts=mag_r["verts"])
+        hol_obj = _new_bmesh_part("_tmp_det_holster", bm_hol, gold_mat, arm_obj, "mixamorig:Spine2")
+        hol_w = [{"mixamorig:Spine2": 0.85, "mixamorig:Spine1": 0.15} if v.co.z > 1.22 else {"mixamorig:Spine1": 0.85, "mixamorig:Spine": 0.15} for v in hol_obj.data.vertices]
+        hol_obj.vertex_groups.clear()
+        _assign_weights(hol_obj, hol_w)
+        _join_into(part_objs["top"], [tie_obj, hol_obj])
+
+        # Golden police detective shield badge on chest + covert tactical ear-comms at left ear
+        bm_bdg = bmesh.new()
+        shield = bmesh.ops.create_cone(bm_bdg, cap_ends=True, cap_tris=True, segments=6, radius1=0.015, radius2=0.012, depth=0.006)
+        bmesh.ops.rotate(bm_bdg, cent=(0, 0, 0), matrix=Euler((math.radians(90.0), 0.0, 0.0), "XYZ").to_matrix(), verts=shield["verts"])
+        bmesh.ops.translate(bm_bdg, vec=(0.068, -0.128, 1.288), verts=shield["verts"])
+        comms = bmesh.ops.create_uvsphere(bm_bdg, u_segments=10, v_segments=8, radius=0.0075)
+        bmesh.ops.scale(bm_bdg, vec=(0.55, 1.25, 1.10), verts=comms["verts"])
+        bmesh.ops.translate(bm_bdg, vec=(0.082, -0.048, 1.505), verts=comms["verts"])
+        bdg_obj = _new_bmesh_part("_tmp_det_badge", bm_bdg, gold_mat, arm_obj, "mixamorig:Spine2")
+        bdg_w = [{"mixamorig:Head": 1.0} if v.co.z > 1.44 else {"mixamorig:Spine2": 1.0} for v in bdg_obj.data.vertices]
+        bdg_obj.vertex_groups.clear()
+        _assign_weights(bdg_obj, bdg_w)
+        _replace_accessory_object(part_objs, bdg_obj)
+
 
 def _parse_glb_stats(glb_path: Path) -> dict[str, Any]:
     raw = glb_path.read_bytes()
@@ -1500,7 +1685,7 @@ def _write_slot_mapping_and_manifest(
     }
 
 
-def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int = 10) -> list[dict[str, Any]]:
+def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int = 12) -> list[dict[str, Any]]:
     for col in list(bpy.data.collections):
         if col.name.startswith("Build_"):
             for o in list(col.objects):
