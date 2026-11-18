@@ -3,33 +3,32 @@
  * 원고 여백·먹선 테두리·말풍선 상단 안전 여백, 선택적 말풍선·효과선(집중선/속도선/반짝이) 래스터 베이킹,
  * 및 1~4컷 개별 표정·시선·고개 연기 키프레임 스냅샷 시퀀스 합성 모듈.
  */
-import {
-  DEFAULT_FRAMING,
-  eyeAnglesQuaternion,
-  expressionToMorphWeights,
-  failVisible,
-  isLabFailure,
-} from "../contracts";
-import { qNormalize } from "../shared/math";
+import { DEFAULT_FRAMING, failVisible, isLabFailure } from "../contracts";
 
 import { MAX_PNG_EXPORT_DIMENSION, MAX_SETTLE_STEPS, MIN_EXPORT_DIMENSION, exportFileName } from "./export-session";
 import { PNG_MIME, encodePng } from "./png-encoder";
-import { findWebtoonStripActingArc } from "./webtoon-strip-acting-presets";
+import { buildActingCutPlan, findWebtoonStripActingArc } from "./webtoon-strip-acting";
 
 import type { ExportDeps, ExportOutcome } from "./export-session";
-import type { WebtoonStripActingArcId, WebtoonStripCutActingKeyframe } from "./webtoon-strip-acting-presets";
+import type { WebtoonStripActingArcId } from "./webtoon-strip-acting";
 import type {
   ApplyPlan,
   CameraFramingMode,
   CapturedRaster,
   CharacterEngine,
   LabFailure,
-  Quat,
-  Vec3,
 } from "../contracts";
 
-export { WEBTOON_STRIP_ACTING_ARCS, findWebtoonStripActingArc } from "./webtoon-strip-acting-presets";
-export type { WebtoonStripActingArcId, WebtoonStripActingArcSpec, WebtoonStripCutActingKeyframe } from "./webtoon-strip-acting-presets";
+export {
+  WEBTOON_STRIP_ACTING_ARCS,
+  buildActingCutPlan,
+  findWebtoonStripActingArc,
+} from "./webtoon-strip-acting";
+export type {
+  WebtoonStripActingArcId,
+  WebtoonStripActingArcSpec,
+  WebtoonStripCutActingKeyframe,
+} from "./webtoon-strip-acting";
 
 export interface WebtoonStripCutSpec {
   readonly id: string;
@@ -54,60 +53,6 @@ export interface WebtoonStripMangaFxOptions {
   readonly linesKind?: WebtoonStripFxLinesKind;
   readonly includeSpeechBubbles?: boolean;
   readonly intensity?: number;
-}
-
-function eulerDegToQuat(deg: Vec3): Quat {
-  const rx = (deg[0] * Math.PI) / 360;
-  const ry = (deg[1] * Math.PI) / 360;
-  const rz = (deg[2] * Math.PI) / 360;
-  const cx = Math.cos(rx);
-  const sx = Math.sin(rx);
-  const cy = Math.cos(ry);
-  const sy = Math.sin(ry);
-  const cz = Math.cos(rz);
-  const sz = Math.sin(rz);
-  return qNormalize([
-    sx * cy * cz - cx * sy * sz,
-    cx * sy * cz + sx * cy * sz,
-    cx * cy * sz - sx * sy * cz,
-    cx * cy * cz + sx * sy * sz,
-  ]);
-}
-
-/**
- * 기준 `ApplyPlan`의 체형·얼굴 파라미터 및 팔·다리 포즈는 그대로 유지하면서,
- * 해당 컷의 감정 표정(`facs:*`)·안구 시선(`eyeGaze`)·목/고개 연기만 덮어쓴 스냅샷 `ApplyPlan`을 생성한다.
- */
-export function buildActingCutPlan(basePlan: ApplyPlan, keyframe: WebtoonStripCutActingKeyframe, cutIndex: number): ApplyPlan {
-  const nextMorphs: Record<string, number> = {};
-  for (const [morphKey, value] of Object.entries(basePlan.morphWeights)) {
-    if (!morphKey.startsWith("facs:")) {
-      nextMorphs[morphKey] = value;
-    }
-  }
-  Object.assign(nextMorphs, expressionToMorphWeights(keyframe.expression));
-
-  const eyeAngle = { yawDeg: keyframe.gazeYawDeg, pitchDeg: keyframe.gazePitchDeg };
-  const eyeQuat = eyeAnglesQuaternion(eyeAngle);
-
-  return {
-    ...basePlan,
-    revision: basePlan.revision + 100 + cutIndex,
-    morphWeights: nextMorphs,
-    boneRotations: {
-      ...basePlan.boneRotations,
-      neck: eulerDegToQuat(keyframe.neckEulerDeg),
-      head: eulerDegToQuat(keyframe.headEulerDeg),
-      leftEye: eyeQuat,
-      rightEye: eyeQuat,
-    },
-    eyeGaze: {
-      mode: "manual",
-      symmetry: true,
-      left: eyeAngle,
-      right: eyeAngle,
-    },
-  };
 }
 
 export interface WebtoonStripLayout {
