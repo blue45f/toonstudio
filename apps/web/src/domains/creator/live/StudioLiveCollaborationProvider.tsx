@@ -10,6 +10,10 @@ import { resolveStudioLiveCanonicalAuthority } from "./studio-live-canonical-aut
 import { mergeBindingTelemetry } from "./studio-live-binding-telemetry";
 import { readOrCreateStudioLiveClientInstanceId } from "./studio-live-client-identity";
 import {
+  findStudioLiveRecoveryBoundaryEntry,
+  type StudioLiveRecoveryBoundaryLatch,
+} from "./studio-live-recovery-boundary";
+import {
   StudioLiveCollaborationContext,
   type StudioLiveAvailability,
   type StudioLiveCollaborationContextValue,
@@ -28,7 +32,6 @@ import {
 } from "./studio-live-sync-safety";
 import type { StudioCrdtDocument } from "./studio-crdt-document";
 import type { StudioOfflineBranchRuntime } from "../offline-branch/studio-offline-branch-runtime";
-import { findStudioLiveRecoveryBoundaryEntry, type StudioLiveRecoveryBoundaryLatch } from "./studio-live-recovery-boundary";
 import type {
   StudioCrdtAuthoritativeAckBarrierResult,
   StudioCrdtDraftProtectionBarrierResult,

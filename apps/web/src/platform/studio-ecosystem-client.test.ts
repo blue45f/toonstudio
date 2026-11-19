@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { studioEcosystemClient } from "./studio-ecosystem-client";
 
 
+
 const postMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./api", () => ({

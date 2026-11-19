@@ -5,6 +5,8 @@ import process from "node:process";
 
 import { chromium, firefox, webkit } from "playwright";
 
+import { qaModuleFailures, recordQaScriptResponse } from "./lib/qa-page-state.mjs";
+
 const ENGINE = (process.env.QA_BROWSER_ENGINE ?? "chromium").trim().toLowerCase();
 const BASE_URL = (process.env.STUDIO_BASE_URL ?? "https://www.toonstudio.cloud").replace(/\/+$/u, "");
 const REPORT_DIR = process.env.QA_REPORT_DIR ?? `qa-results/studio-cross-browser-v2/${ENGINE}`;
@@ -475,19 +477,21 @@ function classify({ // NOSONAR javascript:S3776
   pageErrors,
   consoleErrors,
   requestFailures,
+  scriptResponses,
   workspaceProbe,
   bg3dProbe,
 }) {
   const hardFailures = [];
   const warnings = [];
+  const moduleFailures = qaModuleFailures({ consoleErrors, scriptResponses });
 
   if (navigationError) hardFailures.push(`navigation failed: ${navigationError}`);
   if (responseStatus !== null && responseStatus >= 400 && route.id !== "invalid-route") {
     hardFailures.push(`document HTTP status ${responseStatus}`);
   }
-  if (!ready && pageErrors.length > 0) hardFailures.push("no Studio readiness surface found");
+  if (!ready && (pageErrors.length > 0 || moduleFailures.length > 0)) hardFailures.push("no Studio readiness surface found");
   if (dom.bodyTextLength === 0 && dom.visualSurfaceCount === 0) {
-    if (dom.loadingLike && pageErrors.length === 0) warnings.push("loading surface remained after retry window");
+    if (dom.loadingLike && pageErrors.length === 0 && moduleFailures.length === 0) warnings.push("loading surface remained after retry window");
     else hardFailures.push("blank page");
   }
   if (dom.documentOverflowX > 2) hardFailures.push(`document horizontal overflow ${dom.documentOverflowX}px`);
@@ -498,6 +502,7 @@ function classify({ // NOSONAR javascript:S3776
     hardFailures.push(`${dom.dialogsOutsideViewport.length} visible dialogs extend outside the viewport`);
   }
   if (pageErrors.length > 0) hardFailures.push(`${pageErrors.length} uncaught page errors`);
+  hardFailures.push(...moduleFailures);
 
   const centralEditorDuplicate = dom.duplicateTestIds.find(
     (item) => item.testId === "studio-central-3d-editor",
@@ -556,6 +561,7 @@ async function runCase(browser, profile, route) {
   const pageErrors = [];
   const consoleErrors = [];
   const requestFailures = [];
+  const scriptResponses = [];
   page.on("pageerror", (error) => pageErrors.push(String(error?.stack ?? error)));
   page.on("console", (message) => {
     if (message.type() !== "error") return;
@@ -566,6 +572,7 @@ async function runCase(browser, profile, route) {
     const text = `${request.method()} ${request.url()} :: ${request.failure()?.errorText ?? "failed"}`;
     if (!ignoredNetwork(text)) requestFailures.push(text);
   });
+  page.on("response", (response) => recordQaScriptResponse(response, scriptResponses));
 
   const url = `${BASE_URL}${route.pathname}`;
   let responseStatus = null;
@@ -610,6 +617,7 @@ async function runCase(browser, profile, route) {
     pageErrors,
     consoleErrors,
     requestFailures,
+    scriptResponses,
     workspaceProbe,
     bg3dProbe,
   });
@@ -631,6 +639,7 @@ async function runCase(browser, profile, route) {
     pageErrors: pageErrors.slice(0, 30),
     consoleErrors: consoleErrors.slice(0, 50),
     requestFailures: requestFailures.slice(0, 50),
+    scriptResponses,
     ...classification,
   };
 

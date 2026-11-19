@@ -55,6 +55,14 @@ describe("campus route authority coverage", () => {
   it("does not turn an unknown future route into a fake plaza page", () => {
     expect(campusBinding("future-unregistered", "/unknown")).toBeNull();
   });
+  it("MCP·CLI 연동 안내는 제작 도구 학습실에 속하고 Studio 표시 보호를 유지한다", () => {
+    expect(routes.find((route) => route.id === "creator-studio-mcp"))
+      .toEqual({ id: "creator-studio-mcp", path: "/studio/mcp" });
+    expect(campusBinding("creator-studio-mcp", "/studio/mcp"))
+      .toEqual({ routeId: "creator-studio-mcp", districtId: "academy", surface: "room", private: true });
+    expect(campusBinding("creator-studio-mcp", "/studio/mcp", "?token=secret"))
+      .toMatchObject({ districtId: "academy", surface: "protected", private: true });
+  });
   it("개인 공간과 팀 가입은 기존 전용 화면과 보호 경계를 유지한다", () => {
     expect(campusBinding("creator-studio-personal-space", "/studio/space"))
       .toMatchObject({ districtId: "atelier", surface: "native", private: true });

@@ -110,6 +110,20 @@ test("메모리 실패만 작은 그룹으로 재시도하고 단일 파일 실�
   assert.ok(failed.failure);
 });
 
+test("stderr 없는 worker 중단도 단계·종료 코드·signal을 보존한다", () => {
+  const identity = { version: "fixture", options: {}, files: [{ path: "a", bytes: 1 }] };
+  for (const failedPhase of ["inventory", "preflight", "finalSnapshot"]) {
+    let inventoryCount = 0;
+    assert.throws(() => verifyInShards({ maxBytes: 100 }, (job) => {
+      const phase = job.phase === "inventory" && inventoryCount++ > 0 ? "finalSnapshot" : job.phase;
+      if (phase === failedPhase) return { failed: true, memoryFailure: true, exit: null, signal: "SIGKILL", message: "" };
+      if (job.phase === "inventory") return { identity, fingerprint: "same" };
+      if (job.phase === "preflight") return { fingerprint: "same", semanticAllowed: true, diagnostics: [] };
+      return { checked: job.files, fingerprint: "same", diagnostics: [], elapsedMs: 1, peakRssBytes: 1 };
+    }), /exit=null.*signal=SIGKILL/u, failedPhase);
+  }
+});
+
 test("샤드 응답 누락과 worker snapshot 불일치를 거부한다", () => {
   const identity = { version: "fixture", options: {}, files: [{ path: "a", bytes: 1 }] };
   for (const response of [{ fingerprint: "different", checked: ["a"] }, { fingerprint: "same", checked: [] }]) {

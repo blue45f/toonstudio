@@ -37,6 +37,11 @@ describe("전체 경로의 시각 분류 계약", () => {
   it.each([
     ["/", "home", "hero"],
     ["/studio", "projects", "canvas-noir"],
+    ["/studio/toolchain", "production", "canvas-noir"],
+    ["/studio/engines", "production", "canvas-noir"],
+    ["/studio/jobs", "production", "canvas-noir"],
+    ["/studio/mcp", "production", "canvas-noir"],
+    ["/studio/manual", "learn", "background-city"],
     ["/studio/assets/characters/new", "characters", "character-pink"],
     ["/studio/immersive", "backgrounds", "background-city"],
     ["/market/resource/brush-1", "assets", "character-blue"],
@@ -97,7 +102,7 @@ describe("전체 경로의 시각 분류 계약", () => {
     expect(JSON.stringify(resolution)).toBe(before);
   });
 
-  it.each(["/unknown/deep/page", "/community-unknown", "/studio-invalid/canvas", "*"])(
+  it.each(["/unknown/deep/page", "/community-unknown", "/studio-invalid/canvas", "/studio/mcp-tools", "*"])(
     "알 수 없는 %s도 안전한 기본 디자인을 받으며 비슷한 이름의 경로군으로 새지 않는다",
     (path) => expect(resolveRouteStageDesign(path)).toMatchObject({ domain: "system", artPlacement: "none", matchedBy: "fallback" }),
   );

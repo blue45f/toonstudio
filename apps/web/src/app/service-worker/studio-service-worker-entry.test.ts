@@ -125,10 +125,114 @@ function assetResponse(url: string): Response {
   const mime = url.endsWith(".js") ? "application/javascript" : url.endsWith(".css") ? "text/css" : "text/html";
   return new Response(url.endsWith("/offline-drawing") ? "local rescue" : "body", { headers: { "content-type": mime } });
 }
+function failPrecachePublishing(paths: string[], rejectCleanup: boolean | "all" = false) {
+  const quotaError = new DOMException("Precache quota exhausted", "QuotaExceededError");
+  const writes: string[] = [];
+  const originalOpen = harness.caches.api.open;
+  vi.spyOn(harness.caches.api, "open").mockImplementation(async (name) => {
+    const cache = await originalOpen(name);
+    if (name !== PRECACHE) return cache;
+    return { ...cache, put: async (target: Request | string, response: Response) => {
+      const pathname = new URL(typeof target === "string" ? target : target.url, ORIGIN).pathname;
+      writes.push(pathname);
+      if (paths.includes(pathname)) throw quotaError;
+      return cache.put(target, response);
+    } };
+  });
+  if (rejectCleanup) {
+    const originalDelete = harness.caches.api.delete;
+    vi.spyOn(harness.caches.api, "delete").mockImplementation(async (name) => {
+      if (name === PRECACHE || rejectCleanup === "all") throw new Error("Cache cleanup denied");
+      return originalDelete(name);
+    });
+  }
+  return { quotaError, writes };
+}
 beforeEach(() => { harness = createHarness(); });
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("install", () => {
+  it("KAN-33: 누락 자원 게시가 quota로 실패해도 같은 build의 정상 JS와 CSS는 덮어쓰지 않는다", async () => {
+    const scriptPath = "/assets/index-abc.js";
+    const stylePath = "/assets/index-abc.css";
+    harness.caches.seed(PRECACHE, scriptPath, new Response("existing script", { headers: { "content-type": "application/javascript" } }));
+    harness.caches.seed(PRECACHE, stylePath, new Response("existing style", { headers: { "content-type": "text/css" } }));
+    const { quotaError, writes } = failPrecachePublishing([stylePath, "/bootstrap-compat.js"]);
+    harness.setNetwork(async (url) => assetResponse(url));
+    await loadWorker();
+    const { waited } = await harness.dispatch("install");
+    await expect(waited).rejects.toBe(quotaError);
+    const cache = await harness.caches.api.open(PRECACHE);
+    expect(await (await cache.match(scriptPath))?.text()).toBe("existing script");
+    expect(await (await cache.match(stylePath))?.text()).toBe("existing style");
+    expect(writes).toEqual(["/bootstrap-compat.js"]);
+    expect(harness.caches.entries(PRECACHE)).toEqual([`${ORIGIN}${scriptPath}`, `${ORIGIN}${stylePath}`]);
+    expect(harness.counters.skipWaiting).toBe(0);
+  });
+
+  it.each([false, true, "all"] as const)("KAN-33: 새 build 게시 실패는 새 캐시만 정리하고 원래 오류를 유지한다(cleanup 거부=%s)", async (rejectCleanup) => {
+    const previous = "toonstudio-sw-precache-v5-previous";
+    harness.caches.seed(previous, "/assets/previous.js", new Response("previous build original"));
+    const { quotaError, writes } = failPrecachePublishing(["/assets/index-abc.css"], rejectCleanup);
+    harness.setNetwork(async (url) => assetResponse(url));
+    await loadWorker();
+    const { waited } = await harness.dispatch("install");
+    await expect(waited).rejects.toBe(quotaError);
+    expect(writes).toEqual(["/assets/index-abc.js", "/assets/index-abc.css"]);
+    if (!rejectCleanup) expect(harness.caches.stores.has(PRECACHE)).toBe(false);
+    const previousCache = await harness.caches.api.open(previous);
+    expect(await (await previousCache.match("/assets/previous.js"))?.text()).toBe("previous build original");
+    if (rejectCleanup !== "all") expect([...harness.caches.stores.keys()].filter((name) => name.startsWith(`${PRECACHE}-install-`))).toEqual([]);
+    expect(harness.counters.skipWaiting).toBe(0);
+  });
+
+  it.each(["/assets/index-abc.js", "/bootstrap-compat.js", "/offline-draw/bootstrap.js"])(
+    "KAN-33: 설치 중 %s의 HTML 응답만 한 번 다시 받고 정상 파일은 중복 요청하지 않는다",
+    async (failedPath) => {
+      let failedCalls = 0;
+      harness.setNetwork(async (url) => url.endsWith(failedPath) && ++failedCalls === 1
+        ? shell("<!doctype html>stale shell") : assetResponse(url));
+      await loadWorker();
+      const { waited } = await harness.dispatch("install");
+      await expect(waited).resolves.toBeDefined();
+      expect(failedCalls).toBe(2);
+      const retried = harness.fetchCalls.lastIndexOf(`${ORIGIN}${failedPath}`);
+      expect(harness.fetchInits[retried]).toEqual({ cache: "reload" });
+      for (const path of [...MANIFEST.criticalUrls, ...MANIFEST.shellUrls]) {
+        expect(harness.fetchCalls.filter((url) => url === `${ORIGIN}${path}`))
+          .toHaveLength(path === failedPath ? 2 : 1);
+      }
+      const cached = await (await harness.caches.api.open(PRECACHE)).match(failedPath);
+      expect(cached?.headers.get("content-type")).toBe("application/javascript");
+      expect([...harness.caches.stores.keys()].filter((name) => name.startsWith(`${PRECACHE}-install-`))).toEqual([]);
+      expect(harness.counters.skipWaiting).toBe(0);
+    },
+  );
+
+  it.each(["html", "404"] as const)(
+    "KAN-33: 필수 자원의 %s 실패는 같은 build와 이전 build의 정상 캐시를 바꾸지 않는다",
+    async (failure) => {
+      const previous = "toonstudio-sw-precache-v5-previous";
+      harness.caches.seed(PRECACHE, "/assets/index-abc.js", new Response("same build original"));
+      harness.caches.seed(previous, "/assets/previous.js", new Response("previous build original"));
+      harness.setNetwork(async (url) => url.endsWith("/assets/index-abc.css")
+        ? failure === "html" ? shell("<!doctype html>missing asset") : new Response("missing", { status: 404 })
+        : assetResponse(url));
+      await loadWorker();
+      const { waited } = await harness.dispatch("install");
+      await expect(waited).rejects.toThrow();
+      expect(harness.caches.entries(PRECACHE)).toEqual([`${ORIGIN}/assets/index-abc.js`]);
+      const sameBuild = await (await harness.caches.api.open(PRECACHE)).match("/assets/index-abc.js");
+      const oldBuild = await (await harness.caches.api.open(previous)).match("/assets/previous.js");
+      expect(await sameBuild?.text()).toBe("same build original");
+      expect(await oldBuild?.text()).toBe("previous build original");
+      expect(harness.fetchCalls.filter((url) => url.endsWith("/assets/index-abc.css")))
+        .toHaveLength(failure === "html" ? 2 : 1);
+      expect([...harness.caches.stores.keys()].filter((name) => name.startsWith(`${PRECACHE}-install-`))).toEqual([]);
+      expect(harness.counters.skipWaiting).toBe(0);
+    },
+  );
+
   it("precaches the critical set plus both shells and never skips waiting", async () => {
     harness.setNetwork(async (url) => assetResponse(url));
     await loadWorker(); await harness.dispatch("install");
@@ -166,6 +270,47 @@ describe("activate", () => {
 });
 
 describe("fetch routing", () => {
+  it.each(["/assets/index-abc.js", "/bootstrap-compat.js", "/offline-draw/bootstrap.js"])(
+    "KAN-33: 고정 필수 자원 %s의 HTML 캐시를 버리고 HTTP 캐시도 한 번만 우회한다",
+    async (path) => {
+      harness.caches.seed(PRECACHE, path, shell("<!doctype html>cached shell"));
+      let calls = 0;
+      harness.setNetwork(async (url) => ++calls === 1 ? shell("<!doctype html>http cached shell") : assetResponse(url));
+      await loadWorker();
+      const { response } = await harness.dispatch("fetch", { request: new Request(`${ORIGIN}${path}`) });
+      expect(response?.headers.get("content-type")).toBe("application/javascript");
+      expect(harness.fetchCalls).toEqual([`${ORIGIN}${path}`, `${ORIGIN}${path}`]);
+      expect(harness.fetchInits[1]).toEqual({ cache: "reload" });
+      const cached = await (await harness.caches.api.open(PRECACHE)).match(path);
+      expect(cached?.headers.get("content-type")).toBe("application/javascript");
+    },
+  );
+
+  it("KAN-33: 계속 HTML인 필수 청크는 저장하지 않고 유한한 502 실패로 알린다", async () => {
+    harness.setNetwork(async () => shell("<!doctype html>missing chunk"));
+    await loadWorker();
+    const path = "/assets/index-abc.js";
+    const { response } = await harness.dispatch("fetch", { request: new Request(`${ORIGIN}${path}`) });
+    expect(response?.status).toBe(502);
+    expect(response?.headers.get("content-type")).toBe("text/plain; charset=utf-8");
+    expect(response?.headers.get("cache-control")).toBe("no-store");
+    expect(harness.fetchCalls).toEqual([`${ORIGIN}${path}`, `${ORIGIN}${path}`]);
+    expect(harness.caches.entries(PRECACHE)).not.toContain(`${ORIGIN}${path}`);
+  });
+
+  it("KAN-33: 정상 필수 청크는 한 번만 요청하고 실제 HTML 문서는 유지한다", async () => {
+    vi.stubGlobal("__STUDIO_SERVICE_WORKER_MANIFEST__", {
+      ...MANIFEST, criticalUrls: [...MANIFEST.criticalUrls, "/offline-draw/index.html"],
+    });
+    harness.setNetwork(async (url) => assetResponse(url));
+    await loadWorker();
+    const script = await harness.dispatch("fetch", { request: new Request(`${ORIGIN}/assets/index-abc.js`) });
+    const document = await harness.dispatch("fetch", { request: new Request(`${ORIGIN}/offline-draw/index.html`) });
+    expect(script.response?.headers.get("content-type")).toBe("application/javascript");
+    expect(document.response?.headers.get("content-type")).toBe("text/html");
+    expect(harness.fetchCalls).toEqual([`${ORIGIN}/assets/index-abc.js`, `${ORIGIN}/offline-draw/index.html`]);
+  });
+
   it.each(["503", "offline"] as const)("이전 SW에 완료 응답이 남고 새 SW가 waiting이어도 재확인의 %s를 unavailable로 전달한다", async (failure) => {
     vi.stubGlobal("crypto", { subtle: webcrypto.subtle, randomUUID });
     const fixture = releaseFixture();

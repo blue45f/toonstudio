@@ -51,6 +51,7 @@ async function openImagePreview() {
   trigger.focus();
   fireEvent.click(trigger);
   const dialog = screen.getByRole("dialog", { name: "preview.png 이미지 미리보기" });
+  expect(dialog.getAttribute("aria-modal")).toBe("true");
   const close = within(dialog).getByRole("button", { name: "닫기" });
   expect(document.activeElement).toBe(close);
   // Dialog가 열기 동작 다음 턴에 등록하는 바깥 포인터 리스너까지 준비한다.

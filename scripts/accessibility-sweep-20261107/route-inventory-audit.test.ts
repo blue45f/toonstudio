@@ -6,6 +6,8 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { collectAuditRouteInventory } from "../lib/sitewide-audit-route-inventory.mjs";
+
 import {
   auditAccessibilityContracts,
   auditSitewideRouteInventory,
@@ -118,6 +120,7 @@ describe("전페이지 접근성 독립 회귀 테스트 — 라우트 인벤토
 
     expect(report.counts.appRouteDeclarations).toBe(317);
     // Studio 정본의 /studio/canvas/poser 별칭을 독립 경로로 더하고 기존 경로와 중복 제거한다.
+    // MCP·CLI 안내는 편집기 와일드카드와 별개인 /studio/mcp 앱 라우트로 포함한다.
     expect(report.counts.expandedRoutes).toBe(445);
     expect(report.counts.wildcardExclusions).toBe(5);
     expect(report.counts.studioRegistrationsAndAliases).toBe(55);
@@ -175,6 +178,22 @@ describe("전페이지 접근성 독립 회귀 테스트 — 라우트 인벤토
     expect(report.allExpandedRoutes).toContain("/brush-lab");
     expect(report.allExpandedRoutes).toContain("/shaper");
     expect(report.allExpandedRoutes).toContain("/admin/overview");
+  });
+
+  it("MCP·CLI 안내를 실제 앱 선언 출처가 있는 Studio 허브 경로로 수집한다", async () => {
+    const inventory = await collectAuditRouteInventory(REPO_ROOT);
+    expect(inventory.entries.filter((entry) => entry.path === "/studio/mcp")).toEqual([{
+      path: "/studio/mcp",
+      usesPlaceholder: false,
+      sources: [expect.objectContaining({
+        source: "apps/web/src/app/routes/groups/creator.routes.tsx",
+        symbol: "creatorRoutes",
+        kind: "app-route",
+        id: "creator-studio-mcp",
+        pattern: "/studio/mcp",
+      })],
+    }]);
+    expect(classifyRouteDomain("/studio/mcp")).toBe("studio-hub");
   });
 
   it("라우트 도메인 분류기가 주요 공개·제작·관리 경로를 일관되게 분류한다", () => {
