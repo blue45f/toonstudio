@@ -318,7 +318,7 @@ describe("long-session multi-user collaborative drawing stability", () => {
       const request: StudioCrdtUpdateRequest = {
         protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION,
         workId: "work-soak",
-        updateId: `upd-${seq}`,
+        updateId: `12345678-1234-4234-8234-${String(seq).padStart(12, "0")}`,
         clientSequence: seq,
         update: "AAECAw==",
       };
@@ -418,13 +418,11 @@ describe("long-session multi-user collaborative drawing stability", () => {
       sessionId: "self-session",
       displayName: "Self",
       role: "editor",
-      visibility: "active",
     };
     const ghost: StudioLiveParticipant = {
       sessionId: "ghost-session",
       displayName: "Ghost",
       role: "editor",
-      visibility: "active",
     };
     const factory = applyStudioLiveP2pOverlay(() => primary, {
       now: () => now,
@@ -441,7 +439,7 @@ describe("long-session multi-user collaborative drawing stability", () => {
       sentAt: now,
       sequence: 1,
       kind: "presence:hello",
-      payload: { pageId: "page-1" },
+      payload: { visibility: "active", pageId: "page-1" },
     });
     for (const listener of listeners) listener(hello);
     expect(transport.direct?.getPeers().map((peer) => peer.sessionId)).toEqual(["ghost-session"]);
@@ -523,7 +521,7 @@ describe("long-session multi-user collaborative drawing stability", () => {
           seq,
           phase: "append",
           operation: "draw",
-          samples: { startIndex: seq * 2, points: [seq * 4, seq * 4], pressures: [0.5] },
+          samples: { startIndex: seq, points: [seq * 4, seq * 4], pressures: [0.5] },
         });
       }
     }

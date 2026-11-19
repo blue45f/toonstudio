@@ -280,7 +280,6 @@ async function runSoak(): Promise<void> {
       sessionId: "soak-self",
       displayName: "Self",
       role: "editor",
-      visibility: "active",
     },
   });
   await p2pTransport.connect();
@@ -455,7 +454,7 @@ async function runSoak(): Promise<void> {
       const req: StudioCrdtUpdateRequest = {
         protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION,
         workId: "work-soak",
-        updateId: `upd-${clientSequence}`,
+        updateId: `12345678-1234-4234-8234-${String(clientSequence).padStart(12, "0")}`,
         clientSequence,
         update: "AAECAw==",
       };
@@ -489,12 +488,11 @@ async function runSoak(): Promise<void> {
           sessionId: ghostSessionId,
           displayName: ghostSessionId,
           role: "editor",
-          visibility: "active",
         },
         sentAt: virtualNow,
         sequence: round,
         kind: "presence:hello",
-        payload: { pageId: "page-soak" },
+        payload: { visibility: "active", pageId: "page-soak" },
       });
       for (const listener of p2pPrimaryListeners) listener(hello);
 
