@@ -10,7 +10,7 @@ const commands = (job) => job.steps.map((step) => step.run ?? "").join("\n");
 
 test("macOS 동기화·재접속 시험과 lint는 같은 플랫폼·제한으로 유지한다", () => {
   const job = workflow.jobs["macos-sync-contracts"];
-  assert.equal(job["runs-on"], "macos-14");
+  assert.equal(job["runs-on"], "macos-15");
   assert.equal(job["timeout-minutes"], 25);
   for (const file of ["studio-crdt-room-binding", "studio-live-p2p-overlay-transport", "studio-live-p2p-reconnect", "studio-live-collaboration-transport", "studio-live-signaling-server-transport", "studio-live-collaboration-room.ink", "studio-live-socket-transport", "studio-mesh-sync-regression"]) {
     assert.ok(commands(job).includes(`apps/web/src/domains/creator/live/${file}.test.ts`), file);
