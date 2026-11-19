@@ -613,7 +613,12 @@ export function StudioLiveCollaborationProvider({
 
       const onVisibilityChange = () => {
         try {
-          if (document.hidden) nextRoom.clearCursor();
+          if (document.hidden) {
+            nextRoom.clearCursor();
+          } else {
+            // 백그라운드 탭 타이머 스로틀링 동안 쌓인 만료 상태·고아 잉크를 복귀 즉시 정리한다.
+            nextRoom.reconcileAfterVisibilityResume();
+          }
           nextRoom.updatePresence({ visibility: document.hidden ? "idle" : "active" });
         } catch (cause) {
           if (!cancelled) setError(messageFrom(cause, frozenStatus3Text("studio.frozenStatus3.liveProv.presenceNotifyFailed", "작업 상태를 팀에 알리지 못했습니다.")));

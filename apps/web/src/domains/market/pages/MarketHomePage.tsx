@@ -9,6 +9,7 @@ import {
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocation } from "react-router-dom";
 
+import { IpExchangeQuickPanel } from "../components/IpExchangeQuickPanel";
 import { MarketGrandAtelierShowcase } from "../components/MarketGrandAtelierShowcase";
 import {
   MarketHomeExploreBand,
@@ -536,6 +537,10 @@ export function MarketHomePage() {
                 ) : null}
               </>
             )}
+          </Container>
+
+          <Container size="wide" className="pb-10">
+            <IpExchangeQuickPanel />
           </Container>
 
           <MarketGrandAtelierShowcase />
