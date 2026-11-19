@@ -100,4 +100,50 @@ describe("프로젝트 참고자료 보드", () => {
     fireEvent.click(screen.getByRole("button", { name: "내 변경을 버리고 저장본 열기" }));
     expect(screen.getByText("다른 탭의 메모")).toBeTruthy();
   });
+
+  it("사용자가 복구를 선택한 뒤에만 손상 원문을 같은 프로젝트의 별도 키에 보존한다", () => {
+    const key = studioMoodboardStorageKey("A");
+    const otherKey = studioMoodboardStorageKey("B");
+    const damaged = "{damaged-board-A";
+    localStorage.setItem(key, damaged);
+    localStorage.setItem(otherKey, "other-project-original");
+    const write = vi.spyOn(Storage.prototype, "setItem");
+    render(<StudioProjectMoodboard projectId="A" />);
+    expect(write).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "새 무드보드로 시작하기" }));
+    const backups = Object.keys(localStorage).filter((storedKey) => storedKey.startsWith(`${key}:damaged:`));
+    expect(backups).toHaveLength(1);
+    expect(backups.map((storedKey) => localStorage.getItem(storedKey))).toEqual([damaged]);
+    expect(Object.keys(current("A").cards)).toEqual([]);
+    expect(localStorage.getItem(otherKey)).toBe("other-project-original");
+    expect(write.mock.calls.map(([storedKey]) => storedKey)).toEqual([backups[0], key]);
+  });
+
+  it("손상 원문 백업이 실패하면 기존 보드를 삭제하거나 새 보드로 덮어쓰지 않는다", () => {
+    const key = studioMoodboardStorageKey("A");
+    localStorage.setItem(key, "damaged-original");
+    render(<StudioProjectMoodboard projectId="A" />);
+    const write = vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => { throw new Error("quota"); });
+
+    fireEvent.click(screen.getByRole("button", { name: "새 무드보드로 시작하기" }));
+    expect(screen.getByRole("alert").textContent).toContain("원래 보드를 보존하지 못했어요");
+    expect(localStorage.getItem(key)).toBe("damaged-original");
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(Object.keys(localStorage)).toEqual([key]);
+    expect(screen.queryByRole("group", { name: "보드 변경 기록" })).toBeNull();
+  });
+
+  it("복구 전에 다른 탭이 원문을 바꾸면 그 값을 보존하고 다시 읽는다", () => {
+    const key = studioMoodboardStorageKey("A");
+    localStorage.setItem(key, "first-damaged-original");
+    render(<StudioProjectMoodboard projectId="A" />);
+    localStorage.setItem(key, "changed-original");
+    const write = vi.spyOn(Storage.prototype, "setItem");
+
+    fireEvent.click(screen.getByRole("button", { name: "새 무드보드로 시작하기" }));
+    expect(write).not.toHaveBeenCalled();
+    expect(localStorage.getItem(key)).toBe("changed-original");
+    expect(Object.keys(localStorage)).toEqual([key]);
+  });
 });

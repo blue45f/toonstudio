@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { StudioSpacePollSnapshot } from "@toonstudio/contracts/studio-space-poll";
 import { apiFetch } from "@/platform/api";
 import { StudioSpacePollPanel } from "./StudioSpacePollPanel";
+import { createStudioPoll, serializeStudioPoll } from "./studio-virtual-space-poll";
 import { useStudioSpacePoll } from "./use-studio-space-poll";
 
 vi.mock("@/platform/api", () => ({ apiFetch: vi.fn() }));
@@ -36,6 +37,7 @@ describe("팀 공간 투표", () => {
   });
 
   it("작품 접근을 잃은 계정에는 이전 집계를 띄우지 않는다", async () => {
+    const write = vi.spyOn(Storage.prototype, "setItem");
     vi.mocked(apiFetch).mockResolvedValueOnce(send(current)).mockResolvedValueOnce(send({}, 403));
     render(<StudioSpacePollPanel {...actor} />);
     await screen.findByText("다음 컷은?");
@@ -43,6 +45,7 @@ describe("팀 공간 투표", () => {
     await screen.findByRole("alert");
     expect(screen.queryByText("다음 컷은?")).toBeNull();
     expect(screen.queryByText("투표 만들기")).toBeNull();
+    expect(write).not.toHaveBeenCalled();
   });
 
   it("권한이 없는 팀원이 빈 공간을 열면 빈 상태를 안내한다", async () => {
@@ -64,6 +67,23 @@ describe("팀 공간 투표", () => {
 });
 
 describe("기기에 저장하는 투표", () => {
+  it("개인 투표는 작품·공간·계정 키를 바꾸면 다른 사본을 보여 주지 않는다", () => {
+    const created = createStudioPoll({ ...draft, id: "local-poll", createdBySessionId: actor.actor, createdByName: actor.name });
+    if (!created.ok) throw new Error(created.reason);
+    const key = JSON.stringify(["studio-space-poll-v1", actor.workId, actor.world, actor.actor]);
+    localStorage.setItem(key, serializeStudioPoll(created.poll));
+    const panel = render(<StudioSpacePollPanel {...actor} localOnly />);
+    expect(screen.getByText(draft.question)).toBeTruthy();
+
+    for (const props of [{ world: "meeting" }, { actor: "other-member" }, { workId: "other-work" }]) {
+      panel.rerender(<StudioSpacePollPanel {...actor} {...props} localOnly />);
+      expect(screen.queryByText(draft.question)).toBeNull();
+      panel.rerender(<StudioSpacePollPanel {...actor} localOnly />);
+      expect(screen.getByText(draft.question)).toBeTruthy();
+    }
+    expect(apiFetch).not.toHaveBeenCalled();
+  });
+
   it("저장 실패 뒤 재시도해 마감과 재열기를 복원하며 계정별로 분리한다", async () => {
     const hook = renderHook(() => useStudioSpacePoll("space-user-a", "a", "감독"));
     const write = vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => { throw new DOMException("full", "QuotaExceededError"); });
@@ -96,5 +116,18 @@ describe("기기에 저장하는 투표", () => {
     expect(hook.result.current.state).toMatchObject({ failed: false, poll: null });
     act(() => hook.result.current.create(draft));
     expect(hook.result.current.state.poll?.question).toBe(draft.question);
+  });
+
+  it("손상 사본 백업이 실패하면 원문을 삭제하지 않고 복구 대기 상태를 유지한다", () => {
+    localStorage.setItem("space-corrupt", "damaged-original");
+    const hook = renderHook(() => useStudioSpacePoll("space-corrupt", "a", "감독"));
+    const write = vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => { throw new DOMException("full", "QuotaExceededError"); });
+    const remove = vi.spyOn(Storage.prototype, "removeItem");
+
+    act(() => hook.result.current.keepCopyAndRestart());
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(remove).not.toHaveBeenCalled();
+    expect(localStorage.getItem("space-corrupt")).toBe("damaged-original");
+    expect(hook.result.current.state).toMatchObject({ failed: true, corrupt: true, poll: null });
   });
 });

@@ -529,7 +529,7 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/studio-template-catalog.ts", "durable-storage-write", '"toonspectrum:studio-template-favorites:v1"', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/studio-workspace-arrangement.ts", "durable-storage-write", '`${STUDIO_WORKSPACE_ARRANGEMENT_KEY}:${id}`', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/studio-workspace-arrangement.ts", "durable-storage-write", '"toonspectrum:studio:arrangement:v1"', 1, UI_ONLY, UI_PROOF),
-
+  allow("apps/web/src/domains/creator/assistant/studio-workflow-pack-store.ts", "durable-storage-write", '"toonstudio:custom-workflow-packs:v1"', 2, OPTIONAL_LOCAL_TOOL_STATE, "studio-workflow-pack-store.test.ts가 저장 전 프리셋 정규화, 원고·권한·바이너리 확장 필드 제외, 최신 24개 상한, 무효 입력의 기존 값 보존, 저장 차단 시 메모리 결과와 정확한 한 키만 쓰는 저장·삭제를 검증한다. 브라우저별 도구 설정이며 프로젝트 저장 권위가 아니다."),
   allow("apps/web/src/domains/creator/brush-lab/StudioBrushV6DraftGuard.tsx", "local-storage-write", '`${key}:source-mixbox`', 1, "사용자가 명시적으로 이전 Mixbox 초안을 전환하기 전에 exact 원문을 충돌 없는 별도 키에 보관하는 필수 원문 백업이다. 기존 초안의 호환 이주만 소유하며 원고·자동 저장·복구의 새 browser-KV 권위나 선택적 UI 상태가 아니다.", "StudioBrushV6DraftGuard.test.tsx가 사용자 선택 전 쓰기 없음, namespace·collision 사본 보존, exact 원문 재해석, readback·source mismatch·quota 실패 시 편집기 미개방, 100 suffix 상한에서 기존 사본의 무삭제·무덮어쓰기를 검증한다. 아래 AST finding 계약은 정확한 sourceAuthoring 쓰기 1회만 소유한다."),
   allow("apps/web/src/domains/creator/brush-lab/StudioBrushIntegratedWorkbench.tsx", "local-storage-write", "brushStudioV6StorageKey(scope)", 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
   allow("apps/web/src/domains/creator/brush-lab/StudioBrushV5Composer.tsx", "local-storage-write", '"toonstudio.brush-studio-v5.library"', 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
@@ -540,7 +540,7 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/brush-lab/StudioBrushV6Workbench.tsx", "local-storage-write", '`toonstudio.brush-program-v6:${encodeURIComponent(scope)}`', 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
   allow("apps/web/src/domains/creator/brush/StudioMaterialBrushControls.tsx", "local-storage-write", '`toonstudio.brush-program-v6:${encodeURIComponent(`brush:${editorId}`)}`', 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
   allow("apps/web/src/domains/creator/layer/StudioLayerFilterPresetShelf.tsx", "local-storage-write", "STUDIO_LAYER_FILTER_PRESET_STORAGE_KEY", 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
-
+  allow("apps/web/src/domains/creator/assistant/studio-workflow-pack-telemetry.ts", "durable-storage-write", '"toonstudio:workflow-pack-telemetry:v1"', 1, UI_ONLY, "studio-workflow-pack-telemetry.test.ts가 허용된 여섯 이벤트 카운터와 마지막 팩 ID만 정확한 키에 저장하고 원고·권한 확장 필드와 무효 카운터를 버리며 저장 차단 시 메모리 집계만 반환하는 최근 사용 설정을 검증한다."),
   allow("apps/web/src/domains/creator/ai/studio-ai-project-handoff.ts", "durable-storage-write", '"toonstudio:ai-project-handoff:v1"', 1, BOUNDED_LOCAL_CACHE, BOUNDED_LOCAL_CACHE_PROOF),
   allow("apps/web/src/domains/creator/project-graph/studio-project-graph-cache.ts", "durable-storage-write", "key", 1, BOUNDED_LOCAL_CACHE, BOUNDED_LOCAL_CACHE_PROOF),
   allow("apps/web/src/domains/creator/project-graph/studio-project-graph-device.ts", "durable-storage-write", '"toonstudio:project-graph-device:v1"', 1, BOUNDED_LOCAL_CACHE, BOUNDED_LOCAL_CACHE_PROOF),
@@ -592,7 +592,9 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/virtual-space/studio-workspace-video-library.ts", "indexeddb-open", '"toonstudio-workspace-recordings"', 1, LOCAL_RECORDING_COPY, LOCAL_RECORDING_PROOF),
   allow("apps/web/src/domains/creator/virtual-space/studio-workspace-video-library.ts", "indexeddb-write", "put", 2, LOCAL_RECORDING_COPY, LOCAL_RECORDING_PROOF),
   allow("apps/web/src/domains/creator/virtual-space/studio-workspace-video-library.ts", "indexeddb-cleanup", "delete", 2, CLEANUP_ONLY, LOCAL_RECORDING_PROOF),
-
+  allow("apps/web/src/domains/creator/virtual-space/use-studio-space-poll.ts", "local-storage-write", "key", 1, REVIEW_TOOL_LOCAL_STATE, "StudioSpacePollPanel.test.tsx가 localOnly 개인 투표의 작품·공간·계정별 키 격리, 재열기·익명 중복 방지·저장 실패 재시도를 검증한다. 팀 투표는 서버 경로를 사용하며 접근 거절 시 로컬 사본으로 전환하거나 쓰지 않는다."),
+  allow("apps/web/src/domains/creator/virtual-space/use-studio-space-poll.ts", "local-storage-write", '`${key}:recovery:${crypto.randomUUID()}`', 1, REVIEW_TOOL_LOCAL_STATE, "StudioSpacePollPanel.test.tsx가 사용자가 손상 사본 보관을 선택할 때 같은 개인 투표 키의 원문을 별도 UUID 키로 보존하고, 백업 쓰기 실패 시 원문과 복구 대기 상태를 유지함을 검증한다."),
+  allow("apps/web/src/domains/creator/virtual-space/use-studio-space-poll.ts", "local-storage-cleanup", "key", 1, CLEANUP_ONLY, "StudioSpacePollPanel.test.tsx가 손상 원문을 별도 키에 보존한 뒤에만 해당 투표 키를 제거하며, 백업 실패 시 removeItem을 호출하지 않는 경로를 검증한다."),
   // Explicit legacy IndexedDB seams. Operation counts prevent a file-level blanket exemption.
   allow("apps/web/src/domains/creator/bg3d/bg3d-model-library.ts", "indexeddb-open", '"toonstudio-studio-bg3d-model-library"', 1, LEGACY_IDB, LEGACY_IDB_PROOF),
   allow("apps/web/src/domains/creator/bg3d/bg3d-model-library.ts", "indexeddb-write", "add", 2, LEGACY_IDB, LEGACY_IDB_PROOF),
@@ -629,25 +631,23 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/vrm/vrm-library.ts", "indexeddb-open", '"toonstudio-studio-vrm-library"', 1, LEGACY_IDB, LEGACY_IDB_PROOF),
   allow("apps/web/src/domains/creator/vrm/vrm-library.ts", "indexeddb-write", "put", 6, VRM_LIBRARY_MIXED_PERSISTENCE, VRM_LIBRARY_MIXED_PERSISTENCE_PROOF),
   allow("apps/web/src/domains/creator/vrm/vrm-library.ts", "indexeddb-cleanup", "delete", 2, CLEANUP_ONLY, CLEANUP_PROOF),
-
   // 프로젝트 썸네일: 저장 정본은 OPFS 파일 쌍이고, 이 IndexedDB는 이관 소스이자 OPFS를 못 쓰거나
   // OPFS 쓰기가 실패할 때만 쓰는 설계된 폴백 티어다 (이전 누락 잔재 아님 — 폴백 전용 테스트가 있다).
   allow("apps/web/src/domains/creator/studio-project-thumbnail.ts", "indexeddb-open", '"toonstudio-project-thumbnails"', 1, THUMBNAIL_IDB_FALLBACK, THUMBNAIL_IDB_FALLBACK_PROOF),
   allow("apps/web/src/domains/creator/studio-project-thumbnail.ts", "indexeddb-write", "put", 1, THUMBNAIL_IDB_FALLBACK, THUMBNAIL_IDB_FALLBACK_PROOF),
   allow("apps/web/src/domains/creator/studio-project-thumbnail.ts", "indexeddb-cleanup", "delete", 1, CLEANUP_ONLY, CLEANUP_PROOF),
-
   // 2026-10-15 CI 복구 검토: 고도화 마라톤(c5913641)·후속 정리(6faf6cd5)·내 이야기 핸드오프(c62f9ea0)가 더한
   // 브라우저 로컬 저장 25건. 파일·종류·키 표현식·횟수를 하나씩 고정하며 디렉터리·접두사 단위 면제는 없다.
   // canvas 문서·ProjectGraph revision 이력·권한·공유 협업 상태의 정본을 허용하는 것이 아니다. 서버 동기화가
   // 아직 없는 로컬 작업 사본은 근거 문장에 그 사실을 적었고, 서버 저장이나 SQLite/OPFS 저장소로 옮겨지면 이
   // 항목들도 함께 줄여야 한다(이 구역은 늘기만 하면 안 된다).
-
   // 기획·세계관 작업 사본: 주입된 저장소 포트로만 쓰고, 읽을 때 엄격 파서를 거쳐 다른 프로젝트·깨진 값은 걸러낸다.
   allow("apps/web/src/domains/creator/planning/studio-planning-store.ts", "durable-storage-write", "storageKey(state.projectId)", 1, PLANNING_LOCAL_WORKING_COPY, "studio-planning-connection.test.ts covers first-open creation, save with a bumped revision, re-read, and rejection of another project's or malformed snapshots; writeStudioProjectPlanning stores only parseStudioProjectPlanning output under the projectId-scoped key."),
   allow("apps/web/src/domains/creator/planning/studio-world-lore-store.ts", "durable-storage-write", "storageKey(lore.projectId)", 1, PLANNING_LOCAL_WORKING_COPY, "studio-world-lore.test.ts covers the empty ensure, the round trip, and rejection of another project's snapshot; writeStudioWorldLore stores only parseStudioWorldLore output under the projectId-scoped key."),
   allow("apps/web/src/domains/creator/studio-world-wiki-store.ts", "durable-storage-write", "storageKey(settings.projectId)", 1, PLANNING_LOCAL_WORKING_COPY, "studio-world-wiki.test.ts covers the store round trip, rejection of another project, and a broken value reading as null; writeStudioWorldWikiSettings stores only parseStudioWorldWikiSettings output, and the public view is generated locally from it until a server publication contract exists."),
   allow("apps/web/src/domains/creator/planning/studio-foreshadow-ledger.ts", "durable-storage-write", "storageKey(state.projectId)", 1, PLANNING_LOCAL_WORKING_COPY, "studio-foreshadow-ledger.test.ts covers the store round trip and rejection of malformed snapshots and of seeds from another project; writeStudioForeshadowLedger stores only parseStudioForeshadowLedger output, which also requires every seed to carry the ledger's projectId."),
   allow("apps/web/src/domains/creator/planning/studio-moodboard.ts", "durable-storage-write", "storageKey(normalizedProjectId)", 1, PLANNING_LOCAL_WORKING_COPY, "studio-moodboard.test.ts covers per-project isolation, reopening with the same layout, and rejection of broken boards; saveStudioProjectMoodboard re-deserializes the board and throws on an invalid card, column, or reference before the single setItem."),
+  allow("apps/web/src/domains/creator/planning/StudioProjectMoodboard.tsx", "local-storage-write", 'key+":damaged:"+crypto.randomUUID()', 1, PLANNING_LOCAL_WORKING_COPY, "StudioProjectMoodboard.test.tsx가 명시적 복구 선택 뒤에만 프로젝트별 손상 원문을 별도 키에 보존하고, 다른 프로젝트 격리·백업 실패·다른 탭의 원문 교체 시 기존 데이터 무변경을 검증한다. 기존 기획 보드의 복구 사본이며 원고 정본이나 권한을 새로 저장하지 않는다."),
   allow("apps/web/src/domains/creator/production-hub/team-playbook-model.ts", "durable-storage-write", "storageKey(state.projectId)", 1, PLANNING_LOCAL_WORKING_COPY, "team-playbook-model.test.ts covers ensure, write, and re-read and rejection of broken or other-project snapshots; writeStudioPlaybook stores only parseStudioPlaybook output, which requires every card to carry the playbook's projectId."),
   allow("apps/web/src/domains/creator/production-hub/team-pilot-template-model.ts", "durable-storage-write", "storageKey(state.workspaceId)", 1, PLANNING_LOCAL_WORKING_COPY, "team-pilot-template-model.test.ts covers the ensure, upsert, write, and read round trip, refuses to mix another workspace's runs or templates, and recovers a broken snapshot as null; writeStudioTeamPilot stores only parseStudioTeamPilot output under the workspaceId-scoped key."),
   allow("apps/web/src/domains/creator/planning/studio-fact-concordance.ts", "local-storage-write", "factConcordanceStorageKey(projectId)", 1, PLANNING_LOCAL_WORKING_COPY, "studio-fact-concordance.test.ts round-trips the side data and drops broken records on read; only check verdicts and the fix and lore-revision trails (before/after text of the corrected segment or lore field, keyed by episode, segment, or entry) are stored here, the lore entries and the manuscript live in their own stores, and a write failure is swallowed so the concordance index is not blocked."),

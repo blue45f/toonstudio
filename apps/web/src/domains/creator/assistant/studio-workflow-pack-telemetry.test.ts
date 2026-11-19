@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { WorkflowPackStorageLike } from "./studio-workflow-pack-store";
 import {
@@ -39,5 +39,39 @@ describe("studio-workflow-pack-telemetry", () => {
     const summary = loadWorkflowPackTelemetrySummary(storage);
     expect(summary.totalEvents).toBe(0);
     expect(summary.lastPackId).toBeNull();
+  });
+
+  it("최근 사용 집계는 허용된 카운터와 팩 ID만 정확한 키에 다시 저장한다", () => {
+    const storage = createMemoryStorage();
+    storage.setItem(WORKFLOW_PACK_TELEMETRY_KEY, JSON.stringify({
+      counts: { "pack-applied": 2.8, "router-jumped": -1, unknown: 99 },
+      lastPackId: "preset-1",
+      projectGraph: { pages: ["manuscript-fixture"] },
+      authToken: "fixture-only",
+    }));
+    const write = vi.spyOn(storage, "setItem");
+
+    const summary = recordWorkflowPackEvent("router-jumped", undefined, storage);
+    expect(summary.totalEvents).toBe(3);
+    expect(summary.counts).toEqual({
+      "pack-applied": 2,
+      "pack-shared-deeplink": 0,
+      "pack-saved-custom": 0,
+      "pack-imported-json": 0,
+      "rights-receipt-copied": 0,
+      "router-jumped": 1,
+    });
+    expect(Object.keys(summary).sort()).toEqual(["counts", "lastPackId", "totalEvents"]);
+    expect(write).toHaveBeenCalledExactlyOnceWith(WORKFLOW_PACK_TELEMETRY_KEY, JSON.stringify(summary));
+    expect(loadWorkflowPackTelemetrySummary(storage)).toEqual(summary);
+  });
+
+  it("최근 사용 저장이 차단되어도 메모리 집계만 반환한다", () => {
+    const storage: WorkflowPackStorageLike = {
+      getItem: () => null,
+      setItem: () => { throw new Error("storage blocked"); },
+    };
+    expect(recordWorkflowPackEvent("pack-applied", "preset-1", storage).totalEvents).toBe(1);
+    expect(loadWorkflowPackTelemetrySummary(storage).totalEvents).toBe(0);
   });
 });
