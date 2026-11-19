@@ -8,7 +8,8 @@ export type StudioAssistantLearningTool =
   | "sfx-lexicon"
   | "color-harmony"
   | "focus-timer"
-  | "croquis-pose";
+  | "croquis-pose"
+  | "workflow-packs";
 
 export interface StudioLearningFocus {
   readonly id: string;
@@ -105,6 +106,13 @@ const TOOL_FOCUS: Readonly<Record<Exclude<StudioAssistantLearningTool, "focus-ti
     reason: "크로키와 카메라 구도를 연습 중이라 캐릭터, 드로잉과 투시 자료를 우선합니다.",
     primarySteps: ["character", "drawing"],
     secondarySteps: ["background", "3d"],
+  },
+  "workflow-packs": {
+    id: "workflow-packs",
+    label: "워크플로우 · 팩 세팅",
+    reason: "장르별 제작 팩을 구성 중이라 제작 워크플로와 게시 검수 자료를 우선합니다.",
+    primarySteps: ["workflow", "publish"],
+    secondarySteps: ["3d", "color"],
   },
 };
 

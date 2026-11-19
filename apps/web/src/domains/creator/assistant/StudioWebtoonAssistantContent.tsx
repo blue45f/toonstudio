@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Copy,
   Maximize,
+  PackageOpen,
   Palette,
   Pause,
   Play,
@@ -70,6 +71,8 @@ import {
   type ReaderScrollSpeedProfile,
 } from "./webtoon-scroll-pacing-simulator";
 import { WebtoonSfxLexiconEngine, type SfxCategory } from "./webtoon-sfx-lexicon";
+import { serializeStudioWorkflowPack, type StudioWorkflowPack } from "./studio-workflow-pack";
+import { StudioAssistantSkillRouterBar, StudioWorkflowPacksPanel } from "./StudioWebtoonAssistantWorkflowViews";
 import { StudioWebtoonTensionMapEntry } from "./StudioWebtoonTensionMapEntry";
 import { useTensionMapDraft } from "./use-tension-map-draft";
 import { WebtoonPerspectiveGuidePreview } from "./WebtoonPerspectiveGuidePreview";
@@ -88,15 +91,7 @@ import { StudioContextualLearningPanel } from "./StudioContextualLearningPanel";
 import type { StudioAssistantLearningTool } from "./studio-contextual-learning";
 import { formatNumber } from "@toonstudio/core/format";
 
-export type AssistantActiveTab =
-  | "spec-slicer"
-  | "scroll-pacing"
-  | "tension-map"
-  | "sfx-lexicon"
-  | "color-harmony"
-  | "focus-timer"
-  | "croquis-pose"
-  | "learning";
+export type AssistantActiveTab = "spec-slicer" | "scroll-pacing" | "tension-map" | "sfx-lexicon" | "color-harmony" | "focus-timer" | "croquis-pose" | "workflow-packs" | "learning";
 
 const TAB_ID_PREFIX = "studio-webtoon-assistant";
 const TITLE_ID = `${TAB_ID_PREFIX}-title`;
@@ -109,6 +104,7 @@ const ASSISTANT_TABS: readonly StudioWorkbenchTab[] = [
   { id: "color-harmony", label: "피부/그림자 컬러 조화", icon: Palette },
   { id: "focus-timer", label: "마감 & 포커스플로우", icon: Timer },
   { id: "croquis-pose", label: "인체 크로키 & 구도 가이드", icon: Maximize },
+  { id: "workflow-packs", label: "워크플로우 팩", icon: PackageOpen },
   { id: "learning", label: "배우면서 만들기", icon: BookOpen },
 ];
 
@@ -117,25 +113,10 @@ const PLATFORM_IDS = Object.keys(WEBTOON_PLATFORM_SPECS) as readonly WebtoonPlat
 const PRODUCTION_STAGE_IDS = PRODUCTION_STAGES.map(
   (stage) => stage.id,
 ) as readonly WebtoonProductionStage[];
-const SKIN_TONE_IDS: readonly SkinToneId[] = [
-  "warm-fair",
-  "cool-pale",
-  "blush-peach",
-  "sun-kissed-tan",
-  "dark-rich",
-];
-const PERSPECTIVE_PRESETS: readonly PerspectiveGuidePreset[] = [
-  "eye-level",
-  "low-angle",
-  "high-angle",
-  "dutch-tilt",
-];
+const SKIN_TONE_IDS: readonly SkinToneId[] = ["warm-fair", "cool-pale", "blush-peach", "sun-kissed-tan", "dark-rich"];
+const PERSPECTIVE_PRESETS: readonly PerspectiveGuidePreset[] = ["eye-level", "low-angle", "high-angle", "dutch-tilt"];
 
-const POMODORO_MODES: readonly { id: PomodoroMode; label: string }[] = [
-  { id: "standard-25", label: "25/5분 표준" },
-  { id: "deep-flow-50", label: "50/10분 몰입" },
-  { id: "sprint-15", label: "15/3분 스프린트" },
-];
+const POMODORO_MODES: readonly { id: PomodoroMode; label: string }[] = [{ id: "standard-25", label: "25/5분 표준" }, { id: "deep-flow-50", label: "50/10분 몰입" }, { id: "sprint-15", label: "15/3분 스프린트" }];
 const POMODORO_MODE_IDS = POMODORO_MODES.map((mode) => mode.id) as readonly PomodoroMode[];
 
 const READER_SPEED_PROFILES: readonly {
@@ -307,7 +288,9 @@ export function StudioWebtoonAssistantModal({
     return () => clearInterval(interval);
   }, [timerEngine, timerState.isRunning]);
 
-  // Tab 6: Croquis Pose Guide State
+  const [skillRouterQuery, setSkillRouterQuery] = useState("");
+  const [appliedWorkflowPackId, setAppliedWorkflowPackId] = useState<string | null>(null);
+  const [copiedWorkflowPackId, setCopiedWorkflowPackId] = useState<string | null>(null);
   const croquisGuide = useMemo(() => new WebtoonCroquisPoseGuide(), []);
   const [selectedPerspective, setSelectedPerspective] =
     useState<PerspectiveGuidePreset>("eye-level");
@@ -412,6 +395,19 @@ export function StudioWebtoonAssistantModal({
     setActiveTab(next);
     if (next !== "learning") setLastLearningTool(next);
   }
+  function handleApplyWorkflowPack(pack: StudioWorkflowPack) {
+    const spec = WEBTOON_PLATFORM_SPECS[pack.platformId];
+    setSelectedPlatform(pack.platformId);
+    setSliceTargetHeight(clampSliceHeight(spec.recommendedSliceHeightPx, spec.maxSliceHeightPx));
+    setSelectedSkinTone(pack.skinToneId);
+    setCustomBaseColor(colorAssistant.getSkinPalette(pack.skinToneId).base);
+    setSelectedPerspective(pack.perspectivePreset);
+    setReaderSpeed(pack.readerSpeed);
+    timerEngine.setStage(pack.focusStage);
+    timerEngine.setPomodoroMode(pack.focusPreset);
+    setTimerState(timerEngine.getState());
+    setAppliedWorkflowPackId(pack.id);
+  }
 
   async function handleCopySfx(id: string, text: string) {
     const ok = await copyStudioText(text);
@@ -484,7 +480,7 @@ export function StudioWebtoonAssistantModal({
           </button>
         </header>
 
-        {/* Modal Tabs Rail */}
+        <StudioAssistantSkillRouterBar query={skillRouterQuery} onQueryChange={setSkillRouterQuery} activeTab={activeTab} focusStage={timerState.activeStage} panelsCount={panels.length} protectedRegionsCount={protectedRegions.length} canvasHeight={canvasHeight} onSelectTab={handleAssistantTabSelect} />
         <div className="shrink-0 border-b border-line bg-card/60 px-2 py-1">
           <StudioWorkbenchTabStrip
             tabs={ASSISTANT_TABS}
@@ -1326,13 +1322,10 @@ export function StudioWebtoonAssistantModal({
             </div>
           )}
 
-          {/* TAB 7: Contextual Academy learning */}
-          {activeTab === "learning" && (
-            <StudioContextualLearningPanel
-              tool={lastLearningTool}
-              focusStage={timerState.activeStage}
-            />
+          {activeTab === "workflow-packs" && (
+            <StudioWorkflowPacksPanel appliedWorkflowPackId={appliedWorkflowPackId} copiedWorkflowPackId={copiedWorkflowPackId} onApplyPack={handleApplyWorkflowPack} onCopyPack={(pack) => { void copyStudioText(serializeStudioWorkflowPack(pack)).then((ok) => setCopiedWorkflowPackId(ok ? pack.id : null)); }} />
           )}
+          {activeTab === "learning" && <StudioContextualLearningPanel tool={lastLearningTool} focusStage={timerState.activeStage} />}
 
           {/* 텐션 맵: 첫 활성화 때만 불러오고, 이후에는 탭을 떠나도 입력을 유지한다 */}
           <StudioWebtoonTensionMapEntry
