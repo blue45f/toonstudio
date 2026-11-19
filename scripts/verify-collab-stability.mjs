@@ -11,8 +11,10 @@
  */
 
 import { spawnSync } from "node:child_process";
+import os from "node:os";
+import path from "node:path";
 
-const SMOKE_REPORT_PATH = "/tmp/toonstudio-soak-smoke.json";
+const SMOKE_REPORT_PATH = path.join(os.tmpdir(), "toonstudio-soak-smoke.json");
 
 function runStep(label, command, args) {
   console.log(`\n[verify:collab-stability] ${label}...`);

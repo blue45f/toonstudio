@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
+import { studioEcosystemClient } from "./studio-ecosystem-client";
 
 const postMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./api", () => ({
   api: { post: postMock },
 }));
-
-import { studioEcosystemClient } from "./studio-ecosystem-client";
 
 describe("studioEcosystemClient", () => {
   it("RBAC, 구인 광장, 카페, IP 확장 엔드포인트를 정확히 호출한다", async () => {

@@ -4,12 +4,12 @@ import {
   Boxes,
   Brush,
   ClipboardCheck,
+  Compass,
   Focus,
   Handshake,
   MapPinned,
   MessageCircle,
   Radio,
-  Sparkles,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -54,7 +54,7 @@ const P2P_ZONE_PROP: Record<StudioP2pSpaceZoneId, string> = {
 };
 
 const ZONE_META: Record<StudioP2pSpaceZoneId, { icon: LucideIcon; image: string; href: string; ko: string }> = {
-  lobby: { icon: Sparkles, image: "/brand/studio-scene.svg", href: "/studio/home", ko: "프로젝트의 현재 상황과 다음 작업을 확인합니다." },
+  lobby: { icon: Compass, image: "/brand/studio-scene.svg", href: "/studio/home", ko: "프로젝트의 현재 상황과 다음 작업을 확인합니다." },
   writers: { icon: BookOpenText, image: "/assets/studio/cc0-20260906/assets/polyhaven-background-cayley-interior/background.webp", href: "/story-lab", ko: "시놉시스·대본·설정을 함께 다듬습니다." },
   storyboard: { icon: MapPinned, image: "/assets/studio/backgrounds/webtoon_creator_room.png", href: "/studio/new", ko: "에피소드와 컷 흐름을 한눈에 검토합니다." },
   lounge: { icon: MessageCircle, image: "/assets/studio/cc0-20260906/assets/polyhaven-background-wooden-lounge/background.webp", href: "/community", ko: "작업 사이 가볍게 대화하고 아이디어를 나눕니다." },
@@ -139,15 +139,15 @@ export function StudioP2pVirtualStudio({
     <section className="p2p-vs-shell" data-studio-p2p-space="true">
       <header className="p2p-vs-header">
         <div>
-          <span className="p2p-vs-kicker"><Sparkles size={12} /> VIRTUAL CREATOR STUDIO</span>
-          <h4><MapPinned size={15} />{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pVirtualStudio", "ko", "가상 창작 스튜디오")}</h4>
-          <p>{translateCurrentStaticSourceText(
+          <span className="p2p-vs-kicker"><Compass size={12} strokeWidth={1.5} aria-hidden /> VIRTUAL CREATOR STUDIO</span>
+          <h4><MapPinned size={15} strokeWidth={1.5} aria-hidden />{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pVirtualStudio", "ko", "가상 창작 스튜디오")}</h4>
+          <p className="break-keep">{translateCurrentStaticSourceText(
             "domains.creator.live.huddle.StudioP2pVirtualStudio",
             "ko",
             "위치·존 상태는 RTCDataChannel로만 공유하며 서버에 저장하지 않습니다.",
           )}</p>
         </div>
-        <span className="p2p-vs-count"><Users size={12} />{snapshot.peers.length + 1}</span>
+        <span className="p2p-vs-count tabular-nums"><Users size={12} strokeWidth={1.5} aria-hidden />{snapshot.peers.length + 1}</span>
       </header>
 
       <div

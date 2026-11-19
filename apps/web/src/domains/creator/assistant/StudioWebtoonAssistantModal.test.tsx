@@ -86,7 +86,7 @@ describe("StudioWebtoonAssistantModal — shell", () => {
     expect(document.body.style.overflow).toBe("hidden");
   });
 
-  it("keeps the whole canvas content and 8 feature tabs reachable", () => {
+  it("keeps the whole canvas content and 9 feature tabs reachable", () => {
     render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
 
     expect(screen.getByText(/웹툰 창작 보조 센터/)).toBeTruthy();
@@ -99,6 +99,7 @@ describe("StudioWebtoonAssistantModal — shell", () => {
       "피부/그림자 컬러 조화",
       "마감 & 포커스플로우",
       "인체 크로키 & 구도 가이드",
+      "워크플로우 팩",
       "배우면서 만들기",
     ]);
     // 플랫폼 라벨은 스펙 모듈이 단일 출처다 — 여기서 문자열을 다시 적지 않는다.
@@ -165,6 +166,7 @@ describe("StudioWebtoonAssistantModal — tab accessibility", () => {
     // roving tabIndex: 선택된 탭만 tabbable.
     expect(tabs.map((tab) => tab.getAttribute("tabindex"))).toEqual([
       "0",
+      "-1",
       "-1",
       "-1",
       "-1",
@@ -536,5 +538,58 @@ describe("StudioWebtoonAssistantModal — tension map tab", () => {
       expect(tabLeftToBrowser(true)).toBe(false);
       expect(document.activeElement).toBe(methodRegion);
     });
+  });
+});
+
+
+describe("StudioWebtoonAssistantModal — smart skill router & workflow packs", () => {
+  it("routes a creator query directly to the matching tab via the smart router bar", () => {
+    render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
+
+    const input = screen.getByLabelText("스마트 도구 자동 추천 검색");
+    fireEvent.change(input, { target: { value: "로판 워크플로우 팩" } });
+
+    const routerBar = screen.getByTestId("studio-assistant-skill-router");
+    fireEvent.click(within(routerBar).getByRole("button", { name: "워크플로우 팩" }));
+
+    expect(screen.getByTestId("studio-workflow-packs-tab")).toBeTruthy();
+  });
+
+  it("applies a Studio Workflow Pack in one click and updates platform & timer state", () => {
+    render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
+
+    fireEvent.click(tabById("workflow-packs"));
+    const rofanCard = document.querySelector("[data-workflow-pack-id='rofan-episode1-starter']") as HTMLElement;
+    expect(rofanCard).not.toBeNull();
+    fireEvent.click(within(rofanCard).getByRole("button", { name: "팩 일괄 적용" }));
+
+    expect(within(rofanCard).getByRole("button", { name: "적용됨" })).toBeTruthy();
+  });
+
+  it("saves current settings as a custom Workflow Pack and copies a Rights Receipt & deep link", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(globalThis.navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
+    fireEvent.click(tabById("workflow-packs"));
+
+    fireEvent.change(screen.getByLabelText("내 커스텀 팩 이름"), {
+      target: { value: "내 연재 1화 팩" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "현재 세팅 저장" }));
+    expect(screen.getByText("내 연재 1화 팩")).toBeTruthy();
+
+    const rofanCard = document.querySelector("[data-workflow-pack-id='rofan-episode1-starter']") as HTMLElement;
+    fireEvent.click(within(rofanCard).getByRole("button", { name: "공유 링크" }));
+    expect(await within(rofanCard).findByText("링크 복사됨")).toBeTruthy();
+
+    fireEvent.click(within(rofanCard).getByRole("button", { name: "저작권 증명서" }));
+    expect(await within(rofanCard).findByText("증명서 복사됨")).toBeTruthy();
+    expect(writeText).toHaveBeenCalledTimes(2);
+    expect(writeText.mock.calls[0][0]).toContain("workflowPack=");
+    expect(writeText.mock.calls[1][0]).toContain("integrityHash");
   });
 });
