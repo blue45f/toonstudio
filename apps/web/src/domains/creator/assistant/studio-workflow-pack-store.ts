@@ -54,8 +54,16 @@ export function saveCustomStudioWorkflowPack(
   pack: StudioWorkflowPack,
   storage: WorkflowPackStorageLike | null = workflowPackStorage(),
 ): StudioWorkflowPack[] {
-  const existing = loadCustomStudioWorkflowPacks(storage).filter((entry) => entry.id !== pack.id);
-  const next = [pack, ...existing].slice(0, MAX_CUSTOM_PACKS);
+  const existing = loadCustomStudioWorkflowPacks(storage);
+  let normalized: StudioWorkflowPack | null;
+  try {
+    // 도구 프리셋만 보존하며 런타임 객체에 섞인 원고·권한·바이너리 필드는 저장하지 않는다.
+    normalized = parseStudioWorkflowPack(JSON.stringify(pack));
+  } catch {
+    return existing;
+  }
+  if (!normalized) return existing;
+  const next = [normalized, ...existing.filter((entry) => entry.id !== normalized.id)].slice(0, MAX_CUSTOM_PACKS);
   if (storage) {
     try {
       storage.setItem(CUSTOM_WORKFLOW_PACKS_STORAGE_KEY, JSON.stringify(next));

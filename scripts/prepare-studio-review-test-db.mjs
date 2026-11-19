@@ -62,6 +62,7 @@ try {
     "0126_admin_ai_operations.sql",
     "0127_admin_workspace_access.sql",
     "0128_admin_business_plan_access.sql",
+    "0131_studio_space_poll.sql",
   ]) {
     await pool.query(await readFile(new URL(`../apps/api/src/platform/database/migrations/${migration}`, import.meta.url), "utf8"));
   }

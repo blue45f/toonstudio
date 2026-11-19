@@ -97,6 +97,41 @@ describe("Studio companion browser harness boundary", () => {
     );
   });
 
+  it("정본 popup 경로와 이전 링크를 같은 surface로 확인하고 충돌한 view는 거부한다", async () => {
+    const file = ts.createSourceFile("companion.mts", harness, ts.ScriptTarget.Latest, true);
+    const declaration = file.statements.find((statement): statement is ts.FunctionDeclaration =>
+      ts.isFunctionDeclaration(statement) && statement.name?.text === "waitForCompanionConnection");
+    if (!declaration) throw new Error("실제 popup 연결 대기 함수가 없습니다.");
+    type Surface = "workspace" | "navigator";
+    const settled = { waitFor: async () => undefined };
+    type PageProbe = {
+      waitForURL(predicate: (url: URL) => boolean): Promise<void>;
+      locator(): typeof settled;
+      getByRole(): { filter(): typeof settled };
+    };
+    const waitForConnection = runInNewContext(ts.transpile(declaration.getText(file), { target: ts.ScriptTarget.ES2022 })
+      + "\nwaitForCompanionConnection", { URL }) as (page: PageProbe, surface: Surface) => Promise<void>;
+    for (const surface of ["workspace", "navigator"] as const) {
+      const other = surface === "workspace" ? "navigator" : "workspace";
+      const canonical = `/studio/companion/${surface}`;
+      const cases = [
+        [canonical, true], [`${canonical}?view=${surface}`, true],
+        [`${canonical}?view=${other}`, false], [`${canonical}?view=${surface}&view=${surface}`, false],
+        [`/studio/companion/${other}`, false], [`${canonical}/extra`, false],
+        ["/studio/tools-companion", surface === "workspace"],
+        ["/studio/tools-companion?view=navigator", surface === "navigator"],
+        ["/studio/tools-companion?view=navigator&view=navigator", false],
+      ] as const;
+      await waitForConnection({
+        waitForURL: async (predicate) => {
+          for (const [path, accepted] of cases) expect(predicate(new URL(path, "http://127.0.0.1:4179")), `${surface}: ${path}`).toBe(accepted);
+        },
+        locator: () => settled,
+        getByRole: () => ({ filter: () => settled }),
+      }, surface);
+    }
+  });
+
   it("실제 console 분류 함수는 소유 preview의 정확한 socket 종료와 자산 출처만 허용한다", () => {
     const file = ts.createSourceFile("companion.mts", harness, ts.ScriptTarget.Latest, true);
     const names = new Set(["staticPreviewUrl", "isExpectedStaticPreviewSocketIoHandshakeClose", "isExpectedStaticPreviewConsoleError"]);

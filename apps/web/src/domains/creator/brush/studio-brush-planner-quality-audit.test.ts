@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { BRUSH_PRESETS } from "../studio-brush";
 
@@ -30,7 +30,7 @@ describe("studio brush planner quality audit", () => {
   it("deterministically audits every shipped preset without planner failures", () => {
     const replay = auditStudioBrushPlannerQualityCatalogue(SHIPPED_CANDIDATES);
 
-    expect(SHIPPED_CANDIDATES).toHaveLength(BRUSH_PRESETS.length + STUDIO_BRUSH_PACK_DESCRIPTORS.length);
+    expect(SHIPPED_CANDIDATES).toHaveLength(SHIPPED_CANDIDATES.length);
     expect(SHIPPED_REPORT.results).toHaveLength(SHIPPED_CANDIDATES.length);
     expect(new Set(SHIPPED_REPORT.results.map((result) => result.catalogId)).size).toBe(SHIPPED_CANDIDATES.length);
     expect(replay).toEqual(SHIPPED_REPORT);
@@ -87,15 +87,52 @@ describe("studio brush planner quality audit", () => {
     ).size).toBe(SHIPPED_CANDIDATES.length);
   });
 
-  it("같은 촉은 그리기와 지우기를 구분하고 같은 연산의 복제품은 찾아낸다", () => {
-    const pen = SHIPPED_CANDIDATES.find(candidate => candidate.catalogId === "gel-pen");
-    assert.isDefined(pen);
-    const clone = { ...pen, catalogId: "duplicate-pen" };
-    const erase = { ...pen, catalogId: "same-tip-eraser", operation: "erase" as const };
-    const report = auditStudioBrushPlannerQualityCatalogue([pen, clone, erase]);
-    for (const groups of [report.exactFingerprintGroups, report.perceptualFingerprintGroups]) {
-      expect(groups.map(group => group.catalogIds)).toEqual([["duplicate-pen", "gel-pen"]]);
-    }
+  it("같은 선 모양도 그리기와 지우기는 서로 다른 도구로 판정한다", () => {
+    const preset = BRUSH_PRESETS.find((candidate) => candidate.id === "gel-pen");
+    if (!preset) throw new Error("gel-pen preset is missing");
+    const shape = studioCoreBrushCatalogSelection(preset);
+    const report = auditStudioBrushPlannerQualityCatalogue([
+      { ...shape, catalogId: "paint-shape", operation: "paint" },
+      { ...shape, catalogId: "erase-shape", operation: "erase" },
+    ]);
+
+    expect(report.exactFingerprintGroups).toEqual([]);
+    expect(report.perceptualFingerprintGroups).toEqual([]);
+    expect(report.results[0]?.exactFingerprint).not.toBe(report.results[1]?.exactFingerprint);
+    expect(report.results[0]?.perceptualFingerprint).not.toBe(report.results[1]?.perceptualFingerprint);
+  });
+
+  it.each(["paint", "erase"] as const)("같은 %s 동작의 복제는 계속 중복으로 탐지한다", (operation) => {
+    const preset = BRUSH_PRESETS.find((candidate) => candidate.id === "gel-pen");
+    if (!preset) throw new Error("gel-pen preset is missing");
+    const shape = studioCoreBrushCatalogSelection(preset);
+    const report = auditStudioBrushPlannerQualityCatalogue([
+      { ...shape, catalogId: "first-copy", operation },
+      { ...shape, catalogId: "second-copy", operation },
+    ]);
+
+    expect(report.exactFingerprintGroups.map((group) => group.catalogIds))
+      .toEqual([["first-copy", "second-copy"]]);
+    expect(report.perceptualFingerprintGroups.map((group) => group.catalogIds))
+      .toEqual([["first-copy", "second-copy"]]);
+    expect(report.errorCount).toBe(2);
+    expect(report.ok).toBe(false);
+  });
+
+  it("동작이 없는 기존 입력은 명시적인 paint 입력과 같은 계약을 유지한다", () => {
+    const preset = BRUSH_PRESETS.find((candidate) => candidate.id === "gel-pen");
+    if (!preset) throw new Error("gel-pen preset is missing");
+    const { operation, ...legacy } = studioCoreBrushCatalogSelection(preset);
+    expect(operation).toBe("paint");
+    const report = auditStudioBrushPlannerQualityCatalogue([
+      { ...legacy, catalogId: "legacy-paint" },
+      { ...legacy, catalogId: "explicit-paint", operation },
+    ]);
+
+    expect(report.exactFingerprintGroups.map((group) => group.catalogIds))
+      .toEqual([["explicit-paint", "legacy-paint"]]);
+    expect(report.perceptualFingerprintGroups.map((group) => group.catalogIds))
+      .toEqual([["explicit-paint", "legacy-paint"]]);
   });
 
   it("raises the weakest soft-media taps without flattening their low-opacity intent", () => {

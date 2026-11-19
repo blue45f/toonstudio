@@ -12,11 +12,10 @@ import { applyStudioLaunchDensity, readStudioLaunchDensity } from "../../studio-
 import type { StudioDocumentWorkspaceId } from "../../studio-document-workspace";
 import { preserveStudioTaskToolbarPreference, projectStudioTaskAppSettings } from "../../studio-task-tools";
 import type { StudioToolbarPinChange } from "./studio-toolbar-pin-persistence";
-import { hydrateStudioPreference } from "./studio-preference-hydration";
 import { useStudioWorkModePreference } from "./useStudioWorkModePreference";
 import type { StudioUiBooleanPreferenceKey } from "../../studio-ui-preferences-sqlite";
 import { useStudioUiDensityPreference } from "./useStudioUiDensityPreference";
-import { useStudioEffectFavoritesPreference } from "./useStudioEffectFavoritesPreference";
+import { useStudioEffectFavoritePreference } from "./useStudioEffectFavoritePreference";
 
 interface UseStudioPreferencesRuntimeOptions {
   readonly launchSearch: string;
@@ -117,8 +116,10 @@ export function useStudioPreferencesRuntime({
   // Stage work mode lives in its own runtime module too (useStudioWorkModePreference).
   const { dismissWorkModeSuggestion, setWorkMode, suggestedWorkMode, uiChromeExposure, workMode, workModeState } = useStudioWorkModePreference({ episodeStage, uiFirstScreenExposure, uiAdvancedToolsExpanded });
 
-  const effectFavorites = useStudioEffectFavoritesPreference(setAppSettingsPersistenceState);
-  const { effectFavoriteStateRef, effectFavoriteUserRevisionRef, setEffectFavoriteState } = effectFavorites;
+  const {
+    effectFavoriteState, effectFavoriteStateRef, effectFavoriteUserRevisionRef,
+    rememberEffectRecent, setEffectFavoriteState, toggleEffectFavoriteCommand,
+  } = useStudioEffectFavoritePreference(setAppSettingsPersistenceState);
 
   useEffect(() => {
     const mode = launchDensity ?? appSettingsRef.current.general.densityMode;
@@ -147,18 +148,53 @@ export function useStudioPreferencesRuntime({
         ]);
         if (cancelled) return;
 
-        const settingsReady = await hydrateStudioPreference(
-          settingsResult, appSettingsUserRevisionRef.current === settingsRevisionAtStart,
-          saved => { replaceAppSettings(saved); applySavedPresentation(saved); },
-          () => repository.saveAppSettings(appSettingsRef.current),
-        );
-        if (cancelled) return;
-        const favoritesReady = await hydrateStudioPreference(
-          favoritesResult, effectFavoriteUserRevisionRef.current === favoritesRevisionAtStart,
-          saved => { effectFavoriteStateRef.current = saved; setEffectFavoriteState(saved); },
-          () => repository.saveEffectFavorites(effectFavoriteStateRef.current),
-        );
-        if (!cancelled) setAppSettingsPersistenceState(settingsReady && favoritesReady ? "saved" : "session-only");
+        let degraded = false;
+        if (settingsResult.status === "fulfilled") {
+          if (appSettingsUserRevisionRef.current === settingsRevisionAtStart) {
+            const saved = settingsResult.value;
+            replaceAppSettings(saved);
+            applySavedPresentation(saved);
+          } else {
+            try {
+              await repository.saveAppSettings(appSettingsRef.current);
+            } catch {
+              degraded = true;
+            }
+          }
+        } else if (appSettingsUserRevisionRef.current !== settingsRevisionAtStart) {
+          try {
+            await repository.saveAppSettings(appSettingsRef.current);
+          } catch {
+            degraded = true;
+          }
+        } else {
+          degraded = true;
+        }
+
+        if (favoritesResult.status === "fulfilled") {
+          if (effectFavoriteUserRevisionRef.current === favoritesRevisionAtStart) {
+            effectFavoriteStateRef.current = favoritesResult.value;
+            setEffectFavoriteState(favoritesResult.value);
+          } else {
+            try {
+              await repository.saveEffectFavorites(effectFavoriteStateRef.current);
+            } catch {
+              degraded = true;
+            }
+          }
+        } else if (effectFavoriteUserRevisionRef.current !== favoritesRevisionAtStart) {
+          try {
+            await repository.saveEffectFavorites(effectFavoriteStateRef.current);
+          } catch {
+            degraded = true;
+          }
+        } else {
+          degraded = true;
+        }
+
+        if (!cancelled) {
+          setAppSettingsPersistenceState(degraded ? "session-only" : "saved");
+        }
       })
       .catch(() => {
         if (!cancelled) setAppSettingsPersistenceState("session-only");
@@ -167,13 +203,7 @@ export function useStudioPreferencesRuntime({
     return () => {
       cancelled = true;
     };
-  }, [
-    applySavedPresentation,
-    effectFavoriteStateRef,
-    effectFavoriteUserRevisionRef,
-    replaceAppSettings,
-    setEffectFavoriteState,
-  ]);
+  }, [applySavedPresentation, effectFavoriteStateRef, effectFavoriteUserRevisionRef, replaceAppSettings, setEffectFavoriteState]);
 
   const persistStudioUiBooleanPreference = useCallback((
     key: StudioUiBooleanPreferenceKey,
@@ -225,7 +255,6 @@ export function useStudioPreferencesRuntime({
   );
 
   return {
-    ...effectFavorites,
     appSettings: presentedSettings,
     appSettingsInitialTab,
     appSettingsOpen,
@@ -233,19 +262,25 @@ export function useStudioPreferencesRuntime({
     appSettingsRef,
     appSettingsUserRevisionRef,
     commitAppSettings,
+    effectFavoriteState,
+    effectFavoriteStateRef,
+    effectFavoriteUserRevisionRef,
     isRailToolVisible,
     persistAppSettings,
     persistStudioUiBooleanPreference,
     railMoreOpen,
+    rememberEffectRecent,
     setAppSettings,
     setAppSettingsInitialTab,
     setAppSettingsOpen,
     setAppSettingsPersistenceState,
+    setEffectFavoriteState,
     setRailMoreOpen,
     setStudioUiDensity,
     setStudioUiDensityFromCompanion,
     setUiDensityMode,
     setUiAdvancedToolsExpanded,
+    toggleEffectFavorite: toggleEffectFavoriteCommand,
     uiAdvancedToolsExpanded,
     uiBooleanPreferenceRevisionsRef,
     uiDensityMode,

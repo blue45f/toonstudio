@@ -2,101 +2,19 @@ import { waitForEditorSettled } from "./studio-editor-a11y";
 
 import type { Page } from "@playwright/test";
 
-/** 안료 고급 작업의 준비 대기 중 실제 프로젝트 도구를 열고 기본 그리기 화면은 유지한다. */
+/** 원고의 실제 셸·명령·로딩·오프라인 준비 조건을 확인하고 원고 연결 문맥을 유지한다. */
 export async function waitForPigmentEditorSettled(page: Page): Promise<void> {
-  const clarity = page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]:not([data-studio-drawing-clarity-panel="commands"])').first();
-  let handling = false;
-  const handlerState: { failure: { error: unknown } | null } = { failure: null };
-  const revealSavedLayout = async () => {
-    if (handlerState.failure !== null) return;
-    if (handling) {
-      handlerState.failure = { error: new Error("안료 배치 선택 handler가 중첩 호출됐습니다.") };
-      return;
-    }
-    handling = true;
-    try {
-      const deadline = Date.now() + 60_000;
-      const remaining = () => {
-        const value = deadline - Date.now();
-        if (value <= 0) throw new Error("안료 고급 작업의 명시적 배치 선택 시간이 초과됐습니다.");
-        return value;
-      };
-      const before = new URL(page.url());
-    const task = page.locator('dialog[data-studio-drawing-task="tools"]');
-    if (!(await task.isVisible())) await page.locator('[data-studio-clarity-more-trigger="true"]').first()
-      .click({ timeout: remaining() });
-    await task.waitFor({ state: "visible", timeout: remaining() });
-    const workspace = task.locator('[data-drawing-task-category="workspace"]');
-    if (await workspace.count() === 0) {
-      const back = task.getByRole("button", { name: "원고 도구 분류로 돌아가기", exact: true });
-      if (await back.count() !== 1) throw new Error("안료 준비의 분류로 돌아가기 버튼은 하나여야 합니다.");
-      await back.click({ timeout: remaining() });
-    }
-    if (await workspace.count() !== 1) throw new Error("안료 준비의 화면과 도움말 목적은 하나여야 합니다.");
-    await workspace.click({ timeout: remaining() });
-    await task.getByRole("button", { name: "프로젝트·창 도구", exact: true })
-      .click({ timeout: remaining() });
-    await task.waitFor({ state: "detached", timeout: remaining() });
-    await page.locator('[data-studio-drawing-project-tools="true"]').waitFor({ state: "visible", timeout: remaining() });
-    // 셸은 그대로 두고 프로젝트 도구가 열린 상태를 기다린다. 실제 준비가 끝난 뒤 handler를 해제한다.
-    await clarity.waitFor({ state: "detached", timeout: remaining() });
-    const after = new URL(page.url());
-    if (after.origin !== before.origin || after.pathname !== before.pathname || after.hash !== before.hash) {
-      throw new Error("배치 선택이 원고의 주소를 변경했습니다.");
-    }
-    for (const key of new Set(before.searchParams.keys())) {
-      if (JSON.stringify(after.searchParams.getAll(key)) !== JSON.stringify(before.searchParams.getAll(key))) {
-        throw new Error(`배치 선택이 원고의 기존 연결 문맥을 변경했습니다: ${key}`);
-      }
-    }
-
-    } catch (error) {
-      // 이벤트 callback의 오류는 원래 assertion과 별도이므로 준비 결과까지 직접 전달한다.
-      if (handlerState.failure === null) handlerState.failure = { error };
-    } finally {
-      handling = false;
-    }
-  };
-  await page.addLocatorHandler(clarity, revealSavedLayout);
-  let removalAttempted = false;
-  const removeHandler = async () => {
-    removalAttempted = true;
-    await page.removeLocatorHandler(clarity);
-  };
-  let failure: { error: unknown } | null = null;
-  try {
-    // 원래 120/60/45초 조건과 재시도는 그대로 쓰며 handler 시간도 그 대기 예산에 포함된다.
-    try {
-      await waitForEditorSettled(page);
-      if (handlerState.failure !== null) throw handlerState.failure.error;
-      if (await clarity.isVisible()) {
-        // 명시 복구 클릭이 같은 handler를 재호출하지 않게 먼저 해제한다.
-        await removeHandler();
-        await revealSavedLayout();
-        if (handlerState.failure !== null) throw handlerState.failure.error;
-        // 한 번만 기존 준비 조건을 다시 확인한다. 재등장은 추가 복구로 넘기지 않는다.
-        await waitForEditorSettled(page);
-        if (await clarity.isVisible()) throw new Error("안료 준비가 끝난 직후 단순 화면이 다시 나타났습니다.");
-      }
-    } catch (error) {
-      if (handlerState.failure !== null && handlerState.failure.error !== error) {
-        throw new AggregateError([handlerState.failure.error, error], "안료 배치 선택과 원래 준비 검사에 실패했습니다.", { cause: error });
-      }
-      throw error;
-    }
-    if (handlerState.failure !== null) throw handlerState.failure.error;
-  } catch (error) {
-    failure = { error };
+  const before = new URL(page.url());
+  // Clarity는 현재 원고의 상시 셸이다. 공통 준비가 그 버튼을 지원하므로 배치 전환이나
+  // locator handler로 셸을 제거하지 않는다. 출력·프로젝트 명령은 각 작업에서 UI로 연다.
+  await waitForEditorSettled(page);
+  const after = new URL(page.url());
+  if (after.origin !== before.origin || after.pathname !== before.pathname || after.hash !== before.hash) {
+    throw new Error("안료 준비가 원고의 주소를 변경했습니다.");
   }
-  // 실제 획·캡처 도중 포커스나 포인터를 가로채지 않도록 준비 구간에서만 등록한다.
-  if (!removalAttempted) {
-    try { await removeHandler(); }
-    catch (cleanupError) {
-      if (failure !== null) {
-        throw new AggregateError([failure.error, cleanupError], "안료 준비와 handler 해제에 실패했습니다.", { cause: cleanupError });
-      }
-      throw cleanupError;
+  for (const key of new Set(before.searchParams.keys())) {
+    if (JSON.stringify(after.searchParams.getAll(key)) !== JSON.stringify(before.searchParams.getAll(key))) {
+      throw new Error(`안료 준비가 원고의 기존 연결 문맥을 변경했습니다: ${key}`);
     }
   }
-  if (failure !== null) throw failure.error;
 }

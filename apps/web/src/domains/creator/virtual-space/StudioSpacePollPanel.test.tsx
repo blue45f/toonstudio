@@ -47,6 +47,7 @@ describe("팀 공간 투표", () => {
   });
 
   it("작품 접근을 잃은 계정에는 이전 집계를 띄우지 않는다", async () => {
+    const write = vi.spyOn(Storage.prototype, "setItem");
     vi.mocked(apiFetch).mockResolvedValueOnce(send(current)).mockResolvedValueOnce(send({}, 403));
     render(<StudioSpacePollPanel {...actor} />);
     await screen.findByText("다음 컷은?");
@@ -54,6 +55,7 @@ describe("팀 공간 투표", () => {
     await screen.findByRole("alert");
     expect(screen.queryByText("다음 컷은?")).toBeNull();
     expect(screen.queryByText("투표 만들기")).toBeNull();
+    expect(write).not.toHaveBeenCalled();
   });
 
   it("권한이 없는 팀원이 빈 공간을 열면 빈 상태를 안내한다", async () => {

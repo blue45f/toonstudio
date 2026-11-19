@@ -20,7 +20,7 @@ describe("StudioCreativeHoursCard", () => {
 
     render(<StudioCreativeHoursCard tracker={tracker} />);
 
-    expect(screen.getByText("내 창작 시간 (Creative Hours)")).not.toBeNull();
+    expect(screen.getByText("내 창작 시간 · 웰니스")).not.toBeNull();
     expect(screen.getByText(/1시간 0분/u)).not.toBeNull();
     expect(screen.getByText("501회")).not.toBeNull();
   });

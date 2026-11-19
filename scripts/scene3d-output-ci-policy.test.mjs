@@ -11,6 +11,10 @@ import { fixtureGitEnvironment } from "./ci-checkout-test-helpers.mjs";
 const repoRoot = new URL("../", import.meta.url);
 const workflow = (name) => parse(readFileSync(new URL(`.github/workflows/${name}`, repoRoot), "utf8"));
 const manifests = [
+  "apps/web/public/assets/3d/environments/boatyard-v1/manifest.json",
+  "apps/web/public/assets/3d/environments/coast-v1/manifest.json",
+  "apps/web/public/assets/3d/environments/specimen-v1/manifest.json",
+  "apps/web/public/assets/3d/environments/glasshouse-v1/manifest.json",
   "apps/web/public/assets/3d/environments/refined-v6/manifest.json",
   "apps/web/public/assets/3d/environments/expansion-v1/manifest.json",
   "apps/web/public/assets/3d/environments/webtoon-v7/manifest.json",

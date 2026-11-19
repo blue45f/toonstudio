@@ -247,6 +247,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       ),
       authorityDestination("studio-publish"),
       destination("/studio/manual", "Studio 사용 설명서", "Studio manual", "도구·작업 흐름·문제 해결 안내", "Learn tools, workflows and troubleshooting"),
+      destination("/studio/mcp", "MCP · CLI 연동 안내", "MCP & CLI integration guide", "외부 도구 연결과 명령행 사용 방법", "Connect external tools and use the command line"),
     ],
   },
   {

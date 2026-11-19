@@ -165,7 +165,14 @@ async function waitForCompanionConnection(
   page: Page,
   surface: "workspace" | "navigator",
 ): Promise<void> {
-  await page.waitForURL((url) => url.pathname === `/studio/companion/${surface}`, { timeout: 20_000 });
+  await page.waitForURL((url) => {
+    const views = url.searchParams.getAll("view");
+    if (views.length > 1) return false;
+    const view = views[0] ?? null;
+    if (url.pathname === `/studio/companion/${surface}`) return view === null || view === surface;
+    if (url.pathname !== "/studio/tools-companion") return false;
+    return surface === "workspace" ? view === null : view === surface;
+  }, { timeout: 20_000 });
   await page.locator(
     `[data-testid="studio-tools-companion-root"][data-companion-surface="${surface}"]`,
   ).waitFor({ state: "visible", timeout: 20_000 });

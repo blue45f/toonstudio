@@ -191,13 +191,15 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   };
   const input = (path) => `${path.slice(1)}${path.endsWith("/") ? "fixture-payload.bin" : ""}`;
   const world = "apps/web/public/assets/virtual-studio/world/default-world.json";
+  const commonManifests = [world, ...["boatyard-v1", "coast-v1", "specimen-v1", "glasshouse-v1"]
+    .map((pack) => `apps/web/public/assets/3d/environments/${pack}/manifest.json`)];
   const unrelated = ["apps/web/public/assets/unrelated/large.glb", "apps/web/public/vrm/unrelated.vrm", "artifacts/unrelated.bin",
     "apps/web/public/assets/virtual-studio/studio-art-v11/unrelated-large.webp",
     "apps/web/public/assets/3d/environments/bundle-v1/unrelated-large.glb"];
   const unrelatedDocuments = ["docs/third-party/unrelated.md", "docs/adr/9999-unrelated.md", "docs/unrelated/large.bin"];
   try {
     git("init", "--quiet");
-    for (const file of [world, ...Object.values(owned).flat().map(input), ...unrelated, ...unrelatedDocuments, "package.json"]) {
+    for (const file of [...commonManifests, ...Object.values(owned).flat().map(input), ...unrelated, ...unrelatedDocuments, "package.json"]) {
       mkdirSync(dirname(join(root, file)), { recursive: true });
       writeFileSync(join(root, file), "fixture\n");
     }
@@ -208,7 +210,7 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
     for (const shard of Object.keys(owned)) {
       writeFileSync(join(root, ".git/info/sparse-checkout"), `${sparsePatterns(staticJob, { shard }).join("\n")}\n`);
       git("read-tree", "-mu", "HEAD");
-      assert.ok(existsSync(join(root, world)), `${shard}: 공통 메타데이터 누락`);
+      for (const file of commonManifests) assert.ok(existsSync(join(root, file)), `${shard}: 공통 메타데이터 누락 ${file}`);
       for (const [owner, paths] of Object.entries(owned)) {
         for (const path of paths) {
           // 3D 팩 전체에 속한 라이선스는 기존 팩 복원에도 포함되던 공통 입력이다.
@@ -225,6 +227,7 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
     // preflight는 선언을 검사하고, 문서 본문 복원은 위의 실제 shard 행렬에서 검증한다.
     writeFileSync(join(root, ".git/info/sparse-checkout"), `${sparsePatterns(typecheckJob).join("\n")}\n`);
     git("read-tree", "-mu", "HEAD");
+    for (const file of commonManifests) assert.ok(existsSync(join(root, file)), `typecheck: 공통 메타데이터 누락 ${file}`);
     for (const path of foundationDocumentInputs) {
       assert.equal(existsSync(join(root, path.slice(1))), false, `preflight에 불필요한 문서 본문: ${path}`);
       assertTrackedDocumentInputs([path], { cwd: root, env });

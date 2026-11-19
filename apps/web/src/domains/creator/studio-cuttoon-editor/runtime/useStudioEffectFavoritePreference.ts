@@ -9,9 +9,9 @@ import {
 } from "../../studio-effect-favorites";
 import { acquireProductStudioUiPreferencesRepository } from "../../studio-legacy-editor-runtime-helpers";
 
-/** 효과 즐겨찾기와 최근 사용의 동기 상태·저장 revision을 소유한다. 수화는 부모 설정 런타임이 조율한다. */
-export function useStudioEffectFavoritesPreference(
-  setAppSettingsPersistenceState: (value: "session-only") => void,
+/** 효과 목록과 저장 revision을 소유하며, 부모 수화 과정에도 같은 ref를 제공한다. */
+export function useStudioEffectFavoritePreference(
+  setPersistenceState: (state: "session-only") => void,
 ) {
   const [effectFavoriteState, setEffectFavoriteState] = useState<StudioEffectFavoriteState>(() =>
     normalizeStudioEffectFavoriteState(undefined),
@@ -28,10 +28,10 @@ export function useStudioEffectFavoritesPreference(
       .then((repository) => repository.saveEffectFavorites(next))
       .catch(() => {
         if (effectFavoriteUserRevisionRef.current === revision) {
-          setAppSettingsPersistenceState("session-only");
+          setPersistenceState("session-only");
         }
       });
-  }, [setAppSettingsPersistenceState]);
+  }, [setPersistenceState]);
 
   const toggleEffectFavoriteCommand = useCallback((effectId: StudioEffectId): void => {
     persistEffectFavoriteState(toggleStudioEffectFavorite(effectFavoriteStateRef.current, effectId));
@@ -47,6 +47,6 @@ export function useStudioEffectFavoritesPreference(
     effectFavoriteUserRevisionRef,
     rememberEffectRecent,
     setEffectFavoriteState,
-    toggleEffectFavorite: toggleEffectFavoriteCommand,
+    toggleEffectFavoriteCommand,
   } as const;
 }

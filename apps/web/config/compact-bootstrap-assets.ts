@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { transformWithEsbuild } from "vite";
 
-import { compactOfflineDrawingPortableHtml } from "./compact-offline-drawing-portable";
+import { compactOfflineDrawingHtml } from "./compact-offline-drawing-html";
 import { compactSvgStructureWhitespace } from "./compact-svg-structure";
 
 const BOOTSTRAP_FILES = ["bootstrap-compat.js", "bootstrap-theme.js"] as const;
@@ -53,7 +53,7 @@ export async function compactBootstrapAssets(outDir: string): Promise<void> {
   const portablePath = path.join(outDir, "offline-draw/portable.html");
   if (existsSync(portablePath)) {
     const source = await readFile(portablePath, "utf8");
-    await writeFile(portablePath, await compactOfflineDrawingPortableHtml(source));
+    await writeFile(portablePath, await compactOfflineDrawingHtml(source));
   }
   for (const filename of STRUCTURAL_SVG_FILES) {
     const source = await readFile(path.join(outDir, filename), "utf8");
