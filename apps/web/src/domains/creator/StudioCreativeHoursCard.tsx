@@ -34,7 +34,7 @@ export function StudioCreativeHoursCard({
 }: StudioCreativeHoursCardProps) {
   const stats = computeCreativeWorkStatistics(tracker);
   const [checkedIds, setCheckedIds] = useState<readonly string[]>(["wrist", "eye"]);
-  const sessionMinutes = Math.floor(tracker.sessionActiveMs / 60_000);
+  const sessionMinutes = Math.floor(tracker.sessionWorkTimeSeconds / 60);
   const breakRecommended = sessionMinutes >= 50 && !stats.isCurrentlyIdle;
 
   const toggleCheck = (id: string) => {
