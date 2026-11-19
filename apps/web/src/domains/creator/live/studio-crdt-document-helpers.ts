@@ -295,9 +295,20 @@ export function createSampleArray(values: readonly number[]): Y.Array<number> {
  * 디코딩되지 않고 여러 호출에서 재사용되므로, 호출자가 실수로 내부(payload/props 등)를 제자리
  * 수정하면 캐시가 조용히 오염된다. lib/studio-crdt-raster-ops.ts 의 deepFreeze 와 동일한 관례. */
 export function deepFreeze<T>(value: T): T {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    Object.freeze(value);
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child);
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+  Object.freeze(value);
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      const child = value[index];
+      if (child && typeof child === "object") deepFreeze(child);
+    }
+    return value;
+  }
+  const record = value as Record<string, unknown>;
+  for (const key in record) {
+    if (!Object.prototype.hasOwnProperty.call(record, key)) continue;
+    const child = record[key];
+    if (child && typeof child === "object") deepFreeze(child);
   }
   return value;
 }
@@ -468,7 +479,51 @@ export function addRasterAsset(
   return asset.byteLength;
 }
 
+/** 장시간 세션에서 백그라운드 CRDT 스냅샷 컴팩션을 권장하는 누적 업데이트 크기(256KB). */
+export const STUDIO_CRDT_COMPACTION_MIN_UPDATE_BYTES = 256 * 1024;
+/** 절전 복귀·장기 단절 시 델타 순차 재생 대신 단일 스냅샷 점프를 강제하는 임계치. */
+export const STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_GAP_MS = 5 * 60 * 1_000;
+export const STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_MAX_DELTAS = 250;
+export const STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_MAX_BYTES = 512 * 1024;
+
+export interface StudioCrdtCompactionResult {
+  readonly compacted: Uint8Array;
+  readonly rawBytes: number;
+  readonly compactedBytes: number;
+  readonly savedBytes: number;
+  readonly ratio: number;
+}
+
 export function mergeStudioCrdtUpdates(updates: readonly Uint8Array[]): Uint8Array {
   if (updates.length === 0) throw new Error("병합할 CRDT 업데이트가 없습니다.");
   return updates.length === 1 ? updates[0].slice() : Y.mergeUpdates([...updates]);
+}
+
+/** 누적된 Yjs 업데이트 로그를 단일 컴팩션 스냅샷으로 합치고 절감 바이트 통계를 반환한다. */
+export function compactStudioCrdtSnapshot(
+  updates: readonly Uint8Array[],
+): StudioCrdtCompactionResult {
+  const compacted = mergeStudioCrdtUpdates(updates);
+  let rawBytes = 0;
+  for (let index = 0; index < updates.length; index += 1) {
+    rawBytes += updates[index]!.byteLength;
+  }
+  const compactedBytes = compacted.byteLength;
+  const savedBytes = Math.max(0, rawBytes - compactedBytes);
+  const ratio = rawBytes > 0 ? Math.round((compactedBytes / rawBytes) * 10_000) / 10_000 : 1;
+  return { compacted, rawBytes, compactedBytes, savedBytes, ratio };
+}
+
+/** 재접속 시 델타 재생 스파이크를 막기 위해 상태 벡터 기반 단일 스냅샷 점프가 필요한지 판정한다. */
+export function shouldJumpToCrdtSnapshotOnReconnect(input: {
+  readonly gapMs: number;
+  readonly queuedDeltaCount: number;
+  readonly estimatedDeltaBytes: number;
+}): boolean {
+  if (!Number.isFinite(input.gapMs) || !Number.isFinite(input.queuedDeltaCount) || !Number.isFinite(input.estimatedDeltaBytes)) {
+    return true;
+  }
+  return input.gapMs >= STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_GAP_MS
+    || input.queuedDeltaCount >= STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_MAX_DELTAS
+    || input.estimatedDeltaBytes >= STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_MAX_BYTES;
 }

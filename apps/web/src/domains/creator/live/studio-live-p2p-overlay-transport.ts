@@ -941,7 +941,13 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
   private pruneStalePeers(now = this.now()): void {
     for (const sessionId of [...this.knownPeerSessionIds]) {
       const lastSeenAt = this.peerLastSeenAt.get(sessionId);
-      if (lastSeenAt === undefined || now - lastSeenAt <= STUDIO_LIVE_P2P_STALE_PEER_TTL_MS) {
+      if (lastSeenAt === undefined) continue;
+      // OS 시계 역행(NTP 보정 등) 시 유령 피어 만료가 지연되지 않도록 기준 시각을 보정한다.
+      if (now < lastSeenAt) {
+        this.peerLastSeenAt.set(sessionId, now);
+        continue;
+      }
+      if (now - lastSeenAt <= STUDIO_LIVE_P2P_STALE_PEER_TTL_MS) {
         continue;
       }
       const link = this.peers.get(sessionId);
@@ -952,7 +958,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
       this.evictPeerSession(sessionId);
     }
     for (const [sessionId, window] of this.relayInboundWindows) {
-      if (now - window.startedAt >= 3_000) {
+      if (now < window.startedAt || now - window.startedAt >= 3_000) {
         this.relayInboundWindows.delete(sessionId);
       }
     }

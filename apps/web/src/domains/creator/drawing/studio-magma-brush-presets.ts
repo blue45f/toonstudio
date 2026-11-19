@@ -7,7 +7,7 @@ import {
   type AnisotropicSpreadConfig,
   type MagmaBrushDynamicsConfig,
   type MagmaPatternBlendMode,
-} from "./studio-magma-brush-engine";
+} from "./studio-magma-brush-prng";
 
 export interface StudioMagmaBrushPreset {
   readonly id: string;

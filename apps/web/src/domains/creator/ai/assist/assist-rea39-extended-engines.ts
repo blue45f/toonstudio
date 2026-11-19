@@ -1,6 +1,6 @@
 import { cleanSingleLineText } from "@/shared/ai/assist/assist-text";
 
-import { executeRea15Engine } from "./assist-rea15-webtoon-ecosystem-suite";
+import { executeRea15Engine } from "./assist-rea15-executor";
 import {
   CotransVroidSkyboxWorldLocalizerSchema,
   KreaSplineLumiereRealtimeShaderSchema,

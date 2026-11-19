@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { resolveStoryworldIssue } from "../status-i18n/studio-producer-error-i18n-storyworld";
 import { StudioStoryworldBoard } from "./StudioStoryworldBoard";
+import { StudioIpExpansionPanel } from "./StudioIpExpansionPanel";
 import { IssueList } from "./StudioStoryworldIssues";
 import { AxisCards, EmptyState, Panel } from "./StudioStoryworldLabShared";
 import {
@@ -24,13 +25,15 @@ import {
   type StoryworldCapabilityGroup,
   type StoryworldCapabilityMaturity,
 } from "./studio-storyworld-catalog";
+import type {
+  StoryworldAnalysisResult,
+  StoryworldBranchMutation,
+  StoryworldProject,
+} from "./studio-storyworld-causality";
 import {
   rankStoryworldParetoFrontier,
   simulateStoryworldCounterfactual,
-  type StoryworldAnalysisResult,
-  type StoryworldBranchMutation,
-  type StoryworldProject,
-} from "./studio-storyworld-causality";
+} from "./studio-storyworld-counterfactual";
 import {
   friendlyStoryworldFileError,
   parseStoryworldProject,
@@ -113,6 +116,7 @@ export function OverviewTab({ project, result, onOpenIssues, onOpenData, onEditE
           >
             <IssueList issues={result.issues} limit={5} />
           </Panel>
+          <StudioIpExpansionPanel />
         </div>
       </section>
     </div>
