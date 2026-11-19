@@ -20,6 +20,11 @@
   overflow-wrap: anywhere;
 }
 
+.studio-lobby :where(a, button) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .studio-lobby :where(a, button, input):focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
@@ -35,9 +40,9 @@
   background: var(--color-accent-soft);
   padding: 0.3rem 0.65rem;
   color: var(--color-accent);
-  font-size: 0.6875rem;
-  font-weight: 900;
-  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 /* ── 히어로 ─────────────────────────────────────────────── */
@@ -68,10 +73,10 @@
 .studio-lobby-hero h2 {
   max-width: 18ch;
   color: var(--color-fg);
-  font-size: clamp(1.85rem, 3.4vw, 3rem);
-  font-weight: 950;
-  line-height: 1.18;
-  letter-spacing: -0.035em;
+  font-size: clamp(1.75rem, 3.4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
   text-wrap: balance;
 }
 
@@ -79,7 +84,7 @@
   max-width: 50ch;
   color: var(--color-fg-2);
   font-size: 0.9375rem;
-  line-height: 1.75;
+  line-height: 1.7;
   text-wrap: pretty;
 }
 
@@ -95,7 +100,7 @@
 .studio-lobby-idea__label {
   color: var(--color-fg-2);
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .studio-lobby-idea {
@@ -187,14 +192,16 @@
   background: var(--lobby-card);
   padding: 0.25rem 0.6rem;
   color: var(--color-fg-2);
-  font-size: 0.6875rem;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 .studio-lobby-metrics strong {
   color: var(--color-fg);
   font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .studio-lobby-metrics li[data-warning="true"] strong {
@@ -271,11 +278,17 @@
 .studio-lobby-quick__card[data-tone="cyan"] { --lobby-tone: var(--color-accent-2); }
 .studio-lobby-quick__card[data-tone="amber"] { --lobby-tone: var(--color-warning); }
 
-.studio-lobby-quick__card:hover {
-  border-color: var(--lobby-tone);
-  background: var(--color-raised);
-  transform: translateY(-2px);
-  box-shadow: 0 0.9rem 1.6rem -1.1rem color-mix(in srgb, var(--color-fg) 42%, transparent);
+@media (hover: hover) {
+  .studio-lobby-quick__card:hover {
+    border-color: var(--lobby-tone);
+    background: var(--color-raised);
+    transform: translateY(-2px);
+    box-shadow: 0 0.9rem 1.6rem -1.1rem color-mix(in srgb, var(--color-fg) 42%, transparent);
+  }
+}
+
+.studio-lobby-quick__card:active {
+  transform: scale(0.985);
 }
 
 /* 아트 래퍼가 넘침을 잘라 카드 호버 때 이미지만 살짝 확대되게 한다. */
@@ -296,8 +309,10 @@
   transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.studio-lobby-quick__card:hover .studio-lobby-quick__art {
-  transform: scale(1.06);
+@media (hover: hover) {
+  .studio-lobby-quick__card:hover .studio-lobby-quick__art {
+    transform: scale(1.06);
+  }
 }
 
 .studio-lobby-quick__copy {
@@ -308,13 +323,13 @@
 
 .studio-lobby-quick__copy strong {
   font-size: 0.8125rem;
-  font-weight: 850;
+  font-weight: 600;
   line-height: 1.4;
 }
 
 .studio-lobby-quick__copy small {
   color: var(--color-fg-2);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   line-height: 1.45;
 }
 
@@ -333,8 +348,8 @@
   border-radius: 999px;
   padding: 0.05rem 0.45rem;
   color: var(--lobby-tone);
-  font-size: 0.625rem;
-  font-weight: 800;
+  font-size: 0.6875rem;
+  font-weight: 600;
   line-height: 1.5;
 }
 
@@ -365,7 +380,7 @@
 .studio-lobby-panel__heading h2 {
   color: var(--color-fg);
   font-size: 1.1rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
@@ -385,8 +400,8 @@
   border-radius: 0.5rem;
   padding: 0 0.5rem;
   color: var(--color-accent);
-  font-size: 0.75rem;
-  font-weight: 850;
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .studio-lobby-panel__link:hover {
@@ -412,10 +427,16 @@
   transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
-.studio-lobby-project:hover {
-  border-color: var(--color-accent);
-  transform: translateY(-2px);
-  box-shadow: 0 0.9rem 1.6rem -1rem color-mix(in srgb, var(--color-fg) 40%, transparent);
+@media (hover: hover) {
+  .studio-lobby-project:hover {
+    border-color: var(--color-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 0.9rem 1.6rem -1rem color-mix(in srgb, var(--color-fg) 40%, transparent);
+  }
+}
+
+.studio-lobby-project:active {
+  transform: scale(0.985);
 }
 
 .studio-lobby-project__art {
@@ -434,8 +455,10 @@
   transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.studio-lobby-project:hover .studio-lobby-project__art > img {
-  transform: scale(1.05);
+@media (hover: hover) {
+  .studio-lobby-project:hover .studio-lobby-project__art > img {
+    transform: scale(1.05);
+  }
 }
 
 .studio-lobby-project__badge {
@@ -448,8 +471,8 @@
   background: color-mix(in srgb, var(--lobby-panel) 88%, transparent);
   padding: 0.15rem 0.5rem;
   color: var(--color-fg);
-  font-size: 0.625rem;
-  font-weight: 850;
+  font-size: 0.6875rem;
+  font-weight: 600;
 }
 
 .studio-lobby-project__copy {
@@ -463,7 +486,7 @@
   display: -webkit-box;
   overflow: hidden;
   font-size: 0.8125rem;
-  font-weight: 850;
+  font-weight: 600;
   line-height: 1.4;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -475,7 +498,8 @@
   align-items: center;
   gap: 0.3rem;
   color: var(--color-fg-2);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .studio-lobby-project__copy small > svg {
@@ -494,12 +518,12 @@
 
 .studio-lobby-project--new strong {
   font-size: 0.875rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .studio-lobby-project--new small {
   color: var(--color-fg-2);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
 }
 
 .studio-lobby-project__new-icon {
@@ -535,7 +559,7 @@
   margin-top: 0.35rem;
   color: var(--color-fg);
   font-size: 1.05rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .studio-lobby-director__avatar {
@@ -688,13 +712,20 @@
   }
 }
 
+@media (max-width: 767px) {
+  /* iOS Safari 포커스 자동 줌 방지 */
+  .studio-lobby-idea input {
+    font-size: max(1rem, 16px);
+  }
+}
+
 @media (max-width: 600px) {
   .studio-lobby-hero__art {
     min-height: 8.5rem;
   }
 
   .studio-lobby-hero h2 {
-    font-size: 1.6rem;
+    font-size: 1.55rem;
   }
 
   .studio-lobby-hero__actions > * {
