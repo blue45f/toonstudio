@@ -7,6 +7,8 @@ import { COLLABORATION_MODES, COLLABORATION_PAY, COLLABORATION_ROLES, COLLABORAT
 import { CollaborationCrewDivisionPlanner } from "./CollaborationCrewDivisionPlanner";
 import { CollaborationInstantQuoteMatcherSuite } from "./CollaborationInstantQuoteMatcherSuite";
 import { CollaborationTopicSubteamHuddleSuite } from "./CollaborationTopicSubteamHuddleSuite";
+import { MmorpgRecruitmentPlazaPanel } from "./hiring/MmorpgRecruitmentPlazaPanel";
+import { StudioSecurityRbacPanel } from "./StudioSecurityRbacPanel";
 import { CollaborationCard, CollaborationSafety, CollabLogin, CollabNotice, collabButton, collabInput, collabPrimary } from "./collaboration-ui";
 import { collaborationRoleBilingualLabel } from "../creator/public/production-labels";
 
@@ -273,6 +275,12 @@ export function CollaborationBoardPage() {
     <CollaborationInstantQuoteMatcherSuite onApplyRoleFilter={(role) => change("role", role)} />
     <div className="mt-8">
       <CollaborationTopicSubteamHuddleSuite />
+    </div>
+    <div className="mt-8">
+      <MmorpgRecruitmentPlazaPanel />
+    </div>
+    <div className="mt-8">
+      <StudioSecurityRbacPanel />
     </div>
     <div className="mt-10 grid gap-5 lg:grid-cols-2"><CollaborationSafety /><section className="rounded-2xl border border-line bg-panel p-5"><p className="text-xs font-semibold text-accent">{bt("협업에서 제작까지", "From collaboration to production")}</p><h2 className="mt-2 text-lg font-semibold text-fg">{bt("동료를 만나고, 내 작업으로 이어가세요", "Meet collaborators, keep building your own work")}</h2><p className="mt-3 text-sm leading-7 text-fg-2">{bt("갤러리에서 작업 스타일을 확인하고, 공고에서 범위와 조건을 합의하세요. 지원만으로 스튜디오의 비공개 작업 권한이 생기지는 않습니다.", "Check styles in the gallery, agree on scope and terms in posts. Applying doesn't grant private studio access.")}</p><div className="mt-4 flex flex-wrap gap-3"><Link href="/studio" className={collabButton}>{bt("내 작업", "My work")}</Link><Link href="/production" className={collabButton}>{bt("제작 관리", "Production")}</Link><Link href="/market" className={collabButton}>{bt("에셋 마켓", "Asset market")}</Link><Link href="/community" className={collabButton}>{bt("커뮤니티", "Community")}</Link></div></section></div>
   </Container>;

@@ -521,6 +521,11 @@
       "types": "./src/studio-png-structure.ts",
       "import": "./src/studio-png-structure.ts",
       "default": "./src/studio-png-structure.ts"
+    },
+    "./studio-security-rbac": {
+      "types": "./src/studio-security-rbac.ts",
+      "import": "./src/studio-security-rbac.ts",
+      "default": "./src/studio-security-rbac.ts"
     }
   },
   "dependencies": {

@@ -44,6 +44,7 @@ import { StudioAiModule } from "./modules/studio-ai/studio-ai.module";
 import { ResearchModule } from "./modules/research/research.module";
 import { StudioMusicModule } from "./modules/studio-music/studio-music.module";
 import { StudioProjectGraphModule } from "./modules/studio-project-graph/studio-project-graph.module";
+import { StudioEcosystemModule } from "./modules/studio-ecosystem/studio-ecosystem.module";
 import { createStudioRealtimeTicketDynamicModule } from "./modules/studio-realtime-ticket/studio-realtime-ticket.integration";
 import { TrafficAnalyticsModule } from "./modules/traffic-analytics/traffic-analytics.module";
 import { CreatorAnalyticsModule } from "./modules/creator-analytics/creator-analytics.module";
@@ -105,6 +106,7 @@ const studioRealtimeTicketModule =
     ResearchModule,
     StudioMusicModule,
     StudioProjectGraphModule,
+    StudioEcosystemModule,
   ],
 })
 export class AppModule {}

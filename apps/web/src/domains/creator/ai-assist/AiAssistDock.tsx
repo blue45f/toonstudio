@@ -7,6 +7,7 @@ import { AiStrokeStudio } from "./AiStrokeStudio";
 import { AiPerspectiveStudio } from "./AiPerspectiveStudio";
 import { AiBalloonStudio } from "./AiBalloonStudio";
 import { AiFeatureArt } from "./AiFeatureArt";
+import { StudioWebtoonModelerImageGenPanel } from "./StudioWebtoonModelerImageGenPanel";
 import { staggerDelay, useCountUp, useScrollReveal } from "./ai-motion";
 
 export type AiFeatureId = "color" | "stroke" | "perspective" | "balloon";
@@ -158,6 +159,9 @@ export function AiAssistDock() {
             </article>
           );
         })}
+      </div>
+      <div className="mt-6">
+        <StudioWebtoonModelerImageGenPanel />
       </div>
     </div>
   );

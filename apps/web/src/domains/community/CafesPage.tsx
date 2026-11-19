@@ -51,6 +51,7 @@ import {
   CAFE_POSTING_POLICY_LABEL_KEYS,
   CAFE_VISIBILITY_LABEL_KEYS,
 } from "./community-cafe-labels";
+import { WorkspaceCafeHubPanel } from "./WorkspaceCafeHubPanel";
 
 const COPY = {
   docTitle: defineBilingualText("cafesPage", "docTitle", "회원 카페 · 커뮤니티", "Member cafés · Community"),
@@ -536,6 +537,9 @@ export function CafesPage() {
               )}
             </div>
           </aside>
+        </div>
+        <div className="mt-8">
+          <WorkspaceCafeHubPanel />
         </div>
       </Container>
     </div>

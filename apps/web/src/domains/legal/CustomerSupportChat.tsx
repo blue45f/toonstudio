@@ -1,5 +1,5 @@
-import { Bot, LifeBuoy, MessageCircle, Plus, RefreshCw, Send } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { Bot, ImagePlus, LifeBuoy, MessageCircle, Plus, RefreshCw, Send, Wifi, X } from "lucide-react";
+import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   SUPPORT_MESSAGE_MAX_LENGTH,
   SUPPORT_SUBJECT_MAX_LENGTH,
@@ -8,6 +8,13 @@ import {
 
 import "./customer-support-i18n";
 import "./customer-support-chat.css";
+import {
+  SUPPORT_QUICK_TEMPLATES,
+  classifySupportIntent,
+  formatSupportMessageWithAttachments,
+  validateSupportImageAttachment,
+  type SupportImageAttachment,
+} from "./customer-support-realtime";
 import { useCustomerSupportChat } from "./useCustomerSupportChat";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -19,10 +26,46 @@ type ChatController = ReturnType<typeof useCustomerSupportChat>;
 function SupportComposer({ chat }: { chat: ChatController }) {
   const t = useT();
   const [draft, setDraft] = useState("");
+  const [attachments, setAttachments] = useState<SupportImageAttachment[]>([]);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const triage = useMemo(
+    () => (draft.trim().length >= 4 ? classifySupportIntent(draft) : null),
+    [draft],
+  );
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : "";
+      const result = validateSupportImageAttachment({
+        fileName: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+        dataUrl,
+        existingCount: attachments.length,
+      });
+      if (!result.ok) {
+        setAttachmentError(result.reasonKo);
+        return;
+      }
+      setAttachmentError(null);
+      setAttachments((prev) => [...prev, result.attachment]);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!draft.trim() || chat.busy) return;
-    if (await chat.send(draft.trim())) setDraft("");
+    const payload = formatSupportMessageWithAttachments(draft, attachments);
+    if (!payload || chat.busy) return;
+    if (await chat.send(payload)) {
+      setDraft("");
+      setAttachments([]);
+      setAttachmentError(null);
+    }
   };
   return (
     <form className="customer-support__composer" onSubmit={(event) => { void submit(event); }}>
@@ -36,11 +79,54 @@ function SupportComposer({ chat }: { chat: ChatController }) {
         aria-describedby="support-message-limit"
         rows={3}
         disabled={chat.busy}
-        required
+        required={attachments.length === 0}
       />
+      {triage && triage.instantChecklistKo.length > 0 && (
+        <div className="customer-support__triage" aria-label="AI 자가진단 가이드">
+          <p className="customer-support__triage-title">
+            <Bot size={14} strokeWidth={1.5} aria-hidden="true" />
+            AI 즉시 안내 (예상 상담 대기 약 {triage.estimatedQueueMinutes}분)
+          </p>
+          <ul>
+            {triage.instantChecklistKo.map((tip) => (
+              <li key={tip}>{tip}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {attachments.length > 0 && (
+        <ul className="customer-support__attachments" aria-label="첨부된 이미지">
+          {attachments.map((att) => (
+            <li key={att.id}>
+              <span>{att.fileName}</span>
+              <button
+                type="button"
+                aria-label={`${att.fileName} 제거`}
+                onClick={() => setAttachments((prev) => prev.filter((item) => item.id !== att.id))}
+              >
+                <X size={12} aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {attachmentError && <p role="alert" className="customer-support__muted">{attachmentError}</p>}
       <div className="customer-support__composer-actions">
-        <small id="support-message-limit">{draft.length.toLocaleString()} / {t("customerSupport.characters")}</small>
-        <button type="submit" className="customer-support__primary" disabled={chat.busy || !draft.trim()}>
+        <div className="flex flex-wrap items-center gap-2">
+          <small id="support-message-limit" className="tabular-nums">{draft.length.toLocaleString()} / {t("customerSupport.characters")}</small>
+          <label className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs transition-colors duration-150 hover:border-accent sm:min-h-8">
+            <ImagePlus size={14} aria-hidden="true" />
+            <span>이미지 첨부</span>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="sr-only"
+              disabled={chat.busy}
+              onChange={handleFileChange}
+            />
+          </label>
+        </div>
+        <button type="submit" className="customer-support__primary" disabled={chat.busy || (!draft.trim() && attachments.length === 0)}>
           <Send size={16} aria-hidden="true" />
           {t(chat.busy ? "customerSupport.sending" : "customerSupport.send")}
         </button>
@@ -75,12 +161,18 @@ function SupportConversationView({ chat, detail }: { chat: ChatController; detai
   const t = useT();
   const { conversation } = detail;
   const awaitingAi = conversation.status === "ai" && (Boolean(detail.aiError) || detail.messages.at(-1)?.role === "user");
+  const isLiveHuman = conversation.status === "waiting" || conversation.status === "open";
   return (
     <>
       <header className="customer-support__conversation-heading">
         <div>
           <h3>{conversation.subject}</h3>
           <span className="customer-support__badge" data-status={conversation.status}>{t(`customerSupport.status.${conversation.status}`)}</span>
+          {isLiveHuman && (
+            <span className="customer-support__badge" data-status="live">
+              <Wifi size={12} aria-hidden="true" /> 1:1 실시간 동기화
+            </span>
+          )}
         </div>
         <button type="button" disabled={chat.busy || chat.detailLoading} onClick={() => { void chat.refreshDetail(); }}>
           <RefreshCw size={16} aria-hidden="true" />{t("customerSupport.refresh")}
@@ -124,6 +216,22 @@ function NewSupportConversation({ chat }: { chat: ChatController }) {
   return (
     <form className="customer-support__new" onSubmit={(event) => { void submit(event); }}>
       <h3>{t("customerSupport.new")}</h3>
+      <div
+        className="flex snap-x gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0"
+        aria-label="빠른 문의 주제"
+      >
+        {SUPPORT_QUICK_TEMPLATES.map((tpl) => (
+          <button
+            key={tpl.id}
+            type="button"
+            disabled={chat.busy}
+            onClick={() => setSubject(tpl.subjectKo)}
+            className="min-h-11 shrink-0 snap-start rounded-lg border border-line px-3 text-xs transition-colors duration-150 hover:border-accent sm:min-h-8"
+          >
+            {tpl.labelKo}
+          </button>
+        ))}
+      </div>
       <label htmlFor="support-subject">{t("customerSupport.subject")}</label>
       <input id="support-subject" value={subject} onChange={(event) => setSubject(event.target.value)} minLength={2} maxLength={SUPPORT_SUBJECT_MAX_LENGTH} placeholder={t("customerSupport.subjectPlaceholder")} disabled={chat.busy} required />
       <fieldset disabled={chat.busy || chat.loading}>

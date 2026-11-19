@@ -39,6 +39,7 @@ import {
 } from "../studio-panel-ui";
 import { MANGA_TOOLKIT_LABELS as L } from "./manga-toolkit-labels";
 import { StudioBlankComicProDrawingSubPanel } from "./StudioBlankComicProDrawingSubPanel";
+import { StudioSceneDirectionFxPanel } from "./StudioSceneDirectionFxPanel";
 
 import type { KeyboardEvent, ReactElement } from "react";
 
@@ -688,6 +689,9 @@ export function MangaToolkitPanel(): ReactElement {
         {tab === "effect" && <EffectTab />}
       </div>
       <StudioBlankComicProDrawingSubPanel />
+      <div className="mt-4">
+        <StudioSceneDirectionFxPanel />
+      </div>
     </section>
   );
 }

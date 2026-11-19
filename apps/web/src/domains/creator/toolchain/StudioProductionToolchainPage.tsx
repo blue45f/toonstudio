@@ -8,6 +8,7 @@ import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-co
 import { cn } from "@/shared/lib/utils";
 
 import { ShowcaseMoreGrid } from "../publishing/ShowcaseMoreGrid";
+import { StudioMcpCliBridgePanel } from "./StudioMcpCliBridgePanel";
 import { StudioProductionJobWorkspace } from "./StudioProductionJobWorkspace";
 import { StudioToonBridgeConnectionCard } from "./StudioToonBridgeConnectionCard";
 import {
@@ -440,6 +441,7 @@ function EngineCenterContent({
       />
 
       <StudioToonBridgeConnectionCard connection={connection} />
+      <StudioMcpCliBridgePanel />
       <ProfileSelector profile={profile} onChange={onProfileChange} />
 
       <section aria-labelledby="engine-tools-title" className="space-y-4">

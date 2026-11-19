@@ -299,7 +299,7 @@ export function StudioIpExpansionPanel({
         <div
           role="tablist"
           aria-label="IP 확장 스튜디오 보기"
-          className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
+          className="flex snap-x flex-nowrap gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0"
         >
           {VIEW_TABS.map((tab) => {
             const Icon = tab.icon;
@@ -311,7 +311,7 @@ export function StudioIpExpansionPanel({
                 role="tab"
                 aria-selected={selected}
                 onClick={() => setActiveView(tab.id)}
-                className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-xs font-medium leading-[1.35] transition-colors duration-150 sm:min-h-9 ${
+                className={`inline-flex min-h-11 shrink-0 snap-start items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-xs font-medium leading-[1.35] transition-colors duration-150 sm:min-h-9 ${
                   selected
                     ? "bg-accent-soft text-accent"
                     : "bg-card text-fg-2 hover:bg-raised hover:text-fg"
