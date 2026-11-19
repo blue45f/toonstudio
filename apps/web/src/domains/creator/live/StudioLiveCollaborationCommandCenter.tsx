@@ -133,9 +133,9 @@ const ATTENTION_TONE_CLASS = {
 } as const;
 
 const NAV_BUTTON_CLASS =
-  "group min-h-16 rounded-xl border border-line bg-card px-2.5 py-2 text-left transition-colors " +
+  "group min-h-16 rounded-lg border border-line bg-card px-3 py-2 text-left break-keep transition-colors " +
   "hover:border-line-strong hover:bg-raised focus-visible:outline focus-visible:outline-2 " +
-  "focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none";
 
 function normalizeSearch(value: string): string {
   return value.normalize("NFKC").toLocaleLowerCase("ko-KR").replace(/\s+/gu, " ").trim();
@@ -391,15 +391,15 @@ function CommandMetric({
       onClick={() => jumpToSection(section)}
     >
       <span className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 text-[0.68rem] font-bold text-fg-2">
+        <span className="inline-flex items-center gap-2 text-[11px] font-medium text-fg-2">
           <span className="text-accent" aria-hidden>
             {icon}
           </span>
           {label}
         </span>
-        <strong className="text-sm font-black tabular-nums text-fg">{value}</strong>
+        <strong className="text-sm font-semibold tabular-nums text-fg">{value}</strong>
       </span>
-      <span className="mt-1 block truncate text-[0.62rem] text-fg-3">{detail}</span>
+      <span className="mt-1 block truncate text-[11px] text-fg-3">{detail}</span>
     </button>
   );
 }
@@ -514,30 +514,30 @@ export function StudioLiveCollaborationCommandCenter({
   return (
     <section
       aria-labelledby="studio-live-command-center-title"
-      className="mt-3 rounded-2xl border border-accent/25 bg-card/65 p-3 shadow-sm"
+      className="mt-3 rounded-xl border border-accent/25 bg-card/65 p-3 break-keep"
       data-studio-live-command-center="v20"
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-              <ShieldCheck size={15} aria-hidden />
+            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
+              <ShieldCheck size={15} strokeWidth={1.5} aria-hidden />
             </span>
             <div>
-              <h4 className="text-xs font-black text-fg" id="studio-live-command-center-title">
+              <h4 className="text-xs font-semibold text-fg" id="studio-live-command-center-title">
                 협업 관제
               </h4>
-              <p className="mt-0.5 text-[0.64rem] text-fg-3">상태·참여·대화·공유를 한 번에 이동</p>
+              <p className="mt-0.5 text-[11px] text-fg-3">상태·참여·대화·공유를 한 번에 이동</p>
             </div>
           </div>
         </div>
         <button
           type="button"
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-line bg-card px-2.5 text-[0.66rem] font-bold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none sm:min-h-10"
           disabled={copying}
           onClick={handleCopySummary}
         >
-          {copying ? <span className="size-3 animate-pulse rounded-full bg-accent" aria-hidden /> : <Copy size={13} aria-hidden />}
+          <Copy size={13} strokeWidth={1.5} aria-hidden />
           인계 요약 복사
         </button>
       </div>
@@ -545,43 +545,43 @@ export function StudioLiveCollaborationCommandCenter({
       <button
         type="button"
         className={cn(
-          "mt-3 flex min-h-12 w-full items-start gap-2 rounded-xl border px-3 py-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
+          "mt-3 flex min-h-12 w-full items-start gap-2 rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none",
           ATTENTION_TONE_CLASS[attention.tone]
         )}
         onClick={() => jumpToSection(attention.target)}
       >
         {attention.tone === "bad" || attention.tone === "warn" ? (
-          <AlertCircle className="mt-0.5 shrink-0" size={15} aria-hidden />
+          <AlertCircle className="mt-0.5 shrink-0" size={15} strokeWidth={1.5} aria-hidden />
         ) : attention.tone === "good" ? (
-          <Check className="mt-0.5 shrink-0" size={15} aria-hidden />
+          <Check className="mt-0.5 shrink-0" size={15} strokeWidth={1.5} aria-hidden />
         ) : (
-          <ShieldCheck className="mt-0.5 shrink-0" size={15} aria-hidden />
+          <ShieldCheck className="mt-0.5 shrink-0" size={15} strokeWidth={1.5} aria-hidden />
         )}
         <span className="min-w-0">
-          <strong className="block text-[0.7rem] font-black">{attention.label}</strong>
-          <span className="mt-0.5 block text-[0.64rem] leading-relaxed opacity-85">
+          <strong className="block text-xs font-semibold">{attention.label}</strong>
+          <span className="mt-0.5 block text-[11px] leading-relaxed opacity-85">
             {attention.detail}
           </span>
         </span>
       </button>
 
-      <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <CommandMetric
-          icon={<UsersRound size={14} />}
+          icon={<UsersRound size={14} strokeWidth={1.5} />}
           label="참여 탭"
           value={(peers.length + 1).toLocaleString("ko-KR")}
           detail={`${peers.filter((peer) => peer.visibility === "active").length.toLocaleString("ko-KR")}개 활성`}
           section="people"
         />
         <CommandMetric
-          icon={<MessageCircle size={14} />}
+          icon={<MessageCircle size={14} strokeWidth={1.5} />}
           label="세션 채팅"
           value={chatMessages.length.toLocaleString("ko-KR")}
           detail="휘발성 대화"
           section="chat"
         />
         <CommandMetric
-          icon={<MonitorUp size={14} />}
+          icon={<MonitorUp size={14} strokeWidth={1.5} />}
           label="화면 공유"
           value={
             screenState.pendingRequests.length > 0
@@ -592,7 +592,7 @@ export function StudioLiveCollaborationCommandCenter({
           section="screen"
         />
         <CommandMetric
-          icon={<ShieldCheck size={14} />}
+          icon={<ShieldCheck size={14} strokeWidth={1.5} />}
           label="원고 보호"
           value={syncValue}
           detail={syncDetail}
@@ -600,24 +600,24 @@ export function StudioLiveCollaborationCommandCenter({
         />
       </div>
 
-      <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <button
           type="button"
           aria-controls={rosterId}
           aria-expanded={rosterOpen}
-          className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-3 text-[0.68rem] font-bold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
           onClick={toggleRoster}
         >
-          <Search size={14} aria-hidden /> 전체 참여 탭 찾기
-          {rosterOpen ? <ChevronUp size={13} aria-hidden /> : <ChevronDown size={13} aria-hidden />}
+          <Search size={14} strokeWidth={1.5} aria-hidden /> 전체 참여 탭 찾기
+          {rosterOpen ? <ChevronUp size={13} strokeWidth={1.5} aria-hidden /> : <ChevronDown size={13} strokeWidth={1.5} aria-hidden />}
         </button>
         <button
           type="button"
-          className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-3 text-[0.68rem] font-bold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45 motion-reduce:transition-none"
           disabled={!activePeer || !onToggleFollow}
           onClick={() => activePeer && onToggleFollow?.(activePeer.sessionId)}
         >
-          {followedPeer ? <Check size={14} aria-hidden /> : <MousePointer2 size={14} aria-hidden />}
+          {followedPeer ? <Check size={14} strokeWidth={1.5} aria-hidden /> : <MousePointer2 size={14} strokeWidth={1.5} aria-hidden />}
           {followedPeer
             ? `집중 모드 종료 · ${followedPeer.displayName}`
             : activePeer

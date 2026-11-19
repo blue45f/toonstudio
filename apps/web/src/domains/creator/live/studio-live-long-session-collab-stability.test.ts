@@ -51,9 +51,11 @@ import {
   STUDIO_IDLE_SOFT_RECYCLE_DELAY_MS,
   STUDIO_LIVE_AUTO_DEGRADE_FRAME_MS_THRESHOLD,
   STUDIO_LIVE_AUTO_DEGRADE_PEER_THRESHOLD,
+  STUDIO_SURFACE_RESIZE_DEBOUNCE_MS,
   StudioAdaptiveSaveScheduler,
   StudioIdleSoftRecycleScheduler,
   StudioLiveHeartbeatJitterGuard,
+  StudioSurfaceResizeDebouncer,
   collectStudioLiveLongSessionDiagnostics,
   evaluateStudioLiveAutoDegrade,
   evaluateStudioStorageQuota,
@@ -957,5 +959,47 @@ describe("long-session multi-user collaborative drawing stability", () => {
     expect(guard.getState()).toBe("active");
     expect(states).toEqual(["lost", "restoring", "active"]);
     guard.dispose();
+  });
+
+  it("coalesces rapid mobile orientationchange/resize events and self-recovers from compound chaos", () => {
+    const timers: { id: number; run: () => void; delayMs: number }[] = [];
+    let nextId = 1;
+    const commits: { width: number; height: number }[] = [];
+    const debouncer = new StudioSurfaceResizeDebouncer<{ width: number; height: number }>({
+      onCommit: (surface) => commits.push(surface),
+      setTimeout: (fn, delayMs) => {
+        const entry = { id: nextId++, run: fn, delayMs };
+        timers.push(entry);
+        return entry.id;
+      },
+      clearTimeout: (handle) => {
+        const index = timers.findIndex((entry) => entry.id === handle);
+        if (index >= 0) timers.splice(index, 1);
+      },
+    });
+
+    debouncer.schedule({ width: 390, height: 844 });
+    debouncer.schedule({ width: 520, height: 640 });
+    debouncer.schedule({ width: 844, height: 390 });
+    expect(commits).toHaveLength(0);
+    expect(timers).toHaveLength(1);
+    expect(timers[0]!.delayMs).toBe(STUDIO_SURFACE_RESIZE_DEBOUNCE_MS);
+    timers.shift()!.run();
+    expect(commits).toEqual([{ width: 844, height: 390 }]);
+    debouncer.dispose();
+
+    const tracker = new StudioLiveInkStrokeTracker();
+    let now = 20_000_000;
+    for (let index = 0; index < STUDIO_LIVE_INK_MAX_ACTIVE_STROKES; index += 1) {
+      expect(tracker.accept(inkBegin(`compound-${index}`, now), now)).toBe(true);
+    }
+    const guard = new StudioLiveHeartbeatJitterGuard();
+    guard.recordTick(now);
+    now += 60_000;
+    const tick = guard.recordTick(now);
+    expect(tick.recommendedAction).toBe("resync-presence");
+    expect(tracker.pruneExpired(now)).toHaveLength(STUDIO_LIVE_INK_MAX_ACTIVE_STROKES);
+    expect(tracker.activeStrokeCount).toBe(0);
+    expect(tracker.accept(inkBegin("post-recovery-stroke", now), now)).toBe(true);
   });
 });

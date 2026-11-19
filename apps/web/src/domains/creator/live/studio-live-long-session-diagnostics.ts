@@ -484,3 +484,69 @@ export class StudioIdleSoftRecycleScheduler {
     this.timer = null;
   }
 }
+
+export const STUDIO_SURFACE_RESIZE_DEBOUNCE_MS = 100;
+
+export interface StudioSurfaceResizeDebouncerOptions<T> {
+  /** 모바일 회전·뷰포트 리사이즈 연속 이벤트를 합쳐 VRAM 재할당 스파이크를 막는 디바운스 시간(ms). */
+  readonly debounceMs?: number;
+  readonly onCommit: (surface: T) => void;
+  readonly setTimeout?: (fn: () => void, delayMs: number) => unknown;
+  readonly clearTimeout?: (handle: unknown) => void;
+}
+
+/**
+ * 태블릿/모바일 화면 회전(`orientationchange`)과 리사이즈가 연속 발생할 때
+ * 최종 치수 1회만 오프스크린 캔버스에 반영해 VRAM 스파이크를 방지하는 디바운서.
+ */
+export class StudioSurfaceResizeDebouncer<T> {
+  private readonly debounceMs: number;
+  private readonly onCommit: (surface: T) => void;
+  private readonly scheduleTimer: (fn: () => void, delayMs: number) => unknown;
+  private readonly cancelTimer: (handle: unknown) => void;
+  private pending: T | null = null;
+  private timer: unknown = null;
+  private disposed = false;
+
+  constructor(options: StudioSurfaceResizeDebouncerOptions<T>) {
+    this.debounceMs = Math.max(16, Math.trunc(options.debounceMs ?? STUDIO_SURFACE_RESIZE_DEBOUNCE_MS));
+    this.onCommit = options.onCommit;
+    this.scheduleTimer = options.setTimeout ?? ((fn, ms) => globalThis.setTimeout(fn, ms));
+    this.cancelTimer = options.clearTimeout ?? ((h) => globalThis.clearTimeout(h as ReturnType<typeof setTimeout>));
+  }
+
+  schedule(surface: T): void {
+    if (this.disposed) return;
+    this.pending = surface;
+    this.clearTimer();
+    this.timer = this.scheduleTimer(() => {
+      this.timer = null;
+      const latest = this.pending;
+      this.pending = null;
+      if (!this.disposed && latest !== null) {
+        this.onCommit(latest);
+      }
+    }, this.debounceMs);
+  }
+
+  flushNow(): void {
+    if (this.disposed) return;
+    this.clearTimer();
+    const latest = this.pending;
+    this.pending = null;
+    if (latest !== null) this.onCommit(latest);
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.pending = null;
+    this.clearTimer();
+  }
+
+  private clearTimer(): void {
+    if (this.timer === null) return;
+    this.cancelTimer(this.timer);
+    this.timer = null;
+  }
+}

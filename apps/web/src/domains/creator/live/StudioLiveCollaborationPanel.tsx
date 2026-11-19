@@ -182,6 +182,7 @@ export function StudioLiveCollaborationPanelView({
   const watching = screenState.watching;
   const chatLogRef = useRef<HTMLUListElement>(null);
   const [chatInputFocused, setChatInputFocused] = useState(false);
+  const [screenPreviewCollapsed, setScreenPreviewCollapsed] = useState(false);
   const keyboardOffsetPx = useStudioMobileKeyboardOffset(chatInputFocused);
   const chatDraftReady = chatDraft.trim().length > 0;
   const displaySyncSnapshot = useStudioLiveDisplaySync(syncSnapshot);
@@ -902,28 +903,44 @@ export function StudioLiveCollaborationPanelView({
 
       {watching ? (
         <div className="mt-3 overflow-hidden rounded-xl border border-line bg-black/80">
-          {watching.status === "live" && watching.stream ? (
-            <video
-              ref={videoRef}
-              aria-label={`${watching.host.displayName} 공유 화면`}
-              autoPlay
-              className="aspect-video w-full bg-black object-contain"
-              muted
-              playsInline
-            />
-          ) : (
-            <div
-              aria-busy="true"
-              aria-live="polite"
-              className="grid aspect-video place-items-center text-center text-xs text-white/75"
-              role="status"
+          <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-panel/95 px-3 py-2">
+            <span className="min-w-0 truncate text-xs font-medium text-fg">
+              {watching.host.displayName} 공유 화면
+            </span>
+            <button
+              type="button"
+              aria-expanded={!screenPreviewCollapsed}
+              data-studio-live-screen-collapse-toggle="true"
+              className="min-h-9 shrink-0 rounded-lg border border-line bg-card px-3 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transition-none"
+              onClick={() => setScreenPreviewCollapsed((current) => !current)}
             >
-              <span>
-                <LoaderCircle className="mx-auto mb-2 animate-spin motion-reduce:animate-none" size={20} aria-hidden="true" />
-                {watching.status === "requesting" ? frozenStatus2Text("studio.frozenStatus2.live.watchRequesting", "시청 요청 보내는 중") : frozenStatus2Text("studio.frozenStatus2.live.p2pConnecting", "P2P 영상 연결 중")}
-              </span>
-            </div>
-          )}
+              {screenPreviewCollapsed ? "화면 펼치기" : "화면 접기"}
+            </button>
+          </div>
+          {!screenPreviewCollapsed ? (
+            watching.status === "live" && watching.stream ? (
+              <video
+                ref={videoRef}
+                aria-label={`${watching.host.displayName} 공유 화면`}
+                autoPlay
+                className="aspect-video w-full bg-black object-contain"
+                muted
+                playsInline
+              />
+            ) : (
+              <div
+                aria-busy="true"
+                aria-live="polite"
+                className="grid aspect-video place-items-center text-center text-xs text-white/75"
+                role="status"
+              >
+                <span>
+                  <LoaderCircle className="mx-auto mb-2 animate-spin motion-reduce:animate-none" size={20} strokeWidth={1.5} aria-hidden="true" />
+                  {watching.status === "requesting" ? frozenStatus2Text("studio.frozenStatus2.live.watchRequesting", "시청 요청 보내는 중") : frozenStatus2Text("studio.frozenStatus2.live.p2pConnecting", "P2P 영상 연결 중")}
+                </span>
+              </div>
+            )
+          ) : null}
         </div>
       ) : null}
 
