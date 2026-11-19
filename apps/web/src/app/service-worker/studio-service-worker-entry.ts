@@ -118,6 +118,23 @@ function isPinnedCriticalRequest(request: Request): boolean {
   return url.origin === scope.location.origin && criticalPathnames.has(url.pathname);
 }
 
+function isAssetSpaFallback(
+  request: Request, routeClass: StudioServiceWorkerRouteClass, response: Response,
+): boolean {
+  return isStudioServiceWorkerSpaFallbackForAsset({
+    routeClass, url: request.url, contentType: response.headers.get("content-type"),
+  });
+}
+
+async function fetchWithAssetHtmlRecovery(
+  request: Request, routeClass: StudioServiceWorkerRouteClass, initial?: Response,
+): Promise<Response> {
+  const response = initial ?? await fetch(request);
+  // HTML일 때만 HTTP 캐시를 한 번 우회한다. 정상 자원은 중복 요청하지 않는다.
+  return isAssetSpaFallback(request, routeClass, response)
+    ? fetch(request, { cache: "reload" }) : response;
+}
+
 async function handlePinnedCritical(
   request: Request,
   pathname = new URL(request.url).pathname,
@@ -139,7 +156,13 @@ async function handlePinnedCritical(
     if (runtimeCached) return runtimeCached;
   }
   try {
-    const response = await fetch(request);
+    const response = await fetchWithAssetHtmlRecovery(request, routeClass);
+    if (isAssetSpaFallback(request, routeClass, response)) {
+      return new Response("Critical asset returned an HTML document", {
+        status: 502,
+        headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+      });
+    }
     await persist("precache", canonical, response);
     return response;
   } catch {
@@ -164,15 +187,8 @@ async function handleCacheFirst(
     ? await readCached("precache", request, routeClass) : undefined;
   const cached = critical ?? await readCached(bucket, request, routeClass);
   if (cached) return cached;
-  const isSpaFallback = (candidate: Response): boolean => isStudioServiceWorkerSpaFallbackForAsset({
-    routeClass, url: request.url, contentType: candidate.headers.get("content-type"),
-  });
-  let response = await fetch(request);
-  if (isSpaFallback(response)) {
-    // The browser HTTP cache may still hold an `immutable` SPA page for this URL; ask the network once.
-    response = await fetch(request, { cache: "reload" });
-    if (isSpaFallback(response)) return response;
-  }
+  const response = await fetchWithAssetHtmlRecovery(request, routeClass);
+  if (isAssetSpaFallback(request, routeClass, response)) return response;
   await persist(bucket, request, response);
   return response;
 }
@@ -270,13 +286,63 @@ async function handleNavigation(event: FetchEvent, routeClass: StudioServiceWork
   return prepareControlledNavigationDocument(response);
 }
 
+async function installCriticalResources(): Promise<void> {
+  const stagingName = `${cacheNames.precache}-install-${globalThis.crypto.randomUUID()}`;
+  const requests = [
+    ...manifest.criticalUrls.map((url) => new Request(url)),
+    ...manifest.shellUrls.map(shellRequest),
+  ];
+  try {
+    const staging = await caches.open(stagingName);
+    // HTTP 실패는 addAll이 원자적으로 거부한다. HTML 검증 전에는 기존 build 캐시도 건드리지 않는다.
+    await staging.addAll(requests);
+    const verified = await Promise.all(requests.map(async (request) => {
+      const staged = await staging.match(request, { ignoreVary: true });
+      if (!staged) throw new Error(`Critical resource missing from staging: ${request.url}`);
+      const routeClass = classifyStudioServiceWorkerRequest({
+        url: request.url, origin: scope.location.origin, method: "GET",
+        mode: manifest.shellUrls.includes(new URL(request.url).pathname) ? "navigate" : undefined,
+      });
+      const response = await fetchWithAssetHtmlRecovery(request, routeClass, staged);
+      if (!isStudioServiceWorkerResponseCacheable(response) || isAssetSpaFallback(request, routeClass, response)) {
+        throw new Error(`Invalid critical resource response: ${request.url}`);
+      }
+      return { request, response, routeClass };
+    }));
+    const cacheExisted = (await caches.keys()).includes(cacheNames.precache);
+    const cache = await caches.open(cacheNames.precache);
+    try {
+      // 같은 build의 정상 응답은 보존한다. 후속 quota 실패가 기존 실행 코드를 부분 교체하지 않게 한다.
+      for (const { request, response, routeClass } of verified) {
+        const existing = await cache.match(request, { ignoreVary: true });
+        if (existing && isStudioServiceWorkerResponseCacheable(existing)
+          && isStudioServiceWorkerCachedResponseUsable({
+            routeClass, destination: request.destination, url: request.url, status: existing.status,
+            contentType: existing.headers.get("content-type"),
+            crossOriginResourcePolicy: existing.headers.get("cross-origin-resource-policy"),
+          })) continue;
+        await cache.put(request, response);
+      }
+    } catch (error) {
+      if (!cacheExisted) {
+        try { await caches.delete(cacheNames.precache); }
+        catch { /* 정리 실패가 최초 게시 오류를 가리지 않게 한다. 새 SW 설치는 계속 거부한다. */ }
+      }
+      throw error;
+    }
+  } catch (error) {
+    try { await caches.delete(stagingName); }
+    catch { /* 임시 캐시 정리 오류보다 최초 설치 오류를 보존한다. */ }
+    throw error;
+  }
+  // 게시가 성공하고 정리만 실패했다면 정리 오류로 설치를 거부한다.
+  await caches.delete(stagingName);
+}
+
 scope.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     await installLocalDrawingRescue();
-    const cache = await caches.open(cacheNames.precache);
-    // addAll is atomic: a broken deploy cannot replace a working critical cache.
-    await cache.addAll(manifest.criticalUrls.map((url) => new Request(url)));
-    await Promise.all(manifest.shellUrls.map((url) => cache.add(shellRequest(url))));
+    await installCriticalResources();
   })());
   // Deliberately no skipWaiting: a live editor keeps its current code and caches.
 });
