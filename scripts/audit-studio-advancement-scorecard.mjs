@@ -1,14 +1,35 @@
 #!/usr/bin/env node
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
 
+function auditDomainDir(repoRoot, relativeDir) {
+  const dir = path.join(repoRoot, relativeDir);
+  if (!existsSync(dir)) {
+    return { domain: relativeDir, sourceFileCount: 0, testFileCount: 0, testToSourcePercent: 0 };
+  }
+  const entries = readdirSync(dir).filter((name) => {
+    const full = path.join(dir, name);
+    return statSync(full).isFile() && /\.(ts|tsx)$/.test(name);
+  });
+  const sourceFiles = entries.filter((name) => !/\.test\.(ts|tsx)$/.test(name));
+  const testFiles = entries.filter((name) => /\.test\.(ts|tsx)$/.test(name));
+  const testToSourcePercent =
+    sourceFiles.length > 0 ? Math.round((testFiles.length / sourceFiles.length) * 100) : 0;
+  return {
+    domain: relativeDir,
+    sourceFileCount: sourceFiles.length,
+    testFileCount: testFiles.length,
+    testToSourcePercent,
+  };
+}
+
 /**
- * 툰스튜디오 크리에이터 어시스턴트 영역의 모듈·테스트 짝과 핵심 고도화 계약을
- * 정량 스코어카드로 집계한다.
+ * 툰스튜디오 핵심 4대 도메인(assistant, bg3d, brush, export)의 테스트 비율과
+ * 어시스턴트 고도화 모듈(14종)의 연결 무결성을 정량 스코어카드로 집계한다.
  */
 export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
   const assistantDir = path.join(repoRoot, "apps/web/src/domains/creator/assistant");
@@ -27,6 +48,11 @@ export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
     "studio-workflow-pack-store.ts",
     "studio-workflow-pack-rights-receipt.ts",
     "studio-workflow-pack-telemetry.ts",
+    "studio-workflow-pack-policy.ts",
+    "studio-workflow-pack-export-bundle.ts",
+    "studio-workflow-pack-sync.ts",
+    "studio-rights-receipt-verifier.ts",
+    "studio-workflow-pack-runtime-bridge.ts",
     "StudioWebtoonAssistantWorkflowViews.tsx",
     "StudioWebtoonAssistantContent.tsx",
     "studio-contextual-learning.ts",
@@ -45,36 +71,50 @@ export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
       viewsSource.includes("routeStudioAssistantSkills") &&
       viewsSource.includes("BUILTIN_STUDIO_WORKFLOW_PACKS") &&
       viewsSource.includes("buildWorkflowPackShareUrl") &&
-      viewsSource.includes("generateWorkflowPackRightsReceipt") &&
+      viewsSource.includes("buildWorkflowPackExportReceiptAttachment") &&
+      viewsSource.includes("evaluateWorkflowPackTeamPolicy") &&
+      viewsSource.includes("broadcastWorkflowPackUpdate") &&
+      viewsSource.includes("dispatchWorkflowPackRuntimeEvent") &&
+      viewsSource.includes("verifySubmittedRightsReceipt") &&
       viewsSource.includes("saveCustomStudioWorkflowPack");
   } catch {
     return {
-      scope: "apps/web/src/domains/creator/assistant",
+      scope: "apps/web/src/domains/creator/{assistant,bg3d,brush,export}",
       sourceFileCount: sourceFiles.length,
       testFileCount: testFiles.length,
       testToSourcePercent: 0,
       requiredCapabilitiesCount: requiredCapabilities.length,
       presentCapabilitiesCount: presentCapabilities.length,
       wiredRouterAndPacks: false,
+      domains: [],
       ready: false,
     };
   }
+
+  const domains = [
+    auditDomainDir(repoRoot, "apps/web/src/domains/creator/assistant"),
+    auditDomainDir(repoRoot, "apps/web/src/domains/creator/bg3d"),
+    auditDomainDir(repoRoot, "apps/web/src/domains/creator/brush"),
+    auditDomainDir(repoRoot, "apps/web/src/domains/creator/export"),
+  ];
 
   const testCoverageRatio =
     sourceFiles.length > 0 ? Math.round((testFiles.length / sourceFiles.length) * 100) : 0;
 
   return {
-    scope: "apps/web/src/domains/creator/assistant",
+    scope: "apps/web/src/domains/creator/{assistant,bg3d,brush,export}",
     sourceFileCount: sourceFiles.length,
     testFileCount: testFiles.length,
     testToSourcePercent: testCoverageRatio,
     requiredCapabilitiesCount: requiredCapabilities.length,
     presentCapabilitiesCount: presentCapabilities.length,
     wiredRouterAndPacks,
+    domains,
     ready:
       presentCapabilities.length === requiredCapabilities.length &&
       wiredRouterAndPacks &&
-      testFiles.length >= 10,
+      domains.every((d) => d.sourceFileCount > 0) &&
+      testFiles.length >= 14,
   };
 }
 
@@ -84,13 +124,17 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   if (asJson) {
     console.log(JSON.stringify(scorecard, null, 2));
   } else {
+    const domainLines = scorecard.domains.map(
+      (d) =>
+        `  - ${d.domain}: ${d.sourceFileCount} src / ${d.testFileCount} tests (${d.testToSourcePercent}%)`,
+    );
     console.log(
       [
-        `# ToonStudio Advancement Scorecard (${scorecard.scope})`,
-        `- Source files: ${scorecard.sourceFileCount}`,
-        `- Test files: ${scorecard.testFileCount} (${scorecard.testToSourcePercent}% test-to-source ratio)`,
-        `- Required capabilities: ${scorecard.presentCapabilitiesCount}/${scorecard.requiredCapabilitiesCount}`,
-        `- Router & Workflow Packs wired: ${scorecard.wiredRouterAndPacks ? "YES" : "NO"}`,
+        `# ToonStudio Multi-Domain Advancement Scorecard`,
+        `- Assistant capabilities: ${scorecard.presentCapabilitiesCount}/${scorecard.requiredCapabilitiesCount}`,
+        `- Router, Workflow Packs, Runtime Bridge & Verifier wired: ${scorecard.wiredRouterAndPacks ? "YES" : "NO"}`,
+        `- Domain breakdown:`,
+        ...domainLines,
         `- Overall readiness: ${scorecard.ready ? "PASS" : "FAIL"}`,
       ].join("\n"),
     );

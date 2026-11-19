@@ -4,6 +4,7 @@ import {
   Copy,
   FileCheck2,
   Link2,
+  Lock,
   PackageOpen,
   Plus,
   Trash2,
@@ -28,16 +29,17 @@ import {
   buildWorkflowPackShareUrl,
   extractWorkflowPackFromSearch,
 } from "./studio-workflow-pack-deeplink";
-import {
-  generateWorkflowPackRightsReceipt,
-  serializeWorkflowPackRightsReceipt,
-} from "./studio-workflow-pack-rights-receipt";
+import { verifySubmittedRightsReceipt } from "./studio-rights-receipt-verifier";
+import { buildWorkflowPackExportReceiptAttachment } from "./studio-workflow-pack-export-bundle";
+import { dispatchWorkflowPackRuntimeEvent } from "./studio-workflow-pack-runtime-bridge";
+import { evaluateWorkflowPackTeamPolicy } from "./studio-workflow-pack-policy";
 import {
   buildWorkflowPackFromAssistantState,
   deleteCustomStudioWorkflowPack,
   loadCustomStudioWorkflowPacks,
   saveCustomStudioWorkflowPack,
 } from "./studio-workflow-pack-store";
+import { broadcastWorkflowPackUpdate } from "./studio-workflow-pack-sync";
 import {
   loadWorkflowPackTelemetrySummary,
   recordWorkflowPackEvent,
@@ -153,8 +155,10 @@ export function StudioWorkflowPacksPanel({
     loadCustomStudioWorkflowPacks(),
   );
   const [customPackName, setCustomPackName] = useState("");
+  const [lockTeamPolicy, setLockTeamPolicy] = useState(false);
   const [importJson, setImportJson] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
+  const [verifyReceiptJson, setVerifyReceiptJson] = useState("");
   const [copyFeedback, setCopyFeedback] = useState<{
     readonly packId: string;
     readonly kind: "json" | "deeplink" | "receipt";
@@ -174,16 +178,38 @@ export function StudioWorkflowPacksPanel({
     [customPacks],
   );
 
+  const receiptVerification = useMemo(() => {
+    if (!verifyReceiptJson.trim()) return null;
+    const prelim = verifySubmittedRightsReceipt(verifyReceiptJson);
+    const refPack = prelim.packId
+      ? allPacks.find(({ pack }) => pack.id === prelim.packId)?.pack
+      : undefined;
+    return refPack ? verifySubmittedRightsReceipt(verifyReceiptJson, refPack) : prelim;
+  }, [verifyReceiptJson, allPacks]);
+
   function applyAndTrack(pack: StudioWorkflowPack) {
     onApplyPack(pack);
+    dispatchWorkflowPackRuntimeEvent(pack);
+    broadcastWorkflowPackUpdate(pack, "studio-assistant-modal");
     setTelemetry(recordWorkflowPackEvent("pack-applied", pack.id));
   }
 
   function handleSaveCurrentAsPack() {
-    const created = buildWorkflowPackFromAssistantState({
+    const base = buildWorkflowPackFromAssistantState({
       name: customPackName || "내 커스텀 제작 팩",
       ...currentSnapshot,
     });
+    const created: StudioWorkflowPack = lockTeamPolicy
+      ? {
+          ...base,
+          schemaVersion: 2,
+          teamPolicyLock: {
+            teamLabel: "스튜디오 팀 규약",
+            lockedFields: ["platformId", "skinToneId"],
+            requireCommercialClearance: true,
+          },
+        }
+      : base;
     setCustomPacks(saveCustomStudioWorkflowPack(created));
     setCustomPackName("");
     setTelemetry(recordWorkflowPackEvent("pack-saved-custom", created.id));
@@ -192,13 +218,13 @@ export function StudioWorkflowPacksPanel({
   function handleImportPack() {
     const parsed = parseStudioWorkflowPack(importJson);
     if (!parsed) {
-      setImportError("올바른 Studio Workflow Pack JSON(schemaVersion: 1) 형식이 아닙니다.");
+      setImportError("올바른 Studio Workflow Pack JSON(schemaVersion: 1 또는 2) 형식이 아닙니다.");
       return;
     }
     setImportError(null);
     setCustomPacks(saveCustomStudioWorkflowPack(parsed));
     setImportJson("");
-    onApplyPack(parsed);
+    applyAndTrack(parsed);
     setTelemetry(recordWorkflowPackEvent("pack-imported-json", parsed.id));
   }
 
@@ -214,7 +240,7 @@ export function StudioWorkflowPacksPanel({
         typeof window !== "undefined" ? window.location.href : "http://localhost/studio";
       text = buildWorkflowPackShareUrl(pack, baseUrl);
     } else {
-      text = serializeWorkflowPackRightsReceipt(generateWorkflowPackRightsReceipt(pack));
+      text = buildWorkflowPackExportReceiptAttachment(pack).content;
     }
 
     const ok = await copyStudioText(text);
@@ -233,7 +259,7 @@ export function StudioWorkflowPacksPanel({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 font-bold">
             <PackageOpen className="size-4 text-accent" aria-hidden />
-            <span>장르별 Studio Workflow Pack (1클릭 세팅 · 딥링크 · Rights Receipt)</span>
+            <span>장르별 Studio Workflow Pack (v2 3D/브러시 · 팀 잠금 · 딥링크 · Rights Receipt)</span>
           </div>
           <span
             data-testid="workflow-pack-telemetry-badge"
@@ -244,7 +270,7 @@ export function StudioWorkflowPacksPanel({
           </span>
         </div>
         <p className="text-[0.65rem] text-fg-3">
-          플랫폼 규격, 피부톤 팔레트, 투시 구도, 독자 페이싱, 포커스 타이머를 하나의 팩으로 저장·공유하고 상업 연재용 rights-bom-receipt.json을 발급합니다.
+          플랫폼 규격, 피부톤 팔레트, 투시 구도, 3D 조명·브러시 프리셋을 하나의 팩으로 저장·협업 동기화하고 상업 연재용 rights-bom-receipt.json을 발급합니다.
         </p>
 
         {deepLinkPack ? (
@@ -277,6 +303,15 @@ export function StudioWorkflowPacksPanel({
               STUDIO_FOCUS_RING,
             )}
           />
+          <label className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-card px-2 text-[0.64rem] font-semibold text-fg-2">
+            <input
+              type="checkbox"
+              checked={lockTeamPolicy}
+              onChange={(event) => setLockTeamPolicy(event.target.checked)}
+              className="accent-accent"
+            />
+            <span>팀 정책 잠금</span>
+          </label>
           <button
             type="button"
             onClick={handleSaveCurrentAsPack}
@@ -300,7 +335,7 @@ export function StudioWorkflowPacksPanel({
                 setImportError(null);
               }}
               aria-label="가져올 워크플로우 팩 JSON"
-              placeholder='{"schemaVersion": 1, "id": "...", ...}'
+              placeholder='{"schemaVersion": 2, "id": "...", ...}'
               className={cn(
                 "w-full rounded-lg border border-line bg-raised p-2 font-mono text-[0.65rem] text-fg",
                 STUDIO_FOCUS_RING,
@@ -322,11 +357,45 @@ export function StudioWorkflowPacksPanel({
             </div>
           </div>
         </details>
+
+        <details className="mt-1 rounded-lg border border-line bg-card px-2.5 py-1.5">
+          <summary className="cursor-pointer text-[0.66rem] font-bold text-fg-2">
+            저작권 증명서(rights-bom-receipt.json) 무결성 검증
+          </summary>
+          <div className="mt-2 flex flex-col gap-1.5">
+            <textarea
+              rows={3}
+              value={verifyReceiptJson}
+              onChange={(event) => setVerifyReceiptJson(event.target.value)}
+              aria-label="검증할 저작권 증명서 JSON"
+              placeholder='{"receiptSchemaVersion": 1, "integrityHash": "fnv1a-...", ...}'
+              className={cn(
+                "w-full rounded-lg border border-line bg-raised p-2 font-mono text-[0.65rem] text-fg",
+                STUDIO_FOCUS_RING,
+              )}
+            />
+            {receiptVerification ? (
+              <p
+                role="status"
+                data-testid="rights-receipt-verification-result"
+                className={cn(
+                  "rounded px-2 py-1 text-[0.64rem] font-bold",
+                  receiptVerification.clearedForCommercialExport
+                    ? "bg-good/10 text-good"
+                    : "bg-warn/10 text-warn",
+                )}
+              >
+                {receiptVerification.summary}
+              </p>
+            ) : null}
+          </div>
+        </details>
       </div>
 
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         {allPacks.map(({ pack, isCustom }) => {
           const clearance = evaluateWorkflowPackRightsClearance(pack);
+          const policyAudit = evaluateWorkflowPackTeamPolicy(pack, currentSnapshot);
           const isApplied = appliedWorkflowPackId === pack.id;
           const activeCopy = copyFeedback?.packId === pack.id ? copyFeedback.kind : null;
           return (
@@ -353,18 +422,45 @@ export function StudioWorkflowPacksPanel({
                   <span className="rounded border border-line bg-raised px-1.5 py-0.5">
                     {PERSPECTIVE_GUIDES[pack.perspectivePreset].label}
                   </span>
+                  {pack.bg3dLightingPresetId ? (
+                    <span className="rounded border border-line bg-raised px-1.5 py-0.5 font-mono">
+                      3D:{pack.bg3dLightingPresetId}
+                    </span>
+                  ) : null}
+                  {pack.primaryBrushSlotId ? (
+                    <span className="rounded border border-line bg-raised px-1.5 py-0.5 font-mono">
+                      Brush:{pack.primaryBrushSlotId}
+                    </span>
+                  ) : null}
                 </div>
-                <p
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.6rem] font-bold",
-                    clearance.clearedForCommercialExport
-                      ? "bg-good/10 text-good"
-                      : "bg-warn/10 text-warn",
-                  )}
-                >
-                  <CheckCircle2 className="size-3" aria-hidden />
-                  <span>{clearance.summary}</span>
-                </p>
+                <div className="flex flex-wrap gap-1">
+                  <p
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.6rem] font-bold",
+                      clearance.clearedForCommercialExport
+                        ? "bg-good/10 text-good"
+                        : "bg-warn/10 text-warn",
+                    )}
+                  >
+                    <CheckCircle2 className="size-3" aria-hidden />
+                    <span>{clearance.summary}</span>
+                  </p>
+                  {policyAudit.enforced ? (
+                    <p
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.6rem] font-bold",
+                        policyAudit.compliant ? "bg-good/10 text-good" : "bg-warn/10 text-warn",
+                      )}
+                    >
+                      <Lock className="size-3" aria-hidden />
+                      <span>
+                        {policyAudit.compliant
+                          ? `${policyAudit.teamLabel} 규약 준수`
+                          : `${policyAudit.teamLabel} 잠금 확인 필요`}
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 border-t border-line/60 pt-2">

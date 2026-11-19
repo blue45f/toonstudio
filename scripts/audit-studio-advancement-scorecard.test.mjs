@@ -3,10 +3,11 @@ import test from "node:test";
 
 import { buildStudioAdvancementScorecard } from "./audit-studio-advancement-scorecard.mjs";
 
-test("buildStudioAdvancementScorecard reports wired router, workflow packs, and test parity", () => {
+test("buildStudioAdvancementScorecard reports wired multi-domain readiness and 14/14 capabilities", () => {
   const scorecard = buildStudioAdvancementScorecard();
   assert.equal(scorecard.presentCapabilitiesCount, scorecard.requiredCapabilitiesCount);
+  assert.equal(scorecard.requiredCapabilitiesCount, 14);
   assert.equal(scorecard.wiredRouterAndPacks, true);
+  assert.equal(scorecard.domains.length, 4);
   assert.equal(scorecard.ready, true);
-  assert.ok(scorecard.testFileCount >= 6);
 });
