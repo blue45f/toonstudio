@@ -39,6 +39,16 @@ function environmentCatalogInputs() {
   return inputs;
 }
 
+const requiredEnvironmentManifests = ["boatyard-v1", "coast-v1", "specimen-v1", "glasshouse-v1"]
+  .map((pack) => `/apps/web/public/assets/3d/environments/${pack}/manifest.json`);
+
+function assertUniqueEnvironmentManifests(patterns, label) {
+  for (const manifest of requiredEnvironmentManifests) {
+    assert.equal(patterns.filter((pattern) => pattern === manifest).length, 1,
+      `${label}: 환경 manifest 선언은 정확히 한 개여야 합니다. 누락을 복원하거나 중복 선언을 제거하세요: ${manifest}`);
+  }
+}
+
 function targetExists(target) {
   const absoluteTarget = join(repoRoot, target);
   if (existsSync(absoluteTarget)) return true;
@@ -65,6 +75,21 @@ test("checkout 조건식 파서는 알려진 literal 이외의 실행식과 조�
   assert.throws(() => sparsePatterns(block("${{ fromJSON(inputs.paths) }}")), /지원하지 않는 checkout 조건식/u);
   assert.throws(() => sparsePatterns(block("${{ matrix.shard != 'product' && '/docs/' || '' }}")), /지원하지 않는 checkout 조건식/u);
   assert.deepEqual(sparsePatterns(block("${{ matrix.shard == 'studio-3d' && '/models/' || '' }}"), { shard: "studio-3d" }), ["/*", "/models/"]);
+});
+
+test("동시 수정에서 합쳐진 환경 manifest 중복과 누락을 실제 checkout 선언에서 거부한다", () => {
+  const block = job("typecheck");
+  for (const manifest of requiredEnvironmentManifests) {
+    const declaration = `            ${manifest}\n`;
+    assert.equal(block.split(declaration).length, 2, `변경 전 fixture에는 환경 manifest가 한 개 필요합니다: ${manifest}`);
+    for (const count of [0, 2]) {
+      const fixture = block.replace(declaration, declaration.repeat(count));
+      assert.notEqual(fixture, block, "중복·누락 fixture는 실제 checkout 선언을 바꿔야 합니다.");
+      assert.throws(() => assertUniqueEnvironmentManifests(sparsePatterns(fixture), "변경 fixture"), {
+        code: "ERR_ASSERTION", actual: count, expected: 1,
+      });
+    }
+  }
 });
 
 test("production integrity follows the real menu verifier and its CI bootstrap", () => {
@@ -753,6 +778,7 @@ test("필수 정적·lint·타입 checkout은 실제 3D import 메타데이터�
     ...["lint", "typecheck"].map((name) => ({ label: name, patterns: sparsePatterns(job(name)) })),
     { label: "mesh application typecheck", patterns: sparsePatterns(readFileSync(new URL("../.github/workflows/studio-mesh-sync-repair.yml", import.meta.url), "utf8")) },
   ];
+  for (const { label, patterns } of checkouts) assertUniqueEnvironmentManifests(patterns, label);
   const manifests = [...new Set([
     ...["refined-v6", "expansion-v1", "webtoon-v7"].map((pack) => `apps/web/public/assets/3d/environments/${pack}/manifest.json`),
     ...environmentCatalogInputs(),
@@ -1026,6 +1052,9 @@ test("focused integration checks cannot collide with the protected core status",
 test("focused ToonStudio checkout includes imported metadata, validated artwork and fault evidence without unrelated inputs", () => {
   const workflow = readFileSync(new URL("../.github/workflows/toonstudio-session-goals.yml", import.meta.url), "utf8");
   const patterns = sparsePatterns(workflow);
+  for (const eventName of ["pull_request", "workflow_dispatch"]) {
+    assertUniqueEnvironmentManifests(sparsePatterns(workflow, { eventName }), `focused ToonStudio ${eventName}`);
+  }
   const manifests = [...new Set([
     ...["3d/environments/refined-v6/manifest.json", "3d/environments/expansion-v1/manifest.json", "3d/environments/webtoon-v7/manifest.json", "3d/environments/mcp-free-v1/manifest.json", "virtual-studio/world/default-world.json"].map((file) => `apps/web/public/assets/${file}`),
     ...environmentCatalogInputs(),

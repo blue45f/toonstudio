@@ -105,7 +105,11 @@ export async function openStudioMainMenu(page: Page, groupId: string): Promise<L
   if (await page.locator('[data-studio-main-menu-panel="true"]').filter({ visible: true }).count() > 0) {
     await page.keyboard.press("Escape");
   }
-  const triggers = page.locator('[data-studio-main-menu="true"] [data-studio-main-menu-trigger]').filter({ visible: true });
+  // Clarity 빠른 메뉴와 프로젝트 전체 메뉴는 같은 그룹 ID를 가진다. 실제 도구 패널 안에서만 찾는다.
+  const projectTools = page.locator('[data-studio-drawing-project-tools="true"]').filter({ visible: true });
+  const menuScope = await visibleStudioControl(await projectTools.count() > 0
+    ? projectTools : page.locator('[data-studio-editor="true"]'), "Studio 메뉴 영역");
+  const triggers = menuScope.locator('[data-studio-main-menu="true"] [data-studio-main-menu-trigger]').filter({ visible: true });
   await triggers.first().waitFor({ state: "visible" });
   const ids = await triggers.evaluateAll(buttons => buttons.map(button => button.getAttribute("data-studio-main-menu-trigger")));
   const index = ids.indexOf(groupId);
