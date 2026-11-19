@@ -51,7 +51,7 @@ import {
   parseCreatorWorkRevision,
 } from "../creator-work-revisions";
 
-import { assertJoinableChallenge } from "../../modules/creator/challenges";
+import { assertJoinableChallenge } from "../../modules/creator/challenges-admission";
 import { parseSeriesStatus } from "./community-contract";
 import {
   ensureCreatorCommunitySchemaForCapability,
@@ -59,7 +59,7 @@ import {
 } from "../../modules/creator/community-schema";
 import { insertCreatorWorkRelease } from "../../modules/creator/community-publishing";
 import { deleteOwnedStudioGraphForWork } from "../../modules/creator/works-studio-graph-deletion";
-import { getOwnedSeriesOrThrow, nextEpisodeNoOf, touchSeries } from "../../modules/creator/series";
+import { getOwnedSeriesOrThrow, nextEpisodeNoOf, touchSeries } from "../../modules/creator/series-admission";
 import {
   authorOf,
   cleanPages,

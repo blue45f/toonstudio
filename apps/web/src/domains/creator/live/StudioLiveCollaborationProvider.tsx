@@ -169,22 +169,44 @@ function mergeBindingTelemetry(options: {
 }): StudioCrdtSyncTelemetry {
   const { previous, status, transportReady, outboxConfigured } = options;
   const measured = status as StudioCrdtBindingStatusTelemetry;
+  const state = bindingTelemetryState(status.state);
+  const pendingCount = measured.pendingCount ?? previous?.pendingCount ?? 0;
   const persistenceDurability: StudioLivePersistenceDurability =
     measured.persistenceDurability ??
     previous?.persistenceDurability ??
     (outboxConfigured ? "checking" : "unavailable");
+  const nextTransportReady = measured.transportReady ?? transportReady;
+  const lastAckAt = measured.lastAckAt ?? previous?.lastAckAt ?? null;
+  const lastAckServerSequence = measured.lastAckServerSequence ?? previous?.lastAckServerSequence ?? null;
+  const durabilityAtRisk = status.state === "error" && status.durabilityAtRisk ? true : undefined;
+  const nonAuthoritativeDeliveryPending = status.state === "retrying"
+    && status.nonAuthoritativeDeliveryPending === true
+    ? true
+    : undefined;
+  if (
+    previous !== null
+    && previous.state === state
+    && previous.message === status.message
+    && previous.pendingCount === pendingCount
+    && previous.persistenceDurability === persistenceDurability
+    && previous.transportReady === nextTransportReady
+    && previous.lastAckAt === lastAckAt
+    && previous.lastAckServerSequence === lastAckServerSequence
+    && previous.durabilityAtRisk === durabilityAtRisk
+    && previous.nonAuthoritativeDeliveryPending === nonAuthoritativeDeliveryPending
+  ) {
+    return previous;
+  }
   return {
-    state: bindingTelemetryState(status.state),
+    state,
     message: status.message,
-    pendingCount: measured.pendingCount ?? previous?.pendingCount ?? 0,
+    pendingCount,
     persistenceDurability,
-    transportReady: measured.transportReady ?? transportReady,
-    lastAckAt: measured.lastAckAt ?? previous?.lastAckAt ?? null,
-    lastAckServerSequence: measured.lastAckServerSequence ?? previous?.lastAckServerSequence ?? null,
-    ...(status.state === "error" && status.durabilityAtRisk ? { durabilityAtRisk: true } : {}),
-    ...(status.state === "retrying" && status.nonAuthoritativeDeliveryPending === true
-      ? { nonAuthoritativeDeliveryPending: true }
-      : {}),
+    transportReady: nextTransportReady,
+    lastAckAt,
+    lastAckServerSequence,
+    ...(durabilityAtRisk ? { durabilityAtRisk: true } : {}),
+    ...(nonAuthoritativeDeliveryPending ? { nonAuthoritativeDeliveryPending: true } : {}),
   };
 }
 

@@ -79,6 +79,7 @@ export class StudioLiveGesturePreviewRoomAdapter {
   private readonly pinsByKey = new Map<string, EligibleGesturePin>();
   private readonly ownerKeyByGestureId = new Map<string, string>();
   private storeUnsubscribe: (() => void) | null = null;
+  private storeReconcileCount = 0;
   private room: StudioLiveGesturePreviewRoomSource | null = null;
   private roomUnsubscribe: (() => void) | null = null;
   private roomGeneration = 0;
@@ -217,7 +218,10 @@ export class StudioLiveGesturePreviewRoomAdapter {
 
   private ensureStoreSubscription(): void {
     if (this.storeUnsubscribe || this.disposed) return;
-    this.storeUnsubscribe = this.store.subscribe(() => this.reconcileFromStore());
+    this.storeUnsubscribe = this.store.subscribe(() => {
+      this.storeReconcileCount += 1;
+      this.reconcileFromStore();
+    });
   }
 
   private applyGesturePreview(
@@ -227,15 +231,13 @@ export class StudioLiveGesturePreviewRoomAdapter {
     const key = studioLiveGesturePreviewKey(senderSessionId, payload.gestureId);
     if (payload.phase !== "begin") {
       if (!this.pinsByKey.has(key)) return;
-      this.store.apply(senderSessionId, payload);
-      this.reconcileFromStore();
+      this.applyToStoreAndReconcile(senderSessionId, payload);
       return;
     }
 
     const existingPin = this.pinsByKey.get(key);
     if (existingPin) {
-      this.store.apply(senderSessionId, payload);
-      this.reconcileFromStore();
+      this.applyToStoreAndReconcile(senderSessionId, payload);
       return;
     }
     if (
@@ -256,11 +258,29 @@ export class StudioLiveGesturePreviewRoomAdapter {
     });
     this.pinsByKey.set(key, pin);
     this.ownerKeyByGestureId.set(payload.gestureId, key);
-    this.store.apply(senderSessionId, payload);
+    const reconciledByStore = this.applyToStoreAndReconcile(senderSessionId, payload, true);
 
     const storedEntry = this.store.getSnapshot().find((entry) => entry.key === key);
-    if (!storedEntry || !this.entryMatchesPin(storedEntry, pin)) this.removePin(key);
-    this.reconcileFromStore();
+    if (!storedEntry || !this.entryMatchesPin(storedEntry, pin)) {
+      this.removePin(key);
+      this.reconcileFromStore();
+    } else if (!reconciledByStore) {
+      this.reconcileFromStore();
+    }
+  }
+
+  private applyToStoreAndReconcile(
+    senderSessionId: string,
+    payload: StudioLiveGesturePreviewPayload,
+    deferManualReconcile = false,
+  ): boolean {
+    const previousReconcileCount = this.storeReconcileCount;
+    this.store.apply(senderSessionId, payload);
+    const reconciledByStore = this.storeReconcileCount !== previousReconcileCount;
+    if (!reconciledByStore && !deferManualReconcile) {
+      this.reconcileFromStore();
+    }
+    return reconciledByStore;
   }
 
   private retainPresentPeers(peers: readonly StudioLivePeer[]): void {

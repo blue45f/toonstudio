@@ -2,25 +2,32 @@ import {
   DICT,
   markAuthoredI18nDictionaryLoaded,
   registerI18nLocaleEntries,
-  FALLBACK_LANG,
   triggerTranslationBundleUpdate,
-} from "./i18n-core";
+} from "./i18n-dictionary";
 import {
-  normalizeLocaleCode,
-  getLocaleCandidates,
+  FALLBACK_LANG,
   getLocaleCandidateChain,
-} from "./i18n-intl-utils";
+  getLocaleCandidates,
+  type Dict,
+} from "./i18n-constants";
+import { normalizeLocaleCode } from "./i18n-locale-list";
 import { APP_I18N_NAMESPACES, STUDIO_I18N_NAMESPACES } from "./i18n-asset-manifest";
+import { APP_I18N_BUILT_IN_LOCALES } from "./i18n-locale-catalog";
 import {
-  APP_I18N_ASSET_LOCALES,
-  APP_I18N_BUILT_IN_LOCALES,
-  APP_I18N_COMPLETENESS_IN_PROGRESS_THRESHOLD,
-  APP_I18N_LOCALE_TRANSLATED_RATIO,
-  APP_I18N_TRANSLATED_LOCALE_THRESHOLD,
-} from "./i18n-locale-catalog";
+  getAppI18nCompletenessRatio,
+  getAppI18nTranslatedRatio,
+  isAppI18nTranslationInProgress,
+  isFullyTranslatedAppLocale,
+  resolveAppI18nAssetLocale,
+} from "./i18n-locale-metrics";
 
-
-import type { Dict } from "./i18n-core";
+export {
+  getAppI18nCompletenessRatio,
+  getAppI18nTranslatedRatio,
+  isAppI18nTranslationInProgress,
+  isFullyTranslatedAppLocale,
+  resolveAppI18nAssetLocale,
+};
 
 /* ------------------------------------------------------------------------ *
  * 앱 셸 로케일 자산 (public/i18n/app/<namespace>/<locale>.json)
@@ -32,9 +39,7 @@ import type { Dict } from "./i18n-core";
  *     그 사실은 getAppI18nLocaleStatus()로 항상 조회 가능하고 failed 는 콘솔에도 남는다.
  * ------------------------------------------------------------------------ */
 
-const APP_I18N_ASSET_LOCALE_SET: ReadonlySet<string> = new Set(
-  APP_I18N_ASSET_LOCALES,
-);
+
 const APP_I18N_BUILT_IN_LOCALE_SET: ReadonlySet<string> = new Set(
   APP_I18N_BUILT_IN_LOCALES,
 );
@@ -111,56 +116,9 @@ export function appI18nAssetUrl(
   return `${normalizedBase}i18n/app/${namespace}/${assetLocale}.json`;
 }
 
-/**
- * 요청 로케일을 실제 배포 자산으로 좁힌다. 폴백 체인(en → ko)은 **의도적으로 제외한다** —
- * 여기에 en 을 섞으면 모든 로케일이 "자산 있음"으로 보여, 자산이 없다는 사실 자체가 사라진다.
- */
-export function resolveAppI18nAssetLocale(locale: string): string | null {
-  for (const candidate of getLocaleCandidateChain(locale, [])) {
-    if (APP_I18N_ASSET_LOCALE_SET.has(candidate)) return candidate;
-  }
-  return null;
-}
-
 /** resolveTranslation 이 이 로케일에 대해 훑는 후보 순서 — 폴백이 암묵적이지 않다는 증거. */
 export function getAppI18nFallbackChain(locale: string): readonly string[] {
   return getLocaleCandidates(locale);
-}
-
-/** 이 로케일 자산의 실측 번역률(0~1). 자산이 없으면 0. */
-export function getAppI18nTranslatedRatio(locale: string): number {
-  const assetLocale = resolveAppI18nAssetLocale(locale);
-  if (!assetLocale) return 0;
-  return APP_I18N_LOCALE_TRANSLATED_RATIO[assetLocale] ?? 0;
-}
-
-/**
- * 이 로케일을 "번역된 언어"로 제시해도 되는지. false 면 사용자는 사실상 영어를 보게 된다.
- */
-export function isFullyTranslatedAppLocale(locale: string): boolean {
-  return (
-    getAppI18nTranslatedRatio(locale) >= APP_I18N_TRANSLATED_LOCALE_THRESHOLD
-  );
-}
-
-/**
- * 이 로케일의 완성도(0~1). 카탈로그 생성 시 산출되는 완성도 리포트의 completenessRatio 와
- * 같은 실측값(영어 기준 키 중 영어 원문과 다른 값을 가진 비율)이다. 자산이 없으면 0.
- */
-export function getAppI18nCompletenessRatio(locale: string): number {
-  return getAppI18nTranslatedRatio(locale);
-}
-
-/**
- * 완성도가 임계 미만이라 "번역 진행 중"으로 표기해야 하는지. 번역 하한(0.5)을 넘는 로케일도
- * 완성도 임계(0.9) 미만이면 진행 중이다 — 절반만 번역된 언어를 완성된 번역처럼 보이면
- * 사용자는 나머지 절반이 영어로 나오는 이유를 알 수 없다.
- */
-export function isAppI18nTranslationInProgress(locale: string): boolean {
-  return (
-    getAppI18nCompletenessRatio(locale) <
-    APP_I18N_COMPLETENESS_IN_PROGRESS_THRESHOLD
-  );
 }
 
 export function parseAppI18nDictionary(source: string): Dict | null {

@@ -150,6 +150,11 @@ function importsFor(file, sourceText, srcRoot, sourceFiles) {
   return imports;
 }
 
+/** True for PascalCase component names; excludes UPPER_SNAKE_CASE constants. */
+function isPascalCaseComponentName(name) {
+  return /^[A-Z][\w$]*$/u.test(name) && /[a-z]/u.test(name);
+}
+
 /** Exported PascalCase component names declared by a .tsx module. */
 function exportedComponents(sourceText) {
   const names = new Set();
@@ -159,10 +164,14 @@ function exportedComponents(sourceText) {
     /export\s+class\s+([A-Z][\w$]*)/gu,
   ];
   for (const pattern of patterns) {
-    for (const match of sourceText.matchAll(pattern)) names.add(match[1]);
+    for (const match of sourceText.matchAll(pattern)) {
+      if (isPascalCaseComponentName(match[1])) names.add(match[1]);
+    }
   }
   const defaultReference = sourceText.match(/export\s+default\s+([A-Z][\w$]*)\s*;/u);
-  if (defaultReference) names.add(defaultReference[1]);
+  if (defaultReference && isPascalCaseComponentName(defaultReference[1])) {
+    names.add(defaultReference[1]);
+  }
   const exportList = /export\s*\{([\s\S]*?)\}/gu;
   for (const match of sourceText.matchAll(exportList)) {
     for (const part of match[1].split(",")) {
@@ -170,8 +179,8 @@ function exportedComponents(sourceText) {
       if (!name) continue;
       const exported = name.match(/\bas\s+([A-Z][\w$]*)$/u);
       const plain = name.match(/^([A-Z][\w$]*)$/u);
-      if (exported) names.add(exported[1]);
-      else if (plain) names.add(plain[1]);
+      if (exported && isPascalCaseComponentName(exported[1])) names.add(exported[1]);
+      else if (plain && isPascalCaseComponentName(plain[1])) names.add(plain[1]);
     }
   }
   return [...names];

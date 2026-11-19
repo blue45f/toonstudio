@@ -9,7 +9,7 @@ import {
   waitForCollectionMerge,
 } from "./collection-write-through";
 import { withCsrfProtection } from "./csrf";
-import { useApp } from "./store";
+import { getAppStore } from "./store-registry";
 import { toast } from "./toast-store";
 
 import type {
@@ -45,14 +45,14 @@ export function newClientCollectionId(): string {
 }
 
 export function currentCollectionAuthFence(): CollectionAuthFence | null {
-  const { userId, sessionToken, authGeneration } = useApp.getState();
+  const { userId, sessionToken, authGeneration } = getAppStore().getState();
   return userId
     ? { userId, sessionToken, generation: authGeneration }
     : null;
 }
 
 export function isCollectionAuthFenceCurrent(fence: CollectionAuthFence): boolean {
-  const state = useApp.getState();
+  const state = getAppStore().getState();
   return (
     state.userId === fence.userId &&
     state.sessionToken === fence.sessionToken &&
@@ -265,7 +265,7 @@ export function rebaseCollectionOutbox(
 export function currentCollectionFenceForOwner(
   ownerId: string
 ): CollectionAuthFence | null {
-  const state = useApp.getState();
+  const state = getAppStore().getState();
   return state.userId === ownerId
     ? {
         userId: ownerId,
@@ -314,7 +314,7 @@ export function queueCollectionOutboxEntry(
     shouldRetry: (error) => error instanceof CollectionRequestError && error.transient,
     onSuccess: () => {
       scheduledCollectionMutations.delete(entry.mutationId);
-      useApp.setState((state) => ({
+      getAppStore().setState((state) => ({
         collectionOutbox: state.collectionOutbox.filter(
           (candidate) => candidate.mutationId !== entry.mutationId
         ),
@@ -323,7 +323,7 @@ export function queueCollectionOutboxEntry(
     onPermanentFailure: () => {
       scheduledCollectionMutations.delete(entry.mutationId);
       let rolledBack = false;
-      useApp.setState((state) => {
+      getAppStore().setState((state) => {
         const collectionOutbox = state.collectionOutbox.filter(
           (candidate) => candidate.mutationId !== entry.mutationId
         );
@@ -344,7 +344,7 @@ export function queueCollectionOutboxEntry(
             : {}),
         };
       });
-      if (useApp.getState().userId === resolvedEntry.ownerId) {
+      if (getAppStore().getState().userId === resolvedEntry.ownerId) {
         toast(rolledBack
           ? "컬렉션 변경을 저장하지 못해 이전 상태로 되돌렸어요."
           : "컬렉션 변경을 저장하지 못했지만 더 최신인 로컬 상태는 유지했어요.");
@@ -352,7 +352,7 @@ export function queueCollectionOutboxEntry(
     },
     onTransientFailure: () => {
       scheduledCollectionMutations.delete(entry.mutationId);
-      if (useApp.getState().userId === resolvedEntry.ownerId) {
+      if (getAppStore().getState().userId === resolvedEntry.ownerId) {
         toast("컬렉션 변경을 이 기기의 동기화 대기열에 보관했어요. 연결이 복구되면 자동으로 다시 시도합니다.");
       }
     },
@@ -362,7 +362,7 @@ export function queueCollectionOutboxEntry(
 export async function replayPendingCollectionWrites(
   fence: CollectionAuthFence
 ): Promise<void> {
-  const entries = useApp.getState().collectionOutbox.filter(
+  const entries = getAppStore().getState().collectionOutbox.filter(
     (entry) => entry.ownerId === fence.userId
   );
   for (const entry of entries) queueCollectionOutboxEntry(fence, entry);

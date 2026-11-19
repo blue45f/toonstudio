@@ -21,6 +21,7 @@
 import { JPEG_QUALITY, canvasToBlob, downloadBlob } from "./studio-export";
 import { drawWatermarkOnSlice } from "./studio-export-presets";
 import {
+  PDF_PX_TO_PT,
   buildPrintPdfFromPages,
   countPrintPdfOutputPages,
   rgbaToCmykBytes,
@@ -37,11 +38,9 @@ import type {
   BookPrintWarning,
 } from "./studio-book-pdf-export";
 
+export { PDF_PX_TO_PT };
 export type { PdfPrintOptions, PrintPdfPage } from "./studio-pdf-print-export";
 export type { BookPrintRequest, BookPrintWarning } from "./studio-book-pdf-export";
-
-/** px→pt 변환 계수 — CSS 96dpi 픽셀을 PDF 72dpi 포인트로(1px = 0.75pt). */
-export const PDF_PX_TO_PT = 0.75;
 
 /** PDF 한 페이지가 될 JPEG 이미지 — 크기는 캔버스 픽셀(px) 기준. */
 export interface PdfJpegPage {

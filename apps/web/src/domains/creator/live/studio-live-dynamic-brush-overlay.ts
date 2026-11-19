@@ -1025,6 +1025,18 @@ export class StudioLiveDynamicBrushOverlayRenderer {
   private contactPlaceholderRect: PresentationPixelRect | null = null;
 
   attach(canvases: StudioLiveDynamicBrushOverlayCanvases | null): void {
+    if (canvases === null) {
+      if (this.pendingFirstDabRaf) {
+        cancelAnimationFrame(this.pendingFirstDabRaf);
+        this.pendingFirstDabRaf = 0;
+      }
+      if (this.pendingBeginRaf) {
+        cancelAnimationFrame(this.pendingBeginRaf);
+        this.pendingBeginRaf = 0;
+      }
+      this.pendingFirstDab = null;
+      this.pendingBeginElement = null;
+    }
     this.activeCanvas = canvases?.activeCanvas ?? null;
     this.presentationCanvas = canvases?.presentationCanvas ?? null;
     this.settledCanvas = canvases?.settledCanvas ?? null;

@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
 import { bigint, boolean, check, date, foreignKey, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
 
-import { users, bytea } from "./index";
+import { users } from "./auth.schema";
+import { bytea } from "./common.schema";
 
 export const creatorProfiles = pgTable(
   "creator_profile",
@@ -22,7 +23,6 @@ export const creatorProfiles = pgTable(
   },
   (t) => [index("idx_creator_profile_user").on(t.userId)]
 );
-
 
 // ── 창작 스튜디오: 사용자 제작 웹툰/컷툰 + 창작 게시판 ──────────────
 // 툰스푼/포마코 스타일의 브라우저 제작 도구(Konva) 결과물을 올리는 UGC 보드.

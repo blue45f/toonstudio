@@ -7,6 +7,7 @@ import {
 } from "./collection-contract";
 import { addRecentSearch, removeRecentSearch } from "./recent-searches";
 import { apiPost } from "./store-api-post";
+import { registerAppStore } from "./store-registry";
 import {
   canonicalizeGuestCollections,
   currentCollectionAuthFence,
@@ -423,3 +424,5 @@ export const useApp = (create<AppState>()(
     }
   )
 )) as unknown as AppStore;
+
+registerAppStore(useApp);

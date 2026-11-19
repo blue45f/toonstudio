@@ -32,6 +32,8 @@ export const STUDIO_LIVE_INK_MAX_SAMPLES_PER_STROKE = 100_000;
 export const STUDIO_LIVE_INK_CHUNK_MAX_BYTES = 64 * 1024;
 export const STUDIO_LIVE_INK_PREDICTION_MAX_BYTES = 8 * 1024;
 export const STUDIO_LIVE_INK_MAX_ACTIVE_STROKES = 8;
+/** Idle active strokes older than this TTL are reaped so lost ink:end packets cannot deadlock a peer. */
+export const STUDIO_LIVE_INK_ACTIVE_STROKE_TTL_MS = 15_000;
 export const STUDIO_LIVE_INK_MAX_STROKE_WIDTH = 8_192;
 export const STUDIO_LIVE_INK_MAX_SEED = 0xffff_ffff;
 
@@ -463,6 +465,7 @@ interface ActiveInkStrokeState {
   nextChunkSequence: number;
   nextSampleIndex: number;
   lastPredictionSequence: number;
+  lastUpdatedAt: number | null;
 }
 
 /**
@@ -485,7 +488,26 @@ export class StudioLiveInkStrokeTracker {
     this.settled.clear();
   }
 
-  accept(message: StudioLiveInkMessage): boolean {
+  /**
+   * Reaps idle active strokes whose last update is older than `ttlMs`. Prevents a dropped
+   * `ink:end` or `ink:cancel` packet from permanently exhausting `STUDIO_LIVE_INK_MAX_ACTIVE_STROKES`
+   * during multi-hour collaborative drawing sessions.
+   */
+  pruneExpired(now: number, ttlMs = STUDIO_LIVE_INK_ACTIVE_STROKE_TTL_MS): string[] {
+    if (!Number.isFinite(now) || !Number.isFinite(ttlMs) || ttlMs < 0) return [];
+    const expired: string[] = [];
+    for (const [strokeId, state] of this.active) {
+      if (state.lastUpdatedAt === null) continue;
+      if (now - state.lastUpdatedAt <= ttlMs) continue;
+      expired.push(strokeId);
+    }
+    for (const strokeId of expired) this.settle(strokeId);
+    return expired;
+  }
+
+  accept(message: StudioLiveInkMessage, now?: number): boolean {
+    const timestamp = typeof now === "number" && Number.isFinite(now) ? now : null;
+    if (timestamp !== null) this.pruneExpired(timestamp);
     switch (message.kind) {
       case "ink:begin": {
         if (this.active.has(message.strokeId) || this.settled.has(message.strokeId)) return false;
@@ -494,6 +516,7 @@ export class StudioLiveInkStrokeTracker {
           nextChunkSequence: 1,
           nextSampleIndex: 0,
           lastPredictionSequence: 0,
+          lastUpdatedAt: timestamp,
         });
         return true;
       }
@@ -509,6 +532,7 @@ export class StudioLiveInkStrokeTracker {
         }
         state.nextChunkSequence += 1;
         state.nextSampleIndex += message.sampleCount;
+        if (timestamp !== null) state.lastUpdatedAt = timestamp;
         return true;
       }
       case "ink:prediction": {
@@ -521,6 +545,7 @@ export class StudioLiveInkStrokeTracker {
           return false;
         }
         state.lastPredictionSequence = message.predictionSequence;
+        if (timestamp !== null) state.lastUpdatedAt = timestamp;
         return true;
       }
       case "ink:end": {
