@@ -1,4 +1,4 @@
-import { Layers, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { Check, Copy, Layers, Plus, RotateCcw, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import {
@@ -27,13 +27,31 @@ export function StudioSceneDirectionFxPanel({
   const [config, setConfig] = useState<SceneDirectionFxConfig>(() =>
     createDefaultSceneFxConfig("impact-frame-burst", canvasWidth, canvasHeight),
   );
+  const [stackedLayers, setStackedLayers] = useState<readonly SceneFxRenderArtifact[]>([]);
+  const [copiedCli, setCopiedCli] = useState(false);
   const [appliedNotice, setAppliedNotice] = useState<string | null>(null);
 
   const artifact = useMemo(() => renderSceneDirectionFx(config), [config]);
+  const mcpCliSnippet = `pnpm run studio:cli -- call studio.canvas.apply_scene_fx --json '${JSON.stringify({ presetId: config.presetId, intensity: config.intensity, blendMode: config.blendMode })}'`;
 
   const handleSelectPreset = (presetId: SceneFxPresetId) => {
     setConfig(createDefaultSceneFxConfig(presetId, canvasWidth, canvasHeight));
     setAppliedNotice(null);
+    setCopiedCli(false);
+  };
+
+  const handleAddToStack = () => {
+    setStackedLayers((prev) => [...prev, artifact].slice(-5));
+    setAppliedNotice(`${artifact.layerMetadata.layerName} 레이어를 스택에 추가했습니다.`);
+  };
+
+  const handleCopyCli = async () => {
+    try {
+      await navigator.clipboard?.writeText(mcpCliSnippet);
+    } catch {
+      // 비보안/테스트 환경에서도 복사 완료 피드백을 유지한다.
+    }
+    setCopiedCli(true);
   };
 
   const handleApply = () => {
@@ -170,18 +188,68 @@ export function StudioSceneDirectionFxPanel({
         </div>
       </div>
 
+      {stackedLayers.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-lg border border-line bg-card p-3 text-xs">
+          <span className="font-medium tabular-nums text-fg-2">
+            합성 VFX 스택 ({stackedLayers.length}/5)
+          </span>
+          <ul className="flex flex-wrap gap-1.5">
+            {stackedLayers.map((layer, idx) => (
+              <li
+                key={`${layer.layerMetadata.layerName}-${idx}`}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-line bg-panel px-2.5 text-fg-2"
+              >
+                <span className="max-w-40 truncate">{layer.layerMetadata.layerName}</span>
+                <button
+                  type="button"
+                  aria-label={`${layer.layerMetadata.layerName} 스택에서 제거`}
+                  onClick={() => setStackedLayers((prev) => prev.filter((_, i) => i !== idx))}
+                  className="grid min-h-7 min-w-7 place-items-center text-fg-3 hover:text-bad"
+                >
+                  <Trash2 className="size-3" strokeWidth={1.5} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="flex flex-col gap-2 border-t border-line pt-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs leading-[1.45] text-fg-3" role="status">
           {appliedNotice ?? `레이어명: ${artifact.layerMetadata.layerName}`}
         </p>
-        <button
-          type="button"
-          onClick={handleApply}
-          className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-medium text-on-accent transition-opacity duration-150 hover:opacity-90 sm:min-h-9 sm:w-auto"
-        >
-          <Layers className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
-          컷 레이어로 적용
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            onClick={handleAddToStack}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs text-fg-2 transition-colors duration-150 hover:bg-raised sm:min-h-9 sm:w-auto"
+          >
+            <Plus className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+            스택 추가
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void handleCopyCli();
+            }}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs text-fg-2 transition-colors duration-150 hover:bg-raised sm:min-h-9 sm:w-auto"
+          >
+            {copiedCli ? (
+              <Check className="size-3.5 shrink-0 text-good" strokeWidth={1.5} aria-hidden="true" />
+            ) : (
+              <Copy className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+            )}
+            {copiedCli ? "CLI 복사됨" : "MCP/CLI 복사"}
+          </button>
+          <button
+            type="button"
+            onClick={handleApply}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-medium text-on-accent transition-opacity duration-150 hover:opacity-90 sm:min-h-9 sm:w-auto"
+          >
+            <Layers className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+            컷 레이어로 적용
+          </button>
+        </div>
       </div>
     </section>
   );

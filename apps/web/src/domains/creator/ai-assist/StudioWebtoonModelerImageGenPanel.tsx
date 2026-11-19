@@ -1,4 +1,4 @@
-import { Camera, ImagePlus, Layers, Plus, Trash2 } from "lucide-react";
+import { Camera, Check, Copy, ImagePlus, Layers, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { studioEcosystemClient } from "@/platform/studio-ecosystem-client";
@@ -46,6 +46,7 @@ export function StudioWebtoonModelerImageGenPanel({
   );
   const [historyCount, setHistoryCount] = useState(0);
   const [syncLabel, setSyncLabel] = useState<string | null>(null);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
 
   const compiled = useMemo(() => compileWebtoonModelerToImageGen(scene), [scene]);
 
@@ -265,6 +266,33 @@ export function StudioWebtoonModelerImageGenPanel({
           )}
         </div>
       </div>
+
+      <details className="rounded-lg border border-line bg-card px-3 py-2 text-xs">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 font-medium text-fg-2 sm:min-h-8 [&::-webkit-details-marker]:hidden">
+          <span>컴파일된 생성 프롬프트 · 4패스 스펙</span>
+          <span className="tabular-nums text-fg-3">{compiled.renderPasses.join(" → ")}</span>
+        </summary>
+        <div className="mt-2 flex flex-col gap-2 border-t border-line pt-2.5">
+          <p className="rounded-md border border-line bg-panel p-2.5 font-mono text-[11px] leading-[1.55] text-fg [word-break:normal]">
+            {compiled.positivePrompt}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard?.writeText(compiled.positivePrompt).catch(() => {});
+              setCopiedPrompt(true);
+            }}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-panel px-3 text-xs text-fg-2 transition-colors duration-150 hover:bg-raised sm:min-h-8 sm:w-auto sm:self-end"
+          >
+            {copiedPrompt ? (
+              <Check className="size-3.5 shrink-0 text-good" strokeWidth={1.5} aria-hidden="true" />
+            ) : (
+              <Copy className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+            )}
+            {copiedPrompt ? "프롬프트 복사됨" : "프롬프트 복사"}
+          </button>
+        </div>
+      </details>
     </section>
   );
 }
