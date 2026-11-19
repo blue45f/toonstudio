@@ -6,13 +6,6 @@ import {
   type StudioAppSettingsTab,
   type StudioRailToolId,
 } from "../../studio-app-settings";
-import {
-  normalizeStudioEffectFavoriteState,
-  rememberStudioEffectRecent,
-  toggleStudioEffectFavorite,
-  type StudioEffectFavoriteState,
-  type StudioEffectId,
-} from "../../studio-effect-favorites";
 import { acquireProductStudioUiPreferencesRepository } from "../../studio-legacy-editor-runtime-helpers";
 import { applyStudioLaunchDensity, readStudioLaunchDensity } from "../../studio-launch-mode";
 
@@ -22,6 +15,7 @@ import type { StudioToolbarPinChange } from "./studio-toolbar-pin-persistence";
 import { useStudioWorkModePreference } from "./useStudioWorkModePreference";
 import type { StudioUiBooleanPreferenceKey } from "../../studio-ui-preferences-sqlite";
 import { useStudioUiDensityPreference } from "./useStudioUiDensityPreference";
+import { useStudioEffectFavoritesPreference } from "./useStudioEffectFavoritesPreference";
 
 interface UseStudioPreferencesRuntimeOptions {
   readonly launchSearch: string;
@@ -122,12 +116,8 @@ export function useStudioPreferencesRuntime({
   // Stage work mode lives in its own runtime module too (useStudioWorkModePreference).
   const { dismissWorkModeSuggestion, setWorkMode, suggestedWorkMode, uiChromeExposure, workMode, workModeState } = useStudioWorkModePreference({ episodeStage, uiFirstScreenExposure, uiAdvancedToolsExpanded });
 
-  const [effectFavoriteState, setEffectFavoriteState] = useState<StudioEffectFavoriteState>(() =>
-    normalizeStudioEffectFavoriteState(undefined),
-  );
-  const effectFavoriteStateRef = useRef(effectFavoriteState);
-  const effectFavoriteUserRevisionRef = useRef(0);
-  effectFavoriteStateRef.current = effectFavoriteState;
+  const effectFavorites = useStudioEffectFavoritesPreference(setAppSettingsPersistenceState);
+  const { effectFavoriteStateRef, effectFavoriteUserRevisionRef, setEffectFavoriteState } = effectFavorites;
 
   useEffect(() => {
     const mode = launchDensity ?? appSettingsRef.current.general.densityMode;
@@ -211,7 +201,13 @@ export function useStudioPreferencesRuntime({
     return () => {
       cancelled = true;
     };
-  }, [applySavedPresentation, replaceAppSettings]);
+  }, [
+    applySavedPresentation,
+    effectFavoriteStateRef,
+    effectFavoriteUserRevisionRef,
+    replaceAppSettings,
+    setEffectFavoriteState,
+  ]);
 
   const persistStudioUiBooleanPreference = useCallback((
     key: StudioUiBooleanPreferenceKey,
@@ -262,28 +258,8 @@ export function useStudioPreferencesRuntime({
     [presentedSettings.toolbar.visibleIds],
   );
 
-  const persistEffectFavoriteState = useCallback((next: StudioEffectFavoriteState): void => {
-    const revision = ++effectFavoriteUserRevisionRef.current;
-    effectFavoriteStateRef.current = next;
-    setEffectFavoriteState(next);
-    void acquireProductStudioUiPreferencesRepository()
-      .then((repository) => repository.saveEffectFavorites(next))
-      .catch(() => {
-        if (effectFavoriteUserRevisionRef.current === revision) {
-          setAppSettingsPersistenceState("session-only");
-        }
-      });
-  }, []);
-
-  const toggleEffectFavoriteCommand = useCallback((effectId: StudioEffectId): void => {
-    persistEffectFavoriteState(toggleStudioEffectFavorite(effectFavoriteStateRef.current, effectId));
-  }, [persistEffectFavoriteState]);
-
-  const rememberEffectRecent = useCallback((effectId: StudioEffectId): void => {
-    persistEffectFavoriteState(rememberStudioEffectRecent(effectFavoriteStateRef.current, effectId));
-  }, [persistEffectFavoriteState]);
-
   return {
+    ...effectFavorites,
     appSettings: presentedSettings,
     appSettingsInitialTab,
     appSettingsOpen,
@@ -291,25 +267,19 @@ export function useStudioPreferencesRuntime({
     appSettingsRef,
     appSettingsUserRevisionRef,
     commitAppSettings,
-    effectFavoriteState,
-    effectFavoriteStateRef,
-    effectFavoriteUserRevisionRef,
     isRailToolVisible,
     persistAppSettings,
     persistStudioUiBooleanPreference,
     railMoreOpen,
-    rememberEffectRecent,
     setAppSettings,
     setAppSettingsInitialTab,
     setAppSettingsOpen,
     setAppSettingsPersistenceState,
-    setEffectFavoriteState,
     setRailMoreOpen,
     setStudioUiDensity,
     setStudioUiDensityFromCompanion,
     setUiDensityMode,
     setUiAdvancedToolsExpanded,
-    toggleEffectFavorite: toggleEffectFavoriteCommand,
     uiAdvancedToolsExpanded,
     uiBooleanPreferenceRevisionsRef,
     uiDensityMode,

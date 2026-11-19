@@ -11,6 +11,7 @@ import { studioDocumentPersistenceWorkId } from "../apps/web/src/domains/creator
 import { parseStudioWorkspaceRoute } from "../apps/web/src/domains/creator/studio-workspace-route";
 import { withStudioCaptureCpuProfile } from "../scripts/lib/studio-capture-cpu-profile";
 import { withStudioCaptureNativeTrace } from "../scripts/lib/studio-capture-native-trace";
+import { openStudioExportPanel, openStudioMainMenu } from "../scripts/lib/studio-shell-interactions";
 import {
   readDurableStudioAutosaveDocument,
   resolveDurableStudioAutosaveModuleUrl,
@@ -78,8 +79,17 @@ async function fileBytes(download: Download, testInfo: TestInfo, name: string): 
   return readFile(path);
 }
 async function menu(page: Page, itemId: string): Promise<void> {
-  await page.locator('[data-studio-main-menu-trigger="file"]').click();
-  await page.locator(`[data-studio-menu-item-id="${itemId}"]`).click();
+  const fileMenu = await openStudioMainMenu(page, "file");
+  await fileMenu.locator(`[data-studio-menu-item-id="${itemId}"]`).click();
+}
+async function toggleExportOptions(page: Page): Promise<void> {
+  const panel = page.locator('[data-studio-export-menu-panel="true"]');
+  if (await panel.isVisible()) {
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+  } else {
+    await openStudioExportPanel(page);
+  }
 }
 async function downloadPng(page: Page, testInfo: TestInfo, name: string): Promise<Buffer> {
   return withStudioCaptureNativeTrace(process.env.TOONSTUDIO_TRACE_CAPTURE_FRAMES === "1" && name === "v2-converted.png", {
@@ -118,12 +128,17 @@ async function downloadPng(page: Page, testInfo: TestInfo, name: string): Promis
   }, name, async () => {
     await attachCaptureState(page, testInfo, `${name}.before.json`);
     await page.bringToFront();
+    const panel = await openStudioExportPanel(page);
     const download = await waitForStudioCaptureDownload(page, async () => {
-      const button = page.locator('button[data-studio-primary-action="export"]');
-      await expect(button).toHaveAttribute("aria-label", /PNG/u);
+      const button = panel.getByRole("button", { name: "현재 페이지 PNG 다운로드", exact: true });
+      await expect(button).toHaveAccessibleName(/PNG/u);
       await button.click();
     }, page.getByText(CAPTURE_TIMEOUT_TEXT, { exact: true }).first());
     const bytes = await fileBytes(download, testInfo, name);
+    if (await panel.isVisible()) {
+      await page.keyboard.press("Escape");
+      await expect(panel).toBeHidden();
+    }
     expect([...bytes.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
     expect(bytes.readUInt32BE(16)).toBeGreaterThan(0);
     expect(bytes.readUInt32BE(20)).toBeGreaterThan(0);
@@ -131,7 +146,7 @@ async function downloadPng(page: Page, testInfo: TestInfo, name: string): Promis
   }));
 }
 async function downloadSvg(page: Page, testInfo: TestInfo, name: string): Promise<void> {
-  await page.getByRole("button", { name: "내보내기 옵션", exact: true }).click();
+  await toggleExportOptions(page);
   const exchange = page.locator('[data-studio-export-section="exchange"]');
   await exchange.locator("summary").click();
   await expect(exchange).toHaveAttribute("open", "");
@@ -140,11 +155,11 @@ async function downloadSvg(page: Page, testInfo: TestInfo, name: string): Promis
   const text = (await fileBytes(await pending, testInfo, name)).toString("utf8");
   expect(text).toContain("<svg");
   expect(text).toContain("material-contact-v1");
-  await page.getByRole("button", { name: "내보내기 옵션", exact: true }).click();
+  await toggleExportOptions(page);
 }
 async function downloadClippedAppearanceSvg(page: Page, testInfo: TestInfo, name: string, png: Buffer): Promise<void> {
   const width = png.readUInt32BE(16), height = png.readUInt32BE(20);
-  await page.getByRole("button", { name: "내보내기 옵션", exact: true }).click();
+  await toggleExportOptions(page);
   const panel = page.locator('[data-studio-export-menu-panel="true"]');
   await expect(panel.getByRole("button", { name: "2×", exact: true })).toHaveAttribute("aria-pressed", "true");
   const summary = panel.locator('[data-studio-export-output-summary="true"]');
@@ -213,7 +228,7 @@ async function downloadClippedAppearanceSvg(page: Page, testInfo: TestInfo, name
   const changedPixels = await pixelsChanged(page, png, embedded);
   await testInfo.attach(`${name}.pixel-comparison.json`, { body: JSON.stringify({ width, height, changedPixels }), contentType: "application/json" });
   expect(changedPixels).toBe(0);
-  await page.getByRole("button", { name: "내보내기 옵션", exact: true }).click();
+  await toggleExportOptions(page);
 }
 async function downloadBackup(page: Page, testInfo: TestInfo, name: string): Promise<Record<string, unknown>> {
   const pending = page.waitForEvent("download");
@@ -740,7 +755,7 @@ async function seedClipSemanticDraft(page: Page, route: string, raw: string, rea
 async function verifyClipSemanticExportSettings(page: Page, scale: ClipSemanticScale, logicalHeight: number, transparent = false): Promise<void> {
   const { STUDIO_CANVAS_WIDTH } = await import("../apps/web/src/domains/creator/canvas/studio-canvas-constants");
   if (STUDIO_CANVAS_WIDTH !== 720 || logicalHeight !== 640) throw new Error("공개 UI 4× 권장값의 고정 원고 크기가 달라졌습니다.");
-  await page.getByRole("button", { name: "내보내기 옵션", exact: true }).click();
+  await toggleExportOptions(page);
   const panel = page.locator('[data-studio-export-menu-panel="true"]');
   const print = panel.locator('[data-studio-export-section="print"]');
   const openPrint = async () => {
@@ -783,7 +798,7 @@ async function verifyClipSemanticExportSettings(page: Page, scale: ClipSemanticS
   await expect(summary).toContainText(`PNG · ${STUDIO_CANVAS_WIDTH * scale} × ${logicalHeight * scale} px`);
   await expect(summary.getByText(transparent ? "투명 배경 켜짐" : "배경 유지", { exact: true })).toBeVisible();
   await expect(summary.getByText("사용 안 함", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "내보내기 옵션", exact: true }).click();
+  await toggleExportOptions(page);
   await expect(panel).toHaveCount(0);
 }
 
@@ -845,10 +860,10 @@ async function setClipSemanticTransparencyInPanel(panel: ReturnType<Page["locato
 
 async function restoreClipSemanticOpaqueUi(page: Page): Promise<void> {
   const panel = page.locator('[data-studio-export-menu-panel="true"]');
-  if (await panel.count() === 0) await page.getByRole("button", { name: "내보내기 옵션", exact: true }).click();
+  if (await panel.count() === 0) await toggleExportOptions(page);
   await setClipSemanticTransparencyInPanel(panel, false);
   await expect(panel.locator('[data-studio-export-output-summary="true"]').getByText("배경 유지", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "내보내기 옵션", exact: true }).click();
+  await toggleExportOptions(page);
   await expect(panel).toHaveCount(0);
 }
 
