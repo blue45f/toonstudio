@@ -74,7 +74,7 @@ const FAMILY_DOMAINS: readonly [SiteDesignDomain, readonly string[]][] = [
   ["characters", ["/onboarding/character"]],
   ["backgrounds", ["/read/spatial", "/research/3d-assets", "/research/material-assets", "/research/space-assets", "/research/weather-light"]],
   ["publish", ["/publish", "/showcase", "/create", "/market/publish", "/community/promote", "/studio/growth", "/studio/analytics", "/creator/revenue", "/creator/early-access", "/creator/membership"]],
-  ["production", ["/production", "/automation", "/team/people", "/share/version"]],
+  ["production", ["/production", "/automation", "/team/people", "/share/version", "/studio/mcp"]],
   ["community", ["/team", "/community", "/collaborate", "/messages", "/reviews", "/pencafe", "/creators", "/u", "/opportunities", "/events", "/ecosystem/collaboration", "/ecosystem/fandom", "/cuts", "/newsletter", "/character-chat"]],
   ["story", ["/story-lab", "/studio/branching-cuttoon"]],
   ["assets", ["/market", "/research/assets", "/research/packs", "/research/vam", "/research/rijksmuseum", "/research/fonts", "/research/creatures", "/research/music-metadata", "/research/archive", "/research/open-data"]],

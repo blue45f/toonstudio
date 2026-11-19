@@ -1,8 +1,10 @@
+// @vitest-environment jsdom
+
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { StudioAiJobQueuePanel } from "./StudioAiJobQueuePanel";
-import { createStudioAiJob, transitionStudioAiJob, type StudioAiJob } from "./studio-ai-job";
+import { createStudioAiJob, transitionStudioAiJob, type StudioAiJob } from "../studio-ai-job";
 
 function makeDraftJob(overrides: Partial<Parameters<typeof createStudioAiJob>[0]> = {}): StudioAiJob {
   return createStudioAiJob({
@@ -78,7 +80,7 @@ describe("StudioAiJobQueuePanel", () => {
       { type: "progress", value: 0.65, at: "2026-11-19T09:00:04.000Z" },
     );
 
-    const previewReady = transitionStudioAiJob(running, {
+    const previewReady = transitionStudioAiJob({ ...running, id: "job-preview" }, {
       type: "preview",
       at: "2026-11-19T09:00:05.000Z",
       preview: {
@@ -126,7 +128,7 @@ describe("StudioAiJobQueuePanel", () => {
     expect(bar.getAttribute("aria-valuenow")).toBe("65");
 
     fireEvent.click(screen.getByRole("button", { name: /결과 승인/ }));
-    expect(onApprove).toHaveBeenCalledWith("job-running");
+    expect(onApprove).toHaveBeenCalledWith("job-preview");
 
     fireEvent.click(screen.getByRole("button", { name: /사본으로 적용/ }));
     expect(onApply).toHaveBeenCalledWith("job-approved", "copy");

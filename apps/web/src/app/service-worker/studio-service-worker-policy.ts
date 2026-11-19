@@ -364,9 +364,13 @@ export function isStudioServiceWorkerSpaFallbackForAsset(facts: {
   readonly url: string;
   readonly contentType: string | null;
 }): boolean {
-  if (!ASSET_ROUTE_CLASSES.has(facts.routeClass)) return false;
   if (!(facts.contentType ?? "").toLowerCase().startsWith("text/html")) return false;
-  return !new URL(facts.url).pathname.toLowerCase().endsWith(".html");
+  const pathname = parsePathname(facts.url)?.toLowerCase();
+  if (!pathname || pathname.endsWith(".html")) return false;
+  // 고정 precache의 부트스트랩은 /assets 밖에 있어도 실행 코드다. 문서 네비게이션은 제외한다.
+  const isBootstrapCode = (facts.routeClass === "sw-runtime" || facts.routeClass === "passthrough")
+    && /\.(?:m?js|css)$/u.test(pathname);
+  return ASSET_ROUTE_CLASSES.has(facts.routeClass) || isBootstrapCode;
 }
 
 /**

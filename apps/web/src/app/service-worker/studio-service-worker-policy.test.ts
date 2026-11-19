@@ -323,6 +323,20 @@ describe("cached response usability (self-healing CORP guard)", () => {
     ).toBe(false);
   });
 
+  it("KAN-33: 고정 부트스트랩 코드의 HTML은 거부하고 HTML 문서와 네비게이션은 유지한다", () => {
+    const contentType = "text/html; charset=utf-8";
+    for (const [routeClass, path] of [
+      ["sw-runtime", "/bootstrap-compat.js"],
+      ["passthrough", "/offline-draw/bootstrap.js"],
+      ["passthrough", "/offline-draw/styles.css"],
+    ] as const) {
+      expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass, url: `${ORIGIN}${path}`, contentType })).toBe(true);
+      expect(isStudioServiceWorkerCachedResponseUsable({ routeClass, url: `${ORIGIN}${path}`, contentType, status: 200 })).toBe(false);
+    }
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "passthrough", url: `${ORIGIN}/offline-draw/index.html`, contentType })).toBe(false);
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "navigation", url: `${ORIGIN}/page.js`, contentType })).toBe(false);
+  });
+
   it("does not demand CORP from ordinary scripts", () => {
     // `vite preview` only attaches CORP to worker-shaped requests, so a broad
     // check here would disable caching outright in the verifier environment.
