@@ -152,20 +152,20 @@ export function CreatorGrowthIpPage() {
   const pageNotice = notice?.section === "page" ? notice.message : null;
 
   return (
-    <Container size="wide" className="py-6 sm:py-10">
-      <header className="rounded-2xl border border-line bg-card p-6">
+    <Container size="wide" className="py-5 sm:py-10">
+      <header className="break-keep [overflow-wrap:break-word] rounded-2xl border border-line bg-card p-4 sm:p-6">
         <div className="flex gap-6">
           <div className="min-w-0 flex-1">
         <p className="eyebrow text-accent">CREATOR GROWTH · STORY · IP</p>
-        <h1 className="mt-2 max-w-4xl text-balance break-keep text-3xl font-semibold tracking-tight text-fg sm:text-4xl lg:text-5xl">
+        <h1 className="mt-2 max-w-4xl text-balance break-keep text-2xl font-semibold leading-[1.2] tracking-[-0.02em] text-fg sm:text-4xl lg:text-5xl">
           {bi("신인 발굴부터 연재·협업·판권 확장까지", "From creator discovery to publishing, collaboration and IP expansion")}
         </h1>
-        <p className="mt-3 max-w-3xl text-pretty break-keep text-base leading-7 text-fg-2">
+        <p className="mt-2.5 max-w-3xl text-pretty break-keep text-sm leading-[1.65] tracking-[-0.01em] text-fg-2 sm:mt-3 sm:text-base sm:leading-7">
           {bi("필요한 단계만 탭으로 열어 쓰세요. 위에서 아래 순서(연령 정책 → 발굴·지원 → 제작 → 판권·공유 → 환경·교육)대로 진행하면 가장 자연스럽습니다.", "Open only the step you need. Following the tabs in order — age policy → support → production → rights & sharing → environment & education — is the smoothest path.")}
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button type="button" className={GROWTH_BUTTON} aria-pressed={guideSpeaking} onClick={speakGuide}>
-            {guideSpeaking ? <Square size={15} aria-hidden /> : <Headphones size={16} aria-hidden />}
+        <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+          <button type="button" className={`${GROWTH_BUTTON} shrink-0 whitespace-nowrap`} aria-pressed={guideSpeaking} onClick={speakGuide}>
+            {guideSpeaking ? <Square size={15} strokeWidth={1.5} aria-hidden /> : <Headphones size={16} strokeWidth={1.5} aria-hidden />}
             {guideSpeaking ? bi("음성 안내 중지", "Stop voice guide") : bi("음성으로 안내 듣기", "Listen to the guide")}
           </button>
           <SharePageButton
@@ -173,26 +173,26 @@ export function CreatorGrowthIpPage() {
             text={bi("작가 성장·IP 확장 작업대", "Creator growth & IP workspace")}
             description={bi("신인작가 지원, 웹소설→웹툰 각색, 판권·교육·협업 기능", "Creator support, adaptation, rights, education and collaboration")}
             label={bi("공유", "Share")}
-            className="min-h-11 rounded-xl px-4 text-sm"
+            className="min-h-11 shrink-0 whitespace-nowrap rounded-xl px-4 text-sm"
           />
-          <Link to="/studio/ecosystem" className={GROWTH_BUTTON}><Layers size={16} aria-hidden />{bi("창작 생태계 보기", "Creator ecosystem")}</Link>
-          <Link to="/studio/growth" className={GROWTH_BUTTON}>{bi("성장 실험·퍼널", "Growth experiments")}</Link>
-          <Link to="/creator/revenue" className={GROWTH_BUTTON}>{bi("창작자 수익·멤버십", "Creator revenue")}</Link>
-          <Link to="/studio/support" className={GROWTH_BUTTON}>{bi("작가 지원 센터", "Creator support")}</Link>
+          <Link to="/studio/ecosystem" className={`${GROWTH_BUTTON} shrink-0 whitespace-nowrap`}><Layers size={16} strokeWidth={1.5} aria-hidden />{bi("창작 생태계 보기", "Creator ecosystem")}</Link>
+          <Link to="/studio/growth" className={`${GROWTH_BUTTON} shrink-0 whitespace-nowrap`}>{bi("성장 실험·퍼널", "Growth experiments")}</Link>
+          <Link to="/creator/revenue" className={`${GROWTH_BUTTON} shrink-0 whitespace-nowrap`}>{bi("창작자 수익·멤버십", "Creator revenue")}</Link>
+          <Link to="/studio/support" className={`${GROWTH_BUTTON} shrink-0 whitespace-nowrap`}>{bi("작가 지원 센터", "Creator support")}</Link>
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3 text-sm leading-6 text-fg-2">
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3 text-xs leading-[1.6] tracking-[-0.01em] text-fg-2 sm:text-sm sm:leading-6">
           <span className="inline-flex items-start gap-1.5">
-            <HardDrive size={14} aria-hidden className="mt-1.5 shrink-0 text-accent" />
+            <HardDrive size={14} strokeWidth={1.5} aria-hidden className="mt-1 shrink-0 text-accent" />
             {bi("작업 내용은 이 브라우저에만 저장됩니다. 공개·계약·고용·결제는 직접 확인하기 전까지 실행하지 않습니다.", "Work stays in this browser. Publishing, contracts, hiring and payments never run without your explicit confirmation.")}
           </span>
           <button
             type="button"
             onClick={() => openSection("age")}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg font-bold text-fg hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg font-semibold text-fg transition-colors duration-150 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            <Compass size={14} aria-hidden className="text-accent" />
+            <Compass size={14} strokeWidth={1.5} aria-hidden className="text-accent" />
             {bi("연령대", "Age band")}: {biLabel(AGE_BAND_LABEL[state.ageBand])}
-            {ageLimited ? <span className="font-semibold text-fg-2">· {bi("일부 기능 제한", "some features limited")}</span> : null}
+            {ageLimited ? <span className="font-medium text-fg-2">· {bi("일부 기능 제한", "some features limited")}</span> : null}
           </button>
         </div>
           </div>

@@ -97,9 +97,9 @@ export function RightsInquirySection({ state, update, notify, notice }: GrowthSe
       description={bi("작품별 제안 수신·검토·법률 검토 필요·거절·종료 상태를 기록합니다. 제안 기록과 실제 계약 체결을 분리해, 클릭 한 번으로 권리가 이전되거나 동의된 것처럼 보이지 않게 합니다.", "Track inbound proposals and review states while keeping inquiry records separate from actual contract execution or rights transfer.")}
       notice={notice}
     >
-      <div className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+      <div className="grid gap-4 break-keep [overflow-wrap:break-word] xl:grid-cols-[0.8fr_1.2fr]">
         <div className={GROWTH_CARD}>
-          <h3 className="font-black text-fg">{bi("받은 제안 기록", "Record an inquiry")}</h3>
+          <h3 className="font-semibold tracking-[-0.015em] text-fg">{bi("받은 제안 기록", "Record an inquiry")}</h3>
           <fieldset disabled={!policy.allowed} className="mt-3 grid gap-3">
             <legend className="sr-only">{bi("판권 제안 정보", "Rights inquiry details")}</legend>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -130,36 +130,36 @@ export function RightsInquirySection({ state, update, notify, notice }: GrowthSe
                 <textarea className={`${GROWTH_INPUT} min-h-28`} aria-describedby={describedBy} value={draft.scope} onChange={(e) => setDraft((c) => ({ ...c, scope: e.target.value }))} />
               )}
             </GrowthField>
-            <button type="button" className={`${GROWTH_PRIMARY} justify-self-start`} onClick={record}><Plus size={15} aria-hidden />{bi("제안 기록", "Record inquiry")}</button>
+            <button type="button" className={`${GROWTH_PRIMARY} w-full justify-center sm:w-auto sm:justify-self-start`} onClick={record}><Plus size={15} strokeWidth={1.5} aria-hidden />{bi("제안 기록", "Record inquiry")}</button>
           </fieldset>
           {!policy.allowed ? (
-            <p className="mt-3 rounded-xl border border-warn/30 bg-warn/10 p-3 text-xs leading-5 text-fg">
+            <p className="mt-3 rounded-xl border border-warn/30 bg-warn/10 p-3 text-xs leading-[1.6] text-fg">
               {policyReason(policy)}{" "}
-              <a href="#age" className="font-bold text-accent underline underline-offset-2">{bi("연령 정책으로 이동", "Go to age policy")}</a>
+              <a href="#age" className="font-semibold text-accent underline underline-offset-2">{bi("연령 정책으로 이동", "Go to age policy")}</a>
             </p>
           ) : null}
         </div>
         <div className={GROWTH_CARD}>
-          <h3 className="font-black text-fg">
-            {bi("기록한 제안", "Recorded inquiries")} <span className="text-sm font-bold text-fg-2">{state.rightsInquiries.length}</span>
+          <h3 className="font-semibold tracking-[-0.015em] text-fg">
+            {bi("기록한 제안", "Recorded inquiries")} <span className="text-sm font-semibold tabular-nums text-fg-2">{state.rightsInquiries.length}</span>
           </h3>
           <div className="mt-3 grid gap-2">
             {state.rightsInquiries.length ? state.rightsInquiries.slice().reverse().map((item) => (
               <article key={item.id} className={GROWTH_ITEM}>
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <strong className="text-sm text-fg">{item.company || bi("회사 미입력", "No company")}</strong>
+                    <strong className="text-sm font-semibold text-fg">{item.company || bi("회사 미입력", "No company")}</strong>
                     <Pill>{biLabel(RIGHTS_MEDIUM_LABEL[item.medium])}</Pill>
                   </div>
-                  <label className="flex items-center gap-2 text-xs text-fg-2">
-                    <span>{bi("검토 상태", "Status")}</span>
-                    <select className="min-h-11 rounded-lg border border-line bg-card px-2 text-xs text-fg focus-visible:ring-2 focus-visible:ring-accent/40" value={item.status} onChange={(e) => changeStatus(item.id, e.target.value)}>
+                  <label className="flex w-full items-center justify-between gap-2 text-xs text-fg-2 sm:w-auto">
+                    <span className="shrink-0">{bi("검토 상태", "Status")}</span>
+                    <select className="min-h-11 flex-1 rounded-lg border border-line bg-card px-2.5 text-xs text-fg focus-visible:ring-2 focus-visible:ring-accent/40 sm:flex-none" value={item.status} onChange={(e) => changeStatus(item.id, e.target.value)}>
                       {RIGHTS_STATUSES.map((status) => <option key={status} value={status}>{biLabel(RIGHTS_STATUS_LABEL[status])}</option>)}
                     </select>
                   </label>
                 </div>
-                <p className="mt-2 text-xs leading-5 text-fg-2">{[item.territory || bi("권역 미입력", "No territory"), formatRecordedDate(item.createdAt)].join(" · ")}</p>
-                <p className="mt-1 whitespace-pre-line text-xs leading-5 text-fg">{item.scope}</p>
+                <p className="mt-2 text-xs leading-[1.6] text-fg-2">{[item.territory || bi("권역 미입력", "No territory"), formatRecordedDate(item.createdAt)].join(" · ")}</p>
+                <p className="mt-1 whitespace-pre-line text-xs leading-[1.6] text-fg">{item.scope}</p>
               </article>
             )) : <EmptyNote>{bi("아직 기록한 판권 제안이 없습니다.", "No rights inquiries recorded yet.")}</EmptyNote>}
           </div>
@@ -248,15 +248,15 @@ export function EnvironmentSection({ notify, notice }: Pick<GrowthSectionProps, 
       <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
         <div className={GROWTH_CARD}>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-black text-fg">{bi("지금 이 브라우저", "This browser right now")}</h3>
+            <h3 className="font-semibold tracking-[-0.015em] text-fg">{bi("지금 이 브라우저", "This browser right now")}</h3>
             <Pill tone="accent">{readyCount}/{capabilities.length} {bi("사용 가능", "ready")}</Pill>
           </div>
           <CapabilityGrid capabilities={capabilities} />
         </div>
         <aside className={GROWTH_CARD} aria-label={bi("앱 설치 상태", "App install status")}>
           <PwaStatusPanel pwa={pwa} onInstall={() => void requestPwaInstallMessage().then(notify)}>
-            <Link to="/studio/environment" className={`${GROWTH_BUTTON} mt-2 w-full`}><MonitorCheck size={15} aria-hidden />{bi("상세 사용 환경 안내", "Full environment guide")}</Link>
-            <p className="mt-3 text-xs leading-5 text-fg-2">{bi("iOS는 브라우저 제한 때문에 직접 ‘홈 화면에 추가’ 안내가 나올 수 있습니다. 오프라인·업데이트 대기 상태도 함께 보여 줍니다.", "iOS may require manual Add to Home Screen. Offline and pending-update states remain visible.")}</p>
+            <Link to="/studio/environment" className={`${GROWTH_BUTTON} mt-2 w-full`}><MonitorCheck size={15} strokeWidth={1.5} aria-hidden />{bi("상세 사용 환경 안내", "Full environment guide")}</Link>
+            <p className="mt-3 text-xs leading-[1.6] text-fg-2">{bi("iOS는 브라우저 제한 때문에 직접 ‘홈 화면에 추가’ 안내가 나올 수 있습니다. 오프라인·업데이트 대기 상태도 함께 보여 줍니다.", "iOS may require manual Add to Home Screen. Offline and pending-update states remain visible.")}</p>
           </PwaStatusPanel>
         </aside>
       </div>
@@ -268,16 +268,16 @@ const EMPTY_EDUCATION = { institution: "", program: "", region: "", mode: "hybri
 
 function CurriculumRoadmap() {
   return (
-    <ol className="mt-3 grid gap-2 sm:grid-cols-2" aria-label={bi("웹툰 교육과정 단계", "Webtoon curriculum phases")}>
+    <ol className="mt-3 grid gap-2 break-keep [overflow-wrap:break-word] sm:grid-cols-2" aria-label={bi("웹툰 교육과정 단계", "Webtoon curriculum phases")}>
       {WEBTOON_CURRICULUM_GUIDE.map((phase, index) => {
         const english = CURRICULUM_GUIDE_EN[index];
         return (
           <li key={phase.phase} className={GROWTH_ITEM}>
             <div className="flex items-center gap-2">
-              <span aria-hidden className="grid size-7 place-items-center rounded-full bg-accent-soft text-xs font-black text-accent">{String(index + 1).padStart(2, "0")}</span>
-              <strong className="text-sm text-fg">{bi(phase.phase, english?.phase ?? phase.phase)}</strong>
+              <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-semibold tabular-nums text-accent">{String(index + 1).padStart(2, "0")}</span>
+              <strong className="text-sm font-semibold text-fg">{bi(phase.phase, english?.phase ?? phase.phase)}</strong>
             </div>
-            <ul className="mt-2 grid gap-1 text-xs leading-5 text-fg-2">
+            <ul className="mt-2 grid gap-1 text-xs leading-[1.6] text-fg-2">
               {phase.subjects.map((subject, subjectIndex) => <li key={subject}>· {bi(subject, english?.subjects[subjectIndex] ?? subject)}</li>)}
             </ul>
           </li>
@@ -320,17 +320,17 @@ export function EducationSection({ state, update, notify, notice }: GrowthSectio
       description={bi("실제 교육기관 정보는 출처를 확인한 뒤 직접 기록하도록 비워 두었습니다. 대신 웹툰 제작에 필요한 표준 학습 로드맵을 제공합니다.", "Institution data is left for you to record from verified sources instead of being prefilled with fictional schools. A generic production curriculum map is provided.")}
       notice={notice}
     >
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-4 break-keep [overflow-wrap:break-word] xl:grid-cols-2">
         <div className={GROWTH_CARD}>
-          <h3 className="font-black text-fg">{bi("교육과정 로드맵", "Curriculum roadmap")}</h3>
+          <h3 className="font-semibold tracking-[-0.015em] text-fg">{bi("교육과정 로드맵", "Curriculum roadmap")}</h3>
           <CurriculumRoadmap />
           <div className="mt-3 flex flex-wrap gap-2">
-            <Link to="/learn" className={GROWTH_BUTTON}><BookOpen size={15} aria-hidden />{bi("내부 학습실", "Learning hub")}</Link>
-            <Link to="/learn/studio" className={GROWTH_BUTTON}><Clapperboard size={15} aria-hidden />{bi("Studio 실습", "Studio practice")}</Link>
+            <Link to="/learn" className={GROWTH_BUTTON}><BookOpen size={15} strokeWidth={1.5} aria-hidden />{bi("내부 학습실", "Learning hub")}</Link>
+            <Link to="/learn/studio" className={GROWTH_BUTTON}><Clapperboard size={15} strokeWidth={1.5} aria-hidden />{bi("Studio 실습", "Studio practice")}</Link>
           </div>
         </div>
         <div className={GROWTH_CARD}>
-          <h3 className="font-black text-fg">{bi("확인한 교육기관/과정 등록", "Record a verified institution/program")}</h3>
+          <h3 className="font-semibold tracking-[-0.015em] text-fg">{bi("확인한 교육기관/과정 등록", "Record a verified institution/program")}</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <GrowthField label={bi("기관명", "Institution")}>
               <input className={GROWTH_INPUT} value={draft.institution} onChange={(e) => setDraft((c) => ({ ...c, institution: e.target.value }))} />
@@ -375,7 +375,7 @@ export function EducationSection({ state, update, notify, notice }: GrowthSectio
               <input className={GROWTH_INPUT} value={draft.tags} onChange={(e) => setDraft((c) => ({ ...c, tags: e.target.value }))} />
             </GrowthField>
           </div>
-          <button type="button" className={`${GROWTH_PRIMARY} mt-3`} onClick={addProgram}><Plus size={15} aria-hidden />{bi("과정 등록", "Add program")}</button>
+          <button type="button" className={`${GROWTH_PRIMARY} mt-3 w-full justify-center sm:w-auto`} onClick={addProgram}><Plus size={15} strokeWidth={1.5} aria-hidden />{bi("과정 등록", "Add program")}</button>
           <div className="mt-4 grid gap-2">
             {state.educationPrograms.length ? state.educationPrograms.slice().reverse().map((program) => (
               <article key={program.id} className={GROWTH_ITEM}>

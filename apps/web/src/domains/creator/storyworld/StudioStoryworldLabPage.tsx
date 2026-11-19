@@ -5,6 +5,7 @@ import {
   BookOpenCheck,
   BrainCircuit,
   CircleDot,
+  Compass,
   Download,
   FileJson,
   GitBranch,
@@ -15,7 +16,6 @@ import {
   RefreshCcw,
   Settings2,
   ShieldCheck,
-  Sparkles,
   TimerReset,
   TrendingUp,
   Users,
@@ -127,7 +127,7 @@ const TAB_ITEMS: readonly {
   { id: "knowledge", label: "인물 지식", icon: Users },
   { id: "contracts", label: "복선 약속", icon: BookOpenCheck },
   { id: "ip-expansion", label: "IP 확장 스튜디오", icon: TrendingUp },
-  { id: "capabilities", label: "창의 기능 지도", icon: Sparkles },
+  { id: "capabilities", label: "창의 기능 지도", icon: Compass },
   { id: "json", label: "설정 파일", icon: FileJson },
 ];
 
@@ -197,30 +197,30 @@ function StoryworldReaContinuityBar({
       data-testid="storyworld-rea-continuity-bar"
       data-own-control-size=""
       aria-label={pickLang("스토리월드 연속성 및 정사 범위 워크벤치", "Storyworld Continuity & Canon Scope Workbench")}
-      className="mb-5 rounded-2xl border border-line bg-card p-4"
+      className="mb-5 break-keep [overflow-wrap:break-word] rounded-2xl border border-line bg-card p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="font-mono text-xs font-semibold text-accent">
             {pickLang("세계관 연속성 · 인과 역설 & 복선 원장", "STORYWORLD CONTINUITY · CAUSALITY & FORESHADOW LEDGER")}
           </p>
-          <p className="mt-2 text-xs font-semibold text-fg">
+          <p className="mt-1.5 text-xs font-medium leading-[1.6] tracking-[-0.01em] text-fg">
             {pickLang(
               "타임라인 역설·세력 관계·말풍선 호흡 렌즈와 정사·멀티버스 범위를 교차 점검합니다.",
               "Cross-check timeline paradoxes, faction matrices, and 45-char pacing across canon scopes.",
             )}
           </p>
         </div>
-        <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2">
+        <span className="rounded-lg bg-panel px-2.5 py-1 font-mono text-[11px] text-fg-2 sm:text-xs">
           World Anvil · Campfire · Plottr · Scrivener
         </span>
       </div>
       <div
         role="group"
         aria-label={pickLang("점검 렌즈 프리셋", "Checker Lens Presets")}
-        className="mt-3 flex flex-wrap items-center gap-2"
+        className="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto border-t border-line/60 pb-1 pt-3 sm:flex-wrap sm:overflow-visible sm:pb-0"
       >
-        <span className="text-xs font-semibold text-fg-2">
+        <span className="shrink-0 text-xs font-semibold text-fg-2">
           {pickLang("점검 렌즈:", "Checker Lens:")}
         </span>
         {CHECKER_LENSES.map((item) => (
@@ -232,8 +232,8 @@ function StoryworldReaContinuityBar({
             onClick={() => setCheckerLens(item.id)}
             className={
               checkerLens === item.id
-                ? "min-h-11 min-w-11 rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                : "min-h-11 min-w-11 rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-accent-soft/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                ? "min-h-11 min-w-11 shrink-0 whitespace-nowrap rounded-xl bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9"
+                : "min-h-11 min-w-11 shrink-0 whitespace-nowrap rounded-xl bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9"
             }
           >
             {pickLang(item.ko, item.en)}
@@ -243,9 +243,9 @@ function StoryworldReaContinuityBar({
       <div
         role="group"
         aria-label={pickLang("정사 범위 프리셋", "Canon Scope Presets")}
-        className="mt-2 flex flex-wrap items-center gap-2"
+        className="mt-2 flex flex-nowrap items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
       >
-        <span className="text-xs font-semibold text-fg-2">
+        <span className="shrink-0 text-xs font-semibold text-fg-2">
           {pickLang("정사 범위:", "Canon Scope:")}
         </span>
         {CANON_SCOPES.map((item) => (
@@ -257,8 +257,8 @@ function StoryworldReaContinuityBar({
             onClick={() => setCanonScope(item.id)}
             className={
               canonScope === item.id
-                ? "min-h-11 min-w-11 rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                : "min-h-11 min-w-11 rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-accent-soft/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                ? "min-h-11 min-w-11 shrink-0 whitespace-nowrap rounded-xl bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9"
+                : "min-h-11 min-w-11 shrink-0 whitespace-nowrap rounded-xl bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9"
             }
           >
             {pickLang(item.ko, item.en)}
@@ -268,7 +268,7 @@ function StoryworldReaContinuityBar({
       <p
         data-testid="storyworld-rea-status"
         aria-live="polite"
-        className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2"
+        className="mt-3 rounded-xl bg-panel px-3 py-2 font-mono text-xs leading-[1.6] text-fg-2"
       >
         {pickLang(
           `렌즈: ${activeLens.ko} (${checkerLens}) · 범위: ${activeScope.ko} (${canonScope})`,
