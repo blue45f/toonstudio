@@ -861,6 +861,25 @@ export class StudioLiveRoom {
     return this.droppedUnknownInkAuthorFrames;
   }
 
+  /** 현재 발신·수신 추적 중인 활성 잉크 스트로크 총합(장시간 진단 HUD용). */
+  getActiveInkStrokeCount(): number {
+    let total = this.outboundInkTracker.activeStrokeCount;
+    for (const tracker of this.inboundInkTrackerByAuthor.values()) {
+      total += tracker.activeStrokeCount;
+    }
+    return total;
+  }
+
+  /**
+   * 브라우저 백그라운드 탭 스로틀링 해제(`visibilitychange` -> visible) 직후 호출한다.
+   * 지연된 타이머 주기를 기다리지 않고 만료 피어·잠금·고아 잉크를 즉시 정리하고 잉크 큐를 펌핑한다.
+   */
+  reconcileAfterVisibilityResume(): void {
+    if (!this.ready) return;
+    this.pruneExpired(this.now());
+    this.pumpInkQueue();
+  }
+
   /**
    * Legacy fire-and-observe compatibility shim. Server callers that must gate a mutation on the
    * authoritative lease should await `claimLockAsync` instead of interpreting this boolean as ACK.
@@ -1483,11 +1502,12 @@ export class StudioLiveRoom {
   private publishInk(message: StudioLiveInkMessage): boolean {
     if (!this.ready || !canPublishStudioLiveInk(this.participant)) return false;
     if (!this.transportSupportsInk()) return false;
+    const now = this.now();
     // Structural validation runs before any stroke state mutates; authoring bugs throw loud.
     const wire = createStudioLiveInkWireMessage({
       workId: this.workId,
       senderSessionId: this.participant.sessionId,
-      sentAt: this.now(),
+      sentAt: now,
       message,
     });
     const prediction = message.kind === "ink:prediction";
@@ -1499,7 +1519,10 @@ export class StudioLiveRoom {
     if (!prediction && this.outboundInkQueue.length >= STUDIO_LIVE_INK_MAX_QUEUED_MESSAGES) {
       return false;
     }
-    if (!this.outboundInkTracker.accept(message)) return false;
+    for (const expiredStrokeId of this.outboundInkTracker.pruneExpired(now)) {
+      this.outboundActiveInkStrokeIds.delete(expiredStrokeId);
+    }
+    if (!this.outboundInkTracker.accept(message, now)) return false;
     if (message.kind === "ink:begin") {
       this.outboundActiveInkStrokeIds.add(message.strokeId);
     } else if (message.kind === "ink:end" || message.kind === "ink:cancel") {
@@ -1683,7 +1706,7 @@ export class StudioLiveRoom {
       tracker = new StudioLiveInkStrokeTracker();
       this.inboundInkTrackerByAuthor.set(authorId, tracker);
     }
-    if (!tracker.accept(wire.message)) return;
+    if (!tracker.accept(wire.message, receivedAt)) return;
     this.emitInk({
       type: "ink",
       // Attribute by the canonical author identity so presence-to-ink attribution cannot
@@ -2537,6 +2560,22 @@ export class StudioLiveRoom {
       if (lock.owner.sessionId === this.participant.sessionId && lock.leaseUntil > now) continue;
       this.locks.delete(resource);
       locksChanged = true;
+    }
+    // Reap stale ink strokes and expired preview rate windows so multi-hour sessions never
+    // accumulate orphaned per-stroke gates or departed author trackers.
+    for (const expiredStrokeId of this.outboundInkTracker.pruneExpired(now)) {
+      this.outboundActiveInkStrokeIds.delete(expiredStrokeId);
+    }
+    for (const [authorId, tracker] of this.inboundInkTrackerByAuthor) {
+      tracker.pruneExpired(now);
+      if (tracker.activeStrokeCount === 0 && !this.resolveInkAuthorParticipant(authorId)) {
+        this.inboundInkTrackerByAuthor.delete(authorId);
+      }
+    }
+    for (const [sessionId, window] of this.previewInboundWindowBySession) {
+      if (now - window.startedAt >= STUDIO_LIVE_GESTURE_PREVIEW_INBOUND_WINDOW_MS) {
+        this.previewInboundWindowBySession.delete(sessionId);
+      }
     }
     if (presenceChanged) this.emitPresence();
     if (presenceChanged) this.emitVoicePresence();

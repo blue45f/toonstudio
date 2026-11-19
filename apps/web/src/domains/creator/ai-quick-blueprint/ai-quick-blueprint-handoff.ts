@@ -30,8 +30,8 @@ import type { StudioStoryBeat } from "../studio-storyboard-planner";
 import {
   AI_BLUEPRINT_FORMATS,
   type AiBlueprintLocale,
-  type AiQuickBlueprint,
-} from "./ai-quick-blueprint-engine";
+} from "./ai-quick-blueprint-formats";
+import type { AiQuickBlueprint } from "./ai-quick-blueprint-engine";
 
 export type AiBlueprintHandoffStorage = StudioProjectCreationStorage
   & StudioSaveProfileStorage

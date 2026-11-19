@@ -13,16 +13,7 @@
  * - vitest에 의존하지 않는다(엔진 테스트 보조 파일, 배럴에서 내보내지 않는다).
  */
 
-import {
-  buildMockRenderBundleEncoder,
-  createMockAdapter,
-  createMockCanvas,
-  createMockGpuApi,
-  type MockAdapterOptions,
-  type MockDraw,
-  type MockIndirectDraw,
-  type MockRenderBundle,
-} from "./mock-gpu-device-helpers";
+import { buildMockRenderBundleEncoder, createMockAdapterWithGpuFactory, createMockCanvas, createMockGpuApi, type MockAdapterOptions, type MockDraw, type MockIndirectDraw, type MockRenderBundle } from "./mock-gpu-device-helpers";
 
 /** 모의 장치가 흉내 내는 WebGPU 검증 오류. 실 장치에서는 uncapturederror·command buffer 무효화로 나타난다. */
 export class MockValidationError extends Error {
@@ -922,4 +913,5 @@ export function createMockGpu(options: MockGpuOptions = {}): MockGpu {
   return mock;
 }
 
-export { createMockAdapter, createMockCanvas, createMockGpuApi, type MockAdapterOptions };
+export const createMockAdapter = (options: MockAdapterOptions = {}) => createMockAdapterWithGpuFactory(createMockGpu, options);
+export { createMockCanvas, createMockGpuApi, type MockAdapterOptions };

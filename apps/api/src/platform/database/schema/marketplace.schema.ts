@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
 import { bigint, boolean, check, index, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
 
-import { users, bytea } from "./index";
+import { users } from "./auth.schema";
+import { bytea } from "./common.schema";
 
 // 회원이 사이트에 공유한 커스텀 에셋(다른 회원이 스튜디오에서 재사용). 이미지 데이터URL 보관.
 export const creatorAssets = pgTable(

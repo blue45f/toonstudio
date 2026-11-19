@@ -169,22 +169,44 @@ function mergeBindingTelemetry(options: {
 }): StudioCrdtSyncTelemetry {
   const { previous, status, transportReady, outboxConfigured } = options;
   const measured = status as StudioCrdtBindingStatusTelemetry;
+  const state = bindingTelemetryState(status.state);
+  const pendingCount = measured.pendingCount ?? previous?.pendingCount ?? 0;
   const persistenceDurability: StudioLivePersistenceDurability =
     measured.persistenceDurability ??
     previous?.persistenceDurability ??
     (outboxConfigured ? "checking" : "unavailable");
+  const nextTransportReady = measured.transportReady ?? transportReady;
+  const lastAckAt = measured.lastAckAt ?? previous?.lastAckAt ?? null;
+  const lastAckServerSequence = measured.lastAckServerSequence ?? previous?.lastAckServerSequence ?? null;
+  const durabilityAtRisk = status.state === "error" && status.durabilityAtRisk ? true : undefined;
+  const nonAuthoritativeDeliveryPending = status.state === "retrying"
+    && status.nonAuthoritativeDeliveryPending === true
+    ? true
+    : undefined;
+  if (
+    previous !== null
+    && previous.state === state
+    && previous.message === status.message
+    && previous.pendingCount === pendingCount
+    && previous.persistenceDurability === persistenceDurability
+    && previous.transportReady === nextTransportReady
+    && previous.lastAckAt === lastAckAt
+    && previous.lastAckServerSequence === lastAckServerSequence
+    && previous.durabilityAtRisk === durabilityAtRisk
+    && previous.nonAuthoritativeDeliveryPending === nonAuthoritativeDeliveryPending
+  ) {
+    return previous;
+  }
   return {
-    state: bindingTelemetryState(status.state),
+    state,
     message: status.message,
-    pendingCount: measured.pendingCount ?? previous?.pendingCount ?? 0,
+    pendingCount,
     persistenceDurability,
-    transportReady: measured.transportReady ?? transportReady,
-    lastAckAt: measured.lastAckAt ?? previous?.lastAckAt ?? null,
-    lastAckServerSequence: measured.lastAckServerSequence ?? previous?.lastAckServerSequence ?? null,
-    ...(status.state === "error" && status.durabilityAtRisk ? { durabilityAtRisk: true } : {}),
-    ...(status.state === "retrying" && status.nonAuthoritativeDeliveryPending === true
-      ? { nonAuthoritativeDeliveryPending: true }
-      : {}),
+    transportReady: nextTransportReady,
+    lastAckAt,
+    lastAckServerSequence,
+    ...(durabilityAtRisk ? { durabilityAtRisk: true } : {}),
+    ...(nonAuthoritativeDeliveryPending ? { nonAuthoritativeDeliveryPending: true } : {}),
   };
 }
 
@@ -591,7 +613,12 @@ export function StudioLiveCollaborationProvider({
 
       const onVisibilityChange = () => {
         try {
-          if (document.hidden) nextRoom.clearCursor();
+          if (document.hidden) {
+            nextRoom.clearCursor();
+          } else {
+            // 백그라운드 탭 타이머 스로틀링 동안 쌓인 만료 상태·고아 잉크를 복귀 즉시 정리한다.
+            nextRoom.reconcileAfterVisibilityResume();
+          }
           nextRoom.updatePresence({ visibility: document.hidden ? "idle" : "active" });
         } catch (cause) {
           if (!cancelled) setError(messageFrom(cause, frozenStatus3Text("studio.frozenStatus3.liveProv.presenceNotifyFailed", "작업 상태를 팀에 알리지 못했습니다.")));

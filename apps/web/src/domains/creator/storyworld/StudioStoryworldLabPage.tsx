@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Sparkles,
   TimerReset,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import {
@@ -41,6 +42,7 @@ import {
   MultiverseTab,
   OverviewTab,
 } from "./StudioStoryworldLabTabs";
+import { StudioIpExpansionPanel } from "./StudioIpExpansionPanel";
 import { StudioStoryworldSettings, type StoryworldSettingsFocus } from "./StudioStoryworldSettings";
 import { StudioStoryworldUniverse } from "./StudioStoryworldUniverse";
 import { analyzeStoryworldContinuity } from "./studio-storyworld-continuity";
@@ -104,6 +106,7 @@ type StoryworldTab =
   | "multiverse"
   | "knowledge"
   | "contracts"
+  | "ip-expansion"
   | "capabilities"
   | "json";
 
@@ -123,6 +126,7 @@ const TAB_ITEMS: readonly {
   { id: "multiverse", label: "다른 전개", icon: GitBranch },
   { id: "knowledge", label: "인물 지식", icon: Users },
   { id: "contracts", label: "복선 약속", icon: BookOpenCheck },
+  { id: "ip-expansion", label: "IP 확장 스튜디오", icon: TrendingUp },
   { id: "capabilities", label: "창의 기능 지도", icon: Sparkles },
   { id: "json", label: "설정 파일", icon: FileJson },
 ];
@@ -565,6 +569,25 @@ function StudioStoryworldLabEditor({
           {activeTab === "multiverse" ? <MultiverseTab project={project} result={result} /> : null}
           {activeTab === "knowledge" ? <KnowledgeTab project={project} result={result} /> : null}
           {activeTab === "contracts" ? <ContractsTab result={result} /> : null}
+          {activeTab === "ip-expansion" ? (
+            <StudioIpExpansionPanel
+              initialProfile={{
+                workTitle: project.title,
+                genre: "스토리월드 연동 웹툰",
+                publishedEpisodes: Math.max(1, project.scenes.length),
+                cumulativeViews: 1_200_000,
+                hasCharacterSheets: project.characters.length > 0,
+                hasStoryBible: project.facts.length > 0,
+                hasCleanRightsBom: true,
+                has3dWorldAssets: true,
+                hasVoiceCastPlan: false,
+              }}
+              onExportPitchBible={(markdown) => {
+                downloadJson(`${project.id}.ip-pitch-bible.json`, { title: project.title, markdown });
+                setStatusText("IP 확장 피치 바이블을 내보냈습니다.");
+              }}
+            />
+          ) : null}
           {activeTab === "capabilities" ? <CapabilitiesTab /> : null}
           {activeTab === "json" ? <JsonTab onApply={(next) => { setProject(authoredStoryworldProject(next)); setStatusText(frozenStatus2Text("studio.frozenStatus2.world.appliedSettings", "설정 변경을 적용해 다시 점검했습니다. 대시보드에서 결과를 확인하세요.")); }} project={project} /> : null}
         </div>

@@ -182,6 +182,11 @@ export class StudioLiveInkOverlayRenderer {
   /** Canonical-drawn prefix retained solely for FIFO accounting and therefore not repainted. */
   private suppressedSettledPrefixCount = 0;
   attach(canvas: HTMLCanvasElement | null): void {
+    const previousCanvas = this.canvas;
+    if (previousCanvas && previousCanvas !== canvas) {
+      if (previousCanvas.width !== 1) previousCanvas.width = 1;
+      if (previousCanvas.height !== 1) previousCanvas.height = 1;
+    }
     this.canvas = canvas;
     this.context = canvas ? acquireStudioLowLatencyCanvas2dContext(canvas) : null;
     this.applySurface();
@@ -711,6 +716,11 @@ export class StudioLiveInkPredictionRenderer {
   private dirtyRect: StudioLiveInkDirtyRect | null = null;
 
   attach(canvas: HTMLCanvasElement | null): void {
+    const previousCanvas = this.canvas;
+    if (previousCanvas && previousCanvas !== canvas) {
+      if (previousCanvas.width !== 1) previousCanvas.width = 1;
+      if (previousCanvas.height !== 1) previousCanvas.height = 1;
+    }
     this.canvas = canvas;
     this.context = canvas ? acquireStudioLowLatencyCanvas2dContext(canvas) : null;
     this.dirtyRect = null;

@@ -3,7 +3,7 @@ import {
   normalizeCollectionEmoji,
   normalizeCollectionName,
 } from "./collection-contract";
-import { useApp } from "./store";
+import { getAppStore } from "./store-registry";
 import {
   newClientCollectionId,
   rebaseCollectionOutbox,
@@ -13,7 +13,7 @@ import type { CollectionAuthFence, CollectionIdMap } from "./collection-write-th
 import type { Collection } from "./store-types";
 
 export function claimGuestCollectionsForOwner(fence: CollectionAuthFence): void {
-  useApp.setState((state) => {
+  getAppStore().setState((state) => {
     const outbox = [...state.collectionOutbox];
     const hasCreate = new Set(
       outbox
@@ -83,7 +83,7 @@ export function discardGuestCollectionRecovery(
   mergedIdMap: CollectionIdMap
 ): void {
   const mergedClientIds = new Set(Object.keys(mergedIdMap));
-  useApp.setState((state) => ({
+  getAppStore().setState((state) => ({
     collectionOutbox: state.collectionOutbox.filter(
       (entry) =>
         entry.ownerId !== ownerId ||
@@ -94,6 +94,6 @@ export function discardGuestCollectionRecovery(
 }
 
 export function collectionMergeCollectionsForOwner(ownerId: string): Collection[] {
-  const state = useApp.getState();
+  const state = getAppStore().getState();
   return rebaseCollectionOutbox(state.collections, state.collectionOutbox, ownerId);
 }

@@ -472,6 +472,7 @@ export class StudioLiveWetInkOverlayRenderer {
   }
 
   attach(canvases: StudioLiveWetInkOverlayCanvases | null): void {
+    if (canvases === null) this.clearTileSurfacePool();
     this.activeCanvas = canvases?.activeCanvas ?? null;
     this.settledCanvas = canvases?.settledCanvas ?? null;
     this.activeContext = this.activeCanvas
@@ -780,6 +781,7 @@ export class StudioLiveWetInkOverlayRenderer {
     resetStudioInkwashWash();
     this.lastFailureReason = null;
     this.settled = [];
+    this.clearTileSurfacePool();
     this.clearActiveRect();
     this.clearSettledRect();
   }
@@ -883,11 +885,44 @@ export class StudioLiveWetInkOverlayRenderer {
       return;
     }
     const key = `${width}x${height}`;
-    const pool = this.tileSurfacePool.get(key) ?? [];
+    let pool = this.tileSurfacePool.get(key);
+    if (!pool) {
+      // Bound distinct size buckets so variable-size long sessions never leak offscreen canvases.
+      if (this.tileSurfacePool.size >= 24) {
+        const oldestKey = this.tileSurfacePool.keys().next().value;
+        if (typeof oldestKey === "string") {
+          const evicted = this.tileSurfacePool.get(oldestKey);
+          this.tileSurfacePool.delete(oldestKey);
+          if (evicted) this.shrinkPooledSurfaces(evicted);
+        }
+      }
+      pool = [];
+      this.tileSurfacePool.set(key, pool);
+    }
     // Cap per-size pool so long strokes cannot retain unbounded canvases.
-    if (pool.length >= 12) return;
+    if (pool.length >= 12) {
+      this.shrinkPooledSurfaces([surface]);
+      return;
+    }
     pool.push(surface);
-    this.tileSurfacePool.set(key, pool);
+  }
+
+  private clearTileSurfacePool(): void {
+    for (const pool of this.tileSurfacePool.values()) {
+      this.shrinkPooledSurfaces(pool);
+    }
+    this.tileSurfacePool.clear();
+  }
+
+  private shrinkPooledSurfaces(surfaces: readonly StudioWetInkBrushSurface[]): void {
+    for (const surface of surfaces) {
+      try {
+        if (surface.width !== 1) surface.width = 1;
+        if (surface.height !== 1) surface.height = 1;
+      } catch {
+        // Mock or read-only surfaces in tests do not require resize teardown.
+      }
+    }
   }
 
   private prepareUploads(

@@ -1,9 +1,9 @@
 import { sha256HexPortable } from "./sha256-portable";
 import { StudioBg3dSixPassPngArtifactSchema, StudioBg3dSixPassSceneArtifactSchema,
-  hashStudioBg3dSixPassCanonicalJson, parseStudioBg3dSixPassBundleManifest } from "./studio-bg3d-six-pass-bundle";
+  hashStudioBg3dSixPassCanonicalJson, parseStudioBg3dSixPassBundleManifest } from "./studio-bg3d-six-pass-manifest";
 import { inspectStudioPngStructure } from "./studio-png-structure";
 
-import type { StudioBg3dSixPassArtifact, StudioBg3dSixPassBundleManifest } from "./studio-bg3d-six-pass-bundle";
+import type { StudioBg3dSixPassArtifact, StudioBg3dSixPassBundleManifest } from "./studio-bg3d-six-pass-manifest";
 import type { StudioBg3dSixPassRole } from "./studio-bg3d-six-pass-reference";
 
 export type StudioBg3dSixPassArtifactRole = StudioBg3dSixPassRole | "scene";

@@ -31,12 +31,14 @@
  * - ev_4571415adae1548e2078cdaf17fdc17fc7b43d1c9bdbbb5a58461c885bbdd64d
  */
 
-import { PDF_PX_TO_PT } from "./studio-pdf-export";
 import { planMangaBookletImposition, planRunningMarginStamps } from "./studio-imposition-creep";
 import { rasterizePageForMonochromePrint } from "./studio-print-monochrome";
 
 import type { MangaBindingDirection, RunningMarginStampDescriptor } from "./studio-imposition-creep";
 import type { PrintHalftoneSpotShape, PrintMonochromeRasterOptions } from "./studio-print-monochrome";
+
+/** px→pt 변환 계수 — CSS 96dpi 픽셀을 PDF 72dpi 포인트로(1px = 0.75pt). */
+export const PDF_PX_TO_PT = 0.75;
 
 /** mm → pt 변환 계수 (1 inch = 25.4mm = 72pt). */
 export const PRINT_MM_TO_PT = 72 / 25.4;

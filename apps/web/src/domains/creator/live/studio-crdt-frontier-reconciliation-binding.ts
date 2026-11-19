@@ -1,7 +1,11 @@
 import type { MutableRefObject } from "react";
 import type { StudioCrdtDocument } from "./studio-crdt-document";
 import type { StudioCrdtSceneGraphRuntime } from "./StudioLiveCollaborationProvider";
-import type { StudioCrdtSceneGraphFrontier, StudioCrdtSceneGraphChangedIds } from "./studio-crdt-history";
+import {
+  trimStudioCrdtHistoryWindow,
+  type StudioCrdtSceneGraphFrontier,
+  type StudioCrdtSceneGraphChangedIds,
+} from "./studio-crdt-history";
 import { STUDIO_CRDT_ORIGIN_LOCAL } from "./studio-crdt-protocol";
 import * as offline from "../offline-branch/studio-offline-host-integration";
 import { readyStudioWorkAssetImageSources } from "../studio-legacy-editor-runtime-helpers";
@@ -47,8 +51,9 @@ export function bindStudioCrdtFrontierReconciliation<Access extends { documentGe
     forceOfflineProjection: boolean, bundleSources: ReadonlyMap<string, El> = new Map()) => {
     const runtime = input.runtimeRef.current;
     if (!active || !input.mountedRef.current || !runtime || runtime !== subscribedRuntime) return;
-    const currentHistory = input.pagesHistoryRef.current;
-    const currentIndex = Math.max(0, Math.min(input.pagesHiRef.current, Math.max(0, currentHistory.length - 1)));
+    const bounded = trimStudioCrdtHistoryWindow(input.pagesHistoryRef.current, input.pagesHiRef.current);
+    const currentHistory = bounded.history;
+    const currentIndex = bounded.currentIndex;
     const sources = readyStudioWorkAssetImageSources(input.hydrator);
     for (const [id, element] of bundleSources) sources.set(id, element);
     const currentOnly = changedIds !== null && handledPropertyIds.size > 0 && changedIds.strokeIds.size === 0
@@ -63,6 +68,10 @@ export function bindStudioCrdtFrontierReconciliation<Access extends { documentGe
       const history = currentOnly ? currentHistory.map((pages, index) => index === currentIndex ? reconciled.currentPages : pages) : reconciled.history;
       input.pagesHistoryRef.current = history; input.pagesHiRef.current = currentIndex;
       input.rebase(reconciled.currentPages, currentIndex, "remote CRDT reconciliation"); input.setHistory(history);
+    } else if (bounded.trimmed) {
+      input.pagesHistoryRef.current = currentHistory;
+      input.pagesHiRef.current = currentIndex;
+      input.setHistory(currentHistory);
     }
     input.setReconciled(input.document);
   };

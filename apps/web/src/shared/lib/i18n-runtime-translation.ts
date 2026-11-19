@@ -1,19 +1,16 @@
+import { loadAppI18nLocale } from "./i18n-asset-loader";
 import {
-  loadAppI18nLocale,
-  resolveAppI18nAssetLocale,
-} from "./i18n-asset-loader";
+  FALLBACK_LANG,
+  getLocaleCandidateChain,
+  type Dict,
+} from "./i18n-constants";
 import {
   DICT,
-  FALLBACK_LANG,
   getI18nRuntimeTranslationSources,
   triggerTranslationBundleUpdate,
-} from "./i18n-core";
-import {
-  getLocaleCandidateChain,
-  normalizeLocaleCode,
-} from "./i18n-intl-utils";
-
-import type { Dict } from "./i18n-core";
+} from "./i18n-dictionary";
+import { normalizeLocaleCode } from "./i18n-locale-list";
+import { resolveAppI18nAssetLocale } from "./i18n-locale-metrics";
 
 const RUNTIME_TRANSLATION_CACHE_VERSION = 3;
 const I18N_TRANSLATION_ENDPOINT = "https://api.mymemory.translated.net/get";

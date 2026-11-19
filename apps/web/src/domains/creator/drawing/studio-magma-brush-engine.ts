@@ -9,75 +9,25 @@
  *    FG↔BG 색 혼합 및 패턴 블렌드 모드별 깊이 자동 반전(Pattern Depth Auto-Inversion), 픽셀 아트(Pixelation)
  */
 
-export type MagmaPatternBlendMode =
-  | "multiply"
-  | "subtract"
-  | "darken"
-  | "overlay"
-  | "color-dodge"
-  | "color-burn"
-  | "linear-burn"
-  | "hard-mix"
-  | "linear-height"
-  | "height";
+import {
+  createDeterministicPrng,
+  type AnisotropicSpreadConfig,
+  type MagmaBrushDynamicsConfig,
+  type MagmaPatternBlendMode,
+} from "./studio-magma-brush-prng";
 
-export interface AnisotropicSpreadConfig {
-  /** 진행 방향에 수직인 법선 방향 분산 강도 (0..5, 크기 배율) */
-  readonly normalSpread: number;
-  /** 진행 방향과 나란한 접선 방향 분산 강도 (0..5, 크기 배율) */
-  readonly tangentSpread: number;
-  /** true이면 법선과 접선 분산을 독립 적용, false이면 normalSpread를 양축에 동일 적용 */
-  readonly separateSpread: boolean;
-  /** 스텝당 방출할 분산 입자 수 (1..16) */
-  readonly count?: number;
-}
+export {
+  createDeterministicPrng,
+  type AnisotropicSpreadConfig,
+  type MagmaBrushDynamicsConfig,
+  type MagmaPatternBlendMode,
+};
 
 export interface AnisotropicSpreadSample {
   readonly dx: number;
   readonly dy: number;
   readonly normalOffsetPx: number;
   readonly tangentOffsetPx: number;
-}
-
-export interface MagmaBrushDynamicsConfig {
-  readonly sizePx: number;
-  readonly minSizePressure: number;
-  readonly maxSizePressure: number;
-  readonly sizePressure: boolean;
-  readonly minSizeTilt: number;
-  readonly maxSizeTilt: number;
-  readonly sizeTilt: boolean;
-  readonly roundness: number;
-  readonly minRoundness: number;
-  readonly roundnessPressure: boolean;
-  readonly roundnessTilt: boolean;
-  readonly stretch: number;
-  readonly minStretch: number;
-  readonly stretchPressure: boolean;
-  readonly stretchTilt: boolean;
-  readonly hardness: number;
-  readonly opacity: number;
-  readonly flow: number;
-  readonly spacingRatio: number;
-  readonly angleDeg: number;
-  readonly angleToDirection: boolean;
-  readonly angleInitialDirection: boolean;
-  readonly angleJitter: number;
-  readonly pixelation: boolean;
-  readonly spread: AnisotropicSpreadConfig;
-  readonly dualSpread?: AnisotropicSpreadConfig;
-  readonly colorPressure: boolean;
-  readonly colorTilt: boolean;
-  readonly foregroundBackgroundJitter: number;
-  readonly hueJitter: number;
-  readonly saturationJitter: number;
-  readonly brightnessJitter: number;
-  readonly patternBlendMode: MagmaPatternBlendMode;
-  readonly patternEachStamp: boolean;
-  readonly patternScale: number;
-  readonly patternContrast: number;
-  /** Magma 시그니처 Vine 브러시용: 한쪽 에지는 선명하고 반대쪽 에지는 부드러운 비대칭 경도 차 (0..1) */
-  readonly asymmetricEdgeSoftness?: number;
 }
 
 export interface RgbColor01 {
@@ -148,19 +98,6 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * clamp01(t);
 }
 
-/** 결정론적 SplitMix32 난수 생성기 (0..1 반환) */
-export function createDeterministicPrng(seed: number): () => number {
-  let state = (Math.trunc(seed) | 0) >>> 0;
-  if (state === 0) state = 0x9e3779b9;
-  return () => {
-    state = (state + 0x9e3779b9) >>> 0;
-    let z = state;
-    z = Math.imul(z ^ (z >>> 16), 0x85ebca6b) >>> 0;
-    z = Math.imul(z ^ (z >>> 13), 0xc2b2ae35) >>> 0;
-    z = (z ^ (z >>> 16)) >>> 0;
-    return z / 0x100000000;
-  };
-}
 
 /**
  * Magma Studio의 이방성(Anisotropic) 법선·접선 분리 분산을 계산한다.

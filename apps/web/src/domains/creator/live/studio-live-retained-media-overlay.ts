@@ -373,10 +373,21 @@ export class StudioLiveRetainedMediaOverlayRenderer {
     readonly activeCanvas: HTMLCanvasElement;
     readonly settledCanvas: HTMLCanvasElement;
   } | null): void {
+    this.clearCapRepaintWake();
     this.oilUnderlay.reset();
     this.invalidateRetainedRedoPixelSnapshot();
-    this.activeCanvas = canvases?.activeCanvas ?? null;
-    this.settledCanvas = canvases?.settledCanvas ?? null;
+    const nextActiveCanvas = canvases?.activeCanvas ?? null;
+    const nextSettledCanvas = canvases?.settledCanvas ?? null;
+    if (this.activeCanvas && this.activeCanvas !== nextActiveCanvas) {
+      if (this.activeCanvas.width !== 1) this.activeCanvas.width = 1;
+      if (this.activeCanvas.height !== 1) this.activeCanvas.height = 1;
+    }
+    if (this.settledCanvas && this.settledCanvas !== nextSettledCanvas) {
+      if (this.settledCanvas.width !== 1) this.settledCanvas.width = 1;
+      if (this.settledCanvas.height !== 1) this.settledCanvas.height = 1;
+    }
+    this.activeCanvas = nextActiveCanvas;
+    this.settledCanvas = nextSettledCanvas;
     this.activeContext = this.activeCanvas
       ? acquireStudioLowLatencyCanvas2dContext(this.activeCanvas)
       : null;

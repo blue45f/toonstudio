@@ -1,6 +1,6 @@
 import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique } from "drizzle-orm/pg-core";
 
-import { users } from "./index";
+import { users } from "./auth.schema";
 
 // ── 사용자 데이터 (localStorage → DB) ──────────────────────
 export const ratings = pgTable(

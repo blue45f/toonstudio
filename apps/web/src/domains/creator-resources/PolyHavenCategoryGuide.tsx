@@ -11,7 +11,7 @@
  */
 import { useEffect, useState } from "react";
 
-import { ResourcePreSearchFallback } from "./ResourceSearchPage";
+import { ResourcePreSearchFallback } from "./ResourcePreSearchFallback";
 import { resourceUsageLabel } from "./resource-usage";
 import {
   POLYHAVEN_CATEGORIES,

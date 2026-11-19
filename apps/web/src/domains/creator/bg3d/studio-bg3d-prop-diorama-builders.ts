@@ -22,7 +22,7 @@ import {
   type StudioBg3dReaCompetitorId,
   type StudioBg3dReaCompetitorProfile,
   type Vec3,
-} from "./studio-bg3d-rea-webtoon-background-engine";
+} from "./studio-bg3d-rea-primitives";
 
 interface SubPartBlueprint {
   readonly suffix: string;

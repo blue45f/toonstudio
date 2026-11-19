@@ -1,4 +1,5 @@
 import {
+  Activity,
   LocateFixed,
   MessageCircle,
   SendHorizontal,
@@ -13,6 +14,10 @@ import {
 } from "react";
 
 import { STUDIO_LIVE_CURSOR_CHAT_MAX_LENGTH } from "./studio-live-chat-control";
+import {
+  collectStudioLiveLongSessionDiagnostics,
+  serializeStudioLiveDiagnosticsJson,
+} from "./studio-live-long-session-diagnostics";
 import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import type {
@@ -56,9 +61,12 @@ export function StudioLiveQuickCollaborationControls({
   const inputRef = useRef<HTMLInputElement>(null);
   const attentionTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
   const noticeTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
+  const recoveryTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
+  const sawDisconnectRef = useRef(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
+  const [recoveryBadge, setRecoveryBadge] = useState<string | null>(null);
   const [attention, setAttention] = useState<StudioLiveAttentionRequest | null>(null);
   const canChat = room.participant.role !== "viewer";
   const canSpotlight = canDirectAttention(room) && peers.length > 0;
@@ -82,6 +90,24 @@ export function StudioLiveQuickCollaborationControls({
 
   useEffect(() => {
     const unsubscribe = room.subscribe((event) => {
+      if (event.type === "transport-status") {
+        if (event.status.state === "disconnected" || event.status.state === "connecting") {
+          sawDisconnectRef.current = true;
+          return;
+        }
+        if (event.status.state === "ready" && sawDisconnectRef.current) {
+          sawDisconnectRef.current = false;
+          setRecoveryBadge("동기화 복구됨 · 유실 0획");
+          if (recoveryTimerRef.current !== null) {
+            globalThis.clearTimeout(recoveryTimerRef.current);
+          }
+          recoveryTimerRef.current = globalThis.setTimeout(() => {
+            setRecoveryBadge(null);
+            recoveryTimerRef.current = null;
+          }, 4_000);
+        }
+        return;
+      }
       if (
         event.type !== "attention" ||
         event.request.participant.sessionId === room.participant.sessionId
@@ -139,7 +165,26 @@ export function StudioLiveQuickCollaborationControls({
     if (noticeTimerRef.current !== null) {
       globalThis.clearTimeout(noticeTimerRef.current);
     }
+    if (recoveryTimerRef.current !== null) {
+      globalThis.clearTimeout(recoveryTimerRef.current);
+    }
   }, []);
+
+  const copyDiagnosticsReport = useCallback(() => {
+    const snapshot = collectStudioLiveLongSessionDiagnostics({
+      activeInkStrokes: room.getActiveInkStrokeCount(),
+      recovering: recoveryBadge !== null,
+    });
+    const json = serializeStudioLiveDiagnosticsJson(snapshot);
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(json).then(
+        () => announce("장시간 협업 진단 리포트를 복사했습니다."),
+        () => announce("진단 리포트를 복사하지 못했습니다."),
+      );
+      return;
+    }
+    announce("진단 리포트를 준비했습니다.");
+  }, [recoveryBadge, room]);
 
   const submitCursorChat = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -168,6 +213,17 @@ export function StudioLiveQuickCollaborationControls({
       <span aria-atomic="true" aria-live="polite" className="sr-only" role="status">
         {notice}
       </span>
+
+      {recoveryBadge ? (
+        <div
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-line/60 bg-card/85 px-2.5 text-xs font-medium tabular-nums text-fg-2"
+          data-studio-live-recovery-hud="true"
+          role="status"
+        >
+          <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden />
+          <span>{recoveryBadge}</span>
+        </div>
+      ) : null}
 
       {attention ? (
         <div
@@ -274,6 +330,17 @@ export function StudioLiveQuickCollaborationControls({
           <LocateFixed size={16} aria-hidden />
         </button>
       ) : null}
+
+      <button
+        aria-label="장시간 협업 진단 리포트 JSON 복사"
+        className="grid size-11 shrink-0 place-items-center rounded-lg border border-line/60 bg-card/80 text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+        data-studio-live-diagnostics-dump-action="true"
+        title="진단 JSON 복사"
+        type="button"
+        onClick={copyDiagnosticsReport}
+      >
+        <Activity size={16} strokeWidth={1.5} aria-hidden />
+      </button>
     </>
   );
 }

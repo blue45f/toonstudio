@@ -2,8 +2,26 @@ import { useEffect } from "react";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import { builtinAppDictionaries } from "./i18n-built-in-dictionaries";
-
+import {
+  FALLBACK_CHAIN,
+  FALLBACK_LANG,
+  type Dict,
+  type Lang,
+  type LanguageLocaleOption,
+} from "./i18n-constants";
+import {
+  DICT,
+  getI18nRuntimeTranslationSourceKeys,
+  getI18nRuntimeTranslationSources,
+  markAuthoredI18nDictionaryLoaded,
+  registerI18nEnglishSourceEntries,
+  registerI18nLocaleEntries,
+  registerI18nRuntimeSourceEntries,
+  subscribeAuthoredDictionaryLoaded,
+  subscribeTranslationBundleUpdate,
+  triggerTranslationBundleUpdate,
+  type I18nRuntimeTranslationSource,
+} from "./i18n-dictionary";
 import {
   normalizeLocaleCode,
   getLocaleCandidates,
@@ -16,100 +34,25 @@ import {
   loadRuntimeTranslationBundle,
 } from "./i18n-runtime-translation";
 
-// 앱 전역에서 쓰는 다국어 사전.
-//
-// 앱 셸에는 ko/en 두 벌만 컴파일된다. FALLBACK_CHAIN(en → ko)은 어떤 상황에서도 네트워크를
-// 기다리지 않고 해소돼야 하기 때문이다. 나머지 로케일은 public/i18n/app/<namespace>/<locale>.json 에서
-// 지연 로드한다(Studio·Admin 라우트가 이미 쓰는 패턴과 동일). 요청한 로케일의 자산이 없거나
-// 로드가 실패하면 en → ko 로 내려가되 **조용히 넘어가지 않는다** — getAppI18nLocaleStatus()가
-// 어떤 자산이 실제로 문자열을 공급했는지, 왜 폴백했는지를 항상 관측 가능하게 남긴다.
-export type Lang = string;
-
-export interface LanguageLocaleOption {
-  code: string;
-  label: string;
-  nativeLabel: string;
-  englishLabel: string;
-  /**
-   * 실측 번역률(0~1) — 이 로케일 자산에서 영어 원문과 다른 값을 가진 키의 비율.
-   * 자산이 없으면 0. 자세한 정의는 lib/i18n-locale-catalog.ts 참조.
-   */
-  translatedRatio: number;
-  /**
-   * false 면 사람이 검수한 완성 번역이 아니라 자동 번역과 영어 폴백을 함께 사용한다.
-   * 언어 선택 UI 는 이 품질 차이를 감추면 안 된다.
-   */
-  fullyTranslated: boolean;
-  /**
-   * 로케일 완성도(0~1) — 카탈로그 생성 시 산출한 완성도 리포트의 completenessRatio 와 같은
-   * 실측값이다. 자세한 정의는 scripts/generate-app-i18n-catalog.mjs 의
-   * buildLocaleCompletenessReport 참조.
-   */
-  completenessRatio: number;
-  /**
-   * true 면 완성도가 임계(APP_I18N_COMPLETENESS_IN_PROGRESS_THRESHOLD) 미만이다.
-   * 언어 선택 UI 는 이 로케일을 "번역 진행 중"으로 표기해야 하며, 번역 완료 언어인 것처럼
-   * 제시하면 안 된다.
-   */
-  translationInProgress: boolean;
-}
-
-export type Dict = Record<string, string>;
-type DictByLocale = Record<string, Dict>;
-
-// 앱 셸에 정적으로 포함되는 유일한 두 사전. 나머지는 전부 지연 자산이다.
-export const DICT: DictByLocale = {
-  ko: { ...builtinAppDictionaries.ko },
-  en: { ...builtinAppDictionaries.en },
+export {
+  DICT,
+  FALLBACK_CHAIN,
+  FALLBACK_LANG,
+  getI18nRuntimeTranslationSourceKeys,
+  getI18nRuntimeTranslationSources,
+  markAuthoredI18nDictionaryLoaded,
+  registerI18nEnglishSourceEntries,
+  registerI18nLocaleEntries,
+  registerI18nRuntimeSourceEntries,
+  triggerTranslationBundleUpdate,
 };
-
-// Runtime machine translation must not blindly treat every DICT.en entry as a source. Tests and
-// feature modules can register diagnostic/reference dictionaries that are not currently rendered.
-// Start with the app-shell surface, then let lazy Admin/Studio loaders explicitly opt their English
-// dictionaries in when those routes are actually loaded.
-export interface I18nRuntimeTranslationSource {
-  readonly key: string;
-  readonly locale: string;
-}
-
-const runtimeTranslationSources = new Map<string, string>(
-  Object.keys(DICT.en).map((key) => [key, "en"] as const),
-);
-
-/** 사전을 등록하고 기계 번역의 원문으로도 올린다. 등록으로 값이 바뀌었으면 true. */
-export function registerI18nRuntimeSourceEntries(
-  locale: string,
-  entries: Readonly<Record<string, string>>,
-): boolean {
-  const normalized = normalizeLocaleCode(locale);
-  if (!normalized) return false;
-  const changed = registerI18nLocaleEntries(normalized, entries);
-  for (const key of Object.keys(entries)) runtimeTranslationSources.set(key, normalized);
-  return changed;
-}
-
-export function registerI18nEnglishSourceEntries(
-  entries: Readonly<Record<string, string>>,
-): boolean {
-  return registerI18nRuntimeSourceEntries("en", entries);
-}
-
-export function getI18nRuntimeTranslationSources(): readonly I18nRuntimeTranslationSource[] {
-  return [...runtimeTranslationSources].map(([key, locale]) => ({ key, locale }));
-}
-
-export function getI18nRuntimeTranslationSourceKeys(): readonly string[] {
-  return [...runtimeTranslationSources.keys()];
-}
+export type { Dict, I18nRuntimeTranslationSource, Lang, LanguageLocaleOption };
 
 export interface I18nState {
   lang: Lang;
   translationBundleRevision: number;
   setLang: (lang: Lang) => void;
 }
-
-export const FALLBACK_LANG: Lang = "ko";
-export const FALLBACK_CHAIN: readonly string[] = ["en", FALLBACK_LANG];
 
 export function resolveTranslation(
   lang: string,
@@ -170,50 +113,19 @@ export function resolveTranslationForDisplay(
   return resolved === key ? fallbackText ?? formatMissingTranslationKey(key) : resolved;
 }
 
-/**
- * Registers a route-owned dictionary without forcing its strings into the
- * application shell bundle. Route modules call this synchronously while their
- * lazy chunk is evaluated, so the first committed render already sees the
- * localized labels.
- */
-export function registerI18nLocaleEntries(
-  locale: string,
-  entries: Readonly<Record<string, string>>,
-): boolean {
-  const normalized = normalizeLocaleCode(locale);
-  if (!normalized) return false;
-
-  const target = DICT[normalized] ?? (DICT[normalized] = {});
-  let changed = false;
-  for (const [key, value] of Object.entries(entries)) {
-    if (target[key] === value) continue;
-    target[key] = value;
-    changed = true;
-  }
-  return changed;
-}
-
 // 비동기로 도착한 저작 사전(앱·스튜디오 번역 자산)이 로케일마다 몇 번째인지. 번역기는 (로케일, 이 값)마다 하나다.
 // useT가 훅 상태로 읽어야 React Compiler가 번역기 선택을 이 값에도 묶는다(언어 값에만 묶으면 바뀐 사전이 화면에 닿지 않는다).
 // 화면 상태일 뿐이라 언어 저장소(persist)와 따로 둔다.
 const useAuthoredDictionaryEpochs = create<{ readonly epochs: Readonly<Record<string, number>> }>(() => ({ epochs: {} }));
 
-function authoredDictionaryEpoch(normalizedLocale: string): number {
-  return useAuthoredDictionaryEpochs.getState().epochs[normalizedLocale] ?? 0;
-}
-
-/**
- * 화면을 그린 뒤에 도착한 저작 사전을 등록했음을 알린다. React Compiler는 번역 함수 호출 결과를 번역기 참조에 묶어 기억하므로,
- * 번역기 참조가 그대로면 사전이 도착한 뒤에도 처음 그린 대체 문구(영어)가 남는다. 사전이 실제로 바뀐 로케일만 번역기 참조를
- * 한 번 바꿔 기억한 문구를 다시 계산하게 한다. 기계 번역 묶음 같은 일반 갱신은 참조를 그대로 둔다(번역기를 의존성으로 쓰는
- * effect가 그때마다 다시 돌지 않게).
- */
-export function markAuthoredI18nDictionaryLoaded(locale: string): void {
-  const normalized = normalizeLocaleCode(locale);
-  if (!normalized) return;
+subscribeAuthoredDictionaryLoaded((normalized) => {
   useAuthoredDictionaryEpochs.setState((state) => ({
     epochs: { ...state.epochs, [normalized]: (state.epochs[normalized] ?? 0) + 1 },
   }));
+});
+
+function authoredDictionaryEpoch(normalizedLocale: string): number {
+  return useAuthoredDictionaryEpochs.getState().epochs[normalizedLocale] ?? 0;
 }
 
 type TranslationResolver = (
@@ -359,8 +271,8 @@ export function translateNow(
   return getTranslationResolver(getLang())(key, fallbackOrValues, fallbackText);
 }
 
-export function triggerTranslationBundleUpdate() {
+subscribeTranslationBundleUpdate(() => {
   useI18n.setState((state) => ({
     translationBundleRevision: state.translationBundleRevision + 1,
   }));
-}
+});
