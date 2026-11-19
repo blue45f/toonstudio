@@ -8,9 +8,16 @@ import {
   PackageOpen,
   Plus,
   Trash2,
+  Wrench,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { resolveBg3dLightingConfigFromBindings } from "../bg3d/studio-bg3d-workflow-pack-adapter";
+import { resolveBrushSlotConfigFromBindings } from "../brush/studio-brush-workflow-pack-adapter";
+import {
+  applyRightsRemediationPlan,
+  buildRightsRemediationPlan,
+} from "../export/studio-rights-receipt-remediation";
 import { STUDIO_EASE, STUDIO_FOCUS_RING, STUDIO_TOUCH_TARGET } from "../studio-panel-ui";
 import { copyStudioText } from "../studio-workbench-clipboard";
 
@@ -18,6 +25,7 @@ import {
   routeStudioAssistantSkills,
   type StudioAssistantRoutableTab,
 } from "./studio-assistant-skill-router";
+import { verifySubmittedRightsReceipt } from "./studio-rights-receipt-verifier";
 import {
   BUILTIN_STUDIO_WORKFLOW_PACKS,
   evaluateWorkflowPackRightsClearance,
@@ -29,10 +37,12 @@ import {
   buildWorkflowPackShareUrl,
   extractWorkflowPackFromSearch,
 } from "./studio-workflow-pack-deeplink";
-import { verifySubmittedRightsReceipt } from "./studio-rights-receipt-verifier";
 import { buildWorkflowPackExportReceiptAttachment } from "./studio-workflow-pack-export-bundle";
-import { dispatchWorkflowPackRuntimeEvent } from "./studio-workflow-pack-runtime-bridge";
 import { evaluateWorkflowPackTeamPolicy } from "./studio-workflow-pack-policy";
+import {
+  dispatchWorkflowPackRuntimeEvent,
+  resolveWorkflowPackRuntimeBindings,
+} from "./studio-workflow-pack-runtime-bridge";
 import {
   buildWorkflowPackFromAssistantState,
   deleteCustomStudioWorkflowPack,
@@ -159,6 +169,7 @@ export function StudioWorkflowPacksPanel({
   const [importJson, setImportJson] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
   const [verifyReceiptJson, setVerifyReceiptJson] = useState("");
+  const [remediationFeedback, setRemediationFeedback] = useState<string | null>(null);
   const [copyFeedback, setCopyFeedback] = useState<{
     readonly packId: string;
     readonly kind: "json" | "deeplink" | "receipt";
@@ -228,6 +239,17 @@ export function StudioWorkflowPacksPanel({
     setTelemetry(recordWorkflowPackEvent("pack-imported-json", parsed.id));
   }
 
+  function handleOneClickRemediation(pack: StudioWorkflowPack) {
+    const plan = buildRightsRemediationPlan(pack);
+    if (!plan.needsRemediation) return;
+    const result = applyRightsRemediationPlan(pack, plan);
+    setCustomPacks(saveCustomStudioWorkflowPack(result.remediatedPack));
+    applyAndTrack(result.remediatedPack);
+    setRemediationFeedback(
+      `${pack.name} 1클릭 복구 완료: ${result.appliedActions.join(" / ")}`,
+    );
+  }
+
   async function handleCopyKind(
     pack: StudioWorkflowPack,
     kind: "json" | "deeplink" | "receipt",
@@ -289,6 +311,16 @@ export function StudioWorkflowPacksPanel({
               공유 팩 바로 적용
             </button>
           </div>
+        ) : null}
+
+        {remediationFeedback ? (
+          <p
+            role="status"
+            data-testid="workflow-pack-remediation-banner"
+            className="mt-1 rounded-lg border border-good/40 bg-good/10 px-2.5 py-1.5 text-[0.65rem] font-bold text-good"
+          >
+            {remediationFeedback}
+          </p>
         ) : null}
 
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -396,6 +428,9 @@ export function StudioWorkflowPacksPanel({
         {allPacks.map(({ pack, isCustom }) => {
           const clearance = evaluateWorkflowPackRightsClearance(pack);
           const policyAudit = evaluateWorkflowPackTeamPolicy(pack, currentSnapshot);
+          const runtimeBindings = resolveWorkflowPackRuntimeBindings(pack);
+          const bg3dConfig = resolveBg3dLightingConfigFromBindings(runtimeBindings);
+          const brushConfig = resolveBrushSlotConfigFromBindings(runtimeBindings);
           const isApplied = appliedWorkflowPackId === pack.id;
           const activeCopy = copyFeedback?.packId === pack.id ? copyFeedback.kind : null;
           return (
@@ -423,13 +458,13 @@ export function StudioWorkflowPacksPanel({
                     {PERSPECTIVE_GUIDES[pack.perspectivePreset].label}
                   </span>
                   {pack.bg3dLightingPresetId ? (
-                    <span className="rounded border border-line bg-raised px-1.5 py-0.5 font-mono">
-                      3D:{pack.bg3dLightingPresetId}
+                    <span className="rounded border border-line bg-raised px-1.5 py-0.5">
+                      3D:{bg3dConfig.displayName}
                     </span>
                   ) : null}
                   {pack.primaryBrushSlotId ? (
-                    <span className="rounded border border-line bg-raised px-1.5 py-0.5 font-mono">
-                      Brush:{pack.primaryBrushSlotId}
+                    <span className="rounded border border-line bg-raised px-1.5 py-0.5">
+                      브러시:{brushConfig.displayName}
                     </span>
                   ) : null}
                 </div>
@@ -474,6 +509,17 @@ export function StudioWorkflowPacksPanel({
                 >
                   {isApplied ? "적용됨" : "팩 일괄 적용"}
                 </button>
+                {!clearance.clearedForCommercialExport ? (
+                  <button
+                    type="button"
+                    data-testid={`remediate-pack-${pack.id}`}
+                    onClick={() => handleOneClickRemediation(pack)}
+                    className={cn(CHIP_CLASS, "gap-1 border-warn/50 bg-warn/10 text-warn hover:opacity-90")}
+                  >
+                    <Wrench className="size-3" aria-hidden />
+                    <span>1클릭 상업 복구</span>
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => {

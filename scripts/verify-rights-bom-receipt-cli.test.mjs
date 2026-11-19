@@ -7,6 +7,7 @@ import { test } from "vitest";
 import {
   formatRightsVerificationSarif,
   verifyRightsBomDirectory,
+  verifyRightsBomPngBuffer,
   verifyRightsBomReceiptJson,
 } from "./verify-rights-bom-receipt-cli.mjs";
 
@@ -17,6 +18,26 @@ function makeFnv1a(canonical) {
     hash = Math.imul(hash, 0x01000193);
   }
   return `fnv1a-${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+function buildMinimalPngWithTextChunk(keyword, text) {
+  const sig = [137, 80, 78, 71, 13, 10, 26, 10];
+  const ihdr = [
+    0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137,
+  ];
+  const iend = [0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130];
+  const keyBytes = [...Buffer.from(keyword, "ascii")];
+  const textBytes = [...Buffer.from(text, "utf8")];
+  const dataLen = keyBytes.length + 1 + textBytes.length;
+  const lenBytes = [
+    (dataLen >>> 24) & 0xff,
+    (dataLen >>> 16) & 0xff,
+    (dataLen >>> 8) & 0xff,
+    dataLen & 0xff,
+  ];
+  const typeBytes = [...Buffer.from("tEXt", "ascii")];
+  const crcPlaceholder = [0, 0, 0, 0];
+  return new Uint8Array([...sig, ...ihdr, ...lenBytes, ...typeBytes, ...keyBytes, 0, ...textBytes, ...crcPlaceholder, ...iend]);
 }
 
 test("verifyRightsBomReceiptJson validates commercial-cleared receipt and cross-checks pack hash", () => {
@@ -59,6 +80,12 @@ test("verifyRightsBomReceiptJson validates commercial-cleared receipt and cross-
   assert.equal(tampered.ok, false);
   assert.equal(tampered.integrityVerified, false);
   assert.equal(tampered.ruleId, "rights-bom/hash-mismatch");
+
+  // Also verify direct PNG embedded chunk extraction
+  const pngBytes = buildMinimalPngWithTextChunk("ToonStudioRightsBOM", JSON.stringify(receipt));
+  const pngCheck = verifyRightsBomPngBuffer(pngBytes, JSON.stringify(pack));
+  assert.equal(pngCheck.ok, true);
+  assert.equal(pngCheck.integrityVerified, true);
 });
 
 test("verifyRightsBomDirectory scans a folder and emits SARIF 2.1.0 findings for restricted receipts", () => {

@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const RESTRICTED_LICENSES = new Set(["CC-BY-NC", "GPL-3.0"]);
 const VALID_LICENSES = new Set(["CC0", "MIT", "COMMERCIAL", "CC-BY-NC", "GPL-3.0"]);
+const PNG_SIGNATURE = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 
 function fnv1aHex(input) {
   let hash = 0x811c9dc5;
@@ -13,6 +14,70 @@ function fnv1aHex(input) {
     hash = Math.imul(hash, 0x01000193);
   }
   return `fnv1a-${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+/**
+ * PNG 바이너리 버퍼에서 `ToonStudioRightsBOM` tEXt 청크를 추출한다 (zero-dependency).
+ */
+export function extractPngRightsTextChunk(pngBytes, keyword = "ToonStudioRightsBOM") {
+  if (!pngBytes || pngBytes.length < PNG_SIGNATURE.length) return null;
+  for (let i = 0; i < PNG_SIGNATURE.length; i += 1) {
+    if (pngBytes[i] !== PNG_SIGNATURE[i]) return null;
+  }
+
+  let offset = PNG_SIGNATURE.length;
+  while (offset + 12 <= pngBytes.length) {
+    const length =
+      ((pngBytes[offset] << 24) |
+        (pngBytes[offset + 1] << 16) |
+        (pngBytes[offset + 2] << 8) |
+        pngBytes[offset + 3]) >>>
+      0;
+    const type = String.fromCharCode(
+      pngBytes[offset + 4],
+      pngBytes[offset + 5],
+      pngBytes[offset + 6],
+      pngBytes[offset + 7],
+    );
+    const dataStart = offset + 8;
+    const dataEnd = dataStart + length;
+    if (dataEnd + 4 > pngBytes.length) break;
+
+    if (type === "tEXt") {
+      const data = pngBytes.subarray(dataStart, dataEnd);
+      const nullIdx = data.indexOf(0);
+      if (nullIdx !== -1) {
+        let chunkKey = "";
+        for (let i = 0; i < nullIdx; i += 1) {
+          chunkKey += String.fromCharCode(data[i]);
+        }
+        if (chunkKey === keyword) {
+          return new TextDecoder().decode(data.subarray(nullIdx + 1));
+        }
+      }
+    }
+    if (type === "IEND") break;
+    offset = dataEnd + 4;
+  }
+  return null;
+}
+
+/**
+ * 내보낸 웹툰 PNG 바이너리 내부의 `ToonStudioRightsBOM` 메타데이터 청크를 직접 검증한다.
+ */
+export function verifyRightsBomPngBuffer(pngBytes, rawPackJson = null) {
+  const embedded = extractPngRightsTextChunk(pngBytes, "ToonStudioRightsBOM");
+  if (!embedded) {
+    return {
+      ok: false,
+      validFormat: false,
+      clearedForCommercialExport: false,
+      integrityVerified: null,
+      ruleId: "rights-bom/missing-png-chunk",
+      summary: "PNG 내부에서 ToonStudioRightsBOM tEXt 청크를 찾을 수 없습니다.",
+    };
+  }
+  return verifyRightsBomReceiptJson(embedded, rawPackJson);
 }
 
 /**
@@ -192,7 +257,7 @@ export function formatRightsVerificationSarif(batchResult) {
         tool: {
           driver: {
             name: "ToonStudio Rights BOM Verifier",
-            version: "2.0.0",
+            version: "3.0.0",
             rules: [
               {
                 id: "rights-bom/restricted-commercial-license",
@@ -205,6 +270,10 @@ export function formatRightsVerificationSarif(batchResult) {
               {
                 id: "rights-bom/invalid-schema",
                 shortDescription: { text: "Rights BOM 증명서 스키마 불일치" },
+              },
+              {
+                id: "rights-bom/missing-png-chunk",
+                shortDescription: { text: "PNG 내부 ToonStudioRightsBOM tEXt 청크 누락" },
               },
             ],
           },
@@ -243,28 +312,30 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       process.exitCode = 1;
     }
   } else {
-    const receiptPath = args.find(
+    const targetPath = args.find(
       (arg, idx) => !arg.startsWith("--") && idx !== packFlagIdx + 1 && idx !== dirFlagIdx + 1,
     );
 
-    if (!receiptPath) {
+    if (!targetPath) {
       console.error(
-        "Usage: node scripts/verify-rights-bom-receipt-cli.mjs <receipt.json> [--pack <pack.json>] [--json]\n" +
+        "Usage: node scripts/verify-rights-bom-receipt-cli.mjs <receipt.json|cut.png> [--pack <pack.json>] [--json|--sarif]\n" +
           "   or: node scripts/verify-rights-bom-receipt-cli.mjs --dir <folder> [--pack <pack.json>] [--json|--sarif]",
       );
       process.exit(2);
     }
 
-    const rawReceipt = readFileSync(receiptPath, "utf8");
-    const result = verifyRightsBomReceiptJson(rawReceipt, rawPack);
+    const result = /\.png$/i.test(targetPath)
+      ? verifyRightsBomPngBuffer(readFileSync(targetPath), rawPack)
+      : verifyRightsBomReceiptJson(readFileSync(targetPath, "utf8"), rawPack);
+
     if (asSarif) {
       const singleBatch = {
         ok: result.ok,
-        directory: path.dirname(receiptPath),
+        directory: path.dirname(targetPath),
         total: 1,
         passed: result.ok ? 1 : 0,
         failed: result.ok ? 0 : 1,
-        items: [{ file: path.basename(receiptPath), filePath: receiptPath, ...result }],
+        items: [{ file: path.basename(targetPath), filePath: targetPath, ...result }],
       };
       console.log(JSON.stringify(formatRightsVerificationSarif(singleBatch), null, 2));
     } else {
