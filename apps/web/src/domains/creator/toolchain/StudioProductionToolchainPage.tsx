@@ -1,4 +1,4 @@
-import { ArrowRight, Box, CheckCircle2, CircleDashed, FlaskConical, Search, ServerCog, Workflow, Wrench } from "lucide-react";
+import { ArrowRight, Box, CheckCircle2, CircleDashed, FlaskConical, Search, ServerCog, Terminal, Workflow, Wrench } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -200,6 +200,9 @@ function OverviewContent({
             </Link>
             <Link href={withProject("/studio/engines", projectId)} style={{ minHeight: "44px" }} className={SECONDARY_LINK}>
               <ServerCog size={17} aria-hidden="true" /> {bt("설치·라이선스 확인", "Check installs & licenses")}
+            </Link>
+            <Link href={withProject("/studio/mcp", projectId)} style={{ minHeight: "44px" }} className={SECONDARY_LINK}>
+              <Terminal size={17} aria-hidden="true" /> {bt("MCP·CLI 연동 안내", "MCP & CLI guide")}
             </Link>
           </>
         )}
@@ -441,7 +444,7 @@ function EngineCenterContent({
       />
 
       <StudioToonBridgeConnectionCard connection={connection} />
-      <StudioMcpCliBridgePanel />
+      <StudioMcpCliBridgePanel showGuideLink />
       <ProfileSelector profile={profile} onChange={onProfileChange} />
 
       <section aria-labelledby="engine-tools-title" className="space-y-4">

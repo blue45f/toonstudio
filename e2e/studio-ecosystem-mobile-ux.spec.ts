@@ -46,4 +46,17 @@ test.describe("ToonStudio 신규 에코시스템 모바일(375px) UI/UX 검증",
     );
     expect(overflow).toBeLessThanOrEqual(1);
   });
+
+  test("/studio/mcp 연동 안내 페이지가 375px에서 가로 넘침 없이 44px 터치 타겟을 충족한다", async ({ page }) => {
+    await page.goto("/studio/mcp");
+    await expect(page.getByRole("heading", { name: /MCP · CLI 연동 안내/u })).toBeVisible();
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+
+    const copyBtnBox = await page.getByRole("button", { name: "설정 복사" }).boundingBox();
+    expect(copyBtnBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+  });
 });

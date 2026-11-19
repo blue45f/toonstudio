@@ -29,4 +29,15 @@ test.describe("ToonStudio 신규 에코시스템 기능 E2E", () => {
     await rbac.getByLabel("보안 역할 선택").selectOption("main_author");
     await expect(rbac.getByText(/role\.changed:line_assistant->main_author/u)).toBeVisible();
   });
+
+  test("/studio/mcp 에서 MCP·CLI 연동 안내 페이지와 브라우저 즉시 실행 테스트가 동작한다", async ({ page }) => {
+    await page.goto("/studio/mcp");
+    await expect(page.getByRole("heading", { name: /MCP · CLI 연동 안내/u })).toBeVisible();
+
+    await page.getByRole("tab", { name: "터미널 CLI" }).click();
+    await expect(page.getByText(/pnpm run studio:cli -- draw-demo/u)).toBeVisible();
+
+    await page.getByRole("button", { name: "브라우저 즉시 실행 테스트" }).click();
+    await expect(page.getByRole("status").filter({ hasText: /"ok": true/u })).toBeVisible();
+  });
 });

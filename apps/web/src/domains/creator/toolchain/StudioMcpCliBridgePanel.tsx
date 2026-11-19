@@ -1,10 +1,15 @@
-import { Activity, Check, Copy, Play, Terminal } from "lucide-react";
+import { Activity, ArrowUpRight, Check, Copy, Play, Terminal } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { studioEcosystemClient } from "@/platform/studio-ecosystem-client";
 import { useStudioEcosystemStream } from "@/platform/use-studio-ecosystem-stream";
+import Link from "@/shared/navigation/router-link";
 
 import { STUDIO_ECOSYSTEM_COMMAND_IDS } from "./studio-ecosystem-commands";
+
+export interface StudioMcpCliBridgePanelProps {
+  readonly showGuideLink?: boolean;
+}
 
 interface McpToolCatalogEntry {
   readonly name: string;
@@ -95,7 +100,7 @@ const MCP_CLIENT_CONFIG = JSON.stringify(
   2,
 );
 
-export function StudioMcpCliBridgePanel() {
+export function StudioMcpCliBridgePanel({ showGuideLink = false }: StudioMcpCliBridgePanelProps = {}) {
   const [selectedName, setSelectedName] = useState<string>(MCP_TOOL_CATALOG[0].name);
   const [argsText, setArgsText] = useState<string>(MCP_TOOL_CATALOG[0].sampleArgsJson);
   const [copiedTarget, setCopiedTarget] = useState<"cli" | "mcp" | null>(null);
@@ -199,11 +204,22 @@ export function StudioMcpCliBridgePanel() {
             MCP · CLI 통합 자동화 브릿지
           </h3>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-card px-2.5 py-1 text-xs tabular-nums text-fg-2">
-          <Activity className="size-3.5 shrink-0 text-fg-3" strokeWidth={1.5} aria-hidden="true" />
-          JSON-RPC 2.0 · {MCP_TOOL_CATALOG.length}개 MCP 툴 · {STUDIO_ECOSYSTEM_COMMAND_IDS.length}개 커맨드 ·{" "}
-          {stream.status === "connected" ? "실시간 연결" : "로컬"}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-card px-2.5 py-1 text-xs tabular-nums text-fg-2">
+            <Activity className="size-3.5 shrink-0 text-fg-3" strokeWidth={1.5} aria-hidden="true" />
+            JSON-RPC 2.0 · {MCP_TOOL_CATALOG.length}개 MCP 툴 · {STUDIO_ECOSYSTEM_COMMAND_IDS.length}개 커맨드 ·{" "}
+            {stream.status === "connected" ? "실시간 연결" : "로컬"}
+          </span>
+          {showGuideLink && (
+            <Link
+              href="/studio/mcp"
+              className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card px-3 text-xs font-medium text-accent transition-colors duration-150 hover:border-accent sm:min-h-8"
+            >
+              연동 안내 보기
+              <ArrowUpRight className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+            </Link>
+          )}
+        </div>
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
