@@ -9,10 +9,10 @@
  */
 import { dragJointDetailed } from "../../../animation/joint-drag";
 import { FINGER_BONE_NAMES, failVisible } from "../../../contracts";
-import { resolveDragPivot, type DragPivot } from "./drag-pivot";
 import { unprojectToViewPlane } from "../../../render/viewport-math";
 import { v3IsFinite } from "../../../shared/math";
 
+import { resolveDragPivot, type DragPivot } from "./drag-pivot";
 import {
   classifySkeletonBoundaryError,
   diagnoseSkeletonData,
