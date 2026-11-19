@@ -4,10 +4,12 @@ function invariant(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-/** 세부 도구가 필요한 검증에서 원본 픽셀을 재기 전에 실제 메뉴 배치를 연다. */
+/** 세부 도구가 필요한 검증에서 원본 픽셀을 재기 전에 실제 프로젝트 도구 패널을 연다. */
 export async function prepareFilterMenuWorkspace(page: Page, timeoutMs = 10_000): Promise<boolean> {
   const clarity = page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]').first();
   if (!await clarity.isVisible()) return false;
+  const projectTools = page.locator('[data-studio-drawing-project-tools="true"]');
+  if (await projectTools.isVisible()) return false;
   const deadline = Date.now() + timeoutMs;
   const remaining = () => {
     const value = deadline - Date.now();
@@ -30,9 +32,10 @@ export async function prepareFilterMenuWorkspace(page: Page, timeoutMs = 10_000)
   }
   invariant(await workspace.count() === 1, "필터 검증의 화면과 도움말 목적은 하나여야 합니다");
   await workspace.click({ timeout: remaining() });
-  await tools.getByRole("button", { name: "프로젝트·창 도구 배치로 전환", exact: true }).click({ timeout: remaining() });
+  await tools.locator('[data-studio-clarity-action="windows"]').click({ timeout: remaining() });
   await tools.waitFor({ state: "hidden", timeout: remaining() });
-  await page.locator('[data-studio-main-menu="true"]').waitFor({ state: "visible", timeout: remaining() });
+  // 현재 원고 셸은 계속 Clarity다. 패널 안의 전체 메뉴를 빠른 메뉴와 구분해 확인한다.
+  await projectTools.locator('[data-studio-main-menu="true"]').waitFor({ state: "visible", timeout: remaining() });
   invariant(page.url() === originalUrl, "메뉴 배치 진입이 필터 대상 원고 URL을 바꿨습니다");
   invariant(await shell.getAttribute("data-studio-ui-density", { timeout: remaining() }) === originalDensity,
     "메뉴 배치 진입이 사용자의 화면 구성 설정을 바꿨습니다");

@@ -4,12 +4,13 @@ import { prepareFilterMenuWorkspace } from "./studio-filter-menu-workspace";
 
 import type { Page } from "playwright";
 
-function fixture({ simple = true, moreCount = 1, workspaceCount = 1, dialogOpen = false, category = false, backCount = 1, backError, changedUrl, changedDensity, menuError, closeError, advanceMs = 0 }: {
+function fixture({ simple = true, projectOpen = false, moreCount = 1, workspaceCount = 1, dialogOpen = false, category = false, backCount = 1, backError, changedUrl, changedDensity, menuError, closeError, advanceMs = 0 }: {
   simple?: boolean; moreCount?: number; workspaceCount?: number; changedUrl?: string; changedDensity?: string;
+  projectOpen?: boolean;
   dialogOpen?: boolean; category?: boolean; backCount?: number; backError?: Error;
   menuError?: Error; closeError?: Error; advanceMs?: number;
 } = {}) {
-  const state = { simple, dialog: dialogOpen, category, workspace: false, menu: false,
+  const state = { simple, dialog: dialogOpen, category, workspace: false, menu: projectOpen,
     url: "http://127.0.0.1:5194/studio/draft/work-1?tag=a&tag=b&workspace=draw#canvas", density: "comfortable" };
   const calls: string[] = [], timeouts: number[] = [];
   let now = 0;
@@ -34,7 +35,7 @@ function fixture({ simple = true, moreCount = 1, workspaceCount = 1, dialogOpen 
   const project = { click: vi.fn(async (options: { timeout: number }) => {
     step(options);
     if (!state.workspace) throw new Error("화면과 도움말을 먼저 선택해야 합니다.");
-    calls.push("project"); state.dialog = false; state.menu = true; state.simple = false;
+    calls.push("project"); state.dialog = false; state.menu = true;
     if (changedUrl) state.url = changedUrl;
     if (changedDensity) state.density = changedDensity;
   }) };
@@ -46,14 +47,14 @@ function fixture({ simple = true, moreCount = 1, workspaceCount = 1, dialogOpen 
       expect(state.dialog).toBe(options.state === "visible"); calls.push("dialog-" + options.state);
     }),
     locator: (selector: string) => {
+      if (selector === '[data-studio-clarity-action="windows"]') return project;
       expect(selector).toBe('[data-drawing-task-category="workspace"]');
       return workspace;
     },
     getByRole: (role: string, query: { name: string; exact: boolean }) => {
       expect(role).toBe("button"); expect(query.exact).toBe(true);
-      if (query.name === "원고 도구 분류로 돌아가기") return back;
-      expect(query.name).toBe("프로젝트·창 도구 배치로 전환");
-      return project;
+      expect(query.name).toBe("원고 도구 분류로 돌아가기");
+      return back;
     },
   };
   const shell = { getAttribute: async (name: string, options: { timeout: number }) => {
@@ -64,13 +65,17 @@ function fixture({ simple = true, moreCount = 1, workspaceCount = 1, dialogOpen 
     if (menuError) throw menuError;
     expect(state.menu).toBe(true); calls.push("menu-visible");
   }) };
+  const projectTools = {
+    isVisible: async () => state.menu,
+    locator: (selector: string) => { expect(selector).toBe('[data-studio-main-menu="true"]'); return menu; },
+  };
   const page = {
     url: () => state.url,
     locator: (selector: string) => {
       if (selector === '[data-studio-editor="true"][data-studio-drawing-clarity="true"]') return clarity;
       if (selector === "#studio-app-shell") return shell;
       if (selector === 'summary[data-studio-clarity-more-trigger="true"]:visible') return more;
-      if (selector === '[data-studio-main-menu="true"]') return menu;
+      if (selector === '[data-studio-drawing-project-tools="true"]') return projectTools;
       throw new Error("현재 UI에 없는 메뉴 선택자입니다: " + selector);
     },
     getByRole: (role: string, query: { name: string; exact: boolean }) => {
@@ -82,17 +87,24 @@ function fixture({ simple = true, moreCount = 1, workspaceCount = 1, dialogOpen 
 
 afterEach(() => { vi.restoreAllMocks(); });
 
-describe("실제 원고 도구 목적을 통한 필터 작업 배치 준비", () => {
+describe("실제 원고 도구 목적을 통한 필터 프로젝트 패널 준비", () => {
   it("더보기와 화면과 도움말을 거쳐 같은 원고·화면 밀도로 실제 메뉴를 연다", async () => {
     const f = fixture(); const originalUrl = f.state.url, originalDensity = f.state.density;
     await expect(prepareFilterMenuWorkspace(f.page)).resolves.toBe(true);
     expect(f.calls).toEqual(["more", "dialog-visible", "workspace", "project", "dialog-hidden", "menu-visible"]);
     expect(f.state.url).toBe(originalUrl); expect(f.state.density).toBe(originalDensity);
+    expect(f.state.simple).toBe(true);
     expect(f.more.click.mock.calls[0]?.[0]).not.toHaveProperty("force");
   });
   it("이미 기존 배치이면 메뉴를 건드리지 않는다", async () => {
     const f = fixture({ simple: false });
     await expect(prepareFilterMenuWorkspace(f.page)).resolves.toBe(false);
+    expect(f.calls).toEqual([]); expect(f.timeouts).toEqual([]);
+  });
+  it("Clarity 안에서 프로젝트 패널이 이미 열렸으면 닫거나 셸을 바꾸지 않는다", async () => {
+    const f = fixture({ projectOpen: true });
+    await expect(prepareFilterMenuWorkspace(f.page)).resolves.toBe(false);
+    expect(f.state.simple).toBe(true); expect(f.state.menu).toBe(true);
     expect(f.calls).toEqual([]); expect(f.timeouts).toEqual([]);
   });
   it("이미 열린 분류 정문에서는 배경 더보기를 다시 누르지 않는다", async () => {

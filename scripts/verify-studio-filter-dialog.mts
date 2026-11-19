@@ -28,7 +28,7 @@ import { deflateSync } from "node:zlib";
 
 
 import pg from "pg";
-import { chromium, type Browser, type Page } from "playwright";
+import { chromium, type Browser, type Locator, type Page } from "playwright";
 
 import { studioAutosaveKey } from "../apps/web/src/domains/creator/studio-autosave";
 import {
@@ -55,6 +55,7 @@ import {
 } from "./lib/studio-filter-responsive-layout";
 import { resolveStudioFilterVerificationMode } from "./lib/studio-filter-verification-mode";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
+import { openStudioMainMenu } from "./lib/studio-shell-interactions";
 import { readDurableStudioAutosaveDocument, type StudioDurableAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
 import { enabledStudioHistoryControl } from "./lib/studio-verify-history-controls.mjs";
 import { isOptionalStudioPreviewApiError } from "./lib/studio-verify-preview-errors.mjs";
@@ -112,8 +113,7 @@ const NON_DIALOG_MENU_LABELS = new Set([
 ]);
 
 async function collectFilterMenuLabels(page: Page): Promise<string[]> {
-  await openMainMenuGroup(page, "효과");
-  const menu = page.locator('[role="menu"][aria-label="효과"]');
+  const menu = await openStudioMainMenu(page, "filter");
   const items = menu.getByRole("menuitem");
   const count = await items.count();
   const labels: string[] = [];
@@ -433,21 +433,6 @@ async function waitForPaintedEvidenceRegion(
   throw new Error(`${description} (${observed})`);
 }
 
-async function openMainMenuGroup(page: Page, label: string): Promise<void> {
-  const nav = page.locator('[data-studio-main-menu="true"]');
-  await nav.waitFor({ state: "visible", timeout: 15_000 });
-  // Escape without an open menu belongs to the canvas and clears its image selection.
-  // Close an existing main-menu panel only; a normal title click must preserve the filter target.
-  if (await page.locator('[data-studio-main-menu-panel="true"]').count() > 0) {
-    await page.keyboard.press("Escape");
-  }
-  await page.waitForTimeout(80);
-  await nav.getByRole("menuitem", { name: label, exact: true }).click({ timeout: 5_000 });
-  await page
-    .locator(`[role="menu"][aria-label="${label}"]`)
-    .waitFor({ state: "visible", timeout: 5_000 });
-}
-
 function filterDialog(page: Page, label?: string): ReturnType<Page["locator"]> {
   return page.locator(studioFilterDialogSurface(label).selector);
 }
@@ -457,9 +442,9 @@ function filterDialog(page: Page, label?: string): ReturnType<Page["locator"]> {
  * exact name match misses them; a bare substring match would also catch "선택적 가우시안
  * 블러". Anchor at the string start instead.
  */
-function menuItemByLabel(page: Page, label: string): ReturnType<Page["getByRole"]> {
+function menuItemByLabel(menu: Locator, label: string): Locator {
   const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return page.getByRole("menuitem", { name: new RegExp(`^${escaped}`) });
+  return menu.getByRole("menuitem", { name: new RegExp(`^${escaped}`) });
 }
 
 /**
@@ -467,8 +452,8 @@ function menuItemByLabel(page: Page, label: string): ReturnType<Page["getByRole"
  * ("저장이 끝난 뒤 필터를 적용하세요"). Wait for the row to become enabled
  * before clicking instead of racing a fixed timeout.
  */
-async function clickEnabledMenuItem(page: Page, label: string): Promise<void> {
-  const item = menuItemByLabel(page, label);
+async function clickEnabledMenuItem(page: Page, menu: Locator, label: string): Promise<void> {
+  const item = menuItemByLabel(menu, label);
   // Rows disable transiently for two reasons observed in-product: a just-triggered autosave
   // and the inspector's editable-raster preparation for a freshly selected image (the latter
   // takes seconds on a full-page composite). Retry-clicking rides out both windows.
@@ -558,8 +543,8 @@ async function placeTestImage(
   // 메뉴 클릭 재시도(최대 45초)보다 오래 기다리고, 그 사이 거절돼도 미처리 거부로 프로세스가 죽지 않게 한다.
   const chooserPromise = page.waitForEvent("filechooser", { timeout: 60_000 });
   chooserPromise.catch(() => undefined);
-  await openMainMenuGroup(page, "레이어");
-  await clickEnabledMenuItem(page, "이미지…");
+  const menu = await openStudioMainMenu(page, "layer");
+  await clickEnabledMenuItem(page, menu, "이미지…");
   const chooser = await chooserPromise;
   // 인증 정본 문서의 캔버스에는 같은 파랑·빨강 이미지가 이미 있을 수 있다. 그 위에 같은 픽셀을 넣으면
   // 삽입 전후 변화가 0이 되어 "그려지지 않음"으로 잘못 판정한다. 삽입 검증은 구별되는 색을 쓴다.
@@ -775,10 +760,16 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
       // 캔버스가 보이는 것과 서버의 공동 편집 원고가 준비된 것은 별개다.
       await waitForStudioCollaborationDocumentLane(page, new Set(["synced"]));
     }
-    // 메뉴로 전환한 뒤 같은 화면 배치에서 원본·적용·실행취소 픽셀을 비교한다.
+    // 프로젝트 메뉴 진입을 확인한다. 명령 뒤 닫히는 Clarity 패널은 각 명령에서 다시 준비한다.
     const openedMenuWorkspace = await prepareFilterMenuWorkspace(page);
     if (openedMenuWorkspace) {
       log("메뉴·전체 필터 목록·이미지 삽입 검증을 위해 실제 프로젝트·창 도구를 열었습니다. 기본 Clarity 직접 필터 진입 검증과 별도입니다.");
+    }
+    // 필터 명령을 고르면 패널이 닫힌다. 그리기와 원본 캡처도 실제 닫기 버튼을 거친 같은 상태로 시작한다.
+    const projectTools = page.locator('[data-studio-drawing-project-tools="true"]').filter({ visible: true });
+    if (await projectTools.count() > 0) {
+      await projectTools.getByRole("button", { name: "프로젝트 도구 닫기", exact: true }).click();
+      await projectTools.waitFor({ state: "hidden" });
     }
     await activatePenAndDraw(page);
     let originalDocument = await waitForSavedPages(page, (document) =>
@@ -788,8 +779,8 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
     if (AUTHENTICATED) {
       // 공동 문서의 페이지 합성은 제품에서 명시적으로 제한되어 있다. 그 제한을 제거하지
       // 않고 지원되는 실제 이미지 레이어 필터로 정본 저장과 연결 단절을 검증한다.
-      await openMainMenuGroup(page, "효과");
-      invariant(await menuItemByLabel(page, "가우시안 블러").isDisabled(),
+      const menu = await openStudioMainMenu(page, "filter");
+      invariant(await menuItemByLabel(menu, "가우시안 블러").isDisabled(),
         "이미지를 선택하지 않은 공동 문서의 페이지 합성 제한이 사라졌습니다");
       await page.keyboard.press("Escape");
       await placeTestImage(page);
@@ -846,8 +837,8 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
           target: "image", diff: null, undoDiff: null };
         results.push(result);
         const openedAt = Date.now();
-        await openMainMenuGroup(page, "효과");
-        await clickEnabledMenuItem(page, filterCase.label);
+        const menu = await openStudioMainMenu(page, "filter");
+        await clickEnabledMenuItem(page, menu, filterCase.label);
         const dialog = filterDialog(page);
         await dialog.waitFor({ state: "visible", timeout: 45_000 });
         result.openMs = Date.now() - openedAt;
@@ -938,8 +929,8 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
       try {
         if (AUTHENTICATED) await selectCanonicalImage();
         const openStartedAt = Date.now();
-        await openMainMenuGroup(page, "효과");
-        await menuItemByLabel(page, filterCase.label).click({ timeout: 5_000 });
+        const menu = await openStudioMainMenu(page, "filter");
+        await menuItemByLabel(menu, filterCase.label).click({ timeout: 5_000 });
 
         const surface = studioFilterDialogSurface(filterCase.label);
         const dialog = filterDialog(page, filterCase.label);
@@ -1054,8 +1045,8 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
         // the dialog exists, and asserted dialog-free after the drag.
         const compareClip = { x: clip.x, y: clip.y, width: clip.width, height: 180 };
         const beforeOpenBand = await screenshotClipped(page, compareClip);
-        await openMainMenuGroup(page, "효과");
-        await clickEnabledMenuItem(page, "가우시안 블러");
+        const menu = await openStudioMainMenu(page, "filter");
+        await clickEnabledMenuItem(page, menu, "가우시안 블러");
         const dialog = filterDialog(page);
         await dialog.waitFor({ state: "visible", timeout: 45_000 });
         await nudgeFirstParameterSlider(page, dialog);
@@ -1192,8 +1183,8 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
 
         // 2) The dialog must declare the direct-image (non-destructive) target.
         const openStartedAt = Date.now();
-        await openMainMenuGroup(page, "효과");
-        await clickEnabledMenuItem(page, "가우시안 블러");
+        const menu = await openStudioMainMenu(page, "filter");
+        await clickEnabledMenuItem(page, menu, "가우시안 블러");
         const dialog = filterDialog(page);
         await dialog.waitFor({ state: "visible", timeout: 45_000 });
         result.openMs = Date.now() - openStartedAt;
@@ -1275,8 +1266,8 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
         colorScheme: document.documentElement.style.colorScheme,
       }));
       try {
-        await openMainMenuGroup(page, "효과");
-        await clickEnabledMenuItem(page, "가우시안 블러");
+        const menu = await openStudioMainMenu(page, "filter");
+        await clickEnabledMenuItem(page, menu, "가우시안 블러");
         const dialog = filterDialog(page);
         await dialog.waitFor({ state: "visible", timeout: 45_000 });
         for (const theme of ["dark", "light", "contrast"]) {
