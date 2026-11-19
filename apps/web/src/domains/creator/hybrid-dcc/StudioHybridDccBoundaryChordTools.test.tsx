@@ -186,6 +186,8 @@ describe("경계선 면 나누기 전용 도구와 실제 hook", () => {
     await waitFor(() => expect(button("면 나누기 적용")).toHaveProperty("disabled", false));
     expect(screen.queryByRole("alert")).toBeNull(); expect(outcomes).toHaveLength(2); expect(need(outcomes[1]).ok).toBe(true);
     fireEvent.click(button("면 나누기 적용")); await waitFor(() => expect(f.published).toHaveBeenCalledTimes(1));
+    // host 콜백은 React commit보다 먼저 실행되므로 적용 완료 상태까지 기다린다.
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe(i18nDict[useI18n.getState().lang]?.["studio.bg3dScene.boundaryChord.notice.applied"]));
     expect(hashStudioEditableMesh(need(workspaceComponentSelectionSource(f.observed.workspace)).mesh)).not.toBe(f.source.sourceHash);
   });
 
