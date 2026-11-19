@@ -21,7 +21,8 @@ const offlineDrawFiles = [
   "offline-draw/bootstrap.js",
 ];
 const svgFiles = ["brand/production-os-hero.svg", "brand/production-os-workspace.svg"];
-const files = [...bootstrapFiles, ...offlineDrawFiles, ...svgFiles];
+const portableFile = "offline-draw/portable.html";
+const files = [...bootstrapFiles, ...offlineDrawFiles, ...svgFiles, portableFile];
 let directory;
 const original = {};
 const compact = {};
@@ -89,6 +90,32 @@ describe("빌드 bootstrap 압축 계약", () => {
 
   it.each(svgFiles)("%s의 구조 공백 절감은 bootstrap JS 보증과 별도로 확인한다", (file) => {
     expect(Buffer.byteLength(compact[file])).toBeLessThan(Buffer.byteLength(original[file]));
+  });
+
+  it("긴급 복구 HTML의 실행 코드를 압축하고 CSP와 실행 밖 문서 내용을 보존한다", () => {
+    expect(Buffer.byteLength(original[portableFile]) - Buffer.byteLength(compact[portableFile])).toBeGreaterThan(8_000);
+    const before = new JSDOM(original[portableFile]);
+    const after = new JSDOM(compact[portableFile]);
+    try {
+      const normalize = (dom) => {
+        const document = dom.window.document;
+        expect(document.scripts).toHaveLength(1);
+        const script = document.scripts[0];
+        expect(script.type).toBe("module");
+        expect(script.hasAttribute("src")).toBe(false);
+        const csp = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+        const hash = createHash("sha256").update(script.textContent).digest("base64");
+        expect(csp.content.split(";").map((part) => part.trim())).toContain(`script-src 'sha256-${hash}'`);
+        expect(csp.content).toContain("connect-src 'none'");
+        csp.content = csp.content.replace(hash, "SCRIPT_HASH");
+        script.textContent = "SCRIPT_BODY";
+        return document.documentElement.outerHTML;
+      };
+      expect(normalize(after)).toBe(normalize(before));
+    } finally {
+      before.window.close();
+      after.window.close();
+    }
   });
 
   it("precache 계획이 압축된 실제 바이트와 fingerprint를 사용한다", async () => {
