@@ -18,7 +18,7 @@ import {
   type StudioAiApplicationMode,
   type StudioAiJob,
   type StudioAiJobStatus,
-} from "./studio-ai-job";
+} from "../studio-ai-job";
 
 import { cn } from "@/shared/lib/utils";
 

@@ -4,7 +4,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { StudioAiJobQueuePanel } from "./StudioAiJobQueuePanel";
-import { createStudioAiJob, transitionStudioAiJob, type StudioAiJob } from "./studio-ai-job";
+import { createStudioAiJob, transitionStudioAiJob, type StudioAiJob } from "../studio-ai-job";
 
 function makeDraftJob(overrides: Partial<Parameters<typeof createStudioAiJob>[0]> = {}): StudioAiJob {
   return createStudioAiJob({
