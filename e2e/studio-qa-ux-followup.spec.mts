@@ -16,17 +16,17 @@ test.beforeAll(async () => { tooltipBundle = await buildStudioReactFixture(`
     import { AccessibleTooltipLayer } from "./shared/components/AccessibleTooltipLayer";
     function Fixture() {
       const [tool, setTool] = useState("select"), [clicks, setClicks] = useState(0);
-      return <><AccessibleTooltipLayer/><nav data-app-tooltip-preferred-side="right" className="rail">
+      return <><AccessibleTooltipLayer/><div role="toolbar" aria-orientation="vertical" aria-label="그리기 도구" className="rail">
         <button title="선택 · V" aria-pressed={tool === "select"} onClick={() => setTool("select")}>선택</button>
         <button title="펜 · B" aria-pressed={tool === "pen"} onClick={() => { setTool("pen"); setClicks(n => n + 1); }}>펜</button>
-      </nav><output>{clicks}</output></>;
+      </div><output>{clicks}</output></>;
     }
     createRoot(document.getElementById("fixture")).render(<Fixture/>);
   `); });
 
 async function tooltipFixture(page: Page, edge: "left" | "right") {
-  const rail = readFileSync(new URL("../apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarityBar.tsx", import.meta.url), "utf8");
-  expect(rail).toMatch(/className="studio-drawing-clarity-rail" data-app-tooltip-preferred-side="right"/u);
+  const tools = readFileSync(new URL("../apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarityCoreTools.tsx", import.meta.url), "utf8");
+  expect(tools).toMatch(/className="studio-drawing-clarity-tools" role="toolbar" aria-orientation="vertical"/u);
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.setContent(`<html lang="ko"><style>
     body{margin:0;font:16px sans-serif}.rail{position:fixed;${edge}:16px;top:180px;display:flex;flex-direction:column;gap:4px}
@@ -86,13 +86,22 @@ test("모바일은 실제 더보기와 창 배치를 요청한 뒤에만 숨은 
     button.addEventListener("click", () => {
       const editor = document.querySelector('[data-studio-editor="true"]');
       if (!editor) throw new Error("편집기 없음");
-      editor.removeAttribute("data-studio-drawing-clarity");
-      editor.innerHTML = '<main data-studio-canvas-viewport="true">작업 캔버스</main><button hidden data-studio-command-bar-settings-trigger="true">설정</button><span data-testid="studio-workspace-menu-gate"><button hidden aria-haspopup="dialog" aria-label="작업공간: 기본">작업공간</button></span>';
+      const taskBrowser = editor.querySelector('[data-studio-drawing-task-browser="true"]');
+      if (!(taskBrowser instanceof HTMLElement)) throw new Error("작업 분류 없음");
+      taskBrowser.hidden = true;
+      const panel = document.createElement("section");
+      panel.id = "studio-drawing-clarity-panel-commands";
+      panel.dataset.studioDrawingProjectTools = "true";
+      panel.setAttribute("aria-labelledby", "studio-project-tools-heading");
+      panel.innerHTML = '<h2 id="studio-project-tools-heading">프로젝트·창 도구</h2><span data-testid="studio-workspace-menu-gate"><button hidden aria-haspopup="dialog" aria-label="작업공간: 기본">작업공간</button></span>';
+      editor.append(panel);
     });
   });
   const result = await inspectStudioMobileWorkspaceMenuDormancy(page);
   expect(result).toMatchObject({ ok: true, gateCount: 1, triggerCount: 1, heavyMenuCount: 0, dialogCount: 0,
     beforeIntent: { gateCount: 0, triggerCount: 0, heavyMenuCount: 0, dialogCount: 0 } });
+  await expect(page.locator('[data-studio-editor="true"]')).toHaveAttribute("data-studio-drawing-clarity", "true");
+  await expect(page.locator('[data-studio-drawing-project-tools="true"]')).toBeVisible();
 });
 
 test("스토리보드를 정상 닫고 가려졌던 편집기 복귀 버튼으로 홈에 돌아간다", async ({ page }) => {
