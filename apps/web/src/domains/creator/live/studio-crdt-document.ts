@@ -235,7 +235,16 @@ export {
   type StudioCrdtBatchOptions,
   type StudioCrdtBatchSubscription,
 } from "./studio-crdt-document-types";
-export { mergeStudioCrdtUpdates } from "./studio-crdt-document-helpers";
+export {
+  STUDIO_CRDT_COMPACTION_MIN_UPDATE_BYTES,
+  STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_GAP_MS,
+  STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_MAX_BYTES,
+  STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_MAX_DELTAS,
+  compactStudioCrdtSnapshot,
+  mergeStudioCrdtUpdates,
+  shouldJumpToCrdtSnapshotOnReconnect,
+  type StudioCrdtCompactionResult,
+} from "./studio-crdt-document-helpers";
 export {
   parseStudioCrdtShared3dStageCompositeKey,
   preflightShared3dStagePageDiff,

@@ -84,7 +84,7 @@ export class StudioLiveGesturePreviewRoomAdapter {
   private readonly store: StudioLiveGesturePreviewStore;
   private readonly maxEligibleGestures: number;
   private readonly now: () => number;
-  private readonly coalesceListenerNotifications: boolean;
+  private coalesceListenerNotifications: boolean;
   private readonly scheduleFrame: (flush: () => void) => unknown;
   private readonly cancelFrame: (handle: unknown) => void;
   private readonly listeners = new Set<() => void>();
@@ -212,6 +212,13 @@ export class StudioLiveGesturePreviewRoomAdapter {
     return true;
   }
 
+  /** 다중 피어 수 변화에 따라 프레임당 1회 rAF 알림 병합 모드를 동적으로 전환한다. */
+  setCoalesceListenerNotifications(enabled: boolean): void {
+    if (this.disposed || this.coalesceListenerNotifications === enabled) return;
+    this.coalesceListenerNotifications = enabled;
+    if (!enabled) this.flushPendingNotifications();
+  }
+
   /** 대기 중인 rAF 배치 알림이 있으면 즉시 플러시한다. */
   flushPendingNotifications(): void {
     if (this.pendingNotificationFrame === null) return;
@@ -242,7 +249,10 @@ export class StudioLiveGesturePreviewRoomAdapter {
 
   private onRoomEvent(event: StudioLiveRoomEvent): void {
     const now = this.now();
-    if (
+    if (this.lastRoomEventAt !== null && now < this.lastRoomEventAt) {
+      // OS 시계 역행 시 오탐 절전 정리를 방지하고 기준 시각만 재정렬한다.
+      this.lastRoomEventAt = now;
+    } else if (
       this.lastRoomEventAt !== null
       && now - this.lastRoomEventAt > STUDIO_LIVE_GESTURE_PREVIEW_SLEEP_WAKE_GAP_MS
     ) {

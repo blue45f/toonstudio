@@ -498,6 +498,11 @@ export class StudioLiveInkStrokeTracker {
     const expired: string[] = [];
     for (const [strokeId, state] of this.active) {
       if (state.lastUpdatedAt === null) continue;
+      // OS 시계 역행(NTP 보정 등) 시 미래 타임스탬프가 남아 TTL이 고착되지 않도록 현재 시각으로 보정한다.
+      if (now < state.lastUpdatedAt) {
+        state.lastUpdatedAt = now;
+        continue;
+      }
       if (now - state.lastUpdatedAt <= ttlMs) continue;
       expired.push(strokeId);
     }

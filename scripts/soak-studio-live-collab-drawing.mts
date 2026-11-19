@@ -18,6 +18,10 @@
 import { performance } from "node:perf_hooks";
 
 import {
+  STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_GAP_MS,
+  shouldJumpToCrdtSnapshotOnReconnect,
+} from "../apps/web/src/domains/creator/live/studio-crdt-document";
+import {
   STUDIO_CRDT_MAX_RECONCILED_HISTORY_DEPTH,
   trimStudioCrdtHistoryWindow,
 } from "../apps/web/src/domains/creator/live/studio-crdt-history";
@@ -500,13 +504,18 @@ async function runSoak(): Promise<void> {
       });
       for (const listener of p2pPrimaryListeners) listener(hello);
 
-      // 5b. Simulated sleep-wake gap (20-min gap > TTLs) purges stale previews & ghost peers.
-      virtualNow += Math.max(
+      // 5b. Simulated sleep-wake gap (20-min gap > TTLs) purges stale previews, ghost peers & triggers snapshot jump policy.
+      const sleepGapMs = Math.max(
         STUDIO_LIVE_GESTURE_PREVIEW_TTL_MS,
         STUDIO_LIVE_INK_ACTIVE_STROKE_TTL_MS,
         STUDIO_LIVE_GESTURE_PREVIEW_SLEEP_WAKE_GAP_MS,
         STUDIO_LIVE_P2P_STALE_PEER_TTL_MS,
+        STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_GAP_MS,
       ) + 1_000;
+      if (!shouldJumpToCrdtSnapshotOnReconnect({ gapMs: sleepGapMs, queuedDeltaCount: 0, estimatedDeltaBytes: 0 })) {
+        throw new Error("[soak] reconnect snapshot jump policy did not engage after sleep-wake gap");
+      }
+      virtualNow += sleepGapMs;
       room.setPeers(peers.slice(1));
       room.setPeers(peers);
       adapter.flushPendingNotifications();
