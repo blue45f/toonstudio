@@ -19,10 +19,10 @@ test("macOS 동기화·재접속 시험과 lint는 같은 플랫폼·제한으�
   assert.match(commands(job), /node --experimental-strip-types --test scripts\/verify-studio-p2p-channel-lifecycle\.mjs/u);
 });
 
-test("전체 타입 검사에는 Core와 동일한 입력·표준 명령·25분 제한을 사용한다", () => {
+test("전체 타입 검사에는 Core와 동일한 입력·표준 명령·45분 제한을 사용한다", () => {
   const job = workflow.jobs["application-typecheck"];
   assert.equal(job["runs-on"], core.jobs.typecheck["runs-on"]);
-  assert.equal(job["timeout-minutes"], 25);
+  assert.equal(job["timeout-minutes"], 45);
   const checkout = (value) => value.steps.find((step) => step.uses === "actions/checkout@v7").with;
   assert.deepEqual(checkout(job), checkout(core.jobs.typecheck));
   assert.ok(job.steps.some((step) => step.run === "pnpm run typecheck"));
