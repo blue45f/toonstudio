@@ -372,7 +372,6 @@ async function runSoak(): Promise<void> {
 
   // Simulated Undo/Redo history stack that grows each round and is bounded by trimStudioCrdtHistoryWindow.
   let undoHistory: { id: string }[][] = [[{ id: "init" }]];
-  let undoIndex = 0;
 
   const baselineHeapMb = mb(process.memoryUsage().heapUsed);
   let lastReportAt = startedAt;
@@ -472,10 +471,9 @@ async function runSoak(): Promise<void> {
 
     // 4. Undo/Redo history depth bounding verification.
     undoHistory.push([{ id: `snap-${round}` }]);
-    undoIndex = undoHistory.length - 1;
+    const undoIndex = undoHistory.length - 1;
     const boundedHistory = trimStudioCrdtHistoryWindow(undoHistory, undoIndex);
     undoHistory = boundedHistory.history;
-    undoIndex = boundedHistory.currentIndex;
     if (undoHistory.length > STUDIO_CRDT_MAX_RECONCILED_HISTORY_DEPTH) {
       throw new Error(`[soak] Undo/Redo history exceeded cap: ${undoHistory.length}`);
     }
