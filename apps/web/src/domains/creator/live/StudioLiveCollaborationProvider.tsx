@@ -18,6 +18,11 @@ import {
 import { studioLiveDisplayName, type StudioLiveParticipant } from "./studio-live-collaboration-protocol";
 import { isStudioLocalLiveTransportSupported } from "./studio-live-local-transport-support";
 import {
+  STUDIO_HEARTBEAT_EXPECTED_INTERVAL_MS,
+  StudioLiveHeartbeatJitterGuard,
+  probeStudioStorageQuota,
+} from "./studio-live-long-session-diagnostics";
+import {
   projectStudioLiveSyncSnapshot,
   type StudioCrdtSyncTelemetry,
 } from "./studio-live-sync-safety";
@@ -537,6 +542,7 @@ export function StudioLiveCollaborationProvider({
         unsubscribe();
       };
 
+      const heartbeatGuard = new StudioLiveHeartbeatJitterGuard();
       const onVisibilityChange = () => {
         try {
           if (document.hidden) {
@@ -550,16 +556,63 @@ export function StudioLiveCollaborationProvider({
           if (!cancelled) setError(messageFrom(cause, frozenStatus3Text("studio.frozenStatus3.liveProv.presenceNotifyFailed", "작업 상태를 팀에 알리지 못했습니다.")));
         }
       };
+      const onNetworkOnline = () => {
+        if (cancelled) return;
+        try {
+          // 와이파이↔핫스팟 전환 시 half-open 상태를 빠르게 복구하도록 즉시 프레즌스·고아 잉크를 재동기화한다.
+          nextRoom.reconcileAfterVisibilityResume();
+          if (typeof document !== "undefined") {
+            nextRoom.updatePresence({ visibility: document.hidden ? "idle" : "active" });
+          }
+        } catch {
+          // 네트워크 복구 직후의 일시적 전송 실패는 기존 자동 재연결 루프에 위임한다.
+        }
+      };
+      const heartbeatTimer = globalThis.setInterval(() => {
+        if (cancelled) return;
+        const tick = heartbeatGuard.recordTick();
+        if (tick.recommendedAction !== "resync-presence") return;
+        try {
+          nextRoom.reconcileAfterVisibilityResume();
+          if (typeof document !== "undefined") {
+            nextRoom.updatePresence({ visibility: document.hidden ? "idle" : "active" });
+          }
+        } catch {
+          // 타이머 스로틀링 복구 시 전송 오류가 나더라도 세션을 종료하지 않는다.
+        }
+      }, STUDIO_HEARTBEAT_EXPECTED_INTERVAL_MS);
+      const quotaCheckTimer = globalThis.setInterval(() => {
+        if (cancelled) return;
+        void probeStudioStorageQuota().then((quota) => {
+          if (cancelled || quota.status !== "critical") return;
+          setError((current) =>
+            current ?? `브라우저 로컬 저장 공간이 거의 가득 찼습니다(잔여 약 ${quota.remainingMb ?? 0}MB). 불필요한 캐시를 정리해 주세요.`,
+          );
+        });
+      }, 5 * 60_000);
       let visibilityListenerActive = false;
+      let onlineListenerActive = false;
       if (typeof document !== "undefined") {
         nextRoom.updatePresence({ visibility: document.hidden ? "idle" : "active" });
         document.addEventListener("visibilitychange", onVisibilityChange);
         visibilityListenerActive = true;
       }
+      if (typeof window !== "undefined") {
+        window.addEventListener("online", onNetworkOnline);
+        onlineListenerActive = true;
+      }
       const stopVisibilityListener = () => {
-        if (!visibilityListenerActive || typeof document === "undefined") return;
-        visibilityListenerActive = false;
-        document.removeEventListener("visibilitychange", onVisibilityChange);
+        globalThis.clearInterval(heartbeatTimer);
+        globalThis.clearInterval(quotaCheckTimer);
+        heartbeatGuard.reset();
+        if (visibilityListenerActive && typeof document !== "undefined") {
+          visibilityListenerActive = false;
+          document.removeEventListener("visibilitychange", onVisibilityChange);
+        }
+        if (onlineListenerActive && typeof window !== "undefined") {
+          onlineListenerActive = false;
+          window.removeEventListener("online", onNetworkOnline);
+        }
       };
 
       void (async () => {

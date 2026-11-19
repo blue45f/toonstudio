@@ -42,11 +42,14 @@ import {
   type StudioLiveInkBegin,
   type StudioLiveInkChunk,
 } from "./studio-live-ink-protocol";
+import { resolveStudioBg3dMobileLodBias } from "../bg3d/studio-bg3d-lod-selection";
 import {
   STUDIO_HEARTBEAT_THROTTLE_THRESHOLD_MS,
+  STUDIO_IDLE_SOFT_RECYCLE_DELAY_MS,
   STUDIO_LIVE_AUTO_DEGRADE_FRAME_MS_THRESHOLD,
   STUDIO_LIVE_AUTO_DEGRADE_PEER_THRESHOLD,
   StudioAdaptiveSaveScheduler,
+  StudioIdleSoftRecycleScheduler,
   StudioLiveHeartbeatJitterGuard,
   collectStudioLiveLongSessionDiagnostics,
   evaluateStudioLiveAutoDegrade,
@@ -884,5 +887,34 @@ describe("long-session multi-user collaborative drawing stability", () => {
       consecutiveThrottledTicks: 1,
       recommendedAction: "resync-presence",
     });
+  });
+
+  it("schedules idle soft-recycle during drawing pauses and computes mobile 3D/VRM LOD bias", () => {
+    const timers: { id: number; run: () => void; delayMs: number }[] = [];
+    let nextId = 1;
+    const onRecycle = vi.fn();
+    const recycler = new StudioIdleSoftRecycleScheduler({
+      onRecycle,
+      setTimeout: (fn, delayMs) => {
+        const entry = { id: nextId++, run: fn, delayMs };
+        timers.push(entry);
+        return entry.id;
+      },
+      clearTimeout: (handle) => {
+        const index = timers.findIndex((entry) => entry.id === handle);
+        if (index >= 0) timers.splice(index, 1);
+      },
+    });
+
+    recycler.noteActivity();
+    recycler.noteActivity();
+    expect(timers).toHaveLength(1);
+    expect(timers[0]!.delayMs).toBe(STUDIO_IDLE_SOFT_RECYCLE_DELAY_MS);
+    timers.shift()!.run();
+    expect(onRecycle).toHaveBeenCalledTimes(1);
+    recycler.dispose();
+
+    expect(resolveStudioBg3dMobileLodBias({ isMobileViewport: false, devicePixelRatio: 2, activeMeshCount: 4 })).toBe(0);
+    expect(resolveStudioBg3dMobileLodBias({ isMobileViewport: true, devicePixelRatio: 3, activeMeshCount: 28 })).toBe(1.25);
   });
 });

@@ -433,3 +433,54 @@ export class StudioAdaptiveSaveScheduler {
     this.maxWaitTimer = null;
   }
 }
+
+export const STUDIO_IDLE_SOFT_RECYCLE_DELAY_MS = 30_000;
+
+export interface StudioIdleSoftRecycleOptions {
+  /** 로컬 드로잉이 멈춘 뒤 비파괴 캐시·오프스크린 버퍼 정리를 실행할 유휴 대기 시간(ms). */
+  readonly idleDelayMs?: number;
+  readonly onRecycle: () => void;
+  readonly setTimeout?: (fn: () => void, delayMs: number) => unknown;
+  readonly clearTimeout?: (handle: unknown) => void;
+}
+
+/**
+ * 3시간 이상 연속 작업 중 자연스러운 휴지 구간(기본 30초)마다
+ * 비파괴 오프스크린 버퍼·임시 캐시를 소프트 리사이클해 힙/VRAM 파편화를 줄이는 스케줄러.
+ */
+export class StudioIdleSoftRecycleScheduler {
+  private readonly idleDelayMs: number;
+  private readonly onRecycle: () => void;
+  private readonly scheduleTimer: (fn: () => void, delayMs: number) => unknown;
+  private readonly cancelTimer: (handle: unknown) => void;
+  private timer: unknown = null;
+  private disposed = false;
+
+  constructor(options: StudioIdleSoftRecycleOptions) {
+    this.idleDelayMs = Math.max(1_000, Math.trunc(options.idleDelayMs ?? STUDIO_IDLE_SOFT_RECYCLE_DELAY_MS));
+    this.onRecycle = options.onRecycle;
+    this.scheduleTimer = options.setTimeout ?? ((fn, ms) => globalThis.setTimeout(fn, ms));
+    this.cancelTimer = options.clearTimeout ?? ((h) => globalThis.clearTimeout(h as ReturnType<typeof setTimeout>));
+  }
+
+  noteActivity(): void {
+    if (this.disposed) return;
+    this.clearTimer();
+    this.timer = this.scheduleTimer(() => {
+      this.timer = null;
+      if (!this.disposed) this.onRecycle();
+    }, this.idleDelayMs);
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.clearTimer();
+  }
+
+  private clearTimer(): void {
+    if (this.timer === null) return;
+    this.cancelTimer(this.timer);
+    this.timer = null;
+  }
+}

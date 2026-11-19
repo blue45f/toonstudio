@@ -190,7 +190,7 @@ export function StudioLiveCollaborationQuickControls({
           role="dialog"
           aria-label="실시간 협업 보기 설정"
           data-studio-live-quick-controls-panel="true"
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-[80] w-[min(20rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-line bg-panel/98 text-left shadow-lg backdrop-blur-xl"
+          className="absolute right-0 top-[calc(100%+0.5rem)] z-[80] max-h-[min(75dvh,32rem)] w-[min(20rem,calc(100vw-1rem))] overflow-y-auto overscroll-contain rounded-xl border border-line bg-panel/98 text-left break-keep shadow-lg backdrop-blur-xl"
         >
           <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
             <div className="min-w-0">
@@ -198,7 +198,7 @@ export function StudioLiveCollaborationQuickControls({
                 <SlidersHorizontal size={14} strokeWidth={1.5} className="shrink-0 text-fg-2" aria-hidden />
                 <h3 className="text-xs font-semibold text-fg">집중 협업 보기</h3>
               </div>
-              <p className="mt-1 text-[11px] leading-relaxed text-fg-3">
+              <p className="mt-1 text-[11px] leading-relaxed break-keep text-fg-3">
                 원고 동기화는 유지하고 내 화면의 커서 밀도만 조절합니다.
               </p>
             </div>
@@ -350,10 +350,10 @@ export function StudioLiveCollaborationQuickControls({
             </section>
           </div>
 
-          <div className="border-t border-line bg-card/45 p-3">
+          <div className="border-t border-line bg-card/45 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-3">
             <button
               type="button"
-              className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 text-xs font-medium break-keep text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none sm:min-h-10"
               onClick={() => {
                 setOpen(false);
                 onOpenTeam();

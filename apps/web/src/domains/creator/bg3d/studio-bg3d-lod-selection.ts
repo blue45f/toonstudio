@@ -175,3 +175,31 @@ export function selectStudioBg3dLodLevel(input: StudioBg3dLodSelectionInput): nu
 
   return selectedLevel;
 }
+
+export interface StudioBg3dMobileLodBiasInput {
+  readonly isMobileViewport: boolean;
+  readonly devicePixelRatio?: number;
+  readonly activeMeshCount?: number;
+}
+
+/**
+ * 모바일 뷰포트·고해상도 DPR·다중 3D/VRM 메시 환경에서 드로우콜과 GPU 메모리 폭증을 막기 위해
+ * engine-neutral LOD bias(양수일수록 더 일찍 경량 메시로 전환)를 계산한다.
+ */
+export function resolveStudioBg3dMobileLodBias(
+  input: StudioBg3dMobileLodBiasInput,
+): number {
+  let bias = input.isMobileViewport ? 0.5 : 0;
+  const dpr = typeof input.devicePixelRatio === "number" && Number.isFinite(input.devicePixelRatio)
+    ? input.devicePixelRatio
+    : 1;
+  const meshCount = typeof input.activeMeshCount === "number" && Number.isFinite(input.activeMeshCount)
+    ? Math.max(0, Math.trunc(input.activeMeshCount))
+    : 0;
+
+  if (input.isMobileViewport && dpr >= 2.5) bias += 0.25;
+  if (meshCount >= 24) bias += 0.5;
+  else if (meshCount >= 12) bias += 0.25;
+
+  return Math.min(1.5, Math.round(bias * 100) / 100);
+}
