@@ -123,7 +123,7 @@ let retryTimer: ReturnType<typeof setTimeout> | null = null;
 let observationVersion = 0;
 let lastProbeStartedAt: number | null = null;
 const FOREGROUND_PROBE_GAP_MS = 5_000;
-// 절전 해제 구간 판정: 런타임 시작 시각과 이 페이지에서의 첫 확인 성공 여부.
+// 절전 해제 구간 판정: 런타임의 첫 요청 시각과 이 페이지에서의 첫 확인 성공 여부.
 let runtimeStartedAt: number | null = null;
 let confirmedThisSession = false;
 
@@ -141,14 +141,25 @@ function isColdStartError(error: AppApiError): boolean {
     || (typeof error.status === "number" && COLD_START_GATEWAY_STATUSES.has(error.status));
 }
 
-function scheduleNextProbe(): void {
+function visible(): boolean {
+  return typeof document === "undefined" || document.visibilityState === "visible";
+}
+
+function clearProbeTimers(): void {
+  if (intervalId !== null) globalThis.clearInterval(intervalId);
+  intervalId = null;
   if (retryTimer !== null) globalThis.clearTimeout(retryTimer);
   retryTimer = null;
-  if (runtimeUsers === 0 || snapshot.checking || snapshot.nextProbeAt === null) return;
+}
+
+function scheduleNextProbe(notBefore = 0): void {
+  if (retryTimer !== null) globalThis.clearTimeout(retryTimer);
+  retryTimer = null;
+  if (runtimeUsers === 0 || !visible() || snapshot.checking || snapshot.nextProbeAt === null) return;
   retryTimer = globalThis.setTimeout(() => {
     retryTimer = null;
-    void probeServiceCapabilities();
-  }, Math.max(0, snapshot.nextProbeAt - Date.now()));
+    if (visible()) void probeServiceCapabilities();
+  }, Math.max(0, Math.max(snapshot.nextProbeAt, notBefore) - Date.now()));
 }
 function publish(next: ServiceCapabilitySnapshot): ServiceCapabilitySnapshot {
   snapshot = Object.freeze(next);
@@ -194,6 +205,7 @@ export async function probeServiceCapabilities(
   }
 
   const startedVersion = observationVersion;
+  if (runtimeUsers > 0) runtimeStartedAt ??= Date.now();
   lastProbeStartedAt = Date.now();
   publish({ ...snapshot, checking: true });
   activeProbe = Promise.resolve().then(() => api.get<unknown>("/health/capabilities", {
@@ -358,17 +370,31 @@ export function startServiceCapabilityRuntime(): () => void {
     stopServiceCapabilityRuntime();
   };
   if (runtimeUsers > 1) return release;
-  runtimeStartedAt ??= Date.now();
 
-  const refresh = () => { void probeServiceCapabilities(); };
-  const onOnline = () => { void probeServiceCapabilities(true); };
+  const refresh = () => { if (visible()) void probeServiceCapabilities(); };
+  const onOnline = () => { if (visible()) void probeServiceCapabilities(true); };
+  const startPeriodicProbe = () => {
+    if (visible() && intervalId === null) {
+      intervalId = globalThis.setInterval(refresh, CHECK_INTERVAL_MS);
+    }
+  };
   const foregroundRefresh = () => {
+    if (!visible()) return;
     // 탭·도구의 연속 포커스가 이미 진행한 상태 확인의 backoff를 매번 우회하지 않는다.
-    if (lastProbeStartedAt !== null && Date.now() - lastProbeStartedAt < FOREGROUND_PROBE_GAP_MS) return;
+    if (lastProbeStartedAt !== null && Date.now() - lastProbeStartedAt < FOREGROUND_PROBE_GAP_MS) {
+      // 숨김 동안 만료된 재시도도 복귀 직후 최소 확인 간격을 우회하지 않는다.
+      scheduleNextProbe(lastProbeStartedAt + FOREGROUND_PROBE_GAP_MS);
+      return;
+    }
     void probeServiceCapabilities(true);
   };
   const onVisibility = () => {
-    if (document.visibilityState === "visible") foregroundRefresh();
+    if (!visible()) {
+      clearProbeTimers();
+      return;
+    }
+    startPeriodicProbe();
+    foregroundRefresh();
   };
   globalThis.addEventListener("online", onOnline, { passive: true });
   globalThis.addEventListener("focus", foregroundRefresh, { passive: true });
@@ -378,7 +404,7 @@ export function startServiceCapabilityRuntime(): () => void {
   );
   globalThis.addEventListener("storage", onStorage);
   document.addEventListener("visibilitychange", onVisibility, { passive: true });
-  intervalId = globalThis.setInterval(refresh, CHECK_INTERVAL_MS);
+  startPeriodicProbe();
   removeRuntimeListeners = () => {
     globalThis.removeEventListener("online", onOnline);
     globalThis.removeEventListener("focus", foregroundRefresh);
@@ -389,7 +415,7 @@ export function startServiceCapabilityRuntime(): () => void {
     globalThis.removeEventListener("storage", onStorage);
     document.removeEventListener("visibilitychange", onVisibility);
   };
-  void probeServiceCapabilities(true);
+  if (visible()) void probeServiceCapabilities(true);
   return release;
 }
 
@@ -398,10 +424,7 @@ function stopServiceCapabilityRuntime(): void {
   if (runtimeUsers > 0) return;
   removeRuntimeListeners?.();
   removeRuntimeListeners = null;
-  if (intervalId) globalThis.clearInterval(intervalId);
-  intervalId = null;
-  if (retryTimer !== null) globalThis.clearTimeout(retryTimer);
-  retryTimer = null;
+  clearProbeTimers();
 }
 
 export function useServiceCapabilityState(): ServiceCapabilitySnapshot {
