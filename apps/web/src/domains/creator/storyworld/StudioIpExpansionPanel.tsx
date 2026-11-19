@@ -1,14 +1,16 @@
 import {
   CheckCircle2,
   Coins,
+  FileOutput,
   FlaskConical,
   Globe2,
   Layers,
+  Package,
   Plus,
   ShieldAlert,
-  Sparkles,
   TrendingUp,
 } from "lucide-react";
+import { StudioMultiFormatIpKitPanel } from "./StudioMultiFormatIpKitPanel";
 import { useMemo, useState } from "react";
 
 import {
@@ -29,7 +31,7 @@ export interface StudioIpExpansionPanelProps {
   readonly onExportPitchBible?: (markdown: string) => void;
 }
 
-type ExpansionPanelView = "tracks" | "pilot" | "funding-royalty" | "spinoff-bible";
+type ExpansionPanelView = "tracks" | "pilot" | "funding-royalty" | "multiformat-qr" | "spinoff-bible";
 
 const DEFAULT_PROFILE: IpWorkProfile = {
   workTitle: "서울 게이트 브레이커",
@@ -78,6 +80,7 @@ const VIEW_TABS: readonly {
   { id: "tracks", labelKo: "11트랙 OSM 진단", icon: Globe2 },
   { id: "pilot", labelKo: "파일럿 사전검증", icon: FlaskConical },
   { id: "funding-royalty", labelKo: "시즌 펀딩 · 로열티", icon: Coins },
+  { id: "multiformat-qr", labelKo: "멀티포맷 · QR 키트", icon: Package },
   { id: "spinoff-bible", labelKo: "스핀오프 · 피치 바이블", icon: Layers },
 ];
 
@@ -225,9 +228,9 @@ export function StudioIpExpansionPanel({
         <button
           type="button"
           onClick={handleExport}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-semibold text-on-accent transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-semibold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          <Sparkles className="size-3.5" aria-hidden="true" />
+          <FileOutput className="size-3.5" aria-hidden="true" />
           IP 피치 바이블 내보내기
         </button>
       </header>
@@ -619,7 +622,15 @@ export function StudioIpExpansionPanel({
         </div>
       )}
 
-      {/* View 4: 스핀오프 캐논 & B2B 피치 바이블 프리뷰 */}
+      {/* View 4: 멀티포맷 IP 배포 · 원천 3컷 시드 · 오프라인 QR 굿즈 BOM */}
+      {activeView === "multiformat-qr" && (
+        <StudioMultiFormatIpKitPanel
+          workTitle={profile.workTitle}
+          rightsBomCleared={profile.hasCleanRightsBom}
+        />
+      )}
+
+      {/* View 5: 스핀오프 캐논 & B2B 피치 바이블 프리뷰 */}
       {activeView === "spinoff-bible" && (
         <div
           className="flex flex-col gap-3 border-t border-line pt-4 text-xs"

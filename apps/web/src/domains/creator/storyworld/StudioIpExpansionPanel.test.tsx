@@ -22,6 +22,9 @@ describe("StudioIpExpansionPanel", () => {
     fireEvent.click(screen.getByRole("tab", { name: "시즌 펀딩 · 로열티" }));
     expect(screen.getByText(/시즌제 팬덤 펀딩 · 완결 동행 시뮬레이터/)).toBeTruthy();
 
+    fireEvent.click(screen.getByRole("tab", { name: "멀티포맷 · QR 키트" }));
+    expect(screen.getByText(/오프라인 QR 체험 · 굿즈 BOM 빌더/)).toBeTruthy();
+
     fireEvent.click(screen.getByRole("button", { name: "IP 피치 바이블 내보내기" }));
 
     expect(onExport).toHaveBeenCalledTimes(1);
