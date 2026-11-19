@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY as CAP } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
+import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY as CAP, STUDIO_BG3D_SIX_PASS_VRM_BUNDLE_CAPABILITY as VRM_CAP } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { studioCrdtRemoteReaderRequest, studioLiveRequiredReaderFailure } from "./studio-live-bg3d-reader-capability";
 import { createStudioCrdtBinarySyncRequest, createStudioCrdtBinaryUpdateRequest, parseStudioCrdtBinaryUpdateAck, parseStudioCrdtBinaryRemoteUpdate } from "./studio-crdt-binary-wire";
 import { STUDIO_CRDT_PROTOCOL_VERSION } from "./studio-crdt-protocol";
@@ -10,7 +10,7 @@ import { createStudioCrdtServerAckError } from "./studio-crdt-operation-error";
 import { encodeStudioCrdtBinaryEnvelope } from "@/shared/lib/studio-crdt-binary-envelope";
 
 const updateId = "00000000-0000-4000-8000-000000000001";
-const READERS = [CAP, "legacy-pigment-preservation.v1"];
+const READERS = [CAP, VRM_CAP, "legacy-pigment-preservation.v1"];
 describe("원격 공동편집의 6패스 reader 광고", () => {
   it("이 기기의 origin 권위를 원격 서버 요청으로 보내지 않는다", () => {
     const request = { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: "work-1", requestId: "request-1", stateVector: "AA==",
@@ -23,10 +23,13 @@ describe("원격 공동편집의 6패스 reader 광고", () => {
     expect(createStudioCrdtBinaryUpdateRequest(studioCrdtRemoteReaderRequest({ protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION,
       workId: "work-1", updateId, clientSequence: 1, update: "AA==", readerCapabilities: [] }))).toMatchObject({ readerCapabilities: STUDIO_CRDT_READER_CAPABILITIES });
   });
-  it("JSON 변환을 거친 binary ACK와 원격 업데이트에도 요구 계약을 남긴다", () => {
-    const common = { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, wireVersion: 1, workId: "work-1", updateId, serverSequence: "1", requiredReaderCapabilities: [CAP] };
-    expect(parseStudioCrdtBinaryUpdateAck({ ...common, duplicate: false }, { expectedWorkId: "work-1" })).toMatchObject({ requiredReaderCapabilities: [CAP] });
-    expect(parseStudioCrdtBinaryRemoteUpdate({ ...common, update: encodeStudioCrdtBinaryEnvelope("update", Uint8Array.of(0)) }, { expectedWorkId: "work-1" })).toMatchObject({ requiredReaderCapabilities: [CAP] });
+  it.each([
+    { version: "v1", requiredReaderCapabilities: [CAP] },
+    { version: "v2", requiredReaderCapabilities: [CAP, VRM_CAP] },
+  ])("JSON 변환을 거친 binary ACK와 원격 업데이트에도 $version 요구 계약을 남긴다", ({ requiredReaderCapabilities }) => {
+    const common = { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, wireVersion: 1, workId: "work-1", updateId, serverSequence: "1", requiredReaderCapabilities };
+    expect(parseStudioCrdtBinaryUpdateAck({ ...common, duplicate: false }, { expectedWorkId: "work-1" })).toMatchObject({ requiredReaderCapabilities });
+    expect(parseStudioCrdtBinaryRemoteUpdate({ ...common, update: encodeStudioCrdtBinaryEnvelope("update", Uint8Array.of(0)) }, { expectedWorkId: "work-1" })).toMatchObject({ requiredReaderCapabilities });
   });
   it("더 새로운 알 수 없는 reader 요구는 반복 연결 대신 영구 중단한다", () => {
     const value = { requiredReaderCapabilities: ["future-reader.v2"] };
