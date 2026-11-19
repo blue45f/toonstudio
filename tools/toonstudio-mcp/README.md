@@ -25,11 +25,19 @@ pnpm run studio:cli -- draw-demo
   "mcpServers": {
     "toonstudio": {
       "command": "node",
-      "args": ["tools/toonstudio-mcp/server.mjs", "--state-file", ".cache/toonstudio-mcp-state.json"]
+      "args": [
+        "tools/toonstudio-mcp/server.mjs",
+        "--state-file",
+        ".cache/toonstudio-mcp-state.json",
+        "--api-url",
+        "http://localhost:3000"
+      ]
     }
   }
 }
 ```
+
+> `--api-url` (또는 환경변수 `TOONSTUDIO_API_URL`)를 함께 지정하면 구인 광장 파티 생성, 카페 게시글 작성, RBAC 역할 변경이 로컬 상태 파일뿐 아니라 실행 중인 NestJS 백엔드(`/api/studio-ecosystem/*`)에도 실시간 동기화된다.
 
 ## 제공 툴 범위 (15종)
 
