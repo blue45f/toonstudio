@@ -62,7 +62,7 @@
 }
 .studio-library-resume-open:hover { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-on-accent); }
 .studio-library-resume-open svg { flex-shrink: 0; }
-.studio-library-resume-state { padding: 8px 18px 14px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; border-top: 1px solid var(--color-line); margin-top: 8px; color: var(--color-fg-3); font-size: 0.75rem; }
+.studio-library-resume-state { padding: 8px 18px 14px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; border-top: 1px solid var(--color-line); margin-top: 8px; color: var(--color-fg-3); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
 .studio-library-resume-state p { margin: 4px 0; }
 .studio-library-resume-state a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--color-fg-2); font-weight: 500; transition: color 150ms ease; }
 .studio-library-resume-state a:hover { color: var(--color-accent); }
@@ -108,7 +108,7 @@
 .studio-library-project-row [data-studio-selection-checkbox], .studio-library-resume [data-studio-selection-checkbox] { width: 44px; height: 44px; border-radius: 8px; }
 
 .studio-library-project-row-description { display: grid; gap: 4px; min-width: 0; flex: 1; }
-.studio-library-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 0; color: var(--color-fg-3); font-size: 0.75rem; line-height: 1.4; }
+.studio-library-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 0; color: var(--color-fg-3); font-size: 0.75rem; line-height: 1.4; font-variant-numeric: tabular-nums; }
 .studio-library-project-row-description h3 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.35; overflow-wrap: anywhere; color: var(--color-fg); }
 .studio-library-project-row-description h3 a { display: inline-block; padding-block: 2px; transition: color 150ms ease; }
 .studio-library-project-row-description h3 a:hover { color: var(--color-accent); }
@@ -215,6 +215,10 @@
 .studio-library-secondary-tools :is(a, summary):focus-visible,
 .studio-library-guide-summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
+@media (pointer: coarse), (max-width: 767px) {
+  .studio-library-project-row-management > div > :is(a, button),
+  .studio-library-management-links a { min-height: 44px; }
+}
 @media (max-width: 767px) {
   [data-studio-illustrated-surface="library"] :is(a, button, input, select, summary) { scroll-margin-block: 16px max(calc(84px + env(safe-area-inset-bottom)), var(--service-status-overlay-clearance, 0px)); }
 }

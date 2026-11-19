@@ -32,8 +32,10 @@
   }
 }
 @media (pointer: coarse) {
-  [data-studio-bg3d-workspace] :is(button, select, summary, input:not([type="checkbox"]):not([type="radio"])) {
+  [data-studio-bg3d-workspace] :is(button, select, summary, [role="tab"], input:not([type="checkbox"]):not([type="radio"])) {
     min-height: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   [data-studio-bg3d-workspace] button { min-width: 44px; }
   [data-studio-bg3d-workspace] input:not([type="range"]):not([type="color"]),
@@ -128,6 +130,7 @@
     bottom: 0;
     z-index: 45;
     background: var(--color-panel);
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
   }
   [data-bg3d-professional-workspace] > [data-testid="scene3d-cut-panel"] > div {
     max-height: min(55vh, max(8rem, calc(var(--studio-3d-viewport-height, 100dvh) - 12rem)));
