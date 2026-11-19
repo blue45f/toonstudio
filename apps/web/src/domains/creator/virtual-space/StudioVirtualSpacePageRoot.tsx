@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -50,7 +50,7 @@ import { isStudioSpatialInviteToken } from "./studio-spatial-invite-context";
 import { verifyStudioSpaceEntryCode, verifyStudioSpatialInvite } from "./studio-virtual-space-access-client";
 import { StudioVirtualSpaceEntryLobby } from "./StudioVirtualSpaceEntryLobby";
 import type { StudioEntryCodeEntryResult } from "./StudioVirtualSpaceEntryCodePanel";
-import { VirtualSpaceExperience } from "./StudioVirtualSpacePage";
+import type { VirtualSpaceExperienceProps } from "./studio-virtual-space-page-props";
 import {
   createStudioVirtualDemoPreviewTransportFactory,
   isStudioVirtualDemoPreviewProject,
@@ -105,7 +105,7 @@ const ACCESS_DENIAL_COPY: Readonly<Record<string, { readonly ko: string; readonl
   },
 };
 
-export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal = false }: { readonly projectIdOverride?: string; readonly homeHeader?: ReactNode; readonly personal?: boolean } = {}) {
+export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal = false, Experience: VirtualSpaceExperience }: { readonly projectIdOverride?: string; readonly homeHeader?: ReactNode; readonly personal?: boolean; readonly Experience?: ComponentType<VirtualSpaceExperienceProps> } = {}) {
   const bt = useBilingual("StudioVirtualSpacePage");
   const { projectId = "" } = useParams<{ projectId: string }>();
   const decodedProjectId = projectIdOverride ?? decodeProjectId(projectId);
@@ -390,7 +390,7 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
         ephemeralOnly
         showHuddleLauncher={false}
       >
-        <VirtualSpaceExperience
+        {VirtualSpaceExperience ? <VirtualSpaceExperience
           key={JSON.stringify([decodedProjectId, userId, publication.snapshot.active?.scope ?? "bundled"])}
           publication={publication}
           projectId={decodedProjectId}
@@ -418,7 +418,7 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
           isGuest={isGuest}
           guestSpawn={guestSessionForSpace?.spawn ?? guestInvite.spawn}
           entryJustConfirmed={!initialEntryPreference.confirmed}
-        />
+        /> : null}
     </StudioLiveCollaborationProvider>
   );
 }

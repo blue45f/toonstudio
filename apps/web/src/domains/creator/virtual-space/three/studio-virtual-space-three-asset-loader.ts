@@ -4,7 +4,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 
 import type { StudioThreeModelProp } from "./studio-virtual-space-three-generated-assets";
-import { worldToThree } from "./studio-virtual-space-three-scene";
+import { worldToThree } from "./studio-virtual-space-three-coords";
 import { StudioThreePendingLoads, type StudioThreePendingController } from "./studio-virtual-space-three-runtime-policy";
 
 /** 이 모듈 전체가 선택형 3D stage 안에 있으므로 decoder WASM도 3D 선택 시에만 내려받는다. */

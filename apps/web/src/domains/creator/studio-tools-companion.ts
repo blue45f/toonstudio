@@ -7,20 +7,68 @@
  */
 
 import {
-  isStudioCompanionReferenceControl,
-  isStudioCompanionReferencePreviewFrame,
-  isStudioCompanionReferenceProjection,
-  type StudioCompanionReferenceControl,
-  type StudioCompanionReferenceProjection,
-} from "./studio-companion-reference-projection";
+  STUDIO_COMPANION_DENSITIES,
+  STUDIO_COMPANION_MAX_FUTURE_SKEW_MS,
+  STUDIO_COMPANION_MAX_MESSAGE_AGE_MS,
+  STUDIO_COMPANION_PRIMARY_BINDING_LEASE_MS,
+  STUDIO_COMPANION_RECENT_COMMAND_LIMIT,
+  STUDIO_COMPANION_SESSION_QUERY,
+  STUDIO_COMPANION_SURFACES,
+  STUDIO_COMPANION_SURFACE_IDS,
+  STUDIO_COMPANION_TOOL_IDS,
+  STUDIO_COMPANION_TOOL_LABELS,
+  STUDIO_COMPANION_TOOL_LABEL_KEYS,
+  STUDIO_COMPANION_TOOL_ORDER,
+  STUDIO_COMPANION_VIEW_QUERY,
+  STUDIO_COMPANION_WINDOW_FEATURES_BY_SURFACE,
+  STUDIO_TOOLS_COMPANION_CHANNEL,
+  STUDIO_TOOLS_COMPANION_WINDOW_FEATURES,
+  STUDIO_TOOLS_COMPANION_WINDOW_NAME,
+  createStudioCompanionCommandId,
+  createStudioCompanionSessionId,
+  isStudioCompanionSessionId,
+  parseStudioCompanionDocumentScope,
+  parseStudioCompanionSurface,
+  parseStudioCompanionView,
+  requireStudioCompanionSessionId,
+  studioCompanionPrimaryScope,
+  type StudioCompanionCommandMessage,
+  type StudioCompanionCommandName,
+  type StudioCompanionControl,
+  type StudioCompanionControlMessage,
+  type StudioCompanionDensity,
+  type StudioCompanionDocumentScope,
+  type StudioCompanionGoodbyeMessage,
+  type StudioCompanionHelloInput,
+  type StudioCompanionI18n,
+  type StudioCompanionMessage,
+  type StudioCompanionPresentationSafeMessage,
+  type StudioCompanionPresentationSafeState,
+  type StudioCompanionReferenceColorResult,
+  type StudioCompanionReferenceColorResultMessage,
+  type StudioCompanionReferencePreviewFrameMessage,
+  type StudioCompanionReferenceStateMessage,
+  type StudioCompanionRole,
+  type StudioCompanionSequencedMessage,
+  type StudioCompanionSurface,
+  type StudioCompanionToolId,
+  type StudioCompanionView,
+} from "./companion/studio-tools-companion-protocol-types";
 import {
-  isStudioCompanionNavigatorFrame,
-  isStudioCompanionReviewControl,
-  isStudioCompanionReviewProjection,
-  type StudioCompanionReviewControl,
-  type StudioCompanionReviewProjection,
-} from "./studio-companion-review-projection";
-import { isValidStudioWorkspaceWorkId } from "./studio-workspace-route";
+  StudioCompanionCommandGuard,
+  canAcceptStudioCompanionReferencePick,
+  commitStudioCompanionReferencePick,
+  isStudioCompanionCommandAllowed,
+  isStudioCompanionControl,
+  isStudioCompanionControlAllowed,
+  isStudioCompanionMessage,
+  isStudioCompanionMessageFresh,
+  isStudioCompanionPresentationSafeState,
+  isStudioCompanionReferenceColorResult,
+  studioCompanionSurfaceForHello,
+  type StudioCompanionBindingSlot,
+  type StudioCompanionBindingSnapshot,
+} from "./companion/studio-tools-companion-protocol-guards";
 
 export {
   captureStudioCompanionNavigatorFrame,
@@ -40,844 +88,67 @@ export type {
   StudioCompanionReferenceProjection,
 } from "./studio-companion-reference-projection";
 
-export const STUDIO_TOOLS_COMPANION_CHANNEL = "toonstudio.studio.tools-companion.v1";
-export const STUDIO_TOOLS_COMPANION_WINDOW_NAME = "toonstudio-studio-tools";
-export const STUDIO_TOOLS_COMPANION_WINDOW_FEATURES =
-  "popup=yes,width=520,height=820,menubar=no,toolbar=no,location=no,status=no";
-
-export const STUDIO_COMPANION_WINDOW_FEATURES_BY_SURFACE: Readonly<Record<StudioCompanionSurface, string>> = {
-  workspace: STUDIO_TOOLS_COMPANION_WINDOW_FEATURES,
-  navigator: "popup=yes,width=390,height=860,menubar=no,toolbar=no,location=no,status=no",
-  review: "popup=yes,width=420,height=860,menubar=no,toolbar=no,location=no,status=no",
-  reference: "popup=yes,width=420,height=860,menubar=no,toolbar=no,location=no,status=no",
+export {
+  STUDIO_COMPANION_DENSITIES,
+  STUDIO_COMPANION_MAX_FUTURE_SKEW_MS,
+  STUDIO_COMPANION_MAX_MESSAGE_AGE_MS,
+  STUDIO_COMPANION_PRIMARY_BINDING_LEASE_MS,
+  STUDIO_COMPANION_RECENT_COMMAND_LIMIT,
+  STUDIO_COMPANION_SESSION_QUERY,
+  STUDIO_COMPANION_SURFACES,
+  STUDIO_COMPANION_SURFACE_IDS,
+  STUDIO_COMPANION_TOOL_IDS,
+  STUDIO_COMPANION_TOOL_LABELS,
+  STUDIO_COMPANION_TOOL_LABEL_KEYS,
+  STUDIO_COMPANION_TOOL_ORDER,
+  STUDIO_COMPANION_VIEW_QUERY,
+  STUDIO_COMPANION_WINDOW_FEATURES_BY_SURFACE,
+  STUDIO_TOOLS_COMPANION_CHANNEL,
+  STUDIO_TOOLS_COMPANION_WINDOW_FEATURES,
+  STUDIO_TOOLS_COMPANION_WINDOW_NAME,
+  StudioCompanionCommandGuard,
+  canAcceptStudioCompanionReferencePick,
+  commitStudioCompanionReferencePick,
+  createStudioCompanionCommandId,
+  createStudioCompanionSessionId,
+  isStudioCompanionCommandAllowed,
+  isStudioCompanionControl,
+  isStudioCompanionControlAllowed,
+  isStudioCompanionMessage,
+  isStudioCompanionMessageFresh,
+  isStudioCompanionPresentationSafeState,
+  isStudioCompanionReferenceColorResult,
+  isStudioCompanionSessionId,
+  parseStudioCompanionDocumentScope,
+  parseStudioCompanionSurface,
+  parseStudioCompanionView,
+  requireStudioCompanionSessionId,
+  studioCompanionPrimaryScope,
+  studioCompanionSurfaceForHello,
+  type StudioCompanionBindingSlot,
+  type StudioCompanionBindingSnapshot,
+  type StudioCompanionCommandMessage,
+  type StudioCompanionCommandName,
+  type StudioCompanionControl,
+  type StudioCompanionControlMessage,
+  type StudioCompanionDensity,
+  type StudioCompanionDocumentScope,
+  type StudioCompanionGoodbyeMessage,
+  type StudioCompanionHelloInput,
+  type StudioCompanionI18n,
+  type StudioCompanionMessage,
+  type StudioCompanionPresentationSafeMessage,
+  type StudioCompanionPresentationSafeState,
+  type StudioCompanionReferenceColorResult,
+  type StudioCompanionReferenceColorResultMessage,
+  type StudioCompanionReferencePreviewFrameMessage,
+  type StudioCompanionReferenceStateMessage,
+  type StudioCompanionRole,
+  type StudioCompanionSequencedMessage,
+  type StudioCompanionSurface,
+  type StudioCompanionToolId,
+  type StudioCompanionView,
 };
-
-export const STUDIO_COMPANION_SESSION_QUERY = "session";
-export const STUDIO_COMPANION_VIEW_QUERY = "view";
-const STUDIO_COMPANION_SESSION_PATTERN = /^[A-Za-z0-9_-]{12,96}$/u;
-const STUDIO_COMPANION_SCOPE_PATTERN = /^[A-Za-z0-9_-]{1,128}$/u;
-
-export type StudioCompanionI18n = (key: string, fallback?: string) => string;
-
-export type StudioCompanionRole = "primary" | "companion";
-export const STUDIO_COMPANION_SURFACES = ["workspace", "navigator", "review", "reference"] as const;
-export type StudioCompanionSurface = (typeof STUDIO_COMPANION_SURFACES)[number];
-/** @deprecated Use StudioCompanionSurface. */
-export type StudioCompanionView = StudioCompanionSurface;
-
-export type StudioCompanionToolId =
-  | "select"
-  | "pen"
-  | "eraser"
-  | "template"
-  | "bubble"
-  | "text"
-  | "layers"
-  | "ai"
-  | "3d-character"
-  | "3d-bg";
-
-export type StudioCompanionDensity = "simple" | "full" | "focus";
-export type StudioCompanionCommandName =
-  | StudioCompanionToolId
-  | "focus-primary"
-  | "toggle-canvas-only"
-  | "enter-canvas-only"
-  | "exit-canvas-only";
-
-export type StudioCompanionControl =
-  | StudioCompanionReviewControl
-  | StudioCompanionReferenceControl;
-
-export type StudioCompanionReferenceColorResult = {
-  generation: number;
-  revision: number;
-  referenceRevision: number;
-  sequence: number;
-  color: string;
-};
-
-export type StudioCompanionPresentationSafeState = Readonly<{
-  enabled: boolean;
-  clock: number;
-  writerInstanceId: string;
-  mutationId: string;
-}>;
-
-export type StudioCompanionMessage =
-  | {
-      v: 1;
-      type: "hello";
-      role: "primary";
-      primaryInstanceId: string;
-      targetCompanionInstanceId: string | null;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "hello";
-      role: "companion";
-      companionInstanceId: string;
-      targetPrimaryInstanceId: string | null;
-      /** Missing on legacy workspace companions. */
-      view?: StudioCompanionSurface;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "primary-state";
-      primaryInstanceId: string;
-      targetCompanionInstanceId: string;
-      tool: StudioCompanionToolId;
-      density: StudioCompanionDensity;
-      canvasOnly: boolean;
-      title: string;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "companion-command";
-      command: StudioCompanionCommandName;
-      companionInstanceId: string;
-      targetPrimaryInstanceId: string;
-      commandId: string;
-      sequence: number;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "primary-review-state";
-      primaryInstanceId: string;
-      targetCompanionInstanceId: string;
-      generation: number;
-      projection: StudioCompanionReviewProjection;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "navigator-frame";
-      primaryInstanceId: string;
-      targetCompanionInstanceId: string;
-      generation: number;
-      revision: number;
-      sequence: number;
-      width: number;
-      height: number;
-      blob: Blob;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "primary-reference-state";
-      primaryInstanceId: string;
-      targetCompanionInstanceId: string;
-      generation: number;
-      projection: StudioCompanionReferenceProjection;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "reference-preview-frame";
-      primaryInstanceId: string;
-      targetCompanionInstanceId: string;
-      generation: number;
-      revision: number;
-      referenceRevision: number;
-      sequence: number;
-      width: number;
-      height: number;
-      blob: Blob;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "reference-color-result";
-      primaryInstanceId: string;
-      targetCompanionInstanceId: string;
-      generation: number;
-      revision: number;
-      referenceRevision: number;
-      sequence: number;
-      color: string;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "companion-presentation-safe";
-      /** The companion forwarding this state; never a primary routing target. */
-      companionInstanceId: string;
-      /** Null broadcasts a mutation, while a peer hello replay is precisely targeted. */
-      targetCompanionInstanceId: string | null;
-      state: StudioCompanionPresentationSafeState;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "companion-control";
-      control: StudioCompanionControl;
-      generation: number;
-      companionInstanceId: string;
-      targetPrimaryInstanceId: string;
-      commandId: string;
-      sequence: number;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "ping";
-      companionInstanceId: string;
-      targetPrimaryInstanceId: string;
-      nonce: string;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "pong";
-      primaryInstanceId: string;
-      targetCompanionInstanceId: string;
-      nonce: string;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "companion-goodbye";
-      companionInstanceId: string;
-      targetPrimaryInstanceId: string;
-      surface: StudioCompanionSurface;
-      at: number;
-    }
-  | {
-      v: 1;
-      type: "primary-goodbye";
-      primaryInstanceId: string;
-      targetCompanionInstanceId: string;
-      surface: StudioCompanionSurface;
-      at: number;
-    };
-
-export type StudioCompanionCommandMessage = Extract<
-  StudioCompanionMessage,
-  { type: "companion-command" }
->;
-
-export type StudioCompanionControlMessage = Extract<
-  StudioCompanionMessage,
-  { type: "companion-control" }
->;
-
-export type StudioCompanionReferenceStateMessage = Extract<
-  StudioCompanionMessage,
-  { type: "primary-reference-state" }
->;
-
-export type StudioCompanionReferencePreviewFrameMessage = Extract<
-  StudioCompanionMessage,
-  { type: "reference-preview-frame" }
->;
-
-export type StudioCompanionReferenceColorResultMessage = Extract<
-  StudioCompanionMessage,
-  { type: "reference-color-result" }
->;
-
-export type StudioCompanionPresentationSafeMessage = Extract<
-  StudioCompanionMessage,
-  { type: "companion-presentation-safe" }
->;
-
-export type StudioCompanionGoodbyeMessage = Extract<
-  StudioCompanionMessage,
-  { type: "companion-goodbye" }
->;
-
-export type StudioCompanionSequencedMessage =
-  | StudioCompanionCommandMessage
-  | StudioCompanionControlMessage;
-
-export const STUDIO_COMPANION_TOOL_LABELS: Record<StudioCompanionToolId, string> = {
-  select: "선택",
-  pen: "펜",
-  eraser: "지우개",
-  template: "템플릿·에셋",
-  bubble: "말풍선",
-  text: "텍스트",
-  layers: "레이어",
-  ai: "AI 어시스트",
-  "3d-character": "3D 캐릭터",
-  "3d-bg": "3D 배경",
-};
-
-export const STUDIO_COMPANION_TOOL_LABEL_KEYS: Record<StudioCompanionToolId, string> = {
-  select: "studio.toolsCompanion.tool.select",
-  pen: "studio.toolsCompanion.tool.pen",
-  eraser: "studio.toolsCompanion.tool.eraser",
-  template: "studio.toolsCompanion.tool.template",
-  bubble: "studio.toolsCompanion.tool.bubble",
-  text: "studio.toolsCompanion.tool.text",
-  layers: "studio.toolsCompanion.tool.layers",
-  ai: "studio.toolsCompanion.tool.ai",
-  "3d-character": "studio.toolsCompanion.tool.threeDCharacter",
-  "3d-bg": "studio.toolsCompanion.tool.threeDBackground",
-};
-
-export const STUDIO_COMPANION_TOOL_ORDER: readonly StudioCompanionToolId[] = [
-  "select",
-  "pen",
-  "eraser",
-  "template",
-  "bubble",
-  "text",
-  "layers",
-  "ai",
-  "3d-character",
-  "3d-bg",
-] as const;
-
-const STUDIO_COMPANION_TOOL_IDS = new Set<string>(STUDIO_COMPANION_TOOL_ORDER);
-const STUDIO_COMPANION_DENSITIES = new Set<string>(["simple", "full", "focus"]);
-export const STUDIO_COMPANION_SURFACE_IDS = new Set<string>(STUDIO_COMPANION_SURFACES);
-const STUDIO_COMPANION_COMMANDS = new Set<string>([
-  ...STUDIO_COMPANION_TOOL_ORDER,
-  "focus-primary",
-  "toggle-canvas-only",
-  "enter-canvas-only",
-  "exit-canvas-only",
-]);
-export const STUDIO_COMPANION_MAX_MESSAGE_AGE_MS = 30_000;
-const STUDIO_COMPANION_MAX_FUTURE_SKEW_MS = 5_000;
-const STUDIO_COMPANION_RECENT_COMMAND_LIMIT = 256;
-export const STUDIO_COMPANION_PRIMARY_BINDING_LEASE_MS = 12_000;
-
-export function isStudioCompanionSessionId(value: unknown): value is string {
-  return typeof value === "string" && STUDIO_COMPANION_SESSION_PATTERN.test(value);
-}
-
-export function createStudioCompanionSessionId(): string {
-  try {
-    const cryptoApi = globalThis.crypto;
-    const uuid = cryptoApi?.randomUUID?.();
-    if (isStudioCompanionSessionId(uuid)) return uuid;
-    if (cryptoApi?.getRandomValues) {
-      const random = new Uint32Array(4);
-      cryptoApi.getRandomValues(random);
-      const encoded = Array.from(random, (value) => value.toString(16).padStart(8, "0")).join("");
-      const id = `studio-${encoded}`;
-      if (isStudioCompanionSessionId(id)) return id;
-    }
-  } catch {
-    // Fail closed below; this id gates isolation but is never an authentication credential.
-  }
-  return "";
-}
-export const createStudioCompanionCommandId = createStudioCompanionSessionId;
-
-/**
- * Parses the optional detached-window view. A missing value preserves the original
- * all-in-one workspace companion; duplicate or unknown values fail closed.
- */
-export function parseStudioCompanionSurface(search: string): StudioCompanionSurface | null {
-  try {
-    const values = new URLSearchParams(search).getAll(STUDIO_COMPANION_VIEW_QUERY);
-    if (values.length === 0) return "workspace";
-    if (values.length !== 1) return null;
-    const surface = values[0];
-    return typeof surface === "string" && STUDIO_COMPANION_SURFACE_IDS.has(surface)
-      ? surface as StudioCompanionSurface
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-/** @deprecated Use parseStudioCompanionSurface. */
-export const parseStudioCompanionView = parseStudioCompanionSurface;
-
-export function requireStudioCompanionSessionId(sessionId: string): string {
-  if (!isStudioCompanionSessionId(sessionId)) {
-    throw new TypeError("Invalid Studio tools companion session id");
-  }
-  return sessionId;
-}
-
-type StudioCompanionPrimaryScope = { id?: string; remix?: string };
-
-export interface StudioCompanionDocumentScope {
-  readonly workId: string | null;
-  readonly remixId: string | null;
-}
-
-export function studioCompanionPrimaryScope(
-  search: string,
-  routeWorkId?: string | null,
-): StudioCompanionPrimaryScope | null {
-  try {
-    const params = new URLSearchParams(search);
-    const ids = params.getAll("id");
-    const remixes = params.getAll("remix");
-
-    if (ids.length > 1 || remixes.length > 1) return null;
-    const queryWorkId = ids[0];
-    const remixId = remixes[0];
-    if (queryWorkId !== undefined && !isValidStudioWorkspaceWorkId(queryWorkId)) return null;
-    if (remixId !== undefined && !STUDIO_COMPANION_SCOPE_PATTERN.test(remixId)) return null;
-
-    if (routeWorkId !== undefined) {
-      if (routeWorkId !== null && !isValidStudioWorkspaceWorkId(routeWorkId)) return null;
-      if (queryWorkId !== undefined && queryWorkId !== routeWorkId) return null;
-      if (routeWorkId !== null) return { id: routeWorkId };
-      if (queryWorkId !== undefined) return null;
-    }
-
-    if (queryWorkId !== undefined) return { id: queryWorkId };
-    return remixId === undefined ? {} : { remix: remixId };
-  } catch {
-    return null;
-  }
-}
-
-export function parseStudioCompanionDocumentScope(
-  search: string,
-): StudioCompanionDocumentScope | null {
-  const scope = studioCompanionPrimaryScope(search);
-  if (!scope) return null;
-  return Object.freeze({
-    workId: scope.id ?? null,
-    remixId: scope.remix ?? null,
-  });
-}
-
-function isPlainStudioCompanionRecord(value: unknown): value is Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  try {
-    const prototype = Object.getPrototypeOf(value);
-    return prototype === Object.prototype || prototype === null;
-  } catch {
-    return false;
-  }
-}
-
-function hasExactStudioCompanionKeys(
-  value: Record<string, unknown>,
-  expected: readonly string[]
-): boolean {
-  try {
-    const ownKeys = Reflect.ownKeys(value);
-    return ownKeys.length === expected.length
-      && ownKeys.every((key) => typeof key === "string" && expected.includes(key));
-  } catch {
-    return false;
-  }
-}
-
-function studioCompanionExactOwnData(
-  value: unknown,
-  expected: readonly string[]
-): Readonly<Record<string, unknown>> | null {
-  if (!isPlainStudioCompanionRecord(value) || !hasExactStudioCompanionKeys(value, expected)) {
-    return null;
-  }
-  try {
-    const descriptors = Object.getOwnPropertyDescriptors(value);
-    const snapshot: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
-    for (const key of expected) {
-      const descriptor = descriptors[key];
-      if (!descriptor || !descriptor.enumerable || !("value" in descriptor)) return null;
-      snapshot[key] = descriptor.value;
-    }
-    return snapshot;
-  } catch {
-    return null;
-  }
-}
-
-export function isStudioCompanionReferenceColorResult(
-  value: unknown
-): value is StudioCompanionReferenceColorResult {
-  const result = studioCompanionExactOwnData(value, [
-    "generation",
-    "revision",
-    "referenceRevision",
-    "sequence",
-    "color",
-  ]);
-  return result !== null
-    && typeof result.generation === "number"
-    && Number.isSafeInteger(result.generation)
-    && result.generation > 0
-    && typeof result.revision === "number"
-    && Number.isSafeInteger(result.revision)
-    && result.revision > 0
-    && typeof result.referenceRevision === "number"
-    && Number.isSafeInteger(result.referenceRevision)
-    && result.referenceRevision > 0
-    && typeof result.sequence === "number"
-    && Number.isSafeInteger(result.sequence)
-    && result.sequence > 0
-    && typeof result.color === "string"
-    && /^#[\da-f]{6}(?:[\da-f]{2})?$/iu.test(result.color);
-}
-
-export function isStudioCompanionPresentationSafeState(
-  value: unknown
-): value is StudioCompanionPresentationSafeState {
-  const state = studioCompanionExactOwnData(value, [
-    "enabled",
-    "clock",
-    "writerInstanceId",
-    "mutationId",
-  ]);
-  return state !== null
-    && typeof state.enabled === "boolean"
-    && typeof state.clock === "number"
-    && Number.isSafeInteger(state.clock)
-    && state.clock > 0
-    && isStudioCompanionSessionId(state.writerInstanceId)
-    && isStudioCompanionSessionId(state.mutationId);
-}
-
-export function isStudioCompanionControl(value: unknown): value is StudioCompanionControl {
-  return isStudioCompanionReviewControl(value) || isStudioCompanionReferenceControl(value);
-}
-
-export function isStudioCompanionMessage(value: unknown): value is StudioCompanionMessage {
-  if (!isPlainStudioCompanionRecord(value)) return false;
-  const msg = value;
-  if (
-    msg.v !== 1
-    || typeof msg.type !== "string"
-    || typeof msg.at !== "number"
-    || !Number.isSafeInteger(msg.at)
-    || msg.at < 0
-  ) return false;
-  switch (msg.type) {
-    case "hello":
-      if (msg.role === "primary") {
-        return hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "role",
-          "primaryInstanceId",
-          "targetCompanionInstanceId",
-          "at",
-        ])
-          && isStudioCompanionSessionId(msg.primaryInstanceId)
-          && (
-            msg.targetCompanionInstanceId === null
-            || isStudioCompanionSessionId(msg.targetCompanionInstanceId)
-          );
-      }
-      if (msg.role === "companion") {
-        const legacyKeys = [
-          "v",
-          "type",
-          "role",
-          "companionInstanceId",
-          "targetPrimaryInstanceId",
-          "at",
-        ] as const;
-        const surfaceKeys = [...legacyKeys.slice(0, -1), "view", "at"] as const;
-        return (
-          hasExactStudioCompanionKeys(msg, legacyKeys)
-          || (
-            hasExactStudioCompanionKeys(msg, surfaceKeys)
-            && typeof msg.view === "string"
-            && STUDIO_COMPANION_SURFACE_IDS.has(msg.view)
-          )
-        )
-          && isStudioCompanionSessionId(msg.companionInstanceId)
-          && (
-            msg.targetPrimaryInstanceId === null
-            || isStudioCompanionSessionId(msg.targetPrimaryInstanceId)
-          );
-      }
-      return false;
-    case "primary-state":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "primaryInstanceId",
-          "targetCompanionInstanceId",
-          "tool",
-          "density",
-          "canvasOnly",
-          "title",
-          "at",
-        ])
-        && isStudioCompanionSessionId(msg.primaryInstanceId)
-        && isStudioCompanionSessionId(msg.targetCompanionInstanceId)
-        && typeof msg.tool === "string"
-        && STUDIO_COMPANION_TOOL_IDS.has(msg.tool)
-        && typeof msg.density === "string"
-        && STUDIO_COMPANION_DENSITIES.has(msg.density)
-        && typeof msg.canvasOnly === "boolean"
-        && typeof msg.title === "string"
-        && msg.title.length <= 120
-        && !/[\0\r\n]/u.test(msg.title)
-      );
-    case "companion-command":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "command",
-          "companionInstanceId",
-          "targetPrimaryInstanceId",
-          "commandId",
-          "sequence",
-          "at",
-        ])
-        && typeof msg.command === "string"
-        && STUDIO_COMPANION_COMMANDS.has(msg.command)
-        && isStudioCompanionSessionId(msg.companionInstanceId)
-        && isStudioCompanionSessionId(msg.targetPrimaryInstanceId)
-        && isStudioCompanionSessionId(msg.commandId)
-        && typeof msg.sequence === "number"
-        && Number.isSafeInteger(msg.sequence)
-        && msg.sequence > 0
-      );
-    case "primary-review-state":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "primaryInstanceId",
-          "targetCompanionInstanceId",
-          "generation",
-          "projection",
-          "at",
-        ])
-        && isStudioCompanionSessionId(msg.primaryInstanceId)
-        && isStudioCompanionSessionId(msg.targetCompanionInstanceId)
-        && typeof msg.generation === "number"
-        && Number.isSafeInteger(msg.generation)
-        && msg.generation > 0
-        && isStudioCompanionReviewProjection(msg.projection)
-      );
-    case "navigator-frame":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "primaryInstanceId",
-          "targetCompanionInstanceId",
-          "generation",
-          "revision",
-          "sequence",
-          "width",
-          "height",
-          "blob",
-          "at",
-        ])
-        && isStudioCompanionSessionId(msg.primaryInstanceId)
-        && isStudioCompanionSessionId(msg.targetCompanionInstanceId)
-        && isStudioCompanionNavigatorFrame({
-          generation: msg.generation,
-          revision: msg.revision,
-          sequence: msg.sequence,
-          width: msg.width,
-          height: msg.height,
-          blob: msg.blob,
-        })
-      );
-    case "primary-reference-state":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "primaryInstanceId",
-          "targetCompanionInstanceId",
-          "generation",
-          "projection",
-          "at",
-        ])
-        && isStudioCompanionSessionId(msg.primaryInstanceId)
-        && isStudioCompanionSessionId(msg.targetCompanionInstanceId)
-        && typeof msg.generation === "number"
-        && Number.isSafeInteger(msg.generation)
-        && msg.generation > 0
-        && isStudioCompanionReferenceProjection(msg.projection)
-        && msg.projection.generation === msg.generation
-      );
-    case "reference-preview-frame":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "primaryInstanceId",
-          "targetCompanionInstanceId",
-          "generation",
-          "revision",
-          "referenceRevision",
-          "sequence",
-          "width",
-          "height",
-          "blob",
-          "at",
-        ])
-        && isStudioCompanionSessionId(msg.primaryInstanceId)
-        && isStudioCompanionSessionId(msg.targetCompanionInstanceId)
-        && isStudioCompanionReferencePreviewFrame({
-          generation: msg.generation,
-          revision: msg.revision,
-          referenceRevision: msg.referenceRevision,
-          sequence: msg.sequence,
-          width: msg.width,
-          height: msg.height,
-          blob: msg.blob,
-        })
-      );
-    case "reference-color-result":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "primaryInstanceId",
-          "targetCompanionInstanceId",
-          "generation",
-          "revision",
-          "referenceRevision",
-          "sequence",
-          "color",
-          "at",
-        ])
-        && isStudioCompanionSessionId(msg.primaryInstanceId)
-        && isStudioCompanionSessionId(msg.targetCompanionInstanceId)
-        && isStudioCompanionReferenceColorResult({
-          generation: msg.generation,
-          revision: msg.revision,
-          referenceRevision: msg.referenceRevision,
-          sequence: msg.sequence,
-          color: msg.color,
-        })
-      );
-    case "companion-presentation-safe":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "companionInstanceId",
-          "targetCompanionInstanceId",
-          "state",
-          "at",
-        ])
-        && isStudioCompanionSessionId(msg.companionInstanceId)
-        && (
-          msg.targetCompanionInstanceId === null
-          || isStudioCompanionSessionId(msg.targetCompanionInstanceId)
-        )
-        && isStudioCompanionPresentationSafeState(msg.state)
-      );
-    case "companion-control":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "control",
-          "generation",
-          "companionInstanceId",
-          "targetPrimaryInstanceId",
-          "commandId",
-          "sequence",
-          "at",
-        ])
-        && isStudioCompanionControl(msg.control)
-        && typeof msg.generation === "number"
-        && Number.isSafeInteger(msg.generation)
-        && msg.generation > 0
-        && isStudioCompanionSessionId(msg.companionInstanceId)
-        && isStudioCompanionSessionId(msg.targetPrimaryInstanceId)
-        && isStudioCompanionSessionId(msg.commandId)
-        && typeof msg.sequence === "number"
-        && Number.isSafeInteger(msg.sequence)
-        && msg.sequence > 0
-      );
-    case "ping":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "companionInstanceId",
-          "targetPrimaryInstanceId",
-          "nonce",
-          "at",
-        ])
-        && isStudioCompanionSessionId(msg.companionInstanceId)
-        && isStudioCompanionSessionId(msg.targetPrimaryInstanceId)
-        && isStudioCompanionSessionId(msg.nonce)
-      );
-    case "pong":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "primaryInstanceId",
-          "targetCompanionInstanceId",
-          "nonce",
-          "at",
-        ])
-        && isStudioCompanionSessionId(msg.primaryInstanceId)
-        && isStudioCompanionSessionId(msg.targetCompanionInstanceId)
-        && isStudioCompanionSessionId(msg.nonce)
-      );
-    case "companion-goodbye":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "companionInstanceId",
-          "targetPrimaryInstanceId",
-          "surface",
-          "at",
-        ])
-        && isStudioCompanionSessionId(msg.companionInstanceId)
-        && isStudioCompanionSessionId(msg.targetPrimaryInstanceId)
-        && typeof msg.surface === "string"
-        && STUDIO_COMPANION_SURFACE_IDS.has(msg.surface)
-      );
-    case "primary-goodbye":
-      return (
-        hasExactStudioCompanionKeys(msg, [
-          "v",
-          "type",
-          "primaryInstanceId",
-          "targetCompanionInstanceId",
-          "surface",
-          "at",
-        ])
-        && isStudioCompanionSessionId(msg.primaryInstanceId)
-        && isStudioCompanionSessionId(msg.targetCompanionInstanceId)
-        && typeof msg.surface === "string"
-        && STUDIO_COMPANION_SURFACE_IDS.has(msg.surface)
-      );
-    default:
-      return false;
-  }
-}
-
-export function isStudioCompanionMessageFresh(
-  message: Pick<StudioCompanionMessage, "at">,
-  now = Date.now()
-): boolean {
-  if (!Number.isFinite(now)) return false;
-  return (
-    now - message.at <= STUDIO_COMPANION_MAX_MESSAGE_AGE_MS
-    && message.at - now <= STUDIO_COMPANION_MAX_FUTURE_SKEW_MS
-  );
-}
-
-export type StudioCompanionHelloInput =
-  | {
-      role: "primary";
-      primaryInstanceId: string;
-      targetCompanionInstanceId: string | null;
-    }
-  | {
-      role: "companion";
-      companionInstanceId: string;
-      targetPrimaryInstanceId: string | null;
-      surface?: StudioCompanionSurface;
-    };
 
 export function buildStudioCompanionCommand(
   input: {
@@ -1063,62 +334,6 @@ export class StudioCompanionPresentationSafeGuard {
   }
 }
 
-export class StudioCompanionCommandGuard {
-  private companionInstanceId: string | null = null;
-  private lastSequence = 0;
-  private readonly recentCommandIds = new Set<string>();
-  private readonly recentCommandOrder: string[] = [];
-
-  bindCompanion(companionInstanceId: string): void {
-    if (this.companionInstanceId === companionInstanceId) return;
-    this.companionInstanceId = companionInstanceId;
-    this.lastSequence = 0;
-    this.recentCommandIds.clear();
-    this.recentCommandOrder.length = 0;
-  }
-
-  reset(): void {
-    this.companionInstanceId = null;
-    this.lastSequence = 0;
-    this.recentCommandIds.clear();
-    this.recentCommandOrder.length = 0;
-  }
-
-  accept(message: StudioCompanionSequencedMessage, expected: {
-    primaryInstanceId: string;
-    companionInstanceId: string;
-    now?: number;
-  }): boolean {
-    if (this.companionInstanceId !== expected.companionInstanceId) return false;
-    if (message.targetPrimaryInstanceId !== expected.primaryInstanceId) return false;
-    if (message.companionInstanceId !== expected.companionInstanceId) return false;
-    if (!isStudioCompanionMessageFresh(message, expected.now ?? Date.now())) return false;
-    if (message.sequence <= this.lastSequence) return false;
-    if (this.recentCommandIds.has(message.commandId)) return false;
-
-    this.lastSequence = message.sequence;
-    this.recentCommandIds.add(message.commandId);
-    this.recentCommandOrder.push(message.commandId);
-    while (this.recentCommandOrder.length > STUDIO_COMPANION_RECENT_COMMAND_LIMIT) {
-      const expired = this.recentCommandOrder.shift();
-      if (expired) this.recentCommandIds.delete(expired);
-    }
-    return true;
-  }
-
-  snapshot(): {
-    companionInstanceId: string | null;
-    lastSequence: number;
-    recentCommandCount: number;
-  } {
-    return {
-      companionInstanceId: this.companionInstanceId,
-      lastSequence: this.lastSequence,
-      recentCommandCount: this.recentCommandIds.size,
-    };
-  }
-}
-
 /**
  * Companion-side fence for the view-only Reference stream. The projection is the revision
  * authority; preview and color messages are accepted only for that exact cursor and once per
@@ -1254,68 +469,6 @@ export class StudioCompanionReferenceMessageGuard {
     this.frameSequence = 0;
     this.colorSequence = 0;
   }
-}
-
-export type StudioCompanionBindingSnapshot = {
-  surface: StudioCompanionSurface;
-  companionInstanceId: string;
-  generation: number;
-  lastActivityAt: number;
-};
-
-export type StudioCompanionBindingSlot = StudioCompanionBindingSnapshot & {
-  commandGuard: StudioCompanionCommandGuard;
-  referencePickRevision: number;
-  referencePickSequence: number;
-};
-
-export function studioCompanionSurfaceForHello(
-  message: Extract<StudioCompanionMessage, { type: "hello"; role: "companion" }>
-): StudioCompanionSurface {
-  return message.view ?? "workspace";
-}
-
-export function isStudioCompanionCommandAllowed(
-  surface: StudioCompanionSurface,
-  command: StudioCompanionCommandName
-): boolean {
-  return surface === "workspace" || command === "focus-primary";
-}
-
-export function isStudioCompanionControlAllowed(
-  surface: StudioCompanionSurface,
-  control: StudioCompanionControl
-): boolean {
-  if (surface === "workspace") return true;
-  if (surface === "navigator") {
-    return control.kind === "navigator-demand" || control.kind === "navigate";
-  }
-  if (surface === "reference") return isStudioCompanionReferenceControl(control);
-  return control.kind === "select-layer"
-    || control.kind === "history"
-    || control.kind === "comment-focus"
-    || control.kind === "brush";
-}
-
-export function canAcceptStudioCompanionReferencePick(
-  slot: StudioCompanionBindingSlot,
-  control: StudioCompanionControl
-): boolean {
-  if (control.kind !== "reference-pick-color") return true;
-  return control.referenceRevision > slot.referencePickRevision
-    || (
-      control.referenceRevision === slot.referencePickRevision
-      && control.sequence > slot.referencePickSequence
-    );
-}
-
-export function commitStudioCompanionReferencePick(
-  slot: StudioCompanionBindingSlot,
-  control: StudioCompanionControl
-): void {
-  if (control.kind !== "reference-pick-color") return;
-  slot.referencePickRevision = control.referenceRevision;
-  slot.referencePickSequence = control.sequence;
 }
 
 export {

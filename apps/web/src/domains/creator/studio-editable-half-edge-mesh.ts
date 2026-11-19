@@ -8,7 +8,11 @@
  * merge/weld/dissolve, normals/crease, non-manifold diagnostics. Knife/bridge/subdiv are out.
  */
 
-import { hashStudioEditableMeshAuthority } from "./studio-editable-mesh-authority-digest";
+import {
+  hashStudioEditableMeshAuthority,
+  isIssuedStudioEditableMeshExtrudeRegionReceipt,
+  issueStudioEditableMeshExtrudeRegionReceipt,
+} from "./studio-editable-mesh-authority-digest";
 import { decodeStudioMeshUvLayer, snapshotStudioMeshUvLayer, validateStudioMeshUvLayer, type StudioMeshUvLayer } from "./mesh-uv/studio-mesh-uv-authority";
 import { preserveStudioMeshUvForUnchangedTopology, remapStudioMeshUvExtrudeRegion } from "./mesh-uv/studio-mesh-uv-topology-remap";
 import { bevelEditableMeshEdges } from "./hybrid-dcc/studio-editable-mesh-bevel";
@@ -144,53 +148,7 @@ export interface StudioEditableMeshExtrudeRegionMutation {
   readonly receipt: StudioEditableMeshExtrudeRegionReceipt;
 }
 
-const issuedStudioEditableMeshExtrudeRegionReceipts =
-  new WeakSet<StudioEditableMeshExtrudeRegionReceipt>();
-
-/** Identity check for receipts issued by this module; structural lookalikes are not authoritative. */
-export function isIssuedStudioEditableMeshExtrudeRegionReceipt(
-  receipt: unknown,
-): receipt is StudioEditableMeshExtrudeRegionReceipt {
-  return typeof receipt === "object"
-    && receipt !== null
-    && issuedStudioEditableMeshExtrudeRegionReceipts.has(
-      receipt as StudioEditableMeshExtrudeRegionReceipt,
-    );
-}
-
-function freezeStudioEditableMeshTopologyIdRemap(
-  remap: StudioEditableMeshTopologyIdRemap,
-): StudioEditableMeshTopologyIdRemap {
-  const entries = remap.entries.map((entry) => Object.freeze([entry[0], entry[1]] as const));
-  return Object.freeze({ entries: Object.freeze(entries) });
-}
-
-function issueStudioEditableMeshExtrudeRegionReceipt(
-  receipt: StudioEditableMeshExtrudeRegionReceipt,
-): StudioEditableMeshExtrudeRegionReceipt {
-  const selectionRemap = Object.freeze({
-    ...(receipt.selectionRemap.vertex
-      ? { vertex: freezeStudioEditableMeshTopologyIdRemap(receipt.selectionRemap.vertex) }
-      : {}),
-    ...(receipt.selectionRemap.edge
-      ? { edge: freezeStudioEditableMeshTopologyIdRemap(receipt.selectionRemap.edge) }
-      : {}),
-    ...(receipt.selectionRemap.face
-      ? { face: freezeStudioEditableMeshTopologyIdRemap(receipt.selectionRemap.face) }
-      : {}),
-  });
-  const issued = Object.freeze({
-    ...receipt,
-    sourceFaceIds: Object.freeze([...receipt.sourceFaceIds]),
-    capFaceIds: Object.freeze([...receipt.capFaceIds]),
-    sideFaceIds: Object.freeze([...receipt.sideFaceIds]),
-    boundaryHalfEdgeIds: Object.freeze([...receipt.boundaryHalfEdgeIds]),
-    faceRemap: freezeStudioEditableMeshTopologyIdRemap(receipt.faceRemap),
-    selectionRemap,
-  });
-  issuedStudioEditableMeshExtrudeRegionReceipts.add(issued);
-  return issued;
-}
+export { isIssuedStudioEditableMeshExtrudeRegionReceipt };
 
 export interface StudioMeshDiagnostic {
   readonly code:

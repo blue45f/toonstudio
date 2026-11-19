@@ -6,7 +6,7 @@ import { studioEmoteDefinition, type StudioEmoteKind } from "../studio-virtual-s
 import type { StudioVirtualSpacePoint, StudioVirtualSpacePresenceState } from "../studio-virtual-space-model";
 import { userStatusBadge } from "../studio-virtual-space-user-status";
 import type { StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
-import { STUDIO_THREE_SCALE, worldToThree } from "./studio-virtual-space-three-scene";
+import { STUDIO_THREE_SCALE, worldToThree } from "./studio-virtual-space-three-coords";
 import { disposeStudioThreeOwnedModel } from "./studio-virtual-space-three-asset-loader";
 import { studioThreeFillLightIntensity } from "./studio-virtual-space-three-motion";
 import { StudioThreePendingLoads, type StudioThreePendingController } from "./studio-virtual-space-three-runtime-policy";

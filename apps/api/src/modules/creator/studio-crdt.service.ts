@@ -573,10 +573,13 @@ export class StudioCrdtService implements OnModuleDestroy {
   evictIdleDocuments(now = this.now().getTime()): number {
     let evicted = 0;
     for (const [workId, entry] of this.documents) {
-      if (
-        this.workTails.has(workId) ||
-        now - entry.lastAccessedAt < this.idleEvictionMs
-      ) {
+      if (this.workTails.has(workId)) continue;
+      if (now < entry.lastAccessedAt) {
+        // OS 시계 역행 시 유휴 Y.Doc 회수가 지연되지 않도록 기준 시각을 보정한다.
+        entry.lastAccessedAt = now;
+        continue;
+      }
+      if (now - entry.lastAccessedAt < this.idleEvictionMs) {
         continue;
       }
       entry.doc.destroy();
@@ -1020,10 +1023,14 @@ export class StudioCrdtService implements OnModuleDestroy {
   ): Promise<void> {
     if (entry.sequence <= entry.compactedSequence || entry.uncompactedUpdateCount === 0) return;
     const now = this.now();
+    const nowMs = now.getTime();
+    if (nowMs < entry.lastCompactedAt) {
+      entry.lastCompactedAt = nowMs;
+    }
     if (
       entry.uncompactedUpdateCount < this.compactUpdateCount &&
       entry.uncompactedUpdateBytes < this.compactUpdateBytes &&
-      now.getTime() - entry.lastCompactedAt < this.compactIntervalMs
+      nowMs - entry.lastCompactedAt < this.compactIntervalMs
     ) {
       return;
     }

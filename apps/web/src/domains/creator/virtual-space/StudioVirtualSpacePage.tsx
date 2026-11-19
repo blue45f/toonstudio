@@ -232,6 +232,7 @@ import {
   writeStudioVirtualSpacePositionRecords,
 } from "./studio-virtual-space-page-helpers";
 import type { VirtualSpaceExperienceProps } from "./studio-virtual-space-page-props";
+import { StudioVirtualSpacePage as StudioVirtualSpacePageShell } from "./StudioVirtualSpacePageRoot";
 import { SPACE_PROXIMITY_MEDIA_RADIUS } from "./hud/space-proximity-media";
 import { spaceZoneWorkItems, spaceZoneWorkKind } from "./hud/space-zone-workflow";
 import { useSpaceProximityMedia, useSpaceProximityScope } from "./hud/use-space-proximity-media";
@@ -2085,6 +2086,8 @@ export function VirtualSpaceExperience({
   );
 }
 
-export { StudioVirtualSpacePage } from "./StudioVirtualSpacePageRoot";
-// eslint-disable-next-line react-refresh/only-export-components -- 페이지 셸은 StudioVirtualSpacePageRoot로 분리했고 기존 import 경로를 유지하는 재수출이다
-export { default } from "./StudioVirtualSpacePageRoot";
+export function StudioVirtualSpacePage(props: { readonly projectIdOverride?: string; readonly homeHeader?: ReactNode; readonly personal?: boolean } = {}) {
+  return <StudioVirtualSpacePageShell {...props} Experience={VirtualSpaceExperience} />;
+}
+
+export default StudioVirtualSpacePage;

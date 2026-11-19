@@ -16,7 +16,7 @@ import {
 } from "../mesh-uv/studio-mesh-uv-authority";
 
 import { hybridDccCommitGeometry } from "./studio-hybrid-dcc-document";
-import { synchronizeWorkspaceGeometryAuthority, type StudioHybridDccWorkspace } from "./studio-hybrid-dcc-workspace";
+import { synchronizeWorkspaceGeometryAuthority, type StudioHybridDccWorkspace } from "./studio-hybrid-dcc-geometry-sync";
 
 export type StudioHybridDccUvMode = "box" | "planar-xy" | "planar-xz" | "planar-yz";
 export interface StudioHybridDccUvPoint { readonly x: number; readonly y: number }
