@@ -60,6 +60,7 @@ export function StudioSecurityRbacPanel({
 }: StudioSecurityRbacPanelProps) {
   const [assignments, setAssignments] = useState<readonly RoleAssignmentRecord[]>(initialAssignments);
   const [selectedUserId, setSelectedUserId] = useState<string>(initialAssignments[1]?.userId ?? initialAssignments[0].userId);
+  const [simulatedClientIp, setSimulatedClientIp] = useState("");
   const [auditLogs, setAuditLogs] = useState<SecurityAuditEntry[]>([]);
   const stream = useStudioEcosystemStream(true);
   const latestRbacEventId = useMemo(
@@ -183,9 +184,24 @@ export function StudioSecurityRbacPanel({
             </select>
           </div>
 
+          <label className="flex flex-col gap-1 text-fg-2 sm:flex-row sm:items-center sm:justify-between">
+            <span>접속 IP 모의 검증 (선택)</span>
+            <input
+              type="text"
+              value={simulatedClientIp}
+              onChange={(e) => setSimulatedClientIp(e.target.value)}
+              placeholder="예: 10.0.1.5 또는 203.0.113.10"
+              className="min-h-11 rounded-lg border border-line bg-panel px-3 font-mono text-xs text-fg [word-break:normal] sm:min-h-8 sm:w-56"
+            />
+          </label>
+
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {SIMULATED_PERMISSIONS.map((perm) => {
-              const evalResult = evaluateSecurityPermission(selectedMember, perm);
+              const evalResult = evaluateSecurityPermission(
+                selectedMember,
+                perm,
+                simulatedClientIp.trim() || undefined,
+              );
               return (
                 <div
                   key={perm}
@@ -207,7 +223,7 @@ export function StudioSecurityRbacPanel({
           <p className="flex items-center gap-1.5 text-xs tabular-nums text-fg-3">
             <ShieldCheck className="size-3.5 shrink-0 text-fg-2" strokeWidth={1.5} aria-hidden="true" />
             총 활성 권한 {effectivePermissions.length}개 · 워터마크 강제:{" "}
-            {evaluateSecurityPermission(selectedMember, "manuscript:read").enforceWatermark
+            {evaluateSecurityPermission(selectedMember, "manuscript:read", simulatedClientIp.trim() || undefined).enforceWatermark
               ? "활성"
               : "비활성"}
           </p>

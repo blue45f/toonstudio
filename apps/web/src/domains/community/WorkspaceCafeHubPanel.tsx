@@ -1,4 +1,4 @@
-import { Coffee, EyeOff, ImagePlus, Lock, Send, X } from "lucide-react";
+import { Coffee, EyeOff, ImagePlus, Lock, MessageSquare, Send, X } from "lucide-react";
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { studioEcosystemClient } from "@/platform/studio-ecosystem-client";
@@ -37,12 +37,15 @@ export function WorkspaceCafeHubPanel({
   );
   const activeCafe = scopedCafes[0] ?? cafes[0];
   const [channel, setChannel] = useState<CafeBoardChannel>(activeCafe.channels[0]);
+  const [channelFilter, setChannelFilter] = useState<CafeBoardChannel | "all">("all");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [attachments, setAttachments] = useState<CafeImageAttachment[]>([]);
   const [lightboxImage, setLightboxImage] = useState<CafeImageAttachment | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [posts, setPosts] = useState<WorkspaceCafePost[]>([]);
+  const [commentsByPost, setCommentsByPost] = useState<Record<string, readonly { id: string; author: string; text: string }[]>>({});
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const stream = useStudioEcosystemStream(true);
   const latestCafeEventId = useMemo(
     () => stream.events.find((e) => e.type === "cafe.post_created")?.id ?? null,
@@ -91,7 +94,18 @@ export function WorkspaceCafeHubPanel({
     setActiveScope(scope);
     const nextCafe = cafes.find((c) => c.scope === scope) ?? cafes[0];
     setChannel(nextCafe.channels[0]);
+    setChannelFilter("all");
     setError(null);
+  };
+
+  const handleAddComment = (postId: string) => {
+    const draft = (commentDrafts[postId] ?? "").trim();
+    if (!draft) return;
+    setCommentsByPost((prev) => ({
+      ...prev,
+      [postId]: [...(prev[postId] ?? []), { id: `cmt-${Date.now().toString(36)}`, author: currentUserName, text: draft }],
+    }));
+    setCommentDrafts((prev) => ({ ...prev, [postId]: "" }));
   };
 
   const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -154,7 +168,9 @@ export function WorkspaceCafeHubPanel({
     setAttachments([]);
   };
 
-  const visiblePosts = posts.filter((p) => p.cafeId === activeCafe.id);
+  const visiblePosts = posts.filter(
+    (p) => p.cafeId === activeCafe.id && (channelFilter === "all" || p.channel === channelFilter),
+  );
 
   return (
     <section
@@ -302,40 +318,107 @@ export function WorkspaceCafeHubPanel({
         </form>
       </div>
 
+      {posts.some((p) => p.cafeId === activeCafe.id) && (
+        <div
+          className="flex snap-x gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0"
+          aria-label="게시판 채널 필터"
+        >
+          <button
+            type="button"
+            onClick={() => setChannelFilter("all")}
+            className={`min-h-11 shrink-0 snap-start rounded-lg border px-3 text-xs transition-colors duration-150 sm:min-h-8 ${
+              channelFilter === "all"
+                ? "border-accent bg-accent-soft font-medium text-accent"
+                : "border-line bg-card text-fg-2 hover:text-fg"
+            }`}
+          >
+            전체 채널
+          </button>
+          {activeCafe.channels.map((ch) => (
+            <button
+              key={ch}
+              type="button"
+              onClick={() => setChannelFilter(ch)}
+              className={`min-h-11 shrink-0 snap-start rounded-lg border px-3 text-xs transition-colors duration-150 sm:min-h-8 ${
+                channelFilter === ch
+                  ? "border-accent bg-accent-soft font-medium text-accent"
+                  : "border-line bg-card text-fg-2 hover:text-fg"
+              }`}
+            >
+              {CAFE_CHANNEL_LABELS[ch]}
+            </button>
+          ))}
+        </div>
+      )}
+
       {visiblePosts.length > 0 && (
         <ul className="space-y-2">
-          {visiblePosts.map((post) => (
-            <li key={post.id} className="rounded-lg border border-line bg-card p-3.5 text-xs">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium leading-[1.45] text-fg">{post.title}</span>
-                <span className="text-fg-3">{CAFE_CHANNEL_LABELS[post.channel]}</span>
-              </div>
-              {post.body && (
-                <p className="mt-1.5 whitespace-pre-wrap leading-[1.6] text-fg-2">{post.body}</p>
-              )}
-              {post.attachments.length > 0 && (
-                <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {post.attachments.map((att) => (
-                    <button
-                      key={att.id}
-                      type="button"
-                      onClick={() => setLightboxImage(att)}
-                      className="overflow-hidden rounded-md border border-line text-left transition-colors duration-150 hover:border-accent"
-                      aria-label={`${att.fileName} 크게 보기`}
-                    >
-                      <img
-                        src={att.dataUrl}
-                        alt={att.caption || att.fileName}
-                        className={`h-24 w-full object-cover ${
-                          att.spoilerBlur ? "blur-sm" : ""
-                        }`}
-                      />
-                    </button>
-                  ))}
+          {visiblePosts.map((post) => {
+            const postComments = commentsByPost[post.id] ?? [];
+            return (
+              <li key={post.id} className="rounded-lg border border-line bg-card p-3.5 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium leading-[1.45] text-fg">{post.title}</span>
+                  <span className="text-fg-3">{CAFE_CHANNEL_LABELS[post.channel]}</span>
                 </div>
-              )}
-            </li>
-          ))}
+                {post.body && (
+                  <p className="mt-1.5 whitespace-pre-wrap leading-[1.6] text-fg-2">{post.body}</p>
+                )}
+                {post.attachments.length > 0 && (
+                  <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {post.attachments.map((att) => (
+                      <button
+                        key={att.id}
+                        type="button"
+                        onClick={() => setLightboxImage(att)}
+                        className="overflow-hidden rounded-md border border-line text-left transition-colors duration-150 hover:border-accent"
+                        aria-label={`${att.fileName} 크게 보기`}
+                      >
+                        <img
+                          src={att.dataUrl}
+                          alt={att.caption || att.fileName}
+                          className={`h-24 w-full object-cover ${
+                            att.spoilerBlur ? "blur-sm" : ""
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-3 flex flex-col gap-2 border-t border-line pt-2.5">
+                  {postComments.length > 0 && (
+                    <ul className="space-y-1 text-fg-2">
+                      {postComments.map((cmt) => (
+                        <li key={cmt.id} className="flex items-baseline gap-1.5">
+                          <MessageSquare className="size-3 shrink-0 text-fg-3" strokeWidth={1.5} aria-hidden="true" />
+                          <span className="font-medium text-fg">{cmt.author}:</span>
+                          <span>{cmt.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={commentDrafts[post.id] ?? ""}
+                      onChange={(e) =>
+                        setCommentDrafts((prev) => ({ ...prev, [post.id]: e.target.value }))
+                      }
+                      placeholder="댓글 피드백 남기기"
+                      className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-panel px-3 text-xs text-fg sm:min-h-8"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddComment(post.id)}
+                      className="min-h-11 shrink-0 rounded-lg border border-line bg-panel px-3 text-xs font-medium text-fg-2 transition-colors duration-150 hover:bg-raised sm:min-h-8"
+                    >
+                      댓글
+                    </button>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
 
