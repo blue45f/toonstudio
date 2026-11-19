@@ -11,43 +11,50 @@ afterEach(() => {
   cleanup();
 });
 
+const SAMPLE_SECTIONS: StudioPublicWiki["sections"] = [
+  {
+    kind: "character",
+    label: "캐릭터",
+    entries: [
+      {
+        id: "char-1",
+        kind: "character",
+        name: "서진우",
+        aliases: ["신호수"],
+        summary: "안개 구역의 첫 관측자",
+        details: "1화에서 낡은 라디오를 통해 경보를 수신한다.",
+        revealEpisode: 1,
+        related: [{ id: "loc-1", name: "남쪽 등대", kind: "location" }],
+      },
+    ],
+  },
+  {
+    kind: "location",
+    label: "장소",
+    entries: [
+      {
+        id: "loc-1",
+        kind: "location",
+        name: "남쪽 등대",
+        aliases: [],
+        summary: "안개가 가장 짙은 해안 초소",
+        details: "매달 초 전파가 끊긴다.",
+        revealEpisode: 4,
+        related: [],
+      },
+    ],
+  },
+];
+
 const SAMPLE_WIKI: StudioPublicWiki = {
+  projectId: "world-wiki-test",
   spoilerThroughEpisode: 12,
   publicCount: 2,
-  sections: [
-    {
-      kind: "character",
-      label: "캐릭터",
-      entries: [
-        {
-          id: "char-1",
-          kind: "character",
-          name: "서진우",
-          aliases: ["신호수"],
-          summary: "안개 구역의 첫 관측자",
-          details: "1화에서 낡은 라디오를 통해 경보를 수신한다.",
-          revealEpisode: 1,
-          related: [{ id: "loc-1", name: "남쪽 등대" }],
-        },
-      ],
-    },
-    {
-      kind: "location",
-      label: "장소",
-      entries: [
-        {
-          id: "loc-1",
-          kind: "location",
-          name: "남쪽 등대",
-          aliases: [],
-          summary: "안개가 가장 짙은 해안 초소",
-          details: "매달 초 전파가 끊긴다.",
-          revealEpisode: 4,
-          related: [],
-        },
-      ],
-    },
-  ],
+  sections: SAMPLE_SECTIONS,
+  entries: SAMPLE_SECTIONS.flatMap((section) => section.entries),
+  spoilerHiddenCount: 0,
+  privateHiddenCount: 0,
+  unconfiguredHiddenCount: 0,
 };
 
 describe("WorldWikiSection", () => {
@@ -79,7 +86,16 @@ describe("WorldWikiSection", () => {
   it("공개 설정이 없으면 빈 상태 안내를 표시한다", () => {
     render(
       <WorldWikiSection
-        wiki={{ spoilerThroughEpisode: 0, publicCount: 0, sections: [] }}
+        wiki={{
+          projectId: "world-wiki-test",
+          spoilerThroughEpisode: 0,
+          publicCount: 0,
+          sections: [],
+          entries: [],
+          spoilerHiddenCount: 0,
+          privateHiddenCount: 0,
+          unconfiguredHiddenCount: 0,
+        }}
       />,
     );
 

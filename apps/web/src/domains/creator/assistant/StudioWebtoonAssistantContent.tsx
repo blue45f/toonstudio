@@ -71,7 +71,7 @@ import {
   type ReaderScrollSpeedProfile,
 } from "./webtoon-scroll-pacing-simulator";
 import { WebtoonSfxLexiconEngine, type SfxCategory } from "./webtoon-sfx-lexicon";
-import { serializeStudioWorkflowPack, type StudioWorkflowPack } from "./studio-workflow-pack";
+import type { StudioWorkflowPack } from "./studio-workflow-pack";
 import { StudioAssistantSkillRouterBar, StudioWorkflowPacksPanel } from "./StudioWebtoonAssistantWorkflowViews";
 import { StudioWebtoonTensionMapEntry } from "./StudioWebtoonTensionMapEntry";
 import { useTensionMapDraft } from "./use-tension-map-draft";
@@ -290,7 +290,6 @@ export function StudioWebtoonAssistantModal({
 
   const [skillRouterQuery, setSkillRouterQuery] = useState("");
   const [appliedWorkflowPackId, setAppliedWorkflowPackId] = useState<string | null>(null);
-  const [copiedWorkflowPackId, setCopiedWorkflowPackId] = useState<string | null>(null);
   const croquisGuide = useMemo(() => new WebtoonCroquisPoseGuide(), []);
   const [selectedPerspective, setSelectedPerspective] =
     useState<PerspectiveGuidePreset>("eye-level");
@@ -1323,7 +1322,7 @@ export function StudioWebtoonAssistantModal({
           )}
 
           {activeTab === "workflow-packs" && (
-            <StudioWorkflowPacksPanel appliedWorkflowPackId={appliedWorkflowPackId} copiedWorkflowPackId={copiedWorkflowPackId} onApplyPack={handleApplyWorkflowPack} onCopyPack={(pack) => { void copyStudioText(serializeStudioWorkflowPack(pack)).then((ok) => setCopiedWorkflowPackId(ok ? pack.id : null)); }} />
+            <StudioWorkflowPacksPanel appliedWorkflowPackId={appliedWorkflowPackId} currentSnapshot={{ platformId: selectedPlatform, skinToneId: selectedSkinTone, perspectivePreset: selectedPerspective, focusStage: timerState.activeStage, focusPreset: timerState.pomodoroMode, readerSpeed }} onApplyPack={handleApplyWorkflowPack} />
           )}
           {activeTab === "learning" && <StudioContextualLearningPanel tool={lastLearningTool} focusStage={timerState.activeStage} />}
 

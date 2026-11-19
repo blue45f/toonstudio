@@ -23,6 +23,10 @@ export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
   const requiredCapabilities = [
     "studio-assistant-skill-router.ts",
     "studio-workflow-pack.ts",
+    "studio-workflow-pack-deeplink.ts",
+    "studio-workflow-pack-store.ts",
+    "studio-workflow-pack-rights-receipt.ts",
+    "studio-workflow-pack-telemetry.ts",
     "StudioWebtoonAssistantWorkflowViews.tsx",
     "StudioWebtoonAssistantContent.tsx",
     "studio-contextual-learning.ts",
@@ -39,7 +43,10 @@ export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
       contentSource.includes("StudioAssistantSkillRouterBar") &&
       contentSource.includes("StudioWorkflowPacksPanel") &&
       viewsSource.includes("routeStudioAssistantSkills") &&
-      viewsSource.includes("BUILTIN_STUDIO_WORKFLOW_PACKS");
+      viewsSource.includes("BUILTIN_STUDIO_WORKFLOW_PACKS") &&
+      viewsSource.includes("buildWorkflowPackShareUrl") &&
+      viewsSource.includes("generateWorkflowPackRightsReceipt") &&
+      viewsSource.includes("saveCustomStudioWorkflowPack");
   } catch {
     return {
       scope: "apps/web/src/domains/creator/assistant",
@@ -67,7 +74,7 @@ export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
     ready:
       presentCapabilities.length === requiredCapabilities.length &&
       wiredRouterAndPacks &&
-      testFiles.length >= 6,
+      testFiles.length >= 10,
   };
 }
 
