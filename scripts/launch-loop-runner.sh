@@ -19,6 +19,8 @@ LOG_DIR="${LOG_DIR:-/tmp/toonstudio-launch-loop-logs}"
 DRY_RUN=0
 ALLOW_MAIN=0
 USE_CAFFEINATE=1
+AUTO_PUSH=0
+AUTO_PR_MERGE=0
 
 usage() {
   cat <<'EOF'
@@ -31,6 +33,8 @@ Options:
   --max-failures <N>                            Max consecutive failed cycles before halt (default: 3)
   --sleep <seconds>                             Cooldown between cycles (default: 15)
   --log-dir <path>                              Log directory outside git tree (default: /tmp/toonstudio-launch-loop-logs)
+  --auto-push                                   Push feature branch to origin after each verified checkpoint commit
+  --auto-pr-merge                               After all ACs VERIFIED + pnpm verify:push green, open PR and enable gh auto-merge
   --allow-main                                  Allow running directly on main branch (not recommended)
   --no-caffeinate                               Disable macOS caffeinate sleep prevention
   --dry-run                                     Print resolved target AC and command without executing agent
@@ -46,6 +50,8 @@ while [[ $# -gt 0 ]]; do
     --max-failures) MAX_CONSECUTIVE_FAILURES="$2"; shift 2 ;;
     --sleep) SLEEP_SECONDS="$2"; shift 2 ;;
     --log-dir) LOG_DIR="$2"; shift 2 ;;
+    --auto-push) AUTO_PUSH=1; shift ;;
+    --auto-pr-merge) AUTO_PUSH=1; AUTO_PR_MERGE=1; shift ;;
     --allow-main) ALLOW_MAIN=1; shift ;;
     --no-caffeinate) USE_CAFFEINATE=0; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
@@ -54,7 +60,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Enrich PATH for macOS Homebrew, nvm, volta, bun, local bins
 for p in /opt/homebrew/bin /usr/local/bin "$HOME/.local/bin" "$HOME/.volta/bin" "$HOME/.bun/bin" "$HOME/.nvm/versions/node"/*/bin; do
   if [[ -d "$p" ]]; then
     PATH="$p:$PATH"
@@ -97,7 +102,6 @@ fi
 
 mkdir -p "$LOG_DIR"
 
-# Prevent macOS sleep during long unattended runs
 CAFFEINATE_PID=""
 cleanup() {
   if [[ -n "$CAFFEINATE_PID" ]] && kill -0 "$CAFFEINATE_PID" 2>/dev/null; then
@@ -123,7 +127,6 @@ count_remaining_acs() {
 }
 
 pick_next_ac() {
-  # Priority order: REJECTED -> IN_PROGRESS -> TODO
   local target=""
   for wanted in REJECTED IN_PROGRESS TODO; do
     target="$(awk -F'|' -v w="$wanted" '
@@ -169,6 +172,31 @@ run_agent_cycle() {
   esac
 }
 
+push_feature_branch() {
+  if [[ "$AUTO_PUSH" -eq 1 && "$CURRENT_BRANCH" != "main" ]]; then
+    echo "[launch-loop] Pushing checkpoint to origin/${CURRENT_BRANCH}..."
+    git push -u origin "$CURRENT_BRANCH"
+  fi
+}
+
+open_and_automerge_pr() {
+  if [[ "$AUTO_PR_MERGE" -ne 1 || "$CURRENT_BRANCH" == "main" ]]; then
+    return
+  fi
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "[launch-loop] WARNING: 'gh' CLI not found; skipping automatic PR create/merge." >&2
+    return
+  fi
+  echo "[launch-loop] Creating PR and enabling CI-gated auto-merge (squash)..."
+  gh pr create \
+    --base main \
+    --head "$CURRENT_BRANCH" \
+    --title "feat(launch-loop): ToonStudio 상용 출시 24개 AC 전수 고도화" \
+    --body "docs/launch-loop/AC_LEDGER.md 전 항목 VERIFIED 및 pnpm verify:push 통과 완료. 운영 배포는 AGENTS.md §8에 따라 미실행." \
+    || true
+  gh pr merge "$CURRENT_BRANCH" --squash --auto --delete-branch
+}
+
 START_EPOCH="$(date +%s)"
 DEADLINE_EPOCH="$(( START_EPOCH + MAX_HOURS * 3600 ))"
 CONSECUTIVE_FAILURES=0
@@ -178,6 +206,7 @@ echo "[launch-loop] Repo:      $REPO_ROOT"
 echo "[launch-loop] Branch:    $CURRENT_BRANCH"
 echo "[launch-loop] Agent:     $RESOLVED_AGENT"
 echo "[launch-loop] Budget:    ${MAX_HOURS}h / ${MAX_CYCLES} cycles"
+echo "[launch-loop] AutoPush:  ${AUTO_PUSH} | AutoPRMerge: ${AUTO_PR_MERGE}"
 echo "[launch-loop] Logs:      $LOG_DIR"
 echo "================================================================"
 
@@ -197,6 +226,8 @@ for (( cycle=1; cycle<=MAX_CYCLES; cycle++ )); do
     fi
     echo "[launch-loop] Running final release gate: pnpm verify:push"
     pnpm verify:push 2>&1 | tee "$LOG_DIR/final-verify-push-$(date +%Y%m%d-%H%M%S).log"
+    push_feature_branch
+    open_and_automerge_pr
     echo "[launch-loop] ALL GATES GREEN. Commercial launch loop complete."
     exit 0
   fi
@@ -228,6 +259,7 @@ for (( cycle=1; cycle<=MAX_CYCLES; cycle++ )); do
   if [[ "$CYCLE_RC" -eq 0 && ( "$NEW_REMAINING" -lt "$REMAINING" || "$HEAD_AFTER" != "$HEAD_BEFORE" ) ]]; then
     CONSECUTIVE_FAILURES=0
     echo "[launch-loop] Cycle ${cycle} progressed (${TARGET_AC}: HEAD ${HEAD_BEFORE} -> ${HEAD_AFTER}, remaining ${REMAINING} -> ${NEW_REMAINING})."
+    push_feature_branch
   else
     CONSECUTIVE_FAILURES="$(( CONSECUTIVE_FAILURES + 1 ))"
     echo "[launch-loop] WARNING: Cycle ${cycle} made no verified progress (rc=${CYCLE_RC}, failures=${CONSECUTIVE_FAILURES}/${MAX_CONSECUTIVE_FAILURES})."

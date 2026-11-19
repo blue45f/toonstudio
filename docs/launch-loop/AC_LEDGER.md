@@ -27,7 +27,7 @@
 | AC-016 | Wave 3 | P1 | IN_PROGRESS | F07: `T3` 압력 베지어·`T6` ColorDrop·`T9` 레이어 트리오 제스처(`studio-layer-trio-gestures.ts`) + 테스트 전수 구현 완료(호스트 연결·vitest 대기) | `pnpm test:studio-material-brush && pnpm verify:studio-brushes` |
 | AC-017 | Wave 3 | P1 | IN_PROGRESS | F08: `studio-bg3d-live-ink-bake-bridge.ts` 원클릭 3D→2D 비파괴 컷 굽기·Split-Wipe·Rights BOM 승계 + 테스트 구현 완료(WebGPU 순차 검증 대기) | `pnpm verify:studio-3d-professional-completion && pnpm verify:studio-3d-web-authoring` |
 | AC-018 | Wave 3 | P1 | IN_PROGRESS | F10: `title-to-three-cut-remix-bridge.ts` 탐색→3컷 리믹스 브리지 구현 완료(상세 UI CTA 연결·타임랩스 WebM 검증 대기) | `pnpm harness:verify && pnpm verify:studio-artist-journey` |
-| AC-019 | Wave 4 | P2 | TODO | UI v2 에디터 크롬 정합(44px 상단바·18→7 메뉴·82%+ 캔버스·모바일 88%+ Thumb-Arc) | `pnpm verify:studio-menus && pnpm verify:studio-canvas-chrome` |
+| AC-019 | Wave 4 | P2 | IN_PROGRESS | UI v2 에디터 크롬 계약(`studio-ui-v2-chrome-contract.ts` + 테스트 구현 완료: 44px 상단바·7대 메뉴·82%/88% 시야 판정, 셸 바인딩·브라우저 검증 대기) | `pnpm verify:studio-menus && pnpm verify:studio-canvas-chrome` |
 | AC-020 | Wave 4 | P2 | IN_PROGRESS | 표면 통합 거버넌스(`unified-surface-governance.ts` + 테스트 구현 완료: 28개 리서치 핀보드 투영·프로젝트 6→8탭·Admin 4그룹, 라우터 연결·vitest 대기) | `pnpm validate:architecture && pnpm verify:studio-wiring-reachability` |
 | AC-021 | Wave 4 | P2 | TODO | 전 화면 디자인 토큰·중첩카드 0·스켈레톤 100%·축소모션·고대비 강제색상 감사 통과 | `pnpm audit:sitewide-visual-ux:all && pnpm audit:sitewide-visual-ux:forced-colors` |
 | AC-022 | Wave 4 | P2 | TODO | 미연결 코드(Dead/Unconnected) 0 및 앱 경계(`web`/`admin-web`/`api`) 위반 0 | `pnpm validate:architecture && pnpm check:unconnected-code:gate` |
