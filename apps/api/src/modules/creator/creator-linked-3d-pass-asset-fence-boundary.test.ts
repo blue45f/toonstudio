@@ -24,6 +24,26 @@ const creatorFile = ts.createSourceFile(
   true,
   ts.ScriptKind.TS,
 );
+const workAssetRepositoryFile = ts.createSourceFile(
+  "studio-work-asset.repository.ts", workAssetRepositorySource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS,
+);
+
+function repositoryMethod(name: string): ts.MethodDeclaration {
+  const matches: ts.MethodDeclaration[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isMethodDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === name) matches.push(node);
+    ts.forEachChild(node, visit);
+  };
+  visit(workAssetRepositoryFile);
+  const [method] = matches;
+  if (!method || matches.length !== 1) throw new Error(`자산 저장소 메서드를 하나로 확인할 수 없습니다: ${name}`);
+  return method;
+}
+
+function isAssetIdPredicate(node: ts.Expression, name: string): boolean {
+  return ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === name
+    && node.arguments.length === 1 && ts.isIdentifier(node.arguments[0]) && node.arguments[0].text === "assetId";
+}
 
 function functionSource(name: string): string {
   let match: ts.FunctionDeclaration | null = null;
@@ -97,10 +117,29 @@ describe("creator server linked-pass asset transaction boundary", () => {
   });
 
   it("generic upload compensation and trusted GC retain deterministic linked-pass rows", () => {
-    expect(
-      workAssetRepositorySource.match(
-        /if \(isStudioLinked3dPassServerAssetId\(assetId\)\) return false;/gu,
-      ),
-    ).toHaveLength(2);
+    for (const name of ["deleteUnreferencedUpload", "deleteInternalForTrustedGarbageCollection"]) {
+      const method = repositoryMethod(name);
+      const guards: ts.IfStatement[] = [];
+      const deletes: ts.CallExpression[] = [];
+      const visit = (node: ts.Node): void => {
+        if (ts.isIfStatement(node) && ts.isBinaryExpression(node.expression)
+          && node.expression.operatorToken.kind === ts.SyntaxKind.BarBarToken
+          && isAssetIdPredicate(node.expression.left, "isStudioLinked3dPassServerAssetId")
+          && isAssetIdPredicate(node.expression.right, "isWorkVrmCutReservedAssetId")
+          && ts.isReturnStatement(node.thenStatement) && node.thenStatement.expression?.kind === ts.SyntaxKind.FalseKeyword) guards.push(node);
+        if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)
+          && node.expression.name.text === "delete" && ts.isIdentifier(node.expression.expression)
+          && node.expression.expression.text === "transaction" && node.arguments.length === 1
+          && ts.isIdentifier(node.arguments[0]) && node.arguments[0].text === "creatorWorkAssets") deletes.push(node);
+        ts.forEachChild(node, visit);
+      };
+      visit(method);
+      expect(guards, name).toHaveLength(1);
+      expect(deletes, name).toHaveLength(1);
+      const [guard] = guards;
+      const [deletion] = deletes;
+      if (!guard || !deletion) throw new Error(`${name}: 삭제보다 앞선 예약 자산 거부가 필요합니다.`);
+      expect(guard.getStart(workAssetRepositoryFile), name).toBeLessThan(deletion.getStart(workAssetRepositoryFile));
+    }
   });
 });

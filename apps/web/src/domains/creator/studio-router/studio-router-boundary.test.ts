@@ -108,7 +108,10 @@ describe("Studio router bundle boundaries", () => {
     expect(documentLayoutSource).toContain("useSearchParams");
     expect(documentLayoutSource).toContain("readStudioLiveRoomQuery");
     expect(documentLayoutSource).toContain("useStudioDocumentRuntime()");
-    expect(documentLayoutSource).not.toContain("useLocation");
+    expect(documentLayoutSource).toContain("const { pathname, hash, state } = useLocation();");
+    expect(documentLayoutSource).toContain("const navigate = useNavigate();");
+    expect(documentLayoutSource).toContain("navigate({ pathname, search: withStudioLiveJamRoom(params, instantWorkId).toString(), hash }, { replace: true, state });");
+    expect(documentLayoutSource).not.toContain("setSearchParams");
     expect(legacyEditorSource).not.toContain("readStudioLiveRoomQuery");
     expect(legacyEditorSource).not.toContain("setSearchParams");
     expect(legacyEditorSource).toContain("useStudioDocumentLayout()");

@@ -8,15 +8,17 @@ const page = readFileSync(new URL("../FeedbackPage.tsx", import.meta.url), "utf8
 const css = readFileSync(new URL("./feedback-community.css", import.meta.url), "utf8");
 
 describe("FeedbackPage 히어로 위계 계약", () => {
-  it("대제목이 h1이고 소제목은 h1이 아니다", () => {
+  it("대제목만 h1이고 설명은 문단이다", () => {
     expect(page).toContain('<h1 className="fb-hero-title">');
     expect(page).not.toContain('<p className="fb-hero-title">');
-    expect(page).toContain('<p className="fb-hero-kicker">');
+    expect(page).toContain('<p className="fb-hero-description">');
+    expect(page).not.toContain('<h1 className="fb-hero-description">');
     expect(page.match(/<h1[\s>]/g)).toHaveLength(1);
   });
 
-  it("소제목 스타일은 kicker 규칙이 담당하고 낡은 h1 규칙이 없다", () => {
-    expect(css).toContain(".fb-hero-kicker {");
+  it("제목과 설명 스타일이 분리되고 낡은 h1 규칙이 없다", () => {
+    expect(css).toContain(".fb-hero-title {");
+    expect(css).toContain(".fb-hero-description {");
     expect(css).not.toContain(".fb-hero h1 {");
   });
 

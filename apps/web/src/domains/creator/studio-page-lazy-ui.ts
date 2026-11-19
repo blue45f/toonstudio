@@ -1,14 +1,9 @@
 import { loadStudioBackground3DModule } from "./studio-background-3d-loader";
 import { createStudioIntentLazyLoader } from "./studio-intent-lazy-loader";
 
-
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
-/**
- * Optional Studio surfaces and user-triggered runtimes live in this explicit registry so
- * StudioPage stays focused on orchestration. Every feature keeps a literal import() boundary
- * for Vite/Rolldown analysis.
- */
+/** 선택형 UI·사용자 실행 런타임은 명시적 import() 경계에 등록해 Host 조율과 번들 분석을 분리한다. */
 const studioCaptureReadinessRuntimeLoader = createStudioIntentLazyLoader(
   () => import("./studio-capture-readiness")
 );
@@ -350,6 +345,10 @@ const StudioAdvancedRulerPanel = lazyRetry(
 const StudioVrmPoser = lazyRetry(
   () => import( "./vrm/StudioVrmPoser").then((mod) => ({ default: mod.StudioVrmPoser })),
   "StudioVrmPoser"
+);
+const StudioTeamVrmCutEditorGate = lazyRetry(
+  () => import("./scene3d/StudioTeamVrmCutEditorGate"),
+  "StudioTeamVrmCutEditorGate"
 );
 const StudioCharacterShaper = lazyRetry(
   () => import("./character-shaper/StudioCharacterShaper").then((mod) => ({ default: mod.StudioCharacterShaper })),
@@ -952,6 +951,7 @@ export {
   StudioUnifiedBrushPicker,
   StudioUploadPublish,
   StudioVrmPoser,
+  StudioTeamVrmCutEditorGate,
   StudioCharacterShaper,
   StudioMannequinPoserPanel,
   StudioCanonicalVNextDryMediaCanvas,

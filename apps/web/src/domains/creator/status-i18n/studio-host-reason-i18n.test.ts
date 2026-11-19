@@ -15,7 +15,7 @@ import { scanHardcodedStatusStrings } from "../../../shared/language/status-i18n
  * studio.hostReason.* (사유 라벨 32키 — 인벤토리 6군을 군 단위로 전량
  * 이관해 형제 문구의 하드코딩 잔존을 없앴다), studio.hostFillGuide.* (3키),
  * studio.hostLivingInk.* (7키 — 동사·범위 키 분리 + {action}/{scope} 보간),
- * studio.hostError.* (throw 10키 — aiErrorText 선례의 생산 시점 해석
+ * studio.hostError.* (throw 10키 + BG3D 이력 표시 오류 1키 — aiErrorText 선례의 생산 시점 해석
  * hostErrorText로 생산, catch 소비처 무변경).
  * studio.hostStatus.*(배치 2)는 키 개수 고정 계약 때문에 확장하지 않았다.
  */
@@ -85,13 +85,13 @@ function collectCalls(): Array<{ key: string; fallback: string; file: string }> 
 }
 
 describe("studio.hostReason/hostFillGuide/hostLivingInk/hostError 사전 (3라운드 등록 모듈)", () => {
-  it("ko/en 키 집합이 일치하고 네임스페이스별 키 수가 고정값과 같다 (32·3·7·10 = 52)", () => {
+  it("ko/en 키 집합이 일치하고 네임스페이스별 키 수가 고정값과 같다 (32·3·7·11 = 53)", () => {
     expect(Object.keys(DICTS.en).sort()).toEqual(ALL_KEYS);
-    expect(ALL_KEYS).toHaveLength(52);
+    expect(ALL_KEYS).toHaveLength(53);
     expect(count("studio.hostReason.")).toBe(32);
     expect(count("studio.hostFillGuide.")).toBe(3);
     expect(count("studio.hostLivingInk.")).toBe(7);
-    expect(count("studio.hostError.")).toBe(10);
+    expect(count("studio.hostError.")).toBe(11);
   });
 
   it("en 값에 한글이 없고 ko/en 값이 비어 있지 않으며 플레이스홀더가 일치한다", () => {
@@ -139,7 +139,7 @@ describe("소비 계약 (호스트 + ProductionOperationsControlWorkspace)", () 
 
   it("호출부 한국어 폴백이 ko 사전값과 글자 단위로 일치한다 (한국어 표시 회귀 0)", () => {
     const calls = collectCalls();
-    expect(calls.length).toBeGreaterThanOrEqual(52);
+    expect(calls.length).toBeGreaterThanOrEqual(53);
     for (const call of calls) {
       expect(DICTS.ko[call.key], `${call.file} :: ${call.key}`).toBe(call.fallback);
     }

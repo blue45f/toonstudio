@@ -18,7 +18,7 @@
  *   라벨을 키로 분리하고 본문은 {action}·{scope} 보간으로 조립해, ko 조립
  *   결과가 이관 전 템플릿과 글자 단위로 같아지게 한다.
  * - `studio.hostError.*` — throw 생산자 채널 10건 (호스트 9 + Production
- *   OperationsControlWorkspace 1). 생산자는 훅이 아니라 생산 시점에 현재
+ *   OperationsControlWorkspace 1)과 BG3D 이력 표시 오류 1건. 생산자는 훅이 아니라 생산 시점에 현재
  *   로케일로 해석하는 `hostErrorText`로 문구를 만든다 (AI 이관 T1의
  *   `aiErrorText` 선례 — 설계 rem-item4-ai-throw-design §3.2 안 3).
  *   catch 소비처(`cause.message` 표시)는 무변경이다.
@@ -74,6 +74,7 @@ registerI18nLocaleEntries("ko", {
   "studio.hostLivingInk.announce": "수채 번짐 · {scope} {action}",
   "studio.hostLivingInk.actionFailed": "수채 번짐 {action}를 완료하지 못했습니다.",
   "studio.hostError.rasterAuthorityScopeChanged": "래스터 서버 승인 범위가 변경되었습니다.",
+  "studio.hostError.bg3dHistoryTargetUnavailable": "3D 배경을 다시 열 수 없어요. 원고에서 레이어와 편집 권한을 확인해 주세요.",
   "studio.hostError.commentReplyDraftBlocksResolution": "작성 중인 답글을 등록하거나 내용을 비운 뒤 해결 상태를 변경해 주세요.",
   "studio.hostError.sharedDocRequiredCapture": "공동 문서를 불러온 뒤 캡처할 수 있어요.",
   "studio.hostError.sharedDocRequiredTimelapse": "공동 문서를 불러온 뒤 타임랩스를 만들 수 있어요.",
@@ -129,6 +130,7 @@ registerI18nLocaleEntries("en", {
   "studio.hostLivingInk.announce": "Watercolor bleed · {scope} {action}",
   "studio.hostLivingInk.actionFailed": "The watercolor bleed {action} could not be completed.",
   "studio.hostError.rasterAuthorityScopeChanged": "The raster server approval scope has changed.",
+  "studio.hostError.bg3dHistoryTargetUnavailable": "Could not reopen the 3D background. Check the layer and your editing permission in the manuscript.",
   "studio.hostError.commentReplyDraftBlocksResolution": "Post the reply you are writing, or clear its content, before changing the resolved state.",
   "studio.hostError.sharedDocRequiredCapture": "You can capture after loading the shared document.",
   "studio.hostError.sharedDocRequiredTimelapse": "You can create a timelapse after loading the shared document.",

@@ -63,13 +63,18 @@ describe("Studio canvas leaf boundaries", () => {
     }
   });
 
-  it("keeps context-menu state, outside-click lifecycle, and 3D parsing in StudioPage", () => {
+  it("메뉴 수명과 3D 판독은 호스트의 명령·레이어 복구 모듈에 둔다", () => {
     const page = moduleEdges("../StudioCuttoonEditorHost.tsx");
+    const resume = moduleEdges("../studio-cuttoon-editor/runtime/studio-bg3d-layer-resume.ts");
     const viewport = moduleEdges("./StudioCanvasViewportStageHost.tsx");
     const menu = moduleEdges("./StudioCanvasContextMenu.tsx");
 
     expect(page.source).toContain("const [contextMenu, setContextMenu] = useState");
     expect(page.source).toContain('globalThis.addEventListener("click", handleCloseMenu)');
+    expect(page.valueImports).toContain("./studio-cuttoon-editor/runtime/studio-bg3d-layer-resume");
+    expect(page.source).toContain("studioBg3dLayerEditSource(element, { linked3dRender, shared3dStage }, elements)");
+    expect(resume.valueImports).toContain("../../studio-background-3d-metadata");
+    expect(resume.source).toContain('parseStudio3dTool(element.src) === "bg3d"');
     const commands = moduleEdges("../studio-cuttoon-editor/StudioCuttoonEditorContextMenu.tsx");
     expect(commands.valueImports).toContain("../studio-background-3d-metadata");
     expect(commands.source).toContain("parseStudio3dTool(contextMenuEl.src)");
@@ -77,6 +82,7 @@ describe("Studio canvas leaf boundaries", () => {
     expect(menu.valueImports).not.toContain("../studio-background-3d-metadata");
     expect(menu.valueImports).not.toContain("../studio-background-3d-loader");
     expect(menu.valueImports).not.toContain("../studio-element-model");
+    expect(menu.valueImports).not.toContain("../studio-cuttoon-editor/runtime/studio-bg3d-layer-resume");
     expect(menu.source).not.toContain("parseStudio3dTool");
   });
 

@@ -6498,7 +6498,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       const target = resolveStudioBg3dHistoryTarget(bg3dHistoryTarget, bg3dHistoryScope(), pages,
         masterEditMode || collaborationDocumentLocked || workHydrationFailed || !persistLeadershipAllowsDraw, reviewBoundPage);
       if (!target || !setCurrentPageId(target.pageId)) {
-        setError("3D 배경을 다시 열 수 없어요. 원고에서 레이어와 편집 권한을 확인해 주세요.");
+      setError(hostErrorText("studio.hostError.bg3dHistoryTargetUnavailable", "3D 배경을 다시 열 수 없어요. 원고에서 레이어와 편집 권한을 확인해 주세요."));
         navigateStudio2dSurface("canvas", { replace: true });
         return false;
       }
