@@ -8,15 +8,13 @@ import { StudioVirtualSpacePage } from "./StudioVirtualSpacePageRoot";
 import { verifyStudioSpaceEntryCode } from "./studio-virtual-space-access-client";
 import { createStudioGuestSession, readStudioGuestSession, writeStudioGuestSession } from "./studio-virtual-space-guest-session";
 import type { StudioVirtualSpaceEntryLobby } from "./StudioVirtualSpaceEntryLobby";
+import type { VirtualSpaceExperienceProps } from "./studio-virtual-space-page-props";
 
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({ useSession: () => ({ ready: true, data: null }) }));
 vi.mock("../live/StudioLiveCollaborationProvider", () => ({ StudioLiveCollaborationProvider: ({ children }: PropsWithChildren) => <>{children}</> }));
 vi.mock("../live/use-studio-live-transport-auth", () => ({ useStudioLiveTransportAuth: () => undefined }));
 vi.mock("./world-publication/use-studio-world-publication", () => ({ useStudioWorldPublication: () => ({ snapshot: {} }) }));
 vi.mock("./studio-virtual-space-access-client", () => ({ verifyStudioSpaceEntryCode: vi.fn(), verifyStudioSpatialInvite: vi.fn() }));
-vi.mock("./StudioVirtualSpacePage", () => ({
-  VirtualSpaceExperience: ({ nickname }: { nickname: string }) => <h1>무대 · {nickname}</h1>,
-}));
 vi.mock("./StudioVirtualSpaceEntryLobby", () => ({
   StudioVirtualSpaceEntryLobby: ({ nickname, onNickname, onEnter, accessBlocked, accessNotice }: ComponentProps<typeof StudioVirtualSpaceEntryLobby>) => <>
     <input aria-label="닉네임" value={nickname} onChange={event => onNickname(event.target.value)} />
@@ -30,8 +28,10 @@ const firstCode = "ABC234";
 const secondCode = "DEF567";
 const approved = { status: "valid", expiresAt: "2030-01-01T00:00:00.000Z" } as const;
 
+function GuestExperience({ nickname }: VirtualSpaceExperienceProps) { return <h1>무대 · {nickname}</h1>; }
+
 function openGuestSpace(url = "?place=skyport") {
-  return render(<MemoryRouter initialEntries={[`/studio/p/${spaceId}/space${url}`]}><StudioVirtualSpacePage projectIdOverride={spaceId} /></MemoryRouter>);
+  return render(<MemoryRouter initialEntries={[`/studio/p/${spaceId}/space${url}`]}><StudioVirtualSpacePage projectIdOverride={spaceId} Experience={GuestExperience} /></MemoryRouter>);
 }
 
 function previousVisit() {

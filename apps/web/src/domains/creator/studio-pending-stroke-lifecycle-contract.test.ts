@@ -128,7 +128,9 @@ describe("pending stroke lifecycle source contract", () => {
     // hook-argument refs inside effect scope). The ref-before-state contract is unchanged.
     expect(admission).toContain("commitStudioWorkAssetAdmittedHistory(pagesHistoryRef, admitted.history)");
     expect(admission).toContain("rebaseStudioHistoryJournal(");
-    expect(remoteFrontier).toContain("const currentHistory = input.pagesHistoryRef.current");
+    expect(remoteFrontier).toContain("trimStudioCrdtHistoryWindow(input.pagesHistoryRef.current, input.pagesHiRef.current)");
+    expect(remoteFrontier).toContain("const currentHistory = bounded.history");
+    expect(remoteFrontier).toContain("const currentIndex = bounded.currentIndex");
     // 전체 복원과 속성 선반영 모두 동일한 최종 history를 ref → journal → state 순서로 발행한다.
     expect(assertRemoteHistoryPublication(remoteFrontier)).toBe(2);
     expect(studioPageSource).toMatch(/rebase:\s*rebaseStudioHistoryJournal/u);
