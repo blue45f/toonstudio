@@ -22,7 +22,7 @@ function renderFooter(overrides: Partial<Parameters<typeof StudioBg3dActionFoote
       insertDisabled={false}
       isCapturing={false}
       isRestoringScene={false}
-      materializationKind="live-stage"
+      materializationKind="editable-lt-bundle"
       mutationKind="connect"
       operation="insert"
       saveDisabled={false}
@@ -60,7 +60,7 @@ describe("StudioBg3dActionFooter mobile UX & WebGL recovery", () => {
         insertDisabled={false}
         isCapturing={false}
         isRestoringScene={false}
-        materializationKind="live-stage"
+        materializationKind="editable-lt-bundle"
         mutationKind="connect"
         operation="insert"
         saveDisabled={false}
