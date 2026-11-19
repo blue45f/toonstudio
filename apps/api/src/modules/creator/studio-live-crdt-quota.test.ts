@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { StudioLiveCrdtQuotaLimiter } from "./studio-live-crdt-quota";
+import {
+  InMemoryStudioLiveOpLogStore,
+  STUDIO_OP_ROOM_IDLE_EVICTION_MS,
+  StudioLiveOpRoomRegistry,
+} from "./studio-live-op";
 
 describe("StudioLiveCrdtQuotaLimiter", () => {
   it("shares the default sync budget by user and work across reconstructed scopes", () => {
@@ -177,5 +182,54 @@ describe("StudioLiveCrdtQuotaLimiter", () => {
     now += 1_000;
     limiter.purgeExpired(now);
     expect(limiter.consumeUpdate(next, 1)).toBe(true);
+  });
+});
+
+describe("StudioLiveOpRoomRegistry long-session memory bounds", () => {
+  it("evicts idle op rooms while retaining active works and preserves incremental state after persistSnapshot", async () => {
+    const store = new InMemoryStudioLiveOpLogStore();
+    const registry = new StudioLiveOpRoomRegistry(store);
+    const start = 10_000_000;
+    const idleRoom = await registry.getRoom("work-idle", start);
+    await registry.getRoom("work-active", start);
+    expect(registry.size).toBe(2);
+
+    await idleRoom.submit(
+      {
+        opId: "actor-1:1",
+        actorId: "actor-1",
+        lamport: 1,
+        baseSeq: 0,
+        body: {
+          kind: "add",
+          stroke: {
+            id: "stroke-1",
+            pageId: "page-1",
+            layerId: "layer-1",
+            payload: {
+              version: 1,
+              type: "draw",
+              kind: "freehand",
+              mode: "pen",
+              stroke: "#111111",
+              strokeWidth: 4,
+              points: [0, 0, 10, 10],
+            },
+          },
+        },
+      },
+      "user-1",
+    );
+    const snap = await idleRoom.persistSnapshot();
+    expect(snap.seq).toBe(1);
+    expect(idleRoom.verifyIncrementalState()).toBe(true);
+
+    const evicted = registry.evictIdleRooms(
+      start + STUDIO_OP_ROOM_IDLE_EVICTION_MS + 1_000,
+      STUDIO_OP_ROOM_IDLE_EVICTION_MS,
+      new Set(["work-active"]),
+    );
+    expect(evicted).toBe(1);
+    expect(registry.size).toBe(1);
   });
 });

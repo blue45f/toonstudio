@@ -521,10 +521,11 @@ export async function revalidateParticipant(
 export async function revalidateAllParticipants(
   this: StudioLiveGatewayHost, ): Promise<void> {
   const now = Date.now();
-  // 장시간 협업 후 유휴 상태가 된 룸의 인메모리 캐시·버킷을 15초 스윕마다 확정 회수한다.
+  // 장시간 협업 후 유휴 상태가 된 룸의 인메모리 캐시·버킷·Op 룸을 15초 스윕마다 확정 회수한다.
   this.pruneRateLimits(now);
   this.purgeExpiredCandidateRelayAuthorizations(now);
   this.crdtQuotaLimiter.purgeExpired(now);
+  this.studioLiveOpRooms?.evictIdleRooms(now, undefined, new Set(this.socketIdsByWork.keys()));
   for (const [key, expiresAt] of this.deliveredInterServerVoiceSignals) {
     if (expiresAt <= now) this.deliveredInterServerVoiceSignals.delete(key);
   }
