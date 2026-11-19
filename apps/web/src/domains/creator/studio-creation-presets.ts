@@ -25,6 +25,8 @@ export const STUDIO_CREATION_PRESETS: readonly StudioCreationPreset[] = [
   { id: "cuttoon-square-4", kind: "webtoon", width: 1080, height: 1080 },
   { id: "cuttoon-portrait-8", kind: "webtoon", width: 1080, height: 1350 },
   { id: "cuttoon-story-10", kind: "webtoon", width: 1080, height: 1920 },
+  { id: "memoir-autobiography-8", kind: "webtoon", width: 1080, height: 1350 },
+  { id: "local-qr-four-cut", kind: "webtoon", width: 1080, height: 1080 },
   { id: "page-comic-digital-8", kind: "webtoon", width: 1600, height: 2400 },
   { id: "page-comic-b5-24", kind: "webtoon", width: 1760, height: 2508 },
   { id: "illustration-portrait", kind: "illustration", width: 2048, height: 2560 },

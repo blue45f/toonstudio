@@ -54,6 +54,10 @@ import {
   STUDIO_LIVE_P2P_STALE_PEER_TTL_MS,
   applyStudioLiveP2pOverlay,
 } from "./studio-live-p2p-overlay-transport";
+import {
+  STUDIO_REMOTE_CURSOR_TTL_MS,
+  StudioRemoteCursorOverlayStore,
+} from "./studio-live-remote-cursor-store";
 import { StudioLiveRetainedMediaOverlayRenderer } from "./studio-live-retained-media-overlay";
 
 import type { StudioLocalDatabase } from "../studio-local-database";
@@ -718,5 +722,70 @@ describe("long-session multi-user collaborative drawing stability", () => {
     idleTimer!.run();
     expect(onSave).toHaveBeenCalledTimes(2);
     scheduler.dispose();
+  });
+
+  it("skips idle cursor rAF ticks and clamps backward OS clock jumps in StudioRemoteCursorOverlayStore", () => {
+    let now = 6_000_000;
+    let intervalHandler: (() => void) | null = null;
+    const frames: (() => void)[] = [];
+    const roomListeners = new Set<(event: StudioLiveRoomEvent) => void>();
+    const source = {
+      ready: true,
+      getCursors: () => [],
+      subscribe: (listener: (event: StudioLiveRoomEvent) => void) => {
+        roomListeners.add(listener);
+        return () => roomListeners.delete(listener);
+      },
+    };
+    const store = new StudioRemoteCursorOverlayStore(source, {
+      now: () => now,
+      requestFrame: (cb) => {
+        frames.push(cb);
+        return frames.length;
+      },
+      cancelFrame: () => undefined,
+      setInterval: (cb) => {
+        intervalHandler = cb;
+        return 1;
+      },
+      clearInterval: () => {
+        intervalHandler = null;
+      },
+    });
+    const unsubscribe = store.subscribe(() => undefined);
+    // Idle interval ticks when no cursors are active must NOT schedule rAF.
+    intervalHandler?.();
+    intervalHandler?.();
+    expect(frames).toHaveLength(0);
+
+    // Emit a remote cursor, then step OS clock backward by 60s.
+    const participant: StudioLiveParticipant = {
+      sessionId: "cursor-peer",
+      displayName: "Cursor Peer",
+      role: "editor",
+      visibility: "active",
+    };
+    for (const listener of roomListeners) {
+      listener({
+        type: "cursor",
+        participant,
+        cursor: { x: 100, y: 120, pageId: "page-1", tool: "pen" },
+      });
+    }
+    expect(frames).toHaveLength(1);
+    frames.shift()!();
+    expect(store.getSnapshot()).toHaveLength(1);
+
+    now -= 60_000;
+    intervalHandler?.();
+    frames.shift()!();
+    expect(store.getSnapshot()).toHaveLength(1);
+
+    // Advancing just past TTL from the clamped clock evicts the stale cursor cleanly.
+    now += STUDIO_REMOTE_CURSOR_TTL_MS + 100;
+    intervalHandler?.();
+    frames.shift()!();
+    expect(store.getSnapshot()).toEqual([]);
+    unsubscribe();
   });
 });

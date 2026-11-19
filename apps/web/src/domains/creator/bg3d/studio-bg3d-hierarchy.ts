@@ -11,7 +11,10 @@ import {
   parseStudioSpatialMeasurementDocument,
   serializeStudioSpatialMeasurementDocument,
 } from "@toonstudio/studio-project-model/spatial-measurement";
-import { validateStudioScene3dShotVersionCollection } from "../scene3d/studio-scene3d-shot-versions";
+import {
+  validateStudioScene3dShotVersionCollectionWithBg3dParser,
+  type StudioLegacyBg3dSceneDocumentParser,
+} from "../contracts/studio-scene3d-shot-version-validator";
 import { failBudget } from "./studio-bg3d-scene-document-types";
 
 import type {
@@ -638,14 +641,15 @@ type SceneOptionalFields = Pick<StudioBg3dSceneDocument,
 export function normalizeStudioBg3dSceneOptionalFields(
   value: Record<string, unknown>,
   rootMode: "lenient" | "strict",
+  parseLegacyBg3d?: StudioLegacyBg3dSceneDocumentParser,
 ): SceneOptionalFields | null {
   let pinnedVersionedCut: StudioBg3dSceneDocument["pinnedVersionedCut"];
   if (Object.prototype.hasOwnProperty.call(value, "pinnedVersionedCut")) {
     try {
-      pinnedVersionedCut = validateStudioScene3dShotVersionCollection({
+      pinnedVersionedCut = validateStudioScene3dShotVersionCollectionWithBg3dParser({
         version: 1,
         cuts: [value.pinnedVersionedCut],
-      }).cuts[0];
+      }, parseLegacyBg3d ?? (() => null)).cuts[0];
     } catch {
       if (rootMode === "lenient") throw new Error("고정 컷 원본이 손상되어 장면을 변경하지 않았습니다.");
       return null;

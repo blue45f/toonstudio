@@ -16,7 +16,7 @@ import { hashStudioPagesHistoryIdentity, studioPagesHistoryRecoveryIdentity, stu
 import { withStudioHistoryCleanup } from "./studio-pages-history-cleanup";
 import { StudioPagesHistoryDurableRuntime, StudioPagesHistoryDurabilityUnavailableError,
   type BrowserRecoveryScope, type CreateDefaultStudioPagesHistoryDurableRuntimeOptions,
-  type StudioPagesHistoryRecoveryPort, type StudioPagesHistoryPersistenceKind } from "../../../studio-pages-history-durable-runtime";
+  type StudioPagesHistoryRecoveryPort, type StudioPagesHistoryPersistenceKind } from "./studio-pages-history-durable-class";
 
 const TEXT_DECODER = new TextDecoder("utf-8", { fatal: true });
 

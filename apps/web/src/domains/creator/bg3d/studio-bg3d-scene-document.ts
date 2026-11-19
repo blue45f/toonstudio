@@ -1447,7 +1447,7 @@ function normalizeDecodedCurrentDocument(
     const shots = includesShots ? normalizeShots(value.shots, nodeIds) : undefined;
     const shotIds = new Set(shots?.map((shot) => shot.id) ?? []);
     const activeShotId = normalizedId(value.activeShotId);
-    const optionalFields = normalizeStudioBg3dSceneOptionalFields(value, rootMode);
+    const optionalFields = normalizeStudioBg3dSceneOptionalFields(value, rootMode, parseStudioBg3dSceneDocument);
     if (!optionalFields) return null;
     const normalized: StudioBg3dSceneDocument = {
       kind: STUDIO_BG3D_SCENE_DOCUMENT_KIND,

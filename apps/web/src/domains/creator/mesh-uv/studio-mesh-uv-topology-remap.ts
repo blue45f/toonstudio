@@ -1,5 +1,8 @@
 /** 코너의 생성 순서·발급 영수증으로만 UV를 옮긴다. 위치 검색이나 새 투영은 하지 않는다. */
-import { hashStudioEditableMesh, isIssuedStudioEditableMeshExtrudeRegionReceipt } from "../studio-editable-half-edge-mesh";
+import {
+  hashStudioEditableMeshAuthority as hashStudioEditableMesh,
+  isIssuedStudioEditableMeshExtrudeRegionReceipt,
+} from "../studio-editable-mesh-authority-digest";
 
 import { decodeStudioMeshUvLayer, hashStudioMeshUvTopology, type StudioMeshUvCorner } from "./studio-mesh-uv-authority";
 

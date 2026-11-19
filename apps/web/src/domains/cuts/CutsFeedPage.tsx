@@ -20,6 +20,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
 
+import { CutsFandomCoCreationBar } from "./CutsFandomCoCreationBar";
 import { CutsPlayer } from "./CutsPlayer";
 import { CutsRemixBadge } from "./CutsRemixBadge";
 import { countFanRemixes, isClipRemixAllowed, resolveRemixAllowed, selectFanRemixes } from "./cuts-remix";
@@ -465,6 +466,7 @@ export function CutsFeedPage() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <SiteContextualSubNav pathnameOverride="/cuts" />
         </div>
+        <CutsFandomCoCreationBar />
         <details className="group/cuts-aux mt-2 rounded-xl border border-white/12 bg-[#0d101c]/90 text-xs text-white/90">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3.5 py-2 text-xs font-medium text-white/80 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
             <span>{t("재생·음성 보조 옵션", "Playback & voice options")}</span>

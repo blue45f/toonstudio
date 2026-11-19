@@ -48,7 +48,11 @@ import { EpisodeTipRanking } from "@/domains/monetization/tipping/components/Epi
 import { CreatorMonetizationNav } from "../../components/CreatorMonetizationNav";
 
 type PeriodKey = "month" | "3m" | "6m";
-type RevenueMixId = "fastpass-cookie-pps" | "fanbox-patreon-membership" | "3d-brush-asset-royalty";
+type RevenueMixId =
+  | "fastpass-cookie-pps"
+  | "fanbox-patreon-membership"
+  | "3d-brush-asset-royalty"
+  | "ip-season-funding-royalty";
 type TaxRegimeId = "kr-withholding-33pct" | "us-w8ben-treaty" | "studio-split-70-30";
 
 const REVENUE_MIX_OPTIONS: readonly {
@@ -78,6 +82,13 @@ const REVENUE_MIX_OPTIONS: readonly {
     en: "3D Asset & Brush Royalty",
     detailKo: "스튜디오 마켓에 등록한 3D 배경·브러시 소재 라이선스 판매 로열티를 집계합니다.",
     detailEn: "Aggregates licensing royalties from 3D backgrounds and custom brushes sold on the Studio market.",
+  },
+  {
+    id: "ip-season-funding-royalty",
+    ko: "IP 판권·시즌 펀딩·레이어 로열티",
+    en: "IP Licensing, Season Funding & Layer Royalty",
+    detailKo: "2차 판권 MG/RS, 시즌 완결 팬덤 펀딩, 수정 가능 레이어 재사용 로열티를 통합 시뮬레이션합니다.",
+    detailEn: "Simulates combined payouts across secondary IP MG/RS, season fandom funding, and reusable layer royalties.",
   },
 ];
 
@@ -366,6 +377,9 @@ export function CreatorRevenueDashboardPage() {
         </a>
         <a href="/market/seller" className={buttonClass({ variant: "ghost" })}>
           {t(SELLER_CTA)}
+        </a>
+        <a href="/studio/growth-ip#rights" className={buttonClass({ variant: "ghost" })}>
+          {pickLang("IP 확장·시즌 펀딩 스튜디오", "Open IP expansion & season funding")}
         </a>
       </nav>
 

@@ -85,7 +85,10 @@ export class StudioRemoteCursorOverlayStore {
     this.commitSnapshot();
     this.unsubscribeRoom = this.source.subscribe(this.handleRoomEvent);
     this.pruneTimer = this.scheduler.setInterval(
-      () => this.scheduleFlush(false),
+      () => {
+        // 활성 원격 커서가 없을 때는 불필요한 rAF 깨움을 건너뛰어 장시간 세션 유휴 CPU·배터리를 절약한다.
+        if (this.cursors.size > 0) this.scheduleFlush(false);
+      },
       1_000,
     );
   }
@@ -164,6 +167,11 @@ export class StudioRemoteCursorOverlayStore {
     const now = this.scheduler.now();
     let changed = false;
     for (const [sessionId, cursor] of this.cursors) {
+      if (now < cursor.updatedAt) {
+        // OS 시계 역행 시 잔류 커서가 TTL을 넘겨 고정되지 않도록 기준 시각을 보정한다.
+        this.cursors.set(sessionId, { ...cursor, updatedAt: now });
+        continue;
+      }
       if (now - cursor.updatedAt <= STUDIO_REMOTE_CURSOR_TTL_MS) continue;
       this.cursors.delete(sessionId);
       changed = true;
@@ -172,7 +180,9 @@ export class StudioRemoteCursorOverlayStore {
   }
 
   private commitSnapshot(): void {
-    this.snapshot = Array.from(this.cursors.values());
+    this.snapshot = this.cursors.size === 0
+      ? EMPTY_STUDIO_REMOTE_CURSOR_SNAPSHOT
+      : Array.from(this.cursors.values());
     for (const listener of [...this.listeners]) listener();
   }
 }

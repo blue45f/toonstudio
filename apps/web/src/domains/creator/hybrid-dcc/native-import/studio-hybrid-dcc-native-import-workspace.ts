@@ -5,7 +5,7 @@ import { sha256HexPortable } from "../../studio-sha256";
 import { hashStudioEditableMesh } from "../../studio-editable-half-edge-mesh";
 import { hybridDccRegisterAssets } from "../studio-hybrid-dcc-document";
 import { createStudioHybridDccIdentityTransform } from "../studio-hybrid-dcc-object-transform";
-import { synchronizeWorkspaceGeometryAuthority, type StudioHybridDccWorkspace } from "../studio-hybrid-dcc-workspace";
+import { synchronizeWorkspaceGeometryAuthority, type StudioHybridDccWorkspace } from "../studio-hybrid-dcc-geometry-sync";
 
 import { STUDIO_NATIVE_IMPORT_MAX_ASSETS, STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES, type StudioNativeImportAsset, type StudioNativeImportIssue } from "./studio-hybrid-dcc-native-import-contracts";
 import { decodeStudioNativeGlb } from "./studio-hybrid-dcc-native-glb";

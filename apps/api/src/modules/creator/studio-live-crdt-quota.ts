@@ -133,6 +133,12 @@ export class StudioLiveCrdtQuotaLimiter {
     this.lastCleanupAt = null;
   }
 
+  /** 백그라운드 주기 스윕에서 호출해 유휴·만료 CRDT 쿼터 버킷을 즉시 회수한다. */
+  purgeExpired(now = this.now()): void {
+    this.lastCleanupAt = now;
+    this.evictExpiredBuckets(now);
+  }
+
   private cleanup(now: number): void {
     if (
       this.lastCleanupAt !== null &&
@@ -142,10 +148,19 @@ export class StudioLiveCrdtQuotaLimiter {
       return;
     }
     this.lastCleanupAt = now;
+    this.evictExpiredBuckets(now);
+  }
+
+  private evictExpiredBuckets(now: number): void {
     for (const [key, bucket] of this.syncBuckets) {
       if (bucket.resetsAt <= now) this.syncBuckets.delete(key);
     }
     for (const [key, bucket] of this.tokenBuckets) {
+      // OS 시계 역행(NTP 보정) 시 미래 updatedAt으로 버킷 만료가 지연되지 않도록 보정한다.
+      if (now < bucket.updatedAt) {
+        bucket.updatedAt = now;
+        continue;
+      }
       if (now - bucket.updatedAt >= this.idleTtlMs) {
         this.tokenBuckets.delete(key);
       }

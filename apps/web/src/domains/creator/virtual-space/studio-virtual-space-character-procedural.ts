@@ -21,7 +21,7 @@
 
 import type { StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import type { StudioCharacterAtlasLayout } from "./studio-virtual-space-character-atlas";
-import { studioEmotionFace, type StudioEmotionKind } from "./studio-virtual-space-character-motion";
+import { studioEmotionFace, type StudioEmotionKind } from "./studio-virtual-space-character-emotions";
 import { circle, ellipse, INK, roundRect, strokePath } from "./studio-virtual-space-character-procedural-canvas";
 import { drawOutfitDetail } from "./studio-virtual-space-character-procedural-outfit";
 import type {

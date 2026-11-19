@@ -706,7 +706,7 @@ export {
   type AssistVolcanoGlacierDesertDune,
   type AssistXianxiaFlyingSwordInnBamboo,
   type AssistZombieBarricadeGasMaskLockpick,
-} from "./assist-localize-run";
+} from "./assist-localize-wave45-directors";
 export {
   runAssistAgeOfSailGalleonWheelCannonCutlassDirector,
   runAssistAncientMythologyTriremeKhopeshRuneDirector,

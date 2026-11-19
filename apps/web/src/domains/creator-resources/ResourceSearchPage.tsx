@@ -87,6 +87,7 @@ export function ResourceCard({ item, saved, onToggle, disabled, kindLabel, wideT
       <div className="mt-auto flex flex-wrap gap-2 pt-2">
         <a href={item.sourceUrl} className={RESOURCE_BUTTON} target="_blank" rel="noopener noreferrer">원문 확인 ↗</a>
         <button className={RESOURCE_BUTTON} aria-pressed={saved} disabled={disabled} onClick={onToggle}>{saved ? "저장 해제" : "보드에 저장"}</button>
+        <Link to="/studio/growth-ip#rights" className={RESOURCE_BUTTON}>3컷 파일럿 시드</Link>
         {item.provider === "bizinfo" && item.deadline && <button className={RESOURCE_BUTTON} onClick={() => downloadText("opportunity-deadline.ics", deadlineCalendar(item), "text/calendar;charset=utf-8")}>마감일 일정 파일</button>}
       </div>
     </div>
