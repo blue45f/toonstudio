@@ -2,20 +2,20 @@ import {
   AlertCircle,
   Check,
   ChevronDown,
+  Copy,
   Download,
   Eye,
   EyeOff,
+  Link2,
   LoaderCircle,
   MessageCircle,
   MonitorUp,
   MousePointer2,
   Radio,
   RefreshCw,
-  Copy,
   ScreenShareOff,
   SendHorizontal,
   ShieldCheck,
-  Sparkles,
   UserMinus,
   UsersRound,
   X,
@@ -63,6 +63,7 @@ import {
 import { StudioLiveCollaborationCommandCenter } from "./StudioLiveCollaborationCommandCenter";
 import { useStudioLiveCursorQuality } from "./use-studio-live-cursor-quality";
 import { useStudioLiveDisplaySync } from "./use-studio-live-display-sync";
+import { useStudioMobileKeyboardOffset } from "./use-studio-mobile-keyboard-offset";
 
 import type {
   StudioLiveChatMessage,
@@ -180,6 +181,8 @@ export function StudioLiveCollaborationPanelView({
   const ready = availability === "ready";
   const watching = screenState.watching;
   const chatLogRef = useRef<HTMLUListElement>(null);
+  const [chatInputFocused, setChatInputFocused] = useState(false);
+  const keyboardOffsetPx = useStudioMobileKeyboardOffset(chatInputFocused);
   const chatDraftReady = chatDraft.trim().length > 0;
   const displaySyncSnapshot = useStudioLiveDisplaySync(syncSnapshot);
   const syncPresentation = displaySyncSnapshot
@@ -208,17 +211,17 @@ export function StudioLiveCollaborationPanelView({
   return (
     <section
       aria-labelledby="studio-live-collaboration-title"
-      className="mx-4 mt-4 rounded-2xl border border-accent/30 bg-accent-soft/25 p-3.5 sm:mx-5"
+      className="mx-4 mt-4 rounded-xl border border-accent/30 bg-accent-soft/20 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] break-keep sm:mx-5 sm:p-4"
       data-studio-live-mode={mode ?? "unavailable"}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-              <Radio size={17} aria-hidden="true" />
+            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
+              <Radio size={16} strokeWidth={1.5} aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <h3 className="truncate text-sm font-bold text-fg" id="studio-live-collaboration-title">
+              <h3 className="truncate text-sm font-semibold text-fg" id="studio-live-collaboration-title">
                 실시간 세션
               </h3>
               <p className="mt-0.5 text-xs text-fg-3">
@@ -231,13 +234,13 @@ export function StudioLiveCollaborationPanelView({
           aria-atomic="true"
           aria-live={syncPresentation?.assertive ? "assertive" : "polite"}
           className={cn(
-            "inline-flex min-h-7 w-[11.5rem] shrink-0 items-center justify-center gap-1.5 truncate rounded-full border px-2 text-[0.68rem] font-semibold tabular-nums",
+            "inline-flex min-h-7 max-w-[11.5rem] shrink-0 items-center justify-center gap-2 truncate rounded-full border px-3 text-[11px] font-medium tabular-nums",
             syncStatusToneClass(syncPresentation?.tone ?? null, ready, availability)
           )}
           role={syncPresentation?.assertive ? "alert" : "status"}
         >
           {availability === "connecting" ? (
-            <LoaderCircle className="animate-spin motion-reduce:animate-none" size={12} aria-hidden="true" />
+            <LoaderCircle className="animate-spin motion-reduce:animate-none" size={12} strokeWidth={1.5} aria-hidden="true" />
           ) : (
             <span
               aria-hidden="true"
@@ -250,23 +253,23 @@ export function StudioLiveCollaborationPanelView({
 
       {/* 초안/저장 작품 모두 동일한 서버 ACL 작품 ID를 공유한다. */}
       {onCopyInviteLink ? (
-      <div className="mt-3.5 rounded-xl border border-accent/40 bg-card p-3 shadow-sm">
+      <div className="mt-3 rounded-xl border border-line bg-card p-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-accent" aria-hidden />
-            <span className="text-xs font-bold text-fg">팀 초대 링크</span>
+            <Link2 size={15} strokeWidth={1.5} className="shrink-0 text-accent" aria-hidden />
+            <span className="text-xs font-semibold text-fg">팀 초대 링크</span>
           </div>
           <button
             type="button"
             onClick={onCopyInviteLink}
-            className="flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-transform active:scale-95 hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+            className="flex min-h-11 items-center gap-2 rounded-lg bg-accent px-3 text-xs font-medium text-on-accent transition-colors hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-card motion-reduce:transition-none"
           >
-            <Copy size={13} aria-hidden />
+            <Copy size={13} strokeWidth={1.5} aria-hidden />
             초대 링크 복사
           </button>
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
-          <label className="text-xs font-semibold text-fg-2" htmlFor="studio-live-invite-role">
+          <label className="text-xs font-medium text-fg-2" htmlFor="studio-live-invite-role">
             링크로 들어온 사람의 권한
           </label>
           <select
@@ -279,14 +282,14 @@ export function StudioLiveCollaborationPanelView({
                 onInviteRoleChange?.(next);
               }
             }}
-            className="min-h-9 rounded-lg border border-line bg-card px-2 py-1.5 text-xs font-semibold text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            className="min-h-11 rounded-lg border border-line bg-card px-3 py-2 text-xs font-medium text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:min-h-9"
           >
             <option value="editor">편집 가능</option>
             <option value="commenter">댓글만 가능</option>
             <option value="viewer">보기 전용</option>
           </select>
         </div>
-        <p className="mt-2 text-[0.72rem] leading-relaxed text-fg-3">
+        <p className="mt-2 text-xs leading-relaxed text-fg-3">
           고른 권한은 이 링크로 처음 들어오는 참가자에게만 적용됩니다. 링크는 현재 작품의 서버
           권한을 우회하지 않으며, 팀원으로 추가된 사용자는 로그인 뒤 서버 권한이 우선합니다.
           팀원이 열면 같은 캔버스에서 실시간 획과 커서를 안전하게 동기화합니다.
@@ -529,13 +532,13 @@ export function StudioLiveCollaborationPanelView({
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <UsersRound className="shrink-0 text-accent" size={16} aria-hidden="true" />
-            <p className="truncate text-xs font-semibold text-fg">
+            <UsersRound className="shrink-0 text-accent" size={15} strokeWidth={1.5} aria-hidden="true" />
+            <p className="truncate text-xs font-semibold tabular-nums text-fg">
               {ready ? `나 포함 ${peers.length + 1}개 작업 탭` : "작업 탭 확인 대기"}
             </p>
           </div>
           {ready ? (
-            <span className="text-[0.68rem] text-fg-3" aria-live="polite">
+            <span className="text-[11px] tabular-nums text-fg-3" aria-live="polite">
               다른 탭 {peers.length}개
             </span>
           ) : null}
@@ -648,7 +651,7 @@ export function StudioLiveCollaborationPanelView({
                   <strong className="min-w-0 truncate font-semibold text-fg">
                     {message.self ? "나" : message.participant.displayName}
                   </strong>
-                  <time className="shrink-0 text-[0.62rem] text-fg-3">
+                  <time className="shrink-0 text-[11px] tabular-nums text-fg-3">
                     {chatTimeLabel(message.sentAt)}
                   </time>
                 </span>
@@ -665,17 +668,23 @@ export function StudioLiveCollaborationPanelView({
               : "연결이 준비되면 채팅을 시작할 수 있습니다."}
           </p>
         )}
-        <form className="mt-2 flex items-center gap-2" onSubmit={handleChatSubmit}>
+        <form
+          className="mt-2 flex items-center gap-2"
+          style={keyboardOffsetPx > 0 ? { marginBottom: `${keyboardOffsetPx}px` } : undefined}
+          onSubmit={handleChatSubmit}
+        >
           <label className="sr-only" htmlFor="studio-live-chat-input">채팅 메시지</label>
           <input
             autoComplete="off"
-            className="min-h-11 min-w-0 flex-1 rounded-xl border border-line bg-card px-3 text-xs text-fg placeholder:text-fg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-card px-3 text-xs text-fg placeholder:text-fg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
             disabled={!ready || !canChat}
             id="studio-live-chat-input"
             maxLength={STUDIO_LIVE_CHAT_TEXT_MAX_LENGTH}
             placeholder={canChat ? "메시지 입력" : "열람자 권한은 채팅을 보낼 수 없습니다"}
             type="text"
             value={chatDraft}
+            onFocus={() => setChatInputFocused(true)}
+            onBlur={() => setChatInputFocused(false)}
             onChange={(event) => onChatDraftChange(event.target.value)}
             onKeyDown={(event) => { if (event.key === "Enter" && (event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault(); }}
           />
