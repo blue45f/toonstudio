@@ -218,13 +218,13 @@ export function MyStoryStartFlow({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 break-keep [overflow-wrap:break-word]">
       <header className="max-w-2xl">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">{bt("내 이야기", "My story")}</p>
-        <h1 className="mt-2 text-3xl font-black leading-tight text-fg sm:text-4xl">
+        <p className="text-xs font-semibold tracking-[0.04em] text-accent">{bt("내 이야기", "MY STORY")}</p>
+        <h1 className="mt-2 text-2xl font-semibold leading-[1.2] tracking-[-0.02em] text-fg sm:text-4xl">
           {bt("내 이야기를 웹툰으로", "Turn my story into a webtoon")}
         </h1>
-        <p className="mt-3 text-sm leading-6 text-fg-2 sm:text-base sm:leading-7">
+        <p className="mt-2.5 text-sm leading-[1.65] tracking-[-0.01em] text-fg-2 sm:mt-3 sm:text-base sm:leading-7">
           {bt(
             "상상한 이야기나 내 경험을 적어 주세요. 질문에 답하면 4컷·8컷 대본 초안이 만들어져요. 모르는 질문은 건너뛰어도 돼요.",
             "Write an imagined story or a real experience. Answer a few questions for a 4- or 8-panel script draft. You can skip any question.",
@@ -237,10 +237,14 @@ export function MyStoryStartFlow({
       {session.stage === "pick" && resumable && initialIdea.trim() ? (
         <section aria-label={bt("홈에서 입력한 새 아이디어", "New idea from the home page")} className="rounded-2xl border border-line bg-panel/60 p-4">
           <p className="text-sm font-semibold text-fg">{initialIdea}</p>
-          <p className="mt-2 text-sm leading-6 text-fg-2">
+          <p className="mt-2 text-sm leading-[1.6] text-fg-2">
             {bt("새 아이디어로 시작하면 이 기기에 임시 저장된 질문 답변을 대체해요. 쓰던 이야기는 아래에서 이어 쓸 수 있어요.", "Starting this idea replaces the answers temporarily saved on this device. You can continue the saved story below.")}
           </p>
-          <button type="button" onClick={startFromIdea} className="mt-3 min-h-11 rounded-xl bg-accent px-4 font-semibold text-on-accent">
+          <button
+            type="button"
+            onClick={startFromIdea}
+            className="mt-3 min-h-11 w-full rounded-xl bg-accent px-4 font-semibold text-on-accent transition-opacity duration-150 hover:opacity-90 sm:w-auto"
+          >
             {bt("새 아이디어로 시작", "Start this new idea")}
           </button>
         </section>

@@ -12,28 +12,33 @@ import { PWA_PLATFORM_LABEL, PWA_SERVICE_WORKER_LABEL, PWA_STATUS_LABEL } from "
 /** 기능별 준비 상태 — 색만이 아니라 아이콘·글자(사용 가능/확인 필요)로도 구분한다. */
 export function CapabilityGrid({ capabilities }: { capabilities: readonly EnvironmentCapability[] }) {
   return (
-    <ul className="grid gap-2 sm:grid-cols-2">
+    <ul className="grid grid-cols-1 gap-2 break-keep [overflow-wrap:break-word] sm:grid-cols-2">
       {capabilities.map((item) => (
-        <li key={item.id} className="rounded-xl border border-line bg-panel p-3">
+        <li key={item.id} className="rounded-xl bg-panel p-3.5">
           <div className="flex items-center gap-2">
             <span
               aria-hidden
               className={cn(
-                "grid size-7 shrink-0 place-items-center rounded-full",
+                "grid size-7 shrink-0 place-items-center rounded-lg",
                 item.supported ? "bg-good/15 text-good" : "bg-warn/15 text-warn",
               )}
             >
-              {item.supported ? <CheckCircle2 size={15} /> : <TriangleAlert size={15} />}
+              {item.supported ? <CheckCircle2 size={15} strokeWidth={1.5} /> : <TriangleAlert size={15} strokeWidth={1.5} />}
             </span>
-            <strong className="min-w-0 flex-1 text-sm text-fg">{item.title}</strong>
-            <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-xs font-bold", item.supported ? "bg-good/15 text-fg" : "bg-warn/15 text-fg")}>
+            <strong className="min-w-0 flex-1 text-sm font-semibold leading-[1.35] text-fg">{item.title}</strong>
+            <span
+              className={cn(
+                "shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold",
+                item.supported ? "bg-good/15 text-good" : "bg-warn/15 text-warn",
+              )}
+            >
               {item.supported ? bi("사용 가능", "Ready") : bi("확인 필요", "Check")}
             </span>
           </div>
-          <p className="mt-2 text-xs leading-5 text-fg-2">{item.purpose}</p>
+          <p className="mt-2 text-xs leading-[1.6] tracking-[-0.01em] text-fg-2">{item.purpose}</p>
           {!item.supported ? (
-            <p className="mt-2 rounded-lg bg-warn/10 px-2.5 py-1.5 text-xs leading-5 text-fg">
-              <strong>{bi("해결 방법", "How to fix")}:</strong> {item.fix}
+            <p className="mt-2 rounded-lg bg-warn/10 px-2.5 py-1.5 text-xs leading-[1.6] text-fg">
+              <strong className="font-semibold">{bi("해결 방법", "How to fix")}:</strong> {item.fix}
             </p>
           ) : null}
         </li>
@@ -46,7 +51,7 @@ function StatusRow({ term, value }: { term: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <dt className="text-fg-2">{term}</dt>
-      <dd className="text-right font-bold text-fg">{value}</dd>
+      <dd className="text-right font-semibold text-fg">{value}</dd>
     </div>
   );
 }
@@ -63,33 +68,33 @@ export function PwaStatusPanel({
 }) {
   const installed = pwa.status === "installed";
   return (
-    <div>
+    <div className="break-keep [overflow-wrap:break-word]">
       <div className="flex items-center gap-3">
         <span
           aria-hidden
           className={cn("grid size-10 shrink-0 place-items-center rounded-xl", pwa.online ? "bg-good/15 text-good" : "bg-warn/15 text-warn")}
         >
-          {pwa.online ? <Wifi size={18} /> : <WifiOff size={18} />}
+          {pwa.online ? <Wifi size={18} strokeWidth={1.5} /> : <WifiOff size={18} strokeWidth={1.5} />}
         </span>
         <div className="min-w-0">
-          <strong className="block text-sm text-fg">
+          <strong className="block text-sm font-semibold leading-[1.35] text-fg">
             {bi("앱 설치(PWA)", "App install (PWA)")} · {biLabel(PWA_PLATFORM_LABEL[pwa.platform])}
           </strong>
-          <p className="text-xs text-fg-2">{biLabel(PWA_STATUS_LABEL[pwa.status])}</p>
+          <p className="text-xs leading-[1.5] text-fg-2">{biLabel(PWA_STATUS_LABEL[pwa.status])}</p>
         </div>
       </div>
-      <dl className="mt-4 grid gap-2 text-xs">
+      <dl className="mt-4 grid gap-2 text-xs leading-[1.5]">
         <StatusRow term={bi("실행 방식", "Display mode")} value={pwa.standalone ? bi("설치한 앱", "Installed app") : bi("브라우저 탭", "Browser tab")} />
         <StatusRow term={bi("네트워크", "Network")} value={pwa.online ? bi("온라인", "Online") : bi("오프라인", "Offline")} />
         <StatusRow term={bi("오프라인 캐시", "Offline cache")} value={biLabel(PWA_SERVICE_WORKER_LABEL[pwa.serviceWorkerStatus])} />
       </dl>
       {pwa.serviceWorkerStatus === "update-waiting" ? (
-        <p role="note" className="mt-3 rounded-xl border border-accent/30 bg-accent-soft p-3 text-xs leading-5 text-fg">
+        <p role="note" className="mt-3 rounded-xl bg-accent-soft p-3 text-xs leading-[1.6] text-fg">
           {bi("새 버전이 준비되었습니다. 진행 중 작업을 저장한 뒤 앱을 다시 열어 최신 버전을 적용하세요.", "A new version is ready. Save active work, then reopen the app to apply it safely.")}
         </p>
       ) : null}
       <button type="button" className={`${GROWTH_PRIMARY} mt-4 w-full`} disabled={installed} onClick={onInstall}>
-        <Download size={16} aria-hidden />
+        <Download size={16} strokeWidth={1.5} aria-hidden />
         {installed ? bi("이미 설치됨", "Already installed") : bi("앱 설치 / 설치 안내", "Install app / help")}
       </button>
       {children}
