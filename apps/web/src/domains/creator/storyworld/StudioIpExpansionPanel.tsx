@@ -10,8 +10,9 @@ import {
   ShieldAlert,
   TrendingUp,
 } from "lucide-react";
-import { StudioMultiFormatIpKitPanel } from "./StudioMultiFormatIpKitPanel";
 import { useMemo, useState } from "react";
+
+import { studioEcosystemClient } from "@/platform/studio-ecosystem-client";
 
 import {
   buildIpPitchBibleMarkdown,
@@ -25,13 +26,19 @@ import {
   type IpWorkProfile,
   type LayerRoyaltyUsageEntry,
 } from "./studio-ip-expansion";
+import { StudioMultiFormatIpKitPanel } from "./StudioMultiFormatIpKitPanel";
 
 export interface StudioIpExpansionPanelProps {
   readonly initialProfile?: IpWorkProfile;
   readonly onExportPitchBible?: (markdown: string) => void;
 }
 
-type ExpansionPanelView = "tracks" | "pilot" | "funding-royalty" | "multiformat-qr" | "spinoff-bible";
+type ExpansionPanelView =
+  | "tracks"
+  | "pilot"
+  | "funding-royalty"
+  | "multiformat-qr"
+  | "spinoff-bible";
 
 const DEFAULT_PROFILE: IpWorkProfile = {
   workTitle: "서울 게이트 브레이커",
@@ -93,14 +100,12 @@ export function StudioIpExpansionPanel({
   const [selectedTrack, setSelectedTrack] = useState<IpExpansionTrackId>("animation");
   const [projectedGrossKrw, setProjectedGrossKrw] = useState(1_500_000_000);
 
-  // 파일럿 3컷 시장성 사전검증 상태
   const [openingHookScore, setOpeningHookScore] = useState(84);
   const [characterConsistencyScore, setCharacterConsistencyScore] = useState(88);
   const [sampleReaderCompletionRate, setSampleReaderCompletionRate] = useState(79);
   const [pilotCutCount, setPilotCutCount] = useState(6);
   const [mobileLegibilityPass, setMobileLegibilityPass] = useState(true);
 
-  // 시즌 팬덤 펀딩 & 레이어 자동 로열티 원장 상태
   const [targetSupporters, setTargetSupporters] = useState(320);
   const [avgMonthlyPledgeKrw, setAvgMonthlyPledgeKrw] = useState(9_900);
   const [seasonEpisodes, setSeasonEpisodes] = useState(24);
@@ -109,7 +114,6 @@ export function StudioIpExpansionPanel({
     DEFAULT_ROYALTY_ENTRIES,
   );
 
-  // 스핀오프 & 파생 기획 상태
   const [spinoffs, setSpinoffs] = useState<readonly IpSpinoffNode[]>([
     {
       id: "spin-1",
@@ -205,70 +209,72 @@ export function StudioIpExpansionPanel({
       royaltyReport,
     });
     onExportPitchBible?.(md);
-    setExportNotice("IP 피치 바이블 마크다운(11트랙·사전검증·펀딩·로열티 포함)을 생성했습니다.");
+    setExportNotice("IP 피치 바이블 마크다운을 생성했습니다.");
+    void studioEcosystemClient
+      .evaluateIpReadiness({
+        workTitle: profile.workTitle,
+        publishedEpisodes: profile.publishedEpisodes,
+        hasCleanRightsBom: profile.hasCleanRightsBom,
+      })
+      .catch(() => {
+        // 오프라인/로컬 미리보기 환경에서는 로컬 평가를 유지한다.
+      });
   };
 
   return (
     <section
-      className="flex flex-col gap-5 rounded-2xl border border-line bg-panel p-5 text-fg break-keep"
+      className="flex flex-col gap-4 rounded-xl border border-line bg-panel p-5 text-fg [word-break:keep-all]"
       aria-label="IP 확장 스튜디오 패널"
     >
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <Globe2 className="size-4 shrink-0 text-accent" aria-hidden="true" />
-            <h3 className="text-base font-bold tracking-tight text-fg">
-              IP 확장 스튜디오 · OSM 파이프라인
-            </h3>
-          </div>
-          <p className="mt-1 text-xs leading-5 text-fg-2">
-            단일 원고에서 영상·게임·로컬·교육·자서전까지 11개 확장 트랙을 진단하고 시장성 사전검증·시즌 펀딩·자동 로열티를 설계합니다.
-          </p>
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
+        <div className="flex items-center gap-2">
+          <Globe2 className="size-4 text-fg-2" strokeWidth={1.5} aria-hidden="true" />
+          <h3 className="text-sm font-medium tracking-tight text-fg">
+            IP 확장 스튜디오 (OSM 파이프라인)
+          </h3>
         </div>
         <button
           type="button"
           onClick={handleExport}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-semibold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3.5 text-xs font-medium text-on-accent transition-opacity duration-150 hover:opacity-90"
         >
-          <FileOutput className="size-3.5" aria-hidden="true" />
+          <FileOutput className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
           IP 피치 바이블 내보내기
         </button>
       </header>
 
-      {/* KPI 요약 스트립 (중첩 카드 없이 표면 단계와 헤어라인으로만 구분) */}
-      <div className="grid gap-3 border-b border-line pb-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="flex flex-col gap-0.5 rounded-xl bg-card px-3.5 py-2.5">
-          <span className="text-[11px] font-medium text-fg-3">즉시 추진 가능 트랙</span>
-          <strong className="text-lg font-bold tabular-nums text-accent">
+      <div className="grid gap-2 border-b border-line pb-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex flex-col gap-0.5 rounded-lg bg-card px-3.5 py-2.5">
+          <span className="text-xs text-fg-3">즉시 추진 가능 트랙</span>
+          <strong className="text-base font-medium tabular-nums text-accent">
             {readyCount}/{readiness.length}개
           </strong>
         </div>
-        <div className="flex flex-col gap-0.5 rounded-xl bg-card px-3.5 py-2.5">
-          <span className="text-[11px] font-medium text-fg-3">파일럿 시장성 점수</span>
-          <strong className="text-lg font-bold tabular-nums text-fg">
+        <div className="flex flex-col gap-0.5 rounded-lg bg-card px-3.5 py-2.5">
+          <span className="text-xs text-fg-3">파일럿 시장성 점수</span>
+          <strong className="text-base font-medium tabular-nums text-fg">
             {pilotReport.overallScore}점
           </strong>
         </div>
-        <div className="flex flex-col gap-0.5 rounded-xl bg-card px-3.5 py-2.5">
-          <span className="text-[11px] font-medium text-fg-3">시즌 펀딩 순정산</span>
-          <strong className="text-lg font-bold tabular-nums text-good">
+        <div className="flex flex-col gap-0.5 rounded-lg bg-card px-3.5 py-2.5">
+          <span className="text-xs text-fg-3">시즌 펀딩 순정산</span>
+          <strong className="text-base font-medium tabular-nums text-good">
             {(fundingReport.netCreatorFundingKrw / 10_000).toLocaleString("ko-KR")}만원
           </strong>
         </div>
-        <div className="flex flex-col gap-0.5 rounded-xl bg-card px-3.5 py-2.5">
-          <span className="text-[11px] font-medium text-fg-3">레이어 자동 로열티</span>
-          <strong className="text-lg font-bold tabular-nums text-fg">
+        <div className="flex flex-col gap-0.5 rounded-lg bg-card px-3.5 py-2.5">
+          <span className="text-xs text-fg-3">레이어 자동 로열티</span>
+          <strong className="text-base font-medium tabular-nums text-fg">
             {(royaltyReport.eligiblePayoutKrw / 10_000).toLocaleString("ko-KR")}만원
           </strong>
         </div>
       </div>
 
-      {/* 작품 상태 토글 + 뷰 탭 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3 text-xs text-fg-2">
-          <span className="font-semibold text-fg">{profile.workTitle}</span>
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          <span className="font-medium text-fg">{profile.workTitle}</span>
           <span className="tabular-nums text-fg-3">{profile.publishedEpisodes}화</span>
-          <label className="inline-flex min-h-11 cursor-pointer items-center gap-1.5">
+          <label className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 text-fg-2">
             <input
               type="checkbox"
               checked={profile.hasCleanRightsBom}
@@ -278,7 +284,7 @@ export function StudioIpExpansionPanel({
             />
             <span>권리 BOM 클리어</span>
           </label>
-          <label className="inline-flex min-h-11 cursor-pointer items-center gap-1.5">
+          <label className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 text-fg-2">
             <input
               type="checkbox"
               checked={profile.hasVoiceCastPlan}
@@ -301,13 +307,13 @@ export function StudioIpExpansionPanel({
                 role="tab"
                 aria-selected={selected}
                 onClick={() => setActiveView(tab.id)}
-                className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-colors duration-150 ${
                   selected
                     ? "bg-accent-soft text-accent"
                     : "bg-card text-fg-2 hover:bg-raised hover:text-fg"
                 }`}
               >
-                <Icon className="size-3.5" aria-hidden="true" />
+                <Icon className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
                 <span>{tab.labelKo}</span>
               </button>
             );
@@ -315,7 +321,6 @@ export function StudioIpExpansionPanel({
         </div>
       </div>
 
-      {/* View 1: 11트랙 OSM 진단 & 수익 시뮬레이션 */}
       {activeView === "tracks" && (
         <div className="flex flex-col gap-4" role="tabpanel" aria-label="11트랙 OSM 진단">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -326,25 +331,23 @@ export function StudioIpExpansionPanel({
                   key={item.trackId}
                   type="button"
                   onClick={() => setSelectedTrack(item.trackId)}
-                  className={`flex min-h-11 flex-col gap-1 rounded-xl p-3 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                  className={`flex flex-col gap-1.5 rounded-lg p-3 text-left transition-colors duration-150 ${
                     isSelected
-                      ? "bg-accent-soft ring-1 ring-accent"
+                      ? "bg-accent-soft/60 ring-1 ring-accent"
                       : "bg-card hover:bg-raised"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2 text-xs font-semibold">
-                    <span className="truncate text-fg">{item.labelKo}</span>
-                    <span className="shrink-0 tabular-nums text-accent">
-                      {item.readinessScore}점
-                    </span>
+                  <div className="flex items-center justify-between gap-2 text-xs font-medium text-fg">
+                    <span className="truncate">{item.labelKo}</span>
+                    <span className="tabular-nums">{item.readinessScore}점</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-fg-2">
+                  <div className="flex items-center gap-1.5 text-xs tabular-nums text-fg-3">
                     {item.status === "ready" ? (
-                      <CheckCircle2 className="size-3.5 shrink-0 text-good" aria-hidden="true" />
+                      <CheckCircle2 className="size-3.5 shrink-0 text-good" strokeWidth={1.5} aria-hidden="true" />
                     ) : (
-                      <ShieldAlert className="size-3.5 shrink-0 text-warn" aria-hidden="true" />
+                      <ShieldAlert className="size-3.5 shrink-0 text-warn" strokeWidth={1.5} aria-hidden="true" />
                     )}
-                    <span className="tabular-nums">
+                    <span>
                       예상 MG {(item.estimatedMgKrw / 10_000).toLocaleString("ko-KR")}만원 · RS{" "}
                       {item.creatorRsPercent}%
                     </span>
@@ -356,11 +359,11 @@ export function StudioIpExpansionPanel({
 
           <div className="grid gap-4 border-t border-line pt-4 md:grid-cols-2">
             <div className="flex flex-col gap-2 text-xs">
-              <h4 className="flex items-center gap-1.5 font-semibold text-fg">
-                <TrendingUp className="size-3.5 text-accent" aria-hidden="true" />
+              <h4 className="flex items-center gap-1.5 font-medium text-fg">
+                <TrendingUp className="size-3.5 text-fg-2" strokeWidth={1.5} aria-hidden="true" />
                 {activeTrack.labelKo} 수익 시뮬레이션
               </h4>
-              <label className="flex flex-col gap-1.5 text-fg-2">
+              <label className="flex flex-col gap-1 text-fg-2">
                 <span className="tabular-nums">
                   예상 총매출 ({(projectedGrossKrw / 100_000_000).toFixed(1)}억원)
                 </span>
@@ -373,16 +376,13 @@ export function StudioIpExpansionPanel({
                   onChange={(e) => setProjectedGrossKrw(Number(e.target.value))}
                 />
               </label>
-              <p className="font-semibold tabular-nums text-accent">
+              <p className="font-medium tabular-nums text-accent">
                 작가 예상 총정산:{" "}
                 {(simulation.totalCreatorPayoutKrw / 10_000).toLocaleString("ko-KR")}만원
               </p>
-              <div className="mt-1 flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 {activeTrack.deliverablesKo.map((deliverable) => (
-                  <span
-                    key={deliverable}
-                    className="rounded-lg bg-card px-2.5 py-1 text-[11px] text-fg-2"
-                  >
+                  <span key={deliverable} className="rounded-md bg-card px-2 py-1 text-[11px] text-fg-2">
                     {deliverable}
                   </span>
                 ))}
@@ -390,28 +390,28 @@ export function StudioIpExpansionPanel({
             </div>
 
             <div className="flex flex-col gap-2 text-xs">
-              <h4 className="font-semibold text-fg">스핀오프 · 파생 기획 ({spinoffs.length}건)</h4>
-              <div className="flex gap-1.5">
+              <h4 className="font-medium tabular-nums text-fg">스핀오프 · 파생 기획 ({spinoffs.length}건)</h4>
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={newSpinoffTitle}
                   onChange={(e) => setNewSpinoffTitle(e.target.value)}
                   placeholder="신규 스핀오프/외전 제목"
-                  className="min-h-11 min-w-0 flex-1 rounded-xl border border-line bg-card px-3 py-1.5 text-xs text-fg"
+                  className="h-9 min-w-0 flex-1 rounded-lg border border-line bg-card px-2.5 text-xs text-fg"
                 />
                 <button
                   type="button"
                   onClick={handleAddSpinoff}
-                  className="inline-flex min-h-11 items-center gap-1 rounded-xl bg-raised px-3 py-1.5 font-semibold text-fg hover:bg-accent-soft hover:text-accent"
+                  className="inline-flex h-9 items-center gap-1 rounded-lg bg-raised px-2.5 text-xs text-fg-2 transition-colors duration-150 hover:bg-accent-soft hover:text-accent"
                 >
-                  <Plus className="size-3.5" aria-hidden="true" />
+                  <Plus className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
                   추가
                 </button>
               </div>
-              <ul className="space-y-1.5 text-fg-2">
+              <ul className="space-y-1 text-fg-2">
                 {spinoffs.map((node) => (
                   <li key={node.id} className="truncate">
-                    · <strong className="text-fg">{node.title}</strong> ({node.canonLink})
+                    · <span className="font-medium text-fg">{node.title}</span> ({node.canonLink})
                   </li>
                 ))}
               </ul>
@@ -420,15 +420,14 @@ export function StudioIpExpansionPanel({
         </div>
       )}
 
-      {/* View 2: 파일럿 3컷 시장성 사전검증 */}
       {activeView === "pilot" && (
         <div
-          className="grid gap-5 border-t border-line pt-4 md:grid-cols-2"
+          className="grid gap-4 border-t border-line pt-4 md:grid-cols-2"
           role="tabpanel"
           aria-label="파일럿 사전검증"
         >
           <div className="flex flex-col gap-3 text-xs">
-            <h4 className="font-semibold text-fg">원천 IP 파일럿 콘티 사전검증 입력</h4>
+            <h4 className="font-medium text-fg">원천 IP 파일럿 콘티 사전검증 입력</h4>
             <label className="flex flex-col gap-1 text-fg-2">
               <span className="tabular-nums">초반 3컷 오프닝 훅 점수 ({openingHookScore}점)</span>
               <input
@@ -463,7 +462,7 @@ export function StudioIpExpansionPanel({
                 onChange={(e) => setSampleReaderCompletionRate(Number(e.target.value))}
               />
             </label>
-            <div className="flex flex-wrap items-center gap-4 pt-1">
+            <div className="flex flex-wrap items-center gap-4">
               <label className="inline-flex items-center gap-2 text-fg-2">
                 <span>파일럿 컷 수</span>
                 <input
@@ -472,10 +471,10 @@ export function StudioIpExpansionPanel({
                   max={60}
                   value={pilotCutCount}
                   onChange={(e) => setPilotCutCount(Math.max(1, Number(e.target.value) || 1))}
-                  className="min-h-11 w-20 rounded-xl border border-line bg-card px-2.5 text-xs tabular-nums text-fg"
+                  className="h-9 w-20 rounded-lg border border-line bg-card px-2.5 text-xs tabular-nums text-fg"
                 />
               </label>
-              <label className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 text-fg-2">
+              <label className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 text-fg-2">
                 <input
                   type="checkbox"
                   checked={mobileLegibilityPass}
@@ -486,11 +485,11 @@ export function StudioIpExpansionPanel({
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 rounded-xl bg-card p-4 text-xs">
-            <div className="flex items-center justify-between gap-2 border-b border-line/60 pb-2.5">
-              <span className="font-semibold text-fg">사전검증 판정</span>
+          <div className="flex flex-col gap-3 rounded-lg bg-card p-4 text-xs">
+            <div className="flex items-center justify-between gap-2 border-b border-line/60 pb-2">
+              <span className="font-medium text-fg">사전검증 판정</span>
               <span
-                className={`font-bold tabular-nums ${
+                className={`font-medium tabular-nums ${
                   pilotReport.verdict === "go"
                     ? "text-good"
                     : pilotReport.verdict === "iterate"
@@ -501,10 +500,10 @@ export function StudioIpExpansionPanel({
                 {pilotReport.overallScore}점 · {pilotReport.verdictLabelKo}
               </span>
             </div>
-            <p className="text-fg-2 tabular-nums">
+            <p className="tabular-nums text-fg-2">
               예상 1화 완독 유지율: <strong className="text-fg">{pilotReport.estimatedRetentionPercent}%</strong>
             </p>
-            <ul className="space-y-1.5 text-fg-2">
+            <ul className="space-y-1 text-fg-2">
               {pilotReport.actionItemsKo.map((item) => (
                 <li key={item}>· {item}</li>
               ))}
@@ -513,16 +512,15 @@ export function StudioIpExpansionPanel({
         </div>
       )}
 
-      {/* View 3: 시즌 팬덤 펀딩 & 수정 가능 레이어 자동 로열티 원장 */}
       {activeView === "funding-royalty" && (
         <div
-          className="grid gap-5 border-t border-line pt-4 md:grid-cols-2"
+          className="grid gap-4 border-t border-line pt-4 md:grid-cols-2"
           role="tabpanel"
           aria-label="시즌 펀딩 및 자동 로열티"
         >
           <div className="flex flex-col gap-3 text-xs">
-            <h4 className="font-semibold text-fg">시즌제 팬덤 펀딩 · 완결 동행 시뮬레이터</h4>
-            <div className="grid grid-cols-2 gap-2.5">
+            <h4 className="font-medium text-fg">시즌제 팬덤 펀딩 · 완결 동행 시뮬레이터</h4>
+            <div className="grid grid-cols-2 gap-2">
               <label className="flex flex-col gap-1 text-fg-2">
                 <span>목표 후원 독자(명)</span>
                 <input
@@ -531,7 +529,7 @@ export function StudioIpExpansionPanel({
                   max={50_000}
                   value={targetSupporters}
                   onChange={(e) => setTargetSupporters(Math.max(0, Number(e.target.value) || 0))}
-                  className="min-h-11 rounded-xl border border-line bg-card px-3 tabular-nums text-fg"
+                  className="h-9 rounded-lg border border-line bg-card px-2.5 tabular-nums text-fg"
                 />
               </label>
               <label className="flex flex-col gap-1 text-fg-2">
@@ -542,7 +540,7 @@ export function StudioIpExpansionPanel({
                   step={1000}
                   value={avgMonthlyPledgeKrw}
                   onChange={(e) => setAvgMonthlyPledgeKrw(Math.max(0, Number(e.target.value) || 0))}
-                  className="min-h-11 rounded-xl border border-line bg-card px-3 tabular-nums text-fg"
+                  className="h-9 rounded-lg border border-line bg-card px-2.5 tabular-nums text-fg"
                 />
               </label>
               <label className="flex flex-col gap-1 text-fg-2">
@@ -553,7 +551,7 @@ export function StudioIpExpansionPanel({
                   max={100}
                   value={seasonEpisodes}
                   onChange={(e) => setSeasonEpisodes(Math.max(1, Number(e.target.value) || 1))}
-                  className="min-h-11 rounded-xl border border-line bg-card px-3 tabular-nums text-fg"
+                  className="h-9 rounded-lg border border-line bg-card px-2.5 tabular-nums text-fg"
                 />
               </label>
               <label className="flex flex-col gap-1 text-fg-2">
@@ -566,12 +564,12 @@ export function StudioIpExpansionPanel({
                   onChange={(e) =>
                     setEpisodeProductionCostKrw(Math.max(0, Number(e.target.value) || 0))
                   }
-                  className="min-h-11 rounded-xl border border-line bg-card px-3 tabular-nums text-fg"
+                  className="h-9 rounded-lg border border-line bg-card px-2.5 tabular-nums text-fg"
                 />
               </label>
             </div>
-            <div className="rounded-xl bg-card p-3.5">
-              <p className="font-semibold tabular-nums text-good">
+            <div className="rounded-lg bg-card p-3">
+              <p className="font-medium tabular-nums text-good">
                 창작자 순정산: {(fundingReport.netCreatorFundingKrw / 10_000).toLocaleString("ko-KR")}만원 · 제작 확보 {fundingReport.fundedEpisodeRunway}화
               </p>
               <ul className="mt-2 space-y-1 text-fg-2">
@@ -584,16 +582,16 @@ export function StudioIpExpansionPanel({
 
           <div className="flex flex-col gap-3 text-xs">
             <div className="flex items-center justify-between gap-2">
-              <h4 className="font-semibold text-fg">수정 가능 레이어 · 자동 로열티 정산 원장</h4>
+              <h4 className="font-medium text-fg">수정 가능 레이어 · 자동 로열티 정산 원장</h4>
               <span className="tabular-nums text-fg-2">
                 누적 {royaltyReport.totalUsageCount}회 사용 · 보류 {royaltyReport.blockedCount}건
               </span>
             </div>
-            <ul className="divide-y divide-line/60 rounded-xl bg-card px-3.5">
+            <ul className="divide-y divide-line/60 rounded-lg bg-card px-3">
               {royaltyReport.entries.map((entry) => (
                 <li key={entry.assetId} className="flex items-center justify-between gap-2 py-2.5">
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-fg">{entry.assetName}</p>
+                    <p className="truncate font-medium text-fg">{entry.assetName}</p>
                     <p className="text-[11px] tabular-nums text-fg-3">
                       {entry.creatorName} · {entry.usageCount}회 ×{" "}
                       {(entry.unitRoyaltyKrw / 10_000).toLocaleString("ko-KR")}만원
@@ -603,7 +601,7 @@ export function StudioIpExpansionPanel({
                     <button
                       type="button"
                       onClick={() => handleToggleRoyaltyBom(entry.assetId)}
-                      className={`min-h-11 rounded-lg px-2.5 text-[11px] font-semibold ${
+                      className={`h-8 rounded-md px-2 text-[11px] font-medium transition-colors duration-150 ${
                         entry.rightsBomCleared
                           ? "bg-accent-soft text-accent"
                           : "bg-raised text-warn"
@@ -611,7 +609,7 @@ export function StudioIpExpansionPanel({
                     >
                       {entry.rightsBomCleared ? "BOM 승인" : "권리 보류"}
                     </button>
-                    <span className="w-16 text-right font-semibold tabular-nums text-fg">
+                    <span className="w-16 text-right font-medium tabular-nums text-fg">
                       {(entry.subtotalKrw / 10_000).toLocaleString("ko-KR")}만원
                     </span>
                   </div>
@@ -622,7 +620,6 @@ export function StudioIpExpansionPanel({
         </div>
       )}
 
-      {/* View 4: 멀티포맷 IP 배포 · 원천 3컷 시드 · 오프라인 QR 굿즈 BOM */}
       {activeView === "multiformat-qr" && (
         <StudioMultiFormatIpKitPanel
           workTitle={profile.workTitle}
@@ -630,7 +627,6 @@ export function StudioIpExpansionPanel({
         />
       )}
 
-      {/* View 5: 스핀오프 캐논 & B2B 피치 바이블 프리뷰 */}
       {activeView === "spinoff-bible" && (
         <div
           className="flex flex-col gap-3 border-t border-line pt-4 text-xs"
@@ -643,18 +639,18 @@ export function StudioIpExpansionPanel({
               value={newSpinoffTitle}
               onChange={(e) => setNewSpinoffTitle(e.target.value)}
               placeholder="신규 스핀오프/외전 제목"
-              className="min-h-11 min-w-0 flex-1 rounded-xl border border-line bg-card px-3 text-xs text-fg"
+              className="h-9 min-w-0 flex-1 rounded-lg border border-line bg-card px-2.5 text-xs text-fg"
             />
             <button
               type="button"
               onClick={handleAddSpinoff}
-              className="inline-flex min-h-11 items-center gap-1 rounded-xl bg-raised px-4 font-semibold text-fg hover:bg-accent-soft hover:text-accent"
+              className="inline-flex h-9 items-center gap-1 rounded-lg bg-raised px-3 text-xs font-medium text-fg transition-colors duration-150 hover:bg-accent-soft hover:text-accent"
             >
-              <Plus className="size-3.5" aria-hidden="true" />
+              <Plus className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
               추가
             </button>
           </div>
-          <pre className="max-h-72 overflow-auto rounded-xl bg-card p-4 font-mono text-[11px] leading-5 text-fg-2 whitespace-pre-wrap">
+          <pre className="max-h-72 overflow-auto rounded-lg bg-card p-4 font-mono text-[11px] leading-5 text-fg-2 whitespace-pre-wrap">
             {buildIpPitchBibleMarkdown(profile, readiness, spinoffs, {
               pilotReport,
               fundingReport,
@@ -665,7 +661,7 @@ export function StudioIpExpansionPanel({
       )}
 
       {exportNotice && (
-        <p className="text-xs font-medium text-good" role="status">
+        <p className="text-xs text-good" role="status">
           {exportNotice}
         </p>
       )}
