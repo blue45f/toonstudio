@@ -60,7 +60,7 @@ function entry({ simple = true, taskOpen = false, category = false, backCount = 
     getByRole: (role: string, query: { name: string; exact: boolean }) => {
       expect(role).toBe("button"); expect(query.exact).toBe(true);
       if (query.name === "원고 도구 분류로 돌아가기") return back;
-      expect(query.name).toBe("프로젝트·창 도구 배치로 전환");
+      expect(query.name).toBe("프로젝트·창 도구");
       if (!state.workspaceSelected) throw new Error("화면과 도움말 목적을 고르기 전에는 작업 배치를 선택할 수 없습니다.");
       return { click: showSavedLayout };
     },
@@ -79,9 +79,16 @@ function entry({ simple = true, taskOpen = false, category = false, backCount = 
   }) };
   const page = {
     locator: (selector: string) => {
-      if (selector === '[data-studio-editor="true"][data-studio-drawing-clarity="true"]') return clarity;
+      if (selector === '[data-studio-editor="true"][data-studio-drawing-clarity="true"]:not([data-studio-drawing-clarity-panel="commands"])') return clarity;
       if (selector === 'dialog[data-studio-drawing-task="tools"]') return task;
       if (selector === '[data-studio-clarity-more-trigger="true"]') return trigger;
+      if (selector === '[data-studio-drawing-project-tools="true"]') return {
+        waitFor: vi.fn(async ({ state: expected, timeout }: { state: string; timeout: number }) => {
+          expect(expected).toBe("visible"); expect(state.workspaceSelected).toBe(true);
+          expect(state.simple).toBe(false);
+          expect(timeout).toBeGreaterThan(0); expect(timeout).toBeLessThanOrEqual(60_000);
+        }),
+      };
       throw new Error("허용하지 않은 UI 조작: " + selector);
     },
     addLocatorHandler: vi.fn(async (target: unknown, handler: () => Promise<void>) => {

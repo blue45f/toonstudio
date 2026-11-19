@@ -21,7 +21,7 @@ const offlineDrawFiles = [
   "offline-draw/bootstrap.js",
 ];
 const svgFiles = ["brand/production-os-hero.svg", "brand/production-os-workspace.svg"];
-const files = [...bootstrapFiles, ...offlineDrawFiles, ...svgFiles];
+const files = [...bootstrapFiles, ...offlineDrawFiles, ...svgFiles, "offline-draw/portable.html"];
 let directory;
 const original = {};
 const compact = {};

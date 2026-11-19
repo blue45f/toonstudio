@@ -165,11 +165,7 @@ async function waitForCompanionConnection(
   page: Page,
   surface: "workspace" | "navigator",
 ): Promise<void> {
-  await page.waitForURL((url) => {
-    if (url.pathname !== "/studio/tools-companion") return false;
-    const view = url.searchParams.get("view");
-    return surface === "workspace" ? view === null : view === surface;
-  }, { timeout: 20_000 });
+  await page.waitForURL((url) => url.pathname === `/studio/companion/${surface}`, { timeout: 20_000 });
   await page.locator(
     `[data-testid="studio-tools-companion-root"][data-companion-surface="${surface}"]`,
   ).waitFor({ state: "visible", timeout: 20_000 });
@@ -198,7 +194,7 @@ async function waitForNavigatorPreview(page: Page): Promise<boolean> {
 }
 
 async function openWindowMenu(page: Page): Promise<ReturnType<Page["locator"]>> {
-  return openStudioMainMenu(page, "view");
+  return openStudioMainMenu(page, "window");
 }
 
 async function openWorkspaceCompanion(
@@ -254,13 +250,13 @@ async function verifyToolRoundTrip(primary: Page, workspace: Page): Promise<bool
   // Companion → primary command path.
   await palette.getByRole("button", { name: "지우개", exact: true }).click();
   const eraser = primary.locator(
-    'button[aria-label="지우개 (E)"][aria-pressed="true"]',
+    '[data-studio-rail-tool-id="eraser"][aria-pressed="true"]',
   );
   await eraser.waitFor({ state: "visible", timeout: 10_000 });
 
   // Primary → companion state publication path. Clicking the primary avoids falsely calling two
   // same-direction commands a round-trip.
-  const pen = primary.getByRole("button", { name: "펜 (B)", exact: true });
+  const pen = primary.locator('[data-studio-rail-tool-id="pen"]');
   await pen.click();
   await palette.locator('button[aria-pressed="true"]', { hasText: /^펜$/u })
     .waitFor({ state: "visible", timeout: 10_000 });

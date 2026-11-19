@@ -73,6 +73,10 @@ jobs:
             /apps/web/public/assets/3d/environments/webtoon-v7/manifest.json
             /apps/web/public/assets/3d/environments/mcp-free-v1/manifest.json
             /apps/web/public/assets/3d/environments/authored-v1/manifest.json
+            /apps/web/public/assets/3d/environments/boatyard-v1/manifest.json
+            /apps/web/public/assets/3d/environments/coast-v1/manifest.json
+            /apps/web/public/assets/3d/environments/specimen-v1/manifest.json
+            /apps/web/public/assets/3d/environments/glasshouse-v1/manifest.json
             /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
             /apps/web/public/assets/studio/bundle-scenes-v1/manifest.json
             /apps/web/public/assets/virtual-studio/bundle-decor-v1/manifest.json
@@ -166,6 +170,10 @@ jobs:
             /apps/web/public/assets/3d/environments/webtoon-v7/manifest.json
             /apps/web/public/assets/3d/environments/mcp-free-v1/manifest.json
             /apps/web/public/assets/3d/environments/authored-v1/manifest.json
+            /apps/web/public/assets/3d/environments/boatyard-v1/manifest.json
+            /apps/web/public/assets/3d/environments/coast-v1/manifest.json
+            /apps/web/public/assets/3d/environments/specimen-v1/manifest.json
+            /apps/web/public/assets/3d/environments/glasshouse-v1/manifest.json
             /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
             /apps/web/public/assets/studio/bundle-scenes-v1/manifest.json
             /apps/web/public/assets/virtual-studio/bundle-decor-v1/manifest.json
@@ -272,6 +280,10 @@ jobs:
             /apps/web/public/assets/3d/environments/webtoon-v7/manifest.json
             /apps/web/public/assets/3d/environments/mcp-free-v1/manifest.json
             /apps/web/public/assets/3d/environments/authored-v1/manifest.json
+            /apps/web/public/assets/3d/environments/boatyard-v1/manifest.json
+            /apps/web/public/assets/3d/environments/coast-v1/manifest.json
+            /apps/web/public/assets/3d/environments/specimen-v1/manifest.json
+            /apps/web/public/assets/3d/environments/glasshouse-v1/manifest.json
             /apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json
             /apps/web/public/assets/virtual-studio/bundle-v1/manifest.json
             /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
@@ -1197,6 +1209,7 @@ jobs:
           apps/api/src/modules/studio-project-graph/studio-recording-booth-asset.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-world-publication.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-work-session.integration.test.ts
+          apps/api/src/modules/studio-project-graph/studio-space-poll.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts
           apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts
