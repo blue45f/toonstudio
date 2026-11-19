@@ -32,6 +32,7 @@ import {
 } from "../apps/web/src/domains/creator/live/studio-crdt-protocol";
 import {
   createStudioLiveEnvelope,
+  studioLocalLiveChannelName,
   type StudioLiveParticipant,
 } from "../apps/web/src/domains/creator/live/studio-live-collaboration-protocol";
 import {
@@ -68,12 +69,12 @@ import {
 } from "../apps/web/src/domains/creator/live/studio-live-p2p-overlay-transport";
 import { StudioLiveRetainedMediaOverlayRenderer } from "../apps/web/src/domains/creator/live/studio-live-retained-media-overlay";
 
-import type { StudioLocalDatabase } from "../apps/web/src/domains/creator/studio-local-database";
 import type {
   StudioLivePeer,
   StudioLiveRoomEvent,
 } from "../apps/web/src/domains/creator/live/studio-live-collaboration-room";
 import type { StudioLiveTransport } from "../apps/web/src/domains/creator/live/studio-live-collaboration-transport";
+import type { StudioLocalDatabase } from "../apps/web/src/domains/creator/studio-local-database";
 
 const DEFAULT_DURATION_MS = 3 * 60 * 60 * 1_000; // 3 hours
 const DEFAULT_PEER_COUNT = 6;
@@ -280,6 +281,7 @@ async function runSoak(): Promise<void> {
     },
   })({
     workId: "work-soak",
+    roomName: studioLocalLiveChannelName("work-soak"),
     participant: {
       sessionId: "soak-self",
       displayName: "Self",

@@ -52,6 +52,7 @@ import {
   STUDIO_CRDT_SNAPSHOT_MAX_BYTES,
   STUDIO_CRDT_UPDATE_MAX_BYTES,
   studioCrdtPayloadHash,
+  studioCrdtPayloadHashesEqual as bytesEqual,
 } from "./studio-crdt.repository";
 import { StudioRasterAssetService } from "./studio-raster-asset.service";
 import { StudioWorkAssetService } from "./studio-work-asset.service";
@@ -201,14 +202,6 @@ export function decodeStudioCrdtBase64(
     throw new StudioCrdtInvalidPayloadError(`${label} exceeds its decoded byte budget`);
   }
   return decoded;
-}
-
-function bytesEqual(left: Uint8Array, right: Uint8Array): boolean {
-  if (left.byteLength !== right.byteLength) return false;
-  for (let index = 0; index < left.byteLength; index += 1) {
-    if (left[index] !== right[index]) return false;
-  }
-  return true;
 }
 
 export function chunkStudioCrdtSyncDiff(diff: Uint8Array): string[] {

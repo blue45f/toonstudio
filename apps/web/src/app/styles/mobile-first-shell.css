@@ -11,17 +11,29 @@
   :root:has([data-site-mobile-utilities="available"]) :is([data-floating-controls-mobile="disabled"]:not([data-floating-controls-open]), [data-site-ost]:not([data-site-ost-expanded]) [data-site-ost-pill]) { display: none; }
   :root:has(nav[data-site-product]) #main-content { padding-block-end: max(6rem, var(--floating-stack-clearance, 0px)); }
   :root:has(nav[data-site-product]) .site-footer__meta { padding-block-end: calc(6rem + env(safe-area-inset-bottom)); }
+  /* 모바일 터치 반응성(더블탭 줌 지연 제거) 및 시트/모달 배경 스크롤 관통 방지 */
+  :is(button, a[href], summary, [role="tab"], [data-slot="button"]) {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :is(dialog[open], [role="dialog"]) {
+    overscroll-behavior-y: contain;
+  }
 }
 
 /* 실제 공통 메뉴가 연결된 Workspace의 새 기본 메뉴 버튼만 기존 5탭과 맞춘다. */
 @media (max-width: 767px) {
-  .workspace-nav > [data-workspace-menu-trigger] { display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:0; min-height:66px; gap:3px; padding:5px 2px; border:1px solid transparent; border-radius:12px; background:transparent; color:var(--color-fg-2); font-size:12px; }
+  .workspace-nav > [data-workspace-menu-trigger] { display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:0; min-height:66px; gap:3px; padding:5px 2px; border:1px solid transparent; border-radius:12px; background:transparent; color:var(--color-fg-2); font-size:12px; word-break:keep-all; overflow-wrap:break-word; }
   .workspace-nav > [data-workspace-menu-trigger]:is(:hover,:focus-visible) { border-color:var(--color-line-strong); background:var(--color-raised); }
 }
 
-/* 작은 화면의 검색·작성·선택 입력은 본문과 같은 읽기 크기를 유지한다. */
+/* 작은 화면의 검색·작성·선택 입력은 본문과 같은 읽기 크기를 유지하고, 한글 제목·버튼은 어절 단위로 줄바꿈한다. */
 @media (max-width: 767px) {
   #main-content :is(input[placeholder], textarea, select):not([data-own-control-size]) {
     font-size: max(1rem, 1em);
+  }
+  #main-content :is(h1, h2, h3, button, summary) {
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 }

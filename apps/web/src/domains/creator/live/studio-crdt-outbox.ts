@@ -11,6 +11,7 @@ import {
 
 import type {
   StudioCrdtOutboxDatabase,
+  StudioCrdtOutboxSqlCandidate,
   StudioLocalDatabase,
 } from "../studio-local-database";
 

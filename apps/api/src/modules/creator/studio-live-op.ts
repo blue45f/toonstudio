@@ -650,14 +650,19 @@ export class StudioLiveOpRoom {
     return { snapshot: this.snapshot(), ops: [] };
   }
 
-  /** 현재 스냅샷을 저장소에 기록한다 (재시작 hydrate용 기준점 전진). */
+  /** 현재 스냅샷을 저장소에 기록하고 인메모리 기준점을 전진해 완료 로그를 비운다. */
   async persistSnapshot(): Promise<StudioLiveOpSnapshot> {
     const snapshot = this.snapshot();
-    await this.store.saveSnapshot(this.workId, {
+    const stored: StudioLiveOpStoredSnapshot = {
       seq: snapshot.seq,
       state: snapshot.state,
       opIds: snapshot.opIds,
-    });
+    };
+    await this.store.saveSnapshot(this.workId, stored);
+    if (!this.baseSnapshot || snapshot.seq > this.baseSnapshot.seq) {
+      this.baseSnapshot = stored;
+      this.log = this.log.filter((op) => op.seq > snapshot.seq);
+    }
     return snapshot;
   }
 
@@ -708,9 +713,13 @@ export class InMemoryStudioLiveOpLogStore implements StudioLiveOpLogStore {
   }
 }
 
-/** workId 단위 방 레지스트리. 게이트웨이가 보유하고 모듈 종료 시 비운다. */
+/** 활성 소켓이 없는 유휴 Op 룸을 인메모리에서 회수하는 기본 대기 시간(10분). */
+export const STUDIO_OP_ROOM_IDLE_EVICTION_MS = 10 * 60_000;
+
+/** workId 단위 방 레지스트리. 게이트웨이가 보유하고 주기적 스윕·모듈 종료 시 비운다. */
 export class StudioLiveOpRoomRegistry {
   private readonly rooms = new Map<string, Promise<StudioLiveOpRoom>>();
+  private readonly lastAccessedAtByWork = new Map<string, number>();
   private readonly store: StudioLiveOpLogStore;
   private readonly options: StudioLiveOpRoomOptions;
 
@@ -719,20 +728,54 @@ export class StudioLiveOpRoomRegistry {
     this.options = options;
   }
 
-  getRoom(workId: string): Promise<StudioLiveOpRoom> {
+  getRoom(workId: string, now = Date.now()): Promise<StudioLiveOpRoom> {
+    this.lastAccessedAtByWork.set(workId, now);
     let room = this.rooms.get(workId);
     if (!room) {
       room = StudioLiveOpRoom.open(workId, this.store, this.options);
       this.rooms.set(workId, room);
       room.catch(() => {
-        if (this.rooms.get(workId) === room) this.rooms.delete(workId);
+        if (this.rooms.get(workId) === room) {
+          this.rooms.delete(workId);
+          this.lastAccessedAtByWork.delete(workId);
+        }
       });
     }
     return room;
   }
 
+  /** 활성 소켓이 없는 유휴 Op 룸을 회수해 서버 장기 가동 시 힙 누적을 방지한다. */
+  evictIdleRooms(
+    now = Date.now(),
+    idleTtlMs = STUDIO_OP_ROOM_IDLE_EVICTION_MS,
+    activeWorkIds?: ReadonlySet<string>,
+  ): number {
+    let evicted = 0;
+    for (const workId of [...this.rooms.keys()]) {
+      if (activeWorkIds?.has(workId)) {
+        this.lastAccessedAtByWork.set(workId, now);
+        continue;
+      }
+      const lastAccessedAt = this.lastAccessedAtByWork.get(workId);
+      if (lastAccessedAt === undefined) {
+        this.lastAccessedAtByWork.set(workId, now);
+        continue;
+      }
+      if (now < lastAccessedAt) {
+        this.lastAccessedAtByWork.set(workId, now);
+        continue;
+      }
+      if (now - lastAccessedAt < idleTtlMs) continue;
+      this.rooms.delete(workId);
+      this.lastAccessedAtByWork.delete(workId);
+      evicted += 1;
+    }
+    return evicted;
+  }
+
   clear(): void {
     this.rooms.clear();
+    this.lastAccessedAtByWork.clear();
   }
 
   get size(): number {

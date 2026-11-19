@@ -121,10 +121,7 @@ import {
   studioVirtualPlaceWorldScope,
 } from "./studio-virtual-space-place-world";
 import { studioVirtualSpaceDefaultGalleryFrames } from "./studio-virtual-space-gallery-defaults";
-import { studioDefaultRecordingBoothConfig } from "./studio-virtual-space-recording-booth-defaults";
-import type {
-  StudioVirtualSpace as StudioBookableSpace,
-} from "./studio-virtual-space-space-booking";
+import { studioDefaultRecordingBoothConfig, studioRecordingBoothBookingSpaces } from "./studio-virtual-space-recording-booth-defaults";
 import { useStudioVirtualSpaceBoothAsset } from "./use-studio-virtual-space-booth-asset";
 import { useStudioVirtualSpaceSocialSync } from "./use-studio-virtual-space-social-sync";
 import {
@@ -422,12 +419,10 @@ export function VirtualSpaceExperience({
 
   const [worldManifest, setWorldManifest] = useState<StudioVirtualSpaceWorldManifest>(DEFAULT_STUDIO_WORLD_MANIFEST);
   // 예약 패널의 스페이스 목록: 녹음부스를 맨 앞에 두고 월드 방을 함께 예약할 수 있게 한다.
-  const boothSpaces = useMemo<readonly StudioBookableSpace[]>(() => [
-    { id: boothConfig.roomId, name: "녹음부스", capacity: 2, equipmentTags: ["마이크", "방음"] },
-    ...worldManifest.rooms
-      .filter((room) => room.id !== boothConfig.roomId)
-      .map((room) => ({ id: room.id, name: room.labelKo, capacity: 8, equipmentTags: [] as readonly string[] })),
-  ], [boothConfig, worldManifest]);
+  const boothSpaces = useMemo(
+    () => studioRecordingBoothBookingSpaces(boothConfig, worldManifest),
+    [boothConfig, worldManifest],
+  );
   const navigationWorld = useMemo(() => studioVirtualDecorationNavigationWorld(worldManifest, decorations), [worldManifest, decorations]);
   const deskScope = useMemo(() => ({ userId: privateActorId, projectId, activeWorldScope, authoringMode }), [privateActorId, projectId, activeWorldScope, authoringMode]);
   const { preferredSlotId, preferDesk } = useSpaceDeskPreference(deskScope, worldManifest, () => notify(bt("이 기기에 자리를 기억하지 못했어요. 저장 공간을 확인해 주세요.", "Your desk could not be saved on this device. Check available storage."), "warn"));

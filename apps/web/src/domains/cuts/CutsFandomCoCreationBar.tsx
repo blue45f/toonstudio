@@ -37,14 +37,20 @@ export function CutsFandomCoCreationBar() {
   return (
     <section
       aria-label="독자 공동기획 및 시즌 완결 동행 바"
-      className="mt-2 flex flex-col gap-3 rounded-xl border border-line bg-panel p-3.5 text-xs text-fg [word-break:keep-all]"
+      className="mt-2 flex flex-col gap-3 rounded-xl border border-line bg-panel p-3.5 text-xs text-fg break-keep [overflow-wrap:break-word] sm:p-4"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <HeartHandshake className="size-4 text-accent" strokeWidth={1.5} aria-hidden="true" />
-          <span className="font-medium text-fg">독자 공동기획 · 시즌 완결 동행</span>
+          <HeartHandshake className="size-4 shrink-0 text-accent" strokeWidth={1.5} aria-hidden="true" />
+          <span className="font-semibold leading-[1.4] tracking-[-0.01em] text-fg">
+            독자 공동기획 · 시즌 완결 동행
+          </span>
         </div>
-        <div role="group" aria-label="취향 큐레이션 렌즈" className="flex flex-wrap gap-1.5">
+        <div
+          role="group"
+          aria-label="취향 큐레이션 렌즈"
+          className="flex flex-nowrap gap-1.5 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible sm:pb-0"
+        >
           {([
             { id: "all", label: "전체 큐레이션" },
             { id: "30-plus-depth", label: "30대+ 서사·직장인" },
@@ -55,7 +61,7 @@ export function CutsFandomCoCreationBar() {
               type="button"
               aria-pressed={audienceLens === lens.id}
               onClick={() => setAudienceLens(lens.id)}
-              className={`inline-flex h-8 items-center rounded-lg px-2.5 text-xs font-medium transition-colors duration-150 ${
+              className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg px-3 text-xs font-medium leading-[1.35] transition-colors duration-150 sm:min-h-8 sm:px-2.5 ${
                 audienceLens === lens.id
                   ? "bg-accent-soft text-accent"
                   : "bg-card text-fg-2 hover:bg-raised hover:text-fg"
@@ -67,7 +73,7 @@ export function CutsFandomCoCreationBar() {
         </div>
       </div>
 
-      <div className="grid gap-2 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
         {options.map((option) => {
           const ratio = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
           const selected = votedId === option.id;
@@ -77,20 +83,20 @@ export function CutsFandomCoCreationBar() {
               type="button"
               aria-pressed={selected}
               onClick={() => handleVote(option.id)}
-              className={`flex min-h-11 flex-col gap-1 rounded-lg p-2.5 text-left transition-colors duration-150 ${
+              className={`flex min-h-11 flex-col gap-1.5 rounded-lg p-3 text-left transition-colors duration-150 ${
                 selected ? "bg-accent-soft ring-1 ring-accent" : "bg-card hover:bg-raised"
               }`}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1 font-medium text-fg">
+              <div className="flex items-start justify-between gap-2">
+                <span className="inline-flex items-start gap-1.5 font-medium leading-[1.4] tracking-[-0.01em] text-fg">
                   {selected ? (
-                    <CheckCircle2 className="size-3.5 text-accent" strokeWidth={1.5} aria-hidden="true" />
+                    <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-accent" strokeWidth={1.5} aria-hidden="true" />
                   ) : (
-                    <Vote className="size-3.5 text-fg-3" strokeWidth={1.5} aria-hidden="true" />
+                    <Vote className="mt-0.5 size-3.5 shrink-0 text-fg-3" strokeWidth={1.5} aria-hidden="true" />
                   )}
-                  <span className="truncate">{option.labelKo}</span>
+                  <span>{option.labelKo}</span>
                 </span>
-                <span className="font-mono tabular-nums text-fg-2">{ratio}%</span>
+                <span className="shrink-0 font-mono tabular-nums text-fg-2">{ratio}%</span>
               </div>
               <span className="tabular-nums text-[11px] text-fg-3">{option.votes}명 참여</span>
             </button>
@@ -98,7 +104,7 @@ export function CutsFandomCoCreationBar() {
         })}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-2 text-[11px] text-fg-2">
+      <div className="flex flex-col gap-2.5 border-t border-line/60 pt-2.5 text-xs leading-[1.6] tracking-[-0.01em] text-fg-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <span>
           {audienceLens === "30-plus-depth"
             ? "30대+ 성인 독자 취향 맞춤 서사·시즌 펀딩 작품을 우선 표시합니다."
@@ -108,9 +114,9 @@ export function CutsFandomCoCreationBar() {
         </span>
         <Link
           href="/studio/growth-ip#rights"
-          className="inline-flex h-8 items-center gap-1 rounded-lg bg-raised px-2.5 font-medium text-fg transition-colors duration-150 hover:bg-accent-soft hover:text-accent"
+          className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-raised px-3 font-medium text-fg transition-colors duration-150 hover:bg-accent-soft hover:text-accent sm:min-h-9 sm:w-auto"
         >
-          <PenTool className="size-3" strokeWidth={1.5} aria-hidden="true" />
+          <PenTool className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
           이 연출로 3컷 파일럿 시작
         </Link>
       </div>

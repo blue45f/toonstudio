@@ -21,11 +21,12 @@ import {
 import {
   adminButtonClass,
   adminFetch,
+  startAdminVisiblePolling,
+  useAdminReadTask,
   formatNum,
   formatWon,
 } from "./admin-client";
 import { AdminNotice, AdminSpinner, Stat, StatGroup } from "./admin-ui";
-import { startAdminVisiblePolling, useAdminReadTask } from "./admin-visible-polling";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";

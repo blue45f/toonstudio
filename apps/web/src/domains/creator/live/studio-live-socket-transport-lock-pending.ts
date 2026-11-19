@@ -356,6 +356,11 @@ export function forgetAbandonedLockAcquisition(this: StudioLiveSocketTransportHo
 export function pruneAbandonedLockAcquisitions(this: StudioLiveSocketTransportHost): void {
   const now = this.now();
   for (const abandoned of Array.from(this.abandonedLockAcquisitions.values())) {
+    // OS 시계 역행 시 포기된 락 만료가 지연되지 않도록 최대 TTL 상한으로 보정한다.
+    if (abandoned.discardAt - now > ABANDONED_LOCK_ACQUISITION_TTL_MS) {
+      abandoned.discardAt = now + ABANDONED_LOCK_ACQUISITION_TTL_MS;
+      continue;
+    }
     if (abandoned.discardAt > now) continue;
     this.forgetAbandonedLockAcquisition(abandoned.requestId);
   }

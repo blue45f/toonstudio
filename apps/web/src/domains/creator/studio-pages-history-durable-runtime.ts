@@ -6,7 +6,6 @@ import {
   describeStudioOpfsRecoveryJournalError,
   StudioOpfsRecoveryJournalError,
   type StudioOpfsRecoveryAppendInput,
-  type StudioOpfsRecoveryCheckpointInput,
   type StudioOpfsRecoveryEntry,
   type StudioOpfsRecoveryEvictionResult,
   type StudioOpfsRecoveryJournalIdentity,
@@ -17,6 +16,7 @@ import {
 import {
   type StudioCompatibleRecoveryVaultCallbacks,
 } from "./studio-opfs-recovery-runtime";
+
 const RECOVERY_DATABASE_NAME = "toonstudio-studio-crdt-recovery-vault";
 const RECOVERY_DATABASE_VERSION = 1;
 const RECOVERY_STORE_NAME = "rejected-frontiers";

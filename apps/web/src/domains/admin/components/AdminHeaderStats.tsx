@@ -7,8 +7,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { adminFetch } from "./admin-client";
-import { startAdminVisiblePolling, useAdminReadTask } from "./admin-visible-polling";
+import { adminFetch, startAdminVisiblePolling, useAdminReadTask } from "./admin-client";
 
 import { useT } from "@/shared/lib/i18n";
 

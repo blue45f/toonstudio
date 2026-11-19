@@ -173,22 +173,22 @@ export function CreatorRevenueDashboardPage() {
     <section
       data-testid="revenue-dashboard-rea-payout-bar"
       aria-label={pickLang("창작자 수익 정산 벤치마크 워크벤치", "Creator revenue settlement benchmark workbench")}
-      className="mb-5 rounded-2xl border border-line bg-card p-4"
+      className="mb-5 break-keep [overflow-wrap:break-word] rounded-2xl border border-line bg-card p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-accent">
+        <span className="text-xs font-semibold leading-[1.4] tracking-[-0.01em] text-accent">
           {pickLang("REA 수익원 믹스 · 세무 정산 시뮬레이터", "REA Revenue Mix & Tax Settlement Simulator")}
         </span>
-        <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
+        <span className="rounded-lg bg-panel px-2.5 py-1 font-mono text-[11px] text-fg-3 sm:text-xs">
           Patreon · Pixiv Fanbox · Gumroad · Naver PPS · Postype
         </span>
       </div>
       <div
-        className="mt-3 flex flex-wrap items-center gap-2"
+        className="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto border-t border-line/60 pb-1 pt-3 sm:flex-wrap sm:overflow-visible sm:pb-0"
         role="group"
         aria-label={pickLang("수익원 믹스 모델", "Revenue mix model")}
       >
-        <span className="text-xs font-semibold text-fg-2">
+        <span className="shrink-0 text-xs font-semibold text-fg-2">
           {pickLang("수익 모델", "Revenue Mix")}
         </span>
         {REVENUE_MIX_OPTIONS.map((item) => {
@@ -202,8 +202,8 @@ export function CreatorRevenueDashboardPage() {
               onClick={() => setRevenueMix(item.id)}
               className={
                 active
-                  ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                  ? "min-h-11 shrink-0 whitespace-nowrap rounded-lg bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent transition-colors duration-150 sm:min-h-9"
+                  : "min-h-11 shrink-0 whitespace-nowrap rounded-lg bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg sm:min-h-9"
               }
             >
               {pickLang(item.ko, item.en)}
@@ -212,11 +212,11 @@ export function CreatorRevenueDashboardPage() {
         })}
       </div>
       <div
-        className="mt-2 flex flex-wrap items-center gap-2"
+        className="mt-2 flex flex-nowrap items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
         role="group"
         aria-label={pickLang("세무·배분 체계", "Tax and split regime")}
       >
-        <span className="text-xs font-semibold text-fg-2">
+        <span className="shrink-0 text-xs font-semibold text-fg-2">
           {pickLang("세무·배분", "Tax Regime")}
         </span>
         {TAX_REGIME_OPTIONS.map((item) => {
@@ -230,8 +230,8 @@ export function CreatorRevenueDashboardPage() {
               onClick={() => setTaxRegime(item.id)}
               className={
                 active
-                  ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                  ? "min-h-11 shrink-0 whitespace-nowrap rounded-lg bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent transition-colors duration-150 sm:min-h-9"
+                  : "min-h-11 shrink-0 whitespace-nowrap rounded-lg bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg sm:min-h-9"
               }
             >
               {pickLang(item.ko, item.en)}
@@ -242,7 +242,7 @@ export function CreatorRevenueDashboardPage() {
       <p
         data-testid="revenue-dashboard-rea-status"
         aria-live="polite"
-        className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg"
+        className="mt-3 rounded-xl bg-panel px-3 py-2 font-mono text-xs leading-[1.6] text-fg"
       >
         {pickLang(
           `${activeMix.ko} + ${activeTax.ko} · ${activeMix.detailKo} (${activeTax.detailKo})`,
