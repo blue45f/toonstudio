@@ -29,7 +29,9 @@ import {
   buildWorkflowPackShareUrl,
   extractWorkflowPackFromSearch,
 } from "./studio-workflow-pack-deeplink";
+import { verifySubmittedRightsReceipt } from "./studio-rights-receipt-verifier";
 import { buildWorkflowPackExportReceiptAttachment } from "./studio-workflow-pack-export-bundle";
+import { dispatchWorkflowPackRuntimeEvent } from "./studio-workflow-pack-runtime-bridge";
 import { evaluateWorkflowPackTeamPolicy } from "./studio-workflow-pack-policy";
 import {
   buildWorkflowPackFromAssistantState,
@@ -156,6 +158,7 @@ export function StudioWorkflowPacksPanel({
   const [lockTeamPolicy, setLockTeamPolicy] = useState(false);
   const [importJson, setImportJson] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
+  const [verifyReceiptJson, setVerifyReceiptJson] = useState("");
   const [copyFeedback, setCopyFeedback] = useState<{
     readonly packId: string;
     readonly kind: "json" | "deeplink" | "receipt";
@@ -175,8 +178,18 @@ export function StudioWorkflowPacksPanel({
     [customPacks],
   );
 
+  const receiptVerification = useMemo(() => {
+    if (!verifyReceiptJson.trim()) return null;
+    const prelim = verifySubmittedRightsReceipt(verifyReceiptJson);
+    const refPack = prelim.packId
+      ? allPacks.find(({ pack }) => pack.id === prelim.packId)?.pack
+      : undefined;
+    return refPack ? verifySubmittedRightsReceipt(verifyReceiptJson, refPack) : prelim;
+  }, [verifyReceiptJson, allPacks]);
+
   function applyAndTrack(pack: StudioWorkflowPack) {
     onApplyPack(pack);
+    dispatchWorkflowPackRuntimeEvent(pack);
     broadcastWorkflowPackUpdate(pack, "studio-assistant-modal");
     setTelemetry(recordWorkflowPackEvent("pack-applied", pack.id));
   }
@@ -342,6 +355,39 @@ export function StudioWorkflowPacksPanel({
                 JSON 검증 후 적용
               </button>
             </div>
+          </div>
+        </details>
+
+        <details className="mt-1 rounded-lg border border-line bg-card px-2.5 py-1.5">
+          <summary className="cursor-pointer text-[0.66rem] font-bold text-fg-2">
+            저작권 증명서(rights-bom-receipt.json) 무결성 검증
+          </summary>
+          <div className="mt-2 flex flex-col gap-1.5">
+            <textarea
+              rows={3}
+              value={verifyReceiptJson}
+              onChange={(event) => setVerifyReceiptJson(event.target.value)}
+              aria-label="검증할 저작권 증명서 JSON"
+              placeholder='{"receiptSchemaVersion": 1, "integrityHash": "fnv1a-...", ...}'
+              className={cn(
+                "w-full rounded-lg border border-line bg-raised p-2 font-mono text-[0.65rem] text-fg",
+                STUDIO_FOCUS_RING,
+              )}
+            />
+            {receiptVerification ? (
+              <p
+                role="status"
+                data-testid="rights-receipt-verification-result"
+                className={cn(
+                  "rounded px-2 py-1 text-[0.64rem] font-bold",
+                  receiptVerification.clearedForCommercialExport
+                    ? "bg-good/10 text-good"
+                    : "bg-warn/10 text-warn",
+                )}
+              >
+                {receiptVerification.summary}
+              </p>
+            ) : null}
           </div>
         </details>
       </div>
