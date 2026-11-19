@@ -102,7 +102,11 @@ describe("D1 트래픽 원자 저장 및 관리자 조회", () => {
       status: "live", storageMode: "first-party-cloudflare-d1-v1",
       totals: { pageViews: 2, uniqueVisitors: 1, sessions: 2, returningVisitors: 1, averageLoadTimeMs: 600 },
       engagement: { engagedSessions: 1, bounceRate: 50, pageViewsPerSession: 1 },
-      sharing: { attempts: 1, completed: 1, opened: 0, uniqueSharers: 1, attributedPageViews: 2 },
+      sharing: { attempts: 1, completed: 1, opened: 0, uniqueSharers: 1, attributedPageViews: 2,
+        channels: expect.any(Array), topContent: expect.any(Array) },
+      series: expect.any(Array), realtimeSeries: expect.any(Array), topPages: expect.any(Array),
+      sources: expect.any(Array), devices: expect.any(Array), browsers: expect.any(Array),
+      countries: expect.any(Array), recent: expect.any(Array),
       privacy: { storesRawIp: false, storesQueryString: false, honorsBrowserPrivacySignals: true, adminPathsExcluded: true },
     });
     expect(overview.series).toHaveLength(25);
@@ -111,6 +115,24 @@ describe("D1 트래픽 원자 저장 및 관리자 조회", () => {
     const pulse = await repository.pulse({ now: NOW, fiveMinutesAgo: new Date(NOW.getTime() - 300_000), thirtyMinutesAgo: new Date(NOW.getTime() - 1_800_000) });
     expect(pulse).toMatchObject({ activeVisitors: 1, activeSessions: 2, pageViews5m: 2, pageViews30m: 2 });
     expect(pulse.series).toHaveLength(30);
+  });
+
+  it("빈 관리자 통계도 목록 배열과 값이 0인 시간 bucket을 보존한다", async () => {
+    const { repository } = fixture();
+    const overview = await repository.overview({ now: NOW, start: new Date(NOW.getTime() - 86_400_000), days: 1, bucketSeconds: 3600, retentionDays: 90 });
+    expect(overview).toMatchObject({
+      status: "empty", totals: { pageViews: 0, uniqueVisitors: 0, sessions: 0 },
+      sharing: { attempts: 0, channels: [], topContent: [] },
+      topPages: [], sources: [], devices: [], browsers: [], countries: [], recent: [],
+    });
+    expect(overview.series).toEqual(Array.from({ length: 25 }, (_, index) => ({
+      bucket: new Date(Date.parse("2026-09-25T12:00:00.000Z") + index * 3_600_000).toISOString(),
+      pageViews: 0, visitors: 0, sessions: 0,
+    })));
+    expect(overview.realtimeSeries).toEqual(Array.from({ length: 30 }, (_, index) => ({
+      bucket: new Date(Date.parse("2026-09-26T12:05:00.000Z") + index * 60_000).toISOString(),
+      pageViews: 0, visitors: 0,
+    })));
   });
 
   it("retention은 세 저장소를 같은 cutoff로 정리하고 새 기록은 보존한다", async () => {

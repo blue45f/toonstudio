@@ -131,6 +131,10 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       setError("6패스 묶음 v1은 일반 원고의 기본 도형 장면을 지원합니다. 문서 마스터와 외부 모델 원본은 아직 지원하지 않습니다.");
       return false;
     }
+    if (sixPass && (masterEditMode || result.bg3dScene.attachments.length || result.bg3dScene.nodes.some((node) => node.kind !== "primitive"))) {
+      setError("6패스 묶음 v1은 일반 원고의 기본 도형 장면을 지원합니다. 문서 마스터와 외부 모델 원본은 아직 지원하지 않습니다.");
+      return false;
+    }
     let nativeState: StudioBg3dSixPassBundleState | undefined = activePage.bg3dLtBundles;
     let previousBundle = targetElementId ? nativeState?.bundles.find((bundle) => bundle.bundleId === elementById.get(targetElementId)?.bg3dLtBundleId) : undefined;
     if (previousBundle && (!sixPass || result.sharedStageMutation?.kind === "unlink")) {
