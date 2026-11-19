@@ -28,7 +28,7 @@ import {
 } from "./studio-live-sync-safety";
 import type { StudioCrdtDocument } from "./studio-crdt-document";
 import type { StudioOfflineBranchRuntime } from "../offline-branch/studio-offline-branch-runtime";
-import type { StudioCrdtRecoveryVaultEntry } from "./studio-crdt-recovery-vault";
+import { findStudioLiveRecoveryBoundaryEntry, type StudioLiveRecoveryBoundaryLatch } from "./studio-live-recovery-boundary";
 import type {
   StudioCrdtAuthoritativeAckBarrierResult,
   StudioCrdtDraftProtectionBarrierResult,
@@ -109,12 +109,6 @@ function messageFrom(error: unknown, fallback: string): string {
   return resolveStudioLiveProducerErrorFromCause(error) ?? (error instanceof Error && error.message ? error.message : fallback);
 }
 
-interface StudioLiveRecoveryBoundaryLatch {
-  scopeKey: string;
-  rejectedUpdateId: string | null;
-  recovery: StudioLiveRecoveryState;
-}
-
 interface StudioLiveRevocationBoundaryLatch {
   scopeKey: string;
   mode: StudioLiveTransportMode;
@@ -123,23 +117,6 @@ interface StudioLiveRevocationBoundaryLatch {
 
 const RECOVERY_VAULT_REHYDRATION_INITIAL_DELAY_MS = 50;
 const RECOVERY_VAULT_REHYDRATION_MAX_DELAY_MS = 5_000;
-
-function findStudioLiveRecoveryBoundaryEntry(
-  entries: readonly StudioCrdtRecoveryVaultEntry[],
-  boundary: StudioLiveRecoveryBoundaryLatch
-): StudioCrdtRecoveryVaultEntry | null {
-  const { vaultId } = boundary.recovery;
-  if (vaultId) {
-    const exactVault = entries.find((entry) => entry.vaultId === vaultId);
-    if (exactVault) return exactVault;
-  }
-  const rejectedUpdateId = boundary.rejectedUpdateId;
-  if (!rejectedUpdateId) return null;
-  return entries.find((entry) =>
-    entry.rejectedUpdateId === rejectedUpdateId ||
-    entry.updates.some((update) => update.updateId === rejectedUpdateId)
-  ) ?? null;
-}
 
 /**
  * Always-mounted live-room owner. Team management and screen sharing may open as panels, but

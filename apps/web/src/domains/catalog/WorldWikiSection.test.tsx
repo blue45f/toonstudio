@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { StudioPublicWiki } from "@/domains/creator/public/world-wiki";
@@ -53,23 +53,27 @@ const SAMPLE_WIKI: StudioPublicWiki = {
 describe("WorldWikiSection", () => {
   it("분류 필터와 검색을 통해 스포일러 경계 내 공개 설정만 필터링한다", () => {
     render(<WorldWikiSection wiki={SAMPLE_WIKI} titleName="안개 속의 신호" />);
+    const queryLocationEntry = () => {
+      const section = screen.queryByRole("heading", { name: "장소 · 1" })?.parentElement;
+      return section ? within(section).queryByText("남쪽 등대") : null;
+    };
 
     expect(screen.getByText("안개 속의 신호 공식 설정 위키")).toBeTruthy();
     expect(screen.getByText("서진우")).toBeTruthy();
-    expect(screen.getByText("남쪽 등대")).toBeTruthy();
+    expect(queryLocationEntry()).toBeTruthy();
 
     const locationFilter = screen.getByRole("button", { name: "장소 · 1" });
     fireEvent.click(locationFilter);
     expect(locationFilter.getAttribute("aria-pressed")).toBe("true");
     expect(screen.queryByText("서진우")).toBeNull();
-    expect(screen.getByText("남쪽 등대")).toBeTruthy();
+    expect(queryLocationEntry()).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "전체 · 2" }));
     fireEvent.change(screen.getByPlaceholderText("공개된 설정 안에서 검색"), {
       target: { value: "라디오" },
     });
     expect(screen.getByText("서진우")).toBeTruthy();
-    expect(screen.queryByText("남쪽 등대")).toBeNull();
+    expect(queryLocationEntry()).toBeNull();
   });
 
   it("공개 설정이 없으면 빈 상태 안내를 표시한다", () => {

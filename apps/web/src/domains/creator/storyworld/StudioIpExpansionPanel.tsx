@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { studioEcosystemClient } from "@/platform/studio-ecosystem-client";
+
 import {
   buildIpPitchBibleMarkdown,
   calculateLayerRoyaltyLedger,
@@ -208,6 +210,15 @@ export function StudioIpExpansionPanel({
     });
     onExportPitchBible?.(md);
     setExportNotice("IP 피치 바이블 마크다운을 생성했습니다.");
+    void studioEcosystemClient
+      .evaluateIpReadiness({
+        workTitle: profile.workTitle,
+        publishedEpisodes: profile.publishedEpisodes,
+        hasCleanRightsBom: profile.hasCleanRightsBom,
+      })
+      .catch(() => {
+        // 오프라인/로컬 미리보기 환경에서는 로컬 평가를 유지한다.
+      });
   };
 
   return (
