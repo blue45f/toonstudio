@@ -1,12 +1,12 @@
 /* 같은 생성 폼과 선택값을 유지하며 현재 목적의 입력만 보여 준다. */
 [data-studio-create-step-panel][hidden] { display: none !important; }
 .studio-create-step-navigation { display: flex; gap: .375rem; margin: 0 0 1rem; }
-.studio-create-step-navigation button { flex: 1; min-width: 0; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: .375rem; border-radius: .75rem; padding: .5rem; font-size: .875rem; color: var(--color-fg-2); }
-.studio-create-step-navigation button span { display: grid; place-items: center; width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; background: var(--color-panel); }
+.studio-create-step-navigation button { flex: 1; min-width: 0; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: .375rem; border-radius: .75rem; padding: .5rem; font-size: .875rem; color: var(--color-fg-2); word-break: keep-all; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.studio-create-step-navigation button span { display: grid; place-items: center; width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; background: var(--color-panel); font-variant-numeric: tabular-nums; }
 .studio-create-step-navigation [aria-current='step'] { color: var(--color-accent); font-weight: 750; background: var(--color-accent-soft); }
 .studio-create-step-navigation [aria-current='step'] span { color: var(--color-on-accent); background: var(--color-accent); }
 .studio-create-step-actions { display: flex; justify-content: flex-end; gap: .75rem; margin: 1rem 0; }
-.studio-create-step-actions button { --site-control-size: 48px; display: inline-flex; min-height: 48px; min-width: 100px; justify-content: center; align-items: center; border-radius: .75rem; padding: .75rem 1rem; border: 1px solid var(--color-line); background: var(--color-card); font-size: 1rem; }
+.studio-create-step-actions button { --site-control-size: 48px; display: inline-flex; min-height: 48px; min-width: 100px; justify-content: center; align-items: center; border-radius: .75rem; padding: .75rem 1rem; border: 1px solid var(--color-line); background: var(--color-card); font-size: 1rem; word-break: keep-all; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .studio-create-step-actions button[data-studio-create-step-next] { flex: 1; background: var(--color-accent); color: var(--color-on-accent); font-weight: 700; }
 .studio-create-step-actions button:disabled { opacity: .5; cursor: not-allowed; }
 .studio-create-genre-options { margin: 1rem 0; border: 1px solid var(--color-line); border-radius: .875rem; background: var(--color-card); }
@@ -40,6 +40,7 @@
   .studio-create-format-art { height: 3rem; }
   .studio-create-format-art > [data-studio-format-visual] > div { transform: scale(.3); }
   [data-studio-outcome-create="true"] .studio-create-format-section [data-studio-create-format] strong { font-size: .875rem; }
-  [data-studio-create-step-panel='2'] :is(input, select) { font-size: 1rem; min-height: 48px; }
+  [data-studio-create-step-panel='2'] :is(input, select, textarea) { font-size: max(1rem, 16px); min-height: 48px; }
+  .studio-create-step-actions { padding-bottom: env(safe-area-inset-bottom, 0px); }
 }
 @media (prefers-reduced-motion: reduce) { .studio-create-step-navigation *, .studio-create-step-actions * { transition: none; scroll-behavior: auto; } }

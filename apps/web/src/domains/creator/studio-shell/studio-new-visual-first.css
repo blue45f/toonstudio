@@ -8,6 +8,8 @@
   background: var(--color-card, var(--card));
   box-shadow: 0 18px 48px -42px rgb(0 0 0 / 0.55);
   transform: translateZ(0);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #project-kind-title + div > button::before {
@@ -91,7 +93,8 @@
 #project-kind-title + div > button > b {
   margin-top: .05rem;
   font-size: 1.05rem;
-  letter-spacing: -.025em;
+  letter-spacing: -.02em;
+  word-break: keep-all;
 }
 
 #project-kind-title + div > button > span:last-child {
@@ -99,19 +102,30 @@
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  word-break: keep-all;
 }
 
-#project-kind-title + div > button:hover::before,
 #project-kind-title + div > button:focus-visible::before {
   background-size: 111%;
   filter: saturate(1.08) contrast(1.04);
 }
 
-#project-kind-title + div > button:hover > span:first-child,
 #project-kind-title + div > button:focus-visible > span:first-child,
 #project-kind-title + div > button[aria-pressed="true"] > span:first-child {
   background: color-mix(in srgb, var(--color-accent, #8b5cf6) 78%, #111 22%);
   transform: translateY(-2px) scale(1.035);
+}
+
+@media (hover: hover) {
+  #project-kind-title + div > button:hover::before {
+    background-size: 111%;
+    filter: saturate(1.08) contrast(1.04);
+  }
+
+  #project-kind-title + div > button:hover > span:first-child {
+    background: color-mix(in srgb, var(--color-accent, #8b5cf6) 78%, #111 22%);
+    transform: translateY(-2px) scale(1.035);
+  }
 }
 
 #project-kind-title + div > button[aria-pressed="true"] {
@@ -197,6 +211,22 @@
 
   #project-kind-title + div > button > b {
     margin-top: .3rem;
+  }
+}
+
+@media (max-width: 380px) {
+  #project-kind-title + div > button {
+    min-height: 8.25rem;
+    padding-left: 6.4rem;
+  }
+
+  #project-kind-title + div > button::before,
+  #project-kind-title + div > button::after {
+    width: 5.5rem;
+  }
+
+  #project-kind-title + div > button > span:first-child {
+    left: 3.6rem;
   }
 }
 

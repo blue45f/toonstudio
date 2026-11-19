@@ -275,7 +275,8 @@
 }
 
 .create-start-recent-copy strong {
-  overflow-wrap: anywhere;
+  word-break: keep-all;
+  overflow-wrap: break-word;
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.4;
@@ -394,6 +395,21 @@
 .create-start-page :where(a, button, summary) {
   min-height: 48px !important;
   scroll-margin-block: 96px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  word-break: keep-all;
+}
+
+@media (hover: none) {
+  .create-start-choice:hover {
+    border-color: var(--color-line);
+    background: var(--color-panel);
+  }
+  .create-start-secondary a:hover,
+  .create-start-section-nav a:hover {
+    border-color: var(--color-line);
+    background: var(--color-panel);
+  }
 }
 
 .create-start-page :where(a, button, summary):focus-visible {
