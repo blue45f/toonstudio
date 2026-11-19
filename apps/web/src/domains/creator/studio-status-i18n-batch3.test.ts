@@ -207,6 +207,7 @@ const BG3D_PANEL_STATUS_KEYS = [
   "studio.bg3dPanelStatus.sceneTemplate.categoryEmpty",
   "studio.bg3dPanelStatus.sceneTemplate.trackedEmpty",
   "studio.bg3dPanelStatus.sharedCharacterPlacement.loadingStatus",
+  "studio.bg3dPanelStatus.sharedCharacterPlacement.paintUnavailable",
   "studio.bg3dPanelStatus.sharedCharacterPlacement.loading3d",
   "studio.bg3dPanelStatus.sharedCharacterPlacement.groundingChecking",
   "studio.bg3dPanelStatus.sharedCharacterStatusOverlay.loadingHeadline",
