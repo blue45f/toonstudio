@@ -15,13 +15,24 @@ export function MyStoryPrivacyNotice({ compact = false, className }: {
   return (
     <aside
       aria-labelledby="my-story-privacy-title"
-      className={cn("rounded-2xl border border-line bg-panel/40 p-4 sm:p-5", className)}
+      className={cn(
+        "break-keep [overflow-wrap:break-word] rounded-2xl border border-line bg-panel/40 p-4 sm:p-5",
+        className,
+      )}
     >
-      <h2 id="my-story-privacy-title" className="flex items-center gap-2 text-sm font-bold text-fg">
-        <LockKeyhole size={16} aria-hidden className="text-accent" />
+      <h2
+        id="my-story-privacy-title"
+        className="flex items-center gap-2 text-sm font-semibold tracking-[-0.015em] text-fg"
+      >
+        <LockKeyhole size={16} strokeWidth={1.5} aria-hidden className="shrink-0 text-accent" />
         {bt("이 기기에만 저장돼요", "Saved on this device only")}
       </h2>
-      <ul className={cn("mt-2 space-y-1.5 text-sm leading-6 text-fg-2", compact && "text-xs leading-5")}>
+      <ul
+        className={cn(
+          "mt-2 space-y-1.5 text-sm leading-[1.6] tracking-[-0.01em] text-fg-2",
+          compact && "text-xs leading-[1.55]",
+        )}
+      >
         <li>
           {bt(
             "쓰는 중인 답변은 이 기기의 브라우저에만 임시 저장돼요. 서버로 보내지 않아요.",

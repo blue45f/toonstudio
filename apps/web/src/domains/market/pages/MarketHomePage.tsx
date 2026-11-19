@@ -280,7 +280,7 @@ export function MarketHomePage() {
               role="group"
               aria-label={t("빠른 라이선스·소재 필터", "Quick license and asset filters")}
               data-testid="market-quick-license-filters"
-              className="mt-3 flex flex-wrap items-center gap-1.5"
+              className="mt-3 flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0"
             >
               {MARKET_QUICK_FILTERS.map((chip) => {
                 const active = quickFilterId === chip.id;
@@ -298,7 +298,7 @@ export function MarketHomePage() {
                     aria-pressed={active}
                     onClick={() => setQuickFilterId(chip.id)}
                     className={cn(
-                      "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-[8px] border px-3 py-1.5 text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+                      "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-[8px] border px-3 py-1.5 text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
                       active
                         ? "border-accent/65 bg-accent-soft font-medium text-fg"
                         : "border-line bg-panel/60 font-normal text-fg-2 hover:border-line-strong hover:text-fg",

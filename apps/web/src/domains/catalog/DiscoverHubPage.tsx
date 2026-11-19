@@ -5,6 +5,8 @@ import {
   CalendarDays,
   Clapperboard,
   Compass,
+  Globe2,
+  Heart,
   HelpCircle,
   Library,
   MessageCircle,
@@ -12,7 +14,6 @@ import {
   NotebookPen,
   Search,
   Shuffle,
-  Sparkles,
   Swords,
   Telescope,
   TrendingUp,
@@ -182,7 +183,7 @@ interface DiscoverDestination {
 const DESTINATIONS: readonly DiscoverDestination[] = [
   { href: "/search", icon: Search, title: ["정확히 검색", "Exact search"], body: ["찾는 작품·작가·태그가 있을 때", "When you know a story, creator or tag"] },
   { href: "/explore", icon: Compass, title: ["조건으로 탐색", "Explore by filters"], body: ["장르·태그·상태·플랫폼을 좁혀 발견", "Narrow by genre, tag, status and platform"] },
-  { href: "/recommend", icon: Sparkles, title: ["맞춤 추천", "Recommendations"], body: ["내 평가와 선호 장르를 반영한 추천", "Picks from your ratings and favorite genres"] },
+  { href: "/recommend", icon: Heart, title: ["맞춤 추천", "Recommendations"], body: ["내 평가와 선호 장르를 반영한 추천", "Picks from your ratings and favorite genres"] },
   { href: "/ranking", icon: TrendingUp, title: ["통합 랭킹", "Rankings"], body: ["인기·급상승·평점 등 여러 신호로 비교", "Compare popularity, momentum and ratings"] },
   { href: "/calendar", icon: CalendarDays, title: ["연재 캘린더", "Release calendar"], body: ["요일별로 업데이트되는 작품 확인", "See which stories update on each day"] },
   { href: "/random", icon: Shuffle, title: ["랜덤 발견", "Random discovery"], body: ["고르기 어려울 때 한 편씩 미리 보기", "Preview one pick at a time when choosing is hard"] },
@@ -194,6 +195,7 @@ const DESTINATIONS: readonly DiscoverDestination[] = [
   { href: "/community", icon: MessagesSquare, title: ["작품 이야기 나누기", "Talk about stories"], body: ["작품·작가·펜카페 커뮤니티에서 감상 나누기", "Share impressions in story, creator and pencafe communities"] },
   { href: "/research", icon: Telescope, title: ["참고자료 찾기", "Find references"], body: ["내 장면에 필요한 레퍼런스·3D 재료·폰트", "References, 3D materials and fonts for your scenes"], highlight: true },
   { href: "/create", icon: NotebookPen, title: ["내 작품 만들기", "Create your own story"], body: ["새 원고에서 나의 이야기 시작하기", "Start your own story in a new manuscript"] },
+  { href: "/studio/growth-ip#rights", icon: Globe2, title: ["IP 확장 · 3컷 파일럿", "IP expansion & 3-cut pilot"], body: ["내 작품의 2차 판권·시즌 펀딩·QR 굿즈 기획", "Plan secondary IP rights, season funding and QR goods"] },
 ];
 
 /** 공개 카탈로그 수치와 기준일은 실제 스냅샷만 사용한다. */
@@ -416,19 +418,19 @@ export function DiscoverHubPage() {
         <section
           aria-label={bt("최근 본 작품 이어보기", "Continue reading")}
           data-testid="discover-quick-return-bar"
-          className="discover-quick-return-bar mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line pb-3.5 pt-1"
+          className="discover-quick-return-bar mb-6 flex flex-col gap-2 border-b border-line pb-3.5 pt-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-4"
         >
-          <span className="text-xs font-medium text-fg-3">
+          <span className="shrink-0 text-xs font-medium text-fg-3">
             {bt("최근 본 작품 이어보기", "Continue reading")}
           </span>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0">
             {quickReturnModel.hasHistory ? (
               <>
                 {quickReturnModel.recentTitles.map((item) => (
                   <Link
                     key={item.id}
                     href={`/title/${item.slug}`}
-                    className="ink-arrow inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-lg bg-panel px-3 text-xs font-medium text-fg transition-colors duration-150 hover:bg-raised hover:text-accent motion-reduce:transition-none"
+                    className="ink-arrow inline-flex min-h-11 min-w-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-panel px-3 text-xs font-medium text-fg transition-colors duration-150 hover:bg-raised hover:text-accent motion-reduce:transition-none"
                   >
                     <span>{`${item.title} ${bt("이어보기", "Resume")}`}</span>
                     <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
@@ -436,7 +438,7 @@ export function DiscoverHubPage() {
                 ))}
                 <Link
                   href="/library"
-                  className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-lg px-2.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:bg-panel hover:text-fg motion-reduce:transition-none"
+                  className="inline-flex min-h-11 min-w-11 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:bg-panel hover:text-fg motion-reduce:transition-none"
                 >
                   {bt("최근 열람 서재", "Recent history")}
                 </Link>
@@ -447,7 +449,7 @@ export function DiscoverHubPage() {
                   <Link
                     key={item.id}
                     href={`/title/${item.slug}`}
-                    className="ink-arrow inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-lg bg-panel/75 px-3 text-xs font-medium text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg motion-reduce:transition-none"
+                    className="ink-arrow inline-flex min-h-11 min-w-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-panel/75 px-3 text-xs font-medium text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg motion-reduce:transition-none"
                   >
                     <span>{`${item.title} ${bt("첫 화부터", "Start Ep. 1")}`}</span>
                     <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
@@ -455,7 +457,7 @@ export function DiscoverHubPage() {
                 ))}
                 <Link
                   href="/ranking"
-                  className="ink-arrow inline-flex min-h-11 min-w-11 items-center gap-1 rounded-lg px-2.5 text-xs font-medium text-accent transition-colors duration-150 hover:bg-accent-soft/60 motion-reduce:transition-none"
+                  className="ink-arrow inline-flex min-h-11 min-w-11 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 text-xs font-medium text-accent transition-colors duration-150 hover:bg-accent-soft/60 motion-reduce:transition-none"
                 >
                   {bt("추천 에피소드 바로가기", "Jump to featured episodes")}
                 </Link>
