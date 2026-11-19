@@ -1,4 +1,6 @@
 // 관리자 API(Nest /api/admin/*) 공용 클라이언트 — HttpOnly 쿠키 인증을 공유한다.
+import { ADMIN_READ_TIMEOUT_MS, invalidateAdminReads, readAdminResponse } from "./admin-read-request";
+
 import { api, apiPath, HTTPError } from "@/platform/api";
 import { getCurrentUiLocale } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
@@ -172,12 +174,15 @@ async function adminRaw(
   init?: RequestInit,
 ): Promise<Response> {
   try {
+    const method = (init?.method ?? "GET").toUpperCase();
     return await api.raw(apiPath(`/api/admin${path}`), {
-      method: (init?.method ?? "GET") as never,
+      method: method as never,
       cache: "no-store",
       body: init?.body as BodyInit | null | undefined,
       headers: buildAdminHeaders(init),
       signal: init?.signal ?? undefined,
+      ...(method === "GET" ? { timeout: ADMIN_READ_TIMEOUT_MS, totalTimeout: ADMIN_READ_TIMEOUT_MS } : {}),
+      retry: 0,
     });
   } catch (error) {
     if (error instanceof HTTPError) throw toAdminApiError(error);
@@ -187,12 +192,10 @@ async function adminRaw(
 
 export async function adminFetch<T>(
   path: string,
-  _uid: string,
+  uid: string,
   init?: RequestInit,
 ): Promise<T> {
-  const response = await adminRaw(path, init);
-  if (response.status === 204) return undefined as T;
-  const text = await response.text();
+  const text = await adminFetchText(path, uid, init);
   if (!text.trim()) return undefined as T;
   try {
     return JSON.parse(text) as T;
@@ -206,12 +209,23 @@ export async function adminFetch<T>(
 
 export async function adminFetchText(
   path: string,
-  _uid: string,
+  uid: string,
   init?: RequestInit,
 ): Promise<string> {
-  const response = await adminRaw(path, init);
-  if (response.status === 204) return "";
-  return response.text();
+  if ((init?.method ?? "GET").toUpperCase() === "GET") {
+    return readAdminResponse(
+      apiPath(`/api/admin${path}`), uid, buildAdminHeaders(init), init?.signal,
+      (signal) => adminRaw(path, { ...init, signal }),
+    );
+  }
+  try {
+    const response = await adminRaw(path, init);
+    if (response.status === 204) return "";
+    return await response.text();
+  } finally {
+    // 전송 실패도 서버 반영 여부를 확정할 수 없으므로 이후 조회를 새로 시작한다.
+    if (init?.method?.toUpperCase() !== "HEAD") invalidateAdminReads();
+  }
 }
 
 export function downloadAdminFile(

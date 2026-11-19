@@ -17,10 +17,13 @@ function report(status: "available" | "degraded" = "available", ageMs = 0) {
     capabilities: { ...capabilities, studioCloudSave: status === "degraded" ? "unavailable" : "available" } };
 }
 const releases: Array<() => void> = [];
+let visibility: DocumentVisibilityState = "visible";
 beforeEach(() => {
   vi.useFakeTimers(); vi.setSystemTime(new Date("2026-09-28T13:00:00Z"));
   vi.resetModules(); mocks.get.mockReset(); mocks.get.mockImplementation(async () => report());
   localStorage.clear();
+  visibility = "visible";
+  vi.spyOn(document, "visibilityState", "get").mockImplementation(() => visibility);
 });
 afterEach(() => {
   for (const release of releases.splice(0)) release();
@@ -37,6 +40,10 @@ function storage(value: ReturnType<typeof report>) {
 }
 function failure(capability = "creator.work.write", retryAfterSeconds: number | null = 5) {
   window.dispatchEvent(new CustomEvent(ERROR_EVENT, { detail: { capability, retryAfterSeconds } }));
+}
+function setVisibility(value: DocumentVisibilityState) {
+  visibility = value;
+  document.dispatchEvent(new Event("visibilitychange"));
 }
 
 describe("서비스 상태 캐시와 재연결 수명주기", () => {
@@ -120,6 +127,100 @@ describe("서비스 상태 캐시와 재연결 수명주기", () => {
   it("서버 렌더링 스냅샷은 같은 참조로 반환한다", async () => {
     const subject = await import("./service-capability-state");
     expect(subject.getServiceCapabilityServerSnapshot()).toBe(subject.getServiceCapabilityServerSnapshot());
+  });
+  it("숨겨진 탭에서 시작하면 자동 요청을 멈추고 다른 탭의 최신 상태는 받는다", async () => {
+    visibility = "hidden";
+    const subject = await start();
+    window.dispatchEvent(new Event("online"));
+    window.dispatchEvent(new Event("focus"));
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(mocks.get).not.toHaveBeenCalled();
+
+    storage(report("degraded"));
+    expect(subject.getServiceCapabilitySnapshot().status).toBe("degraded");
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(mocks.get).not.toHaveBeenCalled();
+
+    setVisibility("visible");
+    window.dispatchEvent(new Event("focus"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.get).toHaveBeenCalledTimes(1);
+    expect(subject.getServiceCapabilitySnapshot().status).toBe("available");
+  });
+  it("숨김 동안 주기 요청을 멈추고 복귀 시 한 번 확인한 뒤 주기를 다시 시작한다", async () => {
+    await start();
+    setVisibility("hidden");
+    await vi.advanceTimersByTimeAsync(180_000);
+    expect(mocks.get).toHaveBeenCalledTimes(1);
+
+    let finish: (value: ReturnType<typeof report>) => void = () => undefined;
+    mocks.get.mockReturnValueOnce(new Promise<ReturnType<typeof report>>((resolve) => { finish = resolve; }));
+    setVisibility("visible");
+    window.dispatchEvent(new Event("focus"));
+    await vi.advanceTimersByTimeAsync(6_000);
+    window.dispatchEvent(new Event("focus"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.get).toHaveBeenCalledTimes(2);
+    finish(report());
+    await vi.advanceTimersByTimeAsync(53_999);
+    expect(mocks.get).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(mocks.get).toHaveBeenCalledTimes(3);
+  });
+  it("숨김 전에 시작한 요청이 장애로 끝나도 숨김 상태에서는 재시도하지 않는다", async () => {
+    let finish: (value: ReturnType<typeof report>) => void = () => undefined;
+    mocks.get.mockReturnValueOnce(new Promise<ReturnType<typeof report>>((resolve) => { finish = resolve; }));
+    const subject = await start();
+    setVisibility("hidden");
+    finish(report("degraded"));
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(subject.getServiceCapabilitySnapshot()).toMatchObject({ status: "degraded", checking: false });
+    expect(mocks.get).toHaveBeenCalledTimes(1);
+
+    setVisibility("visible");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.get).toHaveBeenCalledTimes(2);
+    expect(subject.getServiceCapabilitySnapshot().status).toBe("available");
+  });
+  it("숨김 동안 만료된 재시도도 빠른 복귀의 5초 확인 간격을 지킨다", async () => {
+    mocks.get.mockResolvedValueOnce({ ...report("degraded"), retryAfterSeconds: 1 });
+    await start();
+    setVisibility("hidden");
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(mocks.get).toHaveBeenCalledTimes(1);
+    setVisibility("visible");
+    window.dispatchEvent(new Event("focus"));
+    await vi.advanceTimersByTimeAsync(2_999);
+    expect(mocks.get).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(mocks.get).toHaveBeenCalledTimes(2);
+  });
+  it("오프라인으로 복귀한 탭은 연결이 회복될 때까지 자동 확인하지 않는다", async () => {
+    let connected = false;
+    vi.spyOn(navigator, "onLine", "get").mockImplementation(() => connected);
+    visibility = "hidden";
+    await start();
+    setVisibility("visible");
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(mocks.get).not.toHaveBeenCalled();
+    connected = true;
+    window.dispatchEvent(new Event("online"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.get).toHaveBeenCalledTimes(1);
+  });
+  it("오래 숨겨진 탭의 첫 요청도 절전 해제 안내 시간을 보장한다", async () => {
+    const { AppApiError } = await import("./api-error");
+    visibility = "hidden";
+    mocks.get.mockRejectedValueOnce(new AppApiError("응답 지연", { kind: "timeout" }));
+    const subject = await start();
+    await vi.advanceTimersByTimeAsync(120_000);
+    setVisibility("visible");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.get).toHaveBeenCalledTimes(1);
+    expect(subject.getServiceCapabilitySnapshot()).toMatchObject({ status: "degraded", warmingUp: true });
+    await vi.advanceTimersByTimeAsync(6_000);
+    expect(mocks.get).toHaveBeenCalledTimes(2);
+    expect(subject.getServiceCapabilitySnapshot()).toMatchObject({ status: "available", recoveredAt: null });
   });
 });
 

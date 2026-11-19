@@ -25,6 +25,7 @@ import {
   formatWon,
 } from "./admin-client";
 import { AdminNotice, AdminSpinner, Stat, StatGroup } from "./admin-ui";
+import { startAdminVisiblePolling, useAdminReadTask } from "./admin-visible-polling";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -147,7 +148,11 @@ function ActionCard({
   );
 }
 
-export function AdminDashboard({
+export function AdminDashboard({ uid, onNavigate }: AdminDashboardProps) {
+  return <AdminDashboardContent key={uid} uid={uid} onNavigate={onNavigate} />;
+}
+
+function AdminDashboardContent({
   uid,
   onNavigate,
 }: AdminDashboardProps) {
@@ -160,22 +165,25 @@ export function AdminDashboard({
   const lang = useI18n((state) => state.lang);
   const copy = getAdminAdvancedCopy(lang);
 
-  const load = useCallback(
-    async (background = false) => {
+  const load = useAdminReadTask(useCallback(
+    async (signal: AbortSignal, background = false) => {
       if (background) setRefreshing(true);
       else setLoading(true);
       setError(null);
 
       const [dashboardResult, reportsResult, announcementsResult, healthResult] =
         await Promise.allSettled([
-          adminFetch<Dashboard>(`/dashboard?days=${days}`, uid),
+          adminFetch<Dashboard>(`/dashboard?days=${days}`, uid, { signal }),
           adminFetch<{ items: ReportItem[] }>(
             "/reports?status=pending&limit=200",
             uid,
+            { signal },
           ),
-          adminFetch<{ items: AnnouncementItem[] }>("/announcements", uid),
-          adminFetch<SystemHealth>("/system/health", uid),
+          adminFetch<{ items: AnnouncementItem[] }>("/announcements", uid, { signal }),
+          adminFetch<SystemHealth>("/system/health", uid, { signal }),
         ]);
+
+      if (signal.aborted) return;
 
       if (dashboardResult.status === "rejected") {
         const message =
@@ -216,23 +224,11 @@ export function AdminDashboard({
       setRefreshing(false);
     },
     [days, t, uid],
-  );
+  ));
 
-  useEffect(() => {
-    void load(false);
-  }, [load]);
+  useEffect(() => startAdminVisiblePolling(() => void load(false), null), [load]);
 
-  useEffect(() => {
-    const refresh = () => {
-      if (document.visibilityState === "visible") void load(true);
-    };
-    const interval = globalThis.setInterval(refresh, 60_000);
-    document.addEventListener("visibilitychange", refresh);
-    return () => {
-      globalThis.clearInterval(interval);
-      document.removeEventListener("visibilitychange", refresh);
-    };
-  }, [load]);
+  useEffect(() => startAdminVisiblePolling(() => void load(true), 60_000, false), [load]);
 
   const criticalAnnouncementCount = useMemo(
     () =>

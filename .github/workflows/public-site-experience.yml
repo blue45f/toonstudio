@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/public-site-experience.yml'
       - 'scripts/*public-site-experience.mjs'
+      - 'scripts/public-site-observation-policy*'
       - 'apps/web/src/shared/components/public-site-*'
       - 'apps/web/src/shared/components/site-public-routes.ts'
       - 'apps/web/src/app/PublicSite*'
@@ -31,6 +32,9 @@ jobs:
     name: Read-only production browser observation
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    concurrency:
+      group: public-site-production-observation
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
         with:
@@ -42,24 +46,76 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
+      - name: Select this PR, SHA and hourly observation window
+        id: observation-window
+        env:
+          OBSERVATION_SHA: ${{ github.sha }}
+          OBSERVATION_PR: ${{ github.event.pull_request.number }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          import { buildObservationKey } from './scripts/public-site-observation-policy.mjs';
+          const key = buildObservationKey({ sha: process.env.OBSERVATION_SHA, pullRequest: process.env.OBSERVATION_PR });
+          appendFileSync(process.env.GITHUB_OUTPUT, `key=${key}\n`);
+          NODE
+      - name: Reuse only a completed observation from the same window
+        id: observation-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/public-site-observation-receipt
+          key: ${{ steps.observation-window.outputs.key }}
+      - name: Record reused observation evidence
+        if: steps.observation-cache.outputs.cache-hit == 'true'
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+          import path from 'node:path';
+          const receipt = JSON.parse(readFileSync(path.join(process.env.RUNNER_TEMP, 'public-site-observation-receipt/receipt.json'), 'utf8'));
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, `같은 PR·SHA·1시간 관측 구간의 완료 기록을 재사용했습니다. 후보 회귀 게이트는 별도로 실행합니다.\n\n이전 관측: ${receipt.runUrl}\n\n관측 완료: ${receipt.completedAt}\n`);
+          NODE
       - name: Install isolated, pinned browser tooling
+        if: steps.observation-cache.outputs.cache-hit != 'true'
         run: |
           npm install --prefix "$RUNNER_TEMP/public-site-browser" --no-save --ignore-scripts playwright@1.62.1
           node "$RUNNER_TEMP/public-site-browser/node_modules/playwright/cli.js" install --with-deps chromium
           cp scripts/audit-public-site-experience.mjs "$RUNNER_TEMP/public-site-browser/audit.mjs"
+          cp scripts/public-site-observation-policy.mjs "$RUNNER_TEMP/public-site-browser/public-site-observation-policy.mjs"
       - name: Observe public routes without submitting forms or entering Studio
+        if: steps.observation-cache.outputs.cache-hit != 'true'
         env:
           AUDIT_REPOSITORY: ${{ github.workspace }}
           AUDIT_OUTPUT: ${{ github.workspace }}/public-site-audit
           AUDIT_BASE_URL: https://www.toonstudio.cloud
         run: node "$RUNNER_TEMP/public-site-browser/audit.mjs"
+      - name: Record completed observation receipt
+        if: steps.observation-cache.outputs.cache-hit != 'true'
+        env:
+          OBSERVATION_KEY: ${{ steps.observation-window.outputs.key }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { mkdirSync, writeFileSync } from 'node:fs';
+          import path from 'node:path';
+          const directory = path.join(process.env.RUNNER_TEMP, 'public-site-observation-receipt');
+          mkdirSync(directory, { recursive: true });
+          writeFileSync(path.join(directory, 'receipt.json'), JSON.stringify({
+            key: process.env.OBSERVATION_KEY,
+            runUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+            completedAt: new Date().toISOString(),
+          }));
+          NODE
       - name: Keep screenshots and complete coverage inventory
-        if: always()
+        if: always() && steps.observation-cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v7
         with:
           name: public-site-production-observation
           path: public-site-audit
           retention-days: 7
+      - name: Save completed observation for this window only
+        if: success() && steps.observation-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/public-site-observation-receipt
+          key: ${{ steps.observation-window.outputs.key }}
 
   candidate-regression:
     name: Public site candidate regression gate
@@ -75,6 +131,8 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Production observation budget and freshness contracts
+        run: node --test scripts/public-site-observation-policy.test.mjs
       - name: Navigation, search, storage and public boundary regressions
         run: |
           pnpm exec vitest run \
