@@ -14,25 +14,68 @@ function harness() {
   }) };
   const context = { setResourceCacheLimitBytes: vi.fn(), getResourceCacheUsageBytes: () => 512, delete: vi.fn() };
   const recorders: Array<{ delete: ReturnType<typeof vi.fn> }> = [];
+  const drawPath = vi.fn();
+  const addPath = vi.fn();
+  class PathBuilder {
+    private count = 0;
+    addOval() { this.count++; }
+    addPath(_unit: unknown, matrix: number[]) { this.count++; addPath(matrix); }
+    isEmpty() { return this.count === 0; }
+    detach() { this.count = 0; return { delete: vi.fn() }; }
+    delete() {}
+  }
+  class Paint {
+    setAntiAlias() {}
+    setColorComponents() {}
+    setBlendMode() {}
+    delete() {}
+  }
   class PictureRecorder {
     delete = vi.fn();
     constructor() { recorders.push(this); }
-    beginRecording() { return { drawPicture: vi.fn() }; }
+    beginRecording() { return { drawPicture: vi.fn(), drawPath }; }
     finishRecordingAsPicture() {
       const picture = { delete: vi.fn(), approximateBytesUsed: () => 32 };
       pictures.push(picture); return picture;
     }
   }
-  const ck = { PictureRecorder, GetWebGLContext: vi.fn(() => 1), MakeWebGLContext: vi.fn(() => context),
+  const ck = { PictureRecorder, PathBuilder, Paint, BlendMode: { DstOut: 1, SrcOver: 2 }, GetWebGLContext: vi.fn(() => 1), MakeWebGLContext: vi.fn(() => context),
     MakeOnScreenGLSurface: vi.fn(() => surface), deleteContext: vi.fn(), setCurrentContext: vi.fn(() => true), ColorSpace: { SRGB: {} }, ClipOp: { Intersect: 1 }, ImageFormat: { PNG: 1 }, TRANSPARENT: new Float32Array(4),
   } as unknown as CanvasKit;
   const canvas = document.createElement("canvas");
   const frame: SkiaDocumentFrame = { revision: {}, width: 200, height: 200, dpr: 1, documentWidth: 1000, documentHeight: 1000,
     camera: { scaleX: 1, scaleY: 1, rotation: 0, offsetX: 0, offsetY: 0 }, items: [{ id: "a", revision: {}, nodes: [] }] };
-  return { canvas, ck, frame, output, surface, context, pictures, recorders };
+  return { canvas, ck, frame, output, surface, context, pictures, recorders, drawPath, addPath };
 }
 
 describe("persistent CanvasKit document renderer", () => {
+  it.each([true, false])("접촉하지 않은 점은 건너뛰고 다음 획과 유효한 점을 그린다 (합쳐 그리기 %s)", async (union) => {
+    const h = harness();
+    const renderer = createSkiaDocumentRenderer(h.canvas, { loadCanvasKit: async () => h.ck });
+    const item = (id: string, dabs: number[], erase = false) => ({
+      id, revision: {}, ink: { dabs: new Float32Array(dabs), color: { r: 0, g: 0, b: 0, a: 1 }, opacity: 1, union, erase },
+    });
+    const frame = { ...h.frame, items: [
+      item("no-contact", [1, 1, 0]),
+      item("intermittent", [2, 2, 0, 3, 3, 2, 4, 4, 0, 5, 5, 1, 6, 6, 0]),
+      item("eraser", [8, 9, 0, 10, 11, 3], true),
+    ] };
+    expect(await renderer.present(frame)).toMatchObject({ status: "presented", stats: { compiledItems: 3 } });
+    expect(h.addPath.mock.calls.map(([m]) => [m[2], m[5], m[0]])).toEqual([[3, 3, 2], [5, 5, 1], [10, 11, 3]]);
+    expect(h.drawPath).toHaveBeenCalledTimes(union ? 2 : 3);
+    renderer.dispose();
+  });
+  it.each([[-1, 1, -1], [1, NaN, 0], [1, 1, Infinity]])("유효하지 않은 점을 검출하고 결과를 게시하지 않는다 (%s, %s, %s)", async (x, y, radius) => {
+    const h = harness();
+    const renderer = createSkiaDocumentRenderer(h.canvas, { loadCanvasKit: async () => h.ck });
+    const frame = { ...h.frame, items: [{ id: "invalid", revision: {}, ink: {
+      dabs: new Float32Array([x, y, radius]), color: { r: 0, g: 0, b: 0, a: 1 }, opacity: 1, union: true,
+    } }] };
+    expect(await renderer.present(frame)).toMatchObject({ status: "unavailable", reason: "Invalid GPU dab geometry" });
+    expect(h.drawPath).not.toHaveBeenCalled();
+    expect(h.surface.flush).not.toHaveBeenCalled();
+    renderer.dispose();
+  });
   it("reuses compiled geometry on camera/resize and compiles only changed items", async () => {
     const h = harness(); const renderer = createSkiaDocumentRenderer(h.canvas, { loadCanvasKit: async () => h.ck });
     expect(await renderer.present(h.frame)).toMatchObject({ status: "presented", stats: { compiledItems: 1, interactiveReadbacks: 0 } });

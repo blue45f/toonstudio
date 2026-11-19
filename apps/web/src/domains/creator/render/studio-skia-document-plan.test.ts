@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { captureStudioInkInputContractV2 } from "../contracts/studio-ink-input-contract";
 import type { El } from "../studio-element-model";
 import { planStudioCausalInk } from "../studio-causal-ink";
 import { resolveStudioCausalInkDrawContract } from "../brush/studio-draw-rendering";
@@ -10,6 +11,20 @@ const pen = (id = "ink"): El => ({ id, type: "draw", mode: "pen", kind: "freehan
 } as El);
 
 describe("GPU document projection", () => {
+  it("저장된 무압력 터치의 원래 굵기를 복원하고 펜과 부분 필압은 보존한다", () => {
+    const source = pen();
+    if (source.type !== "draw") throw new Error("펜 획이 필요합니다.");
+    const touch = { ...source, pressures: [0, 0, 0], inkInput: captureStudioInkInputContractV2("touch") };
+    const original = JSON.stringify(touch);
+    expect(resolveStudioCausalInkDrawContract(touch).pressures).toEqual([1, 1, 1]);
+    const radii = compileStudioSkiaDocumentItem(touch)?.ink?.dabs.filter((_, index) => index % 3 === 2);
+    expect(radii?.length).toBeGreaterThan(0);
+    expect(radii?.every((radius) => radius === 6)).toBe(true);
+    expect(JSON.stringify(touch)).toBe(original);
+    expect(resolveStudioCausalInkDrawContract({ ...touch, pressures: [0, 0.3, 0] }).pressures).toEqual([0, 0.3, 0]);
+    expect(resolveStudioCausalInkDrawContract({ ...touch, inkInput: captureStudioInkInputContractV2("pen") }).pressures).toEqual([0, 0, 0]);
+  });
+
   it("uses the exact existing pressure and causal dab planner without rewriting source", () => {
     const el = pen(); const before = JSON.stringify(el);
     if (el.type !== "draw") throw new Error("fixture");

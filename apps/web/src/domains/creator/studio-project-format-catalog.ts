@@ -221,10 +221,10 @@ export const STUDIO_PROJECT_FORMAT_PROFILES: readonly StudioProjectFormatProfile
 ]);
 
 export const STUDIO_PROJECT_START_POINT_OPTIONS: readonly StudioProjectIntentOption<StudioProjectStartPoint>[] = Object.freeze([
-  { id: "idea", titleKo: "아이디어부터", titleEn: "Start from an idea", descriptionKo: "작품 Brief와 첫 구조를 준비합니다.", descriptionEn: "Prepare the work brief and initial structure." },
-  { id: "script", titleKo: "대본이 있어요", titleEn: "I have a script", descriptionKo: "대본을 장면·컷·샷으로 분해합니다.", descriptionEn: "Break the script into scenes, panels or shots." },
-  { id: "storyboard", titleKo: "콘티·이미지가 있어요", titleEn: "I have boards or images", descriptionKo: "기존 자료를 제작 순서에 배치합니다.", descriptionEn: "Arrange existing material into the production flow." },
-  { id: "files", titleKo: "작업 파일이 있어요", titleEn: "I have working files", descriptionKo: "가져오기 전에 맞는 프로젝트 구조를 준비합니다.", descriptionEn: "Prepare the right project structure before import." },
+  { id: "idea", titleKo: "아이디어부터", titleEn: "Start from an idea", descriptionKo: "줄거리와 인물부터 정리합니다.", descriptionEn: "Outline the story and its characters." },
+  { id: "script", titleKo: "대본이 있어요", titleEn: "I have a script", descriptionKo: "대본을 쓰고 장면과 컷을 나눕니다.", descriptionEn: "Write your script and divide it into scenes and panels." },
+  { id: "storyboard", titleKo: "콘티·이미지가 있어요", titleEn: "I have boards or images", descriptionKo: "원고에 콘티와 이미지를 배치합니다.", descriptionEn: "Lay out storyboard panels and images on the page." },
+  { id: "files", titleKo: "작업 파일이 있어요", titleEn: "I have working files", descriptionKo: "새 프로젝트로 작업 파일을 가져옵니다.", descriptionEn: "Bring working files into the new project." },
 ]);
 
 export const STUDIO_PROJECT_PURPOSE_OPTIONS: readonly StudioProjectIntentOption<StudioProjectPurpose>[] = Object.freeze([

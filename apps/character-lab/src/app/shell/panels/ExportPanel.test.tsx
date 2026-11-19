@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createDefaultRecipe, createKitDefaultRecipe } from "../../../contracts";
 import { isPng } from "../../../export/png-encoder";
@@ -626,20 +626,35 @@ describe("ExportPanel", () => {
     expect(screen.getByTestId("export-receipt").textContent).toContain(longFileName);
     expect(store.getState().recipe.slots.pose).toBe("pose/cheer");
 
-    const unloadedPkgRecipe = {
-      ...baseRecipe,
-      source: {
-        kind: "package" as const,
-        characterId: "unloaded_hero_pkg",
-        sha256: "b".repeat(64),
-      },
-    };
-    fileContentToRead = serializeRecipe(unloadedPkgRecipe);
-    await act(async () => {
-      fireEvent.change(input, {
-        target: { files: [new File([fileContentToRead], "unloaded-pkg.character.json", { type: "application/json" })] },
-      });
+    const { browserPackageLoader } = await import("./PackagePanel");
+    let finishCatalogRead!: () => void;
+    const catalogRead = new Promise<void>((resolve) => { finishCatalogRead = resolve; });
+    const loadIndex = vi.spyOn(browserPackageLoader, "loadIndex").mockImplementation(async () => {
+      await catalogRead;
+      return { ok: true, entries: [] };
     });
+    try {
+      const unloadedPkgRecipe = {
+        ...baseRecipe,
+        source: {
+          kind: "package" as const,
+          characterId: "unloaded_hero_pkg",
+          sha256: "b".repeat(64),
+        },
+      };
+      fileContentToRead = serializeRecipe(unloadedPkgRecipe);
+      await act(async () => {
+        fireEvent.change(input, {
+          target: { files: [new File([fileContentToRead], "unloaded-pkg.character.json", { type: "application/json" })] },
+        });
+      });
+      expect(screen.getByTestId("export-active-source").textContent).toContain("절차적 휴머노이드");
+      expect(store.getState().recipe.slots.pose).toBe("pose/cheer");
+      await act(async () => finishCatalogRead());
+      expect(loadIndex).toHaveBeenCalledOnce();
+    } finally {
+      loadIndex.mockRestore();
+    }
     await waitFor(() => expect(screen.getByTestId("export-active-source").textContent).toContain("제작 패키지 (unloaded_hero_pkg · 미로드)"));
     expect(store.getState().capabilities.pose.status).toBe("unavailable");
     expect(screen.getByRole("list", { name: "레시피 불러오기 안내" }).textContent).toContain(

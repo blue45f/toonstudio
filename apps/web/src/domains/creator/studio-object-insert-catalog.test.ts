@@ -16,6 +16,14 @@ import {
 import { VRM_PROPS } from "./vrm/studio-vrm-props";
 
 describe("studio object insert catalog (Canva-style 3D elements)", () => {
+  it("공원 삽입의 기존 항목 ID가 새 강변 쉼터와 같은 촬영 썸네일을 가리킨다", () => {
+    expect(findStudioObjectInsertItem("obj-scene-park_plaza")).toMatchObject({
+      sourceId: "park_plaza",
+      assetUrl: "/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.glb",
+      thumbnailUrl: "/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.png",
+    });
+  });
+
   it("lists primitives, props, and scene templates with unique ids", () => {
     const items = listStudioObjectInsertItems();
     expect(STUDIO_OBJECT_INSERT_CATALOG_VERSION).toBe("object-insert-catalog-v1");

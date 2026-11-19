@@ -282,6 +282,8 @@ export function resolveStudioStylusPressureInput(
     return rawPressure;
   }
   const normalizedType = typeof pointerType === "string" ? pointerType.toLowerCase() : "";
+  // WebKit은 필압 센서가 없는 손가락 접촉에도 0을 보낸다. 브러시가 선택한 기본/속도 필압을 적용한다.
+  if (normalizedType === "touch" && rawPressure === 0) return undefined;
   const hasHardwarePressure = normalizedType === "pen"
     || (normalizedType === "touch" && rawPressure !== 0.5);
   return hasHardwarePressure

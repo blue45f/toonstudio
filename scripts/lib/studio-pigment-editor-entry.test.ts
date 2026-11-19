@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { waitForEditorSettled } from "../../e2e/helpers/studio-editor-a11y";
 import { waitForPigmentEditorSettled } from "../../e2e/helpers/studio-pigment-editor-entry";
@@ -6,66 +6,53 @@ import { waitForPigmentEditorSettled } from "../../e2e/helpers/studio-pigment-ed
 import type { Page } from "@playwright/test";
 
 vi.mock("../../e2e/helpers/studio-editor-a11y", () => ({ waitForEditorSettled: vi.fn() }));
-afterEach(() => { vi.resetAllMocks(); });
 
-function entry() {
-  const state = { url: "http://127.0.0.1:4173/studio/draft/work-1?workspace=draw&materialBrush=brush-1&tag=a&tag=b#canvas" };
-  const rejectUiMutation = vi.fn(() => { throw new Error("준비 대기가 현재 원고 셸을 조작했습니다."); });
+const manuscript = "http://127.0.0.1:4173/studio/draft/work-1?workspace=draw&materialBrush=brush-1#page-two";
+
+function pageAt(before: string, after = before) {
+  const waitFor = vi.fn().mockResolvedValue(undefined);
   const page = {
-    url: () => state.url,
-    locator: rejectUiMutation,
-    addLocatorHandler: rejectUiMutation,
-    removeLocatorHandler: rejectUiMutation,
-    goto: rejectUiMutation,
-    evaluate: rejectUiMutation,
-  } as unknown as Page;
-  return { page, state, rejectUiMutation };
+    url: vi.fn().mockReturnValueOnce(before).mockReturnValue(after),
+    locator: vi.fn((selector: string) => {
+      expect(selector).toBe('[data-studio-canvas-viewport]:visible');
+      return { waitFor };
+    }),
+  };
+  return { page: page as unknown as Page, waitFor };
 }
 
-describe("현재 Clarity 셸에서 안료 원고 준비", () => {
-  it("실제 공통 준비가 끝날 때까지 기다리고 상시 셸을 제거하는 handler나 배치 전환을 등록하지 않는다", async () => {
-    const f = entry();
-    const settled = Promise.withResolvers<void>();
-    vi.mocked(waitForEditorSettled).mockReturnValue(settled.promise);
-    const completed = vi.fn();
-    const pending = waitForPigmentEditorSettled(f.page).then(completed);
-    await Promise.resolve();
-    expect(waitForEditorSettled).toHaveBeenCalledExactlyOnceWith(f.page);
-    expect(completed).not.toHaveBeenCalled();
-    settled.resolve();
-    await pending;
-    expect(completed).toHaveBeenCalledOnce();
-    expect(f.rejectUiMutation).not.toHaveBeenCalled();
-  });
+describe("현재 원고에서 안료 작업 준비", () => {
+  beforeEach(() => { vi.resetAllMocks(); });
 
-  it.each(["앱 셸", "명령", "aria-busy", "오프라인 상태", "레이아웃"])("%s 준비 실패를 원문으로 전달하며 복구로 성공을 만들지 않는다", async (stage) => {
-    const f = entry(), error = new Error(`${stage} 준비 실패`);
-    vi.mocked(waitForEditorSettled).mockRejectedValue(error);
-    await expect(waitForPigmentEditorSettled(f.page)).rejects.toBe(error);
-    expect(waitForEditorSettled).toHaveBeenCalledExactlyOnceWith(f.page);
-    expect(f.rejectUiMutation).not.toHaveBeenCalled();
-  });
-
-  it("재열기마다 원래 준비 조건을 다시 확인하고 URL·중복 query·브러시 연결을 그대로 보존한다", async () => {
-    const f = entry(), original = f.state.url;
-    await waitForPigmentEditorSettled(f.page);
-    await waitForPigmentEditorSettled(f.page);
-    expect(waitForEditorSettled).toHaveBeenCalledTimes(2);
-    expect(f.state.url).toBe(original);
-    expect(f.rejectUiMutation).not.toHaveBeenCalled();
+  it.each(["ko", "en"])("화면 폭과 무관하게 %s 원고의 현재 캔버스를 그대로 사용한다", async language => {
+    const { page, waitFor } = pageAt(manuscript.replace("#", `&lang=${language}#`));
+    await waitForPigmentEditorSettled(page);
+    expect(waitForEditorSettled).toHaveBeenCalledExactlyOnceWith(page);
+    expect(waitFor).toHaveBeenCalledExactlyOnceWith({ state: "visible", timeout: 60_000 });
   });
 
   it.each([
-    ["https://example.invalid/studio/draft/work-1?workspace=draw&materialBrush=brush-1&tag=a&tag=b#canvas", "원고의 주소"],
-    ["http://127.0.0.1:4173/studio/draft/another?workspace=draw&materialBrush=brush-1&tag=a&tag=b#canvas", "원고의 주소"],
-    ["http://127.0.0.1:4173/studio/draft/work-1?workspace=draw&materialBrush=brush-1&tag=a&tag=b#other", "원고의 주소"],
-    ["http://127.0.0.1:4173/studio/draft/work-1?workspace=draw&materialBrush=another&tag=a&tag=b#canvas", "기존 연결 문맥을 변경했습니다: materialBrush"],
-    ["http://127.0.0.1:4173/studio/draft/work-1?workspace=draw&materialBrush=brush-1&tag=a#canvas", "기존 연결 문맥을 변경했습니다: tag"],
-    ["http://127.0.0.1:4173/studio/draft/work-1?workspace=draw&materialBrush=brush-1&tag=b&tag=a#canvas", "기존 연결 문맥을 변경했습니다: tag"],
-  ])("준비 중 원고 identity 변경을 성공으로 판정하지 않는다: %s", async (changedUrl, message) => {
-    const f = entry();
-    vi.mocked(waitForEditorSettled).mockImplementation(async () => { f.state.url = changedUrl; });
-    await expect(waitForPigmentEditorSettled(f.page)).rejects.toThrow(message);
-    expect(f.rejectUiMutation).not.toHaveBeenCalled();
+    manuscript.replace("4173", "5173"),
+    manuscript.replace("work-1", "work-2"),
+    manuscript.replace("page-two", "page-one"),
+    manuscript.replace("brush-1", "brush-2"),
+    manuscript.replace("workspace=draw&", ""),
+  ])("다른 작품이나 안료 문맥을 조용히 수용하지 않는다", async after => {
+    await expect(waitForPigmentEditorSettled(pageAt(manuscript, after).page)).rejects.toThrow("안료 원고");
+  });
+
+  it("제품이 부가 쿼리를 붙여도 요청한 브러시와 페이지를 보존한다", async () => {
+    await waitForPigmentEditorSettled(pageAt(manuscript, manuscript.replace("#", "&layout=full#")).page);
+  });
+
+  it("공용 준비 실패와 실제 캔버스 준비 실패를 각각 전파한다", async () => {
+    const { page, waitFor } = pageAt(manuscript);
+    const offline = new Error("저장·연결 상태 준비 실패");
+    vi.mocked(waitForEditorSettled).mockRejectedValueOnce(offline);
+    await expect(waitForPigmentEditorSettled(page)).rejects.toBe(offline);
+    expect(waitFor).not.toHaveBeenCalled();
+    const missingCanvas = new Error("캔버스 없음");
+    waitFor.mockRejectedValueOnce(missingCanvas);
+    await expect(waitForPigmentEditorSettled(page)).rejects.toBe(missingCanvas);
   });
 });

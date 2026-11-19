@@ -189,12 +189,13 @@ export function createStudioRejectedStrokeRecoveryRepository(
 
 export async function acquireStudioRejectedStrokeRecoveryRepository(
   scope: StudioRejectedStrokeRecoveryScope,
-  options: Readonly<{ acquireDatabase?: () => Promise<StudioLocalDatabase> }> = {},
+  options: Readonly<{ acquireDatabase?: () => Promise<StudioLocalDatabase>; retryOpen?: boolean }> = {},
 ): Promise<StudioRejectedStrokeRecoveryRepository> {
-  const [{ acquireStudioLocalDatabase }, { createStudioAutosaveSqliteStore }] = await Promise.all([
+  const [{ acquireStudioLocalDatabase, retryFailedStudioLocalDatabaseOpen }, { createStudioAutosaveSqliteStore }] = await Promise.all([
     import("../studio-local-database-runtime"),
     import("../studio-autosave-sqlite-store"),
   ]);
+  if (options.retryOpen) await retryFailedStudioLocalDatabaseOpen();
   const database = await (options.acquireDatabase ?? acquireStudioLocalDatabase)();
   const autosave = createStudioAutosaveSqliteStore(database);
   const scopeKey = studioRejectedStrokeRecoveryScopeKey(scope);

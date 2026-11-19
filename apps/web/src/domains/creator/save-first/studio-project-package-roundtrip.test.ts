@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  readStudioAutosave,
   studioAutosaveKey,
   type StudioAutosavePayload,
 } from "../studio-autosave";
@@ -15,6 +14,7 @@ import {
   type StudioProjectLibraryEntry,
 } from "../studio-project-library-store";
 import { buildStudioProjectPackage } from "./studio-project-package";
+import { importedTestPorts, readImportedTestSnapshot } from "./studio-project-package-import-test-fixture";
 import { importStudioProjectPackage } from "./studio-project-package-import";
 import { buildStudioProjectWorkspacePackageEntries } from "./studio-project-workspace-snapshots";
 import {
@@ -199,7 +199,7 @@ function idFactory(prefix: string): () => string {
 
 async function importInto(target: Storage, file: File, now: string, seed: string) {
   return importStudioProjectPackage(file, {
-    storage: target,
+    storage: target, autosavePorts: importedTestPorts(target),
     authUserId: "artist-1",
     now,
     createProjectId: idFactory(`${seed}-project`),
@@ -270,7 +270,7 @@ describe("project package export → import roundtrip integrity", () => {
     expect(result.restoredSnapshotCount).toBe(2);
     for (const sourceDocument of sourceDocuments) {
       const imported = result.documents.find((document) => document.title === sourceDocument.title)!;
-      const recovered = readStudioAutosave(target, studioAutosaveKey({
+      const recovered = await readImportedTestSnapshot(target, studioAutosaveKey({
         userId: "artist-1",
         workId: imported.id,
       }));
@@ -292,8 +292,8 @@ describe("project package export → import roundtrip integrity", () => {
     const firstResult = await importInto(first, sourcePackageFile(), IMPORT_NOW, "rt1");
 
     const firstDocuments = readStudioProjectDocuments(first, firstResult.project.id).documents;
-    const restoredSnapshots = firstDocuments.map((document) => {
-      const recovered = readStudioAutosave(first, studioAutosaveKey({
+    const restoredSnapshots = await Promise.all(firstDocuments.map(async (document) => {
+      const recovered = await readImportedTestSnapshot(first, studioAutosaveKey({
         userId: "artist-1",
         workId: document.id,
       }));
@@ -304,7 +304,7 @@ describe("project package export → import roundtrip integrity", () => {
         savedAt: recovered!.payload.savedAt,
         payload: recovered!.payload,
       };
-    });
+    }));
     const repackaged = buildStudioProjectPackage({
       project: firstResult.project,
       documents: firstDocuments,
@@ -326,7 +326,7 @@ describe("project package export → import roundtrip integrity", () => {
     expect(secondResult.restoredSnapshotCount).toBe(2);
     for (const sourceDocument of sourceDocuments) {
       const imported = secondResult.documents.find((document) => document.title === sourceDocument.title)!;
-      const recovered = readStudioAutosave(second, studioAutosaveKey({
+      const recovered = await readImportedTestSnapshot(second, studioAutosaveKey({
         userId: "artist-1",
         workId: imported.id,
       }));

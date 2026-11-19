@@ -91,6 +91,11 @@ function generatedProjectId(
   throw new Error("A unique project id could not be created.");
 }
 
+/** 가져오기 롤백은 같은 고정 키에 보관해 둔 원본 문자열을 그대로 돌려놓는다. */
+export function writeSerializedStudioProjectLibrary(storage: StudioProjectLibraryStorage, raw: string): void {
+  storage.setItem(STUDIO_PROJECT_LIBRARY_STORAGE_KEY, raw);
+}
+
 export function writeStudioProjectLibrary(
   storage: StudioProjectLibraryStorage,
   state: StudioProjectLibraryState,
@@ -103,7 +108,7 @@ export function writeStudioProjectLibrary(
     projects: canonicalProjects(state.projects),
     updatedAt: state.updatedAt,
   });
-  storage.setItem(STUDIO_PROJECT_LIBRARY_STORAGE_KEY, JSON.stringify(next));
+  writeSerializedStudioProjectLibrary(storage, JSON.stringify(next));
   target?.dispatchEvent(new CustomEvent(STUDIO_PROJECT_LIBRARY_UPDATED_EVENT, { detail: next }));
   return next;
 }

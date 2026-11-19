@@ -430,6 +430,26 @@ describe("StudioProjectCreatePage", () => {
     });
   });
 
+  it.each(["lane=blank", "template=webtoon-vertical-episode"])("처음 열 화면과 표시가 일치하고 대본에서 원고로 되돌릴 수 있다 (%s)", async (query) => {
+    const { container } = renderCreate(`/studio/new?${query}`);
+    const disclosure = container.querySelector<HTMLDetailsElement>("[data-studio-start-disclosure]");
+    expect(disclosure?.open).toBe(false);
+    const currentChoice = () => container.querySelector('[data-studio-start-point][aria-pressed="true"]')?.getAttribute("data-studio-start-point");
+    expect(currentChoice()).toBe("editor");
+    expect(disclosure?.querySelector("summary")?.textContent).toMatch(/편집기|editor/u);
+    fireEvent.click(startPointButton(container, "script"));
+    expect(currentChoice()).toBe("script");
+    expect(container.querySelector("[data-studio-create-next-step]")?.textContent).toMatch(/대본|script/u);
+    fireEvent.click(startPointButton(container, "files"));
+    expect(currentChoice()).toBe("files");
+    fireEvent.click(startPointButton(container, "editor"));
+    expect(currentChoice()).toBe("editor");
+    expect(container.querySelector("[data-studio-create-next-step]")?.textContent).toMatch(/편집기|editor/u);
+    fireEvent.click(createControl("button", { name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u }));
+    await waitFor(() => expect(screen.getByLabelText("location").textContent).toMatch(/^\/studio\/p\/[^/]+\/d\//u));
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(1);
+  });
+
   it("infers the template lane from ?template= and routes to the editor (S2-7)", async () => {
     const { container } = renderCreate("/studio/new?template=webtoon-vertical-episode");
 

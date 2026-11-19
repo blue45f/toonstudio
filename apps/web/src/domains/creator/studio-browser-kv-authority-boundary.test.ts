@@ -545,7 +545,6 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/studio-draft-save-outbox.ts", "durable-storage-write", "key", 2, BOUNDED_LOCAL_CACHE, BOUNDED_LOCAL_CACHE_PROOF),
   allow("apps/web/src/domains/creator/studio-template-catalog.ts", "durable-storage-write", '"toonspectrum:studio-template-handoff:v1"', 1, BOUNDED_LOCAL_CACHE, BOUNDED_LOCAL_CACHE_PROOF),
 
-  allow("apps/web/src/domains/creator/save-first/studio-project-package-import.ts", "durable-storage-write", "studioAutosaveKey({userId:options.authUserId??null,workId:restored.document.id,})", 1, INJECTED_COMPATIBILITY, INJECTED_PROOF),
   allow("apps/web/src/domains/creator/studio-asset-governance.ts", "durable-storage-write", "studioAssetGovernanceStorageKey(projectId)", 1, REVIEWED_LOCAL_WORKING_COPY, REVIEWED_LOCAL_WORKING_COPY_PROOF),
   allow("apps/web/src/domains/creator/studio-localization-project-store.ts", "durable-storage-write", "storageKey(parsed.projectId)", 1, REVIEWED_LOCAL_WORKING_COPY, REVIEWED_LOCAL_WORKING_COPY_PROOF),
   allow("apps/web/src/domains/creator/studio-marketplace-submission-store.ts", "durable-storage-write", "studioMarketplaceSubmissionStorageKey(sellerId)", 1, REVIEWED_LOCAL_WORKING_COPY, REVIEWED_LOCAL_WORKING_COPY_PROOF),

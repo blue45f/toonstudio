@@ -40,6 +40,17 @@ describe("studio-brush-velocity-pressure", () => {
     expect(result.sample.source).toBe("nominal");
   });
 
+  it("압력 없는 손가락의 시작·이동은 명목 굵기를 쓰고 실제 펜 필압 0은 유지한다", () => {
+    const settings = { ...base, useVelocityPressure: false, pressureMinSize: 0 };
+    const touch = { x: 0, y: 0, timeMs: 0, pointerType: "touch", pressure: 0 };
+    const first = advanceStudioBrushVelocityPressure(null, touch, settings);
+    const next = advanceStudioBrushVelocityPressure(first.state, { ...touch, x: 12, timeMs: 16 }, settings);
+    expect([first.pressure, next.pressure]).toEqual([1, 1]);
+    const stylus = advanceStudioBrushVelocityPressure(null, { ...touch, pointerType: "pen" }, settings);
+    expect(stylus.pressure).toBe(0);
+    expect(advanceStudioBrushVelocityPressure(null, touch, { ...settings, rawMaterialPressure: true }).pressure).toBe(0.5);
+  });
+
   it("keeps non-pressure input nominal when velocity simulation is disabled", () => {
     const settings = { ...base, brushId: "pencil", useVelocityPressure: false };
     const first = advanceStudioBrushVelocityPressure(

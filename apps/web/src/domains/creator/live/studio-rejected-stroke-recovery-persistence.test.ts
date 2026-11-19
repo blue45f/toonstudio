@@ -8,6 +8,7 @@ import {
 } from "./studio-rejected-stroke-recovery-persistence";
 import { createStudioAutosaveSqliteStore } from "../studio-autosave-sqlite-store";
 import { openStudioLocalDatabase } from "../studio-local-database";
+import { acquireStudioLocalDatabase, closeStudioLocalDatabaseRuntime } from "../studio-local-database-runtime";
 
 import type { StudioAsyncKeyValueStore } from "../studio-local-database";
 import type { StudioRejectedStrokeRecord } from "../studio-rejected-stroke-recovery";
@@ -127,6 +128,28 @@ describe("실패 획 SQLite KV 영속 계약", () => {
     await expect(repository.save(record())).rejects.toThrow("quota");
     await repository.save(record());
     expect(await repository.load(scopeKey)).toHaveLength(1);
+  });
+
+  it("최초 개방이 실패해도 명시적 재시도 뒤 같은 SQLite의 기존 획을 읽고 정상 연결을 유지한다", async () => {
+    const scope = { ownerId: "artist", documentKey: "draft", projectId: "project", documentId: "document" };
+    const database = await openStudioLocalDatabase({ vfs: "memory" });
+    const saved = await acquireStudioRejectedStrokeRecoveryRepository(scope, { acquireDatabase: async () => database });
+    await saved.save(record());
+    const open = vi.fn(async () => database).mockRejectedValueOnce(new Error("worker-start-failed"));
+    const acquireDatabase = () => acquireStudioLocalDatabase(open);
+    try {
+      await expect(acquireStudioRejectedStrokeRecoveryRepository(scope, { acquireDatabase })).rejects.toThrow("worker-start-failed");
+      await expect(acquireStudioRejectedStrokeRecoveryRepository(scope, { acquireDatabase })).rejects.toThrow("worker-start-failed");
+      expect(open).toHaveBeenCalledTimes(1);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const recovered = await acquireStudioRejectedStrokeRecoveryRepository(scope, { acquireDatabase, retryOpen: true });
+        expect(await recovered.load(scopeKey)).toEqual([expect.objectContaining({ id: "stroke-1", stroke: record().stroke })]);
+      }
+      expect(open).toHaveBeenCalledTimes(2);
+    } finally {
+      await closeStudioLocalDatabaseRuntime();
+      await database.close();
+    }
   });
 
   it.each([false, true])("실제 SQLite에서 정확한 문서·페이지의 자동저장 뒤 정리한다 (준비 입력=%s)", async (admissionCheckpoint) => {

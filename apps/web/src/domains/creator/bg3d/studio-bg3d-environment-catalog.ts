@@ -6,6 +6,7 @@
  * GLB structure, device-budget, and Three.js admission path as a user-imported model.
  */
 
+import riverside from "../../../../public/assets/3d/environments/riverside-v2/manifest.json";
 import boatyard from "../../../../public/assets/3d/environments/boatyard-v1/manifest.json";
 import coast from "../../../../public/assets/3d/environments/coast-v1/manifest.json";
 import specimenRoom from "../../../../public/assets/3d/environments/specimen-v1/manifest.json";
@@ -573,11 +574,36 @@ export const STUDIO_BG3D_BOTANICAL_SEASIDE_SETS = Object.freeze([
   }, "scripts/blender/generate_harbor_boat_repair_shed.py"),
 ]);
 
+const PAVILION_V2 = defineBlenderSet(riverside, {
+  id: "ts-bg3d-hangang_riverside_pavilion-v2",
+  name: "웹툰 한강 공원 쉼터",
+  description: "물결 처마와 갈라진 철제 기둥 아래 긴 벤치, 피크닉 테이블, 음수대와 자전거 거치대가 놓인 강변 데크.",
+  theme: "urban",
+  tags: ["한강", "공원", "쉼터", "벤치", "riverside", "park", "pavilion", "bench"],
+  url: "/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.glb",
+  thumbnailUrl: "/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.png",
+  detailCamera: {
+    subject: { ko: "쉼터 벤치와 물결 처마", en: "Riverside bench and curved eaves" },
+    position: riverside.detailCamera.position as [number, number, number],
+    target: riverside.detailCamera.target as [number, number, number],
+    fovDegrees: riverside.detailCamera.fovDegrees,
+  },
+}, "scripts/blender/generate_riverside_park_pavilion.py");
+
+const priorPavilionFile = "webtoon_riverside_park_pavilion.glb";
+function currentPavilion(asset: StudioBg3dEnvironmentAsset): StudioBg3dEnvironmentAsset {
+  return asset.fileName === priorPavilionFile ? PAVILION_V2 : asset;
+}
+
+export const STUDIO_BG3D_CURRENT_PARK_AND_STREET_ENVIRONMENTS = Object.freeze(
+  STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1.map(currentPavilion),
+);
+
 export const STUDIO_BG3D_ENVIRONMENT_ASSETS = Object.freeze([
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
   ...STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
-  ...STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1,
+  ...STUDIO_BG3D_CURRENT_PARK_AND_STREET_ENVIRONMENTS,
   ...STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
 ]);
 
@@ -586,7 +612,7 @@ export const STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS = Object.freeze([
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
   ...STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
-  ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1,
+  ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1.map(currentPavilion),
   ...STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
 ]);
 
@@ -666,7 +692,7 @@ const AUTHORED_V1_BY_KEY = new Map(
   ]),
 );
 
-const RESOLVABLE_ENVIRONMENT_ASSETS = [...STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1, ...STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS, ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1, ...STUDIO_BG3D_ENVIRONMENT_ASSETS];
+const RESOLVABLE_ENVIRONMENT_ASSETS = [...STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1, ...STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1, ...STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS, ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1, ...STUDIO_BG3D_ENVIRONMENT_ASSETS];
 const ENVIRONMENT_BY_ID = new Map(RESOLVABLE_ENVIRONMENT_ASSETS.map((asset) => [asset.id, asset] as const));
 const ENVIRONMENT_BY_URL = new Map(RESOLVABLE_ENVIRONMENT_ASSETS.map((asset) => [asset.url, asset] as const));
 const ENVIRONMENT_BY_HASH = new Map(RESOLVABLE_ENVIRONMENT_ASSETS.map((asset) => [asset.sha256, asset] as const));

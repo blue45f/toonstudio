@@ -4,11 +4,8 @@ import {
   BriefcaseBusiness,
   Clapperboard,
   FileImage,
-  FileText,
   LayoutTemplate,
-  Lightbulb,
   Presentation,
-  Upload,
   UserRound,
   UsersRound,
   type LucideIcon,
@@ -51,13 +48,6 @@ export const AUXILIARY_ICONS: Readonly<Record<AuxiliaryKind, LucideIcon>> = {
   "three-d": Box,
   design: LayoutTemplate,
   slides: Presentation,
-};
-
-export const START_POINT_ICONS: Readonly<Record<StudioProjectStartPoint, LucideIcon>> = {
-  idea: Lightbulb,
-  script: FileText,
-  storyboard: Clapperboard,
-  files: Upload,
 };
 
 export const COLLABORATION_ICONS: Readonly<Record<StudioProjectCollaboration, LucideIcon>> = {

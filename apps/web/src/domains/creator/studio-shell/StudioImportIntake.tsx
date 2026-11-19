@@ -1,6 +1,6 @@
 import { translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { AlertTriangle, CheckCircle2, FileUp, FolderOpen, Plus, ShieldCheck } from "lucide-react";
-import { useRef, useState, type ChangeEvent } from "react";
+import { useLayoutEffect, useRef, useState, type ChangeEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -11,10 +11,9 @@ import {
   planStudioImport,
   type StudioImportPlanItem,
 } from "../studio-import-compatibility";
-import { importStudioProjectPackage } from "../save-first/studio-project-package-import";
+import { importStudioProjectPackage, StudioProjectPackageStorageError } from "../save-first/studio-project-package-import";
 import { classifyStudioProjectOpenFailure } from "../studio-cuttoon-editor/studio-project-open-failure";
 import {
-  STUDIO_IMPORT_HANDOFF_ACCEPT,
   registerStudioImportHandoff,
   studioImportHandoffHref,
   studioImportHandoffTargetForFormat,
@@ -53,7 +52,14 @@ function listLabel(values: readonly string[], fallback: string): string {
 export function StudioImportIntake({ locale }: { readonly locale: StudioImportIntakeLocale }) {
   useBilingualI18nRevision();
   const navigate = useNavigate();
-  const { data: session } = useSession();
+  const { data: session, ready: ownerReady } = useSession();
+  const owner = session?.user?.id ?? null;
+  const ownerScope = useRef<AbortController | null>(null);
+  useLayoutEffect(() => {
+    const scope = new AbortController();
+    ownerScope.current = scope;
+    return () => scope.abort();
+  }, [owner, ownerReady]);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [failedSelectionFile, setFailedSelectionFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
@@ -64,9 +70,9 @@ export function StudioImportIntake({ locale }: { readonly locale: StudioImportIn
   const selectFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0] ?? null;
     event.currentTarget.value = "";
+    if (!file) return;
     setMessage("");
     setFailedSelectionFile(null);
-    if (!file) return;
     try {
       const plan = planStudioImport([{
         name: file.name,
@@ -93,20 +99,27 @@ export function StudioImportIntake({ locale }: { readonly locale: StudioImportIn
     continuingRef.current = true;
     try {
       if (selection.item.format === "toonstudio") {
+        const signal = ownerScope.current?.signal;
+        if (!ownerReady || !signal || signal.aborted) return;
         setImporting(true);
         setMessage("");
         try {
           const restored = await importStudioProjectPackage(selection.file, {
             storage: window.localStorage,
             target: window,
-            authUserId: session?.user?.id ?? null,
+            authUserId: owner, signal,
           });
+          if (signal.aborted) return;
           navigate(restored.href, { replace: true });
         } catch (error) {
-          setFailedSelectionFile(selection.file);
-          setMessage(error instanceof Error
+          if (signal.aborted) return;
+          setFailedSelectionFile(error instanceof StudioProjectPackageStorageError ? null : selection.file);
+          setMessage(error instanceof StudioProjectPackageStorageError
+            ? bi("기기 저장소에 원고를 복원하지 못했습니다. 같은 파일로 다시 시도해 주세요.", "The manuscript could not be restored to this device. Try the same file again.")
+            : error instanceof Error
             ? error.message
             : bi("ToonStudio 프로젝트 파일을 복원하지 못했습니다.", "The ToonStudio project file could not be restored."));
+        } finally {
           setImporting(false);
         }
         return;
@@ -133,6 +146,7 @@ export function StudioImportIntake({ locale }: { readonly locale: StudioImportIn
       || studioImportHandoffTargetForFormat(selection.item.format) !== null
     : false;
   const selectionRejected = Boolean(selection && failedSelectionFile === selection.file);
+  const retryableStorageFailure = Boolean(message && selection?.item.format === "toonstudio" && !selectionRejected);
   const failureKind = message ? classifyStudioProjectOpenFailure(message) : null;
   const Icon = selection?.item.status === "accepted"
     ? CheckCircle2
@@ -142,27 +156,26 @@ export function StudioImportIntake({ locale }: { readonly locale: StudioImportIn
 
   return (
     <section
-      className="mt-8 rounded-3xl border border-line bg-card p-5 shadow-sm sm:p-6"
+      className="mt-4 min-w-0 rounded-2xl border border-line bg-card p-4 sm:p-6"
       aria-labelledby="studio-import-intake-title"
     >
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-[0.65rem] font-black uppercase tracking-[0.16em] text-accent">
-            {bi("파일 가져오기", "Import files")}</p>
-          <h2 id="studio-import-intake-title" className="mt-1 text-xl font-black text-fg">
-            {bi("파일 내용을 확인하고 불러오세요", "Preview your file before importing")}
+          <h2 id="studio-import-intake-title" className="text-xl font-bold text-fg">
+            {bi("프로젝트·이미지", "Projects & images")}
           </h2>
-          <p className="mt-2 text-sm leading-6 text-fg-3">
-            {bi("파일을 고르면 유지되는 내용과 달라질 수 있는 내용을 먼저 볼 수 있어요. ToonStudio 작업 파일은 원고를 새 프로젝트로 불러옵니다.", "Choose a file to see what will be kept and what may change. ToonStudio project files restore the manuscript into a new project.")}
+          <p id="studio-import-intake-help" className="mt-2 text-sm leading-6 text-fg-2">
+            {bi("ToonStudio 작업 파일, PSD·ORA 또는 이미지를 선택하세요. 가져오기 전에 보존되는 레이어를 확인할 수 있어요.", "Choose a ToonStudio project, PSD, ORA or image. Review which layers are kept before importing.")}
           </p>
         </div>
-        <label className={buttonClass({ size: "lg", className: "shrink-0 cursor-pointer gap-2" })}>
+        <label className={buttonClass({ size: "lg", className: "min-h-11 w-full shrink-0 cursor-pointer gap-2 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent lg:w-auto" })}>
           <FileUp size={17} aria-hidden="true" />
           {bi("파일 선택", "Choose file")}
+          {/* iOS 파일 앱에서도 미등록 확장자를 선택한 뒤 동일한 호환성 검사를 거친다. */}
           <input
             ref={fileInputRef}
             type="file"
-            accept={STUDIO_IMPORT_HANDOFF_ACCEPT}
+            aria-describedby="studio-import-intake-help"
             disabled={importing}
             className="sr-only"
             onChange={selectFile}
@@ -216,7 +229,7 @@ export function StudioImportIntake({ locale }: { readonly locale: StudioImportIn
             </div>
             <button
               type="button"
-              disabled={selection.item.status === "blocked" || selectionRejected || !operational || importing}
+              disabled={selection.item.status === "blocked" || selectionRejected || !operational || importing || (selection.item.format === "toonstudio" && !ownerReady)}
               onClick={() => { void continueImport(); }}
               className={buttonClass({ className: "shrink-0 gap-2" })}
             >
@@ -233,13 +246,15 @@ export function StudioImportIntake({ locale }: { readonly locale: StudioImportIn
 
       {message ? (
         <div
-          data-studio-import-failure-recovery={failureKind ?? "invalid-format"}
+          data-studio-import-failure-recovery={retryableStorageFailure ? "device-storage" : failureKind ?? "invalid-format"}
           className="mt-4 rounded-2xl border border-danger/35 bg-danger-soft/15 p-4 text-xs text-danger"
           role="alert"
         >
           <p className="font-semibold leading-5">{message}</p>
           <p className="mt-1.5 leading-5 text-fg-2">
-            {failureKind === "incompatible-version"
+            {retryableStorageFailure
+              ? bi("저장 공간을 확인하거나 같은 원고를 연 다른 탭을 닫은 뒤 ‘프로젝트 복원’을 눌러 주세요.", "Check device storage or close other tabs editing the manuscript, then choose Restore project.")
+              : failureKind === "incompatible-version"
               ? bi(
                   "기존에 저장된 내 작업과 원고는 변경되지 않았습니다. 현재 빌드가 지원하는 호환 버전 파일이나 .toonproject.zip 아카이브를 선택해 열어 주세요.",
                   "Your saved projects and manuscripts remain untouched. Choose a compatible file version or a .toonproject.zip archive.",

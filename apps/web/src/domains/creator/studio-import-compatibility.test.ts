@@ -69,6 +69,15 @@ describe("Studio import compatibility", () => {
     });
   });
 
+  it("iOS 파일 앱이 확장자 뒤에 붙인 번호를 인식하고 그 밖의 접미사는 거른다", () => {
+    const names = ["작업.TOONSTUDIO 2", "작업.toonstudio 13", "작업.toonstudio draft", "작업.toonstudio 2.exe"];
+    const plan = planStudioImport(names.map(name => ({ name, mimeType: "", sizeBytes: 1024 })));
+    expect(plan.items.map(({ format, status }) => [format, status])).toEqual([
+      ["toonstudio", "accepted"], ["toonstudio", "accepted"], ["unknown", "blocked"], ["unknown", "blocked"],
+    ]);
+    expect(plan.items.map(({ file }) => file.name)).toEqual(names);
+  });
+
   it("rejects malformed descriptors and empty batches", () => {
     expect(() => planStudioImport([])).toThrow("at least one file");
     expect(() => planStudioImport([

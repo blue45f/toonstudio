@@ -10,11 +10,14 @@ import {
   STUDIO_BG3D_ENVIRONMENT_ASSETS,
   STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
   STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
+  STUDIO_BG3D_CURRENT_PARK_AND_STREET_ENVIRONMENTS,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
   getStudioBg3dEnvironmentAsset,
   getStudioBg3dEnvironmentAssetByHash,
+  resolveStudioBg3dEnvironmentUrl,
+  STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS,
 } from "./studio-bg3d-environment-catalog";
 import {
   DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES,
@@ -68,7 +71,7 @@ describe("Studio Tripo MCP free-wallet environment pack v1", () => {
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
       ...STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
-      ...STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1,
+      ...STUDIO_BG3D_CURRENT_PARK_AND_STREET_ENVIRONMENTS,
       ...STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
     ]);
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toHaveLength(35);
@@ -77,6 +80,42 @@ describe("Studio Tripo MCP free-wallet environment pack v1", () => {
     expect(SAMPLE_BG3D_MODEL_ENTRIES.map(({ id }) => id)).toEqual(
       STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id),
     );
+  });
+
+  it("한강 쉼터는 새 원고에 평탄한 CC0 덱을 배치하고 과거 두 판의 원본과 권리를 복원한다", async () => {
+    const original = getStudioBg3dEnvironmentAsset("ts-bg3d-webtoon_riverside_park_pavilion-mcp-v1");
+    const oldCc0 = getStudioBg3dEnvironmentAsset("ts-bg3d-webtoon_riverside_park_pavilion-authored-v1");
+    const current = getStudioBg3dEnvironmentAsset("ts-bg3d-hangang_riverside_pavilion-v2");
+    if (!original || !oldCc0 || !current) throw new Error("한강 쉼터의 세 판이 필요합니다.");
+
+    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS[30]).toBe(current);
+    expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS[30]).toBe(current);
+    expect(original.provenance.providerTaskId).toBe("dc0f0bda-cda2-47be-b636-ee7aea460ebb");
+    expect(original.provenance.license).toBe("Tripo Terms of Service - Free User Output");
+    expect(oldCc0.provenance.license).toBe("CC0-1.0");
+    expect(current.provenance).toMatchObject({ origin: "original-procedural", license: "CC0-1.0", externalResources: 0 });
+    expect(current.detailCamera?.subject.ko).toBe("쉼터 벤치와 물결 처마");
+    expect(new Set([original.sha256, oldCc0.sha256, current.sha256]).size).toBe(3);
+    for (const version of [original, oldCc0, current]) {
+      const source = readFileSync(publicAssetPath(version.url));
+      expect(`sha256:${createHash("sha256").update(source).digest("hex")}`).toBe(version.sha256);
+      expect(source.byteLength).toBe(version.byteSize);
+      expect(getStudioBg3dEnvironmentAssetByHash(version.sha256)).toBe(version);
+      for (const key of [version.id, version.sha256, version.url]) {
+        expect(resolveStudioBg3dEnvironmentUrl(key)).toBe(version.url);
+        expect(resolveStudioBg3dEnvironmentUrl(key, { preferCc0Counterpart: true })).toBe(
+          version === original ? oldCc0.url : version.url,
+        );
+      }
+    }
+    const bytes = new Uint8Array(readFileSync(publicAssetPath(current.url)));
+    const validation = await validateStudioBg3dGlb(bytes, {
+      declared: { byteSize: current.byteSize, sha256: current.sha256 },
+      cumulative: { usedBytes: 0, maximumBytes: 64 * 1024 * 1024 },
+      profile: "mobile", budgets: DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES,
+      digest: async (input) => createHash("sha256").update(input).digest("hex"),
+    });
+    expect(validation).toMatchObject({ ok: true, metrics: { drawCalls: 4, textures: 6 } });
   });
 
   it.each(STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1)(

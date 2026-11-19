@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, waitForElementToBeRemoved, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioHybridDccPanel } from "./StudioHybridDccPanel";
@@ -69,11 +69,18 @@ function fileWorkspace() {
 function workfile(): File { return new File([Uint8Array.from(encodeStudioHybridDccWorkfile(fileWorkspace()))], "scene.toon3d", { type: STUDIO_HYBRID_DCC_WORKFILE_MIME }); }
 function choose(file: File) { fireEvent.change(screen.getByLabelText("열 .toon3d 작업파일 선택"), { target: { files: [file] } }); }
 const probe = () => screen.getByTestId("file-workspace");
-const confirm = () => screen.getByRole("dialog", { name: "3D 작업파일을 열까요?" });
-function fileError(): HTMLElement {
+function fileTopbar(): HTMLElement {
   const topbar = document.querySelector<HTMLElement>("[data-studio-hybrid-dcc-topbar]");
   if (!topbar) throw new Error("작업파일 도구 막대가 없습니다.");
-  return within(topbar).getByRole("alert");
+  return topbar;
+}
+const fileError = () => within(fileTopbar()).getByRole("alert");
+async function chooseWorkfileForReplacement(): Promise<HTMLElement> {
+  choose(workfile());
+  const topbar = fileTopbar();
+  const reading = within(topbar).getByText("작업파일 읽기·검증 중");
+  await waitForElementToBeRemoved(reading, { container: topbar });
+  return screen.getByRole("dialog", { name: "3D 작업파일을 열까요?" });
 }
 async function mount() {
   const workspace = source("current-doc", "current-cube");
@@ -135,15 +142,16 @@ describe("native .toon3d 파일 저장과 열기", () => {
 
   it("완전 검증 뒤 확인을 표시하고 취소는 보존, 확인 두 번은 가져온 이력을 한 번만 교체한다", async () => {
     const { notify } = await mount(); const before = probe().getAttribute("data-state");
-    choose(workfile()); await waitFor(() => expect(confirm()).toBeTruthy());
+    const firstDialog = await chooseWorkfileForReplacement();
     expect(document.activeElement?.textContent).toBe("취소");
     expect(probe().getAttribute("data-state")).toBe(before);
-    fireEvent.click(within(confirm()).getByRole("button", { name: "취소" }));
+    fireEvent.click(within(firstDialog).getByRole("button", { name: "취소" }));
+    expect(firstDialog.isConnected).toBe(false);
     expect(probe().getAttribute("data-state")).toBe(before);
-    choose(workfile()); await waitFor(() => expect(confirm()).toBeTruthy());
+    const secondDialog = await chooseWorkfileForReplacement();
     const changesBefore = notify.mock.calls.length;
-    const apply = within(confirm()).getByRole("button", { name: "현재 작업을 교체하고 열기" });
-    fireEvent.click(apply); fireEvent.click(apply);
+    const apply = within(secondDialog).getByRole("button", { name: "현재 작업을 교체하고 열기" });
+    act(() => { apply.click(); apply.click(); });
     await waitFor(() => expect(probe().getAttribute("data-assets")).toBe("file-cube"));
     expect(probe().getAttribute("data-document")).toBe("current-doc");
     expect(probe().getAttribute("data-undo")).toBe(String(fileWorkspace().session.undoStack.length));
@@ -200,15 +208,16 @@ describe("native .toon3d 파일 저장과 열기", () => {
 
   it("파일 검증이 끝난 확인창에서도 계정 전환은 교체 대상을 폐기한다", async () => {
     await mount(); const before = probe().getAttribute("data-state");
-    choose(workfile()); await waitFor(() => expect(confirm()).toBeTruthy());
+    await chooseWorkfileForReplacement();
     act(() => { f.actor = "new-file-owner"; f.revision += 1; f.listeners.forEach((listener) => listener()); });
     expect(screen.queryByRole("dialog")).toBeNull(); expect(probe().getAttribute("data-state")).toBe(before);
   });
 
   it("확인 뒤 파생 메시 재생성 중 계정이 바뀌어도 이전 파일을 최종 publish하지 않는다", async () => {
-    await mount(); const before = probe().getAttribute("data-state"); choose(workfile()); await waitFor(() => expect(confirm()).toBeTruthy());
+    await mount(); const before = probe().getAttribute("data-state");
+    const dialog = await chooseWorkfileForReplacement();
     f.holdPreview = true;
-    fireEvent.click(within(confirm()).getByRole("button", { name: "현재 작업을 교체하고 열기" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "현재 작업을 교체하고 열기" }));
     await waitFor(() => expect(f.release).toHaveLength(1));
     act(() => { f.revision += 1; f.listeners.forEach((listener) => listener()); });
     await act(async () => { f.release.forEach((release) => release()); });

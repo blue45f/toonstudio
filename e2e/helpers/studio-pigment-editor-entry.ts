@@ -2,19 +2,19 @@ import { waitForEditorSettled } from "./studio-editor-a11y";
 
 import type { Page } from "@playwright/test";
 
-/** 원고의 실제 셸·명령·로딩·오프라인 준비 조건을 확인하고 원고 연결 문맥을 유지한다. */
+/** 원고 배치를 바꾸지 않고 현재 주소의 캔버스와 저장·연결 상태가 준비될 때까지 기다린다. */
 export async function waitForPigmentEditorSettled(page: Page): Promise<void> {
-  const before = new URL(page.url());
-  // Clarity는 현재 원고의 상시 셸이다. 공통 준비가 그 버튼을 지원하므로 배치 전환이나
-  // locator handler로 셸을 제거하지 않는다. 출력·프로젝트 명령은 각 작업에서 UI로 연다.
+  const requested = new URL(page.url());
   await waitForEditorSettled(page);
-  const after = new URL(page.url());
-  if (after.origin !== before.origin || after.pathname !== before.pathname || after.hash !== before.hash) {
-    throw new Error("안료 준비가 원고의 주소를 변경했습니다.");
+  await page.locator('[data-studio-canvas-viewport]:visible').waitFor({ state: "visible", timeout: 60_000 });
+
+  const current = new URL(page.url());
+  if (current.origin !== requested.origin || current.pathname !== requested.pathname || current.hash !== requested.hash) {
+    throw new Error("안료 원고가 준비되는 동안 다른 문서로 이동했습니다.");
   }
-  for (const key of new Set(before.searchParams.keys())) {
-    if (JSON.stringify(after.searchParams.getAll(key)) !== JSON.stringify(before.searchParams.getAll(key))) {
-      throw new Error(`안료 준비가 원고의 기존 연결 문맥을 변경했습니다: ${key}`);
+  for (const key of new Set(requested.searchParams.keys())) {
+    if (JSON.stringify(current.searchParams.getAll(key)) !== JSON.stringify(requested.searchParams.getAll(key))) {
+      throw new Error(`안료 원고가 준비되는 동안 주소의 ${key} 값이 바뀌었습니다.`);
     }
   }
 }

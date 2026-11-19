@@ -89,7 +89,7 @@ import { StudioCreateLaunchSummary, StudioCreateReturnToStart } from "./StudioCr
 import { StudioCreateQuickPresetStrip, type StudioCreateQuickPreset } from "./StudioCreateQuickPresetStrip";
 import { StudioCreateReviewDetails } from "./StudioCreateReviewDetails";
 import { StudioJourneyStepBar } from "./StudioJourneyStepBar";
-import { StudioCreateFormatStep, StudioCreateStartStep } from "./StudioCreateChoiceSteps";
+import { StudioCreateFormatStep, StudioCreateStartStep, type StudioCreateStartChoice } from "./StudioCreateChoiceSteps";
 import { StudioCreateStepActions, StudioCreateStepNavigation, StudioCreateStepPanel, StudioCreateStepScope } from "./StudioCreateStepFlow";
 import { useStudioCreateStepFlow } from "./useStudioCreateStepFlow";
 import { STUDIO_PROJECT_TITLE_MAX_LENGTH, normalizeStudioProjectTitleDraft } from "./studio-project-title";
@@ -250,6 +250,8 @@ export function StudioModeProjectCreatePage() {
   const effectiveStartPoint = structuredWebtoon
     ? projectStartPointFromOnboarding(selection.startingPoint)
     : startPoint;
+  const editorEntry = !structuredWebtoon && (entryLane === "blank" || entryLane === "template");
+  const directEditor = editorEntry && (lane === "blank" || lane === "template") && effectiveStartPoint !== "files";
   const titleReady = title.trim().length > 0;
   const targetTitle = auxiliary
     ? bt(auxiliary.titleKo, auxiliary.titleEn)
@@ -271,11 +273,10 @@ export function StudioModeProjectCreatePage() {
     stepFlow.goTo(2, customWidth === null ? CANVAS_WIDTH_INPUT_ID : CANVAS_HEIGHT_INPUT_ID);
   }
 
-  function syncStartPointSelection(next: StudioProjectStartPoint, supportsPlan = supportsProductionPlan) {
+  function syncStartPointSelection(next: StudioProjectStartPoint, supportsPlan = supportsProductionPlan, nextLane = studioCreateLaneForStartPoint(next)) {
     setStartPoint(next);
     // 재료를 직접 바꾸면 첫 단계가 바뀐 것이므로 레인(과 그 착지)도 따라간다.
     // files는 가져오기 착지가 따로 있어 레인을 유지한다.
-    const nextLane = studioCreateLaneForStartPoint(next);
     if (nextLane !== null) setLane(nextLane);
     if (supportsPlan) {
       setSelection((current) => ({
@@ -320,9 +321,13 @@ export function StudioModeProjectCreatePage() {
     setError(null);
   }
 
-  function chooseStartPoint(next: StudioProjectStartPoint) {
+  function chooseStartPoint(next: StudioCreateStartChoice) {
     setActiveQuickPresetId(null);
-    syncStartPointSelection(next);
+    if (next === "editor") {
+      syncStartPointSelection("idea", supportsProductionPlan, entryLane);
+    } else {
+      syncStartPointSelection(next);
+    }
   }
 
   function create(): boolean {
@@ -750,7 +755,7 @@ export function StudioModeProjectCreatePage() {
                 description={bt("단일 작업실은 선택한 도구와 첫 문서를 준비해요.", "A standalone workspace prepares its tools and first document.")}>
                 <p className="mt-3 text-base font-semibold text-fg">{targetTitle}</p>
               </FormStepSection>
-            ) : <StudioCreateStartStep effectiveStartPoint={effectiveStartPoint} onStartPoint={chooseStartPoint} />}
+            ) : <StudioCreateStartStep selected={directEditor ? "editor" : effectiveStartPoint} editorEntry={editorEntry} onStartPoint={chooseStartPoint} />}
           <StudioCreateLaunchSummary
             targetTitle={targetTitle} width={documentWidth} height={documentHeight}
             titleReady={titleReady} sizeReady={sizeReady} structuredWebtoon={structuredWebtoon}

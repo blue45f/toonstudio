@@ -227,6 +227,7 @@ export function retryStudioRejectedStrokeStorage(): void {
     hydrateStudioRejectedStrokeRecords(scopeKey, recovered);
     publish();
   }).catch(() => {
+    if (activeScopeKey !== scopeKey || persistenceByScope.get(scopeKey) !== persistence) return;
     setStudioRejectedStrokeStorageError(scopeKey, "획 복구 원본을 아직 읽지 못했습니다. 원본은 삭제하지 않았습니다.");
   });
 }

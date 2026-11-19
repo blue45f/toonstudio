@@ -172,7 +172,7 @@ function hardwarePressureOf(
   pressure: unknown
 ): number | null {
   const finite = finiteOr(pressure, Number.NaN);
-  if (finite < 0 || finite > 1) return null;
+  if (!Number.isFinite(finite) || finite < 0 || finite > 1) return null;
   if (pointerType === "pen") return finite;
   // Pointer Events conventionally reports exactly 0.5 for force-incapable active touch.
   if (pointerType === "touch" && finite !== 0.5) return finite;

@@ -1,0 +1,36 @@
+{
+  "fileName": "hangang_riverside_pavilion.glb",
+  "byteSize": 1573512,
+  "sha256": "sha256:65c5e7ac26358c23e90741748c2289bad72e2aa44366981ca8483a14399abdc0",
+  "bounds": [
+    5.72,
+    3.575,
+    4.44
+  ],
+  "camera": {
+    "position": [
+      6.18,
+      4.71,
+      8.68
+    ],
+    "target": [
+      0,
+      1.44,
+      -0.04
+    ],
+    "fovDegrees": 34
+  },
+  "detailCamera": {
+    "position": [
+      3.71,
+      1.68,
+      4.15
+    ],
+    "target": [
+      0.69,
+      1.8,
+      -0.13
+    ],
+    "fovDegrees": 44
+  }
+}

@@ -16,6 +16,7 @@ import {
 } from "../studio-project-library-store";
 import { buildStudioProjectPackage } from "./studio-project-package";
 import { createStudioProjectDefinition } from "../studio-project-definition";
+import { importedTestPorts, importedTestSqlite, readImportedTestSnapshot } from "./studio-project-package-import-test-fixture";
 import { importStudioProjectPackage } from "./studio-project-package-import";
 import {
   buildStudioProjectWorkspacePackageEntries,
@@ -113,6 +114,26 @@ function packageFile(withWorkspace = true): File {
 }
 
 describe("ToonStudio project package import", () => {
+  it.each([
+    ["Atelier.toonstudio 2", ""],
+    ["Atelier", "application/vnd.toonstudio.package+zip"],
+  ])("파일 선택에서 인식한 작업 파일 %s의 본문도 복원한다", async (name, mime) => {
+    const target = storage();
+    const archive = new File([packageFile()], name, { type: mime });
+    const result = await importStudioProjectPackage(archive, {
+      storage: target, autosavePorts: importedTestPorts(target),
+    });
+    const key = studioAutosaveKey({ userId: null, workId: result.documents[0]!.id });
+    expect((await readImportedTestSnapshot(target, key))?.payload.currentPageId).toBe("page-1");
+  });
+
+  it("실행 파일 이름은 프로젝트 MIME을 지정해도 가져오지 않는다", async () => {
+    const target = storage();
+    const archive = new File([packageFile()], "Atelier.toonstudio 2.exe", { type: "application/vnd.toonstudio.package+zip" });
+    await expect(importStudioProjectPackage(archive, { storage: target })).rejects.toThrow("유효한 .toonstudio");
+    expect(target.length).toBe(0);
+  });
+
   it("restores a package as a new local project without overwriting a colliding autosave", async () => {
     const target = storage();
     const collidingKey = studioAutosaveKey({ userId: "artist-1", workId: sourceDocument.id });
@@ -125,7 +146,7 @@ describe("ToonStudio project package import", () => {
     writeStudioLifecycleAutosave(target, collidingKey, existingSnapshot, { preservePrimary: false });
 
     const result = await importStudioProjectPackage(packageFile(), {
-      storage: target,
+      storage: target, autosavePorts: importedTestPorts(target),
       authUserId: "artist-1",
       now: "2026-09-16T02:00:00.000Z",
       createProjectId: () => "fixed-id",
@@ -143,7 +164,7 @@ describe("ToonStudio project package import", () => {
       projectId: result.project.id,
       title: sourceDocument.title,
     });
-    const recovered = readStudioAutosave(target, studioAutosaveKey({
+    const recovered = await readImportedTestSnapshot(target, studioAutosaveKey({
       userId: "artist-1",
       workId: importedDocumentId,
     }));
@@ -160,7 +181,7 @@ describe("ToonStudio project package import", () => {
   it("rejects old metadata-only project files instead of presenting an empty restored canvas", async () => {
     const target = storage();
     await expect(importStudioProjectPackage(packageFile(false), {
-      storage: target,
+      storage: target, autosavePorts: importedTestPorts(target),
       createProjectId: () => "fixed-id",
       createDocumentId: () => "fixed-id",
     })).rejects.toThrow(/필수 파일|원고/u);
@@ -221,7 +242,7 @@ describe("ToonStudio project package import", () => {
     const file = new File([pkg.blob], pkg.fileName, { type: pkg.blob.type });
     let docSeq = 0;
     const result = await importStudioProjectPackage(file, {
-      storage: target,
+      storage: target, autosavePorts: importedTestPorts(target),
       authUserId: "artist-1",
       now: "2026-09-16T02:00:00.000Z",
       createProjectId: () => "archived-proj",
@@ -256,7 +277,7 @@ describe("ToonStudio project package import", () => {
       key: (i) => base.key(i),
       removeItem: (k) => base.removeItem(k),
       setItem: (k, v) => {
-        if (failWrites && k.includes("autosave")) {
+        if (failWrites && k.includes("save-profile")) {
           const err = new Error("QuotaExceededError");
           err.name = "QuotaExceededError";
           throw err;
@@ -266,19 +287,20 @@ describe("ToonStudio project package import", () => {
     };
     failWrites = true;
     await expect(importStudioProjectPackage(packageFile(), {
-      storage: quotaStorage,
+      storage: quotaStorage, autosavePorts: importedTestPorts(quotaStorage),
       authUserId: "artist-1",
       createProjectId: () => "rollback-id",
       createDocumentId: () => "rollback-doc",
     })).rejects.toThrow(/QuotaExceededError/);
     expect(readStudioProjectLibrary(base).projects).toEqual([]);
+    expect(await importedTestSqlite(quotaStorage).read(studioAutosaveKey({ userId: "artist-1", workId: "import-document-rollback-doc" }))).toMatchObject({ state: "cleared" });
     expect(readStudioProjectDocuments(base, "import-rollback-id").documents).toEqual([]);
   });
 
   it("Blob/File 읽기 도중 AbortSignal이 취소되면 ABORTED/AbortError로 분리하고 기존 프로젝트를 보존한다", async () => {
     const store = storage();
     await importStudioProjectPackage(packageFile(), {
-      storage: store,
+      storage: store, autosavePorts: importedTestPorts(store),
       authUserId: "artist-1",
       createProjectId: () => "existing-project",
       createDocumentId: () => "existing-doc",
@@ -302,7 +324,7 @@ describe("ToonStudio project package import", () => {
 
     await expect(
       importStudioProjectPackage(file, {
-        storage: store,
+        storage: store, autosavePorts: importedTestPorts(store),
         authUserId: "artist-1",
         signal: controller.signal,
         createProjectId: () => "aborted-project",
@@ -317,7 +339,7 @@ describe("ToonStudio project package import", () => {
   it("distinguishes incompatible future snapshot versions from corruption while keeping existing projects untouched", async () => {
     const store = storage();
     await importStudioProjectPackage(packageFile(), {
-      storage: store,
+      storage: store, autosavePorts: importedTestPorts(store),
       authUserId: "artist-1",
       createProjectId: () => "existing-project",
       createDocumentId: () => "existing-doc",
@@ -343,7 +365,7 @@ describe("ToonStudio project package import", () => {
 
     await expect(
       importStudioProjectPackage(futureFile, {
-        storage: store,
+        storage: store, autosavePorts: importedTestPorts(store),
         authUserId: "artist-1",
         createProjectId: () => "future-project",
         createDocumentId: () => "future-doc",

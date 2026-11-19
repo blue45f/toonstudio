@@ -218,6 +218,31 @@ describe("실패 획 복구 호스트의 영속 세대 경계", () => {
     expect(getStudioRejectedStrokeRecords()).toEqual([]);
   });
 
+  it("같은 원고를 다시 연 뒤 이전 화면의 늦은 재시도 실패가 경고를 되살리지 않는다", async () => {
+    const store = repository();
+    let rejectOldRead: (error: Error) => void = () => undefined;
+    const oldRead = new Promise<readonly StudioRejectedStrokeRecord[]>((_, reject) => { rejectOldRead = reject; });
+    const first = renderHook(() => useStudioRejectedStrokeRecoveryHost({
+      activePageId: "page-1", queueDeferredStrokeCommit: () => true, recoveryScope: scope,
+      acquireRepository: async (_, { retryOpen }) => {
+        if (retryOpen) return { ...store, load: () => oldRead };
+        throw new Error("worker unavailable");
+      },
+    }));
+    await waitFor(() => expect(getStudioRejectedStrokeStorageError()).toBeTruthy());
+    act(() => { retryStudioRejectedStrokeStorage(); });
+    first.unmount();
+    renderHook(() => useStudioRejectedStrokeRecoveryHost({
+      activePageId: "page-1", queueDeferredStrokeCommit: () => true, recoveryScope: scope,
+      acquireRepository: async () => store,
+    }));
+    await act(async () => {
+      rejectOldRead(new Error("closed worker"));
+      await oldRead.catch(() => undefined);
+    });
+    expect(getStudioRejectedStrokeStorageError()).toBeNull();
+  });
+
   it("읽기 실패를 표시하고 명시적인 재시도로 원본을 다시 읽는다", async () => {
     const scopeKey = studioRejectedStrokeRecoveryScopeKey(scope);
     const store = repository();
@@ -230,6 +255,8 @@ describe("실패 획 복구 호스트의 영속 세대 경계", () => {
     act(() => { retryStudioRejectedStrokeStorage(); });
     await waitFor(() => expect(getStudioRejectedStrokeRecords()).toHaveLength(1));
     expect(getStudioRejectedStrokeStorageError()).toBeNull();
+    expect(acquireRepository).toHaveBeenNthCalledWith(1, scope, { retryOpen: false });
+    expect(acquireRepository).toHaveBeenNthCalledWith(2, scope, { retryOpen: true });
   });
 });
 

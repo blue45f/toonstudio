@@ -8,7 +8,7 @@ import { createStudioProject, readStudioProjectLibrary } from "../studio-project
 import { StudioImportIntake } from "./StudioImportIntake";
 
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({
-  useSession: () => ({ data: null }),
+  useSession: () => ({ data: null, ready: true }),
 }));
 
 beforeEach(() => {
@@ -50,6 +50,13 @@ describe("StudioImportIntake open failure recovery", () => {
     expect(view.getByRole("button", { name: /다른 호환 파일 선택/u })).toBeTruthy();
     expect(view.getByRole("link", { name: /내 작업 열기/u }).getAttribute("href")).toBe("/studio");
     expect(view.getByRole("link", { name: /새 작품 시작/u }).getAttribute("href")).toBe("/studio/new");
+
+    fireEvent.change(input, { target: { files: [] } });
+    expect(view.getByRole("alert")).toBe(alert);
+    expect(restoreButton.disabled).toBe(true);
+    fireEvent.change(input, { target: { files: [new File(["original"], "scan.ora")] } });
+    expect(view.queryByRole("alert")).toBeNull();
+    expect((view.getByRole("button", { name: "편집기에서 가져오기" }) as HTMLButtonElement).disabled).toBe(false);
 
     const afterProjects = readStudioProjectLibrary(window.localStorage).projects;
     expect(afterProjects).toHaveLength(1);

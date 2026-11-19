@@ -1,11 +1,10 @@
 import { hasStudioBg3dSixPassAutosaveMarkers } from "../studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-persistence-markers";
+import { planStudioImport } from "../studio-import-compatibility";
 import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
 
 import {
   parseStudioAutosave,
   studioAutosaveKey,
-  studioLifecycleAutosaveSidecarKey,
-  writeStudioLifecycleAutosave,
   type StudioAutosavePayload,
 } from "../studio-autosave";
 import {
@@ -29,6 +28,7 @@ import {
   STUDIO_PROJECT_LIBRARY_STORAGE_KEY,
   STUDIO_PROJECT_LIBRARY_UPDATED_EVENT,
   updateStudioProjectThumbnailUrl,
+  writeSerializedStudioProjectLibrary,
   type StudioProjectKind,
   type StudioProjectLibraryEntry,
 } from "../studio-project-library-store";
@@ -41,16 +41,20 @@ import {
   STUDIO_SAVE_PROFILE_STORAGE_KEY,
   upsertStudioStorageBinding,
   writeStudioSaveProfiles,
+  writeSerializedStudioSaveProfiles,
   type StudioAccessMode,
   type StudioDistributionState,
 } from "./studio-save-profile";
 import {
   restoreStudioSubmissionsForImportedProject,
+  writeSerializedStudioSubmissions,
   STUDIO_SUBMISSION_STORAGE_KEY,
 } from "./studio-submission-store";
 import {
   STUDIO_PROJECT_WORKSPACE_INDEX_ENTRY,
 } from "./studio-project-workspace-snapshots";
+
+import { commitImportedDocumentAutosaves, type StudioImportAutosavePorts } from "./studio-imported-document-autosaves";
 
 const REQUIRED_ENTRIES = Object.freeze([
   "manifest.json",
@@ -118,11 +122,14 @@ export interface StudioProjectPackageImportResult {
   readonly href: string;
 }
 
+export class StudioProjectPackageStorageError extends Error {}
+
 export interface StudioProjectPackageImportOptions {
   readonly storage: Storage;
   readonly target?: EventTarget;
   readonly authUserId?: string | null;
   readonly now?: string;
+  readonly autosavePorts?: StudioImportAutosavePorts;
   readonly createProjectId?: () => string;
   readonly createDocumentId?: () => string;
   readonly signal?: AbortSignal;
@@ -394,29 +401,17 @@ function generatedImportDocumentId(factory: () => string): string {
   return `import-document-${factory()}`.slice(0, 160);
 }
 
-function restoreRaw(storage: Storage, key: string, value: string | null): void {
-  try {
-    if (value === null) storage.removeItem(key);
-    else storage.setItem(key, value);
-  } catch {
-    // 롤백 중 스토리지 할당량 예외가 다른 키 복원을 중단시키지 않도록 방어한다.
-  }
-}
-
-function removeKeySafely(storage: Storage, key: string): void {
-  try {
-    storage.removeItem(key);
-  } catch {
-    // 무시하고 다음 키 정리를 진행한다.
-  }
-}
 
 export async function importStudioProjectPackage(
   file: File,
   options: StudioProjectPackageImportOptions,
 ): Promise<StudioProjectPackageImportResult> {
   throwIfImportAborted(options.signal);
-  if (!(file instanceof File) || file.size <= 0 || !file.name.toLowerCase().endsWith(".toonstudio")) {
+  if (!(file instanceof File) || !file.name.trim() || file.size <= 0) {
+    throw new Error("유효한 .toonstudio 프로젝트 파일을 선택해 주세요.");
+  }
+  const [candidate] = planStudioImport([{ name: file.name, sizeBytes: file.size, mimeType: file.type }]).items;
+  if (candidate?.format !== "toonstudio" || candidate.status !== "accepted") {
     throw new Error("유효한 .toonstudio 프로젝트 파일을 선택해 주세요.");
   }
   const parsed = await parseStudioProjectPackage(file, options.signal);
@@ -447,10 +442,39 @@ export async function importStudioProjectPackage(
     documentIdBySource.set(sourceDocument.id, documentId);
   }
 
+  const snapshots = [...documentIdBySource].flatMap(([sourceId, documentId]) => {
+    const payload = parsed.snapshots.get(sourceId);
+    return payload ? [{ key: studioAutosaveKey({ userId: options.authUserId, workId: documentId }), payload }] : [];
+  });
+  try {
+    return await commitImportedDocumentAutosaves({
+      snapshots, storage: options.storage, signal: options.signal, ports: options.autosavePorts,
+      publish: () => publishImportedProjectMetadata(file, options, parsed, now, projectId, documentIdBySource),
+    });
+  } catch (cause) {
+    throwIfImportAborted(options.signal);
+    throw new StudioProjectPackageStorageError(
+      cause instanceof Error ? cause.message : "기기 저장소에 원고를 복원하지 못했습니다.",
+      { cause },
+    );
+  }
+}
+
+function publishImportedProjectMetadata(
+  file: File, options: StudioProjectPackageImportOptions, parsed: ParsedProjectPackage,
+  now: string, projectId: string, documentIdBySource: ReadonlyMap<string, string>,
+): StudioProjectPackageImportResult {
+  throwIfImportAborted(options.signal);
+  // 내구 저장을 기다린 사이 다른 탭이 추가한 프로젝트·문서에도 덮어쓰지 않는다.
+  const newIds = new Set(documentIdBySource.values());
+  const collides = readStudioProjectLibrary(options.storage).projects.some(project =>
+    project.id === projectId || readStudioProjectDocuments(options.storage, project.id).documents.some(doc => newIds.has(doc.id)));
+  if (collides || options.storage.getItem(studioProjectDocumentStorageKey(projectId)) !== null) {
+    throw new Error("기존 프로젝트 또는 원고와 복원할 ID가 겹칩니다.");
+  }
   const libraryBefore = options.storage.getItem(STUDIO_PROJECT_LIBRARY_STORAGE_KEY);
   const profilesBefore = options.storage.getItem(STUDIO_SAVE_PROFILE_STORAGE_KEY);
   const submissionsBefore = options.storage.getItem(STUDIO_SUBMISSION_STORAGE_KEY);
-  const createdAutosaveKeys: string[] = [];
   try {
     throwIfImportAborted(options.signal);
     let project = createStudioProject(options.storage, {
@@ -539,17 +563,6 @@ export async function importStudioProjectPackage(
       });
     }
 
-    for (const restored of restoredDocuments) {
-      const snapshot = parsed.snapshots.get(restored.sourceDocumentId);
-      if (!snapshot) continue;
-      const key = studioAutosaveKey({
-        userId: options.authUserId ?? null,
-        workId: restored.document.id,
-      });
-      createdAutosaveKeys.push(key);
-      writeStudioLifecycleAutosave(options.storage, key, snapshot, { preservePrimary: false });
-    }
-
     ensureStudioSaveProfile(options.storage, project.id, {
       provider: "browser",
       autoSave: parsed.autoSave,
@@ -621,21 +634,33 @@ export async function importStudioProjectPackage(
         (candidate) => candidate.id === project.id,
       ) ?? project,
       documents: Object.freeze(documents),
-      restoredSnapshotCount: createdAutosaveKeys.length,
+      restoredSnapshotCount: parsed.snapshots.size,
       restoredSubmissionCount: restoredSubmissions.length,
       href: opened
         ? studioProjectDocumentHref(opened, openedWorkspace)
         : `/studio/p/${encodeURIComponent(project.id)}/overview`,
     });
   } catch (cause) {
-    removeKeySafely(options.storage, studioProjectDocumentStorageKey(projectId));
-    for (const key of createdAutosaveKeys) {
-      removeKeySafely(options.storage, key);
-      removeKeySafely(options.storage, studioLifecycleAutosaveSidecarKey(key));
+    const failures: unknown[] = [];
+    try {
+      options.storage.removeItem(studioProjectDocumentStorageKey(projectId));
+    } catch (rollbackError) {
+      failures.push(rollbackError);
     }
-    restoreRaw(options.storage, STUDIO_PROJECT_LIBRARY_STORAGE_KEY, libraryBefore);
-    restoreRaw(options.storage, STUDIO_SAVE_PROFILE_STORAGE_KEY, profilesBefore);
-    restoreRaw(options.storage, STUDIO_SUBMISSION_STORAGE_KEY, submissionsBefore);
+    const originalMetadata = [
+      [STUDIO_PROJECT_LIBRARY_STORAGE_KEY, libraryBefore, writeSerializedStudioProjectLibrary],
+      [STUDIO_SAVE_PROFILE_STORAGE_KEY, profilesBefore, writeSerializedStudioSaveProfiles],
+      [STUDIO_SUBMISSION_STORAGE_KEY, submissionsBefore, writeSerializedStudioSubmissions],
+    ] as const;
+    for (const [key, original, writeOriginal] of originalMetadata) {
+      try {
+        if (options.storage.getItem(key) === original) continue;
+        if (original === null) options.storage.removeItem(key);
+        else writeOriginal(options.storage, original);
+      } catch (rollbackError) {
+        failures.push(rollbackError);
+      }
+    }
     const rollbackTarget = options.target ?? (typeof window !== "undefined" ? window : undefined);
     try {
       rollbackTarget?.dispatchEvent(
@@ -651,6 +676,7 @@ export async function importStudioProjectPackage(
     } catch {
       // 이벤트 발행 실패는 원래 예외 전파를 막지 않는다.
     }
+    if (failures.length) throw new AggregateError([cause, ...failures], "프로젝트 목록을 복원하지 못했습니다.", { cause });
     throw cause;
   }
 }

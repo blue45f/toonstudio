@@ -143,7 +143,9 @@ function extension(name: string): string {
   const normalized = name.trim().toLowerCase();
   if (normalized.endsWith(".toonproject.zip")) return "json";
   const lastDot = normalized.lastIndexOf(".");
-  return lastDot > -1 ? normalized.slice(lastDot + 1) : "";
+  const suffix = lastDot > -1 ? normalized.slice(lastDot + 1) : "";
+  // iOS 파일 앱은 같은 이름을 다시 받으면 미등록 확장자 뒤에 공백과 번호를 붙인다.
+  return /^toonstudio [1-9]\d*$/u.test(suffix) ? "toonstudio" : suffix;
 }
 
 export function detectStudioImportFormat(

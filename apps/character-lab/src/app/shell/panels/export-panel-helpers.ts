@@ -93,7 +93,10 @@ export function readTextFile(file: File): Promise<string> {
 export function describeReceipt(receipt: ExportReceipt): string {
   const size = receipt.width && receipt.height ? ` · ${receipt.width}×${receipt.height}` : "";
   const psd = receipt.psd ? ` · 레이어 ${receipt.psd.layerCount}(그룹 ${receipt.psd.groupCount}) · 재합성 MAE ${receipt.psd.recomposeMae.toFixed(2)}` : "";
-  return `${receipt.fileName} (${receipt.bytes.toLocaleString("ko-KR")} B${size}${psd} · ${receipt.durationMs} ms)`;
+  const motion = receipt.motion
+    ? ` · ${receipt.motion.beatCount ? `${receipt.motion.beatCount}비트 · ` : ""}${receipt.motion.frameCount}f (평균 ${receipt.motion.avgFrameMs.toFixed(2)}ms/f · 피크 ${receipt.motion.peakRasterMb.toFixed(2)}MB · 효과음 ${receipt.motion.audioEvents}건${receipt.motion.ambientBgm ? " · 앰비언트 BGM" : ""})`
+    : "";
+  return `${receipt.fileName} (${receipt.bytes.toLocaleString("ko-KR")} B${size}${psd}${motion} · ${receipt.durationMs} ms)`;
 }
 
 export function clampExportInt(value: string, min: number, max: number, fallback: number): number {

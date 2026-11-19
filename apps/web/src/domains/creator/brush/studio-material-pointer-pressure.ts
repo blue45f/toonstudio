@@ -5,14 +5,14 @@ function unit(value: unknown, fallback: number): number {
 }
 
 export function normalizeStudioMaterialPointerPressure(pointerType: unknown, pressure: unknown): number {
-  return pointerType === "mouse" ? 0.5 : unit(pressure, 0.5);
+  return pointerType === "mouse" || (pointerType === "touch" && pressure === 0) ? 0.5 : unit(pressure, 0.5);
 }
 
 /** A pen lift reports zero: extending its endpoint retains the last real contact. */
 export function resolveStudioMaterialReleasePressure(
   pointerType: unknown, pressure: unknown, lastContact: unknown,
 ): number {
-  if (pointerType === "pen" && !(typeof pressure === "number" && pressure > 0 && pressure <= 1)) {
+  if ((pointerType === "pen" || pointerType === "touch") && !(typeof pressure === "number" && pressure > 0 && pressure <= 1)) {
     return unit(lastContact, 0.5);
   }
   return normalizeStudioMaterialPointerPressure(pointerType, pressure);

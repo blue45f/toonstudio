@@ -325,6 +325,30 @@ for (const width of [320, 390, 912, 1024, 1280]) {
     const library = page.getByRole("region", { name: "작품 관리", exact: true });
     await expect(library).toBeVisible();
     await expect(library.getByRole("heading", { name: "내 작업", exact: true })).toBeVisible();
+    const header = page.locator(".workspace-library-shell .workspace-topbar");
+    const signIn = header.getByRole("button", { name: "로그인", exact: true });
+    await expect(signIn).toBeVisible();
+    // 문서 폭은 그대로여도 브랜드의 최소 폭 때문에 마지막 버튼이 잘릴 수 있다.
+    const buttons = header.locator(".workspace-utilities button:visible, .workspace-utilities a:visible");
+    for (const action of await buttons.all()) {
+      const bounds = await action.evaluate((element) => {
+        const { x, right, width, height } = element.getBoundingClientRect();
+        return { x, right, width, height, label: element.getAttribute("aria-label") };
+      });
+      expect(bounds.x).toBeGreaterThanOrEqual(0);
+      expect(bounds.right, bounds.label ?? "보관함 상단 조작").toBeLessThanOrEqual(width);
+      if (width <= 390) {
+        expect(bounds.width).toBeGreaterThanOrEqual(44);
+        expect(bounds.height).toBeGreaterThanOrEqual(44);
+      }
+    }
+    if (width === 320) {
+      await signIn.click();
+      const auth = page.locator('[data-auth-modal="true"]');
+      await expect(auth).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(auth).toBeHidden();
+    }
     // 목록 첫 화면의 주요 행동을 검사한다. 보조 로비는 안내 안에 접혀 있으므로 정문 링크를 대신하지 않는다.
     const startNew = library.getByRole("link", { name: "새 작업", exact: true });
     const importWork = library.getByRole("link", { name: "파일 가져오기", exact: true });
@@ -383,6 +407,7 @@ for (const width of [320, 390, 912, 1024, 1280]) {
 }
 
 test("new project flow explains a disabled start action and preserves the chosen setup", async ({ page }, testInfo) => {
+  await seedGuestSession(page);
   await page.setViewportSize({ width: 320, height: 1000 });
   await page.goto("/studio/new?kind=webtoon&template=webtoon-vertical", { waitUntil: "domcontentloaded" });
 
@@ -445,5 +470,28 @@ test("new project flow explains a disabled start action and preserves the chosen
     () => document.documentElement.scrollWidth <= window.innerWidth + 1,
   );
   expect(hasNoHorizontalOverflow).toBe(true);
+  const firstWorkspace = page.locator("[data-studio-start-disclosure]");
+  await expect(firstWorkspace).toHaveJSProperty("open", false);
+  const picker = firstWorkspace.locator("summary");
+  await expect(picker).toContainText("편집기에서 바로 시작");
+  await picker.focus();
+  await picker.press("Enter");
+  const selected = firstWorkspace.locator('[data-studio-start-point][aria-pressed="true"]');
+  await expect(selected).toHaveAttribute("data-studio-start-point", "editor");
+  await firstWorkspace.locator('[data-studio-start-point="script"]').click();
+  await expect(page.locator("[data-studio-create-next-step]")).toContainText("대본 작성");
+  await firstWorkspace.locator('[data-studio-start-point="editor"]').click();
+  await expect(selected).toHaveAttribute("data-studio-start-point", "editor");
+  await expect(page.locator("[data-studio-create-next-step]")).toContainText("편집기");
+  await picker.click();
+  await expect(firstWorkspace).toHaveJSProperty("open", false);
   await capturePageEvidence(page, testInfo, "studio-new-guided-320");
+  await page.locator("#studio-create-primary-action").click();
+  await expect(page).toHaveURL(/\/studio\/p\/[^/]+\/d\/[^?]+\?.*format=vertical-webtoon/u);
+  await expect(page.locator('[data-studio-editor="true"]')).toBeVisible();
+  await expect(page).toHaveURL((url) => Boolean(url.searchParams.get("room")));
+  const documentUrl = page.url();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(documentUrl);
+  await expect(page.locator('[data-studio-editor="true"]')).toBeVisible();
 });

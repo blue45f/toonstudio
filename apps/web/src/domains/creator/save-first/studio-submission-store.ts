@@ -89,12 +89,17 @@ export function readStudioSubmissions(storage: StudioSubmissionStorage): StudioS
   }
 }
 
+/** 가져오기 롤백은 같은 고정 키에 보관해 둔 원본 문자열을 그대로 돌려놓는다. */
+export function writeSerializedStudioSubmissions(storage: StudioSubmissionStorage, raw: string): void {
+  storage.setItem(STUDIO_SUBMISSION_STORAGE_KEY, raw);
+}
+
 function writeStudioSubmissions(
   storage: StudioSubmissionStorage,
   state: StudioSubmissionState,
   target?: EventTarget,
 ): StudioSubmissionState {
-  storage.setItem(STUDIO_SUBMISSION_STORAGE_KEY, JSON.stringify(state));
+  writeSerializedStudioSubmissions(storage, JSON.stringify(state));
   target?.dispatchEvent(new CustomEvent(STUDIO_SUBMISSION_UPDATED_EVENT, { detail: state }));
   return state;
 }

@@ -398,12 +398,17 @@ export function readStudioSaveProfiles(storage: StudioSaveProfileStorage): Studi
   }
 }
 
+/** 가져오기 롤백은 같은 고정 키에 보관해 둔 원본 문자열을 그대로 돌려놓는다. */
+export function writeSerializedStudioSaveProfiles(storage: StudioSaveProfileStorage, raw: string): void {
+  storage.setItem(STUDIO_SAVE_PROFILE_STORAGE_KEY, raw);
+}
+
 export function writeStudioSaveProfiles(
   storage: StudioSaveProfileStorage,
   state: StudioSaveProfileState,
   target?: StudioSaveProfileEventTarget,
 ): StudioSaveProfileState {
-  storage.setItem(STUDIO_SAVE_PROFILE_STORAGE_KEY, JSON.stringify(state));
+  writeSerializedStudioSaveProfiles(storage, JSON.stringify(state));
   target?.dispatchEvent(new CustomEvent(STUDIO_SAVE_PROFILE_UPDATED_EVENT, { detail: state }));
   return state;
 }

@@ -34,8 +34,13 @@ describe("Studio 가져오기 화면에 원고 이미지 도우미가 들어 있
     const surface = container.querySelector('[data-studio-illustrated-surface="import"]');
     const entry = surface?.querySelector('[data-panel-import-entry="true"]');
     expect(entry).toBeTruthy();
-    // 같은 화면의 기존 가져오기 입력 바로 뒤에 이어진다.
-    expect(entry?.previousElementSibling).toBeTruthy();
+    const picker = screen.getByLabelText("파일 선택");
+    expect(picker.hasAttribute("accept")).toBe(false);
+    expect(entry && (picker.compareDocumentPosition(entry) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy();
+    for (const href of ["/studio/brushes", "/studio/bg3d", "/studio/assets/audio"]) {
+      expect(surface?.querySelector(`a[href="${href}"]`)).toBeTruthy();
+    }
+    expect(surface?.querySelector('a[href="/studio/canvas"]')).toBeNull();
     expect(screen.getByRole("heading", { level: 2, name: "스캔한 원고에서 컷을 찾거나, 긴 원고를 카드로 나누기" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "컷 찾기 시작" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "카드 나누기 시작" })).toBeTruthy();

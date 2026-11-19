@@ -24,7 +24,7 @@ class DocumentShrankError extends Error {
 async function readDocumentBounds(page: Page): Promise<DocumentBounds> {
   return page.evaluate(() => ({
     width: Math.ceil(Math.max(document.documentElement.scrollWidth, document.body.scrollWidth, innerWidth)),
-    height: Math.ceil(Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, innerHeight)),
+    height: Math.max((document.scrollingElement ?? document.documentElement).scrollHeight, innerHeight),
   }));
 }
 
@@ -35,7 +35,8 @@ async function readFrame(page: Page, top?: number): Promise<CaptureFrame> {
     return {
       x: scrollX, y: scrollY, width: innerWidth, height: innerHeight,
       documentWidth: Math.ceil(Math.max(document.documentElement.scrollWidth, document.body.scrollWidth, innerWidth)),
-      documentHeight: Math.ceil(Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, innerHeight)),
+      // 문서 끝의 소수점 반올림은 body와 실제 스크롤 요소에서 서로 다를 수 있다.
+      documentHeight: Math.max((document.scrollingElement ?? document.documentElement).scrollHeight, innerHeight),
     };
   }, top);
 }
@@ -115,7 +116,9 @@ export async function capturePageEvidence(page: Page, testInfo: TestInfo, name: 
             continue;
           }
           gapRewinds = 0;
-          if (frame.y + frame.height <= coveredHeight) throw new Error("Screenshot scroll made no forward progress");
+          if (frame.y + frame.height <= coveredHeight) {
+            throw new Error(`Screenshot scroll made no forward progress (target=${targetY}, viewport=${frame.y}+${frame.height}, document=${frame.documentHeight}, covered=${coveredHeight})`);
+          }
           const file = `${name}-attempt-${attempt + 1}-part-${String(tiles.length + 1).padStart(3, "0")}.jpg`;
           files.push(file);
           await page.screenshot({
@@ -133,7 +136,9 @@ export async function capturePageEvidence(page: Page, testInfo: TestInfo, name: 
           observedDocumentHeight = Math.max(observedDocumentHeight, after.documentHeight);
           observedDocumentWidth = Math.max(observedDocumentWidth, after.documentWidth);
           tiles.push({ file, x: frame.x, y: frame.y, width: frame.width, height: frame.height });
-          coveredHeight = Math.max(coveredHeight, Math.min(snapshotBounds.height, frame.y + frame.height));
+          // scrollY는 소수일 수 있지만 scrollHeight와 CSS 배율 JPEG의 마지막 행은 정수다.
+          const bottom = frame.y + frame.height;
+          coveredHeight = Math.max(coveredHeight, Math.round(bottom) >= snapshotBounds.height ? snapshotBounds.height : bottom);
           if (coveredHeight >= snapshotBounds.height) break;
           const overlap = Math.min(160, Math.floor(frame.height / 3));
           targetY = Math.max(0, coveredHeight - overlap);

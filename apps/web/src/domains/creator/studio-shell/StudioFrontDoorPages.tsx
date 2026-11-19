@@ -6,7 +6,7 @@
  * 원래 라우트에 연결된 적이 없어 영향이 없다.
  */
 import { getActiveI18nLocale, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { ArrowRight, Boxes, Brush, FileImage, FilePlus2, Music2, Palette, Sparkles, Store, UserRoundPen, type LucideIcon } from "lucide-react";
+import { ArrowRight, Boxes, Brush, FilePlus2, Music2, Palette, Sparkles, Store, UserRoundPen, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -275,10 +275,8 @@ function PageHeader({
 }
 
 /** Render supported import workflows for projects, media, brushes, and 3D assets. */
-export function StudioImportPage() {
+export function StudioImportPage({ children }: { readonly children: ReactNode }) {
   useBilingualI18nRevision();
-  const language = useI18n((state) => state.lang);
-  const locale = studioFrontDoorLocale(language);
   useDocumentTitle(bi("파일 가져오기", "Import files"));
   const steps: readonly StudioTaskFlowStep[] = bi([
       { id: "choose", label: "파일 선택", description: "원본은 변경하지 않음", state: "current" },
@@ -291,27 +289,22 @@ export function StudioImportPage() {
     ]);
 
   return (
-    <Container size="wide" className="min-w-0 py-7 sm:py-10 lg:py-12">
-      <PageHeader
-        eyebrow="IMPORT"
-        title={bi("파일 종류를 몰라도 괜찮아요.", "You do not need to know the file type.")}
-        description={bi("가져올 대상을 고르면 기존 편집기와 에셋 도구로 연결하고, 손실 가능성이 있는 항목은 적용 전에 알려 줍니다.", "Choose what you are importing. ToonStudio opens the right editor and reports possible losses before applying changes.")}
-        locale={locale}
-        crumbs={[
-          { label: bi("내 작업", "My work"), href: "/studio" },
-          { label: bi("파일 가져오기", "Import files") },
-        ]}
-      />
-      <StudioTaskFlow steps={steps} ariaLabel={bi("파일 가져오기 단계", "File import steps")} className="mt-5" />
-
-      <div className="mt-8 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <Container size="wide" className="min-w-0 pt-4 pb-7 sm:py-8">
+      <header>
+        <nav aria-label={bi("현재 위치", "Current location")} className="flex flex-wrap items-center gap-2 text-sm text-fg-3">
+          <Link href="/studio" className="inline-flex min-h-11 min-w-11 items-center rounded-lg underline focus-visible:outline-2">
+            {bi("내 작업", "My work")}
+          </Link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{bi("가져오기", "Import")}</span>
+        </nav>
+        <h1 className="mt-2 break-words font-display text-3xl font-bold tracking-tight text-fg sm:text-4xl">
+          {bi("파일 가져오기", "Import files")}
+        </h1>
+      </header>
+      {children}
+      <div className="mt-5 grid min-w-0 gap-3 md:grid-cols-3">
         {[
-          {
-            href: "/studio/canvas",
-            icon: FileImage,
-            title: bi("프로젝트·이미지", "Projects & images"),
-            body: bi("Studio 프로젝트, PSD, ORA, CBZ와 일반 이미지를 편집기에서 가져옵니다.", "Import Studio projects, PSD, ORA, CBZ and standard images in the editor."),
-          },
           {
             href: "/studio/brushes",
             icon: Brush,
@@ -340,6 +333,12 @@ export function StudioImportPage() {
         ))}
       </div>
 
+      <details className="mt-5 min-w-0">
+        <summary className="min-h-11 cursor-pointer content-center rounded-md text-sm font-semibold text-fg">
+          {bi("파일을 가져오는 순서", "How file import works")}
+        </summary>
+        <StudioTaskFlow steps={steps} ariaLabel={bi("파일 가져오기 단계", "File import steps")} className="mt-3" />
+      </details>
       <RecoverableActionNotice
         tone="warning"
         title={bi("지원하지 않는 객체는 몰래 평탄화하지 않습니다", "Unsupported objects are never flattened silently")}

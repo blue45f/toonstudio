@@ -77,13 +77,14 @@ function drawInk(ck: CanvasKit, canvas: Canvas, ink: SkiaDocumentInk): void {
       const c = Math.cos(angle); const s = Math.sin(angle);
       for (let i = 0; i < ink.dabs.length; i += 3) {
         const x = ink.dabs[i]!; const y = ink.dabs[i + 1]!; const radius = ink.dabs[i + 2]!;
+        if (radius === 0) continue;
         builder.addPath(unit, [radius * c, -radius * s, x, radius * s, radius * c, y, 0, 0, 1]);
         if (!ink.union) {
           const path = builder.detach();
           try { canvas.drawPath(path, paint); } finally { path.delete(); }
         }
       }
-      if (ink.union) {
+      if (ink.union && !builder.isEmpty()) {
         const path = builder.detach();
         try { canvas.drawPath(path, paint); } finally { path.delete(); }
       }
@@ -302,7 +303,7 @@ export function createSkiaDocumentRenderer(canvas: HTMLCanvasElement,
             const renderItem = () => {
               if (item.ink) {
                 for (let i = 0; i < item.ink.dabs.length; i++) {
-                  if (!Number.isFinite(item.ink.dabs[i]) || (i % 3 === 2 && item.ink.dabs[i]! <= 0)) {
+                  if (!Number.isFinite(item.ink.dabs[i]) || (i % 3 === 2 && item.ink.dabs[i]! < 0)) {
                     throw new Error("Invalid GPU dab geometry");
                   }
                 }

@@ -103,6 +103,8 @@ describe("studio stylus pressure profile", () => {
     expect(mappedPen).not.toBe(0.25);
     expect(resolveStudioStylusPressureInput("mouse", 0.25, profile)).toBe(0.25);
     expect(resolveStudioStylusPressureInput("touch", 0.5, profile)).toBe(0.5);
+    expect(resolveStudioStylusPressureInput("touch", 0, profile)).toBeUndefined();
+    expect(resolveStudioStylusPressureInput("pen", 0)).toBe(0);
     expect(resolveStudioStylusPressureInput("touch", 0.25, profile)).toBe(mappedPen);
     expect(resolveStudioStylusPressureInput("pen", Number.NaN, profile)).toBeNaN();
     expect(resolveStudioStylusPressureInput("pen", 2, profile)).toBe(2);

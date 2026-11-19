@@ -15,18 +15,18 @@ function localeFromLanguage(_language: string): "ko" | "en" {
   return getActiveI18nLocale() === "ko" ? "ko" : "en";
 }
 
-/** Keeps the visual front door while adding the real preflight-to-editor import path below it. */
 export function StudioImportIntegratedPage() {
   useBilingualI18nRevision();
   const language = useI18n((state) => state.lang);
   const locale = localeFromLanguage(language);
   return (
     <div data-studio-illustrated-surface="import">
-      <StudioImportPage />
-      <Container size="wide" className="pb-10 lg:pb-12">
-        <StudioImportVisualGuide locale={locale} />
+      <StudioImportPage>
         <StudioImportIntake locale={locale} />
+      </StudioImportPage>
+      <Container size="wide" className="pb-10 lg:pb-12">
         <PanelImportEntry />
+        <StudioImportVisualGuide locale={locale} />
       </Container>
     </div>
   );

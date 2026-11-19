@@ -275,11 +275,15 @@ export function studioLiveBrushPressureSamples(
   el: DrawEl,
   sourcePointCount = Math.floor(el.points.length / 2)
 ): number[] {
+  // 센서 없는 터치를 0으로 저장한 기존 선은 원본을 고치지 않고 해당 모델의 기본 굵기로 재생한다.
+  const missingTouchPressure = el.inkInput?.pointerType === "touch"
+    && el.inkInput.pressureSource === "simulated" && el.pressureModel !== undefined
+    && el.pressures?.[0] === 0 && el.pressures.every((value) => value === 0);
   return mapStudioBrushAliasPressureSamples(
     el.mode === "eraser" && !isStudioBrushEraserAliasId(el.brush)
       ? null
       : el.brush,
-    el.pressures,
+    missingTouchPressure ? undefined : el.pressures,
     sourcePointCount,
     studioInkFallbackPressure(el.pressureModel)
   );

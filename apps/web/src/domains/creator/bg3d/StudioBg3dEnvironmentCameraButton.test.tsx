@@ -57,9 +57,14 @@ describe("환경 에셋에 저장된 카메라 구도", () => {
 
   it("별도 세부 구도가 없는 기존 장소는 원래 추천 구도만 제공한다", () => {
     const existing = STUDIO_BG3D_ENVIRONMENT_ASSETS.filter(asset => !asset.detailCamera);
-    expect(existing).toHaveLength(28);
-    render(<StudioBg3dEnvironmentCameraButton {...controls()} assetHash={existing[0]!.sha256} />);
-    expect(screen.getAllByRole("button")).toEqual([button()]);
+    // 한강 쉼터 v2까지 여덟 공간은 세부 구도가 있다. 나머지 스물일곱 공간을 전부 확인한다.
+    expect(existing).toHaveLength(27);
+    const props = controls();
+    const { rerender } = render(<StudioBg3dEnvironmentCameraButton {...props} assetHash={existing[0]!.sha256} />);
+    for (const asset of existing) {
+      rerender(<StudioBg3dEnvironmentCameraButton {...props} assetHash={asset.sha256} />);
+      expect(screen.getAllByRole("button")).toEqual([button()]);
+    }
   });
 
   it.each([...STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS, ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1])(

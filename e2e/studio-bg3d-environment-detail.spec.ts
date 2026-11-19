@@ -7,6 +7,7 @@ import { openStudioBg3dProfessionalMode, selectStudioBg3dTaskTab } from "../scri
 import { openStudioLayerNavigator, openStudioMainMenu } from "../scripts/lib/studio-shell-interactions";
 
 const shots = [
+  { model: "hangang_riverside_pavilion", label: "웹툰 한강 공원 쉼터", subject: "쉼터 벤치와 물결 처마", wide: 34, detail: 44 },
   { model: "coastal_signal_station", label: "붉은 등대와 방파제", subject: "부두 난간", wide: 39, detail: 40 },
   { model: "harbor_boat_repair_shed", label: "항구 목선 수리소", subject: "선체 이음부", wide: 40, detail: 38 },
   { model: "botanical_illustration_room", label: "식물 세밀화 작업실", subject: "표본 작업대", wide: 37, detail: 30 },

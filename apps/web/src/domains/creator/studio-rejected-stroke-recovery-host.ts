@@ -102,7 +102,10 @@ export interface StudioRejectedStrokeRecoveryHostInput {
   readonly recoveryScope?: StudioRejectedStrokeRecoveryScope;
   readonly getDocumentGeneration?: () => number;
   readonly hasRestoredStroke?: (pageId: string, strokeId: string) => boolean;
-  readonly acquireRepository?: (scope: StudioRejectedStrokeRecoveryScope) => Promise<StudioRejectedStrokeRecoveryRepository>;
+  readonly acquireRepository?: (
+    scope: StudioRejectedStrokeRecoveryScope,
+    options: Readonly<{ retryOpen: boolean }>,
+  ) => Promise<StudioRejectedStrokeRecoveryRepository>;
 }
 
 /**
@@ -128,15 +131,17 @@ export function useStudioRejectedStrokeRecoveryHost(
     let current = true;
     const acquire = latest.current.acquireRepository ?? acquireStudioRejectedStrokeRecoveryRepository;
     let repository: Promise<StudioRejectedStrokeRecoveryRepository> | null = null;
-    const getRepository = () => {
-      repository ??= acquire(scope).catch((cause: unknown) => {
-        repository = null;
-        throw cause;
+    const getRepository = (retryOpen = false) => {
+      if (repository && !retryOpen) return repository;
+      const opening = acquire(scope, { retryOpen });
+      repository = opening;
+      void opening.catch(() => {
+        if (repository === opening) repository = null;
       });
-      return repository;
+      return opening;
     };
     const deactivate = activateStudioRejectedStrokeRecovery(scopeKey, {
-      load: async () => (await getRepository()).load(scopeKey),
+      load: async () => (await getRepository(true)).load(scopeKey),
       save: async (record) => (await getRepository()).save(record),
       delete: async (record) => (await getRepository()).delete(record),
       confirmRestored: async (record) => (await getRepository()).confirmRestored(record),

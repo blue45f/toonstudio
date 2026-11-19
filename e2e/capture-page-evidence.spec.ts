@@ -51,6 +51,18 @@ async function expectCompleteCoverage(info: TestInfo, coverage: Coverage): Promi
   expect(covered).toBeGreaterThanOrEqual(coverage.height);
 }
 
+test("body에서 문서 끝을 1px 크게 읽어도 실제 스크롤 영역의 마지막 행까지 기록한다", async ({ page }, info) => {
+  await installDocument(page, 2100);
+  await page.evaluate(() => {
+    // 브라우저의 소수점 레이아웃에서 관측된 body와 루트의 반올림 차이를 재현한다.
+    Object.defineProperty(document.body, "scrollHeight", { get: () => 2101 });
+  });
+  await capturePageEvidence(page, info, "rounded-body");
+  const coverage = getCoverage(info, "rounded-body");
+  expect(coverage.height).toBe(2100);
+  await expectCompleteCoverage(info, coverage);
+});
+
 test("안정된 긴 문서의 모든 구간을 기록하고 원래 화면 위치를 복원한다", async ({ page }, info) => {
   await installDocument(page);
   await page.evaluate(() => scrollTo({ top: 350, behavior: "instant" }));
