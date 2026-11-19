@@ -9,9 +9,12 @@ import {
 } from "./studio-workflow-pack";
 
 describe("StudioWorkflowPack", () => {
-  it("clears all built-in starter packs for commercial export", () => {
+  it("clears all built-in starter packs for commercial export and provides v2 3D/brush bindings", () => {
     expect(BUILTIN_STUDIO_WORKFLOW_PACKS.length).toBeGreaterThanOrEqual(4);
     for (const pack of BUILTIN_STUDIO_WORKFLOW_PACKS) {
+      expect(pack.schemaVersion).toBe(2);
+      expect(pack.bg3dLightingPresetId).toBeTruthy();
+      expect(pack.primaryBrushSlotId).toBeTruthy();
       const clearance = evaluateWorkflowPackRightsClearance(pack);
       expect(clearance.clearedForCommercialExport).toBe(true);
       expect(clearance.blockedLicenses).toEqual([]);
@@ -34,16 +37,37 @@ describe("StudioWorkflowPack", () => {
     expect(clearance.summary).toContain("CC-BY-NC");
   });
 
-  it("round-trips a workflow pack cleanly through JSON serialization", () => {
-    const original = BUILTIN_STUDIO_WORKFLOW_PACKS[1];
-    const json = serializeStudioWorkflowPack(original);
-    const restored = parseStudioWorkflowPack(json);
-    expect(restored).toEqual(original);
+  it("round-trips both v1 and v2 workflow packs cleanly through JSON serialization", () => {
+    const v2Pack: StudioWorkflowPack = {
+      ...BUILTIN_STUDIO_WORKFLOW_PACKS[1],
+      teamPolicyLock: {
+        teamLabel: "스튜디오 테스트팀",
+        lockedFields: ["platformId", "skinToneId"],
+        requireCommercialClearance: true,
+      },
+    };
+    expect(parseStudioWorkflowPack(serializeStudioWorkflowPack(v2Pack))).toEqual(v2Pack);
+
+    const v1Pack: StudioWorkflowPack = {
+      schemaVersion: 1,
+      id: "legacy-v1-pack",
+      name: "레거시 v1 팩",
+      genre: "일상",
+      summary: "v1 하위 호환 검증",
+      platformId: "naver-webtoon",
+      skinToneId: "warm-fair",
+      perspectivePreset: "eye-level",
+      focusStage: "storyboard",
+      focusPreset: "standard-25",
+      readerSpeed: "casual",
+      rightsBom: [{ assetLabel: "기본 프리셋", license: "MIT" }],
+    };
+    expect(parseStudioWorkflowPack(serializeStudioWorkflowPack(v1Pack))).toEqual(v1Pack);
   });
 
   it("rejects malformed or unknown-schema workflow pack payloads", () => {
     expect(parseStudioWorkflowPack("not-json")).toBeNull();
-    expect(parseStudioWorkflowPack(JSON.stringify({ schemaVersion: 2, id: "x" }))).toBeNull();
+    expect(parseStudioWorkflowPack(JSON.stringify({ schemaVersion: 3, id: "x" }))).toBeNull();
     expect(
       parseStudioWorkflowPack(
         JSON.stringify({

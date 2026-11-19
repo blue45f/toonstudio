@@ -6,13 +6,25 @@ import type { ReaderScrollSpeedProfile } from "./webtoon-scroll-pacing-simulator
 
 export type WorkflowPackLicenseCode = "CC0" | "MIT" | "COMMERCIAL" | "CC-BY-NC" | "GPL-3.0";
 
+export type WorkflowPackLockableField =
+  | "platformId"
+  | "skinToneId"
+  | "perspectivePreset"
+  | "readerSpeed";
+
+export interface StudioWorkflowPackTeamPolicy {
+  readonly teamLabel: string;
+  readonly lockedFields: readonly WorkflowPackLockableField[];
+  readonly requireCommercialClearance: boolean;
+}
+
 export interface StudioWorkflowPackRightsEntry {
   readonly assetLabel: string;
   readonly license: WorkflowPackLicenseCode;
 }
 
 export interface StudioWorkflowPack {
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 1 | 2;
   readonly id: string;
   readonly name: string;
   readonly genre: string;
@@ -24,6 +36,12 @@ export interface StudioWorkflowPack {
   readonly focusPreset: PomodoroMode;
   readonly readerSpeed: ReaderScrollSpeedProfile;
   readonly rightsBom: readonly StudioWorkflowPackRightsEntry[];
+  /** schemaVersion 2 선택 필드: BG3D 기본 라이팅 프리셋 ID */
+  readonly bg3dLightingPresetId?: string;
+  /** schemaVersion 2 선택 필드: 2D 대표 브러시 슬롯 ID */
+  readonly primaryBrushSlotId?: string;
+  /** schemaVersion 2 선택 필드: 팀 스튜디오 강제 규약(Team Policy Lock) */
+  readonly teamPolicyLock?: StudioWorkflowPackTeamPolicy;
 }
 
 export interface StudioWorkflowPackRightsClearance {
@@ -39,7 +57,7 @@ const RESTRICTED_COMMERCIAL_LICENSES: ReadonlySet<WorkflowPackLicenseCode> = new
 
 export const BUILTIN_STUDIO_WORKFLOW_PACKS: readonly StudioWorkflowPack[] = [
   {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: "rofan-episode1-starter",
     name: "로맨스판타지 1화 세팅 팩",
     genre: "로맨스판타지",
@@ -50,13 +68,15 @@ export const BUILTIN_STUDIO_WORKFLOW_PACKS: readonly StudioWorkflowPack[] = [
     focusStage: "background-3d",
     focusPreset: "deep-flow-50",
     readerSpeed: "immersive",
+    bg3dLightingPresetId: "palace-golden-hour",
+    primaryBrushSlotId: "g-pen-crisp",
     rightsBom: [
       { assetLabel: "궁전 복도 파라메트릭 3D 조명 프리셋", license: "CC0" },
       { assetLabel: "로판 한글 식자 스타일 세트", license: "COMMERCIAL" },
     ],
   },
   {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: "modern-romance-daily",
     name: "현대 로맨스 · 일상 컷 팩",
     genre: "현대 로맨스",
@@ -67,13 +87,15 @@ export const BUILTIN_STUDIO_WORKFLOW_PACKS: readonly StudioWorkflowPack[] = [
     focusStage: "storyboard",
     focusPreset: "standard-25",
     readerSpeed: "casual",
+    bg3dLightingPresetId: "cafe-soft-daylight",
+    primaryBrushSlotId: "soft-pencil-rough",
     rightsBom: [
       { assetLabel: "카페·오피스 기본 라이팅 프로파일", license: "CC0" },
       { assetLabel: "일상 말풍선·의성어 프리셋", license: "MIT" },
     ],
   },
   {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: "action-noir-3d-stage",
     name: "액션 · 느와르 3D 연출 팩",
     genre: "액션 / 느와르",
@@ -84,13 +106,15 @@ export const BUILTIN_STUDIO_WORKFLOW_PACKS: readonly StudioWorkflowPack[] = [
     focusStage: "lineart",
     focusPreset: "sprint-15",
     readerSpeed: "skimmer",
+    bg3dLightingPresetId: "noir-rim-backlit",
+    primaryBrushSlotId: "ink-brush-dynamic",
     rightsBom: [
       { assetLabel: "느와르 역광 Live Ink 프리셋", license: "CC0" },
       { assetLabel: "액션 타격 효과음 번들", license: "COMMERCIAL" },
     ],
   },
   {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: "global-canvas-shortform",
     name: "글로벌 캔버스 · 숏폼 세팅 팩",
     genre: "글로벌 연재",
@@ -101,6 +125,8 @@ export const BUILTIN_STUDIO_WORKFLOW_PACKS: readonly StudioWorkflowPack[] = [
     focusStage: "finishing-sfx",
     focusPreset: "standard-25",
     readerSpeed: "skimmer",
+    bg3dLightingPresetId: "studio-cool-neutral",
+    primaryBrushSlotId: "clean-mono-liner",
     rightsBom: [
       { assetLabel: "글로벌 세로 스크롤 여백 가이드", license: "MIT" },
     ],
@@ -174,13 +200,38 @@ const VALID_LICENSES = new Set<WorkflowPackLicenseCode>([
   "CC-BY-NC",
   "GPL-3.0",
 ]);
+const VALID_LOCK_FIELDS = new Set<WorkflowPackLockableField>([
+  "platformId",
+  "skinToneId",
+  "perspectivePreset",
+  "readerSpeed",
+]);
+
+function parseOptionalTeamPolicy(raw: unknown): StudioWorkflowPackTeamPolicy | undefined | null {
+  if (raw === undefined) return undefined;
+  if (!raw || typeof raw !== "object") return null;
+  const candidate = raw as Record<string, unknown>;
+  if (typeof candidate.teamLabel !== "string" || candidate.teamLabel.trim().length === 0) return null;
+  if (typeof candidate.requireCommercialClearance !== "boolean") return null;
+  if (!Array.isArray(candidate.lockedFields)) return null;
+  const lockedFields: WorkflowPackLockableField[] = [];
+  for (const field of candidate.lockedFields) {
+    if (!VALID_LOCK_FIELDS.has(field as WorkflowPackLockableField)) return null;
+    lockedFields.push(field as WorkflowPackLockableField);
+  }
+  return {
+    teamLabel: candidate.teamLabel.trim(),
+    lockedFields: [...new Set(lockedFields)],
+    requireCommercialClearance: candidate.requireCommercialClearance,
+  };
+}
 
 export function parseStudioWorkflowPack(raw: string): StudioWorkflowPack | null {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return null;
     const candidate = parsed as Record<string, unknown>;
-    if (candidate.schemaVersion !== 1) return null;
+    if (candidate.schemaVersion !== 1 && candidate.schemaVersion !== 2) return null;
     if (typeof candidate.id !== "string" || candidate.id.trim().length === 0) return null;
     if (typeof candidate.name !== "string" || candidate.name.trim().length === 0) return null;
     if (typeof candidate.genre !== "string" || typeof candidate.summary !== "string") return null;
@@ -204,8 +255,20 @@ export function parseStudioWorkflowPack(raw: string): StudioWorkflowPack | null 
       });
     }
 
+    const teamPolicyLock = parseOptionalTeamPolicy(candidate.teamPolicyLock);
+    if (teamPolicyLock === null) return null;
+
+    const bg3dLightingPresetId =
+      typeof candidate.bg3dLightingPresetId === "string" && candidate.bg3dLightingPresetId.trim().length > 0
+        ? candidate.bg3dLightingPresetId.trim()
+        : undefined;
+    const primaryBrushSlotId =
+      typeof candidate.primaryBrushSlotId === "string" && candidate.primaryBrushSlotId.trim().length > 0
+        ? candidate.primaryBrushSlotId.trim()
+        : undefined;
+
     return {
-      schemaVersion: 1,
+      schemaVersion: candidate.schemaVersion,
       id: candidate.id.trim(),
       name: candidate.name.trim(),
       genre: candidate.genre.trim(),
@@ -217,6 +280,9 @@ export function parseStudioWorkflowPack(raw: string): StudioWorkflowPack | null 
       focusPreset: candidate.focusPreset as PomodoroMode,
       readerSpeed: candidate.readerSpeed as ReaderScrollSpeedProfile,
       rightsBom,
+      ...(bg3dLightingPresetId ? { bg3dLightingPresetId } : {}),
+      ...(primaryBrushSlotId ? { primaryBrushSlotId } : {}),
+      ...(teamPolicyLock ? { teamPolicyLock } : {}),
     };
   } catch {
     return null;

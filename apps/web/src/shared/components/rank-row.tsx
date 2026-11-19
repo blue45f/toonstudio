@@ -226,34 +226,59 @@ export const RankRow = memo(function RankRow({
         </div>
       </div>
 
-      {/* Expanded Score breakdown panel */}
-      {expanded && (
-        <div id={detailId} className="border-t border-line/45 bg-canvas/40 px-3 py-3 text-xs rounded-b-xl animate-fade-in">
-          <div className="flex flex-col gap-2.5">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 font-medium text-accent text-xs tracking-[0.02em]">
-                {t("ranking.breakdownTitle")}
-              </span>
-              <span className="font-mono text-[10px] text-fg-3">
-                {t("ranking.totalScore")}: <strong className="text-fg font-semibold">{ranked.score.toFixed(2)}</strong>
-              </span>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {explainScore(title, axis).map((factor, i) => (
-                <div key={i} className="rounded-lg border border-line bg-card/80 p-2">
-                  <div className="text-[0.62rem] text-fg-3 leading-snug">{factor.label}</div>
-                  <div className="mt-0.5 font-mono text-[11px] font-bold text-fg-2">{factor.value}</div>
+      {/* Expanded Score breakdown panel — 중첩 카드 금지(DESIGN.md §4) + 스펙트럼 기여도 바 */}
+      {expanded && (() => {
+        const factors = explainScore(title, axis);
+        return (
+          <div
+            id={detailId}
+            data-testid="rank-row-score-breakdown"
+            className="border-t border-line/60 bg-canvas/45 px-3 py-3 text-xs rounded-b-xl animate-fade-in"
+          >
+            <div className="flex flex-col gap-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="flex items-center gap-1 font-medium text-accent text-xs tracking-[0.02em]">
+                  {t("ranking.breakdownTitle")}
+                </span>
+                <span className="font-mono text-[10px] text-fg-3 tnum">
+                  {t("ranking.totalScore")}: <strong className="text-fg font-semibold">{ranked.score.toFixed(2)}</strong>
+                </span>
+              </div>
+
+              {factors.length > 0 && (
+                <div
+                  className="flex h-1.5 w-full overflow-hidden rounded-full bg-raised"
+                  aria-hidden="true"
+                >
+                  {factors.map((factor, i) => (
+                    <span
+                      key={`${factor.label}-${i}`}
+                      className={cn(
+                        "h-full flex-1 border-r border-canvas/70 last:border-r-0",
+                        i % 3 === 0 ? "bg-accent" : i % 3 === 1 ? "bg-cool" : "bg-good",
+                      )}
+                      style={{ opacity: Math.max(0.45, 1 - i * 0.1) }}
+                    />
+                  ))}
                 </div>
-              ))}
+              )}
+
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                {factors.map((factor, i) => (
+                  <div key={`${factor.label}-${i}`} className="rounded-lg bg-panel/65 px-2.5 py-2">
+                    <div className="text-[0.62rem] text-fg-3 leading-snug [word-break:keep-all]">{factor.label}</div>
+                    <div className="mt-0.5 font-mono text-[11px] font-bold text-fg-2 tnum">{factor.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-[0.65rem] text-fg-3 leading-relaxed [word-break:keep-all]">
+                {t("ranking.breakdownDescription")}
+              </p>
             </div>
-            
-            <p className="text-[0.65rem] text-fg-3 leading-relaxed">
-              {t("ranking.breakdownDescription")}
-            </p>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 });
