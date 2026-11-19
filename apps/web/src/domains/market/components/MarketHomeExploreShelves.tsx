@@ -170,21 +170,21 @@ export function MarketHomeExploreBand({
           </div>
           <ol
             data-ink-stagger
-            className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+            className="mt-4 grid gap-3 break-keep [overflow-wrap:break-word] sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
           >
             {STARTER_STAGES.map((item) => (
               <li
                 key={item.step}
-                className="ink-frame flex flex-col justify-between rounded-[12px] border border-line bg-card p-3.5"
+                className="ink-frame flex flex-col justify-between rounded-[12px] bg-card p-3.5"
               >
                 <div>
                   <span className="text-xs font-medium text-accent tabular-nums">
                     {t(`${item.step}단계`, `Step ${item.step}`)}
                   </span>
-                  <h3 className="mt-1 text-sm font-semibold text-fg [word-break:keep-all]">
+                  <h3 className="mt-1 text-sm font-semibold leading-[1.35] text-fg">
                     {t(item.stageKo, item.stageEn)}
                   </h3>
-                  <p className="mt-1 text-xs leading-5 text-fg-2 [word-break:keep-all]">
+                  <p className="mt-1 text-xs leading-[1.6] tracking-[-0.01em] text-fg-2">
                     {t(item.descKo, item.descEn)}
                   </p>
                 </div>
@@ -193,7 +193,7 @@ export function MarketHomeExploreBand({
                   className="ink-arrow mt-2.5 inline-flex min-h-11 items-center gap-1 text-xs font-medium text-accent hover:underline"
                 >
                   <span>{t(`${item.stageKo} 소재 보기`, `Browse ${item.stageEn}`)}</span>
-                  <ArrowRight size={12} aria-hidden="true" />
+                  <ArrowRight size={12} strokeWidth={1.5} aria-hidden="true" />
                 </Link>
               </li>
             ))}
@@ -369,30 +369,30 @@ export function MarketHomeExploreBand({
 
           <div
             data-ink-stagger
-            className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+            className="mt-4 grid gap-3 break-keep [overflow-wrap:break-word] sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
           >
             {RIGHTS_VERIFIED_SHELVES.map((shelf) => (
               <Link
                 key={shelf.href}
                 href={shelf.href}
-                className="ink-frame group flex flex-col justify-between rounded-[12px] border border-line bg-card p-4 transition-colors duration-150 hover:border-line-strong"
+                className="ink-frame group flex flex-col justify-between rounded-[12px] bg-card p-4 transition-colors duration-150 hover:bg-raised"
               >
                 <div>
                   <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-3">
                     <span className="size-1.5 rounded-full bg-good" aria-hidden="true" />
-                    <ShieldCheck className="size-3.5" aria-hidden="true" />
+                    <ShieldCheck className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
                     {t("사용 조건 표기됨", "Terms disclosed")}
                   </span>
-                  <h3 className="mt-1.5 text-sm font-semibold text-fg [word-break:keep-all] group-hover:text-accent">
+                  <h3 className="mt-1.5 text-sm font-semibold leading-[1.35] text-fg group-hover:text-accent">
                     {t(shelf.titleKo, shelf.titleEn)}
                   </h3>
-                  <p className="mt-1 text-xs leading-5 text-fg-2 [word-break:keep-all]">
+                  <p className="mt-1 text-xs leading-[1.6] tracking-[-0.01em] text-fg-2">
                     {t(shelf.descKo, shelf.descEn)}
                   </p>
                 </div>
                 <span className="ink-arrow mt-3 inline-flex items-center gap-1 text-xs font-medium text-accent">
                   <span>{t("조건으로 탐색", "Filter catalog")}</span>
-                  <ArrowRight className="size-3" aria-hidden="true" />
+                  <ArrowRight className="size-3" strokeWidth={1.5} aria-hidden="true" />
                 </span>
               </Link>
             ))}
@@ -403,14 +403,14 @@ export function MarketHomeExploreBand({
               <p className="text-xs font-medium text-fg-3">
                 {t("최근 활동 배급자 스토어", "Active publisher storefronts")}
               </p>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-nowrap gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible sm:pb-0">
                 {featuredPublishers.map((pub) => (
                   <Link
                     key={pub.id}
                     href={`/market/creator/${encodeURIComponent(pub.id)}`}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-[8px] border border-line bg-card px-3 py-2 text-xs font-medium text-fg transition-colors hover:border-line-strong hover:text-accent"
+                    className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-[8px] bg-card px-3 py-2 text-xs font-medium text-fg transition-colors duration-150 hover:bg-raised hover:text-accent"
                   >
-                    <Store className="size-3.5 text-fg-3" aria-hidden="true" />
+                    <Store className="size-3.5 text-fg-3" strokeWidth={1.5} aria-hidden="true" />
                     <span>{pub.name}</span>
                     <span className="numeral tnum rounded-[4px] bg-raised px-1.5 py-0.5 text-xs text-fg-2 tabular-nums">
                       {t(`패키지 ${pub.count}개`, `${pub.count} pkgs`)}
@@ -477,16 +477,16 @@ export function MarketHomeSellBand() {
             )}
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap gap-2.5">
+        <div className="grid w-full shrink-0 grid-cols-1 gap-2.5 sm:flex sm:w-auto sm:flex-wrap">
           <Link
             href="/market/publish"
             className={buttonClass({
               variant: "solid",
               size: "md",
-              className: "min-h-11 rounded-[9px] font-medium",
+              className: "min-h-11 w-full justify-center rounded-[9px] font-medium sm:w-auto",
             })}
           >
-            <Plus className="size-4" aria-hidden="true" />
+            <Plus className="size-4" strokeWidth={1.5} aria-hidden="true" />
             {t("소재 공유하기", "Share materials")}
           </Link>
           <Link
@@ -494,10 +494,10 @@ export function MarketHomeSellBand() {
             className={buttonClass({
               variant: "outline",
               size: "md",
-              className: "min-h-11 rounded-[9px] font-medium",
+              className: "min-h-11 w-full justify-center rounded-[9px] font-medium sm:w-auto",
             })}
           >
-            <Upload className="size-4" aria-hidden="true" />
+            <Upload className="size-4" strokeWidth={1.5} aria-hidden="true" />
             {t("Studio에서 공유", "Share from Studio")}
           </Link>
         </div>
@@ -581,7 +581,11 @@ export function MarketHomeGuideBand() {
             </Link>
             <Link href="/studio" className="ink-arrow">
               <span>{t("ToonStudio에서 다음 컷 그리기", "Draw the next panel in ToonStudio")}</span>
-              <ArrowRight size={16} aria-hidden="true" />
+              <ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" />
+            </Link>
+            <Link href="/studio/growth-ip#rights" className="ink-arrow">
+              <span>{t("2차 판권·시즌 펀딩 IP 확장 설계", "Plan secondary IP rights & season funding")}</span>
+              <ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" />
             </Link>
           </nav>
         </section>

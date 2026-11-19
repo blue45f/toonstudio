@@ -189,17 +189,18 @@ export function MarketHomePresets({
         </div>
 
         {activePreset ? (
-          <details className="group/preset-guide shrink-0 text-xs text-fg-2">
-            <summary className="flex min-h-11 [min-block-size:2.75rem]! cursor-pointer list-none items-center gap-1.5 rounded-[8px] px-2.5 font-medium text-fg-2 transition-colors hover:bg-raised/50 hover:text-fg focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
-              <HelpCircle size={14} aria-hidden="true" />
+          <details className="group/preset-guide shrink-0 break-keep [overflow-wrap:break-word] text-xs text-fg-2">
+            <summary className="flex min-h-11 [min-block-size:2.75rem]! cursor-pointer list-none items-center gap-1.5 rounded-[8px] px-2.5 font-medium text-fg-2 transition-colors duration-150 hover:bg-raised/50 hover:text-fg focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+              <HelpCircle size={14} strokeWidth={1.5} aria-hidden="true" />
               <span>{t("소재 안내 · 사용하기", "Material guide & use")}</span>
               <ChevronDown
                 size={14}
+                strokeWidth={1.5}
                 aria-hidden="true"
                 className="transition-transform duration-150 group-open/preset-guide:rotate-180 motion-reduce:transition-none"
               />
             </summary>
-            <div className="my-2 flex flex-col gap-3 rounded-[12px] border border-line bg-panel p-3 sm:max-w-xl">
+            <div className="my-2 flex flex-col gap-3 rounded-[12px] border border-line bg-panel p-3.5 sm:max-w-xl">
               <div className="flex items-start gap-3">
                 <img
                   src={
@@ -215,35 +216,35 @@ export function MarketHomePresets({
                   aria-hidden="true"
                   loading="lazy"
                   decoding="async"
-                  className="h-12 w-20 shrink-0 rounded-[8px] border border-line object-cover"
+                  className="h-12 w-20 shrink-0 rounded-[8px] object-cover"
                 />
                 <div className="min-w-0">
-                  <p className="mb-0.5 text-xs font-medium text-fg">
+                  <p className="mb-0.5 text-xs font-semibold leading-[1.4] text-fg">
                     {t(activePreset.label, PRESET_EN_COPY[activePreset.id].label)}
                   </p>
-                  <p className="leading-5 text-fg-2 [word-break:keep-all]">
+                  <p className="leading-[1.6] tracking-[-0.01em] text-fg-2">
                     {t(activePreset.description, PRESET_EN_COPY[activePreset.id].description)}
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2 border-t border-line pt-2.5">
+              <div className="grid grid-cols-1 gap-2 border-t border-line pt-2.5 sm:flex sm:flex-wrap sm:items-center">
                 <Link
                   href={activePreset.studioMountRoute}
                   className={buttonClass({
                     variant: "solid",
                     size: "sm",
-                    className: "min-h-11 [min-block-size:2.75rem]! gap-1.5 rounded-[8px] px-3.5 text-xs font-medium",
+                    className: "min-h-11 [min-block-size:2.75rem]! w-full justify-center gap-1.5 rounded-[8px] px-3.5 text-xs font-medium sm:w-auto",
                   })}
                 >
                   {t(activePreset.studioMountLabel, PRESET_EN_COPY[activePreset.id].studioMountLabel)}
-                  <ArrowRight size={13} aria-hidden="true" />
+                  <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
                 </Link>
                 <Link
                   href="/market/browse"
                   className={buttonClass({
                     variant: "outline",
                     size: "sm",
-                    className: "min-h-11 [min-block-size:2.75rem]! rounded-[8px] px-3.5 text-xs font-medium",
+                    className: "min-h-11 [min-block-size:2.75rem]! w-full justify-center rounded-[8px] px-3.5 text-xs font-medium sm:w-auto",
                   })}
                 >
                   {t("전체 에셋 카탈로그", "Full asset catalog")}
