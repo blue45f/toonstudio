@@ -1,5 +1,6 @@
+import * as Dialog from "@radix-ui/react-dialog";
 import { Coffee, EyeOff, ImagePlus, Lock, MessageSquare, Send, X } from "lucide-react";
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { studioEcosystemClient } from "@/platform/studio-ecosystem-client";
 import { useStudioEcosystemStream } from "@/platform/use-studio-ecosystem-stream";
@@ -42,6 +43,7 @@ export function WorkspaceCafeHubPanel({
   const [body, setBody] = useState("");
   const [attachments, setAttachments] = useState<CafeImageAttachment[]>([]);
   const [lightboxImage, setLightboxImage] = useState<CafeImageAttachment | null>(null);
+  const lightboxTrigger = useRef<HTMLButtonElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [posts, setPosts] = useState<WorkspaceCafePost[]>([]);
   const [commentsByPost, setCommentsByPost] = useState<Record<string, readonly { id: string; author: string; text: string }[]>>({});
@@ -78,17 +80,6 @@ export function WorkspaceCafeHubPanel({
       active = false;
     };
   }, [activeScope, latestCafeEventId]);
-
-  useEffect(() => {
-    if (!lightboxImage) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setLightboxImage(null);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [lightboxImage]);
 
   const handleScopeChange = (scope: WorkspaceCafeScope) => {
     setActiveScope(scope);
@@ -370,7 +361,10 @@ export function WorkspaceCafeHubPanel({
                       <button
                         key={att.id}
                         type="button"
-                        onClick={() => setLightboxImage(att)}
+                        onClick={(event) => {
+                          lightboxTrigger.current = event.currentTarget;
+                          setLightboxImage(att);
+                        }}
                         className="overflow-hidden rounded-md border border-line text-left transition-colors duration-150 hover:border-accent"
                         aria-label={`${att.fileName} 크게 보기`}
                       >
@@ -423,35 +417,46 @@ export function WorkspaceCafeHubPanel({
       )}
 
       {lightboxImage && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${lightboxImage.fileName} 이미지 미리보기`}
-          onClick={() => setLightboxImage(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-6"
+        <Dialog.Root
+          open
+          onOpenChange={(open) => {
+            if (!open) setLightboxImage(null);
+          }}
         >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-xl border border-line bg-panel p-4"
-          >
-            <div className="mb-2 flex items-center justify-between gap-4 text-xs">
-              <span className="truncate font-medium text-fg">{lightboxImage.fileName}</span>
-              <button
-                type="button"
-                onClick={() => setLightboxImage(null)}
-                className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line px-3 text-fg-2 hover:bg-raised sm:min-h-8"
-              >
-                <X className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
-                닫기
-              </button>
-            </div>
-            <img
-              src={lightboxImage.dataUrl}
-              alt={lightboxImage.caption || lightboxImage.fileName}
-              className="mx-auto max-h-[72vh] w-auto rounded-lg object-contain"
-            />
-          </div>
-        </div>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/75" />
+            <Dialog.Content
+              aria-describedby={undefined}
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                if (lightboxTrigger.current?.isConnected) lightboxTrigger.current.focus();
+              }}
+              className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-1.5rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-line bg-panel p-4 sm:w-[calc(100%-3rem)]"
+            >
+              <div className="mb-2 flex items-center justify-between gap-4 text-xs">
+                <Dialog.Title asChild>
+                  <span className="truncate font-medium text-fg">
+                    {lightboxImage.fileName}{" "}<span className="sr-only">이미지 미리보기</span>
+                  </span>
+                </Dialog.Title>
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line px-3 text-fg-2 hover:bg-raised sm:min-h-8"
+                  >
+                    <X className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
+                    닫기
+                  </button>
+                </Dialog.Close>
+              </div>
+              <img
+                src={lightboxImage.dataUrl}
+                alt={lightboxImage.caption || lightboxImage.fileName}
+                className="mx-auto max-h-[72vh] w-auto rounded-lg object-contain"
+              />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
       )}
     </section>
   );
