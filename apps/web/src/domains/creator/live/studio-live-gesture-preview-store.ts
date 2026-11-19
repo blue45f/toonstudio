@@ -12,6 +12,7 @@ import {
   type StudioLiveGesturePreviewSamples,
   type StudioLiveGesturePreviewShape,
 } from "./studio-live-gesture-preview";
+import { deepFreeze } from "./studio-live-gesture-preview-freeze";
 
 export const STUDIO_LIVE_GESTURE_PREVIEW_TTL_MS = 3_000;
 export const STUDIO_LIVE_GESTURE_PREVIEW_MAX_PEERS = 64;
@@ -198,23 +199,6 @@ function resolveLimits(
       STUDIO_LIVE_GESTURE_PREVIEW_MAX_AUTHORITATIVE_WITNESSES,
     ),
   });
-}
-
-function deepFreeze<T>(value: T): T {
-  if (value === null || typeof value !== "object" || Object.isFrozen(value)) return value;
-  if (Array.isArray(value)) {
-    for (let index = 0; index < value.length; index += 1) {
-      const child = value[index];
-      if (child !== null && typeof child === "object") deepFreeze(child);
-    }
-    return Object.freeze(value);
-  }
-  const record = value as Record<string, unknown>;
-  for (const key of Object.keys(record)) {
-    const child = record[key];
-    if (child !== null && typeof child === "object") deepFreeze(child);
-  }
-  return Object.freeze(value);
 }
 
 function canonicalJsonValue(value: unknown): unknown {

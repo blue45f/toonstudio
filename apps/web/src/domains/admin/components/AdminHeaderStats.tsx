@@ -5,9 +5,10 @@ import {
   Radio,
   ShieldAlert,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { adminFetch } from "./admin-client";
+import { startAdminVisiblePolling, useAdminReadTask } from "./admin-visible-polling";
 
 import { useT } from "@/shared/lib/i18n";
 
@@ -36,32 +37,29 @@ interface AdminHeaderStatsProps {
 }
 
 export function AdminHeaderStats({ userId }: AdminHeaderStatsProps) {
+  return <AdminHeaderStatsContent key={userId} userId={userId} />;
+}
+
+function AdminHeaderStatsContent({ userId }: AdminHeaderStatsProps) {
   const [health, setHealth] = useState<SystemHealthRes | null>(null);
   const [traffic, setTraffic] = useState<TrafficPulseRes | null>(null);
   const t = useT();
 
-  useEffect(() => {
-    let unmounted = false;
-    const fetchPulse = async () => {
-      const [healthResult, trafficResult] = await Promise.allSettled([
-        adminFetch<SystemHealthRes>("/system/health", userId),
-        adminFetch<TrafficPulseRes>("/traffic/pulse", userId),
-      ]);
-      if (unmounted) return;
-      if (healthResult.status === "fulfilled") {
-        setHealth(healthResult.value);
-      }
-      if (trafficResult.status === "fulfilled") {
-        setTraffic(trafficResult.value);
-      }
-    };
-    void fetchPulse();
-    const interval = globalThis.setInterval(() => void fetchPulse(), 15_000);
-    return () => {
-      unmounted = true;
-      globalThis.clearInterval(interval);
-    };
-  }, [userId]);
+  const fetchPulse = useAdminReadTask(useCallback(async (signal: AbortSignal) => {
+    const [healthResult, trafficResult] = await Promise.allSettled([
+      adminFetch<SystemHealthRes>("/system/health", userId, { signal }),
+      adminFetch<TrafficPulseRes>("/traffic/pulse", userId, { signal }),
+    ]);
+    if (signal.aborted) return;
+    if (healthResult.status === "fulfilled") {
+      setHealth(healthResult.value);
+    }
+    if (trafficResult.status === "fulfilled") {
+      setTraffic(trafficResult.value);
+    }
+  }, [userId]));
+
+  useEffect(() => startAdminVisiblePolling(() => void fetchPulse(), 15_000), [fetchPulse]);
 
   if (!health) return null;
 

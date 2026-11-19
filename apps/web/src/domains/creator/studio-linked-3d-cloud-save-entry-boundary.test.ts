@@ -65,7 +65,7 @@ describe("Studio linked-3D cloud-save entry boundary", () => {
   });
 
   it("blocks linked remix hydration and saving before cloud or draft-room authority opens", () => {
-    const parsedProject = source.indexOf("const parsedProject = creatorWorkSnapshotToStudioProject(w)");
+    const parsedProject = source.indexOf("const parsedProject = await readStudioCreatorWorkProject(w, resolvedTargetId, controller.signal)");
     const routeRemixFence = source.indexOf("if (remixId && hasLinked3dRender)", parsedProject);
     const cloudHydration = source.indexOf("hydrateStudioLinked3dPassCloudProject({", parsedProject);
     expect(parsedProject).toBeGreaterThanOrEqual(0);

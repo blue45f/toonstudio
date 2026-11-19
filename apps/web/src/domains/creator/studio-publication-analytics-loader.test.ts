@@ -145,7 +145,7 @@ describe("Studio publication analytics lazy boundary", () => {
       /remixId\s+\? Promise\.resolve\(createEmptyStudioPublicationAnalyticsSnapshot\(\)\)\s+: normalizeStudioPublicationAnalyticsDeferred\(doc\?\.publicationAnalytics\)/,
     );
     expect(studioSource).toMatch(
-      /if \(!alive \|\| controller\.signal\.aborted\) return;\s+const parsedProject = creatorWorkSnapshotToStudioProject\(w\);\s+const hasLinked3dRender = parsedProject\.pagesList\.some/,
+      /if \(!alive \|\| controller\.signal\.aborted\) return;\s+const parsedProject = await readStudioCreatorWorkProject\(w, resolvedTargetId, controller\.signal\);\s+const hasLinked3dRender = parsedProject\.pagesList\.some/,
     );
     expect(studioSource).toMatch(
       /if \(remixId && hasLinked3dRender\) \{[\s\S]*?return;\s+\}\s+const hydratedProject = hasLinked3dRender/,

@@ -46,6 +46,10 @@ import type {
   StudioPredictedInkSample,
   StudioPredictedInkSurfaceUpdate,
 } from "../studio-predicted-ink-tail";
+import {
+  clearStudioLiveOverlayCanvas,
+  releaseStudioLiveOverlayCanvas,
+} from "./studio-live-overlay-canvas-cleanup";
 
 export interface StudioLiveInkSurface {
   /** 스케일된 문서 안에서 표면의 CSS 배치(px). planStudioWebGpuViewportSurface.surface 와 동일. */
@@ -183,10 +187,7 @@ export class StudioLiveInkOverlayRenderer {
   private suppressedSettledPrefixCount = 0;
   attach(canvas: HTMLCanvasElement | null): void {
     const previousCanvas = this.canvas;
-    if (previousCanvas && previousCanvas !== canvas) {
-      if (previousCanvas.width !== 1) previousCanvas.width = 1;
-      if (previousCanvas.height !== 1) previousCanvas.height = 1;
-    }
+    releaseStudioLiveOverlayCanvas(previousCanvas, canvas);
     this.canvas = canvas;
     this.context = canvas ? acquireStudioLowLatencyCanvas2dContext(canvas) : null;
     this.applySurface();
@@ -676,13 +677,7 @@ export class StudioLiveInkOverlayRenderer {
   }
 
   private clearRect(): void {
-    const context = this.context;
-    const canvas = this.canvas;
-    if (!context || !canvas) return;
-    context.save();
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.restore();
+    clearStudioLiveOverlayCanvas(this.context, this.canvas);
   }
 }
 
@@ -717,10 +712,7 @@ export class StudioLiveInkPredictionRenderer {
 
   attach(canvas: HTMLCanvasElement | null): void {
     const previousCanvas = this.canvas;
-    if (previousCanvas && previousCanvas !== canvas) {
-      if (previousCanvas.width !== 1) previousCanvas.width = 1;
-      if (previousCanvas.height !== 1) previousCanvas.height = 1;
-    }
+    releaseStudioLiveOverlayCanvas(previousCanvas, canvas);
     this.canvas = canvas;
     this.context = canvas ? acquireStudioLowLatencyCanvas2dContext(canvas) : null;
     this.dirtyRect = null;
@@ -959,10 +951,7 @@ export class StudioLiveInkPredictionRenderer {
     const context = this.context;
     const canvas = this.canvas;
     if (!context || !canvas) return;
-    context.save();
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.restore();
+    clearStudioLiveOverlayCanvas(context, canvas);
     this.dirtyRect = null;
   }
 }

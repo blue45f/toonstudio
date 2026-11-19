@@ -49,6 +49,7 @@ import {
   TrafficTopPages,
 } from "./AdminTrafficBreakdowns";
 import { WebVitalsDashboardPage } from "../traffic/WebVitalsDashboardPage";
+import { startAdminVisiblePolling, useAdminReadTask } from "./admin-visible-polling";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -324,6 +325,10 @@ function withPulse(
 }
 
 export function AdminTraffic({ uid }: { uid: string }) {
+  return <AdminTrafficContent key={uid} uid={uid} />;
+}
+
+function AdminTrafficContent({ uid }: { uid: string }) {
   const t = useT();
   const locale = useI18n((state) => state.lang);
   const [days, setDays] = useState<TrafficRangeDays>(7);
@@ -342,39 +347,43 @@ export function AdminTraffic({ uid }: { uid: string }) {
     setData(next);
   }, []);
 
-  const loadOverview = useCallback(
-    async (background = false) => {
+  const loadOverview = useAdminReadTask(useCallback(
+    async (signal: AbortSignal, background = false) => {
       const sequence = ++overviewSequence.current;
-      if (!background) setRefreshing(true);
+      if (!background) {
+        setRefreshing(true);
+        setOverviewError(null);
+      }
       try {
         const next = await adminFetch<TrafficOverview>(
           `/traffic?days=${days}`,
           uid,
+          { signal },
         );
-        if (sequence !== overviewSequence.current) return;
+        if (signal.aborted || sequence !== overviewSequence.current) return;
         publishData(next);
         setOverviewError(null);
       } catch (caught) {
-        if (sequence !== overviewSequence.current) return;
+        if (signal.aborted || sequence !== overviewSequence.current) return;
         setOverviewError(
           caught instanceof Error
             ? caught.message
             : t("admin.traffic.loadError"),
         );
       } finally {
-        if (sequence === overviewSequence.current && !background) {
+        if (!signal.aborted && sequence === overviewSequence.current && !background) {
           setRefreshing(false);
         }
       }
     },
     [days, publishData, t, uid],
-  );
+  ));
 
-  const loadPulse = useCallback(async () => {
+  const loadPulse = useAdminReadTask(useCallback(async (signal: AbortSignal) => {
     const sequence = ++pulseSequence.current;
     try {
-      const pulse = await adminFetch<TrafficPulse>("/traffic/pulse", uid);
-      if (sequence !== pulseSequence.current) return;
+      const pulse = await adminFetch<TrafficPulse>("/traffic/pulse", uid, { signal });
+      if (signal.aborted || sequence !== pulseSequence.current) return;
       const current = dataRef.current;
       if (current) publishData(withPulse(current, pulse));
       setPulseError(null);
@@ -388,37 +397,35 @@ export function AdminTraffic({ uid }: { uid: string }) {
         void loadOverview(true);
       }
     } catch (caught) {
-      if (sequence !== pulseSequence.current) return;
+      if (signal.aborted || sequence !== pulseSequence.current) return;
       setPulseError(
         caught instanceof Error
           ? caught.message
           : t("admin.traffic.loadError"),
       );
     }
-  }, [loadOverview, publishData, t, uid]);
+  }, [loadOverview, publishData, t, uid]));
 
-  useEffect(() => {
-    setOverviewError(null);
+  useEffect(() => startAdminVisiblePolling(() => {
     void loadOverview();
     void loadPulse();
-  }, [loadOverview, loadPulse]);
+  }, null), [loadOverview, loadPulse]);
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const refreshWhenVisible = (task: () => void) => {
-      if (document.visibilityState === "visible") task();
-    };
-    const pulseInterval = globalThis.setInterval(
-      () => refreshWhenVisible(() => void loadPulse()),
+    const stopPulse = startAdminVisiblePolling(
+      () => void loadPulse(),
       TRAFFIC_PULSE_REFRESH_MS,
+      false,
     );
-    const overviewInterval = globalThis.setInterval(
-      () => refreshWhenVisible(() => void loadOverview(true)),
+    const stopOverview = startAdminVisiblePolling(
+      () => void loadOverview(true),
       TRAFFIC_OVERVIEW_REFRESH_MS,
+      false,
     );
     return () => {
-      globalThis.clearInterval(pulseInterval);
-      globalThis.clearInterval(overviewInterval);
+      stopPulse();
+      stopOverview();
     };
   }, [autoRefresh, loadOverview, loadPulse]);
 

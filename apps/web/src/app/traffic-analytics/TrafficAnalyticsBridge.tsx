@@ -126,7 +126,7 @@ let trafficEndpointUnavailable = false;
 function postTrafficEvent(
   endpoint: "page-view" | "heartbeat" | "share-event" | "web-vitals",
   body: Record<string, unknown>,
-): void {
+): boolean {
   const init = withCsrfProtection({
     method: "POST",
     cache: "no-store",
@@ -140,7 +140,7 @@ function postTrafficEvent(
   if (
     trafficEndpointUnavailable
     || (typeof navigator !== "undefined" && navigator.onLine === false)
-  ) return;
+  ) return false;
   void apiFetch(apiPath(`/api/analytics/traffic/${endpoint}`), init)
     .then((response) => {
       // A 5xx means the collector is not there; it will not be there on the next navigation
@@ -151,6 +151,7 @@ function postTrafficEvent(
       // Analytics is fail-soft and never blocks navigation or editing.
       trafficEndpointUnavailable = true;
     });
+  return true;
 }
 
 function createRuntimeIdentifiers(): {
@@ -169,6 +170,11 @@ export function TrafficAnalyticsBridge() {
   const identifiersRef =
     useRef<ReturnType<typeof createRuntimeIdentifiers> | null>(null);
   const engagedMsRef = useRef(0);
+  const lastHeartbeatRef = useRef<{
+    sessionId: string;
+    engagedSeconds: number;
+    paths: Set<string>;
+  } | null>(null);
   // `performance.now()` is impure, so it cannot run during render. Start empty and stamp the clock
   // in an effect — the first visible interval begins when the bridge mounts, which is the moment
   // the old initialiser was trying to capture.
@@ -192,11 +198,22 @@ export function TrafficAnalyticsBridge() {
     const engagedSeconds = Math.floor(engagedMsRef.current / 1_000);
     if (engagedSeconds < MIN_HEARTBEAT_SECONDS) return;
     identifiersRef.current ??= createRuntimeIdentifiers();
-    postTrafficEvent("heartbeat", {
+    const { sessionId } = identifiersRef.current;
+    const previous = lastHeartbeatRef.current;
+    const sameSnapshot = previous?.sessionId === sessionId && previous.engagedSeconds === engagedSeconds
+      ? previous
+      : null;
+    if (sameSnapshot?.paths.has(path)) return;
+    const dispatched = postTrafficEvent("heartbeat", {
       ...identifiersRef.current,
       path,
       engagedSeconds,
     });
+    // 참여 시간이 늘면 이전 경로 집합을 버리고, 같은 스냅샷의 재방문·종료 전송만 합친다.
+    if (dispatched) {
+      if (sameSnapshot) sameSnapshot.paths.add(path);
+      else lastHeartbeatRef.current = { sessionId, engagedSeconds, paths: new Set([path]) };
+    }
   }, []);
 
   useEffect(() => {
@@ -297,6 +314,7 @@ export function TrafficAnalyticsBridge() {
   }, []);
 
   useEffect(() => {
+    let interval: ReturnType<typeof globalThis.setInterval> | null = null;
     const sendHeartbeat = () => {
       const path = currentPathRef.current;
       if (!analyticsEnabled(path)) return;
@@ -304,30 +322,47 @@ export function TrafficAnalyticsBridge() {
       sendEngagementSnapshot(path);
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
+    const stopHeartbeat = () => {
+      if (interval !== null) globalThis.clearInterval(interval);
+      interval = null;
+    };
+
+    const resumeHeartbeat = () => {
+      if (document.visibilityState !== "visible") return;
+      if (visibleSinceRef.current === null) {
         visibleSinceRef.current = analyticsEnabled(currentPathRef.current)
           ? performance.now()
           : null;
-        return;
       }
+      if (interval !== null) return;
+      interval = globalThis.setInterval(() => {
+        if (document.visibilityState === "visible") sendHeartbeat();
+      }, HEARTBEAT_INTERVAL_MS);
+    };
+
+    const pauseHeartbeat = () => {
+      stopHeartbeat();
       sendHeartbeat();
       visibleSinceRef.current = null;
     };
 
-    const handlePageHide = () => {
-      sendHeartbeat();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") resumeHeartbeat();
+      else pauseHeartbeat();
     };
 
-    const interval = globalThis.setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
+    resumeHeartbeat();
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    globalThis.addEventListener("pagehide", handlePageHide);
+    globalThis.addEventListener("pagehide", pauseHeartbeat);
+    globalThis.addEventListener("pageshow", resumeHeartbeat);
 
     return () => {
-      globalThis.clearInterval(interval);
+      stopHeartbeat();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      globalThis.removeEventListener("pagehide", handlePageHide);
+      globalThis.removeEventListener("pagehide", pauseHeartbeat);
+      globalThis.removeEventListener("pageshow", resumeHeartbeat);
       sendHeartbeat();
+      visibleSinceRef.current = null;
     };
   }, [accumulateVisibleTime, sendEngagementSnapshot]);
 

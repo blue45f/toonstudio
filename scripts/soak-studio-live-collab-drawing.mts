@@ -284,7 +284,6 @@ async function runSoak(): Promise<void> {
       sessionId: "soak-self",
       displayName: "Self",
       role: "editor",
-      visibility: "active",
     },
   });
   await p2pTransport.connect();
@@ -376,7 +375,6 @@ async function runSoak(): Promise<void> {
 
   // Simulated Undo/Redo history stack that grows each round and is bounded by trimStudioCrdtHistoryWindow.
   let undoHistory: { id: string }[][] = [[{ id: "init" }]];
-  let undoIndex = 0;
 
   const baselineHeapMb = mb(process.memoryUsage().heapUsed);
   let lastReportAt = startedAt;
@@ -460,7 +458,7 @@ async function runSoak(): Promise<void> {
       const req: StudioCrdtUpdateRequest = {
         protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION,
         workId: "work-soak",
-        updateId: `upd-${clientSequence}`,
+        updateId: `12345678-1234-4234-8234-${String(clientSequence).padStart(12, "0")}`,
         clientSequence,
         update: "AAECAw==",
       };
@@ -476,10 +474,9 @@ async function runSoak(): Promise<void> {
 
     // 4. Undo/Redo history depth bounding verification.
     undoHistory.push([{ id: `snap-${round}` }]);
-    undoIndex = undoHistory.length - 1;
+    const undoIndex = undoHistory.length - 1;
     const boundedHistory = trimStudioCrdtHistoryWindow(undoHistory, undoIndex);
     undoHistory = boundedHistory.history;
-    undoIndex = boundedHistory.currentIndex;
     if (undoHistory.length > STUDIO_CRDT_MAX_RECONCILED_HISTORY_DEPTH) {
       throw new Error(`[soak] Undo/Redo history exceeded cap: ${undoHistory.length}`);
     }
@@ -495,12 +492,11 @@ async function runSoak(): Promise<void> {
           sessionId: ghostSessionId,
           displayName: ghostSessionId,
           role: "editor",
-          visibility: "active",
         },
         sentAt: virtualNow,
         sequence: round,
         kind: "presence:hello",
-        payload: { pageId: "page-soak" },
+        payload: { visibility: "active", pageId: "page-soak" },
       });
       for (const listener of p2pPrimaryListeners) listener(hello);
 

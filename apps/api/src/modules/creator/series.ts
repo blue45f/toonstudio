@@ -6,7 +6,6 @@ import { withDatabaseCapability } from "../../platform/http/service-availability
 
 import {
   MAX_SERIES_TITLE,
-  nextEpisodeNumber,
   parseSeriesSort,
   parseSeriesStatus,
   validateSeriesInput,

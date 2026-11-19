@@ -88,6 +88,14 @@ import {
   studioLiveLockResourcesConflict,
 } from "@/shared/lib/studio-live-lock-resource";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
+import {
+  boundedTiming,
+  canEditStudioLiveGesturePreview,
+  copyCursor,
+  copyParticipant,
+  lockPriority,
+} from "./studio-live-room-values";
+import type { StudioLiveGesturePreviewInboundWindow } from "./studio-live-room-values";
 
 const DEFAULT_HEARTBEAT_MS = 10_000;
 const DEFAULT_PRESENCE_TTL_MS = 30_000;
@@ -303,12 +311,6 @@ interface PendingStudioLiveLockRelease {
   timeout: unknown;
 }
 
-interface StudioLiveGesturePreviewInboundWindow {
-  readonly startedAt: number;
-  readonly packetCount: number;
-  readonly byteCount: number;
-}
-
 export interface StudioLiveRoomOptions {
   workId: string;
   participant: StudioLiveParticipant;
@@ -331,34 +333,8 @@ function defaultClearInterval(handle: unknown): void {
   globalThis.clearInterval(handle as ReturnType<typeof setInterval>);
 }
 
-function boundedTiming(value: number | undefined, fallback: number, min: number, max: number) {
-  if (!Number.isFinite(value)) return fallback;
-  return Math.min(max, Math.max(min, Math.trunc(value ?? fallback)));
-}
-
-function copyParticipant(participant: StudioLiveParticipant): StudioLiveParticipant {
-  return { ...participant };
-}
-
-function canEditStudioLiveGesturePreview(participant: StudioLiveParticipant): boolean {
-  return participant.role === "owner"
-    || participant.role === "admin"
-    || participant.role === "editor";
-}
-
 /** V18 ink shares the gesture-preview authoring gate: only edit-capable roles may stream. */
 const canPublishStudioLiveInk = canEditStudioLiveGesturePreview;
-
-function copyCursor(cursor: StudioLiveCursorPayload): StudioLiveCursorPayload {
-  return {
-    ...cursor,
-    ...(cursor.points ? { points: [...cursor.points] } : {}),
-  };
-}
-
-function lockPriority(lock: Pick<StudioLiveLock, "claimId" | "owner">): string {
-  return `${lock.claimId}\u0000${lock.owner.sessionId}`;
-}
 
 /**
  * Transport-neutral presence/cursor/lease-lock room. BroadcastChannel is the local default; a

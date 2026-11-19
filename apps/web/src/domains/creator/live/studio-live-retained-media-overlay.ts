@@ -74,6 +74,10 @@ import { paintStudioLiveRetainedRoundStroke } from "./studio-live-retained-strok
 
 import type { DrawEl } from "../studio-element-model";
 import type { StudioLiveInkSurface } from "./studio-live-ink-overlay";
+import {
+  clearStudioLiveOverlayCanvas,
+  releaseStudioLiveOverlayCanvas,
+} from "./studio-live-overlay-canvas-cleanup";
 
 export type StudioLiveRetainedMediaKind =
   | "material"
@@ -378,14 +382,8 @@ export class StudioLiveRetainedMediaOverlayRenderer {
     this.invalidateRetainedRedoPixelSnapshot();
     const nextActiveCanvas = canvases?.activeCanvas ?? null;
     const nextSettledCanvas = canvases?.settledCanvas ?? null;
-    if (this.activeCanvas && this.activeCanvas !== nextActiveCanvas) {
-      if (this.activeCanvas.width !== 1) this.activeCanvas.width = 1;
-      if (this.activeCanvas.height !== 1) this.activeCanvas.height = 1;
-    }
-    if (this.settledCanvas && this.settledCanvas !== nextSettledCanvas) {
-      if (this.settledCanvas.width !== 1) this.settledCanvas.width = 1;
-      if (this.settledCanvas.height !== 1) this.settledCanvas.height = 1;
-    }
+    releaseStudioLiveOverlayCanvas(this.activeCanvas, nextActiveCanvas);
+    releaseStudioLiveOverlayCanvas(this.settledCanvas, nextSettledCanvas);
     this.activeCanvas = nextActiveCanvas;
     this.settledCanvas = nextSettledCanvas;
     this.activeContext = this.activeCanvas
@@ -530,7 +528,7 @@ export class StudioLiveRetainedMediaOverlayRenderer {
     // Travel keeps its issued paint program: rebuilding thousands of points here stalls input.
     if (this.active.kind === "highlighter"
       || (this.active.kind === "pencil" && this.active.paintedSourceSegments === 0)) {
-      this.clearCanvas(this.activeContext, this.activeCanvas);
+      clearStudioLiveOverlayCanvas(this.activeContext, this.activeCanvas);
       const fullActive: ActiveRetainedStroke = {
         id: element.id,
         kind: this.active.kind,
@@ -681,7 +679,7 @@ export class StudioLiveRetainedMediaOverlayRenderer {
           renderStudioMaterialBrushMarks(context, marks, element.symmetry);
           if (marks.length > 0) this.markSettledPaint(active, context);
         }, finalize, () => {
-          if (target === this.activeContext) this.clearCanvas(this.activeContext, this.activeCanvas);
+          if (target === this.activeContext) clearStudioLiveOverlayCanvas(this.activeContext, this.activeCanvas);
         });
         active.paintedDabs += result.totalMarks;
         return true;
@@ -780,7 +778,7 @@ export class StudioLiveRetainedMediaOverlayRenderer {
       const radiusPx = oilRadiusMean(dabs);
       if (target === this.activeContext) {
         // 활성 픽셀을 다시 샘플링하지 않는다. 고정한 바닥에서 혼색을 재생한다.
-        this.clearCanvas(this.activeContext, this.activeCanvas);
+        clearStudioLiveOverlayCanvas(this.activeContext, this.activeCanvas);
       }
       const programs = studioOilRibbonProgramsForBrush(
         brush,
@@ -888,7 +886,7 @@ export class StudioLiveRetainedMediaOverlayRenderer {
         && active.paintedSourceSegments === 0 && active.paintedPencilMarks > 0) {
         // Pointerdown's visibility hint is not pigment. Retire it once travel begins,
         // otherwise it survives every append and disappears only on document replay.
-        this.clearCanvas(this.activeContext, this.activeCanvas);
+        clearStudioLiveOverlayCanvas(this.activeContext, this.activeCanvas);
         active.pencilProgram = [];
         active.paintedPencilMarks = 0;
       }
@@ -1065,7 +1063,7 @@ export class StudioLiveRetainedMediaOverlayRenderer {
       }
       if (target === this.activeContext
         && active.paintedSourceSegments === 0 && active.paintedPencilMarks > 0) {
-        this.clearCanvas(this.activeContext, this.activeCanvas);
+        clearStudioLiveOverlayCanvas(this.activeContext, this.activeCanvas);
         active.paintedPencilMarks = 0;
       }
       // 증분 빌더: 이동마다 전체 스트로크의 선분을 다시 세우던 O(n)/이동을 새 점 수에만
@@ -1121,7 +1119,7 @@ export class StudioLiveRetainedMediaOverlayRenderer {
       const width = studioBrushAliasEffectiveDiameter(brush, Math.max(1, element.strokeWidth));
       const brushId = resolveStudioHighlighterWashBrushId(brush);
       if (target === this.activeContext) {
-        this.clearCanvas(this.activeContext, this.activeCanvas);
+        clearStudioLiveOverlayCanvas(this.activeContext, this.activeCanvas);
       }
       const composite = ontoSettled ? "multiply" : "source-over";
       context.globalCompositeOperation = composite;
@@ -1330,7 +1328,7 @@ export class StudioLiveRetainedMediaOverlayRenderer {
   }
 
   private replaySettledOnly(): void {
-    this.clearCanvas(this.settledContext, this.settledCanvas);
+    clearStudioLiveOverlayCanvas(this.settledContext, this.settledCanvas);
     this.settledHasPixels = false;
     if (!this.isNativeSurfaceReady) return;
     for (const stroke of this.settled) {
@@ -1483,22 +1481,11 @@ export class StudioLiveRetainedMediaOverlayRenderer {
   }
 
   private clearActiveRect(): void {
-    this.clearCanvas(this.activeContext, this.activeCanvas);
+    clearStudioLiveOverlayCanvas(this.activeContext, this.activeCanvas);
   }
 
   private clearSettledRect(): void {
     this.settledHasPixels = false;
-    this.clearCanvas(this.settledContext, this.settledCanvas);
-  }
-
-  private clearCanvas(
-    context: CanvasRenderingContext2D | null,
-    canvas: HTMLCanvasElement | null,
-  ): void {
-    if (!context || !canvas) return;
-    context.save();
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.restore();
+    clearStudioLiveOverlayCanvas(this.settledContext, this.settledCanvas);
   }
 }
