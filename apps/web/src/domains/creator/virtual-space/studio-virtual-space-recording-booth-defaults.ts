@@ -8,6 +8,8 @@
  */
 
 import type { StudioRecordingBoothConfig } from "./studio-virtual-space-recording-booth";
+import type { StudioVirtualSpace as StudioBookableSpace } from "./studio-virtual-space-space-booking";
+import type { StudioVirtualSpaceWorldManifest } from "./studio-virtual-space-world-manifest";
 
 /** 기본 녹음부스: 회의실 안쪽 180×130, 예약 독점, 최대 5분. */
 export function studioDefaultRecordingBoothConfig(): StudioRecordingBoothConfig {
@@ -19,4 +21,17 @@ export function studioDefaultRecordingBoothConfig(): StudioRecordingBoothConfig 
     maxDurationSec: 300,
     exclusive: true,
   });
+}
+
+/** 예약 패널에 녹음부스를 먼저 두고 나머지 월드 방을 이어 붙인다. */
+export function studioRecordingBoothBookingSpaces(
+  boothConfig: StudioRecordingBoothConfig,
+  worldManifest: StudioVirtualSpaceWorldManifest,
+): readonly StudioBookableSpace[] {
+  return [
+    { id: boothConfig.roomId, name: "녹음부스", capacity: 2, equipmentTags: ["마이크", "방음"] },
+    ...worldManifest.rooms
+      .filter((room) => room.id !== boothConfig.roomId)
+      .map((room) => ({ id: room.id, name: room.labelKo, capacity: 8, equipmentTags: [] as readonly string[] })),
+  ];
 }

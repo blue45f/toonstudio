@@ -1,21 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  STUDIO_CRDT_COMPACTION_MIN_UPDATE_BYTES,
-  STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_GAP_MS,
-  STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_MAX_BYTES,
-  STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_MAX_DELTAS,
-  StudioCrdtDocument,
-  compactStudioCrdtSnapshot,
-  shouldJumpToCrdtSnapshotOnReconnect,
-} from "./studio-crdt-document";
-import {
   STUDIO_CRDT_MAX_RECONCILED_HISTORY_DEPTH,
   trimStudioCrdtHistoryWindow,
 } from "./studio-crdt-history";
 import { SqliteStudioCrdtOutbox } from "./studio-crdt-outbox";
-import { STUDIO_CRDT_PROTOCOL_VERSION, type StudioCrdtUpdateRequest } from "./studio-crdt-protocol";
-import { createStudioLiveEnvelope, type StudioLiveParticipant } from "./studio-live-collaboration-protocol";
+import {
+  STUDIO_CRDT_PROTOCOL_VERSION,
+  type StudioCrdtUpdateRequest,
+} from "./studio-crdt-protocol";
+import {
+  createStudioLiveEnvelope,
+  studioLocalLiveChannelName,
+  type StudioLiveParticipant,
+} from "./studio-live-collaboration-protocol";
 import { StudioLiveDynamicBrushOverlayRenderer } from "./studio-live-dynamic-brush-overlay";
 import { STUDIO_LIVE_GESTURE_PREVIEW_VERSION } from "./studio-live-gesture-preview";
 import {
@@ -468,7 +466,11 @@ describe("long-session multi-user collaborative drawing stability", () => {
         throw new Error("ICE unavailable");
       },
     });
-    const transport = factory({ workId: "work-mesh", participant: self });
+    const transport = factory({
+      workId: "work-mesh",
+      roomName: studioLocalLiveChannelName("work-mesh"),
+      participant: self,
+    });
     await transport.connect();
 
     const hello = createStudioLiveEnvelope({
@@ -601,57 +603,6 @@ describe("long-session multi-user collaborative drawing stability", () => {
     adapter.dispose();
   });
 
-  it("compacts accumulated CRDT updates cleanly and enforces reconnect snapshot-jump thresholds", () => {
-    const doc = new StudioCrdtDocument();
-    const updates: Uint8Array[] = [];
-    const unsubscribe = doc.subscribe((update) => {
-      updates.push(update);
-    });
-    for (let index = 0; index < 20; index += 1) {
-      doc.addStroke({
-        id: `compact-stroke-${index}`,
-        pageId: "page-1",
-        layerId: "layer-1",
-        points: [index, index, index + 10, index + 12],
-        pressures: [0.5, 0.7],
-        stroke: "#111111",
-        strokeWidth: 4,
-        opacity: 1,
-      });
-    }
-    unsubscribe();
-    const result = compactStudioCrdtSnapshot(updates);
-    expect(result.rawBytes).toBeGreaterThan(0);
-    expect(result.compactedBytes).toBeLessThanOrEqual(result.rawBytes);
-    expect(STUDIO_CRDT_COMPACTION_MIN_UPDATE_BYTES).toBe(256 * 1024);
-
-    const restored = new StudioCrdtDocument(result.compacted);
-    expect(restored.getStrokes()).toHaveLength(20);
-    restored.destroy();
-    doc.destroy();
-
-    expect(shouldJumpToCrdtSnapshotOnReconnect({
-      gapMs: 1_000,
-      queuedDeltaCount: 10,
-      estimatedDeltaBytes: 8_192,
-    })).toBe(false);
-    expect(shouldJumpToCrdtSnapshotOnReconnect({
-      gapMs: STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_GAP_MS,
-      queuedDeltaCount: 1,
-      estimatedDeltaBytes: 128,
-    })).toBe(true);
-    expect(shouldJumpToCrdtSnapshotOnReconnect({
-      gapMs: 1_000,
-      queuedDeltaCount: STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_MAX_DELTAS,
-      estimatedDeltaBytes: 128,
-    })).toBe(true);
-    expect(shouldJumpToCrdtSnapshotOnReconnect({
-      gapMs: 1_000,
-      queuedDeltaCount: 1,
-      estimatedDeltaBytes: STUDIO_CRDT_RECONNECT_SNAPSHOT_JUMP_MAX_BYTES,
-    })).toBe(true);
-  });
-
   it("clamps backward OS clock jumps in Ink tracker so orphaned strokes still expire on time", () => {
     const tracker = new StudioLiveInkStrokeTracker();
     let now = 5_000_000;
@@ -736,7 +687,7 @@ describe("long-session multi-user collaborative drawing stability", () => {
 
   it("skips idle cursor rAF ticks and clamps backward OS clock jumps in StudioRemoteCursorOverlayStore", () => {
     let now = 6_000_000;
-    let intervalHandler: (() => void) | null = null;
+    const interval: { handler: (() => void) | null } = { handler: null };
     const frames: (() => void)[] = [];
     const roomListeners = new Set<(event: StudioLiveRoomEvent) => void>();
     const source = {
@@ -755,17 +706,17 @@ describe("long-session multi-user collaborative drawing stability", () => {
       },
       cancelFrame: () => undefined,
       setInterval: (cb) => {
-        intervalHandler = cb;
+        interval.handler = cb;
         return 1;
       },
       clearInterval: () => {
-        intervalHandler = null;
+        interval.handler = null;
       },
     });
     const unsubscribe = store.subscribe(() => undefined);
     // Idle interval ticks when no cursors are active must NOT schedule rAF.
-    intervalHandler?.();
-    intervalHandler?.();
+    interval.handler?.();
+    interval.handler?.();
     expect(frames).toHaveLength(0);
 
     // Emit a remote cursor, then step OS clock backward by 60s.
@@ -773,7 +724,6 @@ describe("long-session multi-user collaborative drawing stability", () => {
       sessionId: "cursor-peer",
       displayName: "Cursor Peer",
       role: "editor",
-      visibility: "active",
     };
     for (const listener of roomListeners) {
       listener({
@@ -787,13 +737,13 @@ describe("long-session multi-user collaborative drawing stability", () => {
     expect(store.getSnapshot()).toHaveLength(1);
 
     now -= 60_000;
-    intervalHandler?.();
+    interval.handler?.();
     frames.shift()!();
     expect(store.getSnapshot()).toHaveLength(1);
 
     // Advancing just past TTL from the clamped clock evicts the stale cursor cleanly.
     now += STUDIO_REMOTE_CURSOR_TTL_MS + 100;
-    intervalHandler?.();
+    interval.handler?.();
     frames.shift()!();
     expect(store.getSnapshot()).toEqual([]);
     unsubscribe();

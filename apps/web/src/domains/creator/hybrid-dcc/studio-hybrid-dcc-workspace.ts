@@ -11,7 +11,6 @@ import { getStudioBg3dRoomPreset, buildStudioBg3dRoomParts } from "../bg3d/studi
 import {
   exportStudioMeshByFormat,
   type StudioMeshExportFormat,
-  type StudioMeshExportResult,
 } from "../export/studio-mesh-export-adapters";
 import {
   createStudioLiveBridgeDocument,
@@ -34,7 +33,6 @@ import {
   retargetStudioMotionReport,
   sampleStudioAnimationClip,
   stepStudioSpringBone,
-  type StudioRetargetReport,
   type StudioSpringBone,
 } from "../studio-character-animation-p2";
 import {
@@ -70,7 +68,6 @@ import {
 } from "../studio-geometry-nodes-workspace-bridge";
 import {
   bomFromAssetParts,
-  type StudioManufacturingBom,
 } from "../studio-manufacturing-bom-lite";
 import {
   createStudioMeshModifierStack,
@@ -91,15 +88,10 @@ import { sha256HexPortable } from "../studio-sha256";
 import { createStudioDefaultSolidBooleanBackend } from "../studio-solid-boolean-backend";
 import { packStudioToon3dPackage, type StudioToon3dPackage } from "../studio-toon3d-package";
 import {
-  type StudioUvMap,
-} from "../studio-uv-unwrap-lite";
-
-import {
   collabAppendOp,
   collabJoin,
   collabConflictReport,
   createStudioDccCollabRoom,
-  type StudioDccCollabRoom,
 } from "./studio-dcc-collab-shell";
 import {
   createStudioHybridDccComponentSelection,
@@ -126,7 +118,6 @@ import {
   hybridDccCanUndo,
   hybridDccCanRedo,
   snapshotStudioHybridDccState,
-  type StudioHybridDccSession,
 } from "./studio-hybrid-dcc-document";
 import {
   createStudioHybridDccIdentityTransform,

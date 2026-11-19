@@ -19,6 +19,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   adminFetch,
+  startAdminVisiblePolling,
+  useAdminReadTask,
   downloadTrafficOverviewCsv,
   formatNum,
   formatTrafficDateTime,
@@ -49,7 +51,6 @@ import {
   TrafficTopPages,
 } from "./AdminTrafficBreakdowns";
 import { WebVitalsDashboardPage } from "../traffic/WebVitalsDashboardPage";
-import { startAdminVisiblePolling, useAdminReadTask } from "./admin-visible-polling";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";

@@ -128,6 +128,14 @@ export function studioCrdtPayloadHash(value: Uint8Array): Uint8Array {
   return Uint8Array.from(createHash("sha256").update(value).digest());
 }
 
+export function studioCrdtPayloadHashesEqual(left: Uint8Array, right: Uint8Array): boolean {
+  if (left.byteLength !== right.byteLength) return false;
+  for (let index = 0; index < left.byteLength; index += 1) {
+    if (left[index] !== right[index]) return false;
+  }
+  return true;
+}
+
 function snapshotRecord(
   row: typeof creatorWorkCrdtSnapshots.$inferSelect
 ): StudioCrdtSnapshotRecord {
