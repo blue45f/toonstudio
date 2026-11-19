@@ -42,6 +42,8 @@ describe("campus route authority coverage", () => {
     expect(new Set(routes.map((route) => route.id)).size).toBe(routes.length);
     expect([...CAMPUS_ROUTE_DISTRICTS.keys()].sort()).toEqual(routes.map((route) => route.id).sort());
     for (const route of routes) expect(campusBinding(route.id, route.path), route.id).not.toBeNull();
+    expect(campusBinding("creator-studio-mcp", "/studio/mcp"))
+      .toEqual({ routeId: "creator-studio-mcp", districtId: "academy", surface: "room", private: true });
   });
   it("covers all fourteen market routes without inventing checkout capability", () => {
     const market = routes.filter((route) => route.id.startsWith("market-"));

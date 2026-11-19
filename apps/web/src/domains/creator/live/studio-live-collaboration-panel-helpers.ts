@@ -4,13 +4,67 @@
  * (2026-10-03 파일 크기 래칫 해소로 StudioLiveCollaborationPanel에서 추출 — 동작 변경 없음.)
  */
 
-import type { StudioScreenShareState } from "../studio-screen-share";
+import type { Ref } from "react";
+
+import type {
+  StudioRemoteScreenShare,
+  StudioScreenShareRequest,
+  StudioScreenShareState,
+  StudioScreenShareViewer,
+} from "../studio-screen-share";
 import type { StudioScreenIcePolicyMode } from "../studio-screen-ice-policy";
 import type { StudioTeamRole } from "../studio-team-client";
-import type { StudioLiveAvailability } from "./studio-live-collaboration-context";
-import type { StudioLivePeer } from "./studio-live-collaboration-room";
+import type { StudioLiveAvailability, StudioLiveRecoveryState } from "./studio-live-collaboration-context";
+import type { StudioLiveChatMessage, StudioLivePeer } from "./studio-live-collaboration-room";
 import type { StudioLiveTransportMode } from "./studio-live-collaboration-transport";
-import type { StudioLiveSyncPresentation } from "./studio-live-sync-safety";
+import type { StudioLiveCursorQualitySnapshot } from "./studio-live-cursor-quality";
+import type { StudioLiveInviteRole } from "./studio-live-jam-session";
+import type { StudioLiveSyncPresentation, StudioLiveSyncSnapshot } from "./studio-live-sync-safety";
+
+export interface StudioLiveCollaborationPanelViewProps {
+  availability: StudioLiveAvailability;
+  mode: StudioLiveTransportMode | null;
+  peers: StudioLivePeer[];
+  chatMessages: StudioLiveChatMessage[];
+  canChat: boolean;
+  chatDraft: string;
+  chatNotice: string | null;
+  screenState: StudioScreenShareState;
+  screenSupported: boolean;
+  screenReady: boolean;
+  screenNetworkMode: StudioScreenIcePolicyMode | null;
+  serverAvailable: boolean;
+  localFallbackAllowed: boolean;
+  usingLocalFallback: boolean;
+  busyAction: string | null;
+  error: string | null;
+  inviteLinkNotice?: string | null;
+  /** Permission granted to people who open the invite link. "editor" adds no URL restriction. */
+  inviteRole?: StudioLiveInviteRole | "editor";
+  onInviteRoleChange?: (role: StudioLiveInviteRole | "editor") => void;
+  syncSnapshot?: StudioLiveSyncSnapshot;
+  recovery?: StudioLiveRecoveryState | null;
+  followingSessionId?: string | null;
+  remoteCursorsVisible?: boolean;
+  cursorQuality?: StudioLiveCursorQualitySnapshot | null;
+  videoRef?: Ref<HTMLVideoElement>;
+  onChatDraftChange: (value: string) => void;
+  onChatSubmit: () => void;
+  onCopyInviteLink?: () => void;
+  onStartShare: () => void;
+  onStopShare: () => void;
+  onRetryServer: () => void;
+  onUseLocalFallback: () => void;
+  onExportRecovery: () => void;
+  onReloadAuthoritative: () => void;
+  onToggleFollow?: (sessionId: string) => void;
+  onToggleRemoteCursors?: () => void;
+  onApproveRequest: (request: StudioScreenShareRequest) => void;
+  onRejectRequest: (request: StudioScreenShareRequest) => void;
+  onStopViewer: (viewer: StudioScreenShareViewer) => void;
+  onWatchShare: (share: StudioRemoteScreenShare) => void;
+  onStopWatching: () => void;
+}
 
 export const ROLE_LABEL: Record<StudioTeamRole, string> = {
   owner: "소유자",

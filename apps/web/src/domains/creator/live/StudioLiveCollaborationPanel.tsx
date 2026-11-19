@@ -20,7 +20,7 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent, type Ref } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import {
   StudioScreenShareController,
@@ -37,8 +37,6 @@ import {
 } from "./studio-live-canvas-overlay-model";
 import {
   useStudioLiveCollaboration,
-  type StudioLiveAvailability,
-  type StudioLiveRecoveryState,
 } from "./studio-live-collaboration-context";
 import { STUDIO_LIVE_CHAT_TEXT_MAX_LENGTH } from "./studio-live-collaboration-protocol";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
@@ -49,12 +47,10 @@ import {
 } from "./studio-peer-screen-signaling-room";
 import {
   presentStudioLiveCursorQuality,
-  type StudioLiveCursorQualitySnapshot,
 } from "./studio-live-cursor-quality";
 import {
   formatStudioLiveLastAck,
   presentStudioLiveSyncSnapshot,
-  type StudioLiveSyncSnapshot,
 } from "./studio-live-sync-safety";
 import {
   toggleStudioLiveRemoteCursors,
@@ -65,11 +61,6 @@ import { useStudioLiveCursorQuality } from "./use-studio-live-cursor-quality";
 import { useStudioLiveDisplaySync } from "./use-studio-live-display-sync";
 import { useStudioMobileKeyboardOffset } from "./use-studio-mobile-keyboard-offset";
 
-import type {
-  StudioLiveChatMessage,
-  StudioLivePeer,
-} from "./studio-live-collaboration-room";
-import type { StudioLiveTransportMode } from "./studio-live-collaboration-transport";
 import type {
   StudioScreenIcePolicyMode,
   StudioScreenIcePolicySession,
@@ -84,55 +75,13 @@ import {
   syncStatusToneClass,
   tabInitial,
   visibleLivePeers,
+  type StudioLiveCollaborationPanelViewProps,
 } from "./studio-live-collaboration-panel-helpers";
 
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 
-export interface StudioLiveCollaborationPanelViewProps {
-  availability: StudioLiveAvailability;
-  mode: StudioLiveTransportMode | null;
-  peers: StudioLivePeer[];
-  chatMessages: StudioLiveChatMessage[];
-  canChat: boolean;
-  chatDraft: string;
-  chatNotice: string | null;
-  screenState: StudioScreenShareState;
-  screenSupported: boolean;
-  screenReady: boolean;
-  screenNetworkMode: StudioScreenIcePolicyMode | null;
-  serverAvailable: boolean;
-  localFallbackAllowed: boolean;
-  usingLocalFallback: boolean;
-  busyAction: string | null;
-  error: string | null;
-  inviteLinkNotice?: string | null;
-  /** Permission granted to people who open the invite link. "editor" adds no URL restriction. */
-  inviteRole?: StudioLiveInviteRole | "editor";
-  onInviteRoleChange?: (role: StudioLiveInviteRole | "editor") => void;
-  syncSnapshot?: StudioLiveSyncSnapshot;
-  recovery?: StudioLiveRecoveryState | null;
-  followingSessionId?: string | null;
-  remoteCursorsVisible?: boolean;
-  cursorQuality?: StudioLiveCursorQualitySnapshot | null;
-  videoRef?: Ref<HTMLVideoElement>;
-  onChatDraftChange: (value: string) => void;
-  onChatSubmit: () => void;
-  onCopyInviteLink?: () => void;
-  onStartShare: () => void;
-  onStopShare: () => void;
-  onRetryServer: () => void;
-  onUseLocalFallback: () => void;
-  onExportRecovery: () => void;
-  onReloadAuthoritative: () => void;
-  onToggleFollow?: (sessionId: string) => void;
-  onToggleRemoteCursors?: () => void;
-  onApproveRequest: (request: StudioScreenShareRequest) => void;
-  onRejectRequest: (request: StudioScreenShareRequest) => void;
-  onStopViewer: (viewer: StudioScreenShareViewer) => void;
-  onWatchShare: (share: StudioRemoteScreenShare) => void;
-  onStopWatching: () => void;
-}
+export type { StudioLiveCollaborationPanelViewProps } from "./studio-live-collaboration-panel-helpers";
 
 
 export function StudioLiveCollaborationPanelView({

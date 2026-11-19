@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  STUDIO_CRDT_MAX_RECONCILED_HISTORY_DEPTH,
   reconcileStudioCrdtHistory,
   reconcileStudioCrdtSceneGraphHistory,
+  trimStudioCrdtHistoryWindow,
 } from "./studio-crdt-history";
 
 import type {
@@ -276,5 +278,23 @@ describe("reconcileStudioCrdtHistory", () => {
     expect(result.history[0]?.[0]?.name).toBe("B-local-history");
     expect(result.history[0]?.[1]?.name).toBe("A-remote");
     expect(result.history[1]?.[0]?.name).toBe("B-frontier");
+  });
+
+  it("bounds Undo/Redo history depth during remote CRDT reconciliation while preserving currentIndex", () => {
+    const history = Array.from({ length: 240 }, (_, index) => [{ id: `snap-${index}` }]);
+    const currentIndex = 225;
+    const activeSnapshot = history[currentIndex];
+
+    const bounded = trimStudioCrdtHistoryWindow(history, currentIndex);
+    expect(bounded.trimmed).toBe(true);
+    expect(bounded.history).toHaveLength(STUDIO_CRDT_MAX_RECONCILED_HISTORY_DEPTH);
+    expect(bounded.history[bounded.currentIndex]).toBe(activeSnapshot);
+
+    // Histories within the cap return the original array reference without extra allocation.
+    const small = history.slice(0, 10);
+    const untouched = trimStudioCrdtHistoryWindow(small, 5);
+    expect(untouched.trimmed).toBe(false);
+    expect(untouched.history).toBe(small);
+    expect(untouched.currentIndex).toBe(5);
   });
 });

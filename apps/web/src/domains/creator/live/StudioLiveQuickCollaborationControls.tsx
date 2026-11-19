@@ -271,7 +271,7 @@ export function StudioLiveQuickCollaborationControls({
           data-studio-live-recovery-hud="true"
           role="status"
         >
-          <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden />
+          <span className="size-1.5 shrink-0 rounded-full bg-good" aria-hidden />
           <span>{recoveryBadge}</span>
         </div>
       ) : null}

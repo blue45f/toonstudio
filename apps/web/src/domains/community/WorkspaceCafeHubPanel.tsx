@@ -427,12 +427,16 @@ export function WorkspaceCafeHubPanel({
           role="dialog"
           aria-modal="true"
           aria-label={`${lightboxImage.fileName} 이미지 미리보기`}
-          onClick={() => setLightboxImage(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6"
         >
+          <button
+            type="button"
+            aria-label="이미지 미리보기 배경 닫기"
+            onClick={() => setLightboxImage(null)}
+            className="absolute inset-0 cursor-default bg-canvas/80 backdrop-blur-xs"
+          />
           <div
-            onClick={(event) => event.stopPropagation()}
-            className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-xl border border-line bg-panel p-4"
+            className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-xl border border-line bg-panel p-4"
           >
             <div className="mb-2 flex items-center justify-between gap-4 text-xs">
               <span className="truncate font-medium text-fg">{lightboxImage.fileName}</span>
