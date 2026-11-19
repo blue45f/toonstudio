@@ -73,14 +73,16 @@ function body(source: ts.SourceFile, name: string): string {
 }
 
 describe("6패스 순수 shape 분리의 원본 동등성", () => {
-  it("원본 fixture·상수·예산과 마스크 계약 확장 외 순수 함수 본문을 그대로 유지한다", () => {
+  it("원본 fixture·상수·예산과 마스크·v2 revision 계약 확장 외 순수 함수 본문을 그대로 유지한다", () => {
     expect(createHash("sha256").update(before).digest("hex")).toBe("4db06fecf624253c05a7124bd26012bf6bbf906dab62a0751345e6dfb137ddec");
     const current = readFileSync(new URL("./studio-crdt-bg3d-shape.ts", import.meta.url), "utf8");
     const file = ts.createSourceFile("shape.ts", current, ts.ScriptTarget.Latest, true);
-    // PR #2718의 유효 마스크 허용은 아래 동작 검사로 구분하고, 추출 전 fixture는 바꾸지 않는다.
+    // 유효 마스크와 v2 revision 확장은 아래 동작 검사로 구분하고, 추출 전 fixture는 바꾸지 않는다.
     for (const name of ["object", "map", "props", "sourceHash", "isValidStudioBg3dImageReferenceCandidate"])
       expect(body(file, name), name).toBe(body(beforeFile, name));
-    expect(body(file, "parseStudioCrdtBg3dRevision")).toBe(body(beforeFile, "parseRevision"));
+    expect(body(file, "parseStudioCrdtBg3dRevision")).toBe(body(beforeFile, "parseRevision")
+      .replace("value.version !== 1", "(value.version !== 1 && value.version !== 2)")
+      .replace("return { version: 1,", "return { version: value.version,"));
     expect(body(file, "snapshotStudioCrdtBg3dShape")).toBe(body(beforeFile, "snapshotStudioCrdtBg3dBundles")
       .replace("parseRevision(raw)", "parseStudioCrdtBg3dRevision(raw, failure)"));
     expect(body(file, "hasValidStudioCrdtBg3dBundleRoots")).toBe(body(beforeFile, "hasValidStudioCrdtBg3dBundleRoots")
@@ -88,6 +90,41 @@ describe("6패스 순수 shape 분리의 원본 동등성", () => {
     for (const declaration of beforeFile.statements.filter(ts.isVariableStatement)) {
       expect(current).toContain(declaration.getText(beforeFile));
     }
+  });
+
+  it.each([1, 2] as const)("v%s revision의 버전을 보존하고 현재 shape·facade에서 읽는다", (version) => {
+    const doc = document();
+    try {
+      const revision = { version, pageId: manifest.pageId, bundleId: manifest.bundleId,
+        renderRevisionId: manifest.renderRevisionId, parentRevisionId: null, manifestHash };
+      const raw = JSON.stringify(revision);
+      doc.getMap(shape.STUDIO_BG3D_BUNDLE_REVISIONS_ROOT).set(revisionKey, raw);
+      expect(shape.parseStudioCrdtBg3dRevision(raw)).toEqual(revision);
+      expect(shape.hasValidStudioCrdtBg3dBundleRoots(doc)).toBe(true);
+      expect(facade.hasValidStudioCrdtBg3dBundleRoots(doc)).toBe(true);
+      expect(shape.snapshotStudioCrdtBg3dShape(doc).revisions.get(revisionKey)).toEqual({ raw, ref: revision });
+      expect(facade.snapshotStudioCrdtBg3dBundles(doc).revisions.get(revisionKey)).toEqual({ raw, ref: revision });
+      if (version === 1) expect(outcome(() => facade.snapshotStudioCrdtBg3dBundles(doc)))
+        .toEqual(outcome(() => baseline.snapshotStudioCrdtBg3dBundles(doc)));
+      else {
+        expect(baseline.hasValidStudioCrdtBg3dBundleRoots(doc)).toBe(false);
+        expect(() => baseline.snapshotStudioCrdtBg3dBundles(doc)).toThrow(ConflictException);
+      }
+    } finally { doc.destroy(); }
+  });
+
+  it.each([0, 3, "1", "2", null])("지원하지 않는 revision 버전 %j는 원본처럼 거부한다", (version) => {
+    const doc = document();
+    try {
+      const raw = JSON.stringify({ version, pageId: manifest.pageId, bundleId: manifest.bundleId,
+        renderRevisionId: manifest.renderRevisionId, parentRevisionId: null, manifestHash });
+      doc.getMap(shape.STUDIO_BG3D_BUNDLE_REVISIONS_ROOT).set(revisionKey, raw);
+      expect(() => shape.parseStudioCrdtBg3dRevision(raw)).toThrow("6패스 CRDT revision 참조가 손상되었습니다.");
+      for (const validate of [shape.hasValidStudioCrdtBg3dBundleRoots, facade.hasValidStudioCrdtBg3dBundleRoots, baseline.hasValidStudioCrdtBg3dBundleRoots])
+        expect(validate(doc)).toBe(false);
+      expect(outcome(() => facade.snapshotStudioCrdtBg3dBundles(doc)))
+        .toEqual(outcome(() => baseline.snapshotStudioCrdtBg3dBundles(doc)));
+    } finally { doc.destroy(); }
   });
 
   it("기존 public 상수·validator는 같은 객체를 재export하고 snapshot signature도 유지한다", () => {
@@ -192,6 +229,7 @@ describe("6패스 순수 shape 분리의 원본 동등성", () => {
         expect(first.images.get("element-color")!.props.bg3dLtBundleReference).toBe(stored);
         expect(first.images.get("element-color")!.ref).not.toBe(stored);
         expect(first.images.get("element-color")!.ref).toEqual(stored);
+        if (!(first.revisions instanceof Map)) throw new Error("시험용 snapshot의 revision Map을 확인할 수 없습니다.");
         first.revisions.clear();
         expect(second.revisions.size).toBe(1);
         expect(doc.getMap(shape.STUDIO_BG3D_BUNDLE_REVISIONS_ROOT).size).toBe(1);

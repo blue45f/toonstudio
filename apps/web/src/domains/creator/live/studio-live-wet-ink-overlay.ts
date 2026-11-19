@@ -69,6 +69,10 @@ import {
 import type { DrawEl } from "../studio-element-model";
 import type { StudioLiveInkSurface } from "./studio-live-ink-overlay";
 import type { WatercolorBrushDab } from "../brush/studio-watercolor-brush";
+import {
+  clearStudioLiveWetInkTileSurfacePool,
+  releaseStudioLiveWetInkTileSurface,
+} from "./studio-live-wet-ink-surface-pool";
 
 const MAX_LIVE_DABS = 4_096;
 const MAX_LIVE_TILES = 4_096;
@@ -874,55 +878,11 @@ export class StudioLiveWetInkOverlayRenderer {
   }
 
   private releaseTileSurface(surface: StudioWetInkBrushSurface): void {
-    const width = surface.width;
-    const height = surface.height;
-    if (
-      !Number.isFinite(width)
-      || !Number.isFinite(height)
-      || width <= 0
-      || height <= 0
-    ) {
-      return;
-    }
-    const key = `${width}x${height}`;
-    let pool = this.tileSurfacePool.get(key);
-    if (!pool) {
-      // Bound distinct size buckets so variable-size long sessions never leak offscreen canvases.
-      if (this.tileSurfacePool.size >= 24) {
-        const oldestKey = this.tileSurfacePool.keys().next().value;
-        if (typeof oldestKey === "string") {
-          const evicted = this.tileSurfacePool.get(oldestKey);
-          this.tileSurfacePool.delete(oldestKey);
-          if (evicted) this.shrinkPooledSurfaces(evicted);
-        }
-      }
-      pool = [];
-      this.tileSurfacePool.set(key, pool);
-    }
-    // Cap per-size pool so long strokes cannot retain unbounded canvases.
-    if (pool.length >= 12) {
-      this.shrinkPooledSurfaces([surface]);
-      return;
-    }
-    pool.push(surface);
+    releaseStudioLiveWetInkTileSurface(this.tileSurfacePool, surface);
   }
 
   private clearTileSurfacePool(): void {
-    for (const pool of this.tileSurfacePool.values()) {
-      this.shrinkPooledSurfaces(pool);
-    }
-    this.tileSurfacePool.clear();
-  }
-
-  private shrinkPooledSurfaces(surfaces: readonly StudioWetInkBrushSurface[]): void {
-    for (const surface of surfaces) {
-      try {
-        if (surface.width !== 1) surface.width = 1;
-        if (surface.height !== 1) surface.height = 1;
-      } catch {
-        // Mock or read-only surfaces in tests do not require resize teardown.
-      }
-    }
+    clearStudioLiveWetInkTileSurfacePool(this.tileSurfacePool);
   }
 
   private prepareUploads(

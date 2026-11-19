@@ -1,3 +1,9 @@
+import {
+  capabilityRoleAllowed,
+  channelCanCarry,
+  isReliableMeshLink,
+} from "./studio-live-p2p-peer-policy";
+import type { StudioLiveP2pPeerLink } from "./studio-live-p2p-peer-policy";
 import { StudioLiveP2pMeshHandshake } from "./studio-live-p2p-mesh-handshake";
 import { respondStudioP2pCrdtSync } from "./studio-live-p2p-bg3d-reader";
 import { STUDIO_CRDT_READER_CAPABILITIES, studioCrdtReaderMetadata, supportsStudioCrdtReaders } from "./studio-crdt-reader-capability";
@@ -48,7 +54,6 @@ import {
 import {
   STUDIO_PEER_CAPABILITIES,
   STUDIO_PEER_FABRIC_WIRE,
-  STUDIO_PEER_VIEWER_SAFE_CAPABILITIES,
   isStudioPeerCapability,
   parseStudioPeerFabricPacket,
   type StudioPeerCapability,
@@ -162,26 +167,6 @@ function isDirectRelayEnvelope(
   envelope: StudioLiveEnvelope,
 ): envelope is StudioLiveEnvelope<"direct:relay"> {
   return envelope.kind === "direct:relay";
-}
-
-interface StudioLiveP2pInkInboundWindow { startedAt: number; packetCount: number; byteCount: number; }
-
-interface StudioLiveP2pPeerLink {
-  readonly sessionId: string;
-  participant: StudioLiveParticipant;
-  connection: StudioLiveP2pRtcPeerConnection;
-  channel: StudioLiveP2pRtcDataChannel | null;
-  readonly handshake: StudioLiveP2pMeshHandshake;
-  /** Binary lanes this peer announced over its channel; empty until a caps message arrives. */
-  peerBinaryLanes: readonly string[];
-  /** Capability-scoped feature lanes advertised by this authenticated peer. */
-  peerCapabilities: readonly StudioPeerCapability[];
-  readerCapabilities?: readonly string[];
-  /** True once our own capability announcement reached this peer's channel. */
-  announcedBinaryLanes: boolean;
-  inkInboundWindow: StudioLiveP2pInkInboundWindow | null;
-  directInboundWindow?: { startedAt: number; count: number; bytes: number };
-  closed: boolean;
 }
 
 type StudioLiveP2pEphemeralSendResult = "sent" | "fallback" | "rejected";
@@ -360,7 +345,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
       return this.primary.binaryLaneCapabilities ?? STUDIO_LIVE_P2P_NO_BINARY_LANES;
     }
     return this.ready && [...this.peers.values()].some((peer) =>
-      this.isReliableMeshLink(peer) && peer.announcedBinaryLanes
+      isReliableMeshLink(peer) && peer.announcedBinaryLanes
       && peer.peerBinaryLanes.includes(STUDIO_LIVE_INK_CAPABILITY)
     ) ? STUDIO_LIVE_P2P_RELIABLE_INK_LANES : STUDIO_LIVE_P2P_NO_BINARY_LANES;
   }
@@ -512,7 +497,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     if (this.closed) return false;
     if (this.usesPeerInkLane()) {
       if (!this.ready || !this.binaryLaneCapabilities.includes(STUDIO_LIVE_INK_CAPABILITY)) return false;
-      if ([...this.peers.values()].some((peer) => !this.isReliableMeshLink(peer))) return false;
+      if ([...this.peers.values()].some((peer) => !isReliableMeshLink(peer))) return false;
       return this.sendMeshInkFrame(message);
     }
     const sendPrimary = this.primary.sendInk;
@@ -780,32 +765,11 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     const channel = peer.channel;
     if (peer.closed || channel?.readyState !== "open") return false;
     if (!enforcePreviewLimits) return true;
-    return this.channelCanCarry(
+    return channelCanCarry(
       peer,
       serializedBytes,
       STUDIO_LIVE_P2P_PREVIEW_MAX_BUFFERED_BYTES,
     );
-  }
-
-  private channelCanCarry(
-    peer: StudioLiveP2pPeerLink,
-    messageBytes: number,
-    maxBufferedBytes: number,
-  ): boolean {
-    const channel = peer.channel;
-    if (peer.closed || channel?.readyState !== "open") return false;
-    if (
-      !Number.isFinite(channel.bufferedAmount)
-      || channel.bufferedAmount < 0
-      || channel.bufferedAmount + messageBytes > maxBufferedBytes
-    ) return false;
-    const maxMessageSize = peer.connection.sctp?.maxMessageSize;
-    return maxMessageSize === undefined
-      || maxMessageSize === 0
-      || maxMessageSize === Number.POSITIVE_INFINITY
-      || (Number.isFinite(maxMessageSize)
-        && maxMessageSize > 0
-        && messageBytes <= maxMessageSize);
   }
 
   private sendSerializedToPeer(peer: StudioLiveP2pPeerLink, serialized: string): boolean {
@@ -830,12 +794,6 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
 
   private usesPeerInkLane(): boolean {
     return this.primary.crdtFanout === "mesh" || this.primary.crdtFanout === "none";
-  }
-
-  private isReliableMeshLink(peer: StudioLiveP2pPeerLink): boolean {
-    const channel = peer.channel;
-    return !peer.closed && channel?.readyState === "open" && channel.ordered === true
-      && channel.maxRetransmits === null && channel.maxPacketLifeTime === null;
   }
 
   /** True only when the primary negotiated the ink-v2 binary lane for this connection. */
@@ -864,7 +822,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
       peers.some(
         (peer) =>
           !peer.peerBinaryLanes.includes(STUDIO_LIVE_INK_CAPABILITY)
-          || !this.channelCanCarry(
+          || !channelCanCarry(
             peer,
             frame.byteLength,
             STUDIO_LIVE_P2P_INK_MAX_BUFFERED_BYTES,
@@ -881,7 +839,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
   private announceMeshBinaryLanes(link: StudioLiveP2pPeerLink): void {
     if (link.closed || link.announcedBinaryLanes) return;
     const lanes = this.usesPeerInkLane()
-      ? (this.isReliableMeshLink(link) ? STUDIO_LIVE_P2P_RELIABLE_INK_LANES : STUDIO_LIVE_P2P_NO_BINARY_LANES)
+      ? (isReliableMeshLink(link) ? STUDIO_LIVE_P2P_RELIABLE_INK_LANES : STUDIO_LIVE_P2P_NO_BINARY_LANES)
       : this.primary.binaryLaneCapabilities ?? STUDIO_LIVE_P2P_NO_BINARY_LANES;
     if (lanes.length === 0 && this.localPeerCapabilities.length === 0) return;
     // Set before send: a synchronous adapter can answer during send, otherwise recursing forever.
@@ -900,7 +858,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
   private receiveMeshInk(link: StudioLiveP2pPeerLink, data: ArrayBuffer): void {
     // Fail closed without a locally negotiated lane. Never approximate exact ink with JSON.
     if (this.usesPeerInkLane()) {
-      if (!this.ready || !this.isReliableMeshLink(link) || !link.announcedBinaryLanes
+      if (!this.ready || !isReliableMeshLink(link) || !link.announcedBinaryLanes
         || !link.peerBinaryLanes.includes(STUDIO_LIVE_INK_CAPABILITY)) return;
     } else if (!this.inkLaneNegotiated()) return;
     if (!this.acceptMeshInkInbound(link, data.byteLength)) return;
@@ -1156,28 +1114,18 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     });
   }
 
-  private capabilityRoleAllowed(
-    peer: StudioLiveP2pPeerLink,
-    capability: StudioPeerCapability,
-  ): boolean {
-    return (
-      this.context.participant.role !== "viewer"
-      && peer.participant.role !== "viewer"
-    ) || STUDIO_PEER_VIEWER_SAFE_CAPABILITIES.has(capability);
-  }
-
   private fabricCapabilitiesForPeer(
     peer: StudioLiveP2pPeerLink,
   ): readonly StudioPeerCapability[] {
     if (
       !this.ready
       || !this.knownPeerSessionIds.has(peer.sessionId)
-      || !this.isReliableMeshLink(peer)
+      || !isReliableMeshLink(peer)
     ) return [];
     return peer.peerCapabilities.filter(
       (capability) =>
         this.localPeerCapabilities.includes(capability)
-        && this.capabilityRoleAllowed(peer, capability),
+        && capabilityRoleAllowed(this.context, peer, capability),
     );
   }
 
@@ -1213,7 +1161,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     if (
       !peer
       || !this.fabricCapabilitiesForPeer(peer).includes(packet.capability)
-      || !this.channelCanCarry(
+      || !channelCanCarry(
         peer,
         studioLiveUtf8ByteLength(raw),
         STUDIO_LIVE_P2P_FABRIC_BUFFER_LIMITS[trafficClass],
@@ -1245,7 +1193,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
 
   private directPeerReady(peer: StudioLiveP2pPeerLink): boolean {
     return this.knownPeerSessionIds.has(peer.sessionId) && peer.participant.role !== "viewer"
-      && this.isReliableMeshLink(peer);
+      && isReliableMeshLink(peer);
   }
 
   /**

@@ -481,9 +481,9 @@ export function captureCollectionHydrationFence(): CollectionHydrationFence | nu
   if (!fence) return null;
   return {
     ...fence,
-    collectionRevision: useApp.getState().collectionRevision,
+    collectionRevision: getAppStore().getState().collectionRevision,
     preserveCollections:
       collectionWriteThrough.hasPending(collectionAccountKey(fence)) ||
-      useApp.getState().collectionOutbox.some((entry) => entry.ownerId === fence.userId),
+      getAppStore().getState().collectionOutbox.some((entry) => entry.ownerId === fence.userId),
   };
 }

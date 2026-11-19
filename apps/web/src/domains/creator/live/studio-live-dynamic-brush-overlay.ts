@@ -105,6 +105,11 @@ import type { StudioPaperMediumV1 } from "../brush/studio-paper-media-profile-v1
 import type { DrawEl } from "../studio-element-model";
 import type { StudioLiveInkSurface } from "./studio-live-ink-overlay";
 import type { StudioPaperSubstrateModel } from "../brush/studio-paper-substrate-model";
+import {
+  cancelStudioLiveOverlayFrame,
+  clearStudioLiveOverlayCanvas,
+  releaseStudioLiveOverlayCanvas,
+} from "./studio-live-overlay-canvas-cleanup";
 
 const POINT_EPSILON = 1e-6;
 const MAX_LEGACY_LIVE_DABS = STUDIO_DYNAMIC_BRUSH_DAB_CAP_RANGE.max;
@@ -1026,14 +1031,8 @@ export class StudioLiveDynamicBrushOverlayRenderer {
 
   attach(canvases: StudioLiveDynamicBrushOverlayCanvases | null): void {
     if (canvases === null) {
-      if (this.pendingFirstDabRaf) {
-        cancelAnimationFrame(this.pendingFirstDabRaf);
-        this.pendingFirstDabRaf = 0;
-      }
-      if (this.pendingBeginRaf) {
-        cancelAnimationFrame(this.pendingBeginRaf);
-        this.pendingBeginRaf = 0;
-      }
+      this.pendingFirstDabRaf = cancelStudioLiveOverlayFrame(this.pendingFirstDabRaf);
+      this.pendingBeginRaf = cancelStudioLiveOverlayFrame(this.pendingBeginRaf);
       this.pendingFirstDab = null;
       this.pendingBeginElement = null;
     }
@@ -2407,14 +2406,8 @@ export class StudioLiveDynamicBrushOverlayRenderer {
   }
 
   private resetActiveState(): void {
-    if (this.pendingFirstDabRaf) {
-      cancelAnimationFrame(this.pendingFirstDabRaf);
-      this.pendingFirstDabRaf = 0;
-    }
-    if (this.pendingBeginRaf) {
-      cancelAnimationFrame(this.pendingBeginRaf);
-      this.pendingBeginRaf = 0;
-    }
+    this.pendingFirstDabRaf = cancelStudioLiveOverlayFrame(this.pendingFirstDabRaf);
+    this.pendingBeginRaf = cancelStudioLiveOverlayFrame(this.pendingBeginRaf);
     this.pendingFirstDab = null;
     this.pendingBeginElement = null;
     this.active = null;
@@ -2640,8 +2633,7 @@ export class StudioLiveDynamicBrushOverlayRenderer {
     if (this.active !== null || this.pendingBeginElement !== null) return;
     const canvas = this.activeCanvas;
     if (!canvas) return;
-    if (canvas.width !== 1) canvas.width = 1;
-    if (canvas.height !== 1) canvas.height = 1;
+    releaseStudioLiveOverlayCanvas(canvas);
   }
 
   private restoreCoverageBackingStore(): void {
@@ -2666,8 +2658,7 @@ export class StudioLiveDynamicBrushOverlayRenderer {
       if (!canvas) continue;
       // Resizing releases the old RGBA allocation and clears the bitmap. Keep a real 1 × 1
       // surface so a context acquired by the long-lived host remains valid for a later viewport.
-      if (canvas.width !== 1) canvas.width = 1;
-      if (canvas.height !== 1) canvas.height = 1;
+      releaseStudioLiveOverlayCanvas(canvas);
     }
     // A mock canvas or an already-minimal real canvas may not observe a dimension mutation.
     // Explicitly clear all three bitmaps after the provider releases their backing stores. The
@@ -2677,24 +2668,13 @@ export class StudioLiveDynamicBrushOverlayRenderer {
   }
 
   private clearActiveRect(): void {
-    this.clearCanvas(this.activeContext, this.activeCanvas);
-    this.clearCanvas(this.presentationContext, this.presentationCanvas);
+    clearStudioLiveOverlayCanvas(this.activeContext, this.activeCanvas);
+    clearStudioLiveOverlayCanvas(this.presentationContext, this.presentationCanvas);
     this.settleFlattenUnionRect = null;
     this.contactPlaceholderRect = null;
   }
 
   private clearSettledRect(): void {
-    this.clearCanvas(this.settledContext, this.settledCanvas);
-  }
-
-  private clearCanvas(
-    context: CanvasRenderingContext2D | null,
-    canvas: HTMLCanvasElement | null,
-  ): void {
-    if (!context || !canvas) return;
-    context.save();
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.restore();
+    clearStudioLiveOverlayCanvas(this.settledContext, this.settledCanvas);
   }
 }

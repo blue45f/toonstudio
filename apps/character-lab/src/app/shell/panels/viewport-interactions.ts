@@ -9,20 +9,18 @@
  */
 import { dragJointDetailed } from "../../../animation/joint-drag";
 import { FINGER_BONE_NAMES, failVisible } from "../../../contracts";
-import { resolveDragPivot, type DragPivot } from "./drag-pivot";
 import { unprojectToViewPlane } from "../../../render/viewport-math";
 import { v3IsFinite } from "../../../shared/math";
 
+import { resolveDragPivot, type DragPivot } from "./drag-pivot";
 import {
   classifySkeletonBoundaryError,
   diagnoseSkeletonData,
   isFinitePixelPair,
   reportBoundaryFailure,
   reportInvalidPivotWorld,
-  safeComputeWorldTransforms,
 } from "./skeleton-boundary-guard";
 
-import type { SkeletonBoundaryOptions } from "./skeleton-boundary-guard";
 import type { HumanoidBoneName, HudSample, JointDragHandle, LabFailure, Pose, SkeletonData, Vec3 } from "../../../contracts";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
 
