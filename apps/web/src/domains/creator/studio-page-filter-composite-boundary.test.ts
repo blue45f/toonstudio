@@ -256,7 +256,7 @@ describe("StudioPage page-composite filter integration boundary", () => {
     expect(sharedContext).toContain("viewTransformSuppressed: viewTransformSuppressedRef.current");
     expect(sharedContext).toContain("purpose,");
     expect(filterContext).toContain(
-      'currentStudioEditablePageRasterContext(name, rasterRuntime, "page-filter")',
+      'currentStudioEditablePageRasterContext(name, rasterRuntime, "page-filter",',
     );
   });
 
@@ -302,10 +302,12 @@ describe("StudioPage page-composite filter integration boundary", () => {
 
     expect(projection).toContain("const canvasRenderElements: El[] = studioFilterPreview");
     expect(projection).toContain(": [...studioLiveGesturePreviewRenderPlan.elements]");
-    expect(projection).toContain("if (studioFilterPageComposite)");
+    expect(projection).toContain("if (studioFilterPageComposite &&");
     expect(projection).toContain("studioFilterPreview?.elementId === studioFilterPageComposite.id");
-    expect(projection).toContain("canvasRenderElements.push({");
-    expect(projection).toContain("...previewComposite");
+    expect(projection).toContain("canvasRenderElements.push(overlay)");
+    expect(projection).toContain("studioFilterPreview.replacementSourceId");
+    expect(projection).toContain("canvasRenderElements[index] = overlay");
+    expect(projection).toContain("...studioFilterPreview.patch");
     expect(projection).toContain("locked: true");
     expect(projection).toContain("noClip: true");
     expect(projection).not.toMatch(/authoredCanvasRenderElements\.(?:push|splice|pop|shift|unshift)\(/u);
@@ -319,6 +321,8 @@ describe("StudioPage page-composite filter integration boundary", () => {
     expect(apply).toContain('if (studioFilterSession.target === "image")');
     expect(apply).toMatch(/import\(["'].*render\/studio-raster-edit-preparation["']\)/);
     expect(apply).toContain("rasterRuntime.applyStudioEditableRasterCopy({");
+    expect(apply).toContain("if (!hasActiveImageFilters(patch))");
+    expect(apply).toMatch(/currentStudioFilterPageRasterContext\(\s*studioFilterSession\.plan\.name,\s*rasterRuntime,\s*replacementSourceId,/u);
     expect(apply).toContain("destinationElements: currentContext.destinationElements");
     expect(apply).toContain("const composite = {");
     expect(apply).toContain("...studioFilterSession.image");
@@ -376,7 +380,7 @@ describe("StudioPage page-composite filter integration boundary", () => {
 
     expect(sessionState).toContain('target: "page-composite"');
     expect(sessionState).toContain("image: ImageEl & El");
-    expect(dialogTarget.expression.getText(dialogTarget.sourceFile)).toBe("studioFilterSession.target");
+    expect(dialogTarget.expression.getText(dialogTarget.sourceFile)).toBe('replacementSourceId ? "layer-composite" : studioFilterSession.target');
     expect(dialogClose.expression.getText(dialogClose.sourceFile)).toBe("closeStudioFilterDialog");
     expect(mobileDock).toContain("filterMutationLocked={menuFilterDisabled}");
     expect(mobileDock).toContain("filterPreparationBusy={studioFilterPreparationBusy}");

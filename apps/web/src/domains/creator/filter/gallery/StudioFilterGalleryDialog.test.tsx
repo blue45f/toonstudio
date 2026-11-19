@@ -167,6 +167,19 @@ describe("필터 갤러리 대화상자", () => {
     expect(onApply).not.toHaveBeenCalled();
   });
 
+  it("선택 레이어의 원본 복구를 안내하고 효과 스택에는 이미지 마스크를 적용하지 않는다", () => {
+    const { onApply } = renderDialog({ targetKind: "layer-composite", selectionAvailable: true });
+    const dialog = screen.getByRole("dialog", { name: "필터 갤러리" });
+    expect(dialog.getAttribute("aria-describedby")).toContain("studio-filter-gallery-description");
+    const note = document.getElementById("studio-filter-gallery-description");
+    expect(note?.textContent).toContain("선택한 레이어에만 효과를 적용합니다.");
+    expect(note?.textContent).toContain("실행 취소하면 원본이 다시 보입니다.");
+    expect(screen.queryByRole("radio", { name: "선택 안" })).toBeNull();
+    fireEvent.click(effectButton("명도 반전"));
+    fireEvent.click(screen.getByRole("button", { name: "적용" }));
+    expect(onApply.mock.calls[0]?.[2]).toBe("whole");
+  });
+
   it("선택 영역이 있으면 선택 안·밖 적용 범위를 고른다", () => {
     const { onApply } = renderDialog({ selectionAvailable: true });
     fireEvent.click(effectButton("명도 반전"));

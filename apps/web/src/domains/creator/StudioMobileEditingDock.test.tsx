@@ -1661,6 +1661,19 @@ describe("StudioMobileEditingDock", () => {
     expect(unavailableFilter.getAttribute("aria-describedby")).not.toBeNull();
   });
 
+  it("선택한 펜 레이어의 필터 메뉴가 실제 적용 범위와 현재 효과를 전달한다", () => {
+    const props = createProps({
+      isMobile: true, filterTargetLabel: "선택 레이어",
+      selected: { id: "stroke", type: "draw" } as StudioMobileEditingDockProps["selected"],
+    });
+    render(<StudioMobileEditingDock {...props} />);
+    const toolbar = screen.getByRole("toolbar", { name: "선택 항목 빠른 작업" });
+    const control = within(toolbar).getByRole<HTMLSelectElement>("combobox", { name: "선택 레이어 필터 선택" });
+    expect(control.title).toContain("선택 레이어");
+    fireEvent.change(control, { target: { value: "motion-blur" } });
+    expect(props.stableHandlers.openStudioFilter).toHaveBeenCalledWith("motion-blur");
+  });
+
   it("routes every mobile filter kind through the stable handler", () => {
     const stableHandlers = createHandlers();
     render(

@@ -490,8 +490,8 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
           studioLiveGesturePreviewAuthoritativeElementIds={elements.map((element: { id: string }) => element.id)}
           studioFilterPageComposite={
             studioFilterSession?.target === "page-composite" &&
-            studioFilterSession.pageId === activePage.id &&
-            studioFilterSession.historyIndex === pagesHi &&
+            studioFilterPreview?.elementId === studioFilterSession.elementId &&
+            studioFilterSession.pageId === activePage.id && studioFilterSession.historyIndex === pagesHi &&
             !masterEditMode
               ? studioFilterSession.image
               : null

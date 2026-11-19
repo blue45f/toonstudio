@@ -268,7 +268,7 @@ export interface StudioMobileEditingDockProps {
   eraseToIntersection?: boolean;
   filterMutationLocked: boolean;
   filterPreparationBusy: boolean;
-  filterTargetLabel: "선택 이미지" | "현재 페이지 합성본";
+  filterTargetLabel: import("./filter/studio-filter-target-presentation").StudioFilterTargetLabel;
   filterUnavailableReason: string | null;
   /** 원고 명령이 판정한 가용성. 지연 확정 획과 협업 범위의 기록까지 포함한다. */
   undoDisabled: boolean;

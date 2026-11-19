@@ -7,6 +7,7 @@
  * 같은 필드·같은 픽셀 크기로 계산한 결과를 함께 보인다. 적용하면 { filterGallery } 패치 하나를 넘긴다. 이 파일은 지연
  * 로드 청크라 등록부(커널 전체)를 바로 가져온다.
  */
+import { useStudioFilterTargetDescription, type StudioFilterTargetKind } from "../studio-filter-target-presentation";
 import { ArrowDown, ArrowUp, Eye, EyeOff, LayoutGrid, RotateCcw, Search, Shuffle, Trash2, X } from "lucide-react";
 import { useEffect, useEffectEvent, useMemo, useRef, useState, type ReactElement, type RefObject } from "react";
 
@@ -68,7 +69,7 @@ export interface StudioFilterGalleryDialogProps {
   imageSrc?: string | null;
   initialDraft?: StudioFilterDraft;
   rootRef: RefObject<HTMLElement | null>;
-  targetKind?: "image" | "page-composite";
+  targetKind?: StudioFilterTargetKind;
   mutationLocked?: boolean;
   mutationLockReason?: string;
   applying?: boolean;
@@ -231,6 +232,7 @@ export function StudioFilterGalleryDialog({
   const [query, setQuery] = useState("");
   const [previewEnabled, setPreviewEnabled] = useState(true);
   const [announcement, setAnnouncement] = useState("");
+  const targetDescription = useStudioFilterTargetDescription(targetKind, true);
   const canUseSelectionScope = targetKind === "image" && selectionAvailable;
   const [applicationScope, setApplicationScope] = useState<StudioFilterApplicationScope>(
     () => (canUseSelectionScope ? "inside" : "whole"),
@@ -369,9 +371,7 @@ export function StudioFilterGalleryDialog({
           <div className="min-w-0 flex-1">
             <h2 id="studio-filter-gallery-title" className="truncate text-sm font-bold tracking-tight">필터 갤러리</h2>
             <p id="studio-filter-gallery-description" className="mt-0.5 text-[0.7rem] leading-relaxed text-fg-3">
-              {targetKind === "page-composite"
-                ? "현재 보이는 페이지를 편집 가능한 합성 레이어로 만들고, 원본 레이어를 보존한 채 효과 스택을 적용합니다."
-                : "선택한 이미지 레이어에 효과 스택을 비파괴로 저장합니다. 다시 열면 겹마다 고칠 수 있어요."}
+              {targetDescription}
             </p>
           </div>
           <button

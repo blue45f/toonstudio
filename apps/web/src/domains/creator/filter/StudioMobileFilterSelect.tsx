@@ -9,6 +9,7 @@ import { localizeStudioText } from "../studio-localize-text";
 import { STUDIO_EASE } from "../studio-panel-ui";
 import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 import { STUDIO_FILTER_DIALOG_CATALOG, studioFilterGroupLabel, type StudioFilterCatalogGroup } from "./studio-filter-catalog";
+import type { StudioFilterTargetLabel } from "./studio-filter-target-presentation";
 import type { StudioFilterKind } from "./studio-filter-menu";
 import { STUDIO_FILTER_DIALOG_GROUP_ORDER } from "./studio-filter-menu-groups";
 
@@ -25,7 +26,7 @@ const groups = STUDIO_FILTER_DIALOG_GROUP_ORDER.map((id) => ({
 interface StudioMobileFilterSelectProps {
   filterMutationLocked: boolean;
   filterPreparationBusy: boolean;
-  filterTargetLabel: "선택 이미지" | "현재 페이지 합성본";
+  filterTargetLabel: StudioFilterTargetLabel;
   filterUnavailableReason: string | null;
   onSelect: (kind: StudioFilterKind) => void;
   placement: "primary" | "context" | "workspace";
@@ -39,7 +40,7 @@ export function StudioMobileFilterSelect({
   const bt = useBilingual("studio.mobileDock");
   const preload = useStudioFilterDialogIntent();
   const guidanceId = useId();
-  const target = filterTargetLabel === "선택 이미지" ? bt("선택 이미지", "Selected image") : bt("현재 페이지 합성본", "Current page composite");
+  const target = bt(filterTargetLabel, { "선택 이미지": "Selected image", "선택 레이어": "Selected layer", "현재 페이지 합성본": "Current page composite" }[filterTargetLabel]);
   const reason = filterUnavailableReason ?? (filterMutationLocked
     ? frozenStatus4Text("studio.frozenStatus4.dock.filterLocked", "편집 잠금을 해제한 뒤 필터를 적용하세요.") : null);
   const disabled = reason !== null || filterPreparationBusy;

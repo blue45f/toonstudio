@@ -240,14 +240,14 @@ describe("StudioFilterDialog", () => {
     expect(onApply.mock.calls[0]?.[2]).toBe("outside");
   });
 
-  it("keeps selection scope hidden for page composites", () => {
+  it.each(["page-composite", "layer-composite"] as const)("합성 대상 %s에서는 이미지 선택 마스크를 표시하지 않는다", (targetKind) => {
     const html = renderToStaticMarkup(
       <StudioFilterDialog
         activeKey="filter:page-selection"
         kind="motion-blur"
         image={{}}
         rootRef={createRef<HTMLElement>()}
-        targetKind="page-composite"
+        targetKind={targetKind}
         selectionAvailable
         onPreview={vi.fn()}
         onApply={vi.fn()}
@@ -257,6 +257,12 @@ describe("StudioFilterDialog", () => {
 
     expect(html).not.toContain("적용 범위");
     expect(html).not.toContain("선택 안에 적용");
+    if (targetKind === "layer-composite") {
+      expect(html).toContain('aria-describedby="studio-filter-dialog-description"');
+      expect(html).toContain("선택한 레이어에만 효과를 적용합니다.");
+      expect(html).toContain("원본 레이어는 숨겨 두고, 실행 취소하면 원본이 다시 보입니다.");
+      expect(html).not.toContain("현재 보이는 페이지");
+    }
   });
 
   it("explains page compositing, source preservation, and one-step undo accessibly", () => {

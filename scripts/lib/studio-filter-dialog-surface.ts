@@ -2,7 +2,7 @@ import type { Locator, Page } from "playwright";
 
 const GALLERY_LABEL = "필터 갤러리…";
 const SLIDER_NUDGE_STEPS = 15;
-export const STUDIO_FILTER_TARGET_DESCRIPTION = /비파괴 필터로 적용합니다|효과 스택을 비파괴로 저장합니다|합성 레이어로 만들고/u;
+export const STUDIO_FILTER_TARGET_DESCRIPTION = /비파괴 필터로 적용합니다|효과 스택을 비파괴로 저장합니다|합성 레이어로 만들고|선택한 레이어에만 효과를 적용합니다/u;
 
 /** 메뉴의 실제 세션 종류와 같은 대화상자를 기다린다. */
 export function studioFilterDialogSurface(label?: string) {
@@ -12,11 +12,13 @@ export function studioFilterDialogSurface(label?: string) {
 }
 
 /** 설명이 없거나 두 권위가 섞이면 페이지 합성으로 추측하지 않는다. */
-export function studioFilterTargetFromDescription(description: string | null): "image" | "page-composite" {
+export function studioFilterTargetFromDescription(description: string | null): "image" | "page-composite" | "layer-composite" {
   const image = description?.includes("비파괴") ?? false;
   const composite = description?.includes("합성 레이어") ?? false;
-  if (image === composite) throw new Error("필터 대상 설명을 확인할 수 없습니다.");
-  return image ? "image" : "page-composite";
+  const layer = description?.includes("선택한 레이어에만") ?? false;
+  if (Number(image) + Number(composite) + Number(layer) !== 1) throw new Error("필터 대상 설명을 확인할 수 없습니다.");
+  if (image) return "image";
+  return layer ? "layer-composite" : "page-composite";
 }
 
 /** 새 원고의 빈 스택은 픽셀을 바꾼 적용의 증거가 아니다. 기존 스택 비우기 기능은 건드리지 않는다. */

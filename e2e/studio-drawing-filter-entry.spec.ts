@@ -1,15 +1,18 @@
+import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { buffer } from "node:stream/consumers";
 
 import { expect, test, type Page } from "@playwright/test";
 import { decodePng } from "image-js";
 
 import { STUDIO_FILTER_DIALOG_CATALOG } from "../apps/web/src/domains/creator/filter/studio-filter-catalog";
-import { openStudioExportPanel, openStudioMainMenu, showStudioProjectWindowTools } from "../scripts/lib/studio-shell-interactions";
+import { openStudioExportPanel, openStudioLayerNavigator, openStudioMainMenu, showStudioProjectWindowTools } from "../scripts/lib/studio-shell-interactions";
 
 const singleFilters = STUDIO_FILTER_DIALOG_CATALOG.map(({ kind }) => kind);
 
-async function downloadCurrentArtwork(page: Page, pngPath?: string) {
+async function downloadCurrentArtwork(page: Page, pngPath?: string, scale?: 1 | 2) {
   const panel = await openStudioExportPanel(page);
+  if (scale) await panel.getByRole("button", { name: `${scale}×`, exact: true }).click();
   const download = page.waitForEvent("download");
   await panel.getByRole("button", { name: "현재 페이지 PNG 다운로드", exact: true }).click();
   const artwork = await download;
@@ -264,4 +267,157 @@ test("첫 필터 엔진 수신이 늦어도 취소·다시 선택해 원고에 �
     releaseAssets?.();
     await context.unrouteAll({ behavior: "wait" });
   }
+});
+
+async function addFilterTestBitmap(page: Page) {
+  const imageLayer = await openStudioMainMenu(page, "layer");
+  const picker = page.waitForEvent("filechooser");
+  await imageLayer.getByRole("menuitem", { name: /^이미지…/u }).click();
+  await (await picker).setFiles("apps/web/public/assets/studio/cc0-20260906/previews/kenney-watercraft-boat-speed-b.png");
+  const projectTools = page.getByRole("button", { name: "프로젝트 도구 닫기", exact: true });
+  if (await projectTools.isVisible()) await projectTools.click();
+}
+
+async function openManuscriptFilter(page: Page, id: string) {
+  await page.getByRole("navigation", { name: "원고 빠른 메뉴" }).getByRole("menuitem", { name: "필터", exact: true }).click();
+  const item = page.getByRole("menu", { name: "필터", exact: true }).locator(`[data-studio-menu-item-id="${id}"]`);
+  await expect(item).toBeEnabled({ timeout: 5_000 });
+  await item.click();
+  const dialog = page.locator('[role="dialog"][aria-labelledby="studio-filter-dialog-title"]');
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
+test("비트맵과 펜 획이 있는 원고는 중립 보정 전후와 색 필터 실행 취소 후 1·2배 PNG의 모든 픽셀이 같다", async ({ page }, info) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto(`/studio/draft/filter-fidelity-${randomUUID()}?uiMode=full`, { waitUntil: "domcontentloaded" });
+  await addFilterTestBitmap(page);
+
+  const artwork = async (label: string) => {
+    const pixels = [];
+    for (const scale of [1, 2] as const) {
+      pixels.push(await downloadCurrentArtwork(page, info.outputPath(`${label}-${scale}x.png`), scale));
+    }
+    return pixels;
+  };
+  const bitmap = await artwork("bitmap");
+  await drawTestStroke(page, false);
+  await openStudioLayerNavigator(page);
+  const layers = page.locator('[data-studio-layer-row="true"]:visible');
+  await expect(layers).toHaveCount(2);
+  const original = await artwork("original");
+  expect(original.map((pixels, i) => pixels.equals(bitmap[i]))).toEqual([false, false]);
+  const editor = page.locator("[data-studio-history-undo-depth]");
+  const depth = Number(await editor.getAttribute("data-studio-history-undo-depth"));
+  expect(depth).toBeGreaterThanOrEqual(2);
+
+
+  const readPreviewPixels = async () => Buffer.from((await readPagePreview(page)).getRawImage().data);
+  const sourcePreview = await readPreviewPixels();
+  const neutral = await openManuscriptFilter(page, "brightness-contrast");
+  await expect(neutral.getByText(/합성 레이어로 만들고/u)).toBeVisible();
+  await expect(neutral.getByRole("slider")).toHaveCount(2);
+  for (const slider of await neutral.getByRole("slider").all()) await expect(slider).toHaveValue("0");
+  await neutral.getByRole("slider").first().press("End");
+  await expect.poll(async () => (await readPreviewPixels()).equals(sourcePreview), { timeout: 30_000 }).toBe(false);
+  await neutral.getByRole("button", { name: "기본값", exact: true }).click();
+  for (const slider of await neutral.getByRole("slider").all()) await expect(slider).toHaveValue("0");
+  await expect.poll(async () => (await readPreviewPixels()).equals(sourcePreview), { timeout: 30_000 }).toBe(true);
+  await neutral.getByRole("button", { name: "적용", exact: true }).click();
+  await expect(neutral).toBeHidden();
+  const unchanged = await artwork("neutral");
+  expect(unchanged.map((pixels, i) => pixels.equals(original[i]))).toEqual([true, true]);
+  await expect(layers).toHaveCount(2);
+  await expect(editor).toHaveAttribute("data-studio-history-undo-depth", String(depth));
+
+  const color = await openManuscriptFilter(page, "solarize");
+  await color.getByRole("slider").first().press("ArrowUp");
+  await color.getByRole("button", { name: "적용", exact: true }).click();
+  await expect(color).toBeHidden();
+  await expect(editor).toHaveAttribute("data-studio-history-undo-depth", String(depth + 1));
+  const changed = await artwork("colored");
+  expect(changed.map((pixels, i) => pixels.equals(original[i]))).toEqual([false, false]);
+  await page.getByRole("button", { name: "되돌리기 · 실행취소", exact: true }).filter({ visible: true }).click();
+  const restored = await artwork("color-undo");
+  expect(restored.map((pixels, i) => pixels.equals(original[i]))).toEqual([true, true]);
+  await expect(layers).toHaveCount(2);
+  await expect(editor).toHaveAttribute("data-studio-history-undo-depth", String(depth));
+
+  // 같은 탭에서 PNG 출력을 마치고도 원고의 다음 합성 작업을 바로 시작할 수 있어야 한다.
+  for (const id of ["gaussian-blur", "motion-blur"]) {
+    await test.step(id, async () => {
+      const dialog = await openManuscriptFilter(page, id);
+      await dialog.getByRole("slider").first().press("ArrowUp");
+      await dialog.getByRole("button", { name: "적용", exact: true }).click();
+      await expect(dialog).toBeHidden();
+      await expect(editor).toHaveAttribute("data-studio-history-undo-depth", String(depth + 1));
+      await expect(layers).toHaveCount(3);
+      const applied = await downloadCurrentArtwork(page, info.outputPath(`${id}-2x.png`), 2);
+      expect(applied.equals(original[1])).toBe(false);
+      await page.getByRole("button", { name: "되돌리기 · 실행취소", exact: true }).filter({ visible: true }).click();
+      await expect(editor).toHaveAttribute("data-studio-history-undo-depth", String(depth));
+      await expect(layers).toHaveCount(2);
+      const undoPixels = await downloadCurrentArtwork(page, info.outputPath(`${id}-undo-2x.png`), 2);
+      expect(undoPixels.equals(original[1])).toBe(true);
+    });
+  }
+});
+
+test("선택한 펜 레이어의 색 필터는 해당 획만 바꾸고 실행 취소하면 원본 PNG와 레이어가 복원된다", async ({ page }, info) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto(`/studio/draft/stroke-filter-${randomUUID()}?uiMode=full`, { waitUntil: "domcontentloaded" });
+  await addFilterTestBitmap(page);
+  await openStudioLayerNavigator(page);
+  const rows = page.locator('[data-studio-layer-row="true"]:visible');
+  await expect(rows).toHaveCount(1);
+  const bitmapId = await rows.first().getAttribute("id");
+  const bitmapFile = info.outputPath("underlying-bitmap.png");
+  const bitmap = await downloadCurrentArtwork(page, bitmapFile, 1);
+  const { width, channels } = decodePng(await readFile(bitmapFile));
+  await drawTestStroke(page, false);
+  await expect(rows).toHaveCount(2);
+  const bitmapRow = page.locator(`[id="${bitmapId}"]`);
+  const stroke = page.locator(`[data-studio-layer-row="true"]:not([id="${bitmapId}"]):visible`);
+  const strokeId = await stroke.getAttribute("id");
+  const sourceRow = page.locator(`[id="${strokeId}"]`);
+  const original = await downloadCurrentArtwork(page, info.outputPath("selected-stroke-original.png"), 1);
+  await sourceRow.click({ position: { x: 12, y: 18 } });
+  await expect(sourceRow).toHaveAttribute("aria-selected", "true");
+  const editor = page.locator("[data-studio-history-undo-depth]");
+  const depth = Number(await editor.getAttribute("data-studio-history-undo-depth"));
+  const dialog = await openManuscriptFilter(page, "solarize");
+  await expect(dialog.getByText(/선택한 레이어에만 효과를 적용합니다/u)).toBeVisible();
+  await dialog.getByRole("slider").first().press("ArrowUp");
+  await dialog.getByRole("button", { name: "적용", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(editor).toHaveAttribute("data-studio-history-undo-depth", String(depth + 1));
+  await expect(rows).toHaveCount(3);
+  await expect(sourceRow.locator('[data-studio-layer-row-action="visibility"]')).toHaveAccessibleName(/ 표시$/u);
+  await expect(bitmapRow.locator('[data-studio-layer-row-action="visibility"]')).toHaveAccessibleName(/ 숨김$/u);
+
+  const colored = await downloadCurrentArtwork(page, info.outputPath("selected-stroke-filtered.png"), 1);
+  expect(colored.equals(original)).toBe(false);
+  // 획의 실제 래스터 경계와 가장자리 안티앨리어싱 한 픽셀 밖은 비트맵까지 그대로여야 한다.
+  let xMin = width, xMax = -1, yMin = Infinity, yMax = -1;
+  for (let i = 0; i < original.length; i++) {
+    if (bitmap[i] === original[i]) continue;
+    const pixel = Math.floor(i / channels), x = pixel % width, y = Math.floor(pixel / width);
+    xMin = Math.min(xMin, x); xMax = Math.max(xMax, x);
+    yMin = Math.min(yMin, y); yMax = Math.max(yMax, y);
+  }
+  expect(xMax).toBeGreaterThan(xMin);
+  let changedOutsideStroke = 0;
+  for (let i = 0; i < original.length; i++) {
+    if (original[i] === colored[i]) continue;
+    const pixel = Math.floor(i / channels), x = pixel % width, y = Math.floor(pixel / width);
+    if (x < xMin - 1 || x > xMax + 1 || y < yMin - 1 || y > yMax + 1) changedOutsideStroke++;
+  }
+  expect(changedOutsideStroke).toBe(0);
+
+  await page.getByRole("button", { name: "되돌리기 · 실행취소", exact: true }).filter({ visible: true }).click();
+  await expect(editor).toHaveAttribute("data-studio-history-undo-depth", String(depth));
+  await expect(rows).toHaveCount(2);
+  await expect(sourceRow.locator('[data-studio-layer-row-action="visibility"]')).toHaveAccessibleName(/ 숨김$/u);
+  const restored = await downloadCurrentArtwork(page, info.outputPath("selected-stroke-undo.png"), 1);
+  expect(restored.equals(original)).toBe(true);
 });

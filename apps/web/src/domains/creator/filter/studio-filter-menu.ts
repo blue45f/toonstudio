@@ -64,6 +64,7 @@ export type StudioFilterPatch = StudioFilterPackPatch;
 
 export interface StudioFilterPreview {
   elementId: string;
+  replacementSourceId?: string;
   patch: StudioFilterPatch;
 }
 

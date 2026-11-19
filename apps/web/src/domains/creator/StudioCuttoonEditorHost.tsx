@@ -1399,6 +1399,7 @@ import type { StudioDrawingPaletteLayout } from "./brush/studio-drawing-palettes
 import type { PaperGrainKind } from "./brush/studio-paper-texture";
 import type { SvgExportEl, SvgExportResult } from "./export/studio-svg-export";
 import type { StudioFilterDraft, StudioFilterKind, StudioFilterPreview } from "./filter/studio-filter-menu";
+import type { StudioFilterTargetLabel } from "./filter/studio-filter-target-presentation";
 import type { StudioLayerLiftReviewOptions } from "./layer/StudioLayerLiftDialog";
 import type {
   StudioDialogueImportApplyResult,
@@ -6456,7 +6457,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       const target = resolveStudioBg3dHistoryTarget(bg3dHistoryTarget, bg3dHistoryScope(), pages,
         masterEditMode || collaborationDocumentLocked || workHydrationFailed || !persistLeadershipAllowsDraw, reviewBoundPage);
       if (!target || !setCurrentPageId(target.pageId)) {
-        setError("3D 배경을 다시 열 수 없어요. 원고에서 레이어와 편집 권한을 확인해 주세요.");
+        setError(t("studio.hostError.bg3dReopenUnavailable", "3D 배경을 다시 열 수 없어요. 원고에서 레이어와 편집 권한을 확인해 주세요."));
         navigateStudio2dSurface("canvas", { replace: true });
         return false;
       }
@@ -13129,23 +13130,22 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       ? studioLinked3dPassDestructiveEditReason(studioFilterDialogImage)
         ?? studioWorkAssetDestructiveEditReason(studioFilterDialogImage)
       : null;
+  const studioFilterSessionBusyReason = timelinePlaying
+    ? t("studio.hostReason.filterTimelinePlaying", "타임라인 재생을 멈춘 뒤 필터를 적용하세요.")
+    : timelapseCapturing
+      ? t("studio.hostReason.filterTimelapseCapturing", "타임랩스 캡처가 끝난 뒤 필터를 적용하세요.")
+      : saving
+        ? t("studio.hostReason.filterSaving", "저장이 끝난 뒤 필터를 적용하세요.")
+        : isExporting ? t("studio.hostReason.filterExporting", "내보내기가 끝난 뒤 필터를 적용하세요.") : null;
   const studioFilterDialogMutationLockReason = !studioFilterDialogImage ||
     studioFilterDialogImage.type !== "image"
     ? t("studio.hostReason.filterTargetMissing", "필터 대상이 현재 페이지에 없습니다. 대화상자를 닫고 다시 선택해 주세요.")
     : activeSurfaceReviewLocked
       ? t("studio.hostReason.filterReviewLocked", "검토 잠금을 해제한 뒤 필터를 적용하세요.")
-      : timelinePlaying
-        ? t("studio.hostReason.filterTimelinePlaying", "타임라인 재생을 멈춘 뒤 필터를 적용하세요.")
-        : timelapseCapturing
-          ? t("studio.hostReason.filterTimelapseCapturing", "타임랩스 캡처가 끝난 뒤 필터를 적용하세요.")
-          : saving
-            ? t("studio.hostReason.filterSaving", "저장이 끝난 뒤 필터를 적용하세요.")
-            : studioFilterDialogImageEditReason
-              ? studioFilterDialogImageEditReason
-              : studioFilterSession?.target === "image" &&
-                  isEffectivelyLocked(studioFilterDialogImage, groups)
-                ? t("studio.hostReason.filterLayerLocked", "이미지와 상위 그룹의 잠금을 해제한 뒤 필터를 적용하세요.")
-                : null;
+      : studioFilterSessionBusyReason ?? studioFilterDialogImageEditReason ??
+        (studioFilterSession?.target === "image" && isEffectivelyLocked(studioFilterDialogImage, groups)
+          ? t("studio.hostReason.filterLayerLocked", "이미지와 상위 그룹의 잠금을 해제한 뒤 필터를 적용하세요.")
+          : null);
   const studioFilterDialogMutationLocked = studioFilterDialogMutationLockReason !== null;
   useEffect(() => {
     if (!studioFilterSession) return;
@@ -24504,6 +24504,9 @@ function clearSelectionForEdit() {
           includeBackground: false,
           sourceDisposition: "hide-originals" as const,
           sourceDispositionIds: sourceIds,
+          ...(purpose === "page-filter" ? {
+            insertionIndex: context.destinationElements.findLastIndex((element) => sourceIds.includes(element.id)) + 1,
+          } : {}),
           name,
         },
       };
@@ -24511,11 +24514,19 @@ function clearSelectionForEdit() {
     return context;
   }
 
+  const studioSelectedFilterLayerId =
+    selected && selected.type !== "image" && !isEffectivelyHidden(selected, groups)
+    && !isEffectivelyLocked(selected, groups) && !localHiddenElementIds.has(selected.id)
+      ? selected.id
+      : undefined;
+
   function currentStudioFilterPageRasterContext(
     name: string,
     rasterRuntime: typeof import("./render/studio-raster-edit-preparation"),
+    sourceId?: string,
   ) {
-    return currentStudioEditablePageRasterContext(name, rasterRuntime, "page-filter");
+    return currentStudioEditablePageRasterContext(name, rasterRuntime, "page-filter",
+      sourceId ? { sourceIds: [sourceId] } : undefined);
   }
 
   async function openStudioFilter(kind: StudioFilterKind, initialDraft?: StudioFilterDraft) {
@@ -24559,15 +24570,6 @@ function clearSelectionForEdit() {
       });
       return;
     }
-    // Selected vector/stroke layer: filter that layer only (not whole-page flatten).
-    const selectedLayerFilterIds =
-      selected
-      && selected.type !== "image"
-      && !isEffectivelyHidden(selected, groups)
-      && !isEffectivelyLocked(selected, groups)
-      && !localHiddenElementIds.has(selected.id)
-        ? [selected.id] as const
-        : null;
     disarmAllPixelTools();
     setTool("select");
     if (!prepareStudioDocumentReplacement("필터 미리보기를 준비", { flushPending: true })) return;
@@ -24575,7 +24577,7 @@ function clearSelectionForEdit() {
     const mutationTicket = captureStudioMutationTicket();
     const historyIndex = pagesHiRef.current;
     const pageId = currentPageIdRef.current;
-    const layerScopedFilter = Boolean(selectedLayerFilterIds?.length);
+    const layerScopedFilter = studioSelectedFilterLayerId !== undefined;
     const layerName = layerScopedFilter
       ? "필터 · 선택 레이어"
       : "필터 · 현재 페이지 합성";
@@ -24597,14 +24599,7 @@ function clearSelectionForEdit() {
       const rasterRuntime = await import("./render/studio-raster-edit-preparation");
       const { resolveStudioRasterEditReason } = await import("./status-i18n/studio-producer-error-i18n-exports-raster");
       if (runId !== studioFilterPreparationRunIdRef.current || controller.signal.aborted) return;
-      const initialContext = layerScopedFilter
-        ? currentStudioEditablePageRasterContext(
-          layerName,
-          rasterRuntime,
-          "page-filter",
-          { sourceIds: selectedLayerFilterIds! },
-        )
-        : currentStudioFilterPageRasterContext(layerName, rasterRuntime);
+      const initialContext = currentStudioFilterPageRasterContext(layerName, rasterRuntime, studioSelectedFilterLayerId);
       const planned = rasterRuntime.planStudioEditableRasterCopy(initialContext.input);
       if (!planned.ok) throw new Error(resolveStudioRasterEditReason(planned.reason));
       const rendered = await rasterRuntime.renderStudioEditableRasterCopy(
@@ -24622,14 +24617,7 @@ function clearSelectionForEdit() {
         currentPageIdRef.current !== pageId ||
         !canApplyStudioMutation(mutationTicket)
       ) return;
-      const latestContext = layerScopedFilter
-        ? currentStudioEditablePageRasterContext(
-          layerName,
-          rasterRuntime,
-          "page-filter",
-          { sourceIds: selectedLayerFilterIds! },
-        )
-        : currentStudioFilterPageRasterContext(layerName, rasterRuntime);
+      const latestContext = currentStudioFilterPageRasterContext(layerName, rasterRuntime, studioSelectedFilterLayerId);
       if (!rasterRuntime.isStudioEditableRasterCopyPlanCurrent(planned.plan, latestContext.input)) {
         throw new Error(t("studio.hostStatus.filterPreviewPageChanged", "필터 미리보기 준비 중 페이지가 바뀌었습니다. 최신 화면에서 다시 시도해 주세요."));
       }
@@ -24639,7 +24627,7 @@ function clearSelectionForEdit() {
           rendered,
           newId: uid(),
         }),
-        // Layer-scoped previews still use the composite apply pipeline, but are not full-page.
+        ...(layerScopedFilter && selected?.groupId ? { groupId: selected.groupId } : {}),
         filterPageComposite: !layerScopedFilter,
         noClip: true,
       } satisfies ImageEl & El;
@@ -25055,25 +25043,10 @@ function clearSelectionForEdit() {
     !selectedImageMutationLocked &&
     !menuSelectedAnimatedImage &&
     !isEffectivelyHidden(selected, groups);
-  const studioFilterTargetLabel: "선택 이미지" | "현재 페이지 합성본" =
-    studioDirectImageFilterTarget ? "선택 이미지" : "현재 페이지 합성본";
-  /**
-   * §Filter 문서 사전점검 — 메뉴가 **광고하는 가용성**을 실제 결과와 같게 만든다.
-   *
-   * 지금까지 필터 게이트는 "재생 중 · 저장 중 · 검토 잠금" 같은 **세션** 사유만 봤다. 정작
-   * 자주 막는 쪽은 문서다: 화면과 똑같이 합칠 수 없는 레이어(자동 줄바꿈 글상자, 지우개 자국이
-   * 남은 그리기 레이어, 인터넷 주소로 연결된 이미지…)가 하나라도 있으면 준비 단계가
-   * fail-closed 로 멈춘다. 그런데도 메뉴는 51개 항목을 전부 활성으로 보여 줬고, 눌러도 사유 한
-   * 줄 없이 끝났다(실측). 막는 것 자체는 옳다 — 필터가 화면과 다른 결과를 조용히 구워 내면 안
-   * 된다. 틀린 건 **광고와 실제의 불일치**다.
-   *
-   * 그래서 추측하지 않고, 눌렀을 때 실제로 도는 그 계획 함수를 미리 한 번 돌려 사유를 그대로
-   * 가져온다. 두 경로가 같은 함수를 쓰므로 메뉴와 결과가 어긋날 수 없고, 사유 문구도 이미
-   * 작가용으로 쓰여 있다("…상자를 조금 넓히거나 원하는 자리에서 엔터로 줄을 나눈 뒤…").
-   *
-   * 비용은 문서가 실제로 바뀐 뒤 한 번, 그것도 획이 멎고 나서만 낸다. 획 커밋마다 페이지를
-   * 직렬화하면 그리기 핫패스를 갉아먹는다.
-   */
+  const studioFilterTargetLabel: StudioFilterTargetLabel = studioDirectImageFilterTarget ? "선택 이미지"
+    : studioSelectedFilterLayerId ? "선택 레이어" : "현재 페이지 합성본";
+  // 획이 멎은 뒤 실제 합성 계획으로 문서의 가용성을 확인한다.
+  const studioFilterSharedPage = Boolean(sharedDocument);
   const [studioFilterDocumentPreflightReason, setStudioFilterDocumentPreflightReason] =
     useState<string | null>(null);
   const studioFilterPreflightContextRef =
@@ -25090,6 +25063,8 @@ function clearSelectionForEdit() {
       setStudioFilterDocumentPreflightReason(null);
       return;
     }
+    // 캡처·재생 사유는 세션이 직접 표시한다. 문서에 기억해 두면 출력 뒤에도 필터가 잠긴다.
+    if (viewTransformSuppressed || timelinePlaying) return;
     let cancelled = false;
     const handle = globalThis.setTimeout(() => {
       // 아직 획을 긋는 중이면 건너뛴다. 획이 끝나면 문서가 다시 바뀌면서 이 효과가 재실행된다.
@@ -25099,7 +25074,7 @@ function clearSelectionForEdit() {
           if (cancelled) return;
           const buildContext = studioFilterPreflightContextRef.current;
           if (!buildContext) return;
-          const context = buildContext("필터 사전점검", rasterRuntime);
+          const context = buildContext("필터 사전점검", rasterRuntime, studioSelectedFilterLayerId);
           const planned = rasterRuntime.planStudioEditableRasterCopy(context.input);
           setStudioFilterDocumentPreflightReason(planned.ok ? null : rasterI18n.resolveStudioRasterEditReason(planned.reason));
         })
@@ -25114,36 +25089,39 @@ function clearSelectionForEdit() {
       globalThis.clearTimeout(handle);
     };
   }, [
+    activePage.id,
+    activePage.hideMaster,
+    activeSurfaceReviewLocked,
     bg,
     bgGrad,
     canvasH,
+    collaborationDocumentLocked,
     elements,
     groups,
     localHiddenElementIds,
     masterEditMode,
+    masterRenderEls,
     studioDirectImageFilterTarget,
+    studioSelectedFilterLayerId,
+    studioFilterSharedPage,
+    timelinePlaying,
+    viewTransformSuppressed,
     webtoonTheme,
   ]);
-  const studioFilterUnavailableReason = timelinePlaying
-    ? t("studio.hostReason.filterTimelinePlaying", "타임라인 재생을 멈춘 뒤 필터를 적용하세요.")
-    : timelapseCapturing
-      ? t("studio.hostReason.filterTimelapseCapturing", "타임랩스 캡처가 끝난 뒤 필터를 적용하세요.")
-      : saving
-        ? t("studio.hostReason.filterSaving", "저장이 끝난 뒤 필터를 적용하세요.")
-        : activeSurfaceReviewLocked
-          ? t("studio.hostReason.filterReviewLocked", "검토 잠금을 해제한 뒤 필터를 적용하세요.")
-          : sharedDocument && !studioDirectImageFilterTarget
-            ? t("studio.hostReason.filterSharedPageCompositePending", "공동 작업 문서의 페이지 합성 필터는 준비 중입니다. 지금은 이미지 레이어를 선택해 필터를 적용하세요.")
-          : masterEditMode && selected?.type !== "image"
-            ? t("studio.hostReason.filterMasterSelectImageLayer", "마스터 편집에서는 필터를 적용할 이미지 레이어를 선택하세요.")
-            : masterEditMode && selectedImageMutationLocked
-              ? t("studio.hostReason.filterLayerLocked", "이미지와 상위 그룹의 잠금을 해제한 뒤 필터를 적용하세요.")
-              : masterEditMode && menuSelectedAnimatedImage
-                ? t("studio.hostReason.filterAnimatedImage", "애니메이션 이미지는 정적 프레임으로 만든 뒤 필터를 적용하세요.")
-                : masterEditMode && selected && isEffectivelyHidden(selected, groups)
-                  ? t("studio.hostReason.filterHiddenImageLayer", "숨긴 이미지 레이어를 다시 표시한 뒤 필터를 적용하세요.")
-                  // 세션 사유가 전부 통과했으면 마지막으로 문서 자체를 묻는다.
-                  : studioFilterDocumentPreflightReason;
+  const studioFilterUnavailableReason = studioFilterSessionBusyReason ?? (
+    activeSurfaceReviewLocked ? t("studio.hostReason.filterReviewLocked", "검토 잠금을 해제한 뒤 필터를 적용하세요.")
+    : studioFilterSharedPage && !studioDirectImageFilterTarget
+      ? t("studio.hostReason.filterSharedPageCompositePending", "공동 작업 문서의 페이지 합성 필터는 준비 중입니다. 지금은 이미지 레이어를 선택해 필터를 적용하세요.")
+    : masterEditMode && selected?.type !== "image"
+      ? t("studio.hostReason.filterMasterSelectImageLayer", "마스터 편집에서는 필터를 적용할 이미지 레이어를 선택하세요.")
+    : masterEditMode && selectedImageMutationLocked
+      ? t("studio.hostReason.filterLayerLocked", "이미지와 상위 그룹의 잠금을 해제한 뒤 필터를 적용하세요.")
+    : masterEditMode && menuSelectedAnimatedImage
+      ? t("studio.hostReason.filterAnimatedImage", "애니메이션 이미지는 정적 프레임으로 만든 뒤 필터를 적용하세요.")
+    : masterEditMode && selected && isEffectivelyHidden(selected, groups)
+      ? t("studio.hostReason.filterHiddenImageLayer", "숨긴 이미지 레이어를 다시 표시한 뒤 필터를 적용하세요.")
+    : studioFilterDocumentPreflightReason
+  );
   const menuFilterDisabled = studioFilterPreparationBusy || studioFilterUnavailableReason !== null;
   const menuSharedNonOwnerSave = Boolean(sharedDocument && sharedDocument.role !== "owner");
   const menuHasSavedView = savedStudioView?.pageId === activePage.id;

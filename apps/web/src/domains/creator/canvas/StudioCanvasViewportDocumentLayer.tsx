@@ -140,15 +140,15 @@ export function StudioCanvasViewportDocumentLayer({
                         : element,
                     )
                   : [...studioLiveGesturePreviewRenderPlan.elements];
-                if (studioFilterPageComposite) {
-                  const previewComposite = studioFilterPreview?.elementId === studioFilterPageComposite.id
-                    ? ({ ...studioFilterPageComposite, ...studioFilterPreview.patch } as ImageEl & El)
-                    : studioFilterPageComposite;
-                  canvasRenderElements.push({
-                    ...previewComposite,
-                    locked: true,
-                    noClip: true,
-                  });
+                if (studioFilterPageComposite && studioFilterPreview?.elementId === studioFilterPageComposite.id) {
+                  const overlay = { ...studioFilterPageComposite, ...studioFilterPreview.patch, locked: true, noClip: true };
+                  const sourceId = studioFilterPreview.replacementSourceId;
+                  if (sourceId) {
+                    const index = canvasRenderElements.findIndex((element) => element.id === sourceId);
+                    if (index >= 0) canvasRenderElements[index] = overlay;
+                  } else {
+                    canvasRenderElements.push(overlay);
+                  }
                 }
                 // 공유 수묵 워시는 침착만 알고 삭제를 모른다. Konva 가 이 커밋을 그리기 전에
                 // (layout effect 는 react-konva 의 rAF batchDraw 보다 앞선다) 페이지의 수묵 획

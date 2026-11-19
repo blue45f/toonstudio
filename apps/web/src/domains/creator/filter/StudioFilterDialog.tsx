@@ -1,3 +1,4 @@
+import { useStudioFilterTargetDescription, type StudioFilterTargetKind } from "./studio-filter-target-presentation";
 import {
   ChevronDown,
   Clock3,
@@ -158,7 +159,7 @@ interface StudioFilterDialogProps {
   imageSrc?: string | null;
   initialDraft?: StudioFilterDraft;
   rootRef: RefObject<HTMLElement | null>;
-  targetKind?: "image" | "page-composite";
+  targetKind?: StudioFilterTargetKind;
   mutationLocked?: boolean;
   mutationLockReason?: string;
   applying?: boolean;
@@ -476,6 +477,7 @@ export function StudioFilterDialog({
       ? cloneStudioFilterDraft(initialDraft)
       : createStudioFilterDraft(kind, image),
   );
+  const targetDescription = useStudioFilterTargetDescription(targetKind);
   const canUseSelectionScope = targetKind === "image" && selectionAvailable;
   const [applicationScope, setApplicationScope] = useState<StudioFilterApplicationScope>(
     () => canUseSelectionScope ? "inside" : "whole",
@@ -1054,9 +1056,7 @@ export function StudioFilterDialog({
               {title}
             </h2>
             <p id={descriptionId} className="mt-0.5 text-[0.7rem] leading-relaxed text-fg-3">
-              {targetKind === "page-composite"
-                ? "현재 보이는 페이지를 편집 가능한 합성 레이어로 만들고, 원본 레이어를 보존한 채 필터를 적용합니다."
-                : "선택한 이미지 레이어에 비파괴 필터로 적용합니다."}
+              {targetDescription}
             </p>
           </div>
           <button

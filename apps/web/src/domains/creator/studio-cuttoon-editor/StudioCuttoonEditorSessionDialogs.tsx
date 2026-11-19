@@ -8,6 +8,7 @@ import { useStudioAppliedFilterIntent } from "../filter/studio-applied-filter-co
 import { Suspense } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { isEffectivelyLocked } from "../studio-layers";
+import { hasActiveImageFilters } from "../render/studio-konva-filter-fields";
 import { createStudioPixelEditCanvas, encodeStudioPixelEditResultPng, loadStudioPixelEditImage } from "../studio-legacy-editor-runtime-helpers";
 import { StudioFilterDialog as StudioSingleFilterDialog, StudioLayerLiftDialog } from "../studio-page-lazy-ui";
 import { StudioFilterGalleryDialog } from "../filter/gallery/studio-filter-gallery-lazy";
@@ -62,6 +63,9 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
   } = s;
   // 필터 갤러리는 단일 필터와 같은 세션 계약을 받는 별도 대화상자다(효과 스택 편집).
   const StudioFilterDialog = studioFilterSession?.kind === "filter-gallery" ? StudioFilterGalleryDialog : StudioSingleFilterDialog;
+  const replacementSourceId = studioFilterSession?.target === "page-composite"
+    ? studioFilterSession.plan.sourceDispositionIds[0]
+    : undefined;
   const progress = <div data-studio-filter-preparing="true" className="studio-drawing-filter-progress">
     <span role="status">{bt("필터 미리보기를 준비하는 중…", "Preparing filter preview…")}</span>
     <button type="button" onClick={closeStudioFilterDialog}>{bt("취소", "Cancel")}</button>
@@ -77,7 +81,7 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
             kind={studioFilterSession.kind}
             image={studioFilterDialogImage}
             imageSrc={studioFilterDialogImage.src}
-            targetKind={studioFilterSession.target}
+            targetKind={replacementSourceId ? "layer-composite" : studioFilterSession.target}
             {...(studioFilterSession.initialDraft
               ? { initialDraft: studioFilterSession.initialDraft }
               : {})}
@@ -103,8 +107,8 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
             }
             onPreview={(patch) => {
               setStudioFilterPreview(
-                patch
-                  ? { elementId: studioFilterSession.elementId, patch }
+                patch && (studioFilterSession.target === "image" || hasActiveImageFilters(patch))
+                  ? { elementId: studioFilterSession.elementId, patch, ...(replacementSourceId ? { replacementSourceId } : {}) }
                   : null,
               );
             }}
@@ -210,6 +214,11 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
                   closeStudioFilterDialog();
                   return;
                 }
+                if (!hasActiveImageFilters(patch)) {
+                  closeStudioFilterDialog();
+                  announceDrawingShortcut(bt("보정값이 중립이라 원고를 그대로 두었어요.", "The settings are neutral. Your artwork is unchanged."));
+                  return;
+                }
                 const rasterRuntime = await import("../render/studio-raster-edit-preparation");
                 const { resolveStudioRasterEditReason, resolveStudioRasterEditErrorFromCause } = await import("../status-i18n/studio-producer-error-i18n-exports-raster");
                 resolveRasterError = resolveStudioRasterEditErrorFromCause;
@@ -217,6 +226,7 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
                 const currentContext = currentStudioFilterPageRasterContext(
                   studioFilterSession.plan.name,
                   rasterRuntime,
+                  replacementSourceId,
                 );
                 const composite = {
                   ...studioFilterSession.image,
@@ -253,7 +263,9 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
                 setLastStudioFilterDraft(draft);
                 setStudioFilterSession(null);
                 setError(null);
-                announceDrawingShortcut("원본을 보존한 페이지 필터 레이어를 추가했어요");
+                announceDrawingShortcut(replacementSourceId
+                  ? bt("선택한 레이어에 필터를 적용했어요. 원본 레이어는 숨겨 두었어요.", "Filter applied to the selected layer. The original layer is hidden.")
+                  : "원본을 보존한 페이지 필터 레이어를 추가했어요");
               } catch (filterApplyError) {
                 setError(
                   filterApplyError instanceof Error

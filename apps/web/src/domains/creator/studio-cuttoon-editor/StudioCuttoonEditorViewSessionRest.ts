@@ -423,7 +423,7 @@ export type StudioCuttoonEditorViewSessionRest = {
   studioFilterPreview: import("../filter/studio-filter-menu").StudioFilterPreview | null;
   studioFilterSession: { id: number; target: "image"; elementId: string; kind: import("../filter/studio-filter-menu").StudioFilterKind; initialDraft?: import("../filter/studio-filter-menu").StudioFilterDraft; selection?: import("../studio-selection-tools").PixelSelection; } | { id: number; target: "page-composite"; elementId: string; kind: import("../filter/studio-filter-menu").StudioFilterKind; initialDraft?: import("../filter/studio-filter-menu").StudioFilterDraft; image: import("../studio-element-model").ImageEl & import("../studio-element-model").El; plan: import("../render/studio-raster-edit-preparation").StudioEditableRasterCopyPlan; mutationTicket: import("../studio-editor-scope").StudioEditorMutationTicket; pageId: string; historyIndex: number; } | null;
   studioFilterSessionIdRef: import("react").RefObject<number>;
-  studioFilterTargetLabel: "선택 이미지" | "현재 페이지 합성본";
+  studioFilterTargetLabel: import("../filter/studio-filter-target-presentation").StudioFilterTargetLabel;
   studioFilterUnavailableReason: string | null;
   studioHistoryRetention: { readonly lastMeasuredRetainedBytes: number; readonly lastMeasuredBudgetBytes: number; readonly lastMeasuredEntryBytes: number; readonly totalBudgetEvictedSteps: number; readonly totalAppends: number; readonly notice: Readonly<{ id: number; message: string; }> | null; };
   rejectedStrokeCount: number;
