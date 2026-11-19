@@ -379,10 +379,8 @@ vi.mock("./studio-live-collaboration-room", () => {
   return { StudioLiveRoom };
 });
 
-// The provider resolves the room and the adaptive cursor transport in one Promise.all. Leaving the
-// transport module real adds a second module graph to that await, so the room is not constructed
-// within the microtask budget renderProvider spends — every room assertion then reads undefined.
-// The stub also records which base factory was wrapped, which is the observable this suite needs.
+// 방과 adaptive cursor transport는 함께 로드되므로 수명주기 테스트에서 실제 전송 그래프를
+// 열지 않는다. 이 stub은 래핑된 base factory를 기록해 전송 선택 계약을 검증한다.
 vi.mock("./studio-live-adaptive-cursor-transport", () => ({
   STUDIO_LIVE_CURSOR_CAPTURE_INTERVAL_MS: 16,
   createStudioAdaptiveCursorTransportFactory: (
@@ -595,19 +593,14 @@ function renderProviderOnce(
   return (output as { props: { value: StudioLiveCollaborationContextValue } }).props.value;
 }
 
-/**
- * The provider fetches studio-live-collaboration-room on demand, so a single render pass no
- * longer produces a room. Draining the microtask queue and rendering again is what React does
- * once the lazy chunk lands, so every assertion below observes the post-resolution state — which
- * is also what makes this suite a proof that the dynamic boundary resolves.
- */
+/** 지연 모듈이 실제로 준비된 뒤 다시 렌더링하여 비동기 초기화 결과를 관찰한다. */
 async function renderProvider(
   options: RenderProviderOptions = {}
 ): Promise<StudioLiveCollaborationContextValue> {
   renderProviderOnce(options);
-  // The gated effect now awaits two dynamic imports (room + adaptive cursor transport) before it
-  // constructs anything, so the drain has to outlast that chain rather than a single import.
-  for (let tick = 0; tick < 64; tick += 1) await Promise.resolve();
+  // 고정 microtask 횟수는 첫 오프라인 i18n 모듈의 I/O를 기다리지 못한다.
+  // 방·전송·오프라인 세션에서 연쇄적으로 시작한 import의 완료를 함께 기다린다.
+  await vi.dynamicImportSettled();
   return renderProviderOnce(options);
 }
 
