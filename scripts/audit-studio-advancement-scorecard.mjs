@@ -29,7 +29,7 @@ function auditDomainDir(repoRoot, relativeDir) {
 
 /**
  * 툰스튜디오 핵심 4대 도메인(assistant, bg3d, brush, export)의 테스트 비율과
- * 어시스턴트 고도화 모듈(14종)의 연결 무결성을 정량 스코어카드로 집계한다.
+ * 어시스턴트 고도화 모듈(14종) 및 크로스-도메인 브리지(6종)의 연결 무결성을 정량 스코어카드로 집계한다.
  */
 export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
   const assistantDir = path.join(repoRoot, "apps/web/src/domains/creator/assistant");
@@ -59,6 +59,18 @@ export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
   ];
   const presentCapabilities = requiredCapabilities.filter((file) => sourceFiles.includes(file));
 
+  const requiredCrossDomainBridges = [
+    "apps/web/src/domains/creator/assistant/use-workflow-pack-runtime-consumer.ts",
+    "apps/web/src/domains/creator/export/studio-export-rights-receipt-adapter.ts",
+    "apps/web/src/domains/creator/export/studio-rights-receipt-remediation.ts",
+    "apps/web/src/domains/creator/bg3d/studio-bg3d-workflow-pack-adapter.ts",
+    "apps/web/src/domains/creator/brush/studio-brush-workflow-pack-adapter.ts",
+    "scripts/verify-rights-bom-receipt-cli.mjs",
+  ];
+  const presentCrossDomainBridges = requiredCrossDomainBridges.filter((relPath) =>
+    existsSync(path.join(repoRoot, relPath)),
+  );
+
   let wiredRouterAndPacks;
   const contentPath = path.join(assistantDir, "StudioWebtoonAssistantContent.tsx");
   const viewsPath = path.join(assistantDir, "StudioWebtoonAssistantWorkflowViews.tsx");
@@ -85,6 +97,8 @@ export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
       testToSourcePercent: 0,
       requiredCapabilitiesCount: requiredCapabilities.length,
       presentCapabilitiesCount: presentCapabilities.length,
+      requiredCrossDomainBridgesCount: requiredCrossDomainBridges.length,
+      presentCrossDomainBridgesCount: presentCrossDomainBridges.length,
       wiredRouterAndPacks: false,
       domains: [],
       ready: false,
@@ -108,10 +122,13 @@ export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
     testToSourcePercent: testCoverageRatio,
     requiredCapabilitiesCount: requiredCapabilities.length,
     presentCapabilitiesCount: presentCapabilities.length,
+    requiredCrossDomainBridgesCount: requiredCrossDomainBridges.length,
+    presentCrossDomainBridgesCount: presentCrossDomainBridges.length,
     wiredRouterAndPacks,
     domains,
     ready:
       presentCapabilities.length === requiredCapabilities.length &&
+      presentCrossDomainBridges.length === requiredCrossDomainBridges.length &&
       wiredRouterAndPacks &&
       domains.every((d) => d.sourceFileCount > 0) &&
       testFiles.length >= 14,
@@ -132,6 +149,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       [
         `# ToonStudio Multi-Domain Advancement Scorecard`,
         `- Assistant capabilities: ${scorecard.presentCapabilitiesCount}/${scorecard.requiredCapabilitiesCount}`,
+        `- Cross-domain bridges & CLI: ${scorecard.presentCrossDomainBridgesCount}/${scorecard.requiredCrossDomainBridgesCount}`,
         `- Router, Workflow Packs, Runtime Bridge & Verifier wired: ${scorecard.wiredRouterAndPacks ? "YES" : "NO"}`,
         `- Domain breakdown:`,
         ...domainLines,
