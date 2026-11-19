@@ -9,10 +9,12 @@ import {
   STUDIO_STORYWORLD_SCHEMA_VERSION,
   analyzeStoryworldProject,
   fingerprintStoryworldValue,
-  rankStoryworldParetoFrontier,
-  simulateStoryworldCounterfactual,
   type StoryworldProject,
 } from "./studio-storyworld-causality";
+import {
+  rankStoryworldParetoFrontier,
+  simulateStoryworldCounterfactual,
+} from "./studio-storyworld-counterfactual";
 
 function healthyProject(): StoryworldProject {
   return {

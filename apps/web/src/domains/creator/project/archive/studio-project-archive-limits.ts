@@ -1,5 +1,5 @@
-import { STUDIO_PROJECT_ARCHIVE_LIMITS, fail } from "../../studio-project-archive";
-import type { StudioProjectArchiveLimits } from "../../studio-project-archive";
+import { STUDIO_PROJECT_ARCHIVE_LIMITS, fail } from "./studio-project-archive-primitives";
+import type { StudioProjectArchiveLimits } from "./studio-project-archive-primitives";
 
 /** 새 bundle 문서에만 적용한다. 기존 파일의 한도와 픽셀은 변경하지 않는다. */
 export const STUDIO_PROJECT_ARCHIVE_BUNDLE_MAX_BYTES = 544 * 1024 * 1024;

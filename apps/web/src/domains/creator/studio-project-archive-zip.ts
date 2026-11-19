@@ -13,10 +13,10 @@ import {
   fail,
   fatalTextDecoder,
   textEncoder,
-} from "./studio-project-archive";
+} from "./project/archive/studio-project-archive-primitives";
 import type {
   StudioProjectArchiveLimits,
-} from "./studio-project-archive";
+} from "./project/archive/studio-project-archive-primitives";
 
 const ZIP_LOCAL_SIGNATURE = 0x04034b50;
 const ZIP_CENTRAL_SIGNATURE = 0x02014b50;
