@@ -57,6 +57,7 @@ describe("WorkspaceCafeHubPanel", () => {
 
   it("이미지 미리보기로 초점을 옮기고 Escape로 닫은 뒤 원래 버튼에 복원한다", async () => {
     const { trigger, dialog } = await openImagePreview();
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
     const close = within(dialog).getByRole("button", { name: "닫기" });
     await waitFor(() => expect(document.activeElement).toBe(close));
     fireEvent.keyDown(close, { key: "Escape" });

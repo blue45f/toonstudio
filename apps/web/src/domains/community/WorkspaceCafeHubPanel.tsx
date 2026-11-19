@@ -426,6 +426,7 @@ export function WorkspaceCafeHubPanel({
           <Dialog.Portal>
             <Dialog.Overlay className="fixed inset-0 z-50 bg-black/75" />
             <Dialog.Content
+              aria-modal="true"
               aria-describedby={undefined}
               onCloseAutoFocus={(event) => {
                 event.preventDefault();
