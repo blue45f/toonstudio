@@ -138,6 +138,7 @@ test("real product selectors partition into static and mandatory PostgreSQL exec
     "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
     "apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts",
     "apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts",
+    "apps/api/src/modules/studio-project-graph/studio-space-poll.integration.test.ts",
   ]) {
     assert.ok(CORE_DATABASE_VITEST_TARGETS.includes(suite), `실제 DB 검증 소유 목록에서 누락: ${suite}`);
     assert.ok(routed.includes(suite), `DB 없는 product 실행에서 분리하지 않은 실제 DB 시험: ${suite}`);

@@ -398,6 +398,7 @@ test("review database invariants execute with real PostgreSQL and the accepted g
   assert.ok(migrationFiles.includes("0091_creator_work_publication_media.sql"));
   assert.ok(migrationFiles.includes("0116_studio_review_comment_pen_strokes.sql"));
   assert.ok(migrationFiles.includes("0121_studio_bg3d_six_pass_bundle.sql"));
+  assert.ok(migrationFiles.includes("0131_studio_space_poll.sql"));
   assert.match(preparation, /"studio_bg3d_revision_guard"/u);
   assert.match(preparation, /"studio_bg3d_artifact_guard"/u);
   assert.ok(!migrationFiles.includes("0084_studio_pinned_review_share.sql"));
@@ -424,6 +425,7 @@ test("review database invariants execute with real PostgreSQL and the accepted g
     "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
     "apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts",
     "apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts",
+    "apps/api/src/modules/studio-project-graph/studio-space-poll.integration.test.ts",
   ]) {
     assert.ok(CORE_DATABASE_VITEST_TARGETS.includes(suite), `고정 원고·첨삭·실제 인증 DB 검증의 소유 누락: ${suite}`);
     assert.ok(database.includes(suite), `보호된 실제 DB job의 검증 누락: ${suite}`);
@@ -481,6 +483,10 @@ test("mandatory lanes start independently and dependency-free contracts run firs
     assert.match(typecheck, new RegExp(excludedPath.replaceAll(".", "\\.")));
   }
   for (const requiredManifest of [
+    "/apps/web/public/assets/3d/environments/boatyard-v1/manifest.json",
+    "/apps/web/public/assets/3d/environments/coast-v1/manifest.json",
+    "/apps/web/public/assets/3d/environments/specimen-v1/manifest.json",
+    "/apps/web/public/assets/3d/environments/glasshouse-v1/manifest.json",
     "/apps/web/public/assets/3d/environments/refined-v6/manifest.json",
     "/apps/web/public/assets/3d/environments/expansion-v1/manifest.json",
     "/apps/web/public/assets/3d/environments/webtoon-v7/manifest.json",
@@ -1005,7 +1011,7 @@ test("focused integration checks cannot collide with the protected core status",
 test("focused ToonStudio checkout includes imported metadata, validated artwork and fault evidence without unrelated inputs", () => {
   const workflow = readFileSync(new URL("../.github/workflows/toonstudio-session-goals.yml", import.meta.url), "utf8");
   const patterns = sparsePatterns(workflow);
-  const manifests = ["3d/environments/refined-v6/manifest.json", "3d/environments/expansion-v1/manifest.json", "3d/environments/webtoon-v7/manifest.json", "3d/environments/mcp-free-v1/manifest.json", "virtual-studio/world/default-world.json"].map((file) => `apps/web/public/assets/${file}`);
+  const manifests = ["3d/environments/boatyard-v1/manifest.json", "3d/environments/coast-v1/manifest.json", "3d/environments/specimen-v1/manifest.json", "3d/environments/glasshouse-v1/manifest.json", "3d/environments/refined-v6/manifest.json", "3d/environments/expansion-v1/manifest.json", "3d/environments/webtoon-v7/manifest.json", "3d/environments/mcp-free-v1/manifest.json", "virtual-studio/world/default-world.json"].map((file) => `apps/web/public/assets/${file}`);
   const validatedArt = [
     "world-v2/characters/pixel-maker/manifest.json",
     ...["down", "right", "left", "up"].map((direction) => `world-v2/characters/pixel-maker/walk-${direction}.png`),

@@ -37,6 +37,7 @@ export const CORE_DATABASE_VITEST_TARGETS = Object.freeze([
   "apps/api/src/modules/studio-project-graph/studio-review-preview-producer.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-review-existing-graph-runtime.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-review-voice-note.integration.test.ts",
+  "apps/api/src/modules/studio-project-graph/studio-space-poll.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-world-publication.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-work-session.integration.test.ts",
 ]);

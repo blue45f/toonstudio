@@ -67,6 +67,10 @@ jobs:
             !/apps/web/public/assets/
             /apps/web/public/assets/virtual-studio/world/
             /apps/web/public/assets/reference-rebuild/
+            /apps/web/public/assets/3d/environments/boatyard-v1/manifest.json
+            /apps/web/public/assets/3d/environments/coast-v1/manifest.json
+            /apps/web/public/assets/3d/environments/specimen-v1/manifest.json
+            /apps/web/public/assets/3d/environments/glasshouse-v1/manifest.json
             /apps/web/public/assets/3d/environments/refined-v6/manifest.json
             /apps/web/public/assets/3d/environments/refined-v6/render-passes-report.json
             /apps/web/public/assets/3d/environments/expansion-v1/manifest.json
@@ -160,6 +164,10 @@ jobs:
             /*
             !/apps/web/public/assets/
             /apps/web/public/assets/virtual-studio/world/
+            /apps/web/public/assets/3d/environments/boatyard-v1/manifest.json
+            /apps/web/public/assets/3d/environments/coast-v1/manifest.json
+            /apps/web/public/assets/3d/environments/specimen-v1/manifest.json
+            /apps/web/public/assets/3d/environments/glasshouse-v1/manifest.json
             /apps/web/public/assets/3d/environments/refined-v6/manifest.json
             /apps/web/public/assets/3d/environments/refined-v6/render-passes-report.json
             /apps/web/public/assets/3d/environments/expansion-v1/manifest.json
@@ -266,6 +274,10 @@ jobs:
             !/apps/web/public/assets/
             /apps/web/public/assets/virtual-studio/world/
             /apps/web/public/assets/reference-rebuild/
+            /apps/web/public/assets/3d/environments/boatyard-v1/manifest.json
+            /apps/web/public/assets/3d/environments/coast-v1/manifest.json
+            /apps/web/public/assets/3d/environments/specimen-v1/manifest.json
+            /apps/web/public/assets/3d/environments/glasshouse-v1/manifest.json
             /apps/web/public/assets/3d/environments/refined-v6/manifest.json
             /apps/web/public/assets/3d/environments/refined-v6/render-passes-report.json
             /apps/web/public/assets/3d/environments/expansion-v1/manifest.json
@@ -1195,6 +1207,7 @@ jobs:
           apps/api/src/modules/studio-project-graph/studio-review-voice-note.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-project-graph-review-race.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-recording-booth-asset.integration.test.ts
+          apps/api/src/modules/studio-project-graph/studio-space-poll.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-world-publication.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-work-session.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts
