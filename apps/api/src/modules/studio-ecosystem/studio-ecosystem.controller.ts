@@ -1,4 +1,4 @@
-import { Body, Controller, Get, MessageEvent, Param, Post, Query, Sse } from "@nestjs/common";
+import { Body, Controller, Get, Inject, MessageEvent, Param, Post, Query, Sse } from "@nestjs/common";
 import { Observable } from "rxjs";
 import type {
   SecurityPermissionId,
@@ -15,7 +15,9 @@ import {
 @Controller("api/studio-ecosystem")
 export class StudioEcosystemController {
   constructor(
+    @Inject(StudioEcosystemService)
     private readonly service: StudioEcosystemService,
+    @Inject(StudioEcosystemEventsService)
     private readonly events: StudioEcosystemEventsService,
   ) {}
 
