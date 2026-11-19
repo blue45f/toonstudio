@@ -232,6 +232,10 @@ export const StudioProductionJobsPage = lazyRetry(
   () => import("@/domains/creator/toolchain/StudioProductionToolchainPage").then((module) => ({ default: module.StudioProductionJobsPage })),
   "StudioProductionJobsPage",
 );
+export const StudioMcpCliGuidePage = lazyRetry(
+  () => import("@/domains/creator/toolchain/StudioMcpCliGuidePage").then((module) => ({ default: module.StudioMcpCliGuidePage })),
+  "StudioMcpCliGuidePage",
+);
 
 export const StudioSpatialReaderPage = lazyRetry(
   () => import("@/domains/creator/spatial-reader/StudioSpatialReaderPage").then((module) => ({ default: module.StudioSpatialReaderPage })),

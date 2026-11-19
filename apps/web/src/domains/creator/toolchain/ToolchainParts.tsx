@@ -18,6 +18,7 @@ import {
   ScanText,
   ServerCog,
   Sparkles,
+  Terminal,
   Workflow,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -33,12 +34,13 @@ import { STUDIO_TOOLCHAIN_PROFILES, type StudioToolchainProfileId } from "./stud
 import { profileEnglish, TOOL_STATE_LABELS, type StudioToolState } from "./studio-production-toolchain-labels";
 import { withProject } from "./toolchain-links";
 
-export type ToolchainPageMode = "overview" | "engines" | "jobs";
+export type ToolchainPageMode = "overview" | "engines" | "jobs" | "mcp";
 
 const PAGES: readonly { readonly mode: ToolchainPageMode; readonly path: string; readonly icon: LucideIcon; readonly ko: string; readonly en: string }[] = [
   { mode: "overview", path: "/studio/toolchain", icon: Workflow, ko: "제작 흐름", en: "Overview" },
   { mode: "engines", path: "/studio/engines", icon: ServerCog, ko: "설치·라이선스", en: "Installs & licenses" },
   { mode: "jobs", path: "/studio/jobs", icon: ListChecks, ko: "작업 큐", en: "Job queue" },
+  { mode: "mcp", path: "/studio/mcp", icon: Terminal, ko: "MCP · CLI 연동", en: "MCP & CLI" },
 ];
 
 const CATEGORY_ICONS: Readonly<Record<string, LucideIcon>> = {

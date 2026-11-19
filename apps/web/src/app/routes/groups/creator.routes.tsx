@@ -14,7 +14,7 @@ import {
   StudioImportPage, StudioImmersiveHubPage, StudioManualPage,
   StudioMusicPage, StudioNewPage, StudioProjectShellPage, MotionWebtoonPage,
   StudioVirtualSpacePage, StudioProductionToolchainPage, StudioEngineCenterPage,
-  StudioProductionJobsPage, StudioGenerativePage, StudioSpatialReaderPage,
+  StudioProductionJobsPage, StudioMcpCliGuidePage, StudioGenerativePage, StudioSpatialReaderPage,
   StudioTemplatesPage, StudioRouter, CreatorAnalyticsPage, StudioPoserPage,
   PdfWorkbenchPage,
 } from "./creator-route-pages";
@@ -46,6 +46,7 @@ export const creatorRoutes = defineAppRoutes([
   { id: "creator-studio-toolchain", path: studioRoutePath("toolchain"), element: <StudioProductionToolchainPage /> },
   { id: "creator-studio-engines", path: studioRoutePath("engines"), element: <StudioEngineCenterPage /> },
   { id: "creator-studio-jobs", path: studioRoutePath("jobs"), element: <StudioProductionJobsPage /> },
+  { id: "creator-studio-mcp", path: "/studio/mcp", element: <StudioMcpCliGuidePage /> },
   { id: "creator-studio-immersive", path: studioRoutePath("immersive"), element: <StudioImmersiveHubPage /> },
   { id: "creator-studio-motion-webtoon", path: studioRoutePath("motion-webtoon"), element: <MotionWebtoonPage /> },
   { id: "creator-spatial-reader", path: "/read/spatial", element: <StudioSpatialReaderPage /> },
