@@ -156,4 +156,26 @@ describe("StudioLiveCrdtQuotaLimiter", () => {
       true
     );
   });
+
+  it("reclaims expired scopes immediately on background purgeExpired and clamps backward clock jumps", () => {
+    let now = 8_000_000;
+    const limiter = new StudioLiveCrdtQuotaLimiter({
+      now: () => now,
+      syncWindowMs: 1_000,
+      bucketLimit: 1,
+      cleanupIntervalMs: 30_000,
+      idleTtlMs: 1_000,
+    });
+    const first = { userId: "first", workId: "work" };
+    const next = { userId: "next", workId: "work" };
+
+    expect(limiter.consumeUpdate(first, 1)).toBe(true);
+    // Simulate NTP stepping OS clock backward by 60 seconds.
+    now -= 60_000;
+    limiter.purgeExpired(now);
+    // Bucket timestamp is clamped to the new clock, so advancing idleTtlMs evicts it cleanly.
+    now += 1_000;
+    limiter.purgeExpired(now);
+    expect(limiter.consumeUpdate(next, 1)).toBe(true);
+  });
 });

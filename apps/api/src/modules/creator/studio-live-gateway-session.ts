@@ -520,6 +520,14 @@ export async function revalidateParticipant(
 
 export async function revalidateAllParticipants(
   this: StudioLiveGatewayHost, ): Promise<void> {
+  const now = Date.now();
+  // 장시간 협업 후 유휴 상태가 된 룸의 인메모리 캐시·버킷을 15초 스윕마다 확정 회수한다.
+  this.pruneRateLimits(now);
+  this.purgeExpiredCandidateRelayAuthorizations(now);
+  this.crdtQuotaLimiter.purgeExpired(now);
+  for (const [key, expiresAt] of this.deliveredInterServerVoiceSignals) {
+    if (expiresAt <= now) this.deliveredInterServerVoiceSignals.delete(key);
+  }
   const participants = [...this.participantsBySocket.entries()];
   await Promise.allSettled(
     participants.map(([socketId, participant]) => {
