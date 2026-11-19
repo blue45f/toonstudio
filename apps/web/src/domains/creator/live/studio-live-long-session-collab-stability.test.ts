@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { SqliteStudioCrdtOutbox } from "./studio-crdt-outbox";
 import { STUDIO_CRDT_PROTOCOL_VERSION, type StudioCrdtUpdateRequest } from "./studio-crdt-protocol";
+import { createStudioLiveEnvelope, type StudioLiveParticipant } from "./studio-live-collaboration-protocol";
 import { STUDIO_LIVE_GESTURE_PREVIEW_VERSION } from "./studio-live-gesture-preview";
 import {
   StudioLiveGesturePreviewRoomAdapter,
@@ -14,6 +15,10 @@ import {
 } from "./studio-live-gesture-preview-store";
 import { encodeStudioLiveInkSamples } from "./studio-live-ink-codec";
 import {
+  StudioLiveInkOverlayRenderer,
+  StudioLiveInkPredictionRenderer,
+} from "./studio-live-ink-overlay";
+import {
   STUDIO_LIVE_INK_ACTIVE_STROKE_TTL_MS,
   STUDIO_LIVE_INK_MAX_ACTIVE_STROKES,
   STUDIO_LIVE_INK_PROTOCOL_VERSION,
@@ -22,10 +27,15 @@ import {
   type StudioLiveInkBegin,
   type StudioLiveInkChunk,
 } from "./studio-live-ink-protocol";
+import {
+  STUDIO_LIVE_P2P_STALE_PEER_TTL_MS,
+  applyStudioLiveP2pOverlay,
+} from "./studio-live-p2p-overlay-transport";
+import { StudioLiveRetainedMediaOverlayRenderer } from "./studio-live-retained-media-overlay";
 
 import type { StudioLocalDatabase } from "../studio-local-database";
-import type { StudioLiveParticipant } from "./studio-live-collaboration-protocol";
 import type { StudioLivePeer, StudioLiveRoomEvent } from "./studio-live-collaboration-room";
+import type { StudioLiveTransport } from "./studio-live-collaboration-transport";
 import type { StudioLiveGesturePreviewPayload } from "./studio-live-gesture-preview";
 
 function inkPayload(count: number): ArrayBuffer {
@@ -314,5 +324,125 @@ describe("long-session multi-user collaborative drawing stability", () => {
     expect(outbox.listEmergency("user-soak", "work-soak")).toEqual([]);
     expect(await outbox.list("user-soak", "work-soak")).toEqual([]);
     expect(outbox.getStatus().state).toBe("durable");
+  });
+
+  it("releases canvas backing stores and cancels pending wake timers when live overlays detach", () => {
+    const makeCanvas = () => {
+      const context = {
+        save() {},
+        restore() {},
+        setTransform() {},
+        clearRect() {},
+        beginPath() {},
+        arc() {},
+        fill() {},
+        stroke() {},
+        drawImage() {},
+        getImageData: (_x: number, _y: number, w: number, h: number) => ({
+          data: new Uint8ClampedArray(Math.max(0, w) * Math.max(0, h) * 4),
+          width: w,
+          height: h,
+        }),
+        putImageData() {},
+      };
+      return {
+        width: 1024,
+        height: 768,
+        getContext: () => context,
+      } as unknown as HTMLCanvasElement;
+    };
+    const surface = {
+      left: 0,
+      top: 0,
+      width: 1024,
+      height: 768,
+      documentScale: 1,
+      documentWidth: 1024,
+      flipX: false,
+    };
+
+    const inkCanvas = makeCanvas();
+    const inkRenderer = new StudioLiveInkOverlayRenderer();
+    inkRenderer.attach(inkCanvas);
+    inkRenderer.setSurface(surface);
+    expect(inkCanvas.width).toBeGreaterThan(1);
+    inkRenderer.attach(null);
+    expect(inkCanvas.width).toBe(1);
+    expect(inkCanvas.height).toBe(1);
+
+    const predictionCanvas = makeCanvas();
+    const predictionRenderer = new StudioLiveInkPredictionRenderer();
+    predictionRenderer.attach(predictionCanvas);
+    predictionRenderer.setSurface(surface);
+    expect(predictionCanvas.width).toBeGreaterThan(1);
+    predictionRenderer.attach(null);
+    expect(predictionCanvas.width).toBe(1);
+    expect(predictionCanvas.height).toBe(1);
+
+    const activeCanvas = makeCanvas();
+    const settledCanvas = makeCanvas();
+    const retainedRenderer = new StudioLiveRetainedMediaOverlayRenderer();
+    retainedRenderer.attach({ activeCanvas, settledCanvas });
+    retainedRenderer.setSurface(surface);
+    expect(activeCanvas.width).toBeGreaterThan(1);
+    expect(settledCanvas.width).toBeGreaterThan(1);
+    retainedRenderer.attach(null);
+    expect(activeCanvas.width).toBe(1);
+    expect(activeCanvas.height).toBe(1);
+    expect(settledCanvas.width).toBe(1);
+    expect(settledCanvas.height).toBe(1);
+  });
+
+  it("evicts silent ghost peers past TTL in P2P overlay so long-session mesh does not poison", async () => {
+    let now = 3_000_000;
+    const listeners = new Set<(value: unknown) => void>();
+    const primary: StudioLiveTransport = {
+      mode: "server",
+      canvasLockPolicy: "cooperative",
+      crdtFanout: "mesh",
+      ready: true,
+      connect: async () => undefined,
+      send: () => true,
+      subscribe: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+      close: () => undefined,
+    };
+    const self: StudioLiveParticipant = {
+      sessionId: "self-session",
+      displayName: "Self",
+      role: "editor",
+      visibility: "active",
+    };
+    const ghost: StudioLiveParticipant = {
+      sessionId: "ghost-session",
+      displayName: "Ghost",
+      role: "editor",
+      visibility: "active",
+    };
+    const factory = applyStudioLiveP2pOverlay(() => primary, {
+      now: () => now,
+      createPeerConnection: () => {
+        throw new Error("ICE unavailable");
+      },
+    });
+    const transport = factory({ workId: "work-mesh", participant: self });
+    await transport.connect();
+
+    const hello = createStudioLiveEnvelope({
+      workId: "work-mesh",
+      sender: ghost,
+      sentAt: now,
+      sequence: 1,
+      kind: "presence:hello",
+      payload: { pageId: "page-1" },
+    });
+    for (const listener of listeners) listener(hello);
+    expect(transport.direct?.getPeers().map((peer) => peer.sessionId)).toEqual(["ghost-session"]);
+
+    now += STUDIO_LIVE_P2P_STALE_PEER_TTL_MS + 1_000;
+    expect(transport.direct?.getPeers()).toEqual([]);
+    transport.close();
   });
 });

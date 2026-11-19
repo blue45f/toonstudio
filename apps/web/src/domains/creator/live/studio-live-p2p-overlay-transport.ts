@@ -101,6 +101,8 @@ export const STUDIO_LIVE_P2P_INK_MAX_BUFFERED_BYTES = 256 * 1024;
 export const STUDIO_LIVE_P2P_INK_INBOUND_WINDOW_MS = 3_000;
 export const STUDIO_LIVE_P2P_INK_INBOUND_MAX_PACKETS = 480;
 export const STUDIO_LIVE_P2P_INK_INBOUND_MAX_BYTES = 4 * 1024 * 1024;
+/** 하트비트·채널 응답 없이 이탈한 피어를 정리하는 만료 시간(장시간 메시 고착 방지). */
+export const STUDIO_LIVE_P2P_STALE_PEER_TTL_MS = 45_000;
 
 const STUDIO_LIVE_P2P_FABRIC_BUFFER_LIMITS = Object.freeze({
   control: 128 * 1024, realtime: 96 * 1024, bulk: 512 * 1024,
@@ -222,6 +224,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
   private readonly maxPeers: number;
   private readonly localPeerCapabilities: readonly StudioPeerCapability[];
   private readonly knownPeerSessionIds = new Set<string>();
+  private readonly peerLastSeenAt = new Map<string, number>();
   /** Latest participant record per known peer. Kept after the mesh link dies so the
    * socket-relay lane can still address the peer and attribute inbound packets. */
   private readonly knownParticipants = new Map<string, StudioLiveParticipant>();
@@ -257,6 +260,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     this.direct = {
       getPeers: () => {
         if (this.closed || !this.ready) return [];
+        this.pruneStalePeers();
         const bySessionId = new Map<string, StudioLiveParticipant>();
         for (const peer of this.peers.values()) {
           if (this.directPeerReady(peer)) {
@@ -551,6 +555,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     this.controlListeners.clear();
     for (const sessionId of [...this.peers.keys()]) this.teardownPeer(sessionId);
     this.knownPeerSessionIds.clear();
+    this.peerLastSeenAt.clear();
     this.knownParticipants.clear();
     this.relayPeerSessionIds.clear();
     this.relayInboundWindows.clear();
@@ -599,6 +604,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     if (!parsed) {
       return Promise.reject(new StudioLiveP2pError("update-invalid"));
     }
+    this.pruneStalePeers();
     if (this.closed || this.peers.size === 0
       || this.peers.size !== this.knownPeerSessionIds.size
       || this.openPeerChannelCount() !== this.peers.size) {
@@ -716,6 +722,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
   }
 
   private sendEphemeral(envelope: StudioLiveEnvelope): StudioLiveP2pEphemeralSendResult {
+    this.pruneStalePeers();
     let serialized: string | undefined;
     try {
       serialized = JSON.stringify(envelope);
@@ -845,6 +852,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
    * Partial failure is returned to the caller, never reported as successful room-wide delivery.
    */
   private sendMeshInkFrame(wire: StudioLiveInkWireMessage): boolean {
+    this.pruneStalePeers();
     if (
       this.knownPeerSessionIds.size === 0
       || this.peers.size !== this.knownPeerSessionIds.size
@@ -947,19 +955,48 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
   private observePresence(envelope: StudioLiveEnvelope): void {
     const sessionId = envelope.sender.sessionId;
     if (sessionId === this.context.participant.sessionId) return;
+    const now = this.now();
     if (envelope.kind === "presence:leave") {
-      this.knownPeerSessionIds.delete(sessionId);
-      this.knownParticipants.delete(sessionId);
-      this.relayPeerSessionIds.delete(sessionId);
-      this.relayInboundWindows.delete(sessionId);
-      this.teardownPeer(sessionId);
+      this.evictPeerSession(sessionId);
+      this.pruneStalePeers(now);
       return;
     }
     if (envelope.kind === "presence:hello" || envelope.kind === "presence:heartbeat") {
       this.knownPeerSessionIds.add(sessionId);
+      this.peerLastSeenAt.set(sessionId, now);
       this.knownParticipants.set(sessionId, envelope.sender);
       this.ensurePeer(envelope.sender);
       this.peers.get(sessionId)?.handshake.onPresence();
+      this.pruneStalePeers(now);
+    }
+  }
+
+  private evictPeerSession(sessionId: string): void {
+    this.knownPeerSessionIds.delete(sessionId);
+    this.peerLastSeenAt.delete(sessionId);
+    this.knownParticipants.delete(sessionId);
+    this.relayPeerSessionIds.delete(sessionId);
+    this.relayInboundWindows.delete(sessionId);
+    this.teardownPeer(sessionId);
+  }
+
+  private pruneStalePeers(now = this.now()): void {
+    for (const sessionId of [...this.knownPeerSessionIds]) {
+      const lastSeenAt = this.peerLastSeenAt.get(sessionId);
+      if (lastSeenAt === undefined || now - lastSeenAt <= STUDIO_LIVE_P2P_STALE_PEER_TTL_MS) {
+        continue;
+      }
+      const link = this.peers.get(sessionId);
+      if (link && !link.closed && link.channel?.readyState === "open") {
+        this.peerLastSeenAt.set(sessionId, now);
+        continue;
+      }
+      this.evictPeerSession(sessionId);
+    }
+    for (const [sessionId, window] of this.relayInboundWindows) {
+      if (now - window.startedAt >= 3_000) {
+        this.relayInboundWindows.delete(sessionId);
+      }
     }
   }
 
@@ -1253,6 +1290,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
 
   private handleChannelMessage(link: StudioLiveP2pPeerLink, data: unknown): void {
     if (this.closed || link.closed || this.peers.get(link.sessionId) !== link) return;
+    this.peerLastSeenAt.set(link.sessionId, this.now());
     if (data instanceof ArrayBuffer) {
       this.receiveMeshInk(link, data);
       return;
