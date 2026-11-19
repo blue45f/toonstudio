@@ -104,4 +104,18 @@ describe("StudioLiveCollaborationQuickControls", () => {
       }).getAttribute("data-studio-live-cursor-visibility"),
     ).toBe("followed");
   });
+
+  it("closes the popover on Escape and restores focus to the trigger", () => {
+    renderControls();
+
+    const trigger = screen.getByRole("button", {
+      name: "모든 커서 및 실시간 협업 보기 설정",
+    });
+    fireEvent.click(trigger);
+    expect(screen.getByRole("dialog", { name: "실시간 협업 보기 설정" })).toBeTruthy();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "실시간 협업 보기 설정" })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
 });

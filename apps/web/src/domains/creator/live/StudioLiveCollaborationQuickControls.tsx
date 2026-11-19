@@ -3,7 +3,7 @@ import {
   Crosshair,
   EyeOff,
   MousePointer2,
-  Sparkles,
+  SlidersHorizontal,
   UsersRound,
   Waves,
   X,
@@ -63,9 +63,9 @@ function roleLabel(role: StudioLivePeer["role"]): string {
 }
 
 function CursorModeIcon({ mode }: { readonly mode: StudioLiveCursorVisibilityMode }) {
-  if (mode === "hidden") return <EyeOff size={16} strokeWidth={1.8} aria-hidden />;
-  if (mode === "followed") return <Crosshair size={16} strokeWidth={1.8} aria-hidden />;
-  return <MousePointer2 size={16} strokeWidth={1.8} aria-hidden />;
+  if (mode === "hidden") return <EyeOff size={15} strokeWidth={1.5} aria-hidden />;
+  if (mode === "followed") return <Crosshair size={15} strokeWidth={1.5} aria-hidden />;
+  return <MousePointer2 size={15} strokeWidth={1.5} aria-hidden />;
 }
 
 export function StudioLiveCollaborationQuickControls({
@@ -165,7 +165,7 @@ export function StudioLiveCollaborationQuickControls({
         data-studio-live-cursor-visibility={preferences.cursorVisibility}
         title={triggerLabel}
         className={cn(
-          "relative grid size-11 place-items-center rounded-lg border shadow-xl backdrop-blur-md transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
+          "relative grid size-11 place-items-center rounded-lg border shadow-md backdrop-blur-md transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
           open || preferences.cursorVisibility === "followed"
             ? "border-accent/50 bg-accent-soft text-accent"
             : preferences.cursorVisibility === "hidden"
@@ -175,7 +175,7 @@ export function StudioLiveCollaborationQuickControls({
         onClick={() => setOpen((current) => !current)}
       >
         <CursorModeIcon mode={preferences.cursorVisibility} />
-        <span data-studio-mobile-cursor-label="true" className="hidden text-xs font-semibold">커서 보기 · {currentModeCopy.label}</span>
+        <span data-studio-mobile-cursor-label="true" className="hidden text-xs font-medium">커서 보기 · {currentModeCopy.label}</span>
         {live.availability === "ready" ? (
           <span
             aria-hidden
@@ -190,35 +190,35 @@ export function StudioLiveCollaborationQuickControls({
           role="dialog"
           aria-label="실시간 협업 보기 설정"
           data-studio-live-quick-controls-panel="true"
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-[80] w-[min(20rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-line bg-panel/98 text-left shadow-2xl backdrop-blur-xl"
+          className="absolute right-0 top-[calc(100%+0.5rem)] z-[80] w-[min(20rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-line bg-panel/98 text-left shadow-lg backdrop-blur-xl"
         >
-          <div className="flex items-start justify-between gap-3 border-b border-line px-3.5 py-3">
+          <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <Sparkles size={15} className="shrink-0 text-accent" aria-hidden />
-                <h3 className="text-xs font-bold text-fg">집중 협업 보기</h3>
+                <SlidersHorizontal size={14} strokeWidth={1.5} className="shrink-0 text-fg-2" aria-hidden />
+                <h3 className="text-xs font-semibold text-fg">집중 협업 보기</h3>
               </div>
-              <p className="mt-1 text-[0.68rem] leading-relaxed text-fg-3">
+              <p className="mt-1 text-[11px] leading-relaxed text-fg-3">
                 원고 동기화는 유지하고 내 화면의 커서 밀도만 조절합니다.
               </p>
             </div>
             <button
               type="button"
               aria-label="실시간 협업 보기 설정 닫기"
-              className="grid size-9 shrink-0 place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+              className="grid size-8 shrink-0 place-items-center rounded-lg text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
               onClick={() => {
                 setOpen(false);
                 triggerRef.current?.focus({ preventScroll: true });
               }}
             >
-              <X size={15} aria-hidden />
+              <X size={14} strokeWidth={1.5} aria-hidden />
             </button>
           </div>
 
-          <div className="space-y-3 p-3.5">
+          <div className="space-y-3 p-3">
             <fieldset>
-              <legend className="text-[0.68rem] font-bold text-fg-2">커서 표시 범위</legend>
-              <div className="mt-2 grid grid-cols-3 gap-1.5">
+              <legend className="text-[11px] font-medium text-fg-2">커서 표시 범위</legend>
+              <div className="mt-2 grid grid-cols-3 gap-2">
                 {(Object.keys(CURSOR_MODE_COPY) as StudioLiveCursorVisibilityMode[]).map(
                   (mode) => {
                     const selected = preferences.cursorVisibility === mode;
@@ -235,7 +235,7 @@ export function StudioLiveCollaborationQuickControls({
                             : CURSOR_MODE_COPY[mode].description
                         }
                         className={cn(
-                          "flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border px-1.5 text-[0.65rem] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45",
+                          "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border px-2 text-[11px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45 motion-reduce:transition-none",
                           selected
                             ? "border-accent/55 bg-accent-soft text-accent"
                             : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
@@ -255,7 +255,7 @@ export function StudioLiveCollaborationQuickControls({
               type="button"
               aria-pressed={preferences.showTrails}
               className={cn(
-                "flex min-h-11 w-full items-center gap-2 rounded-xl border px-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
+                "flex min-h-11 w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none",
                 preferences.showTrails
                   ? "border-accent/40 bg-accent-soft/55 text-fg"
                   : "border-line bg-card text-fg-2 hover:bg-raised",
@@ -263,13 +263,14 @@ export function StudioLiveCollaborationQuickControls({
               onClick={() => setStudioLiveCursorTrails(!preferences.showTrails)}
             >
               <Waves
-                size={16}
-                className={preferences.showTrails ? "text-accent" : "text-fg-3"}
+                size={15}
+                strokeWidth={1.5}
+                className={preferences.showTrails ? "shrink-0 text-accent" : "shrink-0 text-fg-3"}
                 aria-hidden
               />
               <span className="min-w-0 flex-1">
-                <span className="block text-[0.7rem] font-bold">실시간 획 트레일</span>
-                <span className="mt-0.5 block text-[0.63rem] leading-relaxed text-fg-3">
+                <span className="block text-xs font-medium">실시간 획 트레일</span>
+                <span className="mt-0.5 block text-[11px] leading-relaxed text-fg-3">
                   끄면 포인터만 표시해 저사양 기기와 대규모 세션의 렌더 비용을 줄입니다.
                 </span>
               </span>
@@ -282,7 +283,7 @@ export function StudioLiveCollaborationQuickControls({
                     : "border-line bg-raised text-transparent",
                 )}
               >
-                <Check size={12} />
+                <Check size={12} strokeWidth={1.75} />
               </span>
             </button>
 
@@ -290,16 +291,16 @@ export function StudioLiveCollaborationQuickControls({
               <div className="flex items-center justify-between gap-2">
                 <h4
                   id={`${panelId}-participants`}
-                  className="text-[0.68rem] font-bold text-fg-2"
+                  className="text-[11px] font-medium text-fg-2"
                 >
                   빠른 집중 따라가기
                 </h4>
-                <span className="text-[0.62rem] text-fg-3">
+                <span className="text-[11px] tabular-nums text-fg-3">
                   {live.peers.length.toLocaleString("ko-KR")}명 접속
                 </span>
               </div>
               {peerOptions.length > 0 ? (
-                <div className="mt-2 max-h-56 space-y-1 overflow-y-auto pr-0.5">
+                <div className="mt-2 max-h-56 space-y-1 overflow-y-auto pr-1">
                   {peerOptions.map((peer) => {
                     const following = peer.sessionId === followingSessionId;
                     return (
@@ -308,7 +309,7 @@ export function StudioLiveCollaborationQuickControls({
                         type="button"
                         aria-pressed={following}
                         className={cn(
-                          "flex min-h-11 w-full items-center gap-2 rounded-xl border px-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
+                          "flex min-h-11 w-full items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none",
                           following
                             ? "border-accent/50 bg-accent-soft text-fg"
                             : "border-transparent bg-card/70 text-fg-2 hover:border-line hover:bg-raised hover:text-fg",
@@ -317,48 +318,48 @@ export function StudioLiveCollaborationQuickControls({
                       >
                         <span
                           aria-hidden
-                          className="grid size-7 shrink-0 place-items-center rounded-full text-[0.62rem] font-black text-[oklch(0.96_0.01_85)]"
+                          className="grid size-7 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-[oklch(0.96_0.01_85)]"
                           style={{ backgroundColor: studioLiveParticipantColor(peer.sessionId) }}
                         >
                           {participantInitial(peer.displayName)}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[0.7rem] font-semibold">
+                          <span className="block truncate text-xs font-medium">
                             {peer.displayName}
                           </span>
-                          <span className="mt-0.5 block truncate text-[0.61rem] text-fg-3">
+                          <span className="mt-0.5 block truncate text-[11px] text-fg-3">
                             {roleLabel(peer.role)} · {peer.visibility === "active" ? "작업 중" : "자리 비움"}
                           </span>
                         </span>
                         {following ? (
-                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent px-1.5 py-1 text-[0.6rem] font-bold text-on-accent">
-                            <Check size={10} aria-hidden /> 집중 중
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-on-accent">
+                            <Check size={10} strokeWidth={1.75} aria-hidden /> 집중 중
                           </span>
                         ) : (
-                          <Crosshair size={14} className="shrink-0 text-fg-3" aria-hidden />
+                          <Crosshair size={14} strokeWidth={1.5} className="shrink-0 text-fg-3" aria-hidden />
                         )}
                       </button>
                     );
                   })}
                 </div>
               ) : (
-                <p className="mt-2 rounded-xl border border-dashed border-line px-3 py-3 text-[0.67rem] leading-relaxed text-fg-3">
+                <p className="mt-2 rounded-lg border border-dashed border-line px-3 py-3 text-[11px] leading-relaxed text-fg-3">
                   다른 팀원이 접속하면 여기서 바로 따라갈 수 있습니다.
                 </p>
               )}
             </section>
           </div>
 
-          <div className="border-t border-line bg-card/45 p-2.5">
+          <div className="border-t border-line bg-card/45 p-3">
             <button
               type="button"
-              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-card px-3 text-[0.68rem] font-bold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+              className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
               onClick={() => {
                 setOpen(false);
                 onOpenTeam();
               }}
             >
-              <UsersRound size={15} aria-hidden /> 팀·화면 공유·채팅 열기
+              <UsersRound size={14} strokeWidth={1.5} aria-hidden /> 팀·화면 공유·채팅 열기
             </button>
           </div>
         </div>
