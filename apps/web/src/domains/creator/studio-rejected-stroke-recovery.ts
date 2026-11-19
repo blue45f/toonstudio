@@ -19,6 +19,7 @@
  * 호스트가 등록하므로 이 스토어는 편집기 상태나 데이터베이스를 직접 import하지 않는다.
  */
 
+import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 import { isCompleteStudioDrawOp } from "./brush/studio-draw-completion";
 
 import type { DrawEl } from "./studio-element-model";
@@ -228,7 +229,7 @@ export function retryStudioRejectedStrokeStorage(): void {
     publish();
   }).catch(() => {
     if (activeScopeKey !== scopeKey || persistenceByScope.get(scopeKey) !== persistence) return;
-    setStudioRejectedStrokeStorageError(scopeKey, "획 복구 원본을 아직 읽지 못했습니다. 원본은 삭제하지 않았습니다.");
+    setStudioRejectedStrokeStorageError(scopeKey, translateBilingualPair("studio.recoveryNotice", "획 복구 목록을 아직 읽지 못했습니다. 원본은 그대로 있습니다.", "The stroke recovery list is still unavailable. The original strokes have been kept."));
   });
 }
 

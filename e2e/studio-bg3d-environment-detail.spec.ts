@@ -62,9 +62,13 @@ for (const shot of shots) {
     await openEditor(page, dialog);
     await selectStudioBg3dTaskTab(dialog, "models", 60_000);
     await dialog.getByLabel("3D 모델 라이브러리 검색").fill(shot.label);
+    const addModel = button(dialog, shot.label + " 장면에 추가");
+    await expect(addModel).toBeEnabled();
+    await addModel.focus();
+    await expect(addModel).toBeFocused();
     const [model] = await Promise.all([
       page.waitForResponse(response => response.url().endsWith("/" + shot.model + ".glb")),
-      button(dialog, shot.label + " 장면에 추가").press("Enter"),
+      page.keyboard.press("Enter"),
     ]);
     expect(model.status()).toBe(200);
     // 큰 GLB는 DevTools 응답 버퍼에서 제거될 수 있다. 작업 화면이 받은 바로 그 URL의 원본과 저장된 첨부 해시를 대조한다.

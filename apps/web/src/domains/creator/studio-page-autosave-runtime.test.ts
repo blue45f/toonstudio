@@ -1,3 +1,4 @@
+import { useI18n } from "@/shared/lib/i18n";
 import * as bundleProduct from "./scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-product-authority";
 import * as lineProduct from "./studio-linked-3d-pass-product-authority";
 import { createBg3dBundleProjectFixture, createBg3dBundleTestAuthority } from "./bg3d/studio-bg3d-bundle-project.test-fixture";
@@ -193,6 +194,20 @@ describe("preserve the current drawing before continuing an older one", () => {
     complete(true);
     await restoring;
     expect(fixture.context.setPagesHistory).toHaveBeenCalledOnce();
+  });
+  it.each(["ko", "en"] as const)("보관 확인이 거절되면 %s로 다른 탭의 저장 완료 후 재시도를 안내한다", async (lang) => {
+    const previous = useI18n.getState().lang;
+    try {
+      useI18n.setState({ lang });
+      const fixture = recoveryFixture();
+      fixture.context.preserveCurrentDocument.mockResolvedValue(false);
+      await restoreStudioAutosaveRecovery(fixture.context);
+      expect(fixture.context.setError).toHaveBeenCalledWith(expect.stringMatching(
+        lang === "ko" ? /다른 스튜디오 탭이 있다면.*저장을 마치고 닫은 뒤 다시/ : /If another Studio tab is open, finish saving there, close it, and retry here/u,
+      ));
+      expect(fixture.context.setPagesHistory).not.toHaveBeenCalled();
+      expect(fixture.context.autosaveRecoveryCandidateRef.current).toBe(fixture.candidate);
+    } finally { useI18n.setState({ lang: previous }); }
   });
   it.each(["refused", "failed"])("keeps both drawings when the safety copy is %s", async (reason) => {
     const fixture = recoveryFixture();

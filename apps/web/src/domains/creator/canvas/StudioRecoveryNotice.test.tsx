@@ -2,10 +2,12 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { useI18n } from "@/shared/lib/i18n";
+
 import { StudioRecoveryNotice } from "./StudioRecoveryNotice";
 import { createStudioRecoveryNewDrawingHref } from "./studio-recovery-notice-model";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); useI18n.setState({ lang: "ko" }); });
 const handlers = () => ({ autoRestore: true, onRestore: vi.fn(), onBackup: vi.fn(), onDelete: vi.fn() });
 
 describe("low-friction studio recovery", () => {
@@ -33,6 +35,21 @@ describe("low-friction studio recovery", () => {
       expect(props.onBackup).toHaveBeenCalledOnce();
     },
   );
+
+  it("영어에서도 현재 그림을 보존하고 다시 열기·새 탭·백업·명시적 삭제를 구분한다", () => {
+    useI18n.setState({ lang: "en" });
+    const props = handlers();
+    render(<StudioRecoveryNotice {...props} autoRestore={false} blockedReason={null} />);
+    expect(screen.getByRole("heading", { name: "Check the save status" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Continue drawing" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Start a new drawing.*New tab/u }).getAttribute("target")).toBe("_blank");
+    fireEvent.click(screen.getByRole("button", { name: "More options" }));
+    expect(screen.getByRole("button", { name: "Delete earlier drawing…" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Download backup" }));
+    expect(props.onBackup).toHaveBeenCalledOnce();
+    expect(props.onRestore).not.toHaveBeenCalled();
+    expect(props.onDelete).not.toHaveBeenCalled();
+  });
 
   it("asks only after automatic recovery actually fails", async () => {
     const props = {

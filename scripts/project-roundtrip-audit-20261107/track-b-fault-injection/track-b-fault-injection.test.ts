@@ -19,14 +19,15 @@ import {
 import {
   importStudioProjectPackage,
 } from "../../../apps/web/src/domains/creator/save-first/studio-project-package-import";
+import { importedTestPorts, importedTestSqlite } from "../../../apps/web/src/domains/creator/save-first/studio-project-package-import-test-fixture";
 import {
   buildStudioProjectWorkspacePackageEntries,
 } from "../../../apps/web/src/domains/creator/save-first/studio-project-workspace-snapshots";
 import {
-  STUDIO_SAVE_PROFILE_UPDATED_EVENT,
+  readStudioSaveProfiles, STUDIO_SAVE_PROFILE_UPDATED_EVENT,
 } from "../../../apps/web/src/domains/creator/save-first/studio-save-profile";
 import {
-  STUDIO_SUBMISSION_UPDATED_EVENT,
+  readStudioSubmissions, STUDIO_SUBMISSION_UPDATED_EVENT,
 } from "../../../apps/web/src/domains/creator/save-first/studio-submission-store";
 import {
   serializeStudioAutosave,
@@ -390,6 +391,7 @@ describe("Track B: export/import 중 abort·quota 오류·손상 archive에서 �
     const probeController = createQuotaFaultStorage(probeEnv.storage, {});
     await importStudioProjectPackage(file, {
       storage: probeController.storage,
+      autosavePorts: importedTestPorts(probeController.storage),
       now: "2026-11-06T13:00:00.000Z",
     });
     const totalWrites = probeController.getSetItemCallCount();
@@ -407,12 +409,15 @@ describe("Track B: export/import 중 abort·quota 오류·손상 archive에서 �
       await expect(
         importStudioProjectPackage(file, {
           storage: faultController.storage,
+          autosavePorts: importedTestPorts(faultController.storage),
           now: "2026-11-06T13:00:00.000Z",
           createProjectId: () => `quota-step-${step}`,
           createDocumentId: () => `quota-doc-${step}-${++docSeq}`,
         }),
       ).rejects.toThrow(/quota/iu);
 
+      const importedKey = studioAutosaveKey({ userId: null, workId: `import-document-quota-doc-${step}-1` });
+      expect(await importedTestSqlite(faultController.storage).read(importedKey)).toMatchObject({ state: "cleared" });
       const snapshotAfterRollback = snapshotStorageState(stepEnv.storage);
       expect(snapshotAfterRollback).toEqual(stepEnv.baselineSnapshot);
       expect(canonicalJsonDigest(snapshotAfterRollback)).toBe(stepEnv.baselineDigest);
@@ -563,7 +568,7 @@ describe("Track B: export/import 중 abort·quota 오류·손상 archive에서 �
     const eventRecorder = createEventRecordingTarget();
     const probeEnv = createSeededBaselineEnvironment();
     const probeFault = createQuotaFaultStorage(probeEnv.storage, {});
-    await importStudioProjectPackage(file, { storage: probeFault.storage });
+    await importStudioProjectPackage(file, { storage: probeFault.storage, autosavePorts: importedTestPorts(probeFault.storage) });
     const finalStep = probeFault.getSetItemCallCount();
 
     const finalStepFault = createQuotaFaultStorage(eventEnv.storage, {
@@ -572,6 +577,7 @@ describe("Track B: export/import 중 abort·quota 오류·손상 archive에서 �
     await expect(
       importStudioProjectPackage(file, {
         storage: finalStepFault.storage,
+        autosavePorts: importedTestPorts(finalStepFault.storage),
         target: eventRecorder.target,
         createProjectId: () => "event-gap-proj",
       }),
@@ -584,33 +590,29 @@ describe("Track B: export/import 중 abort·quota 오류·손상 archive에서 �
       STUDIO_PROJECT_LIBRARY_UPDATED_EVENT,
       STUDIO_PROJECT_DOCUMENTS_UPDATED_EVENT,
     ]);
-    const lastProfileDetail = eventRecorder.latestDetailByType.get(
-      STUDIO_SAVE_PROFILE_UPDATED_EVENT,
-    ) as { profiles?: Record<string, unknown> } | undefined;
-    expect(Boolean(lastProfileDetail?.profiles?.["import-event-gap-proj"])).toBe(true);
-    const lastSubmissionDetail = eventRecorder.latestDetailByType.get(
-      STUDIO_SUBMISSION_UPDATED_EVENT,
-    ) as { submissions?: Array<{ projectId?: string }> } | undefined;
-    expect(
-      lastSubmissionDetail?.submissions?.some((sub) => sub.projectId === "import-event-gap-proj"),
-    ).toBe(true);
+    expect(eventRecorder.latestDetailByType.get(STUDIO_SAVE_PROFILE_UPDATED_EVENT)).toEqual(readStudioSaveProfiles(eventEnv.storage));
+    expect(eventRecorder.latestDetailByType.get(STUDIO_SUBMISSION_UPDATED_EVENT)).toEqual(readStudioSubmissions(eventEnv.storage));
+    expect(snapshotStorageState(eventEnv.storage)).toEqual(eventEnv.baselineSnapshot);
 
-    // (2) 스냅샷 쓰기 시점에 영구 QuotaExceededError(persistentFailureAfterTrigger: true)가 발생하면 restoreRaw의 setItem도 실패하여 라이브러리에 반쪽 프로젝트가 남는 경계 재현
+    // 원고 본문을 맡는 저장소가 계속 가득 찬 경우에도 원래 원고·제출 기록과 작품 목록은 보존한다.
     const persistentQuotaEnv = createSeededBaselineEnvironment();
-    const persistentFault = createQuotaFaultStorage(persistentQuotaEnv.storage, {
-      failWhenKeyIncludes: "autosave",
-      persistentFailureAfterTrigger: true,
-    });
+    const ports = importedTestPorts(persistentQuotaEnv.storage);
+    const sqlite = await ports.acquireSqlite();
+    const quota = new DOMException("Disk full", "QuotaExceededError");
     await expect(
       importStudioProjectPackage(file, {
-        storage: persistentFault.storage,
+        storage: persistentQuotaEnv.storage,
+        autosavePorts: {
+          ...ports,
+          acquireSqlite: async () => ({ ...sqlite, write: async () => { throw quota; } }),
+        },
         createProjectId: () => "persistent-quota-proj",
       }),
-    ).rejects.toThrow(/quota/iu);
-    const projectsAfterPersistentQuota = readStudioProjectLibrary(persistentQuotaEnv.storage).projects;
-    expect(projectsAfterPersistentQuota.some((p) => p.id === "import-persistent-quota-proj")).toBe(
-      true,
-    );
+    ).rejects.toMatchObject({ cause: { cause: quota } });
+    expect(snapshotStorageState(persistentQuotaEnv.storage)).toEqual(persistentQuotaEnv.baselineSnapshot);
+    expect(readStudioProjectLibrary(persistentQuotaEnv.storage).projects.some(
+      project => project.id === "import-persistent-quota-proj",
+    )).toBe(false);
 
     // [GAP-B4 회귀 게이트] importStudioProjectPackage와 importStudioProjectArchive가 mid-read Blob.slice 취소를 즉시 감지하여 AbortError로 중단함
     const midAbortEnv = createSeededBaselineEnvironment();

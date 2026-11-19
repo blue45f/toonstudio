@@ -143,7 +143,17 @@ function SignalRow({ signal }: { signal: StudioReliabilitySignal }) {
   );
 }
 
-export function StudioReliabilityStatusRail() {
+export function StudioStrokeRecoveryReadNotice({ message }: { readonly message: string }) {
+  const bt = useBilingual("studio.strokeRecovery");
+  return (
+    <div data-studio-stroke-recovery-read-notice role="status" className="pointer-events-auto flex max-w-[min(30rem,100%)] flex-wrap items-center gap-x-2 rounded-lg bg-card px-2.5 py-1.5 text-xs text-warning">
+      <span className="min-w-0 flex-1 basis-48">{message}</span>
+      <button type="button" onClick={retryStudioRejectedStrokeStorage} className="min-h-11 min-w-11 rounded-lg px-3 py-2 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{bt("복구 목록 다시 읽기", "Retry recovery list")}</button>
+    </div>
+  );
+}
+
+export function StudioReliabilityStatusRail({ strokeReadNoticeInCanvas = false }: { readonly strokeReadNoticeInCanvas?: boolean }) {
   const drawing = useStudioDrawingClarity()?.active === true, bt = useBilingual("studio.drawingClarity");
   const rootRef = useRef<HTMLDivElement>(null), returnTrigger = useRef<HTMLElement | null>(null);
   const status = useStudioReliabilityStatus();
@@ -302,12 +312,7 @@ export function StudioReliabilityStatusRail() {
         </div>
       ) : null}
 
-      {rejectedStrokeStorageError ? (
-        <div role="status" className="pointer-events-auto max-w-[min(30rem,100%)] rounded-lg bg-card/95 px-2.5 py-1.5 text-xs text-warning">
-          {rejectedStrokeStorageError}
-          <button type="button" onClick={retryStudioRejectedStrokeStorage} className="min-h-11 rounded-lg px-3 py-2 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">복구 목록 다시 읽기</button>
-        </div>
-      ) : null}
+      {rejectedStrokeStorageError && !strokeReadNoticeInCanvas ? <StudioStrokeRecoveryReadNotice message={rejectedStrokeStorageError} /> : null}
       {rejectedStrokes.length > STUDIO_REJECTED_STROKE_RECOVERY_LIMIT ? (
         <p role="status" className="pointer-events-auto max-w-[min(30rem,100%)] rounded-lg bg-card/95 px-2.5 py-1.5 text-xs text-fg-2">
           복구할 획 {rejectedStrokes.length}개가 보관돼 있습니다. 최근 {STUDIO_REJECTED_STROKE_RECOVERY_LIMIT}개를 먼저 표시하며, 처리하면 다음 획이 나타납니다.

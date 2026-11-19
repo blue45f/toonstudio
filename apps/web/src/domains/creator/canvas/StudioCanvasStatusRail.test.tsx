@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -12,6 +12,7 @@ import {
   type StudioCanvasStickyBannersContext,
 } from "./StudioCanvasStickyBanners";
 
+import { activateStudioRejectedStrokeRecovery, setStudioRejectedStrokeStorageError } from "../studio-rejected-stroke-recovery";
 import type { ReactNode } from "react";
 import { DrawingClarityContext } from "../studio-cuttoon-editor/StudioDrawingClarityContext";
 
@@ -140,6 +141,26 @@ function createProps(
 }
 
 describe("StudioCanvasStatusRail", () => {
+  it.each([true, false])("작은 화면의 복구 목록 재시도는 하단 보기 설정과 분리하고 읽기가 끝나면 닫는다 (몰입 %s)", async (mobileImmersive) => {
+    viewportState.mobile = true;
+    const load = vi.fn().mockResolvedValue([]);
+    const deactivate = activateStudioRejectedStrokeRecovery("test-read-notice", {
+      load, save: vi.fn(), delete: vi.fn(), confirmRestored: vi.fn(),
+    });
+    try {
+      setStudioRejectedStrokeStorageError("test-read-notice", "복구 목록을 읽지 못했습니다.");
+      render(<StudioCanvasStatusRail {...createProps({ mobileImmersive })} />);
+      const retry = screen.getByRole("button", { name: "복구 목록 다시 읽기" });
+      const rail = retry.closest("[data-studio-canvas-status-rail]");
+      expect(rail).toBeTruthy();
+      expect(retry.closest("[data-studio-reliability-status-rail]")).toBeNull();
+      if (mobileImmersive) expect(rail?.getAttribute("data-studio-canvas-status-rail-filled")).toBe("true");
+      fireEvent.click(retry);
+      await waitFor(() => expect(screen.queryByRole("button", { name: "복구 목록 다시 읽기" })).toBeNull());
+      expect(load).toHaveBeenCalledOnce();
+    } finally { act(deactivate); }
+  });
+
   it("offers a backup instead of an unsafe autosave restore", () => {
     const props = createProps({
       hasAutosave: true,

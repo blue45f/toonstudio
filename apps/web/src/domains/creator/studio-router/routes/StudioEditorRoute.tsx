@@ -109,7 +109,7 @@ export function StudioEditorRoute({ resolution }: {
           예전처럼 모든 표면에 "모바일 도크 그리기"를 약속하면, 도크가 없는 3D 배경·포저·
           DCC 표면에서 "눌렀는데 안 되는" 거짓 안내가 된다 — 되는/안 되는 목록은 표면마다 다르다.
         */}
-        {(() => {
+        {route.surface !== "bg3d" && (() => {
           const touchPlan = resolveStudioMobileTouchPlan(route.surface);
           return (
             <MobileFullEditNotice

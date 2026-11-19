@@ -39,6 +39,7 @@ import {
   readStudioSaveProfiles,
   recordStudioManualSave,
   STUDIO_SAVE_PROFILE_STORAGE_KEY,
+  STUDIO_SAVE_PROFILE_UPDATED_EVENT,
   upsertStudioStorageBinding,
   writeStudioSaveProfiles,
   writeSerializedStudioSaveProfiles,
@@ -46,9 +47,11 @@ import {
   type StudioDistributionState,
 } from "./studio-save-profile";
 import {
+  readStudioSubmissions,
   restoreStudioSubmissionsForImportedProject,
   writeSerializedStudioSubmissions,
   STUDIO_SUBMISSION_STORAGE_KEY,
+  STUDIO_SUBMISSION_UPDATED_EVENT,
 } from "./studio-submission-store";
 import {
   STUDIO_PROJECT_WORKSPACE_INDEX_ENTRY,
@@ -663,6 +666,12 @@ function publishImportedProjectMetadata(
     }
     const rollbackTarget = options.target ?? (typeof window !== "undefined" ? window : undefined);
     try {
+      rollbackTarget?.dispatchEvent(
+        new CustomEvent(STUDIO_SAVE_PROFILE_UPDATED_EVENT, { detail: readStudioSaveProfiles(options.storage) }),
+      );
+      rollbackTarget?.dispatchEvent(
+        new CustomEvent(STUDIO_SUBMISSION_UPDATED_EVENT, { detail: readStudioSubmissions(options.storage) }),
+      );
       rollbackTarget?.dispatchEvent(
         new CustomEvent(STUDIO_PROJECT_LIBRARY_UPDATED_EVENT, {
           detail: readStudioProjectLibrary(options.storage),

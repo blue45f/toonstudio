@@ -1,39 +1,13 @@
-import {
-  ArrowDownToLine,
-  ArrowUpToLine,
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  Combine,
-  FlipHorizontal2,
-  FlipVertical2,
-  FolderMinus,
-  FolderPlus,
-  Lock,
-  LockOpen,
-  Loader2,
-  PaintBucket,
-  ScanSearch,
-  type LucideIcon,
-} from "lucide-react";
-import { useLayoutEffect, useRef } from "react";
+import { ArrowDownToLine, ArrowUpToLine, AlignCenter, AlignLeft, AlignRight, Combine, FlipHorizontal2, FlipVertical2, FolderMinus, FolderPlus, Lock, LockOpen, Loader2, PaintBucket, ScanSearch, type LucideIcon } from "lucide-react";
+import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { useStudioDrawingClarity } from "../studio-cuttoon-editor/StudioDrawingClarityContext";
-
-import { presentStudioAutosaveDocumentLeadership } from "../studio-autosave-document-leader";
+import { presentStudioAutosaveDocumentLeadership, type StudioAutosaveDocumentLeadershipBasis, type StudioAutosaveDocumentRole } from "../studio-autosave-document-leader";
 import { StudioRecoveryNotice } from "./StudioRecoveryNotice";
-import { observeStudioCanvasNoticePlacement } from "./studio-canvas-notice-placement";
-
-import { StudioReliabilityStatusRail } from "../StudioReliabilityStatusRail";
+import { useStudioRejectedStrokeStorageError } from "../use-studio-reliability-status";
+import { StudioReliabilityStatusRail, StudioStrokeRecoveryReadNotice } from "../StudioReliabilityStatusRail";
 import { StudioToolHintTarget } from "../StudioToolHint";
-
-import type {
-  StudioAutosaveDocumentLeadershipBasis,
-  StudioAutosaveDocumentRole,
-} from "../studio-autosave-document-leader";
-import type { CSSProperties, ReactNode } from "react";
-
 import { cn } from "@/shared/lib/utils";
 import { useIsMobile } from "@/shared/hooks/use-media-query";
 
@@ -373,6 +347,7 @@ export function StudioCanvasStatusRail({
   // 모바일의 선택 명령은 플로팅 도구가 맡는다. 데스크톱은 고정된 도구줄을 사용해
   // 드래그 도중 선택이 바뀌어도 캔버스의 입력 좌표가 밀리지 않게 한다.
   const selectionCommandLaneMounted = !useIsMobile();
+  const strokeReadError = useStudioRejectedStrokeStorageError();
   /**
    * 후발(follower) 탭에는 **복구 버튼이 뜨면 안 된다.** 누르면 선행 탭의 문서를 메모리에
    * 올려놓고 저장은 못 하는 최악의 상태가 된다 — 화면에는 작업이 있는데 어디에도 남지 않는다.
@@ -385,15 +360,10 @@ export function StudioCanvasStatusRail({
         })
       : null;
 
-  /**
-   * 모바일 몰입 모드의 고지 띠에 **지금 담긴 것이 있는지**.
-   *
-   * 예전에는 이 띠가 늘 흐름 안에 있었고, 담긴 것이 하나도 없어도 떠 있는 상단 바를
-   * 피하려는 3.75rem(60px) 여백만으로 세로 60px 을 먹었다. 360×640 에서 60px 은 그리기
-   * 면적의 9.4% 다. 아래 분기는 그 예약을 "담을 게 있을 때만"으로 좁힌다.
-   */
+  // 모바일에서는 획 복구 목록도 상단 고지 띠에 모아 하단 보기 설정과 겹치지 않게 한다.
   const mobileNoticeStripFilled =
     followerNotice !== null
+    || (!selectionCommandLaneMounted && Boolean(strokeReadError))
     || hasAutosave
     || normalizedActiveGroupName !== null
     || selectionCommandLaneMounted
@@ -402,9 +372,29 @@ export function StudioCanvasStatusRail({
 
   const noticeRailRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    if (!mobileNoticeStripFilled) return;
+    if (!mobileImmersive || !mobileNoticeStripFilled) return;
     const rail = noticeRailRef.current;
-    return rail ? observeStudioCanvasNoticePlacement(rail, mobileImmersive) : undefined;
+    const host = rail?.parentElement;
+    if (!rail || !host) return;
+    const controls = host.querySelector("[data-studio-floating-controls]");
+    if (!controls) return;
+    const placeBelowControls = () => {
+      const hostTop = host.getBoundingClientRect().top;
+      const bottom = Math.max(64, ...Array.from(controls.children, (child) =>
+        child.getBoundingClientRect().bottom - hostTop));
+      rail.style.top = `${Math.ceil(bottom + 8)}px`;
+    };
+    const resize = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(placeBelowControls);
+    const observeChildren = () => {
+      resize?.disconnect();
+      resize?.observe(host);
+      for (const child of controls.children) resize?.observe(child);
+      placeBelowControls();
+    };
+    const mutations = new MutationObserver(observeChildren);
+    mutations.observe(controls, { childList: true });
+    observeChildren();
+    return () => { resize?.disconnect(); mutations.disconnect(); };
   }, [mobileImmersive, mobileNoticeStripFilled]);
 
   return (
@@ -426,7 +416,7 @@ export function StudioCanvasStatusRail({
               } as CSSProperties)
         }
       >
-        <StudioReliabilityStatusRail />
+        <StudioReliabilityStatusRail strokeReadNoticeInCanvas={!selectionCommandLaneMounted} />
       </div>
 
       <div
@@ -449,6 +439,7 @@ export function StudioCanvasStatusRail({
             : "contents"
         )}
       >
+      {!selectionCommandLaneMounted && strokeReadError ? <StudioStrokeRecoveryReadNotice message={strokeReadError} /> : null}
       {followerNotice ? (
         <div
           data-studio-autosave-document-follower

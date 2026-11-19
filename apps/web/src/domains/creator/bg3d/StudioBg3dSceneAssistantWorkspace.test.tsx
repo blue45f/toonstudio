@@ -72,6 +72,22 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
+  it("장면 도우미 안에서 터치 안내를 열고 닫아도 선택 단계가 보존된다", () => {
+    const host = createHost();
+    render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
+    const summary = screen.getByText("터치 작업 안내");
+    const guide = summary.closest("details");
+    expect(guide?.open).toBe(false);
+    fireEvent.click(summary);
+    expect(guide?.open).toBe(true);
+    expect(guide?.textContent).toContain("WebGL2로 계속");
+    expect(guide?.textContent).toContain("장면을 눌러 배치하기");
+    fireEvent.click(summary);
+    expect(guide?.open).toBe(false);
+    expect(screen.getByTestId("studio-bg3d-scene-assistant").dataset.step).toBe("choose");
+    expect(host.addSceneTemplate).not.toHaveBeenCalled();
+  });
+
   it("opens with purpose-led choices and no professional DCC terminology", () => {
     render(<StudioBg3dSceneAssistantWorkspace h={createHost()} onOpenProfessional={vi.fn()} />);
 

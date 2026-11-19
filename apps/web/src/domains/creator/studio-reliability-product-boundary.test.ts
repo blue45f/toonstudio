@@ -127,12 +127,11 @@ describe("Studio reliability product boundary", () => {
 
   it("mounts the reliability notices inside the existing canvas status rail", () => {
     expect(statusRail).toMatch(
-      /import \{ StudioReliabilityStatusRail \} from "\.\.\/StudioReliabilityStatusRail"/u,
+      /import\s*\{[^}]*\bStudioReliabilityStatusRail\b[^}]*\}\s*from "\.\.\/StudioReliabilityStatusRail"/u,
     );
-    expect(statusRail).toContain("<StudioReliabilityStatusRail />");
-    const railIndex = statusRail.indexOf("<StudioReliabilityStatusRail />");
+    const railIndex = statusRail.search(/<StudioReliabilityStatusRail\b/u);
     // 배너 조건에는 follower 게이트가 함께 걸린다(후발 탭에는 복구 버튼을 띄우지 않는다).
-    const autosaveBannerIndex = statusRail.indexOf("{hasAutosave && ");
+    const autosaveBannerIndex = statusRail.indexOf("{hasAutosave && !followerNotice && ");
     // 세션 복구 배너와 같은 레일에, 그 위에 산다.
     expect(railIndex).toBeGreaterThan(0);
     expect(autosaveBannerIndex).toBeGreaterThan(railIndex);

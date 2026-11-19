@@ -82,16 +82,16 @@ function walkProductSources(root: string): string[] {
   if (!existsSync(root)) return [];
   const files: string[] = [];
   const visit = (directory: string): void => {
-    for (const entry of readdirSync(directory).sort()) {
-      if (EXCLUDED_DIRECTORY_NAMES.has(entry)) continue;
-      const absolute = resolve(directory, entry);
-      const stats = statSync(absolute);
-      if (stats.isDirectory()) visit(absolute);
-      else if (stats.isFile() && isProductSourceFile(slash(absolute))) files.push(absolute);
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (EXCLUDED_DIRECTORY_NAMES.has(entry.name)) continue;
+      const absolute = resolve(directory, entry.name);
+      const kind = entry.isSymbolicLink() ? statSync(absolute) : entry;
+      if (kind.isDirectory()) visit(absolute);
+      else if (kind.isFile() && isProductSourceFile(slash(absolute))) files.push(absolute);
     }
   };
   visit(root);
-  return files;
+  return files.sort();
 }
 
 function studioSourceRoots(): readonly string[] {
@@ -160,43 +160,27 @@ function isDirectBrowserStorageReference(
     || receiver === `window.${storageName}`;
 }
 
-function collectBrowserStorageAliases(
-  sourceFile: ts.SourceFile,
-  storageName: BrowserStorageName,
-): ReadonlySet<string> {
-  const aliases = new Set<string>([storageName]);
-  const visit = (node: ts.Node): void => {
-    const initializer = ts.isVariableDeclaration(node) && node.initializer
-      ? compact(unwrapExpression(node.initializer).getText(sourceFile))
-      : null;
-    if (
-      ts.isVariableDeclaration(node)
-      && ts.isIdentifier(node.name)
-      && initializer !== null
-      && isDirectBrowserStorageReference(initializer, storageName)
-    ) {
-      aliases.add(node.name.text);
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(sourceFile);
-  return aliases;
-}
-
-function collectInitializerText(sourceFile: ts.SourceFile): ReadonlyMap<string, string> {
+function collectStorageBindings(sourceFile: ts.SourceFile) {
+  const localStorageAliases = new Set(["localStorage"]);
+  const sessionStorageAliases = new Set(["sessionStorage"]);
   const candidates = new Map<string, Set<string>>();
   const visit = (node: ts.Node): void => {
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
-      const values = candidates.get(node.name.text) ?? new Set<string>();
-      values.add(compact(unwrapExpression(node.initializer).getText(sourceFile)));
-      candidates.set(node.name.text, values);
+      const name = node.name.text;
+      const initializer = compact(unwrapExpression(node.initializer).getText(sourceFile));
+      if (isDirectBrowserStorageReference(initializer, "localStorage")) localStorageAliases.add(name);
+      if (isDirectBrowserStorageReference(initializer, "sessionStorage")) sessionStorageAliases.add(name);
+      const values = candidates.get(name) ?? new Set<string>();
+      values.add(initializer);
+      candidates.set(name, values);
     }
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);
-  return new Map([...candidates]
+  const initializers = new Map([...candidates]
     .filter(([, values]) => values.size === 1)
     .map(([name, values]) => [name, [...values][0]!] as const));
+  return { localStorageAliases, sessionStorageAliases, initializers };
 }
 
 function resolvedKeyText(
@@ -244,9 +228,7 @@ function analyzeBrowserKvSource(file: string, source: string): readonly BrowserK
     true,
     scriptKind(file),
   );
-  const localStorageAliases = collectBrowserStorageAliases(sourceFile, "localStorage");
-  const sessionStorageAliases = collectBrowserStorageAliases(sourceFile, "sessionStorage");
-  const initializers = collectInitializerText(sourceFile);
+  const { localStorageAliases, sessionStorageAliases, initializers } = collectStorageBindings(sourceFile);
   const findings: BrowserKvFinding[] = [];
   const compactSource = compact(source);
   const wrapperModule =
@@ -261,9 +243,8 @@ function analyzeBrowserKvSource(file: string, source: string): readonly BrowserK
     }
     if (ts.isCallExpression(node)) {
       const call = receiverAndMethod(node.expression, sourceFile);
-      const firstArgument = node.arguments[0];
-      const key = resolvedKeyText(firstArgument, sourceFile, initializers);
       if (call?.method === "setItem") {
+        const key = resolvedKeyText(node.arguments[0], sourceFile, initializers);
         if (isDirectBrowserStorageReceiver(call.receiver, "localStorage", localStorageAliases)) {
           findings.push(finding(file, sourceFile, node, "local-storage-write", key));
         } else if (
@@ -283,8 +264,10 @@ function analyzeBrowserKvSource(file: string, source: string): readonly BrowserK
         call?.method === "removeItem"
         && isDirectBrowserStorageReceiver(call.receiver, "localStorage", localStorageAliases)
       ) {
+        const key = resolvedKeyText(node.arguments[0], sourceFile, initializers);
         findings.push(finding(file, sourceFile, node, "local-storage-cleanup", key));
       } else if (call?.method === "open" && isIndexedDbFactoryReceiver(call.receiver, source)) {
+        const key = resolvedKeyText(node.arguments[0], sourceFile, initializers);
         findings.push(finding(file, sourceFile, node, "indexeddb-open", key));
       } else if (
         call
@@ -303,6 +286,7 @@ function analyzeBrowserKvSource(file: string, source: string): readonly BrowserK
         wrapperModule
         && (compact(node.expression.getText(sourceFile)) === "openDB" || call?.method === "openDB")
       ) {
+        const key = resolvedKeyText(node.arguments[0], sourceFile, initializers);
         findings.push(finding(file, sourceFile, node, "indexeddb-wrapper", key));
       }
     }

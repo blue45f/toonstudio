@@ -159,7 +159,7 @@ describe("모바일 편집 안내의 펼치기와 복귀", () => {
     for (const item of [...plan.canDo, ...plan.cannotDo]) {
       expect(screen.getByText(item.ko).closest("[hidden]")).toBeNull();
     }
-    expect(screen.getByRole("complementary").getAttribute("data-studio-mobile-touch-tier")).toBe("desktop-required");
+    expect(screen.getByRole("complementary").getAttribute("data-studio-mobile-touch-tier")).toBe("touch-edit");
   });
 
   it("계속하기로 닫으면 재진입 버튼으로 포커스를 돌리고 다시 같은 안내를 열 수 있다", () => {
@@ -275,7 +275,7 @@ describe("모바일 편집 안내의 기기 경계", () => {
     render(notice("bg3d"));
     const guide = screen.getByRole("complementary", { name: "모바일 편집 안내" });
     expect(guide.querySelector("p")?.textContent).toContain(resolveStudioMobileTouchPlan("bg3d").cannotDo[0]?.ko);
-    expect(guide.getAttribute("data-studio-mobile-touch-tier")).toBe("desktop-required");
+    expect(guide.getAttribute("data-studio-mobile-touch-tier")).toBe("touch-edit");
   });
 });
 
@@ -288,6 +288,21 @@ describe("좁은 기기 안내의 정보 보존", () => {
     expect(summary?.textContent).toContain(plan.cannotDo[0]?.ko);
     expect(summary?.closest("[hidden]")).toBeNull();
     expect(summary?.className).not.toMatch(/truncate|line-clamp|overflow-hidden/);
+  });
+
+  it.each([
+    { surface: "bg3d", action: /tap the scene to place it/i, limitation: /WebGL2/ },
+    { surface: "poser", action: /apply supported poses and expressions/i, limitation: /joint or expression must exist/i },
+    { surface: "character", action: /save the edited character as a PNG/i, limitation: /supported by the current model/i },
+    { surface: "dcc", action: /save a \.toon3d workfile/i, limitation: /preview needs WebGL/i },
+  ])("$surface의 영문 안내에서도 실제 작업과 제한을 읽을 수 있다", ({ surface, action, limitation }) => {
+    language.value = "en";
+    render(notice(surface));
+    const guide = screen.getByRole("complementary");
+    expect(guide.querySelector("p")?.textContent).toMatch(limitation);
+    fireEvent.click(screen.getByRole("button", { name: "Device guide View available tasks" }));
+    expect(screen.getByText(action).closest("[hidden]")).toBeNull();
+    expect(screen.getByText(limitation).closest("[hidden]")).toBeNull();
   });
 
   it("영문 요약에도 동일한 첫 한계를 보이고 모든 버튼은 reduced-motion을 따른다", () => {

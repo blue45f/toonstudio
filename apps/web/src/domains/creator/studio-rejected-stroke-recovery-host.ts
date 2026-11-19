@@ -6,6 +6,7 @@
  * without the 30k-line component.
  */
 
+import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 import { useLayoutEffect, useRef } from "react";
 
 import { uid } from "./studio-id";
@@ -150,7 +151,7 @@ export function useStudioRejectedStrokeRecoveryHost(
       // 프로젝트 변경 또는 StrictMode 재마운트 뒤 도착한 이전 세대의 읽기를 적용하지 않는다.
       if (current) hydrateStudioRejectedStrokeRecords(scopeKey, records);
     }).catch(() => {
-      if (current) setStudioRejectedStrokeStorageError(scopeKey, "이 문서의 획 복구 원본을 읽지 못했습니다. 저장소가 준비된 뒤 문서를 다시 열어 주세요.");
+      if (current) setStudioRejectedStrokeStorageError(scopeKey, translateBilingualPair("studio.recoveryNotice", "이 원고의 획 복구 목록을 읽지 못했습니다.", "Could not read the stroke recovery list for this manuscript."));
     });
     return () => {
       current = false;

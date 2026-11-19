@@ -1,3 +1,4 @@
+import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 import { hasStudioBg3dSixPassAutosaveMarkers } from "./studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-persistence-markers";
 import { hydrateStudioAiImageReferenceDocument } from "./ai/studio-ai-image-reference-roles";
 import { normalizeStudioAiProvenanceDocument } from "./ai/studio-ai-provenance";
@@ -294,7 +295,7 @@ export async function restoreStudioAutosaveRecovery(
           return;
         }
         if (!(await ctx.preserveCurrentDocument())) {
-          setError("현재 그림을 보관하지 못해 이전 그림을 열지 않았어요. 저장 공간을 확인하거나 파일로 보관한 뒤 다시 시도해 주세요.");
+          setError(translateBilingualPair("studio.recoveryNotice", "현재 그림을 저장하지 못해 이전 그림을 열지 않았어요. 다른 스튜디오 탭이 있다면 그 탭에서 저장을 마치고 닫은 뒤 다시 시도해 주세요. 계속 실패하면 기기 저장 공간을 확인해 주세요.", "The current drawing could not be saved, so the earlier drawing stayed closed. If another Studio tab is open, finish saving there, close it, and retry here. If saving still fails, check device storage."));
           return;
         }
         if (autosaveRecoveryCandidateRef.current !== saved) {

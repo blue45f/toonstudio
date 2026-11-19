@@ -25,10 +25,10 @@ describe("표면별 터치 계획 전수", () => {
     expect(resolveStudioMobileTouchPlan("comic").tier).toBe("touch-edit");
     expect(resolveStudioMobileTouchPlan("animation").tier).toBe("touch-assisted");
     expect(resolveStudioMobileTouchPlan("brushes").tier).toBe("touch-assisted");
-    expect(resolveStudioMobileTouchPlan("character").tier).toBe("touch-assisted");
-    expect(resolveStudioMobileTouchPlan("bg3d").tier).toBe("desktop-required");
-    expect(resolveStudioMobileTouchPlan("poser").tier).toBe("desktop-required");
-    expect(resolveStudioMobileTouchPlan("dcc").tier).toBe("desktop-required");
+    expect(resolveStudioMobileTouchPlan("character").tier).toBe("touch-edit");
+    expect(resolveStudioMobileTouchPlan("bg3d").tier).toBe("touch-edit");
+    expect(resolveStudioMobileTouchPlan("poser").tier).toBe("touch-edit");
+    expect(resolveStudioMobileTouchPlan("dcc").tier).toBe("touch-assisted");
   });
 
   it("모든 계획이 되는 작업·안 되는 작업·최소 동선을 비어 있지 않게 가진다", () => {
@@ -41,11 +41,6 @@ describe("표면별 터치 계획 전수", () => {
         expect(entry.ko.length, surface).toBeGreaterThan(0);
         expect(entry.en.length, surface).toBeGreaterThan(0);
       }
-      // 안 되는 작업은 최소 하나가 "이 기기에서 안 돼요"를 명시해 진입 시점에 막는다.
-      expect(
-        plan.cannotDo.some((entry) => entry.ko.includes("안 돼요") || entry.ko.includes("데스크톱")),
-        surface,
-      ).toBe(true);
     }
   });
 
@@ -73,12 +68,16 @@ describe("표면별 터치 계획 전수", () => {
     }
   });
 
-  it("데스크톱 필수 표면은 표면 자체 편집이 안 됨을 가능 목록보다 먼저 읽히게 명시한다", () => {
-    for (const surface of ["bg3d", "poser", "dcc"] as const) {
-      const plan = resolveStudioMobileTouchPlan(surface);
-      expect(plan.cannotDo[0]?.ko, surface).toContain("이 기기에서 안 돼요");
-      expect(plan.cannotDo[0]?.ko, surface).toContain("데스크톱");
-    }
+  it.each([
+    { surface: "bg3d", steps: ["pick-background", "place-in-scene", "frame-shot", "insert-shot"], action: "눌러 배치", condition: "WebGL2" },
+    { surface: "poser", steps: ["pick-character", "pose-character", "insert-character"], action: "포즈와 표정", condition: "모델에 없는 관절" },
+    { surface: "character", steps: ["choose-part", "apply-preset", "export-character"], action: "PNG로 저장", condition: "모델이 지원하지 않는 파츠" },
+    { surface: "dcc", steps: ["pick-primitive", "add-primitive", "save-workfile"], action: ".toon3d 작업파일", condition: "WebGL" },
+  ])("$surface에서 확인한 터치 조작과 모델·렌더러 제한을 구분한다", ({ surface, steps, action, condition }) => {
+    const plan = resolveStudioMobileTouchPlan(surface);
+    expect(plan.steps.map((step) => step.id)).toEqual(steps);
+    expect(plan.canDo.some((item) => item.ko.includes(action))).toBe(true);
+    expect(plan.cannotDo[0]?.ko).toContain(condition);
   });
 
   it("모르는 표면은 편집 가능을 약속하지 않는 fail-closed 기본값으로 떨어진다", () => {

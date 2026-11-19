@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { createStudioRecoveryNewDrawingHref } from "./studio-recovery-notice-model";
 
 import { translateNow, useT } from "@/shared/lib/i18n";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import "../status-i18n/studio-brush-canvas-status-i18n-core";
@@ -23,6 +24,7 @@ const actionClass = "inline-flex min-h-11 items-center justify-center gap-2 roun
 
 export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, onBackup, onDelete }: StudioRecoveryNoticeProps) {
   const t = useT();
+  const bt = useBilingual("studio.recoveryNotice");
   const titleId = useId();
   const detailsId = useId();
   const [expanded, setExpanded] = useState(false);
@@ -95,7 +97,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
           <div className="min-w-0">
             <h2 id={titleId} className="font-bold">{t("studio.brushCanvasStatus.canvas.recoveryLoadingHeading", "마지막 작업을 이어 여는 중이에요")}</h2>
             <p className="mt-1 leading-relaxed text-fg-2">
-              안전하게 저장된 같은 그림이면 묻지 않고 자동으로 이어서 엽니다.
+              {bt("안전하게 저장된 같은 그림이면 묻지 않고 자동으로 이어서 엽니다.", "The same drawing reopens automatically once its saved copy is verified.")}
             </p>
           </div>
         </div>
@@ -104,17 +106,17 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
   }
 
   const blockedDescription = blockedReason === "revision-mismatch"
-    ? "저장된 작품과 내용이 달라요. 덮어쓰지 않고 백업 파일로 보관해 주세요."
+    ? bt("저장된 작품과 내용이 달라요. 덮어쓰지 않고 백업 파일로 보관해 주세요.", "This copy differs from the saved work. Download a backup to keep both versions.")
     : blockedReason === "work-mismatch"
-      ? "다른 작품의 그림이에요. 덮어쓰지 않고 백업 파일로 보관해 주세요."
+      ? bt("다른 작품의 그림이에요. 덮어쓰지 않고 백업 파일로 보관해 주세요.", "This drawing belongs to another work. Download a backup to keep it.")
       : blockedReason
         ? t("studio.brushCanvasStatus.canvas.recoveryBlockedUnverified", "안전하게 열 수 있는지 확인하지 못했어요. 먼저 백업 파일을 받아 주세요.")
         : null;
   const manualRestoreRequired = blockedReason === null && !autoRestore;
   const fallbackDescription = error
     ?? (manualRestoreRequired
-      ? "이 탭이 저장을 맡는지 확인하지 못해 자동으로 열지 않았어요. 현재 그림은 그대로 유지됩니다."
-      : "자동 복원이 끝나지 않았어요. 현재 그림은 바꾸지 않았습니다. 다시 이어 열거나 새 그림을 시작할 수 있어요.");
+      ? bt("이 탭이 저장을 맡는지 확인하지 못해 자동으로 열지 않았어요. 현재 그림은 그대로 유지됩니다.", "The drawing is unchanged. This tab could not confirm it can save, so recovery needs your confirmation.")
+      : bt("자동 복원이 끝나지 않았어요. 현재 그림은 바꾸지 않았습니다. 다시 이어 열거나 새 그림을 시작할 수 있어요.", "Your current drawing is unchanged. Retry recovery or start a new drawing."));
   const description = blockedDescription ?? fallbackDescription;
 
   return (
@@ -127,7 +129,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
     >
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 basis-48" role="status" aria-live="polite">
-          <h2 id={titleId} className="font-bold">{blockedReason ? "남겨 둔 그림을 보관해 주세요" : manualRestoreRequired ? "저장 상태를 확인해 주세요" : t("studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailedTitle", "자동으로 이어 열지 못했어요")}</h2>
+          <h2 id={titleId} className="font-bold">{blockedReason ? bt("남겨 둔 그림을 보관해 주세요", "Keep a backup of the earlier drawing") : manualRestoreRequired ? bt("저장 상태를 확인해 주세요", "Check the save status") : t("studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailedTitle", "자동으로 이어 열지 못했어요")}</h2>
           <p className="mt-1 leading-relaxed text-fg-2">{description}</p>
         </div>
         <div className="flex max-w-full flex-wrap gap-2">
@@ -139,7 +141,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
             className={cn(actionClass, "bg-accent text-on-accent hover:bg-accent-2")}
           >
             {busy === "restore" ? <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden /> : blockedReason ? <Download size={15} aria-hidden /> : <RotateCcw size={15} aria-hidden />}
-            {busy === "restore" ? t("studio.brushCanvasStatus.canvas.recoveryOpening", "그림 여는 중…") : blockedReason ? "백업 파일 받기" : manualRestoreRequired ? "이어서 그리기" : "다시 이어 열기"}
+            {busy === "restore" ? t("studio.brushCanvasStatus.canvas.recoveryOpening", "그림 여는 중…") : blockedReason ? bt("백업 파일 받기", "Download backup") : manualRestoreRequired ? bt("이어서 그리기", "Continue drawing") : bt("다시 이어 열기", "Retry recovery")}
           </button>
           <a
             href={newDrawingHref}
@@ -156,12 +158,12 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
             }}
             className={cn(actionClass, "border border-line bg-card text-fg-2 hover:bg-raised", busy && "pointer-events-none opacity-50")}
           >
-            새 그림 그리기 <span className="text-[0.65rem]">새 탭</span>
+            {bt("새 그림 그리기", "Start a new drawing")} <span className="text-[0.65rem]">{bt("새 탭", "New tab")}</span>
           </a>
         </div>
       </div>
       <p className="mt-2 text-[0.7rem] leading-relaxed text-fg-3">
-        새 탭에서 시작합니다. 현재 그림과 남겨 둔 작업은 유지돼요.
+        {bt("새 탭에서 시작합니다. 현재 그림과 남겨 둔 작업은 유지돼요.", "The new tab opens a blank drawing. Both existing drawings stay here.")}
       </p>
       <button
         type="button"
@@ -171,24 +173,24 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
         onClick={() => setExpanded(!expanded)}
         className={cn(actionClass, "mt-1 text-fg-2 hover:bg-raised")}
       >
-        다른 방법 <span aria-hidden>{expanded ? "▴" : "▾"}</span>
+        {bt("다른 방법", "More options")} <span aria-hidden>{expanded ? "▴" : "▾"}</span>
       </button>
       {expanded && (
         <div id={detailsId} className="mt-1 border-t border-line pt-2">
           <p className="leading-relaxed text-fg-2">
-            현재 그림은 ‘파일 → 저장 기록’에 먼저 보관합니다. 실패하면 이어 열지 않아요.
+            {bt("현재 그림은 ‘파일 → 저장 기록’에 먼저 보관합니다. 실패하면 이어 열지 않아요.", "A copy of the current drawing is saved in File → Save history before recovery starts.")}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {!blockedReason && (
               <button type="button" disabled={busy !== null} onClick={() => void run("backup")} className={cn(actionClass, "border border-line hover:bg-raised")}>
-                <Download size={14} aria-hidden /> 백업 파일 받기
+                <Download size={14} aria-hidden /> {bt("백업 파일 받기", "Download backup")}
               </button>
             )}
             <button type="button" disabled={busy !== null} onClick={() => void run("delete")} className={cn(actionClass, "text-bad hover:bg-bad/10")}>
-              <Trash2 size={14} aria-hidden /> {busy === "delete" ? t("studio.brushCanvasStatus.canvas.recoveryDeletingCheck", "삭제 확인 중…") : "이전 그림 삭제…"}
+              <Trash2 size={14} aria-hidden /> {busy === "delete" ? t("studio.brushCanvasStatus.canvas.recoveryDeletingCheck", "삭제 확인 중…") : bt("이전 그림 삭제…", "Delete earlier drawing…")}
             </button>
           </div>
-          <p className="mt-2 text-[0.7rem] leading-relaxed text-fg-3">백업에는 이전 그림이 담겨요. 삭제는 현재 캔버스가 아닌 이전 그림에 적용되며, 확인 후 되돌릴 수 없어요.</p>
+          <p className="mt-2 text-[0.7rem] leading-relaxed text-fg-3">{bt("백업에는 이전 그림이 담겨요. 삭제는 현재 캔버스가 아닌 이전 그림에 적용되며, 확인 후 되돌릴 수 없어요.", "The backup contains the earlier drawing. Deleting it is permanent once confirmed. Your current canvas stays here.")}</p>
         </div>
       )}
       {error && <p role="alert" className="mt-2 leading-relaxed text-bad">{error}</p>}

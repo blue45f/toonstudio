@@ -23,6 +23,10 @@ import {
   importStudioProjectPackage,
 } from "../../../apps/web/src/domains/creator/save-first/studio-project-package-import";
 import {
+  importedTestPorts,
+  readImportedTestSnapshot,
+} from "../../../apps/web/src/domains/creator/save-first/studio-project-package-import-test-fixture";
+import {
   buildStudioProjectWorkspacePackageEntries,
   collectStudioProjectWorkspaceSnapshots,
 } from "../../../apps/web/src/domains/creator/save-first/studio-project-workspace-snapshots";
@@ -191,6 +195,7 @@ describe("Track A: 합성 프로젝트 한글/emoji/중첩 scene·layer/빈값/�
       new File([built.blob], built.fileName, { type: built.blob.type }),
       {
         storage: targetStorage,
+        autosavePorts: importedTestPorts(targetStorage),
         now: "2026-11-06T12:30:00.000Z",
         createProjectId: () => "track-a-imported",
         createDocumentId: () => `doc-${++docCounter}`,
@@ -216,7 +221,7 @@ describe("Track A: 합성 프로젝트 한글/emoji/중첩 scene·layer/빈값/�
     expect(importedArchivedDoc.status).toBe("archived");
     expect(importedArchivedDoc.title).toContain(fixture.hangulJamoText);
 
-    const restoredMainAutosave = readStudioAutosave(
+    const restoredMainAutosave = await readImportedTestSnapshot(
       targetStorage,
       studioAutosaveKey({ userId: null, workId: importedMainDoc.id }),
     );
@@ -225,6 +230,12 @@ describe("Track A: 합성 프로젝트 한글/emoji/중첩 scene·layer/빈값/�
     expect(restoredMainAutosave!.payload.description).toBe(fixture.primarySnapshot.description);
     expect(restoredMainAutosave!.payload.tagsText).toBe(fixture.primarySnapshot.tagsText);
     expect(restoredMainAutosave!.payload.currentPageId).toBe("page-2");
+    const archived = await readImportedTestSnapshot(
+      targetStorage,
+      studioAutosaveKey({ userId: null, workId: importedArchivedDoc.id }),
+    );
+    expect(archived?.payload.title).toBe(fixture.archivedEmptyElementsSnapshot.title);
+    expect(archived?.payload.pagesList).toEqual(fixture.archivedEmptyElementsSnapshot.pagesList);
 
     const page1 = restoredMainAutosave!.payload.pagesList[0] as Record<string, unknown>;
     expect(page1.name).toBe(`표지 컷 ${fixture.emojiComplexText}`);
@@ -909,7 +920,7 @@ describe("Track A: 합성 프로젝트 한글/emoji/중첩 scene·layer/빈값/�
     const importedTrashedTarget = createMemoryStorage();
     const importedTrashed = await importStudioProjectPackage(
       new File([trashedPkg.blob], trashedPkg.fileName, { type: trashedPkg.blob.type }),
-      { storage: importedTrashedTarget, now: fixture.savedAt },
+      { storage: importedTrashedTarget, autosavePorts: importedTestPorts(importedTrashedTarget), now: fixture.savedAt },
     );
     // 재현: 원본 프로젝트는 status === "trashed"이나 import 결과는 "active"로 풀림
     expect(trashedProj.status).toBe("trashed");

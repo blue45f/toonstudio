@@ -16,9 +16,8 @@ import type { BilingualText } from "@/shared/lib/i18n-bilingual-copy";
  * - 진입 안내는 이 계획만 소비한다. 새 표면을 추가하면 이 표부터 채워야 한다.
  *
  * 등급 정의:
- * - "touch-edit": 태블릿 터치만으로 컷 편집·간단 수정 최소 동선이 끝까지 배선된 표면.
- * - "touch-assisted": 표면 자체는 보기·간단 조정까지, 실제 수정은 캔버스 최소 동선으로
- *   돌아와서 하는 표면. 표면 고유의 정밀 작업은 데스크톱 몫을 명시한다.
+ * - "touch-edit": 터치로 주요 편집 동선을 수행하고 결과를 원고에 반영하거나 파일로 받을 수 있는 표면.
+ * - "touch-assisted": 터치로 수행할 수 있는 일부 작업과 검증된 조작 범위를 별도로 안내하는 표면.
  * - "desktop-required": 이 기기에서는 보기만 된다. 표면 자체의 편집은 진입 시점에
  *   "안 된다"고 먼저 알리고 데스크톱 경로를 안내한다.
  */
@@ -143,61 +142,79 @@ export const STUDIO_MOBILE_TOUCH_PLANS: Readonly<Record<StudioWorkspaceSurface, 
   },
   character: {
     surface: "character",
-    tier: "touch-assisted",
+    tier: "touch-edit",
     label: { ko: "캐릭터 셰이퍼", en: "Character shaper" },
     canDo: [
-      { ko: "모바일 시트(접기·반·전체)로 캐릭터 보기·간단 조정", en: "View and lightly adjust the character with the mobile sheet (collapsed, half, full)" },
+      { ko: "얼굴·헤어·의상·포즈 프리셋을 골라 적용하거나 실행 취소하기", en: "Apply face, hair, clothing and pose presets, or undo a change" },
+      { ko: "편집한 캐릭터를 PNG로 저장하기", en: "Save the edited character as a PNG" },
       GOTO_CANVAS_SIMPLE_EDIT,
       AUTOSAVE_CONTINUE,
     ],
     cannotDo: [
-      { ko: "정밀 체형 수치·세부 조정은 이 기기에서 안 돼요 — 데스크톱에서 해 주세요", en: "Precise proportion values and fine adjustments are unavailable here — do it on desktop" },
+      { ko: "모델이 지원하지 않는 파츠와 프리셋은 적용할 수 없어요. 선택 가능한 카드를 골라 주세요.", en: "Only parts and presets supported by the current model can be applied. Choose an available card." },
     ],
-    steps: ASSISTED_STEPS,
+    steps: [
+      { id: "choose-part", label: { ko: "편집할 파츠 열기", en: "Open the part you want to edit" } },
+      { id: "apply-preset", label: { ko: "프리셋을 눌러 결과 확인하기", en: "Tap a preset to see the result" } },
+      { id: "export-character", label: { ko: "완성한 캐릭터를 PNG로 저장하기", en: "Save the finished character as a PNG" } },
+    ],
   },
   bg3d: {
     surface: "bg3d",
-    tier: "desktop-required",
+    tier: "touch-edit",
     label: { ko: "3D 배경", en: "3D backgrounds" },
     canDo: [
-      { ko: "3D 장면 보기·돌려 보기와 상태 확인", en: "View and orbit the 3D scene and check its status" },
+      { ko: "배경이나 소품을 고른 뒤 장면을 눌러 배치하기", en: "Choose a background or prop, then tap the scene to place it" },
+      { ko: "추천 구도로 카메라를 맞추고 원고에 컷으로 넣기", en: "Frame the camera with a suggested view and insert the shot into the manuscript" },
       GOTO_CANVAS_SIMPLE_EDIT,
       AUTOSAVE_CONTINUE,
     ],
     cannotDo: [
-      { ko: "3D 배치·변형·장면 편집 자체는 이 기기에서 안 돼요 — 데스크톱에서 해 주세요", en: "Placing, transforming and editing the 3D scene itself is unavailable here — do it on desktop" },
-      { ko: "모델 가져오기·정밀 카메라 작업은 데스크톱에서 해 주세요", en: "Model import and precise camera work are desktop work" },
+      { ko: "WebGPU 화면이 열리지 않으면 ‘WebGL2로 계속’을 눌러 보세요. 두 방식 모두 지원하지 않으면 3D 장면을 표시할 수 없어요.", en: "If WebGPU cannot open the scene, try continuing with WebGL2. The 3D scene needs one of these renderers." },
     ],
-    steps: DESKTOP_REQUIRED_STEPS,
+    steps: [
+      { id: "pick-background", label: { ko: "장면 도우미에서 배경 또는 소품 고르기", en: "Choose a background or prop in Scene Assistant" } },
+      { id: "place-in-scene", label: { ko: "장면에서 놓을 곳 누르기", en: "Tap where you want to place it" } },
+      { id: "frame-shot", label: { ko: "추천 구도로 카메라 맞추기", en: "Apply a suggested camera view" } },
+      { id: "insert-shot", label: { ko: "원고에 넣고 해당 컷 확인하기", en: "Insert the shot and check it in the manuscript" } },
+    ],
   },
   poser: {
     surface: "poser",
-    tier: "desktop-required",
+    tier: "touch-edit",
     label: { ko: "포저", en: "Poser" },
     canDo: [
-      { ko: "모델·포즈 보기·돌려 보기", en: "View and orbit the model and pose" },
+      { ko: "캐릭터를 골라 돌려 보고 모델이 지원하는 포즈와 표정 적용하기", en: "Choose a character, orbit the view and apply supported poses and expressions" },
+      { ko: "원고에 캐릭터를 넣고 레이어 확인하기", en: "Insert the character and check its layer in the manuscript" },
       GOTO_CANVAS_SIMPLE_EDIT,
       AUTOSAVE_CONTINUE,
     ],
     cannotDo: [
-      { ko: "관절·포즈 정밀 조정은 이 기기에서 안 돼요 — 데스크톱에서 해 주세요", en: "Precise joint and pose adjustment is unavailable here — do it on desktop" },
-      { ko: "본·리깅 작업은 데스크톱에서 해 주세요", en: "Bone and rigging work is desktop work" },
+      { ko: "모델에 없는 관절이나 표정은 조절할 수 없어요. 필요한 동작을 지원하는 캐릭터를 골라 주세요.", en: "A joint or expression must exist on the model to adjust it. Choose a character that supports the pose you need." },
     ],
-    steps: DESKTOP_REQUIRED_STEPS,
+    steps: [
+      { id: "pick-character", label: { ko: "캐릭터 고르기", en: "Choose a character" } },
+      { id: "pose-character", label: { ko: "포즈를 적용하고 돌려 보기", en: "Apply a pose and orbit the view" } },
+      { id: "insert-character", label: { ko: "원고에 넣어 레이어 확인하기", en: "Insert the character and check the layer" } },
+    ],
   },
   dcc: {
     surface: "dcc",
-    tier: "desktop-required",
+    tier: "touch-assisted",
     label: { ko: "3D 작업대", en: "3D workbench" },
     canDo: [
-      { ko: "작업 상태·장면 보기", en: "View the work state and scene" },
+      { ko: "‘맞춤 두상·계단’에서 도형을 고르고 계단의 단수 정하기", en: "Choose a shape in Custom head and stairs and set the step count" },
+      { ko: "도형을 추가하고 .toon3d 작업파일로 저장하기", en: "Add the shape and save a .toon3d workfile" },
       GOTO_CANVAS_SIMPLE_EDIT,
-      AUTOSAVE_CONTINUE,
     ],
     cannotDo: [
-      { ko: "모델링·조각·CAD 정밀 작업은 이 기기에서 안 돼요 — 데스크톱에서 해 주세요", en: "Modeling, sculpting and CAD precision work is unavailable here — do it on desktop" },
+      { ko: "3D 미리보기에는 WebGL2가 필요해요. 미리보기가 열리지 않아도 작업파일을 저장해 다른 기기에서 이어갈 수 있어요.", en: "The 3D preview needs WebGL2. If it cannot open, save a workfile to continue on another device." },
     ],
-    steps: DESKTOP_REQUIRED_STEPS,
+    steps: [
+      { id: "pick-primitive", label: { ko: "맞춤 두상 또는 계단 고르기", en: "Choose a custom head or staircase" } },
+      { id: "add-primitive", label: { ko: "치수를 정하고 도형 추가하기", en: "Set the dimensions and add the shape" } },
+      { id: "save-workfile", label: { ko: "다른 기기로 옮기려면 .toon3d 작업파일 저장하기", en: "Save a .toon3d workfile to move it to another device" } },
+    ],
   },
 };
 

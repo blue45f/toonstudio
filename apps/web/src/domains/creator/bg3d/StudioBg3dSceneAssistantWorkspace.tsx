@@ -16,13 +16,11 @@ import { StudioBg3dAssistantScenePicker } from "./StudioBg3dAssistantScenePicker
 import { getStudioBg3dEnvironmentAsset } from "./studio-bg3d-environment-catalog";
 import { studioBg3dAssistantLocationId, type StudioBg3dSceneChoice } from "./studio-bg3d-assistant-location";
 import { StudioBg3dEditorViewport } from "./StudioBg3dEditorViewport";
-import { AssetCard, AssistantStepper, GoalPicker, SheetHandle, type StudioBg3dAssistantAssetItem as AssistantAsset } from "./StudioBg3dSceneAssistantChrome";
+import { AssetCard, AssistantStepper, GoalPicker, SceneAssistantTouchGuide, SheetHandle, type StudioBg3dAssistantAssetItem as AssistantAsset } from "./StudioBg3dSceneAssistantChrome";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
-import {
-  STUDIO_BG3D_ASSISTANT_CAMERA_PRESETS, STUDIO_BG3D_ASSISTANT_OUTPUT_STYLES, STUDIO_BG3D_ASSISTANT_STEPS,
-  nextStudioBg3dAssistantStep, previousStudioBg3dAssistantStep, studioBg3dAssistantOutputSettings, studioBg3dAssistantStepIndex,
-} from "./studio-bg3d-scene-assistant";
+import { STUDIO_BG3D_ASSISTANT_CAMERA_PRESETS, STUDIO_BG3D_ASSISTANT_OUTPUT_STYLES, STUDIO_BG3D_ASSISTANT_STEPS, nextStudioBg3dAssistantStep, previousStudioBg3dAssistantStep, studioBg3dAssistantOutputSettings, studioBg3dAssistantStepIndex } from "./studio-bg3d-scene-assistant";
 import type { StudioBg3dAssistantGoal, StudioBg3dAssistantOutputStyle, StudioBg3dAssistantSheetState, StudioBg3dAssistantStep } from "./studio-bg3d-scene-assistant";
+
 import "./studio-bg3d-scene-assistant.css";
 import "../studio-3d-ui/studio-3d-illustrated-chrome.css";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -809,6 +807,7 @@ export function StudioBg3dSceneAssistantWorkspace({
         <div className="scene-assistant__panel-scroll">
           <StudioBg3dAssistantHostReadinessBanner host={h} hasDraftScene={hasScene} />
           <StudioScene3dBg3dCutPanel host={h} preferredExpanded={false} />
+          <SceneAssistantTouchGuide />
           {preparingModel && <p role="status" className="scene-assistant__notice">
             {bt(`${preparingModel} 배치 준비 중…`, `Preparing ${preparingModel} for placement…`)}
           </p>}

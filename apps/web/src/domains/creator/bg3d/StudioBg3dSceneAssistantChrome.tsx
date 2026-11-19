@@ -5,6 +5,7 @@ import {
   ChevronUp,
   ImagePlus,
 } from "lucide-react";
+import { resolveStudioMobileTouchPlan } from "../studio-mobile-touch-flow";
 import { StudioToolArtwork, type StudioArtworkTool } from "../studio-tool-art/StudioToolArtwork";
 
 import {
@@ -15,6 +16,27 @@ import {
   type StudioBg3dAssistantSheetState,
   type StudioBg3dAssistantStep,
 } from "./studio-bg3d-scene-assistant";
+
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+
+export function SceneAssistantTouchGuide() {
+  const bt = useBilingual("SceneAssistantTouchGuide");
+  const { canDo, cannotDo, tier } = resolveStudioMobileTouchPlan("bg3d");
+  return (
+    <details
+      data-studio-mobile-touch-tier={tier}
+      className="mx-3 hidden border-b border-line text-sm text-fg max-lg:block [@media(pointer:coarse)_and_(max-width:1366px)]:block"
+    >
+      <summary className="min-h-11 cursor-pointer py-3 font-semibold focus-visible:outline-accent">
+        {bt("터치 작업 안내", "Touch editing guide")}
+      </summary>
+      <ul className="list-disc space-y-1 pb-2 ps-5">
+        {canDo.map((entry) => <li key={entry.ko}>{bt(entry.ko, entry.en)}</li>)}
+      </ul>
+      {cannotDo.map((entry) => <p className="pb-3 text-fg-2" key={entry.ko}>{bt(entry.ko, entry.en)}</p>)}
+    </details>
+  );
+}
 
 export interface StudioBg3dAssistantAssetItem {
   readonly id: string;
