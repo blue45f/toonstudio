@@ -565,4 +565,31 @@ describe("StudioWebtoonAssistantModal — smart skill router & workflow packs", 
 
     expect(within(rofanCard).getByRole("button", { name: "적용됨" })).toBeTruthy();
   });
+
+  it("saves current settings as a custom Workflow Pack and copies a Rights Receipt & deep link", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(globalThis.navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
+    fireEvent.click(tabById("workflow-packs"));
+
+    fireEvent.change(screen.getByLabelText("내 커스텀 팩 이름"), {
+      target: { value: "내 연재 1화 팩" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "현재 세팅 저장" }));
+    expect(screen.getByText("내 연재 1화 팩")).toBeTruthy();
+
+    const rofanCard = document.querySelector("[data-workflow-pack-id='rofan-episode1-starter']") as HTMLElement;
+    fireEvent.click(within(rofanCard).getByRole("button", { name: "공유 링크" }));
+    expect(await within(rofanCard).findByText("링크 복사됨")).toBeTruthy();
+
+    fireEvent.click(within(rofanCard).getByRole("button", { name: "저작권 증명서" }));
+    expect(await within(rofanCard).findByText("증명서 복사됨")).toBeTruthy();
+    expect(writeText).toHaveBeenCalledTimes(2);
+    expect(writeText.mock.calls[0][0]).toContain("workflowPack=");
+    expect(writeText.mock.calls[1][0]).toContain("integrityHash");
+  });
 });
