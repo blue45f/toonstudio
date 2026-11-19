@@ -228,6 +228,21 @@ export class StudioLiveGesturePreviewRoomAdapter {
     for (const listener of [...this.listeners]) listener();
   }
 
+  /** 백그라운드 탭 복귀 직후 지연된 프리뷰·rAF 알림을 즉시 정리하고 플러시한다. */
+  reconcileAfterVisibilityResume(): void {
+    if (this.disposed) return;
+    const now = this.now();
+    if (
+      this.lastRoomEventAt !== null
+      && now - this.lastRoomEventAt > STUDIO_LIVE_GESTURE_PREVIEW_SLEEP_WAKE_GAP_MS
+    ) {
+      this.clearTransientState();
+    } else {
+      this.reconcileFromStore();
+    }
+    this.flushPendingNotifications();
+  }
+
   dispose(): void {
     if (this.disposed) return;
     if (this.pendingNotificationFrame !== null) {

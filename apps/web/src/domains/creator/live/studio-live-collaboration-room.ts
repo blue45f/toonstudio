@@ -837,6 +837,25 @@ export class StudioLiveRoom {
     return this.droppedUnknownInkAuthorFrames;
   }
 
+  /** 현재 발신·수신 추적 중인 활성 잉크 스트로크 총합(장시간 진단 HUD용). */
+  getActiveInkStrokeCount(): number {
+    let total = this.outboundInkTracker.activeStrokeCount;
+    for (const tracker of this.inboundInkTrackerByAuthor.values()) {
+      total += tracker.activeStrokeCount;
+    }
+    return total;
+  }
+
+  /**
+   * 브라우저 백그라운드 탭 스로틀링 해제(`visibilitychange` -> visible) 직후 호출한다.
+   * 지연된 타이머 주기를 기다리지 않고 만료 피어·잠금·고아 잉크를 즉시 정리하고 잉크 큐를 펌핑한다.
+   */
+  reconcileAfterVisibilityResume(): void {
+    if (!this.ready) return;
+    this.pruneExpired(this.now());
+    this.pumpInkQueue();
+  }
+
   /**
    * Legacy fire-and-observe compatibility shim. Server callers that must gate a mutation on the
    * authoritative lease should await `claimLockAsync` instead of interpreting this boolean as ACK.

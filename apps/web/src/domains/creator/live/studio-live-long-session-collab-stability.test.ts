@@ -42,6 +42,11 @@ import {
   type StudioLiveInkChunk,
 } from "./studio-live-ink-protocol";
 import {
+  StudioAdaptiveSaveScheduler,
+  collectStudioLiveLongSessionDiagnostics,
+  serializeStudioLiveDiagnosticsJson,
+} from "./studio-live-long-session-diagnostics";
+import {
   STUDIO_LIVE_P2P_STALE_PEER_TTL_MS,
   applyStudioLiveP2pOverlay,
 } from "./studio-live-p2p-overlay-transport";
@@ -635,5 +640,73 @@ describe("long-session multi-user collaborative drawing stability", () => {
     now += STUDIO_LIVE_INK_ACTIVE_STROKE_TTL_MS + 100;
     expect(tracker.pruneExpired(now)).toEqual(["clock-skew-stroke"]);
     expect(tracker.activeStrokeCount).toBe(0);
+  });
+
+  it("collects 6-metric diagnostics JSON and defers autosave during active input under a strict maxWait cap", () => {
+    const healthy = collectStudioLiveLongSessionDiagnostics({
+      activeInkStrokes: 2,
+      settledStrokeCount: 3,
+      undoHistoryDepth: 42,
+      outboxQueueSize: 0,
+      p2pRelayFallbackPeers: 0,
+      heapUsedMb: 184.5,
+      now: () => 9_000_000,
+    });
+    expect(healthy.status).toBe("healthy");
+    const parsed = JSON.parse(serializeStudioLiveDiagnosticsJson(healthy)) as Record<string, unknown>;
+    expect(parsed.undoHistoryDepth).toBe(42);
+    expect(parsed.heapUsedMb).toBe(184.5);
+
+    const degraded = collectStudioLiveLongSessionDiagnostics({
+      activeInkStrokes: 8,
+      outboxQueueSize: 40,
+      heapUsedMb: 812,
+      now: () => 9_000_000,
+    });
+    expect(degraded.status).toBe("degraded");
+
+    let now = 1_000;
+    const timers: { id: number; run: () => void; dueAt: number }[] = [];
+    let nextTimerId = 1;
+    const onSave = vi.fn();
+    const scheduler = new StudioAdaptiveSaveScheduler({
+      idleDelayMs: 1_500,
+      maxWaitMs: 10_000,
+      onSave,
+      now: () => now,
+      setTimeout: (fn, delayMs) => {
+        const entry = { id: nextTimerId++, run: fn, dueAt: now + delayMs };
+        timers.push(entry);
+        return entry.id;
+      },
+      clearTimeout: (handle) => {
+        const index = timers.findIndex((entry) => entry.id === handle);
+        if (index >= 0) timers.splice(index, 1);
+      },
+    });
+
+    // Active local drawing defers idle save, but maxWait ceiling guarantees durability.
+    scheduler.markLocalInputActive(true);
+    scheduler.markDirty();
+    expect(scheduler.hasPendingSave).toBe(true);
+    expect(onSave).toHaveBeenCalledTimes(0);
+    expect(timers).toHaveLength(1);
+    expect(timers[0]!.dueAt).toBe(11_000);
+
+    // Trigger maxWait ceiling while user is still drawing continuously.
+    now = 11_000;
+    timers.shift()!.run();
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(scheduler.hasPendingSave).toBe(false);
+
+    // When local input pauses, idle timer fires promptly after idleDelayMs.
+    scheduler.markDirty();
+    scheduler.markLocalInputActive(false);
+    const idleTimer = timers.find((entry) => entry.dueAt === 12_500);
+    expect(idleTimer).toBeDefined();
+    now = 12_500;
+    idleTimer!.run();
+    expect(onSave).toHaveBeenCalledTimes(2);
+    scheduler.dispose();
   });
 });
