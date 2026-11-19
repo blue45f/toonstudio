@@ -165,6 +165,32 @@ function readBootstrapSource(): string {
   return readFileSync(BOOTSTRAP_PATH, "utf8");
 }
 
+function readBuiltStaticModuleGraph(
+  assetDirectory: string,
+  entryAsset: string,
+  javascriptAssets: readonly string[]
+): ReadonlyMap<string, string> {
+  const sources = new Map<string, string>();
+  const pending = [entryAsset];
+  while (pending.length > 0) {
+    const asset = pending.pop();
+    if (asset === undefined || sources.has(asset)) continue;
+    expect(javascriptAssets, asset).toContain(asset);
+    const code = readFileSync(join(assetDirectory, asset), "utf8");
+    sources.set(asset, code);
+    const source = ts.createSourceFile(asset, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+    for (const statement of source.statements) {
+      if (!ts.isImportDeclaration(statement) && !ts.isExportDeclaration(statement)) continue;
+      const specifier = statement.moduleSpecifier;
+      if (!specifier) continue;
+      if (!ts.isStringLiteralLike(specifier)) throw new Error("출하 청크의 정적 모듈 경로가 문자열이 아닙니다.");
+      expect(specifier.text, asset).toMatch(/^\.\//u);
+      pending.push(specifier.text.slice(2));
+    }
+  }
+  return sources;
+}
+
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -433,7 +459,10 @@ describe("revision comparison Worker strict-CSP bootstrap", () => {
       const runtimeAsset = javascriptAssets.find((name) =>
         /^studio-revision-compare\.worker-[\w-]+\.js$/u.test(name));
       expect(runtimeAsset).toBeDefined();
-      const runtimeCode = readFileSync(join(assetDirectory, runtimeAsset!), "utf8");
+      if (!runtimeAsset) throw new Error("출하된 버전 비교 Worker 진입 자산이 없습니다.");
+      // Zod가 분리돼도 Worker의 정적 import/export로 도달하는 출하 청크만 검사한다.
+      const runtimeSources = readBuiltStaticModuleGraph(assetDirectory, runtimeAsset, javascriptAssets);
+      const runtimeCode = [...runtimeSources.values()].join("\n");
       expect(runtimeCode).toContain("__zod_globalConfig");
       expect(runtimeCode).toContain("Cloudflare");
       expect(runtimeCode).toContain("Function");
