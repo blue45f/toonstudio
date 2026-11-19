@@ -9,6 +9,58 @@ export async function visibleStudioControl(locator: Locator, description: string
   return visible;
 }
 
+/** 실제로 마운트된 셸의 사용자 조작 진입점을 기다린다. 로딩 표지만으로 준비를 선언하지 않는다. */
+export async function waitForStudioShellHydration(page: Page, timeoutMs = 60_000): Promise<void> {
+  const editor = '[data-studio-editor="true"]:visible';
+  const hydrated = page.locator([
+    `${editor}[data-studio-drawing-clarity="true"] [data-studio-clarity-more-trigger="true"]:visible`,
+    `${editor}:not([data-studio-drawing-clarity="true"]) [data-studio-command-bar-settings-trigger="true"]`,
+  ].join(", "));
+  await hydrated.waitFor({ state: "attached", timeout: timeoutMs });
+  if (await hydrated.count() !== 1) throw new Error("Studio 셸 준비 진입점은 정확히 하나여야 합니다.");
+}
+
+export interface StudioWorkspaceDormancy {
+  gateCount: number;
+  heavyMenuCount: number;
+  dialogCount: number;
+  triggerCount: number;
+  triggerVisible: boolean;
+}
+
+export function studioWorkspaceDormancyMatches(snapshot: StudioWorkspaceDormancy, clarity: boolean): boolean {
+  const expectedGateCount = clarity ? 0 : 1;
+  return snapshot.gateCount === expectedGateCount && snapshot.triggerCount === expectedGateCount
+    && snapshot.heavyMenuCount === 0 && snapshot.dialogCount === 0 && !snapshot.triggerVisible;
+}
+
+async function workspaceDormancy(page: Page): Promise<StudioWorkspaceDormancy> {
+  const trigger = page.locator('button[aria-haspopup="dialog"][aria-label^="작업공간:"]');
+  const triggerCount = await trigger.count();
+  return {
+    gateCount: await page.getByTestId("studio-workspace-menu-gate").count(),
+    heavyMenuCount: await page.getByTestId("studio-workspace-menu").count(),
+    dialogCount: await page.getByTestId("studio-workspace-dialog").count(),
+    triggerCount,
+    triggerVisible: triggerCount > 0 && await trigger.isVisible(),
+  };
+}
+
+/** 기본 그리기에는 관리자도 게이트도 없고, 실제 창 배치를 요청한 뒤에만 경량 게이트가 생긴다. */
+export async function inspectStudioMobileWorkspaceMenuDormancy(page: Page) {
+  await waitForStudioShellHydration(page, 5_000);
+  const editor = await visibleStudioControl(page.locator('[data-studio-editor="true"]'), "Studio 편집기");
+  const clarity = await editor.getAttribute("data-studio-drawing-clarity") === "true";
+  const beforeIntent = await workspaceDormancy(page);
+  if (!studioWorkspaceDormancyMatches(beforeIntent, clarity)) {
+    throw new Error(`요청 전 작업공간 관리자가 휴면 상태가 아닙니다: ${JSON.stringify(beforeIntent)}`);
+  }
+  await showStudioProjectWindowTools(page);
+  await page.getByTestId("studio-workspace-menu-gate").waitFor({ state: "attached", timeout: 5_000 });
+  const afterIntent = await workspaceDormancy(page);
+  return { ...afterIntent, beforeIntent, ok: studioWorkspaceDormancyMatches(afterIntent, false) };
+}
+
 const CLARITY_ACTION_CATEGORIES: Readonly<Record<string, string>> = {
   pages: "document", layers: "document", assets: "document",
   brush: "drawing", character3d: "drawing", all: "drawing", search: "drawing",

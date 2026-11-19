@@ -11,6 +11,16 @@
   "module": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
+    "./admin-cloud-workboard": {
+      "types": "./src/admin-cloud-workboard.ts",
+      "import": "./src/admin-cloud-workboard.ts",
+      "default": "./src/admin-cloud-workboard.ts"
+    },
+    "./ai-operations": {
+      "types": "./src/ai-operations.ts",
+      "import": "./src/ai-operations.ts",
+      "default": "./src/ai-operations.ts"
+    },
     "./business-plan": {
       "types": "./src/business-plan.ts",
       "import": "./src/business-plan.ts",
