@@ -34,6 +34,7 @@ import type { PackagePanelLoader } from "./package-panel/browser-package-loader"
 import type { PackageReadyState } from "./package-panel/PackageDetail";
 import type { KitBaseId, KitManifest, LabFailure, RecipeSource } from "../../../contracts";
 import type { AuthoredIndexEntry } from "../../../domains/authored/package-index";
+import type { AuthoredPackageLoadResult, PackageIndexLoadResult } from "../../../domains/authored/package-load-flow";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { KitPlanRegistry, KitRecipeSource } from "../kit-plan-registry";
 
