@@ -1,6 +1,11 @@
 import { buildWorkflowPackExportReceiptAttachment } from "../assistant/studio-workflow-pack-export-bundle";
 
 import {
+  buildStudioAiOptOutManifest,
+  serializeStudioAiOptOutManifest,
+  type StudioAiOptOutManifest,
+} from "./studio-ai-optout-manifest";
+import {
   buildCutPerceptualRightsEntry,
   serializeCutPerceptualRightsLedger,
   type CutPerceptualRightsLedger,
@@ -31,6 +36,9 @@ export interface EpisodeDeliveryPackage {
   readonly ledgerJson: string;
   readonly dossierFilename: string;
   readonly dossierMarkdown: string;
+  readonly aiOptOutFilename: string;
+  readonly aiOptOutManifestJson: string;
+  readonly aiOptOutManifest: StudioAiOptOutManifest;
   readonly dossier: EpisodeRightsDossier;
   readonly ledger: CutPerceptualRightsLedger;
   readonly packageIntegrityHash: string;
@@ -46,12 +54,13 @@ function fnv1aHex(input: string): string {
 }
 
 /**
- * 원고 납품 ZIP에 포함되는 Rights BOM 증명서 · PNG 메타데이터 · 퍼셉추얼 원장 · IP 실사 리포트를
- * 단일 결정적 패키지로 묶어 생성한다.
+ * 원고 납품 ZIP에 포함되는 Rights BOM 증명서 · PNG 메타데이터 · 퍼셉추얼 원장 ·
+ * IP 실사 리포트 · AI 학습 금지(TDMRep) 매니페스트를 단일 결정적 패키지로 묶어 생성한다.
  */
 export function buildEpisodeDeliveryPackage(params: {
   readonly seriesTitle: string;
   readonly episodeLabel: string;
+  readonly rightsHolder?: string;
   readonly pack: StudioWorkflowPack;
   readonly cuts: readonly EpisodeDeliveryCutInput[];
   readonly generatedAtIso?: string;
@@ -78,8 +87,18 @@ export function buildEpisodeDeliveryPackage(params: {
     [{ episodeLabel: params.episodeLabel, receipt: attachment.receipt }],
     generatedAtIso,
   );
+  const aiOptOutManifest = buildStudioAiOptOutManifest({
+    seriesTitle: params.seriesTitle,
+    episodeLabel: params.episodeLabel,
+    rightsHolder: params.rightsHolder,
+    receipt: attachment.receipt,
+    ledger,
+    issuedAtIso: generatedAtIso,
+  });
+
   const ledgerJson = serializeCutPerceptualRightsLedger(ledger);
   const dossierMarkdown = formatEpisodeRightsDossierMarkdown(dossier);
+  const aiOptOutManifestJson = serializeStudioAiOptOutManifest(aiOptOutManifest);
 
   const packageIntegrityHash = fnv1aHex(
     JSON.stringify({
@@ -87,6 +106,7 @@ export function buildEpisodeDeliveryPackage(params: {
       episodeLabel: params.episodeLabel,
       receiptHash: attachment.receipt.integrityHash,
       dossierHash: dossier.dossierHash,
+      aiOptOutHash: aiOptOutManifest.manifestIntegrityHash,
       cutHashes: ledger.entries.map((e) => e.dHash64),
     }),
   );
@@ -104,6 +124,9 @@ export function buildEpisodeDeliveryPackage(params: {
     ledgerJson,
     dossierFilename: "IP-RIGHTS-DOSSIER.md",
     dossierMarkdown,
+    aiOptOutFilename: "ai-training-optout.json",
+    aiOptOutManifestJson,
+    aiOptOutManifest,
     dossier,
     ledger,
     packageIntegrityHash,
