@@ -19,10 +19,8 @@ import {
   isFinitePixelPair,
   reportBoundaryFailure,
   reportInvalidPivotWorld,
-  safeComputeWorldTransforms,
 } from "./skeleton-boundary-guard";
 
-import type { SkeletonBoundaryOptions } from "./skeleton-boundary-guard";
 import type { HumanoidBoneName, HudSample, JointDragHandle, LabFailure, Pose, SkeletonData, Vec3 } from "../../../contracts";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
 
