@@ -49,15 +49,15 @@ export function StudioMultiFormatIpKitPanel({
 
   return (
     <div
-      className="flex flex-col gap-6 border-t border-line pt-4 text-xs text-fg break-keep"
+      className="flex flex-col gap-6 border-t border-line pt-4 text-xs text-fg break-keep [overflow-wrap:break-word]"
       role="tabpanel"
       aria-label="멀티포맷 및 오프라인 QR 키트"
     >
       {/* 1. 멀티포맷 원클릭 배포 규격 선택 */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h4 className="flex items-center gap-2 text-sm font-semibold text-fg">
-            <FileText className="size-4 text-accent" aria-hidden="true" />
+          <h4 className="flex items-center gap-2 text-sm font-semibold leading-[1.35] tracking-[-0.015em] text-fg">
+            <FileText className="size-4 shrink-0 text-accent" strokeWidth={1.5} aria-hidden="true" />
             멀티포맷 배포 규격 ({MULTI_FORMAT_DISTRIBUTION_SPECS.length}종)
           </h4>
           <span className="font-mono text-[11px] tabular-nums text-fg-2">
@@ -65,7 +65,7 @@ export function StudioMultiFormatIpKitPanel({
           </span>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {MULTI_FORMAT_DISTRIBUTION_SPECS.map((spec) => {
             const selected = spec.id === activeFormat.id;
             return (
@@ -74,13 +74,13 @@ export function StudioMultiFormatIpKitPanel({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => setSelectedFormat(spec.id)}
-                className={`flex min-h-11 flex-col gap-1 rounded-xl p-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                className={`flex min-h-11 flex-col gap-1 rounded-xl p-3 text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   selected
                     ? "bg-accent-soft text-accent ring-1 ring-accent"
                     : "bg-card text-fg hover:bg-raised"
                 }`}
               >
-                <span className="font-semibold">{spec.labelKo}</span>
+                <span className="font-semibold leading-[1.4]">{spec.labelKo}</span>
                 <span className="font-mono text-[11px] tabular-nums text-fg-2">
                   {spec.resolutionLabel} · 권장 {spec.recommendedCuts}컷
                 </span>
@@ -106,25 +106,27 @@ export function StudioMultiFormatIpKitPanel({
       {/* 2. 원천 텍스트 → 파일럿 3컷 시드 변환 & 45자 호흡 점검 */}
       <div className="grid gap-4 border-t border-line pt-4 md:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <h4 className="text-sm font-semibold text-fg">원천 스토리 → 파일럿 3컷 시드</h4>
+          <h4 className="text-sm font-semibold leading-[1.35] tracking-[-0.015em] text-fg">
+            원천 스토리 → 파일럿 3컷 시드
+          </h4>
           <label className="flex flex-col gap-1.5 text-fg-2">
-            <span>설화·웹소설·경험 원문 (문장 단위로 3컷 분할)</span>
+            <span className="leading-[1.5]">설화·웹소설·경험 원문 (문장 단위로 3컷 분할)</span>
             <textarea
               rows={4}
               value={sourceText}
               onChange={(e) => setSourceText(e.target.value)}
-              className="rounded-xl border border-line bg-card p-3 text-xs leading-5 text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="rounded-xl border border-line bg-card p-3 text-xs leading-[1.6] tracking-[-0.01em] text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
           </label>
-          <p className="inline-flex items-center gap-1.5 text-[11px] font-medium">
+          <p className="inline-flex items-center gap-1.5 text-[11px] font-medium leading-[1.5]">
             {pilotPlan.pacingPass ? (
               <>
-                <CheckCircle2 className="size-3.5 text-good" aria-hidden="true" />
+                <CheckCircle2 className="size-3.5 shrink-0 text-good" strokeWidth={1.5} aria-hidden="true" />
                 <span className="text-good">모든 컷 말풍선 45자 호흡 기준 통과</span>
               </>
             ) : (
               <>
-                <AlertTriangle className="size-3.5 text-warn" aria-hidden="true" />
+                <AlertTriangle className="size-3.5 shrink-0 text-warn" strokeWidth={1.5} aria-hidden="true" />
                 <span className="text-warn">45자를 초과한 컷 대사를 줄여 모바일 가독성을 확보하세요</span>
               </>
             )}
@@ -133,20 +135,20 @@ export function StudioMultiFormatIpKitPanel({
 
         <ol className="divide-y divide-line/60 rounded-xl bg-card px-3.5">
           {pilotPlan.cuts.map((cut) => (
-            <li key={cut.index} className="flex flex-col gap-1 py-2.5">
+            <li key={cut.index} className="flex flex-col gap-1 py-3">
               <div className="flex items-center justify-between gap-2">
-                <strong className="text-fg">
+                <strong className="font-semibold text-fg">
                   {cut.roleLabelKo} · {cut.cameraShotKo}
                 </strong>
                 <span
-                  className={`font-mono text-[11px] tabular-nums ${
+                  className={`shrink-0 font-mono text-[11px] tabular-nums ${
                     cut.overBalloonLimit ? "text-warn" : "text-fg-3"
                   }`}
                 >
                   {cut.charCount}/45자
                 </span>
               </div>
-              <p className="text-fg-2">{cut.dialogueLineKo}</p>
+              <p className="leading-[1.6] tracking-[-0.01em] text-fg-2">{cut.dialogueLineKo}</p>
             </li>
           ))}
         </ol>
@@ -155,8 +157,8 @@ export function StudioMultiFormatIpKitPanel({
       {/* 3. 오프라인 QR 체험 & 굿즈 BOM 수익 시뮬레이터 */}
       <div className="grid gap-4 border-t border-line pt-4 md:grid-cols-2">
         <div className="flex flex-col gap-3">
-          <h4 className="flex items-center gap-2 text-sm font-semibold text-fg">
-            <Package className="size-4 text-accent" aria-hidden="true" />
+          <h4 className="flex items-center gap-2 text-sm font-semibold leading-[1.35] tracking-[-0.015em] text-fg">
+            <Package className="size-4 shrink-0 text-accent" strokeWidth={1.5} aria-hidden="true" />
             오프라인 QR 체험 · 굿즈 BOM 빌더
           </h4>
           <div className="grid grid-cols-2 gap-2">
@@ -178,6 +180,7 @@ export function StudioMultiFormatIpKitPanel({
               <span>제작 수량(개)</span>
               <input
                 type="number"
+                inputMode="numeric"
                 min={10}
                 max={10_000}
                 value={quantity}
@@ -189,6 +192,7 @@ export function StudioMultiFormatIpKitPanel({
               <span>판매가(원)</span>
               <input
                 type="number"
+                inputMode="numeric"
                 min={1000}
                 step={1000}
                 value={unitPriceKrw}
@@ -203,8 +207,8 @@ export function StudioMultiFormatIpKitPanel({
               checked={includeQrStampCard}
               onChange={(e) => setIncludeQrStampCard(e.target.checked)}
             />
-            <QrCode className="size-3.5 text-accent" aria-hidden="true" />
-            <span>오프라인 QR 4컷 스탬프 카드 동봉 (+350원/개)</span>
+            <QrCode className="size-3.5 shrink-0 text-accent" strokeWidth={1.5} aria-hidden="true" />
+            <span className="leading-[1.5]">오프라인 QR 4컷 스탬프 카드 동봉 (+350원/개)</span>
           </label>
         </div>
 
@@ -212,7 +216,7 @@ export function StudioMultiFormatIpKitPanel({
           <div className="flex items-center justify-between gap-2 border-b border-line/60 pb-2">
             <span className="font-semibold text-fg">{goodsReport.skuLabelKo}</span>
             <span
-              className={`font-semibold tabular-nums ${
+              className={`shrink-0 font-semibold tabular-nums ${
                 goodsReport.printReady ? "text-good" : "text-warn"
               }`}
             >
@@ -233,10 +237,10 @@ export function StudioMultiFormatIpKitPanel({
               </dd>
             </div>
           </dl>
-          <p className="text-[11px] text-fg-2">인쇄 규격: {goodsReport.bleedSpecKo}</p>
-          <p className="text-[11px] text-fg-2">{goodsReport.qrFlowSummaryKo}</p>
+          <p className="text-[11px] leading-[1.6] text-fg-2">인쇄 규격: {goodsReport.bleedSpecKo}</p>
+          <p className="text-[11px] leading-[1.6] text-fg-2">{goodsReport.qrFlowSummaryKo}</p>
           {goodsReport.blockersKo.length > 0 ? (
-            <ul className="space-y-1 text-[11px] font-medium text-warn">
+            <ul className="space-y-1 text-[11px] font-medium leading-[1.55] text-warn">
               {goodsReport.blockersKo.map((blocker) => (
                 <li key={blocker}>· {blocker}</li>
               ))}

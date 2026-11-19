@@ -76,51 +76,51 @@ export function IpExchangeQuickPanel() {
   return (
     <section
       aria-label="B2B IP 사업화 및 조립형 3D 셀러 리소스 Fit"
-      className="flex flex-col gap-4 rounded-2xl border border-line bg-panel p-5 text-fg break-keep"
+      className="flex flex-col gap-4 rounded-2xl border border-line bg-panel p-4 text-fg break-keep [overflow-wrap:break-word] sm:p-5"
     >
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
+      <header className="flex flex-col gap-3 border-b border-line pb-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold tracking-tight text-fg">
+          <h2 className="text-base font-semibold leading-[1.3] tracking-[-0.015em] text-fg">
             B2B IP 사업화 · 조립형 3D 셀러 Fit 보드
           </h2>
-          <p className="mt-1 text-xs text-fg-2">
+          <p className="mt-1 text-xs leading-[1.6] tracking-[-0.01em] text-fg-2">
             상업 Rights BOM이 검증된 원천 IP 2차 판권 패키지와 1m 조립형 3D 배경 리소스를 한눈에 검토합니다.
           </p>
         </div>
-        <div role="tablist" aria-label="마켓 확장 보기" className="flex gap-1.5">
+        <div role="tablist" aria-label="마켓 확장 보기" className="grid w-full grid-cols-2 gap-1.5 sm:flex sm:w-auto">
           <button
             type="button"
             role="tab"
             aria-selected={tab === "ip-deals"}
             onClick={() => setTab("ip-deals")}
-            className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 text-xs font-medium transition-colors duration-150 ${
+            className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-medium leading-[1.35] transition-colors duration-150 ${
               tab === "ip-deals"
                 ? "bg-accent-soft text-accent"
                 : "bg-card text-fg-2 hover:bg-raised hover:text-fg"
             }`}
           >
-            <Briefcase className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
-            B2B IP 판권 보드
+            <Briefcase className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+            <span>B2B IP 판권 보드</span>
           </button>
           <button
             type="button"
             role="tab"
             aria-selected={tab === "seller-3d"}
             onClick={() => setTab("seller-3d")}
-            className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 text-xs font-medium transition-colors duration-150 ${
+            className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-medium leading-[1.35] transition-colors duration-150 ${
               tab === "seller-3d"
                 ? "bg-accent-soft text-accent"
                 : "bg-card text-fg-2 hover:bg-raised hover:text-fg"
             }`}
           >
-            <Box className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
-            조립형 3D 셀러 Fit
+            <Box className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+            <span>조립형 3D 셀러 Fit</span>
           </button>
         </div>
       </header>
 
       {tab === "ip-deals" ? (
-        <div className="grid gap-3 md:grid-cols-3" role="tabpanel" aria-label="B2B IP 판권 보드">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3" role="tabpanel" aria-label="B2B IP 판권 보드">
           {SAMPLE_IP_DEALS.map((deal) => {
             const assessment = evaluateB2bIpDealReadiness(deal);
             return (
@@ -134,23 +134,25 @@ export function IpExchangeQuickPanel() {
                       {assessment.readinessScore}점
                     </span>
                   </div>
-                  <h3 className="mt-1.5 text-sm font-semibold text-fg">{deal.title}</h3>
-                  <p className="mt-0.5 text-fg-2">
+                  <h3 className="mt-1.5 text-sm font-semibold leading-[1.35] tracking-[-0.01em] text-fg">
+                    {deal.title}
+                  </h3>
+                  <p className="mt-0.5 leading-[1.55] text-fg-2">
                     {deal.genre} · {deal.episodesReady}화 확보
                   </p>
                 </div>
                 <div className="flex flex-col gap-1.5 border-t border-line/60 pt-2.5">
                   <p className="inline-flex items-center gap-1 font-medium">
                     {assessment.status === "deal-ready" ? (
-                      <CheckCircle2 className="size-3.5 text-good" strokeWidth={1.5} aria-hidden="true" />
+                      <CheckCircle2 className="size-3.5 shrink-0 text-good" strokeWidth={1.5} aria-hidden="true" />
                     ) : (
-                      <ShieldAlert className="size-3.5 text-warn" strokeWidth={1.5} aria-hidden="true" />
+                      <ShieldAlert className="size-3.5 shrink-0 text-warn" strokeWidth={1.5} aria-hidden="true" />
                     )}
                     <span className={assessment.status === "deal-ready" ? "text-good" : "text-warn"}>
                       {assessment.statusLabelKo}
                     </span>
                   </p>
-                  <p className="tabular-nums text-fg-2">
+                  <p className="tabular-nums leading-[1.5] text-fg-2">
                     희망 MG {(deal.targetMgKrw / 10_000).toLocaleString("ko-KR")}만원 · 로열티{" "}
                     {deal.creatorRoyaltyPercent}%
                   </p>
@@ -160,13 +162,15 @@ export function IpExchangeQuickPanel() {
           })}
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2" role="tabpanel" aria-label="조립형 3D 셀러 Fit">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2" role="tabpanel" aria-label="조립형 3D 셀러 Fit">
           {SAMPLE_3D_SELLER_SETS.map((asset) => {
             const fit = evaluate3dSellerAssetFit(asset);
             return (
               <article key={asset.assetId} className="flex flex-col gap-2 rounded-xl bg-card p-4 text-xs">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-fg">{asset.title}</h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-sm font-semibold leading-[1.35] tracking-[-0.01em] text-fg">
+                    {asset.title}
+                  </h3>
                   <span
                     className={`shrink-0 rounded-md px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums ${
                       fit.tone === "good"
@@ -179,10 +183,10 @@ export function IpExchangeQuickPanel() {
                     {fit.badgeLabelKo}
                   </span>
                 </div>
-                <p className="tabular-nums text-fg-2">
+                <p className="tabular-nums leading-[1.5] text-fg-2">
                   포맷 {asset.format.toUpperCase()} · 리믹스 자동 로열티 {asset.autoRoyaltyPercent}%
                 </p>
-                <ul className="space-y-1 border-t border-line/60 pt-2 text-fg-2">
+                <ul className="space-y-1 border-t border-line/60 pt-2 leading-[1.6] text-fg-2">
                   {fit.notesKo.map((note) => (
                     <li key={note}>· {note}</li>
                   ))}
@@ -193,11 +197,11 @@ export function IpExchangeQuickPanel() {
         </div>
       )}
 
-      <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3 text-xs text-fg-2">
+      <footer className="flex flex-col gap-2.5 border-t border-line pt-3 text-xs leading-[1.6] tracking-[-0.01em] text-fg-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <span>계약·결제는 자동 실행되지 않으며 권리 BOM 확인 후 별도 협의로 진행됩니다.</span>
         <Link
           to="/studio/growth-ip#rights"
-          className="inline-flex min-h-10 items-center rounded-lg bg-raised px-3 font-medium text-fg transition-colors duration-150 hover:bg-accent-soft hover:text-accent"
+          className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-lg bg-raised px-3.5 font-medium text-fg transition-colors duration-150 hover:bg-accent-soft hover:text-accent sm:w-auto"
         >
           IP 확장 스튜디오에서 피치 바이블 만들기
         </Link>

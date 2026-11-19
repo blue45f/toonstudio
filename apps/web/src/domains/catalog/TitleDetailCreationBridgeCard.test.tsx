@@ -22,6 +22,8 @@ describe("TitleDetailCreationBridgeCard", () => {
       title: "안개 속의 신호",
       summary: "창작·뷰어 체험",
       create: "3컷 이야기 만들기",
+      pilot: "3컷 파일럿·IP 확장",
+      storyworld: "스토리월드·바이블",
       spatial: "공간 뷰어 체험",
       chat: "캐릭터와 대화하기",
     },
@@ -30,10 +32,12 @@ describe("TitleDetailCreationBridgeCard", () => {
       title: "Fog Signal",
       summary: "Create or try the viewer",
       create: "Create a 3-panel story",
+      pilot: "3-cut pilot & IP expansion",
+      storyworld: "Storyworld & IP bible",
       spatial: "Try the spatial viewer",
       chat: "Chat with characters",
     },
-  ])("$lang: 부가 활동을 접어 시작하고 펼치면 기존 목적지 3개를 제공한다", (copy) => {
+  ])("$lang: 부가 활동을 접어 시작하고 펼치면 창작·IP·뷰어 목적지 5개를 제공한다", (copy) => {
     useI18n.setState({ lang: copy.lang });
     render(
       <MemoryRouter>
@@ -52,9 +56,11 @@ describe("TitleDetailCreationBridgeCard", () => {
     fireEvent.click(summary);
     expect(card.hasAttribute("open")).toBe(true);
     const links = within(card).getAllByRole("link");
-    expect(links).toHaveLength(3);
+    expect(links).toHaveLength(5);
     expect(links.every((link) => link.className.includes("min-h-11"))).toBe(true);
     expect(within(card).getByRole("link", { name: copy.create }).getAttribute("href")).toBe("/create");
+    expect(within(card).getByRole("link", { name: copy.pilot }).getAttribute("href")).toBe("/studio/growth-ip#rights");
+    expect(within(card).getByRole("link", { name: copy.storyworld }).getAttribute("href")).toBe("/studio/storyworld");
     expect(within(card).getByRole("link", { name: copy.spatial }).getAttribute("href")).toBe("/read/spatial");
     expect(within(card).getByRole("link", { name: copy.chat }).getAttribute("href")).toBe("/character-chat?work=fog-signal");
     expect(within(card).getByText(new RegExp(copy.title))).toBeTruthy();
