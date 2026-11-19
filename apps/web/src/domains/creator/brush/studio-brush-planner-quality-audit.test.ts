@@ -87,6 +87,54 @@ describe("studio brush planner quality audit", () => {
     ).size).toBe(SHIPPED_CANDIDATES.length);
   });
 
+  it("같은 선 모양도 그리기와 지우기는 서로 다른 도구로 판정한다", () => {
+    const preset = BRUSH_PRESETS.find((candidate) => candidate.id === "gel-pen");
+    if (!preset) throw new Error("gel-pen preset is missing");
+    const shape = studioCoreBrushCatalogSelection(preset);
+    const report = auditStudioBrushPlannerQualityCatalogue([
+      { ...shape, catalogId: "paint-shape", operation: "paint" },
+      { ...shape, catalogId: "erase-shape", operation: "erase" },
+    ]);
+
+    expect(report.exactFingerprintGroups).toEqual([]);
+    expect(report.perceptualFingerprintGroups).toEqual([]);
+    expect(report.results[0]?.exactFingerprint).not.toBe(report.results[1]?.exactFingerprint);
+    expect(report.results[0]?.perceptualFingerprint).not.toBe(report.results[1]?.perceptualFingerprint);
+  });
+
+  it.each(["paint", "erase"] as const)("같은 %s 동작의 복제는 계속 중복으로 탐지한다", (operation) => {
+    const preset = BRUSH_PRESETS.find((candidate) => candidate.id === "gel-pen");
+    if (!preset) throw new Error("gel-pen preset is missing");
+    const shape = studioCoreBrushCatalogSelection(preset);
+    const report = auditStudioBrushPlannerQualityCatalogue([
+      { ...shape, catalogId: "first-copy", operation },
+      { ...shape, catalogId: "second-copy", operation },
+    ]);
+
+    expect(report.exactFingerprintGroups.map((group) => group.catalogIds))
+      .toEqual([["first-copy", "second-copy"]]);
+    expect(report.perceptualFingerprintGroups.map((group) => group.catalogIds))
+      .toEqual([["first-copy", "second-copy"]]);
+    expect(report.errorCount).toBe(2);
+    expect(report.ok).toBe(false);
+  });
+
+  it("동작이 없는 기존 입력은 명시적인 paint 입력과 같은 계약을 유지한다", () => {
+    const preset = BRUSH_PRESETS.find((candidate) => candidate.id === "gel-pen");
+    if (!preset) throw new Error("gel-pen preset is missing");
+    const { operation, ...legacy } = studioCoreBrushCatalogSelection(preset);
+    expect(operation).toBe("paint");
+    const report = auditStudioBrushPlannerQualityCatalogue([
+      { ...legacy, catalogId: "legacy-paint" },
+      { ...legacy, catalogId: "explicit-paint", operation },
+    ]);
+
+    expect(report.exactFingerprintGroups.map((group) => group.catalogIds))
+      .toEqual([["explicit-paint", "legacy-paint"]]);
+    expect(report.perceptualFingerprintGroups.map((group) => group.catalogIds))
+      .toEqual([["explicit-paint", "legacy-paint"]]);
+  });
+
   it("raises the weakest soft-media taps without flattening their low-opacity intent", () => {
     const tunedIds = [
       "bleeding-stain",

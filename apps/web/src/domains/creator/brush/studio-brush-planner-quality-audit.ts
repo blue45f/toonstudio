@@ -7,6 +7,8 @@
  * early-opacity clipping risk, speed-density response, and perceptual fingerprint collisions.
  */
 
+import type { StudioToolOperation } from "../studio-brush";
+
 import {
   auditStudioBrushContinuity,
   type StudioBrushContinuityAuditCandidate,
@@ -27,6 +29,8 @@ import {
 
 export interface StudioBrushPlannerQualityCandidate
   extends StudioBrushContinuityAuditCandidate {
+  /** 기존 감사 입력은 paint로 해석하며, 카탈로그의 명시적인 erase 동작을 보존한다. */
+  readonly operation?: StudioToolOperation;
   readonly category?: string;
   readonly previewStyle?: string;
 }
@@ -308,10 +312,12 @@ function opacityQuality(
 }
 
 function exactFingerprint(
+  candidate: StudioBrushPlannerQualityCandidate,
   continuity: StudioBrushContinuityAuditResult,
   material: StudioBrushMaterialResponse | null,
 ): string {
   return JSON.stringify({
+    operation: candidate.operation ?? "paint",
     continuity: continuity.behaviorFingerprint,
     material: material?.fingerprints.combined ?? null,
   });
@@ -323,6 +329,7 @@ function perceptualFingerprint(
   material: StudioBrushMaterialResponse | null,
 ): string {
   return JSON.stringify({
+    operation: candidate.operation ?? "paint",
     strategy: continuity.renderStrategy,
     family: continuity.renderFamily,
     width: quantized(candidate.defaultWidth, 1),
@@ -528,7 +535,7 @@ export function auditStudioBrushPlannerQualityCatalogue(
       speed: speedQuality(continuity),
       opacity: opacityQuality(candidate, continuity, material),
     };
-    const exact = exactFingerprint(continuity, material);
+    const exact = exactFingerprint(candidate, continuity, material);
     const perceptual = perceptualFingerprint(candidate, continuity, material);
     const findings = baseFindings(base);
     return {
