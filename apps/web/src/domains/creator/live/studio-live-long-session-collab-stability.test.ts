@@ -14,7 +14,11 @@ import {
   trimStudioCrdtHistoryWindow,
 } from "./studio-crdt-history";
 import { SqliteStudioCrdtOutbox } from "./studio-crdt-outbox";
-import { STUDIO_CRDT_PROTOCOL_VERSION, type StudioCrdtUpdateRequest } from "./studio-crdt-protocol";
+import {
+  STUDIO_CRDT_PROTOCOL_VERSION,
+  STUDIO_CRDT_STROKE_PAYLOAD_VERSION,
+  type StudioCrdtUpdateRequest,
+} from "./studio-crdt-protocol";
 import { createStudioLiveEnvelope, type StudioLiveParticipant } from "./studio-live-collaboration-protocol";
 import { STUDIO_LIVE_GESTURE_PREVIEW_VERSION } from "./studio-live-gesture-preview";
 import {
@@ -588,11 +592,17 @@ describe("long-session multi-user collaborative drawing stability", () => {
         id: `compact-stroke-${index}`,
         pageId: "page-1",
         layerId: "layer-1",
-        points: [index, index, index + 10, index + 12],
-        pressures: [0.5, 0.7],
-        stroke: "#111111",
-        strokeWidth: 4,
-        opacity: 1,
+        payload: {
+          version: STUDIO_CRDT_STROKE_PAYLOAD_VERSION,
+          type: "draw",
+          kind: "freehand",
+          mode: "pen",
+          points: [index, index, index + 10, index + 12],
+          pressures: [0.5, 0.7],
+          stroke: "#111111",
+          strokeWidth: 4,
+          opacity: 1,
+        },
       });
     }
     unsubscribe();

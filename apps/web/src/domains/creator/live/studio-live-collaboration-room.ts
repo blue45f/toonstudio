@@ -88,6 +88,7 @@ import {
   studioLiveLockResourcesConflict,
 } from "@/shared/lib/studio-live-lock-resource";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
+import * as roomDefaults from "./studio-live-room-defaults";
 import {
   boundedTiming,
   canEditStudioLiveGesturePreview,
@@ -318,21 +319,6 @@ export interface StudioLiveRoomOptions {
   dependencies?: StudioLiveRoomDependencies;
 }
 
-function defaultRandomId(): string {
-  if (typeof crypto === "undefined" || typeof crypto.randomUUID !== "function") {
-    throw new Error("안전한 공동작업 세션 식별자를 만들 수 없습니다.");
-  }
-  return crypto.randomUUID();
-}
-
-function defaultSetInterval(handler: () => void, delay: number): unknown {
-  return globalThis.setInterval(handler, delay);
-}
-
-function defaultClearInterval(handle: unknown): void {
-  globalThis.clearInterval(handle as ReturnType<typeof setInterval>);
-}
-
 /** V18 ink shares the gesture-preview authoring gate: only edit-capable roles may stream. */
 const canPublishStudioLiveInk = canEditStudioLiveGesturePreview;
 
@@ -415,13 +401,11 @@ export class StudioLiveRoom {
     const deps = options.dependencies ?? {};
     this.transportFactory = deps.transportFactory ?? createStudioLocalLiveTransport;
     this.now = deps.now ?? Date.now;
-    this.randomId = deps.randomId ?? defaultRandomId;
-    this.scheduleInterval = deps.setInterval ?? defaultSetInterval;
-    this.cancelInterval = deps.clearInterval ?? defaultClearInterval;
-    this.scheduleTimeout = deps.setTimeout ?? ((handler, delay) => globalThis.setTimeout(handler, delay));
-    this.cancelTimeout =
-      deps.clearTimeout ??
-      ((handle) => globalThis.clearTimeout(handle as ReturnType<typeof setTimeout>));
+    this.randomId = deps.randomId ?? roomDefaults.defaultRandomId;
+    this.scheduleInterval = deps.setInterval ?? roomDefaults.defaultSetInterval;
+    this.cancelInterval = deps.clearInterval ?? roomDefaults.defaultClearInterval;
+    this.scheduleTimeout = deps.setTimeout ?? roomDefaults.defaultSetTimeout;
+    this.cancelTimeout = deps.clearTimeout ?? roomDefaults.defaultClearTimeout;
     this.heartbeatMs = boundedTiming(deps.heartbeatMs, DEFAULT_HEARTBEAT_MS, 250, 30_000);
     this.presenceTtlMs = boundedTiming(
       deps.presenceTtlMs,
