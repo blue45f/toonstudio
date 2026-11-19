@@ -86,7 +86,7 @@ describe("StudioWebtoonAssistantModal — shell", () => {
     expect(document.body.style.overflow).toBe("hidden");
   });
 
-  it("keeps the whole canvas content and 8 feature tabs reachable", () => {
+  it("keeps the whole canvas content and 9 feature tabs reachable", () => {
     render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
 
     expect(screen.getByText(/웹툰 창작 보조 센터/)).toBeTruthy();
@@ -99,6 +99,7 @@ describe("StudioWebtoonAssistantModal — shell", () => {
       "피부/그림자 컬러 조화",
       "마감 & 포커스플로우",
       "인체 크로키 & 구도 가이드",
+      "워크플로우 팩",
       "배우면서 만들기",
     ]);
     // 플랫폼 라벨은 스펙 모듈이 단일 출처다 — 여기서 문자열을 다시 적지 않는다.
@@ -165,6 +166,7 @@ describe("StudioWebtoonAssistantModal — tab accessibility", () => {
     // roving tabIndex: 선택된 탭만 tabbable.
     expect(tabs.map((tab) => tab.getAttribute("tabindex"))).toEqual([
       "0",
+      "-1",
       "-1",
       "-1",
       "-1",
@@ -536,5 +538,31 @@ describe("StudioWebtoonAssistantModal — tension map tab", () => {
       expect(tabLeftToBrowser(true)).toBe(false);
       expect(document.activeElement).toBe(methodRegion);
     });
+  });
+});
+
+
+describe("StudioWebtoonAssistantModal — smart skill router & workflow packs", () => {
+  it("routes a creator query directly to the matching tab via the smart router bar", () => {
+    render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
+
+    const input = screen.getByLabelText("스마트 도구 자동 추천 검색");
+    fireEvent.change(input, { target: { value: "로판 워크플로우 팩" } });
+
+    const routerBar = screen.getByTestId("studio-assistant-skill-router");
+    fireEvent.click(within(routerBar).getByRole("button", { name: "워크플로우 팩" }));
+
+    expect(screen.getByTestId("studio-workflow-packs-tab")).toBeTruthy();
+  });
+
+  it("applies a Studio Workflow Pack in one click and updates platform & timer state", () => {
+    render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
+
+    fireEvent.click(tabById("workflow-packs"));
+    const rofanCard = document.querySelector("[data-workflow-pack-id='rofan-episode1-starter']") as HTMLElement;
+    expect(rofanCard).not.toBeNull();
+    fireEvent.click(within(rofanCard).getByRole("button", { name: "팩 일괄 적용" }));
+
+    expect(within(rofanCard).getByRole("button", { name: "적용됨" })).toBeTruthy();
   });
 });
