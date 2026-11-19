@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Check, FastForward, ListChecks, SkipForward, Sparkles, Wand2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, FastForward, FileText, ListChecks, PenLine, SkipForward } from "lucide-react";
 import { useEffect, useId, useRef, type KeyboardEvent } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -84,9 +84,9 @@ export function MyStoryAskStage({
   }
 
   return (
-    <section aria-labelledby={titleId} className="space-y-5">
+    <section aria-labelledby={titleId} className="space-y-5 break-keep [overflow-wrap:break-word]">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-fg-2">
+        <p className="text-sm font-semibold tabular-nums text-fg-2">
           <span className="text-accent">
             {bt(`질문 ${progress.index} / ${progress.total}`, `Question ${progress.index} of ${progress.total}`)}
           </span>
@@ -149,10 +149,10 @@ export function MyStoryAskStage({
       </nav>
 
       <div className="space-y-2">
-        <h2 id={titleId} className="text-xl font-bold leading-snug text-fg sm:text-2xl">
+        <h2 id={titleId} className="text-xl font-semibold leading-[1.3] tracking-[-0.02em] text-fg sm:text-2xl">
           {bt(question.promptKo, question.promptEn)}
         </h2>
-        <p id={exampleId} className="text-sm leading-6 text-fg-2">
+        <p id={exampleId} className="text-sm leading-[1.6] tracking-[-0.01em] text-fg-2">
           {bt(`예시: ${question.exampleKo}`, `Example: ${question.exampleEn}`)}
         </p>
         <textarea
@@ -164,7 +164,7 @@ export function MyStoryAskStage({
           onKeyDown={onKeyDown}
           aria-labelledby={titleId}
           aria-describedby={[exampleId, countId, hintId, sensitiveKinds.length > 0 ? sensitiveId : null].filter(Boolean).join(" ")}
-          className="min-h-32 w-full resize-y rounded-xl border border-line bg-panel px-3 py-2.5 text-base leading-7 text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
+          className="min-h-32 w-full resize-y rounded-xl border border-line bg-panel px-3 py-2.5 text-base leading-[1.65] text-fg outline-none transition-colors duration-150 focus:border-accent focus:ring-2 focus:ring-accent/30"
         />
         <div
           role="group"
@@ -174,9 +174,9 @@ export function MyStoryAskStage({
           <button
             type="button"
             onClick={() => onAnswer(locale === "ko" ? question.exampleKo : question.exampleEn)}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-panel/70 px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-panel px-3 py-1.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg"
           >
-            <Sparkles size={13} aria-hidden="true" className="text-accent" />
+            <FileText size={13} strokeWidth={1.5} aria-hidden="true" className="text-accent" />
             {bt("예시 문장 바로 넣기", "Insert example")}
           </button>
           <button
@@ -192,26 +192,26 @@ export function MyStoryAskStage({
                 }),
               )
             }
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft/50 px-3 py-1.5 text-xs font-bold text-accent transition-colors hover:border-accent"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent transition-opacity duration-150 hover:opacity-90"
           >
-            <Wand2 size={13} aria-hidden="true" />
+            <PenLine size={13} strokeWidth={1.5} aria-hidden="true" />
             {bt("내 이야기 흐름에 맞춰 자동 추천", "Smart contextual suggestion")}
           </button>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-fg-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs leading-[1.55] text-fg-3">
           <p id={hintId}>
             {bt(
               "비워 두고 넘어가도 돼요. 빈 칸은 초안에도 빈칸으로 남아요. Ctrl+Enter로도 넘어갈 수 있어요.",
               "You can leave it empty; it stays blank in the draft. Ctrl+Enter also moves on.",
             )}
           </p>
-          <p id={countId}>{Array.from(answer).length} / {MY_STORY_ANSWER_MAX_LENGTH}</p>
+          <p id={countId} className="tabular-nums">{Array.from(answer).length} / {MY_STORY_ANSWER_MAX_LENGTH}</p>
         </div>
         {sensitiveKinds.length > 0 ? (
           <p
             id={sensitiveId}
             role="status"
-            className="rounded-xl border border-warn/40 bg-warn/10 p-3 text-xs leading-5 text-fg"
+            className="rounded-xl bg-warn/10 p-3 text-xs leading-[1.6] text-fg"
           >
             {bt(
               `개인 정보처럼 보이는 내용이 있어요 (${sensitiveNames.ko}). 꼭 필요한 게 아니라면 지우거나 호칭으로 바꿔 주세요.`,
@@ -221,31 +221,31 @@ export function MyStoryAskStage({
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
         <button
           type="button"
           onClick={onPrev}
           disabled={session.step <= 0}
-          className={buttonClass({ variant: "outline", size: "md", className: "min-h-11 gap-1.5" })}
+          className={buttonClass({ variant: "outline", size: "md", className: "min-h-11 justify-center gap-1.5" })}
         >
-          <ArrowLeft size={15} aria-hidden />
+          <ArrowLeft size={15} strokeWidth={1.5} aria-hidden />
           {bt("이전", "Back")}
         </button>
         <button
           type="button"
           onClick={onNext}
-          className={buttonClass({ variant: blank ? "outline" : "solid", size: "md", className: "min-h-11 gap-1.5" })}
+          className={buttonClass({ variant: blank ? "outline" : "solid", size: "md", className: "min-h-11 justify-center gap-1.5" })}
         >
           {forwardLabel}
-          {blank ? <SkipForward size={15} aria-hidden /> : <ArrowRight size={15} aria-hidden />}
+          {blank ? <SkipForward size={15} strokeWidth={1.5} aria-hidden /> : <ArrowRight size={15} strokeWidth={1.5} aria-hidden />}
         </button>
         <button
           type="button"
           onClick={onReview}
           disabled={!answeredAny}
-          className={buttonClass({ variant: "quiet", size: "md", className: "min-h-11 gap-1.5" })}
+          className={buttonClass({ variant: "quiet", size: "md", className: "col-span-2 min-h-11 justify-center gap-1.5 sm:col-span-1" })}
         >
-          <FastForward size={15} aria-hidden />
+          <FastForward size={15} strokeWidth={1.5} aria-hidden />
           {bt("여기까지로 초안 보기", "See the draft so far")}
         </button>
       </div>

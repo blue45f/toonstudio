@@ -1,9 +1,10 @@
-import { ArrowLeft, Clapperboard, Info, PenLine, RotateCcw, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Clapperboard, Globe2, Info, PenLine, RotateCcw, TriangleAlert } from "lucide-react";
 import { useId, useState, type Ref } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+import Link from "@/shared/navigation/router-link";
 
 import { MyStoryAiPanel } from "./MyStoryAiPanel";
 import type { MyStoryTextCompleter } from "./my-story-ai";
@@ -68,10 +69,10 @@ function CutRow({
   return (
     <li className={cn("rounded-xl border bg-panel/40 p-4", cut.blank ? "border-dashed border-line-strong" : "border-line")}>
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <h3 className="text-sm font-bold text-fg">
+        <h3 className="text-sm font-semibold tabular-nums text-fg">
           {bt(`컷 ${cut.index} · ${cut.labelKo}`, `Panel ${cut.index} · ${cut.labelEn}`)}
           {cut.blank ? (
-            <span className="ml-2 rounded-full border border-warn/40 bg-warn/10 px-2 py-0.5 text-[0.7rem] font-semibold text-fg">
+            <span className="ml-2 rounded-md bg-warn/15 px-2 py-0.5 text-[0.7rem] font-medium text-warn">
               {bt("빈칸", "Blank")}
             </span>
           ) : null}
@@ -182,17 +183,17 @@ export function MyStoryReviewStage({
   const tone = MY_STORY_TONES[draft.toneId];
 
   return (
-    <section aria-labelledby={`${baseId}-heading`} className="space-y-6">
+    <section aria-labelledby={`${baseId}-heading`} className="space-y-6 break-keep [overflow-wrap:break-word]">
       <div className="space-y-2">
         <h2
           id={`${baseId}-heading`}
           ref={headingRef}
           tabIndex={-1}
-          className="text-xl font-bold text-fg outline-none sm:text-2xl"
+          className="text-xl font-semibold leading-[1.25] tracking-[-0.02em] text-fg outline-none sm:text-2xl"
         >
           {bt("초안 미리보기", "Draft preview")}
         </h2>
-        <p className="text-sm leading-6 text-fg-2">
+        <p className="text-sm tabular-nums leading-[1.6] tracking-[-0.01em] text-fg-2">
           {bt(
             `컷 ${draft.cuts.length}장 중 ${draft.filledCuts}장이 채워졌고, 빈칸은 ${draft.blankCuts}장이에요. 초안은 답변을 컷에 배치한 것이고, 없는 내용을 만들어 넣지 않았어요.`,
             `${draft.filledCuts} of ${draft.cuts.length} panels are filled and ${draft.blankCuts} are blank. The draft only places your answers into panels; nothing was invented.`,
@@ -312,27 +313,34 @@ export function MyStoryReviewStage({
       />
 
       <div className="rounded-2xl border border-accent/40 bg-accent-soft p-4 sm:p-5">
-        <h3 className="text-base font-bold text-fg">{bt("스튜디오에서 이어 만들기", "Continue in the studio")}</h3>
-        <p className="mt-1.5 text-sm leading-6 text-fg-2">
+        <h3 className="text-base font-semibold tracking-[-0.015em] text-fg">{bt("스튜디오에서 이어 만들기", "Continue in the studio")}</h3>
+        <p className="mt-1.5 text-sm leading-[1.6] tracking-[-0.01em] text-fg-2">
           {bt(
             `새 작품에 대본과 ${draft.cutCount}컷 계획을 저장하고 대본 화면을 열어요. 내용을 확인한 뒤 ‘이어서 그리기’로 원고를 열어 직접 그릴 수 있어요.`,
             `Save the script and ${draft.cutCount}-panel plan in a new work and open the script view. Review it, then choose “Continue drawing” to open the manuscript and draw.`,
           )}
         </p>
         <p className="mt-1.5 text-sm text-fg-2">
-          {bt("작품 제목", "Work title")}: <strong className="text-fg">{draft.title}</strong>
+          {bt("작품 제목", "Work title")}: <strong className="font-semibold text-fg">{draft.title}</strong>
         </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
           <button
             type="button"
             onClick={onOpen}
             disabled={opening}
             aria-busy={opening}
-            className={buttonClass({ variant: "solid", size: "lg", className: "min-h-11 gap-2" })}
+            className={buttonClass({ variant: "solid", size: "lg", className: "min-h-11 w-full justify-center gap-2 sm:w-auto" })}
           >
-            <Clapperboard size={16} aria-hidden />
+            <Clapperboard size={16} strokeWidth={1.5} aria-hidden />
             {opening ? bt("여는 중…", "Opening…") : openError ? bt("다시 시도", "Try again") : bt("스튜디오에서 열기", "Open in the studio")}
           </button>
+          <Link
+            href="/studio/growth-ip#rights"
+            className={buttonClass({ variant: "outline", size: "lg", className: "min-h-11 w-full justify-center gap-2 sm:w-auto" })}
+          >
+            <Globe2 size={16} strokeWidth={1.5} aria-hidden />
+            {bt("IP 확장 · QR 단행본 키트", "IP expansion & QR book kit")}
+          </Link>
         </div>
         {openError ? (
           <p role="alert" className="mt-3 rounded-xl border border-bad/40 bg-bad/10 p-3 text-sm leading-6 text-fg">
