@@ -8,6 +8,7 @@ import {
 
 import {
   STUDIO_DEFAULT_QUALITY_BRUSH_CATALOG_ITEMS,
+  STUDIO_DEFAULT_QUALITY_ERASER_BRUSH_CATALOG_ITEMS,
   STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS,
   STUDIO_LISTED_ERASER_BRUSH_CATALOG_ITEMS,
   STUDIO_LISTED_PAINT_BRUSH_CATALOG_ITEMS,
@@ -39,7 +40,13 @@ describe("original material product integration", () => {
       STUDIO_DEFAULT_QUALITY_BRUSH_CATALOG_ITEMS.length,
     );
     expect(STUDIO_LISTED_PAINT_BRUSH_CATALOG_ITEMS.length).toBeGreaterThan(86);
-    expect(STUDIO_LISTED_ERASER_BRUSH_CATALOG_ITEMS).toHaveLength(2);
+    // 기본 품질 대표와 검색 가능한 전체 지우개의 정체성을 각각 고정한다.
+    expect(STUDIO_DEFAULT_QUALITY_ERASER_BRUSH_CATALOG_ITEMS.map(({ id }) => id)).toEqual([
+      "standard-eraser", "kneaded-eraser",
+    ]);
+    expect(STUDIO_LISTED_ERASER_BRUSH_CATALOG_ITEMS.map(({ id }) => id)).toEqual([
+      "standard-eraser", "kneaded-eraser", "precision-eraser", "broad-eraser", "lift-eraser",
+    ]);
   });
 
   it.each(STUDIO_MATERIAL_BRUSH_DEFINITIONS)("preserves $program through Korean search, selection and an explicit editing-start handoff", async (definition) => {

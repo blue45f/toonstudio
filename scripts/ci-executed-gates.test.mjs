@@ -30,6 +30,25 @@ function job(name) {
   return block;
 }
 
+function environmentCatalogInputs() {
+  const catalog = readFileSync(join(repoRoot, "apps/web/src/domains/creator/bg3d/studio-bg3d-environment-catalog.ts"), "utf8");
+  const inputs = [...catalog.matchAll(/from\s+"(?:\.\.\/)+public\/assets\/(3d\/environments\/[^"\n]+\.json)"/gu)]
+    .map((match) => `apps/web/public/assets/${match[1]}`);
+  assert.ok(inputs.length > 0, "실제 환경 카탈로그의 JSON 입력을 확인해야 합니다.");
+  assert.equal(new Set(inputs).size, inputs.length, "환경 카탈로그 입력은 중복 없이 검증해야 합니다.");
+  return inputs;
+}
+
+const requiredEnvironmentManifests = ["boatyard-v1", "coast-v1", "specimen-v1", "glasshouse-v1"]
+  .map((pack) => `/apps/web/public/assets/3d/environments/${pack}/manifest.json`);
+
+function assertUniqueEnvironmentManifests(patterns, label) {
+  for (const manifest of requiredEnvironmentManifests) {
+    assert.equal(patterns.filter((pattern) => pattern === manifest).length, 1,
+      `${label}: 환경 manifest 선언은 정확히 한 개여야 합니다. 누락을 복원하거나 중복 선언을 제거하세요: ${manifest}`);
+  }
+}
+
 function targetExists(target) {
   const absoluteTarget = join(repoRoot, target);
   if (existsSync(absoluteTarget)) return true;
@@ -56,6 +75,21 @@ test("checkout 조건식 파서는 알려진 literal 이외의 실행식과 조�
   assert.throws(() => sparsePatterns(block("${{ fromJSON(inputs.paths) }}")), /지원하지 않는 checkout 조건식/u);
   assert.throws(() => sparsePatterns(block("${{ matrix.shard != 'product' && '/docs/' || '' }}")), /지원하지 않는 checkout 조건식/u);
   assert.deepEqual(sparsePatterns(block("${{ matrix.shard == 'studio-3d' && '/models/' || '' }}"), { shard: "studio-3d" }), ["/*", "/models/"]);
+});
+
+test("동시 수정에서 합쳐진 환경 manifest 중복과 누락을 실제 checkout 선언에서 거부한다", () => {
+  const block = job("typecheck");
+  for (const manifest of requiredEnvironmentManifests) {
+    const declaration = `            ${manifest}\n`;
+    assert.equal(block.split(declaration).length, 2, `변경 전 fixture에는 환경 manifest가 한 개 필요합니다: ${manifest}`);
+    for (const count of [0, 2]) {
+      const fixture = block.replace(declaration, declaration.repeat(count));
+      assert.notEqual(fixture, block, "중복·누락 fixture는 실제 checkout 선언을 바꿔야 합니다.");
+      assert.throws(() => assertUniqueEnvironmentManifests(sparsePatterns(fixture), "변경 fixture"), {
+        code: "ERR_ASSERTION", actual: count, expected: 1,
+      });
+    }
+  }
 });
 
 test("production integrity follows the real menu verifier and its CI bootstrap", () => {
@@ -738,10 +772,21 @@ test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·�
   assert.equal(foundationDocuments.length, 16, "foundation 문서 선언은 정확히 16개여야 합니다.");
 });
 
-test("static regression checkout retains all imported 3D manifests but excludes their model payloads", () => {
-  const patterns = sparsePatterns(job("static"));
-  const manifests = ["refined-v6", "expansion-v1", "expansion-v2", "webtoon-v7"].map((pack) => `apps/web/public/assets/3d/environments/${pack}/manifest.json`);
-  const models = ["refined-v6/hospital_reception.glb", "expansion-v1/library_reading_room.glb", "webtoon-v7/webtoon_rooftop_utility_platform.glb", "unrelated/large.glb"].map((file) => `apps/web/public/assets/3d/environments/${file}`);
+test("필수 정적·lint·타입 checkout은 실제 3D import 메타데이터를 보존하고 모델 본문은 제외한다", () => {
+  const checkouts = [
+    ...SHARD_NAMES.map((shard) => ({ label: shard, patterns: sparsePatterns(job("static"), { shard }) })),
+    ...["lint", "typecheck"].map((name) => ({ label: name, patterns: sparsePatterns(job(name)) })),
+    { label: "mesh application typecheck", patterns: sparsePatterns(readFileSync(new URL("../.github/workflows/studio-mesh-sync-repair.yml", import.meta.url), "utf8")) },
+  ];
+  for (const { label, patterns } of checkouts) assertUniqueEnvironmentManifests(patterns, label);
+  const manifests = [...new Set([
+    ...["refined-v6", "expansion-v1", "webtoon-v7"].map((pack) => `apps/web/public/assets/3d/environments/${pack}/manifest.json`),
+    ...environmentCatalogInputs(),
+  ])];
+  const models = [...new Set([
+    ...["refined-v6/hospital_reception.glb", "expansion-v1/library_reading_room.glb", "webtoon-v7/webtoon_rooftop_utility_platform.glb", "unrelated/large.glb"].map((file) => `apps/web/public/assets/3d/environments/${file}`),
+    ...["boatyard-v1", "coast-v1", "specimen-v1", "glasshouse-v1"].map((pack) => `apps/web/public/assets/3d/environments/${pack}/unrelated-model.glb`),
+  ])];
   const scratch = mkdtempSync(join(tmpdir(), "core-3d-manifests-"));
   const git = (...args) => {
     const result = spawnSync("git", args, { cwd: scratch, env: fixtureGitEnvironment(scratch), encoding: "utf8" });
@@ -753,9 +798,11 @@ test("static regression checkout retains all imported 3D manifests but excludes 
     git("add", ".");
     git("-c", "user.name=CI Test", "-c", "user.email=ci@example.invalid", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "fixture");
     git("config", "core.sparseCheckout", "true"); git("config", "core.sparseCheckoutCone", "false");
-    writeFileSync(join(scratch, ".git/info/sparse-checkout"), `${patterns.join("\n")}\n`); git("read-tree", "-mu", "HEAD");
-    for (const file of manifests) assert.ok(existsSync(join(scratch, file)), `missing 3D import: ${file}`);
-    for (const file of models) assert.equal(existsSync(join(scratch, file)), false, `unrelated binary admitted: ${file}`);
+    for (const { label, patterns } of checkouts) {
+      writeFileSync(join(scratch, ".git/info/sparse-checkout"), `${patterns.join("\n")}\n`); git("read-tree", "-mu", "HEAD");
+      for (const file of manifests) assert.ok(existsSync(join(scratch, file)), `${label}: missing 3D import: ${file}`);
+      for (const file of models) assert.equal(existsSync(join(scratch, file)), false, `${label}: unrelated binary admitted: ${file}`);
+    }
   } finally { rmSync(scratch, { recursive: true, force: true }); }
 });
 
@@ -1005,7 +1052,13 @@ test("focused integration checks cannot collide with the protected core status",
 test("focused ToonStudio checkout includes imported metadata, validated artwork and fault evidence without unrelated inputs", () => {
   const workflow = readFileSync(new URL("../.github/workflows/toonstudio-session-goals.yml", import.meta.url), "utf8");
   const patterns = sparsePatterns(workflow);
-  const manifests = ["3d/environments/refined-v6/manifest.json", "3d/environments/expansion-v1/manifest.json", "3d/environments/expansion-v2/manifest.json", "3d/environments/webtoon-v7/manifest.json", "3d/environments/mcp-free-v1/manifest.json", "virtual-studio/world/default-world.json"].map((file) => `apps/web/public/assets/${file}`);
+  for (const eventName of ["pull_request", "workflow_dispatch"]) {
+    assertUniqueEnvironmentManifests(sparsePatterns(workflow, { eventName }), `focused ToonStudio ${eventName}`);
+  }
+  const manifests = [...new Set([
+    ...["3d/environments/refined-v6/manifest.json", "3d/environments/expansion-v1/manifest.json", "3d/environments/webtoon-v7/manifest.json", "3d/environments/mcp-free-v1/manifest.json", "virtual-studio/world/default-world.json"].map((file) => `apps/web/public/assets/${file}`),
+    ...environmentCatalogInputs(),
+  ])];
   const validatedArt = [
     "world-v2/characters/pixel-maker/manifest.json",
     ...["down", "right", "left", "up"].map((direction) => `world-v2/characters/pixel-maker/walk-${direction}.png`),

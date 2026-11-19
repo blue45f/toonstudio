@@ -2,9 +2,9 @@ import { waitForEditorSettled } from "./studio-editor-a11y";
 
 import type { Page } from "@playwright/test";
 
-/** 안료 고급 작업의 준비 대기 중 나타나는 단순 화면을 실제 세션 배치 선택으로 전환한다. */
+/** 안료 고급 작업의 준비 대기 중 실제 프로젝트 도구를 열고 기본 그리기 화면은 유지한다. */
 export async function waitForPigmentEditorSettled(page: Page): Promise<void> {
-  const clarity = page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]').first();
+  const clarity = page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]:not([data-studio-drawing-clarity-panel="commands"])').first();
   let handling = false;
   const handlerState: { failure: { error: unknown } | null } = { failure: null };
   const revealSavedLayout = async () => {
@@ -34,9 +34,11 @@ export async function waitForPigmentEditorSettled(page: Page): Promise<void> {
     }
     if (await workspace.count() !== 1) throw new Error("안료 준비의 화면과 도움말 목적은 하나여야 합니다.");
     await workspace.click({ timeout: remaining() });
-    await task.getByRole("button", { name: "프로젝트·창 도구 배치로 전환", exact: true })
+    await task.getByRole("button", { name: "프로젝트·창 도구", exact: true })
       .click({ timeout: remaining() });
     await task.waitFor({ state: "detached", timeout: remaining() });
+    await page.locator('[data-studio-drawing-project-tools="true"]').waitFor({ state: "visible", timeout: remaining() });
+    // 셸은 그대로 두고 프로젝트 도구가 열린 상태를 기다린다. 실제 준비가 끝난 뒤 handler를 해제한다.
     await clarity.waitFor({ state: "detached", timeout: remaining() });
     const after = new URL(page.url());
     if (after.origin !== before.origin || after.pathname !== before.pathname || after.hash !== before.hash) {

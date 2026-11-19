@@ -8,6 +8,7 @@ import { createStudioScene3dVersionedCut } from "../scene3d/studio-scene3d-shot-
 import { studioCutVrmDocumentScope, studioTeamCutVrmDocumentScope } from "../studio-shared-3d-scene-runtime";
 import { createStudioVrmSceneDocument } from "../vrm/studio-vrm-scene-document";
 import type { StudioBackground3DInsertResult } from "../scene-3d/studio-3d-insert-contract";
+import type { PageState } from "../studio-page-state";
 
 function scene() {
   const base = createDefaultStudioBg3dSceneDocument();
@@ -18,10 +19,10 @@ describe("6패스 LT 지원 표면 경계", () => {
   it("문서 마스터는 6패스를 병합 저장으로 바꾸지 않고 거부한다", async () => {
     const commit = vi.fn();
     const setError = vi.fn();
+    const activePage: PageState = { id: "page-a", elements: [], bg: "#ffffff", bgGrad: null, canvasH: 1080 };
     const insert = bindStudioBg3dRenderedImage({ isRealtimeTeamSession: false, masterEditMode: true,
-      activePage: { id: "master-page", elements: [] }, cutDocumentKey: "master-draft",
-      bg3dMutationTicketRef: { current: null },
-      setError, setStatusNotice: vi.fn(), commit });
+      setError, setStatusNotice: vi.fn(), commit, activePage, cutDocumentKey: "document-a",
+      bg3dMutationTicketRef: { current: null } });
     const result: StudioBackground3DInsertResult = {
       kind: "separated", width: 1, height: 1, layers: [], compositePngDataUrl: "data:image/png;base64,AA==",
       perspectiveGuides: [], bg3dScene: scene(),
