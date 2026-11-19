@@ -202,7 +202,18 @@ function resolveLimits(
 
 function deepFreeze<T>(value: T): T {
   if (value === null || typeof value !== "object" || Object.isFrozen(value)) return value;
-  for (const child of Object.values(value)) deepFreeze(child);
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      const child = value[index];
+      if (child !== null && typeof child === "object") deepFreeze(child);
+    }
+    return Object.freeze(value);
+  }
+  const record = value as Record<string, unknown>;
+  for (const key of Object.keys(record)) {
+    const child = record[key];
+    if (child !== null && typeof child === "object") deepFreeze(child);
+  }
   return Object.freeze(value);
 }
 

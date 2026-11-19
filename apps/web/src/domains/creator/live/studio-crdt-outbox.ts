@@ -35,6 +35,16 @@ const unhealthyUntil = new Map<string, number>();
 const emergencyAcknowledgedUpdates = new Set<string>();
 const emergencyActivePuts = new Map<string, number>();
 
+function addEmergencyAcknowledgedKey(key: string): void {
+  emergencyAcknowledgedUpdates.delete(key);
+  emergencyAcknowledgedUpdates.add(key);
+  while (emergencyAcknowledgedUpdates.size > STUDIO_CRDT_OUTBOX_MAX_ENTRIES_PER_WORK) {
+    const oldest = emergencyAcknowledgedUpdates.values().next().value;
+    if (typeof oldest !== "string") break;
+    emergencyAcknowledgedUpdates.delete(oldest);
+  }
+}
+
 interface StoredStudioCrdtUpdate {
   kind?: "update";
   key: string;
@@ -831,7 +841,7 @@ export class SqliteStudioCrdtOutbox implements StudioCrdtOutbox {
 
   removeEmergency(scope: string, workId: string, updateId: string): void {
     const key = outboxKey(scope, workId, updateId);
-    emergencyAcknowledgedUpdates.add(key);
+    addEmergencyAcknowledgedKey(key);
     removeMemoryRow(key);
   }
 
@@ -883,6 +893,8 @@ export class SqliteStudioCrdtOutbox implements StudioCrdtOutbox {
     const row = memoryRows.get(key);
     if (!row) throw new StudioCrdtOutboxError("emergency-copy-invalid");
     const serialized = serializeRequest(row.request);
+    emergencyActivePuts.set(key, (emergencyActivePuts.get(key) ?? 0) + 1);
+    let acknowledged = false;
     try {
       const result = await (await this.database()).enqueueCrdtOutboxRecord(
         {
@@ -897,7 +909,8 @@ export class SqliteStudioCrdtOutbox implements StudioCrdtOutbox {
         this.limits,
       );
       if (result === "acknowledged") {
-        emergencyAcknowledgedUpdates.add(key);
+        acknowledged = true;
+        addEmergencyAcknowledgedKey(key);
         removeMemoryRow(key);
       } else {
         const current = memoryRows.get(key);
@@ -910,11 +923,19 @@ export class SqliteStudioCrdtOutbox implements StudioCrdtOutbox {
         throw new StudioCrdtOutboxCapacityError(error.entryCount, error.totalBytes);
       }
       throw error;
+    } finally {
+      const remaining = (emergencyActivePuts.get(key) ?? 1) - 1;
+      if (remaining <= 0) emergencyActivePuts.delete(key);
+      else emergencyActivePuts.set(key, remaining);
+      if (acknowledged && remaining <= 0) {
+        emergencyAcknowledgedUpdates.delete(key);
+      }
     }
   }
 
   async remove(scope: string, workId: string, updateId: string): Promise<void> {
     assertScope(scope);
+    const key = outboxKey(scope, workId, updateId);
     this.removeEmergency(scope, workId, updateId);
     try {
       await (await this.database()).acknowledgeCrdtOutboxRecord(
@@ -923,6 +944,9 @@ export class SqliteStudioCrdtOutbox implements StudioCrdtOutbox {
         updateId,
         this.now(),
       );
+      if (!emergencyActivePuts.has(key)) {
+        emergencyAcknowledgedUpdates.delete(key);
+      }
       this.markDurable();
     } catch (error) {
       this.markDegraded(error);
