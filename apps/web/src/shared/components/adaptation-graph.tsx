@@ -2,16 +2,13 @@ import { Tv, Film, Sparkles, Play } from "lucide-react";
 
 import { MiniPoster } from "./rank-row";
 
-
 import type { Title } from "@/shared/lib/types";
 
-import { TYPE_LABEL } from "@/shared/lib/taxonomy";
+import { STATUS_LABEL, TYPE_LABEL } from "@/shared/lib/taxonomy";
 import { type MediaAdaptation, MEDIA_KIND_LABEL, mediaThumb, mediaLink } from "@/shared/lib/title-universe";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 import { useInView } from "@/shared/hooks/use-in-view";
-
-
 
 const EXT_ICON: Record<MediaAdaptation["kind"], typeof Tv> = {
   drama: Tv,
@@ -127,7 +124,14 @@ function Connector({ inView, step }: { inView: boolean; step: number }) {
   );
 }
 
-// 원작 → 웹툰 → 영상화 그래프
+function formatRatingDelta(originalRating: number, targetRating: number): string | null {
+  if (!(originalRating > 0) || !(targetRating > 0)) return null;
+  const diff = Number((targetRating - originalRating).toFixed(1));
+  if (Math.abs(diff) < 0.1) return "원작과 평점 동일";
+  return diff > 0 ? `원작보다 평점 +${diff.toFixed(1)}` : `원작이 평점 +${Math.abs(diff).toFixed(1)} 높음`;
+}
+
+// 원작 → 웹툰 → 영상화 그래프 + 노블코믹스 버전 비교 매트릭스(AC-014)
 export function AdaptationGraph({
   original,
   adaptations,
@@ -142,36 +146,94 @@ export function AdaptationGraph({
   className?: string;
 }) {
   const [ref, inView] = useInView<HTMLDivElement>();
+  const comparableVersions: { readonly title: Title; readonly role: string; readonly deltaLabel: string | null }[] = [
+    {
+      title: original,
+      role: original.type === "webnovel" ? "원작 소설" : "원작",
+      deltaLabel: null,
+    },
+    ...adaptations.map((a) => ({
+      title: a,
+      role: `${TYPE_LABEL[a.type]}화`,
+      deltaLabel: formatRatingDelta(original.stats.ratingAvg, a.stats.ratingAvg),
+    })),
+  ];
+
   return (
-    <div ref={ref} className={cn("flex items-start gap-1 overflow-x-auto rail pb-1", className)}>
-      <Node
-        title={original}
-        role={original.type === "webnovel" ? "원작 소설" : "원작"}
-        highlight={original.id === currentId}
-        inView={inView}
-        step={0}
-      />
-      {adaptations.map((a, i) => (
-        <div key={a.id} className="flex items-start gap-1">
-          <Connector inView={inView} step={i + 1} />
-          <Node
-            title={a}
-            role={TYPE_LABEL[a.type] + "화"}
-            highlight={a.id === currentId}
-            inView={inView}
-            step={i + 1}
-          />
-        </div>
-      ))}
-      {externalMedia.map((e, i) => {
-        const step = adaptations.length + 1 + i;
-        return (
-          <div key={`${e.kind}-${e.name}-${e.year}`} className="flex items-start gap-1">
-            <Connector inView={inView} step={step} />
-            <MediaNode media={e} inView={inView} step={step} />
+    <div ref={ref} className={cn("flex flex-col gap-3", className)}>
+      <div className="flex items-start gap-1 overflow-x-auto rail pb-1">
+        <Node
+          title={original}
+          role={original.type === "webnovel" ? "원작 소설" : "원작"}
+          highlight={original.id === currentId}
+          inView={inView}
+          step={0}
+        />
+        {adaptations.map((a, i) => (
+          <div key={a.id} className="flex items-start gap-1">
+            <Connector inView={inView} step={i + 1} />
+            <Node
+              title={a}
+              role={TYPE_LABEL[a.type] + "화"}
+              highlight={a.id === currentId}
+              inView={inView}
+              step={i + 1}
+            />
           </div>
-        );
-      })}
+        ))}
+        {externalMedia.map((e, i) => {
+          const step = adaptations.length + 1 + i;
+          return (
+            <div key={`${e.kind}-${e.name}-${e.year}`} className="flex items-start gap-1">
+              <Connector inView={inView} step={step} />
+              <MediaNode media={e} inView={inView} step={step} />
+            </div>
+          );
+        })}
+      </div>
+
+      {comparableVersions.length > 1 && (
+        <div
+          data-testid="adaptation-version-comparison"
+          className="border-t border-line/60 pt-3"
+        >
+          <p className="eyebrow mb-2 text-[0.62rem] text-fg-3">버전별 평점 · 완결 비교</p>
+          <ul className="divide-y divide-line/50 text-xs">
+            {comparableVersions.map(({ title, role, deltaLabel }) => (
+              <li
+                key={title.id}
+                className="flex flex-wrap items-center justify-between gap-2 py-2 first:pt-0 last:pb-0"
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="shrink-0 rounded-full bg-raised px-2 py-0.5 text-[0.65rem] font-semibold text-fg-2">
+                    {role}
+                  </span>
+                  <Link
+                    href={`/title/${title.slug}`}
+                    className={cn(
+                      "truncate font-medium transition-colors hover:text-accent",
+                      title.id === currentId ? "text-accent" : "text-fg",
+                    )}
+                  >
+                    {title.title}
+                  </Link>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center gap-2 text-[0.7rem] text-fg-2">
+                  <span className="font-display font-semibold text-fg tnum">
+                    ★ {title.stats.ratingAvg.toFixed(1)}
+                  </span>
+                  <span className="text-fg-3">{STATUS_LABEL[title.status]}</span>
+                  {deltaLabel && (
+                    <span className="rounded-md bg-panel px-2 py-0.5 text-[0.65rem] font-medium text-accent [word-break:keep-all]">
+                      {deltaLabel}
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
