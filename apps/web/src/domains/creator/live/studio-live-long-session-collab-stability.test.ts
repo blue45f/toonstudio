@@ -75,6 +75,7 @@ import {
 import { StudioLiveRetainedMediaOverlayRenderer } from "./studio-live-retained-media-overlay";
 import { trimStudioLiveWetInkTileSurfacePoolForIdle } from "./studio-live-wet-ink-surface-pool";
 
+import type { StudioWetInkBrushSurface } from "../brush/studio-wet-ink-brush-runtime";
 import type { StudioLocalDatabase } from "../studio-local-database";
 import type { StudioLivePeer, StudioLiveRoomEvent } from "./studio-live-collaboration-room";
 import type { StudioLiveTransport } from "./studio-live-collaboration-transport";
@@ -1027,12 +1028,12 @@ describe("long-session multi-user collaborative drawing stability", () => {
     expect(aged.reconnectCount).toBe(0);
     expect(aged.slowFrameCount).toBe(0);
 
-    const pool = new Map<string, { width: number; height: number }[]>();
+    const pool = new Map<string, StudioWetInkBrushSurface[]>();
     pool.set(
       "256x256",
-      Array.from({ length: 6 }, () => ({ width: 256, height: 256 })),
+      Array.from({ length: 6 }, () => ({ width: 256, height: 256 }) as unknown as StudioWetInkBrushSurface),
     );
-    const released = trimStudioLiveWetInkTileSurfacePoolForIdle(pool as never, 2);
+    const released = trimStudioLiveWetInkTileSurfacePoolForIdle(pool, 2);
     expect(released).toBe(4);
     expect(pool.get("256x256")).toHaveLength(2);
   });

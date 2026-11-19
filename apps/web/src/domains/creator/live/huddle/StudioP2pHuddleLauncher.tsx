@@ -222,12 +222,12 @@ export default function StudioP2pHuddleLauncher({ placement = "floating", idleCh
     data-studio-shell-floating-target={dockPlacement === "floating" ? "collaboration" : undefined}
     data-studio-shell-force-visible={active ? translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "en", "true") : undefined}
   >
-    <section id="studio-p2p-huddle-panel" hidden={!open} style={{ display: open ? "flex" : undefined, ...(dockPlacement === "inline" ? { position: "absolute", bottom: "100%", right: 0, zIndex: 65, maxWidth: "calc(100vw - 2.25rem)", maxHeight: "min(680px, calc(100dvh - 10rem))" } as const : {}) }} className="studio-p2p-huddle-panel pointer-events-auto mb-2 min-h-0 w-[min(760px,calc(100vw-1.5rem))] max-w-full flex-col overflow-hidden rounded-2xl border border-accent/40 bg-panel text-fg shadow-2xl"
+    <section id="studio-p2p-huddle-panel" hidden={!open} style={{ display: open ? "flex" : undefined, ...(dockPlacement === "inline" ? { position: "absolute", bottom: "100%", right: 0, zIndex: 65, maxWidth: "calc(100vw - 2.25rem)", maxHeight: "min(680px, calc(100dvh - 10rem))" } as const : {}) }} className="studio-p2p-huddle-panel pointer-events-auto mb-2 min-h-0 w-[min(760px,calc(100vw-1.5rem))] max-w-full flex-col overflow-hidden rounded-xl border border-accent/40 bg-panel break-keep text-fg shadow-lg"
       aria-labelledby="studio-p2p-huddle-heading" data-studio-p2p-huddle="true">
-      <header className="flex shrink-0 items-center justify-between border-b border-line p-3">
-        <div><h3 id="studio-p2p-huddle-heading" className="text-sm font-bold">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "Virtual Studio · Huddle")}</h3>
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line p-3">
+        <div><h3 id="studio-p2p-huddle-heading" className="text-sm font-semibold">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "Virtual Studio · Huddle")}</h3>
           <p className="text-[11px] text-fg-3">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "근접 P2P 우선 · 카메라·마이크는 직접 켤 때만 사용")}</p></div>
-        <button ref={closeRef} type="button" className={`${controlClass} min-w-11 shrink-0`} aria-label={translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "대화 패널 접기")} onClick={() => { if (chromeTarget && placement === "floating") pendingChromeFocus.current = "trigger"; setOpen(false); }}><X size={16} /></button>
+        <button ref={closeRef} type="button" className={`${controlClass} min-w-11 shrink-0`} aria-label={translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "대화 패널 접기")} onClick={() => { if (chromeTarget && placement === "floating") pendingChromeFocus.current = "trigger"; setOpen(false); }}><X size={15} strokeWidth={1.5} /></button>
       </header>
       <div className="min-h-0 max-h-[68dvh] space-y-3 overflow-y-auto overscroll-contain p-3">
         {!active ? <div className="space-y-3 text-xs leading-relaxed text-fg-2">
@@ -242,11 +242,11 @@ export default function StudioP2pHuddleLauncher({ placement = "floating", idleCh
           </div>}
           <button className={controlClass} type="button" disabled={!canJoin} aria-describedby={!canJoin ? "studio-huddle-unavailable" : undefined} onClick={join}>{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "동의하고 P2P 채팅 참여")}</button>
         </div> : <>
-          <p className="text-xs text-fg-2" role="status">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "나 포함 ")}{(snapshot?.peers.length ?? 0) + 1}{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "명 참여 · 연결 가능 ")}{snapshot?.availablePeers ?? 0}{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "명")}</p>
-          {(snapshot?.overflowPeerCount ?? 0) > 0 && <p role="status" className="text-xs text-warn">{formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "통화 정원 {v0}명이 가득 차 {v1}명이 아직 참여하지 못하고 있습니다. 직접 연결 보호를 위한 상한이며, 자리가 나면 자동으로 참여합니다."), { v0: String(HUDDLE_MAX_REMOTE_PEERS + 1), v1: String(snapshot?.overflowPeerCount ?? 0) })}</p>}
-          {proximityPeerIds.current ? <p className="rounded-lg bg-accent-soft px-2 py-1.5 text-[11px] font-semibold text-accent" data-studio-p2p-proximity-scope="true" data-studio-p2p-conversation={conversation.current?.id}>{conversation.current ? bt("수락한 대화 참여자에게만 연결합니다.", "Only accepted conversation members are connected.") : translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "가상 스튜디오 근처 대화 · 가까운 팀원만 직접 연결")}</p> : null}
+          <p className="text-xs tabular-nums text-fg-2" role="status">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "나 포함 ")}{(snapshot?.peers.length ?? 0) + 1}{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "명 참여 · 연결 가능 ")}{snapshot?.availablePeers ?? 0}{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "명")}</p>
+          {(snapshot?.overflowPeerCount ?? 0) > 0 && <p role="status" className="text-xs tabular-nums text-warn">{formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "통화 정원 {v0}명이 가득 차 {v1}명이 아직 참여하지 못하고 있습니다. 직접 연결 보호를 위한 상한이며, 자리가 나면 자동으로 참여합니다."), { v0: String(HUDDLE_MAX_REMOTE_PEERS + 1), v1: String(snapshot?.overflowPeerCount ?? 0) })}</p>}
+          {proximityPeerIds.current ? <p className="rounded-lg bg-accent-soft px-3 py-2 text-[11px] font-medium text-accent" data-studio-p2p-proximity-scope="true" data-studio-p2p-conversation={conversation.current?.id}>{conversation.current ? bt("수락한 대화 참여자에게만 연결합니다.", "Only accepted conversation members are connected.") : translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "가상 스튜디오 근처 대화 · 가까운 팀원만 직접 연결")}</p> : null}
           {!mediaAvailable && <p role="status" className="text-xs text-warn">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "이 브라우저는 카메라·마이크를 지원하지 않습니다. 지원하는 브라우저에서 같은 작업실을 열어 주세요. 채팅·활동은 계속 사용할 수 있습니다.")}</p>}
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             <button className={controlClass} type="button" disabled={busy || !mediaAvailable} aria-pressed={!snapshot?.muted}
               onClick={() => void capture(() => controller.current?.setMicrophone(Boolean(snapshot?.muted)) ?? Promise.resolve())}>
               {snapshot?.muted ? <MicOff size={14} /> : <Mic size={14} />}{snapshot?.muted ? translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "마이크 켜기") : translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "마이크 끄기")}</button>
@@ -280,7 +280,7 @@ export default function StudioP2pHuddleLauncher({ placement = "floating", idleCh
             onProximityMediaChange={handleProximityMediaChange}
             onNearbyChange={handleNearbyChange}
           />}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <MediaTile name={translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "나 · 미리보기")} stream={snapshot?.localStream ?? null} muted visual={Boolean(snapshot?.camera || snapshot?.sharing)} />
             {snapshot?.peers.map((peer) => <div key={peer.participant.sessionId}>
               <MediaTile name={peer.participant.displayName} stream={peer.stream} muted={deafened} visual={peer.camera || peer.sharing} />
@@ -317,12 +317,12 @@ export default function StudioP2pHuddleLauncher({ placement = "floating", idleCh
               onKeyDown={(event) => { if (event.key === "Enter" && (event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault(); }} />
             <button type="submit" className={controlClass} disabled={!draft.trim() || !snapshot?.peers.length}>{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "전송")}</button>
           </form>
-          <p className="text-[10px] leading-relaxed text-fg-3">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "이 대화는 기존 세션 채팅과 분리되어 있습니다. 수신 확인은 상대 브라우저 도착을 뜻하며 읽음 확인이 아닙니다. 나가면 기록이 지워집니다.")}</p>
+          <p className="text-[11px] leading-relaxed text-fg-3">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "이 대화는 기존 세션 채팅과 분리되어 있습니다. 수신 확인은 상대 브라우저 도착을 뜻하며 읽음 확인이 아닙니다. 나가면 기록이 지워집니다.")}</p>
         </>}
         {(notice || snapshot?.error) && <p role="status" className="text-xs leading-relaxed text-warn">{notice ?? snapshot?.error}</p>}
       </div>
     </section>
-    <button ref={triggerRef} type="button" aria-controls="studio-p2p-huddle-panel" aria-expanded={open} className="pointer-events-auto ml-auto flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-accent/40 bg-panel px-4 text-xs font-bold text-fg shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+    <button ref={triggerRef} type="button" aria-controls="studio-p2p-huddle-panel" aria-expanded={open} className="pointer-events-auto ml-auto flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-accent/40 bg-panel px-4 text-xs font-semibold tabular-nums text-fg shadow-md transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
       onClick={() => {
         const nextOpen = !open;
         if (chromeTarget && placement === "floating") pendingChromeFocus.current = nextOpen ? "panel" : "trigger";

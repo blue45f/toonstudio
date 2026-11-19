@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export const P2P_CONTROL_CLASS = "inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-line bg-card px-2 text-xs text-fg hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40";
+export const P2P_CONTROL_CLASS = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 text-xs font-medium break-keep text-fg transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40 motion-reduce:transition-none";
 
 function playCurrent(media: HTMLMediaElement | null, reportBlocked: (blocked: boolean) => void): void {
   const source = media?.srcObject;
