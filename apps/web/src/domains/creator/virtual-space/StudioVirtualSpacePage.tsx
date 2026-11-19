@@ -63,6 +63,8 @@ import { StudioVirtualSpaceUserList } from "./StudioVirtualSpaceUserList";
 import { useStudioVirtualPeerConnectionTracker } from "./use-studio-virtual-peer-connection-tracker";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
 import { StudioVirtualThemeCharacterPicker } from "./StudioVirtualThemeCharacterPicker";
+import { useStudioWorldDraftLifetime } from "./use-studio-world-draft-lifetime";
+import { StudioWorldLoadNotice } from "./StudioWorldLoadNotice";
 import { StudioWorldAuthoringEntry } from "./StudioWorldAuthoringEntry";
 import { useStudioWorldRuleGate } from "./StudioWorldRuleGate";
 import { useSpaceDeskPreference } from "./hud/use-space-desk-preference";
@@ -121,7 +123,10 @@ import {
   studioVirtualPlaceWorldScope,
 } from "./studio-virtual-space-place-world";
 import { studioVirtualSpaceDefaultGalleryFrames } from "./studio-virtual-space-gallery-defaults";
-import { studioDefaultRecordingBoothConfig, studioRecordingBoothBookingSpaces } from "./studio-virtual-space-recording-booth-defaults";
+import { studioDefaultRecordingBoothConfig } from "./studio-virtual-space-recording-booth-defaults";
+import type {
+  StudioVirtualSpace as StudioBookableSpace,
+} from "./studio-virtual-space-space-booking";
 import { useStudioVirtualSpaceBoothAsset } from "./use-studio-virtual-space-booth-asset";
 import { useStudioVirtualSpaceSocialSync } from "./use-studio-virtual-space-social-sync";
 import {
@@ -229,7 +234,6 @@ import {
   writeStudioVirtualSpacePositionRecords,
 } from "./studio-virtual-space-page-helpers";
 import type { VirtualSpaceExperienceProps } from "./studio-virtual-space-page-props";
-import { StudioVirtualSpacePage as StudioVirtualSpacePageShell } from "./StudioVirtualSpacePageRoot";
 import { SPACE_PROXIMITY_MEDIA_RADIUS } from "./hud/space-proximity-media";
 import { spaceZoneWorkItems, spaceZoneWorkKind } from "./hud/space-zone-workflow";
 import { useSpaceProximityMedia, useSpaceProximityScope } from "./hud/use-space-proximity-media";
@@ -418,10 +422,12 @@ export function VirtualSpaceExperience({
 
   const [worldManifest, setWorldManifest] = useState<StudioVirtualSpaceWorldManifest>(DEFAULT_STUDIO_WORLD_MANIFEST);
   // 예약 패널의 스페이스 목록: 녹음부스를 맨 앞에 두고 월드 방을 함께 예약할 수 있게 한다.
-  const boothSpaces = useMemo(
-    () => studioRecordingBoothBookingSpaces(boothConfig, worldManifest),
-    [boothConfig, worldManifest],
-  );
+  const boothSpaces = useMemo<readonly StudioBookableSpace[]>(() => [
+    { id: boothConfig.roomId, name: "녹음부스", capacity: 2, equipmentTags: ["마이크", "방음"] },
+    ...worldManifest.rooms
+      .filter((room) => room.id !== boothConfig.roomId)
+      .map((room) => ({ id: room.id, name: room.labelKo, capacity: 8, equipmentTags: [] as readonly string[] })),
+  ], [boothConfig, worldManifest]);
   const navigationWorld = useMemo(() => studioVirtualDecorationNavigationWorld(worldManifest, decorations), [worldManifest, decorations]);
   const deskScope = useMemo(() => ({ userId: privateActorId, projectId, activeWorldScope, authoringMode }), [privateActorId, projectId, activeWorldScope, authoringMode]);
   const { preferredSlotId, preferDesk } = useSpaceDeskPreference(deskScope, worldManifest, () => notify(bt("이 기기에 자리를 기억하지 못했어요. 저장 공간을 확인해 주세요.", "Your desk could not be saved on this device. Check available storage."), "warn"));
@@ -431,7 +437,8 @@ export function VirtualSpaceExperience({
   const baselineWorldManifestRef = useRef<StudioVirtualSpaceWorldManifest>(DEFAULT_STUDIO_WORLD_MANIFEST);
   const [worldLoaded, setWorldLoaded] = useState(false);
   const [loadedPositionScope, setLoadedPositionScope] = useState<string | null>(null);
-  const [worldLoadError, setWorldLoadError] = useState(false);
+  const [worldLoadError, setWorldLoadError] = useState<"floor" | "read" | null>(null);
+  const [worldLoadAttempt, setWorldLoadAttempt] = useState(0);
   const [currentInteraction, setCurrentInteraction] = useState<StudioWorldInteractionDefinition | null>(null);
   const [pendingInteraction, setPendingInteraction] = useState<StudioWorldInteractionDefinition | null>(null);
   const [interactionState, dispatchInteraction] = useReducer(reduceStudioSpatialInteraction, EMPTY_STUDIO_SPATIAL_INTERACTION_STATE);
@@ -501,6 +508,7 @@ export function VirtualSpaceExperience({
 
   useEffect(() => {
     const abortController = new AbortController();
+    if (authoringMode && !currentSession.ready) return;
     const resolved = builtinRef.current;
     engineBridge.clearMovement();
     movingRef.current = false;
@@ -512,16 +520,17 @@ export function VirtualSpaceExperience({
     setStuck(false);
     setWorldLoaded(false);
     setLoadedPositionScope(null);
-    setWorldLoadError(false);
+    setWorldLoadError(null);
     const manifestRequest = publishedWorld
       ? Promise.resolve(publishedWorld.publication.manifest)
       : resolved
         ? Promise.resolve(resolved.manifest)
         : loadStudioVirtualSpaceWorldManifest(undefined, undefined, abortController.signal);
-    void manifestRequest.then((manifest) => {
+    void manifestRequest.then(async (manifest) => {
       if (abortController.signal.aborted) return;
       baselineWorldManifestRef.current = manifest;
-      const storedDraft = authoringMode ? readStudioWorldAuthoringDraftRecord(projectId) : null;
+      const storedDraft = authoringMode ? await readStudioWorldAuthoringDraftRecord(projectId) : null;
+      if (abortController.signal.aborted) return;
       const activeManifest = storedDraft?.manifest ?? manifest;
       setDraftBaseRevision(storedDraft ? storedDraft.basePublishedRevisionId : publishedWorld?.publication.revisionId ?? null);
       const spawn = studioWorldSpawn(activeManifest, resolved?.spawnId).point;
@@ -540,19 +549,18 @@ export function VirtualSpaceExperience({
       setCurrentInteraction(null);
       if (!point) {
         setWorldLoaded(false);
-        setWorldLoadError(true);
+        setWorldLoadError("floor");
         return;
       }
       const self = studioWorldPresenceState(activeManifest, { ...selfRef.current, ...point, moving: false });
       selfRef.current = self;
       setSnapshot((current) => ({ ...current, self }));
-      setWorldLoadError(false);
+      setWorldLoadError(null);
       setLoadedPositionScope(positionScopeKey);
       setWorldLoaded(true);
-    });
+    }).catch(() => { if (!abortController.signal.aborted) setWorldLoadError("read"); });
     return () => abortController.abort();
-  }, [authoringMode, builtinKey, engineBridge, fallbackIdentity, guestSpawn, participantRole, positionScope, positionScopeKey, projectId, publishedWorld, setFollowingPeerId, startLocation]);
-
+  }, [authoringMode, builtinKey, currentSession.ready, engineBridge, fallbackIdentity, guestSpawn, participantRole, positionScope, positionScopeKey, privateActorId, worldLoadAttempt, projectId, publishedWorld, setFollowingPeerId, startLocation]);
 
   const applyAuthoringManifest = useCallback((nextManifest: StudioVirtualSpaceWorldManifest) => {
     if (validateStudioWorldManifest(nextManifest).length > 0) return;
@@ -583,13 +591,15 @@ export function VirtualSpaceExperience({
     return () => globalThis.clearTimeout(timeout);
   }, [applyAuthoringManifest, authoringDraft, authoringMode, worldReady]);
 
-  const { tileEffects, cloneBinding, reloadTileEffects, changeTileEffects, tileSilentZones, tileMedia, setTileMedia, handleTileEffectTrigger } = useStudioTileEffectWiring({ decorationScope, engineBridge });
-  const resetAuthoringManifest = useCallback(() => {
-    clearStudioWorldAuthoringDraft(projectId);
+  const { tileEffects, cloneBinding, reloadTileEffects, changeTileEffects, tileSilentZones, tileMedia, setTileMedia, handleTileEffectTrigger } = useStudioTileEffectWiring({ decorationScope, engineBridge, owner: privateActorId, notify });
+  const worldDraftLifetime = useStudioWorldDraftLifetime(privateActorId, projectId);
+  const resetAuthoringManifest = useCallback(async () => {
+    const cleared = await clearStudioWorldAuthoringDraft(projectId); if (!worldDraftLifetime.active) return;
+    if (!cleared) { notify(bt("초안을 지우지 못했습니다.", "Could not clear the draft."), "warn"); return; }
     reloadTileEffects();
     setAuthoringDraft(baselineWorldManifestRef.current);
     setDraftBaseRevision(publishedWorld?.publication.revisionId ?? null);
-  }, [projectId, publishedWorld, reloadTileEffects]);
+  }, [projectId, publishedWorld, reloadTileEffects, notify, bt, worldDraftLifetime]);
 
   useEffect(() => {
     if (!worldReady) return undefined;
@@ -1753,7 +1763,7 @@ export function VirtualSpaceExperience({
         {!personal ? <>
           <button type="button" className="space-link-row" onClick={() => setPanel("rtc")}><Radio size={17} aria-hidden />{bt("실시간 연결 상태", "Live connection status")}</button>
           <StudioWorldPublicationPanel publication={publication} draft={authoringMode ? authoringDraft : undefined} draftBaseRevision={draftBaseRevision}
-            onRebaseDraft={(revisionId) => { if (!writeStudioWorldAuthoringDraft(projectId, authoringDraft, revisionId)) return false; setDraftBaseRevision(revisionId); return true; }}
+            onRebaseDraft={async (revisionId) => { if (!await writeStudioWorldAuthoringDraft(projectId, authoringDraft, revisionId) || !worldDraftLifetime.active) return false; setDraftBaseRevision(revisionId); return true; }}
             onEdit={() => { const nextSearch = new URLSearchParams(location.search); nextSearch.set("worldEdit", "1"); navigate({ pathname: location.pathname, search: nextSearch.toString() }); }}
             onApplied={() => { if (authoringMode) { const nextSearch = new URLSearchParams(location.search); nextSearch.delete("worldEdit"); navigate({ pathname: location.pathname, search: nextSearch.toString() }); } }} />
         </> : null}
@@ -1891,9 +1901,7 @@ export function VirtualSpaceExperience({
           onObjectStateChange: change => controllerRef.current?.sendObjectState(change.objectId, change.stateKey, change.stateChangedAt),
           tileEffects, placedFixtures: mergedPlacedFixtures, onBuildPlacementEvent: buildPlacement.handleCanvasEvent,
           onTileEffectTrigger: handleTileEffectTrigger,
-        }} /> : <div className="studio-vspace-engine-message" role="status">{worldLoadError
-          ? bt("이 월드에는 안전하게 시작할 수 있는 바닥이 없습니다.", "This world has no safe floor where a player can start.")
-          : bt("공간 데이터 불러오는 중…", "Loading world data…")}</div>}
+        }} /> : <StudioWorldLoadNotice error={worldLoadError} onRetry={() => setWorldLoadAttempt(value => value + 1)} />}
       </div>
       <SpaceZoneSplash input={zoneSplashInput} />
       <SpaceHudLayout
@@ -2062,7 +2070,7 @@ export function VirtualSpaceExperience({
         roomInteractions={dialogueRoomInteractions}
       /> : null}
       {authoringMode && worldReady ? <div className="space-hud__authoring">
-        <Suspense fallback={<p role="status">{bt("공간 편집기 불러오는 중…", "Loading world editor…")}</p>}><StudioWorldAuthoringEntry
+        <Suspense fallback={<p role="status">{bt("공간 편집기 불러오는 중…", "Loading world editor…")}</p>}><StudioWorldAuthoringEntry key={JSON.stringify([privateActorId, projectId])}
           projectId={projectId}
           basePublishedRevisionId={draftBaseRevision}
           disabled={publication.enabled && (["reading", "publishing", "preparing"].includes(publication.snapshot.phase) || !publication.snapshot.viewVerified)}
@@ -2076,8 +2084,6 @@ export function VirtualSpaceExperience({
   );
 }
 
-export function StudioVirtualSpacePage(props: { readonly projectIdOverride?: string; readonly homeHeader?: ReactNode; readonly personal?: boolean } = {}) {
-  return <StudioVirtualSpacePageShell {...props} Experience={VirtualSpaceExperience} />;
-}
-
-export default StudioVirtualSpacePage;
+export { StudioVirtualSpacePage } from "./StudioVirtualSpacePageRoot";
+// eslint-disable-next-line react-refresh/only-export-components -- 페이지 셸은 StudioVirtualSpacePageRoot로 분리했고 기존 import 경로를 유지하는 재수출이다
+export { default } from "./StudioVirtualSpacePageRoot";

@@ -10,7 +10,7 @@ export function StudioWorldPublicationPanel({ publication, draft, draftBaseRevis
   readonly draftBaseRevision?: string | null;
   readonly onApplied: () => void;
   readonly onEdit?: () => void;
-  readonly onRebaseDraft?: (revisionId: string | null) => boolean;
+  readonly onRebaseDraft?: (revisionId: string | null) => boolean | Promise<boolean>;
 }) {
   const bt = useBilingual("StudioWorldPublicationPanel"), { snapshot, refresh, publish } = publication;
   const [baseReviewFailed, setBaseReviewFailed] = useState(false);
@@ -49,7 +49,9 @@ export function StudioWorldPublicationPanel({ publication, draft, draftBaseRevis
           ? onRebaseDraft ? <Button variant="outline" className="min-h-11 max-w-full whitespace-normal" disabled={busy} onClick={() => { void (async () => {
             const scope = baseScope.current, generation = ++scope.request;
             const base = await publication.reviewDraftBase();
-            if (scope.active && generation === scope.request) setBaseReviewFailed(!base || !onRebaseDraft(base.revisionId));
+            if (!scope.active || generation !== scope.request) return;
+            const saved = base && await onRebaseDraft(base.revisionId);
+            if (scope.active && generation === scope.request) setBaseReviewFailed(!saved);
           })(); }}>{bt("현재 게시본을 기준으로 초안 저장", "Save draft with current publication base")}</Button> : null
           : <Button className="min-h-11 max-w-full whitespace-normal" disabled={busy} onClick={() => { void apply(() => publish(draft, draftBaseRevision)); }}>{bt("초안 게시·적용", "Publish and apply draft")}</Button> : null}
       {!snapshot.retryIntent && snapshot.previous && snapshot.authority?.canPublish ? <Button variant="outline" className="min-h-11 max-w-full whitespace-normal" disabled={busy}

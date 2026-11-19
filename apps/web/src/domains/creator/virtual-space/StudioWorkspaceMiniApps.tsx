@@ -1,15 +1,15 @@
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { getAuthUserId, useSession } from "@/domains/auth/public/session/auth-session-store";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { resetFailedStudioLocalDatabaseOwnership } from "../studio-local-database-runtime";
 import { readStudioLiveRoomQuery } from "../live/studio-live-jam-session";
 import { StudioVirtualSpaceAppHost } from "./StudioVirtualSpaceAppHost";
 import { StudioVirtualSpaceAppStore } from "./StudioVirtualSpaceAppStore";
 import { listStoreApps } from "./studio-virtual-space-app-store";
+import { accessStudioSpaceRecord, observeStudioSpaceRecords } from "./studio-space-device-record";
 
-const localChange = "studio-workspace-mini-apps-changed";
 const appIds = listStoreApps().map(app => app.id);
-const serverSnapshot = () => "";
 
 export function StudioWorkspaceMiniApps({ projectId }: { readonly projectId?: string }) {
   const actor = useSession().data?.user.id ?? null;
@@ -22,51 +22,49 @@ export function StudioWorkspaceMiniApps({ projectId }: { readonly projectId?: st
 function ScopedMiniApps({ prefix, actor }: { readonly prefix: string; readonly actor: string | null }) {
   const bt = useBilingual("StudioVirtualSpaceAppStore");
   const [writeFailed, setWriteFailed] = useState(false);
-  const subscribe = useCallback((notify: () => void) => {
-    const storageChanged = (event: StorageEvent) => {
-      if (event.key === null || event.key.startsWith(prefix)) notify();
-    };
-    const changedHere = (event: Event) => {
-      if ((event as CustomEvent<string>).detail === prefix) notify();
-    };
-    window.addEventListener("storage", storageChanged);
-    window.addEventListener(localChange, changedHere);
-    return () => {
-      window.removeEventListener("storage", storageChanged);
-      window.removeEventListener(localChange, changedHere);
-    };
-  }, [prefix]);
-  const read = useCallback(() => {
-    try {
-      return appIds.filter(id => window.localStorage.getItem(prefix + id) === "1").join(",");
-    } catch {
-      return null;
-    }
-  }, [prefix]);
-  const snapshot = useSyncExternalStore(subscribe, read, serverSnapshot);
-  const installed = snapshot ? snapshot.split(",") : [];
-  const refresh = () => window.dispatchEvent(new CustomEvent(localChange, { detail: prefix }));
-  const change = (next: readonly string[]) => {
-    if (getAuthUserId() !== actor) return;
+  const [snapshot, setSnapshot] = useState<readonly string[] | null>();
+  const [retry, setRetry] = useState(0);
+  const active = useRef(true);
+  const refresh = () => setRetry(count => count + 1);
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    const current = () => !cancelled && getAuthUserId() === actor;
+    void Promise.all(appIds.map(async id => await accessStudioSpaceRecord(prefix + id, undefined, current) === "1" ? id : null))
+      .then(ids => { if (current()) setSnapshot(ids.filter(id => id !== null)); },
+        () => { if (current()) setSnapshot(null); });
+    const stop = observeStudioSpaceRecords(key => { if (key.startsWith(prefix)) refresh(); });
+    return () => { cancelled = true; stop(); };
+  }, [actor, prefix, retry]);
+  const retryRead = async () => {
+    await resetFailedStudioLocalDatabaseOwnership();
+    if (active.current && getAuthUserId() === actor) refresh();
+  };
+  const installed = snapshot ?? [];
+  const change = async (next: readonly string[]) => {
+    if (!snapshot || !active.current || getAuthUserId() !== actor) return;
     const id = appIds.find(id => next.includes(id) !== installed.includes(id));
     if (!id) return;
+    const current = () => active.current && getAuthUserId() === actor;
     try {
-      // 앱마다 별도 키에 기록해 두 탭이 서로 다른 앱을 동시에 설치해도 보존한다.
-      if (next.includes(id)) window.localStorage.setItem(prefix + id, "1");
-      else window.localStorage.removeItem(prefix + id);
-      setWriteFailed(false);
-      refresh();
+      if (writeFailed) await resetFailedStudioLocalDatabaseOwnership();
+      await accessStudioSpaceRecord(prefix + id, () => ({ value: next.includes(id) ? "1" : null }), () => getAuthUserId() === actor);
+      if (current()) { setWriteFailed(false); refresh(); }
     } catch {
-      setWriteFailed(true);
+      if (current()) setWriteFailed(true);
     }
   };
   return <>
-    <StudioVirtualSpaceAppStore installedAppIds={installed} onInstalledChange={change} />
+    {Array.isArray(snapshot) && <StudioVirtualSpaceAppStore installedAppIds={installed} onInstalledChange={change} />}
+    {snapshot === undefined && <p role="status">{bt("설치 목록을 불러오는 중이에요.", "Loading installed apps.")}</p>}
     {snapshot === null || writeFailed ? <p role="alert">
       {snapshot === null
         ? bt("이 기기의 설치 목록을 열지 못했습니다.", "Could not read the apps installed on this device.")
         : bt("설치 목록을 저장하지 못했습니다. 기기 저장 공간을 확인한 뒤 다시 시도해 주세요.", "Could not save the installed apps. Check device storage and try again.")}
-      {snapshot === null ? <button type="button" onClick={refresh}>{bt("다시 읽기", "Retry")}</button> : null}
+      {snapshot === null ? <button type="button" onClick={retryRead}>{bt("다시 읽기", "Retry")}</button> : null}
     </p> : null}
     <StudioVirtualSpaceAppHost installedAppIds={installed} />
   </>;

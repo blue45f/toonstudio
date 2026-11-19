@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -35,6 +35,18 @@ describe("StudioSpecialistSuiteBar", () => {
       .toBe("/studio/assets/audio?project=project-12");
     expect(within(nav).getByRole("link", { name: /PDF 원고 워크벤치/u }).getAttribute("href"))
       .toBe("/studio/pdf-workbench?project=project-12");
+  });
+  it("모바일에서 작업 이름을 펼쳐도 같은 11개 링크와 작품 문맥을 유지한다", () => {
+    render(<MemoryRouter><StudioSpecialistSuiteBar projectId="panel-a" /></MemoryRouter>);
+    const menu = screen.getByRole("button", { name: "전문 도구 전체" });
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(11);
+    fireEvent.click(menu);
+    expect(menu.getAttribute("aria-expanded")).toBe("true");
+    expect(document.getElementById(menu.getAttribute("aria-controls")!)?.classList.contains("grid")).toBe(true);
+    expect(screen.getAllByRole("link")).toEqual(links);
+    fireEvent.click(menu);
+    expect(menu.getAttribute("aria-expanded")).toBe("false");
   });
   it("작품을 지정하지 않은 가상 스튜디오는 개인 공간 로비로 연결한다", () => {
     render(<MemoryRouter><StudioSpecialistSuiteBar /></MemoryRouter>);

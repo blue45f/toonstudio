@@ -11,20 +11,19 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
-import { requestStudioAiComicComposerOpen } from "../../ai/studio-ai-comic-composer-intent";
 import { StudioToonAutomationWorkspace } from "../../ai/StudioToonAutomationWorkspace";
+import { retryFailedStudioLocalDatabaseOpen } from "../../studio-local-database-runtime";
+import { DirectorDeviceOpenFailure, readDirectorDeviceDraft, writeDirectorDeviceDraft } from "../../ai/studio-director-device-draft";
 import { prepareDirectorEditorReturn } from "../../ai/studio-director-editor-return";
 import { StudioDirectorDraftSync, type DirectorDraftPatch } from "../../ai/studio-director-draft-sync";
 import { createStudioAiComicDirectorApiClient } from "../../ai/studio-ai-comic-director-api";
 import { resolvePersistedAiErrorText } from "../../ai/studio-ai-error-i18n-t4t5";
-import { createStudioToonProductionHandoff } from "../../ai/studio-toon-production-board";
 import type { StudioScenarioImageGenerationRequest } from "../../ai/studio-scenario-candidate-workflow";
 import {
   createStudioAiComicDirectorSession,
-  loadStudioAiComicDirectorSession,
   reconcileStudioAiComicDirectorJobs,
   studioAiComicDirectorCandidateDigest,
   type StudioAiComicDirectorSessionDocument,
@@ -35,6 +34,7 @@ import { STUDIO_EASE, STUDIO_FOCUS_RING, STUDIO_TOUCH_TARGET } from "../../studi
 import type { StudioCompositionRouteResolution } from "../studio-route-manifest";
 
 import { useT } from "@/shared/lib/i18n";
+import { useApp } from "@/shared/lib/store";
 import { creatorSub2StatusText } from "../../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
 import { cn } from "@/shared/lib/utils";
@@ -77,27 +77,16 @@ function studioSurfacePath(
   return `/studio/${surface}`;
 }
 
-function initialSession(
-  resolution: StudioCompositionRouteResolution,
-): StudioAiComicDirectorSessionDocument {
-  if (typeof window !== "undefined" && resolution.sessionId !== "new") {
-    const saved = loadStudioAiComicDirectorSession(
-      window.localStorage,
-      resolution.sessionId,
-    );
-    if (saved) {
-      return {
-        ...saved,
-        jobs: reconcileStudioAiComicDirectorJobs(saved.jobs),
-      };
-    }
-  }
-  return createStudioAiComicDirectorSession({
-    id: resolution.sessionId === "new" ? uid() : resolution.sessionId,
-    workId: resolution.workId,
-    remixSourceWorkId: resolution.remixSourceWorkId,
-    title: "새 AI 코믹 디렉터 세션",
-  });
+// 같은 문서에서 방금 발급한 ID만 저장소 장애 중의 임시 집필을 허용한다.
+let issuedPersonalDraft: string | null = null;
+
+function DirectorNewSession({ resolution }: StudioAiComicDirectorRouteProps) {
+  const [id] = useState(uid);
+  useLayoutEffect(() => {
+    issuedPersonalDraft = !resolution.workId && !resolution.remixSourceWorkId ? id : null;
+  }, [id, resolution.workId, resolution.remixSourceWorkId]);
+  const location = useLocation();
+  return <Navigate replace to={routePath(resolution, id) + location.search + location.hash} />;
 }
 
 const BIBLE_KINDS: readonly {
@@ -123,15 +112,70 @@ const STAGES = [
 export function StudioAiComicDirectorRoute({
   resolution,
 }: StudioAiComicDirectorRouteProps): ReactElement {
+  return resolution.sessionId === "new" ? <DirectorNewSession resolution={resolution}/> : <DirectorDeviceSession resolution={resolution}/>;
+}
+
+function DirectorDeviceSession({ resolution }: StudioAiComicDirectorRouteProps) {
+  const [draft, setDraft] = useState<StudioDirectorDraftSync | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const { sessionId: id, workId, remixSourceWorkId } = resolution;
+  const [issuedHere] = useState(() => id === issuedPersonalDraft && !workId && !remixSourceWorkId);
+  useEffect(() => {
+    let active = true;
+    if (issuedPersonalDraft === id) issuedPersonalDraft = null;
+    const write = (expected: string | null, value: string) => writeDirectorDeviceDraft(id, expected, value);
+    readDirectorDeviceDraft(id).then(({ session, raw }) => {
+      if (!active) return;
+      if (session && (session.workId !== workId || session.remixSourceWorkId !== remixSourceWorkId)) throw Error("다른 작품의 대본입니다.");
+      const seed = session ? { ...session, jobs: reconcileStudioAiComicDirectorJobs(session.jobs) }
+        : createStudioAiComicDirectorSession({ id, workId, remixSourceWorkId, title: "새 AI 코믹 디렉터 세션" });
+      setDraft(new StudioDirectorDraftSync(seed, raw, write));
+    }).catch(cause => {
+      if (!active) return;
+      if (issuedHere && cause instanceof DirectorDeviceOpenFailure) {
+        const seed = createStudioAiComicDirectorSession({ id, title: "새 AI 코믹 디렉터 세션" });
+        setDraft(new StudioDirectorDraftSync(seed, null, write, true));
+      } else setFailed(true);
+    });
+    return () => { active = false; };
+  }, [id, workId, remixSourceWorkId, attempt, issuedHere]);
+  if (draft) return <DirectorWorkspace resolution={resolution} draft={draft}/>;
+  return <main className="mx-auto max-w-xl space-y-3 p-6">
+    <p role={failed ? "alert" : "status"}>{failed
+      ? creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.deviceLoadFailed", "이 기기의 대본을 열지 못했어요. 다른 편집 탭을 닫고 다시 시도하세요.")
+      : creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.deviceLoading", "대본을 여는 중…")}</p>
+    {failed && <button type="button" className={cn("min-h-11 rounded-lg border border-line px-4", STUDIO_FOCUS_RING)}
+      onClick={async () => {
+        setFailed(false);
+        await retryFailedStudioLocalDatabaseOpen();
+        setAttempt(n => n + 1);
+      }}>
+      {creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.retryDeviceLoad", "대본 다시 열기")}
+    </button>}
+  </main>;
+}
+
+function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProps & { draft: StudioDirectorDraftSync }): ReactElement {
   const t = useT();
   const location = useLocation();
   const navigate = useNavigate();
   const api = useMemo(() => createStudioAiComicDirectorApiClient(), []);
-  const [draft] = useState(() => new StudioDirectorDraftSync(initialSession(resolution),
-    typeof window === "undefined" ? null : window.localStorage));
-  const [session, setSession] = useState(draft.current);
+  const [{ session, storageFailed, saving }, setDraftView] = useState(() => draft.snapshot());
+  useEffect(() => draft.subscribe(() => setDraftView(draft.snapshot())), [draft]);
+  useEffect(() => {
+    const protectPendingDraft = (event: BeforeUnloadEvent) => {
+      const state = draft.snapshot();
+      if (!state.saving && !state.storageFailed) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", protectPendingDraft);
+    return () => window.removeEventListener("beforeunload", protectPendingDraft);
+  }, [draft]);
   const [networkBusy, setNetworkBusy] = useState(true);
   const pending = useRef(true);
+  const [scopeRejected, setScopeRejected] = useState(false);
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
@@ -140,7 +184,6 @@ export function StudioAiComicDirectorRoute({
   const initialSessionRef = useRef(session);
   const initialCreate = useRef<ReturnType<typeof api.createSession> | null>(null);
   const initialResolutionRef = useRef(resolution);
-  const initialSearchRef = useRef(location.search);
   const automationOpen = new URLSearchParams(location.search).get("view") === "automation";
   const [syncState, setSyncState] = useState<
     "local" | "loading" | "saved" | "conflict" | "error"
@@ -151,12 +194,18 @@ export function StudioAiComicDirectorRoute({
     "character",
   );
 
+  const rejectMismatchedScope = useCallback(() => {
+    setScopeRejected(true);
+    setSyncState("error");
+    setMessage(creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.scopeMismatch", "이 작품과 저장된 대본이 일치하지 않습니다. 현재 대본을 보존했습니다."));
+  }, []);
+
   const reflectRemote = useCallback((kind: "read" | "save" | "reload", issued: StudioAiComicDirectorSessionDocument, remote: StudioAiComicDirectorSessionDocument) => {
     const state = draft.receive(kind, issued, remote);
-    setSession(draft.current);
+    setDraftView(draft.snapshot());
     setSyncState(state);
     if (state === "conflict") setMessage("서버의 원고와 이 기기의 수정본이 달라요. 로컬 대본을 유지했습니다.");
-    if (state === "local") setMessage("응답을 기다리는 동안 수정한 내용은 이 기기에 보관했습니다. 클라우드에 다시 저장할 수 있어요.");
+    if (state === "local") setMessage("응답을 기다리는 동안 수정한 대본은 계속 편집할 수 있어요.");
     return state;
   }, [draft]);
 
@@ -169,23 +218,8 @@ export function StudioAiComicDirectorRoute({
       pending.current = true;
       setNetworkBusy(true);
       draft.persist();
+      setDraftView(draft.snapshot());
       setSyncState("loading");
-      if (initialResolution.sessionId === "new") {
-        const created = await createInitialSession();
-        if (!active) return;
-        if (created.ok) {
-          reflectRemote("save", seedSession, created.data);
-        } else {
-          setSyncState(created.code === "not_authenticated" ? "local" : "error");
-          setMessage(created.message);
-        }
-        navigate(
-          `${routePath(initialResolution, seedSession.id)}${initialSearchRef.current}`,
-          { replace: true },
-        );
-        return;
-      }
-
       const remote = await api.getSession(initialResolution.sessionId);
       if (!active) return;
       if (remote.ok) {
@@ -208,19 +242,21 @@ export function StudioAiComicDirectorRoute({
       setSyncState(remote.code === "not_authenticated" ? "local" : "error");
       setMessage(remote.message);
     };
-    void synchronize().finally(() => {
+    void synchronize().catch(() => {
+      if (active) rejectMismatchedScope();
+    }).finally(() => {
       if (active) { pending.current = false; setNetworkBusy(false); }
     });
     return () => {
       active = false;
     };
-  }, [api, draft, navigate, reflectRemote]);
+  }, [api, draft, reflectRemote, rejectMismatchedScope]);
 
   const patchSession = (patch: DirectorDraftPatch) => {
     draft.edit(patch);
-    setSession(draft.current);
+    setDraftView(draft.snapshot());
     setSyncState(draft.conflicted ? "conflict" : "local");
-    if (!draft.conflicted) setMessage(null);
+    if (!draft.conflicted && !scopeRejected) setMessage(null);
   };
 
   const setAutomationView = (open: boolean) => {
@@ -243,7 +279,7 @@ export function StudioAiComicDirectorRoute({
   };
 
   const synchronizeDraft = async (kind: "save" | "reload") => {
-    if (pending.current || (kind === "save" && draft.conflicted)) return;
+    if (scopeRejected || pending.current || (kind === "save" && draft.conflicted)) return;
     pending.current = true;
     setNetworkBusy(true);
     setSyncState("loading");
@@ -260,9 +296,10 @@ export function StudioAiComicDirectorRoute({
         setSyncState(draft.conflicted ? "conflict" : result.code === "not_authenticated" ? "local" : "error");
         setMessage(result.message);
       }
+    } catch {
+      if (mounted.current) rejectMismatchedScope();
     } finally {
-      pending.current = false;
-      setNetworkBusy(false);
+      if (mounted.current) { pending.current = false; setNetworkBusy(false); }
     }
   };
 
@@ -291,6 +328,7 @@ export function StudioAiComicDirectorRoute({
   };
 
   const saveBibleRevision = async () => {
+    if (scopeRejected || networkBusy) return;
     setSyncState("loading");
     const result = await api.appendVisualBibleRevision(
       session.id,
@@ -299,6 +337,7 @@ export function StudioAiComicDirectorRoute({
     if (!mounted.current) return;
     if (result.ok) {
       if (draft.current.visualBible !== session.visualBible) {
+        setSyncState("local");
         setMessage("먼저 보낸 작품 기준을 저장했습니다. 이후 수정한 기준은 이 기기에 남아 있습니다.");
         return;
       }
@@ -310,25 +349,17 @@ export function StudioAiComicDirectorRoute({
     }
   };
 
-  const openScenesInEditor = (request?: StudioScenarioImageGenerationRequest) => {
-    if (!window.crossOriginIsolated) {
-      const href = !draft.storageFailed && prepareDirectorEditorReturn(session, resolution.editorHref, request);
-      if (!href) {
-        setMessage("콘티를 원고로 넘기지 못했습니다. 이 기기의 저장 공간과 작품 로그인을 확인해 주세요.");
-        return;
-      }
-      // 원고의 격리 헤더를 받는 실제 문서 이동에서 암호화 키는 다시 잠긴다.
-      window.location.assign(href);
+  const openScenesInEditor = async (request?: StudioScenarioImageGenerationRequest) => {
+    const actor = useApp.getState().userId;
+    const saved = await draft.persist();
+    if (!mounted.current || actor !== useApp.getState().userId) return;
+    const href = saved && draft.current === session && prepareDirectorEditorReturn(session, resolution.editorHref, request);
+    if (!href) {
+      setMessage(creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.handoffFailed", "콘티를 원고로 넘기지 못했습니다. 이 기기의 저장 공간과 작품 로그인을 확인해 주세요."));
       return;
     }
-    requestStudioAiComicComposerOpen(createStudioToonProductionHandoff({
-      title: session.title,
-      storyText: session.storyText,
-      characterDescription: session.characterDescription,
-      scenes: session.scenes,
-      request,
-    }));
-    navigate(resolution.editorHref);
+    if (window.crossOriginIsolated) navigate(href);
+    else window.location.assign(href);
   };
 
   const continueInEditor = () => openScenesInEditor();
@@ -413,7 +444,7 @@ export function StudioAiComicDirectorRoute({
                 "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-[0.65rem] font-semibold",
                 syncState === "saved"
                   ? "border-good/35 bg-good/10 text-good"
-                  : syncState === "conflict"
+                  : syncState === "conflict" || storageFailed
                     ? "border-warn/35 bg-warn/10 text-warn"
                     : "border-line bg-card text-fg-3",
               )}
@@ -431,12 +462,14 @@ export function StudioAiComicDirectorRoute({
                   ? "동기화 중"
                   : syncState === "conflict"
                     ? "revision 충돌"
-                    : "로컬 자동 저장"}
+                    : storageFailed
+                      ? creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.deviceUnsaved", "기기에 저장 안 됨")
+                      : saving ? creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.deviceSaving", "기기에 저장 중…") : "로컬 자동 저장"}
             </span>
             {syncState === "conflict" ? (
               <button
                 type="button"
-                disabled={networkBusy}
+                disabled={networkBusy || scopeRejected}
                 onClick={() => void synchronizeDraft("reload")}
                 className={cn(
                   "inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-semibold hover:bg-raised",
@@ -449,7 +482,7 @@ export function StudioAiComicDirectorRoute({
             ) : (
               <button
                 type="button"
-                disabled={networkBusy}
+                disabled={networkBusy || scopeRejected}
                 onClick={() => void synchronizeDraft("save")}
                 className={cn(
                   "min-h-11 rounded-lg border border-line bg-card px-3 text-xs font-semibold hover:bg-raised",
@@ -474,7 +507,20 @@ export function StudioAiComicDirectorRoute({
           </div>
         </header>
 
-        {draft.storageFailed && <p role="alert">이 기기에 대본을 저장하지 못했습니다. 창을 닫기 전에 대본을 복사하거나 클라우드에 저장하세요.</p>}
+        {storageFailed && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-warn/45 bg-warn/10 p-3">
+            <p role="alert" className="min-w-0 flex-1 basis-60 text-sm text-fg">
+              {creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.deviceSaveFailed", "이 기기에 대본을 저장하지 못했습니다. 창을 닫기 전에 다시 저장하거나 대본을 복사하세요.")}
+            </p>
+            <button type="button" className={cn("min-h-11 rounded-lg border border-line bg-card px-3 text-sm font-semibold", STUDIO_FOCUS_RING)}
+              onClick={async () => {
+                await retryFailedStudioLocalDatabaseOpen();
+                if (await draft.persist(true) && mounted.current) setMessage(creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.deviceSaved", "이 기기에 대본을 저장했습니다."));
+              }}>
+              {creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.retryDeviceSave", "이 기기에 다시 저장")}
+            </button>
+          </div>
+        )}
         {message ? (
           <p
             role="status"
@@ -629,6 +675,7 @@ export function StudioAiComicDirectorRoute({
                   </button>
                   <button
                     type="button"
+                    disabled={networkBusy || scopeRejected}
                     onClick={() => void saveBibleRevision()}
                     className="mt-2 min-h-11 w-full rounded-lg bg-accent text-xs font-bold text-on-accent"
                   >

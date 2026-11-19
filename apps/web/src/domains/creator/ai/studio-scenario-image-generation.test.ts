@@ -108,6 +108,22 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("reviewed scenario image replacement integrity", () => {
+  it("원고 권한과 선택 컷을 확인한 뒤 실제 제작을 시작할 때만 디렉터를 한 번 전환한다", async () => {
+    const { context } = session();
+    const onStarted = vi.fn();
+    const request = { indexes: [1], variants: 2 } as const;
+    await createStudioScenarioImageGenerationExecutors({
+      ...context, collaborationAccessRef: { current: { locked: true } },
+    }).executeGenerateScenarioImages(request, onStarted);
+    expect(onStarted).not.toHaveBeenCalled();
+    const executor = createStudioScenarioImageGenerationExecutors(context);
+    await executor.executeGenerateScenarioImages({ indexes: [], variants: 2 }, onStarted);
+    expect(onStarted).not.toHaveBeenCalled();
+    generateImage.mockResolvedValue({ ok: true, data: { dataUrl: REPLACEMENT_IMAGE } });
+    await executor.executeGenerateScenarioImages(request, onStarted);
+    expect(onStarted).toHaveBeenCalledTimes(1);
+    expect(generateImage).toHaveBeenCalledTimes(2);
+  });
   it.each(["background", "character", "role"] as const)("retains the reviewed image and its exact provenance when %s replacement fails", async (mode) => {
     const current = session(mode);
     let resolve!: (result: StudioAiResult<{ dataUrl: string }>) => void;

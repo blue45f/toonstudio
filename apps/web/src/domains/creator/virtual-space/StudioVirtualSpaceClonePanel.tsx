@@ -33,7 +33,7 @@ export function StudioVirtualSpaceClonePanel({ world, tileEffects = NO_EFFECTS, 
   readonly tileEffects?: readonly StudioTileEffectDefinition[];
   readonly disabled: boolean;
   readonly incoming?: string;
-  readonly onApplySnapshot: (snapshot: StudioSpaceSnapshot) => boolean;
+  readonly onApplySnapshot: (snapshot: StudioSpaceSnapshot) => boolean | Promise<boolean>;
 }) {
   const bt = useBilingual("StudioVirtualSpaceClonePanel");
   const [name, setName] = useState("");
@@ -90,10 +90,10 @@ export function StudioVirtualSpaceClonePanel({ world, tileEffects = NO_EFFECTS, 
     setMessage("");
   };
 
-  const apply = () => {
+  const apply = async () => {
     if (disabled || !proposal || !confirmed) return;
     try {
-      if (!onApplySnapshot(proposal.snapshot)) throw new Error("draft-save-failed");
+      if (!await onApplySnapshot(proposal.snapshot)) throw new Error("draft-save-failed");
     } catch {
       setMessage(bt("초안을 저장하지 못했습니다. 브라우저 저장 공간을 확인하고 다시 적용하세요.", "Could not save the draft. Check browser storage and apply again."));
       return;

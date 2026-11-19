@@ -93,10 +93,7 @@ export function readTextFile(file: File): Promise<string> {
 export function describeReceipt(receipt: ExportReceipt): string {
   const size = receipt.width && receipt.height ? ` · ${receipt.width}×${receipt.height}` : "";
   const psd = receipt.psd ? ` · 레이어 ${receipt.psd.layerCount}(그룹 ${receipt.psd.groupCount}) · 재합성 MAE ${receipt.psd.recomposeMae.toFixed(2)}` : "";
-  const motion = receipt.motion
-    ? ` · ${receipt.motion.beatCount ? `${receipt.motion.beatCount}비트 · ` : ""}${receipt.motion.frameCount}f (평균 ${receipt.motion.avgFrameMs.toFixed(2)}ms/f · 피크 ${receipt.motion.peakRasterMb.toFixed(2)}MB · 효과음 ${receipt.motion.audioEvents}건${receipt.motion.ambientBgm ? " · 앰비언트 BGM" : ""})`
-    : "";
-  return `${receipt.fileName} (${receipt.bytes.toLocaleString("ko-KR")} B${size}${psd}${motion} · ${receipt.durationMs} ms)`;
+  return `${receipt.fileName} (${receipt.bytes.toLocaleString("ko-KR")} B${size}${psd} · ${receipt.durationMs} ms)`;
 }
 
 export function clampExportInt(value: string, min: number, max: number, fallback: number): number {
@@ -191,7 +188,7 @@ export interface ApplyImportedRecipeParams {
   readonly engine: CharacterEngine | null;
   readonly dispatch: (cmd: LabCommand) => void;
   readonly applyStoreEvent: (event: LabEvent) => void;
-  readonly getRegisteredPackage: (characterId: string, sha256: string) => { readonly glbSha256: string; readonly capabilities: LabStateCapabilities } | undefined;
+  readonly getRegisteredPackage: (characterId: string, sha256?: string) => { readonly glbSha256: string; readonly capabilities: LabStateCapabilities } | undefined;
   readonly ensurePackageRegistered?: (characterId: string, expectedSha256: string) => Promise<{ readonly glbSha256: string; readonly capabilities: LabStateCapabilities } | undefined>;
   readonly peekKitManifest: ((source: Extract<RecipeSource, { readonly kind: "kit" }>) => KitManifest | undefined) | undefined;
   readonly catalog?: PresetCatalog;
@@ -246,12 +243,13 @@ export async function applyImportedRecipeText(
     if (!registered && ensurePackageRegistered) {
       registered = await ensurePackageRegistered(nextSource.characterId, nextSource.sha256);
     }
+    registered ??= getRegisteredPackage(nextSource.characterId);
     if (registered && registered.glbSha256 !== nextSource.sha256) {
       return {
         ok: false,
         failure: failVisible(
           "package-sha-mismatch",
-          `제작 패키지 '${nextSource.characterId}'의 GLB SHA-256 해시가 현재 등록된 패키지와 일치하지 않아 현재 작업을 보호하기 위해 불러오기를 중단했습니다. '제작 패키지' 탭에서 올바른 버전을 다시 등록하세요.`,
+          `제작 패키지 '${nextSource.characterId}'의 GLB SHA-256이 다릅니다(레시피 ${nextSource.sha256.slice(0, 8)}…, 확인한 파일 ${registered.glbSha256.slice(0, 8)}…). 현재 작업을 유지했습니다. '제작 패키지' 탭에서 레시피와 일치하는 판을 불러오세요.`,
           undefined,
           now,
         ),

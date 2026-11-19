@@ -246,7 +246,8 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
   const launchHref = (href: string) => preserveStudioLaunchDensity(href, location.search);
   const focusedScript = section === "story" && selectedView === "script"
     && readStudioLaunchDensity(location.search) === "focus";
-  if (focusedScript) {
+  const focusedBoard = section === "story" && selectedView === "references" && readStudioLaunchDensity(location.search) !== "full";
+  if (focusedScript || focusedBoard) {
     const fullParams = new URLSearchParams(location.search);
     fullParams.set("uiMode", "full");
     const [continuePath, continueSearch = ""] = launchHref(headerFacts?.hasResumeDocument ? headerFacts.resumeHref : workHref(displayProjectId)).split("?", 2);
@@ -254,30 +255,35 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
     continueParams.set("startTool", "draw");
     return (
       <Container size="wide" className="py-4 sm:py-6">
-        <header data-studio-project-shell="focused-script" className="rounded-2xl border border-line bg-card p-4 sm:p-5">
+        <header data-studio-project-shell={focusedBoard ? "focused-board" : "focused-script"} className={focusedBoard ? "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-b border-line pb-2" : "rounded-2xl border border-line bg-card p-4 sm:p-5"}>
           <Link href="/studio" className="inline-flex min-h-11 items-center text-sm font-semibold text-fg-2 hover:text-accent">{bt("내 작업으로", "Back to My work")}</Link>
-          <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="break-words text-sm font-semibold text-fg-2">{projectTitle}</p>
-              <h1 className="mt-1 text-2xl font-black text-fg">{bt("대본 확인하고 이어 그리기", "Review your script and keep drawing")}</h1>
+          <div className={focusedBoard ? "contents" : "mt-1 flex flex-wrap items-center justify-between gap-3"}>
+            <div className={focusedBoard ? "min-w-0 text-right" : "min-w-0"}>
+              {focusedBoard ? <h1 className="break-words text-sm font-bold text-fg">{projectTitle}</h1> : <>
+                <p className="break-words text-sm font-semibold text-fg-2">{projectTitle}</p>
+                <h1 className="mt-1 text-2xl font-black text-fg">{bt("대본 확인하고 이어 그리기", "Review your script and keep drawing")}</h1>
+              </>}
             </div>
             <Link
               href={`${continuePath}?${continueParams.toString()}`}
               data-studio-project-header-continue="true"
-              className={buttonClass({ size: "lg", className: "gap-2" })}
+              className={buttonClass({ size: "lg", className: "justify-self-start gap-2" })}
             >
               <Brush size={17} aria-hidden="true" />{bt("이어서 그리기", "Continue drawing")}
             </Link>
           </div>
-          <details className="mt-3 rounded-xl border border-line bg-panel/40">
+          <details className={cn("rounded-xl border border-line bg-panel/40", focusedBoard ? "open:col-span-2" : "mt-3")}>
             <summary className="min-h-11 cursor-pointer px-3 py-2.5 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{bt("프로젝트 메뉴", "Project menu")}</summary>
             <nav aria-label={bt("프로젝트 주요 단계", "Main project stages")} className="flex flex-wrap gap-2 border-t border-line p-2">
               {PRIMARY_SECTIONS.map((id) => <Link key={id} href={launchHref(projectSectionHref(displayProjectId, id))} aria-current={id === section ? "page" : undefined} className={buttonClass({ variant: "quiet", className: "min-h-11" })}>{bt(SECTION_DEFINITIONS[id].label.ko, SECTION_DEFINITIONS[id].label.en)}</Link>)}
             </nav>
-            <Link className={buttonClass({ variant: "quiet", className: "min-h-11" })} href={projectViewHref(displayProjectId, "story", "references", location.search)}>{bt("아이디어 보드", "Idea board")}</Link>
+            <Link className={buttonClass({ variant: "quiet", className: "min-h-11" })} href={projectViewHref(displayProjectId, "story", focusedBoard ? "script" : "references", location.search)}>{focusedBoard ? bt("대본 열기", "Open script") : bt("아이디어 보드", "Idea board")}</Link>
             <Link className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-accent" href={`${projectSectionHref(displayProjectId, "story")}?${fullParams.toString()}`}>{bt("전체 기획 도구 보기", "Show all planning tools")}</Link>
           </details>
         </header>
+        {focusedBoard && <Suspense fallback={<p role="status">{bt("아이디어 보드를 여는 중…", "Opening the idea board…")}</p>}>
+          <ProjectMoodboard key={displayProjectId} projectId={displayProjectId}/>
+        </Suspense>}
         <StudioProjectDiagnosticsBridge projectId={displayProjectId} />
       </Container>
     );

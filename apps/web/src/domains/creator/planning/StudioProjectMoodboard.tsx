@@ -2,15 +2,12 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import "./StudioProjectMoodboard.css";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
+import { loadDeviceMoodboard, writeDeviceMoodboard, MoodboardChanged, type DeviceBoard } from "./studio-moodboard-device-store";
 import { StudioMoodboardCheckpointPanel } from "./StudioMoodboardCheckpointPanel";
 import { StudioMoodboardPanel } from "./StudioMoodboardPanel";
 import {
   STUDIO_MOODBOARD_UPDATED_EVENT,
   createDefaultStudioProjectMoodboard,
-  readStudioProjectMoodboard,
-  saveStudioProjectMoodboard,
-  serializeMoodboard,
-  studioMoodboardStorageKey,
   type Moodboard,
   type MoodboardAssetCatalogEntry,
 } from "./studio-moodboard";
@@ -20,35 +17,7 @@ export interface StudioProjectMoodboardProps {
   readonly imageCatalog?: readonly MoodboardAssetCatalogEntry[];
 }
 
-type LoadState =
-  | { readonly kind: "ready"; readonly board: Moodboard }
-  | { readonly kind: "broken"; readonly reason: string; readonly damaged?: string }
-  | { readonly kind: "unavailable" };
-
-function loadMoodboard(projectId: string): LoadState {
-  if (typeof window === "undefined") return { kind: "unavailable" };
-  try {
-    const stored = readStudioProjectMoodboard(window.localStorage, projectId);
-    if (stored === null) {
-      const initial = createDefaultStudioProjectMoodboard(projectId);
-      return { kind: "ready", board: saveStudioProjectMoodboard(window.localStorage, initial) };
-    }
-    if (!stored.ok) return { kind: "broken", reason: stored.reason, damaged: window.localStorage.getItem(studioMoodboardStorageKey(projectId)) ?? undefined };
-    // projectId 가 비어 있는 구 저장본은 현재 프로젝트 보드로 귀속시켜 저장한다.
-    const board = stored.board.projectId
-      ? stored.board
-      : saveStudioProjectMoodboard(
-          window.localStorage,
-          { ...stored.board, projectId },
-        );
-    return { kind: "ready", board };
-  } catch (error) {
-    return {
-      kind: "broken",
-      reason: error instanceof Error ? error.message : r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.loadFailed", "무드보드를 불러올 수 없어요."),
-    };
-  }
-}
+type LoadState = DeviceBoard | { kind: "loading" } | { kind: "unavailable"; reason: string };
 
 export function StudioProjectMoodboard(props: StudioProjectMoodboardProps) {
   return <ProjectBoardSession key={props.projectId} {...props} />;
@@ -57,121 +26,118 @@ export function StudioProjectMoodboard(props: StudioProjectMoodboardProps) {
 const HISTORY_LIMIT = 30;
 
 function ProjectBoardSession({ projectId, imageCatalog }: StudioProjectMoodboardProps) {
-  const [state, setState] = useState<LoadState>(() => loadMoodboard(projectId));
+  const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [history, setHistory] = useState<{ past: Moodboard[]; future: Moodboard[] }>({ past: [], future: [] });
   const [saveError, setSaveError] = useState<"unavailable" | "changed" | null>(null);
-  const lastSaved = useRef(state.kind === "ready" ? serializeMoodboard(state.board) : null);
-  const writing = useRef(false);
+  const [saving, setSaving] = useState(false);
+  const lastSaved = useRef("");
+  const epoch = useRef(0);
+  const pending = useRef(0);
+  const queue = useRef(Promise.resolve(true));
+  const alive = useRef(false);
+  const events = useRef<BroadcastChannel | null>(null);
 
-  function loadSavedState(next: LoadState) {
-    lastSaved.current = next.kind === "ready" ? serializeMoodboard(next.board) : null;
-    setState(next);
-    setHistory({ past: [], future: [] });
-    setSaveError(null);
-  }
-
-  const refreshFromStorage = useEffectEvent(() => {
-    if (writing.current) return;
-    const next = loadMoodboard(projectId);
-    if (next.kind === "ready" && serializeMoodboard(next.board) === lastSaved.current) return;
-    if (saveError) setSaveError("changed");
-    else loadSavedState(next);
-  });
-
-  useEffect(() => {
-    const updated = (event: Event) => {
-      if (event instanceof CustomEvent && event.detail?.projectId === projectId) refreshFromStorage();
-    };
-    const stored = (event: StorageEvent) => {
-      if (event.key === null || event.key === studioMoodboardStorageKey(projectId)) refreshFromStorage();
-    };
-    window.addEventListener(STUDIO_MOODBOARD_UPDATED_EVENT, updated);
-    window.addEventListener("storage", stored);
-    return () => {
-      window.removeEventListener(STUDIO_MOODBOARD_UPDATED_EVENT, updated);
-      window.removeEventListener("storage", stored);
-    };
-  }, [projectId]);
-
-  function persist(board: Moodboard) {
-    writing.current = true;
+  async function reload(external = false) {
+    if (external && (pending.current || saveError)) return;
+    const ticket = ++epoch.current;
     try {
-      const current = readStudioProjectMoodboard(window.localStorage, projectId);
-      if (current?.ok !== true || serializeMoodboard(current.board) !== lastSaved.current) {
-        setSaveError("changed");
-        return false;
-      }
-      const saved = saveStudioProjectMoodboard(window.localStorage, board, window);
-      lastSaved.current = serializeMoodboard(saved);
+      const next = await loadDeviceMoodboard(projectId);
+      if (!alive.current || epoch.current !== ticket || (external && next.raw === lastSaved.current)) return;
+      lastSaved.current = next.raw;
+      setState(next);
+      setHistory({ past: [], future: [] });
       setSaveError(null);
-      return true;
     } catch {
-      setSaveError("unavailable");
-      return false;
-    } finally {
-      writing.current = false;
+      if (alive.current && epoch.current === ticket && !external) setState({ kind: "unavailable",
+        reason: r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.loadFailed", "무드보드를 불러올 수 없어요.") });
     }
   }
 
-  if (state.kind === "unavailable") return null;
-  if (state.kind === "broken") {
-    const restore = (replacement: Moodboard) => {
-      try {
-        const storage = window.localStorage;
-        const key = studioMoodboardStorageKey(projectId);
-        if (state.damaged !== undefined) {
-          if (storage.getItem(key) !== state.damaged) {
-            loadSavedState(loadMoodboard(projectId));
-            return false;
-          }
-          // 복구 시 손상된 원문도 프로젝트별로 보존한다.
-          storage.setItem(key + ":damaged:" + crypto.randomUUID(), state.damaged);
-        } else if (storage.getItem(key) !== null) {
-          loadSavedState(loadMoodboard(projectId));
-          return false;
-        }
-        loadSavedState({ kind: "ready", board: saveStudioProjectMoodboard(storage, replacement, window) });
-        return true;
-      } catch {
-        setState({ ...state, reason: "원래 보드를 보존하지 못했어요. 저장 공간과 브라우저 설정을 확인해 주세요." });
-        return false;
-      }
+  const refresh = useEffectEvent((external: boolean) => { void reload(external); });
+  useEffect(() => {
+    alive.current = true;
+    refresh(false);
+    const channel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel(STUDIO_MOODBOARD_UPDATED_EVENT);
+    events.current = channel;
+    if (channel) channel.onmessage = event => { if (event.data === projectId) refresh(true); };
+    const updated = (event: Event) => {
+      if (event instanceof CustomEvent && event.detail?.projectId === projectId) refresh(true);
     };
-    return <section aria-label="기획 무드보드" className="studio-project-moodboard">
-      <h2>기획 무드보드</h2><p role="alert">{state.reason}</p>
-      <button type="button" onClick={() => loadSavedState(loadMoodboard(projectId))}>보드 다시 불러오기</button>
-      <StudioMoodboardCheckpointPanel projectId={projectId} onRestore={restore}/>
-      <button type="button" onClick={() => restore(createDefaultStudioProjectMoodboard(projectId))}>새 무드보드로 시작하기</button>
+    window.addEventListener(STUDIO_MOODBOARD_UPDATED_EVENT, updated);
+    return () => {
+      alive.current = false;
+      window.removeEventListener(STUDIO_MOODBOARD_UPDATED_EVENT, updated);
+      channel?.close();
+      events.current = null;
+    };
+  }, [projectId]);
+
+  function persist(board: Moodboard, preserveDamaged = false) {
+    ++epoch.current;
+    ++pending.current;
+    setSaving(true);
+    queue.current = queue.current.then(async () => {
+      try {
+        lastSaved.current = await writeDeviceMoodboard(projectId, board, lastSaved.current, preserveDamaged);
+        window.dispatchEvent(new CustomEvent(STUDIO_MOODBOARD_UPDATED_EVENT, { detail: board }));
+        events.current?.postMessage(projectId);
+        if (alive.current) setSaveError(null);
+        return true;
+      } catch (error) {
+        if (alive.current) setSaveError(error instanceof MoodboardChanged ? "changed" : "unavailable");
+        return false;
+      } finally {
+        --pending.current;
+        if (!pending.current && alive.current) setSaving(false);
+      }
+    });
+    return queue.current;
+  }
+
+  if (state.kind === "loading") return <p role="status" className="p-3">{r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.opening", "아이디어 보드를 여는 중…")}</p>;
+  if (state.kind === "broken" || state.kind === "unavailable") {
+    const restore = async (replacement: Moodboard) => {
+      if (state.kind !== "broken" || pending.current) return false;
+      if (!await persist(replacement, true)) return false;
+      if (alive.current) await reload();
+      return true;
+    };
+    const title = r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.boardName", "아이디어 보드");
+    return <section aria-label={title} className="studio-project-moodboard">
+      <h2>{title}</h2><p role="alert">{state.reason}</p>
+      <button type="button" onClick={() => void reload()}>보드 다시 불러오기</button>
+      {saveError && <p role="alert">{saveError === "changed" ? r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.backupChanged", "저장본이 바뀌었어요. 다시 불러와 확인해 주세요.") : r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.backupFailed", "원래 보드를 보존하지 못했어요. 저장 공간을 확인해 주세요.")}</p>}
+      {state.kind === "broken" && <StudioMoodboardCheckpointPanel projectId={projectId} onRestore={restore}/>}
+      {state.kind === "broken" && <button type="button" disabled={saving} onClick={() => void restore(createDefaultStudioProjectMoodboard(projectId))}>새 무드보드로 시작하기</button>}
     </section>;
   }
 
   function change(next: Moodboard, past: Moodboard[], future: Moodboard[]) {
-    setState({ kind: "ready", board: next });
+    setState({ kind: "ready", board: next, raw: lastSaved.current });
     setHistory({ past: past.slice(-HISTORY_LIMIT), future: future.slice(-HISTORY_LIMIT) });
-    persist(next);
+    return persist(next);
   }
 
   const board = state.board;
   const previous = history.past.at(-1);
   const following = history.future.at(-1);
-  return <div className="studio-project-moodboard">
+  const tools = <>
     <div className="studio-project-moodboard-actions" role="group" aria-label="보드 변경 기록">
       <button type="button" disabled={!previous} onClick={() => previous && change(previous, history.past.slice(0, -1), [...history.future, board])}>실행 취소</button>
       <button type="button" disabled={!following} onClick={() => following && change(following, [...history.past, board], history.future.slice(0, -1))}>다시 실행</button>
-      {!saveError && <span role="status">이 기기에 저장됨</span>}
+      {!saveError && <span role="status">{saving ? r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.localSaving", "저장 중…") : r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.localSaved", "이 기기에 저장됨")}</span>}
     </div>
     {saveError && <div role="alert">
       {saveError === "changed"
-        ? <>다른 탭에서 보드가 바뀌었어요. 지금 화면의 수정 내용은 저장되지 않았습니다. <button type="button" onClick={() => loadSavedState(loadMoodboard(projectId))}>내 변경을 버리고 저장본 열기</button></>
+        ? <>다른 탭에서 보드가 바뀌었어요. 지금 화면의 수정 내용은 저장되지 않았습니다. <button type="button" onClick={() => void reload()}>내 변경을 버리고 저장본 열기</button></>
         : <>저장 공간이나 브라우저 설정을 확인해 주세요. 수정한 카드는 이 탭에 남아 있어요. <button type="button" onClick={() => persist(board)}>다시 저장</button></>}
     </div>}
-    {!saveError && <StudioMoodboardCheckpointPanel projectId={projectId} board={board} onRestore={snapshot => {
-      if (!persist(snapshot)) return false;
-      setHistory({ past: [...history.past, board].slice(-HISTORY_LIMIT), future: [] });
-      setState({ kind: "ready", board: snapshot });
-      return true;
-    }}/>}
-    <StudioMoodboardPanel board={board} imageCatalog={imageCatalog} scriptProjectId={saveError ? undefined : projectId} profileProjectId={saveError ? undefined : projectId}
+    {!saveError && <StudioMoodboardCheckpointPanel projectId={projectId} board={board} onRestore={snapshot =>
+      change(snapshot, [...history.past, board], [])
+    }/>}
+  </>;
+  return <div className="studio-project-moodboard">
+    <StudioMoodboardPanel tools={tools} board={board} imageCatalog={imageCatalog} scriptProjectId={saveError ? undefined : projectId} profileProjectId={saveError ? undefined : projectId}
       onBoardChange={next => change(next, [...history.past, board], [])} />
   </div>;
 }

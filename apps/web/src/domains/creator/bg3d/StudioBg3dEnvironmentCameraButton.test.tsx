@@ -37,22 +37,27 @@ describe("환경 에셋에 저장된 카메라 구도", () => {
   });
 
   it.each([
-    ["botanical_glasshouse", "모종 작업대", [-0.7, 2.17, 2.34], [-2.19, 1.47, 0.54], 37],
-    ["coastal_signal_station", "부두 난간", [3.28, 2.52, 4.28], [1.11, 1.15, 1.36], 40],
-    ["botanical_illustration_room", "표본 작업대", [0.23, 1.8, 0.83], [-0.61, 1.054, -0.2], 30],
-    ["harbor_boat_repair_shed", "선체 이음부", [2.57, 1.93, 2.91], [0.62, 0.9, 0.18], 38],
+    ["botanical_glasshouse-v1", "모종 작업대", [-0.7, 2.17, 2.34], [-2.19, 1.47, 0.54], 37],
+    ["coastal_signal_station-v1", "부두 난간", [3.28, 2.52, 4.28], [1.11, 1.15, 1.36], 40],
+    ["botanical_illustration_room-v1", "표본 작업대", [0.23, 1.8, 0.83], [-0.61, 1.054, -0.2], 30],
+    ["harbor_boat_repair_shed-v1", "선체 이음부", [2.57, 1.93, 2.91], [0.62, 0.9, 0.18], 38],
+    ["fantasy_ruin_courtyard-v6", "룬 분수", [14.7, 11.2, 16.5], [0.215, 2.237, 0.241], 17.6],
+    ["korean_school_rooftop-v6", "옥상 급수탱크", [18, 12, 18.5], [7.234, 2.729, 2.081], 18.4],
+    ["webtoon_school_gate_module-mcp-v1", "교문 돌기둥", [12.946, 6.964, 14.464], [0.232, 1.203, -2.836], 20],
   ] as const)("%s 세부 구도를 명시적으로 골라야 Blender의 촬영 지점으로 이동한다", (id, subject, position, target, fovDegrees) => {
-    const asset = getStudioBg3dEnvironmentAsset(`ts-bg3d-${id}-v1`)!;
+    const asset = getStudioBg3dEnvironmentAsset(`ts-bg3d-${id}`)!;
     const props = { ...controls(), assetHash: asset.sha256 };
     render(<StudioBg3dEnvironmentCameraButton {...props} />);
     expect(props.onCommit).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: `세부 구도 적용 · ${subject}` }));
+    const detail = screen.getByRole("button", { name: `세부 구도 적용 · ${subject}` });
+    expect(detail.textContent).toContain(subject);
+    fireEvent.click(detail);
     expect(props.onCommit).toHaveBeenCalledExactlyOnceWith(camera, expect.objectContaining({ position, target, fovDegrees }));
   });
 
   it("별도 세부 구도가 없는 기존 장소는 원래 추천 구도만 제공한다", () => {
     const existing = STUDIO_BG3D_ENVIRONMENT_ASSETS.filter(asset => !asset.detailCamera);
-    expect(existing).toHaveLength(31);
+    expect(existing).toHaveLength(28);
     render(<StudioBg3dEnvironmentCameraButton {...controls()} assetHash={existing[0]!.sha256} />);
     expect(screen.getAllByRole("button")).toEqual([button()]);
   });

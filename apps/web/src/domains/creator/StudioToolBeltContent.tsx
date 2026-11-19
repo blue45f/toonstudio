@@ -164,7 +164,7 @@ export interface StudioToolBeltContentHandlers {
     readonly sourceId: string;
   }) => void;
   addDiagonalSplit: () => void;
-  addDialogueBubbles: () => Promise<void>;
+  addDialogueBubbles: (targetFrameId?: string) => Promise<void>;
   addDialogueSuggestionToScript: (candidate: DialogueSuggestionCandidate) => void;
   addEmeresLibraryItem: (item: StudioEmeresLibraryItem) => void;
   addEmeresTemplate: (t: StudioEmeresTemplate) => void;

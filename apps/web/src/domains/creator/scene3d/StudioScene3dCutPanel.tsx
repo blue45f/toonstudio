@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { isStudioLocalDatabaseOwnershipBusyError } from "../studio-local-database-ownership";
 import { StudioScene3dCutSession } from "./studio-scene3d-cut-session";
+import { StudioScene3dShotList } from "./StudioScene3dShotList";
 import type { compareStudioScene3dCutSource } from "./studio-scene3d-shot-versions";
 
 const BUTTON =
@@ -57,6 +58,14 @@ export function StudioScene3dCutPanel({
   const cuts = state.project?.shotVersions?.cuts ?? [];
   const selected = cuts.find((cut) => cut.id === state.selectedId);
   const act = (fn: () => void) => session.run(fn);
+  const download = (raw: string, type: string, filename: string) => {
+    if (backupUrl.current) URL.revokeObjectURL(backupUrl.current);
+    backupUrl.current = URL.createObjectURL(new Blob([raw], { type }));
+    const anchor = document.createElement("a");
+    anchor.href = backupUrl.current;
+    anchor.download = filename;
+    anchor.click();
+  };
   const asyncAct = (fn: () => Promise<void>) => {
     void fn().catch((error: unknown) =>
       session.run(() => {
@@ -286,6 +295,8 @@ export function StudioScene3dCutPanel({
               {selected.revision} · {t("장면 버전", "Scene revision")}{" "}
               {selected.source.scene.revision}
             </p>
+            <StudioScene3dShotList cuts={cuts} selected={selected}
+              onDownload={text => act(() => download(text, "text/plain;charset=utf-8", "studio-3d-shot-list.txt"))} />
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -477,14 +488,7 @@ export function StudioScene3dCutPanel({
               act(() => {
                 const raw = session.backup();
                 setJson(raw);
-                if (backupUrl.current) URL.revokeObjectURL(backupUrl.current);
-                backupUrl.current = URL.createObjectURL(
-                  new Blob([raw], { type: "application/json" })
-                );
-                const anchor = document.createElement("a");
-                anchor.href = backupUrl.current;
-                anchor.download = "studio-3d-cuts.json";
-                anchor.click();
+                download(raw, "application/json", "studio-3d-cuts.json");
               })
             }
           >

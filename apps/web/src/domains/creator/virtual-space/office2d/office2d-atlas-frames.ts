@@ -30,14 +30,19 @@ export function office2dAtlasDrawFrame(
   const { width, height } = OFFICE2D_CHARACTER_CELL;
   const foot = height * OFFICE2D_FOOT_RATIO;
   const clipped = Math.max(0, Math.min(1, crop));
-  const atlas = generatedImage ? office2dGeneratedAtlas(character, sheet) : null;
-  const frame = atlas && image.width === atlas.width && image.height === atlas.height
-    ? atlas.frames[row * atlas.columns + col] : undefined;
-  if (!atlas || !frame) return {
-    source: { x: col * width, y: row * height, width, height: height * clipped },
-    destination: { x: 0, y: 0, width, height: height * clipped },
-    accessoryOffset: { x: 0, y: 0 },
-  };
+  const atlas = office2dGeneratedAtlas(character, sheet);
+  const frame = atlas && col >= 0 && col < atlas.columns ? atlas.frames[row * atlas.columns + col] : undefined;
+  if (!generatedImage || !atlas || !frame || image.width !== atlas.width || image.height !== atlas.height) {
+    const footY = atlas && image.width === atlas.columns * width && image.height === atlas.rows * height
+      ? frame?.referenceFootY : undefined;
+    const y = foot - (footY ?? foot);
+    const drawHeight = Math.max(0, Math.min(height, height * clipped - y));
+    return {
+      source: { x: col * width, y: row * height, width, height: drawHeight },
+      destination: { x: 0, y, width, height: drawHeight },
+      accessoryOffset: { x: 0, y },
+    };
+  }
   const scaleX = atlas.width / atlas.columns / width;
   const scaleY = atlas.height / atlas.rows / height;
   const destination = {

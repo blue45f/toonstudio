@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { resetFailedStudioLocalDatabaseOwnership } from "../../studio-local-database-runtime";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
@@ -9,9 +10,8 @@ import {
 } from "../studio-virtual-space-art-style";
 import {
   readStudioVirtualCharacterCustomization,
-  readStudioVirtualDecorationState,
+  studioVirtualDecorationPreset,
   writeStudioVirtualCharacterCustomization,
-  writeStudioVirtualDecorationState,
   type StudioVirtualCharacterCustomization,
   type StudioVirtualDecorationState,
 } from "../studio-virtual-space-customization";
@@ -119,48 +119,50 @@ export function useSpacePreferences({ initialArtStyle, decorationScope, decorati
     return () => window.removeEventListener("toonspectrum:space-theme-change", onThemeEvent);
   }, []);
 
-  const decorationSession = useMemo(() => decorationOwner && studioVirtualSpaceSyncEnabled()
-    ? new StudioVirtualDecorationSession(decorationScope, studioVirtualSpaceDecorationSync(), decorationOwner) : null, [decorationOwner, decorationScope]);
-  const activeSession = useRef(decorationSession);
+  const syncEnabled = Boolean(decorationOwner) && studioVirtualSpaceSyncEnabled();
+  const decorationSession = useMemo(() => new StudioVirtualDecorationSession(decorationScope,
+    syncEnabled ? studioVirtualSpaceDecorationSync() : null, decorationOwner), [decorationOwner, decorationScope, syncEnabled]);
+  const activeSession = useRef<StudioVirtualDecorationSession | null>(decorationSession);
   useEffect(() => {
     activeSession.current = decorationSession;
-    return () => { activeSession.current = null; decorationSession?.cancelPending(); };
+    return () => { activeSession.current = null; decorationSession.cancelPending(); };
   }, [decorationSession]);
-  const viewKey = decorationSession ? JSON.stringify([decorationOwner, decorationScope]) : decorationScope;
+  const viewKey = JSON.stringify([decorationOwner, decorationScope]);
   const [decorationDrafts, setDecorationDrafts] = useState<ReadonlyMap<string, StudioVirtualDecorationState>>(() => new Map());
-  const [syncFeedback, setSyncFeedback] = useState<{ owner: StudioVirtualDecorationSession; status: "local" | "conflict" } | null>(null);
-  const initialDecorations = useMemo(() => decorationSession?.initialState ?? readStudioVirtualDecorationState(decorationScope), [decorationScope, decorationSession]);
+  const [syncFeedback, setSyncFeedback] = useState<{ owner: StudioVirtualDecorationSession; status: "local" | "conflict" | "device-error" } | null>(null);
+  const [initialDecorations] = useState(() => studioVirtualDecorationPreset("creator-garden"));
   const decorations = decorationDrafts.get(viewKey) ?? initialDecorations;
   const updateDecorationView = useCallback((next: StudioVirtualDecorationState) => {
     setDecorationDrafts(current => new Map(current).set(viewKey, next));
-  }, [viewKey]);
+  }, [viewKey, setDecorationDrafts]);
   const handleResult = useCallback((result: StudioVirtualDecorationSyncResult, edit: number, adopt: boolean) => {
-    if (!decorationSession || activeSession.current !== decorationSession || decorationSession.editCount !== edit) return;
-    if (result.status === "server") {
-      setSyncFeedback(null);
-      if (adopt && result.state.revision > 0) updateDecorationView(result.state);
-    } else if (decorationSession.hasPendingDraft) {
-      setSyncFeedback({ owner: decorationSession, status: decorationSession.hasConflict ? "conflict" : "local" });
-    }
-  }, [decorationSession, updateDecorationView]);
-  const recoverDecorations = useCallback((choice: "retry" | "device" | "server" = "retry") => {
-    if (!decorationSession) return;
-    const pending = choice === "retry" ? decorationSession.load(initialDecorations) : decorationSession.resolveConflict(choice);
+    if (activeSession.current !== decorationSession || decorationSession.editCount !== edit) return;
+    if (adopt && decorationSession.cachedState) updateDecorationView(decorationSession.cachedState);
+    if (decorationSession.cachedState && !decorationSession.cachedLocally)
+      setSyncFeedback({ owner: decorationSession, status: "device-error" });
+    else if (decorationSession.hasConflict) setSyncFeedback({ owner: decorationSession, status: "conflict" });
+    else if (result.status === "local" && decorationSession.hasPendingDraft) setSyncFeedback({ owner: decorationSession, status: "local" });
+    else setSyncFeedback(null);
+  }, [decorationSession, setSyncFeedback, updateDecorationView]);
+  const recoverDecorations = useCallback(async (choice?: "retry" | "device" | "server") => {
+    if (choice === "retry") await resetFailedStudioLocalDatabaseOwnership();
+    if (activeSession.current !== decorationSession) return;
+    const pending = !choice || choice === "retry" ? decorationSession.load(initialDecorations) : decorationSession.resolveConflict(choice);
     const edit = decorationSession.editCount;
     void pending?.then(result => handleResult(result, edit, true));
   }, [decorationSession, initialDecorations, handleResult]);
   const selectDecorations = useCallback((next: StudioVirtualDecorationState) => {
     updateDecorationView(next);
     if (next.districtKey !== decorations.districtKey) selectEnvironmentPreference(studioDistrictEnvironment(next.districtKey));
-    let cached: boolean;
-    if (decorationSession) {
-      const pending = decorationSession.save(next);
-      const edit = decorationSession.editCount;
-      cached = decorationSession.cachedLocally;
-      void pending.then(result => handleResult(result, edit, false));
-    } else cached = writeStudioVirtualDecorationState(next, decorationScope);
-    if (!cached) notify(bt("공간 변경은 적용됐지만 이 기기에 저장하지 못했어요. 저장 공간을 확인해 주세요.", "Space changes are applied, but could not be saved on this device. Check available storage."), "warn");
-  }, [bt, decorationScope, decorations.districtKey, decorationSession, handleResult, notify, selectEnvironmentPreference, updateDecorationView]);
+    const warn = () => notify(bt("공간 변경은 적용됐지만 이 기기에 저장하지 못했어요. 저장 공간을 확인해 주세요.", "Space changes are applied, but could not be saved on this device. Check available storage."), "warn");
+    const pending = decorationSession.save(next);
+    const edit = decorationSession.editCount;
+    void pending.then(result => {
+      if (activeSession.current !== decorationSession || edit !== decorationSession.editCount) return;
+      if (!decorationSession.cachedLocally) warn();
+      handleResult(result, edit, false);
+    });
+  }, [bt, decorations.districtKey, decorationSession, handleResult, notify, selectEnvironmentPreference, updateDecorationView]);
   // 빌드 모드로 배치한 상태 가구. 꾸미기와 달리 서버 계약이 없어 이 브라우저에만
   // 저장한다(배치 모듈이 키를 소유한다). 캔버스로 넘길 디스크립터는 여기서 파생한다.
   const [placedFixtureDrafts, setPlacedFixtureDrafts] = useState<ReadonlyMap<string, readonly StudioBuildPlacementRequest[]>>(() => new Map());
@@ -185,7 +187,7 @@ export function useSpacePreferences({ initialArtStyle, decorationScope, decorati
   }, [decorationSession, recoverDecorations]);
 
   return {
-    decorationSyncEnabled: Boolean(decorationSession),
+    decorationSyncEnabled: syncEnabled,
     decorationSyncStatus: syncFeedback && syncFeedback.owner === decorationSession ? syncFeedback.status : null,
     recoverDecorations,
     artStyle, selectArtStyle,

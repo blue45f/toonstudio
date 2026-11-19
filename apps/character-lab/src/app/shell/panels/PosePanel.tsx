@@ -14,6 +14,7 @@ import { hasPoseSkeleton, readPoseSkeleton } from "../../../render/pose-skeleton
 import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions } from "../lab-store-context";
 
 import { PoseFineLimbGazeControls } from "./pose-fine-limb-gaze-controls";
+import { effectiveHandPose, matchesHandPosePreset } from "./pose-hand-adjustment";
 import {
   CoordInputs,
   HAND_SIDES,
@@ -86,6 +87,7 @@ export function PosePanel() {
 
   const [scope, setScope] = useState<PoseScope>("full");
   const [handSide, setHandSide] = useState<HandSide>("both");
+  const hands = effectiveHandPose(recipe);
   const [poseIntensity, setPoseIntensity] = useState(1);
   const intensityBasePoseRef = useRef<Pose | null>(null);
   const lastScaledPoseRef = useRef<Pose | null>(null);
@@ -473,7 +475,7 @@ export function PosePanel() {
         </div>
         <div className="cl-pose-grid" role="group" aria-label="손 포즈 프리셋">
           {HAND_POSE_PRESETS.map((preset) => {
-            const selected = recipe.slots["hand-pose"] === preset.id;
+            const selected = matchesHandPosePreset(hands, handSide, preset);
             return (
               <button key={preset.id} type="button" className={`cl-pose-card${selected ? " cl-pose-card--selected" : ""}`} aria-pressed={selected} disabled={handBlocked} title={handCapability.reasonKo} data-preset-id={preset.id} onClick={() => applyHandPreset(preset)}>
                 <span className="cl-pose-card-label">{preset.labelKo}</span>

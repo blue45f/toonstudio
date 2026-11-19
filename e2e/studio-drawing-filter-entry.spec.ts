@@ -8,11 +8,13 @@ import { openStudioExportPanel, openStudioMainMenu, showStudioProjectWindowTools
 
 const singleFilters = STUDIO_FILTER_DIALOG_CATALOG.map(({ kind }) => kind);
 
-async function downloadCurrentArtwork(page: Page) {
+async function downloadCurrentArtwork(page: Page, pngPath?: string) {
   const panel = await openStudioExportPanel(page);
   const download = page.waitForEvent("download");
   await panel.getByRole("button", { name: "현재 페이지 PNG 다운로드", exact: true }).click();
-  const stream = await (await download).createReadStream();
+  const artwork = await download;
+  if (pngPath) await artwork.saveAs(pngPath);
+  const stream = await artwork.createReadStream();
   if (!stream) throw new Error("내보낸 원고 PNG를 읽을 수 없습니다.");
   const pixels = decodePng(await buffer(stream));
   const close = panel.getByRole("button", { name: "출력 설정 닫기" });
@@ -144,9 +146,10 @@ test("가로 태블릿에서 선택한 이미지의 브러시와 필터를 키�
   await page.evaluate(() => {
     const post = Worker.prototype.postMessage;
     const queued: Array<() => void> = [];
-    Worker.prototype.postMessage = function (this: Worker, ...args: Parameters<Worker["postMessage"]>) {
+    Worker.prototype.postMessage = function (this: Worker, ...args: [message: unknown, options?: Transferable[] | StructuredSerializeOptions]) {
       const [message] = args;
-      if (typeof message?.type === "string" && message.type.startsWith("studio-image-filter/")) {
+      if (typeof message === "object" && message !== null && "type" in message
+        && typeof message.type === "string" && message.type.startsWith("studio-image-filter/")) {
         queued.push(() => Reflect.apply(post, this, args));
         document.documentElement.dataset.heldFilterMessages = String(queued.length);
       } else {
@@ -200,11 +203,13 @@ test("여러 줄인 프로젝트 메뉴에서 포인터를 옮겨 필터를 열 
   await expect(gallery).toBeHidden({ timeout: 45_000 });
 });
 
-test("첫 필터 엔진 수신이 늦어도 취소·다시 선택해 원고에 한 번만 적용한다", async ({ page, context }) => {
+test("첫 필터 엔진 수신이 늦어도 취소·다시 선택해 원고에 한 번만 적용한다", async ({ page, context }, info) => {
   let releaseAssets: (() => void) | undefined;
   const held = new Promise<void>(resolve => { releaseAssets = resolve; });
+  let delayFilterEngine = false;
   let delayedWorkers = 0;
   await context.route(/\/studio-svg-export\.worker(?:-[^/?.]+)?\.(?:js|ts)(?:\?|$)/u, async (route) => {
+    if (!delayFilterEngine) return route.continue();
     delayedWorkers++;
     await held;
     await route.continue().catch(error => {
@@ -215,6 +220,11 @@ test("첫 필터 엔진 수신이 늦어도 취소·다시 선택해 원고에 �
     await page.setViewportSize({ width: 1440, height: 960 });
     await page.goto("/studio/draft/slow-first-filter", { waitUntil: "domcontentloaded" });
     await drawTestStroke(page, false);
+    const original = await downloadCurrentArtwork(page, info.outputPath("mosaic-before.png"));
+    // 내보내기에서 사용한 워커와 분리해, 새로 연 원고의 첫 필터 엔진부터 지연시킨다.
+    delayFilterEngine = true;
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator("[data-studio-canvas-viewport]").first()).toHaveAttribute("data-studio-canvas-input-state", "ready", { timeout: 90_000 });
     const quick = page.getByRole("navigation", { name: "원고 빠른 메뉴" });
     const open = async () => {
       await quick.getByRole("menuitem", { name: "필터", exact: true }).click();
@@ -234,9 +244,22 @@ test("첫 필터 엔진 수신이 늦어도 취소·다시 선택해 원고에 �
     releaseAssets?.();
     const dialog = page.getByRole("dialog", { name: "모자이크 / 픽셀화", exact: true });
     await expect(dialog).toHaveCount(1, { timeout: 45_000 });
-    await dialog.getByRole("button", { name: "적용", exact: true }).click();
+    // 지연 작업이 끝나면 안내가 잠시 표시된다. 누르기 전부터 확인해야 닫힌 뒤의 토스트를 놓치지 않는다.
+    const done = page.getByRole("status").filter({ hasText: "원본을 보존한 페이지 필터 레이어를 추가했어요" }).first();
+    await Promise.all([
+      expect(done).toBeVisible({ timeout: 45_000 }),
+      dialog.getByRole("button", { name: "적용", exact: true }).click(),
+    ]);
     await expect(dialog).toBeHidden();
-    await expect(page.getByRole("status").filter({ hasText: "원본을 보존한 페이지 필터 레이어를 추가했어요" }).first()).toBeVisible();
+    const filtered = await downloadCurrentArtwork(page, info.outputPath("mosaic-applied.png"));
+    expect(filtered.length).toBe(original.length);
+    expect(filtered.equals(original)).toBe(false);
+    await page.getByRole("button", { name: "되돌리기 · 실행취소", exact: true }).filter({ visible: true }).click();
+    const restored = await downloadCurrentArtwork(page, info.outputPath("mosaic-undo.png"));
+    expect(restored.equals(original)).toBe(true);
+    await page.getByRole("button", { name: "다시 · 다시실행", exact: true }).filter({ visible: true }).click();
+    const repeated = await downloadCurrentArtwork(page, info.outputPath("mosaic-redo.png"));
+    expect(repeated.equals(filtered)).toBe(true);
   } finally {
     releaseAssets?.();
     await context.unrouteAll({ behavior: "wait" });

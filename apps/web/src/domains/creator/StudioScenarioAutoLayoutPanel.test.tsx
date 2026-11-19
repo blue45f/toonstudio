@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { lockUserAi, setUserAiConfiguration } from "@/shared/ai/user-ai-store";
@@ -239,17 +239,24 @@ describe("StudioScenarioAutoLayoutPanel comic director integration", () => {
   });
 
   it("does not make an empty reference pack depend on asset-list loading", () => {
+    const onGenerateImages = vi.fn<StudioScenarioAutoLayoutPanelProps["onGenerateImages"]>();
     const props = panelProps({
       imageReferenceDocument: createEmptyStudioAiImageReferenceDocument(),
       imageReferencesLoading: true,
       imageReferenceMissingCount: 0,
+      onGenerateImages,
     });
     render(<StudioScenarioAutoLayoutPanel {...props} />);
 
     const generate = screen.getByRole("button", { name: "선택한 1컷 제작하기" }) as HTMLButtonElement;
     expect(generate.disabled).toBe(false);
     fireEvent.click(generate);
-    expect(props.onGenerateImages).toHaveBeenCalledWith({ indexes: [0], variants: 2 });
+    expect(onGenerateImages).toHaveBeenCalledExactlyOnceWith({ indexes: [0], variants: 2 }, expect.any(Function));
+    const production = screen.getByRole("button", { name: /제작·수리/u });
+    expect(production.getAttribute("aria-current")).toBeNull();
+    const [, onStarted] = onGenerateImages.mock.calls[0]!;
+    act(() => onStarted!());
+    expect(production.getAttribute("aria-current")).toBe("step");
   });
 });
 

@@ -4,6 +4,8 @@
  */
 
 import { CANVAS_W } from "./studio-assets";
+import { seedBounds } from "./studio-comipo-compose";
+import { collectStudioDecorRefs } from "./studio-comipo-incremental";
 import {
   mutateComipoSnapshot,
   pickTargetPanelFrame,
@@ -12,6 +14,7 @@ import {
   type MutateComipoResult,
   type StudioCanvasSnapshot,
 } from "./studio-comipo-insert";
+import { composeDialogueInPolygon } from "./render/studio-comipo-polygon-dialogue";
 import { viewportSpawnCenter, type Rect } from "./studio-selection";
 
 import type { StudioDecorElement } from "./studio-comipo-incremental";
@@ -21,6 +24,9 @@ export type StudioElementLike = {
   id: string;
   type: string;
   hidden?: boolean;
+  locked?: boolean;
+  points?: readonly number[];
+  frameClipId?: string;
   x?: number;
   y?: number;
   width?: number;
@@ -121,8 +127,17 @@ export function planCommitFromMutation(
 ): CommitMutationPatch | null {
   if (!result.ok) return null;
 
-  const decorIds = new Set(elements.filter(isStudioDecorElement).map((e) => e.id));
-  const kept = elements.filter((e) => !decorIds.has(e.id));
+  const decorById = new Map(result.snapshot.decor.map((element) => [element.id, element]));
+  const kept: StudioElementLike[] = [];
+  for (const element of elements) {
+    if (isStudioDecorElement(element)) {
+      const updated = decorById.get(element.id);
+      if (updated) kept.push(updated);
+      decorById.delete(element.id);
+    } else {
+      kept.push(element);
+    }
+  }
   const existingFrameKeys = new Set(
     elements
       .filter(
@@ -135,7 +150,7 @@ export function planCommitFromMutation(
     (f) => !existingFrameKeys.has(`${f.x},${f.y},${f.width},${f.height}`)
   );
 
-  return { kept: [...kept], addedFrames, decor: [...result.snapshot.decor] };
+  return { kept, addedFrames, decor: [...decorById.values()] };
 }
 
 export function frameElFromPanel(
@@ -196,14 +211,33 @@ export function runStudioPageAddSceneTemplate(
 export function runStudioPageAddDialogueBubbles(
   state: StudioPageInsertState,
   dialogueScript: string,
-  createId: () => string
+  createId: () => string,
+  targetFrameId?: string,
 ): ShippedInsertResult {
   if (!dialogueScript.trim()) return { ok: false };
   const snapshot = studioCanvasSnapshotFromElements(state.elements);
   const canvasW = state.canvasW ?? CANVAS_W;
+  let targetFrame: PanelLayoutFrame | undefined;
+  if (targetFrameId !== undefined) {
+    const frame = state.elements.find(element => element.id === targetFrameId);
+    if (!frame || frame.type !== "frame" || frame.hidden || frame.locked) return { ok: false };
+    const { x, y, width, height } = frame;
+    if (x == null || y == null || width == null || height == null
+      || ![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return { ok: false };
+    targetFrame = { x, y, width, height };
+    if (frame.points?.length) {
+      const decor = state.elements.filter(element => element.frameClipId === undefined || element.frameClipId === targetFrameId)
+        .filter(isStudioDecorElement);
+      const occupied = collectStudioDecorRefs(targetFrame, decor).map(ref => seedBounds(ref.seed));
+      const bubbles = composeDialogueInPolygon(dialogueScript, { ...targetFrame, points: frame.points }, canvasW, occupied);
+      if (!bubbles) return { ok: false };
+      const added = bubbles.map(bubble => ({ ...bubble, id: createId(), frameClipId: targetFrameId }));
+      return { ok: true, elements: [...state.elements, ...added], snapshot: { frames: snapshot.frames, decor: [...snapshot.decor, ...added] } };
+    }
+  }
   const result = mutateComipoSnapshot(
     snapshot,
-    { kind: "dialogue", script: dialogueScript },
+    { kind: "dialogue", script: dialogueScript, targetFrame },
     createId,
     canvasW
   );

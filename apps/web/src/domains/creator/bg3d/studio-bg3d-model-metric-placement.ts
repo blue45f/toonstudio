@@ -4,7 +4,7 @@ import {
   resolveStudioBg3dMetricInstanceScale,
   StudioBg3dModelMetricPolicyError,
 } from "./studio-bg3d-model-metric-policy";
-import { Box3 } from "three";
+import { Box3, Vector3, type Object3D } from "three";
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import { attachStudioGeneric3dWorkflowMetadata, parseStudioGeneric3dWorkflowMetadata } from "../studio-generic-3d-workflow-metadata";
 
@@ -66,6 +66,17 @@ interface PlacementAsset {
   readonly name: string;
   readonly size: readonly [number, number, number];
   readonly localInsertionPoint: readonly [number, number, number];
+}
+
+/** 원본 크기와 바닥 중앙을 같은 월드 경계에서 읽어 프리뷰와 최종 배치에 전달한다. */
+export function measureStudioBg3dPlacementAsset(root: Object3D): Pick<PlacementAsset, "size" | "localInsertionPoint"> {
+  root.updateWorldMatrix(true, true);
+  const bounds = new Box3().setFromObject(root, true);
+  const size = bounds.getSize(new Vector3()).toArray();
+  if (bounds.isEmpty() || ![...bounds.min.toArray(), ...bounds.max.toArray()].every(Number.isFinite)
+    || size.some(value => value <= 0 || value > 10_000)) throw new Error("model-bounds-unavailable");
+  const center = bounds.getCenter(new Vector3());
+  return { size, localInsertionPoint: [center.x, bounds.min.y, center.z] };
 }
 
 /** 고스트 경계와 접지 기준점도 최종 인스턴스와 같은 역배율을 적용하고 GLB 단위·축 사전 진단도 함께 산출한다. */

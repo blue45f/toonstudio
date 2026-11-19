@@ -718,8 +718,8 @@ export function StudioVirtualSpaceWorldAuthoringPanel({
           </button>
           <button onKeyDown={handleHistoryKeyDown}
             type="button"
-            onClick={() => {
-              const ok = writeStudioWorldAuthoringDraft(projectId, manifest, basePublishedRevisionId);
+            onClick={async () => {
+              const ok = await writeStudioWorldAuthoringDraft(projectId, manifest, basePublishedRevisionId);
               setMessage(ok ? bt("브라우저 초안을 저장했습니다.", "Browser draft saved.") : bt("초안을 저장하지 못했습니다.", "Could not save draft."));
             }}
           >

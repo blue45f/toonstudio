@@ -125,6 +125,13 @@ describe("StudioToonAutomationWorkspace", () => {
     fireEvent.click(screen.getByRole("button", { name: "연결 장면 추가" }));
     expect(screen.queryByText("장면 3 / 4")).not.toBeNull();
 
+    const cutCheckbox = (number: number) =>
+      screen.getByRole<HTMLInputElement>("checkbox", { name: `${number}번 컷 후보 생성 선택` });
+    expect([1, 2, 3, 4].every(number => cutCheckbox(number).checked)).toBe(true);
+    fireEvent.click(cutCheckbox(3));
+    fireEvent.click(cutCheckbox(4));
+    fireEvent.click(screen.getByRole("button", { name: "연결 장면 추가" }));
+    expect([1, 2, 3, 4, 5, 6].filter(number => cutCheckbox(number).checked)).toEqual([1, 2]);
     fireEvent.click(screen.getByRole("button", { name: "사용량·포인트" }));
     fireEvent.click(screen.getByRole("button", { name: "선택 컷 생성 작업 열기" }));
 

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -13,6 +14,12 @@ import {
   DEFAULT_STUDIO_WORLD_MANIFEST,
   validateStudioWorldManifest,
 } from "./studio-virtual-space-world-manifest";
+import { createSpaceDeviceRecordFixture } from "./studio-space-device-record.test-fixture";
+
+const db = createSpaceDeviceRecordFixture();
+vi.mock("../studio-local-database-runtime", () => ({ acquireStudioLocalDatabase: async () => db }));
+beforeEach(() => { db.records.clear(); vi.clearAllMocks(); });
+
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
@@ -106,7 +113,7 @@ describe("Virtual Studio world authoring", () => {
     );
   });
 
-  it("persists a valid project-scoped browser draft and clears it", () => {
+  it("persists a valid project-scoped browser draft and clears it", async () => {
     const projectId = "authoring-demo";
     const manifest = {
       ...DEFAULT_STUDIO_WORLD_MANIFEST,
@@ -116,45 +123,46 @@ describe("Virtual Studio world authoring", () => {
       ),
     };
 
-    expect(writeStudioWorldAuthoringDraft(projectId, manifest)).toBe(true);
-    expect(localStorage.getItem(studioWorldDraftStorageKey(projectId))).toBeTruthy();
-    const restored = readStudioWorldAuthoringDraft(projectId);
+    expect(await writeStudioWorldAuthoringDraft(projectId, manifest)).toBe(true);
+    expect(db.records.has(studioWorldDraftStorageKey(projectId))).toBe(true);
+    expect(localStorage.getItem(studioWorldDraftStorageKey(projectId))).toBeNull();
+    const restored = await readStudioWorldAuthoringDraft(projectId);
     expect(restored?.version).toBe(manifest.version);
     expect(restored?.rooms[0]).toMatchObject({ labelEn: "Edited Lounge" });
 
-    clearStudioWorldAuthoringDraft(projectId);
-    expect(readStudioWorldAuthoringDraft(projectId)).toBeNull();
+    await clearStudioWorldAuthoringDraft(projectId);
+    expect(await readStudioWorldAuthoringDraft(projectId)).toBeNull();
   });
 
-  it("does not persist invalid drafts", () => {
+  it("does not persist invalid drafts", async () => {
     const invalid = {
       ...DEFAULT_STUDIO_WORLD_MANIFEST,
       rooms: [],
     };
 
-    expect(writeStudioWorldAuthoringDraft("bad-world", invalid)).toBe(false);
+    expect(await writeStudioWorldAuthoringDraft("bad-world", invalid)).toBe(false);
     expect(localStorage.length).toBe(0);
   });
 
-  it("preserves the exact publication origin across remounts and never guesses a legacy draft base", () => {
-    expect(writeStudioWorldAuthoringDraft("pinned-draft", DEFAULT_STUDIO_WORLD_MANIFEST, "published-A")).toBe(true);
-    expect(readStudioWorldAuthoringDraftRecord("pinned-draft")).toEqual({ manifest: DEFAULT_STUDIO_WORLD_MANIFEST, basePublishedRevisionId: "published-A" });
-    expect(writeStudioWorldAuthoringDraft("unpublished-draft", DEFAULT_STUDIO_WORLD_MANIFEST, null)).toBe(true);
-    expect(readStudioWorldAuthoringDraftRecord("unpublished-draft")?.basePublishedRevisionId).toBeNull();
+  it("preserves the exact publication origin across remounts and never guesses a legacy draft base", async () => {
+    expect(await writeStudioWorldAuthoringDraft("pinned-draft", DEFAULT_STUDIO_WORLD_MANIFEST, "published-A")).toBe(true);
+    expect(await readStudioWorldAuthoringDraftRecord("pinned-draft")).toEqual({ manifest: DEFAULT_STUDIO_WORLD_MANIFEST, basePublishedRevisionId: "published-A" });
+    expect(await writeStudioWorldAuthoringDraft("unpublished-draft", DEFAULT_STUDIO_WORLD_MANIFEST, null)).toBe(true);
+    expect((await readStudioWorldAuthoringDraftRecord("unpublished-draft"))?.basePublishedRevisionId).toBeNull();
     localStorage.setItem(studioWorldDraftStorageKey("legacy-draft"), JSON.stringify(DEFAULT_STUDIO_WORLD_MANIFEST));
-    expect(readStudioWorldAuthoringDraftRecord("legacy-draft")).toEqual({ manifest: DEFAULT_STUDIO_WORLD_MANIFEST });
-    expect(writeStudioWorldAuthoringDraft("legacy-draft", DEFAULT_STUDIO_WORLD_MANIFEST)).toBe(true);
-    expect(readStudioWorldAuthoringDraftRecord("legacy-draft")?.basePublishedRevisionId).toBeUndefined();
+    expect(await readStudioWorldAuthoringDraftRecord("legacy-draft")).toEqual({ manifest: DEFAULT_STUDIO_WORLD_MANIFEST });
+    expect(await writeStudioWorldAuthoringDraft("legacy-draft", DEFAULT_STUDIO_WORLD_MANIFEST)).toBe(true);
+    expect((await readStudioWorldAuthoringDraftRecord("legacy-draft"))?.basePublishedRevisionId).toBeUndefined();
   });
 
-  it("rejects malformed persisted origin data without discarding another project's draft", () => {
-    writeStudioWorldAuthoringDraft("valid-base", DEFAULT_STUDIO_WORLD_MANIFEST, "published-A");
+  it("rejects malformed persisted origin data without discarding another project's draft", async () => {
+    await writeStudioWorldAuthoringDraft("valid-base", DEFAULT_STUDIO_WORLD_MANIFEST, "published-A");
     localStorage.setItem(studioWorldDraftStorageKey("bad-base"), JSON.stringify({ contract: "studio-world-browser-draft-v2", manifest: DEFAULT_STUDIO_WORLD_MANIFEST, basePublishedRevisionId: 123 }));
-    expect(readStudioWorldAuthoringDraftRecord("bad-base")).toBeNull();
-    expect(readStudioWorldAuthoringDraftRecord("valid-base")?.basePublishedRevisionId).toBe("published-A");
+    expect(await readStudioWorldAuthoringDraftRecord("bad-base")).toBeNull();
+    expect((await readStudioWorldAuthoringDraftRecord("valid-base"))?.basePublishedRevisionId).toBe("published-A");
   });
 
-  it("does not persist a draft that would hide the editor behind an unsafe world", () => {
+  it("does not persist a draft that would hide the editor behind an unsafe world", async () => {
     const invalid = {
       ...DEFAULT_STUDIO_WORLD_MANIFEST,
       props: [],
@@ -166,7 +174,7 @@ describe("Virtual Studio world authoring", () => {
       }],
     };
 
-    expect(writeStudioWorldAuthoringDraft("blocked-world", invalid)).toBe(false);
+    expect(await writeStudioWorldAuthoringDraft("blocked-world", invalid)).toBe(false);
     expect(localStorage.length).toBe(0);
   });
 
@@ -182,19 +190,19 @@ describe("Virtual Studio world authoring", () => {
       DEFAULT_STUDIO_WORLD_MANIFEST,
     )).toThrow("Unsupported world JSON format");
   });
-  it("clears only the requested project's draft", () => {
-    expect(writeStudioWorldAuthoringDraft("project-a", DEFAULT_STUDIO_WORLD_MANIFEST)).toBe(true);
-    expect(writeStudioWorldAuthoringDraft("project-b", DEFAULT_STUDIO_WORLD_MANIFEST)).toBe(true);
-    clearStudioWorldAuthoringDraft("project-a");
-    expect(readStudioWorldAuthoringDraft("project-a")).toBeNull();
-    expect(readStudioWorldAuthoringDraft("project-b")).toEqual(DEFAULT_STUDIO_WORLD_MANIFEST);
+  it("clears only the requested project's draft", async () => {
+    expect(await writeStudioWorldAuthoringDraft("project-a", DEFAULT_STUDIO_WORLD_MANIFEST)).toBe(true);
+    expect(await writeStudioWorldAuthoringDraft("project-b", DEFAULT_STUDIO_WORLD_MANIFEST)).toBe(true);
+    await clearStudioWorldAuthoringDraft("project-a");
+    expect(await readStudioWorldAuthoringDraft("project-a")).toBeNull();
+    expect(await readStudioWorldAuthoringDraft("project-b")).toEqual(DEFAULT_STUDIO_WORLD_MANIFEST);
   });
-  it("reports blocked browser writes and rejects corrupt stored JSON", () => {
+  it("reports blocked browser writes and rejects corrupt stored JSON", async () => {
     localStorage.setItem(studioWorldDraftStorageKey("corrupt"), "{");
-    expect(readStudioWorldAuthoringDraft("corrupt")).toBeNull();
-    vi.spyOn(localStorage, "setItem").mockImplementation(() => { throw new Error("quota"); });
-    expect(writeStudioWorldAuthoringDraft("blocked", DEFAULT_STUDIO_WORLD_MANIFEST)).toBe(false);
-    expect(readStudioWorldAuthoringDraft("blocked")).toBeNull();
+    expect(await readStudioWorldAuthoringDraft("corrupt")).toBeNull();
+    db.kvSet.mockRejectedValueOnce(new Error("quota"));
+    expect(await writeStudioWorldAuthoringDraft("blocked", DEFAULT_STUDIO_WORLD_MANIFEST)).toBe(false);
+    expect(await readStudioWorldAuthoringDraft("blocked")).toBeNull();
   });
 
 
@@ -234,4 +242,37 @@ describe("Virtual Studio world authoring", () => {
       DEFAULT_STUDIO_WORLD_MANIFEST,
     )).toThrow(/invalid room id/u);
   });
+});
+
+it("같은 작품의 두 계정과 구 기기 초안을 격리하고 손상된 원본도 보존한다", async () => {
+  const session = await import("@/domains/auth/public/session/auth-session-state");
+  let actor: string | null = "alice";
+  const current = vi.spyOn(session, "getAuthUserId").mockImplementation(() => actor);
+  const project = "shared-work";
+  const key = studioWorldDraftStorageKey(project);
+  localStorage.setItem(key, JSON.stringify(DEFAULT_STUDIO_WORLD_MANIFEST));
+  try {
+    expect(await readStudioWorldAuthoringDraft(project)).toBeNull();
+    const privateWorld = { ...DEFAULT_STUDIO_WORLD_MANIFEST, id: "alice-world" };
+    expect(await writeStudioWorldAuthoringDraft(project, privateWorld)).toBe(true);
+    actor = "bob";
+    expect(await readStudioWorldAuthoringDraft(project)).toBeNull();
+    actor = "alice";
+    expect(await readStudioWorldAuthoringDraft(project)).toEqual(privateWorld);
+    const delayed = Promise.withResolvers<string | null>();
+    db.kvGet.mockReturnValueOnce(delayed.promise);
+    const stale = writeStudioWorldAuthoringDraft(project, { ...privateWorld, id: "stale" });
+    await vi.waitFor(() => expect(db.kvGet.mock.results.some(result => result.value === delayed.promise)).toBe(true));
+    actor = "bob";
+    delayed.resolve(null);
+    expect(await stale).toBe(false);
+    actor = null;
+    expect(await readStudioWorldAuthoringDraft(project)).toEqual(DEFAULT_STUDIO_WORLD_MANIFEST);
+    expect(await clearStudioWorldAuthoringDraft(project)).toBe(true);
+    expect(await readStudioWorldAuthoringDraft(project)).toBeNull();
+    const corrupt = studioWorldDraftStorageKey("damaged");
+    localStorage.setItem(corrupt, "broken");
+    expect(await writeStudioWorldAuthoringDraft("damaged", privateWorld)).toBe(true);
+    expect([...db.records].some(([id, value]) => id.startsWith(corrupt + ":recovery:") && JSON.parse(value) === "broken")).toBe(true);
+  } finally { current.mockRestore(); localStorage.clear(); }
 });

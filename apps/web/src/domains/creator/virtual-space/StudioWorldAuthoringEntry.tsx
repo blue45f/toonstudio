@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { Component, lazy, Suspense, useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { loadStudioWorldAuthoring } from "./load-studio-world-authoring";
 import { reloadStudioWorldAfterDraftSave } from "./studio-world-authoring-reload";
@@ -20,12 +20,14 @@ export function StudioWorldAuthoringEntry({ clone, ...props }: Props & {
   const scope = JSON.stringify([props.projectId, props.basePublishedRevisionId, Boolean(props.disabled)]);
   const [attempt, setAttempt] = useState(() => createAttempt(scope));
   const [reloadFailed, setReloadFailed] = useState(false);
-  const latest = useRef(props); latest.current = props;
+  const latest = useRef<Props | null>(props);
+  useLayoutEffect(() => { latest.current = props; return () => { latest.current = null; }; }, [props]);
   const reloading = useRef(false);
-  const saveAndReload = () => {
-    if (props.disabled || latest.current !== props || reloading.current) return;
+  const sameDraft = () => latest.current?.projectId === props.projectId && latest.current.manifest === props.manifest && latest.current.basePublishedRevisionId === props.basePublishedRevisionId && !latest.current.disabled;
+  const saveAndReload = async () => {
+    if (props.disabled || !sameDraft() || reloading.current) return;
     reloading.current = true;
-    const ok = reloadStudioWorldAfterDraftSave(props.projectId, props.manifest, props.basePublishedRevisionId);
+    const ok = await reloadStudioWorldAfterDraftSave(props.projectId, props.manifest, props.basePublishedRevisionId, undefined, sameDraft);
     if (!ok) { reloading.current = false; setReloadFailed(true); }
   };
   const current = attempt.scope === scope ? attempt : createAttempt(scope);

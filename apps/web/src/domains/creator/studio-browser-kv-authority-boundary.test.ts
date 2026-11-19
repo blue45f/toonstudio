@@ -380,10 +380,6 @@ const PLANNING_LOCAL_WORKING_COPY =
   "Reviewed browser-local working copy of project- or workspace-scoped planning metadata; it is not the canvas document, the ProjectGraph revision history, a permission grant, or shared collaboration state, and it is not synced to a server yet.";
 const REVIEW_TOOL_LOCAL_STATE =
   "Device-local working state of a review or QC tool (compare session, compare comments, playlist verdicts, vote sessions, an unsent external-review draft, or a per-episode QC summary); losing it cannot alter the canvas document, the manuscript pin document, or server approval records.";
-const LOCAL_RECORDING_COPY =
-  "사용자가 명시적으로 시작한 화면 녹화의 계정·작품별 기기 보관본이며 원고·월드 정본이나 협업 권한을 소유하지 않는다.";
-const LOCAL_RECORDING_PROOF =
-  "studio-workspace-video-library.test.ts가 실제 IndexedDB의 영상·목록 원자 저장/삭제와 동일 ID의 scope 격리를 검사하고, StudioVirtualSpaceBotRecorder.test.tsx가 입력 거절·다운로드·quota 실패 시 메모리 원본 보존을 검사한다. 정확한 DB명·연산·횟수만 허용한다.";
 
 const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   // 2026-11-12: 함수/주입 포트로 감싸진 sessionStorage 두 곳만 아래 payload·기본 저장소 변이 계약과 함께 허용한다.
@@ -471,12 +467,13 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-rewards.ts", "local-storage-write", "\"toonspectrum:virtual-space-rewards:v1\"", 1, UI_ONLY, "studio-virtual-space-rewards.test.ts bounds the inventory to twelve allowlisted cosmetic reward IDs; it stores no currency, chance, project content, permissions, or executable payloads."),
   allow("apps/web/src/domains/creator/virtual-space/use-studio-virtual-space-p2p-board.ts", "local-storage-write", "storageKey(scope,storageOwnerId)", 1, REVIEWED_LOCAL_WORKING_COPY, "use-studio-virtual-space-p2p-board.test.tsx proves the bounded whiteboard cache is account-, world-, board-, and content-revision-scoped and restores only the local participant's notes/strokes."),
   allow("apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceGuide.tsx", "local-storage-write", "\"toonspectrum:virtual-studio-guide:v1\"", 1, UI_ONLY, "Only the seen marker is stored. StudioVirtualSpaceGuide.test.tsx verifies skip, replay and unavailable storage without automatic movement, tool execution or document writes."),
-  allow("apps/web/src/domains/creator/virtual-space/studio-world-draft-storage.ts", "local-storage-write", "studioWorldDraftStorageKey(projectId)", 1, REVIEWED_LOCAL_WORKING_COPY, "studio-virtual-space-world-authoring.test.ts verifies explicit Tiled JSON round-trip, project-scoped authoring drafts and rejection of invalid manifests."),
-  allow("apps/web/src/domains/creator/virtual-space/studio-world-draft-storage.ts", "local-storage-cleanup", "studioWorldDraftStorageKey(projectId)", 1, CLEANUP_ONLY, "studio-virtual-space-world-authoring.test.ts verifies deletion only affects the requested project draft, not other projects or canonical revisions."),
-  allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-tile-effects-storage.ts", "local-storage-write", "storageKey(scope)", 1, REVIEWED_LOCAL_WORKING_COPY, "studio-virtual-space-tile-effect-runtime.test.ts covers this storage module; reads re-sanitize every entry through createTileEffect, and the module header demotes it to a draft once world data gains the field."),
+  allow("apps/web/src/domains/creator/virtual-space/studio-workspace-video-legacy.ts", "indexeddb-open", '"toonstudio-workspace-recordings"', 1, LEGACY_IDB, "구 녹화 원본을 작품·계정별로 이관할 때만 연다. 새 녹화는 SQLite와 OPFS에 저장한다."),
+  allow("apps/web/src/domains/creator/virtual-space/studio-workspace-video-legacy.ts", "indexeddb-cleanup", "delete", 1, CLEANUP_ONLY, "사용자가 고른 구 녹화의 [scope, id]만 같은 트랜잭션으로 삭제한다. 새 녹화와 다른 범위의 원본을 보존한다."),
   // 3D 포즈 갤러리의 즐겨찾기(핀)·최근 사용 id 목록(최대 64개). 잃어도 기본 갤러리로 돌아갈 뿐이다.
   allow("apps/web/src/domains/creator/scene-3d/studio-pose-preset-storage.ts", "durable-storage-write", "key", 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
   allow("apps/web/src/domains/creator/scene-3d/studio-webtoon-pose-preset-storage.ts", "durable-storage-write", "key", 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
+  allow("apps/web/src/domains/creator/assistant/studio-workflow-pack-store.ts", "durable-storage-write", '"toonstudio:custom-workflow-packs:v1"', 2, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
+  allow("apps/web/src/domains/creator/assistant/studio-workflow-pack-telemetry.ts", "durable-storage-write", '"toonstudio:workflow-pack-telemetry:v1"', 1, UI_ONLY, UI_PROOF),
   // 제작 허브의 로컬 우선 부가 메타데이터: 버전 스냅샷은 HEAD revision 참조(revisionId·rootGraphHash)와
   // 이름·메모만, 공유 링크는 클라이언트 발급 토큰 표, 예약 발행은 예약·주간 패턴이다. 모두 읽을 때 형태를
   // 검사하고(readTable·readPersistedState), ProjectGraph의 불변 revision 이력이나 원고 본문을 대신하지 않는다.
@@ -586,12 +583,6 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   // 가상 스튜디오 빌드 모드 배치 목록과 타일 이펙트 초안: 꾸미기(decorations)는 서버 정본 계약이라
   // 얹을 수 없어 이 브라우저 로컬 범위로 확정한 작업 사본이다. 읽을 때 저장값을 다시 검증·살균한다.
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-placed-fixtures.ts", "local-storage-write", "storageKey(scope)", 1, REVIEWED_LOCAL_WORKING_COPY, "studio-virtual-space-placed-fixtures.test.ts verifies the localStorage round-trip, scope isolation, corrupt-value rejection, catalog/coordinate/rotation validation, and the 24-item placement cap."),
-  allow("apps/web/src/domains/creator/virtual-space/StudioWorkspaceMiniApps.tsx", "local-storage-write", "prefix+id", 1, UI_ONLY, "StudioWorkspaceMiniApps.test.tsx가 알려진 앱 설치 표시만 계정·작품별로 복원하고 계정/공간 전환·읽기/쓰기 실패·다른 탭 제거를 검사한다. 원고 내용이나 권한은 저장하지 않는다."),
-  allow("apps/web/src/domains/creator/virtual-space/StudioWorkspaceMiniApps.tsx", "local-storage-cleanup", "prefix+id", 1, CLEANUP_ONLY, "StudioWorkspaceMiniApps.test.tsx가 해당 계정·공간의 앱 설치 표시 제거와 실행 중인 앱 닫기를 검사한다. 다른 앱이나 원고 정본을 삭제하지 않는다."),
-  allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-decoration-checkpoint.ts", "local-storage-write", '"toonspectrum:space-decoration-checkpoint:v1:"+JSON.stringify([owner,scope])', 1, REVIEWED_LOCAL_WORKING_COPY, "studio-virtual-space-decoration-session.test.ts가 owner·scope별 복구 초안, 원래 서버 revision의 CAS, 재접속·로그아웃 취소·다른 기기 충돌·응답 유실을 검사한다. 서버 정본은 별도로 유지한다."),
-  allow("apps/web/src/domains/creator/virtual-space/studio-workspace-video-library.ts", "indexeddb-open", '"toonstudio-workspace-recordings"', 1, LOCAL_RECORDING_COPY, LOCAL_RECORDING_PROOF),
-  allow("apps/web/src/domains/creator/virtual-space/studio-workspace-video-library.ts", "indexeddb-write", "put", 2, LOCAL_RECORDING_COPY, LOCAL_RECORDING_PROOF),
-  allow("apps/web/src/domains/creator/virtual-space/studio-workspace-video-library.ts", "indexeddb-cleanup", "delete", 2, CLEANUP_ONLY, LOCAL_RECORDING_PROOF),
 
   // Explicit legacy IndexedDB seams. Operation counts prevent a file-level blanket exemption.
   allow("apps/web/src/domains/creator/bg3d/bg3d-model-library.ts", "indexeddb-open", '"toonstudio-studio-bg3d-model-library"', 1, LEGACY_IDB, LEGACY_IDB_PROOF),
@@ -958,10 +949,6 @@ describe("Studio browser-KV authority boundary", () => {
       "virtual-space/studio-virtual-space-entry-preference.ts",
       "virtual-space/three/studio-virtual-space-three-motion.ts",
       "virtual-space/use-studio-space-lighting.ts",
-      "virtual-space/StudioWorkspaceMiniApps.tsx",
-      "virtual-space/studio-virtual-space-decoration-checkpoint.ts",
-      "virtual-space/studio-workspace-video-library.ts",
-      "virtual-space/studio-world-draft-storage.ts",
     ];
     for (const relativePath of reviewedFiles) {
       const file = `apps/web/src/domains/creator/${relativePath}`;
@@ -970,9 +957,6 @@ describe("Studio browser-KV authority boundary", () => {
       const findings = analyzeBrowserKvSource(file, source);
       expect(unauthorizedFindings(findings, allowances), file).toEqual([]);
       expect(unauthorizedFindings(findings.map((item) => ({ ...item, key: "other-key" })), allowances), file).not.toEqual([]);
-      const otherKinds: BrowserKvFinding[] = findings.map(item => ({ ...item,
-        kind: item.kind === "local-storage-write" ? "indexeddb-write" : "local-storage-write" }));
-      expect(unauthorizedFindings(otherKinds, allowances), file).not.toEqual([]);
       expect(unauthorizedFindings([...findings, ...findings], allowances), file).not.toEqual([]);
       expect(unauthorizedFindings(analyzeBrowserKvSource(`${file}.other.ts`, source), allowances), file).not.toEqual([]);
       const newAuthority = analyzeBrowserKvSource(file, `${source}\nlocalStorage.setItem("studio-project-document", payload);`);

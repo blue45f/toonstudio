@@ -290,6 +290,36 @@ describe("runStudioPageAddSceneTemplate / runStudioPageAddDialogueBubbles", () =
       runStudioPageAddDialogueBubbles(studioPageState(elements), "   ", nextId).ok
     ).toBe(false);
   });
+
+  it("두 번째 컷에만 대사를 넣고 기존 컷·말풍선·그림의 겹침 순서를 보존한다", () => {
+    const elements: TestElement[] = [
+      { id: "frame1", type: "frame", x: 24, y: 32, width: 600, height: 600 },
+      { id: "existing", type: "bubble", variant: "speech", text: "먼저 온 대사",
+        x: 100, y: 100, width: 160, height: 70, fill: "#fff", textFill: "#000", rotation: 0 },
+      { id: "paint", type: "draw" },
+      { id: "frame2", type: "frame", x: 24, y: 720, width: 600, height: 800 },
+    ];
+    const result = runStudioPageAddDialogueBubbles(studioPageState(elements), "하나: 안녕\n둘: 반가워", nextId, "frame2");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.elements.slice(0, elements.length)).toEqual(elements);
+    const added = result.snapshot.decor.filter(element => element.id !== "existing");
+    expect(added.map(element => element.type === "bubble" && element.text)).toEqual(["안녕", "반가워"]);
+    for (const bubble of added) {
+      if (bubble.type !== "bubble") throw new Error("선택한 컷에는 말풍선만 추가되어야 합니다.");
+      expect(bubble.y).toBeGreaterThanOrEqual(720);
+      expect(bubble.y + bubble.height).toBeLessThanOrEqual(1520);
+    }
+  });
+
+  it.each([{ locked: true }, { hidden: true }, { width: 0 }, { x: NaN }, { type: "image" }])(
+    "지정한 컷에 배치할 수 없으면 다른 컷에 대사를 넣지 않는다 (%o)", override => {
+      const first = { id: "first", type: "frame", x: 24, y: 32, width: 600, height: 600 };
+      const state = studioPageState([first, { ...first, id: "target", y: 720, ...override }]);
+      expect(runStudioPageAddDialogueBubbles(state, "손님: 안녕하세요", nextId, "target")).toEqual({ ok: false });
+      expect(runStudioPageAddDialogueBubbles(state, "손님: 안녕하세요", nextId, "removed")).toEqual({ ok: false });
+    },
+  );
 });
 
 describe("mutateComipoSnapshot low-level contract", () => {

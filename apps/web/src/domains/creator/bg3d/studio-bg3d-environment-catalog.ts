@@ -12,13 +12,15 @@ import specimenRoom from "../../../../public/assets/3d/environments/specimen-v1/
 import glasshouse from "../../../../public/assets/3d/environments/glasshouse-v1/manifest.json";
 import refinedV6Manifest from "../../../../public/assets/3d/environments/refined-v6/manifest.json";
 import refinedV6RenderPassesReport from "../../../../public/assets/3d/environments/refined-v6/render-passes-report.json";
-import expansionV1Manifest from "../../../../public/assets/3d/environments/expansion-v1/manifest.json";
 import webtoonV7Manifest from "../../../../public/assets/3d/environments/webtoon-v7/manifest.json";
 import authoredV1Manifest from "../../../../public/assets/3d/environments/authored-v1/manifest.json";
 
 import { defineEnvironment, getRefinedEnvironmentCamera, V3_PROVENANCE } from "./studio-bg3d-environment-definition";
 import type { StudioBg3dEnvironmentAsset, StudioBg3dEnvironmentProvenance, StudioBg3dEnvironmentTheme } from "./studio-bg3d-environment-definition";
 
+import { STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS, STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1 } from "./studio-bg3d-environment-expansion";
+
+export { STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS, STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1 };
 export type { StudioBg3dEnvironmentAsset, StudioBg3dEnvironmentProvenance, StudioBg3dEnvironmentTheme } from "./studio-bg3d-environment-definition";
 
 export const STUDIO_BG3D_ENVIRONMENT_PACK_ID =
@@ -226,6 +228,18 @@ export const STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS = Object.freeze([
 const REFINED_V6_BY_FILE = new Map(
   refinedV6Manifest.records.map((record) => [record.fileName, record] as const),
 );
+// 실물의 중심을 겨눈 Blender 근접 구도. 원경과 같은 방위에서 바로 컷을 잇는다.
+const REFINED_DETAIL_CAMERAS = new Map<string, NonNullable<StudioBg3dEnvironmentAsset["detailCamera"]>>([
+  ["fantasy_ruin_courtyard.glb", {
+    subject: { ko: "룬 분수", en: "Rune fountain" },
+    position: [14.7, 11.2, 16.5], target: [0.215, 2.237, 0.241], fovDegrees: 17.6,
+  }],
+  ["korean_school_rooftop.glb", {
+    subject: { ko: "옥상 급수탱크", en: "Rooftop water tanks" },
+    position: [18, 12, 18.5], target: [7.234, 2.729, 2.081], fovDegrees: 18.4,
+  }],
+]);
+
 /** New selection uses the revised bytes. Historical IDs and hashes remain resolvable below. */
 export const STUDIO_BG3D_ENVIRONMENT_ASSETS_V6 = Object.freeze(
   STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS.map((original) => {
@@ -234,6 +248,7 @@ export const STUDIO_BG3D_ENVIRONMENT_ASSETS_V6 = Object.freeze(
     return defineEnvironment({
       ...original,
       camera: getRefinedEnvironmentCamera(original),
+      detailCamera: REFINED_DETAIL_CAMERAS.get(original.fileName),
       id: original.id.replace(/-v1$/u, "-v6"),
       url: refined.url as StudioBg3dEnvironmentAsset["url"],
       thumbnailUrl: refined.thumbnailUrl as StudioBg3dEnvironmentAsset["thumbnailUrl"],
@@ -247,35 +262,6 @@ export const STUDIO_BG3D_ENVIRONMENT_ASSETS_V6 = Object.freeze(
       sources: Object.freeze([...refined.sources]),
     }));
   }),
-);
-
-export const STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1 = Object.freeze(
-  expansionV1Manifest.assets.map((asset) => defineEnvironment({
-    id: asset.id,
-    name: asset.name,
-    description: asset.description,
-    theme: asset.theme as StudioBg3dEnvironmentTheme,
-    tags: asset.tags,
-    fileName: asset.fileName as `${string}.glb`,
-    url: asset.url as `/assets/3d/environments/${string}.glb`,
-    thumbnailUrl: asset.thumbnailUrl as `/assets/3d/environments/${string}.png`,
-    byteSize: asset.byteSize,
-    sha256: asset.sha256 as `sha256:${string}`,
-    bounds: asset.bounds as [number, number, number],
-    camera: {
-      position: asset.camera.position as [number, number, number],
-      target: asset.camera.target as [number, number, number],
-      fovDegrees: asset.camera.fovDegrees,
-    },
-  }, Object.freeze({
-    ...V3_PROVENANCE,
-    origin: "original-procedural-with-cc0-sources",
-    generator: "scripts/blender/generate_studio_environment_expansion_v1.py",
-    sources: Object.freeze([...new Set([
-      ...asset.sourceModels.map(({ sourceUrl }) => sourceUrl),
-      ...asset.sourceMaterials.map(({ sourceUrl }) => sourceUrl),
-    ])]),
-  }))),
 );
 
 export const STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7 = Object.freeze(
@@ -350,6 +336,7 @@ export const STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1 = Object.freeze([
     sha256: "sha256:c2f456cf2c9cb2367523b656d9004afc1ed2fc190988ec1c31bb6e5b2b0685ad",
     bounds: [2.344587, 3.8, 8.928126],
     camera: { position: [12.946, 6.964, 14.464], target: [0.0, 1.634, 0.0], fovDegrees: 50 },
+    detailCamera: { subject: { ko: "교문 돌기둥", en: "School gate pillars" }, position: [12.946, 6.964, 14.464], target: [0.232, 1.203, -2.836], fovDegrees: 20 },
   }, Object.freeze({
     ...MCP_FREE_V1_PROVENANCE_BASE,
     providerTaskId: "ffee2ca3-7508-41de-862d-398a0cfbb885",
@@ -588,7 +575,7 @@ export const STUDIO_BG3D_BOTANICAL_SEASIDE_SETS = Object.freeze([
 
 export const STUDIO_BG3D_ENVIRONMENT_ASSETS = Object.freeze([
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
-  ...STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1,
+  ...STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1,
   ...STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
@@ -597,7 +584,7 @@ export const STUDIO_BG3D_ENVIRONMENT_ASSETS = Object.freeze([
 /** 직접 제작하거나 CC0 소재만 사용한 배경 목록. */
 export const STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS = Object.freeze([
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
-  ...STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1,
+  ...STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1,
   ...STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
@@ -679,7 +666,7 @@ const AUTHORED_V1_BY_KEY = new Map(
   ]),
 );
 
-const RESOLVABLE_ENVIRONMENT_ASSETS = [...STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS, ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1, ...STUDIO_BG3D_ENVIRONMENT_ASSETS];
+const RESOLVABLE_ENVIRONMENT_ASSETS = [...STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1, ...STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS, ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1, ...STUDIO_BG3D_ENVIRONMENT_ASSETS];
 const ENVIRONMENT_BY_ID = new Map(RESOLVABLE_ENVIRONMENT_ASSETS.map((asset) => [asset.id, asset] as const));
 const ENVIRONMENT_BY_URL = new Map(RESOLVABLE_ENVIRONMENT_ASSETS.map((asset) => [asset.url, asset] as const));
 const ENVIRONMENT_BY_HASH = new Map(RESOLVABLE_ENVIRONMENT_ASSETS.map((asset) => [asset.sha256, asset] as const));

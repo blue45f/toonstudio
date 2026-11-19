@@ -145,15 +145,8 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
       <div className="mx-auto flex h-full max-h-full max-w-[1800px] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_24px_80px_oklch(0.05_0.01_70/0.55)]">
         <header data-bg3d-workspace-header="true" className="flex flex-wrap shrink-0 items-center justify-between gap-2 border-b border-line px-3 py-2 sm:flex-nowrap sm:items-start sm:gap-3 sm:px-5 sm:py-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <StudioToolArtwork tool="bg3d" className="[--studio-tool-art-size:28px] sm:[--studio-tool-art-size:38px]" />
+            <StudioToolArtwork tool="environment" className="[--studio-tool-art-size:28px] sm:[--studio-tool-art-size:38px]" />
             <div className="min-w-0">
-              <p className="eyebrow text-fg-2">
-                {translateCurrentStaticSourceText(
-                  "domains.creator.bg3d.StudioBg3dEditorModal",
-                  "ko",
-                  "웹툰 제작 도우미",
-                )}
-              </p>
               <h2
                 id="studio-bg3d-dialog-title"
                 className="mt-0.5 truncate text-base font-bold tracking-tight text-fg sm:mt-1 sm:text-xl"
@@ -280,10 +273,6 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
             </button>
           </div>
         </header>
-        <div data-bg3d-mobile-guidance="true" className="flex shrink-0 items-start gap-2 border-b border-line bg-accent-soft/55 px-3 py-2 text-[0.68rem] leading-5 text-fg-2 sm:hidden" role="note">
-          <Sparkles size={14} className="mt-0.5 shrink-0 text-accent" aria-hidden />
-          <span><strong className="text-fg">모바일 간편 모드</strong> · 구도·배치·검토에 맞춰 핵심 도구만 표시합니다. 정밀 3D 모델링과 대량 출력은 데스크톱 사용을 권장합니다.</span>
-        </div>
         <div
           aria-busy={isCapturing || undefined}
           inert={isCapturing}

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { parseStudioWorkspaceRoute } from "../studio-workspace-route";
 
-import { loadStudioAiComicDirectorSession } from "./studio-ai-comic-director-session";
+import { readDirectorDeviceDraft } from "./studio-director-device-draft";
 import { createStudioToonProductionHandoff } from "./studio-toon-production-board";
 
 import type { StudioAiComicComposerHandoff } from "./studio-ai-comic-composer-handoff";
@@ -72,21 +72,35 @@ function readReceipt() {
 export function restoreDirectorEditorReturn(listener: (handoff: StudioAiComicComposerHandoff) => void): () => void {
   const receipt = readReceipt();
   if (!receipt || ((receipt.workId || receipt.remixSourceWorkId) && !receipt.actorId)) return () => {};
-  let unsubscribe: (() => void) | undefined;
-  let complete = false;
-  const deliver = () => {
+  let disposed = false;
+  let pending = false;
+  function activeUrl() {
     const url = new URL(window.location.href);
-    if (complete || url.searchParams.get(QUERY) !== receipt.token || url.pathname !== receipt.pathname || !matchesCanvas(url, receipt)) return;
+    return receipt && !disposed && url.searchParams.get(QUERY) === receipt.token && url.pathname === receipt.pathname
+      && matchesCanvas(url, receipt) && readReceipt()?.token === receipt.token ? url : null;
+  }
+  const consume = (url: URL) => {
+    window.sessionStorage.removeItem(RECEIPT_KEY);
+    url.searchParams.delete(QUERY);
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    unsubscribe();
+  };
+  const deliver = async () => {
+    const url = activeUrl();
+    if (!url) return;
     const actor = useApp.getState().userId;
     if (actor === null && receipt.actorId !== null) return;
-    complete = true;
-    unsubscribe?.();
+    if (actor !== receipt.actorId) { consume(url); return; }
+    if (pending) return;
+    pending = true;
     try {
-      window.sessionStorage.removeItem(RECEIPT_KEY);
-      url.searchParams.delete(QUERY);
-      window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
-      if (actor !== receipt.actorId) return;
-      const saved = loadStudioAiComicDirectorSession(window.localStorage, receipt.sessionId);
+      const { session: saved } = await readDirectorDeviceDraft(receipt.sessionId);
+      const current = activeUrl();
+      if (!current) return;
+      const currentActor = useApp.getState().userId;
+      if (currentActor === null && receipt.actorId !== null) { pending = false; return; }
+      consume(current);
+      if (currentActor !== actor) return;
       if (saved?.id === receipt.sessionId && saved.workId === receipt.workId && saved.remixSourceWorkId === receipt.remixSourceWorkId
         && saved.revision === receipt.revision && saved.updatedAt === receipt.updatedAt) {
         listener(createStudioToonProductionHandoff({
@@ -95,10 +109,10 @@ export function restoreDirectorEditorReturn(listener: (handoff: StudioAiComicCom
         }));
         return;
       }
-    } catch { /* 저장소 접근이 차단되면 아래 복구 안내를 표시한다. */ }
+    } catch { if (!activeUrl()) return; }
     toast("콘티를 다시 확인해 주세요. 뒤로 돌아가 최신 콘티에서 제작을 이어갈 수 있어요.", { tone: "error" });
   };
-  deliver();
-  if (!complete) unsubscribe = useApp.subscribe(deliver);
-  return () => unsubscribe?.();
+  const unsubscribe = useApp.subscribe(() => { void deliver(); });
+  void deliver();
+  return () => { disposed = true; unsubscribe(); };
 }

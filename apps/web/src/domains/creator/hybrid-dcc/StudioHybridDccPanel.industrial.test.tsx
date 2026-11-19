@@ -12,24 +12,12 @@ import { disposeStudioOcctWorker } from "../studio-occt-worker-client";
 import { StudioHybridDccPanel } from "./StudioHybridDccPanel";
 import * as fileIo from "./studio-hybrid-dcc-file-io";
 import { decodeStudioHybridDccWorkfile, encodeStudioHybridDccWorkfile, STUDIO_HYBRID_DCC_WORKFILE_MIME } from "./studio-hybrid-dcc-workfile";
-import type { StudioHybridDccWorkspace } from "./studio-hybrid-dcc-workspace";
+import { unpackWorkfileWorkspace, type WorkfileRequest, type WorkfileResponse } from "./studio-hybrid-dcc-workfile-transport";
 
 import type {
   StudioOcctWorkerRequest,
   StudioOcctWorkerResponse,
 } from "../studio-occt-worker-protocol";
-
-// OCCT 전용 Worker fixture가 작업파일 전송까지 가로채지 않도록 실제 codec을 별도로 연결한다.
-vi.mock("./studio-hybrid-dcc-workfile-worker-client", () => ({
-  encodeWorkfileInWorker: async (workspace: StudioHybridDccWorkspace, signal: AbortSignal) => {
-    signal.throwIfAborted();
-    return encodeStudioHybridDccWorkfile(workspace);
-  },
-  decodeWorkfileInWorker: async (bytes: Uint8Array<ArrayBuffer>, documentId: string, signal: AbortSignal) => {
-    signal.throwIfAborted();
-    return decodeStudioHybridDccWorkfile(bytes, { documentId });
-  },
-}));
 
 /**
  * Deterministic browser transport for this UI integration gate. The dedicated
@@ -100,7 +88,21 @@ function quickTools(modeTitle = "오브젝트 만들기와 형태 편집") {
 }
 
 function useFakeBrowserOcctWorker(): void {
-  vi.stubGlobal("Worker", FakePanelOcctWorker);
+  vi.stubGlobal("Worker", function (_url: URL, options: WorkerOptions) {
+    if (options.name?.startsWith("toonstudio-occt")) return new FakePanelOcctWorker();
+    if (options.name !== "studio-hybrid-dcc-workfile") throw new Error(`알 수 없는 DCC 워커: ${options.name}`);
+    // 작업파일은 OCCT 명령과 다른 프로토콜을 쓰며, 실제 전송 문서와 파일 코덱을 왕복한다.
+    return {
+      onmessage: null as ((event: MessageEvent<WorkfileResponse>) => void) | null,
+      postMessage(request: WorkfileRequest) {
+        const copy = structuredClone(request);
+        if (copy.kind !== "encode") throw new Error("내보내기의 인코딩 요청이 필요합니다.");
+        const bytes = encodeStudioHybridDccWorkfile(unpackWorkfileWorkspace(copy.workspace));
+        queueMicrotask(() => this.onmessage?.(new MessageEvent("message", { data: { kind: "encoded", bytes } })));
+      },
+      terminate() { /* 이 전송기는 별도 스레드를 생성하지 않는다. */ },
+    };
+  });
 }
 
 afterEach(() => {
@@ -338,33 +340,44 @@ describe("StudioHybridDccPanel industrial wiring", () => {
   it("build/document domains: room, BOM, collab, UV, boolean, export toon3d", async () => {
     const download = vi.spyOn(fileIo, "downloadStudioHybridDccFile").mockImplementation(() => undefined);
     useFakeBrowserOcctWorker();
-    render(<StudioHybridDccPanel />);
-    fireEvent.click(screen.getByRole("button", { name: /^Room/u }));
+    const { container } = render(<StudioHybridDccPanel />);
+    const expert = container.querySelector<HTMLDetailsElement>("details[data-studio-hybrid-dcc-expert-tools]");
+    const toggle = expert?.querySelector("summary");
+    if (!expert || !toggle) throw new Error("전문가용 도구 목록을 찾지 못했습니다.");
+    fireEvent.click(toggle);
+    expect(expert.open).toBe(true);
+    const clickTool = (section: string, name: RegExp) => {
+      const group = within(expert).getByRole("region", { name: section });
+      const button = within(group).getByRole("button", { name });
+      expect(button).toHaveProperty("disabled", false);
+      fireEvent.click(button);
+    };
+    clickTool("만들기·불러오기", /^Room/u);
     await waitFor(() => {
       expect(document.querySelector("[data-studio-hybrid-dcc-log]")?.textContent).toMatch(
         /Room 완료/u,
       );
     });
-    fireEvent.click(screen.getByRole("button", { name: /^BOM/u }));
+    clickTool("표면·내보내기", /^BOM/u);
     await waitFor(() => {
       const log = document.querySelector("[data-studio-hybrid-dcc-log]")?.textContent ?? "";
       expect(log).toMatch(/BOM 완료/u);
       const stats = document.querySelector("[data-studio-hybrid-dcc-stats]");
       expect(Number(stats?.getAttribute("data-bom") ?? 0)).toBeGreaterThanOrEqual(0);
     });
-    fireEvent.click(screen.getByRole("button", { name: /^Collab/u }));
+    clickTool("컷·협업·기록", /^Collab/u);
     await waitFor(() => {
       const stats = document.querySelector("[data-studio-hybrid-dcc-stats]");
       expect(Number(stats?.getAttribute("data-collab") ?? 0)).toBeGreaterThan(0);
     });
     // Need active mesh for UV/boolean
-    fireEvent.click(screen.getByRole("button", { name: /^Add cube/u }));
+    clickTool("만들기·불러오기", /^Add cube/u);
     await waitFor(() => {
       expect(document.querySelector("[data-studio-hybrid-dcc-log]")?.textContent).toMatch(
         /Add cube 완료/u,
       );
     });
-    fireEvent.click(screen.getByRole("button", { name: /^UV unwrap/u }));
+    clickTool("표면·내보내기", /^UV unwrap/u);
     await waitFor(() => {
       const log = document.querySelector("[data-studio-hybrid-dcc-log]")?.textContent ?? "";
       expect(log).toMatch(/UV 완료/u);
@@ -372,14 +385,14 @@ describe("StudioHybridDccPanel industrial wiring", () => {
       expect(stats?.getAttribute("data-uv")).not.toBe("");
     });
     const uvStateHash = document.querySelector("[data-studio-hybrid-dcc-stats]")?.getAttribute("data-studio-hybrid-dcc-state-hash");
-    fireEvent.click(screen.getByRole("button", { name: /^Subdiv/u }));
+    clickTool("메시 편집", /^Subdiv/u);
     await waitFor(() => {
       expect(document.querySelector("[data-studio-hybrid-dcc-log]")?.textContent).toMatch(
         /Subdiv 실패.*UV/u,
       );
     });
     expect(document.querySelector("[data-studio-hybrid-dcc-stats]")?.getAttribute("data-studio-hybrid-dcc-state-hash")).toBe(uvStateHash);
-    fireEvent.click(screen.getByRole("button", { name: /^Export \.toon3d/u }));
+    clickTool("표면·내보내기", /^Export \.toon3d/u);
     await waitFor(() => {
       expect(download).toHaveBeenCalledTimes(1);
     });
@@ -394,7 +407,7 @@ describe("StudioHybridDccPanel industrial wiring", () => {
     expect(restored.session.state.stateHash).not.toBe(uvStateHash);
     expect(Object.values(restored.session.state.geometry.records).some((record) => record.mesh.uvLayer?.corners.length === 24)).toBe(true);
     // Industrial OCCT boolean (not Manifold pure path) on dedicated asset
-    fireEvent.click(screen.getByRole("button", { name: /^OCCT boolean/u }));
+    clickTool("정밀 CAD · OpenCascade", /^OCCT boolean/u);
     await waitFor(
       () => {
         const log = document.querySelector("[data-studio-hybrid-dcc-log]")?.textContent ?? "";

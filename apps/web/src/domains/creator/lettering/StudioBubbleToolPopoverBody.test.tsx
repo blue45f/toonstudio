@@ -53,4 +53,16 @@ describe("StudioBubbleToolPopoverBody library", () => {
     expect(html).toContain("기기 안에서 분석");
     expect(html).toContain("추천 넣기");
   });
+
+  it("현재 수정할 수 있는 컷을 골랐을 때만 컷 대사 배치가 표시된다", () => {
+    const frame = { id: "two", type: "frame" as const, x: 24, y: 680, width: 600, height: 600 };
+    const render = (selected: StudioToolBeltContentProps["selected"], text = "") =>
+      renderToStaticMarkup(<StudioBubbleToolPopoverBody toolBelt={{ ...toolBelt(text), selected }} />);
+    const action = /<button\b([^>]*?)>선택한 컷에 대사 넣기<\/button>/u;
+    expect(render(null)).not.toMatch(action);
+    expect(render({ ...frame, locked: true })).not.toMatch(action);
+    expect(render({ ...frame, hidden: true })).not.toMatch(action);
+    expect(render(frame).match(action)?.[1]).toContain("disabled");
+    expect(render(frame, "나: 안녕").match(action)?.[1]).not.toContain('disabled=""');
+  });
 });

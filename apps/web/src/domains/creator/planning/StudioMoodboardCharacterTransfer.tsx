@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { readStudioProjectDiagnosticSource, STUDIO_PROJECT_DIAGNOSTIC_SOURCE_UPDATED_EVENT } from "../studio-project-diagnostic-source-store";
 import { updateStudioProjectWorkspaceState } from "../studio-project-workspace-store";
 
 import { upsertStoryCharacterProfile } from "./studio-character-profile";
-import { readStudioProjectMoodboard, type Moodboard } from "./studio-moodboard";
+import { readDeviceMoodboard } from "./studio-moodboard-device-store";
+import { type Moodboard } from "./studio-moodboard";
 import { applyCharacterProfileDraftFromMoodboard, deriveCharacterProfileDraftFromMoodboard } from "./studio-moodboard-web-collect";
 
 const fields = [["background", "배경 이야기"], ["motivation", "목표"], ["appearanceNotes", "외형 메모"]] as const;
@@ -49,12 +50,17 @@ export function StudioMoodboardCharacterTransfer({ projectId, board, cardIds, on
   const selectedDraft = character && deriveCharacterProfileDraftFromMoodboard(board, cardIds, character.id);
   const visible = preview && selectedDraft && JSON.stringify(preview.draft) === JSON.stringify(selectedDraft) ? preview : null;
   const changed = visible && fields.some(([field]) => visible.next[field] !== (visible.original?.[field] ?? ""));
-  function apply() {
-    if (!visible || !changed || !character) return;
+  const validation = useRef<AbortController | null>(null);
+  useEffect(() => () => validation.current?.abort(), [projectId, visible]);
+  async function apply() {
+    if (!visible || !changed || !character || validation.current) return;
+    const request = new AbortController();
+    validation.current = request;
     setError("");
     try {
-      const stored = readStudioProjectMoodboard(window.localStorage, projectId);
-      if (!stored?.ok || stored.board.projectId !== projectId
+      const stored = await readDeviceMoodboard(projectId);
+      if (request.signal.aborted) return;
+      if (stored?.kind !== "ready" || stored.board.projectId !== projectId
         || JSON.stringify(deriveCharacterProfileDraftFromMoodboard(stored.board, cardIds, character.id)) !== JSON.stringify(visible.draft)) {
         setPreview(null);
         setError("선택한 카드가 바뀌었어요. 보드의 최신 내용을 확인하고 다시 미리 보세요.");
@@ -72,12 +78,13 @@ export function StudioMoodboardCharacterTransfer({ projectId, board, cardIds, on
       setPreview(null);
       setStatus(`${character.name}의 인물 시트를 이 기기에 저장했어요.`);
     } catch (cause) {
+      if (request.signal.aborted) return;
       if (cause instanceof Error && cause.message === "profile-changed") {
         setSource(readSource(projectId));
         setPreview(null);
         setError("인물 시트가 바뀌었어요. 최신 내용을 다시 미리 보세요.");
       } else setError("인물 시트를 저장하지 못했어요. 저장 공간을 확인한 뒤 다시 시도하세요.");
-    }
+    } finally { validation.current = null; }
   }
   return <section aria-label="보드에서 인물 시트로" className="mt-3 space-y-2 rounded-lg border border-line bg-panel p-3">
     <h3 className="text-sm font-bold">인물 시트에 메모 추가</h3>

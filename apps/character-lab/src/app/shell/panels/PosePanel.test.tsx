@@ -38,21 +38,27 @@ function setup(options: { recipe?: CharacterRecipe; capabilities?: SlotCapabilit
 }
 
 function card(group: string, name: string): HTMLButtonElement {
-  return within(screen.getByRole("group", { name: group })).getByRole("button", { name: new RegExp(`^${name}`, "u") });
+  return within(screen.getByLabelText(group, { selector: '[role="group"]' })).getByRole("button", { name: new RegExp(`^${name}`, "u") });
+}
+
+function ikControls() {
+  const section = screen.getByText("IK 목표", { selector: "legend", exact: true }).closest("fieldset");
+  if (!section) throw new Error("IK 목표가 속한 필드셋을 찾을 수 없습니다");
+  return within(section);
 }
 
 function setTarget(x: string, y: string, z: string): void {
-  fireEvent.change(screen.getByLabelText("목표 X"), { target: { value: x } });
-  fireEvent.change(screen.getByLabelText("목표 Y"), { target: { value: y } });
-  fireEvent.change(screen.getByLabelText("목표 Z"), { target: { value: z } });
+  fireEvent.change(ikControls().getByLabelText("목표 X"), { target: { value: x } });
+  fireEvent.change(ikControls().getByLabelText("목표 Y"), { target: { value: y } });
+  fireEvent.change(ikControls().getByLabelText("목표 Z"), { target: { value: z } });
 }
 
 describe("PosePanel 프리셋", () => {
   it("포즈 10·손 포즈 8 카드를 보여주고 전신 범위 카드 클릭은 slot/apply 1회", () => {
     const dispatched = setup();
-    const poses = within(screen.getByRole("group", { name: "포즈 프리셋" })).getAllByRole("button");
+    const poses = within(screen.getByLabelText("포즈 프리셋", { selector: '[role="group"]' })).getAllByRole("button");
     expect(poses).toHaveLength(10);
-    expect(within(screen.getByRole("group", { name: "손 포즈 프리셋" })).getAllByRole("button")).toHaveLength(8);
+    expect(within(screen.getByLabelText("손 포즈 프리셋", { selector: '[role="group"]' })).getAllByRole("button")).toHaveLength(8);
     expect(card("포즈 프리셋", "A 포즈").getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(card("포즈 프리셋", "서기"));
     expect(dispatched).toEqual([{ type: "slot/apply", slot: "pose", presetId: "pose/idle" }]);
@@ -82,7 +88,10 @@ describe("PosePanel 프리셋", () => {
   });
 
   it("손 포즈: 양손은 slot/apply, 왼손/오른손은 hand-pose/set", () => {
-    const dispatched = setup();
+    const relaxed = findHandPosePreset("relaxed");
+    const recipe = createDefaultRecipe();
+    recipe.handPose = { left: relaxed.left, right: relaxed.right };
+    const dispatched = setup({ recipe });
     fireEvent.click(card("손 포즈 프리셋", "주먹"));
     expect(dispatched[0]).toEqual({ type: "slot/apply", slot: "hand-pose", presetId: "hand-pose/fist" });
     fireEvent.click(screen.getByLabelText("왼손"));
@@ -104,7 +113,7 @@ describe("PosePanel 프리셋", () => {
     expect(screen.getByText(new RegExp(reason, "u"))).toBeTruthy();
     expect(screen.getByText(/손가락 본 일부 없음/u)).toBeTruthy();
     expect(card("손 포즈 프리셋", "주먹").disabled).toBe(false);
-    expect((screen.getByRole("button", { name: "IK 적용" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((ikControls().getByRole("button", { name: "IK 적용" }) as HTMLButtonElement).disabled).toBe(true);
     expect(dispatched).toEqual([]);
   });
 });
@@ -113,7 +122,7 @@ describe("PosePanel IK", () => {
   it("도달 가능한 왼손 목표는 pose/set(전신)으로 기록되고 FK 말단이 목표와 일치하며 '도달'을 표시한다", () => {
     const dispatched = setup();
     setTarget("0.35", "1.1", "0.3");
-    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    fireEvent.click(ikControls().getByRole("button", { name: "IK 적용" }));
     expect(dispatched).toHaveLength(1);
     const command = dispatched[0];
     expect(command?.type).toBe("pose/set");
@@ -142,14 +151,14 @@ describe("PosePanel IK", () => {
     const dispatched = setup({ engineSession: session });
 
     const expectedHand = ikEndPosition({}, "leftArm", customSkeleton);
-    expect(screen.getByLabelText("목표 Y")).toHaveProperty("value", expectedHand[1].toFixed(3));
+    expect(ikControls().getByLabelText("목표 Y")).toHaveProperty("value", expectedHand[1].toFixed(3));
 
     fireEvent.change(screen.getByLabelText("부위"), { target: { value: "head" } });
     const headRest = ikEndPosition({}, "head", customSkeleton);
-    expect(screen.getByLabelText("목표 Y")).toHaveProperty("value", headRest[1].toFixed(3));
+    expect(ikControls().getByLabelText("목표 Y")).toHaveProperty("value", headRest[1].toFixed(3));
     const target = [headRest[0] + 0.02, headRest[1] - 0.03, headRest[2] + 0.1] as const;
     setTarget(target[0].toFixed(3), target[1].toFixed(3), target[2].toFixed(3));
-    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    fireEvent.click(ikControls().getByRole("button", { name: "IK 적용" }));
     expect(dispatched).toHaveLength(1);
     const command = dispatched[0];
     if (command?.type !== "pose/set") throw new Error("pose/set 기대");
@@ -192,7 +201,7 @@ describe("PosePanel IK", () => {
     const dispatched = setup();
     fireEvent.change(screen.getByLabelText("부위"), { target: { value: "rightLeg" } });
     setTarget("-2", "-2", "2");
-    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    fireEvent.click(ikControls().getByRole("button", { name: "IK 적용" }));
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]).toMatchObject({ type: "pose/set", scope: "full", labelKo: "IK 오른발 → (-2.00, -2.00, 2.00)" });
     expect(screen.getByText(/오른발 목표 미도달\(max-reach\): 목표가 체인 최대 신장/u).getAttribute("data-status")).toBe("unreachable");
@@ -203,10 +212,10 @@ describe("PosePanel IK", () => {
     fireEvent.change(screen.getByLabelText("부위"), { target: { value: "head" } });
     expect(screen.queryByLabelText(/폴 벡터 지정/u)).toBeNull();
     const rest = ikEndPosition({}, "head");
-    expect(screen.getByLabelText("목표 Y")).toHaveProperty("value", rest[1].toFixed(3));
+    expect(ikControls().getByLabelText("목표 Y")).toHaveProperty("value", rest[1].toFixed(3));
     const target = [rest[0] + 0.02, rest[1] - 0.04, rest[2] + 0.14] as const;
     setTarget(target[0].toFixed(3), target[1].toFixed(3), target[2].toFixed(3));
-    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    fireEvent.click(ikControls().getByRole("button", { name: "IK 적용" }));
     const command = dispatched[0];
     if (command?.type !== "pose/set") throw new Error("pose/set 기대");
     const head = computeWorldTransforms(skeleton, command.pose).get("head")?.position ?? [0, 0, 0];
@@ -219,20 +228,20 @@ describe("PosePanel IK", () => {
     recipe.pose = { leftUpperArm: qFromAxisAngle([0, 0, 1], degToRad(-60)) };
     setup({ recipe });
     setTarget("9", "9", "9");
-    fireEvent.click(screen.getByRole("button", { name: "현재 위치 읽기" }));
+    fireEvent.click(ikControls().getByRole("button", { name: "현재 위치 읽기" }));
     const expected = ikEndPosition(recipe.pose, "leftArm");
-    expect(screen.getByLabelText("목표 X")).toHaveProperty("value", expected[0].toFixed(3));
-    expect(screen.getByLabelText("목표 Y")).toHaveProperty("value", expected[1].toFixed(3));
+    expect(ikControls().getByLabelText("목표 X")).toHaveProperty("value", expected[0].toFixed(3));
+    expect(ikControls().getByLabelText("목표 Y")).toHaveProperty("value", expected[1].toFixed(3));
     expect(expected[1]).toBeLessThan(1.2);
   });
 
   it("IK 빠른 위치 이동 버튼이 목표 좌표를 10cm 단위로 이동시킨다", () => {
     setup();
     setTarget("0.200", "1.000", "0.100");
-    fireEvent.click(screen.getByRole("button", { name: "위로 +10cm" }));
-    expect(screen.getByLabelText("목표 Y")).toHaveProperty("value", "1.100");
-    fireEvent.click(screen.getByRole("button", { name: "앞으로 +10cm" }));
-    expect(screen.getByLabelText("목표 Z")).toHaveProperty("value", "0.200");
+    fireEvent.click(ikControls().getByRole("button", { name: "위로 +10cm" }));
+    expect(ikControls().getByLabelText("목표 Y")).toHaveProperty("value", "1.100");
+    fireEvent.click(ikControls().getByRole("button", { name: "앞으로 +10cm" }));
+    expect(ikControls().getByLabelText("목표 Z")).toHaveProperty("value", "0.200");
   });
 });
 
@@ -332,9 +341,9 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     expect(store.getState().failures).toHaveLength(1);
     expect(store.getState().failures[0]?.code).toBe("skeleton-cycle");
 
-    fireEvent.click(screen.getByRole("button", { name: "현재 위치 읽기" }));
+    fireEvent.click(ikControls().getByRole("button", { name: "현재 위치 읽기" }));
     fireEvent.change(screen.getByLabelText("부위"), { target: { value: "head" } });
-    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    fireEvent.click(ikControls().getByRole("button", { name: "IK 적용" }));
     expect(screen.getAllByText(/\[skeleton-cycle\]/u).length).toBeGreaterThanOrEqual(2);
     fireEvent.click(screen.getByRole("button", { name: "관절 제한으로 클램프" }));
 
@@ -363,12 +372,12 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     expect((screen.getByRole("button", { name: "포즈 초기화" }) as HTMLButtonElement).disabled).toBe(true);
     expect(card("손 포즈 프리셋", "주먹").disabled).toBe(true);
     expect((screen.getByLabelText("부위") as HTMLSelectElement).disabled).toBe(true);
-    expect((screen.getByLabelText("목표 X") as HTMLInputElement).disabled).toBe(true);
-    expect((screen.getByRole("button", { name: "위로 +10cm" }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole("button", { name: "현재 위치 읽기" }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole("button", { name: "IK 적용" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((ikControls().getByLabelText("목표 X") as HTMLInputElement).disabled).toBe(true);
+    expect((ikControls().getByRole("button", { name: "위로 +10cm" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((ikControls().getByRole("button", { name: "현재 위치 읽기" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((ikControls().getByRole("button", { name: "IK 적용" }) as HTMLButtonElement).disabled).toBe(true);
 
-    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    fireEvent.click(ikControls().getByRole("button", { name: "IK 적용" }));
     expect(store.dispatched).toEqual([]);
 
     currentSkeleton = skeleton;
@@ -384,10 +393,10 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     expect((screen.getByRole("button", { name: "포즈 초기화" }) as HTMLButtonElement).disabled).toBe(false);
     expect(card("손 포즈 프리셋", "주먹").disabled).toBe(false);
     expect((screen.getByLabelText("부위") as HTMLSelectElement).disabled).toBe(false);
-    expect((screen.getByLabelText("목표 X") as HTMLInputElement).disabled).toBe(false);
-    expect((screen.getByRole("button", { name: "IK 적용" }) as HTMLButtonElement).disabled).toBe(false);
+    expect((ikControls().getByLabelText("목표 X") as HTMLInputElement).disabled).toBe(false);
+    expect((ikControls().getByRole("button", { name: "IK 적용" }) as HTMLButtonElement).disabled).toBe(false);
     setTarget("0.35", "1.1", "0.3");
-    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    fireEvent.click(ikControls().getByRole("button", { name: "IK 적용" }));
     expect(store.dispatched).toHaveLength(1);
     expect(store.dispatched[0]?.type).toBe("pose/set");
   });
@@ -478,7 +487,7 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     expect((screen.getByTestId("pose-quick-chip-a-pose") as HTMLButtonElement).disabled).toBe(true);
     expect(card("포즈 프리셋", "서기").disabled).toBe(true);
     expect(card("손 포즈 프리셋", "주먹").disabled).toBe(true);
-    expect((screen.getByRole("button", { name: "IK 적용" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((ikControls().getByRole("button", { name: "IK 적용" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByTestId("pose-skeleton-diagnostics").textContent).toMatch(/스켈레톤 본 0개 · 정적 메시\(스켈레톤 없음\)/u);
   });
 
@@ -643,6 +652,9 @@ describe("PosePanel P2-17 손·발·시선 개별 조정 및 관절 제한·반�
 
     fireEvent.click(screen.getByLabelText("세부 왼손"));
     fireEvent.change(screen.getByTestId("pose-fine-hand-curl-slider"), { target: { value: "80" } });
+    const curlCmd = dispatched.at(-1);
+    if (curlCmd?.type !== "pose/set") throw new Error("손가락 굽힘 명령 누락");
+    expect(curlCmd.pose.leftIndexIntermediate).toBeDefined();
     fireEvent.change(screen.getByTestId("pose-fine-wrist-flex-slider"), { target: { value: "45" } });
 
     const wristCmd = dispatched.at(-1);
@@ -650,7 +662,8 @@ describe("PosePanel P2-17 손·발·시선 개별 조정 및 관절 제한·반�
     if (wristCmd?.type !== "pose/set") throw new Error("pose/set 기대");
     expect(wristCmd.scope).toBe("left-hand");
     expect(wristCmd.pose.leftHand).toBeDefined();
-    expect(wristCmd.pose.leftIndexIntermediate).toBeDefined();
+    // 이 테스트는 명령 관찰용 스토어를 쓰므로 손목 명령은 입력 레시피의 손가락을 그대로 전달한다.
+    expect(wristCmd.pose.leftIndexProximal).toEqual(recipe.handPose.left.leftIndexProximal);
     expect(poseLimitViolations(wristCmd.pose, skeleton)).toEqual([]);
 
     fireEvent.click(screen.getByTestId("pose-hand-mirror-btn"));

@@ -9,9 +9,10 @@
  * - 이미지 카드는 카탈로그로 해석된 주소만 그리고, 깨진 참조는 사유를
  *   텍스트로 보여준다 (빈 칸으로 숨기지 않는다).
  */
-import { useRef, useState, type ClipboardEvent, type FormEvent } from "react";
+import { useId, useRef, useState, type ClipboardEvent, type FormEvent, type ReactNode } from "react";
 import { SketchPad, StrokePaths } from "@/shared/components/sketch-pad/SketchPad";
 import { PAPER, type Stroke } from "@/shared/components/sketch-pad/sketch-strokes";
+import { StudioToolArtwork, type StudioArtworkTool } from "../studio-tool-art/StudioToolArtwork";
 import { StudioMoodboardCharacterTransfer } from "./StudioMoodboardCharacterTransfer";
 import { StudioMoodboardConnections } from "./StudioMoodboardConnections";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
@@ -40,6 +41,7 @@ import {
 
 export interface StudioMoodboardPanelProps {
   readonly board: Moodboard;
+  readonly tools?: ReactNode;
   readonly scriptProjectId?: string;
   readonly profileProjectId?: string;
   readonly onBoardChange?: (board: Moodboard) => void;
@@ -63,6 +65,10 @@ const KIND_LABELS: Readonly<Record<MoodboardCardKind, string>> = {
   todo: "할 일",
 };
 
+const CARD_ART: Record<MoodboardCardKind, StudioArtworkTool> = {
+  sketch: "drawingDesk", image: "references", note: "text", link: "share", todo: "projects",
+};
+
 const KIND_PLACEHOLDERS: Readonly<Record<MoodboardCardKind, string>> = {
   sketch: "예: 복도 조명 구도",
   image: "에셋 이름이나 이미지 주소",
@@ -80,6 +86,7 @@ const EMPTY_DRAFT: CardDraft = { kind: "note", value: "" };
 
 export function StudioMoodboardPanel({
   board,
+  tools,
   onBoardChange,
   scriptProjectId,
   profileProjectId,
@@ -89,6 +96,8 @@ export function StudioMoodboardPanel({
   planningEpisodeId,
   planningCharacterId,
 }: StudioMoodboardPanelProps) {
+  const boardId = useId();
+  const ideaBoard = r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.boardName", "아이디어 보드");
   const summary = moodboardSummary(board);
   const editable = onBoardChange !== undefined;
   const collectCounterRef = useRef(0);
@@ -144,15 +153,22 @@ export function StudioMoodboardPanel({
   };
 
   return (
-    <section aria-label="기획 무드보드">
-      <header>
-        <h2>{board.title}</h2>
-        <p>
-          장면의 분위기·참고 이미지·링크·할 일을 열마다 모아 두는 보드예요.
-          카드 {summary.total}장
-          {summary.byKind.todo > 0 ? ` · 남은 할 일 ${summary.todosOpen}개` : ""}
-        </p>
+    <section aria-label={ideaBoard}>
+      <header className="studio-moodboard-heading">
+        <StudioToolArtwork tool="storyboard" />
+        <div><h2>{board.title === "기획 무드보드" || board.title === "아이디어 보드" ? ideaBoard : board.title}</h2>
+          <p>카드 {summary.total}장{summary.byKind.todo > 0 ? ` · 남은 할 일 ${summary.todosOpen}개` : ""}</p>
+        </div>
       </header>
+      {tools}
+      {board.columns.length > 1 && <nav className="studio-moodboard-jump" aria-label={r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.columnJump", "보드 열 바로가기")}>
+        {board.columns.map((column, index) => <button type="button" key={column.id}
+          aria-controls={boardId + "-column-" + index} onClick={() => {
+            const heading = document.getElementById(boardId + "-column-" + index);
+            heading?.focus({ preventScroll: true });
+            heading?.scrollIntoView({ block: "start" });
+          }}>{column.title}</button>)}
+      </nav>}
       {editable && firstColumnId && (
         <div>
           <label>
@@ -169,7 +185,7 @@ export function StudioMoodboardPanel({
       <div className="studio-moodboard-columns">
         {board.columns.map((column, columnIndex) => (
           <section key={column.id} aria-label={`${column.title} 열`}>
-            <h3>
+            <h3 id={boardId + "-column-" + columnIndex} tabIndex={-1}>
               {column.title} <span>{column.cardIds.length}장</span>
             </h3>
             <ul>
@@ -178,7 +194,7 @@ export function StudioMoodboardPanel({
                 if (!card) return null;
                 return (
                   <li key={card.id} id={moodboardCardAnchor(card.id)} tabIndex={-1} data-moodboard-kind={card.kind}>
-                    <span className="studio-moodboard-card-kind">{KIND_LABELS[card.kind]}</span>
+                    <span className="studio-moodboard-card-kind"><StudioToolArtwork tool={CARD_ART[card.kind]} />{KIND_LABELS[card.kind]}</span>
                     {editingCardId === card.id && onBoardChange ? (
                       <EditCardForm card={card} onCancel={() => setEditingCardId(null)} onSave={updated => {
                         onBoardChange({ ...board, cards: { ...board.cards, [card.id]: updated } });

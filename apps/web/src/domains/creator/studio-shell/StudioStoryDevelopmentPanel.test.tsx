@@ -95,6 +95,25 @@ describe("집중 대본 화면", () => {
     expect(window.localStorage.getItem(storyDevelopmentStorageKey(PROJECT))).toContain(SOURCE);
   });
 
+  it("다른 탭에서 대본을 고쳤다면 작성 중인 장면과 외부 저장본을 모두 남긴다", async () => {
+    const stored = seed();
+    render(<StudioStoryDevelopmentPanel projectId={PROJECT} focused onApplyBeats={vi.fn()} />);
+    fireEvent.click(await screen.findByText("장면 구성"));
+    const title = screen.getByRole("textbox", { name: "장면 제목 또는 장소·시간" }) as HTMLInputElement;
+    const action = screen.getByRole("textbox", { name: "행동·대사·연출 메모" }) as HTMLTextAreaElement;
+    fireEvent.change(title, { target: { value: "옥상 · 저녁" } });
+    fireEvent.change(action, { target: { value: "소녀가 창문을 연다." } });
+    const external = { ...stored, chapters: stored.chapters.map(item => ({ ...item, body: "다른 탭에서 수정한 회차" })) };
+    const raw = JSON.stringify(external);
+    window.localStorage.setItem(storyDevelopmentStorageKey(PROJECT), raw);
+    fireEvent.click(screen.getByRole("button", { name: "대본 끝에 장면 추가" }));
+    expect(screen.getByText(/대본 저장본이 달라졌어요/u)).toBeTruthy();
+    expect(title.value).toBe("옥상 · 저녁");
+    expect(action.value).toBe("소녀가 창문을 연다.");
+    expect((screen.getByRole("textbox", { name: /^대본$/u }) as HTMLTextAreaElement).value).toBe(SOURCE);
+    expect(window.localStorage.getItem(storyDevelopmentStorageKey(PROJECT))).toBe(raw);
+  });
+
   it("빈 컷 계획을 준비 완료로 표시하지 않는다", () => {
     render(<StudioStoryDevelopmentPanel projectId={PROJECT} focused currentPanelCount={0} onApplyBeats={vi.fn()} />);
     expect(screen.queryByText(/현재 0컷 계획이 준비되어/u)).toBeNull();

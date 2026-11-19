@@ -116,7 +116,7 @@ export interface StudioScenarioImageGenerationContext {
 }
 
 export interface StudioScenarioImageGenerationExecutors {
-  readonly executeGenerateScenarioImages: (request?: StudioScenarioImageGenerationRequest) => Promise<void>;
+  readonly executeGenerateScenarioImages: (request?: StudioScenarioImageGenerationRequest, onStarted?: () => void) => Promise<void>;
   readonly executeRegenerateScenarioImage: (index: number) => Promise<void>;
 }
 
@@ -178,7 +178,7 @@ export function createStudioScenarioImageGenerationExecutors(
     ];
   }
 
-  async function executeGenerateScenarioImages(request: StudioScenarioImageGenerationRequest = {}) {
+  async function executeGenerateScenarioImages(request: StudioScenarioImageGenerationRequest = {}, onStarted?: () => void) {
     if (collaborationAccessRef.current.locked) return;
     if (scenarioAbortControllerRef.current) return;
     const mutationTicket = captureStudioMutationTicket();
@@ -225,6 +225,7 @@ export function createStudioScenarioImageGenerationExecutors(
     const characterContext = buildStudioCharacterBiblePromptContext(characterBible, 4_000);
 
     try {
+      onStarted?.();
       for (let taskIndex = 0; taskIndex < tasks.length; taskIndex++) {
         if (scenarioCancelRef.current || controller.signal.aborted) break;
         const task = tasks[taskIndex];

@@ -1,5 +1,5 @@
 import { BookOpenText, Download, FilePlus2, PanelTopOpen, Trash2, WandSparkles } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -17,6 +17,7 @@ import { serializeStudioWriterRoomDocument } from "../studio-writer-room";
 import type { StudioStoryBeat } from "../studio-storyboard-planner";
 import { formatNumber } from "@toonstudio/core/format";
 
+const SceneOutline = lazy(() => import("../planning/StudioStorySceneOutline").then(module => ({ default: module.StudioStorySceneOutline })));
 const MoodboardExcerpt = lazy(() => import("../planning/StudioMoodboardScriptExcerpt").then(module => ({ default: module.StudioMoodboardScriptExcerpt })));
 
 const FIELD =
@@ -65,6 +66,14 @@ function loadDevelopment(projectId: string): StudioStoryDevelopmentDocument {
   }
 }
 
+function currentStoryChapter(projectId: string, development: StudioStoryDevelopmentDocument) {
+  const first = development.chapters[0]?.id ?? "";
+  try {
+    const saved = window.sessionStorage.getItem(storyDevelopmentStorageKey(projectId) + ":chapter");
+    return development.chapters.find(chapter => chapter.id === saved)?.id ?? first;
+  } catch { return first; }
+}
+
 function downloadText(filename: string, text: string, type = "application/json") {
   const blob = new Blob([text], { type });
   const href = URL.createObjectURL(blob);
@@ -92,6 +101,7 @@ function StoryDetails({ collapsed, label, children }: {
 function adaptationWarningText(warning: string, bt: (ko: string, en: string) => string): string {
   const code = warning.split(":")[0];
   switch (code) {
+    case "empty-scene": return bt("내용이 없는 장면은 컷 계획에서 제외했어요.", "Scenes without content were left out of the panel plan.");
     case "source-empty": return bt("대본을 입력하면 새 컷 구성을 미리 볼 수 있어요.", "Enter a script to preview a new panel plan.");
     case "source-truncated": return bt("분석할 수 있는 글자 수를 넘은 부분은 이번 분석에 포함되지 않았어요.", "Text beyond the analysis limit was not included.");
     case "scene-limit-reached": return bt("한 번에 분석할 수 있는 장면 수에 도달했어요. 대본을 나누어 확인하세요.", "The scene limit was reached. Review the script in smaller sections.");
@@ -118,7 +128,8 @@ export function StudioStoryDevelopmentPanel({
   const bt = useBilingual("StudioStoryDevelopmentPanel");
   const [development, setDevelopment] = useState(() => loadDevelopment(projectId));
   const [loadedProjectId, setLoadedProjectId] = useState(projectId);
-  const [selectedChapterId, setSelectedChapterId] = useState(() => development.chapters[0]?.id ?? "");
+  const scriptRef = useRef<HTMLTextAreaElement>(null);
+  const [selectedChapterId, setSelectedChapterId] = useState(() => currentStoryChapter(projectId, development));
   const [notice, setNotice] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"saving" | "saved" | "failed">("saving");
   const [saveRetry, setSaveRetry] = useState(0);
@@ -128,7 +139,7 @@ export function StudioStoryDevelopmentPanel({
     const next = loadDevelopment(projectId);
     setDevelopment(next);
     setLoadedProjectId(projectId);
-    setSelectedChapterId(next.chapters[0]?.id ?? "");
+    setSelectedChapterId(currentStoryChapter(projectId, next));
     setSaveState("saving");
     setConfirmingReplace(false);
   }, [projectId]);
@@ -166,7 +177,24 @@ export function StudioStoryDevelopmentPanel({
     setNotice(null);
   };
 
+  const appendToCurrentChapter = (body: string) => {
+    if (loadedProjectId !== projectId || chapter.status === "locked" || body.length > 120_000) return false;
+    try {
+      if (window.localStorage.getItem(storyDevelopmentStorageKey(projectId)) !== JSON.stringify(development)) return false;
+    } catch { return false; }
+    patchChapter({ body });
+    return true;
+  };
+
+  const selectChapter = (id: string) => {
+    setSelectedChapterId(id);
+    try { window.sessionStorage.setItem(storyDevelopmentStorageKey(projectId) + ":chapter", id); }
+    catch { /* 탭의 선택을 기억하지 못해도 현재 대본은 계속 작업할 수 있다. */ }
+    setConfirmingReplace(false);
+    setNotice(null);
+  };
   const addChapter = () => {
+    if (development.chapters.length >= 100) return;
     const index = development.chapters.length + 1;
     const next: StudioStoryChapter = {
       id: `chapter-${Date.now().toString(36)}`,
@@ -175,14 +203,14 @@ export function StudioStoryDevelopmentPanel({
       status: "draft",
     };
     patchDevelopment({ chapters: [...development.chapters, next] });
-    setSelectedChapterId(next.id);
+    selectChapter(next.id);
   };
 
   const removeChapter = () => {
     if (development.chapters.length <= 1) return;
     const remaining = development.chapters.filter((item) => item.id !== chapter.id);
     patchDevelopment({ chapters: remaining });
-    setSelectedChapterId(remaining[0]?.id ?? "");
+    selectChapter(remaining[0]?.id ?? "");
   };
 
   const apply = (mode: "replace" | "append", confirmed = false) => {
@@ -200,7 +228,7 @@ export function StudioStoryDevelopmentPanel({
 
   const exportWriterRoom = () => {
     if (plan.beats.length === 0) return;
-    const writerRoom = buildWriterRoomFromStoryAdaptation({ development, plan });
+    const writerRoom = buildWriterRoomFromStoryAdaptation({ development, plan, chapterId: chapter.id });
     downloadText(
       `${(development.title || chapter.title || "story").replace(/[^a-z0-9가-힣_-]+/giu, "-")}-writer-room.json`,
       serializeStudioWriterRoomDocument(writerRoom),
@@ -268,13 +296,13 @@ export function StudioStoryDevelopmentPanel({
         {!focused || development.chapters.length > 1 ? <aside className="rounded-2xl border border-line bg-panel p-3">
           <div className="flex items-center justify-between gap-2">
             <b className="text-sm text-fg">{bt("회차", "Chapters")}</b>
-            <button type="button" onClick={addChapter} className={buttonClass({ variant: "quiet", size: "icon" })} aria-label={bt("회차 추가", "Add chapter")}>
+            <button type="button" disabled={development.chapters.length >= 100} onClick={addChapter} className={buttonClass({ variant: "quiet", size: "icon" })} aria-label={bt("회차 추가", "Add chapter")}>
               <FilePlus2 size={16} aria-hidden="true" />
             </button>
           </div>
           <div className="mt-3 space-y-1">
             {development.chapters.map((item) => (
-              <button key={item.id} type="button" onClick={() => { setSelectedChapterId(item.id); setConfirmingReplace(false); setNotice(null); }} className={cn(
+              <button key={item.id} type="button" onClick={() => selectChapter(item.id)} className={cn(
                 "min-h-11 w-full rounded-xl border px-3 text-left text-xs font-bold",
                 item.id === chapter.id ? "border-accent bg-accent-soft text-accent" : "border-transparent text-fg-2 hover:bg-raised",
               )}>
@@ -293,29 +321,33 @@ export function StudioStoryDevelopmentPanel({
               <option value="review">{bt("검토", "Review")}</option>
               <option value="locked">{bt("확정", "Locked")}</option>
             </select>
-            <button type="button" disabled={development.chapters.length <= 1} onClick={removeChapter} className={buttonClass({ variant: "quiet", size: "icon" })} aria-label={bt("회차 삭제", "Delete chapter")}>
+            {focused && development.chapters.length === 1 ? <button type="button" onClick={addChapter} className={buttonClass({ variant: "quiet" })}>
+              <FilePlus2 size={16} aria-hidden="true" /> {bt("회차 추가", "Add chapter")}
+            </button> : <button type="button" disabled={development.chapters.length <= 1} onClick={removeChapter} className={buttonClass({ variant: "quiet", size: "icon" })} aria-label={bt("회차 삭제", "Delete chapter")}>
               <Trash2 size={16} aria-hidden="true" />
-            </button>
+            </button>}
           </div>
           <textarea
             className={cn(FIELD, "mt-2 min-h-64 resize-y font-serif leading-7")}
             value={chapter.body}
+            ref={scriptRef}
             aria-label={bt("대본", "Script")}
             maxLength={120000}
             onChange={(event) => patchChapter({ body: event.target.value })}
             placeholder={bt("웹소설 본문 또는 웹툰으로 전환할 대본을 붙여 넣으세요.", "Paste the web-novel chapter or script you want to adapt.")}
           />
 
+          {loadedProjectId === projectId && <Suspense fallback={null}>
+            <SceneOutline key={JSON.stringify([projectId, chapter.id])} body={chapter.body} locked={chapter.status === "locked"}
+              onAppend={appendToCurrentChapter} onSelect={(start, end) => {
+                scriptRef.current?.focus();
+                scriptRef.current?.setSelectionRange(start, end);
+              }} />
+          </Suspense>}
           {selectedCards.length === 2 && loadedProjectId === projectId && (
             <Suspense fallback={<p role="status">연결한 카드를 여는 중…</p>}>
               <MoodboardExcerpt key={JSON.stringify([projectId, chapter.id, ...selectedCards])}
-                projectId={projectId} from={selectedCards[0]!} to={selectedCards[1]!} chapter={chapter} onAppend={body => {
-                  try {
-                    if (window.localStorage.getItem(storyDevelopmentStorageKey(projectId)) !== JSON.stringify(development)) return false;
-                  } catch { return false; }
-                  patchChapter({ body });
-                  return true;
-                }} />
+                projectId={projectId} from={selectedCards[0]!} to={selectedCards[1]!} chapter={chapter} onAppend={appendToCurrentChapter} />
             </Suspense>
           )}
           <StoryDetails collapsed={focused} label={bt("대본을 새 컷 계획으로 나누기 (선택)", "Split the script into a new panel plan (optional)")}>

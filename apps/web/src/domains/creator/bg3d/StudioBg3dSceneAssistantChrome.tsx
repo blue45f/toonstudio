@@ -3,11 +3,9 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  CircleUserRound,
-  Cuboid,
   ImagePlus,
-  Layers3,
 } from "lucide-react";
+import { StudioToolArtwork, type StudioArtworkTool } from "../studio-tool-art/StudioToolArtwork";
 
 import {
   STUDIO_BG3D_ASSISTANT_STEPS,
@@ -29,11 +27,11 @@ const GOALS: readonly {
   readonly id: StudioBg3dAssistantGoal;
   readonly title: string;
   readonly description: string;
-  readonly icon: typeof Layers3;
+  readonly art: StudioArtworkTool;
 }[] = Object.freeze([
-  { id: "background", title: "배경·구도", description: "완성된 장소를 고르고 카메라만 맞춰요", icon: Layers3 },
-  { id: "character", title: "인물·포즈", description: "프로젝트 캐릭터와 포즈 참고를 배치해요", icon: CircleUserRound },
-  { id: "props", title: "소품", description: "가구와 물건을 현재 장면에 바로 놓아요", icon: Cuboid },
+  { id: "background", title: "배경·구도", description: "완성된 장소를 고르고 카메라만 맞춰요", art: "environment" },
+  { id: "character", title: "인물·포즈", description: "프로젝트 캐릭터와 포즈 참고를 배치해요", art: "performer" },
+  { id: "props", title: "소품", description: "가구와 물건을 현재 장면에 바로 놓아요", art: "stageProp" },
 ]);
 
 export function SheetHandle({
@@ -105,16 +103,16 @@ export function GoalPicker({
   return (
     <div className="scene-assistant__goal-grid" role="group" aria-label="만들 장면 종류">
       {GOALS.map((item) => {
-        const Icon = item.icon;
         return (
           <button
             key={item.id}
             type="button"
             className="scene-assistant__goal"
+            data-scene-goal={item.id}
             aria-pressed={goal === item.id}
             onClick={() => onChange(item.id)}
           >
-            <span className="scene-assistant__goal-icon"><Icon size={18} aria-hidden /></span>
+            <span className="scene-assistant__goal-icon"><StudioToolArtwork tool={item.art} /></span>
             <span><strong>{item.title}</strong><small>{item.description}</small></span>
           </button>
         );

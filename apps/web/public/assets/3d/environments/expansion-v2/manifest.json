@@ -1,0 +1,50 @@
+{
+  "version": "expansion-v2",
+  "assets": [
+    {
+      "sourceId": "ts-bg3d-library_reading_room-expansion-v1",
+      "sourceSha256": "sha256:2461352f0b60143a21f88e9173f3700efcd919fbbc05b1dbc5e92c087680bc39",
+      "id": "ts-bg3d-library_reading_room-expansion-v2",
+      "fileName": "library_reading_room.glb",
+      "sha256": "sha256:210660a91eb8997a4ba838adf089457125f21265ba3b7a208d9da67a40124cf3",
+      "byteSize": 23816348,
+      "removedTriangles": 312
+    },
+    {
+      "sourceId": "ts-bg3d-independent_bookshop-expansion-v1",
+      "sourceSha256": "sha256:bc1986e34e69d53a98550b5afa6e678be36b16fe22b82a2daafccd6acfcd5a43",
+      "id": "ts-bg3d-independent_bookshop-expansion-v2",
+      "fileName": "independent_bookshop.glb",
+      "sha256": "sha256:b946cf2059ce13a19f3f049682e298671eb4508c4411d60426a7adeb80749994",
+      "byteSize": 21020040,
+      "removedTriangles": 96
+    },
+    {
+      "sourceId": "ts-bg3d-fashion_boutique-expansion-v1",
+      "sourceSha256": "sha256:e4d529856c6be1ae13ff684858d85a3fc51ead2eb3dd86ffd1b03367df2f94a5",
+      "id": "ts-bg3d-fashion_boutique-expansion-v2",
+      "fileName": "fashion_boutique.glb",
+      "sha256": "sha256:3874f191c5893923d64762686e08893b9da48736d0516cd25846057cc3942ce9",
+      "byteSize": 12515144,
+      "removedTriangles": 288
+    },
+    {
+      "sourceId": "ts-bg3d-park_garden_pavilion-expansion-v1",
+      "sourceSha256": "sha256:6cf4b5ba75ded1e8fcfb891e1774420f192a1952c480b6914cd292aab781d0ff",
+      "id": "ts-bg3d-park_garden_pavilion-expansion-v2",
+      "fileName": "park_garden_pavilion.glb",
+      "sha256": "sha256:56a437d2458f148512b702224162c117a56a7dc6536e7dbae683493b4796808c",
+      "byteSize": 20896776,
+      "removedTriangles": 24
+    },
+    {
+      "sourceId": "ts-bg3d-science_research_laboratory-expansion-v1",
+      "sourceSha256": "sha256:43bacb2752e166a8302870cc1feacb354cac302290e8d43ec4ed9cf0dadf8b99",
+      "id": "ts-bg3d-science_research_laboratory-expansion-v2",
+      "fileName": "science_research_laboratory.glb",
+      "sha256": "sha256:b50c981ab42e71d750462d3f223d6a7e129a0dc8b257c3ea51c4a69f88893547",
+      "byteSize": 6373028,
+      "removedTriangles": 640
+    }
+  ]
+}

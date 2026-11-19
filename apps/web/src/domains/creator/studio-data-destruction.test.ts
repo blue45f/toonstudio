@@ -162,6 +162,8 @@ describe("inventory stays in sync with the owning modules (drift contract)", () 
   });
 
   it("IndexedDB names match the library modules", () => {
+    expect(read("./virtual-space/studio-workspace-video-legacy.ts")).toContain('"toonstudio-workspace-recordings"');
+    expect(STUDIO_INDEXED_DB_DATABASES).toContain("toonstudio-workspace-recordings");
     expect(read("./vrm/vrm-library.ts")).toContain('"toonstudio-studio-vrm-library"');
     expect(read("./live/studio-crdt-outbox.ts")).toContain("toonstudio-studio-crdt-outbox");
     expect(read("./studio-checkpoints.ts")).toContain("toonstudio-studio-checkpoints");

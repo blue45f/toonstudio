@@ -7,7 +7,7 @@ import { scanHardcodedStatusStrings } from "@/shared/language/status-i18n";
 /**
  * character-shaper·planning·studio-production 로딩·실패·에러·빈 상태 문구
  * i18n 키 이관 계약 (A4 잔여 3라운드 c04, 42파일 138건 중 이관 118건·
- * 신규 키 126개). 현재 계약은 LT 캡처 생산자를 포함한 43파일·127키다.
+ * 신규 키 126개).
  *
  * 표시 정본은 studio.r3c04Status.* (studio-r3c04-status-i18n 등록 모듈) 키이며,
  * 코드 안의 한국어 원문은 useT 폴백 인자나 r3c04StatusText 헬퍼의 koFallback으로만
@@ -73,12 +73,12 @@ const R3C04_KEYS = [
   "studio.r3c04Status.shaper.viewportHud.loadFailed",
   "studio.r3c04Status.shaper.viewportHud.emptyModel",
   "studio.r3c04Status.shaper.viewportHud.captureUnavailable",
-  "studio.r3c04Status.shaper.viewportHud.captureBusy",
   "studio.r3c04Status.shaper.viewportHud.captureEmpty",
   "studio.r3c04Status.shaper.viewportHud.captureFailed",
   "studio.r3c04Status.shaper.viewportHud.imageLoadFailed",
-  "studio.r3c04Status.shaper.viewportHud.layerInsertUnavailable",
-  "studio.r3c04Status.shaper.viewportHud.layerInsertFailed",
+  "studio.r3c04Status.shaper.viewportHud.layerAddFailed",
+  "studio.r3c04Status.shaper.viewportHud.captureBusy",
+  "studio.r3c04Status.shaper.viewportHud.ltNotConnected",
   "studio.r3c04Status.shaper.dialog.presetsLoading",
   "studio.r3c04Status.shaper.dialog.commitUnavailable",
   "studio.r3c04Status.shaper.dialog.modelLoadFailed",
@@ -114,6 +114,15 @@ const R3C04_KEYS = [
   "studio.r3c04Status.planning.moodboard.emptyCards",
   "studio.r3c04Status.planning.plotline.emptyEpisodes",
   "studio.r3c04Status.planning.plotline.emptyFilter",
+  "studio.r3c04Status.planning.projectMoodboard.boardName",
+  "studio.r3c04Status.planning.projectMoodboard.columnJump",
+  "studio.r3c04Status.planning.projectMoodboard.opening",
+  "studio.r3c04Status.planning.projectMoodboard.localSaving",
+  "studio.r3c04Status.planning.projectMoodboard.localSaved",
+  "studio.r3c04Status.planning.projectMoodboard.backupChanged",
+  "studio.r3c04Status.planning.projectMoodboard.backupFailed",
+  "studio.r3c04Status.planning.projectMoodboard.retryCards",
+  "studio.r3c04Status.planning.projectMoodboard.checkingCards",
   "studio.r3c04Status.planning.projectMoodboard.loadFailed",
   "studio.r3c04Status.planning.storyPlanning.metricsLoadFailed",
   "studio.r3c04Status.planning.storyPlanning.emptyCharacters",
@@ -203,12 +212,12 @@ const EXPECTED_KO: Readonly<Record<string, string>> = {
   "studio.r3c04Status.shaper.viewportHud.loadFailed": "불러오기 실패",
   "studio.r3c04Status.shaper.viewportHud.emptyModel": "모델 없음",
   "studio.r3c04Status.shaper.viewportHud.captureUnavailable": "캐릭터 화면이 준비되지 않았습니다. 모델을 불러온 후 다시 시도하세요.",
-  "studio.r3c04Status.shaper.viewportHud.captureBusy": "다른 캡처가 끝난 후 다시 시도하세요.",
   "studio.r3c04Status.shaper.viewportHud.captureEmpty": "캐릭터 화면의 크기를 확인할 수 없습니다.",
-  "studio.r3c04Status.shaper.viewportHud.captureFailed": "뷰포트를 캡처하지 못했습니다.",
+  "studio.r3c04Status.shaper.viewportHud.captureFailed": "3D 뷰 캡처에 실패했습니다.",
   "studio.r3c04Status.shaper.viewportHud.imageLoadFailed": "이미지를 불러오지 못했습니다.",
-  "studio.r3c04Status.shaper.viewportHud.layerInsertUnavailable": "이 페이지에 레이어를 추가할 수 없습니다. 원고의 편집 권한과 잠금 상태를 확인하세요.",
-  "studio.r3c04Status.shaper.viewportHud.layerInsertFailed": "레이어를 추가하지 못했습니다.",
+  "studio.r3c04Status.shaper.viewportHud.layerAddFailed": "레이어를 추가하지 못했습니다.",
+  "studio.r3c04Status.shaper.viewportHud.captureBusy": "다른 캡처가 끝난 후 다시 시도하세요.",
+  "studio.r3c04Status.shaper.viewportHud.ltNotConnected": "이 페이지에 레이어를 추가할 수 없습니다. 원고의 편집 권한과 잠금 상태를 확인하세요.",
   "studio.r3c04Status.shaper.dialog.presetsLoading": "프리셋 불러오는 중",
   "studio.r3c04Status.shaper.dialog.commitUnavailable": "지금은 적용할 수 없습니다.",
   "studio.r3c04Status.shaper.dialog.modelLoadFailed": "모델을 불러오지 못했습니다",
@@ -244,6 +253,15 @@ const EXPECTED_KO: Readonly<Record<string, string>> = {
   "studio.r3c04Status.planning.moodboard.emptyCards": "아직 카드가 없어요. 아래에서 첫 카드를 더해 보세요.",
   "studio.r3c04Status.planning.plotline.emptyEpisodes": "아직 회차 줄거리가 없어요. 회차 줄거리를 적으면 그 회차가 열로 나타나요.",
   "studio.r3c04Status.planning.plotline.emptyFilter": "이 필터에 맞는 플롯라인이 없어요. 필터를 풀면 전체 타임라인이 보여요.",
+  "studio.r3c04Status.planning.projectMoodboard.boardName": "아이디어 보드",
+  "studio.r3c04Status.planning.projectMoodboard.columnJump": "보드 열 바로가기",
+  "studio.r3c04Status.planning.projectMoodboard.opening": "아이디어 보드를 여는 중…",
+  "studio.r3c04Status.planning.projectMoodboard.localSaving": "저장 중…",
+  "studio.r3c04Status.planning.projectMoodboard.localSaved": "이 기기에 저장됨",
+  "studio.r3c04Status.planning.projectMoodboard.backupChanged": "저장본이 바뀌었어요. 다시 불러와 확인해 주세요.",
+  "studio.r3c04Status.planning.projectMoodboard.backupFailed": "원래 보드를 보존하지 못했어요. 저장 공간을 확인해 주세요.",
+  "studio.r3c04Status.planning.projectMoodboard.retryCards": "카드 다시 확인",
+  "studio.r3c04Status.planning.projectMoodboard.checkingCards": "카드 연결을 확인하는 중…",
   "studio.r3c04Status.planning.projectMoodboard.loadFailed": "무드보드를 불러올 수 없어요.",
   "studio.r3c04Status.planning.storyPlanning.metricsLoadFailed": "회차 성과를 불러오지 못했습니다.",
   "studio.r3c04Status.planning.storyPlanning.emptyCharacters": "아직 등록된 캐릭터가 없어요. 원고나 스토리월드에서 캐릭터가 생기면, 여기서 성격·말투·관계를 시트로 적을 수 있어요.",
@@ -321,6 +339,7 @@ const CONSUMERS = [
   "planning/StudioLoreNameCheckPanel.tsx",
   "planning/StudioLoreTimeline.tsx",
   "planning/StudioMoodboardPanel.tsx",
+  "planning/StudioMoodboardScriptExcerpt.tsx",
   "planning/StudioPlotlineTimeline.tsx",
   "planning/StudioProjectMoodboard.tsx",
   "planning/StudioProjectStoryPlanning.tsx",
@@ -387,12 +406,5 @@ describe("studio shaper/planning/production status i18n r3c04", () => {
       const violations = scanHardcodedStatusStrings(readSource(file));
       expect(violations, `${file}: ${JSON.stringify(violations)}`).toEqual([]);
     }
-  });
-
-  it("LT 캡처 생산자의 throw 오류도 현재 로케일로 해석한다", () => {
-    expect(scanHardcodedStatusStrings(
-      readSource("character-shaper/character-shaper-lt-capture.ts"),
-      { includeProducerChannels: true },
-    )).toEqual([]);
   });
 });

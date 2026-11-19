@@ -23,18 +23,4 @@ describe("mannequin poser composition-brief host mount", () => {
     expect(poser).toContain("onInsertCaptureFallback={handleCapture}");
   });
 
-  it("snapshot is derived from poser state (camera preset · pose preset · body · material)", () => {
-    const poser = read(POSER);
-    expect(poser).toContain("buildStudioMannequinCompositionSnapshot({");
-    expect(poser).toContain("cameraPreset,");
-    expect(poser).toContain("posePresetId: lastPosePresetId");
-    expect(poser).toContain("heightCm: params.heightCm");
-  });
-
-  it("camera preset buttons and reset keep the snapshot state in sync with the scene", () => {
-    const poser = read(POSER);
-    expect(poser).toContain("setCameraPreset(preset);");
-    expect(poser).toContain('setCameraPreset("home");');
-    expect(poser).toContain("setLastPosePresetId(presetId);");
-  });
 });

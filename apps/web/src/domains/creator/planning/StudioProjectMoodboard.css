@@ -35,7 +35,7 @@
 .studio-moodboard-columns > section { min-width: 0; border-top: 2px solid var(--color-line); padding: .75rem .25rem; }
 .studio-moodboard-columns :is(form, li) { margin-block: .6rem; }
 .studio-moodboard-columns li { padding-block: .6rem; border-bottom: 1px solid var(--color-line); overflow-wrap: anywhere; }
-.studio-moodboard-columns li img { display: block; max-width: 100%; max-height: 12rem; object-fit: contain; }
+.studio-moodboard-columns li img:not(.studio-tool-art > img) { display: block; max-width: 100%; max-height: 12rem; object-fit: contain; }
 .studio-project-moodboard .play-sketch-surface, .studio-moodboard-sketch-preview svg {
   display: block;
   width: 100%;
@@ -93,4 +93,31 @@
 }
 @media (forced-colors: active) {
   .studio-moodboard-columns li:focus, .studio-moodboard-card-organize > summary:focus-visible { outline-color: Highlight; }
+}
+
+.studio-moodboard-heading { display: flex; align-items: center; gap: .75rem; }
+.studio-moodboard-heading > .studio-tool-art { --studio-tool-art-size: 52px; }
+.studio-moodboard-heading p { color: var(--color-fg-2); font-size: .875rem; }
+.studio-moodboard-card-kind { display: inline-flex; align-items: center; gap: .45rem; }
+.studio-moodboard-card-kind .studio-tool-art { --studio-tool-art-size: 24px; }
+.studio-moodboard-columns li[data-moodboard-kind] {
+  border-inline-start: 3px solid var(--card-ink, var(--color-accent));
+}
+.studio-moodboard-columns li[data-moodboard-kind="sketch"] { --card-ink: #d9775c; }
+.studio-moodboard-columns li[data-moodboard-kind="image"] { --card-ink: #4ba18a; }
+.studio-moodboard-columns li[data-moodboard-kind="note"] { --card-ink: #c09445; }
+.studio-moodboard-columns li[data-moodboard-kind="link"] { --card-ink: #588db7; }
+.studio-moodboard-columns li[data-moodboard-kind="todo"] { --card-ink: #9a78ac; }
+.studio-moodboard-columns h3[tabindex] { scroll-margin-block-start: 6rem; }
+.studio-moodboard-columns h3[tabindex]:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.studio-moodboard-jump { display: none; }
+@media (max-width: 600px) {
+  .studio-moodboard-jump { display: flex; flex-wrap: wrap; gap: .35rem; margin-block: .75rem; }
+  .studio-moodboard-jump > button { flex: 1 1 auto; font-size: .875rem; font-weight: 650; }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .studio-moodboard-columns li[data-moodboard-kind] { transition: border-color 140ms ease; }
+  .studio-moodboard-columns li[data-moodboard-kind]:hover {
+    border-color: color-mix(in srgb, var(--card-ink) 65%, var(--color-line));
+  }
 }

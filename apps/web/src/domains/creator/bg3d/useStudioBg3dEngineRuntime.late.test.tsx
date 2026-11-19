@@ -56,7 +56,7 @@ describe("BG3D late adapter session and preference ownership", () => {
     expect(result.current.glFactory).toBeNull();
     act(() => h.emit(0));
     expect(result.current.plan).toMatchObject({ backend: "webgpu", status: "available" });
-    expect(result.current.glFactory).toBeTypeOf("function");
+    await waitFor(() => expect(result.current.glFactory).toBeTypeOf("function"));
     expect(h.probe).toHaveBeenCalledOnce();
   });
 

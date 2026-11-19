@@ -27,6 +27,7 @@ export interface StudioBg3dEnvironmentProvenance {
     | "scripts/blender/generate_harbor_boat_repair_shed.py"
     | "scripts/blender/refine_studio_environments_v6.py"
     | "scripts/blender/generate_studio_environment_expansion_v1.py"
+    | "scripts/blender/refine_studio_environment_expansion_v2.py"
     | "scripts/blender/generate_environment_pack_v7.py"
     | "scripts/generate_self_authored_environment_pack_v1.py"
     | "official-tripo-mcp";

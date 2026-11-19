@@ -10,6 +10,7 @@ import instruments from "./atelier-tools.webp";
 import commands from "./atelier-commands.webp";
 import edits from "./atelier-edit.webp";
 import media from "./atelier-media.webp";
+import workbench from "./atelier-workbench.webp";
 import "./StudioToolArtwork.css";
 
 const tools = {
@@ -25,6 +26,8 @@ const tools = {
   crop: [media, 0, 0, Crop], shapes: [media, 1, 0, Shapes], rect: [media, 2, 0, RectangleHorizontal], oval: [media, 3, 0, Circle],
   text: [media, 0, 1, Type], image: [media, 1, 1, Image], pin: [media, 2, 1, MapPin], guides: [media, 3, 1, Spline],
   pose: [media, 0, 2, PersonStanding], references: [media, 1, 2, Images], fit: [media, 2, 2, Focus], rotate: [media, 3, 2, RotateCw],
+  drawingDesk: [workbench, 0, 0, PenTool], storyboard: [workbench, 1, 0, Frame], performer: [workbench, 2, 0, UserRound],
+  environment: [workbench, 0, 1, House], stageProp: [workbench, 1, 1, Box], manuscript: [workbench, 2, 1, Upload],
 } as const;
 
 export type StudioArtworkTool = keyof typeof tools;
@@ -38,7 +41,7 @@ export function StudioToolArtwork({ tool, className = "" }: {
   return (
     <span className={`studio-tool-art ${className}`.trim()} data-studio-tool-art={tool} aria-hidden="true">
       <img key={atlas} src={atlas} alt="" draggable={false} decoding="async"
-        style={{ left: `-${column * 100}%`, top: `-${row * 100}%` }}
+        style={{ left: `-${column * 100}%`, top: `-${row * 100}%`, ...(atlas === workbench && { width: "300%", height: "200%" }) }}
         onLoad={event => { event.currentTarget.dataset.ready = "true"; }}
         onError={event => { delete event.currentTarget.dataset.ready; }} />
       <Fallback aria-hidden="true" focusable="false" />

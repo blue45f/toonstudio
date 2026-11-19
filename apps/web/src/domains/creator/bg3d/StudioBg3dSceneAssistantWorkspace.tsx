@@ -22,9 +22,7 @@ import {
   STUDIO_BG3D_ASSISTANT_CAMERA_PRESETS, STUDIO_BG3D_ASSISTANT_OUTPUT_STYLES, STUDIO_BG3D_ASSISTANT_STEPS,
   nextStudioBg3dAssistantStep, previousStudioBg3dAssistantStep, studioBg3dAssistantOutputSettings, studioBg3dAssistantStepIndex,
 } from "./studio-bg3d-scene-assistant";
-import type {
-  StudioBg3dAssistantGoal, StudioBg3dAssistantOutputStyle, StudioBg3dAssistantSheetState, StudioBg3dAssistantStep,
-} from "./studio-bg3d-scene-assistant";
+import type { StudioBg3dAssistantGoal, StudioBg3dAssistantOutputStyle, StudioBg3dAssistantSheetState, StudioBg3dAssistantStep } from "./studio-bg3d-scene-assistant";
 import "./studio-bg3d-scene-assistant.css";
 import "../studio-3d-ui/studio-3d-illustrated-chrome.css";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -61,7 +59,7 @@ export interface StudioBg3dSceneAssistantHost extends StudioBg3dAssistantReadine
   readonly error?: string | null; readonly sixPassLtInsertUnavailableReason?: string | null;
   readonly librarySaveNotice?: string | null;
   readonly addSceneTemplate: (templateId: string) => boolean;
-  readonly addCustomModelToScene: (modelId: string) => void | Promise<void>;
+  readonly addCustomModelToScene: (modelId: string) => Promise<boolean>;
   readonly addPrimitive: (kind: "box" | "cylinder" | "plane" | "sphere") => void;
   readonly applyCameraPreset: (presetId: string) => void;
   readonly zoomCameraBy: (factor: number) => void;
@@ -191,7 +189,7 @@ function ChooseStep({
   const terms = query.trim().normalize("NFKC").toLowerCase().split(/\s+/u).filter(Boolean);
   const matches = goal === "background" && terms.length ? assets.filter(asset => {
     const entry = getStudioBg3dEnvironmentAsset(asset.id);
-    const text = [asset.name, entry?.description, entry?.detailCamera?.subject.ko, ...(entry?.tags ?? [])]
+    const text = [asset.name, entry?.description, entry?.detailCamera?.subject.ko, entry?.detailCamera?.subject.en, ...(entry?.tags ?? [])]
       .join(" ").normalize("NFKC").toLowerCase();
     return terms.every(term => text.includes(term));
   }) : assets;
@@ -200,9 +198,7 @@ function ChooseStep({
       <section className="scene-assistant__hero">
         <img src="/brand/illustrated-20260928/background-city.webp" alt="" decoding="async" loading="lazy" />
         <div>
-          <p><Compass size={13} aria-hidden /> 1분 장면 제작</p>
           <h3>무엇을 만들까요?</h3>
-          <span>장소나 인물을 고르면 배치부터 웹툰 적용까지 필요한 도구만 보여 드립니다.</span>
           <small>{bt("창작 영감을 위한 예시 일러스트", "Illustration for creative inspiration")}</small>
         </div>
       </section>
@@ -523,6 +519,8 @@ function FinishStep({
 export function StudioBg3dSceneAssistantWorkspace({
   h, onOpenProfessional, viewport, onHostChange,
 }: StudioBg3dSceneAssistantWorkspaceProps) {
+  const bt = useBilingual("StudioBg3dSceneAssistantWorkspace");
+  const [preparingModel, setPreparingModel] = useState<string | null>(null);
   const [, refreshMutableHost] = useReducer((revision: number) => revision + 1, 0);
   const initialContent = assistantSceneHasContent(h);
   const [step, setStep] = useState<StudioBg3dAssistantStep>(initialContent ? "arrange" : "choose");
@@ -564,7 +562,7 @@ export function StudioBg3dSceneAssistantWorkspace({
     || h.applyingTemplateId
     || h.deletingModelId,
   );
-  const busy = activeTaskBusy || readinessPhase === "error";
+  const busy = activeTaskBusy || readinessPhase === "error" || preparingModel !== null;
   const insertDisabled = !hasScene
     || busy
     || Boolean(h.insertBlocked)
@@ -654,11 +652,17 @@ export function StudioBg3dSceneAssistantWorkspace({
     setSheetState("half");
   };
 
-  const addAsset = (asset: AssistantAsset) => {
+  const addAsset = async (asset: AssistantAsset) => {
     if (busy || !asset.canUse) return;
-    void h.addCustomModelToScene(asset.id);
-    setStep("arrange");
-    setSheetState("peek");
+    setPreparingModel(asset.name);
+    try {
+      if (await h.addCustomModelToScene(asset.id)) {
+        setStep("arrange");
+        setSheetState("peek");
+      }
+    } finally {
+      setPreparingModel(null);
+    }
   };
 
   const selectCameraPreset = (presetId: string) => {
@@ -743,19 +747,16 @@ export function StudioBg3dSceneAssistantWorkspace({
       />
     );
   }
+  const detailTab = goal !== "background" ? "models" : step === "frame" ? "view" : step === "finish" ? "lt" : "templates";
+  const detailLabel = {
+    models: bt("모델 라이브러리", "Model library"), view: bt("카메라 세부 조정", "Camera settings"),
+    lt: bt("선화 세부 조정", "Line settings"), templates: bt("장면 템플릿", "Scene templates"),
+  }[detailTab];
   const openProfessionalForContext = () => {
-    if (goal === "character" || goal === "props") {
-      h.setActivePanelTab("models");
-      h.setModelsPanelActivated(true);
-    } else if (step === "frame") {
-      h.setActivePanelTab("view");
-      h.setViewEditorSection("camera");
-    } else if (step === "finish") {
-      h.setActivePanelTab("lt");
-      h.setLtEditorSection("line");
-    } else {
-      h.setActivePanelTab("templates");
-    }
+    h.setActivePanelTab(detailTab);
+    if (detailTab === "models") h.setModelsPanelActivated(true);
+    if (detailTab === "view") h.setViewEditorSection("camera");
+    if (detailTab === "lt") h.setLtEditorSection("line");
     onOpenProfessional();
   };
 
@@ -800,7 +801,7 @@ export function StudioBg3dSceneAssistantWorkspace({
             <div><h3>{STUDIO_BG3D_ASSISTANT_STEPS[studioBg3dAssistantStepIndex(step)]?.label}</h3></div>
           </div>
           <button type="button" className="scene-assistant__precision" onClick={openProfessionalForContext}>
-            <SlidersHorizontal size={14} aria-hidden /> 정밀 편집
+            <SlidersHorizontal size={14} aria-hidden /> {detailLabel}
           </button>
         </div>
 
@@ -808,6 +809,9 @@ export function StudioBg3dSceneAssistantWorkspace({
         <div className="scene-assistant__panel-scroll">
           <StudioBg3dAssistantHostReadinessBanner host={h} hasDraftScene={hasScene} />
           <StudioScene3dBg3dCutPanel host={h} preferredExpanded={false} />
+          {preparingModel && <p role="status" className="scene-assistant__notice">
+            {bt(`${preparingModel} 배치 준비 중…`, `Preparing ${preparingModel} for placement…`)}
+          </p>}
           {stepContent}
         </div>
         {h.librarySaveNotice ? (
@@ -823,13 +827,9 @@ export function StudioBg3dSceneAssistantWorkspace({
 
         <footer className="scene-assistant__footer">
           <div className="scene-assistant__footer-secondary">
-            {step !== "choose" ? (
+            {step !== "choose" && (
               <button type="button" onClick={goBack}>
                 <ArrowLeft size={15} aria-hidden /> 이전
-              </button>
-            ) : (
-              <button type="button" onClick={openProfessionalForContext}>
-                <SlidersHorizontal size={15} aria-hidden /> 정밀 편집
               </button>
             )}
           </div>

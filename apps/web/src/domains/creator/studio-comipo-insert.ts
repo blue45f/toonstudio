@@ -40,6 +40,7 @@ export type ComipoInsertAction =
       kind: "dialogue";
       script: string;
       startY?: number;
+      targetFrame?: PanelLayoutFrame;
     };
 
 export type MutateComipoResult = { ok: false } | { ok: true; snapshot: StudioCanvasSnapshot };
@@ -211,12 +212,13 @@ function mutateDialogue(
   script: string,
   createId: () => string,
   canvasWidth: number,
-  startY = 80
+  startY = 80,
+  targetFrame?: PanelLayoutFrame,
 ): MutateComipoResult {
   const trimmed = script.trim();
   if (!trimmed) return { ok: false };
 
-  let frames = [...snapshot.frames].sort((a, b) => a.y - b.y || a.x - b.x);
+  let frames = targetFrame ? [targetFrame] : [...snapshot.frames].sort((a, b) => a.y - b.y || a.x - b.x);
   let decor = snapshot.decor;
   let checkVirtual: PanelLayoutFrame | null = null;
 
@@ -267,7 +269,7 @@ export function mutateComipoSnapshot(
       action.createFrameAtOrigin
     );
   }
-  return mutateDialogue(snapshot, action.script, createId, canvasWidth, action.startY);
+  return mutateDialogue(snapshot, action.script, createId, canvasWidth, action.startY, action.targetFrame);
 }
 
 /** 삽입 후 스냅샷이 프레임·가상 프레임 모두에서 쌍별 겹침 없는지(테스트·디버그). */

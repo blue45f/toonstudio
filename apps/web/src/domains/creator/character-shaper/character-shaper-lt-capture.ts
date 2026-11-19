@@ -1,5 +1,5 @@
-import { STUDIO_LT_CONVERT_SOURCE_MAX_EDGE } from "../lt-convert/studio-lt-convert-source";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
+import { STUDIO_LT_CONVERT_SOURCE_MAX_EDGE } from "../lt-convert/studio-lt-convert-source";
 import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
 import type { CaptureState } from "../vrm/StudioVrmPoserTypes";
 import { captureStudioVrmRgba } from "../vrm/studio-vrm-raster-capture";

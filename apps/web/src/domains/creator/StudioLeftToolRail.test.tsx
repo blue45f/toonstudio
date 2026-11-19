@@ -970,7 +970,7 @@ describe("StudioLeftToolRail", () => {
     expect(props.stableHandlers.commitAppSettings).toHaveBeenCalledWith({
       ...appSettings,
       toolbar: pinStudioToolbarTools(appSettings.toolbar, ["hand"]),
-    });
+    }, { before: appSettings.toolbar, restore: false });
   });
 
   it("opens the toolbar settings tab while preserving the More trigger as modal return focus", () => {
@@ -1147,19 +1147,19 @@ it("renders every saved tool in actual DOM order including view tools and pinned
   expect(props.setReferencePanelOpen).toHaveBeenCalledWith(true);
 });
 
-it("restores all 35 tools in a single settings update without changing other preferences", () => {
+it("restores all 35 tools in a single settings update without changing other preferences", async () => {
   stubAnimationFrame();
   const appSettings = hiddenToolSettings();
   const props = createProps({ appSettings, isRailToolVisible: (id) => id === "select", railMoreOpen: true });
-  render(<StudioLeftToolRail {...props} />);
+  const view = render(<StudioLeftToolRail {...props} />);
   expect(screen.getByText("구성")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "모든 도구 고정" }));
-  expect(props.stableHandlers.commitAppSettings).toHaveBeenCalledExactlyOnceWith({
-    ...appSettings, toolbar: pinAllStudioToolbarTools(appSettings.toolbar),
-  });
+  const pinnedSettings = { ...appSettings, toolbar: pinAllStudioToolbarTools(appSettings.toolbar) };
+  expect(props.stableHandlers.commitAppSettings).toHaveBeenCalledExactlyOnceWith(pinnedSettings, { before: appSettings.toolbar, restore: false });
   expect(props.setRailMoreOpen).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "이전 구성" }));
-  expect(props.stableHandlers.commitAppSettings).toHaveBeenLastCalledWith(appSettings);
+  view.rerender(<StudioLeftToolRail {...createProps({ ...props, appSettings: pinnedSettings })} />);
+  fireEvent.click(await screen.findByRole("button", { name: "이전 구성" }));
+  expect(props.stableHandlers.commitAppSettings).toHaveBeenLastCalledWith(appSettings, { before: pinnedSettings.toolbar, restore: true });
 });
 
 it("finds hidden tools by familiar aliases and reports an empty result", () => {

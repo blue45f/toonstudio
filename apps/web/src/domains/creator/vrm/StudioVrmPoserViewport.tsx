@@ -1,9 +1,5 @@
-/**
-  type PropInstance,
-  type StudioVrmTexturePaintPanelSettings,
- * Studio VRM poser view slice extracted from `StudioVrmPoser.tsx` (behavior unchanged).
- * The caller passes one host object; this component destructures the original local names.
- */
+/** 포저와 캐릭터 셰이퍼가 함께 쓰는 3D 뷰포트다. */
+import { createStudio3dPointerEvents } from "../scene-3d/studio-3d-pointer-events";
 import { CharacterShaperOrbitControls } from "../character-shaper/CharacterShaperOrbitControls";
 import {
   Canvas,
@@ -356,6 +352,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                     : "3D 캐릭터 편집 뷰포트입니다. 관절 원을 끌면 해당 부위를 직접 회전하고 손·발 마름모를 끌면 IK 목표를 이동합니다. 우클릭 또는 터치 길게 누르기로 관절을 잠그며, 빈 공간 드래그와 휠·핀치로 시점을 조절하세요."}
                 </p>
                 <Canvas
+                  events={createStudio3dPointerEvents}
                   role="group"
                   tabIndex={0}
                   aria-keyshortcuts="B F I"

@@ -740,7 +740,7 @@ test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·�
 
 test("static regression checkout retains all imported 3D manifests but excludes their model payloads", () => {
   const patterns = sparsePatterns(job("static"));
-  const manifests = ["refined-v6", "expansion-v1", "webtoon-v7"].map((pack) => `apps/web/public/assets/3d/environments/${pack}/manifest.json`);
+  const manifests = ["refined-v6", "expansion-v1", "expansion-v2", "webtoon-v7"].map((pack) => `apps/web/public/assets/3d/environments/${pack}/manifest.json`);
   const models = ["refined-v6/hospital_reception.glb", "expansion-v1/library_reading_room.glb", "webtoon-v7/webtoon_rooftop_utility_platform.glb", "unrelated/large.glb"].map((file) => `apps/web/public/assets/3d/environments/${file}`);
   const scratch = mkdtempSync(join(tmpdir(), "core-3d-manifests-"));
   const git = (...args) => {
@@ -1005,7 +1005,7 @@ test("focused integration checks cannot collide with the protected core status",
 test("focused ToonStudio checkout includes imported metadata, validated artwork and fault evidence without unrelated inputs", () => {
   const workflow = readFileSync(new URL("../.github/workflows/toonstudio-session-goals.yml", import.meta.url), "utf8");
   const patterns = sparsePatterns(workflow);
-  const manifests = ["3d/environments/refined-v6/manifest.json", "3d/environments/expansion-v1/manifest.json", "3d/environments/webtoon-v7/manifest.json", "3d/environments/mcp-free-v1/manifest.json", "virtual-studio/world/default-world.json"].map((file) => `apps/web/public/assets/${file}`);
+  const manifests = ["3d/environments/refined-v6/manifest.json", "3d/environments/expansion-v1/manifest.json", "3d/environments/expansion-v2/manifest.json", "3d/environments/webtoon-v7/manifest.json", "3d/environments/mcp-free-v1/manifest.json", "virtual-studio/world/default-world.json"].map((file) => `apps/web/public/assets/${file}`);
   const validatedArt = [
     "world-v2/characters/pixel-maker/manifest.json",
     ...["down", "right", "left", "up"].map((direction) => `world-v2/characters/pixel-maker/walk-${direction}.png`),

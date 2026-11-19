@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import "../planning/__tests__/planning-device-database";
+
 import { createStudioAiComicDirectorSession, saveStudioAiComicDirectorSession } from "./studio-ai-comic-director-session";
+import * as deviceDraft from "./studio-director-device-draft";
 import { prepareDirectorEditorReturn, restoreDirectorEditorReturn } from "./studio-director-editor-return";
 
 import { useApp } from "@/shared/lib/store";
@@ -27,7 +30,7 @@ afterEach(() => {
 });
 
 describe("콘티에서 격리된 원고 문서로 복귀", () => {
-  it("같은 탭의 같은 콘티만 한 번 열고 쿼리·앵커와 브라우저 이력을 보존한다", () => {
+  it("같은 탭의 같은 콘티만 한 번 열고 쿼리·앵커와 브라우저 이력을 보존한다", async () => {
     const session = setup();
     const href = prepareDirectorEditorReturn(session, "/studio/canvas?room=workshop#page", { variants: 4, qualityProfile: "final" })!;
     const receipt = sessionStorage.getItem(receiptKey)!;
@@ -35,9 +38,10 @@ describe("콘티에서 격리된 원고 문서로 복귀", () => {
     expect(receipt).not.toContain(session.title);
     visit(href);
     const listener = vi.fn();
-    restoreDirectorEditorReturn(listener)();
-    restoreDirectorEditorReturn(listener)();
-    expect(listener).toHaveBeenCalledTimes(1);
+    const stop = restoreDirectorEditorReturn(listener);
+    const other = restoreDirectorEditorReturn(listener);
+    await vi.waitFor(() => expect(listener).toHaveBeenCalledTimes(1));
+    stop(); other();
     expect(listener.mock.calls[0]![0]).toMatchObject({ storyText: session.storyText, variants: 4, qualityProfile: "final" });
     expect(location.pathname + location.search + location.hash).toBe("/studio/canvas?room=workshop#page");
     expect(history.state).toEqual({ idx: 3 });
@@ -58,7 +62,7 @@ describe("콘티에서 격리된 원고 문서로 복귀", () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
-  it("작품의 로그인 복구를 기다리고 다른 계정에서 소비한 표식은 다시 열지 않는다", () => {
+  it("작품의 로그인 복구를 기다리고 다른 계정에서 소비한 표식은 다시 열지 않는다", async () => {
     const session = setup("work-a");
     const path = "/studio/work/work-a/canvas";
     expect(prepareDirectorEditorReturn(session, path)).toBeNull();
@@ -69,7 +73,7 @@ describe("콘티에서 격리된 원고 문서로 복귀", () => {
     const unsubscribe = restoreDirectorEditorReturn(listener);
     expect(listener).not.toHaveBeenCalled();
     useApp.setState({ userId: "actor-a" });
-    expect(listener).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(listener).toHaveBeenCalledTimes(1));
     unsubscribe();
     visit(prepareDirectorEditorReturn(session, path)!);
     useApp.setState({ userId: "actor-b" });
@@ -79,12 +83,14 @@ describe("콘티에서 격리된 원고 문서로 복귀", () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it("전달 직전 바뀐 콘티와 손상된 요청은 적용하지 않는다", () => {
+  it("전달 직전 바뀐 콘티와 손상된 요청은 적용하지 않는다", async () => {
     const session = setup();
     visit(prepareDirectorEditorReturn(session, "/studio/canvas")!);
     const listener = vi.fn();
     saveStudioAiComicDirectorSession(localStorage, { ...session, revision: session.revision + 1, storyText: "새 대본" });
-    restoreDirectorEditorReturn(listener)();
+    const stop = restoreDirectorEditorReturn(listener);
+    await vi.waitFor(() => expect(sessionStorage.getItem(receiptKey)).toBeNull());
+    stop();
     expect(listener).not.toHaveBeenCalled();
     visit(prepareDirectorEditorReturn(session, "/studio/canvas")!);
     sessionStorage.setItem(receiptKey, JSON.stringify({ ...JSON.parse(sessionStorage.getItem(receiptKey)!), request: { indexes: "all" } }));
@@ -97,4 +103,34 @@ describe("콘티에서 격리된 원고 문서로 복귀", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
     expect(prepareDirectorEditorReturn(session, "/studio/canvas")).toBeNull();
   });
+});
+
+it("비동기 복구 중 첫 StrictMode 구독을 정리해도 다음 구독 한 번만 원고를 연다", async () => {
+  const session = setup();
+  visit(prepareDirectorEditorReturn(session, "/studio/canvas")!);
+  const listener = vi.fn();
+  const first = restoreDirectorEditorReturn(listener);
+  first();
+  const second = restoreDirectorEditorReturn(listener);
+  await vi.waitFor(() => expect(listener).toHaveBeenCalledOnce());
+  expect(sessionStorage.getItem(receiptKey)).toBeNull();
+  second();
+});
+
+it("기기 원본을 기다리던 사이 다른 계정이 들어오면 원래 계정으로 돌아와도 전달하지 않는다", async () => {
+  const session = setup("work-a");
+  useApp.setState({ userId: "actor-a" });
+  visit(prepareDirectorEditorReturn(session, "/studio/work/work-a/canvas")!);
+  let finish: (value: Awaited<ReturnType<typeof deviceDraft.readDirectorDeviceDraft>>) => void = () => { throw new Error("read not started"); };
+  vi.spyOn(deviceDraft, "readDirectorDeviceDraft").mockImplementationOnce(() =>
+    new Promise(resolve => { finish = resolve; }));
+  const listener = vi.fn();
+  const stop = restoreDirectorEditorReturn(listener);
+  useApp.setState({ userId: "actor-b" });
+  useApp.setState({ userId: "actor-a" });
+  finish({ raw: JSON.stringify(session), session });
+  await Promise.resolve();
+  expect(listener).not.toHaveBeenCalled();
+  expect(sessionStorage.getItem(receiptKey)).toBeNull();
+  stop();
 });

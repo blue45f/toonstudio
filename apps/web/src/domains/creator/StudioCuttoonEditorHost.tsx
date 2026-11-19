@@ -1326,7 +1326,7 @@ import { resolveStudioWorkspacePanelLayoutVisibility } from "./studio-workspace-
 import { useStudioViewportPanelBounds, useStudioViewportPanelMemory } from "./studio-cuttoon-editor/runtime/useStudioViewportPanelMemory";
 import type { StudioDrawingClarityBaseline } from "./studio-cuttoon-editor/StudioDrawingClarityPolicy";
 import {
-  studioDocumentToolNavigation, executeStudioDocumentBackNavigation, studioWorkspaceDocumentIdentity,
+  studioDocumentToolNavigation, studioWorkspaceDocumentIdentity,
   type Studio2dWorkspaceSurface,
 } from "./studio-workspace-route";
 import { resolveStudioWorkspaceWidePanelToggle } from "./studio-workspace-wide-mode";
@@ -5558,7 +5558,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   ) {
     if (studioRoute.surface === surface && options?.force !== true) return;
     const next = studioDocumentToolNavigation(studioRoute, surface, location);
-    if (next.back) { executeStudioDocumentBackNavigation(navigate); return; }
+    if (next.back) { navigate(-1); return; }
     const guard = window.history.state;
     const catalogEntry = next.state && guard?.__studioMobileBackDepth === 1 && guard.__studioMobileBackLayer === "modal:catalog";
     navigate(next.href, { replace: options?.replace === true || next.switchTool || Boolean(catalogEntry),
@@ -6456,7 +6456,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       const target = resolveStudioBg3dHistoryTarget(bg3dHistoryTarget, bg3dHistoryScope(), pages,
         masterEditMode || collaborationDocumentLocked || workHydrationFailed || !persistLeadershipAllowsDraw, reviewBoundPage);
       if (!target || !setCurrentPageId(target.pageId)) {
-      setError(hostErrorText("studio.hostError.bg3dHistoryTargetUnavailable", "3D 배경을 다시 열 수 없어요. 원고에서 레이어와 편집 권한을 확인해 주세요."));
+        setError("3D 배경을 다시 열 수 없어요. 원고에서 레이어와 편집 권한을 확인해 주세요.");
         navigateStudio2dSurface("canvas", { replace: true });
         return false;
       }
@@ -19073,9 +19073,9 @@ const puppetWarpArmed =
     if (!scenarioStoryText.trim()) return;
     void executeGenerateScenario();
   }
-  function onGenerateScenarioImages(request?: Parameters<typeof executeGenerateScenarioImages>[0]) {
+  function onGenerateScenarioImages(...args: Parameters<typeof executeGenerateScenarioImages>) {
     if (!isStudioAiConfigured(aiSettings)) return;
-    runWithAiNotice(() => void executeGenerateScenarioImages(request));
+    runWithAiNotice(() => void executeGenerateScenarioImages(...args));
   }
   function onRegenerateScenarioImage(index: number) {
     if (!isStudioAiConfigured(aiSettings)) return;
@@ -19602,7 +19602,7 @@ const puppetWarpArmed =
     }
   }
   // 대사 스크립트 일괄 삽입 — runStudioPageAddDialogueBubbles 단일 shipped 경로.
-  async function addDialogueBubbles() {
+  async function addDialogueBubbles(targetFrameId?: string) {
     if (!dialogueScript.trim()) return;
     if (comipoActionBusyRef.current) return;
     const deferredAction = captureDeferredComipoAction();
@@ -19611,13 +19611,13 @@ const puppetWarpArmed =
     try {
       const { runStudioPageAddDialogueBubbles } = await loadStudioComipoShipped();
       if (!canApplyDeferredComipoAction(deferredAction)) return;
-      const result = runStudioPageAddDialogueBubbles(studioInsertState(), script, uid);
+      const result = runStudioPageAddDialogueBubbles(studioInsertState(), script, uid, targetFrameId);
       if (!result.ok) {
         setError(t("studio.hostStatus.dialoguePlaceFailed", "대사를 컷 안에 배치하지 못했습니다. 대사 길이를 줄여 보세요."));
         return;
       }
-      commit(result.elements as El[]);
-      setDialogueScript("");
+      if (!commit(result.elements as El[])) return;
+      setDialogueScript((current) => current === script ? "" : current);
       setMenu(null);
       setTool("select");
     } catch (error) {

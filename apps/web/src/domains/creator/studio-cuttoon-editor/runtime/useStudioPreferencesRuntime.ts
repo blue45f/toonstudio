@@ -19,6 +19,7 @@ import { applyStudioLaunchDensity, readStudioLaunchDensity } from "../../studio-
 import type { StudioDocumentWorkspaceId } from "../../studio-document-workspace";
 import { preserveStudioTaskToolbarPreference, projectStudioTaskAppSettings } from "../../studio-task-tools";
 import type { StudioToolbarPinChange } from "./studio-toolbar-pin-persistence";
+import { hydrateStudioPreference } from "./studio-preference-hydration";
 import { useStudioWorkModePreference } from "./useStudioWorkModePreference";
 import type { StudioUiBooleanPreferenceKey } from "../../studio-ui-preferences-sqlite";
 import { useStudioUiDensityPreference } from "./useStudioUiDensityPreference";
@@ -156,53 +157,18 @@ export function useStudioPreferencesRuntime({
         ]);
         if (cancelled) return;
 
-        let degraded = false;
-        if (settingsResult.status === "fulfilled") {
-          if (appSettingsUserRevisionRef.current === settingsRevisionAtStart) {
-            const saved = settingsResult.value;
-            replaceAppSettings(saved);
-            applySavedPresentation(saved);
-          } else {
-            try {
-              await repository.saveAppSettings(appSettingsRef.current);
-            } catch {
-              degraded = true;
-            }
-          }
-        } else if (appSettingsUserRevisionRef.current !== settingsRevisionAtStart) {
-          try {
-            await repository.saveAppSettings(appSettingsRef.current);
-          } catch {
-            degraded = true;
-          }
-        } else {
-          degraded = true;
-        }
-
-        if (favoritesResult.status === "fulfilled") {
-          if (effectFavoriteUserRevisionRef.current === favoritesRevisionAtStart) {
-            effectFavoriteStateRef.current = favoritesResult.value;
-            setEffectFavoriteState(favoritesResult.value);
-          } else {
-            try {
-              await repository.saveEffectFavorites(effectFavoriteStateRef.current);
-            } catch {
-              degraded = true;
-            }
-          }
-        } else if (effectFavoriteUserRevisionRef.current !== favoritesRevisionAtStart) {
-          try {
-            await repository.saveEffectFavorites(effectFavoriteStateRef.current);
-          } catch {
-            degraded = true;
-          }
-        } else {
-          degraded = true;
-        }
-
-        if (!cancelled) {
-          setAppSettingsPersistenceState(degraded ? "session-only" : "saved");
-        }
+        const settingsReady = await hydrateStudioPreference(
+          settingsResult, appSettingsUserRevisionRef.current === settingsRevisionAtStart,
+          saved => { replaceAppSettings(saved); applySavedPresentation(saved); },
+          () => repository.saveAppSettings(appSettingsRef.current),
+        );
+        if (cancelled) return;
+        const favoritesReady = await hydrateStudioPreference(
+          favoritesResult, effectFavoriteUserRevisionRef.current === favoritesRevisionAtStart,
+          saved => { effectFavoriteStateRef.current = saved; setEffectFavoriteState(saved); },
+          () => repository.saveEffectFavorites(effectFavoriteStateRef.current),
+        );
+        if (!cancelled) setAppSettingsPersistenceState(settingsReady && favoritesReady ? "saved" : "session-only");
       })
       .catch(() => {
         if (!cancelled) setAppSettingsPersistenceState("session-only");

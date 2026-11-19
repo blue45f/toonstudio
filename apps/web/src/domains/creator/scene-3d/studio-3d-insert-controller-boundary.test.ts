@@ -257,10 +257,12 @@ describe("Studio 3D insert controller boundary", () => {
     expect(backgroundInsert).toContain(
       "if (targetElementId && renderResult.magicFilterMask) {"
     );
-    expect(backgroundInsert).toContain("if (isRealtimeTeamSession && !sixPass) {");
+    const realtimeBranch = backgroundInsert.indexOf("if (isRealtimeTeamSession && !sixPass && !keepLocalPasses && !detachComposite) {");
+    expect(realtimeBranch).toBeGreaterThanOrEqual(0);
+    expect(backgroundInsert).toContain("if (keepLocalPasses && !canStoreLocalVrmCut()) {");
     expect(backgroundInsert).toContain("const sixPass = !!result.bg3dScene.output.sixPassLt;");
     expect(backgroundInsert).toContain("await transaction.prepareStudioBg3dSixPassBundle(");
-    expect(backgroundInsert.indexOf("if (isRealtimeTeamSession && !sixPass) {")).toBeLessThan(
+    expect(realtimeBranch).toBeLessThan(
       backgroundInsert.indexOf("const plan = planStudioBg3dLtLayers")
     );
     expect(backgroundInsert.indexOf(
@@ -273,22 +275,22 @@ describe("Studio 3D insert controller boundary", () => {
     expect(backgroundInsert).toContain(
       "if (nextLinkedRender === null || !commit(nextElements, {"
     );
-    expect(backgroundInsert.indexOf("setSelectedId(plan.anchorElementId);")).toBeGreaterThan(
-      backgroundInsert.indexOf(
-        "if (!commit(nextElements, {"
-      )
-    );
+    const linkedRenderGuard = backgroundInsert.indexOf("if (!nextLinkedRender) {");
+    const durableCommit = backgroundInsert.indexOf("return commit(durableElements, {");
+    const acceptedGuard = backgroundInsert.indexOf("if (!accepted) return false;");
+    expect(linkedRenderGuard).toBeGreaterThanOrEqual(0);
+    expect(durableCommit).toBeGreaterThan(linkedRenderGuard);
+    expect(acceptedGuard).toBeGreaterThan(durableCommit);
+    expect(backgroundInsert.indexOf("setDrawingAssistPreview(null);")).toBeGreaterThan(acceptedGuard);
+    expect(backgroundInsert.indexOf("setSelectedId(plan.anchorElementId);")).toBeGreaterThan(acceptedGuard);
     expect(backgroundInsert).toContain("drawingAssist: nextDrawingAssist");
     expect(backgroundInsert).toContain("mapStudioBg3dPerspectiveGuidesToAnchor(");
     expect(backgroundInsert).toContain(
       "const anchor = nextElements.find((element) => element.id === plan.anchorElementId);"
     );
     expect(backgroundInsert).not.toContain("commitStudioDrawingAssistDocument(");
-    expect(backgroundInsert.indexOf("setTool(\"select\");")).toBeGreaterThan(
-      backgroundInsert.indexOf("if (!commit(nextElements, {")
-    );
-    expect(backgroundInsert.lastIndexOf("return true;")).toBeGreaterThan(
-      backgroundInsert.indexOf("commitStudioDrawingAssistDocument(")
-    );
+    const selectTool = backgroundInsert.lastIndexOf('setTool("select");');
+    expect(selectTool).toBeGreaterThan(acceptedGuard);
+    expect(backgroundInsert.lastIndexOf("return true;")).toBeGreaterThan(selectTool);
   });
 });

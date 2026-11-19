@@ -29,3 +29,26 @@ export async function findBg3dRotationGesture(canvas: Locator) {
   const absolute = ({ x, y }: { x: number; y: number }) => ({ x: box.x + x * box.width, y: box.y + y * box.height });
   return { start: absolute(start), end: absolute(end) };
 }
+
+/** 누른 포인터를 그대로 둔 채 HTML 도구막대가 없는 실제 WebGPU 프레임을 읽는다. */
+export async function readBg3dRotationFrame(canvas: Locator): Promise<Buffer> {
+  const encoded = await canvas.evaluate((element) => {
+    if (!(element instanceof HTMLCanvasElement)) throw new Error("WebGPU 렌더 캔버스가 없습니다.");
+    return new Promise<string>((resolve, reject) => {
+      const timer = window.setTimeout(() => {
+        cancelAnimationFrame(frame);
+        reject(new Error("활성 회전 뷰포트가 새 프레임을 제공하지 않았습니다."));
+      }, 5_000);
+      const frame = requestAnimationFrame(() => {
+        clearTimeout(timer);
+        try {
+          resolve(element.toDataURL("image/png").split(",")[1] || "");
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+  });
+  if (!encoded) throw new Error("WebGPU 회전 프레임 PNG를 읽지 못했습니다.");
+  return Buffer.from(encoded, "base64");
+}

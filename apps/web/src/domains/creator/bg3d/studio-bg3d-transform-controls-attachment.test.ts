@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { Group, PerspectiveCamera, Scene } from "three";
-import { TransformControls } from "three-stdlib";
+import { OrbitControls, TransformControls } from "three-stdlib";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -104,6 +104,62 @@ describe("BG3D gizmo의 실제 Three 객체 연결 수명", () => {
     stopAfter();
     scene.add(after);
     expect(controls.visible).toBe(false);
+  });
+
+  it("먼저 연결된 카메라도 취소한 Y 손잡이의 포인터를 이어받지 않고 새 빈 구역 드래그만 받는다", () => {
+    const scene = new Scene();
+    const target = new Group();
+    scene.add(target);
+    const canvas = document.createElement("canvas");
+    const width = 728;
+    const height = 543;
+    vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, width, height));
+    Object.defineProperty(canvas, "clientHeight", { value: height });
+    canvas.releasePointerCapture = vi.fn();
+    const camera = new PerspectiveCamera(50, width / height, 0.1, 100);
+    camera.position.set(4, 3, 6);
+    const orbit = new OrbitControls(camera, canvas);
+    const controls = new TransformControls(camera, canvas);
+    controls.setMode("rotate");
+    controls.attach(target);
+    scene.add(controls);
+    scene.updateMatrixWorld(true);
+    disposals.push(() => orbit.dispose(), () => controls.dispose());
+    const internals = controls as unknown as StudioBg3dInterruptibleTransformControls & {
+      pointerHover: (pointer: { x: number; y: number; button: number }) => void;
+      addEventListener: (type: "dragging-changed", callback: (event: { value: boolean }) => void) => void;
+    };
+    // Drei는 손잡이의 dragging-changed를 동기적으로 OrbitControls.enabled에 반영한다.
+    internals.addEventListener("dragging-changed", ({ value }) => { orbit.enabled = !value; });
+    const cancel = vi.fn();
+    disposals.push(watchStudioBg3dTransformControlsInterruption(internals, { onDragCancel: cancel }));
+    const pointer = (type: string, x: number, y: number, buttons: number) => new PointerEvent(type, {
+      pointerId: 1, pointerType: "mouse", button: type === "pointermove" ? -1 : 0, buttons,
+      clientX: x, clientY: y, bubbles: true,
+    });
+    let start: { x: number; y: number } | undefined;
+    for (let x = width / 2; x < width / 2 + 125 && !start; x += 2) {
+      for (let y = height / 2; y < height / 2 + 55; y += 2) {
+        internals.pointerHover({ x: x / width * 2 - 1, y: 1 - y / height * 2, button: 0 });
+        if (internals.axis === "Y") { start = { x, y }; break; }
+      }
+    }
+    if (!start) throw new Error("렌더 카메라에서 실제 Y축 손잡이를 찾지 못했습니다.");
+    const initialCamera = camera.position.clone();
+    canvas.dispatchEvent(pointer("pointerdown", start.x, start.y, 1));
+    expect(internals.dragging).toBe(true);
+    document.dispatchEvent(pointer("pointermove", start.x + 24, start.y, 1));
+    expect(target.quaternion.w).not.toBe(1);
+    document.dispatchEvent(pointer("pointermove", start.x + 300, start.y, 0));
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(target.quaternion.w).toBe(1);
+    document.dispatchEvent(pointer("pointermove", start.x + 30, start.y, 1));
+    document.dispatchEvent(pointer("pointerup", start.x + 30, start.y, 0));
+    expect(camera.position.distanceTo(initialCamera)).toBeLessThan(1e-10);
+    canvas.dispatchEvent(pointer("pointerdown", 5, 5, 1));
+    document.dispatchEvent(pointer("pointermove", 70, 5, 1));
+    document.dispatchEvent(pointer("pointerup", 70, 5, 0));
+    expect(camera.position.distanceTo(initialCamera)).toBeGreaterThan(0.1);
   });
 
   it("gizmo 드래그 중 pointercancel·탭 비활성화·버튼 해제 이동이 오면 시작 위치로 reset하고 고착을 해제한다", () => {

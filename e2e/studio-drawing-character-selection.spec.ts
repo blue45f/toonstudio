@@ -87,3 +87,46 @@ for (const width of [1440, 390]) {
     expect(errors).toEqual([]);
   });
 }
+
+test("WebGL 준비 직후 포저를 닫고 다시 열 때 이전 캔버스에 이벤트를 연결하지 않는다", async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    // 실제 WebGL 컨텍스트가 생긴 프레임에서 사용자가 닫기를 누르는 순서를 재현한다.
+    Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
+      configurable: true, writable: true,
+      value(this: HTMLCanvasElement, ...args: Parameters<typeof getContext>) {
+        const context: RenderingContext | null = Reflect.apply(getContext, this, args);
+        const dialog = this.closest('[data-studio-vrm-dialog="true"]');
+        if (context && dialog && (args[0] === "webgl" || args[0] === "webgl2")) {
+          queueMicrotask(() => {
+            const close = Array.from(dialog.querySelectorAll<HTMLButtonElement>("footer button"))
+              .find(button => button.textContent?.trim() === "닫기");
+            if (!close?.isConnected || close.disabled) return;
+            document.documentElement.dataset.qaPoserClosedOnGpu = String(
+              Number(document.documentElement.dataset.qaPoserClosedOnGpu ?? 0) + 1,
+            );
+            close.click();
+          });
+        }
+        return context;
+      },
+    });
+  });
+  await page.goto("/studio/draft/poser-pending-frame?workspace=draw", { waitUntil: "commit" });
+  const header = page.locator("[data-studio-drawing-clarity-header]:visible");
+  const trigger = header.locator('[data-studio-main-menu-trigger="3d"]');
+  await trigger.focus({ timeout: 90_000 });
+  await trigger.press("Enter");
+  await page.getByRole("menu").filter({ visible: true }).last().getByText("인물·포즈 편집", { exact: true }).click();
+  for (const count of [1, 2]) {
+    if (count === 2) await page.goForward();
+    await expect(page.locator("html")).toHaveAttribute("data-qa-poser-closed-on-gpu", String(count), { timeout: 60_000 });
+    await expect(page.locator('[data-studio-vrm-dialog="true"]')).toBeHidden();
+    await expect(page).toHaveURL(url => url.searchParams.get("workspace") === "draw");
+    await expect(header).toBeVisible();
+  }
+  expect(errors).toEqual([]);
+});

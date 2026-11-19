@@ -1,5 +1,7 @@
 import { Scene, type Object3D } from "three";
 
+import { isStudioBg3dViewportControlTarget } from "./studio-bg3d-camera-application";
+
 import type { TransformControls } from "three-stdlib";
 
 /** ref 등록을 기다리는 동안 장면에서 제거된 객체를 gizmo가 계속 읽지 않게 한다. */
@@ -59,6 +61,7 @@ export interface StudioBg3dInterruptibleTransformControls {
   axis: string | null;
   domElement?: HTMLElement;
   reset: () => unknown;
+  onPointerDown?: (event: PointerEvent) => void;
   onPointerMove?: (event: PointerEvent) => void;
 }
 
@@ -105,9 +108,13 @@ export function watchStudioBg3dTransformControlsInterruption(
   };
 
   const onPointerDown = (event: PointerEvent) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || controls.dragging || isStudioBg3dViewportControlTarget(event.target)) return;
     activePointerId = event.pointerId;
     requireButtons = event.buttons > 0;
+    // 같은 DOM에 먼저 붙은 OrbitControls가 손잡이를 잡은 포인터까지 등록하면,
+    // 취소 직후 새 누름 없이 카메라가 움직인다. 캡처 단계에서 실제 Three 픽을 먼저 실행한다.
+    // 손잡이가 맞으면 Drei가 즉시 Orbit을 끈다. 빈 공간에서는 원래 카메라 드래그가 시작된다.
+    controls.onPointerDown?.(event);
   };
   const onPointerUp = (event: PointerEvent) => {
     if (activePointerId === null || event.pointerId === activePointerId) {

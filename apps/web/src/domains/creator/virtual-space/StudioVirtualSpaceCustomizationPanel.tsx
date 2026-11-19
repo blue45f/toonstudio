@@ -141,7 +141,7 @@ export function StudioVirtualSpaceCustomizationPanel({
   readonly character: StudioVirtualCharacterCustomization;
   readonly decorations: StudioVirtualDecorationState;
   readonly decorationSyncEnabled?: boolean;
-  readonly decorationSyncStatus?: "local" | "conflict" | null;
+  readonly decorationSyncStatus?: "local" | "conflict" | "device-error" | null;
   readonly onRecoverDecorations?: (choice: "retry" | "device" | "server") => void;
   readonly selfPoint: StudioVirtualSpacePoint;
   readonly onNickname: (nickname: string) => void;
@@ -365,6 +365,10 @@ export function StudioVirtualSpaceCustomizationPanel({
         <p role="status">{bt("다른 기기에서 배치를 바꿨어요. 현재 보이는 배치는 이 기기의 편집본이에요.", "Another device changed the layout. You are viewing this device’s draft.")}</p>
         <button type="button" onClick={() => onRecoverDecorations?.("server")}>{bt("서버 배치 사용", "Use server layout")}</button>
         <button type="button" onClick={() => onRecoverDecorations?.("device")}>{bt("이 기기 배치로 저장", "Save this device’s layout")}</button>
+      </div>}
+      {decorationSyncStatus === "device-error" && <div role="status">
+        <p>{bt("현재 배치를 이 기기에 저장하지 못했습니다.", "The current layout could not be saved on this device.")}</p>
+        <button type="button" className="min-h-11" onClick={() => onRecoverDecorations?.("retry")}>{bt("기기 저장 다시 시도", "Retry device save")}</button>
       </div>}
       {decorationSyncStatus === "local" && <div>
         <p role="status">{bt("서버 저장 대기 중이에요. 연결이 돌아오면 다시 저장해요.", "Waiting to save. The layout will sync when the connection returns.")}</p>

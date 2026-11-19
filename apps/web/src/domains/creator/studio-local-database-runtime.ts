@@ -33,7 +33,16 @@ export function acquireStudioLocalDatabase(
 }
 
 /** 명시적 재시도만 사용한다. 소유권 경합으로 실패한 동일 세대만 해제하며 새 연결은 열지 않는다. */
-export async function resetFailedStudioLocalDatabaseOwnership(): Promise<boolean> {
+export function resetFailedStudioLocalDatabaseOwnership(): Promise<boolean> {
+  return resetRejectedStudioOpen(true);
+}
+
+/** 사용자가 명시적으로 다시 열 때만, 현재도 실패한 같은 개방 세대를 해제한다. */
+export function retryFailedStudioLocalDatabaseOpen(): Promise<boolean> {
+  return resetRejectedStudioOpen(false);
+}
+
+async function resetRejectedStudioOpen(ownershipOnly: boolean): Promise<boolean> {
   const opening = sharedDatabase;
   if (!opening) return false;
   try {
@@ -41,7 +50,7 @@ export async function resetFailedStudioLocalDatabaseOwnership(): Promise<boolean
     return false;
   } catch (cause) {
     // 기다리는 동안 다른 소비자가 교체한 연결이나 정상 연결을 닫지 않는다.
-    if (sharedDatabase !== opening || !isStudioLocalDatabaseOwnershipBusyError(cause)) return false;
+    if (sharedDatabase !== opening || (ownershipOnly && !isStudioLocalDatabaseOwnershipBusyError(cause))) return false;
     await closeStudioLocalDatabaseRuntime({ preserveBrushMemorySession: true });
     return true;
   }

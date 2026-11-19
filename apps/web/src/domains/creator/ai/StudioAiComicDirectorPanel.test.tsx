@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { deviceKey, records, writeDevice } from "../planning/__tests__/planning-device-database";
+
+import { createStudioAiComicDirectorSession, studioAiComicDirectorStorageKey } from "./studio-ai-comic-director-session";
 import { createEmptyStudioAiImageReferenceDocument } from "./studio-ai-image-reference-roles";
 import {
   StudioAiComicDirectorPanel,
@@ -104,7 +108,10 @@ describe("StudioAiComicDirectorPanel", () => {
       screen.getByRole("button", { name: "선택한 1컷 제작하기" }),
     );
 
-    expect(onGenerateImages).toHaveBeenCalledWith({ indexes: [1], variants: 2 });
+    expect(onGenerateImages).toHaveBeenCalledExactlyOnceWith({ indexes: [1], variants: 2 }, expect.any(Function));
+    expect(screen.getByRole("button", { name: "선택한 1컷 제작하기" })).toBeTruthy();
+    expect(screen.queryByText("후보를 만들고 사용할 결과 선택")).toBeNull();
+    act(() => onGenerateImages.mock.calls[0]![1]());
     expect(screen.getByText("후보를 만들고 사용할 결과 선택")).toBeTruthy();
   });
 
@@ -120,7 +127,7 @@ describe("StudioAiComicDirectorPanel", () => {
     expect(cut(2).checked).toBe(false);
     fireEvent.click(screen.getByRole("button", { name: "그림 없는 컷 선택" }));
     fireEvent.click(screen.getByRole("button", { name: "선택한 1컷 제작하기" }));
-    expect(onGenerateImages).toHaveBeenCalledExactlyOnceWith({ indexes: [1], variants: 2 });
+    expect(onGenerateImages).toHaveBeenCalledExactlyOnceWith({ indexes: [1], variants: 2 }, expect.any(Function));
   });
 
   it("writes the chosen creative direction into the real image prompt before generation", () => {
@@ -191,4 +198,22 @@ describe("StudioAiComicDirectorPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "취소" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
+});
+
+it("검수를 열기만 하면 기존 대본을 보존하고 변경 저장이 실패하면 같은 변경을 다시 확인한다", async () => {
+  const prior = createStudioAiComicDirectorSession({ id: "review-device", storyText: "이미 쓴 대사", scenes: PREVIEW });
+  const key = deviceKey("studio-director-drafts", studioAiComicDirectorStorageKey(prior.id));
+  records.set(key, JSON.stringify(prior));
+  const settings = props({ sessionId: prior.id, storyText: "이전 원고 대사" });
+  const view = render(<StrictMode><StudioAiComicDirectorPanel {...settings} /></StrictMode>);
+  await act(async () => {});
+  expect(writeDevice).not.toHaveBeenCalled();
+  writeDevice.mockRejectedValueOnce(new Error("quota"));
+  fireEvent.click(screen.getByRole("button", { name: /제작·수리/u }));
+  await screen.findByText(/검수 변경을 저장하지 못했어요/u);
+  expect(JSON.parse(records.get(key)!).storyText).toBe("이미 쓴 대사");
+  fireEvent.click(screen.getByRole("button", { name: "이 기기에 다시 저장" }));
+  await waitFor(() => expect(screen.queryByText(/검수 변경을 저장하지 못했어요/u)).toBeNull());
+  expect(JSON.parse(records.get(key)!)).toMatchObject({ storyText: "이미 쓴 대사", stage: "production" });
+  view.unmount();
 });

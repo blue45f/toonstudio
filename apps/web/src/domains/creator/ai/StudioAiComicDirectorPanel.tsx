@@ -1,3 +1,7 @@
+import { parseStudioWorkspaceRoute } from "../studio-workspace-route";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
+import { saveReviewedDirectorSession } from "./studio-director-device-draft";
+import { StudioDirectorMaskEditor } from "./StudioDirectorMaskEditor";
 import { formatI18nTemplate, translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy"; import { r5CreatorStatusText } from "../r5-cat1-status-i18n";
 import {
   ChevronRight,
@@ -13,10 +17,10 @@ import {
 } from "lucide-react";
 import {
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
-  type PointerEvent as ReactPointerEvent,
   type ReactElement,
 } from "react";
 import { createPortal } from "react-dom";
@@ -55,7 +59,6 @@ import type { CharacterCanonSheet } from "./canon/studio-character-canon";
 import {
   createStudioAiComicApplyDiff,
   createStudioAiComicDirectorSession,
-  saveStudioAiComicDirectorSession,
   studioAiComicDirectorCandidateDigest,
   updateStudioAiComicDirectorSession,
   type StudioAiComicDirectorJob,
@@ -146,7 +149,7 @@ export interface StudioAiComicDirectorPanelProps {
   readonly preview: ScenarioPreviewItem[] | null;
   readonly textProvenance: StudioTextAiProvenance | null;
   readonly onGenerate: () => void;
-  readonly onGenerateImages: (request?: StudioScenarioImageGenerationRequest) => void;
+  readonly onGenerateImages: (request?: StudioScenarioImageGenerationRequest, onStarted?: () => void) => void;
   readonly onChangeScene: (index: number, patch: Partial<ScenarioPreviewItem>) => void;
   readonly onRemoveScene: (index: number) => void;
   readonly onRegenerateScene: (index: number) => void;
@@ -179,150 +182,17 @@ function selectedCandidate(item: ScenarioPreviewItem | undefined): ScenarioImage
     ?? null;
 }
 
-function MaskEditor({
-  source,
-  onChange,
-}: {
-  readonly source: string;
-  readonly onChange: (maskDataUrl: string) => void;
-}): ReactElement {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
-  const drawingRef = useRef(false);
-  const lastRef = useRef<{ x: number; y: number } | null>(null);
-  const [brush, setBrush] = useState(48);
-
-  const emit = () => {
-    const canvas = canvasRef.current;
-    if (canvas?.width && canvas.height) onChange(canvas.toDataURL("image/png"));
-  };
-
-  const configure = () => {
-    const image = imageRef.current;
-    const canvas = canvasRef.current;
-    if (!image || !canvas || !image.naturalWidth || !image.naturalHeight) return;
-    if (canvas.width !== image.naturalWidth || canvas.height !== image.naturalHeight) {
-      canvas.width = image.naturalWidth;
-      canvas.height = image.naturalHeight;
-      emit();
-    }
-  };
-
-  const point = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    const canvas = event.currentTarget;
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: (event.clientX - rect.left) / rect.width * canvas.width,
-      y: (event.clientY - rect.top) / rect.height * canvas.height,
-    };
-  };
-
-  const stroke = (canvas: HTMLCanvasElement, from: { x: number; y: number }, to: { x: number; y: number }) => {
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    context.save();
-    context.globalCompositeOperation = "source-over";
-    context.strokeStyle = "white";
-    context.fillStyle = "white";
-    context.lineCap = "round";
-    context.lineJoin = "round";
-    context.lineWidth = brush;
-    context.beginPath();
-    context.moveTo(from.x, from.y);
-    context.lineTo(to.x, to.y);
-    context.stroke();
-    context.restore();
-  };
-
-  const fillPreset = (preset: "center" | "lower" | "all" | "clear") => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    if (preset !== "clear") {
-      context.fillStyle = "white";
-      if (preset === "all") context.fillRect(0, 0, canvas.width, canvas.height);
-      else if (preset === "center") {
-        context.beginPath();
-        context.ellipse(canvas.width / 2, canvas.height / 2, canvas.width * 0.2, canvas.height * 0.28, 0, 0, Math.PI * 2);
-        context.fill();
-      } else {
-        context.fillRect(0, canvas.height * 0.52, canvas.width, canvas.height * 0.48);
-      }
-    }
-    emit();
-  };
-
-  return (
-    <div className="space-y-2">
-      <div className="relative mx-auto aspect-video max-h-72 overflow-hidden rounded-xl border border-line bg-canvas">
-        <img
-          ref={imageRef}
-          src={source}
-          alt={translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "수리 마스크를 그릴 현재 후보")}
-          onLoad={configure}
-          className="absolute inset-0 size-full object-contain"
-        />
-        <canvas
-          ref={canvasRef}
-          aria-label={translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "수리하거나 전경으로 분리할 영역을 칠하는 마스크")}
-          onPointerDown={(event) => {
-            drawingRef.current = true;
-            event.currentTarget.setPointerCapture?.(event.pointerId);
-            const next = point(event);
-            lastRef.current = next;
-            stroke(event.currentTarget, next, next);
-          }}
-          onPointerMove={(event) => {
-            if (!drawingRef.current || !lastRef.current) return;
-            const next = point(event);
-            stroke(event.currentTarget, lastRef.current, next);
-            lastRef.current = next;
-          }}
-          onPointerUp={(event) => {
-            drawingRef.current = false;
-            lastRef.current = null;
-            event.currentTarget.releasePointerCapture?.(event.pointerId);
-            emit();
-          }}
-          onPointerCancel={() => {
-            drawingRef.current = false;
-            lastRef.current = null;
-          }}
-          className={cn(
-            "absolute inset-0 size-full touch-none cursor-crosshair opacity-55",
-            STUDIO_FOCUS_RING,
-          )}
-        />
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <label className="text-[0.67rem] font-semibold text-fg-2">
-          {translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "브러시")}<input
-            type="range"
-            min={12}
-            max={180}
-            value={brush}
-            onChange={(event) => setBrush(Number(event.target.value))}
-            className="ml-2 align-middle accent-accent"
-          />
-        </label>
-        <button type="button" onClick={() => fillPreset("center")} className="min-h-11 rounded-lg border border-line bg-card px-2 text-[0.65rem] text-fg-2 hover:bg-raised">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "가운데 선택")}</button>
-        <button type="button" onClick={() => fillPreset("lower")} className="min-h-11 rounded-lg border border-line bg-card px-2 text-[0.65rem] text-fg-2 hover:bg-raised">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "아래쪽 선택")}</button>
-        <button type="button" onClick={() => fillPreset("all")} className="min-h-11 rounded-lg border border-line bg-card px-2 text-[0.65rem] text-fg-2 hover:bg-raised">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "전체 선택")}</button>
-        <button type="button" onClick={() => fillPreset("clear")} className="min-h-11 rounded-lg border border-line bg-card px-2 text-[0.65rem] text-fg-2 hover:bg-raised">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크 지우기")}</button>
-      </div>
-    </div>
-  );
-}
-
 function StageThumbnail({ item }: { readonly item: ScenarioPreviewItem }): ReactElement {
   return item.imageDataUrl
     ? <img src={item.imageDataUrl} alt="" className="size-full object-cover" />
     : <div className="grid size-full place-items-center text-fg-3"><ImagePlus size={20} aria-hidden /></div>;
 }
 
-export function StudioAiComicDirectorPanel({
+export function StudioAiComicDirectorPanel(props: StudioAiComicDirectorPanelProps): ReactElement | null {
+  return <DirectorReviewSession key={props.sessionId ?? ""} {...props} />;
+}
+
+function DirectorReviewSession({
   open,
   onClose,
   textConfigured,
@@ -383,14 +253,17 @@ export function StudioAiComicDirectorPanel({
   const [mediaBusy, setMediaBusy] = useState<"quality" | "repair" | "layers" | null>(null);
   const [mediaMessage, setMediaMessage] = useState<string | null>(null);
   const [localJobs, setLocalJobs] = useState<StudioAiComicDirectorJob[]>([]);
-  const [session, setSession] = useState<StudioAiComicDirectorSessionDocument>(() =>
-    createStudioAiComicDirectorSession({
-      id: sessionId,
-      baseDocumentRevision,
-      storyText,
-      scenes: items,
-    }),
-  );
+  const [session, setSession] = useState<StudioAiComicDirectorSessionDocument>(() => {
+    const route = parseStudioWorkspaceRoute(new URL(window.location.href));
+    return { ...createStudioAiComicDirectorSession({
+      id: sessionId, baseDocumentRevision, storyText, scenes: items,
+      workId: route.valid ? route.workId : null, remixSourceWorkId: route.valid ? route.remixSourceWorkId : null,
+    }), stage, status: busy ? "generating" : items.length ? "review" : "draft", jobs: localJobs };
+  });
+  const lastReview = useRef(session);
+  const reviewQueue = useRef(Promise.resolve());
+  const [reviewFailed, setReviewFailed] = useState(false);
+  const [reviewAttempt, setReviewAttempt] = useState(0);
   const operationIdRef = useRef(uid("apply"));
   const api = useMemo(
     () => sessionApiClient ?? (sessionId ? createStudioAiComicDirectorApiClient() : null),
@@ -430,22 +303,33 @@ export function StudioAiComicDirectorPanel({
     return () => cancelAnimationFrame(frame);
   }, [open]);
 
+  const dismissDirector = useEffectEvent(onClose);
   useEffect(() => {
     if (!open || !dialogRef.current || typeof document === "undefined") return;
     return activateStudioModalSheet({
       dialog: dialogRef.current,
       document,
       root: document.body,
-      onDismiss: onClose,
+      onDismiss: dismissDirector,
       returnFocus: returnFocusRef.current,
       initialFocus: dialogRef.current.querySelector<HTMLElement>("[data-autofocus]"),
     });
-  }, [onClose, open]);
+  }, [open]);
 
   useEffect(() => {
-    if (!sessionId || typeof window === "undefined") return;
-    saveStudioAiComicDirectorSession(window.localStorage, session);
-  }, [session, sessionId]);
+    if (!open || !sessionId || session.id !== sessionId) return;
+    let active = true;
+    reviewQueue.current = reviewQueue.current.then(async () => {
+      try {
+        await saveReviewedDirectorSession(lastReview.current, session);
+        lastReview.current = session;
+        if (active) setReviewFailed(false);
+      } catch {
+        if (active) setReviewFailed(true);
+      }
+    });
+    return () => { active = false; };
+  }, [open, session, sessionId, reviewAttempt]);
 
   if (!open || typeof document === "undefined") return null;
 
@@ -500,15 +384,14 @@ export function StudioAiComicDirectorPanel({
 
   const generateSelected = () => {
     if (!generation.requestedCount || !generation.withinLimit || busy || !imageConfigured || referenceBlocked) return;
-    const operationId = uid("generation");
-    void persistJob({
-      operationId,
-      kind: "generation",
-      progressTotal: generation.requestedCount,
-      payload: { ...request, indexes: generation.indexes },
+    const payload = { ...request, indexes: generation.indexes };
+    onGenerateImages(payload, () => {
+      setStage("production");
+      void persistJob({
+        operationId: uid("generation"), kind: "generation",
+        progressTotal: generation.requestedCount, payload,
+      });
     });
-    onGenerateImages({ ...request, indexes: generation.indexes });
-    setStage("production");
   };
 
   const updateDirection = (index: number, direction: DirectorDirection) => {
@@ -770,6 +653,11 @@ export function StudioAiComicDirectorPanel({
           {sessionId ? <span className="rounded-full border border-good/35 bg-good/10 px-2 py-1 text-[0.62rem] font-semibold text-good">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "세션 자동 저장")}</span> : null}
           <button type="button" onClick={onClose} aria-label={translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "닫기")} title={translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "닫기 (Esc)")} className={cn("ml-auto grid size-11 place-items-center rounded-lg border border-line bg-card text-fg-3 hover:bg-raised hover:text-fg", STUDIO_FOCUS_RING)}><X size={16} aria-hidden /></button>
         </header>
+        {reviewFailed && <div className="flex flex-wrap items-center gap-2 border-b border-line px-4">
+          <p role="alert" className="text-sm">{creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.reviewSaveFailed", "검수 변경을 저장하지 못했어요. 대본 탭에서 최신 저장본을 확인해 주세요.")}</p>
+          <button type="button" className={cn("min-h-11 rounded-lg border border-line px-3 text-sm", STUDIO_FOCUS_RING)}
+            onClick={() => setReviewAttempt(value => value + 1)}>{creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.retryDeviceSave", "이 기기에 다시 저장")}</button>
+        </div>}
 
         <div className="grid min-h-0 md:grid-cols-[12.5rem_minmax(0,1fr)]">
           <nav aria-label={translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "AI 코믹 디렉터 제작 단계")} className="overflow-x-auto border-b border-line bg-panel p-2 md:overflow-y-auto md:border-b-0 md:border-r">
@@ -849,7 +737,7 @@ export function StudioAiComicDirectorPanel({
                 {busy ? <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-xl border border-accent/30 bg-accent-soft p-3 text-xs"><Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden />{stageLabel ?? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "제작 중…")}{progress ? ` (${progress.done}/${progress.total})` : ""}</div> : null}
                 <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_25rem]">
                   <section><div className="mb-2 flex gap-1 overflow-x-auto pb-1">{items.map((item, index) => <button key={index} type="button" onClick={() => { setActiveIndex(index); setMaskDataUrl(""); }} className={cn("min-h-11 shrink-0 rounded-lg border px-3 text-xs", activeIndex === index ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-3")}>{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 ")}{index + 1}{item.imageCandidates?.length ? ` · ${item.imageCandidates.length}` : ""}</button>)}</div>{activeItem ? <><div className="grid gap-2 sm:grid-cols-2">{scenarioImageCandidates(activeItem).map((candidate, candidateIndex) => { const chosen = candidate.id === activeCandidate?.id; return <label key={candidate.id} className={cn("overflow-hidden rounded-xl border bg-card", chosen ? "border-accent" : "border-line")}><span className="block aspect-[4/3] bg-raised"><img src={candidate.imageDataUrl} alt={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 {v0} 후보 {v1}"), { v0: String(activeIndex + 1), v1: String(candidateIndex + 1) })} className="size-full object-cover" /></span><span className="flex min-h-11 items-center gap-2 px-2"><input type="radio" name={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "en", "candidate-{v0}"), { v0: String(activeIndex) })} checked={chosen} onChange={() => chooseCandidate(candidate.id)} className="size-4 accent-accent" /><strong className="text-xs">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "후보 ")}{candidateIndex + 1}</strong>{candidate.repair ? <span className="rounded-full bg-good/10 px-2 py-0.5 text-[0.58rem] text-good">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "부분 수리")}</span> : null}{candidate.qualityReport ? <span className="ml-auto text-[0.58rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "분석됨")}</span> : null}</span></label>; })}</div>{!scenarioImageCandidates(activeItem).length ? <div className="rounded-xl border border-dashed border-line p-8 text-center"><p className="text-sm font-semibold">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "아직 이미지 후보가 없습니다.")}</p><button type="button" onClick={() => onRegenerateScene(activeIndex)} disabled={!imageConfigured || busy || regeneratingIndex !== null} className="mt-3 min-h-11 rounded-lg bg-accent px-4 text-xs font-bold text-on-accent disabled:opacity-45">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "이 컷 이미지 생성")}</button></div> : null}</> : null}</section>
-                  <aside className="space-y-3 rounded-xl border border-line bg-panel p-3"><section><h3 className="flex items-center gap-1.5 text-xs font-bold"><ScanSearch size={14} className="text-accent" aria-hidden />{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "후보 품질 분석")}</h3><p className="mt-1 text-[0.62rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "해상도·투명도·가장자리·명암을 실제 픽셀로 측정합니다. 정체성과 해부는 모르는 상태로 남깁니다.")}</p><button type="button" onClick={() => void analyzeCandidate()} disabled={!activeCandidate || mediaBusy !== null} className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold hover:bg-raised disabled:opacity-45">{mediaBusy === "quality" ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "분석 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "현재 후보 픽셀 품질 분석")}</button>{activeCandidate?.qualityReport ? <ul className="mt-2 space-y-1 text-[0.62rem] text-fg-2">{activeCandidate.qualityReport.findings.map((finding) => <li key={finding.id} className={cn("rounded-lg border p-2", finding.severity === "review" ? "border-warn/30 bg-warn/10" : "border-line bg-card")}>{resolveStudioAiComicFindingMessage(finding, activeCandidate.qualityReport)}</li>)}</ul> : null}</section><section className="border-t border-line pt-3"><h3 className="flex items-center gap-1.5 text-xs font-bold"><WandSparkles size={14} className="text-accent" aria-hidden />{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크 영역 수리")}</h3>{!repairCapabilities.maskEdit ? <><p className="mt-1 rounded-lg border border-warn/30 bg-warn/10 p-2 text-[0.64rem] text-warn">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크 영역 수리를 연결하지 않았습니다. ")}{repairCapabilities.reason}</p><button type="button" onClick={() => onRegenerateScene(activeIndex)} disabled={!activeItem || busy} className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold hover:bg-raised disabled:opacity-45">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "이 컷 전체 다시 제작")}</button></> : activeCandidate ? <><MaskEditor source={activeCandidate.imageDataUrl} onChange={setMaskDataUrl} /><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "수리 대상")}<select value={repairTarget} onChange={(event) => setRepairTarget(event.target.value as StudioAiComicRepairTarget)} className="mt-1 min-h-11 w-full rounded-lg border border-line bg-card px-2 text-xs">{REPAIR_TARGETS.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}</select></label><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "수리 지시")}<textarea value={repairPrompt} onChange={(event) => setRepairPrompt(event.target.value)} rows={3} className="mt-1 w-full rounded-lg border border-line bg-card p-2 text-xs" /></label><button type="button" onClick={() => void repairCandidate()} disabled={!maskDataUrl || mediaBusy !== null} className="mt-2 min-h-11 w-full rounded-lg bg-accent px-3 text-xs font-bold text-on-accent disabled:opacity-45">{mediaBusy === "repair" ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "선택 영역 수리 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "선택 영역만 수리")}</button></> : <p className="mt-1 text-[0.64rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "먼저 사용할 후보를 선택하세요.")}</p>}</section><section className="border-t border-line pt-3"><h3 className="flex items-center gap-1.5 text-xs font-bold"><Layers3 size={14} className="text-accent" aria-hidden />{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "레이어 분리")}</h3><p className="mt-1 text-[0.62rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "검토한 마스크가 있으면 실제 전경·배경 PNG를 만들고, 없으면 단일 레이어 폴백을 명시합니다.")}</p><button type="button" onClick={() => void decomposeCandidate()} disabled={!activeCandidate || mediaBusy !== null} className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold hover:bg-raised disabled:opacity-45">{mediaBusy === "layers" ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "레이어 분리 중…") : maskDataUrl ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크로 전경·배경 분리") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "단일 레이어로 유지")}</button>{activeItem?.layerManifest ? <p className={cn("mt-2 rounded-lg border p-2 text-[0.62rem]", activeItem.layerManifest.editable ? "border-good/30 bg-good/10 text-good" : "border-line bg-card text-fg-3")}>{activeItem.layerManifest.editable ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "{v0}개 편집 레이어 준비됨"), { v0: String(activeItem.layerManifest.layers.length) }) : activeItem.layerManifest.limitation}</p> : null}</section>{mediaMessage ? <p role="status" className="rounded-lg border border-line bg-card p-2 text-[0.65rem] text-fg-2">{mediaMessage}</p> : null}</aside>
+                  <aside className="space-y-3 rounded-xl border border-line bg-panel p-3"><section><h3 className="flex items-center gap-1.5 text-xs font-bold"><ScanSearch size={14} className="text-accent" aria-hidden />{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "후보 품질 분석")}</h3><p className="mt-1 text-[0.62rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "해상도·투명도·가장자리·명암을 실제 픽셀로 측정합니다. 정체성과 해부는 모르는 상태로 남깁니다.")}</p><button type="button" onClick={() => void analyzeCandidate()} disabled={!activeCandidate || mediaBusy !== null} className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold hover:bg-raised disabled:opacity-45">{mediaBusy === "quality" ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "분석 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "현재 후보 픽셀 품질 분석")}</button>{activeCandidate?.qualityReport ? <ul className="mt-2 space-y-1 text-[0.62rem] text-fg-2">{activeCandidate.qualityReport.findings.map((finding) => <li key={finding.id} className={cn("rounded-lg border p-2", finding.severity === "review" ? "border-warn/30 bg-warn/10" : "border-line bg-card")}>{resolveStudioAiComicFindingMessage(finding, activeCandidate.qualityReport)}</li>)}</ul> : null}</section><section className="border-t border-line pt-3"><h3 className="flex items-center gap-1.5 text-xs font-bold"><WandSparkles size={14} className="text-accent" aria-hidden />{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크 영역 수리")}</h3>{!repairCapabilities.maskEdit ? <><p className="mt-1 rounded-lg border border-warn/30 bg-warn/10 p-2 text-[0.64rem] text-warn">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크 영역 수리를 연결하지 않았습니다. ")}{repairCapabilities.reason}</p><button type="button" onClick={() => onRegenerateScene(activeIndex)} disabled={!activeItem || busy} className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold hover:bg-raised disabled:opacity-45">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "이 컷 전체 다시 제작")}</button></> : activeCandidate ? <><StudioDirectorMaskEditor source={activeCandidate.imageDataUrl} onChange={setMaskDataUrl} /><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "수리 대상")}<select value={repairTarget} onChange={(event) => setRepairTarget(event.target.value as StudioAiComicRepairTarget)} className="mt-1 min-h-11 w-full rounded-lg border border-line bg-card px-2 text-xs">{REPAIR_TARGETS.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}</select></label><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "수리 지시")}<textarea value={repairPrompt} onChange={(event) => setRepairPrompt(event.target.value)} rows={3} className="mt-1 w-full rounded-lg border border-line bg-card p-2 text-xs" /></label><button type="button" onClick={() => void repairCandidate()} disabled={!maskDataUrl || mediaBusy !== null} className="mt-2 min-h-11 w-full rounded-lg bg-accent px-3 text-xs font-bold text-on-accent disabled:opacity-45">{mediaBusy === "repair" ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "선택 영역 수리 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "선택 영역만 수리")}</button></> : <p className="mt-1 text-[0.64rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "먼저 사용할 후보를 선택하세요.")}</p>}</section><section className="border-t border-line pt-3"><h3 className="flex items-center gap-1.5 text-xs font-bold"><Layers3 size={14} className="text-accent" aria-hidden />{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "레이어 분리")}</h3><p className="mt-1 text-[0.62rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "검토한 마스크가 있으면 실제 전경·배경 PNG를 만들고, 없으면 단일 레이어 폴백을 명시합니다.")}</p><button type="button" onClick={() => void decomposeCandidate()} disabled={!activeCandidate || mediaBusy !== null} className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold hover:bg-raised disabled:opacity-45">{mediaBusy === "layers" ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "레이어 분리 중…") : maskDataUrl ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크로 전경·배경 분리") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "단일 레이어로 유지")}</button>{activeItem?.layerManifest ? <p className={cn("mt-2 rounded-lg border p-2 text-[0.62rem]", activeItem.layerManifest.editable ? "border-good/30 bg-good/10 text-good" : "border-line bg-card text-fg-3")}>{activeItem.layerManifest.editable ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "{v0}개 편집 레이어 준비됨"), { v0: String(activeItem.layerManifest.layers.length) }) : activeItem.layerManifest.limitation}</p> : null}</section>{mediaMessage ? <p role="status" className="rounded-lg border border-line bg-card p-2 text-[0.65rem] text-fg-2">{mediaMessage}</p> : null}</aside>
                 </div>
               </div>
             ) : null}

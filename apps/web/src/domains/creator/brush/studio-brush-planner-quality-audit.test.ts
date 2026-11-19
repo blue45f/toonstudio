@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 
 import { BRUSH_PRESETS } from "../studio-brush";
 
@@ -30,7 +30,7 @@ describe("studio brush planner quality audit", () => {
   it("deterministically audits every shipped preset without planner failures", () => {
     const replay = auditStudioBrushPlannerQualityCatalogue(SHIPPED_CANDIDATES);
 
-    expect(SHIPPED_CANDIDATES).toHaveLength(SHIPPED_CANDIDATES.length);
+    expect(SHIPPED_CANDIDATES).toHaveLength(BRUSH_PRESETS.length + STUDIO_BRUSH_PACK_DESCRIPTORS.length);
     expect(SHIPPED_REPORT.results).toHaveLength(SHIPPED_CANDIDATES.length);
     expect(new Set(SHIPPED_REPORT.results.map((result) => result.catalogId)).size).toBe(SHIPPED_CANDIDATES.length);
     expect(replay).toEqual(SHIPPED_REPORT);
@@ -85,6 +85,17 @@ describe("studio brush planner quality audit", () => {
     expect(new Set(
       SHIPPED_REPORT.results.map((result) => result.perceptualFingerprint),
     ).size).toBe(SHIPPED_CANDIDATES.length);
+  });
+
+  it("같은 촉은 그리기와 지우기를 구분하고 같은 연산의 복제품은 찾아낸다", () => {
+    const pen = SHIPPED_CANDIDATES.find(candidate => candidate.catalogId === "gel-pen");
+    assert.isDefined(pen);
+    const clone = { ...pen, catalogId: "duplicate-pen" };
+    const erase = { ...pen, catalogId: "same-tip-eraser", operation: "erase" as const };
+    const report = auditStudioBrushPlannerQualityCatalogue([pen, clone, erase]);
+    for (const groups of [report.exactFingerprintGroups, report.perceptualFingerprintGroups]) {
+      expect(groups.map(group => group.catalogIds)).toEqual([["duplicate-pen", "gel-pen"]]);
+    }
   });
 
   it("raises the weakest soft-media taps without flattening their low-opacity intent", () => {

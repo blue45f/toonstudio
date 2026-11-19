@@ -293,7 +293,8 @@ export function planStudioBg3dEditableCompositeDetach<
       || !isValidId(layer.elementId)
       || typeof layer.created !== "boolean"
       || typeof layer.sceneAnchor !== "boolean"
-      || layer.name !== STUDIO_BG3D_LT_LAYER_NAMES[layer.role]
+      || typeof layer.name !== "string"
+      || (layer.created && layer.name !== STUDIO_BG3D_LT_LAYER_NAMES[layer.role])
       || !isStudioBg3dLtPngDataUrl(layer.pngDataUrl)
     ) {
       return failure("invalid-plan.layerPlanInvalid");

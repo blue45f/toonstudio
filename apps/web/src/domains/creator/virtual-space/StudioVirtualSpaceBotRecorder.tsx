@@ -58,7 +58,9 @@ function WorkspaceRecorder({ zones, defaultZoneId, onAssetize, scope }: Recorder
   useEffect(() => {
     mounted.current = true;
     let live = true;
-    void listWorkspaceVideos(scope).then(items => {
+    void listWorkspaceVideos(scope, () => {
+      if (live) setNotice(bt("이전 녹화 목록을 열지 못했습니다. 녹화 탭을 다시 열어 주세요.", "Could not open older recordings. Reopen the recording tab to try again."));
+    }).then(items => {
       if (live) setRecordings(current => {
         const existing = new Set(current.map(item => item.id));
         return [...current, ...items.map(entry => entry.recording).filter(item => !existing.has(item.id))];
@@ -95,14 +97,15 @@ function WorkspaceRecorder({ zones, defaultZoneId, onAssetize, scope }: Recorder
         return;
       }
       unsaved.current.set(item.id, video);
+      let listed: StudioBotRecording = item;
       try {
-        await saveWorkspaceVideo({ scope, recording: item }, video);
+        listed = (await saveWorkspaceVideo({ scope, recording: item }, video)).recording;
         unsaved.current.delete(item.id);
         if (mounted.current) setNotice(bt("이 기기에 녹화를 저장했습니다.", "Recording saved on this device."));
       } catch {
         if (mounted.current) setNotice(bt("기기 저장 공간을 확인해 주세요. 창을 닫기 전에 영상을 다운로드할 수 있습니다.", "Device storage failed. Download the recording before closing."));
       }
-      if (mounted.current) setRecordings(items => [item, ...items.filter(entry => entry.id !== item.id)]);
+      if (mounted.current) setRecordings(items => [listed, ...items.filter(entry => entry.id !== listed.id)]);
     } finally {
       pending.current = false;
       if (mounted.current) setBusy(false);

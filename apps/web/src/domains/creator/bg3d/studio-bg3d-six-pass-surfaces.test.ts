@@ -19,6 +19,8 @@ describe("6패스 LT 지원 표면 경계", () => {
     const commit = vi.fn();
     const setError = vi.fn();
     const insert = bindStudioBg3dRenderedImage({ isRealtimeTeamSession: false, masterEditMode: true,
+      activePage: { id: "master-page", elements: [] }, cutDocumentKey: "master-draft",
+      bg3dMutationTicketRef: { current: null },
       setError, setStatusNotice: vi.fn(), commit });
     const result: StudioBackground3DInsertResult = {
       kind: "separated", width: 1, height: 1, layers: [], compositePngDataUrl: "data:image/png;base64,AA==",

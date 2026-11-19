@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { PerspectiveCamera } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { readStudioMannequinCaptureCamera } from "./studio-mannequin-capture-camera";
 import { STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN } from "./studio-mannequin-lighting";
-import { snapshotStudioMannequinLightingPlan, type StudioMannequinSceneHandle } from "./studio-mannequin-scene";
+import { resolveStudioMannequinCameraFrame, snapshotStudioMannequinLightingPlan, type StudioMannequinCameraPreset, type StudioMannequinSceneHandle, type StudioMannequinSceneOptions } from "./studio-mannequin-scene";
 import {
   StudioMannequinWebglUnavailableError,
   probeStudioMannequinWebgl2Support,
@@ -79,7 +81,47 @@ beforeEach(() => {
   vi.mocked(sceneHandle.setCameraFovDeg!).mockClear();
 });
 
+function renderObservedCamera(preset: StudioMannequinCameraPreset, fov: number) {
+  const scene = mockCreateScene.mock.calls.at(-1)?.[0] as StudioMannequinSceneOptions;
+  const frame = resolveStudioMannequinCameraFrame(1.7, preset);
+  const camera = new PerspectiveCamera(fov, 1, 0.05, 60);
+  camera.position.set(...frame.position);
+  camera.lookAt(...frame.target);
+  act(() => scene.onCaptureCameraChange?.(readStudioMannequinCaptureCamera(camera, true)));
+}
+
 describe("StudioMannequinEngineReadiness & Poser page/WebGL2 recovery", () => {
+  it("포저의 체형·포즈·재질과 캡처 카메라가 실제 구도 브리프에 함께 표시된다", async () => {
+    render(<StudioMannequinPoserPanel open onClose={vi.fn()} onInsert={vi.fn()} initialPosePresetId="run" />);
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
+    expect(screen.getByTestId("composition-brief-empty")).toBeTruthy();
+    renderObservedCamera("home", 47);
+    const panel = screen.getByTestId("composition-brief-panel");
+    await waitFor(() => expect(panel.textContent).toContain("pose:run"));
+    expect(panel.textContent).toContain("신장 170cm");
+    expect(panel.textContent).toContain("목조 인형");
+    expect(panel.textContent).toContain("화각 47도");
+  });
+
+  it("프리셋과 리셋 명령 뒤 프레임이 관찰되면 현재 방향을 브리프에 반영한다", () => {
+    render(<StudioMannequinPoserPanel open onClose={vi.fn()} onInsert={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
+    renderObservedCamera("home", 40);
+    const brief = screen.getByTestId("composition-brief-text");
+    const initial = brief.textContent;
+    expect(initial).toContain("오른쪽 3/4 앞모습");
+    fireEvent.click(screen.getByRole("button", { name: "측면" }));
+    expect(sceneHandle.setCameraPreset).toHaveBeenCalledWith("side");
+    expect(brief.textContent).toEqual(initial);
+    renderObservedCamera("side", 40);
+    expect(brief.textContent).toContain("오른쪽 옆모습");
+    fireEvent.click(screen.getByRole("button", { name: "리셋" }));
+    expect(sceneHandle.resetCamera).toHaveBeenCalled();
+    expect(brief.textContent).toContain("오른쪽 옆모습");
+    renderObservedCamera("home", 40);
+    expect(brief.textContent).toEqual(initial);
+  });
+
   it("probeStudioMannequinWebgl2Support가 WebGL2 컨텍스트를 확인하고 즉시 반환한다", () => {
     vi.spyOn(window.navigator, "userAgent", "get").mockReturnValue("Chromium Headless QA");
     const loseContext = vi.fn();

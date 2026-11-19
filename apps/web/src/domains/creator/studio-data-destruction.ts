@@ -52,6 +52,7 @@ export const STUDIO_OPFS_ROOTS: readonly string[] = Object.freeze([
 
 export const STUDIO_INDEXED_DB_DATABASES: readonly string[] = Object.freeze([
   "toonstudio-studio-vrm-library",
+  "toonstudio-workspace-recordings",
   "toonstudio-studio-crdt-outbox",
   "toonstudio-studio-checkpoints",
   "toonstudio-studio-crdt-recovery-vault",

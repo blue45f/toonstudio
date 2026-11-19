@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createOfficeZone } from "./studio-virtual-space-office-zones";
 import { StudioTileEffectRuntimeTracker } from "./studio-virtual-space-tile-effect-runtime";
@@ -11,6 +12,12 @@ import {
   readStudioTileEffects,
   writeStudioTileEffects,
 } from "./studio-virtual-space-tile-effects-storage";
+import { createSpaceDeviceRecordFixture } from "./studio-space-device-record.test-fixture";
+
+const db = createSpaceDeviceRecordFixture();
+vi.mock("../studio-local-database-runtime", () => ({ acquireStudioLocalDatabase: async () => db }));
+beforeEach(() => { db.records.clear(); vi.clearAllMocks(); });
+
 
 const TILE = 16;
 const center = (tile: number) => tile * TILE + TILE / 2;
@@ -68,7 +75,7 @@ describe("StudioTileEffectRuntimeTracker", () => {
 });
 
 describe("tile-effects-storage", () => {
-  it("쓰고 읽으면 같은 목록이 돌아오고, 깨진 항목은 버려진다", () => {
+  it("쓰고 읽으면 같은 목록이 돌아오고, 깨진 항목은 버려진다", async () => {
     const portal = effect({ kind: "portal", id: "p1", name: "포털", tileX: 2, tileY: 2, destinationRoom: "lobby", destinationTileX: 1, destinationTileY: 1 });
     const store = new Map<string, string>();
     const original = globalThis.localStorage;
@@ -80,9 +87,9 @@ describe("tile-effects-storage", () => {
       },
     });
     try {
-      expect(writeStudioTileEffects([portal], "scope-a")).toBe(true);
-      expect(readStudioTileEffects("scope-a").map((item) => item.id)).toEqual(["p1"]);
-      expect(readStudioTileEffects("scope-b")).toEqual([]);
+      expect(await writeStudioTileEffects([portal], "scope-a")).toBe(true);
+      expect((await readStudioTileEffects("scope-a")).map((item) => item.id)).toEqual(["p1"]);
+      expect(await readStudioTileEffects("scope-b")).toEqual([]);
       expect(parseStudioTileEffects("not-json")).toEqual([]);
       expect(parseStudioTileEffects(JSON.stringify([{ kind: "portal" }, { kind: "nope" }]))).toEqual([]);
     } finally {

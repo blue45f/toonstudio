@@ -130,7 +130,7 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide, o
       setLtSource({ status: "ready", imageData, label: "3D 뷰 캡처", error: null });
     } catch (cause) {
       setLtSource({ status: "error", imageData: null, label: "3D 뷰 캡처",
-        error: cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.shaper.viewportHud.captureFailed", "뷰포트를 캡처하지 못했습니다.") });
+        error: cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.shaper.viewportHud.captureFailed", "3D 뷰 캡처에 실패했습니다.") });
     }
   };
 
@@ -160,12 +160,12 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide, o
       const committed = await onInsertLtLayers([encodeStudioLtPng(line), encodeStudioLtPng(tone)], controller.signal);
       if (controller.signal.aborted) return;
       if (!committed) {
-        setLtApplyError(r3c04StatusText("studio.r3c04Status.shaper.viewportHud.layerInsertUnavailable", "이 페이지에 레이어를 추가할 수 없습니다. 원고의 편집 권한과 잠금 상태를 확인하세요."));
+        setLtApplyError(r3c04StatusText("studio.r3c04Status.shaper.viewportHud.ltNotConnected", "이 페이지에 레이어를 추가할 수 없습니다. 원고의 편집 권한과 잠금 상태를 확인하세요."));
         return;
       }
       closeLt();
     } catch (cause) {
-      if (!controller.signal.aborted) setLtApplyError(cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.shaper.viewportHud.layerInsertFailed", "레이어를 추가하지 못했습니다."));
+      if (!controller.signal.aborted) setLtApplyError(cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.shaper.viewportHud.layerAddFailed", "레이어를 추가하지 못했습니다."));
     } finally {
       if (insertion.current === controller) { insertion.current = null; setApplying(false); }
     }

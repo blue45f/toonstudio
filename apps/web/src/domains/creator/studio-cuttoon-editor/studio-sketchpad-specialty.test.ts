@@ -48,7 +48,9 @@ describe("sketchpad specialty planners", () => {
     expect(STUDIO_BRUSH_CATALOG_COUNTS.total).toBe(
       STUDIO_BRUSH_CATALOG_COUNTS.core + STUDIO_BRUSH_CATALOG_COUNTS.pro,
     );
-    expect(STUDIO_BRUSH_CATALOG_COUNTS.erase).toBe(2);
+    const erasers = ["standard-eraser", "kneaded-eraser", "precision-eraser", "broad-eraser", "lift-eraser"];
+    expect(STUDIO_BRUSH_CATALOG_COUNTS.erase).toBe(erasers.length);
+    for (const id of erasers) expect(studioBrushCatalogItemById(id)?.operation).toBe("erase");
     expect(STUDIO_BRUSH_CATALOG_COUNTS.paint).toBe(
       STUDIO_BRUSH_CATALOG_COUNTS.total - STUDIO_BRUSH_CATALOG_COUNTS.erase,
     );

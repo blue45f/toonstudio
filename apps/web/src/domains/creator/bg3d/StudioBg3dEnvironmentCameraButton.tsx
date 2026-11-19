@@ -35,16 +35,18 @@ export function StudioBg3dEnvironmentCameraButton({
     }
     onCommit(before, next);
   };
-  const shotButton = (camera: StudioBg3dEnvironmentCamera, text: string, description: string) => (
+  const shotButton = (camera: StudioBg3dEnvironmentCamera, text: string, description: string, subject?: string) => (
     <button type="button" aria-label={description} title={blockedReason || description}
       disabled={Boolean(blockedReason)} onClick={() => apply(camera)}
-      className="min-h-11 min-w-11 rounded-lg border border-line bg-card px-2 text-xs font-semibold text-fg shadow-sm focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50">
+      className="inline-flex min-h-11 min-w-11 flex-col items-center justify-center gap-0.5 rounded-lg border border-line bg-card px-2 text-xs font-semibold text-fg shadow-sm hover:bg-raised focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50">
       {text}
+      {subject && <span className="max-w-24 text-balance text-[0.65rem] leading-tight text-fg-2">{subject}</span>}
     </button>
   );
   return <>
     {shotButton(asset.camera, bt("추천 구도", "Suggested shot"), label)}
     {asset.detailCamera && shotButton(asset.detailCamera, bt("세부 구도", "Detail shot"),
-      bt(`세부 구도 적용 · ${asset.detailCamera.subject.ko}`, `Apply detail shot · ${asset.detailCamera.subject.en}`))}
+      bt(`세부 구도 적용 · ${asset.detailCamera.subject.ko}`, `Apply detail shot · ${asset.detailCamera.subject.en}`),
+      bt(asset.detailCamera.subject.ko, asset.detailCamera.subject.en))}
   </>;
 }

@@ -434,6 +434,7 @@
   "studio.bubble.inputPlaceholder": "Minsu: Hello?\\nJiyoung: Long time no see\\n(After a moment)",
   "studio.bubble.inputAria": "Dialogue script",
   "studio.bubble.insertAll": "Insert all as bubbles",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubble.batchEdit": "Batch dialogue edit",
   "studio.bubble.translate": "Translate (my API key)",
   "studio.bubble.placementHelp.title": "Click/Tap",

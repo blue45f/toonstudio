@@ -11,6 +11,7 @@ import {
   closeStudioLocalDatabaseRuntime,
   probeStudioLocalDatabaseRuntime,
   resetFailedStudioLocalDatabaseOwnership,
+  retryFailedStudioLocalDatabaseOpen,
 } from "./studio-local-database-runtime";
 
 const productWorker = vi.hoisted(() => ({
@@ -164,6 +165,18 @@ describe("studio local database runtime", () => {
     await expect(acquireStudioLocalDatabase()).rejects.toBe(failure);
     expect(productWorker.acquire).toHaveBeenCalledOnce();
     expect(productWorker.close).not.toHaveBeenCalled();
+  });
+
+  it("사용자의 저장소 다시 열기는 소유권과 무관한 개방 실패도 복구하고 정상 연결은 유지한다", async () => {
+    const failure = new Error("disk unavailable");
+    const database = { close: vi.fn(async () => undefined) } as unknown as StudioLocalDatabase;
+    productWorker.acquire.mockRejectedValueOnce(failure).mockResolvedValueOnce(database);
+    await expect(acquireStudioLocalDatabase()).rejects.toBe(failure);
+    await expect(resetFailedStudioLocalDatabaseOwnership()).resolves.toBe(false);
+    await expect(retryFailedStudioLocalDatabaseOpen()).resolves.toBe(true);
+    await expect(acquireStudioLocalDatabase()).resolves.toBe(database);
+    await expect(retryFailedStudioLocalDatabaseOpen()).resolves.toBe(false);
+    expect(database.close).not.toHaveBeenCalled();
   });
 
   it("실패한 동일 세대만 한 번 닫고 다음 명시 획득에서만 새 Worker를 연다", async () => {

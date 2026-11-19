@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { studioSpacePollSnapshot, type StudioSpacePollCommand, type StudioSpacePollSnapshot } from "@toonstudio/contracts/studio-space-poll";
+import { getAuthUserId } from "@/domains/auth/public/session/auth-session-store";
 import { apiFetch } from "@/platform/api";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { StudioVirtualSpacePoll } from "./StudioVirtualSpacePoll";
@@ -18,7 +19,7 @@ export function StudioSpacePollPanel(props: Props) {
   const guest = !props.actor && readStudioGuestSession();
   const voter = props.actor ?? (guest && guest.spaceId === props.workId ? guest.sessionId : "device");
   const key = JSON.stringify(["studio-space-poll-v1", props.workId, props.world, voter]);
-  if (props.localOnly) return <LocalPoll key={key} storageKey={key} voter={voter} name={props.name} />;
+  if (props.localOnly) return <LocalPoll key={key} storageKey={key} voter={voter} name={props.name} actor={props.actor} />;
   if (!props.actor) return <PollLoading />;
   return <TeamPoll key={key} {...props} />;
 }
@@ -28,9 +29,10 @@ function PollLoading() {
   return <p role="status">{bt("공간의 투표를 불러오는 중이에요.", "Loading the room poll.")}</p>;
 }
 
-function LocalPoll({ storageKey, voter, name }: { storageKey: string; voter: string; name: string }) {
+function LocalPoll({ storageKey, voter, name, actor }: { storageKey: string; voter: string; name: string; actor: string | null }) {
   const bt = useBilingual("StudioVirtualSpacePoll");
-  const { state, retry, keepCopyAndRestart, create, vote, close } = useStudioSpacePoll(storageKey, voter, name);
+  const { state, retry, keepCopyAndRestart, create, vote, close } = useStudioSpacePoll(storageKey, voter, name, () => getAuthUserId() === actor);
+  if (state.loading) return <PollLoading />;
   return <div className="studio-poll-local">
     <p className="space-panel-note">{bt("이 기기에 저장하는 개인 투표예요.", "This personal poll is saved on this device.")}</p>
     {state.failed && <div role="alert">{state.corrupt ? bt("저장된 투표 파일을 읽을 수 없어요.", "The saved poll file could not be read.") :

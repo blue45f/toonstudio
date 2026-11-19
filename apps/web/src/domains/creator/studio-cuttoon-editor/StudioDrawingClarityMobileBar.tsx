@@ -43,6 +43,7 @@ export function StudioDrawingClarityMobileBar({
   const [helpOpen, setHelpOpen] = useState(false);
   const [editBarExpanded, setEditBarExpanded] = useState(false);
   const poseCommand = s.studioMainMenuGroups.find((group) => group.id === "3d")?.items.find((item) => item.commandId === "insert.character-3d");
+  const brushLibrary = s.studioMainMenuGroups.flatMap(group => group.items).find(item => item.commandId === "brush.saved-library");
   const commandPresentation = useStudioDrawingCommandPresentation(s, true);
   const openInspector = useCallback(() => s.studioMobileEditingDockHandlers.openInspectorRoute({ primary: "layers" }, "props"), [s.studioMobileEditingDockHandlers]);
   useEffect(() => {
@@ -82,6 +83,7 @@ export function StudioDrawingClarityMobileBar({
         { id: "bubble", label: bt("말풍선·대사", "Speech bubbles and dialogue"), run: () => { s.setMobileSheet(null); s.setMenu("bubble"); } },
         { id: "assets", label: bt("소재 찾기", "Find assets"), run: () => { s.setMobileSheet(null); preloadStudioAssetToolPopoverBody(); s.setMenu("asset"); } },
         { id: "export", label: bt("원고 내보내기", "Export draft"), run: (trigger) => { s.setMobileSheet(null); onExportTrigger?.(trigger); s.setExportMenuOpen(true); } },
+        ...(brushLibrary && !brushLibrary.disabled ? [{ id: "brush", label: bt("내 브러시 관리", "Manage my brushes"), run: () => { s.setMobileSheet(null); brushLibrary.onSelect(); } }] : []),
         ...(poseCommand && !poseCommand.disabled ? [{ id: "character3d", label: bt("3D 캐릭터·포즈", "3D character and pose"), run: () => { s.setMobileSheet(null); poseCommand.onSelect(); } }] : []),
         { id: "all", label: bt("전체 도구", "All tools"), run: (trigger) => { s.setMobileSheet(null); requestStudioAllTools(trigger); } },
         { id: "search", label: bt("도구·기능 검색", "Search tools and features"), run: openSearch },

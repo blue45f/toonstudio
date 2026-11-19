@@ -459,7 +459,8 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     const webTests = gitFiles("apps/web").filter((path) => /\.test\.(?:ts|tsx|mts)$/u.test(path)).length;
     expect(factOf(slide, 0, "웹 테스트 파일")).toBe("5,100+");
     expect(webTests).toBeGreaterThanOrEqual(5100);
-    expect(gitFiles("e2e").filter((path) => /\.spec\.(?:ts|mts)$/u.test(path)).length).toBe(Number(factOf(slide, 1, "E2E 스펙")));
+    expect(execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "e2e"], { encoding: "utf8" })
+      .split("\n").filter((path) => /\.spec\.(?:ts|mts)$/u.test(path)).length).toBe(Number(factOf(slide, 1, "E2E 스펙")));
     expect(gitFiles(".github/workflows").filter((path) => /\.ya?ml$/u.test(path)).length).toBe(Number(factOf(slide, 2, "워크플로")));
     const ratchetSource = read("config/architecture-boundary-ratchet.json");
     const ratchet = JSON.parse(ratchetSource) as Record<string, number>;

@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { StudioVirtualSpaceEngineBridge } from "./studio-virtual-space-engine-bridge";
 import {
   STUDIO_TILE_EFFECT_TILE_SIZE,
@@ -18,27 +19,39 @@ import { createSilentZone, type StudioSilentZone } from "./studio-virtual-space-
 export function useStudioTileEffectWiring(input: {
   readonly decorationScope: string;
   readonly engineBridge: StudioVirtualSpaceEngineBridge;
+  readonly owner: string | null;
+  readonly notify: (message: string, severity: "warn") => void;
 }) {
-  const { decorationScope, engineBridge } = input;
-  const [tileEffectState, setTileEffectState] = useState<{ readonly scope: string; readonly effects: readonly StudioTileEffectDefinition[] }>(
-    () => ({ scope: decorationScope, effects: readStudioTileEffects(decorationScope) }),
-  );
-  const tileEffects = useMemo<readonly StudioTileEffectDefinition[]>(
-    () => (tileEffectState.scope === decorationScope ? tileEffectState.effects : readStudioTileEffects(decorationScope)),
-    [tileEffectState, decorationScope],
-  );
-  const loadTileEffects = useCallback((next: readonly StudioTileEffectDefinition[]) => {
-    setTileEffectState({ scope: decorationScope, effects: next });
-  }, [decorationScope]);
-  const reloadTileEffects = useCallback(() => loadTileEffects(readStudioTileEffects(decorationScope)), [decorationScope, loadTileEffects]);
+  const { decorationScope, engineBridge, owner, notify } = input;
+  const bt = useBilingual("useStudioTileEffectWiring");
+  const view = JSON.stringify([owner, decorationScope]);
+  const version = useRef({ request: 0 }).current;
+  const [stored, setStored] = useState<{ view: string; effects: readonly StudioTileEffectDefinition[] } | null>(null);
+  const tileEffects = useMemo(() => stored?.view === view ? stored.effects : [], [stored, view]);
+  const loadTileEffects = useCallback((effects: readonly StudioTileEffectDefinition[]) => {
+    ++version.request;
+    setStored({ view, effects });
+  }, [view, version]);
+  const reloadTileEffects = useCallback(async () => {
+    const request = ++version.request;
+    try {
+      const effects = await readStudioTileEffects(decorationScope);
+      if (request === version.request) setStored({ view, effects });
+    } catch {
+      if (request === version.request) notify(bt("저장한 타일을 불러오지 못했습니다.", "Could not load saved tiles."), "warn");
+    }
+  }, [decorationScope, view, bt, notify, version]);
+  useEffect(() => { void reloadTileEffects(); return () => { ++version.request; }; }, [reloadTileEffects, version]);
   const cloneBinding = (search: URLSearchParams, hash: string) => ({
     scope: decorationScope, effects: tileEffects, onLoad: loadTileEffects,
     expanded: search.get("clone") === "1", incoming: hash.startsWith("#clone=") ? hash : "",
   });
-  const changeTileEffects = useCallback((next: readonly StudioTileEffectDefinition[]) => {
+  const changeTileEffects = useCallback(async (next: readonly StudioTileEffectDefinition[]) => {
     loadTileEffects(next);
-    writeStudioTileEffects(next, decorationScope);
-  }, [decorationScope, loadTileEffects]);
+    const request = version.request;
+    if (!await writeStudioTileEffects(next, decorationScope) && request === version.request)
+      notify(bt("타일 변경을 이 기기에 저장하지 못했습니다.", "Could not save the tile changes on this device."), "warn");
+  }, [decorationScope, loadTileEffects, notify, bt, version]);
   // 타일 편집기로 배치한 silent 구역도 같은 음소 파이프라인에 태운다.
   const tileSilentZones = useMemo<readonly StudioSilentZone[]>(() => tileEffects.flatMap((effect) => {
     if (effect.kind !== "zone" || effect.zoneTag !== "silent") return [];

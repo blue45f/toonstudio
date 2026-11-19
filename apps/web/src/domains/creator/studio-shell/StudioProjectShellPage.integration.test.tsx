@@ -80,6 +80,20 @@ describe("StudioProjectShellPage integration", () => {
       .toBe("/studio/work/project-1/canvas?uiMode=simple");
   });
 
+  it("아이디어 보드에 직접 들어가면 같은 작품의 대본과 전체 기획 도구를 메뉴에서 연다", async () => {
+    const view = renderStory("/studio/p/project-1/story?view=references&uiMode=focus");
+    expect(view.container.querySelector('[data-studio-project-shell="focused-board"]')).toBeTruthy();
+    expect(view.container.querySelector('[data-studio-project-view="references"]')).toBeNull();
+    fireEvent.click(screen.getByText(/프로젝트 메뉴|Project menu/u));
+    const script = screen.getByRole("link", { name: /대본 열기|Open script/u });
+    expect(script.getAttribute("href")).toContain("/studio/p/project-1/story?");
+    expect(script.getAttribute("href")).toContain("view=script");
+    expect(script.getAttribute("href")).toContain("uiMode=focus");
+    fireEvent.click(screen.getByRole("link", { name: /전체 기획 도구 보기|Show all planning tools/u }));
+    await waitFor(() => expect(view.container.querySelector('[data-studio-project-view="references"]')).toBeTruthy());
+    expect(view.container.querySelector('[data-studio-project-shell="focused-board"]')).toBeNull();
+  });
+
   it("renders a selected project view and links to its real version owner", () => {
     const view = renderReview("/studio/p/project-1/review?view=versions");
     expect(view.container.querySelector("[data-studio-project-view=versions]")).toBeTruthy();

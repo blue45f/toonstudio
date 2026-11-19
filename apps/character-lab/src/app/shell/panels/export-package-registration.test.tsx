@@ -52,10 +52,10 @@ function packageFixture(indexSha256: string | null = null, planSha256 = FIXTURE_
   };
 }
 
-function renderImportPanel() {
+function renderImportPanel(engineReady = true) {
   const engine = createMockEngine();
-  const engineSession = createMockEngineSession({ phase: "ready", backend: engine.backend, diagnostics: engine.diagnostics });
-  engineSession.setEngine(engine);
+  const engineSession = createMockEngineSession(engineReady ? { phase: "ready", backend: engine.backend, diagnostics: engine.diagnostics } : { phase: "idle" });
+  if (engineReady) engineSession.setEngine(engine);
   const reloadSource = vi.spyOn(engineSession, "reloadSource");
   const paintSession = createPaintSession({
     layerSize: 16,
@@ -163,17 +163,39 @@ describe("ExportPanel 제작 패키지 자동 등록의 null 해시·불일치 �
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
-  it("null 인덱스에서 로드한 실제 해시가 레시피와 다르면 엔진을 바꾸지 않고 현재 작업을 보존한다", async () => {
+  it.each([true, false])("null 인덱스에서 실제 해시가 다르면 현재 작업을 보존한다 (엔진 준비 %s)", async (engineReady) => {
     const { entry, loaded } = packageFixture(null, OTHER_SHA256);
     vi.spyOn(browserPackageLoader, "loadIndex").mockResolvedValue({ ok: true, entries: [entry] });
     const loadPackage = vi.spyOn(browserPackageLoader, "loadPackage").mockResolvedValue(loaded);
-    const panel = renderImportPanel();
+    const panel = renderImportPanel(engineReady);
 
     await panel.importRecipe();
 
     await waitFor(() => expect(screen.getByTestId("export-failure-alert").textContent).toContain("package-sha-mismatch"));
+    expect(screen.getByTestId("export-failure-alert").textContent).toContain(`레시피 ${FIXTURE_GLB_SHA256.slice(0, 8)}…, 확인한 파일 ${OTHER_SHA256.slice(0, 8)}…`);
     expect(loadPackage).toHaveBeenCalledExactlyOnceWith(entry, { preferredLod: 0 });
+    expect(panel.packagePlans.get(CHARACTER_ID)).toBeUndefined();
     panel.assertCurrentWorkPreserved();
+  });
+
+  it("다른 판이 이미 등록되어 있어도 레시피가 가리키는 보관판을 찾아 두 판을 보존한다", async () => {
+    const current = packageFixture(OTHER_SHA256, OTHER_SHA256);
+    const archived = packageFixture(FIXTURE_GLB_SHA256);
+    const entry = { ...current.entry, archivedGlbSha256: [FIXTURE_GLB_SHA256] };
+    vi.spyOn(browserPackageLoader, "loadIndex").mockResolvedValue({ ok: true, entries: [entry] });
+    const loadPackage = vi.spyOn(browserPackageLoader, "loadPackage").mockResolvedValue(archived.loaded);
+    const panel = renderImportPanel();
+    panel.packagePlans.register(current.loaded.plan);
+
+    await panel.importRecipe();
+
+    await waitFor(() => expect(screen.getByTestId("export-receipt").textContent).toContain("package.character.json"));
+    expect(loadPackage).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      baseUrl: `${entry.baseUrl}/revisions/${FIXTURE_GLB_SHA256}`, glbSha256: FIXTURE_GLB_SHA256,
+    }), { preferredLod: 0 });
+    expect(panel.packagePlans.get(CHARACTER_ID, OTHER_SHA256)).toBe(current.loaded.plan);
+    expect(panel.packagePlans.get(CHARACTER_ID, FIXTURE_GLB_SHA256)).toBe(archived.loaded.plan);
+    expect(panel.store.getState().recipe.source).toEqual({ kind: "package", characterId: CHARACTER_ID, sha256: FIXTURE_GLB_SHA256 });
   });
 
   it("null 인덱스의 패키지 검증이 실패하면 활성 엔진의 기존 작업을 보호하고 플랜을 등록하지 않는다", async () => {

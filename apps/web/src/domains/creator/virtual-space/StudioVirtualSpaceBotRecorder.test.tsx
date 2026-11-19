@@ -20,7 +20,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(listWorkspaceVideos).mockResolvedValue([]);
   vi.mocked(readWorkspaceVideo).mockResolvedValue(video);
-  vi.mocked(saveWorkspaceVideo).mockResolvedValue("saved");
+  vi.mocked(saveWorkspaceVideo).mockImplementation(async entry => entry);
   vi.mocked(startWorkspaceVideoCapture).mockImplementation(async (_source, _canvas, _quality, finish) => ({
     pause, resume, stop: () => finish(video), discard: vi.fn(),
   }));

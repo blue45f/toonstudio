@@ -1,19 +1,11 @@
-/**
- * 타일 이펙트 배치의 로컬 저장소 (죽은 동선 배선).
- *
- * 꾸미기 저장소(decoration)와 같은 방식을 따른다: 브라우저 localStorage에
- * 스코프별로 보관하고, 읽을 때는 `createTileEffect`로 다시 살균해 깨진
- * 항목은 버린다. 월드 게시 데이터에 타일 이펙트 필드가 생기면 그쪽을
- * 정본으로 삼고 이 저장소는 초안 용도로 강등한다.
- */
-
 import {
   createTileEffect,
   type StudioTileEffectDefinition,
   type StudioTileEffectInput,
 } from "./studio-virtual-space-tile-effects";
 
-import { readStudioWorldAuthoringDraftRecord, writeStudioWorldAuthoringDraft } from "./studio-world-draft-storage";
+import { accessStudioSpaceRecord } from "./studio-space-device-record";
+import { readStudioWorldAuthoringDraftRecord, studioWorldDeviceScope, updateStudioWorldDraftTiles } from "./studio-world-draft-storage";
 
 function authoringProject(scope?: string): string | null {
   if (!scope?.startsWith("[")) return null;
@@ -27,14 +19,6 @@ const TILE_EFFECTS_STORAGE_KEY = "toonspectrum:virtual-space-tile-effects:v1";
 
 function storageKey(scope?: string): string {
   return scope ? `${TILE_EFFECTS_STORAGE_KEY}:${encodeURIComponent(scope)}` : TILE_EFFECTS_STORAGE_KEY;
-}
-
-function safeRead(key: string): string | null {
-  try {
-    return globalThis.localStorage?.getItem(key) ?? null;
-  } catch {
-    return null;
-  }
 }
 
 /** 저장값을 살균된 타일 이펙트 목록으로 되돌린다. 형식이 깨졌으면 빈 목록. */
@@ -55,24 +39,30 @@ export function parseStudioTileEffects(raw: string | null): readonly StudioTileE
   return Object.freeze(effects);
 }
 
-export function readStudioTileEffects(scope?: string): readonly StudioTileEffectDefinition[] {
+export async function readStudioTileEffects(scope?: string): Promise<readonly StudioTileEffectDefinition[]> {
+  const record = studioWorldDeviceScope(storageKey(scope));
   const projectId = authoringProject(scope);
-  const override = projectId && scope ? readStudioWorldAuthoringDraftRecord(projectId)?.tileEffectsByScope?.[scope] : undefined;
-  return parseStudioTileEffects(Array.isArray(override) ? JSON.stringify(override) : safeRead(storageKey(scope)));
+  const draft = projectId && scope ? await readStudioWorldAuthoringDraftRecord(projectId) : null;
+  const override = scope ? draft?.tileEffectsByScope?.[scope] : undefined;
+  const raw = Array.isArray(override) ? JSON.stringify(override) : await accessStudioSpaceRecord(record.key, undefined, record.current);
+  return record.current() ? parseStudioTileEffects(raw) : [];
 }
 
-/** 저장 성공 여부. 실패(용량·차단)해도 실행은 메모리 상태로 계속된다. */
-export function writeStudioTileEffects(effects: readonly StudioTileEffectDefinition[], scope?: string): boolean {
+export async function writeStudioTileEffects(effects: readonly StudioTileEffectDefinition[], scope?: string): Promise<boolean> {
+  const record = studioWorldDeviceScope(storageKey(scope));
   try {
     const projectId = authoringProject(scope);
-    const draft = projectId && scope ? readStudioWorldAuthoringDraftRecord(projectId) : null;
-    if (projectId && scope && draft?.tileEffectsByScope?.[scope]) {
-      return writeStudioWorldAuthoringDraft(projectId, draft.manifest, draft.basePublishedRevisionId, { scope, effects });
-    }
-    if (!globalThis.localStorage) return false;
-    globalThis.localStorage.setItem(storageKey(scope), JSON.stringify(effects));
-    return true;
-  } catch {
-    return false;
-  }
+    if (projectId && scope && await updateStudioWorldDraftTiles(projectId, scope, effects)) return record.current();
+    if (!record.current()) return false;
+    await accessStudioSpaceRecord(record.key, raw => ({ value: JSON.stringify(effects),
+      preserveDamaged: raw !== null && !isValidTileRecord(raw) }), record.current);
+    return record.current();
+  } catch { return false; }
+}
+
+function isValidTileRecord(raw: string): boolean {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length === parseStudioTileEffects(raw).length;
+  } catch { return false; }
 }

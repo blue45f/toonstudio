@@ -82,7 +82,7 @@ describe("StudioVirtualSpaceClonePanel", () => {
     expect(applied).toHaveLength(1);
     expect(applied[0]?.name).toBe("팀 배포 스페이스");
     expect(applied[0]?.world.props).toHaveLength(DEFAULT_STUDIO_WORLD_MANIFEST.props.length);
-    expect(screen.queryByLabelText("가져오기 전 미리보기")).toBeNull();
+    await waitFor(() => expect(screen.queryByLabelText("가져오기 전 미리보기")).toBeNull());
   });
   it("rejects an invalid pasted link without touching the apply callback", async () => {
     const applied: StudioSpaceSnapshot[] = [];

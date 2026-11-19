@@ -1,17 +1,7 @@
 /**
  * Studio 3D 데생 인형 — Three.js 씬 계층 (v3 에코르셰·작화 보조선·무게중심 추선·관절 잠금·견갑상완 리듬 통합).
- *
- * studio-mannequin-model.ts 스펙에서 관절 그룹/프리미티브/에코르셰 메시를 만들고, 관절 클릭 선택·
- * 손/발 IK 드래그·원근/직교 카메라·오빗 컨트롤·리사이즈·캡처를 담당한다.
- *
- * 하우스 규칙 준수:
- * - 렌더링은 invalidate() 기반 on-demand 1프레임 rAF — 상시 루프가 없어 패널이 닫히면
- *   자동으로 멈추고, dispose()가 보류 중 rAF·지오메트리·머티리얼·렌더러를 전부 정리한다.
- * - 난수 호출 없이 완전 결정적(툰 그라디언트도 절차 생성 DataTexture).
- * - Three import 는 이 파일과 패널 청크 안에만 머문다(check:studio-bundle 경계).
- * - 캡처는 VRM 포저와 같은 오프스크린 렌더타깃 → Worker PNG 인코딩 파이프라인을 재사용한다.
+ * 관절 선택·손발 IK·원근/직교 카메라·오빗·캡처를 담당하며, on-demand rAF와 결정적 DataTexture만 사용한다.
  */
-
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
@@ -66,15 +56,20 @@ import {
 export type { StudioMannequinFigureId, StudioMannequinFigureEcorcheState } from "./studio-mannequin-scene-figure";
 export {
   createStudioMannequinLightingObject, mountStudioMannequinLightingGroup, readStudioMannequinLightingSnapshot,
-  replaceStudioMannequinLightingGroup, snapshotStudioMannequinLightingPlan, type StudioMannequinLightingSnapshot, type StudioMannequinMountedLightSnapshot,
+  replaceStudioMannequinLightingGroup, snapshotStudioMannequinLightingPlan,
+  type StudioMannequinLightingSnapshot, type StudioMannequinMountedLightSnapshot,
 };
 
 export type StudioMannequinProjection = "perspective" | "orthographic";
 
 export interface StudioMannequinCaptureResult {
-  readonly pngDataUrl: string; readonly width: number; readonly height: number;
-  readonly displayWidth?: number; readonly displayHeight?: number;
-  readonly lighting?: StudioMannequinLightingSnapshot; readonly camera?: CompositionCameraSnapshot;
+  readonly pngDataUrl: string;
+  readonly width: number;
+  readonly height: number;
+  readonly displayWidth?: number;
+  readonly displayHeight?: number;
+  readonly lighting?: StudioMannequinLightingSnapshot;
+  readonly camera?: CompositionCameraSnapshot;
 }
 
 /** 캡처 래스터와 논리 뷰 크기로 삽입 결과를 만든다(순수 함수). */
@@ -84,10 +79,12 @@ export function resolveStudioMannequinCaptureResult(input: {
   readonly lighting?: StudioMannequinLightingSnapshot; readonly camera?: CompositionCameraSnapshot;
 }): StudioMannequinCaptureResult {
   const { pngDataUrl, width, height, displayWidth, displayHeight, lighting } = input;
-  const displayValid = Number.isFinite(displayWidth) && displayWidth > 0 && Number.isFinite(displayHeight)
-    && displayHeight > 0 && displayWidth <= width && displayHeight <= height;
-  const extra = { ...(lighting ? { lighting } : {}), ...(input.camera ? { camera: input.camera } : {}) };
-  return displayValid ? { pngDataUrl, width, height, displayWidth, displayHeight, ...extra } : { pngDataUrl, width, height, ...extra };
+  const displayValid = Number.isFinite(displayWidth) && displayWidth > 0 && Number.isFinite(displayHeight) && displayHeight > 0 && displayWidth <= width && displayHeight <= height;
+  const lightingPart = lighting ? { lighting } : {};
+  const cameraPart = input.camera ? { camera: input.camera } : {};
+  return displayValid
+    ? { pngDataUrl, width, height, displayWidth, displayHeight, ...lightingPart, ...cameraPart }
+    : { pngDataUrl, width, height, ...lightingPart, ...cameraPart };
 }
 
 export interface StudioMannequinSceneOptions {
@@ -1180,7 +1177,7 @@ export function createStudioMannequinScene(
     const pngDataUrl = await encodeStudioVrmCapturePngDataUrl(
       rgba,
       { width, height },
-      { signal: captureOptions.signal, timeoutMs: CAPTURE_PNG_TIMEOUT_MS },
+      { signal: captureOptions.signal, timeoutMs: CAPTURE_PNG_TIMEOUT_MS, shareStartupBudget: true },
     );
     return resolveStudioMannequinCaptureResult({
       pngDataUrl,

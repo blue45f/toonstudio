@@ -149,10 +149,11 @@ export async function openStudioLayerNavigator(page: Page, timeoutMs = 10_000): 
     if (await mobileLayers.count() > 0) await (await visibleStudioControl(mobileLayers, "모바일 레이어", remaining())).click({ timeout: remaining() });
     else await runStudioClarityAction(page, "layers");
   }
-  await splitPane.or(layers).first().waitFor({ state: "visible", timeout: remaining() });
   const selectedTab = page.getByTestId("studio-inspector-navigator")
     .locator('[data-studio-inspector-primary-tab="layers"][aria-selected="true"]').filter({ visible: true });
   const openLayers = splitPane.or(selectedTab).first();
+  if (await openLayers.isVisible()) return;
+  await splitPane.or(layers).first().waitFor({ state: "visible", timeout: remaining() });
   if (await openLayers.isVisible()) return;
   // 배치 복원이 클릭 직전에 끝나면 탭이 분할 패널로 교체된다. 실제 열린 목록을 확인한다.
   try {

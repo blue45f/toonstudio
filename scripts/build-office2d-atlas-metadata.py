@@ -157,9 +157,13 @@ def extract(role, sheet, path, write_runtime=False):
             reference_cell = legacy.crop((col * 128, row * 192, (col + 1) * 128, (row + 1) * 192))
             reference_bounds = reference_cell.point(lambda value: 255 if value > ALPHA_THRESHOLD else 0).getbbox()
             reference = head_center(reference_cell, reference_bounds) if reference_bounds else {"x": 64, "y": 48}
-            frames.append({"source": source,
-                           "anchor": {"x": head["x"], "y": y1}, "head": head,
-                           "referenceHead": reference, "pixels": area})
+            frame = {"source": source, "anchor": {"x": head["x"], "y": y1}, "head": head,
+                     "referenceHead": reference, "pixels": area}
+            if sheet == "walk":
+                if not reference_bounds:
+                    raise ValueError(f"{legacy_path.name}: {row}행 {col}열의 보행 발끝을 찾을 수 없습니다.")
+                frame["referenceFootY"] = reference_bounds[3]
+            frames.append(frame)
     return {"url": f"/assets/virtual-studio/office-cast-v2/{runtime.name}", "width": width, "height": height,
             "columns": columns, "rows": rows, "sha256": hashlib.sha256(runtime.read_bytes()).hexdigest(),
             "originalUrl": f"/assets/virtual-studio/office-cast-v2/{path.name}",

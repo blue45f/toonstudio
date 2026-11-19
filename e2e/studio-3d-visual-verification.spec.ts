@@ -7,7 +7,7 @@ import { openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "../scripts/l
 import { pinStudioRailToolInCatalog } from "../scripts/lib/studio-rail-tool-catalog-pin";
 import { openStudioLayerNavigator } from "../scripts/lib/studio-shell-interactions";
 
-import { findBg3dRotationGesture } from "./helpers/bg3d-rotation-ring";
+import { findBg3dRotationGesture, readBg3dRotationFrame } from "./helpers/bg3d-rotation-ring";
 
 /**
  * 실 브라우저에서 렌더된 프레임을 근거로 하는 Studio 3D 표면 전수 검증.
@@ -169,12 +169,13 @@ async function waitForStableBg3dFrame(
   label: string,
   timeoutMs = 15_000,
 ): Promise<StableFrameCapture> {
-  // DOM 상태 overlay와 toolbar의 글자 anti-aliasing은 framebuffer 잔상과 무관하므로 실제
-  // R3F render canvas만 캡처한다.
+  // locator.screenshot()은 실제 OS 커서 위치에서 buttons=0 이동을 일으킬 수 있다.
+  // 누른 드래그를 취소하지 않도록 스왑체인에 표시한 canvas만 읽는다.
   const viewport = page.locator(BG3D_RENDER_CANVAS).first();
   const startedAt = Date.now();
-  const firstPng = await viewport.screenshot();
+  const firstPng = await readBg3dRotationFrame(viewport);
   const firstFrame = await decodeFrameStats(page, firstPng.toString("base64"));
+  expect(firstFrame.distinctColors, "누른 회전 손잡이와 상자가 실제 렌더되어야 합니다.").toBeGreaterThan(30);
   const firstSurface = await readBg3dRenderSurface(page);
   let previousFrame = firstFrame;
   let previousSurface = firstSurface;
@@ -187,7 +188,7 @@ async function waitForStableBg3dFrame(
 
   while (Date.now() - startedAt < timeoutMs) {
     await page.waitForTimeout(100);
-    finalPng = await viewport.screenshot();
+    finalPng = await readBg3dRotationFrame(viewport);
     finalFrame = await decodeFrameStats(page, finalPng.toString("base64"));
     finalSurface = await readBg3dRenderSurface(page);
     samples += 1;
@@ -393,7 +394,11 @@ async function dragBg3dRotationRing(
   testInfo: TestInfo,
   label: "continuous" | "direct",
   steps: 1 | 24,
-): Promise<{ capture: StableFrameCapture; values: readonly string[] }> {
+): Promise<{
+  capture: StableFrameCapture;
+  values: readonly string[];
+  history: { before: readonly string[]; undone: readonly string[]; redone: readonly string[] };
+}> {
   const { start, end } = await findBg3dRotationGesture(page.locator(BG3D_RENDER_CANVAS).first());
   const readRotationValues = () => Promise.all(
     ["X", "Y", "Z"].map((axis) =>
@@ -411,6 +416,7 @@ async function dragBg3dRotationRing(
     await page.mouse.move(start.x, start.y);
     await page.waitForTimeout(300);
     await page.mouse.down();
+    let capture: StableFrameCapture;
     try {
       // 직접 경로도 마지막 move 전까지 같은 pointer-down 시간을 보내게 해, 두 경로 모두 마지막
       // 자세를 present할 시간은 정확히 80ms로 맞춘다. 기존에는 연속 80ms, 직접 1,920ms였다.
@@ -427,11 +433,20 @@ async function dragBg3dRotationRing(
       const hitRotationRing = lastValues.some((value, index) => value !== initialValues[index]);
       if (!hitRotationRing) continue;
 
-      const capture = await waitForStableBg3dFrame(page, testInfo, label);
-      return { capture, values: lastValues };
+      capture = await waitForStableBg3dFrame(page, testInfo, label);
+      expect(await readRotationValues(), "프레임을 읽는 동안 드래그가 취소되면 앞 자세를 비교할 수 없습니다.").toEqual(lastValues);
+      expect(capture.frame.distinctColors).toBeGreaterThan(30);
     } finally {
       await page.mouse.up();
     }
+    const toolbar = page.locator(BG3D_VIEWPORT);
+    await expect.poll(readRotationValues).toEqual(lastValues);
+    await toolbar.getByRole("button", { name: "실행 취소", exact: true }).click();
+    await expect.poll(readRotationValues).toEqual(initialValues);
+    const undone = await readRotationValues();
+    await toolbar.getByRole("button", { name: "다시 실행", exact: true }).click();
+    await expect.poll(readRotationValues).toEqual(lastValues);
+    return { capture, values: lastValues, history: { before: initialValues, undone, redone: await readRotationValues() } };
   }
 
   throw new Error(
@@ -741,6 +756,7 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
       finalPeakTileDelta,
       continuousRotationDegrees: continuous.values.map(Number),
       directRotationDegrees: direct.values.map(Number),
+      history: { continuous: continuous.history, direct: direct.history },
       continuous: continuous.capture,
       direct: direct.capture,
     };

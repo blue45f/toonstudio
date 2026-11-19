@@ -126,8 +126,10 @@ describe("shared character/background 3D scene integration boundary", () => {
     const mainView = backgroundSource.slice(mainViewStart, mainViewEnd);
     expect(sceneContent).not.toContain("<CaptureBridge");
     expect(sceneContent).not.toContain("<BgViewportController");
+    expect(sceneContent).not.toContain("<StudioBg3dPlacementPointerController");
     expect(mainView.match(/<CaptureBridge/gu)).toHaveLength(1);
     expect(mainView.match(/<BgViewportController/gu)).toHaveLength(1);
+    expect(mainView.match(/<StudioBg3dPlacementPointerController/gu)).toHaveLength(1);
   });
 
   it("reuses the loaded VRM until the linked model identity changes", () => {

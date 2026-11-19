@@ -357,7 +357,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
 
   it("wires the realtime branch through one element+group+Shared Stage commit before separated LT", () => {
     const body = applyBg3dRenderedImageBody();
-    const realtimeBranch = body.indexOf("if (isRealtimeTeamSession && !sixPass && !keepLocalPasses) {");
+    const realtimeBranch = body.indexOf("if (isRealtimeTeamSession && !sixPass && !keepLocalPasses && !detachComposite) {");
     const masterBranch = body.indexOf("if (masterEditMode) {");
     const realtime = body.slice(realtimeBranch, masterBranch);
 
@@ -368,7 +368,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
     expect(realtime).toContain("groups: [...realtimePlan.nextGroups],");
     expect(realtime).toContain("shared3dStage: realtimePlan.nextShared3dStage,");
     expect(realtime).toContain("expectStudioRasterImagePresentation({");
-    expect(body.indexOf("if (isRealtimeTeamSession && !sixPass && !keepLocalPasses) {")).toBeLessThan(
+    expect(body.indexOf("if (isRealtimeTeamSession && !sixPass && !keepLocalPasses && !detachComposite) {")).toBeLessThan(
       body.indexOf("const plan = planStudioBg3dLtLayers"),
     );
   });
@@ -376,7 +376,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
   it("reports the merged insert and saved Stage as a neutral notice, not an error", () => {
     const body = applyBg3dRenderedImageBody();
     const realtime = body.slice(
-      body.indexOf("if (isRealtimeTeamSession && !sixPass && !keepLocalPasses) {"),
+      body.indexOf("if (isRealtimeTeamSession && !sixPass && !keepLocalPasses && !detachComposite) {"),
       body.indexOf("if (masterEditMode) {"),
     );
 

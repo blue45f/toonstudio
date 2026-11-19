@@ -160,6 +160,7 @@ describe("editable composite + shared Stage detach integration", () => {
       | TestImage
       | undefined;
     expect(composite).toMatchObject({
+      name: "3D LT · 메인 선화",
       src: PNG.composite,
       bg3dScene: DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
     });
@@ -186,7 +187,7 @@ describe("editable composite + shared Stage detach integration", () => {
     expect(removedB.restoredElementIds).toEqual(["shared-character"]);
     expect(removedB.nextElements.find(({ id }) => id === "shared-character")?.hidden)
       .toBe(false);
-    expect(elements.find(({ id }) => id === "shared-character")?.vrmScene)
+    expect(removedB.nextElements.find(({ id }) => id === "shared-character")?.vrmScene)
       .toBe(characterScene);
   });
 });

@@ -8,7 +8,7 @@ import type { Bg3dTemplateLibraryEntry, Bg3dVerifiedStoredRecord, BgCustomModelI
 import { orderStudioBg3dHierarchySelectionRootsFirst } from "./studio-bg3d-template-instance";
 import { nameNewStudioBg3dCustomModel } from "./studio-bg3d-instance-naming";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
-import { loadStudioBg3dMetricAttachment, scaleStudioBg3dMetricPlacementAsset, studioBg3dModelMetricPolicyMessage } from "./studio-bg3d-model-metric-placement";
+import { loadStudioBg3dMetricAttachment, measureStudioBg3dPlacementAsset, scaleStudioBg3dMetricPlacementAsset, studioBg3dModelMetricPolicyMessage } from "./studio-bg3d-model-metric-placement";
 import { copyStudioBg3dMetricInstanceScale, StudioBg3dModelMetricPolicyError } from "./studio-bg3d-model-metric-policy";
 import {
   allocateStudioBg3dMeasurementTemplateNodeIds, assertStudioBg3dTemplateHydration,
@@ -509,18 +509,18 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
     setError(null);
   }
   h.commitCustomModelPlacement = commitCustomModelPlacement;
-  async function addCustomModelToScene(modelId: string) {
+  async function addCustomModelToScene(modelId: string): Promise<boolean> {
     const session = modalAssetSessionRef.current;
-    if (!session || !isModalAssetSessionCurrent(session)) return;
+    if (!session || !isModalAssetSessionCurrent(session)) return false;
     if (
       isCapturing || isRestoringScene || isUploadingModel || isBatchRenderingShots || isQuadView ||
       applyingTemplateId !== null || deletingModelId !== null ||
       isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)
-    ) return;
-    if (!canAdmitSceneNodes(1)) return;
+    ) return false;
+    if (!canAdmitSceneNodes(1)) return false;
     setError(null);
     try {
-      await studioBg3dModalOperationCoordinator.runSceneMutation(
+      const result = await studioBg3dModalOperationCoordinator.runSceneMutation(
         session,
         async (lease: any) => {
           lease.throwIfRevoked();
@@ -534,26 +534,12 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
           if (!record) throw new Error("model-unavailable");
           const root = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, modelId, h.engineRuntime?.plan?.backend)?.root;
           if (!root) throw new Error("model-unavailable");
-          root.updateWorldMatrix(true, true);
-          const bounds = new THREE.Box3().setFromObject(root, true);
-          if (bounds.isEmpty() || ![...bounds.min.toArray(), ...bounds.max.toArray()].every(Number.isFinite)) {
-            throw new Error("model-bounds-unavailable");
-          }
-          const size = bounds.getSize(new THREE.Vector3()).toArray();
-          if (size.some((component: number) => component <= 0 || component > 10_000)) {
-            throw new Error("model-bounds-unavailable");
-          }
           return {
             record,
             asset: scaleStudioBg3dMetricPlacementAsset({
               modelId,
               name: record.name,
-              size: [size[0], size[1], size[2]],
-              localInsertionPoint: [
-                (bounds.min.x + bounds.max.x) / 2,
-                bounds.min.y,
-                (bounds.min.z + bounds.max.z) / 2,
-              ],
+              ...measureStudioBg3dPlacementAsset(root),
             }, attachmentByStorageModelIdRef.current.get(modelId), R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, modelId, materialBackend)),
           };
         },
@@ -584,9 +570,11 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
           setRefTick((revision: number) => revision + 1);
         },
       );
+      return result.status === "committed";
     } catch (modelFailure) {
-      if (!isModalAssetSessionCurrent(session) || isMaterialBackendCurrent?.() === false) return;
+      if (!isModalAssetSessionCurrent(session) || isMaterialBackendCurrent?.() === false) return false;
       setError(modelFailure instanceof StudioBg3dModelMetricPolicyError ? studioBg3dModelMetricPolicyMessage() : modelFailure instanceof StudioBg3dThreeOperationError ? modelFailure.message : modelFailure instanceof StudioBg3dModelPlacementAdmissionError ? modelFailure.message : frozenStatus6Text("studio.frozenStatus6.placement.integrityUnknown", "3D 모델의 원본·경계와 무결성을 확인하지 못해 배치 미리보기를 시작하지 않았습니다."));
+      return false;
     }
   }
   h.addCustomModelToScene = addCustomModelToScene;

@@ -188,7 +188,7 @@ export interface StudioLazyPanelStackHandlers {
   onChangeScenarioScene: (index: number, patch: Partial<ScenarioPreviewItem>) => void;
   onDiscardScenarioPreview: () => void;
   onGenerateScenario: () => void;
-  onGenerateScenarioImages: (request?: StudioScenarioImageGenerationRequest) => void;
+  onGenerateScenarioImages: (request?: StudioScenarioImageGenerationRequest, onStarted?: () => void) => void;
   onImportScenarioProductionPlan: (handoff: StudioAiComicComposerHandoff) => void;
   onRegenerateScenarioImage: (index: number) => void;
   onRemoveScenarioScene: (index: number) => void;

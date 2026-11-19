@@ -11,7 +11,7 @@ import {
   validateStudioLinked3dRenderDocumentAgainstPage,
   type StudioLinked3dRenderElementLike,
 } from "../studio-linked-3d-render-document";
-import type { StudioShared3dStagePersistedState } from "../studio-shared-3d-stage-collection";
+import { studioShared3dStageCollectionEntries, type StudioShared3dStagePersistedState } from "../studio-shared-3d-stage-collection";
 import type { StudioShared3dStageElementSource } from "../studio-shared-3d-stage-document";
 
 type LinkedLayerElement = StudioLinked3dRenderElementLike & StudioShared3dStageElementSource;
@@ -182,11 +182,18 @@ export function resolveStudioScene3dLinkedLayerEditSource(input: {
   readonly linked3dRender: unknown;
   readonly shared3dStage: StudioShared3dStagePersistedState;
   readonly elements: readonly LinkedLayerElement[];
+  readonly allowIndependentBundle?: boolean;
 }): StudioBg3dSceneDocument | null {
   const pageDocument = parseStudioLinked3dRenderDocument(input.linked3dRender);
   if (!pageDocument) return null;
   const link = pageDocument.links.find(({ bundleId }) => bundleId === input.bundleId);
-  if (!link) return null;
+  if (!link) {
+    if (!input.allowIndependentBundle) return null;
+    const stages = studioShared3dStageCollectionEntries(input.shared3dStage);
+    if (!stages || stages.some((stage) => stage.background.bundleId === input.bundleId)) return null;
+    const independent = resolveCanonicalStudioBg3dSceneForBundle(input.elements, input.bundleId);
+    return independent.ok ? independent.scene : null;
+  }
   const sceneLookup = resolveCanonicalStudioBg3dSceneForBundle(input.elements, input.bundleId);
   if (!sceneLookup.ok) return null;
   const scene = sceneLookup.scene;

@@ -47,7 +47,7 @@ function createHost(
     focusSelectionDisabledReason: null,
     error: null,
     addSceneTemplate: vi.fn(() => true),
-    addCustomModelToScene: vi.fn(),
+    addCustomModelToScene: vi.fn().mockResolvedValue(true),
     addPrimitive: vi.fn(),
     applyCameraPreset: vi.fn(),
     zoomCameraBy: vi.fn(),
@@ -222,7 +222,7 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("인물과 소품은 유지"));
     expect(host.addSceneTemplate).toHaveBeenCalledWith("cafe");
   });
-  it("adds classified character assets without forcing the user into a separate tool", () => {
+  it("adds classified character assets without forcing the user into a separate tool", async () => {
     const host = createHost({
       modelLibrary: [{ id: "hero", name: "주인공 캐릭터", thumbnail: null, canUse: true }],
       genericModelClassifications: new Map([["hero", "character"]]),
@@ -235,7 +235,7 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     fireEvent.click(screen.getByRole("button", { name: /주인공 캐릭터/ }));
 
     expect(host.addCustomModelToScene).toHaveBeenCalledWith("hero");
-    expect(screen.getByTestId("studio-bg3d-scene-assistant").getAttribute("data-step")).toBe("arrange");
+    await waitFor(() => expect(screen.getByTestId("studio-bg3d-scene-assistant").getAttribute("data-step")).toBe("arrange"));
   });
 
   it("maps a visible creator style to renderer settings and applies the result to the current cut", () => {
@@ -266,18 +266,14 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
 
   it("opens the professional workspace only as an explicit progressive disclosure", () => {
     const openProfessional = vi.fn();
-    render(
-      <StudioBg3dSceneAssistantWorkspace
-        h={createHost()}
-        onOpenProfessional={openProfessional}
-      />,
-    );
-
-    fireEvent.click(screen.getAllByRole("button", { name: /정밀 편집/ })[0]);
+    const host = createHost();
+    render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={openProfessional} />);
+    fireEvent.click(screen.getByRole("button", { name: /^장면 템플릿$/u }));
+    expect(host.setActivePanelTab).toHaveBeenCalledWith("templates");
     expect(openProfessional).toHaveBeenCalledOnce();
   });
 
-  it("한국어 번들 배경 전체를 간편 모드에서 찾아 원본을 배치한다", () => {
+  it("한국어 번들 배경 전체를 간편 모드에서 찾아 원본을 배치한다", async () => {
     const modelLibrary = copyStudioBg3dBundledEnvironmentLibraryEntries();
     const host = createHost({ modelLibrary });
     render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
@@ -293,6 +289,7 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect(shipyard).toBeDefined();
     fireEvent.click(grid.getByRole("button", { name: /항구 목선 수리소/ }));
     expect(host.addCustomModelToScene).toHaveBeenCalledWith(shipyard?.id);
+    await waitFor(() => expect(screen.getByTestId("studio-bg3d-scene-assistant").getAttribute("data-step")).toBe("arrange"));
   });
 
   it("소품이 비었을 때 전체 라이브러리에서 에셋 탭을 연다", () => {
@@ -306,7 +303,23 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect(open).toHaveBeenCalledOnce();
   });
 
-  it("surfaces environment-classified 3D models in the background goal step and adds them on click", () => {
+  it("모델 준비가 거절되면 선택 화면에서 같은 배경을 다시 시도할 수 있다", async () => {
+    let finish!: (prepared: boolean) => void;
+    const add = vi.fn().mockImplementationOnce(() => new Promise<boolean>(resolve => { finish = resolve; })).mockResolvedValue(true);
+    const host = createHost({ modelLibrary: [{ id: "room", name: "테스트 공간", thumbnail: null, canUse: true }], addCustomModelToScene: add });
+    render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
+    const card = screen.getByRole("button", { name: /테스트 공간/ });
+    fireEvent.click(card);
+    expect(card).toHaveProperty("disabled", true);
+    expect(screen.getByText("테스트 공간 배치 준비 중…")).toBeTruthy();
+    finish(false);
+    await waitFor(() => expect(card).toHaveProperty("disabled", false));
+    expect(screen.getByTestId("studio-bg3d-scene-assistant").getAttribute("data-step")).toBe("choose");
+    fireEvent.click(card);
+    await waitFor(() => expect(screen.getByTestId("studio-bg3d-scene-assistant").getAttribute("data-step")).toBe("arrange"));
+  });
+
+  it("surfaces environment-classified 3D models in the background goal step and adds them on click", async () => {
     const host = createHost({
       modelLibrary: [
         {
@@ -327,9 +340,7 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect(host.addCustomModelToScene).toHaveBeenCalledWith(
       "tripo3d-bg-webtoon-palace-courtyard-v1",
     );
-    expect(screen.getByTestId("studio-bg3d-scene-assistant").getAttribute("data-step")).toBe(
-      "arrange",
-    );
+    await waitFor(() => expect(screen.getByTestId("studio-bg3d-scene-assistant").getAttribute("data-step")).toBe("arrange"));
   });
 
   it("distinguishes engine error from active restoration so blocked hosts do not spin infinitely", () => {

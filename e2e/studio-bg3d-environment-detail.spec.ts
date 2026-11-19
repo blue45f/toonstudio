@@ -11,6 +11,9 @@ const shots = [
   { model: "harbor_boat_repair_shed", label: "항구 목선 수리소", subject: "선체 이음부", wide: 40, detail: 38 },
   { model: "botanical_illustration_room", label: "식물 세밀화 작업실", subject: "표본 작업대", wide: 37, detail: 30 },
   { model: "botanical_glasshouse", label: "햇살 드는 유리온실", subject: "모종 작업대", wide: 39, detail: 37 },
+  { model: "fantasy_ruin_courtyard", label: "판타지 유적 안뜰", subject: "룬 분수", wide: 44, detail: 17.6 },
+  { model: "korean_school_rooftop", label: "한국 학교 옥상", subject: "옥상 급수탱크", wide: 46, detail: 18.4 },
+  { model: "webtoon_school_gate_module", label: "웹툰 한국 학교 정문", subject: "교문 돌기둥", wide: 50, detail: 20 },
 ] as const;
 const sha = (bytes: string | Buffer) => createHash("sha256").update(bytes).digest("hex");
 const angle = (value: number) => value.toFixed(1) + "°";
@@ -33,7 +36,7 @@ interface Layer {
   src: string;
   bg3dScene?: { camera: { fovDegrees: number }; nodes: { kind: string; name: string }[]; attachments: { hash: string }[] };
 }
-async function readSavedLayer(page: Page) {
+async function readSavedLayer(page: Page, imagePath?: string) {
   const menu = await openStudioMainMenu(page, "file");
   const [file] = await Promise.all([page.waitForEvent("download"), menu.locator('[data-studio-menu-item-id="export-json"]').press("Enter")]);
   const path = await file.path();
@@ -42,6 +45,7 @@ async function readSavedLayer(page: Page) {
   const layer = doc.payload.data.pagesList[0]?.elements.find(element => element.bg3dScene);
   if (!layer?.bg3dScene) throw new Error("원고에 삽입된 3D 배경 레이어가 없습니다.");
   expect(layer.src).toMatch(/^data:image\/png;base64,/u);
+  if (imagePath) await writeFile(imagePath, Buffer.from(layer.src.slice(layer.src.indexOf(",") + 1), "base64"));
   return { id: layer.id, imageHash: sha(layer.src), scene: layer.bg3dScene };
 }
 
@@ -62,7 +66,11 @@ for (const shot of shots) {
       button(dialog, shot.label + " 장면에 추가").press("Enter"),
     ]);
     expect(model.status()).toBe(200);
-    const assetHash = "sha256:" + sha(await model.body());
+    // 큰 GLB는 DevTools 응답 버퍼에서 제거될 수 있다. 작업 화면이 받은 바로 그 URL의 원본과 저장된 첨부 해시를 대조한다.
+    const source = await page.request.get(model.url());
+    expect(source.status()).toBe(200);
+    const assetHash = "sha256:" + sha(await source.body());
+    await source.dispose();
     const canvas = viewport.locator("canvas:visible").first();
     await expect(canvas).toBeVisible();
     const bounds = await canvas.boundingBox();
@@ -94,7 +102,7 @@ for (const shot of shots) {
     await viewport.screenshot({ path: info.outputPath("detail.png") });
     await button(dialog, "컬러 배경 추가").press("Enter");
     await dialog.waitFor({ state: "hidden", timeout: 120_000 });
-    const saved = await readSavedLayer(page);
+    const saved = await readSavedLayer(page, info.outputPath("inserted.png"));
     expect(saved.scene.camera.fovDegrees).toBe(shot.detail);
     expect(saved.scene.attachments.map(asset => asset.hash)).toEqual([assetHash]);
     expect(saved.scene.nodes.filter(node => node.kind === "model").map(node => node.name)).toEqual([shot.model + " 1"]);
@@ -105,6 +113,7 @@ for (const shot of shots) {
     await openStudioLayerNavigator(page, 50_000);
     const row = page.getByRole("tree", { name: "레이어 트리" }).locator(`[id="studio-layer-${saved.id}"]`);
     await row.click({ position: { x: 12, y: 18 } });
+    if (!await row.isVisible()) await openStudioLayerNavigator(page, 50_000);
     await expect(row).toHaveAttribute("aria-selected", "true");
     await openEditor(page, dialog);
     await expect(button(dialog, "3D 배경 업데이트")).toBeVisible();

@@ -18,6 +18,7 @@
  * 그건 대본 내용이 아니라 호출자 계약 위반이다.
  */
 
+import { matchNamedStudioScene } from "./planning/studio-story-scene-source";
 import type { StudioStoryBeat } from "./studio-storyboard-planner";
 
 /* ── 파싱 ─────────────────────────────────────────────────────────────── */
@@ -65,6 +66,8 @@ const SCENE_HEADING_PATTERNS: readonly RegExp[] = [
 const DIALOGUE_PATTERN = /^\s*([^:：]{1,12})\s*[:：]\s*(.+)$/u;
 
 function matchSceneHeading(line: string): { location?: string } | null {
+  const named = matchNamedStudioScene(line);
+  if (named) return { location: named.location };
   for (const pattern of SCENE_HEADING_PATTERNS) {
     const m = pattern.exec(line);
     if (m) {

@@ -10,12 +10,10 @@ import { clamp } from "../../../shared/math";
 
 import {
   ARM_UPPER_BONES,
-  DEFAULT_HAND_SLIDERS,
   FOOT_SIDES,
   FOOT_SIDE_LABELS_KO,
   adjustedFootJoint,
   readFootSliders,
-  buildSingleHandFinePose,
   deriveGazeControlMode,
   mirrorEyeGazeLeftRight,
   mirrorFeetOnlyPose,
@@ -25,6 +23,7 @@ import {
   type GazeControlMode,
   type HandSlidersState,
 } from "./pose-fine-limb-gaze-math";
+import { adjustHandAxis, effectiveHandPose, readHandSliders } from "./pose-hand-adjustment";
 import { HAND_SIDES, HAND_SIDE_LABELS_KO, isHandSide, mirrorHumanoidPoseLeftRight, type HandSide } from "./pose-panel-helpers";
 
 import type { CharacterRecipe, EyeGaze, HumanoidBoneName, LabCommand, Pose, Quat, SkeletonData } from "../../../contracts";
@@ -75,11 +74,6 @@ export function PoseFineLimbGazeControls(props: PoseFineLimbGazeControlsProps) {
 
   const [autoClampLimits, setAutoClampLimits] = useState(true);
   const [fineHandSide, setFineHandSide] = useState<HandSide>("both");
-  const [handSliders, setHandSliders] = useState<Readonly<Record<"left" | "right", HandSlidersState>>>({
-    left: DEFAULT_HAND_SLIDERS,
-    right: DEFAULT_HAND_SLIDERS,
-  });
-
   const [fineFootSide, setFineFootSide] = useState<FootSide>("both");
   const currentGaze = recipe.eyeGaze ?? DEFAULT_EYE_GAZE;
   const [gazeMode, setGazeMode] = useState<GazeControlMode>(() => deriveGazeControlMode(currentGaze));
@@ -95,69 +89,34 @@ export function PoseFineLimbGazeControls(props: PoseFineLimbGazeControlsProps) {
 
   const maybeClamp = (pose: Pose): Pose => (autoClampLimits ? clampPoseToLimits(pose, activeSkeleton) : pose);
 
-  const activeHandValues = fineHandSide === "right" ? handSliders.right : handSliders.left;
+  const handPose = effectiveHandPose(recipe);
+  const activeHandValues = readHandSliders(handPose, fineHandSide === "right" ? "right" : "left");
   const activeFootValues = readFootSliders(recipe.pose, fineFootSide === "right" ? "right" : "left");
 
-  const updateHandSliders = (patch: Partial<HandSlidersState>, coalesceSuffix: string): void => {
+  const updateHandSlider = (axis: keyof HandSlidersState, value: number): void => {
     if (guardCorruptedRig()) return;
-    const nextLeft = fineHandSide === "left" || fineHandSide === "both" ? { ...handSliders.left, ...patch } : handSliders.left;
-    const nextRight = fineHandSide === "right" || fineHandSide === "both" ? { ...handSliders.right, ...patch } : handSliders.right;
-    setHandSliders({ left: nextLeft, right: nextRight });
-
-    if (fineHandSide === "left") {
-      dispatch({
-        type: "pose/set",
-        pose: maybeClamp(buildSingleHandFinePose("left", nextLeft)),
-        scope: "left-hand",
-        labelKo: "왼손 세부 관절 조정",
-        coalesceKey: `pose:fine-hand:left:${coalesceSuffix}`,
-      });
-      return;
-    }
-    if (fineHandSide === "right") {
-      dispatch({
-        type: "pose/set",
-        pose: maybeClamp(buildSingleHandFinePose("right", nextRight)),
-        scope: "right-hand",
-        labelKo: "오른손 세부 관절 조정",
-        coalesceKey: `pose:fine-hand:right:${coalesceSuffix}`,
-      });
-      return;
-    }
-    const nextArmsHands: Partial<Record<HumanoidBoneName, Quat>> = {};
-    for (const bone of ARM_UPPER_BONES) {
-      const q = recipe.pose[bone];
-      if (q) nextArmsHands[bone] = q;
-    }
-    Object.assign(nextArmsHands, buildSingleHandFinePose("left", nextLeft), buildSingleHandFinePose("right", nextRight));
+    const scope = fineHandSide === "both" ? "arms-hands" : fineHandSide === "left" ? "left-hand" : "right-hand";
     dispatch({
-      type: "pose/set",
-      pose: maybeClamp(nextArmsHands),
-      scope: "arms-hands",
-      labelKo: "양손 세부 관절 조정",
-      coalesceKey: `pose:fine-hand:both:${coalesceSuffix}`,
+      type: "pose/set", pose: adjustHandAxis(handPose, fineHandSide, axis, value, maybeClamp), scope,
+      labelKo: `${HAND_SIDE_LABELS_KO[fineHandSide]} 세부 관절 조정`, coalesceKey: `pose:fine-hand:${fineHandSide}:${axis}`,
     });
   };
 
   const mirrorHands = (): void => {
     if (guardCorruptedRig()) return;
-    setHandSliders({ left: handSliders.right, right: handSliders.left });
     dispatch({ type: "pose/set", pose: maybeClamp(mirrorHandsOnlyPose(recipe)), scope: "arms-hands", labelKo: "손 포즈 좌우 반전" });
   };
 
   const resetHands = (): void => {
     if (guardCorruptedRig()) return;
     if (fineHandSide === "left") {
-      setHandSliders((prev) => ({ ...prev, left: DEFAULT_HAND_SLIDERS }));
       dispatch({ type: "pose/set", pose: {}, scope: "left-hand", labelKo: "왼손 자세 복원" });
       return;
     }
     if (fineHandSide === "right") {
-      setHandSliders((prev) => ({ ...prev, right: DEFAULT_HAND_SLIDERS }));
       dispatch({ type: "pose/set", pose: {}, scope: "right-hand", labelKo: "오른손 자세 복원" });
       return;
     }
-    setHandSliders({ left: DEFAULT_HAND_SLIDERS, right: DEFAULT_HAND_SLIDERS });
     const preservedArms: Partial<Record<HumanoidBoneName, Quat>> = {};
     for (const bone of ARM_UPPER_BONES) {
       const q = recipe.pose[bone];
@@ -261,14 +220,12 @@ export function PoseFineLimbGazeControls(props: PoseFineLimbGazeControlsProps) {
   const mirrorAllBodyLimbsAndGaze = (): void => {
     if (guardCorruptedRig()) return;
     const combined: Partial<Record<HumanoidBoneName, Quat>> = { ...recipe.pose, ...recipe.handPose.left, ...recipe.handPose.right };
-    setHandSliders({ left: handSliders.right, right: handSliders.left });
     dispatch({ type: "pose/set", pose: maybeClamp(mirrorHumanoidPoseLeftRight(combined)), scope: "full", labelKo: "전신·손·발 통합 좌우 반전" });
     dispatch({ type: "eye-gaze/set", gaze: mirrorEyeGazeLeftRight(currentGaze) });
   };
 
   const resetAllLimbsAndGaze = (): void => {
     if (guardCorruptedRig()) return;
-    setHandSliders({ left: DEFAULT_HAND_SLIDERS, right: DEFAULT_HAND_SLIDERS });
     setGazeMode("conjugate");
     dispatch({ type: "pose/set", pose: {}, scope: "full", labelKo: "전신·손·발 전체 복원" });
     dispatch({ type: "hand-pose/set", side: "left", presetId: null });
@@ -322,10 +279,10 @@ export function PoseFineLimbGazeControls(props: PoseFineLimbGazeControlsProps) {
             </label>
           ))}
         </div>
-        <DegreeSliderRow id={`${ids}-hand-curl`} label="손가락 굽힘(그립)" testId="pose-fine-hand-curl-slider" min={-15} max={90} value={activeHandValues.curlDeg} disabled={handBlocked} onChange={(curlDeg) => updateHandSliders({ curlDeg }, "curl")} />
-        <DegreeSliderRow id={`${ids}-hand-spread`} label="손가락 벌림(스프레드)" testId="pose-fine-hand-spread-slider" min={-15} max={30} value={activeHandValues.spreadDeg} disabled={handBlocked} onChange={(spreadDeg) => updateHandSliders({ spreadDeg }, "spread")} />
-        <DegreeSliderRow id={`${ids}-wrist-flex`} label="손목 굴곡(굽힘)" testId="pose-fine-wrist-flex-slider" min={-65} max={65} value={activeHandValues.wristFlexDeg} disabled={handBlocked} onChange={(wristFlexDeg) => updateHandSliders({ wristFlexDeg }, "wrist-flex")} />
-        <DegreeSliderRow id={`${ids}-wrist-deviate`} label="손목 꺾임(요·척측)" testId="pose-fine-wrist-deviate-slider" min={-35} max={35} value={activeHandValues.wristDeviateDeg} disabled={handBlocked} onChange={(wristDeviateDeg) => updateHandSliders({ wristDeviateDeg }, "wrist-dev")} />
+        <DegreeSliderRow id={`${ids}-hand-curl`} label="손가락 굽힘(그립)" testId="pose-fine-hand-curl-slider" min={-15} max={90} value={Math.round(activeHandValues.curlDeg)} disabled={handBlocked} onChange={(curlDeg) => updateHandSlider("curlDeg", curlDeg)} />
+        <DegreeSliderRow id={`${ids}-hand-spread`} label="손가락 벌림(스프레드)" testId="pose-fine-hand-spread-slider" min={-15} max={30} value={Math.round(activeHandValues.spreadDeg)} disabled={handBlocked} onChange={(spreadDeg) => updateHandSlider("spreadDeg", spreadDeg)} />
+        <DegreeSliderRow id={`${ids}-wrist-flex`} label="손목 굴곡(굽힘)" testId="pose-fine-wrist-flex-slider" min={-65} max={65} value={Math.round(activeHandValues.wristFlexDeg)} disabled={handBlocked} onChange={(wristFlexDeg) => updateHandSlider("wristFlexDeg", wristFlexDeg)} />
+        <DegreeSliderRow id={`${ids}-wrist-deviate`} label="손목 꺾임(요·척측)" testId="pose-fine-wrist-deviate-slider" min={-35} max={35} value={Math.round(activeHandValues.wristDeviateDeg)} disabled={handBlocked} onChange={(wristDeviateDeg) => updateHandSlider("wristDeviateDeg", wristDeviateDeg)} />
         <div className="cl-pose-actions">
           <button type="button" data-testid="pose-hand-mirror-btn" disabled={handBlocked} onClick={mirrorHands}>손 좌우 반전</button>
           <button type="button" data-testid="pose-hand-reset-btn" disabled={handBlocked} onClick={resetHands}>{`${HAND_SIDE_LABELS_KO[fineHandSide]} 복원`}</button>

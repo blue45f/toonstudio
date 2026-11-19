@@ -58,6 +58,29 @@ describe("생성 atlas의 source 픽셀과 기존 논리셀 계약", () => {
     expect(plan.deferred.some((url) => plan.critical.includes(url))).toBe(false);
   });
 
+  it("첫 화면·오프라인의 신발과 장식이 같은 위상의 고해상도 배우와 바닥을 공유한다", () => {
+    const legacyImage = { width: 1152, height: 768 };
+    for (const character of OFFICE2D_CHARACTERS) {
+      const atlas = generated.office2dGeneratedAtlas(character, "walk");
+      if (!atlas) throw new Error(`${character} 보행 시트 누락`);
+      for (const [index, frame] of atlas.frames.entries()) {
+        if (frame.referenceFootY === undefined) throw new Error(`${character} ${index} 발끝 누락`);
+        const row = Math.floor(index / atlas.columns), col = index % atlas.columns;
+        const early = office2dAtlasDrawFrame(character, "walk", row, col, legacyImage, 1, false);
+        const loaded = office2dAtlasDrawFrame(character, "walk", row, col, atlas);
+        const scaleY = atlas.height / atlas.rows / 192;
+        expect(early.source).toMatchObject({ x: col * 128, y: row * 192, width: 128 });
+        expect(early.destination.y + frame.referenceFootY).toBe(188);
+        expect(early.source.height).toBeGreaterThanOrEqual(frame.referenceFootY);
+        expect(early.accessoryOffset.y).toBe(early.destination.y);
+        expect(loaded.destination.y + (frame.anchor.y - loaded.source.y) / scaleY).toBeCloseTo(188);
+      }
+    }
+    const cropped = office2dAtlasDrawFrame("pd", "walk", 1, 3, legacyImage, 0.92, false);
+    expect(cropped.destination.y).toBe(5);
+    expect(cropped.destination.y + cropped.destination.height).toBeCloseTo(192 * 0.92);
+  });
+
   it("실제 생성 PNG의 크기·해시·모든 프레임이 metadata와 맞고 원본 WebP도 남아 있다", () => {
     const directory = fileURLToPath(new URL("../../../../../public/assets/virtual-studio/office-cast-v2/", import.meta.url));
     const present = readdirSync(directory).filter((name) => name.endsWith(".png")).sort();

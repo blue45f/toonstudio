@@ -26,7 +26,11 @@ async function fixtureVault() {
   }, passphrase);
 }
 
-test("기존 승인 컷을 보존하고 지정한 빈 컷만 참조 이미지로 제작한 뒤 취소·재시도한다", async ({ page, baseURL }, info) => {
+test.use({ hasTouch: true });
+
+for (const width of [1280, 390]) {
+test(width === 1280 ? "기존 승인 컷을 보존하고 지정한 빈 컷만 참조 이미지로 제작한 뒤 취소·재시도한다" : "390px 디렉터에서 생성 고지를 터치·키보드로 확인하고 승인한 컷을 보존한다", async ({ page, baseURL }, info) => {
+  await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
   test.setTimeout(180_000);
   const original = await readFile("apps/web/public/favicon-32.png");
   const generated = await readFile("apps/web/public/favicon-96.png");
@@ -104,8 +108,44 @@ test("기존 승인 컷을 보존하고 지정한 빈 컷만 참조 이미지로
   await dialog.getByRole("button", { name: "선택 해제" }).click();
   await checkbox(3).check();
   await generate.click();
-  const confirm = page.getByRole("button", { name: "이해했어요, 생성하기" });
-  await confirm.click();
+  const notice = page.getByRole("dialog", { name: "생성형 AI 이미지 안내", exact: true });
+  const confirm = notice.getByRole("button", { name: "이해했어요, 생성하기", exact: true });
+  const cancelNotice = notice.getByRole("button", { name: "취소", exact: true });
+  await expect(notice).toBeVisible();
+  await expect(confirm).toBeFocused();
+  const hitTargets = [];
+  for (const control of [cancelNotice, confirm]) {
+    const target = await control.evaluate(el => {
+      const box = el.getBoundingClientRect();
+      return { label: el.textContent, height: box.height, center: el.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)),
+        right: el.contains(document.elementFromPoint(box.right - 4, box.top + box.height / 2)) };
+    });
+    hitTargets.push(target);
+    expect(target.height).toBeGreaterThanOrEqual(44);
+    expect(target.center && target.right).toBe(true);
+  }
+  const topLayer = await notice.evaluate(el => el.matches(":modal"));
+  expect(topLayer).toBe(true);
+  const hitboxPath = info.outputPath("consent-hitbox.json");
+  await writeFile(hitboxPath, JSON.stringify({ width, topLayer, hitTargets }, null, 2));
+  await info.attach("consent-hitbox.json", { path: hitboxPath, contentType: "application/json" });
+  const noticeImage = info.outputPath("consent.png");
+  await notice.screenshot({ path: noticeImage });
+  await info.attach("consent.png", { path: noticeImage, contentType: "image/png" });
+  await page.keyboard.press("Tab");
+  await expect(cancelNotice).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(confirm).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(notice).toBeHidden();
+  await expect(generate).toBeFocused();
+  expect(requests).toHaveLength(0);
+  await generate.click();
+  if (width === 390) await cancelNotice.tap(); else await cancelNotice.click();
+  await expect(notice).toBeHidden();
+  expect(requests).toHaveLength(0);
+  await generate.click();
+  if (width === 390) await confirm.tap(); else await confirm.click();
   await expect.poll(() => requests.length).toBe(2);
   const cancel = dialog.getByRole("button", { name: "취소", exact: true });
   await expect(cancel).toBeHidden();
@@ -118,7 +158,7 @@ test("기존 승인 컷을 보존하고 지정한 빈 컷만 참조 이미지로
   await expect(checkbox(3)).not.toBeChecked();
   holdNext = true;
   await generate.click();
-  if (await confirm.isVisible()) await confirm.click();
+  await expect(notice).toBeHidden();
   try {
     await expect.poll(() => requests.length).toBe(3);
     await cancel.click();
@@ -130,7 +170,7 @@ test("기존 승인 컷을 보존하고 지정한 빈 컷만 참조 이미지로
   await expect(checkbox(2)).toBeChecked();
   await expect(checkbox(1)).not.toBeChecked();
   await generate.click();
-  if (await confirm.isVisible()) await confirm.click();
+  await expect(notice).toBeHidden();
   await expect.poll(() => requests.length).toBe(5);
   await expect(cancel).toBeHidden();
   await direction.click();
@@ -148,3 +188,4 @@ test("기존 승인 컷을 보존하고 지정한 빈 컷만 참조 이미지로
   await info.attach("reviewed-cuts.png", { path: screenshot, contentType: "image/png" });
   await info.attach("generation-requests.json", { path: evidence, contentType: "application/json" });
 });
+}

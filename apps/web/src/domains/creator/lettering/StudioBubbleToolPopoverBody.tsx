@@ -69,6 +69,8 @@ export function StudioBubbleToolPopoverBody({
     addDialogueBubbles,
     openFeatureTutorial,
   } = toolBelt.stableHandlers;
+  const selectedFrame = toolBelt.selected?.type === "frame" && !toolBelt.selected.locked
+    && !toolBelt.selected.hidden ? toolBelt.selected : null;
   const t = useT();
   const preferencesRef = useRef<BubbleLibraryPreferences>(
     EMPTY_BUBBLE_LIBRARY_PREFERENCES,
@@ -338,6 +340,16 @@ export function StudioBubbleToolPopoverBody({
         >
           {localizeText(t, "말풍선으로 한 번에 넣기", "studio.bubble.insertAll")}
         </button>
+        {selectedFrame && (
+          <button
+            type="button"
+            disabled={!dialogueScript.trim()}
+            onClick={() => { void addDialogueBubbles(selectedFrame.id); }}
+            className="min-h-11 w-full rounded-xl border border-line bg-card px-2 text-xs font-semibold enabled:hover:bg-raised disabled:opacity-50"
+          >
+            {localizeText(t, "선택한 컷에 대사 넣기", "studio.bubble.insertSelectedFrame")}
+          </button>
+        )}
         <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
           <button
             type="button"

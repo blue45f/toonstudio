@@ -17,6 +17,7 @@ export function studioBg3dLayerEditSource(element: El | null, page: ScenePage, e
       const scene = resolveStudioScene3dLinkedLayerEditSource({
         bundleId: element.bg3dLtBundleId, linked3dRender: page.linked3dRender,
         shared3dStage: page.shared3dStage, elements,
+        allowIndependentBundle: true,
       });
       return scene ? { scene } : null;
     }

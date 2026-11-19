@@ -20,8 +20,8 @@ import { acceptStudioBg3dViewportRenderer, isStudioBg3dCanvasFactoryPending } fr
 import { createStudioBg3dPointerEvents } from "./studio-bg3d-pointer-events";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
-const StudioBg3dTurntableController = lazyRetry(() => import("./StudioBg3dTurntableController").then((module) => ({ default: module.StudioBg3dTurntableController })), "StudioBg3dTurntableController");
-const StudioBg3dTurntableMotion = lazyRetry(() => import("./StudioBg3dTurntableMotion").then((module) => ({ default: module.StudioBg3dTurntableMotion })), "StudioBg3dTurntableMotion");
+const StudioBg3dTurntableController = lazyRetry(() => import("./StudioBg3dTurntableController").then((m) => ({ default: m.StudioBg3dTurntableController })), "StudioBg3dTurntableController");
+const StudioBg3dTurntableMotion = lazyRetry(() => import("./StudioBg3dTurntableMotion").then((m) => ({ default: m.StudioBg3dTurntableMotion })), "StudioBg3dTurntableMotion");
 
 export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<string, any>; simplified?: boolean }) {
   const {
@@ -50,10 +50,8 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
     createStudioBg3dModelImportActions, CONTROL_BUTTON, ICON_BUTTON, cx, canSetStudioBg3dParent, collectStudioBg3dEffectivelyVisibleEntityIds, resolveStudioBg3dHierarchy,
     planStudioBg3dImmersiveStage, studioBg3dImmersiveStageFailureMessage, resolveStudioBg3dInsertBackgroundFromDocument, resolveStudioBg3dInsertBackgroundMode,
     STUDIO_BG3D_LENS_MAX_FOCAL_MM, STUDIO_BG3D_LENS_MIN_FOCAL_MM, STUDIO_BG3D_LENS_PRESETS, computeStudioBg3dTwoPointPerspective, isStudioBg3dTwoPointPerspectiveActive,
-    studioBg3dFocalLengthToFovDegrees, studioBg3dFovDegreesToFocalLength,
-    resolveStudioBg3dLtCaptureSize, encodeStudioBg3dLtLayers,
-    EMPTY_STUDIO_BG3D_LT_USER_PRESET_PAYLOAD, createStudioBg3dLtUserPreset,
-    deleteStudioBg3dLtUserPreset, renameStudioBg3dLtUserPreset, upsertStudioBg3dLtUserPreset,
+    studioBg3dFocalLengthToFovDegrees, studioBg3dFovDegreesToFocalLength, resolveStudioBg3dLtCaptureSize, encodeStudioBg3dLtLayers,
+    EMPTY_STUDIO_BG3D_LT_USER_PRESET_PAYLOAD, createStudioBg3dLtUserPreset, deleteStudioBg3dLtUserPreset, renameStudioBg3dLtUserPreset, upsertStudioBg3dLtUserPreset,
     getProductStudioBg3dLtPresetSqliteRepository, STUDIO_BG3D_LT_BUILT_IN_PRESETS,
     STUDIO_BG3D_LT_PRESET_MAX_COUNT, STUDIO_BG3D_LT_PRESET_MAX_DESCRIPTION_LENGTH,
     STUDIO_BG3D_LT_PRESET_MAX_NAME_LENGTH, applyStudioBg3dLtPreset,
@@ -413,14 +411,6 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     onScaleChange={setAdaptiveDprScale}
                     onFrameTimeChange={setEngineFrameTimeMs}
                   />
-                  <StudioBg3dPlacementPointerController
-                    active={placementActive && !effectiveIsQuadView && !immersiveSceneActive}
-                    objectsRef={primitiveObjectsRef}
-                    onMove={moveCustomModelPlacement}
-                    onCommit={commitCustomModelPlacement}
-                    onCancel={() => cancelCustomModelPlacement("3D 모델 배치를 취소했습니다.")}
-                    onRotate={rotateCustomModelPlacement}
-                  />
                   <StudioBg3dViewFrameClear />
                   {effectiveIsQuadView ? (
                     <Fragment>
@@ -447,6 +437,14 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     visible={!immersiveSceneActive}
                   >
                     {immersiveCameraNode ?? mainCameraNode}
+                    <StudioBg3dPlacementPointerController
+                      active={placementActive && !effectiveIsQuadView && !immersiveSceneActive}
+                      objectsRef={primitiveObjectsRef}
+                      onMove={moveCustomModelPlacement}
+                      onCommit={commitCustomModelPlacement}
+                      onCancel={() => cancelCustomModelPlacement("3D 모델 배치를 취소했습니다.")}
+                      onRotate={rotateCustomModelPlacement}
+                    />
                     {!immersiveSceneActive ? (
                       <Fragment>
                         <CaptureBridge onCaptureUpdate={onCaptureUpdate} />

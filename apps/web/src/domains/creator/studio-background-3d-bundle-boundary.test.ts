@@ -140,6 +140,20 @@ describe("Studio background 3D bundle boundary", () => {
     for (const imports of [host, resume]) expect(imports.valueImports.filter(specifier => /^three(?:\/|$)/u.test(specifier))).toEqual([]);
   });
 
+  it("원고와 도구 메뉴가 3D 편집기를 미리 읽지 않고 메뉴에서 메타데이터로 도구를 판별한다", () => {
+    const host = moduleImports("./StudioCuttoonEditorHost.tsx");
+    const view = moduleImports("./studio-cuttoon-editor/StudioCuttoonEditorView.tsx");
+    const menu = moduleImports("./studio-cuttoon-editor/StudioCuttoonEditorContextMenu.tsx");
+    expect(view.dynamicImports).toContain("./StudioCuttoonEditorContextMenu");
+    expect(view.valueImports).not.toContain("./StudioCuttoonEditorContextMenu");
+    expect(menu.valueImports).toContain("../studio-background-3d-metadata");
+    for (const imports of [host, view, menu]) {
+      expect(imports.valueImports).not.toContainEqual(expect.stringMatching(
+        /(?:^three(?:\/|$)|studio-background-3d-primitives$|bg3d\/StudioBackground3D$)/u,
+      ));
+    }
+  });
+
   it("loads the 3D editor from one analyzable dynamic-import boundary", () => {
     const imports = moduleImports("./studio-background-3d-loader.ts");
 

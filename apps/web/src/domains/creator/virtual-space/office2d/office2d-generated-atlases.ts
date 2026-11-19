@@ -9,6 +9,8 @@ export interface Office2dGeneratedAtlasFrame {
   readonly anchor: Office2dAtlasPoint;
   readonly head: Office2dAtlasPoint;
   readonly referenceHead: Office2dAtlasPoint;
+  /** 먼저 표시하는 기존 보행 셀에서 신발이 끝나는 y 픽셀 경계. */
+  readonly referenceFootY?: number;
   readonly pixels: number;
 }
 export interface Office2dGeneratedAtlas {

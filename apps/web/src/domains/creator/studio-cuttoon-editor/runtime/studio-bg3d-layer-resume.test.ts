@@ -14,6 +14,20 @@ describe("3D 배경 재편집 항목 복구", () => {
       .toMatchObject({ pageId: page.id, layerId: layer.id, source: { scene: layer.type === "image" ? layer.bg3dScene : null } });
   });
 
+  it("다른 배경만 연결한 페이지에서는 선택한 독립 배경의 구도를 다시 연다", () => {
+    if (layer.type !== "image" || !layer.bg3dScene) throw new Error("배경 원본이 필요합니다.");
+    const scene = { ...layer.bg3dScene, camera: { ...layer.bg3dScene.camera, fovDegrees: 69 } };
+    const independent = { ...layer, id: "other-background", bg3dLtBundleId: "other-bundle", bg3dScene: scene };
+    const savedPage = { ...page, elements: [...page.elements, independent] };
+    const request = { ...target, layerId: independent.id };
+    expect(resolveStudioBg3dHistoryTarget(request, scope, [savedPage], false, true))
+      .toMatchObject({ layerId: independent.id, source: { scene: { camera: { fovDegrees: 69 } } } });
+    const diverged = { ...independent, id: "conflicting-scene", bg3dScene: layer.bg3dScene };
+    expect(resolveStudioBg3dHistoryTarget(request, scope, [
+      { ...savedPage, elements: [...savedPage.elements, diverged] },
+    ], false, true)).toBeNull();
+  });
+
   it("새 배경 진입과 손상된 기존 레이어 기록을 구분한다", () => {
     expect(readStudioBg3dHistoryTarget({})).toBeUndefined();
     expect(readStudioBg3dHistoryTarget({ studioBg3dEditTarget: null })).toBeNull();

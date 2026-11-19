@@ -283,7 +283,7 @@ function writeCharacterCustomization(value: StudioVirtualCharacterCustomization)
   }
 }
 
-function decorationStorageKey(scope?: string): string {
+export function decorationStorageKey(scope?: string): string {
   return scope ? `${DECOR_STORAGE_KEY}:${encodeURIComponent(scope)}` : DECOR_STORAGE_KEY;
 }
 

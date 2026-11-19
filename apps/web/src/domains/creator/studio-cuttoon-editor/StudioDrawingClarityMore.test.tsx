@@ -119,6 +119,29 @@ describe("목적 화면으로 여는 드로잉 더보기", () => {
         { id: "windows", label: "기존 작업 배치", run }, { id: "view", label: "보기 설정", run },
       ]} />;
   }
+  it("분류를 열기 전에 명령과 필터를 찾고 사용 가능 여부와 원래 실행 동작을 유지한다", () => {
+    const filters = [
+      { id: "blur", label: "가우시안 블러", onSelect: vi.fn() },
+      { id: "ink", label: "잉크 블러", onSelect: vi.fn(), disabled: true, unavailableReason: "레이어를 선택하세요" },
+    ];
+    render(<StudioDrawingClarityMore id="search-actions" hostId="absent" purpose="도구와 도움말" presentation="tasks"
+      actions={[{ id: "brush", label: "내 브러시 관리", run: vi.fn() }]} filterItems={filters} />);
+    fireEvent.click(trigger());
+    const search = screen.getByRole("searchbox", { name: "원고 명령 검색" });
+    const type = (value: string) => fireEvent.change(search, { target: { value } });
+    type("없는검색어");
+    expect(screen.getByText("일치하는 도구나 필터가 없습니다.")).toBeTruthy();
+    type(" 브러시 ");
+    expect(screen.getByRole("button", { name: "내 브러시 관리" })).toBeTruthy();
+    type("블러");
+    const disabled = screen.getByRole("button", { name: /잉크 블러.*레이어를 선택하세요/u });
+    expect(disabled.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(disabled);
+    expect(filters[1].onSelect).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "가우시안 블러" }));
+    expect(filters[0].onSelect).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog", { name: "원고 도구" })).toBeNull();
+  });
   it("원본 트리거에서 native 화면으로 초점이 진입하며 이름 있는 부가 기능을 보존한다", () => {
     render(tasks()); const source = trigger(); source.focus(); fireEvent.click(source);
     const dialog = screen.getByRole("dialog", { name: "원고 도구" }) as HTMLDialogElement;

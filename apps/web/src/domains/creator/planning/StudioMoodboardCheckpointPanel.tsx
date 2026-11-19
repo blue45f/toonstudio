@@ -5,7 +5,7 @@ import { getMoodboardCheckpointStore, readMoodboardCheckpoint, writeMoodboardChe
 interface Props {
   projectId: string;
   board?: Moodboard;
-  onRestore: (saved: Moodboard) => boolean;
+  onRestore: (saved: Moodboard) => Promise<boolean>;
 }
 
 const control = "min-h-11 rounded-lg border border-line px-3 text-sm disabled:opacity-50";
@@ -57,8 +57,14 @@ function CheckpointActions({ projectId, board, onRestore }: Props) {
       {board && <button type="button" className={control} disabled={state !== "ready" || Boolean(same) || !Object.keys(board.cards).length} onClick={() => void save()}>
         {entry ? "현재 보드로 복구본 교체" : "현재 보드를 복구본으로 저장"}
       </button>}
-      {entry && <button type="button" className={control} disabled={state !== "ready" || Boolean(same)} onClick={() => {
-        setNotice(onRestore(entry.board) ? "저장한 카드와 연결을 복원했어요." : "현재 보드를 확인한 뒤 다시 시도해 주세요.");
+      {entry && <button type="button" className={control} disabled={state !== "ready" || Boolean(same)} onClick={async () => {
+        if (inFlight.current) return;
+        inFlight.current = true;
+        setState("saving");
+        const restored = await onRestore(entry.board);
+        inFlight.current = false;
+        setState("ready");
+        setNotice(restored ? "저장한 카드와 연결을 복원했어요." : "현재 보드를 확인한 뒤 다시 시도해 주세요.");
       }}>이 복구본으로 되돌리기</button>}
       {state === "error" && <button type="button" className={control} onClick={() => { setState("loading"); setGeneration(n => n + 1); }}>복구본 다시 불러오기</button>}
     </div>

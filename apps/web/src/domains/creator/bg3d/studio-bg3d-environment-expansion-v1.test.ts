@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import expansionManifest from "../../../../public/assets/3d/environments/expansion-v1/manifest.json";
 import { SAMPLE_BG3D_MODEL_ENTRIES } from "./bg3d-model-library";
 import {
+  STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
   STUDIO_BG3D_ENVIRONMENT_ASSETS,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
@@ -31,7 +32,7 @@ describe("Studio original environment expansion v1", () => {
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1).toHaveLength(6);
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toEqual([
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
-      ...STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1,
+      ...STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1,
       ...STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,

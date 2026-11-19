@@ -70,6 +70,7 @@ jobs:
             /apps/web/public/assets/3d/environments/refined-v6/manifest.json
             /apps/web/public/assets/3d/environments/refined-v6/render-passes-report.json
             /apps/web/public/assets/3d/environments/expansion-v1/manifest.json
+            /apps/web/public/assets/3d/environments/expansion-v2/manifest.json
             /apps/web/public/assets/3d/environments/webtoon-v7/manifest.json
             /apps/web/public/assets/3d/environments/authored-v1/manifest.json
             /apps/web/public/assets/3d/environments/refined-v6/hospital_reception.glb
@@ -115,6 +116,7 @@ jobs:
             /apps/web/public/assets/3d/environments/*.glb
             /apps/web/public/assets/3d/environments/thumbnails/
             /apps/web/public/assets/3d/environments/expansion-v1/
+            /apps/web/public/assets/3d/environments/expansion-v2/
             /apps/web/public/assets/3d/environments/webtoon-v7/
             !/apps/web/public/vrm/
             !/artifacts/

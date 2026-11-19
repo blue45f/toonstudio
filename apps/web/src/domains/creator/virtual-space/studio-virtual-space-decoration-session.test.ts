@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { studioVirtualDecorationPreset, type StudioVirtualDecorationState } from "./studio-virtual-space-customization";
 import { StudioVirtualDecorationSession } from "./studio-virtual-space-decoration-session";
 import { createStudioVirtualDecorationSync, type StudioVirtualDecorationTransport } from "./studio-virtual-space-decoration-sync";
+import { createSpaceDeviceRecordFixture } from "./studio-space-device-record.test-fixture";
+
+const db = createSpaceDeviceRecordFixture();
+vi.mock("../studio-local-database-runtime", () => ({ acquireStudioLocalDatabase: async () => db }));
+beforeEach(() => { db.records.clear(); vi.clearAllMocks(); });
+
 
 const scope = '["test","studio",false]';
 const layout = studioVirtualDecorationPreset("creator-garden");
@@ -107,4 +113,42 @@ describe("가구 편집의 서버 버전과 대기열", () => {
     expect(result.current?.revision).toBe(4);
     expect(save).not.toHaveBeenCalled();
   });
+});
+
+it("기기의 구형 가구 배치를 되살리고 회원·작품별 새 체크포인트를 섞지 않는다", async () => {
+  const { decorationStorageKey } = await import("./studio-virtual-space-customization");
+  const old = { ...layout, placements: [], revision: 21 };
+  localStorage.setItem(decorationStorageKey(scope), JSON.stringify(old));
+  const device = new StudioVirtualDecorationSession(scope, null, null);
+  expect((await device.load(layout)).state).toMatchObject(old);
+  const alice = new StudioVirtualDecorationSession(scope, null, "alice");
+  expect((await alice.load(layout)).state).toEqual(layout);
+  await alice.save(old);
+  expect((await new StudioVirtualDecorationSession(scope, null, "alice").load(layout)).state).toMatchObject(old);
+  expect((await new StudioVirtualDecorationSession(scope, null, "bob").load(layout)).state).toEqual(layout);
+  expect((await new StudioVirtualDecorationSession("다른 작품", null, "alice").load(layout)).state).toEqual(layout);
+});
+
+it("SQLite를 처음 열지 못해도 다시 열면 방금 수정한 배치를 기기에 기록한다", async () => {
+  db.kvGet.mockRejectedValueOnce(new Error("SQLite busy"));
+  const next = { ...layout, placements: [], revision: 42 };
+  const session = new StudioVirtualDecorationSession(scope, null, "alice");
+  expect((await session.save(next)).state).toEqual(next);
+  expect(session.cachedLocally).toBe(false);
+  expect((await session.load(layout)).state).toEqual(next);
+  expect(session.cachedLocally).toBe(true);
+  expect((await new StudioVirtualDecorationSession(scope, null, "alice").load(layout)).state).toMatchObject(next);
+});
+
+it("이전 탭의 서버 응답이 새 탭의 편집을 덮지 않고 잘못된 원문을 복구본으로 보관한다", async () => {
+  const { studioDecorationCheckpointStore } = await import("./studio-virtual-space-decoration-checkpoint");
+  const store = studioDecorationCheckpointStore("alice", scope);
+  const key = "toonspectrum:space-decoration-checkpoint:v1:" + JSON.stringify(["alice", scope]);
+  localStorage.setItem(key, "{broken");
+  const first = { id: "first", base: 0, pending: true, state: layout };
+  expect(await store.write(first)).toBe(true);
+  expect([...db.records].some(([id, value]) => id.startsWith(key + ":recovery:") && JSON.parse(value) === "{broken")).toBe(true);
+  await store.write({ ...first, id: "second" });
+  expect(await store.write({ ...first, pending: false }, first.id)).toBe(false);
+  expect(await store.read()).toMatchObject({ id: "second", pending: true });
 });

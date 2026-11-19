@@ -105,6 +105,8 @@ test("닫힌 레이어 패널을 실제 더보기로 열고 이미 열린 탭을
 test("분할 레이어에는 제거된 탭을 요구하지 않고 실제 탭 선택 실패는 거부한다", async ({ page }) => {
   await page.setContent('<section data-studio-inspector-layers-split="true">레이어 목록</section>');
   await openStudioLayerNavigator(page, 1_000);
+  // 이미 보이는 목록은 추가 시간이 필요 없고, 닫힌 탭은 아래에서 실제로 선택되어야 한다.
+  await openStudioLayerNavigator(page, 0);
   await page.setContent(`<aside data-testid="studio-inspector-navigator"><button
     data-studio-inspector-primary-tab="layers" aria-selected="false">동작하지 않는 레이어 탭</button></aside>`);
   await expect(openStudioLayerNavigator(page, 1_000)).rejects.toThrow();

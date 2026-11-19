@@ -1,3 +1,4 @@
+import { readStudioStorySceneSources } from "./planning/studio-story-scene-source";
 import { createEmptyStudioWriterRoomDocument, normalizeStudioWriterRoomDocument, type StudioWriterRoomDocument } from "./studio-writer-room";
 import { planStudioStoryboard, type StudioStoryBeat, type StudioStoryBeatKind } from "./studio-storyboard-planner";
 
@@ -82,15 +83,6 @@ function beatKind(text: string, index: number): StudioStoryBeatKind {
   return "action";
 }
 
-function sourceParagraphs(source: string): string[] {
-  return source
-    .replace(/\r\n?/gu, "\n")
-    .split(/\n\s*\n+/gu)
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .slice(0, MAX_SCENES);
-}
-
 export function buildStudioStoryAdaptationPlan(sourceText: string): StudioStoryAdaptationPlan {
   const original = sourceText.trim();
   if (!original) {
@@ -108,11 +100,12 @@ export function buildStudioStoryAdaptationPlan(sourceText: string): StudioStoryA
   const bounded = original.slice(0, MAX_SOURCE_CHARS);
   if (bounded.length < original.length) warnings.push("source-truncated");
 
-  const paragraphs = sourceParagraphs(bounded);
+  const sourceScenes = readStudioStorySceneSources(bounded).scenes;
   const beats: StudioStoryBeat[] = [];
   const scenes: StudioStoryAdaptationScene[] = [];
 
-  paragraphs.forEach((paragraph, sceneIndex) => {
+  sourceScenes.slice(0, MAX_SCENES).forEach(({ heading, text: paragraph }, sceneIndex) => {
+    if (!paragraph && heading) { warnings.push("empty-scene"); return; }
     if (beats.length >= MAX_BEATS) return;
     const sceneId = `adaptation-scene-${sceneIndex + 1}`;
     const parts = sentences(paragraph);
@@ -139,14 +132,14 @@ export function buildStudioStoryAdaptationPlan(sourceText: string): StudioStoryA
       scenes.push(Object.freeze({
         id: sceneId,
         order: sceneIndex,
-        heading: `Scene ${sceneIndex + 1}`,
+        heading: heading ?? `Scene ${sceneIndex + 1}`,
         summary: compact(paragraph, 500),
         beatIds: Object.freeze(beatIds),
       }));
     }
   });
 
-  if (paragraphs.length >= MAX_SCENES) warnings.push("scene-limit-reached");
+  if (sourceScenes.length > MAX_SCENES) warnings.push("scene-limit-reached");
   if (beats.length >= MAX_BEATS) warnings.push("beat-limit-reached");
   if (beats.length === 0) warnings.push("no-beats");
 
@@ -165,9 +158,12 @@ export function buildStudioStoryAdaptationPlan(sourceText: string): StudioStoryA
 
 export function buildWriterRoomFromStoryAdaptation(input: {
   readonly development: StudioStoryDevelopmentDocument;
+  readonly chapterId?: string;
   readonly plan: StudioStoryAdaptationPlan;
 }): StudioWriterRoomDocument {
   const { development, plan } = input;
+  const chapter = input.chapterId === undefined ? development.chapters[0] : development.chapters.find(item => item.id === input.chapterId);
+  if (input.chapterId !== undefined && !chapter) throw new Error("내보낼 회차를 찾을 수 없습니다.");
   const empty = createEmptyStudioWriterRoomDocument();
   const storyboard = plan.beats.length > 0 ? planStudioStoryboard(plan.beats) : null;
 
@@ -190,7 +186,7 @@ export function buildWriterRoomFromStoryAdaptation(input: {
       premise: { text: development.logline, characterIds: [] },
       synopsis: { text: development.synopsis || compact(plan.scenes.map((scene) => scene.summary).join(" "), 4000), characterIds: [] },
       "episode-outline": {
-        title: development.chapters[0]?.title || development.title || "Adaptation",
+        title: chapter?.title || development.title || "Adaptation",
         summary: development.synopsis || compact(plan.scenes.map((scene) => scene.summary).join(" "), 4000),
         characterIds: [],
       },
@@ -232,7 +228,7 @@ export function buildWriterRoomFromStoryAdaptation(input: {
     completion: {
       premise: Boolean(development.logline.trim()),
       synopsis: Boolean(development.synopsis.trim()),
-      "episode-outline": Boolean(development.title.trim() || development.chapters[0]?.title.trim()),
+      "episode-outline": Boolean(development.title.trim() || chapter?.title.trim()),
       beats: plan.beats.length > 0,
       scenes: plan.scenes.length > 0,
       "panel-plan": panels.length > 0,

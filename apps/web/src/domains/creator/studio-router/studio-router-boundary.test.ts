@@ -109,30 +109,33 @@ describe("Studio router bundle boundaries", () => {
     expect(documentLayoutSource).toContain("readStudioLiveRoomQuery");
     expect(documentLayoutSource).toContain("useStudioDocumentRuntime()");
     // 주소를 교체할 때 해시·방문 상태는 보존하되, 협업 문서 식별은 정본 레이아웃 컨텍스트와 쿼리만 사용한다.
-    expect(documentLayoutSource).toContain("const { pathname, hash, state } = useLocation();");
+    expect(documentLayoutSource).toMatch(/const \{ pathname, hash, state \} = useLocation\(\)/u);
     expect(documentLayoutSource).not.toMatch(/useLocation\(\)\.(?:search|key)|location\.search/u);
     expect(documentLayoutSource).toContain("readStudioLiveRoomQuery(params)");
     expect(documentLayoutSource).toMatch(/useStudioLocalDraftOwner\(\{[\s\S]*?roomId: liveRoomParam, workId, remixId,/u);
-    expect(documentLayoutSource).toContain("const navigate = useNavigate();");
-    expect(documentLayoutSource).toContain("navigate({ pathname, search: withStudioLiveJamRoom(params, instantWorkId).toString(), hash }, { replace: true, state });");
-    expect(documentLayoutSource).not.toContain("setSearchParams");
     expect(legacyEditorSource).not.toContain("readStudioLiveRoomQuery");
     expect(legacyEditorSource).not.toContain("setSearchParams");
     expect(legacyEditorSource).toContain("useStudioDocumentLayout()");
   });
 
   it("moves the DCC route/navigation half out of the legacy page into the workbench route", () => {
-    // Href construction, the v1 return receipt and back-navigation all live in the route module.
+    // DCC 주소와 반환 영수증은 워크벤치가 소유한다.
     for (const symbol of [
       "createStudioDccNavigationState",
       "studioCanvasHref",
       "studioDccHref",
       "studioWorkspaceReturnHref",
-      "navigate(-1)",
     ]) {
       expect(dccWorkbenchRouteSource).toContain(symbol);
       expect(legacyEditorSource).not.toContain(symbol);
     }
+    expect(dccWorkbenchNavigationSource).toMatch(
+      /const returnHref = studioWorkspaceReturnHref\(location\.state, studioRoute\);\s*if \(returnHref\) \{\s*navigate\(-1\);\s*return;/u,
+    );
+    // 호스트가 기록을 한 칸 되돌릴 수 있는 경우는 같은 원고의 2D 도구 복귀 판정뿐이다.
+    const documentToolBack = /const next = studioDocumentToolNavigation\(studioRoute, surface, location\);\s*if \(next\.back\) \{\s*navigate\(-1\);\s*return;\s*\}/u;
+    expect(legacyEditorSource).toMatch(documentToolBack);
+    expect(legacyEditorSource.replace(documentToolBack, "")).not.toMatch(/\bnavigate\(\s*-1\s*\)/u);
     // Surface-scoped lifecycle (pagehide flush, denied-access auto-close) moved with it, and it
     // lives in the component half so it can only run while the DCC surface node is mounted.
     expect(dccWorkbenchSurfaceSource).toContain('globalThis.addEventListener("pagehide"');
