@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "እጅግ በጣም ቀላል አቀማመጥ",
   "studio.mainMenu.item.view.density-full": "አጠቃላይ አቀማመጥ",
   "studio.mainMenu.item.view.wide": "ፓነሎችን ሰብስብና አስፋ",
+  "studio.mainMenu.item.view.wide.open": "ፓነሎችን አሳይ",
   "studio.mainMenu.item.view.tools-companion": "ባለብዙ ማሳያ የስራ ቦታ…",
   "studio.mainMenu.item.view.canvas-only": "ሸራ ብቻ",
   "studio.mainMenu.item.view.color-vision.unavailable": "የእይታ ሽግግር ተቆልፎ ሳለ የቀለም እይታ ሁነታን መቀየር አይችሉም።",

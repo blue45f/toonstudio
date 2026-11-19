@@ -81,3 +81,38 @@ for (const language of ["ko", "en"] as const) {
     expect(pageErrors).toEqual([]);
   });
 }
+
+test("전문 제작 도구는 작은 화면과 강제색에서도 이름·선택·작품 경로를 유지한다", async ({ page }) => {
+  await page.goto("/studio/assets?project=tool-art-review", { waitUntil: "domcontentloaded" });
+  const suite = page.getByTestId("studio-specialist-suite-bar");
+  const model = suite.locator('a[href="/studio/3d/dcc/model?project=tool-art-review"]');
+  const space = suite.locator('a[href="/studio/p/tool-art-review/space"]');
+  await expect(model).toHaveAccessibleName(/정밀 3D 모델러|Precision 3D Modeler/u);
+  await expect(space).toHaveAccessibleName(/가상 스튜디오|Virtual studio/u);
+  const drawings = suite.locator("[data-studio-tool-art]");
+  await expect(drawings).toHaveCount(9);
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const stage = suite.locator('a[href^="/studio/bg3d"]');
+    const character = suite.locator('a[href^="/studio/assets/characters/new"]');
+    await stage.focus();
+    await page.keyboard.press("Tab");
+    await expect(character).toBeFocused();
+    for (const link of [character, space]) {
+      await link.focus();
+      const bounds = await link.evaluate((anchor) => {
+        const container = anchor.parentElement?.getBoundingClientRect();
+        const rect = anchor.getBoundingClientRect();
+        return { left: rect.left, right: rect.right, height: rect.height, start: container?.left, end: container?.right };
+      });
+      expect(bounds.height).toBeGreaterThanOrEqual(44);
+      expect(bounds.left).toBeGreaterThanOrEqual((bounds.start ?? width) - 1);
+      expect(bounds.right).toBeLessThanOrEqual((bounds.end ?? 0) + 1);
+    }
+    await expect(space.locator('[data-studio-tool-art="space"] img[data-ready]')).toBeVisible();
+  }
+  await page.emulateMedia({ forcedColors: "active" });
+  await expect(space.locator("img")).toBeHidden();
+  await expect(space.locator("svg")).toBeVisible();
+  await expect(space).toBeFocused();
+});

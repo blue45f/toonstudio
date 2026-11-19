@@ -20,6 +20,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
@@ -705,8 +706,7 @@ export function StudioVirtualSpaceWorldAuthoringPanel({
 >
       <div className="studio-vspace-authoring-head">
         <div>
-          <p>WORLD AUTHORING</p>
-          <h2>{bt("Virtual Studio 월드 편집", "Virtual Studio world editor")}</h2>
+          <h2 className="flex items-center gap-2"><StudioToolArtwork tool="space" />{bt("Virtual Studio 월드 편집", "Virtual Studio world editor")}</h2>
           <span>{manifest.width} × {manifest.height} · v{manifest.version}</span>
         </div>
         <div className="studio-vspace-authoring-actions">

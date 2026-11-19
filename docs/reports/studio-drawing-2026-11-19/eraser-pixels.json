@@ -1,0 +1,52 @@
+{
+  "precision-eraser": {
+    "changed": 860,
+    "ink": 80,
+    "inkAffectedWidth": 8,
+    "beforeMinAlpha": 255,
+    "minAlpha": 255,
+    "inkLift": 1.0,
+    "undoPixelDiff": 0,
+    "centerMedianLift": 1.0
+  },
+  "broad-eraser": {
+    "changed": 2373,
+    "ink": 1612,
+    "inkAffectedWidth": 142,
+    "beforeMinAlpha": 255,
+    "minAlpha": 255,
+    "inkLift": 1.0,
+    "undoPixelDiff": 0,
+    "centerMedianLift": 1.0
+  },
+  "lift-eraser": {
+    "changed": 1571,
+    "ink": 778,
+    "inkAffectedWidth": 68,
+    "beforeMinAlpha": 255,
+    "minAlpha": 255,
+    "inkLift": 0.17073170731707318,
+    "undoPixelDiff": 0,
+    "centerMedianLift": 0.1595
+  },
+  "kneaded-eraser": {
+    "changed": 1452,
+    "ink": 622,
+    "inkAffectedWidth": 54,
+    "beforeMinAlpha": 255,
+    "minAlpha": 255,
+    "inkLift": 0.3939393939393939,
+    "undoPixelDiff": 0,
+    "centerMedianLift": 0.3804
+  },
+  "standard-eraser": {
+    "changed": 1282,
+    "ink": 450,
+    "inkAffectedWidth": 38,
+    "beforeMinAlpha": 255,
+    "minAlpha": 255,
+    "inkLift": 1.0,
+    "undoPixelDiff": 0,
+    "centerMedianLift": 1.0
+  }
+}

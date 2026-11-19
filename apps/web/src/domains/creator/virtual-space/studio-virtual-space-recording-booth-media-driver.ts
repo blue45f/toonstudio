@@ -128,7 +128,7 @@ interface ActiveCapture {
   rejectStop: ((reason: unknown) => void) | null;
 }
 
-let mediaSessionCounter = 0;
+
 
 /**
  * MediaRecorder 기반 녹음부스 드라이버를 만든다.
@@ -269,9 +269,8 @@ export function createMediaRecorderBoothDriver(
         if (audioContext) void audioContext.close().catch(() => undefined);
         throw reason;
       }
-      mediaSessionCounter += 1;
       const session: StudioRecordingSession = {
-        id: `booth-media-session-${mediaSessionCounter}`,
+        id: `booth-media-session-${crypto.randomUUID()}`,
         boothId: config.boothId,
         reverb: config.reverb,
         startedAtMs: now(),

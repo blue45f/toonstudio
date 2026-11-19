@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Süper basit düzen",
   "studio.mainMenu.item.view.density-full": "genel düzen",
   "studio.mainMenu.item.view.wide": "Panelleri daraltıp genişlet",
+  "studio.mainMenu.item.view.wide.open": "Panelleri göster",
   "studio.mainMenu.item.view.tools-companion": "Çok ekranlı çalışma alanı…",
   "studio.mainMenu.item.view.canvas-only": "Yalnızca tuval",
   "studio.mainMenu.item.view.color-vision.unavailable": "Görünüm dönüşümü kilitliyken renk görme denetim modunu değiştiremezsiniz.",

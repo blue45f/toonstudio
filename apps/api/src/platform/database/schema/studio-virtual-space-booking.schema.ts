@@ -1,16 +1,22 @@
+import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
+  check,
   foreignKey,
   index,
   integer,
   jsonb,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
+  uuid,
 } from "drizzle-orm/pg-core";
 
 import { users } from "./auth.schema";
+import { creatorWorks } from "./creator.schema";
 
 /**
  * 가상 스튜디오 스페이스 예약·대기열·갤러리 좋아요의 서버 정본.
@@ -130,3 +136,29 @@ export const studioVirtualSpaceGalleryLikes = pgTable(
     }).onDelete("cascade"),
   ],
 );
+
+/** 작품 공간별 투표와 계정당 한 표. 식별 정보는 서버의 중복 확인에만 사용한다. */
+export const studioSpacePolls = pgTable("studio_space_poll", {
+  id: uuid("id").primaryKey(),
+  workId: text("workId").notNull().references(() => creatorWorks.id, { onDelete: "cascade" }),
+  world: text("world").notNull(), question: text("question").notNull(), options: text("options").array().notNull(),
+  anonymous: boolean("anonymous").notNull(),
+  createdBy: text("createdBy").references(() => users.id, { onDelete: "set null" }),
+  creatorName: text("creatorName").notNull(), requestHash: text("requestHash").notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).notNull().default(sql`clock_timestamp()`),
+  deadline: timestamp("deadline", { withTimezone: true }), closed: boolean("closed").notNull().default(false),
+}, table => [
+  index("studio_space_poll_current_idx").on(table.workId, table.world, table.createdAt.desc(), table.id.desc()),
+  check("studio_space_poll_world_check", sql`length(${table.world}) BETWEEN 1 AND 256`),
+  check("studio_space_poll_question_check", sql`length(${table.question}) BETWEEN 1 AND 200`),
+  check("studio_space_poll_options_check", sql`cardinality(${table.options}) BETWEEN 2 AND 6`),
+]);
+
+export const studioSpacePollVotes = pgTable("studio_space_poll_vote", {
+  pollId: uuid("pollId").notNull().references(() => studioSpacePolls.id, { onDelete: "cascade" }),
+  voterId: text("voterId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  optionIndex: smallint("optionIndex").notNull(), voterName: text("voterName"),
+}, table => [
+  primaryKey({ columns: [table.pollId, table.voterId] }),
+  check("studio_space_poll_vote_optionIndex_check", sql`${table.optionIndex} BETWEEN 0 AND 5`),
+]);

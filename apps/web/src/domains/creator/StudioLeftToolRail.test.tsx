@@ -1,5 +1,5 @@
-import { pinAllStudioToolbarTools, pinStudioToolbarTools } from "./studio-toolbar-configuration";
 // @vitest-environment jsdom
+import { studioDrawingPinnedToolbar, unpinStudioToolbarTools, pinAllStudioToolbarTools, pinStudioToolbarTools } from "./studio-toolbar-configuration";
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,7 +10,7 @@ import {
   type StudioLeftToolRailClientInput,
 } from "./editor-client/studio-left-tool-rail-client";
 import { studioDrawingVisibleTools } from "./studio-drawing-core-tools";
-import { DEFAULT_STUDIO_RAIL_TOOL_ORDER, defaultStudioAppSettings } from "./studio-app-settings";
+import { DEFAULT_STUDIO_RAIL_TOOL_ORDER, defaultStudioAppSettings, normalizeStudioAppSettings } from "./studio-app-settings";
 import {
   StudioLeftToolRail,
   type StudioLeftToolRailHandlers,
@@ -349,6 +349,26 @@ function hiddenToolSettings(): ReturnType<typeof defaultStudioAppSettings> {
 }
 
 describe("StudioLeftToolRail", () => {
+  it("새 레일은 명시한 고정만 한 번 표시하고, 저장·재열기 후에도 같은 실행·해제 명령을 사용한다", () => {
+    const host = document.createElement("div"); document.body.append(host);
+    try {
+      const settings = defaultStudioAppSettings();
+      const launch = vi.fn();
+      const pins = (toolbar: typeof settings.toolbar) => createProps({ appSettings: { ...settings, toolbar }, setPoserVrmOpen: launch });
+      const view = render(<StudioLeftToolRail {...pins(settings.toolbar)} pinnedToolHost={host} />);
+      expect(host.childElementCount).toBe(0);
+      const added = pinStudioToolbarTools(studioDrawingPinnedToolbar(settings.toolbar), ["vrm3d", "bg3d", "vrm3d"]);
+      const restored = normalizeStudioAppSettings(JSON.parse(JSON.stringify({ ...settings, toolbar: added })));
+      view.rerender(<StudioLeftToolRail {...pins(restored.toolbar)} pinnedToolHost={host} />);
+      const tools = host.querySelectorAll("button[data-studio-rail-tool-id]");
+      expect([...tools].map(button => button.getAttribute("data-studio-rail-tool-id"))).toEqual(["vrm3d"]);
+      fireEvent.click(tools[0]!);
+      expect(launch).toHaveBeenCalledOnce();
+      view.rerender(<StudioLeftToolRail {...pins(unpinStudioToolbarTools(restored.toolbar, ["vrm3d"]))} pinnedToolHost={host} />);
+      expect(host.childElementCount).toBe(0);
+    } finally { host.remove(); }
+  });
+
   it("uses dashed selection silhouettes that remain distinct from solid shape tools", () => {
     render(<StudioLeftToolRail {...createProps()} />);
 

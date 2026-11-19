@@ -19,12 +19,11 @@
   overflow: auto;
   border: 1px solid var(--start-line);
   border-radius: 1rem;
-  background: color-mix(in srgb, var(--color-panel) 94%, transparent);
+  background: var(--color-panel);
   padding: 0.75rem;
   color: var(--color-fg);
-  box-shadow: 0 18px 48px color-mix(in srgb, var(--color-canvas) 55%, transparent);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--color-canvas) 26%, transparent);
   transform: translateX(-50%);
-  backdrop-filter: blur(14px);
   animation: studio-canvas-start-in 220ms ease-out;
 }
 
@@ -336,6 +335,19 @@ body:has([data-studio-cinematic-canvas-welcome="true"]) [data-studio-shell-float
   #studio-workspace:has([data-studio-brush-panel-presentation="overlay"]) .studio-canvas-start:not(.studio-canvas-start--collapsed) {
     width: min(820px, calc(100% - var(--studio-brush-overlay-width, 0px) - 24px));
   }
+}
+
+@media (min-width: 64rem) {
+  #studio-workspace .studio-canvas-start:has(> div[hidden]) {
+    container-type: normal;
+    width: max-content;
+    max-width: calc(100% - var(--studio-brush-overlay-width, 0px) - 24px);
+    padding: .4rem;
+  }
+}
+
+.studio-canvas-start__tutorial .studio-tool-art {
+  --studio-tool-art-size: 22px;
 }
 
 @container studio-canvas-start (max-width: 780px) {

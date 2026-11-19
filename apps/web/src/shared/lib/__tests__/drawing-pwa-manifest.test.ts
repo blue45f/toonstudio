@@ -17,6 +17,7 @@ interface DrawingManifest {
   display: string;
   categories?: string[];
   icons: ManifestIcon[];
+  shortcuts: { url: string }[];
 }
 
 const root = process.cwd();
@@ -66,7 +67,8 @@ describe("ToonStudio Draw PWA", () => {
     const installerScript = readFileSync(join(drawingAppRoot, "install.js"), "utf8");
     expect(installer).toContain('rel="manifest" href="/draw-app/manifest.webmanifest"');
     expect(installer).toContain('id="install-app"');
-    expect(installer).toContain("같은 Studio 문서·브러시·레이어·저장 엔진");
+    expect(installer).toContain('href="/studio">브라우저에서 작품 보관함 열기');
+    expect(manifest.shortcuts.map(({ url }) => new URL(url, appOrigin).searchParams.get("view"))).toEqual([null, "archived"]);
     expect(installerScript).toContain("register('/sw.js', { scope: '/' })");
     expect(installerScript).not.toContain("/offline-draw/sw.js");
     expect(installerScript).toContain("drawingShell=app");
@@ -75,8 +77,7 @@ describe("ToonStudio Draw PWA", () => {
   it("exposes the shared-engine drawing installer next to the full-app install flow", () => {
     const launchpad = source("apps/web/src/domains/marketing/CreatorLaunchpad.tsx");
     expect(launchpad).toContain("/draw-app/install.html?source=site");
-    expect(launchpad).toContain("순수 드로잉 앱 설치");
-    expect(launchpad).toContain("동일한 문서·브러시·레이어·저장 엔진");
+    expect(launchpad).toContain("툰스튜디오 드로잉 설치");
     expect(launchpad).not.toContain("/offline-draw/install.html?source=site");
   });
 

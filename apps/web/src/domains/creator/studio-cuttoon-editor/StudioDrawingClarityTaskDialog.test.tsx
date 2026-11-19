@@ -29,7 +29,7 @@ beforeEach(() => {
 afterEach(() => { cleanup(); restoreNative(); pendingClose = []; });
 function flushCloseEvents(): void { pendingClose.splice(0).forEach(node => node.dispatchEvent(new Event("close"))); }
 
-function renderTask({ strict = false, onClose = vi.fn(), run = vi.fn() } = {}) {
+function renderTask({ strict = false, opensWorkspace = false, onClose = vi.fn(), run = vi.fn() } = {}) {
   function Harness() {
     const source = useRef<HTMLButtonElement>(null), next = useRef<HTMLButtonElement>(null);
     const [open, setOpen] = useState(true), [changes, setChanges] = useState(0);
@@ -37,7 +37,7 @@ function renderTask({ strict = false, onClose = vi.fn(), run = vi.fn() } = {}) {
       <button type="button" ref={next}>다음 작업</button>
       {open ? <StudioDrawingClarityTaskDialog id="test-task" title="보기 설정" kind="view" returnFocus={() => source.current}
         onClose={() => { onClose(); setOpen(false); }}>
-        {(finish) => <><button type="button" onClick={() => finish(() => { run(); next.current?.focus(); })}>실제 작업 열기</button>
+        {(finish) => <><button type="button" onClick={() => finish(() => { run(); next.current?.focus(); }, opensWorkspace)}>실제 작업 열기</button>
           <button type="button" onClick={() => setChanges(value => value + 1)}>설정 바꾸기 {changes}</button></>}
       </StudioDrawingClarityTaskDialog> : null}</>;
   }
@@ -46,6 +46,23 @@ function renderTask({ strict = false, onClose = vi.fn(), run = vi.fn() } = {}) {
 }
 
 describe("드로잉 목적 화면 native lifecycle", () => {
+  it("모바일 시트의 방문 기록을 닫은 뒤 3D 진입을 한 번만 실행한다", () => {
+    const previous = window.history.state;
+    window.history.replaceState({ __studioMobileBackLayer: "modal:drawing-task:view" }, "");
+    const back = vi.spyOn(window.history, "back").mockImplementation(() => {});
+    try {
+      const { run } = renderTask({ opensWorkspace: true });
+      const action = screen.getByRole("button", { name: "실제 작업 열기" });
+      fireEvent.click(action); fireEvent.click(action);
+      expect(back).toHaveBeenCalledTimes(1);
+      expect(run).not.toHaveBeenCalled();
+      fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+      expect(run).toHaveBeenCalledTimes(1);
+    } finally {
+      back.mockRestore();
+      window.history.replaceState(previous, "");
+    }
+  });
   it("진입 초점과 shortcut 경계를 제공하고 내용 갱신으로 화면을 재열거나 초점을 빼앗지 않는다", () => {
     const { onClose } = renderTask();
     const dialog = screen.getByRole("dialog", { name: "보기 설정" }) as HTMLDialogElement;

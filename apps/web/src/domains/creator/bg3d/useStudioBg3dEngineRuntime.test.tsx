@@ -4,7 +4,6 @@ import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  STUDIO_BG3D_DEVICE_LOSS_NOTICE_MS,
   useStudioBg3dEngineRuntime,
 } from "./useStudioBg3dEngineRuntime";
 
@@ -60,7 +59,7 @@ afterEach(() => {
 
 describe("useStudioBg3dEngineRuntime", () => {
   it("starts without a renderer and admits the explicit WebGPU selection after probing", async () => {
-    const { result } = renderHook(() => useStudioBg3dEngineRuntime(options()));
+    const { result } = renderHook(() => useStudioBg3dEngineRuntime(options({ createWebGpuRenderer: vi.fn() })));
 
     expect(result.current.phase).toBe("probing");
     expect(result.current.plan).toMatchObject({
@@ -75,7 +74,7 @@ describe("useStudioBg3dEngineRuntime", () => {
       status: "available",
       reason: "user-webgpu-override",
     });
-    expect(result.current.glFactory).toBeTypeOf("function");
+    await waitFor(() => expect(result.current.glFactory).toBeTypeOf("function"));
   });
 
   it("normalizes a legacy persisted auto preference to explicit WebGPU", async () => {
@@ -194,6 +193,8 @@ describe("useStudioBg3dEngineRuntime", () => {
     expect(result.current.glFactory).toBeNull();
     expect(result.current.deviceLostMessage).toContain("WebGL2를 직접 선택");
     expect(result.current.deviceLostMessage).toContain("device-lost-during-init");
+    act(() => result.current.reportRendererFailure("webgpu", "initialization-failed"));
+    expect(result.current.deviceLostMessage).toContain("device-lost-during-init");
     expect(result.current.deviceLostMessage).not.toContain("전환");
 
     act(() => result.current.setPreference("webgpu"));
@@ -225,6 +226,31 @@ describe("useStudioBg3dEngineRuntime", () => {
     expect(result.current.plan.status).toBe("failed");
     expect(result.current.deviceLostMessage).toContain("10초");
     secondCanvas.remove();
+  });
+
+  it("장치를 만든 뒤 새 캔버스의 첫 draw만 준비 상태를 완료한다", async () => {
+    const notifications = new Map<HTMLCanvasElement, () => void>();
+    const createWebGpuRenderer = vi.fn(async (canvas: HTMLCanvasElement, rendererOptions: { onFirstSceneFrame: () => void }) => {
+      notifications.set(canvas, rendererOptions.onFirstSceneFrame);
+      return { renderer: { render: () => undefined }, dispose: async () => undefined };
+    });
+    const { result } = renderHook(() => useStudioBg3dEngineRuntime(options({
+      createWebGpuRenderer: createWebGpuRenderer as never,
+    })));
+    await waitFor(() => expect(result.current.glFactory).toBeTypeOf("function"));
+    expect(result.current.webGpuCanvasStage).toBe("waiting-for-canvas");
+    const first = document.createElement("canvas");
+    const second = document.createElement("canvas");
+    await act(async () => { await result.current.glFactory!({ canvas: first }); });
+    await act(async () => { await result.current.glFactory!({ canvas: second }); });
+    expect(result.current.webGpuCanvasStage).toBe("waiting-for-frame");
+    act(() => notifications.get(first)!());
+    expect(result.current.webGpuCanvasStage).toBe("waiting-for-frame");
+    act(() => notifications.get(second)!());
+    expect(result.current.webGpuCanvasStage).toBe("rendered");
+    act(() => result.current.setPreference("webgl2"));
+    act(() => notifications.get(second)!());
+    expect(result.current.webGpuCanvasStage).toBe("waiting-for-canvas");
   });
 
   it("marks a live device loss failed without mounting WebGL2", async () => {
@@ -302,7 +328,7 @@ describe("useStudioBg3dEngineRuntime", () => {
     expect(savePreference).toHaveBeenCalledWith("webgl2");
   });
 
-  it("expires the detailed loss banner but retains the failed selection", async () => {
+  it("작업자가 엔진을 다시 고를 때까지 실패 원인과 복구 방법을 유지한다", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const createWebGpuRenderer = vi.fn(async () => {
       throw new Error("device-lost-during-init");
@@ -318,10 +344,12 @@ describe("useStudioBg3dEngineRuntime", () => {
     await waitFor(() => expect(result.current.deviceLostMessage).not.toBeNull());
 
     await act(async () => {
-      vi.advanceTimersByTime(STUDIO_BG3D_DEVICE_LOSS_NOTICE_MS + 1);
+      vi.advanceTimersByTime(60_000);
     });
-    expect(result.current.deviceLostMessage).toBeNull();
+    expect(result.current.deviceLostMessage).toContain("device-lost-during-init");
     expect(result.current.plan).toMatchObject({ backend: "webgpu", status: "failed" });
+    act(() => result.current.setPreference("webgl2"));
+    expect(result.current.deviceLostMessage).toBeNull();
   });
 
   it("makes WebGPU unavailable for a latched requirement until WebGL2 is chosen", async () => {

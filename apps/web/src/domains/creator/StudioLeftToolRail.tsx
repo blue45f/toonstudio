@@ -1,8 +1,7 @@
 import { StudioAllToolsCatalogSlot as StudioAllToolsCatalog } from "./StudioAllToolsCatalogSlot";
 import { preloadStudioAllToolsCatalog } from "./studio-all-tools-catalog-loader";
-import { pinAllStudioToolbarTools, pinStudioToolbarTools, unpinStudioToolbarTools } from "./studio-toolbar-configuration";
+import { studioProjectRailVisibleIds, studioDrawingPinnedToolbar, STUDIO_DRAWING_RAIL_FIXED_IDS, pinAllStudioToolbarTools, pinStudioToolbarTools, unpinStudioToolbarTools } from "./studio-toolbar-configuration";
 import { subscribeStudioAllTools } from "./studio-toolbar-channel";
-import { isStudioDrawingCoreTool, studioDrawingVisibleTools } from "./studio-drawing-core-tools";
 import {
   Box,
   Boxes,
@@ -60,7 +59,6 @@ import {
 } from "./editor-client/studio-left-tool-rail-client";
 import { preloadStudioRasterRetouchRuntime } from "./render/studio-raster-retouch-preload";
 import {
-  DEFAULT_STUDIO_RAIL_TOOL_ORDER,
   STUDIO_RAIL_TOOL_CATALOG,
   type StudioRailToolId,
   type StudioToolbarPreferences,
@@ -95,6 +93,7 @@ import type { StudioRailToolButtonProps } from "./studio-chrome-ui";
 
 import type { DrawMode, DrawShapeKind } from "./studio-editor-tool-model";
 
+import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 type StudioRailToolDefinition = StudioRailToolButtonProps & { [key: `data-${string}`]: string | boolean | undefined };
@@ -104,8 +103,8 @@ const STUDIO_CANVAS_IMAGE_ACCEPT =
   "image/*,.bmp,.dib,.tga,.icb,.vda,.vst,.ppm,.pam,.qoi,.tif,.tiff";
 const STUDIO_RAIL_MORE_GAP_PX = 4;
 const STUDIO_RAIL_MORE_MARGIN_PX = 8;
-const STUDIO_RAIL_MORE_MAX_HEIGHT_PX = 28 * 16;
-const STUDIO_RAIL_MORE_WIDTH_PX = 22 * 16;
+const STUDIO_RAIL_MORE_MAX_HEIGHT_PX = 43 * 16;
+const STUDIO_RAIL_MORE_WIDTH_PX = 26 * 16;
 
 type PositionedStudioRailMore = StudioRailMorePosition & { readonly maxHeight: number };
 
@@ -179,6 +178,7 @@ export type StudioLeftToolRailHandlers = StudioLeftToolRailHandlersContract;
 
 export interface StudioLeftToolRailProps {
   readonly client: StudioLeftToolRailClient;
+  readonly pinnedToolHost?: HTMLDivElement | null;
 }
 
 const selectStudioLeftToolRailSnapshot = (
@@ -186,16 +186,16 @@ const selectStudioLeftToolRailSnapshot = (
 ): StudioLeftToolRailSnapshot => snapshot;
 
 export const StudioLeftToolRail = memo(function StudioLeftToolRail({
-  client,
+  client, pinnedToolHost,
 }: StudioLeftToolRailProps) {
   return (
     <StudioEditorClientProvider client={client}>
-      <StudioLeftToolRailConnected />
+      <StudioLeftToolRailConnected pinnedToolHost={pinnedToolHost} />
     </StudioEditorClientProvider>
   );
 });
 
-function StudioLeftToolRailConnected() {
+function StudioLeftToolRailConnected({ pinnedToolHost }: Pick<StudioLeftToolRailProps, "pinnedToolHost">) {
   const snapshot = useEditorSelector(selectStudioLeftToolRailSnapshot);
   const client = useStudioEditorClient<StudioLeftToolRailSnapshot>();
   const {
@@ -239,11 +239,6 @@ function StudioLeftToolRailConnected() {
     viewTransformSuppressed,
     viewTool,
   } = snapshot;
-  // Core drawing/editing commands remain discoverable in every density and saved toolbar.
-  const isRailToolVisible = (id: Parameters<typeof isConfiguredRailToolVisible>[0]) =>
-    appSettings.toolbar.configured === true
-      ? appSettings.toolbar.visibleIds.includes(id)
-      : isStudioDrawingCoreTool(id) || isConfiguredRailToolVisible(id);
   const railMoreDialogId = useId();
   const [railMoreQuery, setRailMoreQuery] = useState("");
   const [toolbarBeforeShowAll, setToolbarBeforeShowAll] = useState<StudioToolbarPreferences | null>(null);
@@ -432,7 +427,6 @@ function StudioLeftToolRailConnected() {
   const addText = bindVoidAction("addText");
   const announceDrawingShortcut = bindVoidAction("announceDrawingShortcut");
   const clearPolyLassoDraft = bindVoidAction("clearPolyLassoDraft");
-  const commitAppSettings = bindVoidAction("commitAppSettings");
   const disarmAllPixelTools = bindVoidAction("disarmAllPixelTools");
   const fitCanvasToWidth = bindVoidAction("fitCanvasToWidth");
   const fitCanvasToWidthWithFocus = client.availability(
@@ -595,10 +589,8 @@ function StudioLeftToolRailConnected() {
     });
   }
 
-  const visibleRailIds = [...new Set([
-    ...studioDrawingVisibleTools(appSettings.toolbar.visibleIds, appSettings.toolbar.configured === true),
-    ...DEFAULT_STUDIO_RAIL_TOOL_ORDER,
-  ])].filter(isRailToolVisible);
+  const toolbar = pinnedToolHost ? studioDrawingPinnedToolbar(appSettings.toolbar) : appSettings.toolbar;
+  const visibleRailIds = pinnedToolHost ? toolbar.visibleIds : studioProjectRailVisibleIds(toolbar, isConfiguredRailToolVisible);
 
   // Keep action/lock contracts intact, but render in the saved DOM (and keyboard) order.
   const railToolDefinitions: Record<StudioRailToolId, StudioRailToolDefinition> = {
@@ -1085,9 +1077,11 @@ zoom: { icon: Search, label: zoomViewToolLabel, description: zoomViewToolOpen ? 
     setAppSettingsInitialTab("toolbar");
     setAppSettingsOpen(true);
   };
-  const changePins = (toolbar: StudioToolbarPreferences) => {
-    setToolbarBeforeShowAll(appSettings.toolbar);
-    commitAppSettings({ ...appSettings, toolbar });
+  const changePins = (next: StudioToolbarPreferences, restore = false) => {
+    void invokeRail("commitAppSettings", { ...appSettings, toolbar: next }, { before: toolbar, restore }).then(receipt => {
+      if (receipt.status === "applied") setToolbarBeforeShowAll(restore ? null : appSettings.toolbar);
+      else announceDrawingShortcut(translateBilingualPair("studio.rail.pinSaveFailed", "도구 고정을 저장하지 못했습니다. 다시 눌러 주세요.", "Couldn’t save your pinned tools. Please try again."));
+    });
   };
   const openCreationMode = (mode: StudioCreationMode): void => {
     switch (mode) {
@@ -1133,7 +1127,7 @@ zoom: { icon: Search, label: zoomViewToolLabel, description: zoomViewToolOpen ? 
       {railMoreOpen && typeof document !== "undefined" ? createPortal(
         <div ref={railMoreDialogRef} id={railMoreDialogId} role="dialog" aria-modal="false"
           aria-labelledby={railMoreTitleId} tabIndex={-1} data-studio-shortcut-boundary="true"
-          className="fixed z-[90] flex w-[22rem] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-xl border border-line bg-panel p-3 shadow-xl"
+          className="fixed z-[90] flex w-[26rem] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-xl border border-line bg-panel p-3 shadow-xl"
           style={{ left: railMorePosition.left, top: railMorePosition.top, maxHeight: railMorePosition.maxHeight }}>
           <header className="mb-2 flex shrink-0 items-center justify-between gap-2">
             <div><h2 id={railMoreTitleId} className="text-sm font-semibold">전체 도구</h2>
@@ -1141,14 +1135,14 @@ zoom: { icon: Search, label: zoomViewToolLabel, description: zoomViewToolOpen ? 
             <button type="button" aria-label="전체 도구 닫기" onClick={closeRailMoreAndRestoreFocus} className="grid size-11 place-items-center rounded-lg hover:bg-raised"><X size={18} aria-hidden /></button>
           </header>
           <div className="min-h-0 overflow-y-auto overscroll-contain">
-            <StudioAllToolsCatalog definitions={railToolDefinitions} pinned={visibleRailIds} query={railMoreQuery} onQuery={setRailMoreQuery}
-              onPin={(id, pinned) => changePins(pinned ? pinStudioToolbarTools(appSettings.toolbar, [id]) : unpinStudioToolbarTools(appSettings.toolbar, [id]))}
+            <StudioAllToolsCatalog definitions={railToolDefinitions} pinned={visibleRailIds} fixed={pinnedToolHost ? STUDIO_DRAWING_RAIL_FIXED_IDS : undefined} query={railMoreQuery} onQuery={setRailMoreQuery}
+              onPin={(id, pinned) => changePins(pinned ? pinStudioToolbarTools(toolbar, [id]) : unpinStudioToolbarTools(toolbar, [id]))}
               onUsed={closeRailMoreAndRestoreFocus} />
           </div>
           <footer className="mt-2 flex shrink-0 flex-wrap gap-2 border-t border-line pt-2">
-            <button type="button" className="min-h-11 rounded-lg border border-line px-3 text-xs" onClick={() => changePins(pinAllStudioToolbarTools(appSettings.toolbar))}>모든 도구 고정</button>
+            <button type="button" className="min-h-11 rounded-lg border border-line px-3 text-xs" onClick={() => changePins(pinAllStudioToolbarTools(toolbar))}>모든 도구 고정</button>
             {toolbarBeforeShowAll ? <button type="button" className="min-h-11 rounded-lg border border-line px-3 text-xs"
-              onClick={() => { commitAppSettings({ ...appSettings, toolbar: toolbarBeforeShowAll }); setToolbarBeforeShowAll(null); }}>이전 구성</button> : null}
+              onClick={() => changePins(toolbarBeforeShowAll, true)}>이전 구성</button> : null}
             <button type="button" className="min-h-11 rounded-lg border border-line px-3 text-xs" onClick={openConfiguration}>구성 편집</button>
           </footer>
         </div>, document.body) : null}
@@ -1160,7 +1154,9 @@ zoom: { icon: Search, label: zoomViewToolLabel, description: zoomViewToolOpen ? 
     <input ref={imageFileInputRef} type="file" accept={STUDIO_CANVAS_IMAGE_ACCEPT}
       aria-label="캔버스 이미지 파일 선택" className="sr-only" tabIndex={-1}
       onChange={onPickImage} disabled={activeSurfaceReviewLocked} />
-    {studioUiDensityAllows(uiDensityMode, "tool-rail") && !canvasOnlyMode ? (
+    {pinnedToolHost && createPortal(visibleRailIds.filter(id => !STUDIO_DRAWING_RAIL_FIXED_IDS.includes(id)).map(id =>
+      <StudioRailToolButton key={id} {...railToolDefinitions[id]} data-studio-rail-tool-id={id} showLabel />), pinnedToolHost)}
+    {!pinnedToolHost && studioUiDensityAllows(uiDensityMode, "tool-rail") && !canvasOnlyMode ? (
       <StudioVerticalToolRail className={cn(mobileImmersive && "hidden")} view={appSettings.toolbar.view} footer={railMoreFooter}>
         <StudioCreationModeLauncher onSelectMode={openCreationMode} />
         <StudioRailDivider data-studio-rail-group-divider="creator-modes" label="제작 모드" />

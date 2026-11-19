@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createStudioTextAt } from "./studio-pending-text-insert";
 import { bubbleVerticalPadding } from "./studio-bubble-text-fit";
 import StudioTextEditOverlay, { StudioTextEditFallbackModal } from "./StudioTextEditOverlay";
 
@@ -227,5 +228,28 @@ describe("StudioTextEditFallbackModal IME guard", () => {
     expect(onCommit).toHaveBeenCalledWith("고친 대사");
     fireEvent.keyDown(textarea, { key: "Escape" });
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("기기 원고의 새 글자 작성", () => {
+  const target = createStudioTextAt("new", 180, 220, "#000000");
+  it("취소와 조합 중에는 레이어를 만들지 않고 입력한 글자를 정확히 한 번 넘긴다", () => {
+    const commit = vi.fn(), cancel = vi.fn();
+    const form = <StudioTextEditFallbackModal elementId={target.id} elementById={new Map()} pendingText={target} onCommit={commit} onCancel={cancel} />;
+    const mount = render(form);
+    const text = screen.getByRole("textbox", { name: "새 글자 내용" });
+    expect((screen.getByRole("button", { name: "원고에 추가" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.keyDown(text, { key: "Enter", ctrlKey: true });
+    fireEvent.change(text, { target: { value: "첫 장면" } });
+    fireEvent.keyDown(text, { key: "Enter", ctrlKey: true, isComposing: true });
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    expect(commit).not.toHaveBeenCalled();
+    expect(cancel).toHaveBeenCalledOnce();
+    mount.unmount();
+    render(form);
+    const next = screen.getByRole("textbox", { name: "새 글자 내용" });
+    fireEvent.change(next, { target: { value: "둘째 장면" } });
+    fireEvent.keyDown(next, { key: "Enter", ctrlKey: true });
+    expect(commit.mock.calls).toEqual([["둘째 장면"]]);
   });
 });

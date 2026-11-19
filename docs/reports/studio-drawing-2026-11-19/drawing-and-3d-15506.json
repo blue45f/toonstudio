@@ -1,0 +1,186 @@
+{
+  "served": "http://127.0.0.1:15506",
+  "cdp": "http://127.0.0.1:9223",
+  "source": {
+    "gitSha": "f68519a427740023acc48e3ee74dc1e2c6538031",
+    "sha256Tree": "648636bb4f44ebe76b1e06e198a18122bbd61276cc689261132fcddd5c4d35c0",
+    "files": 35685,
+    "bytes": 5129066906,
+    "computedAt": "2026-11-19T10:33:47.093416+09:00",
+    "elapsedSec": 9.858,
+    "sections": {
+      "product": {
+        "sha256": "91a274b53da15b5e205bef1862290e3f7806b57af9afe13fe364aab8fa78c70e",
+        "files": 28049,
+        "bytes": 5062488369
+      },
+      "tests": {
+        "sha256": "5068c54f44b3e3b453d231e95cfef49be5734354c5adcd8f00adaaa290ce77e1",
+        "files": 7636,
+        "bytes": 66578537
+      }
+    }
+  },
+  "dist": {
+    "gitSha": "f68519a427740023acc48e3ee74dc1e2c6538031",
+    "buildId": "cbb0e66f6861",
+    "sha256Tree": "5ed29113b9e69fd976b642c6339abfa0fe73c66bf91c87e6f8fd7d2ba933ec6a",
+    "files": 20295,
+    "bytes": 5269164329,
+    "computedAt": "2026-11-19T10:40:24.604030+09:00",
+    "elapsedSec": 7.717
+  },
+  "sourceChanged": false,
+  "distChanged": false,
+  "servedHashes": {
+    "index.html": "f7f561a29762262032d00101e4032d4b0de9594699181f2a2a123e8a19431cc8",
+    "sw.js": "4a038659282dc5f46f60aeca8e33a450850a22798977559ccacbc160b8dd3ba8",
+    ".vite/build-meta.json": "3b56a5982371fb7472e44b336eb029cf69f025d581123587ab55f44b6dc72400"
+  },
+  "totalWallSeconds": 540.86,
+  "retries": 0,
+  "deployed": false,
+  "enabledWebGPUGizmo": true,
+  "postBuildInputs": "648636bb4f44ebe76b1e06e198a18122bbd61276cc689261132fcddd5c4d35c0",
+  "officialSuiteInputFileCount": 8,
+  "officialSuiteInputsUnchanged": true,
+  "api": {
+    "loopbackOnly": true,
+    "deployed": false,
+    "apiSourceTree": {
+      "files": 1663,
+      "sha256": "fc49b313b3968705c75aa2c7a47cfb67013eb610c7cf89afe90dcb97968bb4e6"
+    },
+    "databaseMigration": {
+      "state": "applied",
+      "checksum": "c02a2573889dae4c48839fa78ced054a696df6238e0489783433e0ef5617c68c",
+      "provenance": "executed"
+    },
+    "aclContractVerified": true,
+    "preexistingPollRowsVisibleToRuntime": 9,
+    "endpoints": {
+      "api": {
+        "status": 200,
+        "readiness": "ready"
+      },
+      "web": {
+        "status": 200,
+        "readiness": "ready"
+      },
+      "previousIsolatedApi": {
+        "status": 200,
+        "readiness": "ready"
+      }
+    },
+    "marker": "served"
+  },
+  "suites": {
+    "drawing": {
+      "statuses": {
+        "passed": 11,
+        "failed": 2
+      },
+      "pageerror": 0,
+      "crash": 1,
+      "testErrorCount": 4,
+      "runnerErrorCount": 0,
+      "wallSeconds": 335.87,
+      "httpErrors": [
+        [
+          403,
+          "/api/analytics/traffic",
+          44
+        ],
+        [
+          403,
+          "/api/studio-realtime/tickets",
+          15
+        ],
+        [
+          503,
+          "/api/health/capabilities",
+          4
+        ]
+      ]
+    },
+    "three": {
+      "statuses": {
+        "passed": 8
+      },
+      "pageerror": 0,
+      "crash": 0,
+      "testErrorCount": 0,
+      "runnerErrorCount": 0,
+      "wallSeconds": 204.99,
+      "httpErrors": [
+        [
+          403,
+          "/api/analytics/traffic",
+          31
+        ],
+        [
+          403,
+          "/api/studio-realtime/tickets",
+          8
+        ]
+      ]
+    }
+  },
+  "passed": false,
+  "single1440": {
+    "officialSuite": "drawing",
+    "test": "드로잉 진입 경로가 달라도 같은 원고 도구와 캔버스 배치를 사용한다 (1440px)",
+    "wallSeconds": 45.43,
+    "exitCode": 1,
+    "pageErrors": 0,
+    "pageCrashEvents": [],
+    "retries": 0,
+    "2FramesAfterContextmenu": {
+      "target": {
+        "tag": "DIV",
+        "id": "",
+        "role": "group",
+        "label": "작업 캔버스 — 휠로 세로 이동, Shift+휠로 가로 이동, H·스페이스·휠 버튼 드래그 또는 방향키로 자유 이동",
+        "title": null,
+        "classes": "relative flex-1 overflow-auto overscroll-contain rounded-none border-0 outline-none [scrollbar-gutter:stable] group/asset-drop transition-shadow data-[studio-asset-drop-active=true",
+        "test": null,
+        "menu": null
+      },
+      "canvas": {
+        "x": 78,
+        "y": 100,
+        "width": 1362,
+        "height": 860
+      },
+      "x": 1430,
+      "y": 950,
+      "prevented": false,
+      "menus": [],
+      "hasFocus": true,
+      "visibility": "visible"
+    },
+    "error": "실제 스크롤 뷰포트 DIV 우클릭 뒤 캔버스 작업 메뉴가 열리지 않음."
+  },
+  "single390": {
+    "officialSuite": "drawing",
+    "test": "드로잉 진입 경로가 달라도 같은 원고 도구와 캔버스 배치를 사용한다 (390px)",
+    "wallSeconds": 36.13,
+    "exitCode": 1,
+    "pageErrors": 0,
+    "pageCrashEvents": [
+      {
+        "utc": "2026-11-19T01:51:01.270Z",
+        "type": "crash",
+        "surface": "/studio/draft/drawing-entry-design"
+      }
+    ],
+    "retries": 0,
+    "lastNavigation": {
+      "utc": "2026-11-19T01:51:00.123Z",
+      "type": "navigation",
+      "surface": "/studio/draft/drawing-entry-design",
+      "queryFields": []
+    },
+    "error": "PWA 홈 방문 후 같은 원고 무쿼리 재진입, 헤더 대기 중 Chromium에서 Target crashed 발생. 앱 pageerror 없음. 원인 미확정."
+  }
+}

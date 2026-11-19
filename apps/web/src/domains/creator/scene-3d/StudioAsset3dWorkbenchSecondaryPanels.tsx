@@ -1,3 +1,4 @@
+import { StudioAsset3dRigFilePanel } from "./StudioAsset3dRigFilePanel";
 import { useState, type CSSProperties, type ReactElement } from "react";
 
 import type {
@@ -15,7 +16,6 @@ import {
   STUDIO_ASSET3D_REMESH_UNWRAP_METRICS,
   STUDIO_ASSET3D_SLICER_SPECS,
   buildAsset3dSlicerDeepLinkUrl,
-  buildAsset3dUnitOctahedralBoneGeometry,
   computeAsset3dDagEdgeBezierGeometry,
   evaluateAsset3dAiUnwrapPlan,
   evaluateAsset3dRemeshConfig,
@@ -28,15 +28,11 @@ import {
 import {
   STUDIO_ASSET3D_SKIN_WEIGHT_BRUSH_METRICS,
   detectAsset3dMultiviewPosition,
-  sanitizeAsset3dDisplayBoneName,
-  type StudioAsset3dDraftBoneNode,
   type StudioAsset3dMeshNormalAuditReport,
-  type StudioAsset3dSkeletonAuditReport,
   type StudioAsset3dSubmeshExtractionResult,
   type StudioAsset3dWeightBrushMode,
 } from "./studio-asset3d-weight-paint-pbr-engine";
 import type {
-  StudioAsset3dRigToolMode,
   StudioAsset3dWorkbenchMode,
 } from "./StudioAsset3dInspectorWorkbench";
 import {
@@ -68,7 +64,6 @@ const MULTIVIEW_SAMPLE_FILES = Object.freeze([
   "hero_back_cape.png",
 ]);
 
-const OCTAHEDRAL_BONE_METRICS = buildAsset3dUnitOctahedralBoneGeometry(1);
 const SAMPLE_UV_SEAM_INDICES = computeAsset3dUvSeamLineIndices(
   [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0],
   [0, 0, 1, 0, 0, 1, 0.2, 0.2, 1, 1, 0.2, 0.9],
@@ -111,17 +106,6 @@ function createRangeTrackStyle(min: number, max: number, extra?: CSSProperties):
 export interface StudioAsset3dWorkbenchSecondaryPanelsProps {
   readonly baseId: string;
   readonly studioMode: StudioAsset3dWorkbenchMode;
-  readonly rigTool: StudioAsset3dRigToolMode;
-  readonly onRigToolChange: (mode: StudioAsset3dRigToolMode) => void;
-  readonly rigBones: readonly StudioAsset3dDraftBoneNode[];
-  readonly selectedBoneName: string;
-  readonly onSelectBone: (boneName: string, cleanName: string) => void;
-  readonly renameDraft: string;
-  readonly onRenameDraftChange: (value: string) => void;
-  readonly onRenameSelectedBone: () => void;
-  readonly onAddChildBone: () => void;
-  readonly binaryRigByteLength: number;
-  readonly skeletonAudit: StudioAsset3dSkeletonAuditReport;
   readonly weightBrushMode: StudioAsset3dWeightBrushMode;
   readonly onWeightBrushModeChange: (mode: StudioAsset3dWeightBrushMode) => void;
   readonly weightBrushSizePx: number;
@@ -195,97 +179,13 @@ export function StudioAsset3dWorkbenchSecondaryPanels(
           data-testid="varco3d-workbench-panel-rigging"
           className="grid grid-cols-1 gap-3 rounded-xl border border-line/70 bg-panel/60 p-3 md:grid-cols-2"
         >
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-xs font-semibold text-fg">
-                스켈레톤 본 트리 ({props.rigBones.length}개 · 바이너리 {props.binaryRigByteLength}B ·
-                옥타헤드럴 {OCTAHEDRAL_BONE_METRICS.positions.length / 3}정점/
-                {OCTAHEDRAL_BONE_METRICS.triangleIndices.length / 3}면)
-              </h3>
-              <div role="group" aria-label="리깅 편집 도구" className="flex gap-1">
-                {(["skeleton", "weight", "pose"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    data-testid={`varco3d-rig-tool-${mode}`}
-                    aria-pressed={props.rigTool === mode}
-                    onClick={() => props.onRigToolChange(mode)}
-                    className={`rounded-md border px-2 py-0.5 text-[0.68rem] font-medium ${
-                      props.rigTool === mode
-                        ? "border-accent bg-accent-soft text-fg"
-                        : "border-line bg-card text-fg-2"
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div
-              role="listbox"
-              aria-label="리깅 본 목록"
-              className="max-h-36 overflow-y-auto rounded-lg border border-line/60 bg-card p-1.5"
-            >
-              {props.rigBones.map((bone) => {
-                const cleanName = sanitizeAsset3dDisplayBoneName(bone.name);
-                const selected = bone.name === props.selectedBoneName;
-                return (
-                  <button
-                    key={bone.name}
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    data-testid={`varco3d-bone-item-${cleanName}`}
-                    onClick={() => props.onSelectBone(bone.name, cleanName)}
-                    className={`flex w-full items-center justify-between rounded px-2 py-1 text-left text-[0.72rem] ${
-                      selected
-                        ? "bg-accent-soft font-semibold text-fg"
-                        : "text-fg-2 hover:bg-raised"
-                    }`}
-                  >
-                    <span>{cleanName}</span>
-                    <span className="text-[0.64rem] text-fg-3">
-                      {bone.parentName ? sanitizeAsset3dDisplayBoneName(bone.parentName) : "ROOT"}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <input
-                type="text"
-                aria-label="선택된 본 이름 변경"
-                data-testid="varco3d-bone-rename-input"
-                value={props.renameDraft}
-                onChange={(e) => props.onRenameDraftChange(e.target.value)}
-                className="min-w-0 flex-1 rounded-lg border border-line bg-card px-2 py-1 text-xs text-fg"
-              />
-              <button
-                type="button"
-                data-testid="varco3d-bone-rename-submit"
-                onClick={props.onRenameSelectedBone}
-                className="rounded-lg border border-line bg-card px-2.5 py-1 text-xs font-medium text-fg hover:border-accent"
-              >
-                이름 변경
-              </button>
-              <button
-                type="button"
-                data-testid="varco3d-bone-add-child"
-                onClick={props.onAddChildBone}
-                className="rounded-lg bg-accent px-2.5 py-1 text-xs font-semibold text-canvas"
-              >
-                + 자식 본
-              </button>
-            </div>
-          </div>
-
+          <StudioAsset3dRigFilePanel />
           <div className="flex flex-col justify-between gap-2 rounded-lg border border-line/60 bg-card p-2.5 text-[0.72rem] text-fg-2">
             <div className="flex flex-col gap-2">
+              <p>브러시 모양과 강도를 견본에서 확인할 수 있어요. GLB의 정점은 ‘스킨 웨이트 옮기기’에서 편집하세요.</p>
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-fg">
-                  스킨 웨이트 브러시 ([ / ] 단축키 지원)
+                  웨이트 브러시 미리보기 ([ / ] 크기 조절)
                 </span>
                 <span
                   data-testid="varco3d-weight-brush-size-readout"
@@ -378,10 +278,7 @@ export function StudioAsset3dWorkbenchSecondaryPanels(
               </label>
             </div>
 
-            <div className="text-[0.66rem] text-fg-3">
-              루트 본 수: {props.skeletonAudit.rootNames.length}개 · 사이클 감지:{" "}
-              {props.skeletonAudit.cycleBoneNames.length === 0 ? "없음(정상)" : "있음"}
-            </div>
+
           </div>
         </div>
       ) : null}

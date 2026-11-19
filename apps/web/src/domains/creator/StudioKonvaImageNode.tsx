@@ -37,6 +37,7 @@ import {
   expectedStudioRasterImagePresentation,
   registerStudioMountedRasterImagePresentation,
 } from "./render/studio-raster-image-presentation";
+import { useStudioAppliedFilterDraw } from "./filter/studio-applied-filter-context";
 import { refreshStudioRasterPresentationCaches } from "./render/studio-raster-presentation-cache";
 import {
   evaluateStudioAnimatedImageFilterCapability,
@@ -1898,8 +1899,8 @@ export function StudioKonvaImageNode({
           )
         : imageSource;
 
-  // Parent cache owners finish their layout registration before this passive effect. A child
-  // layout effect can otherwise run between the parent's old cleanup and its new registration.
+  const settleAppliedFilter = useStudioAppliedFilterDraw(el, filterCacheKey, rasterPresentationRequestKey,
+    rasterPresentationEligible && !!displayImg && filterPipelineActive && workerRequiredFailureKey !== workerRequestKey);
   useEffect(() => {
     if (!rasterPresentationSource || !rasterPresentationEligible) return;
     const identity = {
@@ -1913,7 +1914,7 @@ export function StudioKonvaImageNode({
 
     // A cached blend/mask ancestor can still contain the previous image despite this node's new
     // image prop. Rebuild those owners once per exact presentation, preserving their cache policy.
-    if (!refreshStudioRasterPresentationCaches(node)) return;
+    if (!refreshStudioRasterPresentationCaches(node)) { settleAppliedFilter?.(); return; }
 
     let active = true;
     const acknowledgeAfterDraw = () => {
@@ -1931,19 +1932,18 @@ export function StudioKonvaImageNode({
         || rasterPresentationRequestKeyRef.current !== identity.requestKey
       ) return;
       acknowledgeStudioRasterImagePresentationDraw(identity);
+      settleAppliedFilter?.();
       const currentExpected = expectedStudioRasterImagePresentation(identity);
       if (currentExpected) acknowledgeStudioRasterImagePresentation(currentExpected);
     };
     layer.on("draw.studioRasterPresentation", acknowledgeAfterDraw);
-    // Coalesce with React-Konva's pending draw instead of forcing another synchronous full Stage
-    // pass. `draw` fires only after drawScene completes, so the receipt is an actual presentation
-    // fence; decode, React commit, another image, or a transient GPU preview cannot satisfy it.
+    // 실제 drawScene 이후에만 표시를 확인한다. 프록시 프레임과 React 커밋은 이 경계를 넘지 않는다.
     layer.batchDraw();
     return () => {
       active = false;
       layer.off("draw.studioRasterPresentation", acknowledgeAfterDraw);
     };
-  }, [el.id, el.src, rasterPresentationEligible, rasterPresentationRequestKey, rasterPresentationSource]);
+  }, [el.id, el.src, rasterPresentationEligible, rasterPresentationRequestKey, rasterPresentationSource, settleAppliedFilter]);
 
   if (!displayImg || !imageSource) return null;
 

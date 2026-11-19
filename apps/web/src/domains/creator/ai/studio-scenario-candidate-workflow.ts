@@ -416,8 +416,17 @@ function explicitGenerationIndexes(
           (items[index]?.imagePrompt.trim().length ?? 0) > 0,
       )
     : items.flatMap((item, index) =>
-        item.imageDataUrl || item.imagePrompt.trim().length === 0 ? [] : [index],
+        item.imageDataUrl || item.imageCandidates?.length || item.imagePrompt.trim().length === 0 ? [] : [index],
       );
+}
+
+/** 제작 보드에서 원고로 넘긴 후보 수·품질·연출 지시를 해당 컷의 요청에 보존한다. */
+export function reviewedScenarioGenerationRequest(items: readonly ScenarioPreviewItem[], indexes: readonly number[]): StudioScenarioImageGenerationRequest {
+  const selected = indexes.map(index => items[index]).filter((item): item is ScenarioPreviewItem => Boolean(item));
+  const variants = selected.find(item => item.preferredVariantCount)?.preferredVariantCount ?? 2;
+  const qualityProfile = selected.find(item => item.preferredQualityProfile)?.preferredQualityProfile;
+  const variationStrategy = selected.find(item => item.preferredVariationStrategy)?.preferredVariationStrategy;
+  return { indexes, variants, ...(qualityProfile && { qualityProfile }), ...(variationStrategy && { variationStrategy }) };
 }
 
 export function inspectStudioScenarioImageGeneration(

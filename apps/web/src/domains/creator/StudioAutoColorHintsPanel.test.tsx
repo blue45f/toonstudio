@@ -286,7 +286,7 @@ describe("StudioAutoColorHintsPanel module boundary", () => {
     await waitFor(() => {
       expect(screen.getByText(/힌트 계획 준비됨/)).toBeTruthy();
     });
-    fireEvent.click(screen.getByRole("radio", { name: /새 채색 레이어/ }));
+    expect(screen.getByRole("radio", { name: /새 채색 레이어/ }).getAttribute("aria-checked")).toBe("true");
     fireEvent.click(screen.getByRole("button", { name: "새 채색 레이어에 적용" }));
     await waitFor(() => {
       expect(onApplyNewLayer).toHaveBeenCalled();
@@ -304,5 +304,48 @@ describe("StudioAutoColorHintsPanel module boundary", () => {
     expect(typeof summarizeStudioAutoColorHintPlan).toBe("function");
     expect(typeof planStudioAutoColorHints).toBe("function");
     expect(typeof StudioAutoColorHintsPanel).toBe("function");
+  });
+
+  it("선택 선화가 바뀐 뒤 도착한 기존 계획은 적용하지 않는다", async () => {
+    const first = createStudioAutoColorHintsDemoRequest();
+    const next = createStudioAutoColorHintsDemoRequest();
+    let finish: ((value: ReturnType<typeof planStudioAutoColorHints>) => void) | undefined;
+    const worker = vi.fn(() => new Promise<ReturnType<typeof planStudioAutoColorHints>>(resolve => { finish = resolve; }));
+    const onPlan = vi.fn();
+    const { rerender } = render(<StudioAutoColorHintsPanel request={first} onRun={worker} onPlan={onPlan} onApplyNewLayer={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "힌트 계획 실행" }));
+    await waitFor(() => expect(worker).toHaveBeenCalledOnce());
+    rerender(<StudioAutoColorHintsPanel request={next} onRun={worker} onPlan={onPlan} onApplyNewLayer={vi.fn()} />);
+    finish?.(planStudioAutoColorHints(first));
+    await waitFor(() => expect(screen.getByRole("button", { name: "힌트 계획 실행" })).toBeTruthy());
+    expect(onPlan).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "새 채색 레이어에 적용" })).toBeNull();
+  });
+
+  it("색 힌트를 바꾼 뒤 새 계획을 만들 때까지 적용을 막고 PNG 실패 시 원본을 지킨다", async () => {
+    const { image, seeds } = createStudioAutoColorHintsDemoRequest();
+    const apply = vi.fn();
+    const { rerender } = render(<StudioAutoColorHintsPanel image={image} seeds={seeds} onApplyNewLayer={apply} />);
+    const run = () => fireEvent.click(screen.getByRole("button", { name: "힌트 계획 실행" }));
+    run();
+    const button = await screen.findByRole("button", { name: "새 채색 레이어에 적용" });
+    expect(button).toHaveProperty("disabled", false);
+    const revised = seeds.map(seed => ({ ...seed, color: [11, 62, 99, 255] as const }));
+    rerender(<StudioAutoColorHintsPanel image={image} seeds={revised} onApplyNewLayer={apply} />);
+    expect(button).toHaveProperty("disabled", true);
+    expect(screen.getByText(/색 힌트가 바뀌었어요/)).toBeTruthy();
+    run();
+    await waitFor(() => expect(button).toHaveProperty("disabled", false));
+    const getContext = mockCanvas2dContext({ createImageData() { throw new Error("PNG 픽셀 할당 실패"); } } as unknown as CanvasRenderingContext2D);
+    const encode = vi.spyOn(HTMLCanvasElement.prototype, "toDataURL");
+    try {
+      fireEvent.click(button);
+      expect((await screen.findByRole("alert")).textContent).toContain("PNG 픽셀 할당 실패");
+      expect(encode).not.toHaveBeenCalled();
+      expect(apply).not.toHaveBeenCalled();
+    } finally {
+      getContext.mockRestore();
+      encode.mockRestore();
+    }
   });
 });

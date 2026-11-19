@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-export type StudioDrawingClarityPanel = "layers" | "brush" | "pages";
+export type StudioDrawingClarityPanel = "layers" | "brush" | "pages" | "commands";
 export interface DrawingClarityState {
   readonly active: boolean;
   readonly available: boolean;

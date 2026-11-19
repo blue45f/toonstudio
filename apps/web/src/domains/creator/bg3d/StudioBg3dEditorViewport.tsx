@@ -17,20 +17,12 @@ import { StudioBg3dViewFrameClear } from "./StudioBg3dViewFrameClear";
 import { StudioBg3dViewportReadinessOverlay } from "./StudioBg3dViewportReadinessOverlay";
 import { acceptStudioBg3dViewportRenderer, isStudioBg3dCanvasFactoryPending } from "./studio-bg3d-canvas-renderer-admission";
 import { createStudioBg3dPointerEvents } from "./studio-bg3d-pointer-events";
-import { useStudioBg3dProSuiteHint } from "./studio-bg3d-prosuite-hint";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
-const StudioBg3dTurntableController = lazyRetry(
-  () => import("./StudioBg3dTurntableController").then((m) => ({ default: m.StudioBg3dTurntableController })),
-  "StudioBg3dTurntableController",
-);
-const StudioBg3dTurntableMotion = lazyRetry(
-  () => import("./StudioBg3dTurntableMotion").then((m) => ({ default: m.StudioBg3dTurntableMotion })),
-  "StudioBg3dTurntableMotion",
-);
+const StudioBg3dTurntableController = lazyRetry(() => import("./StudioBg3dTurntableController").then((module) => ({ default: module.StudioBg3dTurntableController })), "StudioBg3dTurntableController");
+const StudioBg3dTurntableMotion = lazyRetry(() => import("./StudioBg3dTurntableMotion").then((module) => ({ default: module.StudioBg3dTurntableMotion })), "StudioBg3dTurntableMotion");
 
 export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<string, any>; simplified?: boolean }) {
-  const proSuiteHint = useStudioBg3dProSuiteHint();
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -348,7 +340,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     data-testid="studio-bg3d-engine-probing"
                     className="flex h-full w-full items-center justify-center bg-panel p-6 text-center text-sm text-fg-2"
                   >
-                    선택한 3D 엔진을 확인하고 있습니다.
+                    {isStudioBg3dCanvasFactoryPending(engineRuntime) ? "WebGPU 엔진 파일을 불러오고 있습니다." : "선택한 3D 엔진을 확인하고 있습니다."}
                   </div>
                 ) : engineRuntime.plan.status !== "available" ? (
                   <div
@@ -964,7 +956,12 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     </button>
                   </StudioToolHintTarget>
                   <StudioToolHintTarget
-                    hint={proSuiteHint}
+                    hint={{
+                      id: "bg3d:viewport:prosuite",
+                      title: "웹툰 컷 제작",
+                      description: "장면 화각을 조절하고 카메라 컷을 저장한 뒤, 선택한 컷을 레이어별로 출력합니다.",
+                      preview: "camera-orbit",
+                    }}
                     preferredSide="left"
                   >
                     <button

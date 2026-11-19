@@ -41,6 +41,28 @@ import type { StudioEditorMutationTicket } from "../studio-editor-scope";
 import type { ScenarioPreviewItem } from "../studio-scenario-layout";
 import type { Dispatch, SetStateAction } from "react";
 
+function describeContinuityStates(states: NonNullable<ScenarioPreviewItem["continuity"]>["props"]): string {
+  return Object.entries(states ?? {})
+    .filter(([name]) => name.trim())
+    .map(([name, state]) => state?.trim() ? `${name.trim()} (${state.trim()})` : name.trim())
+    .join(", ");
+}
+
+function reviewedCutPrompt(panel: ScenarioPreviewItem, characterContext: string, direction: string): string {
+  const beat = panel.continuity;
+  const anchors = [
+    ["등장인물", beat?.characterNames?.filter(Boolean).join(", ")],
+    ["장소", beat?.location],
+    ["시간", beat?.time],
+    ["의상", describeContinuityStates(beat?.costumes)],
+    ["소품", describeContinuityStates(beat?.props)],
+  ].filter(([, value]) => value?.trim()).map(([label, value]) => `${label}: ${value}`).join("\n");
+  return [
+    characterContext && `[캐릭터 바이블 — [고정] 설정 유지]\n${characterContext}`,
+    panel.imagePrompt, anchors && `[이 컷의 연속성]\n${anchors}`, direction,
+  ].filter(value => value.trim()).join("\n\n");
+}
+
 /** StudioPage's scenario preview state — the reviewed scenes the image executors fill in. */
 export interface StudioScenarioImageGenerationSnapshot {
   items: ScenarioPreviewItem[];
@@ -214,13 +236,7 @@ export function createStudioScenarioImageGenerationExecutors(
         }
         const panel = snapshot.items[index];
         let imageResult: StudioAiResult<{ dataUrl: string }>;
-        const reviewedImagePrompt = [
-          characterContext ? `[캐릭터 바이블 — [고정] 설정 유지]\n${characterContext}` : "",
-          panel.imagePrompt,
-          task.promptDirective,
-        ]
-          .filter((value) => value.trim().length > 0)
-          .join("\n\n");
+        const reviewedImagePrompt = reviewedCutPrompt(panel, characterContext, task.promptDirective);
         const provider = studioImageAiProviderContext(aiSettings);
         const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "generated");
         const roleReferences = scenarioRoleReferencesForRequest(continuityReferenceDataUrl);
@@ -385,13 +401,7 @@ export function createStudioScenarioImageGenerationExecutors(
       snapshot.items.find((item, itemIndex) => itemIndex !== index && item.imageDataUrl)?.imageDataUrl ?? null;
     const characterContext = buildStudioCharacterBiblePromptContext(characterBible, 4_000);
     const defaultRecipe = compileStudioScenarioImagePromptDirective();
-    const reviewedImagePrompt = [
-      characterContext ? `[캐릭터 바이블 — [고정] 설정 유지]\n${characterContext}` : "",
-      panel.imagePrompt,
-      defaultRecipe.promptDirective,
-    ]
-      .filter((value) => value.trim().length > 0)
-      .join("\n\n");
+    const reviewedImagePrompt = reviewedCutPrompt(panel, characterContext, defaultRecipe.promptDirective);
     const provider = studioImageAiProviderContext(aiSettings);
     const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "generated");
     const roleReferences = scenarioRoleReferencesForRequest(referenceImageDataUrl);

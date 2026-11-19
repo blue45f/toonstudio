@@ -13,8 +13,9 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
+import type { StudioSpacePollSnapshot } from "@toonstudio/contracts/studio-space-poll";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
@@ -29,14 +30,15 @@ import {
   tallyStudioPoll,
   type StudioPoll,
   type StudioPollCreateInput,
+  type StudioPollTally,
 } from "./studio-virtual-space-poll";
 
 export interface StudioVirtualSpacePollProps {
   readonly poll: StudioPoll | null;
+  readonly shared?: StudioSpacePollSnapshot;
   readonly canCreate: boolean;
   readonly canClose: boolean;
   readonly voterSessionId: string;
-  readonly voterName: string;
   readonly onCreate: (input: Omit<StudioPollCreateInput, "createdBySessionId" | "createdByName" | "nowMs" | "id">) => void;
   readonly onVote: (optionId: string) => void;
   readonly onClose: () => void;
@@ -170,37 +172,53 @@ function PollEmptyState() {
 }
 
 export function StudioVirtualSpacePoll({
-  poll,
-  canCreate,
-  canClose,
-  voterSessionId,
-  voterName,
-  onCreate,
-  onVote,
-  onClose,
+  poll, shared, canCreate, canClose, voterSessionId, onCreate, onVote, onClose,
 }: StudioVirtualSpacePollProps) {
+  const bt = useBilingual("StudioVirtualSpacePoll");
   const [now, setNow] = useState(() => Date.now());
-
+  const [replacing, setReplacing] = useState<string | null>(null);
+  const active = shared ? shared.poll : poll;
+  const deadline = active?.deadlineMs;
+  const closed = active?.closed;
   useEffect(() => {
-    if (!poll || poll.deadlineMs == null || studioPollStatus(poll) !== "open") return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
+    if (deadline == null || closed) return;
+    const timer = setInterval(() => {
+      const time = Date.now();
+      setNow(time);
+      if (time >= deadline) clearInterval(timer);
+    }, 1000);
     return () => clearInterval(timer);
-  }, [poll]);
+  }, [deadline, closed]);
 
-  if (!poll) {
+  if (!active || (active.id === replacing && canCreate)) {
     if (!canCreate) return <PollEmptyState />;
-    return <PollWizard onCreate={onCreate} voterName={voterName} />;
+    return <>
+      {active && <button className="studio-poll-secondary" type="button" onClick={() => setReplacing(null)}>{bt("이전 결과 보기", "Back to results")}</button>}
+      <PollWizard onCreate={onCreate} />
+    </>;
   }
 
-  return <PollCard
-    poll={poll}
-    now={now}
-    canVote={Boolean(voterSessionId)}
-    canClose={canClose}
-    didVote={studioPollDidVote(poll, voterSessionId)}
-    onVote={onVote}
-    onClose={onClose}
-  />;
+  const tally = shared?.poll ? sharedPollTally(shared.poll) : poll && tallyStudioPoll(poll);
+  if (!tally) return null;
+  const pollTime = Math.max(active.createdAt, now);
+  return <>
+    <PollCard poll={active} now={pollTime} tally={tally}
+      canVote={shared ? shared.canVote : Boolean(voterSessionId)} canClose={canClose}
+      didVote={shared ? shared.didVote : Boolean(poll && studioPollDidVote(poll, voterSessionId))}
+      onVote={onVote} onClose={onClose} />
+    {canCreate && studioPollStatus(active, pollTime) !== "open" && <button type="button" className="studio-poll-secondary"
+      onClick={() => setReplacing(active.id)}>{bt("새 투표 만들기", "Create another poll")}</button>}
+  </>;
+}
+
+function sharedPollTally(poll: NonNullable<StudioSpacePollSnapshot["poll"]>): StudioPollTally {
+  const totalVotes = poll.options.reduce((sum, option) => sum + option.count, 0);
+  const results = poll.options.map((option, index) => ({
+    optionId: String(index), count: option.count, text: option.text,
+    percent: totalVotes ? Math.round(option.count / totalVotes * 1000) / 10 : 0,
+    voters: option.voters.map((name, number) => ({ name, sessionId: String(number) })),
+  })).sort((a, b) => b.count - a.count || a.text.localeCompare(b.text, "ko"));
+  return { totalVotes, uniqueVoters: totalVotes, results };
 }
 
 /* 투표 생성 마법사 */
@@ -500,10 +518,8 @@ function WizardFooter({
 
 function PollWizard({
   onCreate,
-  voterName,
 }: {
   readonly onCreate: StudioVirtualSpacePollProps["onCreate"];
-  readonly voterName: string;
 }) {
   const bt = useBilingual("StudioVirtualSpacePoll");
   const [step, setStep] = useState(0);
@@ -538,10 +554,6 @@ function PollWizard({
     <header className="studio-poll-head">
       <div>
         <h2>{bt("투표 만들기", "Create a poll")}</h2>
-        <p>{bt(
-          `${voterName}님, 팀의 의견을 빠르게 모아보세요.`,
-          `${voterName}, gather your team's opinion quickly.`,
-        )}</p>
       </div>
       <WizardSteps step={step} />
     </header>
@@ -591,7 +603,7 @@ function PollWizard({
 /* 투표 카드 */
 
 function PollCard({
-  poll,
+  poll, tally,
   now,
   canVote,
   canClose,
@@ -599,7 +611,8 @@ function PollCard({
   onVote,
   onClose,
 }: {
-  readonly poll: StudioPoll;
+  readonly poll: Pick<StudioPoll, "anonymous" | "question" | "createdByName" | "closed" | "deadlineMs">;
+  readonly tally: StudioPollTally;
   readonly now: number;
   readonly canVote: boolean;
   readonly canClose: boolean;
@@ -610,7 +623,6 @@ function PollCard({
   const bt = useBilingual("StudioVirtualSpacePoll");
   const status = studioPollStatus(poll, now);
   const timeLeft = studioPollTimeLeftMs(poll, now);
-  const tally = useMemo(() => tallyStudioPoll(poll), [poll]);
   const voteUnit = bt("표", "votes");
   const open = status === "open";
 

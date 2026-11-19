@@ -1,19 +1,22 @@
-import { ArrowLeft, ArrowUpRight, BookOpen, Brush, MonitorCog, Send } from "lucide-react";
+import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
+import { splitStudioMainMenuSections, type StudioMainMenuItem } from "../studio-main-menu-model";
 import type { StudioDrawingClarityAction } from "./StudioDrawingClarityMore";
 
 const TASKS = [
-  { id: "document", ko: "원고와 레이어", en: "Draft and layers", detailKo: "페이지 · 레이어 · 소재", detailEn: "Pages, layers and assets", ids: ["pages", "layers", "assets", "history"], icon: BookOpen, emblem: "/brand/luminous-atelier-20261114/icon-studio-layers-color.webp" },
-  { id: "drawing", ko: "그리기 도구", en: "Drawing tools", detailKo: "펜 설정 · 전체 도구 · 검색", detailEn: "Pen settings, all tools and search", ids: ["brush", "bubble", "all", "search"], icon: Brush, emblem: "/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp" },
-  { id: "output", ko: "내보내기와 협업", en: "Export and collaboration", detailKo: "파일 출력 · 함께 작업", detailEn: "Output files and work together", ids: ["export", "team"], icon: Send, emblem: "/brand/luminous-atelier-20261114/icon-nav-learn-collab.webp" },
-  { id: "workspace", ko: "화면과 도움말", en: "Display and help", detailKo: "작업 배치 · 사용 방법 · 문제 해결", detailEn: "Workspace, guides and recovery", ids: ["windows", "view", "help", "device", "status"], icon: MonitorCog, emblem: "/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp" },
+  { id: "document", ko: "원고와 레이어", en: "Draft and layers", detailKo: "페이지 · 레이어 · 소재", detailEn: "Pages, layers and assets", ids: ["pages", "layers", "assets", "history"], art: "layers" },
+  { id: "drawing", ko: "그리기 도구", en: "Drawing tools", detailKo: "펜 설정 · 필터 · 전체 도구", detailEn: "Pen settings, filters and all tools", ids: ["brush", "bubble", "character3d", "all", "search"], art: "brush" },
+  { id: "output", ko: "내보내기와 협업", en: "Export and collaboration", detailKo: "파일 출력 · 함께 작업", detailEn: "Output files and work together", ids: ["export", "team"], art: "export" },
+  { id: "workspace", ko: "화면과 도움말", en: "Display and help", detailKo: "작업 배치 · 사용 방법 · 문제 해결", detailEn: "Workspace, guides and recovery", ids: ["windows", "view", "help", "device", "status"], art: "tools" },
 ] as const;
 
 /** 목적을 고른 뒤 해당 명령만 보여 준다. 실행은 기존 명령과 native 화면 종료에 맡긴다. */
-export function StudioDrawingClarityTaskActions({ actions, run }: {
+export function StudioDrawingClarityTaskActions({ actions, filterItems, run }: {
   readonly actions: readonly StudioDrawingClarityAction[];
+  readonly filterItems?: readonly StudioMainMenuItem[];
   readonly run: (action: StudioDrawingClarityAction) => void;
 }) {
   const bt = useBilingual("studio.drawingClarity");
@@ -33,11 +36,28 @@ export function StudioDrawingClarityTaskActions({ actions, run }: {
         <button type="button" className="studio-drawing-clarity-button" onClick={() => setTaskId(null)} aria-label={bt("원고 도구 분류로 돌아가기", "Back to draft tool categories")}><ArrowLeft size={18} aria-hidden /></button>
         <div><h3 ref={heading} tabIndex={-1}>{bt(active.ko, active.en)}</h3><p>{bt(active.detailKo, active.detailEn)}</p></div>
       </header>
+      {active.id === "drawing" && filterItems && filterItems.length > 0 && (
+        <label className="studio-drawing-filter-choice">
+          <span>{bt("필터", "Filters")}</span>
+          <select value="" aria-label={bt("필터 선택", "Choose a filter")} onChange={(event) => {
+            const item = filterItems.find(option => option.id === event.currentTarget.value);
+            if (item && !item.disabled) run({ id: item.id, label: item.label, run: item.onSelect });
+          }}>
+            <option value="" disabled>{bt("필터 선택", "Choose a filter")}</option>
+            {splitStudioMainMenuSections(filterItems).map(section => {
+              const options = section.rows.map(({ item }) => <option key={item.id} value={item.id} disabled={item.disabled}>
+                {item.disabled && item.unavailableReason ? `${item.label} — ${item.unavailableReason}` : item.label}
+              </option>);
+              return section.label ? <optgroup key={section.rows[0]?.index} label={section.label}>{options}</optgroup> : options;
+            })}
+          </select>
+        </label>
+      )}
       <div className="studio-drawing-task-list">{active.actions.map(action => <button key={action.id} type="button" data-studio-clarity-action={action.id}
         className="studio-drawing-task-action" onClick={() => run(action)}><span>{action.label}</span><ArrowUpRight size={18} aria-hidden /></button>)}</div>
     </> : <nav aria-label={bt("원고 도구 목적 고르기", "Choose a draft task")} className="studio-drawing-task-grid">
-      {groups.map(task => { const Icon = task.icon; return <button key={task.id} type="button" className="studio-drawing-task-purpose"
-        data-drawing-task-category={task.id} onClick={() => setTaskId(task.id)}><span className="studio-drawing-task-purpose__visual" aria-hidden="true"><img src={task.emblem} alt="" width={40} height={40} /><Icon size={18} aria-hidden /></span><strong>{bt(task.ko, task.en)}</strong><span>{bt(task.detailKo, task.detailEn)}</span></button>; })}
+      {groups.map(task => <button key={task.id} type="button" className="studio-drawing-task-purpose"
+        data-drawing-task-category={task.id} onClick={() => setTaskId(task.id)}><StudioToolArtwork tool={task.art} className="studio-drawing-task-art" /><strong>{bt(task.ko, task.en)}</strong><span>{bt(task.detailKo, task.detailEn)}</span></button>)}
     </nav>}
   </div>;
 }

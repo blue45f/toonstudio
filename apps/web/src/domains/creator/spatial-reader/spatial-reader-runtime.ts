@@ -1,9 +1,11 @@
 import { CanvasTexture, Color, DoubleSide, Group, LinearFilter, Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, Raycaster, RingGeometry, Scene, SRGBColorSpace, Vector2, Vector3, WebGLRenderer, type Texture } from "three";
+import { createSpatialPanelGeometry, type SpatialFocus, type SpatialSurface } from "./spatial-reader-surface";
 import { spatialCaptionPages as captionPages } from "./spatial-caption-pages";
 import { nextSpatialPanel, visibleSpatialPanels, type SpatialBook } from "./spatial-book";
 
 export interface SpatialReaderRuntime {
   focus(index: number): void;
+  setPresentation(surface: SpatialSurface, focusMode: SpatialFocus): void;
   enter(mode: "immersive-vr" | "immersive-ar"): Promise<void>;
   exit(): Promise<void>;
   setScale(scale: number): void;
@@ -60,20 +62,85 @@ export function createSpatialReader(element: HTMLElement, book: SpatialBook, ini
   let targets: Mesh[]=[];let scale=1;let captionPage=0;
   const ray=new Raycaster(),rotation=new Matrix4(),direction=new Vector3(),position=new Vector3();
   const mesh=(texture:Texture,width:number,height:number)=>new Mesh(new PlaneGeometry(width,height),new MeshBasicMaterial({map:texture,side:DoubleSide,transparent:true,depthWrite:false}));
+  let surface: SpatialSurface = "cylinder-90deg-canopy";
+  let focusMode: SpatialFocus = "pointed-panel";
+  let pointedIndex = index;
+  const artwork = new Map<Mesh<PlaneGeometry, MeshBasicMaterial>, number>();
+  const pointer = new Vector2();
+  function placePanel(group: Group, slot: number) {
+    const offset = slot - index;
+    const compact = !session && camera.aspect < 0.8 && offset !== 0;
+    group.position.set(offset * (compact ? 1.5 : 2.25), 1.45, (ar ? 0 : -3) - Math.abs(offset) * 0.4);
+    group.rotation.y = -offset * 0.1;
+    group.scale.setScalar(compact ? 0.7 : 1);
+    // 좁은 화면에서는 양옆 컷의 그림을 이동 단서로 남기고 자막은 현재 컷에서 읽는다.
+    const caption = group.children.find(child => child.userData.caption === true);
+    if (caption) caption.visible = !compact;
+  }
+  function updateArtworkEmphasis(plane: Mesh<PlaneGeometry, MeshBasicMaterial>, slot: number) {
+    plane.material.color.setScalar(focusMode === "pointed-panel" && slot !== pointedIndex ? 0.32 : 1);
+  }
+  function applyFocus() {
+    for (const group of panels.children) {
+      group.visible = focusMode !== "current-panel" || group.userData.index === index;
+    }
+    for (const [plane, slot] of artwork) updateArtworkEmphasis(plane, slot);
+  }
+  function pointAt(slot: number) {
+    if (slot === pointedIndex) return;
+    pointedIndex = slot;
+    applyFocus();
+  }
+  function setPresentation(nextSurface: SpatialSurface, nextFocus: SpatialFocus) {
+    if (nextSurface !== surface) {
+      surface = nextSurface;
+      for (const plane of artwork.keys()) {
+        const previous = plane.geometry;
+        const { width, height } = previous.parameters;
+        plane.geometry = createSpatialPanelGeometry(width, height, surface);
+        previous.dispose();
+      }
+    }
+    if (nextFocus !== focusMode) {
+      focusMode = nextFocus;
+      pointedIndex = index;
+      applyFocus();
+    }
+  }
   function navigation() {
     release(buttons);
     for(const [name,delta,x] of [["← 이전",-1,-.75],["다음 →",1,.75]] as const){const button=mesh(label(name,"button"),.65,.18);button.position.set(x,.18,ar?.1:-2.8);button.userData.delta=delta;buttons.add(button);}
   }
   function focus(next:number) {
-    if(disposed)return;const nextIndex=nextSpatialPanel(next,0,book.panels.length);if(nextIndex!==index)captionPage=0;index=nextIndex;const version=++generation;release(panels);targets=[];
-    for(const slot of visibleSpatialPanels(index,book.panels.length)){
-      const panel=book.panels[slot],delta=slot-index;const group=new Group();group.position.set(delta*2.25,1.45,(ar?0:-3)-Math.abs(delta)*.4);group.rotation.y=-delta*.1;panels.add(group);
+    if (disposed) return;
+    const nextIndex = nextSpatialPanel(next, 0, book.panels.length);
+    if (nextIndex !== index) captionPage = 0;
+    index = nextIndex;
+    const version = ++generation;
+    release(panels);
+    targets = [];
+    artwork.clear();
+    pointedIndex = index;
+    for (const slot of visibleSpatialPanels(index, book.panels.length)) {
+      const panel = book.panels[slot], delta = slot-index;
+      const group = new Group();
+      group.userData.index = slot;
+      group.visible = focusMode !== "current-panel" || delta === 0;
+      panels.add(group);
       const pages=captionPages(panel.caption);const page=delta===0?captionPage%pages.length:0;
-      const caption=mesh(label(`${slot+1}/${book.panels.length} · ${panel.title.replace(/\s+/gu," ").slice(0,12)} · 대사 ${page+1}/${pages.length}\n${pages[page]}`),1.9,.48);caption.position.y=-1.06;caption.userData.index=slot;if(delta===0&&pages.length>1)caption.userData.captionStep=1;group.add(caption);targets.push(caption);
+      const caption=mesh(label(`${slot+1}/${book.panels.length} · ${panel.title.replace(/\s+/gu," ").slice(0,12)} · 대사 ${page+1}/${pages.length}\n${pages[page]}`),1.9,.48);caption.position.y=-1.06;caption.userData.index=slot;if(delta===0&&pages.length>1)caption.userData.captionStep=1;caption.userData.caption=true;group.add(caption);targets.push(caption);
+      placePanel(group, slot);
       const add=async(src:string,depth:number)=>{
         const {texture,aspect}=await rasterTexture(src);
         if(disposed||version!==generation){texture.dispose();return;}
-        const height=Math.min(1.65,1.95/aspect),width=height*aspect;const plane=mesh(texture,width,height);plane.position.z=depth;plane.userData.index=slot;group.add(plane);targets.push(plane);
+        const height = Math.min(1.65, 1.95 / aspect), width = height * aspect;
+        const plane = new Mesh(
+          createSpatialPanelGeometry(width, height, surface),
+          new MeshBasicMaterial({ map: texture, side: DoubleSide, transparent: true, depthWrite: false }),
+        );
+        artwork.set(plane, slot);
+        updateArtworkEmphasis(plane, slot);
+        plane.position.z=depth;plane.userData.index=slot;group.add(plane);targets.push(plane);
       };
       void add(panel.src,0).catch(error=>{if(!disposed&&version===generation)onStatus(String(error));});
       if(delta===0)for(const layer of panel.layers)void add(layer.src,layer.depth).catch(error=>{if(!disposed&&version===generation)onStatus(String(error));});
@@ -87,35 +154,74 @@ export function createSpatialReader(element: HTMLElement, book: SpatialBook, ini
     else if(typeof object.userData.index==="number")focus(object.userData.index);
     else if(typeof object.userData.delta==="number")focus(index+object.userData.delta);
   }
+  function hitPanel() {
+    return ray.intersectObjects(targets, false).find(hit => hit.object.visible && hit.object.parent?.visible)?.object;
+  }
+  function hitControlOrPanel() {
+    return ray.intersectObjects([...targets, ...buttons.children], false).find(hit => hit.object.visible && hit.object.parent?.visible)?.object;
+  }
   function select(controller?: Group) {
     if(ar&&placing){if(reticle.visible){root.position.setFromMatrixPosition(reticle.matrix);root.visible=true;placing=false;reticle.visible=false;onStatus("웹툰을 배치했어요. 컨트롤러 또는 화면의 이전·다음 버튼으로 감상하세요.");}return;}
     if(controller){rotation.identity().extractRotation(controller.matrixWorld);position.setFromMatrixPosition(controller.matrixWorld);direction.set(0,0,-1).applyMatrix4(rotation);ray.set(position,direction);}
     else ray.setFromCamera(new Vector2(0,0),camera);
-    activate(ray.intersectObjects([...targets,...buttons.children],false)[0]?.object as Mesh|undefined);
+    activate(hitControlOrPanel() as Mesh | undefined);
   }
   const controllers=[renderer.xr.getController(0),renderer.xr.getController(1)];
   const selectHandlers=controllers.map(controller=>()=>select(controller));
   controllers.forEach((controller,i)=>{scene.add(controller);controller.addEventListener("select",selectHandlers[i]);});
   let pointerStart:{x:number;y:number}|null=null;
+  function pointRay(event: PointerEvent) {
+    const bounds = renderer.domElement.getBoundingClientRect();
+    pointer.set((event.clientX - bounds.left) / bounds.width * 2 - 1, 1 - (event.clientY - bounds.top) / bounds.height * 2);
+    ray.setFromCamera(pointer, camera);
+  }
+  const pointerMove = (event: PointerEvent) => {
+    if (session || event.pointerType === "touch" || focusMode !== "pointed-panel") return;
+    pointRay(event);
+    pointAt(hitPanel()?.userData.index ?? index);
+  };
+  const pointerLeave = () => pointAt(index);
+  const pointerCancel = () => { pointerStart = null; pointerLeave(); };
   const pointerDown=(event:PointerEvent)=>{pointerStart={x:event.clientX,y:event.clientY};};
   const pointerUp=(event:PointerEvent)=>{
-    if(session||!pointerStart||Math.hypot(pointerStart.x-event.clientX,pointerStart.y-event.clientY)>10)return;
-    const bounds=renderer.domElement.getBoundingClientRect();ray.setFromCamera(new Vector2((event.clientX-bounds.left)/bounds.width*2-1,-(event.clientY-bounds.top)/bounds.height*2+1),camera);
-    activate(ray.intersectObjects([...targets,...buttons.children],false)[0]?.object as Mesh|undefined);pointerStart=null;
+    const start=pointerStart;pointerStart=null;
+    if(session||!start||Math.hypot(start.x-event.clientX,start.y-event.clientY)>10)return;
+    pointRay(event);
+    activate(hitControlOrPanel() as Mesh | undefined);
   };
   renderer.domElement.addEventListener("pointerdown",pointerDown);renderer.domElement.addEventListener("pointerup",pointerUp);
+  renderer.domElement.addEventListener("pointermove",pointerMove);
+  renderer.domElement.addEventListener("pointerleave",pointerLeave);
+  renderer.domElement.addEventListener("pointercancel",pointerCancel);
   const contextLost=(event:Event)=>{event.preventDefault();onFatal("그래픽 장치가 중단되어 일반 감상 모드로 전환했어요.");};renderer.domElement.addEventListener("webglcontextlost",contextLost);
-  const resize=()=>{if(disposed)return;const width=Math.max(1,element.clientWidth),height=Math.max(1,element.clientHeight);renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();};
+  const resize = () => {
+    if (disposed) return;
+    const width = Math.max(1, element.clientWidth), height = Math.max(1, element.clientHeight);
+    renderer.setSize(width, height, false);
+    camera.aspect = width / height;
+    camera.fov = Math.max(55, 2 * Math.atan(1.12 / (2.8 * camera.aspect)) * 180 / Math.PI);
+    camera.updateProjectionMatrix();
+    for (const group of panels.children) {
+      if (group instanceof Group) placePanel(group, group.userData.index);
+    }
+  };
   const observer=new ResizeObserver(resize);observer.observe(element);resize();
   const end=()=>{hitSource?.cancel();hitSource=null;session=null;ar=false;placing=false;reticle.visible=false;scene.background=new Color(0x0b1420);root.visible=true;root.position.set(0,0,0);root.scale.setScalar(1);if(!disposed){focus(index);onStatus("공간 세션을 종료했어요. 현재 컷에서 이어서 감상할 수 있어요.");}};
   renderer.setAnimationLoop((_time,frame)=>{
     if(disposed||document.hidden&&!session)return;
     if(ar&&placing&&frame&&hitSource){const space=renderer.xr.getReferenceSpace();const hit=frame.getHitTestResults(hitSource)[0];const pose=space&&hit?hit.getPose(space):null;reticle.visible=Boolean(pose);if(pose)reticle.matrix.fromArray(pose.transform.matrix);}
+    if (session && root.visible && !placing && focusMode === "pointed-panel") {
+      const head = renderer.xr.getCamera();
+      head.getWorldPosition(position);
+      head.getWorldDirection(direction);
+      ray.set(position, direction);
+      pointAt(hitPanel()?.userData.index ?? index);
+    }
     renderer.render(scene,camera);
   });
   focus(index);
   return {
-    focus,
+    focus, setPresentation,
     async enter(mode){
       if(disposed||entering||session)throw new Error("공간 감상 화면을 준비 중이거나 이미 실행 중이에요.");
       if(!isSecureContext||!navigator.xr)throw new Error("AR/VR은 지원 기기의 보안 연결에서 사용할 수 있어요. 일반 감상은 계속 사용할 수 있습니다.");
@@ -141,7 +247,10 @@ export function createSpatialReader(element: HTMLElement, book: SpatialBook, ini
       const current=session;session=null;if(current){current.removeEventListener("end",end);void current.end().catch(()=>{});}
       controllers.forEach((controller,i)=>controller.removeEventListener("select",selectHandlers[i]));
       renderer.setAnimationLoop(null);renderer.domElement.removeEventListener("pointerdown",pointerDown);renderer.domElement.removeEventListener("pointerup",pointerUp);renderer.domElement.removeEventListener("webglcontextlost",contextLost);
-      release(panels);release(buttons);reticle.geometry.dispose();reticle.material.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();scene.clear();
+      renderer.domElement.removeEventListener("pointermove",pointerMove);
+      renderer.domElement.removeEventListener("pointerleave",pointerLeave);
+      renderer.domElement.removeEventListener("pointercancel",pointerCancel);
+      artwork.clear();release(panels);release(buttons);reticle.geometry.dispose();reticle.material.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();scene.clear();
     },
   };
 }

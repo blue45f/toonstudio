@@ -66,7 +66,7 @@ export interface StudioTemplateBackgroundControllerOptions {
   setBg: (bg: string) => void;
   setBgGrad: (grad: string[] | null) => void;
   setCurrentTemplate: (tpl: TemplateSpec | null) => void;
-  commit: (els: El[]) => boolean;
+  commit: (els: El[], page?: Pick<PageState, "canvasH" | "bg" | "bgGrad">) => boolean;
   undo: () => void;
   setSelectedId: (id: string | null) => void;
   setError: (err: string | null) => void;
@@ -157,14 +157,13 @@ export function useStudioTemplateLayout(options: StudioTemplateBackgroundControl
       frameCount: tpl.frames.length,
     });
     if (elements.length > 0 && !(await confirmStudioDestructiveAction(templateRequest))) return;
-    setMenu(null);
-    setCanvasH(tpl.canvasH);
-    setBg("#ffffff");
-    setBgGrad(null);
-    setCurrentTemplate(tpl);
     const nextEls = regenerateTemplate(tpl, panelGutter, [])
       ?? instantiateTemplateFrames(tpl.frames, []);
-    settleStudioDestructiveCommit(templateRequest, commit(nextEls), undo);
+    if (!settleStudioDestructiveCommit(templateRequest, commit(nextEls, {
+      canvasH: tpl.canvasH, bg: "#ffffff", bgGrad: null,
+    }), undo)) return;
+    setMenu(null);
+    setCurrentTemplate(tpl);
     setSelectedId(null);
     announceDrawingShortcut(
       tpl.frames.length > 0

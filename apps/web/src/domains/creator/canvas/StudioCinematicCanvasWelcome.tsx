@@ -1,5 +1,4 @@
 import {
-  Brush,
   ChevronDown,
   GraduationCap,
   Sparkles,
@@ -9,6 +8,7 @@ import { Component, Suspense, useEffect, useId, useRef, useState, type KeyboardE
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 
 import {
   requestStudioCreationMode,
@@ -214,7 +214,7 @@ export function StudioCinematicCanvasWelcome({
     >
       <div className="studio-canvas-start__quick-actions">
         <button type="button" className="studio-canvas-start__tutorial" onKeyDown={closeWithEscape} onClick={drawNow}>
-          <Brush size={14} aria-hidden="true" />{bt("바로 그리기", "Draw now")}
+          <StudioToolArtwork tool="pen" />{bt("바로 그리기", "Draw now")}
         </button>
         {onOpenTutorial ? (
           <button type="button" className="studio-canvas-start__tutorial" onKeyDown={closeWithEscape} onClick={openTutorial}>

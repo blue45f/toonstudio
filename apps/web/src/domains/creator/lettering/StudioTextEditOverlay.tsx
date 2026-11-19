@@ -1,3 +1,4 @@
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -369,8 +370,9 @@ export default function StudioTextEditOverlay({
 
 interface StudioTextEditFallbackModalProps {
   elementId: string;
+  pendingText?: import("../studio-element-model").TextEl;
   elementById: Map<string, El>;
-  onCommit: (value: string) => void;
+  onCommit: (value: string) => string | void;
   onCancel: () => void;
 }
 
@@ -388,18 +390,34 @@ interface StudioTextEditFallbackModalProps {
 export function StudioTextEditFallbackModal({
   elementId,
   elementById,
+  pendingText,
   onCommit,
   onCancel,
 }: StudioTextEditFallbackModalProps) {
-  const el = editableElement(elementById.get(elementId));
-  const [value, setValue] = useState(el?.text ?? "");
+  const bt = useBilingual("studio.letteringEdit");
+  const [insertError, setInsertError] = useState("");
+  const el = pendingText ?? editableElement(elementById.get(elementId));
+  const [value, setValue] = useState(pendingText ? "" : el?.text ?? "");
+  const insertDialog = useRef<HTMLDialogElement>(null);
+  useLayoutEffect(() => {
+    const node = insertDialog.current;
+    if (!node || node.open) return;
+    if (typeof node.showModal === "function") node.showModal();
+    else node.setAttribute("open", "");
+    return () => { if (node.open && typeof node.close === "function") node.close(); };
+  }, []);
+  const canApply = !pendingText || Boolean(value.trim());
 
+  const apply = () => {
+    if (!canApply) return;
+    const error = onCommit(value);
+    if (pendingText && typeof error === "string") setInsertError(error);
+  };
   if (!el) return null;
 
-  return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/40 p-6">
+  const form = (
       <div className="w-full max-w-sm rounded-2xl border border-line bg-panel p-4">
-        <p className="mb-1 text-sm font-medium text-fg">텍스트 편집</p>
+        <p className="mb-1 text-sm font-medium text-fg">{pendingText ? bt("새 글자", "Add text") : bt("텍스트 편집", "Edit text")}</p>
         <p className="mb-2 text-[0.68rem] text-fg-3">
           단일 키(B·V·Space 등)는 글자로 입력 · Enter 줄바꿈 · 완료 ⌘Enter · 취소 Esc
         </p>
@@ -407,37 +425,46 @@ export function StudioTextEditFallbackModal({
           // eslint-disable-next-line jsx-a11y/no-autofocus -- 더블클릭/더블탭으로만 열리는 모달이며, 열릴 때 입력란에 포커스를 주는 것이 올바른 모달 a11y 패턴
           autoFocus
           spellCheck
+          aria-label={pendingText ? bt("새 글자 내용", "New text") : bt("글자 내용", "Text")}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={(event) => {
             // 인라인 오버레이와 **같은** IME 가드. 이게 없으면 한글 조합 중 누른 Escape 가
             // "조합 취소"가 아니라 모달 닫기로 흘러가 입력 전체가 사라진다(측정된 결함).
             // Safari/WebKit 은 확정 keydown 에서 isComposing=false 와 legacy 229 를 함께 보낸다.
-            if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
+            if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) {
+              if (pendingText && event.key === "Escape") event.preventDefault();
+              return;
+            }
             if (event.key === "Escape") {
               event.preventDefault();
               onCancel();
             } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
               event.preventDefault();
-              onCommit(value);
+              apply();
             }
           }}
           rows={3}
           className="w-full resize-none rounded-lg border border-line bg-card p-2 text-sm text-fg outline-none focus:border-accent"
         />
+        {insertError && <p role="alert" className="mt-2 text-sm text-fg">{insertError}</p>}
         <div className="mt-2 flex justify-end gap-2">
-          <button type="button" onClick={onCancel} className={buttonClass({ size: "sm", variant: "quiet" })}>
-            취소
+          <button type="button" onClick={onCancel} className={`${buttonClass({ size: "sm", variant: "quiet" })} min-h-11`}>
+            {bt("취소", "Cancel")}
           </button>
           <button
             type="button"
-            onClick={() => onCommit(value)}
-            className={buttonClass({ size: "sm", variant: "solid" })}
+            disabled={!canApply}
+            onClick={apply}
+            className={`${buttonClass({ size: "sm", variant: "solid" })} min-h-11`}
           >
-            적용
+            {pendingText ? bt("원고에 추가", "Add to manuscript") : bt("적용", "Apply")}
           </button>
         </div>
       </div>
-    </div>
   );
+  if (pendingText) return <dialog ref={insertDialog} aria-label={bt("새 글자", "Add text")} data-studio-shortcut-boundary="true"
+    className="m-auto w-[min(24rem,calc(100vw-2rem))] rounded-2xl border-0 bg-panel p-0 text-fg backdrop:bg-black/40"
+    onCancel={event => { event.preventDefault(); onCancel(); }}>{form}</dialog>;
+  return <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/40 p-6">{form}</div>;
 }

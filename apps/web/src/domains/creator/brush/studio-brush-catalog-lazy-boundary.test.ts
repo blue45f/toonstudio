@@ -34,8 +34,8 @@ describe("Studio brush catalogue lazy boundary", () => {
       core: STUDIO_CORE_BRUSH_CATALOG_ITEMS.length,
       pro: 207,
       total: STUDIO_CORE_BRUSH_CATALOG_ITEMS.length + 207,
-      erase: 2,
-      paint: STUDIO_CORE_BRUSH_CATALOG_ITEMS.length - 2 + 207,
+      erase: 5,
+      paint: STUDIO_CORE_BRUSH_CATALOG_ITEMS.length - 5 + 207,
     });
   });
 

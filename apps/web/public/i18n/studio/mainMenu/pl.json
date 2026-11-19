@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Super prosty układ",
   "studio.mainMenu.item.view.density-full": "Pełny układ",
   "studio.mainMenu.item.view.wide": "Zwiń panele i poszerz widok",
+  "studio.mainMenu.item.view.wide.open": "Pokaż panele",
   "studio.mainMenu.item.view.tools-companion": "Obszar roboczy z wieloma wyświetlaczami…",
   "studio.mainMenu.item.view.canvas-only": "Tylko płótno",
   "studio.mainMenu.item.view.color-vision.unavailable": "Nie można zmienić trybu kontroli widzenia kolorów, gdy przekształcanie widoku jest zablokowane.",

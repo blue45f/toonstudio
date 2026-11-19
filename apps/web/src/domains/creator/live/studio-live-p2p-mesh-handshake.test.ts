@@ -15,6 +15,47 @@ function peer() {
 }
 
 describe("협업 데이터 채널의 첫 연결 복구", () => {
+  it("상대가 응답하지 않아도 횟수·시간을 넘겨 재전송하지 않는다", async () => {
+    vi.useFakeTimers();
+    try {
+      const waiting = peer(), expired = peer(), left = peer();
+      await Promise.all([waiting.handshake.offer(), expired.handshake.offer(), left.handshake.offer()]);
+      expired.time.mockReturnValue(60000);
+      left.current.mockReturnValue(false);
+      await vi.advanceTimersByTimeAsync(60000);
+      expect(waiting.send).toHaveBeenCalledTimes(9);
+      expect(expired.send).toHaveBeenCalledTimes(1);
+      expect(left.send).toHaveBeenCalledTimes(1);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("수신자가 참가 승인 전 놓친 제안과 ICE를 새 접속 알림 없이 다시 받는다", async () => {
+    vi.useFakeTimers();
+    try {
+      const sender = peer(), receiver = peer();
+      sender.time.mockImplementation(Date.now);
+      let joined = false;
+      sender.send.mockImplementation((type, sdp) => {
+        if (joined) void receiver.handshake.receive(type, sdp);
+      });
+      sender.ice.mockImplementation(candidate => {
+        if (joined) void receiver.handshake.onRemoteIce(candidate);
+      });
+      receiver.send.mockImplementation((type, sdp) => { void sender.handshake.receive(type, sdp); });
+      await sender.handshake.offer();
+      sender.handshake.onLocalIce({ candidate: "original-ice" });
+      expect(receiver.connection.setRemoteDescription).not.toHaveBeenCalled();
+      joined = true;
+      await vi.advanceTimersByTimeAsync(3500);
+      expect(receiver.connection.setRemoteDescription).toHaveBeenCalledWith({ type: "offer", sdp: "original-offer" });
+      expect(receiver.connection.addIceCandidate).toHaveBeenCalledWith({ candidate: "original-ice" });
+      expect(sender.connection.setRemoteDescription).toHaveBeenCalledWith({ type: "answer", sdp: "original-answer" });
+      await vi.advanceTimersByTimeAsync(60000);
+      expect(sender.send).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); }
+  });
+
   it("첫 제안 또는 응답이 유실되면 같은 연결의 SDP·ICE를 재전송하고 연결 후 멈춘다", async () => {
     const a = peer(), b = peer(), candidate = { candidate: "host", sdpMid: "0" };
     await a.handshake.offer();

@@ -138,8 +138,8 @@ export function CreatorLaunchpad({ locale }: { locale: CreatorContinuityLocale }
       ? copy.install
       : copy.installHelp;
   const swReady = pwa.serviceWorkerStatus === "active" || pwa.serviceWorkerStatus === "update-waiting";
-  const drawingInstallLabel = bi("순수 드로잉 앱 설치", "Install ToonStudio Draw");
-  const drawingInstallBody = bi("별도 간이 편집기가 아니라 현재 Studio와 동일한 문서·브러시·레이어·저장 엔진을 캔버스 중심 앱 UI로 설치합니다.", "Installs the same Studio document, brush, layer and save engine with canvas-first app chrome — not a separate lightweight editor.");
+  const drawingInstallLabel = bi("툰스튜디오 드로잉 설치", "Install ToonStudio Draw");
+  const drawingInstallBody = bi("홈 화면에서 작품 보관함을 열고 웹과 같은 도구로 그리세요.", "Open your work library from the home screen and draw with the same tools as on the web.");
 
   return (
     <section className="clp" aria-labelledby="creator-continuity-title" data-creator-launchpad="v1">

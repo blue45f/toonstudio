@@ -315,6 +315,7 @@ export interface StudioCanvasViewportProps {
    */
   referenceOverlayEnabled?: boolean;
   canvasInteractionBlocked: boolean;
+  canvasInputStatus?: import("./studio-canvas-input-status").StudioCanvasInputStatus;
   hardCanvasInteractionBlock: boolean;
   collaborationDocumentLocked: boolean;
   collaborationDocumentUnavailable: boolean;
@@ -336,7 +337,7 @@ export interface StudioCanvasViewportProps {
   drawingPracticeCompareActive: boolean;
   drawMode: DrawMode;
   drawShape: DrawShapeKind;
-  editing: { id: string; } | null;
+  editing: import("../lettering/studio-pending-text-insert").StudioLetteringEditTarget | null;
   eyedropperActive: boolean;
   effScale: number;
   /** Settled scroll viewport of the canvas host. Frame-accurate values come from the store below. */
@@ -507,7 +508,7 @@ export interface StudioCanvasViewportProps {
   shapeFill: boolean;
   shortcutsOpen: boolean;
   showGrid: boolean;
-  showQuickStart: boolean;
+  showQuickStart: "requested" | "automatic" | false;
   showWebtoonGuides: boolean;
   smartGuides: SmartGuideOverlay;
   /** Axis-aligned abutting frame gutters (CSP co-edit handles). */

@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Супер једноставан распоред",
   "studio.mainMenu.item.view.density-full": "Пун распоред",
   "studio.mainMenu.item.view.wide": "Скупи панеле и прошири приказ",
+  "studio.mainMenu.item.view.wide.open": "Прикажи панеле",
   "studio.mainMenu.item.view.tools-companion": "Радни простор са више екрана…",
   "studio.mainMenu.item.view.canvas-only": "Само платно",
   "studio.mainMenu.item.view.color-vision.unavailable": "Не можете да промените режим провере вида боја док је трансформација приказа закључана.",

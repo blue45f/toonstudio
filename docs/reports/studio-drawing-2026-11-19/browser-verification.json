@@ -1,0 +1,157 @@
+{
+  "ref": "f68519a427740023acc48e3ee74dc1e2c6538031",
+  "buildId": "de16c0003e3c",
+  "buildFiles": 20293,
+  "staticBytes": 5269135008,
+  "inputSha256": "ff987b6e9fa99ab5fd81808a20669e3c8e27a53b9f15ccfe4df4c080161b1e26",
+  "builtSha256": "69ecdbb36ade5352d171a344956562540908635fa0b3871b85beab301ef077fb",
+  "browserServedSha256": {
+    "index.html": "b06c86e0a230fd1c1f1fe1346fe9df13bdf16a313900f63f974e203c3b00343c",
+    "sw.js": "27e950b8cf3c74161144ce89574060470f873846d17438ece5ac9080c38ceea6",
+    ".vite/build-meta.json": "80cc09f8ebbbcfb8995e0e5ed064b9fe8806069340e5781f6190e64601476af3"
+  },
+  "inputsStable": true,
+  "staticStable": true,
+  "sourceSha256": {
+    "apps/web/src/app/service-worker/studio-service-worker-registration.ts": "7d0acec1b6ff187ebf5674ba02462e80f4059269295316fbca700bc21c6d5aa4",
+    "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css": "de68a9b38d22ede0ebe97bcb62f4a6400227f9a74823f3a6b976352d3ca93448",
+    "e2e/studio-drawing-chrome-layout.spec.mts": "0c4f8c650ac35e02b1c39943ff250e2948b977bd0ef3126fe406dc83c38ab931"
+  },
+  "apiReady": "ready",
+  "official": {
+    "drawing": {
+      "total": 13,
+      "results": {
+        "passed": 12,
+        "failed": 1
+      },
+      "testErrors": 1,
+      "runnerErrors": 0,
+      "pageErrors": 0,
+      "targetCrashes": 1,
+      "wallSeconds": 69.59,
+      "failedTests": [
+        "드로잉 진입 경로가 달라도 같은 원고 도구와 캔버스 배치를 사용한다 (1440px)"
+      ],
+      "httpErrors": [
+        [
+          403,
+          "/api/analytics/traffic",
+          52
+        ],
+        [
+          403,
+          "/api/studio-realtime/tickets",
+          19
+        ],
+        [
+          503,
+          "/api/health/capabilities",
+          4
+        ]
+      ]
+    },
+    "three": {
+      "total": 8,
+      "results": {
+        "passed": 8
+      },
+      "testErrors": 0,
+      "runnerErrors": 0,
+      "pageErrors": 0,
+      "targetCrashes": 0,
+      "wallSeconds": 162.17,
+      "failedTests": [],
+      "httpErrors": [
+        [
+          403,
+          "/api/analytics/traffic",
+          31
+        ],
+        [
+          403,
+          "/api/studio-realtime/tickets",
+          8
+        ]
+      ]
+    }
+  },
+  "offlineDual": [
+    {
+      "width": 1280,
+      "canvasTop": [
+        100,
+        100,
+        100
+      ],
+      "titleHeight": [
+        55,
+        55,
+        55
+      ],
+      "clickArea": [
+        203.2421875,
+        52.390625
+      ],
+      "labels": [
+        "연결 복구 후 재시도",
+        "일부 오프라인 도구 준비 필요"
+      ],
+      "linesPerLabel": [
+        1,
+        1
+      ],
+      "simulatedUnavailableResponses": 10
+    },
+    {
+      "width": 390,
+      "canvasTop": [
+        125,
+        125,
+        125
+      ],
+      "titleHeight": [
+        64,
+        64,
+        64
+      ],
+      "clickArea": [
+        248,
+        52.390625
+      ],
+      "labels": [
+        "연결 복구 후 재시도",
+        "일부 오프라인 도구 준비 필요"
+      ],
+      "linesPerLabel": [
+        1,
+        1
+      ],
+      "simulatedUnavailableResponses": 10
+    }
+  ],
+  "officialWallSeconds": 231.77,
+  "isolated1440": {
+    "results": {
+      "passed": 1
+    },
+    "retries": 0,
+    "wallSeconds": 22.02,
+    "pageErrors": 0,
+    "targetCrashes": 0
+  },
+  "harness": {
+    "command": "pnpm harness:verify",
+    "exitCode": 0,
+    "typecheckedWebFiles": 27203,
+    "webDiagnostics": 0,
+    "apiTypecheck": "passed",
+    "selectedGateCases": 159
+  },
+  "changedUnitTests": {
+    "files": 123,
+    "passed": 1503,
+    "failed": 0,
+    "skipped": 0
+  }
+}

@@ -66,6 +66,7 @@ function itemLabelKey(
     if (state.quickAccessPaletteLoading) return `${baseKey}.loading`;
     if (state.quickAccessPaletteOpen) return `${baseKey}.open`;
   }
+  if (path === "view/wide" && item.checked) return `${baseKey}.open`;
   if (path === "view/left-panel" && state.leftPanelOpen) return `${baseKey}.open`;
   if (path === "view/right-panel" && state.rightPanelOpen) return `${baseKey}.open`;
   // Same two-key shape the panel rows use: the base key is the "show" wording and

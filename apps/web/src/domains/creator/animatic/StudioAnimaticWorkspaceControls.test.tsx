@@ -107,8 +107,9 @@ describe("animatic subtitle track controls", () => {
   it("writes edited subtitle start times back into the timeline dialogue cues", () => {
     const h = renderDialogueControls();
     fireEvent.change(screen.getByLabelText("자막 1 시작 (초)"), { target: { value: "1" } });
-    fireEvent.click(screen.getByRole("button", { name: "자막 시작 시각을 대사에 반영" }));
-    expect(h.current().timeline.segments[0]!.cues[0]).toMatchObject({ text: "안녕, 시작하자", offsetMs: 1000 });
+    fireEvent.change(screen.getByLabelText("자막 1 끝 (초)"), { target: { value: "1.8" } });
+    fireEvent.click(screen.getByRole("button", { name: "자막 시간 적용" }));
+    expect(h.current().timeline.segments[0]!.cues[0]).toMatchObject({ text: "안녕, 시작하자", offsetMs: 1000, subtitleDurationMs: 800 });
   });
 
   it("shows an empty-state hint instead of export buttons when the episode has no dialogue", () => {

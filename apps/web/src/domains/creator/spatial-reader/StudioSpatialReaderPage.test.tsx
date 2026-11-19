@@ -29,6 +29,11 @@ function sampleBook(): SpatialBook {
   });
 }
 
+const spatialRuntime = vi.hoisted(() => ({
+  setPresentation: vi.fn(), setScale: vi.fn(), focus: vi.fn(), enter: vi.fn(), exit: vi.fn(), destroy: vi.fn(),
+}));
+vi.mock("./spatial-reader-runtime", () => ({ createSpatialReader: () => spatialRuntime }));
+
 const sample = vi.hoisted(() => ({ create: vi.fn() }));
 vi.mock("./spatial-sample-book", () => ({ createSampleSpatialBook: sample.create }));
 
@@ -100,6 +105,21 @@ describe("StudioSpatialReaderPage", () => {
     await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
   });
 
+  it("공간 보기 진입과 설정 변경은 현재 장면을 유지하면서 실제 런타임에 전달된다", async () => {
+    renderPage();
+    fireEvent.click(screen.getByTestId("spatial-rea-curve-dome-120deg-cinema"));
+    fireEvent.click(screen.getByRole("button", { name: "샘플 작품으로 체험하기" }));
+    fireEvent.click(await screen.findByRole("button", { name: "공간 보기" }));
+    await waitFor(() => expect(spatialRuntime.setPresentation).toHaveBeenCalledWith("dome-120deg-cinema", "pointed-panel"));
+    fireEvent.click(screen.getByRole("button", { name: "현재 컷만 보기" }));
+    expect(spatialRuntime.setPresentation).toHaveBeenLastCalledWith("dome-120deg-cinema", "current-panel");
+    expect(spatialRuntime.destroy).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "일반 보기" }));
+    expect(spatialRuntime.destroy).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "공간 보기" }));
+    await waitFor(() => expect(spatialRuntime.setPresentation).toHaveBeenLastCalledWith("dome-120deg-cinema", "current-panel"));
+  });
+
   it("잘못된 작품 파일은 검증 오류로 안내한다", async () => {
     renderPage();
     const input = screen.getByLabelText(/공간 웹툰 파일\(JSON\)/u);
@@ -111,7 +131,7 @@ describe("StudioSpatialReaderPage", () => {
   it("REA 공간 리더 워크벤치에서 곡률 모드·시선 포커스를 전환하고 en 로케일에서 한글을 포함하지 않는다", () => {
     renderPage();
     const bar = screen.getByTestId("spatial-reader-rea-webxr-fov-bar");
-    expect(bar.textContent).toContain("Apple Vision Pro visionOS · Meta Quest WebXR · Spline Spatial");
+    expect(within(bar).getByRole("heading", { name: "공간 보기 설정" })).toBeTruthy();
     const curveGroup = within(bar).getByRole("group", { name: "곡률 모드" });
     const gazeGroup = within(bar).getByRole("group", { name: "시선 포커스" });
     const allChips = [...within(curveGroup).getAllByRole("button"), ...within(gazeGroup).getAllByRole("button")];
@@ -124,25 +144,25 @@ describe("StudioSpatialReaderPage", () => {
     }
 
     expect(screen.getByTestId("spatial-rea-curve-cylinder-90deg-canopy").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("spatial-rea-gaze-foveated-depth-dof").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("spatial-rea-gaze-pointed-panel").getAttribute("aria-pressed")).toBe("true");
 
     fireEvent.click(screen.getByTestId("spatial-rea-curve-dome-120deg-cinema"));
     expect(screen.getByTestId("spatial-rea-curve-dome-120deg-cinema").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("spatial-rea-curve-cylinder-90deg-canopy").getAttribute("aria-pressed")).toBe("false");
-    expect(screen.getByTestId("spatial-reader-rea-status").textContent).toContain("dome-120deg-cinema");
+    expect(screen.getByTestId("spatial-reader-rea-status").textContent).toContain("120° 돔");
 
     fireEvent.click(screen.getByTestId("spatial-rea-curve-floating-panel-stack"));
     expect(screen.getByTestId("spatial-rea-curve-floating-panel-stack").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("spatial-reader-rea-status").textContent).toContain("floating-panel-stack");
+    expect(screen.getByTestId("spatial-reader-rea-status").textContent).toContain("평면 컷");
 
-    fireEvent.click(screen.getByTestId("spatial-rea-gaze-spatial-binaural-pan"));
-    expect(screen.getByTestId("spatial-rea-gaze-spatial-binaural-pan").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("spatial-rea-gaze-foveated-depth-dof").getAttribute("aria-pressed")).toBe("false");
-    expect(screen.getByTestId("spatial-reader-rea-status").textContent).toContain("spatial-binaural-pan");
+    fireEvent.click(screen.getByTestId("spatial-rea-gaze-all-panels"));
+    expect(screen.getByTestId("spatial-rea-gaze-all-panels").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("spatial-rea-gaze-pointed-panel").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("spatial-reader-rea-status").textContent).toContain("모든 컷 보기");
 
-    fireEvent.click(screen.getByTestId("spatial-rea-gaze-comfort-vignette-lock"));
-    expect(screen.getByTestId("spatial-rea-gaze-comfort-vignette-lock").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("spatial-reader-rea-status").textContent).toContain("comfort-vignette-lock");
+    fireEvent.click(screen.getByTestId("spatial-rea-gaze-current-panel"));
+    expect(screen.getByTestId("spatial-rea-gaze-current-panel").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("spatial-reader-rea-status").textContent).toContain("현재 컷만 보기");
 
     act(() => {
       useI18n.setState({ lang: "en" });
@@ -155,7 +175,7 @@ describe("StudioSpatialReaderPage", () => {
       expect(link.className).toContain("min-h-11");
     }
     expect(screen.getByTestId("spatial-rea-curve-floating-panel-stack").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("spatial-rea-gaze-comfort-vignette-lock").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("spatial-rea-gaze-current-panel").getAttribute("aria-pressed")).toBe("true");
   });
 
   it("빈 파일·손상된 JSON 및 빈 제목·빈 대사·빈 대체 텍스트 데이터에서도 기본 제목과 접근성 이름을 복원하고 정상 상태에서 불필요한 상시 UI를 노출하지 않는다", async () => {

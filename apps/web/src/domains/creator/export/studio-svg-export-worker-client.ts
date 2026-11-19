@@ -43,7 +43,9 @@ export interface StudioSvgExportWorkerClientResult {
 }
 
 const STUDIO_SVG_EXPORT_PREWARM_IDLE_MS = 45_000;
-const STUDIO_SVG_EXPORT_READY_TIMEOUT_MS = 3_000;
+// 유휴 선로딩은 빨리 정리하되 사용자가 시작한 작업은 첫 모듈 다운로드와 평가를 기다린다.
+const STUDIO_SVG_EXPORT_PREWARM_READY_TIMEOUT_MS = 3_000;
+const STUDIO_SVG_EXPORT_READY_TIMEOUT_MS = 30_000;
 const STUDIO_SVG_EXPORT_RUN_TIMEOUT_MS = 30_000;
 
 interface StudioSvgExportPrewarmedWorker {
@@ -294,7 +296,7 @@ export function preloadStudioSvgExportWorker(
   }, STUDIO_SVG_EXPORT_PREWARM_IDLE_MS);
   entry.readyTimer = setTimeout(() => {
     releaseStudioSvgExportPrewarmedWorker(entry);
-  }, STUDIO_SVG_EXPORT_READY_TIMEOUT_MS);
+  }, STUDIO_SVG_EXPORT_PREWARM_READY_TIMEOUT_MS);
   return true;
 }
 

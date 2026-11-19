@@ -1,4 +1,5 @@
 import { creatorStorageText } from "../storage-feedback/studio-device-storage-copy";
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 import { StudioDeviceStorageMessage } from "../storage-feedback/StudioDeviceStorageMessage";
 import "../studio-3d-ui/studio-3d-reference-workspace.css";
 /**
@@ -8,7 +9,6 @@ import "../studio-3d-ui/studio-3d-reference-workspace.css";
 import {
   ImagePlus,
   Loader2,
-  UserRound,
   X,
 } from "lucide-react";
 import {
@@ -54,6 +54,7 @@ export function StudioVrmPoserDialog({ h }: { h: StudioVrmPoserHost }) {
     dialogRef,
     closeButtonRef,
     status,
+    error,
     vrm,
     activePanelTab,
     recentPreferencesRuntime,
@@ -121,17 +122,17 @@ export function StudioVrmPoserDialog({ h }: { h: StudioVrmPoserHost }) {
             broadcastPreviewActive && "!hidden",
           )}
         >
-          <div className="min-w-0">
-            <p className="eyebrow flex items-center gap-1.5 text-accent">
-              <UserRound size={14} aria-hidden />
-              VRM 캐릭터 빌더
-            </p>
-            <h2 id={dialogTitleId} className="mt-1 truncate text-lg font-bold tracking-tight text-fg sm:text-xl">{h.cutPaintSession ? "팀 컷 표면 채색" : "3D 캐릭터 만들기"}</h2>
-            <p id={dialogDescriptionId} className="mt-1 line-clamp-1 text-xs text-fg-3">
-              {h.cutPaintSession ? h.cutPaintSession.entry.name : displayModelName
-                ? `${displayModelName} · ${transparentBackground ? "캐릭터만 투명 PNG로 패널에 추가" : "배경색 포함 PNG로 패널에 추가"}`
-                : "내 VRM을 불러와 패널에 추가"}
-            </p>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <StudioToolArtwork tool="character" className="[--studio-tool-art-size:32px] sm:[--studio-tool-art-size:38px]" />
+            <div className="min-w-0">
+              <p className="eyebrow text-fg-2">VRM 캐릭터 빌더</p>
+              <h2 id={dialogTitleId} className="mt-1 truncate text-lg font-bold tracking-tight text-fg sm:text-xl">{h.cutPaintSession ? "팀 컷 표면 채색" : "3D 캐릭터 만들기"}</h2>
+              <p id={dialogDescriptionId} className="mt-1 line-clamp-1 text-xs text-fg-3">
+                {h.cutPaintSession ? h.cutPaintSession.entry.name : displayModelName
+                  ? `${displayModelName} · ${transparentBackground ? "캐릭터만 투명 PNG로 패널에 추가" : "배경색 포함 PNG로 패널에 추가"}`
+                  : "내 VRM을 불러와 패널에 추가"}
+              </p>
+            </div>
           </div>
           <button
             ref={closeButtonRef}
@@ -255,6 +256,11 @@ export function StudioVrmPoserDialog({ h }: { h: StudioVrmPoserHost }) {
               <StudioVrmPoserPanelBodyC h={h} />
               <StudioVrmPoserPanelBodyD h={h} /></>}
             </div>
+            {status === "ready" && error && !broadcastPreviewActive ? (
+              <p role="alert" className="shrink-0 border-t border-danger/30 bg-panel px-4 py-2 text-xs text-danger sm:px-5">
+                <StudioDeviceStorageMessage message={error} />
+              </p>
+            ) : null}
             <footer className="sticky bottom-0 z-20 flex shrink-0 items-center justify-between gap-2 border-t border-line bg-panel/95 px-4 py-3 backdrop-blur sm:px-5">
               <button
                 type="button"

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { applyProtectedRecordRuntimeContracts } from "./protected-record-database-contracts.mjs";
+import { buildStudioSpacePollRuntimeAclSql } from "./studio-space-poll-runtime-acl.mjs";
 import { buildWorkVrmCutRuntimeAclSql } from "./studio-work-vrm-cut-runtime-acl.mjs";
 import { buildProductionOperationsRuntimeAclSql } from "./production-operations-database-contract.mjs";
 import { buildProductionOperationRuntimeAclSql, buildProductionOperationCapabilitySql } from "./production-operation-database-contract.mjs";
@@ -3652,12 +3653,10 @@ export function runProductionDatabaseMigrations({ // NOSONAR javascript:S3776
     psql(databaseUrl, buildStudioProductionRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildProductionOperationsRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildStudioProjectGraphRuntimeAclSql(runtimeDatabaseRole));
-    psql(
-      databaseUrl,
-      buildCreatorMarketplaceRuntimeAclSql(runtimeDatabaseRole),
-    );
+    psql(databaseUrl, buildCreatorMarketplaceRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildCreatorAssetObjectStorageRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildWorkVrmCutRuntimeAclSql(runtimeDatabaseRole));
+    psql(databaseUrl, buildStudioSpacePollRuntimeAclSql(runtimeDatabaseRole));
 
     process.stdout.write(
       `Production migration manifest complete: ${adopted} adopted, ${applied} applied, ${skipped} checksum-verified skips\n`,

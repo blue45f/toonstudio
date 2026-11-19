@@ -412,6 +412,7 @@ export interface StudioInspectorAsideProps {
   selectedRasterSource: string | null;
   selectedWorkAssetDestructiveEditReason: string | null;
   setSelectedId: import("react").Dispatch<import("react").SetStateAction<string | null>>;
+  studioRoute?: import("./studio-workspace-route").StudioWorkspaceRoute;
   autoColorScribbleCanvasArmed?: boolean;
   setAutoColorScribbleCanvasArmed?: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   autoColorCanvasSeedHit?: { x: number; y: number; nonce: number } | null;

@@ -63,7 +63,8 @@ interface PeerState {
   sequence: number;
   helloSent: boolean;
   role: StudioLiveParticipant["role"];
-  viewerSyncCountdown: number;
+  receivedState: boolean;
+  syncCountdown: number;
 }
 export interface StudioP2pBoardDependencies {
   readonly epoch?: string;
@@ -163,8 +164,30 @@ function immutableEntity(entity: StudioP2pBoardEntity): StudioP2pBoardEntity {
     : Object.freeze({ ...entity });
 }
 
+/** 보드의 소유자·수신자는 참가자 ID이며, 실제 전송은 현재 연결의 주소로만 보낸다. */
+function boardParticipantPort(port: StudioLiveDirectPort): StudioLiveDirectPort {
+  const canonical = port.canonicalSessionId;
+  if (!canonical) return port;
+  const resolve = (participantId: string) => {
+    const matches = port.getPeers().filter(peer => canonical(peer.sessionId) === participantId);
+    return matches.length === 1 ? matches[0] : undefined;
+  };
+  return {
+    getPeers: () => port.getPeers().map(peer => ({ ...peer, sessionId: canonical(peer.sessionId) })),
+    send: (participantId, payload) => {
+      const peer = resolve(participantId);
+      return Boolean(peer && port.send(peer.sessionId, payload));
+    },
+    subscribe: listener => port.subscribe((sender, payload) => {
+      const participantId = canonical(sender.sessionId);
+      if (resolve(participantId)?.sessionId === sender.sessionId) listener({ ...sender, sessionId: participantId }, payload);
+    }),
+  };
+}
+
 export class StudioP2pBoardController {
   private readonly epoch: string;
+  private readonly port: StudioLiveDirectPort;
   private readonly entities = new Map<string, StudioP2pBoardEntity>();
   private readonly peers = new Map<string, PeerState>();
   private readonly listeners = new Set<() => void>();
@@ -175,10 +198,11 @@ export class StudioP2pBoardController {
 
   constructor(
     private readonly participant: StudioLiveParticipant,
-    private readonly port: StudioLiveDirectPort,
+    port: StudioLiveDirectPort,
     private readonly scope: StudioP2pBoardScope,
     private readonly dependencies: StudioP2pBoardDependencies = {},
   ) {
+    this.port = boardParticipantPort(port);
     this.epoch = dependencies.epoch ?? globalThis.crypto.randomUUID();
     if (!safeId(participant.sessionId) || !safeId(this.epoch, 80)
       || !safeId(scope.boardId) || !safeId(scope.worldId) || !safeId(scope.contentRevision)) throw new Error("Invalid P2P board identity");
@@ -190,7 +214,7 @@ export class StudioP2pBoardController {
     return Object.freeze({
       entities: Object.freeze([...this.entities.values()].map(immutableEntity)),
       readyPeerIds: Object.freeze([...this.peers]
-        .filter(([, peer]) => peer.epoch !== null || (peer.role === "viewer" && peer.helloSent))
+        .filter(([, peer]) => peer.receivedState || (peer.role === "viewer" && peer.helloSent))
         .map(([id]) => id)),
       available: !this.closed && this.unsubscribe !== null,
       canEdit: this.participant.role !== "viewer",
@@ -275,34 +299,40 @@ export class StudioP2pBoardController {
   }
   private emit(): void { for (const listener of this.listeners) listener(); }
 
+  private forgetPeerEntities(id: string): void {
+    for (const [key, entity] of this.entities) if (entity.ownerSessionId === id) this.entities.delete(key);
+  }
+
+  private trackPeer(participant: StudioLiveParticipant): PeerState {
+    const existing = this.peers.get(participant.sessionId);
+    if (existing?.role === participant.role) return existing;
+    if (existing) this.forgetPeerEntities(participant.sessionId);
+    const peer: PeerState = {
+      epoch: null, sequence: 0, helloSent: false, role: participant.role, receivedState: false, syncCountdown: 0,
+    };
+    this.peers.set(participant.sessionId, peer);
+    return peer;
+  }
+
   private syncPeers(): void {
     if (this.closed) return;
     const connected = new Map(this.port.getPeers().filter((peer) => peer.sessionId !== this.participant.sessionId).map((peer) => [peer.sessionId, peer]));
     for (const id of this.peers.keys()) if (!connected.has(id)) {
       this.peers.delete(id);
-      for (const [key, entity] of this.entities) if (entity.ownerSessionId === id) this.entities.delete(key);
+      this.forgetPeerEntities(id);
     }
     for (const [id, participant] of connected) {
-      let peer = this.peers.get(id);
-      if (!peer) {
-        peer = {
-          epoch: null,
-          sequence: 0,
-          helloSent: false,
-          role: participant.role,
-          viewerSyncCountdown: 0,
-        };
-        this.peers.set(id, peer);
-      } else {
-        peer.role = participant.role;
+      const peer = this.trackPeer(participant);
+      if (this.participant.role === "viewer" || (peer.role !== "viewer" && peer.receivedState)) continue;
+      if (peer.syncCountdown > 0) {
+        peer.syncCountdown -= 1;
+        continue;
       }
       if (peer.role === "viewer") {
-        if (peer.viewerSyncCountdown <= 0) {
-          this.sendReadOnlySnapshot(id, peer);
-        } else {
-          peer.viewerSyncCountdown -= 1;
-        }
+        this.sendReadOnlySnapshot(id, peer);
       } else {
+        // 발송 성공은 상대 보드의 수신 확인이 아니다. 첫 상태가 도착할 때까지 다시 요청한다.
+        peer.helloSent = false;
         this.sendHello(id, peer);
       }
     }
@@ -313,7 +343,8 @@ export class StudioP2pBoardController {
     if (peer.helloSent) return;
     // Mark before sending because loopback/test ports may synchronously deliver and answer.
     peer.helloSent = true;
-    if (!this.send(targetSessionId, "hello", {}, null)) peer.helloSent = false;
+    if (this.send(targetSessionId, "hello", {}, null)) peer.syncCountdown = 4;
+    else peer.helloSent = false;
   }
 
   private sendReadOnlySnapshot(targetSessionId: string, peer: PeerState): void {
@@ -326,7 +357,7 @@ export class StudioP2pBoardController {
       null,
     );
     peer.helloSent = stateSent;
-    peer.viewerSyncCountdown = stateSent ? 4 : 0;
+    peer.syncCountdown = stateSent ? 4 : 0;
   }
 
   private base(kind: StudioP2pBoardPacket["kind"], targetSessionId: string, targetEpoch: string | null, sequence = ++this.sequence): BoardPacketBase {
@@ -353,35 +384,17 @@ export class StudioP2pBoardController {
       || packet.boardId !== this.scope.boardId || packet.worldId !== this.scope.worldId || packet.contentRevision !== this.scope.contentRevision) return;
     const connectedPeer = this.port.getPeers().find((candidate) => candidate.sessionId === sender.sessionId);
     if (!connectedPeer) return;
-    let peer = this.peers.get(sender.sessionId);
-    if (!peer) {
-      peer = {
-        epoch: null,
-        sequence: 0,
-        helloSent: false,
-        role: connectedPeer.role,
-        viewerSyncCountdown: 0,
-      };
-      this.peers.set(sender.sessionId, peer);
-    } else if (peer.role !== connectedPeer.role) {
-      peer.role = connectedPeer.role;
-      peer.epoch = null;
-      peer.sequence = 0;
-      peer.helloSent = false;
-      peer.viewerSyncCountdown = 0;
-      for (const [key, entity] of this.entities) {
-        if (entity.ownerSessionId === sender.sessionId) this.entities.delete(key);
-      }
-    }
+    const peer = this.trackPeer(connectedPeer);
     // The authenticated direct-roster role is authoritative. Viewers never publish board frames.
     if (connectedPeer.role === "viewer") return;
     if (packet.kind === "hello") {
       if (peer.epoch !== packet.sessionEpoch) {
+        // 연결이 먼저 열린 경우, 새 보드가 구독하기 전에 보낸 첫 인사를 다시 전달한다.
+        peer.helloSent = false;
         peer.epoch = packet.sessionEpoch;
         peer.sequence = 0;
-        for (const [key, entity] of this.entities) {
-          if (entity.ownerSessionId === sender.sessionId) this.entities.delete(key);
-        }
+        peer.receivedState = false;
+        this.forgetPeerEntities(sender.sessionId);
       }
       if (this.participant.role !== "viewer") {
         this.sendHello(sender.sessionId, peer);
@@ -394,28 +407,24 @@ export class StudioP2pBoardController {
       && packet.targetEpoch === null;
     if (!oneWayReadOnlyDelivery && packet.targetEpoch !== this.epoch) return;
     if (peer.epoch !== packet.sessionEpoch) {
-      if (!oneWayReadOnlyDelivery || packet.kind !== "state") return;
+      // 내 현재 세션을 지목한 상태는 상대가 인사를 받았다는 확인도 겸한다.
+      if (packet.kind !== "state" || (peer.epoch !== null && !oneWayReadOnlyDelivery)) return;
       peer.epoch = packet.sessionEpoch;
       peer.sequence = 0;
-      for (const [key, entity] of this.entities) {
-        if (entity.ownerSessionId === sender.sessionId) this.entities.delete(key);
-      }
+      this.forgetPeerEntities(sender.sessionId);
     }
     if (packet.sequence <= peer.sequence) return;
     peer.sequence = packet.sequence;
     if (packet.kind === "state") {
-      for (const [key, entity] of this.entities) {
-        if (entity.ownerSessionId === sender.sessionId) this.entities.delete(key);
-      }
+      peer.receivedState = true;
+      this.forgetPeerEntities(sender.sessionId);
       for (const entity of packet.entities) this.acceptEntity(entity);
     } else if (packet.kind === "upsert") {
       this.acceptEntity(packet.entity);
     } else if (packet.kind === "remove") {
       this.entities.delete(this.key(sender.sessionId, packet.entityId));
     } else if (packet.kind === "clear") {
-      for (const [key, entity] of this.entities) {
-        if (entity.ownerSessionId === sender.sessionId) this.entities.delete(key);
-      }
+      this.forgetPeerEntities(sender.sessionId);
     }
     this.emit();
   }

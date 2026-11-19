@@ -1,5 +1,7 @@
 import type { StudioAiComicComposerHandoff } from "./studio-ai-comic-composer-handoff";
 
+import { toast } from "@/shared/lib/toast-store";
+
 export const STUDIO_AI_COMIC_COMPOSER_OPEN_EVENT =
   "toonspectrum:studio-ai-comic-composer-open";
 
@@ -42,5 +44,18 @@ export function subscribeStudioAiComicComposerOpenRequest(
   const handleOpen: EventListener = () => deliver();
   target.addEventListener(STUDIO_AI_COMIC_COMPOSER_OPEN_EVENT, handleOpen);
   deliver();
-  return () => target.removeEventListener(STUDIO_AI_COMIC_COMPOSER_OPEN_EVENT, handleOpen);
+  let active = true;
+  let unsubscribe: (() => void) | undefined;
+  if (target === browserTarget() && typeof window !== "undefined" && new URLSearchParams(window.location.search).has("directorReturn")) {
+    void import("./studio-director-editor-return").then(({ restoreDirectorEditorReturn }) => {
+      if (active) unsubscribe = restoreDirectorEditorReturn(listener);
+    }).catch(() => {
+      if (active) toast("콘티를 열지 못했습니다. 새로고침해 다시 열어 주세요.", { tone: "error" });
+    });
+  }
+  return () => {
+    active = false;
+    unsubscribe?.();
+    target.removeEventListener(STUDIO_AI_COMIC_COMPOSER_OPEN_EVENT, handleOpen);
+  };
 }

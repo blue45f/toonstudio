@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "פריסה סופר פשוטה",
   "studio.mainMenu.item.view.density-full": "פריסה כוללת",
   "studio.mainMenu.item.view.wide": "הרחבה עם חלוניות מכווצות",
+  "studio.mainMenu.item.view.wide.open": "הצגת חלוניות",
   "studio.mainMenu.item.view.tools-companion": "סביבת עבודה מרובת תצוגה...",
   "studio.mainMenu.item.view.canvas-only": "קנבס בלבד",
   "studio.mainMenu.item.view.color-vision.unavailable": "לא ניתן לשנות את מצב בדיקת ראיית הצבעים כל עוד טרנספורמציית התצוגה נעולה.",

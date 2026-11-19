@@ -11,7 +11,7 @@
  */
 
 import { Search } from "lucide-react";
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 
 import {
   subscribeStudioCommandSearchFromAppShell,
@@ -131,21 +131,24 @@ export function StudioCommandSearchHost({
 
   // 메뉴·인스펙터·모바일 도크는 도메인 채널, 전역 ⌘K / Ctrl+K 는 AppShell 브리지를
   // 사용한다. 둘 다 같은 `openSearch`로 수렴해 색인·범위·포커스 복귀 계약이 갈라지지 않는다.
+  const openRequest = useEffectEvent((request: StudioCommandSearchRequest) => {
+    openSearch(request.scope ?? "all", request.query ?? "");
+  });
   useEffect(() => {
-    const openRequest = (request: StudioCommandSearchRequest) => {
-      openSearch(request.scope ?? "all", request.query ?? "");
-    };
     const unsubscribeStudio = subscribeStudioCommandSearchRequests(openRequest);
     const unsubscribeAppShell = subscribeStudioCommandSearchFromAppShell(openRequest);
     const unregisterReady = registerStudioCommandSearchHost();
-    onReadyChange?.(true);
     return () => {
       unsubscribeStudio();
       unsubscribeAppShell();
       unregisterReady();
-      onReadyChange?.(false);
     };
-  }, [openSearch, onReadyChange]);
+  }, []);
+
+  useEffect(() => {
+    onReadyChange?.(true);
+    return () => onReadyChange?.(false);
+  }, [onReadyChange]);
 
   useEffect(() => {
     if (!pendingRequest) return;

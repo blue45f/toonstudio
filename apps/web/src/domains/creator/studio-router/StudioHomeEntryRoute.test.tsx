@@ -7,9 +7,11 @@ import { describe, expect, it } from "vitest";
 import { StudioHomeEntryRoute } from "./StudioHomeEntryRoute";
 
 describe("the exact Studio home entry", () => {
-  it.each(["", "?view=archived", "?view=trash", "?utm_source=campaign"])("retains the lightweight library for %s", (search) => {
+  it.each(["", "?view=archived", "?view=trash", "?utm_source=campaign", "?drawingShell=app&uiMode=focus&startTool=draw&source=pwa", "?drawingShell=integrated"])("retains the lightweight library for %s", (search) => {
     const markup = renderToStaticMarkup(<MemoryRouter initialEntries={[`/studio${search}`]}><StudioHomeEntryRoute home={<b>library</b>} legacy={<b>resolver</b>} /></MemoryRouter>);
     expect(markup).toContain("library");
+    expect(markup).toContain('data-workspace-surface="works"');
+    expect(markup).not.toContain("data-studio-drawing-home-chrome");
     expect(markup).not.toContain("resolver");
   });
   it.each(["?id=opaque%20id", "?remix=source", "?mode=upload", "?id=", "?id=a&remix=b", "?mode=upload&mode=upload"])("sends identity-bearing input unchanged to the canonical resolver: %s", (search) => {

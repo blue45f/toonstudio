@@ -289,6 +289,23 @@ describe("studio tool operation memory SQLite controller", () => {
     expect(merged.shouldApplyHydratedActiveSnapshot).toBe(false);
   });
 
+  it.each([
+    ["precision-eraser", 4, 1], ["broad-eraser", 72, 1], ["lift-eraser", 36, 0.16],
+  ] as const)("%s 선택과 사용자 굵기를 SQLite에서 복원해 펜과 구분한다", async (brushId, strokeWidth, brushOpacity) => {
+    const db = await openMemoryDatabase();
+    const persistence = createStudioToolOperationMemorySqlitePersistence({ acquireDatabase: async () => db });
+    const controller = createStudioToolOperationMemoryController(persistence);
+    for (const width of [strokeWidth, strokeWidth + 1]) {
+      const memory = rememberStudioToolOperationSnapshot(normalizeStudioToolOperationMemory(null), "erase", {
+        ...DEFAULT_STUDIO_BRUSH_SNAPSHOT, brushId, strokeWidth: width, brushOpacity,
+      });
+      expect(await controller.save(memory)).toBe(true);
+      const restored = await createStudioToolOperationMemoryController(persistence).hydrate();
+      expect(restored.erase).toMatchObject({ brushId, strokeWidth: width, brushOpacity });
+      expect(restored.paint).toEqual(DEFAULT_STUDIO_BRUSH_SNAPSHOT);
+    }
+  });
+
   it("uses the real sqlite-wasm KV table and survives a controller restart", async () => {
     const database = await openMemoryDatabase();
     const persistence = createStudioToolOperationMemorySqlitePersistence({
@@ -491,6 +508,24 @@ describe("studio tool operation memory SQLite controller", () => {
     await expect(Promise.all([firstSave, secondSave])).resolves.toEqual([true, true]);
     expect(saved).toHaveLength(2);
     expect(parseStudioToolOperationMemory(saved[1]).memory.paint.strokeWidth).toBe(33);
+  });
+
+  it("지우개 프리셋을 바꾸면 속성 병합 타이머 전에 같은 SQLite 행에 새 선택을 기록한다", async () => {
+    const database = await openMemoryDatabase();
+    vi.useFakeTimers();
+    try {
+      const persistence = createStudioToolOperationMemorySqlitePersistence({ acquireDatabase: async () => database });
+      const controller = createStudioToolOperationMemoryController(persistence, { coalesceMs: 250 });
+      const base = await controller.hydrate();
+      controller.scheduleSave(rememberStudioToolOperationSnapshot(base, "erase", kneadedEraser()));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(controller.getSnapshot()).toMatchObject({ dirty: false });
+      await expect(createStudioToolOperationMemoryController(persistence).hydrate()).resolves.toMatchObject({
+        erase: { brushId: "kneaded-eraser", brushOpacity: 0.38 },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("proactively coalesces active snapshot changes into one latest SQLite write", async () => {

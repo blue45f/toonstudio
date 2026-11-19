@@ -9,8 +9,7 @@
  * 경계:
  * - 시작 시각은 타임라인 cue의 offsetMs가 정본이다. 편집한 시작 시각은
  *   applyStudioAnimaticSubtitleTiming으로 문서 cue에 되돌릴 수 있다.
- * - 끝 시각(표시 길이)은 타임라인 cue에 저장 필드가 없어 자막 트랙 층에서만
- *   유지한다. 기본값은 읽기 속도 기반 추정이며 컷 경계를 넘지 않는다.
+ * - 조정한 표시 길이는 대사 cue에 보관한다. 기존 문서는 글자 수와 컷 길이로 계산한다.
  * - 효과음(sfx) cue는 기본 제외하고, 옵션을 켜면 함께 변환한다.
  */
 import {
@@ -145,7 +144,7 @@ export function buildStudioAnimaticSubtitleTrack(
       if (cue.kind === "sfx" && !options.includeSfx) continue;
       const startMs = clamp(window.startMs + cue.offsetMs, window.startMs, window.endMs);
       const readingMs = Math.ceil((cue.text.length / charsPerSecond) * 1_000);
-      const endMs = Math.min(window.endMs, startMs + Math.max(minDurationMs, readingMs));
+      const endMs = Math.min(window.endMs, startMs + (cue.subtitleDurationMs ?? Math.max(minDurationMs, readingMs)));
       cues.push({
         id: `${segment.id}:${cue.id}`,
         segmentId: segment.id,
@@ -200,8 +199,7 @@ export function shiftStudioAnimaticSubtitleTrack(
 }
 
 /**
- * 편집한 자막 시작 시각을 애니매틱 문서 cue의 offsetMs에 되돌린다.
- * 끝 시각은 문서 cue에 저장 필드가 없어 반영되지 않는다(모듈 머리말 참조).
+ * 원고의 대사에 컷 기준 시작 시각과 자막이 남아 있을 길이를 함께 저장한다.
  */
 export function applyStudioAnimaticSubtitleTiming(
   document: StudioAnimaticDocument,
@@ -216,6 +214,7 @@ export function applyStudioAnimaticSubtitleTiming(
     if (segmentStart === undefined) continue;
     next = patchStudioAnimaticCue(next, cue.segmentId, cue.cueId, {
       offsetMs: Math.max(0, Math.round(cue.startMs - segmentStart)),
+      subtitleDurationMs: Math.max(1, Math.round(cue.endMs - cue.startMs)),
     });
   }
   return next;

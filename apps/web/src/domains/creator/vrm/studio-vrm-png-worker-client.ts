@@ -33,6 +33,8 @@ export interface StudioVrmPngWorkerOptions {
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
   readonly startupTimeoutMs?: number;
+  /** 첫 원고 삽입은 기존 준비+인코딩 총시간 안에서 느린 워커 모듈 로드를 기다린다. */
+  readonly shareStartupBudget?: boolean;
   readonly session?: StudioVrmPngWorkerSession;
   readonly workerFactory?: StudioVrmPngWorkerFactory;
 }
@@ -48,8 +50,8 @@ export type StudioVrmPngWorkerErrorCode =
   | "worker-failed";
 
 export class StudioVrmPngWorkerError extends Error {
-  constructor(readonly code: StudioVrmPngWorkerErrorCode) {
-    super(`studio-vrm-png-worker:${code}`);
+  constructor(readonly code: StudioVrmPngWorkerErrorCode, readonly phase?: "startup" | "encode") {
+    super(`studio-vrm-png-worker:${code}${phase ? `:${phase}` : ""}`);
     this.name = code === "aborted"
       ? "AbortError"
       : code === "timeout"
@@ -254,7 +256,7 @@ export function encodeStudioVrmPngInWorker(
       callback();
     };
     const fail = (code: StudioVrmPngWorkerErrorCode) => {
-      finish(() => reject(new StudioVrmPngWorkerError(code)));
+      finish(() => reject(new StudioVrmPngWorkerError(code, code === "timeout" ? (ready ? "encode" : "startup") : undefined)));
     };
     const handleAbort = () => fail("aborted");
     function handleWorkerFailure(event: WorkerErrorLike): void {
@@ -263,8 +265,10 @@ export function encodeStudioVrmPngInWorker(
     }
     function startEncoding(): void {
       ready = true;
-      if (startupTimeout !== null) clearTimeout(startupTimeout);
-      startupTimeout = null;
+      if (!options.shareStartupBudget && startupTimeout !== null) {
+        clearTimeout(startupTimeout);
+        startupTimeout = null;
+      }
       encodeTimeout = setTimeout(() => fail("timeout"), boundedTimeout(options.timeoutMs));
       try {
         worker!.postMessage(request, studioVrmPngWorkerRequestTransfers(request));
@@ -347,7 +351,11 @@ export function encodeStudioVrmPngInWorker(
       worker.addEventListener("error", handleWorkerFailure);
       worker.addEventListener("messageerror", handleWorkerFailure);
       if (warm) startEncoding();
-      else startupTimeout = setTimeout(() => fail("timeout"), boundedStartupTimeout(options.startupTimeoutMs));
+      else {
+        const startup = boundedStartupTimeout(options.startupTimeoutMs);
+        const budget = options.shareStartupBudget ? startup + boundedTimeout(options.timeoutMs) : startup;
+        startupTimeout = setTimeout(() => fail("timeout"), budget);
+      }
     } catch {
       fail("worker-failed");
     }

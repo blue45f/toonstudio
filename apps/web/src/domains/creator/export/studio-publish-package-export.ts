@@ -1,3 +1,5 @@
+import { FALLBACK_CHAIN, getLang, registerI18nLocaleEntries, resolveTranslationForDisplay } from "@/shared/lib/i18n";
+
 import {
   projectStudioAiProvenanceForPublish,
   type StudioAiProvenanceDocument,
@@ -26,9 +28,13 @@ import {
   type StudioPublishProfile,
 } from "../studio-publish-preflight";
 
-import { resolveStudioPublishPackageErrorFromCause, resolveStudioPublishPackageIssue } from "../status-i18n/studio-producer-error-i18n-publish";
 import type { PageState } from "../studio-page-state";
 import type { WatermarkSettings } from "../studio-watermark";
+
+const toolsLoadKey = "studio.publishPackage.loadToolsFailed";
+const toolsLoadFallback = "게시 도구를 불러오지 못했어요. 다시 시도해 주세요.";
+registerI18nLocaleEntries("ko", { [toolsLoadKey]: toolsLoadFallback });
+registerI18nLocaleEntries("en", { [toolsLoadKey]: "Publishing tools could not load. Try again." });
 
 /**
  * 캡처 시점의 스냅샷으로 게시 패키지를 만든다.
@@ -165,7 +171,18 @@ export async function executeStudioPublishPackageExport(
   } = snapshot;
   if (!ensureSharedDocumentAvailableForExport()) return;
   if (!publishPackagePlan?.canExport || publishPackageExportBusy) return;
-  const { resolveStudioPublishPackageReadiness } = await import("../publish/studio-publish-package-readiness");
+  const exportModules = await Promise.all([
+    import("../publish/studio-publish-package-readiness"),
+    import("../status-i18n/studio-producer-error-i18n-publish"),
+  ]).catch(() => null);
+  if (!exportModules) {
+    setPublishPackageExportStatus({
+      tone: "bad",
+      text: resolveTranslationForDisplay(getLang(), toolsLoadKey, FALLBACK_CHAIN, toolsLoadFallback),
+    });
+    return;
+  }
+  const [readinessModule, { resolveStudioPublishPackageErrorFromCause, resolveStudioPublishPackageIssue }] = exportModules;
   const structuralResult = validateStudioPublishPreflight(
     buildStudioPublishPreflightInput(
       snapshot,
@@ -179,7 +196,7 @@ export async function executeStudioPublishPackageExport(
     effectivePublishPackageSettings.destination,
     { aiUsage: effectivePublishPackageSettings.aiUsage }
   );
-  const readiness = resolveStudioPublishPackageReadiness(publishPackagePlan, structuralResult, complianceResult);
+  const readiness = readinessModule.resolveStudioPublishPackageReadiness(publishPackagePlan, structuralResult, complianceResult);
   if (!readiness.canExport) {
     const blockedCount = readiness.blockingIssueCount;
     setPublishPackageExportStatus({

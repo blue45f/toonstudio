@@ -8,6 +8,11 @@ import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSe
 const ExportPanel = lazy(() => import("../export/StudioExportMenuPanel").then((module) => ({ default: module.StudioExportMenuPanel })));
 const PromoHandoffSection = lazy(() => import("../export/StudioPromoHandoffSection").then((module) => ({ default: module.StudioPromoHandoffSection })));
 
+function restoreExportFocus(trigger: HTMLElement | null) {
+  const target = trigger?.isConnected ? trigger : document.querySelector<HTMLElement>("[data-studio-clarity-export-trigger]");
+  target?.focus({ preventScroll: true });
+}
+
 /** 기존 출력 패널에 기존 원고 캡처·내보내기 명령을 그대로 전달한다. */
 export function StudioDrawingClarityExport({ session: s, triggerRef }: {
   readonly session: StudioCuttoonEditorViewSession;
@@ -17,8 +22,8 @@ export function StudioDrawingClarityExport({ session: s, triggerRef }: {
   const { setExportMenuOpen } = s;
   const [promoBusy, setPromoBusy] = useState(false);
   useEffect(() => {
-    const restore = () => (triggerRef.current ?? document.querySelector<HTMLElement>("[data-studio-clarity-export-trigger]"))?.focus({ preventScroll: true });
-    const close = () => { setExportMenuOpen(false); restore(); };
+
+    const close = () => { setExportMenuOpen(false); restoreExportFocus(triggerRef.current); };
     const escape = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented) return;
       event.preventDefault(); event.stopPropagation(); close();
@@ -52,10 +57,10 @@ export function StudioDrawingClarityExport({ session: s, triggerRef }: {
       onCopyToClipboard={handlers.handleCopyToClipboard} onDownloadCurrentPage={handlers.handleDownload}
       externalCancellableBusy={promoBusy} onWorkspaceAbortNotice={s.setStudioStatusNotice}
       onRequestCloseAndReturn={() => {
-        setExportMenuOpen(false); (triggerRef.current ?? document.querySelector<HTMLElement>("[data-studio-clarity-export-trigger]"))?.focus({ preventScroll: true });
+        setExportMenuOpen(false); restoreExportFocus(triggerRef.current);
       }}
       renderPrimaryExport={() => <button type="button" className="studio-drawing-clarity-button w-full" onClick={() => {
-        setExportMenuOpen(false); (triggerRef.current ?? document.querySelector<HTMLElement>("[data-studio-clarity-export-trigger]"))?.focus({ preventScroll: true });
+        setExportMenuOpen(false); restoreExportFocus(triggerRef.current);
       }}>{bt("출력 설정 닫기", "Close export settings")}</button>}
       renderAdditionalExports={(context) => (
         <Suspense fallback={null}>

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { buildProtectedRecordCapabilitySql } from "./protected-record-database-contracts.mjs";
+import { buildStudioSpacePollRuntimeAclViolationSql } from "./studio-space-poll-runtime-acl.mjs";
 import { buildWorkVrmCutRuntimeAclViolationSql } from "./studio-work-vrm-cut-runtime-acl.mjs";
 import { buildProductionOperationsRuntimeAclViolationSql } from "./production-operations-database-contract.mjs";
 
@@ -917,12 +918,10 @@ BEGIN
     RAISE EXCEPTION 'team-comment nullable mutation message capability is missing';
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_catalog.pg_extension WHERE extname = 'pg_trgm'
-  ) THEN
-    RAISE EXCEPTION 'pg_trgm extension is missing';
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_extension WHERE extname = 'pg_trgm') THEN RAISE EXCEPTION 'pg_trgm extension is missing'; END IF;
+  IF ${buildStudioSpacePollRuntimeAclViolationSql(runtimeDatabaseRole)} THEN
+    RAISE EXCEPTION '공간 투표 데이터 권한이 올바르지 않습니다.';
   END IF;
-
   IF ${buildWorkVrmCutRuntimeAclViolationSql(runtimeDatabaseRole)} THEN
     RAISE EXCEPTION '작품 VRM 컷 정본 테이블 권한이 올바르지 않습니다.';
   END IF;

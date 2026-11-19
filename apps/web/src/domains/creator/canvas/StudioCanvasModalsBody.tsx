@@ -181,7 +181,7 @@ export interface StudioCanvasModalsOverlayProps {
   addPage: () => void;
   reorderPage: (fromIndex: number, toIndex: number) => void;
   editingFallbackToModal: boolean;
-  editing: { id: string; } | null;
+  editing: import("../lettering/studio-pending-text-insert").StudioLetteringEditTarget | null;
   elementById: Map<string, El>;
   commitEditText: (finalValue: string) => void;
   cancelEditText: () => void;
@@ -573,6 +573,7 @@ export const StudioCanvasModalsBody = memo(function StudioCanvasModalsBody({
       {editingFallbackToModal ? (
         <Suspense fallback={null}>
           <StudioTextEditFallbackModal
+            pendingText={editing?.pendingText}
             key={editing!.id}
             elementId={editing!.id}
             elementById={elementById}

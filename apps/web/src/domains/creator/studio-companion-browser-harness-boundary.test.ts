@@ -62,9 +62,10 @@ describe("Studio companion browser harness boundary", () => {
     expect(roundTripSource).toContain(
       'palette.getByRole("button", { name: "지우개", exact: true }).click()',
     );
-    expect(roundTripSource).toContain(
-      'primary.getByRole("button", { name: "펜 (B)", exact: true })',
-    );
+    expect(roundTripSource).toContain('[data-studio-rail-tool-id="pen"]');
+    expect(roundTripSource).toContain('[data-studio-rail-tool-id="eraser"][aria-pressed="true"]');
+    expect(harness).toContain('openStudioMainMenu(page, "window")');
+    expect(harness).toContain('url.pathname === `/studio/companion/${surface}`');
     expect(roundTripSource).toContain(
       "palette.locator('button[aria-pressed=\"true\"]', { hasText: /^펜$/u })",
     );

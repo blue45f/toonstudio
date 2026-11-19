@@ -16,6 +16,7 @@ interface Snapshot { readonly enabled: boolean; readonly phase: string; readonly
 function fixture(preference: StudioBg3dEnginePreference = "webgpu") {
   const snapshots: Snapshot[] = [], webgl = vi.fn(), webgpu = vi.fn(), retire = vi.fn();
   const loadPreference: UseStudioBg3dEngineRuntimeOptions["loadPreference"] = async () => preference;
+  const createWebGpuRenderer = vi.fn<NonNullable<UseStudioBg3dEngineRuntimeOptions["createWebGpuRenderer"]>>();
   function CanvasOwner({ runtime }: { readonly runtime: StudioBg3dEngineRuntimeState }) {
     useLayoutEffect(() => {
       // R3F는 gl factory가 없으면 기본 WebGLRenderer를 만든다. 이 경계 진입 자체를 관찰한다.
@@ -25,7 +26,7 @@ function fixture(preference: StudioBg3dEnginePreference = "webgpu") {
     return <span data-testid="canvas-owner" />;
   }
   function Host({ enabled }: { readonly enabled: boolean }) {
-    const runtime = useStudioBg3dEngineRuntime({ enabled, deviceProfile: "desktop", antialias: true, probe, loadPreference, savePreference });
+    const runtime = useStudioBg3dEngineRuntime({ enabled, deviceProfile: "desktop", antialias: true, probe, loadPreference, savePreference, createWebGpuRenderer });
     const mounted = runtime.phase === "ready" && runtime.plan.status === "available" && !isStudioBg3dCanvasFactoryPending(runtime);
     snapshots.push({ enabled, phase: runtime.phase, backend: runtime.plan.backend, factory: runtime.glFactory !== null, mounted });
     return mounted ? <CanvasOwner runtime={runtime} /> : null;

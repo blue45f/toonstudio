@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 
 import { activateStudioModalSheet } from "../useStudioModalSheet";
 
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 import { StudioHybridDccHeading } from "./StudioHybridDccHeading";
 import { StudioHybridDccIntro } from "./StudioHybridDccIntro";
 import { StudioHybridDccPanel } from "./StudioHybridDccPanel";
@@ -147,16 +148,17 @@ export function StudioHybridDccDialog({
               className="ml-auto hidden items-center gap-1 md:flex"
             >
               {([
-                ["/studio/bg3d", bt("3D 배경", "3D Background")],
-                ["/studio/poser", bt("3D 포즈", "3D Poser")],
-                ["/studio/lift3d", bt("Lift3D", "Lift3D")],
-                ["/studio/assets/characters/new", bt("캐릭터 셰이퍼", "Character Shaper")],
-              ] as const).map(([href, label]) => (
+                ["/studio/bg3d", bt("3D 배경", "3D Background"), "bg3d"],
+                ["/studio/poser", bt("3D 포즈", "3D Poser"), "mannequin"],
+                ["/studio/lift3d", bt("Lift3D", "Lift3D"), "layers"],
+                ["/studio/assets/characters/new", bt("캐릭터 셰이퍼", "Character Shaper"), "character"],
+              ] as const).map(([href, label, art]) => (
                 <a
                   key={href}
                   href={href}
-                  className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
+                  <StudioToolArtwork tool={art} className="[--studio-tool-art-size:22px]" />
                   {label}
                 </a>
               ))}

@@ -83,6 +83,7 @@ export function StudioBg3dReadinessBadge({
         <button
           type="button"
           data-testid="studio-bg3d-header-return-2d"
+          aria-label={bt("2D 원고로 복귀", "Return to 2D")}
           disabled={disableReturnTo2d}
           onClick={onReturnTo2d}
           className={studioBg3dClassNames(
@@ -91,7 +92,7 @@ export function StudioBg3dReadinessBadge({
           )}
         >
           <ArrowLeft size={14} aria-hidden />
-          <span className="sm:hidden">{bt("2D 복귀", "2D")}</span>
+          <span className="sm:hidden">{bt("원고로 복귀", "2D")}</span>
           <span className="hidden sm:inline">{bt("2D 원고로 복귀", "Return to 2D")}</span>
         </button>
       ) : null}

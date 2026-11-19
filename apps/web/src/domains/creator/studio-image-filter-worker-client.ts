@@ -28,7 +28,6 @@ import {
   studioImageFilterWorkerErrorParams,
   type StudioImageFilterWorkerErrorCode,
 } from "./studio-image-filter-worker-error";
-
 import type { ImageFilterFields } from "./render/studio-konva-filter-fields";
 import type { StudioImageDataLike } from "./studio-filters";
 
@@ -240,6 +239,7 @@ function cloneSafeWorkerRequest(request: StudioImageFilterWorkerRunRequest): Stu
   };
 }
 
+const IMAGE_FILTER_WORKER_STARTUP_TIMEOUT_MS = 30_000;
 const directFilterRegistry: KonvaLike = { Filters: {} };
 registerStudioKonvaFilters(directFilterRegistry);
 
@@ -405,7 +405,7 @@ function runImageFilterWithWorker(
     }
     readyTimer = setTimeout(
       () => finish(() => reject(workerUnavailableError("readyTimeout"))),
-      3_000,
+      IMAGE_FILTER_WORKER_STARTUP_TIMEOUT_MS,
     );
   });
 }
@@ -645,7 +645,7 @@ export function createStudioImageFilterWorkerSession(
     };
     readyTimer = setTimeout(
       () => rejectCurrentWorkerUnavailable(workerUnavailableError("readyTimeout")),
-      3_000,
+      IMAGE_FILTER_WORKER_STARTUP_TIMEOUT_MS,
     );
   };
 
@@ -1114,7 +1114,7 @@ export function createStudioImageFilterResidentWorkerSession(
     };
     readyTimer = setTimeout(
       () => rejectCurrentWorkerUnavailable(workerUnavailableError("readyTimeout")),
-      3_000,
+      IMAGE_FILTER_WORKER_STARTUP_TIMEOUT_MS,
     );
   };
 

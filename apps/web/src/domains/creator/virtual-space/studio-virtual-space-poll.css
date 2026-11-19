@@ -2,17 +2,19 @@
  * 생성 마법사 + 실시간 결과 바 애니메이션 + 마감 카운트다운.
  * 다크모드·모바일(390px)·reduced-motion 대응. */
 
+.studio-poll-fields, .studio-poll-local, .studio-poll {
+  --poll-surface: var(--color-canvas);
+  --poll-ink: var(--color-fg);
+  --poll-muted: var(--color-fg-2);
+  --poll-line: var(--color-line);
+  --poll-panel: var(--space-surface-solid, var(--color-panel));
+  --poll-accent: var(--color-accent);
+  --poll-accent-ink: var(--color-on-accent);
+  --poll-bar-track: var(--color-line);
+  --poll-radius: 0.65rem;
+}
+
 .studio-poll {
-  --poll-surface: #fbf9f4;
-  --poll-ink: #1c1917;
-  --poll-muted: #78716c;
-  --poll-line: rgb(28 25 23 / 0.12);
-  --poll-panel: rgb(255 255 255 / 0.88);
-  --poll-accent: #7c3aed;
-  --poll-accent-ink: #fff;
-  --poll-bar-track: rgb(28 25 23 / 0.08);
-  --poll-shadow: 0 12px 32px rgb(28 25 23 / 0.14);
-  --poll-radius: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
@@ -21,19 +23,6 @@
   border-radius: var(--poll-radius);
   background: var(--poll-panel);
   color: var(--poll-ink);
-  box-shadow: var(--poll-shadow);
-}
-
-[data-theme="dark"] .studio-poll {
-  --poll-surface: #161a24;
-  --poll-ink: #f5f3ee;
-  --poll-muted: #a8a29e;
-  --poll-line: rgb(255 255 255 / 0.14);
-  --poll-panel: rgb(30 34 46 / 0.9);
-  --poll-accent: #a78bfa;
-  --poll-accent-ink: #1c1917;
-  --poll-bar-track: rgb(255 255 255 / 0.1);
-  --poll-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
 }
 
 .studio-poll-head {
@@ -80,7 +69,7 @@
 
 .studio-poll-status.is-open {
   background: rgb(22 163 74 / 0.16);
-  color: #16a34a;
+  color: var(--color-good);
 }
 
 .studio-poll-status.is-expired,
@@ -95,8 +84,8 @@
   gap: 0.35rem;
   padding: 0.4rem 0.7rem;
   border-radius: 0.7rem;
-  background: linear-gradient(135deg, var(--poll-accent), #ec4899);
-  color: #fff;
+  background: var(--poll-accent);
+  color: var(--poll-accent-ink);
   font-size: 0.84rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -129,7 +118,7 @@
 }
 
 .studio-poll-steps li.is-done {
-  color: #16a34a;
+  color: var(--color-good);
   border-color: rgb(22 163 74 / 0.4);
 }
 
@@ -180,7 +169,7 @@
   font-size: 0.78rem;
   font-style: normal;
   font-weight: 600;
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .studio-poll-error svg {
@@ -235,8 +224,8 @@
 }
 
 .studio-poll-icon-btn:hover {
-  color: #ef4444;
-  border-color: #ef4444;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
 }
 
 .studio-poll-settings {
@@ -382,9 +371,8 @@
 
 .studio-poll-primary {
   border: 0;
-  background: linear-gradient(135deg, var(--poll-accent), #ec4899);
-  color: #fff;
-  box-shadow: var(--poll-shadow);
+  background: var(--poll-accent);
+  color: var(--poll-accent-ink);
 }
 
 .studio-poll-secondary {
@@ -491,7 +479,7 @@
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--poll-accent), #ec4899);
+  background: var(--poll-accent);
   transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -542,7 +530,7 @@
 
 .studio-poll-voted {
   font-weight: 700;
-  color: #16a34a;
+  color: var(--color-good);
 }
 
 .studio-poll-foot .studio-poll-secondary {
@@ -585,14 +573,14 @@
 
 .poll-art-check {
   fill: none;
-  stroke: #16a34a;
+  stroke: var(--color-good);
   stroke-width: 3.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .poll-art-badge {
-  fill: #16a34a;
+  fill: var(--color-good);
 }
 
 .poll-art-badge-check {
@@ -625,6 +613,15 @@
 
 /* 모바일(390px) */
 @media (max-width: 480px) {
+  .studio-poll-voters summary {
+    min-height: 44px;
+    align-content: center;
+  }
+
+  .studio-poll button, .studio-poll-fields > button, .studio-poll-local button {
+    min-height: 44px;
+  }
+
   .studio-poll {
     padding: 0.85rem;
     gap: 0.7rem;
@@ -677,4 +674,11 @@
   .studio-poll-secondary:hover:not(:disabled) {
     transform: none;
   }
+}
+
+.studio-poll-fields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }

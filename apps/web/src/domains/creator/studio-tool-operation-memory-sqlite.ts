@@ -452,8 +452,15 @@ export function createStudioToolOperationMemoryController(
     },
     hydrate,
     scheduleSave(memory) {
+      const previous = snapshot.memory;
       markDirty(memory);
-      armCoalescedWrite();
+      const presetChanged = (["paint", "erase"] as const).some(operation => {
+        const from = previous[operation], to = snapshot.memory[operation];
+        return from.brushId !== to.brushId || from.sourcePresetId !== to.sourcePresetId;
+      });
+      // 도구 목록에서 고른 프리셋은 바로 기록한다. 연속 굵기·강도 조절만 모아서 쓴다.
+      if (presetChanged) void flush();
+      else armCoalescedWrite();
     },
     save(memory) {
       markDirty(memory);

@@ -1,0 +1,152 @@
+{
+  "date": "2026-11-19",
+  "environment": "격리된 로컬 원고, 실제 Chrome CDP 9223, 새 게스트 컨텍스트",
+  "condition": "렌더러 모듈 하나만 19초 뒤에 전달. 실제 GPU API, 장치와 장면은 대체하지 않음.",
+  "beforeSurface": "로컬 정적 빌드 15508, 드로잉 원고에서 3D 배경 열기",
+  "afterSurface": "변경 후 개발 서버 5497, 3D 배경 바로가기에서 같은 편집기 열기",
+  "samples": {
+    "before": {
+      "events": [
+        {
+          "t": 25,
+          "step": "navigating"
+        },
+        {
+          "t": 18132,
+          "step": "open-bg3d"
+        },
+        {
+          "t": 21681,
+          "d": {
+            "badge": "WebGPU 확인 중",
+            "loading": false
+          }
+        },
+        {
+          "t": 23034,
+          "coldChunk": "start"
+        },
+        {
+          "t": 23638,
+          "d": {
+            "badge": "WebGPU 초기화 중",
+            "loading": true,
+            "canvas": 300
+          }
+        },
+        {
+          "t": 42034,
+          "coldChunk": "released"
+        },
+        {
+          "t": 47832,
+          "d": {
+            "badge": "WebGPU 실행 실패",
+            "alert": "WebGPU 렌더러 응답이 지연되어 초기화를 중단했습니다. WebGPU 실행을 중단했습니다. 다시 선택하거나 WebGL2를 직접 선택해 주세요.WebGL2로 계속하면 같은 장면을 바로 편집할 수 있습니다. 자동으로 다른 엔진을 실행하지 않습니다. 보기 탭의 3D 렌더 엔진에서 WebGPU 또는 WebGL2를 직접 선택해 주세요.WebGL2로 계속WebGPU 다시 시도품질 낮춰 다시 열기2D 원고로 복귀",
+            "loading": false
+          }
+        },
+        {
+          "t": 47832,
+          "waiting": true,
+          "released": true
+        }
+      ],
+      "viewportCssPixels": [
+        965,
+        744
+      ],
+      "centralRoiColorCount": 708,
+      "imageSha256": "860c2e4b88ea5dae46730befed014e3e20cb37614bf3d814a5fa70ef81c7f092"
+    },
+    "after": {
+      "events": [
+        {
+          "t": 13898,
+          "step": "navigating"
+        },
+        {
+          "t": 72825,
+          "coldChunk": "start"
+        },
+        {
+          "t": 72888,
+          "d": {
+            "badge": "WebGPU 초기화 중",
+            "loading": false
+          }
+        },
+        {
+          "t": 91826,
+          "coldChunk": "released"
+        },
+        {
+          "t": 96721,
+          "d": {
+            "badge": "WebGPU 활성",
+            "loading": false,
+            "canvas": 963
+          }
+        },
+        {
+          "t": 96722,
+          "waiting": true,
+          "released": true
+        },
+        {
+          "t": 98410,
+          "actualClassroom": true,
+          "badge": "WebGPU 활성"
+        }
+      ],
+      "viewportCssPixels": [
+        965,
+        744
+      ],
+      "centralRoiColorCount": 1309,
+      "imageSha256": "1c7ec2422a85e2de75ca0c815247e0bec90e1b2b9f77733b034517a3047b8e56"
+    },
+    "afterStatic": {
+      "events": [
+        {
+          "t": 4,
+          "step": "navigating"
+        },
+        {
+          "t": 11631,
+          "coldChunk": "start"
+        },
+        {
+          "t": 11835,
+          "d": {
+            "badge": "WebGPU 초기화 중",
+            "loading": false
+          }
+        },
+        {
+          "t": 30655,
+          "coldChunk": "released"
+        },
+        {
+          "t": 31344,
+          "d": {
+            "badge": "WebGPU 활성",
+            "loading": false,
+            "canvas": 963
+          }
+        },
+        {
+          "t": 31344,
+          "waiting": true,
+          "released": true
+        },
+        {
+          "t": 33091,
+          "actualClassroom": true,
+          "badge": "WebGPU 활성"
+        }
+      ]
+    }
+  },
+  "afterStaticSurface": "로컬 정적 빌드 9be4b96e345c (15509), 3D 배경 바로가기"
+}

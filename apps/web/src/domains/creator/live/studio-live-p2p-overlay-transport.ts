@@ -200,7 +200,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
   readonly mode: StudioLiveTransport["mode"];
   readonly canvasLockPolicy: StudioLiveTransport["canvasLockPolicy"];
   readonly crdtFanout: NonNullable<StudioLiveTransport["crdtFanout"]>;
-  readonly canonicalSessionId?: StudioLiveTransport["canonicalSessionId"];
+  get canonicalSessionId(): StudioLiveTransport["canonicalSessionId"] { return this.direct.canonicalSessionId; }
   readonly transportSessionId?: StudioLiveTransport["transportSessionId"];
   private readonly context: StudioLiveTransportContext;
   private readonly primary: StudioLiveTransport;
@@ -243,6 +243,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     peerCapabilities: readonly StudioPeerCapability[],
   ) {
     this.direct = {
+      canonicalSessionId: primary.canonicalSessionId?.bind(primary),
       getPeers: () => {
         if (this.closed || !this.ready) return [];
         this.pruneStalePeers();
@@ -315,7 +316,6 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     this.localPeerCapabilities = Object.freeze([
       ...new Set(peerCapabilities.filter(isStudioPeerCapability)),
     ]);
-    this.canonicalSessionId = primary.canonicalSessionId?.bind(primary);
     this.transportSessionId = primary.transportSessionId?.bind(primary);
     const fabricLink: StudioPeerFabricLinkPort = {
       getPeers: () => this.fabricPeers(),
@@ -968,7 +968,10 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     if (this.closed) return;
     const sessionId = participant.sessionId;
     if (sessionId === this.context.participant.sessionId) return;
+    const localAddress = () => this.transportSessionId?.(this.context.participant.sessionId) ?? this.context.participant.sessionId;
+    const local = localAddress();
     const existing = this.peers.get(sessionId);
+    if (existing && existing.localAddress !== local) this.teardownPeer(sessionId);
     if (existing && !existing.closed) {
       existing.participant = participant;
       return;
@@ -984,20 +987,14 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
       return;
     }
     const link: StudioLiveP2pPeerLink = {
-      sessionId,
-      participant,
-      connection,
-      channel: null,
+      localAddress: local, sessionId, participant, connection, channel: null,
       handshake: new StudioLiveP2pMeshHandshake(
-        connection, () => !this.closed && this.peers.get(sessionId)?.connection === connection, this.now,
+        connection, () => !this.closed && this.peers.get(sessionId)?.connection === connection && localAddress() === local, this.now,
         (type, sdp) => this.sendMeshDescription(sessionId, type, sdp),
         (candidate) => this.sendMeshIce(sessionId, candidate),
       ),
-      peerBinaryLanes: STUDIO_LIVE_P2P_NO_BINARY_LANES,
-      peerCapabilities: Object.freeze([]),
-      announcedBinaryLanes: false,
-      inkInboundWindow: null,
-      closed: false,
+      peerBinaryLanes: STUDIO_LIVE_P2P_NO_BINARY_LANES, peerCapabilities: Object.freeze([]),
+      announcedBinaryLanes: false, inkInboundWindow: null, closed: false,
     };
     this.peers.set(sessionId, link);
     connection.onicecandidate = (event) => {
@@ -1021,7 +1018,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
         this.relayPeerSessionIds.add(sessionId);
       }
     };
-    if (!shouldOfferMesh(this.transportSessionId?.(this.context.participant.sessionId) ?? this.context.participant.sessionId, sessionId)) return;
+    if (!shouldOfferMesh(local, sessionId)) return;
     try {
       this.bindChannel(link, connection.createDataChannel(STUDIO_LIVE_P2P_CHANNEL_LABEL));
     } catch {
@@ -1370,6 +1367,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     const link = this.peers.get(sessionId);
     if (!link) return;
     link.closed = true;
+    link.handshake.cancelOfferRetries();
     this.peers.delete(sessionId);
     try {
       link.channel?.close();

@@ -51,7 +51,8 @@ describe("BG3D no-forced-fallback wiring", () => {
   });
 
   it("withdraws the WebGPU factory after the explicit selection fails", () => {
-    expect(runtimeSource).toContain('plan.status !== "available"');
+    expect(runtimeSource).toContain('plan.backend === "webgpu" && plan.status === "available"');
+    expect(runtimeSource).toContain("if (!createRenderer) return null");
     expect(runtimeSource).toContain("setWebgpuRuntimeFailed(true)");
     expect(selectionSource).toContain('hardBlocks.includes("webgpu-runtime-failed")');
   });

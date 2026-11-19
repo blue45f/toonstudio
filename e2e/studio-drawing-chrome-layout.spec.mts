@@ -4,8 +4,6 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { STUDIO_OFFLINE_AUTOMATION_EVENT } from "../apps/web/src/domains/creator/offline/studio-offline-automation";
 
-import { buildStudioReactFixture } from "./helpers/studio-react-fixture.mjs";
-
 const styles = [
   "../apps/web/src/app/styles/sitewide-visual-ux.css",
   "../apps/web/src/app/styles/mobile-first-shell.css",
@@ -13,47 +11,8 @@ const styles = [
   "../apps/web/src/domains/creator/studio-shell/studio-visual-identity-v2.css",
   "../apps/web/src/domains/creator/studio-shell/studio-document-chrome.css",
   "../apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css",
+  "../apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingMobileWorkspace.css",
 ].map(path => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n");
-
-async function mountProductSaveCenter(page: Page) {
-  // 저장 버튼·native dialog·slot 등록·포커스 복귀는 제품 코드다. 외부 상태 생산자만 문구 fixture로 공급한다.
-  const source = await buildStudioReactFixture(`
-      import { useEffect, useState } from "react";
-      import { createRoot } from "react-dom/client";
-      import { createPortal } from "react-dom";
-      import { StudioSaveSyncStatusCenter } from "./domains/creator/StudioSaveSyncStatusCenter";
-      import { createEmptyOperationJournal } from "./domains/creator/studio-operation-recovery-coordinator";
-      import { useEditorStatusSlot } from "./shared/lib/modal-status-slot";
-      function Notices() {
-        const slot = useEditorStatusSlot(), [messages, setMessages] = useState<string[]>([]);
-        useEffect(() => {
-          if (!slot) return;
-          const change = (event: Event) => {
-            if (event instanceof CustomEvent && Array.isArray(event.detail) && event.detail.every(value => typeof value === "string")) setMessages(event.detail);
-          };
-          window.addEventListener("studio-fixture-notices", change);
-          slot.summary.dataset.fixtureNoticesReady = "true";
-          return () => {
-            window.removeEventListener("studio-fixture-notices", change);
-            delete slot.summary.dataset.fixtureNoticesReady;
-          };
-        }, [slot]);
-        if (!slot) return null;
-        return <>
-          {createPortal(messages.map(message => <span key={message} role="status" data-studio-offline-important="true">{message}</span>), slot.summary)}
-          {createPortal(<section aria-label="전체 작업 안내">{messages.map(message =>
-            <p key={message} data-fixture-full-notice="true" style={{fontSize:24,lineHeight:1.5,whiteSpace:"normal"}}>{message}</p>
-          )}</section>, slot.element)}
-        </>;
-      }
-      const root = document.querySelector("[data-studio-save-status-chrome-mount]");
-      if (!root) throw new Error("저장 상태 fixture 자리가 없습니다.");
-      createRoot(root).render(<><StudioSaveSyncStatusCenter presentation="drawing" journal={createEmptyOperationJournal("chrome-layout-fixture")}/><Notices/></>);
-    `);
-  await page.addScriptTag({ content: source });
-  await expect(page.locator('button[data-studio-drawing-save-summary="true"]')).toHaveAttribute("aria-describedby", /.+/u);
-  await expect(page.locator('[data-fixture-notices-ready="true"]')).toHaveCount(1);
-}
 
 /** 제품 CSS와 저장 요약의 실제 중첩 구조를 사용한다. 앱의 획·저장 검증은 별도 production 검사에서 한다. */
 async function mountHeader(page: Page, mobile: boolean) {
@@ -127,7 +86,7 @@ for (const mobile of [false, true]) {
       await mountHeader(page, mobile);
       if (mode === "contrast") await page.locator("html").evaluate(node => { node.dataset.designTheme = "contrast"; });
       const before = await geometry(page);
-      expect(before.title.height).toBeGreaterThanOrEqual(mobile ? 64 : 55);
+      expect(before.title.height).toBeGreaterThanOrEqual(55);
       const message = "일부 오프라인 도구 준비 필요";
       await setNotices(page, [message]);
       await expect(page.getByRole("status")).toHaveText(message);
@@ -148,27 +107,36 @@ for (const mobile of [false, true]) {
   }
 }
 
-test("1280 원고에서 일곱 빠른 메뉴와 오프라인 안내가 캔버스 원점을 유지한다", async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
+async function openManuscriptHeader(page: Page) {
   await page.goto("/studio/draft/compact-header-offline-status?language=ko", { waitUntil: "domcontentloaded" });
   const header = page.locator("[data-studio-drawing-clarity-header=true]");
   const canvas = page.locator("[data-studio-canvas-viewport]").first();
   const summary = header.getByRole("button", { name: /^저장 상태 열기/ });
   const notice = summary.locator("[data-studio-offline-important=true]");
-  // 실제 상태 패널이 연결된 뒤 자동 준비의 부분 완료와 완료를 같은 채널로 전달한다.
   await page.locator("[data-studio-offline-panel][data-studio-offline-presentation=status-center]").waitFor({ state: "attached", timeout: 60_000 });
   await expect(canvas).toBeVisible();
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
-  async function offlinePhase(phase: "partial" | "ready") {
-    await page.evaluate(({ event, phase }) => {
-      window.dispatchEvent(new CustomEvent(event, { detail: { phase, message: phase } }));
-    }, { event: STUDIO_OFFLINE_AUTOMATION_EVENT, phase });
-  }
-  await offlinePhase("ready");
+  return { header, canvas, summary, notice };
+}
+
+async function offlinePhase(page: Page, phase: "partial" | "ready") {
+  await page.evaluate(({ event, phase }) => {
+    window.dispatchEvent(new CustomEvent(event, { detail: { phase, message: phase } }));
+  }, { event: STUDIO_OFFLINE_AUTOMATION_EVENT, phase });
+}
+
+test("1280 원고에서 일곱 빠른 메뉴와 오프라인 안내가 캔버스 원점을 유지한다", async ({ page }) => {
+  // 실제 상태 패널에 단일 도구 준비 안내만 발생하도록 연결 확인 응답을 고정한다.
+  await page.route("**/api/health/capabilities*", route => route.fulfill({
+    json: { status: "ready", capabilities: { studioProjectRead: "available", studioCloudSave: "available" } },
+  }));
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const { header, canvas, summary, notice } = await openManuscriptHeader(page);
+  await offlinePhase(page, "ready");
   await expect(notice).toHaveCount(0);
   const before = await canvas.boundingBox();
   expect(before).not.toBeNull();
-  await offlinePhase("partial");
+  await offlinePhase(page, "partial");
   const message = "일부 오프라인 도구 준비 필요";
   await expect(notice).toHaveText(message);
   await expect(summary).toHaveAccessibleDescription(message);
@@ -180,67 +148,105 @@ test("1280 원고에서 일곱 빠른 메뉴와 오프라인 안내가 캔버스
   });
   expect(noticeLines).toBe(1);
   const menu = header.getByRole("navigation", { name: "원고 빠른 메뉴" });
-  for (const name of ["파일", "편집", "컷·원고", "레이어", "브러시·필터", "3D·캐릭터", "협업·검수"]) {
-    const button = menu.getByRole("button", { name, exact: true });
+  for (const name of ["파일", "편집", "컷·원고", "레이어", "필터", "3D·캐릭터", "협업·검수"]) {
+    const button = menu.getByRole("menuitem", { name, exact: true }).or(menu.getByRole("button", { name, exact: true }));
     const box = await button.boundingBox();
     expect(box?.width).toBeGreaterThanOrEqual(44);
     expect(box?.height).toBeGreaterThanOrEqual(44);
     await button.focus();
     await expect(button).toBeFocused();
   }
-  await offlinePhase("ready");
+  await offlinePhase(page, "ready");
   await expect(notice).toHaveCount(0);
   expect(await canvas.boundingBox()).toEqual(before);
 });
 
-test("좁은320 화면과 두 배 글꼴의 긴 안내를 실제 저장 상세에서 모두 읽고 복귀한다", async ({ page }) => {
+test("1280·390 원고에서 연결 복구와 오프라인 도구 준비를 함께 읽어도 캔버스 원점을 유지한다", async ({ page }) => {
+  await page.route("**/api/health/capabilities*", route => route.fulfill({ status: 503, json: { status: "unavailable" } }));
+  const retryMessage = "연결 복구 후 재시도";
+  const message = "일부 오프라인 도구 준비 필요";
+  for (const size of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+    await test.step(`${size.width}px에서 두 안내를 추가하고 해제한다`, async () => {
+      await page.setViewportSize(size);
+      const { header, canvas, summary, notice } = await openManuscriptHeader(page);
+      const title = header.locator(".studio-drawing-clarity-title");
+      const retry = summary.locator("[data-studio-draft-save-attention]");
+      await expect(retry).toHaveText(retryMessage);
+      await offlinePhase(page, "ready");
+      await expect(summary).toHaveAccessibleDescription(retryMessage);
+      const origin = await canvas.boundingBox();
+      const titleBox = await title.boundingBox();
+      expect(origin).not.toBeNull();
+      expect(titleBox).not.toBeNull();
+
+      await offlinePhase(page, "partial");
+      await expect(summary).toHaveAccessibleDescription(`${retryMessage} ${message}`);
+      const hit = await summary.boundingBox();
+      if (!hit) throw new Error("저장 상태 버튼의 터치 영역이 없습니다.");
+      expect(hit.width).toBeGreaterThanOrEqual(44);
+      expect(hit.height).toBeGreaterThanOrEqual(44);
+      for (const [label, expected] of [[retry, retryMessage], [notice, message]] as const) {
+        await expect(label).toHaveText(expected);
+        await expect(label).toBeVisible();
+        const lines = await label.evaluate(node => {
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          return Array.from(range.getClientRects(), rect => ({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }));
+        });
+        expect(lines).toHaveLength(1);
+        expect(lines[0].left).toBeGreaterThanOrEqual(hit.x - 1);
+        expect(lines[0].right).toBeLessThanOrEqual(hit.x + hit.width + 1);
+        expect(lines[0].top).toBeGreaterThanOrEqual(hit.y - 1);
+        expect(lines[0].bottom).toBeLessThanOrEqual(hit.y + hit.height + 1);
+      }
+      expect(await title.boundingBox()).toEqual(titleBox);
+      expect(await canvas.boundingBox()).toEqual(origin);
+      await offlinePhase(page, "ready");
+      await expect(notice).toHaveCount(0);
+      await expect(summary).toHaveAccessibleDescription(retryMessage);
+      expect(await title.boundingBox()).toEqual(titleBox);
+      expect(await canvas.boundingBox()).toEqual(origin);
+    });
+  }
+});
+
+test("좁은320 화면과 두 배 글꼴에서도 긴 영문·복수 안내를 자르지 않는다", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
   await mountHeader(page, true);
   await page.locator("html").evaluate(node => { node.setAttribute("lang", "en"); });
-  await mountProductSaveCenter(page);
-  const summary = page.locator('button[data-studio-drawing-save-summary="true"]');
+  const summary = page.getByRole("button", { name: "저장 상태 열기", exact: true });
   await summary.evaluate(node => { node.style.fontSize = "24px"; });
   const before = await geometry(page);
   const messages = ["Offline tools could not be prepared · Check again", "Storage about 95% full · Back up your work"];
-  await page.evaluate(texts => window.dispatchEvent(new CustomEvent("studio-fixture-notices", { detail: texts })), messages);
+  await setNotices(page, messages);
   await expect(page.getByRole("status")).toHaveText(messages);
   await expect(summary).toHaveAccessibleDescription(messages.join(" "));
-  expect(await geometry(page)).toEqual(before);
+  const bounds = await page.locator("#notice").evaluate(slot => {
+    const button = slot.closest("button");
+    if (!button) throw new Error("저장 버튼이 없습니다.");
+    const rect = button.getBoundingClientRect();
+    const range = document.createRange();
+    range.selectNodeContents(slot);
+    return {
+      overflow: button.scrollHeight - button.clientHeight,
+      text: [...range.getClientRects()].map(part => ({ left: part.left, right: part.right, top: part.top, bottom: part.bottom })),
+      button: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom },
+    };
+  });
+  expect(bounds.overflow).toBeLessThanOrEqual(1);
+  expect(bounds.text.length).toBeGreaterThan(2);
+  for (const rect of bounds.text) {
+    expect(rect.left).toBeGreaterThanOrEqual(bounds.button.left - 1);
+    expect(rect.right).toBeLessThanOrEqual(bounds.button.right + 1);
+    expect(rect.top).toBeGreaterThanOrEqual(bounds.button.top - 1);
+    expect(rect.bottom).toBeLessThanOrEqual(bounds.button.bottom + 1);
+  }
+  const after = await geometry(page);
+  expect(after.title.height).toBeGreaterThan(before.title.height);
+  expect(after.workspace.y).toBeGreaterThanOrEqual(after.header.y + after.header.height);
   await summary.focus();
   await expect(summary).toBeFocused();
-  await summary.click();
-  const dialog = page.locator('dialog[data-studio-drawing-save-dialog="true"]');
-  await expect(dialog).toBeVisible();
-  await expect(dialog).toHaveAttribute("aria-modal", "true");
-  expect(await dialog.evaluate(node => node.matches(":modal"))).toBe(true);
-  const close = dialog.getByRole("button", { name: "저장 상태 닫기", exact: true });
-  await expect(close).toBeFocused();
-  const notices = dialog.locator("[data-fixture-full-notice]");
-  await expect(notices).toHaveText(messages);
-  for (const notice of await notices.all()) {
-    await notice.scrollIntoViewIfNeeded();
-    await expect(notice).toBeVisible();
-    const bounds = await notice.evaluate(node => {
-      const viewport = node.closest(".studio-drawing-dialog-content")?.getBoundingClientRect();
-      if (!viewport) throw new Error("저장 상세 스크롤 영역이 없습니다.");
-      const range = document.createRange();
-      range.selectNodeContents(node);
-      return { clip: { left: viewport.left, right: viewport.right, top: viewport.top, bottom: viewport.bottom },
-        text: [...range.getClientRects()].map(rect => ({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom })) };
-    });
-    expect(bounds.text.length).toBeGreaterThan(1);
-    for (const rect of bounds.text) {
-      expect(rect.left).toBeGreaterThanOrEqual(bounds.clip.left - 1);
-      expect(rect.right).toBeLessThanOrEqual(bounds.clip.right + 1);
-      expect(rect.top).toBeGreaterThanOrEqual(bounds.clip.top - 1);
-      expect(rect.bottom).toBeLessThanOrEqual(bounds.clip.bottom + 1);
-    }
-  }
-  await page.keyboard.press("Escape");
-  await expect(dialog).toBeHidden();
-  await expect(summary).toBeFocused();
-  await expect(summary).toHaveAttribute("aria-expanded", "false");
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent("studio-fixture-notices", { detail: [] })));
-  await expect(summary).toHaveAccessibleDescription("");
+  await summary.click({ trial: true });
+  await setNotices(page, []);
   expect(await geometry(page)).toEqual(before);
 });

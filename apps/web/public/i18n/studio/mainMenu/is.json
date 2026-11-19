@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Ofur einfalt skipulag",
   "studio.mainMenu.item.view.density-full": "heildarskipulag",
   "studio.mainMenu.item.view.wide": "Fella saman spjöld og breikka",
+  "studio.mainMenu.item.view.wide.open": "Sýna spjöld",
   "studio.mainMenu.item.view.tools-companion": "Vinnusvæði með mörgum skjáum…",
   "studio.mainMenu.item.view.canvas-only": "Aðeins striga",
   "studio.mainMenu.item.view.color-vision.unavailable": "Þú getur ekki breytt litasjónarstillingu á meðan útsýnisbreytingin er læst.",

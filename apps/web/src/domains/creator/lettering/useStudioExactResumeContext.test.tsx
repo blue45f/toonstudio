@@ -21,11 +21,13 @@ function Harness({
   resumeRequested,
   onRestored,
   hydrated = true,
+  focus = "cut:2",
   pages = PAGES,
 }: {
   readonly resumeRequested: boolean;
   readonly onRestored?: (pageId: string | null) => void;
   readonly hydrated?: boolean;
+  readonly focus?: string | null;
   readonly pages?: readonly { readonly id: string; readonly elements: readonly { readonly id: string }[] }[];
 }) {
   const [currentPageId, setCurrentPageIdState] = useState("page-1");
@@ -34,6 +36,7 @@ function Harness({
   const [zoom, setZoom] = useState(1);
   const [tool, setTool] = useState<Tool>("select");
   const [drawMode, setDrawMode] = useState<DrawMode>("eraser");
+  const primaryToolActivatedRef = useRef(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   const setCurrentPageId = useCallback((pageId: string) => {
     setCurrentPageIdState(pageId);
@@ -45,7 +48,7 @@ function Harness({
     projectId: "project-1",
     documentId: "document-1",
     workspace: "comic",
-    focus: "cut:2",
+    focus,
     language: "ko-KR",
     sourceVersion: "v4",
     resumeRequested,
@@ -63,6 +66,7 @@ function Harness({
     scrollTop: 0,
     viewportRef,
     updateViewport,
+    primaryToolActivatedRef,
     tool,
     setTool,
     drawMode,
@@ -72,6 +76,11 @@ function Harness({
 
   return (
     <div>
+      <button type="button" onClick={() => {
+        primaryToolActivatedRef.current = true;
+        setTool("draw");
+        setDrawMode("eraser");
+      }}>지우개 선택</button>
       <div
         ref={(node) => {
           viewportRef.current = node;
@@ -122,6 +131,26 @@ describe("useStudioExactResumeContext", () => {
     await waitFor(() => expect(onRestored).toHaveBeenCalledExactlyOnceWith("page-2"));
     expect(screen.getByTestId("state").textContent).toContain('"selectedId":"bubble-2"');
     expect(screen.getByTestId("viewport").scrollTop).toBe(760);
+  });
+
+  it.each([
+    { resumeRequested: false, expectedMode: "eraser" },
+    { resumeRequested: true, expectedMode: "pen" },
+  ])("도구 선택 뒤 원고 복구가 완료될 때 명시적 이어하기 $resumeRequested 의 도구와 페이지를 보존한다", async ({ resumeRequested, expectedMode }) => {
+    writeStudioExactResumeContext(window.localStorage, {
+      projectId: "project-1", documentId: "document-1", workspace: "comic", pageId: "page-2",
+      selectedElementIds: ["bubble-2"], tool: "draw", drawMode: "pen",
+    });
+    const view = render(<Harness resumeRequested={resumeRequested} focus={null} hydrated={false} pages={[PAGES[0]]} />);
+    await act(async () => { screen.getByRole("button", { name: "지우개 선택" }).click(); });
+    view.rerender(<Harness resumeRequested={resumeRequested} focus={null} hydrated />);
+    await waitFor(() => expect(JSON.parse(screen.getByTestId("state").textContent ?? "{}")).toMatchObject({
+      currentPageId: "page-2", selectedId: "bubble-2", tool: "draw", drawMode: expectedMode,
+    }));
+    view.unmount();
+    expect(readStudioExactResumeContext(window.localStorage, "project-1", "document-1")).toMatchObject({
+      pageId: "page-2", selectedElementIds: ["bubble-2"], tool: "draw", drawMode: expectedMode,
+    });
   });
 
   it("restores the page, selection, tool, zoom and viewport from the trusted latest context", async () => {
@@ -225,7 +254,9 @@ describe("useStudioExactResumeContext", () => {
       const [selectedId, setSelectedId] = useState<string | null>(null);
       const [marqueeIds, setMarqueeIds] = useState<string[]>([]);
       const viewportRef = useRef<HTMLDivElement>(null);
+      const primaryToolActivatedRef = useRef(false);
       useStudioExactResumeContext({
+        primaryToolActivatedRef,
         projectId: "project-1",
         documentId: "document-1",
         workspace: "comic",
@@ -285,7 +316,9 @@ describe("useStudioExactResumeContext", () => {
       const [tool, setTool] = useState<Tool>("select");
       const [drawMode, setDrawMode] = useState<DrawMode>(initialMode);
       const viewportRef = useRef<HTMLDivElement>(null);
+      const primaryToolActivatedRef = useRef(false);
       useStudioExactResumeContext({
+        primaryToolActivatedRef,
         projectId: "project-1",
         documentId: "document-1",
         workspace: "comic",

@@ -51,6 +51,7 @@ import { requestStudioAllTools } from "./studio-toolbar-channel";
 import { preloadStudioAssetToolPopoverBody } from "./studio-tool-belt-lazy-ui";
 import { studioTouchGestureHint } from "./studio-cuttoon-editor/studio-touch-gesture-policy";
 import type { StudioAppSettings } from "./studio-app-settings";
+import { StudioToolArtwork } from "./studio-tool-art/StudioToolArtwork";
 import { STUDIO_DRAW_SHAPE_PICKER_KINDS } from "./brush/studio-draw-hud";
 import {
   STUDIO_BRUSH_OPACITY_RANGE,
@@ -76,16 +77,14 @@ import {
   type StudioMobileSheetSnap,
 } from "./studio-mobile-sheet-snap";
 import { STUDIO_EASE } from "./studio-panel-ui";
-import { useStudioFilterDialogIntent } from "./studio-filter-dialog-intent";
+import { StudioMobileFilterSelect } from "./filter/StudioMobileFilterSelect";
 import {
   STUDIO_ERASE_TO_INTERSECTION_LABEL,
   STUDIO_ERASE_TO_INTERSECTION_TIP,
 } from "./studio-vector-erase-to-intersection-apply";
 import { StudioColorBlindPreviewToggle } from "./StudioColorBlindPreviewToggle";
-import {
-  StudioEraserQuickPicker,
-  type StudioEraserQuickPickerId,
-} from "./StudioEraserQuickPicker";
+import { StudioEraserQuickPicker } from "./StudioEraserQuickPicker";
+import { studioEraserDisplayName, studioQuickEraserId } from "./brush/studio-eraser-presets";
 import { StudioLineCorrectionControls } from "./StudioLineCorrectionControls";
 import {
   StudioLivingInkControls,
@@ -137,13 +136,6 @@ const ZOOM_MIN = 0.2;
 const ZOOM_MAX = 5;
 const MOBILE_DRAW_SETTINGS_ID = "studio-mobile-draw-settings";
 const MOBILE_WORKSPACE_TOOLS_ID = "studio-mobile-workspace-tools";
-const STUDIO_MOBILE_FILTER_KINDS = [
-  ["gaussian-blur", "가우시안 블러"],
-  ["motion-blur", "모션 블러"],
-  ["hue-saturation-brightness", "색조 / 채도 / 밝기"],
-  ["brightness-contrast", "명도 / 대비"],
-  ["color-curves", "색상 커브"],
-] as const satisfies readonly (readonly [StudioFilterKind, string])[];
 type StudioDrawSheetStyle = CSSProperties & {
   "--studio-draw-sheet-height": string;
   "--studio-draw-sheet-reserved-bottom": string;
@@ -176,101 +168,6 @@ function studioDrawSheetSizeStyle(
     scrollPaddingBottom: "0.75rem",
   };
 }
-interface StudioMobileFilterSelectProps {
-  filterMutationLocked: boolean;
-  filterPreparationBusy: boolean;
-  filterTargetLabel: "선택 이미지" | "현재 페이지 합성본";
-  filterUnavailableReason: string | null;
-  onSelect: (kind: StudioFilterKind) => void;
-  placement: "context" | "workspace";
-}
-/**
- * Keeps the invisible native select affordance identical in both thumb-reachable mobile rows.
- * The visible shell remains a 44px target while native selection provides familiar mobile UX.
- */
-function StudioMobileFilterSelect({
-  filterMutationLocked,
-  filterPreparationBusy,
-  filterTargetLabel,
-  filterUnavailableReason,
-  onSelect,
-  placement,
-}: StudioMobileFilterSelectProps) {
-  const preloadStudioFilterDialog = useStudioFilterDialogIntent();
-  const guidanceId = useId();
-  const unavailableReason = filterUnavailableReason ?? (
-    filterMutationLocked ? frozenStatus4Text("studio.frozenStatus4.dock.filterLocked", "편집 잠금을 해제한 뒤 필터를 적용하세요.") : null
-  );
-  const disabled = unavailableReason !== null || filterPreparationBusy;
-  const guidance = filterPreparationBusy
-    ? frozenStatus4Text("studio.frozenStatus4.dock.filterPreparing", { target: filterTargetLabel }, "{target}: 필터 미리보기를 준비하는 중입니다.")
-    : unavailableReason
-      ? `${filterTargetLabel}: ${unavailableReason}`
-      : frozenStatus4Text("studio.frozenStatus4.dock.filterSelect", { target: filterTargetLabel }, "{target}: 적용할 필터를 선택하세요.");
-  const shellClassName = cn(
-    "relative flex min-h-[44px] min-w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl px-2 text-[0.62rem] font-semibold text-fg-2",
-    STUDIO_EASE,
-    "focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-    disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:bg-raised",
-  );
-
-  if (disabled) {
-    return (
-      <button
-        type="button"
-        data-studio-mobile-filter-select={placement}
-        data-studio-mobile-filter-target={filterTargetLabel}
-        aria-busy={filterPreparationBusy}
-        aria-disabled="true"
-        aria-label={`${filterTargetLabel} 필터를 사용할 수 없음`}
-        aria-describedby={guidanceId}
-        className={shellClassName}
-        style={{ minWidth: 56 }}
-        title={guidance}
-      >
-        <WandSparkles size={16} aria-hidden />
-        <span>필터</span>
-        <span id={guidanceId} className="sr-only">{guidance}</span>
-      </button>
-    );
-  }
-
-  return (
-    <label
-      data-studio-mobile-filter-select={placement}
-      data-studio-mobile-filter-target={filterTargetLabel}
-      className={shellClassName}
-      style={{ minWidth: 56 }}
-      title={guidance}
-    >
-      <WandSparkles size={16} aria-hidden />
-      <span>필터</span>
-      <span id={guidanceId} className="sr-only">{guidance}</span>
-      <select
-        aria-label={`${filterTargetLabel} 필터 선택`}
-        aria-describedby={guidanceId}
-        defaultValue=""
-        title={guidance}
-        className="absolute inset-0 size-full cursor-pointer opacity-0"
-        onFocus={preloadStudioFilterDialog}
-        onPointerDown={preloadStudioFilterDialog}
-        onPointerEnter={preloadStudioFilterDialog}
-        onChange={(event) => {
-          const kind = event.currentTarget.value as StudioFilterKind;
-          if (!kind) return;
-          onSelect(kind);
-          event.currentTarget.value = "";
-        }}
-      >
-        <option value="" disabled>필터 선택</option>
-        {STUDIO_MOBILE_FILTER_KINDS.map(([kind, label]) => (
-          <option key={kind} value={kind}>{label}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 export interface StudioBrushCatalogHandlers {
   selectionLifecycle?: (event: import("./brush/studio-pending-catalog-input").StudioBrushSelectionLifecycle) => void;
   close: (
@@ -675,8 +572,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
   const shapeModeActive = tool === "draw" && drawMode === "shape";
   const eraserPresetActive =
     drawMode === "eraser" && resolveStudioBrushPresetOperation(brush) === "erase";
-  const activeEraserQuickId: StudioEraserQuickPickerId =
-    brush === "kneaded-eraser" ? "kneaded-eraser" : "standard-eraser";
+  const activeEraserQuickId = studioQuickEraserId(brush);
   const undoDisabled = (hi === 0 && !sidecarUndoAvailable) || collaborationDocumentLocked;
   const redoDisabled =
     (hi >= history.length - 1 && !sidecarRedoAvailable) || collaborationDocumentLocked;
@@ -1052,18 +948,15 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
               <div className="flex min-h-12 items-center justify-between">
                 <p className="text-sm font-semibold text-fg">
                   {drawMode === "eraser"
-                    ? eraserPresetActive ? activeCatalogBrushName : "지우개"
-                    : drawMode === "shape"
-                      ? "도형"
-                      : drawMode === "pixel"
-                        ? "픽셀 펜"
-                        : "브러시"} 설정
+                    ? bt(`${eraserPresetActive ? activeCatalogBrushName : "지우개"} 설정`, `${eraserPresetActive ? studioEraserDisplayName(brush, activeCatalogBrushName, bt) : "Eraser"} settings`)
+                    : drawMode === "shape" ? bt("도형 설정", "Shape settings")
+                      : drawMode === "pixel" ? bt("픽셀 펜 설정", "Pixel pen settings") : bt("브러시 설정", "Brush settings")}
                 </p>
                 <button
                   type="button"
                   onClick={dismissDrawSettings}
                   className="grid size-11 place-items-center rounded-xl text-fg-3 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-                  aria-label="브러시 설정 닫기"
+                  aria-label={bt("브러시 설정 닫기", "Close brush settings")}
                   data-autofocus
                 >
                   <X size={16} aria-hidden />
@@ -1197,7 +1090,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                       active ? "bg-accent text-on-accent shadow-sm" : "text-fg-2 hover:bg-raised"
                     )}
                   >
-                    <Icon size={18} strokeWidth={1.75} aria-hidden />
+                    {m.v === "pen" || m.v === "eraser" ? <StudioToolArtwork tool={m.v} /> : <Icon size={18} strokeWidth={1.75} aria-hidden />}
                   </button>
                 );
               })}
@@ -1266,21 +1159,21 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
 
             {drawMode === "eraser" && mobileSheet === "draw" ? (
               <section
-                aria-label="지우개 종류"
+                aria-label={bt("지우개 종류", "Eraser presets")}
                 className="mb-2.5 rounded-2xl border border-line/70 bg-card/45 p-2"
               >
                 <div className="mb-2 flex items-center justify-between gap-2 px-1">
                   <div>
-                    <p className="text-xs font-extrabold text-fg">지우개 종류</p>
+                    <p className="text-xs font-extrabold text-fg">{bt("지우개 종류", "Eraser presets")}</p>
                     <p className="mt-0.5 text-[0.66rem] text-fg-3">
-                      한 번에 지울 양과 남는 결과를 보고 선택하세요.
+                      {bt("한 번에 지울 양과 남는 결과를 보고 선택하세요.", "Choose a tip and compare how much ink one stroke removes.")}
                     </p>
                   </div>
                 </div>
                 <StudioEraserQuickPicker
                   selectedId={activeEraserQuickId}
                   onSelect={(id) => brushCatalogHandlers.selectBrushId(id)}
-                  ariaLabel="모바일 지우개 종류 빠른 선택"
+                  placement="mobile"
                 />
               </section>
             ) : null}
@@ -1551,7 +1444,6 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
           </section>
         ) : null}
 
-        {/* 간단한 그리기는 펜·지우개·색·레이어·더보기, 나머지 배치는 기존6슬롯을 사용한다. */}
         {isMobile && (
           <nav
             aria-label={label.dock}
@@ -1570,7 +1462,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
               className="grid min-w-0 grid-cols-6 items-stretch gap-1 [&>span>button]:w-full [&>button]:w-full">
               <StudioDockButton
                 ref={mobileBrushDockButtonRef}
-                icon={Pencil}
+                swatch={<StudioToolArtwork tool="pen" />}
                 label={label.pen}
                 data-studio-primary-action="draw"
                 hintDescription={penModeActive
@@ -1599,7 +1491,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                 aria-controls={penModeActive ? MOBILE_DRAW_SETTINGS_ID : undefined}
               />
               <StudioDockButton
-                icon={Eraser}
+                swatch={<StudioToolArtwork tool="eraser" />}
                 label={label.eraser}
                 data-studio-mobile-tool="eraser"
                 hintDescription={eraserModeActive
@@ -1626,6 +1518,18 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                 aria-expanded={eraserModeActive ? drawSettingsOpen : undefined}
                 aria-controls={eraserModeActive ? MOBILE_DRAW_SETTINGS_ID : undefined}
               />
+              {mobileClarity && <>
+                <StudioDockButton swatch={<StudioToolArtwork tool="brush" />} label={bt("브러시", "Brushes")}
+                  data-studio-mobile-tool="brush" onClick={(event) => {
+                    setWorkspaceDockExpanded(false);
+                    setColorToolsOpen(false);
+                    setMobileSheet(null);
+                    openBrushManager(event.currentTarget);
+                  }} />
+                <StudioMobileFilterSelect placement="primary" filterMutationLocked={filterMutationLocked}
+                  filterPreparationBusy={filterPreparationBusy} filterTargetLabel={filterTargetLabel}
+                  filterUnavailableReason={filterUnavailableReason} onSelect={openStudioFilter} />
+              </>}
               <button type="button" ref={colorToolsButtonRef}
                 aria-label={label.color} aria-controls={`${scrollDescriptionId}-colors`} aria-expanded={colorToolsOpen}
                 onClick={() => { setWorkspaceDockExpanded(false); setMobileSheet(null); setColorToolsOpen((open) => !open); }}
@@ -1638,7 +1542,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                 <span className="max-w-full truncate">{bt(mobileClarity ? "색" : "색상", "Color")}</span>
               </button>
               {mobileClarity && clarityHistoryHost ? createPortal(historyActions, clarityHistoryHost) : historyActions}
-              {mobileClarity ? <><StudioDockNavButton icon={Layers} label={bt("레이어", "Layers")} aria-label={bt("레이어 열기", "Open layers")} onClick={() => { setWorkspaceDockExpanded(false); setMenu(null); openInspectorRoute({ primary: "layers" }, "props"); }} /><span id="studio-drawing-clarity-mobile-more-slot" className="studio-drawing-clarity-more-slot" /></> : <button
+              {mobileClarity ? <><StudioDockButton swatch={<StudioToolArtwork tool="layers" />} label={bt("레이어", "Layers")} aria-label={bt("레이어 열기", "Open layers")} onClick={() => { setWorkspaceDockExpanded(false); setMenu(null); openInspectorRoute({ primary: "layers" }, "props"); }} /><span id="studio-drawing-clarity-mobile-more-slot" className="studio-drawing-clarity-more-slot" /></> : <button
                 type="button" ref={workspaceToggleRef}
                 aria-controls={MOBILE_WORKSPACE_TOOLS_ID} aria-expanded={workspaceDockExpanded}
                 aria-label={workspaceToggleAccessibleLabel} title={workspaceToggleAccessibleLabel}

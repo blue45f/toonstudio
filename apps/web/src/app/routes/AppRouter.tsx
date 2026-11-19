@@ -63,12 +63,12 @@ function AppRouteTree({
 
 /** Render application routing with cross-origin isolation limited to editor workspaces. */
 export function AppRouter() {
-  const { pathname, search } = useLocation();
+  const { pathname, search, hash, state } = useLocation();
   const routeTitle = useRouteTitle(pathname, search);
   useRouteSeoPolicy(pathname);
 
-  const legacyEditorHref = legacyStudioEditorHref(pathname, search);
-  if (legacyEditorHref) return <Navigate replace to={legacyEditorHref} />;
+  const legacyEditorHref = legacyStudioEditorHref(pathname, search, hash);
+  if (legacyEditorHref) return <Navigate replace state={state} to={legacyEditorHref} />;
 
   const documentWasStudioEditor = isStudioWorkspaceRoutePathname(
     INITIAL_DOCUMENT_PATHNAME ?? pathname,

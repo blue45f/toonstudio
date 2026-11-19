@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 import { buildStudioModeLaunchHref, resolveStudioModeCreationPlan } from "../studio-mode-creation-plan";
 import {
   createStudioProjectWithInitialDocument,
@@ -169,6 +170,7 @@ export function StudioQuickStart({ locale, presentation = "section" }: {
             loading="eager"
             decoding="async"
           />
+          <StudioToolArtwork tool="pen" className="create-start-choice-tool" />
         </div>
       </article>
     );

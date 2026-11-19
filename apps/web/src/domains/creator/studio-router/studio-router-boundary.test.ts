@@ -108,7 +108,11 @@ describe("Studio router bundle boundaries", () => {
     expect(documentLayoutSource).toContain("useSearchParams");
     expect(documentLayoutSource).toContain("readStudioLiveRoomQuery");
     expect(documentLayoutSource).toContain("useStudioDocumentRuntime()");
+    // 주소를 교체할 때 해시·방문 상태는 보존하되, 협업 문서 식별은 정본 레이아웃 컨텍스트와 쿼리만 사용한다.
     expect(documentLayoutSource).toContain("const { pathname, hash, state } = useLocation();");
+    expect(documentLayoutSource).not.toMatch(/useLocation\(\)\.(?:search|key)|location\.search/u);
+    expect(documentLayoutSource).toContain("readStudioLiveRoomQuery(params)");
+    expect(documentLayoutSource).toMatch(/useStudioLocalDraftOwner\(\{[\s\S]*?roomId: liveRoomParam, workId, remixId,/u);
     expect(documentLayoutSource).toContain("const navigate = useNavigate();");
     expect(documentLayoutSource).toContain("navigate({ pathname, search: withStudioLiveJamRoom(params, instantWorkId).toString(), hash }, { replace: true, state });");
     expect(documentLayoutSource).not.toContain("setSearchParams");

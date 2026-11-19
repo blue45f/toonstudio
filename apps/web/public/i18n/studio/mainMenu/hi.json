@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "अत्यंत सरल लेआउट",
   "studio.mainMenu.item.view.density-full": "समग्र लेआउट",
   "studio.mainMenu.item.view.wide": "पैनल समेटकर चौड़ा करें",
+  "studio.mainMenu.item.view.wide.open": "पैनल दिखाएँ",
   "studio.mainMenu.item.view.tools-companion": "मल्टी-डिस्प्ले कार्यक्षेत्र…",
   "studio.mainMenu.item.view.canvas-only": "केवल कैनवास",
   "studio.mainMenu.item.view.color-vision.unavailable": "जब दृश्य रूपांतरण लॉक हो तो आप रंग दृष्टि मोड नहीं बदल सकते।",

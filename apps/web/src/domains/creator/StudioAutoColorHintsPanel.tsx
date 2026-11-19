@@ -8,7 +8,7 @@ import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
  */
 
 import { Copy, Crosshair, Info, Loader2, Paintbrush, Sparkles, TriangleAlert } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import {
   planStudioAutoColorHints,
@@ -75,7 +75,7 @@ export interface StudioAutoColorHintsPanelProps {
    * Explicit apply path: parent patches the selected image `src` with the painted PNG.
    * Without this handler the apply button stays hidden (plan-only safety).
    */
-  readonly onApplyResult?: (dataUrl: string) => void;
+  readonly onApplyResult?: (dataUrl: string) => boolean | void;
   /**
    * Multi-layer path: parent inserts a new transparent paint image above the line art.
    * When omitted, only "선택 레이어" apply remains available.
@@ -85,7 +85,7 @@ export interface StudioAutoColorHintsPanelProps {
     readonly width: number;
     readonly height: number;
     readonly name: string;
-  }) => void;
+  }) => boolean | void;
   /**
    * When true (or toggled via UI), the parent should intercept canvas clicks and feed
    * `canvasSeedHit` image-local samples. Omitted handlers keep arming local-only (UI still works
@@ -203,13 +203,24 @@ export function StudioAutoColorHintsPanel({
   const [activePaletteId, setActivePaletteId] = useState(
     STUDIO_AUTO_COLOR_SCRIBBLE_PALETTE[0]!.id,
   );
-  const [applyTargetMode, setApplyTargetMode] = useState<StudioAutoColorApplyTargetMode>("selected");
+  const [applyTargetMode, setApplyTargetMode] = useState<StudioAutoColorApplyTargetMode>(onApplyNewLayer ? "new-paint-layer" : "selected");
   const [localCanvasArmed, setLocalCanvasArmed] = useState(false);
 
   const activePalette =
     STUDIO_AUTO_COLOR_SCRIBBLE_PALETTE.find((entry) => entry.id === activePaletteId)
     ?? STUDIO_AUTO_COLOR_SCRIBBLE_PALETTE[0]!;
   const effectiveSeeds = seedsProp ?? scribbleSeeds;
+  const inputs = useMemo(() => ({ image, imageSrc, seeds: effectiveSeeds, request }), [image, imageSrc, effectiveSeeds, request]);
+  const activeInputs = useRef<typeof inputs | null>(null);
+  const [plannedInputs, setPlannedInputs] = useState<typeof inputs | null>(null);
+  useLayoutEffect(() => {
+    activeInputs.current = inputs;
+    return () => { activeInputs.current = null; };
+  }, [inputs]);
+  const clearSourceSize = useEffectEvent(() => onPlanImageSize?.(null));
+  useLayoutEffect(() => () => clearSourceSize(), [image, imageSrc, request]);
+  const planIsCurrent = inputs === plannedInputs;
+  const sameLineArt = plannedInputs !== null && plannedInputs.image === image && plannedInputs.imageSrc === imageSrc && plannedInputs.request === request;
   const canvasArmed = scribbleCanvasArmed ?? localCanvasArmed;
 
   function setCanvasArmed(next: boolean) {
@@ -273,11 +284,11 @@ export function StudioAutoColorHintsPanel({
   }, [canvasSeedHit, canvasSeedHits, seedsProp, activePalette, onCanvasSeedHitConsumed]);
   // Enable from summary metrics only (refs are set synchronously before summary state).
   const canApplySelected =
-    Boolean(onApplyResult)
+    planIsCurrent && Boolean(onApplyResult)
     && summary?.status === "ready"
     && (summary.operationCount ?? 0) > 0;
   const canApplyNewLayer =
-    Boolean(onApplyNewLayer)
+    planIsCurrent && Boolean(onApplyNewLayer)
     && summary?.status === "ready"
     && (summary.operationCount ?? 0) > 0;
   const canApply =
@@ -290,12 +301,8 @@ export function StudioAutoColorHintsPanel({
     setCopyStatus(null);
     setApplyStatus(null);
     try {
-      const resolved = await resolveRequest({
-        image,
-        imageSrc,
-        seeds: effectiveSeeds,
-        request,
-      });
+      const resolved = await resolveRequest(inputs);
+      if (activeInputs.current !== inputs) return;
       setUsingDemo(resolved.usingDemo);
       plannedImageRef.current = resolved.image;
       onPlanImageSize?.({
@@ -305,10 +312,13 @@ export function StudioAutoColorHintsPanel({
       const nextPlan = await Promise.resolve(
         onRun ? onRun(resolved.request) : planStudioAutoColorHints(resolved.request),
       );
+      if (activeInputs.current !== inputs) return;
+      setPlannedInputs(inputs);
       planRef.current = nextPlan;
       setSummary(summarizeStudioAutoColorHintPlan(nextPlan));
       onPlan?.(nextPlan);
     } catch (caught) {
+      if (activeInputs.current !== inputs) return;
       setSummary(null);
       planRef.current = null;
       plannedImageRef.current = null;
@@ -326,7 +336,7 @@ export function StudioAutoColorHintsPanel({
   async function applyPlan() {
     const activePlan = planRef.current;
     const plannedImage = plannedImageRef.current;
-    if (!activePlan || !plannedImage) {
+    if (!planIsCurrent || !activePlan || !plannedImage) {
       setError(panelStatusText("studio.panelStatus.autoColorHints.noPlan", "적용할 계획이 없어요. 먼저 힌트 계획을 실행하세요."));
       return;
     }
@@ -371,17 +381,18 @@ export function StudioAutoColorHintsPanel({
       }
       const dataUrl = encodeStudioAutoColorHintImageToPngDataUrl(batch.imageData);
       if (useNewLayer) {
-        onApplyNewLayer!({
+        const accepted = onApplyNewLayer!({
           dataUrl,
           width: batch.imageData.width,
           height: batch.imageData.height,
           name: "채색",
         });
+        if (accepted === false) throw new Error("채색을 적용하지 못했어요. 편집 권한과 선택 레이어를 확인해 주세요.");
         setApplyStatus(
           `새 채색 레이어 생성 · 연산 ${batch.jobCount.toLocaleString("ko-KR")} · 픽셀 ${batch.paintedPixelCount.toLocaleString("ko-KR")}`,
         );
       } else {
-        onApplyResult!(dataUrl);
+        if (onApplyResult!(dataUrl) === false) throw new Error("채색을 적용하지 못했어요. 편집 권한과 선택 레이어를 확인해 주세요.");
         setApplyStatus(
           `선택 레이어 적용 · 연산 ${batch.jobCount.toLocaleString("ko-KR")} · 픽셀 ${batch.paintedPixelCount.toLocaleString("ko-KR")}`,
         );
@@ -576,6 +587,7 @@ export function StudioAutoColorHintsPanel({
           {busy ? panelStatusText("studio.panelStatus.autoColorHints.planning", "계획 계산 중…") : "힌트 계획 실행"}
         </button>
 
+        {summary && !planIsCurrent && <p role="status" className="text-xs text-fg-2">선화 또는 색 힌트가 바뀌었어요. 현재 내용으로 힌트 계획을 다시 실행하세요.</p>}
         {usingDemo && summary ? (
           <p className="text-center text-[0.64rem] leading-relaxed text-fg-3">
             데모 선화로 계산했습니다. 이미지 레이어를 선택한 뒤 다시 실행하면 선택 선화를 사용합니다.
@@ -645,7 +657,7 @@ export function StudioAutoColorHintsPanel({
               ))}
             </ul>
 
-            {planRef.current && planRef.current.recommendations.length > 0 && !seedsProp ? (
+            {sameLineArt && planRef.current && planRef.current.recommendations.length > 0 && !seedsProp ? (
               <div className="space-y-1.5 rounded-md border border-line bg-panel/30 p-2">
                 <p className="text-[0.64rem] font-semibold text-fg-2">권장 영역에 스크리블 시드</p>
                 <div className="flex flex-wrap gap-1.5">

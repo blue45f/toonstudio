@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useStudioBg3dWebGpuModule } from "./useStudioBg3dWebGpuModule";
 
 import { createStudioScene3dGpuDiagnostics, type StudioScene3dGpuDiagnostics } from "../scene3d/studio-scene3d-gpu-diagnostics";
 
@@ -49,11 +50,6 @@ export type StudioBg3dRendererFactory = (
 export type StudioBg3dEngineRuntimePhase = "probing" | "ready";
 
 /**
- * How long the viewport keeps announcing the detailed device-loss cause. The failed plan remains
- * visible after this notification expires.
- */
-export const STUDIO_BG3D_DEVICE_LOSS_NOTICE_MS = 10_000;
-/**
  * Preference storage must not hold the editor behind a blank probing viewport. OPFS/SQLite can be
  * temporarily busy in another tab or while the browser restores its storage process, so the
  * current session continues with the explicit WebGPU default after this deadline. A late storage
@@ -73,6 +69,8 @@ function webGpuStartupFailureReason(error: unknown): string {
   return `WebGPU 엔진을 시작하지 못했습니다 (${detail.replace(/\s+/gu, " ").slice(0, 200)})`;
 }
 
+type WebGpuCanvasStage = "waiting-for-canvas" | "starting-device" | "waiting-for-frame" | "rendered";
+
 export interface StudioBg3dEngineRuntimeState {
   readonly diagnostics: StudioScene3dGpuDiagnostics;
   readonly phase: StudioBg3dEngineRuntimePhase;
@@ -86,6 +84,7 @@ export interface StudioBg3dEngineRuntimeState {
    * explicitly retries a failed WebGPU selection.
    */
   readonly canvasKey: string;
+  readonly webGpuCanvasStage: WebGpuCanvasStage;
   /** Present only while the selected WebGPU backend is available and the editor is open. */
   readonly glFactory: StudioBg3dRendererFactory | null;
   readonly deviceLostMessage: string | null;
@@ -218,6 +217,10 @@ export function useStudioBg3dEngineRuntime(
   const [webgpuRetryCount, setWebgpuRetryCount] = useState(0);
   const [deviceLostMessage, setDeviceLostMessage] = useState<string | null>(null);
   const [recoveryGeneration, setRecoveryGeneration] = useState(0);
+  const [webGpuCanvasProgress, setWebGpuCanvasProgress] = useState<{
+    canvas: HTMLCanvasElement;
+    stage: Exclude<WebGpuCanvasStage, "waiting-for-canvas">;
+  } | null>(null);
   const [webglOnlyFeatures, setWebglOnlyFeatures] = useState<StudioBg3dEngineWebglOnlyFeatures>(
     EMPTY_STUDIO_BG3D_ENGINE_WEBGL_ONLY_FEATURES,
   );
@@ -262,6 +265,7 @@ export function useStudioBg3dEngineRuntime(
     if (!enabled) {
       wasEnabledRef.current = false;
       setPhase("probing");
+      setWebGpuCanvasProgress(null);
       return;
     }
     // Reopening a retained editor runs this again. Without resetting the phase the engine controls
@@ -378,6 +382,7 @@ export function useStudioBg3dEngineRuntime(
       && (webgl2RuntimeFailed || !webgl2Probe.supported);
     setPreferenceState(normalized);
     preferenceRef.current = normalized;
+    if (normalized !== preference || retriesFailedWebGpu) setWebGpuCanvasProgress(null);
     if (enabled && normalized === "webgl2") {
       setWebgl2Probe(probeWebgl2());
       setPhase("ready");
@@ -407,10 +412,10 @@ export function useStudioBg3dEngineRuntime(
   const handleWebGpuFailure = useCallback((cause: string) => {
     const detail = cause.trim().replace(/[.\s]+$/u, "");
     setWebgpuRuntimeFailed(true);
-    setDeviceLostMessage(
+    setDeviceLostMessage((first) => first ?? (
       `${detail || "WebGPU 엔진 오류가 발생했습니다"}. `
-      + "WebGPU 실행을 중단했습니다. 다시 선택하거나 WebGL2를 직접 선택해 주세요.",
-    );
+      + "WebGPU 실행을 중단했습니다. 다시 선택하거나 WebGL2를 직접 선택해 주세요."
+    ));
   }, []);
 
   const handleWebGl2Failure = useCallback((cause: string) => {
@@ -430,40 +435,44 @@ export function useStudioBg3dEngineRuntime(
     handleWebGl2Failure(cause);
   }, [handleWebGl2Failure, handleWebGpuFailure]);
 
-  useEffect(() => {
-    if (deviceLostMessage === null) return;
-    const timer = setTimeout(() => setDeviceLostMessage(null), STUDIO_BG3D_DEVICE_LOSS_NOTICE_MS);
-    return () => clearTimeout(timer);
-  }, [deviceLostMessage]);
-
   const diagnostics = useMemo(() => createStudioScene3dGpuDiagnostics(), []);
 
+  const createRenderer = useStudioBg3dWebGpuModule(
+    enabled && phase === "ready" && plan.backend === "webgpu" && plan.status === "available",
+    createWebGpuRenderer,
+    handleWebGpuFailure,
+  );
   const glFactory = useMemo<StudioBg3dRendererFactory | null>(() => {
-    if (!enabled || phase !== "ready" || plan.backend !== "webgpu" || plan.status !== "available") {
-      return null;
-    }
+    if (!createRenderer) return null;
     return async ({ canvas }) => {
       webGpuCanvasRef.current = canvas;
       const startedInDocument = canvas.isConnected;
       const isCurrent = () => webGpuCanvasRef.current === canvas
         && preferenceRef.current === "webgpu" && (!startedInDocument || canvas.isConnected);
+      const markFrame = () => {
+        if (isCurrent()) setWebGpuCanvasProgress({ canvas, stage: "rendered" });
+      };
+      if (isCurrent()) setWebGpuCanvasProgress((current) => current?.canvas === canvas
+        ? current : { canvas, stage: "starting-device" });
       try {
-        const create = createWebGpuRenderer ?? (
-          await import("./studio-bg3d-three-webgpu-entry")
-        ).createStudioBg3dThreeWebGpuRenderer;
-        const runtime = await create(canvas, {
+        const runtime = await createRenderer(canvas, {
           antialias,
           alpha: true,
           admission: probe,
           onDeviceLost: (loss) => { if (isCurrent()) handleWebGpuFailure(loss.message); },
+          onRenderError: (message) => { if (isCurrent()) handleWebGpuFailure(message); },
+          onFirstSceneFrame: markFrame,
         });
+        if (isCurrent()) setWebGpuCanvasProgress((current) =>
+          current?.canvas === canvas && current.stage !== "starting-device"
+            ? current : { canvas, stage: "waiting-for-frame" });
         return runtime.renderer as unknown as { render: (scene: never, camera: never) => unknown };
       } catch (error) {
         if (isCurrent()) handleWebGpuFailure(webGpuStartupFailureReason(error));
         throw error;
       }
     };
-  }, [enabled, phase, plan.backend, plan.status, probe, antialias, createWebGpuRenderer, handleWebGpuFailure]);
+  }, [createRenderer, probe, antialias, handleWebGpuFailure]);
 
   return {
     diagnostics,
@@ -474,6 +483,7 @@ export function useStudioBg3dEngineRuntime(
     probe,
     webgl2Probe,
     canvasKey: `${plan.backend}#${recoveryGeneration}`,
+    webGpuCanvasStage: webGpuCanvasProgress?.stage ?? "waiting-for-canvas",
     glFactory,
     deviceLostMessage,
     setPreference,

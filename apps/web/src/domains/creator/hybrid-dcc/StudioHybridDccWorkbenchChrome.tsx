@@ -7,6 +7,8 @@
  */
 import { ChevronDown, MousePointerClick } from "lucide-react";
 
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
+
 import type { StudioDccWorkbenchMode } from "../studio-workspace-route";
 import { WORKBENCH_MODES } from "./studio-hybrid-dcc-workbench-modes";
 
@@ -32,7 +34,6 @@ export function StudioHybridDccModeTabs({ mode, onChange }: StudioHybridDccModeT
     >
       <div className="flex snap-x gap-1 overflow-x-auto overscroll-contain rounded-xl border border-line bg-panel p-1 [scrollbar-width:thin]">
         {WORKBENCH_MODES.map((spec) => {
-          const Icon = spec.icon;
           const active = spec.id === mode;
           return (
             <button
@@ -42,20 +43,20 @@ export function StudioHybridDccModeTabs({ mode, onChange }: StudioHybridDccModeT
               data-studio-hybrid-dcc-mode={spec.id}
               onClick={() => onChange(spec.id)}
               className={cn(
-                "flex min-h-11 shrink-0 snap-start items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-[background-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none",
+                "flex min-h-11 shrink-0 snap-start items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-colors duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none",
                 active
-                  ? "bg-accent text-on-accent shadow-sm"
+                  ? "bg-raised text-fg ring-1 ring-inset ring-accent forced-colors:outline-2 forced-colors:-outline-offset-2 forced-colors:outline-[Highlight]"
                   : "text-fg-2 hover:bg-raised hover:text-fg",
                 FOCUS_RING,
               )}
             >
-              <Icon size={16} aria-hidden="true" className="shrink-0" />
+              {"art" in spec ? <StudioToolArtwork tool={spec.art} className="[--studio-tool-art-size:24px]" /> : <spec.icon size={19} aria-hidden="true" className="shrink-0" />}
               <span className="flex flex-col leading-tight">
                 <span className="whitespace-nowrap text-sm font-semibold">{bt(spec.label[0], spec.label[1])}</span>
                 <span
                   className={cn(
                     "whitespace-nowrap text-[0.6875rem] max-md:hidden",
-                    active ? "text-on-accent/85" : "text-fg-3",
+                    active ? "text-fg-2" : "text-fg-3",
                   )}
                 >
                   {bt(spec.hint[0], spec.hint[1])}

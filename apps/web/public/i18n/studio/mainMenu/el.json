@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Σούπερ απλή διάταξη",
   "studio.mainMenu.item.view.density-full": "Πλήρης διάταξη",
   "studio.mainMenu.item.view.wide": "Σύμπτυξη πάνελ για ευρύτερη προβολή",
+  "studio.mainMenu.item.view.wide.open": "Εμφάνιση πλαισίων",
   "studio.mainMenu.item.view.tools-companion": "Χώρος εργασίας πολλαπλών οθονών…",
   "studio.mainMenu.item.view.canvas-only": "Μόνο καμβάς",
   "studio.mainMenu.item.view.color-vision.unavailable": "Δεν μπορείτε να αλλάξετε τη λειτουργία ελέγχου χρωματικής όρασης ενώ ο μετασχηματισμός προβολής είναι κλειδωμένος.",

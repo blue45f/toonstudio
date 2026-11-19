@@ -1,5 +1,5 @@
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -11,6 +11,7 @@ import {
   STUDIO_BG3D_ENGINE_PREFERENCE_LABELS,
   type StudioBg3dEngineBackend,
 } from "./studio-bg3d-engine-selection";
+import { isStudioBg3dCanvasFactoryPending } from "./studio-bg3d-canvas-renderer-admission";
 import { STUDIO_BG3D_WEBGPU_RENDERER_INIT_TIMEOUT_MS } from "./studio-bg3d-webgpu-capability";
 import type { StudioBg3dEngineRuntimeState } from "./useStudioBg3dEngineRuntime";
 
@@ -23,7 +24,7 @@ interface WebGlContextEventLike extends Event {
 
 export interface StudioBg3dViewportReadinessOverlayProps {
   readonly open: boolean;
-  readonly engineRuntime: Pick<StudioBg3dEngineRuntimeState, "phase" | "plan" | "canvasKey" | "reportRendererFailure">;
+  readonly engineRuntime: Pick<StudioBg3dEngineRuntimeState, "phase" | "plan" | "canvasKey" | "glFactory" | "webGpuCanvasStage" | "setPreference" | "reportRendererFailure">;
   readonly modelRenderer: unknown;
   readonly onClearModelRenderer: () => void;
   readonly isRestoringScene: boolean;
@@ -44,11 +45,23 @@ export function StudioBg3dViewportReadinessOverlay({
 }: StudioBg3dViewportReadinessOverlayProps) {
   const bt = useBilingual("StudioBg3dViewportReadinessOverlay");
   const { phase, plan, canvasKey, reportRendererFailure } = engineRuntime;
+  const factoryPending = isStudioBg3dCanvasFactoryPending(engineRuntime);
   const backend: StudioBg3dEngineBackend = plan.backend;
   const deadlineMs = startupTimeoutMs ?? (backend === "webgpu"
     ? STUDIO_BG3D_WEBGPU_RENDERER_INIT_TIMEOUT_MS
     : STUDIO_BG3D_RENDERER_STARTUP_TIMEOUT_MS);
   const hasModelRenderer = modelRenderer != null;
+  const [slowStage, setSlowStage] = useState<string | null>(null);
+  const stage = engineRuntime.webGpuCanvasStage;
+  const pendingFrame = backend === "webgpu" && stage !== "rendered";
+  const stageKey = `${canvasKey}/${stage}`;
+  useEffect(() => {
+    setSlowStage(null);
+    if (!open || phase !== "ready" || plan.status !== "available" || factoryPending || !pendingFrame) return;
+    // 장치의 init 제한은 factory가 관리한다. Suspense·첫 프레임 지연은 사용자에게 선택지를 준다.
+    const timer = window.setTimeout(() => setSlowStage(stageKey), deadlineMs);
+    return () => window.clearTimeout(timer);
+  }, [open, phase, plan.status, factoryPending, pendingFrame, stageKey, deadlineMs]);
   const hasModelRendererRef = useRef(hasModelRenderer);
 
   useEffect(() => {
@@ -66,7 +79,7 @@ export function StudioBg3dViewportReadinessOverlay({
 
   // Observe native `webglcontextcreationerror` and asynchronous R3F `THREE.WebGLRenderer` throws.
   useEffect(() => {
-    if (!open || phase !== "ready" || plan.status !== "available" || hasModelRenderer) {
+    if (backend !== "webgl2" || !open || phase !== "ready" || plan.status !== "available" || factoryPending || hasModelRenderer) {
       return undefined;
     }
     const host = viewportHostRef.current;
@@ -79,7 +92,7 @@ export function StudioBg3dViewportReadinessOverlay({
     };
     const onWindowError = (event: ErrorEvent) => {
       const msg = String(event.error?.message ?? event.message ?? "");
-      if (/WebGLRenderer:\s*Error creating WebGL context|WebGPU/iu.test(msg)) {
+      if (backend === "webgl2" && /WebGLRenderer:\s*Error creating WebGL context/iu.test(msg)) {
         event.preventDefault();
         reportRendererFailure(
           backend,
@@ -107,6 +120,7 @@ export function StudioBg3dViewportReadinessOverlay({
     backend,
     canvasKey,
     deadlineMs,
+    factoryPending,
     hasModelRenderer,
     open,
     phase,
@@ -115,15 +129,19 @@ export function StudioBg3dViewportReadinessOverlay({
     viewportHostRef,
   ]);
 
-  if (!open || phase !== "ready" || plan.status !== "available") {
+  if (!open || phase !== "ready" || plan.status !== "available" || factoryPending) {
     return null;
   }
-  if (hasModelRenderer && !isRestoringScene) {
+  if (hasModelRenderer && !isRestoringScene && !pendingFrame) {
     return null;
   }
 
   const engineLabel = STUDIO_BG3D_ENGINE_PREFERENCE_LABELS[backend];
-  const headline = !hasModelRenderer
+  const headline = backend === "webgpu" && stage === "waiting-for-canvas"
+    ? bt("3D 뷰포트를 열고 있습니다…", "Opening the 3D viewport…")
+    : backend === "webgpu" && stage === "waiting-for-frame"
+    ? bt("장면의 첫 화면을 그리고 있습니다…", "Drawing the first scene frame…")
+    : !hasModelRenderer || (backend === "webgpu" && stage === "starting-device")
     ? bt(
         `${engineLabel} 엔진을 초기화하고 있습니다…`,
         `Initializing ${engineLabel} engine…`,
@@ -138,6 +156,7 @@ export function StudioBg3dViewportReadinessOverlay({
       role="status"
       aria-live="polite"
       data-testid="studio-bg3d-renderer-initializing"
+      data-webgpu-canvas-stage={backend === "webgpu" ? stage : undefined}
       className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-panel/92 p-6 text-center text-sm text-fg backdrop-blur-sm"
     >
       <Loader2
@@ -152,6 +171,12 @@ export function StudioBg3dViewportReadinessOverlay({
           "Connecting the viewport while preserving your selected engine and scene draft.",
         )}
       </p>
+      {slowStage === stageKey ? (
+        <button type="button" className={studioBg3dClassNames(STUDIO_BG3D_CONTROL_BUTTON, "min-h-11 min-w-11 px-4")}
+          onClick={() => engineRuntime.setPreference("webgl2")}>
+          {bt("WebGL2로 계속", "Continue with WebGL2")}
+        </button>
+      ) : null}
       {onReturnTo2d ? (
         <button
           type="button"

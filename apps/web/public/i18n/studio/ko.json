@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "슈퍼심플 레이아웃",
   "studio.mainMenu.item.view.density-full": "전체 레이아웃",
   "studio.mainMenu.item.view.wide": "패널 접어 넓게",
+  "studio.mainMenu.item.view.wide.open": "패널 펼치기",
   "studio.mainMenu.item.view.tools-companion": "멀티 디스플레이 작업공간…",
   "studio.mainMenu.item.view.canvas-only": "캔버스만",
   "studio.mainMenu.item.view.color-vision.unavailable": "보기 변환이 잠긴 동안에는 색각 검수 모드를 바꿀 수 없어요.",

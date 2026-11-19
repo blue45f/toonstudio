@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "সুপার সহজ বিন্যাস",
   "studio.mainMenu.item.view.density-full": "সামগ্রিক বিন্যাস",
   "studio.mainMenu.item.view.wide": "প্যানেল ভাঁজ করে চওড়া করুন",
+  "studio.mainMenu.item.view.wide.open": "প্যানেলগুলি দেখান",
   "studio.mainMenu.item.view.tools-companion": "মাল্টি-ডিসপ্লে ওয়ার্কস্পেস...",
   "studio.mainMenu.item.view.canvas-only": "শুধুমাত্র ক্যানভাস",
   "studio.mainMenu.item.view.color-vision.unavailable": "ভিউ রূপান্তর লক থাকা অবস্থায় কালার ভিশন মোড পরিবর্তন করা যাবে না।",

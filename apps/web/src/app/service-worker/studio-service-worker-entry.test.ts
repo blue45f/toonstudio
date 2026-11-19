@@ -84,16 +84,18 @@ function createHarness() {
     },
     location: { origin: ORIGIN },
   };
+  const lowPriorityUrls = new Set<string>();
   const ScopedRequest = class extends Request {
     constructor(input: RequestInfo | URL, init?: RequestInit) {
       super(typeof input === "string" ? new URL(input, ORIGIN).href : input, init);
+      if (init?.priority === "low") lowPriorityUrls.add(this.url);
     }
   };
   vi.stubGlobal("location", scope.location); vi.stubGlobal("self", scope); vi.stubGlobal("caches", caches.api);
   vi.stubGlobal("fetch", workerFetch); vi.stubGlobal("Request", ScopedRequest);
   vi.stubGlobal("__STUDIO_SERVICE_WORKER_MANIFEST__", MANIFEST);
   return {
-    listeners, counters, caches, fetchCalls, fetchInits, scope,
+    listeners, counters, caches, fetchCalls, fetchInits, lowPriorityUrls, scope,
     setNetwork(impl: (url: string) => Promise<Response>) { network = impl; },
     async dispatch(type: string, event: Record<string, unknown> = {}) {
       const pending: Promise<unknown>[] = [];
@@ -131,6 +133,7 @@ describe("install", () => {
     harness.setNetwork(async (url) => assetResponse(url));
     await loadWorker(); await harness.dispatch("install");
     const precache = harness.caches.entries(PRECACHE);
+    expect([...harness.lowPriorityUrls]).toEqual(MANIFEST.criticalUrls.map((path) => new URL(path, ORIGIN).href));
     expect(precache).toHaveLength(6); expect(precache).toContain(`${ORIGIN}/studio`);
     expect(precache).toContain(`${ORIGIN}/bootstrap-compat.js`);
     expect(precache).toContain(`${ORIGIN}/offline-draw/bootstrap.js`);
@@ -401,6 +404,7 @@ describe("fetch routing", () => {
     harness.setNetwork(async (url) => url.includes("/i18n/") ? new Response("{}", { headers: { "content-type": "application/json" } }) : shell("online", true));
     await harness.dispatch("fetch", navigationEvent("/studio"));
     expect(harness.fetchCalls.filter((url) => url.includes("/i18n/"))).toHaveLength(2);
+    expect([...harness.lowPriorityUrls]).toEqual(MANIFEST.warmUrls.map((path) => new URL(path, ORIGIN).href));
     expect(harness.caches.entries("toonstudio-sw-data-v5")).toContain(`${ORIGIN}/i18n/studio/mainMenu/ko.json`);
   });
 });

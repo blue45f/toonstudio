@@ -30,6 +30,7 @@ import { STORY_TO_WEBTOON_PIPELINE_MODES } from "@/shared/navigation/webtoon-pla
 import { CreateStartGenreStarterSection } from "./studio-shell/CreateStartGenreStarterSection";
 import { CreateStartGrandAtelierSection } from "./studio-shell/CreateStartGrandAtelierSection";
 import { CreateStartContinueSection } from "./studio-shell/guided-flow/CreateStartContinueSection";
+import { StudioToolArtwork } from "./studio-tool-art/StudioToolArtwork";
 import { StudioQuickStart } from "./studio-shell/StudioQuickStart";
 
 /** 질문형 인터뷰는 "내 이야기"를 고른 사람만 쓰므로 시작 시트 본문과 분리해 늦게 불러온다. */
@@ -318,6 +319,7 @@ export function CreateStartPage() {
                   loading="eager"
                   decoding="async"
                 />
+                <StudioToolArtwork tool="bubble" className="create-start-choice-tool" />
               </div>
             </article>
             <StudioQuickStart locale={locale} presentation="drawing-card" />

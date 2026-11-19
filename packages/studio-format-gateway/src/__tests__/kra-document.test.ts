@@ -868,10 +868,15 @@ describe("importKra: 출력 예산과 중단", () => {
       await importKra(buildKraFixture({ stored: true, width: 1024, height: 512, layers: [{ name: "a", tileFile }] }), { signal });
       return reads;
     };
-    const base = await countReads(1);
-    // 64번째와 128번째 타일을 처리한 뒤에 한 번씩 더 읽는다
-    expect((await countReads(129)) - base).toBe(2);
-    expect((await countReads(63)) - base).toBe(0);
+    // 실행 부하에 따른 레이어 양보는 별도 검사한다. 여기서는 타일 경계에서 읽은 횟수만 비교한다.
+    const nowSpy = vi.spyOn(performance, "now").mockReturnValue(0);
+    try {
+      const base = await countReads(1);
+      expect((await countReads(129)) - base).toBe(2);
+      expect((await countReads(63)) - base).toBe(0);
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 
   // 노드와 마스크를 지날 때마다 중단 신호를 한 번씩 읽는다. 시계를 멈춰 양보가 끼어들지 않게 하고, 노드나 마스크를 더한 문서와의 읽기 횟수 차이를 센다.

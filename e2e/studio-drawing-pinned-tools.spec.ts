@@ -1,0 +1,41 @@
+import { expect, test } from "@playwright/test";
+
+import { pinStudioRailToolInCatalog } from "../scripts/lib/studio-rail-tool-catalog-pin";
+
+test("새 원고 레일에서 고정한 도구를 다시 열고 해제하면 다음 방문에도 반영된다", async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/studio/draft/personal-rail-pins", { waitUntil: "domcontentloaded" });
+  const rail = page.getByRole("toolbar", { name: "그리기 도구", exact: true });
+  const all = rail.locator("[data-studio-rail-all-tools]");
+  const catalog = page.getByRole("dialog", { name: "전체 도구", exact: true });
+  const hand = rail.locator('[data-studio-rail-tool-id="hand"]');
+  await expect(all).toBeVisible({ timeout: 60_000 });
+  await expect(hand).toHaveCount(0);
+  const inspector = page.locator("#studio-drawing-clarity-panel-layers");
+  await expect(inspector).toBeHidden();
+  await all.click();
+  await pinStudioRailToolInCatalog(catalog, "hand");
+  await catalog.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
+  await expect(all).toBeFocused();
+  await expect(inspector).toBeHidden();
+  await expect(hand).toBeVisible();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(hand).toBeVisible({ timeout: 60_000 });
+  await expect(hand).toHaveCount(1);
+  await hand.focus();
+  await page.keyboard.press("Enter");
+  await expect(hand).toHaveAttribute("aria-pressed", "true");
+  await all.click();
+  await catalog.getByRole("searchbox", { name: "전체 도구 검색", exact: true }).fill("hand");
+  const row = catalog.locator('[data-studio-catalog-tool-id="hand"]').locator("..");
+  const unpin = row.getByRole("button", { name: /고정 해제$/u });
+  await expect(unpin).toHaveAttribute("aria-pressed", "true");
+  await unpin.click();
+  await catalog.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
+  await expect(hand).toHaveCount(0);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(all).toBeVisible({ timeout: 60_000 });
+  await expect(hand).toHaveCount(0);
+  await expect(rail.locator('[data-studio-rail-tool-id="pen"]')).toHaveCount(1);
+});

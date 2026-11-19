@@ -5,6 +5,8 @@ import { studioUiDensityAllows } from "../studio-ui-density";
 import { useStudioDrawingClarity } from "../studio-cuttoon-editor/StudioDrawingClarityContext";
 import { StudioColorBlindFilterDefs } from "../StudioColorBlindPreview";
 
+import { StudioCanvasInputNotice } from "./StudioCanvasInputNotice";
+import { studioCanvasInputBusy } from "./studio-canvas-input-status";
 import { StudioCinematicCanvasWelcome } from "./StudioCinematicCanvasWelcome";
 import { shouldShowStudioCinematicCanvasWelcome } from "./studio-cinematic-canvas-welcome-visibility";
 import { useStudioCanvasViewportInteraction } from "./studio-canvas-viewport-interaction";
@@ -40,6 +42,8 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
 }: StudioCanvasViewportProps) {
   const props: StudioCanvasViewportProps = { zoomHostRef, ...rest };
   const clarity = useStudioDrawingClarity();
+  const inputNoticeId = useId();
+  const existingSourceNotice = props.sourceHydrationPending || props.collaborationDocumentUnavailable;
   const zoomHostNodeRef = zoomHostRef;
   const live = useStudioCanvasViewportLiveSurfaces(props);
   /**
@@ -202,6 +206,8 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
     commitAppSettings,
     onToggleHandTool: togglePersistentHandTool,
   });
+  const viewportMenuAvailable = !props.canvasInteractionBlocked && !props.hardCanvasInteractionBlock
+    && !sourceHydrationPending && !workHydrationFailed && !collaborationDocumentUnavailable && !commentPinArmed;
   useStudioHandNavigation({
     viewportRef: wrapRef,
     handToolActive: tool === "hand",
@@ -209,6 +215,9 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
     middleButtonAction: appSettings.mouse.middleButton,
     rightButtonAction: appSettings.mouse.rightButton,
     touchOneFingerMode: appSettings.touch.oneFingerDrag,
+    openViewportMenu: viewportMenuAvailable ? (x, y, source) => {
+      stableHandlers.setContextMenu({ visible: true, x, y, elId: source === "keyboard" ? selected?.id ?? null : null });
+    } : undefined,
   });
 
   const handAriaShortcuts = [
@@ -218,6 +227,8 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
     "ArrowDown",
     "ArrowLeft",
     "ArrowRight",
+    "Shift+F10",
+    "ContextMenu",
   ]
     .filter(Boolean)
     .join(" ");
@@ -348,6 +359,8 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
       <div
         ref={wrapRef}
         data-studio-canvas-viewport
+        data-studio-canvas-input-state={props.canvasInputStatus}
+        aria-busy={studioCanvasInputBusy(props.canvasInputStatus)}
         data-studio-hand-navigation="pointer-capture-v2"
         data-studio-horizontal-wheel-navigation="shift-wheel-v1"
         data-studio-hand-shortcut={
@@ -366,7 +379,7 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
         tabIndex={0}
         role="group"
         aria-keyshortcuts={handAriaShortcuts}
-        aria-describedby={canvasLiveSummaryId}
+        aria-describedby={props.canvasInputStatus && props.canvasInputStatus !== "ready" ? `${canvasLiveSummaryId} ${inputNoticeId}` : canvasLiveSummaryId}
         aria-label={localizeText(
           t,
           "작업 캔버스 — 휠로 세로 이동, Shift+휠로 가로 이동, H·스페이스·휠 버튼 드래그 또는 방향키로 자유 이동",
@@ -405,6 +418,7 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
           canvasRotation,
           closeViewToolWithFocus,
           collaborationDocumentUnavailable,
+          inputNoticeId,
           commentPinArmed,
           commitPages,
           dismissQuickStart,
@@ -463,6 +477,7 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
           bindZoomHost={bindZoomHost}
         />
       </div>
+      {!existingSourceNotice && <StudioCanvasInputNotice status={props.canvasInputStatus} id={inputNoticeId} />}
       <StudioCanvasViewportHudOverlays
         viewport={props}
         interaction={interaction}

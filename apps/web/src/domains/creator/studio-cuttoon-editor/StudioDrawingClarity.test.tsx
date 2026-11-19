@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { createPortal } from "react-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -11,25 +11,16 @@ import { studioDocumentHref } from "../studio-document-workspace";
 import { applyStudioTaskWorkspace } from "../studio-task-workspace";
 import { projectStudioTaskAppSettings } from "../studio-task-tools";
 import { StudioDrawingClarityProvider, type StudioDrawingClaritySession } from "./StudioDrawingClarity";
-import type { StudioDrawingClarityStorage } from "./StudioDrawingClarityPolicy";
-
-function memoryStorage(): StudioDrawingClarityStorage {
-  const map = new Map<string, string>();
-  return {
-    getItem: (key) => map.get(key) ?? null,
-    setItem: (key, value) => { map.set(key, value); },
-  };
-}
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-function session(): StudioDrawingClaritySession {
+function session() {
   const state = createStudioWorkspaceDefaultState(null);
   return {
     currentWorkspaceOwnerScope: "guest", isMobile: false, canvasOnlyMode: false, mobileImmersive: false,
-    workspaceState: state, workMode: "all", uiDensityMode: "simple", appSettings: defaultStudioAppSettings(),
+    workspaceState: state, workMode: "all" as const, uiDensityMode: "simple" as const, appSettings: defaultStudioAppSettings(),
     location: { pathname: "/studio/canvas", search: "", hash: "", key: "entry", state: null },
-    studioDrawingClarityBaseline: { ownerScope: "guest", source: "default", state },
+    studioDrawingClarityBaseline: { ownerScope: "guest", source: "default" as const, state },
     studioMenubarContentHandlers: { setStudioUiDensity: vi.fn() },
   };
 }
@@ -44,12 +35,16 @@ function Probe() {
     <button onClick={state.chooseSimple}>간단한 그리기</button><button onClick={state.showSavedLayout}>내 배치</button>
     <button onClick={(event) => state.open("layers", event.currentTarget)}>레이어</button>
     <button onClick={(event) => state.reveal("layers", event.currentTarget)}>속성 바로 열기</button>
+    <div id="studio-canvas-workspace" tabIndex={-1} aria-label="원고 캔버스" />
+    <section id="studio-drawing-clarity-panel-commands" hidden={state.panel !== "commands"}>
+      <h2 tabIndex={-1} data-clarity-pane-heading>프로젝트·창 도구</h2>
+    </section>
     <section id="studio-drawing-clarity-panel-layers" hidden={state.panel !== "layers"}>
       <h2 tabIndex={-1} data-clarity-pane-heading>레이어·속성</h2><button onClick={state.close}>닫기</button>
     </section>
   </>;
 }
-function tree(value: StudioDrawingClaritySession) { return <StudioDrawingClarityProvider session={value}><Probe /></StudioDrawingClarityProvider>; }
+function tree<T extends StudioDrawingClaritySession>(value: T) { return <StudioDrawingClarityProvider session={value}><Probe /></StudioDrawingClarityProvider>; }
 
 describe("기본 그리기 화면의 세션 선택과 도구함", () => {
   it.each(["android", "ios"])("Capacitor %s의 웹뷰가 기본 원고를 모바일 웹과 같은 화면으로 연다", (platform) => {
@@ -78,9 +73,9 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(screen.getByLabelText("간단 화면 사용 가능").textContent).toBe("가능");
   });
 
-  it("초기 복원이 불명인 동안 기존 배치를 유지하고 확인된 기본 배치에서만 간소화한다", () => {
+  it("원고 첫 프레임부터 같은 편집기를 표시하고 배치 복원 후에도 유지한다", () => {
     const value = session(), view = render(tree({ ...value, studioDrawingClarityBaseline: null }));
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
     view.rerender(tree(value));
     expect(screen.getByLabelText("화면").textContent).toBe("간단");
   });
@@ -101,19 +96,21 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "레이어" }));
   });
 
-  it("저장된 배치는 기본 보존하며 사용자가 명시 선택한 화면만 바꾼다", () => {
+  it("저장한 배치의 프로젝트·창 도구를 열고 작업을 마치면 원고로 포커스를 돌린다", async () => {
     const value = session();
     if (!value.studioDrawingClarityBaseline) throw new Error("기본 snapshot 누락");
     const saved = { ...value, studioDrawingClarityBaseline: { ...value.studioDrawingClarityBaseline, source: "current" as const } };
     render(tree(saved));
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
-    fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
     expect(screen.getByLabelText("화면").textContent).toBe("간단");
-    expect(saved.studioMenubarContentHandlers.setStudioUiDensity).toHaveBeenCalledWith("simple");
+    fireEvent.click(screen.getByRole("button", { name: "내 배치" }));
+    expect(screen.getByRole("heading", { name: "프로젝트·창 도구" })).toBeTruthy();
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
+    fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
+    expect(screen.queryByRole("heading", { name: "프로젝트·창 도구" })).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("원고 캔버스")));
+    expect(saved.studioMenubarContentHandlers.setStudioUiDensity).not.toHaveBeenCalled();
     expect(saved.workspaceState).toBe(value.workspaceState);
     expect(saved.appSettings).toBe(value.appSettings);
-    fireEvent.click(screen.getByRole("button", { name: "내 배치" }));
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
   });
 
   it("저장한 도구 구성과 full·focus·다른 작업 단계를 자동 변경하지 않는다", () => {
@@ -121,7 +118,28 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     const personal = { ...value.appSettings, toolbar: { ...value.appSettings.toolbar, visibleIds: value.appSettings.toolbar.visibleIds.slice(1) } };
     for (const change of [{ uiDensityMode: "full" as const }, { uiDensityMode: "focus" as const }, { workMode: "storyboard" as const }, { appSettings: personal }]) {
       view.rerender(tree({ ...value, ...change }));
+      expect(screen.getByLabelText("화면").textContent).toBe("간단");
+    }
+  });
+
+  it.each(["all", "storyboard", "draw", "color", "post", "lettering", "finish"] as const)("%s 단계에서도 같은 원고 레이어·명령 패널을 조작한다", workMode => {
+    render(tree({ ...session(), workMode }));
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
+    fireEvent.click(screen.getByRole("button", { name: "레이어" }));
+    expect(screen.getByRole("heading", { name: "레이어·속성" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "내 배치" }));
+    expect(screen.getByRole("heading", { name: "프로젝트·창 도구" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "레이어·속성" })).toBeNull();
+  });
+
+  it("캔버스 전용과 데스크톱 몰입은 도구를 숨기고 해제하면 같은 편집기로 돌아온다", () => {
+    const base = session(), view = render(tree(base));
+    for (const visibility of [{ canvasOnlyMode: true }, { mobileImmersive: true }]) {
+      view.rerender(tree({ ...base, ...visibility }));
+      expect(screen.getByLabelText("간단 화면 사용 가능").textContent).toBe("가능");
       expect(screen.getByLabelText("화면").textContent).toBe("기존");
+      view.rerender(tree(base));
+      expect(screen.getByLabelText("화면").textContent).toBe("간단");
     }
   });
 
@@ -133,12 +151,12 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(screen.getByLabelText("화면").textContent).toBe("간단");
     const profiles = [{ id: "personal", name: "내 도구", view: "single" as const, visibleIds: [...toolbar.visibleIds] }];
     view.rerender(tree({ ...value, appSettings: { ...settings, toolbar: { ...toolbar, profiles } } }));
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
     expect(settings.toolbar).toBe(toolbar);
     expect(toolbar.profiles).toBeUndefined();
   });
 
-  it("기본 화면은 body 포털 HUD와 중복 시작 안내만 접고 기존 배치에서 복원한다", () => {
+  it("프로젝트·창 도구를 열어도 원고 기본 HUD와 자동 안내가 다시 나타나지 않는다", () => {
     const css = readFileSync("apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css", "utf8")
       .split("\n").filter((line) => line.includes("data-studio-brush-hud=true]") || line.includes("data-studio-document-window-hub-bar=true]{display:none}") || line.includes("data-studio-quickstart-collapsed=true]") || line.includes("data-studio-shell-floating-target=document-tools]")).join("\n");
     function Surface() {
@@ -162,7 +180,7 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(getComputedStyle(screen.getByTestId("요청한 안내")).display).not.toBe("none");
     for (const name of ["저장 오류 확인", "따라가기 중단", "진행 중 통화"]) expect(getComputedStyle(screen.getByRole("button", { name })).display).not.toBe("none");
     fireEvent.click(screen.getByRole("button", { name: "내 배치" }));
-    for (const name of ["포털 HUD", "문서 도구", "자동 시작", "자동 사용법", "닫힌 문서 도구"]) expect(getComputedStyle(screen.getByTestId(name)).display).not.toBe("none");
+    for (const name of ["포털 HUD", "문서 도구", "자동 시작", "자동 사용법", "닫힌 문서 도구"]) expect(getComputedStyle(screen.getByTestId(name)).display).toBe("none");
     fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
     expect(getComputedStyle(screen.getByTestId("포털 HUD")).display).toBe("none");
     expect(getComputedStyle(screen.getByTestId("닫힌 문서 도구")).display).toBe("none");
@@ -174,7 +192,7 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
     fireEvent.click(screen.getByRole("button", { name: "레이어" }));
     view.rerender(tree({ ...value, currentWorkspaceOwnerScope: "owner-other", studioDrawingClarityBaseline: null }));
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
     expect(screen.queryByRole("heading", { name: "레이어·속성" })).toBeNull();
   });
 
@@ -196,11 +214,11 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(screen.getByLabelText("화면").textContent).toBe("간단");
   });
 
-  it("이후 명시적으로 고른 다른 작업 배치를 이전 간단 화면 선택으로 덮지 않는다", () => {
+  it("다른 브러시 작업공간으로 전환해도 원고는 같은 편집기를 유지한다", () => {
     const value = session(), view = render(tree(value));
     fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
     view.rerender(tree({ ...value, workspaceState: switchStudioWorkspace(value.workspaceState, "coloring") }));
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
   });
 
   it("검색의 명시적인 패널 열기는 이미 열린 패널을 다시 접지 않는다", () => {
@@ -234,104 +252,39 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(value.mobileImmersive).toBe(true);
   });
 
-  it("저장된 모바일 배치는 보존하면서 명시 전환과 기존 배치 복귀를 허용한다", () => {
+  it("저장한 모바일 작업 배치에서도 프로젝트 도구와 원고 포커스를 쓸 수 있다", () => {
     const value = session();
     if (!value.studioDrawingClarityBaseline) throw new Error("초기 배치 누락");
     const saved = { ...value, isMobile: true, mobileImmersive: true, studioDrawingClarityBaseline: { ...value.studioDrawingClarityBaseline, source: "current" as const } };
     render(tree(saved));
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
     fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
     expect(screen.getByLabelText("화면").textContent).toBe("간단");
     fireEvent.click(screen.getByRole("button", { name: "내 배치" }));
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
     expect(saved.workspaceState).toBe(value.workspaceState);
     expect(saved.appSettings).toBe(value.appSettings);
   });
 
-  it("브라우저 저장소가 연결되면 첫 콜드 로드(baseline null)·다중 탭 OPFS 경합·새로고침에서도 디자인이 번갈아 바뀌지 않는다", () => {
-    const storage = memoryStorage();
+  it("기기 안의 오래된 고전 화면 선택과 저장 배치 표식은 새 원고·새로고침·다른 소유자의 화면을 바꾸지 않는다", () => {
+    const choice = "toonstudio:studio-drawing-clarity-choice:v1";
+    const known = "toonstudio:studio-drawing-clarity-known-owner:v1";
     const base = session();
-    // 1. 첫 콜드 마운트 (SQLite/OPFS 워커 복원 전 baseline === null): 첫 프레임부터 '간단' 유지
-    const coldView = render(
-      <StudioDrawingClarityProvider session={{ ...base, studioDrawingClarityBaseline: null }} choiceStorage={storage}>
-        <Probe />
-      </StudioDrawingClarityProvider>,
-    );
-    expect(screen.getByLabelText("화면").textContent).toBe("간단");
-
-    // 2. 복원 완료(source: default) 후에도 깜빡임 없이 '간단' 유지
-    coldView.rerender(
-      <StudioDrawingClarityProvider session={base} choiceStorage={storage}>
-        <Probe />
-      </StudioDrawingClarityProvider>,
-    );
-    expect(screen.getByLabelText("화면").textContent).toBe("간단");
-    coldView.unmount();
-
-    // 3. 두 번째 탭에서 OPFS 잠금 경합으로 baseline이 null에 머물러도 '간단' 유지
-    const secondTab = render(
-      <StudioDrawingClarityProvider session={{ ...base, studioDrawingClarityBaseline: null }} choiceStorage={storage}>
-        <Probe />
-      </StudioDrawingClarityProvider>,
-    );
-    expect(screen.getByLabelText("화면").textContent).toBe("간단");
-    secondTab.unmount();
-
-    // 4. 사용자가 명시적으로 '내 배치'를 고르면 새로고침 뒤에도 '기존' 유지, 다시 '간단한 그리기'를 고르면 새로고침 뒤에도 '간단' 유지
-    const savedSession: StudioDrawingClaritySession = {
-      ...base,
-      studioDrawingClarityBaseline: { ...base.studioDrawingClarityBaseline!, source: "current" },
-    };
-    const toggleView = render(
-      <StudioDrawingClarityProvider session={base} choiceStorage={storage}>
-        <Probe />
-      </StudioDrawingClarityProvider>,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "내 배치" }));
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
-    toggleView.unmount();
-
-    const reloadedCustom = render(
-      <StudioDrawingClarityProvider session={{ ...base, studioDrawingClarityBaseline: null }} choiceStorage={storage}>
-        <Probe />
-      </StudioDrawingClarityProvider>,
-    );
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
-    fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
-    expect(screen.getByLabelText("화면").textContent).toBe("간단");
-    reloadedCustom.unmount();
-
-    const reloadedSimple = render(
-      <StudioDrawingClarityProvider session={savedSession} choiceStorage={storage}>
-        <Probe />
-      </StudioDrawingClarityProvider>,
-    );
-    expect(screen.getByLabelText("화면").textContent).toBe("간단");
-    reloadedSimple.unmount();
-  });
-
-  it("커스텀 작업공간을 저장한 소유자는 다음 콜드 마운트에서도 첫 프레임부터 기존 배치를 유지한다", () => {
-    const storage = memoryStorage();
-    const base = session();
-    const customized: StudioDrawingClaritySession = {
-      ...base,
-      studioDrawingClarityBaseline: { ownerScope: "guest", source: "current", state: base.workspaceState },
-    };
-    const first = render(
-      <StudioDrawingClarityProvider session={customized} choiceStorage={storage}>
-        <Probe />
-      </StudioDrawingClarityProvider>,
-    );
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
-    first.unmount();
-
-    const nextColdLoad = render(
-      <StudioDrawingClarityProvider session={{ ...base, studioDrawingClarityBaseline: null }} choiceStorage={storage}>
-        <Probe />
-      </StudioDrawingClarityProvider>,
-    );
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
-    nextColdLoad.unmount();
+    const savedChoice = JSON.stringify({ ["guest:" + base.workspaceState.activeWorkspaceId]: false });
+    const savedOwner = JSON.stringify({ guest: "saved" });
+    localStorage.setItem(choice, savedChoice); localStorage.setItem(known, savedOwner);
+    try {
+      for (const owner of ["guest", "actor:second", "guest"]) {
+        const view = render(<StudioDrawingClarityProvider session={{ ...base, currentWorkspaceOwnerScope: owner, studioDrawingClarityBaseline: null }} choiceStorage={localStorage}><Probe /></StudioDrawingClarityProvider>);
+        expect(screen.getByLabelText("화면").textContent).toBe("간단");
+        fireEvent.click(screen.getByRole("button", { name: "내 배치" }));
+        expect(screen.getByRole("heading", { name: "프로젝트·창 도구" })).toBeTruthy();
+        expect(screen.getByLabelText("편집기 셸").textContent).toBe("integrated");
+        view.unmount();
+      }
+      expect(localStorage.getItem(choice)).toBe(savedChoice);
+      expect(localStorage.getItem(known)).toBe(savedOwner);
+    } finally { localStorage.removeItem(choice); localStorage.removeItem(known); }
   });
 
   it("제목 필수 저장(pendingSaveIntent) 전환 시 데스크톱 간단 화면에서 작품 정보·레이어 패널을 자동 열고 내부 입력 포커스와 한글 IME 조합 Escape를 보호한다", () => {
@@ -375,41 +328,22 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "저장" }));
   });
 
-  it("전체 기능 링크에서 기본 그리기를 직접 선택하면 문서·룸·위치를 유지하며 링크도 바꾼다", () => {
-    const base = session();
-    const navigate = vi.fn();
+  it("전체 도구 링크에서 원고로 돌아와도 식별자·방·도구·앵커와 탐색 이력을 보존한다", () => {
+    const base = session(), navigate = vi.fn();
     const location = { ...base.location, search: "?room=team-a&uiMode=full&startTool=select", hash: "#page", state: { from: "library" } };
-    render(tree({ ...base, location, navigate, uiDensityMode: "full" }));
+    render(tree({ ...base, location, navigate, uiDensityMode: "full" as const }));
+    fireEvent.click(screen.getByRole("button", { name: "내 배치" }));
     fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
-    expect(navigate).toHaveBeenCalledExactlyOnceWith({
-      pathname: location.pathname, search: "room=team-a&uiMode=basic&startTool=select", hash: "#page",
-    }, { replace: true, state: location.state });
+    expect(navigate).not.toHaveBeenCalled();
+    expect(location).toMatchObject({ search: "?room=team-a&uiMode=full&startTool=select", hash: "#page", state: { from: "library" } });
   });
 
-  it("드로잉 진입 별칭은 저장한 화면을 유지하고 명시한 역할은 우선한다", () => {
-    const storage = memoryStorage();
+  it.each(["?drawingShell=app","?drawingShell=integrated","?roleWorkspace=review","?roleWorkspace=lineart","?uiMode=full","?uiMode=focus","?uiMode=basic"])("역할·밀도·설치 별칭 %s로 들어와도 원고 패널을 연다", search => {
     const base = session();
-    const first = render(
-      <StudioDrawingClarityProvider session={base} choiceStorage={storage}>
-        <Probe />
-      </StudioDrawingClarityProvider>,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
-    expect(screen.getByLabelText("화면").textContent).toBe("간단");
-    first.unmount();
-
-    for (const [search, expected] of [["?drawingShell=integrated", "간단"], ["?drawingShell=app", "간단"], ["?roleWorkspace=authoring", "간단"], ["?roleWorkspace=lineart", "간단"], ["?roleWorkspace=review", "기존"]] as const) {
-      const explicitView = render(
-        <StudioDrawingClarityProvider
-          session={{ ...base, location: { ...base.location, search } }}
-          choiceStorage={storage}
-        >
-          <Probe />
-        </StudioDrawingClarityProvider>,
-      );
-      expect(screen.getByLabelText("화면").textContent).toBe(expected);
-      explicitView.unmount();
-    }
+    render(tree({ ...base, location: { ...base.location, search } }));
+    expect(screen.getByLabelText("편집기 셸").textContent).toBe("integrated");
+    fireEvent.click(screen.getByRole("button", { name: "레이어" }));
+    expect(screen.getByRole("heading", { name:"레이어·속성" })).toBeTruthy();
   });
 
   it("간단 화면의 보조 패널과 페이지 스트립은 캔버스 폭·높이를 밀지 않는 절대 위치 오버레이로 배치한다", () => {
@@ -524,7 +458,6 @@ describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성
       <StudioDrawingClarityProvider session={{
         ...base,
         currentWorkspaceOwnerScope: hydratedOwner,
-        studioDrawingClarityBaseline: { ownerScope: hydratedOwner, source: "default", state: base.workspaceState },
         pendingSaveIntent: "draft",
       }}>
         <SaveMetadataProbe intent="draft" />

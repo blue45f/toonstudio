@@ -11,7 +11,7 @@ import { resolveStudioPsdExportErrorFromCause, resolveSvgExportSkipLabel } from 
 import { resolveStudioPdfVectorErrorFromCause } from "../status-i18n/studio-producer-error-i18n-exports-raster";
 
 import { loadStudioPsdExportModule, loadStudioSvgExportModule, preloadStudioPsdExportModule, preloadStudioSvgExportModule } from "./studio-document-export-loaders";
-import { canvasToBlob, downloadBlob, exportQuality, type ExportFormat } from "./studio-export";
+import { canvasToBlob, downloadBlob, exportQuality, safeExportBaseName, type ExportFormat } from "./studio-export";
 import { readStudioExportGeometryDraft, writeStudioExportGeometryDraft } from "./studio-export-geometry-draft";
 import { StudioExportEpubAndShieldHost } from "./StudioExportEpubAndShieldHost";
 import {
@@ -73,6 +73,7 @@ import type { StudioVectorPdfExportResult } from "./studio-vector-pdf-product";
 import type { StudioWillV1PageExportResult } from "./studio-will-v1-export-bridge";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 
+import { StudioPanelDeliverySection } from "./StudioPanelDeliverySection";
 import { StudioExportBasicOptions } from "./StudioExportBasicOptions";
 import { StudioExportSection } from "./StudioExportSection";
 import { StudioSliceBoundaryInspector, type StudioResolvedPresetSlices } from "./StudioSliceBoundaryInspector";
@@ -85,17 +86,6 @@ import { formatNumber } from "@toonstudio/core/format";
 interface ExportRunStatus {
   tone: "info" | "good" | "warn";
   text: string;
-}
-
-function safeExportBaseName(title: string): string {
-  return Array.from(title.trim())
-    .filter((character) => {
-      const codePoint = character.codePointAt(0) ?? 0;
-      return codePoint >= 0x20 && !"\\/:*?\"<>|".includes(character);
-    })
-    .join("")
-    .trim()
-    .slice(0, 120) || "toonstudio-comic";
 }
 
 export interface StudioExportMenuPackageContext {
@@ -197,7 +187,7 @@ export interface StudioExportMenuPanelProps {
 
 export function StudioExportMenuPanel({
   canvasWidth, canvasHeight, exportScale, exportFormat, exportTransparent, exportPresetId, watermark,
-  isExporting, exportTitle, pageCount, activePageIndex = 0, pageLabels, exportDpi = 72,
+  isExporting: parentExporting, exportTitle, pageCount, activePageIndex = 0, pageLabels, exportDpi = 72,
   exportTrimWidthMm, exportTrimHeightMm, exportBleedMm, dialoguePages = null, setExportScale,
   setExportFormat, setExportTransparent, setExportPresetId, setWatermark, onCopyToClipboard,
   onDownloadCurrentPage, capturePagesForPreset, capturePagesForIndices, exportPresetSlicesFromDocument,
@@ -206,8 +196,10 @@ export function StudioExportMenuPanel({
   sourceWorkId = null, onNavigateToPublish, renderAdditionalExports, renderPrimaryExport,
   externalCancellableBusy = false, onRequestCloseAndReturn, onWorkspaceAbortNotice,
 }: StudioExportMenuPanelProps) {
+  const [panelDeliveryBusy, setPanelDeliveryBusy] = useState(false);
+  const isExporting = parentExporting || panelDeliveryBusy;
   const cancelCtrl = useStudioExportCancelController({
-    externalBusy: externalCancellableBusy,
+    externalBusy: externalCancellableBusy || panelDeliveryBusy,
     onRequestCloseAndReturn,
     onWorkspaceAbortNotice,
   });
@@ -1087,6 +1079,8 @@ export function StudioExportMenuPanel({
         onDownloadCurrentPage={onDownloadCurrentPage}
       >
         {renderPrimaryExport?.(packageContext)}
+        <StudioPanelDeliverySection context={packageContext} pages={dialoguePages} title={exportTitle} width={canvasWidth}
+          watermark={watermark} transparent={exportTransparent} onBusyChange={setPanelDeliveryBusy} />
       </StudioExportBasicOptions>
       <p className="mt-2 text-[10px] tabular-nums text-fg-3">
         출력 폭 {formatNumber(outW)}px

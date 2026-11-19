@@ -82,7 +82,6 @@ export function StudioCharacterShaper({ recoverFromRenderFailure = true, ...prop
 
 function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayers, ...props }: Omit<StudioCharacterShaperProps, "recoverFromRenderFailure">) {
   const { open } = props;
-  const bt = useBilingual("StudioCharacterShaper");
   const h = useStudioVrmPoserController(props);
   const [advanced, setAdvanced] = useState(false);
   const runtimeBinding = useCharacterShaperBinding(h, { runtimeOnly: true });
@@ -95,15 +94,11 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayer
     handleSaveFullLocal: () => controller.authoring.hydrated && h.handleSaveFullLocal(controller.authoring.exportJson()),
     handleLoadFullLocal: async (name: string) => {
       const variant = h.savedFullStates?.[name];
-      if (!variant || !controller.authoring.hydrated) return;
-      if (typeof variant.characterDocumentV3 === "string") {
-        if (!await controller.authoring.importJson(variant.characterDocumentV3)) {
-          h.notify?.(bt("저장한 변형을 복원하지 못했습니다.", "Could not restore the saved look."), "error");
-        }
-      } else {
-        h.handleLoadFullLocal(name);
-        setAdvanced(true);
-      }
+      if (!variant || !controller.authoring.hydrated || (variant.modelId && variant.modelId !== h.activeModelId)) return false;
+      if (typeof variant.characterDocumentV3 === "string") return controller.authoring.importJson(variant.characterDocumentV3);
+      if (h.handleLoadFullLocal(name) !== true) return false;
+      setAdvanced(true);
+      return true;
     },
   };
   const cancelPreview = binding.cancelPreview;

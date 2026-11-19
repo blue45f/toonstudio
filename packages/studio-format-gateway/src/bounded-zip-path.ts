@@ -58,9 +58,17 @@ function hasUnpairedSurrogate(value: string): boolean {
   return false;
 }
 
-export function validateZipPath(bytes: Uint8Array, maxPathBytes: number, policy: FormatZipPathPolicy): ValidatedZipPath {
+export function validateZipPath(
+  bytes: Uint8Array,
+  maxPathBytes: number,
+  policy: FormatZipPathPolicy,
+  encoding: "utf8" | "ascii" = "utf8",
+): ValidatedZipPath {
   if (bytes.byteLength === 0 || bytes.byteLength > maxPathBytes) {
     throw new ZipPathRejection("ZIP 경로 길이가 허용 범위를 벗어났습니다.");
+  }
+  if (encoding === "ascii" && bytes.some((byte) => byte > 0x7f)) {
+    throw new ZipPathRejection("ASCII 이외 문자가 있는 ZIP 항목 경로에는 UTF-8 플래그가 필요합니다.");
   }
   let decoded: string;
   try {

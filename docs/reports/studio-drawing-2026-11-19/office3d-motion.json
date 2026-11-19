@@ -1,0 +1,48 @@
+{
+  "origin": "http://127.0.0.1:5497",
+  "errors": [],
+  "desktopToMobile": {
+    "count": 24,
+    "start": [
+      195,
+      393
+    ],
+    "end": [
+      300,
+      393
+    ],
+    "rangeX": 105,
+    "endRangeX": 0,
+    "endRangeY": 0,
+    "endCaptured": true,
+    "tailCount": 7
+  },
+  "mobileToDesktop": {
+    "count": 30,
+    "start": [
+      466,
+      353
+    ],
+    "end": [
+      631,
+      353
+    ],
+    "rangeX": 165,
+    "endRangeX": 0,
+    "endRangeY": 0,
+    "endCaptured": true,
+    "tailCount": 7
+  },
+  "actors": 2,
+  "mobileViewport": [
+    390,
+    844
+  ],
+  "joystickTarget": [
+    120,
+    120
+  ],
+  "bothHavePeer": true,
+  "stage": "active",
+  "passed": true
+}

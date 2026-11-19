@@ -202,8 +202,8 @@ describe("studio brush catalogue selection", () => {
       core: BRUSH_PRESETS.length,
       pro: 207,
       total: BRUSH_PRESETS.length + 207,
-      erase: 2,
-      paint: BRUSH_PRESETS.length - 2 + 207,
+      erase: 5,
+      paint: BRUSH_PRESETS.length - 5 + 207,
     });
     expect(STUDIO_BRUSH_CATALOG_COUNTS.core).toBeGreaterThanOrEqual(99);
 

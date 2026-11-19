@@ -6,34 +6,30 @@ import {
 } from "../studio-command-execution-registry";
 import { createStudioDrawingClarityCommandBindings } from "./StudioDrawingClarityCommands";
 
-function presentation() { return { showSavedLayout: vi.fn(), openInspector: vi.fn() }; }
+function presentation() { return { showSavedLayout: vi.fn(), openInspector: vi.fn(), openPages: vi.fn(), closePanels: vi.fn() }; }
 
 describe("간단한 그리기 검색 명령의 목적지", () => {
   it.each([
-    "window.left-panel", "window.right-panel", "window.collapse-side-panels",
-    "window.command-bar", "window.page-sequence", "file.project-tools",
-  ])("%s는 기존 배치를 먼저 보이고 원본 명령을 정확히 한 번 실행한다", (commandId) => {
-    const order: string[] = [];
-    const original = vi.fn(() => order.push("원본 명령"));
-    const ui = { showSavedLayout: vi.fn(() => order.push("기존 배치")), openInspector: vi.fn() };
-    const bindings = createStudioDrawingClarityCommandBindings([{ items: [{ commandId, label: "기존 명령", onSelect: original }] }], ui);
+    ["window.left-panel", "openPages"], ["window.page-sequence", "openPages"],
+    ["window.right-panel", "openInspector"], ["view.navigator", "openInspector"],
+    ["canvas.document-settings", "openInspector"],
+    ["filter.levels", "openInspector"], ["filter.tone-curve", "openInspector"],
+    ["window.collapse-side-panels", "closePanels"], ["window.command-bar", "showSavedLayout"],
+    ["file.project-tools", "showSavedLayout"],
+  ] as const)("%s는 같은 편집기의 %s를 열고 원래 명령을 한 번 실행한다", (commandId, destination) => {
+    const ui = presentation(), original = vi.fn();
+    const bindings = createStudioDrawingClarityCommandBindings([{ items: [{ commandId, label: "원고 도구", onSelect: original, searchActivation: "execute" }] }], ui);
     bindings[0]?.execute();
-    expect(order).toEqual(["기존 배치", "원본 명령"]);
     expect(original).toHaveBeenCalledOnce();
-    expect(ui.showSavedLayout).toHaveBeenCalledOnce();
-    expect(ui.openInspector).not.toHaveBeenCalled();
+    expect(ui[destination]).toHaveBeenCalledOnce();
+    expect(ui[destination].mock.invocationCallOrder[0]).toBeLessThan(original.mock.invocationCallOrder[0] ?? 0);
   });
 
-  it("미니맵은 작업 패널을 먼저 보이고 기존 탐색 명령을 한 번 실행한다", () => {
-    const order: string[] = [];
-    const original = vi.fn(() => order.push("원본 탐색"));
-    const ui = { showSavedLayout: vi.fn(), openInspector: vi.fn(() => order.push("작업 패널")) };
-    const bindings = createStudioDrawingClarityCommandBindings([{ items: [{ commandId: "view.navigator", label: "미니맵", onSelect: original }] }], ui);
-    bindings[0]?.execute();
-    expect(order).toEqual(["작업 패널", "원본 탐색"]);
-    expect(original).toHaveBeenCalledOnce();
-    expect(ui.openInspector).toHaveBeenCalledOnce();
-    expect(ui.showSavedLayout).not.toHaveBeenCalled();
+  it("검색에서 실행을 허용하지 않은 문서 설정은 메뉴 전용으로 남는다", () => {
+    const bindings = createStudioDrawingClarityCommandBindings([
+      { items: [{ commandId: "canvas.document-settings", label: "문서 설정", onSelect: vi.fn() }] },
+    ], presentation());
+    expect(bindings).toHaveLength(0);
   });
 
   it("이름·비활성 상태·불가 사유를 바꾸지 않는다", () => {

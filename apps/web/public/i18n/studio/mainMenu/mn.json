@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Супер энгийн зохион байгуулалт",
   "studio.mainMenu.item.view.density-full": "ерөнхий зохион байгуулалт",
   "studio.mainMenu.item.view.wide": "Самбаруудыг хурааж өргөн харах",
+  "studio.mainMenu.item.view.wide.open": "Самбаруудыг харуулах",
   "studio.mainMenu.item.view.tools-companion": "Олон дэлгэцийн ажлын талбар…",
   "studio.mainMenu.item.view.canvas-only": "Зөвхөн канвас",
   "studio.mainMenu.item.view.color-vision.unavailable": "Харах шилжилт түгжигдсэн үед өнгө харах горимыг өөрчлөх боломжгүй.",

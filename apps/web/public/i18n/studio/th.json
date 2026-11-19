@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "เค้าโครงแบบเรียบง่ายสุด ๆ",
   "studio.mainMenu.item.view.density-full": "เค้าโครงแบบเต็ม",
   "studio.mainMenu.item.view.wide": "พับแผงเพื่อขยายพื้นที่",
+  "studio.mainMenu.item.view.wide.open": "แสดงแผง",
   "studio.mainMenu.item.view.tools-companion": "พื้นที่ทำงานแบบหลายจอแสดงผล...",
   "studio.mainMenu.item.view.canvas-only": "แคนวาสเท่านั้น",
   "studio.mainMenu.item.view.color-vision.unavailable": "คุณไม่สามารถเปลี่ยนโหมดการมองเห็นสีได้ในขณะที่ล็อคการเปลี่ยนมุมมอง",

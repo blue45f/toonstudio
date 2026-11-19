@@ -1062,6 +1062,7 @@
   "studio.mainMenu.item.view.density-focus": "Napakasimpleng layout",
   "studio.mainMenu.item.view.density-full": "Buong layout",
   "studio.mainMenu.item.view.wide": "Palawakin nang nakatiklop ang mga panel",
+  "studio.mainMenu.item.view.wide.open": "Ipakita ang mga panel",
   "studio.mainMenu.item.view.tools-companion": "Multi-display na workspace…",
   "studio.mainMenu.item.view.canvas-only": "Canvas lang",
   "studio.mainMenu.item.view.quick-access-palette": "Ipakita ang quick access palette",

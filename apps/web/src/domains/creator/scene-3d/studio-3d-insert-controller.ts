@@ -201,7 +201,7 @@ export function applyStudioVrmInsertResult({
     height: displaySize.height,
     elementPatch: {
       vrmScene: result.scene,
-      name: "3D 데생 인형",
+      name: result.scene.model.name,
     },
   });
 }

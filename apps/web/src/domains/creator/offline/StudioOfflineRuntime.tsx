@@ -12,13 +12,7 @@ import {
   prepareLoadedStudioOfflineResources,
 } from "./studio-offline-client";
 
-type IdleCapableWindow = Window & {
-  readonly requestIdleCallback?: (
-    callback: () => void,
-    options?: { readonly timeout: number },
-  ) => number;
-  readonly cancelIdleCallback?: (handle: number) => void;
-};
+const INPUT_QUIET_MS = 1_200;
 
 function dataSaverEnabled(): boolean {
   try {
@@ -30,16 +24,67 @@ function dataSaverEnabled(): boolean {
   }
 }
 function scheduleDuringIdle(operation: () => Promise<void>): () => void {
-  const idleWindow = window as IdleCapableWindow;
-  if (typeof idleWindow.requestIdleCallback === "function") {
-    const handle = idleWindow.requestIdleCallback(
-      () => { void operation(); },
-      { timeout: 3_000 },
-    );
-    return () => { idleWindow.cancelIdleCallback?.(handle); };
+  let active = true;
+  let timer: number | undefined;
+  let idle: number | undefined;
+  let lastInput = performance.now();
+  const pointers = new Set<number>();
+  const listeners = new AbortController();
+  const options = { capture: true, passive: true, signal: listeners.signal };
+
+  function schedule(delay: number = INPUT_QUIET_MS): void {
+    if (!active || timer !== undefined || idle !== undefined || pointers.size > 0) return;
+    timer = window.setTimeout(() => {
+      timer = undefined;
+      if (typeof window.requestIdleCallback === "function") {
+        idle = window.requestIdleCallback(tryStart, { timeout: 3_000 });
+      } else {
+        tryStart();
+      }
+    }, delay);
   }
-  const handle = window.setTimeout(() => { void operation(); }, 1_200);
-  return () => window.clearTimeout(handle);
+
+  function tryStart(deadline?: IdleDeadline): void {
+    idle = undefined;
+    if (!active || pointers.size > 0) return;
+    const remaining = INPUT_QUIET_MS - (performance.now() - lastInput);
+    if (remaining > 0) schedule(remaining);
+    else if (deadline && deadline.timeRemaining() <= 0) schedule();
+    else {
+      cancel();
+      void operation();
+    }
+  }
+
+  function noteInput(): void {
+    lastInput = performance.now();
+    schedule();
+  }
+  function hold(event: PointerEvent): void {
+    pointers.add(event.pointerId);
+  }
+  function release(event: PointerEvent): void {
+    pointers.delete(event.pointerId);
+    noteInput();
+  }
+  function releaseAll(): void {
+    pointers.clear();
+    noteInput();
+  }
+  function cancel(): void {
+    active = false;
+    window.clearTimeout(timer);
+    if (idle !== undefined) window.cancelIdleCallback?.(idle);
+    listeners.abort();
+  }
+  window.addEventListener("pointerdown", hold, options);
+  window.addEventListener("pointerup", release, options);
+  window.addEventListener("pointercancel", release, options);
+  window.addEventListener("blur", releaseAll, { signal: listeners.signal });
+  window.addEventListener("keydown", noteInput, options);
+  window.addEventListener("wheel", noteInput, options);
+  schedule();
+  return cancel;
 }
 
 function skippedMessage(reason: StudioOfflineAutomationSkipReason): string | null {
@@ -59,6 +104,7 @@ function skippedMessage(reason: StudioOfflineAutomationSkipReason): string | nul
 export function StudioOfflineRuntime() {
   useEffect(() => {
     let disposed = false;
+    let latestInspection = 0;
     let preparationInFlight = false;
     let retryAfterFlight = false;
     let attemptedBuildId: string | null = null;
@@ -67,8 +113,9 @@ export function StudioOfflineRuntime() {
     const inspectAndSchedule = async (allowRetry = false): Promise<void> => {
       cancelScheduled?.();
       cancelScheduled = null;
+      const inspection = ++latestInspection;
       const device = await inspectStudioOfflineDevice();
-      if (disposed) return;
+      if (disposed || inspection !== latestInspection) return;
       const decision = decideStudioOfflineAutomaticPreparation({
         browserOnline: device.online,
         controlled: device.controlled,
@@ -97,10 +144,10 @@ export function StudioOfflineRuntime() {
         return;
       }
       if (!allowRetry && attemptedBuildId === buildId) return;
-      attemptedBuildId = buildId;
       cancelScheduled = scheduleDuringIdle(async () => {
         cancelScheduled = null;
         if (disposed || preparationInFlight) return;
+        attemptedBuildId = buildId;
         preparationInFlight = true;
         publishStudioOfflineAutomation({
           phase: "preparing",
@@ -144,6 +191,7 @@ export function StudioOfflineRuntime() {
       void inspectAndSchedule(true);
     };
     const pause = (): void => {
+      latestInspection += 1;
       cancelScheduled?.();
       cancelScheduled = null;
       attemptedBuildId = null;

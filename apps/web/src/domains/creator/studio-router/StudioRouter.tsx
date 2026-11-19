@@ -45,7 +45,7 @@ export function StudioRouter() {
   const currentHref = `${location.pathname}${location.search}`;
   const canonicalHref = resolveStudioRouterCanonicalHref(resolution, location.search);
   if (!isStudioCanonicalHref(currentHref, canonicalHref)) {
-    return <Navigate replace state={location.state} to={canonicalHref} />;
+    return <Navigate replace state={location.state} to={canonicalHref + location.hash} />;
   }
 
   switch (resolution.kind) {

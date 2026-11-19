@@ -4,34 +4,16 @@ import * as THREE from "three";
 import { isStudioVrmProductionModelUrl } from "../../vrm/studio-vrm-model-quality";
 import { BUNDLED_VRM_RIGHTS_BLOCKS, SAMPLE_VRM_ENTRIES, SAMPLE_VRMS } from "../../vrm/vrm-library";
 import { CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
-import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "../studio-virtual-space-model";
+import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import type { StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
 import { createStudioThreeGlbLoader, loadStudioThreeModelProps, type StudioThreeModelController } from "./studio-virtual-space-three-asset-loader";
 import { createStudioThreeActorLoader } from "./studio-virtual-space-three-actor-loader";
 import { isStudioThreeCampusManifest, studioThreeGeneratedProps, studioThreeManifestProps } from "./studio-virtual-space-three-generated-assets";
 import { loadStudioThreeZoneDioramas } from "./studio-virtual-space-three-dioramas";
 import { STUDIO_THREE_SCALE, threeToWorld, worldToThree } from "./studio-virtual-space-three-coords";
+import { facingToYawRadians, shortestAngleLerp } from "./studio-virtual-space-three-coordinates";
 
-export { STUDIO_THREE_SCALE, threeToWorld, worldToThree };
-
-export function facingToYawRadians(facing: StudioVirtualSpaceFacing): number {
-  switch (facing) {
-    case "down":
-      return 0;
-    case "right":
-      return Math.PI * 0.5;
-    case "up":
-      return Math.PI;
-    case "left":
-      return -Math.PI * 0.5;
-  }
-}
-
-export function shortestAngleLerp(current: number, target: number, alpha: number): number {
-  let diff = ((target - current + Math.PI) % (Math.PI * 2)) - Math.PI;
-  if (diff < -Math.PI) diff += Math.PI * 2;
-  return current + diff * Math.min(1, Math.max(0, alpha));
-}
+export { facingToYawRadians, shortestAngleLerp, STUDIO_THREE_SCALE, threeToWorld, worldToThree };
 
 export interface StudioThreePropSpec {
   readonly id: string;
@@ -213,6 +195,7 @@ export interface StudioThreeActorNode {
   currentYaw: number;
   targetYaw: number;
   moving: boolean;
+  gait?: { x: number; z: number; phase: number };
   vrmLoaded: boolean;
   seated?: boolean;
   emoteId?: string | null;
@@ -292,7 +275,6 @@ export function createStylized3DCharacterNode(
   group.add(shadow);
 
   const rigGroup = new THREE.Group();
-  rigGroup.position.y = 0.05;
   group.add(rigGroup);
 
   const skinMat = new THREE.MeshStandardMaterial({ color: 0xffe4d6, roughness: 0.55, metalness: 0.05 });

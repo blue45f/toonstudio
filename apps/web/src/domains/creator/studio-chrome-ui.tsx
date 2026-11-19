@@ -1,6 +1,8 @@
 import { toolbarViewWidth } from "./studio-toolbar-configuration";
 import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
-import type { StudioToolbarView } from "./studio-app-settings";
+import { isStudioRailToolId, type StudioToolbarView } from "./studio-app-settings";
+import { StudioToolArtwork } from "./studio-tool-art/StudioToolArtwork";
+import { studioRailArtwork } from "./studio-tool-art/studio-rail-artwork";
 /**
  * Studio chrome UI — toolbar, dock, and menu-shell primitives shared by StudioPage.
  *
@@ -1013,14 +1015,11 @@ export function StudioRailToolButton({
   title,
   ...rest
 }: StudioRailToolButtonProps): ReactElement {
-  // 레일 라벨의 로케일 전환은 여기 한 군데서 한다. 34개 버튼이 저마다 문자열 리터럴·헬프
-  // 카탈로그·단축키 조합으로 라벨을 만들고 있어서, 호출부를 하나씩 고치면 다음에 추가되는
-  // 버튼이 또 한국어로 새어 나간다. 버튼마다 이미 `data-studio-rail-tool-id`가 붙어 있으므로
-  // 그 id로 도구 카탈로그 번역을 찾아 갈아끼우면 새 버튼도 공짜로 번역된다.
+  const railId = (rest as Record<string, unknown>)["data-studio-rail-tool-id"];
   const lang = useI18n((state) => state.lang);
   const t = useT();
   const localizedLabel = localizeStudioRailToolLabel({
-    toolId: (rest as Record<string, unknown>)["data-studio-rail-tool-id"] as string | undefined,
+    toolId: typeof railId === "string" ? railId : undefined,
     authoredLabel: label,
     lang,
     t,
@@ -1057,16 +1056,10 @@ export function StudioRailToolButton({
       {...rest}
     >
       <span className="studio-premium-tool-glyph" aria-hidden="true">
-        <span className="studio-premium-tool-glyph__art" />
-        <Icon
-          size={STUDIO_ICON_SIZE.rail}
-          strokeWidth={STUDIO_ICON_STROKE}
-          className={studioChromeIconClass({
-            tone: active ? "accent" : "default",
-            active,
-            disabled,
-          })}
-        />
+        {isStudioRailToolId(railId) ? <StudioToolArtwork tool={studioRailArtwork[railId]} /> : (
+          <Icon size={STUDIO_ICON_SIZE.rail} strokeWidth={STUDIO_ICON_STROKE}
+            className={studioChromeIconClass({ tone: active ? "accent" : "default", active, disabled })} />
+        )}
       </span>
       {showLabel ? <span className="min-w-0 flex-1 text-[13px] leading-snug">{localizedLabel}</span> : null}
       {grouped ? (

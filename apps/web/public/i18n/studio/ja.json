@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "超シンプルなレイアウト",
   "studio.mainMenu.item.view.density-full": "フルレイアウト",
   "studio.mainMenu.item.view.wide": "パネルを折りたたんだ状態で展開する",
+  "studio.mainMenu.item.view.wide.open": "パネルを表示",
   "studio.mainMenu.item.view.tools-companion": "マルチディスプレイワークスペース…",
   "studio.mainMenu.item.view.canvas-only": "キャンバスのみ",
   "studio.mainMenu.item.view.color-vision.unavailable": "変換がロックされている間は色覚モードを変更できません。",

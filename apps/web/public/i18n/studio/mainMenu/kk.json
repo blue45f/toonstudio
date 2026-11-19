@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Өте қарапайым макет",
   "studio.mainMenu.item.view.density-full": "Толық макет",
   "studio.mainMenu.item.view.wide": "Панельдерді жиып, кеңейту",
+  "studio.mainMenu.item.view.wide.open": "Панельдерді көрсету",
   "studio.mainMenu.item.view.tools-companion": "Көп дисплей жұмыс кеңістігі…",
   "studio.mainMenu.item.view.canvas-only": "Тек кенеп",
   "studio.mainMenu.item.view.color-vision.unavailable": "Көрініс түрлендіруі құлыпталған кезде түс көруді тексеру режимін өзгерте алмайсыз.",

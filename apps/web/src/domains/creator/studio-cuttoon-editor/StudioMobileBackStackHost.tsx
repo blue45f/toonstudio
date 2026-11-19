@@ -15,6 +15,9 @@ import {
  */
 export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
   const {
+    admittedBg3dOpen,
+    admittedCharacterShaperOpen,
+    admittedPoserVrmOpen,
     dismissActiveMobileSheet,
     isMobile,
     menu,
@@ -26,9 +29,14 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
     setQuickActionsOpen,
     setShortcutsOpen,
     shortcutsOpen,
+    studioRoute,
   } = s;
 
   const [domRevision, setDomRevision] = useState(0);
+  const routedModalOwners = useRef(new WeakSet<Element>());
+  // 포털은 URL 변경보다 한 커밋 먼저 그려질 수 있다. 실제 편집기에 승인된 창이 같은 이력을 소유한다.
+  const routedSurface = admittedPoserVrmOpen ? "poser" : admittedCharacterShaperOpen ? "character"
+    : admittedBg3dOpen ? "bg3d" : studioRoute.surface;
   const controllerRef = useRef<StudioMobileHistorySyncController | null>(null);
 
   const ensureController = (): StudioMobileHistorySyncController | null => {
@@ -71,6 +79,8 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
     if (!controller) return;
     const layers = resolveStudioMobileBackLayers({
       isMobile: Boolean(isMobile),
+      routedSurface,
+      routedModalOwners: routedModalOwners.current,
       mobileSheet,
       dismissActiveMobileSheet,
       menuOpen: menu !== null,
@@ -96,6 +106,7 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
     setQuickActionsOpen,
     setShortcutsOpen,
     shortcutsOpen,
+    routedSurface,
   ]);
 
   useEffect(() => {

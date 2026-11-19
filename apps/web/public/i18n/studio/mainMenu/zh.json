@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "超级简单的布局",
   "studio.mainMenu.item.view.density-full": "完整布局",
   "studio.mainMenu.item.view.wide": "折叠面板以加宽视图",
+  "studio.mainMenu.item.view.wide.open": "显示面板",
   "studio.mainMenu.item.view.tools-companion": "多显示器工作区...",
   "studio.mainMenu.item.view.canvas-only": "仅画布",
   "studio.mainMenu.item.view.color-vision.unavailable": "当视图转换被锁定时，您无法更改色觉模式。",

@@ -1,6 +1,7 @@
 import { useId, useSyncExternalStore } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 import { useStudioScopedDraftSaveState } from "../studio-collab/studio-scoped-draft-save";
 import {
   EMPTY_STUDIO_SAVE_SYNC_SIGNALS,
@@ -54,7 +55,7 @@ export function StudioDrawingClaritySaveButton({ session: s }: {
           clarity.reveal("layers", trigger);
         }
         void s.studioMenubarContentHandlers.handleSave("draft");
-      }}>{caption}</button>
+      }}><StudioToolArtwork tool="save" />{caption}</button>
     {saveSummary ? <span id={statusDescId} className="sr-only" data-studio-clarity-save-status="true">{saveSummary}</span> : null}
   </>;
 }

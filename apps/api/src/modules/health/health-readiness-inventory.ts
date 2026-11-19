@@ -220,6 +220,8 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "studio_revision",
   "studio_revision_blob",
   "studio_revision_parent",
+  "studio_space_poll",
+  "studio_space_poll_vote",
   "studio_virtual_space_booking",
   "studio_virtual_space_custom_furniture",
   "studio_virtual_space_decoration_layout",

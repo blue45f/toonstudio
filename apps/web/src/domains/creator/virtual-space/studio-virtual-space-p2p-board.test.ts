@@ -75,6 +75,78 @@ describe("StudioP2pBoardController", () => {
     a.close(); b.close();
   });
 
+  it("연결 주소가 달라도 인증 명단으로 참가자를 찾아 양쪽 획과 메모를 전달한다", () => {
+    const network = new DirectNetwork();
+    const aConnection = network.participant("connection-a", "owner");
+    const bConnection = network.participant("connection-b", "editor");
+    const sessions = new Map([["connection-a", "client-a"], ["connection-b", "client-b"]]);
+    const participantPort = (connection: StudioLiveParticipant): StudioLiveDirectPort => ({
+      ...network.port(connection),
+      canonicalSessionId: id => sessions.get(id) ?? id,
+    });
+    const a = new StudioP2pBoardController({ ...aConnection, sessionId: "client-a" }, participantPort(aConnection), scope, network.dependencies("epoch-a"));
+    const b = new StudioP2pBoardController({ ...bConnection, sessionId: "client-b" }, participantPort(bConnection), scope, network.dependencies("epoch-b"));
+    a.start(); b.start(); network.settle();
+    expect(a.snapshot().readyPeerIds).toEqual(["client-b"]);
+    expect(b.snapshot().readyPeerIds).toEqual(["client-a"]);
+    a.addStroke([{ x: .1, y: .1 }, { x: .8, y: .4 }], "#ffd166");
+    b.addNote(.3, .3, "배경 톤 조정", "#83d8c5");
+    expect(b.snapshot().entities).toEqual(a.snapshot().entities);
+    expect(a.snapshot().entities.map(entity => entity.ownerSessionId)).toEqual(["client-a", "client-b"]);
+    a.close(); b.close();
+  });
+
+  it("상대가 보드를 늦게 열어 첫 인사를 못 받았어도 같은 보드에 합류한다", () => {
+    const network = new DirectNetwork();
+    const alice = network.participant("alice"), bob = network.participant("bob");
+    const firstPort = network.port(alice);
+    const a = new StudioP2pBoardController(alice, {
+      ...firstPort,
+      send: (target, payload) => !network.listeners.has(target) || firstPort.send(target, payload),
+    }, scope, network.dependencies("epoch-a"));
+    const b = new StudioP2pBoardController(bob, network.port(bob), scope, network.dependencies("epoch-b"));
+    a.start();
+    a.addNote(.2, .2, "먼저 남긴 메모", "#ffd166");
+    b.start();
+    network.settle();
+    expect(a.snapshot().readyPeerIds).toEqual(["bob"]);
+    expect(b.snapshot().readyPeerIds).toEqual(["alice"]);
+    expect(b.snapshot().entities).toEqual(a.snapshot().entities);
+    a.close(); b.close();
+  });
+
+  it("두 접속의 첫 패킷이 발송된 뒤 유실돼도 양쪽에 기존 보드가 도착한다", () => {
+    const network = new DirectNetwork();
+    const alice = network.participant("alice");
+    const bob = network.participant("bob");
+    let dropping = true;
+    let sent = 0;
+    const port = (owner: StudioLiveParticipant): StudioLiveDirectPort => {
+      const direct = network.port(owner);
+      return { ...direct, send(target, raw) {
+        sent += 1;
+        return dropping || direct.send(target, raw);
+      } };
+    };
+    const a = new StudioP2pBoardController(alice, port(alice), scope, network.dependencies("epoch-a"));
+    const b = new StudioP2pBoardController(bob, port(bob), scope, network.dependencies("epoch-b"));
+    a.start(); b.start();
+    a.addNote(.2, .3, "마감 장면", "#ffd166");
+    b.addNote(.4, .5, "색 조정", "#83d8c5");
+    expect(a.snapshot().readyPeerIds).toEqual([]);
+    dropping = false;
+    for (let round = 0; round < 4; round++) network.settle();
+    expect(a.snapshot().readyPeerIds).toEqual(["bob"]);
+    expect(b.snapshot().readyPeerIds).toEqual(["alice"]);
+    const ids = (board: StudioP2pBoardController) => board.snapshot().entities.map(entity => entity.id).sort();
+    expect(ids(a)).toHaveLength(2);
+    expect(ids(b)).toEqual(ids(a));
+    const settled = sent;
+    network.settle();
+    expect(sent).toBe(settled);
+    a.close(); b.close();
+  });
+
   it("keeps viewers read-only while recovering and receiving through the one-way direct lane", () => {
     const network = new DirectNetwork();
     const alice = network.participant("alice");

@@ -370,7 +370,9 @@ describe("SVG export Worker R8 transfer protocol", () => {
         elements: [],
       }, { workerFactory: () => neverReady });
       const rejection = pending.catch((error: unknown) => error);
-      await vi.advanceTimersByTimeAsync(3_000);
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(terminateTimedOut).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(25_000);
       await expect(rejection).resolves.toMatchObject({
         message: expect.stringContaining("준비 시간이 초과되었습니다"),
       });

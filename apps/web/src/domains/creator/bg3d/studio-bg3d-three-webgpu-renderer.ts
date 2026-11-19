@@ -65,6 +65,10 @@ export interface CreateStudioBg3dThreeWebGpuRendererOptions {
    * A device destroyed by our own `dispose()` never reports.
    */
   readonly onDeviceLost?: (loss: StudioBg3dWebGpuDeviceLoss) => void;
+  /** 화면에 귀속된 첫 프레임 예외 또는 장치가 거절한 명령을 편집기의 복구 화면으로 전달한다. */
+  readonly onRenderError?: (message: string) => void;
+  /** 실제 화면을 대상으로 장면의 첫 draw를 제출했을 때 한 번만 알린다. */
+  readonly onFirstSceneFrame?: () => void;
 }
 
 export interface StudioBg3dThreeWebGpuRuntime {
@@ -275,6 +279,43 @@ async function initializeStudioBg3dThreeWebGpuRenderer(
     throw new StudioBg3dWebGpuRendererError("backend-unavailable");
   }
   let disposed = false;
+  if (options.onRenderError || options.onFirstSceneFrame) {
+    const notify = options.onRenderError;
+    let onFirstSceneFrame = options.onFirstSceneFrame;
+    let failed = false;
+    const report = (cause: unknown) => {
+      if (disposed || failed) return;
+      failed = true;
+      const detail = typeof cause === "object" && cause !== null && "message" in cause ? cause.message : cause;
+      const message = typeof detail === "string" ? detail.replace(/\s+/gu, " ").slice(0, 220).trim() : "";
+      const type = typeof cause === "object" && cause !== null && "type" in cause ? cause.type : null;
+      const label = type === "GPUValidationError" ? "WebGPU 장면의 렌더 명령을 처리하지 못했습니다"
+        : type === "GPUOutOfMemoryError" ? "WebGPU 장면에 필요한 그래픽 메모리가 부족합니다"
+        : "WebGPU 장면을 그리지 못했습니다";
+      notify?.(message ? `${label} (${message})` : label);
+    };
+    // R3F의 프레임 콜백과 비동기 GPU 오류는 React의 자식 렌더 경계로 전파되지 않는다.
+    const renderFrame = renderer.render.bind(renderer);
+    renderer.render = (scene, camera) => {
+      if (failed || disposed) return;
+      try {
+        renderFrame(scene, camera);
+        if (onFirstSceneFrame && renderer.getRenderTarget() === null && renderer.info.render.drawCalls > 0) {
+          const notifyFrame = onFirstSceneFrame;
+          onFirstSceneFrame = undefined;
+          notifyFrame();
+        }
+      } catch (error) {
+        if (!notify) throw error;
+        report(error);
+      }
+    };
+    const onBackendError = renderer.onError.bind(renderer);
+    renderer.onError = (error) => {
+      if (disposed || failed) return;
+      try { onBackendError(error); } finally { if (notify) report(error); }
+    };
+  }
   // R3F 9.6.1은 Canvas를 닫을 때 forceContextLoss()를 부른다. WebGPU에는 이 메서드가
   // 없어 앱이 소유한 device를 명시적으로 해제해야 한다. 직접 해제와 같은 수명을 공유한다.
   const rendererDispose = renderer.dispose.bind(renderer);

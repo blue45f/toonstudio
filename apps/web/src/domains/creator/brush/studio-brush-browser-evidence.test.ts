@@ -29,6 +29,9 @@ describe("Studio brush product evidence contract", () => {
     expect(STUDIO_LISTED_ERASER_BRUSH_CATALOG_ITEMS.map((item) => item.id)).toEqual([
       "standard-eraser",
       "kneaded-eraser",
+      "precision-eraser",
+      "broad-eraser",
+      "lift-eraser",
     ]);
     expect(STUDIO_LISTED_EXTENDED_BRUSH_CATALOG_ITEMS).toHaveLength(
       STUDIO_BRUSH_LISTED_CATALOG_COUNTS.total

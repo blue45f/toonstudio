@@ -142,6 +142,8 @@ export class Office2dBody {
   readonly returnHome: boolean;
   x: number;
   y: number;
+  previousX: number;
+  previousY: number;
   vx = 0;
   vy = 0;
   /** 강체 회전 각도(rad). 토크에 의해 변화하며 렌더러가 소품 회전에 반영한다. */
@@ -193,8 +195,8 @@ export class Office2dBody {
     this.sensor = init.sensor === true;
     this.mask = init.mask ?? ALL_CATEGORIES;
     this.tag = init.tag;
-    this.x = init.x;
-    this.y = init.y;
+    this.x = this.previousX = init.x;
+    this.y = this.previousY = init.y;
     this.homeX = init.x;
     this.homeY = init.y;
     this.targetX = init.x;

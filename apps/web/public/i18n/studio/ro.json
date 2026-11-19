@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Aspect super simplu",
   "studio.mainMenu.item.view.density-full": "Aspect complet",
   "studio.mainMenu.item.view.wide": "Extindere cu panourile restrânse",
+  "studio.mainMenu.item.view.wide.open": "Afișează panourile",
   "studio.mainMenu.item.view.tools-companion": "Spațiu de lucru cu mai multe afișaje...",
   "studio.mainMenu.item.view.canvas-only": "Doar pânză",
   "studio.mainMenu.item.view.color-vision.unavailable": "Nu puteți schimba modul de verificare a vederii culorilor cât timp transformarea vizualizării este blocată.",

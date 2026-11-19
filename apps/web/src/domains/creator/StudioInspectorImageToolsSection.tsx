@@ -4,6 +4,7 @@ import { isStudioAiConfigured } from "./ai/studio-ai-client";
 import { DEFAULT_STUDIO_ADVANCED_FILL_SETTINGS } from "./studio-advanced-fill-settings";
 import { isCropRectNoop, initialCropRect, cropAspectRatio, applyCropAspect } from "./studio-crop";
 import { uid } from "./studio-id";
+import { studioWorkspaceDocumentIdentity } from "./studio-workspace-route";
 import { executeStudioInspectorArmedChange, executeStudioInspectorArmedToggle } from "./studio-inspector-tool-transition";
 import { LIQUIFY_RADIUS_RANGE, LIQUIFY_STRENGTH_RANGE } from "./studio-liquify-contract";
 import {
@@ -421,7 +422,7 @@ export function StudioInspectorSelectedImageTools({
                       {selected.type === "image" ? (
                         <>
                           {selectedReadableImageSource ? (
-                          <StudioAutoColorHintsPanel
+                          <StudioAutoColorHintsPanel key={JSON.stringify([model.studioRoute && studioWorkspaceDocumentIdentity(model.studioRoute), model.masterEditMode, model.currentPageId, selected.id])}
                             imageSrc={selectedReadableImageSource}
                             scribbleCanvasArmed={autoColorScribbleCanvasArmed}
                             onScribbleCanvasArmedChange={
@@ -452,7 +453,7 @@ export function StudioInspectorSelectedImageTools({
                             }
                             onApplyNewLayer={
                               ({ dataUrl, name }) => {
-                                if (selected.type !== "image") return;
+                                if (selected.type !== "image") return false;
                                 const paintEl = {
                                   id: uid(),
                                   type: "image" as const,
@@ -467,13 +468,10 @@ export function StudioInspectorSelectedImageTools({
                                   groupId: selected.groupId,
                                 };
                                 const index = elements.findIndex((el) => el.id === selected.id);
-                                const insertAt = index >= 0 ? index + 1 : elements.length;
-                                const next = [
-                                  ...elements.slice(0, insertAt),
-                                  paintEl,
-                                  ...elements.slice(insertAt),
-                                ];
-                                if (!commit(next as typeof elements)) return;
+                                if (index < 0) return false;
+                                const next = elements.slice();
+                                next.splice(index + 1, 0, paintEl);
+                                if (!commit(next)) return false;
                                 setSelectedId(paintEl.id);
                               }
                             }

@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Super jednoduché rozloženie",
   "studio.mainMenu.item.view.density-full": "Úplné rozloženie",
   "studio.mainMenu.item.view.wide": "Zbaliť panely a rozšíriť",
+  "studio.mainMenu.item.view.wide.open": "Zobraziť panely",
   "studio.mainMenu.item.view.tools-companion": "Pracovný priestor s viacerými displejmi…",
   "studio.mainMenu.item.view.canvas-only": "Iba plátno",
   "studio.mainMenu.item.view.color-vision.unavailable": "Keď je transformácia zobrazenia uzamknutá, režim kontroly farebného videnia nemôžete zmeniť.",

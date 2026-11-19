@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Bố cục siêu đơn giản",
   "studio.mainMenu.item.view.density-full": "Bố cục đầy đủ",
   "studio.mainMenu.item.view.wide": "Thu gọn bảng điều khiển để mở rộng",
+  "studio.mainMenu.item.view.wide.open": "Hiện các bảng",
   "studio.mainMenu.item.view.tools-companion": "Không gian làm việc đa màn hình…",
   "studio.mainMenu.item.view.canvas-only": "Chỉ canvas",
   "studio.mainMenu.item.view.color-vision.unavailable": "Bạn không thể thay đổi chế độ nhìn màu trong khi quá trình chuyển đổi chế độ xem bị khóa.",

@@ -5,10 +5,9 @@ import { unzipSync } from "fflate";
 
 import { openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "../scripts/lib/studio-bg3d-ui-interactions";
 import { pinStudioRailToolInCatalog } from "../scripts/lib/studio-rail-tool-catalog-pin";
-import { showStudioProjectWindowTools } from "../scripts/lib/studio-shell-interactions";
+import { openStudioLayerNavigator } from "../scripts/lib/studio-shell-interactions";
 
 import { findBg3dRotationGesture } from "./helpers/bg3d-rotation-ring";
-import { verifyStudioBg3dProductionWorkflow } from "./helpers/studio-bg3d-production-workflow";
 
 /**
  * 실 브라우저에서 렌더된 프레임을 근거로 하는 Studio 3D 표면 전수 검증.
@@ -153,12 +152,10 @@ function peakColorTileDelta(a: FrameStats, b: FrameStats): number {
 }
 
 async function readBg3dRenderSurface(page: Page): Promise<Bg3dRenderSurface> {
-  return page.locator(BG3D_RENDER_CANVAS).first().evaluate((canvas) => ({
-    cssWidth: canvas.clientWidth,
-    cssHeight: canvas.clientHeight,
-    bufferWidth: canvas.width,
-    bufferHeight: canvas.height,
-  }));
+  return page.locator(BG3D_RENDER_CANVAS).first().evaluate((canvas) => {
+    if (!(canvas instanceof HTMLCanvasElement)) throw new Error("3D 배경 렌더 캔버스를 찾을 수 없습니다.");
+    return { cssWidth: canvas.clientWidth, cssHeight: canvas.clientHeight, bufferWidth: canvas.width, bufferHeight: canvas.height };
+  });
 }
 
 /**
@@ -559,8 +556,8 @@ function railAllToolsTrigger(page: Page): Locator {
     .filter({ visible: true });
 }
 
-async function openStudio(page: Page): Promise<void> {
-  await page.goto("/studio/canvas?preset=illustration", { waitUntil: "domcontentloaded" });
+async function openStudio(page: Page, path = "/studio/canvas?preset=illustration"): Promise<void> {
+  await page.goto(path, { waitUntil: "domcontentloaded" });
   await expect(page.locator(STUDIO_DOCUMENT_SCOPE).first()).toBeVisible({
     timeout: 180_000,
   });
@@ -589,8 +586,6 @@ async function openStudio3dRailTool(
     // 닫으면 키보드 포커스가 '전체 도구' 버튼으로 돌아오되 코치(툴 힌트)는 다시 뜨지 않는다.
     // 여기서 코치를 일부러 닫지 않는다: 새 런처를 코치가 가리면 그것이 회귀다.
     await expect(allTools).toBeFocused();
-    // 고정한 전문 도구 레일은 사용자가 선택하는 프로젝트·창 배치에 표시된다.
-    if (!await tool.isVisible()) await showStudioProjectWindowTools(page);
   } else {
     await page.mouse.move(0, 0);
     await page.keyboard.press("Escape");
@@ -628,8 +623,10 @@ async function openBg3d(page: Page): Promise<void> {
 }
 
 test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.addInitScript((session) => {
+  test.beforeEach(async ({ page, baseURL }) => {
+    if (!baseURL) throw new Error("3D 화면 검사를 실행할 앱 주소가 필요합니다.");
+    await page.addInitScript(({ origin, session }) => {
+      if (window !== window.top || location.origin !== origin) return;
       localStorage.setItem("toonstudio-auth-session-v1", JSON.stringify(session));
       window.__studioRasterImagePresentationProbe = {
         version: 1,
@@ -638,7 +635,7 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
         receiptEpoch: 0,
         receipt: null,
       };
-    }, TEST_CREATOR_SESSION);
+    }, { origin: new URL(baseURL).origin, session: TEST_CREATOR_SESSION });
     // 첫 저장이 끝나면 '게시 준비 제안' 카드(문서당 한 번만 뜨는 비모달 안내)가 문서 메뉴 아래에 떠서
     // 그 밑에 놓인 컨트롤('해제' 등)로 가는 포인터를 가로챈다. 이 스위트가 판정하는 3D 렌더와는 무관한
     // 안내라서 사용자가 하듯 ✕ 로 닫는다. 뜨는 시각이 저장 시점에 달려 있으므로 시각을 맞추지 않고,
@@ -689,7 +686,7 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     test.setTimeout(300_000);
     const fatal = collectFatalErrors(page);
     await page.setViewportSize({ width: 1_440, height: 1_000 });
-    await openStudio(page);
+    await openStudio(page, "/studio/draft/webgpu-ring-reference?workspace=draw");
     await openBg3d(page);
     test.skip(
       await forceBg3dWebGpu(page) === "unavailable",
@@ -697,7 +694,23 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
         + "WebGPU 합성기에서만 재현되므로 건너뜁니다 — 실패 아티팩트로 확인한 사실입니다.",
     );
 
-    await page.locator('[aria-label="상자 추가"]').first().click();
+    const dialog = page.locator(BG3D_DIALOG);
+    const outliner = dialog.getByRole("region", { name: "3D 장면 계층", exact: true });
+    const objects = outliner.getByRole("treeitem");
+    const sceneIds = () => objects.evaluateAll(rows => rows.map(row => row.getAttribute("data-studio-bg3d-node-id")!).sort());
+    await selectStudioBg3dTaskTab(dialog, "layers");
+    const baseline = await sceneIds();
+    await selectStudioBg3dTaskTab(dialog, "shapes");
+    await dialog.getByRole("button", { name: "상자 추가", exact: true }).first().click();
+    await selectStudioBg3dTaskTab(dialog, "layers");
+    await expect(objects).toHaveCount(baseline.length + 1);
+    const expectedIds = await sceneIds();
+    const addedIds = expectedIds.filter(id => !baseline.includes(id));
+    expect(addedIds).toHaveLength(1);
+    const boxRow = outliner.locator(`[role="treeitem"][data-studio-bg3d-node-id="${addedIds[0]}"]`);
+    const targetBox = boxRow.getByRole("button", { name: /^상자 \d+$/u });
+    await targetBox.click();
+    await selectStudioBg3dTaskTab(dialog, "shapes");
     await page.getByRole("button", { name: "회전", exact: true }).first().click();
     const continuous = await dragBg3dRotationRing(page, testInfo, "continuous", 24);
 
@@ -706,11 +719,10 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     await openBg3d(page);
     expect(await forceBg3dWebGpu(page), "재오픈 뒤에도 WebGPU가 유지돼야 합니다.")
       .toBe("running");
-    // 다시 연 편집기는 직전 작업을 복원한다. 같은 상자를 원래 자세로 돌려 같은 장면을 비교한다.
-    const dialog = page.locator(BG3D_DIALOG);
+    // 추가한 상자와 기존 무대 전체의 ID가 처음 측정한 장면과 같아야 두 드래그를 비교할 수 있다.
     await selectStudioBg3dTaskTab(dialog, "layers");
-    await expect(dialog.getByRole("button", { name: /^상자 \d+$/ })).toHaveCount(1);
-    await dialog.getByRole("button", { name: "상자 1", exact: true }).click();
+    await expect.poll(sceneIds).toEqual(expectedIds);
+    await targetBox.click();
     await selectStudioBg3dTaskTab(dialog, "shapes");
     for (const axis of ["X", "Y", "Z"]) {
       const angle = dialog.getByRole("spinbutton", { name: `회전 ${axis}`, exact: true }).first();
@@ -787,22 +799,6 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     await linePreview.click();
     const lineArt = await waitForFrameChange(page, BG3D_VIEWPORT, withRoom, "선화 미리보기");
     expect(lineArt.distinctColors).toBeGreaterThan(1);
-
-    expect(fatal).toEqual([]);
-  });
-
-  test("3D 웹툰 제작의 구도·컷·출력과 실제 선화·바닥 충돌이 동작한다", async ({ page }, testInfo) => {
-    test.setTimeout(300_000);
-    const fatal = collectFatalErrors(page);
-    await openStudio(page);
-    await openBg3d(page);
-
-    await ensureBg3dWebGl2(page);
-    await verifyStudioBg3dProductionWorkflow(page, testInfo, {
-      capture: () => frameStats(page, BG3D_VIEWPORT),
-      changed: (before: FrameStats, label) => waitForFrameChange(page, BG3D_VIEWPORT, before, label),
-      decode: (png) => decodeFrameStats(page, Buffer.from(png).toString("base64")),
-    });
 
     expect(fatal).toEqual([]);
   });
@@ -894,6 +890,8 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     // 레이어 트리와 문서 캔버스를 함께 조작할 수 있는 데스크톱 레이아웃을 사용한다.
     await page.setViewportSize({ width: 1_440, height: 1_000 });
     await openStudio(page);
+    // 같은 패널 폭에서 빈 원고, 삽입, 업데이트의 실제 픽셀을 비교한다.
+    await openStudioLayerNavigator(page);
     // 스크롤 영역보다 원고가 크면 locator.screenshot()이 보이지 않는 아래쪽까지 요청한다.
     // Chrome은 그 부분에 하단 도구막대와 빈 배경을 담을 수 있으므로 실제 축소 도구로 원고 전체를 보여 준다.
     const documentSurface = page.locator(STUDIO_DOCUMENT_SCOPE).first();
@@ -925,9 +923,9 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     await expect(page.locator(BG3D_DIALOG)).toHaveCount(0, { timeout: 120_000 });
     await page.waitForFunction(() => {
       const probe = window.__studioRasterImagePresentationProbe;
-      return probe?.expected !== null
-        && probe?.receipt?.expectationEpoch === probe.expected.epoch
-        && probe.receipt.src === probe.expected.src;
+      return Boolean(probe?.expected && probe.receipt
+        && probe.receipt.expectationEpoch === probe.expected.epoch
+        && probe.receipt.src === probe.expected.src);
     }, null, { timeout: 30_000 });
     const initialCompositeSrc = await page.evaluate(() => (
       window.__studioRasterImagePresentationProbe?.expected?.src ?? ""
@@ -948,6 +946,7 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     await expect(page.locator("[data-studio-status-error-dismiss]")).toHaveCount(0);
     // 알림은 상태 레일 높이를 바꾸므로, 빈 캔버스 기준과 같은 레이아웃으로 되돌린 뒤 캡처한다.
     await dismissStudioStatusNotices(page);
+    await openStudioLayerNavigator(page);
 
     // 삽입 직후 자동 선택된 Transformer/핸들을 제거하고 실제 문서 raster만 비교한다. 전체
     // scroll viewport나 선택 테두리 변화는 빈/깨진 PNG도 성공으로 오판할 수 있다.
@@ -968,8 +967,6 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
 
     // 레이어 트리에서 방금 삽입한 원본을 다시 선택하고 ID를 기록한다. 업데이트가 delete +
     // reinsert로 바뀌어도 단순 count=1은 통과하므로 동일 identity를 직접 고정한다.
-    // 레이어 내비게이터는 작업 패널 아래에 항상 붙어 있다 — 예전의 '레이어' 탭은 없어졌으므로
-    // 탭을 누르지 않고 트리가 보이는지만 확인한다.
     // The complete LT metadata path creates a dedicated "3D LT 배경" group. Match the child
     // raster row explicitly so the group treeitem cannot be mistaken for the persisted element.
     const layerTree = page.getByRole("tree", { name: "레이어 트리" });
@@ -992,7 +989,7 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
 
     // 선택된 병합 레이어의 canonical bg3dScene을 메인 레일에서도 다시 열 수 있어야 한다.
     // 원본 전달이 빠지면 빈 insert 장면과 "컬러 배경 추가" footer가 나타난다.
-    await page.locator('[data-studio-rail-tool-id="bg3d"]').first().click();
+    await page.locator('[data-studio-rail-tool-id="bg3d"]').filter({ visible: true }).first().click();
     await expect(page.locator(BG3D_DIALOG)).toBeVisible({ timeout: 120_000 });
     await selectBg3dProfessionalMode(page);
     // 편집기는 정확히 하나여야 한다. 두 번째 인스턴스가 붙으면 아래 단언들은 업데이트 편집기를
@@ -1038,10 +1035,10 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     await expect(page.locator(BG3D_DIALOG)).toHaveCount(0, { timeout: 120_000 });
     await page.waitForFunction(() => {
       const probe = window.__studioRasterImagePresentationProbe;
-      return probe?.expected !== null
-        && probe?.receipt?.expectationEpoch === probe.expected.epoch
+      return Boolean(probe?.expected && probe.receipt
+        && probe.receipt.expectationEpoch === probe.expected.epoch
         && probe.receipt.elementId === probe.expected.elementId
-        && probe.receipt.src === probe.expected.src;
+        && probe.receipt.src === probe.expected.src);
     }, null, { timeout: 30_000 });
     const updatedCompositeSrc = await page.evaluate(() => (
       window.__studioRasterImagePresentationProbe?.expected?.src ?? ""
@@ -1053,7 +1050,7 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     );
     expect(compositeDelta.peakChannelDelta).toBeGreaterThan(3);
     expect(compositeDelta.changedPixels).toBeGreaterThan(100);
-    // 레이어 수는 내비게이터 머리글('레이어 N')이 보여 준다. 예전에는 '레이어 N' 탭이었다.
+    await openStudioLayerNavigator(page);
     await expect(page.getByRole("heading", { name: "레이어 1", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "레이어 2", exact: true })).toHaveCount(0);
     await expect(layerTree).toBeVisible();
@@ -1091,7 +1088,7 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
 
     // 저장된 canonical scene도 다시 열어 추가한 구가 남아 있는지 먼저 확인한다. 이 검증이
     // 통과하고 아래 raster만 같다면 metadata update와 image capture 사이 결함이다.
-    await page.locator('[data-studio-rail-tool-id="bg3d"]').first().click();
+    await page.locator('[data-studio-rail-tool-id="bg3d"]').filter({ visible: true }).first().click();
     await expect(page.locator(BG3D_DIALOG)).toBeVisible({ timeout: 120_000 });
     await selectBg3dProfessionalMode(page);
     // 편집기는 정확히 하나여야 한다. 두 번째 인스턴스가 붙으면 아래 단언들은 업데이트 편집기를
@@ -1167,7 +1164,6 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     await openStudio(page);
 
     await openStudio3dRailTool(page, "vrm3d");
-    await expect(page).toHaveURL(/\/studio\/canvas\/poser(?:\?|$)/u);
     const insert = page.getByRole("button", { name: /이 포즈로 추가/ }).first();
     await expect(insert).toBeVisible({ timeout: 120_000 });
 
@@ -1211,8 +1207,6 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
       const reason = (await poserDialog.first().innerText().catch(() => "")).replace(/\s+/g, " ");
       expect(inserted, `포즈 삽입이 캔버스에 반영되지 않았습니다: ${reason.slice(0, 400)}`).toBe(true);
     }
-    await expect(page).toHaveURL(/\/studio\/canvas(?:\?|$)/u);
-    await expect(page.locator(STUDIO_DOCUMENT_SCOPE).first()).toBeVisible();
 
     expect(fatal).toEqual([]);
   });

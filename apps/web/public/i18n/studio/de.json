@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Super einfaches Layout",
   "studio.mainMenu.item.view.density-full": "Gesamtlayout",
   "studio.mainMenu.item.view.wide": "Bedienfelder einklappen (Breitansicht)",
+  "studio.mainMenu.item.view.wide.open": "Bedienfelder einblenden",
   "studio.mainMenu.item.view.tools-companion": "Arbeitsbereich mit mehreren Displays…",
   "studio.mainMenu.item.view.canvas-only": "Nur Leinwand",
   "studio.mainMenu.item.view.color-vision.unavailable": "Der Farbsichtprüfungsmodus kann nicht geändert werden, solange die Ansichtstransformation gesperrt ist.",

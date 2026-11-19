@@ -310,9 +310,14 @@ export function deriveCharacterProfileDraftFromMoodboard(
 
 function appendLine(existing: string, addition: string): string {
   if (!addition.trim()) return existing;
-  if (!existing.trim()) return addition;
-  if (existing.includes(addition)) return existing;
-  return `${existing}\n${addition}`;
+  const known = new Set(existing.split("\n").map(line => line.trim()));
+  const added = addition.split("\n").filter(line => {
+    const key = line.trim();
+    if (!key || known.has(key)) return false;
+    known.add(key);
+    return true;
+  });
+  return added.length ? [existing, ...added].filter(Boolean).join("\n") : existing;
 }
 
 /**

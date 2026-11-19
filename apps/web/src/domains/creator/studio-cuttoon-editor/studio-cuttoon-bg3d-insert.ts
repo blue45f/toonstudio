@@ -75,12 +75,10 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
     setStatusNotice(null);
     const sixPass = !!result.bg3dScene.output.sixPassLt;
     const pinnedVrm = result.bg3dScene.pinnedVersionedCut?.source.linkedVrm;
-    if (pinnedVrm) {
-      const expectedCastScope = workId ? studioTeamCutVrmDocumentScope(workId, activePage.id) : studioCutVrmDocumentScope(cutDocumentKey, activePage.id);
-      if (pinnedVrm.documentScope !== expectedCastScope) {
-        setError("고정한 VRM 컷과 현재 원고·페이지가 달라 적용하지 않았습니다.");
-        return false;
-      }
+    const expectedCastScope = workId ? studioTeamCutVrmDocumentScope(workId, activePage.id) : studioCutVrmDocumentScope(cutDocumentKey, activePage.id);
+    if (pinnedVrm && pinnedVrm.documentScope !== expectedCastScope) {
+      setError("고정한 VRM 컷과 현재 원고·페이지가 달라 적용하지 않았습니다.");
+      return false;
     }
     if (pinnedVrm && workId && !sixPass) {
       const ticket = bg3dMutationTicketRef.current;
@@ -105,8 +103,8 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       }
     }
     const originalTargetId = targetElementId;
-    const cutTicket = bg3dMutationTicketRef?.current;
-    const cutAccessCurrent = () => Boolean(cutTicket && bg3dMutationTicketRef?.current === cutTicket && canApplyStudioMutation(cutTicket)
+    const cutTicket = bg3dMutationTicketRef.current;
+    const cutAccessCurrent = () => Boolean(cutTicket && bg3dMutationTicketRef.current === cutTicket && canApplyStudioMutation(cutTicket)
       && currentPageIdRef.current === activePage.id && host.activeElementsRef?.current === elements && host.readCurrentPage?.() === activePage
       && !masterEditMode && !collaborationDocumentLocked && !pageEditLocked
       && (workId ? studioAuthUserId && workId === authorizedWorkAssetScopeId && studioCrdtOperationSyncReady
@@ -173,7 +171,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
           bg3dLtBundleId: undefined,
           bg3dLtRole: undefined,
           bg3dLtRenderMode: undefined,
-          name: "3D LT 배경 · 병합",
+          name: target.name ?? "3D LT 배경 · 병합",
         })) return false;
         // Match the other destructive raster replacements: browser verification must be able to
         // distinguish a successful document commit from the exact new PNG reaching the visible
@@ -212,7 +210,11 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       return materializeBg3dMergedComposite("고정 VRM 컬러 레이어에는 매직 마스크를 함께 저장할 수 없습니다.");
     }
     // 6패스는 봉인된 분리 본문 경로를 사용하고, 일반 LT의 기존 병합 동작을 유지한다.
-    if (isRealtimeTeamSession && !sixPass) {
+    const localTarget = targetElementId && elementById.get(targetElementId);
+    const keepLocalPasses = isRealtimeTeamSession && !sixPass && !masterEditMode && !workId
+      && localTarget?.type === "image" && localTarget.bg3dLtRenderMode === "separated"
+      && result.sharedStageMutation?.kind !== "unlink" && canStoreLocalVrmCut?.() === true;
+    if (isRealtimeTeamSession && !sixPass && !keepLocalPasses) {
       const realtimePlan = planStudioBg3dRealtimeMergedApply({
         result,
         elements,
@@ -555,6 +557,9 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
           prepared,
           apply: () => {
             const mutationTicket = bg3dMutationTicketRef.current;
+            if (keepLocalPasses && !canStoreLocalVrmCut()) {
+              throw new Error("공동 편집이 시작되어 분리 레이어를 유지한 채 갱신을 멈췄어요. 원고에서 컷을 다시 확인해 주세요.");
+            }
             if (
               !mutationTicket || (pinnedVrm && !cutAccessCurrent())
               || !canApplyStudioMutation(mutationTicket)

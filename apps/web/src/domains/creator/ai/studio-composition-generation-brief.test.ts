@@ -6,7 +6,7 @@ import {
   type CompositionGenerationSnapshot,
 } from "./studio-composition-generation-brief";
 
-const BASE: CompositionGenerationSnapshot = Object.freeze({
+const BASE = Object.freeze({
   characterId: "char-hero-01",
   characterName: "주인공",
   characterAppearance: ["검은 단발", "교복 재킷"],
@@ -20,7 +20,7 @@ const BASE: CompositionGenerationSnapshot = Object.freeze({
   }),
   lightingPresetId: "twilight",
   environmentId: "school_classroom",
-});
+} satisfies CompositionGenerationSnapshot);
 
 describe("buildCompositionGenerationBrief", () => {
   it("스냅샷을 결정적 프롬프트와 일관성 키로 조립한다", () => {

@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Superenkel layout",
   "studio.mainMenu.item.view.density-full": "Full layout",
   "studio.mainMenu.item.view.wide": "Skjul paneler for bredere visning",
+  "studio.mainMenu.item.view.wide.open": "Vis paneler",
   "studio.mainMenu.item.view.tools-companion": "Arbeidsområde med flere skjermer...",
   "studio.mainMenu.item.view.canvas-only": "Kun lerret",
   "studio.mainMenu.item.view.color-vision.unavailable": "Du kan ikke endre fargesynsmodus mens visningstransformasjonen er låst.",

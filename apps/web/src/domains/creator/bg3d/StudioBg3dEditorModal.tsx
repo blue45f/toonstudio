@@ -6,6 +6,7 @@ import { SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { useCallback, useReducer, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 import { useStudio3dVisualViewport } from "../studio-3d-ui/useStudio3dVisualViewport";
 import "./studio-bg3d-mobile-workspace.css";
 import "../studio-3d-ui/studio-3d-illustrated-chrome.css";
@@ -143,24 +144,26 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
     >
       <div className="mx-auto flex h-full max-h-full max-w-[1800px] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_24px_80px_oklch(0.05_0.01_70/0.55)]">
         <header data-bg3d-workspace-header="true" className="flex flex-wrap shrink-0 items-center justify-between gap-2 border-b border-line px-3 py-2 sm:flex-nowrap sm:items-start sm:gap-3 sm:px-5 sm:py-3">
-          <div className="min-w-0">
-            <p className="eyebrow flex items-center gap-1.5 text-accent">
-              <Sparkles size={14} aria-hidden />
-              {translateCurrentStaticSourceText(
-                "domains.creator.bg3d.StudioBg3dEditorModal",
-                "ko",
-                "웹툰 제작 도우미",
-              )}
-            </p>
-            <h2
-              id="studio-bg3d-dialog-title"
-              className="mt-0.5 truncate text-base font-bold tracking-tight text-fg sm:mt-1 sm:text-xl"
-            >
-              {title}
-            </h2>
-            <p id="studio-bg3d-dialog-description" className="mt-1 hidden line-clamp-1 text-xs text-fg-3 min-[480px]:block">
-              {description}
-            </p>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <StudioToolArtwork tool="bg3d" className="[--studio-tool-art-size:28px] sm:[--studio-tool-art-size:38px]" />
+            <div className="min-w-0">
+              <p className="eyebrow text-fg-2">
+                {translateCurrentStaticSourceText(
+                  "domains.creator.bg3d.StudioBg3dEditorModal",
+                  "ko",
+                  "웹툰 제작 도우미",
+                )}
+              </p>
+              <h2
+                id="studio-bg3d-dialog-title"
+                className="mt-0.5 truncate text-base font-bold tracking-tight text-fg sm:mt-1 sm:text-xl"
+              >
+                {title}
+              </h2>
+              <p id="studio-bg3d-dialog-description" className="mt-1 hidden line-clamp-1 text-xs text-fg-3 min-[480px]:block">
+                {description}
+              </p>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0 sm:flex-nowrap sm:gap-2">
             {h.readinessState ? (
@@ -175,8 +178,9 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
             <a
               href="/studio/3d/dcc/model"
               data-testid="bg3d-open-hybrid-dcc-link"
-              className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent md:inline-flex"
+              className="hidden min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent md:inline-flex"
             >
+              <StudioToolArtwork tool="model" className="[--studio-tool-art-size:22px]" />
               정밀 모델러 (DCC)
             </a>
             <div

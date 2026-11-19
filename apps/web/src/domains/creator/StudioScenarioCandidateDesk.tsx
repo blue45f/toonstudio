@@ -72,7 +72,9 @@ export function StudioScenarioCandidateDesk({
   onSelectCandidate,
   onApproveCandidate,
 }: StudioScenarioCandidateDeskProps) {
-  const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
+  const [manualIndexes, setSelectedIndexes] = useState<number[] | null>(null);
+  const selectedIndexes = useMemo(() => manualIndexes?.filter(index => index < items.length)
+    ?? inspectStudioScenarioImageGeneration(items).indexes, [items, manualIndexes]);
   const [variants, setVariants] = useState<StudioScenarioImageVariantCount>(() =>
     preferredVariantCount(items),
   );
@@ -83,14 +85,6 @@ export function StudioScenarioCandidateDesk({
     useState<StudioScenarioImageVariationStrategy>(() =>
       preferredVariationStrategy(items),
     );
-
-  useEffect(() => {
-    setSelectedIndexes((current) => {
-      const valid = current.filter((index) => index >= 0 && index < items.length);
-      if (valid.length > 0 || current.length > 0) return valid;
-      return items.flatMap((item, index) => (item.imageDataUrl ? [] : [index]));
-    });
-  }, [items]);
 
   const importedVariantPreference = preferredVariantCount(items);
   const importedQualityPreference = preferredQualityProfile(items);
@@ -136,11 +130,9 @@ export function StudioScenarioCandidateDesk({
       : disabledReason;
 
   const toggleIndex = (index: number) => {
-    setSelectedIndexes((current) =>
-      current.includes(index)
-        ? current.filter((candidate) => candidate !== index)
-        : [...current, index].sort((left, right) => left - right),
-    );
+    setSelectedIndexes(selected.has(index)
+      ? selectedIndexes.filter(candidate => candidate !== index)
+      : [...selectedIndexes, index].sort((left, right) => left - right));
   };
 
   return (

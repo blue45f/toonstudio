@@ -2,14 +2,14 @@ import type {
   StudioAiEpisodeProductionPlan,
   StudioAiVariantCount,
 } from "./studio-ai-episode-production-director";
-import type { ScenarioSceneInput } from "../studio-scenario-layout";
+import type { ScenarioReviewedArtwork, ScenarioSceneInput } from "../studio-scenario-layout";
 import type { ScenarioBeatType } from "../studio-story-beats";
 import type {
   StudioScenarioImageQualityProfile,
   StudioScenarioImageVariationStrategy,
 } from "./studio-scenario-candidate-workflow";
 
-export interface StudioAiComicComposerScene extends ScenarioSceneInput {
+export interface StudioAiComicComposerScene extends ScenarioSceneInput, ScenarioReviewedArtwork {
   readonly sourceSceneNumber: number;
   readonly sourceCutNumber: number;
 }

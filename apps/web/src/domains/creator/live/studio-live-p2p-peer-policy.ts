@@ -12,6 +12,7 @@ import type { StudioPeerCapability } from "./studio-peer-fabric-protocol";
 interface StudioLiveP2pInkInboundWindow { startedAt: number; packetCount: number; byteCount: number; }
 
 export interface StudioLiveP2pPeerLink {
+  readonly localAddress: string;
   readonly sessionId: string;
   participant: StudioLiveParticipant;
   connection: StudioLiveP2pRtcPeerConnection;

@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Super oddiy tartib",
   "studio.mainMenu.item.view.density-full": "To'liq tartib",
   "studio.mainMenu.item.view.wide": "Panellarni yig'ib, kengaytirish",
+  "studio.mainMenu.item.view.wide.open": "Panellarni koʻrsatish",
   "studio.mainMenu.item.view.tools-companion": "Ko‘p displeyli ish maydoni…",
   "studio.mainMenu.item.view.canvas-only": "Faqat kanvas",
   "studio.mainMenu.item.view.color-vision.unavailable": "Ko'rinish o'zgartirishi qulflanganda rangni ko'rish tekshiruvi rejimini o'zgartirib bo'lmaydi.",

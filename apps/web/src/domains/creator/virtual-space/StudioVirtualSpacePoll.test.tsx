@@ -41,6 +41,20 @@ describe("StudioVirtualSpacePoll", () => {
     expect(screen.getByPlaceholderText(/다음 스프린트 주제/)).toBeTruthy();
   });
 
+  it("먼저 열어 둔 패널에서도 새 투표의 남은 시간이 설정 시간을 넘지 않는다", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(1_700_000_000_000);
+      const panel = render(<StudioVirtualSpacePoll poll={null} {...baseProps} />);
+      vi.setSystemTime(1_700_000_030_000);
+      const poll = { ...makePoll(), createdAt: Date.now(), deadlineMs: Date.now() + 15 * 60_000 };
+      panel.rerender(<StudioVirtualSpacePoll poll={poll} {...baseProps} />);
+      expect(screen.getByRole("timer").textContent).toContain("15분 0초 남음");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("투표 카드를 렌더링하고 선택지를 보여준다", () => {
     const poll = makePoll();
     render(<StudioVirtualSpacePoll poll={poll} {...baseProps} />);

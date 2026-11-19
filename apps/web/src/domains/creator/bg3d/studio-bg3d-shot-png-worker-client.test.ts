@@ -320,7 +320,7 @@ describe("Studio BG3D shot PNG Worker boundary", () => {
     const startupOutcome = startup.catch((error: unknown) => error);
     await vi.advanceTimersByTimeAsync(100);
     const startupError = await startupOutcome;
-    expect(startupError).toMatchObject({ code: "timeout", name: "TimeoutError" });
+    expect(startupError).toMatchObject({ code: "timeout", phase: "startup", name: "TimeoutError" });
 
     const encodeWorker = new FakeWorker();
     const timed = encodeStudioBg3dShotPngInWorker([layer()], {
@@ -331,8 +331,51 @@ describe("Studio BG3D shot PNG Worker boundary", () => {
     const timedOutcome = timed.catch((error: unknown) => error);
     await vi.advanceTimersByTimeAsync(100);
     const timedError = await timedOutcome;
-    expect(timedError).toMatchObject({ code: "timeout", name: "TimeoutError" });
+    expect(timedError).toMatchObject({ code: "timeout", phase: "encode", name: "TimeoutError" });
     expect(encodeWorker.terminateCalls).toBe(1);
+  });
+
+  it("배치 워커의 늦은 준비는 기존 전체 제한 안에서 같은 래스터 스냅샷로 한 번만 전송한다", async () => {
+    vi.useFakeTimers();
+    const worker = new FakeWorker();
+    const pixels = layer();
+    const factory = vi.fn(() => worker);
+    const pending = encodeStudioBg3dShotPngInWorker([pixels], {
+      workerFactory: factory, shareStartupBudget: true, startupTimeoutMs: 100, timeoutMs: 200,
+    });
+    await vi.advanceTimersByTimeAsync(130);
+    expect(worker.requests).toHaveLength(0);
+    emitReady(worker);
+    const request = worker.requests[0];
+    if (!request) throw new Error("전송된 패스 없음");
+    const output = png(request.width, request.height);
+    worker.emit(resultFor(request, output));
+    await expect(pending).resolves.toBe(output);
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(pixels.data.byteLength).toBeGreaterThan(0);
+    expect(worker.terminateCalls).toBe(1);
+  });
+
+  it.each([
+    { readyAt: null, deadline: 300, phase: "startup" },
+    { readyAt: 25, deadline: 225, phase: "encode" },
+    { readyAt: 240, deadline: 300, phase: "encode" },
+  ])("준비 $readyAt ms에서 배치 PNG의 $phase 제한 $deadline ms를 지킨다", async ({ readyAt, deadline, phase }) => {
+    vi.useFakeTimers();
+    const worker = new FakeWorker();
+    const pending = encodeStudioBg3dShotPngInWorker([layer()], {
+      workerFactory: () => worker, shareStartupBudget: true, startupTimeoutMs: 100, timeoutMs: 200,
+    }).catch((error: unknown) => error);
+    if (readyAt !== null) {
+      await vi.advanceTimersByTimeAsync(readyAt);
+      emitReady(worker);
+    }
+    await vi.advanceTimersByTimeAsync(deadline - (readyAt ?? 0) - 1);
+    expect(worker.terminateCalls).toBe(0);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await pending).toMatchObject({ code: "timeout", phase });
+    expect(worker.terminateCalls).toBe(1);
+    expect(worker.messages.size).toBe(0);
   });
 
   it("does not allocate a Worker for an already-aborted request", async () => {

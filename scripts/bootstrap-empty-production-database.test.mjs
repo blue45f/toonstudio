@@ -522,6 +522,7 @@ describe("bootstrap SQL and repository contract", () => {
       "0128_admin_business_plan_access",
       "0129_studio_work_vrm_cut",
       "0130_studio_bg3d_vrm_bundle",
+      "0131_studio_space_poll",
     ]);
     expect(contract.fingerprint).toMatch(/^[0-9a-f]{64}$/u);
     expect(contract.fingerprintPaths).toEqual(expect.arrayContaining([

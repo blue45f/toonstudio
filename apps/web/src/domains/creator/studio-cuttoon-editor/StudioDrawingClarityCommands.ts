@@ -4,20 +4,36 @@ import {
   type StudioCommandExecutionMenuGroup,
 } from "../studio-command-execution-registry";
 
-const SAVED_LAYOUT_COMMANDS = new Set([
-  "window.left-panel", "window.right-panel", "window.collapse-side-panels",
-  "window.command-bar", "window.page-sequence", "file.project-tools",
-]);
+export interface StudioDrawingCommandPresentation {
+  readonly showSavedLayout: () => void;
+  readonly openInspector: () => void;
+  readonly openPages: () => void;
+  readonly closePanels: () => void;
+}
 
-/** 검색의 실행 권한과 원본 명령은 유지하고, 목적지가 보이도록 UI만 먼저 연다. */
+/** 메뉴와 검색이 같은 원고 패널에서 원래 명령을 한 번만 실행한다. */
+export function studioDrawingCommandDestination(id: string | undefined, ui: StudioDrawingCommandPresentation) {
+  switch (id) {
+    case "window.left-panel":
+    case "window.page-sequence": return ui.openPages;
+    case "window.right-panel":
+    case "canvas.document-settings":
+    case "view.navigator":
+    case "filter.levels":
+    case "filter.tone-curve": return ui.openInspector;
+    case "window.collapse-side-panels": return ui.closePanels;
+    case "window.command-bar":
+    case "file.project-tools": return ui.showSavedLayout;
+    default: return undefined;
+  }
+}
+
 export function createStudioDrawingClarityCommandBindings(
   groups: readonly StudioCommandExecutionMenuGroup[],
-  presentation: { readonly showSavedLayout: () => void; readonly openInspector: () => void },
+  presentation: StudioDrawingCommandPresentation,
 ): readonly StudioCommandExecutionBinding[] {
   return createStudioCommandExecutionBindings(groups).map((binding) => {
-    const reveal = SAVED_LAYOUT_COMMANDS.has(binding.commandId)
-      ? presentation.showSavedLayout
-      : binding.commandId === "view.navigator" ? presentation.openInspector : null;
-    return reveal ? { ...binding, execute: () => { reveal(); binding.execute(); } } : binding;
+    const reveal = studioDrawingCommandDestination(binding.commandId, presentation);
+    return reveal && !binding.disabled ? { ...binding, execute: () => { reveal(); binding.execute(); } } : binding;
   });
 }

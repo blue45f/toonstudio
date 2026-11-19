@@ -3,7 +3,8 @@
   let installPrompt = null;
   let installButton = null;
   let statusNode = null;
-  let manualMode = false;
+  let canLaunch = false;
+  let helpNode = null;
 
   const isIos = () => /iPad|iPhone|iPod/u.test(navigator.userAgent)
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -16,69 +17,85 @@
     if (statusNode) statusNode.textContent = message;
   };
 
-  const showReady = () => {
-    manualMode = false;
-    if (!installButton) return;
-    installButton.disabled = false;
-    installButton.textContent = 'ToonStudio Draw 설치';
-    setStatus('전체 툰스튜디오와 같은 엔진을 사용하는 드로잉 전용 앱 창으로 설치합니다.');
+  const hideHelp = () => {
+    if (helpNode) helpNode.hidden = true;
+    installButton?.removeAttribute('aria-expanded');
+    installButton?.removeAttribute('aria-controls');
   };
 
-  const showManual = () => {
-    manualMode = true;
+  const showReady = () => {
     if (!installButton) return;
+    hideHelp();
+    installButton.disabled = false;
+    installButton.textContent = '툰스튜디오 드로잉 설치';
+    setStatus('설치를 누르면 브라우저의 설치 창이 열립니다.');
+  };
+
+  const showManual = (expanded = false) => {
+    if (!installButton || !helpNode) return;
     installButton.disabled = false;
     installButton.textContent = isIos() ? '홈 화면에 추가 방법' : '브라우저 설치 방법';
-    setStatus(isIos()
-      ? 'Safari 공유 버튼 → ‘홈 화면에 추가’를 선택하세요. 설치 후 같은 Studio 드로잉 엔진이 앱 UI로 열립니다.'
-      : '브라우저 메뉴의 ‘앱 설치’, ‘바로가기 설치’ 또는 ‘Dock에 추가’를 사용해 주세요.');
+    installButton.setAttribute('aria-controls', helpNode.id);
+    installButton.setAttribute('aria-expanded', String(expanded));
+    helpNode.textContent = isIos()
+      ? 'Safari에서 공유 버튼을 누른 뒤 ‘홈 화면에 추가’를 선택하세요.'
+      : '브라우저 메뉴에서 ‘앱 설치’, ‘바로가기 설치’ 또는 ‘Dock에 추가’를 선택하세요.';
+    helpNode.hidden = !expanded;
+    setStatus('이 브라우저에서는 메뉴에서 설치할 수 있습니다.');
+  };
+
+  const showLaunch = (message) => {
+    canLaunch = true;
+    installPrompt = null;
+    if (!installButton) return;
+    hideHelp();
+    installButton.disabled = false;
+    installButton.textContent = '작품 보관함 열기';
+    setStatus(message);
   };
 
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
+    if (canLaunch) return;
     installPrompt = event;
     showReady();
   });
 
   window.addEventListener('appinstalled', () => {
-    installPrompt = null;
-    if (installButton) {
-      installButton.disabled = false;
-      installButton.textContent = '드로잉 시작';
-    }
-    setStatus('ToonStudio Draw 설치가 완료되었습니다. 작업 데이터와 엔진은 전체 Studio와 동일합니다.');
+    showLaunch('설치를 마쳤습니다. 홈 화면에서 작품 보관함을 열 수 있습니다.');
   });
 
-  document.addEventListener('DOMContentLoaded', async () => {
+  document.addEventListener('DOMContentLoaded', () => {
     installButton = document.getElementById('install-app');
     statusNode = document.getElementById('install-status');
+    helpNode = document.getElementById('install-help');
     if (!installButton || !statusNode) return;
 
     if ('serviceWorker' in navigator) {
-      try {
-        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-      } catch {
-        setStatus('오프라인 앱 셸 준비를 확인하지 못했습니다. 온라인 상태에서 다시 시도해 주세요.');
-      }
+      void navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+        const offlineStatus = document.getElementById('offline-status');
+        if (offlineStatus) {
+          offlineStatus.textContent = '오프라인 작업을 준비하지 못했습니다. 연결을 확인한 뒤 새로고침하세요.';
+          offlineStatus.hidden = false;
+        }
+      });
     }
 
-    if (isStandalone()) {
-      installButton.disabled = false;
-      installButton.textContent = '드로잉 시작';
-      setStatus('현재 앱 창에서 열려 있습니다.');
+    if (canLaunch || isStandalone()) {
+      showLaunch('작품 보관함에서 원고를 선택하세요.');
     } else if (installPrompt) {
       showReady();
-    } else if (isIos()) {
+    } else {
       showManual();
     }
 
     installButton.addEventListener('click', async () => {
-      if (isStandalone() || installButton.textContent === '드로잉 시작') {
+      if (canLaunch) {
         window.location.href = DRAW_START_URL;
         return;
       }
       if (!installPrompt) {
-        showManual();
+        showManual(Boolean(helpNode?.hidden));
         return;
       }
 
@@ -90,22 +107,16 @@
       try {
         await prompt.prompt();
         const choice = await prompt.userChoice;
+        if (canLaunch) return;
         if (choice.outcome === 'accepted') {
-          installButton.disabled = false;
-          installButton.textContent = '드로잉 시작';
-          setStatus('설치 요청을 수락했습니다. 설치가 끝나면 앱 목록에서도 ToonStudio Draw를 열 수 있습니다.');
+          showLaunch('설치 요청을 수락했습니다. 작품 보관함에서 작업을 시작하세요.');
         } else {
-          installButton.disabled = false;
-          installButton.textContent = 'ToonStudio Draw 설치';
-          setStatus('설치를 취소했습니다. 원할 때 다시 설치할 수 있습니다.');
+          showManual();
+          setStatus('설치를 취소했습니다. 다시 설치하려면 설치 방법을 확인하세요.');
         }
       } catch {
-        showManual();
+        if (!canLaunch) showManual(true);
       }
     });
-
-    window.setTimeout(() => {
-      if (!installPrompt && !isStandalone() && !manualMode) showManual();
-    }, 1800);
   });
 })();

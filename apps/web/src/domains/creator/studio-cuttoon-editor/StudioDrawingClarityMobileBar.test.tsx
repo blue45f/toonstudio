@@ -40,7 +40,11 @@ function Surface({ value }: { value: MobileFixture }) {
   const clarity = useStudioDrawingClarity();
   if (!clarity) throw new Error("표시 context 누락");
   return <div data-studio-editor="true" data-studio-drawing-clarity-mobile={clarity.active ? "true" : undefined}>
-    {clarity.active ? <StudioDrawingClarityMobileBar session={value} /> : <section aria-label="기존 작업 배치"><p>프로젝트·창·협업 도구</p><button onClick={clarity.chooseSimple}>간단한 그리기</button></section>}
+    {clarity.active && <StudioDrawingClarityMobileBar session={value} />}
+    <div id="studio-canvas-workspace" tabIndex={-1} />
+    {clarity.panel === "commands" && <section id="studio-drawing-clarity-panel-commands" aria-label="프로젝트·창 도구">
+      <h2 tabIndex={-1} data-clarity-pane-heading>프로젝트·창 도구</h2><button onClick={clarity.chooseSimple}>원고로 돌아가기</button>
+    </section>}
   </div>;
 }
 function show(value = session()) { return render(<StudioDrawingClarityProvider session={value}><Surface value={value} /></StudioDrawingClarityProvider>); }
@@ -165,6 +169,16 @@ describe("웹 모바일 기본 상단", () => {
     } finally { act(unregister); unsubscribe(); }
   });
 
+  it("인물·포즈의 정본 명령이 있을 때에만 그리기 도구에서 3D 캐릭터를 연다", () => {
+    const value = session(), onSelect = vi.fn();
+    show({ ...value, studioMainMenuGroups: [{ id: "3d", label: "3D", items: [
+      { id: "char", commandId: "insert.character-3d", label: "인물·포즈 편집", onSelect },
+    ] }] });
+    more("drawing");
+    fireEvent.click(screen.getByRole("button", { name: "3D 캐릭터·포즈" }));
+    expect(onSelect).toHaveBeenCalledOnce();
+    expect(value.setMobileSheet).toHaveBeenCalledWith(null);
+  });
   it("전체 도구는 기존 채널에 보이는 메뉴 트리거를 전달한다", () => {
     const { container } = show(), root = container.querySelector<HTMLElement>("[data-studio-editor]");
     if (!root) throw new Error("편집 영역 누락");
@@ -179,11 +193,13 @@ describe("웹 모바일 기본 상단", () => {
     expect(dialog.textContent).not.toContain("두 손가락을 짧게 탭하면 실행 취소해요.");
     fireEvent.keyDown(dialog, { key: "Escape" }); expect(screen.queryByRole("dialog")).toBeNull(); expect(document.activeElement).toBe(trigger);
   });
-  it("프로젝트·창 도구는 간결화 표시를 종료해 기존 영역을 보여 주며 다시 돌아올 수 있다", () => {
-    show(); more("workspace"); fireEvent.click(screen.getByRole("button", { name: "프로젝트·창 도구 배치로 전환" }));
-    expect(screen.getByRole("region", { name: "기존 작업 배치" })).toBeTruthy();
-    expect(document.querySelector('[data-studio-drawing-clarity-mobile="true"]')).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" })); expect(screen.getByRole("region", { name: "원고와 저장" })).toBeTruthy();
+  it("모바일 원고를 유지한 채 프로젝트·창 도구를 열고 원고에 초점을 돌린다", () => {
+    show(); more("workspace"); fireEvent.click(screen.getByRole("button", { name: "프로젝트·창 도구" }));
+    const panel = screen.getByRole("region", { name: "프로젝트·창 도구" });
+    expect(screen.getByRole("region", { name: "원고와 저장" })).toBeTruthy();
+    fireEvent.click(within(panel).getByRole("button", { name: "원고로 돌아가기" }));
+    expect(screen.queryByRole("region", { name: "프로젝트·창 도구" })).toBeNull();
+    expect(document.activeElement).toBe(document.getElementById("studio-canvas-workspace"));
   });
   it("함께 작업을 열어도 사용자가 고른 드로잉 배치를 유지한다", () => {
     const value = session(); show(value); more("output"); fireEvent.click(screen.getByRole("button", { name: "함께 작업" }));

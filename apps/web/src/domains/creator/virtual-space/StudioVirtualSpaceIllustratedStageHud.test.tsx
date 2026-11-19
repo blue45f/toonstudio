@@ -1,16 +1,47 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   StudioVirtualSpaceIllustratedLobbyShowcase,
   StudioVirtualSpaceIllustratedStageHud,
 } from "./StudioVirtualSpaceIllustratedStageHud";
+import { readStudioSpaceTheme, writeStudioSpaceTheme } from "./studio-virtual-space-theme";
 
 afterEach(cleanup);
+beforeEach(() => localStorage.clear());
 
 describe("StudioVirtualSpaceIllustratedLobbyShowcase & StageHud", () => {
+  it("캐스트·방·보행·감정 변경은 사무실 테마를 보존하고 테마를 직접 고를 때만 공간에 적용한다", () => {
+    const events: string[] = [];
+    function onTheme(event: Event) {
+      events.push((event as CustomEvent<string>).detail);
+    }
+    writeStudioSpaceTheme("neon-night");
+    window.addEventListener("toonspectrum:space-theme-change", onTheme);
+    try {
+      render(<><StudioVirtualSpaceIllustratedLobbyShowcase /><StudioVirtualSpaceIllustratedStageHud /></>);
+      for (const action of [
+        "lobby-persona-sound-letterer-btn", "lobby-walk-dir-up-btn",
+        "lobby-room-global-ip-pitch-boardroom-btn", "main-stage-cycle-persona-btn",
+        "main-stage-cycle-walk-btn", "main-stage-cycle-emote-btn",
+      ]) {
+        fireEvent.click(screen.getByTestId(action));
+        expect(readStudioSpaceTheme()).toBe("neon-night");
+      }
+      expect(events).toEqual([]);
+      fireEvent.click(screen.getByTestId("lobby-theme-seoul-editorial-hq-btn"));
+      expect(readStudioSpaceTheme()).toBe("webtoon-atelier");
+      expect(events).toEqual(["webtoon-atelier"]);
+      fireEvent.click(screen.getByTestId("main-stage-cycle-theme-btn"));
+      expect(events).toHaveLength(2);
+      expect(readStudioSpaceTheme()).toBe(events[1]);
+    } finally {
+      window.removeEventListener("toonspectrum:space-theme-change", onTheme);
+    }
+  });
+
   it("입장 로비 쇼케이스에서 12대 테마, 8인 캐스트, 4방향 보행(v14), 4종 특화 룸(v14)을 전환하고 로컬스토리지에 저장한다", () => {
     render(<StudioVirtualSpaceIllustratedLobbyShowcase />);
 
@@ -36,7 +67,10 @@ describe("StudioVirtualSpaceIllustratedLobbyShowcase & StageHud", () => {
     ).toContain("/assets/virtual-studio/studio-art-v12/cast/sound-letterer-work.webp");
 
     // v14 4방향 보행 중 UP(후면) 선택
-    fireEvent.click(screen.getByTestId("lobby-walk-dir-up-btn"));
+    const rearWalk = screen.getByRole("button", { name: "후면 보행 (UP)" });
+    fireEvent.click(rearWalk);
+    expect(rearWalk.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "정면 보행 (DOWN)" }).getAttribute("aria-pressed")).toBe("false");
     expect(
       screen.getByTestId("lobby-illustrated-walk-img").getAttribute("src"),
     ).toBe("/assets/virtual-studio/studio-art-v14/walk/creator-walk-up.webp");

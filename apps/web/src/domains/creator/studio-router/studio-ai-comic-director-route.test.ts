@@ -16,7 +16,7 @@ describe("AI Comic Director composition route", () => {
       remixSourceWorkId: null,
       canonicalPathname: "/studio/compose/session-1",
       canonicalHref: "/studio/compose/session-1?from=launcher",
-      editorHref: "/studio",
+      editorHref: "/studio/canvas",
     });
     expect(resolved.lifecycleKey).toContain("composition:session-1");
   });

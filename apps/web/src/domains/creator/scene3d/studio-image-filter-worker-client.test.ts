@@ -860,7 +860,7 @@ describe("runStudioImageFilterWorker", () => {
         code: "readyTimeout",
       });
 
-      await vi.advanceTimersByTimeAsync(3_000);
+      await vi.advanceTimersByTimeAsync(30_000);
 
       await rejection;
       expect(worker.terminateCount).toBe(1);

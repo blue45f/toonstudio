@@ -5,6 +5,7 @@ import type { StudioLiveDirectPort } from "../live/studio-live-direct-port";
 import {
   STUDIO_P2P_BOARD_COLORS,
   STUDIO_P2P_BOARD_MAX_OWN_ENTITIES,
+  STUDIO_P2P_BOARD_MAX_POINTS,
   StudioP2pBoardController,
   type StudioP2pBoardColor,
   type StudioP2pBoardEntity,
@@ -54,7 +55,7 @@ function readLocal(
   scope: StudioP2pBoardScope,
   storageOwnerId: string | null | undefined,
 ): readonly LocalEntity[] {
-  if (typeof localStorage === "undefined" || !storageOwnerId) return [];
+  if (!storageOwnerId) return [];
   let parsed: unknown;
   try {
     parsed = JSON.parse(localStorage.getItem(storageKey(scope, storageOwnerId)) ?? "[]");
@@ -84,7 +85,7 @@ function readLocal(
     if (item.kind !== "stroke" || typeof item.width !== "number"
       || !Number.isFinite(item.width) || item.width < 1 || item.width > 20
       || !Array.isArray(item.points) || item.points.length < 2
-      || item.points.length > 48 || !item.points.every(validPoint)) continue;
+      || item.points.length > STUDIO_P2P_BOARD_MAX_POINTS || !item.points.every(validPoint)) continue;
     entities.push({
       kind: "stroke",
       color,
@@ -97,12 +98,9 @@ function readLocal(
 function writeLocal(
   scope: StudioP2pBoardScope,
   entities: readonly StudioP2pBoardEntity[],
-  ownerSessionId: string,
-  storageOwnerId: string | null | undefined,
-): void {
-  if (typeof localStorage === "undefined" || !storageOwnerId) return;
+  storageOwnerId: string,
+): boolean {
   const values: LocalEntity[] = entities
-    .filter((entity) => entity.ownerSessionId === ownerSessionId)
     .slice(-STUDIO_P2P_BOARD_MAX_OWN_ENTITIES)
     .map((entity) => entity.kind === "stroke"
       ? {
@@ -120,8 +118,9 @@ function writeLocal(
         });
   try {
     localStorage.setItem(storageKey(scope, storageOwnerId), JSON.stringify(values));
+    return true;
   } catch {
-    // Direct collaboration remains available when local persistence is denied.
+    return false;
   }
 }
 export function useStudioVirtualSpaceP2pBoard({
@@ -139,24 +138,34 @@ export function useStudioVirtualSpaceP2pBoard({
 }) {
   const controller = useRef<StudioP2pBoardController | null>(null);
   const [snapshot, setSnapshot] = useState<StudioP2pBoardSnapshot>(EMPTY);
+  const [localSaveFailed, setLocalSaveFailed] = useState(false);
+  const retrySave = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     setSnapshot(EMPTY);
+    setLocalSaveFailed(false);
     if (!enabled || !participant || !port
       || typeof globalThis.crypto?.randomUUID !== "function") return;
-    const recovered = readLocal(scope, storageOwnerId);
+    const recovered = participant.role === "viewer" ? [] : readLocal(scope, storageOwnerId);
     const owner = new StudioP2pBoardController(participant, port, scope);
     controller.current = owner;
     let restoring = true;
+    let lastOwnIds = "";
+    const updateLocal = (next: StudioP2pBoardSnapshot, retry = false) => {
+      if (!storageOwnerId || !next.canEdit) return;
+      const own = next.entities.filter((entity) => entity.ownerSessionId === participant.sessionId);
+      // 변경되지 않은 내 그림을 참여자 목록 갱신 때마다 기기 저장소에 덮어쓰지 않는다.
+      const ids = own.map((entity) => entity.id).join("|");
+      if (!restoring && (ids !== lastOwnIds || retry)) {
+        setLocalSaveFailed(!writeLocal(scope, own, storageOwnerId));
+      }
+      lastOwnIds = ids;
+    };
+    retrySave.current = () => updateLocal(owner.snapshot(), true);
     const refresh = () => {
       const next = owner.snapshot();
       setSnapshot(next);
-      if (!restoring) writeLocal(
-        scope,
-        next.entities,
-        participant.sessionId,
-        storageOwnerId,
-      );
+      updateLocal(next);
     };
     const unsubscribe = owner.subscribe(refresh);
     owner.start();
@@ -172,7 +181,10 @@ export function useStudioVirtualSpaceP2pBoard({
     return () => {
       unsubscribe();
       owner.close();
-      if (controller.current === owner) controller.current = null;
+      if (controller.current === owner) {
+        controller.current = null;
+        retrySave.current = null;
+      }
     };
   }, [enabled, participant, port, scope, storageOwnerId]);
 
@@ -190,5 +202,6 @@ export function useStudioVirtualSpaceP2pBoard({
   const remove = useCallback((id: string) => controller.current?.remove(id) ?? false, []);
   const clearOwn = useCallback(() => controller.current?.clearOwn(), []);
 
-  return { snapshot, addStroke, addNote, remove, clearOwn };
+  const retryLocalSave = useCallback(() => retrySave.current?.(), []);
+  return { snapshot, addStroke, addNote, remove, clearOwn, localSaveFailed, retryLocalSave };
 }

@@ -390,34 +390,53 @@ export async function applyStudioServiceWorkerUpdate(): Promise<void> {
  */
 function scheduleUpdateChecks(registration: ServiceWorkerRegistration): void {
   let checking = false;
-  const checkForUpdate = (): void => {
-    if (checking || document.visibilityState === "hidden") return;
+  let checkAfterResume = false;
+  let intervalId: number | undefined;
+
+  const checkForUpdate = async (): Promise<void> => {
+    if (intervalId === undefined || checking || document.visibilityState === "hidden") return;
     checking = true;
-    registration.update().catch(() => {
-      // 네트워크 오류 등은 다음 주기에 재시도하므로 조용히 무시.
-    }).finally(() => {
+    try {
+      await registration.update();
+    } catch {
+      // 오프라인에서도 다음 포커스·온라인·주기 확인을 계속한다.
+    } finally {
       checking = false;
-    });
+      if (checkAfterResume) {
+        checkAfterResume = false;
+        void checkForUpdate();
+      }
+    }
   };
 
-  // 30분 간격 폴링.
-  const intervalId = globalThis.setInterval(checkForUpdate, 30 * 60 * 1_000);
-
-  // 탭 복귀·포커스·온라인 시 즉시 체크.
-  const onVisible = (): void => {
-    if (document.visibilityState === "visible") checkForUpdate();
+  const start = (): void => {
+    intervalId = window.setInterval(checkForUpdate, 30 * 60 * 1_000);
+    document.addEventListener("visibilitychange", checkForUpdate);
+    window.addEventListener("focus", checkForUpdate);
+    window.addEventListener("online", checkForUpdate);
   };
-  document.addEventListener("visibilitychange", onVisible);
-  globalThis.addEventListener("focus", checkForUpdate);
-  globalThis.addEventListener("online", checkForUpdate);
+  const onPageShow = (event: PageTransitionEvent): void => {
+    if (!event.persisted || intervalId !== undefined) return;
+    start();
+    if (checking) checkAfterResume = true;
+    else void checkForUpdate();
+  };
+  const onPageHide = (event: PageTransitionEvent): void => {
+    window.clearInterval(intervalId);
+    intervalId = undefined;
+    checkAfterResume = false;
+    document.removeEventListener("visibilitychange", checkForUpdate);
+    window.removeEventListener("focus", checkForUpdate);
+    window.removeEventListener("online", checkForUpdate);
+    if (!event.persisted) {
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("pagehide", onPageHide);
+    }
+  };
 
-  // 페이지가 언로드되면 정리 (SPA에서는 거의 호출되지 않지만 안전장치).
-  globalThis.addEventListener("pagehide", () => {
-    globalThis.clearInterval(intervalId);
-    document.removeEventListener("visibilitychange", onVisible);
-    globalThis.removeEventListener("focus", checkForUpdate);
-    globalThis.removeEventListener("online", checkForUpdate);
-  }, { once: true });
+  start();
+  window.addEventListener("pageshow", onPageShow);
+  window.addEventListener("pagehide", onPageHide);
 }
 
 function watchForUpdate(registration: ServiceWorkerRegistration): void {

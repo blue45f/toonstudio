@@ -340,7 +340,7 @@ async function verify(baseUrl: string): Promise<VerificationResult> {
       timeout: 30_000,
     });
     markPhase("primary-shell-ready");
-    await primary.locator('[data-studio-app-menubar="true"]').filter({ visible: true }).waitFor({
+    await primary.locator('[data-studio-canvas-viewport][data-studio-canvas-input-state="ready"]').first().waitFor({
       state: "visible",
       timeout: 30_000,
     });

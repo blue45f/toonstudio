@@ -376,11 +376,11 @@ export function useStudioCanvasViewportInteraction(props: StudioCanvasViewportPr
   }
   // 텍스트 인라인 편집 — canvasFlipH(좌우 반전 미리보기)나 세로쓰기 요소는 캔버스 실시간 오버레이가
   // 안전하게 다룰 수 없어(StudioTextEditOverlay 상단 주석 참고) 예전 중앙 모달로 폴백한다.
-  const editingTarget = editing ? elementById.get(editing.id) : null;
+  const editingTarget = editing?.pendingText ?? (editing ? elementById.get(editing.id) : null);
   const editingVertical = !!editingTarget &&
     (editingTarget.type === "text" || editingTarget.type === "bubble") && !!editingTarget.vertical;
   const editingFallbackToModal = !!editingTarget && (
-    canvasFlipH || canvasRotation !== 0 || editingVertical
+    !!editing?.pendingText || canvasFlipH || canvasRotation !== 0 || editingVertical
   );
   // 핫패스 탈React 계약의 런타임 계측점 — StudioPage 와 같은 규약(의존성 없는 effect 이므로
   // 실제 렌더된 커밋만 센다). 하네스가 싱크를 심지 않으면 no-op 이다.

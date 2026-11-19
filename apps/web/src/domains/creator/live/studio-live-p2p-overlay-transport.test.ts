@@ -528,6 +528,38 @@ async function connectedThreePeerMesh(): Promise<{
 }
 
 describe("Studio live P2P overlay", () => {
+  it("동일 참가자라도 재접속 주소·작품·퇴장 상태에 따라 이전 연결의 제안을 재사용하지 않는다", async () => {
+    vi.useFakeTimers({ now: NOW });
+    const bus = new SignalingBus(), hub = new MemoryRtcHub();
+    let address = "00000000-0000-4000-8000-000000000000";
+    const primary = Object.assign(bus.create(LOCAL), { transportSessionId: () => address });
+    const local = applyStudioLiveP2pOverlay(() => primary, { createPeerConnection: () => hub.create(), now: Date.now })(contextFor(LOCAL));
+    const hello = envelope({ sender: REMOTE, kind: "presence:heartbeat", payload: { visibility: "active", pageId: "p", tool: "pen" } });
+    const offers = () => primary.sent.filter(message => message.kind === "webrtc:description");
+    try {
+      await local.connect();
+      primary.emit({ ...hello, workId: "another-work" });
+      await flush();
+      expect(offers()).toHaveLength(0);
+      primary.emit(hello);
+      await flush();
+      expect(offers()).toHaveLength(1);
+      address = LOCAL.sessionId;
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(offers()).toHaveLength(1);
+      primary.emit(hello);
+      await flush();
+      expect(offers()).toHaveLength(2);
+      expect(offers()[0]!.payload).not.toEqual(offers()[1]!.payload);
+      primary.emit(envelope({ sender: REMOTE, kind: "presence:leave", payload: {}, sequence: 3 }));
+      await vi.advanceTimersByTimeAsync(60000);
+      expect(offers()).toHaveLength(2);
+    } finally {
+      local.close();
+      vi.useRealTimers();
+    }
+  });
+
   it("never derives lock authority from a connected peer mesh", async () => {
     const { local, remote, localPrimary } = await connectedMesh();
     expect(local.authoritativeLockCapability).toBeNull();

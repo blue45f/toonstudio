@@ -133,6 +133,8 @@ function clampToSegmentSpan(
   return { x: axis(point.x, left.x, right.x), y: axis(point.y, left.y, right.y) };
 }
 
+export const STUDIO_PEER_TELEPORT_DISTANCE = 260;
+
 /**
  * 원격 피어 도착 시각 기준 보간 타임라인.
  *
@@ -153,7 +155,7 @@ export class StudioPeerTimeline {
       && Number.isSafeInteger(last.sequence)
       && Number.isSafeInteger(sample.sequence);
     if (last && (sequenced ? sample.sequence! <= last.sequence! : sample.at <= last.at)) return;
-    if (last && (sample.at - last.at > 1500 || Math.hypot(sample.x - last.x, sample.y - last.y) > 260)) this.samples = [];
+    if (last && (sample.at - last.at > 1500 || Math.hypot(sample.x - last.x, sample.y - last.y) > STUDIO_PEER_TELEPORT_DISTANCE)) this.samples = [];
     const current = this.samples.at(-1);
     this.samples.push({
       ...sample,
@@ -189,8 +191,8 @@ export class StudioPeerTimeline {
       }
     }
     const previous = this.samples.at(-2);
-    if (!last.moving || !previous) return presentPeerSample(last);
     const overdue = Math.max(0, at - last.at);
+    if (!previous || !last.moving) return { ...presentPeerSample(last), moving: last.moving && overdue <= this.extrapolationMs };
     const elapsed = Math.min(this.extrapolationMs, overdue);
     const interval = Math.max(16, last.at - previous.at);
     const vx = (last.x - previous.x) / interval, vy = (last.y - previous.y) / interval;

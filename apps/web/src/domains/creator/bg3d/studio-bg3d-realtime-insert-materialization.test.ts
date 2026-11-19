@@ -164,8 +164,8 @@ describe("Studio BG3D realtime-room insert materialization", () => {
         source: first.source,
         png: VALID_UPDATED_PNG,
       }),
-      elements: first.plan.nextElements,
-      groups: first.plan.nextGroups,
+      elements: first.plan.nextElements.map((el) => el.id === first.plan.anchorElementId ? { ...el, name: "1컷 · 복도" } : el),
+      groups: first.plan.nextGroups.map((group) => ({ ...group, name: "1컷 카메라" })),
       shared3dStage: first.plan.nextShared3dStage,
       targetElementId: first.plan.anchorElementId,
       canvasHeight: 1080,
@@ -181,12 +181,13 @@ describe("Studio BG3D realtime-room insert materialization", () => {
     expect(updated.bundleId).toBe("bundle-1");
     expect(updated.nextElements.filter(({ id }) => id === "background-1")).toHaveLength(1);
     expect(updated.nextElements.find(({ id }) => id === "background-1")).toMatchObject({
-      src: VALID_UPDATED_PNG,
+      name: "1컷 · 복도", src: VALID_UPDATED_PNG,
       bg3dLtBundleId: "bundle-1",
       bg3dLtRole: "main-line",
       bg3dLtRenderMode: "combined",
       groupId: "group-1",
     });
+    expect(updated.nextGroups[0]?.name).toBe("1컷 카메라");
     expect(resolveStudioShared3dStageCollectionForBundle(
       updated.nextShared3dStage,
       updated.nextElements,
@@ -356,7 +357,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
 
   it("wires the realtime branch through one element+group+Shared Stage commit before separated LT", () => {
     const body = applyBg3dRenderedImageBody();
-    const realtimeBranch = body.indexOf("if (isRealtimeTeamSession && !sixPass) {");
+    const realtimeBranch = body.indexOf("if (isRealtimeTeamSession && !sixPass && !keepLocalPasses) {");
     const masterBranch = body.indexOf("if (masterEditMode) {");
     const realtime = body.slice(realtimeBranch, masterBranch);
 
@@ -367,7 +368,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
     expect(realtime).toContain("groups: [...realtimePlan.nextGroups],");
     expect(realtime).toContain("shared3dStage: realtimePlan.nextShared3dStage,");
     expect(realtime).toContain("expectStudioRasterImagePresentation({");
-    expect(body.indexOf("if (isRealtimeTeamSession && !sixPass) {")).toBeLessThan(
+    expect(body.indexOf("if (isRealtimeTeamSession && !sixPass && !keepLocalPasses) {")).toBeLessThan(
       body.indexOf("const plan = planStudioBg3dLtLayers"),
     );
   });
@@ -375,7 +376,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
   it("reports the merged insert and saved Stage as a neutral notice, not an error", () => {
     const body = applyBg3dRenderedImageBody();
     const realtime = body.slice(
-      body.indexOf("if (isRealtimeTeamSession && !sixPass) {"),
+      body.indexOf("if (isRealtimeTeamSession && !sixPass && !keepLocalPasses) {"),
       body.indexOf("if (masterEditMode) {"),
     );
 

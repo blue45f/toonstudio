@@ -91,6 +91,24 @@ describe("resolveStudioMobileBackLayers", () => {
     expect(layers).toEqual([]);
   });
 
+  it.each([
+    ["bg3d", "data-studio-bg3d-experience"],
+    ["poser", "data-studio-vrm-dialog"],
+    ["character", "data-character-shaper"],
+  ])("%s 실제 방문 기록과 안쪽 모달의 뒤로가기를 구분한다", (routedSurface, attribute) => {
+    const domRoot = document.createElement("div");
+    domRoot.innerHTML = '<section role="dialog" aria-modal="true" aria-label="편집기"><div role="dialog" aria-modal="true" aria-label="설정"></div></section>';
+    domRoot.firstElementChild!.setAttribute(attribute, "true");
+    const inputs = { isMobile: true, mobileSheet: null, dismissActiveMobileSheet: vi.fn(),
+      menuOpen: false, dismissMenu: vi.fn(), quickActionsOpen: false, dismissQuickActions: vi.fn(),
+      quickAccessPaletteOpen: false, dismissQuickAccessPalette: vi.fn(), shortcutsOpen: false, dismissShortcuts: vi.fn(), domRoot };
+    expect(resolveStudioMobileBackLayers({ ...inputs, routedSurface }).map(layer => layer.id)).toEqual(["modal:0:설정"]);
+    expect(resolveStudioMobileBackLayers({ ...inputs, routedSurface: "canvas" })).toHaveLength(2);
+    const routedModalOwners = new WeakSet<Element>();
+    resolveStudioMobileBackLayers({ ...inputs, routedSurface, routedModalOwners });
+    expect(resolveStudioMobileBackLayers({ ...inputs, routedSurface: "canvas", routedModalOwners }).map(layer => layer.id)).toEqual(["modal:0:설정"]);
+  });
+
   it("모바일 시트(draw→brushes 2단)와 포털 모달을 바닥→최상단 LIFO 순서로 계산한다", () => {
     const root = document.createElement("div");
 
@@ -159,6 +177,25 @@ describe("resolveStudioMobileBackLayers", () => {
 });
 
 describe("createStudioMobileHistorySyncController", () => {
+  it("현재 원고 항목이 먼저 복원된 프레임에서 닫힐 도구 시트 가드를 재등록하지 않는다", () => {
+    const history = createFakeHistory("/studio/draft/one?workspace=draw");
+    const controller = createStudioMobileHistorySyncController(history.adapter);
+    const picker = { id: "modal:drawing-task:tools", dismiss: vi.fn() };
+    controller.syncLayers([picker]);
+    history.subscribe((event) => {
+      // Chromium은 DOM의 pop 리스너를 부르기 전에 history.state를 원래 항목으로 교체한다.
+      controller.syncLayers([picker]);
+      controller.handlePopState(event);
+    });
+    history.systemBack();
+    controller.syncLayers([]);
+    expect(picker.dismiss).toHaveBeenCalledOnce();
+    expect(history.getCursor()).toBe(0);
+    history.navigateInApp("/studio/draft/one?workspace=3d&tool3d=poser");
+    expect(history.getCursor()).toBe(1);
+    controller.dispose();
+  });
+
   it("3단 중첩 패널에서 시스템 뒤로 가기를 누를 때마다 최상단부터 1개씩 닫고 경로를 유지한다", () => {
     const history = createFakeHistory("/studio/p/proj-1/d/doc-1");
     const controller = createStudioMobileHistorySyncController(history.adapter);
@@ -234,15 +271,43 @@ describe("createStudioMobileHistorySyncController", () => {
     history2.navigateInApp("/studio/p/proj-1/story");
     controller2.syncLayers([]);
     expect(history2.getPathname()).toBe("/studio/p/proj-1/story");
+
+    const sameDoc = createFakeHistory("/studio/draft/one?workspace=draw");
+    const sameDocController = createStudioMobileHistorySyncController(sameDoc.adapter);
+    sameDocController.syncLayers([{ id: "catalog", dismiss: vi.fn() }]);
+    sameDoc.navigateInApp("/studio/draft/one?workspace=3d");
+    sameDocController.syncLayers([]);
+    expect(sameDoc.adapter.getHref()).toContain("workspace=3d");
+    expect(sameDocController.getPushedDepth()).toBe(0);
   });
 });
 
 describe("StudioMobileBackStackHost (React StrictMode)", () => {
+  it("원고 URL보다 먼저 마운트한 포저와 종료 중인 포저가 가드 항목을 만들지 않는다", () => {
+    const push = vi.spyOn(window.history, "pushState");
+    const renderHost = (open: boolean) => <>
+      <div role="dialog" aria-modal="true" data-studio-vrm-dialog="true" />
+      <StudioMobileBackStackHost {...({
+        isMobile: true, studioRoute: { surface: "canvas" }, admittedPoserVrmOpen: open,
+        menu: null, mobileSheet: null,
+      } as StudioCuttoonEditorViewSession)} />
+    </>;
+    try {
+      const { rerender, unmount } = render(renderHost(true));
+      rerender(renderHost(false));
+      expect(push).not.toHaveBeenCalled();
+      unmount();
+    } finally {
+      push.mockRestore();
+    }
+  });
+
   it("StrictMode 이중 마운트 이후에도 popstate 리스너가 살아 있어 최상단 시트를 단계별로 닫는다", () => {
     function Harness() {
       const [mobileSheet, setMobileSheet] = useState<StudioMobileSheetKind>("brushes");
       const session = {
         isMobile: true,
+        studioRoute: { surface: "canvas" },
         mobileSheet,
         dismissActiveMobileSheet: () => {
           setMobileSheet((prev) => (prev === "brushes" ? "draw" : null));

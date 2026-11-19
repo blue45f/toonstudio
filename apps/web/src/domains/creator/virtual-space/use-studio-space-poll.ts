@@ -1,31 +1,85 @@
-import { useCallback, useState } from "react";
-
+import { useEffect, useRef, useState } from "react";
 import {
-  castStudioPollVote,
-  closeStudioPoll,
-  createStudioPoll,
-  type StudioPoll,
-  type StudioPollCreateInput,
+  castStudioPollVote, closeStudioPoll, createStudioPoll, parseStudioPoll, serializeStudioPoll, studioPollStatus,
+  type StudioPoll, type StudioPollCreateInput,
 } from "./studio-virtual-space-poll";
 
-/** 투표는 아직 실시간 동기화 채널이 없어 이 기기에서만 진행되는 로컬 투표다. */
-export function useStudioSpacePoll(input: { readonly voterId: string; readonly voterName: string }) {
-  const { voterId, voterName } = input;
-  const [spacePoll, setSpacePoll] = useState<StudioPoll | null>(null);
-  const handleCreatePoll = useCallback((draft: Omit<StudioPollCreateInput, "id" | "createdBySessionId" | "createdByName" | "nowMs">) => {
-    const result = createStudioPoll({ ...draft, createdBySessionId: voterId, createdByName: voterName, nowMs: Date.now() });
-    if (result.ok) setSpacePoll(result.poll);
-  }, [voterId, voterName]);
-  const handleVotePoll = useCallback((optionId: string) => {
-    setSpacePoll((current) => {
-      if (!current) return current;
-      const result = castStudioPollVote(current, { optionId, voterSessionId: voterId, voterName, nowMs: Date.now() });
-      return result.ok ? result.poll : current;
-    });
-  }, [voterId, voterName]);
-  const handleClosePoll = useCallback(() => {
-    setSpacePoll((current) => (current ? closeStudioPoll(current) : current));
-  }, []);
+export type StudioPollDraft = Omit<StudioPollCreateInput, "id" | "createdBySessionId" | "createdByName" | "nowMs">;
+type LocalState = { poll: StudioPoll | null; failed: boolean; corrupt?: boolean };
 
-  return { spacePoll, handleCreatePoll, handleVotePoll, handleClosePoll };
+function read(key: string): LocalState {
+  try {
+    const raw = localStorage.getItem(key);
+    const poll = raw === null ? null : parseStudioPoll(raw);
+    const corrupt = raw !== null && !poll;
+    return { poll, failed: corrupt, corrupt };
+  } catch {
+    return { poll: null, failed: true };
+  }
+}
+
+/** 상위 패널은 계정과 공간이 바뀌면 새 key로 열린다. */
+export function useStudioSpacePoll(key: string, voterId: string, voterName: string) {
+  const [state, setState] = useState(() => read(key));
+  const pending = useRef<StudioPoll | null>(null);
+  const save = (poll: StudioPoll) => {
+    try {
+      localStorage.setItem(key, serializeStudioPoll(poll));
+      pending.current = null;
+      setState({ poll, failed: false });
+    } catch {
+      pending.current = poll;
+      setState({ poll, failed: true });
+    }
+  };
+  useEffect(() => {
+    function sync(event: StorageEvent) {
+      if ((!event.key || event.key === key) && !pending.current) setState(read(key));
+    }
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, [key]);
+
+  const latest = () => pending.current ? { poll: pending.current, failed: false } : read(key);
+  return {
+    state,
+    retry() {
+      if (pending.current) save(pending.current);
+      else setState(read(key));
+    },
+    keepCopyAndRestart() {
+      if (!state.corrupt) return;
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw !== null && !parseStudioPoll(raw)) {
+          localStorage.setItem(`${key}:recovery:${crypto.randomUUID()}`, raw);
+          localStorage.removeItem(key);
+        }
+        setState(read(key));
+      } catch {
+        setState(read(key));
+      }
+    },
+    create(input: StudioPollDraft) {
+      const current = latest();
+      if (current.failed || current.poll?.id !== state.poll?.id || (current.poll && studioPollStatus(current.poll) === "open")) {
+        setState(current);
+        return;
+      }
+      const result = createStudioPoll({ ...input, createdBySessionId: voterId, createdByName: voterName });
+      if (result.ok) save(result.poll);
+    },
+    vote(optionId: string) {
+      const current = latest();
+      if (!current.poll || current.poll.id !== state.poll?.id) { setState(current); return; }
+      const result = castStudioPollVote(current.poll, { optionId, voterSessionId: voterId, voterName });
+      if (result.ok) save(result.poll);
+      else setState(current);
+    },
+    close() {
+      const current = latest();
+      if (current.poll?.createdBySessionId === voterId && current.poll.id === state.poll?.id) save(closeStudioPoll(current.poll));
+      else setState(current);
+    },
+  };
 }

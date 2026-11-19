@@ -32,6 +32,8 @@ export interface StudioBg3dShotPngWorkerOptions {
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
   readonly startupTimeoutMs?: number;
+  /** 배치 출력은 시작 지연을 합산 상한 안에서 허용하고 인코딩 자체의 제한은 유지한다. */
+  readonly shareStartupBudget?: boolean;
   /** Omitted creates one lazy Vite module Worker for exactly this encode request. */
   readonly workerFactory?: StudioBg3dShotPngWorkerFactory;
 }
@@ -47,8 +49,8 @@ export type StudioBg3dShotPngWorkerErrorCode =
   | "worker-failed";
 
 export class StudioBg3dShotPngWorkerError extends Error {
-  constructor(readonly code: StudioBg3dShotPngWorkerErrorCode) {
-    super(`studio-bg3d-shot-png-worker:${code}`);
+  constructor(readonly code: StudioBg3dShotPngWorkerErrorCode, readonly phase?: "startup" | "encode") {
+    super(`studio-bg3d-shot-png-worker:${code}${phase ? `:${phase}` : ""}`);
     this.name = code === "aborted"
       ? "AbortError"
       : code === "timeout"
@@ -214,7 +216,7 @@ export function encodeStudioBg3dShotPngInWorker(
     let settled = false;
     let ready = false;
     let verifying = false;
-    let startupTimeout: ReturnType<typeof setTimeout> | null = null;
+    let startupDeadline: ReturnType<typeof setTimeout> | null = null;
     let encodeTimeout: ReturnType<typeof setTimeout> | null = null;
     const safely = (callback: () => void) => {
       try {
@@ -232,7 +234,7 @@ export function encodeStudioBg3dShotPngInWorker(
       worker = null;
     };
     const cleanup = () => {
-      if (startupTimeout !== null) clearTimeout(startupTimeout);
+      if (startupDeadline !== null) clearTimeout(startupDeadline);
       if (encodeTimeout !== null) clearTimeout(encodeTimeout);
       signal?.removeEventListener("abort", handleAbort);
       detachAndTerminateWorker();
@@ -244,7 +246,8 @@ export function encodeStudioBg3dShotPngInWorker(
       callback();
     };
     const fail = (code: StudioBg3dShotPngWorkerErrorCode) => {
-      finish(() => reject(new StudioBg3dShotPngWorkerError(code)));
+      const phase = code === "timeout" ? (ready ? "encode" : "startup") : undefined;
+      finish(() => reject(new StudioBg3dShotPngWorkerError(code, phase)));
     };
     const handleAbort = () => fail("aborted");
     function handleWorkerFailure(event: WorkerErrorLike): void {
@@ -269,8 +272,10 @@ export function encodeStudioBg3dShotPngInWorker(
           return;
         }
         ready = true;
-        if (startupTimeout !== null) clearTimeout(startupTimeout);
-        startupTimeout = null;
+        if (!options.shareStartupBudget && startupDeadline !== null) {
+          clearTimeout(startupDeadline);
+          startupDeadline = null;
+        }
         encodeTimeout = setTimeout(() => fail("timeout"), boundedTimeout(options.timeoutMs));
         try {
           worker.postMessage(request, studioBg3dShotPngWorkerRequestTransfers(request));
@@ -323,10 +328,9 @@ export function encodeStudioBg3dShotPngInWorker(
       worker.addEventListener("message", handleMessage);
       worker.addEventListener("error", handleWorkerFailure);
       worker.addEventListener("messageerror", handleWorkerFailure);
-      startupTimeout = setTimeout(
-        () => fail("timeout"),
-        boundedStartupTimeout(options.startupTimeoutMs),
-      );
+      const startupBudget = boundedStartupTimeout(options.startupTimeoutMs);
+      const deadline = options.shareStartupBudget ? startupBudget + boundedTimeout(options.timeoutMs) : startupBudget;
+      startupDeadline = setTimeout(() => fail("timeout"), deadline);
     } catch {
       fail("worker-failed");
     }

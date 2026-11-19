@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Disposition ultra simple",
   "studio.mainMenu.item.view.density-full": "Disposition complète",
   "studio.mainMenu.item.view.wide": "Réduire les panneaux pour agrandir",
+  "studio.mainMenu.item.view.wide.open": "Afficher les panneaux",
   "studio.mainMenu.item.view.tools-companion": "Espace de travail multi-écrans…",
   "studio.mainMenu.item.view.canvas-only": "Toile uniquement",
   "studio.mainMenu.item.view.color-vision.unavailable": "Vous ne pouvez pas modifier le mode de vision des couleurs tant que la transformation de la vue est verrouillée.",

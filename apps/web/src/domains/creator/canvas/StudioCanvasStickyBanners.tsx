@@ -73,6 +73,7 @@ export interface StudioCanvasStickyBannersContext {
   readonly setTeamPanelOpen: Dispatch<SetStateAction<boolean>>;
   readonly setTool: Dispatch<SetStateAction<Tool>>;
   readonly setZoom: Dispatch<SetStateAction<number>>;
+  readonly inputNoticeId?: string;
   readonly sourceHydrationPending: boolean;
   readonly stopStudioCommentPlacementSession: () => void;
   readonly studioCrdtOperationSyncReady: boolean;
@@ -115,7 +116,7 @@ export function renderStudioCanvasStickyBanners({
   setTeamPanelOpen,
   setTool,
   setZoom,
-  sourceHydrationPending,
+  sourceHydrationPending, inputNoticeId,
   stopStudioCommentPlacementSession,
   studioCrdtOperationSyncReady,
   t,
@@ -288,7 +289,7 @@ export function renderStudioCanvasStickyBanners({
         </div>
       ) : null}
       {sourceHydrationPending || collaborationDocumentUnavailable ? (
-        <div className="sticky left-0 top-0 z-20 grid min-h-[15rem] w-full place-items-center px-6 py-10 text-center lg:min-h-[20rem]">
+        <div id={inputNoticeId} role="status" className="sticky left-0 top-0 z-20 grid min-h-[15rem] w-full place-items-center px-6 py-10 text-center lg:min-h-[20rem]">
           <span className="max-w-sm">
             <Lock size={22} className="mx-auto text-warn" aria-hidden />
             <strong className="mt-3 block text-sm font-semibold text-fg">

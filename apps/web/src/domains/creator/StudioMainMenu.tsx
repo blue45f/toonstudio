@@ -46,11 +46,12 @@ import { STUDIO_EASE, STUDIO_FOCUS_RING } from "./studio-panel-ui";
 import { StudioMainMenuFloatingPanel } from "./StudioMainMenuFloatingPanel";
 import { StudioToolHintTarget } from "./StudioToolHint";
 
-import type {
-  StudioMainMenuGroup,
-  StudioMainMenuHintKey,
-  StudioMainMenuItem,
-  StudioMainMenuProps,
+import {
+  splitStudioMainMenuSections,
+  type StudioMainMenuGroup,
+  type StudioMainMenuHintKey,
+  type StudioMainMenuItem,
+  type StudioMainMenuProps,
 } from "./studio-main-menu-model";
 import type { StudioToolHintSpec } from "./studio-tool-hints";
 
@@ -248,34 +249,6 @@ export function resolveStudioMainMenuItemIndex(
   return (currentPosition + offset + items.length) % items.length;
 }
 
-type MenuSectionRow = { readonly item: StudioMainMenuItem; readonly index: number };
-type MenuSection = { readonly label?: string; readonly rows: readonly MenuSectionRow[] };
-
-/**
- * Splits a dropdown's rows into the captioned sections the presentation built.
- * A workflow composite title concatenates several catalogue groups and marks the
- * first row of each with `sectionLabel`, so every row up to the next caption belongs
- * to the section that caption names. Rows are carried with their panel-wide index so
- * the roving-tabindex refs and `data-studio-main-menu-item-index` stay flat.
- */
-function splitStudioMainMenuSections(
-  items: readonly StudioMainMenuItem[],
-): readonly MenuSection[] {
-  const sections: { label?: string; rows: MenuSectionRow[] }[] = [];
-  items.forEach((item, index) => {
-    const current = sections.at(-1);
-    if (!current || item.sectionLabel) {
-      sections.push({
-        ...(item.sectionLabel ? { label: item.sectionLabel } : {}),
-        rows: [{ item, index }],
-      });
-      return;
-    }
-    current.rows.push({ item, index });
-  });
-  return sections;
-}
-
 /** Fit the actual visible viewport, including pinch zoom and on-screen keyboards. */
 function measureTrigger(btn: HTMLButtonElement | null): MenuCoords {
   return resolveStudioMainMenuCoords(
@@ -292,6 +265,7 @@ function MenuDropdown({
   onClose,
   onNavigateGroup,
   barActive,
+  presentation,
   isTabStop,
   onFocusTrigger,
   t,
@@ -306,7 +280,7 @@ function MenuDropdown({
     openNextMenu: boolean,
   ) => void;
   barActive: boolean;
-  /** True for the single group that carries the menubar's roving tab stop. */
+  presentation: NonNullable<StudioMainMenuProps["presentation"]>;
   isTabStop: boolean;
   onFocusTrigger: () => void;
   t: (key: string, fallback?: string) => string;
@@ -319,10 +293,7 @@ function MenuDropdown({
   const menuRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const openedRef = useRef(false);
-  // Desktop hover switching opens this menu the moment the cursor crosses the title,
-  // which lands *before* the click that carried the cursor there. Without this flag the
-  // trigger's toggle sees `open === true` and closes the menu the artist just asked for,
-  // so clicking neighbouring titles alternates open/closed instead of switching.
+  // 호버로 이웃 메뉴를 연 직후의 클릭이 같은 메뉴를 다시 닫지 않도록 한다.
   const hoverOpenedRef = useRef(false);
   const openFocusIntentRef = useRef<MenuOpenFocusIntent>("first");
   const closeMenuRef = useRef<(restoreFocus?: boolean) => void>(() => undefined);
@@ -673,13 +644,14 @@ function MenuDropdown({
       }}
     >
       <StudioToolHintTarget
-        hint={barActive ? null : resolveMainMenuHint(group, t)}
+        hint={barActive || presentation !== "bar" ? null : resolveMainMenuHint(group, t)}
         preferredSide="bottom"
         className="shrink-0"
       >
         <button ref={buttonRef} type="button" data-studio-main-menu-trigger={group.id} data-recommended-for-role={group.recommendedForRole ? "true" : undefined} role="menuitem"
           // APG roving tabindex: the menubar is one tab stop, and arrows move between the
           // 18 groups. Before this, reaching the canvas by keyboard cost 18 Tab presses.
+          aria-description={presentation === "panel" ? resolveMainMenuHint(group, t).description : undefined}
           tabIndex={isTabStop ? 0 : -1}
           onPointerEnter={() => preloadStudioMainMenuGroupRuntime(group.id, preloadStudioFilterDialog)}
           onFocus={() => {
@@ -745,6 +717,7 @@ function MenuDropdown({
             // Keep the full familiar core + specialist vocabulary reachable at laptop widths.
             // The chevron is decorative (aria-haspopup owns the affordance), so compact it
             // before allowing labels to collide inside the compressible menubar lane.
+            presentation === "quick" && "studio-drawing-classic-menu-item",
             "inline-flex h-8 min-w-10 items-center justify-center gap-1 rounded-lg px-1.5 text-[0.75rem] font-semibold tracking-tight xl:px-2 2xl:px-2.5 2xl:text-[0.78rem] pointer-coarse:h-11 pointer-coarse:min-w-11 pointer-coarse:px-2",
             STUDIO_EASE,
             STUDIO_FOCUS_RING,
@@ -753,12 +726,13 @@ function MenuDropdown({
               : "text-fg-2 hover:bg-raised/80 hover:text-fg"
           )}
         >
-          {group.label}{group.recommendedForRole ? <span aria-hidden title="직군 핵심 메뉴" className="size-1.5 shrink-0 rounded-full bg-accent/85" /> : null}
+          {group.label}{presentation !== "quick" && group.recommendedForRole ? <span aria-hidden title="직군 핵심 메뉴" className="size-1.5 shrink-0 rounded-full bg-accent/85" /> : null}
           <ChevronDown
             size={STUDIO_ICON_SIZE.contextMenu}
             aria-hidden
             data-studio-main-menu-chevron="true"
             className={cn(
+              presentation === "quick" && "!hidden",
               "hidden opacity-50 transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] 2xl:block motion-reduce:transition-none",
               open && "rotate-180 opacity-90"
             )}
@@ -776,6 +750,7 @@ export function StudioMainMenu({
   specialistBoundaryGroupId = null,
   ariaLabel,
   surface = "primary",
+  presentation = "bar",
   className,
 }: StudioMainMenuProps): ReactElement {
   const t = useT();
@@ -810,16 +785,14 @@ export function StudioMainMenu({
   };
 
   return (
-    // A `nav` landmark cannot carry `menubar` (jsx-a11y/no-noninteractive-element-to-
-    // interactive-role), and an application menu is not site navigation anyway: the
-    // arrow-key group traversal this bar already implements only becomes discoverable to
-    // assistive tech once it announces itself as a menubar.
+    // 그룹 사이의 방향키 이동을 보조기기에 알린다.
     <div
       ref={menuBarRef}
       role="menubar"
       aria-label={ariaLabel ?? localizeText(t, "Main menu", "studio.mainMenu.aria")}
       data-studio-main-menu={surface === "primary" ? "true" : undefined}
-      data-studio-main-menu-action={surface === "action" ? "true" : undefined}
+      data-studio-main-menu-action={surface === "action" && presentation !== "quick" ? "true" : undefined}
+      data-studio-drawing-quick-menu={presentation === "quick" ? "true" : undefined}
       data-studio-shortcut-boundary="true"
       className={cn("flex min-w-max shrink-0 flex-nowrap items-center gap-0.5", className)}
     >
@@ -843,6 +816,7 @@ export function StudioMainMenu({
             surface={surface}
             open={openId === group.id}
             barActive={barActive}
+            presentation={presentation}
             isTabStop={groupIndex === activeTabStopIndex}
             onFocusTrigger={() => setTabStopIndex(groupIndex)}
             onOpen={() => setOpenId(group.id)}

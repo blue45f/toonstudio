@@ -79,6 +79,7 @@ export function createDefaultStudioVirtualSpaceSocialTransport(): StudioVirtualS
       return requestJson(
         await apiFetch(bookingsPath(scopeKey), {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(booking),
         }),
       );
@@ -94,6 +95,7 @@ export function createDefaultStudioVirtualSpaceSocialTransport(): StudioVirtualS
       return requestJson(
         await apiFetch(waitlistPath(scopeKey), {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(entry),
         }),
       );
@@ -112,6 +114,7 @@ export function createDefaultStudioVirtualSpaceSocialTransport(): StudioVirtualS
       return requestJson(
         await apiFetch(`${galleryLikesPath(scopeKey)}/toggle`, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ frameId }),
         }),
       );

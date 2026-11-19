@@ -4,6 +4,7 @@
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
+import { StudioAppliedFilterPresentation } from "../filter/StudioAppliedFilterPresentation";
 import { StudioColorWorkspaceProvider } from "../color/StudioColorWorkspaceContext";
 import { Maximize2 } from "lucide-react";
 import { StudioLiveCollaborationProvider } from "../live/StudioLiveCollaborationProvider";
@@ -40,19 +41,9 @@ const StudioLegacyPigmentStrokeMigration = lazy(() => import("../brush/StudioLeg
 
 export type { StudioCuttoonEditorViewSession };
 
-function resolveBrowserClarityStorage(): Storage | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
-
 export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
   const drawingPresentation = useStudioDrawingPresentation();
-  const choiceStorage = resolveBrowserClarityStorage();
-  return <StudioDrawingClarityProvider session={s} presentation={drawingPresentation} choiceStorage={choiceStorage}><StudioCuttoonEditorViewContent {...s} /></StudioDrawingClarityProvider>;
+  return <StudioDrawingClarityProvider session={s} presentation={drawingPresentation}><StudioCuttoonEditorViewContent {...s} /></StudioDrawingClarityProvider>;
 }
 
 function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
@@ -135,6 +126,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
       data-studio-drawing-clarity-panel={clarity?.active ? clarity.panel ?? undefined : undefined}
       data-studio-drawing-clarity-mobile={clarity?.active && isMobile ? "true" : undefined}
       data-studio-work-mode={workMode ?? "all"}
+      data-studio-workspace-layout-source={s.studioDrawingClarityBaseline?.source}
       data-studio-drawing-presentation={drawingPresentation}
       data-studio-tool-hint-mode={appSettings.general.toolHintMode}
       data-studio-reduce-motion={appSettings.other.reduceMotion ? "true" : "false"}
@@ -166,7 +158,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
         drawingAppPresentation && "isolate",
         maximized && !isMobile && !mobileImmersive &&
           "fixed inset-0 z-[60] overflow-y-auto bg-canvas",
-        canvasOnlyMode && !isMobile &&
+        canvasOnlyMode &&
           "fixed inset-0 z-[70] h-[100dvh] overflow-hidden overscroll-none bg-canvas",
         mobileImmersive &&
           "fixed inset-0 z-[75] h-[100dvh] overflow-hidden overscroll-none bg-canvas"
@@ -181,6 +173,10 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
           : undefined
       }
     >
+      <StudioAppliedFilterPresentation
+        scope={JSON.stringify([s.studioAuthUserId, s.saveIntentScope?.documentKey, s.effectiveWorkId, s.currentPageId])}
+        selected={s.selectedId ? s.elementById.get(s.selectedId) : undefined}
+      >
       {drawingAppPresentation ? (
         !canvasOnlyMode && !mobileImmersive ? <StudioDrawingAppBar session={s} /> : null
       ) : (
@@ -257,7 +253,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
         {s.contextMenu.visible && <Suspense fallback={null}><StudioCuttoonEditorContextMenu {...s} /></Suspense>}
       </Container>
     {canvasOnlyMode ? (
-      <div className="pointer-events-none fixed inset-x-0 top-[max(0.5rem,env(safe-area-inset-top))] z-[45] flex justify-center gap-2 px-3">
+      <div className="pointer-events-none fixed left-[env(safe-area-inset-left)] right-[env(safe-area-inset-right)] top-[max(0.5rem,env(safe-area-inset-top))] z-[80] flex flex-wrap justify-center gap-2 px-2">
         <StudioEditorReturnButton
           variant="canvas-only"
           onReturn={returnFromStudioEditorInBrowser}
@@ -266,7 +262,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
         <button
           type="button"
           onClick={() => setCanvasOnlyMode(false)}
-          className="pointer-events-auto inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-panel/95 px-3 text-xs font-semibold text-fg shadow-lg backdrop-blur transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="pointer-events-auto inline-flex min-h-11 min-w-11 items-center gap-2 rounded-full border border-line bg-panel/95 px-3 text-xs font-semibold text-fg shadow-lg backdrop-blur transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           title="일반 편집 화면으로 복원 (Esc)"
         >
           <Maximize2
@@ -276,11 +272,12 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
             className={studioChromeIconClass({ tone: "accent" })}
           />
           도구막대 복원
-          <kbd className="rounded border border-line bg-card px-1.5 py-0.5 text-[0.65rem] font-medium text-fg-3">Esc</kbd>
+          <kbd className="hidden rounded border border-line bg-card px-1.5 py-0.5 text-[0.65rem] font-medium text-fg-3 lg:inline">Esc</kbd>
         </button>
       </div>
     ) : null}
     <StudioHelpCenterHost />
+      </StudioAppliedFilterPresentation>
     </div>
     </StudioToolHintPreferencesProvider>
     </StudioColorWorkspaceProvider>

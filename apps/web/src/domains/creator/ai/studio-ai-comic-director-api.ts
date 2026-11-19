@@ -177,13 +177,6 @@ export function createStudioAiComicDirectorApiClient(input: {
     const sessionToken = input.sessionToken?.trim()
       || useApp.getState().sessionToken?.trim()
       || null;
-    if (!sessionToken) {
-      return {
-        ok: false,
-        code: "not_authenticated",
-        message: aiErrorText("studio.aiError.comicApi.loginRequired", "로그인하면 AI 코믹 디렉터 세션을 클라우드에 저장할 수 있어요."),
-      };
-    }
     let response: Response;
     try {
       response = await fetchImpl(
@@ -193,7 +186,7 @@ export function createStudioAiComicDirectorApiClient(input: {
           ...init,
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": sessionToken,
+            ...(sessionToken ? { "x-user-id": sessionToken } : {}),
             ...(init.headers ?? {}),
           },
         }),
@@ -203,6 +196,13 @@ export function createStudioAiComicDirectorApiClient(input: {
         ok: false,
         code: "network_error",
         message: aiErrorText("studio.aiError.comicApi.serverUnreachable", "AI 코믹 디렉터 저장 서버에 연결하지 못했어요."),
+      };
+    }
+    if (response.status === 401) {
+      return {
+        ok: false,
+        code: "not_authenticated",
+        message: aiErrorText("studio.aiError.comicApi.loginRequired", "로그인하면 AI 코믹 디렉터 세션을 클라우드에 저장할 수 있어요."),
       };
     }
     let body: unknown;

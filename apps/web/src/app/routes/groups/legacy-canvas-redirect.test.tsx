@@ -1,10 +1,18 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { StudioRouter } from "@/domains/creator/studio-router/StudioRouter";
+import type { StudioEditorRouteResolution } from "@/domains/creator/studio-router/studio-route-manifest";
+import { LegacyCanvasRedirect } from "./LegacyCanvasRedirect";
 import { legacyRedirectRoutes } from "./legacy.routes";
 
+vi.mock("@/domains/creator/studio-router/routes/StudioEditorRoute", () => ({
+  StudioEditorRoute: ({ resolution }: { readonly resolution: StudioEditorRouteResolution }) => (
+    <output data-testid="editor-surface" data-work-id={resolution.workspaceRoute.workId}/>
+  ),
+}));
 const routers: ReturnType<typeof createMemoryRouter>[] = [];
 function openRedirect(entry: string, routeId = "legacy-canvas", previous?: string) {
   const route = legacyRedirectRoutes.find((item) => item.id === routeId);
@@ -50,5 +58,21 @@ describe("캔버스 별칭의 작업 문맥 보존", () => {
     expect(router.state.location.search).toBe("");
     expect(router.state.location.hash).toBe("");
     expect(router.state.historyAction).toBe("REPLACE");
+  });
+  it.each(["/canvas", "/studio/canvas", "/studio"])("%s에서 실제 원고로 이동하며 방·앵커·방문 기록을 보존한다", async (pathname) => {
+    const state = { studioWorkspaceReturn: "qa" };
+    const router = createMemoryRouter([
+      { path: "/before", element: <p>원고 열기 전</p> },
+      { path: "/canvas", element: <LegacyCanvasRedirect /> },
+      { path: "/studio/*", element: <StudioRouter /> },
+    ], {initialEntries:["/before", {pathname,search:"?id=work-1&room=team-a",hash:"#page%3A2",state}]});
+    try {
+      render(<RouterProvider router={router}/>);
+      expect((await screen.findByTestId("editor-surface")).getAttribute("data-work-id")).toBe("work-1");
+      expect(router.state.location).toMatchObject({pathname:"/studio/work/work-1/canvas",search:"?room=team-a",hash:"#page%3A2",state});
+      expect(router.state.historyAction).toBe("REPLACE");
+      await act(async()=>{await router.navigate(-1);});
+      expect(router.state.location.pathname).toBe("/before");
+    } finally { router.dispose(); }
   });
 });

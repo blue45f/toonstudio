@@ -135,13 +135,13 @@ describe("StudioDrawingQuickErgonomicsBar", () => {
 
     render(<StepperHarness />);
 
-    expect(screen.getByText("8px")).toBeTruthy();
+    expect(screen.getByText("두께 8px")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "브러시 크기 키우기" }));
-    expect(screen.getByText("10px")).toBeTruthy();
+    expect(screen.getByText("두께 10px")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "브러시 크기 키우기" }));
-    expect(screen.getByText("13px")).toBeTruthy();
+    expect(screen.getByText("두께 13px")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "브러시 크기 줄이기" }));
-    expect(screen.getByText("10px")).toBeTruthy();
+    expect(screen.getByText("두께 10px")).toBeTruthy();
 
     const readoutBtn = screen.getByRole("button", { name: /현재 브러시 두께 10px/ });
     fireEvent.click(readoutBtn);
@@ -296,6 +296,7 @@ describe("StudioDrawingQuickErgonomicsBar", () => {
       activeCatalogBrush: { id: "gpen", name: "G펜" },
       brushOpacity: 0.85,
       color: "#1e293b",
+      appSettings: { shortcuts: { "brush-smaller": "", "brush-larger": "Alt+J" } },
       setColor,
       activatePrimaryCanvasTool,
       studioBrushCatalogHandlers: { toggle: toggleCatalog },
@@ -308,10 +309,19 @@ describe("StudioDrawingQuickErgonomicsBar", () => {
 
     const brushPill = screen.getByRole("button", { name: /현재 도구 G펜, 8px, 불투명도 85%, 브러시 선택 열기/ });
     expect(brushPill.getAttribute("data-studio-brush-active-pill")).toBe("true");
+    expect(toolbar.querySelector("button")).toBe(brushPill);
+    const readout = screen.getByRole("button", { name: "현재 브러시 두께 8px" });
+    expect(readout.textContent).toBe("두께 8px");
+    const firstStage = screen.getByRole("button", { name: "① 콘티·컷" });
+    expect(readout.compareDocumentPosition(firstStage) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(brushPill);
     expect(activatePrimaryCanvasTool).toHaveBeenCalledWith("draw", "pen");
     expect(toggleCatalog).toHaveBeenCalledWith("desktop-dock", brushPill);
 
+    const increase = screen.getByRole("button", { name: "브러시 크기 키우기" });
+    expect(increase.getAttribute("aria-keyshortcuts")).toBe("Alt+J");
+    expect(increase.title).toBe("브러시 크기 키우기 · Alt+J");
+    expect(screen.getByRole("button", { name: "브러시 크기 줄이기" }).hasAttribute("aria-keyshortcuts")).toBe(false);
     const colorPicker = screen.getByLabelText("주 색 선택") as HTMLInputElement;
     expect(colorPicker.value).toBe("#1e293b");
     fireEvent.change(colorPicker, { target: { value: "#e11d48" } });

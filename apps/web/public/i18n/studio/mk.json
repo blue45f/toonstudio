@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Супер едноставен распоред",
   "studio.mainMenu.item.view.density-full": "Целосен распоред",
   "studio.mainMenu.item.view.wide": "Собери ги панелите и прошири",
+  "studio.mainMenu.item.view.wide.open": "Прикажи ги панелите",
   "studio.mainMenu.item.view.tools-companion": "Работен простор со повеќе екрани…",
   "studio.mainMenu.item.view.canvas-only": "Само платно",
   "studio.mainMenu.item.view.color-vision.unavailable": "Не можете да го промените режимот „Тест за вид на боја“ додека трансформацијата на приказот е заклучена.",

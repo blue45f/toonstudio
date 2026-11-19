@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Супер простий макет",
   "studio.mainMenu.item.view.density-full": "Повний макет",
   "studio.mainMenu.item.view.wide": "Згорнути панелі й розширити",
+  "studio.mainMenu.item.view.wide.open": "Показати панелі",
   "studio.mainMenu.item.view.tools-companion": "Багатоекранний робочий простір…",
   "studio.mainMenu.item.view.canvas-only": "Лише полотно",
   "studio.mainMenu.item.view.color-vision.unavailable": "Неможливо змінити режим перевірки кольорового зору, поки перетворення вигляду заблоковано.",

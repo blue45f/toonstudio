@@ -96,5 +96,29 @@ export interface StudioMainMenuProps {
   ariaLabel?: string;
   /** Primary owns the application menu lane; action menus live beside completion CTAs. */
   surface?: "primary" | "action";
+  /** 여러 줄 메뉴에서는 옆 명령을 가리는 동작 미리보기를 열지 않는다. */
+  presentation?: "bar" | "panel" | "quick";
   className?: string;
+}
+
+type MenuSectionRow = { readonly item: StudioMainMenuItem; readonly index: number };
+type MenuSection = { readonly label?: string; readonly rows: readonly MenuSectionRow[] };
+
+/** 구역별 표시와 키보드 이동이 같은 원래 메뉴 인덱스를 공유한다. */
+export function splitStudioMainMenuSections(
+  items: readonly StudioMainMenuItem[],
+): readonly MenuSection[] {
+  const sections: { label?: string; rows: MenuSectionRow[] }[] = [];
+  items.forEach((item, index) => {
+    const current = sections.at(-1);
+    if (!current || item.sectionLabel) {
+      sections.push({
+        ...(item.sectionLabel ? { label: item.sectionLabel } : {}),
+        rows: [{ item, index }],
+      });
+      return;
+    }
+    current.rows.push({ item, index });
+  });
+  return sections;
 }

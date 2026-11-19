@@ -724,7 +724,7 @@ export async function presentGpuFilterChain(
 ): Promise<StudioGpuFilterPreviewFrame | null> {
   const execution = await executeGpuFilterChain(imageData, el, options);
   if (!execution) {
-    options?.onFailure?.({
+    if (!requestSuperseded(options)) options?.onFailure?.({
       phase: "compute",
       message: "The WebGPU filter compute chain was unavailable.",
     });
@@ -740,10 +740,12 @@ export async function presentGpuFilterChain(
   // buffer and canvas pipeline therefore stay on one physical device with no copy/readback.
   const isolatedRuntime = options !== undefined && "gpu" in options;
   const presentationLease = isolatedRuntime ? null : await acquireStudioGpuDevice();
-  if (!isolatedRuntime && !presentationLease) {
+  const superseded = requestSuperseded(options);
+  if (superseded || (!isolatedRuntime && !presentationLease)) {
+    presentationLease?.release();
     execution.release();
     if (ownsSurface) surface.dispose();
-    options?.onFailure?.({
+    if (!superseded) options?.onFailure?.({
       phase: "presentation",
       message: "The native Studio GPU presentation device was unavailable.",
     });
@@ -758,10 +760,9 @@ export async function presentGpuFilterChain(
   if (presented.status !== "presented") {
     execution.release();
     if (ownsSurface) surface.dispose();
-    options?.onFailure?.({ phase: "presentation", message: presented.reason });
+    if (!requestSuperseded(options)) options?.onFailure?.({ phase: "presentation", message: presented.reason });
     return null;
   }
-
   let disposed = false;
   let finalPromise: Promise<StudioImageDataLike | null> | null = null;
   const dispose = (): void => {

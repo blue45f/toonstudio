@@ -114,9 +114,8 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
   const [entryAvatarIndex, setEntryAvatarIndex] = useState(initialEntryPreference.avatarIndex);
   const [entryArtStyle, setEntryArtStyle] = useState<StudioVirtualArtStyleKey>(() => readStudioVirtualArtStyle());
   const [entryNickname, setEntryNickname] = useState(initialEntryPreference.nickname);
-  const [entryOpen, setEntryOpen] = useState(() =>
-    !initialEntryPreference.confirmed || new URLSearchParams(location.search).get("lobby") === "1",
-  );
+  const lobbyRequested = new URLSearchParams(location.search).get("lobby") === "1";
+  const [entryRequested, setEntryOpen] = useState(() => !initialEntryPreference.confirmed || lobbyRequested);
   const session = useSession();
   const guestInvite = useMemo(() => parseStudioGuestInviteFragment(location.hash), [location.hash]);
   // #code=XXXXXX 코드 초대도 같은 게스트 세션 흐름으로 태우되, 초대 토큰과
@@ -142,6 +141,10 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
     }
     return null;
   }, [guestInvite.token, codeInvite, guestSessionForSpace]);
+  const returningGuest = guestSessionForSpace && guestSessionForSpace.inviteToken === accessCredential?.value ? guestSessionForSpace : null;
+  const [admittedGuest, setAdmittedGuest] = useState<StudioGuestSession | null>(null);
+  // 같은 공간을 새로 열어도 저장된 초대는 서버 확인 후에만 무대에 연결한다.
+  const entryOpen = entryRequested || (isGuest && (!returningGuest || admittedGuest !== returningGuest));
   const [accessGate, setAccessGate] = useState<"idle" | "checking" | "allowed" | "unavailable">("idle");
   const [accessDenial, setAccessDenial] = useState<string | null>(null);
   const [accessRetry, setAccessRetry] = useState(0);
@@ -160,7 +163,15 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
       if (cancelled) return;
       if (result.status === "valid") {
         setAccessGate("allowed");
+        if (returningGuest) {
+          setEntryNickname(returningGuest.nickname);
+          if (!lobbyRequested) {
+            setAdmittedGuest(returningGuest);
+            setEntryOpen(false);
+          }
+        }
       } else if (result.status === "invalid") {
+        setEntryOpen(true);
         setAccessGate("idle");
         setAccessDenial(result.reason);
         if (accessCredential.source === "stored") {
@@ -169,23 +180,24 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
           setGuestSession(null);
         }
       } else {
+        if (returningGuest) setEntryNickname(returningGuest.nickname);
         setAccessGate("unavailable");
       }
     });
     return () => {
       cancelled = true;
     };
-  }, [accessCredential, accessRetry, decodedProjectId, entryOpen, personal, session.data, session.ready]);
+  }, [accessCredential, accessRetry, decodedProjectId, entryOpen, lobbyRequested, personal, returningGuest, session.data, session.ready]);
   const accessBlocked = Boolean(isGuest && accessCredential && (
     accessGate === "checking"
     || accessGate === "idle"
     || accessDenial !== null
     || (accessGate === "unavailable" && accessCredential.source === "fragment")
   ));
-  const accessNotice = !isGuest || !accessCredential
-    ? null
-    : accessDenial !== null
-      ? { tone: "error" as const, ...(ACCESS_DENIAL_COPY[accessDenial] ?? ACCESS_DENIAL_COPY["not-found"]) }
+  const accessNotice = accessDenial !== null
+    ? { tone: "error" as const, ...(ACCESS_DENIAL_COPY[accessDenial] ?? ACCESS_DENIAL_COPY["not-found"]) }
+    : !isGuest || !accessCredential
+      ? null
       : accessGate === "checking" || accessGate === "idle"
         ? { tone: "info" as const, ko: "초대 자격을 확인하고 있어요…", en: "Checking your invitation…" }
         : accessGate === "unavailable" && accessCredential.source === "fragment"
@@ -260,24 +272,28 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
       );
     }
   }
+  const enterGuest = (token: string, nickname: string) => {
+    const guest = guestSessionForSpace?.inviteToken === token
+      ? { ...guestSessionForSpace, nickname }
+      : createStudioGuestSession({ token, spaceId: decodedProjectId, nickname, spawn: guestInvite.spawn });
+    writeStudioGuestSession(guest);
+    setGuestSession(guest);
+    setAdmittedGuest(guest);
+    setEntryNickname(nickname);
+    setAccessDenial(null);
+    setResumeChoiceMade(true);
+    setEntryOpen(false);
+    if (guestInvite.token || codeInvite) {
+      navigate({ pathname: location.pathname, search: location.search }, { replace: true });
+    }
+  };
   const completeEntry = (resume: boolean) => {
     const resolvedNickname = normalizeStudioVirtualSpaceNickname(entryNickname);
     if (!resolvedNickname) return;
     // 자격이 제시된 게스트는 서버 검증을 통과하기 전에는 세션을 만들지 않는다(F-B06-1).
     if (accessBlocked) return;
-    const inviteToken = guestInvite.token ?? codeInvite;
-    if (isGuest && inviteToken) {
-      const guest = createStudioGuestSession({
-        token: inviteToken,
-        spaceId: decodedProjectId,
-        nickname: resolvedNickname,
-        spawn: guestInvite.spawn,
-      });
-      writeStudioGuestSession(guest);
-      setGuestSession(guest);
-      setEntryNickname(resolvedNickname);
-      setResumeChoiceMade(true);
-      setEntryOpen(false);
+    if (isGuest && accessCredential) {
+      enterGuest(accessCredential.value, resolvedNickname);
       return;
     }
     if (!validStudioVirtualSpaceAvatarIndex(entryAvatarIndex)) return;
@@ -356,18 +372,7 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
           return { ok: false, reason: verification.reason, retryAfterSeconds: verification.retryAfterSeconds };
         }
         const resolvedNickname = normalizeStudioVirtualSpaceNickname(entryNickname) ?? publicNickname;
-        const guest = createStudioGuestSession({
-          token: code,
-          spaceId: decodedProjectId,
-          nickname: resolvedNickname,
-          spawn: guestInvite.spawn,
-        });
-        writeStudioGuestSession(guest);
-        setGuestSession(guest);
-        setEntryNickname(resolvedNickname);
-        setAccessDenial(null);
-        setAccessGate("allowed");
-        setEntryOpen(false);
+        enterGuest(code, resolvedNickname);
         return { ok: true };
       }}
       onEnter={() => completeEntry(false)}
@@ -400,6 +405,10 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
           onNicknameChange={(value) => {
             const resolvedNickname = normalizeStudioVirtualSpaceNickname(value);
             if (!resolvedNickname) return;
+            if (isGuest && returningGuest) {
+              enterGuest(returningGuest.inviteToken, resolvedNickname);
+              return;
+            }
             const latestPreference = readStudioVirtualSpaceEntryPreference();
             const storedAvatarIndex = readStudioVirtualSpaceAvatarIndex();
             const nextAvatarIndex = latestPreference.confirmed && validStudioVirtualSpaceStoredAvatarIndex(storedAvatarIndex)

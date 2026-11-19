@@ -4,7 +4,9 @@
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
+import { useStudioAppliedFilterIntent } from "../filter/studio-applied-filter-context";
 import { Suspense } from "react";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { isEffectivelyLocked } from "../studio-layers";
 import { createStudioPixelEditCanvas, encodeStudioPixelEditResultPng, loadStudioPixelEditImage } from "../studio-legacy-editor-runtime-helpers";
 import { StudioFilterDialog as StudioSingleFilterDialog, StudioLayerLiftDialog } from "../studio-page-lazy-ui";
@@ -14,6 +16,8 @@ import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSession) {
+  const watchAppliedFilter = useStudioAppliedFilterIntent();
+  const bt = useBilingual("studio.drawingClarity");
   const {
     activeSurfaceReviewLocked,
     announceDrawingShortcut,
@@ -58,10 +62,15 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
   } = s;
   // 필터 갤러리는 단일 필터와 같은 세션 계약을 받는 별도 대화상자다(효과 스택 편집).
   const StudioFilterDialog = studioFilterSession?.kind === "filter-gallery" ? StudioFilterGalleryDialog : StudioSingleFilterDialog;
+  const progress = <div data-studio-filter-preparing="true" className="studio-drawing-filter-progress">
+    <span role="status">{bt("필터 미리보기를 준비하는 중…", "Preparing filter preview…")}</span>
+    <button type="button" onClick={closeStudioFilterDialog}>{bt("취소", "Cancel")}</button>
+  </div>;
   return (
     <>
+      {s.studioFilterPreparationBusy && !studioFilterSession ? progress : null}
       {studioFilterSession && studioFilterDialogImage?.type === "image" ? (
-        <Suspense fallback={null}>
+        <Suspense fallback={progress}>
           <StudioFilterDialog
             key={studioFilterSession.id}
             activeKey={`filter:${studioFilterSession.id}`}
@@ -105,6 +114,8 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
               if (studioFilterSession.target === "image") {
                 if (applicationScope === "whole") {
                   if (!patchEl(studioFilterSession.elementId, patch as Partial<El>)) return;
+                  const target = elementById.get(studioFilterSession.elementId);
+                  if (target?.type === "image") watchAppliedFilter?.({ ...target, ...patch });
                   setStudioFilterPreview(null);
                   setLastStudioFilterDraft(draft);
                   setStudioFilterApplying(false);
@@ -161,6 +172,7 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
                     ),
                   );
                   if (!committed) return;
+                  watchAppliedFilter?.({ ...target, ...result.transaction.patch });
                   setStudioFilterPreview(null);
                   setLastStudioFilterDraft(draft);
                   setError(null);
@@ -235,6 +247,7 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
                 if (!commit(applied.elements, undefined, studioFilterSession.pageId)) return;
                 setMarqueeIds([]);
                 setSelectedId(composite.id);
+                watchAppliedFilter?.(composite);
                 setTool("select");
                 setStudioFilterPreview(null);
                 setLastStudioFilterDraft(draft);

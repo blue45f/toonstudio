@@ -1,5 +1,7 @@
 import { CircleStop, Disc3, Mic, Square, X } from "lucide-react";
 
+import { readOrCreateStudioLiveClientInstanceId } from "../live/studio-live-client-identity";
+import { readStudioGuestSession } from "./studio-virtual-space-guest-session";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
   STUDIO_REVERB_PRESET_SPECS,
@@ -20,6 +22,7 @@ export interface StudioVirtualSpaceRecordingBoothPanelProps {
   readonly position: StudioVirtualSpacePoint | null;
   readonly userName?: string | null;
   readonly micMutedByUser: boolean;
+  readonly actorId?: string | null;
   readonly projectId?: string | null;
   readonly isGuest?: boolean;
   readonly driver?: StudioRecordingBoothDriver;
@@ -33,6 +36,16 @@ export interface StudioVirtualSpaceRecordingBoothPanelProps {
 /** 오류 코드를 사용자 문구로 바꾼다. 모르는 코드는 상태 코드로 함께 보여 준다. */
 function errorCopy(code: string, bt: (ko: string, en: string) => string): string {
   switch (code) {
+    case "local-save-failed":
+      return bt("기기에 보관하지 못했어요. 창을 닫기 전에 WebM을 받아 주세요.", "Could not keep this take on this device. Download the WebM before closing.");
+    case "local-load-failed":
+      return bt("기기 보관함을 열지 못했어요. 다른 편집 창을 닫고 부스를 다시 열어 주세요.", "Could not open the recording shelf. Close other editing tabs and reopen the booth.");
+    case "local-read-failed":
+      return bt("보관한 녹음 파일을 읽지 못했어요. 부스를 다시 열어 확인해 주세요.", "Could not read the recording. Reopen the booth and check the file.");
+    case "local-remove-failed":
+      return bt("보관한 녹음을 지우지 못했어요. 다시 시도해 주세요.", "Could not remove the saved take. Please retry.");
+    case "local-cleanup-failed":
+      return bt("프로젝트에는 저장됐어요. 부스를 다시 열면 기기 보관함을 정리해요.", "Saved to the project. Reopen the booth to finish cleaning up the local shelf.");
     case "mic-permission-denied":
       return bt("마이크 권한이 거부되었어요. 브라우저 사이트 설정에서 마이크를 허용해 주세요.", "Microphone permission was denied. Allow the microphone in your browser site settings.");
     case "mic-unavailable":
@@ -69,7 +82,28 @@ function formatClock(totalSec: number): string {
  * 마이크 장치 적용의 소유자는 페이지의 조용한 구역 중재 훅이다(부스 구역 포함).
  * 이 패널은 뱃지 표시와 상태 계산만 맡고, onEffectiveMicMuted는 선택적 알림이다.
  */
-export function StudioVirtualSpaceRecordingBoothPanel({
+function localScope({ actorId, isGuest, projectId, config }: StudioVirtualSpaceRecordingBoothPanelProps): string | null {
+  if (actorId === undefined) return null;
+  let owner: string;
+  if (actorId) owner = `account:${actorId}`;
+  else if (isGuest) {
+    const guest = readStudioGuestSession();
+    if (!guest || guest.spaceId !== projectId) return null;
+    owner = `guest:${guest.sessionId}`;
+  } else {
+    try { owner = `tab:${readOrCreateStudioLiveClientInstanceId("recording-booth")}`; }
+    catch { return null; }
+  }
+  return JSON.stringify([owner, projectId ?? null, config.boothId]);
+}
+
+export function StudioVirtualSpaceRecordingBoothPanel(props: StudioVirtualSpaceRecordingBoothPanelProps) {
+  const scope = localScope(props);
+  return <RecordingBoothWorkspace key={scope ?? "session"} {...props} draftScope={scope} />;
+}
+
+function RecordingBoothWorkspace({
+  draftScope,
   config,
   bookings,
   position,
@@ -82,11 +116,11 @@ export function StudioVirtualSpaceRecordingBoothPanel({
   onRequireLogin,
   onProjectAsset,
   onEffectiveMicMuted,
-}: StudioVirtualSpaceRecordingBoothPanelProps) {
+}: StudioVirtualSpaceRecordingBoothPanelProps & { readonly draftScope: string | null }) {
   const bt = useBilingual("StudioVirtualSpaceRecordingBoothPanel");
   const booth = useStudioVirtualSpaceRecordingBooth({
     config, bookings, position, userName, micMutedByUser, projectId, isGuest,
-    driver, nowMs, onRequireLogin, onProjectAsset, onEffectiveMicMuted,
+    driver, nowMs, onRequireLogin, onProjectAsset, onEffectiveMicMuted, draftScope,
   });
   const { access } = booth;
   const activeBooking = access.activeBooking;
@@ -185,12 +219,19 @@ export function StudioVirtualSpaceRecordingBoothPanel({
         <p className="space-panel-note">{bt("아직 녹음한 테이크가 없어요.", "No takes recorded yet.")}</p>
       ) : (
         <ul>
-          {booth.takes.map(({ take, blob, saveState }) => (
+          {booth.takes.map(({ take, blob, saveState, onDevice }) => (
             <li key={take.id}>
               <span>
                 {new Date(take.recordedAtMs).toLocaleTimeString()} · {formatClock(take.durationSec)}
-                {blob ? ` · ${Math.max(1, Math.round(blob.size / 1024))}KB` : ""}
+                {blob || onDevice ? ` · ${Math.max(1, Math.round(take.estimatedBytes / 1024))}KB` : ""}
               </span>
+              {onDevice && saveState !== "saved" ? <small>{bt("이 기기에 보관됨", "Kept on this device")}</small> : null}
+              {(blob || onDevice) && saveState !== "saved" ? <button type="button" onClick={() => { void booth.downloadTake(take.id); }}>
+                {bt("WebM 받기", "Download WebM")}
+              </button> : null}
+              {saveState !== "saved" && saveState !== "saving" ? <button type="button" onClick={() => {
+                if (window.confirm(bt("이 테이크를 기기에서 지울까요?", "Delete this take from this device?"))) void booth.discardTake(take.id);
+              }}>{bt("테이크 삭제", "Delete take")}</button> : null}
               {saveState === "saved" ? (
                 <span>{bt("프로젝트 에셋에 넣었어요", "Added to project assets")}</span>
               ) : saveState === "saving" ? (
@@ -199,7 +240,7 @@ export function StudioVirtualSpaceRecordingBoothPanel({
                 </button>
               ) : saveState === "failed" ? (
                 <>
-                  <span role="alert">{bt("저장에 실패했어요. 테이크는 이 기기에 남아 있어요.", "Save failed. The take is still on this device.")}</span>
+                  <span role="alert">{onDevice ? bt("프로젝트 저장에 실패했어요. 보관한 테이크로 다시 시도할 수 있어요.", "Project save failed. Retry with the take kept on this device.") : bt("프로젝트 저장에 실패했어요. 이 창에서 다시 시도해 주세요.", "Project save failed. Retry in this tab.")}</span>
                   <button type="button" onClick={() => booth.addTakeToProject(take.id)}>
                     {bt("다시 저장하기", "Retry save")}
                   </button>

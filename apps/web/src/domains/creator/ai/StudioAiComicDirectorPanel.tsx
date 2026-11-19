@@ -27,7 +27,7 @@ import { StudioContinuityMetadataEditor } from "../StudioContinuityMetadataEdito
 import { activateStudioModalSheet } from "../useStudioModalSheet";
 import { StudioAiImageReferencePackEditor, STUDIO_AI_IMAGE_REFERENCE_PROVIDER_SAFE_MAX, type StudioAiImageReferenceAssetOption } from "./StudioAiImageReferencePackEditor";
 import {
-  appendScenarioImageCandidate,
+  appendScenarioImageCandidate, inspectStudioScenarioImageGeneration, reviewedScenarioGenerationRequest,
   scenarioImageCandidates,
   scenarioImageInputFingerprint,
   scenarioImageReferenceSignature,
@@ -47,6 +47,7 @@ import {
   createStudioAiComicDirectorApiClient,
   type StudioAiComicDirectorApiClient,
 } from "./studio-ai-comic-director-api";
+import { StudioDirectorCutSelectionHeader, StudioDirectorGenerationAction } from "./StudioDirectorCutSelection";
 import { StudioCharacterCanonDirectorSection } from "./canon/StudioCharacterCanonDirectorSection";
 import { applyCanonPromptBlocks } from "./canon/studio-character-canon-prompt";
 import { useStudioCharacterCanon } from "./canon/useStudioCharacterCanon";
@@ -363,18 +364,17 @@ export function StudioAiComicDirectorPanel({
   const [stage, setStage] = useState<StudioAiComicDirectorStage>(() => {
     if (
       busy ||
-      items.some(
-        (item) =>
-          Boolean(item.imageDataUrl) ||
-          scenarioImageCandidates(item).length > 0 ||
-          Boolean(item.imageError),
-      )
+      items.some(item => item.imageDataUrl || scenarioImageCandidates(item).length || item.imageError)
     ) {
       return "production";
     }
     return items.length ? "direction" : "brief";
   });
-  const [selectedIndexes, setSelectedIndexes] = useState<number[]>(() => items.map((_, index) => index));
+  const [manualIndexes, setSelectedIndexes] = useState<number[] | null>(null);
+  const missingIndexes = useMemo(() => inspectStudioScenarioImageGeneration(items).indexes, [items]);
+  const selectedIndexes = manualIndexes?.filter(index => index < items.length) ?? missingIndexes;
+  const request = reviewedScenarioGenerationRequest(items, selectedIndexes);
+  const generation = inspectStudioScenarioImageGeneration(items, request);
   const [activeIndex, setActiveIndex] = useState(0);
   const [directions, setDirections] = useState<Record<number, DirectorDirection>>({});
   const [maskDataUrl, setMaskDataUrl] = useState("");
@@ -399,10 +399,6 @@ export function StudioAiComicDirectorPanel({
   const canon = useStudioCharacterCanon();
 
   useEffect(() => {
-    setSelectedIndexes((current) => {
-      const valid = current.filter((index) => index >= 0 && index < items.length);
-      return valid.length || current.length ? valid : items.map((_, index) => index);
-    });
     setActiveIndex((current) => Math.min(Math.max(0, current), Math.max(0, items.length - 1)));
   }, [items]);
 
@@ -454,7 +450,7 @@ export function StudioAiComicDirectorPanel({
   if (!open || typeof document === "undefined") return null;
 
   const referenceBlocked =
-    imageReferenceMissingCount > 0
+    imageReferenceMissingCount > 0 || (imageReferenceDocument.references.length > 0 && imageReferencesLoading)
     || imageReferenceDocument.references.length > STUDIO_AI_IMAGE_REFERENCE_PROVIDER_SAFE_MAX;
   const activeItem = items[activeIndex];
   const activeCandidate = selectedCandidate(activeItem);
@@ -503,15 +499,15 @@ export function StudioAiComicDirectorPanel({
   };
 
   const generateSelected = () => {
-    if (!selectedIndexes.length || busy) return;
+    if (!generation.requestedCount || !generation.withinLimit || busy || !imageConfigured || referenceBlocked) return;
     const operationId = uid("generation");
     void persistJob({
       operationId,
       kind: "generation",
-      progressTotal: selectedIndexes.length * 2,
-      payload: { indexes: selectedIndexes, variants: 2 },
+      progressTotal: generation.requestedCount,
+      payload: { ...request, indexes: generation.indexes },
     });
-    onGenerateImages({ indexes: [...selectedIndexes], variants: 2 });
+    onGenerateImages({ ...request, indexes: generation.indexes });
     setStage("production");
   };
 
@@ -823,13 +819,13 @@ export function StudioAiComicDirectorPanel({
 
             {stage === "direction" ? (
               <div className="mx-auto max-w-6xl">
-                <div className="mb-3 flex flex-wrap items-center gap-2"><div><h3 className="text-sm font-bold">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "AI가 이해한 컷과 연출 확인")}</h3><p className="text-[0.65rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "체크박스가 실제 제작 대상을 결정합니다.")}</p></div><button type="button" onClick={() => setSelectedIndexes(items.map((_, index) => index))} disabled={busy || !items.length} className="ml-auto min-h-11 rounded-lg border border-line bg-card px-3 text-xs hover:bg-raised">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "전체 선택")}</button><button type="button" onClick={() => setSelectedIndexes([])} disabled={busy || !selectedIndexes.length} className="min-h-11 rounded-lg border border-line bg-card px-3 text-xs hover:bg-raised">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "선택 해제")}</button></div>
+                <StudioDirectorCutSelectionHeader total={items.length} selected={selectedIndexes.length} missing={missingIndexes.length} busy={busy} onMissing={() => setSelectedIndexes(null)} onAll={() => setSelectedIndexes(items.map((_, index) => index))} onClear={() => setSelectedIndexes([])} />
                 {!items.length ? <div className="rounded-xl border border-dashed border-line p-8 text-center"><p className="text-sm font-semibold">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "아직 컷 구성이 없습니다.")}</p><button type="button" onClick={() => setStage("brief")} className="mt-3 min-h-11 rounded-lg bg-accent px-4 text-xs font-bold text-on-accent">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "이야기 입력으로 이동")}</button></div> : (
                   <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_23rem]">
                     <ul aria-label={translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 구성")} className="grid gap-2 sm:grid-cols-2">
                       {items.map((item, index) => (
                         <li key={index} className={cn("rounded-xl border bg-card p-2", activeIndex === index ? "border-accent" : "border-line")}>
-                          <div className="flex gap-2"><label className="grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-panel"><span className="sr-only">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 ")}{index + 1} {translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "제작 선택")}</span><input type="checkbox" checked={selected.has(index)} onChange={() => setSelectedIndexes((current) => current.includes(index) ? current.filter((value) => value !== index) : [...current, index].sort((left, right) => left - right))} disabled={busy} className="size-4 accent-accent" /></label><button type="button" onClick={() => setActiveIndex(index)} className={cn("min-h-11 min-w-0 flex-1 rounded-lg text-left", STUDIO_FOCUS_RING)}><strong className="block truncate text-xs">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 ")}{index + 1} · {item.summary}</strong><span className="block truncate text-[0.62rem] text-fg-3">{SCENARIO_BEAT_LABELS[item.beatType]} {translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "· 대사 ")}{item.bubbles.length}{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "개")}</span></button><div className="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-raised"><StageThumbnail item={item} /></div></div>
+                          <div className="flex gap-2"><label className="grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-panel"><span className="sr-only">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 ")}{index + 1} {translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "제작 선택")}</span><input type="checkbox" checked={selected.has(index)} onChange={() => setSelectedIndexes(selected.has(index) ? selectedIndexes.filter(value => value !== index) : [...selectedIndexes, index].sort((left, right) => left - right))} disabled={busy} className="size-4 accent-accent" /></label><button type="button" onClick={() => setActiveIndex(index)} className={cn("min-h-11 min-w-0 flex-1 rounded-lg text-left", STUDIO_FOCUS_RING)}><strong className="block truncate text-xs">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 ")}{index + 1} · {item.summary}</strong><span className="block truncate text-[0.62rem] text-fg-3">{SCENARIO_BEAT_LABELS[item.beatType]} {translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "· 대사 ")}{item.bubbles.length}{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "개")}</span></button><div className="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-raised"><StageThumbnail item={item} /></div></div>
                           <label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "제작 방향")}<select aria-label={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "{v0}번 장면 제작 방향"), { v0: String(index + 1) })} value={directions[index] ?? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "en", "faithful")} onChange={(event) => updateDirection(index, event.target.value as DirectorDirection)} disabled={busy} className="mt-1 min-h-11 w-full rounded-lg border border-line bg-panel px-2 text-xs text-fg">{Object.entries(DIRECTIONS).map(([id, meta]) => <option key={id} value={id}>{meta.label}</option>)}</select></label>
                         </li>
                       ))}
@@ -843,7 +839,7 @@ export function StudioAiComicDirectorPanel({
                   onApplyCanon={applyCanonToSelected}
                   disabled={busy}
                 />
-                <div className="sticky bottom-2 mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-line-strong bg-raised/95 p-2 shadow-xl backdrop-blur"><strong className="px-2 text-xs">{selectedIndexes.length}{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 선택됨")}</strong><span className="text-[0.62rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "제작용 · 후보 2개씩 · 최대 ")}{selectedIndexes.length * 2}{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "결과")}</span><button type="button" onClick={generateSelected} disabled={!imageConfigured || referenceBlocked || busy || !selectedIndexes.length} className="ml-auto min-h-11 rounded-lg bg-accent px-4 text-xs font-bold text-on-accent disabled:opacity-45">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "선택한 ")}{selectedIndexes.length}{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 제작하기")}</button></div>
+                <StudioDirectorGenerationAction imageConfigured={imageConfigured} generation={generation} selected={selectedIndexes.length} blocked={!imageConfigured || referenceBlocked || busy} onGenerate={generateSelected} />
               </div>
             ) : null}
 

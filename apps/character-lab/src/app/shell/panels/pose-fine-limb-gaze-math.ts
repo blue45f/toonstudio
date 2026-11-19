@@ -6,7 +6,6 @@ import {
   anklePitch,
   fingerCurl,
   fingerSpread,
-  rotX,
   rotZ,
   seq,
   sideSign,
@@ -22,7 +21,7 @@ import {
   RIGHT_FINGER_BONE_NAMES,
   resolveEyeGaze,
 } from "../../../contracts";
-import { clamp } from "../../../shared/math";
+import { QUAT_IDENTITY, clamp, qNormalize, radToDeg } from "../../../shared/math";
 
 import { mirrorHumanoidPoseLeftRight } from "./pose-panel-helpers";
 
@@ -56,12 +55,6 @@ export const DEFAULT_HAND_SLIDERS: HandSlidersState = {
   spreadDeg: 0,
   wristFlexDeg: 0,
   wristDeviateDeg: 0,
-};
-
-export const DEFAULT_FOOT_SLIDERS: FootSlidersState = {
-  anklePitchDeg: 0,
-  ankleRollDeg: 0,
-  toeLiftDeg: 0,
 };
 
 const FOUR_FINGERS = ["Index", "Middle", "Ring", "Little"] as const;
@@ -113,15 +106,33 @@ export function buildSingleHandFinePose(side: Side, sliders: HandSlidersState): 
   return out;
 }
 
-export function buildSingleFootFinePose(side: Side, sliders: FootSlidersState): Pose {
-  const out: Partial<Record<HumanoidBoneName, Quat>> = {};
-  const put = (bone: HumanoidBoneName, q: Quat): void => {
-    if (isNonIdentity(q)) out[bone] = q;
+// 로컬 발 회전은 X(굽힘) · Y(비틀림) · Z(기울기) 순의 곱이다. ±90° 비틀림은 Z=0인 동등 표현을 사용한다.
+function footAngles(q: Quat): { pitch: number; roll: number } {
+  const [x, y, z, w] = qNormalize(q);
+  const cosY = Math.hypot(1 - 2 * (y * y + z * z), 2 * (w * z - x * y));
+  if (cosY < 1e-8) return { pitch: radToDeg(Math.atan2(2 * (w * x + y * z), 1 - 2 * (x * x + z * z))), roll: 0 };
+  return {
+    pitch: radToDeg(Math.atan2(2 * (w * x - y * z), 1 - 2 * (x * x + y * y))),
+    roll: radToDeg(Math.atan2(2 * (w * z - x * y), 1 - 2 * (y * y + z * z))),
   };
-  const footRot = seq(rotZ(-sideSign(side) * sliders.ankleRollDeg), anklePitch(sliders.anklePitchDeg));
-  put(`${side}Foot`, footRot);
-  put(`${side}Toes`, rotX(-sliders.toeLiftDeg));
-  return out;
+}
+
+export function readFootSliders(pose: Pose, side: Side): FootSlidersState {
+  const ankle = footAngles(pose[`${side}Foot`] ?? QUAT_IDENTITY);
+  return {
+    anklePitchDeg: -ankle.pitch,
+    ankleRollDeg: -sideSign(side) * ankle.roll,
+    toeLiftDeg: -footAngles(pose[`${side}Toes`] ?? QUAT_IDENTITY).pitch,
+  };
+}
+
+/** 편집한 축의 차이만 적용해 외부 포즈의 비틀림과 다른 축·관절을 보존한다. */
+export function adjustedFootJoint(pose: Pose, side: Side, axis: keyof FootSlidersState, value: number): { bone: HumanoidBoneName; rotation: Quat } {
+  const bone = axis === "toeLiftDeg" ? `${side}Toes` as const : `${side}Foot` as const;
+  const current = pose[bone] ?? QUAT_IDENTITY;
+  const delta = value - readFootSliders(pose, side)[axis];
+  const rotation = axis === "ankleRollDeg" ? seq(rotZ(-sideSign(side) * delta), current) : seq(current, anklePitch(delta));
+  return { bone, rotation };
 }
 
 export function mirrorHandsOnlyPose(recipe: CharacterRecipe): Pose {
@@ -154,14 +165,14 @@ export function mirrorHandsOnlyPose(recipe: CharacterRecipe): Pose {
   return nextArmsHands;
 }
 
-export function mirrorFeetOnlyPose(pose: Pose): Pose {
+export function mirrorFeetOnlyPose(pose: Pose, constrain: (feet: Pose) => Pose): Pose {
   const footBones: readonly HumanoidBoneName[] = ["leftFoot", "leftToes", "rightFoot", "rightToes"];
   const footSource: Partial<Record<HumanoidBoneName, Quat>> = {};
   for (const bone of footBones) {
     const q = pose[bone];
     if (q) footSource[bone] = q;
   }
-  const mirroredFeet = mirrorHumanoidPoseLeftRight(footSource);
+  const mirroredFeet = constrain(mirrorHumanoidPoseLeftRight(footSource));
   const nextLower: Partial<Record<HumanoidBoneName, Quat>> = {};
   for (const bone of LEG_UPPER_BONES) {
     const q = pose[bone];

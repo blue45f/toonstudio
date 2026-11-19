@@ -134,6 +134,10 @@ describe("Studio toon production board model", () => {
     });
 
     expect(handoff.scenes).toHaveLength(4);
+    expect(handoff.scenes[2]).toMatchObject({
+      imageDataUrl: approved.imageDataUrl, imageCandidates: approved.imageCandidates,
+      approvedImageCandidateId: approved.approvedImageCandidateId,
+    });
     expect(handoff.variants).toBe(2);
     expect(summarizeStudioToonProductionScenes(scenes)).toEqual({
       total: 4,

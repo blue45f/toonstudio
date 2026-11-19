@@ -165,6 +165,40 @@ describe("Office2dRuntime", () => {
     expect(callbacks.onLocalState.mock.calls.at(-1)?.[0]).toMatchObject({ moving: true, facing: "up" });
   });
 
+  it.each([[1 / 144], [1 / 60.1], [1 / 80, 1 / 135, 1 / 59]])("렌더 간격 %j에서 등속 키 이동은 프레임마다 전진하고 발을 바닥에 둔다", (...intervals: number[]) => {
+    const { runtime } = setup({ reducedMotion: false });
+    runtime.start();
+    runtime.keyDown("ArrowUp");
+    const speeds: number[] = [];
+    const ctx = new FakeContext();
+    let previousY = 0;
+    let elapsed = 0;
+    const render = vi.spyOn(runtime.renderer, "render").mockImplementation((_ctx, frame) => {
+      const actor = frame.actors.find((entry) => entry.id === frame.selfId);
+      if (!actor) throw new Error("로컬 캐릭터가 화면에 없습니다.");
+      if (elapsed > 0.38) {
+        speeds.push(actor.speed);
+        expect(actor.y).toBeLessThan(previousY);
+        expect(actor.moving).toBe(true);
+        expect(actor.facing).toBe("up");
+        expect(office2dActorBob(actor, frame.time, false).offsetY).toBe(0);
+        // 물리좌표는 앞서 있을 수 있지만 화면은 아직 해결되지 않은 공간을 침범하지 않는다.
+        expect(actor.y).toBeGreaterThanOrEqual(runtime.debugState().self.y - 1e-6);
+      }
+      previousY = actor.y;
+    });
+    try {
+      for (let index = 0; elapsed < 0.85; index++) {
+        const dt = intervals[index % intervals.length]!;
+        elapsed += dt;
+        runtime.frame(dt);
+        runtime.draw(ctx, 1);
+      }
+      expect(speeds.length).toBeGreaterThan(20);
+      expect(Math.max(...speeds) - Math.min(...speeds)).toBeLessThan(3);
+    } finally { render.mockRestore(); }
+  });
+
   it("대각선 이동도 같은 속도로 정규화된다", () => {
     const straight = setup();
     straight.runtime.start();
@@ -363,7 +397,8 @@ describe("Office2dRuntime", () => {
     expect([...visitedCols].every((col) => col >= 1 && col <= 8)).toBe(true);
     expect(actor.leanAngle).toBeGreaterThan(0.01);
     const walkingPose = office2dActorBob(actor, 1.0, false);
-    expect(walkingPose.offsetY).toBeLessThan(0);
+    expect(walkingPose.offsetY).toBe(0);
+    expect(walkingPose.scaleY).not.toBe(1);
     expect(walkingPose.shadowScale).toBeLessThanOrEqual(1);
 
     // 멈추면 gaitBlend가 감쇠하며 정지 프레임(0열)으로 매끄럽게 복귀한다.

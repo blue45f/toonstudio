@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { poseLimitViolations } from "../../../animation/joint-limits";
@@ -7,7 +7,7 @@ import { findHandPosePreset, findPosePreset } from "../../../animation/presets";
 import { createReferenceSkeleton } from "../../../animation/reference-skeleton";
 import { computeWorldTransforms } from "../../../animation/skeleton-fk";
 import { ALL_AVAILABLE_CAPABILITIES, createDefaultRecipe } from "../../../contracts";
-import { degToRad, qFromAxisAngle, v3Distance } from "../../../shared/math";
+import { degToRad, qAngle, qFromAxisAngle, qMultiply, v3Distance } from "../../../shared/math";
 import { createMockEngine, mockDiagnostics } from "../../../testing/mock-engine";
 import { MockLabProvider, createMockEngineSession, createMockLabStore } from "../../../testing/mock-store";
 import { createUiStateStore } from "../ui-state";
@@ -669,6 +669,37 @@ describe("PosePanel P2-17 손·발·시선 개별 조정 및 관절 제한·반�
     expect(resetCmd.pose.leftLowerLeg).toEqual(preservedKnee);
     expect(resetCmd.pose.leftFoot).toBeUndefined();
     expect(resetCmd.pose.leftToes).toBeUndefined();
+  });
+
+  it("저장한 비대칭 발 자세와 실행 취소 상태에서 발끝만 다시 조정해도 양쪽 발목·무릎을 보존한다", () => {
+    const recipe = createDefaultRecipe();
+    const pitch = qFromAxisAngle([1, 0, 0], degToRad(-22));
+    const twist = qFromAxisAngle([0, 1, 0], degToRad(8));
+    const roll = qFromAxisAngle([0, 0, 1], degToRad(-12));
+    recipe.pose = { leftFoot: qMultiply(pitch, qMultiply(twist, roll)), leftToes: qFromAxisAngle([1, 0, 0], degToRad(-9)),
+      rightFoot: qFromAxisAngle([0, 1, 0], degToRad(60)), leftLowerLeg: qFromAxisAngle([1, 0, 0], degToRad(160)) };
+    const store = createMockLabStore({recipe, capabilities: ALL_AVAILABLE_CAPABILITIES});
+    render(<MockLabProvider store={store}><PosePanel /></MockLabProvider>);
+    fireEvent.click(screen.getByLabelText("세부 왼발"));
+    const slider = (suffix: string) => screen.getByTestId(`pose-fine-${suffix}-slider`) as HTMLInputElement;
+    expect([slider("ankle-pitch").value, slider("ankle-roll").value, slider("toe-lift").value]).toEqual(["22","12","9"]);
+    fireEvent.change(slider("toe-lift"), {target:{value:"14"}});
+    const command = store.dispatched.at(-1);
+    if (command?.type !== "pose/set") throw new Error("발끝 조정 명령 필요");
+    expect(command.pose.leftFoot).toEqual(recipe.pose.leftFoot);
+    expect(command.pose.leftLowerLeg).toEqual(recipe.pose.leftLowerLeg);
+    expect(command.pose.rightFoot).toEqual(recipe.pose.rightFoot);
+    expect(qAngle(command.pose.leftToes!, qFromAxisAngle([1,0,0], degToRad(-14)))).toBeLessThan(1e-6);
+    act(() => store.setState({recipe:{...recipe,pose:command.pose}}));
+    expect(slider("toe-lift").value).toBe("14");
+    act(() => store.setState({recipe}));
+    expect(slider("toe-lift").value).toBe("9");
+
+    fireEvent.click(screen.getByTestId("pose-auto-joint-limit-toggle"));
+    fireEvent.change(slider("ankle-pitch"), {target:{value:"24"}});
+    const adjust = store.dispatched.at(-1);
+    if (adjust?.type !== "pose/set") throw new Error("발목 조정 명령 필요");
+    expect(qAngle(adjust.pose.leftFoot!, qMultiply(qFromAxisAngle([1,0,0],degToRad(-24)), qMultiply(twist,roll)))).toBeLessThan(1e-6);
   });
 
   it("시선 개별 조정(공동 주시·개별 안구·카메라 응시)은 ±25° 범위로 기록되고 시선 좌우 반전과 정면 복원을 지원한다", () => {

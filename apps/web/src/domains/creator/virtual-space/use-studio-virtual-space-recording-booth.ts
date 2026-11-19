@@ -16,7 +16,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 import {
-  studioRecordingTakeToProjectAsset,
   type StudioProjectAudioAssetDescriptor,
   type StudioRecordingBoothConfig,
   type StudioRecordingBoothDriver,
@@ -36,6 +35,7 @@ import {
 } from "./studio-virtual-space-recording-booth-media-driver";
 import type { StudioSilentZone } from "./studio-virtual-space-silent-zone";
 import type { StudioSpaceBooking } from "./studio-virtual-space-space-booking";
+import { useStudioRecordingBoothTakes } from "./use-studio-recording-booth-takes";
 import { useStudioVirtualSpaceSilentZone } from "./use-studio-virtual-space-silent-zone";
 
 const EMPTY_OFFICE_ZONES: readonly never[] = Object.freeze([]);
@@ -49,6 +49,7 @@ export interface StudioVirtualSpaceRecordedTake {
   readonly take: StudioRecordingTake;
   /** 실제 녹음 Blob. 모의 드라이버처럼 Blob이 없으면 null. */
   readonly blob: Blob | null;
+  readonly onDevice: boolean;
   readonly addedToProject: boolean;
   readonly saveState: StudioRecordingTakeSaveState;
 }
@@ -62,6 +63,7 @@ export interface UseStudioVirtualSpaceRecordingBoothInput {
   /** 호출자가 알고 있는 사용자 마이크 음소 상태. */
   readonly micMutedByUser: boolean;
   /** 에셋 편입 대상 프로젝트. 없으면 편입 대신 안내만 한다. */
+  readonly draftScope?: string | null;
   readonly projectId?: string | null;
   readonly isGuest?: boolean;
   /** 테스트·특수 환경용 드라이버 주입. 기본은 MediaRecorder 드라이버. */
@@ -96,6 +98,8 @@ export interface StudioVirtualSpaceRecordingBoothBinding {
   readonly startRecording: () => Promise<void>;
   readonly stopRecording: () => Promise<void>;
   readonly cancelRecording: () => Promise<void>;
+  readonly discardTake: (id: string) => Promise<void>;
+  readonly downloadTake: (id: string) => Promise<void>;
   readonly addTakeToProject: (takeId: string) => void;
 }
 
@@ -114,7 +118,7 @@ export function useStudioVirtualSpaceRecordingBooth(
 ): StudioVirtualSpaceRecordingBoothBinding {
   const {
     config, bookings, position, userName, micMutedByUser,
-    projectId, isGuest = false, onRequireLogin, onProjectAsset, onEffectiveMicMuted,
+    onEffectiveMicMuted,
   } = input;
 
   const driver = useMemo<StudioRecordingBoothDriver>(
@@ -146,9 +150,10 @@ export function useStudioVirtualSpaceRecordingBooth(
   const [reverb, setReverb] = useState<StudioReverbPreset>(config.reverb);
   const [session, setSession] = useState<StudioRecordingSession | null>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
-  const [takes, setTakes] = useState<readonly StudioVirtualSpaceRecordedTake[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loginNudge, setLoginNudge] = useState(false);
+
+  const { takes, append, addTakeToProject, downloadTake, discardTake } = useStudioRecordingBoothTakes(input, setError, setLoginNudge);
 
   // 세션 ref 는 상태를 바꾸는 자리에서 곧바로 맞춘다. 렌더 효과로만 맞추면 시작 직후 효과가 돌기 전에 들어온 종료·취소가
   // ref 를 비어 있다고 보고 조용히 무시해, 화면은 녹음 중인데 녹음이 끝나지 않았다.
@@ -160,10 +165,16 @@ export function useStudioVirtualSpaceRecordingBooth(
   const driverRef = useRef(driver);
   driverRef.current = driver;
 
-  // 언마운트 시 녹음 중이면 장치를 정리한다.
-  useEffect(() => () => {
-    const current = sessionRef.current;
-    if (current) void driverRef.current.cancelBoothSession(current.id);
+  const mounted = useRef(false);
+  const startPending = useRef(false);
+  const stopPending = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      const current = sessionRef.current;
+      if (current && !stopPending.current) void driverRef.current.cancelBoothSession(current.id);
+    };
   }, []);
 
   // 구역 음소를 실제 마이크 적용 콜백으로 전달(값이 바뀔 때만).
@@ -176,22 +187,24 @@ export function useStudioVirtualSpaceRecordingBooth(
 
   const stopRecording = useCallback(async () => {
     const current = sessionRef.current;
-    if (!current) return;
+    if (!current || stopPending.current) return;
+    stopPending.current = true;
     try {
       if (isMediaDriver(driver)) {
         const { take, blob } = await driver.stopBoothSessionWithBlob(current.id);
-        setTakes((previous) => [...previous, { take, blob, addedToProject: false, saveState: "idle" }]);
+        await append(take, blob);
       } else {
         const take = await driver.stopBoothSession(current.id);
-        setTakes((previous) => [...previous, { take, blob: null, addedToProject: false, saveState: "idle" }]);
+        await append(take, null);
       }
     } catch (reason) {
       setError(errorCodeOf(reason));
     } finally {
+      stopPending.current = false;
       commitSession(null);
       setElapsedSec(0);
     }
-  }, [driver, commitSession]);
+  }, [append, driver, commitSession]);
 
   const stopRecordingRef = useRef(stopRecording);
   stopRecordingRef.current = stopRecording;
@@ -210,25 +223,27 @@ export function useStudioVirtualSpaceRecordingBooth(
   }, [session]);
 
   const startRecording = useCallback(async () => {
-    if (sessionRef.current) return;
+    if (sessionRef.current || startPending.current) return;
     setError(null);
     setLoginNudge(false);
     if (!access.canRecord) {
       setError(access.state);
       return;
     }
+    startPending.current = true;
     try {
       const next = await driver.startBoothSession({ ...config, reverb });
+      if (!mounted.current) { await driver.cancelBoothSession(next.id); return; }
       commitSession(next);
       setElapsedSec(0);
     } catch (reason) {
-      setError(errorCodeOf(reason));
-    }
+      if (mounted.current) setError(errorCodeOf(reason));
+    } finally { startPending.current = false; }
   }, [access, config, driver, reverb, commitSession]);
 
   const cancelRecording = useCallback(async () => {
     const current = sessionRef.current;
-    if (!current) return;
+    if (!current || stopPending.current) return;
     try {
       await driver.cancelBoothSession(current.id);
     } catch {
@@ -237,46 +252,6 @@ export function useStudioVirtualSpaceRecordingBooth(
     commitSession(null);
     setElapsedSec(0);
   }, [driver, commitSession]);
-
-  const savingTakeIdsRef = useRef<ReadonlySet<string>>(new Set());
-  const addTakeToProject = useCallback((takeId: string) => {
-    const entry = takes.find((item) => item.take.id === takeId);
-    if (!entry || entry.saveState === "saved" || savingTakeIdsRef.current.has(takeId)) return;
-    if (isGuest) {
-      setLoginNudge(true);
-      onRequireLogin?.();
-      return;
-    }
-    if (!projectId) {
-      setError("project-required");
-      return;
-    }
-    if (!onProjectAsset) {
-      setTakes((previous) => previous.map((item) =>
-        item.take.id === takeId ? { ...item, saveState: "failed" } : item));
-      return;
-    }
-    const descriptor = studioRecordingTakeToProjectAsset(entry.take, projectId);
-    savingTakeIdsRef.current = new Set(savingTakeIdsRef.current).add(takeId);
-    setTakes((previous) => previous.map((item) =>
-      item.take.id === takeId ? { ...item, saveState: "saving" } : item));
-    void (async () => {
-      try {
-        const result = await onProjectAsset(descriptor, entry.blob);
-        if (result === false) throw new Error("project-asset-save-rejected");
-        setTakes((previous) => previous.map((item) =>
-          item.take.id === takeId ? { ...item, addedToProject: true, saveState: "saved" } : item));
-      } catch {
-        // 실패를 성공으로 위장하지 않는다 — 테이크는 남아 다시 저장할 수 있다.
-        setTakes((previous) => previous.map((item) =>
-          item.take.id === takeId ? { ...item, saveState: "failed" } : item));
-      } finally {
-        const next = new Set(savingTakeIdsRef.current);
-        next.delete(takeId);
-        savingTakeIdsRef.current = next;
-      }
-    })();
-  }, [takes, isGuest, onRequireLogin, onProjectAsset, projectId]);
 
   return {
     access,
@@ -294,5 +269,7 @@ export function useStudioVirtualSpaceRecordingBooth(
     stopRecording,
     cancelRecording,
     addTakeToProject,
+    downloadTake,
+    discardTake,
   };
 }

@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Super jednostavan raspored",
   "studio.mainMenu.item.view.density-full": "Puni raspored",
   "studio.mainMenu.item.view.wide": "Proširi uz sklopljene panele",
+  "studio.mainMenu.item.view.wide.open": "Prikaži panele",
   "studio.mainMenu.item.view.tools-companion": "Radni prostor sa više ekrana…",
   "studio.mainMenu.item.view.canvas-only": "Samo platno",
   "studio.mainMenu.item.view.color-vision.unavailable": "Ne možete promijeniti način provjere vida boja dok je transformacija prikaza zaključana.",

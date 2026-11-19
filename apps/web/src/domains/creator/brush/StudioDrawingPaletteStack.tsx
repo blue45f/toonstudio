@@ -88,7 +88,7 @@ const DRAWING_PALETTE_FOCUS_TARGETS = {
   "palette.tool-properties": "tool-properties",
   "tool.brush-studio": "tool-properties",
   "tool.brush-engines": "tool-properties",
-  "brush.saved-library": "tool-properties",
+  "brush.saved-library": "sub-tools",
 } as const satisfies Partial<
   Record<StudioInspectorFocusTarget, StudioDrawingPaletteId>
 >;

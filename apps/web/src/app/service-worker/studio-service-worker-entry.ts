@@ -205,7 +205,7 @@ function warmStudioPayload(): Promise<void> {
       for (;;) {
         const url = queue.shift();
         if (url === undefined) return;
-        const request = new Request(url, { credentials: "same-origin" });
+        const request = new Request(url, { credentials: "same-origin", priority: "low" });
         const routeClass = classifyStudioServiceWorkerRequest({
           url: request.url, origin: scope.location.origin, method: "GET", destination: request.destination,
         });
@@ -275,7 +275,7 @@ scope.addEventListener("install", (event) => {
     await installLocalDrawingRescue();
     const cache = await caches.open(cacheNames.precache);
     // addAll is atomic: a broken deploy cannot replace a working critical cache.
-    await cache.addAll(manifest.criticalUrls.map((url) => new Request(url)));
+    await cache.addAll(manifest.criticalUrls.map((url) => new Request(url, { priority: "low" })));
     await Promise.all(manifest.shellUrls.map((url) => cache.add(shellRequest(url))));
   })());
   // Deliberately no skipWaiting: a live editor keeps its current code and caches.

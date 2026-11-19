@@ -533,30 +533,18 @@ export function StudioLiveCollaborationProvider({
           if (!cancelled) setError(messageFrom(cause, frozenStatus3Text("studio.frozenStatus3.liveProv.presenceNotifyFailed", "작업 상태를 팀에 알리지 못했습니다.")));
         }
       };
-      const onNetworkOnline = () => {
+      const resyncPresenceSilently = () => {
         if (cancelled) return;
         try {
-          // 와이파이↔핫스팟 전환 시 half-open 상태를 빠르게 복구하도록 즉시 프레즌스·고아 잉크를 재동기화한다.
           nextRoom.reconcileAfterVisibilityResume();
-          if (typeof document !== "undefined") {
-            nextRoom.updatePresence({ visibility: document.hidden ? "idle" : "active" });
-          }
+          if (typeof document !== "undefined") nextRoom.updatePresence({ visibility: document.hidden ? "idle" : "active" });
         } catch {
-          // 네트워크 복구 직후의 일시적 전송 실패는 기존 자동 재연결 루프에 위임한다.
+          // 네트워크 복구·타이머 스로틀링 직후의 일시적 전송 실패는 자동 재연결 루프에 위임한다.
         }
       };
+      const onNetworkOnline = () => resyncPresenceSilently();
       const heartbeatTimer = globalThis.setInterval(() => {
-        if (cancelled) return;
-        const tick = heartbeatGuard.recordTick();
-        if (tick.recommendedAction !== "resync-presence") return;
-        try {
-          nextRoom.reconcileAfterVisibilityResume();
-          if (typeof document !== "undefined") {
-            nextRoom.updatePresence({ visibility: document.hidden ? "idle" : "active" });
-          }
-        } catch {
-          // 타이머 스로틀링 복구 시 전송 오류가 나더라도 세션을 종료하지 않는다.
-        }
+        if (!cancelled && heartbeatGuard.recordTick().recommendedAction === "resync-presence") resyncPresenceSilently();
       }, STUDIO_HEARTBEAT_EXPECTED_INTERVAL_MS);
       const quotaCheckTimer = globalThis.setInterval(() => {
         if (cancelled) return;

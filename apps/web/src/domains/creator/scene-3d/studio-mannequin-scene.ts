@@ -15,6 +15,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
+import type { CompositionCameraSnapshot } from "../ai/studio-composition-generation-brief";
+import { readStudioMannequinCaptureCamera } from "./studio-mannequin-capture-camera";
 import { STUDIO_BG3D_LT_RENDER_MAX_PIXELS } from "../bg3d/studio-bg3d-lt-render";
 import { captureStudioVrmRgba, encodeStudioVrmCapturePngDataUrl } from "../vrm/studio-vrm-raster-capture";
 
@@ -63,50 +65,29 @@ import {
 
 export type { StudioMannequinFigureId, StudioMannequinFigureEcorcheState } from "./studio-mannequin-scene-figure";
 export {
-  createStudioMannequinLightingObject,
-  mountStudioMannequinLightingGroup,
-  readStudioMannequinLightingSnapshot,
-  replaceStudioMannequinLightingGroup,
-  snapshotStudioMannequinLightingPlan,
-  type StudioMannequinLightingSnapshot,
-  type StudioMannequinMountedLightSnapshot,
+  createStudioMannequinLightingObject, mountStudioMannequinLightingGroup, readStudioMannequinLightingSnapshot,
+  replaceStudioMannequinLightingGroup, snapshotStudioMannequinLightingPlan, type StudioMannequinLightingSnapshot, type StudioMannequinMountedLightSnapshot,
 };
 
 export type StudioMannequinProjection = "perspective" | "orthographic";
 
 export interface StudioMannequinCaptureResult {
-  readonly pngDataUrl: string;
-  /** 캡처 래스터 크기(px) — PNG 원본 치수. */
-  readonly width: number;
-  readonly height: number;
-  /** 100% 줌에서 문서에 놓일 논리 크기(업스케일 삽입 방지). */
-  readonly displayWidth?: number;
-  readonly displayHeight?: number;
-  /** 캡처 시점에 뷰포트에 마운트돼 있던 조명 스냅샷. */
-  readonly lighting?: StudioMannequinLightingSnapshot;
+  readonly pngDataUrl: string; readonly width: number; readonly height: number;
+  readonly displayWidth?: number; readonly displayHeight?: number;
+  readonly lighting?: StudioMannequinLightingSnapshot; readonly camera?: CompositionCameraSnapshot;
 }
 
 /** 캡처 래스터와 논리 뷰 크기로 삽입 결과를 만든다(순수 함수). */
 export function resolveStudioMannequinCaptureResult(input: {
-  readonly pngDataUrl: string;
-  readonly width: number;
-  readonly height: number;
-  readonly displayWidth: number;
-  readonly displayHeight: number;
-  readonly lighting?: StudioMannequinLightingSnapshot;
+  readonly pngDataUrl: string; readonly width: number; readonly height: number;
+  readonly displayWidth: number; readonly displayHeight: number;
+  readonly lighting?: StudioMannequinLightingSnapshot; readonly camera?: CompositionCameraSnapshot;
 }): StudioMannequinCaptureResult {
   const { pngDataUrl, width, height, displayWidth, displayHeight, lighting } = input;
-  const displayValid =
-    Number.isFinite(displayWidth)
-    && displayWidth > 0
-    && Number.isFinite(displayHeight)
-    && displayHeight > 0
-    && displayWidth <= width
-    && displayHeight <= height;
-  const lightingPart = lighting ? { lighting } : {};
-  return displayValid
-    ? { pngDataUrl, width, height, displayWidth, displayHeight, ...lightingPart }
-    : { pngDataUrl, width, height, ...lightingPart };
+  const displayValid = Number.isFinite(displayWidth) && displayWidth > 0 && Number.isFinite(displayHeight)
+    && displayHeight > 0 && displayWidth <= width && displayHeight <= height;
+  const extra = { ...(lighting ? { lighting } : {}), ...(input.camera ? { camera: input.camera } : {}) };
+  return displayValid ? { pngDataUrl, width, height, displayWidth, displayHeight, ...extra } : { pngDataUrl, width, height, ...extra };
 }
 
 export interface StudioMannequinSceneOptions {
@@ -119,6 +100,7 @@ export interface StudioMannequinSceneOptions {
   readonly initialSurfaceMode?: StudioMannequinSurfaceMode;
   readonly initialGuideVisibility?: Partial<StudioMannequinGuideVisibility>;
   readonly onSelectJoint?: (jointId: StudioMannequinJointId | null) => void;
+  readonly onCaptureCameraChange?: (camera: CompositionCameraSnapshot) => void;
   readonly onPoseEdited?: (pose: StudioMannequinPose) => void;
 }
 
@@ -589,7 +571,8 @@ export function createStudioMannequinScene(
   perspectiveCamera.position.copy(toVec3(initialCameraFrame.position));
   const orthographicCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.05, 60);
   orthographicCamera.position.copy(toVec3(initialCameraFrame.position));
-  let activeCamera: THREE.Camera = perspectiveCamera;
+  let activeCamera: THREE.PerspectiveCamera | THREE.OrthographicCamera = perspectiveCamera;
+  let fullBodyFramed = false;
   let controls: OrbitControls | null = null;
 
   function updateOrthographicFrustum(): void {
@@ -615,6 +598,8 @@ export function createStudioMannequinScene(
     controls.maxDistance = 12;
     controls.maxPolarAngle = Math.PI * 0.96;
     controls.addEventListener("change", () => {
+      if (controls) cameraTarget.copy(controls.target);
+      fullBodyFramed = false;
       if (projection === "orthographic") updateOrthographicFrustum();
       invalidate();
     });
@@ -646,12 +631,22 @@ export function createStudioMannequinScene(
     controls?.target.copy(cameraTarget);
     controls?.update();
     updateOrthographicFrustum();
+    fullBodyFramed = true;
   }
 
   let pendingFrame = 0;
 
+  let previousCameraKey = "";
   function renderNow(): void {
     if (disposed) return;
+    if (options.onCaptureCameraChange) {
+      const snapshot = readStudioMannequinCaptureCamera(activeCamera, fullBodyFramed);
+      const key = JSON.stringify(snapshot);
+      if (key !== previousCameraKey) {
+        previousCameraKey = key;
+        options.onCaptureCameraChange(snapshot);
+      }
+    }
     syncJointRangeArc();
     proOverlays.syncBalanceOverlay(spec, lead.readPose());
     if (quadViewEnabled) {
@@ -1161,6 +1156,7 @@ export function createStudioMannequinScene(
     const displayWidth = viewWidth;
     const displayHeight = viewHeight;
     const lighting = readStudioMannequinLightingSnapshot(lightingGroup);
+    const camera = readStudioMannequinCaptureCamera(activeCamera, fullBodyFramed);
 
     const previousSelection = selectedJointId;
     selectedJointId = null;
@@ -1192,7 +1188,7 @@ export function createStudioMannequinScene(
       height,
       displayWidth,
       displayHeight,
-      lighting,
+      lighting, camera,
     });
   }
 
@@ -1370,6 +1366,7 @@ export function createStudioMannequinScene(
     },
     resize(width, height) {
       if (disposed) return;
+      if (width / height < viewWidth / viewHeight) fullBodyFramed = false;
       viewWidth = Math.max(1, Math.floor(width));
       viewHeight = Math.max(1, Math.floor(height));
       renderer.setSize(viewWidth, viewHeight, false);

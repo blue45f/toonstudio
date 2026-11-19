@@ -1,0 +1,492 @@
+{
+  "type": "로컬 브라우저 동작 감사",
+  "tested": "모바일 390×844, 별도 데스크톱 1440×960, 임시 게스트 원고",
+  "candidates": {
+    "mobile": 15513,
+    "desktop": 15511
+  },
+  "allTools": {
+    "rows": [
+      {
+        "id": "image",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "운영체제 파일 선택기로 PNG 추가",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "blend",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 blend",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "wet-mix",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 wet-mix",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "dodge-burn",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 dodge-burn",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "liquify",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 liquify",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "crop",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 crop",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "transform",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "모서리·회전 핸들로 선택 레이어 변형 안내",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "marquee-rect",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 marquee-rect",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "marquee-circle",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 marquee-circle",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "lasso",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 lasso",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "frame-anim",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "선택한 래스터에서 프레임 애니메이션 패널 열림·닫힘",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "select",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 select",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "hand",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 hand",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "pen",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 pen",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "pixel-pencil",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 pixel-pencil",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "eraser",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 eraser",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "fill",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 fill",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "lasso-fill",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 lasso-fill",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "eyedropper",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 eyedropper",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "smart-shape",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "스마트 도형 켜짐 안내",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "shape-rect",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 shape-rect",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "shape-ellipse",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 shape-ellipse",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "text",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "새 글자 내용 편집기",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "bubble",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "말풍선 대사 편집",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "comment",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 comment",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "perspective",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "투시도 켜짐 안내",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "reference",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "현재 도구 등록 reference",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "zoom",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "캔버스 확대·축소 HUD",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "zoom-fit",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "확대 54.17% → 75.83% → 맞춤 54.17%",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "rotate-view",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "캔버스 회전 보기 도구, 0°",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "mannequin3d",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "3D 데생 인형 열림과 같은 원고의 새 셸 복귀",
+        "oldMobileReturn": null
+      },
+      {
+        "id": "vrm3d",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "3D 캐릭터 만들기 창",
+        "oldMobileReturn": "3D 주소에 남아 원고의 새 셸이 복귀하지 않음"
+      },
+      {
+        "id": "character-shaper",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "캐릭터 셰이퍼 창",
+        "oldMobileReturn": "3D 주소에 남아 원고의 새 셸이 복귀하지 않음"
+      },
+      {
+        "id": "bg3d",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "장면 도우미 창",
+        "oldMobileReturn": "3D 주소에 남아 원고의 새 셸이 복귀하지 않음"
+      },
+      {
+        "id": "hybrid-dcc",
+        "mobileTap": true,
+        "desktopClick": true,
+        "centerHit": true,
+        "bounds": [
+          292,
+          46
+        ],
+        "outcome": "정밀 3D 모델링 창과 같은 원고 복귀",
+        "oldMobileReturn": null
+      }
+    ],
+    "total": 35,
+    "actualMobileTaps": 35,
+    "actualDesktopClicks": 35,
+    "mobileHitPixels": [
+      292,
+      46
+    ],
+    "pageerrors": [],
+    "note": "표면 선택·도구 진입 검사. 각 도구의 모든 편집·저장 옵션을 실행한 수치는 아님. 체험판 15513의 세 3D 도구 복귀 실패는 후속 수정판과 별도 기록.",
+    "followup": {
+      "steps": [
+        "image",
+        "frame-anim",
+        "zoom",
+        "zoom-fit"
+      ],
+      "errors": [],
+      "frameAnimation": {
+        "opened": true,
+        "closed": true
+      },
+      "zoom": {
+        "before": "현재 확대율 54.17퍼센트",
+        "raised": "현재 확대율 75.83퍼센트",
+        "fitted": "현재 확대율 54.17퍼센트"
+      }
+    }
+  },
+  "menuAudit": {
+    "normalMenus": 213,
+    "verifiedFilters": 58,
+    "otherReversibleMenuCommands": 13,
+    "ids": [
+      "flip-horizontal",
+      "canvas-rulers",
+      "perspective-guide",
+      "webtoon-guides",
+      "grid",
+      "color-vision-grayscale",
+      "color-vision-protanopia",
+      "color-vision-deuteranopia",
+      "color-vision-tritanopia",
+      "color-vision-original",
+      "rotate-right",
+      "rotate-left",
+      "reset-rotation"
+    ],
+    "invokedUnique": 71,
+    "inventoriedOnly": 142,
+    "scope": "이 검사의 실행 수. 외부 발송·결제·삭제 제외."
+  },
+  "routes": {
+    "1440": {
+      "count": 9,
+      "toolOrderConsistent": true
+    },
+    "390": {
+      "count": 9,
+      "toolOrderConsistent": true
+    }
+  }
+}

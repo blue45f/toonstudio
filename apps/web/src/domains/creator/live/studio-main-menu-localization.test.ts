@@ -92,6 +92,19 @@ function item(
 }
 
 describe("localizeStudioMainMenuGroups", () => {
+  it("넓게 쓴 원고에서는 패널을 다시 펼치는 다음 동작을 표시한다", () => {
+    const dictionary = translator({
+      "studio.mainMenu.item.view.wide": "Collapse panels",
+      "studio.mainMenu.item.view.wide.open": "Show panels",
+    });
+    for (const checked of [false, true]) {
+      const groups = localizeStudioMainMenuGroups([{ id: "window", label: "창", items: [
+        { id: "wide", label: checked ? "패널 펼치기" : "패널 접어 넓게", checked, legacyPath: "view/wide", onSelect: vi.fn() },
+      ] }], BASE_STATE, dictionary);
+      expect(item(groups, "window", "wide").label).toBe(checked ? "Show panels" : "Collapse panels");
+    }
+  });
+
   it("does not let the legacy Korean locale term override the server draft label", () => {
     const projected = localizeStudioMainMenuGroups(
       groups(),

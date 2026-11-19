@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Суперпростой макет",
   "studio.mainMenu.item.view.density-full": "Полный макет",
   "studio.mainMenu.item.view.wide": "Свернуть панели и расширить",
+  "studio.mainMenu.item.view.wide.open": "Показать панели",
   "studio.mainMenu.item.view.tools-companion": "Многоэкранное рабочее пространство…",
   "studio.mainMenu.item.view.canvas-only": "Только холст",
   "studio.mainMenu.item.view.color-vision.unavailable": "Нельзя изменить режим проверки цветового зрения, пока преобразование вида заблокировано.",

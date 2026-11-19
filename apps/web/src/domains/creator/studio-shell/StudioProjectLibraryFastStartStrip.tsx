@@ -1,4 +1,4 @@
-import { ArrowUpRight, Box, FileUp, LayoutPanelTop, ScrollText } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import {
@@ -7,6 +7,8 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
+
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("StudioProjectLibraryFastStartStrip", ko, en);
 
@@ -14,7 +16,7 @@ const FAST_START_ITEMS = [
   {
     id: "webtoon-vertical",
     href: "/studio/new?kind=webtoon&template=webtoon-vertical",
-    icon: ScrollText,
+    tool: "pen",
     labelKo: "세로 웹툰 시작",
     labelEn: "Start a webtoon",
     hintKo: "위아래로 읽는 웹툰",
@@ -24,7 +26,7 @@ const FAST_START_ITEMS = [
   {
     id: "four-cut-classic",
     href: "/studio/new?kind=four-cut&template=four-cut-classic",
-    icon: LayoutPanelTop,
+    tool: "frame",
     labelKo: "4컷 만화 시작",
     labelEn: "Start a 4-panel comic",
     hintKo: "네 칸으로 만드는 이야기",
@@ -34,7 +36,7 @@ const FAST_START_ITEMS = [
   {
     id: "bg3d-stage",
     href: "/studio/bg3d",
-    icon: Box,
+    tool: "bg3d",
     labelKo: "3D 장면 만들기",
     labelEn: "Build a 3D scene",
     hintKo: "배경과 캐릭터 배치",
@@ -44,7 +46,7 @@ const FAST_START_ITEMS = [
   {
     id: "psd-clip-import",
     href: "/studio/import",
-    icon: FileUp,
+    tool: "layers",
     labelKo: "원고 파일 불러오기",
     labelEn: "Import a manuscript",
     hintKo: "PSD·CLIP 파일 가져오기",
@@ -67,7 +69,6 @@ export function StudioProjectLibraryFastStartStrip({
       className={cn("grid grid-cols-1 gap-2.5 sm:grid-cols-2", className)}
     >
       {FAST_START_ITEMS.map((item) => {
-        const Icon = item.icon;
         return (
           <Link
             key={item.id}
@@ -80,7 +81,7 @@ export function StudioProjectLibraryFastStartStrip({
                 : "border-line bg-card hover:border-line-strong hover:bg-raised",
             )}
           >
-            <Icon size={20} className={cn("shrink-0", item.primary ? "text-accent" : "text-fg-2")} aria-hidden="true" />
+            <StudioToolArtwork tool={item.tool} className="studio-library-start-tool" />
             <span className="min-w-0 flex-1">
               <span className="block break-keep text-sm font-semibold text-fg">
                 {bi(item.labelKo, item.labelEn)}

@@ -39,6 +39,7 @@ export interface UseStudioExactResumeContextInput {
   readonly scrollTop: number;
   readonly viewportRef: RefObject<HTMLElement | null>;
   readonly updateViewport: () => void;
+  readonly primaryToolActivatedRef: RefObject<boolean>;
   readonly tool: Tool;
   readonly setTool: (tool: Tool) => void;
   readonly drawMode: DrawMode;
@@ -69,7 +70,7 @@ export function useStudioExactResumeContext(input: UseStudioExactResumeContextIn
     projectId, documentId, workspace, focus, language, sourceVersion, resumeRequested, hydrated,
     pages, currentPageId, setCurrentPageId, selectedId, marqueeIds, setSelectedId, setMarqueeIds,
     zoom, setZoom, scrollLeft, scrollTop, viewportRef, updateViewport, tool, setTool, drawMode, setDrawMode,
-    onRestored,
+    primaryToolActivatedRef, onRestored,
   } = input;
   const restoreIdentity = `${projectId ?? ""}\u0000${documentId ?? ""}`;
   const restoredRef = useRef(false);
@@ -222,8 +223,11 @@ export function useStudioExactResumeContext(input: UseStudioExactResumeContextIn
       if (setCurrentPageId(targetPage.id)) return;
     }
     restoredRef.current = true;
-    setTool(context.tool);
-    setDrawMode(context.drawMode);
+    // 원고를 여는 사이 이미 선택한 도구는 유지하고, 페이지와 레이어 복원은 계속한다.
+    if (!primaryToolActivatedRef.current) {
+      setTool(context.tool);
+      setDrawMode(context.drawMode);
+    }
     if (selectedId !== null || marqueeIds.length > 0) return;
     const activePage = pages.find((page) => page.id === currentPageId) ?? pages[0];
     if (!activePage || (context.pageId !== null && context.pageId !== activePage.id)) return;
@@ -244,6 +248,7 @@ export function useStudioExactResumeContext(input: UseStudioExactResumeContextIn
     hydrated,
     marqueeIds.length,
     pages,
+    primaryToolActivatedRef,
     projectId,
     resumeRequested,
     selectedId,

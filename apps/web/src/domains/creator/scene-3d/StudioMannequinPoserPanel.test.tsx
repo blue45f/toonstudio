@@ -606,6 +606,18 @@ describe("StudioMannequinPoserPanel", () => {
     expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
+  it("실제 카메라가 준비될 때까지 구도 생성을 비워두고 오빗 결과로 갱신한다", async () => {
+    renderPanel();
+    await waitForPersistenceReady();
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
+    expect(screen.getByTestId("composition-brief-empty")).toBeTruthy();
+    const options = createScene.mock.calls.at(-1)?.[0] as import("./studio-mannequin-scene").StudioMannequinSceneOptions;
+    act(() => options.onCaptureCameraChange?.({ azimuthDegrees: 180, elevationDegrees: 22, framing: "as-framed", fovDegrees: 72 }));
+    const panel = screen.getByTestId("composition-brief-panel");
+    expect(panel.textContent).toContain("화각 72도");
+    expect(panel.textContent).toContain("뒷모습");
+  });
+
   it("캡처 버튼은 씬 캡처 → onInsert → onClose 순으로 흐르고 논리 크기를 함께 전달한다", async () => {
     const onClose = vi.fn();
     const onInsert = vi.fn(() => true);

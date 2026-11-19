@@ -245,7 +245,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   onDrawingPerspectiveGuideChange: (value: import("react").SetStateAction<import("../drawing/StudioRulersPanel").StudioPerspectiveGuideState | null>) => void;
   duplicateSelected: (options?: import("../studio-page-clipboard-controller").StudioDuplicateSelectionOptions | undefined) => boolean;
   editMenuImageInputRef: import("react").RefObject<HTMLInputElement | null>;
-  editing: { id: string; } | null;
+  editing: import("../lettering/studio-pending-text-insert").StudioLetteringEditTarget | null;
   effScale: number;
   effectFavoriteState: import("../studio-effect-favorites").StudioEffectFavoriteState;
   effectivePublishPackageSettings: import("../studio-publish-package").StudioPublishPackageSettings;
@@ -318,6 +318,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   handleStudioCrdtDocumentChange: (document: import("../live/studio-crdt-document").StudioCrdtDocument | null, runtime: import("../live/StudioLiveCollaborationProvider").StudioCrdtSceneGraphRuntime | null) => void;
   handleStudioLiveEditSafetyChange: (editsDurablyProtected: boolean) => void;
   handleStudioLiveRoomChange: (room: import("../live/studio-live-collaboration-room").StudioLiveRoom | null) => void;
+  canvasInputStatus?: import("../canvas/studio-canvas-input-status").StudioCanvasInputStatus;
   hardCanvasInteractionBlock: boolean;
   hasAutosave: boolean;
   healCloneAligned: boolean;

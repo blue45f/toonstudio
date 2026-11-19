@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Super lihtne paigutus",
   "studio.mainMenu.item.view.density-full": "Täielik paigutus",
   "studio.mainMenu.item.view.wide": "Ahenda paneelid ja laienda vaadet",
+  "studio.mainMenu.item.view.wide.open": "Kuva paneelid",
   "studio.mainMenu.item.view.tools-companion": "Mitme ekraaniga tööruum…",
   "studio.mainMenu.item.view.canvas-only": "Ainult lõuend",
   "studio.mainMenu.item.view.color-vision.unavailable": "Kui vaate teisendus on lukustatud, ei saa te värvinägemise režiimi muuta.",

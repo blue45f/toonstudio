@@ -197,10 +197,12 @@ export async function captureStudioSkiaDocumentForExport(
     }
 
     const items = [...plan.items];
+    // 지우개는 원고의 획만 걷어낸다. 분리된 종이 레이어를 그리는 뷰포트와 같은 순서로 합성한다.
+    const compositePaperAfterErasing = !transparent && elements.some(element => element.type === "draw" && element.mode === "eraser");
     if (!transparent) {
       const background = backgroundItem(page, new Set(plan.ownedDocumentIds));
       if ("status" in background) return background;
-      items.unshift(background);
+      if (!compositePaperAfterErasing) items.unshift(background);
     }
     const revision = Object.freeze({
       pageId: page.id,
@@ -234,6 +236,18 @@ export async function captureStudioSkiaDocumentForExport(
       return { status: "unavailable", reason: "document-export-snapshot-unavailable" };
     }
     const canvas = await (dependencies.decodePng ?? decodePng)(bytes, width, height);
+    if (compositePaperAfterErasing) {
+      const context = canvas.getContext("2d");
+      if (!context) return { status: "unavailable", reason: "document-export-paper-composite-unavailable" };
+      context.save();
+      try {
+        context.globalCompositeOperation = "destination-over";
+        context.fillStyle = page.bg;
+        context.fillRect(0, 0, width, height);
+      } finally {
+        context.restore();
+      }
+    }
     canvas.dataset.studioRasterExportBackend = "skia-document";
     return {
       status: "captured",

@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Սուպեր պարզ դասավորություն",
   "studio.mainMenu.item.view.density-full": "Ամբողջական դասավորություն",
   "studio.mainMenu.item.view.wide": "Ծալել վահանակները և ընդլայնել",
+  "studio.mainMenu.item.view.wide.open": "Ցուցադրել վահանակները",
   "studio.mainMenu.item.view.tools-companion": "Բազմէկրան աշխատանքային տարածք…",
   "studio.mainMenu.item.view.canvas-only": "Միայն կտավ",
   "studio.mainMenu.item.view.color-vision.unavailable": "Չեք կարող փոխել գունային տեսողության ստուգման ռեժիմը, քանի դեռ դիտման փոխակերպումը կողպված է:",

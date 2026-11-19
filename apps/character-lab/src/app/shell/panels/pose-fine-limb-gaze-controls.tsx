@@ -10,11 +10,11 @@ import { clamp } from "../../../shared/math";
 
 import {
   ARM_UPPER_BONES,
-  DEFAULT_FOOT_SLIDERS,
   DEFAULT_HAND_SLIDERS,
   FOOT_SIDES,
   FOOT_SIDE_LABELS_KO,
-  buildSingleFootFinePose,
+  adjustedFootJoint,
+  readFootSliders,
   buildSingleHandFinePose,
   deriveGazeControlMode,
   mirrorEyeGazeLeftRight,
@@ -81,11 +81,6 @@ export function PoseFineLimbGazeControls(props: PoseFineLimbGazeControlsProps) {
   });
 
   const [fineFootSide, setFineFootSide] = useState<FootSide>("both");
-  const [footSliders, setFootSliders] = useState<Readonly<Record<"left" | "right", FootSlidersState>>>({
-    left: DEFAULT_FOOT_SLIDERS,
-    right: DEFAULT_FOOT_SLIDERS,
-  });
-
   const currentGaze = recipe.eyeGaze ?? DEFAULT_EYE_GAZE;
   const [gazeMode, setGazeMode] = useState<GazeControlMode>(() => deriveGazeControlMode(currentGaze));
 
@@ -101,7 +96,7 @@ export function PoseFineLimbGazeControls(props: PoseFineLimbGazeControlsProps) {
   const maybeClamp = (pose: Pose): Pose => (autoClampLimits ? clampPoseToLimits(pose, activeSkeleton) : pose);
 
   const activeHandValues = fineHandSide === "right" ? handSliders.right : handSliders.left;
-  const activeFootValues = fineFootSide === "right" ? footSliders.right : footSliders.left;
+  const activeFootValues = readFootSliders(recipe.pose, fineFootSide === "right" ? "right" : "left");
 
   const updateHandSliders = (patch: Partial<HandSlidersState>, coalesceSuffix: string): void => {
     if (guardCorruptedRig()) return;
@@ -171,40 +166,29 @@ export function PoseFineLimbGazeControls(props: PoseFineLimbGazeControlsProps) {
     dispatch({ type: "pose/set", pose: preservedArms, scope: "arms-hands", labelKo: "양손 자세 복원" });
   };
 
-  const updateFootSliders = (patch: Partial<FootSlidersState>, coalesceSuffix: string): void => {
+  const updateFootSlider = (axis: keyof FootSlidersState, value: number): void => {
     if (guardCorruptedRig()) return;
-    const nextLeft = fineFootSide === "left" || fineFootSide === "both" ? { ...footSliders.left, ...patch } : footSliders.left;
-    const nextRight = fineFootSide === "right" || fineFootSide === "both" ? { ...footSliders.right, ...patch } : footSliders.right;
-    setFootSliders({ left: nextLeft, right: nextRight });
-
-    const nextLower: Partial<Record<HumanoidBoneName, Quat>> = {};
+    const nextLower: Pose = {};
     for (const bone of bonesInScope("lower")) {
       const q = recipe.pose[bone];
       if (q) nextLower[bone] = q;
     }
-    if (fineFootSide === "left" || fineFootSide === "both") {
-      delete nextLower.leftFoot;
-      delete nextLower.leftToes;
-      Object.assign(nextLower, buildSingleFootFinePose("left", nextLeft));
-    }
-    if (fineFootSide === "right" || fineFootSide === "both") {
-      delete nextLower.rightFoot;
-      delete nextLower.rightToes;
-      Object.assign(nextLower, buildSingleFootFinePose("right", nextRight));
+    for (const side of ["left", "right"] as const) {
+      if (fineFootSide !== "both" && fineFootSide !== side) continue;
+      const { bone, rotation } = adjustedFootJoint(recipe.pose, side, axis, value);
+      if (Math.hypot(rotation[0], rotation[1], rotation[2]) < 1e-9) delete nextLower[bone];
+      else Object.assign(nextLower, maybeClamp({ [bone]: rotation }));
     }
     dispatch({
-      type: "pose/set",
-      pose: maybeClamp(nextLower),
-      scope: "lower",
+      type: "pose/set", pose: nextLower, scope: "lower",
       labelKo: `${FOOT_SIDE_LABELS_KO[fineFootSide]} 발목·발끝 조정`,
-      coalesceKey: `pose:fine-foot:${fineFootSide}:${coalesceSuffix}`,
+      coalesceKey: `pose:fine-foot:${fineFootSide}:${axis}`,
     });
   };
 
   const mirrorFeet = (): void => {
     if (guardCorruptedRig()) return;
-    setFootSliders({ left: footSliders.right, right: footSliders.left });
-    dispatch({ type: "pose/set", pose: maybeClamp(mirrorFeetOnlyPose(recipe.pose)), scope: "lower", labelKo: "발 자세 좌우 반전" });
+    dispatch({ type: "pose/set", pose: mirrorFeetOnlyPose(recipe.pose, maybeClamp), scope: "lower", labelKo: "발 자세 좌우 반전" });
   };
 
   const resetFeet = (): void => {
@@ -222,10 +206,6 @@ export function PoseFineLimbGazeControls(props: PoseFineLimbGazeControlsProps) {
       delete nextLower.rightFoot;
       delete nextLower.rightToes;
     }
-    setFootSliders((prev) => ({
-      left: fineFootSide === "left" || fineFootSide === "both" ? DEFAULT_FOOT_SLIDERS : prev.left,
-      right: fineFootSide === "right" || fineFootSide === "both" ? DEFAULT_FOOT_SLIDERS : prev.right,
-    }));
     dispatch({ type: "pose/set", pose: nextLower, scope: "lower", labelKo: `${FOOT_SIDE_LABELS_KO[fineFootSide]} 자세 복원` });
   };
 
@@ -282,7 +262,6 @@ export function PoseFineLimbGazeControls(props: PoseFineLimbGazeControlsProps) {
     if (guardCorruptedRig()) return;
     const combined: Partial<Record<HumanoidBoneName, Quat>> = { ...recipe.pose, ...recipe.handPose.left, ...recipe.handPose.right };
     setHandSliders({ left: handSliders.right, right: handSliders.left });
-    setFootSliders({ left: footSliders.right, right: footSliders.left });
     dispatch({ type: "pose/set", pose: maybeClamp(mirrorHumanoidPoseLeftRight(combined)), scope: "full", labelKo: "전신·손·발 통합 좌우 반전" });
     dispatch({ type: "eye-gaze/set", gaze: mirrorEyeGazeLeftRight(currentGaze) });
   };
@@ -290,7 +269,6 @@ export function PoseFineLimbGazeControls(props: PoseFineLimbGazeControlsProps) {
   const resetAllLimbsAndGaze = (): void => {
     if (guardCorruptedRig()) return;
     setHandSliders({ left: DEFAULT_HAND_SLIDERS, right: DEFAULT_HAND_SLIDERS });
-    setFootSliders({ left: DEFAULT_FOOT_SLIDERS, right: DEFAULT_FOOT_SLIDERS });
     setGazeMode("conjugate");
     dispatch({ type: "pose/set", pose: {}, scope: "full", labelKo: "전신·손·발 전체 복원" });
     dispatch({ type: "hand-pose/set", side: "left", presetId: null });
@@ -372,9 +350,9 @@ export function PoseFineLimbGazeControls(props: PoseFineLimbGazeControlsProps) {
             </label>
           ))}
         </div>
-        <DegreeSliderRow id={`${ids}-ankle-pitch`} label="발목 굽힘(까치발·당김)" testId="pose-fine-ankle-pitch-slider" min={-45} max={45} value={activeFootValues.anklePitchDeg} disabled={poseBlocked} onChange={(anklePitchDeg) => updateFootSliders({ anklePitchDeg }, "pitch")} />
-        <DegreeSliderRow id={`${ids}-ankle-roll`} label="발목 기울기(내반·외반)" testId="pose-fine-ankle-roll-slider" min={-25} max={25} value={activeFootValues.ankleRollDeg} disabled={poseBlocked} onChange={(ankleRollDeg) => updateFootSliders({ ankleRollDeg }, "roll")} />
-        <DegreeSliderRow id={`${ids}-toe-lift`} label="발끝 들기(발가락)" testId="pose-fine-toe-lift-slider" min={-35} max={35} value={activeFootValues.toeLiftDeg} disabled={poseBlocked} onChange={(toeLiftDeg) => updateFootSliders({ toeLiftDeg }, "toe")} />
+        <DegreeSliderRow id={`${ids}-ankle-pitch`} label="발목 굽힘(까치발·당김)" testId="pose-fine-ankle-pitch-slider" min={-45} max={45} value={Math.round(activeFootValues.anklePitchDeg)} disabled={poseBlocked} onChange={(anklePitchDeg) => updateFootSlider("anklePitchDeg", anklePitchDeg)} />
+        <DegreeSliderRow id={`${ids}-ankle-roll`} label="발목 기울기(내반·외반)" testId="pose-fine-ankle-roll-slider" min={-25} max={25} value={Math.round(activeFootValues.ankleRollDeg)} disabled={poseBlocked} onChange={(ankleRollDeg) => updateFootSlider("ankleRollDeg", ankleRollDeg)} />
+        <DegreeSliderRow id={`${ids}-toe-lift`} label="발끝 들기(발가락)" testId="pose-fine-toe-lift-slider" min={-35} max={35} value={Math.round(activeFootValues.toeLiftDeg)} disabled={poseBlocked} onChange={(toeLiftDeg) => updateFootSlider("toeLiftDeg", toeLiftDeg)} />
         <div className="cl-pose-actions">
           <button type="button" data-testid="pose-foot-mirror-btn" disabled={poseBlocked} onClick={mirrorFeet}>발 좌우 반전</button>
           <button type="button" data-testid="pose-foot-reset-btn" disabled={poseBlocked} onClick={resetFeet}>{`${FOOT_SIDE_LABELS_KO[fineFootSide]} 복원`}</button>

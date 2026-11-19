@@ -10,6 +10,7 @@
  * capability snapshot at stroke start; the returned pair is then pinned for the whole stroke.
  */
 
+import { STUDIO_ERASER_RENDER_ROUTES } from "./studio-eraser-render-profiles";
 import {
   STUDIO_HOKUSAI_LIVE_ADAPTER_VERSION,
   STUDIO_HOKUSAI_LIVE_BRUSH_PROTOCOL_VERSION,
@@ -1065,8 +1066,7 @@ const CORE_ROUTE_PROFILE_BY_ID_BASE = Object.freeze({
   "brush-pen": "continuous-specialist",
   "perfect-ink": "continuous-outline",
   "perfect-marker": "continuous-outline",
-  "standard-eraser": "continuous-analytic",
-  "kneaded-eraser": "continuous-analytic",
+  ...STUDIO_ERASER_RENDER_ROUTES,
   marker: "continuous-analytic",
   "felt-tip": "continuous-analytic",
   "marker-bold": "continuous-analytic",

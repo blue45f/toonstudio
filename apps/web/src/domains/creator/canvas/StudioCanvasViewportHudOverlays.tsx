@@ -186,7 +186,8 @@ export function StudioCanvasViewportHudOverlays({
           {showQuickStart ? (
             <Suspense fallback={null}>
               <QuickStartPanel
-              startCollapsed
+              key={showQuickStart}
+              startCollapsed={showQuickStart === "automatic"}
               onDismiss={dismissQuickStart}
               onYield={yieldQuickStart}
               onQuickComic={openQuickComicWizard}
@@ -250,7 +251,7 @@ export function StudioCanvasViewportHudOverlays({
             )}
             style={studioCanvasBottomHudStyle(tool === "draw" && !canvasOnlyMode)}
             aria-label={localizeText(t, "도구 빠른 실행", "studio.canvas.openQuickStart")}
-            aria-expanded={showQuickStart}
+            aria-expanded={Boolean(showQuickStart)}
             title={localizeText(t, "도구 빠른 실행", "studio.canvas.openQuickStart")}
           >
             <CircleHelp size={16} aria-hidden />

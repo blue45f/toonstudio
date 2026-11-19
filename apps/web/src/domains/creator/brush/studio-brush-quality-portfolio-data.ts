@@ -10,7 +10,7 @@ const seeds:readonly Seed[]=[
 ["marker","마커","core","essential","marker","flat-marker","direct","exact-rgba","gpu-causal-exact","round/marker-flat","균일한 불투명 마커 도포",["felt-tip","marker-bold","alcohol-marker","perfect-marker","marker--soft-dynamic"]],
 ["highlighter","형광펜","core","essential","marker","one-wash-marker","single-wash","same-geometry-settled-material","canvas-material-authority","one-wash/round","겹침 과농도를 억제하는 반투명 워시",["pastel-highlighter"]],
 ["standard-eraser","표준 지우개","core","essential","eraser","clean-ink","eraser","exact-rgba","gpu-causal-exact","destination-out/solid","정확한 불투명 destination-out",[]],
-["kneaded-eraser","떡지우개","core","essential","eraser","soft-spray","eraser","same-geometry-settled-material","gpu-causal-exact","destination-out/low-density","저밀도 누적 지우기",[]],
+["kneaded-eraser","떡지우개","core","essential","eraser","soft-spray","eraser","same-geometry-settled-material","gpu-causal-exact","destination-out/low-density","저밀도 누적 지우기",["precision-eraser","broad-eraser","lift-eraser"]],
 ["brush","평붓","core","essential","oil","chisel-ribbon","tilt-chisel","same-geometry-settled-material","gpu-bristle-quality-tie","angled-ribbon/minus-30","간단하고 반응 빠른 방향성 평붓",["flat-brush"]],
 ["pencil","연필","core","essential","pencil","graphite-line","graphite","same-geometry-settled-material","gpu-bristle-quality-tie","graphite/line/grain","선화와 러프를 함께 처리하는 균형형 흑연",["soft-pencil","pencil-2b","pencil-6b","colored-pencil","mypaint-cc0--2b-pencil"]],
 ["pencil--side-shade","연필 측면 음영","core","essential","pencil","graphite-side","side-shading","same-geometry-settled-material","gpu-bristle-quality-tie","graphite/side/tilt","기울기로 넓어지는 측면 접촉",["erodible-pencil","pencil--erodible-wear"]],

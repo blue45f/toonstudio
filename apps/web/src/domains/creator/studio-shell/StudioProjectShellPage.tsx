@@ -7,7 +7,7 @@ import {
   MoreHorizontal,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
@@ -274,6 +274,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
             <nav aria-label={bt("프로젝트 주요 단계", "Main project stages")} className="flex flex-wrap gap-2 border-t border-line p-2">
               {PRIMARY_SECTIONS.map((id) => <Link key={id} href={launchHref(projectSectionHref(displayProjectId, id))} aria-current={id === section ? "page" : undefined} className={buttonClass({ variant: "quiet", className: "min-h-11" })}>{bt(SECTION_DEFINITIONS[id].label.ko, SECTION_DEFINITIONS[id].label.en)}</Link>)}
             </nav>
+            <Link className={buttonClass({ variant: "quiet", className: "min-h-11" })} href={projectViewHref(displayProjectId, "story", "references", location.search)}>{bt("아이디어 보드", "Idea board")}</Link>
             <Link className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-accent" href={`${projectSectionHref(displayProjectId, "story")}?${fullParams.toString()}`}>{bt("전체 기획 도구 보기", "Show all planning tools")}</Link>
           </details>
         </header>
@@ -642,6 +643,11 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
         </div>
       ) : null}
 
+      {section === "story" && selectedView === "references" && (
+        <Suspense fallback={<p role="status">참고자료 보드를 여는 중…</p>}>
+          <ProjectMoodboard key={displayProjectId} projectId={displayProjectId} />
+        </Suspense>
+      )}
       <StudioProjectDiagnosticsBridge projectId={displayProjectId} />
 
       {primaryAction ? (
@@ -761,3 +767,5 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
     </Container>
   );
 }
+
+const ProjectMoodboard = lazy(() => import("../planning/StudioProjectMoodboard").then(module => ({ default: module.StudioProjectMoodboard })));

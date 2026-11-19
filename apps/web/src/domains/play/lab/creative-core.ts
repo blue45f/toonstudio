@@ -1,11 +1,7 @@
 /** Original, local-only creative exercises. No inference, catalog or paid API required. */
-export type Point = { x: number; y: number };
-export type Stroke = { points: Point[]; color: string; size: number; erase?: boolean };
-export const PAPER = "#f7f0e3";
-export const INK = "#322b28";
-export const MAX_STROKES = 160;
-export const MAX_POINTS = 12000;
-export const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+import { clamp, PAPER, pointPath, type Point, type Stroke } from "@/shared/components/sketch-pad/sketch-strokes";
+
+export { clamp, INK, MAX_POINTS, MAX_STROKES, PAPER, pointPath, validStrokes, type Point, type Stroke } from "@/shared/components/sketch-pad/sketch-strokes";
 export const hashSeed = (seed: string) => {
   let h = 2166136261;
   for (const c of seed.slice(0, 200)) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
@@ -114,24 +110,7 @@ export const PALETTE_PRESETS = [
   { name: "레트로 문방구", colors: ["#3d3633", "#ba5e47", "#dfb45e", "#709592", "#f5ead6"] },
   { name: "바닷가의 여름", colors: ["#274d5a", "#418c98", "#9bcbbf", "#e5bc81", "#f7e6c3"] },
 ] as const;
-export function validStrokes(value: unknown): value is Stroke[] {
-  if (!Array.isArray(value) || value.length > MAX_STROKES) return false;
-  let count = 0;
-  return value.every((stroke: unknown) => {
-    if (!stroke || typeof stroke !== "object") return false;
-    const s = stroke as Stroke;
-    if (typeof s.color !== "string" || !/^#[\da-f]{6}$/i.test(s.color) || !Number.isFinite(s.size) || s.size < 1 || s.size > 40 || (s.erase !== undefined && typeof s.erase !== "boolean") || !Array.isArray(s.points) || !s.points.length) return false;
-    count += s.points.length;
-    return count <= MAX_POINTS && s.points.every((p: Point) => p && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1);
-  });
-}
 export const escapeXml = (text: string) => text.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c]!);
-export function pointPath(points: Point[], width = 960, height = 600): string {
-  if (!points.length) return "";
-  const xy = (p: Point) => `${(p.x * width).toFixed(2)} ${(p.y * height).toFixed(2)}`;
-  if (points.length < 3) return `M ${xy(points[0])} ${points.slice(1).map((p) => `L ${xy(p)}`).join(" ")}`;
-  return `M ${xy(points[0])} ${points.slice(1, -1).map((p, i) => `Q ${xy(p)} ${xy({ x: (p.x + points[i + 2].x) / 2, y: (p.y + points[i + 2].y) / 2 })}`).join(" ")} L ${xy(points[points.length - 1])}`;
-}
 export function strokeSvg(strokes: Stroke[], width = 960, height = 600): string {
   return strokes.map((s) => {
     const color = s.erase ? PAPER : s.color;

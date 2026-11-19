@@ -231,8 +231,8 @@ export class Office2dPhysicsWorld {
   teleport(id: string, x: number, y: number): void {
     const body = this.bodyMap.get(id);
     if (!body || !Number.isFinite(x) || !Number.isFinite(y)) return;
-    body.x = x;
-    body.y = y;
+    body.x = body.previousX = x;
+    body.y = body.previousY = y;
     body.targetX = x;
     body.targetY = y;
     body.vx = 0;
@@ -294,13 +294,19 @@ export class Office2dPhysicsWorld {
       const splitStep = this.fixedStep / ccdSplits;
       for (let split = 0; split < ccdSplits; split += 1) {
         const remaining = (frameSteps - subSteps - 1) * ccdSplits + (ccdSplits - split);
-        this.subStep(splitStep, remaining, impacts);
+        this.subStep(splitStep, remaining, impacts, split === 0 && subSteps === frameSteps - 1);
       }
       this.accumulator -= this.fixedStep;
       subSteps += 1;
     }
     const sensorEvents = subSteps > 0 ? this.updateSensors() : { enters: [], exits: [] };
     return { subSteps, impacts: [...impacts.values()], sensorEnters: sensorEvents.enters, sensorExits: sensorEvents.exits };
+  }
+
+  /** 마지막으로 해결된 두 물리 위치 사이에서 화면의 현재 시각을 샘플한다. 충돌 경계를 넘어 예측하지 않는다. */
+  presentationPoint(body: Office2dBody): { readonly x: number; readonly y: number } {
+    const alpha = office2dClamp(this.accumulator / this.fixedStep, 0, 1);
+    return { x: body.previousX + (body.x - body.previousX) * alpha, y: body.previousY + (body.y - body.previousY) * alpha };
   }
 
   private requiredCcdSplits(h: number): number {
@@ -352,11 +358,15 @@ export class Office2dPhysicsWorld {
     }
   }
 
-  private subStep(h: number, remainingSteps: number, impacts: Map<string, Office2dContactEvent>): void {
+  private subStep(h: number, remainingSteps: number, impacts: Map<string, Office2dContactEvent>, capturePrevious: boolean): void {
     this.rebuildStaticHash();
     this.applySpringJoints(h);
 
     for (const body of this.ordered) {
+      if (capturePrevious && body.kind !== "static") {
+        body.previousX = body.x;
+        body.previousY = body.y;
+      }
       if (body.kind === "kinematic") {
         const steps = Math.max(1, remainingSteps);
         const dx = (body.targetX - body.x) / steps;

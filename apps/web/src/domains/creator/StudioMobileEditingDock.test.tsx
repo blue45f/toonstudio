@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { STUDIO_FILTER_DIALOG_CATALOG } from "./filter/studio-filter-catalog";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runMobileDockLateNotice } from "./brush/studio-mobile-brush-readiness.test.helper";
@@ -1523,7 +1524,9 @@ describe("StudioMobileEditingDock", () => {
     const filter = within(toolbar).getByRole<HTMLSelectElement>("combobox", {
       name: "현재 페이지 합성본 필터 선택",
     });
-    expect(within(filter).getAllByRole("option")).toHaveLength(6);
+    expect([...filter.options].map(option => option.value).sort()).toEqual([
+      "", "filter-gallery", ...STUDIO_FILTER_DIALOG_CATALOG.map(({ kind }) => kind),
+    ].sort());
     expect(within(toolbar).queryByRole("button", { name: "채우기" })).toBeNull();
     expect(filter.closest("label")?.className).toContain("min-h-[44px]");
     expect(filter.title).toContain("현재 페이지 합성본");
@@ -2049,7 +2052,16 @@ describe("명료한 그리기의 기존 모바일 도크 재사용", () => {
     const props = createProps({ isMobile: true, sidecarUndoAvailable: true, sidecarRedoAvailable: true }); render(surface(props));
     const history = document.getElementById("studio-drawing-clarity-history-slot"); if (!history) throw new Error("실제 상단 슬롯 누락");
     await waitFor(() => expect(within(history).getAllByRole("button")).toHaveLength(2));
-    const primary = document.querySelector('[data-studio-mobile-primary-actions="true"]'); expect(primary?.children).toHaveLength(5);
+    const primary = document.querySelector<HTMLElement>('[data-studio-mobile-primary-actions="true"]'); expect(primary?.children).toHaveLength(7);
+    if (!primary) throw new Error("모바일 기본 도구가 없습니다.");
+    const tools = within(primary), brush = tools.getByRole("button", { name: "브러시" });
+    fireEvent.click(brush);
+    expect(props.stableHandlers.openBrushManager).toHaveBeenCalledExactlyOnceWith(brush);
+    const filter = tools.getByRole("combobox", { name: "현재 페이지 합성본 필터 선택" });
+    fireEvent.change(filter, { target: { value: "filter-gallery" } });
+    fireEvent.change(filter, { target: { value: "line-width-correct" } });
+    expect(props.stableHandlers.openStudioFilter).toHaveBeenNthCalledWith(1, "filter-gallery");
+    expect(props.stableHandlers.openStudioFilter).toHaveBeenNthCalledWith(2, "line-width-correct");
     expect(document.querySelector('#studio-drawing-clarity-mobile-more-slot summary')).not.toBeNull(); fireEvent.click(screen.getByRole("button", { name: "레이어 열기" })); expect(props.stableHandlers.openInspectorRoute).toHaveBeenCalledWith({ primary: "layers" }, "props");
     fireEvent.click(screen.getByRole("button", { name: "브러시 색상" })); expect(document.querySelector('[data-studio-mobile-color-controls="true"]')?.hasAttribute("hidden")).toBe(false);
     const undo = within(history).getByRole("button", { name: "되돌리기 · 실행취소" }); expect(undo.matches(":disabled")).toBe(false); fireEvent.click(undo);

@@ -108,6 +108,21 @@ describe("StudioAiComicDirectorPanel", () => {
     expect(screen.getByText("후보를 만들고 사용할 결과 선택")).toBeTruthy();
   });
 
+  it("확정한 그림과 설명이 빈 컷은 자동 선택에서 제외하며 직접 해제한 컷은 다시 표시할 때도 해제되어 있다", () => {
+    const onGenerateImages = vi.fn();
+    const preview = [{ ...PREVIEW[0]!, imageDataUrl: "data:image/png;base64,completed" }, PREVIEW[1]!, { ...PREVIEW[1]!, imagePrompt: "" }];
+    const view = render(<StudioAiComicDirectorPanel {...props({ preview, onGenerateImages })} />);
+    fireEvent.click(screen.getByRole("button", { name: /컷 연출/u }));
+    const cut = (n: number) => screen.getByRole<HTMLInputElement>("checkbox", { name: `컷 ${n} 제작 선택` });
+    expect([cut(1).checked, cut(2).checked, cut(3).checked]).toEqual([false, true, false]);
+    fireEvent.click(screen.getByRole("button", { name: "선택 해제" }));
+    view.rerender(<StudioAiComicDirectorPanel {...props({ preview: [...preview], onGenerateImages })} />);
+    expect(cut(2).checked).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "그림 없는 컷 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택한 1컷 제작하기" }));
+    expect(onGenerateImages).toHaveBeenCalledExactlyOnceWith({ indexes: [1], variants: 2 });
+  });
+
   it("writes the chosen creative direction into the real image prompt before generation", () => {
     const onChangeScene = vi.fn();
     render(<StudioAiComicDirectorPanel {...props({ onChangeScene })} />);

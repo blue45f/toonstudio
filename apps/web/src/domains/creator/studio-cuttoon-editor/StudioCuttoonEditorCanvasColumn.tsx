@@ -112,7 +112,7 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
     gridSize,
     groups,
     guides,
-    hardCanvasInteractionBlock,
+    hardCanvasInteractionBlock, canvasInputStatus,
     hasAutosave,
     healCloneArmed,
     healCloneCursorRef,
@@ -459,7 +459,7 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
           canvasInteractionBlocked={canvasInteractionBlocked && !s.scopedCanvasDrawingAvailable}
           canvasScrollViewport={scrollPos}
           scrollViewportStore={scrollViewportStore}
-          hardCanvasInteractionBlock={hardCanvasInteractionBlock}
+          hardCanvasInteractionBlock={hardCanvasInteractionBlock} canvasInputStatus={canvasInputStatus}
           collaborationDocumentLocked={collaborationDocumentLocked}
           collaborationDocumentUnavailable={collaborationDocumentUnavailable}
           collaborationLockMessage={collaborationLockMessage}

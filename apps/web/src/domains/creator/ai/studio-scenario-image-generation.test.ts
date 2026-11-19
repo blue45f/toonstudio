@@ -188,6 +188,30 @@ describe("reviewed scenario image replacement integrity", () => {
     );
   });
 
+  it("빈 컷 생성과 재시도는 완성 컷을 보존하고 컷별 인물·장소·소품과 연결된 이미지 참조를 함께 전달한다", async () => {
+    const state = session("role");
+    const original = structuredClone(state.preview()!.items[0]!);
+    const continuity = { characterNames: ["연우"], location: "빈 극장", costumes: { 연우: "작업복" }, props: { 수첩: "연우 손에" } };
+    state.context.setScenarioResult(previous => previous && {
+      ...previous, items: [previous.items[0]!, { ...previous.items[1]!, continuity }],
+    });
+    generateImage.mockResolvedValue({ ok: true, data: { dataUrl: REPLACEMENT_IMAGE } });
+    await state.generate();
+    expect(state.preview()!.items[0]).toEqual(original);
+    expect(state.preview()!.items[1]!.continuity).toEqual(continuity);
+    expect(generateImage).toHaveBeenCalledTimes(1);
+    const references = generateImage.mock.calls[0]![1];
+    const prompt = String(generateImage.mock.calls[0]![2]);
+    expect(references).toEqual(expect.arrayContaining([expect.objectContaining({ role: "style", dataUrl: "data:image/png;base64,style" })]));
+    for (const anchor of ["연우", "빈 극장", "작업복", "수첩", "연우 손에"]) expect(prompt).toContain(anchor);
+    await state.generate();
+    expect(generateImage).toHaveBeenCalledTimes(1);
+    await state.generate({ indexes: [1], variants: 2 });
+    expect(generateImage).toHaveBeenCalledTimes(3);
+    expect(state.preview()!.items[0]).toEqual(original);
+    expect(state.preview()!.items[1]!.imageCandidates).toHaveLength(3);
+  });
+
   it("rejects an oversized explicit batch before any provider call or paid operation starts", async () => {
     const current = session("background", false);
     const repeated = Array.from({ length: 7 }, (_, index) => ({

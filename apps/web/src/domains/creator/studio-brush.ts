@@ -10,6 +10,7 @@ import {
   STUDIO_BRUSH_ENGINE_LANE_CATALOG_ROWS,
   listStudioBrushEngineLanePresets,
 } from "./brush/studio-brush-engine-lane-catalog";
+import { STUDIO_ERASER_PRESETS } from "./brush/studio-eraser-presets";
 import { STUDIO_PIXEL_PENCIL_RENDER_MODE } from "./studio-pixel-pencil";
 
 /** Artist-facing operation. Render families may be shared, but paint and erase never are. */
@@ -106,6 +107,9 @@ export const STUDIO_BRUSH_RENDER_FAMILY: Readonly<Record<string, StudioBrushRend
   "brush-pen": "calligraphy",
   "standard-eraser": "pen",
   "kneaded-eraser": "pen",
+  "precision-eraser": "pen",
+  "broad-eraser": "pen",
+  "lift-eraser": "pen",
   // perfect-freehand(tldraw) 아웃라인 폴리곤 렌더 — studio-perfect-freehand.ts 어댑터가 그린다.
   "perfect-ink": "perfect",
   "perfect-marker": "perfect",
@@ -286,23 +290,7 @@ export const BRUSH_PRESETS: BrushPreset[] = defineBrushPresets([
   { id: "brush-pen", name: "모필 붓펜", defaultWidth: 9, defaultOpacity: 1.0 },
   { id: "perfect-ink", name: "캘리 잉크펜(퍼펙트)", defaultWidth: 9, defaultOpacity: 1.0 },
   { id: "perfect-marker", name: "마커 펜(퍼펙트)", defaultWidth: 14, defaultOpacity: 1.0 },
-  {
-    id: "standard-eraser",
-    name: "일반 지우개",
-    defaultWidth: 20,
-    defaultOpacity: 1,
-    operation: "erase",
-    searchAliases: ["기본 지우개", "완전 지우개", "standard eraser", "hard eraser"],
-  },
-  {
-    id: "kneaded-eraser",
-    name: "떡지우개(저농도)",
-    defaultWidth: 26,
-    defaultOpacity: 0.38,
-    operation: "erase",
-    defaultColor: "#b7ada0",
-    searchAliases: ["말랑 지우개", "찰흙 지우개", "kneaded eraser", "putty eraser"],
-  },
+  ...STUDIO_ERASER_PRESETS.map(preset => ({ ...preset, operation: "erase" as const })),
   // —— Markers (Canva Draw / Express / Picsart / CSP) ——
   { id: "marker", name: "마커(굵고 반투명)", defaultWidth: 16, defaultOpacity: 0.6 },
   { id: "felt-tip", name: "펠트펜", defaultWidth: 10, defaultOpacity: 0.85 },

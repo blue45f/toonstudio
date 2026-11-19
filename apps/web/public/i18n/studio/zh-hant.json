@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "超簡單的佈局",
   "studio.mainMenu.item.view.density-full": "整體佈局",
   "studio.mainMenu.item.view.wide": "收合面板以加寬畫面",
+  "studio.mainMenu.item.view.wide.open": "顯示面板",
   "studio.mainMenu.item.view.tools-companion": "多顯示器工作區...",
   "studio.mainMenu.item.view.canvas-only": "僅畫布",
   "studio.mainMenu.item.view.color-vision.unavailable": "當視圖轉換被鎖定時，您無法變更色覺模式。",

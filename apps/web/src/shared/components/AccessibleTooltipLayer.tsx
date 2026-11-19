@@ -210,12 +210,15 @@ function resolvePlacement(
   if (!anchor) return null;
 
   const visualViewport = globalThis.visualViewport;
+  const controlledPopup = controlledPopupRect(target);
   const side = target.closest("[data-app-tooltip-preferred-side]")?.getAttribute("data-app-tooltip-preferred-side");
+  const preferredSide = side === "left" || side === "right" ? side
+    : !controlledPopup && target.closest('[role="toolbar"][aria-orientation="vertical"]') ? "right" : undefined;
   return resolveTooltipPlacement({
     anchor,
     popup: bubble.getBoundingClientRect(),
-    controlledPopup: controlledPopupRect(target),
-    preferredSide: side === "left" || side === "right" ? side : undefined,
+    controlledPopup,
+    preferredSide,
     viewport: {
       left: visualViewport?.offsetLeft ?? 0, top: visualViewport?.offsetTop ?? 0,
       width: visualViewport?.width ?? globalThis.innerWidth,

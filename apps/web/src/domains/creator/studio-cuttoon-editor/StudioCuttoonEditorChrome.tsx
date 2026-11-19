@@ -21,7 +21,7 @@ import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSe
 import { useStudioMarketplaceCloudSyncFocus } from "./studio-marketplace-cloud-sync-focus";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
-import { StudioDrawingClarityBarFallback, StudioDrawingClarityEntry } from "./StudioDrawingClarityEntry";
+import { StudioDrawingClarityBarFallback } from "./StudioDrawingClarityEntry";
 import { StudioProjectOpenRecoveryActions } from "./StudioProjectOpenRecoveryActions";
 
 const StudioOptionsBars = lazyRetry(() => import("../StudioOptionsBars").then((module) => ({ default: module.StudioOptionsBars })), "StudioOptionsBars");
@@ -31,22 +31,9 @@ const LazyStudioExportPreflightReturnBanner = lazyRetry(() => import("./StudioEx
 export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
   const clarity = useStudioDrawingClarity();
   const {
-    activeCatalogBrush,
-    activePage,
-    activeServerAiProviderLabel,
-    activeSurfaceReviewLocked,
-    activeToolbarGroup,
-    admittedBg3dOpen,
-    admittedMannequinPoserOpen,
-    admittedCharacterShaperOpen,
-    admittedPoserVrmOpen,
-    advancedFillActive,
-    advancedFillUnsupportedReason,
-    aiAssistTool,
-    aiBgBusy,
-    aiBgError,
-    aiBgPrompt,
-    aiBgSize,
+    activeCatalogBrush, activePage, activeServerAiProviderLabel, activeSurfaceReviewLocked, activeToolbarGroup,
+    admittedBg3dOpen, admittedMannequinPoserOpen, admittedCharacterShaperOpen, admittedPoserVrmOpen,
+    advancedFillActive, advancedFillUnsupportedReason, aiAssistTool, aiBgBusy, aiBgError, aiBgPrompt, aiBgSize,
     aiCharacterBusy,
     aiCharacterError,
     aiCharacterPrompt,
@@ -348,21 +335,9 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
       <StudioOptionsBars draw={studioOptionsBarsDrawModel} selection={studioOptionsBarsSelectionModel} stableHandlers={studioOptionsBarsHandlers} />
     </Suspense>
   ) : null;
-  return (
-    <>
-      {clarity?.active ? (
-        <Suspense fallback={<StudioDrawingClarityBarFallback title={title} />}>
-          <LazyStudioDrawingClarityBar session={s} />
-        </Suspense>
-      ) : drawingAppHeaderActive ? null : <StudioAppMenubar
-        aria-label="문서 메뉴"
-        subRow={isMobile ? <div className="studio-drawing-clarity-entry-mobile"><StudioDrawingClarityEntry /></div> : mobileImmersive ? undefined : desktopOptionsBars}
-        className={cn(canvasOnlyMode && "hidden", mobileImmersive && "h-auto min-h-11 border-0 bg-transparent shadow-none")}
-      >
-        {!isMobile ? <StudioDrawingClarityEntry /> : null}<Suspense
-          fallback={<div aria-hidden data-studio-menubar-loading="true" className="h-9 min-w-0 flex-1 animate-pulse rounded-lg bg-raised/45 motion-reduce:animate-none" />}
-        >
+  const menubarContent = (
           <LazyStudioMenubarContent
+            drawingToolsOnly={clarity?.active}
             activePageLabel={studioMenubarActivePageLabel}
           activeToolbarGroup={activeToolbarGroup}
           aiProvenance={aiProvenance}
@@ -444,6 +419,22 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
             uiAdvancedToolsExpanded={uiAdvancedToolsExpanded}
             stableHandlers={studioMenubarContentHandlers}
           />
+  );
+  return (
+    <>
+      {clarity?.active ? (
+        <Suspense fallback={<StudioDrawingClarityBarFallback title={title} />}>
+          <LazyStudioDrawingClarityBar session={s} projectUtilities={menubarContent} />
+        </Suspense>
+      ) : drawingAppHeaderActive ? null : <StudioAppMenubar
+        aria-label="문서 메뉴"
+        subRow={isMobile || mobileImmersive ? undefined : desktopOptionsBars}
+        className={cn(canvasOnlyMode && "hidden", mobileImmersive && "h-auto min-h-11 border-0 bg-transparent shadow-none")}
+      >
+        <Suspense
+          fallback={<div aria-hidden data-studio-menubar-loading="true" className="h-9 min-w-0 flex-1 animate-pulse rounded-lg bg-raised/45 motion-reduce:animate-none" />}
+        >
+          {menubarContent}
         </Suspense>
         <StudioToolHintTarget
           preferredSide="bottom"

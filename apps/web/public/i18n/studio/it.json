@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Layout estremamente semplice",
   "studio.mainMenu.item.view.density-full": "Layout completo",
   "studio.mainMenu.item.view.wide": "Comprimi pannelli e allarga",
+  "studio.mainMenu.item.view.wide.open": "Mostra pannelli",
   "studio.mainMenu.item.view.tools-companion": "Spazio di lavoro multi-display...",
   "studio.mainMenu.item.view.canvas-only": "Solo tela",
   "studio.mainMenu.item.view.color-vision.unavailable": "Non è possibile modificare la modalità di test della visione dei colori mentre la trasformazione della vista è bloccata.",

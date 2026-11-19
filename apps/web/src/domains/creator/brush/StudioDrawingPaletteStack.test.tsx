@@ -365,7 +365,6 @@ describe("StudioDrawingPaletteStack", () => {
   it.each<StudioInspectorFocusTarget>([
     "tool.brush-studio",
     "tool.brush-engines",
-    "brush.saved-library",
   ])("opens the tool-properties popup before honoring the %s deep link", (target) => {
     render(<Harness defaultPresentation="icon-popup" />);
 
@@ -381,6 +380,13 @@ describe("StudioDrawingPaletteStack", () => {
       screen.getByRole("dialog", { name: "도구 속성 팝업" }),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "필압 설정" })).toBeTruthy();
+  });
+
+  it("저장한 브러시 메뉴는 라이브러리가 들어 있는 서브 도구 팔레트를 연다", () => {
+    render(<Harness defaultPresentation="icon-popup" />);
+    act(() => { requestStudioInspectorFocus("brush.saved-library"); });
+    expect(screen.getByRole("dialog", { name: "서브 도구 팝업" })).toBeTruthy();
+    expect(screen.queryByRole("dialog", { name: "도구 속성 팝업" })).toBeNull();
   });
 
   it.each([

@@ -7,17 +7,16 @@ import { STUDIO_ASSET3D_TURNTABLE_MULTIVIEW_METRICS, computeAsset3dTransparentCa
 import { STUDIO_ASSET3D_IDENTITY_MAP_ADJUSTMENT, STUDIO_ASSET3D_TEXTURE_BRUSH_DEFAULTS, evaluateAsset3dBumpSculptHeightScalar, evaluateAsset3dMapAdjustmentTexel, stepAsset3dPbrBrushSizeByKey } from "./studio-asset3d-map-adjust-bridge-dag-engine";
 import { createStudioAsset3dViewportHudState, type StudioAsset3dViewportHudState } from "./studio-asset3d-preview-inspector";
 import {
-  STUDIO_ASSET3D_SKIN_WEIGHT_BRUSH_METRICS, auditAsset3dMeshNormalsAndWinding, auditAsset3dSkeletonDraft,
+  STUDIO_ASSET3D_SKIN_WEIGHT_BRUSH_METRICS, auditAsset3dMeshNormalsAndWinding,
   buildAsset3dWeightRampGradientCss, computeAsset3dJfaStepSchedule, evaluateAsset3dBrushStrokeInfluence,
   evaluateAsset3dHeightToNormalWhiteout, evaluateAsset3dRigCapabilities, evaluateAsset3dVoxelGridPreviewState,
-  evaluateAsset3dWaveRevealState, extractAsset3dSubmeshPart, packAsset3dBinaryRigPayload,
-  sanitizeAsset3dDisplayBoneName, stepAsset3dWeightBrushSizeByKey,
-  type StudioAsset3dDraftBoneNode, type StudioAsset3dPbrPaintChannel, type StudioAsset3dWeightBrushMode,
+  evaluateAsset3dWaveRevealState, extractAsset3dSubmeshPart,
+ stepAsset3dWeightBrushSizeByKey,
+  type StudioAsset3dPbrPaintChannel, type StudioAsset3dWeightBrushMode,
 } from "./studio-asset3d-weight-paint-pbr-engine";
 import { StudioAsset3dViewportHud } from "./StudioAsset3dViewportHud";
 import { StudioAsset3dWorkbenchSecondaryPanels } from "./StudioAsset3dWorkbenchSecondaryPanels";
 
-export type StudioAsset3dRigToolMode = "skeleton" | "weight" | "pose";
 
 export type StudioAsset3dWorkbenchMode =
   | "Normal"
@@ -54,18 +53,6 @@ export interface StudioAsset3dInspectorWorkbenchProps {
   readonly onHudStateChange?: (state: StudioAsset3dViewportHudState) => void;
   readonly className?: string;
 }
-
-const DEFAULT_RIG_BONES: readonly StudioAsset3dDraftBoneNode[] = Object.freeze([
-  { name: "mixamorig:Hips", parentName: null, position: { x: 0, y: 1.0, z: 0 } },
-  { name: "mixamorig:Spine", parentName: "mixamorig:Hips", position: { x: 0, y: 1.2, z: 0 } },
-  { name: "mixamorig:Chest", parentName: "mixamorig:Spine", position: { x: 0, y: 1.4, z: 0 } },
-  { name: "mixamorig:Neck", parentName: "mixamorig:Chest", position: { x: 0, y: 1.55, z: 0 } },
-  { name: "mixamorig:Head", parentName: "mixamorig:Neck", position: { x: 0, y: 1.7, z: 0 } },
-  { name: "mixamorig:LeftUpperArm", parentName: "mixamorig:Chest", position: { x: -0.2, y: 1.45, z: 0 } },
-  { name: "mixamorig:LeftForeArm", parentName: "mixamorig:LeftUpperArm", position: { x: -0.45, y: 1.45, z: 0 } },
-  { name: "mixamorig:LeftHand", parentName: "mixamorig:LeftForeArm", position: { x: -0.68, y: 1.45, z: 0 } },
-  { name: "HandLoRA_LeftThumb1", parentName: "mixamorig:LeftHand", position: { x: -0.72, y: 1.43, z: 0.03 } },
-]);
 
 const PBR_PAINT_CHANNELS: ReadonlyArray<{
   readonly id: StudioAsset3dPbrPaintChannel;
@@ -123,10 +110,6 @@ export function StudioAsset3dInspectorWorkbench({
   const [mapAdjustBrightness, setMapAdjustBrightness] = useState<number>(0);
   const [mapAdjustInvertGreenY, setMapAdjustInvertGreenY] = useState<boolean>(false);
 
-  const [rigTool, setRigTool] = useState<StudioAsset3dRigToolMode>("weight");
-  const [rigBones, setRigBones] = useState<readonly StudioAsset3dDraftBoneNode[]>(DEFAULT_RIG_BONES);
-  const [selectedBoneName, setSelectedBoneName] = useState<string>("mixamorig:LeftForeArm");
-  const [renameDraft, setRenameDraft] = useState<string>("LeftForeArm");
   const [weightBrushMode, setWeightBrushMode] = useState<StudioAsset3dWeightBrushMode>("add");
   const [weightBrushSizePx, setWeightBrushSizePx] = useState<number>(
     STUDIO_ASSET3D_SKIN_WEIGHT_BRUSH_METRICS.brushDefaultSizePx,
@@ -260,43 +243,6 @@ export function StudioAsset3dInspectorWorkbench({
     [brushHardness, brushStrength, paintChannel],
   );
 
-  const skeletonAudit = useMemo(() => auditAsset3dSkeletonDraft(rigBones), [rigBones]);
-
-  const binaryRigByteLength = useMemo(() => {
-    const joints = rigBones.map((bone, idx) => ({
-      name: bone.name,
-      parent: idx === 0 ? null : 0,
-      translation: [bone.position.x, bone.position.y, bone.position.z] as const,
-      rotation: [0, 0, 0, 1] as const,
-      scale: [1, 1, 1] as const,
-    }));
-    const invBind = new Float32Array(joints.length * 16);
-    for (let i = 0; i < joints.length; i += 1) {
-      invBind[i * 16] = 1;
-      invBind[i * 16 + 5] = 1;
-      invBind[i * 16 + 10] = 1;
-      invBind[i * 16 + 15] = 1;
-    }
-    const payload = packAsset3dBinaryRigPayload({
-      joints,
-      inverseBindMatricesRowMajor: invBind,
-      surfaces: [
-        {
-          surfaceId: "character_body",
-          vertexCount: 4,
-          joints: new Uint16Array(16),
-          weights: new Float32Array([
-            1, 0, 0, 0,
-            1, 0, 0, 0,
-            1, 0, 0, 0,
-            1, 0, 0, 0,
-          ]),
-        },
-      ],
-    });
-    return payload.byteLength;
-  }, [rigBones]);
-
   const partExtractionPreview = useMemo(() => {
     const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0]);
     const indices = new Uint32Array([0, 1, 2, 2, 1, 3]);
@@ -362,48 +308,6 @@ export function StudioAsset3dInspectorWorkbench({
   );
 
   const weightRampGradientCss = useMemo(() => buildAsset3dWeightRampGradientCss(), []);
-
-  const handleRenameSelectedBone = useCallback(() => {
-    const trimmed = renameDraft.trim();
-    if (!trimmed) {
-      return;
-    }
-    const prefixMatch = selectedBoneName.match(/^(?:mixamorig\d*[:_]?|HandLoRA_)/i);
-    const prefix = prefixMatch ? prefixMatch[0] : "";
-    const nextFullName = `${prefix}${trimmed}`;
-    setRigBones((prev) =>
-      prev.map((bone) => {
-        if (bone.name === selectedBoneName) {
-          return { ...bone, name: nextFullName };
-        }
-        if (bone.parentName === selectedBoneName) {
-          return { ...bone, parentName: nextFullName };
-        }
-        return bone;
-      }),
-    );
-    setSelectedBoneName(nextFullName);
-  }, [renameDraft, selectedBoneName]);
-
-  const handleAddChildBone = useCallback(() => {
-    const parent = rigBones.find((b) => b.name === selectedBoneName) ?? rigBones[0];
-    if (!parent) {
-      return;
-    }
-    const newBoneName = `mixamorig:CustomBone_${rigBones.length + 1}`;
-    const nextNode: StudioAsset3dDraftBoneNode = {
-      name: newBoneName,
-      parentName: parent.name,
-      position: {
-        x: parent.position.x,
-        y: parent.position.y + 0.12,
-        z: parent.position.z,
-      },
-    };
-    setRigBones((prev) => [...prev, nextNode]);
-    setSelectedBoneName(newBoneName);
-    setRenameDraft(sanitizeAsset3dDisplayBoneName(newBoneName));
-  }, [rigBones, selectedBoneName]);
 
   return (
     <section
@@ -738,20 +642,6 @@ export function StudioAsset3dInspectorWorkbench({
       <StudioAsset3dWorkbenchSecondaryPanels
         baseId={baseId}
         studioMode={workbenchMode}
-        rigTool={rigTool}
-        onRigToolChange={setRigTool}
-        rigBones={rigBones}
-        selectedBoneName={selectedBoneName}
-        onSelectBone={(boneName, cleanName) => {
-          setSelectedBoneName(boneName);
-          setRenameDraft(cleanName);
-        }}
-        renameDraft={renameDraft}
-        onRenameDraftChange={setRenameDraft}
-        onRenameSelectedBone={handleRenameSelectedBone}
-        onAddChildBone={handleAddChildBone}
-        binaryRigByteLength={binaryRigByteLength}
-        skeletonAudit={skeletonAudit}
         weightBrushMode={weightBrushMode}
         onWeightBrushModeChange={setWeightBrushMode}
         weightBrushSizePx={weightBrushSizePx}

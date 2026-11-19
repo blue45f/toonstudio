@@ -1,3 +1,4 @@
+import { PerspectiveCamera, Scene } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { registerStudioScene3dResourceOwner } from "../scene3d/studio-scene3d-resource-owner";
@@ -12,6 +13,10 @@ const rendererMock = vi.hoisted(() => ({
   backendIsWebGpu: true,
   initError: null as Error | null,
   initPromise: null as Promise<void> | null,
+  render: vi.fn(),
+  renderTarget: vi.fn(),
+  info: { render: { drawCalls: 0 } },
+  error: vi.fn(),
   dispose: vi.fn(),
   backendDispose: vi.fn(),
   fallbackAtInit: undefined as unknown,
@@ -25,6 +30,11 @@ vi.mock("three/webgpu", () => ({
     _getFallback: null | (() => void) | undefined = rendererMock.omitFallbackHook
       ? undefined
       : vi.fn();
+
+    render = rendererMock.render;
+    getRenderTarget = rendererMock.renderTarget;
+    info = rendererMock.info;
+    onError = rendererMock.error;
 
     readonly backend = {
       ...(rendererMock.backendIsWebGpu ? { isWebGPUBackend: true } : {}),
@@ -71,6 +81,10 @@ describe("Studio BG3D Three WebGPU renderer", () => {
     rendererMock.backendIsWebGpu = true;
     rendererMock.initError = null;
     rendererMock.initPromise = null;
+    rendererMock.render.mockReset();
+    rendererMock.renderTarget.mockReset();
+    rendererMock.info.render.drawCalls = 0;
+    rendererMock.error.mockReset();
     rendererMock.dispose.mockReset();
     rendererMock.backendDispose.mockReset();
     rendererMock.fallbackAtInit = undefined;
@@ -78,6 +92,58 @@ describe("Studio BG3D Three WebGPU renderer", () => {
     rendererMock.deviceLost = undefined;
     rendererMock.omitFallbackHook = false;
     vi.unstubAllGlobals();
+  });
+
+  it("프레임 예외를 한 번만 알리고 다른 캔버스에는 전파하지 않는다", async () => {
+    const failed = vi.fn();
+    const nextFailure = vi.fn();
+    const first = await createStudioBg3dThreeWebGpuRenderer(stubCanvas(), { onRenderError: failed });
+    const next = await createStudioBg3dThreeWebGpuRenderer(stubCanvas(), { onRenderError: nextFailure });
+    const scene = new Scene();
+    const camera = new PerspectiveCamera();
+    rendererMock.render.mockImplementationOnce(() => { throw new Error("frame unavailable"); });
+    first.renderer.render(scene, camera);
+    first.renderer.render(scene, camera);
+    next.renderer.render(scene, camera);
+    expect(rendererMock.render).toHaveBeenCalledTimes(2);
+    expect(failed).toHaveBeenCalledOnce();
+    expect(failed).toHaveBeenCalledWith(expect.stringContaining("frame unavailable"));
+    expect(nextFailure).not.toHaveBeenCalled();
+    await first.dispose();
+    await next.dispose();
+  });
+
+  it("실제 화면 draw가 있는 첫 프레임만 준비 완료로 보고한다", async () => {
+    const ready = vi.fn();
+    const runtime = await createStudioBg3dThreeWebGpuRenderer(stubCanvas(), { onFirstSceneFrame: ready });
+    const scene = new Scene();
+    const camera = new PerspectiveCamera();
+    rendererMock.renderTarget.mockReturnValue(null);
+    runtime.renderer.render(scene, camera);
+    rendererMock.info.render.drawCalls = 2;
+    rendererMock.renderTarget.mockReturnValue({});
+    runtime.renderer.render(scene, camera);
+    expect(ready).not.toHaveBeenCalled();
+    rendererMock.renderTarget.mockReturnValue(null);
+    runtime.renderer.render(scene, camera);
+    runtime.renderer.render(scene, camera);
+    expect(ready).toHaveBeenCalledOnce();
+    await runtime.dispose();
+  });
+
+  it("장치 명령 오류는 첫 원인을 유지하며 폐기한 렌더러의 늦은 오류를 무시한다", async () => {
+    const failed = vi.fn();
+    const runtime = await createStudioBg3dThreeWebGpuRenderer(stubCanvas(), { onRenderError: failed });
+    // Three는 장치 오류를 타입 선언의 string 대신 실제 구조화된 이벤트로 전달한다.
+    Reflect.apply(runtime.renderer.onError, runtime.renderer, [{
+      api: "WebGPU", type: "GPUValidationError", message: "command encoder rejected",
+    }]);
+    runtime.renderer.onError("follow-up frame");
+    await runtime.dispose();
+    runtime.renderer.onError("expired");
+    expect(rendererMock.error).toHaveBeenCalledOnce();
+    expect(failed).toHaveBeenCalledOnce();
+    expect(failed).toHaveBeenCalledWith("WebGPU 장면의 렌더 명령을 처리하지 못했습니다 (command encoder rejected)");
   });
 
   it("refuses a target that is not a canvas before importing the WebGPU graph", async () => {

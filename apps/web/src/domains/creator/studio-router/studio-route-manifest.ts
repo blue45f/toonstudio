@@ -334,7 +334,7 @@ function resolveComposition(
       sessionId,
       workId: null,
       remixSourceWorkId: null,
-      editorHref: "/studio",
+      editorHref: "/studio/canvas",
     });
   }
   if (

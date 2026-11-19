@@ -14,6 +14,21 @@ function runFor(physics: Office2dPhysicsWorld, seconds: number, frame = 1 / 60) 
   return impacts;
 }
 
+it("렌더 위치는 마지막 고정 스텝만 보간하고 순간이동한 자리에서 다시 시작한다", () => {
+  const physics = world();
+  const body = physics.addBody({ id: "local", kind: "dynamic", x: 100, y: 200,
+    shape: { type: "circle", radius: 8 }, linearDamping: 0, quadraticDrag: 0 });
+  physics.setVelocity(body.id, 120, 0);
+  physics.step(2.5 / 120);
+  expect(body.x).toBeCloseTo(102);
+  expect(physics.presentationPoint(body).x).toBeCloseTo(101.5);
+  physics.step(0.25 / 120);
+  expect(body.x).toBeCloseTo(102);
+  expect(physics.presentationPoint(body).x).toBeCloseTo(101.75);
+  physics.teleport(body.id, 240, 280);
+  expect(physics.presentationPoint(body)).toEqual({ x: 240, y: 280 });
+});
+
 describe("office2dCollide", () => {
   it("원-원 겹침 법선은 a에서 b를 향한다", () => {
     const a = new Office2dBody({ id: "a", kind: "dynamic", shape: { type: "circle", radius: 10 }, x: 0, y: 0 });

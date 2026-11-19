@@ -20,6 +20,9 @@ import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "../studi
 import { studioNpcInteraction, studioNpcLabel } from "../studio-virtual-space-npc-director";
 import { nearestInteraction, studioFacingToward } from "../studio-virtual-space-phaser-canvas-model";
 import { studioPoseSeatAnchors } from "../studio-virtual-space-pose-controller";
+import { studioCameraLerp } from "../studio-virtual-space-presentation";
+import { useStudioPrefersReducedMotion } from "../studio-virtual-space-reduced-motion";
+import { StudioThreeFollowCamera, StudioThreePeerMotion } from "./studio-virtual-space-three-follow";
 import type { StudioVirtualSpaceSnapshot } from "../studio-virtual-space-presence";
 import { clampStudioWorldPoint } from "../studio-virtual-space-world-pathfinding";
 import { studioWorldInteractions, studioWorldPortals, studioWorldRoomAt, studioWorldSpawn, type StudioWorldInteractionDefinition } from "../studio-virtual-space-world-manifest";
@@ -84,6 +87,10 @@ export function StudioVirtualSpaceThreeCanvas({
   themeRef.current = theme;
   const btRef = useRef(bt);
   btRef.current = bt;
+
+  const reducedMotion = useStudioPrefersReducedMotion();
+  const reducedMotionRef = useRef(reducedMotion);
+  reducedMotionRef.current = reducedMotion;
 
   const snapshotRef = useRef(snapshot);
   snapshotRef.current = snapshot;
@@ -376,8 +383,8 @@ export function StudioVirtualSpaceThreeCanvas({
 
     const raycaster = new THREE.Raycaster();
     const pointerNdc = new THREE.Vector2();
-    const peerPositionTarget = new THREE.Vector3();
-    const cameraPositionTarget = new THREE.Vector3();
+    const remoteMotion = new WeakMap<StudioThreeActorNode, StudioThreePeerMotion>();
+    const followCamera = new StudioThreeFollowCamera(selfPos3.x, selfPos3.z);
     const handleFloorTap = (event: Pick<PointerEvent, "clientX" | "clientY">) => {
       const rect = renderer.domElement.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
@@ -440,11 +447,7 @@ export function StudioVirtualSpaceThreeCanvas({
       const p3 = worldToThree(currentPoint, 0);
       selfNode.group.position.copy(p3);
       const zoomFactor = Math.max(0.65, Math.min(1.65, bridge.userZoom.get()));
-      camera.position.set(
-        p3.x + Math.sin(currentCameraYaw) * (12.8 / zoomFactor),
-        10.8 / zoomFactor,
-        p3.z + Math.cos(currentCameraYaw) * (12.8 / zoomFactor),
-      );
+      followCamera.update(camera, p3.x, p3.z, currentCameraYaw, zoomFactor, 0, true);
     };
 
     const animate = (now: number) => {
@@ -498,7 +501,7 @@ export function StudioVirtualSpaceThreeCanvas({
           keysDown, dt, closestInteraction: preInteraction, nearbyNpcCount: preNearbyNpcCount,
         });
       }
-      currentCameraYaw = shortestAngleLerp(currentCameraYaw, targetCameraYaw, 0.18);
+      currentCameraYaw = shortestAngleLerp(currentCameraYaw, targetCameraYaw, studioCameraLerp(dt, 0.18));
 
       // 키보드 + 조이스틱 벡터 계산 (Space+방향키 시점 둘러보기 중에는 아바타 걷기를 멈춘다)
       const joy = bridge.getJoystick();
@@ -551,9 +554,9 @@ export function StudioVirtualSpaceThreeCanvas({
       }
 
       // 로컬 캐릭터 3D 위치·회전 업데이트
-      selfNode.group.position.x = THREE.MathUtils.lerp(selfNode.group.position.x, currentPoint.x * STUDIO_THREE_SCALE, 0.35);
-      selfNode.group.position.z = THREE.MathUtils.lerp(selfNode.group.position.z, currentPoint.y * STUDIO_THREE_SCALE, 0.35);
-      selfNode.currentYaw = shortestAngleLerp(selfNode.currentYaw, selfNode.targetYaw, 0.22);
+      selfNode.group.position.x = THREE.MathUtils.lerp(selfNode.group.position.x, currentPoint.x * STUDIO_THREE_SCALE, studioCameraLerp(dt, 0.35));
+      selfNode.group.position.z = THREE.MathUtils.lerp(selfNode.group.position.z, currentPoint.y * STUDIO_THREE_SCALE, studioCameraLerp(dt, 0.35));
+      selfNode.currentYaw = shortestAngleLerp(selfNode.currentYaw, selfNode.targetYaw, studioCameraLerp(dt, 0.22));
       selfNode.group.rotation.y = selfNode.currentYaw;
       selfNode.moving = moving;
 
@@ -565,6 +568,7 @@ export function StudioVirtualSpaceThreeCanvas({
         for (const id of peerAvatarIndices.keys()) if (!activeIds.has(id)) peerAvatarIndices.delete(id);
         previousPeers = peers;
       }
+      const wallNow = Date.now();
       for (const peer of peers) {
         const peerId = `peer:${peer.participant.sessionId}`;
         let peerNode = actorNodes.get(peerId);
@@ -578,14 +582,9 @@ export function StudioVirtualSpaceThreeCanvas({
           peerAvatarIndices.set(peerId, peer.state.avatarIndex);
           reloadActorVrm(peerId, peer.state.avatarIndex);
         }
-        const target3 = peerPositionTarget.set(peer.state.x * STUDIO_THREE_SCALE, 0, peer.state.y * STUDIO_THREE_SCALE);
-        const dx = target3.x - peerNode.group.position.x;
-        const dz = target3.z - peerNode.group.position.z;
-        peerNode.moving = Math.hypot(dx, dz) > 0.03;
-        peerNode.targetYaw = peerNode.moving ? Math.atan2(dx, dz) : facingToYawRadians(peer.state.facing);
-        peerNode.group.position.lerp(target3, 0.2);
-        peerNode.currentYaw = shortestAngleLerp(peerNode.currentYaw, peerNode.targetYaw, 0.2);
-        peerNode.group.rotation.y = peerNode.currentYaw;
+        let motion = remoteMotion.get(peerNode);
+        if (!motion) { motion = new StudioThreePeerMotion(); remoteMotion.set(peerNode, motion); }
+        motion.update(peerNode, peer, wallNow, dt);
       }
 
       // NPC 시선 업데이트 (원거리 구역 외곽 NPC 스키닝 컬링 포함)
@@ -598,7 +597,7 @@ export function StudioVirtualSpaceThreeCanvas({
         node.targetYaw = gapPx < 240
           ? Math.atan2(currentPoint.x - npc.point.x, currentPoint.y - npc.point.y)
           : facingToYawRadians(npc.facing ?? "down");
-        node.currentYaw = shortestAngleLerp(node.currentYaw, node.targetYaw, 0.14);
+        node.currentYaw = shortestAngleLerp(node.currentYaw, node.targetYaw, studioCameraLerp(dt, 0.14));
         node.group.rotation.y = node.currentYaw;
       }
 
@@ -615,17 +614,13 @@ export function StudioVirtualSpaceThreeCanvas({
       // 카메라 추종 (유저 줌·카메라 패닝 복구·오빗 각도 반영)
       const zoomFactor = Math.max(0.65, Math.min(1.65, bridge.userZoom.get()));
       const panSample = cameraPanRuntime.sample({
-        deltaSeconds: dt, available: true, directed: false, snap: false, reducedMotion: false, moving,
+        deltaSeconds: dt, available: true, directed: false, snap: false, reducedMotion: reducedMotionRef.current, moving,
         cssToWorld: 1 / zoomFactor, base: currentPoint, center: currentPoint,
         view: { width: 960 / zoomFactor, height: 640 / zoomFactor }, world: { width: manifest.width, height: manifest.height },
       });
       const focusThreeX = selfNode.group.position.x + panSample.x * STUDIO_THREE_SCALE;
       const focusThreeZ = selfNode.group.position.z + panSample.y * STUDIO_THREE_SCALE;
-      const camDist = 12.8 / zoomFactor, camHeight = 10.8 / zoomFactor;
-      cameraPositionTarget.set(focusThreeX + Math.sin(currentCameraYaw) * camDist, camHeight, focusThreeZ + Math.cos(currentCameraYaw) * camDist);
-      if (panSample.direct) camera.position.copy(cameraPositionTarget);
-      else camera.position.lerp(cameraPositionTarget, 0.16);
-      camera.lookAt(focusThreeX - Math.sin(currentCameraYaw) * 0.8, 1.05, focusThreeZ - Math.cos(currentCameraYaw) * 0.8);
+      followCamera.update(camera, focusThreeX, focusThreeZ, currentCameraYaw, zoomFactor, dt, panSample.direct || reducedMotionRef.current);
 
       const zoneChanged = zoneTracker.next(currentPoint);
       if (zoneChanged) callbacksRef.current.onZoneChange?.(zoneChanged);

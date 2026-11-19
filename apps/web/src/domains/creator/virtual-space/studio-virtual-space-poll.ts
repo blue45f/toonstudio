@@ -22,7 +22,7 @@ export interface StudioPollVote {
   readonly voterName: string;
   /** 기명 투표일 때만 표시되는 세션 id. 익명은 빈 문자열. */
   readonly voterSessionId: string;
-  /** 중복 투표 방지를 위한 단방향 수령증. 익명 투표에서도 역추적 불가. */
+  /** 이 기기의 같은 투표에 다시 참여했는지 확인하는 식별값. */
   readonly receipt: string;
 }
 
@@ -169,7 +169,7 @@ export function createStudioPoll(
 /**
  * 투표의 현재 상태를 반환한다.
  */
-export function studioPollStatus(poll: StudioPoll, nowMs?: number): StudioPollStatus {
+export function studioPollStatus(poll: Pick<StudioPoll, "closed" | "deadlineMs">, nowMs?: number): StudioPollStatus {
   if (poll.closed) return "closed";
   const now = Number.isFinite(nowMs) ? Number(nowMs) : Date.now();
   if (poll.deadlineMs != null && now >= poll.deadlineMs) return "expired";
@@ -179,7 +179,7 @@ export function studioPollStatus(poll: StudioPoll, nowMs?: number): StudioPollSt
 /**
  * 마감까지 남은 시간(ms). 마감 없음·종료 상태에서는 null.
  */
-export function studioPollTimeLeftMs(poll: StudioPoll, nowMs?: number): number | null {
+export function studioPollTimeLeftMs(poll: Pick<StudioPoll, "closed" | "deadlineMs">, nowMs?: number): number | null {
   const now = Number.isFinite(nowMs) ? Number(nowMs) : Date.now();
   if (poll.closed || poll.deadlineMs == null) return null;
   return Math.max(0, poll.deadlineMs - now);
@@ -253,7 +253,7 @@ export function tallyStudioPoll(poll: StudioPoll): StudioPollTally {
 }
 
 /**
- * 해당 투표자가 이미 투표했는지 여부. 익명 투표의 수령증은 단방향이라 역추적되지 않는다.
+ * 해당 기기에서 이미 참여했는지 확인한다.
  */
 export function studioPollDidVote(poll: StudioPoll, voterSessionId: string): boolean {
   if (!voterSessionId.trim()) return false;

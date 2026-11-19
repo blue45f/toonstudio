@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Super preprosta postavitev",
   "studio.mainMenu.item.view.density-full": "celotna postavitev",
   "studio.mainMenu.item.view.wide": "Strni plošče in razširi pogled",
+  "studio.mainMenu.item.view.wide.open": "Pokaži plošče",
   "studio.mainMenu.item.view.tools-companion": "Delovni prostor z več zasloni…",
   "studio.mainMenu.item.view.canvas-only": "Samo platno",
   "studio.mainMenu.item.view.color-vision.unavailable": "Ko je preoblikovanje pogleda zaklenjeno, načina preverjanja barvnega vida ni mogoče spremeniti.",

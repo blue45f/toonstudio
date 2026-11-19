@@ -171,6 +171,20 @@ describe("AccessibleTooltipLayer", () => {
     expect(button.hasAttribute("aria-describedby")).toBe(false);
   });
 
+  it.each([[12, "right"], [960, "left"]] as const)("세로 도구 모음 x=%i에서 다음 도구를 가리지 않고 도움말을 %s에 연다", (x, side) => {
+    vi.useFakeTimers();
+    renderLayer(<div role="toolbar" aria-orientation="vertical"><button type="button" title="펜">펜</button></div>);
+    const pen = screen.getByRole("button", { name: "펜" });
+    Object.defineProperty(pen, "getBoundingClientRect", { value: () => new DOMRect(x, 100, 56, 44) });
+    const tooltip = revealByHover(pen);
+    expect(tooltip.dataset.side).toBe(side);
+    const left = Number.parseFloat(tooltip.style.left);
+    const width = tooltip.getBoundingClientRect().width;
+    expect(width).toBe(200);
+    expect(side === "right" ? left >= x + 56 : left + width <= x).toBe(true);
+    expect(pen.getAttribute("aria-describedby")).toContain(tooltip.id);
+  });
+
   it("dismisses ordinary hover help as soon as its action is clicked", () => {
     vi.useFakeTimers();
     const onClick = vi.fn();

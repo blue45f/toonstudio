@@ -35,6 +35,7 @@ function crc32(bytes: Uint8Array): number {
 
 interface ZipFixtureEntry {
   path: string;
+  pathBytes?: Uint8Array;
   data?: Uint8Array;
   compressedData?: Uint8Array;
   method?: number;
@@ -50,7 +51,7 @@ interface ZipFixtureEntry {
 
 function buildZipFixture(entries: readonly ZipFixtureEntry[], comment = ""): Uint8Array {
   const prepared = entries.map((entry) => {
-    const path = encoder.encode(entry.path);
+    const path = entry.pathBytes ?? encoder.encode(entry.path);
     const data = entry.data ?? new Uint8Array();
     const compressedData = entry.compressedData ?? data;
     const localExtra = entry.localExtra ?? new Uint8Array();
@@ -170,6 +171,30 @@ describe("readStudioZipArchive", () => {
     const blob = await blobArchive.readEntryBlob("hello.txt", "text/plain");
     expect(blob.type).toBe("text/plain");
     expect(await blob.text()).toBe("안녕");
+  });
+
+  it("ASCII 파일명은 UTF-8 플래그 없이도 읽고 한글 파일명은 UTF-8 플래그를 확인한다", async () => {
+    const first = encoder.encode("page one");
+    const archive = await readStudioZipArchive(buildZipFixture([
+      { path: "pages/001.png", data: first, flags: 0 },
+      { path: "pages/둘째.png", flags: UTF8_FLAG },
+    ]));
+    expect(archive.entries.map((entry) => entry.path)).toEqual(["pages/001.png", "pages/둘째.png"]);
+    expect(await archive.readEntry("pages/001.png")).toEqual(first);
+    await expectZipError(readStudioZipArchive(buildZipFixture([{ path: "둘째.png", flags: 0 }])), "PATH_INVALID");
+  });
+
+  it("파일명 플래그가 없어도 이식 가능한 경로와 양쪽 헤더 일치 검사를 지킨다", async () => {
+    for (const path of ["CON.png", "../001.png"]) {
+      await expectZipError(readStudioZipArchive(buildZipFixture([{ path, flags: 0 }])), "PATH_INVALID");
+    }
+    for (const flags of [0, UTF8_FLAG]) {
+      const invalidName = buildZipFixture([{ path: "", pathBytes: Uint8Array.of(0xff), flags }]);
+      await expectZipError(readStudioZipArchive(invalidName), "PATH_INVALID");
+      const mismatchedFlags = buildZipFixture([{ path: "001.png", flags }]);
+      new DataView(mismatchedFlags.buffer).setUint16(6, flags ^ UTF8_FLAG, true);
+      await expectZipError(readStudioZipArchive(mismatchedFlags), "LOCAL_HEADER_INVALID");
+    }
   });
 
   it("preserves physical entry order, directories, and a bounded UTF-8 comment", async () => {

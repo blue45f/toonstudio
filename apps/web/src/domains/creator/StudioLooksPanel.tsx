@@ -3,6 +3,8 @@
  * 원클릭 룩 인스펙터 — 검색·즐겨찾기·최근 적용 + 카테고리 칩.
  * 상태(즐겨찾기)는 부모가 localStorage 와 동기화해 넘긴다.
  */
+import { StudioDrawingStyleEditor } from "./ai/StudioDrawingStyleEditor";
+import { imageLookForDrawingStyle } from "./ai/studio-drawing-style-library";
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { RotateCcw, Search, Star } from "lucide-react";
 import { useState } from "react";
@@ -73,6 +75,10 @@ export function StudioLooksPanel({
     <div className="space-y-2">
       <p className="text-[0.66rem] font-semibold text-fg-3 uppercase tracking-wider">원클릭 룩 (Looks)</p>
 
+      <StudioDrawingStyleEditor imageTarget onApply={(_description, recipe) => {
+        const look = imageLookForDrawingStyle(recipe);
+        if (look) onApplyLook(look);
+      }}/>
       <div className="flex flex-wrap items-center gap-1.5">
         <button
           type="button"

@@ -7,6 +7,8 @@
  * every extracted payload with CRC-32. Stored entries and raw-DEFLATE entries are supported.
  */
 
+import { equalBytes, validateZipPath, ZipPathRejection } from "@toonstudio/studio-format-gateway/bounded-zip-path";
+
 const ZIP_LOCAL_FILE_HEADER_SIGNATURE = 0x04034b50;
 const ZIP_CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
 const ZIP_END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50;
@@ -24,10 +26,6 @@ const ZIP_DEFLATE_OPTION_FLAGS = 0x0006;
 const ZIP_STORE_METHOD = 0;
 const ZIP_DEFLATE_METHOD = 8;
 const ZIP64_EXTRA_FIELD_ID = 0x0001;
-const WINDOWS_RESERVED_NAME = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu;
-const UNSAFE_PATH_CHARACTER = /[<>:"|?*\\]/u;
-const UNSAFE_BIDI_CHARACTER = /[\u202a-\u202e\u2066-\u2069]/u;
-
 export const STUDIO_ZIP_READER_LIMITS = Object.freeze({
   maxArchiveBytes: 520_000_000,
   maxEntries: 2_048,
@@ -144,12 +142,6 @@ interface ByteReader {
   read(offset: number, length: number, signal?: AbortSignal): Promise<Uint8Array>;
 }
 
-interface ValidatedPath {
-  path: string;
-  comparisonKey: string;
-  directory: boolean;
-}
-
 interface CentralEntry extends StudioZipEntry {
   flags: number;
   versionNeeded: number;
@@ -165,7 +157,6 @@ interface LocatedEocd {
 }
 
 const textDecoder = new TextDecoder("utf-8", { fatal: true });
-const textEncoder = new TextEncoder();
 
 const crc32Table = (() => {
   const table = new Uint32Array(256);
@@ -324,77 +315,13 @@ function uint32(view: DataView, offset: number): number {
   return view.getUint32(offset, true);
 }
 
-function hasUnpairedSurrogate(value: string): boolean {
-  for (let index = 0; index < value.length; index += 1) {
-    const code = value.charCodeAt(index);
-    if (code >= 0xd800 && code <= 0xdbff) {
-      const next = value.charCodeAt(index + 1);
-      if (!(next >= 0xdc00 && next <= 0xdfff)) return true;
-      index += 1;
-    } else if (code >= 0xdc00 && code <= 0xdfff) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function decodeAndValidatePath(bytes: Uint8Array, maxPathBytes: number): ValidatedPath {
-  if (bytes.byteLength === 0 || bytes.byteLength > maxPathBytes) {
-    throw zipError("PATH_INVALID", "ZIP 경로 길이가 허용 범위를 벗어났습니다.");
-  }
-  let decoded: string;
+function decodeAndValidatePath(bytes: Uint8Array, maxPathBytes: number, flags: number) {
   try {
-    decoded = textDecoder.decode(bytes);
-  } catch {
-    throw zipError("PATH_INVALID", "ZIP 경로가 올바른 UTF-8이 아닙니다.");
+    return validateZipPath(bytes, maxPathBytes, "portable", (flags & ZIP_UTF8_FLAG) ? "utf8" : "ascii");
+  } catch (cause) {
+    if (cause instanceof ZipPathRejection) throw zipError("PATH_INVALID", cause.message, cause.path);
+    throw cause;
   }
-  if (hasUnpairedSurrogate(decoded) || !equalBytes(textEncoder.encode(decoded), bytes)) {
-    throw zipError("PATH_INVALID", "ZIP 경로의 Unicode 인코딩이 정규적이지 않습니다.");
-  }
-  const normalized = decoded.normalize("NFKC");
-  if (normalized !== decoded) {
-    throw zipError("PATH_INVALID", "ZIP 경로는 NFKC 정규형이어야 합니다.", decoded);
-  }
-
-  const directory = decoded.endsWith("/");
-  const pathWithoutDirectorySlash = directory ? decoded.slice(0, -1) : decoded;
-  if (
-    pathWithoutDirectorySlash.length === 0 ||
-    decoded.startsWith("/") ||
-    decoded.startsWith("//") ||
-    /^[A-Za-z]:/u.test(decoded) ||
-    UNSAFE_PATH_CHARACTER.test(decoded) ||
-    UNSAFE_BIDI_CHARACTER.test(decoded) ||
-    [...decoded].some((character) => {
-      const code = character.codePointAt(0) ?? 0;
-      return code <= 31 || code === 127;
-    })
-  ) {
-    throw zipError("PATH_INVALID", "ZIP 경로에 절대 경로 또는 안전하지 않은 문자가 있습니다.", decoded);
-  }
-
-  for (const segment of pathWithoutDirectorySlash.split("/")) {
-    if (
-      segment.length === 0 ||
-      segment === "." ||
-      segment === ".." ||
-      segment.trim() !== segment ||
-      /[. ]$/u.test(segment) ||
-      WINDOWS_RESERVED_NAME.test(segment)
-    ) {
-      throw zipError("PATH_INVALID", "ZIP 경로에 안전하지 않은 구간이 있습니다.", decoded);
-    }
-  }
-
-  return { path: decoded, comparisonKey: decoded.toLowerCase(), directory };
-}
-
-function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
-  if (left.byteLength !== right.byteLength) return false;
-  for (let index = 0; index < left.byteLength; index += 1) {
-    if (left[index] !== right[index]) return false;
-  }
-  return true;
 }
 
 function validateExtraFields(bytes: Uint8Array, path?: string): void {
@@ -427,9 +354,6 @@ function validateFlags(flags: number, method: number, path?: string): void {
       "data descriptor를 사용하는 ZIP 항목은 지원하지 않습니다.",
       path
     );
-  }
-  if ((flags & ZIP_UTF8_FLAG) === 0) {
-    throw zipError("PATH_INVALID", "ZIP 항목 경로에는 UTF-8 플래그가 필요합니다.", path);
   }
   const allowed = ZIP_UTF8_FLAG | (method === ZIP_DEFLATE_METHOD ? ZIP_DEFLATE_OPTION_FLAGS : 0);
   if ((flags & ~allowed) !== 0) {
@@ -610,8 +534,7 @@ async function parseCentralDirectory(
       offset + ZIP_CENTRAL_HEADER_BYTES,
       offset + ZIP_CENTRAL_HEADER_BYTES + pathBytesLength
     );
-    const path = decodeAndValidatePath(pathBytes, limits.maxPathBytes);
-    validateFlags(flags, method, path.path);
+    const path = decodeAndValidatePath(pathBytes, limits.maxPathBytes, flags);
     const pathKey = path.directory
       ? path.comparisonKey.slice(0, -1)
       : path.comparisonKey;

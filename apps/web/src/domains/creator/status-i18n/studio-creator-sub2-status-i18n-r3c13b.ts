@@ -19,6 +19,8 @@ import {
 } from "@/shared/lib/i18n";
 
 registerI18nLocaleEntries("ko", {
+  "studio.creatorSub2.status.animatic.workspaceControls.applyCaptionTiming": "자막 시간 적용",
+  "studio.creatorSub2.status.animatic.workspaceControls.captionTimingHint": "자막 시간을 적용하면 미리보기와 영상에 저장한 시작·끝 시각을 사용합니다.",
   "studio.creatorSub2.status.animatic.keyframeLane.firstSegmentSuffix": " (시작 키프레임은 이전 구간이 없어요)",
   "studio.creatorSub2.status.animatic.workspaceControls.subtitlesEmpty": "이 회차에는 아직 대사가 없습니다. 컷에 말풍선 대사를 넣으면 자막이 자동으로 만들어집니다.",
   "studio.creatorSub2.status.animatic.workspacePanel.changed": "원고가 바뀌어 적용하지 못했습니다. 현재 스토리보드에서 다시 시도하세요.",
@@ -107,6 +109,8 @@ registerI18nLocaleEntries("ko", {
 });
 
 registerI18nLocaleEntries("en", {
+  "studio.creatorSub2.status.animatic.workspaceControls.applyCaptionTiming": "Apply subtitle timing",
+  "studio.creatorSub2.status.animatic.workspaceControls.captionTimingHint": "Apply subtitle timing to use these start and end times in the preview and exported video.",
   "studio.creatorSub2.status.animatic.keyframeLane.firstSegmentSuffix": " (the first keyframe has no previous segment)",
   "studio.creatorSub2.status.animatic.workspaceControls.subtitlesEmpty": "This episode has no dialogue yet. Add speech-balloon lines to cuts and subtitles are created automatically.",
   "studio.creatorSub2.status.animatic.workspacePanel.changed": "The document changed, so this could not be applied. Try again from the current storyboard.",

@@ -10,14 +10,20 @@
  *   텍스트로 보여준다 (빈 칸으로 숨기지 않는다).
  */
 import { useRef, useState, type ClipboardEvent, type FormEvent } from "react";
+import { SketchPad, StrokePaths } from "@/shared/components/sketch-pad/SketchPad";
+import { PAPER, type Stroke } from "@/shared/components/sketch-pad/sketch-strokes";
+import { StudioMoodboardCharacterTransfer } from "./StudioMoodboardCharacterTransfer";
+import { StudioMoodboardConnections } from "./StudioMoodboardConnections";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import {
   addMoodboardCard,
   moodboardSummary,
+  moodboardCardAnchor,
   moveMoodboardCard,
   removeMoodboardCard,
   resolveMoodboardCardImage,
+  isMoodboardWebUrl,
   toggleMoodboardTodo,
   type Moodboard,
   type MoodboardAssetCatalogEntry,
@@ -28,11 +34,14 @@ import {
   collectPastedTextIntoBoard,
   deriveCharacterProfileDraftFromMoodboard,
   deriveEpisodePlanDraftFromMoodboard,
+  moodboardCardLabel,
   type MoodboardPlanningHandoff,
 } from "./studio-moodboard-web-collect";
 
 export interface StudioMoodboardPanelProps {
   readonly board: Moodboard;
+  readonly scriptProjectId?: string;
+  readonly profileProjectId?: string;
   readonly onBoardChange?: (board: Moodboard) => void;
   /** 이미지 카드 ref 해석용 개인/프로젝트 에셋 카탈로그. 없으면 URL 참조만 해석된다. */
   readonly imageCatalog?: readonly MoodboardAssetCatalogEntry[];
@@ -47,6 +56,7 @@ export interface StudioMoodboardPanelProps {
 }
 
 const KIND_LABELS: Readonly<Record<MoodboardCardKind, string>> = {
+  sketch: "스케치",
   image: "이미지",
   note: "메모",
   link: "링크",
@@ -54,6 +64,7 @@ const KIND_LABELS: Readonly<Record<MoodboardCardKind, string>> = {
 };
 
 const KIND_PLACEHOLDERS: Readonly<Record<MoodboardCardKind, string>> = {
+  sketch: "예: 복도 조명 구도",
   image: "에셋 이름이나 이미지 주소",
   note: "떠오른 생각을 한 줄로",
   link: "https:// 로 시작하는 주소",
@@ -70,6 +81,8 @@ const EMPTY_DRAFT: CardDraft = { kind: "note", value: "" };
 export function StudioMoodboardPanel({
   board,
   onBoardChange,
+  scriptProjectId,
+  profileProjectId,
   imageCatalog,
   createCardId,
   onPlanningHandoff,
@@ -80,7 +93,9 @@ export function StudioMoodboardPanel({
   const editable = onBoardChange !== undefined;
   const collectCounterRef = useRef(0);
   const [collectMessage, setCollectMessage] = useState("");
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [selectedCardIds, setSelectedCardIds] = useState<readonly string[]>([]);
+  const [hasProfileTargets, setHasProfileTargets] = useState(false);
   const [handoffMessage, setHandoffMessage] = useState("");
   const firstColumnId = board.columns[0]?.id;
 
@@ -151,7 +166,7 @@ export function StudioMoodboardPanel({
           {collectMessage && <p aria-live="polite">{collectMessage}</p>}
         </div>
       )}
-      <div>
+      <div className="studio-moodboard-columns">
         {board.columns.map((column, columnIndex) => (
           <section key={column.id} aria-label={`${column.title} 열`}>
             <h3>
@@ -162,12 +177,19 @@ export function StudioMoodboardPanel({
                 const card = board.cards[cardId];
                 if (!card) return null;
                 return (
-                  <li key={card.id}>
-                    <MoodboardCardView card={card} imageCatalog={imageCatalog} />
-                    {onPlanningHandoff && (
+                  <li key={card.id} id={moodboardCardAnchor(card.id)} tabIndex={-1} data-moodboard-kind={card.kind}>
+                    <span className="studio-moodboard-card-kind">{KIND_LABELS[card.kind]}</span>
+                    {editingCardId === card.id && onBoardChange ? (
+                      <EditCardForm card={card} onCancel={() => setEditingCardId(null)} onSave={updated => {
+                        onBoardChange({ ...board, cards: { ...board.cards, [card.id]: updated } });
+                        setEditingCardId(null);
+                      }} />
+                    ) : <MoodboardCardView card={card} imageCatalog={imageCatalog} />}
+                    {(onPlanningHandoff || (profileProjectId && editable && hasProfileTargets && card.kind !== "sketch")) && (
                       <label>
                         <input
                           type="checkbox"
+                          aria-label={`${moodboardCardLabel(card)} · 기획으로 보낼 카드로 고르기`}
                           checked={selectedCardIds.includes(card.id)}
                           onChange={() => toggleSelected(card.id)}
                         />
@@ -176,6 +198,7 @@ export function StudioMoodboardPanel({
                     )}
                     {editable && (
                       <div>
+                        {editingCardId !== card.id && <button type="button" onClick={() => setEditingCardId(card.id)}>카드 수정</button>}
                         {card.kind === "todo" && (
                           <label>
                             <input
@@ -186,62 +209,67 @@ export function StudioMoodboardPanel({
                             완료
                           </label>
                         )}
-                        <button
-                          type="button"
-                          disabled={cardIndex === 0}
-                          onClick={() =>
-                            onBoardChange(moveMoodboardCard(board, card.id, column.id, cardIndex - 1))
-                          }
-                        >
-                          위로
-                        </button>
-                        <button
-                          type="button"
-                          disabled={cardIndex === column.cardIds.length - 1}
-                          onClick={() =>
-                            onBoardChange(moveMoodboardCard(board, card.id, column.id, cardIndex + 1))
-                          }
-                        >
-                          아래로
-                        </button>
-                        <button
-                          type="button"
-                          disabled={columnIndex === 0}
-                          onClick={() =>
-                            onBoardChange(
-                              moveMoodboardCard(
-                                board,
-                                card.id,
-                                board.columns[columnIndex - 1]!.id,
-                                board.columns[columnIndex - 1]!.cardIds.length,
-                              ),
-                            )
-                          }
-                        >
-                          왼쪽 열로
-                        </button>
-                        <button
-                          type="button"
-                          disabled={columnIndex === board.columns.length - 1}
-                          onClick={() =>
-                            onBoardChange(
-                              moveMoodboardCard(
-                                board,
-                                card.id,
-                                board.columns[columnIndex + 1]!.id,
-                                board.columns[columnIndex + 1]!.cardIds.length,
-                              ),
-                            )
-                          }
-                        >
-                          오른쪽 열로
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onBoardChange(removeMoodboardCard(board, card.id))}
-                        >
-                          삭제
-                        </button>
+                        <details className="studio-moodboard-card-organize">
+                          <summary>이동·삭제</summary>
+                          <div>
+                            <button
+                              type="button"
+                              disabled={cardIndex === 0}
+                              onClick={() =>
+                                onBoardChange(moveMoodboardCard(board, card.id, column.id, cardIndex - 1))
+                              }
+                            >
+                              위로
+                            </button>
+                            <button
+                              type="button"
+                              disabled={cardIndex === column.cardIds.length - 1}
+                              onClick={() =>
+                                onBoardChange(moveMoodboardCard(board, card.id, column.id, cardIndex + 1))
+                              }
+                            >
+                              아래로
+                            </button>
+                            <button
+                              type="button"
+                              disabled={columnIndex === 0}
+                              onClick={() =>
+                                onBoardChange(
+                                  moveMoodboardCard(
+                                    board,
+                                    card.id,
+                                    board.columns[columnIndex - 1]!.id,
+                                    board.columns[columnIndex - 1]!.cardIds.length,
+                                  ),
+                                )
+                              }
+                            >
+                              왼쪽 열로
+                            </button>
+                            <button
+                              type="button"
+                              disabled={columnIndex === board.columns.length - 1}
+                              onClick={() =>
+                                onBoardChange(
+                                  moveMoodboardCard(
+                                    board,
+                                    card.id,
+                                    board.columns[columnIndex + 1]!.id,
+                                    board.columns[columnIndex + 1]!.cardIds.length,
+                                  ),
+                                )
+                              }
+                            >
+                              오른쪽 열로
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onBoardChange(removeMoodboardCard(board, card.id))}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </details>
                       </div>
                     )}
                   </li>
@@ -262,6 +290,8 @@ export function StudioMoodboardPanel({
           </section>
         ))}
       </div>
+      <StudioMoodboardConnections board={board} onChange={onBoardChange} scriptProjectId={scriptProjectId} />
+      {profileProjectId && editable && <StudioMoodboardCharacterTransfer projectId={profileProjectId} board={board} cardIds={selectedCardIds} onAvailability={setHasProfileTargets} />}
       {onPlanningHandoff && (
         <div>
           <p>고른 카드 {selectedCardIds.length}장으로 기획 초안을 만들어요. 카드는 보드에서 사라지지 않아요.</p>
@@ -287,12 +317,20 @@ function MoodboardCardView({
   readonly card: MoodboardCard;
   readonly imageCatalog?: readonly MoodboardAssetCatalogEntry[];
 }) {
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+  if (card.kind === "sketch") return <figure className="studio-moodboard-sketch-preview">
+    <svg viewBox="0 0 960 600" role="img" aria-label={`${card.text || "스케치"} · ${card.strokes?.length ?? 0}획`}>
+      <rect width="960" height="600" fill={PAPER} /><StrokePaths strokes={card.strokes ?? []} />
+    </svg><figcaption>{card.text || "스케치"}</figcaption>
+  </figure>;
   if (card.kind === "image") {
     const resolution = resolveMoodboardCardImage(card, imageCatalog ?? []);
     if (resolution.status === "resolved") {
       return (
         <figure>
-          <img src={resolution.imageUrl} alt={resolution.label} />
+          {failedImage === resolution.imageUrl
+            ? <p role="note">이미지를 표시할 수 없어요. 카드 수정에서 주소를 확인해 주세요.</p>
+            : <img src={resolution.imageUrl} alt={resolution.label} onError={() => setFailedImage(resolution.imageUrl)} />}
           <figcaption>
             {resolution.label}
             {resolution.scope === "project"
@@ -326,6 +364,31 @@ function MoodboardCardView({
   return <p>{card.text}</p>;
 }
 
+function EditCardForm({ card, onCancel, onSave }: {
+  readonly card: MoodboardCard;
+  readonly onCancel: () => void;
+  readonly onSave: (card: MoodboardCard) => void;
+}) {
+  const [strokes, setStrokes] = useState<Stroke[]>(card.strokes ?? []);
+  const reference = card.kind === "image" || card.kind === "link";
+  const [value, setValue] = useState((reference ? card.ref : card.text) ?? "");
+  const [error, setError] = useState("");
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const next = value.trim();
+    if (!next) { setError("카드 내용을 입력해 주세요."); return; }
+    if (card.kind === "link" && !isMoodboardWebUrl(next)) { setError("http 또는 https 주소를 입력해 주세요."); return; }
+    if (card.kind === "sketch" && !strokes.length) { setError("스케치에 선을 그려 주세요."); return; }
+    onSave(reference ? { ...card, ref: next } : { ...card, text: next, ...(card.kind === "sketch" && { strokes }) });
+  };
+  return <form aria-label="카드 수정" onSubmit={submit}>
+    <label>카드 내용<input value={value} onChange={event => setValue(event.target.value)} /></label>
+    {card.kind === "sketch" && <SketchPad label="카드 스케치 수정" strokes={strokes} onChange={setStrokes} />}
+    <button type="submit">수정 저장</button> <button type="button" onClick={onCancel}>취소</button>
+    {error && <p role="alert">{error}</p>}
+  </form>;
+}
+
 function AddCardForm({
   columnId,
   board,
@@ -338,28 +401,21 @@ function AddCardForm({
   readonly createCardId?: () => string;
 }) {
   const [draft, setDraft] = useState<CardDraft>(EMPTY_DRAFT);
+  const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [error, setError] = useState("");
   const counterRef = useRef(0);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const value = draft.value.trim();
+    const value = draft.value.trim() || (draft.kind === "sketch" ? "스케치" : "");
+    if (draft.kind === "sketch" && !strokes.length) { setError("스케치에 선을 그려 주세요."); return; }
     if (!value) {
       setError(r3c04StatusText("studio.r3c04Status.planning.moodboard.cardContentRequired", "카드 내용을 입력해 주세요."));
       return;
     }
-    if (draft.kind === "link") {
-      let valid: boolean;
-      try {
-        const url = new URL(value);
-        valid = url.protocol === "http:" || url.protocol === "https:";
-      } catch {
-        valid = false;
-      }
-      if (!valid) {
-        setError("링크는 https:// 로 시작하는 주소여야 해요.");
-        return;
-      }
+    if (draft.kind === "link" && !isMoodboardWebUrl(value)) {
+      setError("http 또는 https 주소를 입력해 주세요.");
+      return;
     }
     counterRef.current += 1;
     const id = createCardId
@@ -370,7 +426,7 @@ function AddCardForm({
         ? { id, kind: draft.kind, ref: value }
         : draft.kind === "todo"
           ? { id, kind: "todo", text: value, done: false }
-          : { id, kind: "note", text: value };
+          : { id, kind: draft.kind, text: value, ...(draft.kind === "sketch" && { strokes }) };
     const next = addMoodboardCard(board, columnId, card);
     if (next === board) {
       setError(r3c04StatusText("studio.r3c04Status.planning.moodboard.cardAddFailed", "카드를 더할 수 없어요. 카드가 너무 많거나 이미 있는 카드예요."));
@@ -378,6 +434,7 @@ function AddCardForm({
     }
     setError("");
     setDraft(EMPTY_DRAFT);
+    setStrokes([]);
     onBoardChange(next);
   };
 
@@ -406,6 +463,7 @@ function AddCardForm({
           placeholder={KIND_PLACEHOLDERS[draft.kind]}
         />
       </label>
+      {draft.kind === "sketch" && <SketchPad label="새 카드 스케치" strokes={strokes} onChange={setStrokes} />}
       <button type="submit">카드 더하기</button>
       {error && <p role="alert">{error}</p>}
     </form>

@@ -103,6 +103,7 @@ export class Office2dRuntime {
   private readonly zoneTracker: StudioZoneChangeTracker;
   private readonly stuck = new StudioStuckDetector();
   private readonly self: Office2dActor;
+  private presentedSelf: StudioVirtualSpacePoint;
   private readonly selfPose = new Office2dSelfPose();
   private readonly peers = new Map<string, Office2dActor>();
   private readonly npcs: { readonly state: Office2dNpcState; readonly actor: Office2dActor }[] = [];
@@ -157,6 +158,7 @@ export class Office2dRuntime {
     }
     const snapshot = options.getSnapshot();
     const start = this.resolveStart(snapshot);
+    this.presentedSelf = start;
     this.physics.addBody({ id: SELF_BODY, kind: "dynamic", shape: { type: "circle", radius: SELF_RADIUS }, x: start.x, y: start.y, mass: 60,
       linearDamping: 0, restitution: 0, friction: 0.1, category: OFFICE2D_CATEGORY.actor, maxSpeed: 600 });
     const now = this.now();
@@ -339,6 +341,7 @@ export class Office2dRuntime {
     this.coworkers.vacateNear(point, this.now());
     const free = this.physics.nearestFreePoint(point.x, point.y, SELF_RADIUS) ?? studioWorldSpawn(this.options.manifest).point;
     this.physics.teleport(SELF_BODY, free.x, free.y);
+    this.presentedSelf = free;
     this.self.x = free.x;
     this.self.y = free.y;
     this.selfPose.reset();
@@ -439,7 +442,11 @@ export class Office2dRuntime {
         }
       }
     }
-    if (body) advanceOffice2dActor(this.self, body.x, body.y, dt);
+    if (body) {
+      const shown = this.physics.presentationPoint(body);
+      advanceOffice2dActor(this.self, body.x, body.y, dt, { x: shown.x - this.presentedSelf.x, y: shown.y - this.presentedSelf.y });
+      this.presentedSelf = shown;
+    }
     if (this.self.footstepTriggered && !this.options.getReducedMotion()) {
       const footX = this.self.x + this.self.footstepSide * 5;
       if (sprint) this.particles.emitComboBurst("sprint", footX, this.self.y, 0.8);
@@ -470,7 +477,7 @@ export class Office2dRuntime {
 
     // 6) 카메라·파티클
     const conversation = bridge.getConversationFocus();
-    const focus = conversation ? { x: (conversation.x + this.self.x) / 2, y: (conversation.y + this.self.y) / 2 } : this.self;
+    const focus = conversation ? { x: (conversation.x + this.presentedSelf.x) / 2, y: (conversation.y + this.presentedSelf.y) / 2 } : this.presentedSelf;
     const viewport = this.camera.getViewport();
     const zoom = office2dBaseZoom(viewport) * bridge.userZoom.get() * (conversation ? 1.15 : 1);
     const pan = this.cameraPan.sample({
@@ -748,7 +755,7 @@ export class Office2dRuntime {
     const stageProps = this.options.getStageProps?.();
     this.renderer.render(ctx, {
       camera: this.camera, pixelRatio, time: this.elapsed, now: this.now(),
-      actors: [this.self, ...this.npcs.map(({ actor }) => actor), ...this.peers.values(), ...this.coworkers.visibleActors()],
+      actors: [{ ...this.self, ...this.presentedSelf }, ...this.npcs.map(({ actor }) => actor), ...this.peers.values(), ...this.coworkers.visibleActors()],
       selfId: this.self.id, props, nearbyInteractionId: this.lastInteractionId ?? null, destination: this.destination,
       locateTarget: this.locateTarget(), daylight: this.daylight(), reducedMotion: this.options.getReducedMotion(),
       language: this.options.getLanguage(), particles: this.particles, ghost: this.options.bridge.isGhostMode(),

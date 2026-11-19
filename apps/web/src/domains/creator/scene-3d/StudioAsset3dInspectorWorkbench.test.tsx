@@ -65,15 +65,11 @@ describe("StudioAsset3dInspectorWorkbench", () => {
     );
   });
 
-  it("switches to Rigging mode, strips mixamorig:/HandLoRA_ prefixes, renames bones, and handles [ / ] shortcuts", () => {
+  it("리깅 작업대와 웨이트 브러시 견본을 열고 단축키로 크기를 바꾼다", () => {
     render(<StudioAsset3dInspectorWorkbench />);
 
     fireEvent.click(screen.getByTestId("varco3d-studio-mode-Rigging"));
     expect(screen.getByTestId("varco3d-workbench-panel-rigging")).toBeTruthy();
-
-    // Verify prefix sanitization
-    expect(screen.getByTestId("varco3d-bone-item-LeftForeArm")).toBeTruthy();
-    expect(screen.getByTestId("varco3d-bone-item-LeftThumb1")).toBeTruthy();
 
     // Test [ and ] keyboard shortcuts for weight brush size (default 20px)
     expect(screen.getByTestId("varco3d-weight-brush-size-readout").textContent).toBe("20px");
@@ -82,16 +78,6 @@ describe("StudioAsset3dInspectorWorkbench", () => {
     fireEvent.keyDown(window, { key: "[" });
     expect(screen.getByTestId("varco3d-weight-brush-size-readout").textContent).toBe("20px");
 
-    // Rename selected bone
-    fireEvent.change(screen.getByTestId("varco3d-bone-rename-input"), {
-      target: { value: "ForeArm_Custom" },
-    });
-    fireEvent.click(screen.getByTestId("varco3d-bone-rename-submit"));
-    expect(screen.getByTestId("varco3d-bone-item-ForeArm_Custom")).toBeTruthy();
-
-    // Add child bone
-    fireEvent.click(screen.getByTestId("varco3d-bone-add-child"));
-    expect(screen.getByTestId("varco3d-bone-item-CustomBone_10")).toBeTruthy();
   });
 
   it("switches across Part, Animation, and Comparer modes and updates Remesh/AI Unwrap, DCC Bridge, and DAG pipeline accordions", () => {

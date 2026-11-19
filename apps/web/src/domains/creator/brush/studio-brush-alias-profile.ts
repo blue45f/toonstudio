@@ -24,6 +24,8 @@ import {
   resolveStudioWetEdgeBloomProgram,
 } from "./studio-wet-edge-bloom-v1";
 
+import { studioEraserPressureProfiles, type StudioEraserPressureId } from "./studio-eraser-render-profiles";
+
 import type { StudioBrushEngineProgramSet } from "./studio-brush-engine-program-set";
 
 export const STUDIO_BRUSH_ALIAS_PROFILE_VERSION = "brush-alias-profile-v1" as const;
@@ -53,7 +55,7 @@ export type StudioBrushAliasId =
   | "fountain-pen"
   | "parallel-pen"
   | "brush-pen"
-  | "kneaded-eraser"
+  | StudioEraserPressureId
   | "highlighter"
   | "chisel-highlighter"
   | "pastel-highlighter"
@@ -311,14 +313,7 @@ export const STUDIO_BRUSH_ALIAS_PROFILES = {
     diameterScale: 1.25,
     pressure: { minimum: 0.1, maximum: 1.3, exponent: 1.4 },
   },
-  "kneaded-eraser": {
-    version: STUDIO_BRUSH_ALIAS_PROFILE_VERSION,
-    id: "kneaded-eraser",
-    family: "causal-ink",
-    // The selected 26 px footprint is slightly broadened while light contact remains controllable.
-    diameterScale: 1.16,
-    pressure: { minimum: 0.24, maximum: 0.92, exponent: 0.86 },
-  },
+  ...studioEraserPressureProfiles(STUDIO_BRUSH_ALIAS_PROFILE_VERSION),
   highlighter: {
     version: STUDIO_BRUSH_ALIAS_PROFILE_VERSION,
     id: "highlighter",
@@ -626,8 +621,8 @@ export function isStudioBrushAliasId(value: unknown): value is StudioBrushAliasI
 /** Only named eraser presets may alter the generic eraser footprint and pressure response. */
 export function isStudioBrushEraserAliasId(
   value: unknown
-): value is Extract<StudioBrushAliasId, "kneaded-eraser"> {
-  return value === "kneaded-eraser";
+): value is Extract<StudioBrushAliasId, `${string}-eraser`> {
+  return value === "kneaded-eraser" || value === "precision-eraser" || value === "broad-eraser" || value === "lift-eraser";
 }
 
 /** Unknown/future brushes intentionally return null instead of inheriting pen semantics. */

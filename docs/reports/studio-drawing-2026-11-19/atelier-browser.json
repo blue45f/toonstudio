@@ -1,0 +1,467 @@
+{
+  "tested": "2026-11-19",
+  "runtime": "로컬 정적 빌드 919f03730dfe · Chrome CDP 9223",
+  "catalog": [
+    "select",
+    "transform",
+    "hand",
+    "pen",
+    "pixel",
+    "eraser",
+    "blend",
+    "wetMix",
+    "lightDark",
+    "liquify",
+    "fill",
+    "lassoFill",
+    "dropper",
+    "selectRect",
+    "selectCircle",
+    "lasso",
+    "crop",
+    "shapes",
+    "rect",
+    "oval",
+    "text",
+    "bubble",
+    "image",
+    "pin",
+    "guides",
+    "animation",
+    "mannequin",
+    "pose",
+    "character",
+    "bg3d",
+    "model",
+    "references",
+    "search",
+    "fit",
+    "rotate"
+  ],
+  "atlases": [
+    {
+      "file": "atelier-commands.webp",
+      "width": 576,
+      "height": 432,
+      "frames": 12,
+      "bytes": 97050,
+      "sha256": "2491dd8e193f6abc3bec66d68ffb74bb381fea6212e6a7184f390e54b8399ad1"
+    },
+    {
+      "file": "atelier-edit.webp",
+      "width": 576,
+      "height": 432,
+      "frames": 12,
+      "bytes": 65308,
+      "sha256": "f0a156fcf0608d9556284c0196210cd31b1d19f46e376bef3b5e42bafe3cdf0d"
+    },
+    {
+      "file": "atelier-media.webp",
+      "width": 576,
+      "height": 432,
+      "frames": 12,
+      "bytes": 73012,
+      "sha256": "226e4dd4715e07e47bd2716b564a17f37a21782f51e3216f4a7766e0d2d1ccb8"
+    },
+    {
+      "file": "atelier-tools.webp",
+      "width": 576,
+      "height": 432,
+      "frames": 12,
+      "bytes": 73434,
+      "sha256": "3c4628d1c8d67014c7912b2a968181eca3841881ab0547545dc8e2f5c4144b67"
+    }
+  ],
+  "desktop": {
+    "visual": {
+      "scrollW": 1440,
+      "viewport": 1440,
+      "art": [
+        {
+          "id": "search",
+          "box": [
+            796,
+            17,
+            22,
+            22
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "history",
+          "box": [
+            963,
+            17,
+            22,
+            22
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "save",
+          "box": [
+            1074,
+            17,
+            22,
+            22
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "bubble",
+          "box": [
+            1166,
+            17,
+            22,
+            22
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "export",
+          "box": [
+            1249,
+            17,
+            22,
+            22
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "share",
+          "box": [
+            1336,
+            17,
+            22,
+            22
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "brush",
+          "box": [
+            251,
+            67,
+            22,
+            22
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "search",
+          "box": [
+            1927,
+            65,
+            26,
+            26
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "pen",
+          "box": [
+            569,
+            176,
+            22,
+            22
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "select",
+          "box": [
+            25,
+            113,
+            28,
+            28
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "pen",
+          "box": [
+            25,
+            172,
+            28,
+            28
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "eraser",
+          "box": [
+            25,
+            231,
+            28,
+            28
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "color",
+          "box": [
+            25,
+            291,
+            28,
+            28
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "layers",
+          "box": [
+            25,
+            350,
+            28,
+            28
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "fill",
+          "box": [
+            25,
+            409,
+            28,
+            28
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "frame",
+          "box": [
+            25,
+            468,
+            28,
+            28
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "bubble",
+          "box": [
+            25,
+            527,
+            28,
+            28
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "bg3d",
+          "box": [
+            25,
+            587,
+            28,
+            28
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "pin",
+          "box": [
+            25,
+            646,
+            28,
+            28
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "tools",
+          "box": [
+            25,
+            705,
+            28,
+            28
+          ],
+          "width": 576,
+          "ready": true
+        }
+      ],
+      "viewportBounds": [
+        78,
+        100,
+        1362,
+        860
+      ],
+      "dock": [],
+      "controls": []
+    },
+    "errors": []
+  },
+  "mobile": {
+    "visual": {
+      "scrollW": 390,
+      "viewport": 390,
+      "art": [
+        {
+          "id": "save",
+          "box": [
+            317,
+            18,
+            22,
+            22
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "search",
+          "box": [
+            145,
+            71,
+            17,
+            17
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "share",
+          "box": [
+            212,
+            71,
+            17,
+            17
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "pen",
+          "box": [
+            30,
+            799,
+            24,
+            24
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "eraser",
+          "box": [
+            107,
+            799,
+            24,
+            24
+          ],
+          "width": 576,
+          "ready": true
+        },
+        {
+          "id": "layers",
+          "box": [
+            259,
+            799,
+            24,
+            24
+          ],
+          "width": 576,
+          "ready": true
+        }
+      ],
+      "viewportBounds": [
+        0,
+        102,
+        390,
+        742
+      ],
+      "dock": [
+        [
+          0,
+          797,
+          390,
+          47
+        ]
+      ],
+      "controls": [
+        [
+          9,
+          7,
+          44,
+          44
+        ],
+        [
+          61,
+          1,
+          235,
+          48
+        ],
+        [
+          304,
+          5,
+          77,
+          48
+        ],
+        [
+          4,
+          57,
+          78,
+          44
+        ],
+        [
+          86,
+          57,
+          44,
+          44
+        ],
+        [
+          135,
+          57,
+          64,
+          44
+        ],
+        [
+          202,
+          57,
+          88,
+          44
+        ],
+        [
+          294,
+          57,
+          44,
+          44
+        ],
+        [
+          342,
+          57,
+          44,
+          44
+        ]
+      ]
+    },
+    "errors": []
+  },
+  "forcedColors": {
+    "browserTest": "e2e/studio-drawing-art-contrast.spec.ts",
+    "selected": "펜·지우개",
+    "desktopAndMobile": true
+  },
+  "desktopSyncCollision": {
+    "teamControlsBottomY": 159,
+    "beforeStatusTopY": 140,
+    "afterStatusTopY": 176
+  }
+}

@@ -4,6 +4,7 @@
  * React·상태 의존이 없어 단위 테스트에서 그대로 부를 수 있다.
  */
 import * as THREE from "three";
+import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 
 import { EXTRA_POSE_PRESETS, NATURAL_IDLE_POSES, POSER_FINGER_BONES } from "../studio-pose-presets";
 import { createTwoBoneDefaultPoleTarget } from "../studio-rig-two-bone-ik";
@@ -11,6 +12,7 @@ import { createTwoBoneDefaultPoleTarget } from "../studio-rig-two-bone-ik";
 import { STUDIO_VRM_HTML_FALLBACK_ERROR as HTML_FALLBACK_VRM_ERROR } from "./studio-vrm-asset-runtime";
 import { studioVrmCustomExpressionLabel } from "./studio-vrm-generate-expressions";
 import { createStudioVrmHandPose, type StudioVrmHandPoseType } from "./studio-vrm-hand-poses";
+import { StudioVrmPngWorkerError } from "./studio-vrm-png-worker-client";
 import { EMPTY_STUDIO_VRM_POSE_TRANSLATIONS } from "./studio-vrm-pose-translations";
 import {
   BONE_CATEGORIES,
@@ -306,6 +308,10 @@ export function createCharacterThumbnail(
 }
 
 export function getErrorMessage(caughtError: unknown, fallback: string) {
+  if (caughtError instanceof StudioVrmPngWorkerError && caughtError.phase === "startup")
+    return translateBilingualPair("vrm.png", "PNG 저장 도구를 제시간에 열지 못했어요. 현재 포즈에서 다시 시도해 주세요.", "The PNG encoder took too long to start. Try again with the current pose.");
+  if (caughtError instanceof StudioVrmPngWorkerError && caughtError.phase === "encode")
+    return translateBilingualPair("vrm.png", "캐릭터 PNG 변환 시간이 초과됐어요. 현재 포즈에서 다시 시도해 주세요.", "Encoding the character PNG took too long. Try again with the current pose.");
   return caughtError instanceof Error ? caughtError.message : fallback;
 }
 

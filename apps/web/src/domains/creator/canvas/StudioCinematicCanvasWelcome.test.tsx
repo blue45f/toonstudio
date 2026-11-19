@@ -183,10 +183,13 @@ it("시작 안내 안에서 Escape로 캔버스 편집에 돌아간다", () => {
 it("장면 미리보기에서 원본 PNG를 내려받지 않는다", async () => {
   const { container } = render(<StudioCinematicCanvasWelcome pageKey="preview" visible />);
   // 장면 이미지는 사용자가 펼치기 전에는 요청하지 않는다.
-  expect(container.querySelectorAll("[style]")).toHaveLength(0);
+  const sceneBackgrounds = () => Array.from(container.querySelectorAll<HTMLElement>("[style]"))
+    .map(element => element.style.backgroundImage).filter(Boolean);
+  expect(sceneBackgrounds()).toEqual([]);
+  expect(container.querySelector('img[src*="/brand/studio-canvas-previews/"], img[src$=".png"]')).toBeNull();
   await openExampleScenes();
-  const backgrounds = Array.from(container.querySelectorAll<HTMLElement>("[style]"))
-    .map((element) => element.style.backgroundImage).filter(Boolean);
+  const backgrounds = sceneBackgrounds();
+  expect(container.querySelector('img[src$=".png"]')).toBeNull();
   expect(backgrounds).toHaveLength(6);
   expect(backgrounds.every((url) => url.includes("/brand/studio-canvas-previews/") && url.includes(".webp"))).toBe(true);
   expect(backgrounds.some((url) => url.includes("background.png"))).toBe(false);

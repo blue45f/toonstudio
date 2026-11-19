@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Disposición súper simple",
   "studio.mainMenu.item.view.density-full": "Disposición completa",
   "studio.mainMenu.item.view.wide": "Contraer paneis e ampliar",
+  "studio.mainMenu.item.view.wide.open": "Amosar os paneis",
   "studio.mainMenu.item.view.tools-companion": "Espazo de traballo con pantallas múltiples...",
   "studio.mainMenu.item.view.canvas-only": "Só lenzo",
   "studio.mainMenu.item.view.color-vision.unavailable": "Non se pode cambiar o modo de revisión da visión da cor mentres a transformación da vista estea bloqueada.",

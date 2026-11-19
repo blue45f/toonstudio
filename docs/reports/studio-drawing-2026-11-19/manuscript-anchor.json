@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "routes": [
+    {
+      "entry": "정식 원고 주소",
+      "workIdPreserved": true,
+      "roomPreserved": true,
+      "anchor": "#studio-canvas-workspace",
+      "anchorExistsInDocument": true,
+      "authorizedSourceGET": [
+        200
+      ],
+      "backOneStep": "/studio"
+    },
+    {
+      "entry": "기존 캔버스 주소",
+      "workIdPreserved": true,
+      "roomPreserved": true,
+      "anchor": "#studio-canvas-workspace",
+      "anchorExistsInDocument": true,
+      "authorizedSourceGET": [
+        200
+      ],
+      "backOneStep": "/studio"
+    },
+    {
+      "entry": "기존 스튜디오 홈 주소",
+      "workIdPreserved": true,
+      "roomPreserved": true,
+      "anchor": "#studio-canvas-workspace",
+      "anchorExistsInDocument": true,
+      "authorizedSourceGET": [
+        200
+      ],
+      "backOneStep": "/studio"
+    }
+  ]
+}

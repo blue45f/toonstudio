@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "تخطيط بسيط للغاية",
   "studio.mainMenu.item.view.density-full": "التخطيط الكامل",
   "studio.mainMenu.item.view.wide": "طي اللوحات للتوسيع",
+  "studio.mainMenu.item.view.wide.open": "إظهار اللوحات",
   "studio.mainMenu.item.view.tools-companion": "مساحة عمل متعددة الشاشات…",
   "studio.mainMenu.item.view.canvas-only": "لوحة الرسم فقط",
   "studio.mainMenu.item.view.color-vision.unavailable": "لا يمكنك تغيير وضع فحص رؤية الألوان أثناء قفل تحويل العرض.",

@@ -35,6 +35,7 @@ export interface StudioVrmRasterCaptureBackground {
 
 export interface StudioVrmRasterCaptureOptions {
   readonly session?: StudioVrmPngWorkerSession;
+  readonly shareStartupBudget?: boolean;
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
   /** Selected once before encoding starts. Omission selects the product Worker backend. */

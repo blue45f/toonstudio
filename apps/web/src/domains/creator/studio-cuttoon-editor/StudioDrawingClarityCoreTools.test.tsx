@@ -35,6 +35,51 @@ describe("간단한 그리기의 실제 핵심 도구 연결", () => {
     expect(open).toHaveBeenCalledExactlyOnceWith(button);
     expect(document.getElementById("studio-drawing-clarity-desktop-more-slot")).toBeTruthy();
   });
+  it("현재 캔버스 동작만 선택 표시하고 열린 레이어와 색상 패널은 따로 알린다", () => {
+    const actions = {
+      onSelectTool: vi.fn(), onOpenFill: vi.fn(), onOpenCutSplit: vi.fn(), onOpenBubble: vi.fn(),
+      onToggleBg3d: vi.fn(), onPlacePinComment: vi.fn(), onOpenAllTools: vi.fn(),
+    };
+    const base: StudioDrawingClarityCoreSession = { ...session(), clarityPanel: "layers", colorWheelOpen: true };
+    const row = (state: StudioDrawingClarityCoreSession) =>
+      <StudioDrawingClarityCoreTools session={state} onOpenLayers={vi.fn()} v4Actions={actions} />;
+    const { rerender } = render(row(base));
+    const selected = () => screen.queryAllByRole("button", { pressed: true });
+    const byName = (name: string) => screen.getByRole("button", { name });
+    expect(selected()).toEqual([byName("펜")]);
+    expect(byName("색상").getAttribute("aria-expanded")).toBe("true");
+    expect(byName("레이어").getAttribute("aria-expanded")).toBe("true");
+    const stage = byName("3D 배경");
+    expect(stage.dataset.studioRailToolId).toBe("bg3d");
+    expect(stage.title).toContain("3D 배경");
+    stage.focus();
+    expect(document.activeElement).toBe(stage);
+    fireEvent.click(stage);
+    expect(actions.onToggleBg3d).toHaveBeenCalledOnce();
+    const firstTools = screen.getAllByRole("button").slice(0, 5);
+    expect(firstTools).toEqual(["선택", "펜", "지우개", "색상", "레이어"].map(byName));
+    rerender(row({ ...base, tool: "select", advancedFillActive: true, advancedFillArmed: false }));
+    expect(selected()).toEqual([byName("선택")]);
+    rerender(row({ ...base, tool: "select", advancedFillActive: true, advancedFillArmed: true }));
+    expect(selected()).toEqual([byName("채우기")]);
+    rerender(row({ ...base, commentPinArmed: true }));
+    expect(selected()).toEqual([byName("핀 댓글")]);
+    rerender(row({ ...base, drawMode: "shape" }));
+    expect(selected()).toHaveLength(0);
+  });
+  it("재지정한 키를 제목·접근성·키캡에 반영하고 해제된 키를 안내하지 않는다", () => {
+    const state = { ...session(), appSettings: { shortcuts: { "tool-pen": "K", "tool-eraser": "", undo: "Mod+Shift+Y" } } };
+    render(<><StudioDrawingClarityCoreTools session={state} /><StudioDrawingClarityHistory session={state} /></>);
+    const pen = screen.getByRole("button", { name: "펜" });
+    expect(pen.getAttribute("aria-keyshortcuts")).toBe("K");
+    expect(pen.title).toBe("펜 · K");
+    expect(pen.querySelector("kbd")?.textContent).toBe("K");
+    const eraser = screen.getByRole("button", { name: "지우개" });
+    expect(eraser.hasAttribute("aria-keyshortcuts")).toBe(false);
+    expect(eraser.querySelector("kbd")).toBeNull();
+    expect(eraser.title).toBe("지우개");
+    expect(screen.getByRole("button", { name: /되돌리기/ }).getAttribute("aria-keyshortcuts")).toBe("Control+Shift+Y Meta+Shift+Y");
+  });
   it("기존 비활성 권한과 기록 상태를 우회하지 않고 더보기 자리는 유지한다", () => {
     const value = { ...session(), canvasInteractionBlocked: true, menuEditUndoDisabled: true, menuEditRedoDisabled: true };
     render(<><StudioDrawingClarityCoreTools session={value} /><StudioDrawingClarityHistory session={value} /></>);

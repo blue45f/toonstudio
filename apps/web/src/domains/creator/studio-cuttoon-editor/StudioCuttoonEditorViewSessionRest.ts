@@ -363,7 +363,7 @@ export type StudioCuttoonEditorViewSessionRest = {
   showAlignmentGuides: boolean;
   showGrid: boolean;
   showMobileHint: boolean;
-  showQuickStart: boolean;
+  showQuickStart: "requested" | "automatic" | false;
   showRulers: boolean;
   showWebtoonGuides: boolean;
   silkGenerativeSpec: import("../studio-silk-generative").StudioSilkGenerativeSpec;

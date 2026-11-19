@@ -30,6 +30,7 @@ import {
 import { useStudioCopyFeedback } from "../use-studio-copy-feedback";
 import { useStudioModalSheet } from "../useStudioModalSheet";
 
+import { StudioDrawingStyleEditor } from "./StudioDrawingStyleEditor";
 import {
   DEFAULT_STUDIO_AI_EPISODE_CONTINUITY_LOCKS,
   STUDIO_AI_CONTINUITY_LOCK_IDS,
@@ -537,6 +538,7 @@ export function StudioAiEpisodeProductionModal({
                         placeholder={ANCHOR_PLACEHOLDERS[anchorKey]}
                         className={cn(FIELD_CLASS, "mt-2 disabled:cursor-not-allowed disabled:opacity-45")}
                       />
+                      {id === "style" && locks.style && <StudioDrawingStyleEditor onApply={value => updateAnchor("style", value)} />}
                     </div>
                   );
                 })}

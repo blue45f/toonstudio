@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Super yksinkertainen asettelu",
   "studio.mainMenu.item.view.density-full": "Täysi asettelu",
   "studio.mainMenu.item.view.wide": "Kutista paneelit ja laajenna näkymä",
+  "studio.mainMenu.item.view.wide.open": "Näytä paneelit",
   "studio.mainMenu.item.view.tools-companion": "Monen näytön työtila…",
   "studio.mainMenu.item.view.canvas-only": "Vain kangas",
   "studio.mainMenu.item.view.color-vision.unavailable": "Värinäön tarkistustilaa ei voi vaihtaa, kun näkymän muunnos on lukittu.",

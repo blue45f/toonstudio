@@ -1,0 +1,23 @@
+{
+  "fileName": "botanical_glasshouse.glb",
+  "byteSize": 4554976,
+  "sha256": "sha256:4b086a8d02981d579d0f59882891e8e055ed89130123f57a846bfa3af7213407",
+  "bounds": [
+    8.4615,
+    4.6003,
+    9.1077
+  ],
+  "camera": {
+    "position": [
+      5.3,
+      3.25,
+      9.8
+    ],
+    "target": [
+      -0.25,
+      1.52,
+      -1.1
+    ],
+    "fovDegrees": 39
+  }
+}

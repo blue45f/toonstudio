@@ -76,7 +76,7 @@ export function getArtistStyleDnaPreset(presetId: string): ArtistStyleDnaPresetD
   const matched =
     BUILTIN_ARTIST_STYLE_PRESETS.find(
       (preset) => preset.modelId === targetId || preset.triggerWord === targetId,
-    ) ?? BUILTIN_ARTIST_STYLE_PRESETS[0];
+    );
   if (!matched) return undefined;
   const profile = buildArtistStyleDnaProfile(matched);
   return Object.freeze({

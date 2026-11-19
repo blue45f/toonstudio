@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { studioCameraLerp, STUDIO_GAIT_DISTANCE_PER_CYCLE, STUDIO_PEER_TELEPORT_DISTANCE } from "../studio-virtual-space-presentation";
 import {
   studioSpaceEmoteById,
   studioSpaceEmoteDurationMs,
@@ -8,6 +9,7 @@ import type { StudioVirtualSpaceEngineBridge } from "../studio-virtual-space-eng
 import type { StudioVirtualSpaceSnapshot } from "../studio-virtual-space-presence";
 import type { StudioThreeLightingPreset } from "./studio-virtual-space-three-hdri-controller";
 import type { StudioThreeActorNode } from "./studio-virtual-space-three-scene";
+import { STUDIO_THREE_SCALE } from "./studio-virtual-space-three-coordinates";
 
 export const STUDIO_THREE_LIGHTING_PRESET_STORAGE_KEY = "toonstudio:three-lighting-preset:v1";
 
@@ -188,6 +190,18 @@ function applyVrmEmoteExpression(node: StudioThreeActorNode, emoteId: string | n
   }
 }
 
+function updateWalkPhase(node: StudioThreeActorNode): number {
+  const { x, z } = node.group.position;
+  const gait = node.gait ??= { x, z, phase: 0 };
+  const distance = Math.hypot(x - gait.x, z - gait.z) / STUDIO_THREE_SCALE;
+  gait.phase = node.moving && distance <= STUDIO_PEER_TELEPORT_DISTANCE
+    ? (gait.phase + distance * 2 * Math.PI / STUDIO_GAIT_DISTANCE_PER_CYCLE) % (2 * Math.PI)
+    : 0;
+  gait.x = x;
+  gait.z = z;
+  return gait.phase;
+}
+
 export function applyStudioThreeActorPose(
   node: StudioThreeActorNode,
   now: number,
@@ -207,8 +221,9 @@ export function applyStudioThreeActorPose(
   const emoteActive = !node.moving && Boolean(node.emoteId) && (node.emoteUntil ?? 0) > now;
   applyVrmEmoteExpression(node, emoteActive ? (node.emoteId ?? null) : null);
 
+  const walkPhase = updateWalkPhase(node);
+  const restBlend = studioCameraLerp(dt, 0.2);
   if (node.moving) {
-    const walkPhase = now * 0.011;
     const swing = Math.sin(walkPhase) * 0.42;
     const elbowLeft = Math.max(0.05, -swing * 0.55);
     const elbowRight = Math.max(0.05, swing * 0.55);
@@ -236,7 +251,7 @@ export function applyStudioThreeActorPose(
       node.vrmRightLowerArm.rotation.x = elbowRight;
       node.vrmRightLowerArm.rotation.z = 0;
     }
-    node.rigGroup.position.y = Math.abs(Math.cos(walkPhase)) * 0.045;
+    node.rigGroup.position.y = Math.sin(walkPhase) ** 2 * 0.012;
     node.rigGroup.rotation.set(0, 0, 0);
   } else if (emoteActive && node.emoteId) {
     const emoteId = node.emoteId;
@@ -335,10 +350,10 @@ export function applyStudioThreeActorPose(
     node.rightLeg.rotation.x = -1.35;
     if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = -1.35;
     if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = -1.35;
-    node.leftArm.rotation.x = THREE.MathUtils.lerp(node.leftArm.rotation.x, -0.25, 0.2);
-    node.rightArm.rotation.x = THREE.MathUtils.lerp(node.rightArm.rotation.x, -0.25, 0.2);
-    node.leftArm.rotation.z = THREE.MathUtils.lerp(node.leftArm.rotation.z, 0, 0.2);
-    node.rightArm.rotation.z = THREE.MathUtils.lerp(node.rightArm.rotation.z, 0, 0.2);
+    node.leftArm.rotation.x = THREE.MathUtils.lerp(node.leftArm.rotation.x, -0.25, restBlend);
+    node.rightArm.rotation.x = THREE.MathUtils.lerp(node.rightArm.rotation.x, -0.25, restBlend);
+    node.leftArm.rotation.z = THREE.MathUtils.lerp(node.leftArm.rotation.z, 0, restBlend);
+    node.rightArm.rotation.z = THREE.MathUtils.lerp(node.rightArm.rotation.z, 0, restBlend);
     if (node.vrmLeftUpperArm) {
       node.vrmLeftUpperArm.rotation.z = baseLeftZ;
       node.vrmLeftUpperArm.rotation.x = -0.2;
@@ -350,31 +365,31 @@ export function applyStudioThreeActorPose(
     node.rigGroup.position.y = -0.22;
     node.rigGroup.rotation.set(0, 0, 0);
   } else {
-    node.leftLeg.rotation.x = THREE.MathUtils.lerp(node.leftLeg.rotation.x, 0, 0.2);
-    node.rightLeg.rotation.x = THREE.MathUtils.lerp(node.rightLeg.rotation.x, 0, 0.2);
-    node.leftArm.rotation.x = THREE.MathUtils.lerp(node.leftArm.rotation.x, 0, 0.2);
-    node.rightArm.rotation.x = THREE.MathUtils.lerp(node.rightArm.rotation.x, 0, 0.2);
-    node.leftArm.rotation.z = THREE.MathUtils.lerp(node.leftArm.rotation.z, 0, 0.2);
-    node.rightArm.rotation.z = THREE.MathUtils.lerp(node.rightArm.rotation.z, 0, 0.2);
-    if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperLeg.rotation.x, 0, 0.2);
-    if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperLeg.rotation.x, 0, 0.2);
+    node.leftLeg.rotation.x = THREE.MathUtils.lerp(node.leftLeg.rotation.x, 0, restBlend);
+    node.rightLeg.rotation.x = THREE.MathUtils.lerp(node.rightLeg.rotation.x, 0, restBlend);
+    node.leftArm.rotation.x = THREE.MathUtils.lerp(node.leftArm.rotation.x, 0, restBlend);
+    node.rightArm.rotation.x = THREE.MathUtils.lerp(node.rightArm.rotation.x, 0, restBlend);
+    node.leftArm.rotation.z = THREE.MathUtils.lerp(node.leftArm.rotation.z, 0, restBlend);
+    node.rightArm.rotation.z = THREE.MathUtils.lerp(node.rightArm.rotation.z, 0, restBlend);
+    if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperLeg.rotation.x, 0, restBlend);
+    if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperLeg.rotation.x, 0, restBlend);
     if (node.vrmLeftUpperArm) {
       node.vrmLeftUpperArm.rotation.z = baseLeftZ + Math.sin(now * 0.0022) * 0.02;
-      node.vrmLeftUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperArm.rotation.x, 0.06, 0.2);
+      node.vrmLeftUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperArm.rotation.x, 0.06, restBlend);
     }
     if (node.vrmRightUpperArm) {
       node.vrmRightUpperArm.rotation.z = baseRightZ - Math.sin(now * 0.0022) * 0.02;
-      node.vrmRightUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperArm.rotation.x, 0.06, 0.2);
+      node.vrmRightUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperArm.rotation.x, 0.06, restBlend);
     }
     if (node.vrmLeftLowerArm) {
-      node.vrmLeftLowerArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftLowerArm.rotation.x, 0, 0.2);
-      node.vrmLeftLowerArm.rotation.z = THREE.MathUtils.lerp(node.vrmLeftLowerArm.rotation.z, 0, 0.2);
+      node.vrmLeftLowerArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftLowerArm.rotation.x, 0, restBlend);
+      node.vrmLeftLowerArm.rotation.z = THREE.MathUtils.lerp(node.vrmLeftLowerArm.rotation.z, 0, restBlend);
     }
     if (node.vrmRightLowerArm) {
-      node.vrmRightLowerArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.x, 0, 0.2);
-      node.vrmRightLowerArm.rotation.z = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.z, 0, 0.2);
+      node.vrmRightLowerArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.x, 0, restBlend);
+      node.vrmRightLowerArm.rotation.z = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.z, 0, restBlend);
     }
-    node.rigGroup.position.y = Math.sin(now * 0.003) * 0.015;
+    node.rigGroup.position.y = THREE.MathUtils.lerp(node.rigGroup.position.y, 0, restBlend);
     node.rigGroup.rotation.set(0, 0, 0);
   }
 

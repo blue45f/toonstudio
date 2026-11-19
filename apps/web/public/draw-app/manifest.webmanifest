@@ -1,7 +1,7 @@
 {
   "name": "툰스튜디오 드로잉 · ToonStudio Draw",
   "short_name": "툰드로잉",
-  "description": "툰스튜디오의 동일한 전문 드로잉 엔진을 캔버스 중심 앱 UI로 실행합니다.",
+  "description": "작품 보관함에서 원고를 열고 웹과 같은 도구로 그립니다.",
   "lang": "ko-KR",
   "categories": [
     "graphics_design",
@@ -55,14 +55,14 @@
     {
       "name": "드로잉 스튜디오",
       "short_name": "드로잉",
-      "description": "캔버스 중심 순수 드로잉 프레젠테이션으로 시작",
+      "description": "작품 보관함에서 원고 열기",
       "url": "/studio?drawingShell=app&uiMode=focus&startTool=draw"
     },
     {
-      "name": "전체 툰스튜디오",
-      "short_name": "전체 스튜디오",
-      "description": "동일 프로젝트를 전체 제작 UI로 열기",
-      "url": "/studio?drawingShell=integrated"
+      "name": "보관한 작품",
+      "short_name": "보관한 작품",
+      "description": "보관한 작품을 확인하고 복원",
+      "url": "/studio?view=archived"
     }
   ]
 }

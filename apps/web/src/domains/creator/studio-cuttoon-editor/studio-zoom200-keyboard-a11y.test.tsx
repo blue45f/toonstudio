@@ -145,6 +145,7 @@ describe("200% 확대 및 키보드 전용 도구→옵션→캔버스→저장 
         color: "#111111",
         colorWheelOpen: false,
         advancedFillActive: true,
+        advancedFillArmed: true,
         commentPinArmed: false,
         clarityPanel: "pages",
         activatePrimaryCanvasTool: vi.fn(),
@@ -208,7 +209,7 @@ describe("200% 확대 및 키보드 전용 도구→옵션→캔버스→저장 
     render(<Harness />);
 
     expect(screen.getByRole("button", { name: "채우기" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("button", { name: "컷 분할" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "컷 분할" }).getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByRole("button", { name: "핀 댓글" }).getAttribute("aria-pressed")).toBe("false");
 
     const growBtn = screen.getByRole("button", { name: "브러시 크기 키우기" });

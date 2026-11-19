@@ -128,3 +128,4 @@ apps/api/src/platform/database/migrations/0127_admin_workspace_access.sql
 apps/api/src/platform/database/migrations/0128_admin_business_plan_access.sql
 apps/api/src/platform/database/migrations/0129_studio_work_vrm_cut.sql
 apps/api/src/platform/database/migrations/0130_studio_bg3d_vrm_bundle.sql
+apps/api/src/platform/database/migrations/0131_studio_space_poll.sql

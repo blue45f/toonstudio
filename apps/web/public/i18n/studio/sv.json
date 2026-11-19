@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Superenkel layout",
   "studio.mainMenu.item.view.density-full": "Fullständig layout",
   "studio.mainMenu.item.view.wide": "Fäll ihop paneler och bredda",
+  "studio.mainMenu.item.view.wide.open": "Visa paneler",
   "studio.mainMenu.item.view.tools-companion": "Arbetsyta med flera skärmar...",
   "studio.mainMenu.item.view.canvas-only": "Endast canvas",
   "studio.mainMenu.item.view.color-vision.unavailable": "Du kan inte ändra färgseendeläge medan vytransformeringen är låst.",

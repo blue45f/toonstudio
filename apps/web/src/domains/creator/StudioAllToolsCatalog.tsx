@@ -1,5 +1,7 @@
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { ArrowLeft, Pin, PinOff, Search } from "lucide-react";
+import { StudioToolArtwork } from "./studio-tool-art/StudioToolArtwork";
+import { studioRailArtwork } from "./studio-tool-art/studio-rail-artwork";
 import { useId, useRef, useState } from "react";
 import { STUDIO_RAIL_TOOL_CATALOG, studioRailToolLabel, type StudioRailToolId } from "./studio-app-settings";
 import {
@@ -24,9 +26,10 @@ const QUICK_TOOL_ALIASES = [
   { query: "컷 댓글", ko: "컷 댓글", en: "Review pin" },
 ] as const;
 
-export function StudioAllToolsCatalog({ definitions, pinned, query, onQuery, onPin, onUsed }: {
+export function StudioAllToolsCatalog({ definitions, pinned, fixed = [], query, onQuery, onPin, onUsed }: {
   definitions: Record<StudioRailToolId, StudioRailToolButtonProps>;
   pinned: readonly StudioRailToolId[];
+  fixed?: readonly StudioRailToolId[];
   query: string;
   onQuery: (value: string) => void;
   onPin: (id: StudioRailToolId, pinned: boolean) => void;
@@ -44,7 +47,7 @@ export function StudioAllToolsCatalog({ definitions, pinned, query, onQuery, onP
   const crossSurfaceMatches = useAllToolsCrossSurfaceMatches(query);
   const hasRailMatch = STUDIO_RAIL_TOOL_CATALOG.some(({ id }) => matches(id));
 
-  return <div className="space-y-2" data-studio-all-tools-direct="true">
+  return <div className="space-y-2 max-md:pe-2 pointer-coarse:pe-2" data-studio-all-tools-direct="true">
     <label className="relative block"><Search size={16} aria-hidden className="absolute left-3 top-3.5 text-fg-2" />
       <input type="search" aria-label="전체 도구 검색" value={query}
         placeholder={bt("이름 · 손떨림 보정 · 틈 닫기 · 원근 자 · 단축키", "Name · stabilizer · close gap · perspective · shortcut")} onChange={(event) => onQuery(event.currentTarget.value.slice(0, 80))}
@@ -54,7 +57,7 @@ export function StudioAllToolsCatalog({ definitions, pinned, query, onQuery, onP
       <div data-studio-all-tools-alias-chips="true" className="flex flex-wrap gap-1" aria-label={bt("자주 찾는 별칭", "Popular aliases")}>
         {QUICK_TOOL_ALIASES.map((chip) => (
           <button key={chip.query} type="button" data-studio-tool-alias-chip={chip.query} onClick={() => onQuery(chip.query)}
-            className="min-h-7 rounded-full border border-line bg-card px-2.5 text-[0.68rem] font-medium text-fg-2 hover:border-accent/50 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+            className="min-h-7 max-md:min-h-11 max-md:min-w-11 pointer-coarse:min-h-11 pointer-coarse:min-w-11 rounded-full border border-line bg-card px-2.5 text-[0.68rem] font-medium text-fg-2 hover:border-accent/50 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
             {bt(chip.ko, chip.en)}
           </button>
         ))}
@@ -62,16 +65,16 @@ export function StudioAllToolsCatalog({ definitions, pinned, query, onQuery, onP
       <nav aria-label={bt("도구 분류 고르기", "Choose a tool category")} className="flex flex-wrap gap-1.5">
         <button type="button" data-studio-tool-category="all" aria-pressed={groupId === null}
           onClick={() => setGroupId(null)}
-          className={`min-h-8 rounded-lg border px-2.5 py-1 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${groupId === null ? "border-accent bg-accent-soft text-fg" : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg"}`}>
+          className={`min-h-8 max-md:min-h-11 pointer-coarse:min-h-11 rounded-lg border px-2.5 py-1 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${groupId === null ? "border-accent bg-accent-soft text-fg" : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg"}`}>
           {bt(`전체 ${STUDIO_RAIL_TOOL_CATALOG.length}개 한눈에`, `All ${STUDIO_RAIL_TOOL_CATALOG.length} tools`)}
         </button>
         {STUDIO_CHROME_RAIL_TOOL_GROUPS.map(group => {
-          const Icon = definitions[group.toolIds[0]]?.icon;
+          const art = studioRailArtwork[group.toolIds[0]];
           const active = groupId === group.id;
           return <button key={group.id} type="button" data-studio-tool-category={group.id} aria-pressed={active}
             onClick={() => { setGroupId(active ? null : group.id); requestAnimationFrame(() => heading.current?.focus()); }}
-            className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-left text-xs text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${active ? "border-accent bg-accent-soft font-bold" : "border-line bg-card hover:bg-raised"}`}>
-            {Icon ? <Icon size={14} aria-hidden /> : null}
+            className={`inline-flex min-h-8 max-md:min-h-11 pointer-coarse:min-h-11 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-left text-xs text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${active ? "border-accent bg-accent-soft font-bold" : "border-line bg-card hover:bg-raised"}`}>
+            <StudioToolArtwork tool={art} className="studio-catalog-category-art" />
             <span><strong className="font-semibold">{groupLabel(group.id, group.labelKo)}</strong> <small className="text-fg-2">{bt(`${group.toolIds.length}개 도구`, `${group.toolIds.length} tools`)}</small></span>
           </button>;
         })}
@@ -93,9 +96,9 @@ export function StudioAllToolsCatalog({ definitions, pinned, query, onQuery, onP
         {ids.map((id) => {
           const definition = definitions[id];
           if (!definition) return null;
-          const Icon = definition.icon;
           const label = studioRailToolLabel(id, t);
           const isPinned = pinned.includes(id);
+          const builtIn = fixed.includes(id);
           const shortcut = STUDIO_RAIL_TOOL_CATALOG.find((item) => item.id === id)?.defaultShortcut;
           return <div key={id} className="rounded-lg hover:bg-raised">
             <div className="flex items-start gap-1">
@@ -105,16 +108,16 @@ export function StudioAllToolsCatalog({ definitions, pinned, query, onQuery, onP
                 onClick={(event) => { if (definition.disabled) return; definition.onClick?.(event); onUsed(); }}
                 onFocus={definition.onFocus} onPointerEnter={definition.onPointerEnter}
                 className="flex min-h-11 min-w-0 flex-1 items-start gap-2 rounded-lg px-2 py-2.5 text-left text-sm text-fg focus-visible:ring-2 focus-visible:ring-accent">
-                <Icon size={18} aria-hidden className="mt-0.5 shrink-0" />
+                <StudioToolArtwork tool={studioRailArtwork[id]} className="studio-catalog-row-art" />
                 <span className="min-w-0 flex-1"><span className="block">{label}</span>
                   {definition.disabled ? <span id={`${rootId}-${id}-reason`} className="mt-1 block text-xs leading-relaxed text-fg-2">{definition.unavailableReason ?? "선택 항목과 편집 권한을 확인하세요."}</span> : null}
                 </span>
                 {shortcut ? <kbd className="rounded border border-line bg-panel px-1.5 py-0.5 text-xs text-fg-2">{shortcut}</kbd> : null}
               </button>
-              <button type="button" aria-label={`${label} ${isPinned ? "고정 해제" : "고정"}`} aria-pressed={isPinned}
-                disabled={isPinned && pinned.length <= 1} onClick={() => onPin(id, !isPinned)}
+              <button type="button" aria-label={`${label} ${builtIn ? bt("기본 도구", "Built-in tool") : isPinned ? bt("고정 해제", "Unpin") : bt("고정", "Pin")}`} aria-pressed={isPinned}
+                disabled={builtIn || (isPinned && pinned.length <= 1)} onClick={() => onPin(id, !isPinned)}
                 className="grid size-11 shrink-0 place-items-center rounded-lg text-fg-2 hover:bg-card focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40">
-                {isPinned ? <PinOff size={17} aria-hidden /> : <Pin size={17} aria-hidden />}
+                {isPinned && !builtIn ? <PinOff size={17} aria-hidden /> : <Pin size={17} aria-hidden />}
               </button>
             </div>
             {definition.disabled ? <StudioAllToolsDisabledItemGuidance toolLabel={label} unavailableReason={definition.unavailableReason} onUsed={onUsed} /> : null}

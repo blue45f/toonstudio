@@ -1,348 +1,205 @@
-/**
- * scripts/verify-studio-icons.mts
- * Desktop headless check: Studio chrome icons, rail tools, draw options, and menu chevrons.
- *
- * Run: pnpm exec tsx scripts/verify-studio-icons.mts
- * Expects production build in dist/.
- */
-import { spawn, type ChildProcess } from "node:child_process";
+/** 기본값은 dist 미리보기다. STUDIO_QA_BASE_URL을 지정하면 해당 웹과 격리된 CDP :9223 컨텍스트를 사용한다. */
+import assert from "node:assert/strict";
 
-import { chromium, type Page } from "playwright";
+import { chromium, expect, type Browser, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
-import { openStudioMainMenu, showStudioProjectWindowTools, visibleStudioControl } from "./lib/studio-shell-interactions";
-import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
+import { openStudioAllTools } from "./lib/studio-bg3d-ui-interactions";
+import { openStudioMainMenu, showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
+import { findFreePort, spawnVitePreview, stopChildProcess, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
-const QUICKSTART_KEY = "toonstudio-studio-quick-start-dismissed";
+import type { ChildProcess } from "node:child_process";
 
-function log(msg: string) {
-  console.log(`[verify-icons] ${msg}`);
-}
+const toolbarTools = {
+  select: "선택", pen: "펜", eraser: "지우개", color: "색상", layers: "레이어", fill: "채우기",
+  frame: "컷 분할", bubble: "말풍선", bg3d: "3D 배경", pin: "핀 댓글", tools: "전체 도구",
+} as const;
+const headerTools = {
+  search: "기능·도구 검색", history: "수정이력", save: "초안 저장", bubble: "댓글", export: "출고", share: "공유·초대",
+} as const;
 
-interface IconAudit {
-  region: string;
-  buttons: number;
-  withSvg: number;
-  withoutSvg: number;
-  unlabeledIconOnly: number;
-  tinySvg: number;
-  samplesMissing: string[];
-}
+const log = (message: string) => console.log(`[verify-icons] ${message}`);
 
-async function auditRegion(page: Page, region: string, rootSelector: string): Promise<IconAudit> {
-  return page.locator(rootSelector).first().evaluate((root, regionName) => {
-    const buttons = Array.from(
-      root.querySelectorAll("button, a[role='button'], [role='option'], label.cursor-pointer")
-    ) as HTMLElement[];
-    let withSvg = 0;
-    let withoutSvg = 0;
-    let unlabeledIconOnly = 0;
-    let tinySvg = 0;
-    const samplesMissing: string[] = [];
-
-    for (const el of buttons) {
-      const style = window.getComputedStyle(el);
-      if (style.display === "none" || style.visibility === "hidden") continue;
-      const rect = el.getBoundingClientRect();
-      if (rect.width < 2 || rect.height < 2) continue;
-      // Off-screen toolbelt on desktop
-      if (rect.right < 0 || rect.bottom < 0 || rect.left > window.innerWidth + 40) continue;
-
-      const svgs = Array.from(el.querySelectorAll("svg"));
-      const visibleSvgs = svgs.filter((svg) => {
-        const r = svg.getBoundingClientRect();
-        const s = window.getComputedStyle(svg);
-        return (
-          r.width > 0 &&
-          r.height > 0 &&
-          s.display !== "none" &&
-          s.visibility !== "hidden" &&
-          s.opacity !== "0"
-        );
-      });
-
-      const label =
-        el.getAttribute("aria-label") ||
-        el.getAttribute("title") ||
-        (el.textContent || "").replace(/\s+/g, " ").trim();
-
-      if (visibleSvgs.length > 0) {
-        withSvg += 1;
-        for (const svg of visibleSvgs) {
-          const r = svg.getBoundingClientRect();
-          if (r.width < 10 || r.height < 10) tinySvg += 1;
-        }
-        // Icon-only control without accessible name
-        const textOnly = (el.textContent || "").replace(/\s+/g, " ").trim();
-        const hasName =
-          Boolean(el.getAttribute("aria-label")) ||
-          Boolean(el.getAttribute("title")) ||
-          textOnly.length > 0;
-        if (!hasName) {
-          unlabeledIconOnly += 1;
-          if (samplesMissing.length < 6) samplesMissing.push(`${regionName}: (unnamed icon button)`);
-        }
-      } else {
-        // Text-only is OK for main menu triggers; flag empty controls
-        withoutSvg += 1;
-        if (!label && samplesMissing.length < 6) {
-          samplesMissing.push(`${regionName}: empty control`);
-        }
-      }
-    }
-
-    return {
-      region: regionName,
-      buttons: withSvg + withoutSvg,
-      withSvg,
-      withoutSvg,
-      unlabeledIconOnly,
-      tinySvg,
-      samplesMissing,
-    };
-  }, region);
-}
-
-async function countVisibleSvgs(page: Page, selector: string): Promise<number> {
-  return page.locator(selector).evaluateAll((nodes) => {
-    let n = 0;
-    for (const el of nodes) {
-      const r = el.getBoundingClientRect();
-      const s = window.getComputedStyle(el);
-      if (
-        r.width >= 10 &&
-        r.height >= 10 &&
-        r.right > 0 &&
-        r.bottom > 0 &&
-        r.left < window.innerWidth &&
-        s.display !== "none" &&
-        s.visibility !== "hidden" &&
-        s.opacity !== "0"
-      ) {
-        n += 1;
-      }
-    }
-    return n;
+/** 실제 CSS 크롭이 그리는 한 칸을 읽어 비어 있거나 찌그러지거나 숨은 아트를 검출한다. */
+async function checkArtwork(art: Locator) {
+  await expect(art).toBeInViewport();
+  await expect(art).toHaveAttribute("aria-hidden", "true");
+  await expect(art.locator("img")).toHaveAttribute("data-ready", "true");
+  await expect(art.locator("svg")).toBeHidden();
+  const receipt = await art.evaluate(async (element) => {
+    const image = element.querySelector("img");
+    if (!image) throw new Error("아트 이미지 누락");
+    await image.decode();
+    const tile = element.getBoundingClientRect(), sheet = image.getBoundingClientRect();
+    const column = (tile.left - sheet.left) / tile.width, row = (tile.top - sheet.top) / tile.height;
+    const aligned = [column, row].every(value => Math.abs(value - Math.round(value)) < .01);
+    const painted = image.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+    const cellWidth = image.naturalWidth / 4, cellHeight = image.naturalHeight / 3;
+    const canvas = document.createElement("canvas");
+    canvas.width = cellWidth;
+    canvas.height = cellHeight;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) throw new Error("아이콘 픽셀을 읽을 수 없습니다.");
+    ctx.drawImage(image, Math.round(column) * cellWidth, Math.round(row) * cellHeight, cellWidth, cellHeight,
+      0, 0, cellWidth, cellHeight);
+    const pixels = ctx.getImageData(0, 0, cellWidth, cellHeight).data;
+    let ink = 0;
+    for (let i = 3; i < pixels.length; i += 4) if (pixels[i] >= 128) ink++;
+    return { tool: element.getAttribute("data-studio-tool-art"), size: tile.width,
+      displayed: painted && getComputedStyle(element).overflow === "hidden",
+      geometry: tile.width === tile.height && cellWidth === cellHeight && aligned &&
+        column >= -.01 && column <= 3.01 && row >= -.01 && row <= 2.01 &&
+        Math.abs(sheet.width - tile.width * 4) < 1 && Math.abs(sheet.height - tile.height * 3) < 1,
+      coverage: ink / (cellWidth * cellHeight) };
   });
+  assert(receipt.displayed && receipt.geometry && receipt.size >= 10 && receipt.coverage >= .02,
+    `아이콘 표시·위치·픽셀 검사 실패 ${JSON.stringify(receipt)}`);
+}
+
+async function checkNamedArtwork(region: Locator, entries: Readonly<Record<string, string>>) {
+  for (const [tool, label] of Object.entries(entries)) {
+    const control = region.getByRole("button", { name: label, exact: true });
+    await expect(control).toHaveCount(1);
+    await checkArtwork(control.locator(`[data-studio-tool-art="${tool}"]`));
+  }
+}
+
+async function checkControls(region: Locator) {
+  for (const control of await region.locator("button, summary").filter({ visible: true }).all()) {
+    await expect(control).toHaveAccessibleName(/\S/u);
+  }
+  const tiny = await region.locator("button svg, summary svg").evaluateAll(nodes => nodes.filter(svg => {
+    const rect = svg.getBoundingClientRect();
+    return svg.checkVisibility({ opacityProperty: true, visibilityProperty: true }) &&
+      rect.right > 0 && rect.left < innerWidth && rect.bottom > 0 && rect.top < innerHeight &&
+      Math.min(rect.width, rect.height) < 10;
+  }).length);
+  assert(tiny <= 2, `10px 미만으로 표시된 선 아이콘 ${tiny}개`);
+}
+
+async function checkBrushOptions(page: Page, rail: Locator) {
+  const options = page.locator('[data-studio-quick-ergonomics="true"]');
+  const brush = options.locator('[data-studio-core-draw-control="brush"]');
+  for (const [tool, label] of [["eraser", "지우개"], ["pen", "펜"]]) {
+    const button = rail.getByRole("button", { name: label, exact: true });
+    await button.click();
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+    await expect(options).toHaveAttribute("data-studio-active-draw-mode", tool);
+    await checkArtwork(brush.locator(`[data-studio-tool-art="${tool === "eraser" ? "eraser" : "brush"}"]`));
+  }
+  for (const label of ["브러시 크기 줄이기", "브러시 크기 키우기"]) {
+    const svg = options.getByRole("button", { name: label, exact: true }).locator("svg");
+    await expect(svg).toBeInViewport();
+    const box = await svg.boundingBox();
+    assert(box && Math.min(box.width, box.height) >= 10, `${label} 아이콘 크기`);
+  }
+  await checkControls(options);
+  await brush.click();
+  const library = page.locator('[data-studio-brush-catalog-session="true"]').filter({ visible: true });
+  const presets = library.locator("[data-studio-brush-select]");
+  await expect(presets.nth(2)).toBeVisible();
+  for (const preset of (await presets.all()).slice(0, 3)) {
+    await expect(preset).toHaveAccessibleName(/.+ 선택$/u);
+    await preset.scrollIntoViewIfNeeded();
+    await expect(preset.locator("svg, canvas, img").filter({ visible: true }).first()).toBeInViewport();
+  }
+  log(`펜·지우개 전환, 두께 아이콘, 브러시 선택 ${await presets.count()}개`);
+  await brush.click();
+  await expect(library).toBeHidden();
+}
+
+async function checkCatalog(page: Page) {
+  const dialog = await openStudioAllTools(page);
+  const groups = dialog.locator("[data-studio-tool-category]:not([data-studio-tool-category=all])");
+  await expect(groups).toHaveCount(8);
+  const verified = new Set<string>();
+  for (const group of await groups.all()) {
+    const id = await group.getAttribute("data-studio-tool-category");
+    assert(id);
+    await expect(group).toHaveAccessibleName(/\S/u);
+    await group.scrollIntoViewIfNeeded();
+    await checkArtwork(group.locator("[data-studio-tool-art]"));
+    await group.click();
+    await expect(group).toHaveAttribute("aria-pressed", "true");
+    const tools = dialog.locator("[data-studio-catalog-tool-id]");
+    await expect(tools.first()).toBeVisible();
+    for (const tool of await tools.all()) {
+      const toolId = await tool.getAttribute("data-studio-catalog-tool-id");
+      assert(toolId && !verified.has(toolId), `분류에서 중복된 도구 ${toolId}`);
+      verified.add(toolId);
+      await expect(tool).toHaveAccessibleName(/.+ 사용$/u);
+      await tool.scrollIntoViewIfNeeded();
+      await checkArtwork(tool.locator("[data-studio-tool-art]"));
+    }
+    await dialog.getByRole("button", { name: "도구 분류로 돌아가기" }).click();
+  }
+  const all = dialog.locator('[data-studio-tool-category="all"]');
+  await expect(all).toHaveAccessibleName(`전체 ${verified.size}개 한눈에`);
+  assert(verified.size >= 35, `검사한 기본 도구 ${verified.size}개`);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  log(`전체 도구 8개 분류, ${verified.size}개 버튼의 이름·그림 확인`);
+}
+
+async function checkProjectMenus(page: Page) {
+  await showStudioProjectWindowTools(page);
+  const panel = page.locator('[data-studio-drawing-project-tools="true"]');
+  const triggers = panel.locator("[data-studio-main-menu-trigger]");
+  await expect(triggers.first()).toBeVisible();
+  const count = await triggers.count();
+  assert(count > 0);
+  await page.setViewportSize({ width: 1600, height: 1100 });
+  for (const trigger of await triggers.all()) {
+    await expect(trigger).toHaveAccessibleName(/\S/u);
+    await expect(trigger.locator("[data-studio-main-menu-chevron]")).toBeInViewport();
+  }
+  const menu = await openStudioMainMenu(page, "brush");
+  assert(await menu.getByRole("menuitem").count() >= 4, "그리기 메뉴 항목 누락");
+  await expect(menu.getByRole("menuitem", { name: /^펜(?:\s|$)/u }).first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(menu).toBeHidden();
+  log(`프로젝트 메뉴 ${count}개 펼침 표시·그리기 메뉴 키보드 열기/닫기`);
 }
 
 async function main() {
-  const port = await findFreePort({ unavailableMessage: "port" });
-  let child: ChildProcess | null = null;
-  let exitCode: number;
-
+  const existing = process.env.STUDIO_QA_BASE_URL?.trim() || process.env.TOONSPECTRUM_VERIFY_BASE_URL?.trim();
+  let preview: ChildProcess | undefined, browser: Browser | undefined, context: BrowserContext | undefined;
   try {
-    child = spawn(
-      "pnpm",
-      ["exec", "vite", "preview", "--config", "apps/web/vite.config.ts", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
-      { cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"] }
-    );
-    child.stderr?.on("data", (d) => {
-      const s = String(d);
-      if (!s.includes("ECONNREFUSED") && !s.includes("proxy error")) process.stderr.write(d);
+    let base = existing;
+    if (!base) {
+      const port = await findFreePort();
+      preview = spawnVitePreview({ port, runner: "node-vite-bin", outDir: process.env.TOONSPECTRUM_VERIFY_DIST?.trim() || undefined });
+      base = `http://127.0.0.1:${port}`;
+    }
+    const url = new URL("/studio/canvas", base);
+    await waitForServer(url.origin);
+    browser = existing ? await chromium.connectOverCDP("http://127.0.0.1:9223", { noDefaults: true, isLocal: true }) :
+      await chromium.launch({ headless: true });
+    context = await browser.newContext({ viewport: { width: 1440, height: 1100 }, locale: "ko-KR", reducedMotion: "reduce" });
+    await context.addInitScript(() => {
+      localStorage.setItem("toonstudio-studio-quick-start-dismissed", "1");
+      localStorage.setItem("toonstudio-lang", JSON.stringify({ state: { lang: "ko" }, version: 0 }));
     });
-    await waitForServer(`http://127.0.0.1:${port}/`, {
-      maxAttempts: 60,
-      notReadyMessage: "preview not ready",
-    });
-    // /studio is the project home; inspect icons on the actual canvas editor.
-    const studioUrl = `http://127.0.0.1:${port}/studio/canvas`;
-    log(`preview @ ${studioUrl}`);
-
-    const browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
-    await page.addInitScript(({ key }) => {
-      try {
-        localStorage.setItem(key, "1");
-        // Icon assertions address Korean menu labels; make the harness deterministic across hosts.
-        localStorage.setItem(
-          "toonstudio-lang",
-          JSON.stringify({ state: { lang: "ko" }, version: 0 })
-        );
-        localStorage.setItem("toonstudio-studio-ui-density:v1", JSON.stringify({ mode: "full" }));
-      } catch {
-        /* ignore */
-      }
-    }, { key: QUICKSTART_KEY });
-
-    await page.goto(studioUrl, {
-      waitUntil: "domcontentloaded",
-      timeout: 30000,
-    });
-    await page.waitForTimeout(1000);
-    for (const text of ["나중에", "닫기", "예시로 시작", "빈 캔버스"]) {
-      try {
-        const el = page.getByRole("button", { name: text }).first();
-        if (await el.isVisible({ timeout: 300 })) await el.click({ timeout: 500 });
-      } catch {
-        /* optional */
-      }
-    }
-
-    await page.locator('[data-studio-app-menubar="true"]').filter({ visible: true }).waitFor({ state: "visible", timeout: 20000 });
-    // 메뉴 쉐브론과 전체 레일 아이콘은 실제 프로젝트·창 배치에서 검사한다.
-    await showStudioProjectWindowTools(page);
-    await page.locator('[data-studio-tool-rail="true"]').waitFor({ state: "visible", timeout: 10000 });
-
-    // Activate pen so draw options bar mounts with icons
-    await (await visibleStudioControl(page.locator('[data-studio-rail-tool-id="pen"]'), "펜 도구")).click({ timeout: 4000 });
-    await page.locator('[data-studio-draw-options="true"]').waitFor({ state: "visible", timeout: 8000 });
-    await page.waitForTimeout(300);
-
-    const failures: string[] = [];
-
-    // Hard requirements: minimum visible SVG counts per chrome region
-    const menubarSvgs = await countVisibleSvgs(page, '[data-studio-app-menubar="true"] svg');
-    const railSvgs = await countVisibleSvgs(page, '[data-studio-tool-rail="true"] svg');
-    const drawOptSvgs = await countVisibleSvgs(page, '[data-studio-draw-options="true"] svg');
-    const mainMenu = page.locator('[data-studio-main-menu="true"]');
-    const mainMenuTriggerCount = await mainMenu
-      .locator("[data-studio-main-menu-trigger]")
-      .count();
-    const mainMenuChevronCount = await mainMenu
-      .locator('[data-studio-main-menu-chevron="true"]')
-      .count();
-
-    log(`menubar svgs=${menubarSvgs}, rail svgs=${railSvgs}, draw-options svgs=${drawOptSvgs}, main-menu triggers=${mainMenuTriggerCount}, chevrons=${mainMenuChevronCount}`);
-
-    if (menubarSvgs < 3) failures.push(`앱 메뉴바 아이콘 부족: ${menubarSvgs} (expect ≥3 Download/chevron/etc)`);
-    if (railSvgs < 8) failures.push(`좌측 레일 아이콘 부족: ${railSvgs} (expect ≥8 tool icons)`);
-    if (drawOptSvgs < 3) failures.push(`그리기 옵션바 아이콘 부족: ${drawOptSvgs} (expect pen/eraser/etc)`);
-    if (mainMenuTriggerCount === 0 || mainMenuChevronCount !== mainMenuTriggerCount) {
-      failures.push(
-        `메인 메뉴 chevron 계약 불일치: triggers=${mainMenuTriggerCount}, chevrons=${mainMenuChevronCount}`
-      );
-    } else {
-      await page.setViewportSize({ width: 1600, height: 1100 });
-      await page.waitForTimeout(100);
-      const visibleMainMenuChevrons = await countVisibleSvgs(
-        page,
-        '[data-studio-main-menu-chevron="true"]'
-      );
-      if (visibleMainMenuChevrons !== mainMenuTriggerCount) {
-        failures.push(
-          `2xl 메인 메뉴 chevron 노출 불일치: visible=${visibleMainMenuChevrons}, triggers=${mainMenuTriggerCount}`
-        );
-      }
-      await page.setViewportSize({ width: 1440, height: 1100 });
-      await page.waitForTimeout(100);
-    }
-
-    // Rail tools must each have an SVG (icon-first IA)
-    const railButtons = page.locator('[data-studio-tool-rail="true"] button');
-    const railCount = await railButtons.count();
-    let railMissingIcon = 0;
-    for (let i = 0; i < railCount; i++) {
-      const btn = railButtons.nth(i);
-      if (!(await btn.isVisible().catch(() => false))) continue;
-      const svgCount = await btn.locator("svg").count();
-      const label = (await btn.getAttribute("aria-label")) || (await btn.getAttribute("title")) || "";
-      if (svgCount === 0) {
-        railMissingIcon += 1;
-        failures.push(`레일 버튼 아이콘 없음: ${label || `#${i}`}`);
-      } else {
-        // aria-label required for icon-only rail
-        if (!label) failures.push(`레일 아이콘 접근성 이름 없음: #${i}`);
-      }
-    }
-    log(`rail buttons scanned=${railCount}, missingIcon=${railMissingIcon}`);
-
-    // Draw options: pen/eraser icons when mode switch present
-    const penBtn = page.locator('[data-studio-draw-options="true"] button[title="펜"]');
-    if (await penBtn.count()) {
-      if ((await penBtn.locator("svg").count()) < 1) failures.push("펜 모드 버튼에 아이콘 없음");
-    }
-    const eraserBtn = page.locator('[data-studio-draw-options="true"] button[title="지우개"]');
-    if (await eraserBtn.count()) {
-      if ((await eraserBtn.locator("svg").count()) < 1) failures.push("지우개 모드 버튼에 아이콘 없음");
-    }
-
-    // The tray is intentionally lazy-mounted inside advanced pen options.
-    const advancedToggle = page.locator(
-      '[data-studio-draw-options="true"] [data-studio-draw-advanced-toggle="true"]'
-    );
-    await advancedToggle.click({ timeout: 4000 });
-    await page
-      .locator('[data-studio-draw-advanced="true"]')
-      .waitFor({ state: "visible", timeout: 4000 });
-
-    // Brush tray uses stroke previews (not lucide) — ensure listbox options visible
-    const brushOpts = page.locator('[data-studio-brush-tray="true"] [role="option"]');
-    const brushCount = await brushOpts.count();
-    if (brushCount < 3) failures.push(`브러시 트레이 옵션 부족: ${brushCount}`);
-    else {
-      await brushOpts.first().waitFor({ state: "visible", timeout: 4000 });
-      log(`brush tray options=${brushCount}`);
-    }
-
-    // Open a main menu and ensure chevron + items layout (items are text; chevron on trigger)
-    const drawMenu = await openStudioMainMenu(page, "brush");
-    await drawMenu.waitFor({ state: "visible", timeout: 4000 });
-    const menuItems = await drawMenu.getByRole("menuitem").count();
-    if (menuItems < 4) failures.push(`그리기 메뉴 항목 부족: ${menuItems}`);
-    // Optional icons on menu items are fine either way; ensure readable text
-    const penItem = drawMenu.getByRole("menuitem", { name: "펜", exact: true });
-    if (!(await penItem.isVisible())) failures.push("그리기 메뉴 펜 항목 미노출");
-    await page.keyboard.press("Escape");
-
-    // Dual color / flip / smart shape icon buttons when present
-    for (const name of ["색 교체", "캔버스 좌우 반전", "스마트 도형", "브러시 스튜디오"]) {
-      const btn = page.getByRole("button", { name: new RegExp(name) }).first();
-      if (await btn.isVisible().catch(() => false)) {
-        const hasSvg = (await btn.locator("svg").count()) > 0;
-        if (!hasSvg) failures.push(`옵션 버튼 아이콘 없음: ${name}`);
-        else log(`  icon ok: ${name}`);
-      }
-    }
-
-    // Region audits (informational + unlabeled failures)
-    for (const [region, sel] of [
-      ["menubar", '[data-studio-app-menubar="true"]'],
-      ["tool-rail", '[data-studio-tool-rail="true"]'],
-      ["draw-options", '[data-studio-draw-options="true"]'],
-    ] as const) {
-      const audit = await auditRegion(page, region, sel);
-      log(
-        `audit ${audit.region}: buttons=${audit.buttons} withSvg=${audit.withSvg} withoutSvg=${audit.withoutSvg} unlabeled=${audit.unlabeledIconOnly} tiny=${audit.tinySvg}`
-      );
-      if (audit.unlabeledIconOnly > 0) {
-        failures.push(`${region}: 이름 없는 아이콘 버튼 ${audit.unlabeledIconOnly}개`);
-        for (const s of audit.samplesMissing) failures.push(`  sample: ${s}`);
-      }
-      if (audit.tinySvg > 2) {
-        failures.push(`${region}: 너무 작은 SVG ${audit.tinySvg}개 (<10px) — 터치/가독성 위험`);
-      }
-    }
-
-    // Status / density chips should not look broken (optional)
-    const density = page.getByRole("button", { name: /전체|심플|슈퍼심플/ }).first();
-    if (await density.isVisible().catch(() => false)) log("density control visible");
-
-    if (failures.length === 0) {
-      log("PASS: icons exposed across menubar, rail, draw options, main menu");
-      exitCode = 0;
-    } else {
-      log(`FAIL (${failures.length}):`);
-      for (const f of failures) log(`  - ${f}`);
-      exitCode = 1;
-    }
-
-    await browser.close();
-  } catch (err) {
-    console.error("[verify-icons] fatal:", err);
-    exitCode = 1;
+    const page = await context.newPage();
+    const errors: string[] = [];
+    page.on("pageerror", error => errors.push(error.message));
+    await page.goto(url.href, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    const rail = page.getByRole("toolbar", { name: "그리기 도구", exact: true });
+    await rail.waitFor({ timeout: 120_000 });
+    const header = page.locator('[data-studio-drawing-clarity-header="true"]').filter({ visible: true });
+    await checkNamedArtwork(rail, toolbarTools);
+    await checkNamedArtwork(header, headerTools);
+    await checkControls(header);
+    await checkControls(rail);
+    log(`이름과 픽셀을 확인한 기본 레일 ${Object.keys(toolbarTools).length}개, 상단 명령 ${Object.keys(headerTools).length}개`);
+    await checkBrushOptions(page, rail);
+    await checkCatalog(page);
+    await checkProjectMenus(page);
+    assert.deepEqual(errors, [], "원고 실행 오류");
+    log(`PASS ${url.origin} 원고 아이콘·이름·선택 경로`);
   } finally {
-    if (child && !child.killed) {
-      child.kill("SIGTERM");
-      setTimeout(() => {
-        try {
-          child?.kill("SIGKILL");
-        } catch {
-          /* ignore */
-        }
-      }, 400).unref?.();
-    }
+    await context?.close();
+    await browser?.close();
+    if (preview) await stopChildProcess(preview);
   }
-  process.exit(exitCode);
 }
-
-void main();
+main().catch(error => { console.error("[verify-icons]", error); process.exitCode = 1; });

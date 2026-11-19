@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "სუპერ მარტივი განლაგება",
   "studio.mainMenu.item.view.density-full": "სრული განლაგება",
   "studio.mainMenu.item.view.wide": "პანელების ჩაკეცვა და გაფართოება",
+  "studio.mainMenu.item.view.wide.open": "პანელების ჩვენება",
   "studio.mainMenu.item.view.tools-companion": "მრავალეკრანიანი სამუშაო სივრცე…",
   "studio.mainMenu.item.view.canvas-only": "მხოლოდ ტილო",
   "studio.mainMenu.item.view.color-vision.unavailable": "ფერის ხედვის რეჟიმს ვერ შეცვლით, სანამ ხედის ტრანსფორმაცია დაბლოკილია.",

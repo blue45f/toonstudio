@@ -16,12 +16,14 @@ import {
   searchStudio,
 } from "../studio-command-search";
 import { StudioCommandSearchDialog } from "../StudioCommandSearchDialog";
-import { registerStudioCommandSearchHost, subscribeStudioCommandSearchRequests } from "../studio-help-center-channel";
+import { StudioCommandSearchHost } from "../StudioCommandSearchHost";
+import { requestStudioCommandSearch, subscribeStudioCommandSearchHostReadiness } from "../studio-help-center-channel";
 import {
   STUDIO_RAIL_TOOL_ALIASES,
   matchesStudioRailToolQuery,
 } from "../studio-rail-tool-search";
 import { StudioDrawingClarityProvider } from "../studio-cuttoon-editor/StudioDrawingClarity";
+import { useStudioDrawingClarity } from "../studio-cuttoon-editor/StudioDrawingClarityContext";
 import { StudioDrawingClarityBar } from "../studio-cuttoon-editor/StudioDrawingClarityBar";
 import type { StudioCuttoonEditorViewSession } from "../studio-cuttoon-editor/StudioCuttoonEditorViewSession";
 import { createStudioSaveSyncSignalStore } from "../studio-save-sync-signals";
@@ -262,63 +264,89 @@ describe("P2-20 도구 발견 — 한국어 별칭·초보 안내·기본 메뉴
     expect(onClose).toHaveBeenCalledWith("action");
   });
 
-  it("데스크톱·모바일 기본 메뉴 모두에서 '함께 작업(협업)'과 '도구·기능 검색' 진입로가 누락 없이 동작한다", () => {
-    const restoreModal = stubNativeModal();
-    let releaseMobileSearch = () => {};
-    let releaseMobileHost = () => {};
+  it("인스펙터가 다시 그려져도 구독을 유지하고 최신 열기 명령을 실행한다", async () => {
+    const first = vi.fn(), latest = vi.fn(), ready = vi.fn();
+    const unsubscribe = subscribeStudioCommandSearchHostReadiness(ready);
     try {
-      // 1. 데스크톱 기본 메뉴에서 '내보내기와 협업 › 함께 작업' 및 '그리기 도구 › 도구·기능 검색' 점검
-      const desktop = createClaritySession(false);
-      const desktopSearchListener = vi.fn();
-      const unsubDesktop = subscribeStudioCommandSearchRequests(desktopSearchListener);
-      const desktopView = render(
-        <StudioDrawingClarityProvider session={desktop}>
-          <StudioDrawingClarityBar session={desktop} />
-        </StudioDrawingClarityProvider>,
-      );
-
-      fireEvent.click(screen.getByLabelText("더보기 · 작업 설정과 도움말"));
-      fireEvent.click(screen.getByRole("button", { name: /그리기 도구/ }));
-      fireEvent.click(screen.getByRole("button", { name: "도구·기능 검색" }));
-      expect(desktopSearchListener).toHaveBeenCalledWith({ scope: "all" });
-
-      fireEvent.click(screen.getByLabelText("더보기 · 작업 설정과 도움말"));
-      fireEvent.click(screen.getByRole("button", { name: /내보내기와 협업/ }));
-      fireEvent.click(screen.getByRole("button", { name: "함께 작업" }));
-      expect(desktop.setTeamPanelOpen).toHaveBeenCalledWith(true);
-
-      unsubDesktop();
-      desktopView.unmount();
-
-      // 2. 모바일 기본 메뉴에서 '그리기 도구 › 도구·기능 검색' 및 '내보내기와 협업 › 함께 작업' 점검
-      const mobile = createClaritySession(true);
-      const mobileSearchListener = vi.fn();
-      releaseMobileSearch = subscribeStudioCommandSearchRequests(mobileSearchListener);
-      function StatefulMobileSheet() {
-        const [mobileSheet, setMobileSheet] = useState<StudioCuttoonEditorViewSession["mobileSheet"]>(null);
-        const session = { ...mobile, mobileSheet, setMobileSheet };
-        return <StudioDrawingClarityProvider session={session}>
-          <StudioDrawingClarityBar session={session} />
-        </StudioDrawingClarityProvider>;
-      }
-      render(<StatefulMobileSheet />);
-
-      fireEvent.click(screen.getByLabelText("더보기 · 도구와 도움말"));
-      fireEvent.click(screen.getByRole("button", { name: /그리기 도구/ }));
-      fireEvent.click(screen.getByRole("button", { name: "도구·기능 검색" }));
-      expect(mobileSearchListener).not.toHaveBeenCalled();
-      act(() => { releaseMobileHost = registerStudioCommandSearchHost(); });
-      expect(mobileSearchListener).toHaveBeenCalledWith({ scope: "all" });
-      expect(mobileSearchListener).toHaveBeenCalledTimes(1);
-
-      fireEvent.click(screen.getByLabelText("더보기 · 도구와 도움말"));
-      fireEvent.click(screen.getByRole("button", { name: /내보내기와 협업/ }));
-      fireEvent.click(screen.getByRole("button", { name: "함께 작업" }));
-      expect(mobile.setTeamPanelOpen).toHaveBeenCalledWith(true);
-
+      const view = render(<StudioCommandSearchHost onRequestOpen={first} />);
+      view.rerender(<StudioCommandSearchHost onRequestOpen={latest} />);
+      expect(ready.mock.calls).toEqual([[true]]);
+      await act(async () => { requestStudioCommandSearch({ scope: "all" }); });
+      expect(screen.getByRole("combobox")).toBeTruthy();
+      expect(first).not.toHaveBeenCalled();
+      expect(latest).toHaveBeenCalledOnce();
+      view.unmount();
+      expect(ready.mock.calls).toEqual([[true], [false]]);
     } finally {
-      act(releaseMobileHost);
-      releaseMobileSearch();
+      unsubscribe();
+    }
+  });
+
+  it.each(["패널 닫기", "원고 변경"])("검색창 준비 중 %s 후에는 대기하던 검색을 열지 않는다", async action => {
+    const original = createClaritySession(false);
+    function SearchControls({ hostReady }: { readonly hostReady: boolean }) {
+      const clarity = useStudioDrawingClarity();
+      return <>
+        <button type="button" onClick={clarity?.close}>테스트 패널 닫기</button>
+        {hostReady && <StudioCommandSearchHost />}
+      </>;
+    }
+    function Work({ session, hostReady }: { readonly session: StudioCuttoonEditorViewSession; readonly hostReady: boolean }) {
+      return <StudioDrawingClarityProvider session={session}>
+        <StudioDrawingClarityBar session={session} /><SearchControls hostReady={hostReady} />
+      </StudioDrawingClarityProvider>;
+    }
+    const view = render(<Work session={original} hostReady={false} />);
+    const search = view.container.querySelector<HTMLButtonElement>("[data-studio-clarity-omnibox]");
+    if (!search) throw new Error("검색 버튼이 없습니다.");
+    fireEvent.click(search);
+    expect(screen.getByText("검색을 여는 중")).toBeTruthy();
+    const next = action === "원고 변경" ? { ...original, location: { ...original.location, pathname: "/studio/p/next/d/other" } } : original;
+    if (action === "패널 닫기") fireEvent.click(screen.getByRole("button", { name: "테스트 패널 닫기" }));
+    await act(async () => { view.rerender(<Work session={next} hostReady />); });
+    expect(screen.queryByText("검색을 여는 중")).toBeNull();
+    expect(screen.queryByRole("combobox")).toBeNull();
+  });
+
+  it.each([
+    ["데스크톱", false, "더보기 · 작업 설정과 도움말"],
+    ["모바일", true, "더보기 · 도구와 도움말"],
+  ] as const)("%s 기본 메뉴에서 도구 검색 결과를 실행하고 함께 작업을 연다", async (_label, isMobile, moreLabel) => {
+    const restoreModal = stubNativeModal();
+    const session = createClaritySession(isMobile);
+    const navigateInspector = vi.fn();
+    function SearchInspector({ mobileOpen }: { readonly mobileOpen: boolean }) {
+      const clarity = useStudioDrawingClarity();
+      const visible = isMobile ? mobileOpen : clarity?.panel === "layers";
+      return visible ? <StudioCommandSearchHost hideTrigger={isMobile} onNavigateInspector={navigateInspector} /> : null;
+    }
+    function EditorMenus() {
+      const [mobileSheet, setMobileSheet] = useState<StudioCuttoonEditorViewSession["mobileSheet"]>(null);
+      const current = { ...session, mobileSheet, setMobileSheet };
+      return (
+        <StudioDrawingClarityProvider session={current}>
+          <StudioDrawingClarityBar session={current} />
+          <SearchInspector mobileOpen={mobileSheet === "props"} />
+        </StudioDrawingClarityProvider>
+      );
+    }
+    try {
+      render(<EditorMenus />);
+      fireEvent.click(screen.getByLabelText(moreLabel));
+      fireEvent.click(screen.getByRole("button", { name: /그리기 도구/ }));
+      fireEvent.click(screen.getByRole("button", { name: "도구·기능 검색" }));
+      const query = await screen.findByRole("combobox");
+      fireEvent.change(query, { target: { value: "틈 닫기" } });
+      const match = await screen.findByRole("option", { name: /참조 레이어 · 틈 닫기 채우기/ });
+      fireEvent.click(match);
+      expect(navigateInspector).toHaveBeenCalledExactlyOnceWith({ primary: "properties", image: "fill" });
+      expect(screen.queryByRole("combobox")).toBeNull();
+
+      fireEvent.click(screen.getByLabelText(moreLabel));
+      fireEvent.click(screen.getByRole("button", { name: /내보내기와 협업/ }));
+      fireEvent.click(screen.getByRole("button", { name: "함께 작업" }));
+      expect(session.setTeamPanelOpen).toHaveBeenCalledExactlyOnceWith(true);
+    } finally {
       restoreModal();
     }
   });

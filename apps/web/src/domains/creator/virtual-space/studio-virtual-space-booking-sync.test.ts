@@ -42,6 +42,19 @@ function waitlistEntry(overrides: Partial<StudioSpaceWaitlistEntry> = {}): Studi
   return { ...base, requestedAt: 500, ...overrides };
 }
 
+it("예약·대기열·좋아요의 본문을 API가 읽을 수 있는 JSON으로 보낸다", async () => {
+  vi.mocked(apiFetch).mockImplementation(async () => new Response("{}", { status: 200 }));
+  const transport = createDefaultStudioVirtualSpaceSocialTransport();
+  await transport.createBooking(SCOPE, booking());
+  await transport.joinWaitlist(SCOPE, waitlistEntry());
+  await transport.toggleGalleryLike(SCOPE, "frame-one");
+  for (const [index, input] of [booking(), waitlistEntry(), { frameId: "frame-one" }].entries()) {
+    const init = vi.mocked(apiFetch).mock.calls[index]?.[1];
+    expect(new Headers(init?.headers).get("content-type")).toBe("application/json");
+    expect(JSON.parse(String(init?.body))).toEqual(input);
+  }
+});
+
 describe("acceptBookingsSnapshot", () => {
   it("서버 스냅샷을 클라이언트 형태로 거르고 createdByUserId는 버린다", () => {
     const snapshot = acceptBookingsSnapshot(

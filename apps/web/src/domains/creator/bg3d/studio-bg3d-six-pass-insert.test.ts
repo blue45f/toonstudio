@@ -50,7 +50,7 @@ async function fixture(recapture = false) {
     page = { ...page, ...patch, elements }; return true;
   });
   const setError = vi.fn();
-  const bind = (realtime = true, workId?: string) => bindStudioBg3dRenderedImage({ canStoreLocalVrmCut: () => !workId, cutDocumentKey: "draft-A", readCurrentPage: () => page, activeElementsRef: { get current() { return page.elements; } }, setError, setStatusNotice: vi.fn(), elementById: new Map(page.elements.map((element) => [element.id, element])),
+  const bind = (realtime = true, workId?: string, ownsLocalDraft = () => !workId) => bindStudioBg3dRenderedImage({ canStoreLocalVrmCut: ownsLocalDraft, cutDocumentKey: "draft-A", readCurrentPage: () => page, activeElementsRef: { get current() { return page.elements; } }, setError, setStatusNotice: vi.fn(), elementById: new Map(page.elements.map((element) => [element.id, element])),
     groups: page.groups ?? [], canvasH: page.canvasH, isRealtimeTeamSession: realtime, elements: page.elements, activePage: page,
     bg3dDccSourceRef: { current: null }, commit, setSelectedId: vi.fn(), setTool: vi.fn(), announceDrawingShortcut: vi.fn(),
     masterEditMode: false, pageEditLocked: false, currentStudioDrawingAssistDocument: () => null,
@@ -61,6 +61,23 @@ async function fixture(recapture = false) {
     restore: (next: PageState) => { page = next; }, accept: () => { accepted = true; },
     throwCommit: () => { accepted = new Error("원고 commit 예외"); }, setDocument: (value: StudioCrdtDocument) => { document = value; } };
 }
+it("1인 자동 룸의 기존 분리 LT를 유지하고 CAS 준비 중 공동 편집으로 바뀌면 거절한다", async () => {
+  const f = await fixture();
+  const ordinary = { ...f.result, bg3dScene: createDefaultStudioBg3dSceneDocument(),
+    layers: f.result.layers.filter(({ role }) => ["color", "texture-line", "main-line"].includes(role)) };
+  expect(await f.bind(false)(ordinary)).toBe(true);
+  const initial = f.read(), selected = initial.elements[0]!.id;
+  expect(initial.elements).toHaveLength(3);
+  const ownsLocal = vi.fn().mockReturnValueOnce(true).mockReturnValue(false);
+  expect(await f.bind(true, undefined, ownsLocal)(ordinary, selected)).toBe(false);
+  expect(f.read()).toBe(initial);
+  expect(f.setError).toHaveBeenLastCalledWith(expect.stringContaining("공동 편집이 시작"));
+  expect(await f.bind(true)(ordinary, selected)).toBe(true);
+  expect(f.read().elements.map(({ id }) => id)).toEqual(initial.elements.map(({ id }) => id));
+  expect(await f.bind(true, undefined, () => false)(ordinary, selected)).toBe(true);
+  expect(f.read().elements).toHaveLength(1);
+});
+
 it("기본 도형 6패스는 realtime에서도 실제 일곱 CAS 원본·두 owner·원고 한 commit으로 들어간다", async () => {
   const f = await fixture(); expect(await f.bind()(f.result)).toBe(true);
   expect(f.commit).toHaveBeenCalledOnce(); expect(f.setError).toHaveBeenLastCalledWith(null);

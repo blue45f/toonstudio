@@ -430,3 +430,14 @@ export async function copyCanvasToClipboard(canvas: HTMLCanvasElement): Promise<
     throw new Error("이미지를 클립보드에 복사하지 못했어요. 다시 시도해주세요.");
   }
 }
+
+export function safeExportBaseName(title: string): string {
+  return Array.from(title.trim())
+    .filter((character) => {
+      const codePoint = character.codePointAt(0) ?? 0;
+      return codePoint >= 0x20 && !"\\/:*?\"<>|".includes(character);
+    })
+    .join("")
+    .trim()
+    .slice(0, 120) || "toonstudio-comic";
+}

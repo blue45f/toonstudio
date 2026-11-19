@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Супер просто оформление",
   "studio.mainMenu.item.view.density-full": "цялостно оформление",
   "studio.mainMenu.item.view.wide": "Свиване на панелите за широк изглед",
+  "studio.mainMenu.item.view.wide.open": "Показване на панелите",
   "studio.mainMenu.item.view.tools-companion": "Работно пространство с множество дисплеи…",
   "studio.mainMenu.item.view.canvas-only": "Само платно",
   "studio.mainMenu.item.view.color-vision.unavailable": "Не можете да промените режима за проверка на цветното зрение, докато трансформацията на изгледа е заключена.",

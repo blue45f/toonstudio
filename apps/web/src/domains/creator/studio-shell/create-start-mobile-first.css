@@ -158,6 +158,14 @@
   object-position: center 32%;
 }
 
+.create-start-choice-tool.studio-tool-art {
+  --studio-tool-art-size: clamp(52px, 6.5vw, 84px);
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.35));
+}
+
 .create-start-choice-action {
   display: inline-flex;
   align-items: center;
@@ -504,6 +512,12 @@
 @media (forced-colors: active) {
   .create-start-heading {
     border-color: ButtonText;
+  }
+  .create-start-choice-art {
+    visibility: hidden;
+  }
+  .create-start-choice-tool {
+    filter: none;
   }
 
   .create-start-choice,

@@ -38,6 +38,8 @@ function placeholders(text: string): string[] {
 
 const R3C13B_KEYS = [
   "studio.creatorSub2.status.animatic.keyframeLane.firstSegmentSuffix",
+  "studio.creatorSub2.status.animatic.workspaceControls.applyCaptionTiming",
+  "studio.creatorSub2.status.animatic.workspaceControls.captionTimingHint",
   "studio.creatorSub2.status.animatic.workspaceControls.subtitlesEmpty",
   "studio.creatorSub2.status.animatic.workspacePanel.changed",
   "studio.creatorSub2.status.animatic.workspacePanel.captureFailed",

@@ -1,0 +1,44 @@
+.studio-tool-art {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  flex: 0 0 auto;
+  width: var(--studio-tool-art-size, 26px);
+  height: var(--studio-tool-art-size, 26px);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.studio-tool-art > img {
+  position: absolute;
+  width: 400%;
+  height: 300%;
+  max-width: none;
+  max-height: none;
+  opacity: 0;
+}
+
+.studio-tool-art > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.studio-tool-art > img[data-ready] { opacity: 1; }
+.studio-tool-art > img[data-ready] + svg { display: none; }
+
+.studio-catalog-category-art { --studio-tool-art-size: 22px; }
+.studio-catalog-row-art { --studio-tool-art-size: 26px; }
+
+/* 어두운 점선 선택 윤곽은 작은 크기에서도 종이 바탕 위에 드러난다. */
+@media (forced-colors: none) {
+  .studio-tool-art:is([data-studio-tool-art="selectRect"], [data-studio-tool-art="selectCircle"]):has(> img[data-ready]) {
+    border-radius: 4px;
+    background: #f0e4ce;
+  }
+}
+
+@media (forced-colors: active) {
+  .studio-tool-art > img[data-ready] { display: none; }
+  .studio-tool-art > img[data-ready] + svg { display: block; }
+}

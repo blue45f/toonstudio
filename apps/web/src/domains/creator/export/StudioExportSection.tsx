@@ -7,18 +7,20 @@ interface StudioExportSectionProps {
   description?: string;
   defaultOpen?: boolean;
   detailsRef?: Ref<HTMLDetailsElement>;
+  onOpenChange?: (open: boolean) => void;
   children: ReactNode;
 }
 
 /** 네이티브 접기: 키보드로 열고 닫으며, 접어도 내보내기 설정과 실행 상태를 보존한다. */
 export function StudioExportSection({
-  id, title, description, defaultOpen = false, detailsRef, children,
+  id, title, description, defaultOpen = false, detailsRef, onOpenChange, children,
 }: StudioExportSectionProps) {
   return (
     <details
       ref={detailsRef}
       data-studio-export-section={id}
       open={defaultOpen || undefined}
+      onToggle={onOpenChange ? event => onOpenChange(event.currentTarget.open) : undefined}
       className="group mt-2 min-w-0 rounded-xl border border-line bg-card/30"
     >
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">

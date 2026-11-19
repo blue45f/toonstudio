@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useStudioChromePortalTarget } from "../studio-shell/use-studio-chrome-portal-target";
 import { StudioDrawingClarityTaskDialog } from "./StudioDrawingClarityTaskDialog";
+import type { StudioMainMenuItem } from "../studio-main-menu-model";
 import { StudioDrawingClarityTaskActions } from "./StudioDrawingClarityTaskActions";
 
 export interface StudioDrawingClarityAction {
@@ -14,11 +15,12 @@ export interface StudioDrawingClarityAction {
 }
 
 /** 화면 크기가 달라져도 같은 이름과 실제 명령을 가진 더보기 하나를 유지한다. */
-export function StudioDrawingClarityMore({ id, hostId, purpose, actions, triggerRef, panel, presentation = "menu" }: {
+export function StudioDrawingClarityMore({ id, hostId, purpose, actions, filterItems, triggerRef, panel, presentation = "menu" }: {
   readonly id: string;
   readonly hostId: string;
   readonly purpose: string;
   readonly actions: readonly StudioDrawingClarityAction[];
+  readonly filterItems?: readonly StudioMainMenuItem[];
   readonly triggerRef?: RefObject<HTMLElement | null>;
   readonly panel?: string | null;
   readonly presentation?: "menu" | "tasks";
@@ -119,9 +121,9 @@ export function StudioDrawingClarityMore({ id, hostId, purpose, actions, trigger
   return <>{host ? createPortal(menu, host) : menu}
     {open && presentation === "tasks" && typeof document !== "undefined" ? createPortal(<StudioDrawingClarityTaskDialog id={id}
       title={bt("원고 도구", "Draft tools")} kind="tools" returnFocus={() => trigger.current} onClose={() => setOpen(false)}>
-      {(finish) => <StudioDrawingClarityTaskActions actions={actions} run={(action) => {
+      {(finish) => <StudioDrawingClarityTaskActions actions={actions} filterItems={filterItems} run={(action) => {
         const source = trigger.current;
-        if (source) finish(() => action.run(source));
+        if (source) finish(() => action.run(source), action.id === "character3d");
       }} />}
     </StudioDrawingClarityTaskDialog>, document.body) : null}
   </>;

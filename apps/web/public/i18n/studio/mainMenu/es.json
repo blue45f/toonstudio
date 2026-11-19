@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Diseño súper simple",
   "studio.mainMenu.item.view.density-full": "Diseño completo",
   "studio.mainMenu.item.view.wide": "Contraer paneles y ampliar",
+  "studio.mainMenu.item.view.wide.open": "Mostrar paneles",
   "studio.mainMenu.item.view.tools-companion": "Espacio de trabajo con múltiples pantallas...",
   "studio.mainMenu.item.view.canvas-only": "Solo lienzo",
   "studio.mainMenu.item.view.color-vision.unavailable": "No se puede cambiar el modo de revisión de visión del color mientras la transformación de vista está bloqueada.",

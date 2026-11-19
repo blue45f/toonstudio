@@ -658,7 +658,7 @@ export function useStudioVrmPoserPoseLibrary(h: StudioVrmPoserHost): void {
   });
 
   function handleLoadFullLocal(name: string) {
-    loadHandlers.handleLoadFullLocal(name);
+    return loadHandlers.handleLoadFullLocal(name);
   }
 
   function handleExportPoses() {

@@ -783,7 +783,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
             { width, height },
             {
               signal: captureController.signal,
-              session: h.pngSessionRef?.current ?? undefined, timeoutMs: STUDIO_VRM_CAPTURE_PNG_TIMEOUT_MS,
+              session: h.pngSessionRef?.current ?? undefined, timeoutMs: STUDIO_VRM_CAPTURE_PNG_TIMEOUT_MS, shareStartupBudget: true,
             },
           );
           const fullDataUrl = `${baseDataUrl}#${hashPayload}`;

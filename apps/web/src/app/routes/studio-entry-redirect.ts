@@ -26,12 +26,12 @@ export function readInitialDocumentPathname(): string | null {
 }
 
 /** Redirect a legacy `/studio` editor query to the canonical draft-canvas route. */
-export function legacyStudioEditorHref(pathname: string, search: string): string | null {
+export function legacyStudioEditorHref(pathname: string, search: string, hash = ""): string | null {
   if (pathname !== STUDIO_HOME_PATHNAME || search.length === 0) return null;
   const params = new URLSearchParams(search);
   const hasLegacyEditorState = [...params.keys()].some((key) =>
     LEGACY_STUDIO_EDITOR_QUERY_KEYS.has(key)
   );
-  return hasLegacyEditorState ? `${STUDIO_DRAFT_CANVAS_PATHNAME}${search}` : null;
+  return hasLegacyEditorState ? `${STUDIO_DRAFT_CANVAS_PATHNAME}${search}${hash}` : null;
 }
 

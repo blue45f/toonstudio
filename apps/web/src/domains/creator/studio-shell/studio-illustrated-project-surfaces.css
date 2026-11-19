@@ -205,3 +205,25 @@
   [data-studio-illustrated-surface] :where([aria-current="page"], [aria-pressed="true"], [data-studio-template-selected="true"], [data-studio-project-card][data-selected="true"]) { outline: 2px solid Highlight; outline-offset: -2px; }
   [data-studio-illustrated-surface] :where(a, button, input, select, textarea, summary):focus-visible { outline-color: Highlight; }
 }
+
+@media (max-width: 63.99rem) {
+  [data-studio-project-planning="characters"] article form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+    gap: .75rem;
+    margin-block: .75rem 1.25rem;
+  }
+  [data-studio-project-planning="characters"] article form > label {
+    display: grid;
+    justify-items: start;
+    gap: .25rem;
+    max-inline-size: 100%;
+    color: var(--color-fg-2);
+  }
+  [data-studio-project-planning="characters"] article form :is(input, select, textarea, button) {
+    min-block-size: 2.75rem;
+    max-inline-size: 100%;
+    color: var(--color-fg);
+  }
+}

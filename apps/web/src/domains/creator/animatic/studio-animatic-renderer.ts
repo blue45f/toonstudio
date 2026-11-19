@@ -1,8 +1,30 @@
-import { planStudioAnimaticPreview, sampleStudioAnimaticPreview, type StudioAnimaticPreviewSample, type StudioAnimaticSegment } from "../studio-animatic-timeline";
+import { planStudioAnimaticPreview, sampleStudioAnimaticPreview, type StudioAnimaticDocument, type StudioAnimaticPreviewSample, type StudioAnimaticSegment } from "../studio-animatic-timeline";
+import { buildStudioAnimaticSubtitleTrack, type StudioAnimaticSubtitleCue } from "./studio-animatic-subtitles";
 
 import type { StudioAnimaticWorkspaceSnapshot } from "./studio-animatic-workspace";
 
 export type StudioAnimaticImages = ReadonlyMap<string, CanvasImageSource>;
+
+const subtitleTracks = new WeakMap<StudioAnimaticDocument, Map<string, StudioAnimaticSubtitleCue[]>>();
+
+function captionsAt(timeline: StudioAnimaticDocument, sample: StudioAnimaticPreviewSample) {
+  let bySegment = subtitleTracks.get(timeline);
+  if (!bySegment) {
+    bySegment = new Map();
+    const track = buildStudioAnimaticSubtitleTrack(timeline);
+    if (track.ok) {
+      for (const cue of track.cues) {
+        const cues = bySegment.get(cue.segmentId);
+        if (cues) cues.push(cue);
+        else bySegment.set(cue.segmentId, [cue]);
+      }
+    }
+    subtitleTracks.set(timeline, bySegment);
+  }
+  return (bySegment.get(sample.segmentId) ?? [])
+    .filter((cue) => cue.startMs <= sample.timeMs && sample.timeMs < cue.endMs)
+    .slice(-2);
+}
 
 /** Preview and video export share document coordinates, camera interpolation and transitions. */
 export function drawStudioAnimaticFrame(
@@ -73,7 +95,7 @@ export function drawStudioAnimaticFrame(
     }
     drawCut(segment, sample, (sample.transitionKind === "fade" ? sample.transitionProgress : 1) * sample.camera.opacity);
   }
-  const captions = sample.cues.filter((cue) => cue.kind === "dialogue" && cue.text.trim()).slice(-2);
+  const captions = captionsAt(snapshot.timeline, sample);
   if (captions.length) {
     const fontSize = Math.max(14, width / 28);
     context.font = `${fontSize}px sans-serif`;

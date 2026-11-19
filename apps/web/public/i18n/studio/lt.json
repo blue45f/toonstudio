@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Super paprastas išdėstymas",
   "studio.mainMenu.item.view.density-full": "Visas išdėstymas",
   "studio.mainMenu.item.view.wide": "Sutraukti skydelius ir išplėsti",
+  "studio.mainMenu.item.view.wide.open": "Rodyti skydelius",
   "studio.mainMenu.item.view.tools-companion": "Kelių ekranų darbo sritis…",
   "studio.mainMenu.item.view.canvas-only": "Tik drobė",
   "studio.mainMenu.item.view.color-vision.unavailable": "Negalite pakeisti spalvų matymo režimo, kai vaizdo transformavimas yra užrakintas.",

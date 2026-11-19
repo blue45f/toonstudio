@@ -149,13 +149,15 @@ export function planStudioBg3dMergedComposite(input: {
     } satisfies El,
   });
   if (!plan.ok) return plan;
+  const priorAnchor = elements.find((element) => element.id === plan.anchorElementId);
+  const mergedName = priorAnchor?.type === "image" ? priorAnchor.name ?? "3D LT 배경 · 병합" : "3D LT 배경 · 병합";
 
   return {
     ok: true,
     anchorElementId: plan.anchorElementId,
     bundleId: plan.bundleId,
     nextElements: plan.nextElements.map((element) => element.id === plan.anchorElementId
-      ? ({ ...element, name: "3D LT 배경 · 병합", layerRole: undefined } satisfies El)
+      ? ({ ...element, name: mergedName, layerRole: undefined } satisfies El)
       : element),
     nextGroups: plan.nextGroups,
   };

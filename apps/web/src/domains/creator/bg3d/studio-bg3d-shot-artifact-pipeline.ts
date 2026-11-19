@@ -96,7 +96,7 @@ const DEFAULT_DEPENDENCIES: StudioBg3dShotArtifactPipelineDependencies = {
   renderLtInWorker: renderStudioBg3dLtLayersInWorker,
   createDepthLayer: createStudioBg3dDepthRasterLayer,
   createNormalLayer: createStudioBg3dNormalRasterLayer,
-  encodePngInWorker: encodeStudioBg3dShotPngInWorker,
+  encodePngInWorker: (layers, options) => encodeStudioBg3dShotPngInWorker(layers, { ...options, shareStartupBudget: true }),
   admitPsdLayers: admitStudioBg3dShotPsdLayers,
   buildLayeredPsdInWorker: buildStudioBg3dShotLayeredPsdInWorker,
   workersAvailable: () => typeof Worker === "function",

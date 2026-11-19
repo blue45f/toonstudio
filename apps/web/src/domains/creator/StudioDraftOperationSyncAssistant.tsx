@@ -61,7 +61,7 @@ const TONE_CLASS: Readonly<Record<StudioDraftOperationSyncTone, string>> = {
 };
 
 const TRIGGER_CLASS = "flex min-h-11 items-center gap-2 rounded-full border text-xs font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-const FLOATING_TRIGGER_CLASS = "max-w-[min(19rem,calc(100vw-1.5rem))] px-3 py-2 shadow-lg backdrop-blur-xl hover:-translate-y-0.5 hover:shadow-xl motion-reduce:hover:translate-y-0";
+const FLOATING_TRIGGER_CLASS = "max-w-[min(19rem,calc(100vw-1.5rem))] px-3 py-2 shadow-md";
 /** 상단 바 칩: 폭은 상태가 아니라 자리 규칙이 정한다(아래 INLINE_WIDE_CLASS와 함께 고정 폭). */
 const INLINE_TRIGGER_CLASS = "relative w-11 shrink-0 justify-center px-2.5 hover:brightness-110";
 /**
@@ -296,21 +296,23 @@ export function StudioDraftOperationSyncAssistant({
       aria-expanded={open}
       aria-controls={open ? dialogId : undefined}
       aria-label={`동기화 상태: ${model.compactLabel}`}
-      title={inline ? model.compactLabel : undefined}
+      title={model.compactLabel}
       onClick={() => {
         const next = !open;
         conflictReviewOpenRef.current = next && (live.offlineBranch?.conflicts.length ?? 0) > 0;
         setOpen(next);
       }}
       data-studio-operation-sync-trigger={inline ? "menubar" : "floating"}
+      data-sync-tone={model.tone}
       className={cn(
         TRIGGER_CLASS,
         inline ? cn(INLINE_TRIGGER_CLASS, INLINE_WIDE_CLASS[urgent ? "urgent" : "calm"]) : FLOATING_TRIGGER_CLASS,
         TONE_CLASS[model.tone],
+        !inline && "bg-panel",
       )}
     >
       <StatusIcon tone={model.tone} className="h-4 w-4 shrink-0" />
-      <span className={cn("truncate", inline && (urgent ? "max-xl:sr-only" : "max-2xl:sr-only"))}>
+      <span className={cn("truncate", !inline && "text-fg", inline && (urgent ? "max-xl:sr-only" : "max-2xl:sr-only"))}>
         {model.compactLabel}
       </span>
       {pendingCount > 0 ? (
@@ -495,7 +497,7 @@ export function StudioDraftOperationSyncAssistant({
         open ? "z-[58]" : "z-[51]",
         anchorAtBottom
           ? "bottom-[calc(9.75rem+env(safe-area-inset-bottom))] [--studio-sync-offset:9.75rem]"
-          : "top-[calc(8.75rem+env(safe-area-inset-top))] [--studio-sync-offset:8.75rem]",
+          : "top-[calc(11rem+env(safe-area-inset-top))] [--studio-sync-offset:11rem]",
       )}
     >
       {liveRegion}

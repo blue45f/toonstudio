@@ -14,6 +14,11 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./bounded-zip-path": {
+      "types": "./src/bounded-zip-path.ts",
+      "import": "./src/bounded-zip-path.ts",
+      "default": "./src/bounded-zip-path.ts"
+    },
     "./compatibility-report": {
       "types": "./src/compatibility-report.ts",
       "import": "./src/compatibility-report.ts",

@@ -13,8 +13,7 @@ import {
   LocatedPrivateObjectReferenceSchema,
   type LocatedPrivateObjectReference,
 } from "../../platform/adapters/private-object-storage/private-object-storage.contract";
-import { dbPool } from "../../platform/database";
-import { resolveCreatorCollaborationAccess } from "../creator/creator-collaboration.policy";
+import { readStudioWorkMember, studioWorkTransaction as transaction } from "./studio-work-member-transaction";
 import { shareHash } from "./pinned-share/pinned-share-storage";
 
 export class StudioRecordingBoothAssetRepositoryError extends Error {
@@ -46,23 +45,9 @@ type StoredRow = {
 const COLUMNS = `id,"workId","authorUserId",name,"boothId","durationMs","contentType","byteLength",sha256,
   "objectReference","requestHash","operationId","createdAt","deletedAt","deleteOperationId"`;
 
-async function transaction<T>(action: (client: PoolClient) => Promise<T>): Promise<T> {
-  const client = await dbPool.connect();
-  try { await client.query("BEGIN"); const result = await action(client); await client.query("COMMIT"); return result; }
-  catch (error) { await client.query("ROLLBACK"); throw error; }
-  finally { client.release(); }
-}
-
 async function access(client: PoolClient, actor: string, workId: string, write = false): Promise<Authority> {
-  const work = (await client.query<{ userId: string }>(`SELECT "userId" FROM creator_work WHERE id=$1 FOR ${write ? "UPDATE" : "SHARE"}`, [workId])).rows[0];
-  const user = (await client.query<{ status: string }>('SELECT status FROM "user" WHERE id=$1 FOR SHARE', [actor])).rows[0];
-  if (!work || user?.status !== "active") return fail("forbidden");
-  const membership = (await client.query<{ userId: string; role: string; status: string }>(
-    'SELECT "userId",role,status FROM creator_work_collaborator WHERE "workId"=$1 AND "userId"=$2 FOR SHARE', [workId, actor],
-  )).rows[0];
-  const authority = resolveCreatorCollaborationAccess({ actorUserId: actor, ownerUserId: work.userId, membership });
-  if (!authority.view) return fail("forbidden");
-  return authority;
+  const member = await readStudioWorkMember(client, actor, workId, write);
+  return member?.access ?? fail("forbidden");
 }
 
 function assetFrom(row: StoredRow): StudioRecordingBoothAsset {

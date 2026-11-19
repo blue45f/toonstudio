@@ -17,6 +17,7 @@ interface StudioHandNavigationOptions {
   middleButtonAction: StudioHandPointerButtonAction;
   rightButtonAction: StudioHandPointerButtonAction;
   touchOneFingerMode: StudioHandTouchOneFingerMode;
+  openViewportMenu?: (x: number, y: number, source: "pointer" | "keyboard") => void;
 }
 
 interface StudioHandPanSession {
@@ -92,6 +93,7 @@ export function useStudioHandNavigation({
   middleButtonAction,
   rightButtonAction,
   touchOneFingerMode,
+  openViewportMenu,
 }: StudioHandNavigationOptions) {
   const latestModeRef = useRef({
     handToolActive,
@@ -99,6 +101,7 @@ export function useStudioHandNavigation({
     middleButtonAction,
     rightButtonAction,
     touchOneFingerMode,
+    openViewportMenu,
   });
 
   useEffect(() => {
@@ -108,6 +111,7 @@ export function useStudioHandNavigation({
       middleButtonAction,
       rightButtonAction,
       touchOneFingerMode,
+      openViewportMenu,
     };
   }, [
     handToolActive,
@@ -115,6 +119,7 @@ export function useStudioHandNavigation({
     rightButtonAction,
     temporaryHandActive,
     touchOneFingerMode,
+    openViewportMenu,
   ]);
 
   useEffect(() => {
@@ -434,9 +439,15 @@ export function useStudioHandNavigation({
     };
 
     const onContextMenu = (event: MouseEvent) => {
-      if (session?.source !== "right-button" && !suppressContextMenu) return;
-      if (suppressContextMenu) clearActivationSuppression();
+      if (session?.source === "right-button" || suppressContextMenu) {
+        if (suppressContextMenu) clearActivationSuppression();
+        preventOwnedMouseEvent(event);
+        return;
+      }
+      const mode = latestModeRef.current;
+      if (event.defaultPrevented || event.target !== viewport || mode.rightButtonAction !== "context" || !mode.openViewportMenu) return;
       preventOwnedMouseEvent(event);
+      mode.openViewportMenu(event.clientX, event.clientY, "pointer");
     };
 
     const onViewportKeyDown = (event: KeyboardEvent) => {
@@ -450,6 +461,16 @@ export function useStudioHandNavigation({
       }
 
       if (event.target !== viewport || event.altKey || event.ctrlKey || event.metaKey) {
+        return;
+      }
+
+      if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) {
+        const { openViewportMenu } = latestModeRef.current;
+        if (event.defaultPrevented || !openViewportMenu) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const rect = viewport.getBoundingClientRect();
+        openViewportMenu(rect.left + rect.width / 2, rect.top + rect.height / 2, "keyboard");
         return;
       }
 

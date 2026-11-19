@@ -1,6 +1,8 @@
 import type { StudioLiveP2pRtcIceCandidate, StudioLiveP2pRtcPeerConnection } from "./studio-live-p2p-rtc-types";
 
 type DescriptionType = "offer" | "answer";
+const OFFER_RETRY_MS = 3000;
+const MAX_OFFER_RETRIES = 8;
 
 /** 첫 참가 알림과 SDP의 도착 순서가 달라도 같은 데이터 채널 연결을 마무리한다. */
 export class StudioLiveP2pMeshHandshake {
@@ -8,6 +10,9 @@ export class StudioLiveP2pMeshHandshake {
   private accepted: { type: DescriptionType; sdp: string } | null = null;
   private applying = false;
   private lastOfferAt = 0;
+  private offerExpiresAt = 0;
+  private retriesLeft = 0;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly incomingIce: RTCIceCandidateInit[] = [];
   private readonly localIce: StudioLiveP2pRtcIceCandidate[] = [];
 
@@ -26,14 +31,30 @@ export class StudioLiveP2pMeshHandshake {
     if (!this.isCurrent() || !offer.sdp) return;
     this.outgoing = { type: "offer", sdp: offer.sdp };
     this.lastOfferAt = this.now();
+    this.cancelOfferRetries();
+    this.retriesLeft = MAX_OFFER_RETRIES;
+    this.offerExpiresAt = this.lastOfferAt + OFFER_RETRY_MS * (MAX_OFFER_RETRIES + 1);
+    // 상대가 JOIN을 마치기 전에 첫 SDP를 받으면 폐기한다. 권한 확인 후에도 접속 알림이 새로 오지는 않는다.
+    this.retryTimer = setTimeout(() => this.retryOffer(), OFFER_RETRY_MS);
     this.sendDescription("offer", offer.sdp);
   }
 
   onPresence(): void {
-    if (this.outgoing?.type !== "offer" || this.accepted || this.applying || !this.isCurrent()) return;
-    if (this.now() - this.lastOfferAt < 3000) return;
-    this.lastOfferAt = this.now();
-    this.replay();
+    if (this.retryTimer !== null && this.now() - this.lastOfferAt >= OFFER_RETRY_MS) this.retryOffer();
+  }
+
+  private retryOffer(): void {
+    this.cancelOfferRetries();
+    const now = this.now();
+    if (!this.isCurrent() || this.accepted || now > this.offerExpiresAt) return;
+    this.lastOfferAt = now;
+    if (--this.retriesLeft > 0) this.retryTimer = setTimeout(() => this.retryOffer(), OFFER_RETRY_MS);
+    if (!this.applying) this.replay();
+  }
+
+  cancelOfferRetries(): void {
+    if (this.retryTimer !== null) clearTimeout(this.retryTimer);
+    this.retryTimer = null;
   }
 
   onLocalIce(candidate: StudioLiveP2pRtcIceCandidate): void {
@@ -43,6 +64,7 @@ export class StudioLiveP2pMeshHandshake {
   }
 
   async onRemoteIce(candidate: RTCIceCandidateInit): Promise<void> {
+    if (!this.isCurrent()) return;
     if (this.accepted) await this.connection.addIceCandidate(candidate);
     else if (this.incomingIce.length < 32) this.incomingIce.push(candidate);
   }
@@ -66,6 +88,7 @@ export class StudioLiveP2pMeshHandshake {
         this.sendDescription("answer", answer.sdp);
       }
       this.accepted = { type, sdp };
+      this.cancelOfferRetries();
       for (const candidate of this.incomingIce.splice(0)) {
         if (!this.isCurrent()) return;
         try {

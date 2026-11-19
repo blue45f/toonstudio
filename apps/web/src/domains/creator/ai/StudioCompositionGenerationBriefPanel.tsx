@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 
+import { StudioDrawingStyleEditor } from "./StudioDrawingStyleEditor";
 import { StudioAiConnectionBadge, StudioAiConnectionNotice } from "./StudioAiConnectionBadge";
 import {
   buildCompositionGenerationBrief,
   type CompositionGenerationSnapshot,
+  type CompositionGenerationRequest,
 } from "./studio-composition-generation-brief";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -23,7 +25,7 @@ import { copyStudioText } from "@/shared/lib/copy-text";
 export interface StudioCompositionGenerationBriefPanelProps {
   readonly snapshot: CompositionGenerationSnapshot | null;
   /** AI 제공자가 연결돼 있으면 주입. 없으면 브리프/폴백 모드. */
-  readonly onRequestGeneration?: () => void;
+  readonly onRequestGeneration?: (request: CompositionGenerationRequest) => void;
   /** 폴백: 현재 구도 캡처를 컷에 그대로 삽입. */
   readonly onInsertCaptureFallback: () => void;
   readonly locale?: "ko" | "en";
@@ -76,9 +78,12 @@ export function StudioCompositionGenerationBriefPanel(
   const copy = COPY[props.locale ?? "ko"];
   const [copied, setCopied] = useState(false);
 
+  const [styleDirection, setStyleDirection] = useState("");
   const result = useMemo(
-    () => (props.snapshot ? buildCompositionGenerationBrief(props.snapshot) : null),
-    [props.snapshot],
+    () => props.snapshot ? buildCompositionGenerationBrief({ ...props.snapshot,
+      userPrompt: [props.snapshot.userPrompt, styleDirection].filter(Boolean).join("\n"),
+    }) : null,
+    [props.snapshot, styleDirection],
   );
 
   if (!props.snapshot || result === null) {
@@ -137,6 +142,7 @@ export function StudioCompositionGenerationBriefPanel(
           </p>
         </>
       ) : null}
+      <StudioDrawingStyleEditor onApply={setStyleDirection} canClear={Boolean(styleDirection)} locale={props.locale} />
       {/* 본문 글꼴·줄바꿈 — 고정폭 <pre>는 글자가 커지고 패널 폭을 넘어 잘렸다. */}
       <p
         data-testid="composition-brief-text"
@@ -161,7 +167,7 @@ export function StudioCompositionGenerationBriefPanel(
           {copied ? copy.copied : copy.copyBrief}
         </button>
         {providerConnected ? (
-          <button type="button" onClick={props.onRequestGeneration} className={ACTION_CLASS}>
+          <button type="button" onClick={() => props.onRequestGeneration?.(request)} className={ACTION_CLASS}>
             {copy.requestGeneration}
           </button>
         ) : null}

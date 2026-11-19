@@ -63,7 +63,7 @@ export async function inspectStudioMobileWorkspaceMenuDormancy(page: Page) {
 
 const CLARITY_ACTION_CATEGORIES: Readonly<Record<string, string>> = {
   pages: "document", layers: "document", assets: "document",
-  brush: "drawing", all: "drawing", search: "drawing",
+  brush: "drawing", character3d: "drawing", all: "drawing", search: "drawing",
   export: "output", team: "output",
   windows: "workspace", view: "workspace", help: "workspace", device: "workspace", status: "workspace",
 };
@@ -91,22 +91,26 @@ export async function runStudioClarityAction(page: Page, actionId: string): Prom
   await (await visibleStudioControl(action, `Studio 명령 ${actionId}`)).click();
 }
 
-/** 프로젝트·창 기능을 검증할 때만 사용자가 선택할 수 있는 상세 작업 배치를 연다. */
+/** 원고 위의 프로젝트 도구를 열고, 이미 열린 패널과 독립 작업 화면은 그대로 둔다. */
 export async function showStudioProjectWindowTools(page: Page): Promise<void> {
   const editor = await visibleStudioControl(page.locator('[data-studio-editor="true"]'), "Studio 편집기");
-  if (await editor.getAttribute("data-studio-drawing-clarity") === "true") {
-    await runStudioClarityAction(page, "windows");
-  }
-  await page.locator('[data-studio-editor="true"]:not([data-studio-drawing-clarity="true"])').filter({ visible: true }).waitFor({ state: "visible" });
+  if (await editor.getAttribute("data-studio-drawing-clarity") !== "true") return;
+  const panel = page.locator('[data-studio-drawing-project-tools="true"]').filter({ visible: true });
+  if (await panel.count() === 0) await runStudioClarityAction(page, "windows");
+  await visibleStudioControl(panel, "프로젝트 도구 패널");
 }
 
 export async function openStudioMainMenu(page: Page, groupId: string): Promise<Locator> {
-  if (!/^[a-z][a-z0-9-]*$/u.test(groupId)) throw new Error(`잘못된 Studio 메뉴 식별자: ${groupId}`);
   await showStudioProjectWindowTools(page);
   if (await page.locator('[data-studio-main-menu-panel="true"]').filter({ visible: true }).count() > 0) {
     await page.keyboard.press("Escape");
   }
-  const trigger = await visibleStudioControl(page.locator(`[data-studio-main-menu="true"] [data-studio-main-menu-trigger="${groupId}"]`), `Studio ${groupId} 메뉴`);
+  const triggers = page.locator('[data-studio-main-menu="true"] [data-studio-main-menu-trigger]').filter({ visible: true });
+  await triggers.first().waitFor({ state: "visible" });
+  const ids = await triggers.evaluateAll(buttons => buttons.map(button => button.getAttribute("data-studio-main-menu-trigger")));
+  const index = ids.indexOf(groupId);
+  if (index === -1 || ids.lastIndexOf(groupId) !== index) throw new Error(`등록된 Studio 메뉴가 하나여야 합니다: ${groupId}`);
+  const trigger = triggers.nth(index);
   // 빈 캔버스에서 Escape를 누르면 활성 선택 영역이 해제된다. 메뉴가 열려 있을 때만 닫는다.
   // focus + ArrowDown은 hover로 이미 열리는 메뉴를 click으로 다시 닫는 경쟁도 피한다.
   await trigger.focus();
@@ -139,7 +143,12 @@ export async function openStudioLayerNavigator(page: Page, timeoutMs = 10_000): 
   const splitPane = page.locator('[data-studio-inspector-layers-split="true"]').filter({ visible: true });
   const layers = page.getByTestId("studio-inspector-navigator")
     .locator('[data-studio-inspector-primary-tab="layers"]').filter({ visible: true });
-  if (await splitPane.count() === 0 && await layers.count() === 0) await runStudioClarityAction(page, "layers");
+  if (await splitPane.count() === 0 && await layers.count() === 0) {
+    const mobileLayers = page.locator('[data-studio-mobile-editing-dock="true"]')
+      .getByRole("button", { name: /^(레이어 열기|Open layers)$/u }).filter({ visible: true });
+    if (await mobileLayers.count() > 0) await (await visibleStudioControl(mobileLayers, "모바일 레이어", remaining())).click({ timeout: remaining() });
+    else await runStudioClarityAction(page, "layers");
+  }
   await splitPane.or(layers).first().waitFor({ state: "visible", timeout: remaining() });
   if (await splitPane.count() > 0) {
     await visibleStudioControl(splitPane, "Studio 분할 레이어", remaining());
@@ -147,6 +156,8 @@ export async function openStudioLayerNavigator(page: Page, timeoutMs = 10_000): 
   }
   const tab = await visibleStudioControl(layers, "Studio 레이어 탭", remaining());
   if (await tab.getAttribute("aria-selected", { timeout: remaining() }) !== "true") await tab.click({ timeout: remaining() });
-  await visibleStudioControl(page.getByTestId("studio-inspector-navigator")
-    .locator('[data-studio-inspector-primary-tab="layers"][aria-selected="true"]'), "Studio 선택된 레이어 탭", remaining());
+  // 저장한 데스크톱 배치가 로드되면 클릭한 탭이 같은 레이어 목록의 분할 패널로 바뀔 수 있다.
+  const selectedTab = page.getByTestId("studio-inspector-navigator")
+    .locator('[data-studio-inspector-primary-tab="layers"][aria-selected="true"]').filter({ visible: true });
+  await splitPane.or(selectedTab).first().waitFor({ state: "visible", timeout: remaining() });
 }

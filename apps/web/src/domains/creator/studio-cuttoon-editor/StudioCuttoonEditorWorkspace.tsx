@@ -32,6 +32,7 @@ const TOOL_RAIL_LAYOUT = { version: 2, xRatio: 0.02, yRatio: 0.1, width: 96, hei
 
 export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) {
   const clarity = useStudioDrawingClarity(), compact = clarity?.active === true && !s.isMobile;
+  const [pinnedToolHost, setPinnedToolHost] = useState<HTMLDivElement | null>(null);
   const compactViewport = useMediaQuery("(max-width: 1279px)");
   const [compactBrushPanelWidth, setCompactBrushPanelWidth] = useState(224);
   const setClarityPanelOpen = (panel: "layers" | "pages", next: import("react").SetStateAction<boolean>) => {
@@ -239,7 +240,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
             verdict unchanged, so the pane renders exactly as before until a
             mode actually folds it. An unwired host (no uiChromeExposure)
             keeps the pane mounted, as before. */}
-        {uiChromeExposure
+        {!compact && uiChromeExposure
           && (uiChromeExposure("page-strip") === "folded" || uiChromeExposure("left-panel") === "folded") ? (
           <div
             data-studio-page-list-folded={workMode ?? undefined}
@@ -304,7 +305,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
             advanced-expansion choice, so expanding restores the rail without
             changing the work mode. An unwired host (no uiChromeExposure)
             keeps the rail mounted, as before. */}
-        {uiChromeExposure && uiChromeExposure("tool-rail") === "folded" ? (
+        {!compact && uiChromeExposure && uiChromeExposure("tool-rail") === "folded" ? (
           <div
             data-studio-tool-rail-folded={workMode ?? undefined}
             className="hidden w-12 shrink-0 flex-col items-center border-r border-line bg-panel py-2 lg:flex"
@@ -339,7 +340,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
             />
           )}
         >
-        <LazyStudioLeftToolRail client={studioLeftToolRailRuntime.client} />
+        <LazyStudioLeftToolRail client={studioLeftToolRailRuntime.client} pinnedToolHost={compact ? pinnedToolHost : null} />
         </Suspense>
         </StudioWorkspaceRegion>
         )}
@@ -349,7 +350,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
         <div id={compact ? "studio-drawing-clarity-panel-brush" : undefined} hidden={compact && clarity.panel !== "brush"}
           className={compact ? "studio-drawing-clarity-pane studio-drawing-clarity-pane--brush" : "contents"}>
           {compact && clarity.panel === "brush" ? <Suspense fallback={null}><LazyStudioDrawingClarityPaneHeading panel="brush" /></Suspense> : null}
-        {!isMobile && !canvasOnlyMode && !mobileImmersive && !presentationPanelsHidden
+        {!isMobile && !canvasOnlyMode && !mobileImmersive && (compact || !presentationPanelsHidden)
           && (compact ? clarity.panel === "brush" : s.studioOptionsBarsDrawModel.libraryDockOpen) ? (
           <Suspense fallback={<div role="status" className="hidden w-64 shrink-0 border-r border-line bg-panel p-3 text-sm text-fg-2 lg:block xl:w-[17rem]">{editorShellStatusText("studio.editorShellStatus.workspace.brushLibraryOpening", "브러시 라이브러리를 여는 중…")}</div>}>
             <LazyStudioBrushWorkbenchDock
@@ -407,7 +408,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
               every mode) and mode "all" is the identity, so this renders the
               column exactly as before until a mode actually folds it. An
               unwired host (no uiChromeExposure) keeps the column mounted. */}
-          {uiChromeExposure && uiChromeExposure("right-panel") === "folded" ? (
+          {!compact && uiChromeExposure && uiChromeExposure("right-panel") === "folded" ? (
             <div
               data-studio-inspector-folded={workMode ?? undefined}
               className="hidden w-12 shrink-0 flex-col items-center border-l border-line bg-panel py-2 lg:flex"
@@ -433,7 +434,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
         </div>
         {compact ? (
           <Suspense fallback={<div aria-hidden="true" data-studio-clarity-rail-loading="true" className="studio-drawing-clarity-rail hidden md:flex" />}>
-            <LazyStudioDrawingClarityRail session={s} />
+            <LazyStudioDrawingClarityRail session={s} pinnedHostRef={setPinnedToolHost} />
           </Suspense>
         ) : null}
         <StudioCuttoonEditorPanels {...s} />

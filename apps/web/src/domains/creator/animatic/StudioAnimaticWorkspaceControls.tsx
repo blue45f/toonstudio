@@ -102,9 +102,9 @@ export function StudioAnimaticWorkspaceControls({ workspace, images, selectedSho
         <div className="mt-2 flex flex-wrap gap-2">
           <button className={CONTROL} disabled={busy} onClick={() => exportSubtitles("srt")}>자막 SRT 내보내기</button>
           <button className={CONTROL} disabled={busy} onClick={() => exportSubtitles("vtt")}>자막 WebVTT 내보내기</button>
-          <button className={CONTROL} disabled={busy} onClick={() => { onCommit({ ...workspace, timeline: applyStudioAnimaticSubtitleTiming(workspace.timeline, subtitleTrack) }); setSubtitleTiming({}); }}>자막 시작 시각을 대사에 반영</button>
+          <button className={CONTROL} disabled={busy || !Object.keys(subtitleTiming).length} onClick={() => { onCommit({ ...workspace, timeline: applyStudioAnimaticSubtitleTiming(workspace.timeline, subtitleTrack.filter((cue) => subtitleTiming[cue.id])) }); setSubtitleTiming({}); }}>{creatorSub2StatusText("studio.creatorSub2.status.animatic.workspaceControls.applyCaptionTiming", "자막 시간 적용")}</button>
         </div>
-        <p className="mt-2 text-xs text-fg-3">시작·끝을 고치면 내보내는 자막 파일에 바로 반영됩니다. 시작 시각은 대사에 반영 버튼으로 타임라인에도 저장할 수 있습니다.</p>
+        <p className="mt-2 text-xs text-fg-3">{creatorSub2StatusText("studio.creatorSub2.status.animatic.workspaceControls.captionTimingHint", "자막 시간을 적용하면 미리보기와 영상에 저장한 시작·끝 시각을 사용합니다.")}</p>
       </>}
     </details>
     <details className="rounded-xl border border-line p-3">

@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Supereenvoudige indeling",
   "studio.mainMenu.item.view.density-full": "Volledige indeling",
   "studio.mainMenu.item.view.wide": "Panelen inklappen voor brede weergave",
+  "studio.mainMenu.item.view.wide.open": "Panelen tonen",
   "studio.mainMenu.item.view.tools-companion": "Werkruimte met meerdere schermen…",
   "studio.mainMenu.item.view.canvas-only": "Alleen doek",
   "studio.mainMenu.item.view.color-vision.unavailable": "U kunt de kleurvisiemodus niet wijzigen terwijl de weergavetransformatie is vergrendeld.",

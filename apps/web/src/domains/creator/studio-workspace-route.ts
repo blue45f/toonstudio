@@ -96,12 +96,14 @@ interface StudioDccWorkspaceHrefInput extends StudioWorkspaceHrefInput {
 
 interface StudioWorkspaceNavigationLocation {
   readonly key: string;
+  readonly hash?: string;
   readonly pathname: string;
   readonly search: string;
 }
 
 interface StudioWorkspaceReturnReceipt {
   readonly entryKey: string;
+  readonly hash?: string;
   readonly pathname: string;
   readonly remixSourceWorkId: string | null;
   readonly search: string;
@@ -516,9 +518,6 @@ function parseSurface(tail: readonly string[]): ParsedSurface | null {
   if (tail.length === 1 && isStudio2dWorkspaceSurface(tail[0])) {
     return { dccMode: null, surface: tail[0] };
   }
-  if (tail.length === 2 && tail[0] === "canvas" && tail[1] === "poser") {
-    return { dccMode: null, surface: "poser" };
-  }
   if (tail[0] !== "3d") return null;
   if (tail.length === 1 || (tail.length === 2 && tail[1] === "dcc")) {
     return { dccMode: "model", surface: "dcc" };
@@ -663,6 +662,7 @@ export function createStudioDccNavigationState(
   return Object.freeze({
     studioWorkspaceReturn: Object.freeze({
       entryKey: location.key,
+      ...(location.hash ? { hash: location.hash } : {}),
       pathname: location.pathname,
       remixSourceWorkId: route.remixSourceWorkId,
       search: location.search,
@@ -682,13 +682,15 @@ export function studioWorkspaceReturnHref(
   state: unknown,
   currentRoute: StudioWorkspaceRoute,
 ): string | null {
-  if (currentRoute.surface !== "dcc" || !state || typeof state !== "object") return null;
+  const documentTool = currentRoute.documentWorkspace === "3d";
+  if ((!documentTool && currentRoute.surface !== "dcc") || !state || typeof state !== "object") return null;
   const receipt = ownData(state, "studioWorkspaceReturn");
   if (!receipt || typeof receipt !== "object") return null;
   if (ownData(receipt, "version") !== 1) return null;
   const entryKey = ownData(receipt, "entryKey");
   const pathname = ownData(receipt, "pathname");
   const search = ownData(receipt, "search");
+  const hash = ownData(receipt, "hash");
   const workId = ownData(receipt, "workId");
   const rawRemixSourceWorkId = ownData(receipt, "remixSourceWorkId");
   const remixSourceWorkId = rawRemixSourceWorkId === undefined
@@ -698,6 +700,7 @@ export function studioWorkspaceReturnHref(
     typeof entryKey !== "string"
     || entryKey.length === 0
     || typeof pathname !== "string"
+    || (hash !== undefined && (typeof hash !== "string" || !hash.startsWith("#")))
     || typeof search !== "string"
     || (workId !== null && typeof workId !== "string")
     || (remixSourceWorkId !== null && typeof remixSourceWorkId !== "string")
@@ -719,5 +722,38 @@ export function studioWorkspaceReturnHref(
   ) {
     return null;
   }
-  return studioWorkspaceCanonicalHref(returnRoute, search);
+  if (documentTool && (returnRoute.documentWorkspace === null || returnRoute.documentWorkspace === "3d"
+    || studioWorkspaceDocumentIdentity(returnRoute) !== studioWorkspaceDocumentIdentity(currentRoute))) return null;
+  return studioWorkspaceCanonicalHref(returnRoute, search) + (typeof hash === "string" ? hash : "");
+}
+
+/** 원고에서 연 3D 도구는 실제 원고 방문 기록으로 돌아간다. 직접 연 주소에는 이 기록이 없다. */
+export function studioDocumentToolNavigation(
+  route: StudioWorkspaceRoute,
+  target: Studio2dWorkspaceSurface,
+  location: StudioWorkspaceNavigationLocation & { readonly state: unknown },
+) {
+  const opening = route.documentWorkspace !== null && (target === "bg3d" || target === "poser" || target === "character");
+  const returnHref = route.documentWorkspace === "3d" ? studioWorkspaceReturnHref(location.state, route) : null;
+  let state: StudioDccNavigationState | null = null;
+  if (opening && route.documentWorkspace !== "3d") {
+    state = createStudioDccNavigationState(route, location);
+  } else if (opening && returnHref !== null) {
+    // 검증한 원고의 복귀 기록만 다음 도구에 전달한다. 이전 배경의 편집 대상은 넘기지 않는다.
+    state = { studioWorkspaceReturn: (location.state as StudioDccNavigationState).studioWorkspaceReturn };
+  }
+  return {
+    back: target === "canvas" && returnHref !== null,
+    switchTool: opening && route.documentWorkspace === "3d",
+    state,
+    href: (target === "canvas" && route.surface === "canvas" && route.documentWorkspace !== null
+      ? location.pathname + location.search
+      : studio2dSurfaceNavigationHref(route, target, location.search)) + (location.hash ?? ""),
+  };
+}
+
+export function executeStudioDocumentBackNavigation(
+  navigate: (delta: number) => void | Promise<void>,
+): void {
+  void navigate(-1);
 }

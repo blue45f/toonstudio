@@ -1,0 +1,84 @@
+{
+  "sourceChanged": false,
+  "distChanged": false,
+  "served": "http://127.0.0.1:15504",
+  "servedHashes": {
+    "index.html": "fc95b00d538fc5852339be819e3862f5fc6268b2fc6ef7e985a665379734451e",
+    "sw.js": "55a56bd5ce3e6e9c4371586e8223c8b2d479ddb4b9f39d3a471a28b17591e43a",
+    ".vite/build-meta.json": "fb45bb68503a7291e3b1469a343d6ce46521c723fbacd1ea885c3c66ee46e594"
+  },
+  "cdp": "http://127.0.0.1:9223",
+  "dist": {
+    "gitSha": "f68519a427740023acc48e3ee74dc1e2c6538031",
+    "buildId": "d1d52293918c",
+    "sha256Tree": "f8a5eb0ff521e3f0817caae113cb7fe6f64f7b223a0d84a7b7da37619ee34965",
+    "files": 20293,
+    "bytes": 5269137859,
+    "computedAt": "2026-11-19T09:53:56.691096+09:00",
+    "elapsedSec": 7.502
+  },
+  "source": {
+    "gitSha": "f68519a427740023acc48e3ee74dc1e2c6538031",
+    "sha256Tree": "5f0530d3ce97972ebdffb4cc2eb680a83fddd2f0a697d2afe869a6ca07be960e",
+    "files": 35504,
+    "bytes": 5127485089,
+    "computedAt": "2026-11-19T09:48:58.099820+09:00",
+    "elapsedSec": 13.951
+  },
+  "totalWallSeconds": 263.38,
+  "apiReady": "ready",
+  "postBuildInputs": "5f0530d3ce97972ebdffb4cc2eb680a83fddd2f0a697d2afe869a6ca07be960e",
+  "enabledWebGPUGizmo": true,
+  "retries": 0,
+  "suites": {
+    "drawing": {
+      "statuses": {
+        "passed": 13
+      },
+      "pageerror": 0,
+      "crash": 0,
+      "testErrorCount": 0,
+      "runnerErrorCount": 0,
+      "wallSeconds": 86.25,
+      "httpErrors": [
+        [
+          403,
+          "/api/analytics/traffic",
+          51
+        ],
+        [
+          403,
+          "/api/studio-realtime/tickets",
+          20
+        ],
+        [
+          503,
+          "/api/health/capabilities",
+          4
+        ]
+      ]
+    },
+    "three": {
+      "statuses": {
+        "passed": 8
+      },
+      "pageerror": 0,
+      "crash": 0,
+      "testErrorCount": 0,
+      "runnerErrorCount": 0,
+      "wallSeconds": 177.12,
+      "httpErrors": [
+        [
+          403,
+          "/api/analytics/traffic",
+          31
+        ],
+        [
+          403,
+          "/api/studio-realtime/tickets",
+          8
+        ]
+      ]
+    }
+  }
+}

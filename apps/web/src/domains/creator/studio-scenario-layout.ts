@@ -159,6 +159,25 @@ export interface ScenarioPreviewItem extends ScenarioPanelSeed {
   approvalRevision?: number;
 }
 
+/** 컷을 재배치할 때 좌표·말풍선은 새로 계산하고 검토한 그림과 이력은 그대로 전달한다. */
+export type ScenarioReviewedArtwork = Pick<ScenarioPreviewItem,
+  "imageDataUrl" | "imageError" | "imageProvenance" | "imageCandidates" | "selectedImageCandidateId"
+  | "approvedImageCandidateId" | "qualityReport" | "layerManifest" | "approvalRevision">;
+
+export function scenarioReviewedArtwork(source: ScenarioReviewedArtwork = {}): ScenarioReviewedArtwork {
+  return {
+    ...(source.imageDataUrl ? { imageDataUrl: source.imageDataUrl } : {}),
+    ...(source.imageError ? { imageError: source.imageError } : {}),
+    ...(source.imageProvenance ? { imageProvenance: source.imageProvenance } : {}),
+    ...(source.imageCandidates?.length ? { imageCandidates: source.imageCandidates } : {}),
+    ...(source.selectedImageCandidateId ? { selectedImageCandidateId: source.selectedImageCandidateId } : {}),
+    ...(source.approvedImageCandidateId ? { approvedImageCandidateId: source.approvedImageCandidateId } : {}),
+    ...(source.qualityReport ? { qualityReport: source.qualityReport } : {}),
+    ...(source.layerManifest ? { layerManifest: source.layerManifest } : {}),
+    ...(source.approvalRevision !== undefined ? { approvalRevision: source.approvalRevision } : {}),
+  };
+}
+
 export type ScenarioGenerationPreferences = Pick<
   ScenarioPreviewItem,
   "preferredVariantCount" | "preferredQualityProfile" | "preferredVariationStrategy"

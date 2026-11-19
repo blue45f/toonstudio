@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Diseinu oso sinplea",
   "studio.mainMenu.item.view.density-full": "diseinu orokorra",
   "studio.mainMenu.item.view.wide": "Tolestu panelak eta zabaldu",
+  "studio.mainMenu.item.view.wide.open": "Erakutsi panelak",
   "studio.mainMenu.item.view.tools-companion": "Pantaila anitzeko lan-eremua...",
   "studio.mainMenu.item.view.canvas-only": "Mihisea soilik",
   "studio.mainMenu.item.view.color-vision.unavailable": "Ezin duzu kolore-ikuspegiaren modua aldatu bista-eraldaketa blokeatuta dagoen bitartean.",

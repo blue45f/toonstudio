@@ -201,7 +201,9 @@ describe("BG3D isolated local dummy-data preset > LT preview > safe 2D return > 
     expect(onInsert).not.toHaveBeenCalled();
 
     // 4. 명시적 적용 전 2D 원고로 안전 복귀 -> 2D 원고 미변경 & 미적용 초안 보존
-    fireEvent.click(screen.getByTestId("studio-bg3d-header-return-2d"));
+    const returnButton = screen.getByRole("button", { name: "2D 원고로 복귀" });
+    expect(returnButton.dataset.testid).toBe("studio-bg3d-header-return-2d");
+    fireEvent.click(returnButton);
     expect(open).toBe(false);
     expect(onInsert).not.toHaveBeenCalled();
     const savedDraft = readStudioBg3dUnappliedDraft(scopeKey);

@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Супер жөнөкөй макет",
   "studio.mainMenu.item.view.density-full": "Толук макет",
   "studio.mainMenu.item.view.wide": "Панелдерди жыйып, кеңейтүү",
+  "studio.mainMenu.item.view.wide.open": "Панелдерди көрсөтүү",
   "studio.mainMenu.item.view.tools-companion": "Көп дисплей иш мейкиндиги…",
   "studio.mainMenu.item.view.canvas-only": "Кенеп гана",
   "studio.mainMenu.item.view.color-vision.unavailable": "Көрүнүштү өзгөртүү кулпуланып турганда түс көрүү режимин өзгөртө албайсыз.",

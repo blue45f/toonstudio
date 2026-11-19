@@ -17,21 +17,23 @@ import { getArtistStyleDnaPreset } from "./studio-artist-style-dna";
 export const STUDIO_COMPOSITION_GENERATION_BRIEF_VERSION = 1 as const;
 
 export type CompositionFraming =
+  | "as-framed"
   | "full-body"
   | "upper-body"
   | "bust"
   | "close-up"
   | "wide-shot";
 
-export interface CompositionCameraSnapshot {
-  /** 화각 (도). bg3d StudioBg3dCameraSettings.fovDegrees와 같은 의미. */
-  readonly fovDegrees: number;
+export type CompositionCameraSnapshot = {
   /** 방위각 (도, 0=정면). 씬팩 썸네일 메타의 방위와 같은 규약. */
   readonly azimuthDegrees: number;
   /** 고도각 (도, 양수=하이앵글). */
   readonly elevationDegrees: number;
   readonly framing: CompositionFraming;
-}
+} & (
+  | { readonly projection?: "perspective"; readonly fovDegrees: number }
+  | { readonly projection: "orthographic"; readonly verticalSpanM: number; readonly fovDegrees?: never }
+);
 
 export interface CompositionGenerationSnapshot {
   readonly characterId: string;
@@ -80,6 +82,7 @@ export type CompositionBriefResult =
   | { readonly ok: false; readonly errors: readonly CompositionBriefError[] };
 
 const FRAMING_PROMPT: Readonly<Record<CompositionFraming, string>> = Object.freeze({
+  "as-framed": "match the reference crop",
   "full-body": "full body shot, head to toe visible",
   "upper-body": "upper body shot, waist up",
   bust: "bust shot, chest up",
@@ -88,6 +91,7 @@ const FRAMING_PROMPT: Readonly<Record<CompositionFraming, string>> = Object.free
 });
 
 const FRAMING_LABEL_KO: Readonly<Record<CompositionFraming, string>> = Object.freeze({
+  "as-framed": "현재 화면",
   "full-body": "전신",
   "upper-body": "상반신",
   bust: "바스트",
@@ -165,6 +169,8 @@ export function buildCompositionGenerationBrief(
   if (!snapshot.characterId.trim()) errors.push("missing-character");
   if (!snapshot.camera) {
     errors.push("missing-camera");
+  } else if (snapshot.camera.projection === "orthographic") {
+    if (!(Number.isFinite(snapshot.camera.verticalSpanM) && snapshot.camera.verticalSpanM > 0)) errors.push("invalid-fov");
   } else if (
     !Number.isFinite(snapshot.camera.fovDegrees) ||
     snapshot.camera.fovDegrees < 10 ||
@@ -202,7 +208,10 @@ export function buildCompositionGenerationBrief(
     promptParts.push(`expression: ${snapshot.expressionDescription.trim()}`);
   }
   promptParts.push(`composition: ${FRAMING_PROMPT[camera.framing]}, ${anglePrompt(camera)}`);
-  promptParts.push(`lens: ${Math.round(camera.fovDegrees)}mm-equivalent field of view`);
+  promptParts.push(`azimuth ${camera.azimuthDegrees}°, elevation ${camera.elevationDegrees}°`);
+  promptParts.push(camera.projection === "orthographic"
+    ? `orthographic projection, vertical span ${camera.verticalSpanM} m`
+    : `vertical field of view ${camera.fovDegrees}°`);
   if (snapshot.environmentDescription?.trim()) {
     promptParts.push(`setting: ${snapshot.environmentDescription.trim()}`);
   } else if (snapshot.environmentId) {
@@ -223,9 +232,11 @@ export function buildCompositionGenerationBrief(
   promptParts.push("keep the exact pose and camera angle of the composition reference");
 
   // 한국어 브리프는 사람이 읽는다 — 이름이 있으면 이름만 쓰고 내부 id는 일관성 키·프롬프트에만 남긴다.
+  const lensKo = camera.projection === "orthographic"
+    ? `직교 투영 · 세로 범위 ${camera.verticalSpanM}m` : `화각 ${camera.fovDegrees}도`;
   const briefKoParts: string[] = [
     `캐릭터: ${snapshot.characterName?.trim() || snapshot.characterId}`,
-    `구도: ${FRAMING_LABEL_KO[camera.framing]} · ${angleLabelKo(camera)} · 화각 ${Math.round(camera.fovDegrees)}도`,
+    `구도: ${FRAMING_LABEL_KO[camera.framing]} · ${angleLabelKo(camera)} · ${lensKo} · 방위 ${camera.azimuthDegrees}도 · 고도 ${camera.elevationDegrees}도`,
   ];
   if (snapshot.poseDescription?.trim()) briefKoParts.push(`포즈: ${snapshot.poseDescription.trim()}`);
   if (snapshot.expressionDescription?.trim()) briefKoParts.push(`표정: ${snapshot.expressionDescription.trim()}`);
@@ -238,6 +249,8 @@ export function buildCompositionGenerationBrief(
   } else if (snapshot.scrollPacingHint === "emotional-pause") {
     briefKoParts.push("호흡: 감정 여백 강조");
   }
+
+  if (snapshot.userPrompt?.trim()) briefKoParts.push(`작가 메모: ${snapshot.userPrompt.trim()}`);
 
   const consistencyKeys: string[] = [`character:${snapshot.characterId}`];
   if (snapshot.posePresetId) consistencyKeys.push(`pose:${snapshot.posePresetId}`);
@@ -292,7 +305,8 @@ export function renderCompositionBriefPreviewDataUrl(
   );
   const framingLabel = escapeXml(FRAMING_LABEL_KO[snapshot.camera.framing]);
   const angleLabel = escapeXml(anglePrompt(snapshot.camera));
-  const fovLabel = `${Math.round(snapshot.camera.fovDegrees)}° FOV`;
+  const fovLabel = snapshot.camera.projection === "orthographic"
+    ? `직교 ${snapshot.camera.verticalSpanM}m` : `${snapshot.camera.fovDegrees}° FOV`;
   const svg = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
     `<rect width="100%" height="100%" fill="#111827"/>`,

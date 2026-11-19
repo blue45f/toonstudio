@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Disseny super senzill",
   "studio.mainMenu.item.view.density-full": "Disseny complet",
   "studio.mainMenu.item.view.wide": "Plega els panells i amplia la vista",
+  "studio.mainMenu.item.view.wide.open": "Mostra els panells",
   "studio.mainMenu.item.view.tools-companion": "Espai de treball multipantalla...",
   "studio.mainMenu.item.view.canvas-only": "Només llenç",
   "studio.mainMenu.item.view.color-vision.unavailable": "No podeu canviar el mode de visió del color mentre la transformació de vista està bloquejada.",

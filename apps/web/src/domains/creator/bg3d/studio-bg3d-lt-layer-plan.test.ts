@@ -389,10 +389,34 @@ describe("planStudioBg3dLtLayers bundle update", () => {
     expect(nextLayers[2]?.marker).toBe("keep-main-style");
     expect(nextLayers.filter((layer) => layer.bg3dScene !== undefined)).toEqual([nextLayers[2]]);
     expect(nextLayers[2]?.bg3dScene).toBe(SCENE);
-    expect(result.nextGroups[0]).toEqual({ ...ltGroup, name: STUDIO_BG3D_LT_GROUP_NAME });
+    expect(result.nextGroups[0]).toBe(ltGroup);
     expect(result.nextGroups[1]).toBe(otherGroup);
     expect(tone.bg3dScene).toEqual({ sceneId: "stale-duplicate-anchor" });
     expect(main.height).toBe(240);
+  });
+
+  it("다른 컷과 작가의 패스 이름·표시를 보존하고 선택한 컷의 카메라만 갱신한다", () => {
+    const groupA = group("group-lt", "1컷 복도 · 와이드");
+    const groupB = group("group-b", "2컷 운동장 · 역광");
+    const cameraA = { sceneId: "복도", camera: { azimuth: 46 } };
+    const cameraB = { sceneId: "운동장", camera: { azimuth: 132 } };
+    const nextCamera = { sceneId: "복도", camera: { azimuth: 58 } };
+    const tone = bundleImage("tone", "tone-a", { name: "창문 반사", opacity: 0.34, hidden: true });
+    const line = bundleImage("main-line", "line-a", { name: "복도 소실선", bg3dScene: cameraA });
+    const otherCut = bundleImage("main-line", "line-b", { groupId: groupB.id, bg3dLtBundleId: "bundle-b", bg3dScene: cameraB });
+    const result = unwrap(planStudioBg3dLtLayers<TestElement, TestScene>({
+      elements: [tone, line, otherCut], groups: [groupA, groupB], targetElementId: tone.id,
+      render: { ...separated(), bg3dScene: nextCamera }, allocations: allocations(), newElementTemplate: template(),
+    }));
+    const [updatedTone, addedTexture, updatedLine, untouched] = result.nextElements as TestImage[];
+    expect(updatedTone).toMatchObject({ id: tone.id, name: tone.name, opacity: 0.34, hidden: true });
+    expect(updatedLine).toMatchObject({ id: line.id, name: line.name, bg3dScene: nextCamera });
+    expect(addedTexture?.name).toBe(STUDIO_BG3D_LT_LAYER_NAMES["texture-line"]);
+    expect(result.layers.map(({ name }) => name)).toEqual([tone.name, addedTexture?.name, line.name]);
+    expect(result.nextGroups[0]).toBe(groupA);
+    expect(result.nextGroups[1]).toBe(groupB);
+    expect(untouched).toBe(otherCut);
+    expect(line.bg3dScene).toBe(cameraA);
   });
 
   it("removes obsolete roles and keeps the surviving bundle at the same z-position", () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { createStudioVrmSceneDocument } from "../vrm/studio-vrm-scene-document";
 
 import {
   applyStudioBg3dInsertResult,
@@ -20,9 +21,7 @@ const mutationTicket: StudioEditorMutationTicket = {
   documentGeneration: 3,
 };
 
-// This controller test treats scene metadata as an opaque identity. The parser/serializer suites
-// own the complete scene fixture; cross the type boundary explicitly instead of duplicating it.
-const vrmScene = { version: 2 } as unknown as StudioVrmPoserInsertResult["scene"];
+const vrmScene = createStudioVrmSceneDocument({ source: "bundled", id: "sample-vrm", name: "루미" });
 const vrmResult: StudioVrmPoserInsertResult = {
   pngDataUrl: "data:image/png;base64,vrm",
   width: 200,
@@ -248,7 +247,7 @@ describe("studio 3D insert controller", () => {
         height: vrmResult.height,
         elementPatch: {
           vrmScene,
-          name: "3D 데생 인형",
+          name: "루미",
         },
       });
     });
@@ -266,7 +265,7 @@ describe("studio 3D insert controller", () => {
         height: 100,
         elementPatch: {
           vrmScene,
-          name: "3D 데생 인형",
+          name: "루미",
         },
       });
     });

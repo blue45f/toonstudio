@@ -1,9 +1,12 @@
-import { Columns2, Compass, FlipHorizontal2, LayoutGrid, Lock, Magnet, Minus, Plus, Sparkles, Unlock } from "lucide-react";
-import { useId } from "react";
+import { studioEraserDisplayName } from "../brush/studio-eraser-presets";
+import { Columns2, Compass, FlipHorizontal2, Lock, Magnet, Minus, Plus, Sparkles, Unlock } from "lucide-react";
+import { useId, type ReactNode } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 import { normalizeHexColor } from "../studio-color-utils";
 import { cycleStudioStabilizerStrength } from "../studio-pro-draw-prefs";
+import { drawingCommandShortcut, type DrawingCommandSettings } from "./studio-drawing-command-shortcut";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
@@ -39,6 +42,7 @@ export type StudioDrawingErgonomicsSession = Pick<
   | "setExportMenuOpen"
 > & {
   readonly studioLeftToolRailHandlers: Pick<StudioCuttoonEditorViewSession["studioLeftToolRailHandlers"], "toggleBg3dEditor">;
+  readonly appSettings?: DrawingCommandSettings;
   readonly brush?: string;
   readonly activeCatalogBrush?: {
     readonly id: string;
@@ -111,14 +115,12 @@ function formatStabilizerLabel(
   return bt("보정 강함", "Stabilizer high");
 }
 
-/**
- * 경쟁사 드로잉 툴(클립스튜디오·프로크리에이트·Kleki·Excalidraw·JS Paint) 핵심 인체공학 바:
- * 5단계 제작 동선 퀵필 + 브러시 두께 스테퍼 + 1클릭 손떨림 보정 순환 + 브러시 크기 고정 + 모바일 폭 가이드 + 100% 배율 복귀.
- */
+/** 현재 브러시와 두께를 먼저 배치하고 제작 단계 바로가기는 같은 줄 끝에 둔다. */
 export function StudioDrawingQuickErgonomicsBar({
-  session: s,
+  session: s, compactFilter,
 }: {
   readonly session: StudioDrawingErgonomicsSession;
+  readonly compactFilter?: ReactNode;
 }) {
   const clarity = useStudioDrawingClarity();
   const bt = useBilingual("studio.drawingClarity");
@@ -145,10 +147,12 @@ export function StudioDrawingQuickErgonomicsBar({
     Math.min(100, Math.round((Number.isFinite(s.brushOpacity) ? (s.brushOpacity ?? 1) : 1) * 100)),
   );
   const activeBrushName =
-    s.activeCatalogBrush?.name?.trim() ||
+    studioEraserDisplayName(s.activeCatalogBrush?.id, s.activeCatalogBrush?.name?.trim(), bt) ||
     (activeDrawMode === "eraser" ? bt("지우개", "Eraser") : bt("G펜", "G-Pen"));
   const brushCatalogOpen = s.brushCatalogSession?.placement === "desktop-dock";
   const normalizedColor = normalizeHexColor(s.color ?? "#111111") ?? "#111111";
+  const decrease = drawingCommandShortcut(s.appSettings, "brush-smaller", bt("브러시 크기 줄이기", "Decrease brush size"));
+  const increase = drawingCommandShortcut(s.appSettings, "brush-larger", bt("브러시 크기 키우기", "Increase brush size"));
   const widthReadoutId = useId();
   const optionsLiveSummaryId = useId();
   const stabilizerSafe = Math.max(0, Math.min(3, Math.round(Number.isFinite(s.stabilizer) ? s.stabilizer : 0)));
@@ -176,68 +180,6 @@ export function StudioDrawingQuickErgonomicsBar({
       data-studio-draw-options="true"
       data-studio-active-draw-mode={activeDrawMode}
     >
-      <div
-        className="studio-drawing-stage-pills"
-        role="group"
-        aria-label={bt("웹툰 제작 5단계 바로가기", "5-stage webtoon workflow shortcuts")}
-      >
-        <button
-          type="button"
-          className="studio-drawing-stage-pill"
-          aria-pressed={clarity?.panel === "pages"}
-          onClick={(event) => clarity?.open("pages", event.currentTarget)}
-        >
-          <span>{bt("① 콘티·컷", "1. Storyboard")}</span>
-        </button>
-        <button
-          type="button"
-          className="studio-drawing-stage-pill"
-          disabled={blocked}
-          aria-pressed={s.tool === "draw" && s.drawMode !== "eraser"}
-          onClick={() => s.activatePrimaryCanvasTool("draw", "pen")}
-        >
-          <span>{bt("② 선화·펜터치", "2. Line & Ink")}</span>
-        </button>
-        <button
-          type="button"
-          className="studio-drawing-stage-pill"
-          aria-pressed={clarity?.panel === "brush"}
-          onClick={(event) => clarity?.open("brush", event.currentTarget)}
-        >
-          <img
-            src="/brand/luminous-atelier-20261114/icon-studio-layers-color.webp"
-            alt=""
-            width={18}
-            height={18}
-            aria-hidden="true"
-          />
-          <span>{bt("③ 채색·톤", "3. Color & Tone")}</span>
-        </button>
-        <button
-          type="button"
-          className="studio-drawing-stage-pill studio-drawing-stage-pill--3d"
-          aria-pressed={s.bg3dOpen}
-          onClick={() => s.studioLeftToolRailHandlers.toggleBg3dEditor()}
-        >
-          <img
-            src="/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp"
-            alt=""
-            width={18}
-            height={18}
-            aria-hidden="true"
-          />
-          <span>{bt("④ 3D 배경", "4. 3D Stage")}</span>
-        </button>
-        <button
-          type="button"
-          className="studio-drawing-stage-pill"
-          aria-pressed={s.exportMenuOpen}
-          onClick={() => s.setExportMenuOpen(true)}
-        >
-          <span>{bt("⑤ 마감·출고", "5. Publish")}</span>
-        </button>
-      </div>
-
       <button
         type="button"
         className="studio-drawing-ergonomics-chip"
@@ -272,21 +214,10 @@ export function StudioDrawingQuickErgonomicsBar({
             opacity: opacityPercent / 100,
           }}
         />
-        <span>{activeBrushName}</span>
-        <LayoutGrid size={13} aria-hidden />
+        <span className="studio-drawing-brush-label">{bt("브러시", "Brushes")}</span><span>{activeBrushName}</span>
+        <StudioToolArtwork tool={activeDrawMode === "eraser" ? "eraser" : "brush"} className="studio-brush-picker-art" />
       </button>
-
-      {s.setColor ? (
-        <input
-          type="color"
-          className="studio-drawing-ergonomics-color"
-          aria-label={bt("주 색 선택", "Select primary color")}
-          title={bt("주 색 빠르게 바꾸기", "Quickly change primary stroke color")}
-          disabled={blocked}
-          value={normalizedColor}
-          onChange={(event) => s.setColor?.(event.currentTarget.value)}
-        />
-      ) : null}
+      {compactFilter && <div className="studio-drawing-compact-filter-menu">{compactFilter}</div>}
 
       <div
         className="studio-drawing-stepper"
@@ -300,7 +231,7 @@ export function StudioDrawingQuickErgonomicsBar({
           onClick={() => s.setStrokeWidth((current) => stepBrushWidth(current, -1))}
           aria-label={bt("브러시 크기 줄이기", "Decrease brush size")}
           aria-describedby={widthReadoutId}
-          title={bt("브러시 크기 줄이기 · [", "Decrease brush size · [")}
+          title={decrease.title} aria-keyshortcuts={decrease["aria-keyshortcuts"]}
         >
           <Minus size={15} aria-hidden />
         </button>
@@ -310,9 +241,10 @@ export function StudioDrawingQuickErgonomicsBar({
           className="studio-drawing-stepper-readout"
           onClick={(event) => clarity?.open("brush", event.currentTarget)}
           aria-label={`${bt("현재 브러시 두께", "Current brush size")} ${roundedWidth}px`}
+          aria-expanded={clarity?.panel === "brush"}
           title={bt("클릭해 펜·브러시 세부 설정 열기", "Open detailed brush settings")}
         >
-          <span>{roundedWidth}px</span>
+          <span>{bt("두께", "Size")} {roundedWidth}px</span>
         </button>
         <button
           type="button"
@@ -321,11 +253,23 @@ export function StudioDrawingQuickErgonomicsBar({
           onClick={() => s.setStrokeWidth((current) => stepBrushWidth(current, 1))}
           aria-label={bt("브러시 크기 키우기", "Increase brush size")}
           aria-describedby={widthReadoutId}
-          title={bt("브러시 크기 키우기 · ]", "Increase brush size · ]")}
+          title={increase.title} aria-keyshortcuts={increase["aria-keyshortcuts"]}
         >
           <Plus size={15} aria-hidden />
         </button>
       </div>
+
+      {s.setColor ? (
+        <input
+          type="color"
+          className="studio-drawing-ergonomics-color"
+          aria-label={bt("주 색 선택", "Select primary color")}
+          title={bt("주 색 빠르게 바꾸기", "Quickly change primary stroke color")}
+          disabled={blocked}
+          value={normalizedColor}
+          onChange={(event) => s.setColor?.(event.currentTarget.value)}
+        />
+      ) : null}
 
       <div className="studio-drawing-stabilizer-group" role="group" aria-label={bt("손떨림 보정 강도 조절", "Stroke stabilizer control")}>
         <button
@@ -464,6 +408,68 @@ export function StudioDrawingQuickErgonomicsBar({
       >
         <span>{zoomPercent}%</span>
       </button>
+      <div
+        className="studio-drawing-stage-pills"
+        role="group"
+        aria-label={bt("웹툰 제작 5단계 바로가기", "5-stage webtoon workflow shortcuts")}
+      >
+        <button
+          type="button"
+          className="studio-drawing-stage-pill"
+          aria-pressed={clarity?.panel === "pages"}
+          onClick={(event) => clarity?.open("pages", event.currentTarget)}
+        >
+          <span>{bt("① 콘티·컷", "1. Storyboard")}</span>
+        </button>
+        <button
+          type="button"
+          className="studio-drawing-stage-pill"
+          disabled={blocked}
+          aria-pressed={s.tool === "draw" && s.drawMode !== "eraser"}
+          onClick={() => s.activatePrimaryCanvasTool("draw", "pen")}
+        >
+          <span>{bt("② 선화·펜터치", "2. Line & Ink")}</span>
+        </button>
+        <button
+          type="button"
+          className="studio-drawing-stage-pill"
+          aria-pressed={clarity?.panel === "brush"}
+          onClick={(event) => clarity?.open("brush", event.currentTarget)}
+        >
+          <img
+            src="/brand/luminous-atelier-20261114/icon-studio-layers-color.webp"
+            alt=""
+            width={18}
+            height={18}
+            aria-hidden="true"
+          />
+          <span>{bt("③ 채색·톤", "3. Color & Tone")}</span>
+        </button>
+        <button
+          type="button"
+          className="studio-drawing-stage-pill studio-drawing-stage-pill--3d"
+          aria-pressed={s.bg3dOpen}
+          onClick={() => s.studioLeftToolRailHandlers.toggleBg3dEditor()}
+        >
+          <img
+            src="/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp"
+            alt=""
+            width={18}
+            height={18}
+            aria-hidden="true"
+          />
+          <span>{bt("④ 3D 배경", "4. 3D Stage")}</span>
+        </button>
+        <button
+          type="button"
+          className="studio-drawing-stage-pill"
+          aria-pressed={s.exportMenuOpen}
+          onClick={() => s.setExportMenuOpen(true)}
+        >
+          <span>{bt("⑤ 마감·출고", "5. Publish")}</span>
+        </button>
+      </div>
+
       <span
         id={optionsLiveSummaryId}
         className="sr-only"

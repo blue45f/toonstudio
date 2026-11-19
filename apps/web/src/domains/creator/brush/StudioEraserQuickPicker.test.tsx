@@ -5,10 +5,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioEraserQuickPicker } from "../StudioEraserQuickPicker";
 
-afterEach(cleanup);
+import { useI18n } from "@/shared/lib/i18n";
+
+afterEach(() => { cleanup(); useI18n.setState({ lang: "ko" }); });
 
 describe("StudioEraserQuickPicker", () => {
-  it("renders two accessible 44px-plus quick cards with explicit erase outcomes", () => {
+  it("renders accessible 44px-plus quick cards with explicit erase outcomes", () => {
     render(
       <StudioEraserQuickPicker
         selectedId="kneaded-eraser"
@@ -17,6 +19,7 @@ describe("StudioEraserQuickPicker", () => {
     );
 
     const picker = screen.getByRole("group", { name: "지우개 종류 빠른 선택" });
+    expect(within(picker).getAllByRole("button")).toHaveLength(5);
     const standard = within(picker).getByRole("button", {
       name: "일반 지우개, 100% 지움. 한 번에 완전히 지워요",
     });
@@ -31,6 +34,20 @@ describe("StudioEraserQuickPicker", () => {
     expect(standard.className).toContain("min-h-[8.5rem]");
     expect(within(standard).getByText("100% 지움")).toBeTruthy();
     expect(within(kneaded).getByText("38% 지움")).toBeTruthy();
+  });
+
+  it("영어 사용자가 다섯 가지 팁의 전후·강도·선택 결과를 모두 읽을 수 있다", () => {
+    useI18n.setState({ lang: "en" });
+    const chosen = vi.fn();
+    render(<StudioEraserQuickPicker selectedId="lift-eraser" onSelect={chosen} placement="mobile" />);
+    const group = screen.getByRole("group", { name: "Mobile eraser presets" });
+    expect(group.textContent).not.toMatch(/[가-힣]/);
+    for (const option of within(group).getAllByRole("button")) {
+      expect(option.getAttribute("aria-label")).toMatch(/% erase/);
+      expect(within(option).getByRole("img").getAttribute("aria-label")).toMatch(/preview/);
+      fireEvent.click(option);
+    }
+    expect(chosen.mock.calls.map(([id]) => id)).toEqual(["standard-eraser", "kneaded-eraser", "precision-eraser", "broad-eraser", "lift-eraser"]);
   });
 
   it("shows an empty standard result and exactly 62% retained ink for the kneaded result", () => {

@@ -11,6 +11,8 @@ export const STUDIO_DIRECT_MAX_BUFFERED_BYTES = 128 * 1024;
  * transport's targeted socket relay instead. It is never broadcast.
  */
 export interface StudioLiveDirectPort {
+  /** 인증된 연결 ID를 같은 작품의 참가자 ID로 바꾼다. 로컬 포트는 이미 참가자 ID를 쓴다. */
+  readonly canonicalSessionId?: (connectionId: string) => string;
   getPeers(): StudioLiveParticipant[];
   send(targetSessionId: string, payload: string): boolean;
   subscribe(listener: (sender: StudioLiveParticipant, payload: string) => void): () => void;

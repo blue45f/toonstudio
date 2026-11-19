@@ -15,12 +15,12 @@ import {
   StudioBg3dAssistantHostReadinessBanner,
   type StudioBg3dAssistantReadinessHostLike,
 } from "./StudioBg3dAssistantReadinessBanner";
+import { StudioBg3dAssistantScenePicker, type StudioBg3dSceneChoice } from "./StudioBg3dAssistantScenePicker";
 import { StudioBg3dEditorViewport } from "./StudioBg3dEditorViewport";
 import {
   AssetCard,
   AssistantStepper,
   GoalPicker,
-  ScenePresetCard,
   SheetHandle,
   type StudioBg3dAssistantAssetItem as AssistantAsset,
 } from "./StudioBg3dSceneAssistantChrome";
@@ -28,7 +28,6 @@ import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import {
   STUDIO_BG3D_ASSISTANT_CAMERA_PRESETS,
   STUDIO_BG3D_ASSISTANT_OUTPUT_STYLES,
-  STUDIO_BG3D_ASSISTANT_SCENES,
   STUDIO_BG3D_ASSISTANT_STEPS,
   nextStudioBg3dAssistantStep,
   previousStudioBg3dAssistantStep,
@@ -39,7 +38,6 @@ import {
 import type {
   StudioBg3dAssistantGoal,
   StudioBg3dAssistantOutputStyle,
-  StudioBg3dAssistantScenePreset,
   StudioBg3dAssistantSheetState,
   StudioBg3dAssistantStep,
 } from "./studio-bg3d-scene-assistant";
@@ -199,7 +197,7 @@ function ChooseStep({
   readonly busy: boolean;
   readonly hasScene: boolean;
   readonly onGoalChange: (goal: StudioBg3dAssistantGoal) => void;
-  readonly onSceneSelect: (preset: StudioBg3dAssistantScenePreset) => void;
+  readonly onSceneSelect: (preset: StudioBg3dSceneChoice) => void;
   readonly onAssetAdd: (asset: AssistantAsset) => void;
   readonly onOpenProfessional: () => void;
 }) {
@@ -219,23 +217,12 @@ function ChooseStep({
       <GoalPicker goal={goal} onChange={onGoalChange} />
 
       {goal === "background" ? (
-        <section aria-labelledby="scene-assistant-scene-title">
-          <div className="scene-assistant__section-title">
-            <h4 id="scene-assistant-scene-title">장면 프리셋</h4>
-            {hasScene ? <span>선택하면 현재 장면을 바꿉니다</span> : <span>선택 즉시 3D 장면을 구성합니다</span>}
-          </div>
-          <div className="scene-assistant__scene-grid">
-            {STUDIO_BG3D_ASSISTANT_SCENES.map((preset) => (
-              <ScenePresetCard
-                key={preset.id}
-                preset={preset}
-                selected={selectedSceneId === preset.id}
-                disabled={busy}
-                onSelect={onSceneSelect}
-              />
-            ))}
-          </div>
-        </section>
+        <StudioBg3dAssistantScenePicker
+          selectedTemplateId={selectedSceneId}
+          busy={busy}
+          hasScene={hasScene}
+          onSelect={onSceneSelect}
+        />
       ) : null}
       {goal === "background" && assets.length > 0 ? (
         <section aria-labelledby="scene-assistant-env-assets-title">
@@ -648,7 +635,7 @@ export function StudioBg3dSceneAssistantWorkspace({
     requestSceneFraming();
   };
 
-  const replaceWithScene = (preset: StudioBg3dAssistantScenePreset) => {
+  const replaceWithScene = (preset: StudioBg3dSceneChoice) => {
     if (busy) return;
     if (hasScene) {
       const accepted = window.confirm(
@@ -658,10 +645,12 @@ export function StudioBg3dSceneAssistantWorkspace({
     }
     const created = h.addSceneTemplate(preset.templateId);
     if (!created) return;
-    h.applyCameraPreset(preset.cameraPreset);
+    if (preset.cameraPreset) {
+      h.applyCameraPreset(preset.cameraPreset);
+      setActiveCameraPreset(preset.cameraPreset);
+    }
     frameWholeScene();
-    setSelectedSceneId(preset.id);
-    setActiveCameraPreset(preset.cameraPreset);
+    setSelectedSceneId(preset.templateId);
     setStep("arrange");
     setSheetState("half");
   };

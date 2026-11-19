@@ -111,7 +111,9 @@ describe("studio-virtual-space-three-motion", () => {
     expect(node.vrmRightUpperLeg).toBe(bones.rightUpperLeg);
 
     // 1. 이동 중 보행 스윙 + 팔꿈치 보조 회전
+    applyStudioThreeActorPose(node, 140, 0.016);
     node.moving = true;
+    node.group.position.x += 0.1;
     applyStudioThreeActorPose(node, 150, 0.016);
     expect(node.leftLeg.rotation.x).not.toBe(0);
     expect(bones.leftUpperLeg.rotation.x).not.toBe(0);

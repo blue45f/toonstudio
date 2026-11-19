@@ -4,6 +4,7 @@ import {
   EDITOR_REQUEST_SERVICE_KEY,
 } from "@toonstudio/studio-command-registry";
 
+import type { StudioToolbarPinChange } from "../studio-cuttoon-editor/runtime/studio-toolbar-pin-persistence";
 import type { StudioAppSettings, StudioAppSettingsTab, StudioRailToolId } from "../studio-app-settings";
 import type { BubbleVariant } from "../studio-assets";
 import type { DrawMode, DrawShapeKind, StudioMenu, Tool } from "../studio-editor-tool-model";
@@ -91,7 +92,7 @@ export interface StudioLeftToolRailHandlersContract {
   ) => void;
   readonly announceDrawingShortcut: (message: string) => void;
   readonly clearPolyLassoDraft: () => void;
-  readonly commitAppSettings: (next: StudioAppSettings) => void;
+  readonly commitAppSettings: (next: StudioAppSettings, pinChange?: StudioToolbarPinChange) => void | Promise<void>;
   readonly disarmAllPixelTools: () => void;
   readonly onRequestPixelSelection: () => void;
   readonly onRequestSelectImage: () => void;

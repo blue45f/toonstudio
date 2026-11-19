@@ -1,3 +1,5 @@
+import { StudioSpacePollController } from "./studio-space-poll.controller";
+import { StudioSpacePollRepository } from "./studio-space-poll.repository";
 import { StudioReviewDeliveryController } from "./review-delivery/review-delivery.controller";
 import { STUDIO_REVIEW_DELIVERY_POOL, StudioReviewDeliveryRepository } from "./review-delivery/review-delivery.repository";
 import { StudioReviewDeliveryService } from "./review-delivery/review-delivery.service";
@@ -46,8 +48,9 @@ const privateObjectStorageModule = PrivateObjectStorageModule.fromEnvironment(pr
 
 @Module({
   imports: [CreatorModule, ...(privateObjectStorageModule ? [privateObjectStorageModule] : [])],
-  controllers: [StudioReviewDeliveryController, StudioReviewVoiceNoteController, StudioRecordingBoothAssetController, PinnedReviewShareController, ManuscriptVersionShareController, StudioReviewPolicyController, StudioSessionEvidenceController, StudioWorkSessionController, StudioProjectGraphController, StudioReviewPreviewController, StudioReviewPreviewProducerController, StudioWorldPublicationController, StudioWorldAcousticController, StudioWorldConversationController],
+  controllers: [StudioSpacePollController, StudioReviewDeliveryController, StudioReviewVoiceNoteController, StudioRecordingBoothAssetController, PinnedReviewShareController, ManuscriptVersionShareController, StudioReviewPolicyController, StudioSessionEvidenceController, StudioWorkSessionController, StudioProjectGraphController, StudioReviewPreviewController, StudioReviewPreviewProducerController, StudioWorldPublicationController, StudioWorldAcousticController, StudioWorldConversationController],
   providers: [
+    StudioSpacePollRepository,
     { provide: STUDIO_REVIEW_DELIVERY_POOL, useValue: dbPool }, StudioReviewDeliveryRepository, StudioReviewDeliveryService,
     ManuscriptVersionShareRepository, ManuscriptVersionShareService,
     StudioReviewVoiceNoteRepository, StudioReviewVoiceNoteService,

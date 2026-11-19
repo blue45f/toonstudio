@@ -90,7 +90,7 @@ describe(`${CORE_BRUSH_CATALOG_COUNT}-preset brush catalog contract`, () => {
     expect(counts.core).toBe(BRUSH_PRESETS.length);
     expect(counts.pro).toBe(207);
     expect(counts.total).toBe(counts.core + counts.pro);
-    expect(counts.erase).toBe(2);
+    expect(counts.erase).toBe(5);
     expect(counts.paint).toBe(counts.total - counts.erase);
     expect(STUDIO_ALL_BRUSH_CATALOG_ITEMS).toHaveLength(counts.total);
     expect(new Set(STUDIO_ALL_BRUSH_CATALOG_ITEMS.map((item) => item.id))).toHaveProperty(
@@ -269,21 +269,11 @@ describe(`${CORE_BRUSH_CATALOG_COUNT}-preset brush catalog contract`, () => {
       (item) => item.operation === "paint" || item.operation === "erase"
     )).toBe(true);
     expect(STUDIO_PAINT_BRUSH_CATALOG_ITEMS).toHaveLength(STUDIO_BRUSH_CATALOG_COUNTS.paint);
-    expect(STUDIO_ERASER_BRUSH_CATALOG_ITEMS.map((item) => item.id)).toEqual([
-      "standard-eraser",
-      "kneaded-eraser",
-    ]);
-    expect(listStudioCoreBrushCatalogItems("erase").map((item) => item.id)).toEqual([
-      "standard-eraser",
-      "kneaded-eraser",
-    ]);
-    expect(filterStudioBrushCatalogItems({ operation: "erase" }).map((item) => item.id)).toEqual([
-      "standard-eraser",
-      "kneaded-eraser",
-    ]);
-    expect(filterStudioBrushCatalogItems({ operation: "paint" }).some(
-      (item) => item.id === "standard-eraser" || item.id === "kneaded-eraser"
-    )).toBe(false);
+    const eraserIds = ["standard-eraser", "kneaded-eraser", "precision-eraser", "broad-eraser", "lift-eraser"];
+    expect(STUDIO_ERASER_BRUSH_CATALOG_ITEMS.map(item => item.id)).toEqual(eraserIds);
+    expect(listStudioCoreBrushCatalogItems("erase").map(item => item.id)).toEqual(eraserIds);
+    expect(filterStudioBrushCatalogItems({ operation: "erase" }).map(item => item.id)).toEqual(eraserIds);
+    expect(filterStudioBrushCatalogItems({ operation: "paint" }).some(item => eraserIds.includes(item.id))).toBe(false);
     expect(filterStudioBrushCatalogItems({
       operation: "paint",
       query: "eraser",
@@ -400,59 +390,59 @@ describe(`${CORE_BRUSH_CATALOG_COUNT}-preset brush catalog contract`, () => {
     }
   });
 
-  it(`executes and exports a visible deterministic stroke for all ${CORE_BRUSH_CATALOG_COUNT} presets`, () => {
-    for (const preset of BRUSH_PRESETS) {
-      const runtime = resolveStudioBrushRuntimeContract(preset.id)!;
-      const input = {
-        width: 96,
-        height: 64,
-        bg: "#ffffff",
-        transparentBg: true,
-        elements: [{
-          id: `contract-${preset.id}`,
-          type: "draw" as const,
-          kind: "freehand" as const,
-          mode: "pen" as const,
-          brush: preset.id,
-          points: [10, 34, 24, 18, 42, 42, 62, 20, 82, 31],
-          pressures: [0.35, 0.55, 0.8, 0.6, 0.42],
-          stroke: "#1f6feb",
-          strokeWidth: preset.defaultWidth,
-          opacity: preset.defaultOpacity,
-          sampleSpacing: 1,
-          stampPipeline: runtime.engine === "stamp-dabs" ? "causal-walker-v2" as const : undefined,
-          watercolorPipeline: runtime.engine === "watercolor-dabs" ? "causal-walker-v2" as const : undefined,
-        }],
-      };
-      const first = exportPageToSvg(input);
-      const second = exportPageToSvg(input);
+  it.each(BRUSH_PRESETS)("exports a visible, deterministic $id stroke", preset => {
+    const runtime = resolveStudioBrushRuntimeContract(preset.id)!;
+    const input = {
+      width: 96,
+      height: 64,
+      bg: "#ffffff",
+      transparentBg: true,
+      elements: [{
+        id: `contract-${preset.id}`,
+        type: "draw" as const,
+        kind: "freehand" as const,
+        mode: "pen" as const,
+        brush: preset.id,
+        points: [10, 34, 24, 18, 42, 42, 62, 20, 82, 31],
+        pressures: [0.35, 0.55, 0.8, 0.6, 0.42],
+        stroke: "#1f6feb",
+        strokeWidth: preset.defaultWidth,
+        opacity: preset.defaultOpacity,
+        sampleSpacing: 1,
+        stampPipeline: runtime.engine === "stamp-dabs" ? "causal-walker-v2" as const : undefined,
+        watercolorPipeline: runtime.engine === "watercolor-dabs" ? "causal-walker-v2" as const : undefined,
+      }],
+    };
+    const first = exportPageToSvg(input);
+    const second = exportPageToSvg(input);
 
-      expect(first.elementCount, `${preset.id}: element was not exported`).toBe(1);
-      expect(first.skipped, `${preset.id}: export reported a skipped feature`).toEqual([]);
-      expect(first.svg, `${preset.id}: renderer produced no coloured mark`).toContain("#1f6feb");
-      expect(first.svg, `${preset.id}: export is not deterministic`).toBe(second.svg);
-    }
+    expect(first.elementCount, `${preset.id}: element was not exported`).toBe(1);
+    expect(first.skipped, `${preset.id}: export reported a skipped feature`).toEqual([]);
+    expect(first.svg, `${preset.id}: renderer produced no coloured mark`).toContain("#1f6feb");
+    expect(first.svg, `${preset.id}: export is not deterministic`).toBe(second.svg);
   });
 
   it("catches byte-identical normalized renderers that omit a canonical alias declaration", () => {
     const canonicalBySvg = new Map<string, string>();
     const svgById = new Map<string, string>();
 
-    // Erase identities share renderer carriers but differ by compositing operation, so a forced
-    // paint-mode SVG cannot audit their canonical relation. Operation parity is covered above.
-    for (const preset of BRUSH_PRESETS.filter(({ operation }) => operation === "paint")) {
+    for (const preset of BRUSH_PRESETS) {
+      const erase = preset.operation === "erase";
       const runtime = resolveStudioBrushRuntimeContract(preset.id)!;
       const { svg } = exportPageToSvg({
         width: 96,
         height: 64,
         bg: "#ffffff",
         transparentBg: true,
-        elements: [{
+        elements: [...(erase ? [{
+          id: "same-underlying-ink", type: "draw" as const, kind: "freehand" as const, mode: "pen" as const,
+          brush: "pen", points: [0, 32, 96, 32], stroke: "#222222", strokeWidth: 64, opacity: 1,
+        }] : []), {
           // Deliberately identical id/controls: only the preset route is allowed to affect bytes.
           id: "duplicate-audit-stroke",
           type: "draw",
           kind: "freehand",
-          mode: "pen",
+          mode: erase ? "eraser" : "pen",
           brush: preset.id,
           points: [10, 34, 24, 18, 42, 42, 62, 20, 82, 31],
           pressures: [0.35, 0.55, 0.8, 0.6, 0.42],

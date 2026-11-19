@@ -71,6 +71,19 @@ describe("StudioScenarioCandidateDesk", () => {
     });
   });
 
+  it("keeps a cleared selection through a candidate refresh", () => {
+    const props = {
+      referenceSignature: "refs", busy: false, imageGenerationReady: true,
+      onGenerate: vi.fn(), onSelectCandidate: vi.fn(), onApproveCandidate: vi.fn(),
+    };
+    const { rerender } = render(<StudioScenarioCandidateDesk {...props} items={preview()} />);
+    fireEvent.click(screen.getByRole("button", { name: "선택 해제" }));
+    rerender(<StudioScenarioCandidateDesk {...props} items={preview()} />);
+    expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "미생성·실패" }));
+    expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(1);
+  });
+
   it("restores handed-off quality and variation preferences", () => {
     const items = preview();
     items[0]!.preferredQualityProfile = "final";

@@ -1,10 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   createStudioAnimaticFromPages,
+  planStudioAnimaticPreview,
+  sampleStudioAnimaticPreview,
+  validateStudioAnimaticDocument,
   type StudioAnimaticDocument,
   type StudioAnimaticPageLike,
 } from "../studio-animatic-timeline";
+import { drawStudioAnimaticFrame } from "./studio-animatic-renderer";
+import { createStudioAnimaticWorkspace } from "./studio-animatic-workspace";
 import { resolveStudioAnimaticError } from "../status-i18n/studio-producer-error-i18n";
 import {
   applyStudioAnimaticSubtitleTiming,
@@ -131,6 +136,28 @@ describe("animatic subtitle timing edits", () => {
     expect(shrunk[0]!.endMs - shrunk[0]!.startMs).toBeGreaterThanOrEqual(400);
   });
 
+  it("저장한 자막을 미리보기와 영상에서 끝 시각 직전까지 그린다", () => {
+    const workspace = createStudioAnimaticWorkspace(PAGES, "subtitles");
+    const track = buildStudioAnimaticSubtitleTrack(workspace.timeline);
+    if (!track.ok) throw new Error("대사 트랙 없음");
+    const cue = { ...track.cues[0]!, startMs: 3_000, endMs: 4_500 };
+    const edited = applyStudioAnimaticSubtitleTiming(workspace.timeline, [cue]);
+    const restored = validateStudioAnimaticDocument(JSON.parse(JSON.stringify(edited)));
+    if (!restored.ok) throw new Error("편집한 타임라인 복원 실패");
+    const timeline = restored.document;
+    const planned = planStudioAnimaticPreview(timeline);
+    if (!planned.ok) throw new Error("재생 계획 없음");
+    const fillText = vi.fn();
+    const context = { fillText, save: vi.fn(), restore: vi.fn(), setTransform: vi.fn(), fillRect: vi.fn() } as unknown as CanvasRenderingContext2D;
+    for (const [timeMs, visible] of [[2_999, false], [3_000, true], [4_100, true], [4_499, true], [4_500, false]] as const) {
+      fillText.mockClear();
+      const sample = sampleStudioAnimaticPreview(timeline, planned.plan, timeMs, false);
+      if (!sample) throw new Error("프레임 없음");
+      drawStudioAnimaticFrame(context, 720, 1280, { ...workspace, timeline }, sample, new Map());
+      expect(fillText.mock.calls.some(([text]) => text === "유나: 두 번째 대사")).toBe(visible);
+    }
+  });
+
   it("shifts the whole track and writes start times back into document cues", () => {
     const document = createDocument();
     const track = buildStudioAnimaticSubtitleTrack(document);
@@ -140,7 +167,7 @@ describe("animatic subtitle timing edits", () => {
     const applied = applyStudioAnimaticSubtitleTiming(document, shifted);
     const segment = applied.segments[1]!;
     expect(segment.cues[0]!.offsetMs).toBe(1_600);
-    // 문서 cue에는 끝 시각 필드가 없으므로 시작만 반영되고 나머지는 그대로다.
+    expect(segment.cues[0]!.subtitleDurationMs).toBe(1_200);
     expect(segment.cues[0]!.text).toBe("두 번째 대사");
   });
 });

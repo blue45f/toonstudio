@@ -167,9 +167,10 @@ function readIllustratedPersistedSelection(): IllustratedPersistedSelection {
 
 function writeIllustratedPersistedSelection(
   next: IllustratedPersistedSelection,
+  selectedTheme?: IllustratedStudioThemeId,
 ): void {
   updateIllustrated2dRuntimeState({
-    themeId: next.themeId,
+    ...(selectedTheme ? { themeId: selectedTheme } : {}),
     personaId: next.personaId,
   });
   if (typeof window === "undefined") return;
@@ -178,18 +179,15 @@ function writeIllustratedPersistedSelection(
       ILLUSTRATED_STAGE_STORAGE_KEY,
       JSON.stringify(next),
     );
-    const mappedTheme = ILLUSTRATED_TO_2D_SPACE_THEME[next.themeId];
-    if (mappedTheme) {
-      writeStudioSpaceTheme(mappedTheme);
-      window.dispatchEvent(
-        new CustomEvent<StudioSpaceThemeKey>("toonspectrum:space-theme-change", {
-          detail: mappedTheme,
-        }),
-      );
-    }
   } catch {
-    // Ignore storage quota errors
+    // 기기에 저장할 수 없어도 이번 방문의 선택은 반영한다.
   }
+  if (!selectedTheme) return;
+  const mappedTheme = ILLUSTRATED_TO_2D_SPACE_THEME[selectedTheme];
+  writeStudioSpaceTheme(mappedTheme);
+  window.dispatchEvent(new CustomEvent<StudioSpaceThemeKey>("toonspectrum:space-theme-change", {
+    detail: mappedTheme,
+  }));
 }
 
 /**
@@ -202,11 +200,9 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
   );
 
   const updateSelection = (patch: Partial<IllustratedPersistedSelection>) => {
-    setSelection((prev) => {
-      const next = { ...prev, ...patch };
-      writeIllustratedPersistedSelection(next);
-      return next;
-    });
+    const next = { ...selection, ...patch };
+    setSelection(next);
+    writeIllustratedPersistedSelection(next, patch.themeId);
   };
 
   const activeTheme =
@@ -245,8 +241,8 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
       </div>
 
       {/* Live Preview Grid: Theme Hero + Cast Sprite + 4-Dir Walk + v14 Room Module */}
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-12">
-        <div className="overflow-hidden rounded-xl border border-line bg-panel p-2 sm:col-span-6">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,24rem),1fr))] gap-2.5">
+        <div className="overflow-hidden rounded-xl border border-line bg-panel p-2">
           <div className="relative h-28 w-full overflow-hidden rounded-lg border border-line bg-card">
             <img
               data-testid="lobby-illustrated-theme-hero-img"
@@ -263,7 +259,7 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 sm:col-span-6">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
           <div className="flex flex-col items-center justify-between rounded-xl border border-line bg-panel p-2 text-center">
             <span className="text-[10px] font-semibold text-fg-2">8인 소두 다중프레임</span>
             <div className="flex items-center gap-1">
@@ -295,14 +291,16 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
               alt={activeWalk.labelKo}
               className="h-16 w-16 rounded border border-line bg-card object-contain p-0.5"
             />
-            <div className="flex gap-1">
+            <div className="mt-1 grid grid-cols-2 gap-1">
               {ILLUSTRATED_V14_DIRECTIONAL_WALK_SPRITES.map((w) => (
                 <button
                   key={w.direction}
                   type="button"
+                  aria-label={w.labelKo}
+                  aria-pressed={selection.walkDirection === w.direction}
                   data-testid={`lobby-walk-dir-${w.direction}-btn`}
                   onClick={() => updateSelection({ walkDirection: w.direction })}
-                  className={`rounded px-1 py-0.5 text-[9px] font-bold ${
+                  className={`min-h-11 min-w-11 rounded px-1 text-xs font-semibold ${
                     selection.walkDirection === w.direction
                       ? "bg-accent-soft text-accent"
                       : "bg-card text-fg-2"
@@ -463,7 +461,7 @@ export function StudioVirtualSpaceIllustratedStageHud() {
       ] ?? ILLUSTRATED_V11_STUDIO_THEMES[0];
     const next = { ...selection, themeId: nextTheme.id };
     setSelection(next);
-    writeIllustratedPersistedSelection(next);
+    writeIllustratedPersistedSelection(next, nextTheme.id);
   };
 
   const cyclePersona = () => {

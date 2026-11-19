@@ -1,5 +1,5 @@
 import { BookOpenText, Download, FilePlus2, PanelTopOpen, Trash2, WandSparkles } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -16,6 +16,8 @@ import {
 import { serializeStudioWriterRoomDocument } from "../studio-writer-room";
 import type { StudioStoryBeat } from "../studio-storyboard-planner";
 import { formatNumber } from "@toonstudio/core/format";
+
+const MoodboardExcerpt = lazy(() => import("../planning/StudioMoodboardScriptExcerpt").then(module => ({ default: module.StudioMoodboardScriptExcerpt })));
 
 const FIELD =
   "min-h-11 w-full rounded-xl border border-line bg-panel px-3 py-2 text-sm text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/20";
@@ -144,6 +146,7 @@ export function StudioStoryDevelopmentPanel({
 
   const chapter = development.chapters.find((item) => item.id === selectedChapterId)
     ?? development.chapters[0]!;
+  const selectedCards = typeof window === "undefined" ? [] : new URLSearchParams(window.location.search).getAll("boardCard");
   const plan = useMemo(() => buildStudioStoryAdaptationPlan(chapter.body), [chapter.body]);
 
   const patchDevelopment = (patch: Partial<StudioStoryDevelopmentDocument>) => {
@@ -303,6 +306,18 @@ export function StudioStoryDevelopmentPanel({
             placeholder={bt("웹소설 본문 또는 웹툰으로 전환할 대본을 붙여 넣으세요.", "Paste the web-novel chapter or script you want to adapt.")}
           />
 
+          {selectedCards.length === 2 && loadedProjectId === projectId && (
+            <Suspense fallback={<p role="status">연결한 카드를 여는 중…</p>}>
+              <MoodboardExcerpt key={JSON.stringify([projectId, chapter.id, ...selectedCards])}
+                projectId={projectId} from={selectedCards[0]!} to={selectedCards[1]!} chapter={chapter} onAppend={body => {
+                  try {
+                    if (window.localStorage.getItem(storyDevelopmentStorageKey(projectId)) !== JSON.stringify(development)) return false;
+                  } catch { return false; }
+                  patchChapter({ body });
+                  return true;
+                }} />
+            </Suspense>
+          )}
           <StoryDetails collapsed={focused} label={bt("대본을 새 컷 계획으로 나누기 (선택)", "Split the script into a new panel plan (optional)")}>
           {focused ? <p className="text-sm leading-6 text-fg-2">{bt(`현재 ${currentPanelCount}컷은 그대로 유지돼요. 아래 ${plan.estimatedPanels}컷은 대본을 다시 분석한 제안이며, 교체를 확인하기 전에는 적용되지 않아요.`, `Your current ${currentPanelCount} panels stay unchanged. The ${plan.estimatedPanels} panels below are a new analysis and are not applied until you confirm replacement.`)}</p> : null}
           <div className="mt-4 grid gap-2 sm:grid-cols-4">

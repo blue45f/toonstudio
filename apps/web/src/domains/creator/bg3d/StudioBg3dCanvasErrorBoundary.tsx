@@ -10,17 +10,25 @@ export interface StudioBg3dCanvasErrorBoundaryProps {
 }
 
 interface StudioBg3dCanvasErrorBoundaryState {
-  readonly failedKey: string | null;
+  readonly key: string;
+  readonly failed: boolean;
 }
 
 export class StudioBg3dCanvasErrorBoundary extends Component<
   StudioBg3dCanvasErrorBoundaryProps,
   StudioBg3dCanvasErrorBoundaryState
 > {
-  override state: StudioBg3dCanvasErrorBoundaryState = { failedKey: null };
+  override state: StudioBg3dCanvasErrorBoundaryState = { key: this.props.resetKey, failed: false };
+
+  static getDerivedStateFromProps(
+    props: StudioBg3dCanvasErrorBoundaryProps,
+    state: StudioBg3dCanvasErrorBoundaryState,
+  ): StudioBg3dCanvasErrorBoundaryState | null {
+    return state.key === props.resetKey ? null : { key: props.resetKey, failed: false };
+  }
 
   static getDerivedStateFromError(): Partial<StudioBg3dCanvasErrorBoundaryState> {
-    return {};
+    return { failed: true };
   }
 
   override componentDidCatch(error: unknown, _info: ErrorInfo): void {
@@ -29,12 +37,11 @@ export class StudioBg3dCanvasErrorBoundary extends Component<
       : typeof error === "string"
         ? error
         : "3D 렌더러를 초기화하지 못했습니다.";
-    this.setState({ failedKey: this.props.resetKey });
     this.props.onRendererError(this.props.backend, message);
   }
 
   override render(): ReactNode {
-    if (this.state.failedKey === this.props.resetKey) {
+    if (this.state.failed) {
       return null;
     }
     return this.props.children;

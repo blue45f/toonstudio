@@ -175,8 +175,7 @@ describe("StudioPage wires the Brush rows to real surfaces", () => {
     const body = source.slice(start, start + 900);
     expect(body).toContain("resolveBrushMenuLauncher()");
     expect(body).toContain("openBrushCatalogFromHelp(launcher)");
-    // Focus must land on a live control; the menubar row is the last resort.
-    expect(source).toContain('[data-studio-main-menu-trigger="create"]');
+    expect(source).toContain("findStudioBrushMenuLauncher(studioRootRef.current)");
   });
 
   it("reveals the inspector sections instead of only switching the route", () => {

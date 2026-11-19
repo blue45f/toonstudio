@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Layout super simples",
   "studio.mainMenu.item.view.density-full": "Layout completo",
   "studio.mainMenu.item.view.wide": "Recolher painéis e ampliar",
+  "studio.mainMenu.item.view.wide.open": "Mostrar painéis",
   "studio.mainMenu.item.view.tools-companion": "Espaço de trabalho com vários monitores…",
   "studio.mainMenu.item.view.canvas-only": "Somente tela",
   "studio.mainMenu.item.view.color-vision.unavailable": "Você não pode alterar o modo de inspeção de visão de cores enquanto a transformação da visualização estiver bloqueada.",

@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Tata letak super sederhana",
   "studio.mainMenu.item.view.density-full": "tata letak keseluruhan",
   "studio.mainMenu.item.view.wide": "Lipat panel untuk memperluas",
+  "studio.mainMenu.item.view.wide.open": "Tampilkan panel",
   "studio.mainMenu.item.view.tools-companion": "Ruang kerja multi-layar…",
   "studio.mainMenu.item.view.canvas-only": "Hanya kanvas",
   "studio.mainMenu.item.view.color-vision.unavailable": "Mode penglihatan warna tidak dapat diubah saat transformasi tampilan dikunci.",

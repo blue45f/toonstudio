@@ -1,3 +1,5 @@
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
+
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 /**
@@ -8,16 +10,19 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 export function StudioHybridDccHeading({ titleId }: { readonly titleId: string }) {
   const bt = useBilingual("StudioHybridDccHeading");
   return (
-    <div className="min-w-0 flex-1">
-      <h2 id={titleId} className="truncate text-sm font-semibold tracking-tight text-fg sm:text-base">
-        {bt("정밀 3D 모델링", "Precision 3D modeling")}
-      </h2>
-      <p className="line-clamp-2 text-xs leading-snug text-fg-2 [word-break:keep-all] sm:line-clamp-1">
-        {bt(
-          "웹툰 배경·소품을 3D로 만들어 여러 컷에서 다시 쓰는 작업대",
-          "Build props and sets in 3D, then reuse them across panels",
-        )}
-      </p>
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <StudioToolArtwork tool="model" className="[--studio-tool-art-size:26px] sm:[--studio-tool-art-size:34px]" />
+      <div className="min-w-0">
+        <h2 id={titleId} className="truncate text-sm font-semibold tracking-tight text-fg sm:text-base">
+          {bt("정밀 3D 모델링", "Precision 3D modeling")}
+        </h2>
+        <p className="line-clamp-2 text-xs leading-snug text-fg-2 [word-break:keep-all] sm:line-clamp-1">
+          {bt(
+            "웹툰 배경·소품을 3D로 만들어 여러 컷에서 다시 쓰는 작업대",
+            "Build props and sets in 3D, then reuse them across panels",
+          )}
+        </p>
+      </div>
     </div>
   );
 }

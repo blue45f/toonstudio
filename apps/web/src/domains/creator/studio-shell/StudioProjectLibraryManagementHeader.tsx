@@ -6,6 +6,7 @@ import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
 import { STUDIO_LIBRARY_SECTION_ID } from "./studio-creator-lobby-model";
 import { studioLibraryRecentWork } from "./studio-library-recent-work";
@@ -93,7 +94,8 @@ export function StudioProjectLibraryManagementHeader({
       className="studio-library-mobile-home scroll-mt-4 focus:outline-none"
     >
       <header className="studio-library-heading">
-        <div className="min-w-0">
+        <div className="studio-library-heading-title">
+          <StudioToolArtwork tool="projects" className="studio-library-heading-art" />
           <h1 className="text-2xl font-semibold tracking-[-0.025em] text-fg [word-break:keep-all] sm:text-3xl">
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
           </h1>

@@ -13,6 +13,7 @@ import {
   studioCanvasHref,
   studioCanvasReturnHref,
   studioDccHref,
+  studioDocumentToolNavigation,
   studioRouteStageKey,
   studioVirtualSpaceLifecycleKey,
   studioWorkspaceCanonicalHref,
@@ -42,7 +43,6 @@ describe("studio workspace routes", () => {
 
   it.each([
     ["/studio/canvas", "", "canvas", null, null, "/studio/canvas"],
-    ["/studio/canvas/poser", "", "poser", null, null, "/studio/canvas/poser"],
     ["/studio/canvas/poser", "?room=team-a", "poser", null, null, "/studio/canvas/poser"],
     ["/studio/canvas?id=legacy", "?id=legacy", "canvas", "legacy", null, "/studio/work/legacy/canvas"],
     ["/studio/work/work-1", "", "canvas", "work-1", null, "/studio/work/work-1/canvas"],
@@ -490,23 +490,6 @@ describe("canvas return preserves manuscript identity", () => {
 
 
 describe("editor surface navigation boundary", () => {
-  it("새 초안의 VRM은 독립 포저와 구분하고 canvas의 문서·room·stage key를 유지한다", () => {
-    const canvas = { pathname: "/studio/canvas", search: "?preset=illustration&room=team-a" };
-    const route = parseStudioWorkspaceRoute(canvas);
-    if (!route.valid) throw new Error("Invalid canvas fixture");
-    const href = studio2dSurfaceNavigationHref(route, "poser", canvas.search);
-    expect(href).toBe("/studio/canvas/poser?preset=illustration&room=team-a");
-    const poser = new URL(href, "https://studio.test");
-    const poserRoute = parseStudioWorkspaceRoute(poser);
-    if (!poserRoute.valid) throw new Error("Invalid poser fixture");
-    expect(poserRoute.surface).toBe("poser");
-    expect(shouldPreserveStudioRouteLifecycle(canvas, poser)).toBe(true);
-    expect(studioRouteStageKey(poser)).toBe(studioRouteStageKey(canvas));
-    expect(studioCanvasReturnHref(poserRoute, poser.search)).toBe(`${canvas.pathname}${canvas.search}`);
-    expect(parseStudioWorkspaceRoute({ pathname: "/studio/canvas/poser/extra" }).valid).toBe(false);
-    expect(parseStudioWorkspaceRoute({ pathname: "/studio/canvas/character" }).valid).toBe(false);
-  });
-
   it.each([
     "/studio/p/project-a/d/document-a?workspace=comic",
     "/studio/draft/drawing-a?workspace=comic",
@@ -546,5 +529,36 @@ describe("editor surface navigation boundary", () => {
     if (!route.valid) throw new Error("Invalid remix fixture");
     expect(studio2dSurfaceNavigationHref(route, "bg3d", "?room=team-a"))
       .toBe("/studio/remix/source-a/bg3d?room=team-a");
+  });
+});
+
+describe("원고에서 연 3D 도구의 복귀 주소", () => {
+  const pathname = "/studio/draft/return-a";
+  const search = "?workspace=design&room=team-a&page=two&filter=ink";
+  const origin = { pathname, search, hash: "#panel-4", key: "first", state: null };
+  const routeFor = (href: string) => {
+    const url = new URL(href, "http://localhost");
+    const route = parseStudioWorkspaceRoute(url);
+    if (!route.valid) throw new Error(route.errorCode);
+    return route;
+  };
+
+  it.each(["poser", "character", "bg3d"] as const)("%s 닫기·도구 교체가 같은 원고의 원래 모드와 단서를 보존한다", (target) => {
+    const open = studioDocumentToolNavigation(routeFor(pathname + search), target, origin);
+    expect(open.href).toContain("#panel-4");
+    expect(open.switchTool).toBe(false);
+    const panel = new URL(open.href, "http://localhost");
+    const panelLocation = { pathname, search: panel.search, hash: panel.hash, key: "second", state: open.state };
+    const panelRoute = routeFor(open.href);
+    const returned = new URL(studioWorkspaceReturnHref(open.state, panelRoute)!, "http://localhost");
+    expect(returned.pathname).toBe(pathname);
+    expect(returned.hash).toBe(origin.hash);
+    expect([...returned.searchParams].sort()).toEqual([...new URLSearchParams(search)].sort());
+    expect(studioDocumentToolNavigation(panelRoute, "canvas", panelLocation).back).toBe(true);
+    expect(studioDocumentToolNavigation(panelRoute, "character", panelLocation)).toMatchObject({ switchTool: true, state: open.state });
+    expect(studioWorkspaceReturnHref(open.state, routeFor(open.href.replace("return-a", "return-b")))).toBeNull();
+    const deepLink = studioDocumentToolNavigation(panelRoute, "canvas", { ...panelLocation, state: null });
+    expect(deepLink.back).toBe(false);
+    expect(new URL(deepLink.href, "http://localhost").searchParams.get("workspace")).toBe("draw");
   });
 });

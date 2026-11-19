@@ -167,7 +167,7 @@ import { StudioVirtualSpaceAppEmbedPanel } from "./StudioVirtualSpaceAppEmbedPan
 import { StudioVirtualSpaceMegaphoneBanner } from "./StudioVirtualSpaceMegaphoneBanner";
 import { StudioVirtualSpaceMegaphonePanel } from "./StudioVirtualSpaceMegaphonePanel";
 import { useStudioVirtualSpaceMegaphone } from "./use-studio-virtual-space-megaphone";
-import { StudioVirtualSpacePoll } from "./StudioVirtualSpacePoll";
+import { StudioSpacePollPanel } from "./StudioSpacePollPanel";
 import { StudioVirtualSpaceSilentZoneBadge } from "./StudioVirtualSpaceSilentZoneBadge";
 import { recordingBoothSilentZone } from "./studio-virtual-space-recording-booth-entry";
 import { useStudioOfficePeerApproach } from "./use-studio-office-peer-approach";
@@ -240,7 +240,6 @@ import { useStudioVirtualSceneSnapshotBinding } from "./studio-virtual-space-sce
 import { useStudioSpaceChat } from "./use-studio-space-chat";
 import { useStudioVirtualSpacePeerFixtures } from "./use-studio-virtual-space-peer-fixtures";
 import { useStudioTileEffectWiring } from "./use-studio-tile-effect-wiring";
-import { useStudioSpacePoll } from "./use-studio-space-poll";
 import { useStudioPeerFollow } from "./use-studio-peer-follow";
 import { useStudioSpaceReaction } from "./use-studio-space-reaction";
 import { StudioVirtualSpaceLightingPanel } from "./StudioVirtualSpaceLightingPanel";
@@ -309,7 +308,7 @@ export function VirtualSpaceExperience({
   );
   const positionScopeKey = studioVirtualSpacePositionStorageKey(positionScope);
   const live = useStudioLiveCollaboration();
-  const privateActorId = useSession().data?.user?.id ?? null;
+  const currentSession = useSession(), privateActorId = currentSession.data?.user?.id ?? null;
   const [privateZoneSelection, setPrivateZoneSelection] = useState<string | null>(null);
   const connectivity = useSyncExternalStore(subscribeStudioConnectivity, getStudioConnectivitySnapshot, getStudioConnectivityServerSnapshot);
   const connection = useSpaceConnectionStatus(preparing);
@@ -1423,8 +1422,6 @@ export function VirtualSpaceExperience({
   useEffect(() => {
     if (megaphone.snapshot.status !== "broadcasting") setMegaphoneBannerDismissed(false);
   }, [megaphone.snapshot.status]);
-  const pollVoterId = live.room?.participant.sessionId ?? fallbackIdentity;
-  const { spacePoll, handleCreatePoll, handleVotePoll, handleClosePoll } = useStudioSpacePoll({ voterId: pollVoterId, voterName: localName });
   const proximityWaitingReason = proximity.phase !== "waiting" ? null : proximity.viewer
     ? bt("초대 링크 게스트는 근접 영상을 쓸 수 없어요. 팀원으로 로그인하면 쓸 수 있어요.", "Invite-link guests cannot use proximity video. Sign in as a teammate to use it.")
     : bt("팀원 연결을 확인하는 중이에요. 연결되면 자동으로 시작해요.", "Checking the teammate connection. It starts automatically once connected.");
@@ -1764,9 +1761,9 @@ export function VirtualSpaceExperience({
       case "work": return <StudioVirtualSpacePanelGate active><StudioWorkspaceInbox workId={projectId} /></StudioVirtualSpacePanelGate>;
       case "sessions": return <StudioVirtualSpacePanelGate active><WorkSessionWorkspace workId={projectId} initialSessionId={searchParams.get("session")} /></StudioVirtualSpacePanelGate>;
       case "board": return <StudioVirtualSpacePanelGate active><StudioVirtualSpaceP2pBoard snapshot={p2pBoard.snapshot} selfSessionId={live.room?.participant.sessionId}
-        onStroke={p2pBoard.addStroke} onNote={p2pBoard.addNote} onRemove={p2pBoard.remove} onClearOwn={p2pBoard.clearOwn} /></StudioVirtualSpacePanelGate>;
+        onStroke={p2pBoard.addStroke} onNote={p2pBoard.addNote} onRemove={p2pBoard.remove} onClearOwn={p2pBoard.clearOwn} onRetryLocalSave={p2pBoard.localSaveFailed ? p2pBoard.retryLocalSave : undefined} /></StudioVirtualSpacePanelGate>;
       case "annotation": return <StudioVirtualSpacePanelGate active><StudioVirtualSpaceLiveAnnotationPanel snapshot={p2pBoard.snapshot} selfSessionId={live.room?.participant.sessionId}
-        onStroke={p2pBoard.addStroke} onNote={p2pBoard.addNote} onRemove={p2pBoard.remove} onClearOwn={p2pBoard.clearOwn} /></StudioVirtualSpacePanelGate>;
+        onStroke={p2pBoard.addStroke} onNote={p2pBoard.addNote} onRemove={p2pBoard.remove} onClearOwn={p2pBoard.clearOwn} onRetryLocalSave={p2pBoard.localSaveFailed ? p2pBoard.retryLocalSave : undefined} /></StudioVirtualSpacePanelGate>;
       case "team": return <StudioVirtualSpacePanelGate active><StudioVirtualSpaceTeamHub productionProjectId={productionProjectId} workId={projectId} /></StudioVirtualSpacePanelGate>;
       case "rtc": return <StudioVirtualSpacePanelGate active><StudioVirtualSpaceRtcPanel live={live} /></StudioVirtualSpacePanelGate>;
       case "town": return <StudioVirtualSpacePanelGate active><StudioVirtualSpaceTownProgramPanel selfPoint={snapshot.self} personal={personal}
@@ -1794,7 +1791,7 @@ export function VirtualSpaceExperience({
       case "booth": return <StudioVirtualSpacePanelGate active>
         <StudioVirtualSpaceSpaceBookingPanel spaces={boothSpaces} bookings={boothBookings} waitlist={boothWaitlist} guestPromotion={isGuest ? undefined : { bundle: guestBundle, summary: promotionSummary, busy: promotingGuestBundle, onPromote: promoteGuestBundle, onDismiss: dismissGuestBundle, onClearSummary: clearPromotionSummary }}
           onBookingsChange={setBoothBookings} onWaitlistChange={setBoothWaitlist} />
-        <StudioVirtualSpaceRecordingBoothPanel config={boothConfig} bookings={boothBookings}
+        <StudioVirtualSpaceRecordingBoothPanel config={boothConfig} bookings={boothBookings} actorId={currentSession.ready ? privateActorId : undefined}
           position={{ x: snapshot.self.x, y: snapshot.self.y }} userName={localName}
           micMutedByUser={userMicMuted}
           projectId={personal ? null : projectId} isGuest={isGuest}
@@ -1809,10 +1806,8 @@ export function VirtualSpaceExperience({
         <StudioVirtualSpaceMegaphonePanel binding={megaphone} />
       </StudioVirtualSpacePanelGate>;
       case "poll": return <StudioVirtualSpacePanelGate active>
-        <p className="space-panel-note">{bt("투표는 아직 실시간 동기화가 없어 이 기기에서만 진행돼요.", "Polls aren't synced in real time yet — this poll runs on this device only.")}</p>
-        <StudioVirtualSpacePoll poll={spacePoll} canCreate canClose={Boolean(spacePoll) && spacePoll?.createdBySessionId === pollVoterId}
-          voterSessionId={pollVoterId} voterName={localName}
-          onCreate={handleCreatePoll} onVote={handleVotePoll} onClose={handleClosePoll} />
+        <StudioSpacePollPanel workId={projectId} world={activeWorldScope} actor={privateActorId} name={localName}
+          localOnly={personal || isGuest || !signedIn || authoringMode} />
       </StudioVirtualSpacePanelGate>;
       default: return null;
     }

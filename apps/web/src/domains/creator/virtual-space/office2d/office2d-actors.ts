@@ -10,6 +10,7 @@ import { studioSpaceEmoteById } from "../studio-virtual-space-emote-catalog";
 import type { StudioVirtualSpaceFacing } from "../studio-virtual-space-model";
 import type { StudioSpacePose } from "../studio-virtual-space-pose-controller";
 import type { Office2dCharacterKey, Office2dGesture } from "./office2d-sprite-catalog";
+import { OFFICE2D_ACTOR_HEIGHT } from "./office2d-actor-geometry";
 import { OFFICE2D_CHARACTER_ROWS, OFFICE2D_CHARACTER_WALK_FRAMES, office2dHashIndex } from "./office2d-sprite-catalog";
 import type { Office2dSeatVisual } from "./office2d-scene";
 
@@ -158,10 +159,10 @@ export function office2dFacingFromVector(dx: number, dy: number, fallback: Studi
  * 위치를 옮기고 보행 위상·방향·기울기·탄성 스쿼시를 갱신한다.
  * 실제 이동량으로 판단하므로 로컬 물리와 원격 보간 모두에 동일하게 작동한다.
  */
-export function advanceOffice2dActor(actor: Office2dActor, nextX: number, nextY: number, deltaSeconds: number): void {
+export function advanceOffice2dActor(actor: Office2dActor, nextX: number, nextY: number, deltaSeconds: number, motion?: { readonly x: number; readonly y: number }): void {
   const dt = Math.max(0, Number.isFinite(deltaSeconds) ? deltaSeconds : 0);
-  const dx = nextX - actor.x;
-  const dy = nextY - actor.y;
+  const dx = motion?.x ?? nextX - actor.x;
+  const dy = motion?.y ?? nextY - actor.y;
   const distance = Math.hypot(dx, dy);
   const instVx = dt > 1e-5 ? dx / dt : 0;
   const instVy = dt > 1e-5 ? dy / dt : 0;
@@ -302,7 +303,7 @@ export interface Office2dActorMotionPose {
 /** 숨쉬기·보행 리듬·방향 전환 피벗 쿠션·착석 안착 스쿼시·상체 기울기. reduced motion이면 정적 기본값을 돌려준다. */
 export function office2dActorBob(
   actor: Pick<Office2dActor, "moving" | "stride" | "seat">
-    & Partial<Pick<Office2dActor, "id" | "gaitBlend" | "leanAngle" | "squash" | "turnTransition" | "poseTransition">>,
+    & Partial<Pick<Office2dActor, "id" | "gaitBlend" | "leanAngle" | "squash" | "turnTransition" | "poseTransition" | "speed">>,
   time: number,
   reducedMotion: boolean,
 ): Office2dActorMotionPose {
@@ -317,11 +318,13 @@ export function office2dActorBob(
 
   if ((actor.moving || blend >= 0.08) && !actor.seat) {
     const phase = (actor.stride / OFFICE2D_GAIT_DISTANCE) * Math.PI * 2;
-    // 1주기(좌·우 2걸음) 동안 2번 살짝 도약·착지하는 자연스러운 보행 리듬 + 방향 전환 피벗 홉
+    // 한 발이 지면에 남는 걸음과 회전은 발을 피벗으로 체간 높이만 바꾼다. 질주 때만 전신이 뜬다.
     const cadence = Math.abs(Math.sin(phase));
-    const offsetY = -cadence * 1.6 * blend - turnWave * 1.1;
+    const lift = cadence * 1.6 * blend + turnWave * 1.1;
+    const sprinting = (actor.speed ?? 0) >= SPRINT_AFTERIMAGE_SPEED;
+    const offsetY = sprinting ? -lift : 0;
     const stretch = Math.cos(phase * 2) * 0.014 * blend + squash + poseSquashY + turnWave * 0.018;
-    const scaleY = clamp(1 + stretch, 0.9, 1.1);
+    const scaleY = clamp(1 + stretch + (sprinting ? 0 : lift / OFFICE2D_ACTOR_HEIGHT), 0.9, 1.1);
     const scaleX = clamp((1 / Math.sqrt(scaleY)) * turnCompressX, 0.88, 1.08);
     const swayTilt = Math.sin(phase) * 0.018 * blend;
     const shadowScale = 1 - cadence * 0.12 * blend;

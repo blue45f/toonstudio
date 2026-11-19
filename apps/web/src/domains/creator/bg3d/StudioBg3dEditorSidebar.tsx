@@ -641,7 +641,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
               frozenCut={h.frozenCut} sixPass={Boolean(h.sceneBaseDocument.output.sixPassLt)} teamCut={Boolean(h.cutWorkId && h.frozenCut)}
               sceneRecoveryError={sceneRecoveryError}
               hasCloneFailure={hasCloneFailure}
-              isRestoringScene={isRestoringScene && h.engineRuntime?.plan?.status === "available"}
+              isRestoringScene={(isRestoringScene || h.readinessState?.phase === "initializing") && h.engineRuntime?.plan?.status === "available"}
               hasPendingClone={hasPendingClone}
               hasPendingSharedCharacter={hasPendingSharedCharacter}
               hasFilledOutput={hasFilledOutput}

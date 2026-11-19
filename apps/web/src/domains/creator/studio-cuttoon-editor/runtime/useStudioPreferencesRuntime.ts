@@ -18,6 +18,7 @@ import { applyStudioLaunchDensity, readStudioLaunchDensity } from "../../studio-
 
 import type { StudioDocumentWorkspaceId } from "../../studio-document-workspace";
 import { preserveStudioTaskToolbarPreference, projectStudioTaskAppSettings } from "../../studio-task-tools";
+import type { StudioToolbarPinChange } from "./studio-toolbar-pin-persistence";
 import { useStudioWorkModePreference } from "./useStudioWorkModePreference";
 import type { StudioUiBooleanPreferenceKey } from "../../studio-ui-preferences-sqlite";
 import { useStudioUiDensityPreference } from "./useStudioUiDensityPreference";
@@ -26,8 +27,10 @@ interface UseStudioPreferencesRuntimeOptions {
   readonly launchSearch: string;
   readonly taskWorkspace?: StudioDocumentWorkspaceId | null;
   /**
-   * 호스트가 전달한 episode-pipeline-rail 단계 값을 재계산 없이 사용한다.
-   * null이면 저장된 작업 모드를 그대로 적용하고 작업 모드를 제안하지 않는다.
+   * Current episode pipeline stage, when the host knows one. The host passes
+   * the episode-pipeline-rail derivation verbatim — no new derivation is made
+   * here. Null means "no stage source": the saved mode then applies as-is and
+   * no suggestion is produced.
    */
   readonly episodeStage?: string | null;
   readonly applyMirroredSettings: (settings: StudioAppSettings) => void;
@@ -59,6 +62,9 @@ export function useStudioPreferencesRuntime({
   const [railMoreOpen, setRailMoreOpen] = useState(false);
   const appSettingsRef = useRef(appSettings);
   const appSettingsUserRevisionRef = useRef(0);
+  const hydratedSettings = useRef(false);
+  const pendingPinWrites = useRef(Promise.resolve());
+  const previousPinnedToolbar = useRef<StudioAppSettings["toolbar"] | null>(null);
   const applyMirroredSettingsRef = useRef(applyMirroredSettings);
   const closeRightPanelForFocusModeRef = useRef(closeRightPanelForFocusMode);
   const uiBooleanPreferenceRevisionsRef = useRef<
@@ -129,6 +135,14 @@ export function useStudioPreferencesRuntime({
     if (mode === "focus" && !appSettingsRef.current.general.colorPanelPinned) closeRightPanelForFocusModeRef.current();
   }, [launchDensity, setUiDensityMode]);
 
+  const applySavedPresentation = useCallback((saved: StudioAppSettings) => {
+    const hydrated = applyStudioLaunchDensity(saved, launchDensityRef.current);
+    setUiDensityMode(hydrated.general.densityMode);
+    if (hydrated.general.densityMode === "focus" && !hydrated.general.colorPanelPinned) closeRightPanelForFocusModeRef.current();
+    applyMirroredSettingsRef.current(hydrated);
+    hydratedSettings.current = true;
+  }, [setUiDensityMode]);
+
   useEffect(() => {
     let cancelled = false;
     const settingsRevisionAtStart = appSettingsUserRevisionRef.current;
@@ -146,14 +160,8 @@ export function useStudioPreferencesRuntime({
         if (settingsResult.status === "fulfilled") {
           if (appSettingsUserRevisionRef.current === settingsRevisionAtStart) {
             const saved = settingsResult.value;
-            const hydrated = applyStudioLaunchDensity(saved, launchDensityRef.current);
-            appSettingsRef.current = saved;
-            setAppSettings(saved);
-            setUiDensityMode(hydrated.general.densityMode);
-            if (hydrated.general.densityMode === "focus" && !hydrated.general.colorPanelPinned) {
-              closeRightPanelForFocusModeRef.current();
-            }
-            applyMirroredSettingsRef.current(hydrated);
+            replaceAppSettings(saved);
+            applySavedPresentation(saved);
           } else {
             try {
               await repository.saveAppSettings(appSettingsRef.current);
@@ -203,7 +211,7 @@ export function useStudioPreferencesRuntime({
     return () => {
       cancelled = true;
     };
-  }, [setUiDensityMode]);
+  }, [applySavedPresentation, replaceAppSettings]);
 
   const persistStudioUiBooleanPreference = useCallback((
     key: StudioUiBooleanPreferenceKey,
@@ -215,7 +223,25 @@ export function useStudioPreferencesRuntime({
       .catch(() => setAppSettingsPersistenceState("session-only"));
   }, []);
 
-  const commitAppSettings = useCallback((proposed: StudioAppSettings): void => {
+  const commitAppSettings = useCallback((proposed: StudioAppSettings, pinChange?: StudioToolbarPinChange): void | Promise<void> => {
+    if (pinChange) {
+      setAppSettingsPersistenceState("loading");
+      const write = pendingPinWrites.current.then(async () => {
+        const { persistStudioToolbarPinChange } = await import("./studio-toolbar-pin-persistence");
+        const toolbar = pinChange.restore ? previousPinnedToolbar.current ?? proposed.toolbar : proposed.toolbar;
+        await persistStudioToolbarPinChange(await acquireProductStudioUiPreferencesRepository(), toolbar, pinChange,
+          () => ({ revision: appSettingsUserRevisionRef.current, settings: appSettingsRef.current }),
+          (saved, previousToolbar) => {
+            if (!hydratedSettings.current && !appSettingsUserRevisionRef.current) applySavedPresentation(saved);
+            previousPinnedToolbar.current = pinChange.restore ? null : previousToolbar;
+            appSettingsUserRevisionRef.current++;
+            replaceAppSettings(saved);
+            setAppSettingsPersistenceState("saved");
+          });
+      });
+      pendingPinWrites.current = write.catch(() => setAppSettingsPersistenceState("session-only"));
+      return write;
+    }
     const stored = appSettingsRef.current;
     const presented = projectStudioTaskAppSettings(applyStudioLaunchDensity(stored, uiDensityMode), taskWorkspace, uiDensityMode);
     const next = preserveStudioTaskToolbarPreference(stored, presented,
@@ -225,7 +251,7 @@ export function useStudioPreferencesRuntime({
     persistAppSettings(next);
     setUiDensityMode(proposed.general.densityMode);
     applyMirroredSettingsRef.current(applyStudioLaunchDensity(next, proposed.general.densityMode));
-  }, [persistAppSettings, setUiDensityMode, taskWorkspace, uiDensityMode]);
+  }, [applySavedPresentation, persistAppSettings, replaceAppSettings, setUiDensityMode, taskWorkspace, uiDensityMode]);
 
   // Effect Events cannot cross a custom-hook boundary. The public command remains stable while the
   // callback refs above keep its host-owned side effects current without restarting hydration.

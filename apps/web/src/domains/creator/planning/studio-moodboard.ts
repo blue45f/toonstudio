@@ -15,9 +15,10 @@
  * - 저장소는 기획 스토어(studio-planning-store)와 같은 방식: 프로젝트별
  *   localStorage 키 + 업데이트 이벤트.
  */
+import { validStrokes, type Stroke } from "@/shared/components/sketch-pad/sketch-strokes";
 import type { StudioProjectDiagnosticSourceStorage } from "../studio-project-diagnostic-source-store";
 
-export type MoodboardCardKind = "image" | "note" | "link" | "todo";
+export type MoodboardCardKind = "image" | "note" | "link" | "todo" | "sketch";
 
 export interface MoodboardCard {
   readonly id: string;
@@ -27,6 +28,7 @@ export interface MoodboardCard {
   readonly text?: string;
   /** todo 전용. */
   readonly done?: boolean;
+  readonly strokes?: Stroke[];
 }
 
 export interface MoodboardColumn {
@@ -41,13 +43,20 @@ export interface Moodboard {
   readonly projectId?: string;
   readonly title: string;
   readonly columns: readonly MoodboardColumn[];
+  readonly connections?: readonly MoodboardConnection[];
   readonly cards: Readonly<Record<string, MoodboardCard>>;
 }
 
+export interface MoodboardConnection {
+  readonly from: string;
+  readonly to: string;
+}
+
+export const MOODBOARD_MAX_CONNECTIONS = 400;
 export const MOODBOARD_MAX_COLUMNS = 12;
 export const MOODBOARD_MAX_CARDS = 200;
 
-const CARD_KINDS: readonly MoodboardCardKind[] = ["image", "note", "link", "todo"];
+const CARD_KINDS: readonly MoodboardCardKind[] = ["image", "note", "link", "todo", "sketch"];
 
 export function createMoodboard(input: {
   id: string;
@@ -100,11 +109,25 @@ export function removeMoodboardCard(board: Moodboard, cardId: string): Moodboard
   return {
     ...board,
     cards,
+    ...(board.connections && { connections: board.connections.filter(edge => edge.from !== cardId && edge.to !== cardId) }),
     columns: board.columns.map((col) => ({
       ...col,
       cardIds: col.cardIds.filter((id) => id !== cardId),
     })),
   };
+}
+
+export const moodboardCardAnchor = (id: string) => `moodboard-card-${encodeURIComponent(id)}`;
+
+function connectionKey(from: string, to: string): string {
+  return JSON.stringify([from, to].sort());
+}
+
+export function connectMoodboardCards(board: Moodboard, from: string, to: string): Moodboard {
+  const edges = board.connections ?? [];
+  if (from === to || !Object.hasOwn(board.cards, from) || !Object.hasOwn(board.cards, to)
+    || edges.length >= MOODBOARD_MAX_CONNECTIONS || edges.some(edge => connectionKey(edge.from, edge.to) === connectionKey(from, to))) return board;
+  return { ...board, connections: [...edges, { from, to }] };
 }
 
 export function moveMoodboardCard(
@@ -141,7 +164,7 @@ export function moodboardSummary(board: Moodboard): {
   byKind: Record<MoodboardCardKind, number>;
   todosOpen: number;
 } {
-  const byKind: Record<MoodboardCardKind, number> = { image: 0, note: 0, link: 0, todo: 0 };
+  const byKind: Record<MoodboardCardKind, number> = { image: 0, note: 0, link: 0, todo: 0, sketch: 0 };
   let todosOpen = 0;
   for (const card of Object.values(board.cards)) {
     byKind[card.kind] += 1;
@@ -158,7 +181,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isHttpUrl(value: string): boolean {
+export function isMoodboardWebUrl(value: string): boolean {
   try {
     const url = new URL(value);
     return url.protocol === "http:" || url.protocol === "https:";
@@ -182,10 +205,14 @@ function validateCard(cardId: string, raw: unknown): string | null {
   if (raw.done !== undefined && typeof raw.done !== "boolean") {
     return `카드 ${cardId}의 완료 표시 형식이 아니에요.`;
   }
+  if (raw.kind === "sketch" && (!validStrokes(raw.strokes) || !raw.strokes.length)) {
+    return `스케치 카드 ${cardId}의 획을 읽을 수 없어요.`;
+  }
+  if (raw.kind !== "sketch" && raw.strokes !== undefined) return `카드 ${cardId}의 스케치 종류가 달라요.`;
   if (raw.kind === "image" && (typeof raw.ref !== "string" || !raw.ref.trim())) {
     return `이미지 카드 ${cardId}에 참조가 없어요.`;
   }
-  if (raw.kind === "link" && (typeof raw.ref !== "string" || !isHttpUrl(raw.ref))) {
+  if (raw.kind === "link" && (typeof raw.ref !== "string" || !isMoodboardWebUrl(raw.ref))) {
     return `링크 카드 ${cardId}의 주소가 올바르지 않아요.`;
   }
   if ((raw.kind === "note" || raw.kind === "todo") && (typeof raw.text !== "string" || !raw.text.trim())) {
@@ -225,6 +252,21 @@ export function deserializeMoodboard(
   for (const cardId of cardIds) {
     const problem = validateCard(cardId, (b.cards as Record<string, unknown>)[cardId]);
     if (problem) return { ok: false, reason: problem };
+  }
+  if (b.connections !== undefined) {
+    if (!Array.isArray(b.connections) || b.connections.length > MOODBOARD_MAX_CONNECTIONS) {
+      return { ok: false, reason: "카드 연결 개수가 올바르지 않아요." };
+    }
+    const seen = new Set<string>();
+    for (const edge of b.connections) {
+      if (!isRecord(edge) || typeof edge.from !== "string" || typeof edge.to !== "string"
+        || edge.from === edge.to || !Object.hasOwn(b.cards, edge.from) || !Object.hasOwn(b.cards, edge.to)) {
+        return { ok: false, reason: "연결할 두 카드를 확인해 주세요." };
+      }
+      const key = connectionKey(edge.from, edge.to);
+      if (seen.has(key)) return { ok: false, reason: "두 카드의 연결이 중복돼요." };
+      seen.add(key);
+    }
   }
   // 열 검증: id 중복·깨진 참조·중복 배치를 전부 거부한다.
   const columnIds = new Set<string>();
@@ -287,7 +329,7 @@ export function resolveMoodboardCardImage(
   if (card.kind !== "image") return { status: "not-image" };
   const ref = card.ref?.trim() ?? "";
   if (!ref) return { status: "broken", reason: "이미지 참조가 비어 있어요." };
-  if (isHttpUrl(ref)) {
+  if (isMoodboardWebUrl(ref)) {
     return { status: "resolved", imageUrl: ref, label: card.text?.trim() || ref, scope: "external" };
   }
   const scoped = /^(personal|project):(.+)$/.exec(ref);

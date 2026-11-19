@@ -7,7 +7,7 @@ import {
 } from "./studio-scenario-candidate-workflow";
 
 import type { StudioAiComicComposerHandoff } from "./studio-ai-comic-composer-handoff";
-import type { ScenarioPreviewItem } from "../studio-scenario-layout";
+import { scenarioReviewedArtwork, type ScenarioPreviewItem } from "../studio-scenario-layout";
 
 export const STUDIO_TOON_PRODUCTION_MAX_SCENES = 50;
 export const STUDIO_TOON_PRODUCTION_MAX_EXTENSION_SCENES = 10;
@@ -166,6 +166,7 @@ export function createStudioToonProductionHandoff(input: {
       imagePrompt: scene.imagePrompt,
       dialogue: scene.dialogue,
       continuity: scene.continuity,
+      ...scenarioReviewedArtwork(scene),
     })),
   };
 }

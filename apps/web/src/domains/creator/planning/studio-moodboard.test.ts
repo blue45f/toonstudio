@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   addMoodboardCard,
+  connectMoodboardCards,
   createDefaultStudioProjectMoodboard,
   createMoodboard,
   deserializeMoodboard,
@@ -55,7 +56,7 @@ describe("기획 무드보드 모델", () => {
     expect(board.columns[1]?.cardIds).toEqual(["c1", "c3"]);
     expect(moodboardSummary(board)).toEqual({
       total: 4,
-      byKind: { image: 1, note: 1, link: 1, todo: 1 },
+      byKind: { image: 1, note: 1, link: 1, todo: 1, sketch: 0 },
       todosOpen: 0,
     });
   });
@@ -66,6 +67,23 @@ describe("기획 무드보드 모델", () => {
     expect(addMoodboardCard(board, "b1-col-0", { id: "c1", kind: "note", text: "x" })).toBe(board);
     expect(moveMoodboardCard(board, "nope", "b1-col-1", 0)).toBe(board);
     expect(moveMoodboardCard(board, "c1", "nope", 0)).toBe(board);
+  });
+
+  it("스케치 획과 카드 연결을 저장하고 자기 연결·재연결·없는 카드를 거절한다", () => {
+    const base = sampleBoard();
+    const strokes = [{ color: "#334455", size: 6, points: [{ x: 0.2, y: 0.4 }, { x: 0.9, y: 1 }] }];
+    const board = addMoodboardCard(base, "b1-col-1", { id: "sketch1", kind: "sketch", text: "구도", strokes });
+    const linked = connectMoodboardCards(board, "c2", "sketch1");
+    expect(connectMoodboardCards(linked, "sketch1", "c2")).toBe(linked);
+    expect(connectMoodboardCards(linked, "c2", "c2")).toBe(linked);
+    expect(connectMoodboardCards(linked, "c2", "없는 카드")).toBe(linked);
+    expect(deserializeMoodboard(serializeMoodboard(linked))).toEqual({ ok: true, board: JSON.parse(serializeMoodboard(linked)) });
+    expect(removeMoodboardCard(linked, "sketch1").connections).toEqual([]);
+    for (const connections of [[{ from: "c2", to: "no" }], [...linked.connections!, { from: "sketch1", to: "c2" }]]) {
+      expect(deserializeMoodboard(serializeMoodboard({ ...linked, connections })).ok).toBe(false);
+    }
+    const invalid = { ...linked.cards.sketch1!, strokes: [{ ...strokes[0]!, points: [{ x: 0, y: 2 }] }] };
+    expect(deserializeMoodboard(serializeMoodboard({ ...linked, cards: { ...linked.cards, sketch1: invalid } })).ok).toBe(false);
   });
 
   it("카드 삭제는 열 배치와 카드 맵에서 함께 지운다", () => {

@@ -1,5 +1,5 @@
 import { BookOpen, TriangleAlert, X } from "lucide-react";
-import { useEffect, useEffectEvent, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import {
   localSpatialImage,
@@ -11,9 +11,11 @@ import {
   type SpatialBook,
   type SpatialPanel,
 } from "./spatial-book";
+import { readerChoiceClass, stepRovingChip } from "./spatial-reader-choices";
 import { spatialBookVtt } from "./spatial-book-captions";
 import { fallbackPanelImage } from "./spatial-reader-fallback-panel-image";
 import type { SpatialReaderRuntime } from "./spatial-reader-runtime";
+import type { SpatialFocus, SpatialSurface } from "./spatial-reader-surface";
 import { createSampleSpatialBook, type SpatialSampleCopy } from "./spatial-sample-book";
 import { SpatialReaderEditPanel } from "./SpatialReaderEditPanel";
 import { SpatialReaderIntro } from "./SpatialReaderIntro";
@@ -24,19 +26,17 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 
 const CURVATURE_MODES = [
-  { id: "cylinder-90deg-canopy", ko: "90° 원통형 캐노피 곡률", en: "90-Deg Cylinder Canopy" },
-  { id: "dome-120deg-cinema", ko: "120° 돔 시네마 몰입", en: "120-Deg Dome Cinema" },
-  { id: "floating-panel-stack", ko: "부유 다층 컷 스택", en: "Floating Panel Stack" },
+  { id: "cylinder-90deg-canopy", ko: "90° 원통", en: "90° cylinder" },
+  { id: "dome-120deg-cinema", ko: "120° 돔", en: "120° dome" },
+  { id: "floating-panel-stack", ko: "평면 컷", en: "Flat panels" },
 ] as const;
 
 const GAZE_FOCUSES = [
-  { id: "foveated-depth-dof", ko: "시선 중심 심도(DoF) 포커스", en: "Foveated Depth-of-Field" },
-  { id: "spatial-binaural-pan", ko: "바이노럴 공간 음향 패닝", en: "Spatial Binaural Audio Pan" },
-  { id: "comfort-vignette-lock", ko: "멀미 방지 비네팅 잠금", en: "Comfort Vignette Lock" },
+  { id: "pointed-panel", ko: "가리킨 컷 강조", en: "Highlight pointed panel" },
+  { id: "all-panels", ko: "모든 컷 보기", en: "Show all panels" },
+  { id: "current-panel", ko: "현재 컷만 보기", en: "Show current panel only" },
 ] as const;
 
-type CurvatureModeId = (typeof CURVATURE_MODES)[number]["id"];
-type GazeFocusId = (typeof GAZE_FOCUSES)[number]["id"];
 type SpatialReaderFactory = typeof import("./spatial-reader-runtime")["createSpatialReader"];
 
 /** 여러 장을 한 번에 열 때 이미지 데이터 총량 상한(작품 파일 상한보다 여유를 둔다). */
@@ -65,45 +65,14 @@ function errorText(cause: unknown, fallback: string): string {
   return cause instanceof Error && cause.message ? cause.message : fallback;
 }
 
-function reaChipClass(active: boolean): string {
-  return active
-    ? "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-full border border-accent bg-accent-soft px-3.5 py-2 text-left text-xs font-bold leading-snug text-accent shadow-2xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center"
-    : "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-full border border-line-strong/70 bg-card/85 px-3.5 py-2 text-left text-xs font-semibold leading-snug text-fg-2 transition-colors hover:border-accent/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center";
-}
-
-function stepRovingChip<T extends string>(
-  event: ReactKeyboardEvent<HTMLButtonElement>,
-  order: readonly T[],
-  current: T,
-  onSelect: (next: T) => void,
-  refs: Record<T, HTMLButtonElement | null>,
-): void {
-  const currentIndex = order.indexOf(current);
-  let nextId: T | null = null;
-  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-    nextId = order[(currentIndex + 1) % order.length] ?? order[0];
-  } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-    nextId = order[(currentIndex - 1 + order.length) % order.length] ?? order[0];
-  } else if (event.key === "Home") {
-    nextId = order[0];
-  } else if (event.key === "End") {
-    nextId = order[order.length - 1] ?? order[0];
-  }
-  if (nextId) {
-    event.preventDefault();
-    event.stopPropagation();
-    onSelect(nextId);
-    refs[nextId]?.focus();
-  }
-}
 
 export function StudioSpatialReaderPage() {
   const bt = useBilingual("StudioSpatialReader");
   const lang = useI18n((state) => state.lang);
   const isKo = lang.startsWith("ko");
   const pickLang = (ko: string, en: string) => (isKo ? ko : en);
-  const [curvatureMode, setCurvatureMode] = useState<CurvatureModeId>("cylinder-90deg-canopy");
-  const [gazeFocus, setGazeFocus] = useState<GazeFocusId>("foveated-depth-dof");
+  const [curvatureMode, setCurvatureMode] = useState<SpatialSurface>("cylinder-90deg-canopy");
+  const [gazeFocus, setGazeFocus] = useState<SpatialFocus>("pointed-panel");
   const activeCurvature = CURVATURE_MODES.find((item) => item.id === curvatureMode) ?? CURVATURE_MODES[0];
   const activeGaze = GAZE_FOCUSES.find((item) => item.id === gazeFocus) ?? GAZE_FOCUSES[0];
   const [book, setBook] = useState<SpatialBook | null>(null);
@@ -125,15 +94,15 @@ export function StudioSpatialReaderPage() {
   const audio = useRef<HTMLAudioElement>(null);
   const viewerHeading = useRef<HTMLHeadingElement>(null);
   const panelFilterInputRef = useRef<HTMLInputElement>(null);
-  const curveChipRefs = useRef<Record<CurvatureModeId, HTMLButtonElement | null>>({
+  const curveChipRefs = useRef<Record<SpatialSurface, HTMLButtonElement | null>>({
     "cylinder-90deg-canopy": null,
     "dome-120deg-cinema": null,
     "floating-panel-stack": null,
   });
-  const gazeChipRefs = useRef<Record<GazeFocusId, HTMLButtonElement | null>>({
-    "foveated-depth-dof": null,
-    "spatial-binaural-pan": null,
-    "comfort-vignette-lock": null,
+  const gazeChipRefs = useRef<Record<SpatialFocus, HTMLButtonElement | null>>({
+    "pointed-panel": null,
+    "all-panels": null,
+    "current-panel": null,
   });
   const loadGeneration = useRef(0);
   // 비동기 파일 읽기가 끝난 시점의 최신 작품(편집 중 다른 작품으로 바뀌었는지 확인용).
@@ -174,6 +143,7 @@ export function StudioSpatialReaderPage() {
       setView("2d");
     });
     created.setScale(scale);
+    created.setPresentation(curvatureMode, gazeFocus);
     return created;
   });
 
@@ -201,6 +171,10 @@ export function StudioSpatialReaderPage() {
       if (runtime.current === current) runtime.current = null;
     };
   }, [book, bt, view]);
+
+  useEffect(() => {
+    runtime.current?.setPresentation(curvatureMode, gazeFocus);
+  }, [curvatureMode, gazeFocus]);
 
   useEffect(() => {
     if (book) {
@@ -517,26 +491,23 @@ export function StudioSpatialReaderPage() {
 
       <section
         data-testid="spatial-reader-rea-webxr-fov-bar"
-        aria-label={pickLang("공간 리더 WebXR 시야각 곡률 및 시선 포커스 워크벤치", "Spatial Reader WebXR Curvature & Gaze Focus Workbench")}
+        aria-label={pickLang("공간 보기 설정", "Spatial view settings")}
         className="relative overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-4 shadow-sm sm:p-5"
       >
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <p className="inline-flex items-center rounded-full border border-accent/30 bg-accent-soft px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
-              {pickLang("공간 리더 · WebXR 시야각 곡률 & 시선 심도", "SPATIAL READER · WEBXR FOV CURVATURE & GAZE DOF")}
-            </p>
+            <h2 className="text-base font-semibold text-fg">
+              {pickLang("공간 보기 설정", "Spatial view settings")}
+            </h2>
             <p className="mt-2 text-xs font-semibold text-fg">
               {pickLang(
-                "원통형·돔 캐노피 곡률 배치와 시선 포커스·공간 음향·멀미 방지 모드를 조합합니다.",
-                "Configure cylinder/dome canopy curvature with foveated depth-of-field and spatial audio focus.",
+                "공간 보기에서 컷의 곡면과 강조 방식을 선택하세요. 마우스로 가리키거나 VR에서 고개를 돌려 컷을 강조할 수 있어요.",
+                "Choose a panel surface and focus mode for spatial view. Point with the mouse or turn your head in VR to highlight a panel.",
               )}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2" data-testid="spatial-reader-studio-bridge">
-            <span className="rounded-full border border-line/70 bg-card/85 px-3 py-1 font-mono text-xs text-fg-2">
-              Apple Vision Pro visionOS · Meta Quest WebXR · Spline Spatial
-            </span>
             <Link
               href="/studio"
               className="inline-flex min-h-11 items-center rounded-full border border-line-strong/75 bg-card/90 px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -568,7 +539,7 @@ export function StudioSpatialReaderPage() {
               aria-pressed={curvatureMode === item.id}
               onClick={() => setCurvatureMode(item.id)}
               onKeyDown={(event) => stepRovingChip(event, CURVATURE_MODES.map((m) => m.id), curvatureMode, setCurvatureMode, curveChipRefs.current)}
-              className={reaChipClass(curvatureMode === item.id)}
+              className={readerChoiceClass(curvatureMode === item.id)}
             >
               {pickLang(item.ko, item.en)}
             </button>
@@ -591,7 +562,7 @@ export function StudioSpatialReaderPage() {
               aria-pressed={gazeFocus === item.id}
               onClick={() => setGazeFocus(item.id)}
               onKeyDown={(event) => stepRovingChip(event, GAZE_FOCUSES.map((m) => m.id), gazeFocus, setGazeFocus, gazeChipRefs.current)}
-              className={reaChipClass(gazeFocus === item.id)}
+              className={readerChoiceClass(gazeFocus === item.id)}
             >
               {pickLang(item.ko, item.en)}
             </button>
@@ -603,8 +574,8 @@ export function StudioSpatialReaderPage() {
           className="mt-3 rounded-xl border border-line/65 bg-card/85 px-3.5 py-2 font-mono text-xs text-fg-2"
         >
           {pickLang(
-            `곡률: ${activeCurvature.ko} (${curvatureMode}) · 포커스: ${activeGaze.ko} (${gazeFocus})`,
-            `Curvature: ${activeCurvature.en} (${curvatureMode}) · Focus: ${activeGaze.en} (${gazeFocus})`,
+            `곡률: ${activeCurvature.ko} · 포커스: ${activeGaze.ko}`,
+            `Curvature: ${activeCurvature.en} · Focus: ${activeGaze.en}`,
           )}
         </p>
       </section>

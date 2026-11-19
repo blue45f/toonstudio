@@ -48,7 +48,7 @@ export function useStudioVirtualSpaceBoothAsset(input: {
       notify(bt(`${spaceKoParticle(descriptor.name, "을")} 프로젝트 에셋에 넣었어요.`, `Added "${descriptor.name}" to the project assets.`), "success");
       return true;
     } catch {
-      notify(bt("프로젝트 에셋 저장에 실패했어요. 테이크는 남아 있으니 다시 시도해 주세요.", "Saving to the project assets failed. The take is still here — please try again."), "error");
+      notify(bt("프로젝트 에셋 저장에 실패했어요. 부스에서 다시 시도해 주세요.", "Saving to the project assets failed. Retry from the recording booth."), "error");
       return false;
     }
   }, [bt, notify]);

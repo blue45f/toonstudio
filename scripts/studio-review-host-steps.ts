@@ -67,6 +67,23 @@ const created = await context.request.post(`${origin.origin}/api/creator/works`,
   return { workId, actorId: accountId, headers, initialSaved: saved };
 }
 
+/** 새 검증 계정을 팀 편집자로 초대하고 본인의 초대함에서 정식 수락한다. */
+export async function inviteStudioReviewHostEditor(owner: BrowserContext, editor: BrowserContext, pool: Pool, origin: URL, workId: string, headers: Record<string, string>) {
+  const { accountId } = await createStudioReviewHostActor(editor, pool, origin);
+  const team = `${origin.origin}/api/creator/works/${workId}/team`;
+  const invited = await owner.request.post(team, { headers, data: { userId: accountId, role: "editor" } });
+  assert.equal(invited.status(), 201, "작품 소유자가 다른 계정을 초대해야 합니다.");
+  const inbox = await editor.request.get(`${origin.origin}/api/creator/team/invitations?limit=50`);
+  assert.equal(inbox.status(), 200);
+  const invitations = (await inbox.json() as { workId: string; invitationId: string }[]).filter(i => i.workId === workId);
+  assert.equal(invitations.length, 1);
+  const accepted = await editor.request.post(`${team}/invitations/respond`, {
+    headers, data: { action: "accept", invitationId: invitations[0]!.invitationId },
+  });
+  assert.equal(accepted.status(), 201);
+  assert.deepEqual(await accepted.json(), { workId, role: "editor", status: "active" });
+}
+
 export async function openStudioReviewHost(page: Page, origin: URL, workId: string) {
   const title = STUDIO_REVIEW_HOST_TITLE;
   await page.goto(`${origin.origin}/studio?id=${workId}`, { waitUntil: "domcontentloaded" });

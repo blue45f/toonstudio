@@ -853,16 +853,10 @@ export function StudioLiveCollaborationPanelView({
       {watching ? (
         <div className="mt-3 overflow-hidden rounded-xl border border-line bg-black/80">
           <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-panel/95 px-3 py-2">
-            <span className="min-w-0 truncate text-xs font-medium text-fg">
-              {watching.host.displayName} 공유 화면
-            </span>
-            <button
-              type="button"
-              aria-expanded={!screenPreviewCollapsed}
-              data-studio-live-screen-collapse-toggle="true"
+            <span className="min-w-0 truncate text-xs font-medium text-fg">{watching.host.displayName} 공유 화면</span>
+            <button type="button" aria-expanded={!screenPreviewCollapsed} data-studio-live-screen-collapse-toggle="true"
               className="min-h-9 shrink-0 rounded-lg border border-line bg-card px-3 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transition-none"
-              onClick={() => setScreenPreviewCollapsed((current) => !current)}
-            >
+              onClick={() => setScreenPreviewCollapsed((current) => !current)}>
               {screenPreviewCollapsed ? "화면 펼치기" : "화면 접기"}
             </button>
           </div>

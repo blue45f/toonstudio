@@ -988,6 +988,7 @@ export interface StudioMenubarContentProps {
   pageLabels: string[];
   /** Optional story pages for dialogue TXT package export preflight. */
   dialoguePages?: readonly import( "./lettering/studio-dialogue-batch").DialoguePageLike[] | null;
+  drawingToolsOnly?: boolean;
   projectActionsOpen: boolean;
   projectActionsRef: RefObject<HTMLDivElement | null>;
   projectArchiveBusy: boolean;
@@ -1071,6 +1072,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
   pageEditLocked,
   pageLabels,
   dialoguePages = null,
+  drawingToolsOnly = false,
   projectActionsOpen,
   projectActionsRef,
   projectArchiveBusy,
@@ -1221,11 +1223,10 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
   // Unified search executes only explicitly reviewed rows, using the menu's own closure.
   // This is the first safe slice of the CommandRegistry strangler: no second implementation.
   useEffect(
-    () =>
-      installStudioCommandExecutionBindings(
-        createStudioCommandExecutionBindings(studioMainMenuGroups),
-      ),
-    [studioMainMenuGroups],
+    () => drawingToolsOnly ? undefined : installStudioCommandExecutionBindings(
+      createStudioCommandExecutionBindings(studioMainMenuGroups),
+    ),
+    [drawingToolsOnly, studioMainMenuGroups],
   );
 
   const menubarLaneRef = useRef<HTMLDivElement | null>(null);
@@ -1459,462 +1460,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
     },
   };
 
-  return (
-    <div
-      data-studio-menubar-rows="true"
-      className="flex min-w-0 flex-1 flex-col"
-    >
-      {/* 1행 — 문서 맥락 · 상위 메뉴 · 파일 액션. 여기 폭이 곧 §15.3 메뉴 18개의 가시성이다. */}
-      <div className="flex min-w-0 flex-nowrap items-center gap-2">
-        {/* 가져오기 파일 입력은 StudioPage 루트(data-studio-document-import-inputs)에 상시 마운트한다.
-            메뉴바 lazy 청크/패널 게이트와 무관하게 파일 메뉴·프로젝트 도구 버튼이 같은 ref 를 클릭한다.
-            (2026-07-24: 패널 안 조건부 마운트 → 무반응 버그 수정 후, lazy menubar 레이스까지 제거) */}
-        <div
-          ref={menubarLaneRef}
-          data-testid="studio-menubar-primary"
-          data-studio-menubar-primary="true"
-          onWheel={handleStudioHorizontalWheel}
-          className={cn(
-            "flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-            mobileImmersive && "hidden"
-          )}
-        >
-          {!mobileImmersive ? (
-            <StudioEditorReturnButton
-              variant="lane"
-              onReturn={onNavigateBack}
-            />
-          ) : null}
-          {/* Keep document/workspace context intact; the primary lane scrolls when commands exceed width. */}
-          <div
-            data-studio-document-context="true"
-            className={cn(
-              // This lane contains the workspace dialog trigger. Let the primary menubar scroll
-              // instead of shrinking this wrapper beneath the adjacent history cluster; after a
-              // user traverses all 18 menus at laptop width, a zero-width wrapper otherwise leaves
-              // the visible workspace button covered by History and unreachable by pointer.
-              "flex min-w-max shrink-0 items-center gap-1.5",
-              mobileImmersive && "hidden"
-            )}
-          >
-          <h1
-            className="min-w-0 max-w-[8rem] truncate text-[0.8125rem] font-semibold tracking-tight text-fg xl:max-w-[11rem] 2xl:max-w-[16rem]"
-            title={title.trim() || "무제"}
-          >
-            {title.trim() || "무제"}
-          </h1>
-          <span className="hidden shrink-0 rounded-md border border-line/60 bg-canvas/40 px-1.5 py-0.5 text-[0.62rem] font-medium tabular-nums text-fg-3 sm:inline">
-            {activePageLabel}
-          </span>
-          {/* 테마 이름 글자는 2xl 이상에서만 보인다. 그보다 좁으면 팔레트 아이콘 하나(44px)만 남겨
-              상위 메뉴 레인이 약 60px 더 넓어진다 — 접근 이름은 버튼의 aria-label이 그대로 지킨다. */}
-          <AppearanceTrigger scope="studio" showLabel className="shrink-0 max-2xl:[&>span]:sr-only" />
-          {displayLinkedTitleId ? (
-            <span className="hidden rounded-full border border-accent/30 bg-accent-soft/40 px-1.5 py-0.5 text-[0.6rem] font-semibold text-accent sm:inline">
-              링크됨
-            </span>
-          ) : null}
-          {workspacePersistence.ownerScope === currentWorkspaceOwnerScope ? (
-            <StudioWorkspaceMenuGate
-              key={`${currentWorkspaceOwnerScope}:${workspaceMenuEpoch}`} creatorRole={activeRole}
-              state={workspaceState}
-              liveLayout={liveWorkspaceLayout}
-              resolveDeviceKind={resolveWorkspaceDeviceKind}
-              persistence={workspacePersistence}
-              onStateChange={persistStudioWorkspaceState}
-              onApplyLayout={applyStudioWorkspaceLayout}
-            />
-          ) : (
-            <span role="status" className="inline-flex min-h-8 items-center text-[0.65rem] text-fg-3">
-              전환 중…
-            </span>
-          )}
-          {workspaceSyncNotice && workspacePersistence.ownerScope === currentWorkspaceOwnerScope ? (
-            <span
-              role="status"
-              title={workspaceSyncNotice}
-              className="max-w-40 truncate text-[0.62rem] font-medium text-cool"
-            >
-              {workspaceSyncNotice}
-            </span>
-          ) : null}
-          </div>
-          <span aria-hidden className="mx-0.5 hidden h-4 w-px shrink-0 bg-line md:block" />
-          {/* Desktop application commands live in the compressible center lane. */}
-          <Suspense fallback={null}>
-            <StudioMainMenu
-              groups={presentedStudioMainMenuGroups}
-              specialistBoundaryGroupId={mainMenuPresentation.specialistBoundaryGroupId}
-              className={cn("hidden min-w-max shrink-0 md:flex", mobileImmersive && "!hidden")}
-            />
-          </Suspense>
-          {/* Wide layouts expose high-frequency insert shortcuts; narrower widths use Insert.
-              These are fixed-size chips: `min-w-0` made them collapse to 0px and paint on top
-              of the menubar instead of taking their turn in the scrollable lane.
-              xl~2xl 구간(1280~1535px)에서는 글자를 접어 아이콘만 남긴다(각 44px) — 두 칩이 178px에서 92px로
-              줄어, 상위 메뉴 뒤에 칩이 반쯤 잘려 보이던 폭 부족이 풀린다. 이름은 aria-label·툴팁이 지킨다. */}
-          <div
-            className={cn(
-              "hidden shrink-0 items-center gap-0.5 xl:flex",
-              mobileImmersive && "!hidden"
-            )}
-            role="group"
-            aria-label="삽입 바로가기"
-          >
-          <StudioToolHintTarget hint={MENUBAR_HINTS.assets} preferredSide="bottom">
-            <button
-              type="button"
-              onClick={() => {
-                preloadStudioAssetToolPopoverBody();
-                setMenu(activeToolbarGroup === "assetGroup" ? null : "asset");
-              }}
-              onPointerEnter={preloadStudioAssetToolPopoverBody}
-              onPointerDown={preloadStudioAssetToolPopoverBody}
-              onFocus={preloadStudioAssetToolPopoverBody}
-              aria-label="템플릿·에셋"
-              aria-haspopup="menu"
-              aria-expanded={activeToolbarGroup === "assetGroup"}
-              className={cn(
-                buttonClass({ size: "sm", variant: activeToolbarGroup === "assetGroup" ? "solid" : "quiet" }),
-                "min-h-11 min-w-11 gap-1.5 px-2.5 text-[0.72rem]"
-              )}
-            >
-              <Folder size={14} aria-hidden />
-              <span className="max-2xl:sr-only">템플릿·에셋</span>
-            </button>
-          </StudioToolHintTarget>
-          <StudioToolHintTarget hint={MENUBAR_HINTS.bubbles} preferredSide="bottom">
-            <button
-              type="button"
-              onClick={() => setMenu(menu === "bubble" ? null : "bubble")}
-              aria-label="말풍선"
-              aria-haspopup="menu"
-              aria-expanded={menu === "bubble"}
-              className={cn(
-                buttonClass({ size: "sm", variant: menu === "bubble" ? "solid" : "quiet" }),
-                "min-h-11 min-w-11 gap-1.5 px-2.5 text-[0.72rem]"
-              )}
-            >
-              <MessageCircle size={14} aria-hidden />
-              <span className="max-2xl:sr-only">말풍선</span>
-            </button>
-          </StudioToolHintTarget>
-          </div>
-          <span aria-hidden className="mx-0.5 hidden h-4 w-px shrink-0 bg-line xl:block" />
-          {/* 오른쪽 페이드는 **실제로 더 볼 내용이 남았을 때만** 켜진다. 폭 브레이크포인트로
-              감추던 예전 방식은 17개 그룹이 1920px에서도 넘치면서 거짓이 됐다(D9).
-              레이아웃 진동을 막으려고 언마운트 대신 투명도만 바꾼다. */}
-          <span
-            aria-hidden
-            data-studio-menubar-overflow-cue="true"
-            data-overflowing={laneOverflow.scrollable ? "true" : "false"}
-            className={cn(
-              "pointer-events-none sticky right-0 -mr-2 h-8 w-4 shrink-0 self-center bg-gradient-to-l from-panel to-transparent transition-opacity motion-reduce:transition-none",
-              laneOverflow.scrollable ? "opacity-100" : "opacity-0"
-            )}
-          />
-        </div>
-        {/* 잘린 그룹으로 가는 정본 경로. 스크롤 레인 밖(형제)이라 절대 같이 잘리지 않는다. */}
-        <StudioMenubarOverflowMenu groups={overflowMenuGroups} onReveal={revealMenuGroup} />
-        {/* 파일·내보내기 — 드로잉 앱 메뉴바 */}
-        <div
-          data-testid="studio-menubar-actions"
-          data-studio-menubar-actions="true"
-          className={cn(
-            "flex shrink-0 flex-nowrap items-center gap-1",
-            // Immersive pill is content-width only — keep a real 4px gap so buttons never
-            // paint under each other (the old sticky canvas ring used to cover "작업 저장").
-            mobileImmersive && "min-w-0 gap-1"
-          )}
-        >
-          {/* 화면 구성(밀도) 원터치 전환 — 상태는 기존 uiDensityMode 환경설정을 그대로 쓰고,
-              여기서는 메뉴바에서 바로 닿게만 한다. 배선이 없으면 스스로 숨는다. */}
-          {uiDensityMode && setStudioUiDensity && !mobileImmersive ? (
-            <div
-              role="group"
-              aria-label="화면 구성"
-              data-studio-ui-density-toggle="true"
-              className="hidden shrink-0 items-center gap-0.5 rounded-xl border border-line/70 bg-canvas/40 p-0.5 lg:flex"
-            >
-              {STUDIO_UI_DENSITY_MODES.map((mode) => {
-                const active = mode === uiDensityMode;
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    aria-pressed={active}
-                    data-studio-ui-density={mode}
-                    onClick={() => setStudioUiDensity(mode)}
-                    className={cn(
-                      "min-h-9 whitespace-nowrap rounded-lg px-2 text-[0.68rem] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
-                      active ? "bg-accent text-on-accent" : "text-fg-2 hover:text-fg",
-                    )}
-                  >
-                    {studioUiDensityLabel(mode)}
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-          {/* 첫 화면 다이어트 — 기본 작업(simple)에서 접어 둔 고급 도구 클러스터를 여는 메뉴바 펼침.
-              펼침 상태는 밀도 저장소에 영속되어 새로고침 후에도 유지된다. 전체 도구(full)에선
-              접을 것이 없고 집중 작업(focus)에선 고급이 숨김이 원칙이라 simple에서만 보인다.
-              배선(핸들러)이 없으면 스스로 숨는 기존 패턴을 따른다. */}
-          {uiDensityMode === "simple" && setUiAdvancedToolsExpanded && !mobileImmersive ? (
-            <button
-              type="button"
-              data-studio-advanced-tools-toggle="true" aria-label={studioUiAdvancedToolsToggleAccessibleName(uiAdvancedToolsExpanded === true)} title={studioUiAdvancedToolsToggleTooltip(uiAdvancedToolsExpanded === true)}
-              aria-expanded={uiAdvancedToolsExpanded === true}
-              onClick={() => setUiAdvancedToolsExpanded(uiAdvancedToolsExpanded !== true)}
-              className="hidden min-h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl border border-line/70 bg-canvas/40 px-2 text-[0.68rem] font-bold text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 hover:text-fg lg:flex"
-            >
-              {studioUiAdvancedToolsToggleLabel(uiAdvancedToolsExpanded === true)}
-              <ChevronDown
-                size={12}
-                aria-hidden
-                className={cn("transition-transform", uiAdvancedToolsExpanded ? "rotate-180" : "")}
-              />
-            </button>
-          ) : null}
-          {mobileImmersive ? (
-            <StudioEditorReturnButton
-              variant="immersive"
-              onReturn={onNavigateBack}
-            />
-          ) : null}
-          {!isMobile && actionStudioMainMenuGroups.length > 0 ? (
-            <Suspense fallback={null}>
-              <StudioMainMenu
-                groups={actionStudioMainMenuGroups}
-                ariaLabel={actionStudioMainMenuGroups[0]?.label ?? "AI 도우미"}
-                surface="action"
-                className={cn("shrink-0", mobileImmersive && "hidden")}
-              />
-            </Suspense>
-          ) : null}
-          {isMobile ? (
-            <StudioToolHintTarget
-              hint={mobileImmersive ? MENUBAR_HINTS.immersiveExit : MENUBAR_HINTS.immersive}
-              preferredSide="bottom"
-            >
-              <button
-                type="button"
-                onClick={() => changeMobileImmersiveMode(!mobileImmersive)}
-                aria-pressed={mobileImmersive}
-                aria-label={
-                  mobileImmersive
-                    ? "전체 화면 드로잉 종료"
-                    : "전체 화면 드로잉"
-                }
-                data-studio-mobile-app-mode
-                className={cn(
-                  buttonClass({
-                    size: "sm",
-                    // Quiet exit reads as chrome chrome, not a second primary CTA next to Publish.
-                    variant: mobileImmersive ? "quiet" : "quiet",
-                    className: "min-h-11 shrink-0 gap-1.5 whitespace-nowrap",
-                  }),
-                  // Windowed: sticky exit keeps the control reachable while the long title lane
-                  // scrolls. Immersive: no sticky/ring — the compact pill has no scroll sibling.
-                  // 모바일 폭(≤429px)에서는 아이콘만 남긴다. 예전 359px 경계로는 360~430px 창모드에서
-                  // 액션 클러스터가 레인을 넘쳐 게시 버튼이 잘렸다(`verify:studio-mobile-top`, CI 실패).
-                  !mobileImmersive &&
-                    "sticky left-0 z-20 shadow-[0_0_0_4px_var(--color-canvas)] max-[429px]:size-11 max-[429px]:justify-center max-[429px]:px-0",
-                  mobileImmersive &&
-                    "rounded-full border border-line/70 bg-raised/80 px-2.5 text-fg max-[429px]:size-11 max-[429px]:justify-center max-[429px]:px-0"
-                )}
-              >
-                {mobileImmersive ? (
-                  <Minimize2 size={15} aria-hidden />
-                ) : (
-                  <Maximize2 size={15} aria-hidden />
-                )}
-                <span className="max-[429px]:sr-only">
-                  {mobileImmersive ? "종료" : "전체화면"}
-                </span>
-              </button>
-            </StudioToolHintTarget>
-          ) : null}
-          {mobileImmersive ? (
-            <>
-              <h2 className="sr-only">드로잉 전체화면</h2>
-              {/* 몰입 필은 콘텐츠 폭 기반의 컴팩트 플로팅 컨트롤이라 시각적 제목 자리가 없다
-                  (기존 flex-1 스팬은 항상 0폭으로 짜부라지며 게시하기 버튼만 잘랐다).
-                  문서 맥락은 보조기술에만 그대로 전달한다. */}
-              <span className="sr-only">
-                {title.trim() || "무제"} · {activePageLabel}
-              </span>
-            </>
-          ) : null}
-          {togglePageSequence ? (
-            <StudioToolHintTarget
-              hint={MENUBAR_HINTS.pages}
-              preferredSide="bottom"
-            >
-              <button
-                type="button"
-                onClick={() => togglePageSequence()}
-                data-studio-primary-action="pages"
-                aria-pressed={pageSequenceOpen}
-                aria-label={pageSequenceOpen ? "페이지 목록 닫기" : "페이지 목록 열기"}
-                className={cn(
-                  buttonClass({ size: "sm", variant: "quiet", className: "min-h-11 min-w-11 shrink-0 gap-1.5" }),
-                  // 모바일에서는 하단 도크의 드로잉 행이 같은 '페이지' 버튼을 이미 갖는다. 메뉴바 사본까지
-                  // 두면 320~430px 액션 클러스터가 44px 버튼 7개(332px)로 레인을 넘친다.
-                  isMobile && "hidden",
-                )}
-              >
-                <Files size={14} aria-hidden />
-                {/* 상단 바에 저장·동기화 상태가 들어오면서 2xl 미만에서는 아이콘만 남겨 메뉴 레인 폭을 지킨다. */}
-                <span className="max-2xl:sr-only">페이지</span>
-              </button>
-            </StudioToolHintTarget>
-          ) : null}
-          <div
-            ref={exportMenuRef}
-            className="relative flex shrink-0 items-center"
-            data-studio-primary-action="export"
-          >
-            <StudioToolHintTarget hint={MENUBAR_HINTS.download} preferredSide="bottom">
-              <button
-                type="button"
-                onClick={() => handleDownload()}
-                data-studio-primary-action="export"
-                aria-label={`다운로드 ${exportScale}× ${exportFormat.toUpperCase()}${exportTransparent && exportFormat === "png" ? " · 투명" : ""} · 현재 페이지`}
-                className={cn(
-                  buttonClass({ size: "sm", variant: "quiet", className: "min-h-11 min-w-11 shrink-0 whitespace-nowrap gap-1.5 pr-2" }),
-                  // 모바일 도크의 '내보내기' 가 같은 핸들러다. 메뉴바에는 배율·포맷을 고르는
-                  // 내보내기 옵션만 남겨 44px 클러스터가 320px 안에 들어오게 한다.
-                  isMobile && "hidden"
-                )}
-              >
-                <Download size={14} aria-hidden /> <span className="max-2xl:sr-only">다운로드</span>
-                {" "}
-                <span className="text-[10px] font-semibold tabular-nums text-fg-3 max-2xl:hidden">
-                  {exportScale}× {exportFormat.toUpperCase()}
-                  {exportTransparent && exportFormat === "png" ? " · 투명" : null}
-                </span>
-              </button>
-            </StudioToolHintTarget>
-            <StudioToolHintTarget hint={MENUBAR_HINTS.exportOptions} preferredSide="bottom">
-              <button
-                type="button"
-                onClick={async () => {
-                  preloadStudioExportMenuPanel();
-                  await ensureWatermarkLoaded();
-                  setProjectActionsOpen(false);
-                  setExportMenuOpen((open) => !open);
-                }}
-                onMouseEnter={preloadStudioExportMenuPanel}
-                onFocus={preloadStudioExportMenuPanel}
-                aria-expanded={exportMenuOpen}
-                aria-label="내보내기 옵션"
-                style={isMobile ? { minWidth: 44 } : undefined}
-                className={cn(
-                  buttonClass({ size: "sm", variant: "quiet", className: "min-h-11 min-w-[44px] shrink-0 px-1.5" }),
-                  isMobile && "min-h-11 min-w-[44px]"
-                )}
-              >
-                <ChevronDown
-                  size={13}
-                  aria-hidden
-                  className={cn(
-                    "transition-transform motion-reduce:transition-none",
-                    exportMenuOpen && "rotate-180"
-                  )}
-                />
-              </button>
-            </StudioToolHintTarget>
-            {exportMenuOpen && typeof document !== "undefined"
-              ? createPortal(
-                  <Suspense
-                    fallback={
-                      <div
-                        data-studio-export-menu-panel="true"
-                        className="fixed inset-x-2 top-12 z-[100] max-h-[calc(100dvh-4rem)] overflow-y-auto rounded-xl border border-line bg-panel p-3 text-xs text-fg-3 shadow-2xl sm:inset-x-auto sm:right-3 sm:w-72"
-                      >
-                        {frozenStatus3Text("studio.frozenStatus3.menubar.exportOpening", "내보내기 옵션을 여는 중...")}
-                      </div>
-                    }
-                  >
-                    <StudioExportMenuPanel
-                      canvasWidth={CANVAS_W}
-                      canvasHeight={canvasH}
-                      exportScale={exportScale}
-                      exportFormat={exportFormat}
-                      exportTransparent={exportTransparent}
-                      exportPresetId={exportPresetId}
-                      watermark={watermark}
-                      isExporting={isExporting}
-                      exportTitle={title}
-                      pageCount={pageCount} activePageIndex={Math.max(0, pageLabels.indexOf(activePageLabel))}
-                      pageLabels={pageLabels}
-                      dialoguePages={dialoguePages}
-                      sourceWorkId={workId}
-                      capturePagesForPreset={handleCapturePagesForPreset}
-                      capturePagesForIndices={handleCapturePagesForIndices}
-                      exportPresetSlicesFromDocument={handleExportPresetSlices}
-                      exportCurrentPageToInkMl={exportCurrentPageToInkMl}
-                      exportCurrentPageToWillV1={exportCurrentPageToWillV1}
-                      exportCurrentPageToSvg={exportCurrentPageToSvg}
-                      exportCurrentPageToVectorPdf={exportCurrentPageToVectorPdf}
-                      exportCurrentPageToPsd={exportCurrentPageToPsd}
-                      exportCurrentPageToRasterInterchange={exportCurrentPageToRasterInterchange}
-                      setExportScale={setExportScale}
-                      setExportFormat={setExportFormat}
-                      setExportTransparent={setExportTransparent}
-                      setExportPresetId={setExportPresetId}
-                      setWatermark={setWatermark}
-                      onCopyToClipboard={handleCopyToClipboard} onDownloadCurrentPage={handleDownload} onRequestCloseAndReturn={() => setExportMenuOpen(false)} onWorkspaceAbortNotice={setStudioStatusNotice ? (msg) => setStudioStatusNotice(msg) : undefined}
-                    />
-                  </Suspense>,
-                  document.body
-                )
-              : null}
-          </div>
-          {/* 폰 폭에서도 보여야 한다. 이 시트는 검수·미리보기 7종의 유일한 포인터 경로인데
-              (`StudioProjectReviewActions` 주석), 430px 기본 상태에서는 앱 메뉴바가
-              `md:flex` + 몰입 `!hidden`이고 툴벨트도 몰입에서 숨어 대체 경로가 없다.
-              시트 본문은 이미 `grid-cols-2` / `inset-x-2` / safe-area 패딩으로 폰 레이아웃을
-              갖고 있었다 — 막고 있던 건 트리거뿐이었다. 라벨은 `max-xl:sr-only`라 좁은 폭에서
-              아이콘만 차지한다. */}
-          <div ref={projectActionsRef} className="relative shrink-0">
-            <StudioToolHintTarget hint={MENUBAR_HINTS.project} preferredSide="bottom">
-              <button
-                type="button"
-                onClick={() => {
-                  setExportMenuOpen(false);
-                  setProjectActionsOpen((open) => !open);
-                }}
-                aria-label="프로젝트 센터"
-                aria-haspopup="dialog"
-                aria-expanded={projectActionsOpen}
-                aria-controls="studio-project-actions-menu"
-                style={isMobile ? { minWidth: 44 } : undefined}
-                className={buttonClass({
-                  size: "sm",
-                  variant: "quiet",
-                  // `min-w-[44px]`은 셰브론을 접는 폭에서도 44px 터치 타깃을 지킨다
-                  // (`verify:studio-mobile-top`은 메뉴바 컨트롤의 가로·세로 모두 하드 체크).
-                  className: "min-h-11 min-w-[44px] shrink-0 gap-1.5 whitespace-nowrap",
-                })}
-              >
-                <Folder size={14} aria-hidden /> <span className="max-2xl:sr-only">프로젝트 센터</span>
-                {/* 320px 창모드 메뉴바는 [전체 화면 드로잉][프로젝트][초안 저장][게시하기]로
-                    320px를 5px 넘겨 `overflow-hidden` 레인이 게시 버튼을 잘랐다
-                    (`verify:studio-mobile-top`의 하드 실패). 셰브론은 순수 장식이고
-                    열림 상태는 `aria-expanded`가 이미 전달하므로, 가장 좁은 폭에서만 접는다. */}
-                <ChevronDown
-                  size={13}
-                  className={cn(
-                    "transition-transform motion-reduce:transition-none max-sm:hidden",
-                    projectActionsOpen && "rotate-180"
-                  )}
-                  aria-hidden
-                />
-              </button>
-            </StudioToolHintTarget>
-            {projectActionsOpen && typeof document !== "undefined"
+  const projectCenter = projectActionsOpen && typeof document !== "undefined"
               ? createPortal(
               <StudioProjectCenterSurface
                 desktop={!isMobile}
@@ -2371,7 +1917,467 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
               </StudioProjectCenterSurface>,
               document.body
             )
-            : null}
+            : null;
+  const commandBar = (
+    <StudioMenubarCommandBar
+        preferences={commandBarPreferences}
+        bindings={commandBarBindings}
+        historyPanelOpen={historyPanelOpen}
+        onToggleHistoryPanel={toggleHistoryPanel}
+        onPreferencesChange={changeCommandBarPreferences}
+        hidden={mobileImmersive && !drawingToolsOnly}
+      />
+  );
+  if (drawingToolsOnly) return <>{projectCenter}{commandBar}</>;
+
+  return (
+    <div
+      data-studio-menubar-rows="true"
+      className="flex min-w-0 flex-1 flex-col"
+    >
+      {/* 1행 — 문서 맥락 · 상위 메뉴 · 파일 액션. 여기 폭이 곧 §15.3 메뉴 18개의 가시성이다. */}
+      <div className="flex min-w-0 flex-nowrap items-center gap-2">
+        {/* 가져오기 파일 입력은 StudioPage 루트(data-studio-document-import-inputs)에 상시 마운트한다.
+            메뉴바 lazy 청크/패널 게이트와 무관하게 파일 메뉴·프로젝트 도구 버튼이 같은 ref 를 클릭한다.
+            (2026-07-24: 패널 안 조건부 마운트 → 무반응 버그 수정 후, lazy menubar 레이스까지 제거) */}
+        <div
+          ref={menubarLaneRef}
+          data-testid="studio-menubar-primary"
+          data-studio-menubar-primary="true"
+          onWheel={handleStudioHorizontalWheel}
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            mobileImmersive && "hidden"
+          )}
+        >
+          {!mobileImmersive ? (
+            <StudioEditorReturnButton
+              variant="lane"
+              onReturn={onNavigateBack}
+            />
+          ) : null}
+          {/* Keep document/workspace context intact; the primary lane scrolls when commands exceed width. */}
+          <div
+            data-studio-document-context="true"
+            className={cn(
+              // This lane contains the workspace dialog trigger. Let the primary menubar scroll
+              // instead of shrinking this wrapper beneath the adjacent history cluster; after a
+              // user traverses all 18 menus at laptop width, a zero-width wrapper otherwise leaves
+              // the visible workspace button covered by History and unreachable by pointer.
+              "flex min-w-max shrink-0 items-center gap-1.5",
+              mobileImmersive && "hidden"
+            )}
+          >
+          <h1
+            className="min-w-0 max-w-[8rem] truncate text-[0.8125rem] font-semibold tracking-tight text-fg xl:max-w-[11rem] 2xl:max-w-[16rem]"
+            title={title.trim() || "무제"}
+          >
+            {title.trim() || "무제"}
+          </h1>
+          <span className="hidden shrink-0 rounded-md border border-line/60 bg-canvas/40 px-1.5 py-0.5 text-[0.62rem] font-medium tabular-nums text-fg-3 sm:inline">
+            {activePageLabel}
+          </span>
+          {/* 테마 이름 글자는 2xl 이상에서만 보인다. 그보다 좁으면 팔레트 아이콘 하나(44px)만 남겨
+              상위 메뉴 레인이 약 60px 더 넓어진다 — 접근 이름은 버튼의 aria-label이 그대로 지킨다. */}
+          <AppearanceTrigger scope="studio" showLabel className="shrink-0 max-2xl:[&>span]:sr-only" />
+          {displayLinkedTitleId ? (
+            <span className="hidden rounded-full border border-accent/30 bg-accent-soft/40 px-1.5 py-0.5 text-[0.6rem] font-semibold text-accent sm:inline">
+              링크됨
+            </span>
+          ) : null}
+          {workspacePersistence.ownerScope === currentWorkspaceOwnerScope ? (
+            <StudioWorkspaceMenuGate
+              key={`${currentWorkspaceOwnerScope}:${workspaceMenuEpoch}`} creatorRole={activeRole}
+              state={workspaceState}
+              liveLayout={liveWorkspaceLayout}
+              resolveDeviceKind={resolveWorkspaceDeviceKind}
+              persistence={workspacePersistence}
+              onStateChange={persistStudioWorkspaceState}
+              onApplyLayout={applyStudioWorkspaceLayout}
+            />
+          ) : (
+            <span role="status" className="inline-flex min-h-8 items-center text-[0.65rem] text-fg-3">
+              전환 중…
+            </span>
+          )}
+          {workspaceSyncNotice && workspacePersistence.ownerScope === currentWorkspaceOwnerScope ? (
+            <span
+              role="status"
+              title={workspaceSyncNotice}
+              className="max-w-40 truncate text-[0.62rem] font-medium text-cool"
+            >
+              {workspaceSyncNotice}
+            </span>
+          ) : null}
+          </div>
+          <span aria-hidden className="mx-0.5 hidden h-4 w-px shrink-0 bg-line md:block" />
+          {/* Desktop application commands live in the compressible center lane. */}
+          <Suspense fallback={null}>
+            <StudioMainMenu
+              groups={presentedStudioMainMenuGroups}
+              specialistBoundaryGroupId={mainMenuPresentation.specialistBoundaryGroupId}
+              className={cn("hidden min-w-max shrink-0 md:flex", mobileImmersive && "!hidden")}
+            />
+          </Suspense>
+          {/* Wide layouts expose high-frequency insert shortcuts; narrower widths use Insert.
+              These are fixed-size chips: `min-w-0` made them collapse to 0px and paint on top
+              of the menubar instead of taking their turn in the scrollable lane.
+              xl~2xl 구간(1280~1535px)에서는 글자를 접어 아이콘만 남긴다(각 44px) — 두 칩이 178px에서 92px로
+              줄어, 상위 메뉴 뒤에 칩이 반쯤 잘려 보이던 폭 부족이 풀린다. 이름은 aria-label·툴팁이 지킨다. */}
+          <div
+            className={cn(
+              "hidden shrink-0 items-center gap-0.5 xl:flex",
+              mobileImmersive && "!hidden"
+            )}
+            role="group"
+            aria-label="삽입 바로가기"
+          >
+          <StudioToolHintTarget hint={MENUBAR_HINTS.assets} preferredSide="bottom">
+            <button
+              type="button"
+              onClick={() => {
+                preloadStudioAssetToolPopoverBody();
+                setMenu(activeToolbarGroup === "assetGroup" ? null : "asset");
+              }}
+              onPointerEnter={preloadStudioAssetToolPopoverBody}
+              onPointerDown={preloadStudioAssetToolPopoverBody}
+              onFocus={preloadStudioAssetToolPopoverBody}
+              aria-label="템플릿·에셋"
+              aria-haspopup="menu"
+              aria-expanded={activeToolbarGroup === "assetGroup"}
+              className={cn(
+                buttonClass({ size: "sm", variant: activeToolbarGroup === "assetGroup" ? "solid" : "quiet" }),
+                "min-h-11 min-w-11 gap-1.5 px-2.5 text-[0.72rem]"
+              )}
+            >
+              <Folder size={14} aria-hidden />
+              <span className="max-2xl:sr-only">템플릿·에셋</span>
+            </button>
+          </StudioToolHintTarget>
+          <StudioToolHintTarget hint={MENUBAR_HINTS.bubbles} preferredSide="bottom">
+            <button
+              type="button"
+              onClick={() => setMenu(menu === "bubble" ? null : "bubble")}
+              aria-label="말풍선"
+              aria-haspopup="menu"
+              aria-expanded={menu === "bubble"}
+              className={cn(
+                buttonClass({ size: "sm", variant: menu === "bubble" ? "solid" : "quiet" }),
+                "min-h-11 min-w-11 gap-1.5 px-2.5 text-[0.72rem]"
+              )}
+            >
+              <MessageCircle size={14} aria-hidden />
+              <span className="max-2xl:sr-only">말풍선</span>
+            </button>
+          </StudioToolHintTarget>
+          </div>
+          <span aria-hidden className="mx-0.5 hidden h-4 w-px shrink-0 bg-line xl:block" />
+          {/* 오른쪽 페이드는 **실제로 더 볼 내용이 남았을 때만** 켜진다. 폭 브레이크포인트로
+              감추던 예전 방식은 17개 그룹이 1920px에서도 넘치면서 거짓이 됐다(D9).
+              레이아웃 진동을 막으려고 언마운트 대신 투명도만 바꾼다. */}
+          <span
+            aria-hidden
+            data-studio-menubar-overflow-cue="true"
+            data-overflowing={laneOverflow.scrollable ? "true" : "false"}
+            className={cn(
+              "pointer-events-none sticky right-0 -mr-2 h-8 w-4 shrink-0 self-center bg-gradient-to-l from-panel to-transparent transition-opacity motion-reduce:transition-none",
+              laneOverflow.scrollable ? "opacity-100" : "opacity-0"
+            )}
+          />
+        </div>
+        {/* 잘린 그룹으로 가는 정본 경로. 스크롤 레인 밖(형제)이라 절대 같이 잘리지 않는다. */}
+        <StudioMenubarOverflowMenu groups={overflowMenuGroups} onReveal={revealMenuGroup} />
+        {/* 파일·내보내기 — 드로잉 앱 메뉴바 */}
+        <div
+          data-testid="studio-menubar-actions"
+          data-studio-menubar-actions="true"
+          className={cn(
+            "flex shrink-0 flex-nowrap items-center gap-1",
+            // Immersive pill is content-width only — keep a real 4px gap so buttons never
+            // paint under each other (the old sticky canvas ring used to cover "작업 저장").
+            mobileImmersive && "min-w-0 gap-1"
+          )}
+        >
+          {/* 화면 구성(밀도) 원터치 전환 — 상태는 기존 uiDensityMode 환경설정을 그대로 쓰고,
+              여기서는 메뉴바에서 바로 닿게만 한다. 배선이 없으면 스스로 숨는다. */}
+          {uiDensityMode && setStudioUiDensity && !mobileImmersive ? (
+            <div
+              role="group"
+              aria-label="화면 구성"
+              data-studio-ui-density-toggle="true"
+              className="hidden shrink-0 items-center gap-0.5 rounded-xl border border-line/70 bg-canvas/40 p-0.5 lg:flex"
+            >
+              {STUDIO_UI_DENSITY_MODES.map((mode) => {
+                const active = mode === uiDensityMode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    aria-pressed={active}
+                    data-studio-ui-density={mode}
+                    onClick={() => setStudioUiDensity(mode)}
+                    className={cn(
+                      "min-h-9 whitespace-nowrap rounded-lg px-2 text-[0.68rem] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+                      active ? "bg-accent text-on-accent" : "text-fg-2 hover:text-fg",
+                    )}
+                  >
+                    {studioUiDensityLabel(mode)}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+          {/* 첫 화면 다이어트 — 기본 작업(simple)에서 접어 둔 고급 도구 클러스터를 여는 메뉴바 펼침.
+              펼침 상태는 밀도 저장소에 영속되어 새로고침 후에도 유지된다. 전체 도구(full)에선
+              접을 것이 없고 집중 작업(focus)에선 고급이 숨김이 원칙이라 simple에서만 보인다.
+              배선(핸들러)이 없으면 스스로 숨는 기존 패턴을 따른다. */}
+          {uiDensityMode === "simple" && setUiAdvancedToolsExpanded && !mobileImmersive ? (
+            <button
+              type="button"
+              data-studio-advanced-tools-toggle="true" aria-label={studioUiAdvancedToolsToggleAccessibleName(uiAdvancedToolsExpanded === true)} title={studioUiAdvancedToolsToggleTooltip(uiAdvancedToolsExpanded === true)}
+              aria-expanded={uiAdvancedToolsExpanded === true}
+              onClick={() => setUiAdvancedToolsExpanded(uiAdvancedToolsExpanded !== true)}
+              className="hidden min-h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl border border-line/70 bg-canvas/40 px-2 text-[0.68rem] font-bold text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 hover:text-fg lg:flex"
+            >
+              {studioUiAdvancedToolsToggleLabel(uiAdvancedToolsExpanded === true)}
+              <ChevronDown
+                size={12}
+                aria-hidden
+                className={cn("transition-transform", uiAdvancedToolsExpanded ? "rotate-180" : "")}
+              />
+            </button>
+          ) : null}
+          {mobileImmersive ? (
+            <StudioEditorReturnButton
+              variant="immersive"
+              onReturn={onNavigateBack}
+            />
+          ) : null}
+          {!isMobile && actionStudioMainMenuGroups.length > 0 ? (
+            <Suspense fallback={null}>
+              <StudioMainMenu
+                groups={actionStudioMainMenuGroups}
+                ariaLabel={actionStudioMainMenuGroups[0]?.label ?? "AI 도우미"}
+                surface="action"
+                className={cn("shrink-0", mobileImmersive && "hidden")}
+              />
+            </Suspense>
+          ) : null}
+          {isMobile ? (
+            <StudioToolHintTarget
+              hint={mobileImmersive ? MENUBAR_HINTS.immersiveExit : MENUBAR_HINTS.immersive}
+              preferredSide="bottom"
+            >
+              <button
+                type="button"
+                onClick={() => changeMobileImmersiveMode(!mobileImmersive)}
+                aria-pressed={mobileImmersive}
+                aria-label={
+                  mobileImmersive
+                    ? "전체 화면 드로잉 종료"
+                    : "전체 화면 드로잉"
+                }
+                data-studio-mobile-app-mode
+                className={cn(
+                  buttonClass({
+                    size: "sm",
+                    // Quiet exit reads as chrome chrome, not a second primary CTA next to Publish.
+                    variant: mobileImmersive ? "quiet" : "quiet",
+                    className: "min-h-11 shrink-0 gap-1.5 whitespace-nowrap",
+                  }),
+                  // Windowed: sticky exit keeps the control reachable while the long title lane
+                  // scrolls. Immersive: no sticky/ring — the compact pill has no scroll sibling.
+                  // 모바일 폭(≤429px)에서는 아이콘만 남긴다. 예전 359px 경계로는 360~430px 창모드에서
+                  // 액션 클러스터가 레인을 넘쳐 게시 버튼이 잘렸다(`verify:studio-mobile-top`, CI 실패).
+                  !mobileImmersive &&
+                    "sticky left-0 z-20 shadow-[0_0_0_4px_var(--color-canvas)] max-[429px]:size-11 max-[429px]:justify-center max-[429px]:px-0",
+                  mobileImmersive &&
+                    "rounded-full border border-line/70 bg-raised/80 px-2.5 text-fg max-[429px]:size-11 max-[429px]:justify-center max-[429px]:px-0"
+                )}
+              >
+                {mobileImmersive ? (
+                  <Minimize2 size={15} aria-hidden />
+                ) : (
+                  <Maximize2 size={15} aria-hidden />
+                )}
+                <span className="max-[429px]:sr-only">
+                  {mobileImmersive ? "종료" : "전체화면"}
+                </span>
+              </button>
+            </StudioToolHintTarget>
+          ) : null}
+          {mobileImmersive ? (
+            <>
+              <h2 className="sr-only">드로잉 전체화면</h2>
+              {/* 몰입 필은 콘텐츠 폭 기반의 컴팩트 플로팅 컨트롤이라 시각적 제목 자리가 없다
+                  (기존 flex-1 스팬은 항상 0폭으로 짜부라지며 게시하기 버튼만 잘랐다).
+                  문서 맥락은 보조기술에만 그대로 전달한다. */}
+              <span className="sr-only">
+                {title.trim() || "무제"} · {activePageLabel}
+              </span>
+            </>
+          ) : null}
+          {togglePageSequence ? (
+            <StudioToolHintTarget
+              hint={MENUBAR_HINTS.pages}
+              preferredSide="bottom"
+            >
+              <button
+                type="button"
+                onClick={() => togglePageSequence()}
+                data-studio-primary-action="pages"
+                aria-pressed={pageSequenceOpen}
+                aria-label={pageSequenceOpen ? "페이지 목록 닫기" : "페이지 목록 열기"}
+                className={cn(
+                  buttonClass({ size: "sm", variant: "quiet", className: "min-h-11 min-w-11 shrink-0 gap-1.5" }),
+                  // 모바일에서는 하단 도크의 드로잉 행이 같은 '페이지' 버튼을 이미 갖는다. 메뉴바 사본까지
+                  // 두면 320~430px 액션 클러스터가 44px 버튼 7개(332px)로 레인을 넘친다.
+                  isMobile && "hidden",
+                )}
+              >
+                <Files size={14} aria-hidden />
+                {/* 상단 바에 저장·동기화 상태가 들어오면서 2xl 미만에서는 아이콘만 남겨 메뉴 레인 폭을 지킨다. */}
+                <span className="max-2xl:sr-only">페이지</span>
+              </button>
+            </StudioToolHintTarget>
+          ) : null}
+          <div
+            ref={exportMenuRef}
+            className="relative flex shrink-0 items-center"
+            data-studio-primary-action="export"
+          >
+            <StudioToolHintTarget hint={MENUBAR_HINTS.download} preferredSide="bottom">
+              <button
+                type="button"
+                onClick={() => handleDownload()}
+                data-studio-primary-action="export"
+                aria-label={`다운로드 ${exportScale}× ${exportFormat.toUpperCase()}${exportTransparent && exportFormat === "png" ? " · 투명" : ""} · 현재 페이지`}
+                className={cn(
+                  buttonClass({ size: "sm", variant: "quiet", className: "min-h-11 min-w-11 shrink-0 whitespace-nowrap gap-1.5 pr-2" }),
+                  // 모바일 도크의 '내보내기' 가 같은 핸들러다. 메뉴바에는 배율·포맷을 고르는
+                  // 내보내기 옵션만 남겨 44px 클러스터가 320px 안에 들어오게 한다.
+                  isMobile && "hidden"
+                )}
+              >
+                <Download size={14} aria-hidden /> <span className="max-2xl:sr-only">다운로드</span>
+                {" "}
+                <span className="text-[10px] font-semibold tabular-nums text-fg-3 max-2xl:hidden">
+                  {exportScale}× {exportFormat.toUpperCase()}
+                  {exportTransparent && exportFormat === "png" ? " · 투명" : null}
+                </span>
+              </button>
+            </StudioToolHintTarget>
+            <StudioToolHintTarget hint={MENUBAR_HINTS.exportOptions} preferredSide="bottom">
+              <button
+                type="button"
+                onClick={async () => {
+                  preloadStudioExportMenuPanel();
+                  await ensureWatermarkLoaded();
+                  setProjectActionsOpen(false);
+                  setExportMenuOpen((open) => !open);
+                }}
+                onMouseEnter={preloadStudioExportMenuPanel}
+                onFocus={preloadStudioExportMenuPanel}
+                aria-expanded={exportMenuOpen}
+                aria-label="내보내기 옵션"
+                style={isMobile ? { minWidth: 44 } : undefined}
+                className={cn(
+                  buttonClass({ size: "sm", variant: "quiet", className: "min-h-11 min-w-[44px] shrink-0 px-1.5" }),
+                  isMobile && "min-h-11 min-w-[44px]"
+                )}
+              >
+                <ChevronDown
+                  size={13}
+                  aria-hidden
+                  className={cn(
+                    "transition-transform motion-reduce:transition-none",
+                    exportMenuOpen && "rotate-180"
+                  )}
+                />
+              </button>
+            </StudioToolHintTarget>
+            {exportMenuOpen && typeof document !== "undefined"
+              ? createPortal(
+                  <Suspense
+                    fallback={
+                      <div
+                        data-studio-export-menu-panel="true"
+                        className="fixed inset-x-2 top-12 z-[100] max-h-[calc(100dvh-4rem)] overflow-y-auto rounded-xl border border-line bg-panel p-3 text-xs text-fg-3 shadow-2xl sm:inset-x-auto sm:right-3 sm:w-72"
+                      >
+                        {frozenStatus3Text("studio.frozenStatus3.menubar.exportOpening", "내보내기 옵션을 여는 중...")}
+                      </div>
+                    }
+                  >
+                    <StudioExportMenuPanel
+                      canvasWidth={CANVAS_W}
+                      canvasHeight={canvasH}
+                      exportScale={exportScale}
+                      exportFormat={exportFormat}
+                      exportTransparent={exportTransparent}
+                      exportPresetId={exportPresetId}
+                      watermark={watermark}
+                      isExporting={isExporting}
+                      exportTitle={title}
+                      pageCount={pageCount} activePageIndex={Math.max(0, pageLabels.indexOf(activePageLabel))}
+                      pageLabels={pageLabels}
+                      dialoguePages={dialoguePages}
+                      sourceWorkId={workId}
+                      capturePagesForPreset={handleCapturePagesForPreset}
+                      capturePagesForIndices={handleCapturePagesForIndices}
+                      exportPresetSlicesFromDocument={handleExportPresetSlices}
+                      exportCurrentPageToInkMl={exportCurrentPageToInkMl}
+                      exportCurrentPageToWillV1={exportCurrentPageToWillV1}
+                      exportCurrentPageToSvg={exportCurrentPageToSvg}
+                      exportCurrentPageToVectorPdf={exportCurrentPageToVectorPdf}
+                      exportCurrentPageToPsd={exportCurrentPageToPsd}
+                      exportCurrentPageToRasterInterchange={exportCurrentPageToRasterInterchange}
+                      setExportScale={setExportScale}
+                      setExportFormat={setExportFormat}
+                      setExportTransparent={setExportTransparent}
+                      setExportPresetId={setExportPresetId}
+                      setWatermark={setWatermark}
+                      onCopyToClipboard={handleCopyToClipboard} onDownloadCurrentPage={handleDownload} onRequestCloseAndReturn={() => setExportMenuOpen(false)} onWorkspaceAbortNotice={setStudioStatusNotice ? (msg) => setStudioStatusNotice(msg) : undefined}
+                    />
+                  </Suspense>,
+                  document.body
+                )
+              : null}
+          </div>
+          {/* 좁은 화면은 아이콘으로 프로젝트 센터를 연다. */}
+          <div ref={projectActionsRef} className="relative shrink-0">
+            <StudioToolHintTarget hint={MENUBAR_HINTS.project} preferredSide="bottom">
+              <button
+                type="button"
+                onClick={() => {
+                  setExportMenuOpen(false);
+                  setProjectActionsOpen((open) => !open);
+                }}
+                aria-label="프로젝트 센터"
+                aria-haspopup="dialog"
+                aria-expanded={projectActionsOpen}
+                aria-controls="studio-project-actions-menu"
+                style={isMobile ? { minWidth: 44 } : undefined}
+                className={buttonClass({
+                  size: "sm",
+                  variant: "quiet",
+                  // `min-w-[44px]`은 셰브론을 접는 폭에서도 44px 터치 타깃을 지킨다
+                  // (`verify:studio-mobile-top`은 메뉴바 컨트롤의 가로·세로 모두 하드 체크).
+                  className: "min-h-11 min-w-[44px] shrink-0 gap-1.5 whitespace-nowrap",
+                })}
+              >
+                <Folder size={14} aria-hidden /> <span className="max-2xl:sr-only">프로젝트 센터</span>
+                {/* 좁은 메뉴에서 장식 화살표를 접어 게시 버튼의 자리를 확보한다. */}
+                <ChevronDown
+                  size={13}
+                  className={cn(
+                    "transition-transform motion-reduce:transition-none max-sm:hidden",
+                    projectActionsOpen && "rotate-180"
+                  )}
+                  aria-hidden
+                />
+              </button>
+            </StudioToolHintTarget>
+            {projectCenter}
           </div>
           {!isMobile && !mobileImmersive ? (
             <>
@@ -2466,14 +2472,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
           늘어나도 상위 메뉴 18개의 가로 예산을 한 픽셀도 가져가지 않는다. 오버플로 실측기가
           재는 것은 1행의 `data-studio-menubar-primary` 뿐이라 이 줄은 계산에 아예 안 들어온다. */}
       {mobileImmersive ? <StudioDocumentChromeSlot /> : null}
-      <StudioMenubarCommandBar
-        preferences={commandBarPreferences}
-        bindings={commandBarBindings}
-        historyPanelOpen={historyPanelOpen}
-        onToggleHistoryPanel={toggleHistoryPanel}
-        onPreferencesChange={changeCommandBarPreferences}
-        hidden={mobileImmersive}
-      />
+      {commandBar}
     </div>
   );
 });

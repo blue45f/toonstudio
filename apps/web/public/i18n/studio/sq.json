@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Paraqitje super e thjeshtë",
   "studio.mainMenu.item.view.density-full": "Paraqitje e plotë",
   "studio.mainMenu.item.view.wide": "Palos panelet dhe zgjero",
+  "studio.mainMenu.item.view.wide.open": "Shfaq panelet",
   "studio.mainMenu.item.view.tools-companion": "Hapësira e punës me shumë ekrane…",
   "studio.mainMenu.item.view.canvas-only": "Vetëm kanavacë",
   "studio.mainMenu.item.view.color-vision.unavailable": "Nuk mund të ndryshoni modalitetin e testit të shikimit me ngjyra ndërsa transformimi i pamjes është i kyçur.",

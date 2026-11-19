@@ -126,6 +126,7 @@
   "studio.mainMenu.item.view.density-focus": "Super vienkāršs izkārtojums",
   "studio.mainMenu.item.view.density-full": "Pilns izkārtojums",
   "studio.mainMenu.item.view.wide": "Sakļaut paneļus un paplašināt",
+  "studio.mainMenu.item.view.wide.open": "Rādīt paneļus",
   "studio.mainMenu.item.view.tools-companion": "Vairāku displeju darbvieta…",
   "studio.mainMenu.item.view.canvas-only": "Tikai audekls",
   "studio.mainMenu.item.view.color-vision.unavailable": "Jūs nevarat mainīt krāsu redzes režīmu, kamēr skata transformācija ir bloķēta.",

@@ -75,6 +75,7 @@ export interface StudioAnimaticCue {
   readonly id: string;
   readonly kind: StudioAnimaticCueKind;
   readonly offsetMs: number;
+  readonly subtitleDurationMs?: number;
   readonly text: string;
   readonly speaker?: string;
 }
@@ -376,6 +377,7 @@ function sanitizeCue(value: unknown, durationMs: number): StudioAnimaticCue | nu
     !validId(raw.id)
     || (raw.kind !== "dialogue" && raw.kind !== "sfx")
     || !finiteWithin(raw.offsetMs, 0, durationMs)
+    || (raw.subtitleDurationMs !== undefined && !finiteWithin(raw.subtitleDurationMs, 1, STUDIO_ANIMATIC_MAX_HOLD_MS + STUDIO_ANIMATIC_MAX_TRANSITION_MS))
     || typeof raw.text !== "string"
   ) {
     return null;
@@ -398,6 +400,7 @@ function sanitizeCue(value: unknown, durationMs: number): StudioAnimaticCue | nu
     id: normalizeText(raw.id),
     kind: raw.kind,
     offsetMs: Math.round(raw.offsetMs),
+    ...(typeof raw.subtitleDurationMs === "number" ? { subtitleDurationMs: Math.round(raw.subtitleDurationMs) } : {}),
     text,
     speaker:
       typeof raw.speaker === "string" && normalizeText(raw.speaker)
@@ -1292,7 +1295,7 @@ export function patchStudioAnimaticCue(
   segmentId: string,
   cueId: string,
   patch: Partial<
-    Pick<StudioAnimaticCue, "kind" | "offsetMs" | "text" | "speaker">
+    Pick<StudioAnimaticCue, "kind" | "offsetMs" | "subtitleDurationMs" | "text" | "speaker">
   >
 ): StudioAnimaticDocument {
   const segment = document.segments.find(
@@ -1314,13 +1317,10 @@ export function patchStudioAnimaticCue(
         patch.kind === "dialogue" || patch.kind === "sfx"
           ? patch.kind
           : cue.kind,
-      offsetMs: Math.round(
-        clamp(
-          patch.offsetMs ?? cue.offsetMs,
-          0,
-          segmentDurationMs(segment)
-        )
-      ),
+      offsetMs: Math.round(clamp(patch.offsetMs ?? cue.offsetMs, 0, segmentDurationMs(segment))),
+      ...(patch.subtitleDurationMs !== undefined && Number.isFinite(patch.subtitleDurationMs)
+        ? { subtitleDurationMs: Math.round(clamp(patch.subtitleDurationMs, 1, segmentDurationMs(segment))) }
+        : {}),
       text,
       speaker:
         patch.speaker === undefined

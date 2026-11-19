@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { BG_SCENE_TEMPLATES } from "../studio-background-3d-scene-templates";
 import {
   StudioBg3dSceneAssistantWorkspace,
   type StudioBg3dSceneAssistantHost,
@@ -80,6 +81,28 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect((screen.getByRole("button", { name: "다음: 배치하기" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+
+  it("offers the full location catalog and applies the chosen space only after confirmation", () => {
+    const host = createHost({ primitives: [{ id: "artist-prop" }] });
+    render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "1. 시작점 선택" }));
+    const select = screen.getByRole("combobox", { name: "모든 공간" });
+    expect(new Set(within(select).getAllByRole("option").map((option) => option.getAttribute("value"))))
+      .toEqual(new Set(["", ...BG_SCENE_TEMPLATES.map(({ id }) => id)]));
+    const apply = screen.getByRole("button", { name: "공간 적용" });
+    expect((apply as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(select, { target: { value: "forest_path" } });
+    expect(host.addSceneTemplate).not.toHaveBeenCalled();
+    vi.mocked(window.confirm).mockReturnValueOnce(false);
+    fireEvent.click(apply);
+    expect(host.addSceneTemplate).not.toHaveBeenCalled();
+    fireEvent.click(apply);
+    expect(host.addSceneTemplate).toHaveBeenCalledExactlyOnceWith("forest_path");
+    expect(host.applyCameraPreset).not.toHaveBeenCalled();
+    expect(screen.getByTestId("studio-bg3d-scene-assistant").getAttribute("data-step")).toBe("arrange");
+    fireEvent.click(screen.getByRole("button", { name: "1. 시작점 선택" }));
+    expect((screen.getByRole("combobox", { name: "모든 공간" }) as HTMLSelectElement).value).toBe("forest_path");
+  });
 
   it("refreshes asynchronous mutable host state so restored scenes never leave navigation disabled", async () => {
     const host = createHost();

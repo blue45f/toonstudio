@@ -23,6 +23,8 @@ export interface StudioMobileBackStackInputs {
   readonly dismissQuickAccessPalette: () => void;
   readonly shortcutsOpen: boolean;
   readonly dismissShortcuts: () => void;
+  readonly routedSurface?: string;
+  readonly routedModalOwners?: WeakSet<Element>;
   readonly domRoot?: ParentNode | null;
 }
 
@@ -33,7 +35,7 @@ function isVisibleElement(el: Element): el is HTMLElement {
   return true;
 }
 
-function queryVisibleForeignModals(root: ParentNode): HTMLElement[] {
+function queryVisibleForeignModals(root: ParentNode, routedSurface?: string, routedModalOwners?: WeakSet<Element>): HTMLElement[] {
   const candidates = root.querySelectorAll(
     '[role="dialog"][aria-modal="true"], dialog[open]',
   );
@@ -45,6 +47,15 @@ function queryVisibleForeignModals(root: ParentNode): HTMLElement[] {
     if (node.hasAttribute("data-studio-mobile-sheet")) continue;
     // 첫 진입 웰컴 오버레이는 편집 패널 스택 대상이 아니다.
     if (node.closest("[data-studio-cinematic-canvas-welcome]")) continue;
+    // 주소가 소유한 3D 편집기는 실제 라우터 히스토리가 닫는다. 안쪽 시트·보조 포저는 별도 층이다.
+    if ((routedSurface === "bg3d" && node.hasAttribute("data-studio-bg3d-experience"))
+      || (routedSurface === "character" && node.hasAttribute("data-character-shaper"))
+      || (routedSurface === "poser" && node.hasAttribute("data-studio-vrm-dialog") && !node.hasAttribute("data-character-shaper"))) {
+      routedModalOwners?.add(node);
+      continue;
+    }
+    // 2D 주소가 먼저 복원되고 WebXR/렌더러 종료가 늦은 프레임에도 기존 라우트 창은 자체 가드를 만들지 않는다.
+    if (routedModalOwners?.has(node)) continue;
     modals.push(node);
   }
   return modals;
@@ -155,7 +166,7 @@ export function resolveStudioMobileBackLayers(
     });
   }
 
-  const foreignModals = root ? queryVisibleForeignModals(root) : [];
+  const foreignModals = root ? queryVisibleForeignModals(root, inputs.routedSurface, inputs.routedModalOwners) : [];
 
   if (inputs.quickAccessPaletteOpen && foreignModals.length === 0) {
     layers.push({
@@ -176,7 +187,9 @@ export function resolveStudioMobileBackLayers(
       || modal.getAttribute("aria-labelledby")
       || String(index);
     layers.push({
-      id: `modal:${index}:${label}`,
+      id: modal.hasAttribute("data-studio-drawing-task")
+        ? `modal:drawing-task:${modal.dataset.studioDrawingTask}`
+        : modal.querySelector("[data-studio-all-tools-direct]") ? "modal:catalog" : `modal:${index}:${label}`,
       dismiss: () => dismissForeignModal(modal),
     });
   });
@@ -214,6 +227,8 @@ export function createStudioMobileHistorySyncController(
   const initialPathname = historyAdapter.getPathname();
   let currentLayers: readonly StudioMobilePanelLayer[] = [];
   let pushedDepth = 0;
+  let guardedHref: string | null = null;
+  let guardedEntryKey: unknown;
   let pendingPopTargetDepth: number | null = null;
   let rewindingHistory = false;
   let pendingTimer: ReturnType<typeof setTimeout> | null = null;
@@ -239,6 +254,14 @@ export function createStudioMobileHistorySyncController(
       if (historyAdapter.getPathname() !== initialPathname) {
         return;
       }
+      // 같은 원고에서도 워크스페이스 이동은 실제 라우터 항목이다. 이전 모달 가드로 되감지 않는다.
+      const state = historyAdapter.getState() as { __studioMobileBackSession?: unknown; key?: unknown } | null;
+      if (pushedDepth > 0 && state?.__studioMobileBackSession !== sessionToken && pendingPopTargetDepth === null) {
+        // 브라우저는 popstate 전달 전에 현재 항목을 바꾼다. 그 사이의 React 레이아웃이
+        // 같은 원고 키에서 사라진 가드를 다시 쌓으면 작가는 뒤로 가기를 두 번 눌러야 한다.
+        if (historyAdapter.getHref() === guardedHref && state?.key === guardedEntryKey) return;
+        pushedDepth = 0;
+      }
       const desiredDepth = layers.length;
 
       if (pendingPopTargetDepth !== null) {
@@ -251,6 +274,8 @@ export function createStudioMobileHistorySyncController(
       }
 
       if (desiredDepth > pushedDepth) {
+        guardedHref = historyAdapter.getHref();
+        guardedEntryKey = state?.key;
         const baseState =
           typeof historyAdapter.getState() === "object" && historyAdapter.getState() !== null
             ? (historyAdapter.getState() as Record<string, unknown>)
@@ -262,6 +287,7 @@ export function createStudioMobileHistorySyncController(
               ...baseState,
               __studioMobileBackSession: sessionToken,
               __studioMobileBackDepth: pushedDepth,
+              __studioMobileBackLayer: layers[pushedDepth - 1]?.id,
             },
             historyAdapter.getHref(),
           );

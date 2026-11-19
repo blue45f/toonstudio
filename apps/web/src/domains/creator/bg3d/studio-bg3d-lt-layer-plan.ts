@@ -783,13 +783,13 @@ export function planStudioBg3dLtLayers<
   const plannedLayers: StudioBg3dLtPlannedLayer[] = normalized.layers.map((layer) => ({
     role: layer.role,
     elementId: elementIdByRole.get(layer.role)!,
-    name: STUDIO_BG3D_LT_LAYER_NAMES[layer.role],
+    name: existingByRole.get(layer.role)?.name ?? STUDIO_BG3D_LT_LAYER_NAMES[layer.role],
     pngDataUrl: layer.pngDataUrl,
     created: createdRoles.has(layer.role),
     sceneAnchor: layer.role === normalized.anchorRole,
   }));
 
-  const nextBundleElements = normalized.layers.map((layer) => {
+  const nextBundleElements = normalized.layers.map((layer, index) => {
     const existing = existingByRole.get(layer.role);
     const base = existing ?? template;
     if (!base) {
@@ -806,7 +806,7 @@ export function planStudioBg3dLtLayers<
       commonGeometry!,
       normalized.anchorRole,
       normalized.bg3dScene,
-      STUDIO_BG3D_LT_LAYER_NAMES[layer.role], !existing
+      plannedLayers[index]!.name, !existing
     );
   });
 
@@ -821,16 +821,9 @@ export function planStudioBg3dLtLayers<
     ...retainedElements.slice(adjustedInsertionIndex),
   ];
 
-  let nextGroups: LayerGroup[];
-  if (operation === "update") {
-    nextGroups = input.groups.map((group) =>
-      group.id === groupId && group.name !== STUDIO_BG3D_LT_GROUP_NAME
-        ? { ...group, name: STUDIO_BG3D_LT_GROUP_NAME }
-        : group
-    );
-  } else {
-    nextGroups = [...input.groups, createLayerGroup(groupId, STUDIO_BG3D_LT_GROUP_NAME)];
-  }
+  const nextGroups = operation === "update"
+    ? [...input.groups]
+    : [...input.groups, createLayerGroup(groupId, STUDIO_BG3D_LT_GROUP_NAME)];
 
   const resultingIds = new Set(nextBundleElements.map((element) => element.id));
   const removedElementIds = bundleElements

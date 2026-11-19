@@ -5,7 +5,7 @@ import { defaultStudioAppSettings } from "../studio-app-settings";
 import { applyStudioLaunchDensity, readStudioLaunchDensity } from "../studio-launch-mode";
 import { createStudioWorkspaceDefaultState } from "../studio-workspaces";
 import { applyStudioTaskWorkspace, studioTaskWorkspaceId } from "../studio-task-workspace";
-import { studioDrawingClarityEligible } from "../studio-cuttoon-editor/StudioDrawingClarityPolicy";
+import { isStudioDrawingEditorRoute } from "../studio-cuttoon-editor/StudioDrawingClarityPolicy";
 
 const EXPECTED = {
   webtoon: ["comic", "draw"],
@@ -53,7 +53,8 @@ describe("새 빠른 스케치의 기본 화면 진입", () => {
   it("자동 집중 모드를 붙이지 않고 새 기본 단순 그리기 화면에 진입한다", () => {
     const plan = resolveStudioModeCreationPlan("illustration", "quick-sketch");
     expect(plan.launch.uiMode).toBeNull();
-    const search = new URL(sketchHref(), "http://local.test").search;
+    const location = new URL(sketchHref(), "http://local.test");
+    const search = location.search;
     expect(new URLSearchParams(search).get("workspace")).toBe("draw");
     expect(new URLSearchParams(search).get("startTool")).toBe("draw");
     expect(new URLSearchParams(search).has("uiMode")).toBe(false);
@@ -66,8 +67,8 @@ describe("새 빠른 스케치의 기본 화면 진입", () => {
     const workspaceId = studioTaskWorkspaceId(plan.document.workspace, applied.general.densityMode, search);
     expect(workspaceId).toBe("lineart");
     const state = applyStudioTaskWorkspace(createStudioWorkspaceDefaultState(null), workspaceId);
-    expect(studioDrawingClarityEligible({ baseline: { ownerScope: "guest", source: "default", state },
-      ownerScope: "guest", documentWorkspace: plan.document.workspace, densityMode: applied.general.densityMode, workMode: "all", search, toolbarConfigured: false })).toBe(true);
+    expect(state.activeWorkspaceId).toBe("lineart");
+    expect(isStudioDrawingEditorRoute(location)).toBe(true);
   });
 
   it.each(["simple", "focus", "full"] as const)("저장한 %s 선택을 새 스케치 URL로 덮어쓰지 않는다", (densityMode) => {

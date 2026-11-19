@@ -398,7 +398,7 @@ describe("Studio VRM single-image PNG Worker boundary", () => {
     const startupOutcome = startup.catch((error: unknown) => error);
     await vi.advanceTimersByTimeAsync(100);
     const startupError = await startupOutcome;
-    expect(startupError).toMatchObject({ code: "timeout", name: "TimeoutError" });
+    expect(startupError).toMatchObject({ code: "timeout", phase: "startup", name: "TimeoutError" });
 
     const encodeWorker = new FakeWorker();
     const timed = encodeStudioVrmPngInWorker([layer()], {
@@ -409,8 +409,36 @@ describe("Studio VRM single-image PNG Worker boundary", () => {
     const timedOutcome = timed.catch((error: unknown) => error);
     await vi.advanceTimersByTimeAsync(100);
     const timedError = await timedOutcome;
-    expect(timedError).toMatchObject({ code: "timeout", name: "TimeoutError" });
+    expect(timedError).toMatchObject({ code: "timeout", phase: "encode", name: "TimeoutError" });
     expect(encodeWorker.terminateCalls).toBe(1);
+  });
+
+  it("첫 원고 삽입의 늦은 모듈 기동 뒤 같은 워커로 PNG를 한 번 저장한다", async () => {
+    vi.useFakeTimers();
+    const worker = new FakeWorker();
+    const pending = encodeStudioVrmPngInWorker([layer()], {
+      workerFactory: () => worker, startupTimeoutMs: 100, timeoutMs: 200, shareStartupBudget: true,
+    });
+    await vi.advanceTimersByTimeAsync(150);
+    expect(worker.requests).toHaveLength(0);
+    emitReady(worker);
+    expect(worker.requests).toHaveLength(1);
+    const result = resultFor(worker.requests[0]!);
+    worker.emit(result);
+    await expect(pending).resolves.toBe(result.png);
+  });
+
+  it.each([[false, "startup"], [true, "encode"]] as const)("준비가 %s일 때도 같은 총 기한에 정리한다", async (ready, phase) => {
+    vi.useFakeTimers();
+    const worker = new FakeWorker();
+    const result = encodeStudioVrmPngInWorker([layer()], {
+      workerFactory: () => worker, startupTimeoutMs: 100, timeoutMs: 200, shareStartupBudget: true,
+    }).catch((error: unknown) => error);
+    await vi.advanceTimersByTimeAsync(180);
+    if (ready) emitReady(worker);
+    await vi.advanceTimersByTimeAsync(120);
+    expect(await result).toMatchObject({ code: "timeout", phase });
+    expect(worker.terminateCalls).toBe(1);
   });
 
   it("does not allocate a Worker for an already-aborted request", async () => {

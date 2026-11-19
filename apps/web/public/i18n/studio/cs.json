@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Super jednoduché rozložení",
   "studio.mainMenu.item.view.density-full": "Úplné rozložení",
   "studio.mainMenu.item.view.wide": "Sbalit panely a rozšířit",
+  "studio.mainMenu.item.view.wide.open": "Zobrazit panely",
   "studio.mainMenu.item.view.tools-companion": "Pracovní plocha s více displeji…",
   "studio.mainMenu.item.view.canvas-only": "Pouze plátno",
   "studio.mainMenu.item.view.color-vision.unavailable": "Režim kontroly barevného vidění nelze změnit, dokud je transformace zobrazení uzamčena.",

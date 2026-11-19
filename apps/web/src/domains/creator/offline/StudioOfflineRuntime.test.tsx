@@ -106,6 +106,55 @@ describe("StudioOfflineRuntime", () => {
     window.removeEventListener(STUDIO_OFFLINE_AUTOMATION_EVENT, onStatus);
   });
 
+  it("유휴 시간이 없는 콜백 뒤에는 다음 유휴 구간까지 원고 리소스 다운로드를 미룬다", async () => {
+    const requestIdle = vi.fn<typeof window.requestIdleCallback>();
+    Object.defineProperty(window, "requestIdleCallback", { configurable: true, value: requestIdle });
+    render(<StudioOfflineRuntime />);
+    await flushAutomation();
+    expect(requestIdle).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      requestIdle.mock.calls[0]?.[0]({ didTimeout: true, timeRemaining: () => 0 });
+    });
+    expect(runtime.prepare).not.toHaveBeenCalled();
+    await flushAutomation();
+    expect(requestIdle).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      requestIdle.mock.calls[1]?.[0]({ didTimeout: false, timeRemaining: () => 12 });
+    });
+    expect(runtime.prepare).toHaveBeenCalledTimes(1);
+  });
+
+  it("펜을 누른 동안과 키 입력 직후에는 준비를 미루고 손을 놓은 뒤 한 번 준비한다", async () => {
+    render(<StudioOfflineRuntime />);
+    await act(async () => { await Promise.resolve(); });
+    window.dispatchEvent(new Event("pointerdown"));
+    await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+    expect(runtime.prepare).not.toHaveBeenCalled();
+    window.dispatchEvent(new Event("pointerup"));
+    await act(async () => { await vi.advanceTimersByTimeAsync(1_000); });
+    window.dispatchEvent(new Event("keydown"));
+    await act(async () => { await vi.advanceTimersByTimeAsync(1_000); });
+    expect(runtime.prepare).not.toHaveBeenCalled();
+    await act(async () => { await vi.advanceTimersByTimeAsync(200); });
+    expect(runtime.prepare).toHaveBeenCalledTimes(1);
+  });
+
+  it("대기 중 재검사해도 준비를 이어가고 연결이 끊어진 이전 검사 결과는 버린다", async () => {
+    const inspection = Promise.withResolvers<typeof device>();
+    runtime.inspect.mockReturnValueOnce(inspection.promise);
+    render(<StudioOfflineRuntime />);
+    window.dispatchEvent(new Event("offline"));
+    inspection.resolve(device);
+    await flushAutomation();
+    expect(runtime.prepare).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new Event("online"));
+    await act(async () => { await Promise.resolve(); });
+    document.dispatchEvent(new Event("visibilitychange"));
+    await flushAutomation();
+    expect(runtime.prepare).toHaveBeenCalledTimes(1);
+  });
+
   it("respects browser data-saver without requiring a user setting", async () => {
     Object.defineProperty(navigator, "connection", {
       configurable: true,

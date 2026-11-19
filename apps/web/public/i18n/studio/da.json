@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Super enkelt layout",
   "studio.mainMenu.item.view.density-full": "Fuldt layout",
   "studio.mainMenu.item.view.wide": "Fold paneler sammen for bredere visning",
+  "studio.mainMenu.item.view.wide.open": "Vis paneler",
   "studio.mainMenu.item.view.tools-companion": "Arbejdsområde med flere skærme...",
   "studio.mainMenu.item.view.canvas-only": "Kun lærred",
   "studio.mainMenu.item.view.color-vision.unavailable": "Du kan ikke ændre farvesynstilstand, mens visningstransformationen er låst.",

@@ -160,6 +160,7 @@ import {
 } from "./brush/studio-brush-slots";
 import { resolveStudioStampBrushStyle } from "./brush/studio-brush-stamp-engine";
 import { studioBrushSymmetryTransforms } from "./brush/studio-brush-symmetry";
+import { findStudioBrushMenuLauncher } from "./brush/studio-brush-menu-launcher";
 import { useStudioBrushQuickSlots } from "./brush/useStudioBrushQuickSlots";
 import {
   isDirectLiveDraftEl,
@@ -609,6 +610,8 @@ import { planStudioHokusaiNaturalMediaReplacement } from "./render/studio-hokusa
 import { createNativeBrushDocumentEditorPreparer } from "./brush/studio-native-brush-editor-bridge";
 import { useStudioHybridDccPersistence } from "./hybrid-dcc/studio-hybrid-dcc-persistence";
 import { uid } from "./studio-id";
+import { studioCanvasInputStatus } from "./canvas/studio-canvas-input-status";
+import { createStudioTextAt, type StudioLetteringEditTarget } from "./lettering/studio-pending-text-insert";
 import { canStoreStudioLocalVrmCut } from "./studio-cuttoon-editor/runtime/studio-local-vrm-cut-scope";
 import {
   STUDIO_GPU_LIVE_INK_PROVIDER_LABEL,
@@ -1105,6 +1108,7 @@ import {
   type StudioRawPenInkPreviewEligibility,
   type StudioRawPenInkPreviewState,
 } from "./studio-raw-pen-ink-preview";
+import { useStudioCanvasOnlyViewport } from "./studio-cuttoon-editor/runtime/useStudioCanvasOnlyViewport";
 import { useStudioDrawingPracticeRuntime } from "./use-studio-drawing-practice-runtime";
 import {
   createDefaultStudioReferenceBoardDocument,
@@ -1130,7 +1134,7 @@ import { useStudioDocumentLayout } from "./studio-router/studio-document-layout-
 import { resolveStudioDccRouteAccess, useStudioDccWorkbenchNavigation } from "./studio-router/studio-dcc-workbench-navigation";
 import { StudioDccWorkbenchRoute } from "./studio-router/StudioDccWorkbenchRoute";
 import { announceStudioGpuDeviceLoss } from "./studio-safe-mode-runtime";
-import { layoutScenarioPanels, scenarioGenerationPreferences, scenarioGenerationPreferencesFromHandoff, type ScenarioPreviewItem } from "./studio-scenario-layout";
+import { layoutScenarioPanels, scenarioReviewedArtwork, scenarioGenerationPreferences, scenarioGenerationPreferencesFromHandoff, type ScenarioPreviewItem } from "./studio-scenario-layout";
 import {
   STUDIO_SCROLL_VIEWPORT_ORIGIN,
   STUDIO_SCROLL_VIEWPORT_SETTLE_MS,
@@ -1322,7 +1326,7 @@ import { resolveStudioWorkspacePanelLayoutVisibility } from "./studio-workspace-
 import { useStudioViewportPanelBounds, useStudioViewportPanelMemory } from "./studio-cuttoon-editor/runtime/useStudioViewportPanelMemory";
 import type { StudioDrawingClarityBaseline } from "./studio-cuttoon-editor/StudioDrawingClarityPolicy";
 import {
-  studio2dSurfaceNavigationHref, studioWorkspaceDocumentIdentity,
+  studioDocumentToolNavigation, executeStudioDocumentBackNavigation, studioWorkspaceDocumentIdentity,
   type Studio2dWorkspaceSurface,
 } from "./studio-workspace-route";
 import { resolveStudioWorkspaceWidePanelToggle } from "./studio-workspace-wide-mode";
@@ -3713,37 +3717,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   // 접어 펜 태블릿/큰 모니터에서 실제 드로잉 앱처럼 작업면을 쓴다. 원래 패널 배치는
   // 건드리지 않는 일시적 프레젠테이션 상태라 종료하면 사용자의 작업공간이 그대로 돌아온다.
   const [canvasOnlyMode, setCanvasOnlyMode] = useState(false);
-  // 데스크톱 브라우저 맞춤 상태로 창 폭을 모바일 경계 아래로 줄이면 해당 복원 버튼이
-  // 모바일 툴바에서 사라진다. 경계 진입 commit 전에 상태를 내려 터치 화면을 고정 셸에 가두지 않는다.
-  useLayoutEffect(() => {
-    if (isMobile && maximized) setMaximized(false);
-    // 모바일은 전용 앱 셸이 이미 캔버스 우선 구조이므로 데스크톱 전용 캔버스만 보기의
-    // 중복 상태를 남기지 않는다.
-    if (isMobile && canvasOnlyMode) setCanvasOnlyMode(false);
-  }, [canvasOnlyMode, isMobile, maximized]);
-  // 모바일 앱 셸과 데스크톱 캔버스만 보기는 사이트 크롬 대신 Studio가 화면을 소유한다.
-  // Immersive site-chrome hide is owned by App's StudioRouteImmersiveBridge (path-based).
-  // Studio only stamps presentation data attributes for CSS/hooks (mobile / canvas-only).
-  useLayoutEffect(() => {
-    if (typeof document === "undefined") return;
-    const root = document.documentElement;
-    root.setAttribute("data-studio-app", "true");
-    if (mobileImmersive) {
-      root.setAttribute("data-studio-mobile-immersive", "true");
-    } else {
-      root.removeAttribute("data-studio-mobile-immersive");
-    }
-    if (canvasOnlyMode && !isMobile) {
-      root.setAttribute("data-studio-canvas-only", "true");
-    } else {
-      root.removeAttribute("data-studio-canvas-only");
-    }
-    return () => {
-      root.removeAttribute("data-studio-app");
-      root.removeAttribute("data-studio-mobile-immersive");
-      root.removeAttribute("data-studio-canvas-only");
-    };
-  }, [canvasOnlyMode, isMobile, mobileImmersive]);
+  useStudioCanvasOnlyViewport({ isMobile, mobileImmersive, maximized, canvasOnlyMode, setMaximized, setCanvasOnlyMode });
   // 전체화면/브라우저 맞춤은 저장된 작업공간을 바꾸지 않는 일시적인 프레젠테이션 상태다.
   // 패널 열림 상태 자체를 덮어쓰면 ESC로 돌아왔을 때 사용자가 만든 레이아웃이 사라지고,
   // 작업공간이 뜻하지 않게 "수정됨"으로 표시되므로 렌더링 가시성만 별도로 계산한다.
@@ -3884,11 +3858,12 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     const deviceKind = currentStudioWorkspaceDeviceKind();
     const presented = resolveStudioWorkspaceDeviceLayout(layout, deviceKind);
     const preserveSaveStep = (source === "owner-hydration" || source === "owner-scope-change") && pendingSaveIntent !== null;
-    if (!preserveSaveStep) setInspectorLayout(presented.inspector);
+    const preserveOpenInspector = preserveSaveStep || (source === "owner-hydration" && mobileSheet === "props");
+    if (!preserveOpenInspector) setInspectorLayout(presented.inspector);
     setForceLeftPanelOpen(false);
     canvasWidePanelRestoreRef.current = { left: presented.desktop.leftPanelOpen, right: presented.desktop.rightPanelOpen };
     setLeftPanelOpenWithOverride(presented.desktop.leftPanelOpen);
-    if (!preserveSaveStep) setRightPanelOpenWithOverride(presented.desktop.rightPanelOpen);
+    if (!preserveOpenInspector) setRightPanelOpenWithOverride(presented.desktop.rightPanelOpen);
     if ((source === "owner-scope-change" || source === "owner-hydration") && uiDensityMode === "focus") {
       setForceLeftPanelOpen(false);
       setForceRightPanelOpen(false);
@@ -3901,7 +3876,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     setDrawingPaletteLayout(presented.drawingPalettes);
     viewportPanelMemory.onWorkspaceLayoutApplied(presented, source);
     setQuickActionsPreferences(presented.quickActions);
-    if (!preserveSaveStep) setMobileSheet(null);
+    if (!preserveSaveStep && source !== "owner-hydration") setMobileSheet(null);
     setQuickActionsOpen(false);
     closeStudioMenusForWorkspace(source);
     if (workspaceId && (studioRoute.surface === "canvas" || ["switch", "reload", "active-workspace-delete"].includes(source))) applyStudioWorkspaceLaunchSurface(workspaceId);
@@ -4560,7 +4535,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     applyQueuedRasterRetouchReplayRef.current(queued);
   }, [rasterRetouchReplayEpoch]);
   const [lastStudioFilterDraft, setLastStudioFilterDraft] = useState<StudioFilterDraft | null>(null);
-  const [editing, setEditing] = useState<{ id: string } | null>(null);
+  const [editing, setEditing] = useState<(StudioLetteringEditTarget & { canInsert?: () => boolean }) | null>(null);
+  useEffect(() => { setEditing(previous => previous?.pendingText ? null : previous); }, [activePage.id, autosaveKey, masterEditMode, studioAuthUserId]);
   const [pendingLetteringEdit, setPendingLetteringEdit] = useState<{
     elementId: string;
     pageId: string;
@@ -5553,21 +5529,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     toggleBuiltInBrushCatalog("desktop-dock", trigger);
   }
 
-  /**
-   * §15.3 Brush menu rows open surfaces that anchor to (and return focus to) a
-   * launcher button, but a menu item's `onSelect` receives no event. The
-   * inspector's own launcher is preferred once it is mounted; the menubar row
-   * the artist just used is the fallback, so keyboard focus always lands on a
-   * real, still-connected control instead of the document body.
-   */
   function resolveBrushMenuLauncher(): HTMLButtonElement | null {
-    const root = studioRootRef.current;
-    return (
-      root?.querySelector<HTMLButtonElement>('[data-studio-brush-catalog-launcher="true"]')
-      ?? root?.querySelector<HTMLButtonElement>('[data-studio-brush-manager-launcher="true"]')
-      ?? root?.querySelector<HTMLButtonElement>('[data-studio-main-menu-trigger="create"]')
-      ?? null
-    );
+    return findStudioBrushMenuLauncher(studioRootRef.current);
   }
 
   /** 그리기 ▸ 브러시 프리셋 목록 — §15.3 Brush ▸ Preset Browser. */
@@ -5594,13 +5557,13 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     options?: { readonly force?: boolean; readonly replace?: boolean },
   ) {
     if (studioRoute.surface === surface && options?.force !== true) return;
-    navigate(
-      studio2dSurfaceNavigationHref(studioRoute, surface, location.search),
-      // 패널을 닫아 표면이 canvas 로 내려오는 항목은 히스토리를 쌓지 않는다 — 뒤로가기가
-      // "방금 닫은 패널을 다시 여는" 계단이 되면 라우트 대칭의 의미가 없다.
-      { replace: options?.replace === true, state: surface === "bg3d" && bg3dInitialElementId
-        ? { studioBg3dEditTarget: { scope: bg3dHistoryScope(), pageId: currentPageId, layerId: bg3dInitialElementId } } : null },
-    );
+    const next = studioDocumentToolNavigation(studioRoute, surface, location);
+    if (next.back) { executeStudioDocumentBackNavigation(navigate); return; }
+    const guard = window.history.state;
+    const catalogEntry = next.state && guard?.__studioMobileBackDepth === 1 && guard.__studioMobileBackLayer === "modal:catalog";
+    navigate(next.href, { replace: options?.replace === true || next.switchTool || Boolean(catalogEntry),
+      state: surface === "bg3d" && bg3dInitialElementId
+        ? { ...next.state, studioBg3dEditTarget: { scope: bg3dHistoryScope(), pageId: currentPageId, layerId: bg3dInitialElementId } } : next.state });
   }
 
   /** 그리기 ▸ 브러시 스튜디오 — §15.3 Brush ▸ Brush Studio/Brush DNA. */
@@ -6027,15 +5990,11 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const [bg3dOpen, setBg3dOpen] = useState(false);
   const [bg3dMarketplaceModelId, setBg3dMarketplaceModelId] = useState<string | null>(null);
   function openVrmPoserFromMenu() {
-    // 3D→3D 전환은 먼저 다음 라우트를 요청하고, 라우트 커밋에서 이전 렌더러를 내린다.
-    // 이전 표면을 여기서 먼저 닫으면 close-sync가 canvas replace를 예약해 새 poser URL을
-    // 덮을 수 있다. route-aware admission이 전환 중 WebGL 중복 마운트를 막는다.
+    // 메뉴와 전체 도구 모두 열림 전이에서 URL을 한 번 쓴다. 이전 3D 표면은 새 라우트가 닫는다.
     setPoserVrmOpen(true);
-    navigateStudio2dSurface("poser");
   }
   function openCharacterShaperFromMenu() {
     setCharacterShaperOpen(true);
-    navigateStudio2dSurface("character");
   }
   function openBackground3dFromMenu() {
     setBg3dMarketplaceModelId(null);
@@ -6045,7 +6004,6 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     setBg3dInitialScene(undefined);
     setBg3dInitialElementId(undefined);
     setBg3dOpen(true);
-    navigateStudio2dSurface("bg3d");
   }
   /** Elements 3D rail → BG3D one-shot seeds (cleared after consume). */
   const [bg3dSeedTemplateId, setBg3dSeedTemplateId] = useState<string | null>(null);
@@ -7212,7 +7170,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     scrollTop: scrollPos.top,
     viewportRef: wrapRef,
     updateViewport: updateScrollPos,
-    tool,
+    tool, primaryToolActivatedRef,
     setTool: (nextTool) => {
       primaryToolActivatedRef.current = true;
       setTool(nextTool);
@@ -17141,7 +17099,7 @@ const puppetWarpArmed =
   const cutScope = { namedDocument: Boolean(studioRoute.draftId || studioRoute.documentId), workId, remixId,
     shared: expectsSharedDocument, joined: joinedStudioLiveJam, draftStatus: draftCollaboration?.status };
   const cutScopeRef = useRef(cutScope); cutScopeRef.current = cutScope;
-  const canStoreLocalVrmCut = () => canStoreStudioLocalVrmCut({ ...cutScopeRef.current, peerCount: studioLiveRoomRef.current?.getPeers().length ?? 0 });
+  const ownsSoleLocalDraft = () => canStoreStudioLocalVrmCut({ ...cutScopeRef.current, peerCount: studioLiveRoomRef.current?.getPeers().length ?? 0 });
   const applyBg3dRenderedImage = bindStudioBg3dRenderedImage({
     setError, activeElementsRef, readCurrentPage: () => (pagesHistoryRef.current[pagesHiRef.current] ?? pages).find(page => page.id === activePage.id),
     setStatusNotice,
@@ -17150,7 +17108,7 @@ const puppetWarpArmed =
     patchEl,
     canvasH,
     addEl,
-    isRealtimeTeamSession, scopedWriteRuntime, workId, canStoreLocalVrmCut, cutDocumentKey: autosaveKey,
+    isRealtimeTeamSession, scopedWriteRuntime, workId, canStoreLocalVrmCut: ownsSoleLocalDraft, cutDocumentKey: autosaveKey,
     elements,
     activePage,
     bg3dDccSourceRef,
@@ -18386,18 +18344,16 @@ const puppetWarpArmed =
   }
   function addText(at?: { x: number; y: number }, editImmediately = false) {
     const [cx, cy] = spawnCenter({ width: 220, height: 48, margin: 8 }, at);
-    const element: El = {
-      id: uid(),
-      type: "text",
-      text: "텍스트",
-      x: cx - 110,
-      y: cy - 24,
-      width: 220,
-      fontSize: 40,
-      fill: color,
-      rotation: 0,
-    };
+    const element = createStudioTextAt(uid(), cx, cy, color);
     lastLetteringInsertRef.current = { kind: "text" };
+    if (editImmediately && ownsSoleLocalDraft()) {
+      const ticket = captureStudioMutationTicket(), pageId = activePage.id, masterMode = masterEditMode;
+      if (!canApplyStudioMutation(ticket)) { setError(t("studio.hostStatus.newTextAuthorityPending", "원고와 편집 권한을 확인한 뒤 글자를 추가해 주세요.")); return; }
+      preloadStudioTextEditOverlay();
+      setEditing({ id: element.id, pendingText: element, canInsert: () => canApplyStudioMutation(ticket)
+        && currentPageIdRef.current === pageId && masterEditModeRef.current === masterMode && ownsSoleLocalDraft() });
+      return;
+    }
     if (addEl(element) && editImmediately) {
       setPendingLetteringEdit({ elementId: element.id, pageId: activePage.id });
     }
@@ -18997,8 +18953,8 @@ const puppetWarpArmed =
     setScenarioProgress(null);
     setScenarioStageLabel(null);
     setScenarioResult({
-      items: panels.map((panel) => ({
-        ...panel,
+      items: panels.map((panel, index) => ({
+        ...panel, ...scenarioReviewedArtwork(handoff.scenes[index]),
         ...scenarioGenerationPreferencesFromHandoff(handoff),
       })),
       nextCanvasH,
@@ -19032,16 +18988,7 @@ const puppetWarpArmed =
       nextCanvasH: layout.nextCanvasH,
       items: layout.panels.map((panel, index) => ({
         ...panel,
-        ...(items[index]?.imageDataUrl ? { imageDataUrl: items[index].imageDataUrl } : {}),
-        ...(items[index]?.imageError ? { imageError: items[index].imageError } : {}),
-        ...(items[index]?.imageProvenance ? { imageProvenance: items[index].imageProvenance } : {}),
-        ...(items[index]?.imageCandidates ? { imageCandidates: items[index].imageCandidates } : {}),
-        ...(items[index]?.selectedImageCandidateId
-          ? { selectedImageCandidateId: items[index].selectedImageCandidateId }
-          : {}),
-        ...(items[index]?.approvedImageCandidateId
-          ? { approvedImageCandidateId: items[index].approvedImageCandidateId }
-          : {}),
+        ...scenarioReviewedArtwork(items[index]),
         ...scenarioGenerationPreferences(items[index] ?? {}),
       })),
     };
@@ -19126,9 +19073,9 @@ const puppetWarpArmed =
     if (!scenarioStoryText.trim()) return;
     void executeGenerateScenario();
   }
-  function onGenerateScenarioImages() {
+  function onGenerateScenarioImages(request?: Parameters<typeof executeGenerateScenarioImages>[0]) {
     if (!isStudioAiConfigured(aiSettings)) return;
-    runWithAiNotice(() => void executeGenerateScenarioImages());
+    runWithAiNotice(() => void executeGenerateScenarioImages(request));
   }
   function onRegenerateScenarioImage(index: number) {
     if (!isStudioAiConfigured(aiSettings)) return;
@@ -23624,6 +23571,12 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
   }
 
   function commitEditText(finalValue: string) {
+    if (editing?.pendingText) {
+      if (!editing.canInsert?.()) return t("studio.hostStatus.newTextAuthorityChanged", "원고나 편집 권한이 바뀌어 글자를 추가할 수 없습니다.");
+      if (!finalValue.trim()) return;
+      if (!addEl({ ...editing.pendingText, text: finalValue })) return t("studio.hostStatus.newTextInsertFailed", "지금은 원고에 글자를 추가할 수 없습니다.");
+      setEditing(null); return;
+    }
     try {
       if (editing) {
         const el = elementById.get(editing.id);
@@ -23689,7 +23642,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
 
   function cancelEditText() {
     setEditing(null);
-    endLiveResourceEdit();
+    if (!editing?.pendingText) endLiveResourceEdit();
   }
 
   async function captureReadyStageForPage(page: PageState, onReady?: (page: PageState) => void): Promise<Konva.Stage> { const captureGeneration = studioRevisionProjectGenerationRef.current;
@@ -28233,7 +28186,7 @@ function clearSelectionForEdit() {
       bg3dSeedPrimitiveKind={bg3dSeedPrimitiveKind}
       bg3dMarketplaceModelId={bg3dMarketplaceModelId}
       bg3dSeedTemplateId={bg3dSeedTemplateId}
-      bg3dTargetBundleId={bg3dTargetBundleId} cutDocumentKey={autosaveKey} cutTeamDocument={!canStoreLocalVrmCut()} cutWorkScope={workId ? { workId, authority: scopedWriteRuntime.authority, actorId: studioAuthUserId ?? null, authorized: Boolean(studioAuthUserId && authorizedWorkAssetScopeId === workId), anchorId: bg3dInitialElementId } : undefined}
+      bg3dTargetBundleId={bg3dTargetBundleId} cutDocumentKey={autosaveKey} cutTeamDocument={!ownsSoleLocalDraft()} cutWorkScope={workId ? { workId, authority: scopedWriteRuntime.authority, actorId: studioAuthUserId ?? null, authorized: Boolean(studioAuthUserId && authorizedWorkAssetScopeId === workId), anchorId: bg3dInitialElementId } : undefined}
       bgGrad={bgGrad}
       bgSceneGenreFilter={bgSceneGenreFilter}
       bgSceneSearchQuery={bgSceneSearchQuery}
@@ -28435,7 +28388,7 @@ function clearSelectionForEdit() {
       handleStudioCrdtDocumentChange={handleStudioCrdtDocumentChange}
       handleStudioLiveEditSafetyChange={handleStudioLiveEditSafetyChange}
       handleStudioLiveRoomChange={handleStudioLiveRoomChange}
-      hardCanvasInteractionBlock={hardCanvasInteractionBlock}
+      canvasInputStatus={studioCanvasInputStatus({ saving, documentReloadRequired, sourceHydrationPending, workHydrationFailed, collaborationDocumentUnavailable, initialRecoveryBlocked, autosaveCheckFailed, hasAutosave, collaborationDocumentLocked, reviewLocked: pageEditLocked && !masterEditMode, follower: !persistLeadershipAllowsDraw })} hardCanvasInteractionBlock={hardCanvasInteractionBlock}
       hasAutosave={hasAutosave}
       healCloneAligned={healCloneAligned}
       healCloneArmed={healCloneArmed}
@@ -29035,7 +28988,7 @@ function clearSelectionForEdit() {
       showAlignmentGuides={showAlignmentGuides}
       showGrid={showGrid}
       showMobileHint={showMobileHint}
-      showQuickStart={showQuickStart}
+      showQuickStart={showQuickStart && (quickStartOpen ? "requested" : "automatic")}
       showRulers={showRulers}
       showWebtoonGuides={showWebtoonGuides}
       silkGenerativeSpec={silkGenerativeSpec}

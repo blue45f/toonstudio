@@ -1061,6 +1061,7 @@
   "studio.mainMenu.item.view.density-focus": "Szuper egyszerű elrendezés",
   "studio.mainMenu.item.view.density-full": "Teljes elrendezés",
   "studio.mainMenu.item.view.wide": "Szélesebb nézet a panelek összecsukásával",
+  "studio.mainMenu.item.view.wide.open": "Panelek megjelenítése",
   "studio.mainMenu.item.view.tools-companion": "Több kijelzős munkaterület…",
   "studio.mainMenu.item.view.canvas-only": "Csak vászon",
   "studio.mainMenu.item.view.color-vision.unavailable": "Amíg a nézet átalakítása zárolva van, a színlátás-ellenőrzési mód nem módosítható.",

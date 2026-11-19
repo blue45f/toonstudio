@@ -119,9 +119,10 @@ describe("Studio left tool rail module boundary", () => {
     expect(workspace.source).toContain(
       "studioLeftToolRailRuntime.update(studioLeftToolRailInput);",
     );
-    expect(workspace.source).toContain(
-      "<LazyStudioLeftToolRail client={studioLeftToolRailRuntime.client} />",
-    );
+    const railMounts = workspace.source.match(/<LazyStudioLeftToolRail\s[^>]*\/>/gu);
+    expect(railMounts).toHaveLength(1);
+    expect(railMounts?.[0]).toContain("client={studioLeftToolRailRuntime.client}");
+    expect(railMounts?.[0]).toContain("pinnedToolHost={compact ? pinnedToolHost : null}");
     expect(workspace.source).not.toContain("createStudioLeftToolRailClient(");
     expect(workspace.source).not.toContain(
       "stableHandlers={studioLeftToolRailHandlers}",

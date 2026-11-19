@@ -7,6 +7,7 @@ import { CharacterShaperSavedVariants } from "./CharacterShaperSavedVariants";
 import { ChevronDown, Ellipsis, Eye, Redo2, RotateCcw, Save, SlidersHorizontal, Undo2, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { resolveVrmLibraryEntryDisplayName } from "../vrm/studio-vrm-display-name";
 
@@ -397,6 +398,7 @@ export function CharacterShaperSummaryBar({
       className="relative z-30 flex min-w-0 shrink-0 items-center gap-2 border-b border-line bg-panel/95 px-2.5 py-2 backdrop-blur max-[380px]:flex-wrap sm:gap-3 sm:px-4"
     >
       <div className="flex min-w-0 flex-1 items-center gap-2 max-[380px]:basis-full sm:gap-3">
+        {!compact && <StudioToolArtwork tool="character" className="[--studio-tool-art-size:34px]" />}
         <div className="min-w-0">
           {/* 좁은 화면은 머리말 대신 지금 모델 이름을 제목 아래에 두어 제목이 잘리지 않게 한다. */}
           {compact ? null : <p className="truncate text-[0.62rem] font-semibold tracking-wide text-accent">캐릭터 워크숍</p>}
@@ -404,8 +406,8 @@ export function CharacterShaperSummaryBar({
             캐릭터 셰이퍼
           </h2>
           {compact ? (
-            <p data-character-shaper-model-name="true" className="truncate text-[0.72rem] leading-tight text-fg-3" title={modelName ?? "모델 없음"}>
-              {modelName ?? "모델 없음"}
+            <p data-character-shaper-model-name="true" className="flex min-w-0 items-center gap-1 text-[0.72rem] leading-tight text-fg-3" title={modelName ?? "모델 없음"}>
+              <StudioToolArtwork tool="character" className="[--studio-tool-art-size:16px]" /><span className="truncate">{modelName ?? "모델 없음"}</span>
             </p>
           ) : null}
           <p id={descriptionId} className="sr-only">

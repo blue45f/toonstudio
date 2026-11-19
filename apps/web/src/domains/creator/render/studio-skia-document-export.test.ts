@@ -115,6 +115,24 @@ describe("detached Skia document export", () => {
     expect(deps.harness.renderer.dispose).toHaveBeenCalledOnce();
   });
 
+  it.each([false, true])("지우개 마스크 뒤에만 종이를 합성하고 투명 출력 선택을 지킨다 (%s)", async transparent => {
+    const deps = dependencies();
+    const paperPass = vi.fn();
+    const context = { save: vi.fn(), restore: vi.fn(), globalCompositeOperation: "source-over", fillStyle: "",
+      fillRect(...size: number[]) { paperPass(this.globalCompositeOperation, this.fillStyle, size); } };
+    Object.defineProperty(deps.output, "getContext", { value: () => context });
+    const result = await captureStudioSkiaDocumentForExport({
+      page: page({ bg: "#aabbcc", elements: [{ id: "erase", type: "draw", kind: "freehand",
+        brush: "standard-eraser", mode: "eraser", strokeWidth: 20, opacity: 1, stroke: "#000",
+        points: [8, 8, 20, 20], pressures: [1, 1], sampleSpacing: 1 }] }),
+      transparent, exportScale: 1,
+    }, deps.value);
+    expect(result.status).toBe("captured");
+    expect(deps.harness.presented?.items.map(item => item.id)).toEqual(["erase"]);
+    if (transparent) expect(paperPass).not.toHaveBeenCalled();
+    else expect(paperPass).toHaveBeenCalledWith("destination-over", "#aabbcc", [0, 0, 720, 300]);
+  });
+
   it("keeps transparent exports free of the authored page background", async () => {
     const deps = dependencies();
     const result = await captureStudioSkiaDocumentForExport({

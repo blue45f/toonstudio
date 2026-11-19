@@ -31,10 +31,8 @@ import type { Virtualizer } from "@tanstack/react-virtual";
 import { DEFAULT_STUDIO_BRUSH_CATALOG_FLOATING_LAYOUT } from "../studio-detachable-panels";
 import { planGlowBrushPasses, planNeonBrushPasses } from "../studio-fx-brush";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
-import {
-  StudioEraserQuickPicker,
-  type StudioEraserQuickPickerId,
-} from "../StudioEraserQuickPicker";
+import { StudioEraserQuickPicker } from "../StudioEraserQuickPicker";
+import { studioQuickEraserId } from "./studio-eraser-presets";
 import { StudioFloatingSurface } from "../StudioFloatingSurface";
 import { VirtualizedBrushGrid } from "./studio-brush-virtual";
 import { useStudioFloatingSurfaceLayout } from "../use-studio-floating-surface-layout";
@@ -1114,8 +1112,7 @@ export function StudioBrushLibrarySheet({
     ?? items.find((item) => item.id === activeBrushId)
     ?? visibleItems[0]
     ?? activeCatalogItem;
-  const activeEraserId: StudioEraserQuickPickerId =
-    activeBrushId === "kneaded-eraser" ? "kneaded-eraser" : "standard-eraser";
+  const activeEraserId = studioQuickEraserId(activeBrushId);
   const showEraserQuickPicker =
     operation === "erase" && tab === "all" && normalizedQuery.length === 0;
 
@@ -1576,7 +1573,7 @@ export function StudioBrushLibrarySheet({
         {showEraserQuickPicker ? (
           <StudioEraserQuickPicker
             selectedId={activeEraserId}
-            ariaLabel="지우개 종류 선택"
+            placement="catalog"
             onSelect={(eraserId) => {
               const item = studioBrushCatalogItemById(eraserId);
               if (item?.operation === "erase") void selectCatalogItem(item);
