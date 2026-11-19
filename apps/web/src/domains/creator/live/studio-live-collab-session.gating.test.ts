@@ -423,7 +423,9 @@ describe("Studio Magma/Figma live collaboration session", () => {
       "utf8",
     );
     expect(documentLayoutSource).toContain("shouldPublishStudioLiveJamRoom");
-    expect(documentLayoutSource).toContain("withStudioLiveJamRoom(current, instantWorkId)");
+    expect(documentLayoutSource).toContain("if (!canPublishRoom || !shouldPublishStudioLiveJamRoom({");
+    expect(documentLayoutSource).toContain("withStudioLiveJamRoom(params, instantWorkId)");
+    expect(documentLayoutSource).toContain("navigate({ pathname, search: withStudioLiveJamRoom(params, instantWorkId).toString(), hash }, { replace: true, state });");
     expect(pageSource).not.toContain("shouldPublishStudioLiveJamRoom");
     expect(editorViewSource).toContain("serverRequired={Boolean(studioLiveParticipant && requiresStudioLiveServer)}");
     expect(pageSource).toMatch(/buildStudioLiveShareHref\(provisionalWorkId/u);

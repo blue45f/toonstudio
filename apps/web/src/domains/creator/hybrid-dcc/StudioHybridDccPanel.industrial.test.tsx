@@ -11,12 +11,25 @@ import { disposeStudioOcctWorker } from "../studio-occt-worker-client";
 
 import { StudioHybridDccPanel } from "./StudioHybridDccPanel";
 import * as fileIo from "./studio-hybrid-dcc-file-io";
-import { decodeStudioHybridDccWorkfile, STUDIO_HYBRID_DCC_WORKFILE_MIME } from "./studio-hybrid-dcc-workfile";
+import { decodeStudioHybridDccWorkfile, encodeStudioHybridDccWorkfile, STUDIO_HYBRID_DCC_WORKFILE_MIME } from "./studio-hybrid-dcc-workfile";
+import type { StudioHybridDccWorkspace } from "./studio-hybrid-dcc-workspace";
 
 import type {
   StudioOcctWorkerRequest,
   StudioOcctWorkerResponse,
 } from "../studio-occt-worker-protocol";
+
+// OCCT 전용 Worker fixture가 작업파일 전송까지 가로채지 않도록 실제 codec을 별도로 연결한다.
+vi.mock("./studio-hybrid-dcc-workfile-worker-client", () => ({
+  encodeWorkfileInWorker: async (workspace: StudioHybridDccWorkspace, signal: AbortSignal) => {
+    signal.throwIfAborted();
+    return encodeStudioHybridDccWorkfile(workspace);
+  },
+  decodeWorkfileInWorker: async (bytes: Uint8Array<ArrayBuffer>, documentId: string, signal: AbortSignal) => {
+    signal.throwIfAborted();
+    return decodeStudioHybridDccWorkfile(bytes, { documentId });
+  },
+}));
 
 /**
  * Deterministic browser transport for this UI integration gate. The dedicated

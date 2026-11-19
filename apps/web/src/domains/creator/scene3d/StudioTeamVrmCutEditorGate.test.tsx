@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useLayoutEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -53,7 +53,8 @@ describe("팀 VRM 컷을 다시 열 때의 권한", () => {
     expect(released).toHaveBeenCalledWith(false);
   });
   it("탭에 복귀하면 영수증을 재검사하고 편집 중인 컷 이름과 다운로드한 모델을 유지한다", async () => {
-    render(open());
+    // 초기 파일 로딩과 탭 복귀 리스너 설치를 완료한 뒤 사용자 이벤트를 보낸다.
+    await act(async () => { render(open()); });
     const input = await screen.findByRole("textbox") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "수정 중" } });
     fireEvent(document, new Event("visibilitychange"));
@@ -63,7 +64,7 @@ describe("팀 VRM 컷을 다시 열 때의 권한", () => {
     expect(read).toHaveBeenCalledOnce();
   });
   it("연결 장애 때 편집을 보존하고 권한 철회가 확인되면 원본을 닫는다", async () => {
-    render(open()); await screen.findByRole("textbox");
+    await act(async () => { render(open()); }); await screen.findByRole("textbox");
     recheck.mockRejectedValueOnce(new Error("네트워크 연결을 확인해 주세요."));
     fireEvent(window, new Event("online"));
     expect((await screen.findByRole("alert")).textContent).toContain("네트워크");
@@ -80,7 +81,7 @@ describe("팀 VRM 컷을 다시 열 때의 권한", () => {
     const ui = render(open(false));
     expect(screen.getByRole("alert").textContent).toContain("권한");
     expect(read).not.toHaveBeenCalled();
-    ui.rerender(open()); await screen.findByRole("textbox");
+    await act(async () => { ui.rerender(open()); }); await screen.findByRole("textbox");
     ui.rerender(open(false));
     expect(screen.queryByRole("textbox")).toBeNull();
   });

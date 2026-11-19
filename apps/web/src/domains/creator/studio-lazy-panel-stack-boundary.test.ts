@@ -59,6 +59,23 @@ function moduleEdges(relativePath: string): ModuleEdges {
   return { allImports, dynamicImports, source, syntax: file, valueImports };
 }
 
+function callbackSource(module: ModuleEdges, name: string): string {
+  const declarations: ts.VariableDeclaration[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === name) declarations.push(node);
+    ts.forEachChild(node, visit);
+  };
+  visit(module.syntax);
+  const initializer = declarations[0]?.initializer;
+  if (declarations.length !== 1 || !initializer || !ts.isCallExpression(initializer)
+    || !ts.isIdentifier(initializer.expression) || initializer.expression.text !== "useCallback") {
+    throw new Error(`${name}: 실제 useCallback 선언이 하나 필요합니다.`);
+  }
+  const callback = initializer.arguments[0];
+  if (!callback || !ts.isArrowFunction(callback)) throw new Error(`${name}: 실제 검증 콜백이 없습니다.`);
+  return callback.getText(module.syntax);
+}
+
 const STACK_OPTIONAL_MODULES = [
   "./ai/StudioAiProvenancePanel",
   "./StudioAutoActionsPanel",
@@ -81,6 +98,7 @@ const STACK_OPTIONAL_MODULES = [
   "./StudioTeamPanel",
   "./StudioTimelapsePanel",
   "./vrm/StudioVrmPoser",
+  "./scene3d/StudioTeamVrmCutEditorGate",
   "./StudioWriterRoomPanel",
   "./WorkFxPanel",
 ] as const;
@@ -209,15 +227,14 @@ describe("Studio lazy panel stack boundary", () => {
   });
 
   it("keeps durable BG3D recovery behind current server access and persisted target proof", () => {
-    const page = moduleEdges("./StudioCuttoonEditorHost.tsx").source;
+    const pageModule = moduleEdges("./StudioCuttoonEditorHost.tsx");
+    const page = pageModule.source;
     const contracts = moduleEdges("./studio-page-editor-runtime-contracts.ts").source;
     const accessGate = moduleEdges("./bg3d/studio-bg3d-recovery-access-lease.ts").source;
     const helperStart = contracts.indexOf("function hasStudioBg3dServerPersistedTarget(");
     const helperEnd = contracts.indexOf("function isStudioBg3dRecoveryScopeLocallyCurrent(", helperStart);
     const helper = contracts.slice(helperStart, helperEnd);
-    const validatorStart = page.indexOf("const validateRecoveryAccess = useCallback(async (");
-    const validatorEnd = page.indexOf("const poserMutationTicketRef", validatorStart);
-    const validator = page.slice(validatorStart, validatorEnd);
+    const validator = callbackSource(pageModule, "validateRecoveryAccess");
 
     expect(helperStart).toBeGreaterThanOrEqual(0);
     expect(helperEnd).toBeGreaterThan(helperStart);
@@ -231,8 +248,6 @@ describe("Studio lazy panel stack boundary", () => {
     expect(page).toContain('durability: "memory"');
     expect(contracts).toContain("scope !== snapshot.recoveryScope");
     expect(page).toContain("sharedDocument?.revision,");
-    expect(validatorStart).toBeGreaterThanOrEqual(0);
-    expect(validatorEnd).toBeGreaterThan(validatorStart);
     expect(validator).toContain("isStudioBg3dRecoveryScopeLocallyCurrent(scope, before)");
     expect(validator).toContain("getStudioSharedDocumentMeta(scope.workId, signal)");
     expect(validator).toContain("bg3dRecoveryAccessGateRef.current.authorize({");

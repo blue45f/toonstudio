@@ -127,12 +127,17 @@ describe("Studio background 3D bundle boundary", () => {
     expect(imports.valueImports).not.toContain("three");
   });
 
-  it("keeps StudioPage tool detection on the Three-free metadata module", () => {
-    const imports = moduleImports("./StudioCuttoonEditorHost.tsx");
+  it("호스트의 레이어 복구 판독을 Three 없는 메타데이터 경계에 둔다", () => {
+    const host = moduleImports("./StudioCuttoonEditorHost.tsx");
+    const resume = moduleImports("./studio-cuttoon-editor/runtime/studio-bg3d-layer-resume.ts");
 
-    expect(imports.valueImports).toContain("./studio-background-3d-metadata");
-    expect(imports.valueImports).not.toContain("./studio-background-3d-primitives");
-    expect(imports.valueImports).not.toContain("./bg3d/StudioBackground3D");
+    expect(host.valueImports).toContain("./studio-cuttoon-editor/runtime/studio-bg3d-layer-resume");
+    expect(resume.valueImports).toContain("../../studio-background-3d-metadata");
+    expect(host.valueImports).not.toContain("./studio-background-3d-primitives");
+    expect(host.valueImports).not.toContain("./bg3d/StudioBackground3D");
+    expect(resume.valueImports).not.toContain("../../studio-background-3d-primitives");
+    expect(resume.valueImports).not.toContain("../../bg3d/StudioBackground3D");
+    for (const imports of [host, resume]) expect(imports.valueImports.filter(specifier => /^three(?:\/|$)/u.test(specifier))).toEqual([]);
   });
 
   it("loads the 3D editor from one analyzable dynamic-import boundary", () => {

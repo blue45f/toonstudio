@@ -1,7 +1,7 @@
 import { studioCutVrmDocumentScope, studioTeamCutVrmDocumentScope } from "./studio-shared-3d-scene-runtime";
 import { panelStatusText } from "./status-i18n/studio-panel-status-i18n-r3c06-core";
 import { Loader2 } from "lucide-react";
-import { lazy, Suspense, memo, useEffect, useMemo } from "react";
+import { Suspense, memo, useEffect, useMemo } from "react";
 
 import { isStudioAiConfigured } from "./ai/studio-ai-client";
 import { subscribeStudioAiComicComposerOpenRequest } from "./ai/studio-ai-comic-composer-intent";
@@ -17,6 +17,7 @@ import {
   StudioStoryboardGridPanel,
   StudioTimelapsePanel,
   StudioVrmPoser,
+  StudioTeamVrmCutEditorGate,
   StudioCharacterShaper,
 } from "./studio-page-lazy-ui";
 import { pageDisplayName } from "./studio-page-meta";
@@ -81,8 +82,6 @@ type StudioThreeDPreviewPanelStackHandlers = Pick<
   | "setCurrentPageId"
   | "useBg3dFrameAsAiMethodReference"
 >;
-
-const StudioTeamVrmCutEditorGate = lazy(() => import("./scene3d/StudioTeamVrmCutEditorGate"));
 
 export type StudioThreeDPreviewPanelStackProps = Pick<
   StudioLazyPanelStackProps,

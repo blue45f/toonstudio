@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { Pencil } from "lucide-react";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -15,7 +16,7 @@ import {
   searchStudio,
 } from "../studio-command-search";
 import { StudioCommandSearchDialog } from "../StudioCommandSearchDialog";
-import { subscribeStudioCommandSearchRequests } from "../studio-help-center-channel";
+import { registerStudioCommandSearchHost, subscribeStudioCommandSearchRequests } from "../studio-help-center-channel";
 import {
   STUDIO_RAIL_TOOL_ALIASES,
   matchesStudioRailToolQuery,
@@ -263,6 +264,8 @@ describe("P2-20 도구 발견 — 한국어 별칭·초보 안내·기본 메뉴
 
   it("데스크톱·모바일 기본 메뉴 모두에서 '함께 작업(협업)'과 '도구·기능 검색' 진입로가 누락 없이 동작한다", () => {
     const restoreModal = stubNativeModal();
+    let releaseMobileSearch = () => {};
+    let releaseMobileHost = () => {};
     try {
       // 1. 데스크톱 기본 메뉴에서 '내보내기와 협업 › 함께 작업' 및 '그리기 도구 › 도구·기능 검색' 점검
       const desktop = createClaritySession(false);
@@ -290,25 +293,32 @@ describe("P2-20 도구 발견 — 한국어 별칭·초보 안내·기본 메뉴
       // 2. 모바일 기본 메뉴에서 '그리기 도구 › 도구·기능 검색' 및 '내보내기와 협업 › 함께 작업' 점검
       const mobile = createClaritySession(true);
       const mobileSearchListener = vi.fn();
-      const unsubMobile = subscribeStudioCommandSearchRequests(mobileSearchListener);
-      render(
-        <StudioDrawingClarityProvider session={mobile}>
-          <StudioDrawingClarityBar session={mobile} />
-        </StudioDrawingClarityProvider>,
-      );
+      releaseMobileSearch = subscribeStudioCommandSearchRequests(mobileSearchListener);
+      function StatefulMobileSheet() {
+        const [mobileSheet, setMobileSheet] = useState<StudioCuttoonEditorViewSession["mobileSheet"]>(null);
+        const session = { ...mobile, mobileSheet, setMobileSheet };
+        return <StudioDrawingClarityProvider session={session}>
+          <StudioDrawingClarityBar session={session} />
+        </StudioDrawingClarityProvider>;
+      }
+      render(<StatefulMobileSheet />);
 
       fireEvent.click(screen.getByLabelText("더보기 · 도구와 도움말"));
       fireEvent.click(screen.getByRole("button", { name: /그리기 도구/ }));
       fireEvent.click(screen.getByRole("button", { name: "도구·기능 검색" }));
+      expect(mobileSearchListener).not.toHaveBeenCalled();
+      act(() => { releaseMobileHost = registerStudioCommandSearchHost(); });
       expect(mobileSearchListener).toHaveBeenCalledWith({ scope: "all" });
+      expect(mobileSearchListener).toHaveBeenCalledTimes(1);
 
       fireEvent.click(screen.getByLabelText("더보기 · 도구와 도움말"));
       fireEvent.click(screen.getByRole("button", { name: /내보내기와 협업/ }));
       fireEvent.click(screen.getByRole("button", { name: "함께 작업" }));
       expect(mobile.setTeamPanelOpen).toHaveBeenCalledWith(true);
 
-      unsubMobile();
     } finally {
+      act(releaseMobileHost);
+      releaseMobileSearch();
       restoreModal();
     }
   });
