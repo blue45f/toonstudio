@@ -4,7 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as Y from "yjs";
 
 import { readStudioBg3dBundleRecordInTransaction } from "../../../../../../apps/api/src/modules/creator/studio-bg3d-bundle.repository";
+import { bg3dTestObject } from "../../../../../../apps/api/src/modules/creator/studio-bg3d-bundle.test-fixture";
 import { snapshotStudioCrdtBg3dBundles } from "../../../../../../apps/api/src/modules/creator/studio-crdt-bg3d-bundle";
+import { StudioCrdtInvalidPayloadError } from "../../../../../../apps/api/src/modules/creator/studio-crdt-service-contracts";
 import { StudioCrdtService } from "../../../../../../apps/api/src/modules/creator/studio-crdt.service";
 import { createBg3dBundleProjectFixture } from "../../../../../../apps/web/src/domains/creator/bg3d/studio-bg3d-bundle-project.test-fixture";
 import { StudioCrdtDocument } from "../../../../../../apps/web/src/domains/creator/live/studio-crdt-document";
@@ -15,6 +17,10 @@ import { MemoryStudioCrdtRepository, MemoryStudioCrdtClusterLoadRepository, allo
 
 import type { StudioBg3dBundleRecord } from "../../../../../../apps/api/src/modules/creator/studio-bg3d-bundle.repository";
 import type { StudioBg3dBundleService } from "../../../../../../apps/api/src/modules/creator/studio-bg3d-bundle.service";
+import type { StudioCrdtCompatibleOrderedPage } from "../../../../../../apps/web/src/domains/creator/live/studio-crdt-page-bridge";
+import type { ImageEl } from "../../../../../../apps/web/src/domains/creator/studio-element-model";
+
+type NativeHistoryPage = StudioCrdtCompatibleOrderedPage<ImageEl> & { linked3dRender?: undefined };
 
 vi.mock("../../../../../../apps/api/src/modules/creator/studio-bg3d-bundle.repository", () => ({
   STUDIO_BG3D_BUNDLE_REPOSITORY: Symbol("test repository"), assertStudioBg3dBundleReaderInTransaction: vi.fn(),
@@ -25,27 +31,35 @@ beforeEach(() => vi.resetAllMocks());
 afterEach(() => { for (const service of services.splice(0)) service.onModuleDestroy(); for (const document of documents.splice(0)) document.destroy(); });
 async function nativeHistory() {
   const f = await createBg3dBundleProjectFixture(true), manifests = f.state.bundles[0].revisions;
-  vi.mocked(readStudioBg3dBundleRecordInTransaction).mockImplementation(async (_transaction, key) => {
+  vi.mocked(readStudioBg3dBundleRecordInTransaction).mockImplementation(async (_transaction, key): Promise<StudioBg3dBundleRecord> => {
     const manifest = manifests.find((value) => value.renderRevisionId === key.renderRevisionId);
     if (!manifest) throw new Error("unknown sealed revision");
-    return { state: "sealed", manifest, manifestHash: hashStudioBg3dSixPassBundleManifest(manifest), artifacts: Array.from({ length: 7 }, () => ({})) } as StudioBg3dBundleRecord;
+    const artifacts = await Promise.all([{ role: "scene" as const, artifact: manifest.scene }, ...manifest.layers].map(async ({ role, artifact }) => {
+      const bytes = await f.authority.get(artifact.contentHash);
+      if (!bytes) throw new Error("시험용 봉인 아티팩트의 원본 바이트가 없습니다.");
+      return { role, object: bg3dTestObject(bytes, artifact.mimeType) };
+    }));
+    return { state: "sealed", sealedAt: "2026-11-19T00:00:00.000Z", manifest, manifestHash: hashStudioBg3dSixPassBundleManifest(manifest), artifacts };
   });
-  const repository = new MemoryStudioCrdtRepository(), bundles = { assertReaderCapability: async () => undefined, hasRetainedBundles: async () => true };
+  const repository = new MemoryStudioCrdtRepository(), bundles = {
+    requiredReaders: async (): Promise<readonly string[]> => [CAP],
+    assertReaderCapability: async () => undefined,
+  } satisfies Pick<StudioBg3dBundleService, "requiredReaders" | "assertReaderCapability">;
   const server = new StudioCrdtService(repository, allowStoredRasterAssetReferences, allowStoredWorkAssetReferences, new MemoryStudioCrdtClusterLoadRepository(), {}, undefined, bundles as unknown as StudioBg3dBundleService);
   services.push(server);
   const browser = new StudioCrdtDocument(); documents.push(browser); const doc = asStudioCrdtDocumentHost(browser).doc;
-  const second = f.project.pagesList[0];
-  const firstManifest = manifests[0], first = { ...second, elements: second.elements.map((element) => {
+  const second: NativeHistoryPage = { ...f.project.pagesList[0], linked3dRender: undefined, shared3dStage: undefined };
+  const firstManifest = manifests[0], first: NativeHistoryPage = { ...second, elements: second.elements.map((element) => {
     const layer = firstManifest.layers.find(({ elementId }) => elementId === element.id)!;
     return { ...element, src: layer.role === "main-line" ? `studio-opfs-cas:${layer.artifact.contentHash}` : `bg3d-lt-artifact://sha256/${layer.artifact.contentHash.slice(7)}`,
       bg3dLtBundleReference: { ...element.bg3dLtBundleReference!, renderRevisionId: firstManifest.renderRevisionId, manifestHash: hashStudioBg3dSixPassBundleManifest(firstManifest) } };
   }), bg3dLtBundles: parseStudioBg3dSixPassBundleState({ ...f.state, bundles: [{ ...f.state.bundles[0], activeRevisionId: firstManifest.renderRevisionId, revisions: [firstManifest] }] }),
     linked3dRender: undefined, shared3dStage: undefined };
-  const base = { ...first, elements: [], groups: [], bg3dLtBundles: undefined, linked3dRender: undefined, shared3dStage: undefined };
-  let previous: readonly typeof first[] = [base];
+  const base: NativeHistoryPage = { ...first, elements: [], groups: [], bg3dLtBundles: undefined, linked3dRender: undefined, shared3dStage: undefined };
+  let previous: readonly NativeHistoryPage[] = [base];
   let sequence = 0;
   const append = async (data: Uint8Array) => await server.applyUpdateBytes({ workId: "work-one", actorUserId: "actor", updateId: `aaaaaaaa-aaaa-4aaa-8aaa-${String(++sequence).padStart(12, "0")}`, readerCapabilities: [CAP], data });
-  const publish = async (pages: readonly typeof first[]) => {
+  const publish = async (pages: readonly NativeHistoryPage[]) => {
     const vector = Y.encodeStateVector(doc); publishStudioCrdtSceneGraphDiff(browser, previous, pages);
     const data = Y.encodeStateAsUpdate(doc, vector);
     const result = await append(data);
@@ -55,7 +69,7 @@ async function nativeHistory() {
     const current = new Y.Doc(); Y.applyUpdate(current, (await server.syncBytes("work-one", null, [CAP])).update);
     try { return snapshotStudioCrdtBg3dBundles(current); } finally { current.destroy(); }
   };
-  return { browser, doc, first, second: { ...second, linked3dRender: undefined, shared3dStage: undefined }, base, publish, append, snapshot };
+  return { browser, doc, first, second, base, publish, append, snapshot };
 }
 describe("실제 Web publisher의 6패스 실행 취소 바이트를 API에 저장", () => {
   it("첫 삽입→undo→redo가 raw deleted flag 없이 operation/ack로 저장된다", async () => {
@@ -83,7 +97,7 @@ describe("실제 Web publisher의 6패스 실행 취소 바이트를 API에 저�
 
 it("새 head를 role3개만으로 처음 게시하는 실제 Web Y 바이트는 저장하지 않는다", async () => {
   const f = await nativeHistory();
-  await expect(f.publish([{ ...f.first, elements: f.first.elements.slice(3) }])).rejects.toThrow();
+  await expect(f.publish([{ ...f.first, elements: f.first.elements.slice(3) }])).rejects.toBeInstanceOf(StudioCrdtInvalidPayloadError);
   expect((await f.snapshot()).images.size).toBe(0);
 });
 it("관측하지 못한 동시 삭제는 실제 Web restore ack가 있어도 삭제 상태로 남는다", async () => {
