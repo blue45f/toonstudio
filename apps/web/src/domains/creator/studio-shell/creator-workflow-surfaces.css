@@ -51,7 +51,8 @@
 }
 
 [data-creator-workflow] :is(h1, h2, h3, label, summary) {
-  overflow-wrap: anywhere;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 [data-creator-workflow] :is(a, button, input, select, textarea, summary):focus-visible {
@@ -174,7 +175,7 @@
 }
 
 [data-creator-workflow="publish"] .studio-publish-visual-journey__copy small {
-  font-size: 10px;
+  font-size: 11.5px;
 }
 
 [data-creator-workflow="publish"] .studio-publish-visual-journey__copy > span,
@@ -240,6 +241,13 @@
   [data-creator-workflow] .creator-workflow-topbar :is(a, button),
   [data-creator-workflow] .creator-workflow-nav a { min-height: 44px; }
   [data-creator-workflow] .creator-workflow-topbar :is(button, a) { white-space: normal; }
+  [data-creator-workflow] :is(a, button, summary) {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  [data-creator-workflow] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+    font-size: max(1rem, 16px);
+  }
 }
 
 @media (max-width: 390px) {
