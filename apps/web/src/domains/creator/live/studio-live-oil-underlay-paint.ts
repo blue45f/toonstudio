@@ -2,6 +2,7 @@ import { studioOilDeviceBounds } from "../brush/studio-oil-readback-plan";
 import { paintStudioOilRibbonCarrier } from "../brush/studio-oil-ribbon-carrier";
 import type { StudioOilRibbonPaintInput } from "../brush/studio-oil-ribbon-carrier-types";
 import type { StudioLiveInkSurface } from "./studio-live-ink-overlay";
+import { releaseStudioLiveOverlayCanvas } from "./studio-live-overlay-canvas-cleanup";
 
 export interface StudioLiveOilUnderlay {
   readonly canvas: HTMLCanvasElement;
@@ -62,6 +63,8 @@ export class StudioLiveOilUnderlayPainter {
   private scratch: HTMLCanvasElement | null = null;
 
   reset(): void {
+    releaseStudioLiveOverlayCanvas(this.snapshot);
+    releaseStudioLiveOverlayCanvas(this.scratch);
     this.snapshot = null;
     this.snapshotPixels = null;
     this.scratch = null;
@@ -86,6 +89,7 @@ export class StudioLiveOilUnderlayPainter {
       if (!source || !Number.isFinite(source.pixelRatio) || source.pixelRatio <= 0) {
         throw new Error("유화 정본 바닥 표면이 없습니다.");
       }
+      releaseStudioLiveOverlayCanvas(this.snapshot);
       const snapshot = document.createElement("canvas");
       snapshot.width = width;
       snapshot.height = height;

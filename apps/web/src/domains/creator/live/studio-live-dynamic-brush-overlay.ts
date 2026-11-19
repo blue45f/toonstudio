@@ -1030,15 +1030,21 @@ export class StudioLiveDynamicBrushOverlayRenderer {
   private contactPlaceholderRect: PresentationPixelRect | null = null;
 
   attach(canvases: StudioLiveDynamicBrushOverlayCanvases | null): void {
+    const nextActive = canvases?.activeCanvas ?? null;
+    const nextPresentation = canvases?.presentationCanvas ?? null;
+    const nextSettled = canvases?.settledCanvas ?? null;
     if (canvases === null) {
       this.pendingFirstDabRaf = cancelStudioLiveOverlayFrame(this.pendingFirstDabRaf);
       this.pendingBeginRaf = cancelStudioLiveOverlayFrame(this.pendingBeginRaf);
       this.pendingFirstDab = null;
       this.pendingBeginElement = null;
     }
-    this.activeCanvas = canvases?.activeCanvas ?? null;
-    this.presentationCanvas = canvases?.presentationCanvas ?? null;
-    this.settledCanvas = canvases?.settledCanvas ?? null;
+    releaseStudioLiveOverlayCanvas(this.activeCanvas, nextActive);
+    releaseStudioLiveOverlayCanvas(this.presentationCanvas, nextPresentation);
+    releaseStudioLiveOverlayCanvas(this.settledCanvas, nextSettled);
+    this.activeCanvas = nextActive;
+    this.presentationCanvas = nextPresentation;
+    this.settledCanvas = nextSettled;
     this.activeContext = this.activeCanvas
       ? acquireStudioLowLatencyCanvas2dContext(this.activeCanvas)
       : null;

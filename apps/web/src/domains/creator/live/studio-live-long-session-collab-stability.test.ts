@@ -16,6 +16,7 @@ import {
 import { SqliteStudioCrdtOutbox } from "./studio-crdt-outbox";
 import { STUDIO_CRDT_PROTOCOL_VERSION, type StudioCrdtUpdateRequest } from "./studio-crdt-protocol";
 import { createStudioLiveEnvelope, type StudioLiveParticipant } from "./studio-live-collaboration-protocol";
+import { StudioLiveDynamicBrushOverlayRenderer } from "./studio-live-dynamic-brush-overlay";
 import { STUDIO_LIVE_GESTURE_PREVIEW_VERSION } from "./studio-live-gesture-preview";
 import {
   STUDIO_LIVE_GESTURE_PREVIEW_SLEEP_WAKE_GAP_MS,
@@ -777,5 +778,41 @@ describe("long-session multi-user collaborative drawing stability", () => {
     frames.shift()!();
     expect(store.getSnapshot()).toEqual([]);
     unsubscribe();
+  });
+
+  it("shrinks all three dynamic brush overlay canvases to 1x1 when detached", () => {
+    const makeCanvas = () => ({
+      width: 1024,
+      height: 768,
+      getContext: () => ({
+        save() {},
+        restore() {},
+        setTransform() {},
+        clearRect() {},
+      }),
+    }) as unknown as HTMLCanvasElement;
+    const activeCanvas = makeCanvas();
+    const presentationCanvas = makeCanvas();
+    const settledCanvas = makeCanvas();
+    const renderer = new StudioLiveDynamicBrushOverlayRenderer();
+    renderer.attach({ activeCanvas, presentationCanvas, settledCanvas });
+    renderer.setSurface({
+      left: 0,
+      top: 0,
+      width: 1024,
+      height: 768,
+      documentScale: 1,
+      documentWidth: 1024,
+      flipX: false,
+    });
+    expect(presentationCanvas.width).toBeGreaterThan(1);
+    expect(settledCanvas.width).toBeGreaterThan(1);
+    renderer.attach(null);
+    expect(activeCanvas.width).toBe(1);
+    expect(activeCanvas.height).toBe(1);
+    expect(presentationCanvas.width).toBe(1);
+    expect(presentationCanvas.height).toBe(1);
+    expect(settledCanvas.width).toBe(1);
+    expect(settledCanvas.height).toBe(1);
   });
 });
