@@ -443,7 +443,7 @@ export function WorkspaceCafeHubPanel({
                 <Dialog.Close asChild>
                   <button
                     type="button"
-                    className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line px-3 text-fg-2 hover:bg-raised sm:min-h-8"
+                    className="inline-flex min-h-[var(--site-control-size)] items-center gap-1 rounded-lg border border-line px-3 text-fg-2 hover:bg-raised"
                   >
                     <X className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
                     닫기
