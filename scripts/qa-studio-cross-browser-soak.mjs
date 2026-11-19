@@ -5,6 +5,8 @@ import process from "node:process";
 
 import { chromium, firefox, webkit } from "playwright";
 
+import { qaModuleFailures, recordQaScriptResponse, settleQaPage, snapshotQaDiagnostics } from "./lib/qa-page-state.mjs";
+
 const BROWSER_NAME = process.env.QA_BROWSER ?? "chromium";
 const PROFILE_ID = process.env.QA_PROFILE_ID ?? "kakaotalk-360";
 const WIDTH = Number(process.env.QA_VIEWPORT_WIDTH ?? 360);
@@ -19,6 +21,7 @@ const REPORT_DIR = process.env.QA_REPORT_DIR ?? `qa-results/studio-cross-browser
 const EVIDENCE_DIR = process.env.QA_EVIDENCE_DIR ?? `artifacts/studio-cross-browser-soak/${BROWSER_NAME}-${PROFILE_ID}`;
 const RESULTS_PATH = path.join(REPORT_DIR, "cases.jsonl");
 const MIN_TAP_PX = 43.5;
+const READY_TIMEOUT_MS = Number(process.env.QA_READY_TIMEOUT_MS ?? 8_000);
 
 const ROUTES = Object.freeze([
   { id: "editor", pathname: "/studio", ready: "main, canvas, [data-studio-mobile-editing-dock='true']", interactive: true },
@@ -42,18 +45,18 @@ const digest = (value) => createHash("sha256").update(value).digest("hex").slice
 const textError = (error) => String(error?.stack ?? error?.message ?? error).slice(0, 2_000);
 const safeFilePart = (value) => value.replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/(?:^-+|-+$)/g, "");
 
-async function inspectDom(page) {
-  return page.evaluate((minimumTap) => { // NOSONAR javascript:S3776
+async function inspectDom(page, readySelector) {
+  return page.evaluate(({ minimumTap, readySelector }) => { // NOSONAR javascript:S3776
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const visible = (element) => {
-      if (!(element instanceof HTMLElement)) return false;
-      if (element.closest("[hidden], [inert], [aria-hidden='true']")) return false;
+    const rendered = (element) => {
+      if (!(element instanceof Element)) return false;
       const style = getComputedStyle(element);
       if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return false;
       const rect = element.getBoundingClientRect();
       return rect.width >= 2 && rect.height >= 2 && rect.bottom > 0 && rect.top < vh;
     };
+    const visible = (element) => !element.closest("[hidden], [inert], [aria-hidden='true']") && rendered(element);
     const describe = (element) => {
       const text = (element.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 64);
       const name = element.getAttribute("aria-label") ?? element.getAttribute("title") ?? text;
@@ -101,6 +104,9 @@ async function inspectDom(page) {
     }
 
     const bodyText = (document.body?.innerText ?? "").trim();
+    const loadingSelector = "[aria-busy='true'], [class*='skeleton'], [class*='animate-pulse'], [data-loading='true']";
+    const loadingSurfaces = [...document.querySelectorAll(loadingSelector)].filter(rendered);
+    const visualSurfaces = [...document.querySelectorAll("canvas, svg, img, video, iframe, [data-studio-mobile-editing-dock='true']")].filter(rendered);
     const canvases = [...document.querySelectorAll("canvas")].map((canvas, index) => {
       const rect = canvas.getBoundingClientRect();
       return { index, x: rect.x, y: rect.y, width: rect.width, height: rect.height, area: rect.width * rect.height };
@@ -116,14 +122,20 @@ async function inspectDom(page) {
       controls: controls.length,
       documentOverflowX: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
       largestCanvas: canvases[0] ?? null,
+      loadingLike: loadingSurfaces.length > 0 || /불러오는 중|로딩 중|loading|잠시만 기다/iu.test(bodyText.slice(0, 300)),
+      loadingSurfaceCount: loadingSurfaces.length,
+      loadingOnly: loadingSurfaces.some((surface) => (surface.innerText ?? "").trim() === bodyText)
+        && [...controls, ...visualSurfaces].every((element) => element.closest(loadingSelector)),
       offscreen: offscreen.slice(0, 40),
       popupOnly: popupOnly.slice(0, 20),
       smallTargets: smallTargets.slice(0, 60),
       unnamed: unnamed.slice(0, 60),
+      ready: [...document.querySelectorAll(readySelector)].some(rendered),
+      routeLoading: [...document.querySelectorAll("[data-route-loading-fallback]")].some(rendered),
       viewport: { width: vw, height: vh },
-      visualCount: document.querySelectorAll("canvas, svg, img, video, iframe, [data-studio-mobile-editing-dock='true']").length,
+      visualCount: visualSurfaces.length,
     };
-  }, MIN_TAP_PX);
+  }, { minimumTap: MIN_TAP_PX, readySelector });
 }
 
 async function probeCanvas(page, dom) {
@@ -224,16 +236,20 @@ async function probeInteractions(page, route, dom) { // NOSONAR javascript:S3776
   return result;
 }
 
-function classify({ route, status, navigationError, ready, dom, pageErrors, consoleErrors, requestFailures, interactions, offlineRecovery }) { // NOSONAR javascript:S3776
+function classify({ route, status, navigationError, measurement, interactions, offlineRecovery }) { // NOSONAR javascript:S3776
   const failures = [];
   const warnings = [];
+  const { dom, state, diagnostics: { pageErrors, consoleErrors, requestFailures, scriptResponses } } = measurement;
   if (navigationError) failures.push(`navigation: ${navigationError}`);
   if (status !== null && status >= 400) failures.push(`document HTTP ${status}`);
-  if (!ready) failures.push(`ready selector missing: ${route.ready}`);
-  if (dom.bodyTextLength === 0 && dom.visualCount === 0) failures.push("blank page");
-  if (dom.documentOverflowX > 2) failures.push(`document horizontal overflow ${dom.documentOverflowX}px`);
-  if (dom.offscreen.length > 0) failures.push(`${dom.offscreen.length} visible controls outside viewport`);
+  if (state === "not-ready") failures.push(`ready selector missing: ${route.ready}`);
+  if (state === "blank") failures.push("blank page");
+  if (state === "loading-timeout") failures.push("loading timeout: content did not become ready");
+  if (state === "inspection-error") failures.push(`DOM inspection failed: ${measurement.inspectError ?? "missing DOM evidence"}`);
+  if (dom?.documentOverflowX > 2) failures.push(`document horizontal overflow ${dom.documentOverflowX}px`);
+  if (dom?.offscreen.length > 0) failures.push(`${dom.offscreen.length} visible controls outside viewport`);
   if (pageErrors.length > 0) failures.push(`${pageErrors.length} uncaught page errors`);
+  failures.push(...qaModuleFailures({ consoleErrors, scriptResponses }));
   if (interactions.workspace?.attempted && !interactions.workspace.opened) failures.push("workspace trigger did not open dialog");
   if (interactions.fullScreen?.attempted && !interactions.fullScreen.exitVisible) failures.push("full-screen exit control not visible");
   if (interactions.fullScreen?.exitError) failures.push("full-screen exit control could not be clicked");
@@ -241,13 +257,13 @@ function classify({ route, status, navigationError, ready, dom, pageErrors, cons
   if (interactions.focus?.offscreen) failures.push("keyboard focus moved outside viewport");
   if (offlineRecovery?.attempted && !offlineRecovery.recovered) failures.push("failed to recover after offline reload");
 
-  if (dom.smallTargets.length > 0) warnings.push(`${dom.smallTargets.length} touch targets below 44px`);
-  if (dom.unnamed.length > 0) warnings.push(`${dom.unnamed.length} controls without accessible name`);
-  if (dom.popupOnly.length > 0) warnings.push(`${dom.popupOnly.length} popup-only controls`);
+  if (dom?.smallTargets.length > 0) warnings.push(`${dom.smallTargets.length} touch targets below 44px`);
+  if (dom?.unnamed.length > 0) warnings.push(`${dom.unnamed.length} controls without accessible name`);
+  if (dom?.popupOnly.length > 0) warnings.push(`${dom.popupOnly.length} popup-only controls`);
   if (consoleErrors.length > 0) warnings.push(`${consoleErrors.length} console errors`);
   if (requestFailures.length > 0) warnings.push(`${requestFailures.length} failed requests`);
   if (route.interactive && interactions.canvas?.attempted && !interactions.canvas.drawChanged) warnings.push("canvas stroke caused no visible pixel change");
-  if (route.id === "invalid-route" && !/404|not found|찾을 수|존재하지/u.test(dom.bodyPreview)) warnings.push("invalid route lacks obvious not-found copy");
+  if (dom && route.id === "invalid-route" && !/404|not found|찾을 수|존재하지/u.test(dom.bodyPreview)) warnings.push("invalid route lacks obvious not-found copy");
   return { failures, warnings };
 }
 
@@ -256,13 +272,25 @@ async function runRoute(context, cycle, route, settings, seenSignatures) { // NO
   const pageErrors = [];
   const consoleErrors = [];
   const requestFailures = [];
-  page.on("pageerror", (error) => pageErrors.push(textError(error)));
+  const scriptResponses = [];
+  const offlineDiagnostics = { pageErrors: [], consoleErrors: [], requestFailures: [], scriptResponses: [] };
+  let forcedOffline = false;
+  const diagnostics = () => ({ pageErrors, consoleErrors, requestFailures, scriptResponses });
+  const record = (kind, value) => {
+    diagnostics()[kind].push(value);
+    if (forcedOffline) offlineDiagnostics[kind].push(value);
+  };
+  page.on("pageerror", (error) => record("pageErrors", textError(error)));
   page.on("console", (message) => {
-    if (message.type() === "error" && !/favicon|fonts\.googleapis|fonts\.gstatic/u.test(message.text())) consoleErrors.push(message.text().slice(0, 1_000));
+    if (message.type() === "error" && !/favicon|fonts\.googleapis|fonts\.gstatic/u.test(message.text())) record("consoleErrors", message.text().slice(0, 1_000));
   });
   page.on("requestfailed", (request) => {
     const text = `${request.method()} ${request.url()} :: ${request.failure()?.errorText ?? "failed"}`;
-    if (!/favicon|fonts\.googleapis|fonts\.gstatic/u.test(text)) requestFailures.push(text.slice(0, 1_200));
+    if (!/favicon|fonts\.googleapis|fonts\.gstatic/u.test(text)) record("requestFailures", text.slice(0, 1_200));
+  });
+  page.on("response", (response) => {
+    recordQaScriptResponse(response, scriptResponses);
+    if (forcedOffline) recordQaScriptResponse(response, offlineDiagnostics.scriptResponses);
   });
   await page.addInitScript(({ blockPopups }) => {
     if (blockPopups) window.open = () => null;
@@ -276,33 +304,66 @@ async function runRoute(context, cycle, route, settings, seenSignatures) { // NO
   } catch (error) {
     navigationError = textError(error);
   }
-  const ready = navigationError ? false : await page.locator(route.ready).first().waitFor({ state: "attached", timeout: 8_000 }).then(() => true).catch(() => false);
-  await sleep(220);
-  const dom = await inspectDom(page).catch((error) => ({
-    bodyPreview: "", bodyTextLength: 0, canvasCount: 0, controls: 0, documentOverflowX: 0, largestCanvas: null,
-    offscreen: [], popupOnly: [], smallTargets: [], unnamed: [], viewport: settings.viewport, visualCount: 0,
-    inspectError: textError(error),
-  }));
-  const interactions = navigationError ? {} : await probeInteractions(page, route, dom).catch((error) => ({ probeError: textError(error) }));
+  const measurements = [];
+  const measure = async (phase, readDiagnostics = diagnostics) => {
+    const observed = await settleQaPage({
+      inspect: () => inspectDom(page, route.ready), diagnostics: readDiagnostics,
+      timeoutMs: navigationError ? 0 : READY_TIMEOUT_MS,
+    });
+    measurements.push({ phase, ...observed });
+    return measurements.at(-1);
+  };
+  let measurement = await measure("navigation");
+  const interactions = !navigationError && measurement.state === "ready"
+    ? await probeInteractions(page, route, measurement.dom).catch((error) => ({ probeError: textError(error) }))
+    : { skipped: true, reason: measurement.state };
+  if (!interactions.skipped) measurement = await measure("post-interaction");
+  const beforeRecovery = measurement;
 
   let offlineRecovery = { attempted: false };
-  if (route.id === "editor" && cycle % 4 === 3 && Date.now() + 12_000 < DEADLINE) {
+  if (measurement.state === "ready" && route.id === "editor" && cycle % 4 === 3 && Date.now() + 12_000 < DEADLINE) {
     offlineRecovery = { attempted: true, offlineShellVisible: false, recovered: false };
+    forcedOffline = true;
     await context.setOffline(true).catch(() => undefined);
     await page.reload({ waitUntil: "domcontentloaded", timeout: 5_000 }).catch(() => undefined);
     offlineRecovery.offlineShellVisible = await page.locator("body").evaluate((body) => body.innerText.trim().length > 0 || body.querySelector("canvas, main, svg") !== null).catch(() => false);
     await context.setOffline(false).catch(() => undefined);
-    await page.reload({ waitUntil: "domcontentloaded", timeout: 12_000 }).catch(() => undefined);
-    offlineRecovery.recovered = await page.locator(route.ready).first().waitFor({ state: "attached", timeout: 8_000 }).then(() => true).catch(() => false);
+    forcedOffline = false;
+    const recoveryStart = Object.fromEntries(Object.entries(diagnostics()).map(([key, values]) => [key, values.length]));
+    const recoveryResponse = await page.reload({ waitUntil: "domcontentloaded", timeout: 12_000 }).catch((error) => {
+      offlineRecovery.navigationError = textError(error);
+      return null;
+    });
+    offlineRecovery.status = recoveryResponse?.status() ?? null;
+    measurement = await measure("offline-recovery", () => snapshotQaDiagnostics(diagnostics(), recoveryStart));
+    offlineRecovery.recovered = !offlineRecovery.navigationError && !(offlineRecovery.status >= 400) && measurement.state === "ready";
+    offlineRecovery.diagnostics = offlineDiagnostics;
   }
 
-  const classified = classify({ route, status, navigationError, ready, dom, pageErrors, consoleErrors, requestFailures, interactions, offlineRecovery });
+  const { dom, ready } = measurement;
+  const phaseFindings = [{
+    phase: beforeRecovery.phase,
+    ...classify({ route, status, navigationError, measurement: beforeRecovery, interactions }),
+  }];
+  if (measurement !== beforeRecovery) {
+    const offlineFailures = qaModuleFailures(offlineDiagnostics);
+    if (offlineDiagnostics.pageErrors.length > 0) offlineFailures.push(`${offlineDiagnostics.pageErrors.length} uncaught page errors during forced offline`);
+    phaseFindings.push({ phase: "forced-offline", failures: offlineFailures, warnings: [] });
+    phaseFindings.push({
+      phase: measurement.phase,
+      ...classify({ route, status: offlineRecovery.status, measurement, interactions: {}, offlineRecovery }),
+    });
+  }
+  const classified = {
+    failures: [...new Set(phaseFindings.flatMap((finding) => finding.failures))],
+    warnings: [...new Set(phaseFindings.flatMap((finding) => finding.warnings))],
+  };
   const signaturePayload = {
     route: route.id,
     failures: classified.failures,
-    offscreen: dom.offscreen.map((item) => item.label),
-    smallTargets: dom.smallTargets.map((item) => item.label),
-    unnamed: dom.unnamed.map((item) => item.label),
+    offscreen: (dom?.offscreen ?? []).map((item) => item.label),
+    smallTargets: (dom?.smallTargets ?? []).map((item) => item.label),
+    unnamed: (dom?.unnamed ?? []).map((item) => item.label),
     consoleErrors,
     pageErrors,
   };
@@ -331,11 +392,16 @@ async function runRoute(context, cycle, route, settings, seenSignatures) { // NO
     failures: classified.failures,
     warnings: classified.warnings,
     dom,
+    pageState: measurement.state,
+    measurementPhase: measurement.phase,
+    measurements,
+    phaseFindings,
     interactions,
     offlineRecovery,
     pageErrors,
     consoleErrors,
     requestFailures,
+    scriptResponses,
     heap,
     signature,
     screenshot,
