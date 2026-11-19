@@ -81,6 +81,11 @@ function withoutHeapOption(value = "") {
   return value.replace(/(?:^|\s)--max[-_]old[-_]space[-_]size(?:=|\s+)\d+/gu, " ").trim();
 }
 
+function describeWorkerFailure(result) {
+  const detail = result.message?.trim();
+  return `exit=${result.exit ?? "null"}, signal=${result.signal ?? "none"}${detail ? `: ${detail}` : "; worker stderr가 없습니다."}\n종료 원인을 해결한 뒤 pnpm typecheck를 다시 실행하세요.`;
+}
+
 function createWorkerRunner(options, scratch) {
   let sequence = 0;
   return (job) => {
@@ -109,7 +114,7 @@ function createWorkerRunner(options, scratch) {
 /** Worker 실패·중복·미검사·입력 변경을 통과로 취급하지 않는다. */
 export function verifyInShards(options, runWorker, onProgress = () => {}, onCheckpoint = () => {}) {
   const inventory = runWorker({ phase: "inventory" });
-  if (inventory.failed) throw new Error(`전체 프로그램 목록 생성 실패: ${inventory.message}`);
+  if (inventory.failed) throw new Error(`전체 프로그램 목록 생성 실패: ${describeWorkerFailure(inventory)}`);
   const { identity, fingerprint } = inventory;
   const report = {
     schemaVersion: 1,
@@ -124,7 +129,7 @@ export function verifyInShards(options, runWorker, onProgress = () => {}, onChec
     complete: false,
   };
   const preflight = runWorker({ phase: "preflight", fingerprint });
-  if (preflight.failed) throw new Error(`전역·구문 검사 실패: ${preflight.message}`);
+  if (preflight.failed) throw new Error(`전역·구문 검사 실패: ${describeWorkerFailure(preflight)}`);
   if (preflight.fingerprint !== fingerprint) throw new Error("Preflight 입력 fingerprint가 일치하지 않습니다.");
   report.phases.preflight = preflight;
   report.diagnostics = preflight.diagnostics;
@@ -163,7 +168,8 @@ export function verifyInShards(options, runWorker, onProgress = () => {}, onChec
   }
   assertCompleteCoverage(identity.files.map((file) => file.path), checked);
   const finalInventory = runWorker({ phase: "inventory", fingerprint });
-  if (finalInventory.failed || finalInventory.fingerprint !== fingerprint) {
+  if (finalInventory.failed) throw new Error(`최종 입력 확인 실패: ${describeWorkerFailure(finalInventory)}`);
+  if (finalInventory.fingerprint !== fingerprint) {
     throw new Error("최종 입력 확인 실패: 검사 중 파일이 바뀌었거나 전체 프로그램을 다시 읽지 못했습니다.");
   }
   report.phases.semantic = { checkedFiles: checked.flat().length, expectedFiles: identity.files.length };
@@ -180,7 +186,7 @@ export function main(args = process.argv.slice(2)) {
     const runWorker = createWorkerRunner(options, scratch);
     if (options.list) {
       const inventory = runWorker({ phase: "inventory" });
-      if (inventory.failed) throw new Error(inventory.message);
+      if (inventory.failed) throw new Error(`전체 프로그램 목록 생성 실패: ${describeWorkerFailure(inventory)}`);
       partitionFiles(inventory.identity, options.maxBytes).forEach((files, index) => {
         process.stdout.write(`${index + 1}: ${files.length}개 파일\n`);
       });
@@ -198,7 +204,7 @@ export function main(args = process.argv.slice(2)) {
     }
     const passed = report.complete && report.diagnostics.length === 0;
     process.stdout.write(`전체 타입 검사 ${passed ? "통과" : "실패"}: ${report.phases.semantic?.checkedFiles ?? 0}/${report.identity.files.length}개, 진단 ${report.diagnostics.length}개. ${options.report}\n`);
-    if (report.failure) process.stderr.write(`${report.failure.message}\n`);
+    if (report.failure) process.stderr.write(`${describeWorkerFailure(report.failure)}\n`);
     return passed ? 0 : 1;
   } catch (error) {
     if (!options.list) {
