@@ -46,6 +46,26 @@ export function clearStudioLiveWetInkTileSurfacePool(
   tileSurfacePool.clear();
 }
 
+/**
+ * 30초 이상 로컬 드로잉이 멈춘 유휴 구간에서 버킷당 소수의 웜(warm) 타일만 남기고
+ * 나머지 오프스크린 캔버스를 1×1로 축소해 장기 세션 VRAM 파편화를 회수한다.
+ */
+export function trimStudioLiveWetInkTileSurfacePoolForIdle(
+  tileSurfacePool: Map<string, StudioWetInkBrushSurface[]>,
+  maxRetainedPerBucket = 2,
+): number {
+  const cap = Math.max(0, Math.trunc(maxRetainedPerBucket));
+  let released = 0;
+  for (const [key, pool] of [...tileSurfacePool.entries()]) {
+    if (pool.length <= cap) continue;
+    const excess = pool.splice(cap);
+    shrinkPooledSurfaces(excess);
+    released += excess.length;
+    if (pool.length === 0) tileSurfacePool.delete(key);
+  }
+  return released;
+}
+
 function shrinkPooledSurfaces(surfaces: readonly StudioWetInkBrushSurface[]): void {
   for (const surface of surfaces) {
     try {

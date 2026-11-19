@@ -51,10 +51,12 @@ import {
   STUDIO_IDLE_SOFT_RECYCLE_DELAY_MS,
   STUDIO_LIVE_AUTO_DEGRADE_FRAME_MS_THRESHOLD,
   STUDIO_LIVE_AUTO_DEGRADE_PEER_THRESHOLD,
+  STUDIO_ROLLING_SUMMARY_WINDOW_MS,
   STUDIO_SURFACE_RESIZE_DEBOUNCE_MS,
   StudioAdaptiveSaveScheduler,
   StudioIdleSoftRecycleScheduler,
   StudioLiveHeartbeatJitterGuard,
+  StudioLiveSessionRollingSummary,
   StudioSurfaceResizeDebouncer,
   collectStudioLiveLongSessionDiagnostics,
   evaluateStudioLiveAutoDegrade,
@@ -71,6 +73,7 @@ import {
   StudioRemoteCursorOverlayStore,
 } from "./studio-live-remote-cursor-store";
 import { StudioLiveRetainedMediaOverlayRenderer } from "./studio-live-retained-media-overlay";
+import { trimStudioLiveWetInkTileSurfacePoolForIdle } from "./studio-live-wet-ink-surface-pool";
 
 import type { StudioLocalDatabase } from "../studio-local-database";
 import type { StudioLivePeer, StudioLiveRoomEvent } from "./studio-live-collaboration-room";
@@ -1001,5 +1004,36 @@ describe("long-session multi-user collaborative drawing stability", () => {
     expect(tracker.pruneExpired(now)).toHaveLength(STUDIO_LIVE_INK_MAX_ACTIVE_STROKES);
     expect(tracker.activeStrokeCount).toBe(0);
     expect(tracker.accept(inkBegin("post-recovery-stroke", now), now)).toBe(true);
+  });
+
+  it("tracks 30-minute rolling QA telemetry and trims excess Wet Ink surfaces during idle soft-recycle", () => {
+    const rolling = new StudioLiveSessionRollingSummary(STUDIO_ROLLING_SUMMARY_WINDOW_MS);
+    let now = 30_000_000;
+    rolling.recordReconnect(now);
+    rolling.recordFrame(24, now);
+    rolling.recordFrame(8, now);
+    rolling.recordHeapSample(120, now);
+    now += 10 * 60_000;
+    rolling.recordHeapSample(124.5, now);
+    const snap = rolling.snapshot(now);
+    expect(snap.reconnectCount).toBe(1);
+    expect(snap.slowFrameCount).toBe(1);
+    expect(snap.heapDeltaMb).toBe(4.5);
+    expect(snap.summaryLine).toContain("최근 30분");
+    expect(snap.summaryLine).toContain("+4.5MB");
+
+    now += STUDIO_ROLLING_SUMMARY_WINDOW_MS + 1_000;
+    const aged = rolling.snapshot(now);
+    expect(aged.reconnectCount).toBe(0);
+    expect(aged.slowFrameCount).toBe(0);
+
+    const pool = new Map<string, { width: number; height: number }[]>();
+    pool.set(
+      "256x256",
+      Array.from({ length: 6 }, () => ({ width: 256, height: 256 })),
+    );
+    const released = trimStudioLiveWetInkTileSurfacePoolForIdle(pool as never, 2);
+    expect(released).toBe(4);
+    expect(pool.get("256x256")).toHaveLength(2);
   });
 });

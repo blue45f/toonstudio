@@ -17,6 +17,7 @@ import {
 
 import { STUDIO_LIVE_CURSOR_CHAT_MAX_LENGTH } from "./studio-live-chat-control";
 import {
+  StudioLiveSessionRollingSummary,
   collectStudioLiveLongSessionDiagnostics,
   evaluateStudioLiveAutoDegrade,
   serializeStudioLiveDiagnosticsJson,
@@ -79,6 +80,10 @@ export function StudioLiveQuickCollaborationControls({
   const noticeTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
   const recoveryTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
   const sawDisconnectRef = useRef(false);
+  const rollingSummaryRef = useRef<StudioLiveSessionRollingSummary | null>(null);
+  if (rollingSummaryRef.current === null) {
+    rollingSummaryRef.current = new StudioLiveSessionRollingSummary();
+  }
   const lastLocalCommitRef = useRef<number | null>(lastLocalCommitAt);
   const [composerOpen, setComposerOpen] = useState(false);
   const keyboardOffsetPx = useStudioMobileKeyboardOffset(composerOpen);
@@ -131,6 +136,7 @@ export function StudioLiveQuickCollaborationControls({
         if (event.status.state === "ready" && sawDisconnectRef.current) {
           sawDisconnectRef.current = false;
           const syncedAt = Date.now();
+          rollingSummaryRef.current?.recordReconnect(syncedAt);
           const localCommitLabel =
             lastLocalCommitRef.current !== null
               ? ` · 로컬 저장 ${formatClockTime(lastLocalCommitRef.current)}`
@@ -216,7 +222,11 @@ export function StudioLiveQuickCollaborationControls({
       recovering: recoveryBadge !== null,
       autoDegradedTrails: autoDegrade.degraded,
     });
-    const json = serializeStudioLiveDiagnosticsJson(snapshot);
+    rollingSummaryRef.current?.recordHeapSample(snapshot.heapUsedMb, snapshot.capturedAt);
+    const rolling = rollingSummaryRef.current?.snapshot(snapshot.capturedAt);
+    const json = rolling
+      ? JSON.stringify({ ...snapshot, rollingSummary: rolling }, null, 2)
+      : serializeStudioLiveDiagnosticsJson(snapshot);
     if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
       void navigator.clipboard.writeText(json).then(
         () => announce("장시간 협업 진단 리포트를 복사했습니다."),
@@ -268,7 +278,9 @@ export function StudioLiveQuickCollaborationControls({
 
       {autoDegrade.degraded ? (
         <div
-          className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-line/60 bg-card/85 px-3 text-[11px] font-medium tabular-nums text-fg-2"
+          className={recoveryBadge
+            ? "hidden h-9 shrink-0 items-center gap-2 rounded-lg border border-line/60 bg-card/85 px-3 text-[11px] font-medium tabular-nums text-fg-2 sm:flex"
+            : "flex h-9 shrink-0 items-center gap-2 rounded-lg border border-line/60 bg-card/85 px-3 text-[11px] font-medium tabular-nums text-fg-2"}
           data-studio-live-auto-degrade-hud="true"
           role="status"
           title="동시 접속 인원이 많아 원격 획 트레일을 일시적으로 단순화했습니다."

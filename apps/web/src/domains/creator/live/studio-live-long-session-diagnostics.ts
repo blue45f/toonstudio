@@ -550,3 +550,86 @@ export class StudioSurfaceResizeDebouncer<T> {
     this.timer = null;
   }
 }
+
+export const STUDIO_ROLLING_SUMMARY_WINDOW_MS = 30 * 60_000;
+export const STUDIO_SLOW_FRAME_THRESHOLD_MS = 16.7;
+
+export interface StudioLiveRollingSummarySnapshot {
+  readonly windowMinutes: number;
+  readonly reconnectCount: number;
+  readonly slowFrameCount: number;
+  readonly heapDeltaMb: number | null;
+  readonly summaryLine: string;
+}
+
+/**
+ * 최근 30분간의 재연결·느린 프레임(>16.7ms)·힙 변화량을 유한 버퍼로 집계해
+ * QA·현장 진단용 1줄 요약과 JSON 스냅샷을 제공하는 롤링 텔레메트리 요약기.
+ */
+export class StudioLiveSessionRollingSummary {
+  private readonly windowMs: number;
+  private readonly reconnectTimestamps: number[] = [];
+  private readonly slowFrameTimestamps: number[] = [];
+  private readonly heapSamples: { readonly at: number; readonly mb: number }[] = [];
+
+  constructor(windowMs = STUDIO_ROLLING_SUMMARY_WINDOW_MS) {
+    this.windowMs = Math.max(60_000, Math.trunc(windowMs));
+  }
+
+  recordReconnect(now = Date.now()): void {
+    this.prune(now);
+    this.reconnectTimestamps.push(now);
+    if (this.reconnectTimestamps.length > 500) this.reconnectTimestamps.shift();
+  }
+
+  recordFrame(frameDurationMs: number, now = Date.now()): void {
+    this.prune(now);
+    if (Number.isFinite(frameDurationMs) && frameDurationMs > STUDIO_SLOW_FRAME_THRESHOLD_MS) {
+      this.slowFrameTimestamps.push(now);
+      if (this.slowFrameTimestamps.length > 2_000) this.slowFrameTimestamps.shift();
+    }
+  }
+
+  recordHeapSample(heapUsedMb: number | null, now = Date.now()): void {
+    this.prune(now);
+    if (typeof heapUsedMb !== "number" || !Number.isFinite(heapUsedMb) || heapUsedMb < 0) return;
+    this.heapSamples.push({ at: now, mb: Math.round(heapUsedMb * 100) / 100 });
+    if (this.heapSamples.length > 360) this.heapSamples.shift();
+  }
+
+  snapshot(now = Date.now()): StudioLiveRollingSummarySnapshot {
+    this.prune(now);
+    const windowMinutes = Math.round(this.windowMs / 60_000);
+    const reconnectCount = this.reconnectTimestamps.length;
+    const slowFrameCount = this.slowFrameTimestamps.length;
+    const heapDeltaMb =
+      this.heapSamples.length >= 2
+        ? Math.round((this.heapSamples[this.heapSamples.length - 1]!.mb - this.heapSamples[0]!.mb) * 100) / 100
+        : null;
+    const heapText =
+      heapDeltaMb === null
+        ? "힙 측정 대기"
+        : `힙 ${heapDeltaMb >= 0 ? "+" : ""}${heapDeltaMb}MB`;
+    const summaryLine = `최근 ${windowMinutes}분 · 재연결 ${reconnectCount}회 · 느린 프레임 ${slowFrameCount}회 · ${heapText}`;
+    return Object.freeze({
+      windowMinutes,
+      reconnectCount,
+      slowFrameCount,
+      heapDeltaMb,
+      summaryLine,
+    });
+  }
+
+  private prune(now: number): void {
+    const cutoff = now - this.windowMs;
+    while (this.reconnectTimestamps.length > 0 && this.reconnectTimestamps[0]! < cutoff) {
+      this.reconnectTimestamps.shift();
+    }
+    while (this.slowFrameTimestamps.length > 0 && this.slowFrameTimestamps[0]! < cutoff) {
+      this.slowFrameTimestamps.shift();
+    }
+    while (this.heapSamples.length > 0 && this.heapSamples[0]!.at < cutoff) {
+      this.heapSamples.shift();
+    }
+  }
+}
