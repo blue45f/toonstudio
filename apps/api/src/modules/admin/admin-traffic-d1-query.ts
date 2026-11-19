@@ -317,7 +317,7 @@ export const D1_TRAFFIC_OVERVIEW_QUERY = `
       'attributedPageViews', COALESCE((SELECT page_views FROM share_attribution), 0),
       'attributedVisitors', COALESCE((SELECT visitors FROM share_attribution), 0),
       'attributedSessions', COALESCE((SELECT sessions FROM share_attribution), 0),
-      'channels', COALESCE((
+      'channels', json(COALESCE((
         SELECT json_group_array(json_object(
           'channel', channel,
           'attempts', attempts,
@@ -327,8 +327,8 @@ export const D1_TRAFFIC_OVERVIEW_QUERY = `
           'cancelled', cancelled
         ) ORDER BY attempts DESC, channel)
         FROM share_channel_rows
-      ), json('[]')),
-      'topContent', COALESCE((
+      ), json('[]'))),
+      'topContent', json(COALESCE((
         SELECT json_group_array(json_object(
           'path', path,
           'attempts', attempts,
@@ -336,9 +336,9 @@ export const D1_TRAFFIC_OVERVIEW_QUERY = `
           'completed', completed
         ) ORDER BY attempts DESC, handoffs DESC, path)
         FROM share_content_rows
-      ), json('[]'))
+      ), json('[]')))
     ),
-    'series', COALESCE((
+    'series', json(COALESCE((
       SELECT json_group_array(json_object(
         'bucket', bucket,
         'pageViews', page_views,
@@ -346,16 +346,16 @@ export const D1_TRAFFIC_OVERVIEW_QUERY = `
         'sessions', sessions
       ) ORDER BY bucket)
       FROM series_rows
-    ), json('[]')),
-    'realtimeSeries', COALESCE((
+    ), json('[]'))),
+    'realtimeSeries', json(COALESCE((
       SELECT json_group_array(json_object(
         'bucket', bucket,
         'pageViews', page_views,
         'visitors', visitors
       ) ORDER BY bucket)
       FROM realtime_rows
-    ), json('[]')),
-    'topPages', COALESCE((
+    ), json('[]'))),
+    'topPages', json(COALESCE((
       SELECT json_group_array(json_object(
         'path', path,
         'title', title,
@@ -365,8 +365,8 @@ export const D1_TRAFFIC_OVERVIEW_QUERY = `
         'averageLoadTimeMs', average_load_time_ms
       ) ORDER BY page_views DESC, visitors DESC, path)
       FROM top_page_rows
-    ), json('[]')),
-    'sources', COALESCE((
+    ), json('[]'))),
+    'sources', json(COALESCE((
       SELECT json_group_array(json_object(
         'source', source,
         'medium', medium,
@@ -374,32 +374,32 @@ export const D1_TRAFFIC_OVERVIEW_QUERY = `
         'visitors', visitors
       ) ORDER BY page_views DESC, visitors DESC, source)
       FROM source_rows
-    ), json('[]')),
-    'devices', COALESCE((
+    ), json('[]'))),
+    'devices', json(COALESCE((
       SELECT json_group_array(json_object(
         'label', label,
         'pageViews', page_views,
         'visitors', visitors
       ) ORDER BY page_views DESC, label)
       FROM device_rows
-    ), json('[]')),
-    'browsers', COALESCE((
+    ), json('[]'))),
+    'browsers', json(COALESCE((
       SELECT json_group_array(json_object(
         'label', label,
         'pageViews', page_views,
         'visitors', visitors
       ) ORDER BY page_views DESC, label)
       FROM browser_rows
-    ), json('[]')),
-    'countries', COALESCE((
+    ), json('[]'))),
+    'countries', json(COALESCE((
       SELECT json_group_array(json_object(
         'label', label,
         'pageViews', page_views,
         'visitors', visitors
       ) ORDER BY page_views DESC, label)
       FROM country_rows
-    ), json('[]')),
-    'recent', COALESCE((
+    ), json('[]'))),
+    'recent', json(COALESCE((
       SELECT json_group_array(json_object(
         'occurredAt', occurred_at,
         'path', path,
@@ -410,7 +410,7 @@ export const D1_TRAFFIC_OVERVIEW_QUERY = `
         'browser', browser
       ) ORDER BY occurred_at DESC)
       FROM recent_rows
-    ), json('[]'))
+    ), json('[]')))
   ) AS analytics
 `;
 

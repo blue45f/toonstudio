@@ -183,6 +183,36 @@ test("무료 여부 미확인·유료·절전 앱에는 exec을 보내지 않는
   assert.equal(missing.reason, "APP_TOKEN_UNAVAILABLE");
 });
 
+test("앱 상태 명령 실패는 허용된 종료 메타데이터만 남기고 DB 실행을 막는다", async () => {
+  const cases = [
+    ...["ENOENT", "EACCES", "EPERM", "ETIMEDOUT", "ENOBUFS"].map((code) => [
+      { status: null, error: Object.assign(new Error(secretFixture), { code }) },
+      { exitCode: null, signal: null, spawnErrorCode: code },
+    ]),
+    [{ status: 2 }, { exitCode: 2, signal: null, spawnErrorCode: null }],
+    [{ status: null, signal: "SIGTERM" }, { exitCode: null, signal: "SIGTERM", spawnErrorCode: null }],
+    [{ status: -1, signal: secretFixture, error: { code: secretFixture } }, { exitCode: null, signal: "unknown", spawnErrorCode: "unknown" }],
+  ];
+  for (const [failed, expected] of cases) {
+    const result = await runOnpodAdminReadonlyAudit({ env: environment(), argv: [], spawnImpl: (executable, args, options) => {
+      assert.notEqual(args[0], "exec");
+      if (executable === "onpod") return { ...failed, stdout: secretFixture, stderr: secretFixture };
+      return transport()(executable, args, options);
+    } });
+    assert.equal(result.reason, "APP_STATUS_UNAVAILABLE");
+    assert.deepEqual(result.appStatusFailure, expected);
+    assert.equal(result.app, null);
+    assert.equal(result.audit, null);
+    assert.ok(!formatAuditSummary(result).includes(secretFixture));
+  }
+  const thrown = await runOnpodAdminReadonlyAudit({ env: environment(), argv: [], spawnImpl: (executable, args, options) => {
+    if (executable === "onpod") throw Object.assign(new Error(secretFixture), { code: "ENOENT" });
+    return transport()(executable, args, options);
+  } });
+  assert.deepEqual(thrown.appStatusFailure, { exitCode: null, signal: null, spawnErrorCode: "ENOENT" });
+  assert.ok(!formatAuditSummary(thrown).includes(secretFixture));
+});
+
 test("실패한 exec·예외·부분 결과의 원문 오류를 노출하거나 성공으로 보고하지 않는다", async () => {
   for (const spawnImpl of [
     transport({ stdout: secretFixture, exitCode: 1 }),
@@ -262,8 +292,17 @@ test("workflow는 main 수동 실행·무료 표준 runner·단계별 secret 주
   assert.match(source, /git fetch --no-tags --depth=1 --filter=blob:none origin main/u);
   assert.match(source, /git rev-parse FETCH_HEAD/u);
   const steps = source.split(/^ {6}- /mu);
+  const cliPreflight = steps.find((step) => step.includes("Verify pinned CLI before production credentials"));
+  assert.ok(cliPreflight);
+  assert.match(cliPreflight, /timeout-minutes: 1/u);
+  assert.match(cliPreflight, /version="\$\(onpod --version\)"/u);
+  assert.match(cliPreflight, /\[\[ "\$version" == "onpod 0\.7\.159" \]\]/u);
+  assert.match(cliPreflight, /onpod app status --help >\/dev\/null/u);
+  assert.match(cliPreflight, /onpod exec --help >\/dev\/null/u);
+  assert.doesNotMatch(cliPreflight, /secrets\.|ONPOD_TOKEN|ONPOD_DEPLOY_TOKEN/u);
   const secretSteps = steps.filter((step) => /\$\{\{ secrets\./u.test(step));
   assert.equal(secretSteps.length, 1);
+  assert.ok(steps.indexOf(cliPreflight) < steps.indexOf(secretSteps[0]));
   assert.match(secretSteps[0], /run: node scripts\/run-onpod-admin-readonly-audit\.mjs/u);
   assert.deepEqual([...secretSteps[0].matchAll(/secrets\.([A-Z_]+)/gu)].map((match) => match[1]), ["ONPOD_DEPLOY_TOKEN", "CLOUDFLARE_API_TOKEN"]);
   assert.doesNotMatch(source, /actions\/(?:cache|upload-artifact|download-artifact)|pnpm install|ONPOD_API_ENV_JSON|DATABASE_URL|\b(?:app update|app rollback|db create|attach-db)\b/u);

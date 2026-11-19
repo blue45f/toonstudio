@@ -73,6 +73,16 @@ jobs:
           npm install --global --prefix "$RUNNER_TEMP/onpod-readonly-cli" --no-audit --no-fund onpod@0.7.159
           echo "$RUNNER_TEMP/onpod-readonly-cli/bin" >> "$GITHUB_PATH"
 
+      - name: Verify pinned CLI before production credentials
+        timeout-minutes: 1
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(onpod --version)"
+          [[ "$version" == "onpod 0.7.159" ]]
+          onpod app status --help >/dev/null
+          onpod exec --help >/dev/null
+
       - name: Read fixed app, migration ledger, and optional Worker metadata
         env:
           RELEASE_SHA: ${{ inputs.release_sha }}
