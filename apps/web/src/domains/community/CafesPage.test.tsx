@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -27,19 +28,22 @@ vi.mock("@/shared/seo/use-document-title", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.get.mockReset();
 });
 afterEach(cleanup);
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={["/community/cafes"]}>
-      <CafesPage />
-    </MemoryRouter>,
+    <StrictMode>
+      <MemoryRouter initialEntries={["/community/cafes"]}>
+        <CafesPage />
+      </MemoryRouter>
+    </StrictMode>,
   );
 }
 
 describe("CafesPage remote-data states", () => {
   it("renders an error without also claiming that the list is empty", async () => {
-    mocks.get.mockRejectedValueOnce(new Error("unavailable"));
+    mocks.get.mockRejectedValue(new Error("unavailable"));
 
     renderPage();
 
@@ -50,7 +54,7 @@ describe("CafesPage remote-data states", () => {
   });
 
   it("renders the empty state only after a successful zero-item response", async () => {
-    mocks.get.mockResolvedValueOnce({ items: [] });
+    mocks.get.mockResolvedValue({ items: [] });
 
     renderPage();
 
