@@ -125,8 +125,10 @@
 .character-performance-strip__filters button[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-fg); }
 .character-performance-strip__note { margin: 0 0 0 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-fg-3); font-size: 10.5px; }
 .character-performance-strip__items { display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; padding-bottom: 2px; }
-.character-performance-strip__items button { position: relative; display: flex; flex: 0 0 76px; min-height: 76px; flex-direction: column; align-items: center; gap: 2px; padding: 4px 5px 6px; border: 1px solid var(--color-line); border-radius: 10px; background: var(--color-card); transition: border-color 150ms, background-color 150ms, transform 150ms; }
-.character-performance-strip__items button:hover:not(:disabled) { border-color: var(--color-line-strong); background: var(--color-raised); transform: translateY(-1px); }
+.character-performance-strip__items button { position: relative; display: flex; flex: 0 0 76px; min-height: 76px; flex-direction: column; align-items: center; gap: 2px; padding: 4px 5px 6px; border: 1px solid var(--color-line); border-radius: 10px; background: var(--color-card); touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: border-color 150ms, background-color 150ms, transform 150ms; }
+@media (hover: hover) {
+  .character-performance-strip__items button:hover:not(:disabled) { border-color: var(--color-line-strong); background: var(--color-raised); transform: translateY(-1px); }
+}
 .character-performance-strip__items button[aria-pressed="true"] { border-color: var(--color-accent); box-shadow: inset 0 0 0 1px var(--color-accent); background: var(--color-accent-soft); }
 .character-performance-strip__label { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-fg-2); font-size: 10.5px; text-align: center; }
 .character-performance-strip__check { position: absolute; top: 5px; right: 5px; color: var(--color-accent); }
@@ -146,7 +148,7 @@
 
 [data-studio-3d-reference][data-character-shaper-layout="mobile"] [data-character-shaper-summary] { padding-inline: 10px; min-height: 56px; }
 [data-studio-3d-reference][data-character-shaper-layout="mobile"] .character-category-rail { padding: 5px 4px; gap: 0; }
-[data-studio-3d-reference][data-character-shaper-layout="mobile"] .character-category-rail button { min-height: 54px; font-size: 10px; }
+[data-studio-3d-reference][data-character-shaper-layout="mobile"] .character-category-rail button { min-height: 54px; font-size: 11.5px; font-weight: 600; word-break: keep-all; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 [data-studio-3d-reference][data-character-shaper-layout="mobile"] [data-character-shaper-sheet] { border-top: 1px solid var(--color-line-strong); border-radius: 16px 16px 0 0; background: var(--color-panel); box-shadow: 0 -8px 24px #10111a1a; }
 [data-studio-3d-reference][data-character-shaper-layout="mobile"] [data-character-sheet-panel] { display: flex; flex-direction: column; }
 [data-studio-3d-reference][data-character-shaper-layout="mobile"] [data-character-sheet-panel] > [data-character-shaper-shelf] { height: auto; flex: 1; }
@@ -323,8 +325,8 @@
 .character-gesture-guide li { display: flex; align-items: center; gap: 9px; }
 .character-gesture-guide__icon { display: grid; width: 32px; height: 32px; flex-shrink: 0; place-items: center; border-radius: 9px; background: var(--color-accent-soft); color: var(--color-accent); }
 .character-gesture-guide__text { display: flex; min-width: 0; flex-direction: column; }
-.character-gesture-guide__text strong { font-size: 12px; font-weight: 700; line-height: 1.3; }
-.character-gesture-guide__text span { color: var(--color-fg-2); font-size: 11px; line-height: 1.35; }
+.character-gesture-guide__text strong { font-size: 12px; font-weight: 700; line-height: 1.35; word-break: keep-all; }
+.character-gesture-guide__text span { color: var(--color-fg-2); font-size: 12px; line-height: 1.45; word-break: keep-all; }
 .character-gesture-guide__confirm { width: 100%; min-height: 44px; margin-top: 10px; border-radius: 10px; background: var(--color-accent); color: var(--color-on-accent); font-size: 13px; font-weight: 700; }
 .character-gesture-guide :is(button):focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 @media (forced-colors: active) {

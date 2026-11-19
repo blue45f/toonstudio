@@ -126,11 +126,22 @@
   width: 100%;
   min-width: 0;
   max-width: 100%;
+  min-height: 44px;
   padding-inline: 0.5rem;
-  font-size: 0.75rem;
+  font-size: max(1rem, 16px);
+  touch-action: manipulation;
 }
 [data-character-shaper-layout="mobile"] [data-character-shaper-camera-bar] button {
+  min-height: 44px;
   padding-inline: 0.75rem;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+[data-character-shaper-stage] canvas {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 [data-character-shaper-layout="mobile"] [data-character-shaper-viewport="true"] {
   min-height: 128px;
@@ -183,11 +194,15 @@
   display: flex;
   width: auto;
   min-width: 44px;
+  min-height: 44px;
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.25rem;
-  font-size: 0.625rem;
-  line-height: 1;
+  font-size: 0.75rem;
+  line-height: 1.15;
+  word-break: keep-all;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 [data-character-shaper-layout="mobile"] [data-character-shaper-dock="compact"] > [role="group"] > button {
   flex: 1;

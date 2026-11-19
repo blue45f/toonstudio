@@ -101,7 +101,13 @@
   }
 
   .studio-vspace-three-lighting-hud button {
-    min-height: 36px;
+    min-height: 44px;
+    padding: 4px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    word-break: keep-all;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 

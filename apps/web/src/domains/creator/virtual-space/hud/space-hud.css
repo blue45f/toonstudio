@@ -356,7 +356,7 @@ body:has(.space-hud) [data-site-ost="mounted"] { display: none !important; }
 }
 .space-coach__body { flex: 1; min-width: 0; }
 .space-coach__progress { margin: 0; color: var(--color-accent); font-size: 11px; font-weight: 900; letter-spacing: .04em; }
-.space-coach__title { margin: 2px 0 0; color: var(--color-fg); font-size: 15px; font-weight: 900; line-height: 1.35; }
+.space-coach__title { margin: 2px 0 0; color: var(--color-fg); font-size: 15px; font-weight: 700; line-height: 1.35; }
 .space-coach__text { margin: 2px 0 8px; color: var(--color-fg-2); font-size: 13px; font-weight: 700; line-height: 1.5; }
 .space-coach__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin-top: 8px; }
 .space-coach__check { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--color-fg-2); font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -1377,7 +1377,7 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
 .space-hud[data-panel-open][data-hud-layout="desktop"] .space-npc-dialogue { right: calc(var(--space-panel-width) + var(--space-gutter) * 2 + var(--space-safe-right)); }
 .space-npc-dialogue__header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; }
 .space-npc-dialogue__who { min-width: 0; }
-.space-npc-dialogue__who h2 { margin: 2px 0 0; font-size: 20px; font-weight: 950; letter-spacing: -.01em; }
+.space-npc-dialogue__who h2 { margin: 2px 0 0; font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
 .space-npc-dialogue__where { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--color-fg-2); font-size: 12px; font-weight: 800; }
 .space-npc-dialogue__badge { padding: 1px 6px; border-radius: 6px; background: var(--color-accent-soft); color: var(--color-accent); font-size: 10px; font-weight: 900; letter-spacing: .06em; }
 .space-npc-dialogue__role { margin: 2px 0 0; color: var(--color-accent); font-size: 13px; font-weight: 800; }
@@ -1547,8 +1547,10 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   border-radius: 14px;
   background: transparent;
   color: var(--color-fg-2);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 600;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   cursor: pointer;
 }
 .space-mobile-dock__slot > span:not(.sr-only) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1669,7 +1671,18 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   .space-proximity__card { padding: 4px; }
   .space-proximity__text { max-width: 110px; }
   .space-banner span { display: none; }
-  .space-interact-prompt { min-height: 52px; font-size: 15px; }
+  .space-interact-prompt { min-height: 52px; font-size: 15px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .space-dock__primary,
+  .space-icon-button,
+  .space-pill-button {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .space-chat__input,
+  .space-chat-input input,
+  .space-npc-dialogue__ask input {
+    font-size: max(1rem, 16px);
+  }
   /* NPC 대화는 모바일에서 도크 위 바텀시트로 띄운다. */
   .space-npc-dialogue {
     position: fixed;
