@@ -1,6 +1,17 @@
-import { CheckCircle2, Compass, Copy, PackageOpen } from "lucide-react";
+import {
+  CheckCircle2,
+  Compass,
+  Copy,
+  FileCheck2,
+  Link2,
+  PackageOpen,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING, STUDIO_TOUCH_TARGET } from "../studio-panel-ui";
+import { copyStudioText } from "../studio-workbench-clipboard";
 
 import {
   routeStudioAssistantSkills,
@@ -9,12 +20,34 @@ import {
 import {
   BUILTIN_STUDIO_WORKFLOW_PACKS,
   evaluateWorkflowPackRightsClearance,
+  parseStudioWorkflowPack,
+  serializeStudioWorkflowPack,
   type StudioWorkflowPack,
 } from "./studio-workflow-pack";
-import { PERSPECTIVE_GUIDES } from "./webtoon-croquis-pose-guide";
-import { WEBTOON_PLATFORM_SPECS } from "./webtoon-platform-spec-validator";
+import {
+  buildWorkflowPackShareUrl,
+  extractWorkflowPackFromSearch,
+} from "./studio-workflow-pack-deeplink";
+import {
+  generateWorkflowPackRightsReceipt,
+  serializeWorkflowPackRightsReceipt,
+} from "./studio-workflow-pack-rights-receipt";
+import {
+  buildWorkflowPackFromAssistantState,
+  deleteCustomStudioWorkflowPack,
+  loadCustomStudioWorkflowPacks,
+  saveCustomStudioWorkflowPack,
+} from "./studio-workflow-pack-store";
+import {
+  loadWorkflowPackTelemetrySummary,
+  recordWorkflowPackEvent,
+} from "./studio-workflow-pack-telemetry";
+import { PERSPECTIVE_GUIDES, type PerspectiveGuidePreset } from "./webtoon-croquis-pose-guide";
+import { WEBTOON_PLATFORM_SPECS, type WebtoonPlatformId } from "./webtoon-platform-spec-validator";
 
-import type { WebtoonProductionStage } from "./webtoon-focus-timer";
+import type { SkinToneId } from "./webtoon-color-harmony-assistant";
+import type { PomodoroMode, WebtoonProductionStage } from "./webtoon-focus-timer";
+import type { ReaderScrollSpeedProfile } from "./webtoon-scroll-pacing-simulator";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -76,7 +109,10 @@ export function StudioAssistantSkillRouterBar({
           <button
             key={match.tabId}
             type="button"
-            onClick={() => onSelectTab(match.tabId)}
+            onClick={() => {
+              recordWorkflowPackEvent("router-jumped", match.tabId);
+              onSelectTab(match.tabId);
+            }}
             title={match.reason}
             className={cn(
               "inline-flex min-h-9 items-center gap-1 rounded-lg border px-2 text-[0.65rem] font-bold",
@@ -95,34 +131,204 @@ export function StudioAssistantSkillRouterBar({
   );
 }
 
+export interface CurrentAssistantPackSnapshot {
+  readonly platformId: WebtoonPlatformId;
+  readonly skinToneId: SkinToneId;
+  readonly perspectivePreset: PerspectiveGuidePreset;
+  readonly focusStage: WebtoonProductionStage;
+  readonly focusPreset: PomodoroMode;
+  readonly readerSpeed: ReaderScrollSpeedProfile;
+}
+
 export function StudioWorkflowPacksPanel({
   appliedWorkflowPackId,
-  copiedWorkflowPackId,
+  currentSnapshot,
   onApplyPack,
-  onCopyPack,
 }: {
   readonly appliedWorkflowPackId: string | null;
-  readonly copiedWorkflowPackId: string | null;
+  readonly currentSnapshot: CurrentAssistantPackSnapshot;
   readonly onApplyPack: (pack: StudioWorkflowPack) => void;
-  readonly onCopyPack: (pack: StudioWorkflowPack) => void;
 }) {
+  const [customPacks, setCustomPacks] = useState<StudioWorkflowPack[]>(() =>
+    loadCustomStudioWorkflowPacks(),
+  );
+  const [customPackName, setCustomPackName] = useState("");
+  const [importJson, setImportJson] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<{
+    readonly packId: string;
+    readonly kind: "json" | "deeplink" | "receipt";
+  } | null>(null);
+  const [telemetry, setTelemetry] = useState(() => loadWorkflowPackTelemetrySummary());
+
+  const deepLinkPack = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return extractWorkflowPackFromSearch(window.location.search);
+  }, []);
+
+  const allPacks = useMemo(
+    () => [
+      ...customPacks.map((pack) => ({ pack, isCustom: true })),
+      ...BUILTIN_STUDIO_WORKFLOW_PACKS.map((pack) => ({ pack, isCustom: false })),
+    ],
+    [customPacks],
+  );
+
+  function applyAndTrack(pack: StudioWorkflowPack) {
+    onApplyPack(pack);
+    setTelemetry(recordWorkflowPackEvent("pack-applied", pack.id));
+  }
+
+  function handleSaveCurrentAsPack() {
+    const created = buildWorkflowPackFromAssistantState({
+      name: customPackName || "내 커스텀 제작 팩",
+      ...currentSnapshot,
+    });
+    setCustomPacks(saveCustomStudioWorkflowPack(created));
+    setCustomPackName("");
+    setTelemetry(recordWorkflowPackEvent("pack-saved-custom", created.id));
+  }
+
+  function handleImportPack() {
+    const parsed = parseStudioWorkflowPack(importJson);
+    if (!parsed) {
+      setImportError("올바른 Studio Workflow Pack JSON(schemaVersion: 1) 형식이 아닙니다.");
+      return;
+    }
+    setImportError(null);
+    setCustomPacks(saveCustomStudioWorkflowPack(parsed));
+    setImportJson("");
+    onApplyPack(parsed);
+    setTelemetry(recordWorkflowPackEvent("pack-imported-json", parsed.id));
+  }
+
+  async function handleCopyKind(
+    pack: StudioWorkflowPack,
+    kind: "json" | "deeplink" | "receipt",
+  ) {
+    let text: string;
+    if (kind === "json") {
+      text = serializeStudioWorkflowPack(pack);
+    } else if (kind === "deeplink") {
+      const baseUrl =
+        typeof window !== "undefined" ? window.location.href : "http://localhost/studio";
+      text = buildWorkflowPackShareUrl(pack, baseUrl);
+    } else {
+      text = serializeWorkflowPackRightsReceipt(generateWorkflowPackRightsReceipt(pack));
+    }
+
+    const ok = await copyStudioText(text);
+    if (!ok) return;
+    setCopyFeedback({ packId: pack.id, kind });
+    if (kind === "deeplink") {
+      setTelemetry(recordWorkflowPackEvent("pack-shared-deeplink", pack.id));
+    } else if (kind === "receipt") {
+      setTelemetry(recordWorkflowPackEvent("rights-receipt-copied", pack.id));
+    }
+  }
+
   return (
     <div data-testid="studio-workflow-packs-tab" className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1 rounded-xl border border-line bg-card/60 p-3">
-        <div className="flex items-center gap-1.5 font-bold">
-          <PackageOpen className="size-4 text-accent" aria-hidden />
-          <span>장르별 Studio Workflow Pack (1클릭 세팅 &amp; Rights BOM 검증)</span>
+      <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-card/60 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 font-bold">
+            <PackageOpen className="size-4 text-accent" aria-hidden />
+            <span>장르별 Studio Workflow Pack (1클릭 세팅 · 딥링크 · Rights Receipt)</span>
+          </div>
+          <span
+            data-testid="workflow-pack-telemetry-badge"
+            className="rounded bg-raised px-2 py-0.5 font-mono text-[0.6rem] font-bold text-fg-3"
+          >
+            적용 {telemetry.counts["pack-applied"]} · 공유 {telemetry.counts["pack-shared-deeplink"]} · 증명서{" "}
+            {telemetry.counts["rights-receipt-copied"]}
+          </span>
         </div>
         <p className="text-[0.65rem] text-fg-3">
-          플랫폼 규격, 피부톤 팔레트, 투시 구도, 독자 페이싱, 포커스 타이머를 하나의 팩으로 적용하고 상업 연재 라이선스를 확인합니다.
+          플랫폼 규격, 피부톤 팔레트, 투시 구도, 독자 페이싱, 포커스 타이머를 하나의 팩으로 저장·공유하고 상업 연재용 rights-bom-receipt.json을 발급합니다.
         </p>
+
+        {deepLinkPack ? (
+          <div
+            data-testid="workflow-pack-deeplink-banner"
+            className="mt-1 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/40 bg-accent-soft px-2.5 py-2"
+          >
+            <span className="text-[0.66rem] font-bold text-accent">
+              공유 링크에서 워크플로우 팩 감지됨: {deepLinkPack.name}
+            </span>
+            <button
+              type="button"
+              onClick={() => applyAndTrack(deepLinkPack)}
+              className={cn(CHIP_CLASS, "border-transparent bg-accent text-on-accent")}
+            >
+              공유 팩 바로 적용
+            </button>
+          </div>
+        ) : null}
+
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <input
+            type="text"
+            value={customPackName}
+            onChange={(event) => setCustomPackName(event.target.value)}
+            aria-label="내 커스텀 팩 이름"
+            placeholder="현재 세팅을 저장할 팩 이름 입력 (예: 내 작품 1화 세팅)"
+            className={cn(
+              "min-h-9 min-w-48 flex-1 rounded-lg border border-line bg-card px-2.5 text-xs text-fg",
+              STUDIO_FOCUS_RING,
+            )}
+          />
+          <button
+            type="button"
+            onClick={handleSaveCurrentAsPack}
+            className={cn(CHIP_CLASS, "gap-1 border-line bg-raised text-fg hover:bg-card")}
+          >
+            <Plus className="size-3.5" aria-hidden />
+            <span>현재 세팅 저장</span>
+          </button>
+        </div>
+
+        <details className="mt-1 rounded-lg border border-line bg-card px-2.5 py-1.5">
+          <summary className="cursor-pointer text-[0.66rem] font-bold text-fg-2">
+            JSON으로 외부 팩 가져오기
+          </summary>
+          <div className="mt-2 flex flex-col gap-1.5">
+            <textarea
+              rows={3}
+              value={importJson}
+              onChange={(event) => {
+                setImportJson(event.target.value);
+                setImportError(null);
+              }}
+              aria-label="가져올 워크플로우 팩 JSON"
+              placeholder='{"schemaVersion": 1, "id": "...", ...}'
+              className={cn(
+                "w-full rounded-lg border border-line bg-raised p-2 font-mono text-[0.65rem] text-fg",
+                STUDIO_FOCUS_RING,
+              )}
+            />
+            {importError ? (
+              <p role="alert" className="text-[0.62rem] font-semibold text-bad">
+                {importError}
+              </p>
+            ) : null}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleImportPack}
+                className={cn(CHIP_CLASS, "border-transparent bg-accent text-on-accent")}
+              >
+                JSON 검증 후 적용
+              </button>
+            </div>
+          </div>
+        </details>
       </div>
 
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-        {BUILTIN_STUDIO_WORKFLOW_PACKS.map((pack) => {
+        {allPacks.map(({ pack, isCustom }) => {
           const clearance = evaluateWorkflowPackRightsClearance(pack);
           const isApplied = appliedWorkflowPackId === pack.id;
-          const isCopied = copiedWorkflowPackId === pack.id;
+          const activeCopy = copyFeedback?.packId === pack.id ? copyFeedback.kind : null;
           return (
             <article
               key={pack.id}
@@ -136,7 +342,7 @@ export function StudioWorkflowPacksPanel({
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[0.78rem] font-bold text-fg">{pack.name}</span>
                   <span className="shrink-0 rounded bg-raised px-1.5 py-0.5 text-[0.6rem] font-bold text-fg-3">
-                    {pack.genre}
+                    {isCustom ? `커스텀 · ${pack.genre}` : pack.genre}
                   </span>
                 </div>
                 <p className="text-[0.66rem] leading-relaxed text-fg-2">{pack.summary}</p>
@@ -161,10 +367,10 @@ export function StudioWorkflowPacksPanel({
                 </p>
               </div>
 
-              <div className="flex items-center gap-1.5 border-t border-line/60 pt-2">
+              <div className="flex flex-wrap items-center gap-1.5 border-t border-line/60 pt-2">
                 <button
                   type="button"
-                  onClick={() => onApplyPack(pack)}
+                  onClick={() => applyAndTrack(pack)}
                   className={cn(
                     CHIP_CLASS,
                     "flex-1 border-transparent bg-accent text-on-accent hover:opacity-90",
@@ -174,12 +380,44 @@ export function StudioWorkflowPacksPanel({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onCopyPack(pack)}
+                  onClick={() => {
+                    void handleCopyKind(pack, "deeplink");
+                  }}
+                  className={cn(CHIP_CLASS, "gap-1 border-line bg-raised text-fg hover:bg-card")}
+                >
+                  <Link2 className="size-3" aria-hidden />
+                  <span>{activeCopy === "deeplink" ? "링크 복사됨" : "공유 링크"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleCopyKind(pack, "receipt");
+                  }}
+                  className={cn(CHIP_CLASS, "gap-1 border-line bg-raised text-fg hover:bg-card")}
+                >
+                  <FileCheck2 className="size-3" aria-hidden />
+                  <span>{activeCopy === "receipt" ? "증명서 복사됨" : "저작권 증명서"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleCopyKind(pack, "json");
+                  }}
                   className={cn(CHIP_CLASS, "gap-1 border-line bg-raised text-fg hover:bg-card")}
                 >
                   <Copy className="size-3" aria-hidden />
-                  <span>{isCopied ? "JSON 복사됨" : "JSON 복사"}</span>
+                  <span>{activeCopy === "json" ? "JSON 복사됨" : "JSON"}</span>
                 </button>
+                {isCustom ? (
+                  <button
+                    type="button"
+                    aria-label={`${pack.name} 삭제`}
+                    onClick={() => setCustomPacks(deleteCustomStudioWorkflowPack(pack.id))}
+                    className={cn(CHIP_CLASS, "border-bad/40 bg-bad/10 text-bad hover:opacity-90")}
+                  >
+                    <Trash2 className="size-3" aria-hidden />
+                  </button>
+                ) : null}
               </div>
             </article>
           );
