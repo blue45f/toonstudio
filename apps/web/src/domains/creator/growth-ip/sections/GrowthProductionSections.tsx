@@ -1,5 +1,5 @@
 // 해외 어시스트 소싱 · 시놉시스와 웹소설 각색 · 컷 단위 음성 대사 섹션.
-import { BookOpen, ExternalLink, Headphones, Mic2, Plus, UsersRound, WandSparkles } from "lucide-react";
+import { BookOpen, ExternalLink, Headphones, Layers, Mic2, Plus, UsersRound } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -84,9 +84,9 @@ export function AssistantSourcingSection({ state, update, notify, notice }: Grow
       description={bi("국가·언어·역할·시간대 겹침·단가·포트폴리오·검증 여부를 비교합니다. 플랫폼이 실제 고용주가 되거나 송금을 대행하는 것으로 오인되지 않도록 ‘후보 수집 → 검증 → 계약’ 단계를 분리합니다.", "Compare region, language, role, time overlap, rate, portfolio and verification. Candidate collection, verification and contracting stay separate.")}
       notice={notice}
     >
-      <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+      <div className="grid gap-4 break-keep [overflow-wrap:break-word] xl:grid-cols-[0.85fr_1.15fr]">
         <div className={GROWTH_CARD}>
-          <h3 className="font-black text-fg">{bi("후보 추가", "Add a candidate")}</h3>
+          <h3 className="font-semibold tracking-[-0.015em] text-fg">{bi("후보 추가", "Add a candidate")}</h3>
           <fieldset disabled={!policy.allowed} className="mt-3">
             <legend className="sr-only">{bi("후보 정보", "Candidate details")}</legend>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -103,26 +103,26 @@ export function AssistantSourcingSection({ state, update, notify, notice }: Grow
                 <input className={GROWTH_INPUT} value={candidate.languages} onChange={(e) => setCandidate((c) => ({ ...c, languages: e.target.value }))} placeholder="en, vi, ko" />
               </GrowthField>
               <GrowthField label={bi("겹치는 업무 시간(시간)", "Time-zone overlap (hours)")}>
-                <input className={GROWTH_INPUT} type="number" min={0} max={MAX_OVERLAP_HOURS} value={candidate.timezoneOverlapHours} onChange={(e) => setCandidate((c) => ({ ...c, timezoneOverlapHours: e.target.value }))} />
+                <input className={`${GROWTH_INPUT} tabular-nums`} type="number" inputMode="numeric" min={0} max={MAX_OVERLAP_HOURS} value={candidate.timezoneOverlapHours} onChange={(e) => setCandidate((c) => ({ ...c, timezoneOverlapHours: e.target.value }))} />
               </GrowthField>
               <GrowthField label={bi("시간당 단가(USD)", "Hourly rate (USD)")}>
-                <input className={GROWTH_INPUT} type="number" min={0} value={candidate.hourlyUsd} onChange={(e) => setCandidate((c) => ({ ...c, hourlyUsd: e.target.value }))} />
+                <input className={`${GROWTH_INPUT} tabular-nums`} type="number" inputMode="numeric" min={0} value={candidate.hourlyUsd} onChange={(e) => setCandidate((c) => ({ ...c, hourlyUsd: e.target.value }))} />
               </GrowthField>
               <GrowthField className="sm:col-span-2" label={bi("포트폴리오 주소", "Portfolio URL")}>
                 <input className={GROWTH_INPUT} type="url" inputMode="url" value={candidate.portfolioUrl} onChange={(e) => setCandidate((c) => ({ ...c, portfolioUrl: e.target.value }))} placeholder="https://" />
               </GrowthField>
             </div>
-            <label className="mt-3 flex min-h-11 items-center gap-2 text-sm text-fg-2">
-              <input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={candidate.verified} onChange={(e) => setCandidate((c) => ({ ...c, verified: e.target.checked }))} />
+            <label className="mt-3 flex min-h-11 items-center gap-2 text-sm leading-[1.5] text-fg-2">
+              <input type="checkbox" className="size-4 shrink-0 accent-[var(--color-accent)]" checked={candidate.verified} onChange={(e) => setCandidate((c) => ({ ...c, verified: e.target.checked }))} />
               {bi("외부 검증 완료 표시(운영자가 증빙 확인한 경우만)", "Mark externally verified only after evidence review")}
             </label>
-            <button type="button" className={`${GROWTH_PRIMARY} mt-2`} onClick={addCandidate}><Plus size={15} aria-hidden />{bi("후보 추가", "Add candidate")}</button>
+            <button type="button" className={`${GROWTH_PRIMARY} mt-2 w-full justify-center sm:w-auto`} onClick={addCandidate}><Plus size={15} strokeWidth={1.5} aria-hidden />{bi("후보 추가", "Add candidate")}</button>
           </fieldset>
-          {!policy.allowed ? <p className="mt-3 rounded-xl border border-warn/30 bg-warn/10 p-3 text-xs leading-5 text-fg">{policyReason(policy)}</p> : null}
+          {!policy.allowed ? <p className="mt-3 rounded-xl border border-warn/30 bg-warn/10 p-3 text-xs leading-[1.6] text-fg">{policyReason(policy)}</p> : null}
         </div>
 
         <div className={GROWTH_CARD}>
-          <h3 className="font-black text-fg">{bi("찾는 조건", "What you need")}</h3>
+          <h3 className="font-semibold tracking-[-0.015em] text-fg">{bi("찾는 조건", "What you need")}</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <GrowthField label={bi("필요 역할", "Wanted roles")}>
               <input className={GROWTH_INPUT} value={brief.roles.join(", ")} onChange={(e) => setBrief((c) => ({ ...c, roles: splitTags(e.target.value) }))} />
@@ -131,20 +131,20 @@ export function AssistantSourcingSection({ state, update, notify, notice }: Grow
               <input className={GROWTH_INPUT} value={brief.languages.join(", ")} onChange={(e) => setBrief((c) => ({ ...c, languages: splitTags(e.target.value) }))} />
             </GrowthField>
             <GrowthField label={bi("최소 겹침(시간)", "Min. overlap (h)")}>
-              <input className={GROWTH_INPUT} type="number" min={0} max={MAX_OVERLAP_HOURS} value={brief.timezoneOverlapHours} onChange={(e) => setBrief((c) => ({ ...c, timezoneOverlapHours: clampNumber(e.target.value, 0, MAX_OVERLAP_HOURS, 0) }))} />
+              <input className={`${GROWTH_INPUT} tabular-nums`} type="number" inputMode="numeric" min={0} max={MAX_OVERLAP_HOURS} value={brief.timezoneOverlapHours} onChange={(e) => setBrief((c) => ({ ...c, timezoneOverlapHours: clampNumber(e.target.value, 0, MAX_OVERLAP_HOURS, 0) }))} />
             </GrowthField>
             <GrowthField label={bi("최대 단가(USD, 0=제한 없음)", "Max rate (USD, 0 = any)")}>
-              <input className={GROWTH_INPUT} type="number" min={0} value={brief.maxHourlyUsd} onChange={(e) => setBrief((c) => ({ ...c, maxHourlyUsd: clampNumber(e.target.value, 0, MAX_HOURLY_USD, 0) }))} />
+              <input className={`${GROWTH_INPUT} tabular-nums`} type="number" inputMode="numeric" min={0} value={brief.maxHourlyUsd} onChange={(e) => setBrief((c) => ({ ...c, maxHourlyUsd: clampNumber(e.target.value, 0, MAX_HOURLY_USD, 0) }))} />
             </GrowthField>
           </div>
           <div className="mt-4 grid gap-2">
             {matches.length ? matches.map((match) => (
               <article key={match.id} className={GROWTH_ITEM}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <strong className="text-sm text-fg">{match.displayName}</strong>
-                  <Pill tone="accent">{bi("적합도", "Match")} {match.score}</Pill>
+                  <strong className="text-sm font-semibold text-fg">{match.displayName}</strong>
+                  <Pill tone="accent">{bi("적합도", "Match")} <span className="tabular-nums">{match.score}</span></Pill>
                 </div>
-                <p className="mt-1 text-xs text-fg-2">
+                <p className="mt-1 text-xs tabular-nums leading-[1.6] text-fg-2">
                   {[
                     match.region || bi("지역 미입력", "No region"),
                     `${bi("시간당", "Hourly")} $${match.hourlyUsd}`,
@@ -152,10 +152,10 @@ export function AssistantSourcingSection({ state, update, notify, notice }: Grow
                     match.verified ? bi("검증됨", "Verified") : bi("검증 필요", "Needs verification"),
                   ].join(" · ")}
                 </p>
-                <p className="mt-2 text-xs leading-5 text-fg-2">{assistantMatchReasons(match).join(" · ")}</p>
+                <p className="mt-2 text-xs leading-[1.6] text-fg-2">{assistantMatchReasons(match).join(" · ")}</p>
                 {match.portfolioUrl ? (
-                  <a href={match.portfolioUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center gap-1 text-xs font-bold text-accent">
-                    {bi("포트폴리오", "Portfolio")}<ExternalLink size={12} aria-hidden />
+                  <a href={match.portfolioUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-accent">
+                    {bi("포트폴리오", "Portfolio")}<ExternalLink size={12} strokeWidth={1.5} aria-hidden />
                   </a>
                 ) : null}
               </article>
@@ -221,9 +221,9 @@ export function StoryAdaptationSection({ state, update, notify, notice }: Growth
       description={bi("로그라인·기획의도·세계관·캐릭터·시즌 아크를 작품 기획으로 관리하고, 웹소설 회차를 웹툰 에피소드 묶음으로 변환하는 편집 가능한 각색 초안을 만듭니다.", "Manage logline, premise, world, characters and season arc, then build editable webtoon episode groupings from novel chapters.")}
       notice={notice}
     >
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-4 break-keep [overflow-wrap:break-word] xl:grid-cols-2">
         <div className={GROWTH_CARD}>
-          <h3 className="font-black text-fg">{bi("웹툰 시놉시스", "Webtoon synopsis")}</h3>
+          <h3 className="font-semibold tracking-[-0.015em] text-fg">{bi("웹툰 시놉시스", "Webtoon synopsis")}</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {SYNOPSIS_FIELDS.map(({ key, label, multiline, wide }) => (
               <GrowthField key={key} className={wide ? "sm:col-span-2" : undefined} label={biLabel(label)}>
@@ -235,17 +235,17 @@ export function StoryAdaptationSection({ state, update, notify, notice }: Growth
               </GrowthField>
             ))}
           </div>
-          <p className="mt-3 text-xs text-fg-3">{bi("입력하는 대로 이 브라우저에 자동 저장됩니다.", "Saved in this browser as you type.")}</p>
+          <p className="mt-3 text-xs leading-[1.6] text-fg-3">{bi("입력하는 대로 이 브라우저에 자동 저장됩니다.", "Saved in this browser as you type.")}</p>
         </div>
 
         <div className={GROWTH_CARD}>
-          <h3 className="font-black text-fg">{bi("웹소설 회차", "Web novel chapters")}</h3>
+          <h3 className="font-semibold tracking-[-0.015em] text-fg">{bi("웹소설 회차", "Web novel chapters")}</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_8rem_8rem]">
             <GrowthField label={bi("회차 제목", "Chapter title")}>
               <input className={GROWTH_INPUT} value={chapter.title} onChange={(e) => setChapter((c) => ({ ...c, title: e.target.value }))} />
             </GrowthField>
             <GrowthField label={bi("글자/단어 수", "Word count")}>
-              <input className={GROWTH_INPUT} type="number" min={0} value={chapter.wordCount} onChange={(e) => setChapter((c) => ({ ...c, wordCount: e.target.value }))} />
+              <input className={`${GROWTH_INPUT} tabular-nums`} type="number" inputMode="numeric" min={0} value={chapter.wordCount} onChange={(e) => setChapter((c) => ({ ...c, wordCount: e.target.value }))} />
             </GrowthField>
             <GrowthField label={bi("상태", "Status")}>
               <select
@@ -263,14 +263,14 @@ export function StoryAdaptationSection({ state, update, notify, notice }: Growth
           <GrowthField className="mt-3" label={bi("핵심 사건·감정 변화·클리프행어", "Core event, emotion shift and cliffhanger")}>
             <textarea className={`${GROWTH_INPUT} min-h-24`} value={chapter.summary} onChange={(e) => setChapter((c) => ({ ...c, summary: e.target.value }))} />
           </GrowthField>
-          <button type="button" className={`${GROWTH_PRIMARY} mt-3`} onClick={addChapter}><Plus size={15} aria-hidden />{bi("회차 추가", "Add chapter")}</button>
+          <button type="button" className={`${GROWTH_PRIMARY} mt-3 w-full justify-center sm:w-auto`} onClick={addChapter}><Plus size={15} strokeWidth={1.5} aria-hidden />{bi("회차 추가", "Add chapter")}</button>
 
           {state.novelChapters.length ? (
             <ol className="mt-4 grid gap-1.5" aria-label={bi("추가한 회차", "Added chapters")}>
               {state.novelChapters.slice(-RECENT_CHAPTER_COUNT).map((item) => (
-                <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-panel px-3 py-2 text-xs">
-                  <span className="min-w-0 truncate font-bold text-fg">{item.title || bi("제목 없는 회차", "Untitled chapter")}</span>
-                  <span className="flex items-center gap-2 text-fg-2">
+                <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-panel px-3 py-2 text-xs">
+                  <span className="min-w-0 truncate font-semibold text-fg">{item.title || bi("제목 없는 회차", "Untitled chapter")}</span>
+                  <span className="flex items-center gap-2 tabular-nums text-fg-2">
                     {item.wordCount ? <span>{item.wordCount.toLocaleString()}{bi("자", " words")}</span> : null}
                     <Pill>{biLabel(CHAPTER_STATUS_LABEL[item.status])}</Pill>
                   </span>
@@ -279,12 +279,12 @@ export function StoryAdaptationSection({ state, update, notify, notice }: Growth
             </ol>
           ) : null}
 
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+          <div className="mt-5 flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <h4 className="text-sm font-black text-fg">{bi("웹툰 각색 초안", "Webtoon adaptation draft")}</h4>
-              <p className="mt-0.5 text-xs text-fg-2">{bi("회차를 2개씩 묶어 에피소드 뼈대를 만듭니다. 회차를 고친 뒤 다시 누르면 최신 내용으로 다시 묶어요.", "Groups two chapters per episode. Run again after editing chapters to regroup.")}</p>
+              <h4 className="text-sm font-semibold tracking-[-0.015em] text-fg">{bi("웹툰 각색 초안", "Webtoon adaptation draft")}</h4>
+              <p className="mt-0.5 text-xs leading-[1.6] text-fg-2">{bi("회차를 2개씩 묶어 에피소드 뼈대를 만듭니다. 회차를 고친 뒤 다시 누르면 최신 내용으로 다시 묶어요.", "Groups two chapters per episode. Run again after editing chapters to regroup.")}</p>
             </div>
-            <button type="button" className={GROWTH_BUTTON} disabled={!state.novelChapters.length} onClick={rebuildAdaptation}><WandSparkles size={15} aria-hidden />{bi("각색 플랜 생성", "Build adaptation")}</button>
+            <button type="button" className={`${GROWTH_BUTTON} w-full justify-center sm:w-auto`} disabled={!state.novelChapters.length} onClick={rebuildAdaptation}><Layers size={15} strokeWidth={1.5} aria-hidden />{bi("각색 플랜 생성", "Build adaptation")}</button>
           </div>
           <div className="mt-3 grid gap-2">
             {state.adaptationEpisodes.length ? state.adaptationEpisodes.map((episode) => (
@@ -379,14 +379,14 @@ export function VoiceDialogueSection({ state, update, notify, notice, speechAdap
       description={bi("회차·컷·화자·언어 메타데이터를 저장하고 브라우저 TTS로 바로 검수하거나, 권리를 확보한 음성 파일을 현재 세션에 연결해 재생합니다. 자동 재생은 기본으로 사용하지 않습니다.", "Store episode, panel, speaker and locale metadata, proof with browser TTS, or attach owned voice audio for the current session. Autoplay stays off.")}
       notice={notice}
     >
-      <div className="grid gap-4 xl:grid-cols-[0.75fr_1.25fr]">
+      <div className="grid gap-4 break-keep [overflow-wrap:break-word] xl:grid-cols-[0.75fr_1.25fr]">
         <div className={GROWTH_CARD}>
           <div className="grid grid-cols-2 gap-3">
             <GrowthField label={bi("회차", "Episode")}>
-              <input className={GROWTH_INPUT} type="number" min={1} value={draft.episode} onChange={(e) => setDraft((c) => ({ ...c, episode: e.target.value }))} />
+              <input className={`${GROWTH_INPUT} tabular-nums`} type="number" inputMode="numeric" min={1} value={draft.episode} onChange={(e) => setDraft((c) => ({ ...c, episode: e.target.value }))} />
             </GrowthField>
             <GrowthField label={bi("컷", "Panel")}>
-              <input className={GROWTH_INPUT} type="number" min={1} value={draft.panel} onChange={(e) => setDraft((c) => ({ ...c, panel: e.target.value }))} />
+              <input className={`${GROWTH_INPUT} tabular-nums`} type="number" inputMode="numeric" min={1} value={draft.panel} onChange={(e) => setDraft((c) => ({ ...c, panel: e.target.value }))} />
             </GrowthField>
             <GrowthField label={bi("화자", "Speaker")}>
               <input className={GROWTH_INPUT} value={draft.speaker} onChange={(e) => setDraft((c) => ({ ...c, speaker: e.target.value }))} />
@@ -398,7 +398,7 @@ export function VoiceDialogueSection({ state, update, notify, notice, speechAdap
           <GrowthField className="mt-3" label={bi("대사", "Dialogue")}>
             <textarea className={`${GROWTH_INPUT} min-h-32`} value={draft.text} onChange={(e) => setDraft((c) => ({ ...c, text: e.target.value }))} />
           </GrowthField>
-          <button type="button" className={`${GROWTH_PRIMARY} mt-3`} onClick={addDialogue}><Plus size={15} aria-hidden />{bi("음성 대사 추가", "Add voice dialogue")}</button>
+          <button type="button" className={`${GROWTH_PRIMARY} mt-3 w-full justify-center sm:w-auto`} onClick={addDialogue}><Plus size={15} strokeWidth={1.5} aria-hidden />{bi("음성 대사 추가", "Add voice dialogue")}</button>
         </div>
         <div className={`${GROWTH_CARD} grid content-start gap-2`}>
           {state.voiceDialogues.length ? state.voiceDialogues.slice().reverse().map((dialogue) => (

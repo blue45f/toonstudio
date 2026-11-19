@@ -73,13 +73,13 @@ export function ResourceCard({ item, saved, onToggle, disabled, kindLabel, wideT
         <span className="rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-sm">{resourceUsageLabel(item)}</span>
       </div>
     </div>
-    <div className="flex flex-1 flex-col space-y-3 p-5">
-      <h3 className="break-words text-lg font-semibold [word-break:keep-all]">{item.title}</h3>
-      <p className="text-sm text-fg-2 tabular-nums">{item.creator || "저작자·기관 원문 확인"}{item.dateLabel ? ` · ${item.dateLabel}` : ""}</p>
-      {item.description && <p className="break-words text-sm leading-6 text-fg-2 [word-break:keep-all]">{item.description}</p>}
-      {item.provider === "bizinfo" && <div className="rounded-lg border border-line bg-card p-3 text-sm leading-6"><p className="font-semibold tabular-nums">{deadlineLabel(item.deadline)}</p><p className="text-fg-2">신청 대상: {item.eligibility}</p></div>}
+    <div className="flex flex-1 flex-col space-y-3 break-keep [overflow-wrap:break-word] p-4 sm:p-5">
+      <h3 className="text-base font-semibold leading-[1.35] tracking-[-0.015em] sm:text-lg">{item.title}</h3>
+      <p className="text-sm tabular-nums text-fg-2">{item.creator || "저작자·기관 원문 확인"}{item.dateLabel ? ` · ${item.dateLabel}` : ""}</p>
+      {item.description && <p className="text-sm leading-[1.6] tracking-[-0.01em] text-fg-2">{item.description}</p>}
+      {item.provider === "bizinfo" && <div className="rounded-lg bg-card p-3 text-sm leading-[1.6]"><p className="font-semibold tabular-nums">{deadlineLabel(item.deadline)}</p><p className="text-fg-2">신청 대상: {item.eligibility}</p></div>}
       {item.isbn && <p className="text-xs text-fg-2 tabular-nums">ISBN: {item.isbn}</p>}
-      <details className="text-sm leading-6 text-fg-2"><summary className="cursor-pointer py-1.5 font-medium text-fg-3 hover:text-fg">출처·이용조건·조회일</summary>
+      <details className="text-sm leading-[1.6] text-fg-2"><summary className="min-h-11 cursor-pointer py-2 font-medium text-fg-3 transition-colors duration-150 hover:text-fg sm:min-h-0 sm:py-1.5">출처·이용조건·조회일</summary>
         <p>{item.credit || "크레딧 원문 확인"}</p><p>{resourceUsageDescription(item)}</p>
         {item.licenseUrl && <a className="underline" href={item.licenseUrl} target="_blank" rel="noopener noreferrer">이용조건 확인 ↗</a>}
         <p className="tabular-nums">조회: {item.fetchedAt}</p>
@@ -342,7 +342,7 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, h
     <form className="space-y-3 rounded-2xl border border-line bg-panel p-4" onSubmit={(event) => { event.preventDefault(); searchFor(draft.trim()); }}>
       <label htmlFor={`resource-query-${provider}`} className="block text-base font-semibold">{RESOURCE_LABELS[provider]} 검색</label>
       <div className="resource-search-submit"><input id={`resource-query-${provider}`} className={RESOURCE_INPUT} type="search" required minLength={2} maxLength={80} value={draft} placeholder={config.hint} onChange={(event) => setDraft(event.target.value)} /><button className={`${RESOURCE_BUTTON} shrink-0 bg-accent-soft`} type="submit">검색하기</button></div>
-      <div className="flex flex-wrap gap-2">{config.examples.map((value) => <button key={value} type="button" className={RESOURCE_BUTTON} onClick={() => searchFor(value)}>{value}</button>)}</div>
+      <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">{config.examples.map((value) => <button key={value} type="button" className={`${RESOURCE_BUTTON} shrink-0 whitespace-nowrap`} onClick={() => searchFor(value)}>{value}</button>)}</div>
     </form>
     {translationEnabled && query && <TranslatedQueryNotice state={translated} />}
     <div className="flex flex-wrap items-center gap-3">

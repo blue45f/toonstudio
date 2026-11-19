@@ -114,8 +114,8 @@ function DiscoveryProfileCard({ state, update, notify }: Pick<GrowthSectionProps
   };
 
   return (
-    <div className={GROWTH_CARD}>
-      <h3 className="font-black text-fg">{bi("발굴 프로필", "Discovery profile")}</h3>
+    <div className={`${GROWTH_CARD} break-keep [overflow-wrap:break-word]`}>
+      <h3 className="font-semibold tracking-[-0.015em] text-fg">{bi("발굴 프로필", "Discovery profile")}</h3>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <GrowthField label={bi("활동명 / 필명", "Display / pen name")}>
           <input className={GROWTH_INPUT} value={draft.penName} onChange={(e) => setDraft((c) => ({ ...c, penName: e.target.value }))} />
@@ -142,7 +142,7 @@ function DiscoveryProfileCard({ state, update, notify }: Pick<GrowthSectionProps
       <GrowthField className="mt-3" label={bi("성장 목표·찾는 기회", "Growth goal and opportunities sought")}>
         <textarea className={`${GROWTH_INPUT} min-h-24`} value={draft.goal} onChange={(e) => setDraft((c) => ({ ...c, goal: e.target.value }))} />
       </GrowthField>
-      <button type="button" className={`${GROWTH_PRIMARY} mt-3`} onClick={save}><Plus size={15} aria-hidden />{bi("프로필 저장", "Save profile")}</button>
+      <button type="button" className={`${GROWTH_PRIMARY} mt-3 w-full justify-center sm:w-auto`} onClick={save}><Plus size={15} strokeWidth={1.5} aria-hidden />{bi("프로필 저장", "Save profile")}</button>
       <div className="mt-4 grid gap-2">
         {state.rookieProfiles.length ? state.rookieProfiles.slice(-RECENT_PROFILE_COUNT).reverse().map((profile) => (
           <article key={profile.id} className={GROWTH_ITEM}>
@@ -181,8 +181,8 @@ function SupportRequestCard({ state, update, notify }: Pick<GrowthSectionProps, 
   };
 
   return (
-    <div className={GROWTH_CARD}>
-      <h3 className="font-black text-fg">{bi("서포트 요청", "Support request")}</h3>
+    <div className={`${GROWTH_CARD} break-keep [overflow-wrap:break-word]`}>
+      <h3 className="font-semibold tracking-[-0.015em] text-fg">{bi("서포트 요청", "Support request")}</h3>
       <div className="mt-3 grid gap-3 sm:grid-cols-[11rem_1fr]">
         <GrowthField label={bi("지원 분야", "Area")}>
           <select
@@ -205,7 +205,7 @@ function SupportRequestCard({ state, update, notify }: Pick<GrowthSectionProps, 
           <textarea className={`${GROWTH_INPUT} min-h-28`} aria-describedby={describedBy} value={draft.detail} onChange={(e) => setDraft((c) => ({ ...c, detail: e.target.value }))} />
         )}
       </GrowthField>
-      <button type="button" className={`${GROWTH_PRIMARY} mt-3`} onClick={submit}><Plus size={15} aria-hidden />{bi("요청 등록", "Add request")}</button>
+      <button type="button" className={`${GROWTH_PRIMARY} mt-3 w-full justify-center sm:w-auto`} onClick={submit}><Plus size={15} strokeWidth={1.5} aria-hidden />{bi("요청 등록", "Add request")}</button>
       <ul className="mt-4 grid gap-2">
         {state.supportRequests.length ? state.supportRequests.slice(-RECENT_REQUEST_COUNT).reverse().map((request) => (
           <li key={request.id} className={GROWTH_ITEM}>
