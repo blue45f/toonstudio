@@ -7,12 +7,12 @@ import {
   GraduationCap,
   HardDrive,
   Headphones,
+  Layers,
   Mic2,
   MonitorCheck,
   Scale,
   Share2,
   ShieldCheck,
-  Sparkles,
   Square,
   UserRoundSearch,
   UsersRound,
@@ -153,16 +153,11 @@ export function CreatorGrowthIpPage() {
 
   return (
     <Container size="wide" className="py-6 sm:py-10">
-      <header className="relative isolate overflow-hidden rounded-3xl border border-line bg-card p-5 sm:p-7">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-24 -top-28 -z-10 size-80 rounded-full opacity-70 blur-3xl"
-          style={{ background: "radial-gradient(circle, color-mix(in oklch, var(--color-accent) 32%, transparent), transparent 70%)" }}
-        />
+      <header className="rounded-2xl border border-line bg-card p-6">
         <div className="flex gap-6">
           <div className="min-w-0 flex-1">
         <p className="eyebrow text-accent">CREATOR GROWTH · STORY · IP</p>
-        <h1 className="mt-2 max-w-4xl text-balance break-keep text-3xl font-black tracking-tight text-fg sm:text-4xl lg:text-5xl">
+        <h1 className="mt-2 max-w-4xl text-balance break-keep text-3xl font-semibold tracking-tight text-fg sm:text-4xl lg:text-5xl">
           {bi("신인 발굴부터 연재·협업·판권 확장까지", "From creator discovery to publishing, collaboration and IP expansion")}
         </h1>
         <p className="mt-3 max-w-3xl text-pretty break-keep text-base leading-7 text-fg-2">
@@ -180,7 +175,7 @@ export function CreatorGrowthIpPage() {
             label={bi("공유", "Share")}
             className="min-h-11 rounded-xl px-4 text-sm"
           />
-          <Link to="/studio/ecosystem" className={GROWTH_BUTTON}><Sparkles size={16} aria-hidden />{bi("창작 생태계 보기", "Creator ecosystem")}</Link>
+          <Link to="/studio/ecosystem" className={GROWTH_BUTTON}><Layers size={16} aria-hidden />{bi("창작 생태계 보기", "Creator ecosystem")}</Link>
           <Link to="/studio/growth" className={GROWTH_BUTTON}>{bi("성장 실험·퍼널", "Growth experiments")}</Link>
           <Link to="/creator/revenue" className={GROWTH_BUTTON}>{bi("창작자 수익·멤버십", "Creator revenue")}</Link>
           <Link to="/studio/support" className={GROWTH_BUTTON}>{bi("작가 지원 센터", "Creator support")}</Link>
