@@ -12,8 +12,10 @@ import type {
   StudioBg3dSharedStageMaterializationKind,
   StudioBg3dSharedStageMutationKind,
 } from "./studio-bg3d-shared-stage-editor-session";
+import type { StudioBg3dWebglContextState } from "./studio-bg3d-webgl-context-guard";
 
 interface StudioBg3dActionFooterProps {
+  readonly webglContextState?: StudioBg3dWebglContextState;
   readonly frozenCut?: boolean;
   readonly teamCut?: boolean;
   readonly sixPass?: boolean;
@@ -48,6 +50,7 @@ interface StudioBg3dActionFooterProps {
 }
 
 export function StudioBg3dActionFooter({
+  webglContextState = "active",
   frozenCut,
   teamCut,
   sixPass, onChooseSixPass, sixPassUnavailableReason, outputFormatLocked,
@@ -83,6 +86,22 @@ export function StudioBg3dActionFooter({
 
   return (
     <>
+      {webglContextState !== "active" ? (
+        <div
+          role="status"
+          aria-live="polite"
+          data-studio-bg3d-webgl-recovery="true"
+          className="mx-4 mb-2 flex items-center gap-2 rounded-lg border border-warn/45 bg-[oklch(0.82_0.15_80/0.08)] px-3 py-2 text-xs leading-relaxed break-keep text-fg sm:mx-5"
+        >
+          <Loader2 className="shrink-0 animate-spin motion-reduce:animate-none text-warn" size={14} strokeWidth={1.5} aria-hidden />
+          <span>
+            {webglContextState === "restoring"
+              ? "3D 그래픽 컨텍스트를 복구하고 있습니다. 잠시만 기다려 주세요."
+              : "백그라운드 전환으로 3D 화면이 잠시 중단되었습니다. 자동으로 다시 연결합니다."}
+          </span>
+        </div>
+      ) : null}
+
       {sceneRecoveryError || hasCloneFailure ? (
         <div role="alert" className="mx-4 mb-2 flex items-start gap-2 rounded-lg border border-bad/45 bg-[oklch(0.66_0.20_25/0.10)] px-3 py-2 text-xs leading-relaxed break-keep text-fg sm:mx-5">
           <AlertTriangle className="mt-0.5 shrink-0 text-bad" size={14} strokeWidth={1.5} aria-hidden />

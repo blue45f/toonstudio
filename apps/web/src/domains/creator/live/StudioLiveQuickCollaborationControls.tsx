@@ -22,6 +22,7 @@ import {
   serializeStudioLiveDiagnosticsJson,
 } from "./studio-live-long-session-diagnostics";
 import { useStudioLiveViewportPreferences } from "./studio-live-viewport-preferences";
+import { useStudioMobileKeyboardOffset } from "./use-studio-mobile-keyboard-offset";
 import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import type {
@@ -80,6 +81,7 @@ export function StudioLiveQuickCollaborationControls({
   const sawDisconnectRef = useRef(false);
   const lastLocalCommitRef = useRef<number | null>(lastLocalCommitAt);
   const [composerOpen, setComposerOpen] = useState(false);
+  const keyboardOffsetPx = useStudioMobileKeyboardOffset(composerOpen);
   const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [recoveryBadge, setRecoveryBadge] = useState<string | null>(null);
@@ -307,6 +309,7 @@ export function StudioLiveQuickCollaborationControls({
         <form
           className="order-last flex min-h-11 min-w-0 basis-full items-center gap-2 rounded-lg border border-accent/40 bg-card p-1 sm:basis-auto"
           data-studio-live-cursor-chat-composer="true"
+          style={keyboardOffsetPx > 0 ? { marginBottom: `${keyboardOffsetPx}px` } : undefined}
           onSubmit={submitCursorChat}
         >
           <label className="sr-only" htmlFor="studio-live-cursor-chat-input">

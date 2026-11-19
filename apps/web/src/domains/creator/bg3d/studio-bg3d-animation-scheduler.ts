@@ -1,4 +1,7 @@
-import { selectStudioBg3dLodLevel } from "./studio-bg3d-lod-selection";
+import {
+  resolveStudioBg3dMobileLodBias,
+  selectStudioBg3dLodLevel,
+} from "./studio-bg3d-lod-selection";
 
 export type StudioBg3dAnimationScheduleReason =
   | "capture"
@@ -17,6 +20,9 @@ export interface StudioBg3dAnimationScheduleInput {
   readonly targetFps: number;
   /** Positive values make CPU animation LOD engage sooner; negative values preserve full rate. */
   readonly lodBias?: number;
+  readonly isMobileViewport?: boolean;
+  readonly devicePixelRatio?: number;
+  readonly activeMeshCount?: number;
   /** Preferred camera-projected coverage in CSS pixels; invalid/missing values use distance fallback. */
   readonly projectedDiameterCssPx?: number;
   /** Near-plane/camera intersection override from the projection helper. */
@@ -76,9 +82,15 @@ export function resolveStudioBg3dAnimationSchedule(
   const targetFps = Number.isFinite(input.targetFps)
     ? Math.min(60, Math.max(10, Math.floor(input.targetFps)))
     : 30;
-  const lodBias = Number.isFinite(input.lodBias)
-    ? Math.min(4, Math.max(-2, input.lodBias ?? 0))
+  const mobileLodBias = input.isMobileViewport
+    ? resolveStudioBg3dMobileLodBias({
+        isMobileViewport: true,
+        devicePixelRatio: input.devicePixelRatio,
+        activeMeshCount: input.activeMeshCount,
+      })
     : 0;
+  const baseLodBias = Number.isFinite(input.lodBias) ? (input.lodBias ?? 0) : 0;
+  const lodBias = Math.min(4, Math.max(-2, baseLodBias + mobileLodBias));
   const hasProjectedMeasurement = input.projectedForceHighestDetail === true || (
     Number.isFinite(input.projectedDiameterCssPx) &&
     (input.projectedDiameterCssPx ?? -1) >= 0

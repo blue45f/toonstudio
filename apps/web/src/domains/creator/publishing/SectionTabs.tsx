@@ -63,7 +63,12 @@ export function SectionTabs<TId extends string>({
 
   return (
     <div className={cn("sticky top-[var(--site-header-sticky-offset,5rem)] z-20 rounded-2xl border border-line bg-card/95 p-1.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/85", className)}>
-      <div ref={listRef} role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto [scrollbar-width:thin] lg:flex-wrap">
+      <div
+        ref={listRef}
+        role="tablist"
+        aria-label={label}
+        className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex-wrap"
+      >
         {tabs.map((tab, index) => {
           const Icon = tab.icon;
           const selected = active === tab.id;
@@ -82,7 +87,7 @@ export function SectionTabs<TId extends string>({
               onClick={() => onSelect(tab.id)}
               onKeyDown={(event) => moveFocus(event, index)}
               className={cn(
-                "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 text-sm font-bold transition-colors",
+                "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 text-sm font-semibold transition-colors duration-150",
                 FOCUS,
                 selected ? "bg-accent text-on-accent shadow-sm" : "text-fg-2 hover:bg-raised hover:text-fg",
               )}
@@ -92,12 +97,12 @@ export function SectionTabs<TId extends string>({
                   {String(index + 1).padStart(2, "0")}
                 </span>
               ) : null}
-              <Icon size={15} aria-hidden />
+              <Icon size={15} strokeWidth={1.5} aria-hidden />
               {tab.label}
               {tab.count ? (
                 <span
                   className={cn(
-                    "min-w-5 rounded-full px-1.5 text-center text-xs tabular-nums",
+                    "min-w-5 rounded-md px-1.5 text-center text-xs tabular-nums",
                     selected ? "bg-on-accent/20 text-on-accent" : "bg-accent-soft text-fg",
                   )}
                 >
@@ -135,19 +140,36 @@ export function SectionTabsFooter<TId extends string>({
   const index = tabs.findIndex((tab) => tab.id === active);
   const previous = index > 0 ? tabs[index - 1] : undefined;
   const next = index >= 0 && index < tabs.length - 1 ? tabs[index + 1] : undefined;
-  const base = cn("inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold transition-colors", FOCUS);
+  const base = cn(
+    "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors duration-150 sm:w-auto",
+    FOCUS,
+  );
   return (
-    <nav aria-label={label} className={cn("mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-5", className)}>
+    <nav
+      aria-label={label}
+      className={cn(
+        "mt-8 grid grid-cols-1 gap-2 border-t border-line pt-5 break-keep sm:flex sm:flex-wrap sm:items-center sm:justify-between",
+        className,
+      )}
+    >
       {previous ? (
-        <button type="button" className={cn(base, "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg")} onClick={() => onSelect(previous.id)}>
-          <ChevronLeft size={16} aria-hidden />
+        <button
+          type="button"
+          className={cn(base, "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg")}
+          onClick={() => onSelect(previous.id)}
+        >
+          <ChevronLeft size={16} strokeWidth={1.5} aria-hidden />
           {previousLabel} · {previous.label}
         </button>
-      ) : <span />}
+      ) : <span className="hidden sm:block" />}
       {next ? (
-        <button type="button" className={cn(base, "border-accent/40 bg-card text-fg hover:bg-raised")} onClick={() => onSelect(next.id)}>
+        <button
+          type="button"
+          className={cn(base, "border-accent/40 bg-card text-fg hover:bg-raised")}
+          onClick={() => onSelect(next.id)}
+        >
           {nextLabel} · {next.label}
-          <ChevronRight size={16} aria-hidden />
+          <ChevronRight size={16} strokeWidth={1.5} aria-hidden />
         </button>
       ) : null}
     </nav>

@@ -42,7 +42,10 @@ import {
   type StudioLiveInkBegin,
   type StudioLiveInkChunk,
 } from "./studio-live-ink-protocol";
+import { resolveStudioBg3dAnimationSchedule } from "../bg3d/studio-bg3d-animation-scheduler";
 import { resolveStudioBg3dMobileLodBias } from "../bg3d/studio-bg3d-lod-selection";
+import { attachStudioBg3dWebglContextGuard } from "../bg3d/studio-bg3d-webgl-context-guard";
+import { computeStudioMobileKeyboardOffset } from "./use-studio-mobile-keyboard-offset";
 import {
   STUDIO_HEARTBEAT_THROTTLE_THRESHOLD_MS,
   STUDIO_IDLE_SOFT_RECYCLE_DELAY_MS,
@@ -916,5 +919,43 @@ describe("long-session multi-user collaborative drawing stability", () => {
 
     expect(resolveStudioBg3dMobileLodBias({ isMobileViewport: false, devicePixelRatio: 2, activeMeshCount: 4 })).toBe(0);
     expect(resolveStudioBg3dMobileLodBias({ isMobileViewport: true, devicePixelRatio: 3, activeMeshCount: 28 })).toBe(1.25);
+
+    const mobileAnim = resolveStudioBg3dAnimationSchedule({
+      visibleInHierarchy: true,
+      inCameraFrustum: true,
+      capturing: false,
+      selected: false,
+      targetFps: 30,
+      projectedDiameterCssPx: 60,
+      distanceToCamera: 10,
+      boundingRadius: 1,
+      isMobileViewport: true,
+      devicePixelRatio: 3,
+      activeMeshCount: 28,
+    });
+    expect(mobileAnim.reason).toBe("far");
+  });
+
+  it("computes mobile virtual keyboard offsets cleanly and guards WebGL context loss/recovery", () => {
+    expect(computeStudioMobileKeyboardOffset({ innerHeight: 844, viewportHeight: 790 })).toBe(0);
+    expect(computeStudioMobileKeyboardOffset({ innerHeight: 844, viewportHeight: 520, viewportOffsetTop: 0 })).toBe(324);
+
+    const target = new EventTarget();
+    const states: string[] = [];
+    const onRestore = vi.fn();
+    const guard = attachStudioBg3dWebglContextGuard(target, {
+      onStateChange: (next) => states.push(next),
+      onRestore,
+    });
+    const lostEvent = new Event("webglcontextlost", { cancelable: true });
+    target.dispatchEvent(lostEvent);
+    expect(lostEvent.defaultPrevented).toBe(true);
+    expect(guard.getState()).toBe("lost");
+
+    target.dispatchEvent(new Event("webglcontextrestored"));
+    expect(onRestore).toHaveBeenCalledTimes(1);
+    expect(guard.getState()).toBe("active");
+    expect(states).toEqual(["lost", "restoring", "active"]);
+    guard.dispose();
   });
 });

@@ -475,10 +475,14 @@ export function CutsFeedPage() {
           <section
             data-testid="cuts-rea-interactive-motion-dub-bar"
             aria-label={t("재생·음성 보조 옵션 설정", "Playback & voice options configuration")}
-            className="border-t border-white/10 px-3.5 py-3"
+            className="break-keep [overflow-wrap:break-word] border-t border-white/10 px-3.5 py-3"
           >
             <div className="flex flex-col gap-2.5 md:flex-row md:flex-wrap md:items-center md:justify-between">
-              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("모션 방식 선택", "Motion mode selection")}>
+              <div
+                className="flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible sm:pb-0"
+                role="group"
+                aria-label={t("모션 방식 선택", "Motion mode selection")}
+              >
                 <span className="shrink-0 whitespace-nowrap pr-1 font-semibold text-white/70">{t("모션", "Motion")}</span>
                 {([
                   { id: "rive-statemachine", ko: "인터랙티브 모션", en: "Interactive motion" },
@@ -491,15 +495,19 @@ export function CutsFeedPage() {
                     data-testid={`cuts-rea-motion-${item.id}`}
                     aria-pressed={motionEngine === item.id}
                     onClick={() => setMotionEngine(item.id)}
-                    className={`inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-semibold transition-colors ${
-                      motionEngine === item.id ? "bg-white text-black" : "border border-white/15 bg-white/8 text-white/85 hover:bg-white/16"
+                    className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg px-3 text-xs font-semibold transition-colors duration-150 ${
+                      motionEngine === item.id ? "bg-white text-black" : "bg-white/10 text-white/85 hover:bg-white/16"
                     }`}
                   >
                     {t(item.ko, item.en)}
                   </button>
                 ))}
               </div>
-              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("음성·음향 보조 선택", "Voice & audio options")}>
+              <div
+                className="flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible sm:pb-0"
+                role="group"
+                aria-label={t("음성·음향 보조 선택", "Voice & audio options")}
+              >
                 <span className="shrink-0 whitespace-nowrap pr-1 font-semibold text-white/70">{t("음성·음향", "Audio")}</span>
                 {([
                   { id: "rask-heygen-130lang", ko: "다국어 더빙", en: "Multilingual dubbing" },
@@ -512,8 +520,8 @@ export function CutsFeedPage() {
                     data-testid={`cuts-rea-dub-${item.id}`}
                     aria-pressed={dubbingMode === item.id}
                     onClick={() => setDubbingMode(item.id)}
-                    className={`inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-semibold transition-colors ${
-                      dubbingMode === item.id ? "bg-white text-black" : "border border-white/15 bg-white/8 text-white/85 hover:bg-white/16"
+                    className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg px-3 text-xs font-semibold transition-colors duration-150 ${
+                      dubbingMode === item.id ? "bg-white text-black" : "bg-white/10 text-white/85 hover:bg-white/16"
                     }`}
                   >
                     {t(item.ko, item.en)}
@@ -521,7 +529,7 @@ export function CutsFeedPage() {
                 ))}
               </div>
             </div>
-            <p data-testid="cuts-rea-active-engine-summary" className="mt-2 text-[11px] text-white/70">
+            <p data-testid="cuts-rea-active-engine-summary" className="mt-2 text-[11px] leading-[1.6] text-white/70">
               {t(
                 `선택한 보조 설정: ${motionEngine === "rive-statemachine" ? "인터랙티브 모션" : motionEngine === "kling-pikaframes" ? "카메라 움직임" : "중간 프레임 보간"} · ${dubbingMode === "rask-heygen-130lang" ? "다국어 더빙" : dubbingMode === "audio2face-rhubarb" ? "입모양 맞춤" : "배경음 자동 조절"}`,
                 `Selected options: ${motionEngine === "rive-statemachine" ? "Interactive motion" : motionEngine === "kling-pikaframes" ? "Camera motion" : "Frame interpolation"} · ${dubbingMode === "rask-heygen-130lang" ? "Multilingual dubbing" : dubbingMode === "audio2face-rhubarb" ? "Lip-sync match" : "Auto background volume"}`,
