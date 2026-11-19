@@ -26,20 +26,31 @@ export function GrowthSection({
 }) {
   const headingId = `${id}-title`;
   return (
-    <section id={id} aria-labelledby={headingId} className="mt-6 scroll-mt-28">
+    <section id={id} aria-labelledby={headingId} className="mt-6 scroll-mt-28 break-keep [overflow-wrap:break-word]">
       <header className="mb-4 flex items-start gap-3">
         <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-          <Icon size={19} />
+          <Icon size={19} strokeWidth={1.5} />
         </span>
         <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-accent">{eyebrow}</p>
-          <h2 id={headingId} className="mt-1 text-xl font-black text-fg sm:text-2xl">{title}</h2>
-          <p className="mt-1 max-w-4xl text-pretty break-keep text-base leading-7 text-fg-2 sm:text-sm sm:leading-6">{description}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-accent">{eyebrow}</p>
+          <h2 id={headingId} className="mt-1 text-xl font-semibold leading-[1.25] tracking-[-0.02em] text-fg sm:text-2xl">
+            {title}
+          </h2>
+          <p className="mt-1.5 max-w-4xl text-pretty text-sm leading-[1.65] tracking-[-0.01em] text-fg-2">
+            {description}
+          </p>
         </div>
       </header>
       {/* 알림 영역은 늘 두고 내용만 바꾼다 — 나중에 끼워 넣은 live region은 화면낭독기가 놓치기 쉽다. */}
-      <div role="status" className={notice ? "mb-3 flex items-start gap-2 rounded-xl border border-accent/40 bg-accent-soft px-4 py-3 text-sm leading-6 text-fg" : "sr-only"}>
-        {notice ? <Info size={16} aria-hidden className="mt-1 shrink-0 text-accent" /> : null}
+      <div
+        role="status"
+        className={
+          notice
+            ? "mb-3 flex items-start gap-2 rounded-xl bg-accent-soft px-4 py-3 text-sm leading-[1.6] text-fg"
+            : "sr-only"
+        }
+      >
+        {notice ? <Info size={16} strokeWidth={1.5} aria-hidden className="mt-1 shrink-0 text-accent" /> : null}
         {notice ?? ""}
       </div>
       {children}
@@ -53,16 +64,26 @@ type FieldChildren = ReactNode | ((describedBy: string | undefined) => ReactNode
  * 보이는 라벨 + 입력. 자리표시자만으로 입력 목적을 알리던 칸에 항상 이름을 붙인다.
  * 도움말(hint)은 라벨 밖에 두어 입력 이름이 길어지지 않게 하고, 함수 children이면 aria-describedby로 연결한다.
  */
-export function GrowthField({ label, hint, className, children }: { label: string; hint?: string; className?: string; children: FieldChildren }) {
+export function GrowthField({
+  label,
+  hint,
+  className,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  className?: string;
+  children: FieldChildren;
+}) {
   const hintId = useId();
   const describedBy = hint ? hintId : undefined;
   return (
     <div className={className}>
-      <label className="block text-xs font-semibold text-fg-2">
+      <label className="block text-xs font-semibold leading-[1.4] text-fg-2">
         {label}
         {typeof children === "function" ? children(describedBy) : children}
       </label>
-      {hint ? <p id={hintId} className="mt-1 text-xs leading-5 text-fg-2">{hint}</p> : null}
+      {hint ? <p id={hintId} className="mt-1 text-xs leading-[1.55] text-fg-2">{hint}</p> : null}
     </div>
   );
 }
@@ -72,23 +93,32 @@ export function PolicyBadge({ allowed }: { allowed: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-xs font-black text-fg",
-        allowed ? "border-good/40 bg-good/15" : "border-bad/40 bg-bad/10",
+        "inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold text-fg",
+        allowed ? "bg-good/15 text-good" : "bg-bad/10 text-bad",
       )}
     >
-      {allowed ? <CheckCircle2 size={12} aria-hidden className="text-good" /> : <Lock size={12} aria-hidden className="text-bad" />}
+      {allowed ? <CheckCircle2 size={12} strokeWidth={1.5} aria-hidden /> : <Lock size={12} strokeWidth={1.5} aria-hidden />}
       {allowed ? bi("허용", "Allowed") : bi("제한", "Restricted")}
     </span>
   );
 }
 
 export function EmptyNote({ children }: { children: ReactNode }) {
-  return <p className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm leading-6 text-fg-2">{children}</p>;
+  return (
+    <p className="rounded-xl bg-panel/60 px-4 py-6 text-center text-sm leading-[1.6] text-fg-2">
+      {children}
+    </p>
+  );
 }
 
 export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "accent" }) {
   return (
-    <span className={cn("rounded-full px-2 py-1 text-xs font-semibold", tone === "accent" ? "bg-accent-soft text-fg" : "bg-raised text-fg-2")}>
+    <span
+      className={cn(
+        "rounded-md px-2 py-0.5 text-xs font-medium",
+        tone === "accent" ? "bg-accent-soft text-accent" : "bg-raised text-fg-2",
+      )}
+    >
       {children}
     </span>
   );

@@ -9,11 +9,11 @@ export const bi = <T,>(ko: T, en: T): T => translateBilingualValueForActiveLocal
 export const biLabel = (pair: LabelPair): string => bi(pair[0], pair[1]);
 
 export const GROWTH_CARD = "rounded-2xl border border-line bg-card p-4 sm:p-5";
-export const GROWTH_INPUT = "mt-1.5 block min-h-11 w-full rounded-xl border border-line bg-panel px-3 py-2 text-sm font-normal text-fg outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/40";
-const BUTTON_BASE = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+export const GROWTH_INPUT = "mt-1.5 block min-h-11 w-full rounded-xl border border-line bg-panel px-3 py-2 text-sm font-normal text-fg outline-none transition-colors duration-150 focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/40";
+const BUTTON_BASE = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 export const GROWTH_BUTTON = `${BUTTON_BASE} border-line bg-card text-fg-2 hover:bg-raised hover:text-fg`;
 export const GROWTH_PRIMARY = `${BUTTON_BASE} border-accent/40 bg-accent text-on-accent hover:bg-accent-2`;
-export const GROWTH_ITEM = "rounded-xl border border-line bg-panel p-3";
+export const GROWTH_ITEM = "rounded-xl bg-panel p-3.5";
 
 /** 섹션 컴포넌트 공용 props — 상태 갱신과 "그 섹션 바로 아래"에 보일 안내를 페이지가 넘겨 준다. */
 export interface GrowthSectionProps {
