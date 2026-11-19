@@ -75,10 +75,12 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
     setStatusNotice(null);
     const sixPass = !!result.bg3dScene.output.sixPassLt;
     const pinnedVrm = result.bg3dScene.pinnedVersionedCut?.source.linkedVrm;
-    const expectedCastScope = workId ? studioTeamCutVrmDocumentScope(workId, activePage.id) : studioCutVrmDocumentScope(cutDocumentKey, activePage.id);
-    if (pinnedVrm && pinnedVrm.documentScope !== expectedCastScope) {
-      setError("고정한 VRM 컷과 현재 원고·페이지가 달라 적용하지 않았습니다.");
-      return false;
+    if (pinnedVrm) {
+      const expectedCastScope = workId ? studioTeamCutVrmDocumentScope(workId, activePage.id) : studioCutVrmDocumentScope(cutDocumentKey, activePage.id);
+      if (pinnedVrm.documentScope !== expectedCastScope) {
+        setError("고정한 VRM 컷과 현재 원고·페이지가 달라 적용하지 않았습니다.");
+        return false;
+      }
     }
     if (pinnedVrm && workId && !sixPass) {
       const ticket = bg3dMutationTicketRef.current;
@@ -103,7 +105,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       }
     }
     const originalTargetId = targetElementId;
-    const cutTicket = bg3dMutationTicketRef.current;
+    const cutTicket = pinnedVrm ? bg3dMutationTicketRef.current : undefined;
     const cutAccessCurrent = () => Boolean(cutTicket && bg3dMutationTicketRef.current === cutTicket && canApplyStudioMutation(cutTicket)
       && currentPageIdRef.current === activePage.id && host.activeElementsRef?.current === elements && host.readCurrentPage?.() === activePage
       && !masterEditMode && !collaborationDocumentLocked && !pageEditLocked
