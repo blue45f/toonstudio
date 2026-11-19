@@ -15,6 +15,7 @@
  *   node --experimental-strip-types scripts/soak-studio-live-collab-drawing.mts --duration-ms=60000 --peers=6 --chaos=true
  */
 
+import { writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 
 import {
@@ -82,12 +83,32 @@ const ROUND_SLEEP_MS = 25;
 const MAX_ALLOWED_HEAP_GROWTH_MB = 128;
 const MAX_ALLOWED_P99_ROUND_MS = 50;
 
+interface SoakIntervalSample {
+  readonly elapsedMin: number;
+  readonly round: number;
+  readonly strokes: number;
+  readonly reapedOrphans: number;
+  readonly chaosEvents: number;
+  readonly p99RoundMs: number;
+  readonly heapMb: number;
+  readonly heapGrowthMb: number;
+  readonly rssMb: number;
+  readonly historyDepth: number;
+  readonly detachedVramPx: number;
+}
+
 function parseNumericArg(name: string, fallback: number, min: number): number {
   const prefix = `--${name}=`;
   const raw = process.argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
   if (!raw) return fallback;
   const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed >= min ? Math.trunc(parsed) : fallback;
+}
+
+function parseStringArg(name: string): string | null {
+  const prefix = `--${name}=`;
+  const raw = process.argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length)?.trim();
+  return raw && raw.length > 0 ? raw : null;
 }
 
 function parseBooleanArg(name: string, fallback: boolean): boolean {
@@ -216,11 +237,16 @@ class SoakFakeRoom implements StudioLiveGesturePreviewRoomSource {
 }
 
 async function runSoak(): Promise<void> {
-  const durationMs = parseNumericArg("duration-ms", DEFAULT_DURATION_MS, 1_000);
+  const durationMinArg = parseNumericArg("duration-min", 0, 1);
+  const durationMs = durationMinArg > 0
+    ? durationMinArg * 60_000
+    : parseNumericArg("duration-ms", DEFAULT_DURATION_MS, 1_000);
   const peerCount = parseNumericArg("peers", DEFAULT_PEER_COUNT, 2);
   const chaosEnabled = parseBooleanArg("chaos", true);
+  const reportJsonPath = parseStringArg("report-json");
   const startedAt = Date.now();
   const deadline = startedAt + durationMs;
+  const intervalSamples: SoakIntervalSample[] = [];
 
   let virtualNow = startedAt;
   const scheduler: StudioLiveGesturePreviewStoreScheduler = {
@@ -561,6 +587,19 @@ async function runSoak(): Promise<void> {
       const heapGrowthMb = Math.round((heapMb - baselineHeapMb) * 100) / 100;
       const p99Ms = percentile99(roundLatenciesMs);
       const elapsedMin = ((wallNow - startedAt) / 60_000).toFixed(1);
+      intervalSamples.push({
+        elapsedMin: Number(elapsedMin),
+        round,
+        strokes: totalStrokes,
+        reapedOrphans: totalReapedOrphans,
+        chaosEvents: totalChaosEvents,
+        p99RoundMs: p99Ms,
+        heapMb,
+        heapGrowthMb,
+        rssMb,
+        historyDepth: undoHistory.length,
+        detachedVramPx: lastDetachedVramPixels,
+      });
       console.log(
         `[soak] elapsed=${elapsedMin}m rounds=${round} strokes=${totalStrokes} reapedOrphans=${totalReapedOrphans} chaosEvents=${totalChaosEvents} p99RoundMs=${p99Ms} notifications=${notificationCount} historyDepth=${undoHistory.length} detachedVramPx=${lastDetachedVramPixels} heapMB=${heapMb} (+${heapGrowthMb}MB) rssMB=${rssMb}`,
       );
@@ -583,8 +622,38 @@ async function runSoak(): Promise<void> {
   adapter.dispose();
   p2pTransport.close();
   const finalMem = process.memoryUsage();
+  const elapsedMs = Date.now() - startedAt;
+  const finalHeapMb = mb(finalMem.heapUsed);
+  const finalHeapGrowthMb = Math.round((finalHeapMb - baselineHeapMb) * 100) / 100;
+  const elapsedHours = Math.max(elapsedMs / 3_600_000, 1 / 3_600);
+  const heapSlopeMbPerHour = Math.round((finalHeapGrowthMb / elapsedHours) * 100) / 100;
+  const summary = {
+    passed: true,
+    startedAt: new Date(startedAt).toISOString(),
+    finishedAt: new Date().toISOString(),
+    elapsedMs,
+    peers: peerCount,
+    chaos: chaosEnabled,
+    rounds: round,
+    strokes: totalStrokes,
+    reapedOrphans: totalReapedOrphans,
+    chaosEvents: totalChaosEvents,
+    p99RoundMs: percentile99(roundLatenciesMs),
+    historyDepth: undoHistory.length,
+    detachedVramPx: lastDetachedVramPixels,
+    baselineHeapMb,
+    finalHeapMb,
+    finalHeapGrowthMb,
+    heapSlopeMbPerHour,
+    finalRssMb: mb(finalMem.rss),
+    samples: intervalSamples,
+  };
+  if (reportJsonPath) {
+    await writeFile(reportJsonPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
+    console.log(`[soak] report written: ${reportJsonPath}`);
+  }
   console.log(
-    `[soak] PASS: elapsedMs=${Date.now() - startedAt} rounds=${round} strokes=${totalStrokes} reapedOrphans=${totalReapedOrphans} chaosEvents=${totalChaosEvents} p99RoundMs=${percentile99(roundLatenciesMs)} historyDepth=${undoHistory.length} detachedVramPx=${lastDetachedVramPixels} finalHeapMB=${mb(finalMem.heapUsed)} finalRssMB=${mb(finalMem.rss)}`,
+    `[soak] PASS: elapsedMs=${elapsedMs} rounds=${round} strokes=${totalStrokes} reapedOrphans=${totalReapedOrphans} chaosEvents=${totalChaosEvents} p99RoundMs=${summary.p99RoundMs} historyDepth=${undoHistory.length} detachedVramPx=${lastDetachedVramPixels} finalHeapMB=${finalHeapMb} heapSlopeMBPerHr=${heapSlopeMbPerHour} finalRssMB=${summary.finalRssMb}`,
   );
 }
 

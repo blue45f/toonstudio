@@ -43,8 +43,15 @@ import {
   type StudioLiveInkChunk,
 } from "./studio-live-ink-protocol";
 import {
+  STUDIO_HEARTBEAT_THROTTLE_THRESHOLD_MS,
+  STUDIO_LIVE_AUTO_DEGRADE_FRAME_MS_THRESHOLD,
+  STUDIO_LIVE_AUTO_DEGRADE_PEER_THRESHOLD,
   StudioAdaptiveSaveScheduler,
+  StudioLiveHeartbeatJitterGuard,
   collectStudioLiveLongSessionDiagnostics,
+  evaluateStudioLiveAutoDegrade,
+  evaluateStudioStorageQuota,
+  probeStudioStorageQuota,
   serializeStudioLiveDiagnosticsJson,
 } from "./studio-live-long-session-diagnostics";
 import {
@@ -814,5 +821,68 @@ describe("long-session multi-user collaborative drawing stability", () => {
     expect(presentationCanvas.height).toBe(1);
     expect(settledCanvas.width).toBe(1);
     expect(settledCanvas.height).toBe(1);
+  });
+
+  it("auto-degrades remote stroke trails above peer or frame-budget thresholds and restores cleanly", () => {
+    const normal = evaluateStudioLiveAutoDegrade({
+      peerCount: STUDIO_LIVE_AUTO_DEGRADE_PEER_THRESHOLD,
+      avgFrameMs: STUDIO_LIVE_AUTO_DEGRADE_FRAME_MS_THRESHOLD,
+      userTrailsPreference: true,
+    });
+    expect(normal).toEqual({ effectiveShowTrails: true, degraded: false, reason: "none" });
+
+    const crowded = evaluateStudioLiveAutoDegrade({
+      peerCount: STUDIO_LIVE_AUTO_DEGRADE_PEER_THRESHOLD + 1,
+      avgFrameMs: 8,
+      userTrailsPreference: true,
+    });
+    expect(crowded).toEqual({ effectiveShowTrails: false, degraded: true, reason: "peer-count" });
+
+    const slowFrame = evaluateStudioLiveAutoDegrade({
+      peerCount: 2,
+      avgFrameMs: STUDIO_LIVE_AUTO_DEGRADE_FRAME_MS_THRESHOLD + 2.5,
+      userTrailsPreference: true,
+    });
+    expect(slowFrame).toEqual({ effectiveShowTrails: false, degraded: true, reason: "frame-budget" });
+
+    const disabled = evaluateStudioLiveAutoDegrade({
+      peerCount: 12,
+      avgFrameMs: 24,
+      autoDegradeEnabled: false,
+      userTrailsPreference: true,
+    });
+    expect(disabled).toEqual({ effectiveShowTrails: true, degraded: false, reason: "none" });
+  });
+
+  it("evaluates storage quota thresholds safely and detects background heartbeat throttling without false NTP alarms", async () => {
+    expect(evaluateStudioStorageQuota({ usageBytes: 400, quotaBytes: 1_000 }).status).toBe("ok");
+    expect(evaluateStudioStorageQuota({ usageBytes: 860, quotaBytes: 1_000 }).status).toBe("warning");
+    const critical = evaluateStudioStorageQuota({ usageBytes: 960, quotaBytes: 1_000 });
+    expect(critical.status).toBe("critical");
+
+    const probed = await probeStudioStorageQuota(async () => ({ usage: 900 * 1024 * 1024, quota: 1_000 * 1024 * 1024 }));
+    expect(probed.status).toBe("warning");
+    expect(probed.remainingMb).toBe(100);
+
+    const failedProbe = await probeStudioStorageQuota(async () => {
+      throw new Error("StorageManager blocked");
+    });
+    expect(failedProbe.status).toBe("unknown");
+
+    const guard = new StudioLiveHeartbeatJitterGuard();
+    let now = 10_000_000;
+    expect(guard.recordTick(now).recommendedAction).toBe("none");
+    now += 15_000;
+    expect(guard.recordTick(now)).toMatchObject({ throttled: false, recommendedAction: "none" });
+    // Backward NTP jump should clamp cleanly without triggering resync.
+    now -= 90_000;
+    expect(guard.recordTick(now)).toMatchObject({ throttled: false, jitterMs: 0, recommendedAction: "none" });
+    // Background tab timer throttle exceeding threshold recommends immediate presence resync.
+    now += STUDIO_HEARTBEAT_THROTTLE_THRESHOLD_MS + 15_000;
+    expect(guard.recordTick(now)).toMatchObject({
+      throttled: true,
+      consecutiveThrottledTicks: 1,
+      recommendedAction: "resync-presence",
+    });
   });
 });

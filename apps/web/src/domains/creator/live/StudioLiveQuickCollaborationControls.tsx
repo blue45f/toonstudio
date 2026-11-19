@@ -1,5 +1,6 @@
 import {
   Activity,
+  Gauge,
   LocateFixed,
   MessageCircle,
   SendHorizontal,
@@ -8,6 +9,7 @@ import {
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -16,8 +18,10 @@ import {
 import { STUDIO_LIVE_CURSOR_CHAT_MAX_LENGTH } from "./studio-live-chat-control";
 import {
   collectStudioLiveLongSessionDiagnostics,
+  evaluateStudioLiveAutoDegrade,
   serializeStudioLiveDiagnosticsJson,
 } from "./studio-live-long-session-diagnostics";
+import { useStudioLiveViewportPreferences } from "./studio-live-viewport-preferences";
 import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import type {
@@ -31,6 +35,7 @@ export interface StudioLiveQuickCollaborationControlsProps {
   peers: readonly StudioLivePeer[];
   followingSessionId: string | null;
   onToggleFollow: (sessionId: string) => void;
+  lastLocalCommitAt?: number | null;
 }
 
 function canDirectAttention(room: StudioLiveRoom): boolean {
@@ -52,17 +57,28 @@ function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
+function formatClockTime(timestampMs: number): string {
+  const date = new Date(timestampMs);
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
+}
+
 export function StudioLiveQuickCollaborationControls({
   room,
   peers,
   followingSessionId,
   onToggleFollow,
+  lastLocalCommitAt = null,
 }: StudioLiveQuickCollaborationControlsProps) {
+  const preferences = useStudioLiveViewportPreferences();
   const inputRef = useRef<HTMLInputElement>(null);
   const attentionTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
   const noticeTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
   const recoveryTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
   const sawDisconnectRef = useRef(false);
+  const lastLocalCommitRef = useRef<number | null>(lastLocalCommitAt);
   const [composerOpen, setComposerOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -71,6 +87,21 @@ export function StudioLiveQuickCollaborationControls({
   const canChat = room.participant.role !== "viewer";
   const canSpotlight = canDirectAttention(room) && peers.length > 0;
   const roomReady = room.ready;
+
+  useEffect(() => {
+    if (typeof lastLocalCommitAt === "number" && Number.isFinite(lastLocalCommitAt)) {
+      lastLocalCommitRef.current = lastLocalCommitAt;
+    }
+  }, [lastLocalCommitAt]);
+
+  const autoDegrade = useMemo(
+    () =>
+      evaluateStudioLiveAutoDegrade({
+        peerCount: peers.length,
+        userTrailsPreference: preferences.showTrails,
+      }),
+    [peers.length, preferences.showTrails],
+  );
 
   const announce = (message: string) => {
     setNotice(message);
@@ -97,14 +128,21 @@ export function StudioLiveQuickCollaborationControls({
         }
         if (event.status.state === "ready" && sawDisconnectRef.current) {
           sawDisconnectRef.current = false;
-          setRecoveryBadge("동기화 복구됨 · 유실 0획");
+          const syncedAt = Date.now();
+          const localCommitLabel =
+            lastLocalCommitRef.current !== null
+              ? ` · 로컬 저장 ${formatClockTime(lastLocalCommitRef.current)}`
+              : "";
+          setRecoveryBadge(
+            `동기화 복구됨 · 유실 0획${localCommitLabel} · 동기화 ${formatClockTime(syncedAt)}`,
+          );
           if (recoveryTimerRef.current !== null) {
             globalThis.clearTimeout(recoveryTimerRef.current);
           }
           recoveryTimerRef.current = globalThis.setTimeout(() => {
             setRecoveryBadge(null);
             recoveryTimerRef.current = null;
-          }, 4_000);
+          }, 5_000);
         }
         return;
       }
@@ -174,6 +212,7 @@ export function StudioLiveQuickCollaborationControls({
     const snapshot = collectStudioLiveLongSessionDiagnostics({
       activeInkStrokes: room.getActiveInkStrokeCount(),
       recovering: recoveryBadge !== null,
+      autoDegradedTrails: autoDegrade.degraded,
     });
     const json = serializeStudioLiveDiagnosticsJson(snapshot);
     if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
@@ -184,7 +223,7 @@ export function StudioLiveQuickCollaborationControls({
       return;
     }
     announce("진단 리포트를 준비했습니다.");
-  }, [recoveryBadge, room]);
+  }, [autoDegrade.degraded, recoveryBadge, room]);
 
   const submitCursorChat = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -216,7 +255,7 @@ export function StudioLiveQuickCollaborationControls({
 
       {recoveryBadge ? (
         <div
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-line/60 bg-card/85 px-2.5 text-xs font-medium tabular-nums text-fg-2"
+          className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-line/60 bg-card/85 px-3 text-xs font-medium tabular-nums text-fg-2"
           data-studio-live-recovery-hud="true"
           role="status"
         >
@@ -225,17 +264,29 @@ export function StudioLiveQuickCollaborationControls({
         </div>
       ) : null}
 
+      {autoDegrade.degraded ? (
+        <div
+          className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-line/60 bg-card/85 px-3 text-[11px] font-medium tabular-nums text-fg-2"
+          data-studio-live-auto-degrade-hud="true"
+          role="status"
+          title="동시 접속 인원이 많아 원격 획 트레일을 일시적으로 단순화했습니다."
+        >
+          <Gauge size={14} strokeWidth={1.5} className="shrink-0 text-fg-3" aria-hidden />
+          <span>트레일 자동 절감 · {peers.length.toLocaleString("ko-KR")}명</span>
+        </div>
+      ) : null}
+
       {attention ? (
         <div
-          className="order-last flex min-h-11 basis-full items-center gap-1.5 rounded-lg border border-accent/40 bg-accent-soft px-2 sm:basis-auto"
+          className="order-last flex min-h-11 basis-full items-center gap-2 rounded-lg border border-accent/40 bg-accent-soft px-3 sm:basis-auto"
           data-studio-live-attention-request={attention.requestId}
         >
-          <LocateFixed className="shrink-0 text-accent" size={14} aria-hidden />
-          <span className="min-w-0 flex-1 truncate text-[0.68rem] font-semibold text-fg">
+          <LocateFixed className="shrink-0 text-accent" size={14} strokeWidth={1.5} aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-xs font-medium text-fg">
             {attention.participant.displayName} 위치 초대
           </span>
           <button
-            className="min-h-9 shrink-0 rounded-md bg-accent px-2 text-[0.65rem] font-bold text-on-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="min-h-8 shrink-0 rounded-md bg-accent px-3 text-[11px] font-medium text-on-accent transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
             type="button"
             onClick={acceptAttention}
           >
@@ -243,18 +294,18 @@ export function StudioLiveQuickCollaborationControls({
           </button>
           <button
             aria-label="작업 위치 초대 닫기"
-            className="grid size-9 shrink-0 place-items-center rounded-md text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            className="grid size-8 shrink-0 place-items-center rounded-md text-fg-2 transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
             type="button"
             onClick={() => setAttention(null)}
           >
-            <X size={14} aria-hidden />
+            <X size={14} strokeWidth={1.5} aria-hidden />
           </button>
         </div>
       ) : null}
 
       {composerOpen ? (
         <form
-          className="order-last flex min-h-11 min-w-0 basis-full items-center gap-1.5 rounded-lg border border-accent/40 bg-card p-1 sm:basis-auto"
+          className="order-last flex min-h-11 min-w-0 basis-full items-center gap-2 rounded-lg border border-accent/40 bg-card p-1 sm:basis-auto"
           data-studio-live-cursor-chat-composer="true"
           onSubmit={submitCursorChat}
         >
@@ -279,43 +330,43 @@ export function StudioLiveQuickCollaborationControls({
           />
           <button
             aria-label="커서 메시지 보내기"
-            className="grid size-9 shrink-0 place-items-center rounded-md bg-accent text-on-accent disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="grid size-9 shrink-0 place-items-center rounded-md bg-accent text-on-accent transition-colors disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
             disabled={!draft.trim()}
             type="submit"
           >
-            <SendHorizontal size={14} aria-hidden />
+            <SendHorizontal size={14} strokeWidth={1.5} aria-hidden />
           </button>
           <button
             aria-label="커서 메시지 취소"
-            className="grid size-9 shrink-0 place-items-center rounded-md text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            className="grid size-9 shrink-0 place-items-center rounded-md text-fg-2 transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
             type="button"
             onClick={() => {
               setComposerOpen(false);
               setDraft("");
             }}
           >
-            <X size={14} aria-hidden />
+            <X size={14} strokeWidth={1.5} aria-hidden />
           </button>
         </form>
       ) : canChat ? (
         <button
           aria-keyshortcuts="/"
           aria-label="커서 메시지 입력, 단축키 슬래시"
-          className="grid size-11 shrink-0 place-items-center rounded-lg border border-line/60 bg-card/80 text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"
+          className="grid size-11 shrink-0 place-items-center rounded-lg border border-line/60 bg-card/80 text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50 motion-reduce:transition-none"
           data-studio-live-cursor-chat-action="true"
           disabled={!roomReady}
           title="커서 메시지 · /"
           type="button"
           onClick={openComposer}
         >
-          <MessageCircle size={16} aria-hidden />
+          <MessageCircle size={15} strokeWidth={1.5} aria-hidden />
         </button>
       ) : null}
 
       {canSpotlight ? (
         <button
           aria-label="모든 팀원에게 현재 작업 위치 초대 보내기"
-          className="grid size-11 shrink-0 place-items-center rounded-lg border border-accent/40 bg-accent-soft text-accent transition-colors hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+          className="grid size-11 shrink-0 place-items-center rounded-lg border border-accent/40 bg-accent-soft text-accent transition-colors duration-150 hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
           data-studio-live-attention-action="true"
           title="모두 내 위치로 초대"
           type="button"
@@ -327,19 +378,19 @@ export function StudioLiveQuickCollaborationControls({
             );
           }}
         >
-          <LocateFixed size={16} aria-hidden />
+          <LocateFixed size={15} strokeWidth={1.5} aria-hidden />
         </button>
       ) : null}
 
       <button
         aria-label="장시간 협업 진단 리포트 JSON 복사"
-        className="grid size-11 shrink-0 place-items-center rounded-lg border border-line/60 bg-card/80 text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+        className="grid size-11 shrink-0 place-items-center rounded-lg border border-line/60 bg-card/80 text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
         data-studio-live-diagnostics-dump-action="true"
         title="진단 JSON 복사"
         type="button"
         onClick={copyDiagnosticsReport}
       >
-        <Activity size={16} strokeWidth={1.5} aria-hidden />
+        <Activity size={15} strokeWidth={1.5} aria-hidden />
       </button>
     </>
   );
