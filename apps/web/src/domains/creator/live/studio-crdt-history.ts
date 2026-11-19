@@ -32,6 +32,44 @@ export interface StudioCrdtSceneGraphChangedIds {
   layerGroupIds: ReadonlySet<string>;
 }
 
+/** 장시간 협업 시 원격 CRDT 재조정이 스캔·복제할 Undo/Redo 히스토리 최대 깊이 상한. */
+export const STUDIO_CRDT_MAX_RECONCILED_HISTORY_DEPTH = 100;
+
+export interface StudioCrdtBoundedHistoryWindow<TPage> {
+  readonly history: TPage[][];
+  readonly currentIndex: number;
+  readonly trimmed: boolean;
+}
+
+/**
+ * 현재 시점(currentIndex)의 스냅샷과 활성 Redo 분기를 보존하면서
+ * 오래된 Undo 꼬리를 잘라 장시간 협업 시 O(H×N) 재조정 비용과 메모리 누적을 상한선 내로 유지한다.
+ */
+export function trimStudioCrdtHistoryWindow<TPage>(
+  history: TPage[][],
+  currentIndex: number,
+  maxDepth = STUDIO_CRDT_MAX_RECONCILED_HISTORY_DEPTH,
+): StudioCrdtBoundedHistoryWindow<TPage> {
+  if (history.length === 0) {
+    return { history, currentIndex: 0, trimmed: false };
+  }
+  const boundedCurrentIndex = Math.max(0, Math.min(currentIndex, history.length - 1));
+  if (!Number.isFinite(maxDepth) || maxDepth < 1 || history.length <= maxDepth) {
+    return { history, currentIndex: boundedCurrentIndex, trimmed: false };
+  }
+  const limit = Math.trunc(maxDepth);
+  let start = Math.max(0, boundedCurrentIndex - limit + 1);
+  const end = Math.min(history.length, start + limit);
+  if (end - start < limit) {
+    start = Math.max(0, end - limit);
+  }
+  return {
+    history: history.slice(start, end),
+    currentIndex: boundedCurrentIndex - start,
+    trimmed: true,
+  };
+}
+
 /**
  * Keeps collaborative operations out of another artist's undo path.
  *

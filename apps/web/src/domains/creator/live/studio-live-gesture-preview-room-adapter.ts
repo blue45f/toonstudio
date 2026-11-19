@@ -22,6 +22,9 @@ export const STUDIO_LIVE_GESTURE_PREVIEW_MAX_ELIGIBLE_GESTURES =
   STUDIO_LIVE_GESTURE_PREVIEW_MAX_ACTIVE_GESTURES
   + STUDIO_LIVE_GESTURE_PREVIEW_MAX_SETTLING_GESTURES;
 
+/** 룸 이벤트 간 공백이 이 임계치를 넘으면 절전 복귀·장기 단절로 간주해 잔여 프리뷰를 비운다. */
+export const STUDIO_LIVE_GESTURE_PREVIEW_SLEEP_WAKE_GAP_MS = 10_000;
+
 export interface StudioLiveGesturePreviewRoomSource {
   subscribe(listener: (event: StudioLiveRoomEvent) => void): () => void;
   getPeers(): StudioLivePeer[];
@@ -32,6 +35,11 @@ export interface StudioLiveGesturePreviewRoomAdapterOptions {
   readonly authoritativeElementIds?: Iterable<string>;
   readonly store?: StudioLiveGesturePreviewStore;
   readonly maxEligibleGestures?: number;
+  readonly now?: () => number;
+  /** true이면 프레임당 1회로 구독자 알림을 병합해 다중 협업 고주사율 폭주를 방지한다. */
+  readonly coalesceListenerNotifications?: boolean;
+  readonly scheduleFrame?: (flush: () => void) => unknown;
+  readonly cancelFrame?: (handle: unknown) => void;
 }
 
 interface EligibleGesturePin {
@@ -75,6 +83,10 @@ function boundedEligibleGestureLimit(value: number | undefined): number {
 export class StudioLiveGesturePreviewRoomAdapter {
   private readonly store: StudioLiveGesturePreviewStore;
   private readonly maxEligibleGestures: number;
+  private readonly now: () => number;
+  private readonly coalesceListenerNotifications: boolean;
+  private readonly scheduleFrame: (flush: () => void) => unknown;
+  private readonly cancelFrame: (handle: unknown) => void;
   private readonly listeners = new Set<() => void>();
   private readonly pinsByKey = new Map<string, EligibleGesturePin>();
   private readonly ownerKeyByGestureId = new Map<string, string>();
@@ -83,6 +95,8 @@ export class StudioLiveGesturePreviewRoomAdapter {
   private room: StudioLiveGesturePreviewRoomSource | null = null;
   private roomUnsubscribe: (() => void) | null = null;
   private roomGeneration = 0;
+  private lastRoomEventAt: number | null = null;
+  private pendingNotificationFrame: unknown = null;
   private activePageId: string | null;
   private authoritativeElementIds: ReadonlySet<string>;
   private snapshot: StudioLiveGesturePreviewSnapshot = EMPTY_PREVIEW_SNAPSHOT;
@@ -93,6 +107,21 @@ export class StudioLiveGesturePreviewRoomAdapter {
     this.activePageId = options.pageId ?? null;
     this.authoritativeElementIds = new Set(options.authoritativeElementIds ?? []);
     this.maxEligibleGestures = boundedEligibleGestureLimit(options.maxEligibleGestures);
+    this.now = options.now ?? (() => Date.now());
+    this.coalesceListenerNotifications = options.coalesceListenerNotifications === true;
+    this.scheduleFrame = options.scheduleFrame ?? ((flush) => {
+      if (typeof globalThis.requestAnimationFrame === "function") {
+        return globalThis.requestAnimationFrame(() => flush());
+      }
+      return setTimeout(flush, 16);
+    });
+    this.cancelFrame = options.cancelFrame ?? ((handle) => {
+      if (typeof globalThis.cancelAnimationFrame === "function" && typeof handle === "number") {
+        globalThis.cancelAnimationFrame(handle);
+        return;
+      }
+      clearTimeout(handle as ReturnType<typeof setTimeout>);
+    });
     this.store = options.store ?? new StudioLiveGesturePreviewStore({
       pageId: this.activePageId,
     });
@@ -123,6 +152,7 @@ export class StudioLiveGesturePreviewRoomAdapter {
     this.roomUnsubscribe?.();
     this.roomUnsubscribe = null;
     this.room = null;
+    this.lastRoomEventAt = null;
     this.clearTransientState();
 
     if (!room) return;
@@ -182,12 +212,26 @@ export class StudioLiveGesturePreviewRoomAdapter {
     return true;
   }
 
+  /** 대기 중인 rAF 배치 알림이 있으면 즉시 플러시한다. */
+  flushPendingNotifications(): void {
+    if (this.pendingNotificationFrame === null) return;
+    this.cancelFrame(this.pendingNotificationFrame);
+    this.pendingNotificationFrame = null;
+    if (this.disposed) return;
+    for (const listener of [...this.listeners]) listener();
+  }
+
   dispose(): void {
     if (this.disposed) return;
+    if (this.pendingNotificationFrame !== null) {
+      this.cancelFrame(this.pendingNotificationFrame);
+      this.pendingNotificationFrame = null;
+    }
     this.roomGeneration += 1;
     this.roomUnsubscribe?.();
     this.roomUnsubscribe = null;
     this.room = null;
+    this.lastRoomEventAt = null;
     this.clearTransientState();
     this.storeUnsubscribe?.();
     this.storeUnsubscribe = null;
@@ -197,6 +241,14 @@ export class StudioLiveGesturePreviewRoomAdapter {
   }
 
   private onRoomEvent(event: StudioLiveRoomEvent): void {
+    const now = this.now();
+    if (
+      this.lastRoomEventAt !== null
+      && now - this.lastRoomEventAt > STUDIO_LIVE_GESTURE_PREVIEW_SLEEP_WAKE_GAP_MS
+    ) {
+      this.clearTransientState();
+    }
+    this.lastRoomEventAt = now;
     if (event.type === "gesture-preview") {
       this.applyGesturePreview(event.participant.sessionId, event.payload);
       return;
@@ -351,6 +403,20 @@ export class StudioLiveGesturePreviewRoomAdapter {
         ? EMPTY_PREVIEW_KEYS
         : Object.freeze(nextKeys);
     }
-    for (const listener of [...this.listeners]) listener();
+    this.notifyListeners();
+  }
+
+  private notifyListeners(): void {
+    if (this.listeners.size === 0 || this.disposed) return;
+    if (!this.coalesceListenerNotifications) {
+      for (const listener of [...this.listeners]) listener();
+      return;
+    }
+    if (this.pendingNotificationFrame !== null) return;
+    this.pendingNotificationFrame = this.scheduleFrame(() => {
+      this.pendingNotificationFrame = null;
+      if (this.disposed) return;
+      for (const listener of [...this.listeners]) listener();
+    });
   }
 }

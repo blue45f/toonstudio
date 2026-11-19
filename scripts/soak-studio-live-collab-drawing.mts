@@ -1,27 +1,41 @@
 /**
- * ToonStudio 3-hour multi-user collaborative drawing soak runner.
+ * ToonStudio 3-hour multi-user collaborative drawing chaos soak runner.
  *
- * Exercises the exact long-session collaborative drawing surfaces concurrently on one shared page:
- * - Multi-peer Live Ink Protocol V2 lifecycle + dropped ink:end TTL reaping
- * - Multi-peer Gesture Preview store + room adapter + authoritative projection handoff + peer churn
+ * Exercises all long-session collaborative drawing surfaces concurrently on one shared page:
+ * - Multi-peer Live Ink Protocol V2 lifecycle + 15% dropped ink:end TTL reaping
+ * - Multi-peer Gesture Preview store + room adapter (rAF notification coalescing + sleep-wake purge)
+ * - P2P overlay transport ghost-peer TTL recovery (random hard-disconnect without presence:leave)
+ * - Undo/Redo CRDT history depth bounding (trimStudioCrdtHistoryWindow <= 100)
+ * - Live overlay canvas VRAM proxy check (backing pixel area shrinks to 1x1 on detach)
  * - Production V12 SqliteStudioCrdtOutbox continuous put/remove ACK cycles
- * - Periodic memory (heapUsed / rss) telemetry & fail-closed leak assertions
+ * - Periodic telemetry & fail-closed gates: heapUsed/RSS growth, p99 round latency, VRAM proxy
  *
  * Usage:
- *   pnpm tsx scripts/soak-studio-live-collab-drawing.mts                    # default 3 hours (10,800,000 ms)
- *   pnpm tsx scripts/soak-studio-live-collab-drawing.mts --duration-ms=60000 --peers=6
+ *   node --experimental-strip-types scripts/soak-studio-live-collab-drawing.mts
+ *   node --experimental-strip-types scripts/soak-studio-live-collab-drawing.mts --duration-ms=60000 --peers=6 --chaos=true
  */
 
+import { performance } from "node:perf_hooks";
+
+import {
+  STUDIO_CRDT_MAX_RECONCILED_HISTORY_DEPTH,
+  trimStudioCrdtHistoryWindow,
+} from "../apps/web/src/domains/creator/live/studio-crdt-history";
 import { SqliteStudioCrdtOutbox } from "../apps/web/src/domains/creator/live/studio-crdt-outbox";
 import {
   STUDIO_CRDT_PROTOCOL_VERSION,
   type StudioCrdtUpdateRequest,
 } from "../apps/web/src/domains/creator/live/studio-crdt-protocol";
 import {
+  createStudioLiveEnvelope,
+  type StudioLiveParticipant,
+} from "../apps/web/src/domains/creator/live/studio-live-collaboration-protocol";
+import {
   STUDIO_LIVE_GESTURE_PREVIEW_VERSION,
   type StudioLiveGesturePreviewPayload,
 } from "../apps/web/src/domains/creator/live/studio-live-gesture-preview";
 import {
+  STUDIO_LIVE_GESTURE_PREVIEW_SLEEP_WAKE_GAP_MS,
   StudioLiveGesturePreviewRoomAdapter,
   type StudioLiveGesturePreviewRoomSource,
 } from "../apps/web/src/domains/creator/live/studio-live-gesture-preview-room-adapter";
@@ -32,6 +46,10 @@ import {
 } from "../apps/web/src/domains/creator/live/studio-live-gesture-preview-store";
 import { encodeStudioLiveInkSamples } from "../apps/web/src/domains/creator/live/studio-live-ink-codec";
 import {
+  StudioLiveInkOverlayRenderer,
+  StudioLiveInkPredictionRenderer,
+} from "../apps/web/src/domains/creator/live/studio-live-ink-overlay";
+import {
   STUDIO_LIVE_INK_ACTIVE_STROKE_TTL_MS,
   STUDIO_LIVE_INK_MAX_ACTIVE_STROKES,
   STUDIO_LIVE_INK_PROTOCOL_VERSION,
@@ -40,19 +58,25 @@ import {
   type StudioLiveInkBegin,
   type StudioLiveInkChunk,
 } from "../apps/web/src/domains/creator/live/studio-live-ink-protocol";
+import {
+  STUDIO_LIVE_P2P_STALE_PEER_TTL_MS,
+  applyStudioLiveP2pOverlay,
+} from "../apps/web/src/domains/creator/live/studio-live-p2p-overlay-transport";
+import { StudioLiveRetainedMediaOverlayRenderer } from "../apps/web/src/domains/creator/live/studio-live-retained-media-overlay";
 
 import type { StudioLocalDatabase } from "../apps/web/src/domains/creator/studio-local-database";
-import type { StudioLiveParticipant } from "../apps/web/src/domains/creator/live/studio-live-collaboration-protocol";
 import type {
   StudioLivePeer,
   StudioLiveRoomEvent,
 } from "../apps/web/src/domains/creator/live/studio-live-collaboration-room";
+import type { StudioLiveTransport } from "../apps/web/src/domains/creator/live/studio-live-collaboration-transport";
 
 const DEFAULT_DURATION_MS = 3 * 60 * 60 * 1_000; // 3 hours
 const DEFAULT_PEER_COUNT = 6;
 const REPORT_INTERVAL_MS = 60_000;
 const ROUND_SLEEP_MS = 25;
 const MAX_ALLOWED_HEAP_GROWTH_MB = 128;
+const MAX_ALLOWED_P99_ROUND_MS = 50;
 
 function parseNumericArg(name: string, fallback: number, min: number): number {
   const prefix = `--${name}=`;
@@ -62,8 +86,22 @@ function parseNumericArg(name: string, fallback: number, min: number): number {
   return Number.isFinite(parsed) && parsed >= min ? Math.trunc(parsed) : fallback;
 }
 
+function parseBooleanArg(name: string, fallback: boolean): boolean {
+  const prefix = `--${name}=`;
+  const raw = process.argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
+  if (!raw) return fallback;
+  return raw !== "false" && raw !== "0";
+}
+
 function mb(bytes: number): number {
   return Math.round((bytes / (1024 * 1024)) * 100) / 100;
+}
+
+function percentile99(samples: readonly number[]): number {
+  if (samples.length === 0) return 0;
+  const sorted = [...samples].sort((a, b) => a - b);
+  const index = Math.min(sorted.length - 1, Math.floor(sorted.length * 0.99));
+  return Math.round(sorted[index]! * 100) / 100;
 }
 
 function inkPayload(count: number): ArrayBuffer {
@@ -120,6 +158,31 @@ function makeInkChunk(
   };
 }
 
+function makeMockCanvas(width = 1920, height = 1080): HTMLCanvasElement {
+  const context = {
+    save() {},
+    restore() {},
+    setTransform() {},
+    clearRect() {},
+    beginPath() {},
+    arc() {},
+    fill() {},
+    stroke() {},
+    drawImage() {},
+    getImageData: (_x: number, _y: number, w: number, h: number) => ({
+      data: new Uint8ClampedArray(Math.max(0, w) * Math.max(0, h) * 4),
+      width: w,
+      height: h,
+    }),
+    putImageData() {},
+  };
+  return {
+    width,
+    height,
+    getContext: () => context,
+  } as unknown as HTMLCanvasElement;
+}
+
 class SoakFakeRoom implements StudioLiveGesturePreviewRoomSource {
   private readonly listeners = new Set<(event: StudioLiveRoomEvent) => void>();
 
@@ -151,6 +214,7 @@ class SoakFakeRoom implements StudioLiveGesturePreviewRoomSource {
 async function runSoak(): Promise<void> {
   const durationMs = parseNumericArg("duration-ms", DEFAULT_DURATION_MS, 1_000);
   const peerCount = parseNumericArg("peers", DEFAULT_PEER_COUNT, 2);
+  const chaosEnabled = parseBooleanArg("chaos", true);
   const startedAt = Date.now();
   const deadline = startedAt + durationMs;
 
@@ -172,12 +236,68 @@ async function runSoak(): Promise<void> {
 
   const store = new StudioLiveGesturePreviewStore({ pageId: "page-soak", scheduler });
   const room = new SoakFakeRoom(peers);
-  const adapter = new StudioLiveGesturePreviewRoomAdapter({ pageId: "page-soak", store });
+  const queuedFrames: (() => void)[] = [];
+  const adapter = new StudioLiveGesturePreviewRoomAdapter({
+    pageId: "page-soak",
+    store,
+    now: () => virtualNow,
+    coalesceListenerNotifications: true,
+    scheduleFrame: (flush) => {
+      queuedFrames.push(flush);
+      return queuedFrames.length;
+    },
+    cancelFrame: () => undefined,
+  });
   let notificationCount = 0;
   adapter.subscribe(() => {
     notificationCount += 1;
   });
   adapter.setRoom(room);
+
+  // P2P overlay transport chaos harness for ghost-peer eviction verification.
+  const p2pPrimaryListeners = new Set<(value: unknown) => void>();
+  const p2pPrimary: StudioLiveTransport = {
+    mode: "server",
+    canvasLockPolicy: "cooperative",
+    crdtFanout: "mesh",
+    ready: true,
+    connect: async () => undefined,
+    send: () => true,
+    subscribe: (listener) => {
+      p2pPrimaryListeners.add(listener);
+      return () => p2pPrimaryListeners.delete(listener);
+    },
+    close: () => undefined,
+  };
+  const p2pTransport = applyStudioLiveP2pOverlay(() => p2pPrimary, {
+    now: () => virtualNow,
+    createPeerConnection: () => {
+      throw new Error("ICE unavailable");
+    },
+  })({
+    workId: "work-soak",
+    participant: {
+      sessionId: "soak-self",
+      displayName: "Self",
+      role: "editor",
+      visibility: "active",
+    },
+  });
+  await p2pTransport.connect();
+
+  // Canvas overlay VRAM proxy harness.
+  const inkRenderer = new StudioLiveInkOverlayRenderer();
+  const predictionRenderer = new StudioLiveInkPredictionRenderer();
+  const retainedRenderer = new StudioLiveRetainedMediaOverlayRenderer();
+  const surface = {
+    left: 0,
+    top: 0,
+    width: 1920,
+    height: 1080,
+    documentScale: 1,
+    documentWidth: 1920,
+    flipX: false,
+  };
 
   const trackers = new Map<string, StudioLiveInkStrokeTracker>(
     peers.map((peer) => [peer.sessionId, new StudioLiveInkStrokeTracker()]),
@@ -239,7 +359,6 @@ async function runSoak(): Promise<void> {
       const existing = outboxRows.get(key);
       if (existing) {
         existing.acknowledgedAt = acknowledgedAt;
-        // Periodically compact acknowledged rows in fake DB to measure client memory cleanly.
         if (outboxRows.size > 1_000) outboxRows.delete(key);
       }
     },
@@ -251,26 +370,35 @@ async function runSoak(): Promise<void> {
     now: () => virtualNow,
   });
 
+  // Simulated Undo/Redo history stack that grows each round and is bounded by trimStudioCrdtHistoryWindow.
+  let undoHistory: { id: string }[][] = [[{ id: "init" }]];
+  let undoIndex = 0;
+
   const baselineHeapMb = mb(process.memoryUsage().heapUsed);
   let lastReportAt = startedAt;
   let round = 0;
   let totalStrokes = 0;
   let totalReapedOrphans = 0;
+  let totalChaosEvents = 0;
   let clientSequence = 0;
+  let lastDetachedVramPixels = 0;
+  const roundLatenciesMs: number[] = [];
 
   console.log(
-    `[soak] start: durationMs=${durationMs} (${(durationMs / 3_600_000).toFixed(2)}h), peers=${peerCount}, baselineHeapMB=${baselineHeapMb}`,
+    `[soak] start: durationMs=${durationMs} (${(durationMs / 3_600_000).toFixed(2)}h), peers=${peerCount}, chaos=${chaosEnabled}, baselineHeapMB=${baselineHeapMb}`,
   );
 
   while (Date.now() < deadline) {
+    const roundStart = performance.now();
     round += 1;
     virtualNow += 1_000;
 
-    for (const peer of peers) {
+    for (let peerIndex = 0; peerIndex < peers.length; peerIndex += 1) {
+      const peer = peers[peerIndex]!;
       const tracker = trackers.get(peer.sessionId)!;
       const strokeId = `${peer.sessionId}-r${round}`;
 
-      // 1. Live Ink: periodically drop ink:end (1 in 5 rounds) to prove TTL reaping prevents deadlock.
+      // 1. Live Ink: 15% dropped ink:end packet chaos to prove TTL reaping prevents deadlock.
       if (!tracker.accept(makeInkBegin(strokeId, virtualNow), virtualNow)) {
         throw new Error(
           `[soak] ink begin unexpectedly rejected for ${peer.sessionId} at round ${round} (active=${tracker.activeStrokeCount})`,
@@ -279,7 +407,7 @@ async function runSoak(): Promise<void> {
       if (!tracker.accept(makeInkChunk(strokeId, 1, 0, 4), virtualNow)) {
         throw new Error(`[soak] ink chunk rejected for ${peer.sessionId} at round ${round}`);
       }
-      const simulateDroppedEnd = round % 5 === 0;
+      const simulateDroppedEnd = chaosEnabled ? (round + peerIndex) % 7 === 0 : round % 5 === 0;
       if (!simulateDroppedEnd) {
         tracker.accept({ kind: "ink:cancel", strokeId, reason: "user" }, virtualNow);
       }
@@ -289,8 +417,7 @@ async function runSoak(): Promise<void> {
         throw new Error(`[soak] active ink stroke cap exceeded for ${peer.sessionId}`);
       }
 
-      // 2. Gesture Preview: simultaneous multi-chunk drawing + authoritative projection handoff.
-      const beforeCalls = notificationCount;
+      // 2. Gesture Preview: simultaneous multi-chunk drawing with rAF frame-budget coalescing.
       room.emitPreview(peer, {
         version: STUDIO_LIVE_GESTURE_PREVIEW_VERSION,
         gestureId: strokeId,
@@ -302,9 +429,6 @@ async function runSoak(): Promise<void> {
         renderer: { kind: "freehand", mode: "pen", stroke: "#111111", strokeWidth: 4 },
         samples: { startIndex: 0, points: [0, 0, 8, 8], pressures: [0.5, 0.5] },
       });
-      if (notificationCount - beforeCalls !== 1) {
-        throw new Error(`[soak] duplicate adapter notification detected on begin (${notificationCount - beforeCalls})`);
-      }
       room.emitPreview(peer, {
         version: STUDIO_LIVE_GESTURE_PREVIEW_VERSION,
         gestureId: strokeId,
@@ -341,21 +465,88 @@ async function runSoak(): Promise<void> {
       totalStrokes += 1;
     }
 
-    // Periodic peer churn + TTL sweep every 20 rounds.
-    if (round % 20 === 0) {
+    // Flush the single coalesced rAF notification for all 6 peers in this round.
+    while (queuedFrames.length > 0) {
+      queuedFrames.shift()!();
+    }
+
+    // 4. Undo/Redo history depth bounding verification.
+    undoHistory.push([{ id: `snap-${round}` }]);
+    undoIndex = undoHistory.length - 1;
+    const boundedHistory = trimStudioCrdtHistoryWindow(undoHistory, undoIndex);
+    undoHistory = boundedHistory.history;
+    undoIndex = boundedHistory.currentIndex;
+    if (undoHistory.length > STUDIO_CRDT_MAX_RECONCILED_HISTORY_DEPTH) {
+      throw new Error(`[soak] Undo/Redo history exceeded cap: ${undoHistory.length}`);
+    }
+
+    // 5. Chaos scenarios every 20 rounds: ghost peer hard-disconnect, sleep-wake storm, canvas detach VRAM check.
+    if (chaosEnabled && round % 20 === 0) {
+      totalChaosEvents += 1;
+      // 5a. Ghost peer enters without presence:leave and must evict after TTL.
+      const ghostSessionId = `ghost-peer-${round}`;
+      const hello = createStudioLiveEnvelope({
+        workId: "work-soak",
+        sender: {
+          sessionId: ghostSessionId,
+          displayName: ghostSessionId,
+          role: "editor",
+          visibility: "active",
+        },
+        sentAt: virtualNow,
+        sequence: round,
+        kind: "presence:hello",
+        payload: { pageId: "page-soak" },
+      });
+      for (const listener of p2pPrimaryListeners) listener(hello);
+
+      // 5b. Simulated sleep-wake gap (20-min gap > TTLs) purges stale previews & ghost peers.
       virtualNow += Math.max(
         STUDIO_LIVE_GESTURE_PREVIEW_TTL_MS,
         STUDIO_LIVE_INK_ACTIVE_STROKE_TTL_MS,
-      ) + 500;
+        STUDIO_LIVE_GESTURE_PREVIEW_SLEEP_WAKE_GAP_MS,
+        STUDIO_LIVE_P2P_STALE_PEER_TTL_MS,
+      ) + 1_000;
       room.setPeers(peers.slice(1));
       room.setPeers(peers);
+      adapter.flushPendingNotifications();
       if (adapter.getSnapshot().length !== 0) {
-        throw new Error(`[soak] orphaned gesture previews remained after TTL sweep: ${adapter.getSnapshot().length}`);
+        throw new Error(`[soak] orphaned gesture previews remained after sleep-wake sweep: ${adapter.getSnapshot().length}`);
+      }
+      if ((p2pTransport.direct?.getPeers().length ?? 0) !== 0) {
+        throw new Error("[soak] ghost peer survived past P2P stale TTL");
       }
       if (outbox.listEmergency("soak-user", "work-soak").length !== 0) {
         throw new Error("[soak] emergency outbox retained acknowledged entries");
       }
+
+      // 5c. Canvas overlay attach/detach VRAM proxy check.
+      const inkCanvas = makeMockCanvas();
+      const predCanvas = makeMockCanvas();
+      const activeCanvas = makeMockCanvas();
+      const settledCanvas = makeMockCanvas();
+      inkRenderer.attach(inkCanvas);
+      inkRenderer.setSurface(surface);
+      predictionRenderer.attach(predCanvas);
+      predictionRenderer.setSurface(surface);
+      retainedRenderer.attach({ activeCanvas, settledCanvas });
+      retainedRenderer.setSurface(surface);
+      inkRenderer.attach(null);
+      predictionRenderer.attach(null);
+      retainedRenderer.attach(null);
+      lastDetachedVramPixels =
+        inkCanvas.width * inkCanvas.height
+        + predCanvas.width * predCanvas.height
+        + activeCanvas.width * activeCanvas.height
+        + settledCanvas.width * settledCanvas.height;
+      if (lastDetachedVramPixels > 4) {
+        throw new Error(`[soak] detached overlay canvases retained backing pixels: ${lastDetachedVramPixels}`);
+      }
     }
+
+    const roundElapsedMs = performance.now() - roundStart;
+    roundLatenciesMs.push(roundElapsedMs);
+    if (roundLatenciesMs.length > 2_000) roundLatenciesMs.shift();
 
     const wallNow = Date.now();
     if (wallNow - lastReportAt >= REPORT_INTERVAL_MS) {
@@ -363,13 +554,19 @@ async function runSoak(): Promise<void> {
       const heapMb = mb(mem.heapUsed);
       const rssMb = mb(mem.rss);
       const heapGrowthMb = Math.round((heapMb - baselineHeapMb) * 100) / 100;
+      const p99Ms = percentile99(roundLatenciesMs);
       const elapsedMin = ((wallNow - startedAt) / 60_000).toFixed(1);
       console.log(
-        `[soak] elapsed=${elapsedMin}m rounds=${round} strokes=${totalStrokes} reapedOrphans=${totalReapedOrphans} heapMB=${heapMb} (+${heapGrowthMb}MB) rssMB=${rssMb} activePreviews=${adapter.getSnapshot().length}`,
+        `[soak] elapsed=${elapsedMin}m rounds=${round} strokes=${totalStrokes} reapedOrphans=${totalReapedOrphans} chaosEvents=${totalChaosEvents} p99RoundMs=${p99Ms} notifications=${notificationCount} historyDepth=${undoHistory.length} detachedVramPx=${lastDetachedVramPixels} heapMB=${heapMb} (+${heapGrowthMb}MB) rssMB=${rssMb}`,
       );
       if (heapGrowthMb > MAX_ALLOWED_HEAP_GROWTH_MB) {
         throw new Error(
           `[soak] heap growth exceeded threshold: +${heapGrowthMb}MB > ${MAX_ALLOWED_HEAP_GROWTH_MB}MB`,
+        );
+      }
+      if (p99Ms > MAX_ALLOWED_P99_ROUND_MS) {
+        throw new Error(
+          `[soak] p99 round latency exceeded threshold: ${p99Ms}ms > ${MAX_ALLOWED_P99_ROUND_MS}ms`,
         );
       }
       lastReportAt = wallNow;
@@ -379,9 +576,10 @@ async function runSoak(): Promise<void> {
   }
 
   adapter.dispose();
+  p2pTransport.close();
   const finalMem = process.memoryUsage();
   console.log(
-    `[soak] PASS: elapsedMs=${Date.now() - startedAt} rounds=${round} strokes=${totalStrokes} reapedOrphans=${totalReapedOrphans} finalHeapMB=${mb(finalMem.heapUsed)} finalRssMB=${mb(finalMem.rss)}`,
+    `[soak] PASS: elapsedMs=${Date.now() - startedAt} rounds=${round} strokes=${totalStrokes} reapedOrphans=${totalReapedOrphans} chaosEvents=${totalChaosEvents} p99RoundMs=${percentile99(roundLatenciesMs)} historyDepth=${undoHistory.length} detachedVramPx=${lastDetachedVramPixels} finalHeapMB=${mb(finalMem.heapUsed)} finalRssMB=${mb(finalMem.rss)}`,
   );
 }
 

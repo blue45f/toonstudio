@@ -1,10 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 
+import {
+  STUDIO_CRDT_MAX_RECONCILED_HISTORY_DEPTH,
+  trimStudioCrdtHistoryWindow,
+} from "./studio-crdt-history";
 import { SqliteStudioCrdtOutbox } from "./studio-crdt-outbox";
 import { STUDIO_CRDT_PROTOCOL_VERSION, type StudioCrdtUpdateRequest } from "./studio-crdt-protocol";
 import { createStudioLiveEnvelope, type StudioLiveParticipant } from "./studio-live-collaboration-protocol";
 import { STUDIO_LIVE_GESTURE_PREVIEW_VERSION } from "./studio-live-gesture-preview";
 import {
+  STUDIO_LIVE_GESTURE_PREVIEW_SLEEP_WAKE_GAP_MS,
   StudioLiveGesturePreviewRoomAdapter,
   type StudioLiveGesturePreviewRoomSource,
 } from "./studio-live-gesture-preview-room-adapter";
@@ -444,5 +449,105 @@ describe("long-session multi-user collaborative drawing stability", () => {
     now += STUDIO_LIVE_P2P_STALE_PEER_TTL_MS + 1_000;
     expect(transport.direct?.getPeers()).toEqual([]);
     transport.close();
+  });
+
+  it("bounds Undo/Redo history depth during remote CRDT reconciliation while preserving currentIndex", () => {
+    const history = Array.from({ length: 240 }, (_, index) => [{ id: `snap-${index}` }]);
+    const currentIndex = 225;
+    const activeSnapshot = history[currentIndex];
+
+    const bounded = trimStudioCrdtHistoryWindow(history, currentIndex);
+    expect(bounded.trimmed).toBe(true);
+    expect(bounded.history).toHaveLength(STUDIO_CRDT_MAX_RECONCILED_HISTORY_DEPTH);
+    expect(bounded.history[bounded.currentIndex]).toBe(activeSnapshot);
+
+    // Histories within the cap return the original array reference without extra allocation.
+    const small = history.slice(0, 10);
+    const untouched = trimStudioCrdtHistoryWindow(small, 5);
+    expect(untouched.trimmed).toBe(false);
+    expect(untouched.history).toBe(small);
+    expect(untouched.currentIndex).toBe(5);
+  });
+
+  it("purges pre-sleep previews on sleep-wake gap and coalesces 6-peer burst notifications into one frame", () => {
+    let now = 4_000_000;
+    const pendingFrames: (() => void)[] = [];
+    const scheduler: StudioLiveGesturePreviewStoreScheduler = {
+      now: () => now,
+      setInterval: () => 1,
+      clearInterval: () => undefined,
+    };
+    const store = new StudioLiveGesturePreviewStore({ pageId: "page-a", scheduler });
+    const peers: StudioLivePeer[] = Array.from({ length: 6 }, (_, index) => ({
+      sessionId: `burst-peer-${index + 1}`,
+      displayName: `Peer ${index + 1}`,
+      role: "editor",
+      visibility: "active",
+      pageId: "page-a",
+      lastSeenAt: now,
+    }));
+    const room = new MultiPeerFakeRoom(peers);
+    const adapter = new StudioLiveGesturePreviewRoomAdapter({
+      pageId: "page-a",
+      store,
+      now: () => now,
+      coalesceListenerNotifications: true,
+      scheduleFrame: (flush) => {
+        pendingFrames.push(flush);
+        return pendingFrames.length;
+      },
+      cancelFrame: () => undefined,
+    });
+    const listener = vi.fn();
+    adapter.subscribe(listener);
+    adapter.setRoom(room);
+
+    // 6 peers each send begin + 3 appends in one frame (24 events) -> coalesced to 1 frame flush.
+    for (const peer of peers) {
+      room.emitPreview(peer, {
+        version: STUDIO_LIVE_GESTURE_PREVIEW_VERSION,
+        gestureId: `${peer.sessionId}-g1`,
+        pageId: "page-a",
+        seq: 1,
+        phase: "begin",
+        operation: "draw",
+        base: { documentGeneration: 1 },
+        renderer: { kind: "freehand", mode: "pen", stroke: "#222222", strokeWidth: 4 },
+        samples: { startIndex: 0, points: [0, 0, 5, 5], pressures: [0.5, 0.5] },
+      });
+      for (let seq = 2; seq <= 4; seq += 1) {
+        room.emitPreview(peer, {
+          version: STUDIO_LIVE_GESTURE_PREVIEW_VERSION,
+          gestureId: `${peer.sessionId}-g1`,
+          pageId: "page-a",
+          seq,
+          phase: "append",
+          operation: "draw",
+          samples: { startIndex: seq * 2, points: [seq * 4, seq * 4], pressures: [0.5] },
+        });
+      }
+    }
+    expect(listener).toHaveBeenCalledTimes(0);
+    expect(pendingFrames).toHaveLength(1);
+    pendingFrames.shift()!();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(adapter.getSnapshot()).toHaveLength(6);
+
+    // Simulate 20-minute sleep-wake gap: next room event purges stale pre-sleep previews first.
+    now += STUDIO_LIVE_GESTURE_PREVIEW_SLEEP_WAKE_GAP_MS + 1_000;
+    room.emitPreview(peers[0]!, {
+      version: STUDIO_LIVE_GESTURE_PREVIEW_VERSION,
+      gestureId: "post-wake-stroke",
+      pageId: "page-a",
+      seq: 1,
+      phase: "begin",
+      operation: "draw",
+      base: { documentGeneration: 2 },
+      renderer: { kind: "freehand", mode: "pen", stroke: "#222222", strokeWidth: 4 },
+      samples: { startIndex: 0, points: [10, 10, 20, 20], pressures: [0.5, 0.5] },
+    });
+    adapter.flushPendingNotifications();
+    expect(adapter.getSnapshot().map((entry) => entry.gestureId)).toEqual(["post-wake-stroke"]);
+    adapter.dispose();
   });
 });
