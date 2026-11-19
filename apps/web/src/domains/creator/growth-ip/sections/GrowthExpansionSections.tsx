@@ -1,5 +1,6 @@
-// 판권 제안 CRM · SNS 공유 · 사용 환경과 앱 설치 · 교육 과정 섹션.
+// 판권 제안 CRM · IP 확장 스튜디오 · SNS 공유 · 사용 환경과 앱 설치 · 교육 과정 섹션.
 import { BookOpen, Clapperboard, Copy, ExternalLink, GraduationCap, MonitorCheck, Plus, Scale, Share2 } from "lucide-react";
+import { StudioIpExpansionPanel } from "../../storyworld/StudioIpExpansionPanel";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -163,6 +164,22 @@ export function RightsInquirySection({ state, update, notify, notice }: GrowthSe
             )) : <EmptyNote>{bi("아직 기록한 판권 제안이 없습니다.", "No rights inquiries recorded yet.")}</EmptyNote>}
           </div>
         </div>
+      </div>
+      <div className="mt-6 border-t border-line pt-6">
+        <StudioIpExpansionPanel
+          initialProfile={{
+            workTitle: state.synopsis.title || "내 연재 프로젝트",
+            genre: state.synopsis.theme || "웹툰 오리지널",
+            publishedEpisodes: Math.max(1, state.adaptationEpisodes.length || state.novelChapters.length || 12),
+            cumulativeViews: 1_500_000,
+            hasCharacterSheets: Boolean(state.synopsis.characters),
+            hasStoryBible: Boolean(state.synopsis.world),
+            hasCleanRightsBom: true,
+            has3dWorldAssets: true,
+            hasVoiceCastPlan: state.voiceDialogues.length > 0,
+          }}
+          onExportPitchBible={() => notify(bi("IP 확장 피치 바이블을 생성했습니다.", "Generated IP expansion pitch bible."))}
+        />
       </div>
     </GrowthSection>
   );
