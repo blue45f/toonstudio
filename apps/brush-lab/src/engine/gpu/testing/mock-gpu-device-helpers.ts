@@ -1,7 +1,4 @@
-import {
-  createMockGpu,
-  type MockGpu,
-} from "./mock-gpu-device";
+import type { MockGpu, MockGpuOptions } from "./mock-gpu-device";
 
 export interface MockDraw {
   entryPoint: string;
@@ -89,8 +86,11 @@ export interface MockAdapterOptions {
   ignoreRequiredLimits?: boolean;
 }
 
-export function createMockAdapter(options: MockAdapterOptions = {}): { adapter: GPUAdapter; gpu: MockGpu } {
-  const gpu = options.gpu ?? createMockGpu({ features: options.features, limits: options.limits });
+export function createMockAdapterWithGpuFactory(
+  createGpu: (opts?: MockGpuOptions) => MockGpu,
+  options: MockAdapterOptions = {},
+): { adapter: GPUAdapter; gpu: MockGpu } {
+  const gpu = options.gpu ?? createGpu({ features: options.features, limits: options.limits });
   const info = {
     vendor: options.info?.vendor ?? "mock",
     architecture: options.info?.architecture ?? "mock-arch",

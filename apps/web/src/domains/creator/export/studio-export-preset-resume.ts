@@ -3,10 +3,12 @@ import {
   drawWatermarkOnSlice,
   planSliceDrawOps,
   presetSliceFileName,
-  type PresetExportResult,
-  type PresetSliceExportOptions,
-  type PresetSlicePlan,
-  type PresetVipsPreparedPages,
+} from "./studio-export-slice-helpers";
+import type {
+  PresetExportResult,
+  PresetSliceExportOptions,
+  PresetSlicePlan,
+  PresetVipsPreparedPages,
 } from "./studio-export-presets";
 import { renderStudioPresetTiledRegion } from "./studio-preset-tiled-raster";
 import type { StudioVipsRaster } from "./studio-vips-export";

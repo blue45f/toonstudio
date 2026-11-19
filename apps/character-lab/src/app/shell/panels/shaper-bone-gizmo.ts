@@ -13,7 +13,7 @@ import {
   safeComputeWorldTransforms,
   type SkeletonBoundaryOptions,
 } from "./skeleton-boundary-guard";
-import { resolveDragPivot, type DragPivot } from "./viewport-interactions";
+import { resolveDragPivot, type DragPivot } from "./drag-pivot";
 
 import type { BodyParamKey, FaceParamKey, HumanoidBoneName, JointDragHandle, ParamValues, Pose, SkeletonData } from "../../../contracts";
 

@@ -1,6 +1,6 @@
 import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
-import { users } from "./index";
+import { users } from "./auth.schema";
 
 import type { FeedbackDetails } from "../../../../../../packages/core/src/feedback";
 import type { CommunityCafeRule } from "../../../../../../packages/core/src/types";

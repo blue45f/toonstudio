@@ -185,3 +185,19 @@ test("--write-baseline snapshots current findings", () => {
   );
   assert.equal(check.status, 0, check.stderr);
 });
+
+test("ignores UPPER_SNAKE_CASE exported constants in .tsx modules", () => {
+  const root = makeFixture({
+    [ROUTE]: [
+      `import { SaveStatusBar } from "../../domains/save/SaveStatusBar";`,
+      `export default function HomeRoute() { return <SaveStatusBar />; }`,
+    ].join("\n"),
+    "domains/save/SaveStatusBar.tsx": [
+      `export const DEFAULT_SAVE_TIMEOUT_MS = 3000;`,
+      `export const MAX_RETRIES = 5;`,
+      `export function SaveStatusBar() { return null; }`,
+    ].join("\n"),
+  });
+  const report = runGate(root);
+  assert.deepEqual(findingKeys(report), []);
+});

@@ -29,7 +29,7 @@ import {
   selectReleaseSource,
   workIsDirectlyReadable,
   type CreatorWorkReportReason,
-} from "./community-publishing";
+} from "./community-publishing-source";
 
 export async function promoteDueCreatorCommunityPublications(
   now = new Date(),

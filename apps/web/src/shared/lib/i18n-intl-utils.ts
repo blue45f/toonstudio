@@ -3,16 +3,19 @@ import {
   getAppI18nTranslatedRatio,
   isAppI18nTranslationInProgress,
   isFullyTranslatedAppLocale,
-} from "./i18n-asset-loader";
-import { FALLBACK_LANG, FALLBACK_CHAIN } from "./i18n-core";
+} from "./i18n-locale-metrics";
+import {
+  FALLBACK_LANG,
+  getLocaleCandidateChain,
+  getLocaleCandidates,
+  type LanguageLocaleOption,
+} from "./i18n-constants";
 import {
   NORMALIZED_LOCALE_OPTIONS,
   normalizeLocaleCode,
 } from "./i18n-locale-list";
 
-import type { LanguageLocaleOption } from "./i18n-core";
-
-export { normalizeLocaleCode };
+export { getLocaleCandidateChain, getLocaleCandidates, normalizeLocaleCode };
 
 const DEFAULT_COLLATOR_LOCALE = "en";
 
@@ -45,40 +48,6 @@ const RTL_LANGUAGE_ROOTS = new Set([
   "ur",
   "yi",
 ]);
-
-export function getLocaleCandidateChain(
-  raw: string,
-  fallbackChain: readonly string[],
-): string[] {
-  const normalized = normalizeLocaleCode(raw);
-  const candidates = new Set<string>();
-
-  if (!normalized) {
-    for (const fallback of fallbackChain) {
-      candidates.add(fallback);
-    }
-    return [...candidates];
-  }
-
-  const parts = normalized.split("-");
-  for (let i = parts.length; i >= 1; i--) {
-    const candidate = parts.slice(0, i).join("-");
-    candidates.add(candidate);
-  }
-
-  for (const fallback of fallbackChain) {
-    candidates.add(fallback);
-  }
-
-  return [...candidates];
-}
-
-export function getLocaleCandidates(
-  raw: string,
-  fallbackChain: readonly string[] = FALLBACK_CHAIN,
-): string[] {
-  return getLocaleCandidateChain(raw, fallbackChain);
-}
 
 export function getSupportedIntlLocale(raw: string, fallback: string): string {
   const candidates = getLocaleCandidateChain(raw, [fallback]);
