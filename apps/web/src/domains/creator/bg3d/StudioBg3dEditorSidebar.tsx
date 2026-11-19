@@ -377,7 +377,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
   const offered3dCommands = listOfferedStudio3dCommands();
   return (
           <aside className="flex min-h-0 min-w-0 w-full flex-col border-t border-line bg-panel lg:border-l lg:border-t-0" data-offered-3d-commands={offered3dCommands.map((command) => command.id).join(" ")}>
-            {simpleMode ? <details className="shrink-0 border-b border-line"><summary className="min-h-12 cursor-pointer px-3 py-3 text-xs font-semibold text-fg-2">3D 작업 시작 안내</summary>
+            {simpleMode ? <details className="shrink-0 border-b border-line"><summary className="min-h-12 cursor-pointer px-4 py-3 text-xs font-medium break-keep text-fg-2">3D 작업 시작 안내</summary>
               <StudioBg3dSceneDirectorPanel
                 activeGoal={activeSceneGoal}
                 disabled={isCapturing || isRestoringScene || physicsInteractionLocked || immersiveSceneActive}
@@ -554,8 +554,8 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                     </Suspense>
                   </div>
                 ) : null}
-                <h3 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-fg">
-                  <LayoutTemplate size={15} className="text-accent" aria-hidden />
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold break-keep text-fg">
+                  <LayoutTemplate size={15} strokeWidth={1.5} className="shrink-0 text-accent" aria-hidden />
                   씬 템플릿
                 </h3>
                 {activePanelTab === "templates" ? (
@@ -604,11 +604,11 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
 
                 <div className="mt-5 border-t border-line pt-4">
                   <div className="mb-2 flex items-center justify-between gap-3">
-                    <h3 className="flex items-center gap-1.5 text-sm font-bold text-fg">
-                      <Home size={15} className="text-accent" aria-hidden />
+                    <h3 className="flex items-center gap-2 text-sm font-semibold break-keep text-fg">
+                      <Home size={15} strokeWidth={1.5} className="shrink-0 text-accent" aria-hidden />
                       방 만들기
                     </h3>
-                    <span className="rounded-full border border-line bg-card px-2 py-1 text-[0.62rem] font-semibold text-fg-3">
+                    <span className="rounded-full border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-fg-3">
                       파라메트릭
                     </span>
                   </div>
