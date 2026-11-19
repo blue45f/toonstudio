@@ -11,37 +11,20 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { StudioScene3dBg3dCutPanel } from "../scene3d/StudioScene3dBg3dCutPanel";
-import {
-  StudioBg3dAssistantHostReadinessBanner,
-  type StudioBg3dAssistantReadinessHostLike,
-} from "./StudioBg3dAssistantReadinessBanner";
-import { StudioBg3dAssistantScenePicker, type StudioBg3dSceneChoice } from "./StudioBg3dAssistantScenePicker";
+import { StudioBg3dAssistantHostReadinessBanner, type StudioBg3dAssistantReadinessHostLike } from "./StudioBg3dAssistantReadinessBanner";
+import { StudioBg3dAssistantScenePicker } from "./StudioBg3dAssistantScenePicker";
+import { getStudioBg3dEnvironmentAsset } from "./studio-bg3d-environment-catalog";
+import { studioBg3dAssistantLocationId, type StudioBg3dSceneChoice } from "./studio-bg3d-assistant-location";
 import { StudioBg3dEditorViewport } from "./StudioBg3dEditorViewport";
-import {
-  AssetCard,
-  AssistantStepper,
-  GoalPicker,
-  SheetHandle,
-  type StudioBg3dAssistantAssetItem as AssistantAsset,
-} from "./StudioBg3dSceneAssistantChrome";
+import { AssetCard, AssistantStepper, GoalPicker, SheetHandle, type StudioBg3dAssistantAssetItem as AssistantAsset } from "./StudioBg3dSceneAssistantChrome";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import {
-  STUDIO_BG3D_ASSISTANT_CAMERA_PRESETS,
-  STUDIO_BG3D_ASSISTANT_OUTPUT_STYLES,
-  STUDIO_BG3D_ASSISTANT_STEPS,
-  nextStudioBg3dAssistantStep,
-  previousStudioBg3dAssistantStep,
-  studioBg3dAssistantOutputSettings,
-  studioBg3dAssistantStepIndex,
+  STUDIO_BG3D_ASSISTANT_CAMERA_PRESETS, STUDIO_BG3D_ASSISTANT_OUTPUT_STYLES, STUDIO_BG3D_ASSISTANT_STEPS,
+  nextStudioBg3dAssistantStep, previousStudioBg3dAssistantStep, studioBg3dAssistantOutputSettings, studioBg3dAssistantStepIndex,
 } from "./studio-bg3d-scene-assistant";
-
 import type {
-  StudioBg3dAssistantGoal,
-  StudioBg3dAssistantOutputStyle,
-  StudioBg3dAssistantSheetState,
-  StudioBg3dAssistantStep,
+  StudioBg3dAssistantGoal, StudioBg3dAssistantOutputStyle, StudioBg3dAssistantSheetState, StudioBg3dAssistantStep,
 } from "./studio-bg3d-scene-assistant";
-
 import "./studio-bg3d-scene-assistant.css";
 import "../studio-3d-ui/studio-3d-illustrated-chrome.css";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -152,6 +135,7 @@ function classifyAssistantAsset(
   if (declared === "character" || declared === "creature") return "character";
   if (declared === "environment") return "background";
   if (declared === "prop") return "props";
+  if (getStudioBg3dEnvironmentAsset(entry.id)) return "background";
   const name = entry.name.toLocaleLowerCase();
   if (/character|avatar|girl|boy|woman|man|person|fairy|knight|witch|캐릭터|인물/u.test(name)) {
     return "character";
@@ -202,6 +186,15 @@ function ChooseStep({
   readonly onOpenProfessional: () => void;
 }) {
   const bt = useBilingual("StudioBg3dSceneAssistantIllustration");
+  const [query, setQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(8);
+  const terms = query.trim().normalize("NFKC").toLowerCase().split(/\s+/u).filter(Boolean);
+  const matches = goal === "background" && terms.length ? assets.filter(asset => {
+    const entry = getStudioBg3dEnvironmentAsset(asset.id);
+    const text = [asset.name, entry?.description, entry?.detailCamera?.subject.ko, ...(entry?.tags ?? [])]
+      .join(" ").normalize("NFKC").toLowerCase();
+    return terms.every(term => text.includes(term));
+  }) : assets;
   return (
     <div className="scene-assistant__step-body" data-step="choose">
       <section className="scene-assistant__hero">
@@ -228,13 +221,22 @@ function ChooseStep({
         <section aria-labelledby="scene-assistant-env-assets-title">
           <div className="scene-assistant__section-title">
             <h4 id="scene-assistant-env-assets-title">준비된 3D 환경 모델</h4>
-            <span>장면에 추가해 공간 밀도를 높여요</span>
           </div>
+          <input type="search" aria-label={bt("배경 모델 검색", "Search environment models")}
+            placeholder={bt("장소나 소품 검색", "Search by location or prop")} value={query}
+            className="mb-2 min-h-11 w-full rounded-lg border border-line bg-card px-3 text-sm text-fg"
+            onChange={event => { setQuery(event.target.value); setVisibleCount(8); }} />
           <div className="scene-assistant__asset-grid" data-testid="scene-assistant-env-asset-grid">
-            {assets.map((asset) => (
+            {matches.slice(0, visibleCount).map((asset) => (
               <AssetCard key={asset.id} asset={asset} disabled={busy} onAdd={onAssetAdd} />
             ))}
           </div>
+          {matches.length === 0 && <p role="status">{bt("검색한 배경이 없습니다.", "No matching environments.")}</p>}
+          {matches.length > visibleCount && <button type="button"
+            className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card px-3 text-sm text-fg"
+            onClick={() => setVisibleCount(count => count + 8)}>
+            {bt(`배경 더 보기 (${visibleCount}/${matches.length})`, `More environments (${visibleCount}/${matches.length})`)}
+          </button>}
         </section>
       ) : null}
       {goal !== "background" ? (
@@ -526,7 +528,6 @@ export function StudioBg3dSceneAssistantWorkspace({
   const [step, setStep] = useState<StudioBg3dAssistantStep>(initialContent ? "arrange" : "choose");
   const [goal, setGoal] = useState<StudioBg3dAssistantGoal>("background");
   const [sheetState, setSheetState] = useState<StudioBg3dAssistantSheetState>("half");
-  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
   const [activeCameraPreset, setActiveCameraPreset] = useState("threeQuarter");
   const [outputStyle, setOutputStyle] = useState<StudioBg3dAssistantOutputStyle>("color");
   const [sceneFramingRequest, requestSceneFraming] = useReducer((revision: number) => revision + 1, 0);
@@ -618,8 +619,7 @@ export function StudioBg3dSceneAssistantWorkspace({
     }
   }, [h.lineArtPreview, h.ltToneSettings?.mode, hasScene, modalOpen, readinessPhase, restoringScene]);
   const assistantAssets = ((h.modelLibrary ?? []) as readonly AssistantAsset[])
-    .filter((entry) => classifyAssistantAsset(entry, h.genericModelClassifications) === goal)
-    .slice(0, 8);
+    .filter((entry) => classifyAssistantAsset(entry, h.genericModelClassifications) === goal);
 
   const changeStep = (next: StudioBg3dAssistantStep) => {
     if (studioBg3dAssistantStepIndex(next) > 0 && !hasScene) {
@@ -650,7 +650,6 @@ export function StudioBg3dSceneAssistantWorkspace({
       setActiveCameraPreset(preset.cameraPreset);
     }
     frameWholeScene();
-    setSelectedSceneId(preset.templateId);
     setStep("arrange");
     setSheetState("half");
   };
@@ -699,14 +698,18 @@ export function StudioBg3dSceneAssistantWorkspace({
     stepContent = (
       <ChooseStep
         goal={goal}
-        selectedSceneId={selectedSceneId}
-        assets={assistantAssets}
+        selectedSceneId={studioBg3dAssistantLocationId(h.primitives ?? [])}
+        assets={goal === "background" ? assistantAssets : assistantAssets.slice(0, 8)}
         busy={busy}
         hasScene={hasScene}
         onGoalChange={setGoal}
         onSceneSelect={replaceWithScene}
         onAssetAdd={addAsset}
-        onOpenProfessional={onOpenProfessional}
+        onOpenProfessional={() => {
+          h.setActivePanelTab("models");
+          h.setModelsPanelActivated(true);
+          onOpenProfessional();
+        }}
       />
     );
   } else if (step === "arrange") {

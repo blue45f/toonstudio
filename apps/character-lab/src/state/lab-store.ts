@@ -107,6 +107,7 @@ export function createLabStore(options: LabStoreOptions): LabStoreHandle {
 
   let state: LabState = { ...createInitialLabState(createDefaultRecipe(), ALL_UNAVAILABLE_CAPABILITIES), ...options.initial };
   let planCache: { recipe: CharacterRecipe; capabilities: SlotCapabilityMap; revision: number; plan: ApplyPlan } | null = null;
+  let groupSequence = 0;
   let activeCoalesceKey: string | undefined;
 
   const historyInfo = (revision: number): HistoryInfo => ({
@@ -161,7 +162,7 @@ export function createLabStore(options: LabStoreOptions): LabStoreHandle {
       at: now(),
       // 연속 드래그 병합: param/set·expression/set과 v3 슬라이더 명령(look·비례·채널·형태·소품·헤어 색)
       ...(coalesceKey !== undefined ? { coalesceKey } : {}),
-      ...(command.type === "pose/set" && command.coalesceMode === "session" ? { coalesceMode: "session" as const } : {}),
+      ...((activeCoalesceKey !== undefined && coalesceKey === activeCoalesceKey) || (command.type === "pose/set" && command.coalesceMode === "session") ? { coalesceMode: "session" as const } : {}),
       ...(command.type === "source/set" ? { capabilities: { before: state.capabilities, after: command.capabilities } } : {}),
     };
     history.push(entry);
@@ -266,7 +267,7 @@ export function createLabStore(options: LabStoreOptions): LabStoreHandle {
     getHistory: () => history,
     withCoalesceKey(key, fn) {
       const prev = activeCoalesceKey;
-      activeCoalesceKey = key;
+      activeCoalesceKey = `group:${++groupSequence}:${key}`;
       try {
         fn();
       } finally {

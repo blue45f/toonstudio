@@ -88,11 +88,15 @@ export interface PassMaterialOptions {
    * 이 재질을 쓰는 **모든** 메시가 색 버퍼를 가질 때만 켠다(없는 메시에 attribute를 선언하면 0으로 읽혀 알베도가 검게 곱해진다).
    */
   readonly vertexColor?: boolean;
+  readonly faceShadowUv?: boolean;
 }
 
 /** 재질 define 목록(정점 색 define은 옵션이 켰을 때만) */
 export function passMaterialDefines(options: PassMaterialOptions = {}): string[] {
-  return options.vertexColor === true ? [...CHARACTER_SHADER_DEFINES, CHARACTER_SHADER_VERTEX_COLOR_DEFINE] : [...CHARACTER_SHADER_DEFINES];
+  const defines = [...CHARACTER_SHADER_DEFINES];
+  if (options.vertexColor) defines.push(CHARACTER_SHADER_VERTEX_COLOR_DEFINE);
+  if (options.faceShadowUv) defines.push("#define TS_FACE_SHADOW_UV");
+  return defines;
 }
 
 interface PassMaterialMetadata {
@@ -132,7 +136,7 @@ export function createPassMaterial(deps: PassMaterialDeps, kind: PassMaterialKin
     deps.scene,
     { vertex: CHARACTER_VERTEX_SHADER_NAME, fragment: FRAGMENT_SHADER_NAMES[kind] },
     {
-      attributes: options.vertexColor === true ? [...CHARACTER_SHADER_ATTRIBUTES, CHARACTER_SHADER_VERTEX_COLOR_ATTRIBUTE] : [...CHARACTER_SHADER_ATTRIBUTES],
+      attributes: [...CHARACTER_SHADER_ATTRIBUTES, ...(options.vertexColor ? [CHARACTER_SHADER_VERTEX_COLOR_ATTRIBUTE] : []), ...(options.faceShadowUv ? ["uv2"] : [])],
       uniforms: uniformsFor(kind),
       uniformBuffers: deps.language === ShaderLanguage.WGSL ? [...CHARACTER_SHADER_UNIFORM_BUFFERS] : [],
       samplers: samplersFor(kind),

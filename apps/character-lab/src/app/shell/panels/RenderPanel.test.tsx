@@ -547,6 +547,37 @@ describe("베타 기능 토글", () => {
     expect(lastProfile(dispatched).toon?.outlinePressure).toBe(true);
   });
 
+  it("장르와 기본값 복원을 각각 한 번에 되돌리고 실제 레시피와 일치하는 선택만 표시한다", () => {
+    let time = 0;
+    const store = createLabStore({
+      catalog: createPresetCatalog(vocabularyCatalogEntries()),
+      // 느린 기기에서도 한 번 누른 장르가 이력 여러 개로 쪼개지지 않아야 한다.
+      now: () => (time += 1500),
+    });
+    render(<MockLabProvider store={store}><RenderPanel pollIntervalMs={0} /></MockLabProvider>);
+    const original = store.getState().recipe;
+    const noir = screen.getByTestId("render-genre-preset-genre-noir-rain");
+    const sunset = screen.getByTestId("render-lighting-preset-sunset-rim-pcss");
+    fireEvent.click(noir);
+    const scene = store.getState().recipe;
+    expect(scene.surfaces.outer?.material).toBe("leather");
+    expect(noir.getAttribute("aria-pressed")).toBe("true");
+    expect(store.getState().history.depth).toBe(1);
+    fireEvent.click(sunset);
+    expect(sunset.getAttribute("aria-pressed")).toBe("true");
+    expect(noir.getAttribute("aria-pressed")).toBe("false");
+    act(() => store.dispatch({ type: "history/undo" }));
+    expect(noir.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByTestId("render-reset-material-lighting-btn"));
+    expect(noir.getAttribute("aria-pressed")).toBe("false");
+    act(() => store.dispatch({ type: "history/undo" }));
+    expect(store.getState().recipe).toEqual(scene);
+    act(() => store.dispatch({ type: "history/undo" }));
+    expect(store.getState().recipe).toEqual(original);
+    act(() => store.dispatch({ type: "history/redo" }));
+    expect(noir.getAttribute("aria-pressed")).toBe("true");
+  });
+
   it("피부·의상 표면 소재 프리셋과 툰 셰이딩·그림자 프리셋 적용 및 기본값 복원이 실제 레시피에 반영된다", () => {
     const store = createLabStore({
       catalog: createPresetCatalog(vocabularyCatalogEntries()),

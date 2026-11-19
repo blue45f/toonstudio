@@ -120,24 +120,24 @@
       "generatedAt": "2026-11-19",
       "qualityScore": 100,
       "skeleton": true,
-      "textures": 8,
+      "textures": 9,
       "semanticShapeKeys": 24,
       "hairLodTriangles": [
         6744,
         3266,
         1362
       ],
-      "glbTriangles": 66414,
+      "glbTriangles": 67566,
       "files": {
         "glb": {
           "path": "shaper-atelier-protagonist/shaper-atelier-protagonist.glb",
-          "bytes": 3737860,
-          "sha256": "919e8d4492290cd13dd23ec42ca00b7f1b4761ded60a145652618586f3ac9b35"
+          "bytes": 3798888,
+          "sha256": "ca05e8c0825594775f36f96b7cd3e5bb4783d575b16c0b7c210ea517115ac288"
         },
         "manifest": {
           "path": "shaper-atelier-protagonist/manifest.json",
-          "bytes": 43620,
-          "sha256": "946d8fd4b16b1fec62055d96e21d71c0b079e219f7b778e9412278a56dd72351"
+          "bytes": 43622,
+          "sha256": "381a7e685783d48144693d4fa6e319daa9b580cdfd6ba57f9a1c16bb0a4d479c"
         },
         "slotMapping": {
           "path": "shaper-atelier-protagonist/slot-mapping.json",
@@ -146,10 +146,15 @@
         },
         "contactSheet": {
           "path": "shaper-atelier-protagonist/contact-sheet.png",
-          "bytes": 1464452,
-          "sha256": "422294a63b2149df33f16ffe11cb8227864edeb8da0510c37b5b7c92597aa4c6"
+          "bytes": 1510425,
+          "sha256": "e5598163d691c8d3688b2ba15f3a4e8cbe3030110b77137bf3736abadf1edc40"
         }
-      }
+      },
+      "archivedGlbSha256": [
+        "aa5f6471871c971ae3ba3c621b89d24b31db37d6d020c21544d9cdd6faa40fad",
+        "919e8d4492290cd13dd23ec42ca00b7f1b4761ded60a145652618586f3ac9b35",
+        "9142aa82031a04cf0d23f7e69e7165498860a29b85b759eca808fa3f6776c931"
+      ]
     },
     {
       "id": "shaper-atelier-male-lead",

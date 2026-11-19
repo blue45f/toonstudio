@@ -11,6 +11,7 @@ import {
   STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
+  STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1,
   getStudioBg3dEnvironmentAsset,
   getStudioBg3dEnvironmentAssetByHash,
@@ -56,10 +57,11 @@ describe("Studio original webtoon environment pack v7", () => {
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1,
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1,
+      ...STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
     ]);
-    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toHaveLength(31);
-    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id)).size).toBe(31);
-    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ sha256 }) => sha256)).size).toBe(31);
+    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toHaveLength(35);
+    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id)).size).toBe(35);
+    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ sha256 }) => sha256)).size).toBe(35);
     expect(SAMPLE_BG3D_MODEL_ENTRIES.map(({ id }) => id)).toEqual(
       STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id),
     );
@@ -148,4 +150,23 @@ describe("Studio original webtoon environment pack v7", () => {
         .toBe(report?.previewReview.reviewedImageSha256);
     },
   );
+});
+
+
+describe("블렌더 제작 식물·해안 배경", () => {
+  it.each(STUDIO_BG3D_BOTANICAL_SEASIDE_SETS)("$name은 실제 썸네일과 독립된 휴대폰용 원본을 제공한다", async (asset) => {
+    const thumbnail = readFileSync(publicAssetPath(asset.thumbnailUrl));
+    expect(thumbnail.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+    const bytes = new Uint8Array(readFileSync(publicAssetPath(asset.url)));
+    const model = parseJsonChunk(bytes);
+    expect([...model.buffers ?? [], ...model.images ?? []].every(({ uri }) => uri === undefined)).toBe(true);
+    expect(await validateStudioBg3dGlb(bytes, {
+      declared: { byteSize: asset.byteSize, sha256: asset.sha256 },
+      cumulative: { usedBytes: 0, maximumBytes: 64 * 1024 * 1024 },
+      profile: "mobile",
+      budgets: DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES,
+      digest: async (input) => createHash("sha256").update(input).digest("hex"),
+    })).toMatchObject({ ok: true, code: "valid" });
+    expect(getStudioBg3dEnvironmentAssetByHash(asset.sha256)?.id).toBe(asset.id);
+  });
 });

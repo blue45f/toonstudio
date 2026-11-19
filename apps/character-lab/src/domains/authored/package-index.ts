@@ -27,6 +27,7 @@ export const authoredCharacterIndexSchema = z.looseObject({
       displayName: z.string(),
       role: z.string().optional(),
       license: z.string().optional(),
+      archivedGlbSha256: z.array(z.string().regex(SHA256_PATTERN)).optional(),
       qualityScore: z.number().optional(),
       skeleton: z.boolean().optional(),
       semanticShapeKeys: z.number().optional(),
@@ -44,6 +45,7 @@ export interface AuthoredIndexEntry extends CharacterPackageIndexEntry {
   readonly role: string | null;
   readonly glbUrl?: string;
   readonly glbSha256: string | null;
+  readonly archivedGlbSha256?: readonly string[];
   readonly glbBytes: number | null;
   readonly contactSheetUrl: string | null;
   readonly summary: {
@@ -65,6 +67,22 @@ function trimSlash(url: string): string {
 
 function join(base: string, path: string): string {
   return `${trimSlash(base)}/${path.replace(/^\/+/u, "")}`;
+}
+
+/** 저장한 레시피가 가리키는 정적 보관본만 같은 패키지 로더로 연다. */
+export function selectAuthoredPackageRevision(entry: AuthoredIndexEntry, sha256: string): AuthoredIndexEntry | undefined {
+  if (entry.glbSha256 === null || entry.glbSha256 === sha256) return entry;
+  if (!entry.archivedGlbSha256?.includes(sha256)) return undefined;
+  const baseUrl = join(entry.baseUrl, `revisions/${sha256}`);
+  return {
+    ...entry,
+    baseUrl,
+    manifestUrl: join(baseUrl, AUTHORED_MANIFEST_FILENAME),
+    glbUrl: join(baseUrl, `${entry.characterId}.glb`),
+    glbSha256: sha256,
+    glbBytes: null,
+    contactSheetUrl: null,
+  };
 }
 
 /** index.json(두 형식)을 파싱한다. */
@@ -104,6 +122,7 @@ export function parseCharacterPackageIndex(json: unknown, now?: number): IndexPa
         role: character.role ?? null,
         ...(character.files?.glb?.path ? { glbUrl: join(root, character.files.glb.path) } : {}),
         glbSha256: character.files?.glb?.sha256 ?? null,
+        ...(character.archivedGlbSha256?.length ? { archivedGlbSha256: character.archivedGlbSha256 } : {}),
         glbBytes: character.files?.glb?.bytes ?? null,
         contactSheetUrl: character.files?.contactSheet?.path ? join(root, character.files.contactSheet.path) : null,
         summary: {

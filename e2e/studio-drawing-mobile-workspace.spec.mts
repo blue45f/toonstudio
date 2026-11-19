@@ -178,7 +178,6 @@ test("휴대폰 가로에서 창 메뉴의 캔버스만 보기를 열어 그리�
   const pen = dock.getByRole("button", { name: "펜", exact: true });
   if (await pen.getAttribute("aria-pressed") !== "true") await pen.click();
   const url = page.url();
-  const depth = Number(await editor.getAttribute("data-studio-history-undo-depth"));
 
   const windowMenu = await openStudioMainMenu(page, "window");
   await windowMenu.locator('[data-studio-menu-item-id="canvas-only"]').click();
@@ -189,19 +188,43 @@ test("휴대폰 가로에서 창 메뉴의 캔버스만 보기를 열어 그리�
   const hit = await restore.boundingBox();
   expect(hit?.height).toBeGreaterThanOrEqual(44);
   expect(hit?.width).toBeGreaterThanOrEqual(44);
-  const canvas = await editor.locator("[data-studio-canvas-viewport]").boundingBox();
-  if (!canvas) throw Error("캔버스만 보기에서 원고를 찾을 수 없습니다.");
-  const x = canvas.x + canvas.width * 0.48;
-  const y = canvas.y + canvas.height * 0.47;
+  const viewport = editor.locator("[data-studio-canvas-viewport]");
+  await expect(viewport).toHaveAttribute("data-studio-canvas-input-state", "ready");
+  const stage = viewport.locator(".konvajs-content");
+  const canvas = await viewport.boundingBox();
+  const paper = await stage.boundingBox();
+  if (!canvas || !paper) throw Error("캔버스만 보기에서 원고를 찾을 수 없습니다.");
+  const x = Math.floor(canvas.x + canvas.width * .48);
+  const y = Math.floor(canvas.y + canvas.height * .47);
+  expect(await stage.evaluate((node, point) => node.contains(document.elementFromPoint(point.x, point.y)), { x, y })).toBe(true);
+  // 도구막대나 편집 기록을 열어도 같은 원고의 같은 부분만 비교한다. 커서는 검사 영역 밖으로 옮긴다.
+  const offset = { x: x + 8 - paper.x, y: y - paper.y };
+  const strokePixels = async () => {
+    const box = await stage.boundingBox();
+    if (!box) throw Error("획을 확인할 원고가 닫혔습니다.");
+    return page.screenshot({ clip: { x: Math.round(box.x + offset.x), y: Math.round(box.y + offset.y), width: 24, height: 18 } });
+  };
+  await page.mouse.move(x - 50, y - 30);
+  const blank = await strokePixels();
   await page.mouse.move(x, y);
   await page.mouse.down();
   await page.mouse.move(x + 40, y + 20, { steps: 8 });
   await page.mouse.up();
-  await expect.poll(async () => Number(await editor.getAttribute("data-studio-history-undo-depth"))).toBeGreaterThan(depth);
+  await page.mouse.move(x - 50, y - 30);
+  await expect.poll(async () => (await strokePixels()).equals(blank)).toBe(false);
 
   await restore.click();
   await expect(page.locator("html")).not.toHaveAttribute("data-studio-canvas-only", "true");
   await expect(editor.locator("[data-studio-drawing-clarity-header]")).toBeVisible();
   await expect(dock).toBeVisible();
+  const undo = editor.getByRole("button", { name: "되돌리기 · 실행취소", exact: true });
+  if (!await undo.isVisible()) await editor.getByRole("button", { name: "편집", exact: true }).click();
+  await expect(undo).toBeEnabled();
+  await undo.click();
+  await expect.poll(async () => (await strokePixels()).equals(blank)).toBe(true);
+  const redo = editor.getByRole("button", { name: "다시 · 다시실행", exact: true });
+  await expect(redo).toBeEnabled();
+  await redo.click();
+  await expect.poll(async () => (await strokePixels()).equals(blank)).toBe(false);
   expect(page.url()).toBe(url);
 });

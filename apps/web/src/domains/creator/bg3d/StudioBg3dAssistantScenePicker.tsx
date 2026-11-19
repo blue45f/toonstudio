@@ -4,15 +4,10 @@ import {
   BG_SCENE_TEMPLATE_CATEGORY_LABELS,
   BG_SCENE_TEMPLATES,
 } from "../studio-background-3d-scene-templates";
+import type { StudioBg3dSceneChoice } from "./studio-bg3d-assistant-location";
 import { ScenePresetCard } from "./StudioBg3dSceneAssistantChrome";
 import { STUDIO_BG3D_ASSISTANT_SCENES } from "./studio-bg3d-scene-assistant";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-
-export interface StudioBg3dSceneChoice {
-  readonly templateId: string;
-  readonly title: string;
-  readonly cameraPreset?: string;
-}
 
 interface Props {
   readonly selectedTemplateId: string | null;

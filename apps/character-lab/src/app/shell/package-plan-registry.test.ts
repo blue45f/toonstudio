@@ -50,4 +50,17 @@ describe("app/shell/package-plan-registry", () => {
     );
     expect(() => registry.resolve({ kind: "procedural" }, 0)).toThrow(expect.objectContaining({ code: "package-source-kind" }));
   });
+
+  it("한 인물의 두 판을 번갈아 열어도 각 레시피가 원래 모델을 찾는다", () => {
+    const registry = createPackagePlanRegistry();
+    const original = planFixture();
+    const newer = { ...original, glbSha256: "9".repeat(64) };
+    registry.register(original);
+    registry.register(newer);
+    for (const plan of [original, newer, original]) {
+      const characterId = plan.manifest.characterId;
+      expect(registry.get(characterId, plan.glbSha256)).toBe(plan);
+      expect(registry.resolve({ kind: "package", characterId, sha256: plan.glbSha256 })).toBe(plan);
+    }
+  });
 });

@@ -1,0 +1,23 @@
+{
+  "fileName": "coastal_signal_station.glb",
+  "byteSize": 1900008,
+  "sha256": "sha256:f7f1f46af95514ce270f33df892d5c9011cf06ee0f81db9a2bb7ebfa94666d64",
+  "bounds": [
+    28.0,
+    8.162,
+    26.0
+  ],
+  "camera": {
+    "position": [
+      5.5,
+      4.65,
+      12.1
+    ],
+    "target": [
+      0.3,
+      3.35,
+      -3.55
+    ],
+    "fovDegrees": 39
+  }
+}

@@ -3,11 +3,14 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { poseLimitViolations } from "../../../animation/joint-limits";
-import { findHandPosePreset, findPosePreset } from "../../../animation/presets";
+import { PERFORMANCE_PRESETS, findHandPosePreset, findPosePreset } from "../../../animation/presets";
 import { createReferenceSkeleton } from "../../../animation/reference-skeleton";
 import { computeWorldTransforms } from "../../../animation/skeleton-fk";
-import { ALL_AVAILABLE_CAPABILITIES, createDefaultRecipe } from "../../../contracts";
+import { ALL_AVAILABLE_CAPABILITIES, createDefaultRecipe, createPresetCatalog } from "../../../contracts";
+import { APPEARANCE_PRESETS } from "../../../presets";
 import { degToRad, qAngle, qFromAxisAngle, qMultiply, v3Distance } from "../../../shared/math";
+import { createLabStore } from "../../../state/lab-store";
+import { deserializeRecipe, serializeRecipe } from "../../../state/recipe-io";
 import { createMockEngine, mockDiagnostics } from "../../../testing/mock-engine";
 import { MockLabProvider, createMockEngineSession, createMockLabStore } from "../../../testing/mock-store";
 import { createUiStateStore } from "../ui-state";
@@ -578,6 +581,36 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     expect(screen.queryByTestId("pose-switch-to-export-tab")).toBeNull();
     expect((screen.getByTestId("pose-disabled-reason-details") as HTMLDetailsElement).open).toBe(false);
     expect(screen.getByTestId("pose-skeleton-failure-detail").textContent).toMatch(/상세 진단:/u);
+  });
+
+  it("실제 스토어에서 50→0→75%를 같은 원본에 적용하고 저장·되돌리기 뒤 작업을 이어간다", () => {
+    const recipe = createDefaultRecipe();
+    const arm = qFromAxisAngle([0, 0, 1], degToRad(60));
+    recipe.pose = { leftUpperArm: arm };
+    recipe.face = { noseWidth: 0.3 };
+    recipe.body = { height: 0.4 };
+    const catalog = createPresetCatalog([...APPEARANCE_PRESETS, ...PERFORMANCE_PRESETS]);
+    const store = createLabStore({ catalog, now: () => 1000, initial: { recipe, capabilities: ALL_AVAILABLE_CAPABILITIES } });
+    render(<MockLabProvider store={store}><PosePanel /></MockLabProvider>);
+    const slider = screen.getByRole("slider", { name: "포즈 강도" });
+    for (const [strength, angle] of [[0.5, 30], [0, 0], [0.75, 45]] as const) {
+      fireEvent.change(slider, { target: { value: String(strength) } });
+      expect(screen.getByTestId("pose-intensity-output").textContent).toBe(`${strength * 100}%`);
+      const applied = store.getPlan().boneRotations.leftUpperArm ?? [0, 0, 0, 1];
+      expect(qAngle(applied, [0, 0, 0, 1])).toBeCloseTo(degToRad(angle), 6);
+    }
+    const saved = deserializeRecipe(serializeRecipe(store.getState().recipe));
+    if (!saved.ok) throw new Error(saved.failure.reasonKo);
+    expect(saved.recipe.face).toEqual(recipe.face);
+    expect(saved.recipe.body).toEqual(recipe.body);
+    act(() => store.dispatch({ type: "history/undo" }));
+    expect(store.getState().recipe.pose).toEqual(recipe.pose);
+    expect(screen.getByTestId("pose-intensity-output").textContent).toBe("100%");
+    act(() => store.dispatch({ type: "recipe/load", recipe: saved.recipe }));
+    expect(store.getPlan().boneRotations.leftUpperArm).toEqual(saved.recipe.pose.leftUpperArm);
+    fireEvent.change(slider, { target: { value: "0.5" } });
+    const reopenedArm = store.getPlan().boneRotations.leftUpperArm ?? [0, 0, 0, 1];
+    expect(qAngle(reopenedArm, [0, 0, 0, 1])).toBeCloseTo(degToRad(22.5), 6);
   });
 
   it("포즈 강도 슬라이더(0%–150%)가 기준 포즈를 구면 보간·과장한 pose/set 명령을 coalesceKey와 함께 보낸다", () => {

@@ -54,6 +54,7 @@ export function TopBar() {
   const ui = useUiState();
   const { setActiveSlot, setDrawingMode, setInspectorTab } = useUiActions();
   const activeStageId = resolveActiveWorkflowStageId(ui);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const helpToggleRef = useRef<HTMLButtonElement | null>(null);
   const [studioTheme, setStudioTheme] = useState<"nebula" | "shaper">(() =>
@@ -167,129 +168,134 @@ export function TopBar() {
           {engineText.text}
         </span>
       </div>
-      <div className="cl-topbar-group" role="group" aria-label="히스토리">
-        <button type="button" className="cl-button" disabled={!state.history.canUndo} onClick={() => dispatch({ type: "history/undo" })}>
-          실행 취소
-        </button>
-        <button type="button" className="cl-button" disabled={!state.history.canRedo} onClick={() => dispatch({ type: "history/redo" })}>
-          다시 실행
-        </button>
-        <span className="cl-muted">깊이 {state.history.depth} · rev {state.history.revision}</span>
-      </div>
-      <div className="cl-topbar-group" role="group" aria-label="셰이딩">
-        <button
-          type="button"
-          className="cl-button"
-          aria-pressed={shading.mode === "toon"}
-          onClick={() => dispatch({ type: "shading/set", profile: { mode: shading.mode === "toon" ? "pbr" : "toon" } })}
-        >
-          {shading.mode === "toon" ? "툰 셰이딩" : "PBR 셰이딩"}
-        </button>
-        <label className="cl-select-label">
-          품질
-          <select
-            className="cl-select"
-            value={quality ?? "custom"}
-            onChange={(event) => {
-              const next = event.target.value;
-              if (next === "preview" || next === "standard" || next === "hero") {
-                dispatch({ type: "shading/set", profile: applyQualityPreset(shading, next) });
-              }
-            }}
-          >
-            {QUALITY_PRESET_IDS.map((id) => (
-              <option key={id} value={id}>
-                {QUALITY_PRESET_LABELS_KO[id]}
-              </option>
-            ))}
-            <option value="custom" disabled>
-              사용자 지정
-            </option>
-          </select>
-        </label>
-      </div>
-      <div className="cl-topbar-group" role="group" aria-label="빠른 스타일 프리셋">
-        {QUICK_STYLE_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            className="cl-button cl-button-small"
-            aria-pressed={shading.mode === preset.mode && quality === preset.quality}
-            onClick={() => applyQuickStyle(preset)}
-          >
-            {preset.label}
+      <button type="button" className="cl-button cl-compact-tools-toggle" aria-expanded={toolsOpen} aria-controls="cl-workspace-tools" onClick={() => setToolsOpen((open) => !open)}>
+        작업 도구
+      </button>
+      <div id="cl-workspace-tools" className="cl-workspace-tools" data-open={toolsOpen}>
+        <div className="cl-topbar-group" role="group" aria-label="히스토리">
+          <button type="button" className="cl-button" disabled={!state.history.canUndo} onClick={() => dispatch({ type: "history/undo" })}>
+            실행 취소
           </button>
-        ))}
-      </div>
-      <div className="cl-topbar-group" role="group" aria-label="웹툰 셀·외곽선 퀵 프리셋" data-testid="topbar-toon-shader-presets">
-        {SHAPER_TOON_SHADER_PRESETS.map((preset) => {
-          const targetWidth = preset.lookPatch.line?.widthMm;
-          const active =
-            shading.mode === "toon" &&
-            shading.toon.rampSteps === preset.toon.rampSteps &&
-            shading.toon.rim === preset.toon.rim &&
-            (targetWidth === undefined || Math.abs(shading.look.line.widthMm - targetWidth) <= 0.05);
-          return (
+          <button type="button" className="cl-button" disabled={!state.history.canRedo} onClick={() => dispatch({ type: "history/redo" })}>
+            다시 실행
+          </button>
+          <span className="cl-muted">깊이 {state.history.depth} · rev {state.history.revision}</span>
+        </div>
+        <div className="cl-topbar-group" role="group" aria-label="셰이딩">
+          <button
+            type="button"
+            className="cl-button"
+            aria-pressed={shading.mode === "toon"}
+            onClick={() => dispatch({ type: "shading/set", profile: { mode: shading.mode === "toon" ? "pbr" : "toon" } })}
+          >
+            {shading.mode === "toon" ? "툰 셰이딩" : "PBR 셰이딩"}
+          </button>
+          <label className="cl-select-label">
+            품질
+            <select
+              className="cl-select"
+              value={quality ?? "custom"}
+              onChange={(event) => {
+                const next = event.target.value;
+                if (next === "preview" || next === "standard" || next === "hero") {
+                  dispatch({ type: "shading/set", profile: applyQualityPreset(shading, next) });
+                }
+              }}
+            >
+              {QUALITY_PRESET_IDS.map((id) => (
+                <option key={id} value={id}>
+                  {QUALITY_PRESET_LABELS_KO[id]}
+                </option>
+              ))}
+              <option value="custom" disabled>
+                사용자 지정
+              </option>
+            </select>
+          </label>
+        </div>
+        <div className="cl-topbar-group" role="group" aria-label="빠른 스타일 프리셋">
+          {QUICK_STYLE_PRESETS.map((preset) => (
             <button
               key={preset.id}
               type="button"
               className="cl-button cl-button-small"
-              aria-pressed={active}
-              data-testid={`topbar-toon-preset-${preset.id}`}
-              onClick={() =>
-                dispatch({
-                  type: "shading/set",
-                  profile: buildShaperToonShadingProfile(shading, preset),
-                })
-              }
+              aria-pressed={shading.mode === preset.mode && quality === preset.quality}
+              onClick={() => applyQuickStyle(preset)}
             >
-              {preset.shortLabelKo}
+              {preset.label}
             </button>
-          );
-        })}
-      </div>
-      <nav className="cl-topbar-group" aria-label="가이드 창작 5단계 동선" data-testid="topbar-workflow-stepper">
-        {CHARACTER_LAB_WORKFLOW_STAGES.map((stage) => {
-          const active = activeStageId === stage.id;
-          return (
-            <button
-              key={stage.id}
-              type="button"
-              className="cl-button cl-button-small"
-              aria-current={active ? "step" : undefined}
-              title={stage.competitorRouteBadge}
-              onClick={() => {
-                setActiveSlot(stage.targetSlot);
-                setInspectorTab(stage.targetTab);
-                setDrawingMode(stage.drawingMode);
-              }}
-            >
-              {stage.labelKo}
-            </button>
-          );
-        })}
-      </nav>
-      <div className="cl-topbar-group">
-        <button
-          type="button"
-          className="cl-button cl-button-small"
-          data-testid="topbar-studio-theme-toggle"
-          aria-pressed={studioTheme === "shaper"}
-          onClick={() => setStudioTheme((prev) => (prev === "shaper" ? "nebula" : "shaper"))}
-        >
-          {studioTheme === "shaper" ? "SHAPER 다크 테마" : "네뷸라 기본 테마"}
-        </button>
-        <button
-          ref={helpToggleRef}
-          type="button"
-          className="cl-button cl-button-small"
-          data-testid="topbar-help-toggle"
-          aria-expanded={helpOpen}
-          aria-controls="cl-shortcut-guide"
-          onClick={() => setHelpOpen((prev) => !prev)}
-        >
-          ? 단축키·가이드
-        </button>
+          ))}
+        </div>
+        <div className="cl-topbar-group" role="group" aria-label="웹툰 셀·외곽선 퀵 프리셋" data-testid="topbar-toon-shader-presets">
+          {SHAPER_TOON_SHADER_PRESETS.map((preset) => {
+            const targetWidth = preset.lookPatch.line?.widthMm;
+            const active =
+              shading.mode === "toon" &&
+              shading.toon.rampSteps === preset.toon.rampSteps &&
+              shading.toon.rim === preset.toon.rim &&
+              (targetWidth === undefined || Math.abs(shading.look.line.widthMm - targetWidth) <= 0.05);
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                className="cl-button cl-button-small"
+                aria-pressed={active}
+                data-testid={`topbar-toon-preset-${preset.id}`}
+                onClick={() =>
+                  dispatch({
+                    type: "shading/set",
+                    profile: buildShaperToonShadingProfile(shading, preset),
+                  })
+                }
+              >
+                {preset.shortLabelKo}
+              </button>
+            );
+          })}
+        </div>
+        <nav className="cl-topbar-group" aria-label="가이드 창작 5단계 동선" data-testid="topbar-workflow-stepper">
+          {CHARACTER_LAB_WORKFLOW_STAGES.map((stage) => {
+            const active = activeStageId === stage.id;
+            return (
+              <button
+                key={stage.id}
+                type="button"
+                className="cl-button cl-button-small"
+                aria-current={active ? "step" : undefined}
+                title={stage.competitorRouteBadge}
+                onClick={() => {
+                  setActiveSlot(stage.targetSlot);
+                  setInspectorTab(stage.targetTab);
+                  setDrawingMode(stage.drawingMode);
+                }}
+              >
+                {stage.labelKo}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="cl-topbar-group">
+          <button
+            type="button"
+            className="cl-button cl-button-small"
+            data-testid="topbar-studio-theme-toggle"
+            aria-pressed={studioTheme === "shaper"}
+            onClick={() => setStudioTheme((prev) => (prev === "shaper" ? "nebula" : "shaper"))}
+          >
+            {studioTheme === "shaper" ? "SHAPER 다크 테마" : "네뷸라 기본 테마"}
+          </button>
+          <button
+            ref={helpToggleRef}
+            type="button"
+            className="cl-button cl-button-small"
+            data-testid="topbar-help-toggle"
+            aria-expanded={helpOpen}
+            aria-controls="cl-shortcut-guide"
+            onClick={() => setHelpOpen((prev) => !prev)}
+          >
+            ? 단축키·가이드
+          </button>
+        </div>
       </div>
       {helpOpen ? (
         <div

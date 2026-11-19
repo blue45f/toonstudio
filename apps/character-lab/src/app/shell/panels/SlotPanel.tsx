@@ -23,7 +23,7 @@ import { shallowEqual, useApplyPlan, useCatalog, useDispatch, useLabSelector, us
 import { SlotCustomizeSections } from "./slot-customize-sections";
 import { resolveShaperPresetClickModifiers } from "./viewport-interactions";
 
-import type { CapturedRaster, LabStore, PresetEntry, PresetId, RecipeColorKey, SlotCapability, SlotGroup, SlotKind, ThumbnailEntry, UnsupportedSlot } from "../../../contracts";
+import type { CapturedRaster, PresetEntry, PresetId, RecipeColorKey, SlotCapability, SlotGroup, SlotKind, ThumbnailEntry, UnsupportedSlot } from "../../../contracts";
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from "react";
 
 /** 비울 수 있는 슬롯("없음" 카드 표시) */
@@ -130,7 +130,7 @@ const PresetCard = memo(function PresetCard({ entry, selected, capability, confl
 });
 
 export function SlotPanel() {
-  const store = useLabStore() as LabStore & { readonly withCoalesceKey?: <T>(key: string, fn: () => T) => T };
+  const store = useLabStore();
   const state = useLabState();
   const dispatch = useDispatch();
   const catalog = useCatalog();

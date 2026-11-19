@@ -6,96 +6,24 @@
  * GLB structure, device-budget, and Three.js admission path as a user-imported model.
  */
 
+import boatyard from "../../../../public/assets/3d/environments/boatyard-v1/manifest.json";
+import coast from "../../../../public/assets/3d/environments/coast-v1/manifest.json";
+import specimenRoom from "../../../../public/assets/3d/environments/specimen-v1/manifest.json";
+import glasshouse from "../../../../public/assets/3d/environments/glasshouse-v1/manifest.json";
 import refinedV6Manifest from "../../../../public/assets/3d/environments/refined-v6/manifest.json";
 import refinedV6RenderPassesReport from "../../../../public/assets/3d/environments/refined-v6/render-passes-report.json";
 import expansionV1Manifest from "../../../../public/assets/3d/environments/expansion-v1/manifest.json";
 import webtoonV7Manifest from "../../../../public/assets/3d/environments/webtoon-v7/manifest.json";
 import authoredV1Manifest from "../../../../public/assets/3d/environments/authored-v1/manifest.json";
 
+import { defineEnvironment, getRefinedEnvironmentCamera, V3_PROVENANCE } from "./studio-bg3d-environment-definition";
+import type { StudioBg3dEnvironmentAsset, StudioBg3dEnvironmentProvenance, StudioBg3dEnvironmentTheme } from "./studio-bg3d-environment-definition";
+
+export type { StudioBg3dEnvironmentAsset, StudioBg3dEnvironmentProvenance, StudioBg3dEnvironmentTheme } from "./studio-bg3d-environment-definition";
+
 export const STUDIO_BG3D_ENVIRONMENT_PACK_ID =
   "toonstudio-bg3d-environment-pack-v1" as const;
 export const STUDIO_BG3D_ENVIRONMENT_PACK_VERSION = 1 as const;
-
-export type StudioBg3dEnvironmentTheme =
-  | "home"
-  | "hospitality"
-  | "urban"
-  | "education"
-  | "healthcare"
-  | "heritage"
-  | "retail"
-  | "transit"
-  | "fantasy"
-  | "science-fiction";
-
-export interface StudioBg3dEnvironmentProvenance {
-  readonly origin:
-    | "original-procedural"
-    | "original-procedural-with-cc0-sources"
-    | "ai-generated-free-wallet";
-  readonly author: "ToonStudio";
-  readonly generator:
-    | "scripts/blender/generate_environment_pack_v3.py"
-    | "scripts/blender/generate_environment_pack_v4.py"
-    | "scripts/blender/generate_environment_pack_v5.py"
-    | "scripts/blender/refine_studio_environments_v6.py"
-    | "scripts/blender/generate_studio_environment_expansion_v1.py"
-    | "scripts/blender/generate_environment_pack_v7.py"
-    | "scripts/generate_self_authored_environment_pack_v1.py"
-    | "official-tripo-mcp";
-  readonly blenderVersion: "5.2";
-  readonly license: "CC0-1.0" | "Tripo Terms of Service - Free User Output";
-  readonly licenseUrl:
-    | "https://creativecommons.org/publicdomain/zero/1.0/"
-    | "https://www.tripo3d.ai/terms";
-  readonly attributionRequired: false;
-  readonly commercialUse: true;
-  readonly externalResources: 0;
-  readonly sources?: readonly string[];
-  readonly provider?: "Tripo";
-  readonly providerModelVersion?: "v3.0-20250812";
-  readonly providerTaskId?: string;
-  readonly promptSha256?: `sha256:${string}`;
-  readonly nonExclusive?: true;
-  readonly providerRetainsRights?: true;
-  readonly billingMode?: "free-api-wallet";
-  readonly paymentMethodUsed?: false;
-  readonly creditCost?: number;
-}
-
-export interface StudioBg3dEnvironmentAsset {
-  readonly id: string;
-  readonly name: string;
-  readonly description: string;
-  readonly theme: StudioBg3dEnvironmentTheme;
-  readonly tags: readonly string[];
-  readonly fileName: `${string}.glb`;
-  readonly url: `/assets/3d/environments/${string}.glb`;
-  readonly thumbnailUrl: `/assets/3d/environments/${string}.png`;
-  readonly byteSize: number;
-  readonly sha256: `sha256:${string}`;
-  /** Width, height, and depth in the glTF Y-up metre convention. */
-  readonly bounds: readonly [number, number, number];
-  readonly camera: {
-    readonly position: readonly [number, number, number];
-    readonly target: readonly [number, number, number];
-    readonly fovDegrees: number;
-  };
-  readonly normalization: "authored-metres";
-  readonly provenance: StudioBg3dEnvironmentProvenance;
-}
-
-const V3_PROVENANCE = Object.freeze({
-  origin: "original-procedural",
-  author: "ToonStudio",
-  generator: "scripts/blender/generate_environment_pack_v3.py",
-  blenderVersion: "5.2",
-  license: "CC0-1.0",
-  licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
-  attributionRequired: false,
-  commercialUse: true,
-  externalResources: 0,
-} as const);
 
 const V4_PROVENANCE = Object.freeze({
   ...V3_PROVENANCE,
@@ -111,24 +39,6 @@ const WEBTOON_V7_PROVENANCE = Object.freeze({
   ...V3_PROVENANCE,
   generator: "scripts/blender/generate_environment_pack_v7.py",
 } as const);
-
-function defineEnvironment(
-  input: Omit<StudioBg3dEnvironmentAsset, "normalization" | "provenance">,
-  provenance: StudioBg3dEnvironmentProvenance = V3_PROVENANCE,
-): StudioBg3dEnvironmentAsset {
-  return Object.freeze({
-    ...input,
-    tags: Object.freeze([...input.tags]),
-    bounds: Object.freeze([...input.bounds]) as readonly [number, number, number],
-    camera: Object.freeze({
-      position: Object.freeze([...input.camera.position]) as readonly [number, number, number],
-      target: Object.freeze([...input.camera.target]) as readonly [number, number, number],
-      fovDegrees: input.camera.fovDegrees,
-    }),
-    normalization: "authored-metres",
-    provenance,
-  });
-}
 
 export const STUDIO_BG3D_ENVIRONMENT_ASSETS_V3 = Object.freeze([
   defineEnvironment({
@@ -316,7 +226,6 @@ export const STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS = Object.freeze([
 const REFINED_V6_BY_FILE = new Map(
   refinedV6Manifest.records.map((record) => [record.fileName, record] as const),
 );
-
 /** New selection uses the revised bytes. Historical IDs and hashes remain resolvable below. */
 export const STUDIO_BG3D_ENVIRONMENT_ASSETS_V6 = Object.freeze(
   STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS.map((original) => {
@@ -324,6 +233,7 @@ export const STUDIO_BG3D_ENVIRONMENT_ASSETS_V6 = Object.freeze(
     if (!refined) throw new Error(`Missing refined environment metadata: ${original.fileName}`);
     return defineEnvironment({
       ...original,
+      camera: getRefinedEnvironmentCamera(original),
       id: original.id.replace(/-v1$/u, "-v6"),
       url: refined.url as StudioBg3dEnvironmentAsset["url"],
       thumbnailUrl: refined.thumbnailUrl as StudioBg3dEnvironmentAsset["thumbnailUrl"],
@@ -614,19 +524,83 @@ export const STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1 = Object.freeze(
   }, Object.freeze({ ...V3_PROVENANCE, generator: "scripts/generate_self_authored_environment_pack_v1.py" }))),
 );
 
+function defineBlenderSet(
+  manifest: typeof glasshouse,
+  input: Pick<StudioBg3dEnvironmentAsset, "id" | "name" | "description" | "theme" | "tags" | "url" | "thumbnailUrl" | "detailCamera">,
+  generator: StudioBg3dEnvironmentProvenance["generator"],
+): StudioBg3dEnvironmentAsset {
+  return defineEnvironment({
+    ...input,
+    fileName: manifest.fileName as `${string}.glb`,
+    byteSize: manifest.byteSize,
+    sha256: manifest.sha256 as `sha256:${string}`,
+    bounds: manifest.bounds as [number, number, number],
+    camera: {
+      position: manifest.camera.position as [number, number, number],
+      target: manifest.camera.target as [number, number, number],
+      fovDegrees: manifest.camera.fovDegrees,
+    },
+  }, Object.freeze({ ...V3_PROVENANCE, blenderVersion: "5.3", generator }));
+}
+
+export const STUDIO_BG3D_BOTANICAL_SEASIDE_SETS = Object.freeze([
+  defineBlenderSet(glasshouse, {
+    id: "ts-bg3d-botanical_glasshouse-v1",
+    name: "햇살 드는 유리온실",
+    detailCamera: { subject: { ko: "모종 작업대", en: "Potting bench" }, position: [-0.70, 2.17, 2.34], target: [-2.19, 1.47, 0.54], fovDegrees: 37 },
+    description: "색유리 문과 둥근 철제 아치 사이로 난 통로. 양옆 작업대에 양치식물과 모종, 물뿌리개가 놓여 있습니다.",
+    theme: "nature",
+    tags: ["온실", "식물원", "정원", "꽃", "일상", "로맨스", "greenhouse", "botanical"],
+    url: "/assets/3d/environments/glasshouse-v1/botanical_glasshouse.glb",
+    thumbnailUrl: "/assets/3d/environments/glasshouse-v1/botanical_glasshouse.png",
+  }, "scripts/blender/generate_botanical_glasshouse.py"),
+  defineBlenderSet(coast, {
+    id: "ts-bg3d-coastal_signal_station-v1",
+    name: "붉은 등대와 방파제",
+    detailCamera: { subject: { ko: "부두 난간", en: "Pier railing" }, position: [3.28, 2.52, 4.28], target: [1.11, 1.15, 1.36], fovDegrees: 40 },
+    description: "방파제 보행로 끝에 선 붉은 등대. 난간 너머로 구조환과 바닷가 암초가 보입니다.",
+    theme: "nature",
+    tags: ["등대", "방파제", "해안", "항구", "바다", "신호소", "coast", "lighthouse"],
+    url: "/assets/3d/environments/coast-v1/coastal_signal_station.glb",
+    thumbnailUrl: "/assets/3d/environments/coast-v1/coastal_signal_station.png",
+  }, "scripts/blender/generate_coastal_signal_station.py"),
+  defineBlenderSet(specimenRoom, {
+    id: "ts-bg3d-botanical_illustration_room-v1",
+    name: "식물 세밀화 작업실",
+    detailCamera: { subject: { ko: "표본 작업대", en: "Specimen table" }, position: [0.23, 1.80, 0.83], target: [-0.61, 1.054, -0.20], fovDegrees: 30 },
+    description: "창가 작업대에 말린 표본과 압착기, 눈금자, 유리 시료병을 놓은 식물 화가의 방입니다.",
+    theme: "nature",
+    tags: ["식물", "세밀화", "표본", "화실", "작업실", "책상", "botanical", "illustration"],
+    url: "/assets/3d/environments/specimen-v1/botanical_illustration_room.glb",
+    thumbnailUrl: "/assets/3d/environments/specimen-v1/botanical_illustration_room.png",
+  }, "scripts/blender/generate_botanical_specimen_room.py"),
+  defineBlenderSet(boatyard, {
+    id: "ts-bg3d-harbor_boat_repair_shed-v1",
+    name: "항구 목선 수리소",
+    detailCamera: { subject: { ko: "선체 이음부", en: "Hull joinery" }, position: [2.57, 1.93, 2.91], target: [0.62, 0.90, 0.18], fovDegrees: 38 },
+    description: "늑골이 드러난 목선 곁에 인양 윈치와 감은 로프, 수선 중인 그물이 놓인 부둣가 작업장입니다.",
+    theme: "nature",
+    tags: ["항구", "부두", "목선", "어선", "수리소", "작업장", "boatyard", "harbor"],
+    url: "/assets/3d/environments/boatyard-v1/harbor_boat_repair_shed.glb",
+    thumbnailUrl: "/assets/3d/environments/boatyard-v1/harbor_boat_repair_shed.png",
+  }, "scripts/blender/generate_harbor_boat_repair_shed.py"),
+]);
+
 export const STUDIO_BG3D_ENVIRONMENT_ASSETS = Object.freeze([
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1,
+  ...STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
 ]);
 
-/** 100% CC0-1.0 자체 제작/CC0 합성 환경 에셋 카탈로그 (31종: V6 12 + Expansion 6 + Webtoon V7 3 + Authored V1 10). */
+/** 직접 제작하거나 CC0 소재만 사용한 배경 목록. */
 export const STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS = Object.freeze([
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1,
+  ...STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
 ]);
 
 export interface StudioBg3dEnvironmentCyclesPasses {

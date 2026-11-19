@@ -8,7 +8,7 @@
  * 키트 v2(2026-10-23 A-1): `schema`가 `toonstudio.character-kit/2`이면 v2 파서로 읽고 결과에 `version: 2`와 v1 형식 보기(`legacyView`,
  * `kit-v1-projection.ts`)를 함께 싣는다. 그 밖의 schema(v1·모르는 값)는 이전과 같이 v1 파서가 읽어 같은 사유로 거부한다.
  */
-import { KIT_ASSET_ROOT, KIT_MANIFEST_FILENAME, KIT_V2_SCHEMA_ID, failVisible, isLabFailure, parseKitManifest, parseKitManifestV2 } from "../../contracts";
+import { KIT_ASSET_ROOT, KIT_MANIFEST_FILENAME, KIT_V2_SCHEMA_ID, failVisible, isLabFailure, kitManifestFilename, parseKitManifest, parseKitManifestV2 } from "../../contracts";
 
 import { kitCapabilityDifferences } from "./kit-capability";
 import { buildKitPlanDetailed } from "./kit-plan";
@@ -84,7 +84,7 @@ function parseKitJson(json: unknown, now: number | undefined): ParsedKit {
 export async function loadKitManifestFlow(port: KitFetchPort, request: KitManifestRequest, deps: KitLoadDeps): Promise<KitManifestLoadResult> {
   const now = deps.now;
   const rootUrl = deps.rootUrl ?? KIT_ASSET_ROOT;
-  const manifestUrl = defaultKitManifestUrl(rootUrl);
+  const manifestUrl = joinPackageUrl(rootUrl, kitManifestFilename(request.kitId, request.kitVersion));
   const fail = (code: string, reasonKo: string, detail?: unknown): KitManifestLoadResult => ({ ok: false, failure: failVisible(code, reasonKo, detail, now) });
 
   let json: unknown;

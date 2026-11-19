@@ -1,3 +1,7 @@
+import { useMemo } from "react";
+
+import { useLabStore } from "../lab-store-context";
+
 import {
   WEBTOON_GENRE_SCENE_PRESETS,
   WEBTOON_LIGHTING_SHADOW_PRESETS,
@@ -7,6 +11,7 @@ import {
   buildMaterialSurfaceCommands,
   buildResetMaterialLightingCommands,
   isMaterialSurfacePresetActive,
+  isLightingPresetActive,
   summarizeActiveMaterialAndShadowKo,
 } from "./render-material-lighting-presets";
 
@@ -20,6 +25,24 @@ interface RenderMaterialLightingControlsProps {
 
 /** 장르·소재·조명 프리셋을 표시하고 기존 명령 생성 결과를 전달한다. */
 export function RenderMaterialLightingControls({ surfaces, shading, dispatch }: RenderMaterialLightingControlsProps) {
+  const store = useLabStore();
+  const selected = useMemo(() => {
+    const active = new Set<string>();
+    for (const preset of WEBTOON_LIGHTING_SHADOW_PRESETS) {
+      if (isLightingPresetActive(shading, preset)) active.add(preset.id);
+    }
+    for (const preset of WEBTOON_GENRE_SCENE_PRESETS) {
+      if (isMaterialSurfacePresetActive(surfaces, preset) && isLightingPresetActive(shading, preset)) active.add(preset.id);
+    }
+    return active;
+  }, [shading, surfaces]);
+
+  function apply(commands: readonly LabCommand[]) {
+    const run = () => commands.forEach(dispatch);
+    if (store.withCoalesceKey) store.withCoalesceKey("render-preset", run);
+    else run();
+  }
+
   return (
     <fieldset className="cl-render-group" data-testid="render-material-lighting-suite">
       <legend>피부·의상 소재 & 툰 셰이딩·그림자 프리셋</legend>
@@ -33,10 +56,9 @@ export function RenderMaterialLightingControls({ surfaces, shading, dispatch }: 
             type="button"
             className="cl-preset-chip"
             data-testid={`render-genre-preset-${preset.id}`}
+            aria-pressed={selected.has(preset.id)}
             title={`[${preset.genreTagKo}] ${preset.summaryKo}`}
-            onClick={() => {
-              for (const command of buildGenreScenePresetCommands(surfaces, shading, preset)) dispatch(command);
-            }}
+            onClick={() => apply(buildGenreScenePresetCommands(surfaces, shading, preset))}
           >
             {preset.labelKo}
           </button>
@@ -51,9 +73,7 @@ export function RenderMaterialLightingControls({ surfaces, shading, dispatch }: 
             data-testid={`render-surface-preset-${preset.id}`}
             aria-pressed={isMaterialSurfacePresetActive(surfaces, preset)}
             title={preset.summaryKo}
-            onClick={() => {
-              for (const command of buildMaterialSurfaceCommands(surfaces, preset)) dispatch(command);
-            }}
+            onClick={() => apply(buildMaterialSurfaceCommands(surfaces, preset))}
           >
             {preset.labelKo}
           </button>
@@ -66,10 +86,9 @@ export function RenderMaterialLightingControls({ surfaces, shading, dispatch }: 
             type="button"
             className="cl-preset-chip"
             data-testid={`render-lighting-preset-${preset.id}`}
+            aria-pressed={selected.has(preset.id)}
             title={preset.summaryKo}
-            onClick={() => {
-              for (const command of buildLightingShadowCommands(shading, preset)) dispatch(command);
-            }}
+            onClick={() => apply(buildLightingShadowCommands(shading, preset))}
           >
             {preset.labelKo}
           </button>
@@ -79,9 +98,7 @@ export function RenderMaterialLightingControls({ surfaces, shading, dispatch }: 
         <button
           type="button"
           data-testid="render-reset-material-lighting-btn"
-          onClick={() => {
-            for (const command of buildResetMaterialLightingCommands(surfaces)) dispatch(command);
-          }}
+          onClick={() => apply(buildResetMaterialLightingCommands(surfaces))}
         >
           기본 소재·조명 복원
         </button>

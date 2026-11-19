@@ -551,7 +551,23 @@ describe("툰 hull 외곽선 정책(A-5·A-9)", () => {
 
 // ---------------------------------------------------------------- 얼굴 SDF
 
-describe("얼굴 SDF 그림자(키트 v1에서 끈다)", () => {
+describe("얼굴 SDF 그림자", () => {
+  it("정면 좌표가 있는 신형 키트는 페인트 UV와 별도로 양쪽 툰 셰이더에서 얼굴 그림자를 켜고 끈다", async () => {
+    const kit = await bootKit({ tweaks: { "base/female": (spec) => ({
+      ...spec,
+      meshes: spec.meshes.map((mesh) => mesh.node === "TS_Head" ? { ...mesh, faceShadowUv: true } : mesh),
+    }) } });
+    kit.h.engine.setShading(toon());
+    const material = kit.scene.getMeshByName("TS_Head")?.material;
+    expect(material).toBeInstanceOf(ShaderMaterial);
+    expect((material as ShaderMaterial).options.defines).toContain("#define TS_FACE_SHADOW_UV");
+    expect((material as ShaderMaterial).options.attributes).toContain("uv2");
+    await kit.h.engine.setBetaFeature("nodeMaterialToon", true);
+    const node = kit.scene.getMeshByName("TS_Head")?.material;
+    expect(inputValue(node, "faceSdfFlag")).toBe(1);
+    kit.h.engine.setShading(toon({ faceSdfShadow: false }));
+    expect(inputValue(node, "faceSdfFlag")).toBe(0);
+  });
   it("절차 소스의 머리는 얼굴 SDF 그림자를 쓰고 키트의 머리는 쓰지 않는다(N·L 램프)", async () => {
     const proc = await bootEnv();
     await proc.h.engine.loadSource({ kind: "procedural", model: createProceduralFixture() });

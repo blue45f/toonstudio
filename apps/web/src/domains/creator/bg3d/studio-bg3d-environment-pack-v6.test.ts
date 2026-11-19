@@ -34,6 +34,9 @@ describe("Studio revised environment delivery v6", () => {
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS_V6).toHaveLength(12);
     expect(STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS).toHaveLength(12);
     const selectedIds = new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id));
+    const openFrontInteriors = new Set([
+      "compact_apartment_interior.glb", "stylized_cafe_interior.glb", "classroom_art_studio.glb",
+    ]);
     for (const legacy of STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS) {
       expect(selectedIds.has(legacy.id)).toBe(false);
       expect(getStudioBg3dEnvironmentAsset(legacy.id)).toBe(legacy);
@@ -42,7 +45,21 @@ describe("Studio revised environment delivery v6", () => {
       expect(revised?.url).not.toBe(legacy.url);
       expect(revised?.sha256).not.toBe(legacy.sha256);
       expect(revised?.theme).toBe(legacy.theme);
-      expect(revised?.camera).toEqual(legacy.camera);
+      if (revised && openFrontInteriors.has(legacy.fileName)) {
+        const { position, target } = legacy.camera;
+        const [x, y, z] = revised.camera.position;
+        expect(revised.camera.target).toEqual(target);
+        expect(revised.camera.fovDegrees).toBe(legacy.camera.fovDegrees);
+        expect(x - target[0]).toBeCloseTo((position[0] - target[0]) / 2);
+        expect(y).toBe(position[1]);
+        expect(z).toBeGreaterThan(position[2]);
+        expect(Math.hypot(x - target[0], z - target[2])).toBeCloseTo(
+          Math.hypot(position[0] - target[0], position[2] - target[2]), 4,
+        );
+        expect(getStudioBg3dEnvironmentAssetByHash(revised.sha256)?.camera).toEqual(revised.camera);
+      } else {
+        expect(revised?.camera).toEqual(legacy.camera);
+      }
     }
   });
 
@@ -118,7 +135,7 @@ describe("Studio revised environment delivery v6", () => {
 
   it("resolves all 10 self-authored CC0 webtoon environments (authored-v1) and maps Tripo MCP environments to their CC0 counterparts", async () => {
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1).toHaveLength(10);
-    expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS).toHaveLength(31);
+    expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS).toHaveLength(35);
     expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS.every((asset) => asset.provenance.license === "CC0-1.0")).toBe(true);
 
     for (const authored of STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1) {

@@ -10,7 +10,7 @@
     "blenderVersion": "5.3.0"
   },
   "pipelineRun": {
-    "pipelineManifestConfigDigest": "919e8d4492290cd13dd23ec42ca00b7f1b4761ded60a145652618586f3ac9b35",
+    "pipelineManifestConfigDigest": "ca05e8c0825594775f36f96b7cd3e5bb4783d575b16c0b7c210ea517115ac288",
     "toonstudioPackageKind": "toonstudio.character-package"
   },
   "sourceProvenance": {
@@ -22,13 +22,13 @@
   "files": {
     "glb": {
       "path": "shaper-atelier-protagonist.glb",
-      "bytes": 3737860,
-      "sha256": "919e8d4492290cd13dd23ec42ca00b7f1b4761ded60a145652618586f3ac9b35"
+      "bytes": 3798888,
+      "sha256": "ca05e8c0825594775f36f96b7cd3e5bb4783d575b16c0b7c210ea517115ac288"
     },
     "contactSheet": {
       "path": "contact-sheet.png",
-      "bytes": 1464452,
-      "sha256": "422294a63b2149df33f16ffe11cb8227864edeb8da0510c37b5b7c92597aa4c6"
+      "bytes": 1510425,
+      "sha256": "e5598163d691c8d3688b2ba15f3a4e8cbe3030110b77137bf3736abadf1edc40"
     },
     "slotMapping": {
       "path": "slot-mapping.json",
@@ -1586,7 +1586,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 960,
+      "triangles": 1600,
       "morphTargets": [
         "eyeBlinkLeft_Eye",
         "eyeBlinkRight_Eye"
@@ -1677,7 +1677,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 768,
+      "triangles": 1280,
       "morphTargets": [
         "eyeBlinkLeft_Iris",
         "eyeBlinkRight_Iris"

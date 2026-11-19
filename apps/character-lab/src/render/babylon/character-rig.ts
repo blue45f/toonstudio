@@ -74,6 +74,8 @@ export interface RigPart {
   readonly meshPbrs?: readonly PBRMaterial[];
   /** 알베도 텍스처 존재 여부(`tint`가 없으면 있을 때 레시피 색 틴트를 적용하지 않는다) */
   readonly hasAlbedoTexture: boolean;
+  /** 키트 제작자가 얼굴 그림자용 정면 좌표를 TEXCOORD_1에 기록했다. */
+  readonly faceShadowUv?: boolean;
   /** 키트 파츠의 색 틴트. 있으면 알베도 텍스처가 있어도 색을 곱한다(recolor: 레시피 색, fixed: 고정색). */
   readonly tint?: RigPartTint;
   /** 툰 ShaderMaterial(setShading("toon")에서 지연 생성) */

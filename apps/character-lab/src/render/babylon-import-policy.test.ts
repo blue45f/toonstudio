@@ -113,6 +113,6 @@ describe("Babylon import 정책(render)", () => {
       .filter((entry) => entry.kind === "side-effect")
       .map((entry) => /^@babylonjs\/loaders\/glTF\/2\.0\/Extensions\/([^/]+)\.js$/u.exec(entry.specifier)?.[1])
       .filter((name): name is string => name !== undefined);
-    expect([...registered].sort()).toEqual([...KIT_ALLOWED_EXTENSIONS].sort());
+    expect([...registered].sort()).toEqual([...KIT_ALLOWED_EXTENSIONS, "ExtrasAsMetadata"].sort());
   });
 });

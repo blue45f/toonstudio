@@ -43,6 +43,8 @@ export type ApplyPlanner = (recipe: CharacterRecipe, capabilities: SlotCapabilit
 export interface LabStore {
   getState(): LabState;
   dispatch(command: LabCommand): void;
+  /** 한 번의 프리셋 선택이 낸 동기 명령들을 같은 되돌리기 단계에 기록한다. */
+  withCoalesceKey?(key: string, run: () => void): void;
   subscribe(listener: () => void): () => void;
   applyEvent(event: LabEvent): void;
 }

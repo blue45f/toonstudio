@@ -125,7 +125,6 @@ import type {
 } from "./studio-editor-tool-model";
 import type { El } from "./studio-element-model";
 import type { StudioInspectorRoute } from "./studio-inspector-layout";
-import type { PageState } from "./studio-page-state";
 import type { StudioProDrawPrefs } from "./studio-pro-draw-prefs";
 import type { StudioWorkspaceState } from "./studio-workspaces";
 import { useT } from "@/shared/lib/i18n";
@@ -271,14 +270,9 @@ export interface StudioMobileEditingDockProps {
   filterPreparationBusy: boolean;
   filterTargetLabel: "선택 이미지" | "현재 페이지 합성본";
   filterUnavailableReason: string | null;
-  hi: number;
-  history: PageState[][];
-  /**
-   * 통합 실행취소 저널의 다음 ⌘Z/⇧⌘Z 대상이 사이드카 편집(캐릭터 바이블·Writer Room)인가.
-   * 이 문서들은 `history` 스냅샷 밖이라 `hi` 만 보면 동작하는 ⌘Z 버튼이 꺼진 채로 보인다.
-   */
-  sidecarUndoAvailable?: boolean;
-  sidecarRedoAvailable?: boolean;
+  /** 원고 명령이 판정한 가용성. 지연 확정 획과 협업 범위의 기록까지 포함한다. */
+  undoDisabled: boolean;
+  redoDisabled: boolean;
   isMobile: boolean;
   livingInk: StudioLivingInkControlsProps;
   marqueeIds: string[];
@@ -385,10 +379,8 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
   filterPreparationBusy,
   filterTargetLabel,
   filterUnavailableReason,
-  hi,
-  history,
-  sidecarUndoAvailable = false,
-  sidecarRedoAvailable = false,
+  undoDisabled,
+  redoDisabled,
   isMobile,
   livingInk,
   marqueeIds,
@@ -573,9 +565,6 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
   const eraserPresetActive =
     drawMode === "eraser" && resolveStudioBrushPresetOperation(brush) === "erase";
   const activeEraserQuickId = studioQuickEraserId(brush);
-  const undoDisabled = (hi === 0 && !sidecarUndoAvailable) || collaborationDocumentLocked;
-  const redoDisabled =
-    (hi >= history.length - 1 && !sidecarRedoAvailable) || collaborationDocumentLocked;
   const undoUnavailableTitle = collaborationDocumentLocked ? frozenStatus4Text("studio.frozenStatus4.dock.historyLocked", "공동 작업 문서 잠금을 해제한 뒤 편집 기록을 이동할 수 있어요.") : frozenStatus4Text("studio.frozenStatus4.dock.undoEmpty", "아직 되돌릴 편집 기록이 없어요.");
   const redoUnavailableTitle = collaborationDocumentLocked ? frozenStatus4Text("studio.frozenStatus4.dock.historyLocked", "공동 작업 문서 잠금을 해제한 뒤 편집 기록을 이동할 수 있어요.") : frozenStatus4Text("studio.frozenStatus4.dock.redoEmpty", "다시 적용할 편집 기록이 없어요.");
   const brushDefaultRestoreModified = brushDefaultRestore.modifiedCount > 0;

@@ -26,26 +26,19 @@ import { presetUnavailableReasonKo } from "../../../state/apply-plan";
 import { useApplyLoop, useApplyPlan, useCatalog, useDispatch, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
 import { describeUnsavedWorkKo, evaluateUnsavedCharacterWork, resolveCheckpoint } from "../unsaved-work";
 
+import { browserPackageLoader } from "./package-panel/browser-package-loader";
 import { KIT_BASE_LABELS_KO, KitPartsTable, KitProvenance, PackageUnsavedGuard } from "./package-panel/KitProvenanceView";
 import { PackageDetail, shortSha } from "./package-panel/PackageDetail";
 
+import type { PackagePanelLoader } from "./package-panel/browser-package-loader";
 import type { PackageReadyState } from "./package-panel/PackageDetail";
 import type { KitBaseId, KitManifest, LabFailure, RecipeSource } from "../../../contracts";
 import type { AuthoredIndexEntry } from "../../../domains/authored/package-index";
-import type { AuthoredPackageLoadResult, PackageIndexLoadResult } from "../../../domains/authored/package-load-flow";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { KitPlanRegistry, KitRecipeSource } from "../kit-plan-registry";
 
-export interface PackagePanelLoader {
-  loadIndex(): Promise<PackageIndexLoadResult>;
-  loadPackage(entry: AuthoredIndexEntry, options: { readonly preferredLod?: number }): Promise<AuthoredPackageLoadResult>;
-}
-
-/** 브라우저 기본 로더: 두 *.browser 모듈을 지연 import한다(별도 청크). */
-export const browserPackageLoader: PackagePanelLoader = {
-  loadIndex: () => import("../../../domains/authored/package-index.browser").then((module) => module.loadCharacterPackageIndex()),
-  loadPackage: (entry, options) => import("../../../domains/authored/package-loader.browser").then((module) => module.loadAuthoredPackage(entry, options)),
-};
+export { browserPackageLoader };
+export type { PackagePanelLoader };
 
 export interface PackagePanelProps {
   readonly loader?: PackagePanelLoader;
@@ -427,7 +420,7 @@ export function PackagePanel({
   }, [applyLoop, fetchKit, kitPlans, now, store]);
 
   const source = state.recipe.source;
-  const registeredPackagePlan = source.kind === "package" ? packagePlans.get(source.characterId) : undefined;
+  const registeredPackagePlan = source.kind === "package" ? packagePlans.get(source.characterId, source.sha256) : undefined;
   const activePackageState = source.kind === "package" ? packages[source.characterId] : undefined;
   const showUnloadedPackageNotice =
     source.kind === "package" &&

@@ -62,6 +62,7 @@ export interface KitGlbMeshSpec {
   readonly morphs: readonly string[];
   /** 노드 평행이동(기본 0). 항등이 아니면 `kit-transform-invalid` 시험 */
   readonly translation?: Vec3;
+  readonly faceShadowUv?: boolean;
 }
 
 export interface KitGlbSpec {
@@ -269,6 +270,7 @@ export function buildKitGlb(spec: KitGlbSpec): Uint8Array {
         NORMAL: accessor(f32(normals), 5126, vertexCount, "VEC3", 34962),
         TEXCOORD_0: accessor(f32(uvs), 5126, vertexCount, "VEC2", 34962),
       };
+      if (mesh.faceShadowUv) attributes.TEXCOORD_1 = accessor(f32(uvs), 5126, vertexCount, "VEC2", 34962);
       if (primitive.skinned !== false && skin) {
         const jointIndex = spec.joints.indexOf(primitive.joint);
         const joints: number[] = [];
@@ -309,7 +311,7 @@ export function buildKitGlb(spec: KitGlbSpec): Uint8Array {
       return out;
     });
     meshes.push({ name: mesh.node, primitives, ...(mesh.morphs.length > 0 ? { extras: { targetNames: [...mesh.morphs] } } : {}) });
-    nodes.push({ name: mesh.node, mesh: meshIdx, ...(skin && mesh.primitives.some((p) => p.skinned !== false) ? { skin: 0 } : {}), ...(mesh.translation ? { translation: [...mesh.translation] } : {}) });
+    nodes.push({ name: mesh.node, mesh: meshIdx, ...(mesh.faceShadowUv ? { extras: { toonstudioFaceShadowUv: 1 } } : {}), ...(skin && mesh.primitives.some((p) => p.skinned !== false) ? { skin: 0 } : {}), ...(mesh.translation ? { translation: [...mesh.translation] } : {}) });
   });
   const meshNodes = spec.meshes.map((_mesh, index) => meshNodeBase + index);
   if ((spec.meshParent ?? "armature") === "armature") childrenOf(0).push(...meshNodes);

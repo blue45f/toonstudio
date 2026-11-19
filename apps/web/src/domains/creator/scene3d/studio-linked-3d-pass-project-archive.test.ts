@@ -24,6 +24,9 @@ import {
 import { parseStudioProjectFile, type StudioProjectFile } from "../studio-project-file";
 import { sha256HexPortable } from "../studio-sha256";
 import { studioShared3dStageEntryAsDocument } from "../studio-shared-3d-stage-collection";
+import { createDefaultStudioBg3dSceneDocument } from "../bg3d/studio-bg3d-scene-document";
+import { encodeStudioBg3dSceneGlbRgbaPng } from "../bg3d/studio-bg3d-scene-glb-exact-images";
+import { hashStudioShared3dStageBackground } from "../studio-shared-3d-stage-document";
 
 const PNG_DATA_URL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zcy8AAAAASUVORK5CYII=";
@@ -149,6 +152,51 @@ async function projectWithLinkedPages(
 }
 
 describe("Studio linked 3D pass project archive", () => {
+  it("고밀도 배경의 실제 PNG를 원고 백업·연결 패스·패스 백업에서 같은 바이트로 보존한다", async () => {
+    const edge = 1_320;
+    const rgba = new Uint8Array(edge * edge * 4);
+    let seed = 12345;
+    for (let index = 0; index < rgba.length; index += 1) {
+      seed = (Math.imul(1_664_525, seed) + 1_013_904_223) >>> 0;
+      rgba[index] = seed >>> 24;
+    }
+    const png = encodeStudioBg3dSceneGlbRgbaPng({
+      width: edge, height: edge, rgba, maximumBytes: 8 * 1024 * 1024, signal: new AbortController().signal,
+    });
+    const src = `data:image/png;base64,${Buffer.from(png).toString("base64")}`;
+    expect(src.length).toBeGreaterThan(8 * 1024 * 1024);
+    const sha256 = sha256HexPortable(png);
+    const { authority } = createAuthority();
+    const project = await projectWithLinkedPages(authority);
+    const image = { type: "image", id: "large-scene-image", x: 0, y: 0, width: edge, height: edge, src };
+    const page = project.pagesList[0]!;
+    const linked = parseStudioProjectFile({
+      ...project, pagesList: [{ ...page, elements: [...page.elements, image] }],
+    });
+    const raster = parseStudioProjectFile({
+      ...project, pagesList: [{ id: page.id, elements: [image], bg: "#fff", bgGrad: null, canvasH: edge }],
+    });
+    const scene = createDefaultStudioBg3dSceneDocument();
+    const operations = await Promise.allSettled([
+      buildStudioProjectArchive({ project: raster }).then(async built => {
+        const restored = await importStudioProjectArchive(built.blob);
+        const blob = restored.attachments.get(sha256)?.blob;
+        expect(blob?.size).toBe(png.byteLength);
+        expect(blob && sha256HexPortable(new Uint8Array(await blob.arrayBuffer()))).toBe(sha256);
+      }),
+      prepareStudioLinked3dLinePass({
+        authority, sourceHash: hashStudioShared3dStageBackground(scene)!, scene,
+        layers: [{ role: "main-line", pngDataUrl: src, width: edge, height: edge }],
+      }).then(pass => expect(pass.descriptor.artifact.contentHash).toBe(`sha256:${sha256}`)),
+      prepareStudioLinked3dPassProjectArchiveExport({ project: linked, authority })
+        .then(attachments => expect(attachments).toHaveLength(1)),
+    ]);
+    for (const [index, operation] of operations.entries()) {
+      const name = ["원고 보관과 복원", "연결 주선 준비", "연결 패스 보관"][index];
+      expect.soft(operation.status === "fulfilled" ? "ok" : String(operation.reason), name).toBe("ok");
+    }
+  }, 30_000);
+
   it("deduplicates exact PNG bytes, covers only receipt-bound locators, and restores clean OPFS before apply", async () => {
     const source = createAuthority();
     const project = await projectWithLinkedPages(source.authority);

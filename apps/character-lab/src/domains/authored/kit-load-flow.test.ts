@@ -47,6 +47,18 @@ describe("authored/kit-load-flow — manifest", () => {
     expect(defaultKitManifestUrl("/custom/kit/")).toBe("/custom/kit/kit.json");
   });
 
+  it("2판 인물 레시피는 별도 원장을 사용하고 지정한 SHA도 그 원장에서 대조한다", async () => {
+    const url = `${KIT_ASSET_ROOT}/kit-portrait.json`;
+    const portrait = kitManifestJson({ kitVersion: 2 });
+    const { port, calls } = portOf({ [MANIFEST_URL]: kitManifestJson() }, { [url]: encode(portrait) });
+    const result = await loadKitManifestFlow(port, { ...REQUEST, kitVersion: 2, manifestSha256: OBSERVED }, { sha256: sha256Of(OBSERVED), now: 1 });
+    expect(result.ok && result.manifest.kitVersion).toBe(2);
+    expect(calls).toEqual({ json: [], bytes: [url] });
+    const stale = await loadKitManifestFlow(port, { ...REQUEST, manifestSha256: OBSERVED }, { sha256: sha256Of(OBSERVED), now: 1 });
+    expect(!stale.ok && stale.failure.code).toBe("kit-manifest-fetch-failed");
+    expect(calls.bytes.at(-1)).toBe(MANIFEST_URL);
+  });
+
   it("해시 요구가 없으면 fetchJson(no-cache 경로)으로 읽고 검증된 manifest를 돌려준다", async () => {
     const { port, calls } = portOf({ [MANIFEST_URL]: kitManifestJson() });
     const result = await loadKitManifestFlow(port, REQUEST, { sha256: sha256Of(OBSERVED), now: 1 });

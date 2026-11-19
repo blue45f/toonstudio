@@ -7,6 +7,8 @@
 import { Constants } from "@babylonjs/core/Engines/constants.js";
 import { Material } from "@babylonjs/core/Materials/material.js";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture.js";
+import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
+import { Viewport } from "@babylonjs/core/Maths/math.viewport.js";
 
 import { DEFAULT_FRAMING, DEFAULT_SHADING, failVisible, isHumanoidBoneName, isLabFailure } from "../../contracts";
 import { fnv1a64Hex, sha256Hex } from "../../shared/hash";
@@ -28,9 +30,9 @@ import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
 import { CharacterOutlineController } from "./character-outline-controller";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
-import { fromQuaternion, fromVector3 } from "./convert";
+import { fromQuaternion, fromVector3, toVector3 } from "./convert";
 import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
-import { readEngineFeatures, readEngineHud, readPaintInspection, readRigJointHandles, readRigSourceCapabilities } from "./engine-reports";
+import { readEngineFeatures, readEngineHud, readPaintInspection, readRigSourceCapabilities } from "./engine-reports";
 import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
 import { exportRigGlbWithReport } from "./glb-exporter";
 import { hairLayerSupport } from "./hair-ownership";
@@ -51,11 +53,10 @@ import type { CaptureDeps, PassMaterialSet } from "./capture";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
-  ApplyPlan, ApplyReceipt, AuthoredPackagePlan, CameraFraming, CaptureRequest, CaptureResult,
-  CapturedRaster, CharacterEngine, CharacterPickOptions, CharacterSource, DuoPartnerAttachment,
-  EngineBackend, EngineDiagnostics, HandPropAttachment, HeadPropAttachment, HudSample,
-  JointDragHandle, KitPlan, LabFailure, PaintLayer, PartRole, PhysicsProviderFactory,
-  PhysicsProviderId, PhysicsStatus, PickHit, Quat, SettleReceipt, SfxStampAttachment,
+  ApplyPlan, ApplyReceipt, AuthoredPackagePlan, CameraFraming, CaptureRequest, CaptureResult, CapturedRaster,
+  CharacterEngine, CharacterPickOptions, CharacterSource, DuoPartnerAttachment, EngineBackend, EngineDiagnostics,
+  HandPropAttachment, HeadPropAttachment, HudSample, JointDragHandle, KitPlan, LabFailure, PaintLayer, PartRole,
+  PhysicsProviderFactory, PhysicsProviderId, PhysicsStatus, PickHit, Quat, SettleReceipt, SfxStampAttachment,
   ShadingProfile, SkeletonData, SourceCapabilities, StagePropAttachment, ThumbnailRequest, Vec3,
 } from "../../contracts";
 import type { BetaFeaturePort, BetaFeatureId, BetaFeatureReport, BetaFeatureState, FullSceneFeatureReport } from "../beta-features";
@@ -132,6 +133,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private readonly pressureOutline: CharacterOutlineController;
   private readonly clearTexture: RawTexture;
   private readonly sdfTexture: RawTexture;
+  private portraitSdfTexture: RawTexture | null = null;
   private readonly mouthMask: RawTexture;
   private readonly maskedParts = new WeakSet<RigPart>();
   private readonly beta: BetaController;
@@ -183,11 +185,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     scene.onBeforeActiveMeshesEvaluationObservable.add(() => this.gaze.update());
     this.clearTexture = RawTexture.CreateRGBATexture(new Uint8Array([0, 0, 0, 0]), 1, 1, scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
     this.clearTexture.name = "default:clear";
-    const sdf = generateFaceSdf(FACE_SDF_SIZE);
-    this.sdfTexture = RawTexture.CreateRTexture(sdf.data, sdf.size, sdf.size, scene, false, false, Constants.TEXTURE_BILINEAR_SAMPLINGMODE, Constants.TEXTURETYPE_UNSIGNED_BYTE);
-    this.sdfTexture.name = "default:face-sdf";
-    this.sdfTexture.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
-    this.sdfTexture.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+    this.sdfTexture = this.makeFaceSdf(false);
     this.mouthMask = RawTexture.CreateRGBATexture(generateMouthMask(MOUTH_MASK_SIZE), MOUTH_MASK_SIZE, MOUTH_MASK_SIZE, scene, false, false, Constants.TEXTURE_BILINEAR_SAMPLINGMODE, Constants.TEXTURETYPE_UNSIGNED_BYTE);
     this.mouthMask.name = "default:mouth-mask";
     this.mouthMask.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
@@ -589,7 +587,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
 
   private ensureToonMaterial(part: RigPart, rig: CharacterRig): ShaderMaterial {
     if (!part.toon) {
-      part.toon = createPassMaterial({ scene: this.character.scene, language: shaderLanguageFor(this.engine) }, "toon", `toon:${part.id}`, { vertexColor: this.usesVertexColor(part, rig) });
+      part.toon = createPassMaterial({ scene: this.character.scene, language: shaderLanguageFor(this.engine) }, "toon", `toon:${part.id}`, { vertexColor: this.usesVertexColor(part, rig), faceShadowUv: part.faceShadowUv === true });
       part.toon.backFaceCulling = part.pbr.backFaceCulling;
     }
     setToonUniforms(part.toon, this.toonValues(part, rig));
@@ -617,8 +615,18 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return part.hasAlbedoTexture && part.pbr.transparencyMode === Material.MATERIAL_ALPHATEST ? part.pbr.alphaCutOff : 0;
   }
 
+  private makeFaceSdf(portrait: boolean): RawTexture {
+    const sdf = generateFaceSdf(portrait ? 256 : FACE_SDF_SIZE, { portrait });
+    const texture = RawTexture.CreateRTexture(sdf.data, sdf.size, sdf.size, this.character.scene, false, false, Constants.TEXTURE_BILINEAR_SAMPLINGMODE, Constants.TEXTURETYPE_UNSIGNED_BYTE);
+    texture.name = portrait ? "portrait:face-sdf" : "default:face-sdf";
+    texture.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+    texture.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+    return texture;
+  }
+
   private toonTextures(part: RigPart): NodeToonTextures {
-    return { albedo: this.albedoTexture(part), paint: this.paintTextures.get(part.role) ?? this.clearTexture, sdf: this.sdfTexture };
+    const sdf = part.faceShadowUv ? (this.portraitSdfTexture ??= this.makeFaceSdf(true)) : this.sdfTexture;
+    return { albedo: this.albedoTexture(part), paint: this.paintTextures.get(part.role) ?? this.clearTexture, sdf };
   }
 
   private usesAlbedoTexture(part: RigPart): boolean {
@@ -660,7 +668,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     const average = this.ibl.averageColor;
     const axes = this.headAxes(rig);
     const face = faceSdfUniforms(axes.forward, axes.right, this.character.sunDirection);
-    const useFaceSdf = toon.faceSdfShadow && part.role === "head" && !isKitPart(rig, part);
+    const useFaceSdf = toon.faceSdfShadow && part.role === "head" && (!isKitPart(rig, part) || part.faceShadowUv === true);
     const lighting = normalizeToonLighting(
       [key.diffuse.r * lightScale, key.diffuse.g * lightScale, key.diffuse.b * lightScale],
       [Math.min(1, average[0] * ambientScale), Math.min(1, average[1] * ambientScale), Math.min(1, average[2] * ambientScale)],
@@ -678,7 +686,8 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       faceSdf: useFaceSdf,
       hasPaint: this.paintTextures.get(part.role) !== null,
       faceThreshold: face.threshold,
-      flipU: face.flipU,
+      // 정면 투영 UV는 캐릭터의 +X 방향으로 증가한다. 절차 머리의 펼친 UV와 방향이 반대다.
+      flipU: part.faceShadowUv ? (face.flipU === 1 ? 0 : 1) : face.flipU,
       sdfOffset: 0,
       hasAlbedo: this.usesAlbedoTexture(part),
       mangaToneKind: look.tone.kind,
@@ -881,9 +890,18 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   jointHandles(): readonly JointDragHandle[] {
     const rig = this.rig;
     if (this.disposed || !rig) return [];
-    return readRigJointHandles(
-      rig, this.character.camera, this.engine.getRenderWidth(), this.engine.getRenderHeight(),
-    );
+    const camera = this.character.camera;
+    const width = this.engine.getRenderWidth();
+    const height = this.engine.getRenderHeight();
+    const viewProjection = camera.getViewMatrix(true).multiply(camera.getProjectionMatrix(true));
+    const viewport = new Viewport(0, 0, width, height);
+    const handles: JointDragHandle[] = [];
+    for (const [bone, rb] of rig.humanoid) {
+      const world = rigBoneWorld(rb).position;
+      const projected = Vector3.Project(toVector3(world), Matrix.IdentityReadOnly, viewProjection, viewport);
+      handles.push({ bone, screen: [projected.x, projected.y], world });
+    }
+    return handles;
   }
 
   viewportCamera(): ViewportCameraInfo {
@@ -946,7 +964,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       for (const mesh of part.meshes) attachDecalToMesh(this.character.scene, mesh, texture);
       const decal = part.pbr.decalMap;
       if (decal) decal.isEnabled = true;
-      if (part.toon) setToonTextures(part.toon, { albedo: this.albedoTexture(part), paint: texture, sdf: this.sdfTexture });
+      if (part.toon) setToonTextures(part.toon, { ...this.toonTextures(part), paint: texture });
       this.pushToon(part, rig);
       const flat = this.flatMaterials.get(part.partId);
       if (flat) setFlatTextures(flat, { albedo: this.albedoTexture(part), paint: texture });
@@ -981,35 +999,14 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   }
 
   readHud(): HudSample {
-    return readEngineHud({
-      scene: this.character.scene,
-      diagnostics: this.diagnostics,
-      lane: this.lane,
-      frameStats: this.frameStats,
-      hud: this.hud,
-      backend: this.backend,
-      physics: this.physics,
-      shading: this.shading,
-    });
+    return readEngineHud({ scene: this.character.scene, diagnostics: this.diagnostics, lane: this.lane, frameStats: this.frameStats, hud: this.hud, backend: this.backend, physics: this.physics, shading: this.shading });
   }
 
   sceneFeatures(): FullSceneFeatureReport {
-    return readEngineFeatures({
-      postfx: this.postfx,
-      rig: this.rig,
-      engine: this.engine,
-      character: this.character,
-      shading: this.shading,
-      ibl: this.ibl,
-      hud: this.hud,
-      beta: this.beta,
-      lastGlbReport: this.lastGlbReport,
-    });
+    return readEngineFeatures({ postfx: this.postfx, rig: this.rig, engine: this.engine, character: this.character, shading: this.shading, ibl: this.ibl, hud: this.hud, beta: this.beta, lastGlbReport: this.lastGlbReport });
   }
 
-  betaFeatures(): BetaFeatureReport {
-    return this.beta.report();
-  }
+  betaFeatures(): BetaFeatureReport { return this.beta.report(); }
 
   async setBetaFeature(id: BetaFeatureId, enabled: boolean): Promise<BetaFeatureState> {
     this.assertAlive();
@@ -1017,9 +1014,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return this.beta.set(id, enabled);
   }
 
-  projectionPaint(): ProjectionPaintPort | null {
-    return this.disposed ? null : this.beta.projectionPort();
-  }
+  projectionPaint(): ProjectionPaintPort | null { return this.disposed ? null : this.beta.projectionPort(); }
 
   resize(width: number, height: number): void {
     if (this.disposed) return;
@@ -1044,6 +1039,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.whiteTexture.dispose();
     this.clearTexture.dispose();
     this.sdfTexture.dispose();
+    this.portraitSdfTexture?.dispose();
     this.postfx.dispose();
     this.hud.dispose();
     this.physics.dispose();

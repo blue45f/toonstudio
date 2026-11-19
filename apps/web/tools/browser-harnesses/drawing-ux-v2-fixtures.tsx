@@ -83,8 +83,8 @@ export function createMobileProps(
     filterPreparationBusy: false,
     filterTargetLabel: "현재 페이지 합성본",
     filterUnavailableReason: null,
-    hi: 0,
-    history: [[], []],
+    undoDisabled: true,
+    redoDisabled: false,
     isMobile: false,
     livingInk: {
       supported: false,

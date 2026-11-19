@@ -8,6 +8,7 @@
  *   그리고 만화 출판 원고용 흑백 크로스해칭/망점 스크린톤(`look.tone` + `look.grade`)을 원클릭 전환하고 기본값 복원을 지원한다.
  */
 import { DEFAULT_SHADING, cloneLook, mergeLook } from "../../../contracts";
+import { stableStringify } from "../../../shared/stable-json";
 
 import type { ChannelKey, LabCommand, LookPatch, MaterialPresetId, ShadingProfile, Surface, Surfaces } from "../../../contracts";
 
@@ -538,29 +539,33 @@ export function buildMaterialSurfaceCommands(
   return buildSurfaceMapCommands(currentSurfaces, preset.surfaces);
 }
 
-export function isMaterialSurfacePresetActive(currentSurfaces: Surfaces, preset: WebtoonMaterialSurfacePreset): boolean {
-  return Object.entries(preset.surfaces).every(([channel, mat]) => currentSurfaces[channel as ChannelKey]?.material === mat);
+export function isMaterialSurfacePresetActive(currentSurfaces: Surfaces, preset: Pick<WebtoonMaterialSurfacePreset, "surfaces">): boolean {
+  return MANAGED_SURFACE_CHANNELS.every(channel => currentSurfaces[channel]?.material === preset.surfaces[channel]);
+}
+
+type LightingPreset = Pick<WebtoonLightingShadowPreset, "buildShading" | "lookPatch">;
+
+function lightingProfile(current: ShadingProfile, preset: LightingPreset): Partial<ShadingProfile> {
+  return {
+    ...preset.buildShading(current),
+    look: mergeLook(current.look, {
+      tone: { kind: "none", strength: 0 },
+      grade: { saturation: 1, lightness: 0 },
+      ...preset.lookPatch,
+    }),
+  };
+}
+
+export function isLightingPresetActive(current: ShadingProfile, preset: LightingPreset): boolean {
+  const profile = lightingProfile(current, preset);
+  return stableStringify({ ...current, ...profile }) === stableStringify(current);
 }
 
 export function buildLightingShadowCommands(
   currentShading: ShadingProfile,
   preset: WebtoonLightingShadowPreset,
 ): readonly LabCommand[] {
-  const profilePatch = preset.buildShading(currentShading);
-  const normalizedPatch: LookPatch = {
-    tone: { kind: "none", strength: 0 },
-    grade: { saturation: 1, lightness: 0 },
-    ...preset.lookPatch,
-  };
-  return [
-    {
-      type: "shading/set",
-      profile: {
-        ...profilePatch,
-        look: mergeLook(currentShading.look, normalizedPatch),
-      },
-    },
-  ];
+  return [{ type: "shading/set", profile: lightingProfile(currentShading, preset) }];
 }
 
 export function buildGenreScenePresetCommands(
@@ -568,21 +573,10 @@ export function buildGenreScenePresetCommands(
   currentShading: ShadingProfile,
   preset: WebtoonGenreScenePreset,
 ): readonly LabCommand[] {
-  const commands = buildSurfaceMapCommands(currentSurfaces, preset.surfaces);
-  const profilePatch = preset.buildShading(currentShading);
-  const normalizedPatch: LookPatch = {
-    tone: { kind: "none", strength: 0 },
-    grade: { saturation: 1, lightness: 0 },
-    ...preset.lookPatch,
-  };
-  commands.push({
-    type: "shading/set",
-    profile: {
-      ...profilePatch,
-      look: mergeLook(currentShading.look, normalizedPatch),
-    },
-  });
-  return commands;
+  return [
+    ...buildSurfaceMapCommands(currentSurfaces, preset.surfaces),
+    { type: "shading/set", profile: lightingProfile(currentShading, preset) },
+  ];
 }
 
 export function buildResetMaterialLightingCommands(currentSurfaces: Surfaces): readonly LabCommand[] {

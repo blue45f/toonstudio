@@ -8,6 +8,7 @@ import {
   HUMANOID_BONE_NAMES,
   KIT_PART_SLOTS,
   MIN_PRESETS_PER_SLOT,
+  createKitDefaultRecipe,
   validateMeshPartData,
 } from "../contracts";
 import { buildKitPlanDetailed } from "../domains/authored/kit-plan";
@@ -15,7 +16,7 @@ import { createPaintSession } from "../paint/paint-session";
 import { kitManifestFixture } from "../testing/kit-fixtures";
 import { createMockEngine, createMockEngineFactory } from "../testing/mock-engine";
 
-import { COMPOSED_PANELS, DEFAULT_BOOT_SOURCE, composeCharacterLab, uploadPaintLayers } from "./composition";
+import { COMPOSED_PANELS, DEFAULT_BOOT_SOURCE, composeCharacterLab, createKitShowcaseBootRecipe, uploadPaintLayers } from "./composition";
 
 import type { CompositionOverrides } from "./composition";
 import type { ThumbnailRequest } from "../contracts";
@@ -40,6 +41,17 @@ function canvasStub(): HTMLCanvasElement {
 }
 
 describe("app/composition", () => {
+  it("신규 착장은 실제 서 있는 자세와 2판 얼굴을 사용하고 기본 1판의 휴지 자세를 보존한다", () => {
+    const fresh = createKitShowcaseBootRecipe();
+    expect(fresh.source).toMatchObject({ kind: "kit", kitVersion: 2, baseId: "female" });
+    expect(fresh.slots.pose).toBe("pose/idle");
+    expect(Object.keys(fresh.pose).length).toBeGreaterThan(2);
+    expect(fresh.shading.mode).toBe("toon");
+    const original = createKitDefaultRecipe();
+    expect(original.source).toMatchObject({ kind: "kit", kitVersion: 1 });
+    expect(original.pose).toEqual({});
+  });
+
   it("실제 영역 모듈로 조립하면 카탈로그 94개(외형 64 + 연기 30)가 불변식을 통과하고 failure가 없다", () => {
     const runtime = composeCharacterLab({ defaultSource: "procedural" });
     expect(runtime.catalogFailures).toEqual([]);

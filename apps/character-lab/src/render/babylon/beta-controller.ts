@@ -206,7 +206,7 @@ export function createBetaController(host: BetaHost, loaders: BetaLoaders = DEFA
     const pending: Array<Promise<void>> = [];
     for (const part of rig.parts) {
       if (nodeToons.has(part)) continue;
-      const toon = kit.createNodeToon(host.scene, language, `node-toon:${part.id}`);
+      const toon = kit.createNodeToon(host.scene, language, `node-toon:${part.id}`, part.faceShadowUv === true);
       const entry: NodeToonEntry = { toon, built: false };
       nodeToons.set(part, entry);
       toon.material.backFaceCulling = part.pbr.backFaceCulling;

@@ -223,7 +223,7 @@ export function nodeLanguageFor(isWebGPU: boolean): ShaderLanguage {
  * 툰 NodeMaterial을 만든다. 그래프를 구성하고 `build()`를 시작하며(비동기), 완료·실패는 `ready`로 알린다. 블록 연결 오류는 구성 중 throw한다.
  * 텍스처·uniform 값은 호출자가 `setTextures`·`setParams`로 채운다.
  */
-export function createNodeToon(scene: Scene, language: ShaderLanguage, name: string): NodeToon {
+export function createNodeToon(scene: Scene, language: ShaderLanguage, name: string, faceShadowUv = false): NodeToon {
   const material = new NodeMaterial(name, scene, { shaderLanguage: language, emitComments: false });
   const g = new GraphBuilder();
 
@@ -303,7 +303,7 @@ export function createNodeToon(scene: Scene, language: ShaderLanguage, name: str
   const toLightN = g.normalize("toLightN", toLight.output);
   const lambert = g.add2("lambert", g.mul("lambertHalf", g.dot("nDotL", n, toLightN), half), half);
   const uvSplit = g.add(new VectorSplitterBlock("uvSplit"));
-  connect(uv, uvSplit.xyIn);
+  connect(faceShadowUv ? g.attribute("faceShadowUv", "uv2") : uv, uvSplit.xyIn);
   const sdfU = g.mix("sdfU", uvSplit.x, g.oneMinus("flippedU", uvSplit.x), g.step("flipGate", half, flipUFlag.output));
   const sdfUv = g.add(new VectorMergerBlock("sdfUv"));
   connect(sdfU, sdfUv.x);

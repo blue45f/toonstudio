@@ -744,3 +744,69 @@ input:not(input[type="range"]):user-valid {
     border-color: Highlight;
   }
 }
+
+.cl-compact-tools-toggle {
+  display: none;
+}
+
+.cl-workspace-tools {
+  display: contents;
+}
+
+@media (max-width: 767px) {
+  .cl-topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 8px;
+  }
+
+  .cl-compact-tools-toggle {
+    display: inline-flex;
+    grid-area: 1 / 2;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .cl-topbar > [aria-label="엔진 선택"],
+  .cl-workspace-tools,
+  .cl-help-panel {
+    grid-column: 1 / -1;
+  }
+
+  .cl-workspace-tools {
+    display: none;
+  }
+
+  .cl-workspace-tools[data-open="true"] {
+    display: grid;
+    gap: 8px;
+  }
+
+  .cl-workbench {
+    grid-template-rows: clamp(250px, 49dvh, 460px) auto auto;
+  }
+
+  html {
+    scroll-padding-top: clamp(250px, 49dvh, 460px);
+  }
+
+  .cl-workbench-main {
+    max-height: clamp(250px, 49dvh, 460px);
+  }
+
+  .cl-workbench .cl-viewport-toolbar {
+    flex-wrap: nowrap;
+    max-height: none;
+    overscroll-behavior-inline: contain;
+  }
+
+  .cl-viewport-toolbar > * {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 767px) and (max-height: 500px) {
+  .cl-workbench { grid-template-rows: clamp(112px, 36dvh, 180px) auto auto; }
+  .cl-workbench-main { max-height: clamp(112px, 36dvh, 180px); }
+  html { scroll-padding-top: clamp(112px, 36dvh, 180px); }
+}

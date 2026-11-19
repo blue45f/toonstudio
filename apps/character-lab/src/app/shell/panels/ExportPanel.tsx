@@ -511,7 +511,7 @@ export function ExportPanel({
       engine: engineSession.engine(),
       dispatch,
       applyStoreEvent: (event) => store.applyEvent(event),
-      getRegisteredPackage: (characterId) => packagePlans.get(characterId),
+      getRegisteredPackage: (characterId, sha256) => packagePlans.get(characterId, sha256),
       ensurePackageRegistered: (characterId, expectedSha256) =>
         ensureBrowserPackageRegistered({
           characterId,
@@ -643,7 +643,8 @@ export function ExportPanel({
   };
 
   const isPackageRegistered =
-    labState.recipe.source.kind === "package" && Boolean(packagePlans.get(labState.recipe.source.characterId));
+    labState.recipe.source.kind === "package" &&
+    Boolean(packagePlans.get(labState.recipe.source.characterId, labState.recipe.source.sha256));
 
   const switchInspectorTabWithFocus = (targetTab: "package" | "pose"): void => {
     setInspectorTab(targetTab);

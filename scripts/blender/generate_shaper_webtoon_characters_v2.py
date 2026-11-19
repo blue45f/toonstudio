@@ -20,9 +20,11 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
+from shaper_blazer_twill import apply_blazer_twill  # noqa: E402
 from shaper_face_inlays import fit_face_inlays  # noqa: E402
 from shaper_glb_trim_order import stabilize_opaque_trim_indices  # noqa: E402
 from shaper_mesh_seams import remove_decimation_wires, weld_kit_seams  # noqa: E402
+from shaper_neck_and_shoulders import fit_neck_and_shoulders  # noqa: E402
 from shaper_pleated_skirt import fit_pleated_skirt  # noqa: E402
 from shaper_skirt_pose_clearance import bake_pleated_skirt_clearance  # noqa: E402
 from shaper_tailored_interiors import finish_neck_socket, fit_hair_roots, tailor_blazer, tailor_loafers, tailor_pleated_skirt  # noqa: E402
@@ -1855,6 +1857,8 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
             brow_mat = make_textured_pbr_material(f"mat_brow_{cid}", None, (hr * 0.85, hg * 0.82, hb * 0.85, 1.0), roughness=0.58)
             hair_mat = make_textured_pbr_material(f"mat_hair_{cid}", hair_png, roughness=0.68)
             top_mat = make_textured_pbr_material(f"mat_top_{cid}", top_png, roughness=0.64)
+            if refine_hero_kit:
+                apply_blazer_twill(top_mat, tdir / "atelier_blazer_twill_normal.png")
             bot_mat = make_textured_pbr_material(f"mat_bot_{cid}", bot_png, roughness=0.66)
             sr, sg, sb = _hex_to_rgb01(cols["shoe"])
             shoe_mat = make_textured_pbr_material(f"mat_shoe_{cid}", shoe_png, (sr, sg, sb, 1.0), roughness=0.36)
@@ -1878,6 +1882,7 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
                 lash_mat=lash_mat,
                 brow_mat=brow_mat,
                 neck_ring_fit=neck_ring_fit,
+                portrait_refinement=refine_hero_kit,
             )
 
             before_h = set(bpy.data.objects)
@@ -1962,6 +1967,7 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
                     tailor_loafers(part_objs["shoes"])
                     tailor_blazer(part_objs["top"])
                     finish_neck_socket(body_obj)
+                    fit_neck_and_shoulders(face_objs["head"], body_obj, part_objs["top"], arm_obj)
                     _combine_eye_surfaces(face_objs)
                     fit_face_inlays(face_objs)
                     # 밑창의 실제 접지점을 원점으로 삼아 스킨과 뼈를 같은 거리만큼 올린다.
@@ -2018,6 +2024,8 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
 
             glb_stats = _parse_glb_stats(glb_path)
             idx_entry = _write_slot_mapping_and_manifest(spec, pkg_dir, glb_path, cs_path, glb_stats, template_manifest)
+            if archived := built_map.get(cid, {}).get("archivedGlbSha256"):
+                idx_entry["archivedGlbSha256"] = archived
             built_map[cid] = idx_entry
             built_entries.append(idx_entry)
 

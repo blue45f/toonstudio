@@ -22,6 +22,8 @@ export interface FaceSdfOptions {
   readonly verticalModulation?: number;
   /** 최소 임계값(정면광에서 그림자 0 보장용, > 0) */
   readonly floor?: number;
+  /** 얼굴 정면 좌표를 제공하는 키트에서만 코 아랫면과 입술 아래의 그늘을 쓴다. */
+  readonly portrait?: boolean;
 }
 
 /** 임계값 함수(연속). u: 0=광원 반대편 가장자리, 1=광원 쪽 가장자리. v: 0=턱, 1=이마 */
@@ -32,7 +34,18 @@ export function faceSdfThreshold(u: number, v: number, options: FaceSdfOptions =
   // 코·광대 부근(v≈0.45)은 그늘이 늦게 들어오고 턱·이마는 빨리 들어온다.
   const bulge = 1 - Math.abs(clamp(v, 0, 1) - 0.45) * 2;
   const modulated = lateral * (1 - vertical) + lateral * vertical * clamp(bulge, 0, 1);
-  return clamp(floor + (1 - floor) * modulated, 0, 1);
+  let threshold = floor + (1 - floor) * modulated;
+  if (options.portrait) {
+    // 기준 얼굴의 정면 투영에서 코끝은 (0.50, 0.536), 윗입술은 (0.50, 0.435)이다.
+    // 해가 옆으로 이동할수록 윤곽을 따라 짧은 콧방울 그늘과 아랫입술 밑 음영이 먼저 생긴다.
+    const noseX = (u - 0.479) / 0.032;
+    const noseY = (v - 0.519 - (u - 0.479) * 0.18) / 0.010;
+    const lipX = (u - 0.491) / 0.056;
+    const lipY = (v - 0.413 - 1.8 * (u - 0.499) ** 2) / 0.008;
+    const relief = Math.max(0.94 * Math.exp(-noseX * noseX - noseY * noseY), 0.86 * Math.exp(-lipX * lipX - lipY * lipY));
+    threshold = Math.max(floor, threshold * (1 - relief));
+  }
+  return clamp(threshold, 0, 1);
 }
 
 /** size×size R8 임계 맵 생성(결정적) */

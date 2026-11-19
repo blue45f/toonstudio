@@ -127,7 +127,6 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
     healCloneRadius,
     healCloneSourceAnchor,
     healCloneTool,
-    history,
     historyBrushActive,
     historyBrushBusy,
     historyBrushHardness,
@@ -378,8 +377,8 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
     studioFilterPreparationBusy,
     studioFilterTargetLabel,
     studioFilterUnavailableReason,
-    studioHistorySidecarRedoAvailable,
-    studioHistorySidecarUndoAvailable,
+    menuEditRedoDisabled,
+    menuEditUndoDisabled,
     studioInspectorAsideHandlers,
     studioLayerLiftDisabledReason,
     studioMobileEditingDockHandlers,
@@ -418,7 +417,6 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
     workspaceState,
     zoom,
     bg,
-    hi,
     presentationPanelsHidden,
     proDrawPrefs,
     visibleRightPanelOpen,
@@ -553,7 +551,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           effScale={effScale}
           elementById={elementById}
           elements={elements}
-          eyedropperActive={eyedropperActive} eraseToIntersection={eraseToIntersection} setEraseToIntersection={setEraseToIntersection} canUndoDocument={(hi > 0 || studioHistorySidecarUndoAvailable) && !collaborationDocumentLocked} undoDocument={studioMobileEditingDockHandlers.undo}
+          eyedropperActive={eyedropperActive} eraseToIntersection={eraseToIntersection} setEraseToIntersection={setEraseToIntersection} canUndoDocument={!menuEditUndoDisabled} undoDocument={studioMobileEditingDockHandlers.undo}
           filterClipboard={filterClipboard}
           gridSize={gridSize}
           groups={groups}
@@ -912,10 +910,8 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           filterPreparationBusy={studioFilterPreparationBusy}
           filterTargetLabel={studioFilterTargetLabel}
           filterUnavailableReason={studioFilterUnavailableReason}
-          hi={hi}
-          history={history}
-          sidecarUndoAvailable={studioHistorySidecarUndoAvailable}
-          sidecarRedoAvailable={studioHistorySidecarRedoAvailable}
+          undoDisabled={menuEditUndoDisabled}
+          redoDisabled={menuEditRedoDisabled}
           isMobile={isMobile}
           livingInk={{
             ...studioOptionsBarsDrawModel.livingInk,

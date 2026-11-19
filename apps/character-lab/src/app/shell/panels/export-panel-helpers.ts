@@ -191,7 +191,7 @@ export interface ApplyImportedRecipeParams {
   readonly engine: CharacterEngine | null;
   readonly dispatch: (cmd: LabCommand) => void;
   readonly applyStoreEvent: (event: LabEvent) => void;
-  readonly getRegisteredPackage: (characterId: string) => { readonly glbSha256: string; readonly capabilities: LabStateCapabilities } | undefined;
+  readonly getRegisteredPackage: (characterId: string, sha256: string) => { readonly glbSha256: string; readonly capabilities: LabStateCapabilities } | undefined;
   readonly ensurePackageRegistered?: (characterId: string, expectedSha256: string) => Promise<{ readonly glbSha256: string; readonly capabilities: LabStateCapabilities } | undefined>;
   readonly peekKitManifest: ((source: Extract<RecipeSource, { readonly kind: "kit" }>) => KitManifest | undefined) | undefined;
   readonly catalog?: PresetCatalog;
@@ -242,7 +242,7 @@ export async function applyImportedRecipeText(
 
   const nextSource = parsed.recipe.source;
   if (nextSource.kind === "package") {
-    let registered = getRegisteredPackage(nextSource.characterId);
+    let registered = getRegisteredPackage(nextSource.characterId, nextSource.sha256);
     if (!registered && ensurePackageRegistered) {
       registered = await ensurePackageRegistered(nextSource.characterId, nextSource.sha256);
     }
@@ -307,7 +307,7 @@ export async function applyImportedRecipeText(
         applyStoreEvent({ type: "source/capabilities", capabilities: ALL_AVAILABLE_CAPABILITIES });
       }
     } else if (nextSource.kind === "package") {
-      const registered = getRegisteredPackage(nextSource.characterId);
+      const registered = getRegisteredPackage(nextSource.characterId, nextSource.sha256);
       if (!registered) {
         if (!engine) {
           applyStoreEvent({ type: "source/capabilities", capabilities: ALL_UNAVAILABLE_CAPABILITIES });

@@ -75,7 +75,7 @@ export function ParamCustomizeSections() {
   const dispatch = useDispatch();
   const plan = useApplyPlan();
   const packages = usePackagePlans();
-  const packagePlan = recipe.source.kind === "package" ? packages.get(recipe.source.characterId) : undefined;
+  const packagePlan = recipe.source.kind === "package" ? packages.get(recipe.source.characterId, recipe.source.sha256) : undefined;
   const declaredShapes = recipe.source.kind !== "package" ? undefined
     : packagePlan && recipe.source.sha256 === packagePlan.glbSha256 ? packagePartShapes(packagePlan.manifest, packagePlan.hairLodPolicy.preferredLod) : {};
 

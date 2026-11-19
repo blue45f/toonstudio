@@ -44,6 +44,10 @@ export const CHARACTER_VERTEX_GLSL = `precision highp float;
 attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv;
+#ifdef TS_FACE_SHADOW_UV
+attribute vec2 uv2;
+varying vec2 vFaceUV;
+#endif
 #ifdef TS_VERTEX_COLOR
 attribute vec4 color;
 #endif
@@ -70,6 +74,9 @@ void main(void) {
   vPositionW = worldPos.xyz;
   vNormalW = normalize(mat3(finalWorld) * normalUpdated);
   vUV = uvUpdated;
+#ifdef TS_FACE_SHADOW_UV
+  vFaceUV = uv2;
+#endif
   vViewZ = -(view * worldPos).z;
 #ifdef TS_VERTEX_COLOR
   vColor = color;
@@ -85,6 +92,10 @@ export const CHARACTER_VERTEX_WGSL = `#include<sceneUboDeclaration>
 attribute position: vec3f;
 attribute normal: vec3f;
 attribute uv: vec2f;
+#ifdef TS_FACE_SHADOW_UV
+attribute uv2: vec2f;
+varying vFaceUV: vec2f;
+#endif
 #ifdef TS_VERTEX_COLOR
 attribute color: vec4f;
 #endif
@@ -110,6 +121,9 @@ fn main(input: VertexInputs) -> FragmentInputs {
   vertexOutputs.vPositionW = worldPos.xyz;
   vertexOutputs.vNormalW = normalize(mat3x3f(finalWorld[0].xyz, finalWorld[1].xyz, finalWorld[2].xyz) * normalUpdated);
   vertexOutputs.vUV = uvUpdated;
+#ifdef TS_FACE_SHADOW_UV
+  vertexOutputs.vFaceUV = vertexInputs.uv2;
+#endif
   vertexOutputs.vViewZ = -(scene.view * worldPos).z;
 #ifdef TS_VERTEX_COLOR
   vertexOutputs.vColor = vertexInputs.color;
@@ -135,6 +149,9 @@ varying float vViewZ;
 varying vec4 vColor;
 uniform vec3 cameraPosition;
 uniform vec3 baseColor;
+#ifdef TS_FACE_SHADOW_UV
+varying vec2 vFaceUV;
+#endif
 uniform vec3 shadeTint;
 uniform vec3 lightColor;
 uniform vec3 ambientColor;
@@ -152,8 +169,13 @@ void main(void) {
   vec3 n = normalize(vNormalW);
   vec4 albedoTex = texture2D(albedoSampler, vUV);
   vec4 paint = texture2D(paintSampler, vUV);
-  float sdfU = mix(vUV.x, 1.0 - vUV.x, step(0.5, faceParams.y));
-  float sdf = texture2D(sdfSampler, vec2(sdfU, vUV.y)).r;
+#ifdef TS_FACE_SHADOW_UV
+  vec2 faceUV = vFaceUV;
+#else
+  vec2 faceUV = vUV;
+#endif
+  float sdfU = mix(faceUV.x, 1.0 - faceUV.x, step(0.5, faceParams.y));
+  float sdf = texture2D(sdfSampler, vec2(sdfU, faceUV.y)).r;
   if (alphaParams.x > 0.0 && albedoTex.a < alphaParams.x) discard;
   vec3 base = mix(baseColor, baseColor * albedoTex.rgb, step(0.5, faceParams.w));
   vec3 albedo = mix(base, mix(base, paint.rgb, paint.a), step(0.5, toonParams.w)) * vColor.rgb;
@@ -216,6 +238,9 @@ varying vViewZ: f32;
 varying vColor: vec4f;
 uniform cameraPosition: vec3f;
 uniform baseColor: vec3f;
+#ifdef TS_FACE_SHADOW_UV
+varying vFaceUV: vec2f;
+#endif
 uniform shadeTint: vec3f;
 uniform lightColor: vec3f;
 uniform ambientColor: vec3f;
@@ -237,8 +262,13 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
   let n: vec3f = normalize(fragmentInputs.vNormalW);
   let albedoTex: vec4f = textureSample(albedoSampler, albedoSamplerSampler, fragmentInputs.vUV);
   let paint: vec4f = textureSample(paintSampler, paintSamplerSampler, fragmentInputs.vUV);
-  let sdfU: f32 = mix(fragmentInputs.vUV.x, 1.0 - fragmentInputs.vUV.x, step(0.5, uniforms.faceParams.y));
-  let sdf: f32 = textureSample(sdfSampler, sdfSamplerSampler, vec2f(sdfU, fragmentInputs.vUV.y)).r;
+#ifdef TS_FACE_SHADOW_UV
+  let faceUV = fragmentInputs.vFaceUV;
+#else
+  let faceUV = fragmentInputs.vUV;
+#endif
+  let sdfU: f32 = mix(faceUV.x, 1.0 - faceUV.x, step(0.5, uniforms.faceParams.y));
+  let sdf: f32 = textureSample(sdfSampler, sdfSamplerSampler, vec2f(sdfU, faceUV.y)).r;
   if (uniforms.alphaParams.x > 0.0 && albedoTex.a < uniforms.alphaParams.x) {
     discard;
   }

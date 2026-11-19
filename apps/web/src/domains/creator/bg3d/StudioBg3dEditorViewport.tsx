@@ -4,6 +4,7 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import { TriangleAlert } from "lucide-react";
+import { StudioBg3dEnvironmentCameraButton } from "./StudioBg3dEnvironmentCameraButton";
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { CaptureBridge } from "./StudioBg3dCaptureBridge";
 import { StudioBg3dCanvasErrorBoundary } from "./StudioBg3dCanvasErrorBoundary";
@@ -24,56 +25,31 @@ const StudioBg3dTurntableMotion = lazyRetry(() => import("./StudioBg3dTurntableM
 
 export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<string, any>; simplified?: boolean }) {
   const {
-    THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
-    Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
-    EyeOff, Globe, Hexagon, Home, Layers, LayoutTemplate, Loader2, LocateFixed, Lock, Magnet,
-    Maximize2, Move, MoveDown, PencilLine, Redo2, RotateCcw, RotateCw, Ruler, Save, ScanLine,
-    Scissors, Trash2, SunMoon, Undo2, Unlock, Upload, WandSparkles, X, ZoomIn, ZoomOut,
-    Suspense, useEffect, useEffectEvent, useCallback, useLayoutEffect, useRef, useState,
-    Fragment, lazy, createPortal, flushSync, createStudioBg3dAiMethodReferenceCapture,
-    COMPOSITE_CATEGORIES, COMPOSITE_CATEGORY_LABELS, COMPOSITE_PRESETS,
-    instantiateCompositePreset, cloneBgCustomModelInstances, createBgCustomModelInstance,
-    duplicateBgCustomModelInstance, isStudioBg3dThreeTwoBoneIkChainSupported,
-    measureBg3dObjectSize, parseBg3dSceneWithModelsFromDataUrl, StudioBg3dThreeOperationError,
-    clonePrimitives, createPrimitive, duplicatePrimitive, PRIMITIVE_DEFS, BG_SCENE_TEMPLATES,
-    instantiateSceneTemplate, BG_SKY_PRESETS, getSkyPreset, normalizePanoramaRotationDegrees,
-    createStudioGeneric3dRightsFromAttachment, createStudioGeneric3dVerifiedManifest,
-    createStudioGeneric3dPoseProxies, mergeStudioGeneric3dWorkflowMaps,
-    normalizeStudioGeneric3dClassification, normalizeStudioGeneric3dSourceFormat,
-    parseStudioGeneric3dWorkflowMetadata, createTwoBoneDefaultPoleTarget,
-    createStudioShared3dCharacterShadowEntity, StudioGeneric3dModelModePanel,
-    StudioToolHintTarget, useStudioBg3dSharedCharacterStatus, useStudioModalSheet,
-    snapshotStudioBg3dLiveAnimationPlayback, STUDIO_BG3D_ARTIFACT_CAPTURE_VERSION,
-    STUDIO_BG3D_BEAUTY_RGBA8_PROFILE, STUDIO_BG3D_DEPTH_FLOAT32_PROFILE,
-    STUDIO_BG3D_NORMAL_PROFILE, STUDIO_BG3D_STABLE_ID_PROFILE,
-    normalizeStudioBg3dArtifactCaptureResultV2, copyStudioBg3dBundledEnvironmentLibraryEntries,
-    isStudioBg3dViewportControlTarget, readStudioBg3dObjectWorldBounds,
-    readStudioBg3dWorldSurfaceHit, fitStudioBg3dCameraToBounds,
-    applyOrDeferStudioBg3dHistoryCamera, resolveStudioBg3dCameraGestureCommitView,
-    createStudioBg3dCameraUpForDutchRoll, readStudioBg3dCameraDutchRollDegrees,
-    resolveStudioBg3dCameraDistanceLimits, resolveStudioBg3dCameraNearClip,
-    resolveStudioBg3dCameraUpVector, createStudioBg3dCaptureBackgroundSnapshot,
-    studioBg3dCaptureBackgroundRequestFromSnapshot, registerStudioBg3dCaptureExcludedObject,
-    STUDIO_BG3D_CAPTURE_ASPECT_PRESETS, createStudioBg3dDocumentCaptureAspectPreset,
-    matchStudioBg3dCaptureAspectPreset, normalizeStudioBg3dCaptureAspectRatio,
-    resolveStudioBg3dCaptureFrame, resolveStudioBg3dCaptureFrameCameraSettings,
-    applyStudioBg3dCaptureFrameViewOffset, BgAnimationPlayhead, LtRangeControl, LtToggleRow,
-    PanoramaRotationNumberField, Vec3Field, StudioBg3dDestructiveMutationGuard,
-    deriveStudioBg3dGlbValidationPolicy, resolveStudioBg3dDeviceQuality,
-    acquireStudioBg3dCaptureAdapterAfterViewTransition, CAMERA_PRESETS, canonicalSceneDocument,
-    captureStudioBg3dRaster, collectDeviceSignals, createStudioBg3dHistorySnapshot,
-    createStudioBg3dShotId, degToRad, describeStudioBg3dPhysicsStatus, eulerDegreesToQuaternion,
-    formatBg3dSunTime, generateLtUserPresetId, getStudioBg3dCaptureSourceSize,
-    loadStudioBg3dThreeWebglCaptureRuntime, ltTonePreviewStyle, ltUserPresetFailureMessage,
-    matchingLtPreset, quaternionToEulerDegrees, radToDeg, resolveDeviceQuality,
-    SHARED_CHARACTER_CAPTURE_AUTHORITY_ERROR_MESSAGE, studioBg3dHistoryDocumentAtView,
-    studioBg3dMagicCaptureCompatibilityMessage, waitForStudioBg3dPaintFrame,
-    createStudioBg3dModelImportActions, CONTROL_BUTTON, ICON_BUTTON, cx, canSetStudioBg3dParent,
-    collectStudioBg3dEffectivelyVisibleEntityIds, resolveStudioBg3dHierarchy,
-    planStudioBg3dImmersiveStage, studioBg3dImmersiveStageFailureMessage,
-    resolveStudioBg3dInsertBackgroundFromDocument, resolveStudioBg3dInsertBackgroundMode,
-    STUDIO_BG3D_LENS_MAX_FOCAL_MM, STUDIO_BG3D_LENS_MIN_FOCAL_MM, STUDIO_BG3D_LENS_PRESETS,
-    computeStudioBg3dTwoPointPerspective, isStudioBg3dTwoPointPerspectiveActive,
+    THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View, Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
+    EyeOff, Globe, Hexagon, Home, Layers, LayoutTemplate, Loader2, LocateFixed, Lock, Magnet, Maximize2, Move, MoveDown, PencilLine, Redo2, RotateCcw, RotateCw, Ruler, Save, ScanLine,
+    Scissors, Trash2, SunMoon, Undo2, Unlock, Upload, WandSparkles, X, ZoomIn, ZoomOut, Suspense, useEffect, useEffectEvent, useCallback, useLayoutEffect, useRef, useState,
+    Fragment, lazy, createPortal, flushSync, createStudioBg3dAiMethodReferenceCapture, COMPOSITE_CATEGORIES, COMPOSITE_CATEGORY_LABELS, COMPOSITE_PRESETS,
+    instantiateCompositePreset, cloneBgCustomModelInstances, createBgCustomModelInstance, duplicateBgCustomModelInstance, isStudioBg3dThreeTwoBoneIkChainSupported,
+    measureBg3dObjectSize, parseBg3dSceneWithModelsFromDataUrl, StudioBg3dThreeOperationError, clonePrimitives, createPrimitive, duplicatePrimitive, PRIMITIVE_DEFS, BG_SCENE_TEMPLATES,
+    instantiateSceneTemplate, BG_SKY_PRESETS, getSkyPreset, normalizePanoramaRotationDegrees, createStudioGeneric3dRightsFromAttachment, createStudioGeneric3dVerifiedManifest,
+    createStudioGeneric3dPoseProxies, mergeStudioGeneric3dWorkflowMaps, normalizeStudioGeneric3dClassification, normalizeStudioGeneric3dSourceFormat,
+    parseStudioGeneric3dWorkflowMetadata, createTwoBoneDefaultPoleTarget, createStudioShared3dCharacterShadowEntity, StudioGeneric3dModelModePanel,
+    StudioToolHintTarget, useStudioBg3dSharedCharacterStatus, useStudioModalSheet, snapshotStudioBg3dLiveAnimationPlayback, STUDIO_BG3D_ARTIFACT_CAPTURE_VERSION,
+    STUDIO_BG3D_BEAUTY_RGBA8_PROFILE, STUDIO_BG3D_DEPTH_FLOAT32_PROFILE, STUDIO_BG3D_NORMAL_PROFILE, STUDIO_BG3D_STABLE_ID_PROFILE,
+    normalizeStudioBg3dArtifactCaptureResultV2, copyStudioBg3dBundledEnvironmentLibraryEntries, isStudioBg3dViewportControlTarget, readStudioBg3dObjectWorldBounds,
+    readStudioBg3dWorldSurfaceHit, fitStudioBg3dCameraToBounds, applyOrDeferStudioBg3dHistoryCamera, resolveStudioBg3dCameraGestureCommitView,
+    createStudioBg3dCameraUpForDutchRoll, readStudioBg3dCameraDutchRollDegrees, resolveStudioBg3dCameraDistanceLimits, resolveStudioBg3dCameraNearClip,
+    resolveStudioBg3dCameraUpVector, createStudioBg3dCaptureBackgroundSnapshot, studioBg3dCaptureBackgroundRequestFromSnapshot, registerStudioBg3dCaptureExcludedObject,
+    STUDIO_BG3D_CAPTURE_ASPECT_PRESETS, createStudioBg3dDocumentCaptureAspectPreset, matchStudioBg3dCaptureAspectPreset, normalizeStudioBg3dCaptureAspectRatio,
+    resolveStudioBg3dCaptureFrame, resolveStudioBg3dCaptureFrameCameraSettings, applyStudioBg3dCaptureFrameViewOffset, BgAnimationPlayhead, LtRangeControl, LtToggleRow,
+    PanoramaRotationNumberField, Vec3Field, StudioBg3dDestructiveMutationGuard, deriveStudioBg3dGlbValidationPolicy, resolveStudioBg3dDeviceQuality,
+    acquireStudioBg3dCaptureAdapterAfterViewTransition, CAMERA_PRESETS, canonicalSceneDocument, captureStudioBg3dRaster, collectDeviceSignals, createStudioBg3dHistorySnapshot,
+    createStudioBg3dShotId, degToRad, describeStudioBg3dPhysicsStatus, eulerDegreesToQuaternion, formatBg3dSunTime, generateLtUserPresetId, getStudioBg3dCaptureSourceSize,
+    loadStudioBg3dThreeWebglCaptureRuntime, ltTonePreviewStyle, ltUserPresetFailureMessage, matchingLtPreset, quaternionToEulerDegrees, radToDeg, resolveDeviceQuality,
+    SHARED_CHARACTER_CAPTURE_AUTHORITY_ERROR_MESSAGE, studioBg3dHistoryDocumentAtView, studioBg3dMagicCaptureCompatibilityMessage, waitForStudioBg3dPaintFrame,
+    createStudioBg3dModelImportActions, CONTROL_BUTTON, ICON_BUTTON, cx, canSetStudioBg3dParent, collectStudioBg3dEffectivelyVisibleEntityIds, resolveStudioBg3dHierarchy,
+    planStudioBg3dImmersiveStage, studioBg3dImmersiveStageFailureMessage, resolveStudioBg3dInsertBackgroundFromDocument, resolveStudioBg3dInsertBackgroundMode,
+    STUDIO_BG3D_LENS_MAX_FOCAL_MM, STUDIO_BG3D_LENS_MIN_FOCAL_MM, STUDIO_BG3D_LENS_PRESETS, computeStudioBg3dTwoPointPerspective, isStudioBg3dTwoPointPerspectiveActive,
     studioBg3dFocalLengthToFovDegrees, studioBg3dFovDegreesToFocalLength,
     resolveStudioBg3dLtCaptureSize, encodeStudioBg3dLtLayers,
     EMPTY_STUDIO_BG3D_LT_USER_PRESET_PAYLOAD, createStudioBg3dLtUserPreset,
@@ -300,6 +276,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
       return "none";
     });
   };
+  const framingModel = selectedIds.size === 1 ? customModelById.get(selectedIds.values().next().value) : undefined;
   const sceneIsEmpty =
     primitives.length === 0 && customModels.length === 0 && sharedCharacters.length === 0;
   const turntablePaused = isCapturing || isTransforming || physicsInteractionLocked
@@ -854,6 +831,18 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                       법선 정렬
                     </button>
                   </StudioToolHintTarget>
+                  {framingModel && (
+                    <StudioBg3dEnvironmentCameraButton
+                      assetHash={attachmentByStorageModelIdRef.current.get(framingModel.modelId)?.hash}
+                      blockedReason={focusSelectionDisabledReason}
+                      isCaptureActive={() => captureInFlightRef.current}
+                      readView={() => viewportApiRef.current?.readView()}
+                      readInstance={() => primitiveObjectsRef.current.get(framingModel.id)}
+                      readSource={() => R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, framingModel.modelId, h.engineRuntime?.plan?.backend)?.root}
+                      onCommit={commitCameraViewCommand}
+                      onError={setError}
+                    />
+                  )}
                   <StudioToolHintTarget
                     hint={BG3D_VIEWPORT_HINTS.focus}
                     disabled={Boolean(focusSelectionDisabledReason)}

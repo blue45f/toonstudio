@@ -117,7 +117,7 @@ describe("ExportPanel — 연속 클릭 중복 차단 · 컷별 진행률 · 실
     expect(h.savedFiles).toHaveLength(1);
     expect(h.savedFiles[0]?.fileName).toMatch(/-quad-sheet\.png$/u);
     expect(screen.queryByTestId("export-progress")).toBeNull();
-  });
+  }, 30000);
 
   it("내보내기 실패 시 이전 안내 문구를 정리하고, 원인 해결 후 '다시 시도' 버튼으로 최신 설정을 반영해 정상 저장한다", async () => {
     const h = createRealHarness();

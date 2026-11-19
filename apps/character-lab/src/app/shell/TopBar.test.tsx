@@ -38,6 +38,19 @@ describe("app/shell/TopBar", () => {
     expect(session.selected).toEqual(["webgl2"]);
   });
 
+  it("작업 도구 버튼으로 같은 패널을 열고 닫고 엔진 선택은 계속 접근한다", () => {
+    render(<MockLabProvider><TopBar /></MockLabProvider>);
+    const toggle = screen.getByRole("button", { name: "작업 도구" });
+    const panel = document.getElementById(toggle.getAttribute("aria-controls") ?? "");
+    expect(panel?.dataset.open).toBe("false");
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(panel?.contains(screen.getByRole("combobox", { name: "품질" }))).toBe(true);
+    fireEvent.click(toggle);
+    expect(panel?.dataset.open).toBe("false");
+    expect(panel?.contains(screen.getByRole("button", { name: "WebGL2" }))).toBe(false);
+  });
+
   it("상태 배지·Undo/Redo·셰이딩·품질 프리셋이 상태를 반영하고 명령을 보낸다", () => {
     const store = createMockLabStore({ history: { canUndo: true, canRedo: false, depth: 3, revision: 3 } });
     render(

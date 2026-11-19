@@ -9,6 +9,7 @@ import {
   preserveStudioBg3dLtSceneAnchorAfterRemoval,
   STUDIO_BG3D_LT_GROUP_NAME,
   STUDIO_BG3D_LT_LAYER_NAMES,
+  STUDIO_BG3D_LT_MAX_DATA_URL_LENGTH,
   type StudioBg3dLtImageElementLike,
   type StudioBg3dLtLayerPlanResult,
   type StudioBg3dLtLayerRole,
@@ -164,6 +165,18 @@ describe("3D LT PNG persistence boundary", () => {
     expect(isStudioBg3dLtPngDataUrl("data:image/png;base64,abc")).toBe(false);
     expect(isStudioBg3dLtPngDataUrl("data:image/jpeg;base64,TUFJTg==")).toBe(false);
     expect(isStudioBg3dLtPngDataUrl("https://example.test/image.png")).toBe(false);
+  });
+
+  it("큰 환경 렌더도 본문 전체와 끝 패딩을 검사하고 기존 URL 상한을 지킨다", () => {
+    const prefix = "data:image/png;base64,";
+    const body = "aB+/".repeat(2 * 1024 * 1024);
+    for (const tail of ["YQ==", "YWI=", "YWJj"]) {
+      expect(isStudioBg3dLtPngDataUrl(prefix + body + tail)).toBe(true);
+    }
+    for (const tail of ["=ABC", "Y===", "Y=AB", "ab c", "ab\nc", "abτc"]) {
+      expect(isStudioBg3dLtPngDataUrl(prefix + body + tail)).toBe(false);
+    }
+    expect(isStudioBg3dLtPngDataUrl(prefix + "A".repeat(STUDIO_BG3D_LT_MAX_DATA_URL_LENGTH))).toBe(false);
   });
 
   it("canonicalizes only recognized legacy BG3D fragments", () => {

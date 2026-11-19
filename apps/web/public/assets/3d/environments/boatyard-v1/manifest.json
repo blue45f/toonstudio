@@ -1,0 +1,23 @@
+{
+  "fileName": "harbor_boat_repair_shed.glb",
+  "byteSize": 5585416,
+  "sha256": "sha256:4a0e5d731465cca97435411db8d2e93702e5e762549f515b646c66604f7a0f78",
+  "bounds": [
+    5.42,
+    2.9257,
+    3.62
+  ],
+  "camera": {
+    "position": [
+      4.02,
+      3.53,
+      6.24
+    ],
+    "target": [
+      -0.04,
+      0.86,
+      -0.2
+    ],
+    "fovDegrees": 40
+  }
+}

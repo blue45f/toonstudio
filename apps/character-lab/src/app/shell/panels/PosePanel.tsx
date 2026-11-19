@@ -14,7 +14,6 @@ import { hasPoseSkeleton, readPoseSkeleton } from "../../../render/pose-skeleton
 import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions } from "../lab-store-context";
 
 import { PoseFineLimbGazeControls } from "./pose-fine-limb-gaze-controls";
-import { WEBTOON_SIGNATURE_POSES, buildShaperPresetCommands } from "./shaper-control-points";
 import {
   CoordInputs,
   HAND_SIDES,
@@ -35,6 +34,7 @@ import {
   parseCoords,
   toCoords,
 } from "./pose-panel-helpers";
+import { WEBTOON_SIGNATURE_POSES, buildShaperPresetCommands } from "./shaper-control-points";
 import {
   classifySkeletonBoundaryError,
   diagnoseSkeletonData,
@@ -192,9 +192,10 @@ export function PosePanel() {
     if (Object.keys(basePose).length === 0) return;
     intensityBasePoseRef.current = basePose;
     const scaled = scalePoseIntensity(basePose, nextIntensity);
-    lastScaledPoseRef.current = scaled;
-    setPoseIntensity(nextIntensity);
     dispatch({ type: "pose/set", pose: scaled, scope: "full", labelKo: `포즈 강도 ${Math.round(nextIntensity * 100)}%`, coalesceKey: "pose:intensity" });
+    // reducer가 정규화한 자세를 기억해야 다음 강도도 같은 원본에서 계산한다.
+    lastScaledPoseRef.current = store.getState().recipe.pose;
+    setPoseIntensity(nextIntensity);
   };
 
   const applyHandPreset = (preset: HandPosePreset): void => {

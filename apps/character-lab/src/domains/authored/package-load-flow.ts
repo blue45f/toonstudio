@@ -92,6 +92,9 @@ export async function loadAuthoredPackageFlow(port: PackageFetchPort, entry: Aut
   if (!parsed.ok) return { ok: false, failure: parsed.failure };
   const glb = parsed.manifest.files.glb;
   if (!glb) return { ok: false, failure: failVisible("package-no-glb", "제작 패키지 manifest에 files.glb가 없습니다.", undefined, now) };
+  if (parsed.manifest.characterId !== entry.characterId || (entry.glbSha256 !== null && entry.glbSha256 !== glb.sha256)) {
+    return { ok: false, failure: failVisible("package-revision-mismatch", "제작 패키지 목록에 등록된 인물·판본과 원본 파일 정보가 다릅니다.", undefined, now) };
+  }
 
   const glbResponse = await port.fetchBytes(joinPackageUrl(entry.baseUrl, glb.path));
   if (!glbResponse.ok) {

@@ -295,7 +295,7 @@ def make_scene():
     return [group.build() for group in (floor,frame,panes,fronds)]
 
 
-def review(scene):
+def review(scene, position=CAMERA, target=TARGET, fov=FOV, thumbnail=None):
     world = bpy.data.worlds.new("Daylight")
     world.use_nodes = True
     world.node_tree.nodes.get("Background").inputs[0].default_value = (.70,.81,.83,1)
@@ -311,17 +311,17 @@ def review(scene):
     cam = bpy.data.cameras.new("Garden aisle")
     camera = bpy.data.objects.new(cam.name,cam)
     scene.collection.objects.link(camera)
-    camera.location = CAMERA
-    camera.rotation_euler = (Vector(TARGET)-camera.location).to_track_quat("-Z","Y").to_euler()
+    camera.location = position
+    camera.rotation_euler = (Vector(target)-camera.location).to_track_quat("-Z","Y").to_euler()
     scene.camera = camera
     scene.render.resolution_x, scene.render.resolution_y = 800,600
     scene.render.resolution_percentage = 100
-    cam.angle_x = 2*math.atan(math.tan(math.radians(FOV)/2)*800/600)
+    cam.angle_x = 2*math.atan(math.tan(math.radians(fov)/2)*800/600)
     scene.render.engine = "CYCLES"
     scene.cycles.samples = 14
     scene.cycles.use_denoising = True
     scene.render.image_settings.file_format = "PNG"
-    scene.render.filepath = str(OUT / "botanical_glasshouse.png")
+    scene.render.filepath = str(thumbnail or OUT / "botanical_glasshouse.png")
     bpy.ops.render.render(write_still=True)
 
 

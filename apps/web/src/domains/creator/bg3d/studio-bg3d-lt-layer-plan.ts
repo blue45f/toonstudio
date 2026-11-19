@@ -8,6 +8,7 @@
  */
 
 import { parseStudioBg3dSixPassArtifactSourceUri } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
+import { isStandardBase64 } from "@/shared/lib/standard-base64";
 import { createLayerGroup, type LayerGroup } from "../studio-layers";
 import type { StudioBg3dLtLayerPresentation } from "../scene-3d/studio-3d-insert-contract";
 import { makeStudioBg3dLtLayerElement as makeLayerElement } from "../contracts/studio-bg3d-lt-layer-element";
@@ -268,7 +269,6 @@ interface CommonGeometry {
 }
 
 const ROLE_SET = new Set<string>(STUDIO_BG3D_LT_LAYER_ROLES);
-const BASE64_BODY_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
 const ID_PATTERN = /^\S{1,256}$/u;
 const MAX_LEGACY_SCENE_FRAGMENT_LENGTH = 2 * 1024 * 1024;
 
@@ -318,7 +318,7 @@ export function isStudioBg3dLtPngDataUrl(value: unknown): value is string {
     return false;
   }
   const body = value.slice("data:image/png;base64,".length);
-  return body.length > 0 && body.length % 4 === 0 && BASE64_BODY_PATTERN.test(body);
+  return body.length > 0 && isStandardBase64(body);
 }
 
 function isStudioBg3dLtPersistedLayerSource(

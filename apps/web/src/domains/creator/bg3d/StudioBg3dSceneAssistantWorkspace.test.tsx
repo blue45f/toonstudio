@@ -2,6 +2,9 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { allocateStudioBg3dTemplateInstanceNodeIds } from "./studio-bg3d-template-instance";
+import { studioBg3dAssistantLocationId } from "./studio-bg3d-assistant-location";
+import { copyStudioBg3dBundledEnvironmentLibraryEntries } from "./studio-bg3d-bundled-environment-library";
 import { BG_SCENE_TEMPLATES } from "../studio-background-3d-scene-templates";
 import {
   StudioBg3dSceneAssistantWorkspace,
@@ -100,8 +103,19 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect(host.addSceneTemplate).toHaveBeenCalledExactlyOnceWith("forest_path");
     expect(host.applyCameraPreset).not.toHaveBeenCalled();
     expect(screen.getByTestId("studio-bg3d-scene-assistant").getAttribute("data-step")).toBe("arrange");
+    cleanup();
+    const nodesFor = (sourceId: string) => {
+      const allocation = allocateStudioBg3dTemplateInstanceNodeIds({
+        sourceId, sourceKind: "catalog", insertionOffset: 0, nodeCount: 2, occupiedNodeIds: new Set(), createSeed: () => "saved-cut",
+      });
+      if (!allocation) throw new Error("공간의 저장 식별자를 만들지 못했습니다.");
+      return allocation.nodeIds.map((id) => ({ id }));
+    };
+    const forestNodes = nodesFor("forest_path");
+    render(<StudioBg3dSceneAssistantWorkspace h={createHost({ primitives: forestNodes })} onOpenProfessional={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "1. 시작점 선택" }));
     expect((screen.getByRole("combobox", { name: "모든 공간" }) as HTMLSelectElement).value).toBe("forest_path");
+    expect(studioBg3dAssistantLocationId([...forestNodes, ...nodesFor("beach")])).toBeNull();
   });
 
   it("refreshes asynchronous mutable host state so restored scenes never leave navigation disabled", async () => {
@@ -261,6 +275,35 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: /정밀 편집/ })[0]);
     expect(openProfessional).toHaveBeenCalledOnce();
+  });
+
+  it("한국어 번들 배경 전체를 간편 모드에서 찾아 원본을 배치한다", () => {
+    const modelLibrary = copyStudioBg3dBundledEnvironmentLibraryEntries();
+    const host = createHost({ modelLibrary });
+    render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
+    const grid = within(screen.getByTestId("scene-assistant-env-asset-grid"));
+    expect(grid.getAllByRole("button")).toHaveLength(8);
+    fireEvent.click(screen.getByRole("button", { name: /배경 더 보기/ }));
+    expect(grid.getAllByRole("button")).toHaveLength(16);
+    const search = screen.getByRole("searchbox", { name: "배경 모델 검색" });
+    fireEvent.change(search, { target: { value: "존재하지 않는 배경" } });
+    expect(screen.getByText("검색한 배경이 없습니다.")).toBeTruthy();
+    fireEvent.change(search, { target: { value: "HARBOR 선체" } });
+    const shipyard = modelLibrary.find(item => item.name === "항구 목선 수리소");
+    expect(shipyard).toBeDefined();
+    fireEvent.click(grid.getByRole("button", { name: /항구 목선 수리소/ }));
+    expect(host.addCustomModelToScene).toHaveBeenCalledWith(shipyard?.id);
+  });
+
+  it("소품이 비었을 때 전체 라이브러리에서 에셋 탭을 연다", () => {
+    const host = createHost();
+    const open = vi.fn();
+    render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={open} />);
+    fireEvent.click(screen.getByRole("button", { name: /소품.*가구와 물건/ }));
+    fireEvent.click(screen.getByRole("button", { name: "전체 라이브러리 열기" }));
+    expect(host.setActivePanelTab).toHaveBeenCalledWith("models");
+    expect(host.setModelsPanelActivated).toHaveBeenCalledWith(true);
+    expect(open).toHaveBeenCalledOnce();
   });
 
   it("surfaces environment-classified 3D models in the background goal step and adds them on click", () => {

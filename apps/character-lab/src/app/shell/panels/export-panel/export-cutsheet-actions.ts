@@ -1,4 +1,5 @@
 import { failVisible } from "../../../../contracts";
+import { selectAuthoredPackageRevision } from "../../../../domains/authored/package-index";
 import {
   CUTSHEET_MIME,
   episodeCutsheetFileName,
@@ -6,6 +7,7 @@ import {
   serializeEpisodeCutsheet,
 } from "../../../../export/webtoon-episode-cutsheet";
 import { planApply } from "../../../../state/apply-plan";
+import { browserPackageLoader } from "../package-panel/browser-package-loader";
 import { findWebtoonSceneDirectorPreset } from "../viewport-scene-director";
 
 import type { ApplyPlan, CameraFraming, CharacterEngine, CharacterRecipe, LabFailure, LabState, PresetCatalog } from "../../../../contracts";
@@ -29,24 +31,29 @@ export async function ensureBrowserPackageRegistered(params: {
   readonly fallbackCapabilities: LabState["capabilities"];
 }): Promise<{ readonly glbSha256: string; readonly capabilities: LabState["capabilities"] } | undefined> {
   const { characterId, expectedSha256, packagePlans, fallbackCapabilities } = params;
-  const existing = packagePlans.get(characterId);
+  const existing = packagePlans.get(characterId, expectedSha256);
   if (existing) return existing;
-  if (typeof fetch !== "function") return undefined;
+  const anyRegistered = packagePlans.get(characterId);
+  if (typeof fetch !== "function") return anyRegistered;
   try {
-    const { browserPackageLoader } = await import("../PackagePanel");
     const indexResult = await browserPackageLoader.loadIndex();
-    if (!indexResult.ok) return undefined;
+    if (!indexResult.ok) return anyRegistered;
     const entry = indexResult.entries.find((item) => item.characterId === characterId);
-    if (!entry) return undefined;
-    if (entry.glbSha256 !== null && entry.glbSha256 !== expectedSha256) {
-      return { glbSha256: entry.glbSha256, capabilities: fallbackCapabilities };
+    if (!entry) return anyRegistered;
+    const revision = selectAuthoredPackageRevision(entry, expectedSha256);
+    if (!revision) {
+      return entry.glbSha256 ? { glbSha256: entry.glbSha256, capabilities: fallbackCapabilities } : anyRegistered;
     }
-    const loaded = await browserPackageLoader.loadPackage(entry, { preferredLod: 0 });
-    if (!loaded.ok) return undefined;
+    const loaded = await browserPackageLoader.loadPackage(revision, { preferredLod: 0 });
+    if (!loaded.ok) return anyRegistered;
+    if (loaded.plan.manifest.characterId !== characterId) return anyRegistered;
+    if (loaded.plan.glbSha256 !== expectedSha256) {
+      return { glbSha256: loaded.plan.glbSha256, capabilities: loaded.plan.capabilities };
+    }
     packagePlans.register(loaded.plan);
     return { glbSha256: loaded.plan.glbSha256, capabilities: loaded.plan.capabilities };
   } catch {
-    return undefined;
+    return anyRegistered;
   }
 }
 

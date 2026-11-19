@@ -12,6 +12,7 @@ import { CHARACTER_SLOT_KINDS } from "../../contracts";
 
 import { readGlbJsonChunk } from "./glb-json-chunk";
 import { compareCapabilities } from "./package-capability";
+import { selectAuthoredPackageRevision } from "./package-index";
 import { loadAuthoredPackageFlow, loadPackageIndexFlow } from "./package-load-flow";
 import { parseVrmFromGlb } from "./vrm-extension-parser";
 
@@ -244,11 +245,52 @@ describe("authored/real-packages (public/assets/characters)", () => {
     }
   });
 
+  it("저장한 주인공 원본을 같은 권리·SHA 검증으로 열고 목록에 없는 판은 거절한다", async () => {
+    const entry = (await loadIndexEntries()).find(({ characterId }) => characterId === "shaper-atelier-protagonist");
+    if (!entry) throw new Error("주인공 패키지 누락");
+    const revisions = [
+      "aa5f6471871c971ae3ba3c621b89d24b31db37d6d020c21544d9cdd6faa40fad",
+      "919e8d4492290cd13dd23ec42ca00b7f1b4761ded60a145652618586f3ac9b35",
+      "9142aa82031a04cf0d23f7e69e7165498860a29b85b759eca808fa3f6776c931",
+    ];
+    for (const digest of revisions) {
+      const revision = selectAuthoredPackageRevision(entry, digest);
+      if (!revision) throw new Error(digest);
+      const loaded = await loadAuthoredPackageFlow(fsPort(), revision, { sha256 });
+      if (!loaded.ok) throw new Error(loaded.failure.reasonKo);
+      expect(loaded.detail.observedSha256).toBe(digest);
+      expect(loaded.plan.manifest.characterId).toBe(entry.characterId);
+      expect(loaded.plan.licenseNote).toBe("CC0-1.0");
+      expect(loaded.plan.capabilities.pose.status).toBe("available");
+      expect(loaded.detail.warnings).toEqual([]);
+    }
+    expect(selectAuthoredPackageRevision(entry, "f".repeat(64))).toBeUndefined();
+    const archived = selectAuthoredPackageRevision(entry, revisions[0]!);
+    if (!archived) throw new Error("보관 패키지 누락");
+    const swapped = await loadAuthoredPackageFlow(fsPort(), { ...archived, manifestUrl: entry.manifestUrl }, { sha256 });
+    expect(swapped.ok ? undefined : swapped.failure.code).toBe("package-revision-mismatch");
+    const current = await loadAuthoredPackageFlow(fsPort(), entry, { sha256 });
+    if (!current.ok) throw new Error(current.failure.reasonKo);
+    const chunk = readGlbJsonChunk(current.detail.glbBytes);
+    if (!chunk.ok) throw new Error(chunk.reasonKo);
+    const gltf = chunk.json as {
+      materials: { name: string; normalTexture?: { index: number; scale: number; extensions: { KHR_texture_transform: { scale: number[] } } } }[];
+      textures: { source: number }[];
+      images: { name: string }[];
+    };
+    const woven = gltf.materials.filter((material) => material.normalTexture !== undefined);
+    expect(woven.map((material) => material.name)).toEqual(["mat_top_shaper-atelier-protagonist"]);
+    const normal = woven[0]!.normalTexture!;
+    expect(normal.scale).toBeCloseTo(0.12);
+    expect(normal.extensions.KHR_texture_transform.scale).toEqual([128, 128]);
+    expect(gltf.images[gltf.textures[normal.index]!.source]?.name).toBe("atelier_blazer_twill_normal");
+  });
+
   it.each([
     {
       id: "shaper-atelier-protagonist",
-      sha: "919e8d4492290cd13dd23ec42ca00b7f1b4761ded60a145652618586f3ac9b35",
-      bytes: 3_737_860,
+      sha: "ca05e8c0825594775f36f96b7cd3e5bb4783d575b16c0b7c210ea517115ac288",
+      bytes: 3_798_888,
       hairStyle: "wolf-layered",
       lod: [6744, 3266, 1362],
     },

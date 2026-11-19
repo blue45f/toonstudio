@@ -1,5 +1,6 @@
 /** Rare PNG/CAS implementation loaded only when a linked 3D pass is persisted. */
 
+import { isStandardBase64 } from "@/shared/lib/standard-base64";
 import {
   computeStudioLinked3dPassRootHash,
   computeStudioLinked3dSceneRevisionSignatures,
@@ -45,8 +46,7 @@ function decodePngDataUrl(value: unknown): Uint8Array {
   if (
     base64.length === 0
     || base64.length > Math.ceil(STUDIO_LINKED_3D_PASS_MAX_PNG_BYTES / 3) * 4 + 4
-    || base64.length % 4 !== 0
-    || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(base64)
+    || !isStandardBase64(base64)
     || typeof globalThis.atob !== "function"
   ) {
     passError("invalid-png", "연결형 3D PNG 인코딩이 손상되었거나 안전 한도를 넘었습니다.");

@@ -223,8 +223,8 @@ function createProps(
     filterPreparationBusy: false,
     filterTargetLabel: "현재 페이지 합성본",
     filterUnavailableReason: null,
-    hi: 0,
-    history: [[], []],
+    undoDisabled: true,
+    redoDisabled: false,
     isMobile: false,
     livingInk: {
       supported: false,
@@ -400,7 +400,7 @@ describe("StudioMobileEditingDock", () => {
     expect(within(dock).getByRole("button", { name: "되돌리기 · 실행취소" }).getAttribute("data-hint-description")).toContain("한 단계 되돌립니다");
     expect(within(dock).getByRole("button", { name: "다시 · 다시실행" }).getAttribute("data-hint-description")).toContain("다시 적용");
     expect(dock.querySelector("button button")).toBeNull();
-    view.rerender(<StudioMobileEditingDock {...createProps({ isMobile: true, hi: 1 })} />);
+    view.rerender(<StudioMobileEditingDock {...createProps({ isMobile: true, undoDisabled: false, redoDisabled: true })} />);
     dock = screen.getByRole("navigation", { name: "스튜디오 모바일 도구막대" });
     expect(within(dock).getByRole<HTMLButtonElement>("button", { name: "되돌리기 · 실행취소" }).disabled).toBe(false);
     expect(within(dock).getByRole<HTMLButtonElement>("button", { name: "다시 · 다시실행" }).disabled).toBe(true);
@@ -408,7 +408,7 @@ describe("StudioMobileEditingDock", () => {
     expect(within(dock).getByRole("button", { name: "다시 · 다시실행" }).getAttribute("data-hint-description")).toContain("다시 적용");
     view.rerender(
       <StudioMobileEditingDock
-        {...createProps({ isMobile: true, collaborationDocumentLocked: true })}
+        {...createProps({ isMobile: true, collaborationDocumentLocked: true, undoDisabled: true, redoDisabled: true })}
       />,
     );
     dock = screen.getByRole("navigation", { name: "스튜디오 모바일 도구막대" });
@@ -1925,7 +1925,7 @@ describe("StudioMobileEditingDock", () => {
     useI18n.getState().setLang("en");
     registerI18nLocaleEntries("en", { [keys[0]]: undoCaption, [keys[1]]: redoCaption });
     try {
-      const props = createProps({ isMobile: true, hi: 1 });
+      const props = createProps({ isMobile: true, undoDisabled: false, redoDisabled: true });
       render(<StudioMobileEditingDock {...props} />);
       const toolbar = screen.getByRole("toolbar", { name: "Drawing tools" });
       const undo = within(toolbar).getByRole("button", { name: undoName });
@@ -2048,8 +2048,8 @@ describe("명료한 그리기의 기존 모바일 도크 재사용", () => {
     return <DrawingClarityContext.Provider value={clarity(active)}><div data-studio-editor="true"><div id="studio-drawing-clarity-history-slot" />
       <StudioMobileEditingDock {...props} /><StudioDrawingClarityMore id="test-drawing-menu" hostId="studio-drawing-clarity-mobile-more-slot" purpose="도구와 도움말" actions={[]} /></div></DrawingClarityContext.Provider>;
   }
-  it("원래 기록 버튼을 상단으로 옮겨 sidecar 권한·색상 닫기·같은 명령을 유지한다", async () => {
-    const props = createProps({ isMobile: true, sidecarUndoAvailable: true, sidecarRedoAvailable: true }); render(surface(props));
+  it("상단 기록 버튼이 원고의 현재 실행취소·다시실행 권한과 동일한 명령을 유지한다", async () => {
+    const props = createProps({ isMobile: true, undoDisabled: false, redoDisabled: false }); render(surface(props));
     const history = document.getElementById("studio-drawing-clarity-history-slot"); if (!history) throw new Error("실제 상단 슬롯 누락");
     await waitFor(() => expect(within(history).getAllByRole("button")).toHaveLength(2));
     const primary = document.querySelector<HTMLElement>('[data-studio-mobile-primary-actions="true"]'); expect(primary?.children).toHaveLength(7);
@@ -2066,6 +2066,15 @@ describe("명료한 그리기의 기존 모바일 도크 재사용", () => {
     fireEvent.click(screen.getByRole("button", { name: "브러시 색상" })); expect(document.querySelector('[data-studio-mobile-color-controls="true"]')?.hasAttribute("hidden")).toBe(false);
     const undo = within(history).getByRole("button", { name: "되돌리기 · 실행취소" }); expect(undo.matches(":disabled")).toBe(false); fireEvent.click(undo);
     expect(props.stableHandlers.undo).toHaveBeenCalledOnce(); expect(document.querySelector('[data-studio-mobile-color-controls="true"]')?.hasAttribute("hidden")).toBe(true);
+  });
+  it("공동 문서에서는 내 편집에 허용된 기록 버튼만 실행한다", async () => {
+    const props = createProps({ isMobile: true, collaborationDocumentLocked: true, undoDisabled: false, redoDisabled: true });
+    render(surface(props));
+    const undo = await screen.findByRole("button", { name: "되돌리기 · 실행취소" });
+    expect(undo.matches(":disabled")).toBe(false);
+    fireEvent.click(undo);
+    expect(props.stableHandlers.undo).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "다시 · 다시실행" }).matches(":disabled")).toBe(true);
   });
   it("간단한 표시를 끝내면 기존6도구와 원래 작업 메뉴를 돌려준다", async () => {
     const props = createProps({ isMobile: true }), view = render(surface(props));

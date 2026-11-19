@@ -37,11 +37,7 @@ import type { PresetId, SlotCapabilityMap, SlotKind } from "./slots";
 // ---------------------------------------------------------------- 식별자·경로·버전
 
 export const KIT_SCHEMA_ID = "toonstudio.character-kit/1" as const;
-export const KIT_DEFAULT_ID = "toonstudio-kit-v1" as const;
-export const KIT_ASSET_ROOT = "/assets/characters/toonstudio-kit-v1" as const;
-export const KIT_MANIFEST_FILENAME = "kit.json" as const;
-/** 키트 `kitVersion`. 이름·구조가 호환되지 않게 바뀌면 올리고 레시피 `source.kitVersion`과 맞춘다(불일치는 `kit-version-mismatch`). */
-export const KIT_CURRENT_VERSION = 1 as const;
+export { KIT_ASSET_ROOT, KIT_CURRENT_VERSION, KIT_DEFAULT_ID, KIT_MANIFEST_FILENAME, KIT_PORTRAIT_VERSION, kitManifestFilename } from "./kit-editions";
 
 export const KIT_BASE_IDS = ["female", "male"] as const;
 export type KitBaseId = (typeof KIT_BASE_IDS)[number];

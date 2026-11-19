@@ -32,6 +32,7 @@ type PanelTab = "authored-v1" | "cycles-v6";
 type CyclesPassKey = StudioBg3dCyclesCompositorLayerDescriptor["pass"];
 
 const THEME_LABELS_KO: Readonly<Record<StudioBg3dEnvironmentTheme, string>> = Object.freeze({
+  nature: "자연·정원",
   home: "주거·실내",
   hospitality: "카페·로비",
   urban: "도시·거리",

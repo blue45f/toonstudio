@@ -75,3 +75,13 @@ describe("face-sdf", () => {
     expect(sampleFaceSdf(map, 2, -1)).toBe((map.data[15] ?? 0) / 255);
   });
 });
+
+it("정면 그림자 UV는 사광에서 코끝·입술 아래의 형태를 남기고 정면광에서 풀린다", () => {
+  const map = generateFaceSdf(256, { portrait: true });
+  const side = { fdotl: 0.72, flipU: 0 as const, threshold: 0.14 };
+  for (const [u, v] of [[0.479, 0.519], [0.491, 0.413]]) {
+    expect(faceShadowAt(map, u, v, side)).toBe(1);
+    expect(faceShadowAt(map, u, v, { ...side, threshold: 0 })).toBe(0);
+  }
+  expect(faceShadowAt(map, 0.52, 0.60, side)).toBe(0);
+});

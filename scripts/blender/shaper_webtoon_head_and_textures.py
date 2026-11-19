@@ -476,12 +476,13 @@ def build_sculpted_webtoon_bangs_bmesh(
     # (eye_z + 0.015), while long cheek strands sweep outside +-34 deg!
     if bang_style == "curtain-protagonist":
         strands = [
-            (-7.0, -3.0, 0.013, eye_z + 0.094, eye_z + 0.016, 0.010, -0.003),
-            (7.0, 3.0, 0.013, eye_z + 0.094, eye_z + 0.016, 0.010, 0.003),
-            (-19.0, -29.0, 0.019, eye_z + 0.091, eye_z + 0.012, 0.011, -0.006),
-            (19.0, 29.0, 0.019, eye_z + 0.091, eye_z + 0.012, 0.011, 0.006),
-            (-36.0, -44.0, 0.023, eye_z + 0.082, eye_z - 0.072, 0.010, -0.004),
-            (36.0, 44.0, 0.023, eye_z + 0.082, eye_z - 0.072, 0.010, 0.004),
+            # 가르마에서 관자놀이로 넘긴 겉머리, 그 아래로 비치는 짧은 속머리.
+            (-9.0, 7.0, 0.014, eye_z + 0.090, eye_z + 0.018, 0.011, -0.001),
+            (-2.0, 28.0, 0.018, eye_z + 0.095, eye_z + 0.023, 0.014, 0.003),
+            (12.0, 41.0, 0.016, eye_z + 0.092, eye_z - 0.002, 0.011, 0.006),
+            (-17.0, -33.0, 0.018, eye_z + 0.094, eye_z + 0.014, 0.013, -0.006),
+            (-32.0, -47.0, 0.019, eye_z + 0.083, eye_z - 0.058, 0.014, -0.007),
+            (31.0, 46.0, 0.021, eye_z + 0.085, eye_z - 0.076, 0.012, 0.005),
         ]
     elif bang_style == "hunter-comma":
         strands = [
@@ -738,6 +739,7 @@ def build_korean_webtoon_head_and_face(
     neck_ring_fit: tuple[float, float, float] | None = None,
     scale_z: float = 1.0,
     z_offset: float = 0.0,
+    portrait_refinement: bool = False,
 ) -> dict[str, bpy.types.Object]:
     is_male = gender == "male"
     b_neck = arm_obj.data.bones["mixamorig:Neck"].head_local.copy()
@@ -852,12 +854,14 @@ def build_korean_webtoon_head_and_face(
                     if de2 < 2.1:
                         y += math.exp(-de2 * 1.35) * 0.0044
 
-                dnx = x / (0.0062 if not is_male else 0.0072)
+                nose_width = 0.0084 if portrait_refinement else (0.0062 if not is_male else 0.0072)
+                dnx = x / nose_width
                 dnz_tip = (z - z_nose) / (0.0095 * scale_z)
                 tip_w = math.exp(-(dnx * dnx * 1.3 + dnz_tip * dnz_tip * 1.4))
                 bridge_t = _smoothstep(z_nose, eye_z - 0.003 * scale_z, z) * (1.0 - _smoothstep(eye_z - 0.003 * scale_z, eye_z + 0.012 * scale_z, z))
                 bridge_w = math.exp(-(dnx * dnx * 1.9)) * bridge_t
-                y -= (0.0102 if not is_male else 0.0124) * tip_w + (0.0032 if not is_male else 0.0048) * bridge_w
+                tip_depth = 0.0076 if portrait_refinement else (0.0102 if not is_male else 0.0124)
+                y -= tip_depth * tip_w + (0.0032 if not is_male else 0.0048) * bridge_w
 
                 dmx = x / 0.0145
                 if abs(dmx) < 1.6:
@@ -1115,6 +1119,16 @@ def build_korean_webtoon_head_and_face(
     iris_rz = eye_h * 0.98
     iris_z_shift = eye_h * 0.07
 
+    if portrait_refinement:
+        eye_w, eye_h = 0.0202, 0.0115
+        iris_rx, iris_rz, iris_z_shift = 0.54 * eye_w, 1.07 * eye_h, 0.13 * eye_h
+
+    def lid_height(lateral: float, upper: bool) -> float:
+        # 가로 좌표는 눈물점 -1, 눈꼬리 +1. 공막·홍채·속눈썹이 같은 경계를 쓴다.
+        arc = math.sqrt(max(0.0, 1.0 - lateral * lateral)) * (1.0 - 0.46 * lateral * lateral)
+        aperture = (0.89 - 0.12 * lateral) if upper else -(0.67 + 0.07 * lateral)
+        return 0.0016 * lateral + eye_h * arc * aperture
+
     created: dict[str, bpy.types.Object] = {"head": head_obj}
 
     for side_tag, sx, eye_bone in (("L", 1.0, "TS_ShaperEye.L"), ("R", -1.0, "TS_ShaperEye.R")):
@@ -1128,7 +1142,7 @@ def build_korean_webtoon_head_and_face(
         # 1. Almond Sclera (with non-degenerate radial UVs)
         bm_e = bmesh.new()
         uv_e = bm_e.loops.layers.uv.new("UVMap")
-        nr_e, na_e = 5, 24
+        nr_e, na_e = 5, (40 if portrait_refinement else 24)
         ec_v = bm_e.verts.new((cx, surface_y(0.0, 0.0, 0.0024), eye_z))
         erings = []
         for ir in range(1, nr_e + 1):
@@ -1139,6 +1153,8 @@ def build_korean_webtoon_head_and_face(
                 tilt_z = (0.0022 if face_style == "sharp" else 0.0010) * (math.cos(ang) * sx) * fr
                 dx = eye_w * fr * math.cos(ang)
                 dz = eye_h * fr * math.sin(ang) + tilt_z
+                if portrait_refinement:
+                    dz = fr * lid_height(sx * math.cos(ang), math.sin(ang) >= 0)
                 erow_v.append(bm_e.verts.new((cx + dx, surface_y(dx, dz, 0.0024 * (1.0 - 0.30 * fr * fr)), eye_z + dz)))
             erings.append(erow_v)
         for ia in range(na_e):
@@ -1174,7 +1190,7 @@ def build_korean_webtoon_head_and_face(
         # 2. Jewel Radial Iris
         bm_i = bmesh.new()
         uv_i = bm_i.loops.layers.uv.new("UVMap")
-        nr_i, na_i = 4, 24
+        nr_i, na_i = 4, (40 if portrait_refinement else 24)
         ic_v = bm_i.verts.new((cx, surface_y(0.0, iris_z_shift, 0.0035), eye_z + iris_z_shift))
         irings = []
         for ir in range(1, nr_i + 1):
@@ -1185,6 +1201,11 @@ def build_korean_webtoon_head_and_face(
                 dx = iris_rx * fr * math.cos(ang)
                 dz = min(eye_h * 0.96, iris_z_shift + iris_rz * fr * math.sin(ang))
                 dz = max(-eye_h * 0.94, dz)
+                if portrait_refinement:
+                    lateral = sx * iris_rx * math.cos(ang) / eye_w
+                    rim_z = min(lid_height(lateral, True) - 0.00035,
+                                max(lid_height(lateral, False) + 0.00035, iris_z_shift + iris_rz * math.sin(ang)))
+                    dz = iris_z_shift + fr * (rim_z - iris_z_shift)
                 irow_v.append(bm_i.verts.new((cx + dx, surface_y(dx, dz, 0.0035), eye_z + dz)))
             irings.append(irow_v)
         for ia in range(na_i):
@@ -1206,6 +1227,13 @@ def build_korean_webtoon_head_and_face(
                 f.loops[1][uv_i].uv = (0.5 + 0.48 * fr0 * math.cos(a1), 0.5 + 0.48 * fr0 * math.sin(a1))
                 f.loops[2][uv_i].uv = (0.5 + 0.48 * fr1 * math.cos(a1), 0.5 + 0.48 * fr1 * math.sin(a1))
                 f.loops[3][uv_i].uv = (0.5 + 0.48 * fr1 * math.cos(a0), 0.5 + 0.48 * fr1 * math.sin(a0))
+        if portrait_refinement:
+            # 눈꺼풀 아래로 숨은 홍채 가장자리도 동공의 원형 UV와 중심을 유지한다.
+            for face in bm_i.faces:
+                for loop in face.loops:
+                    point = loop.vert.co
+                    loop[uv_i].uv = (0.5 + 0.48 * (point.x - cx) / iris_rx,
+                                     0.5 + 0.48 * (point.z - eye_z - iris_z_shift) / iris_rz)
         bmesh.ops.recalc_face_normals(bm_i, faces=bm_i.faces)
         m_iris = bpy.data.meshes.new(f"TS_Shaper_Iris_{side_tag}")
         bm_i.to_mesh(m_iris)
@@ -1220,9 +1248,11 @@ def build_korean_webtoon_head_and_face(
         # 3. Dual Starlight Catchlights
         bm_h = bmesh.new()
         uv_h = bm_h.loops.layers.uv.new("UVMap")
+        primary_glint = (0.15, 0.14) if portrait_refinement else (0.25, 0.22)
+        lower_glint = 0.065 if portrait_refinement else 0.13
         for h_dx, h_dz, h_rx, h_rz in (
-            (iris_rx * 0.36, iris_rz * 0.26, iris_rx * 0.25, iris_rz * 0.22),
-            (-iris_rx * 0.34, -iris_rz * 0.32, iris_rx * 0.13, iris_rz * 0.13),
+            (iris_rx * 0.36, iris_rz * 0.26, iris_rx * primary_glint[0], iris_rz * primary_glint[1]),
+            (-iris_rx * 0.34, -iris_rz * 0.32, iris_rx * lower_glint, iris_rz * lower_glint),
         ):
             hc = bm_h.verts.new((cx + h_dx, surface_y(h_dx, h_dz, 0.0044), eye_z + h_dz))
             hring = [
@@ -1264,6 +1294,12 @@ def build_korean_webtoon_head_and_face(
             wing_extra_z = (0.0026 if face_style == "sharp" else 0.0016) * (tl ** 2.0)
             dz_in = eye_h * 0.84 * math.sin(ang_l) + wing_extra_z
             thick = (0.0036 if not is_male else 0.0028) * (0.40 + 0.85 * math.sin(tl * math.pi * 0.82))
+            if portrait_refinement:
+                lateral = -math.cos(math.pi * tl)
+                dx_in = sx * eye_w * lateral
+                wing_extra_x = sx * 0.0036 * tl ** 6
+                dz_in = lid_height(lateral, True) + 0.0022 * tl ** 6
+                thick = 0.00040 + 0.0024 * math.sin(math.pi * tl) ** 0.75 * (0.55 + tl)
             v_bot = bm_l.verts.new((cx + dx_in + wing_extra_x * 0.6, surface_y(dx_in, dz_in, 0.0048), eye_z + dz_in - thick * 0.35))
             v_top = bm_l.verts.new((cx + dx_in + wing_extra_x * 1.15, surface_y(dx_in, dz_in + thick, 0.0054), eye_z + dz_in + thick * 0.82))
             lash_rows.append((v_bot, v_top))
@@ -1285,6 +1321,11 @@ def build_korean_webtoon_head_and_face(
             dx_in = sx * (-eye_w * 0.95 * math.cos(ang_l))
             dz_in = -eye_h * 0.96 * math.sin(ang_l)
             l_th = 0.0011 * math.sin((il / 7.0) * math.pi)
+            if portrait_refinement:
+                lateral = -math.cos(math.pi * tl)
+                dx_in = sx * eye_w * lateral
+                dz_in = lid_height(lateral, False)
+                l_th = 0.0002 + 0.0007 * math.sin(math.pi * il / 7.0)
             vb = bm_l.verts.new((cx + dx_in, surface_y(dx_in, dz_in, 0.0042), eye_z + dz_in - l_th))
             vt = bm_l.verts.new((cx + dx_in, surface_y(dx_in, dz_in, 0.0044), eye_z + dz_in + l_th * 0.4))
             low_rows.append((vb, vt))

@@ -10,7 +10,7 @@ import type { AuthoredPackagePlan, RecipeSource } from "../../contracts";
 
 export interface PackagePlanRegistry {
   register(plan: AuthoredPackagePlan): void;
-  get(characterId: string): AuthoredPackagePlan | undefined;
+  get(characterId: string, sha256?: string): AuthoredPackagePlan | undefined;
   list(): readonly AuthoredPackagePlan[];
   /** 레시피 소스에 맞는 플랜. 없거나 SHA 불일치면 LabFailure throw. */
   resolve(source: RecipeSource, now?: number): AuthoredPackagePlan;
@@ -19,6 +19,7 @@ export interface PackagePlanRegistry {
 
 export function createPackagePlanRegistry(): PackagePlanRegistry {
   const plans = new Map<string, AuthoredPackagePlan>();
+  const revisions = new Map<string, AuthoredPackagePlan>();
   const listeners = new Set<() => void>();
   const notify = (): void => {
     for (const listener of listeners) listener();
@@ -26,15 +27,16 @@ export function createPackagePlanRegistry(): PackagePlanRegistry {
   return {
     register(plan) {
       plans.set(plan.manifest.characterId, plan);
+      revisions.set(`${plan.manifest.characterId}:${plan.glbSha256}`, plan);
       notify();
     },
-    get: (characterId) => plans.get(characterId),
+    get: (characterId, sha256) => sha256 === undefined ? plans.get(characterId) : revisions.get(`${characterId}:${sha256}`),
     list: () => [...plans.values()],
     resolve(source, now) {
       if (source.kind !== "package") {
         throw failVisible("package-source-kind", "제작 패키지 소스가 아닌 레시피입니다.", undefined, now);
       }
-      const plan = plans.get(source.characterId);
+      const plan = revisions.get(`${source.characterId}:${source.sha256}`) ?? plans.get(source.characterId);
       if (!plan) {
         throw failVisible(
           "package-plan-missing",

@@ -6,6 +6,7 @@
  * caller can apply the document. An arbitrary `studio-opfs-cas:` string never becomes portable.
  */
 
+import { isStandardBase64 } from "@/shared/lib/standard-base64";
 import {
   inspectStudioLinked3dPassPng,
   parseStudioLinked3dPassLocator,
@@ -29,8 +30,6 @@ import type { StudioProjectFile } from "./studio-project-file";
 const PNG_SIGNATURE = Object.freeze([137, 80, 78, 71, 13, 10, 26, 10]);
 const ARCHIVE_RASTER_DATA_URL_PATTERN =
   /^data:image\/(?:png|jpeg|gif|webp);base64,([A-Za-z0-9+/=]+)$/iu;
-const STRICT_BASE64_PATTERN =
-  /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
 // Keep these hard ceilings aligned with STUDIO_PROJECT_ARCHIVE_LIMITS without introducing the
 // project-archive -> linked-pass -> project-archive value-import cycle.
 const LINKED_3D_PASS_ARCHIVE_HARD_LIMITS = Object.freeze({
@@ -201,7 +200,7 @@ function rasterDataUrlByteSize(value: string): number | null {
   const match = ARCHIVE_RASTER_DATA_URL_PATTERN.exec(value);
   if (!match) return null;
   const base64 = match[1]!;
-  if (base64.length % 4 !== 0 || !STRICT_BASE64_PATTERN.test(base64)) {
+  if (!isStandardBase64(base64)) {
     archiveError("invalid-project", "portable archive raster data URL의 Base64 receipt가 올바르지 않습니다.");
   }
   const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;

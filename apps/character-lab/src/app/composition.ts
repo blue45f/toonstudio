@@ -14,8 +14,8 @@
  *  - 물리: domains/physics provider-factory(builtin-pbd/rapier/havok)
  *  - 패널: 슬롯 패널 + 뷰포트(ViewportPane) + 인스펙터 9탭(파라미터·표정·포즈·물리·렌더·페인트·비전·제작 패키지·내보내기)
  */
-import { PERFORMANCE_PRESETS } from "../animation/presets";
-import { createDefaultRecipe, createKitDefaultRecipe } from "../contracts";
+import { PERFORMANCE_PRESETS, findPosePreset } from "../animation/presets";
+import { KIT_DEFAULT_ID, KIT_PORTRAIT_VERSION, createDefaultRecipe, createKitDefaultRecipe } from "../contracts";
 import { loadKitManifest } from "../domains/authored/kit-loader.browser";
 import { buildKitPlanDetailed } from "../domains/authored/kit-plan";
 import { GEOMETRY_SLOT_KINDS, buildHumanoidModel, geometryKeyOf } from "../domains/humanoid/humanoid-model";
@@ -101,36 +101,41 @@ export const COMPOSED_PANELS: LabPanels = Object.freeze({
 
 /** 통합 테스트용 교체 지점(GPU 없는 Node에서 같은 조립을 모의 엔진 팩토리로 돌린다). 앱 진입점은 인자 없이 호출한다. */
 /**
- * 브라우저 기본 쇼케이스 부팅 레시피: 모듈식 키트 위에 한국형 웹툰 아카데미 주인공 풀 착장(울프 레이어드 헤어·블레이저·플리츠 스커트·로퍼·리본·별빛 홍채)과
+ * 브라우저 기본 쇼케이스 부팅 레시피: 모듈식 키트 위에 한국형 웹툰 아카데미 주인공 풀 착장(롱 헤어·블레이저·플리츠 스커트·로퍼·리본·갈색 그라데이션 홍채)과
  * 은은한 미소 표정을 입혀 첫 화면부터 완성도 높은 웹툰 캐릭터 실루엣을 보여준다.
  * 단위 테스트가 인자 없이 호출하는 `composeCharacterLab()` 기본값(`createKitDefaultRecipe()`)은 그대로 유지한다.
  */
 export function createKitShowcaseBootRecipe(baseId: KitBaseId = "female"): CharacterRecipe {
   const base = createKitDefaultRecipe(baseId);
+  const standing = findPosePreset("idle");
   return {
     ...base,
+    source: { kind: "kit", kitId: KIT_DEFAULT_ID, baseId, kitVersion: KIT_PORTRAIT_VERSION },
     slots: {
       ...base.slots,
-      hair: "hair/wolf-layered",
+      pose: "pose/idle",
+      hair: "hair/romance-long",
       top: "top/blazer",
       bottom: "bottom/pleated-skirt",
       shoes: "shoes/loafers",
       accessory: "accessory/ribbon",
-      irises: "irises/star-highlight",
+      irises: "irises/soft-gradient",
     },
     colors: {
       ...base.colors,
-      skin: "#f7dcd0",
-      iris: "#5b48c8",
-      hair: "#241d2e",
-      brow: "#2a2133",
+      skin: "#f2d0bd",
+      iris: "#785545",
+      hair: "#463330",
+      brow: "#3a2928",
       top: "#23293c",
       bottom: "#3c3148",
       shoes: "#2a2024",
       accessory: "#b83b56",
     },
+    pose: structuredClone(standing.pose),
+    shading: { ...base.shading, mode: "toon" },
     expression: {
-      mouthSmile: 0.16,
+      mouthSmile: 0.04,
     },
   };
 }

@@ -108,9 +108,9 @@ describe("Studio mobile editing dock module boundary", () => {
     expect(dock.allImports).not.toContain("./StudioPage");
     expect(dock.dynamicImports).not.toContain("./StudioPage");
     expect(page.source).toContain("useStudioStableHandlers<StudioMobileEditingDockHandlers>({");
-    expect(editorView.source).toContain("{isMobile ? (");
-    expect(editorView.source).toContain("<Suspense fallback={null}>");
-    expect(editorView.source).toContain("<StudioMobileEditingDock");
+    expect(editorView.source).toMatch(/\{isMobile && !s\.canvasOnlyMode \? \(\s*<Suspense fallback=\{null\}>\s*<StudioMobileEditingDock\b/u);
+    expect(editorView.source).toContain("undoDisabled={menuEditUndoDisabled}");
+    expect(editorView.source).toContain("redoDisabled={menuEditRedoDisabled}");
   });
 
   it("moves the dock and its presentation contracts out of the page monolith", () => {
