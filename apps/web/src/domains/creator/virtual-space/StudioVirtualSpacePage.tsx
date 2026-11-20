@@ -24,6 +24,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type ComponentProps,
   type ReactNode,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -52,6 +53,7 @@ import { StudioVirtualSpaceGuide, StudioVirtualSpaceMiniTour, type StudioVirtual
 import { StudioVirtualSpaceJoystick } from "./StudioVirtualSpaceJoystick";
 import { StudioVirtualSpaceNpcDialoguePanel, type StudioNpcDialogueAction } from "./StudioVirtualSpaceNpcDialoguePanel";
 import { StudioVirtualSpaceOfficeStart } from "./StudioVirtualSpaceOfficeStart";
+import { StudioVirtualSpacePage as VirtualSpacePageRoot } from "./StudioVirtualSpacePageRoot";
 import { StudioVirtualSpacePanelGate } from "./StudioVirtualSpacePanelGate";
 import type { StudioVirtualSpaceEngineLocalState } from "./studio-virtual-space-stage-state";
 import { applyStudioVirtualStageSearch, readStudioVirtualStageMode, resolveStudioVirtualStageKind, writeStudioVirtualPreferredEngineMode } from "./office2d/studio-virtual-space-stage-mode";
@@ -2084,6 +2086,8 @@ export function VirtualSpaceExperience({
   );
 }
 
-export { StudioVirtualSpacePage } from "./StudioVirtualSpacePageRoot";
-// eslint-disable-next-line react-refresh/only-export-components -- 페이지 셸은 StudioVirtualSpacePageRoot로 분리했고 기존 import 경로를 유지하는 재수출이다
-export { default } from "./StudioVirtualSpacePageRoot";
+export function StudioVirtualSpacePage(props: Omit<ComponentProps<typeof VirtualSpacePageRoot>, "Experience"> = {}) {
+  return <VirtualSpacePageRoot {...props} Experience={VirtualSpaceExperience} />;
+}
+
+export default StudioVirtualSpacePage;
