@@ -45,7 +45,7 @@ import {
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { verifyStudioServiceStatusAccess } from "./lib/studio-drawing-readiness-service-status";
 import { assertStudioFilterCanonicalEvidence, assertStudioFilterCanonicalUnchanged, assertStudioFilterRecoveryUnchanged } from "./lib/studio-filter-canonical-evidence";
-import { studioFilterComparisonBandHeight } from "./lib/studio-filter-comparison-region";
+import { studioFilterComparisonBandHeight, studioFilterDocumentClip } from "./lib/studio-filter-comparison-region";
 import { installStudioFilterConnectionFault } from "./lib/studio-filter-connection-fault";
 import {
   nudgeFirstParameterSlider, prepareStudioFilterGalleryForVerification,
@@ -810,8 +810,11 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
       && isDeepStrictEqual(document.pagesList, originalPages),
     "History traversal changed the original saved strokes");
     if (AUTHENTICATED) await selectCanonicalImage();
-    const baselineStage = await page.locator(".konvajs-content").first().boundingBox();
+    const stageLocator = page.locator(".konvajs-content").first();
+    const baselineStage = await stageLocator.boundingBox();
     invariant(baselineStage, "원본 캔버스의 문서 좌표를 확인하지 못했습니다");
+    const currentDocumentClip = async () => studioFilterDocumentClip(clip, baselineStage, await stageLocator.boundingBox());
+    const captureFilterPixels = async () => screenshotClipped(page, AUTHENTICATED ? await currentDocumentClip() : clip);
     const baseline = await (EXPECT_DENIAL ? screenshotDocumentPixels(page, clip) : screenshotClipped(page, clip));
     committedBaseline = { livePresentationDiff: await compareScreenshotPixels(page, liveBaseline, baseline),
       originalDrawCount: 2, persistedHistoryUnchanged: true };
@@ -874,13 +877,9 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
           return stage && Math.abs(stage.width - expected.width) < 0.5
             && Math.abs(stage.height - expected.height) < 0.5;
         }, baselineStage, { timeout: 10_000 });
-        const deniedStage = await page.locator(".konvajs-content").first().boundingBox();
-        invariant(deniedStage && Math.abs(deniedStage.width - baselineStage.width) < 0.5
-          && Math.abs(deniedStage.height - baselineStage.height) < 0.5,
-        "오류 안내 뒤 문서 배율이 바뀌어 같은 문서 영역을 비교할 수 없습니다");
-        // 오류 행의 높이 변화는 기록하되 같은 문서 좌표·크기의 픽셀만 비교한다.
-        const alignedClip = { ...clip, x: clip.x + deniedStage.x - baselineStage.x,
-          y: clip.y + deniedStage.y - baselineStage.y };
+        const deniedStage = await stageLocator.boundingBox();
+        invariant(deniedStage, "오류 안내 뒤 원고의 화면 위치를 확인할 수 없습니다.");
+        const alignedClip = studioFilterDocumentClip(clip, baselineStage, deniedStage);
         const restoredDeadline = Date.now() + 10_000;
         do {
           result.undoDiff = await compareScreenshotPixels(page, baseline, await screenshotDocumentPixels(page, alignedClip).then((bytes) => { writeFileSync(join(SCRATCH, "studio-filter-dialog-denial-restored.png"), bytes); return bytes; }));
@@ -970,11 +969,11 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
         // 적용 직후 캔버스 반영은 러너 속도에 따라 늦을 수 있다. CI에서는 고정 700ms 뒤 캡처가 0px로 찍혀
         // 뒤 케이스까지 연쇄 실패했다. 기준(0.5%)을 만족할 때까지 상한(15초) 안에서 다시 캡처한다.
         const applyRenderDeadline = Date.now() + 15_000;
-        let after = await screenshotClipped(page, clip);
+        let after = await captureFilterPixels();
         result.diff = await compareScreenshotPixels(page, baseline, after);
         while (result.diff.changedPixels <= result.diff.totalPixels * 0.005 && Date.now() < applyRenderDeadline) {
           await page.waitForTimeout(300);
-          after = await screenshotClipped(page, clip);
+          after = await captureFilterPixels();
           result.diff = await compareScreenshotPixels(page, baseline, after);
         }
         invariant(
@@ -1000,7 +999,7 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
         await page.waitForTimeout(900);
         if (!AUTHENTICATED) await returnToPenLayout(page);
         if (AUTHENTICATED) await selectCanonicalImage();
-        const restored = await screenshotClipped(page, clip);
+        const restored = await captureFilterPixels();
         if (index === 0) writeFileSync(join(SCRATCH, "studio-filter-dialog-first-restored.png"), restored);
         await waitForSavedPages(page, (document) => document.savedAt > appliedDocument.savedAt
           && isDeepStrictEqual(document.pagesList, originalPages),

@@ -867,6 +867,30 @@ describe("studio-gpu-filter-apply: retained interactive presentation", () => {
     expect(await frame!.readbackFinal()).toBe(canonical);
   });
 
+  it.each(["취소", "원본 교체", "장치 손실"])("최종 픽셀 읽기 도중 %s 상황을 구분한다", async (action) => {
+    const harness = createFakeGpu();
+    const controller = new AbortController();
+    const onFailure = vi.fn();
+    let currentRevision = "first";
+    const frame = await presentGpuFilterChain(imageData(), { brightness: 0.2 }, {
+      gpu: harness.gpu, signal: controller.signal, surface: presentationSurface(), onFailure,
+      sourceRevision: currentRevision, isSourceRevisionCurrent: revision => revision === currentRevision,
+    });
+    expect(frame).not.toBeNull();
+    const pending = frame!.readbackFinal();
+    if (action === "취소") controller.abort();
+    if (action === "원본 교체") currentRevision = "second";
+    if (action === "장치 손실") harness.resolveDeviceLoss();
+    expect(await pending).toBeNull();
+    if (action === "장치 손실") {
+      expect(onFailure).toHaveBeenCalledExactlyOnceWith({
+        phase: "final-readback", message: "The settled WebGPU filter frame could not be read back.",
+      });
+    } else {
+      expect(onFailure).not.toHaveBeenCalled();
+    }
+  });
+
   it("drops a superseded preview without any final readback and reports presentation failure", async () => {
     const harness = createFakeGpu();
     const surface = presentationSurface();

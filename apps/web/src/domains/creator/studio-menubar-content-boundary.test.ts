@@ -154,8 +154,9 @@ describe("Studio menubar ownership boundary", () => {
     const keyDown = dismissal.slice(dismissal.indexOf("const onKeyDown ="));
     expect(keyDown).toContain('event.key !== "Escape" || event.defaultPrevented');
     expect(keyDown).toContain(
-      'triggerRef.current?.querySelector<HTMLButtonElement>("button[aria-expanded]")?.focus()'
+      'triggerRef.current?.querySelector<HTMLButtonElement>("button[aria-expanded]") ?? fallbackLauncher?.()'
     );
+    expect(keyDown).toContain("launcher?.focus({ preventScroll: true })");
     expect(dismissal.slice(0, dismissal.indexOf("const onKeyDown ="))).not.toContain("?.focus()");
   });
 

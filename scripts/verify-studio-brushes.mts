@@ -53,7 +53,6 @@ import {
 } from "playwright";
 
 import {
-  isStudioBrushEraserAliasId,
   resolveStudioBrushAliasPencilPasses,
   studioBrushAliasEffectiveDiameter,
 } from "../apps/web/src/domains/creator/brush/studio-brush-alias-profile";
@@ -96,6 +95,7 @@ import {
 } from "../apps/web/src/domains/creator/studio-cc0-mypaint-preset-import-v1";
 
 import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
+import { eraserLiftMatchesPreset, type EraserLiftRatio } from "./lib/studio-brush-eraser-evidence";
 import { initializeStudioVerifierPageOnce, installStudioCanvasScaleDiagnostics } from "./lib/studio-brush-verifier-session";
 import { activateDesktopPen } from "./lib/studio-desktop-brush-activation";
 import {
@@ -111,9 +111,10 @@ import {
   isStaticPreviewReadinessResponse,
   isStaticPreviewReadinessUnavailable,
 } from "./lib/studio-preview-readiness";
-import { pinStudioRailToolInCatalog } from "./lib/studio-rail-tool-catalog-pin";
+import { openStudioLayerNavigator, showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
 import { measureStudioSmartShapeCanvasSpace, placeStudioSmartShapeGrid, requiresStudioSmartShapeOfflinePanel, waitForStudioSmartShapeFloatingReady } from "./lib/studio-smart-shape-visible-grid";
 import { meetsStudioMinimumTouchTarget } from "./lib/studio-touch-target-measurement.mjs";
+import { studioPinnedToolButton } from "./lib/studio-verifier-entry-points";
 import {
   readDurableStudioAutosaveDocument,
   readDurableStudioAutosaveError,
@@ -258,6 +259,7 @@ interface BrushStrokeEvidence {
   transparentPaint: boolean;
   eraseLiveOperationActive: boolean | null;
   eraseResidualRatio: number | null;
+  eraseLift: EraserLiftRatio | null;
   undoEnabled: boolean;
   undoRestoredPixels: boolean;
   redoRestoredStroke: boolean;
@@ -327,11 +329,6 @@ interface PixelCoverage extends PixelDiff {
   visibleSegments: number;
   segmentChangedPixels: number[];
   bounds: { left: number; top: number; right: number; bottom: number } | null;
-}
-
-interface EraserLiftRatio {
-  affectedPixels: number;
-  residualEnergyRatio: number;
 }
 
 interface DesktopBrushResult {
@@ -1574,9 +1571,9 @@ async function measureEraserLiftRatio(
       || emptyCanvas.height !== paintedCanvas.height
       || emptyCanvas.width !== erasedCanvas.width
       || emptyCanvas.height !== erasedCanvas.height
-    ) return { affectedPixels: 0, residualEnergyRatio: 0 };
+    ) return { affectedPixels: 0, residualEnergyRatio: 0, lowerQuartileResidual: 0 };
 
-    let affectedPixels = 0;
+    const residuals: number[] = [];
     let baselineEnergy = 0;
     let residualEnergy = 0;
     for (let offset = 0; offset < emptyPixels.data.length; offset += 4) {
@@ -1595,12 +1592,14 @@ async function measureEraserLiftRatio(
         );
       }
       if (paintedFromEmpty < 24 || erasedFromPainted < 6) continue;
-      affectedPixels += 1;
+      residuals.push(erasedFromEmpty / paintedFromEmpty);
       baselineEnergy += paintedFromEmpty;
       residualEnergy += erasedFromEmpty;
     }
+    residuals.sort((a, b) => a - b);
     return {
-      affectedPixels,
+      affectedPixels: residuals.length,
+      lowerQuartileResidual: residuals[Math.floor(residuals.length / 4)] ?? 0,
       residualEnergyRatio: baselineEnergy > 0 ? residualEnergy / baselineEnergy : 0,
     };
   }, {
@@ -1911,8 +1910,6 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
       const operation = verifierBrushOperation(expectedSelection);
       const transparentPaint = operation === "paint"
         && !studioWetInkBrushDepositsPigment(expectedSelection.runtimeBrushId);
-      const lowDensityEraser = operation === "erase"
-        && isStudioBrushEraserAliasId(expectedSelection.runtimeBrushId);
       await selectDesktopBrush(page, preset, expectedSelection);
       // 빈 문서로 되돌아오면 접힌 시작 안내도 다시 나타난다. 그림자·포커스 복귀 도구 설명은 잉크 기준이 아니다.
       await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true, dismissToolHints: true });
@@ -2149,26 +2146,15 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
             liveEraseLift.affectedPixels >= 4,
             `${preset.id}: live eraser had no measurable baseline overlap`,
           );
-          if (lowDensityEraser) {
-            invariant(
-              liveEraseLift.residualEnergyRatio >= 0.25
-                && liveEraseLift.residualEnergyRatio <= 0.85,
-              `${preset.id}: live low-density gesture retained `
-                + `${(liveEraseLift.residualEnergyRatio * 100).toFixed(1)}% of baseline energy; `
-                + "expected one bounded retained-layer lift",
-            );
-          } else {
-            if (process.env.TOONSPECTRUM_DUMP_ERASE_DIAG === "1") {
-              writeFileSync(join(SCRATCH, `erase-diag-${preset.id}-empty.png`), emptyBefore!);
-              writeFileSync(join(SCRATCH, `erase-diag-${preset.id}-baseline.png`), before);
-              writeFileSync(join(SCRATCH, `erase-diag-${preset.id}-live.png`), live);
-            }
-            invariant(
-              liveEraseLift.residualEnergyRatio <= 0.1,
-              `${preset.id}: live full-strength gesture retained `
-                + `${(liveEraseLift.residualEnergyRatio * 100).toFixed(1)}% of baseline energy`,
-            );
+          if (process.env.TOONSPECTRUM_DUMP_ERASE_DIAG === "1") {
+            writeFileSync(join(SCRATCH, `erase-diag-${preset.id}-empty.png`), emptyBefore!);
+            writeFileSync(join(SCRATCH, `erase-diag-${preset.id}-baseline.png`), before);
+            writeFileSync(join(SCRATCH, `erase-diag-${preset.id}-live.png`), live);
           }
+          invariant(
+            eraserLiftMatchesPreset(expectedSelection, liveEraseLift),
+            `${preset.id}: live eraser residual differs from opacity ${expectedSelection.defaultOpacity}: ${JSON.stringify(liveEraseLift)}`,
+          );
         }
       }
       if (process.env.TOONSPECTRUM_LONG_BRUSH_CANVAS_DUMP === "1") {
@@ -2400,21 +2386,10 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
           eraseLift.affectedPixels >= 4,
           `${preset.id}: eraser had no measurable baseline overlap`,
         );
-        if (lowDensityEraser) {
-          invariant(
-            eraseLift.residualEnergyRatio >= 0.25
-              && eraseLift.residualEnergyRatio <= 0.85,
-            `${preset.id}: one low-density gesture retained `
-              + `${(eraseLift.residualEnergyRatio * 100).toFixed(1)}% of baseline energy; `
-              + "expected a bounded partial lift",
-          );
-        } else {
-          invariant(
-            eraseLift.residualEnergyRatio <= 0.1,
-            `${preset.id}: one full-strength gesture retained `
-              + `${(eraseLift.residualEnergyRatio * 100).toFixed(1)}% of baseline energy`,
-          );
-        }
+        invariant(
+          eraserLiftMatchesPreset(expectedSelection, eraseLift),
+          `${preset.id}: committed eraser residual differs from opacity ${expectedSelection.defaultOpacity}: ${JSON.stringify(eraseLift)}`,
+        );
       }
       // Extended catalogue ids intentionally materialize onto three stable renderer ids. A pill
       // can therefore show the requested pro-brush name while a stale dynamics snapshot still
@@ -2542,6 +2517,7 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
         transparentPaint,
         eraseLiveOperationActive,
         eraseResidualRatio: eraseLift?.residualEnergyRatio ?? null,
+        eraseLift,
         undoEnabled: true,
         undoRestoredPixels,
         redoRestoredStroke,
@@ -2649,36 +2625,33 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
     reportBrowserErrors(errors);
     invariant(errors.messages.length === 0, "desktop browser emitted console/page errors");
     invariant(errors.failedResponses.length === 0, "desktop browser received unexpected 5xx responses");
-    const ok = evidence.length === DESKTOP_STABILITY_CASES.length && evidence.every((entry) =>
-      entry.selected
-      && (entry.transparentPaint || entry.visualChanged)
-      && (entry.operation === "paint" || entry.eraseLiveOperationActive === true)
-      && (
-        entry.operation === "paint"
-        || (
-          entry.eraseResidualRatio !== null
-          && (
-            isStudioBrushEraserAliasId(entry.persistedRuntimeBrushId)
-              ? entry.eraseResidualRatio >= 0.25
-                && entry.eraseResidualRatio <= 0.85
-              : entry.eraseResidualRatio <= 0.1
+    const ok = evidence.length === DESKTOP_STABILITY_CASES.length && DESKTOP_STABILITY_CASES.every((preset, index) => {
+      const entry = evidence[index];
+      return entry?.id === preset.id
+        && entry.selected
+        && (entry.transparentPaint || entry.visualChanged)
+        && (entry.operation === "paint" || entry.eraseLiveOperationActive === true)
+        && (
+          entry.operation === "paint"
+          || (
+            entry.eraseLift !== null
+            && eraserLiftMatchesPreset(preset, entry.eraseLift)
           )
         )
-      )
-      && entry.undoEnabled
-      && entry.undoRestoredPixels
-      && entry.redoRestoredStroke
-      && entry.persistedOperationMatched
-      && (
-        entry.operation === "erase"
-        || entry.source === "core"
-        || (
-          entry.persistedCatalogId === entry.id
-          && entry.persistedRuntimeBrushId !== null
-          && entry.persistedDynamicsMatched === true
-        )
-      )
-    );
+        && entry.undoEnabled
+        && entry.undoRestoredPixels
+        && entry.redoRestoredStroke
+        && entry.persistedOperationMatched
+        && (
+          entry.operation === "erase"
+          || entry.source === "core"
+          || (
+            entry.persistedCatalogId === entry.id
+            && entry.persistedRuntimeBrushId !== null
+            && entry.persistedDynamicsMatched === true
+          )
+        );
+    });
     return {
       ok,
       stabilityRounds: STABILITY_ROUNDS,
@@ -4094,36 +4067,14 @@ async function drawPenPathWithJitterHold(
 }
 
 async function enableSmartShape(page: Page): Promise<void> {
-  const railToggle = page.locator('button[data-studio-rail-tool-id="smart-shape"]');
-  if (await railToggle.isVisible()) {
-    if (await railToggle.getAttribute("aria-pressed") !== "true") await railToggle.click();
-    await page.locator('button[data-studio-rail-tool-id="smart-shape"][aria-pressed="true"]')
-      .waitFor({ state: "visible" });
-    return;
-  }
-  const buttons = page.getByRole("button", { name: "스마트 도형", exact: true });
-  const count = await buttons.count();
-  for (let index = 0; index < count; index += 1) {
-    const button = buttons.nth(index);
-    if (!await button.isVisible()) continue;
-    if (await button.getAttribute("aria-pressed") !== "true") await button.click();
-    invariant(await button.getAttribute("aria-pressed") === "true", "Smart Shape toggle did not activate");
-    return;
-  }
-  throw new Error("visible Smart Shape toggle was not found");
+  const toggle = await studioPinnedToolButton(page, "smart-shape");
+  if (await toggle.getAttribute("aria-pressed") !== "true") await toggle.click();
+  await toggle.and(page.locator('[aria-pressed="true"]')).waitFor({ state: "visible" });
 }
 
 async function revealStudioViewTool(page: Page, mode: "zoom" | "rotate"): Promise<void> {
   const trigger = page.locator(`[data-studio-view-tool-trigger="${mode}"]`);
-  const more = page.locator('[data-studio-tool-rail-settings="true"] button[aria-haspopup="dialog"]');
-  const picker = page.getByRole("dialog", { name: "전체 도구", exact: true });
-  if (!(await trigger.isVisible())) {
-    if (await more.getAttribute("aria-expanded") !== "true") await more.click();
-    const toolId = mode === "zoom" ? "zoom" : "rotate-view";
-    await pinStudioRailToolInCatalog(picker, toolId);
-  }
-  if (await picker.isVisible()) await picker.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
-  await picker.waitFor({ state: "hidden" });
+  if (!await trigger.isVisible()) await studioPinnedToolButton(page, mode === "zoom" ? "zoom" : "rotate-view");
   await trigger.waitFor({ state: "visible" });
 }
 
@@ -4131,6 +4082,7 @@ async function runCurrentStrokeCorrection(page: Page, toScreen: (x: number, y: n
   const before = (await persistedDrawElements(page)).at(-1);
   invariant(before?.id, "current-stroke correction has no persisted source");
   const open = async () => {
+    await showStudioProjectWindowTools(page);
     await openStudioShapeCorrectionMenu(page);
     await page.locator('[data-studio-menu-item-id="correct-current-stroke"]').click();
     await page.getByRole("dialog", { name: "현재 스트로크 교정", exact: true }).waitFor({ state: "visible" });
@@ -4229,12 +4181,14 @@ async function runCurrentStrokeCorrection(page: Page, toScreen: (x: number, y: n
     invariant(typeof draw.id === "string" && draw.id.length > 0, "cold reload restored a stroke without a valid ID");
     return draw.id;
   });
+  await openStudioLayerNavigator(page);
   await waitForStudioRecoveredStrokeLayers(page, recoveredStrokeIds);
   writeFileSync(join(SCRATCH, "studio-smart-shape-cold-recovery.json"), JSON.stringify({
     expectedStrokeIds: recoveredStrokeIds,
     correctedStrokeId: corrected.id,
     ...(await studioShapeLiveReadinessEvidence(page)),
   }, null, 2));
+  await showStudioProjectWindowTools(page);
   await page.locator('[data-studio-command-bar-settings-trigger="true"]').click();
   await page.locator('[data-studio-command-bar-settings-panel="true"] select').nth(7).selectOption("correct-current-stroke");
   await page.keyboard.press("Escape");
@@ -5130,6 +5084,7 @@ function writeBrowserEvidenceReceipt(run: {
             operation: entry.operation,
             liveRetainedLayerActive: entry.eraseLiveOperationActive,
             residualEnergyRatio: entry.eraseResidualRatio,
+            lowerQuartileResidual: entry.eraseLift?.lowerQuartileResidual ?? null,
           }]),
       ),
     },

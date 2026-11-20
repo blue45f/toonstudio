@@ -3,17 +3,19 @@ import { useEffect, type RefObject } from "react";
 interface StudioMenuPopoverDismissOptions {
   readonly open: boolean;
   readonly triggerRef: RefObject<HTMLElement | null>;
+  readonly fallbackLauncher?: () => HTMLElement | null;
   readonly panelSelector: string;
   readonly onDismiss: () => void;
 }
 
 /** Menubar popovers share dismissal while their lazy panels may mount or change in a portal. */
 export function useStudioMenuPopoverDismiss({
-  open, triggerRef, panelSelector, onDismiss,
+  open, triggerRef, fallbackLauncher, panelSelector, onDismiss,
 }: StudioMenuPopoverDismissOptions): void {
   useEffect(() => {
-    const ownerDocument = triggerRef.current?.ownerDocument;
-    if (!open || !ownerDocument) return;
+    if (!open) return;
+    const ownerDocument = triggerRef.current?.ownerDocument ?? fallbackLauncher?.()?.ownerDocument;
+    if (!ownerDocument) return;
 
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
@@ -28,7 +30,8 @@ export function useStudioMenuPopoverDismiss({
       event.preventDefault();
       event.stopPropagation();
       onDismiss();
-      triggerRef.current?.querySelector<HTMLButtonElement>("button[aria-expanded]")?.focus();
+      const launcher = triggerRef.current?.querySelector<HTMLButtonElement>("button[aria-expanded]") ?? fallbackLauncher?.();
+      launcher?.focus({ preventScroll: true });
     };
 
     // Bubble after controls can consume Escape, before the editor's window shortcuts run.
@@ -38,5 +41,5 @@ export function useStudioMenuPopoverDismiss({
       ownerDocument.removeEventListener("keydown", onKeyDown);
       ownerDocument.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [open, triggerRef, panelSelector, onDismiss]);
+  }, [open, triggerRef, fallbackLauncher, panelSelector, onDismiss]);
 }

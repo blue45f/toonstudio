@@ -110,26 +110,23 @@ describe("shape verifier opens the shipped menu", () => {
     const onSelect = vi.fn();
     const canvasEscape = vi.fn();
     document.addEventListener("keydown", canvasEscape);
-    render(<StudioMainMenu groups={[{ id: "create", label: "창작", items: [
+    render(<StudioMainMenu groups={[{ id: "brush", label: "그리기", items: [
       { id: "correct-current-stroke", label: "현재 스트로크 교정", onSelect },
     ] }]} />);
-    const trigger = screen.getByRole("menuitem", { name: "창작" });
+    const trigger = screen.getByRole("menuitem", { name: "그리기" });
     if (alreadyOpen) fireEvent.click(trigger);
     const page = {
-      locator: (selector: string) => ({ getByRole: (role: "menuitem", options: { name: RegExp }) => {
+      locator: (selector: string) => ({ locator: (nested: string) => {
         const bar = document.querySelector<HTMLElement>(selector)!;
-        const button = within(bar).getByRole(role, options);
+        const button = bar.querySelector<HTMLElement>(nested)!;
         return {
           focus: async () => { act(() => { button.focus(); }); },
           press: async (key: string) => { fireEvent.keyDown(button, { key }); },
         };
-      } }),
-      getByRole: (role: "menu", options: { name: RegExp }) => ({
-        waitFor: async () => { await screen.findByRole(role, options); },
-      }),
+      }, waitFor: async () => { expect(document.querySelector(selector)).toBeTruthy(); } }),
     } as unknown as Page;
     await openStudioShapeCorrectionMenu(page);
-    fireEvent.click(within(screen.getByRole("menu", { name: "창작" })).getByRole("menuitem", { name: "현재 스트로크 교정" }));
+    fireEvent.click(within(screen.getByRole("menu", { name: "그리기" })).getByRole("menuitem", { name: "현재 스트로크 교정" }));
     expect(onSelect).toHaveBeenCalledOnce();
     expect(canvasEscape.mock.calls.some(([event]) => event.key === "Escape")).toBe(false);
     document.removeEventListener("keydown", canvasEscape);

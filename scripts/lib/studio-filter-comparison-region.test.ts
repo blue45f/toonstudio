@@ -1,9 +1,25 @@
 import { describe, expect, it } from "vitest";
 
-import { studioFilterComparisonBandHeight } from "./studio-filter-comparison-region";
+import { studioFilterComparisonBandHeight, studioFilterDocumentClip } from "./studio-filter-comparison-region";
 
 const band = { x: 100, y: 503, width: 600, height: 180 };
 const panel = { x: 500, y: 678.390625, width: 300, height: 310 };
+
+describe("상태 안내가 이동한 뒤 문서 픽셀 좌표", () => {
+  const stage = { x: 78, y: 163.5, width: 1362, height: 2043 };
+  it("원고가 화면에서 사라지면 이전 좌표로 캡처하지 않는다", () => {
+    expect(() => studioFilterDocumentClip(band, stage, null)).toThrow("원고의 화면 위치");
+  });
+  it("13.375px 높이의 안내가 생겨도 원고 안에서 같은 위치와 크기를 유지한다", () => {
+    const moved = { ...stage, x: 67, y: 176.875 };
+    const result = studioFilterDocumentClip(band, stage, moved);
+    expect([result.x - moved.x, result.y - moved.y]).toEqual([band.x - stage.x, band.y - stage.y]);
+    expect(result).toMatchObject({ width: band.width, height: band.height });
+  });
+  it.each([{ width: 1000 }, { height: 1100 }])("원고 배율이 바뀐 비교를 거절한다", (change) => {
+    expect(() => studioFilterDocumentClip(band, stage, { ...stage, ...change })).toThrow("원고 배율");
+  });
+});
 
 describe("필터 비교 띠의 실제 가림 제외", () => {
   it("패널이 기존 180px 띠를 일부 가려도 같은 상단 163px만 비교한다", () => {

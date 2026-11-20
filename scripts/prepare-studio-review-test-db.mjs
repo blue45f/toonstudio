@@ -39,8 +39,10 @@ try {
     "0017_creator_work_live_lock_revision.sql",
     "0018_studio_ai_request_gate.sql",
     "0019_studio_ai_request_receipt.sql",
+    "0036_traffic_analytics_relations.sql",
     "0060_studio_ai_free_provider_expansion.sql",
     "0064_studio_project_graph_v3.sql",
+    "0066_share_analytics_events.sql",
     "0067_creator_role_workspace_personalization.sql",
     "0077_membership_operations.sql",
     "0082_studio_review_policy.sql",
@@ -67,6 +69,11 @@ try {
   ]) {
     await pool.query(await readFile(new URL(`../apps/api/src/platform/database/migrations/${migration}`, import.meta.url), "utf8"));
   }
+  // 편집 화면이 전송하는 성능 지표와 방문 기록 정리에 필요한 PostgreSQL 정의만 적용한다.
+  const vitalSchemas = await readFile(new URL("../apps/api/src/modules/traffic-analytics/traffic-web-vital.schema.sql", import.meta.url), "utf8");
+  const vitalSections = vitalSchemas.split(/^-- D1 \(SQLite\) -+$/mu);
+  assert.equal(vitalSections.length, 2, "웹 성능 지표 스키마의 PostgreSQL·D1 구분을 확인해야 합니다.");
+  await pool.query(vitalSections[0]);
   // Drizzle가 만들지 않는 불변 이력 트리거와 소유권 FK를 실제 public 스키마에서 확인한다.
   const adminGuards = [
     ["admin_business_plan", "admin_business_plan_delete_guard", 11, "admin_business_plan_immutable_guard"],

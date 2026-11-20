@@ -182,7 +182,8 @@ describe("Studio brush browser harness catalogue boundary", () => {
     ).toHaveLength(2);
     expect(harness).toContain("pointer-down gesture lost eraser operation authority");
     expect(harness).toContain("eraser gesture had no live retained-layer preview");
-    expect(harness).toContain("live low-density gesture retained");
+    expect(harness).toContain("eraserLiftMatchesPreset(expectedSelection, liveEraseLift)");
+    expect(harness).toContain("eraserLiftMatchesPreset(expectedSelection, eraseLift)");
     expect(harness).toContain("live retained-layer eraser");
     expect(harness).not.toContain("release-visible destination-out over retained paint");
     expect(harness).toContain("waitForPersistedSelectedOperation(");
@@ -191,7 +192,7 @@ describe("Studio brush browser harness catalogue boundary", () => {
     );
     expect(harness).toContain('data-studio-active-tool-summary="eraser"');
     expect(harness).toContain("measureEraserLiftRatio(");
-    expect(harness).toContain("expected a bounded partial lift");
+    expect(harness).toContain("eraserLiftMatchesPreset(preset, entry.eraseLift)");
     expect(harness).toContain("paint+erase cleanup left");
     expect(harness).toContain("long paint+erase cleanup left");
     expect(harness).toContain("TOONSPECTRUM_BRUSH_VERIFY_IDS");
