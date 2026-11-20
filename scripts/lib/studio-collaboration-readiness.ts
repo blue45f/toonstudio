@@ -51,6 +51,27 @@ export async function waitForStudioCollaborationDocumentLane(
 }
 
 
+const studioEditorSelector = '[data-studio-editor="true"]';
+const undoDepthAttribute = "data-studio-history-undo-depth";
+
+export async function readStudioCollaborationUndoDepth(page: Page): Promise<number> {
+  const raw = await page.locator(studioEditorSelector).getAttribute(undoDepthAttribute, { timeout: 10_000 });
+  const depth = Number(raw);
+  if (raw === null || !/^\d+$/u.test(raw) || !Number.isSafeInteger(depth)) {
+    throw new Error("협업 원고의 실행취소 기준 깊이를 확인하지 못했습니다.");
+  }
+  return depth;
+}
+
+/** pointerup 복구 영수증과 달리, 실행취소 깊이는 편집기의 실제 히스토리 커밋을 확인한다. */
+export async function waitForStudioCollaborationUndoDepth(
+  page: Page,
+  expectedDepth: number,
+): Promise<void> {
+  await page.locator(`${studioEditorSelector}[${undoDepthAttribute}="${expectedDepth}"]`)
+    .waitFor({ state: "visible", timeout: 15_000 });
+}
+
 /** 현재 화면의 실제 펜 버튼을 선택한다. 새 기본 화면에 숨겨진 기존 옵션 도크를 강요하지 않는다. */
 export async function selectStudioCollaborationPen(page: Page, timeoutMs = 10_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;

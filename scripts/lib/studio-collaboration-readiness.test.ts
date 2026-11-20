@@ -1,7 +1,10 @@
 import { errors, type Page } from "playwright";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { selectStudioCollaborationPen, waitForStudioCollaborationDocumentLane } from "./studio-collaboration-readiness";
+import {
+  readStudioCollaborationUndoDepth, selectStudioCollaborationPen,
+  waitForStudioCollaborationDocumentLane, waitForStudioCollaborationUndoDepth,
+} from "./studio-collaboration-readiness";
 
 const readyPhases = new Set(["synced", "read-only-follower", "syncing", "offline-queued"]);
 
@@ -129,6 +132,50 @@ describe("협업 검증기 시작 안내 readiness", () => {
   });
 });
 
+
+describe("협업 원고 획의 실제 히스토리 커밋", () => {
+  it("복구 스냅샷에 획이 있어도 두 번째 실행취소 항목이 나타날 때까지 진행하지 않는다", async () => {
+    let depth = 7;
+    const advance = Promise.withResolvers<void>();
+    const waitFor = vi.fn(async () => {
+      expect(depth).toBe(8);
+      await advance.promise;
+      expect(depth).toBe(9);
+    });
+    const locator = vi.fn((selector: string) => {
+      if (selector === '[data-studio-editor="true"]') {
+        return { getAttribute: async () => String(depth) };
+      }
+      expect(selector).toBe('[data-studio-editor="true"][data-studio-history-undo-depth="9"]');
+      return { waitFor };
+    });
+    const page = { locator } as unknown as Page;
+    const before = await readStudioCollaborationUndoDepth(page);
+    depth = 8;
+    const barrier = waitForStudioCollaborationUndoDepth(page, before + 2);
+    const settled = vi.fn();
+    void barrier.then(settled);
+    await Promise.resolve();
+    expect(settled).not.toHaveBeenCalled();
+    expect(waitFor).toHaveBeenCalledExactlyOnceWith({ state: "visible", timeout: 15_000 });
+    depth = 9;
+    advance.resolve();
+    await barrier;
+    expect(settled).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([null, "", "-1", "1.5"])("유효하지 않은 기준 깊이(%s)는 실패한다", async (depth) => {
+    const page = { locator: () => ({ getAttribute: async () => depth }) } as unknown as Page;
+    await expect(readStudioCollaborationUndoDepth(page))
+      .rejects.toThrow("협업 원고의 실행취소 기준 깊이를 확인하지 못했습니다.");
+  });
+
+  it("예상 깊이에 도달하지 못한 브라우저 오류를 전달한다", async () => {
+    const timeout = new errors.TimeoutError("두 번째 획 커밋이 없습니다.");
+    const page = { locator: () => ({ waitFor: async () => { throw timeout; } }) } as unknown as Page;
+    await expect(waitForStudioCollaborationUndoDepth(page, 2)).rejects.toBe(timeout);
+  });
+});
 
 function penUi({ clarity = true, mobile = false, desktopVisibleAfter = 0, selected = false, clickError, remainsUnselected = false, toolbarMode = "pen", connected = true, mobileToolbarName = "드로잉 도구" }: {
   clarity?: boolean; mobile?: boolean; desktopVisibleAfter?: number; selected?: boolean; clickError?: Error; remainsUnselected?: boolean; toolbarMode?: string; connected?: boolean; mobileToolbarName?: string;

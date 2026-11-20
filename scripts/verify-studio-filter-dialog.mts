@@ -38,7 +38,10 @@ import {
 import { parseStudioWorkspaceRoute } from "../apps/web/src/domains/creator/studio-workspace-route";
 
 import { canonicalImageElementIds } from "./lib/studio-canonical-image-identity";
-import { selectStudioCollaborationPen, waitForStudioCollaborationDocumentLane } from "./lib/studio-collaboration-readiness";
+import {
+  readStudioCollaborationUndoDepth, selectStudioCollaborationPen,
+  waitForStudioCollaborationDocumentLane, waitForStudioCollaborationUndoDepth,
+} from "./lib/studio-collaboration-readiness";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { verifyStudioServiceStatusAccess } from "./lib/studio-drawing-readiness-service-status";
 import { assertStudioFilterCanonicalEvidence, assertStudioFilterCanonicalUnchanged, assertStudioFilterRecoveryUnchanged } from "./lib/studio-filter-canonical-evidence";
@@ -251,6 +254,7 @@ async function activatePenAndDraw(page: Page): Promise<void> {
   }), { points: [[centerX, centerY], [centerX + 230, centerY + 130], [centerX + 110, centerY - 20], [centerX - 190, centerY + 170]] });
   log("INITIAL_STROKE_HIT_EVIDENCE " + JSON.stringify(hitEvidence));
   await page.screenshot({ path: join(SCRATCH, "studio-filter-initial-hit-state.png") });
+  const undoDepth = AUTHENTICATED ? await readStudioCollaborationUndoDepth(page) : null;
   await page.mouse.move(centerX, centerY);
   await page.mouse.down();
   await page.mouse.move(centerX + 230, centerY + 130, { steps: 18 });
@@ -259,8 +263,13 @@ async function activatePenAndDraw(page: Page): Promise<void> {
   await page.mouse.down();
   await page.mouse.move(centerX - 190, centerY + 170, { steps: 18 });
   await page.mouse.up();
-  // Let the stroke commit and history entry land before measuring anything.
-  await page.waitForTimeout(600);
+  if (undoDepth !== null) {
+    // 복구 스냅샷은 지연 커밋보다 먼저 두 획을 기록할 수 있다. 이미지 추가의 변경 티켓은
+    // 실제 두 실행취소 항목이 생긴 뒤에만 캡처되게 하고, 원본의 영속 저장도 별도로 검사한다.
+    await waitForStudioCollaborationUndoDepth(page, undoDepth + 2);
+  } else {
+    await page.waitForTimeout(600);
+  }
 }
 
 /** Central canvas region away from fixed chrome — the neighbourhood the filters visibly act on. */
