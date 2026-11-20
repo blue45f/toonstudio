@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 
+import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { StudioMainMenu } from "../StudioMainMenu";
 import { isStudioWorkMode, STUDIO_WORK_MODES, STUDIO_WORK_MODE_META } from "../studio-work-mode";
@@ -15,6 +16,7 @@ export function StudioDrawingProjectTools({ session: s, children }: {
   readonly children?: ReactNode;
 }) {
   const bt = useBilingual("studio.drawingClarity");
+  const stackViewTools = useMediaQuery("(width < 48rem)");
   const close = useStudioDrawingClarity()?.close;
   const presentation = useStudioDrawingCommandPresentation(s, s.isMobile);
   const groups = useMemo(() => s.studioMainMenuGroups.map((group) => ({
@@ -32,6 +34,7 @@ export function StudioDrawingProjectTools({ session: s, children }: {
         <h2 id="studio-project-tools-heading" tabIndex={-1} data-clarity-pane-heading>{bt("프로젝트·창 도구", "Project and window tools")}</h2>
         <button type="button" aria-label={bt("프로젝트 도구 닫기", "Close project tools")} onClick={close}><X size={18} aria-hidden /></button>
       </header>
+      {stackViewTools && <div id="studio-project-view-tools-slot" />}
       <label className="studio-project-tools-stage">
         {bt("작업 단계", "Production stage")}
         <select value={s.workMode ?? "all"} onChange={(event) => { if (isStudioWorkMode(event.target.value)) s.setWorkMode(event.target.value); }}>

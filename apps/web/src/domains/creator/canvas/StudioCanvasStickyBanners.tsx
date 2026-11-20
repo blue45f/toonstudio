@@ -11,6 +11,7 @@ import { StudioLiveCollaborationQuickControls } from "../live/StudioLiveCollabor
 import { creatorWorkHref } from "../publishing/showcase-links";
 import { StudioLivePresenceDockConnected } from "../studio-page-lazy-ui";
 import { adoptMissingPage } from "../studio-pages";
+import { StudioChromePortal } from "../studio-shell/StudioDocumentChromeSlot";
 import {
   stepStudioViewZoom,
   type StudioViewRotation,
@@ -219,45 +220,47 @@ export function renderStudioCanvasStickyBanners({
           </div>
           </StudioCanvasCollaborationDisclosure>
           {viewTool ? (
-            <div className="pointer-events-none flex items-start justify-center px-2">
-              <Suspense fallback={null}>
-                <StudioViewToolsHud
-                  className="!relative !left-auto !top-auto !max-w-full !translate-x-0"
-                  mode={viewTool}
-                  magnification={effScale}
-                  minMagnification={magnificationBounds.min}
-                  maxMagnification={magnificationBounds.max}
-                  canZoomIn={stepStudioViewZoom(zoom, 1) !== zoom}
-                  canZoomOut={stepStudioViewZoom(zoom, -1) !== zoom}
-                  rotation={canvasRotation}
-                  flipped={canvasFlipH}
-                  selectionCount={selectionCount}
-                  onZoomIn={() =>
-                    setZoom((current) => stepStudioViewZoom(current, 1))
-                  }
-                  onZoomOut={() =>
-                    setZoom((current) => stepStudioViewZoom(current, -1))
-                  }
-                  onSetMagnification={(magnification) => {
-                    setZoom(
-                      studioUserZoomForMagnification(
-                        magnification,
-                        viewBaseScale
-                      )
-                    );
-                  }}
-                  onFit={fitCanvasToWidth}
-                  onFitViewport={fitCanvasToViewport}
-                  onFitSelection={zoomToSelection}
-                  onActual={setActualPixelView}
-                  onRotateLeft={() => rotateCanvasView("left")}
-                  onRotateRight={() => rotateCanvasView("right")}
-                  onToggleFlip={toggleHorizontalCanvasView}
-                  onReset={resetView}
-                  onClose={closeViewToolWithFocus}
-                />
-              </Suspense>
-            </div>
+            <StudioChromePortal targetId="studio-project-view-tools-slot">
+              <div className="pointer-events-none flex items-start justify-center px-2">
+                <Suspense fallback={null}>
+                  <StudioViewToolsHud
+                    className="!relative !left-auto !top-auto !max-w-full !translate-x-0"
+                    mode={viewTool}
+                    magnification={effScale}
+                    minMagnification={magnificationBounds.min}
+                    maxMagnification={magnificationBounds.max}
+                    canZoomIn={stepStudioViewZoom(zoom, 1) !== zoom}
+                    canZoomOut={stepStudioViewZoom(zoom, -1) !== zoom}
+                    rotation={canvasRotation}
+                    flipped={canvasFlipH}
+                    selectionCount={selectionCount}
+                    onZoomIn={() =>
+                      setZoom((current) => stepStudioViewZoom(current, 1))
+                    }
+                    onZoomOut={() =>
+                      setZoom((current) => stepStudioViewZoom(current, -1))
+                    }
+                    onSetMagnification={(magnification) => {
+                      setZoom(
+                        studioUserZoomForMagnification(
+                          magnification,
+                          viewBaseScale
+                        )
+                      );
+                    }}
+                    onFit={fitCanvasToWidth}
+                    onFitViewport={fitCanvasToViewport}
+                    onFitSelection={zoomToSelection}
+                    onActual={setActualPixelView}
+                    onRotateLeft={() => rotateCanvasView("left")}
+                    onRotateRight={() => rotateCanvasView("right")}
+                    onToggleFlip={toggleHorizontalCanvasView}
+                    onReset={resetView}
+                    onClose={closeViewToolWithFocus}
+                  />
+                </Suspense>
+              </div>
+            </StudioChromePortal>
           ) : null}
         </div>
       </div>

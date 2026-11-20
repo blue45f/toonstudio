@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -100,6 +100,19 @@ afterEach(() => {
 });
 
 describe("StudioCanvasStickyBanners precision View HUD wiring", () => {
+  it("좁은 프로젝트 창을 열어도 같은 확대 도구를 쓰고 창을 닫으면 캔버스로 돌아간다", async () => {
+    const context = createContext();
+    const banners = renderStudioCanvasStickyBanners(context);
+    const view = render(<>{banners}<div id="studio-project-view-tools-slot" role="region" aria-label="프로젝트 도구" /></>);
+    const project = screen.getByRole("region", { name: "프로젝트 도구" });
+    fireEvent.click(await within(project).findByRole("button", { name: "확대율 100%" }));
+    expect(context.setZoom).toHaveBeenCalledWith(2.5);
+
+    view.rerender(<>{banners}</>);
+    expect(await screen.findByRole("toolbar", { name: "precision view controls" })).toBeTruthy();
+    expect(screen.getAllByRole("toolbar", { name: "precision view controls" })).toHaveLength(1);
+  });
+
   it("derives effective zoom bounds and adapts exact magnification to user zoom", () => {
     const context = createContext();
 
