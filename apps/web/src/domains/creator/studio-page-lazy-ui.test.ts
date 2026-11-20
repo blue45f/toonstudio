@@ -115,8 +115,16 @@ describe("StudioPage optional UI registry", () => {
     expect(registry.valueImports).not.toContain("./filter/StudioFilterDialog");
     expect(page.valueImports).not.toContain("./filter/StudioFilterDialog");
     expect(page.dynamicImports).not.toContain("./filter/StudioFilterDialog");
+    // 도크에서 분리된 선택기가 의도를 소비하며, 도크는 해당 선택기만 연결한다.
+    const dock = moduleEdges("./StudioMobileEditingDock.tsx");
+    expect(dock.valueImports).toContain("./filter/StudioMobileFilterSelect");
+    expect(dock.valueImports).not.toContain("./studio-page-lazy-ui");
+    expect(dock.dynamicImports).not.toContain("./filter/StudioFilterDialog");
+    const mobileFilter = moduleEdges("./filter/StudioMobileFilterSelect.tsx");
+    expect(mobileFilter.valueImports).toContain("../studio-filter-dialog-intent");
+    expect(mobileFilter.valueImports).not.toContain("../studio-page-lazy-ui");
+    expect(mobileFilter.dynamicImports).not.toContain("./StudioFilterDialog");
     for (const consumerPath of [
-      "./StudioMobileEditingDock.tsx",
       "./StudioRasterToolRecoveryPanel.tsx",
       "./StudioMainMenu.tsx",
     ]) {

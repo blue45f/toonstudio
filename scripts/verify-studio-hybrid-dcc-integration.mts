@@ -34,7 +34,8 @@ import {
 } from "playwright";
 
 import { openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "./lib/studio-bg3d-ui-interactions";
-import { openStudioLayerNavigator, showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
+import { openStudioLayerNavigator } from "./lib/studio-shell-interactions";
+import { openStudioProjectCenter } from "./lib/studio-verifier-entry-points";
 import {
   findFreePort,
   stopChildProcess,
@@ -1253,20 +1254,11 @@ async function openHybridDcc(page: Page): Promise<Locator> {
       detail?.trim() || "Route-owned Hybrid DCC panel never passed recovery after reload",
     );
   }
-  await showStudioProjectWindowTools(page);
-  const trigger = page.getByRole("button", { name: "프로젝트 센터", exact: true });
-  const projectMenu = page.locator('[data-studio-project-actions-menu="true"]');
+  const projectMenu = await openStudioProjectCenter(page);
   const entry = projectMenu.locator('[data-studio-hybrid-dcc-open="true"]');
-  for (let attempt = 0; attempt < 10 && !await dialog.isVisible(); attempt += 1) {
-    if (!await projectMenu.isVisible()) await trigger.click({ timeout: 4_000 }).catch(() => undefined);
-    await entry.click({ timeout: 4_000 }).catch(() => undefined);
-    await dialog.waitFor({ state: "visible", timeout: 4_000 }).catch(() => undefined);
-  }
-  if (!await dialog.isVisible()) {
-    await visibleOrBlock(trigger, "project-actions-trigger", "Shipped Studio project-actions trigger is not visible");
-    await visibleOrBlock(projectMenu, "project-actions-menu", "Shipped Studio project-actions portal did not open");
-    await visibleOrBlock(entry, "hybrid-dcc-entry", "Hybrid DCC entry is not visible inside the shipped project-actions portal");
-  }
+  await visibleOrBlock(entry, "hybrid-dcc-entry", "Hybrid DCC entry is not visible inside the shipped project-actions portal");
+  await entry.click({ timeout: 4_000 });
+  await dialog.waitFor({ state: "visible", timeout: 4_000 });
   await visibleOrBlock(dialog, "hybrid-dcc-dialog", "Hybrid DCC dialog did not open from its UI entry");
   if (!await panel.waitFor({ state: "visible", timeout: 20_000 })
     .then(() => true)

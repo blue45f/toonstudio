@@ -3,13 +3,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { activateDesktopPen } from "./studio-desktop-brush-activation";
 import { prepareFilterMenuWorkspace } from "./studio-filter-menu-workspace";
+import { openStudioLayerNavigator } from "./studio-shell-interactions";
 
 vi.mock("./studio-filter-menu-workspace", () => ({ prepareFilterMenuWorkspace: vi.fn() }));
+vi.mock("./studio-shell-interactions", () => ({ openStudioLayerNavigator: vi.fn() }));
 
-function fixture({ visibleRail = true, propertiesSelected = false, lateClarity = false } = {}) {
+function fixture({ visibleRail = true, propertiesSelected = false, lateClarity = false, inspectorVisible = true } = {}) {
   const calls: string[] = [];
   const timeouts: number[] = [];
   let legacyVisible = !lateClarity;
+  let inspectorOpen = inspectorVisible;
   let attempts = 0;
   const timeout = ({ timeout }: { timeout: number }) => {
     timeouts.push(timeout);
@@ -37,8 +40,10 @@ function fixture({ visibleRail = true, propertiesSelected = false, lateClarity =
     click: vi.fn(async (options: { timeout: number }) => { timeout(options); calls.push("visible-pen"); }),
   };
   const inspector = {
+    isVisible: async () => inspectorOpen,
     waitFor: async (options: { state: string; timeout: number }) => {
       expect(options.state).toBe("visible"); timeout(options); calls.push("inspector");
+      if (!inspectorOpen) throw new errors.TimeoutError("프로젝트 메뉴를 열어도 레이어·속성 패널은 숨겨져 있습니다.");
     },
     locator: (selector: string) => { expect(selector).toBe('[data-studio-inspector-primary-tab="properties"]'); return properties; },
   };
@@ -64,7 +69,11 @@ function fixture({ visibleRail = true, propertiesSelected = false, lateClarity =
     if (attempts > 1) legacyVisible = true;
     return attempts > 1;
   });
-  return { page, calls, timeouts, pen, properties, press };
+  vi.mocked(openStudioLayerNavigator).mockImplementation(async (actualPage, budget) => {
+    expect(actualPage).toBe(page); expect(budget).toBeGreaterThan(0); expect(budget).toBeLessThanOrEqual(1_000);
+    calls.push("layers-ui"); inspectorOpen = true;
+  });
+  return { page, calls, timeouts, pen, properties, press, inspector };
 }
 
 afterEach(() => { vi.restoreAllMocks(); vi.clearAllMocks(); });
@@ -75,6 +84,7 @@ describe("PC 정밀 브러시 검증의 실제 도구 진입", () => {
     expect(f.calls).toEqual(["actual-menu", "visible-pen", "toolbar", "pen-mode", "pill", "inspector", "properties"]);
     expect(f.press).not.toHaveBeenCalled();
     expect(f.pen.click.mock.calls[0]?.[0]).not.toHaveProperty("force");
+    expect(openStudioLayerNavigator).not.toHaveBeenCalled();
   });
   it("보이는 rail이 없으면 기존 키보드 동작을 사용하고 이미 선택한 속성은 보존한다", async () => {
     const f = fixture({ visibleRail: false, propertiesSelected: true }); await activateDesktopPen(f.page);
@@ -85,6 +95,39 @@ describe("PC 정밀 브러시 검증의 실제 도구 진입", () => {
     const f = fixture({ lateClarity: true }); await activateDesktopPen(f.page);
     expect(f.calls.filter(call => call === "actual-menu")).toHaveLength(2);
     expect(f.calls).toContain("retry"); expect(f.calls.at(-1)).toBe("properties");
+  });
+  it("프로젝트 메뉴와 별도로 숨겨진 레이어·속성 패널을 실제 사용자 경로로 연다", async () => {
+    const f = fixture({ inspectorVisible: false }); let now = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const waitFor = f.inspector.waitFor;
+    vi.spyOn(f.inspector, "waitFor").mockImplementation(async (options) => {
+      if (!await f.inspector.isVisible()) now += options.timeout;
+      await waitFor(options);
+    });
+    await expect(activateDesktopPen(f.page, 1_000)).resolves.toBeUndefined();
+    expect(f.calls).toEqual(["actual-menu", "visible-pen", "toolbar", "pen-mode", "pill", "layers-ui", "inspector", "properties"]);
+    expect(openStudioLayerNavigator).toHaveBeenCalledExactlyOnceWith(f.page, 1_000);
+    expect(now).toBe(0);
+  });
+  it("레이어 패널 진입의 제품 오류를 숨기거나 준비 성공으로 바꾸지 않는다", async () => {
+    const f = fixture({ inspectorVisible: false }); let now = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const failure = new Error("레이어 진입점이 두 개입니다.");
+    vi.mocked(openStudioLayerNavigator).mockRejectedValue(failure);
+    const waitFor = f.inspector.waitFor;
+    vi.spyOn(f.inspector, "waitFor").mockImplementation(async (options) => { now += options.timeout; await waitFor(options); });
+    await expect(activateDesktopPen(f.page, 1_000)).rejects.toBe(failure);
+    expect(f.properties.click).not.toHaveBeenCalled();
+  });
+  it("레이어 패널 진입이 남은 기한 뒤에 끝나도 준비 성공으로 반환하지 않는다", async () => {
+    const f = fixture({ inspectorVisible: false }); let now = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    vi.mocked(openStudioLayerNavigator).mockImplementation(async () => { now += 1_001; });
+    const waitFor = f.inspector.waitFor;
+    vi.spyOn(f.inspector, "waitFor").mockImplementation(async (options) => { now += options.timeout; await waitFor(options); });
+    await expect(activateDesktopPen(f.page, 1_000)).rejects.toThrow("1000ms 초과");
+    expect(openStudioLayerNavigator).toHaveBeenCalledExactlyOnceWith(f.page, 1_000);
+    expect(f.properties.click).not.toHaveBeenCalled();
   });
   it("UI 준비 실패가 반복돼도 최초 60초 예산을 재시작하지 않는다", async () => {
     const f = fixture(); let now = 0;
