@@ -5624,7 +5624,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     if (!file) return;
     const format = studioBrushPackFormatOf(file.name, file.type);
     if (format === null) {
-      setError(t("studio.hostStatus.brushFileFormatUnknown", "브러시 파일 형식을 알아보지 못했어요. .abr · .myb · .kpp · .sut · .sutg · .bundle · .json 파일을 선택해 주세요."));
+      setError(t("studio.hostStatus.brushFileFormatUnknown", "브러시 파일 형식을 알아보지 못했어요. .abr · .myb · .kpp · .sut · .sutg · .brushset · .bundle · .json 파일을 선택해 주세요."));
       return;
     }
     if (format === "abr" || format === "json") {
@@ -5653,7 +5653,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
         case "kpp": committed = await importer.importAndCommitStudioBrushProgramFile(file, "kpp", product.repository); break;
         case "sut": committed = await importer.importAndCommitStudioBrushProgramFile(file, "sut", product.repository); break;
         case "sutg": committed = await importer.importAndCommitStudioBrushProgramFile(file, "sutg", product.repository); break;
-        case "bundle": committed = await importer.importAndCommitStudioBrushProgramFile(file, "bundle", product.repository); break;
+        case "bundle": case "brushset": committed = await importer.importAndCommitStudioBrushProgramFile(file, format, product.repository); break;
       }
       if (committed.saved.savedCount === 0) {
         setError(t("studio.hostStatus.brushNoNewItems", "브러시 파일에 새로 저장할 항목이 없어요."));

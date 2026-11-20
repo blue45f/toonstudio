@@ -17,6 +17,8 @@
  *   `visited_ast_nodes: 114706`, `data-flow: 51007`, `object-flow: 7429`, `closure: 4391`, `call-flow: 2555`
  */
 
+import { runSpectral38BandKubelkaMunkMix } from "../pigment/spectral-38band-km";
+
 import type { Pt as Point2D, Rgb } from "../core/types";
 
 export {
@@ -51,16 +53,6 @@ function clamp01(v: number): number {
   return clamp(v, 0, 1);
 }
 
-function srgbToLinear01(x: number): number {
-  const c = clamp01(x);
-  return c > 0.04045 ? ((c + 0.055) / 1.055) ** 2.4 : c / 12.92;
-}
-
-function linearToSrgb01(x: number): number {
-  const c = clamp01(x);
-  return c > 0.0031308 ? 1.055 * c ** (1 / 2.4) - 0.055 : 12.92 * c;
-}
-
 // ============================================================================
 // 1. Spectral.js 38-Band (380nm–750nm) Kubelka-Munk + Tinting Strength + OKLab
 // ============================================================================
@@ -79,139 +71,19 @@ export interface Spectral38BandMixResult {
   readonly mixedLinearRgb01: Rgb;
   readonly oklabLCh: { readonly L: number; readonly C: number; readonly hDeg: number };
   readonly spectralReflectance38: readonly number[];
+  readonly chromaPreservationDeltaC: number;
   readonly chromaPreservationGain01: number;
 }
 
 /**
- * Spectral.js (`spectral.js`) 역공학:
- * 38개 파장 대역(380nm~750nm, 10nm 간격)에서 기저 스펙트럼 반사율 R(λ)을 합성하고,
- * 각 파장별로 KS(R) = (1 - R)² / (2R) 및 착색력·휘도 가중치(f² · T² · Y)를 적용해
- * KM(KS) = 1 + KS - √(KS² + 2KS)로 물리적 반사 스펙트럼을 복원한 뒤 OKLab 채도 보존 이득을 계산한다.
+ * 38밴드(380nm~750nm, 10nm 간격) 클린룸 CIE 1931 2° × D65 + Kubelka-Munk 정본 커널 위임:
+ * 7원색 최소기울기 스펙트럼 반사율 R(λ)을 복원하고 KS(R) = (1 - R)² / (2R) 및 착색력·휘도
+ * 가중 농도(f² · T² · Y)로 혼색한 뒤 CIE XYZ/OKLab 채도 보존 이득을 실측 계산한다.
  */
 export function evaluateSpectral38BandKubelkaMunkMix(
   params: Spectral38BandMixParams,
 ): Spectral38BandMixResult {
-  const SIZE = 38;
-  const EPS = 1e-4;
-  const lA = {
-    r: srgbToLinear01(params.colorASrgb01.r),
-    g: srgbToLinear01(params.colorASrgb01.g),
-    b: srgbToLinear01(params.colorASrgb01.b),
-  };
-  const lB = {
-    r: srgbToLinear01(params.colorBSrgb01.r),
-    g: srgbToLinear01(params.colorBSrgb01.g),
-    b: srgbToLinear01(params.colorBSrgb01.b),
-  };
-
-  // CIE 1931 relative luminance Y
-  const lumA = Math.max(EPS, 0.2126 * lA.r + 0.7152 * lA.g + 0.0722 * lA.b);
-  const lumB = Math.max(EPS, 0.2126 * lB.r + 0.7152 * lB.g + 0.0722 * lB.b);
-
-  const tsA = Math.max(0.1, params.tintingStrengthA ?? 1.0);
-  const tsB = Math.max(0.1, params.tintingStrengthB ?? 1.0);
-  const fA = Math.max(0, params.factorA);
-  const fB = Math.max(0, params.factorB);
-
-  const concA = fA * fA * tsA * tsA * lumA;
-  const concB = fB * fB * tsB * tsB * lumB;
-  const totalConc = Math.max(EPS, concA + concB);
-
-  const reflectance38: number[] = new Array(SIZE);
-  let sumBlueBand = 0;
-  let sumGreenBand = 0;
-  let sumRedBand = 0;
-  let weightBlue = 0;
-  let weightGreen = 0;
-  let weightRed = 0;
-
-  for (let i = 0; i < SIZE; i += 1) {
-    // 380nm + i * 10nm
-    const u = i / (SIZE - 1);
-    // Smooth Gaussian spectral lobe basis for Blue (445nm), Green (535nm), Red (615nm)
-    const wB = Math.exp(-(((u - 0.18) / 0.16) ** 2));
-    const wG = Math.exp(-(((u - 0.42) / 0.18) ** 2));
-    const wR = Math.exp(-(((u - 0.68) / 0.2) ** 2));
-    const norm = wB + wG + wR + EPS;
-
-    const rA = clamp((wR * lA.r + wG * lA.g + wB * lA.b) / norm, EPS, 1 - EPS);
-    const rB = clamp((wR * lB.r + wG * lB.g + wB * lB.b) / norm, EPS, 1 - EPS);
-
-    const ksA = ((1 - rA) * (1 - rA)) / (2 * rA);
-    const ksB = ((1 - rB) * (1 - rB)) / (2 * rB);
-    const ksMix = (ksA * concA + ksB * concB) / totalConc;
-    const rMix = clamp(1 + ksMix - Math.sqrt(ksMix * ksMix + 2 * ksMix), EPS, 1);
-
-    reflectance38[i] = Number(rMix.toFixed(4));
-    sumBlueBand += rMix * wB;
-    sumGreenBand += rMix * wG;
-    sumRedBand += rMix * wR;
-    weightBlue += wB;
-    weightGreen += wG;
-    weightRed += wR;
-  }
-
-  const mixedLinear: Rgb = {
-    r: clamp01(sumRedBand / Math.max(EPS, weightRed)),
-    g: clamp01(sumGreenBand / Math.max(EPS, weightGreen)),
-    b: clamp01(sumBlueBand / Math.max(EPS, weightBlue)),
-  };
-
-  // Boost green secondary peak when mixing yellow + blue pigment bands (physical emerald overlap)
-  const yellowBlueOverlap =
-    Math.min(lA.r, lA.g) * (1 - lA.b) * lB.b * (1 - lB.r) +
-    Math.min(lB.r, lB.g) * (1 - lB.b) * lA.b * (1 - lA.r);
-  const adjustedLinear: Rgb = {
-    r: clamp01(mixedLinear.r * (1 - 0.25 * yellowBlueOverlap)),
-    g: clamp01(mixedLinear.g + 0.38 * yellowBlueOverlap),
-    b: clamp01(mixedLinear.b * (1 - 0.15 * yellowBlueOverlap)),
-  };
-
-  const mixedSrgb01: Rgb = {
-    r: Number(linearToSrgb01(adjustedLinear.r).toFixed(4)),
-    g: Number(linearToSrgb01(adjustedLinear.g).toFixed(4)),
-    b: Number(linearToSrgb01(adjustedLinear.b).toFixed(4)),
-  };
-
-  // OKLab conversion (Björn Ottosson matrix used in spectral.js)
-  const l = Math.cbrt(0.4122214708 * adjustedLinear.r + 0.5363325363 * adjustedLinear.g + 0.0514459929 * adjustedLinear.b);
-  const m = Math.cbrt(0.2119034982 * adjustedLinear.r + 0.6806995451 * adjustedLinear.g + 0.1073969566 * adjustedLinear.b);
-  const s = Math.cbrt(0.0883024619 * adjustedLinear.r + 0.2817188376 * adjustedLinear.g + 0.6299787005 * adjustedLinear.b);
-
-  const okL = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
-  const okA = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
-  const okB = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
-  const okC = Math.hypot(okA, okB);
-  const okH = ((Math.atan2(okB, okA) * 180) / Math.PI + 360) % 360;
-
-  // Compare against naive sRGB linear average chroma in OKLab
-  const t = fB / Math.max(EPS, fA + fB);
-  const naiveR = srgbToLinear01((1 - t) * params.colorASrgb01.r + t * params.colorBSrgb01.r);
-  const naiveG = srgbToLinear01((1 - t) * params.colorASrgb01.g + t * params.colorBSrgb01.g);
-  const naiveB = srgbToLinear01((1 - t) * params.colorASrgb01.b + t * params.colorBSrgb01.b);
-  const nl = Math.cbrt(0.4122214708 * naiveR + 0.5363325363 * naiveG + 0.0514459929 * naiveB);
-  const nm = Math.cbrt(0.2119034982 * naiveR + 0.6806995451 * naiveG + 0.1073969566 * naiveB);
-  const ns = Math.cbrt(0.0883024619 * naiveR + 0.2817188376 * naiveG + 0.6299787005 * naiveB);
-  const naiveC = Math.hypot(
-    1.9779984951 * nl - 2.428592205 * nm + 0.4505937099 * ns,
-    0.0259040371 * nl + 0.7827717662 * nm - 0.808675766 * ns,
-  );
-
-  return {
-    mixedSrgb01,
-    mixedLinearRgb01: {
-      r: Number(adjustedLinear.r.toFixed(4)),
-      g: Number(adjustedLinear.g.toFixed(4)),
-      b: Number(adjustedLinear.b.toFixed(4)),
-    },
-    oklabLCh: {
-      L: Number(okL.toFixed(4)),
-      C: Number(okC.toFixed(4)),
-      hDeg: Number(okH.toFixed(2)),
-    },
-    spectralReflectance38: reflectance38,
-    chromaPreservationGain01: Number(Math.max(0, okC - naiveC).toFixed(4)),
-  };
+  return runSpectral38BandKubelkaMunkMix(params);
 }
 
 // ============================================================================

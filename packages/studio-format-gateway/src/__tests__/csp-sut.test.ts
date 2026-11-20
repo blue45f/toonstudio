@@ -145,11 +145,14 @@ describe("SUT/SUTG preserve-first importer", () => {
     expect(result.unsupported).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: "sut-column-unmapped", message: expect.stringContaining("FutureCspField") }),
-        expect.objectContaining({ code: "sut-material-link-unverified" }),
       ]),
     );
+    // Matched Material PNG auto-links to brush tip and resolves `sut-material-link-unverified`.
+    expect(result.unsupported.some((issue) => issue.code === "sut-material-link-unverified")).toBe(false);
     expect(result.assets).toHaveLength(1);
     expect(result.assets[0]).toMatchObject({ mimeType: "image/png", width: 1, height: 1 });
+    expect(program.tip.kind).toBe("image");
+    expect(program.tip.imageAssetId).toBe(result.assets[0]!.id);
     expect(base64Bytes(program.sourcePayload?.base64 ?? "")).toEqual(bytes);
   });
 
@@ -348,11 +351,80 @@ describe("SUT/SUTG preserve-first importer", () => {
     expect(result.programs[0]).toMatchObject({
       name: "둥근펜",
       stabilizer: { strength: 0.6 },
-      tip: { hardness: 0.8, spacingPct: 15, angleJitterDeg: 25 },
+      tip: { kind: "stamp", hardness: 0.8, spacingPct: 15, angleJitterDeg: 25 },
+      mixing: { kind: "wet", strength: 0.75 },
+    });
+    expect(result.programs[0]?.providerPreference).toEqual(
+      expect.arrayContaining([
+        "hokusai-natural-media",
+        "csp:watercolor",
+        "csp:water-edge",
+        "csp:dual-brush",
+        "csp:texture",
+      ]),
+    );
+    expect(result.programFeatures?.[result.programs[0]!.id]).toMatchObject({
+      waterColor: { enabled: true, mixingMode: 2, lmsLinearity: 0.75 },
+      waterEdge: { enabled: true },
+      dualBrush: { enabled: true },
+      texture: { enabled: true, density: 0.4 },
     });
     expect(result.programs[0]?.sizeDynamics).toHaveLength(2);
     expect(result.programs[0]?.flowDynamics).toHaveLength(2);
     expect(result.unsupported.filter((issue) => issue.code === "sut-column-unmapped")).toEqual([]);
+  });
+
+  it("emits taper geometry and flags genuinely unlinked orphan PNG materials", async () => {
+    const bytes = buildAuthoredSutFixture();
+    const pngFixture = buildAuthoredSutFixture();
+    const seeded = await importCspToolFile(pngFixture, {
+      kind: "sut",
+      sqliteReader: readAuthoredSutWithNodeSqlite,
+    });
+    const pngBytes = base64Bytes(seeded.assets[0]!.base64);
+    const result = await importCspToolFile(bytes, {
+      kind: "sut",
+      sqliteReader: async () => ({
+        sqliteVersion: "3.45.0",
+        tables: [
+          {
+            name: "Variant",
+            columns: ["VariantId", "Name", "BrushSize", "BrushUseIn", "BrushInLength", "BrushUseOut", "BrushOutLength"],
+            rows: [
+              {
+                VariantId: 1,
+                Name: "G펜 테이퍼",
+                BrushSize: 300,
+                BrushUseIn: 1,
+                BrushInLength: 18,
+                BrushUseOut: 1,
+                BrushOutLength: 32,
+              },
+            ],
+          },
+          {
+            name: "MaterialFile",
+            columns: ["_PW_ID", "FileData"],
+            rows: [
+              { _PW_ID: 99, FileData: pngBytes },
+              { _PW_ID: 100, FileData: pngBytes },
+            ],
+          },
+        ],
+      }),
+    });
+    expect(result.programs).toHaveLength(1);
+    expect(result.programs[0]!.geometry).toMatchObject({ capStart: false, capEnd: false });
+    expect(result.programFeatures?.[result.programs[0]!.id]?.taper).toEqual({
+      useIn: true,
+      inLength: 18,
+      useOut: true,
+      outLength: 32,
+    });
+    // Two unmatched assets vs one brush row → orphan assets still surface `sut-material-link-unverified`.
+    expect(result.unsupported).toContainEqual(
+      expect.objectContaining({ code: "sut-material-link-unverified" }),
+    );
   });
 
   it("preserves every deterministic SQLite byte mutation or reports a bounded read failure", async () => {

@@ -1,16 +1,8 @@
-/**
- * Photoshop `.abr` brush importer, legacy v1/v2 (matrix §10.4 SUT/ABR lane).
- *
- * v1/v2 is the documented legacy container: big-endian `version(u16)`,
- * `count(u16)`, then per-brush records `type(u16), size(u32)` with computed
- * brushes (type 1) carrying diameter/roundness/angle/spacing and (v2) a
- * UTF-16 name. Modern v6+/v10 files are an 8BIM section container without a
- * public spec; those return an explicit `unsupported-version` error instead
- * of a lossy guess (absolute rule 9). The raw bytes always travel with the
- * result for round-trip retention.
- */
+// ABR v1/v2 + v6/7/9/10 8BIM gate; full v6+ decode loads lazily via importAbrV6.
 
 import { stripTrailingNuls, utf16UnitsToString } from "./nul-text";
+
+import type { AbrV6DescriptorBrush, AbrV6ErrorCode, AbrV6SampledTip } from "./abr-v6";
 
 export interface AbrComputedBrush {
   kind: "computed";
@@ -27,105 +19,106 @@ export interface AbrUnknownBrush {
   byteLength: number;
 }
 
-export type AbrBrush = AbrComputedBrush | AbrUnknownBrush;
+export type AbrBrush = AbrComputedBrush | AbrV6DescriptorBrush | AbrUnknownBrush;
 
 export interface AbrImportResult {
   version: number;
+  subversion?: number;
   brushes: AbrBrush[];
+  samples?: readonly AbrV6SampledTip[];
+  sectionKeys?: readonly string[];
   warnings: string[];
 }
 
 export class AbrParseError extends Error {
-  constructor(
-    message: string,
-    readonly code: "truncated" | "unsupported-version" | "corrupt",
-  ) {
+  constructor(message: string, readonly code: AbrV6ErrorCode) {
     super(message);
     this.name = "AbrParseError";
   }
 }
 
+const V6_VERSIONS = new Set([6, 7, 9, 10]);
+
+function tag4(bytes: Uint8Array, o: number): string {
+  return String.fromCharCode(bytes[o]!, bytes[o + 1]!, bytes[o + 2]!, bytes[o + 3]!);
+}
+
+function scanV6Sections(bytes: Uint8Array, view: DataView, version: number): AbrImportResult {
+  const subversion = view.getUint16(2, false);
+  if (subversion !== 1 && subversion !== 2) {
+    throw new AbrParseError(`unsupported ABR v${version}.${subversion}`, "unsupported-version");
+  }
+  const sectionKeys: string[] = [];
+  let o = 4;
+  while (o < bytes.byteLength) {
+    if (o + 12 > bytes.byteLength) throw new AbrParseError(`ABR v${version} header truncated`, "truncated");
+    if (tag4(bytes, o) !== "8BIM") throw new AbrParseError(`expected 8BIM at ${o}`, "corrupt");
+    const key = tag4(bytes, o + 4);
+    const size = view.getUint32(o + 8, false);
+    o += 12;
+    if (o + size > bytes.byteLength) throw new AbrParseError(`ABR v${version} ${key} truncated`, "truncated");
+    sectionKeys.push(key);
+    o += size;
+    const pad = size & 3;
+    if (pad !== 0 && o + (4 - pad) <= bytes.byteLength) o += 4 - pad;
+  }
+  return { version, subversion, brushes: [], sectionKeys, warnings: [] };
+}
+
+export async function importAbrV6(bytes: Uint8Array): Promise<AbrImportResult> {
+  const { parseAbrV6Container } = await import("./abr-v6");
+  const parsed = parseAbrV6Container(bytes, (msg, code) => {
+    throw new AbrParseError(msg, code);
+  });
+  return { ...parsed, brushes: [...parsed.brushes], warnings: [...parsed.warnings] };
+}
+
 export function importAbr(bytes: Uint8Array): AbrImportResult {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  if (bytes.byteLength < 4) {
-    throw new AbrParseError("file shorter than the ABR header", "truncated");
-  }
+  if (bytes.byteLength < 4) throw new AbrParseError("short ABR header", "truncated");
   const version = view.getUint16(0, false);
   if (version >= 6) {
-    // 8BIM-container era (v6/v7/v10): no public spec — refuse loudly rather
-    // than import a guessed subset. The Fidelity Lab tracks this gap.
-    throw new AbrParseError(
-      `ABR version ${version} uses the undocumented 8BIM container; import is gated until the sampled-brush lane ships`,
-      "unsupported-version",
-    );
+    if (!V6_VERSIONS.has(version) || bytes.byteLength === 4) {
+      throw new AbrParseError(`ABR v${version} requires 8BIM container`, "unsupported-version");
+    }
+    return scanV6Sections(bytes, view, version);
   }
-  if (version !== 1 && version !== 2) {
-    throw new AbrParseError(`unrecognized ABR version ${version}`, "corrupt");
-  }
-
+  if (version !== 1 && version !== 2) throw new AbrParseError(`bad ABR v${version}`, "corrupt");
   const count = view.getUint16(2, false);
   const brushes: AbrBrush[] = [];
   const warnings: string[] = [];
-  let offset = 4;
-
-  for (let index = 0; index < count; index += 1) {
-    if (offset + 6 > bytes.byteLength) {
-      throw new AbrParseError(
-        `brush ${index}: record header exceeds file length`,
-        "truncated",
-      );
-    }
-    const typeCode = view.getUint16(offset, false);
-    const size = view.getUint32(offset + 2, false);
-    offset += 6;
-    if (offset + size > bytes.byteLength) {
-      throw new AbrParseError(
-        `brush ${index}: record body exceeds file length`,
-        "truncated",
-      );
-    }
+  let o = 4;
+  for (let i = 0; i < count; i += 1) {
+    if (o + 6 > bytes.byteLength) throw new AbrParseError(`brush ${i}: truncated header`, "truncated");
+    const typeCode = view.getUint16(o, false);
+    const size = view.getUint32(o + 2, false);
+    o += 6;
+    if (o + size > bytes.byteLength) throw new AbrParseError(`brush ${i}: truncated body`, "truncated");
     if (typeCode === 1) {
-      // Computed brush: misc(u32), spacing(u16), [v2: name], diameter(u16),
-      // roundness(u16), angle(u16), ... — fixed fields are big-endian.
-      let cursor = offset;
-      cursor += 4; // misc
-      const spacingPct = view.getUint16(cursor, false);
-      cursor += 2;
-      let name = `computed-${index}`;
+      let c = o + 4;
+      const spacingPct = view.getUint16(c, false);
+      c += 2;
+      let name = `computed-${i}`;
       if (version === 2) {
-        const nameLength = view.getUint32(cursor, false);
-        cursor += 4;
-        const chars: number[] = [];
-        for (let unit = 0; unit < nameLength; unit += 1) {
-          chars.push(view.getUint16(cursor, false));
-          cursor += 2;
-        }
-        // Trailing NUL is part of the stored length in real files.
-        name = stripTrailingNuls(utf16UnitsToString(chars)) || name;
+        const len = view.getUint32(c, false);
+        c += 4;
+        const units: number[] = [];
+        for (let u = 0; u < len; u += 1) { units.push(view.getUint16(c, false)); c += 2; }
+        name = stripTrailingNuls(utf16UnitsToString(units)) || name;
       }
-      const angleDeg = view.getInt16(cursor, false);
-      cursor += 2;
-      const roundness = view.getInt16(cursor, false);
-      cursor += 2;
-      const diameterPx = view.getUint16(cursor, false);
       brushes.push({
         kind: "computed",
         name,
-        diameterPx,
-        roundness,
-        angleDeg,
+        angleDeg: view.getInt16(c, false),
+        roundness: view.getInt16(c + 2, false),
+        diameterPx: view.getUint16(c + 4, false),
         spacingPct,
       });
     } else {
-      // Sampled (type 2) and unknown types are retained as inventory, not
-      // silently skipped — pixels for sampled tips arrive with the v6 lane.
       brushes.push({ kind: "unknown", typeCode, byteLength: size });
-      warnings.push(
-        `brush ${index}: type ${typeCode} retained as raw payload (no decoder yet)`,
-      );
+      warnings.push(`brush ${i}: type ${typeCode} retained as raw payload`);
     }
-    offset += size;
+    o += size;
   }
-
   return { version, brushes, warnings };
 }

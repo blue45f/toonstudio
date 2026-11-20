@@ -138,6 +138,9 @@ describe("studio brush catalog lifecycle", () => {
     const marker = brushVariantGroupOf("marker--chisel-ribbon");
     expect(marker?.id).toBe("marker");
     expect(brushLifecycleStageOf("marker--chisel-ribbon")).toBe("quarantined");
+    // 2026-11-21 Wave V2-W2: 딥펜 실물리 연동으로 kaburapen·school-pen은 extended 복귀.
+    expect(brushLifecycleStageOf("kaburapen")).toBe("extended");
+    expect(brushLifecycleStageOf("school-pen")).toBe("extended");
     const airbrush = brushVariantGroupOf("airbrush--stamp-soft");
     expect(airbrush?.id).toBe("airbrush");
     expect(brushLifecycleStageOf("airbrush--stamp-soft")).toBe("quarantined");

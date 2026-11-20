@@ -1,5 +1,5 @@
 /**
- * MoXi 흐름층 한 스텝의 WGSL 컴퓨트 커널(실험 — 제품 경로에 연결하지 않는다).
+ * MoXi 흐름층 한 스텝의 WGSL 컴퓨트 커널 (실서비스 지연 WebGPU 수채 런타임 `studio-wet-paper-lbm-webgpu-runtime.ts` 연결).
  *
  * `studio-wet-paper-water.ts`의 흐름층 부분(다공성 부분 bounce-back 스트리밍 + 젖음 전선 고정 + 물막 두께
  * 투과 φ(ρ̄) + 모세관 흡입·종이 기울기·가장자리 바깥 흐름 가속 + BGK τ = 1 충돌 + 잔량 접힘)을 셀당 호출

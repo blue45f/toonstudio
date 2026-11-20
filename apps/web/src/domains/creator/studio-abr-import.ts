@@ -6,12 +6,42 @@ import {
   type StudioBrushDynamicsSource,
 } from "./brush/studio-brush-dynamics";
 import {
+  studioBrushEngineProgramSetFromOil,
+  studioBrushWatercolorProgramSetFrom,
+  type StudioBrushEngineProgramSet,
+} from "./brush/studio-brush-engine-program-set";
+import {
   DEFAULT_STUDIO_BRUSH_SNAPSHOT,
   type StudioBrushSnapshot,
 } from "./brush/studio-brush-library";
-import { encodeStudioBrushTipAlphaMapBase64 } from "./brush/studio-brush-tip-stamp";
+import {
+  buildAbrProgramIr,
+  buildStudioAbrR8MipChain,
+  mapAbrTextureBlendMode,
+  normalizedAbrSignedUnit,
+  normalizedAbrUnitFraction,
+  resampleStudioAbrR8Alpha,
+  type StudioAbrDescriptorSummary,
+  type StudioAbrHighResTip,
+  type StudioAbrR8MipLevel,
+} from "./brush/studio-brush-pack-abr-helpers";
+import {
+  DEFAULT_STUDIO_CSP_BRUSH_EXTENSIONS,
+  normalizeStudioCspBrushExtensions,
+} from "./brush/studio-brush-stroke-color-dynamics";
+import { STUDIO_BRUSH_CUSTOM_TIP_ALPHA_MAP_MAX_SIZE } from "./brush/studio-brush-tip-stamp";
 
+import type { StudioBrushTextureDepthControlSourceV1 } from "./brush/studio-brush-texture-combine-v1";
+import type { BrushProgramIR } from "@toonstudio/studio-project-model";
 import type { Abr, Brush, BrushDynamics, BrushShape, SampleInfo } from "ag-psd";
+
+export {
+  buildStudioAbrR8MipChain,
+  resampleStudioAbrR8Alpha,
+  type StudioAbrDescriptorSummary,
+  type StudioAbrHighResTip,
+  type StudioAbrR8MipLevel,
+} from "./brush/studio-brush-pack-abr-helpers";
 
 export const STUDIO_ABR_IMPORT_LIMITS = Object.freeze({
   maxBytes: 32 * 1024 * 1024,
@@ -21,7 +51,12 @@ export const STUDIO_ABR_IMPORT_LIMITS = Object.freeze({
   maxTotalSamplePixels: 64 * 1024 * 1024,
   maxNameLength: 96,
   outputTipMin: 8,
-  outputTipMax: 64,
+  /** High-resolution R8 tip cap (Photopea/Photoshop parity; previously 64px). */
+  outputTipMax: 1024,
+  /** Compact in-document tip MIP cap matching `STUDIO_BRUSH_CUSTOM_TIP_ALPHA_MAP_MAX_SIZE`. */
+  documentTipMax: STUDIO_BRUSH_CUSTOM_TIP_ALPHA_MAP_MAX_SIZE,
+  /** Brush stroke width cap (previously 80px). */
+  maxStrokeWidth: 500,
 });
 
 export type StudioAbrImportErrorCode =
@@ -68,6 +103,9 @@ export interface StudioAbrBrushCandidate {
   readonly sourceShape: BrushShape["type"];
   readonly sourceSampleId: string | null;
   readonly approximatedFeatures: readonly string[];
+  readonly highResTip?: StudioAbrHighResTip;
+  readonly program?: BrushProgramIR;
+  readonly descriptors?: StudioAbrDescriptorSummary;
 }
 
 export interface StudioAbrImportResult {
@@ -115,67 +153,57 @@ function sampleLookup(samples: readonly SampleInfo[]): Map<string, SampleInfo> {
   return result;
 }
 
-function bilinearAlpha(
-  source: Uint8Array,
-  width: number,
-  height: number,
-  x: number,
-  y: number
-): number {
-  const left = Math.max(0, Math.min(width - 1, Math.floor(x)));
-  const top = Math.max(0, Math.min(height - 1, Math.floor(y)));
-  const right = Math.min(width - 1, left + 1);
-  const bottom = Math.min(height - 1, top + 1);
-  const tx = Math.max(0, Math.min(1, x - left));
-  const ty = Math.max(0, Math.min(1, y - top));
-  const topValue = source[top * width + left]! * (1 - tx) + source[top * width + right]! * tx;
-  const bottomValue = source[bottom * width + left]! * (1 - tx) + source[bottom * width + right]! * tx;
-  return Math.round(topValue * (1 - ty) + bottomValue * ty);
-}
-
-/** Convert an arbitrary rectangular ABR sample into the square compact alpha payload used by Studio. */
-export function convertStudioAbrSampleToTip(sample: SampleInfo): {
-  readonly alphaMapBase64: string;
-  readonly alphaMapSize: number;
-} {
+/**
+ * Convert an arbitrary rectangular ABR sample into a high-resolution square R8 alpha
+ * payload (up to 1024px) plus a downsampled MIP chain ending at the 64px document boundary.
+ */
+export function convertStudioAbrSampleToTip(sample: SampleInfo): StudioAbrHighResTip {
   const { w: width, h: height } = sample.bounds;
   if (
-    !Number.isInteger(width)
-    || !Number.isInteger(height)
-    || width < 1
-    || height < 1
-    || width * height > STUDIO_ABR_IMPORT_LIMITS.maxSamplePixels
-    || sample.alpha.length !== width * height
+    !Number.isInteger(width) ||
+    !Number.isInteger(height) ||
+    width < 1 ||
+    height < 1 ||
+    width * height > STUDIO_ABR_IMPORT_LIMITS.maxSamplePixels ||
+    sample.alpha.length !== width * height
   ) {
     throw new StudioAbrImportError("limits");
   }
   const size = Math.round(clamp(
     Math.max(width, height),
     STUDIO_ABR_IMPORT_LIMITS.outputTipMin,
-    STUDIO_ABR_IMPORT_LIMITS.outputTipMax
+    STUDIO_ABR_IMPORT_LIMITS.outputTipMax,
   ));
   const scale = size / Math.max(width, height);
   const drawnWidth = Math.max(1, Math.round(width * scale));
   const drawnHeight = Math.max(1, Math.round(height * scale));
+  const resized = resampleStudioAbrR8Alpha(sample.alpha, width, height, drawnWidth, drawnHeight);
   const offsetX = Math.floor((size - drawnWidth) / 2);
   const offsetY = Math.floor((size - drawnHeight) / 2);
   const alpha = new Uint8Array(size * size);
   let maximum = 0;
   let total = 0;
   for (let y = 0; y < drawnHeight; y++) {
-    const sourceY = ((y + 0.5) / drawnHeight) * height - 0.5;
     for (let x = 0; x < drawnWidth; x++) {
-      const sourceX = ((x + 0.5) / drawnWidth) * width - 0.5;
-      const value = bilinearAlpha(sample.alpha, width, height, sourceX, sourceY);
+      const value = resized[y * drawnWidth + x] ?? 0;
       alpha[(offsetY + y) * size + offsetX + x] = value;
       maximum = Math.max(maximum, value);
       total += value;
     }
   }
   if (maximum < 8 || total < 32) throw new StudioAbrImportError("parse");
+  const mipLevels: readonly StudioAbrR8MipLevel[] = buildStudioAbrR8MipChain(
+    alpha,
+    size,
+    STUDIO_ABR_IMPORT_LIMITS.documentTipMax,
+  );
+  const docLevel = mipLevels[mipLevels.length - 1]!;
   return {
-    alphaMapBase64: encodeStudioBrushTipAlphaMapBase64(alpha),
+    alphaMapBase64: mipLevels[0]!.alphaMapBase64,
     alphaMapSize: size,
+    documentAlphaMapBase64: docLevel.alphaMapBase64,
+    documentAlphaMapSize: docLevel.size,
+    mipLevels,
   };
 }
 
@@ -190,9 +218,9 @@ function dynamicsSource(value: BrushDynamics["control"]): StudioBrushDynamicsSou
 
 function multiplicativeMapping(
   dynamics: BrushDynamics | undefined,
-  approximated: string[]
+  approximated: string[],
 ): NormalizedStudioBrushDynamicsMapping[] {
-  if (!dynamics || dynamics.control === "off") return [];
+  if (!dynamics || dynamics.control === "off" || dynamics.control === "fade") return [];
   const source = dynamicsSource(dynamics.control);
   if (!source) {
     approximated.push(`지원하지 않는 ${dynamics.control} 제어`);
@@ -211,9 +239,9 @@ function multiplicativeMapping(
 
 function additiveAngleMapping(
   dynamics: BrushDynamics | undefined,
-  approximated: string[]
+  approximated: string[],
 ): NormalizedStudioBrushDynamicsMapping[] {
-  if (!dynamics || dynamics.control === "off") return [];
+  if (!dynamics || dynamics.control === "off" || dynamics.control === "fade") return [];
   const source = dynamicsSource(dynamics.control);
   if (!source) {
     approximated.push(`지원하지 않는 ${dynamics.control} 각도 제어`);
@@ -247,15 +275,15 @@ function proceduralTipFor(shape: BrushShape): NormalizedStudioBrushDynamicsSetti
   };
 }
 
-function shapeSettings(
-  brush: Brush,
+function resolveBrushShapeTip(
+  shape: BrushShape,
   samples: ReadonlyMap<string, SampleInfo>,
-  approximated: string[]
+  approximated: string[],
 ): {
   readonly tip: NormalizedStudioBrushDynamicsSettings["tip"];
   readonly sampleId: string | null;
+  readonly highResTip?: StudioAbrHighResTip;
 } | null {
-  const shape = brush.shape;
   if (shape.type === "sampled") {
     const sample = samples.get(normalizedSampleId(shape.sampledData));
     if (!sample) return null;
@@ -265,10 +293,11 @@ function shapeSettings(
         tip: {
           shape: "round",
           softness: 0,
-          alphaMapBase64: tip.alphaMapBase64,
-          alphaMapSize: tip.alphaMapSize,
+          alphaMapBase64: tip.documentAlphaMapBase64,
+          alphaMapSize: tip.documentAlphaMapSize,
         },
         sampleId: sample.id,
+        highResTip: tip,
       };
     } catch {
       return null;
@@ -287,10 +316,11 @@ function shapeSettings(
           tip: {
             shape: "bristle",
             softness: 1 - clamp(shape.tipsHardness, 0, 1),
-            alphaMapBase64: tip.alphaMapBase64,
-            alphaMapSize: tip.alphaMapSize,
+            alphaMapBase64: tip.documentAlphaMapBase64,
+            alphaMapSize: tip.documentAlphaMapSize,
           },
           sampleId: null,
+          highResTip: tip,
         };
       } catch {
         approximated.push("침식형 펜촉 높이맵");
@@ -305,11 +335,19 @@ function brushSnapshot(
   name: string,
   index: number,
   tip: NormalizedStudioBrushDynamicsSettings["tip"],
-  approximated: string[]
-): StudioBrushSnapshot {
+  samples: ReadonlyMap<string, SampleInfo>,
+  approximated: string[],
+): {
+  snapshot: StudioBrushSnapshot;
+  descriptors: StudioAbrDescriptorSummary;
+  size: number;
+  opacity: number;
+  spacingRatio: number;
+} {
   const shape = brush.shape;
-  const size = clamp(shape.size, 1, 80);
-  const angle = clamp(shape.angle, -180, 180);
+  const size = clamp(shape.size, 1, STUDIO_ABR_IMPORT_LIMITS.maxStrokeWidth);
+  const pose = brush.brushPose;
+  const baseAngle = pose?.overrideAngle ? clamp(pose.angle, -180, 180) : clamp(shape.angle, -180, 180);
   const roundness = clamp(
     shape.type === "computed" || shape.type === "sampled"
       ? shape.roundness
@@ -317,18 +355,16 @@ function brushSnapshot(
         ? 0.3
         : 1,
     0.08,
-    1
+    1,
   );
   const spacingRatio = clamp(shape.spacingOn ? shape.spacing : brush.spacing, 0.01, 16);
-  const sizeMappings = multiplicativeMapping(brush.shapeDynamics?.sizeDynamics, approximated);
-  const opacityMappings = multiplicativeMapping(
-    brush.transfer?.opacityDynamics ?? brush.toolOptions?.opacityDynamics,
-    approximated
-  );
-  const flowMappings = multiplicativeMapping(
-    brush.transfer?.flowDynamics ?? brush.toolOptions?.flowDynamics,
-    approximated
-  );
+  const sizeDyn = brush.shapeDynamics?.sizeDynamics;
+  const opacityDyn = brush.transfer?.opacityDynamics ?? brush.toolOptions?.opacityDynamics;
+  const flowDyn = brush.transfer?.flowDynamics ?? brush.toolOptions?.flowDynamics;
+
+  const sizeMappings = multiplicativeMapping(sizeDyn, approximated);
+  const opacityMappings = multiplicativeMapping(opacityDyn, approximated);
+  const flowMappings = multiplicativeMapping(flowDyn, approximated);
   const angleMappings = additiveAngleMapping(brush.shapeDynamics?.angleDynamics, approximated);
   const roundnessMappings = multiplicativeMapping(brush.shapeDynamics?.roundnessDynamics, approximated);
   const scatterAmount = brush.scatter
@@ -337,59 +373,210 @@ function brushSnapshot(
   const scatterMappings = brush.scatter
     ? multiplicativeMapping(brush.scatter.scatterDynamics, approximated)
     : [];
-  const importedOpacity = clamp(brush.toolOptions?.opacity ?? 1, 0.05, 1);
-  const importedFlow = clamp(brush.toolOptions?.flow ?? 1, 0, 1);
-  const dynamics = normalizeStudioBrushDynamicsSettings({
+  const importedOpacity = clamp(normalizedAbrUnitFraction(brush.toolOptions?.opacity, 1), 0.05, 1);
+  const importedFlow = clamp(normalizedAbrUnitFraction(brush.toolOptions?.flow, 1), 0, 1);
+
+  const dualBrushSettings = brush.dualBrush
+    ? {
+        enabled: true,
+        tip: resolveBrushShapeTip(brush.dualBrush.shape, samples, approximated)?.tip
+          ?? proceduralTipFor(brush.dualBrush.shape),
+        blendMode: (/screen|lighten|dodge/iu.test(brush.dualBrush.blendMode ?? "") ? "screen" : "multiply") as "screen" | "multiply",
+        sizeRatio: clamp(brush.dualBrush.shape.size / Math.max(1, shape.size), 0.25, 2),
+      }
+    : undefined;
+
+  const grainSettings = brush.texture
+    ? (() => {
+        const depth = normalizedAbrUnitFraction(brush.texture.depth, 0.75);
+        const depthSource = dynamicsSource(brush.texture.depthDynamics.control);
+        return {
+          space: (brush.texture.textureEachTip ? "stroke-fixed" : "canvas-fixed") as "stroke-fixed" | "canvas-fixed",
+          amount: depth,
+          scale: clamp(Math.max(0.05, brush.texture.scale) * 16, 0.25, 512),
+          contrast: clamp((normalizedAbrSignedUnit(brush.texture.contrast) + 1) / 2, 0, 1),
+          seed: stableSeed(brush.texture.id || brush.texture.name || name, index + 31),
+          texture: {
+            mode: mapAbrTextureBlendMode(brush.texture.blendMode),
+            depth,
+            depthJitter: clamp(brush.texture.depthDynamics.jitter, 0, 1),
+            minimumDepth: normalizedAbrUnitFraction(brush.texture.depthMinimum, 0),
+            brightness: normalizedAbrSignedUnit(brush.texture.brightness),
+            contrast: normalizedAbrSignedUnit(brush.texture.contrast),
+            invert: brush.texture.invert === true,
+            ...(depthSource
+              ? {
+                  depthControl: {
+                    source: depthSource as StudioBrushTextureDepthControlSourceV1,
+                    strength: 1,
+                    curve: 1,
+                    invert: false,
+                  },
+                }
+              : {}),
+          },
+        };
+      })()
+    : undefined;
+
+  const cd = brush.colorDynamics;
+  const colorDynamicsSettings = cd
+    ? {
+        foregroundBackgroundMix: normalizedAbrUnitFraction(cd.foregroundBackground.minimum, 0),
+        foregroundBackgroundJitter: normalizedAbrUnitFraction(cd.foregroundBackground.jitter, 0),
+        hueJitter: clamp(normalizedAbrUnitFraction(cd.hue, 0) * 180, 0, 180),
+        saturationJitter: normalizedAbrUnitFraction(cd.saturation, 0),
+        valueJitter: normalizedAbrUnitFraction(cd.brightness, 0),
+      }
+    : undefined;
+
+  const hasSizeFade = sizeDyn?.control === "fade";
+  const hasOpacityFade = opacityDyn?.control === "fade" || flowDyn?.control === "fade";
+  const taperSettings = hasSizeFade || hasOpacityFade
+    ? {
+        enabled: true,
+        startLength: 0,
+        endLength: 0.45,
+        minSizeRatio: hasSizeFade ? clamp(sizeDyn!.minimum, 0, 1) : 1,
+        minOpacityRatio: hasOpacityFade ? clamp(opacityDyn?.minimum ?? flowDyn?.minimum ?? 0, 0, 1) : 1,
+        curve: 1,
+      }
+    : undefined;
+
+  const normalizedDynamics = normalizeStudioBrushDynamicsSettings({
     ...DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS,
     seed: stableSeed(name, index),
+    fallbackPressure: pose?.overridePressure
+      ? normalizedAbrUnitFraction(pose.pressure, 0.5)
+      : DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS.fallbackPressure,
     spacingRatio,
     scatterRatio: scatterAmount > 0 ? scatterAmount * 2 : null,
+    ...(taperSettings ? { taper: taperSettings } : {}),
     tip,
+    ...(dualBrushSettings ? { dualBrush: dualBrushSettings } : {}),
+    ...(grainSettings ? { grain: grainSettings } : {}),
+    ...(colorDynamicsSettings ? { colorDynamics: colorDynamicsSettings } : {}),
     width: {
       ...DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS.width,
       base: size,
       mappings: sizeMappings,
+      jitter: sizeDyn && sizeDyn.jitter > 0 ? { mode: "multiply", amount: clamp(sizeDyn.jitter, 0, 1) } : null,
     },
     opacity: {
       ...DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS.opacity,
       base: importedOpacity,
       mappings: opacityMappings,
+      jitter: opacityDyn && opacityDyn.jitter > 0 ? { mode: "multiply", amount: clamp(opacityDyn.jitter, 0, 1) } : null,
     },
     flow: {
       ...DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS.flow,
       base: importedFlow,
       mappings: flowMappings,
+      jitter: flowDyn && flowDyn.jitter > 0 ? { mode: "multiply", amount: clamp(flowDyn.jitter, 0, 1) } : null,
     },
     scatter: {
       ...DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS.scatter,
       mappings: scatterMappings,
+      jitter: brush.scatter && brush.scatter.scatterDynamics.jitter > 0
+        ? { mode: "multiply", amount: clamp(brush.scatter.scatterDynamics.jitter, 0, 1) }
+        : null,
     },
     angle: {
       ...DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS.angle,
-      base: angle,
+      base: baseAngle,
       mappings: angleMappings,
+      jitter: brush.shapeDynamics && brush.shapeDynamics.angleDynamics.jitter > 0
+        ? { mode: "add", amount: clamp(brush.shapeDynamics.angleDynamics.jitter * 180, 0, 180) }
+        : null,
     },
     roundness: {
       ...DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS.roundness,
       base: roundness,
       mappings: roundnessMappings,
+      jitter: brush.shapeDynamics && brush.shapeDynamics.roundnessDynamics.jitter > 0
+        ? { mode: "multiply", amount: clamp(brush.shapeDynamics.roundnessDynamics.jitter, 0, 1) }
+        : null,
     },
   });
-  if (brush.texture) approximated.push("Photoshop 텍스처 블렌드");
-  if (brush.dualBrush) approximated.push("듀얼 브러시");
-  if (brush.colorDynamics) approximated.push("색상 다이내믹스");
-  if (brush.toolOptions?.type === "mixer brush") approximated.push("믹서 브러시 습윤 혼합");
-  if (brush.toolOptions?.type === "smudge brush") approximated.push("스머지 브러시 혼합");
+
+  const dynamics: NormalizedStudioBrushDynamicsSettings = cd && cd.perTip === false
+    ? {
+        ...normalizedDynamics,
+        cspBrushExtensions: normalizeStudioCspBrushExtensions({
+          ...DEFAULT_STUDIO_CSP_BRUSH_EXTENSIONS,
+          strokeColorAndScale: {
+            perStrokeColorJitter: true,
+            strokeHueJitterDeg: clamp(normalizedAbrUnitFraction(cd.hue, 0) * 180, 0, 180),
+            strokeSaturationJitter: normalizedAbrUnitFraction(cd.saturation, 0),
+            strokeValueJitter: normalizedAbrUnitFraction(cd.brightness, 0),
+            subColorMixSource: cd.foregroundBackground.control === "pen pressure"
+              ? "pressure"
+              : cd.foregroundBackground.control === "pen tilt"
+                ? "tilt"
+                : "off",
+            subColorMaxMix: normalizedAbrUnitFraction(cd.foregroundBackground.jitter || cd.foregroundBackground.minimum, 0.5),
+          },
+        }),
+      }
+    : normalizedDynamics;
+
+  let brushId = "ink-particle";
+  let enginePrograms: StudioBrushEngineProgramSet | null = null;
+  if (brush.toolOptions?.type === "smudge brush") {
+    brushId = "web-smudge-trail";
+  } else if (brush.toolOptions?.type === "mixer brush") {
+    brushId = "oil";
+    enginePrograms = studioBrushEngineProgramSetFromOil({
+      bristlePhysics: true,
+      bristleLoadDynamics: true,
+      impastoRelief: false,
+    });
+  } else if (brush.wetEdges) {
+    enginePrograms = studioBrushWatercolorProgramSetFrom({ wetEdgeBloomProgramId: "edge-bloom" });
+  }
+
+  const descriptors: StudioAbrDescriptorSummary = {
+    hasDualBrush: Boolean(brush.dualBrush),
+    hasTexture: Boolean(brush.texture),
+    hasColorDynamics: Boolean(brush.colorDynamics),
+    wetEdges: Boolean(brush.wetEdges),
+    hasScatter: Boolean(brush.scatter),
+    hasBrushPose: Boolean(pose),
+    hasTransfer: Boolean(brush.transfer),
+    ...(pose
+      ? {
+          brushPose: {
+            overrideAngle: Boolean(pose.overrideAngle),
+            overrideTiltX: Boolean(pose.overrideTiltX),
+            overrideTiltY: Boolean(pose.overrideTiltY),
+            overridePressure: Boolean(pose.overridePressure),
+            tiltX: clamp(pose.tiltX, -90, 90),
+            tiltY: clamp(pose.tiltY, -90, 90),
+            angle: clamp(pose.angle, -180, 180),
+            pressure: normalizedAbrUnitFraction(pose.pressure, 1),
+          },
+        }
+      : {}),
+  };
+
   return {
-    ...DEFAULT_STUDIO_BRUSH_SNAPSHOT,
-    brushId: "ink-particle",
-    strokeWidth: size,
-    brushOpacity: importedOpacity,
-    stabilizer: clamp((brush.toolOptions?.smoothingValue ?? 0) / 10, 0, 10),
-    postCorrection: clamp((brush.toolOptions?.smooth ?? 0) / 10, 0, 10),
-    tipAngle: angle,
-    tipRoundness: roundness,
-    brushDynamics: dynamics,
+    snapshot: {
+      ...DEFAULT_STUDIO_BRUSH_SNAPSHOT,
+      brushId,
+      strokeWidth: size,
+      brushOpacity: importedOpacity,
+      stabilizer: clamp((brush.toolOptions?.smoothingValue ?? 0) / 10, 0, 10),
+      postCorrection: clamp((brush.toolOptions?.smooth ?? 0) / 10, 0, 10),
+      tiltEnabled: Boolean(pose?.overrideTiltX || pose?.overrideTiltY || DEFAULT_STUDIO_BRUSH_SNAPSHOT.tiltEnabled),
+      tipAngle: baseAngle,
+      tipRoundness: roundness,
+      brushDynamics: dynamics,
+      enginePrograms,
+    },
+    descriptors,
+    size,
+    opacity: importedOpacity,
+    spacingRatio,
   };
 }
 
@@ -399,8 +586,8 @@ export function convertStudioAbrDocument(document: Abr): StudioAbrImportResult {
     throw new StudioAbrImportError("parse");
   }
   if (
-    document.brushes.length > STUDIO_ABR_IMPORT_LIMITS.maxBrushes
-    || document.samples.length > STUDIO_ABR_IMPORT_LIMITS.maxSamples
+    document.brushes.length > STUDIO_ABR_IMPORT_LIMITS.maxBrushes ||
+    document.samples.length > STUDIO_ABR_IMPORT_LIMITS.maxSamples
   ) {
     throw new StudioAbrImportError("limits");
   }
@@ -422,21 +609,34 @@ export function convertStudioAbrDocument(document: Abr): StudioAbrImportResult {
   for (let index = 0; index < document.brushes.length; index++) {
     const brush = document.brushes[index]!;
     const approximated: string[] = [];
-    const shape = shapeSettings(brush, samples, approximated);
+    const shape = resolveBrushShapeTip(brush.shape, samples, approximated);
     if (!shape) {
       skippedBrushCount++;
       continue;
     }
     const name = cleanName(brush.name, index);
-    const snapshot = brushSnapshot(brush, name, index, shape.tip, approximated);
+    const built = brushSnapshot(brush, name, index, shape.tip, samples, approximated);
+    const program = buildAbrProgramIr(
+      brush,
+      name,
+      index,
+      stableSeed(name, index),
+      built.size,
+      built.opacity,
+      built.spacingRatio,
+      shape.sampleId,
+    );
     const uniqueApproximations = [...new Set(approximated)];
     if (uniqueApproximations.length > 0) approximatedBrushCount++;
     brushes.push(Object.freeze({
       name,
-      snapshot,
+      snapshot: built.snapshot,
       sourceShape: brush.shape.type,
       sourceSampleId: shape.sampleId,
       approximatedFeatures: Object.freeze(uniqueApproximations),
+      ...(shape.highResTip ? { highResTip: shape.highResTip } : {}),
+      program,
+      descriptors: built.descriptors,
     }));
   }
   if (brushes.length === 0) throw new StudioAbrImportError("no-brushes");
@@ -451,9 +651,7 @@ export function convertStudioAbrDocument(document: Abr): StudioAbrImportResult {
 
 export function assertStudioAbrEnvelope(bytes: Uint8Array): void {
   if (bytes.byteLength === 0) throw new StudioAbrImportError("empty");
-  if (bytes.byteLength > STUDIO_ABR_IMPORT_LIMITS.maxBytes) {
-    throw new StudioAbrImportError("file-size");
-  }
+  if (bytes.byteLength > STUDIO_ABR_IMPORT_LIMITS.maxBytes) throw new StudioAbrImportError("file-size");
   if (bytes.byteLength < 4) throw new StudioAbrImportError("signature");
   const version = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint16(0, false);
   if (version === 1 || version === 2) throw new StudioAbrImportError("unsupported-version");
@@ -474,7 +672,5 @@ export async function parseStudioAbrBuffer(bytes: ArrayBuffer): Promise<StudioAb
 }
 
 export function studioAbrImportErrorMessage(error: unknown): string {
-  return error instanceof StudioAbrImportError
-    ? error.message
-    : ERROR_MESSAGES.parse;
+  return error instanceof StudioAbrImportError ? error.message : ERROR_MESSAGES.parse;
 }

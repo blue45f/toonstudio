@@ -47,6 +47,14 @@ import {
   planStudioPatternRibbonQuads,
   planStudioPatternStamps,
 } from "./studio-pattern-brush";
+import {
+  applyBarrelTwistChiselNibToDabs,
+  applyCentrifugalBristleTurnSplayToDabs,
+  applyDipPenRailroadingToDabs,
+  applyDynamicDualTip8ModeToDabs,
+  resampleFlatStrokeWithCentripetalV2,
+  resolveStrokeRgbTuple,
+} from "./studio-brush-natural-media-dab-bridge";
 import { sharpenStrokeCornerSamples } from "./studio-stroke-corner-sharpen";
 import { transformStrokeWithRuledLine } from "./studio-stroke-ruled-line";
 
@@ -321,6 +329,30 @@ function planStudioDynamicBrushFromInput(
     return { dabs: [], sourcePointCount: 0, totalLength: 0, capped: false, settings };
   }
   const sourcePointCount = points.length;
+  let workingInput: Partial<StudioDynamicBrushPlanInput> = input;
+  if (input.curveResampler === "centripetal-v2" && points.length >= 3) {
+    const resampled = resampleFlatStrokeWithCentripetalV2({
+      points: input.points ?? [],
+      pressures: input.pressures,
+      tiltXs: input.tiltXs,
+      tiltYs: input.tiltYs,
+      twists: input.twists,
+      spacingPx: Math.max(0.5, settings.spacing.base),
+      maxStations: finiteNumber(input.maxDabs, DEFAULT_STUDIO_DYNAMIC_BRUSH_MAX_DABS),
+    });
+    if (resampled && resampled.points.length >= 4) {
+      points = sanitizeStrokePoints(resampled.points);
+      workingInput = {
+        ...input,
+        points: resampled.points,
+        pressures: resampled.pressures,
+        tiltXs: resampled.tiltXs,
+        tiltYs: resampled.tiltYs,
+        twists: resampled.twists,
+      };
+    }
+  }
+  input = workingInput;
   const cspExt = settings.cspBrushExtensions;
   let dashedGapRanges: { start: number; end: number }[] | null = null;
 
@@ -622,14 +654,20 @@ function planStudioDynamicBrushFromInput(
       cspExt.strokeColorAndScale.perStrokeColorJitter ||
       cspExt.strokeColorAndScale.subColorMixSource !== "off"
     ) {
+      const fgRgb = resolveStrokeRgbTuple(input.foregroundRgb, input.foregroundHex, [24, 24, 24]);
+      const bgRgb = resolveStrokeRgbTuple(
+        input.secondaryRgb,
+        input.secondaryHex ?? settings.colorDynamics.backgroundColor,
+        [220, 96, 64],
+      );
       finalDabs = finalDabs.map((dab) => {
         const p = sampleNumberAtProgress(input.pressures, dab.progress, settings.fallbackPressure, 0, 1);
         const spd = sampleNumberAtProgress(input.speeds, dab.progress, 0, 0, MAX_POINTER_SPEED);
         const tx = sampleNumberAtProgress(input.tiltXs, dab.progress, 0, -90, 90);
         const ty = sampleNumberAtProgress(input.tiltYs, dab.progress, 0, -90, 90);
         const rgbTint = evaluateStudioStrokeAndSubColorRgb(
-          [24, 24, 24],
-          [220, 96, 64],
+          fgRgb,
+          bgRgb,
           cspExt.strokeColorAndScale,
           {
             strokeSeed: settings.seed,
@@ -641,6 +679,36 @@ function planStudioDynamicBrushFromInput(
         return { ...dab, rgbTint };
       });
     }
+  }
+
+  // Wave V2-W2 실서비스 자연매체 승격 패스 (옵션 활성 시 기존 레거시 스냅샷 바이트 동일성 100% 보존)
+  if (input.naturalMediaNibProfile && finalDabs.length > 0) {
+    finalDabs = applyDipPenRailroadingToDabs(finalDabs, input.naturalMediaNibProfile, {
+      pressures: input.pressures,
+      speeds: input.speeds,
+      baseWidthPx: settings.width.base,
+      maxDabs,
+    });
+  }
+  if (input.dynamicDualTip?.enabled && finalDabs.length > 0) {
+    finalDabs = applyDynamicDualTip8ModeToDabs(finalDabs, {
+      ...input.dynamicDualTip,
+      seed: settings.seed,
+    });
+  }
+  if (typeof input.centrifugalBristleStiffness01 === "number" && Number.isFinite(input.centrifugalBristleStiffness01) && finalDabs.length > 1) {
+    finalDabs = applyCentrifugalBristleTurnSplayToDabs(
+      finalDabs,
+      input.centrifugalBristleStiffness01,
+      input.speeds,
+    );
+  }
+  if (input.barrelTwistChisel?.enabled && finalDabs.length > 0) {
+    finalDabs = applyBarrelTwistChiselNibToDabs(finalDabs, input.barrelTwistChisel, {
+      twists: input.twists,
+      tiltXs: input.tiltXs,
+      tiltYs: input.tiltYs,
+    });
   }
 
   return {

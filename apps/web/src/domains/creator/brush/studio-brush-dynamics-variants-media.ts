@@ -238,23 +238,23 @@ export const STUDIO_BRUSH_DYNAMICS_VARIANTS_MEDIA: Readonly<Record<string, Studi
       tip: { shape: "flake", softness: 0.12 },
       width: {
         base: 16,
-        mappings: [{ source: "pressure", from: 0.85, to: 1.12 }],
-        jitter: { mode: "multiply", amount: 0.45 },
+        mappings: [{ source: "pressure", from: 0.72, to: 1.24 }],
+        jitter: { mode: "multiply", amount: 0.28 },
       },
       opacity: {
         base: 0.46,
-        mappings: [{ source: "pressure", from: 0.55, to: 1 }],
-        jitter: { mode: "multiply", amount: 0.22 },
+        mappings: [{ source: "pressure", from: 0.42, to: 1 }],
+        jitter: { mode: "multiply", amount: 0.14 },
       },
       flow: {
         base: 0.3,
-        mappings: [{ source: "pressure", from: 0.7, to: 1 }],
-        jitter: { mode: "multiply", amount: 0.18 },
+        mappings: [{ source: "pressure", from: 0.48, to: 1 }],
+        jitter: { mode: "multiply", amount: 0.12 },
       },
       spacingRatio: 0.34,
       spacing: {
         mappings: [{ source: "speed", from: 0.75, to: 1.7 }],
-        jitter: { mode: "multiply", amount: 0.18 },
+        jitter: { mode: "multiply", amount: 0.1 },
       },
       // The catalogue exposes this tool as a 40 px spray footprint. A ratio above 1 scattered the
       // only dab of a tap well outside both the cursor and the user's hand on roughly one third of
@@ -263,8 +263,8 @@ export const STUDIO_BRUSH_DYNAMICS_VARIANTS_MEDIA: Readonly<Record<string, Studi
       // throw alternative.
       scatterRatio: 0.2,
       scatter: {
-        mappings: [{ source: "pressure", from: 1.6, to: 0.75 }],
-        jitter: { mode: "multiply", amount: 0.35 },
+        mappings: [{ source: "pressure", from: 1.38, to: 0.78 }],
+        jitter: { mode: "multiply", amount: 0.22 },
       },
       angle: { base: 0, mappings: [], jitter: { mode: "add", amount: 180 } },
       roundness: {

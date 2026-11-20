@@ -20,6 +20,7 @@
  *
  * Environment:
  *   STUDIO_URL                                      default http://localhost:5173/studio
+ *   TOONSPECTRUM_VERIFY_ORIGIN                      optional origin fallback (e.g. http://127.0.0.1:4173 -> <origin>/studio/canvas)
  *   TOONSPECTRUM_INK_FIDELITY_SPAWN_PREVIEW=1      start one bounded Vite preview per case
  *   TOONSPECTRUM_INK_FIDELITY_CASES=a,b            optional case-id filter
  *   TOONSPECTRUM_VERIFY_DIR                         artifact root; defaults to the OS temp dir
@@ -62,6 +63,10 @@ interface CaseResult {
 }
 
 const SPAWN_PREVIEW = process.env.TOONSPECTRUM_INK_FIDELITY_SPAWN_PREVIEW === "1";
+const VERIFY_ORIGIN_STUDIO_URL = process.env.TOONSPECTRUM_VERIFY_ORIGIN?.trim()
+  ? `${process.env.TOONSPECTRUM_VERIFY_ORIGIN.trim().replace(/\/+$/u, "")}/studio/canvas`
+  : undefined;
+const RESOLVED_STUDIO_URL = process.env.STUDIO_URL?.trim() || VERIFY_ORIGIN_STUDIO_URL;
 const VERIFY_ROOT = process.env.TOONSPECTRUM_VERIFY_DIR ?? tmpdir();
 const OUT_DIR = join(VERIFY_ROOT, "studio-ink-live-commit");
 const AGGREGATE_REPORT_PATH = join(OUT_DIR, "report.json");
@@ -109,6 +114,7 @@ async function runCase(definition: FidelityCase): Promise<CaseResult> {
     cwd: process.cwd(),
     env: {
       ...process.env,
+      ...(RESOLVED_STUDIO_URL ? { STUDIO_URL: RESOLVED_STUDIO_URL } : {}),
       TOONSPECTRUM_VERIFY_DIR: caseRoot,
       TOONSPECTRUM_LONG_STROKE_BRUSH: definition.brushName,
       // A preview build cannot serve the /src catalogue module the child probe reads, so without
@@ -119,10 +125,9 @@ async function runCase(definition: FidelityCase): Promise<CaseResult> {
       TOONSPECTRUM_LONG_STROKE_BRUSH_WIDTH: String(definition.brushWidth),
       TOONSPECTRUM_LONG_STROKE_OPERATION: definition.brushOperation,
       TOONSPECTRUM_LONG_STROKE_SPAWN_PREVIEW: SPAWN_PREVIEW ? "1" : "0",
-      // The required gate measures the deterministic shipped compatibility path. Hardware/WebGPU
-      // device-loss coverage is kept in its dedicated fault-injection suites, not silently mixed
-      // into this pixel-authority proof.
-      TOONSPECTRUM_LONG_STROKE_WEBGPU: "0",
+      // WebGPU 하드웨어 가속 경로를 포함해 라이브/커밋 픽셀 일치를 검증한다.
+      // 호환성 모드 전용 검증이 필요하면 TOONSPECTRUM_LONG_STROKE_WEBGPU=0 으로 명시 제어한다.
+      TOONSPECTRUM_LONG_STROKE_WEBGPU: process.env.TOONSPECTRUM_LONG_STROKE_WEBGPU ?? "1",
     },
     stdio: "inherit",
   });

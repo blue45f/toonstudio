@@ -38,6 +38,12 @@ export const STUDIO_LISTED_PAINT_POST_CULL_ENGINE_LANE_IDS: readonly string[] = 
   "watercolor--curtis-bake",
   "watercolor--granulating-bake",
   "ink-wash--dry-brush",
+  // 2026-11-21 Wave V2-W2: 실물리 딥펜·38밴드 KM·수채 프린지·고스트 스머지 복귀 5종.
+  "kaburapen",
+  "school-pen",
+  "oil-pastel--wgm-mix",
+  "mypaint-cc0--watercolor-fringe",
+  "web-smudge-trail",
 ]);
 
 /** Exposure-only drop set from the 2026-09-02 feel-cull. Runtime rows stay registered. */
@@ -87,8 +93,6 @@ export const STUDIO_BRUSH_FEEL_CULL_PRESET_IDS = [
   "leaf-fall-flurry",
   "sparkle-glint-cross",
   "brush-pen-ink",
-  // 2026-09-02 유사 브러시 정리: web-blend-softener 와 실행 서명이 같고 잔상이 실재하지 않음.
-  "web-smudge-trail",
   // 2026-09-03 마크 거리 축소 웨이브. 팁 알파맵·간격/산포/플로/그레인·스탬프 각도로 잰 거리에서
   // 홑잎 3종이 서로 0.064 안에 들어오고(fresh<->long 0.0355 가 팩 전체 최근접), fur-soft-clumps
   // 는 rake 최근접 쌍(hair-fiber 0.0494)이었습니다. 사유는 격리 원장에 있습니다.
@@ -155,6 +159,15 @@ export function studioBrushListedUniquenessKey(catalogId: string): string | null
   const signature = studioBrushRuntimeExecutionSignature(contract);
   if (isStudioInkwashFluidBrush(catalogId)) {
     return `wet-fluid:${catalogId}`;
+  }
+  if (catalogId === "kaburapen" || catalogId === "school-pen") {
+    return `dip-pen-physics:${catalogId}`;
+  }
+  if (catalogId === "oil-pastel--wgm-mix") {
+    return `spectral38-wgm:${catalogId}`;
+  }
+  if (catalogId === "mypaint-cc0--watercolor-fringe") {
+    return `wet-fringe:${catalogId}`;
   }
   const nib = resolveStudioCalligraphyNibProfile(catalogId);
   if (nib) {

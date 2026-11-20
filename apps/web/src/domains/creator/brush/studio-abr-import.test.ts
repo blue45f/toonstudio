@@ -173,4 +173,143 @@ describe("Studio ABR document conversion", () => {
     const document = { brushes: [sampledBrush("큰 촉", "too-large")], samples: [oversized], patterns: [] };
     expect(() => convertStudioAbrDocument(document)).toThrowError(/안전 처리 한도/u);
   });
+
+  it("raises tip resolution to 512~1024px with R8 MIP pyramid and raises width cap to 500px", () => {
+    const hiResSample = sample("tip-512", 512, 512);
+    const tip = convertStudioAbrSampleToTip(hiResSample);
+    expect(STUDIO_ABR_IMPORT_LIMITS.outputTipMax).toBe(1024);
+    expect(STUDIO_ABR_IMPORT_LIMITS.maxStrokeWidth).toBe(500);
+    expect(tip.alphaMapSize).toBe(512);
+    expect(tip.documentAlphaMapSize).toBe(64);
+    expect(tip.mipLevels.map((lvl) => lvl.size)).toEqual([512, 256, 128, 64]);
+
+    const wideBrush = sampledBrush("대형 브러시", "tip-512");
+    wideBrush.shape.size = 420;
+    const result = convertStudioAbrDocument({
+      brushes: [wideBrush],
+      samples: [hiResSample],
+      patterns: [],
+    });
+    const candidate = result.brushes[0]!;
+    expect(candidate.snapshot.strokeWidth).toBe(420);
+    expect(candidate.snapshot.brushDynamics.width.base).toBe(420);
+    expect(candidate.snapshot.brushDynamics.tip.alphaMapBase64).toBeTruthy();
+    expect(candidate.snapshot.brushDynamics.tip.alphaMapSize).toBe(64);
+    expect(candidate.highResTip?.alphaMapSize).toBe(512);
+    expect(candidate.highResTip?.mipLevels).toHaveLength(4);
+  });
+
+  it("preserves Photopea ABR descriptors (dualBrush, useTexture, useColorDynamics, Wtdg, Transfer, Scatter, BrushPose)", () => {
+    const primary = sample("primary-tip", 64, 64);
+    const secondary = sample("dual-tip", 32, 32);
+    const fullBrush: Brush = {
+      ...sampledBrush("Photopea Full Parity", "primary-tip"),
+      wetEdges: true,
+      scatter: {
+        bothAxes: true,
+        count: 3,
+        scatterDynamics: { control: "pen pressure", steps: 0, jitter: 0.45, minimum: 0.1 },
+        countDynamics: { control: "off", steps: 0, jitter: 0.2, minimum: 0 },
+      },
+      texture: {
+        id: "tex-paper",
+        name: "Watercolor Paper",
+        invert: true,
+        scale: 1.5,
+        brightness: 10,
+        contrast: 35,
+        blendMode: "height" as unknown as Brush["texture"] extends { blendMode: infer B } ? B : never,
+        depth: 0.78,
+        depthMinimum: 0.15,
+        depthDynamics: { control: "pen pressure", steps: 0, jitter: 0.25, minimum: 0.15 },
+        textureEachTip: true,
+      },
+      dualBrush: {
+        flip: false,
+        shape: {
+          type: "sampled",
+          name: "Dual Tip",
+          size: 21,
+          angle: 0,
+          roundness: 1,
+          spacingOn: true,
+          spacing: 0.2,
+          flipX: false,
+          flipY: false,
+          sampledData: "dual-tip",
+        },
+        blendMode: "multiply",
+        useScatter: false,
+        spacing: 0.2,
+        count: 1,
+        bothAxes: false,
+        countDynamics: { control: "off", steps: 0, jitter: 0, minimum: 0 },
+        scatterDynamics: { control: "off", steps: 0, jitter: 0, minimum: 0 },
+      },
+      colorDynamics: {
+        foregroundBackground: { control: "pen pressure", steps: 0, jitter: 0.4, minimum: 0.2 },
+        hue: 0.25,
+        saturation: 0.3,
+        brightness: 0.15,
+        purity: 0,
+        perTip: false,
+      },
+      brushPose: {
+        overrideAngle: true,
+        overrideTiltX: true,
+        overrideTiltY: true,
+        overridePressure: true,
+        pressure: 0.65,
+        tiltX: 20,
+        tiltY: -15,
+        angle: 35,
+      },
+    };
+    const result = convertStudioAbrDocument({
+      brushes: [fullBrush],
+      samples: [primary, secondary],
+      patterns: [],
+    });
+    const candidate = result.brushes[0]!;
+    expect(candidate.approximatedFeatures).toEqual([]);
+    expect(candidate.snapshot.brushDynamics.dualBrush).toMatchObject({
+      enabled: true,
+      blendMode: "multiply",
+      sizeRatio: 0.5,
+    });
+    expect(candidate.snapshot.brushDynamics.grain).toMatchObject({
+      space: "stroke-fixed",
+      amount: 0.78,
+      texture: {
+        mode: "height",
+        depth: 0.78,
+        depthJitter: 0.25,
+        minimumDepth: 0.15,
+        invert: true,
+        depthControl: { source: "pressure" },
+      },
+    });
+    expect(candidate.snapshot.brushDynamics.colorDynamics).toMatchObject({
+      foregroundBackgroundMix: 0.2,
+      foregroundBackgroundJitter: 0.4,
+      hueJitter: 45,
+      saturationJitter: 0.3,
+      valueJitter: 0.15,
+    });
+    expect(candidate.snapshot.brushDynamics.cspBrushExtensions?.strokeColorAndScale.perStrokeColorJitter).toBe(true);
+    expect(candidate.snapshot.enginePrograms?.watercolor?.wetEdgeBloomProgramId).toBe("edge-bloom");
+    expect(candidate.snapshot.tipAngle).toBe(35);
+    expect(candidate.snapshot.brushDynamics.fallbackPressure).toBe(0.65);
+    expect(candidate.snapshot.brushDynamics.scatterRatio).toBeCloseTo(0.9, 5);
+    expect(candidate.program?.mixing.kind).toBe("wet");
+    expect(candidate.descriptors).toMatchObject({
+      hasDualBrush: true,
+      hasTexture: true,
+      hasColorDynamics: true,
+      wetEdges: true,
+      hasScatter: true,
+      hasBrushPose: true,
+      hasTransfer: true,
+    });
+  });
 });

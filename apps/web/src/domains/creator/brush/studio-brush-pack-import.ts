@@ -1,33 +1,16 @@
-import { BRUSH_SOURCE_ARCHIVE_MAX_BYTES, BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS, createStudioBrushOriginalSource, requireStudioBrushOriginalSource } from "./studio-brush-original-source";
+import {
+  BRUSH_SOURCE_ARCHIVE_MAX_BYTES,
+  BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS,
+  createStudioBrushOriginalSource,
+  requireStudioBrushOriginalSource,
+} from "./studio-brush-original-source";
 /**
  * Brush pack import router — one entry point for every brush file the studio
- * can actually turn into a drawable brush.
+ * can turn into a drawable brush (`.myb`, `.kpp`, `.sut`, `.sutg`, `.bundle`,
+ * `.brushset`, `.json`; `.abr` keeps its dedicated worker lane).
  *
- * Photoshop `.abr` already had a worker-backed lane (`studio-abr-import.ts`) and
- * the app-private `.json` format had `importBrushFromJson`. libmypaint `.myb`
- * and Krita `.kpp` had *parsers* in `packages/studio-format-gateway` producing a
- * `BrushProgramIR`, but nothing mapped that IR onto the snapshot the drawing
- * engine consumes, so neither format had a user-reachable path. This module is
- * that missing map, plus the sniffing that puts all four formats behind one
- * file input.
- *
- * Two rules it never breaks:
- *
- * 1. **Nothing fake is registered.** Only IR fields with a real snapshot
- *    counterpart become brush settings. Everything the parsers report as
- *    unmapped, plus every field this map cannot carry, is returned in
- *    `warnings`/`unmapped` for the UI to show — a brush that "imported fine"
- *    but silently drew nothing like the source is the failure mode this avoids.
- * 2. **What is registered draws.** The produced `StudioBrushSnapshot` is the
- *    same shape `applySavedBrush` feeds the pen, so an imported preset goes
- *    straight into `planStudioDynamicBrushDabs` (see the round-trip test).
- *
- * Size encodings differ per lane and are detected, not guessed:
- * - Krita `paintbrush` presets carry the base diameter as a **constant** size
- *   mapping normalized against Krita's stock 1000 px cap (`kpp.ts`).
- * - libmypaint (`.myb`, and `.kpp` `mypaintbrush` presets, which the gateway
- *   delegates to the myb lane) carries `radius_logarithmic` folded into the
- *   **pressure** LUT divided by 6, so the px radius is `exp(tap * 6)`.
+ * Heavy archive parsers (`krita-bundle`, `procreate-brushset`) are dynamically
+ * imported so the Studio eager graph stays at +0B.
  */
 
 import {
@@ -37,51 +20,47 @@ import {
   type CspToolFileImportResult,
 } from "../../../../../../packages/studio-format-gateway/src/csp-sut";
 import { parseKppPreset, KppParseError } from "../../../../../../packages/studio-format-gateway/src/kpp";
-import type { KritaBundleImportOptions, KritaBundleImportResult } from "../../../../../../packages/studio-format-gateway/src/krita-bundle";
+import type {
+  KritaBundleImportOptions,
+  KritaBundleImportResult,
+} from "../../../../../../packages/studio-format-gateway/src/krita-bundle";
 import { importMybBrush, MybParseError } from "../../../../../../packages/studio-format-gateway/src/myb";
-import { STABILIZER_MAX } from "../studio-brush";
+import type {
+  ProcreateBrushsetImportOptions,
+  ProcreateBrushsetImportResult,
+} from "../../../../../../packages/studio-format-gateway/src/procreate-brushset";
 
 import {
-  DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS,
-  normalizeStudioBrushDynamicsSettings,
-  type NormalizedStudioBrushDynamicsMapping,
-  type NormalizedStudioBrushDynamicsSettings,
-} from "./studio-brush-dynamics";
-import {
-  DEFAULT_STUDIO_BRUSH_SNAPSHOT,
   createBrush,
   sanitizeBrushSnapshot,
   importBrushFromJson,
-  type StudioBrushSnapshot,
 } from "./studio-brush-library";
 import {
   STUDIO_BRUSH_PROGRAM_MAX_BYTES,
   STUDIO_EXTERNAL_BRUSH_PACK_MAX_BYTES,
 } from "./studio-brush-pack-format";
-// 집계자 예외 (A4 D4 R14): 이 파일의 생산자 방출은 전부 코드지만,
-// studioBrushPackImportNotes는 표시 문구를 조립하는 요약 함수라 이 경계에서만
-// 리졸버를 부른다 — animatic load/save의 문자열 집계 경계와 같은 예외다.
-import { resolveStudioBrushPackWarning } from "../status-i18n/studio-producer-error-i18n-brush";
-
-
-import type {
-  BrushLibraryRepositoryPort,
-} from "./studio-brush-library-repository";
-import type { StudioBrushPackFormat } from "./studio-brush-pack-format";
-import type { FormatIssue } from "../../../../../../packages/studio-format-gateway/src/format-common";
-import type {
-  BrushProgramIR,
-  DynamicMappingIR,
-} from "@toonstudio/studio-project-model";
-
 import {
-  StudioBrushPackPreserveOnlyError, StudioBrushProgramImportError,
-  packWarning, passthroughWarning, withWarningPrefix,
+  StudioBrushPackPreserveOnlyError,
+  StudioBrushProgramImportError,
+  packWarning,
+  passthroughWarning,
+  withWarningPrefix,
   type StudioBrushPackCommitResult,
   type StudioBrushPackImportResult,
   type StudioBrushPackRights,
   type StudioBrushPackWarning,
 } from "./studio-brush-pack-import-types";
+import {
+  studioBrushSnapshotFromProgram,
+} from "./studio-brush-pack-snapshot-lower";
+// 집계자 예외 (A4 D4 R14): 이 파일의 생산자 방출은 전부 코드지만,
+// studioBrushPackImportNotes는 표시 문구를 조립하는 요약 함수라 이 경계에서만
+// 리졸버를 부른다 — animatic load/save의 문자열 집계 경계와 같은 예외다.
+import { resolveStudioBrushPackWarning } from "../status-i18n/studio-producer-error-i18n-brush";
+
+import type { BrushLibraryRepositoryPort } from "./studio-brush-library-repository";
+import type { StudioBrushPackFormat } from "./studio-brush-pack-format";
+import type { FormatIssue } from "../../../../../../packages/studio-format-gateway/src/format-common";
 
 export {
   STUDIO_BRUSH_PACK_ACCEPT,
@@ -91,16 +70,16 @@ export {
   type StudioBrushPackFormat,
 } from "./studio-brush-pack-format";
 
-/** Krita's stock UI diameter cap — the same reference `kpp.ts` normalizes against. */
-export const KRITA_REFERENCE_MAX_DIAMETER_PX = 1000;
+export {
+  KRITA_REFERENCE_MAX_DIAMETER_PX,
+  MYPAINT_LOG_RADIUS_SCALE,
+  MAX_STROKE_WIDTH as STUDIO_BRUSH_PACK_MAX_STROKE_WIDTH,
+  fitCubicBezierToNormalizedLut,
+  studioBrushSnapshotFromProgram,
+  type StudioBrushProgramSnapshotResult,
+  type StudioBrushSnapshotLowerOptions,
+} from "./studio-brush-pack-snapshot-lower";
 
-/** libmypaint stores `radius_logarithmic`; `myb.ts` divides the LUT by this. */
-export const MYPAINT_LOG_RADIUS_SCALE = 6;
-
-/** UI slider bounds, mirrored so an import can never produce an unreachable value. */
-const MIN_STROKE_WIDTH = 1;
-const MAX_STROKE_WIDTH = 80;
-const MIN_OPACITY = 0.05;
 export {
   StudioBrushPackPreserveOnlyError,
   StudioBrushProgramImportError,
@@ -114,295 +93,6 @@ export {
   type StudioBrushPackWarningCode,
   type StudioBrushProgramImportFormat,
 } from "./studio-brush-pack-import-types";
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
-}
-
-// ---------------------------------------------------------------------------
-// BrushProgramIR → StudioBrushSnapshot
-// ---------------------------------------------------------------------------
-
-function mappingsOf(
-  dynamics: readonly DynamicMappingIR[],
-  input: DynamicMappingIR["input"],
-): DynamicMappingIR[] {
-  return dynamics.filter((mapping) => mapping.input === input);
-}
-
-/** A constant mapping's single value; `kpp.ts` writes `[v, v]`. */
-function constantValue(mapping: DynamicMappingIR): number {
-  return mapping.curve[0] ?? 0;
-}
-
-function lutRange(mappings: readonly DynamicMappingIR[]): { low: number; high: number } | null {
-  let low = Number.POSITIVE_INFINITY;
-  let high = Number.NEGATIVE_INFINITY;
-  for (const mapping of mappings) {
-    for (const tap of mapping.curve) {
-      if (!Number.isFinite(tap)) continue;
-      low = Math.min(low, tap);
-      high = Math.max(high, tap);
-    }
-  }
-  return Number.isFinite(low) && Number.isFinite(high) ? { low, high } : null;
-}
-
-/**
- * A LUT is only faithful when it is (near) linear: the snapshot mapping is a
- * `from → to` ramp with a gamma, not an arbitrary table. The residual against
- * the best straight line is what decides whether the artist is told.
- */
-function lutLinearityError(mapping: DynamicMappingIR): number {
-  const taps = mapping.curve;
-  const first = taps[0];
-  const last = taps[taps.length - 1];
-  if (first === undefined || last === undefined || taps.length < 3) return 0;
-  const span = last - first;
-  let worst = 0;
-  for (let index = 1; index < taps.length - 1; index += 1) {
-    const t = index / (taps.length - 1);
-    const expected = first + span * t;
-    worst = Math.max(worst, Math.abs((taps[index] ?? expected) - expected));
-  }
-  return worst;
-}
-
-const LUT_LINEARITY_TOLERANCE = 0.02;
-
-interface SizeResolution {
-  strokeWidth: number;
-  /** 클램프 전 원본 추정 굵기(px) — 최종값과 다르면 호출자가 경고로 알린다. */
-  requestedStrokeWidth: number;
-  /** Fraction of the full width kept at zero pressure (0 = full taper). */
-  pressureMinRatio: number;
-  hasPressure: boolean;
-}
-
-/**
- * Base width, in the units the pen slider uses.
- *
- * Krita lane: a constant mapping holds `diameter / 1000`. Multiple constants
- * multiply, matching `kpp.ts`'s "constants multiply through the chain".
- * libmypaint lane: the pressure LUT holds `radius_logarithmic / 6`, so the
- * widest dab is `2 · exp(maxTap · 6)`.
- */
-function resolveSize(sizeDynamics: readonly DynamicMappingIR[]): SizeResolution {
-  const constants = mappingsOf(sizeDynamics, "constant");
-  const pressures = mappingsOf(sizeDynamics, "pressure");
-  const pressureRange = lutRange(pressures);
-
-  if (constants.length > 0) {
-    const fraction = constants.reduce((product, mapping) => product * constantValue(mapping), 1);
-    const requestedStrokeWidth = Math.round(fraction * KRITA_REFERENCE_MAX_DIAMETER_PX);
-    const strokeWidth = clamp(requestedStrokeWidth, MIN_STROKE_WIDTH, MAX_STROKE_WIDTH);
-    // A Krita size sensor is already a 0..1 multiplier on the diameter.
-    return {
-      strokeWidth,
-      requestedStrokeWidth,
-      pressureMinRatio: pressureRange ? clamp(pressureRange.low, 0, 1) : 0,
-      hasPressure: pressures.length > 0,
-    };
-  }
-
-  if (pressureRange) {
-    const widest = 2 * Math.exp(pressureRange.high * MYPAINT_LOG_RADIUS_SCALE);
-    const narrowest = 2 * Math.exp(pressureRange.low * MYPAINT_LOG_RADIUS_SCALE);
-    const requestedStrokeWidth = Math.round(widest);
-    const strokeWidth = clamp(requestedStrokeWidth, MIN_STROKE_WIDTH, MAX_STROKE_WIDTH);
-    return {
-      strokeWidth,
-      requestedStrokeWidth,
-      pressureMinRatio: widest > 0 ? clamp(narrowest / widest, 0, 1) : 0,
-      hasPressure: true,
-    };
-  }
-
-  return {
-    strokeWidth: DEFAULT_STUDIO_BRUSH_SNAPSHOT.strokeWidth,
-    requestedStrokeWidth: DEFAULT_STUDIO_BRUSH_SNAPSHOT.strokeWidth,
-    pressureMinRatio: 0,
-    hasPressure: false,
-  };
-}
-
-interface FlowResolution {
-  opacity: number;
-  /** 클램프 전 원본 추정 농도 — 최종값과 다르면 호출자가 경고로 알린다. */
-  requestedOpacity: number;
-  pressureMinRatio: number;
-  hasPressure: boolean;
-}
-
-/** Constant flow/opacity params multiply; the pressure LUT rides on top. */
-function resolveFlow(flowDynamics: readonly DynamicMappingIR[]): FlowResolution {
-  const constants = mappingsOf(flowDynamics, "constant");
-  const pressures = mappingsOf(flowDynamics, "pressure");
-  const pressureRange = lutRange(pressures);
-  const constantFactor = constants.reduce(
-    (product, mapping) => product * constantValue(mapping),
-    1,
-  );
-  const peak = pressureRange ? pressureRange.high : 1;
-  const requestedOpacity = constantFactor * peak;
-  const opacity = clamp(requestedOpacity, MIN_OPACITY, 1);
-  return {
-    opacity,
-    requestedOpacity,
-    pressureMinRatio:
-      pressureRange && pressureRange.high > 0
-        ? clamp(pressureRange.low / pressureRange.high, 0, 1)
-        : 0,
-    hasPressure: pressures.length > 0,
-  };
-}
-
-function pressureRamp(from: number): NormalizedStudioBrushDynamicsMapping {
-  return {
-    source: "pressure",
-    mode: "multiply",
-    from: clamp(from, 0, 1),
-    to: 1,
-    amount: 1,
-    curve: 1,
-    invert: false,
-  };
-}
-
-function tipSettingsFor(
-  hardness: number,
-): NormalizedStudioBrushDynamicsSettings["tip"] {
-  const clamped = clamp(hardness, 0, 1);
-  return {
-    shape: clamped > 0.78 ? "hard" : clamped < 0.28 ? "soft" : "round",
-    softness: 1 - clamped,
-    alphaMapBase64: null,
-    alphaMapSize: DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS.tip.alphaMapSize,
-  };
-}
-
-/** Deterministic per-name seed so re-importing the same file replays identically. */
-function stableSeed(value: string): number {
-  let hash = 0x811c9dc5;
-  for (let cursor = 0; cursor < value.length; cursor += 1) {
-    hash ^= value.charCodeAt(cursor);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
-}
-
-export interface StudioBrushProgramSnapshotResult {
-  readonly snapshot: StudioBrushSnapshot;
-  /** IR fields this map cannot carry into a drawable setting. */
-  readonly unmapped: readonly string[];
-  readonly warnings: readonly StudioBrushPackWarning[];
-}
-
-/**
- * Maps a parsed brush program onto the snapshot the pen actually draws with.
- *
- * Anything the snapshot has no slot for (mixing/smudge, mesh geometry, raster
- * output policy, image tips, angle jitter) is reported rather than approximated
- * into something that would draw wrong.
- */
-export function studioBrushSnapshotFromProgram(
-  program: BrushProgramIR,
-): StudioBrushProgramSnapshotResult {
-  const unmapped: string[] = [];
-  const warnings: StudioBrushPackWarning[] = [];
-
-  const size = resolveSize(program.sizeDynamics);
-  const flow = resolveFlow(program.flowDynamics);
-
-  // 굵기·농도가 스튜디오 범위를 벗어나 잘렸으면 조용히 넘기지 않고 알린다 —
-  // "가져왔는데 원본과 다르게 그려지는" 실패를 막는 것이 이 모듈의 규칙이다.
-  if (size.requestedStrokeWidth !== size.strokeWidth) {
-    warnings.push(packWarning("warn.strokeWidthClamped", {
-      requested: String(size.requestedStrokeWidth),
-      applied: String(size.strokeWidth),
-      min: String(MIN_STROKE_WIDTH),
-      max: String(MAX_STROKE_WIDTH),
-    }));
-  }
-  if (Math.abs(flow.requestedOpacity - flow.opacity) > 1e-9) {
-    warnings.push(packWarning("warn.opacityClamped"));
-  }
-
-  for (const mapping of program.sizeDynamics) {
-    if (mapping.input !== "pressure" && mapping.input !== "constant") {
-      unmapped.push(`sizeDynamics(${mapping.input})`);
-    } else if (lutLinearityError(mapping) > LUT_LINEARITY_TOLERANCE) {
-      warnings.push(packWarning("warn.sizeCurveApproximated", { input: mapping.input }));
-    }
-  }
-  for (const mapping of program.flowDynamics) {
-    if (mapping.input !== "pressure" && mapping.input !== "constant") {
-      unmapped.push(`flowDynamics(${mapping.input})`);
-    } else if (lutLinearityError(mapping) > LUT_LINEARITY_TOLERANCE) {
-      warnings.push(packWarning("warn.flowCurveApproximated", { input: mapping.input }));
-    }
-  }
-
-  if (program.tip.kind === "image") {
-    unmapped.push("tip.image");
-    warnings.push(packWarning("warn.imageTipFallback"));
-  } else if (program.tip.kind === "stamp") {
-    warnings.push(packWarning("warn.stampTipApproximated"));
-  }
-  if (program.tip.angleJitterDeg > 0) unmapped.push("tip.angleJitterDeg");
-  if (program.mixing.kind !== "none") {
-    unmapped.push(`mixing.${program.mixing.kind}`);
-    warnings.push(packWarning("warn.wetMixNotReflected"));
-  }
-  if (program.geometry.kind !== "perfect-freehand") {
-    unmapped.push(`geometry.${program.geometry.kind}`);
-  }
-  if (program.output.target !== "vector-path") unmapped.push(`output.${program.output.target}`);
-  if (!size.hasPressure && program.sizeDynamics.length === 0) {
-    warnings.push(packWarning("warn.pressureDefaulted"));
-  }
-
-  const dynamics = normalizeStudioBrushDynamicsSettings({
-    ...DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS,
-    seed: stableSeed(program.id),
-    // IR spacing is a percentage of the tip width; the studio stores a ratio.
-    spacingRatio: clamp(program.tip.spacingPct / 100, 0.01, 16),
-    tip: tipSettingsFor(program.tip.hardness),
-    width: {
-      ...DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS.width,
-      base: size.strokeWidth,
-      mappings: size.hasPressure ? [pressureRamp(size.pressureMinRatio)] : [],
-    },
-    opacity: {
-      ...DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS.opacity,
-      base: flow.opacity,
-      mappings: flow.hasPressure ? [pressureRamp(flow.pressureMinRatio)] : [],
-    },
-    flow: {
-      ...DEFAULT_STUDIO_BRUSH_DYNAMICS_SETTINGS.flow,
-      base: flow.opacity,
-      mappings: flow.hasPressure ? [pressureRamp(flow.pressureMinRatio)] : [],
-    },
-  });
-
-  const snapshot: StudioBrushSnapshot = {
-    ...DEFAULT_STUDIO_BRUSH_SNAPSHOT,
-    // The dynamics-driven family: it is the one that reads every field above.
-    brushId: "ink-particle",
-    sourcePresetId: program.id,
-    sourcePresetName: program.name,
-    strokeWidth: size.strokeWidth,
-    brushOpacity: flow.opacity,
-    pressureMinSize: size.pressureMinRatio,
-    stabilizer: Math.round(clamp(program.stabilizer.strength, 0, 1) * STABILIZER_MAX),
-    brushDynamics: dynamics,
-  };
-
-  return {
-    snapshot,
-    unmapped: [...new Set(unmapped)].sort(),
-    warnings,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // File lanes
@@ -447,7 +137,7 @@ function kritaRights(result: KritaBundleImportResult): StudioBrushPackRights {
   };
 }
 
-/** Verified clean-room SUT/SUTG subset → drawable Studio snapshots. */
+/** Verified clean-room SUT/SUTG subset + auto-linked Material PNG tips → drawable Studio snapshots. */
 export async function importStudioCspToolBytes(
   bytes: Uint8Array,
   fileName: string,
@@ -460,10 +150,6 @@ export async function importStudioCspToolBytes(
     parsed = await importCspToolFile(bytes, { kind, sqliteReader, signal });
   } catch (cause) {
     if (cause instanceof CspToolFileError) {
-      // A4 D4 조건부 묶음 7호 (R21): 하위 파서 코드를 params.causeCode로
-      // 전파한다(파서 접두 포함). detail은 병행 유지 — 표시 지점 리졸버가
-      // causeCode를 gateway 구간 키로 해석해 detail을 대체하고, 해석할 수
-      // 없는 코드(csp:aborted 등 표시 제외)에서는 detail이 그대로 남는다.
       throw new StudioBrushProgramImportError(
         "cspReadFailed",
         kind,
@@ -473,10 +159,19 @@ export async function importStudioCspToolBytes(
     }
     throw cause;
   }
-  const mapped = parsed.programs.map((program) => ({
-    program,
-    mapped: studioBrushSnapshotFromProgram(program),
-  }));
+  const assetsById = new Map(parsed.assets.map((asset) => [asset.id, asset]));
+  const mapped = parsed.programs.map((program) => {
+    const cspFeatures = parsed.programFeatures?.[program.id];
+    const assetId = program.tip.imageAssetId ?? cspFeatures?.linkedAssetId;
+    const linkedAsset = assetId ? assetsById.get(assetId) : undefined;
+    return {
+      program,
+      mapped: studioBrushSnapshotFromProgram(program, {
+        cspFeatures,
+        tipPngBase64: linkedAsset?.base64 ?? null,
+      }),
+    };
+  });
   return {
     format: kind,
     brushes: mapped.map(({ program, mapped: lowered }) => ({
@@ -504,6 +199,72 @@ export async function importStudioCspToolBytes(
   };
 }
 
+/** Procreate `.brushset` ZIP + `brushset.plist` + `Brush.archive` → drawable Studio snapshots. */
+export async function importStudioProcreateBrushsetBytes(
+  bytes: Uint8Array,
+  fileName: string,
+  options: ProcreateBrushsetImportOptions = {},
+): Promise<StudioBrushPackImportResult> {
+  if (options.signal?.aborted) throw new StudioBrushProgramImportError("cancelled", "brushset");
+  const { importProcreateBrushset, ProcreateBrushsetError } = await import(
+    "../../../../../../packages/studio-format-gateway/src/procreate-brushset"
+  );
+  if (options.signal?.aborted) throw new StudioBrushProgramImportError("cancelled", "brushset");
+  let parsed: ProcreateBrushsetImportResult;
+  try {
+    parsed = importProcreateBrushset(bytes, options);
+  } catch (cause) {
+    if (cause instanceof ProcreateBrushsetError) {
+      throw new StudioBrushProgramImportError(
+        cause.code === "aborted" ? "cancelled" : "bundleReadFailed",
+        "brushset",
+        { detail: ` ${cause.message}`, causeCode: `brushset:${cause.code}` },
+        { cause },
+      );
+    }
+    throw cause;
+  }
+  const mapped = parsed.brushes.map((entry) => ({
+    entry,
+    mapped: studioBrushSnapshotFromProgram(entry.program, {
+      procreateFeatures: entry.features,
+      tipPyramid: entry.features.tipPyramid,
+    }),
+  }));
+  return {
+    format: "brushset",
+    brushes: mapped.map(({ entry, mapped: lowered }) => ({
+      name: presetDisplayName(entry.name, fileName),
+      snapshot: {
+        ...lowered.snapshot,
+        sourcePresetName: presetDisplayName(entry.name, fileName),
+      },
+      sourcePath: entry.folder || "Brush.archive",
+    })),
+    unmapped: mapped.flatMap(({ entry, mapped: lowered }) =>
+      lowered.unmapped.map((field) => `${entry.name}:${field}`)),
+    warnings: [
+      ...parsed.warnings.map((issue) => passthroughWarning(issueText(issue))),
+      ...mapped.flatMap(({ entry, mapped: lowered }) =>
+        lowered.warnings.map((warning) => withWarningPrefix(warning, entry.name))),
+    ],
+    unsupported: parsed.unsupported,
+    rights: {
+      authors: parsed.authors,
+      licenses: [],
+      websites: [],
+      emails: [],
+      tags: [],
+    },
+    preservation: {
+      status: parsed.brushes.length > 0 ? "structured-partial" : "preserve-only",
+      sourceFormat: parsed.sourcePayload.format,
+      originalBytesUnmodified: true,
+      sourcePayloadAvailable: parsed.sourcePayload.base64.length > 0,
+    },
+  };
+}
+
 /** Krita `.bundle` KPP/MYB resources → one candidate per verified program. */
 export async function importStudioKritaBundleBytes(
   bytes: Uint8Array,
@@ -518,7 +279,6 @@ export async function importStudioKritaBundleBytes(
     parsed = await parseBundle(bytes, options);
   } catch (cause) {
     if (cause instanceof KritaBundleError) {
-      // A4 D4 조건부 묶음 7호 (R21): causeCode 전파 (detail 병행 유지 — 위 csp 주석 참조).
       throw new StudioBrushProgramImportError(
         "bundleReadFailed",
         "bundle",
@@ -575,8 +335,6 @@ export function importStudioMybBytes(
     parsed = importMybBrush(bytes, presetId, presetDisplayName("", fileName));
   } catch (error) {
     if (error instanceof MybParseError) {
-      // A4 D4 조건부 묶음 7호 (R21): causeCode 전파 (detail 병행 유지 — 위 csp 주석 참조).
-      // 단 동적 삽입분(UTF-8 디코더·zod 원문)은 생산자 message에 그대로 남는 잔존이다.
       throw new StudioBrushProgramImportError(
         "mybReadFailed",
         "myb",
@@ -621,7 +379,6 @@ export function importStudioKppBytes(
     parsed = parseKppPreset(bytes);
   } catch (error) {
     if (error instanceof KppParseError) {
-      // A4 D4 조건부 묶음 7호 (R21): causeCode 전파 (detail 병행 유지 — 위 csp 주석 참조).
       throw new StudioBrushProgramImportError(
         "kppReadFailed",
         "kpp",
@@ -638,14 +395,17 @@ export function importStudioKppBytes(
     ...parsed.warnings.map((text) => passthroughWarning(text)),
   ];
   if (parsed.program.providerPreference.length === 0) {
-    // The gateway produces a shell for paintops with no mapping lane. Registering
-    // it silently would be the "imported but draws nothing like it" failure.
     warnings.push(packWarning("warn.kppEngineFallback"));
   }
   return {
     format: "kpp",
-    brushes: [{ name, snapshot: { ...mapped.snapshot, sourcePresetName: name },
-      originalSource: createStudioBrushOriginalSource(bytes, fileName, "kpp") }],
+    brushes: [
+      {
+        name,
+        snapshot: { ...mapped.snapshot, sourcePresetName: name },
+        originalSource: createStudioBrushOriginalSource(bytes, fileName, "kpp"),
+      },
+    ],
     unmapped: [
       ...mapped.unmapped,
       ...parsed.unmapped.map((entry) => `kpp:${entry}`),
@@ -659,24 +419,23 @@ export function importStudioBrushJsonText(
   text: string,
   fileName: string,
 ): StudioBrushPackImportResult {
-  // 크기 가드는 이 레인 자체에도 둔다. 지금까지는 위임先 importBrushFromJson의
-  // 내부 검사와 StudioBrushLibraryPanel의 file.size 사전 검사에만 기대고 있어,
-  // 파일 입력이 아닌 경로(붙여넣기·동기화 등)로 이 함수를 직접 부르면 검사가
-  // 있는지 코드만 봐서는 알 수 없었다. 한도는 패널·라이브러리와 같은 상수를
-  // 쓰고, 길이 검사를 먼저 해 초과 시 인코딩 비용도 치르지 않는다.
-  // (일반 설정 2MB 한도는 importBrushFromJson이 아카이브 판정 뒤에 계속 강제한다.)
-  if (text.length > BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS
-    || new TextEncoder().encode(text).byteLength > BRUSH_SOURCE_ARCHIVE_MAX_BYTES) {
-    // A4 D4 (R14): plain Error였던 이 방출을 ProgramImportError로 통일하고
-    // code(jsonTooLarge)를 신설했다 — format은 이 레인의 "json"이다.
+  if (
+    text.length > BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS ||
+    new TextEncoder().encode(text).byteLength > BRUSH_SOURCE_ARCHIVE_MAX_BYTES
+  ) {
     throw new StudioBrushProgramImportError("jsonTooLarge", "json");
   }
   const fallbackName = fileName.replace(/\.json$/iu, "");
   const { brush, adjustedFields } = importBrushFromJson(text, fallbackName);
   return {
     format: "json",
-    brushes: [{ name: brush.name, snapshot: sanitizeBrushSnapshot(brush).snapshot,
-      ...(brush.originalSource ? { originalSource: brush.originalSource } : {}) }],
+    brushes: [
+      {
+        name: brush.name,
+        snapshot: sanitizeBrushSnapshot(brush).snapshot,
+        ...(brush.originalSource ? { originalSource: brush.originalSource } : {}),
+      },
+    ],
     unmapped: [],
     warnings:
       adjustedFields.length > 0
@@ -689,17 +448,19 @@ export interface StudioBrushProgramFileOptions {
   readonly signal?: AbortSignal;
   readonly cspSqliteReader?: CspSutSqliteReader;
   readonly kritaBundleOptions?: KritaBundleImportOptions;
+  readonly procreateOptions?: ProcreateBrushsetImportOptions;
 }
 
 /** Reads every engine-neutral program lane; ABR/JSON retain their dedicated owners. */
 export async function importStudioBrushProgramFile(
   file: File,
-  format: "myb" | "kpp" | "sut" | "sutg" | "bundle",
+  format: "myb" | "kpp" | "sut" | "sutg" | "bundle" | "brushset",
   options: StudioBrushProgramFileOptions = {},
 ): Promise<StudioBrushPackImportResult> {
-  const maximumBytes = format === "sut" || format === "sutg" || format === "bundle"
-    ? STUDIO_EXTERNAL_BRUSH_PACK_MAX_BYTES
-    : STUDIO_BRUSH_PROGRAM_MAX_BYTES;
+  const maximumBytes =
+    format === "sut" || format === "sutg" || format === "bundle" || format === "brushset"
+      ? STUDIO_EXTERNAL_BRUSH_PACK_MAX_BYTES
+      : STUDIO_BRUSH_PROGRAM_MAX_BYTES;
   if (file.size > maximumBytes) {
     throw new StudioBrushProgramImportError(
       "fileTooLarge",
@@ -722,9 +483,15 @@ export async function importStudioBrushProgramFile(
       signal: options.signal,
     });
   }
-  const sqliteReader = options.cspSqliteReader
-    ?? (await import("../studio-csp-sut-sqlite-reader-client"))
-      .createBrowserCspSutSqliteReader();
+  if (format === "brushset") {
+    return importStudioProcreateBrushsetBytes(bytes, file.name, {
+      ...options.procreateOptions,
+      signal: options.signal,
+    });
+  }
+  const sqliteReader =
+    options.cspSqliteReader ??
+    (await import("../studio-csp-sut-sqlite-reader-client")).createBrowserCspSutSqliteReader();
   return importStudioCspToolBytes(bytes, file.name, format, sqliteReader, options.signal);
 }
 
@@ -733,6 +500,7 @@ export function studioBrushPackFormatLabel(format: StudioBrushPackFormat): strin
     case "myb": return "libmypaint";
     case "kpp": return "Krita";
     case "bundle": return "Krita 번들";
+    case "brushset": return "Procreate 브러시셋";
     case "sut": return "Clip Studio SUT";
     case "sutg": return "Clip Studio SUTG";
     case "abr": return "Photoshop ABR";
@@ -747,13 +515,7 @@ function displayList(label: string, values: readonly string[]): string | null {
   return `${label}: ${shown.join(", ")}${remainder > 0 ? ` 외 ${remainder}개` : ""}.`;
 }
 
-/**
- * Compact but explicit UI ledger for approximations, unsupported fields and rights.
- * 집계자 예외 (A4 D4 R14): warnings는 구조화 코드로 방출되며, 해석은 이
- * 조립 지점에서만 한다. Panel·Host 양쪽 표시 지점이 이 함수를 경유하므로
- * 두 표시 모두 여기서 해석된 문구를 받는다. unmapped·unsupported·rights
- * 합성 문구는 식별자·데이터 표기라 이 파일의 코드화 범위 밖(현행 유지).
- */
+/** Compact but explicit UI ledger for approximations, unsupported fields and rights. */
 export function studioBrushPackImportNotes(result: StudioBrushPackImportResult): string[] {
   const notes = result.warnings.map((warning) => resolveStudioBrushPackWarning(warning));
   const unmapped = displayList("옮기지 못한 전용 설정", result.unmapped);
@@ -781,11 +543,7 @@ export function studioBrushPackImportNotes(result: StudioBrushPackImportResult):
   return uniqueStrings(notes);
 }
 
-/**
- * Sole commit boundary for MYB/KPP/SUT/SUTG/Krita bundle programs. It refuses
- * preserve-only results and writes every materialized brush in one SQLite
- * repository batch.
- */
+/** Sole commit boundary for MYB/KPP/SUT/SUTG/Krita bundle/Procreate brushset programs. */
 export async function commitStudioBrushPackImport(
   result: StudioBrushPackImportResult,
   repository: BrushLibraryRepositoryPort,
@@ -794,7 +552,8 @@ export async function commitStudioBrushPackImport(
   const materialized = result.brushes.map((candidate) => ({
     ...createBrush(candidate.name, candidate.snapshot),
     ...(Object.hasOwn(candidate, "originalSource")
-      ? { originalSource: requireStudioBrushOriginalSource(candidate.originalSource) } : {}),
+      ? { originalSource: requireStudioBrushOriginalSource(candidate.originalSource) }
+      : {}),
   }));
   const saved = await repository.putMany(materialized);
   return { result, materialized, saved };
@@ -802,7 +561,7 @@ export async function commitStudioBrushPackImport(
 
 export async function importAndCommitStudioBrushProgramFile(
   file: File,
-  format: "myb" | "kpp" | "sut" | "sutg" | "bundle",
+  format: "myb" | "kpp" | "sut" | "sutg" | "bundle" | "brushset",
   repository: BrushLibraryRepositoryPort,
   options: StudioBrushProgramFileOptions = {},
 ): Promise<StudioBrushPackCommitResult> {

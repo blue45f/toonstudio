@@ -4,7 +4,15 @@ import {
 
 export interface FidelityCaseDefinition {
   /** Saved IDs remain stable when the picker display name changes. */
-  readonly id: "inkwash-pen" | "pen";
+  readonly id:
+    | "inkwash-pen"
+    | "pen"
+    | "gpen"
+    | "maru-pen"
+    | "watercolor"
+    | "oil"
+    | "pencil"
+    | "airbrush";
   readonly contract: string;
 }
 
@@ -17,12 +25,9 @@ export interface FidelityCase extends FidelityCaseDefinition {
 }
 
 /**
- * Each case must be a brush a user can actually reach in the picker. `glass-pen` was the original
- * thin-line representative, but the quarantine ledger delisted it — "선언된 \"잉크 흐름\"으로
- * 분기하는 렌더러가 없어" — so the catalogue never lists it and the probe timed out selecting a
- * brush that is not there. The ledger names its replacements; `pen` is the one that survived the
- * later feel-cull (fineliner is quarantined too). `resolveCase` now turns that same class of
- * mistake into an immediate, named failure instead of a fifteen-second locator timeout.
+ * 8대 대표 매체 라이브/커밋 픽셀 일치 검증 스위트:
+ * 먹번짐·펜·G펜·마루펜·수채(38밴드 KM/LBM)·유화(GGX 임파스토)·연필·에어브러시.
+ * 모든 ID는 실제 노출 카탈로그에서 이름·기본 폭을 동적 해석한다.
  */
 export const FIDELITY_CASES = Object.freeze([
   {
@@ -32,6 +37,30 @@ export const FIDELITY_CASES = Object.freeze([
   {
     id: "pen",
     contract: "thin-line causal filtering → committed document geometry",
+  },
+  {
+    id: "gpen",
+    contract: "dip-pen nib flex & taper sharpness → committed outline fidelity",
+  },
+  {
+    id: "maru-pen",
+    contract: "ultra-fine manga nib pressure taper → committed subpixel stroke fidelity",
+  },
+  {
+    id: "watercolor",
+    contract: "38-band KM wet pigment & capillary edge bloom → committed wash fidelity",
+  },
+  {
+    id: "oil",
+    contract: "GGX impasto relief & bristle load carrier → committed ribbon fidelity",
+  },
+  {
+    id: "pencil",
+    contract: "dry-media paper tooth grain response → committed graphite fidelity",
+  },
+  {
+    id: "airbrush",
+    contract: "linear soft-falloff continuous envelope → committed mist fidelity",
   },
 ] as const satisfies readonly FidelityCaseDefinition[]);
 
