@@ -25,6 +25,8 @@ const REQUIRED_FILES = [
   ".opencode/agent/toonstudio.md",
   ".gitmessage.ko",
   ".husky/prepare-commit-msg",
+  ".husky/pre-push",
+  "scripts/verify-pre-push.sh",
   ".github/pull_request_template.md",
   "docs/operations/agent-harness.md",
 ];
@@ -191,12 +193,17 @@ export function parseCli(argv) {
   }
   const staged = argv.includes("--staged");
   const full = argv.includes("--full");
+  const prePush = argv.includes("--pre-push");
   const baseOption = argv.find((argument) => argument.startsWith("--base="));
+  if (prePush && (command !== "verify" || staged || full || baseOption)) {
+    throw new Error("--pre-push는 verify 전용입니다. --staged, --base, --full과 함께 사용할 수 없습니다.");
+  }
   if (staged && baseOption) throw new Error("--staged와 --base는 함께 사용할 수 없습니다.");
   return {
     command,
     staged,
     full,
+    prePush,
     base: baseOption?.slice("--base=".length) || process.env.HARNESS_BASE || "origin/main",
   };
 }
@@ -277,6 +284,10 @@ function collectChangedFiles({ base, staged }) {
 
 function verify(options) {
   if (!check()) return;
+  if (options.prePush) {
+    run("sh", ["scripts/verify-pre-push.sh"]);
+    return;
+  }
   run(process.execPath, ["--test", "scripts/agent-harness.test.mjs"]);
   run(process.execPath, ["scripts/verify-pnpm-lockfile.mjs"]);
 
