@@ -16,6 +16,7 @@ import {
   CLOUDFLARE_STATIC_MAX_FILE_BYTES,
 } from "../deploy/cloudflare-static/src/large-static-assets";
 
+import * as localOAuth from "./lib/cloudflare-local-oauth.mjs";
 import {
   createRequestPacer,
   discoverR2LargeAssets,
@@ -23,6 +24,7 @@ import {
   planR2Uploads,
   r2ObjectPutRequest,
   r2RetryDelayMs,
+  syncCloudflareR2Assets,
   type R2LargeAssetUpload,
 } from "./sync-cloudflare-r2-assets.mts";
 
@@ -46,6 +48,9 @@ function smallFile(path: string, contents: string): void {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   while (temporaryDirectories.length > 0) {
     const directory = temporaryDirectories.pop();
     if (directory) rmSync(directory, { recursive: true, force: true });
@@ -150,6 +155,54 @@ describe("Cloudflare R2 large asset synchronization", () => {
       "cache-control": CLOUDFLARE_R2_MEDIA_CACHE_CONTROL,
       "content-disposition": "inline",
     });
+  });
+});
+
+describe("로컬 OAuth로 실제 동기화 함수를 실행", () => {
+  it("명시한 계정의 목록과 새 객체만 요청하고 기존 API 토큰을 덮어쓰지 않는다", async () => {
+    const account = "a".repeat(32);
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", account);
+    vi.stubEnv("CLOUDFLARE_API_TOKEN", "ambient-fixture");
+    const read = vi.spyOn(localOAuth, "readLocalWranglerOAuthToken").mockReturnValue("mock-session");
+    const dist = temporaryDist();
+    smallFile(join(dist, "vrm/new.vrm"), "new");
+    smallFile(join(dist, "vrm/same.vrm"), "same");
+    const etag = await fileMd5(join(dist, "vrm/same.vrm"));
+    const requests: { method: string; url: string; authorized: boolean }[] = [];
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+      const method = init.method ?? "GET";
+      requests.push({ method, url, authorized: new Headers(init.headers).get("authorization") === "Bearer mock-session" });
+      expect(init.redirect).toBe("error");
+      if (method === "GET") return Response.json({ success: true, result: [{ key: "vrm/same.vrm", size: 4, etag }] });
+      expect(init.body?.toString()).toBe("new");
+      return new Response(null, { status: 200 });
+    });
+    await syncCloudflareR2Assets("dry-run", dist, true);
+    expect(requests).toEqual([]);
+    expect(read).not.toHaveBeenCalled();
+    const uploads = await syncCloudflareR2Assets("production", dist, true);
+    const objects = `https://api.cloudflare.com/client/v4/accounts/${account}/r2/buckets/toonspectrum-public-assets/objects`;
+    expect(requests).toEqual([
+      { method: "GET", url: objects + "?per_page=1000", authorized: true },
+      { method: "PUT", url: objects + "/vrm/new.vrm", authorized: true },
+    ]);
+    expect(uploads.map((upload) => upload.key)).toEqual(["vrm/new.vrm"]);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(process.env.CLOUDFLARE_API_TOKEN).toBe("ambient-fixture");
+  });
+
+  it("계정 누락과 목록 조회 거절 시 PUT 없이 끝나며 응답 본문을 출력하지 않는다", async () => {
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "");
+    const read = vi.spyOn(localOAuth, "readLocalWranglerOAuthToken").mockReturnValue("mock-session");
+    const service = vi.fn(() => Promise.resolve(new Response("private response fixture", { status: 403 })));
+    vi.stubGlobal("fetch", service);
+    const dist = temporaryDist();
+    smallFile(join(dist, "vrm/new.vrm"), "new");
+    await expect(syncCloudflareR2Assets("production", dist, true)).rejects.toThrow("CLOUDFLARE_ACCOUNT_ID");
+    expect(read).not.toHaveBeenCalled();
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "a".repeat(32));
+    await expect(syncCloudflareR2Assets("production", dist, true)).rejects.toThrow(/^Cloudflare API 403 for https:\/\/api\.cloudflare\.com\/client\/v4\/accounts\/a{32}\/r2\/buckets\/toonspectrum-public-assets\/objects$/u);
+    expect(service).toHaveBeenCalledTimes(1);
   });
 });
 

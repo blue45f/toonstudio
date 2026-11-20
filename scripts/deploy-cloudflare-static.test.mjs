@@ -39,7 +39,8 @@ childProcess.execFileSync = (executable, args) => {
 };
 let call = 0;
 childProcess.spawnSync = (executable, args, options) => {
-  log({ executable, args, catalogSource: options.env.VITE_CATALOG_SOURCE ?? null });
+  log({ executable, args, catalogSource: options.env.VITE_CATALOG_SOURCE ?? null,
+    staticAuth: !!options.env.CLOUDFLARE_API_TOKEN, debugLog: options.env.WRANGLER_WRITE_LOGS ?? null });
   if (executable !== "pnpm") throw new Error("Unexpected executable");
   return { status: ++call === Number(process.env.FAKE_FAIL_CALL) ? 17 : 0 };
 };
@@ -265,6 +266,39 @@ describe("Cloudflare production release gates (all child process calls mocked)",
         `RELEASE_SHA:${approvedSha}`,
       ],
     ]);
+  });
+
+  it("로컬 OAuth는 R2를 실제 동기화하고 Worker CLI는 기본 프로필로 독립 실행한다", () => {
+    const { result, commands } = runDeploy({
+      CLOUDFLARE_ACCOUNT_ID: "1".repeat(32),
+      CLOUDFLARE_API_TOKEN: "ignored-fixture",
+    }, ["--production", "--wrangler-oauth"], standingApprovalFile);
+    expect(result.status).toBe(0);
+    expect(commands[4]).toMatchObject({
+      args: ["run", "sync:cloudflare-r2-assets", "--wrangler-oauth"], staticAuth: false, debugLog: "false",
+    });
+    expect(commands[5]).toMatchObject({ staticAuth: false, debugLog: "false" });
+    expect(commands[5].args.slice(0, 5)).toEqual(["exec", "wrangler", "deploy", "--env-file", "/dev/null"]);
+    const explicit = runProduction({ CLOUDFLARE_API_TOKEN: "api-fixture" });
+    expect(explicit.commands.slice(4).every((command) => command.staticAuth)).toBe(true);
+    expect(explicit.commands[4].args).toEqual(["run", "sync:cloudflare-r2-assets"]);
+  });
+
+  it("CI 또는 계정이 없는 로컬 OAuth 요청은 배포 명령을 시작하지 않는다", () => {
+    for (const env of [{ CI: "true" }, { GITHUB_ACTIONS: "true" }, {}]) {
+      const { result, commands } = runDeploy(env, ["--production", "--wrangler-oauth"], standingApprovalFile);
+      expect(result.status).toBe(1);
+      expect(commands).toEqual([]);
+    }
+  });
+
+  it("OAuth R2가 실패하면 Worker와 완료 원장을 건드리지 않는다", () => {
+    const { result, commands, directory } = runDeploy({
+      CLOUDFLARE_ACCOUNT_ID: "1".repeat(32), FAKE_FAIL_CALL: "5", TOONSPECTRUM_DEPLOY_LEDGER_DIR: "ledger",
+    }, ["--production", "--wrangler-oauth"], standingApprovalFile);
+    expect(result.status).toBe(17);
+    expect(commands.at(-1).args).toEqual(["run", "sync:cloudflare-r2-assets", "--wrangler-oauth"]);
+    expect(existsSync(join(directory, "ledger", "cloudflare-static", approvedSha + ".json"))).toBe(false);
   });
 
   it.each([1, 2, 3, 4, 5, 6])("stops after failing build/publication stage %i", (stage) => {

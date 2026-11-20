@@ -6,6 +6,11 @@ import { userInfo } from "node:os";
 import { delimiter, dirname, resolve } from "node:path";
 
 import {
+  isCloudflareAccountId,
+  isLocalWranglerOAuthAllowed,
+  localWranglerOAuthEnvironment,
+} from "./lib/cloudflare-local-oauth.mjs";
+import {
   assertNoDuplicateDeploy,
   recordCompletedDeploy,
   resolveLocalDeployLedgerPath,
@@ -18,6 +23,7 @@ const BUILD_META_PATH = "dist/.vite/build-meta.json";
 const mode = process.argv.includes("--production") ? "production" : "dry-run";
 const skipBuild = process.argv.includes("--skip-build");
 const skipR2Sync = process.argv.includes("--skip-r2-sync");
+const useLocalOAuth = process.argv.includes("--wrangler-oauth");
 const useStandingProfile = process.argv.includes("--standing-profile");
 const coreOriginArg = process.argv
   .find((argument) => argument.startsWith("--core-origin="))
@@ -241,7 +247,12 @@ const baseChildEnvironment = {
   PATH: normalizedPathEntries.join(delimiter),
   ...(childHome ? { HOME: childHome } : {}),
 };
-const useWranglerOAuthIsolation = skipR2Sync && !process.env.CLOUDFLARE_API_TOKEN?.trim();
+if (useLocalOAuth && !isLocalWranglerOAuthAllowed(process.env)) fail("--wrangler-oauth는 로컬 배포에서만 사용할 수 있습니다.");
+if (useLocalOAuth && mode === "production" && !isCloudflareAccountId(process.env.CLOUDFLARE_ACCOUNT_ID)) {
+  fail("--wrangler-oauth로 배포할 계정의 CLOUDFLARE_ACCOUNT_ID를 확인해 주세요.");
+}
+const oldWorkerIsolation = skipR2Sync && !process.env.CLOUDFLARE_API_TOKEN?.trim();
+const oauthChildEnvironment = useLocalOAuth ? localWranglerOAuthEnvironment(baseChildEnvironment) : undefined;
 
 const pipelineCommands = [
   {
@@ -281,7 +292,9 @@ const pipelineCommands = [
       mode === "production" && !skipR2Sync
         ? "sync:cloudflare-r2-assets"
         : "sync:cloudflare-r2-assets:dry-run",
+      ...(useLocalOAuth && mode === "production" && !skipR2Sync ? ["--wrangler-oauth"] : []),
     ],
+    environment: oauthChildEnvironment,
   },
   {
     executable: "pnpm",
@@ -290,14 +303,14 @@ const pipelineCommands = [
       "wrangler",
       "deploy",
       ...(mode === "dry-run" ? ["--dry-run"] : []),
-      ...(useWranglerOAuthIsolation ? ["--env-file", "/dev/null"] : []),
+      ...(useLocalOAuth || oldWorkerIsolation ? ["--env-file", "/dev/null"] : []),
       "--config",
       "deploy/cloudflare-static/wrangler.jsonc",
       ...routeVariables,
     ],
-    environment: useWranglerOAuthIsolation
+    environment: oauthChildEnvironment ?? (oldWorkerIsolation
       ? { ...baseChildEnvironment, WRANGLER_WRITE_LOGS: "false" }
-      : baseChildEnvironment,
+      : baseChildEnvironment),
   },
 ];
 
