@@ -171,6 +171,7 @@ export function useStudioPreferencesRuntime({
           degraded = true;
         }
 
+        if (cancelled) return;
         if (favoritesResult.status === "fulfilled") {
           if (effectFavoriteUserRevisionRef.current === favoritesRevisionAtStart) {
             effectFavoriteStateRef.current = favoritesResult.value;

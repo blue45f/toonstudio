@@ -57,6 +57,40 @@ it("늦게 읽은 즐겨찾기가 사용자가 이미 바꾼 즐겨찾기와 최
   expect(repository.loadEffectFavorites).toHaveBeenCalledTimes(1);
 });
 
+it.each(["성공", "실패"])("닫힌 원고의 설정 저장이 늦게 %s해도 다시 연 원고의 즐겨찾기를 보존한다", async (outcome) => {
+  const initialRead = Promise.withResolvers<StudioEffectFavoriteState>();
+  const pendingSave = Promise.withResolvers<void>();
+  let stored = normalizeStudioEffectFavoriteState();
+  repository.loadEffectFavorites.mockImplementationOnce(() => initialRead.promise).mockImplementation(async () => stored);
+  repository.saveEffectFavorites.mockImplementation(async next => { stored = next; });
+  repository.saveAppSettings.mockResolvedValueOnce().mockReturnValueOnce(pendingSave.promise);
+
+  const oldView = renderHook(() => useStudioPreferencesRuntime(options));
+  await waitFor(() => expect(repository.loadEffectFavorites).toHaveBeenCalledTimes(1));
+  const first = createStudioEffectId("filter", "first");
+  act(() => {
+    oldView.result.current.setStudioUiDensity("focus");
+    oldView.result.current.toggleEffectFavorite(first);
+  });
+  await waitFor(() => expect(stored.favorites).toEqual([first]));
+  await act(async () => { initialRead.resolve(normalizeStudioEffectFavoriteState()); });
+  await waitFor(() => expect(repository.saveAppSettings).toHaveBeenCalledTimes(2));
+  oldView.unmount();
+
+  const reopened = renderHook(() => useStudioPreferencesRuntime(options));
+  await waitFor(() => expect(reopened.result.current.appSettingsPersistenceState).toBe("saved"));
+  const second = createStudioEffectId("look", "second");
+  act(() => { reopened.result.current.toggleEffectFavorite(second); });
+  const latest = reopened.result.current.effectFavoriteState;
+  await waitFor(() => expect(stored.favorites).toContain(second));
+  await act(async () => {
+    if (outcome === "성공") pendingSave.resolve();
+    else pendingSave.reject(new Error("설정 저장 실패"));
+  });
+  expect(stored).toEqual(latest);
+  expect(repository.saveEffectFavorites).toHaveBeenCalledTimes(2);
+});
+
 it("오래된 저장 실패는 최신 상태를 낮추지 않고 최신 저장 실패는 세션 내 선택을 보존한다", async () => {
   const view = renderHook(() => useStudioPreferencesRuntime(options));
   await waitFor(() => expect(view.result.current.appSettingsPersistenceState).toBe("saved"));
