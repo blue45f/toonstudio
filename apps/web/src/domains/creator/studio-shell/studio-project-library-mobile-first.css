@@ -16,7 +16,7 @@
 .studio-library-heading > div:first-child { min-width: 0; flex: 1 1 200px; }
 .studio-library-heading-title { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: center; column-gap: clamp(10px, 1.4vw, 20px); }
 .studio-library-heading-art.studio-tool-art { --studio-tool-art-size: clamp(46px, 5vw, 80px); grid-row: 1 / span 4; align-self: center; }
-.studio-library-heading-title > :is(h1, span, p) { grid-column: 2; }
+.studio-library-heading-title > :is(h1, .studio-library-heading-ink, p) { grid-column: 2; }
 .studio-library-start-tool { --studio-tool-art-size: 38px; }
 .studio-library-entry-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .studio-library-entry-actions > a { min-width: 0; min-height: 44px; border-radius: 8px; font-size: 0.875rem; }

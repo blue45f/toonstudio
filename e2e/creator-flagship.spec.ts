@@ -324,7 +324,19 @@ for (const width of [320, 390, 912, 1024, 1280]) {
 
     const library = page.getByRole("region", { name: "작품 관리", exact: true });
     await expect(library).toBeVisible();
-    await expect(library.getByRole("heading", { name: "내 작업", exact: true })).toBeVisible();
+    const title = library.getByRole("heading", { name: "내 작업", exact: true });
+    await expect(title).toBeVisible();
+    if (width <= 390) {
+      const art = library.locator(".studio-library-heading-art");
+      const decoration = library.locator(".studio-library-heading-ink");
+      const [artRight, titleLeft, decorationLeft] = await Promise.all([
+        art.evaluate(el => el.getBoundingClientRect().right),
+        title.evaluate(el => el.getBoundingClientRect().left),
+        decoration.evaluate(el => el.getBoundingClientRect().left),
+      ]);
+      expect(artRight).toBeLessThanOrEqual(titleLeft);
+      expect(decorationLeft).toBeCloseTo(titleLeft);
+    }
     const header = page.locator(".workspace-library-shell .workspace-topbar");
     const signIn = header.getByRole("button", { name: "로그인", exact: true });
     await expect(signIn).toBeVisible();
