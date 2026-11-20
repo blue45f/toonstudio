@@ -21,6 +21,7 @@ import { StudioMovingToonVoiceConsentCard } from "../export/StudioMovingToonVoic
 import { StudioPortfolioBatchReissuanceCard } from "../export/StudioPortfolioBatchReissuanceCard";
 import { StudioReaderTrustSealPreviewCard } from "../export/StudioReaderTrustSealPreviewCard";
 import { StudioWave100MasterCockpitCard } from "../export/StudioWave100MasterCockpitCard";
+import { StudioWave1000MillenniumCockpitCard } from "../export/StudioWave1000MillenniumCockpitCard";
 import {
   applyRightsRemediationPlan,
   buildRightsRemediationPlan,
@@ -468,6 +469,10 @@ export function StudioWorkflowPacksPanel({
               pack={activePackForSimulation}
             />
             <StudioWave100MasterCockpitCard
+              seriesTitle={activePackForSimulation.name}
+              pack={activePackForSimulation}
+            />
+            <StudioWave1000MillenniumCockpitCard
               seriesTitle={activePackForSimulation.name}
               pack={activePackForSimulation}
             />

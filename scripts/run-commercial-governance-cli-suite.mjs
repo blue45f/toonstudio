@@ -21,6 +21,7 @@ import { verifySealReissuanceRecordJson } from "./verify-seal-reissuance-cli.mjs
 import { verifySealRevocationAndDerivativeJson } from "./verify-seal-revocation-and-derivative-cli.mjs";
 import { verifyVoiceConsentLedgerJson } from "./verify-voice-consent-ledger-cli.mjs";
 import { verifyWave100MasterJson } from "./verify-wave100-master-cli.mjs";
+import { verifyWave1000MillenniumJson } from "./verify-wave1000-millennium-cli.mjs";
 
 function fnv1aHex(input) {
   let hash = 0x811c9dc5;
@@ -332,6 +333,17 @@ export function runCommercialGovernanceCliSuite() {
     }),
   );
 
+  const c17 = verifyWave1000MillenniumJson(
+    JSON.stringify({
+      totalWavesVerified: 1000,
+      dagAcyclic: true,
+      webgpuFrameTimeMs: 8.3,
+      supportedLocalesCount: 30,
+      activeRegionsCount: 3,
+      autoReissuanceEnabled: true,
+    }),
+  );
+
   const checks = [
     ...prelimChecks,
     { name: "export-governance-sarif-cli", ok: c10.ok },
@@ -341,6 +353,7 @@ export function runCommercialGovernanceCliSuite() {
     { name: "verify-ip-marketplace-cli", ok: c14.ok },
     { name: "verify-reader-ecosystem-cli", ok: c15.ok },
     { name: "verify-wave100-master-cli", ok: c16.ok },
+    { name: "verify-wave1000-millennium-cli", ok: c17.ok },
   ];
 
   const passedCount = checks.filter((c) => c.ok).length;
@@ -360,7 +373,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log(JSON.stringify(res, null, 2));
   } else {
     console.log(
-      `ToonStudio Commercial Governance 16-CLI Suite: ${res.passedCount}/${res.totalCount} PASS (${res.receiptHash})`,
+      `ToonStudio Commercial Governance 17-CLI Suite: ${res.passedCount}/${res.totalCount} PASS (${res.receiptHash})`,
     );
   }
   if (!res.ok) {
