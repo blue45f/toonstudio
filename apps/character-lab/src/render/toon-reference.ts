@@ -39,6 +39,24 @@ export interface ToonParams {
   readonly gradeSaturation?: number;
   readonly gradeLightness?: number;
   readonly rampSoftness?: number;
+  /** SHAPER 3차(Cubic) MatCap 램프 블렌드 가중치 0..1 (기본 0 = 기존 계단 램프 항등) */
+  readonly cubicMatCapWeight?: number;
+  /** Cubic MatCap 위치 0..1 (기본 0.5) */
+  readonly cubicMatCapPos?: number;
+  /** Cubic MatCap 폭 슬라이더 0..1 (기본 0.62) */
+  readonly cubicMatCapWidth?: number;
+  /** 광원 방향·역광 정렬 기반 림 라이트 게이트 강도 0..1 (기본 0 = 기존 프레넬 림 항등) */
+  readonly directionalBacklightRimGate?: number;
+  /** Kajiya-Kay 2밴드 헤어 엔젤링 하이라이트 강도 0..1 (기본 0 = 비헤어 파츠 꺼짐) */
+  readonly hairAngelRingIntensity?: number;
+  /** 헤어 엔젤링 주 밴드 중심 V (기본 0.58) */
+  readonly hairAngelRingCenter?: number;
+  /** 헤어 엔젤링 밴드 폭 (기본 0.11) */
+  readonly hairAngelRingWidth?: number;
+  /** 헤어 엔젤링 보조 밴드 가중치 (기본 0.35) */
+  readonly hairAngelRingSecondaryWeight?: number;
+  /** 얼굴 SDF 경계에 fwidth 기반 안티앨리어싱 smoothstep을 적용할지 (기본 false = NodeMaterial 호환 step) */
+  readonly smoothFaceSdf?: boolean;
 }
 
 /** 셰이더 상수(소스 문자열과 같은 값 — `toon-reference.test.ts`가 소스에서 확인한다) */
@@ -109,9 +127,65 @@ export function toonShading(params: ToonParams, fragment: ToonFragmentInput): nu
   const lambert = v3Dot(n, v3Normalize(params.toLight as Vec3)) * 0.5 + 0.5;
   const [sdfU, sdfV] = toonSdfCoordinate(params, fragment.uv);
   const sdf = fragment.sampleSdf(sdfU, sdfV);
-  const faceLit = step(params.faceThreshold, sdf + params.sdfOffset);
+  const softness = params.rampSoftness ?? 0;
+  const faceLit = params.smoothFaceSdf
+    ? smoothstep(
+        params.faceThreshold - (fragment.derivativeWidth + TOON_BAND_EPSILON + softness * 0.08),
+        params.faceThreshold + (fragment.derivativeWidth + TOON_BAND_EPSILON + softness * 0.08),
+        sdf + params.sdfOffset,
+      )
+    : step(params.faceThreshold, sdf + params.sdfOffset);
   const faceShading = mix(TOON_FACE_DARK_SHADE, TOON_FACE_LIT_SHADE, faceLit);
   return mix(lambert, faceShading, step(0.5, params.faceSdf ? 1 : 0));
+}
+
+/** 방향성 역광 림 게이트(GLSL/WGSL `TOON_FRAGMENT`와 동치) */
+export function evaluateDirectionalBacklightRimGate(
+  normalW: readonly [number, number, number],
+  viewDir: readonly [number, number, number],
+  lightDir: readonly [number, number, number],
+  gateStrength = 1,
+): number {
+  const n = v3Normalize(normalW as Vec3);
+  const v = v3Normalize(viewDir as Vec3);
+  const l = v3Normalize(lightDir as Vec3);
+  const backlightAlign = clamp(v3Dot(v, [-l[0], -l[1], -l[2]]) * 0.5 + 0.5, 0, 1);
+  const rimLightSide = smoothstep(-0.25, 0.35, v3Dot(n, l));
+  const directionalGate = clamp(mix(rimLightSide, Math.max(rimLightSide, backlightAlign), 0.55), 0.15, 1);
+  return mix(1, directionalGate, clamp(gateStrength, 0, 1));
+}
+
+/** Kajiya-Kay 2밴드 헤어 엔젤링 하이라이트 강도 스칼라(GLSL/WGSL `TOON_FRAGMENT`와 동치) */
+export function evaluateKajiyaKayHairAngelRing(input: {
+  readonly normalW: readonly [number, number, number];
+  readonly viewDir: readonly [number, number, number];
+  readonly lightDir: readonly [number, number, number];
+  readonly hairFlowUv: readonly [number, number];
+  readonly intensity: number;
+  readonly primaryCenter?: number;
+  readonly bandWidth?: number;
+  readonly secondaryWeight?: number;
+}): number {
+  if (!(input.intensity > 0)) return 0;
+  const n = v3Normalize(input.normalW as Vec3);
+  const v = v3Normalize(input.viewDir as Vec3);
+  const l = v3Normalize(input.lightDir as Vec3);
+  const lambert = v3Dot(n, l) * 0.5 + 0.5;
+  const tangentRaw: Vec3 = [0, n[2] + 0.0001, -n[1]];
+  const tangent = v3Normalize(tangentRaw);
+  const halfVec = v3Normalize([l[0] + v[0], l[1] + v[1], l[2] + v[2]]);
+  const tDotH = v3Dot(tangent, halfVec);
+  const sinTH = Math.sqrt(Math.max(0, 1 - tDotH * tDotH));
+  const primaryCenter = input.primaryCenter ?? 0.58;
+  const bandW = Math.max(0.02, input.bandWidth ?? 0.11);
+  const strandJitter = Math.sin(input.hairFlowUv[0] * 37.6991) * 0.025;
+  const flowCoord = clamp(input.hairFlowUv[1] + strandJitter, 0, 1);
+  const primaryMask = 1 - smoothstep(bandW * 0.45, bandW, Math.abs(flowCoord - primaryCenter));
+  const secondaryMask = 1 - smoothstep(bandW * 0.7, bandW * 1.45, Math.abs(flowCoord - (primaryCenter - bandW * 1.35)));
+  const kkPrimary = Math.pow(sinTH, 24) * primaryMask;
+  const kkSecondary = Math.pow(sinTH, 10) * secondaryMask * (input.secondaryWeight ?? 0.35);
+  const litGate = smoothstep(0.2, 0.65, lambert);
+  return (kkPrimary + kkSecondary) * input.intensity * litGate;
 }
 
 function fract01(v: number): number {
@@ -121,6 +195,7 @@ function fract01(v: number): number {
 /** 툰 프래그먼트 색(선형이 아니라 셰이더가 쓰는 값 그대로, 0..∞) */
 export function evaluateToon(params: ToonParams, fragment: ToonFragmentInput): readonly [number, number, number] {
   const n = v3Normalize(fragment.normalW as Vec3);
+  const l = v3Normalize(params.toLight as Vec3);
   const albedo = toonAlbedo(params, fragment);
   const shading = toonShading(params, fragment);
   const steps = Math.max(2, params.rampSteps);
@@ -130,15 +205,31 @@ export function evaluateToon(params: ToonParams, fragment: ToonFragmentInput): r
   for (let j = 1; j <= TOON_MAX_BOUNDARIES; j += 1) {
     if (j < steps) acc += smoothstep(j / steps - w, j / steps + w, shading);
   }
-  const band = acc / (steps - 1);
+  const steppedBand = acc / (steps - 1);
+  const matcapWeight = clamp(params.cubicMatCapWeight ?? 0, 0, 1);
+  const band = matcapWeight > 0
+    ? mix(steppedBand, evaluateCubicMatCapBand(shading, params.cubicMatCapPos ?? 0.5, params.cubicMatCapWidth ?? 0.62), matcapWeight)
+    : steppedBand;
   const view = v3Normalize([fragment.cameraPosition[0] - fragment.positionW[0], fragment.cameraPosition[1] - fragment.positionW[1], fragment.cameraPosition[2] - fragment.positionW[2]]);
   const fresnel = Math.pow(1 - Math.max(v3Dot(n, view), 0), TOON_FRESNEL_POWER);
-  const rim = smoothstep(TOON_RIM_EDGE0, TOON_RIM_EDGE1, fresnel) * step(0.5, params.rim ? 1 : 0);
+  const rimGate = evaluateDirectionalBacklightRimGate(n, view, l, params.directionalBacklightRimGate ?? 0);
+  const rim = smoothstep(TOON_RIM_EDGE0, TOON_RIM_EDGE1, fresnel) * rimGate * step(0.5, params.rim ? 1 : 0);
+  const hairSpec = evaluateKajiyaKayHairAngelRing({
+    normalW: n,
+    viewDir: view,
+    lightDir: l,
+    hairFlowUv: fragment.uv,
+    intensity: params.hairAngelRingIntensity ?? 0,
+    ...(params.hairAngelRingCenter !== undefined ? { primaryCenter: params.hairAngelRingCenter } : {}),
+    ...(params.hairAngelRingWidth !== undefined ? { bandWidth: params.hairAngelRingWidth } : {}),
+    ...(params.hairAngelRingSecondaryWeight !== undefined ? { secondaryWeight: params.hairAngelRingSecondaryWeight } : {}),
+  });
   const out: [number, number, number] = [0, 0, 0];
   for (let c = 0; c < 3; c += 1) {
     const a = albedo[c] ?? 0;
     const shade = a * (params.shadeTint[c] ?? 0);
-    out[c] = mix(shade, a, band) * (params.lightColor[c] ?? 0) + a * (params.ambientColor[c] ?? 0) + (params.rimColor[c] ?? 0) * rim;
+    const specTint = mix(a * 1.35 + 0.18, params.lightColor[c] ?? 0, 0.45);
+    out[c] = mix(shade, a, band) * (params.lightColor[c] ?? 0) + a * (params.ambientColor[c] ?? 0) + (params.rimColor[c] ?? 0) * rim + specTint * hairSpec;
   }
   const toneKind = params.mangaToneKind ?? "none";
   const toneStrength = params.mangaToneStrength ?? 0;

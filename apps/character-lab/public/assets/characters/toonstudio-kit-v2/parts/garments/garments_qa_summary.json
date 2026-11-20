@@ -1,33 +1,34 @@
 {
   "schema": "toonstudio.character-kit.garments-v2-qa/1",
+  "craftVersion": "v3",
   "total": 34,
   "passed": 34,
   "failed": 0,
-  "elapsedSeconds": 60.42,
+  "elapsedSeconds": 46.31,
   "results": {
     "school-shirt-tie.glb": {
       "presetId": "top/school-shirt-tie",
       "passed": true,
       "errors": [],
-      "bytes": 891552,
+      "bytes": 933816,
       "triangles": 6576,
       "channels": 3,
-      "uv0Overlap": 3e-05,
+      "uv0Overlap": 0.0,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.72,
-        "p10CmPerUnit": 47.36,
-        "p90CmPerUnit": 50.89
+        "medianCmPerUnit": 49.74,
+        "p10CmPerUnit": 47.38,
+        "p90CmPerUnit": 50.82
       },
       "clearance": {
-        "restMinClearanceMm": 1.81,
+        "restMinClearanceMm": 1.804,
         "underlayerMinGapMm": null,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 0.504,
+            "minSignedDistMm": 0.512,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 0.5,
+            "minSignedDistMm": 0.504,
             "penetratingVerts": 0
           }
         }
@@ -36,7 +37,7 @@
         "minZ": 0.8883,
         "meshes": {
           "TS_Top_school-shirt-tie": {
-            "verts": 5629,
+            "verts": 5663,
             "faces": 6576,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -56,25 +57,25 @@
       "presetId": "outer/school-blazer",
       "passed": true,
       "errors": [],
-      "bytes": 1215700,
-      "triangles": 8516,
+      "bytes": 1269600,
+      "triangles": 8740,
       "channels": 3,
       "uv0Overlap": 0.0,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.22,
-        "p10CmPerUnit": 46.09,
-        "p90CmPerUnit": 50.35
+        "medianCmPerUnit": 49.19,
+        "p10CmPerUnit": 45.9,
+        "p90CmPerUnit": 50.3
       },
       "clearance": {
-        "restMinClearanceMm": 5.578,
-        "underlayerMinGapMm": 1.206,
+        "restMinClearanceMm": 5.6,
+        "underlayerMinGapMm": 1.239,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 0.947,
+            "minSignedDistMm": 1.036,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 3.468,
+            "minSignedDistMm": 2.66,
             "penetratingVerts": 0
           }
         }
@@ -83,8 +84,8 @@
         "minZ": 0.79819,
         "meshes": {
           "TS_Outer_school-blazer": {
-            "verts": 7398,
-            "faces": 8516,
+            "verts": 7491,
+            "faces": 8740,
             "trueNonManifold": 0,
             "looseVerts": 0,
             "wireEdges": 0,
@@ -103,17 +104,17 @@
       "presetId": "bottom/pleated-skirt",
       "passed": true,
       "errors": [],
-      "bytes": 781048,
+      "bytes": 818476,
       "triangles": 5584,
       "channels": 2,
       "uv0Overlap": 0.0,
       "uv1DensityCm": {
         "medianCmPerUnit": 49.05,
-        "p10CmPerUnit": 45.73,
+        "p10CmPerUnit": 45.68,
         "p90CmPerUnit": 50.12
       },
       "clearance": {
-        "restMinClearanceMm": 3.654,
+        "restMinClearanceMm": 3.676,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -121,7 +122,7 @@
         "minZ": 0.5491,
         "meshes": {
           "TS_Bottom_pleated-skirt": {
-            "verts": 4903,
+            "verts": 4803,
             "faces": 5584,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -141,17 +142,17 @@
       "presetId": "bottom/school-slacks",
       "passed": true,
       "errors": [],
-      "bytes": 933644,
+      "bytes": 975276,
       "triangles": 7544,
       "channels": 2,
-      "uv0Overlap": 0.00043,
+      "uv0Overlap": 0.00155,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.66,
-        "p10CmPerUnit": 46.69,
-        "p90CmPerUnit": 52.92
+        "medianCmPerUnit": 49.62,
+        "p10CmPerUnit": 46.71,
+        "p90CmPerUnit": 52.69
       },
       "clearance": {
-        "restMinClearanceMm": 2.006,
+        "restMinClearanceMm": 2.213,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -159,7 +160,7 @@
         "minZ": 0.07285,
         "meshes": {
           "TS_Bottom_school-slacks": {
-            "verts": 5982,
+            "verts": 6173,
             "faces": 7544,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -179,7 +180,7 @@
       "presetId": "legwear/knee-socks",
       "passed": true,
       "errors": [],
-      "bytes": 259684,
+      "bytes": 255836,
       "triangles": 2240,
       "channels": 1,
       "uv0Overlap": 0.0,
@@ -189,7 +190,7 @@
         "p90CmPerUnit": 50.09
       },
       "clearance": {
-        "restMinClearanceMm": 1.737,
+        "restMinClearanceMm": 1.758,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -197,7 +198,7 @@
         "minZ": 0.03923,
         "meshes": {
           "TS_Legwear_knee-socks": {
-            "verts": 1832,
+            "verts": 1692,
             "faces": 2240,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -217,17 +218,17 @@
       "presetId": "shoes/loafers",
       "passed": true,
       "errors": [],
-      "bytes": 254400,
-      "triangles": 1928,
+      "bytes": 380408,
+      "triangles": 3024,
       "channels": 3,
-      "uv0Overlap": 0.0,
+      "uv0Overlap": 0.00055,
       "uv1DensityCm": {
-        "medianCmPerUnit": 51.59,
-        "p10CmPerUnit": 47.28,
-        "p90CmPerUnit": 164.5
+        "medianCmPerUnit": 50.09,
+        "p10CmPerUnit": 43.18,
+        "p90CmPerUnit": 165.05
       },
       "clearance": {
-        "restMinClearanceMm": 1.512,
+        "restMinClearanceMm": 1.572,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -235,8 +236,8 @@
         "minZ": 0.0,
         "meshes": {
           "TS_Shoes_loafers": {
-            "verts": 1793,
-            "faces": 1928,
+            "verts": 2944,
+            "faces": 3024,
             "trueNonManifold": 0,
             "looseVerts": 0,
             "wireEdges": 0,
@@ -255,25 +256,25 @@
       "presetId": "top/ribbed-tee",
       "passed": true,
       "errors": [],
-      "bytes": 642260,
+      "bytes": 672476,
       "triangles": 4332,
       "channels": 3,
-      "uv0Overlap": 2e-05,
+      "uv0Overlap": 0.0,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.64,
-        "p10CmPerUnit": 47.74,
+        "medianCmPerUnit": 49.65,
+        "p10CmPerUnit": 47.78,
         "p90CmPerUnit": 50.06
       },
       "clearance": {
-        "restMinClearanceMm": 1.809,
+        "restMinClearanceMm": 1.86,
         "underlayerMinGapMm": null,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 0.569,
+            "minSignedDistMm": 0.589,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 0.507,
+            "minSignedDistMm": 0.505,
             "penetratingVerts": 0
           }
         }
@@ -282,7 +283,7 @@
         "minZ": 0.81694,
         "meshes": {
           "TS_Top_ribbed-tee": {
-            "verts": 3583,
+            "verts": 3589,
             "faces": 4332,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -302,25 +303,25 @@
       "presetId": "top/oversized-hoodie",
       "passed": true,
       "errors": [],
-      "bytes": 996212,
+      "bytes": 1014892,
       "triangles": 7264,
       "channels": 3,
-      "uv0Overlap": 0.0,
+      "uv0Overlap": 5e-05,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.41,
-        "p10CmPerUnit": 46.61,
-        "p90CmPerUnit": 50.46
+        "medianCmPerUnit": 49.42,
+        "p10CmPerUnit": 46.59,
+        "p90CmPerUnit": 50.39
       },
       "clearance": {
-        "restMinClearanceMm": 3.098,
+        "restMinClearanceMm": 3.096,
         "underlayerMinGapMm": null,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 0.609,
+            "minSignedDistMm": 0.589,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 0.982,
+            "minSignedDistMm": 0.677,
             "penetratingVerts": 0
           }
         }
@@ -329,7 +330,7 @@
         "minZ": 0.8221,
         "meshes": {
           "TS_Top_oversized-hoodie": {
-            "verts": 5997,
+            "verts": 6023,
             "faces": 7264,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -349,25 +350,25 @@
       "presetId": "top/knit-cardigan",
       "passed": true,
       "errors": [],
-      "bytes": 922964,
+      "bytes": 958084,
       "triangles": 6724,
       "channels": 3,
-      "uv0Overlap": 0.00025,
+      "uv0Overlap": 0.00046,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.25,
-        "p10CmPerUnit": 46.49,
-        "p90CmPerUnit": 50.14
+        "medianCmPerUnit": 49.26,
+        "p10CmPerUnit": 46.47,
+        "p90CmPerUnit": 50.13
       },
       "clearance": {
         "restMinClearanceMm": 5.6,
-        "underlayerMinGapMm": 1.233,
+        "underlayerMinGapMm": 1.267,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 1.317,
+            "minSignedDistMm": 1.979,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 5.025,
+            "minSignedDistMm": 5.607,
             "penetratingVerts": 0
           }
         }
@@ -376,7 +377,7 @@
         "minZ": 0.80173,
         "meshes": {
           "TS_Outer_knit-cardigan": {
-            "verts": 5457,
+            "verts": 5596,
             "faces": 6724,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -396,17 +397,17 @@
       "presetId": "bottom/wide-denim",
       "passed": true,
       "errors": [],
-      "bytes": 955868,
+      "bytes": 1005332,
       "triangles": 7632,
       "channels": 2,
-      "uv0Overlap": 0.00026,
+      "uv0Overlap": 0.00027,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.74,
-        "p10CmPerUnit": 47.21,
-        "p90CmPerUnit": 54.11
+        "medianCmPerUnit": 49.68,
+        "p10CmPerUnit": 47.09,
+        "p90CmPerUnit": 53.61
       },
       "clearance": {
-        "restMinClearanceMm": 2.216,
+        "restMinClearanceMm": 2.242,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -414,7 +415,7 @@
         "minZ": 0.04446,
         "meshes": {
           "TS_Bottom_wide-denim": {
-            "verts": 6244,
+            "verts": 6408,
             "faces": 7632,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -434,17 +435,17 @@
       "presetId": "bottom/cargo-shorts",
       "passed": true,
       "errors": [],
-      "bytes": 685480,
+      "bytes": 737728,
       "triangles": 4840,
       "channels": 2,
-      "uv0Overlap": 0.0006,
+      "uv0Overlap": 0.00056,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.97,
-        "p10CmPerUnit": 44.87,
-        "p90CmPerUnit": 59.46
+        "medianCmPerUnit": 49.95,
+        "p10CmPerUnit": 42.92,
+        "p90CmPerUnit": 59.64
       },
       "clearance": {
-        "restMinClearanceMm": 2.244,
+        "restMinClearanceMm": 2.242,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -452,7 +453,7 @@
         "minZ": 0.43941,
         "meshes": {
           "TS_Bottom_cargo-shorts": {
-            "verts": 4105,
+            "verts": 4224,
             "faces": 4840,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -472,17 +473,17 @@
       "presetId": "shoes/sneakers",
       "passed": true,
       "errors": [],
-      "bytes": 401396,
-      "triangles": 2552,
+      "bytes": 542020,
+      "triangles": 3648,
       "channels": 3,
-      "uv0Overlap": 0.0,
+      "uv0Overlap": 0.00139,
       "uv1DensityCm": {
-        "medianCmPerUnit": 50.41,
-        "p10CmPerUnit": 47.18,
-        "p90CmPerUnit": 156.14
+        "medianCmPerUnit": 50.0,
+        "p10CmPerUnit": 39.98,
+        "p90CmPerUnit": 169.84
       },
       "clearance": {
-        "restMinClearanceMm": 1.534,
+        "restMinClearanceMm": 1.502,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -490,8 +491,8 @@
         "minZ": -0.0,
         "meshes": {
           "TS_Shoes_sneakers": {
-            "verts": 2753,
-            "faces": 2552,
+            "verts": 3673,
+            "faces": 3648,
             "trueNonManifold": 0,
             "looseVerts": 0,
             "wireEdges": 0,
@@ -510,25 +511,25 @@
       "presetId": "top/dress-shirt",
       "passed": true,
       "errors": [],
-      "bytes": 848000,
+      "bytes": 904308,
       "triangles": 5892,
       "channels": 3,
       "uv0Overlap": 0.0,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.7,
+        "medianCmPerUnit": 49.71,
         "p10CmPerUnit": 47.55,
-        "p90CmPerUnit": 50.12
+        "p90CmPerUnit": 50.14
       },
       "clearance": {
-        "restMinClearanceMm": 1.812,
+        "restMinClearanceMm": 1.852,
         "underlayerMinGapMm": null,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 0.515,
+            "minSignedDistMm": 0.525,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 0.543,
+            "minSignedDistMm": 0.504,
             "penetratingVerts": 0
           }
         }
@@ -537,7 +538,7 @@
         "minZ": 0.98595,
         "meshes": {
           "TS_Top_dress-shirt": {
-            "verts": 4961,
+            "verts": 5060,
             "faces": 5892,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -557,25 +558,25 @@
       "presetId": "outer/tailored-suit",
       "passed": true,
       "errors": [],
-      "bytes": 894304,
-      "triangles": 6208,
+      "bytes": 952500,
+      "triangles": 6432,
       "channels": 3,
       "uv0Overlap": 0.0,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.43,
-        "p10CmPerUnit": 46.39,
-        "p90CmPerUnit": 50.06
+        "medianCmPerUnit": 49.45,
+        "p10CmPerUnit": 46.32,
+        "p90CmPerUnit": 50.05
       },
       "clearance": {
-        "restMinClearanceMm": 5.241,
-        "underlayerMinGapMm": 1.311,
+        "restMinClearanceMm": 5.141,
+        "underlayerMinGapMm": 1.23,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 0.964,
+            "minSignedDistMm": 0.747,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 3.743,
+            "minSignedDistMm": 3.465,
             "penetratingVerts": 0
           }
         }
@@ -584,8 +585,8 @@
         "minZ": 0.86757,
         "meshes": {
           "TS_Outer_tailored-suit": {
-            "verts": 4956,
-            "faces": 6208,
+            "verts": 5119,
+            "faces": 6432,
             "trueNonManifold": 0,
             "looseVerts": 0,
             "wireEdges": 0,
@@ -604,25 +605,25 @@
       "presetId": "outer/trench-coat",
       "passed": true,
       "errors": [],
-      "bytes": 1106972,
-      "triangles": 8164,
+      "bytes": 1156896,
+      "triangles": 8340,
       "channels": 3,
-      "uv0Overlap": 9e-05,
+      "uv0Overlap": 0.0,
       "uv1DensityCm": {
         "medianCmPerUnit": 49.58,
-        "p10CmPerUnit": 47.05,
-        "p90CmPerUnit": 50.87
+        "p10CmPerUnit": 47.04,
+        "p90CmPerUnit": 50.86
       },
       "clearance": {
-        "restMinClearanceMm": 6.095,
-        "underlayerMinGapMm": 1.209,
+        "restMinClearanceMm": 6.041,
+        "underlayerMinGapMm": 1.241,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 0.866,
+            "minSignedDistMm": 0.887,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 1.738,
+            "minSignedDistMm": 4.098,
             "penetratingVerts": 0
           }
         }
@@ -631,8 +632,8 @@
         "minZ": 0.40142,
         "meshes": {
           "TS_Outer_trench-coat": {
-            "verts": 6900,
-            "faces": 8164,
+            "verts": 7147,
+            "faces": 8340,
             "trueNonManifold": 0,
             "looseVerts": 0,
             "wireEdges": 0,
@@ -651,17 +652,17 @@
       "presetId": "bottom/tailored-slacks",
       "passed": true,
       "errors": [],
-      "bytes": 848820,
+      "bytes": 826624,
       "triangles": 6968,
       "channels": 2,
-      "uv0Overlap": 0.00036,
+      "uv0Overlap": 0.00223,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.67,
-        "p10CmPerUnit": 47.99,
-        "p90CmPerUnit": 51.49
+        "medianCmPerUnit": 49.61,
+        "p10CmPerUnit": 46.81,
+        "p90CmPerUnit": 51.52
       },
       "clearance": {
-        "restMinClearanceMm": 2.073,
+        "restMinClearanceMm": 2.045,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -669,7 +670,7 @@
         "minZ": 0.06709,
         "meshes": {
           "TS_Bottom_tailored-slacks": {
-            "verts": 5306,
+            "verts": 4993,
             "faces": 6968,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -689,17 +690,17 @@
       "presetId": "bottom/pencil-skirt",
       "passed": true,
       "errors": [],
-      "bytes": 405452,
+      "bytes": 424116,
       "triangles": 2844,
       "channels": 2,
       "uv0Overlap": 0.0,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.72,
+        "medianCmPerUnit": 49.71,
         "p10CmPerUnit": 49.07,
         "p90CmPerUnit": 50.0
       },
       "clearance": {
-        "restMinClearanceMm": 5.837,
+        "restMinClearanceMm": 5.933,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -707,7 +708,7 @@
         "minZ": 0.41901,
         "meshes": {
           "TS_Bottom_pencil-skirt": {
-            "verts": 2108,
+            "verts": 2109,
             "faces": 2844,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -727,26 +728,26 @@
       "presetId": "shoes/derby-heels",
       "passed": true,
       "errors": [],
-      "bytes": 293084,
-      "triangles": 2040,
+      "bytes": 432704,
+      "triangles": 3136,
       "channels": 3,
-      "uv0Overlap": 0.0,
+      "uv0Overlap": 0.00044,
       "uv1DensityCm": {
-        "medianCmPerUnit": 50.02,
-        "p10CmPerUnit": 47.4,
-        "p90CmPerUnit": 157.86
+        "medianCmPerUnit": 49.99,
+        "p10CmPerUnit": 41.68,
+        "p90CmPerUnit": 166.93
       },
       "clearance": {
-        "restMinClearanceMm": 1.57,
+        "restMinClearanceMm": 1.511,
         "underlayerMinGapMm": null,
         "poses": {}
       },
       "bmeshAudit": {
-        "minZ": -0.0,
+        "minZ": 0.0,
         "meshes": {
           "TS_Shoes_derby-heels": {
-            "verts": 1979,
-            "faces": 2040,
+            "verts": 3065,
+            "faces": 3136,
             "trueNonManifold": 0,
             "looseVerts": 0,
             "wireEdges": 0,
@@ -765,25 +766,25 @@
       "presetId": "top/rofan-corset-bodice",
       "passed": true,
       "errors": [],
-      "bytes": 930168,
+      "bytes": 966832,
       "triangles": 7052,
       "channels": 3,
-      "uv0Overlap": 0.00014,
+      "uv0Overlap": 0.00054,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.31,
-        "p10CmPerUnit": 45.76,
+        "medianCmPerUnit": 49.3,
+        "p10CmPerUnit": 45.71,
         "p90CmPerUnit": 50.58
       },
       "clearance": {
-        "restMinClearanceMm": 2.046,
+        "restMinClearanceMm": 2.021,
         "underlayerMinGapMm": null,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 0.528,
+            "minSignedDistMm": 0.536,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 1.13,
+            "minSignedDistMm": 1.1,
             "penetratingVerts": 0
           }
         }
@@ -792,7 +793,7 @@
         "minZ": 0.98582,
         "meshes": {
           "TS_Top_rofan-corset-bodice": {
-            "verts": 5672,
+            "verts": 5760,
             "faces": 7052,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -812,17 +813,17 @@
       "presetId": "bottom/rofan-layered-skirt",
       "passed": true,
       "errors": [],
-      "bytes": 810896,
+      "bytes": 857108,
       "triangles": 7524,
       "channels": 2,
       "uv0Overlap": 0.0,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.54,
-        "p10CmPerUnit": 43.08,
-        "p90CmPerUnit": 55.36
+        "medianCmPerUnit": 49.5,
+        "p10CmPerUnit": 42.75,
+        "p90CmPerUnit": 55.4
       },
       "clearance": {
-        "restMinClearanceMm": 5.822,
+        "restMinClearanceMm": 5.868,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -830,7 +831,7 @@
         "minZ": 0.0385,
         "meshes": {
           "TS_Bottom_rofan-layered-skirt": {
-            "verts": 5759,
+            "verts": 5990,
             "faces": 7524,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -850,25 +851,25 @@
       "presetId": "outer/imperial-uniform-coat",
       "passed": true,
       "errors": [],
-      "bytes": 1318236,
+      "bytes": 1384188,
       "triangles": 9392,
       "channels": 3,
-      "uv0Overlap": 0.0,
+      "uv0Overlap": 0.00142,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.52,
-        "p10CmPerUnit": 46.64,
+        "medianCmPerUnit": 49.53,
+        "p10CmPerUnit": 46.69,
         "p90CmPerUnit": 51.83
       },
       "clearance": {
-        "restMinClearanceMm": 6.079,
-        "underlayerMinGapMm": 1.223,
+        "restMinClearanceMm": 5.749,
+        "underlayerMinGapMm": 1.226,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 1.632,
+            "minSignedDistMm": 1.281,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 2.908,
+            "minSignedDistMm": 2.855,
             "penetratingVerts": 0
           }
         }
@@ -877,7 +878,7 @@
         "minZ": 0.4209,
         "meshes": {
           "TS_Outer_imperial-uniform-coat": {
-            "verts": 8547,
+            "verts": 8787,
             "faces": 9392,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -897,25 +898,25 @@
       "presetId": "outer/noble-cape",
       "passed": true,
       "errors": [],
-      "bytes": 574660,
+      "bytes": 607328,
       "triangles": 3704,
       "channels": 3,
       "uv0Overlap": 0.0,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.43,
+        "medianCmPerUnit": 49.42,
         "p10CmPerUnit": 46.95,
-        "p90CmPerUnit": 52.14
+        "p90CmPerUnit": 52.15
       },
       "clearance": {
-        "restMinClearanceMm": 6.543,
-        "underlayerMinGapMm": 59.603,
+        "restMinClearanceMm": 6.245,
+        "underlayerMinGapMm": 57.159,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 6.558,
+            "minSignedDistMm": 6.256,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 6.488,
+            "minSignedDistMm": 6.205,
             "penetratingVerts": 0
           }
         }
@@ -924,7 +925,7 @@
         "minZ": 0.39066,
         "meshes": {
           "TS_Outer_noble-cape": {
-            "verts": 3146,
+            "verts": 3149,
             "faces": 3704,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -944,17 +945,17 @@
       "presetId": "shoes/lace-up-boots",
       "passed": true,
       "errors": [],
-      "bytes": 400972,
-      "triangles": 3216,
+      "bytes": 520316,
+      "triangles": 4408,
       "channels": 3,
-      "uv0Overlap": 0.00012,
+      "uv0Overlap": 0.00079,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.97,
-        "p10CmPerUnit": 47.79,
-        "p90CmPerUnit": 118.21
+        "medianCmPerUnit": 49.77,
+        "p10CmPerUnit": 42.38,
+        "p90CmPerUnit": 127.32
       },
       "clearance": {
-        "restMinClearanceMm": 1.529,
+        "restMinClearanceMm": 1.501,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -962,8 +963,8 @@
         "minZ": 0.0,
         "meshes": {
           "TS_Shoes_lace-up-boots": {
-            "verts": 3181,
-            "faces": 3216,
+            "verts": 4243,
+            "faces": 4408,
             "trueNonManifold": 0,
             "looseVerts": 0,
             "wireEdges": 0,
@@ -982,7 +983,7 @@
       "presetId": "accessory/rofan-tiara",
       "passed": true,
       "errors": [],
-      "bytes": 295304,
+      "bytes": 318120,
       "triangles": 1596,
       "channels": 2,
       "uv0Overlap": 0.0,
@@ -992,7 +993,7 @@
         "p90CmPerUnit": 68.95
       },
       "clearance": {
-        "restMinClearanceMm": 215.88,
+        "restMinClearanceMm": 218.911,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -1020,25 +1021,25 @@
       "presetId": "top/tactical-compression",
       "passed": true,
       "errors": [],
-      "bytes": 795216,
+      "bytes": 805716,
       "triangles": 5652,
       "channels": 3,
-      "uv0Overlap": 6e-05,
+      "uv0Overlap": 0.0,
       "uv1DensityCm": {
         "medianCmPerUnit": 49.72,
-        "p10CmPerUnit": 47.13,
-        "p90CmPerUnit": 50.65
+        "p10CmPerUnit": 47.23,
+        "p90CmPerUnit": 50.36
       },
       "clearance": {
-        "restMinClearanceMm": 1.85,
+        "restMinClearanceMm": 1.892,
         "underlayerMinGapMm": null,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 0.52,
+            "minSignedDistMm": 0.526,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 0.585,
+            "minSignedDistMm": 0.502,
             "penetratingVerts": 0
           }
         }
@@ -1047,7 +1048,7 @@
         "minZ": 0.99482,
         "meshes": {
           "TS_Top_tactical-compression": {
-            "verts": 4636,
+            "verts": 4558,
             "faces": 5652,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -1067,25 +1068,25 @@
       "presetId": "outer/techwear-jacket",
       "passed": true,
       "errors": [],
-      "bytes": 980312,
+      "bytes": 996220,
       "triangles": 7436,
       "channels": 3,
-      "uv0Overlap": 0.00035,
+      "uv0Overlap": 0.0,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.44,
-        "p10CmPerUnit": 46.94,
-        "p90CmPerUnit": 50.51
+        "medianCmPerUnit": 49.45,
+        "p10CmPerUnit": 46.99,
+        "p90CmPerUnit": 50.3
       },
       "clearance": {
-        "restMinClearanceMm": 5.894,
-        "underlayerMinGapMm": 1.233,
+        "restMinClearanceMm": 6.1,
+        "underlayerMinGapMm": 1.406,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 0.572,
+            "minSignedDistMm": 0.502,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 2.599,
+            "minSignedDistMm": 1.677,
             "penetratingVerts": 0
           }
         }
@@ -1094,7 +1095,7 @@
         "minZ": 0.91126,
         "meshes": {
           "TS_Outer_techwear-jacket": {
-            "verts": 5999,
+            "verts": 5963,
             "faces": 7436,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -1114,17 +1115,17 @@
       "presetId": "bottom/tactical-cargo",
       "passed": true,
       "errors": [],
-      "bytes": 961436,
+      "bytes": 999036,
       "triangles": 7896,
       "channels": 2,
-      "uv0Overlap": 0.00091,
+      "uv0Overlap": 0.00163,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.36,
-        "p10CmPerUnit": 45.67,
-        "p90CmPerUnit": 52.48
+        "medianCmPerUnit": 49.45,
+        "p10CmPerUnit": 44.35,
+        "p90CmPerUnit": 51.67
       },
       "clearance": {
-        "restMinClearanceMm": 2.225,
+        "restMinClearanceMm": 2.212,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -1132,7 +1133,7 @@
         "minZ": 0.09265,
         "meshes": {
           "TS_Bottom_tactical-cargo": {
-            "verts": 6263,
+            "verts": 6375,
             "faces": 7896,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -1152,26 +1153,26 @@
       "presetId": "shoes/combat-boots",
       "passed": true,
       "errors": [],
-      "bytes": 443068,
-      "triangles": 3672,
+      "bytes": 565280,
+      "triangles": 4864,
       "channels": 3,
       "uv0Overlap": 0.0,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.99,
-        "p10CmPerUnit": 48.18,
-        "p90CmPerUnit": 123.88
+        "medianCmPerUnit": 49.95,
+        "p10CmPerUnit": 45.51,
+        "p90CmPerUnit": 135.65
       },
       "clearance": {
-        "restMinClearanceMm": 1.628,
+        "restMinClearanceMm": 1.522,
         "underlayerMinGapMm": null,
         "poses": {}
       },
       "bmeshAudit": {
-        "minZ": 0.0,
+        "minZ": -0.0,
         "meshes": {
           "TS_Shoes_combat-boots": {
-            "verts": 3709,
-            "faces": 3672,
+            "verts": 4818,
+            "faces": 4864,
             "trueNonManifold": 0,
             "looseVerts": 0,
             "wireEdges": 0,
@@ -1190,25 +1191,25 @@
       "presetId": "accessory/chest-harness",
       "passed": true,
       "errors": [],
-      "bytes": 262680,
+      "bytes": 284540,
       "triangles": 856,
       "channels": 2,
       "uv0Overlap": 0.0,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.22,
-        "p10CmPerUnit": 22.3,
+        "medianCmPerUnit": 49.2,
+        "p10CmPerUnit": 22.33,
         "p90CmPerUnit": 70.93
       },
       "clearance": {
-        "restMinClearanceMm": 19.504,
-        "underlayerMinGapMm": 1.288,
+        "restMinClearanceMm": 19.632,
+        "underlayerMinGapMm": 1.283,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 13.341,
+            "minSignedDistMm": 12.427,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 18.582,
+            "minSignedDistMm": 19.157,
             "penetratingVerts": 0
           }
         }
@@ -1217,7 +1218,7 @@
         "minZ": 1.23338,
         "meshes": {
           "TS_Accessory_chest-harness": {
-            "verts": 1023,
+            "verts": 1018,
             "faces": 856,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -1237,25 +1238,25 @@
       "presetId": "top/murim-dobok-inner",
       "passed": true,
       "errors": [],
-      "bytes": 707412,
+      "bytes": 742612,
       "triangles": 5228,
       "channels": 3,
-      "uv0Overlap": 4e-05,
+      "uv0Overlap": 7e-05,
       "uv1DensityCm": {
         "medianCmPerUnit": 49.66,
         "p10CmPerUnit": 47.58,
-        "p90CmPerUnit": 50.09
+        "p90CmPerUnit": 50.08
       },
       "clearance": {
-        "restMinClearanceMm": 2.007,
+        "restMinClearanceMm": 2.003,
         "underlayerMinGapMm": null,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 0.65,
+            "minSignedDistMm": 0.766,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 0.544,
+            "minSignedDistMm": 0.565,
             "penetratingVerts": 0
           }
         }
@@ -1264,7 +1265,7 @@
         "minZ": 0.97592,
         "meshes": {
           "TS_Top_murim-dobok-inner": {
-            "verts": 4161,
+            "verts": 4141,
             "faces": 5228,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -1284,25 +1285,25 @@
       "presetId": "outer/murim-dopo-robe",
       "passed": true,
       "errors": [],
-      "bytes": 971716,
+      "bytes": 1017136,
       "triangles": 7608,
       "channels": 3,
       "uv0Overlap": 0.0,
       "uv1DensityCm": {
         "medianCmPerUnit": 49.51,
-        "p10CmPerUnit": 48.33,
-        "p90CmPerUnit": 50.01
+        "p10CmPerUnit": 48.41,
+        "p90CmPerUnit": 50.0
       },
       "clearance": {
-        "restMinClearanceMm": 6.1,
-        "underlayerMinGapMm": 1.377,
+        "restMinClearanceMm": 6.087,
+        "underlayerMinGapMm": 1.507,
         "poses": {
           "a_pose_45": {
-            "minSignedDistMm": 0.872,
+            "minSignedDistMm": 0.505,
             "penetratingVerts": 0
           },
           "raise_85_deg": {
-            "minSignedDistMm": 4.736,
+            "minSignedDistMm": 5.122,
             "penetratingVerts": 0
           }
         }
@@ -1311,7 +1312,7 @@
         "minZ": 0.16817,
         "meshes": {
           "TS_Outer_murim-dopo-robe": {
-            "verts": 6207,
+            "verts": 6372,
             "faces": 7608,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -1331,17 +1332,17 @@
       "presetId": "bottom/murim-wide-pants",
       "passed": true,
       "errors": [],
-      "bytes": 956500,
+      "bytes": 944628,
       "triangles": 8256,
       "channels": 2,
-      "uv0Overlap": 0.00016,
+      "uv0Overlap": 0.00126,
       "uv1DensityCm": {
-        "medianCmPerUnit": 49.25,
-        "p10CmPerUnit": 36.74,
-        "p90CmPerUnit": 50.23
+        "medianCmPerUnit": 49.26,
+        "p10CmPerUnit": 33.65,
+        "p90CmPerUnit": 50.14
       },
       "clearance": {
-        "restMinClearanceMm": 2.403,
+        "restMinClearanceMm": 2.499,
         "underlayerMinGapMm": null,
         "poses": {}
       },
@@ -1349,7 +1350,7 @@
         "minZ": 0.09396,
         "meshes": {
           "TS_Bottom_murim-wide-pants": {
-            "verts": 6787,
+            "verts": 6549,
             "faces": 8256,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -1369,25 +1370,25 @@
       "presetId": "accessory/waist-sash",
       "passed": true,
       "errors": [],
-      "bytes": 222732,
+      "bytes": 247404,
       "triangles": 1632,
       "channels": 2,
       "uv0Overlap": 0.0,
       "uv1DensityCm": {
-        "medianCmPerUnit": 50.35,
-        "p10CmPerUnit": 49.22,
-        "p90CmPerUnit": 55.65
+        "medianCmPerUnit": 50.34,
+        "p10CmPerUnit": 49.17,
+        "p90CmPerUnit": 55.66
       },
       "clearance": {
-        "restMinClearanceMm": 27.864,
-        "underlayerMinGapMm": 1.215,
+        "restMinClearanceMm": 27.886,
+        "underlayerMinGapMm": 1.306,
         "poses": {}
       },
       "bmeshAudit": {
         "minZ": 0.72787,
         "meshes": {
           "TS_Accessory_waist-sash": {
-            "verts": 1229,
+            "verts": 1281,
             "faces": 1632,
             "trueNonManifold": 0,
             "looseVerts": 0,
@@ -1407,26 +1408,26 @@
       "presetId": "shoes/murim-boots",
       "passed": true,
       "errors": [],
-      "bytes": 325132,
-      "triangles": 2712,
+      "bytes": 488848,
+      "triangles": 3904,
       "channels": 3,
-      "uv0Overlap": 0.0,
+      "uv0Overlap": 0.0002,
       "uv1DensityCm": {
-        "medianCmPerUnit": 50.0,
-        "p10CmPerUnit": 48.05,
-        "p90CmPerUnit": 137.69
+        "medianCmPerUnit": 49.97,
+        "p10CmPerUnit": 44.63,
+        "p90CmPerUnit": 147.41
       },
       "clearance": {
-        "restMinClearanceMm": 1.504,
+        "restMinClearanceMm": 1.511,
         "underlayerMinGapMm": null,
         "poses": {}
       },
       "bmeshAudit": {
-        "minZ": -0.0,
+        "minZ": 0.0,
         "meshes": {
           "TS_Shoes_murim-boots": {
-            "verts": 2365,
-            "faces": 2712,
+            "verts": 3529,
+            "faces": 3904,
             "trueNonManifold": 0,
             "looseVerts": 0,
             "wireEdges": 0,

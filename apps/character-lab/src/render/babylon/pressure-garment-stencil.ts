@@ -13,9 +13,20 @@ import type { Scene } from "@babylonjs/core/scene.js";
 
 /** native OutlineRenderer의 0x04와 겹치지 않는 전용 비트다. */
 export const PRESSURE_GARMENT_STENCIL_BIT = 0x08;
+/** 키트 머리 윤곽선 패스가 눈·눈썹·속눈썹·입 안을 침범하지 않도록 보호하는 전용 비트다. */
+export const PRESSURE_FACIAL_STENCIL_BIT = 0x10;
+/** SHAPER hID*1 헤어 내부 겹침 주선 억제에 사용하는 전용 비트다. */
+export const PRESSURE_HAIR_INLINE_STENCIL_BIT = 0x20;
 
 const GARMENT_ROLES: ReadonlySet<PartRole> = new Set(["underwear", "top", "bottom", "shoes", "inner", "outer", "legwear"]);
+const FACIAL_GUARD_ROLES: ReadonlySet<PartRole> = new Set(["eyeball", "iris", "pupil", "eye-highlight", "lash", "brow", "teeth", "tongue"]);
+const HAIR_INLINE_ROLES: ReadonlySet<PartRole> = new Set(["hair", "hair-accessory"]);
 const controllers = new WeakMap<Scene, Set<PressureGarmentStencilController>>();
+
+export interface PressureStencilSyncOptions {
+  readonly markFacial?: boolean;
+  readonly markHairInline?: boolean;
+}
 
 type StencilSnapshot = Pick<MaterialStencilState,
   "enabled" | "mask" | "func" | "backFunc" | "funcRef" | "funcMask" |
@@ -25,6 +36,7 @@ type StencilSnapshot = Pick<MaterialStencilState,
 interface GarmentEntry {
   readonly rig: CharacterRig;
   readonly part: RigPart;
+  readonly bit: number;
 }
 
 function snapshot(stencil: MaterialStencilState): StencilSnapshot {
@@ -81,18 +93,27 @@ export class PressureGarmentStencilController {
     };
   }
 
-  sync(rig: CharacterRig, enabled: boolean): void {
+  sync(rig: CharacterRig, enabled: boolean, options: PressureStencilSyncOptions = {}): void {
     if (this.disposed) return;
     this.release(rig);
     this.watchNewMeshes();
-    if (!enabled || rig.kind !== "kit") return;
+    if (!enabled) return;
+    const markGarment = rig.kind === "kit";
+    const markFacial = rig.kind === "kit" && options.markFacial === true;
+    const markHair = options.markHairInline === true;
+    if (!markGarment && !markFacial && !markHair) return;
     for (const part of rig.parts) {
-      if (!GARMENT_ROLES.has(part.role) || part.forceHidden) continue;
+      if (part.forceHidden) continue;
+      let bit = 0;
+      if (markGarment && GARMENT_ROLES.has(part.role)) bit |= PRESSURE_GARMENT_STENCIL_BIT;
+      if (markFacial && FACIAL_GUARD_ROLES.has(part.role)) bit |= PRESSURE_FACIAL_STENCIL_BIT;
+      if (markHair && HAIR_INLINE_ROLES.has(part.role)) bit |= PRESSURE_HAIR_INLINE_STENCIL_BIT;
+      if (bit === 0) continue;
       // 가시성은 플랜으로 달라지므로 등록과 별개로 실제 draw 직전에도 검사한다.
       for (const mesh of part.meshes) {
         if (mesh.isDisposed() || mesh.getScene() !== this.scene) continue;
         this.watch(mesh);
-        this.garments.set(mesh, { rig, part });
+        this.garments.set(mesh, { rig, part, bit });
       }
     }
   }
@@ -169,13 +190,15 @@ export class PressureGarmentStencilController {
     this.restorePending();
     const material = mesh.getMaterialForRenderPass(this.scene.getEngine().currentRenderPassId) ?? mesh.material;
     if (!material || !this.eligible(mesh, material)) return;
+    const entry = this.garments.get(mesh);
+    if (!entry) return;
     // 기존 활성 predicate와 새 marker를 임의로 합치지 않는다. native·사용자 stencil은 그대로 둔다.
     if (material.stencil.enabled) return;
     this.pending.set(material, snapshot(material.stencil));
     Object.assign(material.stencil, {
-      enabled: true, mask: PRESSURE_GARMENT_STENCIL_BIT,
+      enabled: true, mask: entry.bit,
       func: Constants.ALWAYS, backFunc: Constants.ALWAYS,
-      funcRef: PRESSURE_GARMENT_STENCIL_BIT, funcMask: PRESSURE_GARMENT_STENCIL_BIT,
+      funcRef: entry.bit, funcMask: entry.bit,
       opStencilFail: Constants.KEEP, opDepthFail: Constants.KEEP, opStencilDepthPass: Constants.REPLACE,
       backOpStencilFail: Constants.KEEP, backOpDepthFail: Constants.KEEP, backOpStencilDepthPass: Constants.REPLACE,
     } satisfies StencilSnapshot);

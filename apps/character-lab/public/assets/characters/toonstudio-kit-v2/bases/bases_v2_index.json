@@ -1,5 +1,6 @@
 {
   "schema": "toonstudio.character-kit.bases-v2-index/1",
+  "craftVersion": "v3",
   "count": 5,
   "archetypes": [
     "female-romance",
@@ -11,28 +12,115 @@
   "bases": {
     "female-romance": {
       "path": "female-romance.glb",
-      "bytes": 3123128,
-      "sha256": "916ad796078a693bd77c280e509e21a34b96464ab136af054f01f4e9ebf9fd51"
+      "bytes": 3804372,
+      "sha256": "2d673674aece7f85c04a528b87326d5290d5e519f1085d26746ce8cef857ad81"
     },
     "male-webtoon": {
       "path": "male-webtoon.glb",
-      "bytes": 3212308,
-      "sha256": "beda5965651b71dd882209984d5c579fc8bcabeea9f47c3bf92777d50bf1cf1c"
+      "bytes": 3872968,
+      "sha256": "720652394959cd97ef8f86b97369d15d60c7fca9baa687c56598ae6a591fcea4"
     },
     "male-action": {
       "path": "male-action.glb",
-      "bytes": 3289020,
-      "sha256": "6b12246ef6afe28b39e2679973ac46edabaca207410b52eb959091141b11e06c"
+      "bytes": 3917400,
+      "sha256": "85faf378ef71a9e637de1cd5f170670c0dad13f40886bb84e0bdc71be19d3026"
     },
     "youth-academy": {
       "path": "youth-academy.glb",
-      "bytes": 3069764,
-      "sha256": "d96b582fb71270dfd6b83301ab977c79056b790914334679e499a1691c7f80f0"
+      "bytes": 3917112,
+      "sha256": "3c238148f40faae4a286e885981db7f769f2a58de11184ab7ed9fd701f292837"
     },
     "sd-chibi": {
       "path": "sd-chibi.glb",
-      "bytes": 2779380,
-      "sha256": "705fc0df2b28b94a8e628074e56328161450ede2a03c6bef9d8442016837d59e"
+      "bytes": 3560508,
+      "sha256": "d198d1b2de6e659b2e67167b460602364104c6f6dcd6a6d555498f215323a6d1"
+    }
+  },
+  "faceSdfMaps": {
+    "female-romance": {
+      "path": "female-romance_face_sdf.png",
+      "bytes": 17315,
+      "sha256": "c180c5719d13f143d5f30a91c4757da1b74508437c6744dcf3db9e8a78107baf",
+      "uvAttribute": "TEXCOORD_1",
+      "nodeExtrasKey": "toonstudioFaceShadowUv",
+      "bakeStats": {
+        "size": 256,
+        "angles": 16,
+        "format": "PNG-Gray8",
+        "orientation": "upright-top-forehead-bottom-chin",
+        "minValue": 0.02,
+        "maxValue": 0.9805,
+        "meanValue": 0.4856,
+        "hitCoverage": 0.6777
+      }
+    },
+    "male-webtoon": {
+      "path": "male-webtoon_face_sdf.png",
+      "bytes": 16680,
+      "sha256": "167096197d5c98d8743f640449793cb8001b23e24a88a286e5c5268a31c65afa",
+      "uvAttribute": "TEXCOORD_1",
+      "nodeExtrasKey": "toonstudioFaceShadowUv",
+      "bakeStats": {
+        "size": 256,
+        "angles": 16,
+        "format": "PNG-Gray8",
+        "orientation": "upright-top-forehead-bottom-chin",
+        "minValue": 0.02,
+        "maxValue": 0.9813,
+        "meanValue": 0.4835,
+        "hitCoverage": 0.7052
+      }
+    },
+    "male-action": {
+      "path": "male-action_face_sdf.png",
+      "bytes": 16559,
+      "sha256": "692d798a1f897cb60fd32f0f5e65db3933758783bfabc2fc99e97b5d82fd5b85",
+      "uvAttribute": "TEXCOORD_1",
+      "nodeExtrasKey": "toonstudioFaceShadowUv",
+      "bakeStats": {
+        "size": 256,
+        "angles": 16,
+        "format": "PNG-Gray8",
+        "orientation": "upright-top-forehead-bottom-chin",
+        "minValue": 0.02,
+        "maxValue": 0.9805,
+        "meanValue": 0.4834,
+        "hitCoverage": 0.7132
+      }
+    },
+    "youth-academy": {
+      "path": "youth-academy_face_sdf.png",
+      "bytes": 17552,
+      "sha256": "ec4ee53d914af007bf45827bafc50d086a9006d4338d85e8245f128a7a3c8a08",
+      "uvAttribute": "TEXCOORD_1",
+      "nodeExtrasKey": "toonstudioFaceShadowUv",
+      "bakeStats": {
+        "size": 256,
+        "angles": 16,
+        "format": "PNG-Gray8",
+        "orientation": "upright-top-forehead-bottom-chin",
+        "minValue": 0.02,
+        "maxValue": 0.9792,
+        "meanValue": 0.4861,
+        "hitCoverage": 0.6669
+      }
+    },
+    "sd-chibi": {
+      "path": "sd-chibi_face_sdf.png",
+      "bytes": 17455,
+      "sha256": "b4ccc6d9c18454f844855c22339c22aa2abc86d1856bf44e8bb6c3abba038ea5",
+      "uvAttribute": "TEXCOORD_1",
+      "nodeExtrasKey": "toonstudioFaceShadowUv",
+      "bakeStats": {
+        "size": 256,
+        "angles": 16,
+        "format": "PNG-Gray8",
+        "orientation": "upright-top-forehead-bottom-chin",
+        "minValue": 0.02,
+        "maxValue": 0.9802,
+        "meanValue": 0.4849,
+        "hitCoverage": 0.6986
+      }
     }
   }
 }

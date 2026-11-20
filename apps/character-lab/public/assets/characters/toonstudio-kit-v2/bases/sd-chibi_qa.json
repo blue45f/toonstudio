@@ -1,6 +1,6 @@
 {
   "file": "sd-chibi.glb",
-  "bytes": 2779380,
+  "bytes": 3560508,
   "passed": true,
   "errorCount": 0,
   "errors": [],
@@ -31,12 +31,12 @@
       "TS_Eye.L": 632,
       "TS_Eye.R": 632
     },
-    "jawOpenMaxMm": 34.52,
+    "jawOpenMaxMm": 35.18,
     "gltfMinYM": 0.0,
     "gltfHeightM": 1.05
   },
   "neckSeam6Poses": {
-    "seamPairs": 72,
+    "seamPairs": 86,
     "minNormalDot": 1.0,
     "worstGapMm": 0.0,
     "posesMm": {
@@ -49,19 +49,19 @@
     }
   },
   "shoulder85Stretch": {
-    "worstMaxStretch": 1.7964,
+    "worstMaxStretch": 1.7824,
     "cases": {
       "raise_85_deg": {
-        "maxStretch": 1.7964,
-        "p95Stretch": 1.5172,
+        "maxStretch": 1.7824,
+        "p95Stretch": 1.4912,
         "edgesOver2x": 0,
-        "roiEdgeCount": 2326
+        "roiEdgeCount": 2218
       },
       "drop_85_deg": {
-        "maxStretch": 1.7824,
+        "maxStretch": 1.7361,
         "p95Stretch": 1.4083,
         "edgesOver2x": 0,
-        "roiEdgeCount": 2326
+        "roiEdgeCount": 2218
       }
     }
   },
@@ -72,20 +72,20 @@
     "sampleWarnings": []
   },
   "blenderBmeshAndRender": {
-    "blenderMinZM": 0.0,
+    "blenderMinZM": -0.0,
     "blenderHeightM": 1.05,
     "bmeshMeshes": {
       "TS_Body": {
-        "verts": 9673,
-        "faces": 15584,
+        "verts": 11767,
+        "faces": 16736,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_Head": {
-        "verts": 3791,
-        "faces": 6336,
+        "verts": 5454,
+        "faces": 8192,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -116,8 +116,8 @@
         "zeroAreaFaces": 0
       },
       "TS_Lashes": {
-        "verts": 288,
-        "faces": 560,
+        "verts": 324,
+        "faces": 632,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -152,9 +152,9 @@
     "previewPng": "sd-chibi_preview.png"
   },
   "unifiedPreExportAudit": {
-    "vertices": 10962,
-    "faces": 10960,
-    "quads": 10960,
+    "vertices": 12466,
+    "faces": 12464,
+    "quads": 12464,
     "tris": 0,
     "ngons": 0,
     "quadRatio": 1.0,

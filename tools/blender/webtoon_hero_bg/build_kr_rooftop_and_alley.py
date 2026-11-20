@@ -60,6 +60,7 @@ from webtoon_hero_bg.arch_primitives import (  # noqa: E402
     WallOpening,
     add_balustrade,
     add_beveled_box,
+    add_curved_foliage_plant,
     add_door_frame,
     add_pipe_frame,
     add_staircase,
@@ -72,7 +73,9 @@ from webtoon_hero_bg.cutaway_assembly import (  # noqa: E402
     _remove_hierarchy,
     assemble_desktop_cutaway,
     assemble_mobile_cutaway,
+    build_lighting_presets,
     export_cutaway_glb,
+    update_manifest_metadata,
 )
 from webtoon_hero_bg.multiview_preview import (  # noqa: E402
     FREESTYLE_SVG_ADDON,
@@ -86,7 +89,7 @@ from webtoon_hero_bg.qa_bg_gate import (  # noqa: E402
 
 TAU = math.tau
 DEFAULT_OUT_DIR = REPO_ROOT / "apps" / "web" / "public" / "assets" / "3d" / "environments" / "hero-v1"
-DEFAULT_PREVIEW_DIR = REPO_ROOT / "loop-stack" / "competitor-parity" / "previews" / "bg"
+DEFAULT_PREVIEW_DIR = REPO_ROOT / "loop-stack" / "v2-previews" / "bg"
 
 Vec3 = Tuple[float, float, float]
 
@@ -118,10 +121,20 @@ def _lbox(
     *,
     tile: str,
     bevel: float = DEFAULT_BEVEL_M,
+    uv_fit: Optional[bool] = None,
 ) -> None:
     """Place a beveled box at local offset ``(lx, ly, lz)`` rotated by ``rot_z`` around ``origin``."""
     world_center = _rot_local(lx, ly, lz, origin, rot_z)
-    add_beveled_box(group, world_center, (sx, sy, sz), color=color, tile=tile, bevel=bevel, rot_z=rot_z)
+    add_beveled_box(
+        group,
+        world_center,
+        (sx, sy, sz),
+        color=color,
+        tile=tile,
+        bevel=bevel,
+        rot_z=rot_z,
+        uv_fit=uv_fit,
+    )
 
 
 def _lrail(
@@ -360,8 +373,8 @@ def _add_vending_machine(
     _lbox(furniture, origin, rot_z, 0.0, -d * 0.5 + 0.056, 0.72, w - 0.16, 0.110, 0.30, trim_color, tile="laminate_matte", bevel=0.005)
     _lbox(furniture, origin, rot_z, 0.0, -d * 0.5 + 0.054, 0.14, w - 0.16, 0.106, 0.18, "3D4148", tile="metal_leg_dark", bevel=0.004)
 
-    # Glowing upper drink showcase panel & thin glazing in BG_Ceiling (emissive_cool / glass_clear)
-    _lbox(ceiling_emissive, origin, rot_z, 0.0, -d * 0.5 + 0.112, 1.32, w - 0.21, 0.014, 0.78, "F4FAFF", tile="emissive_cool", bevel=0.002)
+    # Glowing upper Korean beverage drink showcase panel with crisp drink graphic & prices ("시원한 음료 · 24H")
+    _lbox(ceiling_emissive, origin, rot_z, 0.0, -d * 0.5 + 0.112, 1.32, w - 0.21, 0.014, 0.78, "FFFFFF", tile="emissive_neon", bevel=0.002, uv_fit=True)
     # Top header backlit logo strip
     _lbox(ceiling_emissive, origin, rot_z, 0.0, -d * 0.5 - 0.004, h - 0.075, w - 0.24, 0.012, 0.085, "FFF2D6", tile="emissive_warm", bevel=0.002)
 
@@ -782,9 +795,12 @@ def _add_rooftop_stairhouse(
     for sx in (-0.72, 0.72):
         props.rail((door_x + sx, cy - d * 0.5 - 0.02, z0 + 3.02), (door_x + sx, canopy_y - 0.26, z0 + 2.58), 0.015, "5B646E", sides=8, tile="iron_dark")
 
-    # Illuminated green EXIT sign box + warm caged bulkhead porch light under canopy (BG_Ceiling)
-    add_beveled_box(props, (door_x, cy - d * 0.5 - 0.048, z0 + 2.38), (0.42, 0.070, 0.15), color="E2E4E6", tile="enamel_gloss", bevel=0.003)
-    add_beveled_box(ceiling_emissive, (door_x, cy - d * 0.5 - 0.086, z0 + 2.38), (0.36, 0.012, 0.105), color="58E08C", tile="emissive_exit_green", bevel=0.002)
+    # Illuminated green Korean EXIT sign box ("비상구 EXIT") + warm caged bulkhead porch light under canopy
+    add_beveled_box(props, (door_x, cy - d * 0.5 - 0.048, z0 + 2.38), (0.44, 0.070, 0.16), color="E2E4E6", tile="enamel_gloss", bevel=0.003)
+    add_beveled_box(ceiling_emissive, (door_x, cy - d * 0.5 - 0.088, z0 + 2.38), (0.38, 0.012, 0.115), color="FFFFFF", tile="emissive_exit_green", bevel=0.002, uv_fit=True)
+    # Framed Korean Rooftop Safety Warning Sign ("위험 · 주의 · 옥상 출입 주의") beside fire door
+    add_beveled_box(wall_north, (door_x - 0.96, cy - d * 0.5 - 0.014, z0 + 1.56), (0.50, 0.018, 0.36), color="383E46", tile="sash_metal", bevel=0.003)
+    add_beveled_box(wall_north, (door_x - 0.96, cy - d * 0.5 - 0.026, z0 + 1.56), (0.45, 0.008, 0.31), color="FFFFFF", tile="chalkboard", bevel=0.001, uv_fit=True)
     # Bulkhead ceiling lamp under canopy
     add_beveled_box(props, (door_x, canopy_y, z0 + 2.44), (0.28, 0.14, 0.036), color="4A5058", tile="iron_dark", bevel=0.003)
     add_beveled_box(ceiling_emissive, (door_x, canopy_y, z0 + 2.41), (0.22, 0.10, 0.032), color="FFF0CE", tile="emissive_warm", bevel=0.004)
@@ -1143,11 +1159,32 @@ def build_kr_school_rooftop_hero() -> Tuple[HeroSceneGroups, List[PreviewCameraV
     for ang in (-0.5, 0.5):
         groups.props_clutter.rail((hx, hy, deck_z + 0.68), (hx + 0.14 * math.sin(ang), hy - 0.14 * math.cos(ang), deck_z + 0.62), 0.030, "C9A44C", sides=8, tile="brass_polished")
 
-    # 2 Wooden Planter Boxes with leafy shrubs framing the stairhouse entry & West lounge corner
-    for px, py in ((-5.85, -3.55), (-1.85, 1.35)):
+    # 2 Wooden Planter Boxes with curved 3D foliage shrubs (monstera & palm, zero flat cards!)
+    for idx_p, (px, py, sp) in enumerate(((-5.85, -3.55, "palm"), (-1.85, 1.35, "monstera"))):
         add_beveled_box(groups.furniture_hero, (px, py, deck_z + 0.22), (0.64, 0.64, 0.44), color="8D6746", tile="wood_walnut", bevel=0.006)
         add_beveled_box(groups.furniture_hero, (px, py, deck_z + 0.44), (0.70, 0.70, 0.048), color="A67C56", tile="wood_oak", bevel=0.005)
-        _add_potted_plant(groups.furniture_hero, (px, py, deck_z + 0.22), pot_radius=0.22, pot_height=0.24, foliage_height=0.78)
+        add_curved_foliage_plant(
+            groups.furniture_hero,
+            (px, py, deck_z + 0.22),
+            species=sp,
+            height=1.08,
+            pot_radius=0.22,
+            pot_height=0.24,
+            leaf_count=11,
+            seed=71 + idx_p * 19,
+            pot_color="B56F4D",
+            pot_tile="ceramic_matte",
+            soil_color="4B3C30",
+            soil_tile="leather",
+            leaf_color="3E7A4E",
+            leaf_tile="foliage",
+        )
+
+    # Rooftop lived-in storytelling props: beverage cans & school backpack resting on SW bench
+    _add_tapered_cylinder(groups.props_clutter, (-3.45, -3.52, deck_z + 0.474), 0.125, 0.032, 0.030, sides=10, color="D64438", tile="enamel_gloss", chamfer=0.002)
+    _add_tapered_cylinder(groups.props_clutter, (-3.33, -3.58, deck_z + 0.474), 0.125, 0.032, 0.030, sides=10, color="3474B4", tile="enamel_gloss", chamfer=0.002)
+    add_beveled_box(groups.furniture_hero, (-4.32, -3.52, deck_z + 0.66), (0.30, 0.18, 0.36), color="2D3E54", tile="fabric_canvas", bevel=0.022, rot_z=0.14)
+    add_beveled_box(groups.furniture_hero, (-4.30, -3.41, deck_z + 0.58), (0.24, 0.06, 0.16), color="233246", tile="fabric_canvas", bevel=0.012, rot_z=0.14)
 
     # Corner Security Floodlight clamped directly onto the East fence corner post (zero floating!)
     post_x, post_y, fl_z = w * 0.5 - 0.162, -4.92, 3.16
@@ -1331,7 +1368,7 @@ def _add_projecting_sign(
     _lbox(props, origin, rot_z, 0.0, proj_y + width * 0.5 - rim * 0.5, 0.0, thickness, rim, height - rim * 1.9, frame_color, tile="aluminum_satin", bevel=0.004)
     _lbox(props, origin, rot_z, 0.0, proj_y - width * 0.5 + rim * 0.5, 0.0, thickness, rim, height - rim * 1.9, frame_color, tile="aluminum_satin", bevel=0.004)
 
-    # Glowing acrylic sign faces on both sides (+X and -X facing down/up the alley!)
+    # Crisp Korean vertical signboard faces on both sides (+X and -X facing down/up the alley!)
     _lbox(
         ceiling_emissive,
         origin,
@@ -1339,16 +1376,14 @@ def _add_projecting_sign(
         0.0,
         proj_y,
         0.0,
-        thickness - 0.026,
+        thickness - 0.022,
         width - rim * 2.04,
         height - rim * 2.04,
         glow_color,
         tile=emissive_tile,
         bevel=0.003,
+        uv_fit=True,
     )
-    # Crisp horizontal graphic divider bars on sign faces so sign has rich webtoon graphic relief
-    for zf in (-0.22, 0.20):
-        _lbox(props, origin, rot_z, 0.0, proj_y, height * zf, thickness + 0.008, width - rim * 2.2, 0.028, frame_color, tile="enamel_gloss", bevel=0.002)
 
 
 def _add_streetlamp(
@@ -1796,9 +1831,9 @@ def build_kr_seoul_alley_street_hero() -> Tuple[HeroSceneGroups, List[PreviewCam
     add_door_frame(groups.wall_west, (-2.72, -3.45, walk_z), width=0.96, height=2.22, wall_thickness=0.24, rot_z=math.pi * 0.5, frame_color="4A3B31", frame_tile="door_wood", leaf_color="5A473A", leaf_tile="door_wood")
     add_beveled_box(groups.wall_west, (-2.42, -3.45, walk_z + 0.045), (0.34, 1.18, 0.090), color="B2ACA2", tile="stone_plinth", bevel=0.005)
     _add_striped_awning(groups.wall_west, groups.wall_west, (-2.58, -5.85, walk_z + 2.74), rot_z=math.pi * 0.5, width=2.80, projection=0.88, drop=0.40, color_a="2B5746", color_b="F2ECE0")
-    # Cafe horizontal glowing fascia signboard (housing on wall_west so cutaway removes it cleanly)
+    # Cafe horizontal Korean fascia signboard ("성수 로스터리 · 24시 마트")
     add_beveled_box(groups.wall_west, (-2.50, -5.20, walk_z + 3.16), (0.18, 4.65, 0.56), color="343A40", tile="sash_metal", bevel=0.005)
-    add_beveled_box(groups.wall_west, (-2.40, -5.20, walk_z + 3.16), (0.018, 4.46, 0.44), color="FFE8BD", tile="trim_paint", bevel=0.002)
+    add_beveled_box(groups.wall_west, (-2.40, -5.20, walk_z + 3.16), (0.018, 4.46, 0.44), color="FFFFFF", tile="floor_wood", bevel=0.002, uv_fit=True)
 
     # Plot W2 (Y: -2.5..+2.6): 3F Classic Seoul Multi-Family Villa with Rolled Shop Shutter (H = 7.45 m)
     _add_building_block_facade(
@@ -1882,9 +1917,9 @@ def build_kr_seoul_alley_street_hero() -> Tuple[HeroSceneGroups, List[PreviewCam
         floor_bands=(2.95, 5.10),
         parapet_h=0.34,
     )
-    # Corner Mini-Mart fascia signboard & pitched blue-white awning (attached to wall_east for clean cutaway)
+    # Corner Mini-Mart horizontal Korean fascia signboard & pitched blue-white awning
     add_beveled_box(groups.wall_east, (2.50, -5.15, walk_z + 3.12), (0.18, 4.90, 0.62), color="2A446E", tile="trim_paint", bevel=0.005)
-    add_beveled_box(groups.wall_east, (2.40, -5.15, walk_z + 3.12), (0.018, 4.68, 0.46), color="E2F4FF", tile="trim_paint", bevel=0.002)
+    add_beveled_box(groups.wall_east, (2.40, -5.15, walk_z + 3.12), (0.018, 4.68, 0.46), color="FFFFFF", tile="floor_wood", bevel=0.002, uv_fit=True)
     _add_striped_awning(groups.wall_east, groups.wall_east, (2.58, -5.15, walk_z + 2.68), rot_z=-math.pi * 0.5, width=3.20, projection=0.82, drop=0.36, color_a="2E5E8C", color_b="F2F4F8")
     # Slim-depth sidewalk vending machine (depth=0.48 m -> sits flush at X=2.09..2.57, zero wall clip!)
     _add_vending_machine(groups.furniture_hero, groups.props_clutter, groups.ceiling, (2.33, -3.15, walk_z), rot_z=-math.pi * 0.5, depth=0.48, body_color="38649A", trim_color="ECEFF2")
@@ -1984,16 +2019,16 @@ def build_kr_seoul_alley_street_hero() -> Tuple[HeroSceneGroups, List[PreviewCam
     _add_catenary_wire(groups.ceiling, (-2.26, -1.98, 4.35), (2.58, -1.35, 4.10), sag=0.28, radius=0.008)
     _add_catenary_wire(groups.ceiling, (2.26, 4.78, 4.35), (-2.58, 4.15, 4.15), sag=0.26, radius=0.008)
 
-    # --- 6. Projecting Illuminated Shop Signs (×6) & Alley Streetlamps (×3) ---
+    # --- 6. Projecting Korean Vertical Shop Signs (×6) & Alley Streetlamps (×3) ---
     # Wall-mounted projecting signs stay inside their parent wall group so West/East cutaways leave 0 floating fixtures!
-    # West row projecting signs (moved middle sign to Y=-0.35 so >= 1.8 m clear of West utility pole at Y=-2.15!)
-    _add_projecting_sign(groups.wall_west, groups.wall_west, (-2.58, -6.35, 4.05), rot_z=math.pi * 0.5, width=0.66, height=1.55, emissive_tile="trim_paint", glow_color="FFD27D")
-    _add_projecting_sign(groups.wall_west, groups.wall_west, (-2.58, -0.35, 4.45), rot_z=math.pi * 0.5, width=0.60, height=1.35, emissive_tile="trim_paint", glow_color="CBEBFF")
-    _add_projecting_sign(groups.wall_west, groups.wall_west, (-2.58, 3.25, 4.75), rot_z=math.pi * 0.5, width=0.58, height=1.25, emissive_tile="trim_paint", glow_color="FFF0C8")
-    # East row projecting signs (rot_z = -pi/2 so local -Y projects toward -X into alley!)
-    _add_projecting_sign(groups.wall_east, groups.wall_east, (2.58, -6.45, 4.35), rot_z=-math.pi * 0.5, width=0.68, height=1.62, emissive_tile="trim_paint", glow_color="D2F0FF")
-    _add_projecting_sign(groups.wall_east, groups.wall_east, (2.58, -1.45, 3.85), rot_z=-math.pi * 0.5, width=0.64, height=1.38, emissive_tile="trim_paint", glow_color="FF9A8B")
-    _add_projecting_sign(groups.wall_east, groups.wall_east, (2.58, 3.45, 4.45), rot_z=-math.pi * 0.5, width=0.62, height=1.42, emissive_tile="trim_paint", glow_color="FFE088")
+    # West row projecting Korean signs ("성수커피", "24H 편의점", "김밥라면")
+    _add_projecting_sign(groups.wall_west, groups.wall_west, (-2.58, -6.35, 4.05), rot_z=math.pi * 0.5, width=0.66, height=1.55, emissive_tile="chalkboard", glow_color="FFFFFF")
+    _add_projecting_sign(groups.wall_west, groups.wall_west, (-2.58, -0.35, 4.45), rot_z=math.pi * 0.5, width=0.60, height=1.35, emissive_tile="carpet", glow_color="FFFFFF")
+    _add_projecting_sign(groups.wall_west, groups.wall_west, (-2.58, 3.25, 4.75), rot_z=math.pi * 0.5, width=0.58, height=1.25, emissive_tile="marble", glow_color="FFFFFF")
+    # East row projecting Korean signs ("24H 편의점", "분식 김밥라면", "성수커피")
+    _add_projecting_sign(groups.wall_east, groups.wall_east, (2.58, -6.45, 4.35), rot_z=-math.pi * 0.5, width=0.68, height=1.62, emissive_tile="carpet", glow_color="FFFFFF")
+    _add_projecting_sign(groups.wall_east, groups.wall_east, (2.58, -1.45, 3.85), rot_z=-math.pi * 0.5, width=0.64, height=1.38, emissive_tile="marble", glow_color="FFFFFF")
+    _add_projecting_sign(groups.wall_east, groups.wall_east, (2.58, 3.45, 4.45), rot_z=-math.pi * 0.5, width=0.62, height=1.42, emissive_tile="chalkboard", glow_color="FFFFFF")
 
     # 3 Cobra-Head Alley Streetlamps (2 pole-mounted stay in props_clutter/ceiling; 1 East wall-mounted belongs to wall_east)
     _add_streetlamp(groups.props_clutter, groups.ceiling, (-2.12, -2.15, 4.75), rot_z=math.pi * 0.5, reach=1.18)
@@ -2032,16 +2067,62 @@ def build_kr_seoul_alley_street_hero() -> Tuple[HeroSceneGroups, List[PreviewCam
     # --- 8. Sidewalk Street Furniture & Authentic Seoul Alley Clutter ---
     # Cafe wooden bench & A-frame menu board on West sidewalk outside Plot W1
     _add_rooftop_bench(groups.furniture_hero, groups.props_clutter, (-2.34, -6.55, walk_z), rot_z=math.pi * 0.5, length=1.35)
-    # A-frame sidewalk cafe menu board
+    # A-frame sidewalk cafe menu board with crisp Korean menu artwork
     mx, my = -2.30, -4.35
     add_beveled_box(groups.furniture_hero, (mx, my - 0.14, walk_z + 0.44), (0.48, 0.036, 0.86), color="5A4432", tile="wood_walnut", bevel=0.004)
     add_beveled_box(groups.furniture_hero, (mx, my + 0.14, walk_z + 0.44), (0.48, 0.036, 0.86), color="5A4432", tile="wood_walnut", bevel=0.004)
-    add_beveled_box(groups.furniture_hero, (mx, my - 0.162, walk_z + 0.46), (0.40, 0.010, 0.66), color="2C3238", tile="laminate_matte", bevel=0.002)
+    add_beveled_box(groups.furniture_hero, (mx, my - 0.164, walk_z + 0.46), (0.40, 0.012, 0.66), color="FFFFFF", tile="paper_book", bevel=0.002, uv_fit=True)
+    add_beveled_box(groups.furniture_hero, (mx, my + 0.164, walk_z + 0.46), (0.40, 0.012, 0.66), color="FFFFFF", tile="paper_book", bevel=0.002, uv_fit=True)
 
-    # 3 Potted sidewalk planters softening shop entrances
-    _add_potted_plant(groups.furniture_hero, (-2.38, -2.92, walk_z), pot_radius=0.18, pot_height=0.32, foliage_height=0.68)
-    _add_potted_plant(groups.furniture_hero, (2.38, -1.68, walk_z), pot_radius=0.18, pot_height=0.30, foliage_height=0.64, pot_color="7D8B7E")
-    _add_potted_plant(groups.furniture_hero, (2.38, 1.98, walk_z), pot_radius=0.19, pot_height=0.34, foliage_height=0.72, pot_color="B87654")
+    # 3 Curved-Foliage Potted Sidewalk Planters softening shop entrances (zero flat leaf cards!)
+    add_curved_foliage_plant(groups.furniture_hero, (-2.38, -2.92, walk_z), species="monstera", height=1.02, pot_radius=0.18, pot_height=0.32, leaf_count=10, seed=11, pot_color="B56F4D", pot_tile="ceramic_matte", soil_color="4B3C30", soil_tile="leather", leaf_color="3E7A4E", leaf_tile="foliage")
+    add_curved_foliage_plant(groups.furniture_hero, (2.38, -1.68, walk_z), species="ficus", height=0.98, pot_radius=0.18, pot_height=0.30, leaf_count=10, seed=22, pot_color="7D8B7E", pot_tile="ceramic_matte", soil_color="4B3C30", soil_tile="leather", leaf_color="457F52", leaf_tile="foliage")
+    add_curved_foliage_plant(groups.furniture_hero, (2.38, 1.98, walk_z), species="palm", height=1.08, pot_radius=0.19, pot_height=0.34, leaf_count=10, seed=33, pot_color="B87654", pot_tile="ceramic_matte", soil_color="4B3C30", soil_tile="leather", leaf_color="367044", leaf_tile="foliage")
+
+    # Parked Seoul Commuter Bicycle leaning neatly beside East villa wall (Y = +4.18, X = +2.32)
+    bx_c, by_c, bz_c = 2.30, 4.18, walk_z
+    wheel_r = 0.31
+    for wy_off in (-0.52, 0.52):
+        # Rubber tire closed torus (14x6)
+        w_rings: List[List[Vec3]] = []
+        for mi in range(14):
+            a = TAU * mi / 14.0
+            ca, sa = math.cos(a), math.sin(a)
+            w_rings.append([
+                (
+                    bx_c + 0.022 * math.sin(TAU * mj / 6.0),
+                    by_c + wy_off + (wheel_r + 0.022 * math.cos(TAU * mj / 6.0)) * ca,
+                    bz_c + wheel_r + 0.022 + (wheel_r + 0.022 * math.cos(TAU * mj / 6.0)) * sa,
+                )
+                for mj in range(6)
+            ])
+        groups.props_clutter.rings(w_rings, color="262A30", tile="rubber_dark", closed_loop=True)
+        # Hub + 4 radial steel spokes
+        groups.props_clutter.rail((bx_c - 0.03, by_c + wy_off, bz_c + wheel_r + 0.022), (bx_c + 0.03, by_c + wy_off, bz_c + wheel_r + 0.022), 0.020, "A8B2BC", sides=8, tile="steel_brushed")
+        for sp_i in range(4):
+            ang = math.pi * sp_i / 4.0
+            r_sp = wheel_r - 0.026
+            groups.props_clutter.rail(
+                (bx_c, by_c + wy_off - r_sp * math.cos(ang), bz_c + wheel_r + 0.022 - r_sp * math.sin(ang)),
+                (bx_c, by_c + wy_off + r_sp * math.cos(ang), bz_c + wheel_r + 0.022 + r_sp * math.sin(ang)),
+                0.0045,
+                "C2C9D0",
+                sides=4,
+                tile="steel_brushed",
+                bevel_ends=False,
+            )
+    # Diamond steel frame, fork, handlebars & saddle
+    hz = bz_c + wheel_r + 0.022
+    groups.props_clutter.rail((bx_c, by_c - 0.52, hz), (bx_c, by_c - 0.04, hz), 0.015, "325E7A", sides=6, tile="enamel_gloss")
+    groups.props_clutter.rail((bx_c, by_c - 0.04, hz), (bx_c, by_c - 0.14, hz + 0.44), 0.016, "325E7A", sides=6, tile="enamel_gloss")
+    groups.props_clutter.rail((bx_c, by_c - 0.52, hz), (bx_c, by_c - 0.14, hz + 0.40), 0.014, "325E7A", sides=6, tile="enamel_gloss")
+    groups.props_clutter.rail((bx_c, by_c - 0.04, hz), (bx_c, by_c + 0.38, hz + 0.42), 0.016, "325E7A", sides=6, tile="enamel_gloss")
+    groups.props_clutter.rail((bx_c, by_c - 0.14, hz + 0.40), (bx_c, by_c + 0.38, hz + 0.46), 0.015, "325E7A", sides=6, tile="enamel_gloss")
+    groups.props_clutter.rail((bx_c, by_c + 0.52, hz), (bx_c, by_c + 0.36, hz + 0.56), 0.015, "A8B2BC", sides=6, tile="steel_brushed")
+    groups.props_clutter.rail((bx_c - 0.22, by_c + 0.34, hz + 0.58), (bx_c + 0.22, by_c + 0.34, hz + 0.58), 0.012, "3C424A", sides=6, tile="iron_dark")
+    add_beveled_box(groups.props_clutter, (bx_c, by_c - 0.16, hz + 0.50), (0.14, 0.24, 0.052), color="3C322A", tile="rubber_dark", bevel=0.012)
+    # Front wire basket on bicycle
+    add_beveled_box(groups.props_clutter, (bx_c, by_c + 0.48, hz + 0.46), (0.26, 0.20, 0.18), color="58626C", tile="iron_dark", bevel=0.006)
 
     # Stacked plastic delivery crates next to snack bar
     for ci, cz in enumerate((walk_z + 0.15, walk_z + 0.45)):
@@ -2222,9 +2303,12 @@ def build_and_verify_scene(
     manifest_path = out_dir / f"{slug}.manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
-    # 4. 6-view 512x512 BLENDER_EEVEE contact sheet PNG + Freestyle SVG
+    # 4. 6-view 512x512 BLENDER_EEVEE contact sheet PNG + 3-tier Freestyle SVG + thumbnail
     preview_report: Optional[Dict[str, Any]] = None
     if not skip_preview:
+        lineart_dst = out_dir / "lineart" / f"{slug}-lineart.svg"
+        thumb_dst = out_dir / "thumbnails" / f"{slug}.png"
+        thumb_idx = 4 if "rooftop" in slug else 0
         preview_report = render_hero_review_bundle(
             preview_dir,
             slug,
@@ -2232,7 +2316,19 @@ def build_and_verify_scene(
             views=views,
             tile_resolution=512,
             interior_cutaway=False,
+            thumbnail_path=thumb_dst,
+            thumbnail_view_index=thumb_idx,
+            lineart_copy_path=lineart_dst,
         )
+        svg_meta = dict(preview_report["freestyleSvg"])
+        svg_meta["path"] = f"lineart/{slug}-lineart.svg"
+        update_manifest_metadata(
+            manifest_path,
+            freestyle_svg=svg_meta,
+            lighting_presets=build_lighting_presets(),
+        )
+    else:
+        update_manifest_metadata(manifest_path, lighting_presets=build_lighting_presets())
 
     return {
         "slug": slug,
@@ -2262,8 +2358,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--preview-dir", type=Path, default=DEFAULT_PREVIEW_DIR)
     parser.add_argument("--scenes", default="rooftop,alley", help="Comma-separated: rooftop,alley")
-    parser.add_argument("--desktop-primary-size", type=int, default=1024)
-    parser.add_argument("--desktop-secondary-size", type=int, default=512)
+    parser.add_argument("--desktop-primary-size", type=int, default=2048)
+    parser.add_argument("--desktop-secondary-size", type=int, default=1024)
     parser.add_argument("--mobile-opaque-size", type=int, default=1024)
     parser.add_argument("--mobile-glass-size", type=int, default=512)
     parser.add_argument("--skip-preview", action="store_true")

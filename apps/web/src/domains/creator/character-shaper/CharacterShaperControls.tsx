@@ -246,7 +246,7 @@ export function CharacterRangeControl({
       <div className="relative mt-1.5">
         <input
           id={rangeId} type="range" min={spec.min} max={spec.max} step="any" value={shown} disabled={disabled}
-          aria-describedby={description} aria-valuetext={readout}
+          aria-label={label} aria-describedby={description} aria-valuetext={readout}
           className="h-11 w-full min-w-0 cursor-pointer touch-pan-y accent-accent disabled:cursor-not-allowed disabled:opacity-45"
           onChange={(event) => preview(snapCharacterValue(Number(event.currentTarget.value), spec))}
           onPointerDown={(event) => {

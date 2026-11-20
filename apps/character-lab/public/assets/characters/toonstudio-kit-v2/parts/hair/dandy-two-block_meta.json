@@ -6,8 +6,8 @@
   "fittedBase": "male-webtoon",
   "file": {
     "path": "dandy-two-block.glb",
-    "bytes": 1320700,
-    "sha256": "0b9b4e3184c0333ba2a785f1604044702583cb78ef317ded3bcf31a992bb8b96"
+    "bytes": 1337688,
+    "sha256": "9ade944d1c8038e6dc5fbc0b626c1b19b4bd4d37120ac5967875ca84a6488c15"
   },
   "drawCalls": 8,
   "materials": [
@@ -19,8 +19,8 @@
     {
       "node": "TS_AuthoredHair_dandy-two-block_LOD0",
       "lod": 0,
-      "triangles": 9608,
-      "vertices": 4872,
+      "triangles": 9752,
+      "vertices": 4944,
       "primitives": 3,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -31,8 +31,8 @@
     {
       "node": "TS_AuthoredHair_dandy-two-block_LOD1",
       "lod": 1,
-      "triangles": 4768,
-      "vertices": 2452,
+      "triangles": 4794,
+      "vertices": 2465,
       "primitives": 3,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -43,8 +43,8 @@
     {
       "node": "TS_AuthoredHair_dandy-two-block_LOD2",
       "lod": 2,
-      "triangles": 1720,
-      "vertices": 918,
+      "triangles": 1784,
+      "vertices": 950,
       "primitives": 2,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -96,10 +96,10 @@
         "shape": "sphere",
         "offsetGltf": [
           0.0,
-          0.08296,
-          -0.00177
+          0.08596,
+          -0.00343
         ],
-        "radius": 0.09052
+        "radius": 0.08959
       },
       {
         "id": "neck_capsule",
@@ -112,7 +112,7 @@
         ],
         "tailGltf": [
           0.0,
-          0.09553,
+          0.09531,
           -0.002
         ],
         "radius": 0.05985
@@ -124,7 +124,7 @@
         "offsetGltf": [
           0.0,
           0.0,
-          0.00092
+          0.00099
         ],
         "radius": 0.15824
       }
@@ -140,7 +140,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 4,
-        "lengthM": 0.1383,
+        "lengthM": 0.1438,
         "hitRadius": 0.015,
         "stiffness": 0.9,
         "dragForce": 0.48,
@@ -149,14 +149,14 @@
           {
             "name": "TS_Spring_dandy-two-block_bang_L_0",
             "positionGltf": [
-              0.00971,
-              1.83084,
-              0.00845
+              0.00979,
+              1.83085,
+              0.00696
             ],
             "localOffsetFromHead": [
-              0.00971,
-              0.1838,
-              0.01645
+              0.00979,
+              0.18775,
+              0.01496
             ],
             "hitRadius": 0.015,
             "stiffness": 0.99,
@@ -171,14 +171,14 @@
           {
             "name": "TS_Spring_dandy-two-block_bang_L_1",
             "positionGltf": [
-              0.03069,
-              1.81462,
-              0.04701
+              0.03139,
+              1.81394,
+              0.04688
             ],
             "localOffsetFromHead": [
-              0.03069,
-              0.16758,
-              0.05501
+              0.03139,
+              0.17083,
+              0.05488
             ],
             "hitRadius": 0.0141,
             "stiffness": 0.915,
@@ -193,14 +193,14 @@
           {
             "name": "TS_Spring_dandy-two-block_bang_L_2",
             "positionGltf": [
-              0.04779,
-              1.77944,
-              0.07145
+              0.04881,
+              1.77733,
+              0.07241
             ],
             "localOffsetFromHead": [
-              0.04779,
-              0.1324,
-              0.07945
+              0.04881,
+              0.13423,
+              0.08041
             ],
             "hitRadius": 0.0132,
             "stiffness": 0.84,
@@ -215,14 +215,14 @@
           {
             "name": "TS_Spring_dandy-two-block_bang_L_3",
             "positionGltf": [
-              0.04958,
-              1.73476,
-              0.06393
+              0.05,
+              1.73083,
+              0.06325
             ],
             "localOffsetFromHead": [
-              0.04958,
+              0.05,
               0.08772,
-              0.07193
+              0.07125
             ],
             "hitRadius": 0.0123,
             "stiffness": 0.765,
@@ -246,7 +246,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 3,
-        "lengthM": 0.1445,
+        "lengthM": 0.1505,
         "hitRadius": 0.015,
         "stiffness": 0.9,
         "dragForce": 0.48,
@@ -255,14 +255,14 @@
           {
             "name": "TS_Spring_dandy-two-block_bang_R_0",
             "positionGltf": [
-              -0.00917,
-              1.83107,
-              0.00904
+              -0.00926,
+              1.83111,
+              0.00756
             ],
             "localOffsetFromHead": [
-              -0.00917,
-              0.18403,
-              0.01704
+              -0.00926,
+              0.18801,
+              0.01556
             ],
             "hitRadius": 0.015,
             "stiffness": 0.99,
@@ -277,14 +277,14 @@
           {
             "name": "TS_Spring_dandy-two-block_bang_R_1",
             "positionGltf": [
-              -0.03012,
-              1.81435,
-              0.0497
+              -0.03092,
+              1.81363,
+              0.04972
             ],
             "localOffsetFromHead": [
-              -0.03012,
-              0.16731,
-              0.0577
+              -0.03092,
+              0.17053,
+              0.05772
             ],
             "hitRadius": 0.0141,
             "stiffness": 0.915,
@@ -299,14 +299,14 @@
           {
             "name": "TS_Spring_dandy-two-block_bang_R_2",
             "positionGltf": [
-              -0.05033,
-              1.77793,
-              0.0754
+              -0.05177,
+              1.77572,
+              0.07658
             ],
             "localOffsetFromHead": [
-              -0.05033,
-              0.13089,
-              0.0834
+              -0.05177,
+              0.13262,
+              0.08458
             ],
             "hitRadius": 0.0132,
             "stiffness": 0.84,
@@ -321,14 +321,14 @@
           {
             "name": "TS_Spring_dandy-two-block_bang_R_3",
             "positionGltf": [
-              -0.05657,
-              1.73233,
-              0.06657
+              -0.05744,
+              1.72812,
+              0.06616
             ],
             "localOffsetFromHead": [
-              -0.05657,
-              0.08529,
-              0.07457
+              -0.05744,
+              0.08502,
+              0.07416
             ],
             "hitRadius": 0.0123,
             "stiffness": 0.765,
@@ -345,31 +345,31 @@
     ]
   },
   "qa": {
-    "bytes": 1320700,
+    "bytes": 1337688,
     "minClearanceMm": 0.8,
     "verticesInside": 0,
     "gltfValidateErrors": 0,
     "gltfValidateWarnings": 0,
     "bmesh": {
       "TS_AuthoredHair_dandy-two-block_LOD0": {
-        "verts": 4982,
-        "faces": 9608,
+        "verts": 5054,
+        "faces": 9752,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_AuthoredHair_dandy-two-block_LOD1": {
-        "verts": 2539,
-        "faces": 4768,
+        "verts": 2552,
+        "faces": 4794,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_AuthoredHair_dandy-two-block_LOD2": {
-        "verts": 918,
-        "faces": 1720,
+        "verts": 950,
+        "faces": 1784,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -380,5 +380,5 @@
   },
   "passed": true,
   "errors": [],
-  "seconds": 1.92
+  "seconds": 2.34
 }

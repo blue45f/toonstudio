@@ -81,12 +81,33 @@ export interface StudioVrmQualitySignals {
  * 메모리 1GB 이하(단독 확정) 또는 코어 2개 이하+메모리 4GB 이하(상호 확정)일 때만 low다.
  * 신호가 없으면 standard를 유지해 정상 기기를 과도하게 낮추지 않는다.
  */
-export function resolveStudioVrmQualityTier(signals: StudioVrmQualitySignals): StudioVrmQualityTier {
-  if (signals.capability === "software") return "low";
+/**
+ * 하드웨어 메모리·코어 기준 저사양 기기 확정 여부(소프트웨어 래스터라이저 단독 제외).
+ * 모바일 과부하 보호(DPR 하향)는 이 확정 신호가 있을 때만 적용해 Retina·SwiftShader 선명도를 유지한다.
+ */
+export function isStudioVrmLowEndHardware(
+  signals: Pick<StudioVrmQualitySignals, "hardwareConcurrency" | "deviceMemoryGb">,
+): boolean {
   const cores = signals.hardwareConcurrency;
   const memoryGb = signals.deviceMemoryGb;
-  if (memoryGb !== undefined && memoryGb <= 1) return "low";
-  if (cores !== undefined && cores <= 2 && memoryGb !== undefined && memoryGb <= 4) return "low";
+  if (memoryGb !== undefined && memoryGb <= 1) return true;
+  if (cores !== undefined && cores <= 2 && memoryGb !== undefined && memoryGb <= 4) return true;
+  return false;
+}
+
+/** 브라우저 하드웨어 신호만 보고 확정 저사양 기기인지 판정한다. 서버/테스트 환경에서는 false. */
+export function isStudioVrmLowEndHardwareDevice(): boolean {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  return isStudioVrmLowEndHardware({
+    hardwareConcurrency: nav.hardwareConcurrency,
+    deviceMemoryGb: nav.deviceMemory,
+  });
+}
+
+export function resolveStudioVrmQualityTier(signals: StudioVrmQualitySignals): StudioVrmQualityTier {
+  if (signals.capability === "software") return "low";
+  if (isStudioVrmLowEndHardware(signals)) return "low";
   return "standard";
 }
 

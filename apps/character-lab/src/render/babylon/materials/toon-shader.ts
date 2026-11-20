@@ -89,6 +89,8 @@ export interface PassMaterialOptions {
    */
   readonly vertexColor?: boolean;
   readonly faceShadowUv?: boolean;
+  /** 헤어 흐름용 UV1(`TEXCOORD_1`)이 있는 헤어 메시에 Kajiya-Kay 엔젤링 UV를 연결한다. */
+  readonly hairFlowUv?: boolean;
 }
 
 /** 재질 define 목록(정점 색 define은 옵션이 켰을 때만) */
@@ -96,6 +98,7 @@ export function passMaterialDefines(options: PassMaterialOptions = {}): string[]
   const defines = [...CHARACTER_SHADER_DEFINES];
   if (options.vertexColor) defines.push(CHARACTER_SHADER_VERTEX_COLOR_DEFINE);
   if (options.faceShadowUv) defines.push("#define TS_FACE_SHADOW_UV");
+  else if (options.hairFlowUv) defines.push("#define TS_HAIR_FLOW_UV");
   return defines;
 }
 
@@ -136,7 +139,11 @@ export function createPassMaterial(deps: PassMaterialDeps, kind: PassMaterialKin
     deps.scene,
     { vertex: CHARACTER_VERTEX_SHADER_NAME, fragment: FRAGMENT_SHADER_NAMES[kind] },
     {
-      attributes: [...CHARACTER_SHADER_ATTRIBUTES, ...(options.vertexColor ? [CHARACTER_SHADER_VERTEX_COLOR_ATTRIBUTE] : []), ...(options.faceShadowUv ? ["uv2"] : [])],
+      attributes: [
+        ...CHARACTER_SHADER_ATTRIBUTES,
+        ...(options.vertexColor ? [CHARACTER_SHADER_VERTEX_COLOR_ATTRIBUTE] : []),
+        ...(options.faceShadowUv || options.hairFlowUv ? ["uv2"] : []),
+      ],
       uniforms: uniformsFor(kind),
       uniformBuffers: deps.language === ShaderLanguage.WGSL ? [...CHARACTER_SHADER_UNIFORM_BUFFERS] : [],
       samplers: samplersFor(kind),
@@ -177,6 +184,24 @@ export function setToonUniforms(material: ShaderMaterial, values: ToonUniformVal
       values.gradeLightness ?? 0,
       values.mangaInk === "line" ? 1 : 0,
       values.rampSoftness ?? 0,
+    ),
+  );
+  material.setVector4(
+    "matcapParams",
+    new Vector4(
+      Math.min(1, Math.max(0, values.cubicMatCapWeight ?? 0)),
+      Math.min(1, Math.max(0, values.cubicMatCapPos ?? 0.5)),
+      Math.min(1, Math.max(0, values.cubicMatCapWidth ?? 0.62)),
+      Math.min(1, Math.max(0, values.directionalBacklightRimGate ?? 0)),
+    ),
+  );
+  material.setVector4(
+    "hairSpecParams",
+    new Vector4(
+      Math.min(1, Math.max(0, values.hairAngelRingIntensity ?? 0)),
+      Math.min(1, Math.max(0, values.hairAngelRingCenter ?? 0.58)),
+      Math.max(0.02, values.hairAngelRingWidth ?? 0.11),
+      Math.min(1, Math.max(0, values.hairAngelRingSecondaryWeight ?? 0.35)),
     ),
   );
 }

@@ -76,6 +76,14 @@ export interface RigPart {
   readonly hasAlbedoTexture: boolean;
   /** 키트 제작자가 얼굴 그림자용 정면 좌표를 TEXCOORD_1에 기록했다. */
   readonly faceShadowUv?: boolean;
+  /** 키트 v2 헤어 흐름용 UV1(`uv1.purpose: "hair-flow"`)을 가졌는지 */
+  readonly hairFlowUv?: boolean;
+  /** 키트 v2 의상 패턴용 UV1(`uv1.purpose: "pattern"`)을 가졌는지 */
+  readonly patternUv?: boolean;
+  /** 키트 v2 멀티채널 리컬러 채널 키(있으면 27채널 `plan.channels`를 우선 적용) */
+  readonly channelKey?: import("../../contracts").ChannelKey;
+  /** 키트 v2 범위(형태 키·층·소품 인스턴스) */
+  readonly partScope?: PartScope;
   /** 키트 파츠의 색 틴트. 있으면 알베도 텍스처가 있어도 색을 곱한다(recolor: 레시피 색, fixed: 고정색). */
   readonly tint?: RigPartTint;
   /** 툰 ShaderMaterial(setShading("toon")에서 지연 생성) */
@@ -215,7 +223,7 @@ function applyRigPartMorphs(
   const skippedShapes: string[] = [];
   for (const [scope, shapeMap] of Object.entries(partMorphWeights) as Array<[PartScope, Readonly<Record<string, number>> | undefined]>) {
     if (!shapeMap) continue;
-    const scopeParts = rig.parts.filter((part) => part.role === scope || part.id === scope || part.id.startsWith(`${scope}:`));
+    const scopeParts = rig.parts.filter((part) => part.partScope === scope || part.role === scope || part.id === scope || part.id.startsWith(`${scope}:`));
     for (const [morphName, weight] of Object.entries(shapeMap)) {
       const influence = Number.isFinite(weight) ? Math.min(1, Math.max(0, weight)) : 0;
       const scopedTargets: MorphTarget[] = [];
@@ -310,19 +318,32 @@ export function applyRigPlan(rig: CharacterRig, plan: ApplyPlan, options: ApplyR
   for (const [name, rb] of rig.humanoid) if (!posed.has(name)) applyBoneRotation(rig, rb, undefined);
   const proportionReceipt = applyRigProportion(rig, plan.proportion);
 
+  const handledPartIds = new Set<number>();
   for (const planPart of plan.parts) {
     const part = rig.partById.get(planPart.partId);
     if (!part) continue;
+    handledPartIds.add(part.partId);
     if (planPart.materialPreset !== part.materialPreset) {
       part.materialPreset = planPart.materialPreset;
       rig.materials.applyPreset(part, planPart.materialPreset);
     }
     setRigPartVisible(part, planPart.visible, options.outlinesVisible);
-    // 고정색 틴트(키트의 안구·치아·혀·속옷)는 레시피·플랜 색을 무시한다.
-    const hex = part.tint?.mode === "fixed" ? part.tint.hex : resolvePartColorHex(part, plan.colors, planPart.color);
+    // 고정색 틴트(키트의 안구·치아·혀·속옷)는 레시피·플랜 색을 무시한다. 멀티채널(v2)은 `plan.channels`를 우선 적용한다.
+    const channelHex = part.channelKey ? plan.channels?.[part.channelKey] : undefined;
+    const hex = part.tint?.mode === "fixed" ? part.tint.hex : (channelHex ?? resolvePartColorHex(part, plan.colors, planPart.color));
     if (hex !== part.colorHex) {
       part.colorHex = hex;
       rig.materials.applyColor(part, hex);
+    }
+  }
+  if (plan.channels) {
+    for (const part of rig.parts) {
+      if (handledPartIds.has(part.partId) || part.tint?.mode === "fixed" || !part.channelKey) continue;
+      const hex = plan.channels[part.channelKey];
+      if (hex && hex !== part.colorHex) {
+        part.colorHex = hex;
+        rig.materials.applyColor(part, hex);
+      }
     }
   }
   for (const rb of rig.bones.values()) rb.node.computeWorldMatrix(true);
@@ -412,6 +433,8 @@ export function inspectRig(rig: CharacterRig): RigInspection {
         return active;
       }),
       hasAlbedoTexture: part.hasAlbedoTexture,
+      ...(part.faceShadowUv !== undefined ? { faceShadowUv: part.faceShadowUv } : {}),
+      ...(part.hairFlowUv !== undefined ? { hairFlowUv: part.hairFlowUv } : {}),
       ...(part.tint ? { tintMode: part.tint.mode } : {}),
       subMeshCountsByMesh: part.meshes.map((mesh) => mesh.subMeshes.length),
       alwaysSelectAsActiveByMesh: part.meshes.map((mesh) => mesh.alwaysSelectAsActiveMesh),

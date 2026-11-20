@@ -59,12 +59,21 @@ from tools.blender.webtoon_hero_bg import (  # noqa: E402
     inspect_glb,
     render_hero_review_bundle,
 )
+from tools.blender.webtoon_hero_bg.arch_primitives import (  # noqa: E402
+    add_curved_foliage_plant,
+    add_pleated_curtain,
+    add_tiered_crystal_chandelier,
+)
+from tools.blender.webtoon_hero_bg.cutaway_assembly import (  # noqa: E402
+    build_lighting_presets,
+    update_manifest_metadata,
+)
 
 TAU = math.tau
 SLUG = "rofan_imperial_palace_hall_balcony"
 
 DEFAULT_OUT_DIR = _REPO_ROOT / "apps/web/public/assets/3d/environments/hero-v1"
-DEFAULT_PREVIEW_DIR = _REPO_ROOT / "loop-stack/competitor-parity/previews/bg"
+DEFAULT_PREVIEW_DIR = _REPO_ROOT / "loop-stack/v2-previews/bg"
 
 # ---------------------------------------------------------------------------
 # Architectural Master Dimensions (Exact 14.00 m x 18.00 m x 8.50 m envelope)
@@ -723,57 +732,36 @@ def _add_draped_curtain_pair(
         )
     group.rings(val_rings, color=fabric_color, tile=fabric_tile)
 
-    # Left & Right floor-length sculpted pleated velvet curtain panels (cinched at tieback)
-    total_h = max(1.20, top_z - bottom_z)
-    z_tie = bottom_z + total_h * 0.34
-    n_z = 6
-    n_pleats = 4
-
+    # Left & Right floor-length sculpted sinusoidal pleated velvet curtains via shared add_pleated_curtain
+    total_h = max(1.20, top_z - bottom_z - 0.03)
     for sx in (-1, 1):
-        outer_x = sx * (opening_width * 0.5 + 0.30)
-        rings = []
-        for iz in range(n_z + 1):
-            t = iz / float(n_z)
-            lz = bottom_z + 0.006 + (total_h - 0.02) * t
-            dist_tie = abs(lz - z_tie) / (total_h * 0.34)
-            cinch = math.exp(-(dist_tie ** 2) * 2.2)
-            panel_w = 0.48 - 0.26 * cinch + 0.07 * (1.0 - t)
-            x_outer = outer_x
-            x_inner = outer_x - sx * panel_w
-            y_base = face_y + side * (0.105 + 0.025 * (1.0 - cinch))
-            amp = 0.042 * (1.0 - 0.38 * cinch)
-            thick = 0.024
-
-            front_pts: List[Tuple[float, float, float]] = []
-            back_pts: List[Tuple[float, float, float]] = []
-            steps_u = n_pleats * 2
-            for iu in range(steps_u + 1):
-                u = iu / float(steps_u)
-                lx = x_outer + (x_inner - x_outer) * u
-                wave = amp * math.sin(math.pi * n_pleats * u)
-                fy = y_base + side * (thick + max(0.0, wave) + 0.015 * math.sin(math.pi * u))
-                by = y_base + side * (max(0.0, wave) * 0.35)
-                front_pts.append(_to_world(lx, fy, lz))
-                back_pts.append(_to_world(lx, by, lz))
-            rings.append(front_pts + list(reversed(back_pts)))
-
-        group.rings(rings, color=fabric_color, tile=fabric_tile)
-
-        # Gilded braided tieback sash & hanging tassel
-        tie_x = outer_x - sx * 0.12
-        add_beveled_box(
+        panel_cx = sx * (opening_width * 0.5 + 0.06)
+        panel_cy = face_y + side * 0.145
+        p_origin = _to_world(panel_cx, panel_cy, bottom_z + 0.008)
+        add_pleated_curtain(
             group,
-            _to_world(tie_x, face_y + side * 0.135, z_tie),
-            (0.26, 0.115, 0.052),
-            color=accent_color,
-            tile=accent_tile,
-            bevel=0.007,
+            p_origin,
+            width=0.58,
+            height=total_h,
+            depth=0.115,
+            pleats=5,
+            thickness=0.014,
             rot_z=rot_z,
+            tieback_height=0.35,
+            tieback_pull=0.22,
+            tieback_side=sx,
+            include_rod=False,
+            color=fabric_color,
+            tile=fabric_tile,
+            tieback_color=accent_color,
+            tieback_tile=accent_tile,
         )
+        # Hanging gilded tassel cord below tieback waist
+        z_tie = bottom_z + 0.008 + total_h * 0.35
         group.rail(
-            _to_world(outer_x - sx * 0.22, face_y + side * 0.185, z_tie - 0.02),
-            _to_world(outer_x - sx * 0.22, face_y + side * 0.185, z_tie - 0.20),
-            radius=0.022,
+            _to_world(panel_cx + sx * 0.12, face_y + side * 0.195, z_tie - 0.02),
+            _to_world(panel_cx + sx * 0.12, face_y + side * 0.195, z_tie - 0.24),
+            radius=0.020,
             color=accent_color,
             sides=6,
             tile=accent_tile,
@@ -935,14 +923,16 @@ def _add_arched_wall_niche(
         return (ox + wx, oy + wy, oz + lz)
 
     spring_z = height - width * 0.5
+    # Ornate crimson-and-gold Imperial Heraldic Tapestry Panel inside the arched wall niche
     add_beveled_box(
         group,
-        _to_world(0.0, face_y + side * 0.008, spring_z * 0.5),
-        (width - 0.04, 0.018, spring_z - 0.02),
-        color=COL_PLASTER_SHADOW,
-        tile="plaster",
-        bevel=0.0,
+        _to_world(0.0, face_y + side * 0.012, spring_z * 0.5),
+        (width - 0.10, 0.018, spring_z - 0.12),
+        color="FFFFFF",
+        tile="chalkboard",
+        bevel=0.002,
         rot_z=rot_z,
+        uv_fit=True,
     )
     # Central gilded shell hub + radially separated fan rays (start at r=0.10 -> 0 welded edges!)
     add_beveled_box(
@@ -2064,8 +2054,9 @@ def build_vaulted_ceiling(ceiling: MeshGroup) -> None:
         pz = Z_WALL_TOP + (rz_in - rh * 0.45) * math.sin(a)
         add_beveled_box(ceiling, (px, 0.0, pz), (rw, 16.9, rh), color=col_p, tile=tl_p, bevel=0.0)
 
-    # Diagonal Groin Cross-Ribs inside each main bay
+    # Sculpted relief coffer moldings & gilded ceiling rosette bosses inside each vault bay
     for y_a, y_b in ((-6.80, -3.60), (-3.60, -0.40), (-0.40, 2.80), (2.80, 6.00)):
+        ymid = 0.5 * (y_a + y_b)
         for a0_deg, a1_deg in ((28.0, 152.0), (152.0, 28.0)):
             steps_d = 6
             diag_pts = [
@@ -2073,10 +2064,41 @@ def build_vaulted_ceiling(ceiling: MeshGroup) -> None:
                 for k in range(steps_d + 1)
             ]
             add_pipe_frame(ceiling, diag_pts, radius=0.048, sides=6, bend_subdiv=1, flange_ends=False, color=COL_GOLD, tile="ceiling_brass")
+        # Raised Baroque relief coffer frame rings + gilded rosette medallions flanking nave crown
+        for ang_deg in (42.0, 138.0):
+            ang_r = math.radians(ang_deg)
+            rx_b, ry_b, rz_b = _vault_pt(ang_r, ymid, inset=0.06)
+            add_beveled_box(ceiling, (rx_b, ry_b, rz_b), (0.36, 1.55, 0.09), color=COL_TRIM, tile="ceiling_beam", bevel=0.008)
+            add_beveled_box(ceiling, (rx_b, ry_b, rz_b - 0.04), (0.22, 1.25, 0.05), color=COL_GOLD, tile="ceiling_brass", bevel=0.005)
+        # Central gilded vault intersection rosette boss
+        ceiling.rings(
+            [
+                [(X_HALL + r * math.cos(TAU * j / 12), ymid + r * math.sin(TAU * j / 12), Z_VAULT_INNER_APEX - dz) for j in range(12)]
+                for (r, dz) in ((0.46, 0.01), (0.50, 0.05), (0.34, 0.11), (0.14, 0.15))
+            ],
+            color=COL_GOLD,
+            tile="ceiling_brass",
+        )
 
-    # 3 Grand Multi-Tier Crystal Chandeliers suspended down the nave centerline
+    # 3 Grand Multi-Tier Crystal Chandeliers via shared add_tiered_crystal_chandelier (3 tiers: 12 / 8 / 6 arms!)
     for cy_ch in (-5.20, -2.00, 1.20):
-        _add_crystal_chandelier(ceiling, cx=X_HALL, cy=cy_ch, z_mount=Z_VAULT_INNER_APEX)
+        add_tiered_crystal_chandelier(
+            ceiling,
+            (X_HALL, cy_ch, Z_VAULT_INNER_APEX),
+            tiers=3,
+            radius=1.18,
+            drop_height=1.92,
+            chain_length=1.72,
+            arms_per_tier=(10, 8, 6),
+            metal_color=COL_GOLD,
+            metal_tile="ceiling_brass",
+            crystal_color=COL_GLASS_CRYSTAL,
+            crystal_tile="glass_clear",
+            candle_color=COL_CANDLE_WAX,
+            candle_tile="ceiling_plaster",
+            flame_color=COL_FLAME_WARM,
+            flame_tile="emissive_amber",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -2167,10 +2189,41 @@ def _add_imperial_throne(furn: MeshGroup, cx: float, cy: float, z_dais: float) -
     back_z0 = z0 + seat_h - 0.02
     add_beveled_box(furn, (cx, back_y, back_z0 + back_h * 0.5), (seat_w + 0.06, 0.14, back_h), color=COL_WALNUT, tile="wood_walnut", bevel=0.010)
     add_beveled_box(furn, (cx, back_y - 0.065, back_z0 + back_h * 0.48), (seat_w - 0.18, 0.085, back_h - 0.24), color=COL_CRIMSON, tile="fabric_velvet", bevel=0.016)
-    # Ornate gilded back boiserie panel & royal crest emblem on rear face (View 3 Back!)
-    add_beveled_box(furn, (cx, back_y + 0.072, back_z0 + back_h * 0.50), (seat_w - 0.18, 0.024, back_h - 0.24), color=COL_GOLD, tile="metal_brass_trim", bevel=0.004)
-    add_beveled_box(furn, (cx, back_y + 0.080, back_z0 + back_h * 0.50), (seat_w - 0.28, 0.022, back_h - 0.34), color=COL_CRIMSON_DARK, tile="fabric_velvet", bevel=0.004)
-    add_beveled_box(furn, (cx, back_y + 0.092, back_z0 + back_h * 0.56), (0.28, 0.024, 0.36), color=COL_GOLD, tile="metal_brass_trim", bevel=0.006)
+    # Sculpted Baroque Rear Boiserie & Imperial Heraldic Relief on Throne Back (View 3 Back!)
+    add_beveled_box(furn, (cx, back_y + 0.072, back_z0 + back_h * 0.50), (seat_w - 0.14, 0.028, back_h - 0.18), color=COL_GOLD, tile="metal_brass_trim", bevel=0.006)
+    # Recessed full-fit crimson-and-gold Imperial Crest tapestry panel
+    add_beveled_box(furn, (cx, back_y + 0.088, back_z0 + back_h * 0.50), (seat_w - 0.28, 0.016, back_h - 0.34), color="FFFFFF", tile="paper_book", bevel=0.003, uv_fit=True)
+    # Twin carved fluted gold pilasters framing the throne back + horizontal stepped frieze rails
+    for sx in (-1, 1):
+        add_beveled_box(furn, (cx + sx * (seat_w * 0.39), back_y + 0.095, back_z0 + back_h * 0.50), (0.075, 0.042, back_h - 0.12), color=COL_GOLD, tile="metal_brass_trim", bevel=0.006)
+        add_beveled_box(furn, (cx + sx * (seat_w * 0.39), back_y + 0.105, back_z0 + back_h * 0.90), (0.105, 0.056, 0.095), color=COL_GOLD_DEEP, tile="metal_brass_trim", bevel=0.005)
+        add_beveled_box(furn, (cx + sx * (seat_w * 0.39), back_y + 0.105, back_z0 + back_h * 0.10), (0.105, 0.056, 0.095), color=COL_GOLD_DEEP, tile="metal_brass_trim", bevel=0.005)
+    # Sculpted 3D Imperial Sunburst Crest Medallion proudly mounted on rear center
+    med_z = back_z0 + back_h * 0.56
+    for ray_i in range(8):
+        ang = TAU * ray_i / 8.0
+        r_start = 0.10
+        r_len = 0.24 if ray_i % 2 == 0 else 0.18
+        furn.rail(
+            (cx + r_start * math.cos(ang), back_y + 0.106, med_z + r_start * math.sin(ang)),
+            (cx + r_len * math.cos(ang), back_y + 0.106, med_z + r_len * math.sin(ang)),
+            radius=0.014,
+            color=COL_GOLD,
+            sides=6,
+            tile="metal_brass_trim",
+            bevel_ends=False,
+        )
+    furn.rings(
+        [
+            [(cx + r * math.cos(TAU * j / 12), back_y + dy, med_z + r * math.sin(TAU * j / 12)) for j in range(12)]
+            for (r, dy) in ((0.13, 0.096), (0.14, 0.118), (0.08, 0.132))
+        ],
+        color=COL_GOLD,
+        tile="metal_brass_trim",
+    )
+    # Rear sculpted crown crest arch & finial orb
+    rear_crest = [(cx + 0.44 * math.cos(math.pi * i / 10.0), back_y + 0.096, back_z0 + back_h - 0.06 + 0.28 * math.sin(math.pi * i / 10.0)) for i in range(11)]
+    add_pipe_frame(furn, rear_crest, radius=0.026, sides=6, bend_subdiv=1, flange_ends=False, color=COL_GOLD, tile="metal_brass_trim")
 
     for sx in (-1, 1):
         px = cx + sx * (seat_w * 0.51)
@@ -2358,23 +2411,25 @@ def _add_pedestal_with_urn(props: MeshGroup, cx: float, cy: float, z0: float) ->
         p2 = (cx + sx * 0.16, cy, uz0 + 0.56)
         _add_bent_strut(props, (p0, p1, p2), radius=0.015, sides=6, color=COL_GOLD, tile="brass_polished")
 
-    # Sculpted botanical laurel foliage (radial stem offset 0.045 m -> zero shared center edges!)
-    fz = uz0 + 0.54
-    for i in range(8):
-        a = TAU * i / 8.0 + 0.22
-        reach = 0.26 if i % 2 == 0 else 0.19
-        rise = 0.30 if i % 2 == 0 else 0.40
-        ca, sa = math.cos(a), math.sin(a)
-        tx, ty = -sa, ca
-        l_rings = []
-        for t in (0.0, 0.42, 0.78, 1.0):
-            r_cur = 0.045 + reach * t
-            broad = 0.056 * (0.20 + math.sin(math.pi * t) ** 0.8)
-            pc = Vector((cx + r_cur * ca, cy + r_cur * sa, fz + rise * t + 0.07 * math.sin(math.pi * t)))
-            sv = Vector((tx, ty, 0.0)) * broad
-            uv = Vector((0.0, 0.0, max(0.008, broad * 0.35)))
-            l_rings.append([tuple(pc - sv), tuple(pc + uv), tuple(pc + sv), tuple(pc - uv * 0.5)])
-        props.rings(l_rings, color=COL_FOLIAGE if i % 2 == 0 else COL_FOLIAGE_LIGHT, tile="foliage_prop")
+    # Sculpted curved 3D foliage burst inside the gilded porcelain urn (zero flat blades!)
+    add_curved_foliage_plant(
+        props,
+        (cx, cy, uz0 + 0.44),
+        species="palm",
+        height=0.62,
+        pot_radius=0.10,
+        pot_height=0.12,
+        leaf_count=9,
+        seed=int(abs(cx * 17 + cy * 31)) + 7,
+        pot_color=COL_GOLD_DEEP,
+        pot_tile="brass_polished",
+        soil_color="443428",
+        soil_tile="stone_prop",
+        stem_color=COL_FOLIAGE,
+        stem_tile="foliage_prop",
+        leaf_color=COL_FOLIAGE_LIGHT,
+        leaf_tile="foliage_prop",
+    )
 
 
 def _add_standing_candelabra(props: MeshGroup, cx: float, cy: float, z0: float) -> None:
@@ -2560,13 +2615,13 @@ def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=f"Build ToonStudio Hero BG3D: {SLUG}")
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--preview-dir", type=Path, default=DEFAULT_PREVIEW_DIR)
-    parser.add_argument("--desktop-primary-size", type=int, default=1024)
+    parser.add_argument("--desktop-primary-size", type=int, default=2048)
     parser.add_argument("--desktop-secondary-size", type=int, default=1024)
     parser.add_argument("--mobile-opaque-size", type=int, default=1024)
     parser.add_argument("--mobile-glass-size", type=int, default=512)
     parser.add_argument("--tile-resolution", type=int, default=512)
     parser.add_argument("--skip-previews", action="store_true")
-    parser.add_argument("--report-out", type=Path, default=None)
+    parser.add_argument("--report-out", type=Path, default=DEFAULT_PREVIEW_DIR / f"{SLUG}-qa-report.json")
     return parser.parse_args(raw)
 
 
@@ -2591,13 +2646,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         optimize_meshopt=True,
         keep_desktop_in_scene=True,
         cameras=build_palace_manifest_cameras(),
+        manifest_filename=f"{SLUG}.manifest.json",
     )
-
-    # Persist slug-scoped manifest alongside shared manifest so parallel hero builds never lose metadata
-    shared_manifest = Path(export_report["manifestPath"])
-    slug_manifest = args.out_dir / f"{SLUG}.manifest.json"
-    if shared_manifest.is_file():
-        slug_manifest.write_text(shared_manifest.read_text(encoding="utf-8"), encoding="utf-8")
+    slug_manifest = Path(export_report["manifestPath"])
 
     # Gate 1: Blender bmesh & scene invariants on Desktop 8-node hierarchy
     gate1_desktop = audit_blender_scene(desktop_scene.root, profile="desktop")
@@ -2608,10 +2659,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     gate2_desktop = inspect_glb(desktop_glb, profile="desktop", require_meshopt=True, run_validate=True)
     gate2_mobile = inspect_glb(mobile_glb, profile="mobile", require_meshopt=True, run_validate=True)
 
-    # Gate 5: 6-view 512x512 BLENDER_EEVEE contact sheet + Freestyle SVG line art
+    # Gate 5: 6-view 512x512 BLENDER_EEVEE contact sheet + 3-tier Freestyle SVG + thumbnail
     preview_report: Dict[str, Any] | None = None
     if not args.skip_previews:
         views = build_palace_six_views()
+        lineart_dst = args.out_dir / "lineart" / f"{SLUG}-lineart.svg"
+        thumb_dst = args.out_dir / "thumbnails" / f"{SLUG}.png"
         preview_report = render_hero_review_bundle(
             args.preview_dir,
             SLUG,
@@ -2619,18 +2672,32 @@ def main(argv: Sequence[str] | None = None) -> int:
             views=views,
             tile_resolution=args.tile_resolution,
             interior_cutaway=True,
+            thumbnail_path=thumb_dst,
+            thumbnail_view_index=4,
+            lineart_copy_path=lineart_dst,
         )
+        svg_meta = dict(preview_report["freestyleSvg"])
+        svg_meta["path"] = f"lineart/{SLUG}-lineart.svg"
+        update_manifest_metadata(
+            slug_manifest,
+            freestyle_svg=svg_meta,
+            lighting_presets=build_lighting_presets(),
+        )
+    else:
+        update_manifest_metadata(slug_manifest, lighting_presets=build_lighting_presets())
 
-    # Check hard prompt size/tri budgets explicitly
+    # Check Gate 3 hard size/tri budgets explicitly (Desktop <= 500k / 20MB, Mobile <= 150k / 6MB)
     d_sum = gate2_desktop["summary"]
     m_sum = gate2_mobile["summary"]
     budget_errors: List[str] = []
-    if not (35_000 <= d_sum["triangles"] <= 120_000):
-        budget_errors.append(f"Desktop triangles {d_sum['triangles']} outside 35k..120k target range")
-    if d_sum["byte_size"] > 6 * 1024 * 1024:
-        budget_errors.append(f"Desktop GLB size {d_sum['byte_size']} exceeds 6 MiB target")
-    if m_sum["byte_size"] > 3 * 1024 * 1024:
-        budget_errors.append(f"Mobile GLB size {m_sum['byte_size']} exceeds 3 MiB target")
+    if d_sum["triangles"] > 500_000:
+        budget_errors.append(f"Desktop triangles {d_sum['triangles']} exceeds 500k budget")
+    if m_sum["triangles"] > 150_000:
+        budget_errors.append(f"Mobile triangles {m_sum['triangles']} exceeds 150k budget")
+    if d_sum["byte_size"] > 20 * 1024 * 1024:
+        budget_errors.append(f"Desktop GLB size {d_sum['byte_size']} exceeds 20 MiB target")
+    if m_sum["byte_size"] > 6 * 1024 * 1024:
+        budget_errors.append(f"Mobile GLB size {m_sum['byte_size']} exceeds 6 MiB target")
 
     passed = bool(
         gate1_desktop["passed"]

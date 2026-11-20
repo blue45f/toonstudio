@@ -1,11 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { isCharacterShaperTypingTarget, pushCharacterShaperKeyLayer } from "./character-shaper-ui-model";
 import { DEFAULT_CHARACTER_OUTPUT_FRAMING } from "./character-shaper-framing";
-import type { CharacterExportEdge } from "./character-shaper-export";
-import { CharacterShaperSettingsContext } from "./character-shaper-session-settings";
+import { DEFAULT_SHAPER_MTOON_SETTINGS } from "./character-shaper-mtoon-uniforms";
+import {
+  CharacterShaperSettingsContext,
+  DEFAULT_CHARACTER_SHAPER_GAZE_OFFSET,
+} from "./character-shaper-session-settings";
+import { isCharacterShaperTypingTarget, pushCharacterShaperKeyLayer } from "./character-shaper-ui-model";
 
-import type { CharacterShaperGazeMode, CharacterShaperPsdOptions } from "./character-shaper-session-settings";
+import type { CharacterExportEdge } from "./character-shaper-export";
+import type { ShaperMtoonMaterialSettings } from "./character-shaper-mtoon-uniforms";
+import type {
+  CharacterShaperGazeMode,
+  CharacterShaperGazeOffset,
+  CharacterShaperPsdOptions,
+} from "./character-shaper-session-settings";
 import type { ShaperCameraControlStyle } from "./character-shaper-ui-model";
 import type { ReactNode } from "react";
 
@@ -20,7 +29,27 @@ export function CharacterShaperSessionSettingsProvider({ children, gazeAvailable
   const [framing, setFraming] = useState(DEFAULT_CHARACTER_OUTPUT_FRAMING);
   const [cameraStyle, setCameraStyle] = useState<ShaperCameraControlStyle>("unity");
   const [gazeMode, setGazeMode] = useState<CharacterShaperGazeMode>("cam");
-  const value = useMemo(() => ({ psdOptions, setPsdOptions, exportEdge, setExportEdge, framing, setFraming, cameraStyle, setCameraStyle, gazeMode, setGazeMode }), [psdOptions, exportEdge, framing, cameraStyle, gazeMode]);
+  const [gazeOffset, setGazeOffset] = useState<CharacterShaperGazeOffset>(DEFAULT_CHARACTER_SHAPER_GAZE_OFFSET);
+  const [shaperMaterial, setShaperMaterial] = useState<ShaperMtoonMaterialSettings>(DEFAULT_SHAPER_MTOON_SETTINGS);
+  const value = useMemo(
+    () => ({
+      psdOptions,
+      setPsdOptions,
+      exportEdge,
+      setExportEdge,
+      framing,
+      setFraming,
+      cameraStyle,
+      setCameraStyle,
+      gazeMode,
+      setGazeMode,
+      gazeOffset,
+      setGazeOffset,
+      shaperMaterial,
+      setShaperMaterial,
+    }),
+    [psdOptions, exportEdge, framing, cameraStyle, gazeMode, gazeOffset, shaperMaterial],
+  );
   useEffect(() => {
     if (locked || !gazeAvailable) return;
     return pushCharacterShaperKeyLayer((event) => {

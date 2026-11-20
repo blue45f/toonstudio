@@ -6,8 +6,8 @@
   "fittedBase": "female-romance",
   "file": {
     "path": "braided-crown.glb",
-    "bytes": 1251788,
-    "sha256": "96b0f02bcccb18bc54943317b156dc8d397a901955b696c28e31f9e60d5057b9"
+    "bytes": 1321608,
+    "sha256": "6ec8178147b057f4b090fbde2e390f1b32f058927b4d7588f0887793caca51c4"
   },
   "drawCalls": 8,
   "materials": [
@@ -19,8 +19,8 @@
     {
       "node": "TS_AuthoredHair_braided-crown_LOD0",
       "lod": 0,
-      "triangles": 8864,
-      "vertices": 4502,
+      "triangles": 9408,
+      "vertices": 4778,
       "primitives": 3,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -31,8 +31,8 @@
     {
       "node": "TS_AuthoredHair_braided-crown_LOD1",
       "lod": 1,
-      "triangles": 4662,
-      "vertices": 2401,
+      "triangles": 4918,
+      "vertices": 2533,
       "primitives": 3,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -43,8 +43,8 @@
     {
       "node": "TS_AuthoredHair_braided-crown_LOD2",
       "lod": 2,
-      "triangles": 2152,
-      "vertices": 1132,
+      "triangles": 2176,
+      "vertices": 1144,
       "primitives": 2,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -96,10 +96,10 @@
         "shape": "sphere",
         "offsetGltf": [
           0.0,
-          0.08792,
-          -0.00185
+          0.09115,
+          -0.00342
         ],
-        "radius": 0.08493
+        "radius": 0.08366
       },
       {
         "id": "neck_capsule",
@@ -112,7 +112,7 @@
         ],
         "tailGltf": [
           0.0,
-          0.08816,
+          0.08793,
           -0.002
         ],
         "radius": 0.04725
@@ -124,7 +124,7 @@
         "offsetGltf": [
           0.0,
           0.0,
-          0.00231
+          0.0031
         ],
         "radius": 0.12696
       }
@@ -140,7 +140,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 2,
-        "lengthM": 0.3249,
+        "lengthM": 0.3323,
         "hitRadius": 0.018,
         "stiffness": 0.58,
         "dragForce": 0.36,
@@ -149,14 +149,14 @@
           {
             "name": "TS_Spring_braided-crown_curl_L_0",
             "positionGltf": [
-              0.08016,
-              1.59164,
-              0.03463
+              0.07707,
+              1.58997,
+              0.03141
             ],
             "localOffsetFromHead": [
-              0.08016,
-              0.11453,
-              0.04263
+              0.07707,
+              0.11676,
+              0.03941
             ],
             "hitRadius": 0.018,
             "stiffness": 0.638,
@@ -171,14 +171,14 @@
           {
             "name": "TS_Spring_braided-crown_curl_L_1",
             "positionGltf": [
-              0.09237,
-              1.50596,
-              0.03801
+              0.09238,
+              1.50249,
+              0.03616
             ],
             "localOffsetFromHead": [
-              0.09237,
-              0.02885,
-              0.04601
+              0.09238,
+              0.02928,
+              0.04416
             ],
             "hitRadius": 0.01719,
             "stiffness": 0.6018,
@@ -193,14 +193,14 @@
           {
             "name": "TS_Spring_braided-crown_curl_L_2",
             "positionGltf": [
-              0.09058,
-              1.42849,
-              0.05823
+              0.09189,
+              1.42383,
+              0.05665
             ],
             "localOffsetFromHead": [
-              0.09058,
-              -0.04862,
-              0.06623
+              0.09189,
+              -0.04938,
+              0.06465
             ],
             "hitRadius": 0.01638,
             "stiffness": 0.5655,
@@ -215,14 +215,14 @@
           {
             "name": "TS_Spring_braided-crown_curl_L_3",
             "positionGltf": [
-              0.09776,
-              1.36477,
-              0.1062
+              0.0947,
+              1.36089,
+              0.1093
             ],
             "localOffsetFromHead": [
-              0.09776,
-              -0.11234,
-              0.1142
+              0.0947,
+              -0.11232,
+              0.1173
             ],
             "hitRadius": 0.01557,
             "stiffness": 0.5292,
@@ -237,14 +237,14 @@
           {
             "name": "TS_Spring_braided-crown_curl_L_4",
             "positionGltf": [
-              0.10285,
-              1.28683,
-              0.10493
+              0.10253,
+              1.28141,
+              0.11235
             ],
             "localOffsetFromHead": [
-              0.10285,
-              -0.19028,
-              0.11293
+              0.10253,
+              -0.1918,
+              0.12035
             ],
             "hitRadius": 0.01476,
             "stiffness": 0.493,
@@ -268,7 +268,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 2,
-        "lengthM": 0.3207,
+        "lengthM": 0.3274,
         "hitRadius": 0.018,
         "stiffness": 0.58,
         "dragForce": 0.36,
@@ -277,14 +277,14 @@
           {
             "name": "TS_Spring_braided-crown_curl_R_0",
             "positionGltf": [
-              -0.08372,
-              1.59164,
-              0.03463
+              -0.08063,
+              1.58997,
+              0.03141
             ],
             "localOffsetFromHead": [
-              -0.08372,
-              0.11453,
-              0.04263
+              -0.08063,
+              0.11676,
+              0.03941
             ],
             "hitRadius": 0.018,
             "stiffness": 0.638,
@@ -299,14 +299,14 @@
           {
             "name": "TS_Spring_braided-crown_curl_R_1",
             "positionGltf": [
-              -0.0884,
-              1.50503,
-              0.03733
+              -0.08737,
+              1.50095,
+              0.03543
             ],
             "localOffsetFromHead": [
-              -0.0884,
-              0.02793,
-              0.04533
+              -0.08737,
+              0.02774,
+              0.04343
             ],
             "hitRadius": 0.01719,
             "stiffness": 0.6018,
@@ -321,14 +321,14 @@
           {
             "name": "TS_Spring_braided-crown_curl_R_2",
             "positionGltf": [
-              -0.09738,
-              1.43268,
-              0.07103
+              -0.096,
+              1.42884,
+              0.07293
             ],
             "localOffsetFromHead": [
-              -0.09738,
-              -0.04443,
-              0.07903
+              -0.096,
+              -0.04437,
+              0.08093
             ],
             "hitRadius": 0.01638,
             "stiffness": 0.5655,
@@ -343,14 +343,14 @@
           {
             "name": "TS_Spring_braided-crown_curl_R_3",
             "positionGltf": [
-              -0.10249,
-              1.35875,
-              0.08852
+              -0.10514,
+              1.35411,
+              0.0927
             ],
             "localOffsetFromHead": [
-              -0.10249,
-              -0.11836,
-              0.09652
+              -0.10514,
+              -0.1191,
+              0.1007
             ],
             "hitRadius": 0.01557,
             "stiffness": 0.5292,
@@ -365,14 +365,14 @@
           {
             "name": "TS_Spring_braided-crown_curl_R_4",
             "positionGltf": [
-              -0.0855,
-              1.28683,
-              0.11187
+              -0.08495,
+              1.28141,
+              0.11407
             ],
             "localOffsetFromHead": [
-              -0.0855,
-              -0.19028,
-              0.11987
+              -0.08495,
+              -0.1918,
+              0.12207
             ],
             "hitRadius": 0.01476,
             "stiffness": 0.493,
@@ -389,31 +389,31 @@
     ]
   },
   "qa": {
-    "bytes": 1251788,
-    "minClearanceMm": 0.798,
+    "bytes": 1321608,
+    "minClearanceMm": 0.799,
     "verticesInside": 0,
     "gltfValidateErrors": 0,
     "gltfValidateWarnings": 0,
     "bmesh": {
       "TS_AuthoredHair_braided-crown_LOD0": {
-        "verts": 4550,
-        "faces": 8864,
+        "verts": 4838,
+        "faces": 9408,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_AuthoredHair_braided-crown_LOD1": {
-        "verts": 2441,
-        "faces": 4662,
+        "verts": 2583,
+        "faces": 4918,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_AuthoredHair_braided-crown_LOD2": {
-        "verts": 1132,
-        "faces": 2152,
+        "verts": 1144,
+        "faces": 2176,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -424,5 +424,5 @@
   },
   "passed": true,
   "errors": [],
-  "seconds": 2.89
+  "seconds": 2.03
 }

@@ -7,12 +7,13 @@ import { KIT_BASE_IDS, KIT_V2_SCHEMA_ID, failVisible, isPresetId, presetSlot } f
 
 import { compareKitCapabilities, deriveKitCapabilities } from "./kit-capability";
 
-import type { AccessoryInstance, KitBaseId, KitManifest, KitManifestV2, KitPartSlot, KitPlan, LabFailure, PresetId, SlotCapabilityMap, SlotKind, Wardrobe } from "../../contracts";
+import type { NormalizedKitManifestV2 } from "./kit-v2-webtoon-adapter";
+import type { AccessoryInstance, KitBaseId, KitManifest, KitPartSlot, KitPlan, KitV2ArchetypeId, LabFailure, PresetId, SlotCapabilityMap, SlotKind } from "../../contracts";
 
-/** 계획기가 받는 manifest(v1 또는 v2). `parseAnyKitManifest`·키트 로드 흐름이 만든 값이다. */
-export type AnyKitManifest = KitManifest | KitManifestV2;
+/** 계획기가 받는 manifest(v1 또는 v2 / 정규화 5아키타입 v2). `parseAnyKitManifest`·키트 로드 흐름이 만든 값이다. */
+export type AnyKitManifest = KitManifest | NormalizedKitManifestV2;
 
-export function isKitManifestV2(manifest: AnyKitManifest): manifest is KitManifestV2 {
+export function isKitManifestV2(manifest: AnyKitManifest): manifest is NormalizedKitManifestV2 {
   return manifest.schema === KIT_V2_SCHEMA_ID;
 }
 
@@ -21,6 +22,8 @@ export interface KitPlanSource {
   readonly kitId: string;
   readonly kitVersion: number;
   readonly baseId: KitBaseId;
+  /** 선택: 5대 웹툰 키트 v2 아키타입 베이스 id */
+  readonly archetypeId?: KitV2ArchetypeId;
 }
 
 /** 계획에 필요한 레시피 슬롯 선택(`recipe.slots`의 부분집합이면 된다) */
@@ -30,7 +33,10 @@ export type KitPlanSlots = Readonly<Partial<Record<SlotKind, string | null>>>;
  * 계획에 필요한 옷장(레시피 v3 `wardrobe`의 지오메트리 부분: 층 프리셋과 추가 소품의 인스턴스 id·프리셋). `recipe.wardrobe`를 그대로 넘겨도 된다.
  * 소품의 앵커·오프셋은 적용 시점 값(`ApplyPlan.accessories`)이라 계획이 읽지 않는다 — 앵커를 바꿔도 파일을 다시 받지 않는다.
  */
-export type KitPlanWardrobe = Readonly<Pick<Wardrobe, "inner" | "outer" | "legwear">> & {
+export type KitPlanWardrobe = {
+  readonly inner: PresetId | `garments/${string}` | null;
+  readonly outer: PresetId | `garments/${string}` | null;
+  readonly legwear: PresetId | `garments/${string}` | null;
   readonly accessories: ReadonlyArray<Pick<AccessoryInstance, "id" | "presetId">>;
 };
 

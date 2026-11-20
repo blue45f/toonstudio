@@ -34,9 +34,9 @@ afterEach(() => {
 });
 
 describe("VRM 작업면 예산 수명주기", () => {
-  it("터치 환경을 제한하고 화면 크기 변경 시 다시 계산한다", async () => {
+  it("터치 환경을 2배 상한으로 유지하고 큰 화면 크기 변경 시 픽셀 예산에 맞춰 다시 계산한다", async () => {
     const hook = renderHook(() => useStudioVrmViewportBudget(ref, false));
-    expect(hook.result.current.dpr).toBe(1.5);
+    expect(hook.result.current.dpr).toBe(2);
     width = 2000; height = 1500;
     await act(async () => { observerCallback?.(); await vi.advanceTimersByTimeAsync(30); });
     expect(width * height * hook.result.current.dpr ** 2).toBeLessThanOrEqual(1_500_000.001);
@@ -47,7 +47,7 @@ describe("VRM 작업면 예산 수명주기", () => {
     expect(disconnect).toHaveBeenCalled();
     width = 2000; height = 1500;
     await act(async () => { window.dispatchEvent(new Event("resize")); await vi.advanceTimersByTimeAsync(30); });
-    expect(hook.result.current.dpr).toBe(1.5);
+    expect(hook.result.current.dpr).toBe(2);
     hook.rerender({ capture: false });
     expect(hook.result.current.dpr).toBeLessThan(1);
   });

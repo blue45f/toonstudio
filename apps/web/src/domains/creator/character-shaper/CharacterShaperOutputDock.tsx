@@ -21,6 +21,7 @@ import { encodeStudioVrmCapturePngBlob, captureStudioVrmRgbaCooperatively } from
 import { characterFrameRect, characterFramedExportSize, createCharacterFramedCamera, DEFAULT_CHARACTER_OUTPUT_FRAMING } from "./character-shaper-framing";
 import { CharacterShaperFramingControls } from "./CharacterShaperFramingControls";
 import { acquireCharacterExportSession, CHARACTER_EXPORT_EDGES } from "./character-shaper-export";
+import { resolveCharacterSemanticSceneInputs } from "./character-shaper-psd-scene-inputs";
 import { boundCharacterSemanticCaptureSize, exportCharacterSemanticPsd } from "./character-shaper-semantic-psd";
 import { pushCharacterShaperKeyLayer } from "./character-shaper-ui-model";
 
@@ -289,26 +290,35 @@ export function CharacterShaperOutputDock({
           blob = await encodeStudioVrmCapturePngBlob(rgba, size, { signal: session.signal, session: h.pngSessionRef?.current ?? undefined });
           receipt = { tone: "good", text: `PNG를 저장했습니다 · ${size.width}×${size.height}${transparent ? " · 투명 배경" : ""}` };
         } else {
-          const result = await exportCharacterSemanticPsd({
-            capture: { gl: capture.gl as never, scene: capture.scene as never, camera: exportCamera },
-            vrm: h.vrm, width: size.width, height: size.height, title: modelName,
-            createHairLayer: psdHairLayerSplit,
-            extractLuminanceOutline: psdLuminanceOutline,
-            screenOutlineScale: framed.screenOutlineScale,
-            signal: session.signal, assertCurrent: session.assertCurrent,
-            onProgress: ({ pass, phase, completed, total }) => {
-              if (!aliveRef.current || exportRef.current !== session || session.signal.aborted) return;
-              const label = PSD_PROGRESS_LABELS[pass] ?? "레이어";
-              const percent = total > 0 ? Math.round(Math.min(1, Math.max(0, completed / total)) * 100) : 0;
-              setProgress(`PSD ${label} ${phase === "render" ? "렌더링" : "계산"} 중 · ${percent}%`);
-            },
-            onCaptured: () => {
-              releaseHelpers?.();
-              releaseHelpers = undefined;
-              helperLeaseRef.current = null;
-              if (aliveRef.current) setProgress("PSD 파일 만드는 중");
-            },
-          });
+          const sceneInputs = resolveCharacterSemanticSceneInputs(h, capture.scene as never);
+          let result;
+          try {
+            result = await exportCharacterSemanticPsd({
+              capture: { gl: capture.gl as never, scene: capture.scene as never, camera: exportCamera },
+              vrm: h.vrm, width: size.width, height: size.height, title: modelName,
+              createHairLayer: psdHairLayerSplit,
+              extractLuminanceOutline: psdLuminanceOutline,
+              screenOutlineScale: framed.screenOutlineScale,
+              garmentRoots: sceneInputs.garmentRoots,
+              propRoots: sceneInputs.propRoots,
+              paintTextureProvider: sceneInputs.paintTextureProvider,
+              signal: session.signal, assertCurrent: session.assertCurrent,
+              onProgress: ({ pass, phase, completed, total }) => {
+                if (!aliveRef.current || exportRef.current !== session || session.signal.aborted) return;
+                const label = PSD_PROGRESS_LABELS[pass] ?? "레이어";
+                const percent = total > 0 ? Math.round(Math.min(1, Math.max(0, completed / total)) * 100) : 0;
+                setProgress(`PSD ${label} ${phase === "render" ? "렌더링" : "계산"} 중 · ${percent}%`);
+              },
+              onCaptured: () => {
+                releaseHelpers?.();
+                releaseHelpers = undefined;
+                helperLeaseRef.current = null;
+                if (aliveRef.current) setProgress("PSD 파일 만드는 중");
+              },
+            });
+          } finally {
+            sceneInputs.dispose();
+          }
           blob = result.blob;
           const skipped = result.receipt.skipped;
           const shaperPsdFlags = [
@@ -443,6 +453,7 @@ export function CharacterShaperOutputDock({
       <label className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-line bg-card px-2.5 text-[0.7rem] font-semibold text-fg-2">
         <input
           type="checkbox"
+          aria-label="헤어 분리 (Base · Shadow · Line)"
           data-testid="shaper-dock-psd-hair-split"
           checked={psdHairLayerSplit}
           disabled={exportBlocked}
@@ -454,6 +465,7 @@ export function CharacterShaperOutputDock({
       <label className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-line bg-card px-2.5 text-[0.7rem] font-semibold text-fg-2">
         <input
           type="checkbox"
+          aria-label="선화 휘도 알파 추출 (a=1-r)"
           data-testid="shaper-dock-psd-outline-alpha"
           checked={psdLuminanceOutline}
           disabled={exportBlocked}

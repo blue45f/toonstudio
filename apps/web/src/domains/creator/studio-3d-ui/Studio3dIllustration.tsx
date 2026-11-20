@@ -3,18 +3,19 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import "./studio-3d-illustrated-chrome.css";
 
 const ART_BASE = "/brand/illustrated-20260928";
-// 정본(720px) 외에 320·640px 파생본이 있어 좁은 화면은 작은 파일만 받는다(원본보다 확대하지 않는다).
-const PORTRAIT_SIZES = "(max-width: 1023px) 190px, 320px";
+// Retina DPR 2(290×363 CSS px → 580×726 물리 px)에서 HTML srcSet 밀도 보정으로 naturalWidth가
+// 절반 미만으로 떨어지지 않도록 4:5 포트레이트 960×1200 정본과 640px 슬롯 크기를 매칭한다.
+const PORTRAIT_SIZES = "(max-width: 1023px) 190px, 640px";
 
 function Portrait({ name }: { readonly name: "character-pink" | "character-blue" }) {
   return (
     <img
       src={`${ART_BASE}/${name}.webp`}
-      srcSet={`${ART_BASE}/${name}-320.webp 320w, ${ART_BASE}/${name}-640.webp 640w, ${ART_BASE}/${name}.webp 720w`}
+      srcSet={`${ART_BASE}/${name}-320.webp 320w, ${ART_BASE}/${name}-640.webp 640w, ${ART_BASE}/${name}-960.webp 960w, ${ART_BASE}/${name}.webp 1200w`}
       sizes={PORTRAIT_SIZES}
       alt=""
-      width={720}
-      height={900}
+      width={960}
+      height={1200}
       loading="lazy"
       decoding="async"
     />

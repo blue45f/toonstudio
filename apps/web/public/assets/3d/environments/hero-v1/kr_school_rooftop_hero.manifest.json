@@ -2,8 +2,8 @@
   "assetId": "kr_school_rooftop_hero",
   "cutawayContract": "room-v1",
   "fileName": "kr_school_rooftop_hero.glb",
-  "byteSize": 3283908,
-  "sha256": "sha256:b4d2c20ba3d48d4d616c53627713a6e411c6f9c24eb1f0615dac4203784c65b9",
+  "byteSize": 4254932,
+  "sha256": "sha256:4f0b25ae22ce60df4b67c8971a41c8ce852793c799278269f54e57eb93678658",
   "bounds": [
     14.0,
     4.492,
@@ -19,20 +19,20 @@
     "BG_Furniture_Hero",
     "BG_Props_Clutter"
   ],
-  "triangles": 43540,
+  "triangles": 46260,
   "drawCalls": 8,
   "materials": 4,
   "mobile": {
     "fileName": "kr_school_rooftop_hero-mobile.glb",
-    "byteSize": 1973100,
-    "sha256": "sha256:c400308473e95260b79d6ce6487171004c513eab49c8f522583c6d07f815c9ef",
+    "byteSize": 2039000,
+    "sha256": "sha256:68782ce12723453b682b5df14d5f5de0d958728cced8f95ddeb705a4fafafee0",
     "nodes": [
       "BG_Shell_Fixed",
       "BG_Cutaway_Front",
       "BG_Ceiling",
       "BG_Furnishings"
     ],
-    "triangles": 43540,
+    "triangles": 46260,
     "drawCalls": 4,
     "materials": 2
   },
@@ -75,6 +75,98 @@
         3.8
       ],
       "lensMm": 85
+    }
+  },
+  "lightingPresets": {
+    "day_5600k": {
+      "labelKo": "주광 5600K (맑은 낮)",
+      "kelvin": 5600,
+      "skyColor": [
+        0.78,
+        0.86,
+        0.96
+      ],
+      "skyEnergy": 1.05,
+      "sunColor": [
+        1.0,
+        0.95,
+        0.86
+      ],
+      "sunEnergy": 4.6,
+      "sunDirection": [
+        -0.58,
+        0.46,
+        -0.78
+      ],
+      "sunAngleDeg": 3.0,
+      "fillColor": [
+        0.94,
+        0.96,
+        1.0
+      ],
+      "fillIntensity": 1.0,
+      "emissiveBoost": 1.0,
+      "exposure": 0.12
+    },
+    "sunset_3200k": {
+      "labelKo": "노을 3200K (골든아워)",
+      "kelvin": 3200,
+      "skyColor": [
+        0.88,
+        0.56,
+        0.42
+      ],
+      "skyEnergy": 0.82,
+      "sunColor": [
+        1.0,
+        0.66,
+        0.36
+      ],
+      "sunEnergy": 5.2,
+      "sunDirection": [
+        -0.82,
+        0.34,
+        -0.34
+      ],
+      "sunAngleDeg": 5.0,
+      "fillColor": [
+        0.76,
+        0.64,
+        0.82
+      ],
+      "fillIntensity": 0.72,
+      "emissiveBoost": 1.45,
+      "exposure": 0.08
+    },
+    "night_moon_8500k": {
+      "labelKo": "야간 월광 8500K (밤/실내등)",
+      "kelvin": 8500,
+      "skyColor": [
+        0.16,
+        0.24,
+        0.42
+      ],
+      "skyEnergy": 0.42,
+      "sunColor": [
+        0.64,
+        0.78,
+        1.0
+      ],
+      "sunEnergy": 1.65,
+      "sunDirection": [
+        0.48,
+        -0.42,
+        -0.74
+      ],
+      "sunAngleDeg": 4.0,
+      "fillColor": [
+        0.98,
+        0.84,
+        0.62
+      ],
+      "fillIntensity": 0.65,
+      "emissiveBoost": 2.2,
+      "exposure": 0.0
     }
   }
 }

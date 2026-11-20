@@ -1,0 +1,201 @@
+{
+  "assetId": "kr_convenience_store_night",
+  "version": "hero-v2",
+  "cutawayContract": "room-v1",
+  "fileName": "desktop.glb",
+  "byteSize": 4247096,
+  "sha256": "sha256:4a730f82e550372cdd280425d337f31d746e66223dd9573e1b4d7024d69675b8",
+  "bounds": [
+    11.0,
+    3.2,
+    8.0
+  ],
+  "nodes": [
+    "BG_Floor",
+    "BG_Wall_North",
+    "BG_Wall_South",
+    "BG_Wall_West",
+    "BG_Wall_East",
+    "BG_Ceiling",
+    "BG_Furniture_Hero",
+    "BG_Props_Clutter"
+  ],
+  "triangles": 52872,
+  "drawCalls": 8,
+  "materials": 4,
+  "mobile": {
+    "fileName": "mobile.glb",
+    "byteSize": 2146812,
+    "sha256": "sha256:1c613f4660fabf20528de2ea496c724fb6f58c9db68abb477261d3324b525282",
+    "nodes": [
+      "BG_Shell_Fixed",
+      "BG_Cutaway_Front",
+      "BG_Ceiling",
+      "BG_Furnishings"
+    ],
+    "triangles": 52872,
+    "drawCalls": 4,
+    "materials": 2
+  },
+  "cameras": {
+    "nightStorefront28mm": {
+      "label": "28mm 야간 편의점 전면 간판 & 파라솔",
+      "position": [
+        3.2,
+        1.72,
+        6.8
+      ],
+      "target": [
+        -0.2,
+        1.75,
+        0.8
+      ],
+      "lensMm": 28
+    },
+    "checkoutDialogue35mm": {
+      "label": "35mm 계산대 카운터 대화 컷",
+      "position": [
+        -0.85,
+        1.54,
+        0.35
+      ],
+      "target": [
+        -3.4,
+        1.38,
+        -1.65
+      ],
+      "lensMm": 35
+    },
+    "windowRamenBar50mm": {
+      "label": "50mm 창가 컵라면 시식 바 컷",
+      "position": [
+        1.15,
+        1.42,
+        0.45
+      ],
+      "target": [
+        3.55,
+        1.16,
+        1.35
+      ],
+      "lensMm": 50
+    }
+  },
+  "lightingPresets": {
+    "day_5600k": {
+      "labelKo": "주광 5600K (맑은 낮)",
+      "kelvin": 5600,
+      "skyColor": [
+        0.78,
+        0.86,
+        0.96
+      ],
+      "skyEnergy": 1.05,
+      "sunColor": [
+        1.0,
+        0.95,
+        0.86
+      ],
+      "sunEnergy": 4.6,
+      "sunDirection": [
+        -0.58,
+        0.46,
+        -0.78
+      ],
+      "sunAngleDeg": 3.0,
+      "fillColor": [
+        0.94,
+        0.96,
+        1.0
+      ],
+      "fillIntensity": 1.0,
+      "emissiveBoost": 1.0,
+      "exposure": 0.12
+    },
+    "sunset_3200k": {
+      "labelKo": "노을 3200K (골든아워)",
+      "kelvin": 3200,
+      "skyColor": [
+        0.88,
+        0.56,
+        0.42
+      ],
+      "skyEnergy": 0.82,
+      "sunColor": [
+        1.0,
+        0.66,
+        0.36
+      ],
+      "sunEnergy": 5.2,
+      "sunDirection": [
+        -0.82,
+        0.34,
+        -0.34
+      ],
+      "sunAngleDeg": 5.0,
+      "fillColor": [
+        0.76,
+        0.64,
+        0.82
+      ],
+      "fillIntensity": 0.72,
+      "emissiveBoost": 1.45,
+      "exposure": 0.08
+    },
+    "night_moon_8500k": {
+      "labelKo": "야간 월광 8500K (밤/실내등)",
+      "kelvin": 8500,
+      "skyColor": [
+        0.16,
+        0.24,
+        0.42
+      ],
+      "skyEnergy": 0.42,
+      "sunColor": [
+        0.64,
+        0.78,
+        1.0
+      ],
+      "sunEnergy": 1.65,
+      "sunDirection": [
+        0.48,
+        -0.42,
+        -0.74
+      ],
+      "sunAngleDeg": 4.0,
+      "fillColor": [
+        0.98,
+        0.84,
+        0.62
+      ],
+      "fillIntensity": 0.65,
+      "emissiveBoost": 2.2,
+      "exposure": 0.0
+    }
+  },
+  "freestyleSvg": {
+    "path": "freestyle.svg",
+    "byteSize": 371213,
+    "pathCount": 2045,
+    "strokeWidths": [
+      "0.55",
+      "1.1",
+      "2.0"
+    ],
+    "lineSets": [
+      "TS_Silhouette",
+      "TS_ArchCrease",
+      "TS_Detail"
+    ]
+  },
+  "contactSheet": {
+    "path": "contact_sheet.png",
+    "byteSize": 2071050,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "lightingPreset": "night_moon_8500k"
+  },
+  "thumbnail": "thumbnail.png"
+}

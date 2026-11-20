@@ -3,17 +3,18 @@
   "kitId": "toonstudio-kit-v2",
   "kitVersion": 2,
   "displayName": "ToonStudio 캐릭터 키트 v2 (5종 아키타입 · 16 핸드포즈 · VRM 1.0 히어로 연동)",
-  "generatedAt": "2026-11-20",
+  "generatedAt": "2026-11-21",
   "generator": {
     "tool": "scripts/blender/run_hero_3d_pipeline.py",
     "blender": "5.3.0",
     "command": [
-      "build_base_v2.py",
+      "build_base_v3.py",
       "build_expressions_v2.py",
-      "forge_hair_v2.py",
-      "forge_garments_v2.py",
+      "forge_hair_v3.py",
+      "forge_garments_v3.py",
       "build_hand_poses_v2.py",
       "export_vrm1_hero.py",
+      "render_portrait_4x5_webp.py",
       "run_hero_3d_pipeline.py --stages kit-json"
     ]
   },
@@ -1302,47 +1303,47 @@
     "param:height:+": {
       "mixamorig:Hips": [
         0.0,
-        0.0723445,
+        0.0721535,
         0.00064
       ],
       "mixamorig:Spine": [
         0.0,
-        0.0080892,
+        0.0080678,
         -0.00032
       ],
       "mixamorig:Spine1": [
         0.0,
-        0.0120715,
+        0.0120397,
         -0.00032
       ],
       "mixamorig:Spine2": [
         0.0,
-        0.0115738,
+        0.0115432,
         0.0
       ],
       "mixamorig:Neck": [
         0.0,
-        0.0070369,
+        0.0070183,
         0.00048
       ],
       "mixamorig:Head": [
         0.0,
-        0.0070527,
+        0.0070341,
         -0.00016
       ],
       "mixamorig:HeadTop_End": [
         0.0,
-        0.0138823,
+        0.0138456,
         0.0
       ],
       "mixamorig:LeftShoulder": [
         0.00306,
-        0.0025654,
+        0.0025587,
         0.00048
       ],
       "mixamorig:LeftArm": [
         0.00942,
-        -0.0009604,
+        -0.0009578,
         -0.00016
       ],
       "mixamorig:LeftForeArm": [
@@ -1357,137 +1358,137 @@
       ],
       "mixamorig:LeftHandThumb1": [
         0.002232,
-        -0.0006402,
+        -0.0006386,
         0.0022464
       ],
       "mixamorig:LeftHandThumb2": [
         0.0017956,
-        -0.0004254,
+        -0.0004243,
         0.0014648
       ],
       "mixamorig:LeftHandThumb3": [
         0.0015121,
-        -0.0003583,
+        -0.0003573,
         0.0012335
       ],
       "mixamorig:LeftHandThumb4": [
         0.0012286,
-        -0.0002911,
+        -0.0002903,
         0.0010023
       ],
       "mixamorig:LeftHandIndex1": [
         0.0062,
-        -0.0001601,
+        -0.0001596,
         0.0021312
       ],
       "mixamorig:LeftHandIndex2": [
         0.002604,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandIndex3": [
         0.001736,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandIndex4": [
         0.001364,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandMiddle1": [
         0.006448,
-        -0.0001601,
+        -0.0001596,
         0.0006912
       ],
       "mixamorig:LeftHandMiddle2": [
         0.002852,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandMiddle3": [
         0.00186,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandMiddle4": [
         0.001488,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandRing1": [
         0.0062,
-        -0.0001601,
+        -0.0001596,
         -0.0007488
       ],
       "mixamorig:LeftHandRing2": [
         0.002604,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandRing3": [
         0.001736,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandRing4": [
         0.001364,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandPinky1": [
         0.005704,
-        -0.0001601,
+        -0.0001596,
         -0.0021312
       ],
       "mixamorig:LeftHandPinky2": [
         0.002108,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandPinky3": [
         0.001364,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandPinky4": [
         0.001116,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:LeftUpLeg": [
         0.00656,
-        -0.0047104,
+        -0.004698,
         0.0
       ],
       "mixamorig:LeftLeg": [
         -0.0003936,
-        -0.031221,
+        -0.0311386,
         0.00016
       ],
       "mixamorig:LeftFoot": [
         -0.0002624,
-        -0.0306028,
+        -0.030522,
         -0.0008
       ],
       "mixamorig:LeftToeBase": [
         0.0,
-        -0.0038348,
+        -0.0038246,
         0.010248
       ],
       "mixamorig:LeftToe_End": [
         0.0,
-        -0.0006972,
+        -0.0006954,
         0.00516
       ],
       "mixamorig:RightShoulder": [
         -0.00306,
-        0.0025654,
+        0.0025587,
         0.00048
       ],
       "mixamorig:RightArm": [
         -0.00942,
-        -0.0009604,
+        -0.0009578,
         -0.00016
       ],
       "mixamorig:RightForeArm": [
@@ -1502,189 +1503,189 @@
       ],
       "mixamorig:RightHandThumb1": [
         -0.002232,
-        -0.0006402,
+        -0.0006386,
         0.0022464
       ],
       "mixamorig:RightHandThumb2": [
         -0.0017956,
-        -0.0004254,
+        -0.0004243,
         0.0014648
       ],
       "mixamorig:RightHandThumb3": [
         -0.0015121,
-        -0.0003583,
+        -0.0003573,
         0.0012335
       ],
       "mixamorig:RightHandThumb4": [
         -0.0012286,
-        -0.0002911,
+        -0.0002903,
         0.0010023
       ],
       "mixamorig:RightHandIndex1": [
         -0.0062,
-        -0.0001601,
+        -0.0001596,
         0.0021312
       ],
       "mixamorig:RightHandIndex2": [
         -0.002604,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:RightHandIndex3": [
         -0.001736,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:RightHandIndex4": [
         -0.001364,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:RightHandMiddle1": [
         -0.006448,
-        -0.0001601,
+        -0.0001596,
         0.0006912
       ],
       "mixamorig:RightHandMiddle2": [
         -0.002852,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:RightHandMiddle3": [
         -0.00186,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:RightHandMiddle4": [
         -0.001488,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:RightHandRing1": [
         -0.0062,
-        -0.0001601,
+        -0.0001596,
         -0.0007488
       ],
       "mixamorig:RightHandRing2": [
         -0.002604,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:RightHandRing3": [
         -0.001736,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:RightHandRing4": [
         -0.001364,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:RightHandPinky1": [
         -0.005704,
-        -0.0001601,
+        -0.0001596,
         -0.0021312
       ],
       "mixamorig:RightHandPinky2": [
         -0.002108,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:RightHandPinky3": [
         -0.001364,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:RightHandPinky4": [
         -0.001116,
-        -8e-05,
+        -7.98e-05,
         0.0
       ],
       "mixamorig:RightUpLeg": [
         -0.00656,
-        -0.0047104,
+        -0.004698,
         0.0
       ],
       "mixamorig:RightLeg": [
         0.0003936,
-        -0.031221,
+        -0.0311386,
         0.00016
       ],
       "mixamorig:RightFoot": [
         0.0002624,
-        -0.0306028,
+        -0.030522,
         -0.0008
       ],
       "mixamorig:RightToeBase": [
         0.0,
-        -0.0038348,
+        -0.0038246,
         0.010248
       ],
       "mixamorig:RightToe_End": [
         0.0,
-        -0.0006972,
+        -0.0006954,
         0.00516
       ],
       "TS_Jaw": [
         0.0,
-        0.0016889,
+        0.0016845,
         0.0009408
       ],
       "TS_Eye.L": [
         0.0027,
-        0.0047403,
-        0.0055463
+        0.0047278,
+        0.0050648
       ],
       "TS_Eye.R": [
         -0.0027,
-        0.0047403,
-        0.0055463
+        0.0047278,
+        0.0050648
       ]
     },
     "param:height:-": {
       "mixamorig:Hips": [
         -0.0,
-        -0.0723445,
+        -0.0721535,
         -0.00064
       ],
       "mixamorig:Spine": [
         0.0,
-        -0.0080892,
+        -0.0080678,
         0.00032
       ],
       "mixamorig:Spine1": [
         0.0,
-        -0.0120715,
+        -0.0120397,
         0.00032
       ],
       "mixamorig:Spine2": [
         0.0,
-        -0.0115738,
+        -0.0115432,
         0.0
       ],
       "mixamorig:Neck": [
         0.0,
-        -0.0070369,
+        -0.0070183,
         -0.00048
       ],
       "mixamorig:Head": [
         0.0,
-        -0.0070527,
+        -0.0070341,
         0.00016
       ],
       "mixamorig:HeadTop_End": [
         0.0,
-        -0.0138823,
+        -0.0138456,
         0.0
       ],
       "mixamorig:LeftShoulder": [
         -0.00306,
-        -0.0025654,
+        -0.0025587,
         -0.00048
       ],
       "mixamorig:LeftArm": [
         -0.00942,
-        0.0009604,
+        0.0009578,
         0.00016
       ],
       "mixamorig:LeftForeArm": [
@@ -1699,137 +1700,137 @@
       ],
       "mixamorig:LeftHandThumb1": [
         -0.002232,
-        0.0006402,
+        0.0006386,
         -0.0022464
       ],
       "mixamorig:LeftHandThumb2": [
         -0.0017956,
-        0.0004254,
+        0.0004243,
         -0.0014648
       ],
       "mixamorig:LeftHandThumb3": [
         -0.0015121,
-        0.0003583,
+        0.0003573,
         -0.0012335
       ],
       "mixamorig:LeftHandThumb4": [
         -0.0012286,
-        0.0002911,
+        0.0002903,
         -0.0010023
       ],
       "mixamorig:LeftHandIndex1": [
         -0.0062,
-        0.0001601,
+        0.0001596,
         -0.0021312
       ],
       "mixamorig:LeftHandIndex2": [
         -0.002604,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandIndex3": [
         -0.001736,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandIndex4": [
         -0.001364,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandMiddle1": [
         -0.006448,
-        0.0001601,
+        0.0001596,
         -0.0006912
       ],
       "mixamorig:LeftHandMiddle2": [
         -0.002852,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandMiddle3": [
         -0.00186,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandMiddle4": [
         -0.001488,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandRing1": [
         -0.0062,
-        0.0001601,
+        0.0001596,
         0.0007488
       ],
       "mixamorig:LeftHandRing2": [
         -0.002604,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandRing3": [
         -0.001736,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandRing4": [
         -0.001364,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandPinky1": [
         -0.005704,
-        0.0001601,
+        0.0001596,
         0.0021312
       ],
       "mixamorig:LeftHandPinky2": [
         -0.002108,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandPinky3": [
         -0.001364,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:LeftHandPinky4": [
         -0.001116,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:LeftUpLeg": [
         -0.00656,
-        0.0047104,
+        0.004698,
         0.0
       ],
       "mixamorig:LeftLeg": [
         0.0003936,
-        0.031221,
+        0.0311386,
         -0.00016
       ],
       "mixamorig:LeftFoot": [
         0.0002624,
-        0.0306028,
+        0.030522,
         0.0008
       ],
       "mixamorig:LeftToeBase": [
         0.0,
-        0.0038348,
+        0.0038246,
         -0.010248
       ],
       "mixamorig:LeftToe_End": [
         0.0,
-        0.0006972,
+        0.0006954,
         -0.00516
       ],
       "mixamorig:RightShoulder": [
         0.00306,
-        -0.0025654,
+        -0.0025587,
         -0.00048
       ],
       "mixamorig:RightArm": [
         0.00942,
-        0.0009604,
+        0.0009578,
         0.00016
       ],
       "mixamorig:RightForeArm": [
@@ -1844,143 +1845,143 @@
       ],
       "mixamorig:RightHandThumb1": [
         0.002232,
-        0.0006402,
+        0.0006386,
         -0.0022464
       ],
       "mixamorig:RightHandThumb2": [
         0.0017956,
-        0.0004254,
+        0.0004243,
         -0.0014648
       ],
       "mixamorig:RightHandThumb3": [
         0.0015121,
-        0.0003583,
+        0.0003573,
         -0.0012335
       ],
       "mixamorig:RightHandThumb4": [
         0.0012286,
-        0.0002911,
+        0.0002903,
         -0.0010023
       ],
       "mixamorig:RightHandIndex1": [
         0.0062,
-        0.0001601,
+        0.0001596,
         -0.0021312
       ],
       "mixamorig:RightHandIndex2": [
         0.002604,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:RightHandIndex3": [
         0.001736,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:RightHandIndex4": [
         0.001364,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:RightHandMiddle1": [
         0.006448,
-        0.0001601,
+        0.0001596,
         -0.0006912
       ],
       "mixamorig:RightHandMiddle2": [
         0.002852,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:RightHandMiddle3": [
         0.00186,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:RightHandMiddle4": [
         0.001488,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:RightHandRing1": [
         0.0062,
-        0.0001601,
+        0.0001596,
         0.0007488
       ],
       "mixamorig:RightHandRing2": [
         0.002604,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:RightHandRing3": [
         0.001736,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:RightHandRing4": [
         0.001364,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:RightHandPinky1": [
         0.005704,
-        0.0001601,
+        0.0001596,
         0.0021312
       ],
       "mixamorig:RightHandPinky2": [
         0.002108,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:RightHandPinky3": [
         0.001364,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:RightHandPinky4": [
         0.001116,
-        8e-05,
+        7.98e-05,
         0.0
       ],
       "mixamorig:RightUpLeg": [
         0.00656,
-        0.0047104,
+        0.004698,
         0.0
       ],
       "mixamorig:RightLeg": [
         -0.0003936,
-        0.031221,
+        0.0311386,
         -0.00016
       ],
       "mixamorig:RightFoot": [
         -0.0002624,
-        0.0306028,
+        0.030522,
         0.0008
       ],
       "mixamorig:RightToeBase": [
         0.0,
-        0.0038348,
+        0.0038246,
         -0.010248
       ],
       "mixamorig:RightToe_End": [
         0.0,
-        0.0006972,
+        0.0006954,
         -0.00516
       ],
       "TS_Jaw": [
         0.0,
-        -0.0016889,
+        -0.0016845,
         -0.0009408
       ],
       "TS_Eye.L": [
         -0.0027,
-        -0.0047403,
-        -0.0055463
+        -0.0047278,
+        -0.0050648
       ],
       "TS_Eye.R": [
         0.0027,
-        -0.0047403,
-        -0.0055463
+        -0.0047278,
+        -0.0050648
       ]
     },
     "param:shoulderWidth:+": {
@@ -2031,12 +2032,12 @@
       "mixamorig:Neck": [
         0.0,
         0.0,
-        2.9e-05
+        2.82e-05
       ],
       "mixamorig:Head": [
         0.0,
         0.0,
-        -2.9e-05
+        -2.82e-05
       ],
       "mixamorig:LeftShoulder": [
         0.0017607,
@@ -2273,12 +2274,12 @@
       "mixamorig:Neck": [
         0.0,
         0.0,
-        -2.9e-05
+        -2.82e-05
       ],
       "mixamorig:Head": [
         0.0,
         0.0,
-        2.9e-05
+        2.82e-05
       ],
       "mixamorig:LeftShoulder": [
         -0.0017607,
@@ -2579,30 +2580,30 @@
       "mixamorig:Spine": [
         0.0,
         0.0,
-        -0.0002401
+        -0.0002413
       ],
       "mixamorig:Spine1": [
         0.0,
         0.0,
-        0.0002401
+        0.0002413
       ],
       "mixamorig:LeftUpLeg": [
-        0.0108041,
+        0.0108083,
         0.0,
         0.0
       ],
       "mixamorig:LeftLeg": [
-        -0.0108041,
+        -0.0108083,
         0.0,
         0.0
       ],
       "mixamorig:RightUpLeg": [
-        -0.0108041,
+        -0.0108083,
         0.0,
         0.0
       ],
       "mixamorig:RightLeg": [
-        0.0108041,
+        0.0108083,
         0.0,
         0.0
       ]
@@ -2611,30 +2612,30 @@
       "mixamorig:Spine": [
         0.0,
         0.0,
-        0.0002401
+        0.0002413
       ],
       "mixamorig:Spine1": [
         0.0,
         0.0,
-        -0.0002401
+        -0.0002413
       ],
       "mixamorig:LeftUpLeg": [
-        -0.0108041,
+        -0.0108083,
         0.0,
         0.0
       ],
       "mixamorig:LeftLeg": [
-        0.0108041,
+        0.0108083,
         0.0,
         0.0
       ],
       "mixamorig:RightUpLeg": [
-        0.0108041,
+        0.0108083,
         0.0,
         0.0
       ],
       "mixamorig:RightLeg": [
-        -0.0108041,
+        -0.0108083,
         0.0,
         0.0
       ]
@@ -3106,17 +3107,17 @@
     "param:legLength:+": {
       "mixamorig:Hips": [
         0.0,
-        0.0879234,
+        0.0876913,
         0.0
       ],
       "mixamorig:Spine": [
         0.0,
-        0.0022928,
+        0.0022867,
         0.0
       ],
       "mixamorig:Spine1": [
         0.0,
-        0.0002111,
+        0.0002105,
         0.0
       ],
       "mixamorig:Spine2": [
@@ -3126,69 +3127,69 @@
       ],
       "mixamorig:LeftUpLeg": [
         0.0,
-        -0.0040293,
+        -0.0040187,
         0.0
       ],
       "mixamorig:LeftLeg": [
         0.0,
-        -0.0383778,
+        -0.0382765,
         0.0
       ],
       "mixamorig:LeftFoot": [
         0.0,
-        -0.0382535,
+        -0.0381525,
         0.0
       ],
       "mixamorig:LeftToeBase": [
         0.0,
-        -0.0047934,
+        -0.0047808,
         0.0
       ],
       "mixamorig:LeftToe_End": [
         0.0,
-        -0.0008715,
+        -0.0008692,
         0.0
       ],
       "mixamorig:RightUpLeg": [
         0.0,
-        -0.0040293,
+        -0.0040187,
         0.0
       ],
       "mixamorig:RightLeg": [
         0.0,
-        -0.0383778,
+        -0.0382765,
         0.0
       ],
       "mixamorig:RightFoot": [
         0.0,
-        -0.0382535,
+        -0.0381525,
         0.0
       ],
       "mixamorig:RightToeBase": [
         0.0,
-        -0.0047934,
+        -0.0047808,
         0.0
       ],
       "mixamorig:RightToe_End": [
         0.0,
-        -0.0008715,
+        -0.0008692,
         0.0
       ]
     },
     "param:legLength:-": {
       "mixamorig:Hips": [
         -0.0,
-        -0.0879234,
+        -0.0876913,
         -0.0
       ],
       "mixamorig:Spine": [
         0.0,
-        -0.0022928,
+        -0.0022867,
         0.0
       ],
       "mixamorig:Spine1": [
         0.0,
-        -0.0002111,
+        -0.0002105,
         0.0
       ],
       "mixamorig:Spine2": [
@@ -3198,140 +3199,140 @@
       ],
       "mixamorig:LeftUpLeg": [
         0.0,
-        0.0040293,
+        0.0040187,
         0.0
       ],
       "mixamorig:LeftLeg": [
         0.0,
-        0.0383778,
+        0.0382765,
         0.0
       ],
       "mixamorig:LeftFoot": [
         0.0,
-        0.0382535,
+        0.0381525,
         0.0
       ],
       "mixamorig:LeftToeBase": [
         0.0,
-        0.0047934,
+        0.0047808,
         0.0
       ],
       "mixamorig:LeftToe_End": [
         0.0,
-        0.0008715,
+        0.0008692,
         0.0
       ],
       "mixamorig:RightUpLeg": [
         0.0,
-        0.0040293,
+        0.0040187,
         0.0
       ],
       "mixamorig:RightLeg": [
         0.0,
-        0.0383778,
+        0.0382765,
         0.0
       ],
       "mixamorig:RightFoot": [
         0.0,
-        0.0382535,
+        0.0381525,
         0.0
       ],
       "mixamorig:RightToeBase": [
         0.0,
-        0.0047934,
+        0.0047808,
         0.0
       ],
       "mixamorig:RightToe_End": [
         0.0,
-        0.0008715,
+        0.0008692,
         0.0
       ]
     },
     "param:headSize:+": {
       "mixamorig:Neck": [
         0.0,
-        -0.0008514,
-        2.14e-05
+        -0.0008487,
+        5.33e-05
       ],
       "mixamorig:Head": [
         0.0,
-        0.0018686,
-        -2.14e-05
+        0.0018538,
+        0.0003067
       ],
       "mixamorig:HeadTop_End": [
         0.0,
-        0.0208234,
+        0.0207684,
         0.0
       ],
       "TS_Jaw": [
         0.0,
-        0.0025334,
+        0.0025267,
         0.0014112
       ],
       "TS_Eye.L": [
         0.00405,
-        0.0071104,
-        0.0083194
+        0.0070917,
+        0.0075973
       ],
       "TS_Eye.R": [
         -0.00405,
-        0.0071104,
-        0.0083194
+        0.0070917,
+        0.0075973
       ]
     },
     "param:headSize:-": {
       "mixamorig:Neck": [
         0.0,
-        0.0008514,
-        -2.14e-05
+        0.0008487,
+        -5.33e-05
       ],
       "mixamorig:Head": [
         0.0,
-        -0.0018686,
-        2.14e-05
+        -0.0018538,
+        -0.0003067
       ],
       "mixamorig:HeadTop_End": [
         0.0,
-        -0.0208234,
+        -0.0207684,
         0.0
       ],
       "TS_Jaw": [
         0.0,
-        -0.0025334,
+        -0.0025267,
         -0.0014112
       ],
       "TS_Eye.L": [
         -0.00405,
-        -0.0071104,
-        -0.0083194
+        -0.0070917,
+        -0.0075973
       ],
       "TS_Eye.R": [
         0.00405,
-        -0.0071104,
-        -0.0083194
+        -0.0070917,
+        -0.0075973
       ]
     },
     "param:neckLength:+": {
       "mixamorig:Neck": [
         0.0,
-        0.0032142,
+        0.0032095,
         0.0
       ],
       "mixamorig:Head": [
         0.0,
-        0.0264858,
+        0.0264905,
         0.0
       ]
     },
     "param:neckLength:-": {
       "mixamorig:Neck": [
         0.0,
-        -0.0032142,
+        -0.0032095,
         0.0
       ],
       "mixamorig:Head": [
         0.0,
-        -0.0264858,
+        -0.0264905,
         0.0
       ]
     }
@@ -3347,22 +3348,22 @@
       "genre": "romance/rofan/academy",
       "file": {
         "path": "bases/female-romance.glb",
-        "bytes": 3123128,
-        "sha256": "916ad796078a693bd77c280e509e21a34b96464ab136af054f01f4e9ebf9fd51"
+        "bytes": 3804372,
+        "sha256": "2d673674aece7f85c04a528b87326d5290d5e519f1085d26746ce8cef857ad81"
       },
       "heightM": 1.65,
-      "headHeightM": 0.2116,
+      "headHeightM": 0.2111,
       "headToBodyRatio": 7.8,
       "boundsM": {
         "min": [
           -0.82696,
           0.0,
-          -0.13094
+          -0.13154
         ],
         "max": [
           0.82696,
           1.65,
-          0.16477
+          0.16585
         ]
       },
       "extensions": [
@@ -3371,8 +3372,8 @@
       "meshes": [
         {
           "node": "TS_Body",
-          "triangles": 20384,
-          "vertices": 12194,
+          "triangles": 21888,
+          "vertices": 13026,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -3398,8 +3399,8 @@
         },
         {
           "node": "TS_Head",
-          "triangles": 7232,
-          "vertices": 4350,
+          "triangles": 10112,
+          "vertices": 6150,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -3457,7 +3458,8 @@
             "facs:mouthPress",
             "facs:tongueOut"
           ],
-          "material": "ts_skin_head"
+          "material": "ts_skin_head",
+          "hasUv1": true
         },
         {
           "node": "TS_Eye_L",
@@ -3540,8 +3542,8 @@
         },
         {
           "node": "TS_Lashes",
-          "triangles": 560,
-          "vertices": 288,
+          "triangles": 632,
+          "vertices": 324,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -3646,132 +3648,132 @@
           "id": "neck",
           "mesh": "TS_Body",
           "indexStart": 0,
-          "indexCount": 1536
+          "indexCount": 1728
         },
         {
           "id": "torso",
           "mesh": "TS_Body",
-          "indexStart": 1536,
-          "indexCount": 9792
+          "indexStart": 1728,
+          "indexCount": 11136
         },
         {
           "id": "pelvis",
           "mesh": "TS_Body",
-          "indexStart": 11328,
-          "indexCount": 2496
+          "indexStart": 12864,
+          "indexCount": 2784
         },
         {
           "id": "upperArm.L",
           "mesh": "TS_Body",
-          "indexStart": 13824,
+          "indexStart": 15648,
           "indexCount": 3456
         },
         {
           "id": "upperArm.R",
           "mesh": "TS_Body",
-          "indexStart": 17280,
+          "indexStart": 19104,
           "indexCount": 3456
         },
         {
           "id": "forearm.L",
           "mesh": "TS_Body",
-          "indexStart": 20736,
+          "indexStart": 22560,
           "indexCount": 3456
         },
         {
           "id": "forearm.R",
           "mesh": "TS_Body",
-          "indexStart": 24192,
+          "indexStart": 26016,
           "indexCount": 3456
         },
         {
           "id": "hand.L",
           "mesh": "TS_Body",
-          "indexStart": 27648,
+          "indexStart": 29472,
           "indexCount": 5520
         },
         {
           "id": "hand.R",
           "mesh": "TS_Body",
-          "indexStart": 33168,
+          "indexStart": 34992,
           "indexCount": 5520
         },
         {
           "id": "thigh.L",
           "mesh": "TS_Body",
-          "indexStart": 38688,
-          "indexCount": 3888
+          "indexStart": 40512,
+          "indexCount": 4320
         },
         {
           "id": "thigh.R",
           "mesh": "TS_Body",
-          "indexStart": 42576,
-          "indexCount": 3888
+          "indexStart": 44832,
+          "indexCount": 4320
         },
         {
           "id": "calf.L",
           "mesh": "TS_Body",
-          "indexStart": 46464,
-          "indexCount": 4752
+          "indexStart": 49152,
+          "indexCount": 5280
         },
         {
           "id": "calf.R",
           "mesh": "TS_Body",
-          "indexStart": 51216,
-          "indexCount": 4752
+          "indexStart": 54432,
+          "indexCount": 5280
         },
         {
           "id": "foot.L",
           "mesh": "TS_Body",
-          "indexStart": 55968,
-          "indexCount": 2592
+          "indexStart": 59712,
+          "indexCount": 2976
         },
         {
           "id": "foot.R",
           "mesh": "TS_Body",
-          "indexStart": 58560,
-          "indexCount": 2592
+          "indexStart": 62688,
+          "indexCount": 2976
         }
       ],
       "anchors": {
         "head-top": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            -0.0,
-            0.1729,
-            -0.0011
+            0.0,
+            0.1768,
+            0.0026
           ]
         },
         "hair": {
           "joint": "mixamorig:Head",
           "offsetM": [
             0.0,
-            0.1345,
-            -0.0706
+            0.1352,
+            -0.0761
           ]
         },
         "face": {
           "joint": "mixamorig:Head",
           "offsetM": [
             0.0,
-            0.0665,
-            0.0872
+            0.048,
+            0.0891
           ]
         },
         "ear-l": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            0.088,
-            0.0497,
-            -0.0222
+            0.0913,
+            0.0629,
+            -0.0177
           ]
         },
         "ear-r": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            -0.088,
-            0.0497,
-            -0.0222
+            -0.0913,
+            0.0629,
+            -0.0177
           ]
         },
         "neck": {
@@ -3779,7 +3781,7 @@
           "offsetM": [
             -0.0,
             -0.0094,
-            0.0513
+            0.0514
           ]
         },
         "wrist-l": {
@@ -3802,16 +3804,16 @@
           "joint": "mixamorig:Hips",
           "offsetM": [
             0.0,
-            0.1011,
+            0.1008,
             -0.004
           ]
         },
         "back": {
           "joint": "mixamorig:Spine2",
           "offsetM": [
-            0.0,
+            0.0122,
             -0.0108,
-            -0.0794
+            -0.0797
           ]
         },
         "hand-l": {
@@ -3851,7 +3853,7 @@
         "TS_Eye.L": 632,
         "TS_Eye.R": 632
       },
-      "neckSeamVertexPairs": 64
+      "neckSeamVertexPairs": 72
     },
     "male-webtoon": {
       "archetypeId": "male-webtoon",
@@ -3859,22 +3861,22 @@
       "genre": "modern/rofan-duke/academy",
       "file": {
         "path": "bases/male-webtoon.glb",
-        "bytes": 3212308,
-        "sha256": "beda5965651b71dd882209984d5c579fc8bcabeea9f47c3bf92777d50bf1cf1c"
+        "bytes": 3872968,
+        "sha256": "720652394959cd97ef8f86b97369d15d60c7fca9baa687c56598ae6a591fcea4"
       },
       "heightM": 1.82,
-      "headHeightM": 0.2117,
+      "headHeightM": 0.2112,
       "headToBodyRatio": 8.6,
       "boundsM": {
         "min": [
           -0.95307,
           0.0,
-          -0.12897
+          -0.12956
         ],
         "max": [
           0.95307,
           1.82,
-          0.18866
+          0.18989
         ]
       },
       "extensions": [
@@ -3883,8 +3885,8 @@
       "meshes": [
         {
           "node": "TS_Body",
-          "triangles": 21248,
-          "vertices": 12664,
+          "triangles": 22816,
+          "vertices": 13502,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -3910,8 +3912,8 @@
         },
         {
           "node": "TS_Head",
-          "triangles": 7296,
-          "vertices": 4433,
+          "triangles": 10048,
+          "vertices": 6052,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -3969,7 +3971,8 @@
             "facs:mouthPress",
             "facs:tongueOut"
           ],
-          "material": "ts_skin_head"
+          "material": "ts_skin_head",
+          "hasUv1": true
         },
         {
           "node": "TS_Eye_L",
@@ -4052,8 +4055,8 @@
         },
         {
           "node": "TS_Lashes",
-          "triangles": 560,
-          "vertices": 288,
+          "triangles": 632,
+          "vertices": 324,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -4158,91 +4161,91 @@
           "id": "neck",
           "mesh": "TS_Body",
           "indexStart": 0,
-          "indexCount": 1536
+          "indexCount": 1728
         },
         {
           "id": "torso",
           "mesh": "TS_Body",
-          "indexStart": 1536,
-          "indexCount": 9792
+          "indexStart": 1728,
+          "indexCount": 11136
         },
         {
           "id": "pelvis",
           "mesh": "TS_Body",
-          "indexStart": 11328,
-          "indexCount": 2496
+          "indexStart": 12864,
+          "indexCount": 2784
         },
         {
           "id": "upperArm.L",
           "mesh": "TS_Body",
-          "indexStart": 13824,
+          "indexStart": 15648,
           "indexCount": 3888
         },
         {
           "id": "upperArm.R",
           "mesh": "TS_Body",
-          "indexStart": 17712,
+          "indexStart": 19536,
           "indexCount": 3888
         },
         {
           "id": "forearm.L",
           "mesh": "TS_Body",
-          "indexStart": 21600,
+          "indexStart": 23424,
           "indexCount": 3456
         },
         {
           "id": "forearm.R",
           "mesh": "TS_Body",
-          "indexStart": 25056,
+          "indexStart": 26880,
           "indexCount": 3456
         },
         {
           "id": "hand.L",
           "mesh": "TS_Body",
-          "indexStart": 28512,
+          "indexStart": 30336,
           "indexCount": 5520
         },
         {
           "id": "hand.R",
           "mesh": "TS_Body",
-          "indexStart": 34032,
+          "indexStart": 35856,
           "indexCount": 5520
         },
         {
           "id": "thigh.L",
           "mesh": "TS_Body",
-          "indexStart": 39552,
-          "indexCount": 4320
+          "indexStart": 41376,
+          "indexCount": 4800
         },
         {
           "id": "thigh.R",
           "mesh": "TS_Body",
-          "indexStart": 43872,
-          "indexCount": 4320
+          "indexStart": 46176,
+          "indexCount": 4800
         },
         {
           "id": "calf.L",
           "mesh": "TS_Body",
-          "indexStart": 48192,
-          "indexCount": 5184
+          "indexStart": 50976,
+          "indexCount": 5760
         },
         {
           "id": "calf.R",
           "mesh": "TS_Body",
-          "indexStart": 53376,
-          "indexCount": 5184
+          "indexStart": 56736,
+          "indexCount": 5760
         },
         {
           "id": "foot.L",
           "mesh": "TS_Body",
-          "indexStart": 58560,
-          "indexCount": 2592
+          "indexStart": 62496,
+          "indexCount": 2976
         },
         {
           "id": "foot.R",
           "mesh": "TS_Body",
-          "indexStart": 61152,
-          "indexCount": 2592
+          "indexStart": 65472,
+          "indexCount": 2976
         }
       ],
       "anchors": {
@@ -4250,48 +4253,48 @@
           "joint": "mixamorig:Head",
           "offsetM": [
             0.0,
-            0.173,
-            -0.0012
+            0.1769,
+            0.0029
           ]
         },
         "hair": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            0.0,
-            0.1345,
-            -0.0748
+            -0.0,
+            0.13,
+            -0.0844
           ]
         },
         "face": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            0.0,
-            0.0585,
-            0.0958
+            -0.0,
+            0.0579,
+            0.0943
           ]
         },
         "ear-l": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            0.0924,
-            0.0497,
-            -0.0228
+            0.0971,
+            0.0701,
+            -0.0155
           ]
         },
         "ear-r": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            -0.0924,
-            0.0497,
-            -0.0228
+            -0.0971,
+            0.0701,
+            -0.0155
           ]
         },
         "neck": {
           "joint": "mixamorig:Neck",
           "offsetM": [
             0.0,
-            -0.0115,
-            0.0632
+            -0.0114,
+            0.0635
           ]
         },
         "wrist-l": {
@@ -4314,16 +4317,16 @@
           "joint": "mixamorig:Hips",
           "offsetM": [
             0.0,
-            0.1146,
+            0.1143,
             -0.004
           ]
         },
         "back": {
           "joint": "mixamorig:Spine2",
           "offsetM": [
-            -0.0,
+            0.0,
             -0.0105,
-            -0.0912
+            -0.0906
           ]
         },
         "hand-l": {
@@ -4363,7 +4366,7 @@
         "TS_Eye.L": 632,
         "TS_Eye.R": 632
       },
-      "neckSeamVertexPairs": 64
+      "neckSeamVertexPairs": 72
     },
     "male-action": {
       "archetypeId": "male-action",
@@ -4371,22 +4374,22 @@
       "genre": "action/hunter/murim",
       "file": {
         "path": "bases/male-action.glb",
-        "bytes": 3289020,
-        "sha256": "6b12246ef6afe28b39e2679973ac46edabaca207410b52eb959091141b11e06c"
+        "bytes": 3917400,
+        "sha256": "85faf378ef71a9e637de1cd5f170670c0dad13f40886bb84e0bdc71be19d3026"
       },
       "heightM": 1.86,
-      "headHeightM": 0.2215,
+      "headHeightM": 0.221,
       "headToBodyRatio": 8.4,
       "boundsM": {
         "min": [
           -0.98513,
           0.0,
-          -0.13808
+          -0.13871
         ],
         "max": [
           0.98513,
           1.86,
-          0.19624
+          0.19752
         ]
       },
       "extensions": [
@@ -4395,8 +4398,8 @@
       "meshes": [
         {
           "node": "TS_Body",
-          "triangles": 22080,
-          "vertices": 13195,
+          "triangles": 23712,
+          "vertices": 13968,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -4422,8 +4425,8 @@
         },
         {
           "node": "TS_Head",
-          "triangles": 7296,
-          "vertices": 4407,
+          "triangles": 9920,
+          "vertices": 5930,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -4481,7 +4484,8 @@
             "facs:mouthPress",
             "facs:tongueOut"
           ],
-          "material": "ts_skin_head"
+          "material": "ts_skin_head",
+          "hasUv1": true
         },
         {
           "node": "TS_Eye_L",
@@ -4564,8 +4568,8 @@
         },
         {
           "node": "TS_Lashes",
-          "triangles": 560,
-          "vertices": 288,
+          "triangles": 632,
+          "vertices": 324,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -4670,91 +4674,91 @@
           "id": "neck",
           "mesh": "TS_Body",
           "indexStart": 0,
-          "indexCount": 1536
+          "indexCount": 1728
         },
         {
           "id": "torso",
           "mesh": "TS_Body",
-          "indexStart": 1536,
-          "indexCount": 9792
+          "indexStart": 1728,
+          "indexCount": 11136
         },
         {
           "id": "pelvis",
           "mesh": "TS_Body",
-          "indexStart": 11328,
-          "indexCount": 3264
+          "indexStart": 12864,
+          "indexCount": 3648
         },
         {
           "id": "upperArm.L",
           "mesh": "TS_Body",
-          "indexStart": 14592,
+          "indexStart": 16512,
           "indexCount": 3888
         },
         {
           "id": "upperArm.R",
           "mesh": "TS_Body",
-          "indexStart": 18480,
+          "indexStart": 20400,
           "indexCount": 3888
         },
         {
           "id": "forearm.L",
           "mesh": "TS_Body",
-          "indexStart": 22368,
+          "indexStart": 24288,
           "indexCount": 3888
         },
         {
           "id": "forearm.R",
           "mesh": "TS_Body",
-          "indexStart": 26256,
+          "indexStart": 28176,
           "indexCount": 3888
         },
         {
           "id": "hand.L",
           "mesh": "TS_Body",
-          "indexStart": 30144,
+          "indexStart": 32064,
           "indexCount": 5520
         },
         {
           "id": "hand.R",
           "mesh": "TS_Body",
-          "indexStart": 35664,
+          "indexStart": 37584,
           "indexCount": 5520
         },
         {
           "id": "thigh.L",
           "mesh": "TS_Body",
-          "indexStart": 41184,
-          "indexCount": 4752
+          "indexStart": 43104,
+          "indexCount": 5280
         },
         {
           "id": "thigh.R",
           "mesh": "TS_Body",
-          "indexStart": 45936,
-          "indexCount": 4752
+          "indexStart": 48384,
+          "indexCount": 5280
         },
         {
           "id": "calf.L",
           "mesh": "TS_Body",
-          "indexStart": 50688,
-          "indexCount": 5184
+          "indexStart": 53664,
+          "indexCount": 5760
         },
         {
           "id": "calf.R",
           "mesh": "TS_Body",
-          "indexStart": 55872,
-          "indexCount": 5184
+          "indexStart": 59424,
+          "indexCount": 5760
         },
         {
           "id": "foot.L",
           "mesh": "TS_Body",
-          "indexStart": 61056,
-          "indexCount": 2592
+          "indexStart": 65184,
+          "indexCount": 2976
         },
         {
           "id": "foot.R",
           "mesh": "TS_Body",
-          "indexStart": 63648,
-          "indexCount": 2592
+          "indexStart": 68160,
+          "indexCount": 2976
         }
       ],
       "anchors": {
@@ -4762,48 +4766,48 @@
           "joint": "mixamorig:Head",
           "offsetM": [
             0.0,
-            0.181,
-            -0.0012
+            0.1845,
+            0.0031
           ]
         },
         "hair": {
           "joint": "mixamorig:Head",
           "offsetM": [
             -0.0,
-            0.1408,
-            -0.0774
+            0.1415,
+            -0.0831
           ]
         },
         "face": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            -0.0,
-            0.0612,
-            0.0997
+            0.0,
+            0.0606,
+            0.0987
           ]
         },
         "ear-l": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            0.101,
-            0.0683,
-            -0.024
+            0.102,
+            0.0737,
+            -0.0167
           ]
         },
         "ear-r": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            -0.101,
-            0.0683,
-            -0.024
+            -0.102,
+            0.0737,
+            -0.0167
           ]
         },
         "neck": {
           "joint": "mixamorig:Neck",
           "offsetM": [
-            0.0,
+            -0.0,
             -0.0035,
-            0.0665
+            0.0669
           ]
         },
         "wrist-l": {
@@ -4826,16 +4830,16 @@
           "joint": "mixamorig:Hips",
           "offsetM": [
             0.0,
-            0.1186,
+            0.1183,
             -0.004
           ]
         },
         "back": {
           "joint": "mixamorig:Spine2",
           "offsetM": [
-            0.0,
+            -0.0,
             -0.0052,
-            -0.0986
+            -0.0978
           ]
         },
         "hand-l": {
@@ -4875,7 +4879,7 @@
         "TS_Eye.L": 632,
         "TS_Eye.R": 632
       },
-      "neckSeamVertexPairs": 64
+      "neckSeamVertexPairs": 72
     },
     "youth-academy": {
       "archetypeId": "youth-academy",
@@ -4883,22 +4887,22 @@
       "genre": "shonen/daily/academy",
       "file": {
         "path": "bases/youth-academy.glb",
-        "bytes": 3069764,
-        "sha256": "d96b582fb71270dfd6b83301ab977c79056b790914334679e499a1691c7f80f0"
+        "bytes": 3917112,
+        "sha256": "3c238148f40faae4a286e885981db7f769f2a58de11184ab7ed9fd701f292837"
       },
       "heightM": 1.56,
-      "headHeightM": 0.223,
+      "headHeightM": 0.2224,
       "headToBodyRatio": 7.0,
       "boundsM": {
         "min": [
           -0.77057,
           0.0,
-          -0.11526
+          -0.11578
         ],
         "max": [
           0.77057,
           1.56,
-          0.15604
+          0.15707
         ]
       },
       "extensions": [
@@ -4907,8 +4911,8 @@
       "meshes": [
         {
           "node": "TS_Body",
-          "triangles": 19552,
-          "vertices": 11768,
+          "triangles": 20992,
+          "vertices": 12513,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -4934,8 +4938,8 @@
         },
         {
           "node": "TS_Head",
-          "triangles": 7296,
-          "vertices": 4375,
+          "triangles": 10176,
+          "vertices": 6806,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -4993,7 +4997,8 @@
             "facs:mouthPress",
             "facs:tongueOut"
           ],
-          "material": "ts_skin_head"
+          "material": "ts_skin_head",
+          "hasUv1": true
         },
         {
           "node": "TS_Eye_L",
@@ -5076,8 +5081,8 @@
         },
         {
           "node": "TS_Lashes",
-          "triangles": 560,
-          "vertices": 288,
+          "triangles": 632,
+          "vertices": 324,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -5182,132 +5187,132 @@
           "id": "neck",
           "mesh": "TS_Body",
           "indexStart": 0,
-          "indexCount": 1536
+          "indexCount": 1728
         },
         {
           "id": "torso",
           "mesh": "TS_Body",
-          "indexStart": 1536,
-          "indexCount": 9024
+          "indexStart": 1728,
+          "indexCount": 10272
         },
         {
           "id": "pelvis",
           "mesh": "TS_Body",
-          "indexStart": 10560,
-          "indexCount": 2496
+          "indexStart": 12000,
+          "indexCount": 2784
         },
         {
           "id": "upperArm.L",
           "mesh": "TS_Body",
-          "indexStart": 13056,
+          "indexStart": 14784,
           "indexCount": 3024
         },
         {
           "id": "upperArm.R",
           "mesh": "TS_Body",
-          "indexStart": 16080,
+          "indexStart": 17808,
           "indexCount": 3024
         },
         {
           "id": "forearm.L",
           "mesh": "TS_Body",
-          "indexStart": 19104,
+          "indexStart": 20832,
           "indexCount": 3456
         },
         {
           "id": "forearm.R",
           "mesh": "TS_Body",
-          "indexStart": 22560,
+          "indexStart": 24288,
           "indexCount": 3456
         },
         {
           "id": "hand.L",
           "mesh": "TS_Body",
-          "indexStart": 26016,
+          "indexStart": 27744,
           "indexCount": 5520
         },
         {
           "id": "hand.R",
           "mesh": "TS_Body",
-          "indexStart": 31536,
+          "indexStart": 33264,
           "indexCount": 5520
         },
         {
           "id": "thigh.L",
           "mesh": "TS_Body",
-          "indexStart": 37056,
-          "indexCount": 3888
+          "indexStart": 38784,
+          "indexCount": 4320
         },
         {
           "id": "thigh.R",
           "mesh": "TS_Body",
-          "indexStart": 40944,
-          "indexCount": 3888
+          "indexStart": 43104,
+          "indexCount": 4320
         },
         {
           "id": "calf.L",
           "mesh": "TS_Body",
-          "indexStart": 44832,
-          "indexCount": 4320
+          "indexStart": 47424,
+          "indexCount": 4800
         },
         {
           "id": "calf.R",
           "mesh": "TS_Body",
-          "indexStart": 49152,
-          "indexCount": 4320
+          "indexStart": 52224,
+          "indexCount": 4800
         },
         {
           "id": "foot.L",
           "mesh": "TS_Body",
-          "indexStart": 53472,
-          "indexCount": 2592
+          "indexStart": 57024,
+          "indexCount": 2976
         },
         {
           "id": "foot.R",
           "mesh": "TS_Body",
-          "indexStart": 56064,
-          "indexCount": 2592
+          "indexStart": 60000,
+          "indexCount": 2976
         }
       ],
       "anchors": {
         "head-top": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            0.0,
-            0.1822,
-            -0.0012
+            -0.0,
+            0.1856,
+            0.0029
           ]
         },
         "hair": {
           "joint": "mixamorig:Head",
           "offsetM": [
             0.0,
-            0.1417,
-            -0.074
+            0.1424,
+            -0.0796
           ]
         },
         "face": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            0.0,
-            0.0701,
+            -0.0,
+            0.0505,
             0.0913
           ]
         },
         "ear-l": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            0.0944,
-            0.0523,
-            -0.0227
+            0.0973,
+            0.0635,
+            -0.0161
           ]
         },
         "ear-r": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            -0.0944,
-            0.0523,
-            -0.0227
+            -0.0973,
+            0.0635,
+            -0.0161
           ]
         },
         "neck": {
@@ -5315,7 +5320,7 @@
           "offsetM": [
             -0.0,
             -0.0087,
-            0.0491
+            0.0494
           ]
         },
         "wrist-l": {
@@ -5338,16 +5343,16 @@
           "joint": "mixamorig:Hips",
           "offsetM": [
             0.0,
-            0.0953,
+            0.095,
             -0.004
           ]
         },
         "back": {
           "joint": "mixamorig:Spine2",
           "offsetM": [
-            0.0,
+            0.0112,
             -0.0087,
-            -0.0704
+            -0.0707
           ]
         },
         "hand-l": {
@@ -5387,7 +5392,7 @@
         "TS_Eye.L": 632,
         "TS_Eye.R": 632
       },
-      "neckSeamVertexPairs": 64
+      "neckSeamVertexPairs": 72
     },
     "sd-chibi": {
       "archetypeId": "sd-chibi",
@@ -5395,22 +5400,22 @@
       "genre": "comedy/gag/emoticon",
       "file": {
         "path": "bases/sd-chibi.glb",
-        "bytes": 2779380,
-        "sha256": "705fc0df2b28b94a8e628074e56328161450ede2a03c6bef9d8442016837d59e"
+        "bytes": 3560508,
+        "sha256": "d198d1b2de6e659b2e67167b460602364104c6f6dcd6a6d555498f215323a6d1"
       },
       "heightM": 1.05,
-      "headHeightM": 0.339,
+      "headHeightM": 0.3389,
       "headToBodyRatio": 3.1,
       "boundsM": {
         "min": [
           -0.42799,
           0.0,
-          -0.16446
+          -0.16771
         ],
         "max": [
           0.42799,
           1.05,
-          0.14184
+          0.14732
         ]
       },
       "extensions": [
@@ -5419,8 +5424,8 @@
       "meshes": [
         {
           "node": "TS_Body",
-          "triangles": 15584,
-          "vertices": 9673,
+          "triangles": 16736,
+          "vertices": 11767,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -5446,8 +5451,8 @@
         },
         {
           "node": "TS_Head",
-          "triangles": 6336,
-          "vertices": 3791,
+          "triangles": 8192,
+          "vertices": 5454,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -5505,7 +5510,8 @@
             "facs:mouthPress",
             "facs:tongueOut"
           ],
-          "material": "ts_skin_head"
+          "material": "ts_skin_head",
+          "hasUv1": true
         },
         {
           "node": "TS_Eye_L",
@@ -5588,8 +5594,8 @@
         },
         {
           "node": "TS_Lashes",
-          "triangles": 560,
-          "vertices": 288,
+          "triangles": 632,
+          "vertices": 324,
           "skinned": true,
           "morphs": [
             "param:height:+",
@@ -5694,91 +5700,91 @@
           "id": "neck",
           "mesh": "TS_Body",
           "indexStart": 0,
-          "indexCount": 1536
+          "indexCount": 1728
         },
         {
           "id": "torso",
           "mesh": "TS_Body",
-          "indexStart": 1536,
-          "indexCount": 7488
+          "indexStart": 1728,
+          "indexCount": 8544
         },
         {
           "id": "pelvis",
           "mesh": "TS_Body",
-          "indexStart": 9024,
-          "indexCount": 2496
+          "indexStart": 10272,
+          "indexCount": 2784
         },
         {
           "id": "upperArm.L",
           "mesh": "TS_Body",
-          "indexStart": 11520,
+          "indexStart": 13056,
           "indexCount": 2160
         },
         {
           "id": "upperArm.R",
           "mesh": "TS_Body",
-          "indexStart": 13680,
+          "indexStart": 15216,
           "indexCount": 2160
         },
         {
           "id": "forearm.L",
           "mesh": "TS_Body",
-          "indexStart": 15840,
+          "indexStart": 17376,
           "indexCount": 2160
         },
         {
           "id": "forearm.R",
           "mesh": "TS_Body",
-          "indexStart": 18000,
+          "indexStart": 19536,
           "indexCount": 2160
         },
         {
           "id": "hand.L",
           "mesh": "TS_Body",
-          "indexStart": 20160,
+          "indexStart": 21696,
           "indexCount": 5520
         },
         {
           "id": "hand.R",
           "mesh": "TS_Body",
-          "indexStart": 25680,
+          "indexStart": 27216,
           "indexCount": 5520
         },
         {
           "id": "thigh.L",
           "mesh": "TS_Body",
-          "indexStart": 31200,
-          "indexCount": 2160
+          "indexStart": 32736,
+          "indexCount": 2400
         },
         {
           "id": "thigh.R",
           "mesh": "TS_Body",
-          "indexStart": 33360,
-          "indexCount": 2160
+          "indexStart": 35136,
+          "indexCount": 2400
         },
         {
           "id": "calf.L",
           "mesh": "TS_Body",
-          "indexStart": 35520,
-          "indexCount": 3024
+          "indexStart": 37536,
+          "indexCount": 3360
         },
         {
           "id": "calf.R",
           "mesh": "TS_Body",
-          "indexStart": 38544,
-          "indexCount": 3024
+          "indexStart": 40896,
+          "indexCount": 3360
         },
         {
           "id": "foot.L",
           "mesh": "TS_Body",
-          "indexStart": 41568,
-          "indexCount": 2592
+          "indexStart": 44256,
+          "indexCount": 2976
         },
         {
           "id": "foot.R",
           "mesh": "TS_Body",
-          "indexStart": 44160,
-          "indexCount": 2592
+          "indexStart": 47232,
+          "indexCount": 2976
         }
       ],
       "anchors": {
@@ -5786,40 +5792,40 @@
           "joint": "mixamorig:Head",
           "offsetM": [
             0.0,
-            0.277,
-            -0.0019
+            0.2774,
+            0.006
           ]
         },
         "hair": {
           "joint": "mixamorig:Head",
           "offsetM": [
             0.0,
-            0.2164,
-            -0.1217
+            0.2083,
+            -0.1332
           ]
         },
         "face": {
           "joint": "mixamorig:Head",
           "offsetM": [
             0.0,
-            0.0823,
-            0.1445
+            0.0701,
+            0.1464
           ]
         },
         "ear-l": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            0.1574,
-            0.0744,
-            -0.022
+            0.1694,
+            0.0591,
+            -0.0251
           ]
         },
         "ear-r": {
           "joint": "mixamorig:Head",
           "offsetM": [
-            -0.1574,
-            0.0744,
-            -0.022
+            -0.1694,
+            0.0591,
+            -0.0251
           ]
         },
         "neck": {
@@ -5827,7 +5833,7 @@
           "offsetM": [
             0.0,
             -0.0116,
-            0.0557
+            0.056
           ]
         },
         "wrist-l": {
@@ -5857,9 +5863,9 @@
         "back": {
           "joint": "mixamorig:Spine2",
           "offsetM": [
-            0.0126,
+            0.0089,
             -0.0112,
-            -0.0646
+            -0.0639
           ]
         },
         "hand-l": {
@@ -5899,7 +5905,7 @@
         "TS_Eye.L": 632,
         "TS_Eye.R": 632
       },
-      "neckSeamVertexPairs": 64
+      "neckSeamVertexPairs": 72
     }
   },
   "parts": [
@@ -5910,8 +5916,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/cargo-shorts.glb",
-            "bytes": 685480,
-            "sha256": "73aae29bb4a7731bae95793d088d725d6a7fb3e99cf509558dc7ad8447327cc7"
+            "bytes": 737728,
+            "sha256": "ea449ed45dd09a7ee70bb958a36f850350ee1fc4bbb1e171dd278ca26d343da3"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -5920,7 +5926,7 @@
             {
               "node": "TS_Bottom_cargo-shorts",
               "triangles": 4840,
-              "vertices": 4105,
+              "vertices": 4224,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -5967,8 +5973,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/chest-harness.glb",
-            "bytes": 262680,
-            "sha256": "02cfbd76447e4fb3130a48cda9aabb6d547b3a0e346fe1526817cd3c2d9b661c"
+            "bytes": 284540,
+            "sha256": "e1f336532c534c0c0a0a4e41cecaf538569cd03f0d66dddfa56db222829f0d6f"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -5977,7 +5983,7 @@
             {
               "node": "TS_Accessory_chest-harness",
               "triangles": 856,
-              "vertices": 1023,
+              "vertices": 1018,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6021,8 +6027,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/combat-boots.glb",
-            "bytes": 443068,
-            "sha256": "bcadbb21c5cd891d67bf8dcb6a47fb95d92344069fa2a5d74a5cc38a16945239"
+            "bytes": 565280,
+            "sha256": "1f0462c412ba4216144c4726fe7c9d87bf5a4ed5c18c4f6e86eacab14b4e4cca"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6030,8 +6036,8 @@
           "meshes": [
             {
               "node": "TS_Shoes_combat-boots",
-              "triangles": 3672,
-              "vertices": 3709,
+              "triangles": 4864,
+              "vertices": 4818,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6076,8 +6082,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/derby-heels.glb",
-            "bytes": 293084,
-            "sha256": "1930164ef31057e1dfc0c102f0197a7b8ddebde9468117afb91003e8fdd819ce"
+            "bytes": 432704,
+            "sha256": "8562af8ef4b52556aebee1374e87938a716ebb27660c5a4f1c5637337819c6e5"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6085,8 +6091,8 @@
           "meshes": [
             {
               "node": "TS_Shoes_derby-heels",
-              "triangles": 2040,
-              "vertices": 1979,
+              "triangles": 3136,
+              "vertices": 3065,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6131,8 +6137,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/dress-shirt.glb",
-            "bytes": 848000,
-            "sha256": "69666ffdb8c82f1cc8659665d32bc9a01f7974c95f7b494e78fe7a1d23d3aa4a"
+            "bytes": 904308,
+            "sha256": "3cb47fd996a38a615270a8eea6efe2ab146b6d28c682ab55c8dfc15dd0f1928a"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6141,7 +6147,7 @@
             {
               "node": "TS_Top_dress-shirt",
               "triangles": 5892,
-              "vertices": 4961,
+              "vertices": 5060,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6189,8 +6195,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/imperial-uniform-coat.glb",
-            "bytes": 1318236,
-            "sha256": "8a9cce275355a80b4279a8eb0d45317dca9111a064490dafd5cc0be1b517e492"
+            "bytes": 1384188,
+            "sha256": "5c926de785691cadcda547f361e5e3b1b794ee4605690d6f60090ebd278aa591"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6199,7 +6205,7 @@
             {
               "node": "TS_Outer_imperial-uniform-coat",
               "triangles": 9392,
-              "vertices": 8547,
+              "vertices": 8787,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6247,8 +6253,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/knee-socks.glb",
-            "bytes": 259684,
-            "sha256": "93ec22135e4d8e5364bb95251c5ab82ee110a552c88b0ae279529906caabf351"
+            "bytes": 255836,
+            "sha256": "42597d2a0ce75a7c51bf5c64db94ec5b75693ec54ee945df50ae87fc81ccaa29"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6257,7 +6263,7 @@
             {
               "node": "TS_Legwear_knee-socks",
               "triangles": 2240,
-              "vertices": 1832,
+              "vertices": 1692,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6298,8 +6304,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/knit-cardigan.glb",
-            "bytes": 922964,
-            "sha256": "7b964c7254495162da64ac4f1e8a05a8e5c4a2b17e3ea0ddd294ae6346b84a52"
+            "bytes": 958084,
+            "sha256": "f8c8ad4c058393dfb080fa8d9dece7f5e9fc646b0f5878f1e39d0c73f7070c52"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6308,7 +6314,7 @@
             {
               "node": "TS_Outer_knit-cardigan",
               "triangles": 6724,
-              "vertices": 5457,
+              "vertices": 5596,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6356,8 +6362,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/lace-up-boots.glb",
-            "bytes": 400972,
-            "sha256": "f1ff4b169315513f2e4d13d2b51a5137d357ee186abc6da19013ad7d32ec092e"
+            "bytes": 520316,
+            "sha256": "a43f4cfc8dc65210ed45e2e36c0773491a7c4ec5d23dc88fb4c4385ed722cb3a"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6365,8 +6371,8 @@
           "meshes": [
             {
               "node": "TS_Shoes_lace-up-boots",
-              "triangles": 3216,
-              "vertices": 3181,
+              "triangles": 4408,
+              "vertices": 4243,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6411,8 +6417,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/loafers.glb",
-            "bytes": 254400,
-            "sha256": "2e577003a008d44971b35ca7a685cedae63c5decd4839c6792f681662534a5dc"
+            "bytes": 380408,
+            "sha256": "c454b8195b7967f1d10542c2c1710cea16233a441af9f97a87ae57f39620c887"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6420,8 +6426,8 @@
           "meshes": [
             {
               "node": "TS_Shoes_loafers",
-              "triangles": 1928,
-              "vertices": 1793,
+              "triangles": 3024,
+              "vertices": 2944,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6466,8 +6472,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/murim-boots.glb",
-            "bytes": 325132,
-            "sha256": "a0c8ecda5980e5d08dea828dfbde488af73720dc56151c5f75ad0d3379694d2c"
+            "bytes": 488848,
+            "sha256": "877a27947bcfa3b3e14a594acf0b37dc2b913e1c0e1a7dd49b9b479515a2f12f"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6475,8 +6481,8 @@
           "meshes": [
             {
               "node": "TS_Shoes_murim-boots",
-              "triangles": 2712,
-              "vertices": 2365,
+              "triangles": 3904,
+              "vertices": 3529,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6521,8 +6527,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/murim-dobok-inner.glb",
-            "bytes": 707412,
-            "sha256": "eff7d2745d759f9465438c6b30452f5ac3ff09ad9b44e5a2a40630f37bac035e"
+            "bytes": 742612,
+            "sha256": "47c82adf5a841c0bf56f26b5f3297518b0bf72adf71be01d8d6329657e752ba0"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6531,7 +6537,7 @@
             {
               "node": "TS_Top_murim-dobok-inner",
               "triangles": 5228,
-              "vertices": 4161,
+              "vertices": 4141,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6579,8 +6585,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/murim-dopo-robe.glb",
-            "bytes": 971716,
-            "sha256": "3cef9790d2429ab417441fc37c1c5870ecceee09830ba8ef8effbea97b0c0dd6"
+            "bytes": 1017136,
+            "sha256": "6b85a98fbf34530f29a3f76b61323eb83cda47b4f0fa43b4c6e3ab6907221fff"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6589,7 +6595,7 @@
             {
               "node": "TS_Outer_murim-dopo-robe",
               "triangles": 7608,
-              "vertices": 6207,
+              "vertices": 6372,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6637,8 +6643,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/murim-wide-pants.glb",
-            "bytes": 956500,
-            "sha256": "63486907d21e5e22842193fbd65ec34b19400e0c7cd14225a8f0fd799194b78d"
+            "bytes": 944628,
+            "sha256": "b76fb80e375052ffb98a4abeababa42af4fdb031baea5ae27c60915c2d89d6d6"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6647,7 +6653,7 @@
             {
               "node": "TS_Bottom_murim-wide-pants",
               "triangles": 8256,
-              "vertices": 6787,
+              "vertices": 6549,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6694,8 +6700,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/noble-cape.glb",
-            "bytes": 574660,
-            "sha256": "928e767d9005e1255023ec4e9135954e763a5256cc03dc49019b3c7aa5c258f5"
+            "bytes": 607328,
+            "sha256": "13d3bf5f999af06c0599595b236ba81dde38d9c8837198a643b6f1bb2e94e5be"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6704,7 +6710,7 @@
             {
               "node": "TS_Outer_noble-cape",
               "triangles": 3704,
-              "vertices": 3146,
+              "vertices": 3149,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6752,8 +6758,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/oversized-hoodie.glb",
-            "bytes": 996212,
-            "sha256": "dc5d58ba4da168423a506497a11d7615065ec107a221544951c29e1e6cc5c381"
+            "bytes": 1014892,
+            "sha256": "54564484ab00591a2b7a3b0126111d43c15a0b4d3b559c716f486d332d84ff64"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6762,7 +6768,7 @@
             {
               "node": "TS_Top_oversized-hoodie",
               "triangles": 7264,
-              "vertices": 5997,
+              "vertices": 6023,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6810,8 +6816,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/pencil-skirt.glb",
-            "bytes": 405452,
-            "sha256": "d54bc9d2314d40d61227ed2072c75550a6a06ce6d51974eefd992ffa983b3115"
+            "bytes": 424116,
+            "sha256": "b6cfa68fe33d46877b55ece7b0422bf33832699f6ee88c5fea735030a1cccc9d"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6820,7 +6826,7 @@
             {
               "node": "TS_Bottom_pencil-skirt",
               "triangles": 2844,
-              "vertices": 2108,
+              "vertices": 2109,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6867,8 +6873,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/pleated-skirt.glb",
-            "bytes": 781048,
-            "sha256": "35f1675fde577932c97e675d796194ff62b785fc02fd286e62c204234d22737e"
+            "bytes": 818476,
+            "sha256": "0b1ea3b8ab06242d77aacbcd3295cac08179c1eaaadaec1af37b9cabc6147ac8"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6877,7 +6883,7 @@
             {
               "node": "TS_Bottom_pleated-skirt",
               "triangles": 5584,
-              "vertices": 4903,
+              "vertices": 4803,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6924,8 +6930,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/ribbed-tee.glb",
-            "bytes": 642260,
-            "sha256": "ae7f74215445e12969938a80fff76add955299d984d74468374cc92e69319c86"
+            "bytes": 672476,
+            "sha256": "d7436b2ae92ec8ab4cfccf3b634b0275cffeb9dfd299ed77de7f993a39417e05"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6934,7 +6940,7 @@
             {
               "node": "TS_Top_ribbed-tee",
               "triangles": 4332,
-              "vertices": 3583,
+              "vertices": 3589,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -6982,8 +6988,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/rofan-corset-bodice.glb",
-            "bytes": 930168,
-            "sha256": "f7b78909b8cb8bd5eae9a93ff6caeeec6e55c4cc26eb733703d836525c563c12"
+            "bytes": 966832,
+            "sha256": "115dbec033cdc3a042b39c3fa35989c98cec42b1654256405ce7a0eb5787715a"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -6992,7 +6998,7 @@
             {
               "node": "TS_Top_rofan-corset-bodice",
               "triangles": 7052,
-              "vertices": 5672,
+              "vertices": 5760,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7040,8 +7046,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/rofan-layered-skirt.glb",
-            "bytes": 810896,
-            "sha256": "357f81358492353dc95fcb73ab01d38e7a96551fff4d8b26aaa3bccc5a067ba3"
+            "bytes": 857108,
+            "sha256": "c57a1f1cafcbdc238970e19dc51cc1ad67fe12cad66977b0a8ae3a9faf6c97b2"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7050,7 +7056,7 @@
             {
               "node": "TS_Bottom_rofan-layered-skirt",
               "triangles": 7524,
-              "vertices": 5759,
+              "vertices": 5990,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7097,8 +7103,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/rofan-tiara.glb",
-            "bytes": 295304,
-            "sha256": "e3e59dd3da99561bf9d5b50b5e80d5fe459f60a5059459e9276888eee542cd72"
+            "bytes": 318120,
+            "sha256": "09dbf1b0b968e1823d8ebb7c6e797b157440bc4f395b7325bda57600eef9a7ab"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7151,8 +7157,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/school-blazer.glb",
-            "bytes": 1215700,
-            "sha256": "eaae7db3b3770aca747fd028d66ae12004b86e8754cc8d02c9daeed3045597a2"
+            "bytes": 1269600,
+            "sha256": "723ebcc35555c9f07710640b358adf345a4e5400c3d7810032ee604d10cc1525"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7160,8 +7166,8 @@
           "meshes": [
             {
               "node": "TS_Outer_school-blazer",
-              "triangles": 8516,
-              "vertices": 7398,
+              "triangles": 8740,
+              "vertices": 7491,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7209,8 +7215,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/school-shirt-tie.glb",
-            "bytes": 891552,
-            "sha256": "3de9fb8c5fa574151389cda9d3233c3624e89f534c3a9b616a24297544af72ac"
+            "bytes": 933816,
+            "sha256": "6f507976b4f24f56f1c9b5ecf9478a44824648e29ec6457ce2e931490794bab3"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7219,7 +7225,7 @@
             {
               "node": "TS_Top_school-shirt-tie",
               "triangles": 6576,
-              "vertices": 5629,
+              "vertices": 5663,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7267,8 +7273,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/school-slacks.glb",
-            "bytes": 933644,
-            "sha256": "79d6bd1125e96204397e56a376efbf644d879048c0dc0362e47592b4b712b6f7"
+            "bytes": 975276,
+            "sha256": "a21b668884d7da4964b0458cc0fcbb43394e81ac36c0eeeccffafa07f76c35ff"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7277,7 +7283,7 @@
             {
               "node": "TS_Bottom_school-slacks",
               "triangles": 7544,
-              "vertices": 5982,
+              "vertices": 6173,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7324,8 +7330,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/sneakers.glb",
-            "bytes": 401396,
-            "sha256": "541f957e8b6d32f542a57110c166f01ac32bba2233339abb66f84e075170a8ad"
+            "bytes": 542020,
+            "sha256": "9a5a525a825870d76bcea458d94250cce59c1871a0e71332eb8b3bc5dc1df6f9"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7333,8 +7339,8 @@
           "meshes": [
             {
               "node": "TS_Shoes_sneakers",
-              "triangles": 2552,
-              "vertices": 2753,
+              "triangles": 3648,
+              "vertices": 3673,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7379,8 +7385,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/tactical-cargo.glb",
-            "bytes": 961436,
-            "sha256": "02701d7fa8dbcb30a97a7de3a01737524dbf3a14c3f2198cffafffae2869b451"
+            "bytes": 999036,
+            "sha256": "27299fb0bd122bbd90a0dc1ae915f2bd2666af37c64707262a89de4086e7c39d"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7389,7 +7395,7 @@
             {
               "node": "TS_Bottom_tactical-cargo",
               "triangles": 7896,
-              "vertices": 6263,
+              "vertices": 6375,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7436,8 +7442,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/tactical-compression.glb",
-            "bytes": 795216,
-            "sha256": "0bbe0e9b108eebbbd1f638cf7f540971d215b07650e4db48b31f5f996f103229"
+            "bytes": 805716,
+            "sha256": "0eaa162354272883f884efe8d958baf781efbd0d2c6f5559789b1065f25f926e"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7446,7 +7452,7 @@
             {
               "node": "TS_Top_tactical-compression",
               "triangles": 5652,
-              "vertices": 4636,
+              "vertices": 4558,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7494,8 +7500,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/tailored-slacks.glb",
-            "bytes": 848820,
-            "sha256": "2aaa7e7873948f7887aef00455701eb9592595e09e1de1448fdbff83ab6ea6ce"
+            "bytes": 826624,
+            "sha256": "ef682682d9f7d2eb22f77809da798ca52b4852a7f6c61592cef6c203a0b132fc"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7504,7 +7510,7 @@
             {
               "node": "TS_Bottom_tailored-slacks",
               "triangles": 6968,
-              "vertices": 5306,
+              "vertices": 4993,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7551,8 +7557,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/tailored-suit.glb",
-            "bytes": 894304,
-            "sha256": "8e448a6fa27434bb6f50c73465e4adb9d1874c1f7058437b292a55e78bc8213c"
+            "bytes": 952500,
+            "sha256": "055288a0a3871b5a155c06815208ae42e6307ae2e72a35c31c84a11326131106"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7560,8 +7566,8 @@
           "meshes": [
             {
               "node": "TS_Outer_tailored-suit",
-              "triangles": 6208,
-              "vertices": 4956,
+              "triangles": 6432,
+              "vertices": 5119,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7609,8 +7615,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/techwear-jacket.glb",
-            "bytes": 980312,
-            "sha256": "ba1b722f015e0f69d18dd1b2884128490ee5547da70baec99ad76d197d65bad9"
+            "bytes": 996220,
+            "sha256": "7651dcb36266a393b765229cbc8851c35b02e4c70fc300b2f7538a66ec6f8dd4"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7619,7 +7625,7 @@
             {
               "node": "TS_Outer_techwear-jacket",
               "triangles": 7436,
-              "vertices": 5999,
+              "vertices": 5963,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7667,8 +7673,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/trench-coat.glb",
-            "bytes": 1106972,
-            "sha256": "56ef2e811f3debc411ec84a622a670e565551abb53c58605897a61197d76d39d"
+            "bytes": 1156896,
+            "sha256": "2e7edd4ddc4462549b8cb5b27e1853273958bdd0894af8e222137f424fda035e"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7676,8 +7682,8 @@
           "meshes": [
             {
               "node": "TS_Outer_trench-coat",
-              "triangles": 8164,
-              "vertices": 6900,
+              "triangles": 8340,
+              "vertices": 7147,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7725,8 +7731,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/waist-sash.glb",
-            "bytes": 222732,
-            "sha256": "2cd60df04385337a17dfbadd7dedce54ebde8d4bc05034cb2dbfd842f931ffd8"
+            "bytes": 247404,
+            "sha256": "00725da8431a214d01bf7c574c0eb093c4451b501088db7201ec1778f1c0604e"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7735,7 +7741,7 @@
             {
               "node": "TS_Accessory_waist-sash",
               "triangles": 1632,
-              "vertices": 1229,
+              "vertices": 1281,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7779,8 +7785,8 @@
         "shared": {
           "file": {
             "path": "parts/garments/wide-denim.glb",
-            "bytes": 955868,
-            "sha256": "c6d8983359a850102bea65136d19ad66c72aed98cd1fb0e7cd1bcf195260db54"
+            "bytes": 1005332,
+            "sha256": "45e4963996e8903631530fc9f89b3ecc159d208e77696bd7a32c1c1e8c69480e"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7789,7 +7795,7 @@
             {
               "node": "TS_Bottom_wide-denim",
               "triangles": 7632,
-              "vertices": 6244,
+              "vertices": 6408,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7836,8 +7842,8 @@
         "shared": {
           "file": {
             "path": "parts/hair/action-pony.glb",
-            "bytes": 1297360,
-            "sha256": "fe567ce025a01f5caca0e5c9ff31708544330c54a91e7e4c1610fbd80ac10469"
+            "bytes": 1407132,
+            "sha256": "c4fb00ec645297ac23cc8947032488d88537413f89419467cbe59d55c72e743d"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7845,8 +7851,8 @@
           "meshes": [
             {
               "node": "TS_AuthoredHair_action-pony_LOD0",
-              "triangles": 9496,
-              "vertices": 4924,
+              "triangles": 10316,
+              "vertices": 5378,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7873,8 +7879,8 @@
             },
             {
               "node": "TS_AuthoredHair_action-pony_LOD1",
-              "triangles": 4598,
-              "vertices": 2452,
+              "triangles": 4994,
+              "vertices": 2687,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7901,8 +7907,8 @@
             },
             {
               "node": "TS_AuthoredHair_action-pony_LOD2",
-              "triangles": 1936,
-              "vertices": 1020,
+              "triangles": 1952,
+              "vertices": 1028,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7942,8 +7948,8 @@
         "shared": {
           "file": {
             "path": "parts/hair/braided-crown.glb",
-            "bytes": 1251788,
-            "sha256": "96b0f02bcccb18bc54943317b156dc8d397a901955b696c28e31f9e60d5057b9"
+            "bytes": 1321608,
+            "sha256": "6ec8178147b057f4b090fbde2e390f1b32f058927b4d7588f0887793caca51c4"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -7951,8 +7957,8 @@
           "meshes": [
             {
               "node": "TS_AuthoredHair_braided-crown_LOD0",
-              "triangles": 8864,
-              "vertices": 4550,
+              "triangles": 9408,
+              "vertices": 4838,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -7979,8 +7985,8 @@
             },
             {
               "node": "TS_AuthoredHair_braided-crown_LOD1",
-              "triangles": 4662,
-              "vertices": 2441,
+              "triangles": 4918,
+              "vertices": 2583,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8007,8 +8013,8 @@
             },
             {
               "node": "TS_AuthoredHair_braided-crown_LOD2",
-              "triangles": 2152,
-              "vertices": 1132,
+              "triangles": 2176,
+              "vertices": 1144,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8048,8 +8054,8 @@
         "shared": {
           "file": {
             "path": "parts/hair/comma-hair.glb",
-            "bytes": 1250040,
-            "sha256": "fe7ae9f7eaa346ddfaea26ac816f8d31c240cf4f1659a85823dc242ecb5076bd"
+            "bytes": 1421996,
+            "sha256": "b295ddecc95359db5fc58dfd57e3488f366b23208fb506626eb243acd22ddfbd"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -8057,8 +8063,8 @@
           "meshes": [
             {
               "node": "TS_AuthoredHair_comma-hair_LOD0",
-              "triangles": 9100,
-              "vertices": 4714,
+              "triangles": 10496,
+              "vertices": 5430,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8085,8 +8091,8 @@
             },
             {
               "node": "TS_AuthoredHair_comma-hair_LOD1",
-              "triangles": 4488,
-              "vertices": 2386,
+              "triangles": 5152,
+              "vertices": 2733,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8113,8 +8119,8 @@
             },
             {
               "node": "TS_AuthoredHair_comma-hair_LOD2",
-              "triangles": 1632,
-              "vertices": 866,
+              "triangles": 1736,
+              "vertices": 918,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8154,8 +8160,8 @@
         "shared": {
           "file": {
             "path": "parts/hair/dandy-two-block.glb",
-            "bytes": 1320700,
-            "sha256": "0b9b4e3184c0333ba2a785f1604044702583cb78ef317ded3bcf31a992bb8b96"
+            "bytes": 1337688,
+            "sha256": "9ade944d1c8038e6dc5fbc0b626c1b19b4bd4d37120ac5967875ca84a6488c15"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -8163,8 +8169,8 @@
           "meshes": [
             {
               "node": "TS_AuthoredHair_dandy-two-block_LOD0",
-              "triangles": 9608,
-              "vertices": 4982,
+              "triangles": 9752,
+              "vertices": 5054,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8191,8 +8197,8 @@
             },
             {
               "node": "TS_AuthoredHair_dandy-two-block_LOD1",
-              "triangles": 4768,
-              "vertices": 2539,
+              "triangles": 4794,
+              "vertices": 2552,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8219,8 +8225,8 @@
             },
             {
               "node": "TS_AuthoredHair_dandy-two-block_LOD2",
-              "triangles": 1720,
-              "vertices": 918,
+              "triangles": 1784,
+              "vertices": 950,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8260,8 +8266,8 @@
         "shared": {
           "file": {
             "path": "parts/hair/hime-cut.glb",
-            "bytes": 1442516,
-            "sha256": "544a8b2462cb062d9a9a3f124d13a4cfc4f64375db50ad0b76c0c4f3bba89dbf"
+            "bytes": 1443144,
+            "sha256": "dce178b6e3c61417d4b87ab49ad22512e0bfa9b76472836a885a5410b6a33b74"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -8366,8 +8372,8 @@
         "shared": {
           "file": {
             "path": "parts/hair/murim-topknot.glb",
-            "bytes": 1357416,
-            "sha256": "27a9ae138356d50f54fcd2ea20c7df7c2c49b0c68a6dbd59d9d25ddbdcaa4807"
+            "bytes": 1362124,
+            "sha256": "7c9afd8c61b801c86aa33a6dadc4d56d3368b7b891d090c3961164bf21dd1406"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -8375,8 +8381,8 @@
           "meshes": [
             {
               "node": "TS_AuthoredHair_murim-topknot_LOD0",
-              "triangles": 10380,
-              "vertices": 5370,
+              "triangles": 10404,
+              "vertices": 5382,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8403,8 +8409,8 @@
             },
             {
               "node": "TS_AuthoredHair_murim-topknot_LOD1",
-              "triangles": 5126,
-              "vertices": 2719,
+              "triangles": 5136,
+              "vertices": 2724,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8472,8 +8478,8 @@
         "shared": {
           "file": {
             "path": "parts/hair/romance-long.glb",
-            "bytes": 1482852,
-            "sha256": "03ac48ca90250528ac1457f6b7678c1f5c6601fa4338e35725a99e2700a7ea0c"
+            "bytes": 1491340,
+            "sha256": "e5c6c4bd619a65dc9dcd6fc20e1448bb74e5fae2388ddeaa4e989c097551daf6"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -8481,8 +8487,8 @@
           "meshes": [
             {
               "node": "TS_AuthoredHair_romance-long_LOD0",
-              "triangles": 11936,
-              "vertices": 6150,
+              "triangles": 11984,
+              "vertices": 6174,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8509,8 +8515,8 @@
             },
             {
               "node": "TS_AuthoredHair_romance-long_LOD1",
-              "triangles": 5576,
-              "vertices": 2944,
+              "triangles": 5612,
+              "vertices": 2962,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8537,8 +8543,8 @@
             },
             {
               "node": "TS_AuthoredHair_romance-long_LOD2",
-              "triangles": 1760,
-              "vertices": 922,
+              "triangles": 1768,
+              "vertices": 926,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8578,8 +8584,8 @@
         "shared": {
           "file": {
             "path": "parts/hair/short-layered.glb",
-            "bytes": 1371104,
-            "sha256": "8276dfc4a25047e58d95e16c2b59bdba067be386a07fa3df0d740efc5b9c1523"
+            "bytes": 1551072,
+            "sha256": "ddc97717d6eb21ac139ef93b986500d2c43a655f4861ad0ff6f44b9642d9cb36"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -8587,8 +8593,8 @@
           "meshes": [
             {
               "node": "TS_AuthoredHair_short-layered_LOD0",
-              "triangles": 9984,
-              "vertices": 5192,
+              "triangles": 11432,
+              "vertices": 5960,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8615,8 +8621,8 @@
             },
             {
               "node": "TS_AuthoredHair_short-layered_LOD1",
-              "triangles": 4880,
-              "vertices": 2611,
+              "triangles": 5534,
+              "vertices": 2975,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8643,8 +8649,8 @@
             },
             {
               "node": "TS_AuthoredHair_short-layered_LOD2",
-              "triangles": 1832,
-              "vertices": 968,
+              "triangles": 1864,
+              "vertices": 984,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8684,8 +8690,8 @@
         "shared": {
           "file": {
             "path": "parts/hair/slicked-back-duke.glb",
-            "bytes": 1260708,
-            "sha256": "4341c1c3f229904f740b51ba48d360ee986b6d8d59fbca5c1adda8e5d97b4efe"
+            "bytes": 1302712,
+            "sha256": "60354e907dda8b478d6d61400ec0ad60b8180042688c62b4e9a7025131098742"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -8693,8 +8699,8 @@
           "meshes": [
             {
               "node": "TS_AuthoredHair_slicked-back-duke_LOD0",
-              "triangles": 9544,
-              "vertices": 4918,
+              "triangles": 9876,
+              "vertices": 5092,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8721,8 +8727,8 @@
             },
             {
               "node": "TS_AuthoredHair_slicked-back-duke_LOD1",
-              "triangles": 4448,
-              "vertices": 2350,
+              "triangles": 4620,
+              "vertices": 2443,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8749,8 +8755,8 @@
             },
             {
               "node": "TS_AuthoredHair_slicked-back-duke_LOD2",
-              "triangles": 1712,
-              "vertices": 902,
+              "triangles": 1736,
+              "vertices": 914,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8790,8 +8796,8 @@
         "shared": {
           "file": {
             "path": "parts/hair/soft-bob.glb",
-            "bytes": 1314452,
-            "sha256": "7cbb6dc5da12c2bba7821cd1ed069b02a80ab352c54e2e35c3abbc3eba1dca6a"
+            "bytes": 1417684,
+            "sha256": "43b55251f6a242b46af7808d63a4cbc719f8d2a983403799d52f43db244d45cc"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -8799,8 +8805,8 @@
           "meshes": [
             {
               "node": "TS_AuthoredHair_soft-bob_LOD0",
-              "triangles": 9588,
-              "vertices": 5002,
+              "triangles": 10332,
+              "vertices": 5418,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8827,8 +8833,8 @@
             },
             {
               "node": "TS_AuthoredHair_soft-bob_LOD1",
-              "triangles": 4710,
-              "vertices": 2535,
+              "triangles": 5126,
+              "vertices": 2780,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8896,8 +8902,8 @@
         "shared": {
           "file": {
             "path": "parts/hair/twin-tail.glb",
-            "bytes": 1363408,
-            "sha256": "53c091691fa3bdc96b7280a1e3da02be007265562dd6b3b52e2ce12fcc3e015b"
+            "bytes": 1448192,
+            "sha256": "28dafcd27dd29046163c9046b5da28f6a0283b2de432137546527d468351e024"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -8905,8 +8911,8 @@
           "meshes": [
             {
               "node": "TS_AuthoredHair_twin-tail_LOD0",
-              "triangles": 9564,
-              "vertices": 4964,
+              "triangles": 10312,
+              "vertices": 5382,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -8933,8 +8939,8 @@
             },
             {
               "node": "TS_AuthoredHair_twin-tail_LOD1",
-              "triangles": 5682,
-              "vertices": 3016,
+              "triangles": 5848,
+              "vertices": 3136,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -9002,8 +9008,8 @@
         "shared": {
           "file": {
             "path": "parts/hair/wolf-layered.glb",
-            "bytes": 1340604,
-            "sha256": "7f13debe8f706080331832ccbef9e8bddc862c822e5ae367e8b51a069d584b03"
+            "bytes": 1451192,
+            "sha256": "04f5d1ef7f3fd096a7fc572c1dec33254cc1a41c7a11d641d6784743f722cfa7"
           },
           "extensions": [
             "KHR_mesh_quantization"
@@ -9011,8 +9017,8 @@
           "meshes": [
             {
               "node": "TS_AuthoredHair_wolf-layered_LOD0",
-              "triangles": 9612,
-              "vertices": 5024,
+              "triangles": 10444,
+              "vertices": 5484,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -9039,8 +9045,8 @@
             },
             {
               "node": "TS_AuthoredHair_wolf-layered_LOD1",
-              "triangles": 4790,
-              "vertices": 2581,
+              "triangles": 5216,
+              "vertices": 2831,
               "skinned": true,
               "morphs": [
                 "param:height:+",
@@ -9175,13 +9181,13 @@
       "baseArchetype": "female-romance",
       "genre": "romance",
       "publicUrl": "/vrm/toonstudio-hero-v1/romance-female.vrm",
-      "bytes": 3274060,
-      "sha256": "1d4ec33b5baa35df93b6f6b5cf691a4a9f8a6aaeb0f88c117034e1421978042a",
+      "bytes": 4331868,
+      "sha256": "5d6279f2748b8b23f69989023a603908ffc61b6563dc5b225fa4459044d85e5c",
       "humanoidBones": 55,
       "presetExpressions": 18,
       "mtoonOutlineWidthMode": "screenCoordinates",
-      "springCount": 5,
-      "minHitRadius": 0.0255
+      "springCount": 6,
+      "minHitRadius": 0.018
     },
     {
       "id": "romance-male",
@@ -9189,12 +9195,12 @@
       "baseArchetype": "male-webtoon",
       "genre": "romance-office",
       "publicUrl": "/vrm/toonstudio-hero-v1/romance-male.vrm",
-      "bytes": 3142220,
-      "sha256": "c31dd57d730073d9c396ff31b394ccf248b20bba36c7a46313d18e1654d386e2",
+      "bytes": 4471640,
+      "sha256": "da0fda1a3eda886e85cb1e3ef9c4911f36b1e15cbe3242bbd8e6425ea0cb83b7",
       "humanoidBones": 55,
       "presetExpressions": 18,
       "mtoonOutlineWidthMode": "screenCoordinates",
-      "springCount": 3,
+      "springCount": 2,
       "minHitRadius": 0.018
     },
     {
@@ -9203,12 +9209,12 @@
       "baseArchetype": "youth-academy",
       "genre": "academy",
       "publicUrl": "/vrm/toonstudio-hero-v1/academy-female.vrm",
-      "bytes": 3224996,
-      "sha256": "ca912609a393cf6843fe47d84c477cfdf28fffcc5f87a4460781a4f44710898e",
+      "bytes": 4801212,
+      "sha256": "da7db2e857d85c1891728cc7743d23a03eafab80581ada0cba15ee9427085c15",
       "humanoidBones": 55,
       "presetExpressions": 18,
       "mtoonOutlineWidthMode": "screenCoordinates",
-      "springCount": 3,
+      "springCount": 2,
       "minHitRadius": 0.018
     },
     {
@@ -9217,12 +9223,12 @@
       "baseArchetype": "youth-academy",
       "genre": "academy",
       "publicUrl": "/vrm/toonstudio-hero-v1/academy-male.vrm",
-      "bytes": 3095672,
-      "sha256": "14693e1d380efae9c16bd2e1ff7bf05f3d9cc6978dbcd128ec668e36a5b67239",
+      "bytes": 4696288,
+      "sha256": "951576dd3911fbcb008ecbcd161b903dd2fd993df8bfd12e8ed61a93687bdcbe",
       "humanoidBones": 55,
       "presetExpressions": 18,
       "mtoonOutlineWidthMode": "screenCoordinates",
-      "springCount": 3,
+      "springCount": 2,
       "minHitRadius": 0.018
     },
     {
@@ -9231,13 +9237,13 @@
       "baseArchetype": "female-romance",
       "genre": "rofan",
       "publicUrl": "/vrm/toonstudio-hero-v1/rofan-empress.vrm",
-      "bytes": 3401652,
-      "sha256": "87a2d4801987a62140749ed1e022b21f582f4627bae168fd928f48415695db73",
+      "bytes": 4370660,
+      "sha256": "9b02a08a7323dadd901eba7f348a3a5b3703c7169450be6e75b717ca7bad44d4",
       "humanoidBones": 55,
       "presetExpressions": 18,
       "mtoonOutlineWidthMode": "screenCoordinates",
-      "springCount": 4,
-      "minHitRadius": 0.024
+      "springCount": 2,
+      "minHitRadius": 0.018
     },
     {
       "id": "rofan-duke",
@@ -9245,12 +9251,12 @@
       "baseArchetype": "male-webtoon",
       "genre": "rofan",
       "publicUrl": "/vrm/toonstudio-hero-v1/rofan-duke.vrm",
-      "bytes": 3215960,
-      "sha256": "97aa3f3302be725d5fb96bc0301fbbb7d923e095c84da100e4f3affbbe707dc8",
+      "bytes": 4647524,
+      "sha256": "23d60b6daeed3db5e980592295f3a7de024fc36868e2e5989e1e7e4cf5249f07",
       "humanoidBones": 55,
       "presetExpressions": 18,
       "mtoonOutlineWidthMode": "screenCoordinates",
-      "springCount": 4,
+      "springCount": 3,
       "minHitRadius": 0.018
     },
     {
@@ -9259,12 +9265,12 @@
       "baseArchetype": "male-action",
       "genre": "action",
       "publicUrl": "/vrm/toonstudio-hero-v1/action-hunter.vrm",
-      "bytes": 3345776,
-      "sha256": "78a6fd46a3a7c786fa2ba3e7c655c9cdc0ad0c39a2684012e6dceb3e81dabb41",
+      "bytes": 4704580,
+      "sha256": "465d6f0db7e5df98faef868c4cad390d46ce2fc27aac55c30ad231e0c4c69dc3",
       "humanoidBones": 55,
       "presetExpressions": 18,
       "mtoonOutlineWidthMode": "screenCoordinates",
-      "springCount": 5,
+      "springCount": 4,
       "minHitRadius": 0.018
     },
     {
@@ -9273,8 +9279,8 @@
       "baseArchetype": "sd-chibi",
       "genre": "comedy-sd",
       "publicUrl": "/vrm/toonstudio-hero-v1/chibi-mascot.vrm",
-      "bytes": 3017644,
-      "sha256": "67dfe3f04358526f03d7d1db22ee4f973e0ba0712523d4bf14676ac5fc23ea30",
+      "bytes": 3935620,
+      "sha256": "c5dca262b8e638ae685178904032ff06c935152be3a7629eb47137c7b8d9dee9",
       "humanoidBones": 55,
       "presetExpressions": 18,
       "mtoonOutlineWidthMode": "screenCoordinates",

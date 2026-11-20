@@ -53,6 +53,7 @@ class Primitive:
     indices: np.ndarray  # (M,3) 또는 (3M,) 정수
     normals: np.ndarray | None = None
     uvs: np.ndarray | None = None
+    uv2: np.ndarray | None = None  # (N,2) float32 TEXCOORD_1 (Face-SDF 정면 투영 UV 등)
     joints: np.ndarray | None = None  # (N,4) uint8/uint16
     weights: np.ndarray | None = None  # (N,4) float32
     region: np.ndarray | None = None  # (N,) uint8
@@ -252,7 +253,13 @@ class GlbWriter:
         self._skin = len(skins) - 1
         self._scene_nodes.append(root_index)
 
-    def add_mesh_node(self, name: str, primitives: list[Primitive], skinned: bool = True) -> int:
+    def add_mesh_node(
+        self,
+        name: str,
+        primitives: list[Primitive],
+        skinned: bool = True,
+        node_extras: dict[str, Any] | None = None,
+    ) -> int:
         """항등 변환의 메시 노드를 장면 루트에 추가한다. morph 타깃 이름은 모든 프리미티브가 같아야 한다."""
         if not primitives:
             raise ValueError("프리미티브가 없습니다.")
@@ -268,6 +275,8 @@ class GlbWriter:
                 attributes["NORMAL"] = self.add_accessor(np.ascontiguousarray(prim.normals, dtype=np.float32), target=_ARRAY_BUFFER)
             if prim.uvs is not None:
                 attributes["TEXCOORD_0"] = self.add_accessor(np.ascontiguousarray(prim.uvs, dtype=np.float32), target=_ARRAY_BUFFER)
+            if prim.uv2 is not None:
+                attributes["TEXCOORD_1"] = self.add_accessor(np.ascontiguousarray(prim.uv2, dtype=np.float32), target=_ARRAY_BUFFER)
             if prim.color0 is not None:
                 attributes["COLOR_0"] = self.add_accessor(np.ascontiguousarray(prim.color0, dtype=np.float32), target=_ARRAY_BUFFER)
             if skinned:
@@ -307,6 +316,8 @@ class GlbWriter:
             if self._skin is None:
                 raise RuntimeError("add_skeleton()을 먼저 호출해야 합니다.")
             node["skin"] = self._skin
+        if node_extras:
+            node["extras"] = dict(node_extras)
         nodes.append(node)
         self._scene_nodes.append(len(nodes) - 1)
         return len(nodes) - 1

@@ -58,7 +58,9 @@ from tools.blender.webtoon_hero_bg.arch_primitives import (  # noqa: E402
     _make_beveled_box_local,
     _transform_points,
     add_beveled_box,
+    add_curved_foliage_plant,
     add_pipe_frame,
+    add_pleated_curtain,
     add_wall_with_openings,
 )
 from tools.blender.webtoon_hero_bg.cutaway_assembly import (  # noqa: E402
@@ -68,7 +70,9 @@ from tools.blender.webtoon_hero_bg.cutaway_assembly import (  # noqa: E402
     _remove_hierarchy,
     assemble_desktop_cutaway,
     assemble_mobile_cutaway,
+    build_lighting_presets,
     export_cutaway_glb,
+    update_manifest_metadata,
 )
 from tools.blender.webtoon_hero_bg.multiview_preview import (  # noqa: E402
     PreviewCameraView,
@@ -85,7 +89,7 @@ from tools.blender.webtoon_hero_bg.qa_bg_gate import (  # noqa: E402
 
 SLUG = "kr_highschool_classroom_corridor"
 DEFAULT_OUT_DIR = REPO_ROOT / "apps/web/public/assets/3d/environments/hero-v1"
-DEFAULT_PREVIEW_DIR = REPO_ROOT / "loop-stack/competitor-parity/previews/bg"
+DEFAULT_PREVIEW_DIR = REPO_ROOT / "loop-stack/v2-previews/bg"
 
 ROOM_LEN_X = 9.600       # X in [-4.800, +4.800]
 TOTAL_DEPTH_Y = 9.200    # Y in [-4.600, +4.600] (Classroom 7.00m + Corridor 2.20m)
@@ -692,19 +696,26 @@ def build_wall_north(wall_n: MeshGroup) -> None:
         bevel_ends=False,
     )
 
-    # 5 gathered pleated curtain drapes flanking the 4 window bays at the piers
-    for px, w_curt in ((-4.42, 0.34), (-2.25, 0.38), (0.0, 0.38), (2.25, 0.38), (4.42, 0.34)):
-        _add_pleated_curtain(
+    # 5 gathered sinusoidal pleated curtain drapes with tiebacks flanking the 4 window bays at the piers
+    curt_z0 = FLOOR_Z + 0.78
+    curt_h = (CEIL_Z - 0.165) - curt_z0
+    for idx, (px, w_curt) in enumerate(((-4.42, 0.38), (-2.25, 0.42), (0.0, 0.42), (2.25, 0.42), (4.42, 0.38))):
+        add_pleated_curtain(
             wall_n,
-            center_x=px,
-            wall_face_y=CLASS_Y_MAX,
-            z_bottom=FLOOR_Z + 0.78,
-            z_top=CEIL_Z - 0.14,
+            (px, CLASS_Y_MAX - 0.092, curt_z0),
             width=w_curt,
-            folds=3,
-            depth=0.062,
+            height=curt_h,
+            depth=0.072,
+            pleats=4,
+            thickness=0.011,
+            tieback_height=0.36,
+            tieback_pull=0.14 if idx in (0, 4) else 0.0,
+            tieback_side=(-1 if idx == 0 else 1),
+            include_rod=False,
             color=COL_CURTAIN,
             tile="carpet",
+            tieback_color=COL_TRIM_OAK,
+            tieback_tile="wood_panel",
         )
 
 
@@ -800,80 +811,54 @@ def build_wall_east(wall_e: MeshGroup) -> None:
         _box(wall_e, (INNER_X_MAX - 0.010, sy, FLOOR_Z + 1.21), (0.044, 0.065, 2.42), COL_TRIM_WHITE, "trim_paint", bevel=0.003)
     _box(wall_e, (INNER_X_MAX - 0.010, CORR_CENTER_Y, FLOOR_Z + 2.43), (0.044, 1.69, 0.065), COL_TRIM_WHITE, "trim_paint", bevel=0.003)
 
-    # --- 1. Curved Green Chalkboard (곡면 칠판) centered at Y = 0.85 (clear gap from corner TV!) ---
+    # --- 1. Green Korean Classroom Chalkboard (칠판 + 판서 그래픽) centered at Y = 0.85 ---
     cb_cy = 0.85
     cb_w = 3.84
     cb_h = 1.22
     cb_z0 = FLOOR_Z + 0.96   # 1.060
     cb_z1 = cb_z0 + cb_h     # 2.280
-    cb_segs = 12
-    cb_curve_depth = 0.060
-    cb_thick = 0.022
+    cb_face_x = INNER_X_MAX - 0.044
 
-    def _cb_x_front(t: float) -> float:
-        return (INNER_X_MAX - 0.028) - cb_curve_depth * (t * t)
-
-    cb_rings: List[List[Tuple[float, float, float]]] = []
-    for i in range(cb_segs + 1):
-        t = -1.0 + 2.0 * (i / cb_segs)
-        py = cb_cy + t * (cb_w * 0.5)
-        xf = _cb_x_front(t)
-        xb = xf + cb_thick
-        cb_rings.append([(xf, py, cb_z0), (xb, py, cb_z0), (xb, py, cb_z1), (xf, py, cb_z1)])
-    wall_e.rings(cb_rings, color=COL_CHALKBOARD, tile="chalkboard")
+    # Single crisp beveled chalkboard slab with full-fit 512x512 Korean math/Korean chalk notes!
+    wall_e.box(
+        (cb_face_x + 0.012, cb_cy, 0.5 * (cb_z0 + cb_z1)),
+        (0.024, cb_w, cb_h),
+        "FFFFFF",
+        tile="chalkboard",
+        bevel=0.003,
+        uv_fit=True,
+    )
 
     frame_h = 0.036
-    frame_d = 0.036
-    for fz0, fz1 in ((cb_z1 - 0.004, cb_z1 + frame_h), (cb_z0 - frame_h, cb_z0 + 0.004)):
-        f_rings = []
-        for i in range(cb_segs + 1):
-            t = -1.0 + 2.0 * (i / cb_segs)
-            py = cb_cy + t * (cb_w * 0.5 + 0.028)
-            xf = _cb_x_front(t) - 0.012
-            xb = xf + frame_d
-            f_rings.append([(xf, py, fz0), (xb, py, fz0), (xb, py, fz1), (xf, py, fz1)])
-        wall_e.rings(f_rings, color=COL_CHALK_FRAME, tile="sash_metal")
-
+    frame_d = 0.042
+    _box(wall_e, (cb_face_x + 0.014, cb_cy, cb_z1 + frame_h * 0.5 - 0.002), (frame_d, cb_w + 0.064, frame_h), COL_CHALK_FRAME, "sash_metal", bevel=0.003)
+    _box(wall_e, (cb_face_x + 0.014, cb_cy, cb_z0 - frame_h * 0.5 + 0.002), (frame_d, cb_w + 0.064, frame_h), COL_CHALK_FRAME, "sash_metal", bevel=0.003)
     for sy in (-1.0, 1.0):
-        ey = cb_cy + sy * (cb_w * 0.5 + 0.014)
-        xf_end = _cb_x_front(1.0)
-        _box(wall_e, (xf_end + 0.008, ey, 0.5 * (cb_z0 + cb_z1)), (0.042, 0.036, cb_h + frame_h * 2.0), COL_CHALK_FRAME, "sash_metal", bevel=0.003)
-        brace_depth = INNER_X_MAX - (xf_end + 0.024)
-        _box(wall_e, (INNER_X_MAX - brace_depth * 0.5 + 0.002, ey, 0.5 * (cb_z0 + cb_z1)), (brace_depth + 0.004, 0.030, cb_h - 0.04), COL_SASH_DARK, "sash_metal", bevel=0.0025)
+        ey = cb_cy + sy * (cb_w * 0.5 + 0.016)
+        _box(wall_e, (cb_face_x + 0.014, ey, 0.5 * (cb_z0 + cb_z1)), (frame_d, 0.036, cb_h + frame_h * 2.0), COL_CHALK_FRAME, "sash_metal", bevel=0.003)
 
-    # Deep curved chalk tray (분필받이)
-    tray_rings = []
+    # Deep extruded aluminum chalk tray (분필받이) + wooden eraser & colored chalk sticks
     tray_z = cb_z0 - frame_h - 0.006
-    for i in range(cb_segs + 1):
-        t = -1.0 + 2.0 * (i / cb_segs)
-        py = cb_cy + t * (cb_w * 0.5 - 0.01)
-        xb = _cb_x_front(t) + 0.006
-        xf = xb - 0.095
-        tray_rings.append([
-            (xf, py, tray_z + 0.028),
-            (xf + 0.012, py, tray_z + 0.028),
-            (xf + 0.012, py, tray_z + 0.012),
-            (xb, py, tray_z + 0.012),
-            (xb, py, tray_z),
-            (xf, py, tray_z),
-        ])
-    wall_e.rings(tray_rings, color=COL_CHALK_FRAME, tile="sash_metal")
+    _box(wall_e, (cb_face_x - 0.042, cb_cy, tray_z + 0.006), (0.095, cb_w - 0.02, 0.012), COL_CHALK_FRAME, "sash_metal", bevel=0.002)
+    _box(wall_e, (cb_face_x - 0.084, cb_cy, tray_z + 0.018), (0.012, cb_w - 0.02, 0.024), COL_CHALK_FRAME, "sash_metal", bevel=0.002)
+    # Chalkboard eraser & chalk pieces resting cleanly inside the tray
+    _box(wall_e, (cb_face_x - 0.046, cb_cy - 0.55, tray_z + 0.028), (0.046, 0.145, 0.030), "8A5E3B", "door_wood", bevel=0.003)
+    for cy_off, c_col in ((0.30, "F6F4EC"), (0.44, "F6D48A"), (0.56, "9FD8F2")):
+        wall_e.rail((cb_face_x - 0.044, cb_cy + cy_off, tray_z + 0.018), (cb_face_x - 0.044, cb_cy + cy_off + 0.072, tray_z + 0.018), radius=0.006, color=c_col, sides=6, tile="trim_paint")
 
-    # --- 2. Flanking Side Cork/Notice Boards beside Chalkboard ---
-    for board_y, bw in ((-1.64, 0.88),):
+    # --- 2. Flanking Side Cork/Timetable Notice Board beside Chalkboard ("2학년 3반 주간 시간표") ---
+    for board_y, bw in ((-1.64, 0.90),):
         bz = 0.5 * (cb_z0 + cb_z1)
-        bh = 1.06
+        bh = 1.08
         _box(wall_e, (INNER_X_MAX - 0.014, board_y, bz), (0.028, bw, bh), COL_TRIM_OAK, "door_wood", bevel=0.003)
         _box(wall_e, (INNER_X_MAX - 0.026, board_y, bz), (0.012, bw - 0.07, bh - 0.07), COL_BULLETIN_BG, "carpet", bevel=0.0)
-        _box(wall_e, (INNER_X_MAX - 0.036, board_y - bw * 0.18, bz + 0.14), (0.008, 0.24, 0.34), "F7F4EC", "plaster", bevel=0.0)
-        _box(wall_e, (INNER_X_MAX - 0.036, board_y + bw * 0.18, bz - 0.12), (0.008, 0.24, 0.32), "F4EBD0", "plaster", bevel=0.0)
+        # Crisp full-fit weekly Korean timetable + notice sheet
+        wall_e.box((INNER_X_MAX - 0.036, board_y, bz + 0.02), (0.008, bw - 0.16, bh - 0.20), "FFFFFF", tile="brick", bevel=0.001, uv_fit=True)
 
-    # --- 3. Class Motto Frame (급훈 액자) centered above Chalkboard ---
+    # --- 3. Class Motto Frame (급훈 액자: "급훈 · 성실 · 창의 · 협동") centered above Chalkboard ---
     motto_z = cb_z1 + 0.26
-    _box(wall_e, (INNER_X_MAX - 0.018, cb_cy, motto_z), (0.036, 0.96, 0.34), "6C4B32", "door_wood", bevel=0.004)
-    _box(wall_e, (INNER_X_MAX - 0.034, cb_cy, motto_z), (0.010, 0.86, 0.25), "F6F2E7", "plaster", bevel=0.0)
-    for dy, bar_w in ((-0.26, 0.14), (-0.06, 0.16), (0.14, 0.15), (0.30, 0.10)):
-        _box(wall_e, (INNER_X_MAX - 0.043, cb_cy + dy, motto_z), (0.008, bar_w, 0.072), "2C2E33", "trim_paint", bevel=0.0)
+    _box(wall_e, (INNER_X_MAX - 0.018, cb_cy, motto_z), (0.036, 1.04, 0.36), "6C4B32", "door_wood", bevel=0.004)
+    wall_e.box((INNER_X_MAX - 0.038, cb_cy, motto_z), (0.012, 0.94, 0.27), "FFFFFF", tile="marble", bevel=0.0015, uv_fit=True)
 
     # --- 4. Analog Wall Clock (아날로그 시계) — crisp white dial proud of bezel + 12 ticks + 10:10 hands ---
     clk_y = cb_cy + 1.32
@@ -925,7 +910,10 @@ def build_wall_east(wall_e: MeshGroup) -> None:
     wall_e.timber((INNER_X_MAX - 0.02, 3.88, tv_origin[2] + 0.06), (tv_origin[0] + 0.04, tv_origin[1] + 0.04, tv_origin[2] + 0.06), 0.036, 0.036, color=COL_SASH_DARK, tile="sash_metal", bevel=0.003)
     wall_e.timber((INNER_X_MAX - 0.02, 3.88, tv_origin[2] - 0.06), (tv_origin[0] + 0.04, tv_origin[1] + 0.04, tv_origin[2] - 0.06), 0.036, 0.036, color=COL_SASH_DARK, tile="sash_metal", bevel=0.003)
     _local_box(wall_e, tv_origin, tv_yaw, 0.018, 0.0, 0.0, 0.052, 1.24, 0.74, COL_TV_BEZEL, "sash_metal", bevel=0.005)
-    _local_box(wall_e, tv_origin, tv_yaw, -0.012, 0.0, 0.008, 0.012, 1.17, 0.66, COL_TV_SCREEN, "glass_tinted", bevel=0.0)
+    # Classroom TV display showing Korean school schedule graphic ("2학년 3반 학사안내 · 기말고사 D-14")
+    pts_tv, faces_tv = _make_beveled_box_local((0.012, 1.17, 0.66), bevel=0.0)
+    pts_tv = [(p[0] - 0.012, p[1], p[2] + 0.008) for p in pts_tv]
+    wall_e.solid(_transform_points(pts_tv, tv_origin, rot_z=tv_yaw), faces_tv, color="FFFFFF", tile="asphalt", uv_fit=True)
     _local_box(wall_e, tv_origin, tv_yaw, -0.014, 0.0, -0.345, 0.016, 1.18, 0.026, "3D434B", "sash_metal", bevel=0.0025)
 
 
@@ -984,9 +972,12 @@ def build_wall_west(wall_w: MeshGroup) -> None:
         (0.92, -0.24, 0.38, 0.30, "F5F3EC"),
         (1.44, -0.22, 0.44, 0.32, "EBF2E4"),
     ]
-    for dy, dz, nw, nh, col in notices:
-        _box(wall_w, (INNER_X_MIN + 0.038, bb_cy + dy, bb_z + dz), (0.008, nw, nh), col, "plaster", bevel=0.0)
-        _box(wall_w, (INNER_X_MIN + 0.044, bb_cy + dy, bb_z + dz + nh * 0.36), (0.006, nw * 0.72, 0.024), "4F6B88", "trim_paint", bevel=0.0)
+    for idx, (dy, dz, nw, nh, col) in enumerate(notices):
+        if idx in (0, 3, 6):
+            wall_w.box((INNER_X_MIN + 0.038, bb_cy + dy, bb_z + dz), (0.008, nw, nh), "FFFFFF", tile="brick", bevel=0.0, uv_fit=True)
+        else:
+            _box(wall_w, (INNER_X_MIN + 0.038, bb_cy + dy, bb_z + dz), (0.008, nw, nh), col, "plaster", bevel=0.0)
+            _box(wall_w, (INNER_X_MIN + 0.044, bb_cy + dy, bb_z + dz + nh * 0.36), (0.006, nw * 0.72, 0.024), "4F6B88", "trim_paint", bevel=0.0)
 
     # Rear wall wooden coat hook rail + wall mirror beside rear door
     _box(wall_w, (INNER_X_MIN + 0.014, 3.70, FLOOR_Z + 1.56), (0.026, 0.92, 0.085), COL_TRIM_OAK, "door_wood", bevel=0.003)
@@ -1547,6 +1538,22 @@ def build_scene_groups() -> HeroSceneGroups:
     build_ceiling(groups.ceiling)
     build_furniture_hero(groups.furniture_hero)
     build_props_clutter(groups.props_clutter)
+    # Potted classroom plant beside sunny front window corner (curved 3D foliage, zero flat cards!)
+    add_curved_foliage_plant(
+        groups.props_clutter,
+        (3.92, 3.88, FLOOR_Z),
+        species="monstera",
+        height=1.08,
+        pot_radius=0.15,
+        pot_height=0.28,
+        leaf_count=9,
+        seed=55,
+        pot_color="C7815A",
+        pot_tile="ceramic_gloss",
+        stem_tile="foliage_prop",
+        leaf_color="3F6E43",
+        leaf_tile="foliage_prop",
+    )
     groups.ground_to_zero()
     return groups
 
@@ -1656,9 +1663,11 @@ def run_build(
     manifest_path = out_dir / f"{SLUG}.manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
-    # 5. Gate-5 6-view 512x512 BLENDER_EEVEE contact sheet + Freestyle SVG line art
+    # 5. Gate-5 6-view 512x512 BLENDER_EEVEE contact sheet + 3-tier Freestyle SVG + thumbnail
     previews: Dict[str, object] = {}
     if not skip_previews:
+        lineart_dst = out_dir / "lineart" / f"{SLUG}-lineart.svg"
+        thumb_dst = out_dir / "thumbnails" / f"{SLUG}.png"
         previews = render_hero_review_bundle(
             preview_dir,
             SLUG,
@@ -1666,7 +1675,19 @@ def run_build(
             views=views,
             tile_resolution=512,
             interior_cutaway=True,
+            thumbnail_path=thumb_dst,
+            thumbnail_view_index=4,
+            lineart_copy_path=lineart_dst,
         )
+        svg_meta = dict(previews["freestyleSvg"])  # type: ignore[arg-type]
+        svg_meta["path"] = f"lineart/{SLUG}-lineart.svg"
+        update_manifest_metadata(
+            manifest_path,
+            freestyle_svg=svg_meta,
+            lighting_presets=build_lighting_presets(),
+        )
+    else:
+        update_manifest_metadata(manifest_path, lighting_presets=build_lighting_presets())
 
     report: Dict[str, object] = {
         "slug": SLUG,
@@ -1702,12 +1723,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Build Korean High School Classroom & Corridor Hero BG3D")
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--preview-dir", type=Path, default=DEFAULT_PREVIEW_DIR)
-    parser.add_argument("--desktop-primary-size", type=int, default=1024)
+    parser.add_argument("--desktop-primary-size", type=int, default=2048)
     parser.add_argument("--desktop-secondary-size", type=int, default=1024)
     parser.add_argument("--mobile-opaque-size", type=int, default=1024)
     parser.add_argument("--mobile-glass-size", type=int, default=512)
     parser.add_argument("--skip-previews", action="store_true")
-    parser.add_argument("--report-out", type=Path, default=None)
+    parser.add_argument("--report-out", type=Path, default=DEFAULT_PREVIEW_DIR / f"{SLUG}-qa-report.json")
     args = parser.parse_args(raw)
 
     run_build(

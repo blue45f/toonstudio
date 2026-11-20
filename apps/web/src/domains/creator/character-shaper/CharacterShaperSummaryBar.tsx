@@ -243,6 +243,7 @@ export function CharacterShaperSummaryBar({
       </label>
       <select
         id={selectId}
+        aria-label="모델"
         value={activeModelId ?? ""}
         disabled={loading}
         onChange={(event) => {
@@ -303,6 +304,7 @@ export function CharacterShaperSummaryBar({
       </label>
       <input
         id={saveInputId}
+        aria-label="변형 이름"
         type="text"
         value={saveName}
         maxLength={24}

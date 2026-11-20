@@ -1,8 +1,11 @@
 import { createContext, useContext, useState } from "react";
 
 import { DEFAULT_CHARACTER_OUTPUT_FRAMING } from "./character-shaper-framing";
-import type { CharacterOutputFraming } from "./character-shaper-framing";
+import { DEFAULT_SHAPER_MTOON_SETTINGS } from "./character-shaper-mtoon-uniforms";
+
 import type { CharacterExportEdge } from "./character-shaper-export";
+import type { CharacterOutputFraming } from "./character-shaper-framing";
+import type { ShaperMtoonMaterialSettings } from "./character-shaper-mtoon-uniforms";
 import type { ShaperCameraControlStyle } from "./character-shaper-ui-model";
 import type { Dispatch, SetStateAction } from "react";
 
@@ -11,7 +14,17 @@ export interface CharacterShaperPsdOptions {
   readonly extractLuminanceOutline: boolean;
 }
 
-export type CharacterShaperGazeMode = "cam" | "fix";
+export type CharacterShaperGazeMode = "cam" | "fix" | "light" | "world";
+
+export interface CharacterShaperGazeOffset {
+  readonly yawDeg: number;
+  readonly pitchDeg: number;
+}
+
+export const DEFAULT_CHARACTER_SHAPER_GAZE_OFFSET: CharacterShaperGazeOffset = Object.freeze({
+  yawDeg: 0,
+  pitchDeg: 0,
+});
 
 interface CharacterShaperSessionSettings {
   readonly exportEdge: CharacterExportEdge;
@@ -24,6 +37,10 @@ interface CharacterShaperSessionSettings {
   readonly setCameraStyle: Dispatch<SetStateAction<ShaperCameraControlStyle>>;
   readonly gazeMode: CharacterShaperGazeMode;
   readonly setGazeMode: Dispatch<SetStateAction<CharacterShaperGazeMode>>;
+  readonly gazeOffset: CharacterShaperGazeOffset;
+  readonly setGazeOffset: Dispatch<SetStateAction<CharacterShaperGazeOffset>>;
+  readonly shaperMaterial: ShaperMtoonMaterialSettings;
+  readonly setShaperMaterial: Dispatch<SetStateAction<ShaperMtoonMaterialSettings>>;
 }
 
 export const CharacterShaperSettingsContext = createContext<CharacterShaperSessionSettings | null>(null);
@@ -39,4 +56,13 @@ export function useCharacterShaperOutputSettings() {
   return { psdOptions: shared?.psdOptions ?? local, setPsdOptions: shared?.setPsdOptions ?? setLocal,
     exportEdge: shared?.exportEdge ?? exportEdge, setExportEdge: shared?.setExportEdge ?? setExportEdge,
     framing: shared?.framing ?? framing, setFraming: shared?.setFraming ?? setFraming };
+}
+
+export function useCharacterShaperMaterialSettings() {
+  const shared = useCharacterShaperSessionSettings();
+  const [local, setLocal] = useState<ShaperMtoonMaterialSettings>(DEFAULT_SHAPER_MTOON_SETTINGS);
+  return {
+    shaperMaterial: shared?.shaperMaterial ?? local,
+    setShaperMaterial: shared?.setShaperMaterial ?? setLocal,
+  };
 }

@@ -1,6 +1,6 @@
 {
   "file": "male-action.glb",
-  "bytes": 3289020,
+  "bytes": 3917400,
   "passed": true,
   "errorCount": 0,
   "errors": [],
@@ -31,12 +31,12 @@
       "TS_Eye.L": 632,
       "TS_Eye.R": 632
     },
-    "jawOpenMaxMm": 34.97,
+    "jawOpenMaxMm": 36.99,
     "gltfMinYM": 0.0,
     "gltfHeightM": 1.86
   },
   "neckSeam6Poses": {
-    "seamPairs": 73,
+    "seamPairs": 80,
     "minNormalDot": 1.0,
     "worstGapMm": 0.0,
     "posesMm": {
@@ -49,19 +49,19 @@
     }
   },
   "shoulder85Stretch": {
-    "worstMaxStretch": 1.6833,
+    "worstMaxStretch": 1.683,
     "cases": {
       "raise_85_deg": {
-        "maxStretch": 1.5139,
-        "p95Stretch": 1.3899,
+        "maxStretch": 1.5271,
+        "p95Stretch": 1.3807,
         "edgesOver2x": 0,
-        "roiEdgeCount": 3834
+        "roiEdgeCount": 3776
       },
       "drop_85_deg": {
-        "maxStretch": 1.6833,
-        "p95Stretch": 1.3063,
+        "maxStretch": 1.683,
+        "p95Stretch": 1.3072,
         "edgesOver2x": 0,
-        "roiEdgeCount": 3834
+        "roiEdgeCount": 3776
       }
     }
   },
@@ -76,16 +76,16 @@
     "blenderHeightM": 1.86,
     "bmeshMeshes": {
       "TS_Body": {
-        "verts": 13195,
-        "faces": 22080,
+        "verts": 13968,
+        "faces": 23712,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_Head": {
-        "verts": 4407,
-        "faces": 7296,
+        "verts": 5930,
+        "faces": 9920,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -116,8 +116,8 @@
         "zeroAreaFaces": 0
       },
       "TS_Lashes": {
-        "verts": 288,
-        "faces": 560,
+        "verts": 324,
+        "faces": 632,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -152,9 +152,9 @@
     "previewPng": "male-action_preview.png"
   },
   "unifiedPreExportAudit": {
-    "vertices": 14690,
-    "faces": 14688,
-    "quads": 14688,
+    "vertices": 16818,
+    "faces": 16816,
+    "quads": 16816,
     "tris": 0,
     "ngons": 0,
     "quadRatio": 1.0,

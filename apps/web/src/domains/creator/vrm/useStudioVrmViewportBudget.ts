@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState, useSyncExternalStore, type RefObject } from "react";
-import { getStudioVrmQualityTier } from "./studio-vrm-gpu-capability";
+import { getStudioVrmQualityTier, isStudioVrmLowEndHardwareDevice } from "./studio-vrm-gpu-capability";
 import { resolveStudioVrmDisplayDpr } from "./studio-vrm-render-policy";
 
 function subscribeVisibility(notify: () => void): () => void {
@@ -22,9 +22,10 @@ export function useStudioVrmViewportBudget(ref: RefObject<HTMLElement | null> | 
     const measure = () => {
       frame = 0;
       const rect = element.getBoundingClientRect();
+      const coarse = query?.matches ?? true;
       const next = resolveStudioVrmDisplayDpr({ width: rect.width, height: rect.height,
-        devicePixelRatio: window.devicePixelRatio, coarse: query?.matches ?? true,
-        tier: getStudioVrmQualityTier() });
+        devicePixelRatio: window.devicePixelRatio, coarse,
+        tier: getStudioVrmQualityTier(), lowEndMobile: coarse && isStudioVrmLowEndHardwareDevice() });
       setDpr(next);
     };
     const schedule = () => {

@@ -1,12 +1,13 @@
-ToonStudio Hero VRM 1.0 Collection (toonstudio-hero-v1)
-=======================================================
+ToonStudio Hero VRM 1.0 Collection (toonstudio-hero-v1 / v3 SSOT)
+==================================================================
 License: CC0-1.0 / ToonStudio Original Procedural Design
-Generated: 2026-11-20
+Generated: 2026-11-21
 Author: ToonStudio
 Pipeline: tools/blender/character_kit/export_vrm1_hero.py (Blender 5.3 + VRM Add-on 4.5.0)
+SSOT: build_base_v3.py + forge_hair_v3.py + forge_garments_v3.py
 
 All 8 hero avatars (romance-female, romance-male, academy-female, academy-male,
 rofan-empress, rofan-duke, action-hunter, chibi-mascot) are procedurally authored
-original geometry and textures built from ToonStudio Character Kit v2 bases with
-zero third-party commercial assets or generative AI meshes. Commercial use,
-modification, and redistribution are permitted without restriction.
+original geometry and zero-moire editorial MToon 1.0 textures built directly from
+ToonStudio Character Kit v3 bases, hairs, and garments with zero third-party
+commercial assets or generative AI meshes.

@@ -447,6 +447,49 @@ export const kitManifestV2Schema = kitManifestV2ObjectSchema.superRefine((manife
 });
 export type KitManifestV2 = z.infer<typeof kitManifestV2Schema>;
 
+/**
+ * 렌더 엔진(`render/babylon/kit-loader*.ts`)이 `domains/authored`를 import하지 않고
+ * v2/v3 `KitPlan.custom`을 읽기 위한 순수 계약 뷰 타입.
+ */
+export interface KitPlanV2FileView {
+  readonly id: string;
+  readonly kind: "base" | "part" | "layer" | "accessory";
+  readonly slot: KitPartSlot | null;
+  readonly scope: import("./customization").PartScope | null;
+  readonly layer: WardrobeLayer | null;
+  readonly instanceId: import("./customization").AccessoryInstanceId | null;
+  readonly url: string;
+  readonly sha256: string;
+  readonly bytes: number;
+  readonly meshes: readonly KitV2Mesh[];
+  readonly hides: readonly import("./character-kit").KitHideableRegionId[];
+  readonly rigidMeshes: readonly string[];
+  readonly defaultAnchor: import("./customization").AccessoryAnchor | null;
+  readonly patternUv: boolean;
+  readonly hairFlowUv: boolean;
+}
+
+export interface KitPlanV2CustomView {
+  readonly manifestVersion: 2;
+  readonly base: {
+    readonly heightM: number;
+    readonly headHeightM: number;
+    readonly headsTall: number;
+    readonly anchors: KitV2Base["anchors"];
+  };
+  readonly files: readonly KitPlanV2FileView[];
+  readonly materials: Readonly<Record<string, KitV2Material>>;
+  readonly physicsMode?: "vrm-spring-bone-1.0";
+  readonly archetypeId?: import("./character-kit-v2-archetypes").KitV2ArchetypeId;
+}
+
+export function readKitPlanV2Custom(plan: import("./character-kit").KitPlan): KitPlanV2CustomView | null {
+  const custom = (plan as { readonly custom?: unknown }).custom;
+  if (typeof custom !== "object" || custom === null) return null;
+  if ((custom as { readonly manifestVersion?: unknown }).manifestVersion !== 2) return null;
+  return custom as KitPlanV2CustomView;
+}
+
 export type ParseKitManifestV2Result = { readonly ok: true; readonly manifest: KitManifestV2 } | { readonly ok: false; readonly failure: LabFailure };
 
 function summarize(issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey>; message: string }>): string {

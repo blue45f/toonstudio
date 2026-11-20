@@ -19,6 +19,7 @@ import { stableStringify } from "../shared/stable-json";
 import { ART_STYLE_IDS, proportionSchema } from "./art-style";
 import { HUMANOID_BONE_NAMES } from "./bones";
 import { KIT_BASE_IDS, KIT_CURRENT_VERSION, KIT_DEFAULT_BASE_ID, KIT_DEFAULT_ID, KIT_DEFAULT_SLOTS } from "./character-kit";
+import { KIT_V2_ARCHETYPE_IDS } from "./character-kit-v2-archetypes";
 import { channelColorsSchema } from "./color-channels";
 import { createDefaultHairColor, createDefaultWardrobe, hairColorSchema, isAccessoryInstanceId, partParamsSchema, surfacesSchema, wardrobeSchema } from "./customization";
 import { failVisible } from "./errors";
@@ -102,6 +103,8 @@ export const recipeSourceSchema = z.discriminatedUnion("kind", [
       kitId: z.string().regex(CHARACTER_ID_PATTERN, "kitId 형식이 올바르지 않습니다."),
       baseId: z.enum(KIT_BASE_IDS),
       kitVersion: z.number().int().positive(),
+      /** 선택: 5대 웹툰 키트 v2 아키타입 베이스 id(생략 시 `baseId` 기본 매핑 사용). */
+      archetypeId: z.enum(KIT_V2_ARCHETYPE_IDS).optional(),
       /** 선택: `kit.json` 바이트의 SHA-256. 있으면 로더가 대조한다(엄격 재현). 기본 레시피는 생략한다. */
       manifestSha256: z.string().regex(SHA256_PATTERN, "manifestSha256은 64자리 소문자 hex여야 합니다.").optional(),
     })

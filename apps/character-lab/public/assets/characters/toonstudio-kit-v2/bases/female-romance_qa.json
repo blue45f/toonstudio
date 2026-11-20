@@ -1,6 +1,6 @@
 {
   "file": "female-romance.glb",
-  "bytes": 3123128,
+  "bytes": 3804372,
   "passed": true,
   "errorCount": 0,
   "errors": [],
@@ -31,12 +31,12 @@
       "TS_Eye.L": 632,
       "TS_Eye.R": 632
     },
-    "jawOpenMaxMm": 27.3,
+    "jawOpenMaxMm": 32.2,
     "gltfMinYM": 0.0,
     "gltfHeightM": 1.65
   },
   "neckSeam6Poses": {
-    "seamPairs": 74,
+    "seamPairs": 81,
     "minNormalDot": 1.0,
     "worstGapMm": 0.0,
     "posesMm": {
@@ -49,19 +49,19 @@
     }
   },
   "shoulder85Stretch": {
-    "worstMaxStretch": 1.5514,
+    "worstMaxStretch": 1.5532,
     "cases": {
       "raise_85_deg": {
-        "maxStretch": 1.4437,
-        "p95Stretch": 1.3161,
+        "maxStretch": 1.4869,
+        "p95Stretch": 1.3087,
         "edgesOver2x": 0,
-        "roiEdgeCount": 4602
+        "roiEdgeCount": 4582
       },
       "drop_85_deg": {
-        "maxStretch": 1.5514,
-        "p95Stretch": 1.2433,
+        "maxStretch": 1.5532,
+        "p95Stretch": 1.2394,
         "edgesOver2x": 0,
-        "roiEdgeCount": 4602
+        "roiEdgeCount": 4582
       }
     }
   },
@@ -72,20 +72,20 @@
     "sampleWarnings": []
   },
   "blenderBmeshAndRender": {
-    "blenderMinZM": 0.0,
+    "blenderMinZM": -0.0,
     "blenderHeightM": 1.65,
     "bmeshMeshes": {
       "TS_Body": {
-        "verts": 12194,
-        "faces": 20384,
+        "verts": 13026,
+        "faces": 21888,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_Head": {
-        "verts": 4350,
-        "faces": 7232,
+        "verts": 6150,
+        "faces": 10112,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -116,8 +116,8 @@
         "zeroAreaFaces": 0
       },
       "TS_Lashes": {
-        "verts": 288,
-        "faces": 560,
+        "verts": 324,
+        "faces": 632,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -152,9 +152,9 @@
     "previewPng": "female-romance_preview.png"
   },
   "unifiedPreExportAudit": {
-    "vertices": 13810,
-    "faces": 13808,
-    "quads": 13808,
+    "vertices": 16002,
+    "faces": 16000,
+    "quads": 16000,
     "tris": 0,
     "ngons": 0,
     "quadRatio": 1.0,

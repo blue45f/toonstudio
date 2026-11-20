@@ -6,8 +6,8 @@
   "fittedBase": "female-romance",
   "file": {
     "path": "wolf-layered.glb",
-    "bytes": 1340604,
-    "sha256": "7f13debe8f706080331832ccbef9e8bddc862c822e5ae367e8b51a069d584b03"
+    "bytes": 1451192,
+    "sha256": "04f5d1ef7f3fd096a7fc572c1dec33254cc1a41c7a11d641d6784743f722cfa7"
   },
   "drawCalls": 8,
   "materials": [
@@ -19,8 +19,8 @@
     {
       "node": "TS_AuthoredHair_wolf-layered_LOD0",
       "lod": 0,
-      "triangles": 9612,
-      "vertices": 4876,
+      "triangles": 10444,
+      "vertices": 5302,
       "primitives": 3,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -31,8 +31,8 @@
     {
       "node": "TS_AuthoredHair_wolf-layered_LOD1",
       "lod": 1,
-      "triangles": 4790,
-      "vertices": 2465,
+      "triangles": 5216,
+      "vertices": 2688,
       "primitives": 3,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -96,10 +96,10 @@
         "shape": "sphere",
         "offsetGltf": [
           0.0,
-          0.08792,
-          -0.00185
+          0.09115,
+          -0.00342
         ],
-        "radius": 0.08493
+        "radius": 0.08366
       },
       {
         "id": "neck_capsule",
@@ -112,7 +112,7 @@
         ],
         "tailGltf": [
           0.0,
-          0.08816,
+          0.08793,
           -0.002
         ],
         "radius": 0.04725
@@ -124,7 +124,7 @@
         "offsetGltf": [
           0.0,
           0.0,
-          0.00231
+          0.0031
         ],
         "radius": 0.12696
       }
@@ -140,7 +140,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 4,
-        "lengthM": 0.3079,
+        "lengthM": 0.3096,
         "hitRadius": 0.018,
         "stiffness": 0.68,
         "dragForce": 0.4,
@@ -149,14 +149,14 @@
           {
             "name": "TS_Spring_wolf-layered_nape_L_0",
             "positionGltf": [
-              0.00875,
-              1.65512,
-              -0.02512
+              0.00871,
+              1.65415,
+              -0.02665
             ],
             "localOffsetFromHead": [
-              0.00875,
-              0.17801,
-              -0.01712
+              0.00871,
+              0.18094,
+              -0.01865
             ],
             "hitRadius": 0.018,
             "stiffness": 0.748,
@@ -171,14 +171,14 @@
           {
             "name": "TS_Spring_wolf-layered_nape_L_1",
             "positionGltf": [
-              0.03839,
-              1.6047,
-              -0.07851
+              0.03958,
+              1.6053,
+              -0.08197
             ],
             "localOffsetFromHead": [
-              0.03839,
-              0.1276,
-              -0.07051
+              0.03958,
+              0.13209,
+              -0.07397
             ],
             "hitRadius": 0.01719,
             "stiffness": 0.7055,
@@ -193,14 +193,14 @@
           {
             "name": "TS_Spring_wolf-layered_nape_L_2",
             "positionGltf": [
-              0.04414,
-              1.52192,
-              -0.08878
+              0.04625,
+              1.52241,
+              -0.09185
             ],
             "localOffsetFromHead": [
-              0.04414,
-              0.04481,
-              -0.08078
+              0.04625,
+              0.0492,
+              -0.08385
             ],
             "hitRadius": 0.01638,
             "stiffness": 0.663,
@@ -215,14 +215,14 @@
           {
             "name": "TS_Spring_wolf-layered_nape_L_3",
             "positionGltf": [
-              0.04724,
-              1.43691,
-              -0.09433
+              0.0482,
+              1.43722,
+              -0.09771
             ],
             "localOffsetFromHead": [
-              0.04724,
-              -0.0402,
-              -0.08633
+              0.0482,
+              -0.03599,
+              -0.08971
             ],
             "hitRadius": 0.01557,
             "stiffness": 0.6205,
@@ -237,14 +237,14 @@
           {
             "name": "TS_Spring_wolf-layered_nape_L_4",
             "positionGltf": [
-              0.06114,
-              1.38383,
-              -0.11834
+              0.06214,
+              1.38358,
+              -0.12183
             ],
             "localOffsetFromHead": [
-              0.06114,
-              -0.09327,
-              -0.11034
+              0.06214,
+              -0.08963,
+              -0.11383
             ],
             "hitRadius": 0.01476,
             "stiffness": 0.578,
@@ -268,7 +268,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 3,
-        "lengthM": 0.3096,
+        "lengthM": 0.3122,
         "hitRadius": 0.018,
         "stiffness": 0.68,
         "dragForce": 0.4,
@@ -277,14 +277,14 @@
           {
             "name": "TS_Spring_wolf-layered_nape_R_0",
             "positionGltf": [
-              -0.01173,
-              1.65531,
-              -0.02384
+              -0.01167,
+              1.65428,
+              -0.02536
             ],
             "localOffsetFromHead": [
-              -0.01173,
-              0.1782,
-              -0.01584
+              -0.01167,
+              0.18107,
+              -0.01736
             ],
             "hitRadius": 0.018,
             "stiffness": 0.748,
@@ -299,14 +299,14 @@
           {
             "name": "TS_Spring_wolf-layered_nape_R_1",
             "positionGltf": [
-              -0.05195,
-              1.60489,
-              -0.07253
+              -0.05258,
+              1.60382,
+              -0.07542
             ],
             "localOffsetFromHead": [
-              -0.05195,
-              0.12779,
-              -0.06453
+              -0.05258,
+              0.13061,
+              -0.06742
             ],
             "hitRadius": 0.01719,
             "stiffness": 0.7055,
@@ -321,14 +321,14 @@
           {
             "name": "TS_Spring_wolf-layered_nape_R_2",
             "positionGltf": [
-              -0.05952,
-              1.52206,
-              -0.08177
+              -0.06147,
+              1.52121,
+              -0.0834
             ],
             "localOffsetFromHead": [
-              -0.05952,
-              0.04496,
-              -0.07377
+              -0.06147,
+              0.048,
+              -0.0754
             ],
             "hitRadius": 0.01638,
             "stiffness": 0.663,
@@ -343,14 +343,14 @@
           {
             "name": "TS_Spring_wolf-layered_nape_R_3",
             "positionGltf": [
-              -0.06378,
-              1.43707,
-              -0.08688
+              -0.06387,
+              1.43604,
+              -0.08928
             ],
             "localOffsetFromHead": [
-              -0.06378,
-              -0.04003,
-              -0.07888
+              -0.06387,
+              -0.03717,
+              -0.08128
             ],
             "hitRadius": 0.01557,
             "stiffness": 0.6205,
@@ -365,14 +365,14 @@
           {
             "name": "TS_Spring_wolf-layered_nape_R_4",
             "positionGltf": [
-              -0.08221,
-              1.38456,
-              -0.10883
+              -0.08244,
+              1.38191,
+              -0.11132
             ],
             "localOffsetFromHead": [
-              -0.08221,
-              -0.09255,
-              -0.10083
+              -0.08244,
+              -0.0913,
+              -0.10332
             ],
             "hitRadius": 0.01476,
             "stiffness": 0.578,
@@ -396,7 +396,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 5,
-        "lengthM": 0.2281,
+        "lengthM": 0.2268,
         "hitRadius": 0.017,
         "stiffness": 0.74,
         "dragForce": 0.42,
@@ -405,14 +405,14 @@
           {
             "name": "TS_Spring_wolf-layered_side_L_0",
             "positionGltf": [
-              0.02338,
-              1.65596,
-              -0.00161
+              0.02328,
+              1.65492,
+              -0.00321
             ],
             "localOffsetFromHead": [
-              0.02338,
-              0.17885,
-              0.00639
+              0.02328,
+              0.18171,
+              0.00479
             ],
             "hitRadius": 0.017,
             "stiffness": 0.814,
@@ -427,14 +427,14 @@
           {
             "name": "TS_Spring_wolf-layered_side_L_1",
             "positionGltf": [
-              0.08208,
-              1.60397,
-              0.01749
+              0.08127,
+              1.60311,
+              0.01597
             ],
             "localOffsetFromHead": [
-              0.08208,
-              0.12686,
-              0.02549
+              0.08127,
+              0.1299,
+              0.02397
             ],
             "hitRadius": 0.01598,
             "stiffness": 0.7523,
@@ -449,14 +449,14 @@
           {
             "name": "TS_Spring_wolf-layered_side_L_2",
             "positionGltf": [
-              0.09814,
-              1.52259,
-              0.02413
+              0.09683,
+              1.52206,
+              0.02245
             ],
             "localOffsetFromHead": [
-              0.09814,
-              0.04548,
-              0.03213
+              0.09683,
+              0.04885,
+              0.03045
             ],
             "hitRadius": 0.01496,
             "stiffness": 0.6907,
@@ -471,14 +471,14 @@
           {
             "name": "TS_Spring_wolf-layered_side_L_3",
             "positionGltf": [
-              0.11699,
-              1.46172,
-              0.0314
+              0.11589,
+              1.46154,
+              0.02988
             ],
             "localOffsetFromHead": [
-              0.11699,
-              -0.01539,
-              0.0394
+              0.11589,
+              -0.01167,
+              0.03788
             ],
             "hitRadius": 0.01394,
             "stiffness": 0.629,
@@ -502,7 +502,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 5,
-        "lengthM": 0.228,
+        "lengthM": 0.2267,
         "hitRadius": 0.017,
         "stiffness": 0.74,
         "dragForce": 0.42,
@@ -511,14 +511,14 @@
           {
             "name": "TS_Spring_wolf-layered_side_R_0",
             "positionGltf": [
-              -0.02339,
-              1.65596,
-              -0.00163
+              -0.02328,
+              1.65492,
+              -0.00323
             ],
             "localOffsetFromHead": [
-              -0.02339,
-              0.17885,
-              0.00637
+              -0.02328,
+              0.18171,
+              0.00477
             ],
             "hitRadius": 0.017,
             "stiffness": 0.814,
@@ -533,14 +533,14 @@
           {
             "name": "TS_Spring_wolf-layered_side_R_1",
             "positionGltf": [
-              -0.08211,
-              1.60397,
-              0.01732
+              -0.08138,
+              1.60311,
+              0.01541
             ],
             "localOffsetFromHead": [
-              -0.08211,
-              0.12687,
-              0.02532
+              -0.08138,
+              0.1299,
+              0.02341
             ],
             "hitRadius": 0.01598,
             "stiffness": 0.7523,
@@ -555,14 +555,14 @@
           {
             "name": "TS_Spring_wolf-layered_side_R_2",
             "positionGltf": [
-              -0.09816,
-              1.52259,
-              0.02386
+              -0.09694,
+              1.52206,
+              0.02176
             ],
             "localOffsetFromHead": [
-              -0.09816,
-              0.04548,
-              0.03186
+              -0.09694,
+              0.04885,
+              0.02976
             ],
             "hitRadius": 0.01496,
             "stiffness": 0.6907,
@@ -577,14 +577,14 @@
           {
             "name": "TS_Spring_wolf-layered_side_R_3",
             "positionGltf": [
-              -0.11701,
-              1.46172,
-              0.03112
+              -0.11602,
+              1.46154,
+              0.02911
             ],
             "localOffsetFromHead": [
-              -0.11701,
-              -0.01539,
-              0.03912
+              -0.11602,
+              -0.01167,
+              0.03711
             ],
             "hitRadius": 0.01394,
             "stiffness": 0.629,
@@ -601,23 +601,23 @@
     ]
   },
   "qa": {
-    "bytes": 1340604,
+    "bytes": 1451192,
     "minClearanceMm": 1.058,
     "verticesInside": 0,
     "gltfValidateErrors": 0,
     "gltfValidateWarnings": 0,
     "bmesh": {
       "TS_AuthoredHair_wolf-layered_LOD0": {
-        "verts": 5024,
-        "faces": 9612,
+        "verts": 5484,
+        "faces": 10444,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_AuthoredHair_wolf-layered_LOD1": {
-        "verts": 2581,
-        "faces": 4790,
+        "verts": 2831,
+        "faces": 5216,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -636,5 +636,5 @@
   },
   "passed": true,
   "errors": [],
-  "seconds": 1.96
+  "seconds": 1.86
 }

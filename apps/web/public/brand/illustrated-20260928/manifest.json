@@ -121,68 +121,76 @@
       ]
     },
     "character-pink": {
-      "source": "characters",
-      "crop": [
-        3,
-        683,
-        680,
-        1357
-      ],
+      "source": "toonstudio-hero-v1/romance-female.vrm",
+      "aspectRatio": "4:5",
+      "generatedAt": "2026-11-21",
+      "generator": "tools/blender/character_kit/render_portrait_4x5_webp.py",
       "labelKo": "로맨스 캐릭터",
       "variants": [
         {
           "file": "character-pink-320.webp",
           "width": 320,
-          "height": 319,
-          "bytes": 28758,
-          "sha256": "807723d6f22752ec1745d3f1130a49e3338400bd9def52c24e3e50ec0fa37d4d"
+          "height": 400,
+          "bytes": 7826,
+          "sha256": "443f9404439d134814d4cdf81fa88c5643106072d0273b929bf14aa2ceb42470"
         },
         {
           "file": "character-pink-640.webp",
           "width": 640,
-          "height": 637,
-          "bytes": 101786,
-          "sha256": "45f9eba655a749ae30ebdb21ee96fc38901651c50ec554b22954d36d2fc926d1"
+          "height": 800,
+          "bytes": 20400,
+          "sha256": "78f6559a7864a590ded1180bb658a3a9dd89051b0854f5c923825a6b464eced7"
+        },
+        {
+          "file": "character-pink-960.webp",
+          "width": 960,
+          "height": 1200,
+          "bytes": 33204,
+          "sha256": "38554387436ea73f989c660e08c776caf840ca9a96d87b97811d110e30a0e783"
         },
         {
           "file": "character-pink.webp",
-          "width": 677,
-          "height": 674,
-          "bytes": 124628,
-          "sha256": "8936aaba94c63d7a44b4fa6d0a9b00de0afbe6f9c4eab5031f494f398e076b62"
+          "width": 960,
+          "height": 1200,
+          "bytes": 37240,
+          "sha256": "da1cb565c9a6addf4269adfe09f028589b2dd9a83458b39690856bda36c32a11"
         }
       ]
     },
     "character-blue": {
-      "source": "characters",
-      "crop": [
-        686,
-        683,
-        1362,
-        1357
-      ],
+      "source": "toonstudio-hero-v1/rofan-empress.vrm",
+      "aspectRatio": "4:5",
+      "generatedAt": "2026-11-21",
+      "generator": "tools/blender/character_kit/render_portrait_4x5_webp.py",
       "labelKo": "푸른 판타지 캐릭터",
       "variants": [
         {
           "file": "character-blue-320.webp",
           "width": 320,
-          "height": 319,
-          "bytes": 36876,
-          "sha256": "2ae565b51059f9114b11e8201a6d0ca9dd756471b0472845a7550b6f5e84a8a4"
+          "height": 400,
+          "bytes": 12910,
+          "sha256": "a8152c7dd54b57897ac3f67bf2af7caddce9a332146660ba03f03cc56417165d"
         },
         {
           "file": "character-blue-640.webp",
           "width": 640,
-          "height": 638,
-          "bytes": 148198,
-          "sha256": "6aaf5f360fb3395167b5374e00a4ee32d60264480972bc757a8d973c8f635bf0"
+          "height": 800,
+          "bytes": 33916,
+          "sha256": "9512f8cbd9ad4e4dd8fd10770dc56cb72c82a1e0519e3e503759b4d64189a96a"
+        },
+        {
+          "file": "character-blue-960.webp",
+          "width": 960,
+          "height": 1200,
+          "bytes": 54890,
+          "sha256": "e96375f85dbe5888ca6cae592ef1ca3386991256b7dbadfeabdf80701972be18"
         },
         {
           "file": "character-blue.webp",
-          "width": 676,
-          "height": 674,
-          "bytes": 182534,
-          "sha256": "5e55151d016911f8852115a26d2ec45d54ca1b551129d11bbd5c3e529c6042bd"
+          "width": 960,
+          "height": 1200,
+          "bytes": 61212,
+          "sha256": "0c39805e929cf44e26f7067a2796c4b5e0e7e4a3fc31db7280eff8b60117e395"
         }
       ]
     },

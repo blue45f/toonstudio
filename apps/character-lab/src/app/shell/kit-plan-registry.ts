@@ -48,6 +48,7 @@ export interface KitPlanBuildSource {
   readonly kitId: string;
   readonly kitVersion: number;
   readonly baseId: KitBaseId;
+  readonly archetypeId?: import("../../contracts").KitV2ArchetypeId;
 }
 
 /** domains/authored/kit-plan-common `KitPlanWardrobe`와 같은 모양(레시피 `wardrobe`를 그대로 넘긴다) */
@@ -199,7 +200,16 @@ export function createKitPlanRegistry(deps?: KitPlanRegistryDeps): KitPlanRegist
       const port = requirePort();
       const loaded = await load(source, port);
       const at = now();
-      const built = port.buildPlan(loaded.original.manifest, { kitId: source.kitId, kitVersion: source.kitVersion, baseId: source.baseId }, recipe.slots, {
+      const built = port.buildPlan(
+        loaded.original.manifest,
+        {
+          kitId: source.kitId,
+          kitVersion: source.kitVersion,
+          baseId: source.baseId,
+          ...(source.archetypeId !== undefined ? { archetypeId: source.archetypeId } : {}),
+        },
+        recipe.slots,
+        {
         ...(loaded.rootUrl !== undefined ? { rootUrl: loaded.rootUrl } : {}),
         ...(options.preferredHairLod !== undefined ? { preferredHairLod: options.preferredHairLod } : {}),
         ...(at !== undefined ? { now: at } : {}),

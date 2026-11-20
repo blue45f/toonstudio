@@ -1,0 +1,201 @@
+{
+  "assetId": "kr_rooftop_studio_oneroom",
+  "version": "hero-v2",
+  "cutawayContract": "room-v1",
+  "fileName": "desktop.glb",
+  "byteSize": 3770584,
+  "sha256": "sha256:ea4e14295080f20b411522296b95d4b84d571bcf43158a9ee7766cee255fb980",
+  "bounds": [
+    9.5,
+    2.8,
+    7.5
+  ],
+  "nodes": [
+    "BG_Floor",
+    "BG_Wall_North",
+    "BG_Wall_South",
+    "BG_Wall_West",
+    "BG_Wall_East",
+    "BG_Ceiling",
+    "BG_Furniture_Hero",
+    "BG_Props_Clutter"
+  ],
+  "triangles": 28180,
+  "drawCalls": 8,
+  "materials": 4,
+  "mobile": {
+    "fileName": "mobile.glb",
+    "byteSize": 1700820,
+    "sha256": "sha256:78b3ce035261995e4c2f2df7bce28cf38f6ea83f14775bb6fa9f1c3e56b36d22",
+    "nodes": [
+      "BG_Shell_Fixed",
+      "BG_Cutaway_Front",
+      "BG_Ceiling",
+      "BG_Furnishings"
+    ],
+    "triangles": 28180,
+    "drawCalls": 4,
+    "materials": 2
+  },
+  "cameras": {
+    "oneroomWide28mm": {
+      "label": "28mm 옥탑 원룸 실내 광각",
+      "position": [
+        -3.45,
+        1.48,
+        1.85
+      ],
+      "target": [
+        0.35,
+        1.28,
+        -1.95
+      ],
+      "lensMm": 28
+    },
+    "terraceStringLight35mm": {
+      "label": "35mm 옥탑 테라스 스트링 전구 컷",
+      "position": [
+        4.05,
+        1.54,
+        2.85
+      ],
+      "target": [
+        1.1,
+        1.35,
+        -1.4
+      ],
+      "lensMm": 35
+    },
+    "deskDeadline50mm": {
+      "label": "50mm 작업 책상 마감 클로즈업",
+      "position": [
+        -1.85,
+        1.36,
+        -1.15
+      ],
+      "target": [
+        -0.95,
+        1.12,
+        -2.95
+      ],
+      "lensMm": 50
+    }
+  },
+  "lightingPresets": {
+    "day_5600k": {
+      "labelKo": "주광 5600K (맑은 낮)",
+      "kelvin": 5600,
+      "skyColor": [
+        0.78,
+        0.86,
+        0.96
+      ],
+      "skyEnergy": 1.05,
+      "sunColor": [
+        1.0,
+        0.95,
+        0.86
+      ],
+      "sunEnergy": 4.6,
+      "sunDirection": [
+        -0.58,
+        0.46,
+        -0.78
+      ],
+      "sunAngleDeg": 3.0,
+      "fillColor": [
+        0.94,
+        0.96,
+        1.0
+      ],
+      "fillIntensity": 1.0,
+      "emissiveBoost": 1.0,
+      "exposure": 0.12
+    },
+    "sunset_3200k": {
+      "labelKo": "노을 3200K (골든아워)",
+      "kelvin": 3200,
+      "skyColor": [
+        0.88,
+        0.56,
+        0.42
+      ],
+      "skyEnergy": 0.82,
+      "sunColor": [
+        1.0,
+        0.66,
+        0.36
+      ],
+      "sunEnergy": 5.2,
+      "sunDirection": [
+        -0.82,
+        0.34,
+        -0.34
+      ],
+      "sunAngleDeg": 5.0,
+      "fillColor": [
+        0.76,
+        0.64,
+        0.82
+      ],
+      "fillIntensity": 0.72,
+      "emissiveBoost": 1.45,
+      "exposure": 0.08
+    },
+    "night_moon_8500k": {
+      "labelKo": "야간 월광 8500K (밤/실내등)",
+      "kelvin": 8500,
+      "skyColor": [
+        0.16,
+        0.24,
+        0.42
+      ],
+      "skyEnergy": 0.42,
+      "sunColor": [
+        0.64,
+        0.78,
+        1.0
+      ],
+      "sunEnergy": 1.65,
+      "sunDirection": [
+        0.48,
+        -0.42,
+        -0.74
+      ],
+      "sunAngleDeg": 4.0,
+      "fillColor": [
+        0.98,
+        0.84,
+        0.62
+      ],
+      "fillIntensity": 0.65,
+      "emissiveBoost": 2.2,
+      "exposure": 0.0
+    }
+  },
+  "freestyleSvg": {
+    "path": "freestyle.svg",
+    "byteSize": 328258,
+    "pathCount": 1763,
+    "strokeWidths": [
+      "0.55",
+      "1.1",
+      "2.0"
+    ],
+    "lineSets": [
+      "TS_Silhouette",
+      "TS_ArchCrease",
+      "TS_Detail"
+    ]
+  },
+  "contactSheet": {
+    "path": "contact_sheet.png",
+    "byteSize": 1614767,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "lightingPreset": "sunset_3200k"
+  },
+  "thumbnail": "thumbnail.png"
+}

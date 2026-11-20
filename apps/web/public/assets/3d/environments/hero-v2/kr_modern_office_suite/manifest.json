@@ -1,0 +1,191 @@
+{
+  "assetId": "kr_modern_office_suite",
+  "titleKo": "현대 오피스 스위트 (대표실 · 오픈 오피스 · 유리 회의실)",
+  "dimensionsM": [
+    12.0,
+    8.5,
+    3.2
+  ],
+  "cutawayContract": "room-v1",
+  "fileName": "desktop.glb",
+  "byteSize": 4055544,
+  "sha256": "sha256:93a8f17c88d3a8f16b2356a30f4f402de115f7bd811e61ef63f3e82f40439203",
+  "bounds": [
+    12.0,
+    3.2,
+    8.9187
+  ],
+  "nodes": [
+    "BG_Floor",
+    "BG_Wall_North",
+    "BG_Wall_South",
+    "BG_Wall_West",
+    "BG_Wall_East",
+    "BG_Ceiling",
+    "BG_Furniture_Hero",
+    "BG_Props_Clutter"
+  ],
+  "mobile": {
+    "fileName": "mobile.glb",
+    "byteSize": 1874852,
+    "sha256": "sha256:f7381eb76c44a7b5fb9a4fd663b0c9f00aee9bccf5b4707be449a4c835fa9097",
+    "nodes": [
+      "BG_Shell_Fixed",
+      "BG_Cutaway_Front",
+      "BG_Ceiling",
+      "BG_Furnishings"
+    ]
+  },
+  "cameras": {
+    "open_office_24mm": {
+      "label": "24mm 오픈 오피스 전경",
+      "lensMm": 24,
+      "position": [
+        -2.85,
+        1.55,
+        2.85
+      ],
+      "target": [
+        2.4,
+        1.32,
+        -1.65
+      ]
+    },
+    "meeting_room_35mm": {
+      "label": "35mm 유리 회의실 화이트보드",
+      "lensMm": 35,
+      "position": [
+        2.75,
+        1.48,
+        -0.45
+      ],
+      "target": [
+        5.55,
+        1.45,
+        -1.88
+      ]
+    },
+    "executive_corner_50mm": {
+      "label": "50mm 대표실 코너 대면",
+      "lensMm": 50,
+      "position": [
+        -2.75,
+        1.42,
+        -0.85
+      ],
+      "target": [
+        -4.45,
+        1.32,
+        -2.85
+      ]
+    }
+  },
+  "lightingPresets": {
+    "day_5600k": {
+      "labelKo": "주광 5600K (맑은 낮)",
+      "kelvin": 5600,
+      "skyColor": [
+        0.78,
+        0.86,
+        0.96
+      ],
+      "skyEnergy": 1.05,
+      "sunColor": [
+        1.0,
+        0.95,
+        0.86
+      ],
+      "sunEnergy": 4.6,
+      "sunDirection": [
+        -0.58,
+        0.46,
+        -0.78
+      ],
+      "sunAngleDeg": 3.0,
+      "fillColor": [
+        0.94,
+        0.96,
+        1.0
+      ],
+      "fillIntensity": 1.0,
+      "emissiveBoost": 1.0,
+      "exposure": 0.12
+    },
+    "sunset_3200k": {
+      "labelKo": "노을 3200K (골든아워)",
+      "kelvin": 3200,
+      "skyColor": [
+        0.88,
+        0.56,
+        0.42
+      ],
+      "skyEnergy": 0.82,
+      "sunColor": [
+        1.0,
+        0.66,
+        0.36
+      ],
+      "sunEnergy": 5.2,
+      "sunDirection": [
+        -0.82,
+        0.34,
+        -0.34
+      ],
+      "sunAngleDeg": 5.0,
+      "fillColor": [
+        0.76,
+        0.64,
+        0.82
+      ],
+      "fillIntensity": 0.72,
+      "emissiveBoost": 1.45,
+      "exposure": 0.08
+    },
+    "night_moon_8500k": {
+      "labelKo": "야간 월광 8500K (밤/실내등)",
+      "kelvin": 8500,
+      "skyColor": [
+        0.16,
+        0.24,
+        0.42
+      ],
+      "skyEnergy": 0.42,
+      "sunColor": [
+        0.64,
+        0.78,
+        1.0
+      ],
+      "sunEnergy": 1.65,
+      "sunDirection": [
+        0.48,
+        -0.42,
+        -0.74
+      ],
+      "sunAngleDeg": 4.0,
+      "fillColor": [
+        0.98,
+        0.84,
+        0.62
+      ],
+      "fillIntensity": 0.65,
+      "emissiveBoost": 2.2,
+      "exposure": 0.0
+    }
+  },
+  "freestyleSvg": {
+    "path": "freestyle.svg",
+    "byteSize": 547883,
+    "pathCount": 2982,
+    "strokeWidths": [
+      "0.55",
+      "1.1",
+      "2.0"
+    ],
+    "lineSets": [
+      "TS_Silhouette",
+      "TS_ArchCrease",
+      "TS_Detail"
+    ]
+  },
+  "thumbnail": "thumbnail.png"
+}

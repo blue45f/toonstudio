@@ -24,10 +24,13 @@ import {
   DEFAULT_RECIPE_COLORS,
   FACE_PARAM_KEYS,
   FACE_PARAM_LABELS_KO,
+  KIT_V2_WEBTOON_ID,
   PARAM_MAX,
   PARAM_MIN,
+  applyKitToonDefaults,
   archetypePresetToBodyParams,
   clampParam,
+  normalizeParamValues,
 } from "../../../contracts";
 import { HAIR_COLORS, IRIS_COLORS, SKIN_TONES, findPaletteEntry } from "../../../domains/humanoid/palette";
 import { resolveProportions } from "../../../domains/humanoid/proportions";
@@ -385,14 +388,30 @@ export function ParamPanel() {
 
   const applyKitV2ArchetypePreset = useCallback(
     (preset: KitV2ArchetypePreset): void => {
-      const coalesceKey = `preset:kit-v2-archetype:${preset.id}`;
       const bodyParams = archetypePresetToBodyParams(preset);
-      for (const key of BODY_PARAM_KEYS) {
-        const value = bodyParams[key];
-        if (value !== undefined) setParam("body", key, value, { coalesceKey });
-      }
+      const nextBody = normalizeParamValues({ ...recipe.body, ...bodyParams });
+      const nextSource = {
+        kind: "kit" as const,
+        kitId: KIT_V2_WEBTOON_ID,
+        baseId: preset.baseId,
+        kitVersion: 2,
+        archetypeId: preset.id,
+      };
+      const nextShading = recipe.source.kind === "kit" ? recipe.shading : applyKitToonDefaults(recipe.shading);
+      const nextHairColor = { ...recipe.hairColor };
+      delete nextHairColor.packageBaseTint;
+      dispatch({
+        type: "recipe/load",
+        recipe: {
+          ...recipe,
+          source: nextSource,
+          body: nextBody,
+          shading: nextShading,
+          hairColor: nextHairColor,
+        },
+      });
     },
-    [setParam],
+    [dispatch, recipe],
   );
 
   const isProportionPresetActive = (preset: QuickProportionPreset): boolean =>

@@ -1,6 +1,6 @@
 {
   "file": "youth-academy.glb",
-  "bytes": 3069764,
+  "bytes": 3917112,
   "passed": true,
   "errorCount": 0,
   "errors": [],
@@ -31,12 +31,12 @@
       "TS_Eye.L": 632,
       "TS_Eye.R": 632
     },
-    "jawOpenMaxMm": 28.74,
+    "jawOpenMaxMm": 33.13,
     "gltfMinYM": 0.0,
     "gltfHeightM": 1.56
   },
   "neckSeam6Poses": {
-    "seamPairs": 74,
+    "seamPairs": 85,
     "minNormalDot": 1.0,
     "worstGapMm": 0.0,
     "posesMm": {
@@ -49,19 +49,19 @@
     }
   },
   "shoulder85Stretch": {
-    "worstMaxStretch": 1.5434,
+    "worstMaxStretch": 1.5426,
     "cases": {
       "raise_85_deg": {
-        "maxStretch": 1.4012,
-        "p95Stretch": 1.3177,
+        "maxStretch": 1.4298,
+        "p95Stretch": 1.3079,
         "edgesOver2x": 0,
-        "roiEdgeCount": 4430
+        "roiEdgeCount": 4480
       },
       "drop_85_deg": {
-        "maxStretch": 1.5434,
-        "p95Stretch": 1.2554,
+        "maxStretch": 1.5426,
+        "p95Stretch": 1.2466,
         "edgesOver2x": 0,
-        "roiEdgeCount": 4430
+        "roiEdgeCount": 4480
       }
     }
   },
@@ -76,16 +76,16 @@
     "blenderHeightM": 1.56,
     "bmeshMeshes": {
       "TS_Body": {
-        "verts": 11768,
-        "faces": 19552,
+        "verts": 12513,
+        "faces": 20992,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_Head": {
-        "verts": 4375,
-        "faces": 7296,
+        "verts": 6806,
+        "faces": 10176,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -116,8 +116,8 @@
         "zeroAreaFaces": 0
       },
       "TS_Lashes": {
-        "verts": 288,
-        "faces": 560,
+        "verts": 324,
+        "faces": 632,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -152,9 +152,9 @@
     "previewPng": "youth-academy_preview.png"
   },
   "unifiedPreExportAudit": {
-    "vertices": 13426,
-    "faces": 13424,
-    "quads": 13424,
+    "vertices": 15586,
+    "faces": 15584,
+    "quads": 15584,
     "tris": 0,
     "ngons": 0,
     "quadRatio": 1.0,

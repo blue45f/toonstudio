@@ -39,6 +39,18 @@ MIN_GLASS_THICKNESS_M = 0.006  # >= 6 mm per Z-fighting invariant
 MIN_STANDOFF_M = 0.004  # >= 3-5 mm clearance for posters/frames/rugs
 SHADE_ANGLE_RAD = 0.523599  # 30 degrees (Blender 5.3 shade_smooth_by_angle)
 
+# Semantic graphic tiles that automatically map full upright [0,1]x[0,1] UVs onto signs/boards
+AUTO_FIT_GRAPHIC_TILES = frozenset(
+    {
+        "chalkboard",
+        "paper_label",
+        "emissive_neon",
+        "emissive_exit_green",
+        "emissive_amber",
+        "emissive_rose",
+    }
+)
+
 Vec3 = Tuple[float, float, float]
 
 
@@ -96,6 +108,7 @@ class MeshGroup:
         self.faces: List[Tuple[int, ...]] = []
         self.colors: List[Tuple[float, float, float, float]] = []
         self.face_tiles: List[str] = []
+        self.face_uv_fits: List[Optional[bool]] = []
 
     def is_empty(self) -> bool:
         return len(self.faces) == 0
@@ -107,6 +120,7 @@ class MeshGroup:
         color: str = "FFFFFF",
         *,
         tile: Optional[str] = None,
+        uv_fit: Optional[bool] = None,
     ) -> None:
         """Append a closed manifold solid defined by vertices and polygon index tuples."""
         if not points or not faces:
@@ -119,6 +133,7 @@ class MeshGroup:
         for face in faces:
             self.faces.append(tuple(start + int(i) for i in face))
             self.face_tiles.append(resolved_tile)
+            self.face_uv_fits.append(uv_fit)
 
     def box(
         self,
@@ -129,6 +144,7 @@ class MeshGroup:
         tile: Optional[str] = None,
         bevel: float = DEFAULT_BEVEL_M,
         rot_z: float = 0.0,
+        uv_fit: Optional[bool] = None,
     ) -> None:
         """Append a closed manifold box, beveled by default (3-8 mm hard-surface spec)."""
         add_beveled_box(
@@ -139,6 +155,7 @@ class MeshGroup:
             tile=tile,
             bevel=bevel,
             rot_z=rot_z,
+            uv_fit=uv_fit,
         )
 
     def rings(
@@ -265,6 +282,10 @@ class MeshGroup:
         self.colors.extend(other.colors)
         self.faces.extend(tuple(base + i for i in face) for face in other.faces)
         self.face_tiles.extend(other.face_tiles)
+        if len(other.face_uv_fits) == len(other.faces):
+            self.face_uv_fits.extend(other.face_uv_fits)
+        else:
+            self.face_uv_fits.extend([None] * len(other.faces))
 
     def clone_translated(self, offset: Vec3) -> "MeshGroup":
         """Return a shallow-copied ``MeshGroup`` shifted by ``offset``."""
@@ -280,6 +301,7 @@ class MeshGroup:
         dup.faces = list(self.faces)
         dup.colors = list(self.colors)
         dup.face_tiles = list(self.face_tiles)
+        dup.face_uv_fits = list(self.face_uv_fits)
         return dup
 
     def build(
@@ -304,10 +326,11 @@ class MeshGroup:
         bm.from_mesh(mesh)
         bm.faces.ensure_lookup_table()
 
-        # Preserve semantic tile assignment per face across n-gon triangulation
+        # Preserve semantic tile assignment & uv_fit flag per face across n-gon triangulation
         unique_tiles: List[str] = []
         tile_to_id: dict[str, int] = {}
         tile_layer = bm.faces.layers.int.new("ts_tile")
+        uvfit_layer = bm.faces.layers.int.new("ts_uvfit")
         for f_idx, face in enumerate(bm.faces):
             t_name = self.face_tiles[f_idx] if f_idx < len(self.face_tiles) else self.default_tile
             tid = tile_to_id.get(t_name)
@@ -316,6 +339,9 @@ class MeshGroup:
                 tile_to_id[t_name] = tid
                 unique_tiles.append(t_name)
             face[tile_layer] = tid
+            fit_flag = self.face_uv_fits[f_idx] if f_idx < len(self.face_uv_fits) else None
+            # 0 = auto, 1 = explicit True, -1 = explicit False
+            face[uvfit_layer] = 1 if fit_flag is True else (-1 if fit_flag is False else 0)
 
         # Triangulate ONLY n-gons (> 4 verts) so Mikktspace tangent computation
         # succeeds cleanly on every mesh (0 MESH_PRIMITIVE_GENERATED_TANGENT_SPACE warnings)
@@ -341,7 +367,9 @@ class MeshGroup:
 
         bm.faces.ensure_lookup_table()
         post_face_tiles = [unique_tiles[f[tile_layer]] for f in bm.faces]
+        post_face_uvfits = [int(f[uvfit_layer]) for f in bm.faces]
         bm.faces.layers.int.remove(tile_layer)
+        bm.faces.layers.int.remove(uvfit_layer)
         bm.to_mesh(mesh)
         bm.free()
         mesh.update()
@@ -352,37 +380,78 @@ class MeshGroup:
         tile_scale = self.tile_scale_m
         for poly_idx, poly in enumerate(mesh.polygons):
             tile_name = post_face_tiles[poly_idx] if poly_idx < len(post_face_tiles) else self.default_tile
+            fit_mode = post_face_uvfits[poly_idx] if poly_idx < len(post_face_uvfits) else 0
             rect = tile_cache.get(tile_name)
             if rect is None:
                 rect = get_tile_uv_rect(resolved_atlas, tile_name, margin=uv_margin)
                 tile_cache[tile_name] = rect
 
+            use_fit = (fit_mode == 1) or (fit_mode == 0 and tile_name in AUTO_FIT_GRAPHIC_TILES)
             n = poly.normal
-            axis = max(range(3), key=lambda k: abs(n[k]))
-            u_ax, v_ax = ((1, 2), (0, 2), (0, 1))[axis]
+            if use_fit:
+                # Upright, un-mirrored viewer-facing projection onto the full [0, 1] tile
+                if abs(n.z) < 0.85:
+                    # Viewer looks along -n; viewer's right = (-n) x (+Z) = (-ny, nx, 0)
+                    right = Vector((-n.y, n.x, 0.0))
+                    if right.length < 1e-6:
+                        right = Vector((1.0, 0.0, 0.0))
+                    else:
+                        right.normalize()
+                    up_dir = n.cross(right)
+                    if up_dir.length < 1e-6:
+                        up_dir = Vector((0.0, 0.0, 1.0))
+                    else:
+                        up_dir.normalize()
+                else:
+                    right = Vector((1.0, 0.0, 0.0))
+                    up_dir = Vector((0.0, 1.0 if n.z >= 0.0 else -1.0, 0.0))
 
-            coords = [
-                (
-                    mesh.vertices[mesh.loops[li].vertex_index].co[u_ax],
-                    mesh.vertices[mesh.loops[li].vertex_index].co[v_ax],
-                )
-                for li in poly.loop_indices
-            ]
-            us = [c[0] for c in coords]
-            vs = [c[1] for c in coords]
-            min_u, max_u = min(us), max(us)
-            min_v, max_v = min(vs), max(vs)
-            span_u = max(max_u - min_u, 1e-5)
-            span_v = max(max_v - min_v, 1e-5)
-            denom = max(span_u, span_v, tile_scale)
-            # Keep small details proportional to physical scale while clamping large spans into [0, 1]
-            for li, (cu, cv) in zip(poly.loop_indices, coords):
-                lu = min(1.0, max(0.0, (cu - min_u) / denom))
-                lv = min(1.0, max(0.0, (cv - min_v) / denom))
-                uv_layer.data[li].uv = (
-                    rect.u_min + lu * rect.u_span,
-                    rect.v_min + lv * rect.v_span,
-                )
+                coords = [
+                    (
+                        mesh.vertices[mesh.loops[li].vertex_index].co.dot(right),
+                        mesh.vertices[mesh.loops[li].vertex_index].co.dot(up_dir),
+                    )
+                    for li in poly.loop_indices
+                ]
+                us = [c[0] for c in coords]
+                vs = [c[1] for c in coords]
+                min_u, max_u = min(us), max(us)
+                min_v, max_v = min(vs), max(vs)
+                span_u = max(max_u - min_u, 1e-5)
+                span_v = max(max_v - min_v, 1e-5)
+                for li, (cu, cv) in zip(poly.loop_indices, coords):
+                    lu = min(1.0, max(0.0, (cu - min_u) / span_u))
+                    lv = min(1.0, max(0.0, (cv - min_v) / span_v))
+                    uv_layer.data[li].uv = (
+                        rect.u_min + lu * rect.u_span,
+                        rect.v_min + lv * rect.v_span,
+                    )
+            else:
+                axis = max(range(3), key=lambda k: abs(n[k]))
+                u_ax, v_ax = ((1, 2), (0, 2), (0, 1))[axis]
+
+                coords = [
+                    (
+                        mesh.vertices[mesh.loops[li].vertex_index].co[u_ax],
+                        mesh.vertices[mesh.loops[li].vertex_index].co[v_ax],
+                    )
+                    for li in poly.loop_indices
+                ]
+                us = [c[0] for c in coords]
+                vs = [c[1] for c in coords]
+                min_u, max_u = min(us), max(us)
+                min_v, max_v = min(vs), max(vs)
+                span_u = max(max_u - min_u, 1e-5)
+                span_v = max(max_v - min_v, 1e-5)
+                denom = max(span_u, span_v, tile_scale)
+                # Keep small details proportional to physical scale while clamping large spans into [0, 1]
+                for li, (cu, cv) in zip(poly.loop_indices, coords):
+                    lu = min(1.0, max(0.0, (cu - min_u) / denom))
+                    lv = min(1.0, max(0.0, (cv - min_v) / denom))
+                    uv_layer.data[li].uv = (
+                        rect.u_min + lu * rect.u_span,
+                        rect.v_min + lv * rect.v_span,
+                    )
 
         # Vertex color attribute "Tint" (BYTE_COLOR POINT matches glTF COLOR_0)
         if len(mesh.vertices) > 0:
@@ -584,11 +653,12 @@ def add_beveled_box(
     bevel: float = DEFAULT_BEVEL_M,
     rot_z: float = 0.0,
     matrix: Optional[Matrix] = None,
+    uv_fit: Optional[bool] = None,
 ) -> None:
     """Add a closed manifold beveled box (default 4 mm bevel) to ``group``."""
     pts, faces = _make_beveled_box_local(size, bevel=bevel)
     world_pts = _transform_points(pts, center, rot_z=rot_z, matrix=matrix)
-    group.solid(world_pts, faces, color=color, tile=tile)
+    group.solid(world_pts, faces, color=color, tile=tile, uv_fit=uv_fit)
 
 
 def add_wall_with_openings(
@@ -1807,3 +1877,695 @@ def add_ceiling_coffer(
         ld = min(0.65, max(0.30, depth - bw * 2.6))
         add_beveled_box(group, (cx, cy, z_top - 0.016), (lw + 0.06, ld + 0.06, 0.024), color="D8D6D0", tile="ceiling_metal", bevel=0.003)
         add_beveled_box(group, (cx, cy, z_top - 0.032), (lw, ld, 0.016), color="FFFFFF", tile=light_tile, bevel=0.003)
+
+
+# ---------------------------------------------------------------------------
+# Organic Architectural Helpers (Watertight 0-Defect Manifold Geometry)
+# ---------------------------------------------------------------------------
+
+
+def _shift_hex_luminance(hex_color: str, factor: float) -> str:
+    """Scale an sRGB hex color's luminance gently for natural organic foliage variation."""
+    clean = hex_color.lstrip("#").strip()
+    r = max(0, min(255, int(round(int(clean[0:2], 16) * factor))))
+    g = max(0, min(255, int(round(int(clean[2:4], 16) * factor))))
+    b = max(0, min(255, int(round(int(clean[4:6], 16) * factor))))
+    return f"{r:02X}{g:02X}{b:02X}"
+
+
+def add_pleated_curtain(
+    group: MeshGroup,
+    center: Vec3,
+    width: float,
+    height: float,
+    *,
+    depth: float = 0.095,
+    pleats: int = 6,
+    thickness: float = 0.012,
+    rot_z: float = 0.0,
+    tieback_height: Optional[float] = None,
+    tieback_pull: float = 0.24,
+    tieback_side: int = 1,
+    include_rod: bool = True,
+    rod_overhang: float = 0.14,
+    rod_radius: float = 0.014,
+    include_rings: bool = True,
+    color: str = "F0EAE0",
+    tile: str = "fabric_linen",
+    rod_color: str = "4A4540",
+    rod_tile: str = "metal_leg_dark",
+    tieback_color: str = "C9A86A",
+    tieback_tile: str = "metal_brass_trim",
+    rod_group: Optional[MeshGroup] = None,
+) -> None:
+    """Build a watertight sinusoidal multi-pleat curtain with optional tieback, rod & rings.
+
+    ``center`` is the bottom-center ``(x, y, z_bottom)`` of the drapery panel.
+    ``tieback_height`` accepts a height fraction ``(0.15..0.85)`` or absolute metres
+    above ``z_bottom``; when set, gathers the drapery smoothly into a pinched waist
+    wrapped by a sculpted 3D tieback band with clean non-welding clearance.
+    """
+    w = max(0.20, float(width))
+    h = max(0.45, float(height))
+    d = max(0.030, float(depth))
+    n_pleats = max(2, int(pleats))
+    nu = max(12, n_pleats * 4)
+    nz = 10
+
+    tz: Optional[float] = None
+    if tieback_height is not None:
+        raw_tz = float(tieback_height)
+        tz = (raw_tz * h) if raw_tz <= 1.0 else raw_tz
+        tz = max(h * 0.18, min(h * 0.82, tz))
+
+    def _slice_centerline(z_local: float) -> Tuple[List[Tuple[float, float]], float]:
+        zf = z_local / h
+        base_amp = (d * 0.5) * (0.72 + 0.36 * (1.0 - zf))
+        x_scale = 1.0
+        x_shift = 0.0
+        amp_scale = 1.0
+        if tz is not None:
+            sigma = max(0.18, h * 0.21)
+            pinch = math.exp(-(((z_local - tz) / sigma) ** 2))
+            x_scale = 1.0 - 0.58 * pinch
+            x_shift = float(tieback_side) * float(tieback_pull) * w * pinch
+            amp_scale = 1.0 - 0.44 * pinch
+        amp = max(0.012, base_amp * amp_scale)
+        pts2d: List[Tuple[float, float]] = []
+        for k in range(nu + 1):
+            s = k / float(nu)
+            lx = (s - 0.5) * w * x_scale + x_shift
+            ly = amp * math.sin(s * n_pleats * TAU)
+            pts2d.append((lx, ly))
+        eff_w = w * x_scale
+        return pts2d, eff_w
+
+    drape_rings: List[List[Vec3]] = []
+    for iz in range(nz + 1):
+        z_val = (iz / float(nz)) * h
+        pts2d, eff_w = _slice_centerline(z_val)
+        # Keep thickness strictly bounded below wave curvature radius so walls never cross
+        half_t = max(0.0022, min(float(thickness) * 0.5, eff_w / max(18.0, n_pleats * 12.0), 0.008))
+        front: List[Vec3] = []
+        back: List[Vec3] = []
+        m = len(pts2d)
+        for k, (px, py) in enumerate(pts2d):
+            if k == 0:
+                tx, ty = pts2d[1][0] - px, pts2d[1][1] - py
+            elif k == m - 1:
+                tx, ty = px - pts2d[m - 2][0], py - pts2d[m - 2][1]
+            else:
+                tx, ty = pts2d[k + 1][0] - pts2d[k - 1][0], pts2d[k + 1][1] - pts2d[k - 1][1]
+            tlen = math.hypot(tx, ty)
+            if tlen < 1e-6:
+                nx, ny = 0.0, 1.0
+            else:
+                nx, ny = -ty / tlen, tx / tlen
+            front.append((px + nx * half_t, py + ny * half_t, z_val))
+            back.append((px - nx * half_t, py - ny * half_t, z_val))
+        ring_local = front + list(reversed(back))
+        drape_rings.append(_transform_points(ring_local, center, rot_z=rot_z))
+
+    group.rings(drape_rings, color=color, tile=tile)
+
+    # Sculpted 3D tieback band around pinched waist (with >= 8 mm radial clearance -> 0 welded edges)
+    if tz is not None:
+        pts_tz, _ = _slice_centerline(tz)
+        xs = [p[0] for p in pts_tz]
+        ys = [p[1] for p in pts_tz]
+        cx_tb = 0.5 * (min(xs) + max(xs))
+        cy_tb = 0.5 * (min(ys) + max(ys))
+        rx_tb = max(0.032, 0.5 * (max(xs) - min(xs)) + 0.016)
+        ry_tb = max(0.028, 0.5 * (max(ys) - min(ys)) + 0.016)
+        band_sides = 18
+        band_steps = (
+            (tz - 0.024, 0.98),
+            (tz - 0.010, 1.06),
+            (tz + 0.010, 1.06),
+            (tz + 0.024, 0.98),
+        )
+        tb_rings: List[List[Vec3]] = []
+        for bz, sc in band_steps:
+            ring_l = [
+                (
+                    cx_tb + rx_tb * sc * math.cos(TAU * j / band_sides),
+                    cy_tb + ry_tb * sc * math.sin(TAU * j / band_sides),
+                    bz,
+                )
+                for j in range(band_sides)
+            ]
+            tb_rings.append(_transform_points(ring_l, center, rot_z=rot_z))
+        group.rings(tb_rings, color=tieback_color, tile=tieback_tile)
+
+    # Curtain rod, turned finials, wall brackets, and hanging torus rings
+    if include_rod:
+        r_grp = rod_group if rod_group is not None else group
+        rr = max(0.008, float(rod_radius))
+        z_rod = h + rr + 0.024  # Clean 24 mm vertical gap above drapery top
+        x_end = w * 0.5 + max(0.04, float(rod_overhang))
+        p_left = _transform_points([(-x_end, 0.0, z_rod)], center, rot_z=rot_z)[0]
+        p_right = _transform_points([(x_end, 0.0, z_rod)], center, rot_z=rot_z)[0]
+        r_grp.rail(p_left, p_right, radius=rr, color=rod_color, sides=12, tile=rod_tile)
+
+        # Turned spherical finial caps separated by 3 mm outside rod ends
+        for side in (-1.0, 1.0):
+            fx0 = side * (x_end + 0.003)
+            fin_profile = (
+                (0.000, rr * 0.65),
+                (0.010, rr * 1.45),
+                (0.024, rr * 1.65),
+                (0.036, rr * 1.25),
+                (0.044, rr * 0.50),
+            )
+            fin_rings: List[List[Vec3]] = []
+            for dx, rad in fin_profile:
+                lx = fx0 + side * dx
+                ring_l = [
+                    (lx, rad * math.cos(TAU * j / 10), z_rod + rad * math.sin(TAU * j / 10))
+                    for j in range(10)
+                ]
+                fin_rings.append(_transform_points(ring_l, center, rot_z=rot_z))
+            r_grp.rings(fin_rings, color=tieback_color, tile=tieback_tile)
+
+            # Wall mounting bracket arms behind rod
+            bx = side * (w * 0.5 + max(0.02, float(rod_overhang) * 0.45))
+            b_pts, b_faces = _make_beveled_box_local((0.022, 0.075, 0.022), bevel=0.003)
+            b_pts = [(p[0] + bx, p[1] + 0.046, p[2] + z_rod) for p in b_pts]
+            r_grp.solid(_transform_points(b_pts, center, rot_z=rot_z), b_faces, color=rod_color, tile=rod_tile)
+
+        if include_rings:
+            n_rings = max(4, min(n_pleats + 2, 10))
+            r_maj = rr + 0.010  # >= 6 mm air gap around rod
+            r_min = 0.004
+            maj_segs = 12
+            min_segs = 6
+            for ri in range(n_rings):
+                frac = ri / float(max(1, n_rings - 1))
+                rx_pos = (frac - 0.5) * (w * 0.94)
+                torus_rings: List[List[Vec3]] = []
+                for mj in range(maj_segs):
+                    ang = TAU * mj / maj_segs
+                    cy_c = r_maj * math.cos(ang)
+                    cz_c = z_rod - 0.004 + r_maj * math.sin(ang)
+                    t_ring: List[Vec3] = []
+                    for mn in range(min_segs):
+                        phi = TAU * mn / min_segs
+                        rad_off = r_min * math.cos(phi)
+                        lx = rx_pos + r_min * math.sin(phi)
+                        ly = (r_maj + rad_off) * math.cos(ang)
+                        lz = z_rod - 0.004 + (r_maj + rad_off) * math.sin(ang)
+                        t_ring.append((lx, ly, lz))
+                    torus_rings.append(_transform_points(t_ring, center, rot_z=rot_z))
+                r_grp.rings(torus_rings, color=tieback_color, tile=tieback_tile, closed_loop=True)
+
+
+def add_curved_foliage_plant(
+    group: MeshGroup,
+    base_center: Vec3,
+    *,
+    species: str = "monstera",
+    height: float = 1.25,
+    pot_radius: float = 0.17,
+    pot_height: float = 0.34,
+    leaf_count: int = 11,
+    rot_z: float = 0.0,
+    seed: int = 42,
+    pot_color: str = "C97A53",
+    pot_tile: str = "ceramic_matte",
+    soil_color: str = "46362A",
+    soil_tile: str = "stone_prop",
+    stem_color: str = "4B6B3E",
+    stem_tile: str = "foliage",
+    leaf_color: str = "3D6A39",
+    leaf_tile: str = "foliage",
+    pot_group: Optional[MeshGroup] = None,
+) -> None:
+    """Build a watertight potted plant with curved 3D beveled leaves (zero flat cards).
+
+    ``species`` supports ``"monstera"``, ``"ficus"``, and ``"palm"``.
+    ``base_center`` is the floor contact center ``(x, y, z_floor)`` of the planter pot.
+    """
+    p_grp = pot_group if pot_group is not None else group
+    h = max(0.40, float(height))
+    pr = max(0.08, float(pot_radius))
+    ph = max(0.14, min(h * 0.45, float(pot_height)))
+    n_leaves = max(5, int(leaf_count))
+
+    # 1. Turned ceramic planter pot resting cleanly on z = base_center[2]
+    pot_sides = 16
+    pot_prof = (
+        (pr * 0.72, 0.000),
+        (pr * 0.76, ph * 0.08),
+        (pr * 0.90, ph * 0.48),
+        (pr * 1.00, ph * 0.88),
+        (pr * 1.05, ph * 0.93),
+        (pr * 1.04, ph),
+        (pr * 0.92, ph),
+    )
+    pot_rings = [
+        _transform_points(
+            [(rad * math.cos(TAU * i / pot_sides), rad * math.sin(TAU * i / pot_sides), zv) for i in range(pot_sides)],
+            base_center,
+            rot_z=rot_z,
+        )
+        for (rad, zv) in pot_prof
+    ]
+    p_grp.rings(pot_rings, color=pot_color, tile=pot_tile)
+
+    # 2. Separate organic soil mound inset 10 mm inside pot wall (zero welded edges)
+    soil_r = pr * 0.86
+    soil_z = ph - 0.032
+    soil_prof = (
+        (soil_r * 0.96, soil_z - 0.025),
+        (soil_r, soil_z),
+        (soil_r * 0.62, soil_z + 0.020),
+        (soil_r * 0.16, soil_z + 0.030),
+    )
+    soil_rings = [
+        _transform_points(
+            [(rad * math.cos(TAU * i / 12), rad * math.sin(TAU * i / 12), zv) for i in range(12)],
+            base_center,
+            rot_z=rot_z,
+        )
+        for (rad, zv) in soil_prof
+    ]
+    p_grp.rings(soil_rings, color=soil_color, tile=soil_tile)
+
+    def _add_curved_leaf(
+        origin_local: Vec3,
+        azim: float,
+        length: float,
+        max_w: float,
+        rise: float,
+        droop: float,
+        roll: float,
+        col_hex: str,
+        width_curve: Sequence[float],
+    ) -> None:
+        """Emit one watertight V-cupped 3D beveled leaf lofted along a parabolic arch."""
+        ox, oy, oz = origin_local
+        dx = math.cos(azim)
+        dy = math.sin(azim)
+        sx = -dy
+        sy = dx
+        cos_r, sin_r = math.cos(roll), math.sin(roll)
+        ts = (0.0, 0.18, 0.42, 0.68, 0.88, 1.0)
+        leaf_rings: List[List[Vec3]] = []
+        for idx, t in enumerate(ts):
+            along = t * length
+            # Smooth upward arch then graceful botanical tip droop
+            z_off = rise * math.sin(math.pi * t * 0.82) - droop * (t**2.2)
+            dz_dt = (rise * 0.82 * math.pi * math.cos(math.pi * t * 0.82) - droop * 2.2 * (t**1.2)) / max(length, 0.05)
+            # Local tangent-perpendicular up vector in the leaf vertical plane
+            t_len = math.hypot(1.0, dz_dt)
+            up_r = -dz_dt / t_len
+            up_z = 1.0 / t_len
+
+            hw = max(0.0055, 0.5 * max_w * width_curve[idx])
+            cup = hw * 0.18
+            thick_mid = max(0.0032, min(0.007, max_w * 0.035))
+            thick_edge = max(0.0020, thick_mid * 0.55)
+
+            # 6-point closed cupped beveled leaf cross-section (local lateral u, normal v)
+            sec_uv = (
+                (-hw, cup),
+                (0.0, thick_mid * 0.55),
+                (hw, cup),
+                (hw * 0.90, cup - thick_edge),
+                (0.0, -thick_mid * 0.55),
+                (-hw * 0.90, cup - thick_edge),
+            )
+            ring_local: List[Vec3] = []
+            for lu, lv in sec_uv:
+                ru = lu * cos_r - lv * sin_r
+                rv = lu * sin_r + lv * cos_r
+                px = ox + dx * (along + rv * up_r) + sx * ru
+                py = oy + dy * (along + rv * up_r) + sy * ru
+                pz = oz + z_off + rv * up_z
+                ring_local.append((px, py, pz))
+            leaf_rings.append(_transform_points(ring_local, base_center, rot_z=rot_z))
+        group.rings(leaf_rings, color=col_hex, tile=leaf_tile)
+
+    def _add_curved_stem(p0: Vec3, p1: Vec3, p2: Vec3, r_base: float, r_tip: float, col_hex: str) -> None:
+        """Emit a smooth tapered quadratic-Bezier watertight stem."""
+        v0, v1, v2 = Vector(p0), Vector(p1), Vector(p2)
+        steps = 5
+        sides = 7
+        stem_rings: List[List[Vec3]] = []
+        for i in range(steps + 1):
+            t = i / float(steps)
+            pos = ((1.0 - t) ** 2) * v0 + 2.0 * (1.0 - t) * t * v1 + (t**2) * v2
+            tang = (2.0 * (1.0 - t) * (v1 - v0) + 2.0 * t * (v2 - v1))
+            tang = tang.normalized() if tang.length > 1e-5 else Vector((0.0, 0.0, 1.0))
+            ref = Vector((0.0, 0.0, 1.0)) if abs(tang.z) < 0.85 else Vector((1.0, 0.0, 0.0))
+            n1 = tang.cross(ref).normalized()
+            n2 = tang.cross(n1).normalized()
+            rad = max(0.004, r_base * (1.0 - t) + r_tip * t)
+            r_local = [tuple(pos + rad * (math.cos(TAU * j / sides) * n1 + math.sin(TAU * j / sides) * n2)) for j in range(sides)]
+            stem_rings.append(_transform_points(r_local, base_center, rot_z=rot_z))
+        group.rings(stem_rings, color=col_hex, tile=stem_tile)
+
+    canopy_h = max(0.24, h - ph)
+    golden = 2.39996323
+
+    if species == "ficus":
+        # Branching woody trunk + curved ficus leaf rosettes
+        trunk_h = canopy_h * 0.56
+        _add_curved_stem(
+            (0.0, 0.0, soil_z + 0.015),
+            (0.025, -0.020, soil_z + trunk_h * 0.55),
+            (-0.015, 0.018, soil_z + trunk_h),
+            r_base=max(0.014, pr * 0.13),
+            r_tip=max(0.008, pr * 0.07),
+            col_hex="6B523B",
+        )
+        n_branches = max(4, min(6, n_leaves // 2))
+        per_branch = max(2, int(round(n_leaves / float(n_branches))))
+        w_curve = (0.14, 0.62, 1.00, 0.88, 0.44, 0.10)
+        for bi in range(n_branches):
+            b_az = seed * 0.37 + bi * golden
+            b_frac = 0.58 + 0.42 * (bi / float(max(1, n_branches - 1)))
+            bz0 = soil_z + trunk_h * b_frac
+            b_reach = pr * (0.85 + 0.45 * (1.0 - b_frac * 0.3))
+            b_end = (
+                b_reach * math.cos(b_az),
+                b_reach * math.sin(b_az),
+                soil_z + trunk_h + canopy_h * (0.20 + 0.24 * (bi % 3) / 2.0),
+            )
+            b_mid = (b_end[0] * 0.45, b_end[1] * 0.45, 0.5 * (bz0 + b_end[2]) + 0.04)
+            _add_curved_stem((0.0, 0.0, bz0), b_mid, b_end, r_base=0.009, r_tip=0.005, col_hex="634D38")
+            for li in range(per_branch):
+                laz = b_az + (li - 0.5 * (per_branch - 1)) * 0.95
+                l_len = max(0.14, canopy_h * (0.28 + 0.05 * ((bi + li) % 3)))
+                l_w = l_len * 0.56
+                col = _shift_hex_luminance(leaf_color, 0.88 + 0.22 * ((bi + li) % 3) / 2.0)
+                _add_curved_leaf(
+                    (b_end[0] + 0.012 * math.cos(laz), b_end[1] + 0.012 * math.sin(laz), b_end[2]),
+                    laz,
+                    length=l_len,
+                    max_w=l_w,
+                    rise=l_len * 0.22,
+                    droop=l_len * 0.26,
+                    roll=0.14 * ((li % 2) * 2 - 1),
+                    col_hex=col,
+                    width_curve=w_curve,
+                )
+
+    elif species == "palm":
+        # Arching fountain palm fronds radiating from central crown
+        w_curve = (0.18, 0.78, 1.00, 0.76, 0.40, 0.09)
+        for i in range(n_leaves):
+            tier = i / float(max(1, n_leaves - 1))
+            az = seed * 0.53 + i * golden
+            s_len = canopy_h * (0.38 + 0.34 * tier)
+            spread = pr * (0.45 + 0.65 * (1.0 - tier * 0.5))
+            p0 = (0.018 * math.cos(az), 0.018 * math.sin(az), soil_z + 0.018)
+            p1 = (spread * 0.45 * math.cos(az), spread * 0.45 * math.sin(az), soil_z + s_len * 0.68)
+            p2 = (spread * math.cos(az), spread * math.sin(az), soil_z + s_len)
+            _add_curved_stem(p0, p1, p2, r_base=0.008, r_tip=0.0045, col_hex=stem_color)
+            frond_len = canopy_h * (0.58 + 0.24 * (1.0 - tier * 0.4))
+            frond_w = max(0.06, frond_len * 0.22)
+            col = _shift_hex_luminance(leaf_color, 0.86 + 0.26 * tier)
+            _add_curved_leaf(
+                (p2[0] + 0.008 * math.cos(az), p2[1] + 0.008 * math.sin(az), p2[2] + 0.006),
+                az,
+                length=frond_len,
+                max_w=frond_w,
+                rise=frond_len * 0.26,
+                droop=frond_len * 0.52,
+                roll=0.12 * ((i % 2) * 2 - 1),
+                col_hex=col,
+                width_curve=w_curve,
+            )
+
+    else:
+        # Broad sculpted Monstera deliciosa / philodendron cluster
+        w_curve = (0.16, 0.76, 1.00, 0.88, 0.50, 0.11)
+        for i in range(n_leaves):
+            tier = i / float(max(1, n_leaves - 1))
+            az = seed * 0.41 + i * golden
+            stem_h = canopy_h * (0.34 + 0.46 * tier)
+            stem_r = pr * (0.95 - 0.32 * tier)
+            p0 = (0.020 * math.cos(az), 0.020 * math.sin(az), soil_z + 0.018)
+            p1 = (stem_r * 0.42 * math.cos(az), stem_r * 0.42 * math.sin(az), soil_z + stem_h * 0.70)
+            p2 = (stem_r * math.cos(az), stem_r * math.sin(az), soil_z + stem_h)
+            _add_curved_stem(p0, p1, p2, r_base=0.009, r_tip=0.005, col_hex=stem_color)
+
+            l_len = max(0.16, canopy_h * (0.36 + 0.14 * (1.0 - abs(tier - 0.5))))
+            l_w = l_len * 0.74
+            col = _shift_hex_luminance(leaf_color, 0.84 + 0.28 * tier)
+            _add_curved_leaf(
+                (p2[0] + 0.008 * math.cos(az), p2[1] + 0.008 * math.sin(az), p2[2] + 0.005),
+                az,
+                length=l_len,
+                max_w=l_w,
+                rise=l_len * 0.22,
+                droop=l_len * 0.34,
+                roll=0.16 * ((i % 2) * 2 - 1),
+                col_hex=col,
+                width_curve=w_curve,
+            )
+
+
+def add_tiered_crystal_chandelier(
+    group: MeshGroup,
+    mount_center: Vec3,
+    *,
+    tiers: int = 3,
+    radius: float = 0.95,
+    drop_height: float = 1.45,
+    chain_length: float = 0.48,
+    arms_per_tier: Sequence[int] = (12, 8, 6),
+    rot_z: float = 0.0,
+    metal_color: str = "D8B464",
+    metal_tile: str = "ceiling_brass",
+    crystal_color: str = "E8F5FC",
+    crystal_tile: str = "glass_clear",
+    candle_color: str = "FAF4E4",
+    candle_tile: str = "ceiling_plaster",
+    flame_color: str = "FFE096",
+    flame_tile: str = "emissive_amber",
+    emissive_group: Optional[MeshGroup] = None,
+) -> None:
+    """Build a watertight multi-tier gilded crystal chandelier hanging from ``mount_center``.
+
+    Shared hero ceiling centerpiece for Romance Fantasy palaces, grand halls, and noble studies.
+    Hangs downward from ``mount_center = (cx, cy, z_ceiling)`` to
+    ``z_ceiling - chain_length - drop_height`` with sculpted central baluster, scrollwork arms,
+    drip bobeches, candles, emissive flame teardrops, and faceted crystal prisms.
+    """
+    cx, cy, z_ceil = mount_center
+    e_grp = emissive_group if emissive_group is not None else group
+    n_tiers = max(1, min(4, int(tiers)))
+    rad = max(0.28, float(radius))
+    drop = max(0.55, float(drop_height))
+    chain = max(0.14, float(chain_length))
+
+    z_body_top = z_ceil - chain
+    z_body_bot = z_body_top - drop
+
+    def _lathe(profile_rz: Sequence[Tuple[float, float]], col: str, tl: str, sides: int = 12, dst: MeshGroup = group, ox: float = 0.0, oy: float = 0.0) -> None:
+        rings = [
+            _transform_points(
+                [(ox + r * math.cos(TAU * i / sides), oy + r * math.sin(TAU * i / sides), zv) for i in range(sides)],
+                (cx, cy, 0.0),
+                rot_z=rot_z,
+            )
+            for (r, zv) in profile_rz
+        ]
+        dst.rings(rings, color=col, tile=tl)
+
+    # 1. Sculpted ceiling rosette medallion + suspension stem/chain collar
+    med_r = min(0.32, rad * 0.34)
+    _lathe(
+        (
+            (med_r, z_ceil - 0.004),
+            (med_r * 0.94, z_ceil - 0.032),
+            (med_r * 0.62, z_ceil - 0.068),
+            (med_r * 0.34, z_ceil - 0.095),
+            (0.032, z_ceil - 0.115),
+        ),
+        metal_color,
+        metal_tile,
+        sides=16,
+    )
+    group.rail(
+        (cx, cy, z_ceil - 0.118),
+        (cx, cy, z_body_top + 0.008),
+        radius=0.018,
+        color=metal_color,
+        sides=10,
+        tile=metal_tile,
+    )
+
+    # 2. Turned central gilded & crystal baluster spine + grand bottom crystal finial
+    spine_r = max(0.042, rad * 0.075)
+    _lathe(
+        (
+            (spine_r * 0.45, z_body_top),
+            (spine_r * 1.15, z_body_top - drop * 0.12),
+            (spine_r * 0.62, z_body_top - drop * 0.25),
+            (spine_r * 1.45, z_body_top - drop * 0.45),
+            (spine_r * 0.72, z_body_top - drop * 0.62),
+            (spine_r * 1.65, z_body_top - drop * 0.78),
+            (spine_r * 0.95, z_body_bot + drop * 0.10),
+            (spine_r * 0.42, z_body_bot + drop * 0.04),
+        ),
+        metal_color,
+        metal_tile,
+        sides=14,
+    )
+    # Grand faceted bottom crystal finial drop (separated by 6 mm below spine base)
+    fin_z0 = z_body_bot + drop * 0.032
+    fin_r = max(0.040, rad * 0.075)
+    _lathe(
+        (
+            (0.008, fin_z0),
+            (fin_r, fin_z0 - drop * 0.075),
+            (fin_r * 0.62, fin_z0 - drop * 0.145),
+            (0.006, fin_z0 - drop * 0.185),
+        ),
+        crystal_color,
+        crystal_tile,
+        sides=8,
+    )
+
+    # 3. Concentric tiers: ornate hoop + scrollwork arms + bobeches + candles + flames + prisms
+    default_arms = list(arms_per_tier) if arms_per_tier else [12, 8, 6]
+    while len(default_arms) < n_tiers:
+        default_arms.append(max(4, default_arms[-1] - 2))
+
+    for ti in range(n_tiers):
+        frac = ti / float(max(1, n_tiers - 1)) if n_tiers > 1 else 0.0
+        tier_r = rad * (1.0 - 0.52 * frac)
+        tier_z = z_body_bot + drop * (0.26 + 0.54 * frac)
+        n_arms = max(4, int(default_arms[ti]))
+        phase_off = (math.pi / n_arms) if (ti % 2 == 1) else 0.0
+
+        # Molded circular brass tier hoop (closed loop torus)
+        hoop_segs = max(18, n_arms * 2)
+        hoop_h = max(0.016, rad * 0.026)
+        hoop_t = max(0.012, rad * 0.018)
+        hoop_prof = (
+            (-hoop_t * 0.5, -hoop_h * 0.5),
+            (hoop_t * 0.5, -hoop_h * 0.5),
+            (hoop_t * 0.65, 0.0),
+            (hoop_t * 0.5, hoop_h * 0.5),
+            (-hoop_t * 0.5, hoop_h * 0.5),
+            (-hoop_t * 0.65, 0.0),
+        )
+        hoop_rings: List[List[Vec3]] = []
+        for si in range(hoop_segs):
+            ang = TAU * si / hoop_segs
+            ca, sa = math.cos(ang), math.sin(ang)
+            r_local = [((tier_r + dr) * ca, (tier_r + dr) * sa, tier_z + dz) for (dr, dz) in hoop_prof]
+            hoop_rings.append(_transform_points(r_local, (cx, cy, 0.0), rot_z=rot_z))
+        group.rings(hoop_rings, color=metal_color, tile=metal_tile, closed_loop=True)
+
+        # Arms, drip-pan bobeches, candles, glowing flames, and hanging crystal prisms
+        for ai in range(n_arms):
+            ang = phase_off + TAU * ai / n_arms
+            ca, sa = math.cos(ang), math.sin(ang)
+            r_in = spine_r * 1.18
+            r_out = tier_r + max(0.045, rad * 0.065)
+            # S-curved scrollwork arm dipping gracefully below hoop and curving up to bobeche
+            arm_pts = [
+                (r_in * ca, r_in * sa, tier_z + 0.025),
+                ((r_in + (r_out - r_in) * 0.42) * ca, (r_in + (r_out - r_in) * 0.42) * sa, tier_z - drop * 0.10),
+                ((r_in + (r_out - r_in) * 0.80) * ca, (r_in + (r_out - r_in) * 0.80) * sa, tier_z - drop * 0.045),
+                (r_out * ca, r_out * sa, tier_z + 0.045),
+            ]
+            w_pts = _transform_points(arm_pts, (cx, cy, 0.0), rot_z=rot_z)
+            add_pipe_frame(
+                group,
+                w_pts,
+                radius=max(0.007, rad * 0.011),
+                sides=6,
+                bend_subdiv=2,
+                bend_radius=0.04,
+                flange_ends=False,
+                color=metal_color,
+                tile=metal_tile,
+            )
+
+            bx, by = r_out * ca, r_out * sa
+            bz = tier_z + 0.052
+            # Turned bobeche saucer cup
+            _lathe(
+                (
+                    (0.012, bz - 0.008),
+                    (0.040, bz + 0.006),
+                    (0.046, bz + 0.018),
+                    (0.024, bz + 0.022),
+                ),
+                metal_color,
+                metal_tile,
+                sides=8,
+                ox=bx,
+                oy=by,
+            )
+            # Wax candle sleeve (4 mm clearance above cup floor)
+            candle_h = max(0.085, drop * 0.085)
+            _lathe(
+                (
+                    (0.013, bz + 0.026),
+                    (0.013, bz + 0.026 + candle_h),
+                    (0.009, bz + 0.030 + candle_h),
+                ),
+                candle_color,
+                candle_tile,
+                sides=8,
+                ox=bx,
+                oy=by,
+            )
+            # Glowing teardrop candle flame (5 mm clearance above candle tip)
+            fz0 = bz + 0.035 + candle_h
+            _lathe(
+                (
+                    (0.004, fz0),
+                    (0.016, fz0 + 0.022),
+                    (0.011, fz0 + 0.048),
+                    (0.003, fz0 + 0.068),
+                ),
+                flame_color,
+                flame_tile,
+                sides=6,
+                dst=e_grp,
+                ox=bx,
+                oy=by,
+            )
+            # Faceted crystal teardrop prism hanging below each bobeche
+            pz_top = bz - 0.018
+            prism_len = max(0.085, drop * (0.095 - 0.015 * frac))
+            _lathe(
+                (
+                    (0.004, pz_top),
+                    (0.018, pz_top - prism_len * 0.55),
+                    (0.013, pz_top - prism_len * 0.85),
+                    (0.004, pz_top - prism_len),
+                ),
+                crystal_color,
+                crystal_tile,
+                sides=6,
+                ox=bx,
+                oy=by,
+            )
+
+            # Secondary crystal prism festooned along the hoop mid-bay between arms
+            mid_ang = ang + math.pi / n_arms
+            mx, my = tier_r * math.cos(mid_ang), tier_r * math.sin(mid_ang)
+            mpz = tier_z - hoop_h * 0.5 - 0.010
+            m_len = max(0.070, prism_len * 0.82)
+            _lathe(
+                (
+                    (0.004, mpz),
+                    (0.015, mpz - m_len * 0.55),
+                    (0.004, mpz - m_len),
+                ),
+                crystal_color,
+                crystal_tile,
+                sides=6,
+                ox=mx,
+                oy=my,
+            )
+

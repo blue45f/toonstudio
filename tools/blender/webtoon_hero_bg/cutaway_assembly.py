@@ -42,6 +42,7 @@ import bpy
 from mathutils import Vector
 
 from .arch_primitives import MeshGroup
+from .multiview_preview import LIGHTING_PRESETS
 from .surface_atlas import (
     MAT_ARCH_TRIM,
     MAT_GLASS_EMISSIVE,
@@ -346,16 +347,22 @@ def assemble_desktop_cutaway(
     auto_ground: bool = True,
     apply_weighted_normal: bool = True,
     collection_name: Optional[str] = None,
+    scene_slug: Optional[str] = None,
 ) -> AssembledHeroScene:
     """Assemble the 8-node Desktop Hero Cutaway hierarchy under ``BG_Root_<slug>``."""
     _ensure_metric_scene()
     if auto_ground:
         groups.ground_to_zero()
 
+    resolved_scene_slug = slug if scene_slug is None else scene_slug
     mat_map = (
         dict(materials)
         if materials is not None
-        else create_desktop_atlas_materials(primary_size=primary_size, secondary_size=secondary_size)
+        else create_desktop_atlas_materials(
+            primary_size=primary_size,
+            secondary_size=secondary_size,
+            scene_slug=resolved_scene_slug,
+        )
     )
     col = _ensure_collection(collection_name or f"HeroDesktop_{slug}")
 
@@ -417,16 +424,22 @@ def assemble_mobile_cutaway(
     auto_ground: bool = True,
     apply_weighted_normal: bool = True,
     collection_name: Optional[str] = None,
+    scene_slug: Optional[str] = None,
 ) -> AssembledHeroScene:
     """Merge the 8 Desktop buckets into the 4-node / 2-material Mobile Hero hierarchy."""
     _ensure_metric_scene()
     if auto_ground:
         groups.ground_to_zero()
 
+    resolved_scene_slug = slug if scene_slug is None else scene_slug
     mat_map = (
         dict(materials)
         if materials is not None
-        else create_mobile_atlas_materials(opaque_size=opaque_size, glass_size=glass_size)
+        else create_mobile_atlas_materials(
+            opaque_size=opaque_size,
+            glass_size=glass_size,
+            scene_slug=resolved_scene_slug,
+        )
     )
     col = _ensure_collection(collection_name or f"HeroMobile_{slug}")
 
@@ -623,6 +636,39 @@ def _remove_hierarchy(assembled: AssembledHeroScene) -> None:
         bpy.data.collections.remove(col)
 
 
+def build_lighting_presets() -> Dict[str, Any]:
+    """Return a JSON-serializable copy of the 3-time-of-day webtoon lighting recipes."""
+    return {k: dict(v) for k, v in LIGHTING_PRESETS.items()}
+
+
+def update_manifest_metadata(
+    manifest_path: Path,
+    *,
+    freestyle_svg: Optional[Mapping[str, Any]] = None,
+    lighting_presets: Optional[Mapping[str, Any]] = None,
+    extra: Optional[Mapping[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Patch an existing per-scene manifest JSON with ``lightingPresets`` and ``freestyleSvg``."""
+    manifest_path = Path(manifest_path)
+    data: Dict[str, Any] = json.loads(manifest_path.read_text(encoding="utf-8"))
+    data["lightingPresets"] = dict(lighting_presets) if lighting_presets is not None else build_lighting_presets()
+    if freestyle_svg is not None:
+        svg_entry: Dict[str, Any] = {
+            "path": str(freestyle_svg.get("path") or freestyle_svg.get("svgPath") or ""),
+            "byteSize": int(freestyle_svg.get("byteSize", 0)),
+            "pathCount": int(freestyle_svg.get("pathCount", 0)),
+        }
+        if "strokeWidths" in freestyle_svg:
+            svg_entry["strokeWidths"] = list(freestyle_svg["strokeWidths"])
+        if "lineSets" in freestyle_svg:
+            svg_entry["lineSets"] = list(freestyle_svg["lineSets"])
+        data["freestyleSvg"] = svg_entry
+    if extra:
+        data.update(extra)
+    manifest_path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return data
+
+
 def export_hero_desktop_and_mobile(
     slug: str,
     groups: HeroSceneGroups,
@@ -636,16 +682,21 @@ def export_hero_desktop_and_mobile(
     keep_desktop_in_scene: bool = True,
     cameras: Optional[Mapping[str, Any]] = None,
     copyright_text: str = DEFAULT_COPYRIGHT,
+    scene_slug: Optional[str] = None,
+    lighting_presets: Optional[Mapping[str, Any]] = None,
+    freestyle_svg: Optional[Mapping[str, Any]] = None,
+    manifest_filename: Optional[str] = None,
 ) -> Tuple[AssembledHeroScene, Dict[str, Any]]:
-    """Build and export both Desktop 8-node and Mobile 4-node GLBs plus ``manifest.json``.
+    """Build and export both Desktop 8-node and Mobile 4-node GLBs plus manifest JSON.
 
     Leaves the Desktop 8-node cutaway scene active in Blender when
     ``keep_desktop_in_scene=True`` so ``multiview_preview.py`` can immediately
-    render the 6-view contact sheet and Freestyle SVG line art.
+    render the 6-view contact sheet and 3-tier Freestyle SVG line art.
     """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     groups.ground_to_zero()
+    resolved_scene_slug = slug if scene_slug is None else scene_slug
 
     # 1. Build & export Mobile 4-node bundle first, then remove its objects so Desktop scene stays clean
     mobile_scene = assemble_mobile_cutaway(
@@ -654,6 +705,7 @@ def export_hero_desktop_and_mobile(
         opaque_size=mobile_opaque_size,
         glass_size=mobile_glass_size,
         auto_ground=False,
+        scene_slug=resolved_scene_slug,
     )
     mobile_meta = export_cutaway_glb(
         mobile_scene,
@@ -670,6 +722,7 @@ def export_hero_desktop_and_mobile(
         primary_size=desktop_primary_size,
         secondary_size=desktop_secondary_size,
         auto_ground=False,
+        scene_slug=resolved_scene_slug,
     )
     desktop_meta = export_cutaway_glb(
         desktop_scene,
@@ -692,11 +745,23 @@ def export_hero_desktop_and_mobile(
             "sha256": mobile_meta["sha256"],
             "nodes": mobile_meta["nodeNames"],
         },
+        "lightingPresets": dict(lighting_presets) if lighting_presets is not None else build_lighting_presets(),
     }
     if cameras:
         manifest["cameras"] = dict(cameras)
+    if freestyle_svg is not None:
+        manifest["freestyleSvg"] = {
+            "path": str(freestyle_svg.get("path") or freestyle_svg.get("svgPath") or ""),
+            "byteSize": int(freestyle_svg.get("byteSize", 0)),
+            "pathCount": int(freestyle_svg.get("pathCount", 0)),
+            **(
+                {"strokeWidths": list(freestyle_svg["strokeWidths"])}
+                if "strokeWidths" in freestyle_svg
+                else {}
+            ),
+        }
 
-    manifest_path = out_dir / "manifest.json"
+    manifest_path = out_dir / (manifest_filename or "manifest.json")
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     if not keep_desktop_in_scene:

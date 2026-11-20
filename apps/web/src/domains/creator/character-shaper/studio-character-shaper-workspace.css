@@ -135,11 +135,18 @@
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
-[data-character-shaper-stage] canvas {
+/* reduced-motion 전역 규칙(transition-duration: 0.01ms)이 3D 캔버스 리사이즈 중 높이를 지연 보간하지 않도록 차단한다. */
+[data-character-shaper-stage] canvas,
+[data-studio-vrm-dialog] canvas {
   touch-action: none;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+  transition-property: none !important;
+  transition-duration: 0s !important;
+  animation-duration: 0s !important;
+  max-width: 100%;
+  max-height: 100%;
 }
 [data-character-shaper-layout="mobile"] [data-character-shaper-viewport="true"] {
   min-height: 128px;

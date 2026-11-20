@@ -7,12 +7,10 @@
 import { Constants } from "@babylonjs/core/Engines/constants.js";
 import { Material } from "@babylonjs/core/Materials/material.js";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture.js";
-import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
-import { Viewport } from "@babylonjs/core/Maths/math.viewport.js";
 
 import { DEFAULT_FRAMING, DEFAULT_SHADING, failVisible, isHumanoidBoneName, isLabFailure } from "../../contracts";
 import { fnv1a64Hex, sha256Hex } from "../../shared/hash";
-import { qConjugate, qMultiply, qRotateVec3, v3Cross, v3Length, v3Normalize, v3Sub } from "../../shared/math";
+import { qConjugate, qMultiply, qRotateVec3 } from "../../shared/math";
 import { stableStringify } from "../../shared/stable-json";
 import { BETA_FEATURE_IDS } from "../beta-features";
 import { faceSdfUniforms, generateFaceSdf } from "../face-sdf";
@@ -23,14 +21,16 @@ import { generateMouthMask, MOUTH_MASK_SIZE } from "../mouth-shade";
 import { mapPresetToOpenPbr } from "../openpbr-mapping";
 import { hullOutlineAllowed, hullOutlineWidthScale } from "../outline-policy";
 import { applyPackageHairColor } from "../package-hair-color";
+import { DEFAULT_EYEBALL_HIGHLIGHT_CONFIG } from "../render-telemetry";
 import { normalizeToonLighting } from "../toon-reference";
 
 import { BABYLON_SIDE_EFFECTS_LOADED } from "./babylon-side-effects";
 import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
+import { collectEngineRenderTelemetry, evaluateAndApplyEyeballHighlight, projectRigJointHandles, readViewportCameraInfo, resolveEnhancedToonParams } from "./character-engine-toon";
 import { CharacterOutlineController } from "./character-outline-controller";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
-import { fromQuaternion, fromVector3, toVector3 } from "./convert";
+import { fromQuaternion } from "./convert";
 import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
 import { readEngineFeatures, readEngineHud, readPaintInspection, readRigSourceCapabilities } from "./engine-reports";
 import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
@@ -70,8 +70,10 @@ import type { ToonUniformValues } from "./materials/toon-shader";
 import type { PhysicsBridge, PhysicsReceiptLike } from "./physics-bridge";
 import type { CharacterScene } from "./scene-builder";
 import type { ReadbackLane } from "../readback";
+import type { EyeballHighlightConfig, EyeballHighlightPort, EyeballHighlightState, RenderTelemetryPort } from "../render-telemetry";
 import type { PaintInspection, RigInspection, SceneInspection } from "../rig-inspection";
 import type { SceneFeatureSource } from "../scene-features";
+import type { CharacterLabRenderTelemetry } from "../style/character-verify-ai-fresh-ideas";
 import type { ViewportCameraInfo, ViewportCameraSource } from "../viewport-camera";
 import type { ProceduralIbl } from "./lighting/ibl";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine.js";
@@ -113,7 +115,8 @@ export interface BabylonCharacterEngineDeps {
   readonly onFailure?: (failure: LabFailure) => void;
 }
 
-export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSource, ViewportCameraSource, BetaFeaturePort, ProjectionPaintHost {
+export class BabylonCharacterEngine
+  implements CharacterEngine, SceneFeatureSource, ViewportCameraSource, BetaFeaturePort, ProjectionPaintHost, EyeballHighlightPort, RenderTelemetryPort {
   readonly backend: EngineBackend;
   readonly diagnostics: EngineDiagnostics;
   readonly lane: ReadbackLane;
@@ -159,6 +162,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     refresh: (rig) => this.finalizeRigPropRefresh(rig),
   });
   private readonly gaze = createEyeGazeController(() => this.rig, () => this.lastPlan?.eyeGaze, () => this.viewportCamera().position);
+  private eyeballHighlightConfig: EyeballHighlightConfig = { ...DEFAULT_EYEBALL_HIGHLIGHT_CONFIG };
   private disposed = false;
   private loopRunning = false;
   private captureChain: Promise<unknown> = Promise.resolve();
@@ -416,13 +420,21 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return this.loadPackage(source.plan, materialOptions, hooks);
   }
 
-  sourceNotes(): readonly string[] {
-    return this.rig?.notes ?? [];
-  }
-
-  inspectRig(): RigInspection | null {
-    return this.rig ? inspectRig(this.rig) : null;
-  }
+  sourceNotes(): readonly string[] { return this.rig?.notes ?? []; }
+  inspectRig(): RigInspection | null { return this.rig ? inspectRig(this.rig) : null; }
+  currentFraming(): CameraFraming { return this.framing; }
+  currentShading(): ShadingProfile { return this.shading; }
+  poseSkeleton(): SkeletonData | null { return this.rig ? rigPoseSkeleton(this.rig) : null; }
+  inspectPaint(): readonly PaintInspection[] { return readPaintInspection(this.rig, this.paintTextures); }
+  inspectScene(): SceneInspection { return inspectCharacterScene(this.character); }
+  readHud(): HudSample { return readEngineHud({ scene: this.character.scene, diagnostics: this.diagnostics, lane: this.lane, frameStats: this.frameStats, hud: this.hud, backend: this.backend, physics: this.physics, shading: this.shading }); }
+  sceneFeatures(): FullSceneFeatureReport { return readEngineFeatures({ postfx: this.postfx, rig: this.rig, engine: this.engine, character: this.character, shading: this.shading, ibl: this.ibl, hud: this.hud, beta: this.beta, lastGlbReport: this.lastGlbReport }); }
+  betaFeatures(): BetaFeatureReport { return this.beta.report(); }
+  projectionPaint(): ProjectionPaintPort | null { return this.disposed ? null : this.beta.projectionPort(); }
+  physicsReceipt(poseHash: string): Promise<PhysicsReceiptLike | null> { return this.physics.receipt(poseHash); }
+  pendingColliderBones(): readonly string[] { return this.physics.pendingColliderBones(); }
+  jointHandles(): readonly JointDragHandle[] { return this.disposed || !this.rig ? [] : projectRigJointHandles(this.rig, this.character.camera, this.engine); }
+  viewportCamera(): ViewportCameraInfo { return readViewportCameraInfo(this.character.camera, this.engine); }
 
   private async loadPackage(plan: AuthoredPackagePlan, materialOptions: MaterialFactoryOptions, hooks: RigMaterialHooks): Promise<CharacterRig> {
     const bytes = await (this.deps.fetchBytes ?? fetchBytesDefault)(plan.glbUrl);
@@ -479,25 +491,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.beta.syncIblShadows();
   }
 
-  async setHandProp(attachment: HandPropAttachment | null): Promise<void> {
-    return this.sceneProps.setHandProp(attachment);
-  }
-
-  async setHeadProp(attachment: HeadPropAttachment | null): Promise<void> {
-    return this.sceneProps.setHeadProp(attachment);
-  }
-
-  async setStageProp(attachment: StagePropAttachment | null): Promise<void> {
-    return this.sceneProps.setStageProp(attachment);
-  }
-
-  async setDuoPartner(attachment: DuoPartnerAttachment | null): Promise<void> {
-    return this.sceneProps.setDuoPartner(attachment);
-  }
-
-  async setSfxStamp(attachment: SfxStampAttachment | null): Promise<void> {
-    return this.sceneProps.setSfxStamp(attachment);
-  }
+  async setHandProp(attachment: HandPropAttachment | null): Promise<void> { return this.sceneProps.setHandProp(attachment); }
+  async setHeadProp(attachment: HeadPropAttachment | null): Promise<void> { return this.sceneProps.setHeadProp(attachment); }
+  async setStageProp(attachment: StagePropAttachment | null): Promise<void> { return this.sceneProps.setStageProp(attachment); }
+  async setDuoPartner(attachment: DuoPartnerAttachment | null): Promise<void> { return this.sceneProps.setDuoPartner(attachment); }
+  async setSfxStamp(attachment: SfxStampAttachment | null): Promise<void> { return this.sceneProps.setSfxStamp(attachment); }
 
   applyPlan(plan: ApplyPlan): ApplyReceipt {
     this.assertAlive();
@@ -530,12 +528,33 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   eyeGaze() { return this.gaze.read(); }
   psdHairLayers() { return hairLayerSupport(this.rig); }
 
-  currentFraming(): CameraFraming {
-    return this.framing;
+  eyeballHighlight(): EyeballHighlightState {
+    const gazeState = this.gaze.read();
+    const eyeballEulerDeg: Vec3 = gazeState.status === "available"
+      ? [(gazeState.left.pitchDeg + gazeState.right.pitchDeg) * 0.5, (gazeState.left.yawDeg + gazeState.right.yawDeg) * 0.5, 0]
+      : [0, 0, 0];
+    return evaluateAndApplyEyeballHighlight({
+      config: this.eyeballHighlightConfig,
+      rig: this.rig,
+      eyeballEulerDeg,
+      cameraForward: this.viewportCamera().forward,
+      sunDirection: this.character.sunDirection,
+    });
   }
 
-  currentShading(): ShadingProfile {
-    return this.shading;
+  setEyeballHighlight(patch: Partial<EyeballHighlightConfig>): EyeballHighlightState {
+    this.assertAlive();
+    this.eyeballHighlightConfig = {
+      mode: patch.mode ?? this.eyeballHighlightConfig.mode,
+      offsetPos: patch.offsetPos ?? this.eyeballHighlightConfig.offsetPos,
+      fixEyeballCam: patch.fixEyeballCam ?? this.eyeballHighlightConfig.fixEyeballCam,
+    };
+    return this.eyeballHighlight();
+  }
+
+  renderTelemetry(): CharacterLabRenderTelemetry {
+    const outlineTelemetry = this.rig ? this.pressureOutline.telemetryFor(this.rig) : null;
+    return collectEngineRenderTelemetry(this.rig, this.shading, outlineTelemetry);
   }
 
   private applyShadingToScene(): void {
@@ -555,7 +574,13 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     const toon = this.shading.mode === "toon";
     const outline = toon ? this.shading.toon.outline : "none";
     const pressure = outline === "hull" && this.shading.toon.outlinePressure === true;
-    this.pressureOutline.sync(rig, pressure, TOON_OUTLINE_WIDTH, outline === "hull" && !pressure);
+    const disableHairInline = !this.shading.look.line.inner.enabled;
+    this.pressureOutline.sync(rig, pressure, TOON_OUTLINE_WIDTH, outline === "hull" && !pressure, {
+      kitHeadContour: true,
+      disableHairInline,
+      screenSpaceCompensation: 0.75,
+      colorTintStrength: 0.45,
+    });
     if (outline === "hull" && rig.kind === "kit") {
       const renderer = this.character.scene.getOutlineRenderer();
       renderer.zOffset = 0;
@@ -587,7 +612,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
 
   private ensureToonMaterial(part: RigPart, rig: CharacterRig): ShaderMaterial {
     if (!part.toon) {
-      part.toon = createPassMaterial({ scene: this.character.scene, language: shaderLanguageFor(this.engine) }, "toon", `toon:${part.id}`, { vertexColor: this.usesVertexColor(part, rig), faceShadowUv: part.faceShadowUv === true });
+      part.toon = createPassMaterial({ scene: this.character.scene, language: shaderLanguageFor(this.engine) }, "toon", `toon:${part.id}`, {
+        vertexColor: this.usesVertexColor(part, rig),
+        faceShadowUv: part.faceShadowUv === true,
+        hairFlowUv: part.hairFlowUv === true,
+      });
       part.toon.backFaceCulling = part.pbr.backFaceCulling;
     }
     setToonUniforms(part.toon, this.toonValues(part, rig));
@@ -698,6 +727,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       gradeSaturation: look.grade.saturation,
       gradeLightness: look.grade.lightness,
       rampSoftness: look.ramp.softness,
+      ...resolveEnhancedToonParams(part, this.shading),
     };
   }
 
@@ -735,14 +765,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   settle(maxSteps: number): Promise<SettleReceipt> {
     this.assertAlive();
     return this.physics.settle(maxSteps);
-  }
-
-  physicsReceipt(poseHash: string): Promise<PhysicsReceiptLike | null> {
-    return this.physics.receipt(poseHash);
-  }
-
-  pendingColliderBones(): readonly string[] {
-    return this.physics.pendingColliderBones();
   }
 
   private runExclusive<T>(task: () => Promise<T>): Promise<T> {
@@ -887,44 +909,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return pickRig(this.character.scene, this.character.camera, this.rig, ndcX, ndcY, options);
   }
 
-  jointHandles(): readonly JointDragHandle[] {
-    const rig = this.rig;
-    if (this.disposed || !rig) return [];
-    const camera = this.character.camera;
-    const width = this.engine.getRenderWidth();
-    const height = this.engine.getRenderHeight();
-    const viewProjection = camera.getViewMatrix(true).multiply(camera.getProjectionMatrix(true));
-    const viewport = new Viewport(0, 0, width, height);
-    const handles: JointDragHandle[] = [];
-    for (const [bone, rb] of rig.humanoid) {
-      const world = rigBoneWorld(rb).position;
-      const projected = Vector3.Project(toVector3(world), Matrix.IdentityReadOnly, viewProjection, viewport);
-      handles.push({ bone, screen: [projected.x, projected.y], world });
-    }
-    return handles;
-  }
-
-  viewportCamera(): ViewportCameraInfo {
-    const camera = this.character.camera;
-    const target = fromVector3(camera.target);
-    const sinBeta = Math.sin(camera.beta);
-    const position: Vec3 = [
-      target[0] + camera.radius * Math.cos(camera.alpha) * sinBeta,
-      target[1] + camera.radius * Math.cos(camera.beta),
-      target[2] + camera.radius * Math.sin(camera.alpha) * sinBeta,
-    ];
-    const direction = v3Sub(target, position);
-    const forward: Vec3 = v3Length(direction) < 1e-9 ? [0, 0, -1] : v3Normalize(direction);
-    const crossUp = v3Cross(forward, [0, 1, 0]);
-    const right: Vec3 = v3Length(crossUp) < 1e-6 ? [1, 0, 0] : v3Normalize(crossUp);
-    const up: Vec3 = v3Cross(right, forward);
-    return { position, forward, right, up, fovY: camera.fov, width: this.engine.getRenderWidth(), height: this.engine.getRenderHeight() };
-  }
-
-  poseSkeleton(): SkeletonData | null {
-    return this.rig ? rigPoseSkeleton(this.rig) : null;
-  }
-
   readBone(name: string): BoneReading | null {
     const rig = this.rig;
     if (!rig) return null;
@@ -932,14 +916,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     if (!rb) return null;
     const world = rigBoneWorld(rb);
     return { name: rb.name, humanoid: rb.humanoid, position: world.position, rotation: world.rotation, localRotation: fromQuaternion(rb.node.rotationQuaternion), auxiliary: rb.auxiliary };
-  }
-
-  inspectPaint(): readonly PaintInspection[] {
-    return readPaintInspection(this.rig, this.paintTextures);
-  }
-
-  inspectScene(): SceneInspection {
-    return inspectCharacterScene(this.character);
   }
 
   updatePaintTexture(layer: PaintLayer): void {
@@ -998,23 +974,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     }
   }
 
-  readHud(): HudSample {
-    return readEngineHud({ scene: this.character.scene, diagnostics: this.diagnostics, lane: this.lane, frameStats: this.frameStats, hud: this.hud, backend: this.backend, physics: this.physics, shading: this.shading });
-  }
-
-  sceneFeatures(): FullSceneFeatureReport {
-    return readEngineFeatures({ postfx: this.postfx, rig: this.rig, engine: this.engine, character: this.character, shading: this.shading, ibl: this.ibl, hud: this.hud, beta: this.beta, lastGlbReport: this.lastGlbReport });
-  }
-
-  betaFeatures(): BetaFeatureReport { return this.beta.report(); }
-
   async setBetaFeature(id: BetaFeatureId, enabled: boolean): Promise<BetaFeatureState> {
     this.assertAlive();
     if (!BETA_FEATURE_IDS.includes(id)) throw failVisible("beta-unknown", `알 수 없는 베타 기능입니다: ${String(id)}`, undefined, this.now());
     return this.beta.set(id, enabled);
   }
-
-  projectionPaint(): ProjectionPaintPort | null { return this.disposed ? null : this.beta.projectionPort(); }
 
   resize(width: number, height: number): void {
     if (this.disposed) return;

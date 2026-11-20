@@ -53,12 +53,17 @@ export function CharacterShaperPaintHud({ h, onExit, compact = false }: Characte
   const [optionsOpen, setOptionsOpen] = useState(false);
   const keyHandlerRef = useRef<(event: KeyboardEvent) => boolean>(() => false);
   const [resetArmed, setResetArmed] = useState(false);
-  const [pressureMode, setPressureMode] = useState<"fake" | "real" | "none">("fake");
-  const [lineColorMode, setLineColorMode] = useState<"baseLineColor" | "baseHairColor" | "baseSkinColor" | "unique">("baseLineColor");
-
   const settings: StudioVrmTexturePaintPanelSettings =
     (h.texturePaintSettings as StudioVrmTexturePaintPanelSettings | undefined)
     ?? DEFAULT_STUDIO_VRM_TEXTURE_PAINT_SETTINGS;
+  const hostSettingsExt = settings as StudioVrmTexturePaintPanelSettings & {
+    readonly pressureMode?: "fake" | "real" | "none";
+    readonly lineColorMode?: "baseLineColor" | "baseHairColor" | "baseSkinColor" | "unique";
+  };
+  const [pressureMode, setPressureMode] = useState<"fake" | "real" | "none">(hostSettingsExt.pressureMode ?? "fake");
+  const [lineColorMode, setLineColorMode] = useState<"baseLineColor" | "baseHairColor" | "baseSkinColor" | "unique">(
+    hostSettingsExt.lineColorMode ?? "baseLineColor",
+  );
   const disabledReason: string =
     typeof h.texturePaintDisabledReason === "string" ? h.texturePaintDisabledReason : "";
   const strokeActive = Boolean(h.texturePaintStrokeActive);
@@ -236,7 +241,15 @@ export function CharacterShaperPaintHud({ h, onExit, compact = false }: Characte
             aria-label="필압 모드"
             value={pressureMode}
             disabled={disabled}
-            onChange={(event) => setPressureMode(event.currentTarget.value as "fake" | "real" | "none")}
+            onChange={(event) => {
+              const nextMode = event.currentTarget.value as "fake" | "real" | "none";
+              setPressureMode(nextMode);
+              const minSize = nextMode === "none" ? 1 : nextMode === "fake" ? 0.25 : Math.min(settings.tuning.minSize, 0.2);
+              h.handleTexturePaintSettingsChange?.({
+                pressureMode: nextMode,
+                tuning: { minSize },
+              } as Parameters<NonNullable<typeof h.handleTexturePaintSettingsChange>>[0]);
+            }}
             className="h-9 rounded-lg border border-line bg-card px-1.5 text-[11px] font-medium text-fg-2 disabled:opacity-45"
           >
             <option value="fake">필압: 가상 sin(πt)</option>
@@ -249,11 +262,30 @@ export function CharacterShaperPaintHud({ h, onExit, compact = false }: Characte
             aria-label="선 색 동기화"
             value={lineColorMode}
             disabled={disabled}
-            onChange={(event) =>
-              setLineColorMode(
-                event.currentTarget.value as "baseLineColor" | "baseHairColor" | "baseSkinColor" | "unique",
-              )
-            }
+            onChange={(event) => {
+              const nextColorMode = event.currentTarget.value as
+                | "baseLineColor"
+                | "baseHairColor"
+                | "baseSkinColor"
+                | "unique";
+              setLineColorMode(nextColorMode);
+              const hairHex = typeof h.avatarForgeState?.hair?.baseColor === "string"
+                ? h.avatarForgeState.hair.baseColor
+                : undefined;
+              const skinHex = typeof h.customColors?.body === "string" ? h.customColors.body : undefined;
+              const syncedColor =
+                nextColorMode === "baseLineColor"
+                  ? "#1c1917"
+                  : nextColorMode === "baseHairColor"
+                    ? hairHex
+                    : nextColorMode === "baseSkinColor"
+                      ? skinHex
+                      : undefined;
+              h.handleTexturePaintSettingsChange?.({
+                lineColorMode: nextColorMode,
+                ...(syncedColor ? { color: syncedColor.toLowerCase() } : {}),
+              } as Parameters<NonNullable<typeof h.handleTexturePaintSettingsChange>>[0]);
+            }}
             className="h-9 rounded-lg border border-line bg-card px-1.5 text-[11px] font-medium text-fg-2 disabled:opacity-45"
           >
             <option value="baseLineColor">선색: 기본 선색</option>

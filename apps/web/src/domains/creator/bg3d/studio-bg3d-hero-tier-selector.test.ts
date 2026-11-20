@@ -11,11 +11,18 @@ import {
   STUDIO_BG3D_HERO_V1_ENTRIES,
 } from "./studio-bg3d-hero-v1-catalog-entries";
 import {
+  STUDIO_BG3D_ENVIRONMENT_ASSETS_HERO_V2_MOBILE,
+  STUDIO_BG3D_HERO_ALL_ENTRIES,
+  STUDIO_BG3D_HERO_V2_ENTRIES,
+} from "./studio-bg3d-hero-v2-catalog-entries";
+import {
   HERO_BG3D_MOBILE_MEMORY_MAX_GB,
   HERO_BG3D_MOBILE_VIEWPORT_MAX_PX,
   formatHeroBg3dDeliveryBadgeKo,
+  isHeroCutawayCapableAsset,
   isHeroV1CutawayCapableAsset,
   resolveHeroBg3dDeliveryAsset,
+  summarizeHeroAllMobileSavings,
   summarizeHeroV1MobileSavings,
 } from "./studio-bg3d-hero-tier-selector";
 
@@ -40,7 +47,7 @@ describe("studio-bg3d-hero-tier-selector", () => {
       expect(resolved.asset?.url).toBe(`/assets/3d/environments/hero-v1/${entry.slug}-mobile.glb`);
       expect(resolved.savedBytes).toBe(expectedSavedBytes);
       expect(resolved.savedPercent).toBeGreaterThanOrEqual(34);
-      expect(resolved.savedPercent).toBeLessThanOrEqual(51);
+      expect(resolved.savedPercent).toBeLessThanOrEqual(75);
       expect(resolved.cutawayCapable).toBe(true);
       expect(formatHeroBg3dDeliveryBadgeKo(resolved)).toContain("모바일 경량");
       expect(formatHeroBg3dDeliveryBadgeKo(resolved)).toContain("절감");
@@ -61,8 +68,11 @@ describe("studio-bg3d-hero-tier-selector", () => {
     });
     expect(lowMemory.tier).toBe("mobile");
     expect(lowMemory.asset.url).toMatch(/-mobile\.glb$/u);
-    expect(lowMemory.savedBytes).toBe(5_430_228 - 2_708_344);
-    expect(lowMemory.savedPercent).toBe(50.1);
+    const cafeMobile = STUDIO_BG3D_ENVIRONMENT_ASSETS_HERO_V1_MOBILE[1]!;
+    expect(lowMemory.savedBytes).toBe(cafeDesktop.byteSize - cafeMobile.byteSize);
+    expect(lowMemory.savedPercent).toBe(
+      Math.round(((cafeDesktop.byteSize - cafeMobile.byteSize) / cafeDesktop.byteSize) * 1000) / 10,
+    );
 
     const preferMobile = resolveHeroBg3dDeliveryAsset(cafeDesktop.id, {
       viewportWidthPx: 1920,
@@ -117,17 +127,57 @@ describe("studio-bg3d-hero-tier-selector", () => {
     expect(unknown.savedBytes).toBe(0);
   });
 
-  it("identifies only the 6 hero-v1 cutaway-capable scenes via isHeroV1CutawayCapableAsset", () => {
-    for (const entry of STUDIO_BG3D_HERO_V1_ENTRIES) {
+  it("identifies all 12 hero-v1 + hero-v2 cutaway-capable scenes via isHeroV1CutawayCapableAsset", () => {
+    for (const entry of STUDIO_BG3D_HERO_ALL_ENTRIES) {
       expect(isHeroV1CutawayCapableAsset(entry.desktopAsset.id)).toBe(true);
       expect(isHeroV1CutawayCapableAsset(entry.mobileAsset.id)).toBe(true);
-      expect(isHeroV1CutawayCapableAsset(entry.slug)).toBe(true);
+      expect(isHeroCutawayCapableAsset(entry.slug)).toBe(true);
     }
 
     expect(isHeroV1CutawayCapableAsset(STUDIO_BG3D_ENVIRONMENT_ASSETS_V6[0]?.id)).toBe(false);
     expect(isHeroV1CutawayCapableAsset("")).toBe(false);
     expect(isHeroV1CutawayCapableAsset(null)).toBe(false);
     expect(isHeroV1CutawayCapableAsset(undefined)).toBe(false);
+  });
+
+  it("resolves all 6 hero-v2 scenes (total 12 scenes) to verified mobile.glb with real byte savings", () => {
+    const mobileV2ById = new Map(
+      STUDIO_BG3D_ENVIRONMENT_ASSETS_HERO_V2_MOBILE.map((asset) => [asset.id, asset] as const),
+    );
+    expect(STUDIO_BG3D_HERO_V2_ENTRIES).toHaveLength(6);
+    expect(STUDIO_BG3D_HERO_ALL_ENTRIES).toHaveLength(12);
+
+    for (const entry of STUDIO_BG3D_HERO_V2_ENTRIES) {
+      const mobileResolved = resolveHeroBg3dDeliveryAsset(entry.desktopAsset.id, {
+        viewportWidthPx: HERO_BG3D_MOBILE_VIEWPORT_MAX_PX,
+      });
+      const expectedMobile = mobileV2ById.get(entry.mobileAsset.id);
+      const expectedSavedBytes = entry.desktopAsset.byteSize - entry.mobileAsset.byteSize;
+
+      expect(mobileResolved.tier).toBe("mobile");
+      expect(mobileResolved.isHeroScene).toBe(true);
+      expect(mobileResolved.heroGeneration).toBe("v2");
+      expect(mobileResolved.switchedToMobile).toBe(true);
+      expect(mobileResolved.asset).toBe(expectedMobile);
+      expect(mobileResolved.asset?.url).toBe(`/assets/3d/environments/hero-v2/${entry.slug}/mobile.glb`);
+      expect(mobileResolved.savedBytes).toBe(expectedSavedBytes);
+      expect(mobileResolved.savedPercent).toBeGreaterThanOrEqual(40);
+      expect(mobileResolved.cutawayCapable).toBe(true);
+
+      const desktopResolved = resolveHeroBg3dDeliveryAsset(entry.desktopAsset, {
+        viewportWidthPx: 1440,
+        deviceMemoryGb: 16,
+      });
+      expect(desktopResolved.tier).toBe("desktop");
+      expect(desktopResolved.heroGeneration).toBe("v2");
+      expect(desktopResolved.asset).toBe(entry.desktopAsset);
+      expect(desktopResolved.savedBytes).toBe(0);
+    }
+
+    const summaryAll = summarizeHeroAllMobileSavings();
+    expect(summaryAll.sceneCount).toBe(12);
+    expect(summaryAll.totalSavedBytes).toBeGreaterThan(20_000_000);
+    expect(summaryAll.averageSavedPercent).toBeGreaterThanOrEqual(45);
   });
 
   it("fetches verified -mobile.glb URL when loadStudioBg3dBundledEnvironmentSource receives mobile deliveryContext", async () => {

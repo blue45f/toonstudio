@@ -1,0 +1,201 @@
+{
+  "assetId": "rofan_noble_study_parlor",
+  "version": "hero-v2",
+  "cutawayContract": "room-v1",
+  "fileName": "desktop.glb",
+  "byteSize": 4697472,
+  "sha256": "sha256:d4972f7f90388147e3e62aaf5855f8dd2685ab5ee6096cc3c354ac195c54104f",
+  "bounds": [
+    11.7745,
+    4.4,
+    9.1781
+  ],
+  "nodes": [
+    "BG_Floor",
+    "BG_Wall_North",
+    "BG_Wall_South",
+    "BG_Wall_West",
+    "BG_Wall_East",
+    "BG_Ceiling",
+    "BG_Furniture_Hero",
+    "BG_Props_Clutter"
+  ],
+  "triangles": 74908,
+  "drawCalls": 8,
+  "materials": 4,
+  "mobile": {
+    "fileName": "mobile.glb",
+    "byteSize": 2610544,
+    "sha256": "sha256:8e8fc086b768207d2f1ec292543571632314892794685211723e96f48df381a4",
+    "nodes": [
+      "BG_Shell_Fixed",
+      "BG_Cutaway_Front",
+      "BG_Ceiling",
+      "BG_Furnishings"
+    ],
+    "triangles": 74908,
+    "drawCalls": 4,
+    "materials": 2
+  },
+  "cameras": {
+    "dukeDeskWide28mm": {
+      "label": "28mm 북부대공 서재 광각",
+      "position": [
+        2.45,
+        1.66,
+        2.95
+      ],
+      "target": [
+        -2.15,
+        1.88,
+        -1.15
+      ],
+      "lensMm": 28
+    },
+    "teaParlorDialogue35mm": {
+      "label": "35mm 티타임 응접 대화 컷",
+      "position": [
+        1.85,
+        1.48,
+        2.65
+      ],
+      "target": [
+        -2.65,
+        1.38,
+        0.95
+      ],
+      "lensMm": 35
+    },
+    "fireplacePortrait50mm": {
+      "label": "50mm 벽난로 클로즈업",
+      "position": [
+        -0.85,
+        1.56,
+        1.65
+      ],
+      "target": [
+        -5.1,
+        1.75,
+        0.35
+      ],
+      "lensMm": 50
+    }
+  },
+  "lightingPresets": {
+    "day_5600k": {
+      "labelKo": "주광 5600K (맑은 낮)",
+      "kelvin": 5600,
+      "skyColor": [
+        0.78,
+        0.86,
+        0.96
+      ],
+      "skyEnergy": 1.05,
+      "sunColor": [
+        1.0,
+        0.95,
+        0.86
+      ],
+      "sunEnergy": 4.6,
+      "sunDirection": [
+        -0.58,
+        0.46,
+        -0.78
+      ],
+      "sunAngleDeg": 3.0,
+      "fillColor": [
+        0.94,
+        0.96,
+        1.0
+      ],
+      "fillIntensity": 1.0,
+      "emissiveBoost": 1.0,
+      "exposure": 0.12
+    },
+    "sunset_3200k": {
+      "labelKo": "노을 3200K (골든아워)",
+      "kelvin": 3200,
+      "skyColor": [
+        0.88,
+        0.56,
+        0.42
+      ],
+      "skyEnergy": 0.82,
+      "sunColor": [
+        1.0,
+        0.66,
+        0.36
+      ],
+      "sunEnergy": 5.2,
+      "sunDirection": [
+        -0.82,
+        0.34,
+        -0.34
+      ],
+      "sunAngleDeg": 5.0,
+      "fillColor": [
+        0.76,
+        0.64,
+        0.82
+      ],
+      "fillIntensity": 0.72,
+      "emissiveBoost": 1.45,
+      "exposure": 0.08
+    },
+    "night_moon_8500k": {
+      "labelKo": "야간 월광 8500K (밤/실내등)",
+      "kelvin": 8500,
+      "skyColor": [
+        0.16,
+        0.24,
+        0.42
+      ],
+      "skyEnergy": 0.42,
+      "sunColor": [
+        0.64,
+        0.78,
+        1.0
+      ],
+      "sunEnergy": 1.65,
+      "sunDirection": [
+        0.48,
+        -0.42,
+        -0.74
+      ],
+      "sunAngleDeg": 4.0,
+      "fillColor": [
+        0.98,
+        0.84,
+        0.62
+      ],
+      "fillIntensity": 0.65,
+      "emissiveBoost": 2.2,
+      "exposure": 0.0
+    }
+  },
+  "freestyleSvg": {
+    "path": "freestyle.svg",
+    "byteSize": 817214,
+    "pathCount": 4394,
+    "strokeWidths": [
+      "0.55",
+      "1.1",
+      "2.0"
+    ],
+    "lineSets": [
+      "TS_Silhouette",
+      "TS_ArchCrease",
+      "TS_Detail"
+    ]
+  },
+  "contactSheet": {
+    "path": "contact_sheet.png",
+    "byteSize": 2264798,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "lightingPreset": "day_5600k"
+  },
+  "thumbnail": "thumbnail.png"
+}

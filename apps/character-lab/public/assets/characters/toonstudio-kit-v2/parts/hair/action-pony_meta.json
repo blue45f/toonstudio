@@ -6,8 +6,8 @@
   "fittedBase": "female-romance",
   "file": {
     "path": "action-pony.glb",
-    "bytes": 1297360,
-    "sha256": "fe567ce025a01f5caca0e5c9ff31708544330c54a91e7e4c1610fbd80ac10469"
+    "bytes": 1407132,
+    "sha256": "c4fb00ec645297ac23cc8947032488d88537413f89419467cbe59d55c72e743d"
   },
   "drawCalls": 8,
   "materials": [
@@ -19,8 +19,8 @@
     {
       "node": "TS_AuthoredHair_action-pony_LOD0",
       "lod": 0,
-      "triangles": 9496,
-      "vertices": 4814,
+      "triangles": 10316,
+      "vertices": 5234,
       "primitives": 3,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -31,8 +31,8 @@
     {
       "node": "TS_AuthoredHair_action-pony_LOD1",
       "lod": 1,
-      "triangles": 4598,
-      "vertices": 2365,
+      "triangles": 4994,
+      "vertices": 2573,
       "primitives": 3,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -43,8 +43,8 @@
     {
       "node": "TS_AuthoredHair_action-pony_LOD2",
       "lod": 2,
-      "triangles": 1936,
-      "vertices": 1020,
+      "triangles": 1952,
+      "vertices": 1028,
       "primitives": 2,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -96,10 +96,10 @@
         "shape": "sphere",
         "offsetGltf": [
           0.0,
-          0.08792,
-          -0.00185
+          0.09115,
+          -0.00342
         ],
-        "radius": 0.08493
+        "radius": 0.08366
       },
       {
         "id": "neck_capsule",
@@ -112,7 +112,7 @@
         ],
         "tailGltf": [
           0.0,
-          0.08816,
+          0.08793,
           -0.002
         ],
         "radius": 0.04725
@@ -124,7 +124,7 @@
         "offsetGltf": [
           0.0,
           0.0,
-          0.00231
+          0.0031
         ],
         "radius": 0.12696
       }
@@ -140,7 +140,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 4,
-        "lengthM": 0.4844,
+        "lengthM": 0.4868,
         "hitRadius": 0.022,
         "stiffness": 0.52,
         "dragForce": 0.34,
@@ -150,13 +150,13 @@
             "name": "TS_Spring_action-pony_pony_C_0",
             "positionGltf": [
               0.0,
-              1.64165,
-              -0.07602
+              1.6399,
+              -0.07681
             ],
             "localOffsetFromHead": [
               0.0,
-              0.16455,
-              -0.06802
+              0.1667,
+              -0.06881
             ],
             "hitRadius": 0.022,
             "stiffness": 0.572,
@@ -171,14 +171,14 @@
           {
             "name": "TS_Spring_action-pony_pony_C_1",
             "positionGltf": [
-              2e-05,
-              1.66837,
-              -0.15993
+              3e-05,
+              1.66848,
+              -0.16135
             ],
             "localOffsetFromHead": [
-              2e-05,
-              0.19127,
-              -0.15193
+              3e-05,
+              0.19527,
+              -0.15335
             ],
             "hitRadius": 0.02121,
             "stiffness": 0.546,
@@ -193,14 +193,14 @@
           {
             "name": "TS_Spring_action-pony_pony_C_2",
             "positionGltf": [
-              -1e-05,
-              1.57815,
-              -0.18935
+              5e-05,
+              1.57875,
+              -0.19246
             ],
             "localOffsetFromHead": [
-              -1e-05,
-              0.10104,
-              -0.18135
+              5e-05,
+              0.10554,
+              -0.18446
             ],
             "hitRadius": 0.02042,
             "stiffness": 0.52,
@@ -215,14 +215,14 @@
           {
             "name": "TS_Spring_action-pony_pony_C_3",
             "positionGltf": [
-              -0.0,
-              1.47783,
-              -0.18369
+              6e-05,
+              1.47803,
+              -0.18695
             ],
             "localOffsetFromHead": [
-              -0.0,
-              0.00072,
-              -0.17569
+              6e-05,
+              0.00482,
+              -0.17895
             ],
             "hitRadius": 0.01962,
             "stiffness": 0.494,
@@ -237,14 +237,14 @@
           {
             "name": "TS_Spring_action-pony_pony_C_4",
             "positionGltf": [
-              0.0,
-              1.37766,
-              -0.17606
+              5e-05,
+              1.37748,
+              -0.17923
             ],
             "localOffsetFromHead": [
-              0.0,
-              -0.09945,
-              -0.16806
+              5e-05,
+              -0.09573,
+              -0.17123
             ],
             "hitRadius": 0.01883,
             "stiffness": 0.468,
@@ -259,14 +259,14 @@
           {
             "name": "TS_Spring_action-pony_pony_C_5",
             "positionGltf": [
-              0.0,
-              1.27811,
-              -0.16245
+              4e-05,
+              1.27758,
+              -0.16528
             ],
             "localOffsetFromHead": [
-              0.0,
-              -0.199,
-              -0.15445
+              4e-05,
+              -0.19563,
+              -0.15728
             ],
             "hitRadius": 0.01804,
             "stiffness": 0.442,
@@ -290,7 +290,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 3,
-        "lengthM": 0.4904,
+        "lengthM": 0.49,
         "hitRadius": 0.022,
         "stiffness": 0.52,
         "dragForce": 0.34,
@@ -300,13 +300,13 @@
             "name": "TS_Spring_action-pony_pony_L_0",
             "positionGltf": [
               0.01168,
-              1.64673,
-              -0.0717
+              1.64498,
+              -0.07249
             ],
             "localOffsetFromHead": [
               0.01168,
-              0.16962,
-              -0.0637
+              0.17177,
+              -0.06449
             ],
             "hitRadius": 0.022,
             "stiffness": 0.572,
@@ -321,14 +321,14 @@
           {
             "name": "TS_Spring_action-pony_pony_L_1",
             "positionGltf": [
-              0.02276,
-              1.68279,
-              -0.15519
+              0.02278,
+              1.68115,
+              -0.15591
             ],
             "localOffsetFromHead": [
-              0.02276,
-              0.20568,
-              -0.14719
+              0.02278,
+              0.20794,
+              -0.14791
             ],
             "hitRadius": 0.02121,
             "stiffness": 0.546,
@@ -344,13 +344,13 @@
             "name": "TS_Spring_action-pony_pony_L_2",
             "positionGltf": [
               0.02756,
-              1.60395,
-              -0.20234
+              1.60244,
+              -0.20313
             ],
             "localOffsetFromHead": [
               0.02756,
-              0.12684,
-              -0.19434
+              0.12923,
+              -0.19513
             ],
             "hitRadius": 0.02042,
             "stiffness": 0.52,
@@ -365,14 +365,14 @@
           {
             "name": "TS_Spring_action-pony_pony_L_3",
             "positionGltf": [
-              0.02514,
-              1.50189,
-              -0.20104
+              0.02512,
+              1.50049,
+              -0.2018
             ],
             "localOffsetFromHead": [
-              0.02514,
-              0.02478,
-              -0.19304
+              0.02512,
+              0.02728,
+              -0.1938
             ],
             "hitRadius": 0.01962,
             "stiffness": 0.494,
@@ -388,13 +388,13 @@
             "name": "TS_Spring_action-pony_pony_L_4",
             "positionGltf": [
               0.02336,
-              1.40002,
-              -0.19068
+              1.39874,
+              -0.19137
             ],
             "localOffsetFromHead": [
               0.02336,
-              -0.07709,
-              -0.18268
+              -0.07447,
+              -0.18337
             ],
             "hitRadius": 0.01883,
             "stiffness": 0.468,
@@ -409,14 +409,14 @@
           {
             "name": "TS_Spring_action-pony_pony_L_5",
             "positionGltf": [
-              0.02888,
-              1.29857,
-              -0.17875
+              0.02894,
+              1.29742,
+              -0.17934
             ],
             "localOffsetFromHead": [
-              0.02888,
-              -0.17854,
-              -0.17075
+              0.02894,
+              -0.17578,
+              -0.17134
             ],
             "hitRadius": 0.01804,
             "stiffness": 0.442,
@@ -440,7 +440,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 3,
-        "lengthM": 0.4919,
+        "lengthM": 0.4914,
         "hitRadius": 0.022,
         "stiffness": 0.52,
         "dragForce": 0.34,
@@ -450,13 +450,13 @@
             "name": "TS_Spring_action-pony_pony_R_0",
             "positionGltf": [
               -0.01168,
-              1.64673,
-              -0.0717
+              1.64498,
+              -0.07249
             ],
             "localOffsetFromHead": [
               -0.01168,
-              0.16962,
-              -0.0637
+              0.17177,
+              -0.06449
             ],
             "hitRadius": 0.022,
             "stiffness": 0.572,
@@ -471,14 +471,14 @@
           {
             "name": "TS_Spring_action-pony_pony_R_1",
             "positionGltf": [
-              -0.02277,
-              1.68376,
-              -0.15585
+              -0.02279,
+              1.68211,
+              -0.15654
             ],
             "localOffsetFromHead": [
-              -0.02277,
-              0.20665,
-              -0.14785
+              -0.02279,
+              0.2089,
+              -0.14854
             ],
             "hitRadius": 0.02121,
             "stiffness": 0.546,
@@ -494,13 +494,13 @@
             "name": "TS_Spring_action-pony_pony_R_2",
             "positionGltf": [
               -0.02762,
-              1.60365,
-              -0.20261
+              1.60215,
+              -0.2034
             ],
             "localOffsetFromHead": [
               -0.02762,
-              0.12654,
-              -0.19461
+              0.12894,
+              -0.1954
             ],
             "hitRadius": 0.02042,
             "stiffness": 0.52,
@@ -515,14 +515,14 @@
           {
             "name": "TS_Spring_action-pony_pony_R_3",
             "positionGltf": [
-              -0.02506,
-              1.50178,
-              -0.20057
+              -0.02505,
+              1.50039,
+              -0.20135
             ],
             "localOffsetFromHead": [
-              -0.02506,
-              0.02467,
-              -0.19257
+              -0.02505,
+              0.02718,
+              -0.19335
             ],
             "hitRadius": 0.01962,
             "stiffness": 0.494,
@@ -538,13 +538,13 @@
             "name": "TS_Spring_action-pony_pony_R_4",
             "positionGltf": [
               -0.02324,
-              1.39991,
-              -0.1915
+              1.39864,
+              -0.1922
             ],
             "localOffsetFromHead": [
               -0.02324,
-              -0.0772,
-              -0.1835
+              -0.07457,
+              -0.1842
             ],
             "hitRadius": 0.01883,
             "stiffness": 0.468,
@@ -559,14 +559,14 @@
           {
             "name": "TS_Spring_action-pony_pony_R_5",
             "positionGltf": [
-              -0.02903,
-              1.29863,
-              -0.17943
+              -0.02908,
+              1.2975,
+              -0.18
             ],
             "localOffsetFromHead": [
-              -0.02903,
-              -0.17848,
-              -0.17143
+              -0.02908,
+              -0.17571,
+              -0.172
             ],
             "hitRadius": 0.01804,
             "stiffness": 0.442,
@@ -590,7 +590,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 2,
-        "lengthM": 0.2074,
+        "lengthM": 0.2102,
         "hitRadius": 0.016,
         "stiffness": 0.76,
         "dragForce": 0.42,
@@ -599,14 +599,14 @@
           {
             "name": "TS_Spring_action-pony_side_L_0",
             "positionGltf": [
-              0.03156,
-              1.65198,
-              0.00444
+              0.03115,
+              1.65026,
+              0.00272
             ],
             "localOffsetFromHead": [
-              0.03156,
-              0.17488,
-              0.01244
+              0.03115,
+              0.17706,
+              0.01072
             ],
             "hitRadius": 0.016,
             "stiffness": 0.836,
@@ -621,14 +621,14 @@
           {
             "name": "TS_Spring_action-pony_side_L_1",
             "positionGltf": [
-              0.07977,
-              1.60125,
-              0.0279
+              0.07974,
+              1.59902,
+              0.02627
             ],
             "localOffsetFromHead": [
-              0.07977,
-              0.12414,
-              0.0359
+              0.07974,
+              0.12581,
+              0.03427
             ],
             "hitRadius": 0.01504,
             "stiffness": 0.7727,
@@ -643,14 +643,14 @@
           {
             "name": "TS_Spring_action-pony_side_L_2",
             "positionGltf": [
-              0.0953,
-              1.52836,
-              0.03707
+              0.09453,
+              1.52485,
+              0.03513
             ],
             "localOffsetFromHead": [
-              0.0953,
-              0.05126,
-              0.04507
+              0.09453,
+              0.05164,
+              0.04313
             ],
             "hitRadius": 0.01408,
             "stiffness": 0.7093,
@@ -665,14 +665,14 @@
           {
             "name": "TS_Spring_action-pony_side_L_3",
             "positionGltf": [
-              0.10807,
-              1.47182,
-              0.04518
+              0.10715,
+              1.46719,
+              0.04333
             ],
             "localOffsetFromHead": [
-              0.10807,
-              -0.00528,
-              0.05318
+              0.10715,
+              -0.00601,
+              0.05133
             ],
             "hitRadius": 0.01312,
             "stiffness": 0.646,
@@ -696,7 +696,7 @@
           "upper_chest_sphere"
         ],
         "strandCount": 2,
-        "lengthM": 0.2074,
+        "lengthM": 0.2102,
         "hitRadius": 0.016,
         "stiffness": 0.76,
         "dragForce": 0.42,
@@ -705,14 +705,14 @@
           {
             "name": "TS_Spring_action-pony_side_R_0",
             "positionGltf": [
-              -0.03156,
-              1.65198,
-              0.00444
+              -0.03115,
+              1.65026,
+              0.00272
             ],
             "localOffsetFromHead": [
-              -0.03156,
-              0.17488,
-              0.01244
+              -0.03115,
+              0.17706,
+              0.01072
             ],
             "hitRadius": 0.016,
             "stiffness": 0.836,
@@ -727,14 +727,14 @@
           {
             "name": "TS_Spring_action-pony_side_R_1",
             "positionGltf": [
-              -0.07976,
-              1.60125,
-              0.0279
+              -0.07974,
+              1.59902,
+              0.02627
             ],
             "localOffsetFromHead": [
-              -0.07976,
-              0.12414,
-              0.0359
+              -0.07974,
+              0.12581,
+              0.03427
             ],
             "hitRadius": 0.01504,
             "stiffness": 0.7727,
@@ -749,14 +749,14 @@
           {
             "name": "TS_Spring_action-pony_side_R_2",
             "positionGltf": [
-              -0.09528,
-              1.52836,
-              0.03706
+              -0.09453,
+              1.52485,
+              0.03513
             ],
             "localOffsetFromHead": [
-              -0.09528,
-              0.05125,
-              0.04506
+              -0.09453,
+              0.05164,
+              0.04313
             ],
             "hitRadius": 0.01408,
             "stiffness": 0.7093,
@@ -771,14 +771,14 @@
           {
             "name": "TS_Spring_action-pony_side_R_3",
             "positionGltf": [
-              -0.10805,
-              1.47182,
-              0.04517
+              -0.10715,
+              1.46719,
+              0.04333
             ],
             "localOffsetFromHead": [
-              -0.10805,
-              -0.00528,
-              0.05317
+              -0.10715,
+              -0.00601,
+              0.05133
             ],
             "hitRadius": 0.01312,
             "stiffness": 0.646,
@@ -795,31 +795,31 @@
     ]
   },
   "qa": {
-    "bytes": 1297360,
+    "bytes": 1407132,
     "minClearanceMm": 0.8,
     "verticesInside": 0,
     "gltfValidateErrors": 0,
     "gltfValidateWarnings": 0,
     "bmesh": {
       "TS_AuthoredHair_action-pony_LOD0": {
-        "verts": 4924,
-        "faces": 9496,
+        "verts": 5378,
+        "faces": 10316,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_AuthoredHair_action-pony_LOD1": {
-        "verts": 2452,
-        "faces": 4598,
+        "verts": 2687,
+        "faces": 4994,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_AuthoredHair_action-pony_LOD2": {
-        "verts": 1020,
-        "faces": 1936,
+        "verts": 1028,
+        "faces": 1952,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -830,5 +830,5 @@
   },
   "passed": true,
   "errors": [],
-  "seconds": 5.24
+  "seconds": 2.02
 }

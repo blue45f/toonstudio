@@ -8,9 +8,8 @@ import {
 import { cn } from "@/shared/lib/utils";
 
 import {
-  STUDIO_BG3D_HERO_V1_ENTRIES,
-  type StudioBg3dHeroV1SceneEntry,
-} from "./studio-bg3d-hero-v1-catalog-entries";
+  STUDIO_BG3D_HERO_ALL_ENTRIES,
+} from "./studio-bg3d-hero-v2-catalog-entries";
 import {
   formatHeroBg3dDeliveryBadgeKo,
   formatHeroBg3dMegabytes,
@@ -19,6 +18,7 @@ import {
   readBrowserHeroBg3dDeliveryContext,
   resolveHeroBg3dDeliveryAsset,
   type HeroBg3dDeliveryResolution,
+  type StudioBg3dHeroSceneEntry,
 } from "./studio-bg3d-hero-tier-selector";
 import {
   DEFAULT_BG3D_WALL_CUTAWAY_CONFIG,
@@ -54,7 +54,7 @@ export interface StudioBg3dHeroCutawaySectionProps {
   readonly onWallCutawayChange?: (event: StudioBg3dWallCutawayChangeEvent) => void;
 }
 
-const DEFAULT_HERO_ENTRY: StudioBg3dHeroV1SceneEntry = STUDIO_BG3D_HERO_V1_ENTRIES[0]!;
+const DEFAULT_HERO_ENTRY: StudioBg3dHeroSceneEntry = STUDIO_BG3D_HERO_ALL_ENTRIES[0]!;
 
 function readLiveViewportWidth(): number {
   if (typeof window !== "undefined" && Number.isFinite(window.innerWidth) && window.innerWidth > 0) {
@@ -146,7 +146,7 @@ export function StudioBg3dHeroCutawaySection({
     [cutawayConfig, effectiveCamera, roomBounds],
   );
 
-  const handleSelectScene = (entry: StudioBg3dHeroV1SceneEntry) => {
+  const handleSelectScene = (entry: StudioBg3dHeroSceneEntry) => {
     setSelectedAssetId(entry.desktopAsset.id);
     setCameraPresetIndex(0);
     const nextResolution = resolveHeroBg3dDeliveryAsset(entry.desktopAsset.id, deliveryContext);
@@ -227,7 +227,7 @@ export function StudioBg3dHeroCutawaySection({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0 [word-break:keep-all]">
                   <p className="text-xs font-semibold text-fg">
-                    {bi("6종 히어로 배경 · 자동 경량 선택", "6 hero scenes · auto lightweight tier")}
+                    {bi("12종 히어로 배경 · 자동 경량 선택", "12 hero scenes · auto lightweight tier")}
                   </p>
                   <p className="mt-0.5 text-xs text-fg-3 tabular-nums">
                     {delivery.tier === "mobile"
@@ -253,7 +253,7 @@ export function StudioBg3dHeroCutawaySection({
               </div>
 
               <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                {STUDIO_BG3D_HERO_V1_ENTRIES.map((entry) => {
+                {STUDIO_BG3D_HERO_ALL_ENTRIES.map((entry) => {
                   const isSelected = entry.slug === activeEntry.slug;
                   const sceneDelivery = resolveHeroBg3dDeliveryAsset(entry.desktopAsset.id, deliveryContext);
                   return (

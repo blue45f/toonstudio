@@ -1,5 +1,6 @@
 {
   "schema": "toonstudio.character-kit.garments-v2-registry/1",
+  "craftVersion": "v3",
   "uv1CmPerUnit": 50.0,
   "count": 34,
   "genres": [
@@ -19,8 +20,8 @@
       "targetBase": "female-romance",
       "file": {
         "path": "school-shirt-tie.glb",
-        "bytes": 891552,
-        "sha256": "3de9fb8c5fa574151389cda9d3233c3624e89f534c3a9b616a24297544af72ac"
+        "bytes": 933816,
+        "sha256": "6f507976b4f24f56f1c9b5ecf9478a44824648e29ec6457ce2e931490794bab3"
       },
       "materials": [
         {
@@ -64,7 +65,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 6576,
-      "vertices": 5629
+      "vertices": 5663
     },
     "outer/school-blazer": {
       "genre": "korean-academy",
@@ -74,8 +75,8 @@
       "targetBase": "female-romance",
       "file": {
         "path": "school-blazer.glb",
-        "bytes": 1215700,
-        "sha256": "eaae7db3b3770aca747fd028d66ae12004b86e8754cc8d02c9daeed3045597a2"
+        "bytes": 1269600,
+        "sha256": "723ebcc35555c9f07710640b358adf345a4e5400c3d7810032ee604d10cc1525"
       },
       "materials": [
         {
@@ -118,8 +119,8 @@
         "purpose": "pattern",
         "cmPerUnit": 50.0
       },
-      "triangles": 8516,
-      "vertices": 7398
+      "triangles": 8740,
+      "vertices": 7491
     },
     "bottom/pleated-skirt": {
       "genre": "korean-academy",
@@ -129,8 +130,8 @@
       "targetBase": "female-romance",
       "file": {
         "path": "pleated-skirt.glb",
-        "bytes": 781048,
-        "sha256": "35f1675fde577932c97e675d796194ff62b785fc02fd286e62c204234d22737e"
+        "bytes": 818476,
+        "sha256": "0b1ea3b8ab06242d77aacbcd3295cac08179c1eaaadaec1af37b9cabc6147ac8"
       },
       "materials": [
         {
@@ -162,7 +163,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 5584,
-      "vertices": 4903
+      "vertices": 4803
     },
     "bottom/school-slacks": {
       "genre": "korean-academy",
@@ -172,8 +173,8 @@
       "targetBase": "female-romance",
       "file": {
         "path": "school-slacks.glb",
-        "bytes": 933644,
-        "sha256": "79d6bd1125e96204397e56a376efbf644d879048c0dc0362e47592b4b712b6f7"
+        "bytes": 975276,
+        "sha256": "a21b668884d7da4964b0458cc0fcbb43394e81ac36c0eeeccffafa07f76c35ff"
       },
       "materials": [
         {
@@ -209,7 +210,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 7544,
-      "vertices": 5982
+      "vertices": 6173
     },
     "legwear/knee-socks": {
       "genre": "korean-academy",
@@ -219,8 +220,8 @@
       "targetBase": "female-romance",
       "file": {
         "path": "knee-socks.glb",
-        "bytes": 259684,
-        "sha256": "93ec22135e4d8e5364bb95251c5ab82ee110a552c88b0ae279529906caabf351"
+        "bytes": 255836,
+        "sha256": "42597d2a0ce75a7c51bf5c64db94ec5b75693ec54ee945df50ae87fc81ccaa29"
       },
       "materials": [
         {
@@ -244,7 +245,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 2240,
-      "vertices": 1832
+      "vertices": 1692
     },
     "shoes/loafers": {
       "genre": "korean-academy",
@@ -254,8 +255,8 @@
       "targetBase": "female-romance",
       "file": {
         "path": "loafers.glb",
-        "bytes": 254400,
-        "sha256": "2e577003a008d44971b35ca7a685cedae63c5decd4839c6792f681662534a5dc"
+        "bytes": 380408,
+        "sha256": "c454b8195b7967f1d10542c2c1710cea16233a441af9f97a87ae57f39620c887"
       },
       "materials": [
         {
@@ -294,8 +295,8 @@
         "purpose": "pattern",
         "cmPerUnit": 50.0
       },
-      "triangles": 1928,
-      "vertices": 1793
+      "triangles": 3024,
+      "vertices": 2944
     },
     "top/ribbed-tee": {
       "genre": "modern-casual",
@@ -305,8 +306,8 @@
       "targetBase": "youth-academy",
       "file": {
         "path": "ribbed-tee.glb",
-        "bytes": 642260,
-        "sha256": "ae7f74215445e12969938a80fff76add955299d984d74468374cc92e69319c86"
+        "bytes": 672476,
+        "sha256": "d7436b2ae92ec8ab4cfccf3b634b0275cffeb9dfd299ed77de7f993a39417e05"
       },
       "materials": [
         {
@@ -348,7 +349,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 4332,
-      "vertices": 3583
+      "vertices": 3589
     },
     "top/oversized-hoodie": {
       "genre": "modern-casual",
@@ -358,8 +359,8 @@
       "targetBase": "youth-academy",
       "file": {
         "path": "oversized-hoodie.glb",
-        "bytes": 996212,
-        "sha256": "dc5d58ba4da168423a506497a11d7615065ec107a221544951c29e1e6cc5c381"
+        "bytes": 1014892,
+        "sha256": "54564484ab00591a2b7a3b0126111d43c15a0b4d3b559c716f486d332d84ff64"
       },
       "materials": [
         {
@@ -403,7 +404,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 7264,
-      "vertices": 5997
+      "vertices": 6023
     },
     "top/knit-cardigan": {
       "genre": "modern-casual",
@@ -413,8 +414,8 @@
       "targetBase": "youth-academy",
       "file": {
         "path": "knit-cardigan.glb",
-        "bytes": 922964,
-        "sha256": "7b964c7254495162da64ac4f1e8a05a8e5c4a2b17e3ea0ddd294ae6346b84a52"
+        "bytes": 958084,
+        "sha256": "f8c8ad4c058393dfb080fa8d9dece7f5e9fc646b0f5878f1e39d0c73f7070c52"
       },
       "materials": [
         {
@@ -458,7 +459,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 6724,
-      "vertices": 5457
+      "vertices": 5596
     },
     "bottom/wide-denim": {
       "genre": "modern-casual",
@@ -468,8 +469,8 @@
       "targetBase": "youth-academy",
       "file": {
         "path": "wide-denim.glb",
-        "bytes": 955868,
-        "sha256": "c6d8983359a850102bea65136d19ad66c72aed98cd1fb0e7cd1bcf195260db54"
+        "bytes": 1005332,
+        "sha256": "45e4963996e8903631530fc9f89b3ecc159d208e77696bd7a32c1c1e8c69480e"
       },
       "materials": [
         {
@@ -505,7 +506,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 7632,
-      "vertices": 6244
+      "vertices": 6408
     },
     "bottom/cargo-shorts": {
       "genre": "modern-casual",
@@ -515,8 +516,8 @@
       "targetBase": "youth-academy",
       "file": {
         "path": "cargo-shorts.glb",
-        "bytes": 685480,
-        "sha256": "73aae29bb4a7731bae95793d088d725d6a7fb3e99cf509558dc7ad8447327cc7"
+        "bytes": 737728,
+        "sha256": "ea449ed45dd09a7ee70bb958a36f850350ee1fc4bbb1e171dd278ca26d343da3"
       },
       "materials": [
         {
@@ -550,7 +551,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 4840,
-      "vertices": 4105
+      "vertices": 4224
     },
     "shoes/sneakers": {
       "genre": "modern-casual",
@@ -560,8 +561,8 @@
       "targetBase": "youth-academy",
       "file": {
         "path": "sneakers.glb",
-        "bytes": 401396,
-        "sha256": "541f957e8b6d32f542a57110c166f01ac32bba2233339abb66f84e075170a8ad"
+        "bytes": 542020,
+        "sha256": "9a5a525a825870d76bcea458d94250cce59c1871a0e71332eb8b3bc5dc1df6f9"
       },
       "materials": [
         {
@@ -600,8 +601,8 @@
         "purpose": "pattern",
         "cmPerUnit": 50.0
       },
-      "triangles": 2552,
-      "vertices": 2753
+      "triangles": 3648,
+      "vertices": 3673
     },
     "top/dress-shirt": {
       "genre": "office-suit",
@@ -611,8 +612,8 @@
       "targetBase": "male-webtoon",
       "file": {
         "path": "dress-shirt.glb",
-        "bytes": 848000,
-        "sha256": "69666ffdb8c82f1cc8659665d32bc9a01f7974c95f7b494e78fe7a1d23d3aa4a"
+        "bytes": 904308,
+        "sha256": "3cb47fd996a38a615270a8eea6efe2ab146b6d28c682ab55c8dfc15dd0f1928a"
       },
       "materials": [
         {
@@ -656,7 +657,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 5892,
-      "vertices": 4961
+      "vertices": 5060
     },
     "outer/tailored-suit": {
       "genre": "office-suit",
@@ -666,8 +667,8 @@
       "targetBase": "male-webtoon",
       "file": {
         "path": "tailored-suit.glb",
-        "bytes": 894304,
-        "sha256": "8e448a6fa27434bb6f50c73465e4adb9d1874c1f7058437b292a55e78bc8213c"
+        "bytes": 952500,
+        "sha256": "055288a0a3871b5a155c06815208ae42e6307ae2e72a35c31c84a11326131106"
       },
       "materials": [
         {
@@ -710,8 +711,8 @@
         "purpose": "pattern",
         "cmPerUnit": 50.0
       },
-      "triangles": 6208,
-      "vertices": 4956
+      "triangles": 6432,
+      "vertices": 5119
     },
     "outer/trench-coat": {
       "genre": "office-suit",
@@ -721,8 +722,8 @@
       "targetBase": "male-webtoon",
       "file": {
         "path": "trench-coat.glb",
-        "bytes": 1106972,
-        "sha256": "56ef2e811f3debc411ec84a622a670e565551abb53c58605897a61197d76d39d"
+        "bytes": 1156896,
+        "sha256": "2e7edd4ddc4462549b8cb5b27e1853273958bdd0894af8e222137f424fda035e"
       },
       "materials": [
         {
@@ -766,8 +767,8 @@
         "purpose": "pattern",
         "cmPerUnit": 50.0
       },
-      "triangles": 8164,
-      "vertices": 6900
+      "triangles": 8340,
+      "vertices": 7147
     },
     "bottom/tailored-slacks": {
       "genre": "office-suit",
@@ -777,8 +778,8 @@
       "targetBase": "male-webtoon",
       "file": {
         "path": "tailored-slacks.glb",
-        "bytes": 848820,
-        "sha256": "2aaa7e7873948f7887aef00455701eb9592595e09e1de1448fdbff83ab6ea6ce"
+        "bytes": 826624,
+        "sha256": "ef682682d9f7d2eb22f77809da798ca52b4852a7f6c61592cef6c203a0b132fc"
       },
       "materials": [
         {
@@ -814,7 +815,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 6968,
-      "vertices": 5306
+      "vertices": 4993
     },
     "bottom/pencil-skirt": {
       "genre": "office-suit",
@@ -824,8 +825,8 @@
       "targetBase": "female-romance",
       "file": {
         "path": "pencil-skirt.glb",
-        "bytes": 405452,
-        "sha256": "d54bc9d2314d40d61227ed2072c75550a6a06ce6d51974eefd992ffa983b3115"
+        "bytes": 424116,
+        "sha256": "b6cfa68fe33d46877b55ece7b0422bf33832699f6ee88c5fea735030a1cccc9d"
       },
       "materials": [
         {
@@ -859,7 +860,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 2844,
-      "vertices": 2108
+      "vertices": 2109
     },
     "shoes/derby-heels": {
       "genre": "office-suit",
@@ -869,8 +870,8 @@
       "targetBase": "male-webtoon",
       "file": {
         "path": "derby-heels.glb",
-        "bytes": 293084,
-        "sha256": "1930164ef31057e1dfc0c102f0197a7b8ddebde9468117afb91003e8fdd819ce"
+        "bytes": 432704,
+        "sha256": "8562af8ef4b52556aebee1374e87938a716ebb27660c5a4f1c5637337819c6e5"
       },
       "materials": [
         {
@@ -909,8 +910,8 @@
         "purpose": "pattern",
         "cmPerUnit": 50.0
       },
-      "triangles": 2040,
-      "vertices": 1979
+      "triangles": 3136,
+      "vertices": 3065
     },
     "top/rofan-corset-bodice": {
       "genre": "rofan-imperial",
@@ -920,8 +921,8 @@
       "targetBase": "female-romance",
       "file": {
         "path": "rofan-corset-bodice.glb",
-        "bytes": 930168,
-        "sha256": "f7b78909b8cb8bd5eae9a93ff6caeeec6e55c4cc26eb733703d836525c563c12"
+        "bytes": 966832,
+        "sha256": "115dbec033cdc3a042b39c3fa35989c98cec42b1654256405ce7a0eb5787715a"
       },
       "materials": [
         {
@@ -965,7 +966,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 7052,
-      "vertices": 5672
+      "vertices": 5760
     },
     "bottom/rofan-layered-skirt": {
       "genre": "rofan-imperial",
@@ -975,8 +976,8 @@
       "targetBase": "female-romance",
       "file": {
         "path": "rofan-layered-skirt.glb",
-        "bytes": 810896,
-        "sha256": "357f81358492353dc95fcb73ab01d38e7a96551fff4d8b26aaa3bccc5a067ba3"
+        "bytes": 857108,
+        "sha256": "c57a1f1cafcbdc238970e19dc51cc1ad67fe12cad66977b0a8ae3a9faf6c97b2"
       },
       "materials": [
         {
@@ -1012,7 +1013,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 7524,
-      "vertices": 5759
+      "vertices": 5990
     },
     "outer/imperial-uniform-coat": {
       "genre": "rofan-imperial",
@@ -1022,8 +1023,8 @@
       "targetBase": "male-webtoon",
       "file": {
         "path": "imperial-uniform-coat.glb",
-        "bytes": 1318236,
-        "sha256": "8a9cce275355a80b4279a8eb0d45317dca9111a064490dafd5cc0be1b517e492"
+        "bytes": 1384188,
+        "sha256": "5c926de785691cadcda547f361e5e3b1b794ee4605690d6f60090ebd278aa591"
       },
       "materials": [
         {
@@ -1068,7 +1069,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 9392,
-      "vertices": 8547
+      "vertices": 8787
     },
     "outer/noble-cape": {
       "genre": "rofan-imperial",
@@ -1078,8 +1079,8 @@
       "targetBase": "female-romance",
       "file": {
         "path": "noble-cape.glb",
-        "bytes": 574660,
-        "sha256": "928e767d9005e1255023ec4e9135954e763a5256cc03dc49019b3c7aa5c258f5"
+        "bytes": 607328,
+        "sha256": "13d3bf5f999af06c0599595b236ba81dde38d9c8837198a643b6f1bb2e94e5be"
       },
       "materials": [
         {
@@ -1117,7 +1118,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 3704,
-      "vertices": 3146
+      "vertices": 3149
     },
     "shoes/lace-up-boots": {
       "genre": "rofan-imperial",
@@ -1127,8 +1128,8 @@
       "targetBase": "female-romance",
       "file": {
         "path": "lace-up-boots.glb",
-        "bytes": 400972,
-        "sha256": "f1ff4b169315513f2e4d13d2b51a5137d357ee186abc6da19013ad7d32ec092e"
+        "bytes": 520316,
+        "sha256": "a43f4cfc8dc65210ed45e2e36c0773491a7c4ec5d23dc88fb4c4385ed722cb3a"
       },
       "materials": [
         {
@@ -1167,8 +1168,8 @@
         "purpose": "pattern",
         "cmPerUnit": 50.0
       },
-      "triangles": 3216,
-      "vertices": 3181
+      "triangles": 4408,
+      "vertices": 4243
     },
     "accessory/rofan-tiara": {
       "genre": "rofan-imperial",
@@ -1178,8 +1179,8 @@
       "targetBase": "female-romance",
       "file": {
         "path": "rofan-tiara.glb",
-        "bytes": 295304,
-        "sha256": "e3e59dd3da99561bf9d5b50b5e80d5fe459f60a5059459e9276888eee542cd72"
+        "bytes": 318120,
+        "sha256": "09dbf1b0b968e1823d8ebb7c6e797b157440bc4f395b7325bda57600eef9a7ab"
       },
       "materials": [
         {
@@ -1218,8 +1219,8 @@
       "targetBase": "male-action",
       "file": {
         "path": "tactical-compression.glb",
-        "bytes": 795216,
-        "sha256": "0bbe0e9b108eebbbd1f638cf7f540971d215b07650e4db48b31f5f996f103229"
+        "bytes": 805716,
+        "sha256": "0eaa162354272883f884efe8d958baf781efbd0d2c6f5559789b1065f25f926e"
       },
       "materials": [
         {
@@ -1263,7 +1264,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 5652,
-      "vertices": 4636
+      "vertices": 4558
     },
     "outer/techwear-jacket": {
       "genre": "action-techwear",
@@ -1273,8 +1274,8 @@
       "targetBase": "male-action",
       "file": {
         "path": "techwear-jacket.glb",
-        "bytes": 980312,
-        "sha256": "ba1b722f015e0f69d18dd1b2884128490ee5547da70baec99ad76d197d65bad9"
+        "bytes": 996220,
+        "sha256": "7651dcb36266a393b765229cbc8851c35b02e4c70fc300b2f7538a66ec6f8dd4"
       },
       "materials": [
         {
@@ -1318,7 +1319,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 7436,
-      "vertices": 5999
+      "vertices": 5963
     },
     "bottom/tactical-cargo": {
       "genre": "action-techwear",
@@ -1328,8 +1329,8 @@
       "targetBase": "male-action",
       "file": {
         "path": "tactical-cargo.glb",
-        "bytes": 961436,
-        "sha256": "02701d7fa8dbcb30a97a7de3a01737524dbf3a14c3f2198cffafffae2869b451"
+        "bytes": 999036,
+        "sha256": "27299fb0bd122bbd90a0dc1ae915f2bd2666af37c64707262a89de4086e7c39d"
       },
       "materials": [
         {
@@ -1365,7 +1366,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 7896,
-      "vertices": 6263
+      "vertices": 6375
     },
     "shoes/combat-boots": {
       "genre": "action-techwear",
@@ -1375,8 +1376,8 @@
       "targetBase": "male-action",
       "file": {
         "path": "combat-boots.glb",
-        "bytes": 443068,
-        "sha256": "bcadbb21c5cd891d67bf8dcb6a47fb95d92344069fa2a5d74a5cc38a16945239"
+        "bytes": 565280,
+        "sha256": "1f0462c412ba4216144c4726fe7c9d87bf5a4ed5c18c4f6e86eacab14b4e4cca"
       },
       "materials": [
         {
@@ -1415,8 +1416,8 @@
         "purpose": "pattern",
         "cmPerUnit": 50.0
       },
-      "triangles": 3672,
-      "vertices": 3709
+      "triangles": 4864,
+      "vertices": 4818
     },
     "accessory/chest-harness": {
       "genre": "action-techwear",
@@ -1426,8 +1427,8 @@
       "targetBase": "male-action",
       "file": {
         "path": "chest-harness.glb",
-        "bytes": 262680,
-        "sha256": "02cfbd76447e4fb3130a48cda9aabb6d547b3a0e346fe1526817cd3c2d9b661c"
+        "bytes": 284540,
+        "sha256": "e1f336532c534c0c0a0a4e41cecaf538569cd03f0d66dddfa56db222829f0d6f"
       },
       "materials": [
         {
@@ -1456,7 +1457,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 856,
-      "vertices": 1023
+      "vertices": 1018
     },
     "top/murim-dobok-inner": {
       "genre": "murim-fantasy",
@@ -1466,8 +1467,8 @@
       "targetBase": "male-webtoon",
       "file": {
         "path": "murim-dobok-inner.glb",
-        "bytes": 707412,
-        "sha256": "eff7d2745d759f9465438c6b30452f5ac3ff09ad9b44e5a2a40630f37bac035e"
+        "bytes": 742612,
+        "sha256": "47c82adf5a841c0bf56f26b5f3297518b0bf72adf71be01d8d6329657e752ba0"
       },
       "materials": [
         {
@@ -1511,7 +1512,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 5228,
-      "vertices": 4161
+      "vertices": 4141
     },
     "outer/murim-dopo-robe": {
       "genre": "murim-fantasy",
@@ -1521,8 +1522,8 @@
       "targetBase": "male-webtoon",
       "file": {
         "path": "murim-dopo-robe.glb",
-        "bytes": 971716,
-        "sha256": "3cef9790d2429ab417441fc37c1c5870ecceee09830ba8ef8effbea97b0c0dd6"
+        "bytes": 1017136,
+        "sha256": "6b85a98fbf34530f29a3f76b61323eb83cda47b4f0fa43b4c6e3ab6907221fff"
       },
       "materials": [
         {
@@ -1567,7 +1568,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 7608,
-      "vertices": 6207
+      "vertices": 6372
     },
     "bottom/murim-wide-pants": {
       "genre": "murim-fantasy",
@@ -1577,8 +1578,8 @@
       "targetBase": "male-webtoon",
       "file": {
         "path": "murim-wide-pants.glb",
-        "bytes": 956500,
-        "sha256": "63486907d21e5e22842193fbd65ec34b19400e0c7cd14225a8f0fd799194b78d"
+        "bytes": 944628,
+        "sha256": "b76fb80e375052ffb98a4abeababa42af4fdb031baea5ae27c60915c2d89d6d6"
       },
       "materials": [
         {
@@ -1614,7 +1615,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 8256,
-      "vertices": 6787
+      "vertices": 6549
     },
     "accessory/waist-sash": {
       "genre": "murim-fantasy",
@@ -1624,8 +1625,8 @@
       "targetBase": "male-webtoon",
       "file": {
         "path": "waist-sash.glb",
-        "bytes": 222732,
-        "sha256": "2cd60df04385337a17dfbadd7dedce54ebde8d4bc05034cb2dbfd842f931ffd8"
+        "bytes": 247404,
+        "sha256": "00725da8431a214d01bf7c574c0eb093c4451b501088db7201ec1778f1c0604e"
       },
       "materials": [
         {
@@ -1654,7 +1655,7 @@
         "cmPerUnit": 50.0
       },
       "triangles": 1632,
-      "vertices": 1229
+      "vertices": 1281
     },
     "shoes/murim-boots": {
       "genre": "murim-fantasy",
@@ -1664,8 +1665,8 @@
       "targetBase": "male-webtoon",
       "file": {
         "path": "murim-boots.glb",
-        "bytes": 325132,
-        "sha256": "a0c8ecda5980e5d08dea828dfbde488af73720dc56151c5f75ad0d3379694d2c"
+        "bytes": 488848,
+        "sha256": "877a27947bcfa3b3e14a594acf0b37dc2b913e1c0e1a7dd49b9b479515a2f12f"
       },
       "materials": [
         {
@@ -1704,8 +1705,8 @@
         "purpose": "pattern",
         "cmPerUnit": 50.0
       },
-      "triangles": 2712,
-      "vertices": 2365
+      "triangles": 3904,
+      "vertices": 3529
     }
   }
 }

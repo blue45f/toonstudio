@@ -105,6 +105,7 @@ function TriSelect(props: {
       {props.label}
       <select
         id={props.id}
+        aria-label={props.label}
         value={props.value}
         onChange={(event) => props.onChange(event.target.value as StcTriLevel)}
         className="rounded-xl border border-line bg-panel px-3 py-2 text-sm text-fg outline-none focus:border-accent"
@@ -236,6 +237,7 @@ export function StudioStcGuidedFlowPanel(props: StudioStcGuidedFlowPanelProps) {
             id="stc-photo-input"
             type="file"
             accept="image/*"
+            aria-label="얼굴 사진 파일 선택"
             onChange={(event) => handleFile(event.target.files?.[0] ?? null)}
             className="text-sm text-fg-2"
           />
@@ -252,7 +254,7 @@ export function StudioStcGuidedFlowPanel(props: StudioStcGuidedFlowPanelProps) {
               />
               <p className="text-xs text-fg-3">{flow.photo.meta.fileName}</p>
               {photoIssues.map((issue) => (
-                <p key={issue.code + issue.message} className={issue.blocking ? "text-sm text-red-500" : "text-sm text-fg-3"}>
+                <p key={issue.code + issue.message} className={issue.blocking ? "text-sm text-bad" : "text-sm text-fg-3"}>
                   {issue.message}
                 </p>
               ))}
@@ -263,6 +265,7 @@ export function StudioStcGuidedFlowPanel(props: StudioStcGuidedFlowPanelProps) {
           <label className="flex items-start gap-2 text-sm text-fg-2">
             <input
               type="checkbox"
+              aria-label="본인 사진 또는 동의받은 사진 확인"
               checked={flow.rightsConfirmed}
               onChange={(event) => setFlow((current) => stcFlowSetRightsConfirmed(current, event.target.checked))}
               className="mt-1"
@@ -290,6 +293,7 @@ export function StudioStcGuidedFlowPanel(props: StudioStcGuidedFlowPanelProps) {
             {STC_FEATURE_LABELS.faceShape}
             <select
               id="stc-face-shape"
+              aria-label={STC_FEATURE_LABELS.faceShape}
               value={flow.profile.faceShape}
               onChange={(event) =>
                 setFlow((current) => stcFlowPatchProfile(current, { faceShape: event.target.value as StcFaceShapeKind }))
@@ -310,6 +314,7 @@ export function StudioStcGuidedFlowPanel(props: StudioStcGuidedFlowPanelProps) {
               {STC_FEATURE_LABELS.eyeTilt}
               <select
                 id="stc-eye-tilt"
+                aria-label={STC_FEATURE_LABELS.eyeTilt}
                 value={flow.profile.eyeTilt}
                 onChange={(event) => setFlow((c) => stcFlowPatchProfile(c, { eyeTilt: event.target.value as "down" | "neutral" | "up" }))}
                 className="rounded-xl border border-line bg-panel px-3 py-2 text-sm text-fg outline-none focus:border-accent"
@@ -332,6 +337,7 @@ export function StudioStcGuidedFlowPanel(props: StudioStcGuidedFlowPanelProps) {
               <input
                 id="stc-cheek"
                 type="range"
+                aria-label="볼 볼륨"
                 min={0}
                 max={100}
                 value={Math.round(flow.profile.cheekFullness * 100)}
@@ -343,6 +349,7 @@ export function StudioStcGuidedFlowPanel(props: StudioStcGuidedFlowPanelProps) {
               <input
                 id="stc-chin"
                 type="range"
+                aria-label="턱 뾰족함"
                 min={0}
                 max={100}
                 value={Math.round(flow.profile.chinPointedness * 100)}
@@ -355,6 +362,7 @@ export function StudioStcGuidedFlowPanel(props: StudioStcGuidedFlowPanelProps) {
               {STC_FEATURE_LABELS.hairStyle}
               <select
                 id="stc-hair-style"
+                aria-label={STC_FEATURE_LABELS.hairStyle}
                 value={flow.profile.hairStyle}
                 onChange={(event) => setFlow((c) => stcFlowPatchProfile(c, { hairStyle: event.target.value as AvatarForgeHairStyle }))}
                 className="rounded-xl border border-line bg-panel px-3 py-2 text-sm text-fg outline-none focus:border-accent"
@@ -370,6 +378,7 @@ export function StudioStcGuidedFlowPanel(props: StudioStcGuidedFlowPanelProps) {
               앞머리
               <select
                 id="stc-bang-style"
+                aria-label="앞머리"
                 value={flow.profile.bangStyle}
                 onChange={(event) => setFlow((c) => stcFlowPatchProfile(c, { bangStyle: event.target.value as AvatarForgeBangStyle }))}
                 className="rounded-xl border border-line bg-panel px-3 py-2 text-sm text-fg outline-none focus:border-accent"
@@ -383,15 +392,15 @@ export function StudioStcGuidedFlowPanel(props: StudioStcGuidedFlowPanelProps) {
             </label>
             <label htmlFor="stc-hair-color" className="flex flex-col gap-1 text-sm text-fg-2">
               {STC_FEATURE_LABELS.hairColor}
-              <input id="stc-hair-color" type="color" value={flow.profile.hairColor} onChange={(event) => setFlow((c) => stcFlowPatchProfile(c, { hairColor: event.target.value }))} />
+              <input id="stc-hair-color" type="color" aria-label={STC_FEATURE_LABELS.hairColor} value={flow.profile.hairColor} onChange={(event) => setFlow((c) => stcFlowPatchProfile(c, { hairColor: event.target.value }))} />
             </label>
             <label htmlFor="stc-iris-color" className="flex flex-col gap-1 text-sm text-fg-2">
               {STC_FEATURE_LABELS.irisColor}
-              <input id="stc-iris-color" type="color" value={flow.profile.irisColor} onChange={(event) => setFlow((c) => stcFlowPatchProfile(c, { irisColor: event.target.value }))} />
+              <input id="stc-iris-color" type="color" aria-label={STC_FEATURE_LABELS.irisColor} value={flow.profile.irisColor} onChange={(event) => setFlow((c) => stcFlowPatchProfile(c, { irisColor: event.target.value }))} />
             </label>
             <label htmlFor="stc-skin-tone" className="flex flex-col gap-1 text-sm text-fg-2">
               {STC_FEATURE_LABELS.skinTone}
-              <input id="stc-skin-tone" type="color" value={flow.profile.skinTone} onChange={(event) => setFlow((c) => stcFlowPatchProfile(c, { skinTone: event.target.value }))} />
+              <input id="stc-skin-tone" type="color" aria-label={STC_FEATURE_LABELS.skinTone} value={flow.profile.skinTone} onChange={(event) => setFlow((c) => stcFlowPatchProfile(c, { skinTone: event.target.value }))} />
             </label>
           </div>
         </div>

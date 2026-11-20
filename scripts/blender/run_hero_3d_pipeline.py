@@ -548,7 +548,11 @@ def assemble_kit_v2_manifest(
             "file": file_entry(glb_path, kit_dir),
             "heightM": meta["heightM"],
             "headHeightM": meta["headHeightM"],
-            "headToBodyRatio": meta.get("headToBodyRatio"),
+            "headToBodyRatio": (
+                round(float(meta["headToBodyRatio"]), 1)
+                if meta.get("headToBodyRatio") is not None
+                else None
+            ),
             "boundsM": meta["boundsM"],
             "extensions": exts,
             "meshes": meshes,
@@ -659,17 +663,18 @@ def assemble_kit_v2_manifest(
         "kitId": "toonstudio-kit-v2",
         "kitVersion": 2,
         "displayName": "ToonStudio 캐릭터 키트 v2 (5종 아키타입 · 16 핸드포즈 · VRM 1.0 히어로 연동)",
-        "generatedAt": datetime.date(2026, 11, 20).isoformat(),
+        "generatedAt": datetime.date(2026, 11, 21).isoformat(),
         "generator": {
             "tool": "scripts/blender/run_hero_3d_pipeline.py",
             "blender": "5.3.0",
             "command": [
-                "build_base_v2.py",
+                "build_base_v3.py",
                 "build_expressions_v2.py",
-                "forge_hair_v2.py",
-                "forge_garments_v2.py",
+                "forge_hair_v3.py",
+                "forge_garments_v3.py",
                 "build_hand_poses_v2.py",
                 "export_vrm1_hero.py",
+                "render_portrait_4x5_webp.py",
                 "run_hero_3d_pipeline.py --stages kit-json",
             ],
         },
@@ -741,7 +746,7 @@ def assemble_kit_v2_manifest(
     notice_md = (
         "# ToonStudio Character Kit v2 출처 및 라이선스 고지\n\n"
         "- **키트 ID**: `toonstudio-kit-v2` (`toonstudio.character-kit/2`)\n"
-        "- **생성일**: 2026-11-20\n"
+        "- **생성일**: 2026-11-21\n"
         "- **라이선스**: `original` / `CC0-1.0` (ToonStudio 자체 절차 제작)\n"
         "- **생성 도구**: Blender 5.3.0 + `tools/blender/character_kit/*` + `scripts/blender/run_hero_3d_pipeline.py`\n\n"
         "## 포함 산출물\n"

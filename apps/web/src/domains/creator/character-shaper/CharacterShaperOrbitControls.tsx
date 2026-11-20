@@ -19,6 +19,7 @@ export function CharacterShaperOrbitControls({ lookAt, gazePaused, captureFrozen
   const { camera, gl, invalidate } = useThree();
   const style = settings?.cameraStyle;
   const gazeMode = settings?.gazeMode;
+  const gazeOffset = settings?.gazeOffset;
   const gazeLease = useRef<CharacterShaperGazeLease | null>(null);
   const gazeAvailable = gazeMode !== undefined;
   useEffect(() => {
@@ -38,8 +39,8 @@ export function CharacterShaperOrbitControls({ lookAt, gazePaused, captureFrozen
   }, [camera, gazeAvailable, gazePaused, invalidate, lookAt]);
   useEffect(() => {
     if (!gazeMode || !lookAt || gazePaused) return;
-    gazeLease.current?.update(gazeMode, captureFrozen);
+    gazeLease.current?.update(gazeMode, captureFrozen, gazeOffset);
     invalidate();
-  }, [camera, captureFrozen, gazeMode, gazePaused, invalidate, lookAt]);
+  }, [camera, captureFrozen, gazeMode, gazeOffset, gazePaused, invalidate, lookAt]);
   return <OrbitControls {...props} ref={controls} enablePan={settings ? true : props.enablePan} />;
 }

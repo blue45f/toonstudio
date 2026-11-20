@@ -126,6 +126,7 @@ export async function prepareHairOwnership(deps: CaptureDeps, width: number, hei
       const material = mesh.material.clone(`hair-owner:${mesh.name}`);
       const color = hairPart(part) ? 1 : 0;
       material.setVector4("outlineColor", new Vector4(color, color, color, 1));
+      material.setVector4("outlineColorTint", new Vector4(0, 0, 0, 0));
       pairs.push([mesh, material]);
     }
     for (const [mesh, material] of pairs) { originals.set(mesh, mesh.material); rtt.setMaterialForRendering(mesh, material); }

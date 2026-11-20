@@ -6,8 +6,8 @@
   "fittedBase": "male-webtoon",
   "file": {
     "path": "comma-hair.glb",
-    "bytes": 1250040,
-    "sha256": "fe7ae9f7eaa346ddfaea26ac816f8d31c240cf4f1659a85823dc242ecb5076bd"
+    "bytes": 1421996,
+    "sha256": "b295ddecc95359db5fc58dfd57e3488f366b23208fb506626eb243acd22ddfbd"
   },
   "drawCalls": 8,
   "materials": [
@@ -19,8 +19,8 @@
     {
       "node": "TS_AuthoredHair_comma-hair_LOD0",
       "lod": 0,
-      "triangles": 9100,
-      "vertices": 4610,
+      "triangles": 10496,
+      "vertices": 5312,
       "primitives": 3,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -31,8 +31,8 @@
     {
       "node": "TS_AuthoredHair_comma-hair_LOD1",
       "lod": 1,
-      "triangles": 4488,
-      "vertices": 2304,
+      "triangles": 5152,
+      "vertices": 2640,
       "primitives": 3,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -43,8 +43,8 @@
     {
       "node": "TS_AuthoredHair_comma-hair_LOD2",
       "lod": 2,
-      "triangles": 1632,
-      "vertices": 866,
+      "triangles": 1736,
+      "vertices": 918,
       "primitives": 2,
       "uv0MonotonicOk": true,
       "uvBounds": [
@@ -96,10 +96,10 @@
         "shape": "sphere",
         "offsetGltf": [
           0.0,
-          0.08296,
-          -0.00177
+          0.08596,
+          -0.00343
         ],
-        "radius": 0.09052
+        "radius": 0.08959
       },
       {
         "id": "neck_capsule",
@@ -112,7 +112,7 @@
         ],
         "tailGltf": [
           0.0,
-          0.09553,
+          0.09531,
           -0.002
         ],
         "radius": 0.05985
@@ -124,7 +124,7 @@
         "offsetGltf": [
           0.0,
           0.0,
-          0.00092
+          0.00099
         ],
         "radius": 0.15824
       }
@@ -139,28 +139,28 @@
           "neck_capsule",
           "upper_chest_sphere"
         ],
-        "strandCount": 3,
-        "lengthM": 0.1709,
+        "strandCount": 4,
+        "lengthM": 0.2068,
         "hitRadius": 0.016,
-        "stiffness": 0.86,
-        "dragForce": 0.46,
+        "stiffness": 0.84,
+        "dragForce": 0.45,
         "gravityPower": 0.24,
         "joints": [
           {
             "name": "TS_Spring_comma-hair_bang_comma_0",
             "positionGltf": [
-              -0.01252,
-              1.82173,
-              0.02907
+              -0.01182,
+              1.82612,
+              0.02183
             ],
             "localOffsetFromHead": [
-              -0.01252,
-              0.17469,
-              0.03707
+              -0.01182,
+              0.18302,
+              0.02983
             ],
             "hitRadius": 0.016,
-            "stiffness": 0.946,
-            "dragForce": 0.46,
+            "stiffness": 0.924,
+            "dragForce": 0.45,
             "gravityPower": 0.24,
             "gravityDir": [
               0.0,
@@ -171,18 +171,18 @@
           {
             "name": "TS_Spring_comma-hair_bang_comma_1",
             "positionGltf": [
-              0.01581,
-              1.81442,
-              0.07788
+              0.02255,
+              1.82728,
+              0.07979
             ],
             "localOffsetFromHead": [
-              0.01581,
-              0.16738,
-              0.08588
+              0.02255,
+              0.18418,
+              0.08779
             ],
             "hitRadius": 0.01504,
-            "stiffness": 0.8743,
-            "dragForce": 0.46,
+            "stiffness": 0.854,
+            "dragForce": 0.45,
             "gravityPower": 0.24,
             "gravityDir": [
               0.0,
@@ -193,18 +193,18 @@
           {
             "name": "TS_Spring_comma-hair_bang_comma_2",
             "positionGltf": [
-              0.04906,
-              1.76777,
-              0.09392
+              0.05706,
+              1.76892,
+              0.09762
             ],
             "localOffsetFromHead": [
-              0.04906,
-              0.12073,
-              0.10192
+              0.05706,
+              0.12582,
+              0.10562
             ],
             "hitRadius": 0.01408,
-            "stiffness": 0.8027,
-            "dragForce": 0.46,
+            "stiffness": 0.784,
+            "dragForce": 0.45,
             "gravityPower": 0.24,
             "gravityDir": [
               0.0,
@@ -215,18 +215,18 @@
           {
             "name": "TS_Spring_comma-hair_bang_comma_3",
             "positionGltf": [
-              0.00327,
-              1.73834,
-              0.09706
+              -0.00269,
+              1.73404,
+              0.10103
             ],
             "localOffsetFromHead": [
-              0.00327,
-              0.0913,
-              0.10506
+              -0.00269,
+              0.09094,
+              0.10903
             ],
             "hitRadius": 0.01312,
-            "stiffness": 0.731,
-            "dragForce": 0.46,
+            "stiffness": 0.714,
+            "dragForce": 0.45,
             "gravityPower": 0.24,
             "gravityDir": [
               0.0,
@@ -245,27 +245,27 @@
           "neck_capsule",
           "upper_chest_sphere"
         ],
-        "strandCount": 3,
-        "lengthM": 0.1217,
+        "strandCount": 4,
+        "lengthM": 0.133,
         "hitRadius": 0.015,
-        "stiffness": 0.9,
+        "stiffness": 0.88,
         "dragForce": 0.48,
         "gravityPower": 0.22,
         "joints": [
           {
             "name": "TS_Spring_comma-hair_bang_sweep_0",
             "positionGltf": [
-              -0.0212,
-              1.82273,
-              0.0209
+              -0.01688,
+              1.82572,
+              0.01907
             ],
             "localOffsetFromHead": [
-              -0.0212,
-              0.17569,
-              0.0289
+              -0.01688,
+              0.18262,
+              0.02707
             ],
             "hitRadius": 0.015,
-            "stiffness": 0.99,
+            "stiffness": 0.968,
             "dragForce": 0.48,
             "gravityPower": 0.22,
             "gravityDir": [
@@ -277,17 +277,17 @@
           {
             "name": "TS_Spring_comma-hair_bang_sweep_1",
             "positionGltf": [
-              -0.04608,
-              1.81814,
-              0.05241
+              -0.03984,
+              1.82538,
+              0.0566
             ],
             "localOffsetFromHead": [
-              -0.04608,
-              0.1711,
-              0.06041
+              -0.03984,
+              0.18228,
+              0.0646
             ],
             "hitRadius": 0.0141,
-            "stiffness": 0.915,
+            "stiffness": 0.8947,
             "dragForce": 0.48,
             "gravityPower": 0.22,
             "gravityDir": [
@@ -299,17 +299,17 @@
           {
             "name": "TS_Spring_comma-hair_bang_sweep_2",
             "positionGltf": [
-              -0.07015,
-              1.78591,
-              0.06022
+              -0.06457,
+              1.78981,
+              0.06716
             ],
             "localOffsetFromHead": [
-              -0.07015,
-              0.13887,
-              0.06822
+              -0.06457,
+              0.14671,
+              0.07516
             ],
             "hitRadius": 0.0132,
-            "stiffness": 0.84,
+            "stiffness": 0.8213,
             "dragForce": 0.48,
             "gravityPower": 0.22,
             "gravityDir": [
@@ -321,17 +321,17 @@
           {
             "name": "TS_Spring_comma-hair_bang_sweep_3",
             "positionGltf": [
-              -0.08276,
-              1.75378,
-              0.03935
+              -0.07578,
+              1.75033,
+              0.05029
             ],
             "localOffsetFromHead": [
-              -0.08276,
-              0.10674,
-              0.04735
+              -0.07578,
+              0.10723,
+              0.05829
             ],
             "hitRadius": 0.0123,
-            "stiffness": 0.765,
+            "stiffness": 0.748,
             "dragForce": 0.48,
             "gravityPower": 0.22,
             "gravityDir": [
@@ -345,31 +345,31 @@
     ]
   },
   "qa": {
-    "bytes": 1250040,
-    "minClearanceMm": 0.8,
+    "bytes": 1421996,
+    "minClearanceMm": 0.793,
     "verticesInside": 0,
     "gltfValidateErrors": 0,
     "gltfValidateWarnings": 0,
     "bmesh": {
       "TS_AuthoredHair_comma-hair_LOD0": {
-        "verts": 4714,
-        "faces": 9100,
+        "verts": 5430,
+        "faces": 10496,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_AuthoredHair_comma-hair_LOD1": {
-        "verts": 2386,
-        "faces": 4488,
+        "verts": 2733,
+        "faces": 5152,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
         "zeroAreaFaces": 0
       },
       "TS_AuthoredHair_comma-hair_LOD2": {
-        "verts": 866,
-        "faces": 1632,
+        "verts": 918,
+        "faces": 1736,
         "trueNonManifold": 0,
         "looseVerts": 0,
         "wireEdges": 0,
@@ -380,5 +380,5 @@
   },
   "passed": true,
   "errors": [],
-  "seconds": 2.1
+  "seconds": 1.88
 }

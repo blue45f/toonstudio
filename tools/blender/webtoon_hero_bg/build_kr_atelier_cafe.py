@@ -77,11 +77,19 @@ from webtoon_hero_bg import (  # noqa: E402
     inspect_glb,
     render_hero_review_bundle,
 )
-from webtoon_hero_bg.cutaway_assembly import _remove_hierarchy  # noqa: E402
+from webtoon_hero_bg.arch_primitives import (  # noqa: E402
+    add_curved_foliage_plant,
+    add_pleated_curtain,
+)
+from webtoon_hero_bg.cutaway_assembly import (  # noqa: E402
+    _remove_hierarchy,
+    build_lighting_presets,
+    update_manifest_metadata,
+)
 
 SLUG = "kr_atelier_cafe_interior"
 DEFAULT_OUT_DIR = REPO_ROOT / "apps/web/public/assets/3d/environments/hero-v1"
-DEFAULT_PREVIEW_DIR = REPO_ROOT / "loop-stack/competitor-parity/previews/bg"
+DEFAULT_PREVIEW_DIR = REPO_ROOT / "loop-stack/v2-previews/bg"
 
 TAU = math.tau
 
@@ -472,14 +480,9 @@ def _build_wall_south(g: MeshGroup) -> None:
     # Exterior architectural fascia header trim & brass-trimmed cafe signboard band
     g.box((0.0, -3.015, 2.94), (9.96, 0.032, 0.36), COL_PLASTER_WARM, tile="trim_paint", bevel=0.005)
     g.box((0.0, -3.035, 3.13), (10.00, 0.068, 0.055), COL_STEEL_DARK, tile="sash_metal", bevel=0.004)
-    # Recessed dark walnut sign plaque over main entrance & folding facade
-    g.box((-1.20, -3.038, 2.94), (2.30, 0.026, 0.24), COL_WALNUT_DARK, tile="wood_panel", bevel=0.004)
-    g.box((-1.20, -3.054, 2.94), (2.22, 0.010, 0.19), COL_AWNING_GREEN, tile="trim_paint", bevel=0.002)
-    # Crisp geometric brass atelier sign bars (zero messy clipping text!)
-    for idx, bx in enumerate((-0.72, -0.46, -0.22, 0.0, 0.24, 0.48, 0.72)):
-        bh = 0.082 if idx in (0, 3, 6) else 0.062
-        g.box((-1.20 + bx, -3.063, 2.94), (0.042, 0.012, bh), COL_BRASS_LIGHT, tile="hardware_brass", bevel=0.002)
-    g.box((-1.20, -3.063, 2.885), (1.76, 0.008, 0.010), COL_BRASS, tile="hardware_brass", bevel=0.0015)
+    # Recessed walnut-framed Korean cafe signboard over main entrance & folding facade ("성수 아틀리에 커피")
+    g.box((-1.20, -3.038, 2.94), (2.52, 0.028, 0.28), COL_WALNUT_DARK, tile="wood_panel", bevel=0.004)
+    g.box((-1.20, -3.056, 2.94), (2.42, 0.012, 0.23), "FFFFFF", tile="asphalt", bevel=0.002, uv_fit=True)
 
     # Exterior granite plinth base on the 3 facade masonry piers
     for px, pw in ((-4.65, 0.68), (2.15, 0.48), (4.65, 0.68)):
@@ -693,16 +696,12 @@ def _build_wall_north(g: MeshGroup) -> None:
 
     # Signature Framed Korean Atelier Menu Board (X in [-1.62, +0.18], Z in [1.46, 2.32])
     mb_cx, mb_cz = -0.72, 1.89
-    mb_w, mb_h = 1.80, 0.86
+    mb_w, mb_h = 1.84, 0.88
     g.box((mb_cx, 3.574, mb_cz), (mb_w, 0.032, mb_h), COL_WALNUT, tile="wood_panel", bevel=0.005)
-    g.box((mb_cx, 3.556, mb_cz), (mb_w - 0.08, 0.014, mb_h - 0.08), COL_CHALK, tile="chalkboard", bevel=0.002)
-    # 5 horizontal oak magnetic menu letter rails + crisp ivory letter tile strips
-    for i, rz in enumerate((2.18, 2.02, 1.88, 1.74, 1.60)):
-        g.box((mb_cx, 3.545, rz), (mb_w - 0.16, 0.014, 0.016), COL_OAK_C, tile="wood_panel", bevel=0.002)
-        # Left menu item bar + right price bar (reads unmistakably as a specialty coffee menu!)
-        item_w = 0.56 if i == 0 else (0.46 + (i % 3) * 0.09)
-        g.box((mb_cx - 0.42 + item_w * 0.5 - 0.22, 3.541, rz + 0.022), (item_w, 0.008, 0.026), COL_TILE_CREAM_A, tile="trim_paint", bevel=0.0015)
-        g.box((mb_cx + 0.52, 3.541, rz + 0.022), (0.18, 0.008, 0.026), COL_BRASS_LIGHT, tile="hardware_brass", bevel=0.0015)
+    # Full-fit 512x512 Korean specialty coffee menu chalkboard ("MENU · 성수 아틀리에")
+    g.box((mb_cx, 3.554, mb_cz), (mb_w - 0.08, 0.016, mb_h - 0.08), "FFFFFF", tile="chalkboard", bevel=0.002, uv_fit=True)
+    # Subtle brass bottom chalk ledge under menu frame
+    g.box((mb_cx, 3.538, mb_cz - mb_h * 0.5 + 0.012), (mb_w - 0.10, 0.042, 0.020), COL_BRASS, tile="hardware_brass", bevel=0.002)
 
     # North-East Architectural Stepped Plaster Arch Feature Niche (X = +1.85, Z = 0.05..2.58)
     niche_cx = 1.85
@@ -710,14 +709,11 @@ def _build_wall_north(g: MeshGroup) -> None:
     g.box((niche_cx - 0.82, 3.572, 1.32), (0.14, 0.048, 2.48), COL_PLASTER_WARM, tile="plaster", bevel=0.004)
     g.box((niche_cx + 0.82, 3.572, 1.32), (0.14, 0.048, 2.48), COL_PLASTER_WARM, tile="plaster", bevel=0.004)
     g.box((niche_cx, 3.572, 2.52), (1.78, 0.048, 0.14), COL_PLASTER_WARM, tile="plaster", bevel=0.004)
-    # Recessed sage-plaster back panel + oak display console shelf + brass arch frame
+    # Recessed sage-plaster back panel + oak display console shelf + framed atelier coffee poster
     g.box((niche_cx, 3.588, 1.32), (1.46, 0.014, 2.34), "E3DDD1", tile="plaster", bevel=0.002)
     g.box((niche_cx, 3.540, 0.92), (1.48, 0.12, 0.038), COL_OAK_A, tile="wood_panel", bevel=0.004)
-    # Minimalist framed geometric poster inside niche
     g.box((niche_cx, 3.568, 1.72), (0.86, 0.028, 1.06), COL_WALNUT, tile="wood_panel", bevel=0.004)
-    g.box((niche_cx, 3.552, 1.72), (0.78, 0.010, 0.98), COL_TILE_CREAM_C, tile="plaster", bevel=0.0015)
-    g.box((niche_cx - 0.12, 3.545, 1.82), (0.34, 0.008, 0.42), COL_TERRACOTTA, tile="trim_paint", bevel=0.002)
-    g.box((niche_cx + 0.14, 3.544, 1.56), (0.30, 0.008, 0.36), COL_AWNING_GREEN, tile="trim_paint", bevel=0.002)
+    g.box((niche_cx, 3.550, 1.72), (0.78, 0.012, 0.98), "FFFFFF", tile="marble", bevel=0.0015, uv_fit=True)
 
 
 # ---------------------------------------------------------------------------
@@ -763,19 +759,11 @@ def _build_wall_east(g: MeshGroup) -> None:
     )
 
     # 3 Coordinated Framed Coffee/Botanical Art Prints above the banquette (Z = 1.44..2.14)
-    art_specs = [
-        (-2.02, 0.54, 0.68, COL_AWNING_GREEN, COL_OAK_C),
-        (-1.20, 0.54, 0.68, COL_TERRACOTTA, COL_TILE_CREAM_A),
-        (-0.38, 0.54, 0.68, COL_WALNUT, COL_TILE_SAGE),
-    ]
-    for ay, aw, ah, acc1, acc2 in art_specs:
+    for ay, aw, ah in ((-2.02, 0.54, 0.68), (-1.20, 0.54, 0.68), (-0.38, 0.54, 0.68)):
         # Outer beveled walnut frame (28 mm proud)
         g.box((4.782, ay, 1.79), (0.028, aw, ah), COL_WALNUT, tile="wood_panel", bevel=0.004)
-        # Cream mat board
-        g.box((4.766, ay, 1.79), (0.008, aw - 0.06, ah - 0.06), COL_CERAMIC_WHITE, tile="plaster", bevel=0.0015)
-        # Stylized modernist geometric composition inside
-        g.box((4.760, ay - 0.05, 1.86), (0.006, aw * 0.42, ah * 0.38), acc1, tile="trim_paint", bevel=0.0015)
-        g.box((4.759, ay + 0.07, 1.69), (0.006, aw * 0.36, ah * 0.30), acc2, tile="trim_paint", bevel=0.0015)
+        # Full-fit Seongsu Atelier gallery poster print inside walnut frame
+        g.box((4.764, ay, 1.79), (0.010, aw - 0.06, ah - 0.06), "FFFFFF", tile="marble", bevel=0.0015, uv_fit=True)
 
     # Architectural brass light switch & thermostat wall plate near entrance (Y = -2.62, Z = 1.24)
     g.box((4.788, -2.62, 1.24), (0.016, 0.088, 0.125), COL_BRASS, tile="hardware_brass", bevel=0.002)
@@ -1979,13 +1967,7 @@ def _build_aframe_sign(g: MeshGroup, cx: float, cy: float, z_base: float, rot_z:
             _pt(half_w, p_top_y + ny * t, z_top + nz * t),
             _pt(-half_w, p_top_y + ny * t, z_top + nz * t),
         ]
-        g.rings([r_in, r_out], color=COL_CHALK, tile="plastic_matte")
-
-        # Chalk menu header & coffee cup accent bar on front face
-        for bar_frac, bw in ((0.76, 0.28), (0.56, 0.22), (0.42, 0.25)):
-            by = p_bot_y + (p_top_y - p_bot_y) * bar_frac + ny * (t + 0.006)
-            bz = z_bot + (z_top - z_bot) * bar_frac + nz * (t + 0.006)
-            _local_box(g, (cx, cy, 0.0), rot_z, 0.0, by, bz, bw, 0.008, 0.022, COL_AWNING_CREAM, tile="paper_label", bevel=0.0015)
+        g.rings([r_in, r_out], color="FFFFFF", tile="paper_label")
 
     # Brass top hinge bar & mid-height folding stay rods
     _local_box(g, (cx, cy, z_base + h), rot_z, 0.0, 0.0, 0.0, w * 0.96, 0.056, 0.028, COL_BRASS, tile="brass_polished", bevel=0.003)
@@ -2074,7 +2056,22 @@ def _build_props_clutter(g: MeshGroup) -> None:
         g.box((sx, 3.45, 2.065), (0.12, 0.085, 0.21), col, tile="paper_label", bevel=0.006)
     for idx, sx in enumerate((-3.14, -2.90, -2.66)):
         _lathe_rings(g, sx, 3.45, [(0.058, 1.958), (0.072, 2.05), (0.042, 2.18), (0.052, 2.21)], sides=14, color=(COL_CERAMIC_WHITE, COL_TERRACOTTA, COL_TILE_SAGE)[idx], tile="ceramic_gloss")
-    _add_potted_plant(g, -2.26, 3.45, 1.958, pot_r=0.085, pot_h=0.14, tree_h=0.36, pot_color=COL_POT_CREAM, pot_tile="ceramic_gloss", seed=303)
+    add_curved_foliage_plant(
+        g,
+        (-2.26, 3.45, 1.958),
+        species="monstera",
+        height=0.46,
+        pot_radius=0.085,
+        pot_height=0.14,
+        leaf_count=7,
+        seed=303,
+        pot_color=COL_POT_CREAM,
+        pot_tile="ceramic_gloss",
+        soil_color=COL_SOIL,
+        stem_tile="foliage_prop",
+        leaf_color=COL_LEAF_B,
+        leaf_tile="foliage_prop",
+    )
 
     # 7. Tabletop Storytelling Props (cleanly grounded on table tops!)
     t_round_z = FLOOR_Z + 0.730  # 0.776 m
@@ -2137,13 +2134,66 @@ def _build_props_clutter(g: MeshGroup) -> None:
             tile="ceramic_gloss" if shelf_idx != 3 else "brass_polished",
         )
 
-    # 9. 3 Large Sculpted Indoor & Storefront Potted Plants (대형 화분)
-    # Hero Plant #1: Tall Ficus/Olive tree framing the wood louver wall & L-bar corner (zero door collision!)
-    _add_potted_plant(g, -4.32, 0.08, FLOOR_Z, pot_r=0.25, pot_h=0.50, tree_h=1.56, pot_color=COL_TERRACOTTA, pot_tile="stone_prop", seed=101)
-    # Hero Plant #2: Tall Indoor Plant in North-East corner between bookshelf & staff door
-    _add_potted_plant(g, 4.30, 3.16, FLOOR_Z, pot_r=0.22, pot_h=0.45, tree_h=1.38, pot_color=COL_POT_CREAM, pot_tile="ceramic_gloss", seed=202)
-    # Hero Plant #3: Storefront Exterior Planter cleanly inside [-4.95, -3.76] on South granite terrace
-    _add_potted_plant(g, -4.36, -3.35, SIDEWALK_TOP_Z, pot_r=0.19, pot_h=0.38, tree_h=0.76, pot_color=COL_TERRACOTTA, pot_tile="stone_prop", seed=404)
+    # 9. 3 Large Sculpted Curved-Foliage Indoor & Storefront Potted Plants (대형 화분)
+    # Hero Plant #1: Tall Ficus tree framing the wood louver wall & L-bar corner (zero door collision!)
+    add_curved_foliage_plant(
+        g,
+        (-4.32, 0.08, FLOOR_Z),
+        species="ficus",
+        height=1.96,
+        pot_radius=0.25,
+        pot_height=0.48,
+        leaf_count=16,
+        seed=101,
+        pot_color=COL_TERRACOTTA,
+        pot_tile="stone_prop",
+        soil_color=COL_SOIL,
+        stem_tile="foliage_prop",
+        leaf_color=COL_LEAF_A,
+        leaf_tile="foliage_prop",
+    )
+    # Hero Plant #2: Lush Monstera in North-East corner between bookshelf & staff door
+    add_curved_foliage_plant(
+        g,
+        (4.30, 3.16, FLOOR_Z),
+        species="monstera",
+        height=1.72,
+        pot_radius=0.22,
+        pot_height=0.44,
+        leaf_count=13,
+        seed=202,
+        pot_color=COL_POT_CREAM,
+        pot_tile="ceramic_gloss",
+        soil_color=COL_SOIL,
+        stem_tile="foliage_prop",
+        leaf_color=COL_LEAF_B,
+        leaf_tile="foliage_prop",
+    )
+    # Hero Plant #3: Storefront Exterior Palm Planter cleanly inside [-4.95, -3.76] on South granite terrace
+    add_curved_foliage_plant(
+        g,
+        (-4.36, -3.35, SIDEWALK_TOP_Z),
+        species="palm",
+        height=1.22,
+        pot_radius=0.19,
+        pot_height=0.38,
+        leaf_count=11,
+        seed=404,
+        pot_color=COL_TERRACOTTA,
+        pot_tile="stone_prop",
+        soil_color=COL_SOIL,
+        stem_tile="foliage_prop",
+        leaf_color=COL_LEAF_C,
+        leaf_tile="foliage_prop",
+    )
+
+    # 9b. Additional Cafe Dessert Stand & Croissant Plates on Bar & Communal Table
+    _lathe_rings(g, -1.26, 0.94, [(0.052, bar_z), (0.022, bar_z + 0.055), (0.115, bar_z + 0.082), (0.122, bar_z + 0.092)], sides=16, color=COL_CERAMIC_WHITE, tile="ceramic_gloss")
+    _lathe_rings(g, -1.26, 0.94, [(0.084, bar_z + 0.094), (0.084, bar_z + 0.165), (0.072, bar_z + 0.172)], sides=16, color="EFE3CE", tile="enamel_gloss")
+    _lathe_rings(g, -1.26, 0.94, [(0.022, bar_z + 0.174), (0.018, bar_z + 0.198)], sides=10, color="C84646", tile="enamel_gloss")
+    # Extra dessert cake plate & brass flatware on communal table
+    _lathe_rings(g, 2.15, 1.24, [(0.056, t_comm_z), (0.078, t_comm_z + 0.014)], sides=16, color=COL_CERAMIC_WHITE, tile="ceramic_gloss")
+    g.box((2.15, 1.24, t_comm_z + 0.040), (0.074, 0.058, 0.044), "DFB874", tile="enamel_gloss", bevel=0.006, rot_z=0.32)
 
     # 10. Exterior Hinged Walnut & Chalkboard A-Frame Signboard (입간판) on South sidewalk terrace
     _build_aframe_sign(g, 2.12, -3.40, SIDEWALK_TOP_Z, rot_z=math.radians(16.0))
@@ -2263,9 +2313,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--preview-dir", type=Path, default=DEFAULT_PREVIEW_DIR)
     parser.add_argument("--qa-out", type=Path, default=DEFAULT_PREVIEW_DIR / f"{SLUG}-qa.json")
-    parser.add_argument("--desktop-primary", type=int, default=1024)
+    parser.add_argument("--desktop-primary", type=int, default=2048)
     parser.add_argument("--desktop-secondary", type=int, default=1024)
-    parser.add_argument("--mobile-opaque", type=int, default=512)
+    parser.add_argument("--mobile-opaque", type=int, default=1024)
     parser.add_argument("--mobile-glass", type=int, default=512)
     parser.add_argument("--skip-preview", action="store_true")
     args = parser.parse_args(raw_argv)
@@ -2338,9 +2388,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     desktop_glb_qa = inspect_glb(desktop_glb, profile="desktop", require_meshopt=True, run_validate=True)
     mobile_glb_qa = inspect_glb(mobile_glb, profile="mobile", require_meshopt=True, run_validate=True)
 
-    # 4. Gate-5 6-view 512x512 BLENDER_EEVEE contact sheet PNG + Freestyle SVG
+    # 4. Gate-5 6-view 512x512 BLENDER_EEVEE contact sheet PNG + 3-tier Freestyle SVG + thumbnail
     preview_report: Optional[Dict[str, Any]] = None
     if not args.skip_preview:
+        lineart_dst = args.out / "lineart" / f"{SLUG}-lineart.svg"
+        thumb_dst = args.out / "thumbnails" / f"{SLUG}.png"
         preview_report = render_hero_review_bundle(
             args.preview_dir,
             SLUG,
@@ -2348,7 +2400,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             views=build_cafe_review_views(),
             tile_resolution=512,
             interior_cutaway=True,
+            thumbnail_path=thumb_dst,
+            thumbnail_view_index=4,
+            lineart_copy_path=lineart_dst,
         )
+        svg_meta = dict(preview_report["freestyleSvg"])
+        svg_meta["path"] = f"lineart/{SLUG}-lineart.svg"
+        update_manifest_metadata(
+            manifest_path,
+            freestyle_svg=svg_meta,
+            lighting_presets=build_lighting_presets(),
+        )
+    else:
+        update_manifest_metadata(manifest_path, lighting_presets=build_lighting_presets())
 
     qa_bundle = {
         "slug": SLUG,

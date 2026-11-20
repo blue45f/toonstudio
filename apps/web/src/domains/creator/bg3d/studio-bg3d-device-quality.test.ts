@@ -99,7 +99,7 @@ describe("selectStudioBg3dQualityProfile", () => {
 });
 
 describe("resolveStudioBg3dDeviceQuality", () => {
-  it("uses the mobile DPR ceiling and effective renderer settings on 375 × 812", () => {
+  it("uses the mobile DPR ceiling (2x, matching audit policy) and effective renderer settings on 375 × 812", () => {
     const quality = resolveStudioBg3dDeviceQuality({
       document: defaultDocument(),
       mode: "edit",
@@ -116,10 +116,10 @@ describe("resolveStudioBg3dDeviceQuality", () => {
 
     expect(quality).toMatchObject({
       profile: "mobile",
-      effectiveDpr: 1.5,
-      renderWidth: 562,
-      renderHeight: 1218,
-      renderPixels: 684_516,
+      effectiveDpr: 2,
+      renderWidth: 750,
+      renderHeight: 1624,
+      renderPixels: 1_218_000,
       shadows: true,
       shadowMapSize: 2048,
       textureScale: 1,

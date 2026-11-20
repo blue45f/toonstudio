@@ -74,7 +74,7 @@ import {
   CameraDirector,
   StudioVrmMannequinMaterial,
   StudioVrmTexturePaintInvalidateBridge,
-  StudioVrmViewportReadyFrame, CaptureBridge 
+  StudioVrmViewportReadyFrame, CaptureBridge, StudioVrmCanvasSizeSync
 } from "./StudioVrmViewportHelpers";
 import {
   StudioVrmPropAttachment,
@@ -255,6 +255,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
   } = h;
   const captureActive = Boolean(isCapturing || isThumbnailCapturing || isSharingPose || broadcastPreviewActive);
   const viewportBudget = useStudioVrmViewportBudget(broadcastViewportHostRef, captureActive);
+  const effectiveDpr = broadcastPreviewActive ? broadcastCanvasDpr : h.vrmLowQualityMode ? Math.min(1, viewportBudget.dpr) : viewportBudget.dpr;
   // GPU 품질 등급은 세션 중 바뀌지 않는다(모듈 캐시). low(소프트웨어 렌더링 등)에서는
   // MSAA가 특히 비싸서 끄고, DPR 하향은 viewportBudget이 함께 적용한다.
   const gpuTier = getStudioVrmQualityTier();
@@ -395,7 +396,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                   key={h.vrmCanvasRecoveryGeneration ?? 0}
                   camera={{ fov: activeCamera.fov, position: new THREE.Vector3(...activeCamera.position), near: 0.1, far: 20 }}
                   className="h-full w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
-                  dpr={broadcastPreviewActive ? broadcastCanvasDpr : h.vrmLowQualityMode ? Math.min(1, viewportBudget.dpr) : viewportBudget.dpr}
+                  dpr={effectiveDpr}
                   frameloop={viewportBudget.visible || captureActive ? vrmFrameLoop : "never"}
                   gl={{ alpha: true, antialias: !h.vrmLowQualityMode && gpuTier !== "low", powerPreference: h.vrmLowQualityMode ? "low-power" : "high-performance" }}
                   onCreated={({ gl }) => {
@@ -403,6 +404,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                     gl.setClearColor(0x000000, 0); gl.setClearAlpha(0);
                   }}
                 >
+                  <StudioVrmCanvasSizeSync dpr={effectiveDpr} paused={captureActive} />
                   <CaptureBridge onCaptureUpdate={onCaptureUpdate} onContextLostChange={h.setVrmContextLost} />
                   {broadcastPreviewReceipt ? (
                     <StudioVrmBroadcastPreviewBridge

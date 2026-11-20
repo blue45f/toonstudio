@@ -25,6 +25,8 @@ import { StudioSurfaceErrorBoundary } from "../StudioSurfaceErrorBoundary";
 import { StudioVrmPoserDialog } from "../vrm/StudioVrmPoserDialog";
 import { useStudioVrmPoserController } from "../vrm/useStudioVrmPoserController";
 
+import { applyShaperMtoonUniformsToVrm } from "./character-shaper-mtoon-uniforms";
+import { useCharacterShaperMaterialSettings } from "./character-shaper-session-settings";
 import { CharacterShaperSessionSettingsProvider } from "./CharacterShaperSessionSettingsProvider";
 import { StudioCharacterShaperDialog } from "./StudioCharacterShaperDialog";
 import { useCharacterShaperBinding } from "./useCharacterShaperBinding";
@@ -80,6 +82,14 @@ export function StudioCharacterShaper({ recoverFromRenderFailure = true, ...prop
   );
 }
 
+function CharacterShaperMaterialSyncBridge({ h }: { readonly h: ReturnType<typeof useStudioVrmPoserController> }) {
+  const { shaperMaterial } = useCharacterShaperMaterialSettings();
+  useEffect(() => {
+    applyShaperMtoonUniformsToVrm(h.vrm, shaperMaterial);
+  }, [h.vrm, shaperMaterial]);
+  return null;
+}
+
 function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayers, ...props }: Omit<StudioCharacterShaperProps, "recoverFromRenderFailure">) {
   const { open } = props;
   const h = useStudioVrmPoserController(props);
@@ -126,6 +136,7 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayer
 
   return (
     <CharacterShaperSessionSettingsProvider gazeAvailable={Boolean(h.vrm?.lookAt) && !h.webcamActive} locked={advanced || Boolean(h.isCapturing || h.isSharingPose || h.isThumbnailCapturing)}>
+      <CharacterShaperMaterialSyncBridge h={h} />
       {advanced ? (
         <>
           <StudioVrmPoserDialog h={h} />

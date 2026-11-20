@@ -1,12 +1,12 @@
 {
   "schema": "toonstudio.bg3d.hero-v1-manifest/1",
-  "generatedAt": "2026-11-20",
+  "generatedAt": "2026-11-21",
   "count": 12,
   "assets": [
     {
       "path": "kr_atelier_cafe_interior-mobile.glb",
-      "bytes": 2708344,
-      "sha256": "369e9e122fd48a7b67ea9e48473aace8b1f7e56a594e768d51e063a8a1a23745",
+      "bytes": 3191328,
+      "sha256": "6c4a01791d276a3610f9cdfabd6c9ab71729cab918d81a270d7c7ba98bdafd77",
       "extensions": [
         "EXT_meshopt_compression",
         "KHR_materials_emissive_strength",
@@ -26,8 +26,8 @@
     },
     {
       "path": "kr_atelier_cafe_interior.glb",
-      "bytes": 5430228,
-      "sha256": "1d371ef6ba2c66a2d8de2f15c7d415d4e44cbf8383f94ad78bf2db1595dae6b1",
+      "bytes": 5316812,
+      "sha256": "751beefe2082bb2a09bcf856b4fab0a2882a44248c0059bc6448fe5c82464fc8",
       "extensions": [
         "EXT_meshopt_compression",
         "KHR_materials_emissive_strength",
@@ -53,8 +53,8 @@
     },
     {
       "path": "kr_highschool_classroom_corridor-mobile.glb",
-      "bytes": 2468760,
-      "sha256": "eb4697d8d077349ca8cb5b387154393a872d3f3122109a4774489462f8542b59",
+      "bytes": 2441564,
+      "sha256": "d2c2e919a92385caf42dc9a3378d4a7c2a0d67a7a980cdcf0877c6486ec99b75",
       "extensions": [
         "EXT_meshopt_compression",
         "KHR_materials_emissive_strength",
@@ -74,8 +74,8 @@
     },
     {
       "path": "kr_highschool_classroom_corridor.glb",
-      "bytes": 4616392,
-      "sha256": "5c9936e12dac243c66a8bac628597f34a4c77611c16d4771b17bcd1635492bc5",
+      "bytes": 4584172,
+      "sha256": "2ebe4885f5215636575a1513e588481fac003669a2b31e018b04b72641021dd3",
       "extensions": [
         "EXT_meshopt_compression",
         "KHR_materials_emissive_strength",
@@ -101,8 +101,8 @@
     },
     {
       "path": "kr_modern_apartment_living-mobile.glb",
-      "bytes": 2734148,
-      "sha256": "5ebe888dfce3fbf1899c93d7247d1e2c7340bfc9b49cde8d34948f54f87839b4",
+      "bytes": 2730404,
+      "sha256": "fdf1136b4b6770000351910a9f2fa847a46e62ff973ac14f30fd565d5e7fd106",
       "extensions": [
         "EXT_meshopt_compression",
         "KHR_materials_emissive_strength",
@@ -122,8 +122,8 @@
     },
     {
       "path": "kr_modern_apartment_living.glb",
-      "bytes": 4904160,
-      "sha256": "a112e569d483aa73c11485bc49d84d7411da1b48b3037fb266c1e32f24dc060c",
+      "bytes": 4825616,
+      "sha256": "ffce62b057ac90365057b6fdcb0641f38ee83cda7662866ec1100b1ba152c803",
       "extensions": [
         "EXT_meshopt_compression",
         "KHR_materials_emissive_strength",
@@ -149,8 +149,8 @@
     },
     {
       "path": "kr_school_rooftop_hero-mobile.glb",
-      "bytes": 1973100,
-      "sha256": "c400308473e95260b79d6ce6487171004c513eab49c8f522583c6d07f815c9ef",
+      "bytes": 2039000,
+      "sha256": "68782ce12723453b682b5df14d5f5de0d958728cced8f95ddeb705a4fafafee0",
       "extensions": [
         "EXT_meshopt_compression",
         "KHR_materials_emissive_strength",
@@ -170,8 +170,8 @@
     },
     {
       "path": "kr_school_rooftop_hero.glb",
-      "bytes": 3283908,
-      "sha256": "b4d2c20ba3d48d4d616c53627713a6e411c6f9c24eb1f0615dac4203784c65b9",
+      "bytes": 4254932,
+      "sha256": "4f0b25ae22ce60df4b67c8971a41c8ce852793c799278269f54e57eb93678658",
       "extensions": [
         "EXT_meshopt_compression",
         "KHR_materials_emissive_strength",
@@ -197,8 +197,8 @@
     },
     {
       "path": "kr_seoul_alley_street_hero-mobile.glb",
-      "bytes": 2508996,
-      "sha256": "f283749f6bdc2dd8e39a5d488ff624670a01fb402d7b226e666e04fff45c604d",
+      "bytes": 2453152,
+      "sha256": "425c44235f1ffa48cc9b252413576ff5c994ddd5ebce2e78ab0fafd016c739a2",
       "extensions": [
         "EXT_meshopt_compression",
         "KHR_materials_emissive_strength",
@@ -218,8 +218,8 @@
     },
     {
       "path": "kr_seoul_alley_street_hero.glb",
-      "bytes": 3826284,
-      "sha256": "3fc34613745d056d123c7aba317615f94653f4e3f8817099d67d3932f4224408",
+      "bytes": 4559724,
+      "sha256": "c70b0ca0804cb49a8ff9717a58852864a04e876b03aff418332fa56019766f3f",
       "extensions": [
         "EXT_meshopt_compression",
         "KHR_materials_emissive_strength",
@@ -245,8 +245,8 @@
     },
     {
       "path": "rofan_imperial_palace_hall_balcony-mobile.glb",
-      "bytes": 3082344,
-      "sha256": "05bdfabcce227d4eff759db7576b8debcc01fffbe99048cf5aa142f8e3298ac3",
+      "bytes": 3827276,
+      "sha256": "48ba57299f64066f18dc5e6577f0cad0e32e4c8012c731f9ad0a20c1321ac581",
       "extensions": [
         "EXT_meshopt_compression",
         "KHR_materials_emissive_strength",
@@ -266,8 +266,8 @@
     },
     {
       "path": "rofan_imperial_palace_hall_balcony.glb",
-      "bytes": 5244352,
-      "sha256": "d9ceff66dcf9c00b97b23339d35fe8421fbb1476f5ba66169b72c6525cbcbeef",
+      "bytes": 6179592,
+      "sha256": "94a33abbfbf7b5efe87fa8deec16754b73dc0e750f46e139f84edd230c63f324",
       "extensions": [
         "EXT_meshopt_compression",
         "KHR_materials_emissive_strength",

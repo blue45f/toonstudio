@@ -99,6 +99,6 @@ describe("studio-vrm-hero-v1-catalog-entries", () => {
     expect(empress.deliveryStatus).toBe("verified-on-disk");
     expect(empress.byteSize).toBe(6_250_000);
     expect(duke.deliveryStatus).toBe("verified-on-disk");
-    expect(duke.byteSize).toBe(3_215_960);
+    expect(duke.byteSize).toBe(4_647_524);
   });
 });

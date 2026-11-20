@@ -1,0 +1,191 @@
+{
+  "assetId": "kr_hospital_ward_corridor",
+  "titleKo": "종합병원 2인실 병실 · 복도 & 간호 스테이션",
+  "dimensionsM": [
+    12.0,
+    8.5,
+    3.1
+  ],
+  "cutawayContract": "room-v1",
+  "fileName": "desktop.glb",
+  "byteSize": 3857792,
+  "sha256": "sha256:f8f93f67e62b52d89af2623fe884e736a2b1fd42fda845be2322a545864aab6b",
+  "bounds": [
+    12.0,
+    3.1,
+    8.52
+  ],
+  "nodes": [
+    "BG_Floor",
+    "BG_Wall_North",
+    "BG_Wall_South",
+    "BG_Wall_West",
+    "BG_Wall_East",
+    "BG_Ceiling",
+    "BG_Furniture_Hero",
+    "BG_Props_Clutter"
+  ],
+  "mobile": {
+    "fileName": "mobile.glb",
+    "byteSize": 1637208,
+    "sha256": "sha256:434ca72c95228d4c776ec830354394213eef9bcf50e9f5ddbc6d120d300bd613",
+    "nodes": [
+      "BG_Shell_Fixed",
+      "BG_Cutaway_Front",
+      "BG_Ceiling",
+      "BG_Furnishings"
+    ]
+  },
+  "cameras": {
+    "ward_dialogue_35mm": {
+      "label": "35mm 2인실 병실 대화",
+      "lensMm": 35,
+      "position": [
+        -1.85,
+        1.48,
+        -0.15
+      ],
+      "target": [
+        -4.45,
+        1.15,
+        -2.05
+      ]
+    },
+    "corridor_nurse_28mm": {
+      "label": "28mm 복도 & 간호 스테이션",
+      "lensMm": 28,
+      "position": [
+        -4.4,
+        1.54,
+        2.38
+      ],
+      "target": [
+        3.85,
+        1.45,
+        0.45
+      ]
+    },
+    "nurse_station_50mm": {
+      "label": "50mm 간호사실 접수 대면",
+      "lensMm": 50,
+      "position": [
+        3.75,
+        1.5,
+        2.2
+      ],
+      "target": [
+        3.85,
+        1.35,
+        -0.6
+      ]
+    }
+  },
+  "lightingPresets": {
+    "day_5600k": {
+      "labelKo": "주광 5600K (맑은 낮)",
+      "kelvin": 5600,
+      "skyColor": [
+        0.78,
+        0.86,
+        0.96
+      ],
+      "skyEnergy": 1.05,
+      "sunColor": [
+        1.0,
+        0.95,
+        0.86
+      ],
+      "sunEnergy": 4.6,
+      "sunDirection": [
+        -0.58,
+        0.46,
+        -0.78
+      ],
+      "sunAngleDeg": 3.0,
+      "fillColor": [
+        0.94,
+        0.96,
+        1.0
+      ],
+      "fillIntensity": 1.0,
+      "emissiveBoost": 1.0,
+      "exposure": 0.12
+    },
+    "sunset_3200k": {
+      "labelKo": "노을 3200K (골든아워)",
+      "kelvin": 3200,
+      "skyColor": [
+        0.88,
+        0.56,
+        0.42
+      ],
+      "skyEnergy": 0.82,
+      "sunColor": [
+        1.0,
+        0.66,
+        0.36
+      ],
+      "sunEnergy": 5.2,
+      "sunDirection": [
+        -0.82,
+        0.34,
+        -0.34
+      ],
+      "sunAngleDeg": 5.0,
+      "fillColor": [
+        0.76,
+        0.64,
+        0.82
+      ],
+      "fillIntensity": 0.72,
+      "emissiveBoost": 1.45,
+      "exposure": 0.08
+    },
+    "night_moon_8500k": {
+      "labelKo": "야간 월광 8500K (밤/실내등)",
+      "kelvin": 8500,
+      "skyColor": [
+        0.16,
+        0.24,
+        0.42
+      ],
+      "skyEnergy": 0.42,
+      "sunColor": [
+        0.64,
+        0.78,
+        1.0
+      ],
+      "sunEnergy": 1.65,
+      "sunDirection": [
+        0.48,
+        -0.42,
+        -0.74
+      ],
+      "sunAngleDeg": 4.0,
+      "fillColor": [
+        0.98,
+        0.84,
+        0.62
+      ],
+      "fillIntensity": 0.65,
+      "emissiveBoost": 2.2,
+      "exposure": 0.0
+    }
+  },
+  "freestyleSvg": {
+    "path": "freestyle.svg",
+    "byteSize": 244199,
+    "pathCount": 1317,
+    "strokeWidths": [
+      "0.55",
+      "1.1",
+      "2.0"
+    ],
+    "lineSets": [
+      "TS_Silhouette",
+      "TS_ArchCrease",
+      "TS_Detail"
+    ]
+  },
+  "thumbnail": "thumbnail.png"
+}

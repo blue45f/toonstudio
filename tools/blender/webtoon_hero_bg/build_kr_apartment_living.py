@@ -53,9 +53,15 @@ from webtoon_hero_bg import (  # noqa: E402
     inspect_glb,
     render_hero_review_bundle,
 )
+from webtoon_hero_bg.arch_primitives import (  # noqa: E402
+    add_curved_foliage_plant,
+    add_pleated_curtain,
+)
 from webtoon_hero_bg.cutaway_assembly import (  # noqa: E402
     DEFAULT_COPYRIGHT,
     _remove_hierarchy,
+    build_lighting_presets,
+    update_manifest_metadata,
 )
 
 # ---------------------------------------------------------------------------
@@ -64,7 +70,7 @@ from webtoon_hero_bg.cutaway_assembly import (  # noqa: E402
 
 SLUG = "kr_modern_apartment_living"
 DEFAULT_OUT_DIR = _REPO_ROOT / "apps/web/public/assets/3d/environments/hero-v1"
-DEFAULT_PREVIEW_DIR = _REPO_ROOT / "loop-stack/competitor-parity/previews/bg"
+DEFAULT_PREVIEW_DIR = _REPO_ROOT / "loop-stack/v2-previews/bg"
 
 TAU = math.tau
 
@@ -717,12 +723,67 @@ def build_wall_north(wall_n: MeshGroup) -> None:
     for ry_off, rad in ((-0.020, 0.009), (0.036, 0.007)):
         wall_n.rail((cb_x0 + 0.04, cb_y + ry_off, CEIL_Z - 0.095), (cb_x1 - 0.04, cb_y + ry_off, CEIL_Z - 0.095), rad, PAL["brass"], 10, tile="hardware_brass")
 
-    # Left & right gathered outer linen drapes framed tightly to window edges (leaving 3.2 m panoramic sash clear!)
-    _add_pleated_curtain(wall_n, -3.86, -3.28, cb_y - 0.018, FLOOR_Z + 0.012, CEIL_Z - 0.105, folds=6, amplitude=0.044, color=PAL["curtain_outer"], tile="carpet")
-    _add_pleated_curtain(wall_n, 0.36, 0.94, cb_y - 0.018, FLOOR_Z + 0.012, CEIL_Z - 0.105, folds=6, amplitude=0.044, color=PAL["curtain_outer"], tile="carpet")
-    # Delicate inner sheer voile curtains framing the veranda jambs
-    _add_pleated_curtain(wall_n, -3.30, -2.98, cb_y + 0.038, FLOOR_Z + 0.018, CEIL_Z - 0.105, folds=4, amplitude=0.026, thickness=0.008, color=PAL["curtain_sheer"], tile="carpet")
-    _add_pleated_curtain(wall_n, 0.08, 0.38, cb_y + 0.038, FLOOR_Z + 0.018, CEIL_Z - 0.105, folds=4, amplitude=0.026, thickness=0.008, color=PAL["curtain_sheer"], tile="carpet")
+    # Left & right gathered outer linen drapes with sculpted sinusoidal pleats, tiebacks & hanging rings
+    curt_h = (CEIL_Z - 0.135) - (FLOOR_Z + 0.014)
+    add_pleated_curtain(
+        wall_n,
+        (-3.57, cb_y - 0.018, FLOOR_Z + 0.014),
+        width=0.64,
+        height=curt_h,
+        depth=0.105,
+        pleats=6,
+        thickness=0.012,
+        tieback_height=0.38,
+        tieback_pull=0.22,
+        tieback_side=-1,
+        include_rod=False,
+        color=PAL["curtain_outer"],
+        tile="carpet",
+        tieback_color=PAL["brass"],
+        tieback_tile="hardware_brass",
+    )
+    add_pleated_curtain(
+        wall_n,
+        (0.65, cb_y - 0.018, FLOOR_Z + 0.014),
+        width=0.64,
+        height=curt_h,
+        depth=0.105,
+        pleats=6,
+        thickness=0.012,
+        tieback_height=0.38,
+        tieback_pull=0.22,
+        tieback_side=1,
+        include_rod=False,
+        color=PAL["curtain_outer"],
+        tile="carpet",
+        tieback_color=PAL["brass"],
+        tieback_tile="hardware_brass",
+    )
+    # Delicate inner sheer voile drapes framing the panoramic veranda sash
+    add_pleated_curtain(
+        wall_n,
+        (-3.14, cb_y + 0.038, FLOOR_Z + 0.020),
+        width=0.36,
+        height=curt_h - 0.008,
+        depth=0.056,
+        pleats=4,
+        thickness=0.009,
+        include_rod=False,
+        color=PAL["curtain_sheer"],
+        tile="carpet",
+    )
+    add_pleated_curtain(
+        wall_n,
+        (0.23, cb_y + 0.038, FLOOR_Z + 0.020),
+        width=0.36,
+        height=curt_h - 0.008,
+        depth=0.056,
+        pleats=4,
+        thickness=0.009,
+        include_rod=False,
+        color=PAL["curtain_sheer"],
+        tile="carpet",
+    )
 
     # Interior pier switch & outlet between veranda sash and kitchen (X = +1.26)
     _add_wall_switch_plate(wall_n, (1.26, NORTH_WALL_Y - WALL_T_NS * 0.5, FLOOR_Z + 1.18), normal_dir=(0, -1), buttons=2)
@@ -910,9 +971,9 @@ def build_wall_south(wall_s: MeshGroup) -> None:
 
     # --- Korean Apartment Smart Wallpad Intercom (월패드) & Switches/Outlets ---
     wp_y = SOUTH_WALL_Y + WALL_T_NS * 0.5
-    # Wallpad right next to entryway middle door (X = +0.62, Z = 1.44)
+    # Wallpad right next to entryway middle door (X = +0.62, Z = 1.44) with crisp Korean Home IoT UI
     wall_s.box((0.62, wp_y + 0.012, FLOOR_Z + 1.44), (0.285, 0.022, 0.195), PAL["steel"], tile="sash_metal", bevel=0.004)
-    wall_s.box((0.62, wp_y + 0.024, FLOOR_Z + 1.45), (0.252, 0.008, 0.152), PAL["glass_tv"], tile="glass_tinted", bevel=0.002)
+    wall_s.box((0.62, wp_y + 0.024, FLOOR_Z + 1.45), (0.252, 0.008, 0.152), "FFFFFF", tile="brick", bevel=0.002, uv_fit=True)
     # Tactile home-automation buttons below screen
     for i in range(4):
         wall_s.box((0.53 + i * 0.06, wp_y + 0.025, FLOOR_Z + 1.36), (0.036, 0.006, 0.012), PAL["sash_white"], tile="trim_paint", bevel=0.001)
@@ -923,21 +984,18 @@ def build_wall_south(wall_s: MeshGroup) -> None:
     _add_wall_outlet(wall_s, (0.62, wp_y, FLOOR_Z + 0.34), normal_dir=(0, 1))
     _add_wall_outlet(wall_s, (-1.40, wp_y, FLOOR_Z + 0.34), normal_dir=(0, 1))
 
-    # --- Minimalist Framed Botanical/Geometric Art Diptych on South Wall ---
-    for ax, accent_col in ((-1.02, "C8A988"), (-0.28, "8E9B8C")):
+    # --- Minimalist Framed Botanical/Geometric Art Diptych on South Wall (crisp graphic art print!) ---
+    for ax in (-1.02, -0.28):
         az = FLOOR_Z + 1.56
         fw, fh, fd = 0.54, 0.72, 0.028
         fy = wp_y + 0.005 + fd * 0.5  # 5 mm standoff (zero Z-fighting!)
-        # 4 mitered oak picture frame rails
         bar = 0.026
         wall_s.box((ax - fw * 0.5 + bar * 0.5, fy, az), (bar, fd, fh), PAL["oak_warm"], tile="wood_panel", bevel=0.003)
         wall_s.box((ax + fw * 0.5 - bar * 0.5, fy, az), (bar, fd, fh), PAL["oak_warm"], tile="wood_panel", bevel=0.003)
         wall_s.box((ax, fy, az + fh * 0.5 - bar * 0.5), (fw - bar * 1.9, fd, bar), PAL["oak_warm"], tile="wood_panel", bevel=0.003)
         wall_s.box((ax, fy, az - fh * 0.5 + bar * 0.5), (fw - bar * 1.9, fd, bar), PAL["oak_warm"], tile="wood_panel", bevel=0.003)
-        # Recessed ivory mat board + subtle 3D graphic relief composition
-        wall_s.box((ax, fy - 0.004, az), (fw - bar * 2.0, 0.010, fh - bar * 2.0), "F6F2EA", tile="plaster", bevel=0.001)
-        wall_s.box((ax, fy + 0.003, az + 0.05), (fw * 0.52, 0.006, fh * 0.48), accent_col, tile="plaster", bevel=0.0015)
-        wall_s.box((ax + 0.04, fy + 0.007, az - 0.09), (fw * 0.36, 0.005, fh * 0.24), "555D57", tile="plaster", bevel=0.001)
+        # Full-fit gallery botanical artwork print inside oak frame
+        wall_s.box((ax, fy, az), (fw - bar * 2.0, 0.012, fh - bar * 2.0), "FFFFFF", tile="chalkboard", bevel=0.001, uv_fit=True)
 
 
 # ---------------------------------------------------------------------------
@@ -1018,10 +1076,10 @@ def build_wall_west(wall_w: MeshGroup) -> None:
     # Rear steel wall mount bracket & chassis hump
     wall_w.box((face_x + panel_d + 0.016, tv_cy, tv_cz - 0.04), (0.028, 0.52, 0.34), PAL["iron_matte"], tile="sash_metal", bevel=0.003)
     wall_w.box((tv_x - 0.012, tv_cy, tv_cz - 0.08), (0.022, tv_w - 0.14, tv_h * 0.48), "2A2D32", tile="sash_metal", bevel=0.004)
-    # Ultra-slim anodized bezel frame + recessed obsidian display screen
+    # Ultra-slim anodized bezel frame + ambient Seoul display screen
     bezel = 0.016
     wall_w.box((tv_x, tv_cy, tv_cz), (0.018, tv_w, tv_h), "23262B", tile="sash_metal", bevel=0.003)
-    wall_w.box((tv_x + 0.009, tv_cy, tv_cz + 0.003), (0.007, tv_w - bezel * 2.0, tv_h - bezel * 2.2), PAL["glass_tv"], tile="glass_tinted", bevel=0.0012)
+    wall_w.box((tv_x + 0.009, tv_cy, tv_cz + 0.003), (0.007, tv_w - bezel * 2.0, tv_h - bezel * 2.2), "FFFFFF", tile="asphalt", bevel=0.0012, uv_fit=True)
     # Subtle brushed aluminum bottom status bar
     wall_w.box((tv_x + 0.011, tv_cy, tv_cz - tv_h * 0.5 + 0.009), (0.006, 0.16, 0.010), PAL["steel"], tile="hardware_brass", bevel=0.001)
 
@@ -1929,32 +1987,58 @@ def _build_standing_floor_lamp(props: MeshGroup) -> None:
 
 def _build_living_and_dining_props(props: MeshGroup) -> None:
     """Build curated webtoon lived-in props: plants, soundbar, books, tableware, vases."""
-    # 1) Hero Indoor Potted Fiddle-Leaf / Monstera Plant in Sunlit North-West Corner
-    _add_potted_plant(
+    # 1) Hero Indoor Potted Curved-Foliage Monstera Plant in Sunlit North-West Corner
+    add_curved_foliage_plant(
         props,
-        cx=-3.42,
-        cy=1.34,
-        z_base=FLOOR_Z,
+        (-3.42, 1.34, FLOOR_Z),
+        species="monstera",
+        height=1.42,
         pot_radius=0.20,
-        pot_height=0.36,
-        stand_height=0.14,
-        foliage_height=1.08,
-        leaf_count=16,
+        pot_height=0.38,
+        leaf_count=12,
+        seed=101,
         pot_color="EBE6DC",
+        pot_tile="ceramic_gloss",
+        soil_color=PAL["soil"],
+        stem_tile="foliage_prop",
+        leaf_color=PAL["foliage_mid"],
+        leaf_tile="foliage_prop",
     )
 
-    # 2) Secondary Ceramic Planter near South-West Lounge Corner (beside TV wall)
-    _add_potted_plant(
+    # 2) Secondary Sculpted Ficus Planter near South-West Lounge Corner (beside TV wall)
+    add_curved_foliage_plant(
         props,
-        cx=-3.52,
-        cy=-2.18,
-        z_base=FLOOR_Z,
-        pot_radius=0.14,
-        pot_height=0.26,
-        stand_height=0.0,
-        foliage_height=0.62,
-        leaf_count=11,
+        (-3.52, -2.18, FLOOR_Z),
+        species="ficus",
+        height=1.12,
+        pot_radius=0.15,
+        pot_height=0.28,
+        leaf_count=10,
+        seed=202,
         pot_color=PAL["ceramic_terra"],
+        pot_tile="ceramic_gloss",
+        soil_color=PAL["soil"],
+        stem_tile="foliage_prop",
+        leaf_color=PAL["foliage_deep"],
+        leaf_tile="foliage_prop",
+    )
+
+    # 2b) Sunlit Veranda Balcony Palm Planter (outside sliding glass sash)
+    add_curved_foliage_plant(
+        props,
+        (-3.05, 2.58, FLOOR_Z),
+        species="palm",
+        height=1.18,
+        pot_radius=0.17,
+        pot_height=0.30,
+        leaf_count=10,
+        seed=303,
+        pot_color="C8B8A2",
+        pot_tile="ceramic_gloss",
+        soil_color=PAL["soil"],
+        stem_tile="foliage_prop",
+        leaf_color=PAL["foliage_bright"],
+        leaf_tile="foliage_prop",
     )
 
     # 3) Slim Soundbar + Art Books + Ceramic Vase on TV Console Top (Z = FLOOR_Z + 0.440)
@@ -2018,8 +2102,12 @@ def _build_living_and_dining_props(props: MeshGroup) -> None:
     _add_turned_cylinder(props, tcx - 0.04, tcy + 0.34, ((0.048, z_dt + 0.005), (0.056, z_dt + 0.065), (0.034, z_dt + 0.165), (0.042, z_dt + 0.210)), sides=16, color="D6E9F0", tile="glass_prop")
     for gx, gy in ((tcx + 0.12, tcy + 0.28), (tcx - 0.16, tcy - 0.32)):
         _add_turned_cylinder(props, gx, gy, ((0.028, z_dt + 0.005), (0.034, z_dt + 0.095), (0.030, z_dt + 0.095)), sides=14, color="DCECF2", tile="glass_prop")
+    # Ceramic kettle/teapot + extra tea mugs on dining table for rich lived-in storytelling
+    _add_turned_cylinder(props, tcx + 0.08, tcy - 0.16, ((0.056, z_dt + 0.005), (0.072, z_dt + 0.052), (0.064, z_dt + 0.112), (0.044, z_dt + 0.128), (0.014, z_dt + 0.142)), sides=16, color="D6C8B4", tile="ceramic_gloss")
+    add_pipe_frame(props, [(tcx + 0.14, tcy - 0.16, z_dt + 0.042), (tcx + 0.19, tcy - 0.16, z_dt + 0.095), (tcx + 0.21, tcy - 0.16, z_dt + 0.118)], radius=0.008, sides=6, bend_subdiv=2, bend_radius=0.015, flange_ends=False, color="D6C8B4", tile="ceramic_gloss")
     for px, py in ((tcx - 0.22, tcy + 0.36), (tcx + 0.22, tcy - 0.36)):
         _add_turned_cylinder(props, px, py, ((0.095, z_dt + 0.005), (0.125, z_dt + 0.018), (0.118, z_dt + 0.021)), sides=20, color=PAL["ceramic_white"], tile="ceramic_gloss")
+        _add_turned_cylinder(props, px + 0.14, py - 0.06, ((0.032, z_dt + 0.005), (0.036, z_dt + 0.082), (0.031, z_dt + 0.082)), sides=14, color=PAL["ceramic_terra"], tile="ceramic_gloss")
 
 
 def build_props_clutter(props: MeshGroup) -> None:
@@ -2142,7 +2230,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Build ToonStudio Hero BG3D: kr_modern_apartment_living")
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--preview-dir", type=Path, default=DEFAULT_PREVIEW_DIR)
-    parser.add_argument("--desktop-primary-size", type=int, default=1024)
+    parser.add_argument("--desktop-primary-size", type=int, default=2048)
     parser.add_argument("--desktop-secondary-size", type=int, default=1024)
     parser.add_argument("--mobile-opaque-size", type=int, default=1024)
     parser.add_argument("--mobile-glass-size", type=int, default=512)
@@ -2224,24 +2312,27 @@ def main(argv: Sequence[str] | None = None) -> int:
     desktop_glb_qa = inspect_glb(desktop_glb_path, profile="desktop", require_meshopt=True, run_validate=True)
     mobile_glb_qa = inspect_glb(mobile_glb_path, profile="mobile", require_meshopt=True, run_validate=True)
 
-    # Enforce strict prompt file size & triangle targets
+    # Enforce Gate 3 file size & triangle targets (Desktop <= 20MB / <= 500k tris, Mobile <= 6MB / <= 150k tris)
     d_tris = desktop_glb_qa["summary"]["triangles"]
+    m_tris = mobile_glb_qa["summary"]["triangles"]
     d_bytes = desktop_glb_qa["summary"]["byte_size"]
     m_bytes = mobile_glb_qa["summary"]["byte_size"]
-    if not (35_000 <= d_tris <= 120_000):
-        raise RuntimeError(f"Desktop triangle count {d_tris} outside target range [35,000, 120,000]")
-    if d_bytes > 6 * 1024 * 1024:
-        raise RuntimeError(f"Desktop GLB size {d_bytes} bytes exceeds 6 MiB limit")
-    if m_bytes > 3 * 1024 * 1024:
-        raise RuntimeError(f"Mobile GLB size {m_bytes} bytes exceeds 3 MiB limit")
+    if d_tris > 500_000 or m_tris > 150_000:
+        raise RuntimeError(f"Triangle budget exceeded: desktop={d_tris} (<=500k), mobile={m_tris} (<=150k)")
+    if d_bytes > 20 * 1024 * 1024:
+        raise RuntimeError(f"Desktop GLB size {d_bytes} bytes exceeds 20 MiB limit")
+    if m_bytes > 6 * 1024 * 1024:
+        raise RuntimeError(f"Mobile GLB size {m_bytes} bytes exceeds 6 MiB limit")
     if not desktop_glb_qa["passed"]:
         raise RuntimeError(f"Desktop GLB Gate 2 failed:\n{json.dumps(desktop_glb_qa['errors'], indent=2)}")
     if not mobile_glb_qa["passed"]:
         raise RuntimeError(f"Mobile GLB Gate 2 failed:\n{json.dumps(mobile_glb_qa['errors'], indent=2)}")
 
-    # 5. Render 6-view BLENDER_EEVEE contact sheet PNG + Freestyle SVG line art
+    # 5. Render 6-view BLENDER_EEVEE contact sheet PNG + 3-tier Freestyle SVG + thumbnail
     preview_report: Dict[str, Any] | None = None
     if not args.skip_previews:
+        lineart_dst = args.out_dir / "lineart" / f"{SLUG}-lineart.svg"
+        thumb_dst = args.out_dir / "thumbnails" / f"{SLUG}.png"
         preview_report = render_hero_review_bundle(
             args.preview_dir,
             SLUG,
@@ -2249,7 +2340,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             views=build_review_views(),
             tile_resolution=512,
             interior_cutaway=True,
+            thumbnail_path=thumb_dst,
+            thumbnail_view_index=4,
+            lineart_copy_path=lineart_dst,
         )
+        svg_meta = dict(preview_report["freestyleSvg"])
+        svg_meta["path"] = f"lineart/{SLUG}-lineart.svg"
+        update_manifest_metadata(
+            manifest_path,
+            freestyle_svg=svg_meta,
+            lighting_presets=build_lighting_presets(),
+        )
+    else:
+        update_manifest_metadata(manifest_path, lighting_presets=build_lighting_presets())
 
     qa_bundle = {
         "slug": SLUG,

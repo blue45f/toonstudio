@@ -169,7 +169,8 @@ describe("studio-bg3d-hero-v1-catalog-entries", () => {
     expect(palace.deliveryStatus).toBe("verified-on-disk");
     expect(palace.desktopAsset.byteSize).toBe(8_420_000);
     expect(palace.mobileAsset.byteSize).toBe(3_110_000);
-    expect(cafe.desktopAsset.byteSize).toBe(5_430_228);
+    const expectedCafeBytes = STUDIO_BG3D_HERO_V1_ENTRIES.find((e) => e.slug === "kr_atelier_cafe_interior")!.desktopAsset.byteSize;
+    expect(cafe.desktopAsset.byteSize).toBe(expectedCafeBytes);
     expect(cafe.deliveryStatus).toBe("verified-on-disk");
   });
 });

@@ -8,8 +8,8 @@
   ],
   "cutawayContract": "room-v1",
   "fileName": "kr_highschool_classroom_corridor.glb",
-  "byteSize": 4616392,
-  "sha256": "sha256:5c9936e12dac243c66a8bac628597f34a4c77611c16d4771b17bcd1635492bc5",
+  "byteSize": 4584172,
+  "sha256": "sha256:2ebe4885f5215636575a1513e588481fac003669a2b31e018b04b72641021dd3",
   "bounds": [
     9.6,
     3.0,
@@ -27,8 +27,8 @@
   ],
   "mobile": {
     "fileName": "kr_highschool_classroom_corridor-mobile.glb",
-    "byteSize": 2468760,
-    "sha256": "sha256:eb4697d8d077349ca8cb5b387154393a872d3f3122109a4774489462f8542b59",
+    "byteSize": 2441564,
+    "sha256": "sha256:d2c2e919a92385caf42dc9a3378d4a7c2a0d67a7a980cdcf0877c6486ec99b75",
     "nodes": [
       "BG_Shell_Fixed",
       "BG_Cutaway_Front",
@@ -132,6 +132,98 @@
         "BG_Wall_South",
         "BG_Cutaway_Front"
       ]
+    }
+  },
+  "lightingPresets": {
+    "day_5600k": {
+      "labelKo": "주광 5600K (맑은 낮)",
+      "kelvin": 5600,
+      "skyColor": [
+        0.78,
+        0.86,
+        0.96
+      ],
+      "skyEnergy": 1.05,
+      "sunColor": [
+        1.0,
+        0.95,
+        0.86
+      ],
+      "sunEnergy": 4.6,
+      "sunDirection": [
+        -0.58,
+        0.46,
+        -0.78
+      ],
+      "sunAngleDeg": 3.0,
+      "fillColor": [
+        0.94,
+        0.96,
+        1.0
+      ],
+      "fillIntensity": 1.0,
+      "emissiveBoost": 1.0,
+      "exposure": 0.12
+    },
+    "sunset_3200k": {
+      "labelKo": "노을 3200K (골든아워)",
+      "kelvin": 3200,
+      "skyColor": [
+        0.88,
+        0.56,
+        0.42
+      ],
+      "skyEnergy": 0.82,
+      "sunColor": [
+        1.0,
+        0.66,
+        0.36
+      ],
+      "sunEnergy": 5.2,
+      "sunDirection": [
+        -0.82,
+        0.34,
+        -0.34
+      ],
+      "sunAngleDeg": 5.0,
+      "fillColor": [
+        0.76,
+        0.64,
+        0.82
+      ],
+      "fillIntensity": 0.72,
+      "emissiveBoost": 1.45,
+      "exposure": 0.08
+    },
+    "night_moon_8500k": {
+      "labelKo": "야간 월광 8500K (밤/실내등)",
+      "kelvin": 8500,
+      "skyColor": [
+        0.16,
+        0.24,
+        0.42
+      ],
+      "skyEnergy": 0.42,
+      "sunColor": [
+        0.64,
+        0.78,
+        1.0
+      ],
+      "sunEnergy": 1.65,
+      "sunDirection": [
+        0.48,
+        -0.42,
+        -0.74
+      ],
+      "sunAngleDeg": 4.0,
+      "fillColor": [
+        0.98,
+        0.84,
+        0.62
+      ],
+      "fillIntensity": 0.65,
+      "emissiveBoost": 2.2,
+      "exposure": 0.0
     }
   }
 }

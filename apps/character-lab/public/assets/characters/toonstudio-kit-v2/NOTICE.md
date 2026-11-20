@@ -1,7 +1,7 @@
 # ToonStudio Character Kit v2 출처 및 라이선스 고지
 
 - **키트 ID**: `toonstudio-kit-v2` (`toonstudio.character-kit/2`)
-- **생성일**: 2026-11-20
+- **생성일**: 2026-11-21
 - **라이선스**: `original` / `CC0-1.0` (ToonStudio 자체 절차 제작)
 - **생성 도구**: Blender 5.3.0 + `tools/blender/character_kit/*` + `scripts/blender/run_hero_3d_pipeline.py`
 

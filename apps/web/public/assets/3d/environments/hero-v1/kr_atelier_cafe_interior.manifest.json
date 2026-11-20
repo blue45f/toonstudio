@@ -2,12 +2,12 @@
   "assetId": "kr_atelier_cafe_interior",
   "cutawayContract": "room-v1",
   "fileName": "kr_atelier_cafe_interior.glb",
-  "byteSize": 5430228,
-  "sha256": "sha256:1d371ef6ba2c66a2d8de2f15c7d415d4e44cbf8383f94ad78bf2db1595dae6b1",
+  "byteSize": 5316812,
+  "sha256": "sha256:751beefe2082bb2a09bcf856b4fab0a2882a44248c0059bc6448fe5c82464fc8",
   "bounds": [
-    10.032,
+    10.2749,
     3.3,
-    7.62
+    8.1004
   ],
   "nodes": [
     "BG_Floor",
@@ -21,8 +21,8 @@
   ],
   "mobile": {
     "fileName": "kr_atelier_cafe_interior-mobile.glb",
-    "byteSize": 2708344,
-    "sha256": "sha256:369e9e122fd48a7b67ea9e48473aace8b1f7e56a594e768d51e063a8a1a23745",
+    "byteSize": 3191328,
+    "sha256": "sha256:6c4a01791d276a3610f9cdfabd6c9ab71729cab918d81a270d7c7ba98bdafd77",
     "nodes": [
       "BG_Shell_Fixed",
       "BG_Cutaway_Front",
@@ -72,6 +72,98 @@
         1.15,
         1.28
       ]
+    }
+  },
+  "lightingPresets": {
+    "day_5600k": {
+      "labelKo": "주광 5600K (맑은 낮)",
+      "kelvin": 5600,
+      "skyColor": [
+        0.78,
+        0.86,
+        0.96
+      ],
+      "skyEnergy": 1.05,
+      "sunColor": [
+        1.0,
+        0.95,
+        0.86
+      ],
+      "sunEnergy": 4.6,
+      "sunDirection": [
+        -0.58,
+        0.46,
+        -0.78
+      ],
+      "sunAngleDeg": 3.0,
+      "fillColor": [
+        0.94,
+        0.96,
+        1.0
+      ],
+      "fillIntensity": 1.0,
+      "emissiveBoost": 1.0,
+      "exposure": 0.12
+    },
+    "sunset_3200k": {
+      "labelKo": "노을 3200K (골든아워)",
+      "kelvin": 3200,
+      "skyColor": [
+        0.88,
+        0.56,
+        0.42
+      ],
+      "skyEnergy": 0.82,
+      "sunColor": [
+        1.0,
+        0.66,
+        0.36
+      ],
+      "sunEnergy": 5.2,
+      "sunDirection": [
+        -0.82,
+        0.34,
+        -0.34
+      ],
+      "sunAngleDeg": 5.0,
+      "fillColor": [
+        0.76,
+        0.64,
+        0.82
+      ],
+      "fillIntensity": 0.72,
+      "emissiveBoost": 1.45,
+      "exposure": 0.08
+    },
+    "night_moon_8500k": {
+      "labelKo": "야간 월광 8500K (밤/실내등)",
+      "kelvin": 8500,
+      "skyColor": [
+        0.16,
+        0.24,
+        0.42
+      ],
+      "skyEnergy": 0.42,
+      "sunColor": [
+        0.64,
+        0.78,
+        1.0
+      ],
+      "sunEnergy": 1.65,
+      "sunDirection": [
+        0.48,
+        -0.42,
+        -0.74
+      ],
+      "sunAngleDeg": 4.0,
+      "fillColor": [
+        0.98,
+        0.84,
+        0.62
+      ],
+      "fillIntensity": 0.65,
+      "emissiveBoost": 2.2,
+      "exposure": 0.0
     }
   }
 }

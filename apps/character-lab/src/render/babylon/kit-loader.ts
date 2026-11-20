@@ -20,15 +20,14 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
 
 import {
-  KIT_ALLOWED_EXTENSIONS,
   KIT_BODY_NODE,
   KIT_BUDGET,
-  KIT_FORBIDDEN_EXTENSIONS,
   OUTLINE_MESH_SUFFIX,
   PART_ROLES,
   allocatePartIdsByRole,
   failVisible,
   parseAuthoredHairMeshName,
+  readKitPlanV2Custom,
   rolePartId,
 } from "../../contracts";
 import { sha256Hex } from "../../shared/hash";
@@ -36,7 +35,18 @@ import { regionRangeProblems, unionHiddenRegions } from "../kit-region-mask";
 import { ROLE_DEFAULT_PRESET, resolvePartColorHex } from "../material-presets";
 
 import { createJointOffsetRig } from "./joint-offset-rig";
-import { identityNode, readGlbInfo } from "./kit-glb-node-info";
+import {
+  expandKitPlanParts,
+  findV2Mesh,
+  inspectV2MeshUv1,
+  isRigidV2Mesh,
+  mapWithParallelLimit,
+  parentRigidMeshToAnchor,
+  pruneDisposedFromContainer,
+  resolveKitRigPartIdentity,
+  resolveV2ChannelKey,
+  validateKitGlbJson,
+} from "./kit-loader-v2";
 import { applyBodyMask } from "./kit-region-mask";
 import { buildJointIndexRemap, buildRigBones, describeJointDiff, diffJoints, isIdentityMatrix, jointsCompatible, listSkeletonJoints, rebindMeshes, skinProblem } from "./kit-skeleton-bind";
 import { RigBindError, rigMeshMetadata } from "./mesh-binding";
@@ -44,8 +54,9 @@ import { chooseHairLod } from "./package-loader";
 
 import type { CharacterRig, RigBone, RigMaterialHooks, RigPart } from "./character-rig";
 import type { JointOffsetRig } from "./joint-offset-rig";
+import type { ExpandedKitPartPlan } from "./kit-loader-v2";
 import type { BodyMaskReport } from "./kit-region-mask";
-import type { HumanoidBoneName, KitHideableRegionId, KitMesh, KitPartPlan, KitPlan, MorphJointOffsets, PartIdPalette, PartRole, RecipeColorKey, SlotCapabilityMap } from "../../contracts";
+import type { HumanoidBoneName, KitHideableRegionId, KitMesh, KitPartPlan, KitPlan, KitV2Mesh, MorphJointOffsets, PartIdPalette, PartRole, RecipeColorKey, SlotCapabilityMap } from "../../contracts";
 import type { AssetContainer } from "@babylonjs/core/assetContainer.js";
 import type { Skeleton } from "@babylonjs/core/Bones/skeleton.js";
 import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";
@@ -123,21 +134,25 @@ export interface KitRigHandle {
 interface MatchedMesh {
   readonly mesh: Mesh;
   readonly declared: KitMesh;
+  readonly v2Declared: KitV2Mesh | undefined;
   readonly role: PartRole;
   readonly materialName: string;
   readonly declaredMorphs: ReadonlySet<string>;
   readonly lod: number | null;
+  readonly rigid: boolean;
 }
 
 interface RoleGroup {
   readonly role: PartRole;
   readonly materialName: string;
   readonly meshes: Mesh[];
+  readonly v2Declared: KitV2Mesh | undefined;
   readonly declaredMorphs: ReadonlySet<string>;
+  readonly rigid: boolean;
 }
 
 interface OpenedFile {
-  readonly plan: KitPartPlan;
+  readonly plan: ExpandedKitPartPlan;
   readonly key: string;
   readonly container: AssetContainer;
   readonly groups: readonly RoleGroup[];
@@ -147,7 +162,7 @@ interface OpenedFile {
 }
 
 interface LoadedFile {
-  readonly plan: KitPartPlan;
+  readonly plan: ExpandedKitPartPlan;
   readonly key: string;
   readonly container: AssetContainer;
   readonly rigParts: KitRigPart[];
@@ -166,43 +181,12 @@ function listFew(items: readonly string[], limit = 5): string {
   return items.length <= limit ? items.join(", ") : `${items.slice(0, limit).join(", ")} 외 ${items.length - limit}개`;
 }
 
-async function mapWithLimit<T, R>(items: readonly T[], limit: number, work: (item: T) => Promise<R>): Promise<R[]> {
-  const results = new Array<R>(items.length);
-  let cursor = 0;
-  let failed = false;
-  const runners = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
-    while (!failed) {
-      const index = cursor;
-      cursor += 1;
-      if (index >= items.length) return;
-      try {
-        results[index] = await work(items[index] as T);
-      } catch (error) {
-        failed = true;
-        throw error;
-      }
-    }
-  });
-  await Promise.all(runners);
-  return results;
-}
-
 function meshRoles(mesh: KitMesh): readonly PartRole[] {
   return mesh.role !== undefined ? [mesh.role] : (mesh.primitiveRoles ?? []);
 }
 
 function meshMaterialNames(mesh: KitMesh): readonly string[] {
   return mesh.material !== undefined ? [mesh.material] : (mesh.primitiveMaterials ?? []);
-}
-
-/** 컨테이너에서 이미 해제된 항목을 배열에서 뺀다(나중의 `container.dispose()`가 이중 해제하지 않도록). */
-function pruneDisposed(container: AssetContainer): void {
-  const keep = <T extends { isDisposed(): boolean }>(items: T[]): void => {
-    for (let i = items.length - 1; i >= 0; i -= 1) if (items[i]?.isDisposed()) items.splice(i, 1);
-  };
-  keep(container.meshes);
-  keep(container.transformNodes);
-  keep(container.rootNodes);
 }
 
 // ---------------------------------------------------------------- 어셈블러
@@ -286,16 +270,17 @@ class KitAssembler implements KitRigHandle {
 
   async loadAll(): Promise<void> {
     const { plan } = this;
+    const expanded = expandKitPlanParts(plan);
     const opened: OpenedFile[] = [];
     try {
-      const base = plan.parts[0];
+      const base = expanded[0];
       if (!base || base.kind !== "base") throw fail("kit-base-missing", "키트 플랜의 첫 항목이 베이스가 아닙니다.", undefined, this.now);
       if (!this.deps.scene.useRightHandedSystem) {
         throw fail("kit-glb-load-failed", "장면이 우수 좌표계가 아니라 키트 GLB(우수 좌표계, +Z 정면)를 변환 없이 올릴 수 없습니다.", undefined, this.now);
       }
-      const bytes = await this.fetchAll(plan.parts);
+      const bytes = await this.fetchAll(expanded);
       this.assertAlive();
-      for (const part of plan.parts) opened.push(await this.open(part, bytes.get(part.id) as Uint8Array, plan));
+      for (const part of expanded) opened.push(await this.open(part, bytes.get(part.id) as Uint8Array, plan));
       this.assertAlive();
       this.adoptBase(opened[0] as OpenedFile, plan);
       for (const file of opened) this.attach(file, plan);
@@ -322,7 +307,7 @@ class KitAssembler implements KitRigHandle {
     }
     const opened: OpenedFile[] = [];
     try {
-      const desired = plan.parts.filter((part) => part.kind === "part");
+      const desired = expandKitPlanParts(plan).filter((part) => part.kind === "part");
       const wantedKeys = new Map(desired.map((part) => [part.id, this.keyOf(part, plan)] as const));
       const removedIds = [...this.files.entries()].filter(([id, file]) => id !== this.baseKey && wantedKeys.get(id) !== file.key).map(([id]) => id);
       const addedParts = desired.filter((part) => this.files.get(part.id)?.key !== wantedKeys.get(part.id));
@@ -390,7 +375,7 @@ class KitAssembler implements KitRigHandle {
   private async fetchAll(parts: readonly KitPartPlan[]): Promise<Map<string, Uint8Array>> {
     const verify = this.deps.verifyIntegrity ?? true;
     const limit = this.deps.parallelism ?? KIT_FETCH_PARALLELISM;
-    const results = await mapWithLimit(parts, limit, async (part) => {
+    const results = await mapWithParallelLimit(parts, limit, async (part) => {
       let bytes: Uint8Array;
       try {
         bytes = await this.deps.fetchBytes(part.url);
@@ -413,10 +398,10 @@ class KitAssembler implements KitRigHandle {
 
   // ---- 열기(검증 + 재바인딩, 리그는 건드리지 않는다)
 
-  private async open(part: KitPartPlan, bytes: Uint8Array, plan: KitPlan): Promise<OpenedFile> {
+  private async open(part: ExpandedKitPartPlan, bytes: Uint8Array, plan: KitPlan): Promise<OpenedFile> {
     const now = this.now;
     const isBase = part.kind === "base";
-    this.checkGlbJson(part, bytes);
+    validateKitGlbJson(part, bytes, plan, now);
     let container: AssetContainer;
     try {
       container = await LoadAssetContainerAsync(bytes, this.deps.scene, {
@@ -454,49 +439,37 @@ class KitAssembler implements KitRigHandle {
     }
   }
 
-  /** GLB JSON만으로 가려낼 수 있는 위반: 금지·미지원 확장, 항등이 아닌 스킨 메시 노드 변환 */
-  private checkGlbJson(part: KitPartPlan, bytes: Uint8Array): void {
-    const info = readGlbInfo(bytes);
-    if (!info) return;
-    const forbidden: readonly string[] = KIT_FORBIDDEN_EXTENSIONS;
-    const allowed: readonly string[] = KIT_ALLOWED_EXTENSIONS;
-    const bad = [...new Set([...info.used, ...info.required])].filter((name) => forbidden.includes(name));
-    const unsupported = info.required.filter((name) => !allowed.includes(name));
-    const offenders = [...new Set([...bad, ...unsupported])];
-    if (offenders.length > 0) {
-      throw fail("kit-unsupported-extension", `키트 GLB가 허용되지 않은 glTF 확장을 씁니다: ${offenders.join(", ")} (${part.url}). 압축·외부 디코더 확장은 키트에서 금지입니다.`, undefined, this.now);
-    }
-    const moved = info.nodes.filter((node) => node.skinned && !identityNode(node)).map((node) => node.name);
-    if (moved.length > 0) {
-      throw fail("kit-transform-invalid", `키트 GLB의 스킨 메시 노드 변환이 항등이 아닙니다: ${listFew(moved)} (${part.url}). 스킨 메시 노드는 이동·회전 0, 스케일 1이어야 합니다.`, undefined, this.now);
-    }
-  }
-
-  private inspect(part: KitPartPlan, container: AssetContainer, isBase: boolean, plan: KitPlan): OpenedFile {
+  private inspect(part: ExpandedKitPartPlan, container: AssetContainer, isBase: boolean, plan: KitPlan): OpenedFile {
     const now = this.now;
     const notes: string[] = [];
     const label = isBase ? `베이스(${part.url})` : `파츠 ${part.id}`;
+    const custom = readKitPlanV2Custom(plan);
+    const allRigid = !isBase && part.meshes.length > 0 && part.meshes.every((mesh) => isRigidV2Mesh(part, mesh.node));
 
-    // ---- 스켈레톤 호환
-    if (container.skeletons.length === 0) throw fail("kit-skin-invalid", `${label}에 스켈레톤(skin)이 없습니다. 키트의 모든 GLB는 68 joint 스켈레톤을 싣습니다.`, undefined, now);
-    if (container.skeletons.length > 1) throw fail("kit-joint-mismatch", `${label}에 스켈레톤이 ${container.skeletons.length}개입니다. 키트는 GLB마다 skin 하나입니다.`, undefined, now);
-    const skeleton = container.skeletons[0] as Skeleton;
-    const joints = listSkeletonJoints(skeleton);
-    const reference = isBase ? plan.skeleton.joints : this.baseJointNames;
-    const diff = diffJoints(reference, plan.skeleton.parents, joints);
-    if (!jointsCompatible(diff)) {
-      throw fail("kit-joint-mismatch", `${label}의 joint가 ${isBase ? "키트 manifest" : "베이스"}와 다릅니다: ${describeJointDiff(diff)}`, undefined, now);
-    }
-    if (joints.length !== KIT_BUDGET.jointCount) {
-      throw fail("kit-joint-mismatch", `${label}의 joint가 ${joints.length}개입니다(정확히 ${KIT_BUDGET.jointCount}개여야 합니다).`, undefined, now);
-    }
+    // ---- 스켈레톤 호환 (강체 소품 파츠는 스켈레톤 없이 앵커 본에 페어런팅한다)
+    let skeleton: Skeleton | null = null;
+    let joints: ReturnType<typeof listSkeletonJoints> = [];
     let remap: Uint16Array | null = null;
-    if (!diff.sameOrder) {
-      if (isBase) {
-        notes.push(`${label}의 joint 순서가 manifest와 다릅니다(이름·부모는 같아 그대로 쓰고, 파츠는 이 순서를 기준으로 맞춥니다).`);
-      } else {
-        remap = buildJointIndexRemap(reference, joints);
-        notes.push(`${label}의 joint 순서가 베이스와 달라 JOINTS 인덱스를 다시 매핑했습니다(키트 빌더는 순서를 같게 내보내야 합니다).`);
+    if (!allRigid || container.skeletons.length > 0) {
+      if (container.skeletons.length === 0) throw fail("kit-skin-invalid", `${label}에 스켈레톤(skin)이 없습니다. 키트의 모든 GLB는 68 joint 스켈레톤을 싣습니다.`, undefined, now);
+      if (container.skeletons.length > 1) throw fail("kit-joint-mismatch", `${label}에 스켈레톤이 ${container.skeletons.length}개입니다. 키트는 GLB마다 skin 하나입니다.`, undefined, now);
+      skeleton = container.skeletons[0] as Skeleton;
+      joints = listSkeletonJoints(skeleton);
+      const reference = isBase ? plan.skeleton.joints : this.baseJointNames;
+      const diff = diffJoints(reference, plan.skeleton.parents, joints);
+      if (!jointsCompatible(diff)) {
+        throw fail("kit-joint-mismatch", `${label}의 joint가 ${isBase ? "키트 manifest" : "베이스"}와 다릅니다: ${describeJointDiff(diff)}`, undefined, now);
+      }
+      if (joints.length !== KIT_BUDGET.jointCount) {
+        throw fail("kit-joint-mismatch", `${label}의 joint가 ${joints.length}개입니다(정확히 ${KIT_BUDGET.jointCount}개여야 합니다).`, undefined, now);
+      }
+      if (!diff.sameOrder) {
+        if (isBase) {
+          notes.push(`${label}의 joint 순서가 manifest와 다릅니다(이름·부모는 같아 그대로 쓰고, 파츠는 이 순서를 기준으로 맞춥니다).`);
+        } else {
+          remap = buildJointIndexRemap(reference, joints);
+          notes.push(`${label}의 joint 순서가 베이스와 달라 JOINTS 인덱스를 다시 매핑했습니다(키트 빌더는 순서를 같게 내보내야 합니다).`);
+        }
       }
     }
 
@@ -504,40 +477,45 @@ class KitAssembler implements KitRigHandle {
     const matched = this.matchMeshes(part, container);
     const boneNodes = new Set<Node>();
     const skeletonNodes = new Set<Node>();
-    for (const bone of skeleton.bones) {
-      const node = bone.getTransformNode();
-      if (node) boneNodes.add(node);
-      for (let cursor: Node | null = node; cursor; cursor = cursor.parent) skeletonNodes.add(cursor);
-    }
-    // Armature·`__root__`처럼 본이 아닌 조상은 항등 변환이어야 한다(본 노드는 평행이동을 가진다).
-    for (const node of skeletonNodes) {
-      if (boneNodes.has(node) || !(node instanceof TransformNode)) continue;
-      node.computeWorldMatrix(true);
-      if (!isIdentityMatrix(node.getWorldMatrix().asArray())) {
-        throw fail("kit-transform-invalid", `${label}의 스켈레톤 루트 노드 '${node.name}'(Armature 포함)의 변환이 항등이 아닙니다. 루트 스케일 1·회전 0이어야 합니다.`, undefined, now);
+    if (skeleton) {
+      for (const bone of skeleton.bones) {
+        const node = bone.getTransformNode();
+        if (node) boneNodes.add(node);
+        for (let cursor: Node | null = node; cursor; cursor = cursor.parent) skeletonNodes.add(cursor);
+      }
+      // Armature·`__root__`처럼 본이 아닌 조상은 항등 변환이어야 한다(본 노드는 평행이동을 가진다).
+      for (const node of skeletonNodes) {
+        if (boneNodes.has(node) || !(node instanceof TransformNode)) continue;
+        node.computeWorldMatrix(true);
+        if (!isIdentityMatrix(node.getWorldMatrix().asArray())) {
+          throw fail("kit-transform-invalid", `${label}의 스켈레톤 루트 노드 '${node.name}'(Armature 포함)의 변환이 항등이 아닙니다. 루트 스케일 1·회전 0이어야 합니다.`, undefined, now);
+        }
       }
     }
     for (const item of matched) {
-      item.mesh.computeWorldMatrix(true);
-      if (!isIdentityMatrix(item.mesh.getWorldMatrix().asArray())) {
-        throw fail("kit-transform-invalid", `${label}의 메시 '${item.mesh.name}' 월드 변환이 항등이 아닙니다. 스킨 메시 노드는 항등 변환이어야 합니다.`, undefined, now);
+      if (!item.rigid) {
+        item.mesh.computeWorldMatrix(true);
+        if (!isIdentityMatrix(item.mesh.getWorldMatrix().asArray())) {
+          throw fail("kit-transform-invalid", `${label}의 메시 '${item.mesh.name}' 월드 변환이 항등이 아닙니다. 스킨 메시 노드는 항등 변환이어야 합니다.`, undefined, now);
+        }
+        const problem = skinProblem(item.mesh, KIT_BUDGET.jointCount, KIT_BUDGET.weightSumTolerance);
+        if (problem) throw fail("kit-skin-invalid", `${label}의 메시 '${item.mesh.name}': ${problem}`, undefined, now);
       }
-      const problem = skinProblem(item.mesh, KIT_BUDGET.jointCount, KIT_BUDGET.weightSumTolerance);
-      if (problem) throw fail("kit-skin-invalid", `${label}의 메시 '${item.mesh.name}': ${problem}`, undefined, now);
       this.checkMorphs(label, item);
       const actualMaterial = item.mesh.material?.name;
       if (actualMaterial !== item.materialName) {
         throw fail("kit-mesh-undeclared", `${label}의 메시 '${item.mesh.name}' 재질이 선언('${item.materialName}')과 다릅니다(GLB: '${actualMaterial ?? "없음"}').`, undefined, now);
       }
     }
-    // 한 역할에는 재질 하나(역할 파츠 전체에 재질 하나를 덮어쓰므로)
-    const materialOfRole = new Map<PartRole, string>();
+    // v1은 역할당 재질 하나, v2는 (파일, 역할, 채널)당 재질 하나를 허용한다.
+    const materialOfKey = new Map<string, string>();
     for (const item of matched) {
-      const previous = materialOfRole.get(item.role);
+      const key = custom ? `${item.role}::${resolveV2ChannelKey(custom, item.materialName) ?? item.materialName}` : item.role;
+      const previous = materialOfKey.get(key);
       if (previous !== undefined && previous !== item.materialName) {
         throw fail("kit-material-multiple", `${label}의 역할 ${item.role}에 재질이 둘 이상입니다('${previous}', '${item.materialName}'). 한 역할은 재질 하나만 씁니다.`, undefined, now);
       }
-      materialOfRole.set(item.role, item.materialName);
+      materialOfKey.set(key, item.materialName);
     }
 
     // ---- 베이스: 영역 범위가 몸 인덱스 버퍼를 분할하는지
@@ -562,27 +540,31 @@ class KitAssembler implements KitRigHandle {
       }
       kept.push(item);
     }
-    const keptMeshes = kept.map((item) => item.mesh);
+    const keptSkinnedMeshes = kept.filter((item) => !item.rigid).map((item) => item.mesh);
+    const keptAllMeshes = kept.map((item) => item.mesh);
 
     // ---- 바인딩 / 부모 정리
     if (isBase) {
+      if (!skeleton) throw fail("kit-skin-invalid", `${label}에 스켈레톤(skin)이 없습니다.`, undefined, now);
       for (const node of container.rootNodes) if (node instanceof TransformNode) node.parent = this.root;
       this.state.baseSkeleton = skeleton;
       this.baseJointNames = joints.map((joint) => joint.name);
       skeleton.useTextureToStoreBoneMatrices = true;
     } else {
-      const baseSkeleton = this.state.baseSkeleton;
-      if (!baseSkeleton) throw fail("kit-base-missing", "베이스가 올라오기 전에 파츠를 열었습니다.", undefined, now);
-      rebindMeshes(keptMeshes, baseSkeleton, remap);
-      this.reparentUnits(keptMeshes, skeletonNodes);
+      if (keptSkinnedMeshes.length > 0) {
+        const baseSkeleton = this.state.baseSkeleton;
+        if (!baseSkeleton) throw fail("kit-base-missing", "베이스가 올라오기 전에 파츠를 열었습니다.", undefined, now);
+        rebindMeshes(keptSkinnedMeshes, baseSkeleton, remap);
+      }
+      this.reparentUnits(keptAllMeshes, skeletonNodes);
       for (const rootNode of container.rootNodes) rootNode.dispose(false, false);
-      skeleton.dispose();
+      skeleton?.dispose();
       container.skeletons.length = 0;
       container.rootNodes.length = 0;
     }
-    pruneDisposed(container);
+    pruneDisposedFromContainer(container);
 
-    const groups = this.groupByRole(kept);
+    const groups = this.groupByRole(kept, custom !== null);
     return { plan: part, key: this.keyOf(part, plan), container, groups, notes, skeleton: isBase ? skeleton : null };
   }
 
@@ -598,7 +580,7 @@ class KitAssembler implements KitRigHandle {
     }
   }
 
-  private matchMeshes(part: KitPartPlan, container: AssetContainer): MatchedMesh[] {
+  private matchMeshes(part: ExpandedKitPartPlan, container: AssetContainer): MatchedMesh[] {
     const now = this.now;
     const label = part.kind === "base" ? "베이스" : `파츠 ${part.id}`;
     const actual = container.meshes.filter((mesh): mesh is Mesh => mesh instanceof Mesh && mesh.getTotalVertices() > 0);
@@ -621,11 +603,13 @@ class KitAssembler implements KitRigHandle {
     const out: MatchedMesh[] = [];
     for (const declared of part.meshes) {
       const found = byNode.get(declared.node) ?? [];
+      const v2Declared = findV2Mesh(part, declared.node);
+      const rigid = v2Declared?.skinned === false;
       const roles = meshRoles(declared);
       const materialNames = meshMaterialNames(declared);
       const hair = parseAuthoredHairMeshName(declared.node);
       const lod = declared.lod ?? hair?.lod ?? null;
-      const declaredMorphs = new Set(declared.morphs);
+      const declaredMorphs = new Set([...declared.morphs, ...(v2Declared?.morphs ?? [])]);
       if (declared.primitiveRoles !== undefined) {
         const expected = declared.primitiveRoles.length;
         const present = found.map((entry) => entry.primitive).filter((value): value is number => value !== null);
@@ -638,14 +622,14 @@ class KitAssembler implements KitRigHandle {
         }
         for (const entry of found) {
           const index = entry.primitive as number;
-          out.push({ mesh: entry.mesh, declared, role: roles[index] as PartRole, materialName: materialNames[index] as string, declaredMorphs, lod });
+          out.push({ mesh: entry.mesh, declared, v2Declared, role: roles[index] as PartRole, materialName: materialNames[index] as string, declaredMorphs, lod, rigid });
         }
       } else {
         if (found.length === 0) throw fail("kit-mesh-missing", `${label}의 GLB에 선언된 메시 '${declared.node}'가 없습니다.`, undefined, now);
         if (found.length > 1 || found[0]?.primitive !== null) {
           throw fail("kit-mesh-undeclared", `${label}의 메시 '${declared.node}'가 프리미티브 ${found.length}개로 나뉘었지만 단일 메시로 선언됐습니다(primitiveRoles로 선언해야 합니다).`, undefined, now);
         }
-        out.push({ mesh: (found[0] as { mesh: Mesh }).mesh, declared, role: roles[0] as PartRole, materialName: materialNames[0] as string, declaredMorphs, lod });
+        out.push({ mesh: (found[0] as { mesh: Mesh }).mesh, declared, v2Declared, role: roles[0] as PartRole, materialName: materialNames[0] as string, declaredMorphs, lod, rigid });
       }
     }
     return out;
@@ -661,15 +645,23 @@ class KitAssembler implements KitRigHandle {
     }
   }
 
-  private groupByRole(items: readonly MatchedMesh[]): RoleGroup[] {
-    const groups = new Map<PartRole, RoleGroup>();
+  private groupByRole(items: readonly MatchedMesh[], splitByMaterial: boolean): RoleGroup[] {
+    const groups = new Map<string, RoleGroup>();
     for (const item of items) {
-      const group = groups.get(item.role);
+      const key = splitByMaterial ? `${item.role}::${item.materialName}` : item.role;
+      const group = groups.get(key);
       if (group) {
         group.meshes.push(item.mesh);
         for (const name of item.declaredMorphs) (group.declaredMorphs as Set<string>).add(name);
       } else {
-        groups.set(item.role, { role: item.role, materialName: item.materialName, meshes: [item.mesh], declaredMorphs: new Set(item.declaredMorphs) });
+        groups.set(key, {
+          role: item.role,
+          materialName: item.materialName,
+          meshes: [item.mesh],
+          v2Declared: item.v2Declared,
+          declaredMorphs: new Set(item.declaredMorphs),
+          rigid: item.rigid,
+        });
       }
     }
     return [...groups.values()].sort((a, b) => rolePartId(a.role) - rolePartId(b.role));
@@ -695,17 +687,20 @@ class KitAssembler implements KitRigHandle {
 
   private attach(file: OpenedFile, plan: KitPlan): KitRigPart[] {
     const now = this.now;
+    const custom = readKitPlanV2Custom(plan);
     const rigParts: KitRigPart[] = [];
     const morphs: Array<{ readonly name: string; readonly target: MorphTarget }> = [];
     const extraMaterials: PBRMaterial[] = [];
     const notes = [...file.notes];
     const loaded: LoadedFile = { plan: file.plan, key: file.key, container: file.container, rigParts, morphs, extraMaterials, notes };
+    const usedPartIds = new Set<number>(this.partIdMap.keys());
     try {
       for (const group of file.groups) {
         const owner = this.partByRole.get(group.role);
-        if (owner) throw fail("kit-mesh-undeclared", `역할 ${group.role}이(가) 두 파일에 중복되었습니다(${owner.id}가 이미 있고 ${file.plan.id}도 선언).`, undefined, now);
-        const material = plan.materials[group.materialName];
-        if (!material) throw fail("kit-manifest-invalid", `재질 '${group.materialName}'이 키트 재질 선언(materials)에 없습니다.`, undefined, now);
+        if (!custom && owner) throw fail("kit-mesh-undeclared", `역할 ${group.role}이(가) 두 파일에 중복되었습니다(${owner.id}가 이미 있고 ${file.plan.id}도 선언).`, undefined, now);
+        const v1Material = plan.materials[group.materialName];
+        const v2Material = custom?.materials[group.materialName];
+        if (!v1Material && !v2Material) throw fail("kit-manifest-invalid", `재질 '${group.materialName}'이 키트 재질 선언(materials)에 없습니다.`, undefined, now);
         const first = group.meshes[0] as Mesh;
         const original = first.material;
         const pbr = this.deps.adaptMaterial(group.role, first);
@@ -713,11 +708,25 @@ class KitAssembler implements KitRigHandle {
         const faceShadowUv = group.role === "head" && group.meshes.every((mesh) =>
           mesh.metadata?.gltf?.extras?.toonstudioFaceShadowUv === 1 && mesh.isVerticesDataPresent("uv2"),
         );
-        const partId = rolePartId(group.role);
+        const uv1Info = inspectV2MeshUv1(group.meshes, group.v2Declared);
+        const channelKey = resolveV2ChannelKey(custom, group.materialName);
+        const identity = custom
+          ? resolveKitRigPartIdentity({
+              role: group.role,
+              materialName: group.materialName,
+              channelKey,
+              partPlan: file.plan,
+              existingPartIds: usedPartIds,
+            })
+          : { id: group.role, partId: rolePartId(group.role), scope: undefined };
+        usedPartIds.add(identity.partId);
         const materialId = Math.min(255, PART_ROLES.indexOf(group.role));
         for (const mesh of group.meshes) {
+          if (group.rigid) {
+            parentRigidMeshToAnchor(mesh, file.plan.v2File?.defaultAnchor ?? null, custom, this.boneMap, this.root);
+          }
           mesh.material = pbr;
-          mesh.metadata = rigMeshMetadata(partId, group.role, materialId, false);
+          mesh.metadata = rigMeshMetadata(identity.partId, group.role, materialId, false);
           mesh.receiveShadows = true;
           // `open`이 숨겨 둔 메시를 재질을 끼운 지금 보이게 한다(이후 가시성은 플랜이 정한다).
           mesh.isVisible = true;
@@ -733,20 +742,25 @@ class KitAssembler implements KitRigHandle {
           if (unknown.length > 0) notes.push(`메시 '${mesh.name}'의 선언되지 않은 morph ${unknown.length}개(${listFew(unknown, 3)})는 구동하지 않습니다.`);
         }
         const materialPreset = ROLE_DEFAULT_PRESET[group.role];
-        const tint: KitPartTint = material.tint.mode === "fixed" ? { mode: "fixed", hex: material.tint.hex } : { mode: "recolor" };
-        const colorKey: RecipeColorKey | undefined = material.tint.mode === "recolor" ? material.tint.colorKey : undefined;
+        const rawTint = v1Material?.tint ?? v2Material?.tint;
+        const tint: KitPartTint = rawTint?.mode === "fixed" ? { mode: "fixed", hex: rawTint.hex } : { mode: "recolor" };
+        const colorKey: RecipeColorKey | undefined = v1Material?.tint.mode === "recolor" ? v1Material.tint.colorKey : undefined;
         const part: KitRigPart = {
-          id: group.role,
-          partId,
+          id: identity.id,
+          partId: identity.partId,
           materialId,
           role: group.role,
           materialPreset,
           ...(colorKey !== undefined ? { colorKey } : {}),
+          ...(channelKey !== undefined ? { channelKey } : {}),
+          ...(identity.scope !== undefined ? { partScope: identity.scope } : {}),
           meshes: group.meshes,
           outlineMeshes: [],
           pbr,
           hasAlbedoTexture: pbr.albedoTexture !== null,
           faceShadowUv,
+          ...(uv1Info.hairFlowUv ? { hairFlowUv: true } : {}),
+          ...(uv1Info.patternUv ? { patternUv: true } : {}),
           toon: null,
           colorHex: tint.mode === "fixed" ? tint.hex : resolvePartColorHex({ materialPreset, ...(colorKey !== undefined ? { colorKey } : {}) }, null),
           visible: true,
@@ -762,7 +776,7 @@ class KitAssembler implements KitRigHandle {
     }
     this.files.set(file.plan.id, loaded);
     for (const part of rigParts) {
-      this.partByRole.set(part.role, part);
+      if (!this.partByRole.has(part.role) || part.id === part.role) this.partByRole.set(part.role, part);
       this.partIdMap.set(part.partId, part);
     }
     for (const { name, target } of morphs) {
@@ -805,7 +819,7 @@ class KitAssembler implements KitRigHandle {
   private refresh(plan: KitPlan): void {
     this.plan = plan;
     this.state.capabilities = plan.capabilities;
-    const sorted = [...this.partByRole.values()].sort((a, b) => a.partId - b.partId);
+    const sorted = [...this.partIdMap.values()].sort((a, b) => a.partId - b.partId);
     this.partList.splice(0, this.partList.length, ...sorted);
     this.state.palette = allocatePartIdsByRole(sorted);
 

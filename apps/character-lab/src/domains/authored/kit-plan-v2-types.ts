@@ -17,6 +17,7 @@ import type {
   KitHideableRegionId,
   KitPartSlot,
   KitPlan,
+  KitV2ArchetypeId,
   KitV2Base,
   KitV2Material,
   KitV2Mesh,
@@ -126,6 +127,10 @@ export interface KitPlanCustom {
   readonly skipped: readonly KitPlanSkip[];
   /** 그리는 삼각형 합과 예산(`KIT_BUDGET.triangles.activeWorst`) */
   readonly triangles: { readonly active: number; readonly budget: number };
+  /** 온디스크 웹툰 키트 v2 물리 모드(`vrm-spring-bone-1.0`) */
+  readonly physicsMode?: "vrm-spring-bone-1.0";
+  /** 5아키타입 웹툰 키트 v2 선택 아키타입 베이스 id */
+  readonly archetypeId?: KitV2ArchetypeId;
 }
 
 /** v2 manifest로 만든 계획(계약 `KitPlan` + `custom`) */

@@ -16,8 +16,8 @@
     "braided-crown",
     "murim-topknot"
   ],
-  "previewSheet": "loop-stack/competitor-parity/previews/char/hair-12-sheet.png",
-  "previewBackSheet": "loop-stack/competitor-parity/previews/char/hair-12-sheet-back.png",
+  "previewSheet": "loop-stack/v2-previews/char/hair-12-sheet-v3.png",
+  "previewBackSheet": "loop-stack/v2-previews/char/hair-12-sheet-v3-back.png",
   "texture": {
     "bytes": 21555,
     "size": 512,
@@ -25,7 +25,7 @@
     "minLuminance": 0.8,
     "columns": 4
   },
-  "totalSeconds": 48.14,
+  "totalSeconds": 36.59,
   "items": {
     "soft-bob": {
       "labelKo": "시스루뱅 소프트 보브",
@@ -33,12 +33,12 @@
       "fittedBase": "female-romance",
       "file": {
         "path": "soft-bob.glb",
-        "bytes": 1314452,
-        "sha256": "7cbb6dc5da12c2bba7821cd1ed069b02a80ab352c54e2e35c3abbc3eba1dca6a"
+        "bytes": 1417684,
+        "sha256": "43b55251f6a242b46af7808d63a4cbc719f8d2a983403799d52f43db244d45cc"
       },
       "triangles": [
-        9588,
-        4710,
+        10332,
+        5126,
         1672
       ],
       "drawCalls": 8,
@@ -57,13 +57,13 @@
       "fittedBase": "female-romance",
       "file": {
         "path": "romance-long.glb",
-        "bytes": 1482852,
-        "sha256": "03ac48ca90250528ac1457f6b7678c1f5c6601fa4338e35725a99e2700a7ea0c"
+        "bytes": 1491340,
+        "sha256": "e5c6c4bd619a65dc9dcd6fc20e1448bb74e5fae2388ddeaa4e989c097551daf6"
       },
       "triangles": [
-        11936,
-        5576,
-        1760
+        11984,
+        5612,
+        1768
       ],
       "drawCalls": 8,
       "materials": [
@@ -81,8 +81,8 @@
       "fittedBase": "female-romance",
       "file": {
         "path": "hime-cut.glb",
-        "bytes": 1442516,
-        "sha256": "544a8b2462cb062d9a9a3f124d13a4cfc4f64375db50ad0b76c0c4f3bba89dbf"
+        "bytes": 1443144,
+        "sha256": "dce178b6e3c61417d4b87ab49ad22512e0bfa9b76472836a885a5410b6a33b74"
       },
       "triangles": [
         11520,
@@ -105,13 +105,13 @@
       "fittedBase": "female-romance",
       "file": {
         "path": "action-pony.glb",
-        "bytes": 1297360,
-        "sha256": "fe567ce025a01f5caca0e5c9ff31708544330c54a91e7e4c1610fbd80ac10469"
+        "bytes": 1407132,
+        "sha256": "c4fb00ec645297ac23cc8947032488d88537413f89419467cbe59d55c72e743d"
       },
       "triangles": [
-        9496,
-        4598,
-        1936
+        10316,
+        4994,
+        1952
       ],
       "drawCalls": 8,
       "materials": [
@@ -129,12 +129,12 @@
       "fittedBase": "female-romance",
       "file": {
         "path": "twin-tail.glb",
-        "bytes": 1363408,
-        "sha256": "53c091691fa3bdc96b7280a1e3da02be007265562dd6b3b52e2ce12fcc3e015b"
+        "bytes": 1448192,
+        "sha256": "28dafcd27dd29046163c9046b5da28f6a0283b2de432137546527d468351e024"
       },
       "triangles": [
-        9564,
-        5682,
+        10312,
+        5848,
         2040
       ],
       "drawCalls": 8,
@@ -153,13 +153,13 @@
       "fittedBase": "female-romance",
       "file": {
         "path": "short-layered.glb",
-        "bytes": 1371104,
-        "sha256": "8276dfc4a25047e58d95e16c2b59bdba067be386a07fa3df0d740efc5b9c1523"
+        "bytes": 1551072,
+        "sha256": "ddc97717d6eb21ac139ef93b986500d2c43a655f4861ad0ff6f44b9642d9cb36"
       },
       "triangles": [
-        9984,
-        4880,
-        1832
+        11432,
+        5534,
+        1864
       ],
       "drawCalls": 8,
       "materials": [
@@ -177,12 +177,12 @@
       "fittedBase": "female-romance",
       "file": {
         "path": "wolf-layered.glb",
-        "bytes": 1340604,
-        "sha256": "7f13debe8f706080331832ccbef9e8bddc862c822e5ae367e8b51a069d584b03"
+        "bytes": 1451192,
+        "sha256": "04f5d1ef7f3fd096a7fc572c1dec33254cc1a41c7a11d641d6784743f722cfa7"
       },
       "triangles": [
-        9612,
-        4790,
+        10444,
+        5216,
         1648
       ],
       "drawCalls": 8,
@@ -201,13 +201,13 @@
       "fittedBase": "male-webtoon",
       "file": {
         "path": "dandy-two-block.glb",
-        "bytes": 1320700,
-        "sha256": "0b9b4e3184c0333ba2a785f1604044702583cb78ef317ded3bcf31a992bb8b96"
+        "bytes": 1337688,
+        "sha256": "9ade944d1c8038e6dc5fbc0b626c1b19b4bd4d37120ac5967875ca84a6488c15"
       },
       "triangles": [
-        9608,
-        4768,
-        1720
+        9752,
+        4794,
+        1784
       ],
       "drawCalls": 8,
       "materials": [
@@ -225,13 +225,13 @@
       "fittedBase": "male-webtoon",
       "file": {
         "path": "comma-hair.glb",
-        "bytes": 1250040,
-        "sha256": "fe7ae9f7eaa346ddfaea26ac816f8d31c240cf4f1659a85823dc242ecb5076bd"
+        "bytes": 1421996,
+        "sha256": "b295ddecc95359db5fc58dfd57e3488f366b23208fb506626eb243acd22ddfbd"
       },
       "triangles": [
-        9100,
-        4488,
-        1632
+        10496,
+        5152,
+        1736
       ],
       "drawCalls": 8,
       "materials": [
@@ -249,13 +249,13 @@
       "fittedBase": "male-webtoon",
       "file": {
         "path": "slicked-back-duke.glb",
-        "bytes": 1260708,
-        "sha256": "4341c1c3f229904f740b51ba48d360ee986b6d8d59fbca5c1adda8e5d97b4efe"
+        "bytes": 1302712,
+        "sha256": "60354e907dda8b478d6d61400ec0ad60b8180042688c62b4e9a7025131098742"
       },
       "triangles": [
-        9544,
-        4448,
-        1712
+        9876,
+        4620,
+        1736
       ],
       "drawCalls": 8,
       "materials": [
@@ -273,13 +273,13 @@
       "fittedBase": "female-romance",
       "file": {
         "path": "braided-crown.glb",
-        "bytes": 1251788,
-        "sha256": "96b0f02bcccb18bc54943317b156dc8d397a901955b696c28e31f9e60d5057b9"
+        "bytes": 1321608,
+        "sha256": "6ec8178147b057f4b090fbde2e390f1b32f058927b4d7588f0887793caca51c4"
       },
       "triangles": [
-        8864,
-        4662,
-        2152
+        9408,
+        4918,
+        2176
       ],
       "drawCalls": 8,
       "materials": [
@@ -297,12 +297,12 @@
       "fittedBase": "male-webtoon",
       "file": {
         "path": "murim-topknot.glb",
-        "bytes": 1357416,
-        "sha256": "27a9ae138356d50f54fcd2ea20c7df7c2c49b0c68a6dbd59d9d25ddbdcaa4807"
+        "bytes": 1362124,
+        "sha256": "7c9afd8c61b801c86aa33a6dadc4d56d3368b7b891d090c3961164bf21dd1406"
       },
       "triangles": [
-        10380,
-        5126,
+        10404,
+        5136,
         2152
       ],
       "drawCalls": 8,
@@ -315,5 +315,6 @@
       "passed": true,
       "errors": []
     }
-  }
+  },
+  "craftVersion": "v3"
 }

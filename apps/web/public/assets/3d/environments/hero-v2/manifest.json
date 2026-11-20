@@ -1,0 +1,295 @@
+{
+  "schema": "toonstudio.bg3d.hero-v2-manifest/1",
+  "generatedAt": "2026-11-21",
+  "count": 12,
+  "assets": [
+    {
+      "path": "kr_modern_office_suite/desktop.glb",
+      "bytes": 4055544,
+      "sha256": "93a8f17c88d3a8f16b2356a30f4f402de115f7bd811e61ef63f3e82f40439203",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Floor",
+        "BG_Furniture_Hero",
+        "BG_Props_Clutter",
+        "BG_Wall_East",
+        "BG_Wall_North",
+        "BG_Wall_South",
+        "BG_Wall_West",
+        "BG_Root_kr_modern_office_suite"
+      ],
+      "materials": [
+        "04_Glass_Emissive",
+        "01_Arch_Trim_Atlas",
+        "02_Wood_Fabric_Atlas",
+        "03_Metal_Hardware_Atlas"
+      ]
+    },
+    {
+      "path": "kr_modern_office_suite/mobile.glb",
+      "bytes": 1874852,
+      "sha256": "f7381eb76c44a7b5fb9a4fd663b0c9f00aee9bccf5b4707be449a4c835fa9097",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Cutaway_Front",
+        "BG_Furnishings",
+        "BG_Shell_Fixed",
+        "BG_Root_kr_modern_office_suite_mobile"
+      ],
+      "materials": [
+        "02_Glass_Accent_512",
+        "01_Opaque_Master_1024"
+      ]
+    },
+    {
+      "path": "kr_seoul_subway_train_platform/desktop.glb",
+      "bytes": 4022612,
+      "sha256": "528fa4fe3b59dbb4614d2495696d7cf7bc0438b02c33b88c3784ac1c826a1f88",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Floor",
+        "BG_Furniture_Hero",
+        "BG_Props_Clutter",
+        "BG_Wall_East",
+        "BG_Wall_North",
+        "BG_Wall_South",
+        "BG_Wall_West",
+        "BG_Root_kr_seoul_subway_train_platform"
+      ],
+      "materials": [
+        "04_Glass_Emissive",
+        "01_Arch_Trim_Atlas",
+        "02_Wood_Fabric_Atlas",
+        "03_Metal_Hardware_Atlas"
+      ]
+    },
+    {
+      "path": "kr_seoul_subway_train_platform/mobile.glb",
+      "bytes": 1800104,
+      "sha256": "a1465d8fd275257fc3988281acc402248965e1fb69a8ae8a2777c48cbcd117b7",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Cutaway_Front",
+        "BG_Furnishings",
+        "BG_Shell_Fixed",
+        "BG_Root_kr_seoul_subway_train_platform_mobile"
+      ],
+      "materials": [
+        "02_Glass_Accent_512",
+        "01_Opaque_Master_1024"
+      ]
+    },
+    {
+      "path": "kr_hospital_ward_corridor/desktop.glb",
+      "bytes": 3857792,
+      "sha256": "f8f93f67e62b52d89af2623fe884e736a2b1fd42fda845be2322a545864aab6b",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Floor",
+        "BG_Furniture_Hero",
+        "BG_Props_Clutter",
+        "BG_Wall_East",
+        "BG_Wall_North",
+        "BG_Wall_South",
+        "BG_Wall_West",
+        "BG_Root_kr_hospital_ward_corridor"
+      ],
+      "materials": [
+        "04_Glass_Emissive",
+        "01_Arch_Trim_Atlas",
+        "02_Wood_Fabric_Atlas",
+        "03_Metal_Hardware_Atlas"
+      ]
+    },
+    {
+      "path": "kr_hospital_ward_corridor/mobile.glb",
+      "bytes": 1637208,
+      "sha256": "434ca72c95228d4c776ec830354394213eef9bcf50e9f5ddbc6d120d300bd613",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Cutaway_Front",
+        "BG_Furnishings",
+        "BG_Shell_Fixed",
+        "BG_Root_kr_hospital_ward_corridor_mobile"
+      ],
+      "materials": [
+        "02_Glass_Accent_512",
+        "01_Opaque_Master_1024"
+      ]
+    },
+    {
+      "path": "rofan_noble_study_parlor/desktop.glb",
+      "bytes": 4697472,
+      "sha256": "d4972f7f90388147e3e62aaf5855f8dd2685ab5ee6096cc3c354ac195c54104f",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Floor",
+        "BG_Furniture_Hero",
+        "BG_Props_Clutter",
+        "BG_Wall_East",
+        "BG_Wall_North",
+        "BG_Wall_South",
+        "BG_Wall_West",
+        "BG_Root_rofan_noble_study_parlor"
+      ],
+      "materials": [
+        "04_Glass_Emissive",
+        "01_Arch_Trim_Atlas",
+        "02_Wood_Fabric_Atlas",
+        "03_Metal_Hardware_Atlas"
+      ]
+    },
+    {
+      "path": "rofan_noble_study_parlor/mobile.glb",
+      "bytes": 2610544,
+      "sha256": "8e8fc086b768207d2f1ec292543571632314892794685211723e96f48df381a4",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Cutaway_Front",
+        "BG_Furnishings",
+        "BG_Shell_Fixed",
+        "BG_Root_rofan_noble_study_parlor_mobile"
+      ],
+      "materials": [
+        "02_Glass_Accent_512",
+        "01_Opaque_Master_1024"
+      ]
+    },
+    {
+      "path": "kr_rooftop_studio_oneroom/desktop.glb",
+      "bytes": 3770584,
+      "sha256": "ea4e14295080f20b411522296b95d4b84d571bcf43158a9ee7766cee255fb980",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Floor",
+        "BG_Furniture_Hero",
+        "BG_Props_Clutter",
+        "BG_Wall_East",
+        "BG_Wall_North",
+        "BG_Wall_South",
+        "BG_Wall_West",
+        "BG_Root_kr_rooftop_studio_oneroom"
+      ],
+      "materials": [
+        "04_Glass_Emissive",
+        "01_Arch_Trim_Atlas",
+        "02_Wood_Fabric_Atlas",
+        "03_Metal_Hardware_Atlas"
+      ]
+    },
+    {
+      "path": "kr_rooftop_studio_oneroom/mobile.glb",
+      "bytes": 1700820,
+      "sha256": "78b3ce035261995e4c2f2df7bce28cf38f6ea83f14775bb6fa9f1c3e56b36d22",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Cutaway_Front",
+        "BG_Furnishings",
+        "BG_Shell_Fixed",
+        "BG_Root_kr_rooftop_studio_oneroom_mobile"
+      ],
+      "materials": [
+        "02_Glass_Accent_512",
+        "01_Opaque_Master_1024"
+      ]
+    },
+    {
+      "path": "kr_convenience_store_night/desktop.glb",
+      "bytes": 4247096,
+      "sha256": "4a730f82e550372cdd280425d337f31d746e66223dd9573e1b4d7024d69675b8",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Floor",
+        "BG_Furniture_Hero",
+        "BG_Props_Clutter",
+        "BG_Wall_East",
+        "BG_Wall_North",
+        "BG_Wall_South",
+        "BG_Wall_West",
+        "BG_Root_kr_convenience_store_night"
+      ],
+      "materials": [
+        "04_Glass_Emissive",
+        "01_Arch_Trim_Atlas",
+        "02_Wood_Fabric_Atlas",
+        "03_Metal_Hardware_Atlas"
+      ]
+    },
+    {
+      "path": "kr_convenience_store_night/mobile.glb",
+      "bytes": 2146812,
+      "sha256": "1c613f4660fabf20528de2ea496c724fb6f58c9db68abb477261d3324b525282",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Cutaway_Front",
+        "BG_Furnishings",
+        "BG_Shell_Fixed",
+        "BG_Root_kr_convenience_store_night_mobile"
+      ],
+      "materials": [
+        "02_Glass_Accent_512",
+        "01_Opaque_Master_1024"
+      ]
+    }
+  ]
+}
