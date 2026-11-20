@@ -785,7 +785,7 @@ export async function presentGpuFilterChain(
         disposed = true;
         if (ownsSurface) surface.dispose();
         if (!bytes) {
-          options?.onFailure?.({
+          if (!requestSuperseded(options)) options?.onFailure?.({
             phase: "final-readback",
             message: "The settled WebGPU filter frame could not be read back.",
           });
