@@ -96,6 +96,7 @@ import {
 
 import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { eraserLiftMatchesPreset, type EraserLiftRatio } from "./lib/studio-brush-eraser-evidence";
+import { hasMeaningfulPixelChange, matchesStudioBrushHistoryBaseline, prepareStudioBrushHistoryEvidence } from "./lib/studio-brush-history-evidence";
 import { studioLongBrushRoute } from "./lib/studio-brush-long-route";
 import { initializeStudioVerifierPageOnce, installStudioCanvasScaleDiagnostics } from "./lib/studio-brush-verifier-session";
 import { activateDesktopPen } from "./lib/studio-desktop-brush-activation";
@@ -1715,10 +1716,6 @@ async function compareScreenshotCoverage(
   });
 }
 
-function hasMeaningfulPixelChange(diff: PixelDiff): boolean {
-  return diff.changedPixels >= 4 && diff.maxChannelDelta >= 4;
-}
-
 async function captureStableEvidence(
   page: Page,
   clip: { x: number; y: number; width: number; height: number },
@@ -2079,6 +2076,9 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
       } else {
         before = await captureStableEvidence(page, usedClip);
       }
+      const historySurface = operation === "paint" && !transparentPaint
+        ? await prepareStudioBrushHistoryEvidence(page, usedClip)
+        : null;
       const emptyBefore = eraseBaseline?.empty ?? null;
       const shortOperationRoute: VerifierStrokeRoute = operation === "erase"
         ? {
@@ -2342,6 +2342,16 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
       const after = await page.screenshot({ animations: "disabled", clip: usedClip });
       const settledDiff = await compareScreenshotPixels(page, before, after);
       const visualChanged = hasMeaningfulPixelChange(settledDiff);
+      const paintedSurface = historySurface ? await historySurface.capture("painted") : null;
+      // 도구 그림자가 한 프레임에서만 원고를 덮을 수 있다. 이때는 같은 좌표의 잉크 레이어를 모두 합성해 복구를 확인한다.
+      const confirmedDocumentRestore = async (phase: string, screenDiff: PixelDiff) => {
+        if (!historySurface || !paintedSurface) return false;
+        const painted = await compareScreenshotPixels(page, historySurface.before, paintedSurface);
+        const restored = await historySurface.capture(phase);
+        const exact = matchesStudioBrushHistoryBaseline(historySurface.before, restored, painted);
+        if (exact) log(`${preset.id}: ${phase} restored the exact document pixels despite ${screenDiff.changedPixels} changed screen pixels`);
+        return exact;
+      };
       // 결정성 판별용: 성공 경로에서도 정착(커밋) 시점의 캔버스 비트맵을 남긴다 — 신선한
       // 세션의 커밋 강도와 딥런 실패 프레임의 커밋 강도를 비트맵 수준에서 비교하기 위함.
       if (process.env.TOONSPECTRUM_BRUSH_VERIFY_SETTLED_DUMP === "1") {
@@ -2490,7 +2500,8 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
         && undoDiff.maxChannelDelta <= 32;
       const undoRestoredPixels = transparentPaint
         || undoDiff.changedPixels <= 3
-        || crossSurfaceAntialiasOnly;
+        || crossSurfaceAntialiasOnly
+        || await confirmedDocumentRestore("undo", undoDiff);
       if (!undoRestoredPixels) {
         writeFileSync(join(SCRATCH, `studio-brush-diagnostic-${preset.id}-before.png`), before);
         writeFileSync(join(SCRATCH, `studio-brush-diagnostic-${preset.id}-stroke.png`), after);
@@ -2545,7 +2556,7 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
         && cleanupDiff.changedPixels <= 16
         && cleanupDiff.maxChannelDelta <= 32;
       invariant(
-        cleanupDiff.changedPixels <= 3 || cleanupCrossSurfaceAntialiasOnly,
+        cleanupDiff.changedPixels <= 3 || cleanupCrossSurfaceAntialiasOnly || await confirmedDocumentRestore("cleanup", cleanupDiff),
         `${preset.id}: post-redo cleanup left perceptible stroke pixels behind`,
       );
       // The next catalogue item may require the durable pro-brush identity to be persisted. A

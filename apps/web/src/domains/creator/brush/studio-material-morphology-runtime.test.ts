@@ -223,13 +223,15 @@ describe("material brushes in the actual product selection contract", () => {
     }
   });
 
-  it("새 흑연 선택의 flow 0.75와 기존 세 단획의 새 계획값을 고정한다", async () => {
+  it("이전 0.75 흑연 설정의 해시와 세 단획을 그대로 재생하고 새 선택에서도 대비를 지킨다", async () => {
     const selection = await materializeStudioBrushCatalogSelection("material-graphite-platelets");
     if (!selection?.brushDynamics) throw new Error("흑연 선택 계약이 없습니다.");
     expect(selection.defaultWidth).toBe(15);
     expect(selection.defaultOpacity).toBe(0.82);
-    expect(selection.brushDynamics.flow.base).toBe(0.75);
-    expect(canonicalSnapshotSha256(selection.brushDynamics))
+    const legacy = normalizeStudioBrushDynamicsSettings({
+      ...selection.brushDynamics, flow: { ...selection.brushDynamics.flow, base: 0.75 },
+    });
+    expect(canonicalSnapshotSha256(legacy))
       .toBe("e8c7dadf7a000d76247061acae2a61af3e5be45fa73b25d8e7042d40d91be301");
     const boundaries = [
       { id: "9f54f65f-053e-4ad8-bf06-6103a5d2694a", seed: 2022802637,
@@ -240,7 +242,12 @@ describe("material brushes in the actual product selection contract", () => {
         alphaPeak: 0.04122871185310551, energy: 5.776183424446749 },
     ];
     for (const boundary of boundaries) {
-      const authored = graphiteShortStrokeSummary(selection.brushDynamics, boundary.id);
+      const authored = graphiteShortStrokeSummary(legacy, boundary.id);
+      const current = graphiteShortStrokeSummary(selection.brushDynamics, boundary.id);
+      expect(current.seed).toBe(authored.seed);
+      expect(current.markCount).toBe(authored.markCount);
+      expect(current.alphaPeak).toBeGreaterThan(authored.alphaPeak);
+      expect(current.energy).toBeGreaterThan(authored.energy);
       expect(authored.flow).toBe(0.75);
       expect(authored.seed).toBe(boundary.seed);
       expect(authored.markCount).toBe(4);
@@ -263,13 +270,40 @@ describe("material brushes in the actual product selection contract", () => {
     expect(previous.markCount).toBe(4);
     expect(previous.alphaPeak).toBeCloseTo(0.03172320692330301, 14);
     expect(previous.energy).toBeCloseTo(4.664622597488389, 13);
-    const authored = graphiteShortStrokeSummary(selection.brushDynamics, syntheticId, ciPressures);
+    const frozen075 = materializeStudioMaterialBrushDynamics({ ...definition, flow: 0.75 }, 15);
+    const authored = graphiteShortStrokeSummary(frozen075, syntheticId, ciPressures);
+    const current = graphiteShortStrokeSummary(selection.brushDynamics, syntheticId, ciPressures);
+    expect(current).toMatchObject({ seed: 372699818, markCount: 4 });
+    expect(current.alphaPeak).toBeGreaterThan(authored.alphaPeak);
+    expect(current.energy).toBeGreaterThan(authored.energy);
     expect(authored.flow).toBe(0.75);
     expect(authored.seed).toBe(372699818);
     expect(authored.markCount).toBe(4);
     expect(authored.alphaPeak).toBeCloseTo(0.052399162928101636, 14);
     expect(authored.energy).toBeCloseTo(6.725831283843496, 13);
     // 계획값 검사는 별도 실제 SCREEN 픽셀 회귀의 가시성 판정을 대신하지 않는다.
+  });
+
+  it("폭 맞춤 189%에서 희미했던 5px 흑연 획은 같은 촉과 필압에서 안료량을 보강한다", async () => {
+    const selection = await materializeStudioBrushCatalogSelection("material-graphite-platelets");
+    if (!selection?.brushDynamics) throw new Error("흑연 선택 계약이 없습니다.");
+    const dynamics = selection.brushDynamics;
+    const source: DrawEl = {
+      id: "88fe20f3-397a-418e-9e3b-b906cc1a411f", type: "draw", kind: "freehand", mode: "pen",
+      brush: selection.runtimeBrushId, brushCatalogId: selection.catalogId, stroke: "#7c5cfc",
+      strokeWidth: selection.defaultWidth, opacity: selection.defaultOpacity,
+      points: [414.4493392070485, 260.61674008810576, 409.69162995594723, 259.0308370044053],
+      pressures: [0.55, 0.7069406792023231], brushDynamics: dynamics,
+      paintModel: "bounded-flow-v2", paperModel: "contact-tooth-v2",
+    };
+    const legacy = normalizeStudioBrushDynamicsSettings({ ...dynamics, flow: { ...dynamics.flow, base: 0.75 } });
+    const previous = dryStrokeSummary({ ...source, brushDynamics: legacy });
+    expect(previous).toMatchObject({ seed: 1182485774, markCount: 3, flow: 0.75 });
+    expect(previous.alphaPeak).toBeCloseTo(0.04151726670422839, 14);
+    const current = dryStrokeSummary(source);
+    expect(current).toMatchObject({ seed: previous.seed, markCount: previous.markCount, flow: 0.95 });
+    expect(current.alphaPeak).toBeGreaterThan(0.06);
+    expect(current.energy).toBeGreaterThan(previous.energy);
   });
 
   it("snapshot 없는 흑연 catalog 획은 generic dry-media의 기존 v3 재생을 유지한다", () => {

@@ -127,7 +127,7 @@ export async function readStudioDurabilityViewport(page: Page): Promise<StudioDu
   });
 }
 
-export function createStudioDurabilityViewportAudit(page: Page) {
+export function createStudioDurabilityViewportAudit(page: Page, screenshotStyle?: string) {
   const evidence: Record<string, unknown> = {};
   const capture = async (roi: StudioDurabilityRoi, phase: string, deadline?: number): Promise<Buffer | null> => {
     const observation: Record<string, unknown> = { roi, startedAt: performance.now(), deadline: deadline ?? null };
@@ -138,6 +138,7 @@ export function createStudioDurabilityViewportAudit(page: Page) {
         const projection = projectStudioDurabilityRoi(before, roi);
         Object.assign(observation, { before, ...projection });
         const screenshot = await page.screenshot({ clip: projection.clip, animations: "disabled", scale: "css",
+          ...(screenshotStyle ? { style: screenshotStyle } : {}),
           ...(deadline === undefined ? {} : { timeout: Math.max(1, deadline - performance.now()) }) });
         const after = await readStudioDurabilityViewport(page);
         observation.after = after;
