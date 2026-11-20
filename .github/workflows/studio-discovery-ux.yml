@@ -145,7 +145,7 @@ jobs:
           name: studio-discovery-dist
           path: dist
           include-hidden-files: true
-          retention-days: 2
+          retention-days: 1
 
   browser:
     needs: build

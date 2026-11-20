@@ -68,7 +68,7 @@ test("브러시 디스크 보완은 전체 입력·산출물·matrix·검증을 
     assert.doesNotMatch(measurement.run, /\brm\b|\bsudo\b|\bfind\b|\btruncate\b/u);
   }
   const artifact = brush.jobs.build.steps.find((step) => step.with?.name === "studio-stability-dist");
-  assert.deepEqual(artifact.with, { name: "studio-stability-dist", path: "dist", "include-hidden-files": true, "retention-days": 3 });
+  assert.deepEqual(artifact.with, { name: "studio-stability-dist", path: "dist", "include-hidden-files": true, "retention-days": 1 });
   assert(job.steps.some((step) => step.run === "pnpm exec playwright install --with-deps chromium"));
   assert(job.steps.some((step) => step.run === "pnpm run verify:studio-brushes"));
   assert(job.steps.some((step) => step.run === "test -s dist/.vite/manifest.json"));
