@@ -7,6 +7,7 @@ import { simulateEpisodeSettlementFromPackJson } from "./simulate-episode-settle
 import { verifyLocalizationManifestJson } from "./verify-localization-rights-cli.mjs";
 import { verifyReaderTrustSealJson } from "./verify-reader-trust-seal-cli.mjs";
 import { verifyRightsBomReceiptJson } from "./verify-rights-bom-receipt-cli.mjs";
+import { verifySealRevocationAndDerivativeJson } from "./verify-seal-revocation-and-derivative-cli.mjs";
 import { verifyVoiceConsentLedgerJson } from "./verify-voice-consent-ledger-cli.mjs";
 
 function fnv1aHex(input) {
@@ -142,9 +143,27 @@ export function runCommercialGovernanceCliSuite() {
       masterAuditHash: sealBase.masterAuditHash,
     }),
   );
-  const c6 = verifyReaderTrustSealJson(
-    JSON.stringify({ ...sealBase, sealDigestHash }),
-    { expectedMasterHash: receiptHash, requireTenStage: true },
+  const signedSeal = { ...sealBase, sealDigestHash };
+  const c6 = verifyReaderTrustSealJson(JSON.stringify(signedSeal), {
+    expectedMasterHash: receiptHash,
+    requireTenStage: true,
+  });
+  const c7 = verifySealRevocationAndDerivativeJson(
+    JSON.stringify({
+      seal: signedSeal,
+      asOfIso: "2026-12-01T00:00:00.000Z",
+      expiresAtIso: "2027-11-20T00:00:00.000Z",
+      revocations: [],
+      requests: [
+        {
+          medium: "movingtoon-shortform",
+          projectTitle: "통합 테스트 숏폼",
+          targetLocales: ["en-US"],
+          requiresVoiceSynthesis: true,
+        },
+      ],
+    }),
+    receiptHash,
   );
 
   const checks = [
@@ -154,6 +173,7 @@ export function runCommercialGovernanceCliSuite() {
     { name: "verify-localization-rights-cli", ok: c4.ok },
     { name: "verify-voice-consent-ledger-cli", ok: c5.ok },
     { name: "verify-reader-trust-seal-cli", ok: c6.ok },
+    { name: "verify-seal-revocation-and-derivative-cli", ok: c7.ok },
   ];
 
   const passedCount = checks.filter((c) => c.ok).length;
@@ -173,7 +193,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log(JSON.stringify(res, null, 2));
   } else {
     console.log(
-      `ToonStudio Commercial Governance 6-CLI Suite: ${res.passedCount}/${res.totalCount} PASS (${res.receiptHash})`,
+      `ToonStudio Commercial Governance 7-CLI Suite: ${res.passedCount}/${res.totalCount} PASS (${res.receiptHash})`,
     );
   }
   if (!res.ok) {

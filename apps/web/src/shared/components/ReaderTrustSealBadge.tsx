@@ -5,22 +5,36 @@ import {
   verifyReaderTrustSealDigest,
   type ReaderTrustSealPayload,
 } from "@/shared/lib/reader-trust-seal";
+import type { ReaderTrustSealLiveStatus } from "@/shared/lib/reader-trust-seal-revocation";
 import { cn } from "@/shared/lib/utils";
 
 /**
  * 독자 열람 페이지·작품 상세 카드에 표시되는 클린 IP 트러스트 배지 컴포넌트.
- * 10단계 프로비넌스 감사 해시와 AI 학습 금지·성우 음성권 동의 상태를 한눈에 공개한다.
+ * 10단계 프로비넌스 감사 해시와 AI 학습 금지·성우 음성권 동의·실시간 철회 상태를 한눈에 공개한다.
  */
 export function ReaderTrustSealBadge({
   seal,
   compact = false,
+  liveStatus,
 }: {
   readonly seal: ReaderTrustSealPayload;
   readonly compact?: boolean;
+  readonly liveStatus?: ReaderTrustSealLiveStatus;
 }) {
-  const digestValid = verifyReaderTrustSealDigest(seal);
-  const verified = digestValid && seal.level !== "unverified";
-  const label = digestValid ? formatReaderTrustSealLabel(seal) : "인증 해시 불일치";
+  const digestValid = liveStatus ? liveStatus.digestValid : verifyReaderTrustSealDigest(seal);
+  const isActive = !liveStatus || liveStatus.effectiveStatus === "active";
+  const effectiveLevel = liveStatus ? liveStatus.effectiveLevel : seal.level;
+  const verified = digestValid && isActive && effectiveLevel !== "unverified";
+  let label: string;
+  if (!digestValid) {
+    label = "인증 해시 불일치";
+  } else if (liveStatus && liveStatus.effectiveStatus === "revoked") {
+    label = "인증 철회됨";
+  } else if (liveStatus && liveStatus.effectiveStatus === "expired") {
+    label = "인증 만료됨";
+  } else {
+    label = formatReaderTrustSealLabel(seal);
+  }
 
   if (compact) {
     return (
@@ -62,6 +76,15 @@ export function ReaderTrustSealBadge({
         </span>
       </summary>
 
+      {liveStatus && liveStatus.effectiveStatus !== "active" ? (
+        <p
+          role="alert"
+          data-testid="reader-trust-seal-revocation-alert"
+          className="mt-2 rounded-lg border border-warn/40 bg-warn/10 px-2.5 py-1.5 text-[0.64rem] font-bold text-warn"
+        >
+          {liveStatus.summary}
+        </p>
+      ) : null}
       <ul className="mt-2.5 flex flex-wrap gap-1.5 text-[0.65rem] text-fg-2">
         <li className="inline-flex items-center gap-1 rounded-md border border-line bg-raised px-2 py-1">
           <CheckCircle2 className="size-3 text-good" aria-hidden />
