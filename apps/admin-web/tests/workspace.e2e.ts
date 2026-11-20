@@ -10,6 +10,30 @@ import { TOONSPECTRUM_CSRF_HEADER, TOONSPECTRUM_CSRF_HEADER_VALUE } from "@toons
 const boardPath = "/admin/workspace/", endpoint = "/api/admin/workspaces/toonstudio";
 const privateMarker = "합성 비공개 원문 fixture", reviewTitle = "합성 통합 검토 작업", fixtureTime = "2026-11-17T00:00:00Z";
 
+const expectedBoardLinks = [
+  ["제작 변경·충돌·검증", "/admin/production/changes/"],
+  ["CI·QA 검증", "/admin/platform/quality/"],
+  ["AI·무료 운영", "/admin/platform/ai-operations/"],
+  ["의존성·CI", "/admin/platform/quality/?view=dependency-review"],
+  ["NestJS 호환성", "/admin/platform/quality/?view=nestjs"],
+  ["클라우드 작업", "/admin/platform/quality/?view=cloud-work"],
+  ["사업계획·제출", "/admin/growth/business-plan/"],
+] as const;
+
+async function expectSpecialistBoardLinks(page: Page): Promise<void> {
+  const region = page.getByRole("region", { name: "전문 작업 보드 연결", exact: true });
+  const cards = region.getByRole("article");
+  await expect(cards).toHaveCount(expectedBoardLinks.length);
+  await expect(region.getByRole("link")).toHaveCount(expectedBoardLinks.length * 2);
+  await expect(region.getByRole("link", { name: "상세 보드 열기", exact: true })).toHaveCount(expectedBoardLinks.length);
+  for (const [title, href] of expectedBoardLinks) {
+    const card = cards.filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+    await expect(card).toHaveCount(1);
+    await expect(card.getByRole("link", { name: title, exact: true })).toHaveAttribute("href", href);
+    await expect(card.getByRole("link", { name: "상세 보드 열기", exact: true })).toHaveAttribute("href", href);
+  }
+}
+
 function syntheticWorkspace(): AdminWorkspace {
   const state = createOperationsWorkspace();
   state.records = [
@@ -81,12 +105,12 @@ async function downloadedText(download: Download): Promise<string> {
   return readFile(path, "utf8");
 }
 
-test("운영 범위와 여섯 전문 보드를 먼저 열고 통합 검토만 저장·재조회한다", async ({ page }) => {
+test("운영 범위와 일곱 전문 보드를 먼저 열고 통합 검토만 저장·재조회한다", async ({ page }) => {
   const fixture = await workspaceFixture(page);
   await page.goto(boardPath);
   await expect(page.getByRole("heading", { name: "사업계획·운영 작업실", exact: true })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "업무 모듈" }).getByRole("button")).toHaveCount(6);
-  await expect(page.getByRole("region", { name: "전문 작업 보드 연결" }).getByRole("link", { name: "상세 보드 열기", exact: true })).toHaveCount(6);
+  await expectSpecialistBoardLinks(page);
   await expect(page.locator(".workspace-table tbody tr")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "비공개 이전 자료 보기", exact: true })).toHaveCount(0);
   await expect(page.getByText(privateMarker, { exact: true })).toHaveCount(0);
@@ -253,11 +277,12 @@ test("저장소가 준비되지 않으면 빈 보드를 성공으로 표시하�
   await expect(page.locator(".workspace-table")).toHaveCount(0);
 });
 
-test("모바일·데스크톱에서 여섯 보드가 넘치지 않고 키보드 상세창 초점을 복원한다", async ({ page }, testInfo) => {
+test("모바일·데스크톱에서 일곱 보드가 넘치지 않고 키보드 상세창 초점을 복원한다", async ({ page }, testInfo) => {
   await workspaceFixture(page, { privateAccess: "owner" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
   await page.goto(boardPath);
+  await expectSpecialistBoardLinks(page);
   await expect(page.getByRole("columnheader", { name: "상세", exact: true })).toHaveCount(1);
   const tableWidth = await page.locator(".workspace-table-wrap").evaluate(element => ({ content: element.scrollWidth, visible: element.clientWidth }));
   expect(tableWidth.content).toBeGreaterThan(tableWidth.visible);
@@ -276,7 +301,7 @@ test("모바일·데스크톱에서 여섯 보드가 넘치지 않고 키보드 
   await page.screenshot({ path: testInfo.outputPath("workspace-mobile.png"), fullPage: true });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.emulateMedia({ colorScheme: "dark" });
-  await expect(page.getByRole("region", { name: "전문 작업 보드 연결" }).getByRole("link", { name: "상세 보드 열기", exact: true })).toHaveCount(6);
+  await expectSpecialistBoardLinks(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("workspace-desktop.png"), fullPage: true });
 });
