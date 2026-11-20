@@ -33,6 +33,7 @@ vi.mock("./production-api", () => ({
 vi.mock("@/domains/auth/public/session/auth-session-state", () => ({
   getAuthSessionRevision: () => sessionMocks.revision,
   getAuthSession: () => (sessionMocks.actor ? { user: { id: sessionMocks.actor } } : null),
+  getAuthUserId: () => sessionMocks.actor,
   listeners: sessionMocks.listeners,
 }));
 

@@ -20,7 +20,7 @@ test("package.json은 단순화된 정본 deploy:* 진입점을 제공하고 기
   );
   assert.equal(
     scripts["deploy:verify"],
-    "pnpm run verify:free-infrastructure && pnpm run verify:cloudflare-static && pnpm run verify:cloudflare-apex-redirect && pnpm run verify:cloudflare-realtime && pnpm run verify:cloudflare-analytics",
+    "pnpm run test:cloud-deploy && pnpm run verify:free-infrastructure && pnpm run verify:cloudflare-static && pnpm run verify:cloudflare-apex-redirect && pnpm run verify:cloudflare-realtime && pnpm run verify:cloudflare-analytics",
   );
   assert.equal(
     scripts["deploy:web:dry-run"],
@@ -45,6 +45,7 @@ test("package.json은 단순화된 정본 deploy:* 진입점을 제공하고 기
     "check:studio-bundle",
     "check:product-tour-remotion-chunks",
     "verify:product-tour-live",
+    "test:cloud-deploy",
     "verify:free-infrastructure",
     "verify:cloudflare-static",
     "verify:cloudflare-apex-redirect",
