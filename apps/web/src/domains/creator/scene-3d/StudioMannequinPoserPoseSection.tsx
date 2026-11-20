@@ -215,6 +215,7 @@ export function StudioMannequinPoseSection({
         scope="mannequin-poser-pose"
         icon={PersonStanding}
         title="포즈 라이브러리 — 10초 가이드"
+        defaultCollapsed
         steps={[
           {
             ko: "검색창 하나로 웹툰 프리셋·데생 인형·손 포즈를 함께 찾습니다. 카드를 누르면 바로 적용됩니다.",

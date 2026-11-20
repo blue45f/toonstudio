@@ -1,24 +1,31 @@
-/* 제목 한 줄과 저장 결과 두 줄이 같은 자리를 쓴다. 확대된 글꼴이나 긴 안내는 아래로 늘어난다. */
+/* 모바일 44px 상단바 높이를 고정해 제목·저장 상태가 캔버스 위로 넘치지 않게 한다. */
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header {
+  height: 44px;
   min-height: 44px;
+  max-height: 44px;
   padding-block: 0;
+  overflow: hidden;
 }
 
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title {
-  align-self: stretch;
-  height: auto;
-  min-height: 55px;
-  max-height: none;
+  align-self: center;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  overflow: hidden;
 }
 
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true] {
-  max-height: none;
+  max-height: 44px;
+  overflow: hidden;
 }
 
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true] > span {
-  -webkit-line-clamp: unset;
-  overflow: visible;
-  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-context {

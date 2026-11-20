@@ -1,7 +1,7 @@
 /** 데생 인형의 체형·포즈·카메라를 편집하고 SQLite/OPFS에 저장한다. */
 import { StudioMannequinRotationControls, type StudioMannequinRotationCommand } from "./StudioMannequinRotationControls";
 import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
-import { Camera, PersonStanding, Redo2, Sliders, Sparkles, Undo2, UserRound, Wand2, X } from "lucide-react";
+import { Camera, Move3d, PersonStanding, Redo2, Sliders, Undo2, UserRound, Wand2, X } from "lucide-react";
 import { useCallback, useEffect, useId, useImperativeHandle, useMemo, useRef, useState, type Ref, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
@@ -139,7 +139,7 @@ const TABS: readonly { id: MannequinTabId; label: string; icon: ReactElement }[]
   { id: "shaper", label: "셰이퍼", icon: <Wand2 size={13} aria-hidden /> },
   { id: "body", label: "체형", icon: <UserRound size={13} aria-hidden /> },
   { id: "pose", label: "포즈", icon: <PersonStanding size={13} aria-hidden /> },
-  { id: "magic", label: "매직 포저", icon: <Sparkles size={13} aria-hidden /> },
+  { id: "magic", label: "매직 포저", icon: <Move3d size={13} aria-hidden /> },
   { id: "joint", label: "관절", icon: <Sliders size={13} aria-hidden /> },
   { id: "camera", label: "카메라·캡처", icon: <Camera size={13} aria-hidden /> },
 ]);
@@ -1497,31 +1497,19 @@ export function StudioMannequinPoserPanel({
       data-studio-mannequin-presentation={presentation}
       data-studio-3d-reference="tooncraft"
       className={presentation === "page"
-        ? "relative isolate flex h-[min(78dvh,54rem)] min-h-[34rem] w-full flex-col overflow-hidden text-fg"
+        ? "relative isolate flex h-[calc(100dvh-7.5rem)] min-h-[36rem] w-full flex-col overflow-hidden text-fg"
         : "fixed inset-0 z-[80] isolate flex flex-col overflow-hidden overscroll-none bg-canvas/85 p-2 text-fg backdrop-blur-sm sm:p-4"}
-      style={presentation === "page" ? undefined : {
-        paddingTop: "max(0.5rem, env(safe-area-inset-top))",
-        paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
-      }}
+      style={presentation === "page" ? undefined : { paddingTop: "max(0.5rem, env(safe-area-inset-top))", paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
     >
       <input ref={fileInputRef} type="file" accept=".mannequin,.json" className="hidden" onChange={handleImportJson} />
       <input ref={cspPepInputRef} type="file" accept=".pep,.xml" className="hidden" onChange={handleImportCspPep} />
       <input ref={csp3dpInputRef} type="file" accept=".3dp,.xml" className="hidden" onChange={handleImportCsp3dp} />
-      <div data-studio-mannequin-surface="true" className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
-        <header data-studio-mannequin-header="true" className="flex flex-wrap items-center justify-between gap-1.5 border-b border-line/70 px-3 py-2">
+      <div data-studio-mannequin-surface="true" className={presentation === "page" ? "flex h-full w-full flex-col overflow-hidden rounded-[var(--atelier-radius-outer,14px)] border border-line bg-panel shadow-[var(--atelier-elevation-dock)]" : "mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl"}>
+        <header data-studio-mannequin-header="true" className="flex flex-wrap items-center justify-between gap-1.5 border-b border-line/70 px-3 py-1.5">
           <div className="flex min-w-0 items-center gap-2">
-            <h2 id={dialogTitleId} className="flex shrink-0 items-center gap-1.5 text-sm font-bold tracking-tight">
-              <StudioToolArtwork tool="mannequin" className="[--studio-tool-art-size:24px]" />
-              3D 데생 인형
-            </h2>
+            <h2 id={dialogTitleId} className="flex shrink-0 items-center gap-1.5 text-sm font-bold tracking-tight"><StudioToolArtwork tool="mannequin" className="[--studio-tool-art-size:20px]" />3D 데생 인형</h2>
             <StudioMannequinEngineStatusBadge state={engineState} />
-            <span
-              aria-live="polite"
-              className={cn(
-                "sr-only text-[0.66rem] sm:not-sr-only sm:inline",
-                persistenceStatus === "memory-only" ? "text-warn" : "text-fg-3",
-              )}
-            >
+            <span aria-live="polite" className={cn("sr-only text-xs sm:not-sr-only sm:inline", persistenceStatus === "memory-only" ? "text-warn" : "text-fg-3")}>
               {captureNotice ?? (persistenceStatus === "loading"
                 ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteLoading", "포즈 상태 불러오는 중")
                 : persistenceStatus === "saving"

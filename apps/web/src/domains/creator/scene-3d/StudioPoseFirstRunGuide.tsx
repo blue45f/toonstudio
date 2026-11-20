@@ -11,7 +11,7 @@
  * - 언어: 단계마다 현재 앱 언어 한 가지만 보여 준다. 영문을 한국어 아래에 병기하지 않는다.
  */
 
-import { X, type LucideIcon } from "lucide-react";
+import { ChevronDown, X, type LucideIcon } from "lucide-react";
 import { useState, type ReactElement } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -36,6 +36,8 @@ export interface StudioPoseFirstRunGuideProps {
   readonly title: string;
   readonly steps: readonly StudioPoseGuideStep[];
   readonly className?: string;
+  /** true이면 첫 진입 시 요약 한 줄(<details>)로 접어 포즈 카드를 먼저 노출한다. */
+  readonly defaultCollapsed?: boolean;
 }
 
 export function StudioPoseFirstRunGuide({
@@ -44,6 +46,7 @@ export function StudioPoseFirstRunGuide({
   title,
   steps,
   className,
+  defaultCollapsed = false,
 }: StudioPoseFirstRunGuideProps): ReactElement | null {
   const [dismissed, setDismissed] = useState<boolean>(() => readStudioPoseGuideDismissed(scope));
   const [doNotShowAgain, setDoNotShowAgain] = useState(false);
@@ -55,6 +58,69 @@ export function StudioPoseFirstRunGuide({
     if (doNotShowAgain) writeStudioPoseGuideDismissed(scope, true);
     setDismissed(true);
   };
+
+  const body = (
+    <>
+      <ol className="mt-2 space-y-1.5">
+        {steps.map((step, index) => (
+          <li key={index} className="flex gap-2 text-xs leading-relaxed text-fg-2">
+            <span
+              aria-hidden
+              className="grid size-4 shrink-0 place-items-center rounded-full bg-accent/15 text-xs font-semibold text-accent tabular-nums"
+            >
+              {index + 1}
+            </span>
+            <span className="min-w-0">{step.en ? bt(step.ko, step.en) : step.ko}</span>
+          </li>
+        ))}
+      </ol>
+      <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-xs text-fg-3 pointer-coarse:min-h-11">
+        <input
+          type="checkbox"
+          checked={doNotShowAgain}
+          onChange={(event) => setDoNotShowAgain(event.target.checked)}
+          className="size-3.5 pointer-coarse:size-5"
+        />
+        {bt("다시 보지 않기", "Don't show again")}
+      </label>
+    </>
+  );
+
+  if (defaultCollapsed) {
+    return (
+      <div
+        role="note"
+        aria-label={`${title} 안내`}
+        data-studio-pose-guide-collapsed="true"
+        className={cn(
+          "relative rounded-[var(--atelier-radius-inner,10px)] border border-line bg-card/85 shadow-[var(--atelier-specular-top)]",
+          className,
+        )}
+      >
+        <details className="group">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 py-2 pl-3 pr-11 text-xs font-semibold text-fg [&::-webkit-details-marker]:hidden">
+            <Icon size={14} className="shrink-0 text-accent" aria-hidden />
+            <span className="min-w-0 flex-1 truncate">{title}</span>
+            <ChevronDown
+              size={14}
+              className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
+              aria-hidden
+            />
+          </summary>
+          <div className="border-t border-line px-3 pb-3">{body}</div>
+        </details>
+        <button
+          type="button"
+          onClick={handleClose}
+          aria-label={bt("가이드 닫기", "Close guide")}
+          title={bt("가이드 닫기", "Close guide")}
+          className="absolute right-0.5 top-0.5 grid size-10 place-items-center rounded-md text-fg-3 transition-colors hover:bg-raised hover:text-fg pointer-coarse:size-11"
+        >
+          <X size={13} aria-hidden />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -74,32 +140,11 @@ export function StudioPoseFirstRunGuide({
       >
         <X size={13} aria-hidden />
       </button>
-      <p className="flex items-center gap-1.5 pr-10 text-[0.72rem] font-bold text-fg pointer-coarse:pr-11">
+      <p className="flex items-center gap-1.5 pr-10 text-xs font-bold text-fg pointer-coarse:pr-11">
         <Icon size={14} className="shrink-0 text-accent" aria-hidden />
         {title}
       </p>
-      <ol className="mt-1.5 space-y-1">
-        {steps.map((step, index) => (
-          <li key={index} className="flex gap-1.5 text-[0.68rem] leading-relaxed text-fg-2">
-            <span
-              aria-hidden
-              className="grid size-4 shrink-0 place-items-center rounded-full bg-accent/15 text-[0.6rem] font-bold text-accent"
-            >
-              {index + 1}
-            </span>
-            <span className="min-w-0">{step.en ? bt(step.ko, step.en) : step.ko}</span>
-          </li>
-        ))}
-      </ol>
-      <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-[0.66rem] text-fg-3 pointer-coarse:min-h-11">
-        <input
-          type="checkbox"
-          checked={doNotShowAgain}
-          onChange={(event) => setDoNotShowAgain(event.target.checked)}
-          className="size-3.5 pointer-coarse:size-5"
-        />
-        {bt("다시 보지 않기", "Don't show again")}
-      </label>
+      {body}
     </div>
   );
 }

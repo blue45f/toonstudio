@@ -1,4 +1,4 @@
-import { ArrowLeft, Loader2, TriangleAlert } from "lucide-react";
+import { ArrowLeft, ChevronDown, Loader2, TriangleAlert } from "lucide-react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -57,10 +57,10 @@ export function StudioBg3dAssistantReadinessBanner({
             aria-hidden
           />
           <div className="min-w-0">
-            <strong className="block font-bold text-fg">
+            <strong className="block font-semibold text-fg">
               {bt(readiness.badgeLabelKo, readiness.badgeLabelEn)}
             </strong>
-            <span className="text-[0.7rem] text-fg-2 [word-break:keep-all]">
+            <span className="text-xs text-fg-2 [word-break:keep-all]">
               {bt(
                 "엔진 연결이 끝나면 장면 프리셋과 배치 도구가 바로 열립니다.",
                 "Scene presets and placement controls unlock as soon as the engine connects.",
@@ -90,18 +90,29 @@ export function StudioBg3dAssistantReadinessBanner({
     <section
       role="alert"
       data-testid="studio-bg3d-assistant-error"
-      className="mx-3 mt-3 rounded-xl border border-warn/45 bg-panel p-3 text-xs text-fg shadow-sm"
+      data-bg3d-readiness-compact="true"
+      className="mx-3 mt-2 rounded-[var(--atelier-radius-inner,10px)] border border-warn/45 bg-panel text-xs text-fg shadow-[var(--atelier-specular-top)]"
     >
-      <div className="flex items-start gap-2">
-        <TriangleAlert size={16} className="mt-0.5 shrink-0 text-warn" aria-hidden />
-        <div className="min-w-0 flex-1">
-          <strong className="block font-bold text-fg [word-break:keep-all]">
+      <details className="group">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden">
+          <TriangleAlert size={15} className="shrink-0 text-warn" aria-hidden />
+          <strong className="min-w-0 flex-1 truncate font-semibold text-fg [word-break:keep-all]">
             {bt(readiness.badgeLabelKo, readiness.badgeLabelEn)}
           </strong>
-          <p className="mt-1 leading-relaxed text-fg-2 [word-break:keep-all]">
+          <span className="shrink-0 text-xs font-medium text-fg-3">
+            {bt("복구 옵션", "Recovery")}
+          </span>
+          <ChevronDown
+            size={14}
+            className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
+            aria-hidden
+          />
+        </summary>
+        <div className="border-t border-line px-3 pb-3 pt-2">
+          <p className="leading-relaxed text-fg-2 [word-break:keep-all]">
             {bt(readiness.detailKo, readiness.detailEn)}
           </p>
-          <p className="mt-1 text-[0.7rem] leading-relaxed text-fg-3 [word-break:keep-all]">
+          <p className="mt-1 text-xs leading-relaxed text-fg-3 [word-break:keep-all]">
             {hasDraftScene
               ? bt(
                   "직접 선택한 엔진 설정과 작업 중인 3D 장면 초안은 그대로 보존됩니다.",
@@ -112,17 +123,17 @@ export function StudioBg3dAssistantReadinessBanner({
                   "Your explicit engine choice is preserved; select an available engine to unlock presets.",
                 )}
           </p>
+          {onPreferenceChange ? (
+            <StudioBg3dEngineRecoveryActions
+              preference={preference}
+              onPreferenceChange={onPreferenceChange}
+              onReopenLowQuality={onReopenLowQuality}
+              onReturnTo2d={onReturnTo2d}
+              testIdPrefix="studio-bg3d-assistant-recovery"
+            />
+          ) : null}
         </div>
-      </div>
-      {onPreferenceChange ? (
-        <StudioBg3dEngineRecoveryActions
-          preference={preference}
-          onPreferenceChange={onPreferenceChange}
-          onReopenLowQuality={onReopenLowQuality}
-          onReturnTo2d={onReturnTo2d}
-          testIdPrefix="studio-bg3d-assistant-recovery"
-        />
-      ) : null}
+      </details>
     </section>
   );
 }

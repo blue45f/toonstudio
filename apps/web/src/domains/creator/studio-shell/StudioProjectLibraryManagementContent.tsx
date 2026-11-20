@@ -174,7 +174,7 @@ export function StudioProjectLibraryManagementContent({
       <section
         aria-label={bi("빠른 작업 시작", "Quick start")}
         data-studio-bento-fast-start="true"
-        className="flex min-w-0 flex-col justify-between gap-3 rounded-xl border border-line bg-panel p-4"
+        className="flex min-w-0 flex-col gap-3 rounded-[var(--atelier-radius-outer,14px)] border border-line-strong bg-panel p-4 shadow-[var(--atelier-elevation-dock)]"
       >
         <div className="flex items-baseline justify-between gap-2">
           <h2 className="text-sm font-semibold text-fg">
@@ -184,7 +184,7 @@ export function StudioProjectLibraryManagementContent({
             {bi("세로 웹툰 · 4컷 · 3D · 가져오기", "Webtoon · 4-panel · 3D · Import")}
           </span>
         </div>
-        <StudioProjectLibraryFastStartStrip />
+        <StudioProjectLibraryFastStartStrip className="flex-1" />
       </section>
     </div>
   ) : null;

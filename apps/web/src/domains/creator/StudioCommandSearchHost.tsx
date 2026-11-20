@@ -201,7 +201,7 @@ export function StudioCommandSearchHost({
         
         <div
           data-studio-command-search-row="true"
-          className="flex min-w-0 items-center gap-1 border-b border-line"
+          className="flex min-w-0 flex-wrap items-center gap-1 border-b border-line pb-1"
         >
           {hideTrigger ? null : (
             <button
@@ -211,7 +211,7 @@ export function StudioCommandSearchHost({
               data-testid="studio-command-search-trigger"
               data-inspector-priority="chrome"
               title="기능·설정 찾기 (⌘K / Ctrl+K / F1)"
-              className="flex min-h-11 min-w-0 flex-1 items-center gap-2 px-3 text-left text-xs text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="flex min-h-11 min-w-[12rem] flex-1 items-center gap-2 overflow-hidden rounded-lg px-2.5 text-left text-xs text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <Search
                 size={STUDIO_ICON_SIZE.contextMenu}
@@ -226,10 +226,10 @@ export function StudioCommandSearchHost({
                 className="flex shrink-0 items-center gap-1"
                 aria-label="단축키 Command K, Control K 또는 F1"
               >
-                <kbd className="rounded border border-line bg-card px-1.5 py-px text-[0.6875rem]">
+                <kbd className="rounded border border-line bg-card px-1.5 py-px text-xs">
                   ⌘K
                 </kbd>
-                <kbd className="rounded border border-line bg-card px-1.5 py-px text-[0.6875rem]">
+                <kbd className="rounded border border-line bg-card px-1.5 py-px text-xs">
                   F1
                 </kbd>
               </span>

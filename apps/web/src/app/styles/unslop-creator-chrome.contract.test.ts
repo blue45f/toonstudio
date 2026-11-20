@@ -122,6 +122,19 @@ const REFINED_CHROME_TSX_FILES = [
   "apps/web/src/domains/creator/production-hub/ProductionScheduleViews.tsx",
   "apps/web/src/domains/creator/production-hub/ProductionRiskWorkspace.tsx",
   "apps/web/src/domains/creator/production-hub/ProductionManagementWorkspace.tsx",
+  // Wave V2-W1 (High-Craft Luminous Atelier & Zero-Friction Choreography)
+  "apps/web/src/domains/creator/studio-shell/StudioProjectShellPage.tsx",
+  "apps/web/src/domains/creator/lettering/StudioBubbleToolPopoverBody.tsx",
+  "apps/web/src/domains/creator/bg3d/StudioBg3dAtmospherePanel.tsx",
+  "apps/web/src/domains/creator/studio-cuttoon-editor/StudioRadialQuickWheel.tsx",
+  "apps/web/src/domains/creator/studio-cuttoon-editor/StudioContextMiniDock.tsx",
+  "apps/web/src/domains/creator/studio-cuttoon-editor/StudioVisualShortcutHud.tsx",
+  "apps/web/src/domains/creator/studio-cuttoon-editor/StudioSplitWipeOverlay.tsx",
+  // Wave V2-W2 / W3B / W4 (Brush Studio · Character Shaper · Virtual Space HUD)
+  "apps/web/src/domains/creator/brush/StudioBrushStudio.tsx",
+  "apps/web/src/domains/creator/character-shaper/CharacterShaperShelf.tsx",
+  "apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceIllustratedStageHud.tsx",
+  "apps/web/src/domains/creator/virtual-space/three/StudioVirtualSpaceThreeHud.tsx",
 ] as const;
 
 const FORBIDDEN_TERM_GUARDED_FILES = [
@@ -143,6 +156,10 @@ const EMOJI_GUARDED_CHROME_FILES = [
   "apps/web/src/domains/creator/bg3d/StudioBg3dAssetShelf.tsx",
   "apps/web/src/domains/creator/bg3d/StudioBg3dProfessionalWorkspace.tsx",
   "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingQuickErgonomicsBar.tsx",
+  "apps/web/src/domains/creator/brush/StudioBrushStudio.tsx",
+  "apps/web/src/domains/creator/character-shaper/CharacterShaperShelf.tsx",
+  "apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceIllustratedStageHud.tsx",
+  "apps/web/src/domains/creator/virtual-space/three/StudioVirtualSpaceThreeHud.tsx",
 ] as const;
 
 const SPARKLES_BANNED_CHROME_FILES = [
@@ -150,9 +167,19 @@ const SPARKLES_BANNED_CHROME_FILES = [
   "apps/web/src/domains/creator/bg3d/StudioBg3dProfessionalWorkspace.tsx",
   "apps/web/src/domains/creator/bg3d/StudioBg3dDynamicComponentsPanel.tsx",
   "apps/web/src/domains/creator/bg3d/StudioBg3dSpatialWebtoonPanel.tsx",
+  "apps/web/src/domains/creator/bg3d/StudioBg3dAtmospherePanel.tsx",
   "apps/web/src/domains/creator/vrm/StudioVrmAvatarForgeGenerateSection.tsx",
   "apps/web/src/domains/creator/vrm/StudioVrmPoseMaterialPanel.tsx",
+  "apps/web/src/domains/creator/lettering/StudioBubbleToolPopoverBody.tsx",
   "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingQuickErgonomicsBar.tsx",
+  "apps/web/src/domains/creator/studio-cuttoon-editor/StudioRadialQuickWheel.tsx",
+  "apps/web/src/domains/creator/studio-cuttoon-editor/StudioContextMiniDock.tsx",
+  "apps/web/src/domains/creator/studio-cuttoon-editor/StudioVisualShortcutHud.tsx",
+  "apps/web/src/domains/creator/studio-cuttoon-editor/StudioSplitWipeOverlay.tsx",
+  "apps/web/src/domains/creator/brush/StudioBrushStudio.tsx",
+  "apps/web/src/domains/creator/character-shaper/CharacterShaperShelf.tsx",
+  "apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceIllustratedStageHud.tsx",
+  "apps/web/src/domains/creator/virtual-space/three/StudioVirtualSpaceThreeHud.tsx",
 ] as const;
 
 const RAW_TAILWIND_COLOR_PATTERN =

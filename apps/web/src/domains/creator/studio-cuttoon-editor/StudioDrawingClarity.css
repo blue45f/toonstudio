@@ -50,8 +50,8 @@ button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%;di
     position:absolute;top:52px;left:56px;right:12px;z-index:30;
     width:fit-content;max-width:calc(100% - 68px);margin-inline:auto;
     height:44px;min-height:44px;max-height:44px;padding:0 6px;
-    border:1px solid var(--color-line);border-radius:10px;
-    background:var(--color-panel);box-shadow:var(--shadow-1,0 4px 12px -4px color-mix(in oklch,var(--color-fg) 14%,transparent));
+    border:1px solid var(--color-line-strong);border-radius:var(--atelier-radius-outer,14px);
+    background:color-mix(in oklch,var(--color-panel) 95%,transparent);box-shadow:var(--atelier-elevation-dock,var(--shadow-1,0 4px 12px -4px color-mix(in oklch,var(--color-fg) 14%,transparent)));
   }
   .studio-drawing-clarity-context-row :is(.studio-drawing-stage-pills,.studio-drawing-stabilizer-group,.studio-drawing-stepper){
     padding-block:0;border-block:0;
@@ -62,13 +62,11 @@ button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%;di
 @media (min-width: 1024px) and (max-width: 1365px) {
   #studio-workspace .studio-drawing-clarity-rail{flex-basis:48px;width:48px;padding-inline:2px}
 }
-/* 좁은 화면의 확대 글꼴·여러 저장 안내는 줄 수에 맞춰 읽을 자리를 확보한다. */
-.studio-drawing-clarity-header .studio-drawing-clarity-title:has([data-studio-connection-notice-summary]:not(:empty)){height:auto;max-height:none}
-.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary]:not(:empty)){max-height:none;overflow:visible}
-.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary]:not(:empty))>span{display:block;overflow-wrap:anywhere;overflow:visible}
-/* 저장 결과와 두 안내가 같은 줄의 남은 폭을 나누고, 큰 글씨는 다음 줄에서 계속 읽는다. */
-.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary] > :nth-child(2))>span{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.5em}
-.studio-drawing-clarity-title [data-studio-connection-notice-summary]:has(> :nth-child(2)){display:contents}
+/* 44px 단일 상단바 높이를 엄격히 유지해 연결 상태 안내가 캔버스 상단으로 넘치지 않게 한다. */
+.studio-drawing-clarity-header .studio-drawing-clarity-title:has([data-studio-connection-notice-summary]:not(:empty)){height:44px;max-height:44px;overflow:hidden}
+.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary]:not(:empty)){max-height:44px;overflow:hidden}
+.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary]:not(:empty))>span{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}
+.studio-drawing-clarity-title [data-studio-connection-notice-summary]{white-space:normal}
 .studio-drawing-clarity-title [data-studio-connection-notice-summary]>*{min-width:0;max-width:100%}
 .studio-drawing-clarity-context-row::-webkit-scrollbar{display:none}
 .studio-drawing-page-position{display:inline-flex;align-items:center;gap:6px;min-width:44px;min-height:44px;max-width:200px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 10px;border:1px solid var(--color-line-strong);border-radius:8px;background:var(--color-card);color:var(--color-fg);font-size:12px;font-weight:600;word-break:keep-all;text-align:left;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1),border-color 150ms cubic-bezier(.16,1,.3,1)}
@@ -112,11 +110,11 @@ button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%;di
 .studio-drawing-clarity-more[open]>summary,.studio-drawing-clarity-more summary[data-studio-clarity-open]{background:var(--color-accent-soft);color:var(--color-accent)}
 .studio-drawing-clarity-more-slot{display:block;min-width:0}
 .studio-drawing-clarity-more-slot>.studio-drawing-clarity-more{width:100%}
-.studio-drawing-clarity-menu{position:fixed;z-index:100;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;min-width:0;padding:8px;border:1px solid var(--color-line-strong);border-radius:12px;background:var(--color-panel);box-shadow:var(--shadow-2,0 12px 28px -12px color-mix(in oklch,var(--color-fg) 22%,transparent))}
+.studio-drawing-clarity-menu{position:fixed;z-index:100;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;min-width:0;padding:8px;border:1px solid var(--color-line-strong);border-radius:var(--atelier-radius-outer,14px);background:var(--color-panel);box-shadow:var(--atelier-elevation-floating,var(--shadow-2,0 12px 28px -12px color-mix(in oklch,var(--color-fg) 22%,transparent)))}
 .studio-drawing-clarity-menu[hidden]{display:none}
 .studio-drawing-clarity-menu button{min-height:44px;min-width:44px;padding:8px 12px;border-radius:8px;font-size:13px;text-align:left;word-break:keep-all}
 .studio-drawing-clarity-menu button:hover{background:var(--color-raised)}
-.studio-drawing-dialog{position:fixed;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(660px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);margin:0;padding:0;overflow:hidden;border:1px solid var(--color-line-strong);border-radius:16px;background:var(--color-panel);box-shadow:var(--shadow-3,0 24px 48px -18px color-mix(in oklch,var(--color-fg) 28%,transparent));color:var(--color-fg)}
+.studio-drawing-dialog{position:fixed;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(660px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);margin:0;padding:0;overflow:hidden;border:1px solid var(--color-line-strong);border-radius:16px;background:var(--color-panel);box-shadow:var(--atelier-elevation-floating,var(--shadow-3,0 24px 48px -18px color-mix(in oklch,var(--color-fg) 28%,transparent)));color:var(--color-fg)}
 .studio-drawing-dialog:not([open]){display:none}
 .studio-drawing-dialog[open]{display:flex;flex-direction:column}
 .studio-drawing-dialog::backdrop{background:color-mix(in oklch,var(--color-canvas) 72%,transparent)}
@@ -140,7 +138,8 @@ button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%;di
 [data-studio-drawing-save-details=true]>section{width:100%}
 .studio-drawing-dialog details{margin-top:18px}
 .studio-drawing-clarity-pane-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:2px 12px;border-bottom:1px solid var(--color-line);background:var(--color-panel)}
-.studio-drawing-clarity-pane-heading h2{font-size:14px;font-weight:600;word-break:keep-all}
+.studio-drawing-clarity-pane-heading h2{font-size:14px;font-weight:600;word-break:keep-all;border-radius:6px}
+.studio-drawing-clarity-pane-heading h2:focus{outline:2px solid var(--color-accent);outline-offset:2px}
 [data-studio-drawing-clarity=true] #studio-workspace{position:relative}
 .studio-drawing-clarity-pane{position:absolute;top:0;bottom:0;z-index:35;display:flex;flex-direction:column;min-height:0;flex-shrink:0;border-left:1px solid var(--color-line);background:var(--color-panel);box-shadow:var(--shadow-2,-10px 0 24px -16px color-mix(in oklch,var(--color-fg) 20%,transparent))}
 .studio-drawing-clarity-pane[hidden]{display:none}

@@ -483,4 +483,46 @@ describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성
     expect(pane?.hasAttribute("hidden")).toBe(true);
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "저장" }));
   });
+
+  it("패널 헤딩이 비동기로 마운트되기 전에 사용자가 다른 영역(건너뛰기 링크 등)으로 포커스를 옮기면 포커스를 빼앗지 않는다", async () => {
+    function DeferredPaneProbe({ mountHeading }: { readonly mountHeading: boolean }) {
+      const clarity = useStudioDrawingClarity();
+      if (!clarity) throw new Error("화면 선택 context가 필요합니다.");
+      return (
+        <>
+          <button type="button" data-testid="skip-target">문서 메뉴로 이동</button>
+          <button
+            type="button"
+            data-testid="layer-opener"
+            onClick={(event) => clarity.open("layers", event.currentTarget)}
+          >
+            레이어
+          </button>
+          <section id="studio-drawing-clarity-panel-layers" hidden={clarity.panel !== "layers"}>
+            {mountHeading ? <h2 tabIndex={-1} data-clarity-pane-heading>레이어·속성</h2> : null}
+          </section>
+        </>
+      );
+    }
+    const base = session();
+    const view = render(
+      <StudioDrawingClarityProvider session={base}>
+        <DeferredPaneProbe mountHeading={false} />
+      </StudioDrawingClarityProvider>,
+    );
+    const opener = screen.getByTestId("layer-opener");
+    opener.focus();
+    fireEvent.click(opener);
+    const skipTarget = screen.getByTestId("skip-target");
+    skipTarget.focus();
+    expect(document.activeElement).toBe(skipTarget);
+
+    view.rerender(
+      <StudioDrawingClarityProvider session={base}>
+        <DeferredPaneProbe mountHeading />
+      </StudioDrawingClarityProvider>,
+    );
+    await Promise.resolve();
+    expect(document.activeElement).toBe(skipTarget);
+  });
 });

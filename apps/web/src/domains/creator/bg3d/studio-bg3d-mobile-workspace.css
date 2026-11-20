@@ -42,6 +42,16 @@
   [data-studio-bg3d-workspace] textarea { font-size: 1rem; }
 }
 @media (max-width: 1023px) {
+  /* 390px 모바일 헤더가 버튼 겹침·줄깨짐 없이 정돈된 2행 이내로 유지되도록 정밀 패딩을 준다. */
+  [data-studio-bg3d-workspace] [data-bg3d-workspace-header] {
+    flex-wrap: wrap;
+    gap: 0.375rem 0.5rem;
+    padding: 0.45rem 0.625rem;
+  }
+  [data-studio-bg3d-workspace] [data-bg3d-workspace-header] :is(button, a) {
+    white-space: nowrap;
+    word-break: keep-all;
+  }
   [data-studio-bg3d-workspace] .scene-assistant {
     --assistant-mobile-panel-height: min(48%, 24rem);
   }

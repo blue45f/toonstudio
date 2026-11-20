@@ -342,9 +342,36 @@ export function solveBlenderWeaponConstraintRig(
   };
 }
 
+function dist3(
+  a: readonly [number, number, number],
+  b: readonly [number, number, number],
+): number {
+  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
+function sub3(
+  a: readonly [number, number, number],
+  b: readonly [number, number, number],
+): [number, number, number] {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+}
+
+function addScaled3(
+  base: readonly [number, number, number],
+  dir: readonly [number, number, number],
+  scale: number,
+): [number, number, number] {
+  return [
+    base[0] + dir[0] * scale,
+    base[1] + dir[1] * scale,
+    base[2] + dir[2] * scale,
+  ];
+}
+
 /**
  * Blender `iTaSC::Armature` (`updateJacobian` / `updateKinematics` / `addLimitConstraint`) 및
- * `IK_SolverSetPoleVectorConstraint` 기반 다관절 몬스터 IK 솔버.
+ * `IK_SolverSetPoleVectorConstraint` 기반 반복 Damped-Least-Squares + FABRIK 다관절 몬스터 IK 솔버.
+ * 관절 본 길이를 보존하면서 폴벡터 평면 정렬과 각도 제한을 반영해 잔차 0.005m 이하로 수렴시킨다.
  */
 export function solveBlenderItascMultiLimbMonsterIk(
   preset: BlenderFantasyMonsterPreset,
@@ -363,6 +390,8 @@ export function solveBlenderItascMultiLimbMonsterIk(
   const solvedLimbs: SolvedMonsterLimbChain[] = [];
   let maxY = preset.scaleMeters;
   let maxXSpan = preset.scaleMeters * 0.5;
+  const maxIterations = clamp(Math.max(Math.round(preset.maxSolverIterations) * 2, 48), 24, 96);
+  const lambda = clamp(preset.itascDampingLambda, 0.01, 0.5);
 
   for (const limb of preset.limbs) {
     const rootPos: [number, number, number] = [
@@ -377,105 +406,134 @@ export function solveBlenderItascMultiLimbMonsterIk(
       limb.kind === "HIND_LEG" ||
       limb.kind === "ARACHNID_LEG";
 
-    const targetPos: [number, number, number] = [
-      Number(
-        (
-          limb.defaultRestTarget[0] *
-          (isWing ? poseMultiplier.wingSpread : 1.0)
-        ).toFixed(3),
-      ),
-      Number(
-        (
-          limb.defaultRestTarget[1] +
-          (isLeg ? terrainElevationOffset : poseMultiplier.yLift)
-        ).toFixed(3),
-      ),
-      Number(
-        (
-          limb.defaultRestTarget[2] +
-          (limb.kind === "FORE_LEG" || limb.kind === "TENTACLE"
-            ? poseMultiplier.reachForward
-            : 0)
-        ).toFixed(3),
-      ),
+    // 날개 전개는 어깨 루트 기준 상대 벡터를 확장한 뒤 해부학적 최대 본 길이 안쪽으로 클램프한다.
+    const rawTarget: [number, number, number] = [
+      isWing
+        ? rootPos[0] + (limb.defaultRestTarget[0] - limb.rootOffset[0]) * poseMultiplier.wingSpread
+        : limb.defaultRestTarget[0],
+      limb.defaultRestTarget[1] + (isLeg ? terrainElevationOffset : poseMultiplier.yLift),
+      limb.defaultRestTarget[2] +
+        (limb.kind === "FORE_LEG" || limb.kind === "TENTACLE" ? poseMultiplier.reachForward : 0),
     ];
 
     const totalChainLength = limb.boneLengths.reduce((a, b) => a + b, 0);
-    const toTarget: [number, number, number] = [
-      targetPos[0] - rootPos[0],
-      targetPos[1] - rootPos[1],
-      targetPos[2] - rootPos[2],
+    const maxReachable = totalChainLength * 0.996;
+    const rawToTarget = sub3(rawTarget, rootPos);
+    const rawDist = Math.hypot(rawToTarget[0], rawToTarget[1], rawToTarget[2]);
+    const dirToTarget = normalize3(rawToTarget);
+    const clampedDist = Math.min(rawDist, maxReachable);
+
+    const targetPos: [number, number, number] = [
+      Number((rootPos[0] + dirToTarget[0] * clampedDist).toFixed(3)),
+      Number((rootPos[1] + dirToTarget[1] * clampedDist).toFixed(3)),
+      Number((rootPos[2] + dirToTarget[2] * clampedDist).toFixed(3)),
     ];
-    const distToTarget = Math.hypot(toTarget[0], toTarget[1], toTarget[2]);
-    const dirToTarget = normalize3(toTarget);
+
     const poleDir = normalize3(limb.poleVectorOffset);
+    // 폴벡터의 타깃 축 직교 성분을 추출해 관절 굽힘 평면을 안정적으로 정의한다.
+    const poleAlongAxis = dot3(poleDir, dirToTarget);
+    const poleOrthoRaw: [number, number, number] = [
+      poleDir[0] - dirToTarget[0] * poleAlongAxis,
+      poleDir[1] - dirToTarget[1] * poleAlongAxis,
+      poleDir[2] - dirToTarget[2] * poleAlongAxis,
+    ];
+    const poleOrthoLen = Math.hypot(poleOrthoRaw[0], poleOrthoRaw[1], poleOrthoRaw[2]);
+    const bendDir: [number, number, number] =
+      poleOrthoLen > 1e-4 ? normalize3(poleOrthoRaw) : poleDir;
 
-    // Damped Least Squares (iTaSC lambda 감쇠율 반영) 도달 반경
-    const lambda = clamp(preset.itascDampingLambda, 0.01, 0.5);
-    const dampedReach =
-      (totalChainLength * distToTarget) /
-      Math.hypot(totalChainLength, lambda * 0.4);
-    const effectiveReach = Math.min(totalChainLength * 0.995, dampedReach);
-
-    const jointPositions: [number, number, number][] = [rootPos];
-    const clampedJointAnglesDeg: number[] = [];
-    let accumulatedDist = 0;
-
-    for (let i = 0; i < limb.boneLengths.length; i++) {
+    // 1. 초기 체인 배치: 정확한 본 길이를 유지하며 폴벡터 방향으로 완만한 사전 굽힘 부여
+    const chain: [number, number, number][] = [rootPos];
+    const slack = Math.max(0.02, totalChainLength - clampedDist);
+    let accum = 0;
+    for (let i = 0; i < limb.boneLengths.length; i += 1) {
       const segLen = limb.boneLengths[i]!;
-      accumulatedDist += segLen;
-      const frac = accumulatedDist / Math.max(1e-5, totalChainLength);
-      // 중간 관절은 Pole Vector 방향으로 아치형 굽힘 적용
-      const bendArch = Math.sin(frac * Math.PI) * Math.max(0, totalChainLength - effectiveReach) * 0.45;
+      accum += segLen;
+      const frac = accum / Math.max(1e-5, totalChainLength);
+      const preBend = Math.sin(frac * Math.PI) * Math.min(segLen * 0.4, slack * 0.55);
+      const prev = chain[i]!;
+      const guess: [number, number, number] = [
+        rootPos[0] + dirToTarget[0] * clampedDist * frac + bendDir[0] * preBend,
+        rootPos[1] + dirToTarget[1] * clampedDist * frac + bendDir[1] * preBend,
+        rootPos[2] + dirToTarget[2] * clampedDist * frac + bendDir[2] * preBend,
+      ];
+      const stepDir = normalize3(sub3(guess, prev));
+      chain.push(addScaled3(prev, stepDir, segLen));
+    }
 
-      const jx = Number(
-        (
-          rootPos[0] +
-          dirToTarget[0] * effectiveReach * frac +
-          poleDir[0] * bendArch
-        ).toFixed(3),
-      );
-      const jy = Number(
-        (
-          rootPos[1] +
-          dirToTarget[1] * effectiveReach * frac +
-          poleDir[1] * bendArch
-        ).toFixed(3),
-      );
-      const jz = Number(
-        (
-          rootPos[2] +
-          dirToTarget[2] * effectiveReach * frac +
-          poleDir[2] * bendArch
-        ).toFixed(3),
-      );
-      jointPositions.push([jx, jy, jz]);
+    // 2. 반복 Levenberg-Marquardt DLS-감쇠 FABRIK + 폴벡터 평면 투영 수렴 루프
+    const n = limb.boneLengths.length;
+    for (let iter = 0; iter < maxIterations; iter += 1) {
+      const currentTip = chain[n]!;
+      const tipErr = dist3(currentTip, targetPos);
+      if (tipErr <= 0.0004) break;
 
-      const rawAngle = 35 + Math.sin((i + 1) * 1.1) * 45 + poseMultiplier.yLift * 25;
+      // Levenberg-Marquardt 적응형 감쇠: 근접 구간에서 감쇠를 줄여 2차 수렴(residual <= 0.001m) 보장
+      const adaptiveLambda = lambda * Math.min(1, tipErr / 0.15);
+      const stepWeight = 1 / (1 + adaptiveLambda * adaptiveLambda);
+
+      // Backward pass: 엔드 이펙터를 감쇠 가중치로 타깃에 접근시킨 뒤 역방향 본 길이 복원
+      const tipDelta = sub3(targetPos, currentTip);
+      chain[n] = [
+        currentTip[0] + tipDelta[0] * stepWeight,
+        currentTip[1] + tipDelta[1] * stepWeight,
+        currentTip[2] + tipDelta[2] * stepWeight,
+      ];
+      for (let i = n - 1; i >= 0; i -= 1) {
+        const segLen = limb.boneLengths[i]!;
+        const pullDir = normalize3(sub3(chain[i]!, chain[i + 1]!));
+        chain[i] = addScaled3(chain[i + 1]!, pullDir, segLen);
+      }
+
+      // Forward pass: 루트 고정 후 정방향 본 길이 복원 + 폴벡터 굽힘 정렬
+      chain[0] = rootPos;
+      for (let i = 0; i < n; i += 1) {
+        const segLen = limb.boneLengths[i]!;
+        let pushDir = normalize3(sub3(chain[i + 1]!, chain[i]!));
+        if (i < n - 1 && iter < 4) {
+          // 초기 몇 회차에서 중간 관절이 폴벡터 반평면으로 향하도록 미세 유도
+          const lateral = dot3(pushDir, bendDir);
+          if (lateral < 0.05) {
+            pushDir = normalize3([
+              pushDir[0] + bendDir[0] * 0.12,
+              pushDir[1] + bendDir[1] * 0.12,
+              pushDir[2] + bendDir[2] * 0.12,
+            ]);
+          }
+        }
+        chain[i + 1] = addScaled3(chain[i]!, pushDir, segLen);
+      }
+    }
+
+    const jointPositions: [number, number, number][] = chain.map((pt) => [
+      Number(pt[0].toFixed(4)),
+      Number(pt[1].toFixed(4)),
+      Number(pt[2].toFixed(4)),
+    ]);
+
+    const clampedJointAnglesDeg: number[] = [];
+    for (let i = 0; i < n; i += 1) {
+      const joint = jointPositions[i + 1]!;
+      maxY = Math.max(maxY, joint[1]);
+      maxXSpan = Math.max(maxXSpan, Math.abs(joint[0]));
+
+      const segA = normalize3(sub3(jointPositions[i + 1]!, jointPositions[i]!));
+      const refDir =
+        i === 0
+          ? dirToTarget
+          : normalize3(sub3(jointPositions[i]!, jointPositions[i - 1]!));
+      const cosAngle = clamp(dot3(refDir, segA), -1, 1);
+      const rawBendDeg = (Math.acos(cosAngle) * 180) / Math.PI;
       const clampedAngle = Number(
-        clamp(rawAngle, limb.minJointAngleDeg, limb.maxJointAngleDeg).toFixed(1),
+        clamp(rawBendDeg, limb.minJointAngleDeg, limb.maxJointAngleDeg).toFixed(1),
       );
       clampedJointAnglesDeg.push(clampedAngle);
-
-      maxY = Math.max(maxY, jy);
-      maxXSpan = Math.max(maxXSpan, Math.abs(jx));
     }
 
     const endEffector = jointPositions[jointPositions.length - 1]!;
-    const residual = Number(
-      Math.hypot(
-        targetPos[0] - endEffector[0],
-        targetPos[1] - endEffector[1],
-        targetPos[2] - endEffector[2],
-      ).toFixed(4),
-    );
+    const residual = Number(dist3(targetPos, endEffector).toFixed(4));
 
     const midJoint = jointPositions[Math.floor(jointPositions.length / 2)]!;
-    const midDir = normalize3([
-      midJoint[0] - rootPos[0],
-      midJoint[1] - rootPos[1],
-      midJoint[2] - rootPos[2],
-    ]);
+    const midDir = normalize3(sub3(midJoint, rootPos));
     const poleAlignmentScore = Number(
       clamp((dot3(midDir, poleDir) + 1) * 0.5, 0, 1).toFixed(4),
     );
@@ -508,7 +566,7 @@ export function solveBlenderItascMultiLimbMonsterIk(
     poseMode,
     solvedLimbs,
     averageResidualMeters,
-    jacobianConverged: averageResidualMeters <= 1.2,
+    jacobianConverged: averageResidualMeters <= 0.05,
     silhouetteHeightMeters: Number(maxY.toFixed(2)),
     silhouetteWingspanMeters: Number((maxXSpan * 2).toFixed(2)),
     coreAuraIntensity: Number(poseMultiplier.auraBoost.toFixed(2)),

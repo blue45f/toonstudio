@@ -65,6 +65,24 @@
     linear-gradient(90deg, oklch(0.14 0.012 68 / 0.9), oklch(0.14 0.012 68 / 0.46) 56%, oklch(0.14 0.012 68 / 0.22)),
     linear-gradient(0deg, oklch(0.14 0.012 68 / 0.88), transparent 56%);
   --art-on: oklch(0.97 0.012 285);
+  /* High-Craft Luminous Atelier 광학 표면 계층: 아홉 테마의 --unified-*에서만 OKLCH로 도출한다. */
+  --atelier-specular-top: inset 0 1px 0 color-mix(in oklch, var(--unified-fg) 10%, transparent);
+  --atelier-specular-strong: inset 0 1px 0 color-mix(in oklch, var(--unified-fg) 16%, transparent);
+  --atelier-rim-hairline: inset 0 0 0 1px color-mix(in oklch, var(--unified-line-strong) 72%, transparent);
+  --atelier-elevation-dock:
+    var(--atelier-specular-top),
+    0 1px 2px color-mix(in oklch, var(--unified-canvas) 45%, transparent),
+    0 12px 28px -10px color-mix(in oklch, var(--unified-canvas) 62%, transparent);
+  --atelier-elevation-floating:
+    var(--atelier-specular-strong),
+    0 2px 6px color-mix(in oklch, var(--unified-canvas) 48%, transparent),
+    0 20px 44px -14px color-mix(in oklch, var(--unified-canvas) 70%, transparent);
+  --atelier-active-bevel:
+    inset 0 1px 0 color-mix(in oklch, var(--unified-accent) 32%, transparent),
+    0 1px 2px color-mix(in oklch, var(--unified-canvas) 35%, transparent);
+  --atelier-radius-outer: 14px;
+  --atelier-radius-inner: 10px;
+  --atelier-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /*
@@ -532,6 +550,12 @@ h1[data-type-variant="editorial"],
     --elevation-2: none;
     --elevation-3: none;
     --art-on: CanvasText;
+    --atelier-specular-top: none;
+    --atelier-specular-strong: none;
+    --atelier-rim-hairline: none;
+    --atelier-elevation-dock: none;
+    --atelier-elevation-floating: none;
+    --atelier-active-bevel: none;
   }
   [data-site-chrome="footer"] {
     --color-bg: Canvas;
@@ -721,6 +745,14 @@ h1[data-type-variant="editorial"],
 }
 :root[data-design-theme="contrast"] [data-studio-beta-notice="true"] :where(p, h2, h3) {
   color: var(--color-fg) !important;
+}
+:root[data-design-theme="contrast"] {
+  --atelier-specular-top: none;
+  --atelier-specular-strong: none;
+  --atelier-rim-hairline: none;
+  --atelier-elevation-dock: none;
+  --atelier-elevation-floating: none;
+  --atelier-active-bevel: none;
 }
 
 /* Public journey cards keep their generated artwork, but their semantic labels use the active palette. */

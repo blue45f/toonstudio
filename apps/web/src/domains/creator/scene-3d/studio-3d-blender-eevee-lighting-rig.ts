@@ -429,8 +429,50 @@ export function evaluateLightProbeVolumeIrradiance(
   };
 }
 
+function cross3(
+  a: readonly [number, number, number],
+  b: readonly [number, number, number],
+): [number, number, number] {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+}
+
+/**
+ * 시선 벡터(`viewDir`)에 직교하는 실루엣 경계(grazing, N·V ≈ 0.20) 다점 법선 링(좌·우·상·어깨 대각 4점)을 생성한다.
+ * 정면 단일 법선 `[0, 0.3, 0.95]`에서만 평가할 때 백림(Back-Rim) 광원이 소실되는 물리 샘플링 누락을 해소한다.
+ */
+function buildSilhouetteGrazingNormals(
+  viewDir: readonly [number, number, number],
+): readonly [number, number, number][] {
+  const v = normalize3(viewDir);
+  const worldUp: [number, number, number] = Math.abs(v[1]) > 0.95 ? [1, 0, 0] : [0, 1, 0];
+  const right = normalize3(cross3(worldUp, v));
+  const up = normalize3(cross3(v, right));
+  const cosTheta = 0.2;
+  const sinTheta = Math.sqrt(1 - cosTheta * cosTheta);
+  const diag = Math.SQRT1_2;
+
+  const combine = (rx: number, uy: number): [number, number, number] =>
+    normalize3([
+      v[0] * cosTheta + (right[0] * rx + up[0] * uy) * sinTheta,
+      v[1] * cosTheta + (right[1] * rx + up[1] * uy) * sinTheta,
+      v[2] * cosTheta + (right[2] * rx + up[2] * uy) * sinTheta,
+    ]);
+
+  return [
+    combine(1, 0),
+    combine(-1, 0),
+    combine(0, 1),
+    combine(diag, diag),
+  ];
+}
+
 /**
  * 판타지 웹툰 조명 리그 전체(다중 EEVEE 광원 + 라이트 프로브 + 볼륨 산란)를 통합 평가한다.
+ * 정면 표면 법선과 실루엣 그레이징 링(N·V ≈ 0.20, 4점)을 함께 샘플링해 실제 백림 가독성과 명암 대비를 산출한다.
  */
 export function evaluateBlenderFantasyLightingRig(
   rig: BlenderFantasyLightingRigPreset,
@@ -438,9 +480,28 @@ export function evaluateBlenderFantasyLightingRig(
   surfaceNormal: readonly [number, number, number] = [0, 0.3, 0.95],
   viewDir: readonly [number, number, number] = [0, 0.1, 1],
 ): BlenderFantasyLightingEvaluation {
-  const lightSamples = rig.lights.map((light) =>
-    evaluateEeveeLightContribution(light, samplePoint, surfaceNormal, viewDir),
-  );
+  const grazingNormals = buildSilhouetteGrazingNormals(viewDir);
+  const lightSamples = rig.lights.map((light) => {
+    const frontSample = evaluateEeveeLightContribution(
+      light,
+      samplePoint,
+      surfaceNormal,
+      viewDir,
+    );
+    const grazingRimValues = grazingNormals
+      .map((gn) => evaluateEeveeLightContribution(light, samplePoint, gn, viewDir).rimContribution)
+      .sort((a, b) => b - a);
+    const topTwoGrazingRim =
+      grazingRimValues.length >= 2
+        ? (grazingRimValues[0]! + grazingRimValues[1]!) * 0.5
+        : (grazingRimValues[0] ?? 0);
+    const effectiveRim = Number(
+      Math.max(frontSample.rimContribution, topTwoGrazingRim).toFixed(4),
+    );
+    return effectiveRim > frontSample.rimContribution
+      ? { ...frontSample, rimContribution: effectiveRim }
+      : frontSample;
+  });
   const probeSample = evaluateLightProbeVolumeIrradiance(
     rig.lightProbe,
     samplePoint,
@@ -487,11 +548,13 @@ export function evaluateBlenderFantasyLightingRig(
   );
   const contrastRatio = Number((keyLum / ambientLum).toFixed(2));
   const webtoonReadabilityGrade: "S" | "A" | "B" =
-    rimSum >= 0.25 && contrastRatio >= 1.8
+    rimSum >= 0.25 && contrastRatio >= 2.8
       ? "S"
-      : contrastRatio >= 1.2
-        ? "A"
-        : "B";
+      : rimSum >= 0.2 && contrastRatio >= 1.8
+        ? "S"
+        : contrastRatio >= 1.2
+          ? "A"
+          : "B";
 
   return {
     rigId: rig.id,

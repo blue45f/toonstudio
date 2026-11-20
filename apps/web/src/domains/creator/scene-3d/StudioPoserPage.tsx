@@ -108,7 +108,7 @@ export function StudioPoserPage(): ReactElement {
     <div className="flex min-h-dvh w-full flex-col bg-canvas text-fg">
       {/* 독립 페이지라 문서 제목(h1)이 필요하다 — 패널 제목은 섹션용 h2라 별도로 둔다. */}
       <h1 className="sr-only">포즈 스튜디오</h1>
-      <div className="flex w-full flex-1 flex-col gap-2 px-3 py-2 sm:px-4">
+      <div className="flex w-full flex-1 flex-col gap-1.5 px-2.5 py-2 sm:px-3">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -225,7 +225,7 @@ export function StudioPoserPage(): ReactElement {
           <section
             data-testid="studio-poser-rea-foreshortening-bar"
             aria-label={pickLang("3D 포저 만화 투시 및 관절 균형 설정", "3D Poser manga foreshortening and joint balance")}
-            className="sticky bottom-2 z-20 mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2 rounded-xl border border-line bg-panel/95 px-3 py-1.5 shadow-sm"
+            className="sticky bottom-2 z-20 mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2 rounded-[var(--atelier-radius-outer,14px)] border border-line-strong bg-panel/95 px-3 py-1.5 shadow-[var(--atelier-elevation-dock)]"
           >
             <div className="flex items-center gap-1" role="group" aria-label={pickLang("카메라 렌즈", "Camera lens")}>
               {CAMERA_LENSES.map((item) => (

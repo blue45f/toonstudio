@@ -87,5 +87,11 @@ describe("studio-3d-blender-eevee-lighting-rig", () => {
       [0, 0, 1],
     );
     expect(hitSample.diffuseIrradiance).toBeGreaterThan(0);
+
+    // Silhouette grazing-ring sampling recovers true back-rim readability on abyss backlight rig
+    const abyssEval = evaluateBlenderFantasyLightingRig(BLENDER_FANTASY_LIGHTING_RIG_PRESETS[0]!);
+    expect(abyssEval.combinedRimIntensity).toBeGreaterThanOrEqual(0.25);
+    expect(abyssEval.contrastRatio).toBeGreaterThanOrEqual(2.8);
+    expect(abyssEval.webtoonReadabilityGrade).toBe("S");
   });
 });

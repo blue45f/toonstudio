@@ -45,6 +45,30 @@ const LazyStudioDrawingProjectTools = lazyRetry(
   "StudioDrawingProjectTools",
 );
 
+/** reduced-motion을 존중하며 5단계 제작 공정 전환에 View Transitions API를 적용한다. */
+function runStageViewTransition(action: () => void): void {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    action();
+    return;
+  }
+  const prefersReduced =
+    typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const docWithTransition = document as Document & {
+    startViewTransition?: (callback: () => void) => unknown;
+  };
+  if (prefersReduced || typeof docWithTransition.startViewTransition !== "function") {
+    action();
+    return;
+  }
+  try {
+    docWithTransition.startViewTransition(() => {
+      action();
+    });
+  } catch {
+    action();
+  }
+}
+
 /** 메뉴와 같은 명령 바인딩과 저장 책임을 쓰는 기본 드로잉 화면이다. */
 export function StudioDrawingClarityBar({ session: s, projectUtilities }: { readonly session: StudioCuttoonEditorViewSession; readonly projectUtilities?: ReactNode }) {
   const clarity = useStudioDrawingClarity();
@@ -151,20 +175,26 @@ function StudioDrawingClarityDesktopBar({
         <StudioMainMenu groups={standardSevenGroups} presentation="quick" surface="action" ariaLabel={bt("표준 7대 메뉴", "Standard 7 menus")} />
       </nav>
       <div className="studio-drawing-workflow-switcher" role="group" data-studio-workflow-switcher="true" aria-label={bt("5단계 제작 공정", "5-stage production workflow")}>
-        <button type="button" className="studio-drawing-workflow-step" aria-pressed={clarity.panel === "pages"} onClick={(event) => clarity.open("pages", event.currentTarget)}>
+        <button type="button" className="studio-drawing-workflow-step" aria-pressed={clarity.panel === "pages"} onClick={(event) => {
+          const trigger = event.currentTarget;
+          runStageViewTransition(() => clarity.open("pages", trigger));
+        }}>
           <span>{bt("1 콘티", "1 Story")}</span>
         </button>
-        <button type="button" className="studio-drawing-workflow-step" aria-pressed={Boolean(s.bg3dOpen)} onClick={() => s.studioLeftToolRailHandlers?.toggleBg3dEditor?.()}>
+        <button type="button" className="studio-drawing-workflow-step" aria-pressed={Boolean(s.bg3dOpen)} onClick={() => runStageViewTransition(() => s.studioLeftToolRailHandlers?.toggleBg3dEditor?.())}>
           <span>{bt("2 3D/배경", "2 3D")}</span>
         </button>
-        <button type="button" className="studio-drawing-workflow-step" disabled={drawingBlocked} aria-pressed={s.tool === "draw"} onClick={() => s.activatePrimaryCanvasTool?.("draw", "pen")}
+        <button type="button" className="studio-drawing-workflow-step" disabled={drawingBlocked} aria-pressed={s.tool === "draw"} onClick={() => runStageViewTransition(() => s.activatePrimaryCanvasTool?.("draw", "pen"))}
           title={drawingBlocked ? bt("현재 편집 권한이 잠겨 있어 작화 모드로 전환할 수 없습니다", "Drawing mode is locked") : bt("작화·채색 도구로 전환", "Switch to drawing and coloring")}>
           <span>{bt("3 작화/채색", "3 Draw")}</span>
         </button>
-        <button type="button" className="studio-drawing-workflow-step" aria-pressed={s.menu === "bubble"} onClick={() => { preloadStudioBubbleToolPopoverBody(); s.setMenu("bubble"); }}>
+        <button type="button" className="studio-drawing-workflow-step" aria-pressed={s.menu === "bubble"} onClick={() => runStageViewTransition(() => { preloadStudioBubbleToolPopoverBody(); s.setMenu("bubble"); })}>
           <span>{bt("4 식자", "4 Text")}</span>
         </button>
-        <button type="button" className="studio-drawing-workflow-step" aria-pressed={Boolean(s.exportMenuOpen)} onClick={(event) => { onExportTrigger(event.currentTarget); s.setExportMenuOpen(true); }}>
+        <button type="button" className="studio-drawing-workflow-step" aria-pressed={Boolean(s.exportMenuOpen)} onClick={(event) => {
+          const trigger = event.currentTarget;
+          runStageViewTransition(() => { onExportTrigger(trigger); s.setExportMenuOpen(true); });
+        }}>
           <span>{bt("5 검수/출고", "5 Export")}</span>
         </button>
       </div>

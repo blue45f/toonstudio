@@ -261,7 +261,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
             <div className={focusedBoard ? "min-w-0 text-right" : "min-w-0"}>
               {focusedBoard ? <h1 className="break-words text-sm font-bold text-fg">{projectTitle}</h1> : <>
                 <p className="break-words text-sm font-semibold text-fg-2">{projectTitle}</p>
-                <h1 className="mt-1 text-2xl font-black text-fg">{bt("대본 확인하고 이어 그리기", "Review your script and keep drawing")}</h1>
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-fg">{bt("대본 확인하고 이어 그리기", "Review your script and keep drawing")}</h1>
               </>}
             </div>
             <Link
@@ -313,32 +313,37 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
         },
       ]} />
       <header
-        className="rounded-2xl border border-line bg-panel/65 p-4 shadow-sm sm:p-6"
+        className="rounded-[var(--atelier-radius-outer,14px)] border border-line-strong bg-panel p-3.5 shadow-[var(--atelier-elevation-dock)] sm:px-4 sm:py-3.5"
         data-studio-project-simple-header="true"
       >
-        <nav
-          aria-label={bt("현재 위치", "Current location")}
-          className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-fg-3"
-        >
-          <Link href="/studio" className="shrink-0 font-semibold hover:text-accent">
-            {bt("내 작업", "My work")}
-          </Link>
-          <span aria-hidden="true">/</span>
-          <Link
-            href={launchHref(projectSectionHref(displayProjectId, "overview"))}
-            className="min-w-0 max-w-56 truncate font-semibold hover:text-accent"
-            title={projectTitle}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <nav
+            aria-label={bt("현재 위치", "Current location")}
+            className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-fg-3"
           >
-            {projectTitle}
-          </Link>
-          <span aria-hidden="true">/</span>
-          <span aria-current="page" className="shrink-0">{bt(definition.label.ko, definition.label.en)}</span>
-        </nav>
+            <Link href="/studio" className="shrink-0 font-semibold hover:text-accent">
+              {bt("내 작업", "My work")}
+            </Link>
+            <span aria-hidden="true">/</span>
+            <Link
+              href={launchHref(projectSectionHref(displayProjectId, "overview"))}
+              className="min-w-0 max-w-56 truncate font-semibold hover:text-accent"
+              title={projectTitle}
+            >
+              {projectTitle}
+            </Link>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page" className="shrink-0 font-medium text-fg-2">{bt(definition.label.ko, definition.label.en)}</span>
+          </nav>
+          <span className="truncate text-xs text-fg-3">
+            {bt("프로젝트", "Project")} · {displayProjectId}
+          </span>
+        </div>
         <div
-          className="mt-4 flex flex-wrap items-center gap-3 sm:gap-4"
+          className="mt-2.5 flex flex-wrap items-center gap-3"
           data-studio-project-header-band="true"
         >
-          <div className="relative aspect-[3/4] w-14 shrink-0 overflow-hidden rounded-xl border border-line bg-panel sm:w-[4.5rem]">
+          <div className="relative aspect-[3/4] w-10 shrink-0 overflow-hidden rounded-lg border border-line bg-panel">
             {projectEntry ? (
               <StudioProjectCardThumbnail
                 variant="cover"
@@ -348,24 +353,28 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
               />
             ) : (
               <div
-                className="grid h-full place-items-center bg-gradient-to-br from-accent-soft to-panel px-1 text-center"
+                className="grid h-full place-items-center bg-accent-soft px-1 text-center"
                 aria-hidden="true"
               >
-                <span className="line-clamp-3 text-[0.65rem] font-black leading-tight text-accent">
+                <span className="line-clamp-2 text-xs font-semibold leading-tight text-accent">
                   {projectTitle}
                 </span>
               </div>
             )}
           </div>
           <div className="min-w-44 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-              <strong className="min-w-0 max-w-full truncate text-lg font-black tracking-tight text-fg sm:text-xl">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <strong className="min-w-0 max-w-full truncate text-base font-semibold tracking-tight text-fg sm:text-lg">
                 {projectTitle}
               </strong>
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent">
+                <SectionIcon size={12} aria-hidden="true" />
+                {bt(definition.label.ko, definition.label.en)}
+              </span>
               {projectEntry ? (
                 <span
                   className={cn(
-                    "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[0.7rem] font-bold",
+                    "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-semibold",
                     projectStatusChipClasses(projectEntry.status),
                   )}
                   data-studio-project-status-chip={projectEntry.status}
@@ -377,75 +386,43 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
                 </span>
               ) : null}
             </div>
-            {headerFacts ? (
-              <ul
-                className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-3"
-                aria-label={bt("프로젝트 핵심 지표", "Project key metrics")}
-                data-studio-project-header-metrics="true"
-              >
-                <li>{bt(`원고 ${headerFacts.documentCount}개`, `${headerFacts.documentCount} manuscripts`)}</li>
-                {headerFacts.lastSavedAt !== null ? (
-                  <li>
-                    {bt(
-                      `최근 저장 ${formatCreatorRelativeTime(headerFacts.lastSavedAt, locale)}`,
-                      `Saved ${formatCreatorRelativeTime(headerFacts.lastSavedAt, locale)}`,
-                    )}
-                  </li>
-                ) : null}
-                <li>{bt(`검토 대기 ${headerFacts.pendingReviewCount}건`, `${headerFacts.pendingReviewCount} awaiting review`)}</li>
-              </ul>
-            ) : null}
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h1 className="text-sm font-semibold text-fg-2">
+                {bt(definition.title.ko, definition.title.en)}
+              </h1>
+              {headerFacts ? (
+                <ul
+                  className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-fg-3 tabular-nums"
+                  aria-label={bt("프로젝트 핵심 지표", "Project key metrics")}
+                  data-studio-project-header-metrics="true"
+                >
+                  <li>{bt(`원고 ${headerFacts.documentCount}개`, `${headerFacts.documentCount} manuscripts`)}</li>
+                  {headerFacts.lastSavedAt !== null ? (
+                    <li>
+                      {bt(
+                        `최근 저장 ${formatCreatorRelativeTime(headerFacts.lastSavedAt, locale)}`,
+                        `Saved ${formatCreatorRelativeTime(headerFacts.lastSavedAt, locale)}`,
+                      )}
+                    </li>
+                  ) : null}
+                  <li>{bt(`검토 대기 ${headerFacts.pendingReviewCount}건`, `${headerFacts.pendingReviewCount} awaiting review`)}</li>
+                </ul>
+              ) : null}
+            </div>
           </div>
-          {headerFacts?.hasResumeDocument ? (
-            <Link
-              href={launchHref(headerFacts.resumeHref)}
-              data-studio-project-header-continue="true"
-              title={headerFacts.resumeSummary ?? undefined}
-              className={buttonClass({ size: "lg", className: "shrink-0 gap-2" })}
-            >
-              <Brush size={17} aria-hidden="true" />
-              {bt("이어서 그리기", "Continue drawing")}
-            </Link>
-          ) : (
-            <Link
-              href={launchHref(workHref(displayProjectId))}
-              data-studio-project-header-continue="true"
-              className={buttonClass({ size: "lg", className: "shrink-0 gap-2" })}
-            >
-              <Brush size={17} aria-hidden="true" />
-              {bt("원고 열기", "Open manuscript")}
-            </Link>
-          )}
-        </div>
-        <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-2 rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
-              <SectionIcon size={14} aria-hidden="true" />
-              {bt(definition.label.ko, definition.label.en)}
-            </span>
-            <h1 className="mt-3 text-pretty text-2xl font-black tracking-tight text-fg sm:text-3xl">
-              {bt(definition.title.ko, definition.title.en)}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-fg-2">
-              {bt(definition.description.ko, definition.description.en)}
-            </p>
-            <p className="mt-2 truncate text-xs text-fg-3">
-              {bt("프로젝트", "Project")} · {displayProjectId}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {recentProjects.length > 0 ? (
               <details className="group relative" data-studio-project-switcher="true">
                 <summary
-                  className={buttonClass({ size: "lg", variant: "outline", className: "cursor-pointer list-none gap-2 [&::-webkit-details-marker]:hidden" })}
+                  className={buttonClass({ size: "sm", variant: "outline", className: "min-h-11 cursor-pointer list-none gap-1.5 [&::-webkit-details-marker]:hidden" })}
                   aria-label={bt("최근 프로젝트로 전환", "Switch to a recent project")}
                 >
-                  <ArrowLeftRight size={17} aria-hidden="true" />
+                  <ArrowLeftRight size={15} aria-hidden="true" />
                   <span>{bt("프로젝트 전환", "Switch project")}</span>
-                  <ChevronDown size={15} className="shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
+                  <ChevronDown size={14} className="shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
                 </summary>
-                <div className="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-2xl border border-line bg-card shadow-xl">
-                  <p className="border-b border-line px-4 py-2.5 text-xs font-bold text-fg-3">
+                <div className="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-[var(--atelier-radius-outer,14px)] border border-line-strong bg-card shadow-[var(--atelier-elevation-floating)]">
+                  <p className="border-b border-line px-4 py-2.5 text-xs font-semibold text-fg-3">
                     {bt("최근 프로젝트", "Recent projects")}
                   </p>
                   <nav
@@ -473,7 +450,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
                         const panel = event.currentTarget.closest("details");
                         if (panel) panel.open = false;
                       }}
-                      className="flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-accent transition-colors hover:bg-accent-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                      className="flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-accent transition-colors hover:bg-accent-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                     >
                       <span className="min-w-0 flex-1 truncate">{bt("모든 작업 보기", "View all work")}</span>
                       <ArrowRight size={14} className="shrink-0" aria-hidden="true" />
@@ -484,28 +461,40 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
             ) : null}
             <Link
               href={`/studio/p/${encodeURIComponent(displayProjectId)}/space`}
-              className={buttonClass({ size: "lg", variant: "quiet", className: "gap-2 text-fg" })}
+              className={buttonClass({ size: "sm", variant: "quiet", className: "min-h-11 gap-1.5 text-fg" })}
               data-studio-enter-virtual-space="true"
             >
-              <Users size={17} aria-hidden="true" />
+              <Users size={15} aria-hidden="true" />
               {bt("팀 공간", "Team space")}
             </Link>
+            {headerFacts?.hasResumeDocument ? (
+              <Link
+                href={launchHref(headerFacts.resumeHref)}
+                data-studio-project-header-continue="true"
+                title={headerFacts.resumeSummary ?? undefined}
+                className={buttonClass({ size: "sm", className: "min-h-11 shrink-0 gap-1.5 px-4" })}
+              >
+                <Brush size={15} aria-hidden="true" />
+                {bt("이어서 그리기", "Continue drawing")}
+              </Link>
+            ) : (
+              <Link
+                href={launchHref(workHref(displayProjectId))}
+                data-studio-project-header-continue="true"
+                className={buttonClass({ size: "sm", className: "min-h-11 shrink-0 gap-1.5 px-4" })}
+              >
+                <Brush size={15} aria-hidden="true" />
+                {bt("원고 열기", "Open manuscript")}
+              </Link>
+            )}
           </div>
         </div>
       </header>
 
-      <StudioJourneyStepBar
-        currentStep={journeyStepFromSection(section)}
-        startHref={launchHref(projectSectionHref(displayProjectId, "story"))}
-        editHref={launchHref(headerFacts?.hasResumeDocument ? headerFacts.resumeHref : workHref(displayProjectId))}
-        exportHref={launchHref(projectSectionHref(displayProjectId, "export"))}
-        className="mt-4"
-      />
-
-      <div className="mt-3 grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto]">
+      <div className="mt-2.5 flex flex-wrap items-start gap-2">
         <nav
           aria-label={bt("프로젝트 주요 단계", "Main project stages")}
-          className="overflow-x-auto rounded-2xl border border-line bg-card p-1.5"
+          className="min-w-0 flex-1 overflow-x-auto rounded-[var(--atelier-radius-outer,14px)] border border-line bg-card p-1"
           data-studio-project-primary-navigation="true"
         >
           <div className="flex min-w-max gap-1">
@@ -518,7 +507,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
                   aria-current={active ? "page" : undefined}
                   data-studio-project-primary-section={id}
                   className={cn(
-                    "inline-flex min-h-10 items-center rounded-xl px-3.5 text-sm font-semibold transition-colors",
+                    "inline-flex min-h-11 items-center rounded-[var(--atelier-radius-inner,10px)] px-3.5 text-sm font-semibold transition-colors",
                     active ? "bg-accent text-on-accent" : "text-fg-2 hover:bg-raised hover:text-fg",
                   )}
                 >
@@ -532,17 +521,17 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
         <details
           open={secondaryNavigationActive || undefined}
           className={cn(
-            "group rounded-2xl border bg-card p-1.5",
+            "group relative rounded-[var(--atelier-radius-outer,14px)] border bg-card p-1",
             secondaryNavigationActive ? "border-accent/55" : "border-line",
           )}
           data-studio-project-secondary-navigation="true"
         >
-          <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-3 text-sm font-semibold text-fg-2 hover:bg-raised hover:text-fg lg:min-w-40">
-            <span className="inline-flex items-center gap-2">
-              <MoreHorizontal size={16} aria-hidden="true" />
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2.5 rounded-[var(--atelier-radius-inner,10px)] px-3 text-sm font-semibold text-fg-2 hover:bg-raised hover:text-fg">
+            <span className="inline-flex items-center gap-1.5">
+              <MoreHorizontal size={15} aria-hidden="true" />
               {bt("소재·설정", "Assets & settings")}
             </span>
-            <ChevronDown size={15} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+            <ChevronDown size={14} className="transition-transform group-open:rotate-180" aria-hidden="true" />
           </summary>
           <div className="mt-1 grid gap-1 border-t border-line pt-1">
             {SECONDARY_SECTIONS.map((id) => {
@@ -555,7 +544,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
                   aria-current={active ? "page" : undefined}
                   data-studio-project-secondary-section={id}
                   className={cn(
-                    "flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold transition-colors",
+                    "flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold transition-colors",
                     active ? "bg-accent-soft text-accent" : "text-fg-2 hover:bg-raised hover:text-fg",
                   )}
                 >
@@ -566,83 +555,75 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
             })}
           </div>
         </details>
-      </div>
 
-      <details
-        className="group mt-3 rounded-2xl border border-line bg-card"
-        data-studio-project-view-picker="true"
-      >
-        <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 py-2.5">
-          <span className="text-xs font-semibold text-fg-3">
-            {bt("현재 화면", "Current view")}
-          </span>
-          <strong className="min-w-0 flex-1 truncate text-sm text-fg">
-            {bt(destination.labelKo, destination.labelEn)}
-          </strong>
-          <span className="text-xs text-fg-3">
-            {bt("화면 바꾸기", "Change view")}
-          </span>
-          <ChevronDown size={16} className="transition-transform group-open:rotate-180" aria-hidden="true" />
-        </summary>
-        <nav
-          aria-label={bt(`${definition.label.ko} 세부 화면`, `${definition.label.en} views`)}
-          className="grid gap-1 border-t border-line p-2 sm:grid-cols-2 lg:grid-cols-3"
+        <details
+          className="group relative rounded-[var(--atelier-radius-outer,14px)] border border-line bg-card p-1"
+          data-studio-project-view-picker="true"
         >
-          {sectionViews.map((view) => {
-            const active = view === selectedView;
-            const viewLabel = resolveStudioProjectViewDestination(displayProjectId, section, view);
-            return (
-              <Link
-                key={view}
-                href={projectViewHref(displayProjectId, section, view, location.search)}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex min-h-10 items-center rounded-xl px-3 text-sm font-semibold transition-colors",
-                  active ? "bg-accent-soft text-accent" : "text-fg-2 hover:bg-raised hover:text-fg",
-                )}
-              >
-                {bt(viewLabel.labelKo, viewLabel.labelEn)}
-              </Link>
-            );
-          })}
-        </nav>
-      </details>
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-[var(--atelier-radius-inner,10px)] px-3 text-sm">
+            <span className="text-xs font-medium text-fg-3">
+              {bt("현재 화면", "Current view")}
+            </span>
+            <strong className="max-w-44 truncate text-sm font-semibold text-fg">
+              {bt(destination.labelKo, destination.labelEn)}
+            </strong>
+            <ChevronDown size={14} className="shrink-0 text-fg-3 transition-transform group-open:rotate-180" aria-hidden="true" />
+          </summary>
+          <nav
+            aria-label={bt(`${definition.label.ko} 세부 화면`, `${definition.label.en} views`)}
+            className="mt-1 grid gap-1 border-t border-line p-1 sm:grid-cols-2 lg:min-w-80"
+          >
+            {sectionViews.map((view) => {
+              const active = view === selectedView;
+              const viewLabel = resolveStudioProjectViewDestination(displayProjectId, section, view);
+              return (
+                <Link
+                  key={view}
+                  href={projectViewHref(displayProjectId, section, view, location.search)}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold transition-colors",
+                    active ? "bg-accent-soft text-accent" : "text-fg-2 hover:bg-raised hover:text-fg",
+                  )}
+                >
+                  {bt(viewLabel.labelKo, viewLabel.labelEn)}
+                </Link>
+              );
+            })}
+          </nav>
+        </details>
+      </div>
 
       <section
         data-studio-project-view={selectedView}
-        className="mt-4 rounded-2xl border border-accent/25 bg-accent-soft/20 p-4 sm:p-5"
+        className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel/75 px-3.5 py-2"
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-xs font-bold text-accent">
-              {bt("현재 화면", "Current view")}
-            </p>
-            <h2 className="mt-1 text-lg font-black text-fg">
-              {bt(destination.labelKo, destination.labelEn)}
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-fg-2">
-              {bt(destination.descriptionKo, destination.descriptionEn)}
-            </p>
-          </div>
-          {destination.href ? (
-            <Link
-              href={launchHref(destination.href)}
-              className={buttonClass({ variant: "outline", className: "shrink-0 gap-2" })}
-            >
-              {bt(destination.ctaKo, destination.ctaEn)}
-              <ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          ) : (
-            <span className="rounded-full border border-line bg-card px-3 py-2 text-xs font-bold text-fg-2">
-              {bt(destination.ctaKo, destination.ctaEn)}
-            </span>
-          )}
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+          <h2 className="text-sm font-semibold text-fg">
+            {bt(destination.labelKo, destination.labelEn)}
+          </h2>
+          <p className="text-xs text-fg-2">
+            {bt(destination.descriptionKo, destination.descriptionEn)}
+          </p>
         </div>
+        {destination.href ? (
+          <Link
+            href={launchHref(destination.href)}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 shrink-0 gap-1.5" })}
+          >
+            {bt(destination.ctaKo, destination.ctaEn)}
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        ) : (
+          <span className="rounded-full border border-line bg-card px-2.5 py-1 text-xs font-semibold text-fg-2">
+            {bt(destination.ctaKo, destination.ctaEn)}
+          </span>
+        )}
       </section>
 
       {section === "story" && (selectedView === "episodes" || selectedView === "characters" || selectedView === "world" || selectedView === "timeline") ? (
         <div
-          className="mt-4 rounded-2xl border border-line bg-card p-4 sm:p-5"
+          className="mt-3 rounded-[var(--atelier-radius-outer,14px)] border border-line bg-card p-4 sm:p-5"
           data-studio-project-planning={selectedView}
         >
           <StudioProjectStoryPlanning projectId={displayProjectId} view={selectedView} />
@@ -656,6 +637,14 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
       )}
       <StudioProjectDiagnosticsBridge projectId={displayProjectId} />
 
+      <StudioJourneyStepBar
+        currentStep={journeyStepFromSection(section)}
+        startHref={launchHref(projectSectionHref(displayProjectId, "story"))}
+        editHref={launchHref(headerFacts?.hasResumeDocument ? headerFacts.resumeHref : workHref(displayProjectId))}
+        exportHref={launchHref(projectSectionHref(displayProjectId, "export"))}
+        className="mt-4"
+      />
+
       {primaryAction ? (
         <section className="mt-5" aria-labelledby="project-next-action">
           <div className="flex items-center gap-3">
@@ -664,7 +653,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
             </span>
             <div>
               <p className="text-xs font-semibold text-fg-3">{bt("추천", "Recommended")}</p>
-              <h2 id="project-next-action" className="text-lg font-black text-fg">
+              <h2 id="project-next-action" className="text-lg font-semibold text-fg">
                 {bt("다음 작업", "Next action")}
               </h2>
             </div>
@@ -674,7 +663,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
               resolveProjectActionHref(section, primaryAction, displayProjectId, headerFacts),
             )}
             data-studio-project-primary-action="true"
-            className="group mt-3 flex min-h-28 items-center gap-4 rounded-2xl border border-accent/35 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent hover:bg-raised hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:p-5"
+            className="group mt-3 flex min-h-24 items-center gap-4 rounded-[var(--atelier-radius-outer,14px)] border border-accent/35 bg-card p-4 shadow-[var(--atelier-elevation-dock)] transition-[border-color,background-color,box-shadow] duration-150 hover:border-accent hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transition-none sm:p-5"
           >
             <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-accent text-on-accent">
               <PrimaryActionIcon size={22} aria-hidden="true" />

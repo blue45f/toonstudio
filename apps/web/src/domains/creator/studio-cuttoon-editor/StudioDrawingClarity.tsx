@@ -91,22 +91,30 @@ export function StudioDrawingClarityProvider({
   useEffect(() => {
     if (!panel) return;
     const targetId = `studio-drawing-clarity-panel-${panel}`;
-    const focus = () => {
+    const opener = triggerRef.current;
+    const movedOutside = (pane: HTMLElement | null, el: Element | null) =>
+      el instanceof HTMLElement && el !== document.body && el !== document.documentElement && el !== opener && !pane?.contains(el);
+    const focus = (deferred: boolean) => {
       const pane = document.getElementById(targetId);
       if (pane && document.activeElement instanceof Node && pane.contains(document.activeElement)) return true;
+      if (deferred && movedOutside(pane, document.activeElement)) return true;
       const target = pane?.querySelector<HTMLElement>("[data-clarity-pane-heading]");
       if (!target) return false;
       if (!hasVisibleDialog()) target.focus({ preventScroll: true });
       return true;
     };
-    const observer = focus() ? null : new MutationObserver(() => { if (focus()) observer?.disconnect(); });
+    const observer = focus(false) ? null : new MutationObserver(() => { if (focus(true)) observer?.disconnect(); });
     observer?.observe(document.body, { childList: true, subtree: true });
+    const cancelDeferred = (event: FocusEvent) => {
+      if (movedOutside(document.getElementById(targetId), event.target as Element | null)) observer?.disconnect();
+    };
+    if (observer) document.addEventListener("focusin", cancelDeferred, true);
     const escape = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented || isImeKeyboardEvent(event) || hasVisibleDialog() || document.querySelector('[data-studio-main-menu-panel="true"]')) return;
       event.preventDefault(); event.stopPropagation(); close();
     };
     document.addEventListener("keydown", escape);
-    return () => { observer?.disconnect(); document.removeEventListener("keydown", escape); };
+    return () => { observer?.disconnect(); if (observer) document.removeEventListener("focusin", cancelDeferred, true); document.removeEventListener("keydown", escape); };
   }, [panel, close]);
 
   return <DrawingClarityContext.Provider value={{ active, available, presentation: editorPresentation, selectionHost, setSelectionHost, panel, open, reveal, close, chooseSimple, showSavedLayout }}>{children}</DrawingClarityContext.Provider>;

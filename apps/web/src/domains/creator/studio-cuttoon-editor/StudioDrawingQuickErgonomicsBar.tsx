@@ -6,18 +6,35 @@ import {
 } from "../drawing/studio-pressure-curve-and-colordrop";
 import {
   DEFAULT_QUICK_MENU_SLOTS,
+  type QuickMenuActionId,
   type QuickMenuSlot,
 } from "../drawing/studio-quickmenu-and-quickshape";
 import { Columns2, Compass, FlipHorizontal2, Gauge, Lock, Magnet, Minus, Plus, Shapes, SlidersHorizontal, Unlock } from "lucide-react";
-import { useId, useState } from "react";
+import { Suspense, useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 import { normalizeHexColor } from "../studio-color-utils";
 import { cycleStudioStabilizerStrength } from "../studio-pro-draw-prefs";
 import { drawingCommandShortcut, type DrawingCommandSettings } from "./studio-drawing-command-shortcut";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
+import type { StudioContextMiniDockMode } from "./StudioContextMiniDock";
+import type { StudioShortcutHudCue } from "./StudioVisualShortcutHud";
+
+const LazyStudioRadialQuickWheel = lazyRetry(
+  () => import("./StudioRadialQuickWheel").then((module) => ({ default: module.StudioRadialQuickWheel })),
+  "StudioRadialQuickWheel",
+);
+const LazyStudioContextMiniDock = lazyRetry(
+  () => import("./StudioContextMiniDock").then((module) => ({ default: module.StudioContextMiniDock })),
+  "StudioContextMiniDock",
+);
+const LazyStudioVisualShortcutHud = lazyRetry(
+  () => import("./StudioVisualShortcutHud").then((module) => ({ default: module.StudioVisualShortcutHud })),
+  "StudioVisualShortcutHud",
+);
 
 export type StudioDrawingErgonomicsSymmetryType =
   | "none"
@@ -165,11 +182,21 @@ export function StudioDrawingQuickErgonomicsBar({
   const bt = useBilingual("studio.drawingClarity");
   const [localPressurePreset, setLocalPressurePreset] = useState<PressureCurvePresetId>("linear");
   const [localQuickShapeEnabled, setLocalQuickShapeEnabled] = useState<boolean>(true);
+  const [quickWheelOpen, setQuickWheelOpen] = useState(false);
+  const [quickWheelAnchor, setQuickWheelAnchor] = useState<{ readonly x: number; readonly y: number } | null>(null);
+  const [miniDockOpen, setMiniDockOpen] = useState(false);
+  const [shortcutCue, setShortcutCue] = useState<StudioShortcutHudCue | null>(null);
+  const quickWheelTriggerRef = useRef<HTMLButtonElement>(null);
+  const miniDockTriggerRef = useRef<HTMLButtonElement>(null);
   const activePressurePreset = s.pressureCurvePreset ?? localPressurePreset;
   const activePressureCurve = PRESSURE_CURVE_PRESETS[activePressurePreset];
   const pressurePresetLabel = formatPressurePresetLabel(activePressurePreset, bt);
   const activeQuickShapeEnabled = s.quickShapeSnapEnabled ?? localQuickShapeEnabled;
-  const activeQuickMenuCount = (s.quickMenuSlots ?? DEFAULT_QUICK_MENU_SLOTS).length;
+  const activeQuickMenuSlots = s.quickMenuSlots ?? DEFAULT_QUICK_MENU_SLOTS;
+  const activeQuickMenuCount = activeQuickMenuSlots.length;
+  const pushCue = useCallback((keycap: string, label: string, value?: string) => {
+    setShortcutCue({ id: Date.now() + Math.random(), keycap, label, value });
+  }, []);
   const blocked =
     s.activeSurfaceReviewLocked ||
     s.pageEditLocked ||
@@ -225,14 +252,49 @@ export function StudioDrawingQuickErgonomicsBar({
   const stabilizerLabel = formatStabilizerLabel(s.stabilizer, bt);
   const optionsLiveSummary = `${bt("현재 도구", "Current tool")} ${activeBrushName}, ${bt("두께", "Size")} ${roundedWidth}px, ${bt("불투명도", "Opacity")} ${opacityPercent}%, ${stabilizerLabel}, ${bt("배율", "Zoom")} ${zoomPercent}%`;
 
-  const resetZoomToActualPixel = () => {
+  const resetZoomToActualPixel = useCallback(() => {
     if (zoomDisabled) return;
+    pushCue("0", bt("배율 맞춤", "Reset zoom"), "100%");
     if (s.studioToolBeltContentHandlers?.setActualPixelView) {
       s.studioToolBeltContentHandlers.setActualPixelView();
       return;
     }
     s.setZoom(1);
-  };
+  }, [bt, pushCue, s, zoomDisabled]);
+
+  const handleQuickWheelAction = useCallback(
+    (actionId: QuickMenuActionId, labelKo: string) => {
+      pushCue("Q", labelKo);
+      if (actionId === "flip-canvas-h") {
+        if (s.studioOptionsBarsHandlers?.flipCanvasHorizontal) s.studioOptionsBarsHandlers.flipCanvasHorizontal();
+        else s.toggleCanvasFlipX?.();
+      } else if (actionId === "fit-canvas") {
+        resetZoomToActualPixel();
+      } else if (actionId === "toggle-alpha-lock" || actionId === "toggle-clipping-mask") {
+        const trigger = quickWheelTriggerRef.current ?? (document.activeElement instanceof HTMLElement ? document.activeElement : document.body);
+        clarity?.open("layers", trigger);
+      } else if (actionId === "colordrop-fill") {
+        s.activatePrimaryCanvasTool("draw", "pen");
+      }
+    },
+    [clarity, pushCue, resetZoomToActualPixel, s],
+  );
+
+  useEffect(() => {
+    const handleGlobalQuickWheelKey = (event: KeyboardEvent) => {
+      if (blocked || event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key !== "q" && event.key !== "Q") return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable)) return;
+      event.preventDefault();
+      setQuickWheelAnchor(null);
+      setQuickWheelOpen((open) => !open);
+    };
+    window.addEventListener("keydown", handleGlobalQuickWheelKey);
+    return () => window.removeEventListener("keydown", handleGlobalQuickWheelKey);
+  }, [blocked]);
+
+  const miniDockMode: StudioContextMiniDockMode = s.bg3dOpen ? "bg3d" : activeDrawMode === "eraser" ? "eraser" : s.tool === "select" ? "select" : "pen";
 
   return (
     <div
@@ -599,6 +661,109 @@ export function StudioDrawingQuickErgonomicsBar({
           <span>{bt("⑤ 마감·출고", "5. Publish")}</span>
         </button>
       </div>
+
+      <button
+        ref={quickWheelTriggerRef}
+        type="button"
+        className="studio-drawing-ergonomics-chip"
+        disabled={blocked}
+        aria-pressed={quickWheelOpen}
+        aria-keyshortcuts="Q"
+        data-studio-quick-wheel-trigger="true"
+        onClick={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          setQuickWheelAnchor({ x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.bottom + 112) });
+          setQuickWheelOpen((open) => !open);
+        }}
+        title={bt("방사형 퀵 휠 열기 (Q)", "Open radial quick wheel (Q)")}
+      >
+        <Compass size={15} aria-hidden />
+        <span>{bt("퀵 휠", "Wheel")}</span>
+      </button>
+
+      <button
+        ref={miniDockTriggerRef}
+        type="button"
+        className="studio-drawing-ergonomics-chip"
+        disabled={blocked}
+        aria-pressed={miniDockOpen}
+        data-studio-mini-dock-toggle="true"
+        onClick={() => setMiniDockOpen((open) => !open)}
+        title={bt("상황 인식 스크러버 미니 독 열기/닫기", "Toggle context-aware scrubber mini dock")}
+      >
+        <SlidersHorizontal size={15} aria-hidden />
+        <span>{bt("미니 독", "Mini dock")}</span>
+      </button>
+
+      {miniDockOpen ? (
+        <Suspense fallback={null}>
+          <div className="fixed bottom-16 left-1/2 z-[35] -translate-x-1/2">
+            <LazyStudioContextMiniDock
+              mode={miniDockMode}
+              strokeWidth={roundedWidth}
+              onStrokeWidthChange={(next) => {
+                s.setStrokeWidth(next);
+                pushCue("[ ]", bt("브러시 두께", "Brush size"), `${next}px`);
+              }}
+              opacityPercent={opacityPercent}
+              stabilizer={stabilizerSafe}
+              onCycleStabilizer={() => {
+                s.setStabilizer((current) => {
+                  const next = cycleStudioStabilizerStrength(current);
+                  pushCue("S", bt("손떨림 보정", "Stabilizer"), formatStabilizerLabel(next, bt));
+                  return next;
+                });
+              }}
+              color={normalizedColor}
+              symmetryActive={
+                typeof s.symmetryType === "string" &&
+                s.symmetryType !== "off" &&
+                s.symmetryType !== "none"
+              }
+              onToggleSymmetry={() => {
+                const next = resolveNextSymmetryMode(s.symmetryType);
+                s.changeStudioSymmetryType?.(next);
+                pushCue("M", bt("대칭 자", "Symmetry"), next);
+              }}
+              flipActive={Boolean(s.canvasFlipH)}
+              onToggleFlip={() => {
+                if (s.studioOptionsBarsHandlers?.flipCanvasHorizontal) {
+                  s.studioOptionsBarsHandlers.flipCanvasHorizontal();
+                } else {
+                  s.toggleCanvasFlipX?.();
+                }
+                pushCue("H", bt("좌우 반전", "Flip view"));
+              }}
+              disabled={blocked}
+              onOpenQuickWheel={() => {
+                setQuickWheelAnchor(null);
+                setQuickWheelOpen(true);
+              }}
+              onReturnToPen={() => s.activatePrimaryCanvasTool("draw", "pen")}
+              onOpenLayers={() => clarity?.open("layers", miniDockTriggerRef.current ?? document.body)}
+              onToggleBg3d={() => s.studioLeftToolRailHandlers.toggleBg3dEditor()}
+            />
+          </div>
+        </Suspense>
+      ) : null}
+
+      {quickWheelOpen ? (
+        <Suspense fallback={null}>
+          <LazyStudioRadialQuickWheel
+            open={quickWheelOpen}
+            anchor={quickWheelAnchor}
+            slots={activeQuickMenuSlots}
+            onSelectAction={(actionId, slot) => handleQuickWheelAction(actionId, slot.labelKo)}
+            onClose={() => setQuickWheelOpen(false)}
+          />
+        </Suspense>
+      ) : null}
+
+      {shortcutCue ? (
+        <Suspense fallback={null}>
+          <LazyStudioVisualShortcutHud cue={shortcutCue} />
+        </Suspense>
+      ) : null}
 
       {blocked && blockedReason ? <span id={blockedReasonId} className="sr-only">{blockedReason}</span> : null}
       {!blocked && s.strokeWidth <= 1 && minWidthReason ? <span id={minWidthReasonId} className="sr-only">{minWidthReason}</span> : null}
