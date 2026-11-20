@@ -18,7 +18,7 @@ import { ReaderTrustSealBadge } from "@/shared/components/ReaderTrustSealBadge";
 import { verifyReaderTrustSealDigest } from "@/shared/lib/reader-trust-seal";
 import { cn } from "@/shared/lib/utils";
 
-const SAMPLE_LUMA_9X8 = new Uint8Array(72).map((_, idx) => (idx * 23) % 256);
+const SAMPLE_LUMA_9X8 = new Uint8Array(72).map((_, idx) => (idx * 19) % 256);
 const FIXED_PARTICIPANTS = [
   { role: "story" as const, displayName: "원작자", sharePercent: 50 },
   { role: "art" as const, displayName: "작화가", sharePercent: 35 },
