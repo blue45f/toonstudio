@@ -24,11 +24,15 @@ import type { ReactElement } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
+export type StudioHandPoseChange =
+  | { readonly kind: "preset" }
+  | { readonly kind: "finger"; readonly finger: StudioFingerName; readonly field: "flex" | "spread" };
+
 export interface StudioHandPosePanelProps {
   /** 현재 손 포즈 데이터. */
   readonly handPose: StudioHandPoseData;
-  /** 손 포즈 변경 콜백. */
-  readonly onHandPoseChange: (pose: StudioHandPoseData) => void;
+  /** 전체 프리셋과 단일 필드 편집을 구분해 상세 손 포즈를 보존한다. */
+  readonly onHandPoseChange: (pose: StudioHandPoseData, change: StudioHandPoseChange) => void;
   /** 웹캠 실시간 핸드 트래킹 활성 여부. */
   readonly webcamActive: boolean;
   /** 웹캠 토글 콜백. */
@@ -61,7 +65,7 @@ export function StudioHandPosePanel({
 
   const handlePresetApply = (presetId: string) => {
     const preset = STUDIO_HAND_PRESETS.find((p) => p.id === presetId);
-    if (preset) onHandPoseChange(preset.pose);
+    if (preset) onHandPoseChange(preset.pose, { kind: "preset" });
   };
 
   const handleFingerChange = (
@@ -69,17 +73,20 @@ export function StudioHandPosePanel({
     field: "flex" | "spread",
     value: number,
   ) => {
-    onHandPoseChange({
-      ...handPose,
-      [finger]: {
-        ...handPose[finger],
-        [field]: value,
+    onHandPoseChange(
+      {
+        ...handPose,
+        [finger]: {
+          ...handPose[finger],
+          [field]: value,
+        },
       },
-    });
+      { kind: "finger", finger, field },
+    );
   };
 
   const handleReset = () => {
-    onHandPoseChange(STUDIO_HAND_PRESETS[0]!.pose);
+    onHandPoseChange(STUDIO_HAND_PRESETS[0]!.pose, { kind: "preset" });
   };
 
   return (

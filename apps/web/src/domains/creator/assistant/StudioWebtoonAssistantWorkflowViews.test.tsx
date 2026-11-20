@@ -34,6 +34,9 @@ describe("StudioWorkflowPacksPanel Wave 7–24 full 10-stage commercial, global 
     expect(screen.getByTestId("studio-global-localization-card")).toBeTruthy();
     expect(screen.getByTestId("studio-movingtoon-voice-consent-card")).toBeTruthy();
     expect(screen.getByTestId("studio-reader-trust-seal-preview-card")).toBeTruthy();
+    expect(screen.getByTestId("studio-portfolio-batch-reissuance-card")).toBeTruthy();
+    expect(screen.getByTestId("studio-wave100-master-cockpit-card")).toBeTruthy();
+    expect(screen.getByTestId("studio-wave1000-millennium-cockpit-card")).toBeTruthy();
 
     const ncPack: StudioWorkflowPack = {
       ...BUILTIN_STUDIO_WORKFLOW_PACKS[0],

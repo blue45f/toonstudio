@@ -635,7 +635,9 @@ apps/web/src/domains/creator/review-handoff
 apps/web/src/domains/creator/review-production
 apps/web/src/domains/creator/review-resolution
 apps/web/src/domains/creator/review-task-completion
+apps/web/src/domains/creator/scene-3d/StudioMannequinPoserHandPose.test.tsx
 apps/web/src/domains/creator/scene-3d/studio-mannequin-foot-grounding-status-text.test.ts
+apps/web/src/domains/creator/scene-3d/studio-mannequin-hand-pose-adapter.test.ts
 apps/web/src/domains/creator/scene3d/bg3d-six-pass
 apps/web/src/domains/creator/scene3d/integration/scene3d-inplace-controller.test.ts
 apps/web/src/domains/creator/scene3d/specialists/specialist-orchestration.test.ts
@@ -938,6 +940,7 @@ scripts/lib/studio-filter-dialog-surface.test.ts
 scripts/lib/studio-hokusai-preview-diagnostics.test.ts
 scripts/lib/studio-inapp-route-modal.test.ts
 scripts/lib/studio-inapp-sweep-harness.test.ts
+scripts/lib/studio-inapp-sweep-interactions.test.ts
 scripts/lib/studio-memory-growth-policy.test.mjs
 scripts/lib/studio-p2p-failure-diagnostics.test.ts
 scripts/lib/studio-preview-navigation-settlement.test.ts

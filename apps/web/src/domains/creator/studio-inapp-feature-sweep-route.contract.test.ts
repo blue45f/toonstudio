@@ -10,6 +10,10 @@ const entry = readFileSync(
   new URL("../../../../../scripts/lib/studio-verifier-entry-points.ts", import.meta.url),
   "utf8",
 );
+const interactions = readFileSync(
+  new URL("../../../../../scripts/lib/studio-inapp-sweep-interactions.ts", import.meta.url),
+  "utf8",
+);
 
 describe("Studio in-app feature sweep route contract", () => {
   it("boots the real canvas editor before exercising editing controls", () => {
@@ -42,10 +46,12 @@ it("펜 선택 완료를 확인한 뒤 같은 펜으로 설정을 열며 삭제�
 });
 
 it("현재 전체 도구로 실제 선택한 뒤 기존 정본 도크의 활성 상태를 확인한다", () => {
-  for (const label of ["선택", "픽셀", "채우기", "도형"]) expect(sweep).toContain('selectWorkspaceTool(page, "' + label + '")');
+  for (const label of ["선택", "펜", "픽셀", "지우개", "채우기", "도형"]) expect(sweep).toContain('selectWorkspaceTool(page, "' + label + '")');
   const helper = sweep.slice(sweep.indexOf("async function selectWorkspaceTool"), sweep.indexOf("const STEPS:"));
-  expect(helper).toContain("await useCatalogTool(page, id)");
-  expect(helper).toContain('includeHidden: true');
+  expect(helper).toContain("await useCatalogTool(page, STUDIO_SWEEP_TOOLS[name])");
+  expect(helper).toContain("studioSweepToolState(page, name)");
+  expect(helper).toContain("await assertStudioSweepTool(page, name)");
+  expect(interactions).toContain('includeHidden: true');
   expect(helper).toContain('getAttribute("aria-pressed")');
   const catalog = sweep.slice(sweep.indexOf("async function useCatalogTool"), sweep.indexOf("async function selectMenuCommand"));
   expect(catalog).toContain("await openStudioAllTools(page)");
@@ -54,6 +60,17 @@ it("현재 전체 도구로 실제 선택한 뒤 기존 정본 도크의 활성 
   expect(catalog).toContain('getAttribute("aria-disabled")');
   expect(catalog).toContain("await clickInView(entry, 5_000)");
   expect(catalog).toContain('await catalog.waitFor({ state: "hidden" })');
+});
+
+it("각 획은 요청한 모드로 선택된 뒤 실제 문서 기록이 추가되어야 한다", () => {
+  const draw = sweep.slice(sweep.indexOf("async function drawStroke"), sweep.indexOf("function dock"));
+  expect(draw).toContain("await selectWorkspaceTool(page, tool)");
+  expect(draw.indexOf("await studioSweepHistoryAppends(page)")).toBeLessThan(draw.indexOf("await page.mouse.down()"));
+  expect(draw.indexOf("await waitForStudioSweepDrawingCommit(page, before)")).toBeGreaterThan(draw.indexOf("await page.mouse.up()"));
+  expect(sweep).toContain('drawStroke(page, "픽셀", 12)');
+  expect(sweep).toContain('drawStroke(page, "지우개", 12)');
+  expect(sweep).toContain('drawStroke(page, "도형", 6)');
+  expect(interactions).toContain('getAttribute("data-studio-history-total-appends")');
 });
 
 it("모바일 페이지·색상·독립 포즈 화면의 현재 UI 계약을 따른다", () => {
@@ -78,7 +95,14 @@ it("45개 실제 검사 범위와 필터·기록·레이어의 결과 단언을 
   expect(steps.match(/createStudioQuickBrushStep\(/gu)).toHaveLength(1);
   expect(staticCount + routes.length + 1).toBe(45);
   expect(entry).toContain('button[aria-controls="studio-mobile-edit-options"]');
-  expect(steps.match(/await showStudioMobileEditOptions\(page\)/gu)).toHaveLength(4);
+  expect(steps.match(/await showStudioMobileEditOptions\(page\)/gu)).toHaveLength(3);
+  const history = interactions.slice(interactions.indexOf("export async function verifyStudioSweepUndoRedo"), interactions.indexOf("export async function verifyStudioSweepZoom"));
+  expect(steps).toContain("run: verifyStudioSweepUndoRedo");
+  expect(history).toContain("await showStudioMobileEditOptions(page)");
+  expect(history).toContain("await studioDocumentHistoryButtons(page, label)");
+  expect(history).toContain('[["실행취소", depth - 1], ["다시실행", depth]]');
+  expect(history).toContain("await page.waitForFunction");
+  expect(steps).toContain('verifyStudioSweepZoom(page, (id) => selectMenuCommand(page, "view", id))');
   expect(steps).toContain('[data-studio-clarity-mobile-quick-actions="true"] button');
   expect(steps).not.toContain('page.keyboard.press("Shift+Space")');
   expect(steps).toContain('[data-studio-mobile-filter-select="primary"]');
