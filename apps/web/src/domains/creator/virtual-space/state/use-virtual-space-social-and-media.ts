@@ -36,7 +36,7 @@ import { distanceBetween, SHARED_ACTIVITY_DISTANCE, TALK_DISTANCE } from "../stu
 import type { VirtualSpacePermissions } from "./use-virtual-space-permissions";
 import type { StudioVirtualWorkspacePanel } from "../studio-virtual-space-panel-scope";
 import type { StudioSpaceEmoteId } from "../studio-virtual-space-emote-catalog";
-import type { StudioVirtualSpaceZone } from "../studio-virtual-space-zones";
+import type { StudioSilentZone } from "../studio-virtual-space-silent-zone";
 
 export interface UseVirtualSpaceSocialAndMediaInput {
   readonly projectId: string;
@@ -64,7 +64,7 @@ export interface UseVirtualSpaceSocialAndMediaInput {
   readonly officeNavigationScope: string;
   readonly positionScope: StudioVirtualSpacePositionScope;
   readonly boothConfig: StudioRecordingBoothConfig;
-  readonly tileSilentZones: readonly StudioVirtualSpaceZone[];
+  readonly tileSilentZones: readonly StudioSilentZone[];
   readonly engineBridge: StudioVirtualSpaceEngineBridge;
   readonly followingPeerId: string | null;
   readonly setFollowingPeer: (id: string | null) => void;

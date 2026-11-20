@@ -31,20 +31,49 @@ const tools = {
 } as const;
 
 export type StudioArtworkTool = keyof typeof tools;
+export type StudioToolArtworkVariant = "glyph" | "art";
 
-/** 버튼 이름은 호출자가 제공한다. 강제색 또는 이미지 오류 시 같은 의미의 선 아이콘을 표시한다. */
-export function StudioToolArtwork({ tool, className = "" }: {
+/**
+ * 버튼 이름은 호출자가 제공한다.
+ * 기본값("glyph")은 <=48px 고밀도 크롬에서 단일 획선 Lucide 아이콘을 선명하게 표시하고,
+ * showcase 카드("art") 또는 사용자 일러스트 모드에서 아틀리에 삽화 아틀라스를 표시한다.
+ */
+export function StudioToolArtwork({
+  tool,
+  className = "",
+  variant = "glyph",
+}: {
   readonly tool: StudioArtworkTool;
   readonly className?: string;
+  readonly variant?: StudioToolArtworkVariant;
 }) {
   const [atlas, column, row, Fallback] = tools[tool];
   return (
-    <span className={`studio-tool-art ${className}`.trim()} data-studio-tool-art={tool} aria-hidden="true">
-      <img key={atlas} src={atlas} alt="" draggable={false} decoding="async"
-        style={{ left: `-${column * 100}%`, top: `-${row * 100}%`, ...(atlas === workbench && { width: "300%", height: "200%" }) }}
-        onLoad={event => { event.currentTarget.dataset.ready = "true"; }}
-        onError={event => { delete event.currentTarget.dataset.ready; }} />
-      <Fallback aria-hidden="true" focusable="false" />
+    <span
+      className={`studio-tool-art ${className}`.trim()}
+      data-studio-tool-art={tool}
+      data-studio-tool-art-variant={variant}
+      aria-hidden="true"
+    >
+      <img
+        key={atlas}
+        src={atlas}
+        alt=""
+        draggable={false}
+        decoding="async"
+        style={{
+          left: `-${column * 100}%`,
+          top: `-${row * 100}%`,
+          ...(atlas === workbench && { width: "300%", height: "200%" }),
+        }}
+        onLoad={(event) => {
+          event.currentTarget.dataset.ready = "true";
+        }}
+        onError={(event) => {
+          delete event.currentTarget.dataset.ready;
+        }}
+      />
+      <Fallback strokeWidth={1.65} aria-hidden="true" focusable="false" />
     </span>
   );
 }

@@ -36,7 +36,7 @@ import {
   type StudioWorldPortalDefinition,
 } from "../studio-virtual-space-world-manifest";
 import { clampStudioWorldPoint, resolveStudioWorldSpawn } from "../studio-virtual-space-world-pathfinding";
-import type { StudioCharacterCustomization, StudioVirtualDecorationState } from "../studio-virtual-space-customization";
+import type { StudioVirtualCharacterCustomization, StudioVirtualDecorationState } from "../studio-virtual-space-customization";
 import type { StudioVirtualWorkspacePanel } from "../studio-virtual-space-panel-scope";
 import type { StudioSpacePose } from "../studio-virtual-space-pose-controller";
 
@@ -64,7 +64,7 @@ export interface UseVirtualSpaceWorldRuntimeInput {
   readonly connectivityMode: string;
   readonly connectivityServerAvailable: boolean;
   readonly decorations: StudioVirtualDecorationState;
-  readonly characterCustomization: StudioCharacterCustomization;
+  readonly characterCustomization: StudioVirtualCharacterCustomization;
   readonly avatarIndex: number;
   readonly setAvatarIndex: (index: number) => void;
   readonly persistAvatarChoice: (index: number) => void;
