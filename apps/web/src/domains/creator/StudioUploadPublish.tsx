@@ -867,8 +867,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
               )}
               이미지 추가
               <input
-                type="file"
-                aria-label="원고 이미지 추가"
+                type="file" aria-label="원고 이미지 추가"
                 accept="image/png,image/jpeg,image/webp"
                 multiple
                 className="sr-only"
@@ -891,8 +890,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
               <p className="mt-1 text-xs text-fg-3">PNG, JPG, WebP · 최대 {MAX_PAGES}장</p>
               <p className="mt-1 text-xs text-fg-3">긴 이미지는 게시할 때 규격에 맞게 자동으로 나뉘어 올라가요</p>
               <input
-                type="file"
-                aria-label="업로드할 원고 이미지 파일 선택"
+                type="file" aria-label="업로드할 원고 이미지 파일 선택"
                 accept="image/png,image/jpeg,image/webp"
                 multiple
                 className="sr-only"
