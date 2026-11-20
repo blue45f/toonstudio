@@ -526,6 +526,7 @@ import {
 } from "./brush/studio-drawing-pointer-transport";
 import { createStudioDrawingShortcutNoticeStore } from "./brush/studio-drawing-shortcut-notice-store";
 import { isStudioPasteScopeCurrent, resolveStudioEditAvailability } from "./studio-edit-controls";
+import { resolveStudioFileImageAppend } from "./layer/studio-file-image-append";
 import {
   isStudioCuttoonSourceFormat,
   isStudioEditorAsyncScopeCurrent,
@@ -20004,21 +20005,17 @@ const puppetWarpArmed =
     e.target.value = "";
     if (!file) return;
     const mutationTicket = captureStudioMutationTicket();
-    const targetPageId = activePage.id;
-    const targetMasterEditMode = masterEditMode;
     const insertionPlacement = nextAssetInsertionPlacement();
     try {
       const { src, width, height, isAnimatedGif, frames, frameFps, frameLoop } = await loadStudioCanvasImageFile(file);
-      if (!isStudioPasteScopeCurrent({
-        mutationAllowed: canApplyStudioMutation(mutationTicket),
-        reviewLocked: activeSurfaceReviewLockedRef.current,
-        targetPageId,
-        currentPageId: currentPageIdRef.current,
-        targetMasterEditMode,
-        currentMasterEditMode: masterEditModeRef.current,
-      })) return;
-      setError(null);
-      addEl({
+      const latest = resolveStudioFileImageAppend({
+        ticket: mutationTicket, currentTicket: captureStudioMutationTicket(), canApply: canApplyStudioMutation, originalPage: activePage,
+        currentPage: pagesHistoryRef.current[pagesHiRef.current]?.find(page => page.id === currentPageIdRef.current),
+        originalMasterMode: masterEditMode, currentMasterMode: masterEditModeRef.current, currentMasterElements: activeElementsRef.current,
+        originalFrame: selected?.type === "frame" ? selected : null, reviewLocked: activeSurfaceReviewLockedRef.current,
+      });
+      if (!latest) return;
+      const image = {
         ...createCanvasImageElement({
           id: uid(),
           src,
@@ -20035,7 +20032,10 @@ const puppetWarpArmed =
           frameLoop,
           activeFrameId: frames[0]!.id,
         } : {}),
-      });
+      };
+      if (commit([...latest, image], undefined, activePage.id)) {
+        setError(null); setSelectedId(image.id); setTool("select");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("studio.hostStatus.imageAddFailedShort", "이미지 추가 실패"));
     }
