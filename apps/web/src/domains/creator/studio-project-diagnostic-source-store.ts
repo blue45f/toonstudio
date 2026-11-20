@@ -1,3 +1,4 @@
+import { getAuthUserId } from "@/domains/auth/public/session/auth-session-state";
 import type { StudioProjectDiagnosticSource } from "./studio-project-diagnostics";
 
 import { EMPTY_STORY_BIBLE_NARRATIVE } from "./planning/studio-character-profile";
@@ -64,27 +65,53 @@ export function parseStudioProjectDiagnosticSource(
   return Object.freeze(cloned);
 }
 
-export function readStudioProjectDiagnosticSource(
-  storage: StudioProjectDiagnosticSourceStorage,
-  projectId: string,
-): StudioProjectDiagnosticSource | null {
-  if (!projectId.trim()) return null;
+function readStoredRecord(storage: StudioProjectDiagnosticSourceStorage, projectId: string) {
   const raw = storage.getItem(storageKey(projectId));
   if (raw === null) return null;
   try {
-    return parseStudioProjectDiagnosticSource(JSON.parse(raw) as unknown, projectId);
+    const record: unknown = JSON.parse(raw);
+    return isRecord(record) && record.schemaVersion === 1 && record.projectId === projectId ? record : null;
   } catch {
     return null;
   }
 }
 
+export function readStudioProjectDiagnosticSource(
+  storage: StudioProjectDiagnosticSourceStorage,
+  projectId: string,
+  exportOwner = getAuthUserId(),
+): StudioProjectDiagnosticSource | null {
+  if (!projectId.trim()) return null;
+  const record = readStoredRecord(storage, projectId);
+  if (!record) return null;
+  const { accountExportPreflights, ...project } = record;
+  if (exportOwner !== null) {
+    project.exportPreflights = isRecord(accountExportPreflights) && Object.hasOwn(accountExportPreflights, exportOwner)
+      ? accountExportPreflights[exportOwner] : [];
+  }
+  return parseStudioProjectDiagnosticSource(project, projectId);
+}
+
 export function writeStudioProjectDiagnosticSource(
   storage: StudioProjectDiagnosticSourceStorage,
   source: StudioProjectDiagnosticSource,
+  exportOwner = getAuthUserId(),
+  preserveExistingPreflights = false,
 ): void {
   const parsed = parseStudioProjectDiagnosticSource(source, source.projectId);
   if (!parsed) throw new Error("A structurally valid project diagnostic source is required.");
-  storage.setItem(storageKey(source.projectId), JSON.stringify(parsed));
+  const prior = readStoredRecord(storage, source.projectId);
+  const accounts = isRecord(prior?.accountExportPreflights) ? prior.accountExportPreflights : {};
+  const guest = Array.isArray(prior?.exportPreflights) ? prior.exportPreflights : [];
+  // 프로젝트의 다른 항목을 복구하더라도 정상적인 사용자별 출고 점검은 보존한다.
+  const currentAccounts = exportOwner === null || preserveExistingPreflights
+    ? accounts : { ...accounts, [exportOwner]: parsed.exportPreflights };
+  const next = {
+    ...parsed,
+    exportPreflights: exportOwner === null && !preserveExistingPreflights ? parsed.exportPreflights : guest,
+    ...(Object.keys(currentAccounts).length ? { accountExportPreflights: currentAccounts } : {}),
+  };
+  storage.setItem(storageKey(source.projectId), JSON.stringify(next));
 }
 
 export function removeStudioProjectDiagnosticSource(

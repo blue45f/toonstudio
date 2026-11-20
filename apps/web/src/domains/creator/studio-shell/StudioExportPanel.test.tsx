@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SessionContext } from "@/domains/auth/public/session/auth-session-store";
 import { useI18n } from "@/shared/lib/i18n";
 
 import * as commercialPreflight from "../export/studio-commercial-preflight-gate";
@@ -12,6 +13,16 @@ import { createStudioProjectDocument } from "../studio-project-document-store";
 import { createStudioProject } from "../studio-project-library-store";
 import * as manuscriptFacts from "./studio-manuscript-export-facts";
 import { StudioExportPanel } from "./StudioExportPanel";
+
+function renderGuestPanel(projectId: string) {
+  return render(
+    <SessionContext.Provider value={{ data: null, ready: true, status: "unauthenticated", update: async () => null }}>
+      <MemoryRouter>
+        <StudioExportPanel projectId={projectId} locale="ko" />
+      </MemoryRouter>
+    </SessionContext.Provider>,
+  );
+}
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -26,11 +37,7 @@ afterEach(() => {
 
 describe("StudioExportPanel", () => {
   it("필수 목적·형식 선택을 먼저 보여 주고 해상도·DPI 등 고급 설정은 기본으로 접어 둔다", () => {
-    render(
-      <MemoryRouter>
-        <StudioExportPanel projectId="proj-export-1" locale="ko" />
-      </MemoryRouter>,
-    );
+    renderGuestPanel("proj-export-1");
 
     expect(
       screen.getByRole("heading", {
@@ -53,7 +60,7 @@ describe("StudioExportPanel", () => {
 
   it("완전한 백업을 선택하면 개인 검사로 바뀌고 게시 목적을 다시 고르면 상업 권리를 검사한다", () => {
     const gate = vi.spyOn(commercialPreflight, "runCommercialPreflightGate");
-    render(<MemoryRouter><StudioExportPanel projectId="archive-rights" locale="ko" /></MemoryRouter>);
+    renderGuestPanel("archive-rights");
     const summary = screen.getByTestId("studio-export-commercial-gate-summary");
     expect(gate.mock.lastCall?.[0].exportMode).toBe("commercial");
     fireEvent.click(screen.getByRole("button", { name: /완전한 백업/u }));
@@ -78,11 +85,7 @@ describe("StudioExportPanel", () => {
       height: 8000,
     });
 
-    render(
-      <MemoryRouter>
-        <StudioExportPanel projectId="proj-local-1" locale="ko" />
-      </MemoryRouter>,
-    );
+    renderGuestPanel("proj-local-1");
 
     // 실제 로컬 원고 크기(1080×8000)가 초기 점검 대상으로 반영된다.
     const summary = screen.getByTestId("studio-export-preset-summary");
@@ -144,11 +147,7 @@ describe("StudioExportPanel", () => {
     );
 
     const load = vi.spyOn(manuscriptFacts, "loadPersistedManuscriptExportFacts");
-    render(
-      <MemoryRouter>
-        <StudioExportPanel projectId="proj-pages-1" locale="ko" />
-      </MemoryRouter>,
-    );
+    renderGuestPanel("proj-pages-1");
 
     await act(async () => {
       const snapshot = await load.mock.results.at(-1)?.value;
@@ -191,11 +190,7 @@ describe("StudioExportPanel", () => {
   });
 
   it("내보내기 목적을 전환해도 대상별 사용자 수정 초안을 보존하고 그룹 역할을 제공한다", () => {
-    render(
-      <MemoryRouter>
-        <StudioExportPanel projectId="proj-export-drafts" locale="ko" />
-      </MemoryRouter>,
-    );
+    renderGuestPanel("proj-export-drafts");
 
     expect(screen.getByRole("group", { name: "내보내기 목적" })).toBeTruthy();
     expect(screen.getByRole("group", { name: "최종 출력 이동" })).toBeTruthy();
@@ -217,11 +212,7 @@ describe("StudioExportPanel", () => {
   });
 
   it("저장 오류 시 다시 시도 복구 버튼을 제공하고 같은 동작의 연속 더블 클릭을 한 번만 처리한다", () => {
-    render(
-      <MemoryRouter>
-        <StudioExportPanel projectId="proj-export-retry" locale="ko" />
-      </MemoryRouter>,
-    );
+    renderGuestPanel("proj-export-retry");
 
     const failSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("storage quota exceeded");
