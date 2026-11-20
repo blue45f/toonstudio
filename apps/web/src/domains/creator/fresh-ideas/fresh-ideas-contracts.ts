@@ -108,11 +108,11 @@ export interface ConfigStorageLike {
 export const FRESH_IDEAS_USER_CONFIG_STORAGE_KEY = "toonstudio:fresh-ideas:user-config:v2";
 export const FRESH_IDEAS_LENS_AFFINITY_STORAGE_KEY = "toonstudio:fresh-ideas:lens-affinity:v2";
 
-export const DEFAULT_FRESH_IDEAS_USER_CONFIG: FreshIdeasUserConfig = Object.freeze({
+export const DEFAULT_FRESH_IDEAS_USER_CONFIG: FreshIdeasUserConfig = Object.freeze<FreshIdeasUserConfig>({
   schemaVersion: "2.0.0",
-  preferredChannels: ["linkedin-kr", "brunch-blog"],
+  preferredChannels: Object.freeze(["linkedin-kr", "brunch-blog"] as const),
   defaultKoreanRegister: "haeyo",
-  extraBannedPhrases: [],
+  extraBannedPhrases: Object.freeze([] as readonly string[]),
   enableUnslopRedlines: true,
 });
 

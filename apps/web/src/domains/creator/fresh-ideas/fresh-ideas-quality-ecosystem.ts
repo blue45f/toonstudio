@@ -352,7 +352,7 @@ export function runFreshIdeasModeCWorkflow(params: {
 
   const sourceTitleAndUrl = sourceUrl ? `${sourceTitle} (${sourceUrl})` : sourceTitle;
   const ideaBankRows: readonly IdeaBankSpreadsheetRow[] = Object.freeze(
-    lenses.map((lens) => ({
+    lenses.map((lens): IdeaBankSpreadsheetRow => ({
       dateIso,
       sourceTitleAndUrl,
       lensId: `${lens.indexTag}-${lens.id}`,
