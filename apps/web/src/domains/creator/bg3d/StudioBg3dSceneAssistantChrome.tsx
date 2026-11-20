@@ -9,6 +9,11 @@ import { resolveStudioMobileTouchPlan } from "../studio-mobile-touch-flow";
 import { StudioToolArtwork, type StudioArtworkTool } from "../studio-tool-art/StudioToolArtwork";
 
 import {
+  formatHeroBg3dMegabytes,
+  readBrowserHeroBg3dDeliveryContext,
+  resolveHeroBg3dDeliveryAsset,
+} from "./studio-bg3d-hero-tier-selector";
+import {
   STUDIO_BG3D_ASSISTANT_STEPS,
   studioBg3dAssistantStepIndex,
   type StudioBg3dAssistantGoal,
@@ -183,19 +188,40 @@ export function AssetCard({
   readonly disabled: boolean;
   readonly onAdd: (asset: StudioBg3dAssistantAssetItem) => void;
 }) {
+  const delivery = resolveHeroBg3dDeliveryAsset(asset.id, readBrowserHeroBg3dDeliveryContext());
+  const deliveredAsset = delivery.asset;
+  const resolvedItem = delivery.isHeroV1 && deliveredAsset && deliveredAsset.id !== asset.id
+    ? { ...asset, id: deliveredAsset.id }
+    : asset;
+  const showMobileSavingsBadge = delivery.isHeroV1 && delivery.tier === "mobile" && delivery.savedBytes > 0;
+
   return (
     <button
       type="button"
       className="scene-assistant__asset-card"
+      data-bg3d-delivery-tier={delivery.isHeroV1 ? delivery.tier : undefined}
+      data-bg3d-delivery-url={delivery.isHeroV1 ? deliveredAsset?.url : undefined}
+      data-bg3d-saved-bytes={delivery.isHeroV1 ? delivery.savedBytes : undefined}
       disabled={disabled || !asset.canUse}
-      onClick={() => onAdd(asset)}
+      onClick={() => onAdd(resolvedItem)}
     >
       <span className="scene-assistant__asset-thumb">
         {asset.thumbnail
           ? <img src={asset.thumbnail} alt="" loading="lazy" decoding="async" />
           : <Box size={28} aria-hidden />}
       </span>
-      <span><strong>{asset.name}</strong><small>장면에 놓고 위치를 정해요</small></span>
+      <span className="[word-break:keep-all]">
+        <strong>{asset.name}</strong>
+        <small>장면에 놓고 위치를 정해요</small>
+        {showMobileSavingsBadge ? (
+          <span
+            data-testid={`bg3d-asset-mobile-savings-${asset.id}`}
+            className="mt-1 inline-flex items-center rounded-md border border-accent bg-accent-soft px-1.5 py-0.5 text-xs font-semibold tabular-nums text-accent"
+          >
+            {`모바일 경량 -${delivery.savedPercent.toFixed(1)}% (${formatHeroBg3dMegabytes(delivery.savedBytes)} 절감)`}
+          </span>
+        ) : null}
+      </span>
       <ImagePlus size={16} aria-hidden />
     </button>
   );

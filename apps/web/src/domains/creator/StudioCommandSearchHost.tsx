@@ -30,6 +30,8 @@ import type {
   StudioCommandSearchCloseReason,
   StudioCommandSearchDialogProps,
 } from "./StudioCommandSearchDialog";
+import type { StudioExpandedEcosystemCommand } from "./shortcuts/studio-expanded-ecosystem-commands";
+import type { StudioEcosystemLoadedModule } from "./studio-cuttoon-editor/studio-ecosystem-lazy-registry";
 import type { ReactNode } from "react";
 
 const StudioCommandSearchDialog = lazy(() =>
@@ -88,6 +90,10 @@ export function StudioCommandSearchHost({
 }: StudioCommandSearchHostProps) {
   const [open, setOpen] = useState(false);
   const [expandedToolsOpen, setExpandedToolsOpen] = useState(false);
+  const [recentExpandedTool, setRecentExpandedTool] = useState<{
+    readonly id: string;
+    readonly koreanLabel: string;
+  } | null>(null);
   // 어느 진입점이 열었는지에 따라 첫 범위가 다르다 — 인스펙터의 찾기는 '현재 패널',
   // F1·⌘K·메뉴·모바일 도크는 '전체'. 다이얼로그 안에서는 언제든 칩으로 바꿀 수 있다.
   const [scope, setScope] = useState<StudioCommandSearchScope>("all");
@@ -95,6 +101,14 @@ export function StudioCommandSearchHost({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const expandedToolsTriggerRef = useRef<HTMLButtonElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const handleLaunchExpandedTool = useCallback(
+    (command: StudioExpandedEcosystemCommand, loadedModule: StudioEcosystemLoadedModule) => {
+      if (loadedModule && typeof loadedModule === "object") {
+        setRecentExpandedTool({ id: command.id, koreanLabel: command.koreanLabel });
+      }
+    },
+    [],
+  );
   const closeExpandedTools = useCallback(() => {
     setExpandedToolsOpen(false);
     const restore = () => {
@@ -230,10 +244,15 @@ export function StudioCommandSearchHost({
                 setExpandedToolsOpen(true);
               }}
               data-testid="studio-expanded-tools-launcher"
+              data-recent-expanded-tool={recentExpandedTool?.id ?? ""}
               data-inspector-priority="chrome"
               aria-label="확장 전문 도구 서랍 열기"
               aria-expanded={expandedToolsOpen}
-              title="확장 전문 도구 서랍 (6대 분류)"
+              title={
+                recentExpandedTool
+                  ? `확장 전문 도구 서랍 (최근 실행: ${recentExpandedTool.koreanLabel})`
+                  : "확장 전문 도구 서랍 (6대 분류)"
+              }
               className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <LayoutGrid
@@ -276,6 +295,7 @@ export function StudioCommandSearchHost({
                 <LazyStudioExpandedToolsDrawer
                   open
                   onClose={closeExpandedTools}
+                  onLaunchTool={handleLaunchExpandedTool}
                   className="relative z-10"
                 />
               </Suspense>

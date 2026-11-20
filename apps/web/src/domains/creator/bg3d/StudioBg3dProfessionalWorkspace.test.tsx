@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { resolveStudioRoute } from "../studio-router/studio-route-manifest";
 
@@ -225,5 +225,65 @@ describe("Studio BG3D professional workspace layout", () => {
     });
     expect(screen.getByTestId("studio-bg3d-bake-status").textContent).toContain("컷 #3");
     expect(screen.getByTestId("studio-bg3d-bake-status").textContent).toContain("출처 소재 2건");
+  });
+
+  it("auto-selects hero-v1 mobile GLB with savings badge and wires collapsed wall cutaway toggle to live evaluation", async () => {
+    const onSelectHeroAsset = vi.fn();
+    const onWallCutawayChange = vi.fn();
+
+    render(
+      <MemoryRouter initialEntries={["/studio/bg3d"]}>
+        <StudioBg3dProfessionalWorkspace
+          scopeKey="project-a:hero-cutaway"
+          outliner={<div>장면 계층</div>}
+          viewport={<main>뷰포트</main>}
+          inspector={<aside>속성</aside>}
+          heroViewportWidthPx={390}
+          heroCamera={{ position: [0, 3.6, 6] as const, target: [0, 1.2, 0] as const }}
+          onSelectHeroAsset={onSelectHeroAsset}
+          onWallCutawayChange={onWallCutawayChange}
+        />
+      </MemoryRouter>,
+    );
+
+    const disclosure = screen.getByTestId("bg3d-wall-cutaway-disclosure") as HTMLDetailsElement;
+    expect(disclosure.open).toBe(false);
+    expect(disclosure.getAttribute("data-bg3d-delivery-tier")).toBe("mobile");
+    expect(disclosure.getAttribute("data-bg3d-delivery-url")).toBe(
+      "/assets/3d/environments/hero-v1/kr_modern_apartment_living-mobile.glb",
+    );
+    expect(Number(disclosure.getAttribute("data-bg3d-saved-bytes"))).toBe(4_904_160 - 2_734_148);
+    expect(screen.getByTestId("bg3d-hero-delivery-badge").textContent).toContain("모바일 경량");
+    expect(screen.getByTestId("bg3d-hero-delivery-badge").textContent).toContain("절감");
+    expect(screen.queryByTestId("studio-bg3d-wall-cutaway-toggle")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("bg3d-wall-cutaway-summary"));
+    const cutawayToggle = await screen.findByTestId("studio-bg3d-wall-cutaway-toggle");
+    expect(disclosure.open).toBe(true);
+    expect(within(cutawayToggle).getByRole("switch", { name: /카메라 앞벽 자동 투명화/u })).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("bg3d-hero-scene-kr_atelier_cafe_interior"));
+    expect(onSelectHeroAsset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tier: "mobile",
+        savedBytes: 5_430_228 - 2_708_344,
+        savedPercent: 50.1,
+        asset: expect.objectContaining({
+          id: "ts-bg3d-hero-v1-kr_atelier_cafe_interior-mobile",
+          url: "/assets/3d/environments/hero-v1/kr_atelier_cafe_interior-mobile.glb",
+        }),
+      }),
+    );
+
+    fireEvent.click(within(cutawayToggle).getByRole("button", { name: /남벽 숨김 중/u }));
+    expect(onWallCutawayChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cutawayCapable: true,
+        config: expect.objectContaining({ lockedVisibleWalls: ["south"] }),
+        evaluation: expect.objectContaining({
+          visibleWalls: expect.arrayContaining(["south"]),
+        }),
+      }),
+    );
   });
 });

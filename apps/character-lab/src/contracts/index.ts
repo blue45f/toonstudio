@@ -11,6 +11,7 @@ export * from "./capture";
 export * from "./catalog";
 export * from "./character-kit";
 export * from "./character-kit-v2";
+export * from "./character-kit-v2-archetypes";
 export * from "./character-look";
 export * from "./character-look-recipe";
 export * from "./color-channels";

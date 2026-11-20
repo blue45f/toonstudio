@@ -61,6 +61,7 @@ import { buildStorySeedSettingRefs, resolveStorySeedReferencedSettings } from ".
 import { createWorldLoreExamples, type StudioLoreEntry } from "./studio-world-lore";
 import { STUDIO_WORLD_LORE_UPDATED_EVENT, ensureStudioWorldLore, readStudioWorldLore, saveStudioWorldLoreEntries, type StudioWorldLoreState } from "./studio-world-lore-store";
 import { useStudioEpisodeDocumentTargets } from "./useStudioEpisodeDocumentTargets";
+import type { FreshIdeasStorySeedPayload } from "../fresh-ideas/fresh-ideas-story-seed-bridge";
 
 export { STUDIO_STORY_PLANNING_VIEWS };
 export type { StudioProjectStoryPlanningView };
@@ -73,6 +74,7 @@ const LazyLoreTimeline = lazy(() => import("./StudioLoreTimeline").then((m) => (
 const LazyLoreGraph = lazy(() => import("./StudioLoreGraph").then((m) => ({ default: m.StudioLoreGraph })));
 const LazyForeshadowLedgerPanel = lazy(() => import("./StudioForeshadowLedgerPanel").then((m) => ({ default: m.StudioForeshadowLedgerPanel })));
 const LazyFactConcordancePanel = lazy(() => import("./StudioFactConcordancePanel").then((m) => ({ default: m.StudioFactConcordancePanel })));
+const LazyStudioFreshIdeasWorkbenchCard = lazy(() => import("../fresh-ideas/StudioFreshIdeasV2WorkbenchCard").then((m) => ({ default: m.StudioFreshIdeasV2WorkbenchCard })));
 
 export interface StudioProjectStoryPlanningProps {
   readonly projectId: string;
@@ -305,12 +307,16 @@ function EpisodeSynopsisSurface({
   const t = useBilingual("StudioProjectStoryPlanning.handoff");
   const targets = useStudioEpisodeDocumentTargets(projectId);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [freshIdeasMounted, setFreshIdeasMounted] = useState(false);
+  const [storySeedNotice, setStorySeedNotice] = useState<FreshIdeasStorySeedPayload | null>(null);
   const [planning, setPlanning] = useProjectPlanning(projectId);
   const [source] = useProjectStorySource(projectId);
   const [lore] = useProjectWorldLore(projectId);
 
   useEffect(() => {
     setSaveError(null);
+    setFreshIdeasMounted(false);
+    setStorySeedNotice(null);
   }, [projectId]);
 
   const bibleCharacters = useMemo(() => source?.story.bible.characters ?? [], [source]);
@@ -324,6 +330,17 @@ function EpisodeSynopsisSurface({
   );
   const episodeMetrics = resolveEpisodeMetricsLoad(metricsResource);
   const appearances = useMemo(() => deriveCharacterAppearancesFromPlans(planning?.plans ?? []), [planning]);
+  const freshIdeasContext = useMemo(() => {
+    const activePlan = planning?.plans.find((plan) => plan.episodeId === pickedEpisodeId) ?? planning?.plans[0];
+    const sourceTitle = activePlan ? `${activePlan.episodeNumber}화 · ${activePlan.title.trim() || "회차 기획"}` : planning?.season.title.trim() || "연재 기획";
+    const summaryParts = [activePlan?.logline.trim(), activePlan?.goal?.trim(), activePlan?.coreConflict?.trim(), activePlan?.synopsis?.trim(), activePlan?.turningPoints.length ? `전환점: ${activePlan.turningPoints.join(", ")}` : ""].filter((part): part is string => Boolean(part));
+    const metricParts = [`기획 회차 ${planning?.plans.length ?? 0}화`, ...(bibleCharacters.length > 0 ? [`등장인물 ${bibleCharacters.length}명`] : []), ...(lore && lore.entries.length > 0 ? [`세계관 설정 ${lore.entries.length}건`] : [])];
+    return {
+      sourceTitle,
+      sourceSummaryKo: summaryParts.join(" ") || "현재 회차의 로그라인과 전환점을 바탕으로 5대 각도 장면 아이디어를 탐색합니다.",
+      sourceMetricsSummaryKo: metricParts.join(" · "),
+    };
+  }, [planning, pickedEpisodeId, bibleCharacters.length, lore]);
 
   if (!planning) return null;
 
@@ -390,6 +407,39 @@ function EpisodeSynopsisSurface({
       <div className="mt-4">
         <StudioCharacterCoverageMap characters={bibleCharacters} episodes={planning.plans} appearances={appearances} episodeMetrics={episodeMetrics} onOpenEpisode={onPickEpisode} />
       </div>
+      {storySeedNotice ? (
+        <div role="status" aria-live="polite" data-testid="story-planning-fresh-ideas-seed-banner" className="mt-4 rounded-xl border border-accent bg-raised px-4 py-3 text-xs text-fg [word-break:keep-all]">
+          <p className="font-semibold text-fg">{storySeedNotice.summaryKo}</p>
+          <p className="mt-1 text-fg-2">
+            회차 목표 초안: {storySeedNotice.livingSpecSeed.goalKo} · <span className="font-mono tabular-nums">{storySeedNotice.cutSeed.cuts.length}컷</span> · 출처 <span className="font-mono tabular-nums">{storySeedNotice.cutSeed.preservedUrls.length}건</span>
+          </p>
+        </div>
+      ) : null}
+      <details
+        data-testid="story-planning-fresh-ideas-disclosure"
+        onToggle={(event) => { if (event.currentTarget.open) setFreshIdeasMounted(true); }}
+        className="mt-4 rounded-xl border border-line bg-panel p-3"
+      >
+        <summary
+          onClick={() => setFreshIdeasMounted(true)}
+          className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-2 text-sm font-semibold text-fg transition-[background-color,color] duration-150 hover:bg-raised motion-reduce:transition-none [word-break:keep-all] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <span>{t("아이디어 리믹스 · 스토리 컷 시드 작업대", "Idea remix · Story cut seed workbench")}</span>
+          <span className="font-mono text-xs text-fg-3">{t("5대 렌즈 → 대본·기획 명세", "5 lenses → script & spec")}</span>
+        </summary>
+        {freshIdeasMounted ? (
+          <div className="mt-3 border-t border-line pt-3">
+            <Suspense fallback={<PlanningBoardSkeleton />}>
+              <LazyStudioFreshIdeasWorkbenchCard
+                sourceTitle={freshIdeasContext.sourceTitle}
+                sourceSummaryKo={freshIdeasContext.sourceSummaryKo}
+                sourceMetricsSummaryKo={freshIdeasContext.sourceMetricsSummaryKo}
+                onExportStorySeed={setStorySeedNotice}
+              />
+            </Suspense>
+          </div>
+        ) : null}
+      </details>
     </div>
   );
 }

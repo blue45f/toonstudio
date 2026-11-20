@@ -4,6 +4,10 @@ import {
   getStudioBg3dEnvironmentAsset,
   type StudioBg3dEnvironmentAsset,
 } from "./studio-bg3d-environment-catalog";
+import {
+  resolveHeroBg3dDeliveryAsset,
+  type HeroBg3dDeliveryContext,
+} from "./studio-bg3d-hero-tier-selector";
 
 const GLB_HEADER_BYTES = 12;
 const GLB_MAGIC = 0x46546c67;
@@ -110,10 +114,13 @@ export async function loadStudioBg3dBundledEnvironmentSource(
   options: {
     readonly signal?: AbortSignal;
     readonly fetcher?: EnvironmentFetch;
+    readonly deliveryContext?: HeroBg3dDeliveryContext;
   } = {},
 ): Promise<StudioBg3dBundledEnvironmentSource> {
   throwIfAborted(options.signal);
-  const asset = getStudioBg3dEnvironmentAsset(assetId);
+  const asset = options.deliveryContext
+    ? resolveHeroBg3dDeliveryAsset(assetId, options.deliveryContext).asset
+    : getStudioBg3dEnvironmentAsset(assetId);
   if (!asset) throw new StudioBg3dBundledEnvironmentLoadError("unknown-asset");
   const injectedFetcher = options.fetcher;
   const defaultFetch = globalThis.fetch;

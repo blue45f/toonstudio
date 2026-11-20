@@ -210,9 +210,7 @@ export function FreshIdeasSourceAndDeconstructDrawer({
                 data-testid="fresh-ideas-source-title-input"
                 value={draft.titleKo}
                 placeholder="리믹스할 문서·회차·릴리즈 제목"
-                onChange={(e) =>
-                  onChangeDraft({ ...draft, enabled: true, titleKo: e.target.value })
-                }
+                onChange={(e) => onChangeDraft({ ...draft, enabled: true, titleKo: e.target.value })}
                 className="min-h-11 rounded-lg border border-line bg-card px-3 text-xs text-fg"
               />
               <textarea
@@ -221,9 +219,7 @@ export function FreshIdeasSourceAndDeconstructDrawer({
                 data-testid="fresh-ideas-source-content-input"
                 value={draft.contentKo}
                 placeholder="기사 문단, 유튜브 자막, 회의 메모, 시트 요약 수치를 붙여 넣으세요."
-                onChange={(e) =>
-                  onChangeDraft({ ...draft, enabled: true, contentKo: e.target.value })
-                }
+                onChange={(e) => onChangeDraft({ ...draft, enabled: true, contentKo: e.target.value })}
                 className="rounded-lg border border-line bg-card p-2.5 text-xs leading-5 text-fg"
               />
             </label>
@@ -238,9 +234,7 @@ export function FreshIdeasSourceAndDeconstructDrawer({
                 data-testid="fresh-ideas-second-title-input"
                 value={draft.secondDocTitleKo}
                 placeholder="두 번째 문서·댓글·인터뷰 제목 (선택)"
-                onChange={(e) =>
-                  onChangeDraft({ ...draft, enabled: true, secondDocTitleKo: e.target.value })
-                }
+                onChange={(e) => onChangeDraft({ ...draft, enabled: true, secondDocTitleKo: e.target.value })}
                 className="min-h-11 rounded-lg border border-line bg-card px-3 text-xs text-fg"
               />
               <textarea
@@ -249,9 +243,7 @@ export function FreshIdeasSourceAndDeconstructDrawer({
                 data-testid="fresh-ideas-second-content-input"
                 value={draft.secondDocContentKo}
                 placeholder="두 번째 관점이나 현장 반론을 입력하면 합의·충돌·공통 사각지대를 합성합니다."
-                onChange={(e) =>
-                  onChangeDraft({ ...draft, enabled: true, secondDocContentKo: e.target.value })
-                }
+                onChange={(e) => onChangeDraft({ ...draft, enabled: true, secondDocContentKo: e.target.value })}
                 className="rounded-lg border border-line bg-card p-2.5 text-xs leading-5 text-fg"
               />
             </label>
@@ -326,6 +318,7 @@ export function FreshIdeasModeCEcosystemPanel({
   onSaveToIdeaBank,
   onCopyDocsMarkdown,
   onExportSheetsCsv,
+  onExportStorySeed,
   onChangeRecordStatus,
 }: {
   readonly disabled?: boolean;
@@ -336,10 +329,8 @@ export function FreshIdeasModeCEcosystemPanel({
   readonly onSaveToIdeaBank: () => void;
   readonly onCopyDocsMarkdown: () => void;
   readonly onExportSheetsCsv: () => void;
-  readonly onChangeRecordStatus: (
-    recordId: string,
-    status: IdeaBankSpreadsheetRow["draftStatus"],
-  ) => void;
+  readonly onExportStorySeed?: () => void;
+  readonly onChangeRecordStatus: (recordId: string, status: IdeaBankSpreadsheetRow["draftStatus"]) => void;
 }) {
   const [fusionIdxA, setFusionIdxA] = useState(0);
   const [fusionIdxB, setFusionIdxB] = useState(2);
@@ -348,7 +339,6 @@ export function FreshIdeasModeCEcosystemPanel({
   const lensA = lenses[fusionIdxA] ?? lenses[0]!;
   const lensB = lenses[fusionIdxB] ?? lenses[Math.min(2, lenses.length - 1)]!;
   const customFusion = fuseTwoLensAngles(lensA, lensB);
-
   const activeOsmuDraft =
     osmuTab === "newsletter"
       ? modeC.osmuPackage.longFormNewsletter
@@ -357,10 +347,7 @@ export function FreshIdeasModeCEcosystemPanel({
         : modeC.osmuPackage.linkedInFeedCut;
 
   return (
-    <div
-      data-testid="fresh-ideas-mode-c-panel"
-      className="flex flex-col gap-3 rounded-lg border border-line bg-panel p-3"
-    >
+    <div data-testid="fresh-ideas-mode-c-panel" className="flex flex-col gap-3 rounded-lg border border-line bg-panel p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1.5">
           <button
@@ -372,6 +359,16 @@ export function FreshIdeasModeCEcosystemPanel({
           >
             <Database size={14} strokeWidth={1.5} className="shrink-0" aria-hidden />
             <span>아이디어 뱅크 5행 저장</span>
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            data-testid="fresh-ideas-export-story-seed-btn"
+            onClick={onExportStorySeed}
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-accent bg-card px-3 py-1.5 text-xs font-medium text-fg hover:bg-raised ${MOTION_BTN}`}
+          >
+            <FileText size={14} strokeWidth={1.5} className="shrink-0 text-accent" aria-hidden />
+            <span>스토리 컷 시드로 보내기</span>
           </button>
           <button
             type="button"

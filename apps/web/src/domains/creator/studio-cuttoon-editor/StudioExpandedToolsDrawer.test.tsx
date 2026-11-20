@@ -120,7 +120,49 @@ describe("StudioExpandedToolsDrawer", () => {
     expect(screen.queryByTestId("studio-expanded-tools-drawer")).toBeNull();
   });
 
-  it("StudioCommandSearchHost에서 1클릭으로 지연 로드 서랍을 열고 Escape로 닫는다", async () => {
+  it("도구 카드 클릭 시 인터랙티브 실행 호스트가 열리고 Escape 1회로 목록·포커스 복원, 2회로 서랍을 닫는다", async () => {
+    const headCmd = STUDIO_EXPANDED_ECOSYSTEM_COMMANDS.find(
+      (cmd) => cmd.panelLoaderId === "head-mixer-3d-panel",
+    );
+    if (!headCmd) throw new Error("head-mixer-3d-panel 커맨드를 찾을 수 없습니다.");
+
+    const onClose = vi.fn();
+    const onLaunchTool = vi.fn();
+    render(
+      <StudioExpandedToolsDrawer
+        open
+        initialCategory="all"
+        commands={[headCmd]}
+        onClose={onClose}
+        onLaunchTool={onLaunchTool}
+      />,
+    );
+
+    const card = screen.getByTestId(`expanded-tool-card-${headCmd.id}`);
+    fireEvent.click(card);
+
+    // 지연 로드된 러너 호스트와 실제 3D 두상 믹서 패널이 마운트되어야 한다
+    const runner = await screen.findByTestId("studio-expanded-tool-runner");
+    expect(runner.getAttribute("data-runner-tool-id")).toBe(headCmd.id);
+    expect(screen.getByTestId("studio-3d-head-mixer-panel")).toBeTruthy();
+    expect(onLaunchTool).toHaveBeenCalledOnce();
+
+    // 1차 Escape: 도구 목록으로 복귀하고 직전 카드 버튼에 포커스가 복원되어야 한다 (서랍 미닫힘)
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => {
+      expect(screen.queryByTestId("studio-expanded-tool-runner")).toBeNull();
+    });
+    expect(onClose).not.toHaveBeenCalled();
+
+    const restoredCard = screen.getByTestId(`expanded-tool-card-${headCmd.id}`);
+    expect(document.activeElement).toBe(restoredCard);
+
+    // 2차 Escape: 목록 상태에서 서랍을 닫아야 한다
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("StudioCommandSearchHost에서 도구를 실행하면 최근 실행 도구 상태를 기록하고 2단계 Escape로 복귀·닫기한다", async () => {
     render(<StudioCommandSearchHost />);
     expect(screen.queryByTestId("studio-expanded-tools-drawer")).toBeNull();
 
@@ -130,6 +172,27 @@ describe("StudioExpandedToolsDrawer", () => {
     const drawer = await screen.findByTestId("studio-expanded-tools-drawer");
     expect(drawer).toBeTruthy();
 
+    // 전체 탭으로 전환 후 3D 두상 믹서 실행
+    fireEvent.click(screen.getByTestId("expanded-tools-tab-all"));
+    const headCmd = STUDIO_EXPANDED_ECOSYSTEM_COMMANDS.find(
+      (cmd) => cmd.panelLoaderId === "head-mixer-3d-panel",
+    );
+    if (!headCmd) throw new Error("head-mixer-3d-panel 커맨드를 찾을 수 없습니다.");
+
+    fireEvent.click(screen.getByTestId(`expanded-tool-card-${headCmd.id}`));
+    await screen.findByTestId("studio-expanded-tool-runner");
+
+    expect(launcher.getAttribute("data-recent-expanded-tool")).toBe(headCmd.id);
+    expect(launcher.getAttribute("title")).toContain(headCmd.koreanLabel);
+
+    // 1차 Escape: 목록 복귀(서랍 유지)
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => {
+      expect(screen.queryByTestId("studio-expanded-tool-runner")).toBeNull();
+    });
+    expect(screen.getByTestId("studio-expanded-tools-drawer")).toBeTruthy();
+
+    // 2차 Escape: 서랍 닫기
     fireEvent.keyDown(window, { key: "Escape" });
     await waitFor(() => {
       expect(screen.queryByTestId("studio-expanded-tools-drawer")).toBeNull();

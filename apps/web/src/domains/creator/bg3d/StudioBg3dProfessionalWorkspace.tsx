@@ -44,6 +44,12 @@ import {
   type AssetShelfEntry,
   type Bg3dShelfStageId,
 } from "./StudioBg3dAssetShelf";
+import {
+  StudioBg3dHeroCutawaySection,
+  type StudioBg3dWallCutawayChangeEvent,
+} from "./StudioBg3dHeroCutawaySection";
+import type { HeroBg3dDeliveryResolution } from "./studio-bg3d-hero-tier-selector";
+import type { Bg3dCutawayCameraInput } from "./studio-bg3d-wall-cutaway-runtime";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("StudioBg3dProfessionalWorkspace", ko, en);
@@ -58,6 +64,12 @@ interface StudioBg3dProfessionalWorkspaceProps {
   readonly captureSnapshot?: Scene3DCaptureSnapshot | null;
   readonly targetDocumentId?: string | null;
   readonly targetCutIndex?: number;
+  readonly activeHeroAssetId?: string | null;
+  readonly heroCamera?: Bg3dCutawayCameraInput | null;
+  readonly heroViewportWidthPx?: number;
+  readonly heroDeviceMemoryGb?: number;
+  readonly onSelectHeroAsset?: (resolution: HeroBg3dDeliveryResolution) => void;
+  readonly onWallCutawayChange?: (event: StudioBg3dWallCutawayChangeEvent) => void;
   readonly onBakeToManuscriptCut?: (layer: BakedManuscriptCutLayer) => void;
   readonly onInsertShelfAsset?: (entry: AssetShelfEntry) => void;
 }
@@ -105,6 +117,16 @@ function panelBounds(panel: StudioBg3dWorkspacePanel): { readonly min: number; r
     : { min: STUDIO_BG3D_INSPECTOR_WIDTH_MIN, max: STUDIO_BG3D_INSPECTOR_WIDTH_MAX };
 }
 
+function readCutHostAddModel(
+  host: unknown,
+): ((modelId: string) => Promise<boolean> | boolean) | null {
+  if (typeof host !== "object" || host === null) return null;
+  const candidate = (host as { readonly addCustomModelToScene?: unknown }).addCustomModelToScene;
+  return typeof candidate === "function"
+    ? (candidate as (modelId: string) => Promise<boolean> | boolean)
+    : null;
+}
+
 export function StudioBg3dProfessionalWorkspace({
   outliner,
   viewport,
@@ -115,6 +137,12 @@ export function StudioBg3dProfessionalWorkspace({
   captureSnapshot = null,
   targetDocumentId = null,
   targetCutIndex = 0,
+  activeHeroAssetId = null,
+  heroCamera = null,
+  heroViewportWidthPx,
+  heroDeviceMemoryGb,
+  onSelectHeroAsset,
+  onWallCutawayChange,
   onBakeToManuscriptCut,
   onInsertShelfAsset,
 }: StudioBg3dProfessionalWorkspaceProps) {
@@ -144,6 +172,28 @@ export function StudioBg3dProfessionalWorkspace({
       setLayout(applyStudioBg3dWorkspacePreset("output"));
       setLiveInkMode("split-wipe");
     }
+  };
+
+  const handleSelectHeroAsset = (resolution: HeroBg3dDeliveryResolution) => {
+    onSelectHeroAsset?.(resolution);
+    const resolvedAsset = resolution.asset;
+    if (!resolvedAsset) return;
+    const addModel = readCutHostAddModel(cutHost);
+    if (addModel) {
+      void Promise.resolve(addModel(resolvedAsset.id)).catch(() => {
+        setBakeStatusMessage(
+          bi("선택한 3D 배경을 불러오지 못했습니다. 다시 시도해 주세요.", "Could not load the selected 3D background."),
+        );
+      });
+    }
+    setBakeStatusMessage(
+      resolution.tier === "mobile"
+        ? bi(
+          `“${resolvedAsset.name}” 경량본(-${resolution.savedPercent.toFixed(1)}%)을 선택했습니다.`,
+          `Selected lightweight "${resolvedAsset.name}" (-${resolution.savedPercent.toFixed(1)}%).`,
+        )
+        : bi(`“${resolvedAsset.name}” 배경을 선택했습니다.`, `Selected "${resolvedAsset.name}".`),
+    );
   };
 
   const handleInsertShelfAsset = (entry: AssetShelfEntry) => {
@@ -432,6 +482,15 @@ export function StudioBg3dProfessionalWorkspace({
           </button>
         </div>
       </div>
+
+      <StudioBg3dHeroCutawaySection
+        activeAssetId={activeHeroAssetId}
+        camera={heroCamera}
+        viewportWidthPx={heroViewportWidthPx}
+        deviceMemoryGb={heroDeviceMemoryGb}
+        onSelectHeroAsset={handleSelectHeroAsset}
+        onWallCutawayChange={onWallCutawayChange}
+      />
 
       <div
         data-studio-bg3d-workspace-layout="dockable-v2"

@@ -400,4 +400,34 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     fireEvent.click(screen.getByTestId("studio-bg3d-assistant-recovery-return-2d"));
     expect(onReturnTo2d).toHaveBeenCalledOnce();
   });
+
+  it("auto-selects mobile -mobile.glb and displays savings badge for hero-v1 scenes on mobile viewport", async () => {
+    const originalWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });
+    try {
+      const modelLibrary = copyStudioBg3dBundledEnvironmentLibraryEntries();
+      const host = createHost({ modelLibrary });
+      render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
+
+      const grid = within(screen.getByTestId("scene-assistant-env-asset-grid"));
+      const apartmentButton = grid.getByRole("button", { name: /한국 현대 원룸·아파트 거실/u });
+      expect(apartmentButton.getAttribute("data-bg3d-delivery-tier")).toBe("mobile");
+      expect(apartmentButton.getAttribute("data-bg3d-delivery-url")).toBe(
+        "/assets/3d/environments/hero-v1/kr_modern_apartment_living-mobile.glb",
+      );
+      expect(
+        screen.getByTestId("bg3d-asset-mobile-savings-ts-bg3d-hero-v1-kr_modern_apartment_living-desktop").textContent,
+      ).toContain("모바일 경량 -44.2%");
+
+      fireEvent.click(apartmentButton);
+      expect(host.addCustomModelToScene).toHaveBeenCalledWith(
+        "ts-bg3d-hero-v1-kr_modern_apartment_living-mobile",
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId("studio-bg3d-scene-assistant").getAttribute("data-step")).toBe("arrange"),
+      );
+    } finally {
+      Object.defineProperty(window, "innerWidth", { value: originalWidth, configurable: true });
+    }
+  });
 });

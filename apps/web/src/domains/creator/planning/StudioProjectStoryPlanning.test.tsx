@@ -482,4 +482,31 @@ describe("4대 신규 마운트 보드의 프로젝트 스토리 상태 양방�
     ]);
     expect(next.find((card) => card.id === "arc-card-1")?.title).toBe("주인공 결심");
   });
+
+  it("episodes 탭 하단 점진 노출을 열면 Fresh Ideas 워크벤치가 지연 마운트되고 스토리 컷 시드 결과를 상태 배너로 피드백한다", async () => {
+    const projectId = "proj-fresh-ideas-lazy";
+    seedRichProject(projectId);
+    renderPlanning(projectId, "episodes");
+
+    const disclosure = screen.getByTestId(
+      "story-planning-fresh-ideas-disclosure",
+    ) as HTMLDetailsElement;
+    expect(disclosure.open).toBe(false);
+    expect(screen.queryByTestId("studio-fresh-ideas-v2-workbench")).toBeNull();
+
+    const summary = disclosure.querySelector("summary");
+    expect(summary).not.toBeNull();
+    expect(summary?.className).toContain("min-h-11");
+    fireEvent.click(summary!);
+
+    const workbench = await screen.findByTestId("studio-fresh-ideas-v2-workbench");
+    expect(workbench).toBeTruthy();
+
+    fireEvent.click(within(workbench).getByTestId("fresh-ideas-mode-mode-c-ecosystem"));
+    fireEvent.click(within(workbench).getByTestId("fresh-ideas-export-story-seed-btn"));
+
+    const banner = await screen.findByTestId("story-planning-fresh-ideas-seed-banner");
+    expect(banner.textContent).toContain("스토리 컷 시드");
+    expect(banner.textContent).toContain("회차 목표 초안");
+  });
 });
