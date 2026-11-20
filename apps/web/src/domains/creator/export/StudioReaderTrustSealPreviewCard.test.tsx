@@ -34,7 +34,14 @@ describe("StudioReaderTrustSealPreviewCard", () => {
       "숏폼 무빙툰: 승계 차단",
     );
 
-    fireEvent.click(screen.getByLabelText("폰트 만료 철회 시뮬레이션"));
+    fireEvent.click(screen.getByTestId("one-click-reissue-seal-btn"));
+    expect(screen.getByTestId("reader-trust-seal-reissued-banner").textContent).toContain(
+      "Pretendard Commercial (OFL)",
+    );
+    expect(screen.getByTestId("derivative-ip-clearance-list").textContent).toContain(
+      "숏폼 무빙툰: 승계 가능",
+    );
+
     const toggle = screen.getByLabelText("카드용 컴팩트 배지 보기");
     fireEvent.click(toggle);
     expect(screen.getByTestId("reader-trust-seal-pill").textContent).toContain(

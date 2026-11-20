@@ -1,4 +1,4 @@
-import { CheckCircle2, Copy, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Copy, RefreshCw, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING, STUDIO_TOUCH_TARGET } from "../studio-panel-ui";
@@ -20,7 +20,14 @@ import type { StudioWorkflowPack } from "../assistant/studio-workflow-pack";
 
 import { ReaderTrustSealBadge } from "@/shared/components/ReaderTrustSealBadge";
 import { verifyReaderTrustSealDigest } from "@/shared/lib/reader-trust-seal";
-import { buildSealRevocationLedger } from "@/shared/lib/reader-trust-seal-revocation";
+import {
+  buildReissuedReaderTrustSeal,
+  type SealReissuanceRecord,
+} from "@/shared/lib/reader-trust-seal-reissuance";
+import {
+  buildSealRevocationLedger,
+  type SealRevocationEntry,
+} from "@/shared/lib/reader-trust-seal-revocation";
 import { cn } from "@/shared/lib/utils";
 
 const SAMPLE_LUMA_9X8 = new Uint8Array(72).map((_, idx) => (idx * 19) % 256);
@@ -32,7 +39,7 @@ const FIXED_PARTICIPANTS = [
 
 /**
  * 스튜디오 제작자가 독자 열람 페이지·작품 카드에 노출될
- * 클린 IP 트러스트 배지(Reader Trust Seal), 철회 시뮬레이션, 파생 IP 승계 상태를 확인·복사하는 미리보기 카드.
+ * 클린 IP 트러스트 배지(Reader Trust Seal), 철회 시뮬레이션, 1클릭 재발급 복구, 파생 IP 승계 상태를 확인·복사하는 미리보기 카드.
  */
 export function StudioReaderTrustSealPreviewCard({
   seriesTitle = "내 연재작",
@@ -45,177 +52,208 @@ export function StudioReaderTrustSealPreviewCard({
 }) {
   const [compactPreview, setCompactPreview] = useState(false);
   const [simulateFontRevocation, setSimulateFontRevocation] = useState(false);
+  const [reissuedRecord, setReissuedRecord] = useState<SealReissuanceRecord | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const { seal, digestValid, derivativeManifest } = useMemo(() => {
-    const ts = "2026-11-20T00:00:00.000Z";
-    const subId = `SUB-${pack.id}`;
-    const pipeline = runSeriesCommercialPipeline({
-      seriesTitle,
-      rightsHolder: pack.teamPolicyLock?.teamLabel ?? "ToonStudio Creator",
-      tier: "episode-serialization-only",
-      participants: FIXED_PARTICIPANTS,
-      episodes: [1, 2, 3].map((ep) => ({
-        episodeLabel: `${ep}화`,
-        pack,
-        cuts: [{ cutId: `${subId}-ep${ep}-c01`, luma9x8: SAMPLE_LUMA_9X8 }],
-        baseLicenseFeeKrw: episodeFeeKrw,
-      })),
-      platformFeeBps: 500,
-      timestampIso: ts,
-    });
-
-    const batch = evaluateAgencySubmissionBatch(
-      [
-        {
-          submissionId: subId,
-          seriesTitle,
-          rightsHolder: pack.teamPolicyLock?.teamLabel ?? "ToonStudio Creator",
+  const { baseSeal, activeRevocationEntry, activeSeal, digestValid, derivativeManifest } =
+    useMemo(() => {
+      const ts = "2026-11-20T00:00:00.000Z";
+      const subId = `SUB-${pack.id}`;
+      const pipeline = runSeriesCommercialPipeline({
+        seriesTitle,
+        rightsHolder: pack.teamPolicyLock?.teamLabel ?? "ToonStudio Creator",
+        tier: "episode-serialization-only",
+        participants: FIXED_PARTICIPANTS,
+        episodes: [1, 2, 3].map((ep) => ({
+          episodeLabel: `${ep}화`,
           pack,
-          episodeCount: 3,
-          proposedEpisodeFeeKrw: episodeFeeKrw,
-          tier: "episode-serialization-only",
-          participants: FIXED_PARTICIPANTS,
-          platformFeeBps: 500,
-        },
-      ],
-      ts,
-    );
+          cuts: [{ cutId: `${subId}-ep${ep}-c01`, luma9x8: SAMPLE_LUMA_9X8 }],
+          baseLicenseFeeKrw: episodeFeeKrw,
+        })),
+        platformFeeBps: 500,
+        timestampIso: ts,
+      });
 
-    const dd = buildIpSlateFundDdReport({
-      fundName: "ToonStudio IP Slate",
-      batchReport: batch,
-      targetSlateBudgetKrw: 10_000_000,
-      evaluatedAtIso: ts,
-    });
+      const batch = evaluateAgencySubmissionBatch(
+        [
+          {
+            submissionId: subId,
+            seriesTitle,
+            rightsHolder: pack.teamPolicyLock?.teamLabel ?? "ToonStudio Creator",
+            pack,
+            episodeCount: 3,
+            proposedEpisodeFeeKrw: episodeFeeKrw,
+            tier: "episode-serialization-only",
+            participants: FIXED_PARTICIPANTS,
+            platformFeeBps: 500,
+          },
+        ],
+        ts,
+      );
 
-    const receiptHash = pipeline.seriesDossier.episodes[0]?.integrityHash ?? "";
-    const packageHash = pipeline.deliveryPackages[0]?.packageIntegrityHash ?? "";
+      const dd = buildIpSlateFundDdReport({
+        fundName: "ToonStudio IP Slate",
+        batchReport: batch,
+        targetSlateBudgetKrw: 10_000_000,
+        evaluatedAtIso: ts,
+      });
 
-    const locManifest = buildGlobalLocalizationRightsManifest({
-      seriesTitle,
-      episodeLabel: "1화",
-      sourceReceiptIntegrityHash: receiptHash,
-      sourcePackageIntegrityHash: packageHash,
-      tracks: [
-        {
-          locale: "en-US",
-          translatorLabel: "북미 현지화 팀",
-          letteringFontAsset: "ToonStudio Sans EN",
-          letteringFontLicense: "MIT",
-          sfxAssetLicense: "CC0",
-          aiTranslationUsed: true,
-          humanPostEdited: true,
-          includesVoiceDubbing: true,
-          voiceActorConsentVerified: true,
-        },
-        {
-          locale: "ja-JP",
-          translatorLabel: "일본 현지화 팀",
-          letteringFontAsset: "Source Han Sans JP",
-          letteringFontLicense: "MIT",
-          sfxAssetLicense: "CC0",
-          aiTranslationUsed: true,
-          humanPostEdited: true,
-          includesVoiceDubbing: true,
-          voiceActorConsentVerified: true,
-        },
-      ],
-      issuedAtIso: ts,
-    });
+      const receiptHash = pipeline.seriesDossier.episodes[0]?.integrityHash ?? "";
+      const packageHash = pipeline.deliveryPackages[0]?.packageIntegrityHash ?? "";
 
-    const voiceLedger = evaluateVoiceSynthesisConsentLedger({
-      seriesTitle,
-      episodeLabel: "1화",
-      sourceReceiptIntegrityHash: receiptHash,
-      localizationChainHash: locManifest.localizationChainHash,
-      contracts: [
-        {
-          contractId: "VA-MAIN-01",
-          characterName: "주연 캐릭터 A",
-          voiceActorName: "전속 성우 1",
-          allowedLocales: ["en-US", "ja-JP"],
-          allowAiVoiceClone: true,
-          allowModelTrainingReuse: false,
-          royaltyPerEpisodeKrw: 300_000,
-          consentExpiresAtIso: "2028-12-31T23:59:59.000Z",
-        },
-      ],
-      request: {
-        targetLocales: ["en-US", "ja-JP"],
-        usesAiVoiceClone: true,
-        usesModelTrainingReuse: false,
-        releaseAtIso: "2026-12-01T00:00:00.000Z",
-      },
-      evaluatedAtIso: ts,
-    });
+      const locManifest = buildGlobalLocalizationRightsManifest({
+        seriesTitle,
+        episodeLabel: "1화",
+        sourceReceiptIntegrityHash: receiptHash,
+        sourcePackageIntegrityHash: packageHash,
+        tracks: [
+          {
+            locale: "en-US",
+            translatorLabel: "북미 현지화 팀",
+            letteringFontAsset: "ToonStudio Sans EN",
+            letteringFontLicense: "MIT",
+            sfxAssetLicense: "CC0",
+            aiTranslationUsed: true,
+            humanPostEdited: true,
+            includesVoiceDubbing: true,
+            voiceActorConsentVerified: true,
+          },
+          {
+            locale: "ja-JP",
+            translatorLabel: "일본 현지화 팀",
+            letteringFontAsset: "Source Han Sans JP",
+            letteringFontLicense: "MIT",
+            sfxAssetLicense: "CC0",
+            aiTranslationUsed: true,
+            humanPostEdited: true,
+            includesVoiceDubbing: true,
+            voiceActorConsentVerified: true,
+          },
+        ],
+        issuedAtIso: ts,
+      });
 
-    const audit10 = verifySeriesIpProvenanceChain(pipeline, dd, locManifest, voiceLedger);
-    const builtSeal = buildReaderTrustSealFromAudit({
-      audit: audit10,
-      deliveryPackage: pipeline.deliveryPackages[0],
-      localizationManifest: locManifest,
-      voiceLedger,
-      issuedAtIso: ts,
-    });
-
-    const revocationLedger = buildSealRevocationLedger({
-      entries: simulateFontRevocation
-        ? [
-            {
-              revocationId: "REV-SIM-FONT-01",
-              sealDigestHash: builtSeal.sealDigestHash,
-              reasonCode: "font-license-expired",
-              reasonDetail: "외주 타이틀 폰트 연간 라이선스 만료 시뮬레이션",
-              revokedAtIso: "2026-11-20T00:00:00.000Z",
-            },
-          ]
-        : [],
-      updatedAtIso: ts,
-    });
-
-    const manifest = buildDerivativeIpChainManifest({
-      seal: builtSeal,
-      revocationLedger,
-      asOfIso: "2026-11-21T00:00:00.000Z",
-      requests: [
-        {
-          medium: "movingtoon-shortform",
-          projectTitle: `${seriesTitle} 숏폼 무빙툰`,
-          partnerName: "ToonStudio Motion",
+      const voiceLedger = evaluateVoiceSynthesisConsentLedger({
+        seriesTitle,
+        episodeLabel: "1화",
+        sourceReceiptIntegrityHash: receiptHash,
+        localizationChainHash: locManifest.localizationChainHash,
+        contracts: [
+          {
+            contractId: "VA-MAIN-01",
+            characterName: "주연 캐릭터 A",
+            voiceActorName: "전속 성우 1",
+            allowedLocales: ["en-US", "ja-JP"],
+            allowAiVoiceClone: true,
+            allowModelTrainingReuse: false,
+            royaltyPerEpisodeKrw: 300_000,
+            consentExpiresAtIso: "2028-12-31T23:59:59.000Z",
+          },
+        ],
+        request: {
           targetLocales: ["en-US", "ja-JP"],
-          requiresVoiceSynthesis: true,
+          usesAiVoiceClone: true,
+          usesModelTrainingReuse: false,
+          releaseAtIso: "2026-12-01T00:00:00.000Z",
         },
-        {
-          medium: "merchandise-goods",
-          projectTitle: `${seriesTitle} 굿즈 에디션`,
-          partnerName: "Studio Goods",
-          targetLocales: [],
-          requiresVoiceSynthesis: false,
-        },
-        {
-          medium: "video-adaptation",
-          projectTitle: `${seriesTitle} 영상화 패키지`,
-          partnerName: "IP Video Partners",
-          targetLocales: ["en-US"],
-          requiresVoiceSynthesis: true,
-        },
-      ],
-    });
+        evaluatedAtIso: ts,
+      });
 
-    return {
-      seal: builtSeal,
-      digestValid: verifyReaderTrustSealDigest(builtSeal),
-      derivativeManifest: manifest,
-    };
-  }, [seriesTitle, pack, episodeFeeKrw, simulateFontRevocation]);
+      const audit10 = verifySeriesIpProvenanceChain(pipeline, dd, locManifest, voiceLedger);
+      const builtSeal = buildReaderTrustSealFromAudit({
+        audit: audit10,
+        deliveryPackage: pipeline.deliveryPackages[0],
+        localizationManifest: locManifest,
+        voiceLedger,
+        issuedAtIso: ts,
+      });
+
+      const revEntry: SealRevocationEntry | null = simulateFontRevocation
+        ? {
+            revocationId: "REV-SIM-FONT-01",
+            sealDigestHash: builtSeal.sealDigestHash,
+            reasonCode: "font-license-expired",
+            reasonDetail: "외주 타이틀 폰트 연간 라이선스 만료 시뮬레이션",
+            revokedAtIso: "2026-11-20T00:00:00.000Z",
+          }
+        : null;
+
+      const revocationLedger = buildSealRevocationLedger({
+        entries: revEntry ? [revEntry] : [],
+        updatedAtIso: ts,
+      });
+
+      const effectiveSeal =
+        reissuedRecord && reissuedRecord.supersedesSealDigestHash === builtSeal.sealDigestHash
+          ? reissuedRecord.reissuedSeal
+          : builtSeal;
+
+      const manifest = buildDerivativeIpChainManifest({
+        seal: effectiveSeal,
+        revocationLedger,
+        asOfIso: "2026-11-21T00:00:00.000Z",
+        requests: [
+          {
+            medium: "movingtoon-shortform",
+            projectTitle: `${seriesTitle} 숏폼 무빙툰`,
+            partnerName: "ToonStudio Motion",
+            targetLocales: ["en-US", "ja-JP"],
+            requiresVoiceSynthesis: true,
+          },
+          {
+            medium: "merchandise-goods",
+            projectTitle: `${seriesTitle} 굿즈 에디션`,
+            partnerName: "Studio Goods",
+            targetLocales: [],
+            requiresVoiceSynthesis: false,
+          },
+          {
+            medium: "video-adaptation",
+            projectTitle: `${seriesTitle} 영상화 패키지`,
+            partnerName: "IP Video Partners",
+            targetLocales: ["en-US"],
+            requiresVoiceSynthesis: true,
+          },
+        ],
+      });
+
+      return {
+        baseSeal: builtSeal,
+        activeRevocationEntry: revEntry,
+        activeSeal: effectiveSeal,
+        digestValid: verifyReaderTrustSealDigest(effectiveSeal),
+        derivativeManifest: manifest,
+      };
+    }, [seriesTitle, pack, episodeFeeKrw, simulateFontRevocation, reissuedRecord]);
+
+  function handleOneClickReissue() {
+    if (!activeRevocationEntry) return;
+    const res = buildReissuedReaderTrustSeal({
+      previousSeal: baseSeal,
+      revocationEntry: activeRevocationEntry,
+      remediationProof: {
+        resolvedReasonCode: activeRevocationEntry.reasonCode,
+        replacementAssetLabel: "Pretendard Commercial (OFL)",
+        evidenceReferenceId: "LIC-OFL-AUTO-2026",
+        verifiedBy: "ToonStudio Auto-Reissuance",
+      },
+      reissuedAtIso: "2026-11-21T00:00:00.000Z",
+    });
+    if (res.ok && res.record) {
+      setReissuedRecord(res.record);
+      setCopied(false);
+    }
+  }
 
   async function handleCopySealJson() {
-    const ok = await copyStudioText(JSON.stringify(seal, null, 2));
+    const ok = await copyStudioText(JSON.stringify(activeSeal, null, 2));
     if (ok) {
       setCopied(true);
     }
   }
+
+  const isRevokedAndUnrecovered =
+    derivativeManifest.sourceLiveStatus.effectiveStatus === "revoked" && !reissuedRecord;
 
   return (
     <section
@@ -242,7 +280,9 @@ export function StudioReaderTrustSealPreviewCard({
             {!digestValid
               ? "서명 해시 불일치"
               : derivativeManifest.allDerivativesCleared
-                ? "서명 해시 검증됨 · 파생 IP 3종 승계 가능"
+                ? reissuedRecord
+                  ? "배지 재발급 복구 완료 · 파생 IP 3종 승계 가능"
+                  : "서명 해시 검증됨 · 파생 IP 3종 승계 가능"
                 : "철회 감지 · 파생 IP 승계 차단됨"}
           </span>
         </span>
@@ -250,7 +290,7 @@ export function StudioReaderTrustSealPreviewCard({
 
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line/70 bg-raised/60 p-2.5">
         <ReaderTrustSealBadge
-          seal={seal}
+          seal={activeSeal}
           compact={compactPreview}
           liveStatus={derivativeManifest.sourceLiveStatus}
         />
@@ -268,13 +308,43 @@ export function StudioReaderTrustSealPreviewCard({
             <input
               type="checkbox"
               checked={simulateFontRevocation}
-              onChange={(event) => setSimulateFontRevocation(event.target.checked)}
+              onChange={(event) => {
+                setSimulateFontRevocation(event.target.checked);
+                setReissuedRecord(null);
+              }}
               className="accent-accent"
             />
             <span>폰트 만료 철회 시뮬레이션</span>
           </label>
+          {isRevokedAndUnrecovered ? (
+            <button
+              type="button"
+              data-testid="one-click-reissue-seal-btn"
+              onClick={handleOneClickReissue}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-lg border border-accent bg-accent px-2.5 text-[0.64rem] font-bold text-on-accent hover:opacity-90",
+                STUDIO_EASE,
+                STUDIO_FOCUS_RING,
+                STUDIO_TOUCH_TARGET,
+              )}
+            >
+              <RefreshCw className="size-3" aria-hidden />
+              <span>1클릭 대체 폰트 교체 & 배지 재발급</span>
+            </button>
+          ) : null}
         </div>
       </div>
+
+      {reissuedRecord ? (
+        <p
+          role="status"
+          data-testid="reader-trust-seal-reissued-banner"
+          className="rounded-lg border border-good/40 bg-good/10 px-2.5 py-1.5 text-[0.64rem] font-bold text-good"
+        >
+          재발급 완료 ({reissuedRecord.remediationProof.replacementAssetLabel}) · Supersedes{" "}
+          {reissuedRecord.supersedesSealDigestHash} → {reissuedRecord.reissuanceChainHash}
+        </p>
+      ) : null}
 
       <ul
         data-testid="derivative-ip-clearance-list"
@@ -297,7 +367,7 @@ export function StudioReaderTrustSealPreviewCard({
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-2">
         <span className="font-mono text-[0.6rem] text-fg-3">
-          Seal: {seal.sealDigestHash} · Derivative: {derivativeManifest.derivativeChainHash}
+          Seal: {activeSeal.sealDigestHash} · Derivative: {derivativeManifest.derivativeChainHash}
         </span>
         <button
           type="button"

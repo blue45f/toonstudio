@@ -7,6 +7,7 @@ import { simulateEpisodeSettlementFromPackJson } from "./simulate-episode-settle
 import { verifyLocalizationManifestJson } from "./verify-localization-rights-cli.mjs";
 import { verifyReaderTrustSealJson } from "./verify-reader-trust-seal-cli.mjs";
 import { verifyRightsBomReceiptJson } from "./verify-rights-bom-receipt-cli.mjs";
+import { verifySealReissuanceRecordJson } from "./verify-seal-reissuance-cli.mjs";
 import { verifySealRevocationAndDerivativeJson } from "./verify-seal-revocation-and-derivative-cli.mjs";
 import { verifyVoiceConsentLedgerJson } from "./verify-voice-consent-ledger-cli.mjs";
 
@@ -166,6 +167,54 @@ export function runCommercialGovernanceCliSuite() {
     receiptHash,
   );
 
+  const reissuedBase = {
+    ...sealBase,
+    masterAuditHash: fnv1aHex(`${receiptHash}:reissued`),
+    issuedAtIso: "2026-11-21T11:45:00.000Z",
+  };
+  const reissuedDigest = fnv1aHex(
+    JSON.stringify({
+      seriesTitle: reissuedBase.seriesTitle,
+      level: reissuedBase.level,
+      verifiedStagesCount: reissuedBase.verifiedStagesCount,
+      totalStagesCount: reissuedBase.totalStagesCount,
+      commercialAssetsCleared: reissuedBase.commercialAssetsCleared,
+      aiTrainingOptOut: reissuedBase.aiTrainingOptOut,
+      voiceConsentVerified: reissuedBase.voiceConsentVerified,
+      globalLocalesCount: reissuedBase.globalLocalesCount,
+      masterAuditHash: reissuedBase.masterAuditHash,
+    }),
+  );
+  const reissuedSeal = { ...reissuedBase, sealDigestHash: reissuedDigest };
+  const reissuanceBase = {
+    reissuanceSchemaVersion: 1,
+    supersedesSealDigestHash: signedSeal.sealDigestHash,
+    resolvedRevocationId: "REV-SUITE-01",
+    remediationProof: {
+      resolvedReasonCode: "font-license-expired",
+      replacementAssetLabel: "Pretendard Commercial (OFL)",
+      evidenceReferenceId: "LIC-OFL-SUITE",
+      verifiedBy: "ToonStudio Suite",
+    },
+    reissuedSeal,
+    reissuedAtIso: "2026-11-21T11:45:00.000Z",
+  };
+  const reissuanceChainHash = fnv1aHex(
+    JSON.stringify({
+      reissuanceSchemaVersion: reissuanceBase.reissuanceSchemaVersion,
+      supersedesSealDigestHash: reissuanceBase.supersedesSealDigestHash,
+      resolvedRevocationId: reissuanceBase.resolvedRevocationId,
+      remediationProof: reissuanceBase.remediationProof,
+      reissuedSealDigestHash: reissuedSeal.sealDigestHash,
+      reissuedMasterAuditHash: reissuedSeal.masterAuditHash,
+      reissuedAtIso: reissuanceBase.reissuedAtIso,
+    }),
+  );
+  const c8 = verifySealReissuanceRecordJson(
+    JSON.stringify({ ...reissuanceBase, reissuanceChainHash }),
+    signedSeal.sealDigestHash,
+  );
+
   const checks = [
     { name: "verify-rights-bom-receipt-cli", ok: c1.ok },
     { name: "simulate-episode-settlement-cli", ok: c2.ok },
@@ -174,6 +223,7 @@ export function runCommercialGovernanceCliSuite() {
     { name: "verify-voice-consent-ledger-cli", ok: c5.ok },
     { name: "verify-reader-trust-seal-cli", ok: c6.ok },
     { name: "verify-seal-revocation-and-derivative-cli", ok: c7.ok },
+    { name: "verify-seal-reissuance-cli", ok: c8.ok },
   ];
 
   const passedCount = checks.filter((c) => c.ok).length;
@@ -193,7 +243,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log(JSON.stringify(res, null, 2));
   } else {
     console.log(
-      `ToonStudio Commercial Governance 7-CLI Suite: ${res.passedCount}/${res.totalCount} PASS (${res.receiptHash})`,
+      `ToonStudio Commercial Governance 8-CLI Suite: ${res.passedCount}/${res.totalCount} PASS (${res.receiptHash})`,
     );
   }
   if (!res.ok) {
