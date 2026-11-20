@@ -39,6 +39,7 @@ try {
     "0017_creator_work_live_lock_revision.sql",
     "0018_studio_ai_request_gate.sql",
     "0019_studio_ai_request_receipt.sql",
+    "0036_traffic_analytics_relations.sql",
     "0060_studio_ai_free_provider_expansion.sql",
     "0064_studio_project_graph_v3.sql",
     "0067_creator_role_workspace_personalization.sql",
