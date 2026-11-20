@@ -36,6 +36,11 @@ import {
 import { registerEditorStatusSlot, registerModalStatusSlot } from "@/shared/lib/modal-status-slot";
 import { STUDIO_MENUBAR_STATUS_SLOT_REFS } from "./studio-shell/studio-menubar-status-slot";
 
+import {
+  StudioSaveConflictResolutionDialog,
+  type SaveConflictResolutionChoice,
+  type SaveConflictSummary,
+} from "./save-first/StudioSaveConflictResolutionDialog";
 import { resolveSaveRecoveryView } from "./studio-save-recovery-ux";
 import {
   formatRecoveryDiagnostics,
@@ -79,6 +84,11 @@ export interface StudioSaveSyncStatusCenterProps {
   readonly onDownloadLocalBackup?: () => void;
   /** 연결 문제 시 즉시 재검사를 실행하는 콜백. 없으면 재확인 버튼을 숨긴다. */
   readonly onRecheckConnection?: () => void;
+  /** 기기 작업본과 외부 최신본 충돌 요약 — 전달되면 3선택 복구 대화상자 동선을 연다. */
+  readonly conflictSummary?: SaveConflictSummary | null;
+  readonly resolvingConflictChoice?: SaveConflictResolutionChoice | null;
+  readonly conflictErrorMessage?: string | null;
+  readonly onResolveConflict?: (choice: SaveConflictResolutionChoice) => void;
 }
 
 function cloudStatusCopy(
@@ -111,9 +121,14 @@ export function StudioSaveSyncStatusCenter({
   onRetrySave,
   onDownloadLocalBackup,
   onRecheckConnection,
+  conflictSummary = null,
+  resolvingConflictChoice = null,
+  conflictErrorMessage = null,
+  onResolveConflict,
 }: StudioSaveSyncStatusCenterProps) {
   useBilingualI18nRevision();
   const [open, setOpen] = useState(false);
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const drawing = presentation === "drawing";
   const dialogRef = useRef<HTMLDialogElement>(null), closeRequested = useRef(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -326,6 +341,17 @@ export function StudioSaveSyncStatusCenter({
           <div className="mt-3 space-y-2 text-[0.75rem]">{deviceInfo}{!drawing ? <>{serverInfo}{recoveryInfo}</> : null}</div>
 
           <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-line/50 pt-3">
+            {conflictSummary && onResolveConflict ? (
+              <button
+                type="button"
+                data-testid="studio-open-save-conflict-dialog"
+                onClick={() => setConflictDialogOpen(true)}
+                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-warn/45 bg-raised px-2.5 text-[0.72rem] font-semibold text-warn hover:bg-accent-soft hover:text-accent pointer-coarse:min-h-11"
+              >
+                <TriangleAlert className="size-3.5" aria-hidden />
+                <span>{bi("저장본 충돌 복구", "Resolve save conflict")}</span>
+              </button>
+            ) : null}
             {view.canRetrySave && onRetrySave ? (
               <button
                 type="button"
@@ -448,6 +474,16 @@ export function StudioSaveSyncStatusCenter({
         </span>
       </button>
       {details}
+      {conflictSummary && onResolveConflict ? (
+        <StudioSaveConflictResolutionDialog
+          open={conflictDialogOpen}
+          summary={conflictSummary}
+          resolvingChoice={resolvingConflictChoice}
+          errorMessage={conflictErrorMessage}
+          onResolve={onResolveConflict}
+          onClose={() => setConflictDialogOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

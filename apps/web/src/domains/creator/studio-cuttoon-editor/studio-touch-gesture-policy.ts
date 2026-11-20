@@ -1,7 +1,41 @@
+import {
+  TouchHoldEyedropperController,
+  computeStylusHoverCursorProjection,
+  evaluateEdgeQuickSlider,
+  snapStrokePointToDrawingAssist,
+} from "../drawing/studio-hover-eyedropper-and-assist";
+import {
+  StudioTouchGestureGuard,
+  type PalmRejectionDecision,
+  type TouchGestureGuardConfig,
+  type TouchPointerSample,
+} from "../drawing/studio-touch-gesture-guard";
 import type { StudioAppSettings } from "../studio-app-settings";
+
+export {
+  TouchHoldEyedropperController,
+  computeStylusHoverCursorProjection,
+  evaluateEdgeQuickSlider,
+  snapStrokePointToDrawingAssist,
+};
 
 export type StudioTouchTapPreferences = Pick<StudioAppSettings["touch"], "twoFinger" | "threeFinger">;
 export type StudioTouchTapAction = "undo" | "toggle-ui";
+
+/** 캔버스 포인터 세션용 팜 리젝션·홀드 스크럽 가드 인스턴스를 생성한다 (AC-005). */
+export function createStudioTouchGestureGuard(
+  config?: TouchGestureGuardConfig,
+): StudioTouchGestureGuard {
+  return new StudioTouchGestureGuard(config);
+}
+
+/** 펜 활성·350ms 쿨다운·접촉 면적(>=28px) 기준으로 손바닥 오입력을 차단한다. */
+export function evaluateStudioPalmRejection(
+  guard: StudioTouchGestureGuard,
+  sample: TouchPointerSample,
+): PalmRejectionDecision {
+  return guard.evaluatePalmRejection(sample);
+}
 
 /** 실행기와 도크 안내가 같은 사용자 설정을 해석한다. */
 export function resolveStudioTouchTapAction(

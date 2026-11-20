@@ -17,6 +17,10 @@ import { TitleCard } from "@/shared/components/title-card";
 import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
 
 import { ExploreReaDirectoryBar } from "./ExploreReaDirectoryBar";
+import {
+  filterTitlesByTagTriggerFinder,
+  parseTagTriggerSearchParams,
+} from "./discover-tag-trigger-finder";
 import { snapshotDateLabel } from "./discover-home";
 import { filterTitlesByLocalQuery, normalizePlatformId, useLocalCatalogFallback } from "./local-catalog-fallback";
 import { genreColor } from "@/shared/lib/genre-color";
@@ -202,10 +206,15 @@ export function ExplorePage() {
             return pid !== null && activePlatforms.includes(pid);
           }),
         );
+  const tagTriggerParams = useMemo(
+    () => parseTagTriggerSearchParams(searchParams),
+    [searchParams],
+  );
+  const tagTriggerFiltered = filterTitlesByTagTriggerFinder(clientFilteredResults, tagTriggerParams);
   const trimmedLocalQuery = localQuery.trim();
   const results = trimmedLocalQuery
-    ? filterTitlesByLocalQuery(clientFilteredResults, trimmedLocalQuery)
-    : clientFilteredResults;
+    ? filterTitlesByLocalQuery(tagTriggerFiltered, trimmedLocalQuery)
+    : tagTriggerFiltered;
   const showCount = data?.showCount ?? 40;
   const pageSize = data?.pageSize ?? 40;
   const shown = results.slice(0, showCount);
@@ -229,7 +238,10 @@ export function ExplorePage() {
     .filter((id): id is PlatformId => id !== null);
   const mergedPlatformOptions = [...new Set([...rawCoverageIds, ...activePlatforms])];
   const platformOptions = mergedPlatformOptions.length > 0 ? mergedPlatformOptions : undefined;
-  const hasFilter = sortExplicit || activeFilters > 0 || trimmedLocalQuery.length > 0;
+  const hasTagTriggerFilter =
+    tagTriggerParams.includeTagIds.length > 0 || tagTriggerParams.excludeTriggerIds.length > 0;
+  const hasFilter =
+    sortExplicit || activeFilters > 0 || trimmedLocalQuery.length > 0 || hasTagTriggerFilter;
 
   // 무한 스크롤 — 하단 센티넬이 보이면 자동으로 다음 페이지 로드(더보기 버튼 누를 필요 없음).
   // useInView는 1회용이라 부적합 → 반복 트리거 IntersectionObserver를 직접 둔다. 버튼은 a11y/수동 폴백으로 유지.

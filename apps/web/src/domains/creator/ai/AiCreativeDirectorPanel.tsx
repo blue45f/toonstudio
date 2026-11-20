@@ -49,8 +49,16 @@ import {
   DEFAULT_ANSWER_TUNING,
   type AnswerTuning,
 } from "./answer-tuning";
+import {
+  createStudioAiJob,
+  transitionStudioAiJob,
+  type StudioAiApplicationMode,
+  type StudioAiJob,
+  type StudioAiSkillId,
+} from "../studio-ai-job";
 import { AnswerTuningControls } from "./AnswerTuningControls";
 import { parseDirectorAnswer, type DirectorInline } from "./director-answer-format";
+import { StudioAiJobQueuePanel } from "./StudioAiJobQueuePanel";
 
 const SUGGESTION_ICONS: Readonly<Record<AiDirectorIcon, LucideIcon>> = {
   story: BookOpenText,
@@ -65,6 +73,20 @@ interface DirectorAnswer {
   readonly content: string;
   readonly provider: StudioServerAiProvider;
   readonly model: string;
+}
+
+function mapDirectorSuggestionToSkill(id: AiDirectorSuggestionId): StudioAiSkillId {
+  switch (id) {
+    case "character-profile":
+      return "character-consistency";
+    case "cut-composition":
+    case "scene-direction":
+      return "storyboard";
+    case "dialogue-translation":
+      return "localization";
+    default:
+      return "story-outline";
+  }
 }
 
 /** 개인 키 구성이 바뀔 때마다 다시 세도록 저장소 revision을 입력으로 받는다. */
@@ -115,6 +137,7 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
   const [idea, setIdea] = useState("");
   const [busy, setBusy] = useState(false);
   const [answer, setAnswer] = useState<DirectorAnswer | null>(null);
+  const [jobs, setJobs] = useState<readonly StudioAiJob[]>([]);
   const [error, setError] = useState("");
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const pending = useRef<AbortController | null>(null);
@@ -152,6 +175,27 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
       inputRef.current?.focus();
       return;
     }
+    const jobId = `director-${crypto.randomUUID()}`;
+    const createdAt = new Date().toISOString();
+    let runningJob = createStudioAiJob({
+      id: jobId,
+      skill: mapDirectorSuggestionToSkill(selected.id),
+      providerId: availability.state === "personal" ? "personal-key" : "toonstudio-ai",
+      privacy: "cloud-provider",
+      cost: "free",
+      estimatedCredits: 0,
+      request: {
+        prompt: idea.trim(),
+        inputSnapshotId: `director-input-${jobId}`,
+        references: [],
+      },
+      at: createdAt,
+    });
+    runningJob = transitionStudioAiJob(runningJob, { type: "request-confirmation", at: createdAt });
+    runningJob = transitionStudioAiJob(runningJob, { type: "confirm", accepted: true, at: createdAt });
+    runningJob = transitionStudioAiJob(runningJob, { type: "start", at: createdAt });
+    setJobs((prev) => [runningJob, ...prev].slice(0, 8));
+
     const controller = new AbortController();
     pending.current = controller;
     setBusy(true);
@@ -164,16 +208,39 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
         // 조절 지시문을 마지막에 붙여 기존 분량 지시("stay under 250 words")보다 우선하게 한다.
         system: applyAnswerTuningToSystemPrompt(request.system, answerTuning),
         user: request.user,
-        operationId: `director-${crypto.randomUUID()}`,
+        operationId: jobId,
       }, controller.signal);
+      const doneAt = new Date().toISOString();
       if (controller.signal.aborted) {
+        setJobs((prev) =>
+          prev.map((j) => (j.id === jobId ? transitionStudioAiJob(j, { type: "cancel", at: doneAt, reason: "user-aborted" }) : j)),
+        );
         setError(bt("요청을 취소했어요. 같은 요청을 자동으로 다시 보내지 않아요.", "Request cancelled. It won't be resent automatically."));
         return;
       }
       if (!result.ok) {
+        setJobs((prev) =>
+          prev.map((j) => (j.id === jobId ? transitionStudioAiJob(j, { type: "fail", at: doneAt, code: "AI_ERROR", message: result.error }) : j)),
+        );
         setError(result.error);
         return;
       }
+      setJobs((prev) =>
+        prev.map((j) =>
+          j.id === jobId
+            ? transitionStudioAiJob(j, {
+                type: "preview",
+                at: doneAt,
+                preview: {
+                  previewId: `prev-${jobId}`,
+                  outputRefs: [`draft-${jobId}`],
+                  estimatedCreditsUsed: 0,
+                  warnings: [],
+                },
+              })
+            : j,
+        ),
+      );
       setAnswer({
         suggestionId: selected.id,
         content: result.data.content,
@@ -181,8 +248,13 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
         model: result.data.model,
       });
     } catch (cause) {
+      const failAt = new Date().toISOString();
+      const msg = cause instanceof Error && cause.message ? cause.message : bt("AI 요청에 실패했어요.", "The AI request failed.");
       if (!controller.signal.aborted) {
-        setError(cause instanceof Error && cause.message ? cause.message : bt("AI 요청에 실패했어요.", "The AI request failed."));
+        setJobs((prev) =>
+          prev.map((j) => (j.id === jobId ? transitionStudioAiJob(j, { type: "fail", at: failAt, code: "NETWORK_ERROR", message: msg }) : j)),
+        );
+        setError(msg);
       }
     } finally {
       if (pending.current === controller) pending.current = null;
@@ -449,6 +521,52 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
                 </span>
               </div>
             </article>
+          ) : null}
+
+          {jobs.length > 0 ? (
+            <StudioAiJobQueuePanel
+              className="mt-4"
+              jobs={jobs}
+              onApprove={(jobId) => {
+                const at = new Date().toISOString();
+                setJobs((prev) =>
+                  prev.map((j) => (j.id === jobId && j.status === "preview-ready" ? transitionStudioAiJob(j, { type: "approve", at }) : j)),
+                );
+              }}
+              onApply={(jobId, mode: StudioAiApplicationMode) => {
+                const at = new Date().toISOString();
+                setJobs((prev) =>
+                  prev.map((j) =>
+                    j.id === jobId && j.status === "approved"
+                      ? transitionStudioAiJob(j, {
+                          type: "apply",
+                          at,
+                          application: {
+                            mode,
+                            targetDocumentId: "director-draft-buffer",
+                            createdObjectIds: [`copy-${jobId}`],
+                          },
+                        })
+                      : j,
+                  ),
+                );
+                void copyAnswer();
+              }}
+              onRetry={() => {
+                void submit();
+              }}
+              onCancel={(jobId) => {
+                if (busy) cancel();
+                const at = new Date().toISOString();
+                setJobs((prev) =>
+                  prev.map((j) =>
+                    j.id === jobId && j.status !== "applied" && j.status !== "cancelled"
+                      ? transitionStudioAiJob(j, { type: "cancel", at, reason: "user-cancelled" })
+                      : j,
+                  ),
+                );
+              }}
+            />
           ) : null}
         </div>
       </div>

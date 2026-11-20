@@ -3,6 +3,7 @@ import { WorkspaceBadge } from "./workspace-ui";
 import type { WorkspaceModule } from "@toonstudio/contracts/admin-workspace";
 
 const boards = [
+  { id: "production", title: "제작 변경·충돌·검증", href: "/admin/production/changes/", storage: "서버 공동 저장", access: "관리자 편집·운영자 조회", detail: "제작 변경 요청의 승인, 로컬·원격 충돌 해결, 적용 기록과 사후 검증 증빙을 관리합니다." },
   { id: "quality", title: "CI·QA 검증", href: "/admin/platform/quality/", storage: "브라우저 로컬", access: "관리자별 기록", detail: "검증 상태·실패 분석·외부 QA·승인 대기를 기존 검증 보드에서 관리합니다." },
   { id: "ai", title: "AI·무료 운영", href: "/admin/platform/ai-operations/", storage: "서버 공동 저장", access: "관리자 편집·운영자 조회", detail: "모델 종료·서비스 한도와 무료 운영 대응 기록을 확인합니다." },
   { id: "dependency", title: "의존성·CI", href: "/admin/platform/quality/?view=dependency-review", storage: "브라우저 로컬", access: "관리자별 기록", detail: "의존성 충돌과 회귀 검증은 기존 CI·QA의 의존성 검토 탭에서 관리합니다." },

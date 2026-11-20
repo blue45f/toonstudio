@@ -62,6 +62,7 @@ import { stableStringify } from "../apps/character-lab/src/shared/stable-json.ts
 
 import { checkContainerJson, loadGlbModel, parseGlbContainer, PointGrid, primsOf, targetNamesOf, triangleCountOf, trianglesOf, viewOf } from "./lib/character-kit-glb-model.mjs";
 import { decodeImageInfo } from "./lib/character-kit-image-decode.mjs";
+import { checkKitDirectoryFiles } from "./lib/character-kit-directory-files.mjs";
 import * as v2 from "./lib/character-kit-v2-checks.mjs";
 
 // 옮긴 모듈의 공개 함수는 이 검증기의 공개 API로 계속 내보낸다(시험·도구 호환).
@@ -1460,21 +1461,6 @@ function collectFileSpecs(manifest, baseIds) {
   return [...specs.values()];
 }
 
-function allReferencedPaths(manifest) {
-  const paths = new Set();
-  for (const baseId of KIT_BASE_IDS) {
-    const base = manifest.bases[baseId];
-    if (base !== undefined) paths.add(base.file.path);
-    if (base?.headRegionMask !== undefined) paths.add(base.headRegionMask.file.path);
-  }
-  for (const part of manifest.parts) for (const baseId of KIT_BASE_IDS) {
-    const variant = part.variants[baseId];
-    if (variant !== undefined) paths.add(variant.file.path);
-    for (const layered of Object.values(part.layerVariants?.[baseId] ?? {})) if (layered !== undefined) paths.add(layered.file.path);
-  }
-  return paths;
-}
-
 // ---------------------------------------------------------------- 진입점
 
 /**
@@ -1593,15 +1579,7 @@ export async function verifyKit(input) {
   if (totalBytes > KIT_BUDGET.totalMaxBytes) report.error("V3", KIT_MANIFEST_FILENAME, `키트 고유 파일 합계 ${(totalBytes / 1048576).toFixed(2)} MiB가 한도 ${(KIT_BUDGET.totalMaxBytes / 1048576).toFixed(0)} MiB를 넘습니다.`);
   for (const spec of specs) if (spec.conflict === true) report.error("V6", spec.path, `같은 파일을 서로 다른 메시 선언으로 참조합니다(${spec.labels.join(", ")}).`);
   if (report.wants("V2")) {
-    const referenced = allReferencedPaths(manifest);
-    const known = new Set([KIT_MANIFEST_FILENAME, manifest.provenance.noticeFile]);
-    const lower = new Map();
-    for (const relative of source.list()) {
-      if (!referenced.has(relative) && !known.has(relative)) report.error("V2", relative, "kit.json이 모르는 파일입니다(kit.json과 NOTICE.md 외에는 선언되지 않은 파일을 둘 수 없습니다).");
-      const key = relative.toLowerCase();
-      if (lower.has(key)) report.error("V2", relative, `대소문자만 다른 중복 경로입니다(${lower.get(key)}).`);
-      lower.set(key, relative);
-    }
+    checkKitDirectoryFiles(source, manifest, report);
   }
   if (report.wants("V4")) {
     report.begin("V4");

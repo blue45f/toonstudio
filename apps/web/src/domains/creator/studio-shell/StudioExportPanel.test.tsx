@@ -37,6 +37,7 @@ describe("StudioExportPanel", () => {
     ).toBeTruthy();
 
     expect(screen.getByTestId("studio-export-preset-summary").textContent).toContain("자동 맞춤 적용됨");
+    expect(screen.getByTestId("studio-export-commercial-gate-summary").textContent).toContain("Rights BOM");
 
     const advanced = screen.getByTestId("studio-export-advanced-settings") as HTMLDetailsElement;
     expect(advanced.open).toBe(false);

@@ -31,7 +31,8 @@ function session(): MobileFixture {
     title: "나의 첫 웹툰", activePageIndex: 0, studioMenubarActivePageLabel: "1페이지", studioMainMenuGroups: [],
     saveSyncStore: createStudioSaveSyncSignalStore(),
     saving: false, collaborationDocumentLocked: false, sharedDocument: null, collaborationLockMessage: () => "편집 잠김",
-    studioMenubarContentHandlers: { setStudioUiDensity: vi.fn(), handleSave: vi.fn<StudioDrawingClarityMobileSession["studioMenubarContentHandlers"]["handleSave"]>().mockResolvedValue(undefined) },
+    studioMenubarContentHandlers: { setStudioUiDensity: vi.fn(), changeMobileImmersiveMode: vi.fn(), handleSave: vi.fn<StudioDrawingClarityMobileSession["studioMenubarContentHandlers"]["handleSave"]>().mockResolvedValue(undefined) },
+    workspaceControlSide: "right", mobileQuickActionsButton: <button type="button" aria-haspopup="menu" aria-expanded={false}>퀵 메뉴 · 오른쪽 엄지 위치</button>,
     studioMobileEditingDockHandlers: { openInspectorRoute: vi.fn() },
     setMobileSheet: vi.fn(), setMenu: vi.fn(), setExportMenuOpen: vi.fn(), setTeamPanelOpen: vi.fn(), mobileSheet: null, setHistoryPanelOpen: vi.fn(), setTutorialHubOpen: vi.fn(),
   };
@@ -138,6 +139,46 @@ describe("웹 모바일 기본 상단", () => {
     const value = session(); show(value);
     fireEvent.click(screen.getByRole("button", { name: "초안 저장" }));
     expect(value.studioMenubarContentHandlers.handleSave).toHaveBeenCalledExactlyOnceWith("draft");
+  });
+  it("편집 옵션에서 기존 전체 화면 모드를 양방향 전환하고 현재 상태를 알린다", () => {
+    const value = session(), changed = vi.fn();
+    function StatefulMode() {
+      const [mobileImmersive, setMobileImmersive] = useState(true);
+      const live = { ...value, mobileImmersive, studioMenubarContentHandlers: {
+        ...value.studioMenubarContentHandlers,
+        changeMobileImmersiveMode: (enabled: boolean) => { changed(enabled); setMobileImmersive(enabled); },
+      } };
+      return <StudioDrawingClarityProvider session={live}><Surface value={live} /></StudioDrawingClarityProvider>;
+    }
+    render(<StatefulMode />);
+    fireEvent.click(screen.getByRole("button", { name: /^편집$/u }));
+    const exit = screen.getByRole("button", { name: "전체 화면 드로잉 종료" });
+    expect(exit.closest("#studio-mobile-edit-options")?.getAttribute("data-compact-expanded")).toBe("true");
+    expect(exit.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(exit);
+    expect(changed).toHaveBeenNthCalledWith(1, false);
+    const enter = screen.getByRole("button", { name: /^전체 화면 드로잉$/u });
+    expect(enter.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(enter);
+    expect(changed).toHaveBeenNthCalledWith(2, true);
+    expect(changed).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("button", { name: "전체 화면 드로잉 종료" }).getAttribute("aria-pressed")).toBe("true");
+  });
+  it.each(["left", "right"] as const)("편집 옵션의 %s 엄지 위치에 기존 퀵 메뉴 하나를 배치해 터치 진입과 순서를 보존한다", (side) => {
+    const open = vi.fn();
+    const label = side === "left" ? "퀵 메뉴 · 왼쪽 엄지 위치" : "퀵 메뉴 · 오른쪽 엄지 위치";
+    show({ ...session(), workspaceControlSide: side, mobileQuickActionsButton: <button type="button" aria-haspopup="menu" aria-expanded={false} onClick={open}>{label}</button> });
+    fireEvent.click(screen.getByRole("button", { name: /^편집$/u }));
+    const quick = screen.getByRole("button", { name: label });
+    expect(quick.closest('[data-studio-clarity-mobile-quick-actions="true"]')).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: label })).toHaveLength(1);
+    expect(quick.closest("#studio-mobile-edit-options")?.getAttribute("data-compact-expanded")).toBe("true");
+    const buttons = [...document.querySelectorAll("#studio-mobile-edit-options button")];
+    expect(side === "left" ? buttons[0] : buttons.at(-1)).toBe(quick);
+    expect(quick.getAttribute("aria-haspopup")).toBe("menu");
+    expect(quick.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(quick);
+    expect(open).toHaveBeenCalledOnce();
   });
   it("메뉴의 페이지·레이어·소재·출력은 기존 모바일 명령을 사용한다", () => {
     const value = session(); show(value);

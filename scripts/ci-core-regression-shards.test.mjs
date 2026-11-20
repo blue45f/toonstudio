@@ -133,6 +133,7 @@ test("real product selectors partition into static and mandatory PostgreSQL exec
   assert.ok(routed.every((file) => file.endsWith(".integration.test.ts")));
   for (const suite of [
     "apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts",
+    "apps/api/src/modules/admin-production-changes/admin-production-changes.integration.test.ts",
     "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
     "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
     "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
@@ -189,6 +190,54 @@ test("NestJS 검증 보드는 정적 회귀와 보호된 PostgreSQL job에서 �
   const manifest = runner.match(/export const POSTGRES_INTEGRATION_SUITES = Object\.freeze\(\[([\s\S]*?)\]\);/u)?.[1];
   assert.ok(manifest, "일반 PostgreSQL 실행기의 정본 목록이 필요합니다.");
   assert.equal(manifest.split(`"${integration}"`).length - 1, 1);
+});
+
+test("제작 변경의 HTTP·캡처·공유 규칙·Admin·ACL은 product에서, 실제 저장은 PostgreSQL에서 한 번 실행한다", () => {
+  const module = "apps/api/src/modules/admin-production-changes";
+  const domain = "apps/admin-web/src/domains/production/changes";
+  const integration = `${module}/admin-production-changes.integration.test.ts`;
+  const access = "apps/admin-web/src/app/shell/ProductionChangeAccess.test.tsx";
+  const contract = "packages/contracts/src/admin-production-change.test.ts";
+  const acl = "scripts/admin-production-changes-database-contract.test.mjs";
+  for (const target of [module, domain, access, contract, acl]) {
+    assert.ok(REQUIRED_VITEST_TARGETS.includes(target), `제작 변경의 필수 선택자가 누락됐습니다: ${target}`);
+  }
+  const execution = executionTargetsByShard();
+  const staticByShard = Object.fromEntries(SHARD_NAMES.map((name) => {
+    const selectors = expandGlobTargets(execution[name]);
+    const args = buildShardVitestArgs(selectors);
+    const databaseOnly = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+    return [name, resolveRequiredTargets(selectors).filter((target) => !databaseOnly.includes(target))];
+  }));
+  for (const target of [
+    `${module}/admin-production-changes.http.test.ts`,
+    `${module}/admin-production-changes-capture.test.ts`,
+    `${domain}/ProductionChangeBoard.test.tsx`,
+    `${domain}/production-change-api.test.ts`,
+    `${domain}/production-change-list.test.ts`,
+    access, contract, acl,
+  ]) {
+    assert.equal(shardForTarget(target), "product", target);
+    assert.deepEqual(SHARD_NAMES.filter((name) => staticByShard[name].includes(target)), ["product"],
+      `제작 변경의 정적 검증은 product에서 정확히 한 번 실행해야 합니다: ${target}`);
+  }
+  const productTargets = expandGlobTargets(execution.product);
+  const productArgs = buildShardVitestArgs(productTargets);
+  assert.ok(resolveRequiredTargets(productTargets).includes(integration));
+  assert.equal(CORE_DATABASE_VITEST_TARGETS.filter((target) => target === integration).length, 1);
+  assert.equal(productArgs.filter((arg, index) => arg === integration && productArgs[index - 1] === "--exclude").length, 1);
+  assert.ok(SHARD_NAMES.every((name) => !staticByShard[name].includes(integration)),
+    "실제 DB 시험을 DB 없는 shard에서 skip 성공으로 집계할 수 없습니다.");
+  const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const database = workflow.match(/^ {2}database:\n([\s\S]*?)(?=^ {2}core:\n)/mu)?.[1];
+  const command = database?.match(/pnpm exec vitest run --no-file-parallelism\n((?: {10}[^\n]+\n)+)/u)?.[0];
+  assert.ok(command, "제작 변경의 실제 DB 검증은 보호된 직렬 PostgreSQL job에서 실행해야 합니다.");
+  assert.equal(command.split(/\s+/u).filter((argument) => argument === integration).length, 1);
+  const runner = readFileSync(new URL("./run-postgres-integration-tests.mjs", import.meta.url), "utf8");
+  const manifest = runner.match(/export const POSTGRES_INTEGRATION_SUITES = Object\.freeze\(\[([\s\S]*?)\]\);/u)?.[1];
+  assert.ok(manifest, "PostgreSQL 실행기의 정본 목록이 필요합니다.");
+  assert.equal(manifest.split(`"${integration}"`).length - 1, 1);
+  assert.ok(runner.includes('"--no-file-parallelism"'), "일반 PostgreSQL 실행기도 직렬 검증을 유지해야 합니다.");
 });
 
 test("클라우드 보드의 계약·API·ACL은 product에서, 실제 DB는 보호된 PostgreSQL job에서 한 번 실행한다", () => {

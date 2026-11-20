@@ -156,4 +156,57 @@ describe("Studio BG3D professional workspace layout", () => {
     fireEvent.click(screen.getByRole("button", { name: "쉘프 접기" }));
     expect(screen.queryByTestId("studio-bg3d-asset-shelf")).toBeNull();
   });
+
+  it("supports Live Ink split-wipe preview controls and non-destructive manuscript cut baking with Rights BOM provenance", () => {
+    const bakedLayers: unknown[] = [];
+    render(
+      <MemoryRouter initialEntries={["/studio/bg3d"]}>
+        <StudioBg3dProfessionalWorkspace
+          scopeKey="project-a:scene-ink"
+          outliner={<div>장면 계층</div>}
+          viewport={<main data-testid="bg3d-main-viewport">뷰포트</main>}
+          inspector={<aside>속성</aside>}
+          targetDocumentId="doc-ep-1"
+          targetCutIndex={2}
+          captureSnapshot={{
+            sceneId: "classroom-01",
+            cameraId: "cam-hero",
+            stage: "live-ink",
+            widthPx: 1600,
+            heightPx: 2400,
+            inkPassRef: "blob:ink-pass-1",
+            shadedPassRef: "blob:shaded-pass-1",
+            inkLineWeightPx: 1.8,
+            assetIds: ["asset-classroom", "asset-desk", "asset-classroom"],
+            capturedAt: "2026-11-20T03:00:00.000Z",
+          }}
+          onBakeToManuscriptCut={(layer) => bakedLayers.push(layer)}
+        />
+      </MemoryRouter>,
+    );
+
+    const viewportHost = document.querySelector("[data-bg3d-professional-viewport='true']");
+    expect(viewportHost?.getAttribute("data-bg3d-live-ink-mode")).toBe("shaded-3d");
+
+    fireEvent.click(screen.getByRole("button", { name: "선화 분할 비교" }));
+    expect(viewportHost?.getAttribute("data-bg3d-live-ink-mode")).toBe("split-wipe");
+    expect(screen.getByTestId("studio-bg3d-split-wipe-readout").textContent).toBe("50%");
+
+    fireEvent.change(screen.getByLabelText("선화 분할 비교 비율"), { target: { value: "65" } });
+    expect(screen.getByTestId("studio-bg3d-split-wipe-readout").textContent).toBe("65%");
+    expect(viewportHost?.getAttribute("data-bg3d-split-wipe-ratio")).toBe("0.65");
+
+    fireEvent.click(screen.getByTestId("studio-bg3d-bake-to-cut"));
+    expect(bakedLayers).toHaveLength(1);
+    expect(bakedLayers[0]).toMatchObject({
+      targetDocumentId: "doc-ep-1",
+      targetCutIndex: 2,
+      nonDestructive: true,
+      previewMode: "split-wipe",
+      splitWipeRatio: 0.65,
+      rightsBomAssetIds: ["asset-classroom", "asset-desk"],
+    });
+    expect(screen.getByTestId("studio-bg3d-bake-status").textContent).toContain("컷 #3");
+    expect(screen.getByTestId("studio-bg3d-bake-status").textContent).toContain("출처 소재 2건");
+  });
 });

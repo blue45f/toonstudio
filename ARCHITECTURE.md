@@ -273,7 +273,7 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 | API `server` 파일 | 28 |
 | API `platform/http` 파일 | 13 |
 | API `platform/adapters` 파일 | 78 |
-| API `platform/database` 파일 | 181 |
+| API `platform/database` 파일 | 185 |
 | `packages/core` 파일 | 148 |
 | `lint:strict` 경고 예산 (`lintStrictMaxWarnings`) | 2,189 |
 
@@ -385,3 +385,13 @@ Drizzle 정의는 기존 `admin.schema.ts`에 둔다. 다른 소스·경계·파
 DB 파일 수는 기존 174 + 새 SQL 7 + 작업실 schema 1 - 기존 관리자 정적 검사 파일 1 = 181이다.
 NestJS 보드가 정적 검사 SQL을 기존 `schema/admin.schema.ts`로 합친 구조를 재사용한다.
 새 유료 자원이나 운영 DB 적용은 포함하지 않는다.
+
+2026-11-20 상태: **migration — 제작 변경 보드의 네이티브 관리자 통합**.
+`apps/admin-web/src/domains/production/changes`와 API의 `modules/admin-production-changes`가
+화면과 서버 저장을 각각 소유한다. 두 앱은 `@toonstudio/contracts/admin-production-change`의
+DTO·승인·상태 전이·증빙 최신성 규칙을 공유한다. 기존 CI·배포·인프라 기능은 복제하지 않는다.
+현재 main의 추가형 SQL 0129~0131까지 DB 파일 수는 184이며, 이번 요청의 영속 저장을 위한
+`0132_admin_production_changes.sql` 한 파일로 185가 된다. Drizzle 정의는 기존
+`schema/admin.schema.ts`에 함께 두며 다른 소스·경계·파일 크기 상한은 유지한다.
+운영 DB 적용·onpod 이미지 교체·외부 배포는 이 소스 통합으로 실행하지 않는다.
+상태와 반영 절차는 [제작 변경 보드 운영 문서](docs/operations/admin-production-change-board.md)에 기록한다.

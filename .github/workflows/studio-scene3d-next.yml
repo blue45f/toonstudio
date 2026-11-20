@@ -42,6 +42,11 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # 같은 PR의 이전 검증만 취소하고 수동 실행의 증거는 보존한다.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   scene3d-contracts:
     runs-on: ubuntu-24.04-arm

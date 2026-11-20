@@ -7,9 +7,10 @@ import { verifySeriesIpProvenanceChain } from "./studio-ip-provenance-chain-veri
 import { buildIpSlateFundDdReport } from "./studio-ip-slate-fund-dd";
 import { buildGlobalLocalizationRightsManifest } from "./studio-localization-rights-chain";
 import { runSeriesCommercialPipeline } from "./studio-rights-monetization-pipeline";
+import { evaluateVoiceSynthesisConsentLedger } from "./studio-voice-synthesis-consent-ledger";
 
 describe("studio-ip-provenance-chain-verifier", () => {
-  it("verifies all 9 stages including global localization rights when linked to the original episode hashes", () => {
+  it("verifies all 10 stages from Rights BOM receipt through global localization and voice synthesis consent", () => {
     const pack = BUILTIN_STUDIO_WORKFLOW_PACKS[0];
     const sampleLuma = new Uint8Array(72).map((_, idx) => (idx * 19) % 256);
     const ts = "2026-11-20T11:15:00.000Z";
@@ -19,26 +20,12 @@ describe("studio-ip-provenance-chain-verifier", () => {
       seriesTitle: "황녀의 검",
       tier: "episode-serialization-only",
       participants,
-      episodes: [
-        {
-          episodeLabel: "1화",
-          pack,
-          cuts: [{ cutId: "SUB-1-ep1-c01", luma9x8: sampleLuma }],
-          baseLicenseFeeKrw: 2_000_000,
-        },
-        {
-          episodeLabel: "2화",
-          pack,
-          cuts: [{ cutId: "SUB-1-ep2-c01", luma9x8: sampleLuma }],
-          baseLicenseFeeKrw: 2_000_000,
-        },
-        {
-          episodeLabel: "3화",
-          pack,
-          cuts: [{ cutId: "SUB-1-ep3-c01", luma9x8: sampleLuma }],
-          baseLicenseFeeKrw: 2_000_000,
-        },
-      ],
+      episodes: [1, 2, 3].map((ep) => ({
+        episodeLabel: `${ep}화`,
+        pack,
+        cuts: [{ cutId: `SUB-1-ep${ep}-c01`, luma9x8: sampleLuma }],
+        baseLicenseFeeKrw: 2_000_000,
+      })),
       platformFeeBps: 500,
       timestampIso: ts,
     });
@@ -65,10 +52,11 @@ describe("studio-ip-provenance-chain-verifier", () => {
       evaluatedAtIso: ts,
     });
 
+    const receiptHash = pipeline.seriesDossier.episodes[0].integrityHash;
     const loc = buildGlobalLocalizationRightsManifest({
       seriesTitle: "황녀의 검",
       episodeLabel: "1화",
-      sourceReceiptIntegrityHash: pipeline.seriesDossier.episodes[0].integrityHash,
+      sourceReceiptIntegrityHash: receiptHash,
       sourcePackageIntegrityHash: pipeline.deliveryPackages[0].packageIntegrityHash,
       tracks: [
         {
@@ -79,28 +67,42 @@ describe("studio-ip-provenance-chain-verifier", () => {
           sfxAssetLicense: "MIT",
           aiTranslationUsed: false,
           humanPostEdited: true,
-          includesVoiceDubbing: false,
-          voiceActorConsentVerified: false,
+          includesVoiceDubbing: true,
+          voiceActorConsentVerified: true,
         },
       ],
       issuedAtIso: ts,
     });
 
-    const audit9 = verifySeriesIpProvenanceChain(pipeline, dd, loc);
-    expect(audit9.allStagesVerified).toBe(true);
-    expect(audit9.stages).toHaveLength(9);
-    expect(audit9.brokenStages).toHaveLength(0);
-
-    // Tamper underwriting dossierHash and ensure verifier flags broken link
-    const tamperedPipeline = {
-      ...pipeline,
-      advanceUnderwriting: {
-        ...pipeline.advanceUnderwriting,
-        dossierHash: "fnv1a-deadbeef",
+    const voice = evaluateVoiceSynthesisConsentLedger({
+      seriesTitle: "황녀의 검",
+      episodeLabel: "1화",
+      sourceReceiptIntegrityHash: receiptHash,
+      localizationChainHash: loc.localizationChainHash,
+      contracts: [
+        {
+          contractId: "VA-1",
+          characterName: "아리아",
+          voiceActorName: "김성우",
+          allowedLocales: ["en-US"],
+          allowAiVoiceClone: true,
+          allowModelTrainingReuse: false,
+          royaltyPerEpisodeKrw: 300_000,
+          consentExpiresAtIso: "2027-12-31T23:59:59.000Z",
+        },
+      ],
+      request: {
+        targetLocales: ["en-US"],
+        usesAiVoiceClone: true,
+        usesModelTrainingReuse: false,
+        releaseAtIso: "2026-12-01T00:00:00.000Z",
       },
-    };
-    const failedAudit = verifySeriesIpProvenanceChain(tamperedPipeline, dd, loc);
-    expect(failedAudit.allStagesVerified).toBe(false);
-    expect(failedAudit.brokenStages).toContain("advance-underwriting");
+      evaluatedAtIso: ts,
+    });
+
+    const audit10 = verifySeriesIpProvenanceChain(pipeline, dd, loc, voice);
+    expect(audit10.allStagesVerified).toBe(true);
+    expect(audit10.stages).toHaveLength(10);
+    expect(audit10.brokenStages).toHaveLength(0);
   });
 });

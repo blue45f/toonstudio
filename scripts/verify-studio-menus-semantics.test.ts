@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import canvasKo from "../apps/web/public/i18n/studio/canvas/ko.json";
 import mainMenuKo from "../apps/web/public/i18n/studio/mainMenu/ko.json";
+import { StudioDrawingClarityCoreTools } from "../apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarityCoreTools";
 import { resetStudioInspectorSectionStateCache } from "../apps/web/src/domains/creator/studio-inspector-section-state";
 import { buildStudio3dMenuItems } from "../apps/web/src/domains/creator/studio-main-menu-items-story";
 import {
@@ -15,6 +16,9 @@ import {
 
 import {
   canvasHeightSnapshotMatches,
+  CATALOGUE_GROUPS,
+  CLARITY_RAIL_TOOL_IDS,
+  menuVerifierSurfaceSpecifications,
   resolveMenuVerifierCandidateUrl,
   THREE_D_MENU_ENTRIES,
 } from "./verify-studio-menus.mts";
@@ -91,6 +95,45 @@ function canvasProps(canvasHeight: number): StudioInspectorCanvasControlsProps {
     onWebtoonThemeChange: vi.fn(),
   };
 }
+
+describe("실제 셸에 따른 메뉴 검증의 명령 범위", () => {
+  it("현재 core 레일의 여덟 ID 및 색상·레이어 진입은 실제 제품 컴포넌트와 일치한다", () => {
+    render(createElement(StudioDrawingClarityCoreTools, {
+      session: {
+        activeSurfaceReviewLocked: false, pageEditLocked: false, canvasInteractionBlocked: false,
+        scopedCanvasDrawingAvailable: true, tool: "draw", drawMode: "pen", color: "#7c5cfc", colorWheelOpen: false,
+        activatePrimaryCanvasTool: vi.fn(), setColorWheelOpen: vi.fn(), menuEditUndoDisabled: false, menuEditRedoDisabled: false,
+        studioMenubarContentHandlers: { undo: vi.fn(), redo: vi.fn() },
+      },
+      onOpenLayers: vi.fn(),
+      v4Actions: { onSelectTool: vi.fn(), onOpenFill: vi.fn(), onOpenCutSplit: vi.fn(), onOpenBubble: vi.fn(),
+        onToggleBg3d: vi.fn(), onPlacePinComment: vi.fn(), onOpenAllTools: vi.fn() },
+    }));
+    expect([...document.querySelectorAll("[data-studio-rail-tool-id]")].map(tool => tool.getAttribute("data-studio-rail-tool-id")))
+      .toEqual(CLARITY_RAIL_TOOL_IDS);
+    expect(screen.getByRole("toolbar", { name: "그리기 도구" }).getAttribute("aria-orientation")).toBe("vertical");
+    expect(screen.getByRole("button", { name: "색상", exact: true })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "레이어", exact: true })).toBeTruthy();
+  });
+
+  it("프로젝트의 18개 그룹에서도 기존 합성 메뉴의 모든 원본 그룹과 행을 그대로 검사한다", () => {
+    const project = menuVerifierSurfaceSpecifications(true);
+    const workflow = menuVerifierSurfaceSpecifications(false);
+    expect(project).toHaveLength(1);
+    expect(project[0]!.menus.map(menu => menu.id)).toEqual([
+      "file", "edit", "view", "canvas", "layer", "select", "transform", "brush", "filter",
+      "vector", "text", "comic", "animation", "3d", "collaboration", "window", "ai", "help",
+    ]);
+    expect(workflow.map(surface => surface.menus.length)).toEqual([9, 1]);
+    const inventory = (surfaces: ReturnType<typeof menuVerifierSurfaceSpecifications>) => surfaces
+      .flatMap(surface => surface.menus.flatMap(menu => menu.sections))
+      .map(group => ({ id: group.id, items: [...group.items] })).sort((a, b) => a.id.localeCompare(b.id));
+    expect(inventory(project)).toEqual(inventory(workflow));
+    expect(inventory(project)).toEqual(CATALOGUE_GROUPS
+      .map(group => ({ id: group.id, items: [...group.items] })).sort((a, b) => a.id.localeCompare(b.id)));
+    expect(project[0]!.menus.find(menu => menu.id === "3d")!.sections[0]!.items).toEqual(THREE_D_MENU_ENTRIES.map(entry => entry.label));
+  });
+});
 
 describe("메뉴 브라우저 검증의 3D 명령 의미", () => {
   it("현재 한국어 이름과 세 명령의 식별자 및 실행 대상을 각각 보존한다", () => {

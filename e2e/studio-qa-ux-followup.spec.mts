@@ -75,7 +75,7 @@ test("로딩 표지나 이전 숨은 셸만 있으면 준비 성공으로 판단
   await expect(waitForStudioShellHydration(page, 150)).rejects.toThrow();
 });
 
-test("모바일은 실제 더보기와 창 배치를 요청한 뒤에만 숨은 경량 관리자를 마운트한다", async ({ page }) => {
+test("모바일은 실제 더보기와 창 배치를 요청한 뒤에만 경량 관리 진입점을 표시한다", async ({ page }) => {
   await page.setContent(`<div data-studio-editor="true" data-studio-drawing-clarity="true">
     <button data-studio-clarity-more-trigger="true" onclick="document.querySelector('[data-studio-drawing-task-browser]').hidden=false">더보기</button>
     <div data-studio-drawing-task-browser="true" hidden>
@@ -93,12 +93,12 @@ test("모바일은 실제 더보기와 창 배치를 요청한 뒤에만 숨은 
       panel.id = "studio-drawing-clarity-panel-commands";
       panel.dataset.studioDrawingProjectTools = "true";
       panel.setAttribute("aria-labelledby", "studio-project-tools-heading");
-      panel.innerHTML = '<h2 id="studio-project-tools-heading">프로젝트·창 도구</h2><span data-testid="studio-workspace-menu-gate"><button hidden aria-haspopup="dialog" aria-label="작업공간: 기본">작업공간</button></span>';
+      panel.innerHTML = '<h2 id="studio-project-tools-heading">프로젝트·창 도구</h2><span data-testid="studio-workspace-menu-gate"><button aria-haspopup="dialog" aria-label="작업공간: 기본">작업공간</button></span>';
       editor.append(panel);
     });
   });
   const result = await inspectStudioMobileWorkspaceMenuDormancy(page);
-  expect(result).toMatchObject({ ok: true, gateCount: 1, triggerCount: 1, heavyMenuCount: 0, dialogCount: 0,
+  expect(result).toMatchObject({ ok: true, gateCount: 1, triggerCount: 1, triggerVisible: true, heavyMenuCount: 0, dialogCount: 0,
     beforeIntent: { gateCount: 0, triggerCount: 0, heavyMenuCount: 0, dialogCount: 0 } });
   await expect(page.locator('[data-studio-editor="true"]')).toHaveAttribute("data-studio-drawing-clarity", "true");
   await expect(page.locator('[data-studio-drawing-project-tools="true"]')).toBeVisible();

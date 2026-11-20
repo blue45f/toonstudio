@@ -2,6 +2,7 @@ name: Studio environment pack validation
 
 on:
   push:
+    branches: [main]
     paths:
       - ".github/workflows/studio-environment-pack-validation.yml"
       - "scripts/blender/refine_studio_environments_v6.py"

@@ -1,6 +1,8 @@
 apps/admin-web/src/app/shell/AdminApp.test.tsx
+apps/admin-web/src/app/shell/ProductionChangeAccess.test.tsx
 apps/admin-web/src/app/shell/WorkspaceAccess.test.tsx
 apps/admin-web/src/domains/operations/nestjs-quality
+apps/admin-web/src/domains/production/changes
 apps/admin-web/src/domains/workspace
 apps/admin-web/src/platform/http/workspace-api.test.ts
 apps/api/src/config/api-body-parser-boundary.test.ts
@@ -10,6 +12,7 @@ apps/api/src/config/security-headers.test.ts
 apps/api/src/csrf-middleware.test.ts
 apps/api/src/logging/log-safe.test.ts
 apps/api/src/modules/admin-nestjs-quality
+apps/api/src/modules/admin-production-changes
 apps/api/src/modules/admin-workspace
 apps/api/src/modules/admin/admin-cloud-workboard.integration.test.ts
 apps/api/src/modules/admin/admin-cloud-workboard.test.ts
@@ -845,6 +848,7 @@ deploy/cloudflare-static/src/index.test.ts
 deploy/cloudflare-static/src/r2-media-assets.test.ts
 packages/contracts/src/admin-cloud-workboard.test.ts
 packages/contracts/src/admin-nestjs-quality.test.ts
+packages/contracts/src/admin-production-change.test.ts
 packages/contracts/src/admin-workspace
 packages/contracts/src/ai-operations.test.ts
 packages/contracts/src/business-plan/business-plan.test.ts
@@ -884,6 +888,7 @@ scripts/accessibility-sweep-20261107/route-inventory-audit.test.ts
 scripts/admin-database-contract.test.mjs
 scripts/admin-database-feature-contracts.test.mjs
 scripts/admin-nestjs-quality-database-contract.test.mjs
+scripts/admin-production-changes-database-contract.test.mjs
 scripts/admin-workspace-database-contract.test.mjs
 scripts/bg3d-preserving-acl-contract.test.mjs
 scripts/bootstrap-empty-production-database.test.mjs

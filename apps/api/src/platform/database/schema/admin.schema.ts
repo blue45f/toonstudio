@@ -514,3 +514,61 @@ export const ADMIN_SCHEMA_INDEXES_SQL = `NOT EXISTS (
         ORDER BY key.position) = expected.columns
   )
 )`;
+
+// 제작 변경 기록은 별도 원장으로 관리하고 서버 이력·캡처 참조는 추가만 허용한다.
+export const adminProductionChangeRequests = pgTable("admin_production_change_request", {
+  id: uuid("id").primaryKey(),
+  version: integer("version").notNull(),
+  document: jsonb("document").notNull(),
+  createdBy: text("created_by").notNull().references(() => users.id, { onDelete: "restrict" }),
+  updatedBy: text("updated_by").notNull().references(() => users.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).notNull().defaultNow(),
+}, table => [
+  check("admin_production_change_request_version_check", sql`${table.version}>0`),
+  check("admin_production_change_document_check", sql`(jsonb_typeof(${table.document})='object' AND ${table.document}->>'id'=${table.id}::text
+    AND ${table.document}->'version'=to_jsonb(${table.version}) AND jsonb_typeof(${table.document}->'data')='object'
+    AND jsonb_typeof(${table.document}->'history')='array'
+    AND ${table.document}->>'status' IN ('draft','submitted','analysis','review','approved','rejected','scheduled','applied','verified','closed')
+    AND octet_length(${table.document}::text)<=2097152) IS TRUE`),
+  index("admin_production_change_updated_idx").on(table.updatedAt.desc(), table.id),
+]);
+export const adminProductionChangeAudit = pgTable("admin_production_change_audit", {
+  id: uuid("id").primaryKey(),
+  requestId: uuid("request_id").notNull().references(() => adminProductionChangeRequests.id, { onDelete: "restrict" }),
+  version: integer("version").notNull(),
+  actorId: text("actor_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  mutationId: uuid("mutation_id").notNull(),
+  requestDigest: text("request_digest").notNull(),
+  action: text("action").notNull(),
+  beforeDocument: jsonb("before_document"),
+  afterDocument: jsonb("after_document").notNull(),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull().defaultNow(),
+}, table => [
+  unique("admin_production_change_mutation_unique").on(table.actorId, table.mutationId),
+  check("admin_production_change_audit_version_check", sql`${table.version}>0`),
+  check("admin_production_change_audit_request_digest_check", sql`${table.requestDigest} ~ '^[a-f0-9]{64}$'`),
+  check("admin_production_change_audit_action_check", sql`${table.action} IN ('create','save','transition')`),
+  check("admin_production_change_before_check", sql`((${table.action}='create' AND ${table.beforeDocument} IS NULL) OR (${table.action}<>'create'
+    AND jsonb_typeof(${table.beforeDocument})='object' AND ${table.beforeDocument}->>'id'=${table.requestId}::text
+    AND octet_length(${table.beforeDocument}::text)<=2097152)) IS TRUE`),
+  check("admin_production_change_after_check", sql`(jsonb_typeof(${table.afterDocument})='object'
+    AND ${table.afterDocument}->>'id'=${table.requestId}::text AND ${table.afterDocument}->'version'=to_jsonb(${table.version})
+    AND octet_length(${table.afterDocument}::text)<=2097152) IS TRUE`),
+  index("admin_production_change_audit_request_idx").on(table.requestId, table.createdAt, table.id),
+]);
+export const adminProductionChangeCaptures = pgTable("admin_production_change_capture", {
+  id: uuid("id").primaryKey(),
+  objectReference: jsonb("object_reference").notNull(),
+  contentType: text("content_type").notNull(),
+  byteLength: integer("byte_length").notNull(),
+  createdBy: text("created_by").notNull().references(() => users.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull().defaultNow(),
+}, table => [
+  check("admin_production_change_capture_content_type_check", sql`${table.contentType} IN ('image/png','image/jpeg','image/webp')`),
+  check("admin_production_change_capture_byte_length_check", sql`${table.byteLength} BETWEEN 1 AND 5242880`),
+  check("admin_production_change_capture_reference_check", sql`(jsonb_typeof(${table.objectReference})='object'
+    AND ${table.objectReference}->>'purpose'='derived' AND ${table.objectReference}->>'contentType'=${table.contentType}
+    AND ${table.objectReference}->'byteLength'=to_jsonb(${table.byteLength}) AND ${table.objectReference}->>'digest' ~ '^sha256:[a-f0-9]{64}$'
+    AND octet_length(${table.objectReference}::text)<=16384) IS TRUE`),
+]);
