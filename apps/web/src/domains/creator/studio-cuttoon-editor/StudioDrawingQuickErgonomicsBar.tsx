@@ -1,6 +1,15 @@
 import { studioEraserDisplayName } from "../brush/studio-eraser-presets";
-import { Columns2, Compass, FlipHorizontal2, Lock, Magnet, Minus, Plus, Sparkles, Unlock } from "lucide-react";
-import { useId, type ReactNode } from "react";
+import {
+  PRESSURE_CURVE_PRESETS,
+  type PressureCurveControlPoints,
+  type PressureCurvePresetId,
+} from "../drawing/studio-pressure-curve-and-colordrop";
+import {
+  DEFAULT_QUICK_MENU_SLOTS,
+  type QuickMenuSlot,
+} from "../drawing/studio-quickmenu-and-quickshape";
+import { Columns2, Compass, FlipHorizontal2, Gauge, Lock, Magnet, Minus, Plus, Shapes, Sparkles, Unlock } from "lucide-react";
+import { useId, useState, type ReactNode } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
@@ -76,6 +85,14 @@ export type StudioDrawingErgonomicsSession = Pick<
     readonly openBrushStudio?: (trigger?: HTMLElement | null) => void;
   };
   readonly studioToolBeltContentHandlers?: { readonly setActualPixelView?: () => void };
+  readonly pressureCurvePreset?: PressureCurvePresetId;
+  readonly onChangePressureCurvePreset?: (
+    next: PressureCurvePresetId,
+    curve: PressureCurveControlPoints,
+  ) => void;
+  readonly quickShapeSnapEnabled?: boolean;
+  readonly onToggleQuickShapeSnap?: (next: boolean) => void;
+  readonly quickMenuSlots?: readonly QuickMenuSlot[];
 };
 
 const SYMMETRY_CYCLE_ORDER: readonly StudioDrawingErgonomicsSymmetryType[] = [
@@ -86,6 +103,29 @@ const SYMMETRY_CYCLE_ORDER: readonly StudioDrawingErgonomicsSymmetryType[] = [
   "kaleidoscope",
   "silk",
 ];
+
+const PRESSURE_PRESET_CYCLE_ORDER: readonly PressureCurvePresetId[] = [
+  "linear",
+  "soft-ink",
+  "firm-gpen",
+  "expressive-brush",
+];
+
+function resolveNextPressurePreset(current: PressureCurvePresetId): PressureCurvePresetId {
+  const index = PRESSURE_PRESET_CYCLE_ORDER.indexOf(current);
+  if (index < 0) return "soft-ink";
+  return PRESSURE_PRESET_CYCLE_ORDER[(index + 1) % PRESSURE_PRESET_CYCLE_ORDER.length] ?? "linear";
+}
+
+function formatPressurePresetLabel(
+  preset: PressureCurvePresetId,
+  bt: (ko: string, en: string) => string,
+): string {
+  if (preset === "soft-ink") return bt("필압 부드러움", "Pressure soft");
+  if (preset === "firm-gpen") return bt("필압 단단한 G펜", "Pressure firm G-Pen");
+  if (preset === "expressive-brush") return bt("필압 강약 강조", "Pressure expressive");
+  return bt("필압 표준", "Pressure linear");
+}
 
 function resolveNextSymmetryMode(current: string | undefined): StudioDrawingErgonomicsSymmetryType {
   if (!current || current === "off" || current === "none") {
@@ -124,6 +164,13 @@ export function StudioDrawingQuickErgonomicsBar({
 }) {
   const clarity = useStudioDrawingClarity();
   const bt = useBilingual("studio.drawingClarity");
+  const [localPressurePreset, setLocalPressurePreset] = useState<PressureCurvePresetId>("linear");
+  const [localQuickShapeEnabled, setLocalQuickShapeEnabled] = useState<boolean>(true);
+  const activePressurePreset = s.pressureCurvePreset ?? localPressurePreset;
+  const activePressureCurve = PRESSURE_CURVE_PRESETS[activePressurePreset];
+  const pressurePresetLabel = formatPressurePresetLabel(activePressurePreset, bt);
+  const activeQuickShapeEnabled = s.quickShapeSnapEnabled ?? localQuickShapeEnabled;
+  const activeQuickMenuCount = (s.quickMenuSlots ?? DEFAULT_QUICK_MENU_SLOTS).length;
   const blocked =
     s.activeSurfaceReviewLocked ||
     s.pageEditLocked ||
@@ -296,6 +343,48 @@ export function StudioDrawingQuickErgonomicsBar({
           className="studio-drawing-stabilizer-slider"
         />
       </div>
+
+      <button
+        type="button"
+        className="studio-drawing-ergonomics-chip"
+        disabled={blocked}
+        aria-pressed={activePressurePreset !== "linear"}
+        data-studio-pressure-preset={activePressurePreset}
+        data-studio-pressure-curve={`${activePressureCurve.x1},${activePressureCurve.y1},${activePressureCurve.x2},${activePressureCurve.y2}`}
+        onClick={() => {
+          const next = resolveNextPressurePreset(activePressurePreset);
+          setLocalPressurePreset(next);
+          s.onChangePressureCurvePreset?.(next, PRESSURE_CURVE_PRESETS[next]);
+        }}
+        title={bt(
+          "클릭할 때마다 필압 베지어 곡선 프리셋(표준 → 부드러움 → 단단한 G펜 → 강약 강조)을 전환합니다",
+          "Cycle cubic Bezier pen pressure curve presets",
+        )}
+      >
+        <Gauge size={15} aria-hidden />
+        <span>{pressurePresetLabel}</span>
+      </button>
+
+      <button
+        type="button"
+        className="studio-drawing-ergonomics-chip"
+        disabled={blocked}
+        aria-pressed={activeQuickShapeEnabled}
+        data-studio-quickshape-snap={activeQuickShapeEnabled ? "true" : "false"}
+        data-studio-quickmenu-slot-count={activeQuickMenuCount}
+        onClick={() => {
+          const next = !activeQuickShapeEnabled;
+          setLocalQuickShapeEnabled(next);
+          s.onToggleQuickShapeSnap?.(next);
+        }}
+        title={bt(
+          `그린 뒤 0.4초 멈추면 직선·사각형·타원으로 자동 스냅합니다 (빠른 메뉴 ${activeQuickMenuCount}슬롯 준비됨)`,
+          `Hold 0.4s after drawing to snap clean shapes (${activeQuickMenuCount} QuickMenu slots ready)`,
+        )}
+      >
+        <Shapes size={15} aria-hidden />
+        <span>{bt("도형 스냅", "QuickShape")}</span>
+      </button>
 
       {s.studioOptionsBarsHandlers?.toggleSizeLock ? (
         <button

@@ -9,11 +9,21 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
+import { useMemo } from "react";
+
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
+import {
+  computeSafeSliceYs,
+  runCommercialPreflightGate,
+} from "../export/studio-commercial-preflight-gate";
+import {
+  buildWebtoonPsdExportManifest,
+  negotiateTimelapseWebmMimeType,
+} from "../export/studio-timelapse-and-psd-exporter";
 import {
   STUDIO_EXPORT_TARGET_PROFILES,
   STUDIO_EXPORT_TARGETS,
@@ -68,6 +78,62 @@ export function StudioExportPanel({
     0.1,
     Math.round((draft.estimatedFileSizeBytes / 1024 / 1024) * 10) / 10,
   );
+  const safeSlicePlan = profile.maxSegmentHeight
+    ? computeSafeSliceYs(draft.height, profile.maxSegmentHeight, [])
+    : null;
+  const plannedSliceCount = safeSlicePlan ? safeSlicePlan.sliceYs.length + 1 : 1;
+  const commercialGateReport = useMemo(
+    () =>
+      runCommercialPreflightGate({
+        documentWidthPx: draft.width,
+        documentHeightPx: draft.height,
+        targetSliceHeightPx: profile.maxSegmentHeight ?? draft.height,
+        exportMode: target === "personal-archive" ? "personal-preview" : "commercial",
+        bubbles:
+          effectiveDraft.minimumTextPx && effectiveDraft.minimumTextPx > 0
+            ? [
+                {
+                  id: "min-text-sample",
+                  text: "최소 대사 가독성 기준",
+                  fontSizePx: effectiveDraft.minimumTextPx,
+                  topY: 64,
+                  bottomY: 128,
+                },
+              ]
+            : [],
+        assets:
+          projectFacts.blockedAssets > 0
+            ? [
+                {
+                  assetId: "blocked-rights-bom",
+                  name: `권리 확인 필요 소재 ${projectFacts.blockedAssets}건`,
+                  licenseCode: "NON-COMMERCIAL",
+                },
+              ]
+            : [],
+      }),
+    [
+      draft.height,
+      draft.width,
+      effectiveDraft.minimumTextPx,
+      profile.maxSegmentHeight,
+      projectFacts.blockedAssets,
+      target,
+    ],
+  );
+  const psdAndTimelapseSpec = useMemo(() => {
+    const psd = buildWebtoonPsdExportManifest({
+      widthPx: draft.width,
+      heightPx: draft.height,
+      layers: [],
+    });
+    const webmMime = negotiateTimelapseWebmMimeType(
+      typeof MediaRecorder !== "undefined" && typeof MediaRecorder.isTypeSupported === "function"
+        ? (mime) => MediaRecorder.isTypeSupported(mime)
+        : undefined,
+    );
+    return { psdGroupCount: psd.groups.length, webmMime };
+  }, [draft.height, draft.width]);
   const platformRecommendedShortLabel =
     profile.exactWidth !== undefined
       ? bt(
@@ -240,7 +306,7 @@ export function StudioExportPanel({
                 : bt("권장 규격", "recommended spec")}
             </strong>
             <p className="mt-0.5 break-words text-fg-3">
-              {`${draft.width} × ${draft.height} px · ${draft.colorSpace.toUpperCase()}${draft.dpi ? ` · ${draft.dpi} DPI` : ""} · ${bt(`추정 약 ${estimatedMb} MB`, `Est. ~${estimatedMb} MB`)}`}
+              {`${draft.width} × ${draft.height} px · ${draft.colorSpace.toUpperCase()}${draft.dpi ? ` · ${draft.dpi} DPI` : ""} · ${bt(`추정 약 ${estimatedMb} MB`, `Est. ~${estimatedMb} MB`)}${plannedSliceCount > 1 ? ` · ${bt(`스마트 컷 분할 ${plannedSliceCount}조각`, `${plannedSliceCount} smart slices`)}` : ""}`}
               {hasCustomSpec ? ` (${platformRecommendedShortLabel})` : ""}
             </p>
           </div>
@@ -306,6 +372,41 @@ export function StudioExportPanel({
                 )}
               </p>
             ) : null}
+            <p
+              data-testid="studio-export-commercial-gate-summary"
+              className={cn(
+                "mt-1.5 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[0.68rem] font-bold",
+                commercialGateReport.passed
+                  ? commercialGateReport.warningCount > 0
+                    ? "border-warn/40 bg-warn/10 text-warn"
+                    : "border-good/35 bg-good/10 text-good"
+                  : "border-bad/40 bg-bad/10 text-bad",
+              )}
+            >
+              {commercialGateReport.passed
+                ? commercialGateReport.warningCount > 0
+                  ? bt(
+                      `Rights BOM 통과 · 375px 모바일 가독성 주의 ${commercialGateReport.warningCount}건`,
+                      `Rights BOM clear · ${commercialGateReport.warningCount} mobile legibility warning`,
+                    )
+                  : bt(
+                      "Rights BOM 상업 라이선스 · 375px 모바일 가독성 기준 충족",
+                      "Rights BOM commercial license & 375px legibility clear",
+                    )
+                : bt(
+                    `Rights BOM 상업 출고 차단 ${commercialGateReport.blockerCount}건 (비상업 라이선스 소재 확인 필요)`,
+                    `Rights BOM blocked (${commercialGateReport.blockerCount} non-commercial asset issue)`,
+                  )}
+            </p>
+            <p
+              data-testid="studio-export-psd-timelapse-spec"
+              className="mt-1 break-words text-[0.68rem] text-fg-3"
+            >
+              {bt(
+                `비파괴 PSD ${psdAndTimelapseSpec.psdGroupCount}계층 그룹 · 과정 타임랩스(${psdAndTimelapseSpec.webmMime}, 0.5×~4×) 출고 지원`,
+                `Non-destructive ${psdAndTimelapseSpec.psdGroupCount}-group PSD & timelapse (${psdAndTimelapseSpec.webmMime}, 0.5×–4×) ready`,
+              )}
+            </p>
           </div>
           <button
             type="button"

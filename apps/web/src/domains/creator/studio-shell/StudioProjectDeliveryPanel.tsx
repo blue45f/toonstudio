@@ -418,7 +418,7 @@ export function StudioProjectDeliveryPanel({
   };
 
   return (
-    <section className="rounded-3xl border border-line bg-card p-4 shadow-sm sm:p-6" aria-labelledby="delivery-title">
+    <section className="rounded-3xl border border-line bg-card p-4 pb-24 shadow-sm sm:p-6 sm:pb-6" aria-labelledby="delivery-title">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <p className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-accent">
@@ -431,7 +431,7 @@ export function StudioProjectDeliveryPanel({
             {bt("직접 게시, 업로드 패키지, 수동 게시와 완전한 프로젝트 보관을 같은 흐름에서 준비합니다. 외부 서비스가 연결되지 않으면 완료로 표시하지 않습니다.", "Prepare direct publishing, upload packages, manual delivery and complete project archives in one flow. External work is never marked complete without a configured service.")}
           </p>
         </div>
-        <button type="button" onClick={refresh} className={buttonClass({ variant: "outline", size: "sm" })}>
+        <button type="button" onClick={refresh} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}>
           {bt("현재 상태로 다시 계산", "Recalculate")}
         </button>
       </div>
@@ -565,7 +565,7 @@ export function StudioProjectDeliveryPanel({
                     </p>
                     <Link
                       href="/studio/new?kind=webtoon&template=webtoon-vertical"
-                      className="mt-3 inline-flex min-h-10 items-center rounded-xl bg-accent px-3 text-xs font-bold text-on-accent"
+                      className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-accent px-3 text-xs font-bold text-on-accent"
                     >
                       {bt("웹툰 원고 만들기", "Create a webtoon")}
                     </Link>
@@ -714,7 +714,7 @@ export function StudioProjectDeliveryPanel({
                 <p className="mt-2 text-xs leading-5 text-fg-2">
                   {bt("규격·권리·현지화·열린 검토를 통과한 결과만 게시 계획에 사용할 수 있습니다.", "Only results checked for format, rights, localization and open reviews can be published.")}
                 </p>
-                <Link href={`/studio/p/${encodeURIComponent(projectId)}/export?view=preflight`} className="mt-3 inline-flex min-h-10 items-center rounded-xl bg-accent px-3 text-xs font-bold text-on-accent">
+                <Link href={`/studio/p/${encodeURIComponent(projectId)}/export?view=preflight`} className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-accent px-3 text-xs font-bold text-on-accent">
                   {bt("사전검사로 이동", "Open preflight")}
                 </Link>
               </div>

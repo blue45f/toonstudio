@@ -23,6 +23,7 @@ import {
 import { Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+import { shouldPromptTasteOnboarding } from "@/domains/engagement/taste-onboarding-entry-bridge";
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
@@ -47,6 +48,12 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { cn } from "@/shared/lib/utils";
 
 import { DiscoverSpotlight } from "./DiscoverSpotlight";
+import {
+  DISCOVER_TAG_FINDER_CHIPS,
+  buildTagTriggerExploreHref,
+  toggleTagTriggerFilterChip,
+  type TagTriggerFilterState,
+} from "./discover-tag-trigger-finder";
 import {
   DISCOVER_HOME_SNAPSHOT_URL,
   orderTitlesByIds,
@@ -280,6 +287,43 @@ export function DiscoverHubPage() {
   );
   const hydrated = useHydrated();
   const recentlyViewedIds = useApp((state) => state.recentlyViewed);
+  const ratings = useApp((state) => state.ratings);
+  const [tagTriggerState, setTagTriggerState] = useState<TagTriggerFilterState>(() => ({
+    includeTagIds: [],
+    excludeTriggerIds: [],
+  }));
+  const tagTriggerExploreHref = useMemo(
+    () => buildTagTriggerExploreHref(tagTriggerState),
+    [tagTriggerState],
+  );
+  const [mountNowMs] = useState(() => Date.now());
+  const [tasteDismissedAt, setTasteDismissedAt] = useState<number | null>(() => {
+    try {
+      const raw = globalThis.localStorage?.getItem("toonstudio:taste-onboarding-dismissed-at");
+      const parsed = raw ? Number(raw) : NaN;
+      return Number.isFinite(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  });
+  const tastePromptDecision = useMemo(
+    () =>
+      shouldPromptTasteOnboarding({
+        dismissedAtMs: tasteDismissedAt,
+        ratedTitleCount: Object.keys(ratings).length,
+        nowMs: mountNowMs,
+      }),
+    [mountNowMs, ratings, tasteDismissedAt],
+  );
+  const dismissTastePrompt = () => {
+    const now = Date.now();
+    setTasteDismissedAt(now);
+    try {
+      globalThis.localStorage?.setItem("toonstudio:taste-onboarding-dismissed-at", String(now));
+    } catch {
+      // 저장 공간 제한 시 세션 상태만 유지한다.
+    }
+  };
   // 대표 작품이 없는 상태에는 가짜 표지나 빈 카드를 만들지 않는다.
   const showSpotlight = home.loading || (home.data != null && pickDiscoverSpotlight(home.data) != null);
   const quickReturnModel = useMemo(() => {
@@ -415,6 +459,39 @@ export function DiscoverHubPage() {
 
       <section aria-labelledby="discover-shelves-title" className="discover-hub-shelves min-w-0">
         <h2 id="discover-shelves-title" className="sr-only">{bt("작품 둘러보기", "Browse stories")}</h2>
+        {hydrated && tastePromptDecision.shouldPrompt ? (
+          <aside
+            aria-label={bt("5문항 취향 테스트 안내", "5-question taste onboarding")}
+            data-testid="discover-taste-onboarding-prompt"
+            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel px-4 py-3 text-fg"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-fg [word-break:keep-all]">
+                {bt("30초 5문항 취향 테스트로 맞춤 작품을 바로 받아보세요", "Get instant tailored picks with a 30-second 5-question taste test")}
+              </p>
+              <p className="mt-0.5 text-xs text-fg-2 [word-break:keep-all]">
+                {bt("선호 장르·전개 속도·분위기만 고르면 18개 플랫폼 통합 추천이 즉시 맞춰집니다.", "Pick your favorite genres, pacing, and mood to tune recommendations across 18 platforms.")}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Link
+                href="/onboarding/taste"
+                className={buttonClass({ size: "sm", className: "min-h-11 gap-1.5 rounded-lg px-3.5 text-xs font-semibold" })}
+              >
+                {bt("취향 테스트 시작", "Start taste test")}
+                <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
+              </Link>
+              <button
+                type="button"
+                onClick={dismissTastePrompt}
+                aria-label={bt("취향 테스트 안내 닫기", "Dismiss taste test prompt")}
+                className="grid size-11 shrink-0 place-items-center rounded-lg text-fg-3 transition-colors hover:bg-raised hover:text-fg"
+              >
+                <X size={15} aria-hidden="true" />
+              </button>
+            </div>
+          </aside>
+        ) : null}
         <section
           aria-label={bt("최근 본 작품 이어보기", "Continue reading")}
           data-testid="discover-quick-return-bar"
@@ -649,6 +726,54 @@ export function DiscoverHubPage() {
             ))}
           </ul>
         </nav>
+          <div
+            data-testid="discover-tag-trigger-finder"
+            role="group"
+            aria-label={bt("키워드·트리거워닝 안전 파인더", "Keyword & trigger-warning safe finder")}
+            className="mt-4 rounded-xl border border-line bg-panel p-3.5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-fg">
+                {bt("취향 코드 포함 · 트리거워닝 제외 파인더", "Include tropes · Exclude trigger warnings")}
+              </p>
+              <Link
+                href={tagTriggerExploreHref}
+                data-testid="discover-tag-trigger-apply"
+                className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2"
+              >
+                {bt("조합 조건으로 탐색", "Explore with selected filters")}
+                <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
+              </Link>
+            </div>
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {DISCOVER_TAG_FINDER_CHIPS.map((chip) => {
+                const isExclude = chip.axis === "trigger-exclude";
+                const active = isExclude
+                  ? tagTriggerState.excludeTriggerIds.includes(chip.id)
+                  : tagTriggerState.includeTagIds.includes(chip.id);
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() =>
+                      setTagTriggerState((current) => toggleTagTriggerFilterChip(current, chip))
+                    }
+                    className={cn(
+                      "inline-flex min-h-11 items-center rounded-lg border px-3 text-xs font-medium transition-colors",
+                      active
+                        ? isExclude
+                          ? "border-bad/45 bg-bad/15 text-bad"
+                          : "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
+                    )}
+                  >
+                    {bt(chip.labelKo, chip.labelEn)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div className="mt-4 grid grid-cols-1 gap-2.5 min-[360px]:grid-cols-2 sm:gap-3 lg:grid-cols-3">
             {DESTINATIONS.filter((destination) => !["/explore", "/ranking", "/calendar"].includes(destination.href)).map((destination) => (
               <SiteLinkCard key={destination.href} layout="tile" href={destination.href} icon={destination.icon}

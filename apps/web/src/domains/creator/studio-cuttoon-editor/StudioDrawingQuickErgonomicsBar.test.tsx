@@ -334,4 +334,47 @@ describe("StudioDrawingQuickErgonomicsBar", () => {
     );
     expect(toolbar.getAttribute("data-studio-active-draw-mode")).toBe("eraser");
   });
+
+  it("필압 베지어 곡선 프리셋 버튼이 표준 -> 부드러움 -> 단단한 G펜 -> 강약 강조 -> 표준 순으로 순환하고 제어점을 전달한다", () => {
+    const onChangePressureCurvePreset = vi.fn();
+    const session = createErgonomicsSession({
+      onChangePressureCurvePreset,
+    });
+
+    render(<StudioDrawingQuickErgonomicsBar session={session} />);
+
+    const linearBtn = screen.getByRole("button", { name: "필압 표준" });
+    expect(linearBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(linearBtn.getAttribute("data-studio-pressure-preset")).toBe("linear");
+    fireEvent.click(linearBtn);
+
+    const softBtn = screen.getByRole("button", { name: "필압 부드러움" });
+    expect(softBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(softBtn.getAttribute("data-studio-pressure-preset")).toBe("soft-ink");
+    expect(onChangePressureCurvePreset).toHaveBeenLastCalledWith("soft-ink", {
+      x1: 0.15,
+      y1: 0.45,
+      x2: 0.55,
+      y2: 0.9,
+    });
+    fireEvent.click(softBtn);
+
+    const firmBtn = screen.getByRole("button", { name: "필압 단단한 G펜" });
+    expect(firmBtn.getAttribute("data-studio-pressure-preset")).toBe("firm-gpen");
+    fireEvent.click(firmBtn);
+
+    const expressiveBtn = screen.getByRole("button", { name: "필압 강약 강조" });
+    expect(expressiveBtn.getAttribute("data-studio-pressure-preset")).toBe("expressive-brush");
+    fireEvent.click(expressiveBtn);
+
+    expect(screen.getByRole("button", { name: "필압 표준" }).getAttribute("aria-pressed")).toBe(
+      "false",
+    );
+
+    const quickShapeBtn = screen.getByRole("button", { name: "도형 스냅" });
+    expect(quickShapeBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(quickShapeBtn.getAttribute("data-studio-quickmenu-slot-count")).toBe("6");
+    fireEvent.click(quickShapeBtn);
+    expect(quickShapeBtn.getAttribute("aria-pressed")).toBe("false");
+  });
 });

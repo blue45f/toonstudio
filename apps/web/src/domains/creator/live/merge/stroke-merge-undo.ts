@@ -17,6 +17,11 @@
  */
 
 import {
+  LOCAL_USER_ORIGIN,
+  isLocalUndoableOrigin,
+  type CrdtTransactionOrigin,
+} from "../studio-crdt-local-undo-scope-guard";
+import {
   computePropsInverse,
   currentTransform,
   type MergeState,
@@ -57,10 +62,12 @@ export class StrokeUndoManager {
     return this.redoStack.length > 0;
   }
 
-  /** 사용자의 일반 op 제출 직후에 호출한다. 새 작업은 redo를 비운다. */
-  track(op: StrokeOp): void {
+  /** 사용자의 일반 op 제출 직후에 호출한다. 원격 피어·하이드레이션 origin은 로컬 Undo 스택에서 차단한다. */
+  track(op: StrokeOp, origin: CrdtTransactionOrigin = LOCAL_USER_ORIGIN): boolean {
+    if (!isLocalUndoableOrigin(origin)) return false;
     this.undoStack.push(op.body);
     this.redoStack = [];
+    return true;
   }
 
   /** 내 마지막 op를 되돌리는 새 op를 제출한다. 되돌릴 게 없으면 null. */

@@ -1,6 +1,6 @@
 import { engagementStatusText } from "./engagement-status-i18n";
 import { apiFetch } from "@/platform/api";
-import { CheckCircle2, Copy, ListChecks, TriangleAlert } from "lucide-react";
+import { CheckCircle2, Copy, ListChecks, Share2, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -16,7 +16,8 @@ import { Container } from "@/shared/components/section";
 import { TitleCard } from "@/shared/components/title-card";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { CollectionIcon } from "@/shared/components/visual-marks";
-import { useDocumentTitle, useMetaRobots } from "@/shared/seo/use-document-title";
+import { buildPublicCollectionShareDescriptor } from "@/shared/lib/public-collection-share";
+import { useDocumentTitle, useMetaRobots, usePageSocialMeta } from "@/shared/seo/use-document-title";
 import { NOINDEX_PRIVATE_ROBOTS } from "@/shared/lib/seo-route-policy";
 import { useApp } from "@/shared/lib/store";
 
@@ -50,12 +51,30 @@ export function PublicCollectionPage() {
       return null;
     }
   }, [token]);
-  useDocumentTitle(snapshot?.name ?? "공개 컬렉션");
+  const shareDescriptor = useMemo(
+    () =>
+      snapshot
+        ? buildPublicCollectionShareDescriptor({
+            id: token.slice(0, 12) || "snapshot",
+            name: snapshot.name,
+            titleCount: snapshot.titleIds.length,
+          })
+        : null,
+    [snapshot, token],
+  );
+  useDocumentTitle(shareDescriptor?.ogTitle ?? snapshot?.name ?? "공개 컬렉션");
+  usePageSocialMeta({
+    canonicalPath: shareDescriptor?.sharePath ?? "/collections/shared",
+    title: shareDescriptor?.ogTitle ?? "공개 컬렉션",
+    description: shareDescriptor?.ogDescription ?? "툰스튜디오 공개 컬렉션",
+    type: "website",
+  });
   useMetaRobots(NOINDEX_PRIVATE_ROBOTS);
   const [titles, setTitles] = useState<Title[]>([]);
   const [loading, setLoading] = useState(Boolean(snapshot));
   const [loadError, setLoadError] = useState(false);
   const [cloned, setCloned] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const createCollection = useApp((state) => state.createCollection);
   const toggleInCollection = useApp((state) => state.toggleInCollection);
 
@@ -112,15 +131,34 @@ export function PublicCollectionPage() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={clone}
-            disabled={cloned}
-            className={buttonClass({ className: "gap-2" })}
-          >
-            {cloned ? <CheckCircle2 size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
-            {cloned ? "내 서재에 복제됨" : "내 컬렉션으로 복제"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                const targetUrl = typeof window !== "undefined" ? window.location.href : shareDescriptor?.shareUrl ?? "";
+                if (!targetUrl || !navigator.clipboard?.writeText) return;
+                try {
+                  await navigator.clipboard.writeText(targetUrl);
+                  setLinkCopied(true);
+                } catch {
+                  setLinkCopied(false);
+                }
+              }}
+              className={buttonClass({ variant: "outline", className: "min-h-11 gap-2" })}
+            >
+              <Share2 size={15} aria-hidden="true" />
+              {linkCopied ? "공유 링크 복사됨" : "공개 링크 복사"}
+            </button>
+            <button
+              type="button"
+              onClick={clone}
+              disabled={cloned}
+              className={buttonClass({ className: "min-h-11 gap-2" })}
+            >
+              {cloned ? <CheckCircle2 size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+              {cloned ? "내 서재에 복제됨" : "내 컬렉션으로 복제"}
+            </button>
+          </div>
         </div>
       </header>
 

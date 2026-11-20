@@ -18,6 +18,13 @@ import type {
 } from "react";
 
 import {
+  buildBakedManuscriptCutLayer,
+  clampSplitWipeRatio,
+  type BakedManuscriptCutLayer,
+  type LiveInkPreviewMode,
+  type Scene3DCaptureSnapshot,
+} from "./studio-bg3d-live-ink-bake-bridge";
+import {
   DEFAULT_STUDIO_BG3D_PROFESSIONAL_WORKSPACE_LAYOUT,
   STUDIO_BG3D_INSPECTOR_WIDTH_MAX,
   STUDIO_BG3D_INSPECTOR_WIDTH_MIN,
@@ -44,6 +51,11 @@ interface StudioBg3dProfessionalWorkspaceProps {
   readonly cutHost?: unknown;
   readonly inspector: ReactNode;
   readonly scopeKey?: string | null;
+  readonly defaultLiveInkMode?: LiveInkPreviewMode;
+  readonly captureSnapshot?: Scene3DCaptureSnapshot | null;
+  readonly targetDocumentId?: string | null;
+  readonly targetCutIndex?: number;
+  readonly onBakeToManuscriptCut?: (layer: BakedManuscriptCutLayer) => void;
 }
 
 interface ResizeGesture {
@@ -62,6 +74,16 @@ const PRESET_ENTRIES: ReadonlyArray<{
   { id: "character", ko: "캐릭터", en: "Character" },
   { id: "output", ko: "출력", en: "Output" },
   { id: "focus", ko: "집중", en: "Focus" },
+];
+
+const LIVE_INK_MODE_ENTRIES: ReadonlyArray<{
+  readonly id: LiveInkPreviewMode;
+  readonly ko: string;
+  readonly en: string;
+}> = [
+  { id: "shaded-3d", ko: "3D 음영", en: "3D shaded" },
+  { id: "split-wipe", ko: "선화 분할 비교", en: "Split-wipe" },
+  { id: "live-ink-only", ko: "선화 전용", en: "Live ink only" },
 ];
 
 function browserStorage(): Storage | null {
@@ -85,6 +107,11 @@ export function StudioBg3dProfessionalWorkspace({
   cutHost,
   inspector,
   scopeKey = null,
+  defaultLiveInkMode = "shaded-3d",
+  captureSnapshot = null,
+  targetDocumentId = null,
+  targetCutIndex = 0,
+  onBakeToManuscriptCut,
 }: StudioBg3dProfessionalWorkspaceProps) {
   useBilingualI18nRevision();
   const isMobile = useIsMobile();
@@ -92,8 +119,36 @@ export function StudioBg3dProfessionalWorkspace({
   const [layout, setLayout] = useState(() =>
     readStudioBg3dProfessionalWorkspaceLayout(browserStorage(), scopeKey));
   const [assetShelfOpen, setAssetShelfOpen] = useState(true);
+  const [liveInkMode, setLiveInkMode] = useState<LiveInkPreviewMode>(defaultLiveInkMode);
+  const [splitWipeRatio, setSplitWipeRatio] = useState<number>(0.5);
+  const [bakeStatusMessage, setBakeStatusMessage] = useState<string | null>(null);
   const hydratedStorageKeyRef = useRef(canonicalStorageKey);
   const resizeGestureRef = useRef<ResizeGesture | null>(null);
+
+  const handleBakeToManuscriptCut = () => {
+    if (!captureSnapshot) {
+      setBakeStatusMessage(bi("3D 뷰포트 캡처 스냅샷을 먼저 준비해 주세요.", "Prepare a 3D viewport capture snapshot first."));
+      return;
+    }
+    const result = buildBakedManuscriptCutLayer({
+      capture: captureSnapshot,
+      targetDocumentId: targetDocumentId ?? "",
+      targetCutIndex,
+      previewMode: liveInkMode,
+      splitWipeRatio,
+    });
+    if (!result.ok) {
+      setBakeStatusMessage(result.messageKo);
+      return;
+    }
+    onBakeToManuscriptCut?.(result.layer);
+    setBakeStatusMessage(
+      bi(
+        `컷 #${result.layer.targetCutIndex + 1}에 비파괴 3D 레이어(출처 소재 ${result.layer.rightsBomAssetIds.length}건)를 반영했습니다.`,
+        `Baked non-destructive 3D layer (${result.layer.rightsBomAssetIds.length} Rights BOM assets) to cut #${result.layer.targetCutIndex + 1}.`,
+      ),
+    );
+  };
 
   useEffect(() => {
     if (hydratedStorageKeyRef.current === canonicalStorageKey) return;
@@ -279,6 +334,62 @@ export function StudioBg3dProfessionalWorkspace({
         >
           {bi("에셋 쉘프", "Asset shelf")}
         </button>
+        <div
+          role="group"
+          aria-label={bi("라이브 선화 미리보기 모드", "Live ink preview mode")}
+          className="inline-flex flex-wrap items-center gap-1"
+        >
+          {LIVE_INK_MODE_ENTRIES.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              aria-pressed={liveInkMode === entry.id}
+              data-bg3d-live-ink-btn={entry.id}
+              className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
+              onClick={() => setLiveInkMode(entry.id)}
+            >
+              {bi(entry.ko, entry.en)}
+            </button>
+          ))}
+          {liveInkMode === "split-wipe" ? (
+            <label className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2">
+              <span data-testid="studio-bg3d-split-wipe-readout" className="tabular-nums">
+                {`${Math.round(splitWipeRatio * 100)}%`}
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={Math.round(splitWipeRatio * 100)}
+                aria-label={bi("선화 분할 비교 비율", "Live ink split-wipe ratio")}
+                onChange={(event) =>
+                  setSplitWipeRatio(clampSplitWipeRatio(Number(event.currentTarget.value) / 100))
+                }
+                className="w-20 accent-accent"
+              />
+            </label>
+          ) : null}
+        </div>
+        {onBakeToManuscriptCut || captureSnapshot ? (
+          <button
+            type="button"
+            data-testid="studio-bg3d-bake-to-cut"
+            onClick={handleBakeToManuscriptCut}
+            className="inline-flex min-h-11 items-center rounded-full border border-accent bg-accent-soft px-3 text-xs font-bold text-accent transition-colors hover:bg-accent hover:text-on-accent"
+          >
+            {bi("원고 컷에 굽기", "Bake to manuscript cut")}
+          </button>
+        ) : null}
+        {bakeStatusMessage ? (
+          <span
+            role="status"
+            data-testid="studio-bg3d-bake-status"
+            className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3 text-xs font-semibold text-fg-2"
+          >
+            {bakeStatusMessage}
+          </span>
+        ) : null}
         <div className="ml-auto flex items-center gap-1.5">
           <Link
             href="/studio/new?template=webtoon&from=bg3d-cut"
@@ -310,6 +421,8 @@ export function StudioBg3dProfessionalWorkspace({
         {layout.outlinerVisible ? renderSeparator("outliner") : null}
         <div
           data-bg3d-professional-viewport="true"
+          data-bg3d-live-ink-mode={liveInkMode}
+          data-bg3d-split-wipe-ratio={splitWipeRatio}
           className="contents xl:flex xl:min-h-0 xl:min-w-0 xl:flex-1"
           style={{ order: "var(--studio-bg3d-viewport-order)" }}
         >
