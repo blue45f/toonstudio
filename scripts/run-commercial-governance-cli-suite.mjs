@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { evaluateSlateDdFromJson } from "./evaluate-ip-slate-dd-cli.mjs";
 import { simulateEpisodeSettlementFromPackJson } from "./simulate-episode-settlement-cli.mjs";
 import { verifyLocalizationManifestJson } from "./verify-localization-rights-cli.mjs";
+import { verifyReaderTrustSealJson } from "./verify-reader-trust-seal-cli.mjs";
 import { verifyRightsBomReceiptJson } from "./verify-rights-bom-receipt-cli.mjs";
 import { verifyVoiceConsentLedgerJson } from "./verify-voice-consent-ledger-cli.mjs";
 
@@ -115,12 +116,44 @@ export function runCommercialGovernanceCliSuite() {
     receiptHash,
   );
 
+  const sealBase = {
+    sealSchemaVersion: 1,
+    seriesTitle: "통합 테스트작",
+    level: "verified-10-stage",
+    verifiedStagesCount: 10,
+    totalStagesCount: 10,
+    commercialAssetsCleared: true,
+    aiTrainingOptOut: true,
+    voiceConsentVerified: true,
+    globalLocalesCount: 1,
+    masterAuditHash: receiptHash,
+    issuedAtIso: "2026-11-20T11:45:00.000Z",
+  };
+  const sealDigestHash = fnv1aHex(
+    JSON.stringify({
+      seriesTitle: sealBase.seriesTitle,
+      level: sealBase.level,
+      verifiedStagesCount: sealBase.verifiedStagesCount,
+      totalStagesCount: sealBase.totalStagesCount,
+      commercialAssetsCleared: sealBase.commercialAssetsCleared,
+      aiTrainingOptOut: sealBase.aiTrainingOptOut,
+      voiceConsentVerified: sealBase.voiceConsentVerified,
+      globalLocalesCount: sealBase.globalLocalesCount,
+      masterAuditHash: sealBase.masterAuditHash,
+    }),
+  );
+  const c6 = verifyReaderTrustSealJson(
+    JSON.stringify({ ...sealBase, sealDigestHash }),
+    { expectedMasterHash: receiptHash, requireTenStage: true },
+  );
+
   const checks = [
     { name: "verify-rights-bom-receipt-cli", ok: c1.ok },
     { name: "simulate-episode-settlement-cli", ok: c2.ok },
     { name: "evaluate-ip-slate-dd-cli", ok: c3.ok },
     { name: "verify-localization-rights-cli", ok: c4.ok },
     { name: "verify-voice-consent-ledger-cli", ok: c5.ok },
+    { name: "verify-reader-trust-seal-cli", ok: c6.ok },
   ];
 
   const passedCount = checks.filter((c) => c.ok).length;
@@ -140,7 +173,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log(JSON.stringify(res, null, 2));
   } else {
     console.log(
-      `ToonStudio Commercial Governance 5-CLI Suite: ${res.passedCount}/${res.totalCount} PASS (${res.receiptHash})`,
+      `ToonStudio Commercial Governance 6-CLI Suite: ${res.passedCount}/${res.totalCount} PASS (${res.receiptHash})`,
     );
   }
   if (!res.ok) {
