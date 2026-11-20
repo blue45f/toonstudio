@@ -53,6 +53,10 @@ function graphiteShortStrokeSummary(
     pressures, brushDynamics: settings,
     paintModel: "bounded-flow-v2", paperModel: "contact-tooth-v2",
   };
+  return dryStrokeSummary(source);
+}
+
+function dryStrokeSummary(source: DrawEl) {
   const result = planStudioDynamicBrushRender(source, "dry-media", false);
   if (result.status !== "ready") throw new Error("흑연 단획 계획이 거부됐습니다.");
   const plan = result.plan;
@@ -131,6 +135,46 @@ describe("material brushes in the actual product selection contract", () => {
     expect(settings.width.jitter).toBeNull();
   });
 
+
+  it.each([
+    {
+      catalogId: "material-silverpoint-crossgrain", id: "1583e3e4-50ca-4c3b-bd6b-a3fa646a1152",
+      points: [258.48915482423337, 155.13215993340677, 253.64248317127897, 156.20946659961098],
+      pressures: [0.55, 0.7467914459586107], seed: 2191266750, oldMarks: 2, newMarks: 5, minimumPeak: 0.37,
+    },
+    {
+      catalogId: "material-silverpoint-crossgrain", id: "e7d99972-c108-4b04-9e09-1f50cfcd4432",
+      points: [258.48915482423337, 154.93016493349347, 253.64248317127897, 156.0074715996977],
+      pressures: [0.55, 0.7381947082629265], seed: 445598094, oldMarks: 2, newMarks: 5, minimumPeak: 0.37,
+    },
+    {
+      catalogId: "needle-graphite", id: "5d9bc377-de0d-43ac-b8e1-60787d34b373",
+      points: [266.02842183994017, 99.44887162397647, 263.120012296578, 100.41858317454316,
+        261.32487024414655, 101.01711304359951, 261.18175018698577, 101.06483162328279],
+      pressures: [0.55, 0.7605012573465455, 0.7605012573465455, 0.7605012573465455],
+      seed: 3269355966, oldMarks: 85, newMarks: 85, minimumPeak: 0.04,
+    },
+  ])("$catalogId의 단획은 기존 스냅샷을 재생하고 새 선택에서 가시성을 보강한다 ($seed)", (fixture) => {
+    const preset = materializeStudioBrushPackSelection(fixture.catalogId);
+    if (!preset?.brushDynamics) throw new Error("브러시 기본 설정이 없습니다.");
+    const dynamics = preset.brushDynamics;
+    const source: DrawEl = {
+      id: fixture.id, type: "draw", kind: "freehand", mode: "pen", brush: preset.runtimeBrushId,
+      brushCatalogId: preset.catalogId, stroke: "#7c5cfc", strokeWidth: preset.defaultWidth,
+      opacity: preset.defaultOpacity, points: fixture.points, pressures: fixture.pressures,
+      brushDynamics: dynamics, paintModel: "bounded-flow-v2", paperModel: "contact-tooth-v2",
+    };
+    const oldDynamics = fixture.catalogId === "needle-graphite"
+      ? { ...dynamics, flow: { ...dynamics.flow, base: 0.46 } }
+      : { ...dynamics, spacingRatio: 0.18 };
+    const previous = dryStrokeSummary({ ...source, brushDynamics: normalizeStudioBrushDynamicsSettings(oldDynamics) });
+    const selected = dryStrokeSummary(source);
+    expect(previous).toMatchObject({ seed: fixture.seed, markCount: fixture.oldMarks });
+    expect(previous.alphaPeak).toBeLessThan(fixture.minimumPeak);
+    expect(selected).toMatchObject({ seed: fixture.seed, markCount: fixture.newMarks });
+    expect(selected.alphaPeak).toBeGreaterThan(fixture.minimumPeak);
+    expect(selected.energy).toBeGreaterThan(previous.energy);
+  });
 
   it("흑연 새 선택의 flow를 보강해도 저장 snapshot과 사용자 flow를 다시 해석하지 않는다", async () => {
     const definition = studioMaterialBrushDefinition("material-graphite-platelets");

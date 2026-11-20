@@ -112,6 +112,7 @@ export type StudioBrushPackExpansionWaveId =
  * Keeping this set explicit prevents a general opacity multiplier from flattening the catalogue.
  */
 export const STUDIO_BRUSH_PACK_VISIBILITY_TUNING_IDS = [
+  "needle-graphite",
   "mist-soft",
   "bokeh-scatter",
   "bleeding-stain",
@@ -172,6 +173,8 @@ const EXPANSION_TUNING: Readonly<
   Record<StudioBrushPackTuningId, StudioBrushPackExpansionTuning>
 > = {
   // ── Legacy soft-media visibility corrections ──────────────────────────
+  // Short, light graphite marks need pigment inside the existing 3 px nib footprint.
+  "needle-graphite": { flow: { base: 0.75 } },
   "mist-soft": {
     // Remains a build-up brush, but no longer starts below the browser's perceptual floor.
     tipSoftness: 0.72,
