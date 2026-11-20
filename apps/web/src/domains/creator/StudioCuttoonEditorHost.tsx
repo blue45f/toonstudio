@@ -28166,6 +28166,7 @@ function clearSelectionForEdit() {
       bg3dInitialElementId={bg3dInitialElementId}
       bg3dInitialScene={bg3dInitialScene}
       bg3dOpen={bg3dOpen}
+      characterShaperOpen={characterShaperOpen}
       bg3dSeedPrimitiveKind={bg3dSeedPrimitiveKind}
       bg3dMarketplaceModelId={bg3dMarketplaceModelId}
       bg3dSeedTemplateId={bg3dSeedTemplateId}
