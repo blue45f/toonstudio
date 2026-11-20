@@ -9,6 +9,8 @@ import type { Title } from "@/shared/lib/types";
 import { isPlaceholderAuthorName } from "./local-catalog-fallback";
 import { resolveExternalPlatformGuide } from "./title-episode-empty-guide";
 import { useCatalogInkIndicator } from "./use-catalog-ink-indicator";
+import { useTitleTrustSeal } from "./use-title-trust-seal";
+import { ReaderTrustSealBadge } from "@/shared/components/ReaderTrustSealBadge";
 import { TitlePoster } from "@/shared/components/title-poster";
 import { proxiedCoverSrc } from "@/shared/lib/cover-proxy";
 import {
@@ -98,6 +100,7 @@ export function TitleDetailHero({
   const official = externalGuide.primary;
   const officialPlatformName = official ? PLATFORMS[official.platformId]?.name ?? official.platformId : null;
   const showBlurredBackdrop = Boolean(title.coverImage && title.ageRating !== "19");
+  const trustSeal = useTitleTrustSeal(title.slug, title.title);
 
   const handleSaveToggle = () => {
     if (current === "want") {
@@ -140,6 +143,7 @@ export function TitleDetailHero({
             <span>{TYPE_LABEL[title.type]}</span>
             <span>{STATUS_LABEL[title.status]}</span>
             <span>{AGE_LABEL[title.ageRating]}</span>
+            <ReaderTrustSealBadge seal={trustSeal.seal} liveStatus={trustSeal.liveStatus} compact />
           </div>
           <h1>{title.title}</h1>
           <p className="title-detail-byline">

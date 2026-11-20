@@ -30,6 +30,7 @@ import { FeedbackModule } from "./modules/feedback/feedback.module";
 import { FortuneModule } from "./modules/fortune/fortune.module";
 import { HealthModule } from "./modules/health/health.module";
 import { IntegrationPlatformModule } from "./modules/integration-platform/integration-platform.module";
+import { IpGovernanceModule } from "./modules/ip-governance/ip-governance.module";
 import { LegalModule } from "./modules/legal/legal.module";
 import { LearningModule } from "./modules/learning/learning.module";
 import { MeModule } from "./modules/me/me.module";
@@ -101,6 +102,7 @@ const studioRealtimeTicketModule =
       : []),
     HealthModule,
     IntegrationPlatformModule,
+    IpGovernanceModule,
     LegalModule,
     LearningModule,
     FortuneModule,

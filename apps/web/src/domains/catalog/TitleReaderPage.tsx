@@ -17,10 +17,12 @@ import { TitleReaderReaBridgeCard } from "./TitleReaderReaBridgeCard";
 import { ReaderPlatformNotice } from "./ReaderPlatformNotice";
 import { resolveExternalPlatformGuide } from "./title-episode-empty-guide";
 import { useLocalCatalogFallback } from "./local-catalog-fallback";
+import { useTitleTrustSeal } from "./use-title-trust-seal";
 
 import { useNextgenLabSettings } from "@/shared/hooks/use-nextgen-lab-settings";
 import { useScreenWakeLock } from "@/shared/hooks/use-screen-wake-lock";
 import { ErrorState } from "@/shared/components/feedback/error-state";
+import { ReaderTrustSealBadge } from "@/shared/components/ReaderTrustSealBadge";
 import {
   formatI18nTemplate,
   translateBilingualValueForActiveLocale,
@@ -94,6 +96,7 @@ function ReaderShell({
 }) {
   useBilingualI18nRevision();
   const navigate = useNavigate();
+  const trustSeal = useTitleTrustSeal(title.slug, title.title);
   // 실험 기능: 읽는 동안 화면 꺼짐 방지 — 지원 환경에서, 설정이 켜져 있을 때만 붙잡는다.
   const labSettings = useNextgenLabSettings();
   useScreenWakeLock(labSettings.readerWakeLock);
@@ -321,6 +324,10 @@ function ReaderShell({
             </p>
           </section>
         </ReaderPlatformNotice>
+
+        <div className="mb-4">
+          <ReaderTrustSealBadge seal={trustSeal.seal} liveStatus={trustSeal.liveStatus} />
+        </div>
 
         {publishedEpisodes.includes(episode) && !hasNext && <p className="mb-4 text-center text-sm text-white/75">{bi("확인된 공개 회차 중 마지막 회차예요", "This is the latest confirmed published episode")}</p>}
 
