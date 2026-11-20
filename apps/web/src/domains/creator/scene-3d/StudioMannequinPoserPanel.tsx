@@ -321,7 +321,7 @@ export function StudioMannequinPoserPanel({
     const currentMeta = readCurrentSemanticMeta();
     let nextPose = poseRef.current;
     if (hasActiveStudioMannequinSemanticContacts(currentMeta)) {
-      const nextSpec = buildStudioMannequinSpec(applyStudioMannequinBreathingParams(nextParams, breathPhaseRef.current), { fingerPose: fingerPoseRef.current });
+      const nextSpec = buildStudioMannequinSpec(applyStudioMannequinBreathingParams(nextParams, breathPhaseRef.current), fingerPoseRef.current);
       nextPose = retargetStudioMannequinSemanticPose(nextSpec, poseRef.current, currentMeta, jointLocksRef.current);
       poseRef.current = nextPose;
       setPose(nextPose);
@@ -429,7 +429,7 @@ export function StudioMannequinPoserPanel({
   );
 
   const effectiveParams = useMemo(() => applyStudioMannequinBreathingParams(params, breathPhase), [params, breathPhase]);
-  const spec = useMemo(() => buildStudioMannequinSpec(effectiveParams, { fingerPose }), [effectiveParams, fingerPose]);
+  const spec = useMemo(() => buildStudioMannequinSpec(effectiveParams, fingerPose), [effectiveParams, fingerPose]);
   const balanceReport = useMemo(() => analyzeStudioMannequinBalance(spec, pose), [spec, pose]);
   const gestureAnalysis = useMemo(() => analyzeStudioMannequinGesture(spec, pose), [spec, pose]);
 
@@ -744,7 +744,7 @@ export function StudioMannequinPoserPanel({
       };
       const nextPose = userEdit && hasActiveStudioMannequinSemanticContacts(nextMeta)
         ? retargetStudioMannequinSemanticPose(
-            buildStudioMannequinSpec(applyStudioMannequinBreathingParams(loaded.params, breathPhaseRef.current), { fingerPose: fingerPoseRef.current }),
+            buildStudioMannequinSpec(applyStudioMannequinBreathingParams(loaded.params, breathPhaseRef.current), fingerPoseRef.current),
             loaded.pose,
             nextMeta,
             {},
@@ -896,7 +896,7 @@ export function StudioMannequinPoserPanel({
     try {
       handle = createStudioMannequinScene({
         container,
-        initialSpec: buildStudioMannequinSpec(stateRef.current.params),
+        initialSpec: buildStudioMannequinSpec(stateRef.current.params, fingerPoseRef.current),
         initialPose: stateRef.current.pose,
         initialLightingRig: lightingRigRef.current,
         onCaptureCameraChange: setCaptureCamera,
@@ -1073,7 +1073,7 @@ export function StudioMannequinPoserPanel({
     setBreathPhase(nextBreath);
     const currentMeta = readCurrentSemanticMeta();
     if (hasActiveStudioMannequinSemanticContacts(currentMeta)) {
-      const nextSpec = buildStudioMannequinSpec(applyStudioMannequinBreathingParams(stateRef.current.params, nextBreath), { fingerPose: fingerPoseRef.current });
+      const nextSpec = buildStudioMannequinSpec(applyStudioMannequinBreathingParams(stateRef.current.params, nextBreath), fingerPoseRef.current);
       commitPose(retargetStudioMannequinSemanticPose(nextSpec, poseRef.current, currentMeta, jointLocksRef.current));
     }
   }, [commitPose, readCurrentSemanticMeta]);

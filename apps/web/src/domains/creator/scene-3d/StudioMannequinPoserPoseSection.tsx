@@ -17,7 +17,7 @@ import { useMemo, useState, type ReactElement } from "react";
 
 import { STUDIO_HAND_PRESETS } from "../studio-hand-pose-scanner";
 import { STUDIO_FOCUS_RING, StudioSectionHeader, StudioToggleChip } from "../studio-panel-ui";
-import { StudioHandPosePanel } from "../StudioHandPosePanel";
+import { StudioHandPosePanel, type StudioHandPosePanelProps } from "../StudioHandPosePanel";
 import {
   STUDIO_MANNEQUIN_POSE_CATEGORIES,
   type StudioMannequinPoseCategory,
@@ -103,7 +103,7 @@ export interface StudioMannequinPoseSectionProps {
   readonly onResetJoints: () => void;
   /** 손 포즈 스캐너·프리셋 패널 외부 제어 상태(미지정 시 내부 상태 사용). */
   readonly handPose?: StudioHandPoseData;
-  readonly onHandPoseChange?: (pose: StudioHandPoseData) => void;
+  readonly onHandPoseChange?: StudioHandPosePanelProps["onHandPoseChange"];
   readonly handWebcamActive?: boolean;
   readonly onToggleHandWebcam?: () => void;
 }
@@ -501,9 +501,9 @@ export function StudioMannequinPoseSection({
         <div className="px-2 pb-2 pt-1.5">
           <StudioHandPosePanel
             handPose={handPose ?? localHandPose}
-            onHandPoseChange={(nextPose) => {
-              setLocalHandPose(nextPose);
-              onHandPoseChange?.(nextPose);
+            onHandPoseChange={(nextPose, change) => {
+              if (handPose === undefined) setLocalHandPose(nextPose);
+              onHandPoseChange?.(nextPose, change);
             }}
             webcamActive={handWebcamActive ?? localHandWebcam}
             onToggleWebcam={() => {

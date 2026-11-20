@@ -1,8 +1,6 @@
 /** 손 패드와 손 포즈 프리셋을 같은 마네킹 손가락 상태에 적용한다. */
 import { useCallback, useState } from "react";
 
-import { STUDIO_HAND_PRESETS, type StudioHandPoseData } from "../studio-hand-pose-scanner";
-
 import {
   mergeHandPadIntoFingerPose,
   type StudioMannequinFingerSplayMap,
@@ -12,17 +10,18 @@ import {
   clampStudioMannequinFingerPose,
   type StudioMannequinFingerPose,
 } from "./studio-mannequin-model";
-import { studioMannequinHandPoseToPadOutput } from "./studio-mannequin-hand-pose-adapter";
+import {
+  createStudioMannequinHandPoseChangeHandler,
+  studioMannequinFingerPoseToHandPose,
+} from "./studio-mannequin-hand-pose-adapter";
 
 export function useStudioMannequinHandPose() {
   const [fingerPose, setFingerPose] = useState<StudioMannequinFingerPose>(
     () => clampStudioMannequinFingerPose(undefined),
   );
-  const [handScannerPose, setHandScannerPose] = useState<StudioHandPoseData | undefined>(
-    () => STUDIO_HAND_PRESETS[0]?.pose,
-  );
   const [leftSplayDeg, setLeftSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
   const [rightSplayDeg, setRightSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
+  const handScannerPose = studioMannequinFingerPoseToHandPose(fingerPose, rightSplayDeg);
 
   const handleApplyHandPad = useCallback(
     (side: "left" | "right" | "both", output: StudioMannequinHandPadOutput) => {
@@ -33,10 +32,9 @@ export function useStudioMannequinHandPose() {
     [],
   );
 
-  const handleScannerHandPoseChange = useCallback((nextHandPose: StudioHandPoseData) => {
-    setHandScannerPose(nextHandPose);
-    handleApplyHandPad("both", studioMannequinHandPoseToPadOutput(nextHandPose));
-  }, [handleApplyHandPad]);
+  const handleScannerHandPoseChange = createStudioMannequinHandPoseChangeHandler(
+    setFingerPose, setLeftSplayDeg, setRightSplayDeg,
+  );
 
   return {
     fingerPose,
