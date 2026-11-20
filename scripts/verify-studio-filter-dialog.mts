@@ -546,6 +546,7 @@ async function placeTestImage(
   const menu = await openStudioMainMenu(page, "layer");
   await clickEnabledMenuItem(page, menu, "이미지…");
   const chooser = await chooserPromise;
+  if (AUTHENTICATED) await waitForStudioCollaborationDocumentLane(page, new Set(["synced"]));
   // 인증 정본 문서의 캔버스에는 같은 파랑·빨강 이미지가 이미 있을 수 있다. 그 위에 같은 픽셀을 넣으면
   // 삽입 전후 변화가 0이 되어 "그려지지 않음"으로 잘못 판정한다. 삽입 검증은 구별되는 색을 쓴다.
   await chooser.setFiles({
@@ -802,8 +803,6 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
     // CRDT 직렬화의 키 삽입 순서와 무관하게 모든 필드·좌표·배열 순서를 정확히 비교한다.
     const originalPages = originalDocument.pagesList;
     const clip = await canvasEvidenceClip(page);
-    const baselineStage = await page.locator(".konvajs-content").first().boundingBox();
-    invariant(baselineStage, "원본 캔버스의 문서 좌표를 확인하지 못했습니다");
     const liveBaseline = await screenshotClipped(page, clip);
     writeFileSync(join(SCRATCH, "studio-filter-dialog-live-baseline.png"), liveBaseline);
     // Compare committed-history rendering on both sides of the filter operation.
@@ -816,6 +815,8 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
       && isDeepStrictEqual(document.pagesList, originalPages),
     "History traversal changed the original saved strokes");
     if (AUTHENTICATED) await selectCanonicalImage();
+    const baselineStage = await page.locator(".konvajs-content").first().boundingBox();
+    invariant(baselineStage, "원본 캔버스의 문서 좌표를 확인하지 못했습니다");
     const baseline = await (EXPECT_DENIAL ? screenshotDocumentPixels(page, clip) : screenshotClipped(page, clip));
     committedBaseline = { livePresentationDiff: await compareScreenshotPixels(page, liveBaseline, baseline),
       originalDrawCount: 2, persistedHistoryUnchanged: true };
@@ -872,6 +873,12 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
         await dialog.waitFor({ state: "hidden" });
         await selectCanonicalImage();
         await page.mouse.move(4, 4);
+        // 레이어 창을 닫은 뒤 같은 원고 배율이 복원되면 오류 안내만큼 이동한 문서 영역을 비교한다.
+        await page.waitForFunction((expected) => {
+          const stage = document.querySelector(".konvajs-content")?.getBoundingClientRect();
+          return stage && Math.abs(stage.width - expected.width) < 0.5
+            && Math.abs(stage.height - expected.height) < 0.5;
+        }, baselineStage, { timeout: 10_000 });
         const deniedStage = await page.locator(".konvajs-content").first().boundingBox();
         invariant(deniedStage && Math.abs(deniedStage.width - baselineStage.width) < 0.5
           && Math.abs(deniedStage.height - baselineStage.height) < 0.5,
