@@ -209,7 +209,8 @@ describe("Studio brush browser harness catalogue boundary", () => {
     expect(harness).toContain(
       "const smartShapes = runShapes ? await runSmartShapeMatrix(browser, studioUrl) : null;",
     );
-    expect(harness).toContain("const y = safeTop + (safeBottom - safeTop) / 2;");
+    expect(harness).toContain("const { startX, endX, y } = studioLongBrushRoute(view);");
+    expect(harness).toContain("persistedPathDistance >= 300");
     expect(harness).toContain("const ALL_BRUSH_LONG_MATRIX =");
     expect(harness).toContain(
       'process.env.TOONSPECTRUM_ALL_BRUSH_LONG_MATRIX === "1"',

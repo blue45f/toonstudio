@@ -16,6 +16,7 @@ on:
       - 'apps/web/src/domains/creator/studio-detail*'
       - 'scripts/verify-studio-brushes.mts'
       - 'scripts/lib/studio-brush-eraser-evidence*.ts'
+      - 'scripts/lib/studio-brush-long-route*.ts'
       - 'scripts/verify-studio-graphite-coverage.mjs'
       - 'scripts/studio-graphite-coverage-browser.mts'
       - 'scripts/verify-studio-graphite-coverage.test.mjs'
@@ -53,6 +54,7 @@ on:
       - 'apps/web/src/domains/creator/studio-detail*'
       - 'scripts/verify-studio-brushes.mts'
       - 'scripts/lib/studio-brush-eraser-evidence*.ts'
+      - 'scripts/lib/studio-brush-long-route*.ts'
       - 'scripts/verify-studio-graphite-coverage.mjs'
       - 'scripts/studio-graphite-coverage-browser.mts'
       - 'scripts/verify-studio-graphite-coverage.test.mjs'
@@ -204,6 +206,7 @@ jobs:
             scripts/lib/studio-filter-connection-fault.test.ts \
             scripts/lib/studio-filter-comparison-region.test.ts \
             scripts/lib/studio-brush-eraser-evidence.test.ts \
+            scripts/lib/studio-brush-long-route.test.ts \
             scripts/lib/studio-drawing-readiness.test.ts \
             scripts/lib/studio-filter-comparison-clip.test.ts \
             scripts/lib/studio-filter-verification-mode.test.ts \
