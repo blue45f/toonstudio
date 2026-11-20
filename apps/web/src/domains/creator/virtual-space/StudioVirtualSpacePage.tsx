@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import {
   Suspense,
-  lazy,
   useCallback,
   useEffect,
   useMemo,
@@ -256,13 +255,11 @@ import {
   StudioVirtualSpaceRtcPanel, StudioVirtualSpaceP2pBoard, StudioVirtualSpaceLiveAnnotationPanel, StudioVirtualSpaceTownProgramPanel,
   StudioVirtualSpaceRoomCatalog, StudioVirtualSpaceSeatsPanel, StudioVirtualSpaceSocialPanel, StudioVirtualSpaceConversationPanel,
   StudioVirtualSpaceReviewPicker, StudioVirtualSpacePlaceGallery, StudioVirtualSpaceRecordingBoothPanel, StudioVirtualSpaceSpaceBookingPanel,
-  StudioVirtualSpaceGalleryViewer, StudioVirtualSpaceEnvironmentPanel, WorkSessionWorkspace, StudioP2pHuddleLauncher,
+  StudioVirtualSpaceGalleryViewer, StudioVirtualSpaceEnvironmentPanel, WorkSessionWorkspace, StudioP2pHuddleLauncher, LazyVirtualThreeAvatarPicker,
 } from "./hud/space-lazy-panels";
 import "./studio-virtual-space.css";
 import "./studio-workspace-live.css";
 import "./hud/space-hud.css";
-
-const LazyVirtualThreeAvatarPicker = lazy(() => import("./three/ui/VirtualThreeAvatarPicker").then(module => ({ default: module.VirtualThreeAvatarPicker })));
 
 export function VirtualSpaceExperience({
   projectId,
