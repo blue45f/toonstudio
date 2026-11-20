@@ -1709,6 +1709,15 @@ export function StudioMannequinPoserPanel({
                     onResetJoints={() => commitPoseWithHistory(createStudioMannequinRestPose(), {})}
                     handPose={handScannerPose}
                     onHandPoseChange={handleScannerHandPoseChange}
+                    handWebcamActive={webcamActive && handTracking}
+                    onToggleHandWebcam={async () => {
+                      if (!webcamActiveRef.current) {
+                        const pendingCamera = handleToggleWebcam(), session = webcamSessionRef.current;
+                        await pendingCamera;
+                        if (session !== webcamSessionRef.current) return;
+                      }
+                      handleToggleHandTracking();
+                    }}
                   />
                   <StudioMannequinDuoPartnerCard duo={duo} />
                 </>

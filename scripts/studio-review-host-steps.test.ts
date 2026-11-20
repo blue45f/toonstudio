@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { openStudioLayerNavigator, showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
+import { prepareFilterMenuWorkspace } from "./lib/studio-filter-menu-workspace";
+import { openStudioLayerNavigator } from "./lib/studio-shell-interactions";
 import { openStudioProjectCenter } from "./lib/studio-verifier-entry-points";
 import { openStudioReviewHost, requestStudioReviewHostCapture, STUDIO_REVIEW_HOST_TITLE } from "./studio-review-host-steps";
 
 import type { Locator, Page } from "playwright";
 
-vi.mock("./lib/studio-shell-interactions", () => ({
-  openStudioLayerNavigator: vi.fn(), showStudioProjectWindowTools: vi.fn(),
-}));
+vi.mock("./lib/studio-filter-menu-workspace", () => ({ prepareFilterMenuWorkspace: vi.fn() }));
+vi.mock("./lib/studio-shell-interactions", () => ({ openStudioLayerNavigator: vi.fn() }));
 vi.mock("./lib/studio-verifier-entry-points", () => ({ openStudioProjectCenter: vi.fn() }));
 
 function fixture({ clarity = true, onboarding = false, betaGate = false } = {}) {
@@ -56,8 +56,10 @@ function fixture({ clarity = true, onboarding = false, betaGate = false } = {}) 
       expect(selector).toBe('[data-studio-clarity-more-trigger="true"]:visible'); return layoutMenu;
     },
   } as unknown as Page;
-  vi.mocked(showStudioProjectWindowTools).mockImplementation(async (actualPage) => {
-    expect(actualPage).toBe(page); state.panel = "commands"; calls.push("project-tools");
+  vi.mocked(prepareFilterMenuWorkspace).mockImplementation(async (actualPage) => {
+    expect(actualPage).toBe(page); calls.push("prepare-menu");
+    if (clarity) state.panel = "commands";
+    return clarity;
   });
   vi.mocked(openStudioLayerNavigator).mockImplementation(async (actualPage) => {
     expect(actualPage).toBe(page); expect(state.panel).toBe("commands");
@@ -74,22 +76,23 @@ describe("실제 인증 원고의 현재 프로젝트·레이어 도구 진입",
   it("폐기된 화면 전환 버튼 없이 현재 프로젝트 메뉴와 레이어·속성을 준비한다", async () => {
     const f = fixture();
     await openStudioReviewHost(f.page, origin, "review-work");
-    expect(f.calls).toEqual(["navigate", "document-heading", "project-tools", "layers"]);
+    expect(f.calls).toEqual(["navigate", "document-heading", "prepare-menu", "layers"]);
     expect(f.state.panel).toBe("layers");
   });
 
   it("실제 원고 제목을 확인하고 기존 온보딩·베타 안내를 닫은 뒤 도구를 연다", async () => {
     const f = fixture({ onboarding: true, betaGate: true });
     await openStudioReviewHost(f.page, origin, "review-work");
-    expect(f.calls).toEqual(["navigate", "document-heading", "dismiss-onboarding", "onboarding-hidden", "dismiss-beta", "project-tools", "layers"]);
+    expect(f.calls).toEqual(["navigate", "document-heading", "dismiss-onboarding", "onboarding-hidden", "dismiss-beta", "prepare-menu", "layers"]);
     expect(f.state).toMatchObject({ onboarding: false, betaGate: false, panel: "layers" });
   });
 
   it("독립 작업 화면에는 Clarity 전환을 요구하지 않는다", async () => {
     const f = fixture({ clarity: false });
     await openStudioReviewHost(f.page, origin, "review-work");
-    expect(f.calls).toEqual(["navigate", "document-heading"]);
-    expect(showStudioProjectWindowTools).not.toHaveBeenCalled();
+    expect(f.calls).toEqual(["navigate", "document-heading", "prepare-menu"]);
+    expect(prepareFilterMenuWorkspace).toHaveBeenCalledExactlyOnceWith(f.page);
+    expect(f.state.panel).toBe("closed");
     expect(openStudioLayerNavigator).not.toHaveBeenCalled();
   });
 
@@ -97,12 +100,12 @@ describe("실제 인증 원고의 현재 프로젝트·레이어 도구 진입",
     const f = fixture(); const failure = new Error("요청한 원고의 제목이 나타나지 않았습니다.");
     vi.spyOn(f.heading, "waitFor").mockRejectedValue(failure);
     await expect(openStudioReviewHost(f.page, origin, "review-work")).rejects.toBe(failure);
-    expect(showStudioProjectWindowTools).not.toHaveBeenCalled();
+    expect(prepareFilterMenuWorkspace).not.toHaveBeenCalled();
   });
 
   it.each(["project", "layers"])("%s 도구 준비 실패를 숨기지 않는다", async (phase) => {
     const f = fixture(); const failure = new Error("현재 도구 준비 실패");
-    vi.mocked(phase === "project" ? showStudioProjectWindowTools : openStudioLayerNavigator).mockRejectedValue(failure);
+    vi.mocked(phase === "project" ? prepareFilterMenuWorkspace : openStudioLayerNavigator).mockRejectedValue(failure);
     await expect(openStudioReviewHost(f.page, origin, "review-work")).rejects.toBe(failure);
     if (phase === "project") expect(openStudioLayerNavigator).not.toHaveBeenCalled();
   });

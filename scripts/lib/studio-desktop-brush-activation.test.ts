@@ -78,6 +78,11 @@ describe("PC 정밀 브러시 검증의 실제 도구 진입", () => {
     expect(f.pen.click.mock.calls[0]?.[0]).not.toHaveProperty("force");
     expect(openStudioLayerNavigator).toHaveBeenCalledOnce();
   });
+  it("검사기가 이미 보이면 다시 열지 않고 필요한 속성 탭만 준비한다", async () => {
+    const f = fixture({ inspectorVisible: true }); await activateDesktopPen(f.page);
+    expect(f.calls).toEqual(["visible-pen", "toolbar", "pen-mode", "pill", "inspector", "properties"]);
+    expect(openStudioLayerNavigator).not.toHaveBeenCalled();
+  });
   it("보이는 rail이 없으면 기존 키보드 동작을 사용하고 이미 선택한 속성은 보존한다", async () => {
     const f = fixture({ visibleRail: false, propertiesSelected: true }); await activateDesktopPen(f.page);
     expect(f.press).toHaveBeenCalledWith("b"); expect(f.pen.click).not.toHaveBeenCalled();
