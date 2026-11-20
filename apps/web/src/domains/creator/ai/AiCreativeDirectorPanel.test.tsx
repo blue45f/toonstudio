@@ -89,6 +89,28 @@ describe("AiCreativeDirectorPanel", () => {
     expect(screen.getByText(/label:gemini · gemini-flash/u)).toBeTruthy();
   });
 
+  it.each([
+    [/스토리 확장하기/u, "scenario", "스토리 개요"],
+    [/캐릭터 설정 분석/u, "assistant", "캐릭터 일관성"],
+    [/장면 구도 추천/u, "composition", "콘티 구성"],
+    [/웹툰 연출 스타일 제안/u, "assistant", "콘티 구성"],
+    [/번역 & 현지화/u, "translation", "현지화 번역"],
+  ] as const)("%s 요청을 제출하면 대기열에 선택한 작업 유형을 표시한다", async (suggestion, task, queueLabel) => {
+    mocks.status.mockResolvedValue(configuredStatus);
+    mocks.complete.mockResolvedValue({ ok: true, data: { content: "검토할 초안", provider: "gemini", model: "gemini-flash" } });
+    renderPanel();
+
+    await screen.findByText("ToonStudio AI 연결됨");
+    fireEvent.click(within(screen.getByRole("list", { name: "제안 목록" })).getByRole("button", { name: suggestion }));
+    fireEvent.click(screen.getByRole("button", { name: "예시 넣기" }));
+    fireEvent.click(screen.getByRole("button", { name: "루나에게 요청" }));
+
+    await screen.findByText("검토할 초안");
+    expect(mocks.complete).toHaveBeenCalledWith(expect.objectContaining({ task }), expect.any(AbortSignal));
+    const queue = screen.getByRole("region", { name: "AI 생성 검토 대기열" });
+    expect(within(queue).getByText(queueLabel)).toBeTruthy();
+  });
+
   it("shows the failure honestly without inventing a result", async () => {
     mocks.status.mockResolvedValue(configuredStatus);
     mocks.complete.mockResolvedValue({ ok: false, code: "free_exhausted", error: "무료 한도가 모두 소진됐어요." });
@@ -98,8 +120,10 @@ describe("AiCreativeDirectorPanel", () => {
     fireEvent.change(screen.getByLabelText(/요청 내용/u), { target: { value: "서아린, 17세" } });
     fireEvent.click(screen.getByRole("button", { name: "루나에게 요청" }));
 
-    const alert = await screen.findByRole("alert");
-    expect(within(alert).getByText("무료 한도가 모두 소진됐어요.")).toBeTruthy();
+    const failure = await screen.findByText("무료 한도가 모두 소진됐어요.");
+    expect(failure.closest('[role="alert"]')).toBeTruthy();
+    const queue = screen.getByRole("region", { name: "AI 생성 검토 대기열" });
+    expect(within(queue).getByRole("alert").textContent).toContain("오류 (AI_ERROR): 무료 한도가 모두 소진됐어요.");
     await waitFor(() => expect(screen.queryByRole("heading", { name: /루나의 제안/u })).toBeNull());
   });
 
