@@ -320,8 +320,8 @@ export const AI_DEV_GATE_ROWS: readonly EngineeringMapRow[] = [
     cells: cells({
       kind: HARNESS,
       what: t(
-        "AI 도구 설정이 어긋나지 않았는지 보는 자동 점검입니다. 필수 파일 19개, 어댑터의 AGENTS.md 연결, 스크립트 이름, 정책 문장 7곳, 한글 커밋 규칙 연결을 확인합니다.",
-        "An automatic check that the AI tooling setup has not drifted: 19 required files, adapter links to AGENTS.md, script names, seven policy passages and the Korean commit-rule wiring.",
+        "AI 도구 설정이 어긋나지 않았는지 보는 자동 점검입니다. 필수 파일 21개, 어댑터의 AGENTS.md 연결, 스크립트 이름, 정책 문장 7곳, 한글 커밋 규칙 연결을 확인합니다.",
+        "An automatic check that the AI tooling setup has not drifted: 21 required files, adapter links to AGENTS.md, script names, seven policy passages and the Korean commit-rule wiring.",
       ),
       where: t(
         "pnpm harness:check · 커밋 직전(pre-commit)과 CI 사전 테스트에서 실행 · scripts/agent-harness.mjs",

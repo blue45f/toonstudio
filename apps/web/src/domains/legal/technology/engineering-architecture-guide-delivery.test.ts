@@ -171,14 +171,14 @@ describe("아키텍처 해설 · 만들고 지키는 구조 구간", () => {
     expect(read(".github/workflows/ci.yml")).toContain("needs: [lint, typecheck, static, serial, a11y, build, database]");
   });
 
-  it(`ai-assisted-dev: 하네스 필수 파일 19개·AGENTS.md 10개(루트 1 + 하위 9)·어댑터 5개가 코드와 같다 — ${hint}`, () => {
+  it(`ai-assisted-dev: 하네스 필수 파일 21개·AGENTS.md 10개(루트 1 + 하위 9)·어댑터 5개가 코드와 같다 — ${hint}`, () => {
     const harness = read("scripts/agent-harness.mjs");
     const required = quotedItems(harness, /const REQUIRED_FILES = \[([^\]]*)\]/u);
     const adapters = quotedItems(harness, /const ADAPTER_FILES = \[([^\]]*)\]/u);
-    expect(required).toHaveLength(19);
+    expect(required).toHaveLength(21);
     expect(required.filter((path) => path.endsWith("AGENTS.md"))).toHaveLength(10);
     expect(adapters).toHaveLength(5);
-    expect(factValues("ai-assisted-dev")).toEqual(["19", "1 + 9", "5", "7"]);
+    expect(factValues("ai-assisted-dev")).toEqual(["21", "1 + 9", "5", "7"]);
     // 한글 커밋 제목 규칙이 commitlint 에 연결되어 있다.
     expect(read("commitlint.config.cjs")).toContain('"subject-korean": [2, "always"]');
   });
