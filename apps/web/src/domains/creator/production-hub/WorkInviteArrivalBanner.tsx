@@ -88,7 +88,7 @@ export function WorkInviteArrivalBanner({
           </p>
           <div
             aria-hidden="true"
-            className="mt-3 animate-pulse space-y-2 motion-reduce:animate-none"
+            className="mt-3 space-y-2 motion-reduce:animate-none"
           >
             <div className="h-5 w-1/2 rounded bg-raised" />
             <div className="h-5 w-2/3 rounded bg-raised" />
@@ -132,7 +132,7 @@ export function WorkInviteArrivalBanner({
         <Inbox aria-hidden="true" className="size-4" />
         WORK INVITATIONS
       </p>
-      <h2 id="work-invite-arrival-title" className="mt-2 text-lg font-black">
+      <h2 id="work-invite-arrival-title" className="mt-2 text-lg font-semibold">
         {bt(arrival.headline.ko, arrival.headline.en)}
       </h2>
       <p className="mt-1 text-sm leading-6 text-fg-2">

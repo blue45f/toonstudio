@@ -168,7 +168,7 @@ function Pill({
 }) {
   return (
     <span className={cn(
-      "inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold",
+      "inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-xs font-bold",
       toneClass(tone),
     )}>
       {children}
@@ -192,10 +192,10 @@ function MetricCard({
   return (
     <div className={cn("rounded-2xl border p-4", toneClass(tone))}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em]">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.12em]">{label}</p>
         <Icon className="size-4" aria-hidden="true" />
       </div>
-      <p className="mt-2 text-2xl font-black tracking-tight text-fg">{value}</p>
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-fg">{value}</p>
       <p className="mt-1 text-xs leading-5 text-fg-2">{detail}</p>
     </div>
   );
@@ -220,7 +220,7 @@ function Section({
     <section id={id} className={cn("scroll-mt-4 rounded-2xl border border-line bg-card p-4 sm:p-5", className)}>
       <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-black text-fg">{title}</h2>
+          <h2 className="text-sm font-semibold text-fg">{title}</h2>
           {description ? <p className="mt-1 max-w-3xl text-xs leading-5 text-fg-2">{description}</p> : null}
         </div>
         {action}
@@ -267,7 +267,7 @@ function ActionRow({ action }: { readonly action: ManagementAction }) {
           </Pill>
         </span>
         <span className="mt-1 block text-xs leading-5 text-fg-2">{action.detail}</span>
-        {action.dueAt ? <span className="mt-1 block text-[0.6875rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "기한 ")}{formatDate(action.dueAt)}</span> : null}
+        {action.dueAt ? <span className="mt-1 block text-xs text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "기한 ")}{formatDate(action.dueAt)}</span> : null}
       </span>
       <span className="hidden shrink-0 items-center gap-1 text-xs font-bold text-accent sm:flex">
         {action.actionLabel}<ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
@@ -288,7 +288,7 @@ function PhaseCell({
   return (
     <div className="flex min-w-20 flex-col items-center gap-1.5">
       <Pill tone={phaseTone(status)}>{PHASE_STATUS_LABELS[status]}</Pill>
-      <span className="text-[0.625rem] text-fg-3">
+      <span className="text-xs text-fg-3">
         {taskCount > 0 ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "{v0}% · {v1}개"), { v0: String(progressPercent), v1: String(taskCount) }) : progressPercent === 100 ? translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "승인 기준") : "—"}
       </span>
     </div>
@@ -351,7 +351,7 @@ export function ProductionManagementWorkspace({
               <Pill tone="accent">{roleCopy.label}</Pill>
               <Pill tone={healthTone(overview.health)}>{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "건강 점수 ")}{overview.healthScore} · {overview.healthLabel}</Pill>
             </div>
-            <h2 id="production-management-heading" className="mt-3 text-2xl font-black tracking-tight text-fg sm:text-3xl">
+            <h2 id="production-management-heading" className="mt-3 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
               {translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "프로젝트 상태 한눈에")}</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">{roleCopy.description}</p>
             <p className="mt-2 max-w-3xl text-xs leading-5 text-fg-3">
@@ -369,8 +369,8 @@ export function ProductionManagementWorkspace({
           <div className={cn("rounded-2xl border p-4", toneClass(healthTone(overview.health)))}>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em]">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "건강 점수 근거")}</p>
-                <p className="mt-1 text-3xl font-black text-fg">{overview.healthScore}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em]">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "건강 점수 근거")}</p>
+                <p className="mt-1 text-3xl font-semibold text-fg">{overview.healthScore}</p>
               </div>
               <Gauge className="size-8" aria-hidden="true" />
             </div>
@@ -456,7 +456,7 @@ export function ProductionManagementWorkspace({
                   type="button"
                   aria-pressed={actionFilter === filter.id}
                   className={cn(
-                    "min-h-8 rounded-lg px-2.5 text-[0.6875rem] font-bold transition-colors",
+                    "min-h-8 rounded-lg px-2.5 text-xs font-bold transition-colors",
                     actionFilter === filter.id ? "bg-accent text-on-accent" : "text-fg-2 hover:bg-raised hover:text-fg",
                   )}
                   onClick={() => setActionFilter(filter.id)}
@@ -472,7 +472,7 @@ export function ProductionManagementWorkspace({
             {visibleActions.length === 0 ? (
               <div className="rounded-xl border border-dashed border-line p-8 text-center">
                 <CheckCircle2 className="mx-auto size-8 text-good" aria-hidden="true" />
-                <p className="mt-3 text-sm font-black text-fg">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "이 조건에서 처리할 항목이 없습니다")}</p>
+                <p className="mt-3 text-sm font-semibold text-fg">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "이 조건에서 처리할 항목이 없습니다")}</p>
                 <p className="mt-1 text-xs text-fg-2">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "새로운 차단·검수·배정 이슈가 생기면 자동으로 표시됩니다.")}</p>
               </div>
             ) : null}
@@ -527,9 +527,9 @@ export function ProductionManagementWorkspace({
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center justify-between gap-2">
                       <span className="text-xs font-bold text-fg">{item.label}</span>
-                      <span className="text-sm font-black text-fg">{item.value}</span>
+                      <span className="text-sm font-semibold text-fg">{item.value}</span>
                     </span>
-                    <span className="mt-1 block text-[0.6875rem] leading-4 text-fg-3">{item.detail}</span>
+                    <span className="mt-1 block text-xs leading-4 text-fg-3">{item.detail}</span>
                   </span>
                   <ArrowRight className="size-4 text-fg-3 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                 </Link>
@@ -581,20 +581,20 @@ export function ProductionManagementWorkspace({
                           {recommendation.currentLoadPercent}% → {recommendation.projectedLoadPercent}%
                         </Pill>
                       </div>
-                      <h3 className="mt-2 text-sm font-black leading-5 text-fg">{recommendation.task.title}</h3>
+                      <h3 className="mt-2 text-sm font-semibold leading-5 text-fg">{recommendation.task.title}</h3>
                       <p className="mt-1 text-xs text-fg-2">
                         {translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "추천 ")}{recommendation.candidateName} · {recommendation.roleLabel}
                       </p>
                     </div>
-                    <span className="text-right text-[0.6875rem] text-fg-3">
+                    <span className="text-right text-xs text-fg-3">
                       {formatDate(recommendation.task.dueAt)} {translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "마감")}<br />{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "예상 +")}{recommendation.addedHours}h
                     </span>
                   </header>
 
                   <div className="mt-3">
-                    <div className="flex items-center justify-between gap-2 text-[0.6875rem]">
+                    <div className="flex items-center justify-between gap-2 text-xs">
                       <span className="text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "배정 후 예상 작업량")}</span>
-                      <span className="font-black text-fg">{recommendation.projectedLoadPercent}%</span>
+                      <span className="font-semibold text-fg">{recommendation.projectedLoadPercent}%</span>
                     </div>
                     <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-raised" aria-label={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "{v0} 배정 후 예상 작업량 {v1}%"), { v0: String(recommendation.candidateName), v1: String(recommendation.projectedLoadPercent) })}>
                       <div
@@ -604,7 +604,7 @@ export function ProductionManagementWorkspace({
                     </div>
                   </div>
 
-                  <ul className="mt-3 space-y-1 text-[0.6875rem] leading-5 text-fg-2">
+                  <ul className="mt-3 space-y-1 text-xs leading-5 text-fg-2">
                     {recommendation.reasons.slice(0, 4).map((reason) => (
                       <li key={reason} className="flex gap-2">
                         <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-good" aria-hidden="true" />
@@ -632,7 +632,7 @@ export function ProductionManagementWorkspace({
             {overview.unassignedTaskCount === 0
               ? <CheckCircle2 className="mx-auto size-8 text-good" aria-hidden="true" />
               : <Users className="mx-auto size-8 text-warn" aria-hidden="true" />}
-            <p className="mt-3 text-sm font-black text-fg">
+            <p className="mt-3 text-sm font-semibold text-fg">
               {overview.unassignedTaskCount === 0 ? translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "모든 열린 업무에 책임자가 있습니다") : translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "현재 규칙으로 추천할 담당자가 없습니다")}
             </p>
             <p className="mt-1 text-xs leading-5 text-fg-2">
@@ -645,8 +645,8 @@ export function ProductionManagementWorkspace({
         {overview.assignmentRecommendations.length > 0 && overview.uncoveredUnassignedTaskCount > 0 ? (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warn/35 bg-warn/10 p-3">
             <div>
-              <p className="text-xs font-black text-fg">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "적합 후보가 없는 업무 ")}{overview.uncoveredUnassignedTaskCount}{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "개")}</p>
-              <p className="mt-1 text-[0.6875rem] leading-5 text-fg-2">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "역할 범위 또는 참여 기간을 보강해야 배정 추천을 만들 수 있습니다.")}</p>
+              <p className="text-xs font-semibold text-fg">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "적합 후보가 없는 업무 ")}{overview.uncoveredUnassignedTaskCount}{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "개")}</p>
+              <p className="mt-1 text-xs leading-5 text-fg-2">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "역할 범위 또는 참여 기간을 보강해야 배정 추천을 만들 수 있습니다.")}</p>
             </div>
             <Link className={buttonClass({ variant: "outline", size: "sm" })} to={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "en", "{v0}/settings"), { v0: String(projectBase) })}>
               {translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "팀 설정 열기")}</Link>
@@ -662,7 +662,7 @@ export function ProductionManagementWorkspace({
         <div className="overflow-x-auto rounded-xl border border-line">
           <table className="w-full min-w-[62rem] border-collapse text-left">
             <thead className="bg-panel">
-              <tr className="border-b border-line text-[0.6875rem] font-black uppercase tracking-[0.08em] text-fg-3">
+              <tr className="border-b border-line text-xs font-semibold uppercase tracking-[0.08em] text-fg-3">
                 <th className="sticky left-0 z-10 min-w-64 bg-panel px-3 py-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "회차·마감")}</th>
                 {overview.episodeRows[0]?.phases.map((phase) => <th key={phase.key} className="px-3 py-3 text-center">{phase.label}</th>)}
                 <th className="min-w-32 px-3 py-3 text-center">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "전체 진행")}</th>
@@ -677,13 +677,13 @@ export function ProductionManagementWorkspace({
                     <th className="sticky left-0 z-10 bg-card px-3 py-3 font-normal">
                       <Link to={episodeHref} className="group block rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-black text-fg">{operations.episodeNumber ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "{v0}화"), { v0: String(operations.episodeNumber) }) : operations.episode.episodeId}</span>
+                          <span className="text-sm font-semibold text-fg">{operations.episodeNumber ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "{v0}화"), { v0: String(operations.episodeNumber) }) : operations.episode.episodeId}</span>
                           <Pill tone={operations.health === "critical" ? "danger" : operations.health === "risk" || operations.health === "unplanned" ? "warning" : operations.health === "published" ? "success" : "accent"}>
                             {episodeHealthLabel(operations.health)}
                           </Pill>
                         </span>
                         <span className="mt-1 block max-w-56 truncate text-xs font-semibold text-fg-2">{operations.title}</span>
-                        <span className="mt-1 block text-[0.6875rem] text-fg-3">
+                        <span className="mt-1 block text-xs text-fg-3">
                           {relativeDeadline(operations.daysUntilRelease)} · {formatDate(operations.releaseAt)}
                         </span>
                       </Link>
@@ -695,14 +695,14 @@ export function ProductionManagementWorkspace({
                     ))}
                     <td className="px-3 py-3">
                       <div className="mx-auto max-w-28">
-                        <div className="flex items-center justify-between gap-2 text-[0.6875rem]">
+                        <div className="flex items-center justify-between gap-2 text-xs">
                           <span className="text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "진행률")}</span>
-                          <span className="font-black text-fg">{operations.progressPercent}%</span>
+                          <span className="font-semibold text-fg">{operations.progressPercent}%</span>
                         </div>
                         <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-raised" aria-label={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "{v0} 진행률 {v1}%"), { v0: String(operations.title), v1: String(operations.progressPercent) })}>
                           <div className={cn("h-full rounded-full", operations.progressPercent >= 100 ? "bg-good" : operations.health === "critical" ? "bg-bad" : "bg-accent")} style={{ width: `${operations.progressPercent}%` }} />
                         </div>
-                        <p className="mt-1 text-center text-[0.625rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "잔여 ")}{operations.remainingHours}h</p>
+                        <p className="mt-1 text-center text-xs text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "잔여 ")}{operations.remainingHours}h</p>
                       </div>
                     </td>
                   </tr>
@@ -726,19 +726,19 @@ export function ProductionManagementWorkspace({
                 <article key={entry.assignment.id} className="rounded-xl border border-line bg-panel p-3">
                   <header className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-fg">{entry.name}</p>
-                      <p className="mt-1 truncate text-[0.6875rem] text-fg-3">{entry.roleLabel}</p>
+                      <p className="truncate text-sm font-semibold text-fg">{entry.name}</p>
+                      <p className="mt-1 truncate text-xs text-fg-3">{entry.roleLabel}</p>
                     </div>
                     <Pill tone={tone}>{entry.loadPercent}%</Pill>
                   </header>
                   <div className="mt-3 h-2 overflow-hidden rounded-full bg-raised" aria-label={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "{v0} 작업량 {v1}%"), { v0: String(entry.name), v1: String(entry.loadPercent) })}>
                     <div className={cn("h-full rounded-full", entry.health === "overloaded" ? "bg-bad" : entry.health === "busy" ? "bg-warn" : "bg-good")} style={{ width: `${Math.min(100, entry.loadPercent)}%` }} />
                   </div>
-                  <div className="mt-3 grid grid-cols-4 gap-2 text-center text-[0.625rem]">
-                    <div><p className="text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "공수")}</p><p className="mt-1 font-black text-fg">{entry.remainingHours}h</p></div>
-                    <div><p className="text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "업무")}</p><p className="mt-1 font-black text-fg">{entry.taskCount}</p></div>
-                    <div><p className="text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "차단")}</p><p className={cn("mt-1 font-black", entry.blockedCount > 0 ? "text-bad" : "text-fg")}>{entry.blockedCount}</p></div>
-                    <div><p className="text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "검수")}</p><p className="mt-1 font-black text-fg">{entry.reviewCount}</p></div>
+                  <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
+                    <div><p className="text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "공수")}</p><p className="mt-1 font-semibold text-fg">{entry.remainingHours}h</p></div>
+                    <div><p className="text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "업무")}</p><p className="mt-1 font-semibold text-fg">{entry.taskCount}</p></div>
+                    <div><p className="text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "차단")}</p><p className={cn("mt-1 font-semibold", entry.blockedCount > 0 ? "text-bad" : "text-fg")}>{entry.blockedCount}</p></div>
+                    <div><p className="text-fg-3">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "검수")}</p><p className="mt-1 font-semibold text-fg">{entry.reviewCount}</p></div>
                   </div>
                 </article>
               );
@@ -758,8 +758,8 @@ export function ProductionManagementWorkspace({
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-bold text-fg">{productionActivityLabel(event.action, bt)}</p>
-                  <p className="mt-1 truncate text-[0.6875rem] text-fg-3">{event.targetType} · {event.targetId}</p>
-                  <p className="mt-1 text-[0.625rem] text-fg-3">{bt(`${event.aggregateRevision}번째 변경`, `Change #${event.aggregateRevision}`)} · {formatDateTime(event.occurredAt)}</p>
+                  <p className="mt-1 truncate text-xs text-fg-3">{event.targetType} · {event.targetId}</p>
+                  <p className="mt-1 text-xs text-fg-3">{bt(`${event.aggregateRevision}번째 변경`, `Change #${event.aggregateRevision}`)} · {formatDateTime(event.occurredAt)}</p>
                 </div>
               </div>
             ))}

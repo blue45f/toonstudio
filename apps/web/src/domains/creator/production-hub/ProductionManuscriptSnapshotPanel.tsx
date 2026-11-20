@@ -98,8 +98,8 @@ function SnapshotThumbnail({ snapshot }: { readonly snapshot: ProductionManuscri
     aria-hidden="true"
   >
     <Icon className="size-6" />
-    <span className="text-lg font-black tracking-tight">{snapshot.name}</span>
-    <span className="text-[0.625rem] font-bold">{productionManuscriptRevisionLabel(snapshot.revisionKind)}</span>
+    <span className="text-lg font-semibold tracking-tight">{snapshot.name}</span>
+    <span className="text-xs font-bold">{productionManuscriptRevisionLabel(snapshot.revisionKind)}</span>
   </div>;
 }
 
@@ -151,7 +151,7 @@ function SnapshotDetailCard({
     ["상태", [isHead ? "HEAD · 현재 작업본" : null, isApproved ? "FINAL · 승인 기준" : null].filter(Boolean).join(" · ") || "보관된 스냅샷"],
   ];
   return <div className="min-w-0 rounded-2xl border border-line bg-card p-4">
-    <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em] text-accent">{caption}</p>
+    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-accent">{caption}</p>
     <div className="mt-3"><SnapshotThumbnail snapshot={snapshot} /></div>
     <dl className="mt-3 space-y-2">
       {rows.map(([term, value]) => <div key={term} className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-2 text-xs">
@@ -337,8 +337,8 @@ export function ProductionManuscriptSnapshotPanel({
   >
     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
       <div className="min-w-0">
-        <p className="text-[0.6875rem] font-black uppercase tracking-[0.14em] text-accent">VERSION SNAPSHOTS</p>
-        <h2 id={headingId} className="mt-2 text-xl font-black text-fg">원클릭 버전 스냅샷</h2>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">VERSION SNAPSHOTS</p>
+        <h2 id={headingId} className="mt-2 text-xl font-semibold text-fg">원클릭 버전 스냅샷</h2>
         <p className="mt-1 max-w-3xl text-sm leading-6 text-fg-2">
           작업 중 언제든 현재 작업본(HEAD)의 참조를 버전으로 저장합니다. 스냅샷은 ProjectGraph revision을 덮어쓰지 않으며,
           복원은 기존 이력을 보존한 채 새 체크포인트를 만듭니다.
@@ -374,7 +374,7 @@ export function ProductionManuscriptSnapshotPanel({
 
     {comparable ? <div className="mt-5 rounded-2xl border border-accent/30 bg-accent-soft/15 p-4" aria-labelledby={compareHeadingId}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 id={compareHeadingId} className="text-sm font-black text-fg">
+        <h3 id={compareHeadingId} className="text-sm font-semibold text-fg">
           버전 비교 · {comparable.left.name} ↔ {comparable.right.name}
         </h3>
         <div className="flex flex-wrap items-center gap-2">
@@ -485,16 +485,16 @@ export function ProductionManuscriptSnapshotPanel({
         >
           <SnapshotThumbnail snapshot={snapshot} />
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <span className="text-sm font-black text-fg">{snapshot.name}</span>
-            {head ? <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[0.625rem] font-bold text-on-accent">
+            <span className="text-sm font-semibold text-fg">{snapshot.name}</span>
+            {head ? <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-on-accent">
               <CheckCircle2 className="size-3" aria-hidden="true" /> HEAD · 현재 작업본
             </span> : null}
-            {approved ? <span className="inline-flex items-center gap-1 rounded-full bg-good/15 px-2 py-0.5 text-[0.625rem] font-bold text-good">
+            {approved ? <span className="inline-flex items-center gap-1 rounded-full bg-good/15 px-2 py-0.5 text-xs font-bold text-good">
               <ShieldCheck className="size-3" aria-hidden="true" /> FINAL · 승인 기준
             </span> : null}
           </div>
           <SnapshotMemoField snapshot={snapshot} onCommit={commitMemo} />
-          <p className="mt-2 truncate font-mono text-[0.625rem] text-fg-3">
+          <p className="mt-2 truncate font-mono text-xs text-fg-3">
             {formatDate(snapshot.createdAt)} · {snapshot.revisionId}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -518,7 +518,7 @@ export function ProductionManuscriptSnapshotPanel({
       })}
     </div> : <div className="mt-5 rounded-2xl border border-dashed border-line p-8 text-center">
       <Camera className="mx-auto size-7 text-fg-3" aria-hidden="true" />
-      <p className="mt-2 font-black text-fg">{t("productionHub.snapshot.empty", "아직 스냅샷이 없습니다")}</p>
+      <p className="mt-2 font-semibold text-fg">{t("productionHub.snapshot.empty", "아직 스냅샷이 없습니다")}</p>
       <p className="mt-1 text-sm text-fg-2">
         작업 중 스냅샷 찍기를 누르면 현재 작업본이 v1부터 자동 이름으로 저장됩니다.
       </p>
@@ -529,12 +529,12 @@ export function ProductionManuscriptSnapshotPanel({
       aria-labelledby={restoreHeadingId}
       onCancel={(event) => { event.preventDefault(); setRestoreTarget(null); }}
       onClose={() => setRestoreTarget(null)}
-      className="rounded-3xl border border-line bg-card p-0 text-fg backdrop:bg-black/50"
+      className="rounded-3xl border border-line bg-card p-0 text-fg backdrop:bg-canvas/75"
     >
       {restoreTarget ? <div className="w-[min(28rem,90vw)] p-5 sm:p-6">
-        <h2 id={restoreHeadingId} className="text-lg font-black text-fg">스냅샷 복원</h2>
+        <h2 id={restoreHeadingId} className="text-lg font-semibold text-fg">스냅샷 복원</h2>
         <p className="mt-2 text-sm leading-6 text-fg-2">
-          <span className="font-black text-fg">{restoreTarget.name}</span>
+          <span className="font-semibold text-fg">{restoreTarget.name}</span>
           {restoreTarget.memo ? <span> · {restoreTarget.memo}</span> : null}
           <span> ({formatDate(restoreTarget.createdAt)}) 시점의 원고를 현재 작업본으로 복원합니다.</span>
         </p>

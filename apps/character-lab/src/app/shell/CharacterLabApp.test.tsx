@@ -15,7 +15,7 @@ describe("CharacterLabApp", () => {
     const { runtime, factory, engine } = createMockRuntime();
     render(<CharacterLabApp runtime={runtime} />);
     expect(screen.getByRole("heading", { level: 1, name: "ToonStudio Character Lab" })).toBeTruthy();
-    expect(screen.getByText("실험 앱 · 배포 대상 아님")).toBeTruthy();
+    expect(screen.queryByText("실험 앱 · 배포 대상 아님")).toBeNull();
     expect(screen.getByRole("status").textContent).toContain("엔진 미선택");
     expect(factory.calls).toHaveLength(0);
     expect(engine.calls).toHaveLength(0);

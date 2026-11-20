@@ -55,7 +55,7 @@ export function ProductionWorkspaceDialog({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[180] bg-black/55 backdrop-blur-sm" />
+        <Dialog.Overlay className="fixed inset-0 z-[180] bg-canvas/75" />
         <Dialog.Content
           className={cn(
             "production-workspace-dialog z-[181] overflow-y-auto overscroll-contain border border-line bg-card text-fg shadow-2xl",

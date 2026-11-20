@@ -135,7 +135,7 @@ function statusTone(status: ProductionRiskStatus): Tone {
 function Pill({ children, tone = "neutral" }: { readonly children: ReactNode; readonly tone?: Tone }) {
   return (
     <span className={cn(
-      "inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold",
+      "inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-xs font-bold",
       toneClass(tone),
     )}>
       {children}
@@ -159,10 +159,10 @@ function MetricCard({
   return (
     <div className={cn("rounded-2xl border p-4", toneClass(tone))}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em]">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.12em]">{label}</p>
         <Icon className="size-4" aria-hidden="true" />
       </div>
-      <p className="mt-2 text-2xl font-black text-fg">{value}</p>
+      <p className="mt-2 text-2xl font-semibold text-fg">{value}</p>
       <p className="mt-1 text-xs leading-5 text-fg-2">{detail}</p>
     </div>
   );
@@ -183,7 +183,7 @@ function Section({
     <section className="rounded-2xl border border-line bg-card p-4 sm:p-5">
       <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-black text-fg">{title}</h2>
+          <h2 className="text-sm font-semibold text-fg">{title}</h2>
           {description ? <p className="mt-1 max-w-3xl text-xs leading-5 text-fg-2">{description}</p> : null}
         </div>
         {action}
@@ -235,9 +235,9 @@ function RiskListRow({
         <Pill tone={statusTone(risk.status)}>{STATUS_LABELS[risk.status]}</Pill>
         <Pill>{risk.source === "automatic" ? "자동 감지" : "직접 등록"}</Pill>
       </div>
-      <p className="mt-3 text-sm font-black leading-5 text-fg">{risk.title}</p>
+      <p className="mt-3 text-sm font-semibold leading-5 text-fg">{risk.title}</p>
       <p className="mt-1 text-xs leading-5 text-fg-2">{risk.description}</p>
-      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[0.6875rem] text-fg-3">
+      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-fg-3">
         <span>{CATEGORY_LABELS[risk.category]}</span>
         <span>우선순위 {Math.round(risk.priorityScore)}</span>
         <span>{riskOwnerName(aggregate, risk)}</span>
@@ -245,7 +245,7 @@ function RiskListRow({
           <span>예상 {risk.varianceHours >= 0 ? "+" : ""}{Math.round(risk.varianceHours)}h</span>
         ) : null}
       </div>
-      {signal ? <p className="mt-2 text-[0.6875rem] leading-4 text-fg-3">마지막 평가 {formatDate(signal.lastDetectedAt)}</p> : null}
+      {signal ? <p className="mt-2 text-xs leading-4 text-fg-3">마지막 평가 {formatDate(signal.lastDetectedAt)}</p> : null}
     </button>
   );
 }
@@ -372,7 +372,7 @@ function RiskDetail({
             <Pill tone={statusTone(risk.status)}>{STATUS_LABELS[risk.status]}</Pill>
             <Pill>{CATEGORY_LABELS[risk.category]}</Pill>
           </div>
-          <h2 className="mt-3 text-xl font-black tracking-tight text-fg">{risk.title}</h2>
+          <h2 className="mt-3 text-xl font-semibold tracking-tight text-fg">{risk.title}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">{risk.description}</p>
         </div>
         <div className="flex flex-col items-end gap-3">
@@ -413,14 +413,14 @@ function RiskDetail({
       {tab === "overview" ? (
         <div className="mt-4 space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-xl border border-line bg-panel p-3"><p className="text-[0.6875rem] font-bold text-fg-3">기준 마감</p><p className="mt-1 text-xs font-semibold text-fg">{formatDate(risk.baselineDueAt)}</p></div>
-            <div className="rounded-xl border border-line bg-panel p-3"><p className="text-[0.6875rem] font-bold text-fg-3">예상 완료</p><p className="mt-1 text-xs font-semibold text-fg">{formatDate(risk.forecastDueAt)}</p></div>
-            <div className="rounded-xl border border-line bg-panel p-3"><p className="text-[0.6875rem] font-bold text-fg-3">대응 기한</p><p className="mt-1 text-xs font-semibold text-fg">{formatDate(risk.responseDueAt)}</p></div>
-            <div className="rounded-xl border border-line bg-panel p-3"><p className="text-[0.6875rem] font-bold text-fg-3">최근 평가</p><p className="mt-1 text-xs font-semibold text-fg">{formatDate(risk.lastEvaluatedAt)}</p></div>
+            <div className="rounded-xl border border-line bg-panel p-3"><p className="text-xs font-bold text-fg-3">기준 마감</p><p className="mt-1 text-xs font-semibold text-fg">{formatDate(risk.baselineDueAt)}</p></div>
+            <div className="rounded-xl border border-line bg-panel p-3"><p className="text-xs font-bold text-fg-3">예상 완료</p><p className="mt-1 text-xs font-semibold text-fg">{formatDate(risk.forecastDueAt)}</p></div>
+            <div className="rounded-xl border border-line bg-panel p-3"><p className="text-xs font-bold text-fg-3">대응 기한</p><p className="mt-1 text-xs font-semibold text-fg">{formatDate(risk.responseDueAt)}</p></div>
+            <div className="rounded-xl border border-line bg-panel p-3"><p className="text-xs font-bold text-fg-3">최근 평가</p><p className="mt-1 text-xs font-semibold text-fg">{formatDate(risk.lastEvaluatedAt)}</p></div>
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-xl border border-line bg-panel p-4">
-              <p className="text-xs font-black text-fg">조기 징후</p>
+              <p className="text-xs font-semibold text-fg">조기 징후</p>
               <ul className="mt-3 space-y-2 text-xs leading-5 text-fg-2">
                 {risk.earlySignals.length > 0
                   ? risk.earlySignals.slice(0, 8).map((entry) => <li key={entry} className="flex gap-2"><CircleAlert className="mt-0.5 size-3.5 shrink-0 text-warn" aria-hidden="true" /><span>{entry}</span></li>)
@@ -428,9 +428,9 @@ function RiskDetail({
               </ul>
             </div>
             <div className="rounded-xl border border-line bg-panel p-4">
-              <p className="text-xs font-black text-fg">대응 계획</p>
+              <p className="text-xs font-semibold text-fg">대응 계획</p>
               <p className="mt-2 text-xs leading-5 text-fg-2">{risk.mitigation || t("productionHub.risk.emptyMitigation", "대응 계획이 아직 없습니다.")}</p>
-              <p className="mt-3 text-xs font-black text-fg">비상 계획</p>
+              <p className="mt-3 text-xs font-semibold text-fg">비상 계획</p>
               <p className="mt-2 text-xs leading-5 text-fg-2">{risk.contingency || t("productionHub.risk.emptyContingency", "비상 계획이 아직 없습니다.")}</p>
             </div>
           </div>
@@ -441,9 +441,9 @@ function RiskDetail({
         <div className="mt-4 space-y-2">
           {(signal?.evidence ?? []).map((item) => (
             <div key={item.key} className="grid gap-2 rounded-xl border border-line bg-panel p-3 sm:grid-cols-[minmax(10rem,1fr)_minmax(8rem,0.7fr)_minmax(8rem,0.7fr)] sm:items-center">
-              <div><p className="text-xs font-bold text-fg">{item.label}</p><p className="mt-1 text-[0.6875rem] text-fg-3">{item.sourceType} · {item.sourceId}</p></div>
-              <p className="text-xs font-black text-fg">{String(item.value ?? "미정")}{item.unit ? ` ${item.unit}` : ""}</p>
-              <p className="text-[0.6875rem] text-fg-3">기준 {String(item.threshold ?? "—")}</p>
+              <div><p className="text-xs font-bold text-fg">{item.label}</p><p className="mt-1 text-xs text-fg-3">{item.sourceType} · {item.sourceId}</p></div>
+              <p className="text-xs font-semibold text-fg">{String(item.value ?? "미정")}{item.unit ? ` ${item.unit}` : ""}</p>
+              <p className="text-xs text-fg-3">기준 {String(item.threshold ?? "—")}</p>
             </div>
           ))}
           {!signal || signal.evidence.length === 0 ? <div className="rounded-xl border border-dashed border-line p-8 text-center text-xs text-fg-3">직접 등록 위험에는 자동 계산 근거가 없을 수 있습니다.</div> : null}
@@ -453,11 +453,11 @@ function RiskDetail({
       {tab === "impact" ? (
         <div className="mt-4 space-y-4">
           <div className="rounded-xl border border-line bg-panel p-4">
-            <p className="text-xs font-black text-fg">영향받는 작업</p>
+            <p className="text-xs font-semibold text-fg">영향받는 작업</p>
             <div className="mt-3 space-y-2">
               {risk.affectedTaskIds.map((taskId, index) => (
                 <div key={taskId} className="flex items-center gap-2 text-xs text-fg-2">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-line bg-raised text-[0.625rem] font-black text-fg">{index + 1}</span>
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-line bg-raised text-xs font-semibold text-fg">{index + 1}</span>
                   <span className="font-semibold text-fg">{taskLabel(aggregate, taskId)}</span>
                   {index < risk.affectedTaskIds.length - 1 ? <ArrowRight className="ml-auto size-3.5 text-fg-3" aria-hidden="true" /> : null}
                 </div>
@@ -466,8 +466,8 @@ function RiskDetail({
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-line bg-panel p-4"><p className="text-xs font-black text-fg">영향 회차</p><p className="mt-2 text-xs leading-5 text-fg-2">{risk.affectedEpisodeIds.join(" · ") || "없음"}</p></div>
-            <div className="rounded-xl border border-line bg-panel p-4"><p className="text-xs font-black text-fg">계약 마일스톤</p><p className="mt-2 text-xs leading-5 text-fg-2">{risk.affectedMilestoneIds.join(" · ") || "없음"}</p></div>
+            <div className="rounded-xl border border-line bg-panel p-4"><p className="text-xs font-semibold text-fg">영향 회차</p><p className="mt-2 text-xs leading-5 text-fg-2">{risk.affectedEpisodeIds.join(" · ") || "없음"}</p></div>
+            <div className="rounded-xl border border-line bg-panel p-4"><p className="text-xs font-semibold text-fg">계약 마일스톤</p><p className="mt-2 text-xs leading-5 text-fg-2">{risk.affectedMilestoneIds.join(" · ") || "없음"}</p></div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link className={buttonClass({ variant: "outline", size: "sm" })} to={`${projectBase}/schedule`}><CalendarClock className="size-4" aria-hidden="true" /> 일정에서 보기</Link>
@@ -490,7 +490,7 @@ function RiskDetail({
               disabled={!canEdit || busy}
             />
           </label>
-          <p className="text-[0.6875rem] leading-4 text-fg-3">
+          <p className="text-xs leading-4 text-fg-3">
             위험 수용·오탐 처리·해결 확인·신호 숨김은 판단 사유를 입력해야 실행할 수 있습니다.
           </p>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -536,13 +536,13 @@ function RiskDetail({
             .reverse()
             .map((event) => (
               <div key={event.id} className="rounded-xl border border-line bg-panel p-3">
-                <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold text-fg">{productionActivityLabel(event.action, bt)}</p><span className="text-[0.6875rem] text-fg-3">{bt(`${event.aggregateRevision}번째 변경`, `Change #${event.aggregateRevision}`)}</span></div>
-                <p className="mt-1 text-[0.6875rem] text-fg-3">{formatDate(event.occurredAt)}{event.reason ? ` · ${event.reason}` : ""}</p>
+                <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold text-fg">{productionActivityLabel(event.action, bt)}</p><span className="text-xs text-fg-3">{bt(`${event.aggregateRevision}번째 변경`, `Change #${event.aggregateRevision}`)}</span></div>
+                <p className="mt-1 text-xs text-fg-3">{formatDate(event.occurredAt)}{event.reason ? ` · ${event.reason}` : ""}</p>
               </div>
             ))}
           <div className="rounded-xl border border-line bg-panel p-3">
             <p className="text-xs font-bold text-fg">위험 최초 감지</p>
-            <p className="mt-1 text-[0.6875rem] text-fg-3">{formatDate(risk.detectedAt)}</p>
+            <p className="mt-1 text-xs text-fg-3">{formatDate(risk.detectedAt)}</p>
           </div>
         </div>
       ) : null}
@@ -668,7 +668,7 @@ function RiskPolicyPanel({
                 disabled={!canManage}
                 className="min-w-0 flex-1 rounded-lg border border-line bg-card px-2 py-1.5 text-sm font-bold text-fg outline-none focus:border-accent"
               />
-              <span className="text-[0.6875rem] text-fg-3">{field.suffix}</span>
+              <span className="text-xs text-fg-3">{field.suffix}</span>
             </span>
           </label>
         ))}
@@ -799,7 +799,7 @@ export function ProductionRiskWorkspace({
                 마지막 평가 {formatDate(evaluation.evaluatedAt)}
               </Pill>
             </div>
-            <h1 className="mt-3 text-2xl font-black tracking-tight text-fg sm:text-3xl">위험·병목</h1>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">위험·병목</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
               마감 초과 전에 예상 지연과 병목을 발견하고, 근거·영향 경로·대응 결과를 한곳에서 관리합니다.
             </p>
@@ -827,11 +827,11 @@ export function ProductionRiskWorkspace({
         action={<Filter className="size-4 text-fg-3" aria-hidden="true" />}
       >
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <label className="block"><span className="text-[0.6875rem] font-bold text-fg-3">검색</span><input value={searchParams.get("q") ?? ""} onChange={(event) => updateParam("q", event.target.value)} className="mt-1 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg outline-none focus:border-accent" placeholder="제목·원인 검색" /></label>
-          <label className="block"><span className="text-[0.6875rem] font-bold text-fg-3">위험도</span><select value={searchParams.get("severity") ?? "all"} onChange={(event) => updateParam("severity", event.target.value)} className="mt-1 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg"><option value="all">전체</option><option value="critical">긴급</option><option value="high">높음</option><option value="warning">주의</option><option value="watch">관찰</option></select></label>
-          <label className="block"><span className="text-[0.6875rem] font-bold text-fg-3">상태</span><select value={searchParams.get("status") ?? "all"} onChange={(event) => updateParam("status", event.target.value)} className="mt-1 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg"><option value="all">활성 위험</option>{Object.entries(STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-          <label className="block"><span className="text-[0.6875rem] font-bold text-fg-3">유형</span><select value={searchParams.get("category") ?? "all"} onChange={(event) => updateParam("category", event.target.value)} className="mt-1 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg"><option value="all">전체</option>{Object.entries(CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-          <label className="block"><span className="text-[0.6875rem] font-bold text-fg-3">등록 방식</span><select value={searchParams.get("source") ?? "all"} onChange={(event) => updateParam("source", event.target.value)} className="mt-1 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg"><option value="all">전체</option><option value="automatic">자동 감지</option><option value="manual">직접 등록</option></select></label>
+          <label className="block"><span className="text-xs font-bold text-fg-3">검색</span><input value={searchParams.get("q") ?? ""} onChange={(event) => updateParam("q", event.target.value)} className="mt-1 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg outline-none focus:border-accent" placeholder="제목·원인 검색" /></label>
+          <label className="block"><span className="text-xs font-bold text-fg-3">위험도</span><select value={searchParams.get("severity") ?? "all"} onChange={(event) => updateParam("severity", event.target.value)} className="mt-1 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg"><option value="all">전체</option><option value="critical">긴급</option><option value="high">높음</option><option value="warning">주의</option><option value="watch">관찰</option></select></label>
+          <label className="block"><span className="text-xs font-bold text-fg-3">상태</span><select value={searchParams.get("status") ?? "all"} onChange={(event) => updateParam("status", event.target.value)} className="mt-1 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg"><option value="all">활성 위험</option>{Object.entries(STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+          <label className="block"><span className="text-xs font-bold text-fg-3">유형</span><select value={searchParams.get("category") ?? "all"} onChange={(event) => updateParam("category", event.target.value)} className="mt-1 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg"><option value="all">전체</option>{Object.entries(CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+          <label className="block"><span className="text-xs font-bold text-fg-3">등록 방식</span><select value={searchParams.get("source") ?? "all"} onChange={(event) => updateParam("source", event.target.value)} className="mt-1 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg"><option value="all">전체</option><option value="automatic">자동 감지</option><option value="manual">직접 등록</option></select></label>
         </div>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <ProductionRiskMultiFilter label="회차" options={episodeOptions} selected={episodeIds} onChange={(values) => updateParam("episode", values.join(","))} />
@@ -848,7 +848,7 @@ export function ProductionRiskWorkspace({
       <div className="grid gap-4 xl:grid-cols-[minmax(20rem,0.8fr)_minmax(0,1.4fr)]">
         <section className={cn("rounded-2xl border border-line bg-card p-4", mobileDetailOpen && "hidden xl:block")}>
           <div className="mb-4 flex items-center justify-between gap-3">
-            <div><h2 className="text-sm font-black text-fg">{view === "episode" ? "회차별 위험" : "위험 목록"}</h2><p className="mt-1 text-xs text-fg-3">{filteredRisks.length}건 · 운영 우선순위순</p></div>
+            <div><h2 className="text-sm font-semibold text-fg">{view === "episode" ? "회차별 위험" : "위험 목록"}</h2><p className="mt-1 text-xs text-fg-3">{filteredRisks.length}건 · 운영 우선순위순</p></div>
             <Pill>{evaluation.risks.filter((risk) => ACTIVE_STATUSES.has(risk.status)).length} 활성</Pill>
           </div>
           <div className="space-y-2">
@@ -866,7 +866,7 @@ export function ProductionRiskWorkspace({
             {filteredRisks.length === 0 ? (
               <div className="rounded-xl border border-dashed border-line p-8 text-center">
                 <CheckCircle2 className="mx-auto size-8 text-good" aria-hidden="true" />
-                <p className="mt-3 text-sm font-black text-fg">{t("productionHub.risk.emptyFiltered", "조건에 맞는 위험이 없습니다")}</p>
+                <p className="mt-3 text-sm font-semibold text-fg">{t("productionHub.risk.emptyFiltered", "조건에 맞는 위험이 없습니다")}</p>
                 <p className="mt-1 text-xs text-fg-3">필터를 바꾸거나 제작 데이터를 다시 평가해 보세요.</p>
               </div>
             ) : null}
@@ -892,7 +892,7 @@ export function ProductionRiskWorkspace({
           ) : (
             <div className="rounded-2xl border border-dashed border-line bg-card p-10 text-center">
               <BadgeCheck className="mx-auto size-9 text-good" aria-hidden="true" />
-              <p className="mt-3 text-sm font-black text-fg">확인할 위험을 선택해 주세요</p>
+              <p className="mt-3 text-sm font-semibold text-fg">확인할 위험을 선택해 주세요</p>
             </div>
           )}
         </div>

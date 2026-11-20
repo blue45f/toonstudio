@@ -26,7 +26,7 @@ export interface QuickStylePreset {
 
 export const QUICK_STYLE_PRESETS: readonly QuickStylePreset[] = [
   { id: "toon-standard", label: "툰 스탠다드", mode: "toon", quality: "standard" },
-  { id: "pbr-studio", label: "PBR 스튜디오", mode: "pbr", quality: "standard" },
+  { id: "pbr-studio", label: "스튜디오 음영", mode: "pbr", quality: "standard" },
   { id: "hero-quality", label: "고품질 히어로", mode: "toon", quality: "hero" },
 ];
 
@@ -145,51 +145,103 @@ export function TopBar() {
     });
   };
 
+  const undoDisabledReason = !state.history.canUndo ? "되돌릴 편집 이력이 없습니다." : undefined;
+  const redoDisabledReason = !state.history.canRedo ? "다시 실행할 편집 이력이 없습니다." : undefined;
+  const engineDisabledReason = initializing ? "엔진을 초기화하는 중입니다." : undefined;
+
   return (
     <header className="cl-topbar">
       <div className="cl-topbar-brand">
-        <p className="cl-eyebrow">실험 앱 · 배포 대상 아님</p>
         <h1 className="cl-title">ToonStudio Character Lab</h1>
       </div>
-      <div className="cl-topbar-group" role="group" aria-label="엔진 선택">
-        {ENGINE_BACKENDS.map((backend) => (
-          <button
-            key={backend}
-            type="button"
-            className="cl-button"
-            aria-pressed={activeBackend === backend}
-            disabled={initializing}
-            onClick={() => selectBackend(backend)}
-          >
-            {ENGINE_BACKEND_LABELS_KO[backend]}
-          </button>
-        ))}
+
+      {/* 핵심 6개 액션 바: 엔진·품질 드로어, Undo/Redo, 음영 전환, 2D 컷 전송, 도움말 */}
+      <div className="cl-topbar-group" role="group" aria-label="핵심 작업">
+        <button
+          type="button"
+          className="cl-button cl-compact-tools-toggle"
+          data-testid="topbar-tools-toggle"
+          aria-expanded={toolsOpen}
+          aria-controls="cl-workspace-tools"
+          onClick={() => setToolsOpen((open) => !open)}
+        >
+          엔진·품질 설정
+        </button>
         <span className="cl-engine-badge" data-tone={engineText.tone} role="status" title={engineText.text}>
           {engineText.text}
         </span>
+        <button
+          type="button"
+          className="cl-button"
+          disabled={!state.history.canUndo}
+          title={undoDisabledReason ?? "실행 취소 (Ctrl/Cmd+Z)"}
+          onClick={() => dispatch({ type: "history/undo" })}
+        >
+          실행 취소
+        </button>
+        <button
+          type="button"
+          className="cl-button"
+          disabled={!state.history.canRedo}
+          title={redoDisabledReason ?? "다시 실행 (Ctrl/Cmd+Shift+Z)"}
+          onClick={() => dispatch({ type: "history/redo" })}
+        >
+          다시 실행
+        </button>
+        <span className="cl-muted" style={{ fontVariantNumeric: "tabular-nums" }}>
+          되돌리기 {state.history.depth}단계
+        </span>
+        <button
+          type="button"
+          className="cl-button"
+          aria-pressed={shading.mode === "toon"}
+          onClick={() => dispatch({ type: "shading/set", profile: { mode: shading.mode === "toon" ? "pbr" : "toon" } })}
+        >
+          {shading.mode === "toon" ? "툰 음영" : "표준 음영"}
+        </button>
+        <button
+          type="button"
+          className="cl-button cl-button--primary"
+          data-testid="topbar-send-2d-cut"
+          aria-pressed={ui.inspectorTab === "export"}
+          onClick={() => {
+            setInspectorTab("export");
+            document.getElementById("cl-tab-export")?.focus();
+          }}
+        >
+          2D 컷 전송
+        </button>
+        <button
+          ref={helpToggleRef}
+          type="button"
+          className="cl-button cl-button-small"
+          data-testid="topbar-help-toggle"
+          aria-expanded={helpOpen}
+          aria-controls="cl-shortcut-guide"
+          onClick={() => setHelpOpen((prev) => !prev)}
+        >
+          ? 단축키·가이드
+        </button>
       </div>
-      <button type="button" className="cl-button cl-compact-tools-toggle" aria-expanded={toolsOpen} aria-controls="cl-workspace-tools" onClick={() => setToolsOpen((open) => !open)}>
-        작업 도구
-      </button>
+
+      {/* 엔진·품질·스타일·워크플로 확장 드로어 */}
       <div id="cl-workspace-tools" className="cl-workspace-tools" data-open={toolsOpen}>
-        <div className="cl-topbar-group" role="group" aria-label="히스토리">
-          <button type="button" className="cl-button" disabled={!state.history.canUndo} onClick={() => dispatch({ type: "history/undo" })}>
-            실행 취소
-          </button>
-          <button type="button" className="cl-button" disabled={!state.history.canRedo} onClick={() => dispatch({ type: "history/redo" })}>
-            다시 실행
-          </button>
-          <span className="cl-muted">깊이 {state.history.depth} · rev {state.history.revision}</span>
+        <div className="cl-topbar-group" role="group" aria-label="엔진 선택">
+          {ENGINE_BACKENDS.map((backend) => (
+            <button
+              key={backend}
+              type="button"
+              className="cl-button"
+              aria-pressed={activeBackend === backend}
+              disabled={initializing}
+              title={engineDisabledReason}
+              onClick={() => selectBackend(backend)}
+            >
+              {ENGINE_BACKEND_LABELS_KO[backend]}
+            </button>
+          ))}
         </div>
-        <div className="cl-topbar-group" role="group" aria-label="셰이딩">
-          <button
-            type="button"
-            className="cl-button"
-            aria-pressed={shading.mode === "toon"}
-            onClick={() => dispatch({ type: "shading/set", profile: { mode: shading.mode === "toon" ? "pbr" : "toon" } })}
-          >
-            {shading.mode === "toon" ? "툰 셰이딩" : "PBR 셰이딩"}
-          </button>
+        <div className="cl-topbar-group" role="group" aria-label="품질 프리셋">
           <label className="cl-select-label">
             품질
             <select
@@ -282,18 +334,7 @@ export function TopBar() {
             aria-pressed={studioTheme === "shaper"}
             onClick={() => setStudioTheme((prev) => (prev === "shaper" ? "nebula" : "shaper"))}
           >
-            {studioTheme === "shaper" ? "SHAPER 다크 테마" : "네뷸라 기본 테마"}
-          </button>
-          <button
-            ref={helpToggleRef}
-            type="button"
-            className="cl-button cl-button-small"
-            data-testid="topbar-help-toggle"
-            aria-expanded={helpOpen}
-            aria-controls="cl-shortcut-guide"
-            onClick={() => setHelpOpen((prev) => !prev)}
-          >
-            ? 단축키·가이드
+            {studioTheme === "shaper" ? "Starlight 통합 테마" : "네뷸라 기본 테마"}
           </button>
         </div>
       </div>

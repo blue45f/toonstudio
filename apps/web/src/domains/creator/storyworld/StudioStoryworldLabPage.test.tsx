@@ -27,7 +27,7 @@ function page(workId: string) {
 // 로컬보다 2.4~3.4배 느렸던 부하 큰 CI 에서는 1초에 닿는다. 저장소의 지연 로딩 시험 관례(LAZY_LOAD_TIMEOUT_MS)대로 15초까지 기다린다.
 const ASYNC_SURFACE_TIMEOUT_MS = 15_000;
 
-async function ready() { await screen.findByRole("button", { name: "설정 파일" }, { timeout: ASYNC_SURFACE_TIMEOUT_MS }); }
+async function ready() { await screen.findByRole("navigation", { name: "스토리월드 랩 섹션" }, { timeout: ASYNC_SURFACE_TIMEOUT_MS }); }
 /**
  * 편집기가 뜨면 "처리 기록" 읽기가 비동기로 시작된다. 이 읽기와 "공유 세계관" 탭의 레지스트리 읽기는 같은 모듈(universe-store)에서
  * `import("../studio-local-database-runtime")` 를 각각 부르는데, vitest 의 vi.mock 은 한 모듈에서 동시에 진행 중인 동적 import 의
@@ -49,6 +49,23 @@ async function open(workId: string) {
   await settleDispositionRead(workId);
   return view;
 }
+/** 4개 핵심 섹션과 세부 보기/고급 드로어 사이를 이동한다. */
+function openStoryworldSection(groupLabel: string, subTabLabel?: string) {
+  const nav = screen.getByRole("navigation", { name: "스토리월드 랩 섹션" });
+  fireEvent.click(within(nav).getByRole("button", { name: new RegExp(`^${groupLabel}`) }));
+  if (subTabLabel) {
+    const subtabs = screen.getByRole("tablist", { name: `${groupLabel} 세부 보기` });
+    fireEvent.click(within(subtabs).getByRole("tab", { name: new RegExp(`^${subTabLabel}`) }));
+  }
+}
+function openAdvancedSection(tabLabel: string) {
+  const drawer = document.querySelector<HTMLDetailsElement>('[data-storyworld-advanced-drawer="true"]');
+  if (drawer && !drawer.open) {
+    fireEvent.click(screen.getByText("고급 · JSON 설정"));
+  }
+  const advancedGroup = screen.getByRole("group", { name: "고급 및 설정 파일" });
+  fireEvent.click(within(advancedGroup).getByRole("button", { name: new RegExp(`^${tabLabel}`) }));
+}
 /** "공유 세계관" 탭은 레지스트리를 읽은 뒤에야 입력칸을 그린다. 읽기가 실패하면 입력칸 대신 오류 안내만 남으므로, 그 문구를 실패 사유로 드러낸다. */
 async function findUniverseNameField() {
   try {
@@ -58,9 +75,9 @@ async function findUniverseNameField() {
     throw reason ? new Error(`공유 세계관 레지스트리를 읽지 못했습니다: ${reason}`, { cause: error }) : error;
   }
 }
-/** "설정 파일" 탭의 직접 편집기는 닫힌 채 시작하므로, 탭을 열고 편집기까지 열어 글자판을 돌려준다. */
+/** "설정 파일" 탭의 직접 편집기는 닫힌 채 시작하므로, 고급 드로어에서 탭을 열고 편집기까지 열어 글자판을 돌려준다. */
 function openSettingsEditor() {
-  fireEvent.click(screen.getByRole("button", { name: "설정 파일" }));
+  openAdvancedSection("설정 파일");
   fireEvent.click(screen.getByRole("button", { name: "직접 편집 열기" }));
   return screen.getByRole("textbox", { name: "세계관 설정 직접 편집" });
 }
@@ -102,19 +119,34 @@ describe("Storyworld actual page integration", () => {
   });
   it("opens every user-facing analysis surface", async () => {
     await open("work-tabs");
-    // 상단의 "설정 파일로 저장" 버튼과 이름이 겹치지 않도록 섹션 탐색 안에서만 찾는다.
     const nav = screen.getByRole("navigation", { name: "스토리월드 랩 섹션" });
-    const openTab = (label: string) => {
-      fireEvent.click(within(nav).getByRole("button", { name: new RegExp(`^${label}`) }));
-      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(label);
-    };
-    for (const label of ["설정 관리", "모순·위험", "다른 전개", "인물 지식", "복선 약속", "창의 기능 지도", "설정 파일", "대시보드"]) {
-      openTab(label);
-    }
+    expect(within(nav).getAllByRole("button")).toHaveLength(4);
+    const drawer = document.querySelector<HTMLDetailsElement>('[data-storyworld-advanced-drawer="true"]');
+    expect(drawer?.open).toBe(false);
+
+    openStoryworldSection("캐릭터·관계", "설정 관리");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("설정 관리");
+    openStoryworldSection("캐릭터·관계", "인물 지식");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("인물 지식");
+    openStoryworldSection("플롯·타임라인", "모순·위험");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("모순·위험");
+    openStoryworldSection("플롯·타임라인", "다른 전개");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("다른 전개");
+    openStoryworldSection("세계관·복선", "복선 약속");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("복선 약속");
+    openAdvancedSection("창의 기능 지도");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("창의 기능 지도");
+    openAdvancedSection("설정 파일");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("설정 파일");
+    openStoryworldSection("플롯·타임라인", "대시보드");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("대시보드");
+
     // 뒤에 늘어난 두 화면은 처음 열 때 비동기로 내용을 채우므로, 채워진 것을 보고 다음으로 넘어간다.
-    openTab("공유 세계관");
+    openStoryworldSection("세계관·복선", "공유 세계관");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("공유 세계관");
     await findUniverseNameField();
-    openTab("개연성 점검");
+    openStoryworldSection("개연성 점검");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("개연성 점검");
     await screen.findByRole("heading", { name: "점검 범위" }, { timeout: ASYNC_SURFACE_TIMEOUT_MS });
   });
   it("keeps authored JSON in SQLite while projecting readiness diagnostics to project storage", async () => {
@@ -167,7 +199,7 @@ describe("Storyworld actual page integration", () => {
     let finish!: (value: string) => void;
     db.kvGet.mockReturnValueOnce(new Promise<string>((resolveRead) => { finish = resolveRead; }));
     render(page("work-delayed"));
-    expect(screen.queryByRole("button", { name: "설정 파일" })).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "스토리월드 랩 섹션" })).toBeNull();
     expect(db.kvSet).not.toHaveBeenCalled();
     await act(async () => {
       finish(JSON.stringify({ version: 1, documentKey: key("work-delayed"), project: { ...STORYWORLD_DEMO_PROJECT, title: "복원된 원본" } }));
@@ -184,7 +216,7 @@ describe("Storyworld actual page integration", () => {
     expect(alert.textContent).toContain("저장된 내용은 그대로 두었습니다");
     expect(db.rows.get(rowKey("work-corrupt"))).toBe("{corrupt");
     expect(db.kvSet).not.toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: "설정 파일" })).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "스토리월드 랩 섹션" })).toBeNull();
     db.rows.delete(rowKey("work-corrupt"));
     fireEvent.click(screen.getByRole("button", { name: "다시 불러오기" }));
     await ready();
@@ -201,7 +233,7 @@ describe("Storyworld settings management layer", () => {
 
   it("edits a character in the settings form and persists through the draft store", async () => {
     await open("work-settings-edit");
-    fireEvent.click(screen.getByRole("button", { name: /^설정 관리/ }));
+    openStoryworldSection("캐릭터·관계", "설정 관리");
     fireEvent.click(screen.getByRole("option", { name: /하은/ }));
     fireEvent.change(screen.getByLabelText("이름"), { target: { value: "하은(본명)" } });
     fireEvent.change(screen.getByLabelText("설명"), { target: { value: "기억 상인 길드의 견습생" } });
@@ -218,7 +250,7 @@ describe("Storyworld settings management layer", () => {
 
   it("stores the moving-toon extension profile as data on the character", async () => {
     await open("work-settings-motion");
-    fireEvent.click(screen.getByRole("button", { name: /^설정 관리/ }));
+    openStoryworldSection("캐릭터·관계", "설정 관리");
     fireEvent.click(screen.getByRole("option", { name: /도진/ }));
     fireEvent.change(screen.getByLabelText("등장 리빌 (무빙툰 프리셋)"), { target: { value: "fade-up" } });
     fireEvent.change(screen.getByLabelText("음성 연기 메모"), { target: { value: "낮고 느린 톤" } });
@@ -242,7 +274,7 @@ describe("Storyworld settings management layer", () => {
 
   it("adds a new scene from the settings tab and selects it", async () => {
     await open("work-settings-add");
-    fireEvent.click(screen.getByRole("button", { name: /^설정 관리/ }));
+    openStoryworldSection("캐릭터·관계", "설정 관리");
     fireEvent.click(screen.getByRole("button", { name: /장면 4/ }));
     fireEvent.change(screen.getByPlaceholderText("새 장면 이름"), { target: { value: "새벽의 금고" } });
     fireEvent.click(screen.getByRole("button", { name: "장면 추가" }));
@@ -255,7 +287,7 @@ describe("Storyworld settings management layer", () => {
 
   it("universe tab creates a shared world, joins the work and designates a local element", async () => {
     await open("work-universe");
-    fireEvent.click(screen.getByRole("button", { name: /^공유 세계관/ }));
+    openStoryworldSection("세계관·복선", "공유 세계관");
 
     fireEvent.change(await findUniverseNameField(), { target: { value: "아르카나 유니버스" } });
     fireEvent.click(screen.getByRole("button", { name: "공유 세계관 만들기" }));
@@ -304,7 +336,7 @@ describe("Storyworld settings management layer", () => {
     };
     applySettingsText(JSON.stringify(conflicting));
 
-    fireEvent.click(screen.getByRole("button", { name: /모순·위험/ }));
+    openStoryworldSection("플롯·타임라인", "모순·위험");
     const conflictText = await screen.findByText(/서로 다른 초기값을 선언했습니다/);
     expect(screen.getByText(/지식을 사용하지만 장면 참여자에 없습니다/)).toBeTruthy();
     const conflictCard = conflictText.closest("article");
@@ -315,7 +347,7 @@ describe("Storyworld settings management layer", () => {
     fireEvent.click(within(conflictCard!).getByRole("button", { name: "설정에서 고치기" }));
     expect((await screen.findByLabelText("라벨") as HTMLInputElement).value).toBe("기억 금고가 열린다");
 
-    fireEvent.click(screen.getByRole("button", { name: /모순·위험/ }));
+    openStoryworldSection("플롯·타임라인", "모순·위험");
     const conflictAgain = (await screen.findByText(/서로 다른 초기값을 선언했습니다/)).closest("article")!;
     fireEvent.click(within(conflictAgain).getByRole("button", { name: "무시" }));
     fireEvent.change(await within(conflictAgain).findByPlaceholderText(/무시 사유/), { target: { value: "초안 단계라 보류" } });
@@ -343,7 +375,7 @@ describe("Storyworld world board layer", () => {
 
   function applyProject(project: unknown) {
     applySettingsText(JSON.stringify(project));
-    fireEvent.click(screen.getByRole("button", { name: "대시보드" }));
+    openStoryworldSection("플롯·타임라인", "대시보드");
   }
 
   it("renders the world board above the checkup section with real element cards", async () => {
@@ -412,7 +444,7 @@ describe("Storyworld world board layer", () => {
     await open("work-rea-continuity");
     const bar = screen.getByTestId("storyworld-rea-continuity-bar");
     expect(bar.hasAttribute("data-own-control-size")).toBe(true);
-    expect(bar.textContent).toContain("World Anvil · Campfire · Plottr · Scrivener");
+    expect(bar.textContent).not.toMatch(/World Anvil|Campfire|Plottr|Scrivener/iu);
 
     expect(within(bar).getByRole("group", { name: "점검 렌즈 프리셋" })).toBeTruthy();
     expect(within(bar).getByRole("group", { name: "정사 범위 프리셋" })).toBeTruthy();

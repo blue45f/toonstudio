@@ -21,6 +21,8 @@ import {
 import {
   DESKTOP_PANEL_STEPS,
   MOBILE_PANEL_STEPS,
+  ensureDesktopBrushPanelOpen,
+  ensureDesktopInspectorOpen,
   toolPopover,
   type PanelStep,
 } from "./helpers/studio-editor-panels";
@@ -78,9 +80,7 @@ async function expectNamesAndRolesAreSound(page: Page, step: PanelStep): Promise
 const DESKTOP_REGION_ORDER = [
   "skip-links",
   "menubar",
-  "work-modes",
   "tool-rail",
-  "brush-panel",
   "canvas",
   "inspector",
 ] as const;
@@ -98,8 +98,9 @@ test.describe("열린 편집기 접근성 — 데스크톱 1440×900", () => {
     await forEachPanel(page, DESKTOP_PANEL_STEPS, (step) => expectNamesAndRolesAreSound(page, step));
   });
 
-  test("Tab·Shift+Tab 으로 메뉴바·작업 모드·도구·캔버스·작업 패널을 지나도 포커스 함정이 없고 포커스가 보인다", async ({ page }) => {
+  test("Tab·Shift+Tab 으로 메뉴바·도구·캔버스·작업 패널을 지나도 포커스 함정이 없고 포커스가 보인다", async ({ page }) => {
     await openGuestEditor(page, { dismissStartDock: true });
+    await ensureDesktopInspectorOpen(page);
     const skipLinks = page.getByRole("navigation", { name: "작업 영역 바로가기" });
 
     const forward = await walkTabOrder(page, {
@@ -131,6 +132,7 @@ test.describe("열린 편집기 접근성 — 데스크톱 1440×900", () => {
   test("메뉴·창·팝업은 Esc 로 닫히고 포커스가 여는 단추로 돌아온다", async ({ page }) => {
     await openGuestEditor(page, { dismissStartDock: true });
     const menubar = page.locator("#studio-menubar");
+    const rail = page.locator("nav.studio-drawing-clarity-rail");
     const inspector = page.locator("#studio-inspector");
     const pressEnter = async (): Promise<void> => page.keyboard.press("Enter");
 
@@ -141,29 +143,31 @@ test.describe("열린 편집기 접근성 — 데스크톱 1440×900", () => {
       open: pressEnter,
     });
     await expectOpenCloseRestoresFocus(page, {
-      label: "소재(템플릿·에셋) 창",
-      opener: menubar.getByRole("button", { name: "템플릿·에셋", exact: true }),
-      surface: toolPopover(page, "asset-group"),
+      label: "원고 도구(더보기) 창",
+      opener: page.locator('[data-studio-clarity-more-trigger="true"]').first(),
+      surface: page.getByRole("dialog", { name: "원고 도구" }),
       open: pressEnter,
     });
     await expectOpenCloseRestoresFocus(page, {
       label: "말풍선 창",
-      opener: menubar.getByRole("button", { name: "말풍선", exact: true }),
+      opener: rail.locator('[data-studio-rail-tool-id="bubble"]'),
       surface: toolPopover(page, "bubble-menu"),
       open: pressEnter,
     });
     await expectOpenCloseRestoresFocus(page, {
       label: "작업 내역 패널",
-      opener: menubar.getByRole("button", { name: "작업 내역", exact: true }),
+      opener: menubar.locator('[data-studio-clarity-history-btn="true"]'),
       surface: page.getByRole("region", { name: "작업 내역" }),
       open: pressEnter,
     });
     await expectOpenCloseRestoresFocus(page, {
-      label: "프로젝트 센터 창",
-      opener: menubar.getByRole("button", { name: "프로젝트 센터", exact: true }),
-      surface: page.getByRole("dialog", { name: "프로젝트 센터" }),
+      label: "레이어·속성 패널",
+      opener: rail.getByRole("button", { name: "레이어", exact: true }),
+      surface: page.locator("#studio-drawing-clarity-panel-layers"),
       open: pressEnter,
     });
+
+    await ensureDesktopInspectorOpen(page);
     await expectOpenCloseRestoresFocus(page, {
       label: "레이어 필터 팝업",
       opener: inspector.getByRole("button", { name: "필터", exact: true }),
@@ -205,29 +209,41 @@ test.describe("열린 편집기 접근성 — 모바일 390×844", () => {
 
   test("기기 안내와 시트는 Esc 로 닫히고 포커스가 여는 단추로 돌아온다", async ({ page }) => {
     await openGuestEditor(page, { dismissStartDock: true });
-    const notice = page.getByRole("complementary", { name: "모바일 편집 안내" });
-    await notice.getByRole("button", { name: "모바일 편집 안내 닫기", exact: true }).click();
-    const guideToggle = notice.getByRole("button", { name: "기기 안내", exact: true });
-    await expect(notice).toHaveAttribute("data-studio-mobile-notice-compact", "true");
-    await expect(guideToggle).toBeFocused();
-    await guideToggle.press("Enter");
-    await expect(notice).toHaveAttribute("data-studio-mobile-notice-expanded", "true");
-    await expect(notice.getByRole("heading", { name: "지금 할 수 있어요", exact: true })).toBeVisible();
-    await notice.getByRole("button", { name: "모바일 편집 안내 닫기", exact: true }).press("Escape");
-    await expect(notice).toHaveAttribute("data-studio-mobile-notice-compact", "true");
-    await expect(guideToggle).toBeFocused();
-    const workMenu = page.getByRole("button", { name: "작업 메뉴", exact: true }).first();
+    const moreTrigger = page.locator('[data-studio-clarity-more-trigger="true"]').first();
     await expectOpenCloseRestoresFocus(page, {
-      label: "작업 메뉴 시트",
-      opener: workMenu,
-      surface: page.locator('[data-studio-mobile-sheet="tools"]:not([aria-hidden="true"])'),
+      label: "원고 도구 시트(더보기)",
+      opener: moreTrigger,
+      surface: page.getByRole("dialog", { name: "원고 도구" }),
       open: async () => page.keyboard.press("Enter"),
     });
+
+    await moreTrigger.click();
+    await expect(page.getByRole("dialog", { name: "원고 도구" })).toBeVisible();
+    await page.locator('[data-drawing-task-category="workspace"]').click();
+    await page.getByRole("button", { name: "이 기기에서 할 수 있는 작업", exact: true }).click();
+    const notice = page.getByRole("complementary", { name: "모바일 편집 안내" });
+    await expect(notice).toBeVisible();
+    await expect(notice).toHaveAttribute("data-studio-mobile-notice-expanded", "true");
+    await expect(notice.getByRole("heading", { name: "지금 할 수 있어요", exact: true })).toBeVisible();
+    await expect(notice.getByRole("heading", { name: "이 기기에서는 안 돼요", exact: true })).toBeVisible();
+    await notice.getByRole("button", { name: "모바일 편집 안내 닫기", exact: true }).press("Escape");
+    const noticeNode = page.locator('[data-testid="mobile-full-edit-notice"]');
+    await expect(noticeNode).toHaveAttribute("data-studio-mobile-notice-compact", "true");
+    await expect(noticeNode).toBeHidden();
+    await expect(moreTrigger).toBeFocused();
+
     const colors = page.getByRole("button", { name: "브러시 색상", exact: true }).first();
     await expectOpenCloseRestoresFocus(page, {
       label: "브러시 색상 시트",
       opener: colors,
       surface: page.locator('[data-studio-mobile-sheet="colors"]:not([aria-hidden="true"])'),
+      open: async () => page.keyboard.press("Enter"),
+    });
+    const layers = page.getByRole("button", { name: "레이어 열기", exact: true }).first();
+    await expectOpenCloseRestoresFocus(page, {
+      label: "작업 패널 시트(레이어 열기)",
+      opener: layers,
+      surface: page.getByRole("dialog", { name: "작업 패널" }),
       open: async () => page.keyboard.press("Enter"),
     });
   });
@@ -243,7 +259,8 @@ test.describe("브러시 목록의 작은 글자 대비", () => {
           state: { preference, studioPreference: preference }, version: 0,
         }));
       }, theme);
-      await openGuestEditor(page);
+      await openGuestEditor(page, { dismissStartDock: true });
+      await ensureDesktopBrushPanelOpen(page);
       const rows = await readBrushTextContrast(page);
       expect(rows.filter((row) => row.kind === "badge").length).toBeGreaterThanOrEqual(2);
       expect(rows.filter((row) => row.kind === "details").length).toBeGreaterThanOrEqual(1);

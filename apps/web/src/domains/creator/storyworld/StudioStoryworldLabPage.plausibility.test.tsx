@@ -64,12 +64,13 @@ afterEach(() => {
 });
 
 describe("스토리월드 랩: 개연성 점검 탭", () => {
-  it("개연성 점검이 탭 목록의 맨 앞에 있고, 주소에 view가 없으면 대시보드로 시작한다", async () => {
+  it("개연성 점검이 4개 핵심 섹션의 맨 앞에 있고, 주소에 view가 없으면 대시보드로 시작한다", async () => {
     render(page("work-1"));
     const nav = await screen.findByRole("navigation", { name: "스토리월드 랩 섹션" });
     const labels = within(nav).getAllByRole("button").map((button) => button.textContent ?? "");
+    expect(labels).toHaveLength(4);
     expect(labels[0]).toContain("개연성 점검");
-    expect(labels[1]).toContain("대시보드");
+    expect(labels[1]).toContain("플롯·타임라인");
     expect(screen.getByRole("heading", { level: 1, name: "대시보드" })).toBeTruthy();
   });
 
@@ -107,7 +108,9 @@ describe("스토리월드 랩: 개연성 점검 탭", () => {
     expect(payload).toMatchObject({ version: 1, dispositions: [{ status: "resolved", note: "확인했어요" }] });
 
     const nav = screen.getByRole("navigation", { name: "스토리월드 랩 섹션" });
-    fireEvent.click(within(nav).getByRole("button", { name: /모순·위험/u }));
+    fireEvent.click(within(nav).getByRole("button", { name: /플롯·타임라인/u }));
+    const subtabs = screen.getByRole("tablist", { name: "플롯·타임라인 세부 보기" });
+    fireEvent.click(within(subtabs).getByRole("tab", { name: /모순·위험/u }));
     expect((await screen.findAllByText("해결 표시됨")).length).toBeGreaterThan(0);
   });
 

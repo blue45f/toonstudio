@@ -72,7 +72,7 @@ export function ProductionRoleTransitionBanner({
       )}
     >
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="flex flex-wrap items-center gap-1.5 font-black text-fg">
+        <p className="flex flex-wrap items-center gap-1.5 font-semibold text-fg">
           <ShieldAlert className="size-4 shrink-0 text-accent" aria-hidden="true" />
           <span>
             {bt(
@@ -86,7 +86,7 @@ export function ProductionRoleTransitionBanner({
           {bt(transition.nextActionsKo, transition.nextActionsEn)}
         </p>
         {nonEmptyCount > 0 ? (
-          <p className="text-[0.6875rem] font-semibold text-fg-2">
+          <p className="text-xs font-semibold text-fg-2">
             {bt(
               `작성 중이던 내용 ${nonEmptyCount}건을 지우지 않고 정책 범위에서 그대로 보존했습니다.`,
               `Preserved ${nonEmptyCount} authored draft(s) in place within policy bounds.`,
@@ -144,7 +144,7 @@ export function ProductionReviewCutCard({
       aria-label={`${cut.cutId} 검수 선택`}
       onClick={onSelect}
       className={cn(
-        "relative min-h-48 w-full overflow-hidden rounded-xl border bg-gradient-to-br from-raised via-panel to-accent-soft text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-accent",
+        "relative min-h-48 w-full overflow-hidden rounded-xl border bg-gradient-to-br from-raised via-panel to-accent-soft text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent",
         selected ? "border-accent" : "border-line hover:border-accent/45",
         muted && "opacity-55 grayscale-[35%]",
       )}
@@ -153,15 +153,15 @@ export function ProductionReviewCutCard({
       <div className="absolute bottom-[18%] right-[10%] h-[42%] w-[35%] rounded-t-full border border-line-strong/45 bg-raised/75" />
       <div className="absolute inset-x-3 bottom-3 rounded-lg border border-line/70 bg-card/90 p-2 backdrop-blur-sm">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[0.6875rem] font-black text-accent">{cut.cutId}</span>
-          <span className="text-[0.625rem] text-fg-3">{revisionLabel}</span>
+          <span className="text-xs font-semibold text-accent">{cut.cutId}</span>
+          <span className="text-xs text-fg-3">{revisionLabel}</span>
         </div>
         <p className="mt-1 text-xs font-semibold text-fg">{cut.framing}</p>
-        <p className="mt-1 line-clamp-1 text-[0.625rem] text-fg-3">{cut.camera}</p>
+        <p className="mt-1 line-clamp-1 text-xs text-fg-3">{cut.camera}</p>
       </div>
       {issues > 0 ? (
         <span
-          className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-full border-2 border-card bg-bad text-[0.6875rem] font-black text-on-accent"
+          className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-full border-2 border-card bg-bad text-xs font-semibold text-on-accent"
           aria-label={`${issues}개 검수 이슈`}
         >
           {issues}
@@ -192,7 +192,7 @@ export function ProductionStaleDecisionBanner({
       className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warn/50 bg-warn/15 p-3 text-xs text-fg"
     >
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="flex flex-wrap items-center gap-1.5 font-black text-warn">
+        <p className="flex flex-wrap items-center gap-1.5 font-semibold text-warn">
           <ShieldAlert className="size-4 shrink-0" aria-hidden="true" />
           <span>
             {bt(
@@ -274,7 +274,7 @@ export function ProductionWorkspaceDeepLinkBanners({
           className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warn/45 bg-warn/10 p-3 text-xs text-fg"
         >
           <div className="min-w-0 flex-1 space-y-1">
-            <p className="flex flex-wrap items-center gap-1.5 font-black text-warn">
+            <p className="flex flex-wrap items-center gap-1.5 font-semibold text-warn">
               <History className="size-4 shrink-0" aria-hidden="true" />
               <span>{bt("이전 고정 리비전(구버전) 열람 중 · 최신본 아님", "Viewing pinned older revision · NOT the latest version")}</span>
             </p>
@@ -378,7 +378,7 @@ export function ProductionCollabHubDeepLinkBanner({
       >
         <div className="min-w-0 flex-1">
           {isHistorical ? (
-            <p className="font-black text-warn">
+            <p className="font-semibold text-warn">
               {bt(
                 `이전 고정 리비전 열람 중 (${episodeId} · ${selectedCutId} · ${viewedRevisionId}) — 최신본(${latestRevisionId})과 혼동하지 마세요 (구버전 승인 잠금)`,
                 `Viewing pinned older revision (${episodeId} · ${selectedCutId} · ${viewedRevisionId}) — latest is ${latestRevisionId} (approval locked)`,
@@ -462,9 +462,9 @@ export function ProductionReviewClarificationCards({
       <section className="rounded-2xl border border-line bg-card p-3">
         <div className="flex items-center gap-2">
           <MessageCirclePlus className="size-4 text-accent" aria-hidden="true" />
-          <h3 className="text-xs font-black text-fg">컷 위치 질문</h3>
+          <h3 className="text-xs font-semibold text-fg">컷 위치 질문</h3>
         </div>
-        <p className="mt-1 text-[0.6875rem] leading-5 text-fg-3">
+        <p className="mt-1 text-xs leading-5 text-fg-3">
           {selectedCut ? `${selectedCut.cutId}에 고정됩니다.` : "먼저 컷을 선택하세요."}
         </p>
         <textarea
@@ -496,7 +496,7 @@ export function ProductionReviewClarificationCards({
           {pending ? bt("전송 중…", "Sending…") : "질문 추가"}
         </button>
         {retryAvailable && !pending && comment.trim() ? (
-          <div className="mt-2 rounded-xl border border-warn/35 bg-warn/10 p-2.5 text-[0.6875rem] text-fg-2">
+          <div className="mt-2 rounded-xl border border-warn/35 bg-warn/10 p-2.5 text-xs text-fg-2">
             <p className="leading-4">
               {bt(
                 "작성 내용을 그대로 보존했습니다. 다시 보내도 같은 질문 ID를 재사용해 중복 생성되지 않습니다.",
@@ -520,7 +520,7 @@ export function ProductionReviewClarificationCards({
       <section className="rounded-2xl border border-line bg-card p-3">
         <div className="flex items-center gap-2">
           <MessagesSquare className="size-4 text-accent" aria-hidden="true" />
-          <h3 className="text-xs font-black text-fg">열린 이슈</h3>
+          <h3 className="text-xs font-semibold text-fg">열린 이슈</h3>
         </div>
         <div className="mt-3 space-y-2">
           {openOrAnswered.map((entry) => (
@@ -533,7 +533,7 @@ export function ProductionReviewClarificationCards({
                 {entry.blocking ? <AlertTriangle className="size-3.5 text-bad" /> : <MessagesSquare className="size-3.5 text-fg-3" />}
                 <span
                   className={cn(
-                    "inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-semibold",
+                    "inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-xs font-semibold",
                     entry.blocking ? "border-bad/35 bg-bad/10 text-bad" : "border-line bg-raised text-fg-2",
                   )}
                 >
@@ -541,7 +541,7 @@ export function ProductionReviewClarificationCards({
                 </span>
               </div>
               <p className="mt-2 text-xs font-semibold leading-5 text-fg">{entry.question}</p>
-              <p className="mt-1 text-[0.6875rem] text-fg-3">
+              <p className="mt-1 text-xs text-fg-3">
                 {partyLabelForAssignment(entry.askedByAssignmentId)} → {partyLabelForAssignment(entry.answerOwnerAssignmentId)}
               </p>
             </div>

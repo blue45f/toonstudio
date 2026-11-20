@@ -75,11 +75,11 @@ export function LiveCursorOverlay({
       {/* 관찰 컨트롤 — 함께 보는 사람이 있을 때만, 없을 때는 빈 상태를 말한다 */}
       <div className="pointer-events-auto absolute right-2 top-2 flex max-w-[80%] flex-wrap justify-end gap-1.5">
         {views === null ? (
-          <span className="rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.6875rem] font-semibold text-fg-3" role="status">
+          <span className="rounded-full border border-line bg-card/90 px-2.5 py-1 text-xs font-semibold text-fg-3" role="status">
             {bt("함께 보는 사람을 불러오는 중…", "Loading who is here…")}
           </span>
         ) : remote.length === 0 ? (
-          <span className="rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.6875rem] font-semibold text-fg-3">
+          <span className="rounded-full border border-line bg-card/90 px-2.5 py-1 text-xs font-semibold text-fg-3">
             {bt("지금은 혼자 보고 있어요", "You are the only one here")}
           </span>
         ) : (
@@ -90,7 +90,7 @@ export function LiveCursorOverlay({
               return (
                 <span key={view.actorId} className="inline-flex items-center gap-1.5" data-observe-state="blocked">
                   <span
-                    className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-warn/50 bg-warn/10 px-2.5 py-1 text-[0.6875rem] font-bold text-warn"
+                    className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-warn/50 bg-warn/10 px-2.5 py-1 text-xs font-bold text-warn"
                     role="status"
                   >
                     <EyeOff className="size-3" aria-hidden="true" />
@@ -99,7 +99,7 @@ export function LiveCursorOverlay({
                   <button
                     type="button"
                     onClick={onFollowStop}
-                    className="inline-flex min-h-8 items-center rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.6875rem] font-bold text-fg-2 shadow-sm outline-none transition-colors hover:bg-raised focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
+                    className="inline-flex min-h-8 items-center rounded-full border border-line bg-card/90 px-2.5 py-1 text-xs font-bold text-fg-2 shadow-sm outline-none transition-colors hover:bg-raised focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
                   >
                     {bt("확인", "Dismiss")}
                   </button>
@@ -112,7 +112,7 @@ export function LiveCursorOverlay({
                   <button
                     type="button"
                     onClick={onFollowResume}
-                    className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-accent bg-accent-soft px-2.5 py-1 text-[0.6875rem] font-bold text-accent shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
+                    className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-accent bg-accent-soft px-2.5 py-1 text-xs font-bold text-accent shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
                     title={bt("내가 직접 움직여서 잠시 멈췄어요. 누르면 다시 따라갑니다.", "Paused because you scrolled yourself. Tap to follow again.")}
                   >
                     <Play className="size-3" aria-hidden="true" />
@@ -121,7 +121,7 @@ export function LiveCursorOverlay({
                   <button
                     type="button"
                     onClick={onFollowStop}
-                    className="inline-flex min-h-8 items-center rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.6875rem] font-bold text-fg-2 shadow-sm outline-none transition-colors hover:bg-raised focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
+                    className="inline-flex min-h-8 items-center rounded-full border border-line bg-card/90 px-2.5 py-1 text-xs font-bold text-fg-2 shadow-sm outline-none transition-colors hover:bg-raised focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
                   >
                     {bt("그만두기", "Stop")}
                   </button>
@@ -136,7 +136,7 @@ export function LiveCursorOverlay({
                   data-observe-state="following"
                   aria-pressed={true}
                   onClick={onFollowStop}
-                  className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-accent bg-accent px-2.5 py-1 text-[0.6875rem] font-bold text-on-accent shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
+                  className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-accent bg-accent px-2.5 py-1 text-xs font-bold text-on-accent shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
                   title={bt("따라가기 그만두기. 직접 스크롤하면 일시정지돼요.", "Stop following. Scrolling yourself pauses it.")}
                 >
                   <Pause className="size-3" aria-hidden="true" />
@@ -153,7 +153,7 @@ export function LiveCursorOverlay({
                 disabled={!allowed}
                 onClick={() => onFollowStart(view.actorId)}
                 className={cn(
-                  "inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.6875rem] font-bold shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none",
+                  "inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none",
                   allowed ? "border-line bg-card/90 text-fg hover:bg-raised" : "cursor-not-allowed border-line bg-card/60 text-fg-3",
                 )}
                 title={allowed
@@ -172,7 +172,7 @@ export function LiveCursorOverlay({
             aria-pressed={selfObserveBlocked}
             onClick={onToggleSelfObserveBlocked}
             className={cn(
-              "inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.6875rem] font-bold shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none",
+              "inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none",
               selfObserveBlocked ? "border-warn/60 bg-warn/15 text-warn" : "border-line bg-card/90 text-fg-2 hover:bg-raised hover:text-fg",
             )}
             title={selfObserveBlocked
@@ -184,7 +184,7 @@ export function LiveCursorOverlay({
           </button>
         ) : null}
         {syncState === "offline" ? (
-          <span className="rounded-full border border-warn/40 bg-warn/10 px-2.5 py-1 text-[0.6875rem] font-bold text-warn" role="status">
+          <span className="rounded-full border border-warn/40 bg-warn/10 px-2.5 py-1 text-xs font-bold text-warn" role="status">
             {bt("연결이 끊겨 마지막 위치를 표시 중이에요", "Connection lost — showing last known positions")}
           </span>
         ) : null}
@@ -211,7 +211,7 @@ export function LiveCursorOverlay({
           >
             <MousePointer2 className="size-4 drop-shadow" style={{ color, fill: color }} />
             <span
-              className="ml-3 inline-flex -translate-y-1 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[0.625rem] font-bold text-white shadow-sm"
+              className="ml-3 inline-flex -translate-y-1 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold text-on-accent shadow-sm"
               style={{ backgroundColor: color }}
             >
               {view.displayName}
@@ -228,7 +228,7 @@ export function LiveCursorOverlay({
 
       {/* 다른 페이지를 보는 사람이 있으면 커서 없이 그 사실만 알린다 */}
       {remote.some((view) => view.pageId !== pageId) ? (
-        <p className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.6875rem] font-semibold text-fg-3">
+        <p className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full border border-line bg-card/90 px-2.5 py-1 text-xs font-semibold text-fg-3">
           <Crosshair className="size-3" aria-hidden="true" />
           {bt("다른 페이지를 보고 있는 사람이 있어요", "Someone is viewing another page")}
         </p>

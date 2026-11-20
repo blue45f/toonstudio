@@ -147,7 +147,7 @@ export function StageHandoffCard({
       className="rounded-2xl border border-line bg-card p-4"
     >
       <header>
-        <h3 className="text-sm font-black text-fg">
+        <h3 className="text-sm font-semibold text-fg">
           {bt("앞 단계에서 이어받은 것", "Handed over from earlier stages")}
         </h3>
         <p className="mt-1 text-xs leading-5 text-fg-2">
@@ -162,7 +162,7 @@ export function StageHandoffCard({
         <div aria-busy="true" className="mt-3 space-y-2">
           <span className="sr-only">{bt("불러오는 중", "Loading")}</span>
           {[0, 1, 2].map((row) => (
-            <div key={row} className="animate-pulse border-l-2 border-line pl-3 motion-reduce:animate-none">
+            <div key={row} className="border-l-2 border-line pl-3 motion-reduce:animate-none">
               <div className="h-3 w-24 rounded bg-raised" />
               <div className="mt-2 h-3 w-full max-w-md rounded bg-raised" />
             </div>
@@ -232,12 +232,12 @@ export function StageHandoffCard({
               return (
                 <div key={entry.kind} className="border-l-2 border-accent/50 pl-3">
                   <p className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-black text-fg">
+                    <span className="text-xs font-semibold text-fg">
                       {bt(entry.title.ko, entry.title.en)}
                     </span>
                     <span
                       className={cn(
-                        "rounded-full bg-accent-soft px-2 py-0.5 text-[0.625rem] font-black text-accent",
+                        "rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent",
                       )}
                     >
                       {bt(sourceLabel.ko, sourceLabel.en)}

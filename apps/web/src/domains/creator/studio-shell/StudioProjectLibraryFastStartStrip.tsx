@@ -75,9 +75,9 @@ export function StudioProjectLibraryFastStartStrip({
             href={item.href}
             data-studio-fast-start-item={item.id}
             className={cn(
-              "group flex min-h-11 items-center gap-3 rounded-xl border p-3.5 text-left transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
+              "group flex min-h-11 items-center gap-3 rounded-lg border p-3.5 text-left transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
               item.primary
-                ? "border-accent/45 bg-accent-soft hover:border-accent"
+                ? "border-accent/45 bg-accent-soft shadow-[inset_2px_0_0_var(--color-accent)] hover:border-accent"
                 : "border-line bg-card hover:border-line-strong hover:bg-raised",
             )}
           >

@@ -27,7 +27,7 @@ describe("app/shell/TopBar", () => {
       </MockLabProvider>,
     );
     expect(screen.getByRole("heading", { level: 1, name: "ToonStudio Character Lab" })).toBeTruthy();
-    expect(screen.getByText("실험 앱 · 배포 대상 아님")).toBeTruthy();
+    expect(screen.queryByText("실험 앱 · 배포 대상 아님")).toBeNull();
     expect(screen.getByRole("status").textContent).toContain("엔진 미선택");
     fireEvent.click(screen.getByRole("button", { name: "WebGPU" }));
     expect(session.selected).toEqual([]);
@@ -38,20 +38,21 @@ describe("app/shell/TopBar", () => {
     expect(session.selected).toEqual(["webgl2"]);
   });
 
-  it("작업 도구 버튼으로 같은 패널을 열고 닫고 엔진 선택은 계속 접근한다", () => {
+  it("엔진·품질 설정 드로어를 열고 닫으며 핵심 6개 액션은 상단 바에 고정한다", () => {
     render(<MockLabProvider><TopBar /></MockLabProvider>);
-    const toggle = screen.getByRole("button", { name: "작업 도구" });
+    const toggle = screen.getByRole("button", { name: "엔진·품질 설정" });
     const panel = document.getElementById(toggle.getAttribute("aria-controls") ?? "");
     expect(panel?.dataset.open).toBe("false");
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(panel?.contains(screen.getByRole("combobox", { name: "품질" }))).toBe(true);
+    expect(panel?.contains(screen.getByRole("button", { name: "WebGL2" }))).toBe(true);
     fireEvent.click(toggle);
     expect(panel?.dataset.open).toBe("false");
-    expect(panel?.contains(screen.getByRole("button", { name: "WebGL2" }))).toBe(false);
+    expect(panel?.contains(screen.getByRole("button", { name: "2D 컷 전송" }))).toBe(false);
   });
 
-  it("상태 배지·Undo/Redo·셰이딩·품질 프리셋이 상태를 반영하고 명령을 보낸다", () => {
+  it("상태 배지·Undo/Redo·음영·품질 프리셋이 상태를 반영하고 명령을 보낸다", () => {
     const store = createMockLabStore({ history: { canUndo: true, canRedo: false, depth: 3, revision: 3 } });
     render(
       <MockLabProvider store={store}>
@@ -62,8 +63,11 @@ describe("app/shell/TopBar", () => {
     const redo = screen.getByRole("button", { name: "다시 실행" });
     expect((undo as HTMLButtonElement).disabled).toBe(false);
     expect((redo as HTMLButtonElement).disabled).toBe(true);
+    expect(redo.getAttribute("title")).toContain("이력이 없습니다");
+    expect(screen.getByText("되돌리기 3단계")).toBeTruthy();
+    expect(screen.queryByText(/rev /i)).toBeNull();
     fireEvent.click(undo);
-    fireEvent.click(screen.getByRole("button", { name: "PBR 셰이딩" }));
+    fireEvent.click(screen.getByRole("button", { name: "표준 음영" }));
     fireEvent.change(screen.getByRole("combobox", { name: "품질" }), { target: { value: "hero" } });
     expect(store.dispatched).toEqual([
       { type: "history/undo" },
@@ -112,12 +116,15 @@ describe("app/shell/TopBar", () => {
         <TopBar />
       </MockLabProvider>,
     );
-    expect(screen.getByRole("button", { name: "PBR 스튜디오" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "스튜디오 음영" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("button", { name: "고품질 히어로" }));
     expect(store.dispatched.at(-1)).toEqual({
       type: "shading/set",
       profile: { ...applyQualityPreset(createDefaultRecipe().shading, "hero"), mode: "toon" },
     });
+
+    fireEvent.click(screen.getByTestId("topbar-send-2d-cut"));
+    expect(ui.getState().inspectorTab).toBe("export");
 
     const helpBtn = screen.getByTestId("topbar-help-toggle");
     expect(helpBtn.getAttribute("aria-expanded")).toBe("false");

@@ -72,8 +72,8 @@ export function CompareSourcePoolStrip({
       className={cn("rounded-2xl border bg-panel p-3", dragOver ? "border-accent" : "border-line")}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-black text-fg">{bt("비교 소스", "Compare sources")}</span>
-        <span className="text-[0.6875rem] text-fg-3">
+        <span className="text-xs font-semibold text-fg">{bt("비교 소스", "Compare sources")}</span>
+        <span className="text-xs text-fg-3">
           {bt("이미지를 끌어다 놓거나, 골라서 페인에 배치하세요", "Drop images here, or pick items to place them in panes")}
         </span>
         <span className="ml-auto inline-flex gap-1.5">
@@ -131,7 +131,7 @@ export function CompareSourcePoolStrip({
                   paneIndex >= 0 ? "bg-accent text-on-accent" : "text-fg-2",
                 )}
               >
-                <span className="rounded bg-black/10 px-1 text-[0.625rem]">{bt(badge.ko, badge.en)}</span>
+                <span className="rounded bg-raised px-1.5 text-xs">{bt(badge.ko, badge.en)}</span>
                 {item.label}
                 {paneIndex >= 0 ? <span aria-label={bt(`페인 ${paneIndex + 1}`, `Pane ${paneIndex + 1}`)}>{paneIndex + 1}</span> : null}
               </button>

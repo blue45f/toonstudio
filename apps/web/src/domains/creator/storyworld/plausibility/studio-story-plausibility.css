@@ -1,25 +1,25 @@
 /*
  * 스토리 개연성 점검 허브 — 스타일.
  *
- * 랩 셸(.storyworld-shell)의 색 토큰을 그대로 따른다. 셸이 어두운 테마만 지원하므로 허브도 같다.
+ * 랩 셸(.storyworld-shell)의 OKLCH 시맨틱 토큰을 그대로 따른다.
  * 색만으로 뜻을 전하지 않는다: 심각도·신뢰·처리 상태는 항상 아이콘이나 글자와 함께 보인다.
  */
 .plausibility-hub {
-  --pl-panel: var(--storyworld-panel, #111724);
-  --pl-panel-strong: var(--storyworld-panel-strong, #161d2b);
-  --pl-elevated: var(--storyworld-bg-elevated, #0d111b);
-  --pl-border: var(--storyworld-border, #263044);
-  --pl-border-strong: var(--storyworld-border-strong, #3a4862);
-  --pl-text: var(--storyworld-text, #f4f7fb);
-  --pl-muted: var(--storyworld-text-muted, #9eabc0);
-  --pl-accent: var(--storyworld-accent, #8fb8ff);
-  --pl-accent-strong: var(--storyworld-accent-strong, #b2ccff);
-  --pl-error: var(--storyworld-bad, #ff8d9d);
-  --pl-warn: var(--storyworld-warn, #ffd27a);
-  --pl-info: var(--storyworld-info, #84c9ff);
-  --pl-good: var(--storyworld-good, #73dbb0);
-  --pl-radius: var(--storyworld-radius, 14px);
-  --pl-radius-small: var(--storyworld-radius-small, 9px);
+  --pl-panel: var(--storyworld-panel, var(--color-panel));
+  --pl-panel-strong: var(--storyworld-panel-strong, var(--color-raised));
+  --pl-elevated: var(--storyworld-bg-elevated, var(--color-card));
+  --pl-border: var(--storyworld-border, var(--color-line));
+  --pl-border-strong: var(--storyworld-border-strong, var(--color-line-strong));
+  --pl-text: var(--storyworld-text, var(--color-fg));
+  --pl-muted: var(--storyworld-text-muted, var(--color-fg-2));
+  --pl-accent: var(--storyworld-accent, var(--color-accent));
+  --pl-accent-strong: var(--storyworld-accent-strong, var(--color-accent-2));
+  --pl-error: var(--storyworld-bad, var(--color-bad));
+  --pl-warn: var(--storyworld-warn, var(--color-warn));
+  --pl-info: var(--storyworld-info, var(--color-cool));
+  --pl-good: var(--storyworld-good, var(--color-good));
+  --pl-radius: var(--storyworld-radius, 12px);
+  --pl-radius-small: var(--storyworld-radius-small, 8px);
   display: grid;
   gap: 14px;
   min-width: 0;
@@ -592,7 +592,7 @@
 
 .plausibility-hub mark {
   border-radius: 3px;
-  background: rgb(255 210 122 / 28%);
+  background: color-mix(in oklch, var(--pl-warn) 28%, transparent);
   padding: 0 2px;
   color: inherit;
   text-decoration: underline;

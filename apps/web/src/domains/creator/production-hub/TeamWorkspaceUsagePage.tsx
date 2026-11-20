@@ -72,7 +72,7 @@ function UsageGauge({ gauge }: { gauge: GaugeSpec }) {
 
 /** 사용량 로딩 스켈레톤. 게이지 3줄과 한도 목록이 앉을 자리를 같은 크기로 채운다. */
 function UsagePageSkeleton() {
-  return <div aria-hidden="true" data-testid="workspace-usage-page-skeleton" className="animate-pulse space-y-5 motion-reduce:animate-none">
+  return <div aria-hidden="true" data-testid="workspace-usage-page-skeleton" className="space-y-5 motion-reduce:animate-none">
     <section className="creator-workflow-panel rounded-2xl border border-line bg-card p-5">
       <div className="mb-4 h-7 w-40 rounded bg-raised" />
       <div className="space-y-5">
@@ -151,7 +151,7 @@ function TeamWorkspaceUsageConsole({ userId, workspaceId }: { userId: string | n
     <header className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-line bg-panel p-5 sm:p-6">
       <div>
         <p className="eyebrow text-accent">TEAM · USAGE</p>
-        <h1 className="mt-2 text-2xl font-black">{detail ? bt(`${detail.workspace.name} 사용량`, `${detail.workspace.name} usage`) : bt("워크스페이스 사용량", "Workspace usage")}</h1>
+        <h1 className="mt-2 text-2xl font-semibold">{detail ? bt(`${detail.workspace.name} 사용량`, `${detail.workspace.name} usage`) : bt("워크스페이스 사용량", "Workspace usage")}</h1>
         <p className="mt-2 text-sm text-fg-2">{bt("공통 이용 한도와 지금 쓰는 양을 한 화면에서 확인합니다. 한도를 넘어도 기존 자료는 자동 삭제되지 않습니다.", "Check plan limits and current usage in one place. Exceeding a limit never auto-deletes your existing data.")}</p>
       </div>
       <nav aria-label={bt("사용량 바로가기", "Usage shortcuts")} className="flex flex-wrap gap-3">

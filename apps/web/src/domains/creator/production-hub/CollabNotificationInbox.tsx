@@ -107,16 +107,16 @@ export function CollabNotificationInbox({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="inline-flex items-center gap-1.5 text-sm font-black text-fg">
+        <h3 className="inline-flex items-center gap-1.5 text-sm font-semibold text-fg">
           <Bell size={15} aria-hidden /> 협업 알림
         </h3>
         {summary.unread > 0 ? (
-          <span className="rounded-full bg-accent px-2 py-0.5 text-[0.65rem] font-bold tabular-nums text-on-accent">
+          <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-bold tabular-nums text-on-accent">
             안 읽음 {summary.unread}개
           </span>
         ) : null}
         {summary.urgentUnread > 0 ? (
-          <span className="rounded-full bg-bad/15 px-2 py-0.5 text-[0.65rem] font-bold tabular-nums text-bad">
+          <span className="rounded-full bg-bad/15 px-2 py-0.5 text-xs font-bold tabular-nums text-bad">
             긴급 {summary.urgentUnread}개
           </span>
         ) : null}
@@ -155,7 +155,7 @@ export function CollabNotificationInbox({
             >
               {label}
               {count > 0 ? (
-                <span className={`rounded px-1.5 py-0.5 text-[0.6rem] tabular-nums ${active ? "bg-black/15 text-on-accent" : "bg-raised text-fg-3"}`}>
+                <span className={`rounded px-1.5 py-0.5 text-xs tabular-nums ${active ? "bg-canvas/25 text-on-accent" : "bg-raised text-fg-3"}`}>
                   {count}
                 </span>
               ) : null}
@@ -189,14 +189,14 @@ export function CollabNotificationInbox({
                 />
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-1.5">
-                    <span className="rounded bg-raised px-1.5 py-0.5 text-[0.6rem] font-bold text-fg-2">
+                    <span className="rounded bg-raised px-1.5 py-0.5 text-xs font-bold text-fg-2">
                       {CATEGORY_LABELS[item.category]}
                     </span>
                     {item.urgent && !item.closed ? (
-                      <span className="rounded bg-bad/15 px-1.5 py-0.5 text-[0.6rem] font-bold text-bad">긴급</span>
+                      <span className="rounded bg-bad/15 px-1.5 py-0.5 text-xs font-bold text-bad">긴급</span>
                     ) : null}
                     {item.closed ? (
-                      <span className="rounded bg-raised px-1.5 py-0.5 text-[0.6rem] font-bold text-fg-3">조치 완료</span>
+                      <span className="rounded bg-raised px-1.5 py-0.5 text-xs font-bold text-fg-3">조치 완료</span>
                     ) : null}
                     <span className="text-xs font-semibold text-fg">{item.title}</span>
                   </span>
@@ -204,7 +204,7 @@ export function CollabNotificationInbox({
                     <span className="mt-0.5 block truncate text-xs text-fg-3">{item.detail}</span>
                   ) : null}
                 </span>
-                <span className="inline-flex shrink-0 items-center gap-1 text-[0.65rem] tabular-nums text-fg-3">
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs tabular-nums text-fg-3">
                   {relativeTime(item.createdAt, referenceNow)}
                   <ExternalLink size={11} aria-hidden />
                 </span>

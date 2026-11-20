@@ -187,7 +187,7 @@ export function ProductionSpotlightTour({
 
   return (
     <div
-      className="fixed inset-0 z-[80] grid place-items-center bg-black/55 p-4"
+      className="fixed inset-0 z-[80] grid place-items-center bg-canvas/75 p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="production-tour-title"
@@ -258,7 +258,7 @@ export function PresenceAvatarStack({
             title={`${member.name} · ${member.roleLabel}${member.active ? " · 지금 보고 있음" : ""}`}
             aria-label={`${member.name} (${member.roleLabel})${member.active ? ", 지금 보고 있음" : ""}`}
             className={cn(
-              "grid size-8 place-items-center rounded-full border-2 border-card text-[0.6875rem] font-bold",
+              "grid size-8 place-items-center rounded-full border-2 border-card text-xs font-bold",
               presenceAvatarTone(member.id),
               member.active && "border-accent ring-2 ring-accent/40",
             )}
@@ -268,7 +268,7 @@ export function PresenceAvatarStack({
         ))}
         {overflowCount > 0 ? (
           <span
-            className="grid size-8 place-items-center rounded-full border-2 border-card bg-raised text-[0.6875rem] font-bold text-fg-2"
+            className="grid size-8 place-items-center rounded-full border-2 border-card bg-raised text-xs font-bold text-fg-2"
             aria-label={`그 외 ${overflowCount}명`}
           >
             +{overflowCount}

@@ -153,9 +153,9 @@ function VersionThumbnail({ snapshot }: { readonly snapshot: ProductionManuscrip
       name={snapshot.name}
       className="absolute inset-0 h-full w-full"
     />
-    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2.5 pb-2 pt-6">
-      <p className="truncate text-xs font-black text-white">{snapshot.name}</p>
-      <p className="truncate text-[0.625rem] font-bold text-white/75">
+    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-canvas/85 to-transparent px-2.5 pb-2 pt-6">
+      <p className="truncate text-xs font-semibold text-fg">{snapshot.name}</p>
+      <p className="truncate text-xs font-medium text-fg-2">
         {productionManuscriptRevisionLabel(snapshot.revisionKind)}
       </p>
     </div>
@@ -175,7 +175,7 @@ interface ShareSettingsPanelProps {
 
 function ShareSettingsPanel({ bt, headingId, settings, onPatch }: ShareSettingsPanelProps) {
   return <div id="ocvs-settings-panel" className="border-t border-line p-5 sm:p-7" aria-labelledby={headingId}>
-    <h3 id={headingId} className="text-sm font-black text-fg">{bt("링크 공유 설정", "Link share settings")}</h3>
+    <h3 id={headingId} className="text-sm font-semibold text-fg">{bt("링크 공유 설정", "Link share settings")}</h3>
     <fieldset className="mt-4">
       <legend className="text-xs font-bold text-fg-2">{bt("공유받는 사람 권한", "Recipient permission")}</legend>
       <div className="mt-2 grid gap-2 sm:grid-cols-3">
@@ -191,7 +191,7 @@ function ShareSettingsPanel({ bt, headingId, settings, onPatch }: ShareSettingsP
               : "border-line bg-panel hover:bg-raised",
           )}
         >
-          <span className="flex items-center gap-1.5 text-sm font-black text-fg">
+          <span className="flex items-center gap-1.5 text-sm font-semibold text-fg">
             <Icon className="size-4" aria-hidden="true" /> {permissionLabel(bt, id)}
           </span>
           <span className="mt-1 block text-xs leading-5 text-fg-2">{permissionDescription(bt, id)}</span>
@@ -261,13 +261,13 @@ function ShareLinkRevealCard({
 }: ShareLinkRevealCardProps) {
   return <div className="border-t border-line p-5 sm:p-7">
     <div className="ocvs-link-reveal rounded-2xl border border-accent/35 bg-accent-soft/20 p-4 sm:p-5" role="status">
-      <p className="flex items-center gap-2 text-sm font-black text-fg">
+      <p className="flex items-center gap-2 text-sm font-semibold text-fg">
         <Check className="size-4 text-good" aria-hidden="true" />
         {bt(
           `${snapshot.name} 버전이 공유됐어요!`,
           `${snapshot.name} is now shared!`,
         )}
-        <span className="ocvs-new-badge rounded-full bg-accent px-2 py-0.5 text-[0.625rem] font-black text-on-accent">{bt("NEW", "NEW")}</span>
+        <span className="ocvs-new-badge rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-on-accent">{bt("NEW", "NEW")}</span>
       </p>
       <div className="mt-3 flex flex-col gap-3 lg:flex-row">
         <div className="min-w-0 flex-1">
@@ -317,7 +317,7 @@ function ShareLinkRevealCard({
             alt={bt("공유 링크 QR 코드", "Share link QR code")}
             width={120}
             height={120}
-            className="ocvs-qr-reveal rounded-xl border border-line bg-white p-1.5"
+            className="ocvs-qr-reveal rounded-xl border border-line bg-[oklch(0.99_0_0)] p-1.5"
           /> : <div className="flex size-[120px] items-center justify-center rounded-xl border border-dashed border-line text-fg-3" aria-hidden="true">
             <QrCode className="size-8" />
           </div>}
@@ -386,11 +386,11 @@ function VersionTimelineItem({
     </div>
     <div className="min-w-0 flex-1">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-black text-fg">{snapshot.name}</span>
-        {isLatest ? <span className="rounded-full bg-accent px-2 py-0.5 text-[0.625rem] font-black text-on-accent">
+        <span className="text-sm font-semibold text-fg">{snapshot.name}</span>
+        {isLatest ? <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-on-accent">
           {bt("최신", "Latest")}
         </span> : null}
-        {sharedCount > 0 ? <span className="inline-flex items-center gap-1 rounded-full bg-good/15 px-2 py-0.5 text-[0.625rem] font-bold text-good">
+        {sharedCount > 0 ? <span className="inline-flex items-center gap-1 rounded-full bg-good/15 px-2 py-0.5 text-xs font-bold text-good">
           <Link2 className="size-3" aria-hidden="true" />
           {bt(`공유 중 ${sharedCount}`, `${sharedCount} shared`)}
         </span> : null}
@@ -434,7 +434,7 @@ function CopiedToast({ bt, leaving }: { readonly bt: BilingualText; readonly lea
     data-leaving={leaving}
     className="ocvs-toast fixed bottom-6 left-1/2 z-50 -translate-x-1/2"
   >
-    <p className="flex items-center gap-2 rounded-2xl bg-fg px-5 py-3 text-sm font-black text-card shadow-xl">
+    <p className="flex items-center gap-2 rounded-2xl bg-fg px-5 py-3 text-sm font-semibold text-card shadow-xl">
       <Check className="size-4 text-good" aria-hidden="true" />
       {bt("복사됨! 링크를 전달해 보세요", "Copied! Share the link")}
     </p>
@@ -650,8 +650,8 @@ export function OneClickVersionShare({
     {/* 히어로: 원클릭 버튼 */}
     <div className="relative overflow-hidden bg-gradient-to-br from-accent-soft/40 via-card to-card p-5 sm:p-7">
       <Confetti pieces={confettiPieces} />
-      <p className="text-[0.6875rem] font-black uppercase tracking-[0.14em] text-accent">ONE-CLICK SHARE</p>
-      <h2 id={headingId} className="mt-2 text-xl font-black text-fg sm:text-2xl">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">ONE-CLICK SHARE</p>
+      <h2 id={headingId} className="mt-2 text-xl font-semibold text-fg sm:text-2xl">
         {bt("클릭 한 번으로 버전 만들고 공유하기", "Version & share in one click")}
       </h2>
       <p className="mt-1 max-w-2xl text-sm leading-6 text-fg-2">
@@ -669,7 +669,7 @@ export function OneClickVersionShare({
           title={headMissing
             ? bt("작업본이 없어 버전을 만들 수 없습니다", "No working copy to version")
             : bt("현재 작업본으로 새 버전을 만들고 공유 링크를 발급합니다", "Create a new version and issue a share link")}
-          className="ocvs-hero-button inline-flex min-h-14 items-center justify-center gap-2.5 rounded-2xl bg-accent px-7 text-base font-black text-on-accent shadow-lg shadow-accent/25 transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+          className="ocvs-hero-button inline-flex min-h-14 items-center justify-center gap-2.5 rounded-xl bg-accent px-7 text-base font-semibold text-on-accent transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy
             ? <LoaderCircle className="size-5 animate-spin" aria-hidden="true" />
@@ -738,10 +738,10 @@ export function OneClickVersionShare({
 
     {/* 버전 타임라인 */}
     <div className="border-t border-line p-5 sm:p-7" aria-labelledby={timelineHeadingId}>
-      <h3 id={timelineHeadingId} className="flex items-center gap-2 text-sm font-black text-fg">
+      <h3 id={timelineHeadingId} className="flex items-center gap-2 text-sm font-semibold text-fg">
         <History className="size-4 text-accent" aria-hidden="true" />
         {bt("버전 히스토리", "Version history")}
-        <span className="rounded-full bg-panel px-2 py-0.5 text-[0.625rem] font-black text-fg-2">
+        <span className="rounded-full bg-panel px-2 py-0.5 text-xs font-semibold text-fg-2">
           {snapshots.length}
         </span>
       </h3>
@@ -760,7 +760,7 @@ export function OneClickVersionShare({
         />)}
       </ol> : <div className="mt-4 rounded-2xl border border-dashed border-line p-8 text-center">
         <EmptyVersionsArt className="mx-auto h-32 w-auto" />
-        <p className="mt-2 font-black text-fg">{bt("아직 버전이 없습니다", "No versions yet")}</p>
+        <p className="mt-2 font-semibold text-fg">{bt("아직 버전이 없습니다", "No versions yet")}</p>
         <p className="mt-1 text-sm text-fg-2">
           {bt(
             "아래 버튼을 누르면 첫 버전이 만들어지고 공유 링크가 바로 발급됩니다.",
@@ -788,7 +788,7 @@ export function OneClickVersionShare({
         "더 세밀한 검수 설정(제출본 선택·다운로드 허용 등)이 필요하면 외부 검수 마법사로 이어집니다. 원클릭 공유는 빠른 경로입니다.",
         "For finer review settings (submission choice, download permission), continue to the external review wizard. One-click share is the fast path.",
       )}
-      <span className="ml-1 font-mono text-[0.625rem]">
+      <span className="ml-1 font-mono text-xs">
         {bt("권한 매핑", "Permission mapping")}: {bt("보기", "View")}→viewer · {bt("댓글", "Comment")}→commenter · {bt("편집", "Edit")}→approver
       </span>
     </p>

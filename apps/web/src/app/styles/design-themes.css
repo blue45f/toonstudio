@@ -52,19 +52,20 @@
 :root[data-design-theme="starlight"],
 [data-appearance-preview="starlight"] {
   color-scheme: dark;
-  --ui-palette-canvas: #070a14;
-  --ui-palette-panel: #0b101d;
-  --ui-palette-card: #101726;
-  --ui-palette-raised: #192235;
-  --ui-palette-line: #303b54;
-  --ui-palette-line-strong: #667796;
-  --ui-palette-fg: #f1f4ff;
-  --ui-palette-fg-2: #c5cede;
-  --ui-palette-fg-3: #a5b3c9;
-  --ui-palette-accent: #b39bff;
-  --ui-palette-accent-2: #6edaff;
-  --ui-palette-accent-soft: rgb(151 121 255 / 16%);
-  --ui-palette-on-accent: #121226;
+  /* Starlight 정본 OKLCH 팔레트 — 기존 짙은 남색·라벤더·시안 지각 색감을 유지하고 원시 hex를 제거한다. */
+  --ui-palette-canvas: oklch(0.147 0.022 269.5);
+  --ui-palette-panel: oklch(0.175 0.028 267.4);
+  --ui-palette-card: oklch(0.206 0.032 264.6);
+  --ui-palette-raised: oklch(0.253 0.038 264.4);
+  --ui-palette-line: oklch(0.354 0.046 265.8);
+  --ui-palette-line-strong: oklch(0.567 0.052 262.3);
+  --ui-palette-fg: oklch(0.968 0.015 273.9);
+  --ui-palette-fg-2: oklch(0.849 0.024 262.1);
+  --ui-palette-fg-3: oklch(0.763 0.035 259.4);
+  --ui-palette-accent: oklch(0.750 0.142 293.7);
+  --ui-palette-accent-2: oklch(0.838 0.112 223.1);
+  --ui-palette-accent-soft: oklch(0.667 0.191 290.6 / 0.16);
+  --ui-palette-on-accent: oklch(0.194 0.040 282.0);
   --color-cool: oklch(0.8 0.12 225);
   --color-good: oklch(0.8 0.14 155);
   --color-warn: oklch(0.84 0.14 80);
