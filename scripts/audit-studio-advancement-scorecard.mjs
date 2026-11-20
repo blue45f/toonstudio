@@ -29,7 +29,7 @@ function auditDomainDir(repoRoot, relativeDir) {
 
 /**
  * 툰스튜디오 핵심 4대 도메인(assistant, bg3d, brush, export)의 테스트 비율과
- * 어시스턴트 고도화 모듈(14종) 및 크로스-도메인 브리지·UI·CLI(40종)의 연결 무결성을 정량 스코어카드로 집계한다.
+ * 어시스턴트 고도화 모듈(14종) 및 크로스-도메인 브리지·UI·CLI(42종)의 연결 무결성을 정량 스코어카드로 집계한다.
  */
 export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
   const assistantDir = path.join(repoRoot, "apps/web/src/domains/creator/assistant");
@@ -88,6 +88,7 @@ export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
     "apps/web/src/shared/lib/reader-trust-seal.ts",
     "apps/web/src/shared/lib/reader-trust-seal-revocation.ts",
     "apps/web/src/shared/lib/reader-trust-seal-reissuance.ts",
+    "apps/web/src/shared/lib/reader-trust-seal-batch-reissuance.ts",
     "apps/web/src/shared/components/ReaderTrustSealBadge.tsx",
     "apps/web/src/domains/creator/bg3d/studio-bg3d-workflow-pack-adapter.ts",
     "apps/web/src/domains/creator/brush/studio-brush-workflow-pack-adapter.ts",
@@ -99,6 +100,7 @@ export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
     "scripts/verify-reader-trust-seal-cli.mjs",
     "scripts/verify-seal-revocation-and-derivative-cli.mjs",
     "scripts/verify-seal-reissuance-cli.mjs",
+    "scripts/verify-portfolio-batch-reissuance-cli.mjs",
     "scripts/run-commercial-governance-cli-suite.mjs",
   ];
   const presentCrossDomainBridges = requiredCrossDomainBridges.filter((relPath) =>

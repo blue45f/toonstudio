@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { evaluateSlateDdFromJson } from "./evaluate-ip-slate-dd-cli.mjs";
 import { simulateEpisodeSettlementFromPackJson } from "./simulate-episode-settlement-cli.mjs";
 import { verifyLocalizationManifestJson } from "./verify-localization-rights-cli.mjs";
+import { verifyPortfolioBatchReissuanceJson } from "./verify-portfolio-batch-reissuance-cli.mjs";
 import { verifyReaderTrustSealJson } from "./verify-reader-trust-seal-cli.mjs";
 import { verifyRightsBomReceiptJson } from "./verify-rights-bom-receipt-cli.mjs";
 import { verifySealReissuanceRecordJson } from "./verify-seal-reissuance-cli.mjs";
@@ -210,9 +211,39 @@ export function runCommercialGovernanceCliSuite() {
       reissuedAtIso: reissuanceBase.reissuedAtIso,
     }),
   );
+  const fullReissuanceRecord = { ...reissuanceBase, reissuanceChainHash };
   const c8 = verifySealReissuanceRecordJson(
-    JSON.stringify({ ...reissuanceBase, reissuanceChainHash }),
+    JSON.stringify(fullReissuanceRecord),
     signedSeal.sealDigestHash,
+  );
+
+  const batchRecords = [{ episodeKey: "suite-ep-01", record: fullReissuanceRecord }];
+  const batchBase = {
+    batchSchemaVersion: 1,
+    totalCount: 2,
+    unchangedActiveCount: 1,
+    reissuedCount: 1,
+    unresolvedCount: 0,
+    reissuedRecords: batchRecords,
+    unresolvedRecords: [],
+    executedAtIso: "2026-11-21T11:45:00.000Z",
+  };
+  const batchReissuanceDigestHash = fnv1aHex(
+    JSON.stringify({
+      batchSchemaVersion: batchBase.batchSchemaVersion,
+      totalCount: batchBase.totalCount,
+      unchangedActiveCount: batchBase.unchangedActiveCount,
+      reissuedCount: batchBase.reissuedCount,
+      unresolvedCount: batchBase.unresolvedCount,
+      reissuedChainHashes: batchRecords.map((r) => ({
+        episodeKey: r.episodeKey,
+        reissuanceChainHash: r.record.reissuanceChainHash,
+      })),
+      executedAtIso: batchBase.executedAtIso,
+    }),
+  );
+  const c9 = verifyPortfolioBatchReissuanceJson(
+    JSON.stringify({ ...batchBase, batchReissuanceDigestHash }),
   );
 
   const checks = [
@@ -224,6 +255,7 @@ export function runCommercialGovernanceCliSuite() {
     { name: "verify-reader-trust-seal-cli", ok: c6.ok },
     { name: "verify-seal-revocation-and-derivative-cli", ok: c7.ok },
     { name: "verify-seal-reissuance-cli", ok: c8.ok },
+    { name: "verify-portfolio-batch-reissuance-cli", ok: c9.ok },
   ];
 
   const passedCount = checks.filter((c) => c.ok).length;
@@ -243,7 +275,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log(JSON.stringify(res, null, 2));
   } else {
     console.log(
-      `ToonStudio Commercial Governance 8-CLI Suite: ${res.passedCount}/${res.totalCount} PASS (${res.receiptHash})`,
+      `ToonStudio Commercial Governance 9-CLI Suite: ${res.passedCount}/${res.totalCount} PASS (${res.receiptHash})`,
     );
   }
   if (!res.ok) {
