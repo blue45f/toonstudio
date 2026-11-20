@@ -1,8 +1,8 @@
 name: Main full QA · isolated diagnostics
 
-# `core` and domain workflows own immediate PR/main verification. This broad matrix
-# runs nightly and on demand, never on every main push. Preserve all diagnostic commands
-# without making each merge enqueue 22 additional jobs.
+# 필수 core와 도메인 워크플로가 PR/main을 즉시 검증한다.
+# 이 진단은 야간·수동으로만 수행하여 병합마다 18개 작업이 추가되지 않는다.
+# 기존 모든 진단 명령은 유지한다.
 on:
   # 02:37 Asia/Seoul; PR/core owns immediate verification.
   schedule:
@@ -59,20 +59,9 @@ jobs:
         run: ${{ matrix.command }}
 
   regression-tests:
-    name: Regression · ${{ matrix.test }}
+    name: Regression · 개별 회귀 계약
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      max-parallel: 2
-      matrix:
-        test:
-          - apps/web/src/domains/creator/ai/StudioStrokeProposalReviewPanel.test.tsx
-          - apps/web/src/domains/creator/ai/studio-3d-generation-client.test.ts
-          - apps/web/src/domains/creator/filter/studio-adjustment-effect-graph.test.ts
-          - apps/web/src/domains/creator/layer/studio-layer-effects-graph-adapter.test.ts
-          - tests/integration/web-api/domains/creator/studio-large-epics-product-wiring.test.ts
-          - apps/web/src/domains/creator/studio-cuttoon-editor/studio-soft-proofing.test.ts
     steps:
       - uses: actions/checkout@v7
         with:
@@ -83,8 +72,25 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Run one repaired contract test
-        run: pnpm exec vitest run "${{ matrix.test }}"
+      # 설치는 공유하고 각 회귀는 별도 프로세스로 실행한다. 앞선 실패도 숨기지 않는다.
+      - name: 스트로크 제안 검토 회귀
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run apps/web/src/domains/creator/ai/StudioStrokeProposalReviewPanel.test.tsx
+      - name: 3D 생성 클라이언트 회귀
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run apps/web/src/domains/creator/ai/studio-3d-generation-client.test.ts
+      - name: 조정 효과 그래프 회귀
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run apps/web/src/domains/creator/filter/studio-adjustment-effect-graph.test.ts
+      - name: 레이어 효과 그래프 어댑터 회귀
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run apps/web/src/domains/creator/layer/studio-layer-effects-graph-adapter.test.ts
+      - name: 대규모 제작 기능 연결 회귀
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run tests/integration/web-api/domains/creator/studio-large-epics-product-wiring.test.ts
+      - name: 소프트 프루핑 회귀
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run apps/web/src/domains/creator/studio-cuttoon-editor/studio-soft-proofing.test.ts
 
   studio-core-tests:
     name: Studio tests · ${{ matrix.gate }}

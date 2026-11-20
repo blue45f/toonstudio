@@ -89,6 +89,32 @@ test("Core 타입·coverage는 표준 runner에서 실패를 숨기지 않고 65
   assert.match(typecheck, /^ {4}timeout-minutes: 65$/mu);
 });
 
+test("KAN-34 판정·종료 회귀를 설치 전 필수 Core 작업에 연결한다", () => {
+  const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const start = ci.indexOf("\n  typecheck:"), end = ci.indexOf("\n  static:", start);
+  assert(start >= 0 && end > start, "실제 typecheck job 범위를 읽어야 합니다.");
+  const typecheck = ci.slice(start, end);
+  const step = typecheck.match(/^ {6}- name: Verify QA classification and failure exit codes before installing dependencies\n((?: {8}[^\n]*\n)+)/mu);
+  assert(step, "설치 전 필수 Node 검증 단계가 있어야 합니다.");
+  const command = step[1].match(/^ {8}run: (node --test [^\n]+)$/mu)?.[1];
+  assert(command, "실제 node --test 명령에서 QA 회귀를 실행해야 합니다.");
+  assert.doesNotMatch(step[1], /^ {8}(?:if|continue-on-error):/mu, "QA 필수 회귀를 조건부 실행이나 실패 허용으로 바꿀 수 없습니다.");
+  assert.doesNotMatch(command, /[|;&#]/u, "필수 Node 테스트의 종료 코드를 shell 명령으로 덮을 수 없습니다.");
+  const args = command.split(/\s+/u);
+  for (const target of [
+    "scripts/qa-studio-cross-browser-soak.test.mjs",
+    "scripts/lib/qa-page-state.test.mjs",
+  ]) {
+    assert.equal(args.filter((arg) => arg === target).length, 1, `설치 전 필수 QA 회귀 누락·중복: ${target}`);
+  }
+  const install = typecheck.indexOf("run: pnpm install --frozen-lockfile");
+  assert(install > step.index, "QA 판정·종료 회귀는 의존성 설치 전에 실행해야 합니다.");
+  const coreStart = ci.indexOf("\n  core:"), verifyStart = ci.indexOf("\n  verify:", coreStart);
+  assert(coreStart >= 0 && verifyStart > coreStart, "실제 필수 집계 job이 있어야 합니다.");
+  assert.match(ci.slice(coreStart, verifyStart), /^ {4}needs: \[[^\]\n]*\btypecheck\b[^\]\n]*\]$/mu);
+  assert.match(ci.slice(verifyStart), /^ {4}needs: core$/mu);
+});
+
 
 test("브러시 디스크·화면 ROI·실제 갈필 경계 회귀를 필수 Core 소유자에서 한 번 실행한다", () => {
   const execution = executionTargetsByShard();

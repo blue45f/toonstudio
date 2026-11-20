@@ -321,6 +321,19 @@ function installWebcamBrowserStubs(getUserMedia: ReturnType<typeof vi.fn>): void
   vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
 }
 
+function installHandWebcamStubs(getUserMedia: ReturnType<typeof vi.fn>): void {
+  installWebcamBrowserStubs(getUserMedia);
+  webcamRuntimeMocks.init.mockResolvedValue({ detectForVideo: vi.fn(() => ({ landmarks: [] })), close: vi.fn() });
+  handRuntimeMocks.init.mockResolvedValue({ detectForVideo: vi.fn(() => ({ landmarks: [] })), close: vi.fn() });
+}
+
+function openPoseHandWebcamButton(): HTMLElement {
+  const details = screen.getByText("손 포즈 프리셋").closest("details");
+  if (!details) throw new Error("손 포즈 프리셋 영역이 없습니다.");
+  details.open = true;
+  return screen.getByRole("button", { name: "웹캠 손 인식 시작" });
+}
+
 /** 카메라 탭을 열고 웹캠(신체 추적)을 시작한 뒤, 손 토글 테스트의 전제 조건을 만든다. */
 async function openCameraTabAndStartWebcam(): Promise<void> {
   const stream = {
@@ -439,6 +452,93 @@ describe("StudioMannequinPoserPanel", () => {
     expect(applied?.joints.rightHand).toBeDefined();
     expect(applied?.joints.leftHand?.[1]).toBeLessThan(0);
     expect(applied?.joints.rightHand?.[1]).toBeLessThan(0);
+  });
+
+  it("포즈 손 웹캠은 첫 클릭에서 카메라 재생 후 손 추적을 시작하고 다시 누르면 손만 중지한다", async () => {
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    installHandWebcamStubs(getUserMedia);
+    const playback = Promise.withResolvers<void>();
+    vi.mocked(HTMLMediaElement.prototype.play).mockReturnValueOnce(playback.promise);
+    renderPanel();
+
+    fireEvent.click(openPoseHandWebcamButton());
+    await waitFor(() => expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce());
+    expect(handRuntimeMocks.init).not.toHaveBeenCalled();
+    await act(async () => { playback.resolve(); });
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "손 인식 중지" })).toBeTruthy());
+    expect(webcamRuntimeMocks.init).toHaveBeenCalledOnce();
+    expect(getUserMedia).toHaveBeenCalledOnce();
+    expect(handRuntimeMocks.init).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "손 인식 중지" }));
+    expect(screen.getByRole("button", { name: "웹캠 손 인식 시작" })).toBeTruthy();
+    expect(handRuntimeMocks.dispose).toHaveBeenCalledOnce();
+    expect(webcamRuntimeMocks.dispose).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
+    expect(screen.getByRole("button", { name: "실시간 동작 인식 중지" })).toBeTruthy();
+  });
+
+  it("포즈 손 웹캠의 카메라 권한 거부는 손 엔진을 시작하지 않는다", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const getUserMedia = vi.fn().mockRejectedValue(Object.assign(new Error("Permission denied"), { name: "NotAllowedError" }));
+    installHandWebcamStubs(getUserMedia);
+    renderPanel();
+
+    fireEvent.click(openPoseHandWebcamButton());
+    await waitFor(() => expect(webcamRuntimeMocks.dispose).toHaveBeenCalledOnce());
+    expect(getUserMedia).toHaveBeenCalledOnce();
+    expect(handRuntimeMocks.init).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "손 인식 중지" })).toBeNull();
+    expect(screen.getByRole("button", { name: "웹캠 손 인식 시작" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
+    expect(screen.getByRole("alert").textContent).toContain("카메라 권한이 차단");
+  });
+
+  it.each(["취소", "언마운트"] as const)("포즈 손 웹캠의 권한 대기 중 %s는 늦은 스트림을 닫고 손 엔진을 시작하지 않는다", async (ending) => {
+    const stopTrack = vi.fn();
+    const stream = { getTracks: () => [{ stop: stopTrack }] } as unknown as MediaStream;
+    const camera = Promise.withResolvers<MediaStream>();
+    const getUserMedia = vi.fn(() => camera.promise);
+    installHandWebcamStubs(getUserMedia);
+    const { unmount } = renderPanel();
+    const start = openPoseHandWebcamButton();
+
+    fireEvent.click(start);
+    await waitFor(() => expect(getUserMedia).toHaveBeenCalledOnce());
+    if (ending === "취소") fireEvent.click(start);
+    else unmount();
+    await act(async () => { camera.resolve(stream); });
+
+    expect(stopTrack).toHaveBeenCalledOnce();
+    expect(handRuntimeMocks.init).not.toHaveBeenCalled();
+    expect(webcamRuntimeMocks.dispose).toHaveBeenCalledOnce();
+    if (ending === "취소") expect(screen.getByRole("button", { name: "웹캠 손 인식 시작" })).toBeTruthy();
+  });
+
+  it("포즈 손 웹캠의 취소된 재생 실패가 재시작한 세션의 손 추적을 끄지 않는다", async () => {
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    installHandWebcamStubs(getUserMedia);
+    const abandonedPlayback = Promise.withResolvers<void>();
+    vi.mocked(HTMLMediaElement.prototype.play).mockReturnValueOnce(abandonedPlayback.promise);
+    renderPanel();
+    const start = openPoseHandWebcamButton();
+
+    fireEvent.click(start);
+    await waitFor(() => expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce());
+    fireEvent.click(start);
+    fireEvent.click(start);
+    await waitFor(() => expect(screen.getByRole("button", { name: "손 인식 중지" })).toBeTruthy());
+    expect(handRuntimeMocks.init).toHaveBeenCalledOnce();
+    expect(handRuntimeMocks.dispose).toHaveBeenCalledOnce();
+
+    await act(async () => { abandonedPlayback.reject(new Error("cancelled playback")); });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("button", { name: "손 인식 중지" })).toBeTruthy();
+    expect(handRuntimeMocks.init).toHaveBeenCalledOnce();
+    expect(handRuntimeMocks.dispose).toHaveBeenCalledOnce();
   });
 
   it("손 트래킹 토글은 준비 중 표시를 거쳐 켜지고 다시 누르면 손 엔진만 해제한다", async () => {

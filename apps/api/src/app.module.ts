@@ -7,6 +7,7 @@ import { DatabaseLifecycleModule } from "./runtime/database-lifecycle.module";
 import { ApiHttpInfrastructureModule } from "./runtime/api-http-infrastructure.module";
 import { AdminModule } from "./modules/admin/admin.module";
 import { AdminNestjsQualityModule } from "./modules/admin-nestjs-quality/admin-nestjs-quality.module";
+import { AdminProductionChangesModule } from "./modules/admin-production-changes/admin-production-changes.module";
 import { AdminWorkspaceModule } from "./modules/admin-workspace/admin-workspace.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BusinessInquiryModule } from "./modules/business-inquiry/business-inquiry.module";
@@ -75,6 +76,7 @@ const studioRealtimeTicketModule =
     AdminModule,
     AdminNestjsQualityModule,
     AdminWorkspaceModule,
+    AdminProductionChangesModule,
     OperationPolicyModule,
     TrafficAnalyticsModule,
     CreatorAnalyticsModule,

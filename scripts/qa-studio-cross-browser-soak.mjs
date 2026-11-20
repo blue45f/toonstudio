@@ -533,3 +533,9 @@ await writeFile(path.join(REPORT_DIR, "report.md"), [
 ].join("\n"));
 
 console.log(JSON.stringify(summary, null, 2));
+
+// 증거 파일과 표준 출력을 보존한 뒤 실제 실패를 호출한 CI에 전달한다.
+if (summary.failedCases > 0) {
+  console.error(`QA 실패 ${summary.failedCases}건: ${path.join(REPORT_DIR, "report.md")}를 확인하고 수정 후 다시 실행하세요.`);
+  process.exitCode = 1;
+}

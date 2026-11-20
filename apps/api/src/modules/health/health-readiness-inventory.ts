@@ -11,6 +11,7 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "admin_cloud_workboard", "admin_cloud_workboard_audit", "admin_cloud_workboard_receipt",
   "admin_content_reports",
   "admin_member_test_accounts", "admin_nestjs_quality_board", "admin_nestjs_quality_history",
+  "admin_production_change_audit", "admin_production_change_capture", "admin_production_change_request",
   "admin_promos",
   "admin_security_policies",
   "admin_workspace",

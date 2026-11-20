@@ -91,7 +91,7 @@ import { StudioProjectCenterSurface } from "./StudioProjectCenterSurface";
 import { StudioProjectReviewActions } from "./StudioProjectReviewActions";
 import { preloadStudioAssetToolPopoverBody } from "./studio-tool-belt-lazy-ui";
 import { StudioToolHintTarget } from "./StudioToolHint";
-import { StudioWorkspaceMenuGate } from "./StudioWorkspaceMenuGate";
+import { StudioWorkspaceContextControls } from "./studio-workspaces/StudioWorkspaceContextControls";
 import { STUDIO_MENUBAR_STATUS_SLOT_REFS } from "./studio-shell/studio-menubar-status-slot";
 import type { StudioAiProvenanceDocument } from "./ai/studio-ai-provenance";
 import type { ExportFormat } from "./export/studio-export";
@@ -1928,7 +1928,15 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
         hidden={mobileImmersive && !drawingToolsOnly}
       />
   );
-  if (drawingToolsOnly) return <>{projectCenter}{commandBar}</>;
+  const workspaceControls = <StudioWorkspaceContextControls
+    currentOwnerScope={currentWorkspaceOwnerScope} menuEpoch={workspaceMenuEpoch} syncNotice={workspaceSyncNotice}
+    creatorRole={activeRole} state={workspaceState} liveLayout={liveWorkspaceLayout}
+    resolveDeviceKind={resolveWorkspaceDeviceKind} persistence={workspacePersistence}
+    onStateChange={persistStudioWorkspaceState} onApplyLayout={applyStudioWorkspaceLayout}
+  />;
+  if (drawingToolsOnly) return <>{projectCenter}{commandBar}
+    <div className="flex flex-wrap items-center gap-2 px-2.5 pb-2">{workspaceControls}</div>
+  </>;
 
   return (
     <div
@@ -1985,30 +1993,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
               링크됨
             </span>
           ) : null}
-          {workspacePersistence.ownerScope === currentWorkspaceOwnerScope ? (
-            <StudioWorkspaceMenuGate
-              key={`${currentWorkspaceOwnerScope}:${workspaceMenuEpoch}`} creatorRole={activeRole}
-              state={workspaceState}
-              liveLayout={liveWorkspaceLayout}
-              resolveDeviceKind={resolveWorkspaceDeviceKind}
-              persistence={workspacePersistence}
-              onStateChange={persistStudioWorkspaceState}
-              onApplyLayout={applyStudioWorkspaceLayout}
-            />
-          ) : (
-            <span role="status" className="inline-flex min-h-8 items-center text-[0.65rem] text-fg-3">
-              전환 중…
-            </span>
-          )}
-          {workspaceSyncNotice && workspacePersistence.ownerScope === currentWorkspaceOwnerScope ? (
-            <span
-              role="status"
-              title={workspaceSyncNotice}
-              className="max-w-40 truncate text-[0.62rem] font-medium text-cool"
-            >
-              {workspaceSyncNotice}
-            </span>
-          ) : null}
+          {workspaceControls}
           </div>
           <span aria-hidden className="mx-0.5 hidden h-4 w-px shrink-0 bg-line md:block" />
           {/* Desktop application commands live in the compressible center lane. */}
