@@ -210,6 +210,20 @@ test("Local My work resumes the exact document context and keeps it after return
     return page.evaluate(() => (window as Window & { __studioExactResumeEvents?: unknown[] }).__studioExactResumeEvents?.length ?? 0);
   }).toBeGreaterThan(0);
   await expect(page.getByText(/최근 작업 위치를 복원했어요\. 최근 페이지 · 확대 160%/u)).toBeVisible();
+
+  const viewport = page.locator("[data-studio-canvas-viewport]").first();
+  const notice = page.locator("[data-studio-global-status-rail]").getByRole("status").filter({ hasText: "최근 작업 위치를 복원했어요" });
+  const dismiss = notice.getByRole("button", { name: "알림 닫기" });
+  const withNotice = (await viewport.boundingBox())!;
+  const target = (await dismiss.boundingBox())!;
+  expect(target.width).toBeGreaterThanOrEqual(44);
+  expect(target.height).toBeGreaterThanOrEqual(44);
+  expect(withNotice.width * withNotice.height / (390 * 900)).toBeGreaterThanOrEqual(0.82);
+  await dismiss.focus();
+  await page.keyboard.press("Enter");
+  await expect(notice).toHaveCount(0);
+  await expect.poll(() => viewport.boundingBox()).toEqual(withNotice);
+
   await expect.poll(async () => page.evaluate(() => (
     (window as Window & { __studioExactResumeEvents?: Array<{ pageId?: string; zoom?: number; selectedElementIds?: string[] }> })
       .__studioExactResumeEvents?.at(-1) ?? null

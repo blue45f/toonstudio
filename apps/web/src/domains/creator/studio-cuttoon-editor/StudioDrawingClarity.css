@@ -180,6 +180,33 @@ body:has([data-studio-editor=true][data-studio-drawing-clarity=true]) [data-stud
 [data-studio-editor=true][data-studio-mobile-immersive=true][data-studio-drawing-clarity-mobile=true] [data-studio-app-menubar=true][data-studio-drawing-clarity-header=true]{position:relative;inset:auto;width:100%;max-width:none;margin:0;border-radius:0}
 html:not([data-studio-canvas-only=true]) [data-studio-editor=true][data-studio-mobile-immersive=true][data-studio-drawing-clarity-mobile=true] #studio-workspace{padding-top:0}
 [data-studio-editor=true][data-studio-drawing-clarity-mobile=true] [data-studio-global-status-rail]:not(:empty){padding-top:0}
+
+/* A lone confirmation floats below the drawing toolbar. Errors and recovery actions keep their rail. */
+#studio-app-shell[data-studio-drawing-clarity=true] [data-studio-global-status-rail]:has(> [data-studio-informational-notice]:only-child) {
+  padding: 0;
+  overflow: visible;
+}
+#studio-app-shell[data-studio-drawing-clarity=true] [data-studio-global-status-rail] > [data-studio-informational-notice]:only-child {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: .5rem;
+  z-index: 59;
+  inline-size: min(24rem, calc(100% - 1rem));
+  align-items: center;
+  margin-block: .25rem 0;
+}
+#studio-app-shell[data-studio-drawing-clarity=true] [data-studio-informational-notice] > span {
+  max-block-size: min(25dvh, 9rem);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+#studio-app-shell[data-studio-drawing-clarity=true] [data-studio-status-notice-dismiss] {
+  display: grid;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  place-items: center;
+}
+
 [data-studio-drawing-clarity-mobile=true] :is([data-studio-collaboration-disclosure=true]:not([data-studio-collaboration-following=true]),[data-studio-mobile-coach=true][data-studio-canvas-transient=coach],[data-studio-mobile-workspace-menu=true]){display:none}
 [data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-layout=simple] [data-studio-mobile-primary-actions]{grid-template-columns:repeat(auto-fit,minmax(max(44px,2.75rem),1fr));gap:clamp(0px,calc((100% - 308px) / 6),4px)}
 [data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-layout=simple] :is([data-studio-mobile-primary-actions] button,.studio-drawing-clarity-more summary){min-height:44px;min-width:44px;font-size:12px}
