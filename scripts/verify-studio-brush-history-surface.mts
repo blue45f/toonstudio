@@ -36,8 +36,8 @@ try {
     const ctx = (node as HTMLCanvasElement).getContext("2d")!;
     ctx.fillStyle = "#7c5cfc"; ctx.fillRect(54, 41, 30, 8);
   });
-  const painted = decodePng(await history.capture("painted"));
-  const paper = decodePng(history.before);
+  const painted = decodePng(await history.capture("painted")).getRawImage();
+  const paper = decodePng(history.before).getRawImage();
   let changedPixels = 0, maxChannelDelta = 0;
   for (let i = 0; i < paper.data.length; i += paper.channels) {
     const delta = Math.max(...[0, 1, 2].map((c) => Math.abs(paper.data[i + c]! - painted.data[i + c]!)));
@@ -50,7 +50,7 @@ try {
     document.querySelector<HTMLCanvasElement>("#retained")!.getContext("2d")!.clearRect(0, 0, 160, 120);
     document.querySelector("aside")!.classList.add("visible");
   });
-  assert.ok(!original.equals(await page.screenshot({ clip })), "external shadow must alter the actual screen");
+  assert.ok(!original.equals(await page.screenshot({ clip })), "원고 바깥 그림자가 화면에 나타나야 합니다.");
   assert.ok(matchesStudioBrushHistoryBaseline(history.before, await history.capture("undo"), visibleInk));
   for (const target of ["#retained", "#live"]) {
     const canvas = page.locator(target);
@@ -59,7 +59,7 @@ try {
       ctx.fillStyle = "#e2e2e2"; ctx.fillRect(66, 43, 1, 1);
     });
     assert.ok(!matchesStudioBrushHistoryBaseline(history.before, await history.capture(target), visibleInk),
-      `single neutral residual on ${target} must fail Undo`);
+      `${target}에 회색 한 픽셀이라도 남으면 실행 취소 검사가 실패해야 합니다.`);
     await canvas.evaluate((node) => (node as HTMLCanvasElement).getContext("2d")!.clearRect(0, 0, 160, 120));
   }
   console.log("브러시 Undo 화면 검사 통과. 원고 밖 그림자, 확정 잔류 1px, 라이브 잔류 1px.");
