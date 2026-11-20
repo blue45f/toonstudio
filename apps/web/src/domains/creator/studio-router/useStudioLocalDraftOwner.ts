@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { rememberStudioLiveOwnedRoomId } from "../live/studio-live-jam-session";
+import { createStudioLiveInstantWorkId, rememberStudioLiveOwnedRoomId } from "../live/studio-live-jam-session";
 import {
   holdStudioLocalDraftOwnership,
   readStudioLocalDraftOriginRoom,
@@ -12,8 +12,11 @@ export function useStudioLocalDraftOwner(input: {
   initialInstantWorkId: string; roomId: string | null; workId: string | null; remixId: string | null;
   ownerId: string | null; projectId: string | null; documentId: string | null; draftId: string | null;
 }): { readonly instantWorkId: string; readonly canPublishRoom: boolean } {
-  const { initialInstantWorkId, workId, remixId } = input;
+  const { workId, remixId } = input;
   const scope = studioLocalDraftOwnerScope(input);
+  const [restoredPage, setRestoredPage] = useState<{ scope: string; sourceId: string; id: string } | null>(null);
+  const initialInstantWorkId = restoredPage?.scope === scope && restoredPage.sourceId === input.initialInstantWorkId
+    ? restoredPage.id : input.initialInstantWorkId;
   const room = input.roomId ?? initialInstantWorkId;
   const [recovered, setRecovered] = useState<{ scope: string; room: string } | null>(null);
   // 이 탭이 회복해 소유자가 된 룸은 처음 연 탭의 룸과 같은 소유 리스다. 회복 직후나 ?room= 게시로 효과가
@@ -29,30 +32,33 @@ export function useStudioLocalDraftOwner(input: {
       rememberStudioLiveOwnedRoomId(session, candidate);
       setRecovered({ scope, room: candidate });
     };
-    // 룸을 싣지 않은 재진입(문서 경로·resume=latest "이어서 작업")에서는 새 룸을 이 탭의
-    // 소유로 등록하기 전에 원점 영수증이 가리키는 직전 룸을 먼저 후보로 삼는다. 새 룸부터
-    // 등록하면 영수증이 덮여 직전 룸 — 과 그 룸에 키잉된 복구 계층 — 에 다시는 닿을 수 없다.
-    // 영수증이 없을 때만 기존대로 새 룸이 원점이 된다. 리스가 살아 있는 동안은 hold가
-    // 채택을 거부하므로 동행 탭을 소유자로 오인하지 않고 영수증도 그대로 남는다.
-    if (!input.roomId && !workId && !remixId && storage) {
-      const receiptRoom = readStudioLocalDraftOriginRoom(storage, scope);
-      if (receiptRoom && receiptRoom !== initialInstantWorkId) {
-        return holdStudioLocalDraftOwnership({
-          scope, room: receiptRoom, knownTabOwner: receiptRoom === recoveredRoom, workId, remixId, storage, locks,
-          onRecovered: () => adopt(receiptRoom),
-        });
-      }
-    }
-    const knownTabOwner = room === initialInstantWorkId || room === recoveredRoom;
-    // 새 페이지의 실제 선택된 초기 룸을 effect에서 확정한다. StrictMode가 initializer를
-    // 재호출하며 남긴 다른 난수 영수증을 URL에 게시한 룸의 소유 영수증으로 쓰지 않는다.
-    if (knownTabOwner && !workId && !remixId) adopt(room);
-    return holdStudioLocalDraftOwnership({
-      scope, room, workId, remixId, storage, locks,
-      knownTabOwner,
-      onRecovered: () => adopt(room),
+    // 룸 없는 링크는 새 룸을 만들기 전에 원고의 기존 영수증부터 확인한다.
+    const previousRoom = !input.roomId && !workId && !remixId && storage
+      ? readStudioLocalDraftOriginRoom(storage, scope) : null;
+    const candidate = previousRoom ?? room;
+    const knownTabOwner = candidate === initialInstantWorkId || candidate === recoveredRoom;
+    if (knownTabOwner && !workId && !remixId) adopt(candidate);
+    const release = holdStudioLocalDraftOwnership({
+      scope, room: candidate, workId, remixId, storage, locks, knownTabOwner,
+      onRecovered: () => adopt(candidate),
     });
-  }, [initialInstantWorkId, input.roomId, recoveredRoom, remixId, room, scope, workId]);
+    if (workId || remixId) return release;
+
+    // 뒤로/앞으로 캐시에 들어간 화면은 언마운트되지 않는다. 다음 화면이 원점 리스를 받을 수 있게
+    // 이탈 시 해제하고, 복귀하면 그 사이 다른 탭이 소유자가 됐는지 새 참가자와 같은 방식으로 확인한다.
+    const restore = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      setRecovered(null);
+      setRestoredPage({ scope, sourceId: input.initialInstantWorkId, id: createStudioLiveInstantWorkId() });
+    };
+    window.addEventListener("pagehide", release);
+    window.addEventListener("pageshow", restore);
+    return () => {
+      window.removeEventListener("pagehide", release);
+      window.removeEventListener("pageshow", restore);
+      release();
+    };
+  }, [initialInstantWorkId, input.initialInstantWorkId, input.roomId, recoveredRoom, remixId, room, scope, workId]);
   const confirmed = !workId && !remixId && recovered?.scope === scope
     && (input.roomId === null || recovered.room === input.roomId)
     ? recovered : null;
