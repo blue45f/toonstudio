@@ -1,8 +1,12 @@
+[data-studio-drawing-clarity-panel="commands"] {
+  --studio-project-tools-width: 24rem;
+  --studio-project-tools-right: max(.5rem, env(safe-area-inset-right));
+}
 .studio-drawing-project-tools {
   position: fixed;
   z-index: 55;
-  inset: max(3.5rem, env(safe-area-inset-top)) max(.5rem, env(safe-area-inset-right)) auto auto;
-  width: min(24rem, calc(100% - 1rem));
+  inset: max(3.5rem, env(safe-area-inset-top)) var(--studio-project-tools-right, .5rem) auto auto;
+  width: min(var(--studio-project-tools-width, 24rem), calc(100% - 1rem));
   max-height: calc(100dvh - 5rem - env(safe-area-inset-bottom));
   overflow: auto;
   overscroll-behavior: contain;
@@ -11,6 +15,11 @@
   background: var(--color-panel);
   color: var(--color-fg);
   box-shadow: 0 8px 24px rgb(0 0 0 / .16);
+}
+@media (min-width: 48rem) {
+  [data-studio-drawing-clarity-panel="commands"] [data-studio-view-tools-hud] {
+    margin-right: calc(var(--studio-project-tools-width) + var(--studio-project-tools-right));
+  }
 }
 .studio-drawing-project-tools .studio-drawing-clarity-pane-heading { justify-content: space-between; padding-inline: .875rem .375rem; }
 .studio-drawing-project-tools button, .studio-project-tools-stage select { min-width: 44px; min-height: 44px; }

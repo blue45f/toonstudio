@@ -38,10 +38,10 @@ export async function waitForStudioRecoveredStrokeLayers(
 /** ArrowDown opens or focuses a group without a second pointer click toggling it closed. */
 export async function openStudioShapeCorrectionMenu(page: Page): Promise<void> {
   const trigger = page.locator('[data-studio-main-menu="true"]')
-    .getByRole("menuitem", { name: /^(창작|Create)$/u });
+    .locator('[data-studio-main-menu-trigger="brush"]');
   await trigger.focus();
   await trigger.press("ArrowDown");
-  await page.getByRole("menu", { name: /^(창작|Create)$/u }).waitFor({ state: "visible" });
+  await page.locator('[data-studio-main-menu-panel="true"] [data-studio-menu-item-id="correct-current-stroke"]').waitFor({ state: "visible" });
 }
 
 export async function studioShapeLiveReadinessEvidence(page: Page) {

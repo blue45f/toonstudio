@@ -111,9 +111,10 @@ import {
   isStaticPreviewReadinessResponse,
   isStaticPreviewReadinessUnavailable,
 } from "./lib/studio-preview-readiness";
-import { pinStudioRailToolInCatalog } from "./lib/studio-rail-tool-catalog-pin";
+import { openStudioLayerNavigator, showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
 import { measureStudioSmartShapeCanvasSpace, placeStudioSmartShapeGrid, requiresStudioSmartShapeOfflinePanel, waitForStudioSmartShapeFloatingReady } from "./lib/studio-smart-shape-visible-grid";
 import { meetsStudioMinimumTouchTarget } from "./lib/studio-touch-target-measurement.mjs";
+import { studioPinnedToolButton } from "./lib/studio-verifier-entry-points";
 import {
   readDurableStudioAutosaveDocument,
   readDurableStudioAutosaveError,
@@ -4094,36 +4095,14 @@ async function drawPenPathWithJitterHold(
 }
 
 async function enableSmartShape(page: Page): Promise<void> {
-  const railToggle = page.locator('button[data-studio-rail-tool-id="smart-shape"]');
-  if (await railToggle.isVisible()) {
-    if (await railToggle.getAttribute("aria-pressed") !== "true") await railToggle.click();
-    await page.locator('button[data-studio-rail-tool-id="smart-shape"][aria-pressed="true"]')
-      .waitFor({ state: "visible" });
-    return;
-  }
-  const buttons = page.getByRole("button", { name: "스마트 도형", exact: true });
-  const count = await buttons.count();
-  for (let index = 0; index < count; index += 1) {
-    const button = buttons.nth(index);
-    if (!await button.isVisible()) continue;
-    if (await button.getAttribute("aria-pressed") !== "true") await button.click();
-    invariant(await button.getAttribute("aria-pressed") === "true", "Smart Shape toggle did not activate");
-    return;
-  }
-  throw new Error("visible Smart Shape toggle was not found");
+  const toggle = await studioPinnedToolButton(page, "smart-shape");
+  if (await toggle.getAttribute("aria-pressed") !== "true") await toggle.click();
+  await toggle.and(page.locator('[aria-pressed="true"]')).waitFor({ state: "visible" });
 }
 
 async function revealStudioViewTool(page: Page, mode: "zoom" | "rotate"): Promise<void> {
   const trigger = page.locator(`[data-studio-view-tool-trigger="${mode}"]`);
-  const more = page.locator('[data-studio-tool-rail-settings="true"] button[aria-haspopup="dialog"]');
-  const picker = page.getByRole("dialog", { name: "전체 도구", exact: true });
-  if (!(await trigger.isVisible())) {
-    if (await more.getAttribute("aria-expanded") !== "true") await more.click();
-    const toolId = mode === "zoom" ? "zoom" : "rotate-view";
-    await pinStudioRailToolInCatalog(picker, toolId);
-  }
-  if (await picker.isVisible()) await picker.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
-  await picker.waitFor({ state: "hidden" });
+  if (!await trigger.isVisible()) await studioPinnedToolButton(page, mode === "zoom" ? "zoom" : "rotate-view");
   await trigger.waitFor({ state: "visible" });
 }
 
@@ -4131,6 +4110,7 @@ async function runCurrentStrokeCorrection(page: Page, toScreen: (x: number, y: n
   const before = (await persistedDrawElements(page)).at(-1);
   invariant(before?.id, "current-stroke correction has no persisted source");
   const open = async () => {
+    await showStudioProjectWindowTools(page);
     await openStudioShapeCorrectionMenu(page);
     await page.locator('[data-studio-menu-item-id="correct-current-stroke"]').click();
     await page.getByRole("dialog", { name: "현재 스트로크 교정", exact: true }).waitFor({ state: "visible" });
@@ -4229,12 +4209,14 @@ async function runCurrentStrokeCorrection(page: Page, toScreen: (x: number, y: n
     invariant(typeof draw.id === "string" && draw.id.length > 0, "cold reload restored a stroke without a valid ID");
     return draw.id;
   });
+  await openStudioLayerNavigator(page);
   await waitForStudioRecoveredStrokeLayers(page, recoveredStrokeIds);
   writeFileSync(join(SCRATCH, "studio-smart-shape-cold-recovery.json"), JSON.stringify({
     expectedStrokeIds: recoveredStrokeIds,
     correctedStrokeId: corrected.id,
     ...(await studioShapeLiveReadinessEvidence(page)),
   }, null, 2));
+  await showStudioProjectWindowTools(page);
   await page.locator('[data-studio-command-bar-settings-trigger="true"]').click();
   await page.locator('[data-studio-command-bar-settings-panel="true"] select').nth(7).selectOption("correct-current-stroke");
   await page.keyboard.press("Escape");
