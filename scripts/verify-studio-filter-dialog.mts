@@ -55,7 +55,7 @@ import {
 } from "./lib/studio-filter-responsive-layout";
 import { resolveStudioFilterVerificationMode } from "./lib/studio-filter-verification-mode";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
-import { openStudioLayerNavigator, openStudioMainMenu } from "./lib/studio-shell-interactions";
+import { openStudioMainMenu, selectStudioLayerThroughNavigator } from "./lib/studio-shell-interactions";
 import { readDurableStudioAutosaveDocument, type StudioDurableAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
 import { enabledStudioHistoryControl } from "./lib/studio-verify-history-controls.mjs";
 import { isOptionalStudioPreviewApiError } from "./lib/studio-verify-preview-errors.mjs";
@@ -659,21 +659,7 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
     if (EXPECT_DENIAL) connectionFault = await installStudioFilterConnectionFault(page, origin);
     let canonicalImageId: string | null = null;
     const selectCanonicalImage = async () => {
-      if (!canonicalImageId) return;
-      const row = page.locator(`[id=${JSON.stringify(`studio-layer-${canonicalImageId}`)}]`);
-      const pane = page.locator("#studio-drawing-clarity-panel-layers");
-      const wasOpen = await pane.isVisible();
-      if (!await row.isVisible()) await openStudioLayerNavigator(page);
-      await row.scrollIntoViewIfNeeded();
-      // 행 중앙에는 가시성 버튼이 있을 수 있으므로 정식 트리 키보드 선택을 사용한다.
-      await row.focus();
-      await row.press("Enter");
-      await page.waitForFunction((id) => document.getElementById(`studio-layer-${id}`)
-        ?.getAttribute("aria-selected") === "true", canonicalImageId);
-      if (!wasOpen && await pane.isVisible()) {
-        await pane.getByRole("button", { name: /레이어·속성 · 닫기|Layers and properties · Close/u }).click();
-        await pane.waitFor({ state: "hidden" });
-      }
+      if (canonicalImageId) await selectStudioLayerThroughNavigator(page, canonicalImageId);
     };
     const selectInsertedCanonicalImage = (document: StudioDurableAutosaveDocument, previousIds = new Set<string>()) => {
       const present = canonicalImageElementIds(document.pagesList);
