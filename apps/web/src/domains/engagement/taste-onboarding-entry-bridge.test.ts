@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  buildTasteFeedRedirectHref,
   shouldPromptTasteOnboarding,
-} from "./taste-onboarding-entry-bridge";
+  type TasteOnboardingEntryDecision,
+  type TasteOnboardingEntryInput,
+} from "./public/taste-onboarding-entry-bridge";
+import { buildTasteFeedRedirectHref } from "./taste-onboarding-entry-bridge";
 
 describe("taste-onboarding-entry-bridge (AC-011)", () => {
   it("콜드스타트 사용자에게만 온보딩을 노출하고, 완료·평가3건 이상·최근 거절 시 노출하지 않는다", () => {
     const now = 1_763_600_000_000;
-    expect(shouldPromptTasteOnboarding({ ratedTitleCount: 0, nowMs: now })).toEqual({
+    const entry: TasteOnboardingEntryInput = { ratedTitleCount: 0, nowMs: now };
+    const decision: TasteOnboardingEntryDecision = shouldPromptTasteOnboarding(entry);
+    expect(decision).toEqual({
       shouldPrompt: true,
       reason: "cold-start",
     });

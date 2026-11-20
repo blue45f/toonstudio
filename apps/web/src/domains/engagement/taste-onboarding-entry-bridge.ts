@@ -20,12 +20,14 @@ export interface TasteOnboardingDecision {
 
 const DISMISS_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 
-export function shouldPromptTasteOnboarding(input: {
+export interface TasteOnboardingEntryInput {
   readonly completedAtMs?: number | null;
   readonly dismissedAtMs?: number | null;
   readonly ratedTitleCount: number;
   readonly nowMs: number;
-}): TasteOnboardingDecision {
+}
+
+export function shouldPromptTasteOnboarding(input: TasteOnboardingEntryInput): TasteOnboardingDecision {
   if (input.completedAtMs) {
     return { shouldPrompt: false, reason: "already-completed" };
   }
