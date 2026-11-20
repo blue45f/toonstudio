@@ -201,5 +201,6 @@ exporter로 만든 VRM 1.0 수리본입니다. 기존 `orion` ID와 `/vrm/Avatar
 
 ## 공개 도메인 원문
 
+- ToonStudio Hero VRM 1.0 8종(`toonstudio-hero-v1/*.vrm` — 서연·도윤·하늘·지후·아리아·카시안·강혁·모찌)은 Blender 5.3 + VRM Add-on 4.5.0 절차 스크립트(`tools/blender/character_kit/export_vrm1_hero.py`)로 자체 제작된 원본 CC0 1.0 자산입니다(`toonstudio-hero-v1/LICENSE.txt` 및 `toonstudio-hero-v1/manifest.json` 참조).
 - 100Avatars(Polygonal Mind) 모델은 CC0 1.0으로 배포됩니다. 원문: <https://creativecommons.org/publicdomain/zero/1.0/>
 - 퇴역한 ToonStudio 오리지널 `TS_Minseo_Campus.vrm`(CC0 1.0, SHA-256 `903601a5…8ebea`)은 번들에서 제거됐지만, 그 모델로 렌더한 `public/catalog/studio-vrm-avatar-reference-catalogue-v1.json`은 그대로 유지되는 파생 산출물입니다.

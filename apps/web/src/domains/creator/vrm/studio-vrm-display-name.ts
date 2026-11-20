@@ -24,6 +24,14 @@ const names = (
  */
 const BUNDLED_VRM_DISPLAY_NAMES: Readonly<Record<string, LocalizedNames>> = {
   "sample-vrm": names("Lumi", "루미", "ルミ", "露米", "露米"),
+  "ts-vrm-hero-v1-romance-female": names("Seoyeon (Romance Heroine)", "서연 (로맨스 여성 주연)", "ソヨン（ロマンスヒロイン）", "瑞妍（浪漫女主）", "瑞妍（浪漫女主）"),
+  "ts-vrm-hero-v1-romance-male": names("Doyun (Office Romance Lead)", "도윤 (오피스 로맨스 남주)", "ドユン（オフィスロマンス）", "道允（职场浪漫男主）", "道允（職場浪漫男主）"),
+  "ts-vrm-hero-v1-academy-female": names("Haneul (Academy Heroine)", "하늘 (한국 학원 교복 여주)", "ハヌル（学園ヒロイン）", "天空（校园女主）", "天空（校園女主）"),
+  "ts-vrm-hero-v1-academy-male": names("Jihu (Academy Lead)", "지후 (한국 학원 교복 남주)", "ジフ（学園ヒーロー）", "智厚（校园男主）", "智厚（校園男主）"),
+  "ts-vrm-hero-v1-rofan-empress": names("Aria (Imperial Princess)", "아리아 (로판 제국 황녀)", "アリア（帝国皇女）", "阿丽亚（帝国皇女）", "阿麗亞（帝國皇女）"),
+  "ts-vrm-hero-v1-rofan-duke": names("Cassian (Northern Duke)", "카시안 (로판 북부대공)", "カシアン（北部大公）", "卡西安（北部大公）", "卡西安（北部大公）"),
+  "ts-vrm-hero-v1-action-hunter": names("Kanghyuk (Awakened Hunter)", "강혁 (액션 각성 헌터)", "カンヒョク（覚醒ハンター）", "姜赫（觉醒猎人）", "姜赫（覺醒獵人）"),
+  "ts-vrm-hero-v1-chibi-mascot": names("Mochi (SD Mascot)", "모찌 (SD 웹툰 마스코트)", "モチ（SDマスコット）", "麻薯（SD吉祥物）", "麻糬（SD吉祥物）"),
   "avatar-a": names("Harin", "하린", "ハリン", "哈琳", "哈琳"),
   "avatar-b": names("Sera", "세라", "セラ", "塞拉", "塞拉"),
   "avatar-c": names("Yuna", "유나", "ユナ", "优娜", "優娜"),

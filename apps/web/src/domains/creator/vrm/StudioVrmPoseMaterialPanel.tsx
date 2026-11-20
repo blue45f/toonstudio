@@ -1,4 +1,4 @@
-import { Download, Loader2, Sparkles, Trash2, Upload } from "lucide-react";
+import { Bookmark, Download, Loader2, Trash2, Upload } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ChangeEvent } from "react";
 
 import { confirmStudioDestructiveAction } from "../studio-destructive-action-preview";
@@ -191,7 +191,7 @@ export function StudioVrmPoseMaterialPanel({
       return {
         loadStatus: "missing",
         payload: EMPTY_STUDIO_POSE_MATERIAL_LIBRARY,
-        message: t("studio.vrmPanelStatus.poseMaterial.hydrating", "SQLite/OPFS 포즈 소재를 불러오는 중입니다."),
+        message: t("studio.vrmPanelStatus.poseMaterial.hydrating", "로컬 포즈 소재를 불러오는 중입니다."),
         messageTone: "neutral",
         authority: "hydrating",
       };
@@ -247,7 +247,7 @@ export function StudioVrmPoseMaterialPanel({
         message: translateNow(
           "studio.vrmPanelStatus.poseMaterial.hydrationFailed",
           { detail: error instanceof Error ? error.message : String(error) },
-          "SQLite/OPFS 포즈 소재를 검증해 불러오지 못했습니다. 원문 보호를 위해 변경을 막았습니다: {detail}",
+          "로컬 포즈 소재를 검증해 불러오지 못했습니다. 원문 보호를 위해 변경을 막았습니다: {detail}",
         ),
         messageTone: "error",
         authority: "memory",
@@ -296,7 +296,7 @@ export function StudioVrmPoseMaterialPanel({
       setPanelState({
         loadStatus: "loaded",
         payload: optimisticPayload,
-        message: t("studio.vrmPanelStatus.poseMaterial.savingToSqlite", "SQLite/OPFS에 저장하는 중입니다."),
+        message: t("studio.vrmPanelStatus.poseMaterial.savingToSqlite", "로컬 저장소에 저장하는 중입니다."),
         messageTone: "neutral",
         authority: "sqlite",
       });
@@ -321,7 +321,7 @@ export function StudioVrmPoseMaterialPanel({
           message: t(
             "studio.vrmPanelStatus.poseMaterial.saveFailedMemoryOnly",
             { detail: error instanceof Error ? error.message : String(error) },
-            "SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다. 현재 탭 메모리 임시 · 새로고침 시 사라짐: {detail}",
+            "로컬 저장소 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다. 현재 탭 메모리 임시 · 새로고침 시 사라짐: {detail}",
           ),
           messageTone: "error",
           authority: "memory",
@@ -505,15 +505,15 @@ export function StudioVrmPoseMaterialPanel({
 
   return (
     <details className="group mt-3.5 rounded-xl border border-accent/25 bg-accent-soft/15 p-3">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-xs font-bold text-fg [&::-webkit-details-marker]:hidden">
-        <Sparkles size={15} className="text-accent" aria-hidden />
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-xs font-semibold text-fg [&::-webkit-details-marker]:hidden">
+        <Bookmark size={15} className="text-accent" aria-hidden />
         캐릭터 공용 포즈 소재
-        <span className="ml-auto rounded-full bg-card px-2 py-0.5 text-[0.65rem] text-fg-3">
+        <span className="ml-auto rounded-md bg-card px-2 py-0.5 text-xs tabular-nums text-fg-3">
           {panelState.payload.materials.length}/64
         </span>
       </summary>
 
-      <p className="mt-1 text-[0.65rem] leading-relaxed text-fg-3">
+      <p className="mt-1 text-xs leading-relaxed text-fg-3">
         VRM normalized 55본 회전만 저장해 체형이 다른 캐릭터에도 이식합니다. 높이·표정·캐릭터 회전은 v1 소재에 포함하지 않습니다.
       </p>
 
@@ -546,25 +546,32 @@ export function StudioVrmPoseMaterialPanel({
       <button
         type="button"
         disabled={mutationDisabled || !materialName.trim()}
+        title={
+          mutationDisabled
+            ? "현재 저장소가 읽기 전용이거나 실시간 작업 중입니다."
+            : !materialName.trim()
+              ? "먼저 포즈 소재 이름을 입력해 주세요."
+              : undefined
+        }
         onClick={handleSave}
-        className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-accent/40 bg-accent-soft px-3 text-xs font-bold text-accent transition-colors hover:bg-accent/15 disabled:cursor-not-allowed disabled:opacity-45"
+        className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-accent/40 bg-accent-soft px-3 text-xs font-semibold text-accent transition-colors hover:bg-accent/15 disabled:cursor-not-allowed disabled:opacity-45"
       >
-        <Sparkles size={14} aria-hidden /> 현재 자세를 범용 소재로 저장
+        <Bookmark size={14} aria-hidden /> 현재 자세를 범용 소재로 저장
       </button>
 
       {disabled ? (
-        <p className="mt-2 text-[0.65rem] leading-relaxed text-warn" role="status">
+        <p className="mt-2 text-xs leading-relaxed text-warn" role="status">
           실시간 추적·애니메이션·캡처·관절 드래그가 끝나면 저장하고 적용할 수 있습니다.
         </p>
       ) : null}
       {lockedBoneCount > 0 ? (
-        <p className="mt-1 text-[0.65rem] text-fg-3">현재 잠금 본 {lockedBoneCount}개는 소재 적용 시 그대로 유지됩니다.</p>
+        <p className="mt-1 text-xs text-fg-3">현재 잠금 본 {lockedBoneCount}개는 소재 적용 시 그대로 유지됩니다.</p>
       ) : null}
 
       <div className="mt-3 rounded-lg border border-line/50 bg-card/40 px-2.5 py-2">
         <label
           htmlFor={strengthSliderId}
-          className="flex items-center justify-between gap-2 text-[0.68rem] font-semibold text-fg-2"
+          className="flex items-center justify-between gap-2 text-xs font-semibold text-fg-2"
         >
           <span>적용 강도</span>
           <span className="tabular-nums text-fg-3">{Math.round(applyStrength * 100)}%</span>
@@ -585,14 +592,14 @@ export function StudioVrmPoseMaterialPanel({
           aria-valuenow={Math.round(applyStrength * 100)}
           aria-valuetext={`${Math.round(applyStrength * 100)}%`}
         />
-        <p className="mt-1 text-[0.62rem] leading-relaxed text-fg-3">
-          100%는 소재 자세 전체, 0%는 rest에 가깝게 섞입니다. 모든 적용 버튼에 공통으로 쓰입니다.
+        <p className="mt-1 text-xs leading-relaxed text-fg-3">
+          100%는 소재 자세 전체, 0%는 기본 자세에 가깝게 섞입니다. 모든 적용 버튼에 공통으로 쓰입니다.
         </p>
       </div>
 
       {panelState.message ? (
         <p
-          className={`mt-2 text-[0.65rem] leading-relaxed ${messageClass(panelState.messageTone)}`}
+          className={`mt-2 text-xs leading-relaxed ${messageClass(panelState.messageTone)}`}
           role="status"
           aria-live="polite"
           data-studio-vrm-pose-material-authority={panelState.authority}
@@ -605,16 +612,22 @@ export function StudioVrmPoseMaterialPanel({
         <button
           type="button"
           disabled={storageReadOnly || panelState.payload.materials.length === 0 || importing}
+          title={
+            panelState.payload.materials.length === 0
+              ? "저장된 포즈 소재가 없어 내보낼 수 없습니다."
+              : undefined
+          }
           onClick={handleExport}
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-3 text-[0.68rem] font-bold text-fg-2 hover:bg-raised disabled:opacity-45"
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 hover:bg-raised disabled:opacity-45"
         >
           <Download size={13} aria-hidden /> JSON 내보내기
         </button>
         <button
           type="button"
           disabled={mutationDisabled}
+          title={mutationDisabled ? "현재 저장소가 읽기 전용이거나 작업 중입니다." : undefined}
           onClick={() => fileInputRef.current?.click()}
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-3 text-[0.68rem] font-bold text-fg-2 hover:bg-raised disabled:opacity-45"
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 hover:bg-raised disabled:opacity-45"
         >
           {importing ? <Loader2 size={13} className="animate-spin motion-reduce:animate-none" aria-hidden /> : <Upload size={13} aria-hidden />}
           JSON 병합
@@ -630,7 +643,7 @@ export function StudioVrmPoseMaterialPanel({
       </div>
 
       {panelState.payload.materials.length === 0 ? (
-        <p className="mt-3 rounded-lg border border-dashed border-line/60 bg-card/25 px-3 py-4 text-center text-[0.68rem] text-fg-3">
+        <p className="mt-3 rounded-lg border border-dashed border-line/60 bg-card/25 px-3 py-4 text-center text-xs text-fg-3">
           {t("studio.vrmPanelStatus.poseMaterial.empty", "저장된 범용 포즈 소재가 없습니다.")}
         </p>
       ) : (
@@ -651,8 +664,8 @@ export function StudioVrmPoseMaterialPanel({
               >
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-bold text-fg" title={material.name}>{material.name}</p>
-                    <p className="mt-0.5 text-[0.65rem] text-fg-3">
+                    <p className="truncate text-xs font-semibold text-fg" title={material.name}>{material.name}</p>
+                    <p className="mt-0.5 text-xs tabular-nums text-fg-3">
                       {SCOPE_LABELS[material.scope]} 소재 · {material.bones.length}본
                     </p>
                   </div>
@@ -678,7 +691,7 @@ export function StudioVrmPoseMaterialPanel({
                         [material.id]: event.target.value as StudioPoseScope,
                       }))
                     }
-                    className="min-h-11 min-w-0 rounded-lg border border-line bg-card px-2 text-[0.68rem] text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-45"
+                    className="min-h-11 min-w-0 rounded-lg border border-line bg-card px-2 text-xs text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-45"
                   >
                     {applicableScopes.map((scope) => (
                       <option key={scope} value={scope}>{SCOPE_LABELS[scope]}에 적용</option>
@@ -688,7 +701,7 @@ export function StudioVrmPoseMaterialPanel({
                     type="button"
                     disabled={disabled}
                     onClick={() => handleApply(material)}
-                    className="min-h-11 rounded-lg border border-accent/40 bg-accent-soft px-3 text-[0.68rem] font-bold text-accent hover:bg-accent/15 disabled:opacity-45"
+                    className="min-h-11 rounded-lg border border-accent/40 bg-accent-soft px-3 text-xs font-semibold text-accent hover:bg-accent/15 disabled:opacity-45"
                   >
                     적용
                   </button>

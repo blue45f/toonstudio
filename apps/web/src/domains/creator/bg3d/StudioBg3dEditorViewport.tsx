@@ -499,7 +499,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     />
                     {ltCaptureSafeFrame.fit === "exact" ? null : (
                       <span
-                        className="absolute rounded-md bg-panel/90 px-1.5 py-0.5 text-[0.6rem] font-bold text-fg-2 shadow-sm"
+                        className="absolute rounded-md bg-panel/95 px-1.5 py-0.5 text-xs font-semibold text-fg-2 shadow-sm"
                         style={{
                           left: `${ltCaptureSafeFrame.x + 4}px`,
                           top: `${ltCaptureSafeFrame.y + 4}px`,
@@ -536,7 +536,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     immersiveSceneActive && "hidden",
                   )}
                 >
-                  <div className="col-span-3 grid grid-cols-3 gap-1 rounded-lg border border-line/70 bg-panel/80 p-1 shadow-sm backdrop-blur sm:flex sm:flex-col">
+                  <div className="col-span-3 grid grid-cols-3 gap-1 rounded-lg border border-line bg-panel/95 p-1 shadow-sm sm:flex sm:flex-col">
                     {TRANSFORM_MODES.map((m: any) => {
                       const ModeIcon = m.icon;
                       const isActive = transformMode === m.id;
@@ -548,7 +548,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                             aria-pressed={isActive}
                             disabled={physicsInteractionLocked || placementActive}
                             className={cx(
-                              "grid size-11 place-items-center rounded-md text-fg-2 transition-[background-color,color,transform] duration-150 ease-out-expo hover:bg-accent-soft hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.94] motion-reduce:transition-colors motion-reduce:active:scale-100 sm:size-8",
+                              "grid size-11 place-items-center rounded-md text-fg-2 transition-colors duration-150 hover:bg-accent-soft hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:size-8",
                               isActive && "bg-accent text-on-accent hover:bg-accent/90 hover:text-on-accent"
                             )}
                             onClick={() => {
@@ -600,7 +600,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                         isBatchRenderingShots
                       }
                       className={cx(
-                        "inline-flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-lg border border-line/70 bg-panel/80 px-2 text-[0.65rem] font-bold text-fg-2 shadow-sm backdrop-blur transition-colors",
+                        "inline-flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-lg border border-line bg-panel/95 px-2 text-xs font-semibold text-fg-2 shadow-sm transition-colors",
                         "hover:bg-accent-soft hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                         "disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9",
                         transformSpace === "local" &&
@@ -721,7 +721,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                       aria-label="배치 정리"
                       disabled={!canPlaceSelectedModelRecipe}
                       className={cx(
-                        "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line/70 bg-panel/80 px-1.5 text-[0.65rem] font-semibold text-fg-2 shadow-sm backdrop-blur transition-colors",
+                        "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line bg-panel/95 px-1.5 text-xs font-semibold text-fg-2 shadow-sm transition-colors",
                         "hover:bg-accent-soft hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                         "disabled:cursor-not-allowed disabled:opacity-40",
                       )}
@@ -819,7 +819,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                       aria-pressed={surfaceSnapAlignNormal}
                       data-testid="bg3d-surface-snap-align-normal"
                       className={cx(
-                        "inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-card px-2 text-[0.65rem] font-semibold text-fg-2 transition-colors",
+                        "inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-card px-2 text-xs font-semibold text-fg-2 transition-colors",
                         "hover:bg-accent-soft hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                         surfaceSnapAlignNormal &&
                           "border-accent/60 bg-accent text-on-accent hover:bg-accent/90 hover:text-on-accent",
@@ -1022,7 +1022,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                   <div
                     role={sharedStageResolution.phase === "ready" ? "status" : "alert"}
                     data-testid="studio-bg3d-shared-stage-status"
-                    className="rounded-lg border border-line/80 bg-panel/92 px-2.5 py-2 text-[0.68rem] font-semibold leading-relaxed text-fg-2 shadow-lg"
+                    className="rounded-lg border border-line bg-panel/95 px-2.5 py-2 text-xs font-semibold leading-relaxed text-fg-2 shadow-sm"
                   >
                     {sharedStageResolution.message}
                   </div>
@@ -1035,7 +1035,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     data-testid="bg3d-surface-snap-status"
                     data-tone={surfaceSnapStatus.tone}
                     className={cx(
-                      "rounded-xl border px-3 py-2 text-center text-xs font-semibold leading-relaxed shadow-lg backdrop-blur",
+                      "rounded-xl border px-3 py-2 text-center text-xs font-semibold leading-relaxed shadow-sm",
                       surfaceSnapStatus.tone === "error"
                         ? "border-bad/50 bg-panel/95 text-bad"
                         : surfaceSnapStatus.tone === "success"
@@ -1053,7 +1053,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     aria-live="polite"
                     aria-atomic="true"
                     data-testid="bg3d-measurement-status"
-                    className="rounded-xl border border-accent/50 bg-panel/95 px-3 py-2 text-center text-xs font-semibold leading-relaxed text-accent shadow-lg backdrop-blur"
+                    className="rounded-xl border border-accent/50 bg-panel/95 px-3 py-2 text-center text-xs font-semibold leading-relaxed text-accent shadow-sm"
                   >
                     {measurementStatus}
                   </output>
@@ -1074,7 +1074,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                       <Suspense
                         fallback={
                           <div role="status" aria-label={frozenStatus5Text("studio.frozenStatus5.bg3dViewport.turntableLoading", "턴테이블 컨트롤을 불러오는 중입니다.")}
-                            className="h-14 w-60 animate-pulse rounded-lg border border-line bg-card/60 motion-reduce:animate-none" />
+                            className="h-14 w-60 rounded-lg border border-line bg-card/60" />
                         }
                       >
                         <StudioBg3dTurntableController
@@ -1087,7 +1087,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                       </Suspense>
                     </div>
                     {!viewportHinted ? (
-                      <span className="rounded-full border border-line/70 bg-panel/85 px-3 py-1 text-center text-[0.66rem] font-medium text-fg-3 shadow-sm backdrop-blur">
+                      <span className="rounded-lg border border-line bg-panel/95 px-3 py-1 text-center text-xs font-medium text-fg-3 shadow-sm">
                         끌어서 회전 · 오른쪽 드래그로 이동 · 휠/핀치로 확대 · 도형 클릭으로 선택
                       </span>
                     ) : null}
@@ -1101,10 +1101,10 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                   >
                     {/* 컨트롤 패널은 lg 미만에서 뷰포트 "아래"에 쌓인다(lg:border-l). 방향을
                         말하면 휴대폰과 태블릿에서 틀린 안내가 되므로 탭 이름만 부른다. */}
-                    <span className="rounded-full border border-line/70 bg-panel/90 px-3 py-1 text-center text-[0.66rem] font-semibold text-fg-2 shadow-sm backdrop-blur sm:hidden">
+                    <span className="rounded-lg border border-line bg-panel/95 px-3 py-1 text-center text-xs font-semibold text-fg-2 shadow-sm sm:hidden">
                       템플릿 · 도형 · 에셋 탭에서 장면을 채워보세요
                     </span>
-                    <div className="hidden max-w-[18rem] rounded-2xl border border-line/70 bg-panel/92 px-4 py-4 text-center shadow-lg backdrop-blur sm:block">
+                    <div className="hidden max-w-[18rem] rounded-xl border border-line bg-panel/95 px-4 py-4 text-center shadow-sm sm:block">
                       <div className="mx-auto grid size-12 place-items-center rounded-xl border border-accent/35 bg-accent-soft text-accent">
                         <Boxes size={22} aria-hidden />
                       </div>

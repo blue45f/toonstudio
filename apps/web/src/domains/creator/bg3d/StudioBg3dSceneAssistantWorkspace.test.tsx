@@ -91,7 +91,9 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
   it("opens with purpose-led choices and no professional DCC terminology", () => {
     render(<StudioBg3dSceneAssistantWorkspace h={createHost()} onOpenProfessional={vi.fn()} />);
 
-    expect(screen.getByText("무엇을 만들까요?")).toBeDefined();
+    expect(screen.getByText("3D 장면 구성")).toBeDefined();
+    expect(screen.queryByText("무엇을 만들까요?")).toBeNull();
+    expect(screen.queryByText("창작 영감을 위한 예시 일러스트")).toBeNull();
     expect(screen.getByRole("button", { name: /배경·구도/ })).toBeDefined();
     expect(screen.getByRole("button", { name: /인물·포즈/ })).toBeDefined();
     expect(screen.getByRole("button", { name: /소품/ })).toBeDefined();

@@ -8,6 +8,7 @@
 import {
   Camera,
   ChevronDown,
+  Info,
   Paintbrush,
   RotateCcw,
   Sliders,
@@ -211,7 +212,7 @@ export function StudioVrmPoserPanelBodyC({ h }: { h: StudioVrmPoserHost }) {
                     </button>
                   ))}
                 </div>
-                <p className="mb-1.5 mt-3 text-[0.65rem] font-bold uppercase tracking-wider text-fg-3">퀵 라이팅</p>
+                <p className="mb-1.5 mt-3 text-xs font-semibold text-fg-3">퀵 라이팅</p>
                 <div className="grid grid-cols-2 gap-2">
                   {STUDIO_VRM_LIGHTING_QUICK_PRESETS.map((preset) => (
                     <button
@@ -251,7 +252,7 @@ export function StudioVrmPoserPanelBodyC({ h }: { h: StudioVrmPoserHost }) {
                 <div className="space-y-3.5">
                   {/* 조명 미세 조정 */}
                   <div className="space-y-1.5">
-                    <p className="text-[0.65rem] font-bold uppercase tracking-wider text-fg-3">조명 미세 조정</p>
+                    <p className="text-xs font-semibold text-fg-3">조명 미세 조정</p>
                     <label className="flex items-center gap-2 text-xs text-fg-2">
                       <span className="w-12 shrink-0 font-medium">밝기</span>
                       <input type="range" min="0.2" max="3" step="0.05" value={lighting.intensity} onChange={e => setLighting((l: LightingParams) => ({...l, intensity: parseFloat(e.target.value)}))} className="h-2 flex-1 accent-accent" />
@@ -271,7 +272,7 @@ export function StudioVrmPoserPanelBodyC({ h }: { h: StudioVrmPoserHost }) {
 
                   {/* 배경 환경 */}
                   <div className="space-y-1.5 border-t border-line/45 pt-3">
-                    <p className="text-[0.65rem] font-bold uppercase tracking-wider text-fg-3">배경 환경</p>
+                    <p className="text-xs font-semibold text-fg-3">배경 환경</p>
                     <div className="flex flex-wrap gap-1.5">
                       {ENV_VARIANTS.map(({ id, label }) => (
                         <button
@@ -323,7 +324,7 @@ export function StudioVrmPoserPanelBodyC({ h }: { h: StudioVrmPoserHost }) {
                   <div className="space-y-3 border-t border-line/45 pt-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-[0.65rem] font-bold uppercase tracking-wider text-fg-3">손 모양 정밀 편집</p>
+                        <p className="text-xs font-semibold text-fg-3">손 모양 정밀 편집</p>
                         <p className="mt-1 text-[0.66rem] leading-relaxed text-fg-3">
                           손가락을 각각 굽히고 실제 손·소품 접촉을 확대해서 확인합니다.
                         </p>
@@ -421,7 +422,7 @@ export function StudioVrmPoserPanelBodyC({ h }: { h: StudioVrmPoserHost }) {
 
                   {/* 전체 상태 저장 · 불러오기 */}
                   <div className="space-y-2 border-t border-line/45 pt-3">
-                    <p className="text-[0.65rem] font-bold uppercase tracking-wider text-fg-3">전체 상태 저장 · 불러오기</p>
+                    <p className="text-xs font-semibold text-fg-3">전체 상태 저장 · 불러오기</p>
                     <p className="text-[0.68rem] leading-relaxed text-fg-3">포즈 · 비율 · 손가락 · 의상 · 조명 · 소품을 한 번에 저장하고 불러옵니다.</p>
                     {vrmCreativePersistenceStatus === "memory" ? (
                       <p className="text-[0.65rem] leading-relaxed text-warn">
@@ -501,8 +502,9 @@ export function StudioVrmPoserPanelBodyC({ h }: { h: StudioVrmPoserHost }) {
                   />
                 </div>
                 {webcamActive && (
-                  <p className="mt-1.5 text-[0.68rem] text-accent font-semibold leading-relaxed">
-                    ℹ️ 웹캠 실시간 페이스 트래킹이 활성화되어 대기 모션이 자동으로 일시 중지되었습니다.
+                  <p className="mt-1.5 flex items-start gap-1.5 text-xs font-semibold leading-relaxed text-accent">
+                    <Info size={16} strokeWidth={1.5} className="mt-0.5 shrink-0" aria-hidden />
+                    <span>웹캠 실시간 페이스 트래킹이 활성화되어 대기 모션이 자동으로 일시 중지되었습니다.</span>
                   </p>
                 )}
               </details>

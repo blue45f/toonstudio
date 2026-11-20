@@ -1,0 +1,80 @@
+{
+  "assetId": "kr_school_rooftop_hero",
+  "cutawayContract": "room-v1",
+  "fileName": "kr_school_rooftop_hero.glb",
+  "byteSize": 3283908,
+  "sha256": "sha256:b4d2c20ba3d48d4d616c53627713a6e411c6f9c24eb1f0615dac4203784c65b9",
+  "bounds": [
+    14.0,
+    4.492,
+    11.0
+  ],
+  "nodes": [
+    "BG_Floor",
+    "BG_Wall_North",
+    "BG_Wall_South",
+    "BG_Wall_West",
+    "BG_Wall_East",
+    "BG_Ceiling",
+    "BG_Furniture_Hero",
+    "BG_Props_Clutter"
+  ],
+  "triangles": 43540,
+  "drawCalls": 8,
+  "materials": 4,
+  "mobile": {
+    "fileName": "kr_school_rooftop_hero-mobile.glb",
+    "byteSize": 1973100,
+    "sha256": "sha256:c400308473e95260b79d6ce6487171004c513eab49c8f522583c6d07f815c9ef",
+    "nodes": [
+      "BG_Shell_Fixed",
+      "BG_Cutaway_Front",
+      "BG_Ceiling",
+      "BG_Furnishings"
+    ],
+    "triangles": 43540,
+    "drawCalls": 4,
+    "materials": 2
+  },
+  "cameras": {
+    "wide24mm": {
+      "position": [
+        9.6,
+        5.8,
+        9.4
+      ],
+      "target": [
+        -0.4,
+        1.7,
+        -0.6
+      ],
+      "lensMm": 24
+    },
+    "dialogue35mm": {
+      "position": [
+        3.4,
+        1.55,
+        3.5
+      ],
+      "target": [
+        -2.6,
+        1.72,
+        -2.2
+      ],
+      "lensMm": 35
+    },
+    "fencePortrait85mm": {
+      "position": [
+        -1.8,
+        1.52,
+        2.2
+      ],
+      "target": [
+        -5.2,
+        1.65,
+        3.8
+      ],
+      "lensMm": 85
+    }
+  }
+}

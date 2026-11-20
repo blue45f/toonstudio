@@ -23,7 +23,7 @@ import {
 } from "./studio-bg3d-zdepth-crowd-tod-compositor";
 
 const MOTION_PRESS =
-  "transition-[background-color,border-color,color,opacity,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
+  "transition-colors duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none";
 
 const CROWD_COUNTS: readonly DatumCrowdPresetCount[] = [4, 6, 15];
 
@@ -113,7 +113,7 @@ export function StudioBg3dZDepthCrowdTodCard({
           data-testid="bg3d-blender-v23-tod-badge"
           className="inline-flex items-center gap-2 rounded-md border border-line bg-raised px-2 py-1 font-mono text-xs font-medium tabular-nums text-fg"
         >
-          <span className="size-2 rounded-full bg-[#4cc38a]" aria-hidden />
+          <span className="size-2 rounded-full bg-good" aria-hidden />
           {evaluation.timeOfDay.kelvin}K · 고도 {evaluation.timeOfDay.solarElevationDeg}° · ΔE{" "}
           {evaluation.timeOfDay.darkroomDeltaE.toFixed(2)}
         </span>
@@ -127,7 +127,7 @@ export function StudioBg3dZDepthCrowdTodCard({
             loading="lazy"
             width={48}
             height={48}
-            className="size-12 shrink-0 rounded-md bg-[#141415] object-cover [mask-image:radial-gradient(closest-side,#000_84%,transparent)]"
+            className="size-12 shrink-0 rounded-md border border-line bg-canvas object-cover"
           />
           <div className="min-w-0 flex-1">
             <span className="inline-flex items-center gap-2 font-medium text-fg">
@@ -154,7 +154,7 @@ export function StudioBg3dZDepthCrowdTodCard({
                 disabled={disabled}
                 data-testid={`bg3d-blender-v23-tod-${tod.id}`}
                 onClick={() => onSelectTimeOfDayId(tod.id)}
-                className={`min-h-9 rounded-lg border px-3 py-1 text-xs font-medium tabular-nums ${
+                className={`min-h-11 rounded-lg border px-3 py-1 text-xs font-medium tabular-nums ${
                   active
                     ? "border-accent bg-raised text-fg"
                     : "border-line bg-panel text-fg-2 hover:bg-raised"
@@ -183,7 +183,7 @@ export function StudioBg3dZDepthCrowdTodCard({
                   disabled={disabled}
                   data-testid={`bg3d-blender-v23-crowd-${cnt}`}
                   onClick={() => onSelectCrowdCount(cnt)}
-                  className={`min-h-8 rounded-md border px-2 py-1 font-mono text-xs font-medium tabular-nums ${
+                  className={`min-h-11 rounded-md border px-2 py-1 font-mono text-xs font-medium tabular-nums ${
                     active
                       ? "border-accent bg-raised text-fg"
                       : "border-line bg-card text-fg-2 hover:bg-raised"
@@ -242,7 +242,7 @@ export function StudioBg3dZDepthCrowdTodCard({
           disabled={disabled}
           data-testid="bg3d-blender-v23-manifest-toggle"
           onClick={() => setShowManifestPreview((prev) => !prev)}
-          className={`min-h-8 rounded-md border border-line bg-card px-3 py-1 font-mono text-xs font-medium tabular-nums text-fg hover:bg-raised ${MOTION_PRESS}`}
+          className={`min-h-11 rounded-md border border-line bg-card px-3 py-1 font-mono text-xs font-medium tabular-nums text-fg hover:bg-raised ${MOTION_PRESS}`}
         >
           {showManifestPreview ? ".toonlayers.json 닫기" : ".toonlayers.json 6패스 확인"}
         </button>
@@ -251,7 +251,7 @@ export function StudioBg3dZDepthCrowdTodCard({
       {showManifestPreview ? (
         <pre
           data-testid="bg3d-blender-v23-manifest-json"
-          className="max-h-40 overflow-y-auto rounded-lg border border-line bg-[#141415] p-3 font-mono text-xs tabular-nums text-fg-2"
+          className="max-h-40 overflow-y-auto rounded-lg border border-line bg-canvas p-3 font-mono text-xs tabular-nums text-fg-2"
         >
           {evaluation.manifestJsonString}
         </pre>

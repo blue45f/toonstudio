@@ -1,0 +1,38 @@
+{
+  "schema": "toonstudio.character-kit.bases-v2-index/1",
+  "count": 5,
+  "archetypes": [
+    "female-romance",
+    "male-webtoon",
+    "male-action",
+    "youth-academy",
+    "sd-chibi"
+  ],
+  "bases": {
+    "female-romance": {
+      "path": "female-romance.glb",
+      "bytes": 3123128,
+      "sha256": "916ad796078a693bd77c280e509e21a34b96464ab136af054f01f4e9ebf9fd51"
+    },
+    "male-webtoon": {
+      "path": "male-webtoon.glb",
+      "bytes": 3212308,
+      "sha256": "beda5965651b71dd882209984d5c579fc8bcabeea9f47c3bf92777d50bf1cf1c"
+    },
+    "male-action": {
+      "path": "male-action.glb",
+      "bytes": 3289020,
+      "sha256": "6b12246ef6afe28b39e2679973ac46edabaca207410b52eb959091141b11e06c"
+    },
+    "youth-academy": {
+      "path": "youth-academy.glb",
+      "bytes": 3069764,
+      "sha256": "d96b582fb71270dfd6b83301ab977c79056b790914334679e499a1691c7f80f0"
+    },
+    "sd-chibi": {
+      "path": "sd-chibi.glb",
+      "bytes": 2779380,
+      "sha256": "705fc0df2b28b94a8e628074e56328161450ede2a03c6bef9d8442016837d59e"
+    }
+  }
+}

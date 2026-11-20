@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Sparkles } from "lucide-react";
 
 import { useIsMobile } from "@/shared/hooks/use-media-query";
 import {
@@ -40,7 +39,11 @@ import {
   type StudioBg3dWorkspacePanel,
   type StudioBg3dWorkspacePresetId,
 } from "./studio-bg3d-professional-workspace-layout";
-import { StudioBg3dAssetShelf } from "./StudioBg3dAssetShelf";
+import {
+  StudioBg3dAssetShelf,
+  type AssetShelfEntry,
+  type Bg3dShelfStageId,
+} from "./StudioBg3dAssetShelf";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("StudioBg3dProfessionalWorkspace", ko, en);
@@ -56,6 +59,7 @@ interface StudioBg3dProfessionalWorkspaceProps {
   readonly targetDocumentId?: string | null;
   readonly targetCutIndex?: number;
   readonly onBakeToManuscriptCut?: (layer: BakedManuscriptCutLayer) => void;
+  readonly onInsertShelfAsset?: (entry: AssetShelfEntry) => void;
 }
 
 interface ResizeGesture {
@@ -112,18 +116,44 @@ export function StudioBg3dProfessionalWorkspace({
   targetDocumentId = null,
   targetCutIndex = 0,
   onBakeToManuscriptCut,
+  onInsertShelfAsset,
 }: StudioBg3dProfessionalWorkspaceProps) {
   useBilingualI18nRevision();
   const isMobile = useIsMobile();
   const canonicalStorageKey = studioBg3dProfessionalWorkspaceStorageKey(scopeKey);
   const [layout, setLayout] = useState(() =>
     readStudioBg3dProfessionalWorkspaceLayout(browserStorage(), scopeKey));
-  const [assetShelfOpen, setAssetShelfOpen] = useState(true);
+  const [assetShelfOpen, setAssetShelfOpen] = useState(false);
+  const [activeStage, setActiveStage] = useState<Bg3dShelfStageId>("build");
+  const [placedShelfAssetIds, setPlacedShelfAssetIds] = useState<readonly string[]>([]);
   const [liveInkMode, setLiveInkMode] = useState<LiveInkPreviewMode>(defaultLiveInkMode);
   const [splitWipeRatio, setSplitWipeRatio] = useState<number>(0.5);
   const [bakeStatusMessage, setBakeStatusMessage] = useState<string | null>(null);
   const hydratedStorageKeyRef = useRef(canonicalStorageKey);
   const resizeGestureRef = useRef<ResizeGesture | null>(null);
+
+  const handleSelectShelfStage = (stage: Bg3dShelfStageId) => {
+    setActiveStage(stage);
+    if (stage === "build") {
+      setLayout(applyStudioBg3dWorkspacePreset("scene"));
+    } else if (stage === "pose") {
+      setLayout(applyStudioBg3dWorkspacePreset("character"));
+    } else if (stage === "shot") {
+      setLayout(applyStudioBg3dWorkspacePreset("focus"));
+    } else {
+      setLayout(applyStudioBg3dWorkspacePreset("output"));
+      setLiveInkMode("split-wipe");
+    }
+  };
+
+  const handleInsertShelfAsset = (entry: AssetShelfEntry) => {
+    setPlacedShelfAssetIds((prev) => (prev.includes(entry.id) ? prev : [...prev, entry.id]));
+    onInsertShelfAsset?.(entry);
+    const title = bi(entry.titleKo, entry.titleEn);
+    setBakeStatusMessage(
+      bi(`“${title}” 항목을 현재 3D 장면에 배치했습니다.`, `Placed "${title}" into the active 3D scene.`),
+    );
+  };
 
   const handleBakeToManuscriptCut = () => {
     if (!captureSnapshot) {
@@ -283,20 +313,16 @@ export function StudioBg3dProfessionalWorkspace({
       {cutHost != null && <StudioScene3dBg3dCutPanel host={cutHost} preferredExpanded={!isMobile} />}
       <div
         data-bg3d-stage-header="true"
-        className="flex min-h-12 shrink-0 flex-wrap items-center gap-1.5 border-b border-line bg-gradient-to-r from-accent/10 via-panel/95 to-panel/95 px-2.5 py-1.5 shadow-sm"
+        className="flex min-h-12 shrink-0 flex-wrap items-center gap-1.5 border-b border-line bg-panel px-2.5 py-1.5"
         role="toolbar"
         aria-label={bi("3D 전문가 작업공간", "3D professional workspace")}
       >
-        <span className="mr-1 hidden items-center gap-1.5 rounded-full border border-accent/35 bg-accent-soft px-2.5 py-1 font-display text-[0.65rem] font-extrabold tracking-wider text-accent sm:inline-flex">
-          <Sparkles size={12} aria-hidden="true" />
-          3D · LIVE INK
-        </span>
         {PRESET_ENTRIES.map((preset) => (
           <button
             key={preset.id}
             type="button"
             aria-pressed={layout.preset === preset.id}
-            className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-bold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
+            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent aria-pressed:shadow-[inset_2px_0_0_var(--color-accent)]"
             onClick={() => setLayout(applyStudioBg3dWorkspacePreset(preset.id))}
           >
             {bi(preset.ko, preset.en)}
@@ -306,7 +332,7 @@ export function StudioBg3dProfessionalWorkspace({
         <button
           type="button"
           aria-pressed={layout.outlinerVisible}
-          className="hidden min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft/50 aria-pressed:text-accent xl:inline-flex"
+          className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft/50 aria-pressed:text-accent xl:inline-flex"
           onClick={() => togglePanel("outliner")}
         >
           {bi("계층", "Hierarchy")}
@@ -314,14 +340,14 @@ export function StudioBg3dProfessionalWorkspace({
         <button
           type="button"
           aria-pressed={layout.inspectorVisible}
-          className="hidden min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft/50 aria-pressed:text-accent xl:inline-flex"
+          className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft/50 aria-pressed:text-accent xl:inline-flex"
           onClick={() => togglePanel("inspector")}
         >
           {bi("속성", "Inspector")}
         </button>
         <button
           type="button"
-          className="hidden min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-accent xl:inline-flex"
+          className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-accent xl:inline-flex"
           onClick={() => setLayout((current) => swapStudioBg3dWorkspaceDockOrder(current))}
         >
           {bi("좌우 바꾸기", "Swap sides")}
@@ -329,7 +355,7 @@ export function StudioBg3dProfessionalWorkspace({
         <button
           type="button"
           aria-pressed={assetShelfOpen}
-          className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-bold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
+          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent aria-pressed:shadow-[inset_2px_0_0_var(--color-accent)]"
           onClick={() => setAssetShelfOpen((current) => !current)}
         >
           {bi("에셋 쉘프", "Asset shelf")}
@@ -345,14 +371,14 @@ export function StudioBg3dProfessionalWorkspace({
               type="button"
               aria-pressed={liveInkMode === entry.id}
               data-bg3d-live-ink-btn={entry.id}
-              className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
+              className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent aria-pressed:shadow-[inset_2px_0_0_var(--color-accent)]"
               onClick={() => setLiveInkMode(entry.id)}
             >
               {bi(entry.ko, entry.en)}
             </button>
           ))}
           {liveInkMode === "split-wipe" ? (
-            <label className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2">
+            <label className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2">
               <span data-testid="studio-bg3d-split-wipe-readout" className="tabular-nums">
                 {`${Math.round(splitWipeRatio * 100)}%`}
               </span>
@@ -376,7 +402,7 @@ export function StudioBg3dProfessionalWorkspace({
             type="button"
             data-testid="studio-bg3d-bake-to-cut"
             onClick={handleBakeToManuscriptCut}
-            className="inline-flex min-h-11 items-center rounded-full border border-accent bg-accent-soft px-3 text-xs font-bold text-accent transition-colors hover:bg-accent hover:text-on-accent"
+            className="inline-flex min-h-11 items-center rounded-lg border border-accent bg-accent-soft px-3 text-xs font-semibold text-accent transition-colors hover:bg-accent hover:text-on-accent"
           >
             {bi("원고 컷에 굽기", "Bake to manuscript cut")}
           </button>
@@ -385,7 +411,7 @@ export function StudioBg3dProfessionalWorkspace({
           <span
             role="status"
             data-testid="studio-bg3d-bake-status"
-            className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3 text-xs font-semibold text-fg-2"
+            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2"
           >
             {bakeStatusMessage}
           </span>
@@ -393,13 +419,13 @@ export function StudioBg3dProfessionalWorkspace({
         <div className="ml-auto flex items-center gap-1.5">
           <Link
             href="/studio/new?template=webtoon&from=bg3d-cut"
-            className="hidden min-h-11 items-center rounded-full bg-accent px-3.5 text-xs font-extrabold text-on-accent shadow-sm transition-colors hover:bg-accent-2 md:inline-flex"
+            className="hidden min-h-11 items-center rounded-lg bg-accent px-3.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2 md:inline-flex"
           >
             {bi("새 웹툰 시작하기", "Start a new webtoon")}
           </Link>
           <button
             type="button"
-            className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-accent"
+            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-accent"
             onClick={() => setLayout(DEFAULT_STUDIO_BG3D_PROFESSIONAL_WORKSPACE_LAYOUT)}
           >
             {bi("기본 배치", "Reset layout")}
@@ -438,7 +464,16 @@ export function StudioBg3dProfessionalWorkspace({
         </div>
       </div>
 
-      {assetShelfOpen ? <StudioBg3dAssetShelf onClose={() => setAssetShelfOpen(false)} /> : null}
+      {assetShelfOpen ? (
+        <StudioBg3dAssetShelf
+          activeStage={activeStage}
+          onSelectStage={handleSelectShelfStage}
+          placedAssetIds={placedShelfAssetIds}
+          onInsertAsset={handleInsertShelfAsset}
+          onBakeToManuscriptCut={handleBakeToManuscriptCut}
+          onClose={() => setAssetShelfOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,0 +1,1028 @@
+{
+  "schema": "toonstudio.character-kit.hair-v2/1",
+  "styleId": "romance-long",
+  "labelKo": "웨이브 롱 헤어",
+  "genre": "로맨스·로판",
+  "fittedBase": "female-romance",
+  "file": {
+    "path": "romance-long.glb",
+    "bytes": 1482852,
+    "sha256": "03ac48ca90250528ac1457f6b7678c1f5c6601fa4338e35725a99e2700a7ea0c"
+  },
+  "drawCalls": 8,
+  "materials": [
+    "ts_hair_romance-long",
+    "ts_hair_tip_romance-long",
+    "ts_hair_accent_romance-long"
+  ],
+  "lods": [
+    {
+      "node": "TS_AuthoredHair_romance-long_LOD0",
+      "lod": 0,
+      "triangles": 11936,
+      "vertices": 6034,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_romance-long_LOD1",
+      "lod": 1,
+      "triangles": 5576,
+      "vertices": 2854,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_romance-long_LOD2",
+      "lod": 2,
+      "triangles": 1760,
+      "vertices": 922,
+      "primitives": 2,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    }
+  ],
+  "morphs": [
+    "param:height:+",
+    "param:height:-",
+    "param:legLength:+",
+    "param:legLength:-",
+    "param:neckLength:+",
+    "param:neckLength:-",
+    "param:headSize:+",
+    "param:headSize:-",
+    "shape:bang-length:+",
+    "shape:bang-length:-",
+    "shape:volume:+",
+    "shape:volume:-",
+    "shape:sway:+",
+    "shape:sway:-"
+  ],
+  "shapes": [
+    "bang-length",
+    "volume",
+    "sway"
+  ],
+  "uv0Monotonic": true,
+  "uv1Purpose": "hair-flow",
+  "texture": {
+    "bytes": 21555,
+    "size": 512,
+    "meanLuminance": 0.9231,
+    "minLuminance": 0.8,
+    "columns": 4
+  },
+  "springBone": {
+    "schema": "toonstudio.hair-springbone/1",
+    "vrmSpec": "VRMC_springBone-1.0",
+    "styleId": "romance-long",
+    "fittedBase": "female-romance",
+    "chainCount": 6,
+    "colliders": [
+      {
+        "id": "head_sphere",
+        "bone": "mixamorig:Head",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.08792,
+          -0.00185
+        ],
+        "radius": 0.08493
+      },
+      {
+        "id": "neck_capsule",
+        "bone": "mixamorig:Neck",
+        "shape": "capsule",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tailGltf": [
+          0.0,
+          0.08816,
+          -0.002
+        ],
+        "radius": 0.04725
+      },
+      {
+        "id": "upper_chest_sphere",
+        "bone": "mixamorig:Spine2",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.00231
+        ],
+        "radius": 0.12696
+      }
+    ],
+    "chains": [
+      {
+        "id": "back_L2",
+        "region": "back",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 4,
+        "lengthM": 0.5295,
+        "hitRadius": 0.022,
+        "stiffness": 0.55,
+        "dragForce": 0.38,
+        "gravityPower": 0.38,
+        "joints": [
+          {
+            "name": "TS_Spring_romance-long_back_L2_0",
+            "positionGltf": [
+              0.01659,
+              1.65665,
+              -0.01473
+            ],
+            "localOffsetFromHead": [
+              0.01659,
+              0.17954,
+              -0.00673
+            ],
+            "hitRadius": 0.022,
+            "stiffness": 0.605,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_L2_1",
+            "positionGltf": [
+              0.08747,
+              1.58412,
+              -0.0342
+            ],
+            "localOffsetFromHead": [
+              0.08747,
+              0.10701,
+              -0.0262
+            ],
+            "hitRadius": 0.02121,
+            "stiffness": 0.5775,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_L2_2",
+            "positionGltf": [
+              0.10243,
+              1.47922,
+              -0.04775
+            ],
+            "localOffsetFromHead": [
+              0.10243,
+              0.00211,
+              -0.03975
+            ],
+            "hitRadius": 0.02042,
+            "stiffness": 0.55,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_L2_3",
+            "positionGltf": [
+              0.09847,
+              1.39908,
+              -0.11832
+            ],
+            "localOffsetFromHead": [
+              0.09847,
+              -0.07803,
+              -0.11032
+            ],
+            "hitRadius": 0.01962,
+            "stiffness": 0.5225,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_L2_4",
+            "positionGltf": [
+              0.10012,
+              1.29796,
+              -0.14345
+            ],
+            "localOffsetFromHead": [
+              0.10012,
+              -0.17915,
+              -0.13545
+            ],
+            "hitRadius": 0.01883,
+            "stiffness": 0.495,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_L2_5",
+            "positionGltf": [
+              0.08209,
+              1.19143,
+              -0.15113
+            ],
+            "localOffsetFromHead": [
+              0.08209,
+              -0.28568,
+              -0.14313
+            ],
+            "hitRadius": 0.01804,
+            "stiffness": 0.4675,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "back_L1",
+        "region": "back",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 8,
+        "lengthM": 0.5125,
+        "hitRadius": 0.022,
+        "stiffness": 0.55,
+        "dragForce": 0.38,
+        "gravityPower": 0.38,
+        "joints": [
+          {
+            "name": "TS_Spring_romance-long_back_L1_0",
+            "positionGltf": [
+              0.00592,
+              1.65735,
+              -0.02634
+            ],
+            "localOffsetFromHead": [
+              0.00592,
+              0.18024,
+              -0.01834
+            ],
+            "hitRadius": 0.022,
+            "stiffness": 0.605,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_L1_1",
+            "positionGltf": [
+              0.03065,
+              1.59088,
+              -0.09491
+            ],
+            "localOffsetFromHead": [
+              0.03065,
+              0.11377,
+              -0.08691
+            ],
+            "hitRadius": 0.02121,
+            "stiffness": 0.5775,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_L1_2",
+            "positionGltf": [
+              0.03562,
+              1.48782,
+              -0.11502
+            ],
+            "localOffsetFromHead": [
+              0.03562,
+              0.01071,
+              -0.10702
+            ],
+            "hitRadius": 0.02042,
+            "stiffness": 0.55,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_L1_3",
+            "positionGltf": [
+              0.0419,
+              1.38536,
+              -0.13079
+            ],
+            "localOffsetFromHead": [
+              0.0419,
+              -0.09174,
+              -0.12279
+            ],
+            "hitRadius": 0.01962,
+            "stiffness": 0.5225,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_L1_4",
+            "positionGltf": [
+              0.03339,
+              1.28521,
+              -0.14764
+            ],
+            "localOffsetFromHead": [
+              0.03339,
+              -0.1919,
+              -0.13964
+            ],
+            "hitRadius": 0.01883,
+            "stiffness": 0.495,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_L1_5",
+            "positionGltf": [
+              0.02751,
+              1.18281,
+              -0.1571
+            ],
+            "localOffsetFromHead": [
+              0.02751,
+              -0.29429,
+              -0.1491
+            ],
+            "hitRadius": 0.01804,
+            "stiffness": 0.4675,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "back_R1",
+        "region": "back",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 5,
+        "lengthM": 0.5223,
+        "hitRadius": 0.022,
+        "stiffness": 0.55,
+        "dragForce": 0.38,
+        "gravityPower": 0.38,
+        "joints": [
+          {
+            "name": "TS_Spring_romance-long_back_R1_0",
+            "positionGltf": [
+              -0.00945,
+              1.65715,
+              -0.0251
+            ],
+            "localOffsetFromHead": [
+              -0.00945,
+              0.18004,
+              -0.0171
+            ],
+            "hitRadius": 0.022,
+            "stiffness": 0.605,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_R1_1",
+            "positionGltf": [
+              -0.0493,
+              1.58811,
+              -0.08934
+            ],
+            "localOffsetFromHead": [
+              -0.0493,
+              0.111,
+              -0.08134
+            ],
+            "hitRadius": 0.02121,
+            "stiffness": 0.5775,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_R1_2",
+            "positionGltf": [
+              -0.05815,
+              1.48251,
+              -0.10819
+            ],
+            "localOffsetFromHead": [
+              -0.05815,
+              0.0054,
+              -0.10019
+            ],
+            "hitRadius": 0.02042,
+            "stiffness": 0.55,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_R1_3",
+            "positionGltf": [
+              -0.06053,
+              1.3785,
+              -0.12416
+            ],
+            "localOffsetFromHead": [
+              -0.06053,
+              -0.09861,
+              -0.11616
+            ],
+            "hitRadius": 0.01962,
+            "stiffness": 0.5225,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_R1_4",
+            "positionGltf": [
+              -0.05486,
+              1.28052,
+              -0.15411
+            ],
+            "localOffsetFromHead": [
+              -0.05486,
+              -0.19659,
+              -0.14611
+            ],
+            "hitRadius": 0.01883,
+            "stiffness": 0.495,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_R1_5",
+            "positionGltf": [
+              -0.04754,
+              1.17635,
+              -0.15287
+            ],
+            "localOffsetFromHead": [
+              -0.04754,
+              -0.30075,
+              -0.14487
+            ],
+            "hitRadius": 0.01804,
+            "stiffness": 0.4675,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "back_R2",
+        "region": "back",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 4,
+        "lengthM": 0.5306,
+        "hitRadius": 0.022,
+        "stiffness": 0.55,
+        "dragForce": 0.38,
+        "gravityPower": 0.38,
+        "joints": [
+          {
+            "name": "TS_Spring_romance-long_back_R2_0",
+            "positionGltf": [
+              -0.01658,
+              1.65665,
+              -0.01476
+            ],
+            "localOffsetFromHead": [
+              -0.01658,
+              0.17954,
+              -0.00676
+            ],
+            "hitRadius": 0.022,
+            "stiffness": 0.605,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_R2_1",
+            "positionGltf": [
+              -0.08732,
+              1.58414,
+              -0.03457
+            ],
+            "localOffsetFromHead": [
+              -0.08732,
+              0.10703,
+              -0.02657
+            ],
+            "hitRadius": 0.02121,
+            "stiffness": 0.5775,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_R2_2",
+            "positionGltf": [
+              -0.10245,
+              1.47873,
+              -0.04863
+            ],
+            "localOffsetFromHead": [
+              -0.10245,
+              0.00163,
+              -0.04063
+            ],
+            "hitRadius": 0.02042,
+            "stiffness": 0.55,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_R2_3",
+            "positionGltf": [
+              -0.10611,
+              1.38785,
+              -0.10712
+            ],
+            "localOffsetFromHead": [
+              -0.10611,
+              -0.08926,
+              -0.09912
+            ],
+            "hitRadius": 0.01962,
+            "stiffness": 0.5225,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_R2_4",
+            "positionGltf": [
+              -0.08811,
+              1.29487,
+              -0.15386
+            ],
+            "localOffsetFromHead": [
+              -0.08811,
+              -0.18224,
+              -0.14586
+            ],
+            "hitRadius": 0.01883,
+            "stiffness": 0.495,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_back_R2_5",
+            "positionGltf": [
+              -0.084,
+              1.18883,
+              -0.1489
+            ],
+            "localOffsetFromHead": [
+              -0.084,
+              -0.28828,
+              -0.1409
+            ],
+            "hitRadius": 0.01804,
+            "stiffness": 0.4675,
+            "dragForce": 0.38,
+            "gravityPower": 0.38,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "side_L",
+        "region": "side",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 2,
+        "lengthM": 0.361,
+        "hitRadius": 0.018,
+        "stiffness": 0.68,
+        "dragForce": 0.4,
+        "gravityPower": 0.34,
+        "joints": [
+          {
+            "name": "TS_Spring_romance-long_side_L_0",
+            "positionGltf": [
+              0.01994,
+              1.65665,
+              0.00719
+            ],
+            "localOffsetFromHead": [
+              0.01994,
+              0.17955,
+              0.01519
+            ],
+            "hitRadius": 0.018,
+            "stiffness": 0.748,
+            "dragForce": 0.4,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_side_L_1",
+            "positionGltf": [
+              0.0709,
+              1.59095,
+              0.04888
+            ],
+            "localOffsetFromHead": [
+              0.0709,
+              0.11384,
+              0.05688
+            ],
+            "hitRadius": 0.01719,
+            "stiffness": 0.7055,
+            "dragForce": 0.4,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_side_L_2",
+            "positionGltf": [
+              0.07913,
+              1.49672,
+              0.05795
+            ],
+            "localOffsetFromHead": [
+              0.07913,
+              0.01961,
+              0.06595
+            ],
+            "hitRadius": 0.01638,
+            "stiffness": 0.663,
+            "dragForce": 0.4,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_side_L_3",
+            "positionGltf": [
+              0.08459,
+              1.40696,
+              0.06934
+            ],
+            "localOffsetFromHead": [
+              0.08459,
+              -0.07015,
+              0.07734
+            ],
+            "hitRadius": 0.01557,
+            "stiffness": 0.6205,
+            "dragForce": 0.4,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_side_L_4",
+            "positionGltf": [
+              0.06851,
+              1.3295,
+              0.0921
+            ],
+            "localOffsetFromHead": [
+              0.06851,
+              -0.14761,
+              0.1001
+            ],
+            "hitRadius": 0.01476,
+            "stiffness": 0.578,
+            "dragForce": 0.4,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "side_R",
+        "region": "side",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 2,
+        "lengthM": 0.3607,
+        "hitRadius": 0.018,
+        "stiffness": 0.68,
+        "dragForce": 0.4,
+        "gravityPower": 0.34,
+        "joints": [
+          {
+            "name": "TS_Spring_romance-long_side_R_0",
+            "positionGltf": [
+              -0.01994,
+              1.65665,
+              0.00719
+            ],
+            "localOffsetFromHead": [
+              -0.01994,
+              0.17955,
+              0.01519
+            ],
+            "hitRadius": 0.018,
+            "stiffness": 0.748,
+            "dragForce": 0.4,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_side_R_1",
+            "positionGltf": [
+              -0.07094,
+              1.59027,
+              0.04894
+            ],
+            "localOffsetFromHead": [
+              -0.07094,
+              0.11316,
+              0.05694
+            ],
+            "hitRadius": 0.01719,
+            "stiffness": 0.7055,
+            "dragForce": 0.4,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_side_R_2",
+            "positionGltf": [
+              -0.08436,
+              1.49625,
+              0.05231
+            ],
+            "localOffsetFromHead": [
+              -0.08436,
+              0.01914,
+              0.06031
+            ],
+            "hitRadius": 0.01638,
+            "stiffness": 0.663,
+            "dragForce": 0.4,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_side_R_3",
+            "positionGltf": [
+              -0.07743,
+              1.41147,
+              0.07556
+            ],
+            "localOffsetFromHead": [
+              -0.07743,
+              -0.06564,
+              0.08356
+            ],
+            "hitRadius": 0.01557,
+            "stiffness": 0.6205,
+            "dragForce": 0.4,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_romance-long_side_R_4",
+            "positionGltf": [
+              -0.06999,
+              1.32939,
+              0.09158
+            ],
+            "localOffsetFromHead": [
+              -0.06999,
+              -0.14772,
+              0.09958
+            ],
+            "hitRadius": 0.01476,
+            "stiffness": 0.578,
+            "dragForce": 0.4,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "qa": {
+    "bytes": 1482852,
+    "minClearanceMm": 1.047,
+    "verticesInside": 0,
+    "gltfValidateErrors": 0,
+    "gltfValidateWarnings": 0,
+    "bmesh": {
+      "TS_AuthoredHair_romance-long_LOD0": {
+        "verts": 6150,
+        "faces": 11936,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_romance-long_LOD1": {
+        "verts": 2944,
+        "faces": 5576,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_romance-long_LOD2": {
+        "verts": 922,
+        "faces": 1760,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      }
+    },
+    "springChainCount": 6
+  },
+  "passed": true,
+  "errors": [],
+  "seconds": 2.25
+}

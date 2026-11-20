@@ -7,6 +7,7 @@ import {
   STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS,
   STUDIO_BG3D_ENVIRONMENT_ASSETS,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1,
+  STUDIO_BG3D_ENVIRONMENT_ASSETS_HERO_V1,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
   STUDIO_BG3D_ENVIRONMENT_CYCLES_PASSES,
@@ -30,7 +31,8 @@ function bytesFor(url: string): Uint8Array {
 
 describe("Studio revised environment delivery v6", () => {
   it("selects twelve revised scenes while preserving every historical ID and hash", () => {
-    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS.slice(0, 12)).toEqual(STUDIO_BG3D_ENVIRONMENT_ASSETS_V6);
+    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS.slice(0, 6)).toEqual(STUDIO_BG3D_ENVIRONMENT_ASSETS_HERO_V1);
+    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS.slice(6, 18)).toEqual(STUDIO_BG3D_ENVIRONMENT_ASSETS_V6);
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS_V6).toHaveLength(12);
     expect(STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS).toHaveLength(12);
     const selectedIds = new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id));
@@ -135,7 +137,7 @@ describe("Studio revised environment delivery v6", () => {
 
   it("resolves all 10 self-authored CC0 webtoon environments (authored-v1) and maps Tripo MCP environments to their CC0 counterparts", async () => {
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1).toHaveLength(10);
-    expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS).toHaveLength(35);
+    expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS).toHaveLength(41);
     expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS.every((asset) => asset.provenance.license === "CC0-1.0")).toBe(true);
 
     for (const authored of STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1) {

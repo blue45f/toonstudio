@@ -193,13 +193,10 @@ function ChooseStep({
   }) : assets;
   return (
     <div className="scene-assistant__step-body" data-step="choose">
-      <section className="scene-assistant__hero">
-        <img src="/brand/illustrated-20260928/background-city.webp" alt="" decoding="async" loading="lazy" />
-        <div>
-          <h3>무엇을 만들까요?</h3>
-          <small>{bt("창작 영감을 위한 예시 일러스트", "Illustration for creative inspiration")}</small>
-        </div>
-      </section>
+      <div className="scene-assistant__section-title compact">
+        <h3>3D 장면 구성</h3>
+        <span>{bt("배경·인물·소품 선택", "Select stage, cast, or props")}</span>
+      </div>
 
       <GoalPicker goal={goal} onChange={onGoalChange} />
 

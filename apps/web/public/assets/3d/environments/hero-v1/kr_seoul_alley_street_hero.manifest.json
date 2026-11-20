@@ -1,0 +1,80 @@
+{
+  "assetId": "kr_seoul_alley_street_hero",
+  "cutawayContract": "room-v1",
+  "fileName": "kr_seoul_alley_street_hero.glb",
+  "byteSize": 3826284,
+  "sha256": "sha256:3fc34613745d056d123c7aba317615f94653f4e3f8817099d67d3932f4224408",
+  "bounds": [
+    8.0,
+    7.469,
+    16.0
+  ],
+  "nodes": [
+    "BG_Floor",
+    "BG_Wall_North",
+    "BG_Wall_South",
+    "BG_Wall_West",
+    "BG_Wall_East",
+    "BG_Ceiling",
+    "BG_Furniture_Hero",
+    "BG_Props_Clutter"
+  ],
+  "triangles": 72396,
+  "drawCalls": 8,
+  "materials": 4,
+  "mobile": {
+    "fileName": "kr_seoul_alley_street_hero-mobile.glb",
+    "byteSize": 2508996,
+    "sha256": "sha256:f283749f6bdc2dd8e39a5d488ff624670a01fb402d7b226e666e04fff45c604d",
+    "nodes": [
+      "BG_Shell_Fixed",
+      "BG_Cutaway_Front",
+      "BG_Ceiling",
+      "BG_Furnishings"
+    ],
+    "triangles": 72396,
+    "drawCalls": 4,
+    "materials": 2
+  },
+  "cameras": {
+    "alleyPerspective24mm": {
+      "position": [
+        0.15,
+        1.72,
+        7.4
+      ],
+      "target": [
+        -0.1,
+        2.55,
+        -4.2
+      ],
+      "lensMm": 24
+    },
+    "streetlampDialogue35mm": {
+      "position": [
+        -1.15,
+        1.56,
+        2.8
+      ],
+      "target": [
+        1.05,
+        2.45,
+        -4.8
+      ],
+      "lensMm": 35
+    },
+    "lowAngle20mm": {
+      "position": [
+        0.45,
+        0.85,
+        6.2
+      ],
+      "target": [
+        -0.4,
+        3.8,
+        -3.5
+      ],
+      "lensMm": 20
+    }
+  }
+}

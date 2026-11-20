@@ -17,6 +17,7 @@ import {
 import { STUDIO_BG3D_BUNDLED_ENVIRONMENT_LIBRARY_ENTRIES } from "./studio-bg3d-bundled-environment-library";
 import {
   STUDIO_BG3D_ENVIRONMENT_ASSETS,
+  STUDIO_BG3D_ENVIRONMENT_ASSETS_HERO_V1,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_V3,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_V4,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_V5,
@@ -236,16 +237,17 @@ describe("Studio BG3D Blender 5.2 Wave 5 environment pack", () => {
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS_V4).toHaveLength(3);
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS_V5).toHaveLength(3);
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toEqual([
+      ...STUDIO_BG3D_ENVIRONMENT_ASSETS_HERO_V1,
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
       ...STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
       ...STUDIO_BG3D_CURRENT_PARK_AND_STREET_ENVIRONMENTS,
       ...STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
     ]);
-    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toHaveLength(35);
-    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id)).size).toBe(35);
-    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ fileName }) => fileName)).size).toBe(35);
-    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ sha256 }) => sha256)).size).toBe(35);
+    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toHaveLength(41);
+    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id)).size).toBe(41);
+    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ fileName }) => fileName)).size).toBe(41);
+    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ sha256 }) => sha256)).size).toBe(41);
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS_V5.map(({ theme }) => theme)).toEqual([
       "retail",
       "transit",
@@ -529,12 +531,12 @@ describe("Studio BG3D Blender 5.2 Wave 5 environment pack", () => {
   });
 
   it("projects all active bundled cards independently of local OPFS availability", () => {
-    expect(SAMPLE_BG3D_MODEL_ENTRIES).toHaveLength(35);
-    expect(STUDIO_BG3D_BUNDLED_ENVIRONMENT_LIBRARY_ENTRIES).toHaveLength(35);
+    expect(SAMPLE_BG3D_MODEL_ENTRIES).toHaveLength(41);
+    expect(STUDIO_BG3D_BUNDLED_ENVIRONMENT_LIBRARY_ENTRIES).toHaveLength(41);
     expect(STUDIO_BG3D_BUNDLED_ENVIRONMENT_LIBRARY_ENTRIES.map(({ id }) => id)).toEqual(
       STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id),
     );
-    expect(STUDIO_BG3D_BUNDLED_ENVIRONMENT_LIBRARY_ENTRIES.slice(9, 12)).toEqual(
+    expect(STUDIO_BG3D_BUNDLED_ENVIRONMENT_LIBRARY_ENTRIES.slice(15, 18)).toEqual(
       STUDIO_BG3D_ENVIRONMENT_ASSETS_V6.slice(-3).map((asset) => expect.objectContaining({
         id: asset.id,
         source: "sample",

@@ -1,0 +1,2215 @@
+{
+  "schema": "toonstudio.character-kit.base-v2/1",
+  "archetypeId": "female-romance",
+  "labelKo": "로맨스 여성 주연 (7.8등신)",
+  "genre": "romance/rofan/academy",
+  "file": {
+    "path": "female-romance.glb",
+    "bytes": 3123128,
+    "sha256": "916ad796078a693bd77c280e509e21a34b96464ab136af054f01f4e9ebf9fd51"
+  },
+  "targetHeightM": 1.65,
+  "heightM": 1.65,
+  "headHeightM": 0.2116,
+  "targetHeadToBodyRatio": 7.8,
+  "headToBodyRatio": 7.8,
+  "boundsM": {
+    "min": [
+      -0.82696,
+      0.0,
+      -0.13094
+    ],
+    "max": [
+      0.82696,
+      1.65,
+      0.16477
+    ]
+  },
+  "materials": [
+    "ts_skin_body",
+    "ts_skin_head",
+    "ts_eye_sclera",
+    "ts_mouth_inner",
+    "ts_lashes_brows"
+  ],
+  "jointCount": 68,
+  "eyeVertexCounts": {
+    "TS_Eye.L": 632,
+    "TS_Eye.R": 632
+  },
+  "neckSeamVertexPairs": 64,
+  "ellipsoidFaceNormalBlend": 0.85,
+  "browSnapOffsetMm": 0.7,
+  "unifiedBmeshAudit": {
+    "vertices": 13810,
+    "faces": 13808,
+    "quads": 13808,
+    "tris": 0,
+    "ngons": 0,
+    "quadRatio": 1.0,
+    "trueNonManifold": 0,
+    "boundaryEdges": 0,
+    "looseVerts": 0,
+    "wireEdges": 0,
+    "zeroAreaFaces": 0,
+    "minZ": 0.0,
+    "maxZ": 1.65
+  },
+  "uvOverlap": {
+    "TS_Body": 8e-05,
+    "TS_Head": 3e-05
+  },
+  "triangles": {
+    "TS_Body": 20384,
+    "TS_Head": 7232,
+    "TS_Eye_L": 1248,
+    "TS_Eye_R": 1248,
+    "TS_Mouth": 496,
+    "TS_Lashes": 560,
+    "TS_Brow_L": 164,
+    "TS_Brow_R": 164,
+    "total": 31496
+  },
+  "morphCounts": {
+    "TS_Body": 18,
+    "TS_Head": 54,
+    "TS_Eye_L": 16,
+    "TS_Eye_R": 16,
+    "TS_Mouth": 20,
+    "TS_Lashes": 25,
+    "TS_Brow_L": 25,
+    "TS_Brow_R": 25,
+    "uniqueContractTotal": 64
+  },
+  "bodyRegions": [
+    {
+      "id": "neck",
+      "mesh": "TS_Body",
+      "indexStart": 0,
+      "indexCount": 1536
+    },
+    {
+      "id": "torso",
+      "mesh": "TS_Body",
+      "indexStart": 1536,
+      "indexCount": 9792
+    },
+    {
+      "id": "pelvis",
+      "mesh": "TS_Body",
+      "indexStart": 11328,
+      "indexCount": 2496
+    },
+    {
+      "id": "upperArm.L",
+      "mesh": "TS_Body",
+      "indexStart": 13824,
+      "indexCount": 3456
+    },
+    {
+      "id": "upperArm.R",
+      "mesh": "TS_Body",
+      "indexStart": 17280,
+      "indexCount": 3456
+    },
+    {
+      "id": "forearm.L",
+      "mesh": "TS_Body",
+      "indexStart": 20736,
+      "indexCount": 3456
+    },
+    {
+      "id": "forearm.R",
+      "mesh": "TS_Body",
+      "indexStart": 24192,
+      "indexCount": 3456
+    },
+    {
+      "id": "hand.L",
+      "mesh": "TS_Body",
+      "indexStart": 27648,
+      "indexCount": 5520
+    },
+    {
+      "id": "hand.R",
+      "mesh": "TS_Body",
+      "indexStart": 33168,
+      "indexCount": 5520
+    },
+    {
+      "id": "thigh.L",
+      "mesh": "TS_Body",
+      "indexStart": 38688,
+      "indexCount": 3888
+    },
+    {
+      "id": "thigh.R",
+      "mesh": "TS_Body",
+      "indexStart": 42576,
+      "indexCount": 3888
+    },
+    {
+      "id": "calf.L",
+      "mesh": "TS_Body",
+      "indexStart": 46464,
+      "indexCount": 4752
+    },
+    {
+      "id": "calf.R",
+      "mesh": "TS_Body",
+      "indexStart": 51216,
+      "indexCount": 4752
+    },
+    {
+      "id": "foot.L",
+      "mesh": "TS_Body",
+      "indexStart": 55968,
+      "indexCount": 2592
+    },
+    {
+      "id": "foot.R",
+      "mesh": "TS_Body",
+      "indexStart": 58560,
+      "indexCount": 2592
+    }
+  ],
+  "jointOffsets": {
+    "param:height:+": {
+      "mixamorig:Hips": [
+        0.0,
+        0.0723445,
+        0.00064
+      ],
+      "mixamorig:Spine": [
+        0.0,
+        0.0080892,
+        -0.00032
+      ],
+      "mixamorig:Spine1": [
+        0.0,
+        0.0120715,
+        -0.00032
+      ],
+      "mixamorig:Spine2": [
+        0.0,
+        0.0115738,
+        0.0
+      ],
+      "mixamorig:Neck": [
+        0.0,
+        0.0070369,
+        0.00048
+      ],
+      "mixamorig:Head": [
+        0.0,
+        0.0070527,
+        -0.00016
+      ],
+      "mixamorig:HeadTop_End": [
+        0.0,
+        0.0138823,
+        0.0
+      ],
+      "mixamorig:LeftShoulder": [
+        0.00306,
+        0.0025654,
+        0.00048
+      ],
+      "mixamorig:LeftArm": [
+        0.00942,
+        -0.0009604,
+        -0.00016
+      ],
+      "mixamorig:LeftForeArm": [
+        0.0214157,
+        0.0,
+        -0.00048
+      ],
+      "mixamorig:LeftHand": [
+        0.0197683,
+        0.0,
+        0.00048
+      ],
+      "mixamorig:LeftHandThumb1": [
+        0.002232,
+        -0.0006402,
+        0.0022464
+      ],
+      "mixamorig:LeftHandThumb2": [
+        0.0017956,
+        -0.0004254,
+        0.0014648
+      ],
+      "mixamorig:LeftHandThumb3": [
+        0.0015121,
+        -0.0003583,
+        0.0012335
+      ],
+      "mixamorig:LeftHandThumb4": [
+        0.0012286,
+        -0.0002911,
+        0.0010023
+      ],
+      "mixamorig:LeftHandIndex1": [
+        0.0062,
+        -0.0001601,
+        0.0021312
+      ],
+      "mixamorig:LeftHandIndex2": [
+        0.002604,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex3": [
+        0.001736,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex4": [
+        0.001364,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle1": [
+        0.006448,
+        -0.0001601,
+        0.0006912
+      ],
+      "mixamorig:LeftHandMiddle2": [
+        0.002852,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle3": [
+        0.00186,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle4": [
+        0.001488,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandRing1": [
+        0.0062,
+        -0.0001601,
+        -0.0007488
+      ],
+      "mixamorig:LeftHandRing2": [
+        0.002604,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandRing3": [
+        0.001736,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandRing4": [
+        0.001364,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky1": [
+        0.005704,
+        -0.0001601,
+        -0.0021312
+      ],
+      "mixamorig:LeftHandPinky2": [
+        0.002108,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky3": [
+        0.001364,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky4": [
+        0.001116,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:LeftUpLeg": [
+        0.00656,
+        -0.0047104,
+        0.0
+      ],
+      "mixamorig:LeftLeg": [
+        -0.0003936,
+        -0.031221,
+        0.00016
+      ],
+      "mixamorig:LeftFoot": [
+        -0.0002624,
+        -0.0306028,
+        -0.0008
+      ],
+      "mixamorig:LeftToeBase": [
+        0.0,
+        -0.0038348,
+        0.010248
+      ],
+      "mixamorig:LeftToe_End": [
+        0.0,
+        -0.0006972,
+        0.00516
+      ],
+      "mixamorig:RightShoulder": [
+        -0.00306,
+        0.0025654,
+        0.00048
+      ],
+      "mixamorig:RightArm": [
+        -0.00942,
+        -0.0009604,
+        -0.00016
+      ],
+      "mixamorig:RightForeArm": [
+        -0.0214157,
+        0.0,
+        -0.00048
+      ],
+      "mixamorig:RightHand": [
+        -0.0197683,
+        0.0,
+        0.00048
+      ],
+      "mixamorig:RightHandThumb1": [
+        -0.002232,
+        -0.0006402,
+        0.0022464
+      ],
+      "mixamorig:RightHandThumb2": [
+        -0.0017956,
+        -0.0004254,
+        0.0014648
+      ],
+      "mixamorig:RightHandThumb3": [
+        -0.0015121,
+        -0.0003583,
+        0.0012335
+      ],
+      "mixamorig:RightHandThumb4": [
+        -0.0012286,
+        -0.0002911,
+        0.0010023
+      ],
+      "mixamorig:RightHandIndex1": [
+        -0.0062,
+        -0.0001601,
+        0.0021312
+      ],
+      "mixamorig:RightHandIndex2": [
+        -0.002604,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandIndex3": [
+        -0.001736,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandIndex4": [
+        -0.001364,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle1": [
+        -0.006448,
+        -0.0001601,
+        0.0006912
+      ],
+      "mixamorig:RightHandMiddle2": [
+        -0.002852,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle3": [
+        -0.00186,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle4": [
+        -0.001488,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandRing1": [
+        -0.0062,
+        -0.0001601,
+        -0.0007488
+      ],
+      "mixamorig:RightHandRing2": [
+        -0.002604,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandRing3": [
+        -0.001736,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandRing4": [
+        -0.001364,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandPinky1": [
+        -0.005704,
+        -0.0001601,
+        -0.0021312
+      ],
+      "mixamorig:RightHandPinky2": [
+        -0.002108,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandPinky3": [
+        -0.001364,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandPinky4": [
+        -0.001116,
+        -8e-05,
+        0.0
+      ],
+      "mixamorig:RightUpLeg": [
+        -0.00656,
+        -0.0047104,
+        0.0
+      ],
+      "mixamorig:RightLeg": [
+        0.0003936,
+        -0.031221,
+        0.00016
+      ],
+      "mixamorig:RightFoot": [
+        0.0002624,
+        -0.0306028,
+        -0.0008
+      ],
+      "mixamorig:RightToeBase": [
+        0.0,
+        -0.0038348,
+        0.010248
+      ],
+      "mixamorig:RightToe_End": [
+        0.0,
+        -0.0006972,
+        0.00516
+      ],
+      "TS_Jaw": [
+        0.0,
+        0.0016889,
+        0.0009408
+      ],
+      "TS_Eye.L": [
+        0.0027,
+        0.0047403,
+        0.0055463
+      ],
+      "TS_Eye.R": [
+        -0.0027,
+        0.0047403,
+        0.0055463
+      ]
+    },
+    "param:height:-": {
+      "mixamorig:Hips": [
+        -0.0,
+        -0.0723445,
+        -0.00064
+      ],
+      "mixamorig:Spine": [
+        0.0,
+        -0.0080892,
+        0.00032
+      ],
+      "mixamorig:Spine1": [
+        0.0,
+        -0.0120715,
+        0.00032
+      ],
+      "mixamorig:Spine2": [
+        0.0,
+        -0.0115738,
+        0.0
+      ],
+      "mixamorig:Neck": [
+        0.0,
+        -0.0070369,
+        -0.00048
+      ],
+      "mixamorig:Head": [
+        0.0,
+        -0.0070527,
+        0.00016
+      ],
+      "mixamorig:HeadTop_End": [
+        0.0,
+        -0.0138823,
+        0.0
+      ],
+      "mixamorig:LeftShoulder": [
+        -0.00306,
+        -0.0025654,
+        -0.00048
+      ],
+      "mixamorig:LeftArm": [
+        -0.00942,
+        0.0009604,
+        0.00016
+      ],
+      "mixamorig:LeftForeArm": [
+        -0.0214157,
+        0.0,
+        0.00048
+      ],
+      "mixamorig:LeftHand": [
+        -0.0197683,
+        0.0,
+        -0.00048
+      ],
+      "mixamorig:LeftHandThumb1": [
+        -0.002232,
+        0.0006402,
+        -0.0022464
+      ],
+      "mixamorig:LeftHandThumb2": [
+        -0.0017956,
+        0.0004254,
+        -0.0014648
+      ],
+      "mixamorig:LeftHandThumb3": [
+        -0.0015121,
+        0.0003583,
+        -0.0012335
+      ],
+      "mixamorig:LeftHandThumb4": [
+        -0.0012286,
+        0.0002911,
+        -0.0010023
+      ],
+      "mixamorig:LeftHandIndex1": [
+        -0.0062,
+        0.0001601,
+        -0.0021312
+      ],
+      "mixamorig:LeftHandIndex2": [
+        -0.002604,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex3": [
+        -0.001736,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex4": [
+        -0.001364,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle1": [
+        -0.006448,
+        0.0001601,
+        -0.0006912
+      ],
+      "mixamorig:LeftHandMiddle2": [
+        -0.002852,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle3": [
+        -0.00186,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle4": [
+        -0.001488,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandRing1": [
+        -0.0062,
+        0.0001601,
+        0.0007488
+      ],
+      "mixamorig:LeftHandRing2": [
+        -0.002604,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandRing3": [
+        -0.001736,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandRing4": [
+        -0.001364,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky1": [
+        -0.005704,
+        0.0001601,
+        0.0021312
+      ],
+      "mixamorig:LeftHandPinky2": [
+        -0.002108,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky3": [
+        -0.001364,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky4": [
+        -0.001116,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:LeftUpLeg": [
+        -0.00656,
+        0.0047104,
+        0.0
+      ],
+      "mixamorig:LeftLeg": [
+        0.0003936,
+        0.031221,
+        -0.00016
+      ],
+      "mixamorig:LeftFoot": [
+        0.0002624,
+        0.0306028,
+        0.0008
+      ],
+      "mixamorig:LeftToeBase": [
+        0.0,
+        0.0038348,
+        -0.010248
+      ],
+      "mixamorig:LeftToe_End": [
+        0.0,
+        0.0006972,
+        -0.00516
+      ],
+      "mixamorig:RightShoulder": [
+        0.00306,
+        -0.0025654,
+        -0.00048
+      ],
+      "mixamorig:RightArm": [
+        0.00942,
+        0.0009604,
+        0.00016
+      ],
+      "mixamorig:RightForeArm": [
+        0.0214157,
+        0.0,
+        0.00048
+      ],
+      "mixamorig:RightHand": [
+        0.0197683,
+        0.0,
+        -0.00048
+      ],
+      "mixamorig:RightHandThumb1": [
+        0.002232,
+        0.0006402,
+        -0.0022464
+      ],
+      "mixamorig:RightHandThumb2": [
+        0.0017956,
+        0.0004254,
+        -0.0014648
+      ],
+      "mixamorig:RightHandThumb3": [
+        0.0015121,
+        0.0003583,
+        -0.0012335
+      ],
+      "mixamorig:RightHandThumb4": [
+        0.0012286,
+        0.0002911,
+        -0.0010023
+      ],
+      "mixamorig:RightHandIndex1": [
+        0.0062,
+        0.0001601,
+        -0.0021312
+      ],
+      "mixamorig:RightHandIndex2": [
+        0.002604,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandIndex3": [
+        0.001736,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandIndex4": [
+        0.001364,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle1": [
+        0.006448,
+        0.0001601,
+        -0.0006912
+      ],
+      "mixamorig:RightHandMiddle2": [
+        0.002852,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle3": [
+        0.00186,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle4": [
+        0.001488,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandRing1": [
+        0.0062,
+        0.0001601,
+        0.0007488
+      ],
+      "mixamorig:RightHandRing2": [
+        0.002604,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandRing3": [
+        0.001736,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandRing4": [
+        0.001364,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandPinky1": [
+        0.005704,
+        0.0001601,
+        0.0021312
+      ],
+      "mixamorig:RightHandPinky2": [
+        0.002108,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandPinky3": [
+        0.001364,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:RightHandPinky4": [
+        0.001116,
+        8e-05,
+        0.0
+      ],
+      "mixamorig:RightUpLeg": [
+        0.00656,
+        0.0047104,
+        0.0
+      ],
+      "mixamorig:RightLeg": [
+        -0.0003936,
+        0.031221,
+        -0.00016
+      ],
+      "mixamorig:RightFoot": [
+        -0.0002624,
+        0.0306028,
+        0.0008
+      ],
+      "mixamorig:RightToeBase": [
+        0.0,
+        0.0038348,
+        -0.010248
+      ],
+      "mixamorig:RightToe_End": [
+        0.0,
+        0.0006972,
+        -0.00516
+      ],
+      "TS_Jaw": [
+        0.0,
+        -0.0016889,
+        -0.0009408
+      ],
+      "TS_Eye.L": [
+        -0.0027,
+        -0.0047403,
+        -0.0055463
+      ],
+      "TS_Eye.R": [
+        0.0027,
+        -0.0047403,
+        -0.0055463
+      ]
+    },
+    "param:shoulderWidth:+": {
+      "mixamorig:LeftArm": [
+        0.0277646,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftForeArm": [
+        0.0003154,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightArm": [
+        -0.0277646,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightForeArm": [
+        -0.0003154,
+        0.0,
+        0.0
+      ]
+    },
+    "param:shoulderWidth:-": {
+      "mixamorig:LeftArm": [
+        -0.0277646,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftForeArm": [
+        -0.0003154,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightArm": [
+        0.0277646,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightForeArm": [
+        0.0003154,
+        0.0,
+        0.0
+      ]
+    },
+    "param:chestDepth:+": {
+      "mixamorig:Neck": [
+        0.0,
+        0.0,
+        2.9e-05
+      ],
+      "mixamorig:Head": [
+        0.0,
+        0.0,
+        -2.9e-05
+      ],
+      "mixamorig:LeftShoulder": [
+        0.0017607,
+        0.0,
+        0.0007365
+      ],
+      "mixamorig:LeftArm": [
+        0.0054726,
+        0.0,
+        -0.0005582
+      ],
+      "mixamorig:LeftForeArm": [
+        0.0,
+        0.0,
+        -0.0001783
+      ],
+      "mixamorig:LeftHandThumb1": [
+        0.0005932,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb2": [
+        0.0003926,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb3": [
+        0.0003276,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb4": [
+        0.0002632,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex1": [
+        0.0001482,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex2": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex3": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex4": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle1": [
+        0.0001482,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle2": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle3": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle4": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing1": [
+        0.0001482,
+        0.0,
+        -0.0
+      ],
+      "mixamorig:LeftHandRing2": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing3": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing4": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky1": [
+        0.0001482,
+        0.0,
+        -0.0
+      ],
+      "mixamorig:LeftHandPinky2": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky3": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky4": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightShoulder": [
+        -0.0017607,
+        0.0,
+        0.0007365
+      ],
+      "mixamorig:RightArm": [
+        -0.0054726,
+        0.0,
+        -0.0005582
+      ],
+      "mixamorig:RightForeArm": [
+        0.0,
+        0.0,
+        -0.0001783
+      ],
+      "mixamorig:RightHandThumb1": [
+        -0.0005932,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb2": [
+        -0.0003926,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb3": [
+        -0.0003276,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb4": [
+        -0.0002632,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex1": [
+        -0.0001482,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex2": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex3": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex4": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle1": [
+        -0.0001482,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle2": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle3": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle4": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing1": [
+        -0.0001482,
+        0.0,
+        -0.0
+      ],
+      "mixamorig:RightHandRing2": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing3": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing4": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky1": [
+        -0.0001482,
+        0.0,
+        -0.0
+      ],
+      "mixamorig:RightHandPinky2": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky3": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky4": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ]
+    },
+    "param:chestDepth:-": {
+      "mixamorig:Neck": [
+        0.0,
+        0.0,
+        -2.9e-05
+      ],
+      "mixamorig:Head": [
+        0.0,
+        0.0,
+        2.9e-05
+      ],
+      "mixamorig:LeftShoulder": [
+        -0.0017607,
+        0.0,
+        -0.0007365
+      ],
+      "mixamorig:LeftArm": [
+        -0.0054726,
+        0.0,
+        0.0005582
+      ],
+      "mixamorig:LeftForeArm": [
+        0.0,
+        0.0,
+        0.0001783
+      ],
+      "mixamorig:LeftHandThumb1": [
+        -0.0005932,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb2": [
+        -0.0003926,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb3": [
+        -0.0003276,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb4": [
+        -0.0002632,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex1": [
+        -0.0001482,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex2": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex3": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex4": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle1": [
+        -0.0001482,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle2": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle3": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle4": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing1": [
+        -0.0001482,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing2": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing3": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing4": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky1": [
+        -0.0001482,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky2": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky3": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky4": [
+        -7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightShoulder": [
+        0.0017607,
+        0.0,
+        -0.0007365
+      ],
+      "mixamorig:RightArm": [
+        0.0054726,
+        0.0,
+        0.0005582
+      ],
+      "mixamorig:RightForeArm": [
+        0.0,
+        0.0,
+        0.0001783
+      ],
+      "mixamorig:RightHandThumb1": [
+        0.0005932,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb2": [
+        0.0003926,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb3": [
+        0.0003276,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb4": [
+        0.0002632,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex1": [
+        0.0001482,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex2": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex3": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex4": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle1": [
+        0.0001482,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle2": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle3": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle4": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing1": [
+        0.0001482,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing2": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing3": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing4": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky1": [
+        0.0001482,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky2": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky3": [
+        7.42e-05,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky4": [
+        7.42e-05,
+        0.0,
+        0.0
+      ]
+    },
+    "param:waist:+": {
+      "mixamorig:Spine1": [
+        0.0,
+        0.0,
+        -0.0004004
+      ],
+      "mixamorig:Spine2": [
+        0.0,
+        0.0,
+        0.0004004
+      ],
+      "mixamorig:LeftUpLeg": [
+        0.0011098,
+        0.0,
+        5.33e-05
+      ],
+      "mixamorig:LeftLeg": [
+        -0.0011098,
+        0.0,
+        -5.41e-05
+      ],
+      "mixamorig:RightUpLeg": [
+        -0.0011098,
+        0.0,
+        5.33e-05
+      ],
+      "mixamorig:RightLeg": [
+        0.0011098,
+        0.0,
+        -5.41e-05
+      ]
+    },
+    "param:waist:-": {
+      "mixamorig:Spine1": [
+        0.0,
+        0.0,
+        0.0004004
+      ],
+      "mixamorig:Spine2": [
+        0.0,
+        0.0,
+        -0.0004004
+      ],
+      "mixamorig:LeftUpLeg": [
+        -0.0011098,
+        0.0,
+        -5.33e-05
+      ],
+      "mixamorig:LeftLeg": [
+        0.0011098,
+        0.0,
+        5.41e-05
+      ],
+      "mixamorig:RightUpLeg": [
+        0.0011098,
+        0.0,
+        -5.33e-05
+      ],
+      "mixamorig:RightLeg": [
+        -0.0011098,
+        0.0,
+        5.41e-05
+      ]
+    },
+    "param:hip:+": {
+      "mixamorig:Spine": [
+        0.0,
+        0.0,
+        -0.0002401
+      ],
+      "mixamorig:Spine1": [
+        0.0,
+        0.0,
+        0.0002401
+      ],
+      "mixamorig:LeftUpLeg": [
+        0.0108041,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftLeg": [
+        -0.0108041,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightUpLeg": [
+        -0.0108041,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightLeg": [
+        0.0108041,
+        0.0,
+        0.0
+      ]
+    },
+    "param:hip:-": {
+      "mixamorig:Spine": [
+        0.0,
+        0.0,
+        0.0002401
+      ],
+      "mixamorig:Spine1": [
+        0.0,
+        0.0,
+        -0.0002401
+      ],
+      "mixamorig:LeftUpLeg": [
+        -0.0108041,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftLeg": [
+        0.0108041,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightUpLeg": [
+        0.0108041,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightLeg": [
+        -0.0108041,
+        0.0,
+        0.0
+      ]
+    },
+    "param:armLength:+": {
+      "mixamorig:LeftArm": [
+        0.0015571,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftForeArm": [
+        0.0305664,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHand": [
+        0.0296525,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb1": [
+        0.003348,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb2": [
+        0.0026934,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb3": [
+        0.0022681,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb4": [
+        0.0018428,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex1": [
+        0.0093,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex2": [
+        0.003906,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex3": [
+        0.002604,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex4": [
+        0.002046,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle1": [
+        0.009672,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle2": [
+        0.004278,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle3": [
+        0.00279,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle4": [
+        0.002232,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing1": [
+        0.0093,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing2": [
+        0.003906,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing3": [
+        0.002604,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing4": [
+        0.002046,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky1": [
+        0.008556,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky2": [
+        0.003162,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky3": [
+        0.002046,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky4": [
+        0.001674,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightArm": [
+        -0.0015571,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightForeArm": [
+        -0.0305664,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHand": [
+        -0.0296525,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb1": [
+        -0.003348,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb2": [
+        -0.0026934,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb3": [
+        -0.0022681,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb4": [
+        -0.0018428,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex1": [
+        -0.0093,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex2": [
+        -0.003906,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex3": [
+        -0.002604,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex4": [
+        -0.002046,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle1": [
+        -0.009672,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle2": [
+        -0.004278,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle3": [
+        -0.00279,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle4": [
+        -0.002232,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing1": [
+        -0.0093,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing2": [
+        -0.003906,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing3": [
+        -0.002604,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing4": [
+        -0.002046,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky1": [
+        -0.008556,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky2": [
+        -0.003162,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky3": [
+        -0.002046,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky4": [
+        -0.001674,
+        0.0,
+        0.0
+      ]
+    },
+    "param:armLength:-": {
+      "mixamorig:LeftArm": [
+        -0.0015571,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftForeArm": [
+        -0.0305664,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHand": [
+        -0.0296525,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb1": [
+        -0.003348,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb2": [
+        -0.0026934,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb3": [
+        -0.0022681,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandThumb4": [
+        -0.0018428,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex1": [
+        -0.0093,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex2": [
+        -0.003906,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex3": [
+        -0.002604,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandIndex4": [
+        -0.002046,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle1": [
+        -0.009672,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle2": [
+        -0.004278,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle3": [
+        -0.00279,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandMiddle4": [
+        -0.002232,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing1": [
+        -0.0093,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing2": [
+        -0.003906,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing3": [
+        -0.002604,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandRing4": [
+        -0.002046,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky1": [
+        -0.008556,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky2": [
+        -0.003162,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky3": [
+        -0.002046,
+        0.0,
+        0.0
+      ],
+      "mixamorig:LeftHandPinky4": [
+        -0.001674,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightArm": [
+        0.0015571,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightForeArm": [
+        0.0305664,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHand": [
+        0.0296525,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb1": [
+        0.003348,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb2": [
+        0.0026934,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb3": [
+        0.0022681,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandThumb4": [
+        0.0018428,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex1": [
+        0.0093,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex2": [
+        0.003906,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex3": [
+        0.002604,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandIndex4": [
+        0.002046,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle1": [
+        0.009672,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle2": [
+        0.004278,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle3": [
+        0.00279,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandMiddle4": [
+        0.002232,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing1": [
+        0.0093,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing2": [
+        0.003906,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing3": [
+        0.002604,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandRing4": [
+        0.002046,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky1": [
+        0.008556,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky2": [
+        0.003162,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky3": [
+        0.002046,
+        0.0,
+        0.0
+      ],
+      "mixamorig:RightHandPinky4": [
+        0.001674,
+        0.0,
+        0.0
+      ]
+    },
+    "param:legLength:+": {
+      "mixamorig:Hips": [
+        0.0,
+        0.0879234,
+        0.0
+      ],
+      "mixamorig:Spine": [
+        0.0,
+        0.0022928,
+        0.0
+      ],
+      "mixamorig:Spine1": [
+        0.0,
+        0.0002111,
+        0.0
+      ],
+      "mixamorig:Spine2": [
+        0.0,
+        3.3e-06,
+        0.0
+      ],
+      "mixamorig:LeftUpLeg": [
+        0.0,
+        -0.0040293,
+        0.0
+      ],
+      "mixamorig:LeftLeg": [
+        0.0,
+        -0.0383778,
+        0.0
+      ],
+      "mixamorig:LeftFoot": [
+        0.0,
+        -0.0382535,
+        0.0
+      ],
+      "mixamorig:LeftToeBase": [
+        0.0,
+        -0.0047934,
+        0.0
+      ],
+      "mixamorig:LeftToe_End": [
+        0.0,
+        -0.0008715,
+        0.0
+      ],
+      "mixamorig:RightUpLeg": [
+        0.0,
+        -0.0040293,
+        0.0
+      ],
+      "mixamorig:RightLeg": [
+        0.0,
+        -0.0383778,
+        0.0
+      ],
+      "mixamorig:RightFoot": [
+        0.0,
+        -0.0382535,
+        0.0
+      ],
+      "mixamorig:RightToeBase": [
+        0.0,
+        -0.0047934,
+        0.0
+      ],
+      "mixamorig:RightToe_End": [
+        0.0,
+        -0.0008715,
+        0.0
+      ]
+    },
+    "param:legLength:-": {
+      "mixamorig:Hips": [
+        -0.0,
+        -0.0879234,
+        -0.0
+      ],
+      "mixamorig:Spine": [
+        0.0,
+        -0.0022928,
+        0.0
+      ],
+      "mixamorig:Spine1": [
+        0.0,
+        -0.0002111,
+        0.0
+      ],
+      "mixamorig:Spine2": [
+        0.0,
+        -3.3e-06,
+        0.0
+      ],
+      "mixamorig:LeftUpLeg": [
+        0.0,
+        0.0040293,
+        0.0
+      ],
+      "mixamorig:LeftLeg": [
+        0.0,
+        0.0383778,
+        0.0
+      ],
+      "mixamorig:LeftFoot": [
+        0.0,
+        0.0382535,
+        0.0
+      ],
+      "mixamorig:LeftToeBase": [
+        0.0,
+        0.0047934,
+        0.0
+      ],
+      "mixamorig:LeftToe_End": [
+        0.0,
+        0.0008715,
+        0.0
+      ],
+      "mixamorig:RightUpLeg": [
+        0.0,
+        0.0040293,
+        0.0
+      ],
+      "mixamorig:RightLeg": [
+        0.0,
+        0.0383778,
+        0.0
+      ],
+      "mixamorig:RightFoot": [
+        0.0,
+        0.0382535,
+        0.0
+      ],
+      "mixamorig:RightToeBase": [
+        0.0,
+        0.0047934,
+        0.0
+      ],
+      "mixamorig:RightToe_End": [
+        0.0,
+        0.0008715,
+        0.0
+      ]
+    },
+    "param:headSize:+": {
+      "mixamorig:Neck": [
+        0.0,
+        -0.0008514,
+        2.14e-05
+      ],
+      "mixamorig:Head": [
+        0.0,
+        0.0018686,
+        -2.14e-05
+      ],
+      "mixamorig:HeadTop_End": [
+        0.0,
+        0.0208234,
+        0.0
+      ],
+      "TS_Jaw": [
+        0.0,
+        0.0025334,
+        0.0014112
+      ],
+      "TS_Eye.L": [
+        0.00405,
+        0.0071104,
+        0.0083194
+      ],
+      "TS_Eye.R": [
+        -0.00405,
+        0.0071104,
+        0.0083194
+      ]
+    },
+    "param:headSize:-": {
+      "mixamorig:Neck": [
+        0.0,
+        0.0008514,
+        -2.14e-05
+      ],
+      "mixamorig:Head": [
+        0.0,
+        -0.0018686,
+        2.14e-05
+      ],
+      "mixamorig:HeadTop_End": [
+        0.0,
+        -0.0208234,
+        0.0
+      ],
+      "TS_Jaw": [
+        0.0,
+        -0.0025334,
+        -0.0014112
+      ],
+      "TS_Eye.L": [
+        -0.00405,
+        -0.0071104,
+        -0.0083194
+      ],
+      "TS_Eye.R": [
+        0.00405,
+        -0.0071104,
+        -0.0083194
+      ]
+    },
+    "param:neckLength:+": {
+      "mixamorig:Neck": [
+        0.0,
+        0.0032142,
+        0.0
+      ],
+      "mixamorig:Head": [
+        0.0,
+        0.0264858,
+        0.0
+      ]
+    },
+    "param:neckLength:-": {
+      "mixamorig:Neck": [
+        0.0,
+        -0.0032142,
+        0.0
+      ],
+      "mixamorig:Head": [
+        0.0,
+        -0.0264858,
+        0.0
+      ]
+    }
+  },
+  "buildSeconds": 4.24
+}

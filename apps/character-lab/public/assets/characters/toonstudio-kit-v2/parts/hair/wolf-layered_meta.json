@@ -1,0 +1,640 @@
+{
+  "schema": "toonstudio.character-kit.hair-v2/1",
+  "styleId": "wolf-layered",
+  "labelKo": "울프 레이어드 컷",
+  "genre": "액션·학원",
+  "fittedBase": "female-romance",
+  "file": {
+    "path": "wolf-layered.glb",
+    "bytes": 1340604,
+    "sha256": "7f13debe8f706080331832ccbef9e8bddc862c822e5ae367e8b51a069d584b03"
+  },
+  "drawCalls": 8,
+  "materials": [
+    "ts_hair_wolf-layered",
+    "ts_hair_tip_wolf-layered",
+    "ts_hair_accent_wolf-layered"
+  ],
+  "lods": [
+    {
+      "node": "TS_AuthoredHair_wolf-layered_LOD0",
+      "lod": 0,
+      "triangles": 9612,
+      "vertices": 4876,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_wolf-layered_LOD1",
+      "lod": 1,
+      "triangles": 4790,
+      "vertices": 2465,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_wolf-layered_LOD2",
+      "lod": 2,
+      "triangles": 1648,
+      "vertices": 876,
+      "primitives": 2,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    }
+  ],
+  "morphs": [
+    "param:height:+",
+    "param:height:-",
+    "param:legLength:+",
+    "param:legLength:-",
+    "param:neckLength:+",
+    "param:neckLength:-",
+    "param:headSize:+",
+    "param:headSize:-",
+    "shape:bang-length:+",
+    "shape:bang-length:-",
+    "shape:volume:+",
+    "shape:volume:-",
+    "shape:sway:+",
+    "shape:sway:-"
+  ],
+  "shapes": [
+    "bang-length",
+    "volume",
+    "sway"
+  ],
+  "uv0Monotonic": true,
+  "uv1Purpose": "hair-flow",
+  "texture": {
+    "bytes": 21555,
+    "size": 512,
+    "meanLuminance": 0.9231,
+    "minLuminance": 0.8,
+    "columns": 4
+  },
+  "springBone": {
+    "schema": "toonstudio.hair-springbone/1",
+    "vrmSpec": "VRMC_springBone-1.0",
+    "styleId": "wolf-layered",
+    "fittedBase": "female-romance",
+    "chainCount": 4,
+    "colliders": [
+      {
+        "id": "head_sphere",
+        "bone": "mixamorig:Head",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.08792,
+          -0.00185
+        ],
+        "radius": 0.08493
+      },
+      {
+        "id": "neck_capsule",
+        "bone": "mixamorig:Neck",
+        "shape": "capsule",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tailGltf": [
+          0.0,
+          0.08816,
+          -0.002
+        ],
+        "radius": 0.04725
+      },
+      {
+        "id": "upper_chest_sphere",
+        "bone": "mixamorig:Spine2",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.00231
+        ],
+        "radius": 0.12696
+      }
+    ],
+    "chains": [
+      {
+        "id": "nape_L",
+        "region": "nape",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 4,
+        "lengthM": 0.3079,
+        "hitRadius": 0.018,
+        "stiffness": 0.68,
+        "dragForce": 0.4,
+        "gravityPower": 0.3,
+        "joints": [
+          {
+            "name": "TS_Spring_wolf-layered_nape_L_0",
+            "positionGltf": [
+              0.00875,
+              1.65512,
+              -0.02512
+            ],
+            "localOffsetFromHead": [
+              0.00875,
+              0.17801,
+              -0.01712
+            ],
+            "hitRadius": 0.018,
+            "stiffness": 0.748,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_nape_L_1",
+            "positionGltf": [
+              0.03839,
+              1.6047,
+              -0.07851
+            ],
+            "localOffsetFromHead": [
+              0.03839,
+              0.1276,
+              -0.07051
+            ],
+            "hitRadius": 0.01719,
+            "stiffness": 0.7055,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_nape_L_2",
+            "positionGltf": [
+              0.04414,
+              1.52192,
+              -0.08878
+            ],
+            "localOffsetFromHead": [
+              0.04414,
+              0.04481,
+              -0.08078
+            ],
+            "hitRadius": 0.01638,
+            "stiffness": 0.663,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_nape_L_3",
+            "positionGltf": [
+              0.04724,
+              1.43691,
+              -0.09433
+            ],
+            "localOffsetFromHead": [
+              0.04724,
+              -0.0402,
+              -0.08633
+            ],
+            "hitRadius": 0.01557,
+            "stiffness": 0.6205,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_nape_L_4",
+            "positionGltf": [
+              0.06114,
+              1.38383,
+              -0.11834
+            ],
+            "localOffsetFromHead": [
+              0.06114,
+              -0.09327,
+              -0.11034
+            ],
+            "hitRadius": 0.01476,
+            "stiffness": 0.578,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "nape_R",
+        "region": "nape",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 3,
+        "lengthM": 0.3096,
+        "hitRadius": 0.018,
+        "stiffness": 0.68,
+        "dragForce": 0.4,
+        "gravityPower": 0.3,
+        "joints": [
+          {
+            "name": "TS_Spring_wolf-layered_nape_R_0",
+            "positionGltf": [
+              -0.01173,
+              1.65531,
+              -0.02384
+            ],
+            "localOffsetFromHead": [
+              -0.01173,
+              0.1782,
+              -0.01584
+            ],
+            "hitRadius": 0.018,
+            "stiffness": 0.748,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_nape_R_1",
+            "positionGltf": [
+              -0.05195,
+              1.60489,
+              -0.07253
+            ],
+            "localOffsetFromHead": [
+              -0.05195,
+              0.12779,
+              -0.06453
+            ],
+            "hitRadius": 0.01719,
+            "stiffness": 0.7055,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_nape_R_2",
+            "positionGltf": [
+              -0.05952,
+              1.52206,
+              -0.08177
+            ],
+            "localOffsetFromHead": [
+              -0.05952,
+              0.04496,
+              -0.07377
+            ],
+            "hitRadius": 0.01638,
+            "stiffness": 0.663,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_nape_R_3",
+            "positionGltf": [
+              -0.06378,
+              1.43707,
+              -0.08688
+            ],
+            "localOffsetFromHead": [
+              -0.06378,
+              -0.04003,
+              -0.07888
+            ],
+            "hitRadius": 0.01557,
+            "stiffness": 0.6205,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_nape_R_4",
+            "positionGltf": [
+              -0.08221,
+              1.38456,
+              -0.10883
+            ],
+            "localOffsetFromHead": [
+              -0.08221,
+              -0.09255,
+              -0.10083
+            ],
+            "hitRadius": 0.01476,
+            "stiffness": 0.578,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "side_L",
+        "region": "side",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 5,
+        "lengthM": 0.2281,
+        "hitRadius": 0.017,
+        "stiffness": 0.74,
+        "dragForce": 0.42,
+        "gravityPower": 0.28,
+        "joints": [
+          {
+            "name": "TS_Spring_wolf-layered_side_L_0",
+            "positionGltf": [
+              0.02338,
+              1.65596,
+              -0.00161
+            ],
+            "localOffsetFromHead": [
+              0.02338,
+              0.17885,
+              0.00639
+            ],
+            "hitRadius": 0.017,
+            "stiffness": 0.814,
+            "dragForce": 0.42,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_side_L_1",
+            "positionGltf": [
+              0.08208,
+              1.60397,
+              0.01749
+            ],
+            "localOffsetFromHead": [
+              0.08208,
+              0.12686,
+              0.02549
+            ],
+            "hitRadius": 0.01598,
+            "stiffness": 0.7523,
+            "dragForce": 0.42,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_side_L_2",
+            "positionGltf": [
+              0.09814,
+              1.52259,
+              0.02413
+            ],
+            "localOffsetFromHead": [
+              0.09814,
+              0.04548,
+              0.03213
+            ],
+            "hitRadius": 0.01496,
+            "stiffness": 0.6907,
+            "dragForce": 0.42,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_side_L_3",
+            "positionGltf": [
+              0.11699,
+              1.46172,
+              0.0314
+            ],
+            "localOffsetFromHead": [
+              0.11699,
+              -0.01539,
+              0.0394
+            ],
+            "hitRadius": 0.01394,
+            "stiffness": 0.629,
+            "dragForce": 0.42,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "side_R",
+        "region": "side",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 5,
+        "lengthM": 0.228,
+        "hitRadius": 0.017,
+        "stiffness": 0.74,
+        "dragForce": 0.42,
+        "gravityPower": 0.28,
+        "joints": [
+          {
+            "name": "TS_Spring_wolf-layered_side_R_0",
+            "positionGltf": [
+              -0.02339,
+              1.65596,
+              -0.00163
+            ],
+            "localOffsetFromHead": [
+              -0.02339,
+              0.17885,
+              0.00637
+            ],
+            "hitRadius": 0.017,
+            "stiffness": 0.814,
+            "dragForce": 0.42,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_side_R_1",
+            "positionGltf": [
+              -0.08211,
+              1.60397,
+              0.01732
+            ],
+            "localOffsetFromHead": [
+              -0.08211,
+              0.12687,
+              0.02532
+            ],
+            "hitRadius": 0.01598,
+            "stiffness": 0.7523,
+            "dragForce": 0.42,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_side_R_2",
+            "positionGltf": [
+              -0.09816,
+              1.52259,
+              0.02386
+            ],
+            "localOffsetFromHead": [
+              -0.09816,
+              0.04548,
+              0.03186
+            ],
+            "hitRadius": 0.01496,
+            "stiffness": 0.6907,
+            "dragForce": 0.42,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_wolf-layered_side_R_3",
+            "positionGltf": [
+              -0.11701,
+              1.46172,
+              0.03112
+            ],
+            "localOffsetFromHead": [
+              -0.11701,
+              -0.01539,
+              0.03912
+            ],
+            "hitRadius": 0.01394,
+            "stiffness": 0.629,
+            "dragForce": 0.42,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "qa": {
+    "bytes": 1340604,
+    "minClearanceMm": 1.058,
+    "verticesInside": 0,
+    "gltfValidateErrors": 0,
+    "gltfValidateWarnings": 0,
+    "bmesh": {
+      "TS_AuthoredHair_wolf-layered_LOD0": {
+        "verts": 5024,
+        "faces": 9612,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_wolf-layered_LOD1": {
+        "verts": 2581,
+        "faces": 4790,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_wolf-layered_LOD2": {
+        "verts": 876,
+        "faces": 1648,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      }
+    },
+    "springChainCount": 4
+  },
+  "passed": true,
+  "errors": [],
+  "seconds": 1.96
+}

@@ -98,29 +98,36 @@ describe("StudioPoserPage (/studio/poser)", () => {
     expect(screen.getByTestId("location").textContent).toBe("/studio");
   });
 
-  it("캡처는 PNG로 받고 포저를 열어 둔 채 저장 토스트를 띄운다 (B-01)", () => {
+  it("기본 캡처는 2D 컷 레이어 삽입으로 동작하고 보조 모드에서 PNG 다운로드를 지원한다", () => {
     useToastStore.setState({ toasts: [] });
+    window.sessionStorage.clear();
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     renderPage();
     const panel = screen.getByTestId("poser-panel");
+    expect(panel.getAttribute("data-capture-target")).toBe("canvas");
+    fireEvent.click(screen.getByRole("button", { name: "캡처 저장" }));
+    expect(click).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem("toonstudio:poser:pending-cut-layer")).toContain("data:image/png");
+    expect(useToastStore.getState().toasts.at(-1)?.message).toContain("2D 컷 레이어를 준비했어요");
+
+    fireEvent.click(screen.getByTestId("studio-poser-capture-mode-download"));
     expect(panel.getAttribute("data-capture-target")).toBe("download");
     fireEvent.click(screen.getByRole("button", { name: "캡처 저장" }));
     expect(click).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId("location")).toBeNull();
     expect(screen.getByTestId("poser-panel")).toBeTruthy();
-    const toasts = useToastStore.getState().toasts;
-    expect(toasts).toHaveLength(1);
-    expect(toasts[0]).toMatchObject({ tone: "success" });
-    expect(toasts[0]?.message).toContain("PNG를 저장했어요");
+    expect(useToastStore.getState().toasts.at(-1)?.message).toContain("PNG를 저장했어요");
     click.mockRestore();
     useToastStore.setState({ toasts: [] });
   });
 
-  it("VARCO 3D 워크벤치 & 세계관 셰이퍼 토글로 도크를 열고 체형 비율 적용 토스트를 띄운다", async () => {
+  it("체형·의상 정밀 워크벤치 토글로 도크를 열고 외부 브랜드 잔재 없이 체형 비율 적용 토스트를 띄운다", async () => {
     useToastStore.setState({ toasts: [] });
     renderPage();
 
     const toggle = screen.getByTestId("studio-poser-varco3d-workbench-toggle");
+    expect(toggle.textContent).not.toContain("VARCO");
+    expect(toggle.textContent).toContain("체형·의상 정밀 워크벤치");
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByTestId("studio-poser-varco3d-workbench-dock")).toBeNull();
 
@@ -135,7 +142,6 @@ describe("StudioPoserPage (/studio/poser)", () => {
     expect(toasts).toHaveLength(1);
     expect(toasts[0]?.message).toContain("세계관 체형 비율 적용됨");
 
-    // Apply VARCO 3D archetype & motion preset directly to the mannequin poser
     fireEvent.click(screen.getByTestId("varco3d-apply-archetype-motion-to-mannequin"));
     await waitFor(() => expect(useToastStore.getState().toasts).toHaveLength(2));
     const updatedToasts = useToastStore.getState().toasts;

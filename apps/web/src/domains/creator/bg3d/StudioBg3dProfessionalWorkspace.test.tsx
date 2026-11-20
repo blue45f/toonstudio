@@ -121,6 +121,10 @@ describe("Studio BG3D professional workspace layout", () => {
     expect(screen.getAllByRole("separator")).toHaveLength(2);
 
     const shelfToggle = screen.getByRole("button", { name: "에셋 쉘프" });
+    expect(shelfToggle.getAttribute("aria-pressed")).toBe("false");
+    expect(screen.queryByTestId("studio-bg3d-asset-shelf")).toBeNull();
+
+    fireEvent.click(shelfToggle);
     expect(shelfToggle.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("studio-bg3d-asset-shelf")).toBeTruthy();
 
@@ -143,10 +147,23 @@ describe("Studio BG3D professional workspace layout", () => {
 
     const shelf = screen.getByTestId("studio-bg3d-asset-shelf");
     expect(within(shelf).queryByRole("button", { name: /Split-Wipe/u })).toBeNull();
-    expect(within(shelf).getByRole("link", { name: "원고 편집기로 이동" }).getAttribute("href"))
-      .toBe("/studio/comic");
-    expect(within(shelf).getByRole("link", { name: /학교 교실·복도 모듈/u }).textContent)
-      .toContain("열기");
+    expect(within(shelf).getByTestId("studio-bg3d-bake-to-panel-cta").tagName).toBe("BUTTON");
+    expect(within(shelf).getByTestId("studio-bg3d-bake-to-panel-cta").textContent)
+      .toContain("현재 컷에 바로 굽기");
+
+    // 4단계 모드가 실제 상태 전환 버튼으로 동작하고, 에셋 카드는 페이지 이동 없이 현재 씬에 즉시 배치된다.
+    const classroomCard = within(shelf).getByTestId("studio-bg3d-shelf-item-room-classroom");
+    expect(classroomCard.tagName).toBe("BUTTON");
+    expect(classroomCard.textContent).toContain("씬에 배치");
+    fireEvent.click(classroomCard);
+    expect(classroomCard.getAttribute("aria-pressed")).toBe("true");
+    expect(classroomCard.textContent).toContain("배치됨");
+    expect(within(shelf).getByTestId("studio-bg3d-asset-shelf-status").textContent).toContain("학교 교실·복도 모듈");
+
+    fireEvent.click(within(shelf).getByTestId("studio-bg3d-stage-step-ink"));
+    expect(within(shelf).getByTestId("studio-bg3d-stage-step-ink").getAttribute("aria-pressed")).toBe("true");
+    expect(document.querySelector("[data-bg3d-professional-viewport='true']")?.getAttribute("data-bg3d-live-ink-mode")).toBe("split-wipe");
+
     expect(screen.getByRole("link", { name: "새 웹툰 시작하기" }).getAttribute("href"))
       .toBe("/studio/new?template=webtoon&from=bg3d-cut");
 

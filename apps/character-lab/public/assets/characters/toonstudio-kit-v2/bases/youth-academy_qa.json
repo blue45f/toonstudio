@@ -1,0 +1,169 @@
+{
+  "file": "youth-academy.glb",
+  "bytes": 3069764,
+  "passed": true,
+  "errorCount": 0,
+  "errors": [],
+  "container": {
+    "extensions": [
+      "KHR_mesh_quantization"
+    ],
+    "jointCount": 68,
+    "materials": [
+      "ts_skin_body",
+      "ts_skin_head",
+      "ts_eye_sclera",
+      "ts_mouth_inner",
+      "ts_lashes_brows"
+    ],
+    "morphCheck": {
+      "file": "youth-academy.glb",
+      "extensionsUsed": [
+        "KHR_mesh_quantization"
+      ],
+      "uniqueMorphCount": 64,
+      "checkedMorphAccessors": 271,
+      "webtoonEmotionPresetCount": 8,
+      "vrm1ExpressionCount": 18,
+      "ok": true
+    },
+    "eyeWeightedVerts": {
+      "TS_Eye.L": 632,
+      "TS_Eye.R": 632
+    },
+    "jawOpenMaxMm": 28.74,
+    "gltfMinYM": 0.0,
+    "gltfHeightM": 1.56
+  },
+  "neckSeam6Poses": {
+    "seamPairs": 74,
+    "minNormalDot": 1.0,
+    "worstGapMm": 0.0,
+    "posesMm": {
+      "1_rest_t_pose": 0.0,
+      "2_a_pose_45": 0.0,
+      "3_neck_flexion": 0.0,
+      "4_neck_extension": 0.0,
+      "5_neck_lateral_tilt": 0.0,
+      "6_neck_twist_reach_85": 0.0
+    }
+  },
+  "shoulder85Stretch": {
+    "worstMaxStretch": 1.5434,
+    "cases": {
+      "raise_85_deg": {
+        "maxStretch": 1.4012,
+        "p95Stretch": 1.3177,
+        "edgesOver2x": 0,
+        "roiEdgeCount": 4430
+      },
+      "drop_85_deg": {
+        "maxStretch": 1.5434,
+        "p95Stretch": 1.2554,
+        "edgesOver2x": 0,
+        "roiEdgeCount": 4430
+      }
+    }
+  },
+  "gltfValidator": {
+    "returncode": 0,
+    "errorCount": 0,
+    "warningCount": 0,
+    "sampleWarnings": []
+  },
+  "blenderBmeshAndRender": {
+    "blenderMinZM": -0.0,
+    "blenderHeightM": 1.56,
+    "bmeshMeshes": {
+      "TS_Body": {
+        "verts": 11768,
+        "faces": 19552,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_Head": {
+        "verts": 4375,
+        "faces": 7296,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_Eye_L": {
+        "verts": 632,
+        "faces": 1248,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_Eye_R": {
+        "verts": 632,
+        "faces": 1248,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_Mouth": {
+        "verts": 254,
+        "faces": 496,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_Lashes": {
+        "verts": 288,
+        "faces": 560,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_Brow_L": {
+        "verts": 84,
+        "faces": 164,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_Brow_R": {
+        "verts": 84,
+        "faces": 164,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      }
+    },
+    "renderedViews": [
+      "front",
+      "three_quarter",
+      "side",
+      "back",
+      "face_closeup",
+      "pose_85_shoulder"
+    ],
+    "contactSheet": "youth-academy_contact_sheet.png",
+    "previewPng": "youth-academy_preview.png"
+  },
+  "unifiedPreExportAudit": {
+    "vertices": 13426,
+    "faces": 13424,
+    "quads": 13424,
+    "tris": 0,
+    "ngons": 0,
+    "quadRatio": 1.0,
+    "trueNonManifold": 0,
+    "boundaryEdges": 0,
+    "looseVerts": 0,
+    "wireEdges": 0,
+    "zeroAreaFaces": 0,
+    "minZ": 0.0,
+    "maxZ": 1.56
+  }
+}

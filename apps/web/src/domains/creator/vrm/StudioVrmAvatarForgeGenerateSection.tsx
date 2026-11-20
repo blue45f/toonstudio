@@ -1,4 +1,4 @@
-import { ChevronDown, Download, Sparkles, UserPlus } from "lucide-react";
+import { ChevronDown, Download, UserPlus } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
@@ -77,8 +77,8 @@ function OptionDisclosure({
         className="flex min-h-11 w-full items-center gap-2 px-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
         onClick={onToggle}
       >
-        <span className="min-w-0 flex-1 truncate text-[0.66rem] font-extrabold text-fg-2">{title}</span>
-        <span className="max-w-[55%] shrink-0 truncate text-[0.58rem] font-bold text-fg-3">{summary}</span>
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold text-fg-2">{title}</span>
+        <span className="max-w-[55%] shrink-0 truncate text-xs font-medium text-fg-3">{summary}</span>
         <ChevronDown size={14} aria-hidden className={`shrink-0 text-fg-3 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open ? (
@@ -308,17 +308,17 @@ export function StudioVrmAvatarForgeGenerateSection({
     <div data-studio-vrm-generate="" className="space-y-2.5 border-t border-line/70 px-3.5 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-[0.72rem] font-extrabold text-fg">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-fg">
             <UserPlus size={14} className="text-accent" aria-hidden />
             새 VRM 캐릭터
           </p>
-          <p className="mt-0.5 text-[0.62rem] leading-relaxed text-fg-3">
+          <p className="mt-0.5 text-xs leading-relaxed text-fg-3">
             위 프리셋·슬라이더를 레시피로 써서 휴머노이드 VRM을 생성합니다. 불러온 모델을 덮어쓰지 않아요.
           </p>
         </div>
         <span
           data-studio-vrm-generate-preset={previewRecipe.presetId ?? "custom"}
-          className="shrink-0 rounded-full border border-line bg-card px-2 py-0.5 text-[0.6rem] font-bold text-fg-2"
+          className="shrink-0 rounded-md border border-line bg-card px-2 py-0.5 text-xs font-medium text-fg-2"
         >
           {previewRecipe.label}
         </span>
@@ -337,14 +337,14 @@ export function StudioVrmAvatarForgeGenerateSection({
             label={`${previewRecipe.label} 생성 결과 미리보기`}
           />
         </span>
-        <span className="min-w-0 text-[0.62rem] leading-relaxed text-fg-3">
+        <span className="min-w-0 text-xs leading-relaxed text-fg-3">
           <span className="flex items-center gap-1.5">
             <span
               className="size-3 rounded-full border border-line shrink-0"
               style={{ background: previewRecipe.state.hair.baseColor }}
               aria-hidden
             />
-            <span className="truncate text-[0.69rem] font-extrabold text-fg-2">{previewRecipe.label}</span>
+            <span className="truncate text-xs font-semibold text-fg-2">{previewRecipe.label}</span>
           </span>
           <span className="mt-0.5 block">{describedPreview.face} · {describedPreview.hair}</span>
           <span className="block">{formatStudioVrmHeadUnits(resolveStudioVrmProportionMetrics(previewRecipe.state.proportions).headUnits)} · {describedPreview.body}</span>
@@ -362,7 +362,7 @@ export function StudioVrmAvatarForgeGenerateSection({
       {previewRecipe.appliedDefaultPresetId ? (
         <p
           data-studio-vrm-generate-default-preset={previewRecipe.appliedDefaultPresetId}
-          className="rounded-xl border border-line bg-raised/60 px-3 py-2 text-[0.66rem] leading-relaxed text-fg-3"
+          className="rounded-xl border border-line bg-raised/60 px-3 py-2 text-xs leading-relaxed text-fg-3"
         >
           아직 고른 스타일이 없어 기본 스타일 <b className="text-fg-2">{previewRecipe.label}</b>로
           생성됩니다. 위에서 다른 스타일을 고르거나 슬라이더를 조절하면 그 설정이 그대로 쓰입니다.
@@ -436,7 +436,7 @@ export function StudioVrmAvatarForgeGenerateSection({
       </div>
 
       {issues.length > 0 ? (
-        <p data-studio-vrm-generate-meta-invalid="" className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-[0.66rem] leading-relaxed text-danger">
+        <p data-studio-vrm-generate-meta-invalid="" className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-xs leading-relaxed text-danger">
           {vrmGenerateStatusText(
             "studio.vrmGenerateStatus.metaInvalid",
             { count: issues.length },
@@ -450,7 +450,7 @@ export function StudioVrmAvatarForgeGenerateSection({
           data-studio-vrm-generate-unavailable=""
           data-studio-vrm-generate-status="unavailable"
           role="status"
-          className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-[0.66rem] leading-relaxed text-danger"
+          className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-xs leading-relaxed text-danger"
         >
           {unavailableMessage}
         </p>
@@ -460,7 +460,7 @@ export function StudioVrmAvatarForgeGenerateSection({
         <p
           data-studio-vrm-generate-status="ok"
           role="status"
-          className="rounded-xl border border-accent/30 bg-accent-soft px-3 py-2 text-[0.66rem] text-accent"
+          className="rounded-xl border border-accent/30 bg-accent-soft px-3 py-2 text-xs text-accent"
         >
           {vrmGenerateStatusText(
             "studio.vrmGenerateStatus.generated",
@@ -475,16 +475,18 @@ export function StudioVrmAvatarForgeGenerateSection({
           type="button"
           data-studio-vrm-generate-submit=""
           disabled={generateBusy}
+          title={generateBusy ? "VRM 파일을 생성하는 중입니다." : undefined}
           onClick={() => void handleGenerate()}
-          className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft px-2 text-[0.7rem] font-extrabold text-accent transition-colors hover:bg-accent/15 disabled:opacity-40"
+          className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft px-2 text-xs font-semibold text-accent transition-colors hover:bg-accent/15 disabled:opacity-40"
         >
-          <Sparkles size={14} aria-hidden />
+          <UserPlus size={14} aria-hidden />
           {generateBusy ? frozenStatus5Text("studio.frozenStatus5.forge.generating", "생성 중…") : "VRM 생성"}
         </button>
         <button
           type="button"
           data-studio-vrm-generate-export=""
           disabled={generateBusy || !generated}
+          title={!generated ? "먼저 VRM 생성을 완료해 주세요." : undefined}
           onClick={() => {
             if (!generated) return;
             const blob = new Blob([generated.result.bytes], { type: "model/gltf-binary" });
@@ -495,7 +497,7 @@ export function StudioVrmAvatarForgeGenerateSection({
             link.click();
             URL.revokeObjectURL(url);
           }}
-          className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-2 text-[0.7rem] font-extrabold text-fg-2 transition-colors hover:bg-raised disabled:opacity-40"
+          className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised disabled:opacity-40"
         >
           <Download size={14} aria-hidden />
           VRM 내보내기

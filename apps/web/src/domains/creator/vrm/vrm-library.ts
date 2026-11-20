@@ -1,5 +1,6 @@
 import { QUATERNIUS_FANTASY_VRMS } from "./quaternius-fantasy-catalog";
 import { QUATERNIUS_MODULAR_VRMS } from "./quaternius-modular-catalog";
+import { STUDIO_VRM_HERO_V1_SAMPLES } from "./studio-vrm-hero-v1-catalog-entries";
 import {
   getProductStudioVrmAssetSqliteOpfsRepository,
   StudioVrmAssetRepositoryError,
@@ -14,7 +15,6 @@ import { isStudioVrmTechnicallyAdmittedThumbnail } from "./studio-vrm-thumbnail-
 import { isStudioVrmProductionThumbnailUrl } from "./studio-vrm-thumbnail-quality";
 import { isStudioVrmTechnicallyAdmittedModel } from "./studio-vrm-model-technical-denylist.generated";
 import { isStudioVrmProductionModelUrl } from "./studio-vrm-model-quality";
-
 import { VrmLibraryError } from "./studio-vrm-library-error";
 
 const DB_NAME = "toonstudio-studio-vrm-library";
@@ -282,6 +282,7 @@ export function isBundledVrmUrlRightsBlocked(url: string): boolean {
 //  그 중 OldMoustache·Eugenia는 "노인" 카테고리 보강).
 export const SAMPLE_VRMS: SampleVrm[] = [
   { id: SAMPLE_VRM_ID, name: "루미", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/sample-vrm.png", url: SAMPLE_VRM_URL },
+  ...STUDIO_VRM_HERO_V1_SAMPLES,
   ...QUATERNIUS_FANTASY_VRMS,
   ...QUATERNIUS_MODULAR_VRMS,
   { id: "shion", name: "시온", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/shion.png", url: "/vrm/Sendagaya_Shibu.vrm" },
@@ -354,13 +355,7 @@ export const SAMPLE_VRMS: SampleVrm[] = [
   { id: "chill-palm", name: "칠팜 (야자수)", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/chill-palm.png", url: "/vrm/ChillPalm.vrm" },
   { id: "good-knight", name: "굿나이트 (기사)", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/good-knight.png", url: "/vrm/GoodKnight.vrm" },
   { id: "bad-bot", name: "배드봇 (로봇)", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/bad-bot.png", url: "/vrm/BadBot.vrm" },
-  {
-    id: "pirate-bot",
-    name: "파이럿봇 (해적 로봇)",
-    thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/pirate-bot.png",
-    url: "/vrm/PirateBot.vrm",
-    limitations: ["heavy-payload"],
-  },
+  { id: "pirate-bot", name: "파이럿봇 (해적 로봇)", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/pirate-bot.png", url: "/vrm/PirateBot.vrm", limitations: ["heavy-payload"] },
   { id: "cyberpal", name: "사이버팔 (사이보그)", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/cyberpal.png", url: "/vrm/Cyberpal.vrm" },
   { id: "bao-samurai", name: "바오사무라이", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/bao-samurai.png", url: "/vrm/BaoSamurai.vrm" },
   {

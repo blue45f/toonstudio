@@ -1,0 +1,74 @@
+{
+  "assetId": "rofan_imperial_palace_hall_balcony",
+  "cutawayContract": "room-v1",
+  "fileName": "rofan_imperial_palace_hall_balcony.glb",
+  "byteSize": 5244352,
+  "sha256": "sha256:d9ceff66dcf9c00b97b23339d35fe8421fbb1476f5ba66169b72c6525cbcbeef",
+  "bounds": [
+    14.002,
+    8.5,
+    18.0656
+  ],
+  "nodes": [
+    "BG_Floor",
+    "BG_Wall_North",
+    "BG_Wall_South",
+    "BG_Wall_West",
+    "BG_Wall_East",
+    "BG_Ceiling",
+    "BG_Furniture_Hero",
+    "BG_Props_Clutter"
+  ],
+  "mobile": {
+    "fileName": "rofan_imperial_palace_hall_balcony-mobile.glb",
+    "byteSize": 3082344,
+    "sha256": "sha256:05bdfabcce227d4eff759db7576b8debcc01fffbe99048cf5aa142f8e3298ac3",
+    "nodes": [
+      "BG_Shell_Fixed",
+      "BG_Cutaway_Front",
+      "BG_Ceiling",
+      "BG_Furnishings"
+    ]
+  },
+  "cameras": {
+    "ballroom_wide_24mm": {
+      "position": [
+        3.67,
+        1.95,
+        7.2
+      ],
+      "target": [
+        1.27,
+        2.75,
+        -4.8
+      ],
+      "fovDegrees": 65
+    },
+    "balcony_confession_35mm": {
+      "position": [
+        -5.65,
+        1.65,
+        5.2
+      ],
+      "target": [
+        -5.85,
+        1.55,
+        -0.2
+      ],
+      "fovDegrees": 45
+    },
+    "grand_stair_low_50mm": {
+      "position": [
+        2.07,
+        1.25,
+        -0.6
+      ],
+      "target": [
+        1.27,
+        2.35,
+        -6.8
+      ],
+      "fovDegrees": 32
+    }
+  }
+}

@@ -1,0 +1,772 @@
+{
+  "schema": "toonstudio.character-kit.hair-v2/1",
+  "styleId": "twin-tail",
+  "labelKo": "로우/하이 트윈테일",
+  "genre": "학원·아이돌",
+  "fittedBase": "female-romance",
+  "file": {
+    "path": "twin-tail.glb",
+    "bytes": 1363408,
+    "sha256": "53c091691fa3bdc96b7280a1e3da02be007265562dd6b3b52e2ce12fcc3e015b"
+  },
+  "drawCalls": 8,
+  "materials": [
+    "ts_hair_twin-tail",
+    "ts_hair_tip_twin-tail",
+    "ts_hair_accent_twin-tail"
+  ],
+  "lods": [
+    {
+      "node": "TS_AuthoredHair_twin-tail_LOD0",
+      "lod": 0,
+      "triangles": 9564,
+      "vertices": 4862,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_twin-tail_LOD1",
+      "lod": 1,
+      "triangles": 5682,
+      "vertices": 2921,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_twin-tail_LOD2",
+      "lod": 2,
+      "triangles": 2040,
+      "vertices": 1076,
+      "primitives": 2,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    }
+  ],
+  "morphs": [
+    "param:height:+",
+    "param:height:-",
+    "param:legLength:+",
+    "param:legLength:-",
+    "param:neckLength:+",
+    "param:neckLength:-",
+    "param:headSize:+",
+    "param:headSize:-",
+    "shape:bang-length:+",
+    "shape:bang-length:-",
+    "shape:volume:+",
+    "shape:volume:-",
+    "shape:sway:+",
+    "shape:sway:-"
+  ],
+  "shapes": [
+    "bang-length",
+    "volume",
+    "sway"
+  ],
+  "uv0Monotonic": true,
+  "uv1Purpose": "hair-flow",
+  "texture": {
+    "bytes": 21555,
+    "size": 512,
+    "meanLuminance": 0.9231,
+    "minLuminance": 0.8,
+    "columns": 4
+  },
+  "springBone": {
+    "schema": "toonstudio.hair-springbone/1",
+    "vrmSpec": "VRMC_springBone-1.0",
+    "styleId": "twin-tail",
+    "fittedBase": "female-romance",
+    "chainCount": 4,
+    "colliders": [
+      {
+        "id": "head_sphere",
+        "bone": "mixamorig:Head",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.08792,
+          -0.00185
+        ],
+        "radius": 0.08493
+      },
+      {
+        "id": "neck_capsule",
+        "bone": "mixamorig:Neck",
+        "shape": "capsule",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tailGltf": [
+          0.0,
+          0.08816,
+          -0.002
+        ],
+        "radius": 0.04725
+      },
+      {
+        "id": "upper_chest_sphere",
+        "bone": "mixamorig:Spine2",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.00231
+        ],
+        "radius": 0.12696
+      }
+    ],
+    "chains": [
+      {
+        "id": "tail_L1",
+        "region": "tail",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 3,
+        "lengthM": 0.5245,
+        "hitRadius": 0.02,
+        "stiffness": 0.5,
+        "dragForce": 0.35,
+        "gravityPower": 0.36,
+        "joints": [
+          {
+            "name": "TS_Spring_twin-tail_tail_L1_0",
+            "positionGltf": [
+              0.06627,
+              1.62743,
+              -0.04208
+            ],
+            "localOffsetFromHead": [
+              0.06627,
+              0.15032,
+              -0.03408
+            ],
+            "hitRadius": 0.02,
+            "stiffness": 0.55,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_L1_1",
+            "positionGltf": [
+              0.14241,
+              1.60258,
+              -0.06718
+            ],
+            "localOffsetFromHead": [
+              0.14241,
+              0.12547,
+              -0.05918
+            ],
+            "hitRadius": 0.01928,
+            "stiffness": 0.525,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_L1_2",
+            "positionGltf": [
+              0.133,
+              1.49854,
+              -0.11721
+            ],
+            "localOffsetFromHead": [
+              0.133,
+              0.02143,
+              -0.10921
+            ],
+            "hitRadius": 0.01856,
+            "stiffness": 0.5,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_L1_3",
+            "positionGltf": [
+              0.12704,
+              1.40179,
+              -0.16334
+            ],
+            "localOffsetFromHead": [
+              0.12704,
+              -0.07532,
+              -0.15534
+            ],
+            "hitRadius": 0.01784,
+            "stiffness": 0.475,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_L1_4",
+            "positionGltf": [
+              0.14631,
+              1.29886,
+              -0.15995
+            ],
+            "localOffsetFromHead": [
+              0.14631,
+              -0.17825,
+              -0.15195
+            ],
+            "hitRadius": 0.01712,
+            "stiffness": 0.45,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_L1_5",
+            "positionGltf": [
+              0.14419,
+              1.18768,
+              -0.14188
+            ],
+            "localOffsetFromHead": [
+              0.14419,
+              -0.28943,
+              -0.13388
+            ],
+            "hitRadius": 0.0164,
+            "stiffness": 0.425,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "tail_L2",
+        "region": "tail",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 2,
+        "lengthM": 0.6033,
+        "hitRadius": 0.02,
+        "stiffness": 0.5,
+        "dragForce": 0.35,
+        "gravityPower": 0.36,
+        "joints": [
+          {
+            "name": "TS_Spring_twin-tail_tail_L2_0",
+            "positionGltf": [
+              0.06271,
+              1.64102,
+              -0.03159
+            ],
+            "localOffsetFromHead": [
+              0.06271,
+              0.16392,
+              -0.02359
+            ],
+            "hitRadius": 0.02,
+            "stiffness": 0.55,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_L2_1",
+            "positionGltf": [
+              0.12868,
+              1.62165,
+              -0.09795
+            ],
+            "localOffsetFromHead": [
+              0.12868,
+              0.14454,
+              -0.08995
+            ],
+            "hitRadius": 0.01928,
+            "stiffness": 0.525,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_L2_2",
+            "positionGltf": [
+              0.14967,
+              1.50271,
+              -0.1477
+            ],
+            "localOffsetFromHead": [
+              0.14967,
+              0.0256,
+              -0.1397
+            ],
+            "hitRadius": 0.01856,
+            "stiffness": 0.5,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_L2_3",
+            "positionGltf": [
+              0.14032,
+              1.3793,
+              -0.14204
+            ],
+            "localOffsetFromHead": [
+              0.14032,
+              -0.09781,
+              -0.13404
+            ],
+            "hitRadius": 0.01784,
+            "stiffness": 0.475,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_L2_4",
+            "positionGltf": [
+              0.12921,
+              1.25797,
+              -0.16194
+            ],
+            "localOffsetFromHead": [
+              0.12921,
+              -0.21913,
+              -0.15394
+            ],
+            "hitRadius": 0.01712,
+            "stiffness": 0.45,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_L2_5",
+            "positionGltf": [
+              0.14372,
+              1.129,
+              -0.16274
+            ],
+            "localOffsetFromHead": [
+              0.14372,
+              -0.34811,
+              -0.15474
+            ],
+            "hitRadius": 0.0164,
+            "stiffness": 0.425,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "tail_R1",
+        "region": "tail",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 3,
+        "lengthM": 0.553,
+        "hitRadius": 0.02,
+        "stiffness": 0.5,
+        "dragForce": 0.35,
+        "gravityPower": 0.36,
+        "joints": [
+          {
+            "name": "TS_Spring_twin-tail_tail_R1_0",
+            "positionGltf": [
+              -0.06627,
+              1.63575,
+              -0.03165
+            ],
+            "localOffsetFromHead": [
+              -0.06627,
+              0.15864,
+              -0.02365
+            ],
+            "hitRadius": 0.02,
+            "stiffness": 0.55,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_R1_1",
+            "positionGltf": [
+              -0.13707,
+              1.6299,
+              -0.08813
+            ],
+            "localOffsetFromHead": [
+              -0.13707,
+              0.15279,
+              -0.08013
+            ],
+            "hitRadius": 0.01928,
+            "stiffness": 0.525,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_R1_2",
+            "positionGltf": [
+              -0.15362,
+              1.51933,
+              -0.13137
+            ],
+            "localOffsetFromHead": [
+              -0.15362,
+              0.04222,
+              -0.12337
+            ],
+            "hitRadius": 0.01856,
+            "stiffness": 0.5,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_R1_3",
+            "positionGltf": [
+              -0.13942,
+              1.40754,
+              -0.13849
+            ],
+            "localOffsetFromHead": [
+              -0.13942,
+              -0.06957,
+              -0.13049
+            ],
+            "hitRadius": 0.01784,
+            "stiffness": 0.475,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_R1_4",
+            "positionGltf": [
+              -0.12257,
+              1.29962,
+              -0.16446
+            ],
+            "localOffsetFromHead": [
+              -0.12257,
+              -0.17748,
+              -0.15646
+            ],
+            "hitRadius": 0.01712,
+            "stiffness": 0.45,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_R1_5",
+            "positionGltf": [
+              -0.15139,
+              1.18606,
+              -0.16251
+            ],
+            "localOffsetFromHead": [
+              -0.15139,
+              -0.29105,
+              -0.15451
+            ],
+            "hitRadius": 0.0164,
+            "stiffness": 0.425,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "tail_R2",
+        "region": "tail",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 2,
+        "lengthM": 0.5854,
+        "hitRadius": 0.02,
+        "stiffness": 0.5,
+        "dragForce": 0.35,
+        "gravityPower": 0.36,
+        "joints": [
+          {
+            "name": "TS_Spring_twin-tail_tail_R2_0",
+            "positionGltf": [
+              -0.06271,
+              1.62855,
+              -0.04723
+            ],
+            "localOffsetFromHead": [
+              -0.06271,
+              0.15144,
+              -0.03923
+            ],
+            "hitRadius": 0.02,
+            "stiffness": 0.55,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_R2_1",
+            "positionGltf": [
+              -0.13423,
+              1.57999,
+              -0.06613
+            ],
+            "localOffsetFromHead": [
+              -0.13423,
+              0.10289,
+              -0.05813
+            ],
+            "hitRadius": 0.01928,
+            "stiffness": 0.525,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_R2_2",
+            "positionGltf": [
+              -0.11189,
+              1.47608,
+              -0.13469
+            ],
+            "localOffsetFromHead": [
+              -0.11189,
+              -0.00103,
+              -0.12669
+            ],
+            "hitRadius": 0.01856,
+            "stiffness": 0.5,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_R2_3",
+            "positionGltf": [
+              -0.14462,
+              1.37154,
+              -0.18114
+            ],
+            "localOffsetFromHead": [
+              -0.14462,
+              -0.10557,
+              -0.17314
+            ],
+            "hitRadius": 0.01784,
+            "stiffness": 0.475,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_R2_4",
+            "positionGltf": [
+              -0.15133,
+              1.25739,
+              -0.13515
+            ],
+            "localOffsetFromHead": [
+              -0.15133,
+              -0.21972,
+              -0.12715
+            ],
+            "hitRadius": 0.01712,
+            "stiffness": 0.45,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_twin-tail_tail_R2_5",
+            "positionGltf": [
+              -0.12515,
+              1.13185,
+              -0.1364
+            ],
+            "localOffsetFromHead": [
+              -0.12515,
+              -0.34525,
+              -0.1284
+            ],
+            "hitRadius": 0.0164,
+            "stiffness": 0.425,
+            "dragForce": 0.35,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "qa": {
+    "bytes": 1363408,
+    "minClearanceMm": 0.8,
+    "verticesInside": 0,
+    "gltfValidateErrors": 0,
+    "gltfValidateWarnings": 0,
+    "bmesh": {
+      "TS_AuthoredHair_twin-tail_LOD0": {
+        "verts": 4964,
+        "faces": 9564,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_twin-tail_LOD1": {
+        "verts": 3016,
+        "faces": 5682,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_twin-tail_LOD2": {
+        "verts": 1076,
+        "faces": 2040,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      }
+    },
+    "springChainCount": 4
+  },
+  "passed": true,
+  "errors": [],
+  "seconds": 5.38
+}

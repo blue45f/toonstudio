@@ -1,0 +1,77 @@
+{
+  "assetId": "kr_atelier_cafe_interior",
+  "cutawayContract": "room-v1",
+  "fileName": "kr_atelier_cafe_interior.glb",
+  "byteSize": 5430228,
+  "sha256": "sha256:1d371ef6ba2c66a2d8de2f15c7d415d4e44cbf8383f94ad78bf2db1595dae6b1",
+  "bounds": [
+    10.032,
+    3.3,
+    7.62
+  ],
+  "nodes": [
+    "BG_Floor",
+    "BG_Wall_North",
+    "BG_Wall_South",
+    "BG_Wall_West",
+    "BG_Wall_East",
+    "BG_Ceiling",
+    "BG_Furniture_Hero",
+    "BG_Props_Clutter"
+  ],
+  "mobile": {
+    "fileName": "kr_atelier_cafe_interior-mobile.glb",
+    "byteSize": 2708344,
+    "sha256": "sha256:369e9e122fd48a7b67ea9e48473aace8b1f7e56a594e768d51e063a8a1a23745",
+    "nodes": [
+      "BG_Shell_Fixed",
+      "BG_Cutaway_Front",
+      "BG_Ceiling",
+      "BG_Furnishings"
+    ]
+  },
+  "cameras": {
+    "establishing_24mm": {
+      "label": "24mm 입구 전경",
+      "lensMm": 24,
+      "position": [
+        3.55,
+        1.52,
+        2.25
+      ],
+      "target": [
+        -1.55,
+        1.25,
+        -1.1
+      ]
+    },
+    "counter_order_35mm": {
+      "label": "35mm 카운터 주문",
+      "lensMm": 35,
+      "position": [
+        0.95,
+        1.48,
+        0.35
+      ],
+      "target": [
+        -2.35,
+        1.28,
+        -1.65
+      ]
+    },
+    "window_dialogue_50mm": {
+      "label": "50mm 창가 좌석 대면",
+      "lensMm": 50,
+      "position": [
+        -2.15,
+        1.32,
+        0.25
+      ],
+      "target": [
+        -3.15,
+        1.15,
+        1.28
+      ]
+    }
+  }
+}

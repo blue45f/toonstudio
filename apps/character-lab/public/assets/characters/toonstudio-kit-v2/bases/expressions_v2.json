@@ -1,0 +1,478 @@
+{
+  "schema": "toonstudio.character-kit.expressions/2",
+  "morphCount": 64,
+  "bodyMorphs": [
+    "param:height:+",
+    "param:height:-",
+    "param:shoulderWidth:+",
+    "param:shoulderWidth:-",
+    "param:chestDepth:+",
+    "param:chestDepth:-",
+    "param:waist:+",
+    "param:waist:-",
+    "param:hip:+",
+    "param:hip:-",
+    "param:armLength:+",
+    "param:armLength:-",
+    "param:legLength:+",
+    "param:legLength:-",
+    "param:headSize:+",
+    "param:headSize:-",
+    "param:neckLength:+",
+    "param:neckLength:-"
+  ],
+  "faceMorphs": [
+    "param:faceShape:+",
+    "param:faceShape:-",
+    "param:jawWidth:+",
+    "param:jawWidth:-",
+    "param:chinLength:+",
+    "param:chinLength:-",
+    "param:cheekVolume:+",
+    "param:cheekVolume:-",
+    "param:forehead:+",
+    "param:forehead:-",
+    "param:eyeSize:+",
+    "param:eyeSize:-",
+    "param:eyeSpacing:+",
+    "param:eyeSpacing:-",
+    "param:eyeTilt:+",
+    "param:eyeTilt:-",
+    "param:noseHeight:+",
+    "param:noseHeight:-",
+    "param:noseWidth:+",
+    "param:noseWidth:-",
+    "param:noseDepth:+",
+    "param:noseDepth:-",
+    "param:mouthWidth:+",
+    "param:mouthWidth:-",
+    "param:lipFullness:+",
+    "param:lipFullness:-",
+    "param:earSize:+",
+    "param:earSize:-",
+    "param:earAngle:+",
+    "param:earAngle:-"
+  ],
+  "facsMorphs": [
+    "facs:browInnerUp",
+    "facs:browOuterUp",
+    "facs:browDown",
+    "facs:eyeBlinkLeft",
+    "facs:eyeBlinkRight",
+    "facs:eyeWide",
+    "facs:eyeSquint",
+    "facs:cheekPuff",
+    "facs:noseSneer",
+    "facs:jawOpen",
+    "facs:mouthSmile",
+    "facs:mouthFrown",
+    "facs:mouthPucker",
+    "facs:mouthFunnel",
+    "facs:mouthPress",
+    "facs:tongueOut"
+  ],
+  "coverageByRole": {
+    "skin": [
+      "param:height:+",
+      "param:height:-",
+      "param:shoulderWidth:+",
+      "param:shoulderWidth:-",
+      "param:chestDepth:+",
+      "param:chestDepth:-",
+      "param:waist:+",
+      "param:waist:-",
+      "param:hip:+",
+      "param:hip:-",
+      "param:armLength:+",
+      "param:armLength:-",
+      "param:legLength:+",
+      "param:legLength:-",
+      "param:headSize:+",
+      "param:headSize:-",
+      "param:neckLength:+",
+      "param:neckLength:-"
+    ],
+    "head": [
+      "param:height:+",
+      "param:height:-",
+      "param:legLength:+",
+      "param:legLength:-",
+      "param:neckLength:+",
+      "param:neckLength:-",
+      "param:headSize:+",
+      "param:headSize:-",
+      "param:faceShape:+",
+      "param:faceShape:-",
+      "param:jawWidth:+",
+      "param:jawWidth:-",
+      "param:chinLength:+",
+      "param:chinLength:-",
+      "param:cheekVolume:+",
+      "param:cheekVolume:-",
+      "param:forehead:+",
+      "param:forehead:-",
+      "param:eyeSize:+",
+      "param:eyeSize:-",
+      "param:eyeSpacing:+",
+      "param:eyeSpacing:-",
+      "param:eyeTilt:+",
+      "param:eyeTilt:-",
+      "param:noseHeight:+",
+      "param:noseHeight:-",
+      "param:noseWidth:+",
+      "param:noseWidth:-",
+      "param:noseDepth:+",
+      "param:noseDepth:-",
+      "param:mouthWidth:+",
+      "param:mouthWidth:-",
+      "param:lipFullness:+",
+      "param:lipFullness:-",
+      "param:earSize:+",
+      "param:earSize:-",
+      "param:earAngle:+",
+      "param:earAngle:-",
+      "facs:browInnerUp",
+      "facs:browOuterUp",
+      "facs:browDown",
+      "facs:eyeBlinkLeft",
+      "facs:eyeBlinkRight",
+      "facs:eyeWide",
+      "facs:eyeSquint",
+      "facs:cheekPuff",
+      "facs:noseSneer",
+      "facs:jawOpen",
+      "facs:mouthSmile",
+      "facs:mouthFrown",
+      "facs:mouthPucker",
+      "facs:mouthFunnel",
+      "facs:mouthPress",
+      "facs:tongueOut"
+    ],
+    "eyeball": [
+      "param:height:+",
+      "param:height:-",
+      "param:legLength:+",
+      "param:legLength:-",
+      "param:neckLength:+",
+      "param:neckLength:-",
+      "param:headSize:+",
+      "param:headSize:-",
+      "param:eyeSize:+",
+      "param:eyeSize:-",
+      "param:eyeSpacing:+",
+      "param:eyeSpacing:-",
+      "param:eyeTilt:+",
+      "param:eyeTilt:-",
+      "param:faceShape:+",
+      "param:faceShape:-"
+    ],
+    "teeth": [
+      "param:height:+",
+      "param:height:-",
+      "param:legLength:+",
+      "param:legLength:-",
+      "param:neckLength:+",
+      "param:neckLength:-",
+      "param:headSize:+",
+      "param:headSize:-",
+      "param:mouthWidth:+",
+      "param:mouthWidth:-",
+      "param:jawWidth:+",
+      "param:jawWidth:-",
+      "facs:jawOpen",
+      "facs:mouthSmile",
+      "facs:mouthFrown",
+      "facs:mouthPucker",
+      "facs:mouthFunnel",
+      "facs:mouthPress",
+      "facs:tongueOut",
+      "facs:cheekPuff"
+    ],
+    "tongue": [
+      "param:height:+",
+      "param:height:-",
+      "param:legLength:+",
+      "param:legLength:-",
+      "param:neckLength:+",
+      "param:neckLength:-",
+      "param:headSize:+",
+      "param:headSize:-",
+      "param:mouthWidth:+",
+      "param:mouthWidth:-",
+      "param:jawWidth:+",
+      "param:jawWidth:-",
+      "facs:jawOpen",
+      "facs:mouthSmile",
+      "facs:mouthFrown",
+      "facs:mouthPucker",
+      "facs:mouthFunnel",
+      "facs:mouthPress",
+      "facs:tongueOut",
+      "facs:cheekPuff"
+    ],
+    "lash": [
+      "param:height:+",
+      "param:height:-",
+      "param:legLength:+",
+      "param:legLength:-",
+      "param:neckLength:+",
+      "param:neckLength:-",
+      "param:headSize:+",
+      "param:headSize:-",
+      "param:eyeSize:+",
+      "param:eyeSize:-",
+      "param:eyeSpacing:+",
+      "param:eyeSpacing:-",
+      "param:eyeTilt:+",
+      "param:eyeTilt:-",
+      "param:forehead:+",
+      "param:forehead:-",
+      "param:faceShape:+",
+      "param:faceShape:-",
+      "facs:browInnerUp",
+      "facs:browOuterUp",
+      "facs:browDown",
+      "facs:eyeBlinkLeft",
+      "facs:eyeBlinkRight",
+      "facs:eyeWide",
+      "facs:eyeSquint"
+    ],
+    "brow": [
+      "param:height:+",
+      "param:height:-",
+      "param:legLength:+",
+      "param:legLength:-",
+      "param:neckLength:+",
+      "param:neckLength:-",
+      "param:headSize:+",
+      "param:headSize:-",
+      "param:eyeSize:+",
+      "param:eyeSize:-",
+      "param:eyeSpacing:+",
+      "param:eyeSpacing:-",
+      "param:eyeTilt:+",
+      "param:eyeTilt:-",
+      "param:forehead:+",
+      "param:forehead:-",
+      "param:faceShape:+",
+      "param:faceShape:-",
+      "facs:browInnerUp",
+      "facs:browOuterUp",
+      "facs:browDown",
+      "facs:eyeBlinkLeft",
+      "facs:eyeBlinkRight",
+      "facs:eyeWide",
+      "facs:eyeSquint"
+    ]
+  },
+  "jawOpenStandalone": true,
+  "quantization": {
+    "extension": "KHR_mesh_quantization",
+    "componentType": 5122,
+    "normalized": true,
+    "boundsEncoding": "raw-int16-min-max"
+  },
+  "webtoonEmotionPresets": {
+    "wink": {
+      "id": "webtoon/wink",
+      "labelKo": "윙크",
+      "genres": [
+        "romance",
+        "academy",
+        "comedy"
+      ],
+      "jawBoneRotationDeg": 0.0,
+      "weights": {
+        "facs:eyeBlinkLeft": 1.0,
+        "facs:mouthSmile": 0.62,
+        "facs:browOuterUp": 0.28,
+        "facs:cheekPuff": 0.12
+      }
+    },
+    "half-lidded": {
+      "id": "webtoon/half-lidded",
+      "labelKo": "반감긴 눈",
+      "genres": [
+        "rofan",
+        "noir",
+        "romance"
+      ],
+      "jawBoneRotationDeg": 0.0,
+      "weights": {
+        "facs:eyeBlinkLeft": 0.46,
+        "facs:eyeBlinkRight": 0.46,
+        "facs:eyeSquint": 0.3,
+        "facs:browDown": 0.16,
+        "facs:mouthPress": 0.18
+      }
+    },
+    "smirk": {
+      "id": "webtoon/smirk",
+      "labelKo": "냉소",
+      "genres": [
+        "rofan",
+        "action",
+        "noir"
+      ],
+      "jawBoneRotationDeg": 0.0,
+      "weights": {
+        "facs:mouthSmile": 0.48,
+        "facs:mouthPress": 0.24,
+        "facs:browDown": 0.34,
+        "facs:browOuterUp": 0.36,
+        "facs:eyeSquint": 0.36,
+        "facs:noseSneer": 0.22
+      }
+    },
+    "flustered": {
+      "id": "webtoon/flustered",
+      "labelKo": "당황",
+      "genres": [
+        "romance",
+        "academy",
+        "comedy"
+      ],
+      "jawBoneRotationDeg": 0.0,
+      "weights": {
+        "facs:eyeWide": 0.68,
+        "facs:browInnerUp": 0.72,
+        "facs:jawOpen": 0.26,
+        "facs:mouthFunnel": 0.22,
+        "facs:mouthFrown": 0.2
+      }
+    },
+    "teary": {
+      "id": "webtoon/teary",
+      "labelKo": "울먹",
+      "genres": [
+        "romance",
+        "rofan",
+        "drama"
+      ],
+      "jawBoneRotationDeg": 0.0,
+      "weights": {
+        "facs:browInnerUp": 0.88,
+        "facs:eyeSquint": 0.32,
+        "facs:mouthFrown": 0.62,
+        "facs:mouthPress": 0.22,
+        "facs:jawOpen": 0.14
+      }
+    },
+    "big-smile": {
+      "id": "webtoon/big-smile",
+      "labelKo": "활짝 웃음",
+      "genres": [
+        "romance",
+        "academy",
+        "comedy"
+      ],
+      "jawBoneRotationDeg": 0.0,
+      "weights": {
+        "facs:mouthSmile": 1.0,
+        "facs:jawOpen": 0.44,
+        "facs:eyeSquint": 0.62,
+        "facs:cheekPuff": 0.24,
+        "facs:browOuterUp": 0.32
+      }
+    },
+    "shout": {
+      "id": "webtoon/shout",
+      "labelKo": "고함",
+      "genres": [
+        "action",
+        "murim",
+        "fantasy"
+      ],
+      "jawBoneRotationDeg": 0.0,
+      "weights": {
+        "facs:jawOpen": 0.94,
+        "facs:mouthFunnel": 0.48,
+        "facs:browDown": 0.92,
+        "facs:noseSneer": 0.56,
+        "facs:eyeWide": 0.48
+      }
+    },
+    "shadowed-neutral": {
+      "id": "webtoon/shadowed-neutral",
+      "labelKo": "무표정 음영",
+      "genres": [
+        "rofan",
+        "action",
+        "thriller"
+      ],
+      "jawBoneRotationDeg": 0.0,
+      "weights": {
+        "facs:browDown": 0.42,
+        "facs:eyeSquint": 0.24,
+        "facs:mouthPress": 0.38,
+        "facs:mouthFrown": 0.18
+      }
+    }
+  },
+  "vrm1ExpressionMappings": {
+    "aa": {
+      "facs:jawOpen": 0.82,
+      "facs:mouthFunnel": 0.18
+    },
+    "ih": {
+      "facs:jawOpen": 0.24,
+      "facs:mouthSmile": 0.55
+    },
+    "ou": {
+      "facs:jawOpen": 0.36,
+      "facs:mouthPucker": 0.72,
+      "facs:mouthFunnel": 0.42
+    },
+    "ee": {
+      "facs:jawOpen": 0.32,
+      "facs:mouthSmile": 0.68
+    },
+    "oh": {
+      "facs:jawOpen": 0.58,
+      "facs:mouthFunnel": 0.68,
+      "facs:mouthPucker": 0.3
+    },
+    "happy": {
+      "facs:mouthSmile": 0.95,
+      "facs:eyeSquint": 0.5,
+      "facs:browOuterUp": 0.22
+    },
+    "angry": {
+      "facs:browDown": 0.92,
+      "facs:noseSneer": 0.5,
+      "facs:mouthFrown": 0.55,
+      "facs:eyeSquint": 0.3
+    },
+    "sad": {
+      "facs:browInnerUp": 0.85,
+      "facs:mouthFrown": 0.65,
+      "facs:eyeSquint": 0.2
+    },
+    "relaxed": {
+      "facs:eyeBlinkLeft": 0.35,
+      "facs:eyeBlinkRight": 0.35,
+      "facs:mouthSmile": 0.38
+    },
+    "surprised": {
+      "facs:eyeWide": 0.88,
+      "facs:browInnerUp": 0.65,
+      "facs:browOuterUp": 0.55,
+      "facs:jawOpen": 0.52
+    },
+    "blink": {
+      "facs:eyeBlinkLeft": 1.0,
+      "facs:eyeBlinkRight": 1.0
+    },
+    "blinkLeft": {
+      "facs:eyeBlinkLeft": 1.0
+    },
+    "blinkRight": {
+      "facs:eyeBlinkRight": 1.0
+    },
+    "lookUp": {},
+    "lookDown": {},
+    "lookLeft": {},
+    "lookRight": {},
+    "neutral": {}
+  }
+}

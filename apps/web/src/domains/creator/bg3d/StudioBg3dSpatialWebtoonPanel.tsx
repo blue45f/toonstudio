@@ -1,4 +1,4 @@
-import { Glasses, Box, Volume2, Hand, Sparkles } from "lucide-react";
+import { Glasses, Box, Volume2, Hand } from "lucide-react";
 import { useState, useId } from "react";
 
 import type { SpatialSfxPresetKind } from "../scene-3d/studio-3d-spatial-audio";
@@ -45,7 +45,7 @@ export function StudioBg3dSpatialWebtoonPanel({
           type="button"
           disabled={disabled}
           onClick={() => handleTabSelect("ar")}
-          className={`flex items-center justify-center gap-1 rounded-md py-1.5 text-[0.7rem] font-bold transition-all ${
+          className={`flex min-h-11 items-center justify-center gap-1 rounded-md px-1.5 text-xs font-semibold transition-colors ${
             activeTab === "ar"
               ? "bg-raised text-fg shadow-sm border border-line"
               : "text-fg-3 hover:text-fg"
@@ -59,7 +59,7 @@ export function StudioBg3dSpatialWebtoonPanel({
           type="button"
           disabled={disabled}
           onClick={() => handleTabSelect("vr")}
-          className={`flex items-center justify-center gap-1 rounded-md py-1.5 text-[0.7rem] font-bold transition-all ${
+          className={`flex min-h-11 items-center justify-center gap-1 rounded-md px-1.5 text-xs font-semibold transition-colors ${
             activeTab === "vr"
               ? "bg-raised text-fg shadow-sm border border-line"
               : "text-fg-3 hover:text-fg"
@@ -73,7 +73,7 @@ export function StudioBg3dSpatialWebtoonPanel({
           type="button"
           disabled={disabled}
           onClick={() => handleTabSelect("audio")}
-          className={`flex items-center justify-center gap-1 rounded-md py-1.5 text-[0.7rem] font-bold transition-all ${
+          className={`flex min-h-11 items-center justify-center gap-1 rounded-md px-1.5 text-xs font-semibold transition-colors ${
             activeTab === "audio"
               ? "bg-raised text-fg shadow-sm border border-line"
               : "text-fg-3 hover:text-fg"
@@ -87,7 +87,7 @@ export function StudioBg3dSpatialWebtoonPanel({
           type="button"
           disabled={disabled}
           onClick={() => handleTabSelect("hands")}
-          className={`flex items-center justify-center gap-1 rounded-md py-1.5 text-[0.7rem] font-bold transition-all ${
+          className={`flex min-h-11 items-center justify-center gap-1 rounded-md px-1.5 text-xs font-semibold transition-colors ${
             activeTab === "hands"
               ? "bg-raised text-fg shadow-sm border border-line"
               : "text-fg-3 hover:text-fg"
@@ -102,7 +102,7 @@ export function StudioBg3dSpatialWebtoonPanel({
       {activeTab === "ar" && (
         <div className="flex flex-col gap-2.5">
           <div>
-            <span className="mb-1.5 block text-[0.7rem] font-semibold text-fg-2">
+            <span className="mb-1.5 block text-xs font-semibold text-fg-2">
               AR 배치 대상 평면
             </span>
             <div className="grid grid-cols-3 gap-1.5">
@@ -116,7 +116,7 @@ export function StudioBg3dSpatialWebtoonPanel({
                   type="button"
                   disabled={disabled}
                   onClick={() => setArOrientation(plane.id as ArPlaneOrientation)}
-                  className={`rounded-lg border p-2 text-center text-[0.68rem] font-semibold transition-all ${
+                  className={`min-h-11 rounded-lg border p-2 text-center text-xs font-semibold transition-colors ${
                     arOrientation === plane.id
                       ? "border-accent bg-accent/15 text-accent"
                       : "border-line bg-card text-fg hover:border-line-strong hover:bg-raised"
@@ -130,10 +130,10 @@ export function StudioBg3dSpatialWebtoonPanel({
 
           <div className="flex flex-col gap-1 rounded-xl border border-line bg-card/60 p-2.5">
             <div className="flex items-center justify-between">
-              <label htmlFor={scaleId} className="text-[0.68rem] font-medium text-fg-3">
+              <label htmlFor={scaleId} className="text-xs font-medium text-fg-3">
                 AR 축척 스케일
               </label>
-              <span className="font-mono text-[0.68rem]">
+              <span className="font-mono text-xs tabular-nums">
                 {arScale === 1 ? "1:1 (실물 크기)" : `1:${Math.round(1 / arScale)} (${(arScale * 100).toFixed(0)}%)`}
               </span>
             </div>
@@ -148,14 +148,14 @@ export function StudioBg3dSpatialWebtoonPanel({
               onChange={(e) => setArScale(Number(e.target.value))}
               className="accent-accent"
             />
-            <div className="mt-1 flex justify-between text-[0.6rem] text-fg-3">
+            <div className="mt-1 flex justify-between text-xs text-fg-3">
               <span>미니어처 (1:50)</span>
               <span>테이블 디오라마 (1:10)</span>
               <span>실물 크기 (1:1)</span>
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-line bg-card/60 p-2 text-[0.68rem]">
+          <div className="flex items-center justify-between rounded-lg border border-line bg-card/60 p-2 text-xs">
             <span className="font-medium text-fg-2">바닥 실시간 그림자 캐처 (Shadow Plane)</span>
             <input
               type="checkbox"
@@ -172,7 +172,7 @@ export function StudioBg3dSpatialWebtoonPanel({
       {activeTab === "vr" && (
         <div className="flex flex-col gap-2.5">
           <div>
-            <span className="mb-1.5 block text-[0.7rem] font-semibold text-fg-2">
+            <span className="mb-1.5 block text-xs font-semibold text-fg-2">
               VR 공간 웹툰 배치 토폴로지
             </span>
             <div className="grid grid-cols-3 gap-1.5">
@@ -186,7 +186,7 @@ export function StudioBg3dSpatialWebtoonPanel({
                   type="button"
                   disabled={disabled}
                   onClick={() => setVrTopology(topo.id as VrStoryLayoutTopology)}
-                  className={`rounded-lg border p-2 text-center text-[0.68rem] font-semibold transition-all ${
+                  className={`min-h-11 rounded-lg border p-2 text-center text-xs font-semibold transition-colors ${
                     vrTopology === topo.id
                       ? "border-accent bg-accent/15 text-accent"
                       : "border-line bg-card text-fg hover:border-line-strong hover:bg-raised"
@@ -198,10 +198,10 @@ export function StudioBg3dSpatialWebtoonPanel({
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-line bg-card/60 p-2 text-[0.68rem]">
+          <div className="flex items-center justify-between rounded-lg border border-line bg-card/60 p-2 text-xs">
             <div className="flex flex-col">
               <span className="font-semibold text-fg">멀미 방지 비네팅 (Comfort Vignette)</span>
-              <span className="text-[0.62rem] text-fg-3">순간 이동 및 스냅 회전 시 시야 테두리를 부드럽게 감쇄</span>
+              <span className="text-xs text-fg-3">순간 이동 및 스냅 회전 시 시야 테두리를 부드럽게 감쇄</span>
             </div>
             <input
               type="checkbox"
@@ -218,7 +218,7 @@ export function StudioBg3dSpatialWebtoonPanel({
       {activeTab === "audio" && (
         <div className="flex flex-col gap-2.5">
           <div>
-            <span className="mb-1.5 block text-[0.7rem] font-semibold text-fg-2">
+            <span className="mb-1.5 block text-xs font-semibold text-fg-2">
               3D 공간 효과음 프리셋 선택
             </span>
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
@@ -235,26 +235,26 @@ export function StudioBg3dSpatialWebtoonPanel({
                   type="button"
                   disabled={disabled}
                   onClick={() => setSelectedSfx(sfx.id as SpatialSfxPresetKind)}
-                  className={`flex items-center gap-1.5 rounded-lg border p-2 text-left text-[0.68rem] font-semibold transition-all ${
+                  className={`flex min-h-11 items-center gap-1.5 rounded-lg border p-2 text-left text-xs font-semibold transition-colors ${
                     selectedSfx === sfx.id
                       ? "border-accent bg-accent/15 text-accent"
                       : "border-line bg-card text-fg hover:border-line-strong hover:bg-raised"
                   }`}
                 >
-                  <Sparkles className="h-3 w-3 text-accent" />
+                  <Volume2 className="h-3.5 w-3.5 text-accent" aria-hidden />
                   <span>{sfx.label}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-line bg-card/60 p-2.5 text-[0.68rem]">
-            <span className="font-semibold text-fg-2">활성 3D 이미터: {emitterCount}개 노드</span>
+          <div className="flex items-center justify-between rounded-xl border border-line bg-card/60 p-2.5 text-xs">
+            <span className="font-semibold tabular-nums text-fg-2">활성 3D 이미터: {emitterCount}개 노드</span>
             <button
               type="button"
               disabled={disabled}
               onClick={() => setEmitterCount((c) => c + 1)}
-              className="rounded-md border border-line bg-card px-2 py-1 text-[0.65rem] font-bold text-fg hover:bg-raised"
+              className="min-h-11 rounded-md border border-line bg-card px-2.5 text-xs font-semibold text-fg transition-colors hover:bg-raised"
             >
               + 씬에 음향 이미터 추가
             </button>
@@ -264,30 +264,30 @@ export function StudioBg3dSpatialWebtoonPanel({
 
       {/* Tab 4: Hand Tracking */}
       {activeTab === "hands" && (
-        <div className="flex flex-col gap-2 rounded-xl border border-line bg-card/60 p-2.5 text-[0.68rem]">
-          <span className="font-bold text-fg">WebXR 25-관절 공간 제스처 단축키</span>
+        <div className="flex flex-col gap-2 rounded-xl border border-line bg-card/60 p-2.5 text-xs">
+          <span className="font-semibold text-fg">WebXR 25-관절 공간 제스처 단축키</span>
           <div className="grid grid-cols-2 gap-2 text-fg-2">
             <div className="rounded-lg bg-raised p-2">
-              <span className="block font-bold text-accent">양손 핀치 줌 (Two-Hand Scale)</span>
-              <span className="mt-0.5 block text-[0.62rem] text-fg-3">
+              <span className="block font-semibold text-accent">양손 핀치 줌 (Two-Hand Scale)</span>
+              <span className="mt-0.5 block text-xs text-fg-3">
                 양손 검지와 엄지를 맞잡고 거리를 벌려 스테이지 확대/축소
               </span>
             </div>
             <div className="rounded-lg bg-raised p-2">
-              <span className="block font-bold text-accent">양손 프레임 캡처 (Two-Hand Crop)</span>
-              <span className="mt-0.5 block text-[0.62rem] text-fg-3">
+              <span className="block font-semibold text-accent">양손 프레임 캡처 (Two-Hand Crop)</span>
+              <span className="mt-0.5 block text-xs text-fg-3">
                 양손으로 L자 사각형 프레임을 만들어 웹툰 컷 즉시 촬영
               </span>
             </div>
             <div className="rounded-lg bg-raised p-2">
-              <span className="block font-bold text-accent">손바닥 펼침 (Open Palm Summon)</span>
-              <span className="mt-0.5 block text-[0.62rem] text-fg-3">
+              <span className="block font-semibold text-accent">손바닥 펼침 (Open Palm Summon)</span>
+              <span className="mt-0.5 block text-xs text-fg-3">
                 손바닥을 위로 펼쳐 3D 도구 및 펜 팔레트 호출
               </span>
             </div>
             <div className="rounded-lg bg-raised p-2">
-              <span className="block font-bold text-accent">검지 포인팅 (Index Teleport)</span>
-              <span className="mt-0.5 block text-[0.62rem] text-fg-3">
+              <span className="block font-semibold text-accent">검지 포인팅 (Index Teleport)</span>
+              <span className="mt-0.5 block text-xs text-fg-3">
                 바닥을 가리켜 포물선 궤적으로 공간 이동
               </span>
             </div>

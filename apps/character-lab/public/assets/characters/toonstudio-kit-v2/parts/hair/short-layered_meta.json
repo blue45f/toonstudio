@@ -1,0 +1,278 @@
+{
+  "schema": "toonstudio.character-kit.hair-v2/1",
+  "styleId": "short-layered",
+  "labelKo": "내추럴 숏 레이어드",
+  "genre": "일상·현대",
+  "fittedBase": "female-romance",
+  "file": {
+    "path": "short-layered.glb",
+    "bytes": 1371104,
+    "sha256": "8276dfc4a25047e58d95e16c2b59bdba067be386a07fa3df0d740efc5b9c1523"
+  },
+  "drawCalls": 8,
+  "materials": [
+    "ts_hair_short-layered",
+    "ts_hair_tip_short-layered",
+    "ts_hair_accent_short-layered"
+  ],
+  "lods": [
+    {
+      "node": "TS_AuthoredHair_short-layered_LOD0",
+      "lod": 0,
+      "triangles": 9984,
+      "vertices": 5062,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_short-layered_LOD1",
+      "lod": 1,
+      "triangles": 4880,
+      "vertices": 2510,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_short-layered_LOD2",
+      "lod": 2,
+      "triangles": 1832,
+      "vertices": 968,
+      "primitives": 2,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    }
+  ],
+  "morphs": [
+    "param:height:+",
+    "param:height:-",
+    "param:legLength:+",
+    "param:legLength:-",
+    "param:neckLength:+",
+    "param:neckLength:-",
+    "param:headSize:+",
+    "param:headSize:-",
+    "shape:bang-length:+",
+    "shape:bang-length:-",
+    "shape:volume:+",
+    "shape:volume:-",
+    "shape:sway:+",
+    "shape:sway:-"
+  ],
+  "shapes": [
+    "bang-length",
+    "volume",
+    "sway"
+  ],
+  "uv0Monotonic": true,
+  "uv1Purpose": "hair-flow",
+  "texture": {
+    "bytes": 21555,
+    "size": 512,
+    "meanLuminance": 0.9231,
+    "minLuminance": 0.8,
+    "columns": 4
+  },
+  "springBone": {
+    "schema": "toonstudio.hair-springbone/1",
+    "vrmSpec": "VRMC_springBone-1.0",
+    "styleId": "short-layered",
+    "fittedBase": "female-romance",
+    "chainCount": 1,
+    "colliders": [
+      {
+        "id": "head_sphere",
+        "bone": "mixamorig:Head",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.08792,
+          -0.00185
+        ],
+        "radius": 0.08493
+      },
+      {
+        "id": "neck_capsule",
+        "bone": "mixamorig:Neck",
+        "shape": "capsule",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tailGltf": [
+          0.0,
+          0.08816,
+          -0.002
+        ],
+        "radius": 0.04725
+      },
+      {
+        "id": "upper_chest_sphere",
+        "bone": "mixamorig:Spine2",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.00231
+        ],
+        "radius": 0.12696
+      }
+    ],
+    "chains": [
+      {
+        "id": "bang_C",
+        "region": "bang",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 6,
+        "lengthM": 0.1317,
+        "hitRadius": 0.015,
+        "stiffness": 0.92,
+        "dragForce": 0.5,
+        "gravityPower": 0.22,
+        "joints": [
+          {
+            "name": "TS_Spring_short-layered_bang_C_0",
+            "positionGltf": [
+              0.00071,
+              1.65909,
+              0.01102
+            ],
+            "localOffsetFromHead": [
+              0.00071,
+              0.18198,
+              0.01902
+            ],
+            "hitRadius": 0.015,
+            "stiffness": 1.012,
+            "dragForce": 0.5,
+            "gravityPower": 0.22,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_short-layered_bang_C_1",
+            "positionGltf": [
+              0.00047,
+              1.6399,
+              0.04918
+            ],
+            "localOffsetFromHead": [
+              0.00047,
+              0.16279,
+              0.05718
+            ],
+            "hitRadius": 0.0141,
+            "stiffness": 0.9353,
+            "dragForce": 0.5,
+            "gravityPower": 0.22,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_short-layered_bang_C_2",
+            "positionGltf": [
+              -0.00443,
+              1.60355,
+              0.0733
+            ],
+            "localOffsetFromHead": [
+              -0.00443,
+              0.12644,
+              0.0813
+            ],
+            "hitRadius": 0.0132,
+            "stiffness": 0.8587,
+            "dragForce": 0.5,
+            "gravityPower": 0.22,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_short-layered_bang_C_3",
+            "positionGltf": [
+              -0.01065,
+              1.55903,
+              0.06998
+            ],
+            "localOffsetFromHead": [
+              -0.01065,
+              0.08193,
+              0.07798
+            ],
+            "hitRadius": 0.0123,
+            "stiffness": 0.782,
+            "dragForce": 0.5,
+            "gravityPower": 0.22,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "qa": {
+    "bytes": 1371104,
+    "minClearanceMm": 1.057,
+    "verticesInside": 0,
+    "gltfValidateErrors": 0,
+    "gltfValidateWarnings": 0,
+    "bmesh": {
+      "TS_AuthoredHair_short-layered_LOD0": {
+        "verts": 5192,
+        "faces": 9984,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_short-layered_LOD1": {
+        "verts": 2611,
+        "faces": 4880,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_short-layered_LOD2": {
+        "verts": 968,
+        "faces": 1832,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      }
+    },
+    "springChainCount": 1
+  },
+  "passed": true,
+  "errors": [],
+  "seconds": 1.96
+}
