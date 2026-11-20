@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,6 +10,7 @@ import * as commercialPreflight from "../export/studio-commercial-preflight-gate
 import { studioAutosaveKey, writeStudioLifecycleAutosave } from "../studio-autosave";
 import { createStudioProjectDocument } from "../studio-project-document-store";
 import { createStudioProject } from "../studio-project-library-store";
+import * as manuscriptFacts from "./studio-manuscript-export-facts";
 import { StudioExportPanel } from "./StudioExportPanel";
 
 beforeEach(() => {
@@ -142,15 +143,18 @@ describe("StudioExportPanel", () => {
       { preservePrimary: false },
     );
 
+    const load = vi.spyOn(manuscriptFacts, "loadPersistedManuscriptExportFacts");
     render(
       <MemoryRouter>
         <StudioExportPanel projectId="proj-pages-1" locale="ko" />
       </MemoryRouter>,
     );
 
-    await waitFor(() => {
-      expect(screen.getByTestId("studio-export-scope-summary").textContent).toContain("실제 편집 원고 연결됨");
+    await act(async () => {
+      const snapshot = await load.mock.results.at(-1)?.value;
+      expect(snapshot?.sourceAuthority).toBe("manuscript-snapshot");
     });
+    expect(screen.getByTestId("studio-export-scope-summary").textContent).toContain("실제 편집 원고 연결됨");
 
     // ① 실제 해상도·순서, ② 플랫폼 추천치, ③ 사전 추정치가 각각 독립 카드에 구분 표시된다.
     expect(screen.getByTestId("studio-export-scope-actual").textContent).toContain("720 × 1,280 px · 총 3P");

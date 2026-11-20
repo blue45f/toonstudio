@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -16,6 +16,7 @@ import type { StudioCuttoonEditorViewSession } from "../studio-cuttoon-editor/St
 import type { El } from "../studio-element-model";
 import { createStudioProjectDocument } from "../studio-project-document-store";
 import { createStudioProject } from "../studio-project-library-store";
+import * as manuscriptFacts from "./studio-manuscript-export-facts";
 import { StudioExportPanel } from "./StudioExportPanel";
 
 beforeEach(() => {
@@ -165,6 +166,7 @@ describe("StudioExportPanel ↔ 편집기 경고 위치 직행 및 동일 범위
     });
     seedThreePageManuscript({ fixedOnPage2: false });
 
+    const load = vi.spyOn(manuscriptFacts, "loadPersistedManuscriptExportFacts");
     const firstRender = render(
       <MemoryRouter initialEntries={["/studio/p/proj-roundtrip-28/export"]}>
         <Routes>
@@ -176,6 +178,10 @@ describe("StudioExportPanel ↔ 편집기 경고 위치 직행 및 동일 범위
       </MemoryRouter>,
     );
 
+    await act(async () => {
+      const snapshot = await load.mock.results.at(-1)?.value;
+      expect(snapshot?.sourceAuthority).toBe("manuscript-snapshot");
+    });
     await waitFor(() => {
       expect(screen.getByTestId("studio-export-scope-summary").textContent).toContain(
         "실제 편집 원고 연결됨",
@@ -236,6 +242,10 @@ describe("StudioExportPanel ↔ 편집기 경고 위치 직행 및 동일 범위
       </MemoryRouter>,
     );
 
+    await act(async () => {
+      const snapshot = await load.mock.results.at(-1)?.value;
+      expect(snapshot?.sourceAuthority).toBe("manuscript-snapshot");
+    });
     await waitFor(() => {
       expect(screen.getByRole("status").textContent).toContain(
         "편집기에서 돌아와 이전과 같은 범위를 최신 원고 기준으로 다시 검사했어요",
