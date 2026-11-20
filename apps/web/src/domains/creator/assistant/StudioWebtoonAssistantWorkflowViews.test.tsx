@@ -5,12 +5,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StudioWorkflowPacksPanel } from "./StudioWebtoonAssistantWorkflowViews";
 import { BUILTIN_STUDIO_WORKFLOW_PACKS, type StudioWorkflowPack } from "./studio-workflow-pack";
 
-describe("StudioWorkflowPacksPanel Wave 7, 16 & 20 remediation, simulator & 8-stage provenance card", () => {
+describe("StudioWorkflowPacksPanel Wave 7–24 full 10-stage commercial, global & MovingToon stack", () => {
   beforeEach(() => {
     window.localStorage.clear();
   });
 
-  it("renders BG3D/brush labels, settlement simulator, 8-stage provenance card, and remediates a CC-BY-NC pack", () => {
+  it("renders BG3D/brush labels, settlement simulator, 8/9/10-stage cards, and remediates NC packs", () => {
     const onApplyPack = vi.fn();
     render(
       <StudioWorkflowPacksPanel
@@ -31,6 +31,12 @@ describe("StudioWorkflowPacksPanel Wave 7, 16 & 20 remediation, simulator & 8-st
     expect(screen.getByText("브러시:크리스프 G펜 (선화)")).toBeTruthy();
     expect(screen.getByTestId("studio-commercial-settlement-widget")).toBeTruthy();
     expect(screen.getByTestId("studio-ip-provenance-audit-card")).toBeTruthy();
+    expect(screen.getByTestId("studio-global-localization-card")).toBeTruthy();
+    expect(screen.getByTestId("studio-movingtoon-voice-consent-card")).toBeTruthy();
+    expect(screen.getByTestId("studio-reader-trust-seal-preview-card")).toBeTruthy();
+    expect(screen.getByTestId("studio-portfolio-batch-reissuance-card")).toBeTruthy();
+    expect(screen.getByTestId("studio-wave100-master-cockpit-card")).toBeTruthy();
+    expect(screen.getByTestId("studio-wave1000-millennium-cockpit-card")).toBeTruthy();
 
     const ncPack: StudioWorkflowPack = {
       ...BUILTIN_STUDIO_WORKFLOW_PACKS[0],

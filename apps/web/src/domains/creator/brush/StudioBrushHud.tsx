@@ -129,9 +129,9 @@ export const StudioBrushHud = memo(function StudioBrushHud({
     let obstaclesAt = 0;
     let disposed = false;
 
-    const refreshObstacles = () => {
+    const refreshObstacles = (force = false) => {
       const now = performance.now();
-      if (now - obstaclesAt < OBSTACLE_REFRESH_MS) return;
+      if (!force && obstacles.length > 0 && now - obstaclesAt < OBSTACLE_REFRESH_MS) return;
       obstaclesAt = now;
       const found: StudioSurfaceRect[] = [];
       for (const element of Array.from(document.querySelectorAll(OBSTACLE_SELECTOR))) {
@@ -167,18 +167,31 @@ export const StudioBrushHud = memo(function StudioBrushHud({
         hide();
         return;
       }
-      refreshObstacles();
+      refreshObstacles(hostRect.width <= 420);
+      const safeArea = studioOnCanvasSafeArea(domRectToSurfaceRect(hostRect), viewportRect());
       const placement = planStudioBrushHudPlacement({
         anchor,
-        safeArea: studioOnCanvasSafeArea(domRectToSurfaceRect(hostRect), viewportRect()),
+        safeArea,
         handedness: handednessRef.current,
         geometry,
         obstacles,
       });
-      placementRef.current = placement;
+      let resolvedTop = placement.rect.top;
+      if (hostRect.width <= 420 && placement.obstructedPx2 > 0) {
+        const collabSummary = document.querySelector("[data-studio-collaboration-summary='true']");
+        const summaryRect = collabSummary?.getBoundingClientRect();
+        if (summaryRect && summaryRect.width > 0 && summaryRect.height > 0) {
+          const maxTop = safeArea.top + Math.max(0, safeArea.height - placement.rect.height);
+          const clearedTop = Math.min(maxTop, Math.ceil(summaryRect.bottom + 8));
+          if (clearedTop > resolvedTop) resolvedTop = clearedTop;
+        }
+      }
+      placementRef.current = resolvedTop === placement.rect.top
+        ? placement
+        : { ...placement, rect: { ...placement.rect, top: resolvedTop } };
       node.style.visibility = "visible";
       node.style.pointerEvents = "auto";
-      node.style.transform = `translate3d(${Math.round(placement.rect.left)}px, ${Math.round(placement.rect.top)}px, 0)`;
+      node.style.transform = `translate3d(${Math.round(placement.rect.left)}px, ${Math.round(resolvedTop)}px, 0)`;
       node.dataset.studioBrushHudSide = placement.side;
       node.dataset.studioBrushHudWithinBudget = placement.withinBudget ? "true" : "false";
     };

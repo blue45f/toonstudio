@@ -1,6 +1,7 @@
 import type { IpSlateFundDdReport } from "./studio-ip-slate-fund-dd";
 import type { GlobalLocalizationRightsManifest } from "./studio-localization-rights-chain";
 import type { SeriesCommercialPipelineOutput } from "./studio-rights-monetization-pipeline";
+import type { VoiceSynthesisConsentLedger } from "./studio-voice-synthesis-consent-ledger";
 
 export interface ProvenanceChainStageCheck {
   readonly stage:
@@ -12,7 +13,8 @@ export interface ProvenanceChainStageCheck {
     | "mg-readiness"
     | "advance-underwriting"
     | "ip-slate-dd"
-    | "localization-rights";
+    | "localization-rights"
+    | "voice-synthesis-consent";
   readonly valid: boolean;
   readonly hash: string;
   readonly detail: string;
@@ -40,13 +42,15 @@ function fnv1aHex(input: string): string {
 }
 
 /**
- * 스튜디오 ERP · 법무 · 투자사 · 글로벌 유통 감사를 위해 제작(Rights BOM)부터 정산(Escrow),
- * 선정산 심사(Underwriting), 펀드 배분(DD), 글로벌 현지화(Localization)까지 해시 체인 참조 무결성을 대조한다.
+ * 스튜디오 ERP · 법무 · 투자사 · 글로벌 유통 · 무빙툰 더빙 감사를 위해 제작(Rights BOM)부터
+ * 정산(Escrow), 선정산 심사(Underwriting), 펀드 배분(DD), 글로벌 현지화(Localization),
+ * 성우 AI 음성권(Voice Consent)까지 최대 10단계 해시 체인 참조 무결성을 대조한다.
  */
 export function verifySeriesIpProvenanceChain(
   pipeline: SeriesCommercialPipelineOutput,
   optionalDdReport?: IpSlateFundDdReport | null,
   optionalLocalizationManifest?: GlobalLocalizationRightsManifest | null,
+  optionalVoiceLedger?: VoiceSynthesisConsentLedger | null,
 ): IpProvenanceChainAuditResult {
   const stages: ProvenanceChainStageCheck[] = [];
 
@@ -159,6 +163,23 @@ export function verifySeriesIpProvenanceChain(
       detail: locValid
         ? `글로벌 다국어(${optionalLocalizationManifest.clearedLocaleCount}개 로케일) 공급망 체인 일치`
         : "글로벌 현지화 라이선스 보류 또는 원작 해시 불일치",
+    });
+  }
+
+  if (optionalVoiceLedger) {
+    const expectedLocHash = optionalLocalizationManifest?.localizationChainHash ?? "";
+    const voiceValid =
+      FNV_HEX_PATTERN.test(optionalVoiceLedger.voiceConsentLedgerHash) &&
+      optionalVoiceLedger.allContractsCleared &&
+      optionalVoiceLedger.sourceReceiptIntegrityHash === receiptHash &&
+      (!expectedLocHash || optionalVoiceLedger.localizationChainHash === expectedLocHash);
+    stages.push({
+      stage: "voice-synthesis-consent",
+      valid: Boolean(voiceValid),
+      hash: optionalVoiceLedger.voiceConsentLedgerHash,
+      detail: voiceValid
+        ? `무빙툰 성우 AI 음성권(${optionalVoiceLedger.checks.length}인) 범위·체인 일치`
+        : "성우 음성권 미승인 또는 상위 해시 불일치",
     });
   }
 

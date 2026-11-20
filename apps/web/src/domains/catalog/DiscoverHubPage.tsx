@@ -46,6 +46,10 @@ import { useApiResource } from "@/platform/use-api-resource";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { cn } from "@/shared/lib/utils";
 
+import {
+  DiscoverTagTriggerFinderCard,
+  DiscoverTasteOnboardingBanner,
+} from "./DiscoverHubEnhancementCards";
 import { DiscoverSpotlight } from "./DiscoverSpotlight";
 import {
   DISCOVER_HOME_SNAPSHOT_URL,
@@ -280,6 +284,7 @@ export function DiscoverHubPage() {
   );
   const hydrated = useHydrated();
   const recentlyViewedIds = useApp((state) => state.recentlyViewed);
+  const ratedTitleCount = useApp((state) => Object.keys(state.ratings).length);
   // 대표 작품이 없는 상태에는 가짜 표지나 빈 카드를 만들지 않는다.
   const showSpotlight = home.loading || (home.data != null && pickDiscoverSpotlight(home.data) != null);
   const quickReturnModel = useMemo(() => {
@@ -415,6 +420,7 @@ export function DiscoverHubPage() {
 
       <section aria-labelledby="discover-shelves-title" className="discover-hub-shelves min-w-0">
         <h2 id="discover-shelves-title" className="sr-only">{bt("작품 둘러보기", "Browse stories")}</h2>
+        <DiscoverTasteOnboardingBanner hydrated={hydrated} ratedTitleCount={ratedTitleCount} />
         <section
           aria-label={bt("최근 본 작품 이어보기", "Continue reading")}
           data-testid="discover-quick-return-bar"
@@ -649,6 +655,7 @@ export function DiscoverHubPage() {
             ))}
           </ul>
         </nav>
+          <DiscoverTagTriggerFinderCard />
           <div className="mt-4 grid grid-cols-1 gap-2.5 min-[360px]:grid-cols-2 sm:gap-3 lg:grid-cols-3">
             {DESTINATIONS.filter((destination) => !["/explore", "/ranking", "/calendar"].includes(destination.href)).map((destination) => (
               <SiteLinkCard key={destination.href} layout="tile" href={destination.href} icon={destination.icon}

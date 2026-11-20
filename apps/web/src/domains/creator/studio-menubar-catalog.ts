@@ -40,9 +40,17 @@
  *    코어 5 + 레이어 보정 2" are the core rows and the remaining filter-pack
  *    rows (44) are specialist effects. Only those 8 named rows stay core.
  */
+import {
+  STUDIO_SEVEN_STANDARD_MENUS,
+  STUDIO_UI_V2_CHROME_CONSTANTS,
+  evaluateCanvasViewportRatio,
+  type StandardMenuGroupId,
+} from "./chrome/studio-ui-v2-chrome-contract";
 import { STUDIO_MENU_ITEM_INVENTORY } from "./studio-command-catalog";
 
 import type { StudioUiDensityMode } from "./studio-ui-density";
+
+export { STUDIO_SEVEN_STANDARD_MENUS, STUDIO_UI_V2_CHROME_CONSTANTS, evaluateCanvasViewportRatio };
 
 export type StudioMenubarCommandTier = "core" | "contextual" | "advanced";
 
@@ -206,4 +214,17 @@ export function foldStudioMenubarGroupsForDensity<
     } as TGroup;
   });
   return changed ? folded : groups;
+}
+
+/**
+ * 레거시 18개 메뉴 그룹 ID를 UI/UX v2 7대 표준 메뉴(`STUDIO_SEVEN_STANDARD_MENUS`)로 매핑한다 (AC-019).
+ */
+export function resolveStandardMenuGroupForSourceGroup(
+  sourceGroupId: string,
+): StandardMenuGroupId {
+  const normalized = sourceGroupId.trim().toLowerCase();
+  const hit = STUDIO_SEVEN_STANDARD_MENUS.find((menu) =>
+    menu.id === normalized || menu.legacyGroupIds.includes(normalized),
+  );
+  return hit?.id ?? "view-help";
 }
