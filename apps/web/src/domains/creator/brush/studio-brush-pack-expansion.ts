@@ -1,14 +1,6 @@
 /**
- * 2026-07 procedural brush pack expansion wave — per-preset professional tuning data.
- *
- * The compact profile rows in studio-brush-pack-runtime.ts derive most parameters from the row
- * index, which is perfect for bulk variety but too coarse for presets that imitate a specific
- * physical tool (a G-pen's dramatic pressure swell, a pastel's canvas-pinned paper tooth, rain
- * falling at one fixed angle...). This module carries explicit, hand-tuned dynamics overrides for
- * the 73 expansion ids plus a deliberately tiny visibility-correction set for legacy soft media.
- *
- * Determinism: no override introduces a new random stream. Jitters/mappings run through the
- * engine's seeded planner and every grain override pins an explicit constant seed.
+ * Hand-tuned dynamics for the procedural brush pack, including first-stroke visibility and dab
+ * spacing for legacy tips. Grain overrides use constant seeds so the planner can replay a stroke.
  */
 import type {
   StudioBrushDynamicsPropertySettings,
@@ -112,6 +104,7 @@ export type StudioBrushPackExpansionWaveId =
  * Keeping this set explicit prevents a general opacity multiplier from flattening the catalogue.
  */
 export const STUDIO_BRUSH_PACK_VISIBILITY_TUNING_IDS = [
+  "needle-graphite",
   "mist-soft",
   "bokeh-scatter",
   "bleeding-stain",
@@ -172,6 +165,8 @@ const EXPANSION_TUNING: Readonly<
   Record<StudioBrushPackTuningId, StudioBrushPackExpansionTuning>
 > = {
   // ── Legacy soft-media visibility corrections ──────────────────────────
+  // Short, light graphite marks need pigment inside the existing 3 px nib footprint.
+  "needle-graphite": { flow: { base: 0.75 } },
   "mist-soft": {
     // Remains a build-up brush, but no longer starts below the browser's perceptual floor.
     tipSoftness: 0.72,

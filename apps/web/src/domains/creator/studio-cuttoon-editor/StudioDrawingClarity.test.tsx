@@ -47,6 +47,27 @@ function Probe() {
 function tree<T extends StudioDrawingClaritySession>(value: T) { return <StudioDrawingClarityProvider session={value}><Probe /></StudioDrawingClarityProvider>; }
 
 describe("기본 그리기 화면의 세션 선택과 도구함", () => {
+  it.each([
+    ["/studio/bg3d", "bg3dOpen"],
+    ["/studio/canvas/poser", "poserVrmOpen"],
+    ["/studio/character", "characterShaperOpen"],
+    ["/studio/animation", "timelineOpen"],
+  ] as const)("%s 패널을 닫은 프레임부터 원고 경로가 확정될 때까지 같은 도구를 쓴다", (pathname, panel) => {
+    const base = session();
+    const specialized = { ...base, isMobile: true, mobileImmersive: true, location: { ...base.location, pathname } };
+    const display = (state: StudioDrawingClaritySession) => <StudioDrawingClarityProvider session={state} presentation="app"><Probe /></StudioDrawingClarityProvider>;
+    const view = render(display({ ...specialized, [panel]: true }));
+    expect(screen.getByLabelText("화면").textContent).toBe("기존");
+
+    view.rerender(display({ ...specialized, [panel]: false }));
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
+    expect(screen.getByLabelText("편집기 셸").textContent).toBe("integrated");
+
+    view.rerender(display({ ...specialized, location: base.location, [panel]: false }));
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
+    expect(screen.getByLabelText("편집기 셸").textContent).toBe("integrated");
+  });
+
   it.each(["android", "ios"])("Capacitor %s의 웹뷰가 기본 원고를 모바일 웹과 같은 화면으로 연다", (platform) => {
     vi.stubGlobal("Capacitor", { isNativePlatform: () => true, getPlatform: () => platform });
     render(<StudioDrawingClarityProvider session={{ ...session(), isMobile: true, mobileImmersive: true }} presentation="app"><Probe /></StudioDrawingClarityProvider>);

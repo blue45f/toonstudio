@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { isImeKeyboardEvent } from "@/shared/lib/palette-ime-guard";
 
-import { isStudioDrawingEditorRoute, type StudioDrawingClarityStorage } from "./StudioDrawingClarityPolicy";
+import { isStudioDrawingEditorRoute, type StudioDrawingClarityStorage, type StudioDrawingPanelVisibility } from "./StudioDrawingClarityPolicy";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 import { DrawingClarityContext, type StudioDrawingClarityPanel } from "./StudioDrawingClarityContext";
@@ -11,6 +11,7 @@ import { DrawingClarityContext, type StudioDrawingClarityPanel } from "./StudioD
 export type StudioDrawingClaritySession = Pick<StudioCuttoonEditorViewSession,
   "currentWorkspaceOwnerScope" | "isMobile" | "workspaceState" | "workMode" | "canvasOnlyMode" | "mobileImmersive"
   | "uiDensityMode" | "studioDrawingClarityBaseline" | "location" | "appSettings">
+  & StudioDrawingPanelVisibility
   & {
     readonly navigate?: StudioCuttoonEditorViewSession["navigate"];
     readonly pendingSaveIntent?: StudioCuttoonEditorViewSession["pendingSaveIntent"];
@@ -42,7 +43,7 @@ export function StudioDrawingClarityProvider({
   }>({ compact: null, large: null });
   const owner = s.currentWorkspaceOwnerScope;
   const triggerRef = useRef<HTMLElement | null>(null);
-  const available = isStudioDrawingEditorRoute(s.location);
+  const available = isStudioDrawingEditorRoute(s.location, s);
   const editorPresentation = available ? "integrated" : presentation;
   const active = available && !s.canvasOnlyMode && (!s.mobileImmersive || s.isMobile);
   const workspace = s.workspaceState.activeWorkspaceId;

@@ -112,6 +112,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   bg3dInitialElementId: string | undefined;
   bg3dInitialScene: import("../bg3d/studio-bg3d-scene-document-types").StudioBg3dSceneDocument | undefined;
   bg3dOpen: boolean;
+  characterShaperOpen: boolean;
   bg3dSeedPrimitiveKind: string | null;
   bg3dMarketplaceModelId?: string | null;
   bg3dSeedTemplateId: string | null;

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, renderHook, waitFor } from "@testing-library/react";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { StrictMode, useEffect, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -226,6 +226,73 @@ describe("useStudioLocalDraftOwner — 소유 탭 리스의 연속성", () => {
     expect(isStudioJoinedLiveJamRoom({ roomId: PREVIOUS_ROOM, instantWorkId: result.current.instantWorkId })).toBe(true);
     expect(readReceiptRoom()).toBe(PREVIOUS_ROOM);
     expect(window.sessionStorage.getItem(STUDIO_LIVE_OWNER_ROOM_SESSION_KEY)).toBeNull();
+  });
+
+  it("원고 이탈 시 BFCache에 남은 이전 화면도 리스를 해제해 같은 탭의 다음 문서가 원점을 회복한다", async () => {
+    const owner = renderOwner({ roomId: FRESH_ROOM });
+    await waitFor(() => expect(locks.held.has(FRESH_LEASE_NAME)).toBe(true));
+    act(() => { window.dispatchEvent(new PageTransitionEvent("pagehide", { persisted: true })); });
+    await waitFor(() => expect(locks.held.has(FRESH_LEASE_NAME)).toBe(false));
+    const nextDocument = renderOwner({ initialInstantWorkId: PREVIOUS_ROOM });
+    await waitFor(() => expect(nextDocument.result.current.instantWorkId).toBe(FRESH_ROOM));
+    expect(nextDocument.result.current.canPublishRoom).toBe(true);
+    expect(readReceiptRoom()).toBe(FRESH_ROOM);
+    act(() => { window.dispatchEvent(new PageTransitionEvent("pagehide", { persisted: true })); });
+    await waitFor(() => expect(locks.held.has(FRESH_LEASE_NAME)).toBe(false));
+    nextDocument.unmount();
+    act(() => { window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })); });
+    await waitFor(() => expect(owner.result.current.instantWorkId).toBe(FRESH_ROOM));
+    await waitFor(() => expect(locks.held.has(FRESH_LEASE_NAME)).toBe(true));
+  });
+
+  it("같은 탭에서 두 원고를 번갈아 열어도 각 문서의 원점과 복구 키를 구분한다", async () => {
+    const first = renderOwner({ roomId: FRESH_ROOM });
+    await waitFor(() => expect(locks.held.has(FRESH_LEASE_NAME)).toBe(true));
+    act(() => { window.dispatchEvent(new PageTransitionEvent("pagehide", { persisted: true })); });
+    await waitFor(() => expect(locks.held.has(FRESH_LEASE_NAME)).toBe(false));
+    const otherScope = studioLocalDraftOwnerScope({ ownerId: "guest-user", projectId: "project-1", documentId: "doc-2", draftId: null });
+    const second = renderOwner({ documentId: "doc-2", initialInstantWorkId: PREVIOUS_ROOM });
+    const otherKey = STUDIO_LOCAL_DRAFT_OWNER_PREFIX + encodeURIComponent(otherScope);
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(otherKey) ?? "null")?.room).toBe(PREVIOUS_ROOM));
+    expect(readReceiptRoom()).toBe(FRESH_ROOM);
+    second.unmount();
+    act(() => { window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })); });
+    await waitFor(() => expect(first.result.current.instantWorkId).toBe(FRESH_ROOM));
+    await waitFor(() => expect(locks.held.has(FRESH_LEASE_NAME)).toBe(true));
+    expect(JSON.parse(localStorage.getItem(otherKey) ?? "null")?.room).toBe(PREVIOUS_ROOM);
+  });
+
+  it("BFCache에서 돌아온 옛 소유자는 다른 탭이 회복한 리스를 가로채지 않는다", async () => {
+    const owner = renderOwner({ initialInstantWorkId: FRESH_ROOM, roomId: FRESH_ROOM });
+    await waitFor(() => expect(locks.held.has(FRESH_LEASE_NAME)).toBe(true));
+    act(() => { window.dispatchEvent(new PageTransitionEvent("pagehide", { persisted: true })); });
+    await waitFor(() => expect(locks.held.has(FRESH_LEASE_NAME)).toBe(false));
+    const otherRecovered = vi.fn();
+    const release = holdStudioLocalDraftOwnership({
+      scope: SCOPE, room: FRESH_ROOM, knownTabOwner: false, workId: null, remixId: null,
+      storage: window.localStorage, locks, onRecovered: otherRecovered,
+    });
+    try {
+      await waitFor(() => expect(otherRecovered).toHaveBeenCalledOnce());
+      act(() => { window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })); });
+      await waitFor(() => expect(owner.result.current.canPublishRoom).toBe(false));
+      expect(isStudioJoinedLiveJamRoom({ roomId: FRESH_ROOM, instantWorkId: owner.result.current.instantWorkId })).toBe(true);
+      expect(readReceiptRoom()).toBe(FRESH_ROOM);
+    } finally { release(); }
+  });
+
+  it("원점 영수증이 없는 공유 링크는 방문 기록 복원 뒤에도 쓰기 권한이 있는 소유자로 승격하지 않는다", async () => {
+    const joiner = renderOwner({ roomId: PREVIOUS_ROOM });
+    expect(joiner.result.current.canPublishRoom).toBe(false);
+    act(() => {
+      window.dispatchEvent(new PageTransitionEvent("pagehide", { persisted: true }));
+      window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+    });
+    await waitFor(() => expect(joiner.result.current.instantWorkId).not.toBe(FRESH_ROOM));
+    expect(joiner.result.current.canPublishRoom).toBe(false);
+    expect(isStudioJoinedLiveJamRoom({ roomId: PREVIOUS_ROOM, instantWorkId: joiner.result.current.instantWorkId })).toBe(true);
+    expect(locks.held.size).toBe(0);
+    expect(readReceiptRoom()).toBeNull();
   });
 
   it("자기 룸을 ?room=으로 게시해 효과가 다시 돌아도 리스를 놓지 않아 복제 탭이 원점을 회복하지 못한다", async () => {
