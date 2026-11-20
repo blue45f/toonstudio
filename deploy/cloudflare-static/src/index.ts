@@ -6,6 +6,11 @@ import { parsePublicSharePath } from "../../../packages/core/src/public-share-pa
 
 import { CORE_CLIENT_IP_HEADER, trustedConnectingIp } from "./core-client-ip";
 import {
+  createEdgeErrorDiagnostics,
+  type EdgeErrorDiagnosticsEnv,
+  type EdgeErrorReporter,
+} from "./edge-error-diagnostics";
+import {
   cloudflareLargeAssetDescriptor,
   cloudflareLargeAssetKey,
   cloudflareSameOriginOnlyAllows,
@@ -26,7 +31,7 @@ import { createNeisCreatorResourceEdge } from "./neis-creator-resource-edge";
 
 export type { AssetsBinding, R2BucketBinding, R2ObjectBinding, R2ObjectBodyBinding } from "./large-static-assets";
 
-export interface CloudflareStaticEnv {
+export interface CloudflareStaticEnv extends EdgeErrorDiagnosticsEnv {
   readonly ASSETS: AssetsBinding;
   readonly LARGE_ASSETS?: R2BucketBinding;
   readonly CORE_API_ORIGIN?: string;
@@ -580,6 +585,7 @@ function retryableRead(request: Request, route: DynamicRoute): boolean {
 async function serveR2LargeAsset(
   request: Request,
   env: CloudflareStaticEnv,
+  reportError: EdgeErrorReporter,
 ): Promise<Response | null> {
   const requestUrl = new URL(request.url);
   const descriptor = cloudflareLargeAssetDescriptor(requestUrl.pathname);
@@ -609,6 +615,7 @@ async function serveR2LargeAsset(
     }));
   }
 
+  let operation: "r2_get" | "r2_head" | "r2_response" = method === "HEAD" ? "r2_head" : "r2_get";
   try {
     let partial = false;
     let object: R2ObjectBinding | R2ObjectBodyBinding | null;
@@ -618,12 +625,14 @@ async function serveR2LargeAsset(
       const requestedRange = r2RangeHeaders(request);
       let acceptedRange = requestedRange;
       if (requestedRange && request.headers.has("if-range")) {
+        operation = "r2_head";
         const metadata = await env.LARGE_ASSETS.head(key);
         if (!metadata) return null;
         acceptedRange = matchesIfRange(request, metadata.httpEtag)
           ? requestedRange
           : undefined;
       }
+      operation = "r2_get";
       object = await env.LARGE_ASSETS.get(
         key,
         acceptedRange ? { range: acceptedRange } : undefined,
@@ -632,6 +641,7 @@ async function serveR2LargeAsset(
     }
     if (!object) return null;
 
+    operation = "r2_response";
     const headers = r2AssetResponseHeaders(object, descriptor, partial);
     if (matchesIfNoneMatch(request, object.httpEtag)) {
       headers.delete("content-length");
@@ -646,7 +656,8 @@ async function serveR2LargeAsset(
       status: partial ? 206 : 200,
       headers,
     }));
-  } catch {
+  } catch (cause) {
+    reportError(env, request, { route: "large-asset", operation, attempt: 1, retrying: false }, cause);
     return null;
   }
 }
@@ -655,6 +666,7 @@ export function createCloudflareStaticGateway(
   runtime: GatewayRuntime = DEFAULT_RUNTIME,
 ) {
   const neisCreatorResources = createNeisCreatorResourceEdge(runtime);
+  const reportError = createEdgeErrorDiagnostics();
   return async function fetchRequest(
     request: Request,
     env: CloudflareStaticEnv,
@@ -690,7 +702,7 @@ export function createCloudflareStaticGateway(
       // 이중 압축이 되었고(2026-10-13 운영 실측: 전 경로 이중 brotli),
       // 어떤 클라이언트도 해제하지 못해 엔진·모델 로딩이 깨졌다.
       // R2 원본 + 엣지 네이티브 압축 조합은 클라이언트별로 정확히 동작한다.
-      const r2Response = await serveR2LargeAsset(request, env);
+      const r2Response = await serveR2LargeAsset(request, env, reportError);
       if (r2Response) return r2Response;
       const largeAsset = cloudflareLargeAssetDescriptor(requestUrl.pathname);
       // R2 미디어 이관 경로는 R2에 아직 없으면 Static Assets로 돌린다(단계 이관·롤백 안전망).
@@ -734,6 +746,7 @@ export function createCloudflareStaticGateway(
     let attempted = 0;
     for (const [index, origin] of orderedOrigins.entries()) {
       attempted += 1;
+      let operation: "upstream_fetch" | "upstream_response" = "upstream_fetch";
       try {
         const response = await runtime.fetch(
           createUpstreamApiRequest(
@@ -746,6 +759,7 @@ export function createCloudflareStaticGateway(
               : undefined,
           ),
         );
+        operation = "upstream_response";
         // Reconstructing a WebSocket upgrade response drops the runtime-specific
         // WebSocket handle. Security headers apply to HTTP responses; the upgrade
         // handshake must pass through unchanged.
@@ -763,11 +777,10 @@ export function createCloudflareStaticGateway(
           env,
         );
         return withSecurityHeaders(patchedResponse);
-      } catch {
-        if (
-          retryableRead(request, route)
-          && index + 1 < orderedOrigins.length
-        ) {
+      } catch (cause) {
+        const retrying = retryableRead(request, route) && index + 1 < orderedOrigins.length;
+        reportError(env, request, { route, operation, attempt: attempted, retrying }, cause);
+        if (retrying) {
           continue;
         }
       }
