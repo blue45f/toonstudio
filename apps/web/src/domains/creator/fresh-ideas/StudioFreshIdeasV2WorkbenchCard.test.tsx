@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioFreshIdeasV2WorkbenchCard } from "./StudioFreshIdeasV2WorkbenchCard";
 
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
 describe("StudioFreshIdeasV2WorkbenchCard (@unslop 9-pass UI v2.2)", () => {
-  it("renders 100/100 badge, runs streaming draft, saves Idea Bank, toggles Cross-Labs, and emits zero emoji slop", async () => {
+  it("renders 100/100 badge, supports cold-start/multi-source drawer, contrarian modes, 9 extended lenses, streaming, OSMU, and Idea Bank status switching", async () => {
     const onStatusChange = vi.fn();
     render(
       <StudioFreshIdeasV2WorkbenchCard
@@ -23,27 +27,60 @@ describe("StudioFreshIdeasV2WorkbenchCard (@unslop 9-pass UI v2.2)", () => {
     const root = screen.getByTestId("studio-fresh-ideas-v2-workbench");
     expect(root.textContent).not.toMatch(/[🔥📖📊✅🎯💡✨]/u);
 
+    // Open multi-source & pre-lens deconstruction drawer, test Cold-Start & trigger router
+    fireEvent.click(screen.getByTestId("fresh-ideas-source-drawer-toggle"));
+    expect(screen.getByTestId("fresh-ideas-deconstruction-summary")).toBeTruthy();
+    fireEvent.change(screen.getByTestId("fresh-ideas-trigger-input"), {
+      target: { value: "이 문서 TL;DR 요약만 해줘" },
+    });
+    expect(screen.getByTestId("fresh-ideas-trigger-route-readout").textContent).toContain(
+      "일반 요약 라우팅",
+    );
+    fireEvent.click(screen.getByTestId("fresh-ideas-cold-start-workspace-doc"));
+    fireEvent.click(screen.getByTestId("fresh-ideas-blindspot-legal-ip-risk"));
+
+    // Contrarian 3-mode switcher on Lens 01
+    fireEvent.click(screen.getByTestId("fresh-ideas-contrarian-conditional-nuance"));
+    expect(screen.getByTestId("fresh-ideas-mode-a-panel").textContent).toContain("경계선");
+
     // Toggle Cross-Labs unified remix
     fireEvent.click(screen.getByTestId("fresh-ideas-toggle-cross-labs"));
-    expect(screen.getByTestId("fresh-ideas-mode-a-panel").textContent).toContain("3대 랩스 통합 리믹스");
+    expect(screen.getByTestId("fresh-ideas-mode-a-panel").textContent).toContain(
+      "3대 랩스 통합 리믹스",
+    );
     fireEvent.click(screen.getByTestId("fresh-ideas-toggle-cross-labs"));
 
-    // Toggle extended lens
+    // Select an extended lens (07 failure-autopsy) and append/swap
+    fireEvent.change(screen.getByTestId("fresh-ideas-extended-lens-select"), {
+      target: { value: "failure-autopsy" },
+    });
     fireEvent.click(screen.getByTestId("fresh-ideas-toggle-extended-lens"));
-    expect(screen.getByTestId("fresh-ideas-v2-lens-10")).toBeTruthy();
+    expect(screen.getByTestId("fresh-ideas-v2-lens-07")).toBeTruthy();
 
-    // Switch to Mode B, select 60s Shorts, and run live streaming draft
+    // Switch to Mode B, test speech register lock, dual preview 3-line cut, 60s Shorts, and streaming
     fireEvent.click(screen.getByTestId("fresh-ideas-mode-mode-b-channel-draft"));
+    fireEvent.change(screen.getByTestId("fresh-ideas-register-select"), {
+      target: { value: "haera" },
+    });
+    fireEvent.click(screen.getByTestId("fresh-ideas-channel-default-dual-preview"));
+    expect(screen.getByTestId("fresh-ideas-dual-three-line-cut")).toBeTruthy();
     fireEvent.click(screen.getByTestId("fresh-ideas-channel-shorts-reels-60s"));
     fireEvent.click(screen.getByTestId("fresh-ideas-stream-btn"));
     await waitFor(() => {
       expect(screen.getByTestId("fresh-ideas-stream-output").textContent).toContain("100%");
     });
 
-    // Switch to Mode C and save 5 rows to persistent Idea Bank + export CSV/Docs
+    // Switch to Mode C, test OSMU tabs, save 5 rows to Idea Bank, update status, and export CSV
     fireEvent.click(screen.getByTestId("fresh-ideas-mode-mode-c-ecosystem"));
+    fireEvent.click(screen.getByTestId("fresh-ideas-osmu-newsletter"));
     fireEvent.click(screen.getByTestId("fresh-ideas-save-bank-btn"));
     expect(screen.getByTestId("fresh-ideas-bank-count").textContent).toContain("5건");
+
+    const statusSelects = screen.getAllByLabelText(/진행 상태/u);
+    expect(statusSelects.length).toBeGreaterThanOrEqual(1);
+    fireEvent.change(statusSelects[0]!, { target: { value: "Published" } });
+    expect((statusSelects[0] as HTMLSelectElement).value).toBe("Published");
+
     fireEvent.click(screen.getByTestId("fresh-ideas-export-csv-btn"));
     await waitFor(() => {
       expect(screen.getByTestId("fresh-ideas-export-notice").textContent).toContain("CSV");

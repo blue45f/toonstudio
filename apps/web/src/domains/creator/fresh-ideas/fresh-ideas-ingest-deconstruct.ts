@@ -1,5 +1,5 @@
 /**
- * Multi-Source / Multimodal Ingestion & Pre-Lens Thesis Deconstruction Engine (REQ-011 ~ REQ-030).
+ * Multi-Source / Multimodal Ingestion & Pre-Lens Thesis Deconstruction Engine (REQ-011 ~ REQ-030, REQ-070, REQ-083).
  */
 
 import {
@@ -8,6 +8,8 @@ import {
   type FreshIdeasSourceKind,
   type SourceDensityTier,
 } from "./fresh-ideas-contracts";
+
+export type RegulatedDomainCategory = "none" | "medical" | "legal" | "financial";
 
 export interface FreshIdeasSourceItem {
   readonly id: string;
@@ -27,11 +29,14 @@ export interface MultiSourceIngestionBundle {
   readonly preservedUrls: readonly string[];
   readonly isDataHeavy: boolean;
   readonly isMultiDoc: boolean;
+  readonly isForeignContext: boolean;
+  readonly regulatedDomain: RegulatedDomainCategory;
   readonly sharedConsensusKo: string;
   readonly directClashKo: string;
   readonly mutualBlindSpotKo: string;
   readonly topSoundbites: readonly string[];
   readonly extractedMetrics: readonly string[];
+  readonly extractedSpeakers: readonly string[];
   readonly normalizedBodyText: string;
   readonly sourceKindTags: readonly FreshIdeasSourceKind[];
 }
@@ -56,23 +61,28 @@ const ABSTRACT_TO_CONCRETE_MAP: ReadonlyArray<readonly [RegExp, string]> = [
   [/민첩성|agility/gi, "주 단위 가설 검증 및 배포 사이클"],
   [/얼라인먼트|alignment/gi, "우선순위 3개 합의 및 비핵심 중단"],
   [/오너십|ownership/gi, "단일 의사결정 담당자와 완료 기준 명시"],
+  [/확장성|scalability/gi, "인원 2배 증원 시 재교육 없는 온보딩 규격"],
 ];
 
 function extractMetricsFromText(text: string): readonly string[] {
-  const matches = text.match(/\d+(?:[.,]\d+)?\s*(?:%|시간|분|일|주|컷|배|명|원|px|mm|fps|점|h|ms)/gi) ?? [];
+  const matches =
+    text.match(
+      /\d+(?:[.,]\d+)?\s*(?:%|시간|분|초|일|주|개월|년|컷|화|배|명|원|달러|px|mm|fps|점|h|ms)/gi,
+    ) ?? [];
   return Object.freeze(Array.from(new Set(matches.map((m) => m.trim()))).slice(0, 8));
 }
 
 function extractTopSoundbites(text: string): readonly string[] {
-  const sentences = text
+  const cleaned = text.replace(/\[\d{1,2}:\d{2}(?::\d{2})?\]/g, "");
+  const sentences = cleaned
     .split(/(?<=[.?!。])\s+|\n+/)
     .map((s) => s.trim())
     .filter((s) => s.length >= 16 && s.length <= 180);
   const scored = sentences.map((sentence) => {
     let score = 0;
     if (/\d/.test(sentence)) score += 3;
-    if (/하지만|그러나|반면|오히려|문제는|원인은|but|however|instead/i.test(sentence)) score += 4;
-    if (/절감|병목|실패|이탈|지연|대비/.test(sentence)) score += 2;
+    if (/하지만|그러나|반면|오히려|문제는|원인은|역설|but|however|instead/i.test(sentence)) score += 4;
+    if (/절감|병목|실패|이탈|지연|대비|반려/.test(sentence)) score += 2;
     return { sentence, score };
   });
   return Object.freeze(
@@ -81,6 +91,21 @@ function extractTopSoundbites(text: string): readonly string[] {
       .slice(0, 3)
       .map((item) => item.sentence),
   );
+}
+
+function detectRegulatedDomain(text: string): RegulatedDomainCategory {
+  const lower = text.toLocaleLowerCase("ko-KR");
+  if (/처방|진단|투약|임상|환자|수술|의료법|증상\s*치료/.test(lower)) return "medical";
+  if (/소송|판례|세무\s*조사|탈세|위법|법률\s*자문|공정거래/.test(lower)) return "legal";
+  if (/레버리지|종목\s*추천|원금\s*보장|수익률\s*보장|공매도|파생상품/.test(lower)) return "financial";
+  return "none";
+}
+
+function detectForeignContext(text: string): boolean {
+  const latinChars = (text.match(/[A-Za-z]/g) ?? []).length;
+  const hangulChars = (text.match(/[가-힣]/g) ?? []).length;
+  if (latinChars >= 40 && latinChars > hangulChars * 0.45) return true;
+  return /silicon\s+valley|us\s+market|fortune\s+500|yc\s+batch|미국\s*본사|해외\s*사례/i.test(text);
 }
 
 export function ingestFreshIdeasSources(
@@ -110,10 +135,21 @@ export function ingestFreshIdeasSources(
     ),
   );
   const extractedMetrics = extractMetricsFromText(combinedText);
+  const extractedSpeakers = Object.freeze(
+    Array.from(
+      new Set(
+        safeSources
+          .map((s) => s.authorOrSpeaker?.trim())
+          .filter((sp): sp is string => Boolean(sp)),
+      ),
+    ),
+  );
   const isDataHeavy =
     extractedMetrics.length >= 4 ||
     safeSources.some((s) => s.kind === "sheet-csv" || s.kind === "visual-diagram");
   const isMultiDoc = safeSources.length >= 2;
+  const isForeignContext = detectForeignContext(combinedText);
+  const regulatedDomain = detectRegulatedDomain(combinedText);
   const sourceKindTags = Object.freeze(Array.from(new Set(safeSources.map((s) => s.kind))));
   const primaryTopic = safeSources[0]!.title.trim() || "핵심 주제";
   const topSoundbites = extractTopSoundbites(combinedText);
@@ -122,12 +158,20 @@ export function ingestFreshIdeasSources(
   const hasComments = safeSources.some((s) => s.kind === "community-comments");
   const hasChangelog = safeSources.some((s) => s.kind === "changelog-pr");
   const hasNewsletter = safeSources.some((s) => s.kind === "newsletter-bundle");
+  const hasYoutube = safeSources.some((s) => s.kind === "youtube-transcript");
+  const hasSlidePdf = safeSources.some((s) => s.kind === "slide-pdf");
+  const hasMeeting = safeSources.some((s) => s.kind === "meeting-transcript");
+  const hasDiagram = safeSources.some((s) => s.kind === "visual-diagram");
 
   const sharedConsensusKo = isMultiDoc
     ? `${safeSources.map((s) => s.title).join("·")} 모두 기존 방식의 효율 저하를 핵심 과제로 전제합니다.`
     : hasNewsletter
       ? "최근 뉴스레터 묶음 전반이 도구 도입 자체를 즉각적 생산성 향상으로 동일시합니다."
-      : `${primaryTopic}에서 단일 요인만 고치면 전체 문제가 풀린다고 전제합니다.`;
+      : hasYoutube
+        ? "영상 발표 전반이 핵심 노하우 한 가지만 적용하면 시행착오가 사라진다고 전제합니다."
+        : hasSlidePdf
+          ? "발표 슬라이드 요약본이 이상적인 정상 경로만 강조하고 예외 비용을 생략합니다."
+          : `${primaryTopic}에서 단일 요인만 고치면 전체 문제가 풀린다고 전제합니다.`;
 
   const directClashKo = isMultiDoc
     ? `${safeSources[0]!.title}의 단기 속도 우선 관점과 ${safeSources[1]!.title}의 장기 품질·유지보수 관점이 정면 충돌합니다.`
@@ -135,7 +179,11 @@ export function ingestFreshIdeasSources(
       ? "원문 주장과 달리 현장 댓글에서는 소규모 팀 적용 시 발생하는 전환 비용을 가장 큰 걸림돌로 지목합니다."
       : hasChangelog
         ? "내부 기술 변경 로그와 실제 사용자가 체감하는 작업 마찰 감소 구간 사이에 해석 간극이 있습니다."
-        : "단기 지표 개선과 팀 전체의 지속 가능성 사이에 뚜렷한 긴장이 존재합니다.";
+        : hasMeeting
+          ? "회의 참석자 간에도 마감 속도 우선파와 검수 기준선 유지파의 우선순위가 갈립니다."
+          : hasDiagram
+            ? "도식화된 선형 화살표와 달리 실제 현장에서는 역방향 재검수 루프가 반복됩니다."
+            : "단기 지표 개선과 팀 전체의 지속 가능성 사이에 뚜렷한 긴장이 존재합니다.";
 
   const mutualBlindSpotKo = hasSelfRemix
     ? "과거 작성 시점과 달라진 2026년 현재의 자동화 기준선 및 팀 협업 비용 변화가 빠져 있습니다."
@@ -149,11 +197,14 @@ export function ingestFreshIdeasSources(
     preservedUrls,
     isDataHeavy,
     isMultiDoc,
+    isForeignContext,
+    regulatedDomain,
     sharedConsensusKo,
     directClashKo,
     mutualBlindSpotKo,
     topSoundbites,
     extractedMetrics,
+    extractedSpeakers,
     normalizedBodyText: combinedText,
     sourceKindTags,
   });

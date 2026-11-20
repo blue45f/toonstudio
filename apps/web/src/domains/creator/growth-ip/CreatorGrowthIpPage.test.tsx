@@ -238,4 +238,15 @@ describe("CreatorGrowthIpPage", () => {
     expect(within(install).queryByText(/SW unknown|unavailable/u)).toBeNull();
     expect(within(environment).getByRole("link", { name: "상세 사용 환경 안내" }).getAttribute("href")).toBe("/studio/environment");
   });
+
+  it("SNS 공유 단계에서 Fresh Ideas v2.2 에디토리얼·OSMU 리믹스 워크벤치를 함께 제공한다", () => {
+    renderPage();
+    openStep(/공유/u);
+    const shareRegion = region(/SNS 공유와 현실적인 플랫폼 제약/u);
+    const workbench = within(shareRegion).getByTestId("studio-fresh-ideas-v2-workbench");
+    expect(workbench).toBeTruthy();
+    expect(within(workbench).getByTestId("fresh-ideas-v2-capability-badge").textContent).toContain(
+      "100/100 규격",
+    );
+  });
 });

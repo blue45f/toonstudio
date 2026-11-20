@@ -1,5 +1,6 @@
 // 판권 제안 CRM · IP 확장 스튜디오 · SNS 공유 · 사용 환경과 앱 설치 · 교육 과정 섹션.
 import { BookOpen, Clapperboard, Copy, ExternalLink, GraduationCap, MonitorCheck, Plus, Scale, Share2 } from "lucide-react";
+import { StudioFreshIdeasV2WorkbenchCard } from "../../fresh-ideas/StudioFreshIdeasV2WorkbenchCard";
 import { StudioIpExpansionPanel } from "../../storyworld/StudioIpExpansionPanel";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -11,6 +12,7 @@ import { getActiveI18nLocale } from "@/shared/lib/i18n-bilingual-copy";
 import {
   creatorAgePolicy,
   WEBTOON_CURRICULUM_GUIDE,
+  type CreatorGrowthIpState,
   type EducationProgram,
   type RightsInquiry,
 } from "../creator-growth-ip-model";
@@ -187,7 +189,11 @@ export function RightsInquirySection({ state, update, notify, notice }: GrowthSe
 
 type ManualSharePlatform = "linkedin" | "instagram" | "tiktok";
 
-export function SocialShareSection({ notify, notice }: Pick<GrowthSectionProps, "notify" | "notice">) {
+export function SocialShareSection({
+  state,
+  notify,
+  notice,
+}: Pick<GrowthSectionProps, "notify" | "notice"> & { readonly state?: CreatorGrowthIpState }) {
   const shareTo = async (platform: ManualSharePlatform) => {
     const url = new URL(GROWTH_IP_PATH, window.location.origin).toString();
     if (platform === "linkedin") {
@@ -202,11 +208,19 @@ export function SocialShareSection({ notify, notice }: Pick<GrowthSectionProps, 
       : bi("링크를 복사하지 못했습니다.", "Could not copy the link."));
   };
 
+  const remixTitle = state?.synopsis.title.trim() || "웹툰 신작 런칭 · 비하인드 기획 노트";
+  const remixSummary =
+    [state?.synopsis.logline, state?.synopsis.premise, state?.novelChapters[0]?.summary]
+      .map((s) => s?.trim())
+      .filter(Boolean)
+      .join(" ") ||
+    "웹툰 연재 기획안과 회차 제작 노트를 독자 유입용 5가지 에디토리얼 각도와 10개 채널 초안으로 변환한다.";
+
   return (
     <GrowthSection
       id="share"
       icon={Share2}
-      eyebrow="SOCIAL DISTRIBUTION"
+      eyebrow="SOCIAL DISTRIBUTION · OSMU REMIX"
       title={bi("SNS 공유와 현실적인 플랫폼 제약", "Social sharing with truthful platform constraints")}
       description={bi("카카오·X·Facebook·Naver·LINE·Telegram·메일·QR은 통합 공유 창을 사용합니다. LinkedIn은 공식 공유 주소를 열고, Instagram·TikTok은 웹 링크 직접 게시가 제한되어 링크 복사로 안내합니다.", "The share dialog covers Kakao, X, Facebook, Naver, LINE, Telegram, email and QR. LinkedIn opens its share URL; Instagram and TikTok fall back to copying the link.")}
       notice={notice}
@@ -225,6 +239,18 @@ export function SocialShareSection({ notify, notice }: Pick<GrowthSectionProps, 
           <button type="button" className={GROWTH_BUTTON} onClick={() => void shareTo("tiktok")}><Copy size={15} aria-hidden />{bi("TikTok용 링크 복사", "Copy link for TikTok")}</button>
         </div>
         <p className="mt-3 text-xs leading-5 text-fg-2">{bi("공유 링크에는 공통 공유 모듈의 유입 추적이 그대로 적용됩니다. Instagram·TikTok에는 브라우저가 확인할 수 없는 ‘게시 완료’ 상태를 표시하지 않습니다.", "Share attribution stays intact. Instagram/TikTok never report a post success the browser cannot verify.")}</p>
+      </div>
+      <div className="mt-4">
+        <StudioFreshIdeasV2WorkbenchCard
+          sourceTitle={remixTitle}
+          sourceSummaryKo={remixSummary}
+          sourceMetricsSummaryKo={
+            state?.novelChapters.length
+              ? `등록 회차 ${state.novelChapters.length}화 · 각색 에피소드 ${state.adaptationEpisodes.length}화`
+              : undefined
+          }
+          onStatusChange={notify}
+        />
       </div>
     </GrowthSection>
   );

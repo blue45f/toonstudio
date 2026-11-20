@@ -22,14 +22,24 @@ export interface QualitySafetyViolation {
     | "LOW_ORTHOGONALITY"
     | "DROPPED_URL"
     | "REGULATED_DOMAIN_UNSAFE"
-    | "GENERIC_HEADLINE";
+    | "GENERIC_HEADLINE"
+    | "GENERIC_SUBJECT_SWAP"
+    | "UNVERIFIED_QUOTE";
   readonly detailKo: string;
+}
+
+export interface SubjectSwapSpecificityReport {
+  readonly passed: boolean;
+  readonly concreteTokenCount: number;
+  readonly concreteTokens: readonly string[];
 }
 
 export interface QualitySafetyAuditReport {
   readonly passed: boolean;
   readonly score100: number;
   readonly maxPairwiseOverlap: number;
+  readonly subjectSwapPassed: boolean;
+  readonly verbatimQuotesVerified: boolean;
   readonly violations: readonly QualitySafetyViolation[];
   readonly deidentifiedPreviewKo: string;
   readonly unconnectedFallbackGuideKo: string;
@@ -69,6 +79,7 @@ export interface ModeCEcosystemBundle {
   readonly voiceChainingHintKo: string;
   readonly stressTestAdvisorPromptKo: string;
   readonly meetingAgendaBriefKo: string;
+  readonly energyTaggingSummaryKo: string;
   readonly osmuPackage: OsmuThreeAssetPackage;
   readonly hybridFusion: HybridAngleFusionResult;
   readonly googleDocExportPayload: {
@@ -99,6 +110,65 @@ const BANNED_CLICHES = [
 const VAGUE_PLACEHOLDER_RE = /\[\s*(?:X|XX|X%|XX%|TBD|\.\.\.|수치|수치\s*입력|데이터\s*입력)\s*\]/i;
 const REGULATED_UNSAFE_RE = /(?:처방약\s*임의\s*중단|탈세\s*방법|무조건\s*레버리지\s*올인)/;
 
+const GENERIC_STOP_WORDS = new Set([
+  "우리가",
+  "모두가",
+  "중요한",
+  "이유는",
+  "방법은",
+  "성공하는",
+  "더나은",
+  "진짜",
+  "핵심",
+  "본질",
+  "결국",
+  "생각",
+  "이야기",
+]);
+
+export function evaluateSubjectSwapSpecificity(
+  headlineKo: string,
+  angleKo: string,
+): SubjectSwapSpecificityReport {
+  const combined = `${headlineKo} ${angleKo}`;
+  const tokens = combined.match(/[가-힣A-Za-z0-9.%/+-]{2,}/g) ?? [];
+  const concreteTokens = Array.from(
+    new Set(
+      tokens.filter(
+        (tok) =>
+          !GENERIC_STOP_WORDS.has(tok) &&
+          (/\d/.test(tok) ||
+            /컷|선굵기|핸드오프|반려율|리드타임|기준선|파라미터|부채|체크리스트|게이트|공정|레이어|브러시|배경|회차|배포|협업|단위경제|스케일/.test(
+              tok,
+            ) ||
+            tok.length >= 3),
+      ),
+    ),
+  );
+  return Object.freeze({
+    passed: concreteTokens.length >= 4,
+    concreteTokenCount: concreteTokens.length,
+    concreteTokens: Object.freeze(concreteTokens.slice(0, 8)),
+  });
+}
+
+export function verifyVerbatimQuotesAgainstSource(
+  draftText: string,
+  sourceCorpus: string,
+): readonly string[] {
+  if (!sourceCorpus.trim()) return Object.freeze([]);
+  const matches = draftText.matchAll(/"([^"\n]{6,160})"/g);
+  const unverified: string[] = [];
+  for (const match of matches) {
+    const quoted = match[1]?.trim();
+    if (!quoted) continue;
+    if (!sourceCorpus.includes(quoted)) {
+      unverified.push(quoted);
+    }
+  }
+  return Object.freeze(unverified);
+}
+
 export function deidentifyInternalDraftText(rawText: string): string {
   return rawText
     .replace(/([가-힣A-Za-z0-9]+)\s*(?:고객사|파트너사)/g, "국내 중견 파트너사")
@@ -110,6 +180,10 @@ export function auditFreshIdeasQualityAndSafety(
   lenses: readonly FreshIdeaLensCardV2[],
   draftText: string,
   expectedUrls: readonly string[] = [],
+  options?: {
+    readonly sourceCorpus?: string;
+    readonly extraBannedPhrases?: readonly string[];
+  },
 ): QualitySafetyAuditReport {
   const violations: QualitySafetyViolation[] = [];
   const corpus = [
@@ -123,8 +197,12 @@ export function auditFreshIdeasQualityAndSafety(
       violations.push({ code: "UNSLOP_EMOJI", detailKo: `장식용 이모지(${emoji})가 포함되어 있습니다.` });
     }
   }
-  for (const phrase of BANNED_CLICHES) {
-    if (lowered.includes(phrase)) {
+  const activeBannedPhrases = [
+    ...BANNED_CLICHES,
+    ...(options?.extraBannedPhrases ?? []).map((p) => p.toLocaleLowerCase("ko-KR")),
+  ];
+  for (const phrase of activeBannedPhrases) {
+    if (phrase && lowered.includes(phrase)) {
       violations.push({ code: "BANNED_CLICHE", detailKo: `금지된 상투어·과장어(${phrase})가 감지되었습니다.` });
     }
   }
@@ -159,23 +237,45 @@ export function auditFreshIdeasQualityAndSafety(
     });
   }
 
+  let subjectSwapPassed = true;
   let maxPairwiseOverlap = 0;
   for (let i = 0; i < lenses.length; i += 1) {
-    if (lenses[i]!.headlineKo.trim().length < 14) {
+    const lens = lenses[i]!;
+    if (lens.headlineKo.trim().length < 14) {
       violations.push({
         code: "GENERIC_HEADLINE",
-        detailKo: `렌즈 ${lenses[i]!.indexTag} 헤드라인이 너무 짧거나 추상적입니다.`,
+        detailKo: `렌즈 ${lens.indexTag} 헤드라인이 너무 짧거나 추상적입니다.`,
+      });
+    }
+    const swapReport = evaluateSubjectSwapSpecificity(lens.headlineKo, lens.angleKo);
+    if (!swapReport.passed) {
+      subjectSwapPassed = false;
+      violations.push({
+        code: "GENERIC_SUBJECT_SWAP",
+        detailKo: `렌즈 ${lens.indexTag}가 주어 치환 구체성 테스트 기준(구체 명사·지표 4개 이상)에 미달합니다.`,
       });
     }
     for (let j = i + 1; j < lenses.length; j += 1) {
-      const overlap = computeHeadlineOverlapRatio(lenses[i]!.headlineKo, lenses[j]!.headlineKo);
+      const overlap = computeHeadlineOverlapRatio(lens.headlineKo, lenses[j]!.headlineKo);
       if (overlap > maxPairwiseOverlap) maxPairwiseOverlap = overlap;
       if (overlap >= 0.45) {
         violations.push({
           code: "LOW_ORTHOGONALITY",
-          detailKo: `렌즈 ${lenses[i]!.indexTag}와 ${lenses[j]!.indexTag}의 주제가 과도하게 겹칩니다(${overlap}).`,
+          detailKo: `렌즈 ${lens.indexTag}와 ${lenses[j]!.indexTag}의 주제가 과도하게 겹칩니다(${overlap}).`,
         });
       }
+    }
+  }
+
+  let verbatimQuotesVerified = true;
+  if (options?.sourceCorpus) {
+    const unverifiedQuotes = verifyVerbatimQuotesAgainstSource(draftText, options.sourceCorpus);
+    if (unverifiedQuotes.length > 0) {
+      verbatimQuotesVerified = false;
+      violations.push({
+        code: "UNVERIFIED_QUOTE",
+        detailKo: `원문에 없는 직접 인용구("${unverifiedQuotes[0]}")가 감지되었습니다.`,
+      });
     }
   }
 
@@ -184,6 +284,8 @@ export function auditFreshIdeasQualityAndSafety(
     passed: violations.length === 0,
     score100,
     maxPairwiseOverlap,
+    subjectSwapPassed,
+    verbatimQuotesVerified,
     violations: Object.freeze(violations),
     deidentifiedPreviewKo: deidentifyInternalDraftText(draftText),
     unconnectedFallbackGuideKo:
@@ -271,15 +373,16 @@ export function runFreshIdeasModeCWorkflow(params: {
   const orderedForSeries = seriesOrder
     .map((id) => lenses.find((l) => l.id === id))
     .filter((item): item is FreshIdeaLensCardV2 => Boolean(item));
+  const finalSeriesPool = orderedForSeries.length >= 3 ? orderedForSeries : lenses.slice(0, 5);
 
   const serializedSeries: readonly SerializedSeriesEpisode[] = Object.freeze(
-    orderedForSeries.map((lens, idx) => ({
+    finalSeriesPool.map((lens, idx) => ({
       partNumber: idx + 1,
       lensId: lens.id,
       episodeTitleKo: `${idx + 1}화 · ${lens.headlineKo}`,
       cliffhangerBridgeKo:
-        idx < orderedForSeries.length - 1
-          ? `다음 ${idx + 2}화 예고: ${orderedForSeries[idx + 1]!.labelKo} 관점에서 실제 해결 기준선을 검증합니다.`
+        idx < finalSeriesPool.length - 1
+          ? `다음 ${idx + 2}화 예고: ${finalSeriesPool[idx + 1]!.labelKo} 관점에서 실제 해결 기준선을 검증합니다.`
           : "최종화 완결: 30분 실행 체크리스트를 팀 주간 회고에 바로 적용합니다.",
     })),
   );
@@ -288,6 +391,7 @@ export function runFreshIdeasModeCWorkflow(params: {
     voiceChainingHintKo: `match-my-writing-style 연동: ${preferredChannel} 채널 톤과 문장 호흡을 사용자 과거 작성 문서에 맞춰 보정합니다.`,
     stressTestAdvisorPromptKo: `get-more-perspectives 연동: [${primary.headlineKo}] 주장을 Operator·Skeptic·Customer·Finance·Visionary 5인 관점으로 사전 검증합니다.`,
     meetingAgendaBriefKo: `prep-for-meetings 전환: [${sourceTitle}] 핵심 쟁점 1줄 + 팀 의사결정 질문 2건으로 30초 회의 브리프를 구성합니다.`,
+    energyTaggingSummaryKo: `focus-my-energy 연동: 저에너지 상태에는 [${primary.indexTag} · ${primary.effortTagKo}] 단문 시드부터, 집중 시간대에는 장문 뉴스레터 초안으로 배정합니다.`,
     osmuPackage,
     hybridFusion,
     googleDocExportPayload,

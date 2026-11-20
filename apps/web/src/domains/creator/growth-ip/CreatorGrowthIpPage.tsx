@@ -142,7 +142,7 @@ export function CreatorGrowthIpPage() {
       case "story": return <StoryAdaptationSection {...sectionProps("story")} />;
       case "voice": return <VoiceDialogueSection {...sectionProps("voice")} speechAdapter={speechAdapter} />;
       case "rights": return <RightsInquirySection {...sectionProps("rights")} />;
-      case "share": return <SocialShareSection notify={notifyIn("share")} notice={noticeIn("share")} />;
+      case "share": return <SocialShareSection state={state} notify={notifyIn("share")} notice={noticeIn("share")} />;
       case "environment": return <EnvironmentSection notify={notifyIn("environment")} notice={noticeIn("environment")} />;
       case "education": return <EducationSection {...sectionProps("education")} />;
     }

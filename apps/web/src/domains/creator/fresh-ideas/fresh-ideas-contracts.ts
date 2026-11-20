@@ -1,5 +1,5 @@
 /**
- * Fresh Ideas v2.0 Contracts, Mode State Machine & 100-Capability Registry (REQ-001 ~ REQ-010).
+ * Fresh Ideas v2.0 Contracts, Mode State Machine & 100-Capability Registry (REQ-001 ~ REQ-010, REQ-100).
  * Pure TypeScript domain module with zero React/DOM dependencies.
  */
 
@@ -95,7 +95,18 @@ export interface ColdStartOption {
   readonly id: "paste-source" | "workspace-doc" | "project-decision";
   readonly labelKo: string;
   readonly promptHintKo: string;
+  readonly sampleTitleKo: string;
+  readonly sampleKind: FreshIdeasSourceKind;
+  readonly sampleContentKo: string;
 }
+
+export interface ConfigStorageLike {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
+export const FRESH_IDEAS_USER_CONFIG_STORAGE_KEY = "toonstudio:fresh-ideas:user-config:v2";
+export const FRESH_IDEAS_LENS_AFFINITY_STORAGE_KEY = "toonstudio:fresh-ideas:lens-affinity:v2";
 
 export const DEFAULT_FRESH_IDEAS_USER_CONFIG: FreshIdeasUserConfig = Object.freeze({
   schemaVersion: "2.0.0",
@@ -104,6 +115,33 @@ export const DEFAULT_FRESH_IDEAS_USER_CONFIG: FreshIdeasUserConfig = Object.free
   extraBannedPhrases: [],
   enableUnslopRedlines: true,
 });
+
+export const SOURCE_KIND_OPTIONS: readonly {
+  readonly id: FreshIdeasSourceKind;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}[] = Object.freeze([
+  { id: "article", labelKo: "아티클 · 에세이", labelEn: "Article" },
+  { id: "multi-doc", labelKo: "다중 문서 교차", labelEn: "Multi-doc" },
+  { id: "youtube-transcript", labelKo: "유튜브 자막 · 챕터", labelEn: "YouTube transcript" },
+  { id: "sheet-csv", labelKo: "시트 · CSV 정량표", labelEn: "Sheet / CSV" },
+  { id: "slide-pdf", labelKo: "슬라이드 · PDF 발표자료", labelEn: "Slide / PDF" },
+  { id: "changelog-pr", labelKo: "릴리즈 노트 · PR", labelEn: "Changelog / PR" },
+  { id: "meeting-transcript", labelKo: "회의록 · 인터뷰 녹취", labelEn: "Meeting transcript" },
+  { id: "newsletter-bundle", labelKo: "뉴스레터 묶음", labelEn: "Newsletter bundle" },
+  { id: "self-past-post", labelKo: "과거 내 글 셀프 리믹스", labelEn: "Past post self-remix" },
+  { id: "community-comments", labelKo: "독자 댓글 · 커뮤니티 반응", labelEn: "Community comments" },
+  { id: "visual-diagram", labelKo: "차트 · 구조 스케치 설명", labelEn: "Visual diagram" },
+]);
+
+export const SPEECH_REGISTER_OPTIONS: readonly {
+  readonly id: KoreanSpeechRegister;
+  readonly labelKo: string;
+}[] = Object.freeze([
+  { id: "haeyo", labelKo: "해요체 (친근·실무)" },
+  { id: "haera", labelKo: "해라체 (칼럼·에세이)" },
+  { id: "hapsyo", labelKo: "합쇼체 (임원·공식)" },
+]);
 
 const DOMAIN_TITLES: readonly [number, string, FreshIdeasCapabilitySpec["moduleName"], readonly string[]][] = [
   [
@@ -294,21 +332,51 @@ export const FRESH_IDEAS_100_CAPABILITIES: readonly FreshIdeasCapabilitySpec[] =
   ),
 );
 
+const REMIX_EXPLICIT_RE =
+  /리믹스|새\s*각도|각도|콘텐츠\s*소재|원소스\s*멀티유즈|osmu|다른\s*시선|비틀|remix|repurpose|new\s+angles?|fresh\s+ideas/i;
+
 export function classifyFreshIdeasTriggerIntent(prompt: string): FreshIdeasTriggerRoute {
   const normalized = prompt.trim().toLocaleLowerCase("ko-KR");
-  if (/요약만|tl;dr|tldr|줄여줘|번역해/.test(normalized) && !/리믹스|각도|아이디어|비틀/.test(normalized)) {
+  const hasExplicitRemix = REMIX_EXPLICIT_RE.test(normalized);
+
+  if (
+    /요약만|세\s*줄\s*요약|tl;dr|tldr|줄여줘|번역만|summarize\s+only|just\s+summarize|plain\s+summary/.test(
+      normalized,
+    ) &&
+    !hasExplicitRemix
+  ) {
     return "plain-summary";
   }
-  if (/내\s*문체로만|말투\s*바꿔|rewrite\s+in\s+my\s+voice/.test(normalized)) {
+  if (
+    /내\s*문체로만|말투\s*바꿔|문체\s*복제|rewrite\s+in\s+my\s+voice|match\s+my\s+(?:writing\s+)?style/.test(
+      normalized,
+    ) &&
+    !hasExplicitRemix
+  ) {
     return "match-my-writing-style";
   }
-  if (/자문단|투표|찬반\s*패널|decision\s+panel/.test(normalized)) {
+  if (
+    /자문단|투표|찬반\s*패널|5인\s*렌즈\s*투표|decision\s+panel|vote\s+split|advisory\s+board/.test(
+      normalized,
+    ) &&
+    !hasExplicitRemix
+  ) {
     return "get-more-perspectives";
   }
-  if (/회의\s*준비|미팅\s*브리프|prep\s+for\s+meeting/.test(normalized)) {
+  if (
+    /회의\s*준비|미팅\s*브리프|1:1\s*준비|prep\s+for\s+meeting|meeting\s+brief|glance\s+card/.test(
+      normalized,
+    ) &&
+    !hasExplicitRemix
+  ) {
     return "prep-for-meetings";
   }
-  if (/뭐부터\s*할까|에너지\s*우선순위|task\s+triage/.test(normalized)) {
+  if (
+    /뭐부터\s*할까|에너지\s*우선순위|번아웃\s*할\s*일|task\s+triage|prioritize\s+by\s+energy|what\s+should\s+i\s+work\s+on/.test(
+      normalized,
+    ) &&
+    !hasExplicitRemix
+  ) {
     return "focus-my-energy";
   }
   return "generate-fresh-ideas";
@@ -328,13 +396,13 @@ export function classifySourceDensity(rawText: string, sourceCount = 1): SourceD
 
 export function inferDefaultTargetPersona(rawText: string): string {
   const lower = rawText.toLocaleLowerCase("ko-KR");
-  if (/웹툰|작화|콘티|브러시|블렌더|bg3d|컷/.test(lower)) {
+  if (/웹툰|웹소설|작화|콘티|브러시|블렌더|bg3d|컷|연재|시놉시스/.test(lower)) {
     return "웹툰 작가·스튜디오 배경/연출 담당자";
   }
-  if (/개발|pr|배포|코드|엔지니어|api|아키텍처/.test(lower)) {
+  if (/개발|pr|배포|코드|엔지니어|api|아키텍처|릴리즈/.test(lower)) {
     return "개발 팀장·프로덕트 엔지니어";
   }
-  if (/매출|마진|cac|ltv|투자|ir|예산|roi/.test(lower)) {
+  if (/매출|마진|cac|ltv|투자|ir|예산|roi|단위경제/.test(lower)) {
     return "스타트업 창업자·재무/사업 총괄";
   }
   return "실무 리드·콘텐츠 기획자";
@@ -357,16 +425,158 @@ export function buildColdStartChooser(): readonly ColdStartOption[] {
       id: "paste-source",
       labelKo: "아티클·링크·메모 붙여넣기",
       promptHintKo: "읽던 기사 본문, URL, 또는 거친 회의 메모를 붙여 넣으면 즉시 5개 각도로 분해합니다.",
+      sampleTitleKo: "주간 70컷 마감 스튜디오의 3D 배경·선화 정합성 리포트",
+      sampleKind: "article",
+      sampleContentKo:
+        "주간 70컷 연재에서 3D 배경 비중을 45%까지 높이면 작화 시간은 19.9시간 줄지만, 인물 선굵기와 배경 외곽선이 어긋나 마감 직전 재작업이 2.4배 늘어나는 역설이 발생한다.",
     },
     {
       id: "workspace-doc",
       labelKo: "문서·뉴스레터 불러오기",
-      promptHintKo: "Google Docs 제목이나 최근 Gmail 뉴스레터 주제를 지정하면 원문을 읽어 리믹스합니다.",
+      promptHintKo: "Google Docs 기획서나 최근 뉴스레터 묶음의 핵심 문단을 넣어 통념과 사각지대를 추출합니다.",
+      sampleTitleKo: "웹소설 원작 각색 시 초반 3화 이탈률 분석 노트",
+      sampleKind: "newsletter-bundle",
+      sampleContentKo:
+        "원작 세계관 설명을 1화에 몰아넣은 각색작은 3컷 이후 스크롤 완독률이 38% 떨어졌고, 반대로 갈등 장면을 첫 3컷에 배치한 작품은 댓글 전환율이 2.1배 높았다.",
     },
     {
       id: "project-decision",
       labelKo: "최근 프로젝트 의사결정·릴리즈 노트",
       promptHintKo: "최근 배포한 기능 변경점이나 팀 회고 한 단락을 외부 발행용 인사이트로 전환합니다.",
+      sampleTitleKo: "스튜디오 브러시·레이어 비파괴 프리셋 잠금 릴리즈 노트",
+      sampleKind: "changelog-pr",
+      sampleContentKo:
+        "어시스턴트별 필압 편차를 줄이기 위해 장르별 외곽선 1.35px 기준선 잠금과 사전 검수 게이트를 배포해 1차 반려율을 절반으로 낮췄다.",
     },
   ]);
+}
+
+function resolveConfigStorage(custom?: ConfigStorageLike): ConfigStorageLike | null {
+  if (custom) return custom;
+  if (typeof globalThis !== "undefined" && "localStorage" in globalThis) {
+    try {
+      return globalThis.localStorage;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+export function loadFreshIdeasUserConfig(customStorage?: ConfigStorageLike): FreshIdeasUserConfig {
+  const storage = resolveConfigStorage(customStorage);
+  if (!storage) return DEFAULT_FRESH_IDEAS_USER_CONFIG;
+  try {
+    const raw = storage.getItem(FRESH_IDEAS_USER_CONFIG_STORAGE_KEY);
+    if (!raw) return DEFAULT_FRESH_IDEAS_USER_CONFIG;
+    const parsed = JSON.parse(raw) as Partial<FreshIdeasUserConfig>;
+    const register: KoreanSpeechRegister =
+      parsed.defaultKoreanRegister === "haera" ||
+      parsed.defaultKoreanRegister === "haeyo" ||
+      parsed.defaultKoreanRegister === "hapsyo"
+        ? parsed.defaultKoreanRegister
+        : DEFAULT_FRESH_IDEAS_USER_CONFIG.defaultKoreanRegister;
+    const preferredChannels = Array.isArray(parsed.preferredChannels)
+      ? parsed.preferredChannels.filter((ch): ch is TargetChannelId => typeof ch === "string")
+      : DEFAULT_FRESH_IDEAS_USER_CONFIG.preferredChannels;
+    const extraBannedPhrases = Array.isArray(parsed.extraBannedPhrases)
+      ? parsed.extraBannedPhrases.filter((p): p is string => typeof p === "string" && p.trim().length > 0)
+      : [];
+    return Object.freeze({
+      schemaVersion: "2.0.0",
+      preferredChannels:
+        preferredChannels.length > 0
+          ? preferredChannels
+          : DEFAULT_FRESH_IDEAS_USER_CONFIG.preferredChannels,
+      defaultKoreanRegister: register,
+      extraBannedPhrases,
+      enableUnslopRedlines: parsed.enableUnslopRedlines !== false,
+    });
+  } catch {
+    return DEFAULT_FRESH_IDEAS_USER_CONFIG;
+  }
+}
+
+export function saveFreshIdeasUserConfig(
+  config: FreshIdeasUserConfig,
+  customStorage?: ConfigStorageLike,
+): FreshIdeasUserConfig {
+  const storage = resolveConfigStorage(customStorage);
+  const normalized: FreshIdeasUserConfig = Object.freeze({
+    schemaVersion: "2.0.0",
+    preferredChannels: Object.freeze([...config.preferredChannels]),
+    defaultKoreanRegister: config.defaultKoreanRegister,
+    extraBannedPhrases: Object.freeze(
+      config.extraBannedPhrases.map((p) => p.trim()).filter(Boolean),
+    ),
+    enableUnslopRedlines: config.enableUnslopRedlines,
+  });
+  if (storage) {
+    try {
+      storage.setItem(FRESH_IDEAS_USER_CONFIG_STORAGE_KEY, JSON.stringify(normalized));
+    } catch {
+      // 저장소 용량 제한 시 메모리 값만 반환한다.
+    }
+  }
+  return normalized;
+}
+
+const VALID_CORE_LENSES: readonly CoreLensId[] = [
+  "contrarian-take",
+  "personal-story-hook",
+  "data-evidence-angle",
+  "practical-playbook",
+  "what-they-missed",
+];
+
+export function recordSessionLensAffinity(
+  lensId: CoreLensId,
+  customStorage?: ConfigStorageLike,
+): CoreLensId {
+  const storage = resolveConfigStorage(customStorage);
+  let counts: Record<string, number> = {};
+  if (storage) {
+    try {
+      const raw = storage.getItem(FRESH_IDEAS_LENS_AFFINITY_STORAGE_KEY);
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (typeof parsed === "object" && parsed !== null) {
+          counts = parsed as Record<string, number>;
+        }
+      }
+    } catch {
+      counts = {};
+    }
+  }
+  counts[lensId] = (typeof counts[lensId] === "number" ? counts[lensId] : 0) + 1;
+  if (storage) {
+    try {
+      storage.setItem(FRESH_IDEAS_LENS_AFFINITY_STORAGE_KEY, JSON.stringify(counts));
+    } catch {
+      // 무시
+    }
+  }
+  return loadPreferredSessionLensId(storage ?? undefined) ?? lensId;
+}
+
+export function loadPreferredSessionLensId(customStorage?: ConfigStorageLike): CoreLensId | null {
+  const storage = resolveConfigStorage(customStorage);
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(FRESH_IDEAS_LENS_AFFINITY_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    let bestId: CoreLensId | null = null;
+    let bestScore = 0;
+    for (const candidate of VALID_CORE_LENSES) {
+      const val = parsed[candidate];
+      if (typeof val === "number" && val > bestScore) {
+        bestScore = val;
+        bestId = candidate;
+      }
+    }
+    return bestId;
+  } catch {
+    return null;
+  }
 }

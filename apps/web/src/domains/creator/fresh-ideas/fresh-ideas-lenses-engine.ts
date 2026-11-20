@@ -1,5 +1,5 @@
 /**
- * Core 5 Lenses Precision Upgrade & 9-Lens Extended Pack + Orthogonality Auto-Pivot (REQ-031 ~ REQ-050).
+ * Core 5 Lenses Precision Upgrade & 9-Lens Extended Pack + Orthogonality Auto-Pivot (REQ-031 ~ REQ-050, REQ-083, REQ-090).
  */
 
 import type {
@@ -25,6 +25,14 @@ export type BlindSpotAxisId =
   | "org-politics"
   | "local-market-asymmetry";
 
+export interface BlindSpotAxisFinding {
+  readonly axis: BlindSpotAxisId;
+  readonly labelKo: string;
+  readonly score100: number;
+  readonly headlineKo: string;
+  readonly summaryKo: string;
+}
+
 export interface FreshIdeaLensCardV2 {
   readonly id: AnyLensId;
   readonly indexTag: string;
@@ -35,9 +43,12 @@ export interface FreshIdeaLensCardV2 {
   readonly effortTagKo: string;
   readonly contrarianMode?: ContrarianIntensityMode;
   readonly falsifiableBoundaryKo?: string;
+  readonly regulatedSafetyNoteKo?: string;
   readonly experienceSlotPromptKo?: string;
   readonly fourBeatArcKo?: readonly [string, string, string, string];
   readonly dataFlipToMicroStory?: boolean;
+  readonly lowDensitySkipNoteKo?: string;
+  readonly lowDensityReinforcementKo?: string;
   readonly retrievalPlaceholdersKo?: readonly string[];
   readonly playbookStepsKo?: readonly { readonly actionKo: string; readonly doneCriteriaKo: string }[];
   readonly blindSpotAxis?: BlindSpotAxisId;
@@ -64,6 +75,15 @@ export interface LensSwapRecommendation {
   readonly rationaleKo: string;
 }
 
+export const CONTRARIAN_MODE_OPTIONS: readonly {
+  readonly id: ContrarianIntensityMode;
+  readonly labelKo: string;
+}[] = Object.freeze([
+  { id: "conditional-nuance", labelKo: "조건부 경계 세분화" },
+  { id: "root-cause-flip", labelKo: "근본 원인 역전" },
+  { id: "priority-inversion", labelKo: "실행 우선순위 전복" },
+]);
+
 function tokenizeKoreanEn(text: string): Set<string> {
   const tokens = text.toLocaleLowerCase("ko-KR").match(/[가-힣a-z0-9]{2,}/g) ?? [];
   const stop = new Set(["이유", "방법", "기준", "실무", "구조", "전환", "과정", "위한", "대한"]);
@@ -82,33 +102,112 @@ export function computeHeadlineOverlapRatio(a: string, b: string): number {
   return Number((intersection / union.size).toFixed(3));
 }
 
+export function scanFiveBlindSpotAxes(
+  bundle: MultiSourceIngestionBundle,
+  decon: ThesisDeconstructionResult,
+): readonly BlindSpotAxisFinding[] {
+  const topic = bundle.primaryTopic;
+  const text = bundle.normalizedBodyText.toLocaleLowerCase("ko-KR");
+  const hasIpSignal = /저작권|라이선스|판권|트레이닝|초상권|cc0|계약/.test(text);
+  const hasCostSignal = /비용|단가|예산|시간|인건비|구독료|마진/.test(text);
+  const hasOrgSignal = /승인|결재|어시|협업|팀장|담당자|회의/.test(text);
+
+  const raw: readonly BlindSpotAxisFinding[] = [
+    {
+      axis: "maintenance-debt",
+      labelKo: "유지보수 부채",
+      score100: 88,
+      headlineKo: `도입 6개월 뒤 ${topic}에서 조용히 쌓이는 유지보수 부채와 권한 충돌`,
+      summaryKo: `${decon.secondOrderChainKo} 특히 ${decon.stakeholderAsymmetryKo}`,
+    },
+    {
+      axis: "hidden-cost",
+      labelKo: "숨은 전환 비용",
+      score100: hasCostSignal ? 92 : 81,
+      headlineKo: `겉으로 안 보이는 ${topic} 초기 4주 재교육·컨텍스트 전환 비용`,
+      summaryKo: `도입 비용만 계산하고 기존 숙련 공정과의 병행 기간에 발생하는 산출량 저하를 빠뜨리는 사각지대입니다. ${decon.survivorshipBiasNoteKo}`,
+    },
+    {
+      axis: "legal-ip-risk",
+      labelKo: "저작권·권리 정합성",
+      score100: hasIpSignal ? 94 : 78,
+      headlineKo: `상용 납품 직전에 발목 잡는 ${topic} 에셋 출처·2차 판권 계약 공백`,
+      summaryKo: `제작 속도만 높였다가 외부 라이선스 증빙과 2차 저작물 권리 범위가 비어 납품이 보류되는 리스크를 점검합니다.`,
+    },
+    {
+      axis: "org-politics",
+      labelKo: "조직 권한·검수 병목",
+      score100: hasOrgSignal ? 90 : 79,
+      headlineKo: `실무자 속도는 빨라졌는데 최종 승인 대기열에서 멈추는 ${topic} 의사결정 병목`,
+      summaryKo: decon.stakeholderAsymmetryKo,
+    },
+    {
+      axis: "local-market-asymmetry",
+      labelKo: "국내 시장 비대칭",
+      score100: bundle.isForeignContext ? 93 : 76,
+      headlineKo: `해외 베스트 프랙티스를 국내 주간 마감 체계에 그대로 옮길 때 깨지는 지점`,
+      summaryKo: `국내 플랫폼의 주간 연재 호흡, 고밀도 모바일 세로 스크롤 규격, 승인 문화를 반영해 적용 조건을 재설계해야 합니다.`,
+    },
+  ];
+
+  return Object.freeze([...raw].sort((a, b) => b.score100 - a.score100));
+}
+
 export function generateFiveOrthogonalLenses(
   bundle: MultiSourceIngestionBundle,
   decon: ThesisDeconstructionResult,
   options?: {
     readonly contrarianMode?: ContrarianIntensityMode;
     readonly preferredLensId?: CoreLensId;
+    readonly blindSpotAxisOverride?: BlindSpotAxisId;
   },
 ): readonly FreshIdeaLensCardV2[] {
-  const contrarianMode: ContrarianIntensityMode =
-    options?.contrarianMode ?? (bundle.isMultiDoc ? "priority-inversion" : "root-cause-flip");
+  const isRegulated = bundle.regulatedDomain !== "none";
+  const effectiveContrarianMode: ContrarianIntensityMode = isRegulated
+    ? "conditional-nuance"
+    : options?.contrarianMode ?? (bundle.isMultiDoc ? "priority-inversion" : "root-cause-flip");
 
   const topic = bundle.primaryTopic;
+  const isLowDensity = bundle.densityTier === "low-density";
+  const lowDensityReinforcementKo = isLowDensity
+    ? "원문이 짧은 단문·인용구이므로 표면 재진술을 피하고 현장에서 실패하는 경계 조건과 반대 사례를 보강했습니다."
+    : undefined;
+
   const metricsText =
     bundle.extractedMetrics.length > 0
       ? bundle.extractedMetrics.slice(0, 3).join(", ")
       : "[최근 4주간 팀 1인당 주간 수정 소요시간 중앙값(분)]";
+
+  const contrarianHeadlineByMode: Record<ContrarianIntensityMode, string> = {
+    "conditional-nuance": `${topic} 원칙이 5인 소팀에서는 통하지만 다중 분업 단계에서 역효과를 내는 경계선`,
+    "root-cause-flip": `${topic}의 발목을 잡는 건 기능 부족이 아니라 검증 없는 파라미터 과잉이다`,
+    "priority-inversion": `${topic} 속도를 높이려 하기 전에 검수 기준선부터 잠가야 재작업이 멈춘다`,
+  };
+
+  const contrarianAngleByMode: Record<ContrarianIntensityMode, string> = {
+    "conditional-nuance": `무조건적인 찬반 대신 팀 규모와 숙련도 경계를 세분화합니다. ${decon.boundaryConditionKo}`,
+    "root-cause-flip": `흔히 기능을 더 얹으면 해결된다고 보지만 실제 병목은 ${decon.concreteBehaviorTerms[0] ?? "공정 간 핸드오프"}입니다. ${decon.boundaryConditionKo}`,
+    "priority-inversion": `실행 순서를 뒤집어 산출량 확대보다 검수 반려 기준 합의를 첫 단계에 배치합니다. ${decon.logicalLeapKo}을 먼저 교정합니다.`,
+  };
+
+  const regulatedSafetyNoteKo = isRegulated
+    ? `민감 도메인(${bundle.regulatedDomain}) 안전선 적용: 의학적·법률적·투자 자문 단정을 배제하고 제도·운영 절차의 조건부 한계만 다룹니다.`
+    : undefined;
 
   const contrarianCard: FreshIdeaLensCardV2 = {
     id: "contrarian-take",
     indexTag: "01",
     labelKo: "통념 뒤집기",
     labelEn: "Contrarian Take",
-    headlineKo: `${topic}의 발목을 잡는 건 기능 부족이 아니라 검증 없는 파라미터 과잉이다`,
-    angleKo: `흔히 기능을 더 얹으면 해결된다고 보지만 실제 병목은 ${decon.concreteBehaviorTerms[0] ?? "공정 간 핸드오프"}입니다. ${decon.boundaryConditionKo}`,
+    headlineKo: contrarianHeadlineByMode[effectiveContrarianMode],
+    angleKo: [contrarianAngleByMode[effectiveContrarianMode], regulatedSafetyNoteKo]
+      .filter(Boolean)
+      .join(" "),
     effortTagKo: "15분 단문 · 40분 칼럼",
-    contrarianMode,
+    contrarianMode: effectiveContrarianMode,
     falsifiableBoundaryKo: decon.boundaryConditionKo,
+    regulatedSafetyNoteKo,
+    lowDensityReinforcementKo,
     preservedUrls: bundle.preservedUrls,
     recommendedForUser: options?.preferredLensId === "contrarian-take",
   };
@@ -128,9 +227,14 @@ export function generateFiveOrthogonalLenses(
       `관점 전환 계기: ${decon.elevatedCaveatKo}`,
       "바뀐 행동 원칙: 변경 전 기준선 잠금과 단일 검수 게이트 선행 적용",
     ]),
+    lowDensityReinforcementKo,
     preservedUrls: bundle.preservedUrls,
     recommendedForUser: options?.preferredLensId === "personal-story-hook",
   };
+
+  const lowDensitySkipNoteKo = isLowDensity
+    ? "원문이 짧은 인용구라 무리한 외부 통계 추정을 생략하고, 내일 당장 직접 측정할 수 있는 현장 관찰 지표 2건으로 전환했습니다."
+    : undefined;
 
   const dataCard: FreshIdeaLensCardV2 = bundle.isDataHeavy
     ? {
@@ -157,6 +261,7 @@ export function generateFiveOrthogonalLenses(
         angleKo: `${decon.logicalLeapKo}을 바로잡기 위해 실제 측정 지표(${metricsText})를 전후 대조합니다. 표본 조건과 팀 규모 차이를 분리해 상관관계 왜곡을 차단합니다.`,
         effortTagKo: "35분 리서치·지표",
         dataFlipToMicroStory: false,
+        lowDensitySkipNoteKo,
         retrievalPlaceholdersKo: Object.freeze([
           "[최근 4주간 팀 1인당 컷·작업 단위 리터칭 소요시간 중앙값(분)]",
           "[최근 1개 분기 검수 1차 반려율(%) 및 재작업 리드타임(시간)]",
@@ -171,8 +276,9 @@ export function generateFiveOrthogonalLenses(
     labelKo: "실전 플레이북",
     labelEn: "Practical Playbook",
     headlineKo: `전사 결재 없이 오늘 오후 30분 안에 끝내는 ${topic} 기준선 점검표`,
-    angleKo: `개인 또는 소팀 권한으로 당장 실행해 산출물을 손에 쥐는 3단계 실행안입니다. ${bundle.densityTier === "low-density" ? "짧은 원문의 공백을 메우기 위해 단계별 실패 역지표를 함께 제시합니다." : ""}`.trim(),
+    angleKo: `개인 또는 소팀 권한으로 당장 실행해 산출물을 손에 쥐는 3단계 실행안입니다. ${isLowDensity ? "짧은 원문의 공백을 메우기 위해 단계별 실패 역지표를 함께 제시합니다." : ""}`.trim(),
     effortTagKo: "25분 실전 가이드",
+    lowDensityReinforcementKo,
     playbookStepsKo: Object.freeze([
       {
         actionKo: "30분 진단: 최근 완료한 작업물 3건에서 가장 오래 걸린 수정 구간 1곳만 표시합니다.",
@@ -191,10 +297,28 @@ export function generateFiveOrthogonalLenses(
     recommendedForUser: options?.preferredLensId === "practical-playbook",
   };
 
-  let missedHeadline = `도입 6개월 뒤 ${topic}에서 조용히 쌓이는 유지보수 부채와 권한 충돌`;
+  const scannedAxes = scanFiveBlindSpotAxes(bundle, decon);
+  const chosenAxis =
+    (options?.blindSpotAxisOverride
+      ? scannedAxes.find((item) => item.axis === options.blindSpotAxisOverride)
+      : scannedAxes.find((item) => item.axis === "maintenance-debt")) ?? scannedAxes[0]!;
+
+  let missedHeadline = chosenAxis.headlineKo;
+  let missedAxis = chosenAxis.axis;
+  let missedAngle = chosenAxis.summaryKo;
   let orthogonalityPivoted = false;
+
   if (computeHeadlineOverlapRatio(contrarianCard.headlineKo, missedHeadline) >= 0.45) {
-    missedHeadline = "국내 협업 팀이 2차 파급효과인 검수 대기열과 저작권 정합성을 놓치는 지점";
+    const fallbackAxis = scannedAxes.find(
+      (item) =>
+        item.axis !== chosenAxis.axis &&
+        computeHeadlineOverlapRatio(contrarianCard.headlineKo, item.headlineKo) < 0.45,
+    );
+    missedHeadline =
+      fallbackAxis?.headlineKo ??
+      "국내 협업 팀이 2차 파급효과인 검수 대기열과 저작권 정합성을 놓치는 지점";
+    missedAxis = fallbackAxis?.axis ?? "local-market-asymmetry";
+    missedAngle = fallbackAxis?.summaryKo ?? chosenAxis.summaryKo;
     orthogonalityPivoted = true;
   }
 
@@ -204,10 +328,11 @@ export function generateFiveOrthogonalLenses(
     labelKo: "놓친 사각지대",
     labelEn: "What They Missed",
     headlineKo: missedHeadline,
-    angleKo: `${decon.secondOrderChainKo} 특히 ${decon.stakeholderAsymmetryKo}`,
+    angleKo: missedAngle,
     effortTagKo: "30분 구조 분석",
-    blindSpotAxis: "maintenance-debt",
+    blindSpotAxis: missedAxis,
     orthogonalityPivoted,
+    lowDensityReinforcementKo,
     preservedUrls: bundle.preservedUrls,
     recommendedForUser: options?.preferredLensId === "what-they-missed",
   };
@@ -389,9 +514,38 @@ export function recommendExtendedLensSwap(
       rationaleKo: "릴리즈 로그·회의록은 안티 패턴 부검(07) 렌즈로 실무 리스크를 짚을 때 반응이 좋습니다.",
     });
   }
+  if (bundle.sourceKindTags.includes("community-comments") || bundle.sourceKindTags.includes("youtube-transcript")) {
+    return Object.freeze({
+      replaceCoreLensId: "what-they-missed",
+      withExtendedLensId: "myth-vs-reality",
+      rationaleKo: "댓글·자막 소스는 초심자 오해 교정(11) 렌즈로 현장 오해를 바로잡을 때 공유율이 높습니다.",
+    });
+  }
   return Object.freeze({
     replaceCoreLensId: "what-they-missed",
     withExtendedLensId: "scale-10x-01x",
     rationaleKo: "일반 아티클은 10x·0.1x 스케일 실험(14)을 덧붙이면 조직 규모별 적용 경계가 선명해집니다.",
   });
+}
+
+export function buildExtendedLensCardById(
+  extendedLensId: ExtendedLensId,
+  bundle: MultiSourceIngestionBundle,
+  decon: ThesisDeconstructionResult,
+): FreshIdeaLensCardV2 {
+  const def =
+    EXTENDED_LENS_PACK.find((item) => item.id === extendedLensId) ?? EXTENDED_LENS_PACK[0]!;
+  return def.buildCard(bundle, decon);
+}
+
+export function applyExtendedLensSwap(
+  coreLenses: readonly FreshIdeaLensCardV2[],
+  swap: LensSwapRecommendation,
+  bundle: MultiSourceIngestionBundle,
+  decon: ThesisDeconstructionResult,
+): readonly FreshIdeaLensCardV2[] {
+  const replacement = buildExtendedLensCardById(swap.withExtendedLensId, bundle, decon);
+  return Object.freeze(
+    coreLenses.map((lens) => (lens.id === swap.replaceCoreLensId ? replacement : lens)),
+  );
 }

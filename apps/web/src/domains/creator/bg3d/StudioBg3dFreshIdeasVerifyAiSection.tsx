@@ -221,7 +221,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
           data-testid="bg3d-blender-verify-ai-badge"
           className="inline-flex items-center gap-1.5 rounded-md border border-line bg-raised px-2.5 py-1 font-mono text-xs font-medium tabular-nums text-fg"
         >
-          <span className="size-2 rounded-full bg-[#4cc38a]" aria-hidden />
+          <span className="size-2 rounded-full bg-good" aria-hidden />
           {verifyAiReport.summaryBadgeKo}
         </span>
       </div>
@@ -261,7 +261,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
         <div className="rounded-xl border border-line bg-card p-3">
           <span className="block text-xs text-fg-3">라이브 블렌더 씬 격리</span>
           <span className="mt-1 inline-flex items-center gap-1.5 font-mono text-xl font-medium leading-none tabular-nums text-fg">
-            <span className="size-2 rounded-full bg-[#4cc38a]" aria-hidden />
+            <span className="size-2 rounded-full bg-good" aria-hidden />
             SHA-256
           </span>
           <span
@@ -286,7 +286,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
             loading="lazy"
             width={56}
             height={56}
-            className="size-14 shrink-0 rounded-lg bg-[#121622] object-cover [mask-image:radial-gradient(closest-side,#000_82%,transparent)]"
+            className="size-14 shrink-0 rounded-lg bg-panel object-cover"
           />
           <ArrowLeftRight size={16} strokeWidth={1.5} className="shrink-0 text-fg-3" aria-hidden />
           <img
@@ -295,7 +295,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
             loading="lazy"
             width={56}
             height={56}
-            className="size-14 shrink-0 rounded-lg bg-[#1c1322] object-cover [mask-image:radial-gradient(closest-side,#000_82%,transparent)]"
+            className="size-14 shrink-0 rounded-lg bg-panel object-cover"
           />
           <div className="min-w-0 flex-1">
             <span className="block truncate text-xs font-medium text-fg">
@@ -374,7 +374,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
           >
             <span
               className={`size-2 shrink-0 rounded-full ${
-                genreLockReport.isCompliant ? "bg-[#4cc38a]" : "bg-[#e5484d]"
+                genreLockReport.isCompliant ? "bg-good" : "bg-bad"
               }`}
               aria-hidden
             />
@@ -450,7 +450,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
               </span>
             </div>
             <span
-              className={`size-2 shrink-0 rounded-full ${step.ready ? "bg-[#4cc38a]" : "bg-[#e5484d]"}`}
+              className={`size-2 shrink-0 rounded-full ${step.ready ? "bg-good" : "bg-bad"}`}
               aria-hidden
             />
           </div>
