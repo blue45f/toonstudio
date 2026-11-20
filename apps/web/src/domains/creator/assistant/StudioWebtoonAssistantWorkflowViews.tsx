@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 import { resolveBg3dLightingConfigFromBindings } from "../bg3d/studio-bg3d-workflow-pack-adapter";
 import { resolveBrushSlotConfigFromBindings } from "../brush/studio-brush-workflow-pack-adapter";
 import { StudioCommercialSettlementWidget } from "../export/StudioCommercialSettlementWidget";
+import { StudioIpProvenanceAuditCard } from "../export/StudioIpProvenanceAuditCard";
 import {
   applyRightsRemediationPlan,
   buildRightsRemediationPlan,
@@ -434,10 +435,14 @@ export function StudioWorkflowPacksPanel({
 
         <details className="mt-1 rounded-lg border border-line bg-card px-2.5 py-1.5">
           <summary className="cursor-pointer text-[0.66rem] font-bold text-fg-2">
-            상업 정산 · MG 선정산 시뮬레이터 ({activePackForSimulation.name})
+            상업 정산 · MG 선정산 시뮬레이터 · 8단계 프로비넌스 감사 ({activePackForSimulation.name})
           </summary>
-          <div className="mt-2">
+          <div className="mt-2 flex flex-col gap-2">
             <StudioCommercialSettlementWidget
+              seriesTitle={activePackForSimulation.name}
+              pack={activePackForSimulation}
+            />
+            <StudioIpProvenanceAuditCard
               seriesTitle={activePackForSimulation.name}
               pack={activePackForSimulation}
             />
