@@ -9,6 +9,7 @@ import { classifyStudioDryMediaCatalogIdV1 } from "../apps/web/src/domains/creat
 import { STUDIO_MATERIAL_BRUSH_DEFINITIONS } from "../apps/web/src/domains/creator/brush/studio-material-brush-catalog";
 import { studioWetInkBrushDepositsPigment } from "../apps/web/src/domains/creator/brush/studio-wet-ink-brush-runtime";
 
+import { studioLongBrushHasSettledDiffusion } from "./lib/studio-brush-wet-paper-evidence";
 import {
   analyzeStudioLongBrushQuality,
   classifyStudioLongBrushQualityPolicy,
@@ -64,7 +65,7 @@ describe("Studio exhaustive long-brush quality policy", () => {
       id: "g-pen-flex",
       source: "pro",
       runtimeBrushId: "ink-particle",
-      mediaGroup: "line",
+      mediaGroup: "ink",
       previewStyle: "calligraphy",
       intentionalDiscrete: false,
     }).kind).toBe("strict-continuous");
@@ -72,7 +73,7 @@ describe("Studio exhaustive long-brush quality policy", () => {
       id: "watercolor-wet-wash",
       source: "pro",
       runtimeBrushId: "airbrush",
-      mediaGroup: "paint",
+      mediaGroup: "watercolor",
       previewStyle: "soft",
       intentionalDiscrete: false,
     }).kind).toBe("soft-wet-continuous");
@@ -80,7 +81,7 @@ describe("Studio exhaustive long-brush quality policy", () => {
       id: "splatter",
       source: "core",
       runtimeBrushId: "splatter",
-      mediaGroup: "line",
+      mediaGroup: "ink",
       previewStyle: "dots",
       intentionalDiscrete: false,
     }).kind).toBe("record-only-discrete");
@@ -90,7 +91,7 @@ describe("Studio exhaustive long-brush quality policy", () => {
     const shared = {
       source: "core" as const,
       runtimeBrushId: "web-dash-stitch",
-      mediaGroup: "line" as const,
+      mediaGroup: "ink" as const,
       previewStyle: "dots",
       intentionalDiscrete: false,
     };
@@ -151,7 +152,7 @@ describe("Studio exhaustive long-brush quality policy", () => {
     for (const material of STUDIO_MATERIAL_BRUSH_DEFINITIONS) {
       const policy = classifyStudioLongBrushQualityPolicy({
         id: `material-${material.program}`, source: "pro", runtimeBrushId: material.runtime,
-        mediaGroup: "line", previewStyle: "line", intentionalDiscrete: false,
+        mediaGroup: "ink", previewStyle: "line", intentionalDiscrete: false,
       });
       const discrete = material.mode === "stamp" || material.mode === "scatter";
       expect(policy.kind === "record-only-discrete", material.program).toBe(discrete);
@@ -288,6 +289,29 @@ describe("Studio exhaustive long-brush quality policy", () => {
     expect(verifierSource).toContain('"02-released-immediate"');
     expect(verifierSource).toContain('"03-settled-autosaved"');
     expect(verifierSource).toContain("const cursorIgnoreRadius = 0;");
+  });
+
+  it("먹 번짐과 백런만 원고 지름을 화면 지름으로 환산한다", () => {
+    expect(STUDIO_ALL_BRUSH_CATALOG_ITEMS.filter(({ id }) => studioLongBrushHasSettledDiffusion(id))
+      .map(({ id }) => id).sort()).toEqual(["ink-wash--moxi-bake", "watercolor--curtis-bake"]);
+    const wash = stroke();
+    const halo = image((x, y) =>
+      x >= 10 && x <= 158 && Math.abs(y - HEIGHT / 2) <= 6 ? 130 : 0);
+    const analyze = (released: typeof wash, settled: typeof wash, width?: number) =>
+      analyzeStudioLongBrushQuality({
+        policy: { kind: "soft-wet-continuous", reason: "안료가 정착하는 워시" },
+        baseline, live: wash, released, settled,
+        route: { ...ROUTE, cursorIgnoreRadius: 0, settledDiffusionWidthPx: width },
+      });
+    const codes = (result: ReturnType<typeof analyze>) => result.findings.map(({ code }) => code);
+    expect(codes(analyze(wash, halo))).toContain("bounds-drift");
+    expect(analyze(wash, halo, 20).ok).toBe(true);
+    expect(analyze(halo, halo, 20).ok).toBe(true);
+    expect(codes(analyze(halo, wash, 20))).toContain("bounds-drift");
+    expect(codes(analyze(wash, stroke(HEIGHT / 2 + 12), 20))).toContain("centerline-drift");
+    expect(codes(analyze(wash, baseline, 20))).toContain("missing-settled-ink");
+    expect(codes(analyze(wash, halo, 8))).toContain("bounds-drift");
+    expect(codes(analyze(wash, wash, 20))).toContain("missing-settled-diffusion");
   });
 
   it("fails a committed carrier that jumps away from its live centerline", () => {

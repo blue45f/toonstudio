@@ -1,5 +1,6 @@
 import { studioBrushCatalogIdIsIntentionallyDiscontinuous } from "../apps/web/src/domains/creator/brush/studio-brush-continuity-audit";
 
+import { measureLongBrushBoundsDrift, normalizeWetPaperBounds, wetPaperDiffusionFindings } from "./lib/studio-brush-wet-paper-evidence";
 import {
   analyzeStudioBrushMediaPixelQuality,
   type StudioBrushMediaPixelImage,
@@ -66,6 +67,8 @@ export interface StudioLongBrushQualityRoute {
    */
   readonly cursorIgnoreRadius: number;
   readonly nominalWidth: number;
+  /** 정착 확산 외곽의 이동 거리는 측정 영상과 같은 화면 단위의 붓 지름으로 정규화한다. */
+  readonly settledDiffusionWidthPx?: number;
 }
 
 export interface StudioLongBrushQualityFrame {
@@ -125,6 +128,7 @@ export type StudioLongBrushQualityFindingCode =
   | "missing-live-ink"
   | "missing-released-ink"
   | "missing-settled-ink"
+  | "missing-settled-diffusion"
   | "energy-collapse"
   | "energy-surge"
   | "bounds-drift"
@@ -735,14 +739,7 @@ function analyzeTransition(
         bottom: rightBoundBottom,
       }
     : null;
-  const boundsDriftPx = leftBounds && rightBounds
-    ? Math.max(
-        Math.abs(leftBounds.left - rightBounds.left),
-        Math.abs(leftBounds.top - rightBounds.top),
-        Math.abs(leftBounds.right - rightBounds.right),
-        Math.abs(leftBounds.bottom - rightBounds.bottom),
-      )
-    : null;
+  const boundsDriftPx = measureLongBrushBoundsDrift(leftBounds, rightBounds);
   const leftCentroid = leftWeight > 0
     ? { x: leftWeightedX / leftWeight, y: leftWeightedY / leftWeight }
     : null;
@@ -1056,7 +1053,7 @@ export function analyzeStudioLongBrushQuality(
     released: released.publicMetrics,
     settled: settled.publicMetrics,
   };
-  const transitions = {
+  const measured = {
     liveToReleased: transition(
       input.live,
       input.released,
@@ -1082,6 +1079,8 @@ export function analyzeStudioLongBrushQuality(
       "settled",
     ),
   };
+  const width = input.policy.kind === "soft-wet-continuous" ? input.route.settledDiffusionWidthPx : undefined;
+  const transitions = normalizeWetPaperBounds(measured, width);
   if (input.policy.kind === "record-only-discrete") {
     const findings = [
       ...(frames.live.visiblePixels < 4
@@ -1132,6 +1131,7 @@ export function analyzeStudioLongBrushQuality(
     };
   }
   const findings = evaluateContinuousQuality(input.policy.kind, frames, transitions);
+  findings.push(...wetPaperDiffusionFindings(frames, width));
   return {
     policy: input.policy,
     frames,

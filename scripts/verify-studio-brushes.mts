@@ -37,7 +37,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
@@ -99,6 +99,7 @@ import { eraserLiftMatchesPreset, type EraserLiftRatio } from "./lib/studio-brus
 import { hasMeaningfulPixelChange, matchesStudioBrushHistoryBaseline, prepareStudioBrushHistoryEvidence } from "./lib/studio-brush-history-evidence";
 import { studioLongBrushRoute } from "./lib/studio-brush-long-route";
 import { initializeStudioVerifierPageOnce, installStudioCanvasScaleDiagnostics } from "./lib/studio-brush-verifier-session";
+import { studioLongBrushHasSettledDiffusion, waitForWetPaperFrame } from "./lib/studio-brush-wet-paper-evidence";
 import { activateDesktopPen } from "./lib/studio-desktop-brush-activation";
 import {
   clickStudioControlAfterReadiness,
@@ -287,6 +288,7 @@ interface LongBrushStrokeEvidence {
   undoRestoredPixels: boolean;
   qualityPolicy: StudioLongBrushQualityResult["policy"]["kind"];
   qualityOk: boolean;
+  settledDiffusionRestored?: boolean;
 }
 
 interface LongBrushArtifactPath {
@@ -307,6 +309,7 @@ interface LongBrushQualityEvidence {
   source: StudioBrushCatalogItem["source"];
   runtimeBrushId: string;
   capture: Readonly<{
+    settledDiffusionWidthPx?: number;
     clip: Readonly<{ x: number; y: number; width: number; height: number }>;
     localRouteStart: Readonly<{ x: number; y: number }>;
     localRouteEnd: Readonly<{ x: number; y: number }>;
@@ -3222,6 +3225,16 @@ function writeLongBrushQualityReport(input: Readonly<{
   }, null, 2)}\n`);
 }
 
+async function readWetPaperStroke(page: Page, id: string | null) {
+  const document = await persistedStudioDocument(page);
+  const pageRecord = document?.pagesList?.find((entry) => entry.id === document.currentPageId);
+  const stroke = pageRecord?.elements?.find((entry) =>
+    typeof entry === "object" && entry !== null && "id" in entry && entry.id === id,
+  );
+  invariant(stroke && id, "정착 안료를 다시 그릴 원본 획을 찾지 못했습니다.");
+  return stroke;
+}
+
 async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<LongBrushResult> {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1100 } });
   // 아래 진단 스크립트는 이름 있는 함수 표현식을 담고 있어 tsx(keep-names) 직렬화가
@@ -3282,12 +3295,16 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
         const view = await readStudioDurabilityViewport(page);
         const { startX, endX, y } = studioLongBrushRoute(view);
         const viewport = view.viewport;
+        const hasWetDiffusion = studioLongBrushHasSettledDiffusion(expectedSelection.runtimeBrushId);
+        const screenScale = Math.hypot(view.documentToScreen[0], view.documentToScreen[1]);
+        // 두 재료는 붓끝 밖으로 번진다. 확대된 화면에서 끝과 후광이 비교 영역에 잘리지 않게 한다.
+        const diffusionMargin = hasWetDiffusion ? Math.ceil(expectedSelection.defaultWidth * screenScale * 2) : 0;
         const qualityMarginX = Math.max(
-          32,
+          32, diffusionMargin,
           Math.min(90, expectedSelection.defaultWidth * 1.25),
         );
         const qualityMarginY = Math.max(
-          48,
+          48, diffusionMargin,
           Math.min(104, expectedSelection.defaultWidth * 1.65),
         );
         const clip = sanitizeEvidenceClip({
@@ -3325,6 +3342,8 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
         } else {
           before = await captureStableEvidence(page, clip);
         }
+        const wetPaper = hasWetDiffusion
+          ? await prepareStudioBrushHistoryEvidence(page, clip) : null;
         const emptyBefore = eraseBaseline?.empty ?? null;
         const canvasReceivesStart = await page.evaluate(({ x, y: pointY }) =>
           document.elementFromPoint(x, pointY)?.closest(".konvajs-content") !== null,
@@ -3379,6 +3398,7 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
           }
         }
         const live = await page.screenshot({ animations: "disabled", clip });
+        const wetPaperLive = await wetPaper?.capture("live");
         if (operation === "erase") {
           invariant(
             await page.evaluate(() =>
@@ -3486,6 +3506,14 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
           15_000,
         );
         const saved = persistedOperation.stroke;
+        // 저장 신호가 먼저 와도 획 고정 시드의 안료가 실제 원고에 정착한 뒤 비교한다.
+        const wetPaperStroke = wetPaper ? await readWetPaperStroke(page, saved.id) : null;
+        const wetPaperSettled = wetPaper && wetPaperLive
+          ? await waitForWetPaperFrame(page, () => wetPaper.capture("settled"), async (frame) =>
+              hasMeaningfulPixelChange(await compareScreenshotPixels(page, wetPaperLive, frame))
+              && hasMeaningfulPixelChange(await compareScreenshotPixels(page, wetPaper.before, frame)),
+            `${preset.id}: 젖은 안료가 원고에 정착하지 않았습니다.`)
+          : null;
         const settled = await page.screenshot({ animations: "disabled", clip });
         const descriptor = studioBrushPackDescriptorById(preset.id);
         const dryMediaClassification = classifyStudioDryMediaCatalogIdV1(preset.id);
@@ -3529,6 +3557,7 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
           Math.min(46, nominalWidth * 1.5),
         );
         const cursorIgnoreRadius = 0;
+        const settledDiffusionWidthPx = wetPaper ? nominalWidth * screenScale : undefined;
         const quality = analyzeStudioLongBrushQuality({
           policy: qualityPolicy,
           baseline: decodeLongBrushQualityImage(before),
@@ -3540,6 +3569,7 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
             crossSectionRadius,
             cursorIgnoreRadius,
             nominalWidth,
+            settledDiffusionWidthPx,
           },
         });
         const qualityArtifacts = saveLongBrushQualityArtifacts(
@@ -3560,6 +3590,7 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
           runtimeBrushId: expectedSelection.runtimeBrushId,
           capture: {
             clip,
+            settledDiffusionWidthPx,
             localRouteStart: localRoutePoints[0]!,
             localRouteEnd: localRoutePoints.at(-1)!,
             brushCursorStyle: "none",
@@ -3811,6 +3842,24 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
               + `${fullCleanupDiff.changedPixels} visible pixels`,
           );
         }
+        if (wetPaper && wetPaperSettled) {
+          const directory = dirname(qualityArtifacts.settled.absolute);
+          writeFileSync(join(directory, "04-settled-document.png"), wetPaperSettled);
+          await (await enabledHistoryButton(page, "다시실행")).click();
+          await waitForPersistedSelectedOperation(page, expectedSelection, operation, 1, false);
+          await page.reload({ waitUntil: "domcontentloaded" });
+          await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true, dismissToolHints: true });
+          const restored = await waitForPersistedSelectedOperation(page, expectedSelection, operation, 1, false);
+          invariant(isDeepStrictEqual(wetPaperStroke, await readWetPaperStroke(page, restored.stroke.id)), `${preset.id}: 다시 연 원고의 획 정보가 달라졌습니다.`);
+          await page.mouse.move(4, 4);
+          const rebuilt = await waitForWetPaperFrame(page, () => wetPaper.capture("reopened"),
+            (frame) => frame.equals(wetPaperSettled),
+            `${preset.id}: 다시 연 원고에서 같은 좌표의 정착 안료를 복원하지 못했습니다.`);
+          writeFileSync(join(directory, "05-reopened-document.png"), rebuilt);
+          await clearStudioVerifierOriginStorage(page, studioUrl);
+          await prepareStudioPage(page, studioUrl);
+          await activateDesktopPen(page);
+        }
         evidence.push({
           id: preset.id,
           source: preset.source,
@@ -3827,6 +3876,7 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
           undoRestoredPixels,
           qualityPolicy: quality.policy.kind,
           qualityOk: quality.ok,
+          ...(wetPaperSettled ? { settledDiffusionRestored: true } : {}),
         });
         log(
           `long ${index + 1}/${LONG_BRUSH_CATALOG_COUNT} `
