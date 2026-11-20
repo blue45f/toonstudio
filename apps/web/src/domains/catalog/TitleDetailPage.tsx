@@ -32,10 +32,14 @@ import { AvailabilityRouter } from "@/shared/components/availability";
 import { CollectionAdd } from "@/shared/components/collection-add";
 import { FanCafePanel } from "@/domains/community/public/fan-cafe-panel";
 import { PriceCompare } from "@/shared/components/price-compare";
+import { PriceTransitionTimeline } from "@/shared/components/price-transition-timeline";
+import { ReviewTrustCard } from "@/shared/components/review-trust-card";
 import { AvailabilityHistoryPanel } from "@/domains/engagement/public/availability-history-panel";
 import { PersonalContentPreferenceNotice } from "@/domains/engagement/public/personal-content-preference-notice";
 import { ReadStateSelector } from "@/shared/components/read-state";
 import { ReviewCard, ReviewForm } from "@/domains/community/public/reviews";
+import { computeReviewTrustSummary } from "@/shared/lib/review-trust-engine";
+import { buildThreeCutRemixBlueprint } from "@/shared/lib/title-to-three-cut-remix-bridge";
 import { ScoreBreakdown } from "@/shared/components/score-breakdown";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
@@ -167,6 +171,8 @@ export function TitleDetailPage() {
   } : null);
 
   const addRecentlyViewed = useApp((s) => s.addRecentlyViewed);
+  const subscriptions = useApp((s) => s.subscriptions);
+  const toggleSubscription = useApp((s) => s.toggleSubscription);
   const viewedId = data?.title?.id;
   useEffect(() => {
     if (viewedId) addRecentlyViewed(viewedId);
@@ -255,6 +261,17 @@ export function TitleDetailPage() {
   const firstEpisodeHref = firstPublishedEpisode
     ? `/title/${encodeURIComponent(title.slug)}/read/${firstPublishedEpisode.number}`
     : null;
+  const remixBlueprint = buildThreeCutRemixBlueprint({ slug: title.slug, genres: title.genres });
+  const reviewTrustSummary = computeReviewTrustSummary(
+    reviews.map((review) => ({
+      id: review.id,
+      rating: review.rating,
+      createdAt: review.createdAt,
+      verifiedReader: review.progress === "완독" || review.progress === "정주행중",
+      helpfulCount: review.likes,
+    })),
+  );
+  const isPriceAlertEnabled = Boolean(subscriptions[title.id]);
 
   return (
     <PageEntrance variant="pop">
@@ -289,18 +306,18 @@ export function TitleDetailPage() {
           </span>
           <div className="min-w-0">
             <p className="text-sm font-medium text-fg [word-break:keep-all]">
-              {bi("이 작품의 칸 호흡이 마음에 들었다면", "Inspired by this story's pacing?")}
+              {remixBlueprint.templateNameKo}
             </p>
             <p className="text-xs text-fg-2 [word-break:keep-all]">
-              {bi("새 원고 책상에서 콘티·칸 배치를 바로 실험해 볼 수 있어요.", "Experiment with panel layout and storyboards in a fresh manuscript.")}
+              {remixBlueprint.panels.map((p) => `${p.index}. ${p.roleKo}`).join(" → ")}
             </p>
           </div>
         </div>
         <Link
-          href={`/create?ref=${encodeURIComponent(title.slug)}`}
+          href={remixBlueprint.studioLaunchHref}
           className="ink-arrow inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-line-strong bg-card px-3.5 py-2 text-xs font-medium text-fg transition-colors duration-150 hover:border-accent hover:text-accent motion-reduce:transition-none"
         >
-          {bi("이 연출로 시작", "Start with this direction")}
+          {bi("3컷 템플릿으로 시작", "Start 3-cut template")}
           <ArrowRight size={14} strokeWidth={1.5} aria-hidden="true" />
         </Link>
       </section>
@@ -348,7 +365,8 @@ export function TitleDetailPage() {
           </div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr] lg:items-start">
-            <div className="lg:sticky lg:top-[var(--site-header-sticky-offset,5rem)]">
+            <div className="flex flex-col gap-4 lg:sticky lg:top-[var(--site-header-sticky-offset,5rem)]">
+              <ReviewTrustCard summary={reviewTrustSummary} />
               <ReviewForm titleId={title.id} />
             </div>
             <div className="flex flex-col gap-3">
@@ -432,6 +450,12 @@ export function TitleDetailPage() {
               {bi("가격 · 지표 요약", "Pricing and metrics")}
             </summary>
           <PriceCompare availability={title.availability} />
+          <PriceTransitionTimeline
+            events={[]}
+            alertEnabled={isPriceAlertEnabled}
+            onEnableAlert={() => toggleSubscription(title.id)}
+            className="mt-3"
+          />
           <section aria-labelledby="title-metrics-summary" className="rounded-2xl border border-line bg-card p-5">
             <h3 id="title-metrics-summary" className="text-sm font-semibold text-fg">{bi("지표 요약", "Metrics summary")}</h3>
             <dl className="mt-3.5 flex flex-col gap-2.5 text-sm">

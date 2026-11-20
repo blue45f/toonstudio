@@ -95,6 +95,7 @@ import {
   studioCc0MypaintPresetUsesIntentionalDiscreteCarrier,
 } from "../apps/web/src/domains/creator/studio-cc0-mypaint-preset-import-v1";
 
+import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { initializeStudioVerifierPageOnce, installStudioCanvasScaleDiagnostics } from "./lib/studio-brush-verifier-session";
 import { activateDesktopPen } from "./lib/studio-desktop-brush-activation";
 import {
@@ -953,13 +954,7 @@ async function ensureDesktopBrushCatalogTrigger(page: Page): Promise<Locator> {
 
 async function openDesktopCatalog(page: Page): Promise<Locator> {
   const trigger = await ensureDesktopBrushCatalogTrigger(page);
-  const dock = page.locator('[data-studio-brush-workbench-dock="true"]');
-  if (!await dock.isVisible()) await trigger.click();
-  await dock.waitFor({ state: "visible" });
-  await dock.getByRole("button", { name: "확장 보기", exact: true }).click();
-  const catalog = page.locator('[role="dialog"][data-studio-brush-floating]')
-    .locator('[data-studio-brush-catalog-session="true"]');
-  await catalog.waitFor({ state: "visible" });
+  const catalog = await openStudioBrushCatalogThroughUi(page, trigger);
   invariant(await page.locator('[data-studio-brush-catalog-session="true"]').count() === 1, "desktop opened more than one built-in catalogue session");
   invariant(
     await page.locator('[role="dialog"][data-studio-brush-floating]').count() === 1,

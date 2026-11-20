@@ -16,7 +16,8 @@ import { createEmptyStudioReleaseSchedule } from "../apps/web/src/domains/creato
 import { buildStudioSavePayload } from "../apps/web/src/domains/creator/studio-save-payload";
 import { createEmptyStudioWriterRoomDocument } from "../apps/web/src/domains/creator/studio-writer-room";
 
-import { openStudioLayerNavigator, showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
+import { prepareFilterMenuWorkspace } from "./lib/studio-filter-menu-workspace";
+import { openStudioLayerNavigator } from "./lib/studio-shell-interactions";
 import { openStudioProjectCenter } from "./lib/studio-verifier-entry-points";
 
 import type { Pool } from "pg";
@@ -99,10 +100,10 @@ export async function openStudioReviewHost(page: Page, origin: URL, workId: stri
   }
   const gate = page.getByRole("button", { name: "나중에 보기", exact: true });
   if (await gate.isVisible()) await gate.click();
-  // 프로젝트 메뉴와 레이어·속성을 현재 사용자 명령으로 각각 준비한다.
+  await prepareFilterMenuWorkspace(page);
+  // 원고 URL과 화면 구성을 보존한 메뉴 준비 후 레이어·속성도 실제 명령으로 연다.
   const layoutMenu = page.locator('[data-studio-clarity-more-trigger="true"]:visible').first();
   if (await layoutMenu.isVisible()) {
-    await showStudioProjectWindowTools(page);
     await openStudioLayerNavigator(page);
   }
 }

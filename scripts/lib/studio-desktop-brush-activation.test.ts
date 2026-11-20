@@ -2,16 +2,13 @@ import { errors, type Page } from "playwright";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { activateDesktopPen } from "./studio-desktop-brush-activation";
-import { prepareFilterMenuWorkspace } from "./studio-filter-menu-workspace";
 import { openStudioLayerNavigator } from "./studio-shell-interactions";
 
-vi.mock("./studio-filter-menu-workspace", () => ({ prepareFilterMenuWorkspace: vi.fn() }));
 vi.mock("./studio-shell-interactions", () => ({ openStudioLayerNavigator: vi.fn() }));
 
-function fixture({ visibleRail = true, propertiesSelected = false, lateClarity = false, inspectorVisible = true } = {}) {
+function fixture({ visibleRail = true, propertiesSelected = false, lateClarity = false, inspectorVisible = propertiesSelected } = {}) {
   const calls: string[] = [];
   const timeouts: number[] = [];
-  let legacyVisible = !lateClarity;
   let inspectorOpen = inspectorVisible;
   let attempts = 0;
   const timeout = ({ timeout }: { timeout: number }) => {
@@ -31,7 +28,6 @@ function fixture({ visibleRail = true, propertiesSelected = false, lateClarity =
   const toolbar = {
     waitFor: async (options: { state: string; timeout: number }) => {
       expect(options.state).toBe("visible"); timeout(options); calls.push("toolbar");
-      if (!legacyVisible) throw new errors.TimeoutError("지연된 간결한 화면이 기존 옵션을 숨겼습니다.");
     },
     locator: (selector: string) => { expect(selector).toBe('[data-studio-brush-active-pill="true"]'); return pill; },
   };
@@ -43,7 +39,7 @@ function fixture({ visibleRail = true, propertiesSelected = false, lateClarity =
     isVisible: async () => inspectorOpen,
     waitFor: async (options: { state: string; timeout: number }) => {
       expect(options.state).toBe("visible"); timeout(options); calls.push("inspector");
-      if (!inspectorOpen) throw new errors.TimeoutError("프로젝트 메뉴를 열어도 레이어·속성 패널은 숨겨져 있습니다.");
+      if (!inspectorOpen) throw new errors.TimeoutError("레이어·속성 패널이 아직 숨겨져 있습니다.");
     },
     locator: (selector: string) => { expect(selector).toBe('[data-studio-inspector-primary-tab="properties"]'); return properties; },
   };
@@ -63,15 +59,11 @@ function fixture({ visibleRail = true, propertiesSelected = false, lateClarity =
     },
     waitForTimeout: async (ms: number) => { expect(ms).toBeLessThanOrEqual(100); calls.push("retry"); },
   } as unknown as Page;
-  vi.mocked(prepareFilterMenuWorkspace).mockImplementation(async (actualPage, budget) => {
+  vi.mocked(openStudioLayerNavigator).mockImplementation(async (actualPage, budget) => {
     expect(actualPage).toBe(page); expect(budget).toBeGreaterThan(0); expect(budget).toBeLessThanOrEqual(10_000);
     calls.push("actual-menu"); attempts += 1;
-    if (attempts > 1) legacyVisible = true;
-    return attempts > 1;
-  });
-  vi.mocked(openStudioLayerNavigator).mockImplementation(async (actualPage, budget) => {
-    expect(actualPage).toBe(page); expect(budget).toBeGreaterThan(0); expect(budget).toBeLessThanOrEqual(1_000);
-    calls.push("layers-ui"); inspectorOpen = true;
+    if (lateClarity && attempts === 1) throw new errors.TimeoutError("검사기 패널이 교체되었습니다.");
+    inspectorOpen = true;
   });
   return { page, calls, timeouts, pen, properties, press, inspector };
 }
@@ -81,22 +73,26 @@ afterEach(() => { vi.restoreAllMocks(); vi.clearAllMocks(); });
 describe("PC 정밀 브러시 검증의 실제 도구 진입", () => {
   it("실제 메뉴 배치 후 보이는 펜과 기존 모드·설정·속성 준비를 확인한다", async () => {
     const f = fixture(); await activateDesktopPen(f.page);
-    expect(f.calls).toEqual(["actual-menu", "visible-pen", "toolbar", "pen-mode", "pill", "inspector", "properties"]);
+    expect(f.calls).toEqual(["visible-pen", "toolbar", "pen-mode", "pill", "actual-menu", "inspector", "properties"]);
     expect(f.press).not.toHaveBeenCalled();
     expect(f.pen.click.mock.calls[0]?.[0]).not.toHaveProperty("force");
+  });
+  it("검사기가 이미 보이면 다시 열지 않고 필요한 속성 탭만 준비한다", async () => {
+    const f = fixture({ inspectorVisible: true }); await activateDesktopPen(f.page);
+    expect(f.calls).toEqual(["visible-pen", "toolbar", "pen-mode", "pill", "inspector", "properties"]);
     expect(openStudioLayerNavigator).not.toHaveBeenCalled();
   });
   it("보이는 rail이 없으면 기존 키보드 동작을 사용하고 이미 선택한 속성은 보존한다", async () => {
     const f = fixture({ visibleRail: false, propertiesSelected: true }); await activateDesktopPen(f.page);
     expect(f.press).toHaveBeenCalledWith("b"); expect(f.pen.click).not.toHaveBeenCalled();
-    expect(f.properties.click).not.toHaveBeenCalled(); expect(f.calls).toContain("pen-mode");
+    expect(f.properties.click).not.toHaveBeenCalled(); expect(openStudioLayerNavigator).not.toHaveBeenCalled(); expect(f.calls).toContain("pen-mode");
   });
   it("늦게 나타난 간결한 화면은 실제 메뉴로 다시 진입한 뒤 같은 검사를 마친다", async () => {
     const f = fixture({ lateClarity: true }); await activateDesktopPen(f.page);
     expect(f.calls.filter(call => call === "actual-menu")).toHaveLength(2);
     expect(f.calls).toContain("retry"); expect(f.calls.at(-1)).toBe("properties");
   });
-  it("프로젝트 메뉴와 별도로 숨겨진 레이어·속성 패널을 실제 사용자 경로로 연다", async () => {
+  it("숨겨진 레이어·속성 패널을 남은 예산 안에서 실제 사용자 경로로 연다", async () => {
     const f = fixture({ inspectorVisible: false }); let now = 0;
     vi.spyOn(Date, "now").mockImplementation(() => now);
     const waitFor = f.inspector.waitFor;
@@ -105,7 +101,7 @@ describe("PC 정밀 브러시 검증의 실제 도구 진입", () => {
       await waitFor(options);
     });
     await expect(activateDesktopPen(f.page, 1_000)).resolves.toBeUndefined();
-    expect(f.calls).toEqual(["actual-menu", "visible-pen", "toolbar", "pen-mode", "pill", "layers-ui", "inspector", "properties"]);
+    expect(f.calls).toEqual(["visible-pen", "toolbar", "pen-mode", "pill", "actual-menu", "inspector", "properties"]);
     expect(openStudioLayerNavigator).toHaveBeenCalledExactlyOnceWith(f.page, 1_000);
     expect(now).toBe(0);
   });
@@ -132,16 +128,16 @@ describe("PC 정밀 브러시 검증의 실제 도구 진입", () => {
   it("UI 준비 실패가 반복돼도 최초 60초 예산을 재시작하지 않는다", async () => {
     const f = fixture(); let now = 0;
     vi.spyOn(Date, "now").mockImplementation(() => now);
-    vi.mocked(prepareFilterMenuWorkspace).mockImplementation(async () => {
+    vi.mocked(openStudioLayerNavigator).mockImplementation(async () => {
       now += 20_000; throw new errors.TimeoutError("가려진 실제 메뉴");
     });
     await expect(activateDesktopPen(f.page)).rejects.toThrow("60000ms 초과");
-    expect(now).toBe(60_000); expect(prepareFilterMenuWorkspace).toHaveBeenCalledTimes(3);
+    expect(now).toBe(60_000); expect(openStudioLayerNavigator).toHaveBeenCalledTimes(3);
   });
   it("제품 불변조건 실패는 Timeout으로 취급해 재시도하지 않는다", async () => {
     const f = fixture(); const failure = new Error("실제 메뉴 진입점이 두 개입니다.");
-    vi.mocked(prepareFilterMenuWorkspace).mockRejectedValue(failure);
+    vi.mocked(openStudioLayerNavigator).mockRejectedValue(failure);
     await expect(activateDesktopPen(f.page)).rejects.toBe(failure);
-    expect(prepareFilterMenuWorkspace).toHaveBeenCalledTimes(1); expect(f.pen.click).not.toHaveBeenCalled();
+    expect(openStudioLayerNavigator).toHaveBeenCalledTimes(1); expect(f.properties.click).not.toHaveBeenCalled();
   });
 });
