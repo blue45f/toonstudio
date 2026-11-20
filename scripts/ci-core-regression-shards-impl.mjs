@@ -86,10 +86,12 @@ export function shardForTarget(target) {
     || target.startsWith("apps/admin-web/")
     || target === "packages/contracts/src/admin-cloud-workboard.test.ts"
     || target === "packages/contracts/src/admin-nestjs-quality.test.ts"
+    || target === "packages/contracts/src/admin-production-change.test.ts"
     || target === "packages/contracts/src/admin-workspace"
     || target.startsWith("packages/contracts/src/admin-workspace/")
     || target === "scripts/admin-workspace-database-contract.test.mjs"
     || target === "scripts/admin-nestjs-quality-database-contract.test.mjs"
+    || target === "scripts/admin-production-changes-database-contract.test.mjs"
     || target === "scripts/admin-database-contract.test.mjs"
     || target === "scripts/admin-database-feature-contracts.test.mjs"
     || target === "scripts/run-postgres-integration-tests.test.mjs"

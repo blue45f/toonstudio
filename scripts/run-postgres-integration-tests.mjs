@@ -23,6 +23,7 @@ const CREATOR_MARKETPLACE_DB_VERIFIER =
   "scripts/verify-creator-marketplace-db.mts";
 
 export const POSTGRES_INTEGRATION_SUITES = Object.freeze([
+  "apps/api/src/modules/admin-production-changes/admin-production-changes.integration.test.ts",
   "apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts",
   "scripts/production-operations-runtime-acl.integration.test.mjs",
   "scripts/production-release-compatibility.integration.test.mjs",
