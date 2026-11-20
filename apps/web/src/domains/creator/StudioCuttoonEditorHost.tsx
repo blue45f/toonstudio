@@ -12747,6 +12747,11 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   });
   useStudioMenuPopoverDismiss({
     open: projectActionsOpen, triggerRef: projectActionsRef,
+    fallbackLauncher: () => {
+      const editor = wrapRef.current?.closest('[data-studio-editor="true"]');
+      return editor?.querySelector<HTMLElement>('[data-studio-drawing-project-tools="true"] [data-studio-main-menu-trigger="file"]')
+        ?? editor?.querySelector<HTMLElement>('[data-studio-clarity-more-trigger="true"]') ?? null;
+    },
     panelSelector: "[data-studio-project-actions-menu]",
     onDismiss: () => setProjectActionsOpen(false),
   });

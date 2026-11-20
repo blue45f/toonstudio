@@ -54,6 +54,29 @@ describe("Studio menubar popover dismissal", () => {
     },
   );
 
+  it("드로잉 도구에서 연 프로젝트 센터는 Escape와 바깥 클릭으로 닫힌다", () => {
+    const fileMenu = document.createElement("button");
+    const panel = document.createElement("div");
+    panel.setAttribute("data-studio-project-actions-menu", "true");
+    const outside = document.createElement("button");
+    document.body.append(fileMenu, panel, outside);
+    const onDismiss = vi.fn();
+    renderHook(() => useStudioMenuPopoverDismiss({
+      open: true, triggerRef: { current: null }, fallbackLauncher: () => fileMenu,
+      panelSelector: "[data-studio-project-actions-menu]", onDismiss,
+    }));
+
+    pointerDown(panel);
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(escape(panel).defaultPrevented).toBe(true);
+    expect(onDismiss).toHaveBeenCalledOnce();
+    expect(document.activeElement).toBe(fileMenu);
+    outside.focus();
+    pointerDown(outside);
+    expect(onDismiss).toHaveBeenCalledTimes(2);
+    expect(document.activeElement).toBe(outside);
+  });
+
   it("recognizes a delayed or replaced portal and the launcher as inside", () => {
     const menu = fixture();
     pointerDown(menu.control);
