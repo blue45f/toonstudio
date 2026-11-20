@@ -151,13 +151,13 @@ describe("웹 모바일 기본 상단", () => {
       return <StudioDrawingClarityProvider session={live}><Surface value={live} /></StudioDrawingClarityProvider>;
     }
     render(<StatefulMode />);
-    fireEvent.click(screen.getByRole("button", { name: "편집", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^편집$/u }));
     const exit = screen.getByRole("button", { name: "전체 화면 드로잉 종료" });
     expect(exit.closest("#studio-mobile-edit-options")?.getAttribute("data-compact-expanded")).toBe("true");
     expect(exit.getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(exit);
     expect(changed).toHaveBeenNthCalledWith(1, false);
-    const enter = screen.getByRole("button", { name: "전체 화면 드로잉", exact: true });
+    const enter = screen.getByRole("button", { name: /^전체 화면 드로잉$/u });
     expect(enter.getAttribute("aria-pressed")).toBe("false");
     fireEvent.click(enter);
     expect(changed).toHaveBeenNthCalledWith(2, true);
@@ -168,7 +168,7 @@ describe("웹 모바일 기본 상단", () => {
     const open = vi.fn();
     const label = side === "left" ? "퀵 메뉴 · 왼쪽 엄지 위치" : "퀵 메뉴 · 오른쪽 엄지 위치";
     show({ ...session(), workspaceControlSide: side, mobileQuickActionsButton: <button type="button" aria-haspopup="menu" aria-expanded={false} onClick={open}>{label}</button> });
-    fireEvent.click(screen.getByRole("button", { name: "편집", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^편집$/u }));
     const quick = screen.getByRole("button", { name: label });
     expect(quick.closest('[data-studio-clarity-mobile-quick-actions="true"]')).toBeTruthy();
     expect(screen.getAllByRole("button", { name: label })).toHaveLength(1);
