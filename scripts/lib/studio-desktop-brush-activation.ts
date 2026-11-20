@@ -1,6 +1,6 @@
 import { errors, type Page } from "playwright";
 
-import { prepareFilterMenuWorkspace } from "./studio-filter-menu-workspace";
+import { openStudioLayerNavigator } from "./studio-shell-interactions";
 
 /** 정밀 브러시 검사에 필요한 배치는 실제 메뉴로 열고, 늦은 기본 화면 전환도 같은 예산 안에서 복구한다. */
 export async function activateDesktopPen(page: Page, timeoutMs = 60_000): Promise<void> {
@@ -14,7 +14,6 @@ export async function activateDesktopPen(page: Page, timeoutMs = 60_000): Promis
   };
   while (Date.now() < deadline) {
     try {
-      await prepareFilterMenuWorkspace(page, Math.min(10_000, remaining()));
       const pen = page.locator('button[data-studio-rail-tool-id="pen"]:visible').first();
       if (await pen.count() > 0) await pen.click({ timeout: Math.min(1_000, remaining()) });
       else await page.keyboard.press("b");
@@ -27,6 +26,8 @@ export async function activateDesktopPen(page: Page, timeoutMs = 60_000): Promis
       await toolbar.locator('[data-studio-brush-active-pill="true"]')
         .waitFor({ state: "visible", timeout: Math.min(1_000, remaining()) });
       const inspector = page.getByTestId("studio-inspector-navigator");
+      // 통합 원고는 레이어/속성 창을 열 때만 검사기를 표시한다.
+      if (!await inspector.isVisible()) await openStudioLayerNavigator(page, Math.min(10_000, remaining()));
       await inspector.waitFor({ state: "visible", timeout: Math.min(1_000, remaining()) });
       const properties = inspector.locator('[data-studio-inspector-primary-tab="properties"]');
       if (await properties.getAttribute("aria-selected", { timeout: Math.min(1_000, remaining()) }) !== "true") {

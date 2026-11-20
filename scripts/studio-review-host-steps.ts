@@ -16,6 +16,8 @@ import { createEmptyStudioReleaseSchedule } from "../apps/web/src/domains/creato
 import { buildStudioSavePayload } from "../apps/web/src/domains/creator/studio-save-payload";
 import { createEmptyStudioWriterRoomDocument } from "../apps/web/src/domains/creator/studio-writer-room";
 
+import { prepareFilterMenuWorkspace } from "./lib/studio-filter-menu-workspace";
+
 import type { Pool } from "pg";
 import type { BrowserContext, Page } from "playwright";
 
@@ -96,14 +98,7 @@ export async function openStudioReviewHost(page: Page, origin: URL, workId: stri
   }
   const gate = page.getByRole("button", { name: "나중에 보기", exact: true });
   if (await gate.isVisible()) await gate.click();
-  // 미세 펜 설정과 개별 레이어 행을 검수할 수 있는 작업 화면을 실제 메뉴로 연다.
-  const layoutMenu = page.locator('[data-studio-clarity-more-trigger="true"]:visible').first();
-  if (await layoutMenu.isVisible()) {
-    await layoutMenu.click();
-    await page.getByRole("button", { name: /화면과 도움말/u }).click();
-    await page.getByRole("button", { name: "프로젝트·창 도구 배치로 전환", exact: true }).click();
-    await page.locator('[data-studio-clarity-entry="true"]:visible').first().waitFor();
-  }
+  await prepareFilterMenuWorkspace(page);
 }
 
 /** Original three-pen-strokes-per-page acceptance remains unchanged. */
