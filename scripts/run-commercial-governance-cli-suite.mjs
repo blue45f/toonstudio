@@ -3,14 +3,24 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { evaluateSlateDdFromJson } from "./evaluate-ip-slate-dd-cli.mjs";
+import {
+  buildGovernanceSarifReport,
+  verifyGovernanceSarifReport,
+} from "./export-governance-sarif-cli.mjs";
 import { simulateEpisodeSettlementFromPackJson } from "./simulate-episode-settlement-cli.mjs";
+import { verifyCreativeLineageJson } from "./verify-creative-lineage-cli.mjs";
+import { verifyGlobalDistributionPlanJson } from "./verify-global-distribution-cli.mjs";
+import { verifyIpMarketplaceSettlementJson } from "./verify-ip-marketplace-cli.mjs";
 import { verifyLocalizationManifestJson } from "./verify-localization-rights-cli.mjs";
+import { verifyMovingToonPipelineJson } from "./verify-movingtoon-pipeline-cli.mjs";
 import { verifyPortfolioBatchReissuanceJson } from "./verify-portfolio-batch-reissuance-cli.mjs";
+import { verifyReaderEcosystemJson } from "./verify-reader-ecosystem-cli.mjs";
 import { verifyReaderTrustSealJson } from "./verify-reader-trust-seal-cli.mjs";
 import { verifyRightsBomReceiptJson } from "./verify-rights-bom-receipt-cli.mjs";
 import { verifySealReissuanceRecordJson } from "./verify-seal-reissuance-cli.mjs";
 import { verifySealRevocationAndDerivativeJson } from "./verify-seal-revocation-and-derivative-cli.mjs";
 import { verifyVoiceConsentLedgerJson } from "./verify-voice-consent-ledger-cli.mjs";
+import { verifyWave100MasterJson } from "./verify-wave100-master-cli.mjs";
 
 function fnv1aHex(input) {
   let hash = 0x811c9dc5;
@@ -246,7 +256,7 @@ export function runCommercialGovernanceCliSuite() {
     JSON.stringify({ ...batchBase, batchReissuanceDigestHash }),
   );
 
-  const checks = [
+  const prelimChecks = [
     { name: "verify-rights-bom-receipt-cli", ok: c1.ok },
     { name: "simulate-episode-settlement-cli", ok: c2.ok },
     { name: "evaluate-ip-slate-dd-cli", ok: c3.ok },
@@ -256,6 +266,81 @@ export function runCommercialGovernanceCliSuite() {
     { name: "verify-seal-revocation-and-derivative-cli", ok: c7.ok },
     { name: "verify-seal-reissuance-cli", ok: c8.ok },
     { name: "verify-portfolio-batch-reissuance-cli", ok: c9.ok },
+  ];
+  const sarif = buildGovernanceSarifReport({
+    receiptHash,
+    passedCount: prelimChecks.filter((c) => c.ok).length,
+    totalCount: prelimChecks.length,
+    checks: prelimChecks,
+  });
+  const c10 = verifyGovernanceSarifReport(sarif);
+  const c11 = verifyGlobalDistributionPlanJson(
+    JSON.stringify({
+      simulpubReleaseUtcIso: "2026-12-01T15:00:00.000Z",
+      watermarkPolicyEnabled: true,
+      targets: [
+        {
+          locale: "en-US",
+          gutterPx: 60,
+          sfxAssetsCleared: true,
+          platformSpecMatched: true,
+          bubbleOverflowCount: 0,
+        },
+      ],
+    }),
+  );
+  const c12 = verifyMovingToonPipelineJson(
+    JSON.stringify({
+      keyframes: [{ cutId: "c1", startMs: 0, endMs: 18_000 }],
+      audioStems: [{ stemId: "BGM-1", licenseCleared: true }],
+      captionsIncluded: true,
+      bundleSizeMb: 12,
+      maxMobileBudgetMb: 20,
+    }),
+  );
+  const c13 = verifyCreativeLineageJson(
+    JSON.stringify({
+      bg3d: { triangleCount: 120_000, textureMemoryMb: 128 },
+      brushPackLocked: true,
+      unresolvedCrdtConflicts: 0,
+      humanStrokeRatioPercent: 92,
+    }),
+  );
+  const c14 = verifyIpMarketplaceSettlementJson(
+    JSON.stringify({
+      totalGrossRevenueKrw: 70_000_000,
+      advanceRecoupedKrw: 20_000_000,
+      creatorPayoutKrw: 30_000_000,
+      studioShareKrw: 20_000_000,
+    }),
+  );
+  const c15 = verifyReaderEcosystemJson(
+    JSON.stringify({
+      sealActive: true,
+      tdmRepHeaderEnforced: true,
+      triggerTagsDeclared: true,
+    }),
+  );
+  const c16 = verifyWave100MasterJson(
+    JSON.stringify({
+      completedWavesCount: 100,
+      euAiActDisclosureReady: true,
+      incidentKillSwitchArmed: true,
+      coldStorageRetentionYears: 10,
+      replicatedRegionsCount: 3,
+      creatorWeeklyHours: 40,
+    }),
+  );
+
+  const checks = [
+    ...prelimChecks,
+    { name: "export-governance-sarif-cli", ok: c10.ok },
+    { name: "verify-global-distribution-cli", ok: c11.ok },
+    { name: "verify-movingtoon-pipeline-cli", ok: c12.ok },
+    { name: "verify-creative-lineage-cli", ok: c13.ok },
+    { name: "verify-ip-marketplace-cli", ok: c14.ok },
+    { name: "verify-reader-ecosystem-cli", ok: c15.ok },
+    { name: "verify-wave100-master-cli", ok: c16.ok },
   ];
 
   const passedCount = checks.filter((c) => c.ok).length;
@@ -275,7 +360,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log(JSON.stringify(res, null, 2));
   } else {
     console.log(
-      `ToonStudio Commercial Governance 9-CLI Suite: ${res.passedCount}/${res.totalCount} PASS (${res.receiptHash})`,
+      `ToonStudio Commercial Governance 16-CLI Suite: ${res.passedCount}/${res.totalCount} PASS (${res.receiptHash})`,
     );
   }
   if (!res.ok) {

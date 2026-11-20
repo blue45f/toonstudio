@@ -18,7 +18,9 @@ import { StudioCommercialSettlementWidget } from "../export/StudioCommercialSett
 import { StudioGlobalLocalizationReadinessCard } from "../export/StudioGlobalLocalizationReadinessCard";
 import { StudioIpProvenanceAuditCard } from "../export/StudioIpProvenanceAuditCard";
 import { StudioMovingToonVoiceConsentCard } from "../export/StudioMovingToonVoiceConsentCard";
+import { StudioPortfolioBatchReissuanceCard } from "../export/StudioPortfolioBatchReissuanceCard";
 import { StudioReaderTrustSealPreviewCard } from "../export/StudioReaderTrustSealPreviewCard";
+import { StudioWave100MasterCockpitCard } from "../export/StudioWave100MasterCockpitCard";
 import {
   applyRightsRemediationPlan,
   buildRightsRemediationPlan,
@@ -458,6 +460,14 @@ export function StudioWorkflowPacksPanel({
               pack={activePackForSimulation}
             />
             <StudioReaderTrustSealPreviewCard
+              seriesTitle={activePackForSimulation.name}
+              pack={activePackForSimulation}
+            />
+            <StudioPortfolioBatchReissuanceCard
+              seriesTitle={activePackForSimulation.name}
+              pack={activePackForSimulation}
+            />
+            <StudioWave100MasterCockpitCard
               seriesTitle={activePackForSimulation.name}
               pack={activePackForSimulation}
             />
