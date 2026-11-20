@@ -52,6 +52,9 @@ const PRE_MULTER_AUTH_GUARDS: ReadonlySet<string> = new Set([
   "StudioRasterAssetUploadGuard",
 ]);
 
+const ADMIN_CAPTURE_ROUTE =
+  "modules/admin-production-changes/admin-production-changes.controller.ts#AdminProductionChangesController.upload";
+
 function controllerFiles(root: string): string[] {
   return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
     const path = join(root, entry.name);
@@ -131,6 +134,7 @@ describe("멀티파트 업로드 라우트의 Multer 이전 인증 가드", () =
   it("스캐너가 알려진 업로드 라우트를 실제로 찾아낸다", () => {
     expect(routes.map((route) => route.id)).toEqual(
       expect.arrayContaining([
+        ADMIN_CAPTURE_ROUTE,
         "modules/production-collaboration/production-voice-commentary.controller.ts#ProductionVoiceCommentaryController.create",
         "modules/studio-project-graph/studio-recording-booth-asset.controller.ts#StudioRecordingBoothAssetController.create",
         "modules/studio-project-graph/studio-review-voice-note.controller.ts#StudioReviewVoiceNoteController.create",
@@ -142,7 +146,13 @@ describe("멀티파트 업로드 라우트의 Multer 이전 인증 가드", () =
 
   it("모든 업로드 라우트가 로그인 확인 가드를 가진다(익명 본문은 메모리에 쌓이지 않는다)", () => {
     const unguarded = routes
-      .filter((route) => !route.guards.some((name) => PRE_MULTER_AUTH_GUARDS.has(name)))
+      .filter((route) => {
+        if (route.id === ADMIN_CAPTURE_ROUTE) {
+          // 이 경로는 로그인과 관리자 쓰기 권한을 본문 파싱 전에 함께 검사한다.
+          return !route.guards.includes("AdminProductionChangesUploadGuard");
+        }
+        return !route.guards.some((name) => PRE_MULTER_AUTH_GUARDS.has(name));
+      })
       .map((route) => route.id);
     expect(unguarded).toEqual([]);
   });
