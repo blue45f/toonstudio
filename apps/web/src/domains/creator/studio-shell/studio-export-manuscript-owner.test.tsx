@@ -7,6 +7,8 @@ import { SessionContext, type SessionContextValue } from "@/domains/auth/public/
 import { useI18n } from "@/shared/lib/i18n";
 
 import { studioAutosaveKey, writeStudioLifecycleAutosave } from "../studio-autosave";
+import type { PageState } from "../studio-page-state";
+import { createBlankPage } from "../studio-pages";
 import { readStudioProjectDiagnosticSource, studioProjectDiagnosticSourceStorageKey } from "../studio-project-diagnostic-source-store";
 import { ensureStudioProjectWorkspaceState, updateStudioProjectWorkspaceState } from "../studio-project-workspace-store";
 import { createStudioProjectDocument } from "../studio-project-document-store";
@@ -28,11 +30,13 @@ function panel(id: string | null, ready = true) {
   </MemoryRouter></SessionContext.Provider>;
 }
 function seed(owner: string | null, label: string, date: string) {
+  const { id, bg, bgGrad, canvasH } = createBlankPage(() => label, 1280);
+  const page: PageState = {
+    id, bg, bgGrad, canvasH, name: label,
+    elements: [{ id: `cut-${label}`, type: "frame", x: 0, y: 0, width: 720, height: 640, stroke: "#111" }],
+  };
   return writeStudioLifecycleAutosave(localStorage, studioAutosaveKey({ userId: owner, workId: doc }), {
-    version: 6, savedAt: date, pagesList: [{
-      id: label, name: label, canvasH: 1280,
-      elements: [{ id: "cut-"+label, type: "frame", x: 0, y: 0, width: 720, height: 640, stroke: "#111" }],
-    }],
+    version: 6, savedAt: date, pagesList: [page],
   }, { preservePrimary: false });
 }
 afterEach(() => { cleanup(); vi.restoreAllMocks(); localStorage.clear(); });
