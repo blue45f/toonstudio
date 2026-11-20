@@ -88,7 +88,7 @@ export function StudioExportPanel({
         documentWidthPx: draft.width,
         documentHeightPx: draft.height,
         targetSliceHeightPx: profile.maxSegmentHeight ?? draft.height,
-        exportMode: target === "personal-archive" ? "personal-preview" : "commercial",
+        exportMode: profile.requireRightsClearance ? "commercial" : "personal-preview",
         bubbles:
           effectiveDraft.minimumTextPx && effectiveDraft.minimumTextPx > 0
             ? [
@@ -117,8 +117,8 @@ export function StudioExportPanel({
       draft.width,
       effectiveDraft.minimumTextPx,
       profile.maxSegmentHeight,
+      profile.requireRightsClearance,
       projectFacts.blockedAssets,
-      target,
     ],
   );
   const psdAndTimelapseSpec = useMemo(() => {
@@ -383,7 +383,12 @@ export function StudioExportPanel({
                   : "border-bad/40 bg-bad/10 text-bad",
               )}
             >
-              {commercialGateReport.passed
+              {!profile.requireRightsClearance
+                ? bt(
+                    `개인 백업 · 상업 이용 권리는 별도로 확인하세요 · 주의 ${commercialGateReport.warningCount}건`,
+                    `Personal backup · Check rights before commercial use · Warnings: ${commercialGateReport.warningCount}`,
+                  )
+                : commercialGateReport.passed
                 ? commercialGateReport.warningCount > 0
                   ? bt(
                       `Rights BOM 통과 · 375px 모바일 가독성 주의 ${commercialGateReport.warningCount}건`,

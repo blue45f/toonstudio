@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
+import * as commercialPreflight from "../export/studio-commercial-preflight-gate";
 import { studioAutosaveKey, writeStudioLifecycleAutosave } from "../studio-autosave";
 import { createStudioProjectDocument } from "../studio-project-document-store";
 import { createStudioProject } from "../studio-project-library-store";
@@ -47,6 +48,19 @@ describe("StudioExportPanel", () => {
 
     const finalizeLink = screen.getByRole("link", { name: /편집기에서 최종 출력/u });
     expect(finalizeLink.getAttribute("href")).toBe("/studio/work/proj-export-1/publish");
+  });
+
+  it("완전한 백업을 선택하면 개인 검사로 바뀌고 게시 목적을 다시 고르면 상업 권리를 검사한다", () => {
+    const gate = vi.spyOn(commercialPreflight, "runCommercialPreflightGate");
+    render(<MemoryRouter><StudioExportPanel projectId="archive-rights" locale="ko" /></MemoryRouter>);
+    const summary = screen.getByTestId("studio-export-commercial-gate-summary");
+    expect(gate.mock.lastCall?.[0].exportMode).toBe("commercial");
+    fireEvent.click(screen.getByRole("button", { name: /완전한 백업/u }));
+    expect(gate.mock.lastCall?.[0].exportMode).toBe("personal-preview");
+    expect(summary.textContent).toContain("상업 이용 권리는 별도로 확인");
+    fireEvent.click(screen.getByRole("button", { name: /웹툰 플랫폼/u }));
+    expect(gate.mock.lastCall?.[0].exportMode).toBe("commercial");
+    expect(summary.textContent).toContain("Rights BOM");
   });
 
   it("로컬 원고가 있는 프로젝트는 실제 원고 크기로 규격 불일치를 잡아내고 비로그인 로컬 편집기와 공개 게시 동선을 분리한다", () => {
@@ -109,19 +123,22 @@ describe("StudioExportPanel", () => {
       width: 1080,
       height: 8000,
     });
+    const pagesList = [
+      {
+        id: "p-1", name: "오프닝", canvasH: 1280,
+        elements: [{ id: "opening-cut", type: "frame", x: 16, y: 16, width: 680, height: 640, fill: "#fff", stroke: "#111" }],
+      },
+      { id: "p-2", name: "전개", canvasH: 1600, elements: [] },
+      { id: "p-3", name: "엔딩", canvasH: 1280, elements: [] },
+    ];
     writeStudioLifecycleAutosave(
       window.localStorage,
       studioAutosaveKey({ userId: null, workId: "doc-pages-1" }),
       {
         version: 6,
         savedAt: "2026-11-15T05:00:00.000Z",
-        title: "1화",
-        pagesList: [
-          { id: "p-1", name: "오프닝", canvasH: 1280, elements: [] },
-          { id: "p-2", name: "전개", canvasH: 1600, elements: [] },
-          { id: "p-3", name: "엔딩", canvasH: 1280, elements: [] },
-        ],
-      } as never,
+        pagesList,
+      },
       { preservePrimary: false },
     );
 
