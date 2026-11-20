@@ -156,14 +156,14 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByTestId("location").textContent).toBe(
       "/showcase?tab=works&sort=popular&tag=%EC%95%A1%EC%85%98",
     );
-    expect(screen.queryByRole("heading", { name: "어떻게 시작할까요?" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "새 웹툰·원고 시작" })).toBeNull();
   });
 
   it("갤러리와 무관한 조건만 있으면 시작 시트를 그대로 연다", () => {
     renderStartSheet("/create?from=home");
 
     expect(screen.getByTestId("location").textContent).toBe("/create?from=home");
-    expect(screen.getByRole("heading", { name: "어떻게 시작할까요?" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "새 웹툰·원고 시작" })).toBeTruthy();
   });
 
   it("기본 화면에는 주요 시작 카드와 표준 규격을 바로 보여주고 세부 픽셀 규격·전문 도구·한 줄 콘티는 접힌 펼침 영역으로 둔다", () => {
@@ -339,7 +339,7 @@ describe("CreateStartPage (작품 시작 시트)", () => {
 
     fireEvent.click(back);
 
-    const heading = screen.getByRole("heading", { level: 1, name: "어떻게 시작할까요?" });
+    const heading = screen.getByRole("heading", { level: 1, name: "새 웹툰·원고 시작" });
     expect(heading.getAttribute("tabindex")).toBe("-1");
     expect(document.activeElement).toBe(heading);
     expect(screen.queryByRole("link", { name: "작품 시작으로 돌아가기" })).toBeNull();
@@ -348,12 +348,12 @@ describe("CreateStartPage (작품 시작 시트)", () => {
 
   it("첫 진입의 초점은 유지하고 페이지 이동과 복귀에서는 제목을 안내한다", () => {
     renderStartSheet("/create");
-    const heading = screen.getByRole("heading", { level: 1, name: "어떻게 시작할까요?" });
+    const heading = screen.getByRole("heading", { level: 1, name: "새 웹툰·원고 시작" });
     expect(document.activeElement).not.toBe(heading);
     fireEvent.click(screen.getByRole("link", { name: "제작 도구" }));
     expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1, name: "제작 단계와 도구" }));
     fireEvent.click(screen.getByRole("link", { name: "작품 시작으로 돌아가기" }));
-    expect(screen.getByRole("heading", { level: 1, name: "어떻게 시작할까요?" })).toBe(heading);
+    expect(screen.getByRole("heading", { level: 1, name: "새 웹툰·원고 시작" })).toBe(heading);
     expect(document.activeElement).toBe(heading);
   });
 
@@ -365,7 +365,7 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     fireEvent.click(screen.getByRole("button", { name: "테스트 이전 주소" }));
     expect(await screen.findByTestId("create-start-persona-guide")).toBeTruthy();
     expect(screen.getByTestId("location").textContent).toBe("/create?from=home");
-    expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1, name: "어떻게 시작할까요?" }));
+    expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1, name: "새 웹툰·원고 시작" }));
     expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
   });
 
@@ -425,7 +425,7 @@ describe("CreateStartPage — 내 이야기 의도 카드", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "내 이야기를 웹툰으로" }, LAZY_FLOW_WAIT)).toBeTruthy();
     expect(screen.getByRole("link", { name: "다른 시작 방법 보기" }).getAttribute("href")).toBe("/create");
-    expect(screen.queryByRole("heading", { name: "어떻게 시작할까요?" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "새 웹툰·원고 시작" })).toBeNull();
     expect(screen.queryByRole("link", { name: /콘티부터 시작하기/ })).toBeNull();
     expect(screen.getByRole("heading", { name: "어떤 이야기를 남기고 싶나요?" })).toBeTruthy();
   });
@@ -466,7 +466,7 @@ describe("CreateStartPage — 내 이야기 의도 카드", () => {
   it("모르는 intent 값은 일반 시작 시트로 취급한다", () => {
     renderStartSheet("/create?intent=other");
 
-    expect(screen.getByRole("heading", { name: "어떻게 시작할까요?" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "새 웹툰·원고 시작" })).toBeTruthy();
     expect(screen.queryByRole("heading", { level: 1, name: "내 이야기를 웹툰으로" })).toBeNull();
   });
 });

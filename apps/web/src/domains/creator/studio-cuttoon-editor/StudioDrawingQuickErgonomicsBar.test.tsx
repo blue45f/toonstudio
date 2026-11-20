@@ -377,4 +377,23 @@ describe("StudioDrawingQuickErgonomicsBar", () => {
     fireEvent.click(quickShapeBtn);
     expect(quickShapeBtn.getAttribute("aria-pressed")).toBe("false");
   });
+
+  it("비활성화된 두께·배율·편집 잠금 컨트롤이 모두 명시적 사유(title·aria-describedby)를 제공한다", () => {
+    const session = createErgonomicsSession({
+      activeSurfaceReviewLocked: true,
+      strokeWidth: 1,
+      zoomLocked: true,
+    });
+    render(<StudioDrawingQuickErgonomicsBar session={session} />);
+    const shrink = screen.getByRole("button", { name: "브러시 크기 줄이기" });
+    const zoom = screen.getByRole("button", { name: /캔버스 배율/ });
+    for (const button of [shrink, zoom]) {
+      expect(button.matches(":disabled")).toBe(true);
+      expect(button.getAttribute("data-studio-disabled-reason")).toBeTruthy();
+      expect(button.getAttribute("title")).toBeTruthy();
+      const descId = button.getAttribute("aria-describedby");
+      expect(descId).toBeTruthy();
+      expect(document.getElementById(descId!)?.textContent?.trim()).toBeTruthy();
+    }
+  });
 });

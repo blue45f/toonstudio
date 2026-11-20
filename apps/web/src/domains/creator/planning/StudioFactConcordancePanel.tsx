@@ -63,10 +63,19 @@ const FILTER_LABEL: Readonly<Record<ClassificationFilter, string>> = {
   forgotten: "정해졌는데 잊음",
 };
 
+const CLASSIFICATION_TONE: Readonly<Record<FactConcordanceClassification, string>> = {
+  used: "border border-good/35 bg-good/10 text-good",
+  unregistered: "border border-warn/35 bg-warn/10 text-warn",
+  forgotten: "border border-bad/35 bg-bad/10 text-bad",
+};
+
 const FIELD_LABEL: Readonly<Record<LoreRevisionRecord["field"], string>> = {
   summary: "한 줄 요약",
   details: "상세 설정",
 };
+
+const CONTROL_INPUT_CLASS =
+  "min-h-11 rounded-lg border border-line bg-panel px-3 py-2 text-xs text-fg outline-none placeholder:text-fg-3 focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 function EntryCard({
   entry,
@@ -94,55 +103,57 @@ function EntryCard({
   const label = FACT_CLASSIFICATION_LABELS[entry.classification];
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4">
+    <article className="rounded-xl border border-line bg-card p-4 text-fg">
       <header className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-semibold text-slate-900">{entry.displayName}</h3>
+        <h3 className="text-sm font-semibold text-fg">{entry.displayName}</h3>
         {entry.kind ? (
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
+          <span className="rounded-full border border-line bg-raised px-2.5 py-0.5 text-xs text-fg-2">
             {FACT_TERM_KIND_LABELS[entry.kind].ko}
           </span>
         ) : null}
-        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${CLASSIFICATION_TONE[entry.classification]}`}>
           {label.ko}
         </span>
         {entry.loreStatus ? (
-          <span className="text-[11px] text-slate-500">
+          <span className="text-xs tabular-nums text-fg-3">
             설정 v{entry.loreVersion ?? 1} · 상태 {entry.loreStatus}
           </span>
         ) : null}
       </header>
-      <p className="mt-1 text-xs text-slate-500">{label.hintKo}</p>
+      <p className="mt-1.5 text-xs leading-relaxed text-fg-2">{label.hintKo}</p>
       {entry.mentions.length > 0 ? (
-        <div className="mt-2 space-y-1">
-          <p className="text-xs text-slate-600">
+        <div className="mt-2.5 space-y-1.5">
+          <p className="text-xs tabular-nums text-fg-2">
             {entry.episodeCount}개 회차 · 언급 {entry.mentions.length}곳 · 처음{" "}
             {episodeLabel(entry.firstEpisodeId)} · 마지막 {episodeLabel(entry.lastEpisodeId)}
           </p>
           <ul className="space-y-1">
             {entry.mentions.slice(0, 3).map((mention) => (
-              <li key={mention.id} className="text-xs text-slate-500">
+              <li key={mention.id} className="rounded-lg border border-line/70 bg-panel px-2.5 py-1.5 text-xs text-fg-2">
                 [{episodeLabel(mention.episodeId)} ·{" "}
                 {mention.segmentKind === "dialogue" ? "대사" : "지문"}] {mention.excerpt}
               </li>
             ))}
           </ul>
           {entry.mentions.length > 3 ? (
-            <p className="text-[11px] text-slate-400">
+            <p className="text-xs tabular-nums text-fg-3">
               외 {entry.mentions.length - 3}곳의 언급이 더 있어요.
             </p>
           ) : null}
         </div>
       ) : (
-        <p className="mt-2 text-xs text-slate-500">{r3c04StatusText("studio.r3c04Status.planning.fact.notFoundInPublished", "게시된 회차 본문에서 찾지 못했어요.")}</p>
+        <p className="mt-2 text-xs text-fg-3">
+          {r3c04StatusText("studio.r3c04Status.planning.fact.notFoundInPublished", "게시된 회차 본문에서 찾지 못했어요.")}
+        </p>
       )}
 
-      <div className="mt-3 border-t border-slate-100 pt-3">
-        <p className="text-xs font-medium text-slate-700">
+      <div className="mt-3.5 border-t border-line pt-3">
+        <p className="text-xs font-semibold text-fg-2">
           제3 확인자 체크 {entryChecks.length > 0 ? `(${entryChecks.length}건)` : ""}
         </p>
-        <ul className="mt-1 space-y-1">
+        <ul className="mt-1.5 space-y-1">
           {entryChecks.map((check) => (
-            <li key={check.id} className="text-xs text-slate-500">
+            <li key={check.id} className="text-xs text-fg-2">
               {FACT_CHECK_VERDICT_LABELS[check.verdict]}
               {check.note ? ` — ${check.note}` : ""} ({check.checkedAt})
             </li>
@@ -151,7 +162,7 @@ function EntryCard({
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <select
             aria-label="확인 판정"
-            className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+            className={CONTROL_INPUT_CLASS}
             value={verdict}
             onChange={(event) => setVerdict(event.target.value as FactCheckVerdict)}
           >
@@ -163,14 +174,14 @@ function EntryCard({
           </select>
           <input
             aria-label="확인 메모"
-            className="min-w-40 flex-1 rounded-md border border-slate-300 px-2 py-1 text-xs"
+            className={`min-w-40 flex-1 ${CONTROL_INPUT_CLASS}`}
             placeholder="확인 메모 (선택)"
             value={note}
             onChange={(event) => setNote(event.target.value)}
           />
           <button
             type="button"
-            className="rounded-md bg-slate-900 px-3 py-1 text-xs font-medium text-white"
+            className="min-h-11 rounded-lg bg-accent px-3.5 text-xs font-semibold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             onClick={() => {
               const error = onRecordCheck(entry.key, verdict, note);
               setCheckError(error);
@@ -180,35 +191,35 @@ function EntryCard({
             {currentUserId ? "확인 기록" : "확인자 지정 필요"}
           </button>
         </div>
-        {checkError ? <p className="mt-1 text-xs text-red-600">{checkError}</p> : null}
+        {checkError ? <p role="alert" className="mt-1.5 text-xs font-medium text-bad">{checkError}</p> : null}
       </div>
 
       {firstMention ? (
-        <div className="mt-3 border-t border-slate-100 pt-3">
-          <p className="text-xs font-medium text-slate-700">
+        <div className="mt-3.5 border-t border-line pt-3">
+          <p className="text-xs font-semibold text-fg-2">
             원고 쪽 수정 제안 — 설정이 아니라 신규 원고를 고치는 것이 원칙이에요.
           </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-fg-3">
             대상: {episodeLabel(firstMention.episodeId)} · “{firstMention.surface}”가 실린 조각
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <input
               aria-label="고친 원고 내용"
-              className="min-w-40 flex-1 rounded-md border border-slate-300 px-2 py-1 text-xs"
+              className={`min-w-40 flex-1 ${CONTROL_INPUT_CLASS}`}
               placeholder="고친 뒤의 문장"
               value={fixAfter}
               onChange={(event) => setFixAfter(event.target.value)}
             />
             <input
               aria-label="수정 이유"
-              className="min-w-32 flex-1 rounded-md border border-slate-300 px-2 py-1 text-xs"
+              className={`min-w-32 flex-1 ${CONTROL_INPUT_CLASS}`}
               placeholder="고치는 이유"
               value={fixReason}
               onChange={(event) => setFixReason(event.target.value)}
             />
             <button
               type="button"
-              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700"
+              className="min-h-11 rounded-lg border border-line bg-panel px-3.5 text-xs font-semibold text-fg transition-colors hover:border-line-strong hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               onClick={() => {
                 const error = onProposeManuscriptFix({
                   entryKey: entry.key,
@@ -228,7 +239,7 @@ function EntryCard({
               원고 수정 기록
             </button>
           </div>
-          {fixError ? <p className="mt-1 text-xs text-red-600">{fixError}</p> : null}
+          {fixError ? <p role="alert" className="mt-1.5 text-xs font-medium text-bad">{fixError}</p> : null}
         </div>
       ) : null}
     </article>
@@ -255,28 +266,29 @@ export function StudioFactConcordancePanel(props: StudioFactConcordancePanelProp
   const { digest } = concordance;
 
   return (
-    <section className="space-y-4">
-      <header className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="text-base font-semibold text-slate-900">사실 색인</h2>
-        <p className="mt-1 text-sm text-slate-600">
+    <section className="space-y-4 text-fg">
+      <header className="rounded-xl border border-line bg-panel p-4 sm:p-5">
+        <h2 className="text-base font-semibold text-fg">사실 색인</h2>
+        <p className="mt-1 text-sm leading-relaxed text-fg-2 [word-break:keep-all]">
           게시된 회차 본문·대사에서 인물·장소·사건·설정을 역추출해 설정집과 대조한
           색인이에요. 본문에 나왔는데 정해진 적 없는 것과, 정해졌는데 잊힌 것을
           갈라서 보여줘요.
         </p>
-        <p className="mt-2 text-sm text-slate-700">
+        <p className="mt-2.5 text-sm tabular-nums text-fg-2">
           색인 {digest.totalEntries}건 · 언급 {digest.mentionCount}곳 ·{" "}
-          <strong>정해진 적 없음 {digest.unregisteredCount}건</strong> ·{" "}
-          <strong>정해졌는데 잊음 {digest.forgottenCount}건</strong>
+          <strong className="font-semibold text-warn">정해진 적 없음 {digest.unregisteredCount}건</strong> ·{" "}
+          <strong className="font-semibold text-bad">정해졌는데 잊음 {digest.forgottenCount}건</strong>
         </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-3.5 flex flex-wrap items-center gap-2">
           {(Object.keys(FILTER_LABEL) as ClassificationFilter[]).map((key) => (
             <button
               key={key}
               type="button"
+              aria-pressed={filter === key}
               className={
                 filter === key
-                  ? "rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white"
-                  : "rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-600"
+                  ? "min-h-11 rounded-lg bg-accent px-3.5 text-xs font-semibold text-on-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  : "min-h-11 rounded-lg border border-line bg-card px-3.5 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               }
               onClick={() => setFilter(key)}
             >
@@ -285,7 +297,7 @@ export function StudioFactConcordancePanel(props: StudioFactConcordancePanelProp
           ))}
           <input
             aria-label="색인 검색"
-            className="min-w-40 flex-1 rounded-md border border-slate-300 px-2 py-1 text-xs"
+            className={`min-w-44 flex-1 ${CONTROL_INPUT_CLASS}`}
             placeholder="이름으로 찾기"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -294,7 +306,9 @@ export function StudioFactConcordancePanel(props: StudioFactConcordancePanelProp
       </header>
 
       {visible.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">{r3c04StatusText("studio.r3c04Status.planning.fact.emptyIndexFiltered", "이 조건에 맞는 색인 항목이 없어요.")}</p>
+        <p className="rounded-xl border border-dashed border-line bg-panel p-6 text-center text-sm text-fg-3">
+          {r3c04StatusText("studio.r3c04Status.planning.fact.emptyIndexFiltered", "이 조건에 맞는 색인 항목이 없어요.")}
+        </p>
       ) : (
         <div className="space-y-3">
           {visible.map((entry) => (
@@ -311,18 +325,23 @@ export function StudioFactConcordancePanel(props: StudioFactConcordancePanelProp
         </div>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-900">설정 수정 이력</h3>
-        <p className="mt-1 text-xs text-slate-500">
+      <section className="rounded-xl border border-line bg-panel p-4 sm:p-5">
+        <h3 className="text-sm font-semibold text-fg">설정 수정 이력</h3>
+        <p className="mt-1 text-xs text-fg-3">
           설정은 조용히 바뀌지 않아요. 바뀐 항목·필드·전후 값·버전이 여기에 남아요.
         </p>
         {props.loreRevisions.length === 0 ? (
-          <p className="mt-2 text-xs text-slate-500">{r3c04StatusText("studio.r3c04Status.planning.fact.emptyRevisions", "아직 설정 수정 이력이 없어요.")}</p>
+          <p className="mt-2.5 text-xs text-fg-3">
+            {r3c04StatusText("studio.r3c04Status.planning.fact.emptyRevisions", "아직 설정 수정 이력이 없어요.")}
+          </p>
         ) : (
-          <ul className="mt-2 space-y-2">
+          <ul className="mt-2.5 space-y-2">
             {props.loreRevisions.map((revision) => (
-              <li key={revision.id} className="text-xs text-slate-600">
-                <strong>{revision.entryName}</strong> · {FIELD_LABEL[revision.field]} · v
+              <li
+                key={revision.id}
+                className="rounded-lg border border-line bg-card px-3 py-2 text-xs leading-relaxed tabular-nums text-fg-2"
+              >
+                <strong className="font-semibold text-fg">{revision.entryName}</strong> · {FIELD_LABEL[revision.field]} · v
                 {revision.beforeVersion} → v{revision.afterVersion} · {revision.at}
                 <br />
                 전: {revision.before || r3c04StatusText("studio.r3c04Status.planning.fact.emptyValue", "(비어 있음)")} → 후: {revision.after}
@@ -334,10 +353,13 @@ export function StudioFactConcordancePanel(props: StudioFactConcordancePanelProp
         )}
         {props.fixes.length > 0 ? (
           <>
-            <h4 className="mt-4 text-sm font-semibold text-slate-900">원고 수정 기록</h4>
-            <ul className="mt-2 space-y-1">
+            <h4 className="mt-4 text-sm font-semibold text-fg">원고 수정 기록</h4>
+            <ul className="mt-2 space-y-1.5">
               {props.fixes.map((fix) => (
-                <li key={fix.id} className="text-xs text-slate-600">
+                <li
+                  key={fix.id}
+                  className="rounded-lg border border-line bg-card px-3 py-2 text-xs text-fg-2"
+                >
                   [{episodeLabel(fix.episodeId)}] {fix.before} → {fix.after}
                   {fix.reason ? ` — ${fix.reason}` : ""} ({fix.at})
                 </li>

@@ -69,13 +69,26 @@ export function StudioDrawingClarityMobileBar({
   const quickActions = <span data-studio-clarity-mobile-quick-actions="true" className="shrink-0">{s.mobileQuickActionsButton}</span>;
   if (!clarity) return null;
   return <>
-    <header id="studio-menubar" role="region" tabIndex={-1} aria-label={bt("원고와 저장", "Draft and save")}
+    <div id="studio-menubar" role="region" tabIndex={-1} aria-label={bt("원고와 저장", "Draft and save")}
       data-studio-app-menubar="true" data-studio-drawing-clarity-header="true" data-studio-drawing-clarity-mobile-header="true"
       data-studio-device-guide-entry={guideSurface ?? undefined}
       className="studio-drawing-clarity-header studio-drawing-clarity-mobile-header">
       <StudioEditorReturnButton variant="lane" onReturn={returnFromStudioEditorInBrowser} />
       <div className="studio-drawing-clarity-title"><h1 title={s.title}>{s.title.trim() || bt("제목 없는 원고", "Untitled draft")}</h1><StudioDocumentChromeSlot /></div>
       <StudioDrawingClaritySaveButton session={s} />
+      <button
+        type="button"
+        data-studio-clarity-export-btn="true"
+        className="studio-drawing-clarity-button studio-drawing-clarity-mobile-export"
+        onClick={(event) => {
+          s.setMobileSheet(null);
+          onExportTrigger?.(event.currentTarget);
+          s.setExportMenuOpen(true);
+        }}
+        title={bt("세로 스크롤 분할 PNG·PSD 출고", "Export draft")}
+      >
+        <span>{bt("출고", "Export")}</span>
+      </button>
       <button type="button" className="studio-drawing-compact-edit-toggle"
         aria-controls="studio-mobile-edit-options" aria-expanded={editBarExpanded}
         onClick={() => setEditBarExpanded(value => !value)}>
@@ -99,7 +112,7 @@ export function StudioDrawingClarityMobileBar({
         { id: "view", label: bt("화면과 작업 환경", "Display and workspace"), run: requestStudioShellFloatingLayoutManagerOpen },
         { id: "status", label: bt("저장·화면 문제 해결", "Save and display troubleshooting"), run: requestStudioDrawingReliability },
       ]} />
-    </header>
+    </div>
     <div id="studio-mobile-edit-options" data-compact-expanded={editBarExpanded}
       className="studio-drawing-clarity-context-row studio-drawing-clarity-mobile-context">
       {s.workspaceControlSide === "left" ? quickActions : null}

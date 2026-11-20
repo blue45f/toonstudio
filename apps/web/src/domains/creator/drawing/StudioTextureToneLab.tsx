@@ -129,27 +129,15 @@ interface Theme {
 
 function useTheme(dark: boolean): Theme {
   return useMemo<Theme>(
-    () =>
-      dark
-        ? {
-            panel:
-              "border-white/10 bg-gradient-to-b from-[#171226] via-[#12101d] to-[#0d0b14]",
-            card: "border-white/10 bg-white/[0.04]",
-            heading: "text-white",
-            body: "text-white/70",
-            muted: "text-white/45",
-            input: "border-white/15 bg-white/[0.06] text-white",
-            canvasBg: "#14111f",
-          }
-        : {
-            panel: "border-slate-900/10 bg-gradient-to-b from-[#faf8ff] to-[#f1edfb]",
-            card: "border-slate-900/10 bg-white",
-            heading: "text-slate-900",
-            body: "text-slate-700",
-            muted: "text-slate-500",
-            input: "border-slate-300 bg-white text-slate-900",
-            canvasBg: "#ffffff",
-          },
+    () => ({
+      panel: "border-line bg-panel text-fg",
+      card: "border-line bg-card",
+      heading: "text-fg",
+      body: "text-fg-2",
+      muted: "text-fg-3",
+      input: "border-line bg-card text-fg",
+      canvasBg: dark ? "oklch(0.147 0.022 269.5)" : "oklch(0.985 0.004 85)",
+    }),
     [dark],
   );
 }
@@ -252,7 +240,7 @@ function DualBrushTab({
   };
 
   const basePreset = STUDIO_NATURAL_MEDIA_PRESETS.find((p) => p.id === baseBrushId);
-  const baseColor = "#8b5cf6";
+  const baseColor = "oklch(0.75 0.142 293.7)";
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -268,7 +256,7 @@ function DualBrushTab({
     );
   }, [baseBrushId, textureId, blendMode, strength, scale, theme.canvasBg]);
 
-  const selectCls = `w-full rounded-xl border px-3 py-2 text-sm ${theme.input}`;
+  const selectCls = `min-h-11 w-full rounded-lg border px-3 text-sm ${theme.input}`;
   const labelCls = `mb-1 block text-xs font-semibold ${theme.muted}`;
 
   return (
@@ -365,7 +353,7 @@ function DualBrushTab({
               setStrength(Number(e.target.value));
               setComboId("custom");
             }}
-            className="w-full accent-violet-500"
+            className="min-h-11 w-full accent-accent"
           />
         </div>
         <div>
@@ -383,7 +371,7 @@ function DualBrushTab({
               setScale(Number(e.target.value));
               setComboId("custom");
             }}
-            className="w-full accent-violet-500"
+            className="min-h-11 w-full accent-accent"
           />
         </div>
       </div>
@@ -392,8 +380,7 @@ function DualBrushTab({
           ref={canvasRef}
           width={PREVIEW_W}
           height={PREVIEW_H}
-          className="w-full rounded-2xl border"
-          style={{ borderColor: "rgba(128,128,128,0.25)" }}
+          className="w-full rounded-2xl border border-line"
           role="img"
           aria-label={tx("이중 브러시 미리보기: 기본 팁에 질감이 결합된 스트로크")}
         />
@@ -496,7 +483,7 @@ function ScreentoneTab({
     ctx.stroke();
   }, [pattern, density, lines, angle, ink, theme.canvasBg]);
 
-  const selectCls = `w-full rounded-xl border px-3 py-2 text-sm ${theme.input}`;
+  const selectCls = `min-h-11 w-full rounded-lg border px-3 text-sm ${theme.input}`;
   const labelCls = `mb-1 block text-xs font-semibold ${theme.muted}`;
 
   return (
@@ -538,10 +525,10 @@ function ScreentoneTab({
                   setPattern(value);
                   setPresetId("custom");
                 }}
-                className={`flex-1 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
+                className={`min-h-11 flex-1 rounded-lg border px-3 text-sm font-semibold transition-colors ${
                   pattern === value
-                    ? "border-violet-400 bg-violet-500/20 text-violet-200"
-                    : `${theme.card} ${theme.body} hover:border-violet-300/40`
+                    ? "border-accent bg-accent-soft text-accent shadow-[inset_2px_0_0_var(--color-accent)]"
+                    : `${theme.card} ${theme.body} hover:border-accent/45`
                 }`}
               >
                 {label}
@@ -565,7 +552,7 @@ function ScreentoneTab({
               setDensity(Number(e.target.value));
               setPresetId("custom");
             }}
-            className="w-full accent-violet-500"
+            className="min-h-11 w-full accent-accent"
           />
         </div>
         <div>
@@ -583,7 +570,7 @@ function ScreentoneTab({
               setLines(Number(e.target.value));
               setPresetId("custom");
             }}
-            className="w-full accent-violet-500"
+            className="min-h-11 w-full accent-accent"
           />
         </div>
         <div>
@@ -601,7 +588,7 @@ function ScreentoneTab({
               setAngle(Number(e.target.value));
               setPresetId("custom");
             }}
-            className="w-full accent-violet-500"
+            className="min-h-11 w-full accent-accent"
           />
         </div>
         <div>
@@ -613,7 +600,7 @@ function ScreentoneTab({
             type="color"
             value={ink}
             onChange={(e) => setInk(e.target.value)}
-            className="h-10 w-16 cursor-pointer rounded-lg border border-white/15 bg-transparent"
+            className="h-11 w-16 cursor-pointer rounded-lg border border-line bg-transparent"
           />
         </div>
       </div>
@@ -622,8 +609,7 @@ function ScreentoneTab({
           ref={canvasRef}
           width={PREVIEW_W}
           height={PREVIEW_H}
-          className="w-full rounded-2xl border"
-          style={{ borderColor: "rgba(128,128,128,0.25)" }}
+          className="w-full rounded-2xl border border-line"
           role="img"
           aria-label={tx("스크린톤 미리보기")}
         />
@@ -733,7 +719,7 @@ function GradientMapTab({
     setStops(createCustomGradientModel(stops).removeStop(index).stops);
   };
 
-  const selectCls = `w-full rounded-xl border px-3 py-2 text-sm ${theme.input}`;
+  const selectCls = `min-h-11 w-full rounded-lg border px-3 text-sm ${theme.input}`;
   const labelCls = `mb-1 block text-xs font-semibold ${theme.muted}`;
 
   return (
@@ -761,14 +747,16 @@ function GradientMapTab({
         </div>
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <span className={`text-xs font-semibold ${theme.muted}`}>
+            <span className={`text-xs font-semibold tabular-nums ${theme.muted}`}>
               {tx("정지점 편집")} ({stops.length})
             </span>
             <button
               type="button"
               onClick={addStop}
               disabled={stops.length >= 16}
-              className="rounded-lg border border-violet-400/40 bg-violet-500/15 px-2.5 py-1 text-xs font-bold text-violet-200 transition-colors hover:bg-violet-500/25 disabled:opacity-40"
+              title={stops.length >= 16 ? tx("정지점은 최대 16개까지 추가할 수 있습니다.") : undefined}
+              data-unavailable-reason={stops.length >= 16 ? tx("정지점은 최대 16개까지 추가할 수 있습니다.") : undefined}
+              className="min-h-11 rounded-lg border border-accent/45 bg-accent-soft px-3 text-xs font-semibold text-accent transition-colors hover:border-accent disabled:cursor-not-allowed disabled:opacity-40"
             >
               {tx("정지점 추가")}
             </button>
@@ -777,7 +765,7 @@ function GradientMapTab({
             {stops.map((stop, index) => (
               <li
                 key={`${stop.position.toFixed(4)}-${index}`}
-                className={`flex items-center gap-2 rounded-xl border p-2 ${theme.card}`}
+                className={`flex items-center gap-2 rounded-lg border p-2 ${theme.card}`}
               >
                 <input
                   type="color"
@@ -789,7 +777,7 @@ function GradientMapTab({
                     });
                   }}
                   aria-label={tx("정지점 색상 ") + (index + 1)}
-                  className="h-8 w-10 shrink-0 cursor-pointer rounded-md border border-white/15 bg-transparent"
+                  className="h-9 w-10 shrink-0 cursor-pointer rounded-md border border-line bg-transparent"
                 />
                 <input
                   type="range"
@@ -801,7 +789,7 @@ function GradientMapTab({
                     updateStop(index, { position: Number(e.target.value) })
                   }
                   aria-label={tx("정지점 위치 ") + (index + 1)}
-                  className="min-w-0 flex-1 accent-violet-500"
+                  className="min-h-11 min-w-0 flex-1 accent-accent"
                 />
                 <span className={`w-10 shrink-0 text-right text-xs tabular-nums ${theme.muted}`}>
                   {Math.round(stop.position * 100)}%
@@ -810,8 +798,10 @@ function GradientMapTab({
                   type="button"
                   onClick={() => removeStop(index)}
                   disabled={stops.length <= 2}
+                  title={stops.length <= 2 ? tx("정지점은 최소 2개가 필요합니다.") : undefined}
+                  data-unavailable-reason={stops.length <= 2 ? tx("정지점은 최소 2개가 필요합니다.") : undefined}
                   aria-label={tx("정지점 삭제 ") + (index + 1)}
-                  className="shrink-0 rounded-lg px-2 py-1 text-sm text-red-400 transition-colors hover:bg-red-500/15 disabled:opacity-30"
+                  className="grid size-11 shrink-0 place-items-center rounded-lg text-sm text-bad transition-colors hover:bg-bad/15 disabled:cursor-not-allowed disabled:opacity-35"
                 >
                   ×
                 </button>
@@ -819,7 +809,7 @@ function GradientMapTab({
             ))}
           </ol>
           {!validation.ok && (
-            <p role="alert" className="mt-2 text-xs text-red-400">
+            <p role="alert" className="mt-2 text-xs text-bad">
               {validation.errors[0]}
             </p>
           )}
@@ -830,8 +820,7 @@ function GradientMapTab({
           ref={canvasRef}
           width={PREVIEW_W}
           height={PREVIEW_H}
-          className="w-full rounded-2xl border"
-          style={{ borderColor: "rgba(128,128,128,0.25)" }}
+          className="w-full rounded-2xl border border-line"
           role="img"
           aria-label={tx("그라데이션 맵 미리보기: 명도가 색상으로 매핑된 테스트 장면")}
         />
@@ -882,9 +871,9 @@ function buildSampleSession(): TimelapseSession {
     });
   }
   const defs: TimelapseStroke[] = [
-    { id: "wave", color: "#8b5cf6", width: 10, startedAtMs: 0, endedAtMs: 3000, samples: wave },
-    { id: "spiral", color: "#06b6d4", width: 7, startedAtMs: 3500, endedAtMs: 6500, samples: spiral },
-    { id: "circle", color: "#f472b6", width: 12, startedAtMs: 7000, endedAtMs: 9000, samples: circle },
+    { id: "wave", color: "oklch(0.75 0.142 293.7)", width: 10, startedAtMs: 0, endedAtMs: 3000, samples: wave },
+    { id: "spiral", color: "oklch(0.72 0.12 205)", width: 7, startedAtMs: 3500, endedAtMs: 6500, samples: spiral },
+    { id: "circle", color: "oklch(0.74 0.15 350)", width: 12, startedAtMs: 7000, endedAtMs: 9000, samples: circle },
   ];
   let session = createTimelapseSession();
   for (const s of defs) session = recordStroke(session, s);
@@ -923,11 +912,9 @@ function drawTimelapseFrame(
 function TimelapseTab({
   tx,
   theme,
-  dark,
 }: {
   tx: (s: string) => string;
   theme: Theme;
-  dark: boolean;
 }): ReactElement {
   const [session, setSession] = useState<TimelapseSession | null>(null);
   const [playbackMs, setPlaybackMs] = useState(0);
@@ -1006,7 +993,7 @@ function TimelapseTab({
         <button
           type="button"
           onClick={startSample}
-          className="rounded-2xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-fuchsia-500/25 transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          className="min-h-11 rounded-lg bg-accent px-5 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           {tx("샘플 녹화 만들기")}
         </button>
@@ -1019,7 +1006,7 @@ function TimelapseTab({
                 setPlaying((v) => !v);
               }}
               aria-pressed={playing}
-              className={`rounded-2xl border px-6 py-2.5 text-sm font-bold transition-colors ${theme.card} ${theme.heading} hover:border-violet-400/50`}
+              className={`min-h-11 rounded-lg border px-5 text-sm font-semibold transition-colors ${theme.card} ${theme.heading} hover:border-accent/50`}
             >
               {playing ? tx("일시정지") : tx("재생")}
             </button>
@@ -1031,7 +1018,7 @@ function TimelapseTab({
                   setRate(Number(e.target.value) as TimelapsePlaybackRate)
                 }
                 aria-label={tx("재생 속도")}
-                className={`rounded-xl border px-2 py-1.5 text-sm ${theme.input}`}
+                className={`min-h-11 rounded-lg border px-2.5 text-sm ${theme.input}`}
               >
                 {TIMELAPSE_PLAYBACK_RATES.map((r) => (
                   <option key={r} value={r}>
@@ -1053,8 +1040,7 @@ function TimelapseTab({
             ref={canvasRef}
             width={PREVIEW_W}
             height={PREVIEW_H}
-            className="w-full rounded-2xl border"
-            style={{ borderColor: "rgba(128,128,128,0.25)" }}
+            className="w-full rounded-2xl border border-line"
             role="img"
             aria-label={tx("타임랩스 재생 미리보기")}
           />
@@ -1070,14 +1056,14 @@ function TimelapseTab({
               step={10}
               value={playbackMs}
               onChange={(e) => seek(Number(e.target.value))}
-              className="w-full accent-violet-500"
+              className="min-h-11 w-full accent-accent"
             />
             <div
-              className="h-1.5 overflow-hidden rounded-full bg-white/10"
+              className="h-1.5 overflow-hidden rounded-full bg-raised"
               aria-hidden="true"
             >
               <div
-                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-[width] duration-100"
+                className="h-full rounded-full bg-accent transition-[width] duration-100"
                 style={{
                   width: `${Math.round(getTimelapseProgress(session, playbackMs) * 100)}%`,
                 }}
@@ -1115,7 +1101,7 @@ function TimelapseTab({
               type="button"
               onClick={() => setShowGuide((v) => !v)}
               aria-expanded={showGuide}
-              className={`flex w-full items-center justify-between px-5 py-3 text-sm font-semibold ${theme.heading}`}
+              className={`flex min-h-11 w-full items-center justify-between px-5 py-3 text-sm font-semibold ${theme.heading}`}
             >
               {tx("MediaRecorder WebM 내보내기 가이드")}
               <span aria-hidden="true" className={showGuide ? "rotate-180" : ""}>
@@ -1123,7 +1109,7 @@ function TimelapseTab({
               </span>
             </button>
             {showGuide && (
-              <ol className={`space-y-2 border-t px-5 py-4 text-sm ${theme.body} ${dark ? "border-white/10" : "border-slate-900/10"}`}>
+              <ol className={`space-y-2 border-t border-line px-5 py-4 text-sm ${theme.body}`}>
                 {guide.map((step, i) => (
                   <li key={i} className="leading-relaxed">
                     {step}
@@ -1166,8 +1152,9 @@ export function StudioTextureToneLab({
 
   return (
     <section
+      data-design-theme={dark ? "starlight" : "light"}
       aria-labelledby={headingId}
-      className={`relative overflow-hidden rounded-3xl border p-6 sm:p-8 ${theme.panel}`}
+      className={`relative overflow-hidden rounded-2xl border p-6 sm:p-8 ${theme.panel}`}
     >
       <style>{`
         @keyframes studio-lab-tab-enter {
@@ -1184,16 +1171,12 @@ export function StudioTextureToneLab({
       <div className="relative">
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-xl">
-            <p
-              className={`text-xs font-semibold uppercase tracking-[0.2em] ${
-                dark ? "text-violet-300/80" : "text-violet-600"
-              }`}
-            >
+            <p className="text-xs font-semibold text-accent">
               {tx("질감 · 톤 실험실")}
             </p>
             <h2
               id={headingId}
-              className={`mt-1 text-2xl font-black sm:text-3xl ${theme.heading}`}
+              className={`mt-1 text-2xl font-semibold tracking-[-0.02em] sm:text-3xl ${theme.heading}`}
             >
               {tx("브러시에 종이결을 입히고, 만화 톤을 붙이고, 색감을 한 번에 바꾸는 실험실")}
             </h2>
@@ -1206,9 +1189,9 @@ export function StudioTextureToneLab({
             onClick={() => setDark((v) => !v)}
             aria-pressed={!dark}
             aria-label={dark ? tx("라이트 테마로 전환") : tx("다크 테마로 전환")}
-            className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-colors ${theme.card} ${theme.body} hover:border-violet-400/50`}
+            className={`min-h-11 rounded-lg border px-4 text-sm font-semibold transition-colors ${theme.card} ${theme.body} hover:border-accent/50`}
           >
-            {dark ? tx("☀ 라이트") : tx("☾ 다크")}
+            {dark ? tx("라이트") : tx("다크")}
           </button>
         </header>
 
@@ -1226,15 +1209,15 @@ export function StudioTextureToneLab({
               aria-selected={tab === id}
               aria-label={lz(TAB_LABEL_KO[id], TAB_LABEL_EN[id])}
               onClick={() => setTab(id)}
-              className={`shrink-0 rounded-2xl border px-5 py-2.5 text-sm font-bold transition-all ${
+              className={`min-h-11 shrink-0 rounded-lg border px-4 text-sm font-semibold transition-colors ${
                 tab === id
-                  ? "border-violet-400 bg-gradient-to-r from-violet-500/30 to-fuchsia-500/20 text-violet-100 shadow-lg shadow-violet-500/20"
-                  : `${theme.card} ${theme.muted} hover:border-violet-300/40 ${theme.body}`
-              } ${!dark && tab === id ? "!text-violet-700" : ""}`}
+                  ? "border-accent bg-accent-soft text-accent shadow-[inset_2px_0_0_var(--color-accent)]"
+                  : `${theme.card} ${theme.body} hover:border-accent/45`
+              }`}
             >
               {tx(TAB_LABEL_KO[id])}
               {!isEn && (
-                <span className="ml-1.5 text-[10px] font-normal uppercase tracking-wide opacity-60">
+                <span className="ml-1.5 text-xs font-normal text-fg-3">
                   {TAB_LABEL_EN[id]}
                 </span>
               )}
@@ -1251,9 +1234,7 @@ export function StudioTextureToneLab({
           {tab === "dual-brush" && <DualBrushTab tx={tx} lz={lz} theme={theme} />}
           {tab === "screentone" && <ScreentoneTab tx={tx} lz={lz} theme={theme} />}
           {tab === "gradient-map" && <GradientMapTab tx={tx} lz={lz} theme={theme} />}
-          {tab === "timelapse" && (
-            <TimelapseTab tx={tx} theme={theme} dark={dark} />
-          )}
+          {tab === "timelapse" && <TimelapseTab tx={tx} theme={theme} />}
         </div>
       </div>
     </section>

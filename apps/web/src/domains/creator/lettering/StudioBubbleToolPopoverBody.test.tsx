@@ -38,6 +38,8 @@ describe("StudioBubbleToolPopoverBody library", () => {
     expect(html).not.toContain('role="menu"');
     expect(html.match(/data-studio-bubble-variant=/g)).toHaveLength(16);
     expect(html.match(/data-studio-bubble-favorite=/g)).toHaveLength(16);
+    expect(html).toContain('data-studio-parametric-emotion-bubble="true"');
+    expect(html).toContain("8파라미터 감정 말풍선 · 갤러리");
     expect(html).toContain("min-h-11");
     expect(containsNestedButton(html)).toBe(false);
   });

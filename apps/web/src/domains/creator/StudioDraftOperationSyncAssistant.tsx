@@ -109,7 +109,7 @@ function SummaryCard({
       <div className="flex items-start gap-2.5">
         <span className="mt-0.5 shrink-0 text-fg-3" aria-hidden>{icon}</span>
         <div className="min-w-0 flex-1">
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.08em] text-fg-3">{label}</p>
+          <p className="text-xs font-semibold text-fg-3">{label}</p>
           <p className="mt-1 text-xs font-semibold leading-relaxed text-fg-2">{value}</p>
         </div>
       </div>
@@ -354,8 +354,8 @@ export function StudioDraftOperationSyncAssistant({
               <StatusIcon tone={model.tone} className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 id={`${dialogId}-title`} className="text-base font-black">기기·서버 동기화</h2>
-              <p className="mt-0.5 text-sm font-bold leading-snug">{model.headline}</p>
+              <h2 id={`${dialogId}-title`} className="text-base font-bold">기기·서버 동기화</h2>
+              <p className="mt-0.5 text-sm font-semibold leading-snug">{model.headline}</p>
               <p id={`${dialogId}-description`} className="mt-1 text-xs leading-relaxed text-fg-3">
                 {model.detail}
               </p>
@@ -394,20 +394,20 @@ export function StudioDraftOperationSyncAssistant({
 
           <dl className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
             <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-              <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">기기 복구 지점</dt>
-              <dd className="mt-1 text-sm font-black">{safeCount(localCheckpointCount)}개</dd>
+              <dt className="text-xs font-medium text-fg-3">기기 복구 지점</dt>
+              <dd className="mt-1 text-sm font-semibold tabular-nums">{safeCount(localCheckpointCount)}개</dd>
             </div>
             <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-              <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">서버 반영 대기</dt>
-              <dd className="mt-1 text-sm font-black">{pendingCount}개</dd>
+              <dt className="text-xs font-medium text-fg-3">서버 반영 대기</dt>
+              <dd className="mt-1 text-sm font-semibold tabular-nums">{pendingCount}개</dd>
             </div>
             <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-              <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">마지막 서버 승인</dt>
-              <dd className="mt-1 text-xs font-black">{lastAckLabel}</dd>
+              <dt className="text-xs font-medium text-fg-3">마지막 서버 승인</dt>
+              <dd className="mt-1 text-xs font-semibold tabular-nums">{lastAckLabel}</dd>
             </div>
             <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-              <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">서버 원고</dt>
-              <dd className="mt-1 text-sm font-black">{serverRevision === null ? "—" : `r${serverRevision}`}</dd>
+              <dt className="text-xs font-medium text-fg-3">서버 원고</dt>
+              <dd className="mt-1 text-sm font-semibold tabular-nums">{serverRevision === null ? "—" : `저장 #${serverRevision}`}</dd>
             </div>
           </dl>
 
@@ -422,7 +422,7 @@ export function StudioDraftOperationSyncAssistant({
               type="button"
               onClick={() => void runPrimaryAction()}
               disabled={busyAction !== null}
-              className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-sm font-black text-on-accent shadow-sm hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-sm font-semibold text-on-accent shadow-sm hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ActionIcon action={model.primaryAction} busy={busyAction !== null} />
               {busyAction === "export-recovery" ? "복구 파일 만드는 중" : model.primaryActionLabel}
@@ -461,7 +461,7 @@ export function StudioDraftOperationSyncAssistant({
             </p>
           ) : null}
 
-          <p className="mt-3 text-[0.68rem] leading-relaxed text-fg-3">
+          <p className="mt-3 text-xs leading-relaxed text-fg-3">
             기기 복구 저장, 변경 단위 서버 승인, 서버 원고 버전은 서로 다른 보호 단계입니다. 연결이 끊겨도 로컬 변경을 먼저 보관하고, 다시 연결되면 순서대로 전송합니다. 충돌이나 권한 문제가 생기면 자동 덮어쓰기 대신 버전·복구 확인 흐름을 사용합니다.
           </p>
         </div>

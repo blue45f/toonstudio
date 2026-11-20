@@ -34,7 +34,9 @@ import type { StudioInspectorTabA11y } from "./studio-inspector-tab-a11y";
 const StudioAdvancedRasterTransformSection = lazy(() =>
   import("./transform/StudioAdvancedRasterTransformSection").then((m) => ({ default: m.StudioAdvancedRasterTransformSection })),
 );
-
+const StudioColorizeMaskHostSection = lazy(() =>
+  import("./fill/studio-colorize-mask-host").then((m) => ({ default: m.StudioColorizeMaskHostSection })),
+);
 
 export function StudioInspectorSelectedImageTools({
   model,
@@ -44,226 +46,54 @@ export function StudioInspectorSelectedImageTools({
   tabA11y: StudioInspectorTabA11y;
 }) {
   const {
-    activatePixelSelectionToolFromInspector,
-    activeImageInspectorTab,
-    activeInspectorPixelSelectionTool,
-    addFilterMask,
-    addLayerMask,
-    advancedFillActive,
-    advancedFillBusy,
-    advancedFillPreview,
-    advancedFillReferenceLayerCount,
-    advancedFillSettings,
-    advancedFillColorDropView,
-    advancedFillStatus,
-    advancedFillUnsupportedReason,
-    advancedFillVisibleRasterCount,
-    aiColorizeBusy,
-    aiColorizeError,
-    aiColorizeExtras,
-    aiColorizePrompt,
-    aiSettings,
-    applyContentAwareFill,
-    applyCropToSelectedImage,
-    applyPixelSelectionAdjust,
-    applyPixelSelectionContentTransform,
-    applyPuppetWarpToSelectedImage,
-    autoColorCanvasSeedHit,
-    autoColorCanvasSeedHits,
-    autoColorScribbleCanvasArmed,
-    clearHealCloneSource,
-    clearPolyLassoDraft,
-    color,
-    colorRangeFuzziness,
-    colorRangePickActive,
-    colorRangePreviewEnabled,
-    colorRangeSamples,
-    commit,
-    commitPixelSelectionState,
-    commitQuickMask,
-    createLayerMaskFromSelection,
-    cropAspect,
-    cropBusy,
-    cropRect,
-    deleteFilterMask,
-    deleteLayerMask,
-    disarmAllPixelTools,
-    dodgeBurnActive,
-    dodgeBurnBusy,
-    dodgeBurnExposure,
-    dodgeBurnHardness,
-    dodgeBurnMode,
-    dodgeBurnRadius,
-    dodgeBurnRange,
-    dodgeBurnSponge,
-    effectFavoriteState,
-    elements,
-    enterQuickMask,
-    exitQuickMask,
-    extractPixelSelectionToLayer,
-    filterClipboard,
-    filterMaskBusy,
-    filterMaskHardness,
-    filterMaskPaintActive,
-    filterMaskPaintMode,
-    filterMaskRadius,
-    filterMaskStrength,
-    handleRasterRecovery,
-    healCloneAligned,
-    healCloneBusy,
-    healCloneHardness,
-    healCloneOpacity,
-    healCloneRadius,
-    healCloneSourceAnchor,
-    healCloneTool,
-    historyBrushActive,
-    historyBrushBusy,
-    historyBrushHardness,
-    historyBrushOpacity,
-    historyBrushRadius,
-    historyBrushSourceSrc,
-    historyPanelOpen,
-    inspectorInteractionPolicy,
-    inspectorLayout,
-    invertFilterMask,
-    invertLayerMask,
-    invertQuickMask,
-    layerMaskBusy,
-    layerMaskHardness,
-    layerMaskPaintActive,
-    layerMaskPaintMode,
-    layerMaskRadius,
-    layerMaskStrength,
-    liquifyActive,
-    liquifyBusy,
-    liquifyMode,
-    liquifyRadius,
-    liquifyStrength,
-    onAutoColorPlanImageSize,
-    onColorizeSelected,
-    onQuickMaskTintColorChange,
-    onQuickMaskTintOpacityChange,
-    onTogglePixelMagneticLasso,
-    openFeatureTutorial,
-    openStudioFilter,
-    openStudioLayerLift,
-    patchEl,
-    pixelBrushRadius,
-    pixelBusy,
-    pixelCombine,
-    pixelMagneticLasso,
-    pixelSel,
-    pixelSelectionCanRedo,
-    pixelSelectionCanUndo,
-    pixelTool,
-    polyLassoSession,
-    puppetWarpActive,
-    puppetWarpBusy,
-    puppetWarpPins,
-    quickMaskActive,
-    quickMaskBrushMode,
-    quickMaskHardness,
-    quickMaskOpacity,
-    quickMaskRadius,
-    quickMaskTintColor,
-    quickMaskTintOpacity,
-    quickSelectTolerance,
-    rasterAvailability,
-    redoPixelSelectionState,
-    rememberEffectRecent,
-    resetPixelSelectionState,
-    runColorRangeApply,
-    selected,
-    selectedImageHasActiveFilters,
-    selectedReadableImageSource,
-    selectedWorkAssetDestructiveEditReason,
-    setAdvancedFillPreview,
-    setAdvancedFillStatus,
-    setAiColorizePrompt,
-    setAutoColorCanvasSeedHit,
-    setAutoColorCanvasSeedHits,
-    setAutoColorScribbleCanvasArmed,
-    setColor,
-    setColorRangeFuzziness,
-    setColorRangePreviewEnabled,
-    setColorRangeSamples,
-    setCropAspect,
-    setCropRect,
-    setDodgeBurnExposure,
-    setDodgeBurnHardness,
-    setDodgeBurnMode,
-    setDodgeBurnRadius,
-    setDodgeBurnRange,
-    setDodgeBurnSponge,
-    setFilterClipboard,
-    setFilterMaskHardness,
-    setFilterMaskPaintActive,
-    setFilterMaskPaintMode,
-    setFilterMaskRadius,
-    setFilterMaskStrength,
-    setHealCloneAligned,
-    setHealCloneHardness,
-    setHealCloneOpacity,
-    setHealCloneRadius,
-    setHealCloneTool,
-    setHistoryBrushActive,
-    setHistoryBrushHardness,
-    setHistoryBrushOpacity,
-    setHistoryBrushRadius,
-    setHistoryBrushSourceIndex,
-    setHistoryBrushSourceSrc,
-    setHistoryPanelOpen,
-    setLayerMaskHardness,
-    setLayerMaskPaintActive,
-    setLayerMaskPaintMode,
-    setLayerMaskRadius,
-    setLayerMaskStrength,
-    setLiquifyMode,
-    setLiquifyRadius,
-    setLiquifyStrength,
-    setPixelBrushRadius,
-    setPixelCombine,
-    setPuppetWarpActive,
-    setPuppetWarpPins,
-    setQuickMaskBrushMode,
-    setQuickMaskHardness,
-    setQuickMaskOpacity,
-    setQuickMaskRadius,
-    setQuickSelectTolerance,
-    setSelectedId,
-    setSmudgeRadius,
-    setSmudgeStrength,
-    setWandTolerance,
-    setWetMixHardness,
-    setWetMixPickup,
-    setWetMixRadius,
-    setWetMixStrength,
-    setWetMixWetness,
-    shouldMountImageInspectorTab,
-    smudgeActive,
-    smudgeBusy,
-    smudgeRadius,
-    smudgeStrength,
-    studioFilterPreparationBusy,
-    studioLayerLiftDisabledReason,
-    toggleAdvancedFill,
-    toggleDodgeBurnTool,
-    toggleEffectFavorite,
-    toggleFilterMaskEnabled,
-    toggleLayerMaskEnabled,
-    toggleLiquifyTool,
-    toggleSmudgeTool,
-    toggleWetMixTool,
-    undoPixelSelectionState,
-    updateAdvancedFillSettings,
-    wandTolerance,
-    wetMixActive,
-    wetMixBusy,
-    wetMixHardness,
-    wetMixPickup,
-    wetMixRadius,
-    wetMixStrength,
-    wetMixWetness,
+    activatePixelSelectionToolFromInspector, activeImageInspectorTab, activeInspectorPixelSelectionTool,
+    addFilterMask, addLayerMask, advancedFillActive, advancedFillBusy, advancedFillPreview,
+    advancedFillReferenceLayerCount, advancedFillSettings, advancedFillColorDropView, advancedFillStatus,
+    advancedFillUnsupportedReason, advancedFillVisibleRasterCount, aiColorizeBusy, aiColorizeError,
+    aiColorizeExtras, aiColorizePrompt, aiSettings, applyContentAwareFill, applyCropToSelectedImage,
+    applyPixelSelectionAdjust, applyPixelSelectionContentTransform, applyPuppetWarpToSelectedImage,
+    autoColorCanvasSeedHit, autoColorCanvasSeedHits, autoColorScribbleCanvasArmed,
+    clearHealCloneSource, clearPolyLassoDraft, color, colorRangeFuzziness, colorRangePickActive,
+    colorRangePreviewEnabled, colorRangeSamples, commit, commitPixelSelectionState, commitQuickMask,
+    createLayerMaskFromSelection, cropAspect, cropBusy, cropRect, deleteFilterMask, deleteLayerMask,
+    disarmAllPixelTools, dodgeBurnActive, dodgeBurnBusy, dodgeBurnExposure, dodgeBurnHardness,
+    dodgeBurnMode, dodgeBurnRadius, dodgeBurnRange, dodgeBurnSponge, effectFavoriteState, elements,
+    enterQuickMask, exitQuickMask, extractPixelSelectionToLayer, filterClipboard, filterMaskBusy,
+    filterMaskHardness, filterMaskPaintActive, filterMaskPaintMode, filterMaskRadius, filterMaskStrength,
+    handleRasterRecovery, healCloneAligned, healCloneBusy, healCloneHardness, healCloneOpacity,
+    healCloneRadius, healCloneSourceAnchor, healCloneTool, historyBrushActive, historyBrushBusy,
+    historyBrushHardness, historyBrushOpacity, historyBrushRadius, historyBrushSourceSrc, historyPanelOpen,
+    inspectorInteractionPolicy, inspectorLayout, invertFilterMask, invertLayerMask, invertQuickMask,
+    layerMaskBusy, layerMaskHardness, layerMaskPaintActive, layerMaskPaintMode, layerMaskRadius,
+    layerMaskStrength, liquifyActive, liquifyBusy, liquifyMode, liquifyRadius, liquifyStrength,
+    onAutoColorPlanImageSize, onColorizeSelected, onQuickMaskTintColorChange, onQuickMaskTintOpacityChange,
+    onTogglePixelMagneticLasso, openFeatureTutorial, openStudioFilter, openStudioLayerLift, patchEl,
+    pixelBrushRadius, pixelBusy, pixelCombine, pixelMagneticLasso, pixelSel, pixelSelectionCanRedo,
+    pixelSelectionCanUndo, pixelTool, polyLassoSession, puppetWarpActive, puppetWarpBusy, puppetWarpPins,
+    quickMaskActive, quickMaskBrushMode, quickMaskHardness, quickMaskOpacity, quickMaskRadius,
+    quickMaskTintColor, quickMaskTintOpacity, quickSelectTolerance, rasterAvailability,
+    redoPixelSelectionState, rememberEffectRecent, resetPixelSelectionState, runColorRangeApply, selected,
+    selectedImageHasActiveFilters, selectedReadableImageSource, selectedWorkAssetDestructiveEditReason,
+    setAdvancedFillPreview, setAdvancedFillStatus, setAiColorizePrompt, setAutoColorCanvasSeedHit,
+    setAutoColorCanvasSeedHits, setAutoColorScribbleCanvasArmed, setColor, setColorRangeFuzziness,
+    setColorRangePreviewEnabled, setColorRangeSamples, setCropAspect, setCropRect, setDodgeBurnExposure,
+    setDodgeBurnHardness, setDodgeBurnMode, setDodgeBurnRadius, setDodgeBurnRange, setDodgeBurnSponge,
+    setFilterClipboard, setFilterMaskHardness, setFilterMaskPaintActive, setFilterMaskPaintMode,
+    setFilterMaskRadius, setFilterMaskStrength, setHealCloneAligned, setHealCloneHardness,
+    setHealCloneOpacity, setHealCloneRadius, setHealCloneTool, setHistoryBrushActive,
+    setHistoryBrushHardness, setHistoryBrushOpacity, setHistoryBrushRadius, setHistoryBrushSourceIndex,
+    setHistoryBrushSourceSrc, setHistoryPanelOpen, setLayerMaskHardness, setLayerMaskPaintActive,
+    setLayerMaskPaintMode, setLayerMaskRadius, setLayerMaskStrength, setLiquifyMode, setLiquifyRadius,
+    setLiquifyStrength, setPixelBrushRadius, setPixelCombine, setPuppetWarpActive, setPuppetWarpPins,
+    setQuickMaskBrushMode, setQuickMaskHardness, setQuickMaskOpacity, setQuickMaskRadius,
+    setQuickSelectTolerance, setSelectedId, setSmudgeRadius, setSmudgeStrength, setWandTolerance,
+    setWetMixHardness, setWetMixPickup, setWetMixRadius, setWetMixStrength, setWetMixWetness,
+    shouldMountImageInspectorTab, smudgeActive, smudgeBusy, smudgeRadius, smudgeStrength,
+    studioFilterPreparationBusy, studioLayerLiftDisabledReason, toggleAdvancedFill, toggleDodgeBurnTool,
+    toggleEffectFavorite, toggleFilterMaskEnabled, toggleLayerMaskEnabled, toggleLiquifyTool,
+    toggleSmudgeTool, toggleWetMixTool, undoPixelSelectionState, updateAdvancedFillSettings,
+    wandTolerance, wetMixActive, wetMixBusy, wetMixHardness, wetMixPickup, wetMixRadius,
+    wetMixStrength, wetMixWetness,
   } = model;
   if (!selected) return null;
   return (
@@ -422,6 +252,7 @@ export function StudioInspectorSelectedImageTools({
                       {selected.type === "image" ? (
                         <>
                           {selectedReadableImageSource ? (
+                          <>
                           <StudioAutoColorHintsPanel key={JSON.stringify([model.studioRoute && studioWorkspaceDocumentIdentity(model.studioRoute), model.masterEditMode, model.currentPageId, selected.id])}
                             imageSrc={selectedReadableImageSource}
                             scribbleCanvasArmed={autoColorScribbleCanvasArmed}
@@ -476,6 +307,25 @@ export function StudioInspectorSelectedImageTools({
                               }
                             }
                           />
+                          <StudioColorizeMaskHostSection
+                            selected={selected}
+                            imageSrc={selectedReadableImageSource}
+                            activeColor={color}
+                            elements={elements}
+                            patchEl={patchEl}
+                            commit={commit}
+                            setSelectedId={setSelectedId}
+                            canvasArmed={autoColorScribbleCanvasArmed}
+                            onArmCanvasHints={setAutoColorScribbleCanvasArmed ? (next) => executeStudioInspectorArmedChange(next, { disarm: disarmAllPixelTools, setActive: setAutoColorScribbleCanvasArmed }) : undefined}
+                            canvasSeedHit={autoColorCanvasSeedHit}
+                            canvasSeedHits={autoColorCanvasSeedHits}
+                            onCanvasSeedHitConsumed={() => {
+                              setAutoColorCanvasSeedHit?.(null);
+                              setAutoColorCanvasSeedHits?.(null);
+                            }}
+                            onPlanImageSize={onAutoColorPlanImageSize}
+                          />
+                          </>
                           ) : (
                             <p
                               role="status"
@@ -514,9 +364,25 @@ export function StudioInspectorSelectedImageTools({
                       rasterAvailability("filter").entry.enabled ? (
                         <StudioImageAdjustmentsPanel
                           selected={selected}
+                          readableImageSrc={selectedReadableImageSource}
+                          destructiveEditDisabledReason={selectedWorkAssetDestructiveEditReason}
                           filterClipboard={filterClipboard}
                           onSetFilterClipboard={setFilterClipboard}
                           onPatch={(patch) => patchEl(selected.id, patch)}
+                          onCreateShadingLayer={({ dataUrl, name, blendMode, clipBelow }) => {
+                            const index = elements.findIndex((el) => el.id === selected.id);
+                            if (index < 0) return false;
+                            const shadeEl: El = {
+                              id: uid(), type: "image", src: dataUrl, x: selected.x, y: selected.y,
+                              width: selected.width, height: selected.height, rotation: selected.rotation ?? 0,
+                              opacity: 1, name, blendMode, clipBelow, groupId: selected.groupId, frameClipId: selected.frameClipId,
+                            };
+                            const next = elements.slice();
+                            next.splice(index + 1, 0, shadeEl);
+                            if (!commit(next)) return false;
+                            setSelectedId(shadeEl.id);
+                            return true;
+                          }}
                           effectFavoriteState={effectFavoriteState}
                           onToggleEffectFavorite={toggleEffectFavorite}
                           onRememberEffectRecent={rememberEffectRecent}

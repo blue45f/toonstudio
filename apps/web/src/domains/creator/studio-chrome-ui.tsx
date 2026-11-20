@@ -249,7 +249,7 @@ export function StudioFloatingToolPopover({
   desktopWindow?: StudioFloatingToolPopoverDesktopWindow;
 }): ReactElement | null {
   const desktop = useMediaQuery(STUDIO_DESKTOP_FLOATING_QUERY);
-  useStudioWindowKeyboardFocus(`[data-studio-tool-popover="${id}"]`, open);
+  useStudioWindowKeyboardFocus(`[data-studio-tool-popover="${id}"]`, open, desktopWindow?.onClose);
   if (!open || typeof document === "undefined") return null;
   if (desktop && desktopWindow) {
     return createPortal(

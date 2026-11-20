@@ -1,16 +1,10 @@
 /**
  * Deterministic vertical-webtoon pacing analysis.
  *
- * The analyzer deliberately consumes the same lightweight page/element shape as the Studio
- * thumbnail pipeline. It never reads pixels, DOM state, network data, or React state, so preview,
- * export preflight, a future Worker, and tests can share one bounded result.
- *
- * SFX rhythm (REPORT L-4): visible sound-effect lettering is aggregated as one more
- * rhythm signal on the same pages — per-screen density, per-panel rate, the longest
- * stretch without any SFX, and a category breakdown when the host recorded one.
- * An element counts as SFX under the exact rule the animatic timeline already uses
- * (`animaticCueKind === "sfx"`, or a text element whose name mentions sfx/효과음),
- * plus an explicit element type of "sfx". SFX lettering is never counted as dialogue.
+ * Consumes the lightweight page/element shape shared by the Studio thumbnail pipeline
+ * without touching pixels, DOM state, network, or React state.
+ * Includes SFX rhythm aggregation (REPORT L-4) and oversized panel detection
+ * (`OVERSIZED_PANEL` when `panel.height / viewportHeight > 1.4`).
  */
 
 import type { StudioShotSize } from "./studio-storyboard-planner";
@@ -36,10 +30,7 @@ export interface StudioScrollRhythmElementLike {
   readonly name?: string;
   /** Explicit cue role — the same field the animatic timeline reads. */
   readonly animaticCueKind?: "dialogue" | "sfx";
-  /**
-   * Category of the SFX entry this element was placed from (preset or lexicon id/label),
-   * when the host recorded it. Free-form: the preset and lexicon taxonomies differ.
-   */
+  /** Category of the SFX entry when recorded (preset or lexicon id/label). */
   readonly sfxCategory?: string;
 }
 
@@ -58,6 +49,7 @@ export type StudioScrollRhythmInsightCode =
   | "SFX_LONG_GAP"
   | "NO_BREATHING_ROOM"
   | "LONG_EMPTY_RUN"
+  | "OVERSIZED_PANEL"
   | "FLAT_BEAT_INTERVALS"
   | "TIGHT_ENDING"
   | "EMPTY_ENDING"
@@ -68,7 +60,7 @@ export interface StudioScrollRhythmInsight {
   readonly code: StudioScrollRhythmInsightCode;
   readonly severity: StudioScrollRhythmInsightSeverity;
   readonly pageId: string | null;
-  /** A4 D4 (R15): title/detail/suggestion 표시 문구 대신 해석용 params만 싣는다. */
+  /** A4 D4 (R15): 표시 문구 대신 해석용 params만 싣는다. */
   readonly params: Readonly<Record<string, string>>;
 }
 
@@ -80,12 +72,9 @@ export interface StudioScrollRhythmPageMetric {
   readonly panelCount: number;
   readonly dialogueCount: number;
   readonly dialogueCharacters: number;
-  /** Visible SFX lettering elements on the page. */
   readonly sfxCount: number;
   readonly sfxPerScreen: number;
-  /** SFX per panel (frame/panel element). Null when the page has no panel element. */
   readonly sfxPerPanel: number | null;
-  /** Longest vertical stretch without any SFX element, in px and in screens. */
   readonly longestSfxGapPx: number;
   readonly longestSfxGapScreens: number;
   readonly beatCount: number;
@@ -95,6 +84,8 @@ export interface StudioScrollRhythmPageMetric {
   readonly breathingRoomRatio: number;
   readonly longestGapPx: number;
   readonly longestGapScreens: number;
+  readonly tallestPanelScreens: number;
+  readonly oversizedPanelCount: number;
   readonly beatIntervalVariation: number | null;
   readonly score: number;
 }
@@ -121,7 +112,6 @@ export interface StudioScrollRhythmAnalysis {
   readonly densePageCount: number;
   readonly totalSfxCount: number;
   readonly sfxDensePageCount: number;
-  /** Longest SFX-free stretch across pages, in screens. 0 when no SFX exists at all. */
   readonly longestSfxGapScreens: number;
   readonly sfxCategoryCounts: readonly StudioScrollRhythmSfxCategoryCount[];
   readonly breathingPageCount: number;
@@ -155,21 +145,18 @@ interface VerticalSpan {
   readonly end: number;
 }
 
-/** SFX lettering above this many per screen starts to crowd the rhythm. */
+/** SFX lettering thresholds and oversized panel screen ratio threshold. */
 export const STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN = 4;
 export const STUDIO_SCROLL_RHYTHM_SFX_CRITICAL_PER_SCREEN = 6;
-/** SFX-free stretch (in screens) long enough to surface as a rhythm gap. */
 export const STUDIO_SCROLL_RHYTHM_SFX_LONG_GAP_SCREENS = 2.5;
+/** Single panel taller than 1.4 smartphone screens triggers OVERSIZED_PANEL. */
+export const STUDIO_SCROLL_RHYTHM_OVERSIZED_PANEL_SCREENS = 1.4;
+export const STUDIO_SCROLL_RHYTHM_OVERSIZED_PANEL_CRITICAL_SCREENS = 2.2;
 
 const SFX_NAME_PATTERN = /(?:^|\b)sfx(?:\b|$)|효과음/iu;
 
-/**
- * Whether a visible element is SFX lettering. Mirrors the animatic timeline's
- * cueKindForElement rule so both pipes classify the same element the same way.
- */
-export function isStudioScrollRhythmSfxElement(
-  element: StudioScrollRhythmElementLike
-): boolean {
+/** Whether a visible element is SFX lettering (mirrors animatic cueKindForElement). */
+export function isStudioScrollRhythmSfxElement(element: StudioScrollRhythmElementLike): boolean {
   if (element.animaticCueKind) return element.animaticCueKind === "sfx";
   const type = element.type.trim().toLowerCase();
   if (type === "sfx") return true;
@@ -181,16 +168,7 @@ const DEFAULT_PAGE_GAP = 24;
 const PANEL_TYPES = new Set(["frame", "panel"]);
 const DIALOGUE_TYPES = new Set(["bubble", "dialogue", "caption", "text"]);
 const BEAT_TYPES = new Set([
-  "frame",
-  "panel",
-  "bubble",
-  "dialogue",
-  "caption",
-  "text",
-  "image",
-  "sticker",
-  "bg3d",
-  "vrm",
+  "frame", "panel", "bubble", "dialogue", "caption", "text", "image", "sticker", "bg3d", "vrm",
 ]);
 
 function finiteOr(value: number | undefined, fallback: number): number {
@@ -206,13 +184,8 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/**
- * One bounded requestAnimationFrame step for the reader-speed simulator.
- * Long background-tab gaps are capped at 100ms so returning to the tab never skips several pages.
- */
-export function planStudioAutoScrollStep(
-  input: StudioAutoScrollStepInput
-): StudioAutoScrollStep {
+/** Bounded requestAnimationFrame step for the reader-speed simulator (caps gaps at 100ms). */
+export function planStudioAutoScrollStep(input: StudioAutoScrollStepInput): StudioAutoScrollStep {
   const scrollHeight = Math.max(0, finiteOr(input.scrollHeight, 0));
   const viewportHeight = Math.max(0, finiteOr(input.viewportHeight, 0));
   const maxScrollTop = Math.max(0, scrollHeight - viewportHeight);
@@ -220,7 +193,6 @@ export function planStudioAutoScrollStep(
   const speed = clamp(finiteOr(input.speedPxPerSecond, 0), 0, 2_000);
   const elapsedSeconds = clamp(finiteOr(input.elapsedMs, 0), 0, 100) / 1_000;
   const nextScrollTop = clamp(current + speed * elapsedSeconds, 0, maxScrollTop);
-
   return {
     nextScrollTop: round(nextScrollTop),
     maxScrollTop: round(maxScrollTop),
@@ -230,7 +202,7 @@ export function planStudioAutoScrollStep(
 
 function elementVerticalSpan(
   element: StudioScrollRhythmElementLike,
-  canvasHeight: number
+  canvasHeight: number,
 ): VerticalSpan | null {
   const y = finiteOr(element.y, Number.NaN);
   const height = finiteOr(element.height, Number.NaN);
@@ -239,7 +211,6 @@ function elementVerticalSpan(
     const end = clamp(y + height, 0, canvasHeight);
     return end > start ? { start, end } : null;
   }
-
   const points = element.points;
   if (!points || points.length < 2) return null;
   let minY = Number.POSITIVE_INFINITY;
@@ -287,8 +258,7 @@ function coefficientOfVariation(values: readonly number[]): number | null {
   if (values.length < 3) return null;
   const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
   if (mean <= 0) return null;
-  const variance =
-    values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
+  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
   return Math.sqrt(variance) / mean;
 }
 
@@ -302,7 +272,7 @@ function gradeForScore(score: number): StudioScrollRhythmAnalysis["grade"] {
 function endingAnalysis(
   pages: readonly StudioScrollRhythmPageLike[],
   metrics: readonly StudioScrollRhythmPageMetric[],
-  viewportHeight: number
+  viewportHeight: number,
 ): StudioScrollEndingAnalysis {
   const lastPage = pages[pages.length - 1];
   const lastMetric = metrics[metrics.length - 1];
@@ -310,12 +280,9 @@ function endingAnalysis(
     return {
       mode: "none",
       trailingWhitespacePx: lastMetric?.canvasHeight ?? 0,
-      trailingWhitespaceScreens: lastMetric
-        ? round(lastMetric.canvasHeight / viewportHeight)
-        : 0,
+      trailingWhitespaceScreens: lastMetric ? round(lastMetric.canvasHeight / viewportHeight) : 0,
     };
   }
-
   const visibleSpans = lastPage.elements
     .filter((element) => !element.hidden && finiteOr(element.opacity, 1) > 0)
     .map((element) => elementVerticalSpan(element, lastMetric.canvasHeight))
@@ -323,30 +290,10 @@ function endingAnalysis(
   const lastEnd = visibleSpans.reduce((max, span) => Math.max(max, span.end), 0);
   const trailingWhitespacePx = Math.max(0, lastMetric.canvasHeight - lastEnd);
   const screens = trailingWhitespacePx / viewportHeight;
-
-  if (screens < 0.12) {
-    return {
-      mode: "tight",
-      trailingWhitespacePx: round(trailingWhitespacePx),
-      trailingWhitespaceScreens: round(screens),
-    };
-  }
-  if (screens <= 0.4) {
-    return {
-      mode: "balanced",
-      trailingWhitespacePx: round(trailingWhitespacePx),
-      trailingWhitespaceScreens: round(screens),
-    };
-  }
-  if (screens <= 1.35) {
-    return {
-      mode: "reveal",
-      trailingWhitespacePx: round(trailingWhitespacePx),
-      trailingWhitespaceScreens: round(screens),
-    };
-  }
+  const mode: StudioScrollEndingMode =
+    screens < 0.12 ? "tight" : screens <= 0.4 ? "balanced" : screens <= 1.35 ? "reveal" : "empty";
   return {
-    mode: "empty",
+    mode,
     trailingWhitespacePx: round(trailingWhitespacePx),
     trailingWhitespaceScreens: round(screens),
   };
@@ -354,19 +301,16 @@ function endingAnalysis(
 
 function pushInsight(
   insights: StudioScrollRhythmInsight[],
-  insight: StudioScrollRhythmInsight
+  insight: StudioScrollRhythmInsight,
 ): void {
   if (insights.length < STUDIO_SCROLL_RHYTHM_LIMITS.maxInsights) insights.push(insight);
 }
 
 export function analyzeStudioScrollRhythm(
   sourcePages: readonly StudioScrollRhythmPageLike[],
-  options: AnalyzeStudioScrollRhythmOptions = {}
+  options: AnalyzeStudioScrollRhythmOptions = {},
 ): StudioScrollRhythmAnalysis {
-  const viewportHeight = Math.max(
-    1,
-    finiteOr(options.viewportHeightPx, DEFAULT_VIEWPORT_HEIGHT)
-  );
+  const viewportHeight = Math.max(1, finiteOr(options.viewportHeightPx, DEFAULT_VIEWPORT_HEIGHT));
   const pageGap = Math.max(0, finiteOr(options.pageGapPx, DEFAULT_PAGE_GAP));
   const pages = sourcePages.slice(0, STUDIO_SCROLL_RHYTHM_LIMITS.maxPages);
   let truncated = pages.length !== sourcePages.length;
@@ -376,18 +320,17 @@ export function analyzeStudioScrollRhythm(
 
   for (const page of pages) {
     const canvasHeight = Math.max(1, finiteOr(page.canvasH, 1_080));
-    const sourceElements = page.elements.slice(
-      0,
-      STUDIO_SCROLL_RHYTHM_LIMITS.maxElementsPerPage
-    );
+    const sourceElements = page.elements.slice(0, STUDIO_SCROLL_RHYTHM_LIMITS.maxElementsPerPage);
     if (sourceElements.length !== page.elements.length) truncated = true;
     const visible = sourceElements.filter(
-      (element) => !element.hidden && finiteOr(element.opacity, 1) > 0
+      (element) => !element.hidden && finiteOr(element.opacity, 1) > 0,
     );
     const spans: VerticalSpan[] = [];
     const sfxSpans: VerticalSpan[] = [];
     const beatCenters: number[] = [];
     let panelCount = 0;
+    let oversizedPanelCount = 0;
+    let tallestPanelHeightPx = 0;
     let dialogueCount = 0;
     let dialogueCharacters = 0;
     let sfxCount = 0;
@@ -397,26 +340,35 @@ export function analyzeStudioScrollRhythm(
       const type = element.type.trim().toLowerCase();
       const span = elementVerticalSpan(element, canvasHeight);
       if (span) spans.push(span);
-      if (PANEL_TYPES.has(type)) panelCount += 1;
+      if (PANEL_TYPES.has(type)) {
+        panelCount += 1;
+        const explicitH = finiteOr(element.height, Number.NaN);
+        const panelHeight =
+          Number.isFinite(explicitH) && explicitH > 0
+            ? explicitH
+            : span
+              ? span.end - span.start
+              : 0;
+        if (panelHeight > tallestPanelHeightPx) tallestPanelHeightPx = panelHeight;
+        if (panelHeight / viewportHeight > STUDIO_SCROLL_RHYTHM_OVERSIZED_PANEL_SCREENS) {
+          oversizedPanelCount += 1;
+        }
+      }
       const sfx = isStudioScrollRhythmSfxElement(element);
       if (sfx) {
         sfxCount += 1;
         if (span) sfxSpans.push(span);
         const category = element.sfxCategory?.trim();
-        if (category) {
-          sfxCategoryCounts.set(category, (sfxCategoryCounts.get(category) ?? 0) + 1);
-        }
+        if (category) sfxCategoryCounts.set(category, (sfxCategoryCounts.get(category) ?? 0) + 1);
       }
       if (!sfx && DIALOGUE_TYPES.has(type)) {
         dialogueCount += 1;
         dialogueCharacters += (element.text ?? "").slice(
           0,
-          STUDIO_SCROLL_RHYTHM_LIMITS.maxTextCodeUnits
+          STUDIO_SCROLL_RHYTHM_LIMITS.maxTextCodeUnits,
         ).length;
       }
-      if (span && BEAT_TYPES.has(type)) {
-        beatCenters.push((span.start + span.end) / 2);
-      }
+      if (span && BEAT_TYPES.has(type)) beatCenters.push((span.start + span.end) / 2);
 
       if (PANEL_TYPES.has(type)) weightedLoad += 1;
       else if (DIALOGUE_TYPES.has(type)) weightedLoad += 0.9;
@@ -434,21 +386,18 @@ export function analyzeStudioScrollRhythm(
     const gaps = spanGaps(merged, canvasHeight);
     const occupied = merged.reduce((sum, span) => sum + (span.end - span.start), 0);
     const whitespace = Math.max(0, canvasHeight - occupied);
-    const longestGapPx = gaps.reduce(
-      (longest, gap) => Math.max(longest, gap.end - gap.start),
-      0
-    );
+    const longestGapPx = gaps.reduce((longest, gap) => Math.max(longest, gap.end - gap.start), 0);
     const screenCount = canvasHeight / viewportHeight;
     const sfxPerScreen = sfxCount / Math.max(screenCount, 0.25);
     const sfxGaps = spanGaps(mergeSpans(sfxSpans), canvasHeight);
     const longestSfxGapPxRaw = sfxGaps.reduce(
       (longest, gap) => Math.max(longest, gap.end - gap.start),
-      0
+      0,
     );
     const densityPerScreen = weightedLoad / Math.max(screenCount, 0.25);
-    const dialogueCharactersPerScreen =
-      dialogueCharacters / Math.max(screenCount, 0.25);
+    const dialogueCharactersPerScreen = dialogueCharacters / Math.max(screenCount, 0.25);
     const breathingRoomRatio = whitespace / canvasHeight;
+    const tallestPanelScreens = tallestPanelHeightPx / viewportHeight;
 
     let score = 100;
     if (visible.length === 0) score -= 35;
@@ -458,15 +407,13 @@ export function analyzeStudioScrollRhythm(
     }
     if (breathingRoomRatio < 0.06 && visible.length > 0) score -= 16;
     if (longestGapPx / viewportHeight > 1.4 && visible.length > 0) score -= 8;
+    if (oversizedPanelCount > 0) score -= Math.min(12, oversizedPanelCount * 6);
     if (beatIntervalVariation !== null && beatIntervalVariation < 0.12) score -= 10;
     if (sfxPerScreen > STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN) {
-      score -= Math.min(
-        10,
-        (sfxPerScreen - STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN) * 2
-      );
+      score -= Math.min(10, (sfxPerScreen - STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN) * 2);
     }
 
-    const metric: StudioScrollRhythmPageMetric = {
+    metrics.push({
       pageId: page.id,
       canvasHeight: round(canvasHeight),
       screenCount: round(screenCount),
@@ -486,19 +433,14 @@ export function analyzeStudioScrollRhythm(
       breathingRoomRatio: round(breathingRoomRatio),
       longestGapPx: round(longestGapPx),
       longestGapScreens: round(longestGapPx / viewportHeight),
-      beatIntervalVariation:
-        beatIntervalVariation === null ? null : round(beatIntervalVariation, 3),
+      tallestPanelScreens: round(tallestPanelScreens),
+      oversizedPanelCount,
+      beatIntervalVariation: beatIntervalVariation === null ? null : round(beatIntervalVariation, 3),
       score: Math.round(clamp(score, 0, 100)),
-    };
-    metrics.push(metric);
+    });
 
     if (visible.length === 0) {
-      pushInsight(insights, {
-        code: "NO_VISIBLE_CONTENT",
-        severity: "warning",
-        pageId: page.id,
-        params: {},
-      });
+      pushInsight(insights, { code: "NO_VISIBLE_CONTENT", severity: "warning", pageId: page.id, params: {} });
     }
     if (densityPerScreen > 8) {
       pushInsight(insights, {
@@ -519,10 +461,7 @@ export function analyzeStudioScrollRhythm(
     if (sfxPerScreen > STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN) {
       pushInsight(insights, {
         code: "SFX_DENSE",
-        severity:
-          sfxPerScreen > STUDIO_SCROLL_RHYTHM_SFX_CRITICAL_PER_SCREEN
-            ? "critical"
-            : "warning",
+        severity: sfxPerScreen > STUDIO_SCROLL_RHYTHM_SFX_CRITICAL_PER_SCREEN ? "critical" : "warning",
         pageId: page.id,
         params: { sfx: String(round(sfxPerScreen, 1)) },
       });
@@ -543,13 +482,22 @@ export function analyzeStudioScrollRhythm(
         params: { gapScreens: String(round(longestGapPx / viewportHeight, 1)) },
       });
     }
-    if (beatIntervalVariation !== null && beatIntervalVariation < 0.12) {
+    if (oversizedPanelCount > 0) {
       pushInsight(insights, {
-        code: "FLAT_BEAT_INTERVALS",
-        severity: "info",
+        code: "OVERSIZED_PANEL",
+        severity:
+          tallestPanelScreens > STUDIO_SCROLL_RHYTHM_OVERSIZED_PANEL_CRITICAL_SCREENS
+            ? "critical"
+            : "warning",
         pageId: page.id,
-        params: {},
+        params: {
+          panelScreens: String(round(tallestPanelScreens, 1)),
+          count: String(oversizedPanelCount),
+        },
       });
+    }
+    if (beatIntervalVariation !== null && beatIntervalVariation < 0.12) {
+      pushInsight(insights, { code: "FLAT_BEAT_INTERVALS", severity: "info", pageId: page.id, params: {} });
     }
   }
 
@@ -558,12 +506,7 @@ export function analyzeStudioScrollRhythm(
     Math.max(0, metrics.length - 1) * pageGap;
   const ending = endingAnalysis(pages, metrics, viewportHeight);
   if (ending.mode === "tight") {
-    pushInsight(insights, {
-      code: "TIGHT_ENDING",
-      severity: "info",
-      pageId: metrics.at(-1)?.pageId ?? null,
-      params: {},
-    });
+    pushInsight(insights, { code: "TIGHT_ENDING", severity: "info", pageId: metrics.at(-1)?.pageId ?? null, params: {} });
   } else if (ending.mode === "empty") {
     pushInsight(insights, {
       code: "EMPTY_ENDING",
@@ -573,8 +516,6 @@ export function analyzeStudioScrollRhythm(
     });
   }
 
-  // SFX gaps are only a rhythm signal when the episode uses SFX at all — a work
-  // with no SFX anywhere must not be flooded with gap notes.
   const totalSfxCount = metrics.reduce((sum, metric) => sum + metric.sfxCount, 0);
   if (totalSfxCount > 0) {
     for (const metric of metrics) {
@@ -590,22 +531,12 @@ export function analyzeStudioScrollRhythm(
   }
 
   if (truncated) {
-    if (insights.length >= STUDIO_SCROLL_RHYTHM_LIMITS.maxInsights) {
-      // Keep the budget contract itself visible even when page-level findings filled the list.
-      insights.pop();
-    }
-    pushInsight(insights, {
-      code: "ANALYSIS_TRUNCATED",
-      severity: "warning",
-      pageId: null,
-      params: {},
-    });
+    if (insights.length >= STUDIO_SCROLL_RHYTHM_LIMITS.maxInsights) insights.pop();
+    pushInsight(insights, { code: "ANALYSIS_TRUNCATED", severity: "warning", pageId: null, params: {} });
   }
 
   const averageScore =
-    metrics.length > 0
-      ? metrics.reduce((sum, metric) => sum + metric.score, 0) / metrics.length
-      : 0;
+    metrics.length > 0 ? metrics.reduce((sum, metric) => sum + metric.score, 0) / metrics.length : 0;
   const endingPenalty = ending.mode === "empty" ? 8 : ending.mode === "tight" ? 3 : 0;
   const score = Math.round(clamp(averageScore - endingPenalty, 0, 100));
 
@@ -618,26 +549,20 @@ export function analyzeStudioScrollRhythm(
     densePageCount: metrics.filter((metric) => metric.densityPerScreen > 8).length,
     totalSfxCount,
     sfxDensePageCount: metrics.filter(
-      (metric) => metric.sfxPerScreen > STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN
+      (metric) => metric.sfxPerScreen > STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN,
     ).length,
     longestSfxGapScreens:
       totalSfxCount > 0
-        ? round(
-            metrics.reduce(
-              (longest, metric) => Math.max(longest, metric.longestSfxGapScreens),
-              0
-            )
-          )
+        ? round(metrics.reduce((longest, metric) => Math.max(longest, metric.longestSfxGapScreens), 0))
         : 0,
     sfxCategoryCounts: Object.freeze(
       [...sfxCategoryCounts.entries()]
         .map(([category, count]) => Object.freeze({ category, count }))
-        .sort((a, b) => b.count - a.count || (a.category < b.category ? -1 : 1))
+        .sort((a, b) => b.count - a.count || (a.category < b.category ? -1 : 1)),
     ),
     breathingPageCount: metrics.filter((metric) => metric.breathingRoomRatio >= 0.12).length,
     flatRhythmPageCount: metrics.filter(
-      (metric) =>
-        metric.beatIntervalVariation !== null && metric.beatIntervalVariation < 0.12
+      (metric) => metric.beatIntervalVariation !== null && metric.beatIntervalVariation < 0.12,
     ).length,
     ending,
     insights,
@@ -659,10 +584,7 @@ export interface ScrollRhythmEpisodeInput {
   readonly episodeId: string;
   readonly label: string;
   readonly shots: readonly ScrollRhythmShotInput[];
-  readonly pageMeta?: {
-    readonly shotCount: number;
-    readonly totalHeightPx: number;
-  };
+  readonly pageMeta?: { readonly shotCount: number; readonly totalHeightPx: number };
 }
 
 export interface ScrollRhythmShotMetric {
@@ -757,7 +679,7 @@ function buildScrollRhythmPlannerEpisode(
   const meanGapPx = scrollRhythmMean(shots.map((shot) => shot.gapAfterPx));
   const totalHeightPx = shots.reduce((sum, shot) => sum + shot.totalPx, 0);
   const emptyCutCount = shots.filter((shot) => shot.emptyCut).length;
-  const sizeChanges = shots.slice(1).filter((shot, index) => shot.shotSize !== shots[index].shotSize).length;
+  const sizeChanges = shots.slice(1).filter((shot, index) => shot.shotSize !== shots[index]?.shotSize).length;
   const shotSizeChangeRate = shots.length >= 2 ? sizeChanges / (shots.length - 1) : null;
 
   const segments: ScrollRhythmSegment[] = [];
@@ -765,7 +687,6 @@ function buildScrollRhythmPlannerEpisode(
   let runStart = 0;
   const closeRun = (endExclusive: number): void => {
     const run = shots.slice(runStart, endExclusive);
-    if (run.length === 0) return;
     const first = run[0];
     const last = run[run.length - 1];
     if (!first || !last) return;
@@ -801,17 +722,16 @@ function buildScrollRhythmPlannerEpisode(
     runStart = index;
   }
 
-  let baseline: ScrollRhythmBaseline | null = null;
-  if (priorPlanner.length > 0) {
-    baseline = {
-      episodeCount: priorPlanner.length,
-      meanDialogueRatio: scrollRhythmMean(
-        priorPlanner.map((entry) => entry.meanDialogueRatio ?? 0),
-      ),
-      meanShotCount: scrollRhythmMean(priorPlanner.map((entry) => entry.shotCount)) ?? 0,
-      meanTotalHeightPx: scrollRhythmMean(priorPlanner.map((entry) => entry.totalHeightPx)) ?? 0,
-    };
-  }
+  const baseline: ScrollRhythmBaseline | null =
+    priorPlanner.length > 0
+      ? {
+          episodeCount: priorPlanner.length,
+          meanDialogueRatio: scrollRhythmMean(priorPlanner.map((entry) => entry.meanDialogueRatio ?? 0)),
+          meanShotCount: scrollRhythmMean(priorPlanner.map((entry) => entry.shotCount)) ?? 0,
+          meanTotalHeightPx: scrollRhythmMean(priorPlanner.map((entry) => entry.totalHeightPx)) ?? 0,
+        }
+      : null;
+
   return {
     episodeId: input.episodeId,
     label: input.label,
@@ -857,9 +777,10 @@ export function deriveScrollRhythmReport(
   const reports: ScrollRhythmEpisodeReport[] = [];
   const priorPlanner: ScrollRhythmEpisodeReport[] = [];
   for (const input of episodes) {
-    const report = input.shots.length > 0
-      ? buildScrollRhythmPlannerEpisode(input, priorPlanner)
-      : buildScrollRhythmPageMetaEpisode(input);
+    const report =
+      input.shots.length > 0
+        ? buildScrollRhythmPlannerEpisode(input, priorPlanner)
+        : buildScrollRhythmPageMetaEpisode(input);
     reports.push(report);
     if (report.source === "planner") priorPlanner.push(report);
   }

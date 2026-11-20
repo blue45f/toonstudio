@@ -80,15 +80,32 @@ describe("간단한 그리기의 실제 핵심 도구 연결", () => {
     expect(eraser.title).toBe("지우개");
     expect(screen.getByRole("button", { name: /되돌리기/ }).getAttribute("aria-keyshortcuts")).toBe("Control+Shift+Y Meta+Shift+Y");
   });
-  it("기존 비활성 권한과 기록 상태를 우회하지 않고 더보기 자리는 유지한다", () => {
+  it("기존 비활성 권한과 기록 상태를 우회하지 않고 사유(title·aria-describedby)와 더보기 자리를 유지한다", () => {
     const value = { ...session(), canvasInteractionBlocked: true, menuEditUndoDisabled: true, menuEditRedoDisabled: true };
     render(<><StudioDrawingClarityCoreTools session={value} /><StudioDrawingClarityHistory session={value} /></>);
     for (const name of ["펜", "지우개", "색상", "되돌리기 · 실행취소", "다시 · 다시실행"]) {
-      const button = screen.getByRole("button", { name }); expect(button.matches(":disabled")).toBe(true); fireEvent.click(button);
+      const button = screen.getByRole("button", { name });
+      expect(button.matches(":disabled")).toBe(true);
+      expect(button.getAttribute("title")).toBeTruthy();
+      expect(button.getAttribute("data-studio-disabled-reason")).toBeTruthy();
+      const descId = button.getAttribute("aria-describedby");
+      expect(descId).toBeTruthy();
+      expect(document.getElementById(descId!)?.textContent?.trim()).toBeTruthy();
+      fireEvent.click(button);
     }
     expect(value.activatePrimaryCanvasTool).not.toHaveBeenCalled();
     expect(value.studioMenubarContentHandlers.undo).not.toHaveBeenCalled();
     expect(document.getElementById("studio-drawing-clarity-desktop-more-slot")).not.toBeNull();
+  });
+  it("9개 핵심 도구 그룹과 하단 유틸리티 구분선을 정확히 구성한다", () => {
+    const actions = {
+      onSelectTool: vi.fn(), onOpenFill: vi.fn(), onOpenCutSplit: vi.fn(), onOpenBubble: vi.fn(),
+      onToggleBg3d: vi.fn(), onPlacePinComment: vi.fn(), onOpenAllTools: vi.fn(),
+    };
+    render(<StudioDrawingClarityCoreTools session={session()} onOpenLayers={vi.fn()} v4Actions={actions} />);
+    const toolbar = screen.getByRole("toolbar", { name: "그리기 도구" });
+    expect(toolbar.getAttribute("data-studio-rail-group-count")).toBe("9");
+    expect(toolbar.querySelectorAll('[data-studio-rail-core-group="true"]')).toHaveLength(9);
   });
   it("제한된 담당 획이 허용되는 경우에도 기존 tool 전환을 사용한다", () => {
     const value = { ...session(), canvasInteractionBlocked: true, scopedCanvasDrawingAvailable: true };

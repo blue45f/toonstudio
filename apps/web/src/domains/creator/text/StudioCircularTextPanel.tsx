@@ -64,7 +64,7 @@ export function StudioCircularTextPanel({
             size: "sm",
             variant: enabled ? "solid" : "outline",
             className: cn(
-              "h-6 px-2 text-[11px] font-medium transition-colors",
+              "min-h-9 pointer-coarse:min-h-11 px-2.5 text-xs font-medium transition-colors",
               enabled
                 ? "border-accent bg-accent text-on-accent"
                 : "border-line text-fg-3 hover:bg-raised hover:text-fg",
@@ -75,7 +75,7 @@ export function StudioCircularTextPanel({
         </button>
       </div>
 
-      <p className="text-[11px] leading-relaxed text-fg-3">
+      <p className="text-xs leading-relaxed text-fg-3">
         효과음이나 제목 글자를 원을 따라 배치하고 방향·간격을 바로 조절합니다.
       </p>
 
@@ -133,7 +133,7 @@ export function StudioCircularTextPanel({
                 );
               })}
             </svg>
-            <div className="absolute bottom-1 right-2 text-[10px] text-fg-3">
+            <div className="absolute bottom-1 right-2 text-xs tabular-nums text-fg-3">
               총 전개각: {Math.round(layout.totalSpanDeg)}°
             </div>
           </div>
@@ -142,7 +142,7 @@ export function StudioCircularTextPanel({
           <div className="flex flex-col gap-2.5 pt-1">
             {/* Radius slider */}
             <div className="flex flex-col gap-1">
-              <div className="flex justify-between text-[11px]">
+              <div className="flex justify-between text-xs">
                 <span className="text-fg-3">반경</span>
                 <span className="font-semibold tabular-nums text-fg-2">
                   {Math.round(options.radius)}px
@@ -163,15 +163,15 @@ export function StudioCircularTextPanel({
                 }
                 data-inspector-control-id="typography.circular.radius"
                 data-inspector-priority="advanced"
-                className="h-6 w-full cursor-pointer accent-accent"
+                className="min-h-9 pointer-coarse:min-h-11 w-full cursor-pointer accent-accent"
               />
             </div>
 
             {/* Start Angle slider */}
             <div className="flex flex-col gap-1">
-              <div className="flex justify-between text-[11px]">
+              <div className="flex justify-between text-xs">
                 <span className="text-fg-3">시작 각도</span>
-                <span className="font-semibold text-slate-200">
+                <span className="font-semibold tabular-nums text-fg-2">
                   {Math.round(options.startAngleDeg ?? -90)}°
                 </span>
               </div>
@@ -190,13 +190,13 @@ export function StudioCircularTextPanel({
                 }
                 data-inspector-control-id="typography.circular.start-angle"
                 data-inspector-priority="advanced"
-                className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-pink-400"
+                className="min-h-9 pointer-coarse:min-h-11 w-full cursor-pointer accent-accent"
               />
             </div>
 
             {/* Direction toggle */}
             <div className="flex items-center justify-between pt-1">
-              <span className="text-[11px] text-fg-3">진행 방향</span>
+              <span className="text-xs text-fg-3">진행 방향</span>
               <div className="flex gap-1">
                 <button
                   type="button"
@@ -212,7 +212,7 @@ export function StudioCircularTextPanel({
                         ? "solid"
                         : "ghost",
                     className: cn(
-                      "h-6 px-2 text-[10px]",
+                      "min-h-9 pointer-coarse:min-h-11 px-2.5 text-xs",
                       (options.direction ?? "clockwise") === "clockwise"
                         ? "border-accent/45 bg-accent-soft text-fg"
                         : "text-fg-3 hover:bg-raised hover:text-fg",
@@ -238,10 +238,10 @@ export function StudioCircularTextPanel({
                         ? "solid"
                         : "ghost",
                     className: cn(
-                      "h-6 px-2 text-[10px]",
+                      "min-h-9 pointer-coarse:min-h-11 px-2.5 text-xs",
                       options.direction === "counter-clockwise"
-                        ? "bg-slate-700 text-white"
-                        : "text-slate-400",
+                        ? "border-accent/45 bg-accent-soft text-fg"
+                        : "text-fg-3 hover:bg-raised hover:text-fg",
                     ),
                   })}
                 >
@@ -252,7 +252,7 @@ export function StudioCircularTextPanel({
 
             {/* Orientation toggle */}
             <div className="flex items-center justify-between pt-1">
-              <span className="text-[11px] text-fg-3">글자 방향</span>
+              <span className="text-xs text-fg-3">글자 방향</span>
               <div className="flex gap-1">
                 <button
                   type="button"
@@ -268,10 +268,10 @@ export function StudioCircularTextPanel({
                         ? "solid"
                         : "ghost",
                     className: cn(
-                      "h-6 px-2 text-[10px]",
+                      "min-h-9 pointer-coarse:min-h-11 px-2.5 text-xs",
                       (options.orientation ?? "outward") === "outward"
-                        ? "bg-slate-700 text-white"
-                        : "text-slate-400",
+                        ? "border-accent/45 bg-accent-soft text-fg"
+                        : "text-fg-3 hover:bg-raised hover:text-fg",
                     ),
                   })}
                 >
@@ -289,10 +289,10 @@ export function StudioCircularTextPanel({
                     variant:
                       options.orientation === "inward" ? "solid" : "ghost",
                     className: cn(
-                      "h-6 px-2 text-[10px]",
+                      "min-h-9 pointer-coarse:min-h-11 px-2.5 text-xs",
                       options.orientation === "inward"
-                        ? "bg-slate-700 text-white"
-                        : "text-slate-400",
+                        ? "border-accent/45 bg-accent-soft text-fg"
+                        : "text-fg-3 hover:bg-raised hover:text-fg",
                     ),
                   })}
                 >

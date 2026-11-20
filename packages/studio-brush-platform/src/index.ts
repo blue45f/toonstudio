@@ -11,3 +11,4 @@ export * from "./libmypaint";
 export * from "./providers";
 export * from "./stroke-budget";
 export * from "./natural-media-fullsize-benchmark";
+export * from "./natural-media/dip-pen-railroading-and-impasto";

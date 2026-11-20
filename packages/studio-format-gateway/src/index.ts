@@ -32,5 +32,6 @@ export * from "./openraster";
 export * from "./xcf";
 export * from "./xcf-layer-modes";
 export * from "./artcraft-suite-formats";
+export * from "./clip-vector-layer";
 
 export * from "./compatibility-report";

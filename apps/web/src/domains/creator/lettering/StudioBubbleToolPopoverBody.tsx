@@ -12,6 +12,7 @@ import { StudioAiEmotionBubbleMatcher } from "../ai/studio-ai-emotion-bubble-mat
 
 import { StudioBubbleLibraryPanel } from "./StudioBubbleLibraryPanel";
 import { StudioBubblePresetEditorPanel } from "./StudioBubblePresetEditorPanel";
+import { StudioParametricEmotionBubblePanel } from "./StudioParametricEmotionBubblePanel";
 import { StudioSmartBubbleCharacterPanel } from "./StudioSmartBubbleCharacterPanel";
 import {
   BUBBLE_LIBRARY_PREFERENCES_STORAGE_KEY,
@@ -382,31 +383,17 @@ export function StudioBubbleToolPopoverBody({
         <strong className="font-semibold text-fg">
           {localizeText(t, "클릭·탭", "studio.bubble.placementHelp.title")}
         </strong>
-        {localizeText(
-          t,
-          "는 선택 컷 또는 현재 화면에 스마트 배치하고,",
-          "studio.bubble.placementHelp.when",
-        )}
+        {localizeText(t, "는 선택 컷 또는 현재 화면에 스마트 배치하고,", "studio.bubble.placementHelp.when")}
         <strong className="font-semibold text-fg">
           {localizeText(t, "끌어 놓기", "studio.bubble.placementHelp.drag")}
         </strong>
-        {localizeText(
-          t,
-          "는 포인터 위치에 배치합니다. ",
-          "studio.bubble.placementHelp.dragHint",
-        )}
-        {localizeText(
-          t,
-          "드래그는 ",
-          "studio.bubble.placementHelp.dragEscapeLead",
-        )}
+        {localizeText(t, "는 포인터 위치에 배치합니다. ", "studio.bubble.placementHelp.dragHint")}
+        {localizeText(t, "드래그는 ", "studio.bubble.placementHelp.dragEscapeLead")}
         <kbd className="font-semibold">Esc</kbd>
-        {localizeText(
-          t,
-          "로 취소할 수 있어요.",
-          "studio.bubble.placementHelp.cancelHint",
-        )}
+        {localizeText(t, "로 취소할 수 있어요.", "studio.bubble.placementHelp.cancelHint")}
       </p>
+
+      <StudioParametricEmotionBubblePanel onInsertBubble={insertBubble} />
 
       <StudioSmartBubbleCharacterPanel onInsertBubble={insertBubble} />
 
@@ -416,9 +403,7 @@ export function StudioBubbleToolPopoverBody({
         preferences={preferences}
         onInsertBubble={insertBubble}
         onMarkBubbleUsed={markBubbleUsed}
-        onToggleFavorite={(id) =>
-          commitPreferences((current) => toggleBubbleFavorite(current, id))
-        }
+        onToggleFavorite={(id) => commitPreferences((current) => toggleBubbleFavorite(current, id))}
       />
     </div>
   );

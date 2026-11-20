@@ -279,8 +279,13 @@ describe("CharacterShaperLandingPage", () => {
     expect(cta.getAttribute("href")).toBe("/studio/assets/characters/new?editor=open");
   });
 
-  it("opens the editor in place from the hero and closes it back to the guide", async () => {
+  it("mounts the interactive 3D editor immediately on default entry without fake macOS dots and switches to guide on close", async () => {
     renderPage();
+
+    expect(await screen.findByRole("dialog", { name: "캐릭터 셰이퍼 편집기" })).toBeTruthy();
+    expect(document.querySelector(".studio-character-guide__stage-dots")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "편집기 닫기" }));
     expect(screen.queryByRole("dialog", { name: "캐릭터 셰이퍼 편집기" })).toBeNull();
 
     fireEvent.click(screen.getByRole("link", { name: "샘플 캐릭터로 바로 시작" }));
@@ -290,6 +295,13 @@ describe("CharacterShaperLandingPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "편집기 닫기" }));
     expect(screen.getByTestId("location").textContent).toBe("/studio/assets/characters/new");
     expect(screen.queryByRole("dialog", { name: "캐릭터 셰이퍼 편집기" })).toBeNull();
+  });
+
+  it("opens the guide directly via ?guide=1 without auto-opening the editor", () => {
+    renderPage("/studio/assets/characters/new?guide=1");
+    expect(screen.queryByRole("dialog", { name: "캐릭터 셰이퍼 편집기" })).toBeNull();
+    expect(document.querySelector(".studio-character-guide__stage-dots")).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "프리셋으로 시작하는 3D 웹툰 캐릭터" })).toBeTruthy();
   });
 
   it("honors a shared ?editor=open link and removes only the editor parameter on close", async () => {

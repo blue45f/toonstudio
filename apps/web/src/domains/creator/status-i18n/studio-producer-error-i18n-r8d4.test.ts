@@ -209,11 +209,11 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    // R24: 외부 혼색 원본의 보관 출처 오류 1키가 더해졌다 — 전체 누적 2,382키.
+    // R24+OVERSIZED_PANEL: 외부 혼색 원본 보관 출처 1키 + scrollRhythm OVERSIZED_PANEL 3키 — 전체 누적 2,385키.
     expect(source).toContain('"studio.producerError.livePageBridge.legacyPigmentArchiveInvalid": "외부 혼색 원본의 보관 출처가 올바르지 않습니다. 원본 보관본을 다시 확인해 주세요."');
     expect(source).toContain('"studio.producerError.livePageBridge.legacyPigmentArchiveInvalid": "The archived pigment source provenance is invalid. Check the original archive again."');
-    expect(new Set(accumulated.ko).size).toBe(2382);
-    expect(accumulated.ko).toHaveLength(2382);
+    expect(new Set(accumulated.ko).size).toBe(2385);
+    expect(accumulated.ko).toHaveLength(2385);
     expect(accumulated.en).toEqual(accumulated.ko);
   });
 });

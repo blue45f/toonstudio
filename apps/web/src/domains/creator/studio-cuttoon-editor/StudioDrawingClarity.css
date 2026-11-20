@@ -1,169 +1,157 @@
-/* 원고·실제 저장 권위는 그대로 두고 기본 그리기를 루미너스 아틀리에 작업 화면으로 정리한다. */
-.studio-drawing-clarity-header{position:relative;z-index:50;display:flex;align-items:center;gap:12px;min-height:64px;flex-shrink:0;padding:7px 16px;border-bottom:1px solid color-mix(in oklch,var(--color-accent) 22%,var(--color-line));background:linear-gradient(98deg,color-mix(in oklch,var(--color-panel) 91%,transparent),color-mix(in oklch,var(--color-raised) 85%,var(--color-accent-soft))),url("/brand/luminous-atelier-20261114/scene-studio-canvas-aura.webp") right center/380px auto no-repeat;backdrop-filter:blur(20px) saturate(1.24);box-shadow:0 10px 28px -20px rgb(8 12 28 / .5);color:var(--color-fg)}
-/* 비동기 안내 한 줄의 공간을 미리 확보하고 긴 저장 문구 줄바꿈에도 64px 높이를 고정해 캔버스 원점이 밀리지 않게 한다. */
-.studio-drawing-clarity-title{position:relative;flex:1;min-width:0;height:64px;min-height:64px;max-height:64px;overflow:hidden}
-.studio-drawing-clarity-title h1{position:absolute;inset:2px 0 auto;z-index:1;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;font-weight:700;line-height:20px}
+/* 원고·실제 저장 권위는 그대로 두고 단일 44px 상단바·48px 9그룹 레일·82%+ 캔버스 시야의 차분한 아틀리에 크롬을 구성한다. */
+[data-studio-editor="true"] button:active:not([data-studio-allow-press-feedback="true"]){transform:none!important}
+.studio-drawing-clarity-header{position:relative;z-index:50;display:flex;align-items:center;gap:8px;height:44px;min-height:44px;max-height:44px;flex-shrink:0;padding:0 12px;border-bottom:1px solid var(--color-line);background:var(--color-panel);box-shadow:none;color:var(--color-fg)}
+/* 44px 단일 상단바 안에서 원고명과 저장 상태 요약을 고정 예약해 캔버스 원점이 밀리지 않게 한다. */
+.studio-drawing-clarity-title{position:relative;flex:1;min-width:96px;height:44px;min-height:44px;max-height:44px;overflow:hidden}
+.studio-drawing-clarity-title h1{position:absolute;inset:2px 0 auto;z-index:1;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;line-height:18px;word-break:keep-all}
 .studio-drawing-clarity-title [data-studio-document-chrome-slot]{display:block;position:static;min-width:0;width:100%;max-width:none;margin:0}
 .studio-drawing-clarity-title [data-studio-save-status-chrome-mount],.studio-drawing-clarity-title [data-studio-save-sync-status-center]{display:block;min-width:0;width:100%}
-button[data-studio-drawing-save-summary=true]{display:flex;align-items:flex-end;min-height:48px;max-height:64px;min-width:48px;width:100%;gap:5px;padding:20px 0 0;overflow:hidden;border:0;border-radius:8px;background:transparent;box-shadow:none;text-align:left;font-size:12px;line-height:1.35;color:var(--color-fg-2)}
+button[data-studio-drawing-save-summary=true]{display:flex;align-items:flex-end;min-height:44px;max-height:44px;min-width:44px;width:100%;gap:5px;padding:19px 0 2px;overflow:hidden;border:0;border-radius:8px;background:transparent;box-shadow:none;text-align:left;font-size:12px;line-height:1.35;color:var(--color-fg-2)}
 button[data-studio-drawing-save-summary=true]>svg{margin-bottom:2px;flex-shrink:0}
-button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-[data-studio-drawing-save-summary=true] time{white-space:nowrap}
+button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+[data-studio-drawing-save-summary=true] time{white-space:nowrap;font-variant-numeric:tabular-nums}
 [data-studio-connection-notice-summary]{white-space:normal}
-.studio-drawing-clarity-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:48px;min-width:48px;padding:8px 12px;border:1px solid color-mix(in oklch,var(--color-line-strong) 84%,transparent);border-radius:14px;background:color-mix(in oklch,var(--color-card) 86%,var(--color-panel));color:var(--color-fg);font-size:13px;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 rgb(255 255 255 / .08);transition:transform .18s cubic-bezier(.16,1,.3,1),background-color .18s ease,border-color .18s ease,box-shadow .18s ease}
-.studio-drawing-clarity-button:hover:not(:disabled),.studio-drawing-clarity-rail button:hover:not(:disabled){background:color-mix(in oklch,var(--color-raised) 86%,var(--color-accent-soft));border-color:color-mix(in oklch,var(--color-accent) 44%,var(--color-line-strong));transform:translateY(-1px);box-shadow:inset 0 1px 0 rgb(255 255 255 / .12),0 8px 18px -12px rgb(8 12 28 / .5)}
-.studio-drawing-clarity-button[aria-pressed=true]{border-color:color-mix(in oklch,var(--color-accent) 68%,white 12%);background:linear-gradient(145deg,color-mix(in oklch,var(--color-accent-soft) 92%,var(--color-panel)),color-mix(in oklch,var(--color-accent) 20%,var(--color-raised)));box-shadow:inset 0 1px 0 rgb(255 255 255 / .16),0 10px 22px -12px color-mix(in oklch,var(--color-accent) 56%,transparent)}
-.studio-drawing-clarity-button:disabled{opacity:.45;cursor:default}
+.studio-drawing-clarity-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px;padding:0 10px;border:1px solid var(--color-line-strong);border-radius:10px;background:var(--color-card);color:var(--color-fg);font-size:12px;font-weight:600;word-break:keep-all;cursor:pointer;box-shadow:none;transition:background-color 150ms cubic-bezier(.16,1,.3,1),border-color 150ms cubic-bezier(.16,1,.3,1),color 150ms cubic-bezier(.16,1,.3,1)}
+.studio-drawing-clarity-button:hover:not(:disabled),.studio-drawing-clarity-rail button:hover:not(:disabled){background:var(--color-raised);border-color:color-mix(in oklch,var(--color-accent) 44%,var(--color-line-strong));box-shadow:none}
+.studio-drawing-clarity-button[aria-pressed=true]{border-color:var(--color-accent);background:var(--color-accent-soft);color:var(--color-fg);box-shadow:none}
+.studio-drawing-clarity-button:disabled{opacity:.45;cursor:not-allowed}
 .studio-drawing-clarity-header :is(button,input,select):focus-visible,.studio-drawing-clarity-rail :is(button,input,select):focus-visible,.studio-drawing-clarity-context-row :is(button,input,select):focus-visible,.studio-drawing-clarity-more summary:focus-visible,.studio-drawing-task-dialog :focus-visible{outline:2px solid var(--color-accent);outline-offset:2px}
-.studio-drawing-clarity-swatch{display:block;inline-size:20px;block-size:20px;border:1.5px solid color-mix(in oklch,var(--color-fg) 26%,var(--color-line-strong));border-radius:7px;box-shadow:0 0 0 2px rgb(255 255 255 / .08)}
-.studio-drawing-color-tool { position: relative; display: inline-flex; }
-.studio-drawing-color-tool .studio-drawing-clarity-swatch {
-  position: absolute; right: -2px; bottom: 0; width: 11px; height: 11px;
-  border: 2px solid var(--color-card); border-radius: 50%; box-shadow: 0 0 0 1px var(--color-line-strong);
-}
-.studio-drawing-clarity-tools { --studio-tool-art-size: 28px; }
-.studio-drawing-clarity-header { --studio-tool-art-size: 22px; }
-.studio-drawing-clarity-mobile-context { --studio-tool-art-size: 17px; }
-.studio-brush-picker-art { --studio-tool-art-size: 22px; }
-.studio-drawing-clarity-save{min-width:86px;background:var(--color-fg);border-color:var(--color-fg);color:var(--color-panel);font-weight:700;white-space:nowrap;box-shadow:none}
-.studio-drawing-clarity-save:hover:not(:disabled){background:var(--color-fg-2);color:var(--color-panel);border-color:var(--color-fg);transform:none}
-.studio-drawing-clarity-mobile-header{min-height:56px;gap:8px;padding:3px 8px}
-.studio-drawing-clarity-mobile-header .studio-drawing-clarity-save{min-width:64px;padding-inline:12px}
-.studio-drawing-clarity-context-row{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:8px;height:53px;min-height:53px;max-height:53px;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:4px 12px;flex-shrink:0;border-bottom:1px solid color-mix(in oklch,var(--color-line) 86%,transparent);background:color-mix(in oklch,var(--color-panel) 92%,var(--color-card));backdrop-filter:blur(16px);color:var(--color-fg-2)}
+.studio-drawing-clarity-swatch{display:block;inline-size:18px;block-size:18px;border:1.5px solid var(--color-line-strong);border-radius:6px;box-shadow:none}
+.studio-drawing-color-tool{position:relative;display:inline-flex}
+.studio-drawing-color-tool .studio-drawing-clarity-swatch{position:absolute;right:-3px;bottom:-2px;width:11px;height:11px;border:2px solid var(--color-panel);border-radius:50%;box-shadow:0 0 0 1px var(--color-line-strong)}
+.studio-drawing-clarity-tools{--studio-tool-art-size:20px}
+.studio-drawing-clarity-header{--studio-tool-art-size:16px}
+.studio-drawing-clarity-mobile-context{--studio-tool-art-size:16px}
+.studio-brush-picker-art{--studio-tool-art-size:18px}
+.studio-drawing-clarity-save{min-width:64px;background:var(--color-card);border-color:var(--color-line-strong);color:var(--color-fg);font-weight:600;white-space:nowrap;box-shadow:none}
+.studio-drawing-clarity-save:hover:not(:disabled){background:var(--color-raised);border-color:var(--color-accent);color:var(--color-fg)}
+.studio-drawing-clarity-export{min-width:60px;background:var(--color-accent);border-color:var(--color-accent);color:var(--color-on-accent);font-weight:600;white-space:nowrap;box-shadow:none}
+.studio-drawing-clarity-export:hover:not(:disabled){background:color-mix(in oklch,var(--color-accent) 88%,var(--color-fg));border-color:var(--color-accent);color:var(--color-on-accent)}
+.studio-drawing-clarity-mobile-header{height:44px;min-height:44px;max-height:44px;gap:4px;padding:0 6px}
+.studio-drawing-clarity-mobile-header .studio-drawing-clarity-save{min-width:52px;padding-inline:8px}
+.studio-drawing-clarity-mobile-export{min-width:44px;min-height:44px;padding:0 10px;background:var(--color-accent);border-color:var(--color-accent);color:var(--color-on-accent);font-weight:600;white-space:nowrap}
+.studio-drawing-clarity-context-row{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:6px;height:44px;min-height:44px;max-height:44px;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:0 8px;flex-shrink:0;border-bottom:1px solid var(--color-line);background:var(--color-panel);color:var(--color-fg-2)}
+.studio-drawing-clarity-context-row:empty{display:none}
 /* 선택해도 원고 원점은 고정된다. 같은 줄에 실제 선택 명령만 표시한다. */
 .studio-drawing-selection-slot:empty,
-.studio-drawing-selection-slot:not(:empty) + .studio-drawing-ergonomics-bar { display: none; }
-.studio-drawing-selection-slot:not(:empty) { flex: 1 1 0; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
-.studio-drawing-selection-slot [data-studio-selection-command-lane] { height: 44px; margin: 0; }
+.studio-drawing-selection-slot:not(:empty) + .studio-drawing-ergonomics-bar{display:none}
+.studio-drawing-selection-slot:not(:empty){flex:1 1 0;min-width:0;overflow-x:auto;scrollbar-width:thin}
+.studio-drawing-selection-slot [data-studio-selection-command-lane]{height:44px;margin:0}
 @media (min-width: 1024px) {
-  .studio-drawing-clarity-header:not(.studio-drawing-clarity-mobile-header) {
-    min-height: 56px;
-    padding-block: 0;
-    background: var(--color-panel);
-    backdrop-filter: none;
-    box-shadow: none;
+  .studio-drawing-clarity-header:not(.studio-drawing-clarity-mobile-header){
+    height:44px;min-height:44px;max-height:44px;padding:0 10px;gap:6px;
+    background:var(--color-panel);box-shadow:none;
   }
-  .studio-drawing-clarity-header:not(.studio-drawing-clarity-mobile-header) .studio-drawing-clarity-title {
-    height: 55px; min-height: 55px; max-height: 55px;
+  .studio-drawing-clarity-header:not(.studio-drawing-clarity-mobile-header) .studio-drawing-clarity-title{
+    height:44px;min-height:44px;max-height:44px;
   }
-  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) {
-    height: 44px; min-height: 44px; max-height: 44px; padding-block: 0;
-    border: 0; background: var(--color-panel); box-shadow: inset 0 -1px var(--color-line);
+  /* 2행 옵션 바를 상단 흐름 밖 경량 플로팅 스트립으로 분리해 단일 44px 상단바와 82%+ 캔버스 면적을 확보한다. */
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
+    position:absolute;top:52px;left:56px;right:12px;z-index:30;
+    width:fit-content;max-width:calc(100% - 68px);margin-inline:auto;
+    height:44px;min-height:44px;max-height:44px;padding:0 6px;
+    border:1px solid var(--color-line);border-radius:10px;
+    background:var(--color-panel);box-shadow:var(--shadow-1,0 4px 12px -4px color-mix(in oklch,var(--color-fg) 14%,transparent));
   }
-  .studio-drawing-clarity-context-row :is(.studio-drawing-stage-pills,.studio-drawing-stabilizer-group,.studio-drawing-stepper) {
-    padding-block: 0; border-block: 0;
+  .studio-drawing-clarity-context-row :is(.studio-drawing-stage-pills,.studio-drawing-stabilizer-group,.studio-drawing-stepper){
+    padding-block:0;border-block:0;
   }
-  .studio-drawing-clarity-context-row .studio-drawing-clarity-button { min-height: 44px; padding-block: 0; }
-  .studio-drawing-clarity-rail { overflow-y: auto; overscroll-behavior: contain; }
+  .studio-drawing-clarity-context-row .studio-drawing-clarity-button{min-height:44px;padding-block:0}
+  .studio-drawing-clarity-rail{overflow-y:auto;overscroll-behavior:contain}
 }
 @media (min-width: 1024px) and (max-width: 1365px) {
-  #studio-workspace .studio-drawing-clarity-rail { flex-basis: 58px; padding-inline: 4px; }
+  #studio-workspace .studio-drawing-clarity-rail{flex-basis:48px;width:48px;padding-inline:2px}
 }
 /* 좁은 화면의 확대 글꼴·여러 저장 안내는 줄 수에 맞춰 읽을 자리를 확보한다. */
-.studio-drawing-clarity-header .studio-drawing-clarity-title:has([data-studio-connection-notice-summary]:not(:empty)) {
-  height: auto; max-height: none;
-}
-.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary]:not(:empty)) {
-  max-height: none; overflow: visible;
-}
-.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary]:not(:empty)) > span {
-  display: block; overflow-wrap: anywhere; overflow: visible;
-}
+.studio-drawing-clarity-header .studio-drawing-clarity-title:has([data-studio-connection-notice-summary]:not(:empty)){height:auto;max-height:none}
+.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary]:not(:empty)){max-height:none;overflow:visible}
+.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary]:not(:empty))>span{display:block;overflow-wrap:anywhere;overflow:visible}
 /* 저장 결과와 두 안내가 같은 줄의 남은 폭을 나누고, 큰 글씨는 다음 줄에서 계속 읽는다. */
-.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary] > :nth-child(2)) > span {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: .5em;
-}
-.studio-drawing-clarity-title [data-studio-connection-notice-summary]:has(> :nth-child(2)) {
-  display: contents;
-}
-.studio-drawing-clarity-title [data-studio-connection-notice-summary] > * {
-  min-width: 0;
-  max-width: 100%;
-}
+.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary] > :nth-child(2))>span{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.5em}
+.studio-drawing-clarity-title [data-studio-connection-notice-summary]:has(> :nth-child(2)){display:contents}
+.studio-drawing-clarity-title [data-studio-connection-notice-summary]>*{min-width:0;max-width:100%}
 .studio-drawing-clarity-context-row::-webkit-scrollbar{display:none}
-.studio-drawing-page-position{display:inline-flex;align-items:center;gap:8px;min-width:48px;min-height:44px;max-width:220px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:6px 12px;border:1px solid color-mix(in oklch,var(--color-line-strong) 72%,transparent);border-radius:999px;background:color-mix(in oklch,var(--color-card) 84%,transparent);color:var(--color-fg);font-size:12px;font-weight:650;text-align:left;cursor:pointer;transition:background-color .16s ease,border-color .16s ease}
-.studio-drawing-page-position:hover{background:color-mix(in oklch,var(--color-raised) 86%,var(--color-accent-soft));border-color:color-mix(in oklch,var(--color-accent) 40%,var(--color-line-strong))}
+.studio-drawing-page-position{display:inline-flex;align-items:center;gap:6px;min-width:44px;min-height:44px;max-width:200px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 10px;border:1px solid var(--color-line-strong);border-radius:8px;background:var(--color-card);color:var(--color-fg);font-size:12px;font-weight:600;word-break:keep-all;text-align:left;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1),border-color 150ms cubic-bezier(.16,1,.3,1)}
+.studio-drawing-page-position:hover{background:var(--color-raised);border-color:var(--color-accent)}
 .studio-drawing-page-position>span{flex-shrink:0}
-.studio-drawing-ergonomics-bar{display:flex;flex:1 0 auto;flex-wrap:nowrap;align-items:center;gap:6px;min-width:0}
-.studio-drawing-stage-pills{display:inline-flex;flex-shrink:0;align-items:center;gap:2px;padding-inline-start:8px;border-inline-start:1px solid var(--color-line)}
-.studio-drawing-stage-pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px;padding:4px 9px;border:0;border-radius:6px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:550;white-space:nowrap;cursor:pointer}
+.studio-drawing-ergonomics-bar{display:flex;flex:1 0 auto;flex-wrap:nowrap;align-items:center;gap:4px;min-width:0}
+.studio-drawing-stage-pills{display:inline-flex;flex-shrink:0;align-items:center;gap:2px;padding-inline-start:6px;border-inline-start:1px solid var(--color-line)}
+.studio-drawing-stage-pill{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;min-width:44px;padding:0 8px;border:0;border-radius:8px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:500;white-space:nowrap;word-break:keep-all;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1),color 150ms cubic-bezier(.16,1,.3,1)}
 .studio-drawing-stage-pill>img{width:18px;height:18px;border-radius:5px;object-fit:cover;flex-shrink:0}
-.studio-drawing-stage-pill:hover:not(:disabled){background:color-mix(in oklch,var(--color-raised) 88%,var(--color-accent-soft));color:var(--color-fg)}
-.studio-drawing-stage-pill[aria-pressed=true]{color:var(--color-fg);font-weight:700}
-.studio-drawing-stage-pill:disabled{opacity:.45;cursor:default}
+.studio-drawing-stage-pill:hover:not(:disabled){background:var(--color-raised);color:var(--color-fg)}
+.studio-drawing-stage-pill[aria-pressed=true]{background:var(--color-accent-soft);color:var(--color-fg);font-weight:600}
+.studio-drawing-stage-pill:disabled{opacity:.45;cursor:not-allowed}
 .studio-drawing-stepper{display:inline-flex;align-items:center;flex:none;gap:0;border-inline:1px solid var(--color-line)}
-.studio-drawing-stepper-btn,.studio-drawing-stepper-readout{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;border:0;border-radius:6px;background:transparent;color:var(--color-fg);font-size:12px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums;cursor:pointer}
+.studio-drawing-stepper-btn,.studio-drawing-stepper-readout{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;color:var(--color-fg);font-size:12px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1)}
 .studio-drawing-stepper-readout{padding:0 8px;min-width:52px}
-.studio-drawing-stepper-btn:hover:not(:disabled),.studio-drawing-stepper-readout:hover:not(:disabled){background:color-mix(in oklch,var(--color-raised) 88%,var(--color-accent-soft))}
-.studio-drawing-stepper-btn:disabled{opacity:.42;cursor:default}
-.studio-drawing-ergonomics-chip{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px;padding:4px 9px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:550;font-variant-numeric:tabular-nums;white-space:nowrap;cursor:pointer}
+.studio-drawing-stepper-btn:hover:not(:disabled),.studio-drawing-stepper-readout:hover:not(:disabled){background:var(--color-raised)}
+.studio-drawing-stepper-btn:disabled{opacity:.42;cursor:not-allowed}
+.studio-drawing-ergonomics-chip{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;min-width:44px;padding:0 8px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;word-break:keep-all;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1),color 150ms cubic-bezier(.16,1,.3,1)}
 .studio-drawing-ergonomics-chip:hover:not(:disabled){background:var(--color-raised);color:var(--color-fg)}
-.studio-drawing-ergonomics-chip[aria-pressed=true]{background:var(--color-raised);color:var(--color-fg);font-weight:650}
-.studio-drawing-ergonomics-chip:disabled{opacity:.45;cursor:default}
-.studio-drawing-ergonomics-dot{display:inline-block;width:10px;height:10px;border-radius:999px;border:1px solid rgb(255 255 255 / .24);flex-shrink:0}
-.studio-drawing-ergonomics-color{width:44px;height:44px;min-width:44px;padding:11px;border:0;border-radius:6px;background:transparent;cursor:pointer}
-.studio-drawing-ergonomics-color:disabled{opacity:.45;cursor:default}
+.studio-drawing-ergonomics-chip[aria-pressed=true]{background:var(--color-accent-soft);color:var(--color-fg);font-weight:600}
+.studio-drawing-ergonomics-chip:disabled{opacity:.45;cursor:not-allowed}
+.studio-drawing-ergonomics-dot{display:inline-block;width:10px;height:10px;border-radius:999px;border:1px solid var(--color-line-strong);flex-shrink:0}
+.studio-drawing-ergonomics-color{width:44px;height:44px;min-width:44px;padding:11px;border:0;border-radius:8px;background:transparent;cursor:pointer}
+.studio-drawing-ergonomics-color:disabled{opacity:.45;cursor:not-allowed}
 .studio-drawing-clarity-context-actions,.studio-drawing-clarity-history{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.studio-drawing-clarity-history button{min-width:48px;min-height:48px;padding:4px 10px}
+.studio-drawing-clarity-history button{min-width:44px;min-height:44px;padding:0 8px}
 .studio-drawing-clarity-mobile-context{padding-inline:8px}
-.studio-drawing-clarity-mobile-context .studio-drawing-clarity-history button{width:48px;font-size:12px}
+.studio-drawing-clarity-mobile-context .studio-drawing-clarity-history button{width:44px;font-size:12px}
 .studio-drawing-clarity-mobile-context .studio-drawing-clarity-history button>span{display:none}
-.studio-drawing-clarity-rail{display:flex;flex-direction:column;align-items:center;align-self:stretch;order:-1;flex:0 0 78px;gap:8px;padding:8px 7px;background:var(--color-panel);border-inline-end:1px solid var(--color-line);overflow-y:auto;scrollbar-width:thin}
-.studio-drawing-rail-brand{display:none}
+/* 좌측 48px 정밀 도구 레일: 9개 코어 그룹 + 2px 인셋 라벤더 활성선 */
+.studio-drawing-clarity-rail{display:flex;flex-direction:column;align-items:center;align-self:stretch;order:-1;flex:0 0 48px;width:48px;gap:4px;padding:6px 2px;background:var(--color-panel);border-inline-end:1px solid var(--color-line);overflow-y:auto;scrollbar-width:thin}
 .studio-drawing-clarity-tools{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;width:100%;align-content:start}
-.studio-drawing-clarity-tools>.studio-drawing-clarity-button,.studio-drawing-clarity-tools summary{display:flex;flex-direction:column;justify-content:center;gap:5px;min-height:58px;width:100%;padding:6px 3px;font-size:12px;border-color:color-mix(in oklch,var(--color-line) 75%,transparent)}
-.studio-drawing-clarity-rail .studio-drawing-clarity-more-slot{margin-top:12px;padding-top:10px;border-top:1px solid var(--color-line)}
+.studio-drawing-clarity-tools>.studio-drawing-clarity-button,.studio-drawing-clarity-tools summary{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;width:44px;min-width:44px;margin-inline:auto;padding:2px;font-size:12px;border-color:transparent}
+.studio-drawing-rail-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.studio-drawing-rail-divider{display:block;width:28px;height:1px;margin:4px auto;background:var(--color-line)}
+.studio-drawing-clarity-rail .studio-drawing-clarity-more-slot{margin-top:6px;padding-top:6px;border-top:1px solid var(--color-line)}
 .studio-drawing-clarity-more{position:relative;flex-shrink:0}
-.studio-drawing-clarity-more summary{display:grid;place-items:center;gap:4px;list-style:none;min-width:48px;min-height:48px;border-radius:14px;cursor:pointer;font-size:12px}
+.studio-drawing-clarity-more summary{display:grid;place-items:center;gap:2px;list-style:none;min-width:44px;min-height:44px;border-radius:10px;cursor:pointer;font-size:12px;color:var(--color-fg-2)}
 .studio-drawing-clarity-more summary::-webkit-details-marker{display:none}
+.studio-drawing-clarity-more summary>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 .studio-drawing-clarity-more[open]>summary,.studio-drawing-clarity-more summary[data-studio-clarity-open]{background:var(--color-accent-soft);color:var(--color-accent)}
 .studio-drawing-clarity-more-slot{display:block;min-width:0}
 .studio-drawing-clarity-more-slot>.studio-drawing-clarity-more{width:100%}
-.studio-drawing-clarity-menu{position:fixed;z-index:100;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;min-width:0;padding:8px;border:1px solid color-mix(in oklch,var(--color-accent) 26%,var(--color-line-strong));border-radius:18px;background:color-mix(in oklch,var(--color-panel) 94%,transparent);backdrop-filter:blur(22px) saturate(1.25);box-shadow:0 18px 42px -12px rgb(8 12 28 / .55)}
+.studio-drawing-clarity-menu{position:fixed;z-index:100;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;min-width:0;padding:8px;border:1px solid var(--color-line-strong);border-radius:12px;background:var(--color-panel);box-shadow:var(--shadow-2,0 12px 28px -12px color-mix(in oklch,var(--color-fg) 22%,transparent))}
 .studio-drawing-clarity-menu[hidden]{display:none}
-.studio-drawing-clarity-menu button{min-height:48px;min-width:48px;padding:10px 12px;border-radius:10px;font-size:14px;text-align:left}
-.studio-drawing-clarity-menu button:hover{background:color-mix(in oklch,var(--color-raised) 86%,var(--color-accent-soft))}
-.studio-drawing-dialog{position:fixed;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(660px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);margin:0;padding:0;overflow:hidden;border:1px solid color-mix(in oklch,var(--color-accent) 28%,var(--color-line-strong));border-radius:26px;background:linear-gradient(160deg,color-mix(in oklch,var(--color-panel) 96%,var(--color-accent-soft)),var(--color-panel));box-shadow:0 28px 64px -20px rgb(6 10 24 / .68);color:var(--color-fg)}
+.studio-drawing-clarity-menu button{min-height:44px;min-width:44px;padding:8px 12px;border-radius:8px;font-size:13px;text-align:left;word-break:keep-all}
+.studio-drawing-clarity-menu button:hover{background:var(--color-raised)}
+.studio-drawing-dialog{position:fixed;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(660px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);margin:0;padding:0;overflow:hidden;border:1px solid var(--color-line-strong);border-radius:16px;background:var(--color-panel);box-shadow:var(--shadow-3,0 24px 48px -18px color-mix(in oklch,var(--color-fg) 28%,transparent));color:var(--color-fg)}
 .studio-drawing-dialog:not([open]){display:none}
 .studio-drawing-dialog[open]{display:flex;flex-direction:column}
-.studio-drawing-dialog::backdrop{background:color-mix(in srgb,var(--color-panel) 72%,transparent);backdrop-filter:blur(8px)}
-.studio-drawing-dialog-header{display:flex;align-items:center;gap:12px;flex-shrink:0;min-height:64px;padding:7px 16px;border-bottom:1px solid var(--color-line);background:color-mix(in oklch,var(--color-panel) 92%,transparent)}
+.studio-drawing-dialog::backdrop{background:color-mix(in oklch,var(--color-canvas) 72%,transparent)}
+.studio-drawing-dialog-header{display:flex;align-items:center;gap:12px;flex-shrink:0;min-height:56px;padding:6px 16px;border-bottom:1px solid var(--color-line);background:var(--color-panel)}
 .studio-drawing-dialog-header>div{flex:1;min-width:0}
-.studio-drawing-dialog-header h2{font-size:19px;font-weight:700}
+.studio-drawing-dialog-header h2{font-size:17px;font-weight:600;word-break:keep-all}
 .studio-drawing-dialog-header>.studio-drawing-clarity-button{padding:0;border-color:transparent;background:transparent;box-shadow:none}
 .studio-drawing-dialog-content{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:20px;scrollbar-width:thin}
 .studio-drawing-task-service:empty{display:none}
 .studio-drawing-task-service{flex-shrink:0;max-height:20dvh;overflow:auto;padding:0 20px}
 .studio-drawing-task-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:18px}
-.studio-drawing-task-card{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:8px;min-width:48px;min-height:128px;overflow:hidden;padding:14px;border:1px solid var(--color-line);border-radius:20px;background:var(--color-raised);color:var(--color-fg);font-size:14px;font-weight:650;text-align:left}
-.studio-drawing-task-card>img{width:52px;height:52px;object-fit:contain;margin-bottom:4px;border-radius:12px}
+.studio-drawing-task-card{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:8px;min-width:44px;min-height:112px;overflow:hidden;padding:14px;border:1px solid var(--color-line);border-radius:12px;background:var(--color-raised);color:var(--color-fg);font-size:14px;font-weight:600;text-align:left;word-break:keep-all}
+.studio-drawing-task-card>img{width:48px;height:48px;object-fit:contain;margin-bottom:4px;border-radius:10px}
 .studio-drawing-task-list{display:grid;gap:4px}
-.studio-drawing-task-action{display:flex;align-items:center;gap:12px;min-height:56px;min-width:48px;width:100%;padding:10px 12px;border:0;border-bottom:1px solid var(--color-line);border-radius:12px;background:transparent;color:var(--color-fg);font-size:14px;text-align:left;transition:background-color .16s ease}
-.studio-drawing-task-action:hover{background:color-mix(in oklch,var(--color-raised) 84%,var(--color-accent-soft))}
+.studio-drawing-task-action{display:flex;align-items:center;gap:12px;min-height:48px;min-width:44px;width:100%;padding:8px 12px;border:0;border-bottom:1px solid var(--color-line);border-radius:10px;background:transparent;color:var(--color-fg);font-size:14px;text-align:left;word-break:keep-all;transition:background-color 150ms cubic-bezier(.16,1,.3,1)}
+.studio-drawing-task-action:hover{background:var(--color-raised)}
 .studio-drawing-task-action>span{flex:1;min-width:0}
 .studio-drawing-task-action>svg{flex-shrink:0;color:var(--color-accent)}
-.studio-drawing-dialog button,.studio-drawing-dialog summary{min-height:48px;min-width:48px}
-.studio-drawing-dialog [data-studio-drawing-save-header]>div>p:first-child{font-size:18px}
+.studio-drawing-dialog button,.studio-drawing-dialog summary{min-height:44px;min-width:44px}
+.studio-drawing-dialog [data-studio-drawing-save-header]>div>p:first-child{font-size:17px}
 [data-studio-drawing-save-details=true]>section{width:100%}
 .studio-drawing-dialog details{margin-top:18px}
-.studio-drawing-clarity-pane-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:56px;padding:3px 12px;border-bottom:1px solid var(--color-line);background:color-mix(in oklch,var(--color-panel) 94%,var(--color-accent-soft))}
-.studio-drawing-clarity-pane-heading h2{font-size:15px;font-weight:700}
+.studio-drawing-clarity-pane-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:2px 12px;border-bottom:1px solid var(--color-line);background:var(--color-panel)}
+.studio-drawing-clarity-pane-heading h2{font-size:14px;font-weight:600;word-break:keep-all}
 [data-studio-drawing-clarity=true] #studio-workspace{position:relative}
-.studio-drawing-clarity-pane{position:absolute;top:0;bottom:0;z-index:35;display:flex;flex-direction:column;min-height:0;flex-shrink:0;border-left:1px solid color-mix(in oklch,var(--color-accent) 18%,var(--color-line));background:color-mix(in oklch,var(--color-panel) 97%,var(--color-card));backdrop-filter:blur(18px);box-shadow:-14px 0 32px -18px rgb(8 12 28 / .55)}
+.studio-drawing-clarity-pane{position:absolute;top:0;bottom:0;z-index:35;display:flex;flex-direction:column;min-height:0;flex-shrink:0;border-left:1px solid var(--color-line);background:var(--color-panel);box-shadow:var(--shadow-2,-10px 0 24px -16px color-mix(in oklch,var(--color-fg) 20%,transparent))}
 .studio-drawing-clarity-pane[hidden]{display:none}
-.studio-drawing-clarity-pane--brush,.studio-drawing-clarity-pane--pages{left:78px;right:auto;max-width:min(320px,calc(100vw - 86px));border-left:0;border-right:1px solid color-mix(in oklch,var(--color-accent) 18%,var(--color-line));box-shadow:14px 0 32px -18px rgb(8 12 28 / .55)}
+.studio-drawing-clarity-pane--brush,.studio-drawing-clarity-pane--pages{left:48px;right:auto;max-width:min(320px,calc(100vw - 56px));border-left:0;border-right:1px solid var(--color-line);box-shadow:var(--shadow-2,10px 0 24px -16px color-mix(in oklch,var(--color-fg) 20%,transparent))}
 .studio-drawing-clarity-pane--brush [data-studio-brush-workbench-dock=true]{position:static!important;min-height:0;flex:1;border:0}
 [data-studio-drawing-clarity=true]{--studio-drawing-inspector-width:min(360px,38vw)}
 .studio-drawing-clarity-pane--inspector{right:0;left:auto;width:var(--studio-drawing-inspector-width);min-width:0;max-width:var(--studio-drawing-inspector-width);overflow:hidden}
 /* 캔버스의 커서·채팅 버튼은 그 위에 열린 레이어 패널의 조작면을 침범하지 않는다. */
 [data-studio-drawing-clarity-panel=layers]:not([data-studio-drawing-clarity-mobile=true]) #studio-canvas-workspace{isolation:isolate}
-[data-studio-drawing-clarity-panel=layers]:not([data-studio-drawing-clarity-mobile=true]):has([data-studio-inspector-dock=right]) [data-studio-operation-sync-placement=floating]{
-  right:calc(var(--studio-drawing-inspector-width) + max(.75rem,env(safe-area-inset-right)));
-}
-[data-studio-inspector-dock=left]>.studio-drawing-clarity-pane--inspector{left:0;right:auto;border-left:0;border-right:1px solid color-mix(in oklch,var(--color-accent) 18%,var(--color-line));box-shadow:14px 0 32px -18px rgb(8 12 28 / .55)}
+[data-studio-drawing-clarity-panel=layers]:not([data-studio-drawing-clarity-mobile=true]):has([data-studio-inspector-dock=right]) [data-studio-operation-sync-placement=floating]{right:calc(var(--studio-drawing-inspector-width) + max(.75rem,env(safe-area-inset-right)))}
+[data-studio-inspector-dock=left]>.studio-drawing-clarity-pane--inspector{left:0;right:auto;border-left:0;border-right:1px solid var(--color-line);box-shadow:var(--shadow-2,10px 0 24px -16px color-mix(in oklch,var(--color-fg) 20%,transparent))}
 .studio-drawing-clarity-pane--inspector #studio-inspector{min-width:0!important;max-width:calc(min(360px,38vw) - 12px)!important}
 .studio-drawing-clarity-pane--inspector>div:not(.studio-drawing-clarity-pane-heading){min-height:0}
 body:has([data-studio-editor=true][data-studio-drawing-clarity=true]) [data-studio-brush-hud=true]{display:none!important}
@@ -183,182 +171,153 @@ html:not([data-studio-canvas-only=true]) [data-studio-editor=true][data-studio-m
 [data-studio-drawing-clarity-mobile=true] :is([data-studio-collaboration-disclosure=true]:not([data-studio-collaboration-following=true]),[data-studio-mobile-coach=true][data-studio-canvas-transient=coach],[data-studio-mobile-workspace-menu=true]){display:none}
 [data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-layout=simple] [data-studio-mobile-primary-actions]{grid-template-columns:repeat(auto-fit,minmax(max(44px,2.75rem),1fr));gap:clamp(0px,calc((100% - 308px) / 6),4px)}
 [data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-layout=simple] :is([data-studio-mobile-primary-actions] button,.studio-drawing-clarity-more summary){min-height:44px;min-width:44px;font-size:12px}
-.studio-drawing-clarity-mobile-help{position:fixed;inset:0;margin:auto;width:min(28rem,calc(100vw - 24px));height:fit-content;max-height:calc(100dvh - 32px);overflow:auto;padding:18px;border:1px solid var(--color-line);border-radius:18px;background:var(--color-panel);color:var(--color-fg)}
-.studio-drawing-clarity-mobile-help::backdrop{background:color-mix(in srgb,var(--color-fg) 40%,transparent)}
+/* 모바일(<1024px) 전 높이에서 상단 2단 바를 기본 접힘으로 유지해 88%+ 캔버스 시야를 확보한다. */
+#studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header{height:44px;min-height:44px;max-height:44px;padding:0 6px;gap:4px;background:var(--color-panel);border-bottom:1px solid var(--color-line);box-shadow:none}
+#studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title{height:44px;min-height:44px;max-height:44px}
+#studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-compact-edit-toggle{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:44px;min-height:44px;flex:none;padding:0 8px;border:1px solid var(--color-line-strong);border-radius:10px;background:var(--color-card);color:var(--color-fg);font-size:12px;font-weight:600;word-break:keep-all}
+#studio-app-shell[data-studio-drawing-clarity-mobile=true] div#studio-mobile-edit-options.studio-drawing-clarity-mobile-context[data-compact-expanded=false]{display:none}
+#studio-app-shell[data-studio-drawing-clarity-mobile=true] div#studio-mobile-edit-options.studio-drawing-clarity-mobile-context[data-compact-expanded=true]{background:var(--color-panel);border-bottom:1px solid var(--color-line)}
+.studio-drawing-clarity-mobile-help{position:fixed;inset:0;margin:auto;width:min(28rem,calc(100vw - 24px));height:fit-content;max-height:calc(100dvh - 32px);overflow:auto;padding:18px;border:1px solid var(--color-line);border-radius:16px;background:var(--color-panel);color:var(--color-fg)}
+.studio-drawing-clarity-mobile-help::backdrop{background:color-mix(in oklch,var(--color-canvas) 68%,transparent)}
 .studio-drawing-clarity-mobile-help>header{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.studio-drawing-clarity-mobile-help h2{font-size:16px;font-weight:700}
+.studio-drawing-clarity-mobile-help h2{font-size:16px;font-weight:600}
 .studio-drawing-clarity-mobile-help p{margin-block:16px;font-size:14px;line-height:1.7}
 html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=canvas]) [data-studio-device-guide-surface=studio-editor-canvas][data-studio-mobile-notice-compact=true],html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=comic]) [data-studio-device-guide-surface=studio-editor-comic][data-studio-mobile-notice-compact=true]{display:none}
-@media(max-width:639px){.studio-drawing-dialog{inset:0;transform:none;width:100%;height:100dvh;max-height:100dvh;border:0;border-radius:0}.studio-drawing-dialog-content{flex:1;padding:20px 18px calc(24px + env(safe-area-inset-bottom))}.studio-drawing-clarity-header{gap:8px}.studio-drawing-clarity-title h1{font-size:14px}}
+@media(max-width:639px){.studio-drawing-dialog{inset:0;transform:none;width:100%;height:100dvh;max-height:100dvh;border:0;border-radius:0}.studio-drawing-dialog-content{flex:1;padding:20px 18px calc(24px + env(safe-area-inset-bottom))}.studio-drawing-clarity-header{gap:4px}.studio-drawing-clarity-title h1{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.studio-drawing-clarity-header *,.studio-drawing-clarity-rail *,.studio-drawing-clarity-context-row *,.studio-drawing-clarity-more *,.studio-drawing-task-dialog *{transition:none!important;animation:none!important;transform:none!important}}
-@media(forced-colors:active){.studio-drawing-clarity-button,.studio-drawing-clarity-rail button,.studio-drawing-stage-pill,.studio-drawing-ergonomics-chip{border-color:ButtonText}.studio-drawing-clarity-button[aria-pressed=true],.studio-drawing-stage-pill[aria-pressed=true],.studio-drawing-ergonomics-chip[aria-pressed=true]{outline:2px solid Highlight}}
-/* 도구 분류마다 작업대의 실제 도구를 보여 준다. */
-.studio-drawing-task-purpose {
-  display: grid; grid-template-columns: 50px 1fr; grid-template-rows: auto auto; align-content: center;
-  gap: 3px 14px; min-height: 98px; padding: 14px; border: 1px solid var(--color-line);
-  border-radius: 10px; background: var(--color-card); color: var(--color-fg); text-align: start; cursor: pointer;
-}
-.studio-drawing-task-purpose:hover { border-color: var(--color-line-strong); background: var(--color-raised); }
-.studio-drawing-task-art { --studio-tool-art-size: 48px; grid-row: span 2; align-self: center; }
-.studio-drawing-task-purpose[data-drawing-task-category="drawing"] { --task-ink: #d67b51; }
-.studio-drawing-task-purpose[data-drawing-task-category="document"] { --task-ink: #669cb8; }
-.studio-drawing-task-purpose[data-drawing-task-category="output"] { --task-ink: #c76f7b; }
-.studio-drawing-task-purpose[data-drawing-task-category="workspace"] { --task-ink: #65a58d; }
-.studio-drawing-task-purpose {
-  min-width: 0;
-  border-inline-start: 3px solid color-mix(in oklab, var(--task-ink) 75%, var(--color-line));
-  background: color-mix(in oklab, var(--task-ink) 7%, var(--color-card));
-}
-.studio-drawing-task-search {
-  display: flex; align-items: center; gap: 10px; min-height: 46px; margin-bottom: 12px;
-  padding-inline: 13px; border: 1px solid var(--color-line-strong); border-radius: 10px;
-  background: var(--color-panel); color: var(--color-fg-2);
-}
-.studio-drawing-task-search:focus-within { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-.studio-drawing-task-search input { flex: 1; min-width: 0; min-height: 44px; border: 0; background: transparent; color: var(--color-fg); font: inherit; }
-.studio-drawing-task-search input:focus-visible { outline: none; }
+@media(forced-colors:active){.studio-drawing-clarity-button,.studio-drawing-clarity-rail button,.studio-drawing-stage-pill,.studio-drawing-ergonomics-chip,.studio-drawing-workflow-step{border-color:ButtonText}.studio-drawing-clarity-button[aria-pressed=true],.studio-drawing-stage-pill[aria-pressed=true],.studio-drawing-ergonomics-chip[aria-pressed=true],.studio-drawing-workflow-step[aria-pressed=true]{outline:2px solid Highlight}}
+/* 도구 분류마다 작업대의 실제 도구를 보여 준다(의미 토큰 기반). */
+.studio-drawing-task-purpose{display:grid;grid-template-columns:50px 1fr;grid-template-rows:auto auto;align-content:center;gap:3px 14px;min-height:92px;min-width:0;padding:14px;border:1px solid var(--color-line);border-inline-start:3px solid color-mix(in oklch,var(--task-ink) 75%,var(--color-line));border-radius:10px;background:color-mix(in oklch,var(--task-ink) 7%,var(--color-card));color:var(--color-fg);text-align:start;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1),border-color 150ms cubic-bezier(.16,1,.3,1)}
+.studio-drawing-task-purpose:hover{border-color:var(--color-line-strong);background:var(--color-raised)}
+.studio-drawing-task-art{--studio-tool-art-size:48px;grid-row:span 2;align-self:center}
+.studio-drawing-task-purpose[data-drawing-task-category="drawing"]{--task-ink:var(--color-accent)}
+.studio-drawing-task-purpose[data-drawing-task-category="document"]{--task-ink:var(--color-cool)}
+.studio-drawing-task-purpose[data-drawing-task-category="output"]{--task-ink:var(--color-warn)}
+.studio-drawing-task-purpose[data-drawing-task-category="workspace"]{--task-ink:var(--color-good)}
+.studio-drawing-task-search{display:flex;align-items:center;gap:10px;min-height:44px;margin-bottom:12px;padding-inline:12px;border:1px solid var(--color-line-strong);border-radius:10px;background:var(--color-panel);color:var(--color-fg-2)}
+.studio-drawing-task-search:focus-within{outline:2px solid var(--color-accent);outline-offset:2px}
+.studio-drawing-task-search input{flex:1;min-width:0;min-height:44px;border:0;background:transparent;color:var(--color-fg);font:inherit}
+.studio-drawing-task-search input:focus-visible{outline:none}
 @media (max-width: 560px) {
-  .studio-drawing-task-grid { grid-template-columns: minmax(0, 1fr); gap: 6px; }
-  .studio-drawing-task-purpose { min-height: 66px; padding: 7px 12px; grid-template-columns: 42px minmax(0, 1fr); column-gap: 12px; }
-  .studio-drawing-task-art { --studio-tool-art-size: 42px; }
+  .studio-drawing-task-grid{grid-template-columns:minmax(0,1fr);gap:6px}
+  .studio-drawing-task-purpose{min-height:66px;padding:7px 12px;grid-template-columns:42px minmax(0,1fr);column-gap:12px}
+  .studio-drawing-task-art{--studio-tool-art-size:42px}
 }
-@media (prefers-reduced-motion: no-preference) and (pointer: coarse) {
-  .studio-drawing-task-purpose .studio-drawing-task-art { transition: transform 120ms ease-out; }
-  .studio-drawing-task-purpose:active .studio-drawing-task-art { transform: scale(.94); }
-}
-@media (prefers-reduced-motion: no-preference) and (hover: hover) {
-  .studio-drawing-task-art { transition: transform 150ms ease-out; }
-  .studio-drawing-task-purpose:hover .studio-drawing-task-art { transform: translateY(-2px) rotate(-3deg); }
-}
-.studio-drawing-task-purpose>strong{font-size:16px;line-height:1.4}
+.studio-drawing-task-purpose>strong{font-size:15px;font-weight:600;line-height:1.4;word-break:keep-all}
 .studio-drawing-task-purpose>span:last-child{font-size:13px;line-height:1.5;color:var(--color-fg-2)}
-.studio-drawing-task-category-heading{display:flex;align-items:center;gap:12px;margin-bottom:20px}
-.studio-drawing-task-category-heading h3{font-size:18px;font-weight:700}
+.studio-drawing-task-category-heading{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.studio-drawing-task-category-heading h3{font-size:17px;font-weight:600}
 .studio-drawing-task-category-heading p{margin-top:4px;font-size:13px;line-height:1.5;color:var(--color-fg-2)}
-/* 원고와 입력 좌표는 그대로 유지하고 편집기 크롬에 Starlight 프로스티드 글래스 깊이감을 부여한다. */
-#studio-app-shell[data-studio-drawing-clarity=true]{background:radial-gradient(circle at 18% 8%,color-mix(in oklch,var(--color-accent) 9%,var(--color-canvas)),var(--color-canvas) 62%)!important}
+/* 캔버스 배경은 평탄한 단일 시맨틱 토큰으로 유지한다(장식 그라디언트·글로우 금지). */
+#studio-app-shell[data-studio-drawing-clarity=true]{background:var(--color-canvas)!important}
 #studio-app-shell[data-studio-drawing-clarity=true] :is([data-studio-layer-row],[data-studio-brush-chip]):is([aria-selected=true],[data-studio-layer-selected=true]){
-  border-color:color-mix(in oklch,var(--color-accent) 64%,white 10%)!important;background:color-mix(in oklch,var(--color-accent-soft) 90%,var(--color-panel))!important;box-shadow:inset 0 1px 0 rgb(255 255 255 / .14),0 8px 18px -12px color-mix(in oklch,var(--color-accent) 45%,transparent)!important
+  border-color:var(--color-accent)!important;background:var(--color-accent-soft)!important;box-shadow:none!important;
 }
 #studio-app-shell[data-studio-drawing-clarity=true] :is([data-studio-canvas-status-rail],[data-studio-status-bar]){
-  border-color:color-mix(in oklch,var(--color-accent) 22%,var(--color-line-strong))!important;background:color-mix(in oklch,var(--color-panel) 90%,transparent)!important;backdrop-filter:blur(16px) saturate(1.2)
+  border-color:var(--color-line-strong)!important;background:var(--color-panel)!important;
 }
-/* 데스크톱에서도 자동저장 복구·팔로워·내부편집·채우기 미리보기 배너가 마운트될 때 캔버스 원점(77.5px)이 밀리지 않도록 오버레이로 고정한다. */
+/* 데스크톱에서도 자동저장 복구·팔로워·내부편집·채우기 미리보기 배너가 마운트될 때 캔버스 원점이 밀리지 않도록 오버레이로 고정한다. */
 [data-studio-editor=true] [data-studio-canvas-status-rail]:not([data-studio-canvas-status-rail-filled])>:not([data-studio-selection-command-lane=true]){position:absolute;inset:3.5rem .75rem auto;z-index:25;margin-bottom:0}
-#studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-editing-dock=true]{
-  background:color-mix(in oklch,var(--color-panel) 92%,transparent);backdrop-filter:blur(18px) saturate(1.2)
-}
-#studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-actions] :is(button,summary){
-  border:1px solid transparent;border-radius:14px;color:var(--color-fg-2);font-size:12px
-}
+#studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-editing-dock=true]{background:var(--color-panel);border-top:1px solid var(--color-line)}
+#studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-actions] :is(button,summary){border:1px solid transparent;border-radius:10px;color:var(--color-fg-2);font-size:12px}
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-actions] :is(button[aria-pressed=true],button[aria-expanded=true],details[open]>summary){
-  border-color:color-mix(in oklch,var(--color-accent) 64%,white 10%)!important;background:color-mix(in oklch,var(--color-accent-soft) 92%,var(--color-panel))!important;color:var(--color-fg)!important;box-shadow:inset 0 1px 0 rgb(255 255 255 / .14)
+  border-color:var(--color-accent)!important;background:var(--color-accent-soft)!important;color:var(--color-fg)!important;box-shadow:none!important;
 }
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-actions] button[aria-pressed=true] svg{color:inherit!important}
 @media(forced-colors:active){
-  #studio-app-shell[data-studio-drawing-clarity=true] .studio-drawing-clarity-save{background:Highlight!important;color:HighlightText!important;border-color:Highlight!important}
+  #studio-app-shell[data-studio-drawing-clarity=true] .studio-drawing-clarity-save,
+  #studio-app-shell[data-studio-drawing-clarity=true] .studio-drawing-clarity-export{background:Highlight!important;color:HighlightText!important;border-color:Highlight!important}
   #studio-app-shell[data-studio-drawing-clarity=true] :is(.studio-drawing-clarity-header,[data-studio-mobile-editing-dock=true],[data-studio-inspector-primary]){background:Canvas!important;color:CanvasText!important}
   #studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-actions] :is(button[aria-pressed=true],button[aria-expanded=true],details[open]>summary){border-color:Highlight!important;background:Canvas!important;color:CanvasText!important;outline:2px solid Highlight;outline-offset:-2px}
 }
-/* Grand Atelier V4 드로잉 상단 메뉴바 · 옴니박스 · 손떨림 슬라이더 · 웹툰 좌측 레일 */
-.studio-drawing-classic-menubar{display:none;align-items:center;gap:2px;padding:3px;border:1px solid color-mix(in oklch,var(--color-line-strong) 72%,transparent);border-radius:12px;background:color-mix(in oklch,var(--color-card) 78%,transparent)}
-@media(min-width:1260px){.studio-drawing-classic-menubar{display:inline-flex}}
-/* 일곱 메뉴와 명령 이름을 모두 보여 주면서 제목 아래에 저장·오프라인 안내 두 줄을 확보한다. */
-@media (min-width: 1260px) and (max-width: 1365px) {
-  .studio-drawing-clarity-header:not(.studio-drawing-clarity-mobile-header) { gap: 6px; }
-  .studio-drawing-clarity-header .studio-drawing-classic-menu-item { padding-inline: 5px; }
-  .studio-drawing-clarity-header :is(.studio-drawing-omnibox, .studio-drawing-clarity-compact-btn, .studio-drawing-clarity-share) {
-    gap: 5px; padding-inline: 8px;
-  }
-  .studio-drawing-omnibox > kbd { display: none; }
+/* 단일 44px 상단바 내 7대 표준 메뉴 · 5단계 제작 공정 스위처 · 단일 ⌘K 옴니박스 */
+.studio-drawing-classic-menubar{display:none;align-items:center;gap:2px;padding:0 2px;border:0;border-radius:8px;background:transparent}
+@media(min-width:1180px){.studio-drawing-classic-menubar{display:inline-flex}}
+.studio-drawing-workflow-switcher{display:none;align-items:center;gap:2px;padding:0 4px;border-inline:1px solid var(--color-line)}
+@media(min-width:1420px){.studio-drawing-workflow-switcher{display:inline-flex}}
+.studio-drawing-workflow-step{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 7px;border:0;border-radius:8px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;word-break:keep-all;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1),color 150ms cubic-bezier(.16,1,.3,1)}
+.studio-drawing-workflow-step:hover:not(:disabled){background:var(--color-raised);color:var(--color-fg)}
+.studio-drawing-workflow-step[aria-pressed=true]{background:var(--color-accent-soft);color:var(--color-accent);font-weight:600}
+.studio-drawing-workflow-step:disabled{opacity:.45;cursor:not-allowed}
+@media (min-width: 1180px) and (max-width: 1365px) {
+  .studio-drawing-clarity-header:not(.studio-drawing-clarity-mobile-header){gap:4px}
+  .studio-drawing-clarity-header :is(.studio-drawing-omnibox,.studio-drawing-clarity-compact-btn,.studio-drawing-clarity-share,.studio-drawing-clarity-export){gap:4px;padding-inline:8px}
+  .studio-drawing-omnibox>kbd{display:none}
 }
-.studio-drawing-classic-menu-item{min-width:44px;min-height:44px;padding:4px 9px;border:0;border-radius:8px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:650;white-space:nowrap;cursor:pointer;transition:background-color .15s ease,color .15s ease}
-.studio-drawing-classic-menu-item:hover{background:color-mix(in oklch,var(--color-raised) 88%,var(--color-accent-soft));color:var(--color-fg)}
-.studio-drawing-omnibox{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:6px 12px;border:1px solid color-mix(in oklch,var(--color-accent) 34%,var(--color-line-strong));border-radius:999px;background:color-mix(in oklch,var(--color-card) 90%,var(--color-panel));color:var(--color-fg);font-size:12px;font-weight:650;white-space:nowrap;cursor:pointer;transition:border-color .16s ease,background-color .16s ease}
-.studio-drawing-omnibox:hover{border-color:var(--color-accent);background:color-mix(in oklch,var(--color-raised) 86%,var(--color-accent-soft))}
-.studio-drawing-omnibox>kbd{padding:2px 6px;border:1px solid var(--color-line);border-radius:6px;background:var(--color-panel);color:var(--color-fg-2);font-size:11px;font-weight:700}
-.studio-drawing-clarity-compact-btn{min-height:44px;min-width:44px;padding:6px 10px;font-size:12px;white-space:nowrap}
-.studio-drawing-clarity-share{min-height:44px;padding:6px 13px;border-color:var(--color-line-strong);background:var(--color-card);color:var(--color-fg);font-size:12px;font-weight:650;white-space:nowrap;box-shadow:none}
-.studio-drawing-stabilizer-group{display:inline-flex;align-items:center;gap:2px;padding-inline-end:8px;border-inline-end:1px solid var(--color-line)}
+.studio-drawing-omnibox{display:inline-flex;align-items:center;gap:6px;min-height:44px;min-width:44px;padding:0 10px;border:1px solid var(--color-line-strong);border-radius:10px;background:var(--color-card);color:var(--color-fg);font-size:12px;font-weight:600;white-space:nowrap;word-break:keep-all;cursor:pointer;transition:border-color 150ms cubic-bezier(.16,1,.3,1),background-color 150ms cubic-bezier(.16,1,.3,1)}
+.studio-drawing-omnibox:hover{border-color:var(--color-accent);background:var(--color-raised)}
+.studio-drawing-omnibox>kbd{padding:1px 5px;border:1px solid var(--color-line);border-radius:5px;background:var(--color-panel);color:var(--color-fg-2);font-family:var(--font-mono);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+.studio-drawing-clarity-compact-btn{min-height:44px;min-width:44px;padding:0 9px;font-size:12px;white-space:nowrap}
+.studio-drawing-clarity-share{min-height:44px;padding:0 10px;border-color:var(--color-line-strong);background:var(--color-card);color:var(--color-fg);font-size:12px;font-weight:600;white-space:nowrap;box-shadow:none}
+.studio-drawing-stabilizer-group{display:inline-flex;align-items:center;gap:2px;padding-inline-end:6px;border-inline-end:1px solid var(--color-line)}
 .studio-drawing-stabilizer-group>.studio-drawing-ergonomics-chip{border:0;background:transparent}
 .studio-drawing-stabilizer-slider{width:64px;min-height:44px;accent-color:var(--color-accent);cursor:pointer}
-/* 선택한 입력 도구는 세로선, 펼친 패널은 밑줄, 키보드 포커스는 둘레선으로 표시한다. */
-#studio-app-shell .studio-drawing-clarity-tools > .studio-drawing-clarity-button {
-  position: relative; gap: 3px; min-height: 50px; min-width: 44px; padding: 4px 2px;
-  border: 1px solid transparent !important; border-radius: 6px !important; background: transparent !important;
-  box-shadow: none !important; color: var(--color-fg-2) !important; font-size: 12px; font-weight: 550;
+/* 선택한 입력 도구는 2px 인셋 라벤더 세로선, 펼친 패널은 강조 배경, 키보드 포커스는 둘레선으로 표시한다. */
+#studio-app-shell .studio-drawing-clarity-tools>.studio-drawing-clarity-button{
+  position:relative;gap:2px;min-height:44px;height:44px;min-width:44px;width:44px;padding:2px;
+  border:1px solid transparent!important;border-radius:8px!important;background:transparent!important;
+  box-shadow:none!important;color:var(--color-fg-2)!important;font-size:12px;font-weight:500;
 }
-#studio-app-shell .studio-drawing-clarity-tools > button:hover:not(:disabled),
-#studio-app-shell .studio-drawing-clarity-tools > button[aria-pressed=true] {
-  transform: none; background: var(--color-raised) !important; color: var(--color-fg) !important;
+#studio-app-shell .studio-drawing-clarity-tools>button:hover:not(:disabled),
+#studio-app-shell .studio-drawing-clarity-tools>button[aria-pressed=true],
+#studio-app-shell .studio-drawing-clarity-tools>button[aria-expanded=true]{
+  transform:none;background:var(--color-raised)!important;color:var(--color-fg)!important;
 }
-#studio-app-shell .studio-drawing-clarity-tools > button[aria-pressed=true] { font-weight: 700; }
-#studio-app-shell .studio-drawing-clarity-tools > button[aria-pressed=true]::before {
-  content: ""; position: absolute; inset: 10px auto 10px 2px; border-radius: 0; background: none;
-  border-inline-start: 3px solid currentColor;
+#studio-app-shell .studio-drawing-clarity-tools>button[aria-pressed=true]{
+  background:var(--color-accent-soft)!important;color:var(--color-accent)!important;font-weight:600;
 }
-#studio-app-shell .studio-drawing-ergonomics-bar [data-studio-brush-active-pill] {
-  border-color: var(--color-line) !important; background: transparent !important;
-  color: var(--color-fg) !important; box-shadow: none !important;
+#studio-app-shell .studio-drawing-clarity-tools>button[aria-pressed=true]::before{
+  content:"";position:absolute;inset:8px auto 8px 2px;border-radius:1px;background:none;
+  border-inline-start:2px solid var(--color-accent);
 }
-.studio-drawing-clarity-tools > button[aria-expanded=true] > span:last-of-type {
-  color: var(--color-fg); text-decoration: underline; text-underline-offset: 3px;
+#studio-app-shell .studio-drawing-ergonomics-bar [data-studio-brush-active-pill]{
+  border-color:var(--color-line)!important;background:transparent!important;
+  color:var(--color-fg)!important;box-shadow:none!important;
 }
-.studio-drawing-clarity-tools > button:focus-visible,
-.studio-drawing-ergonomics-bar :is(button,input):focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-accent)); outline-offset: -3px;
+.studio-drawing-clarity-tools>button:focus-visible,
+.studio-drawing-ergonomics-bar :is(button,input):focus-visible{
+  outline:2px solid var(--color-focus-ring,var(--color-accent));outline-offset:-2px;
 }
 @media (forced-colors: active) {
-  .studio-drawing-clarity-tools > button[aria-pressed=true] { outline: none; }
-  #studio-app-shell .studio-drawing-clarity-tools > button[aria-pressed=true]::before { border-color: Highlight; }
-  .studio-drawing-clarity-tools > button:focus-visible,
-  .studio-drawing-ergonomics-bar :is(button,input):focus-visible { outline: 2px dashed ButtonText; }
+  .studio-drawing-clarity-tools>button[aria-pressed=true]{outline:none}
+  #studio-app-shell .studio-drawing-clarity-tools>button[aria-pressed=true]::before{border-color:Highlight}
+  .studio-drawing-clarity-tools>button:focus-visible,
+  .studio-drawing-ergonomics-bar :is(button,input):focus-visible{outline:2px dashed ButtonText}
 }
-#studio-app-shell .studio-drawing-rail-kbd{position:absolute;inset-block-start:3px;inset-inline-end:3px;color:var(--color-fg-2);font-size:9px;font-weight:500;line-height:1}
-@media(max-height:540px){.studio-drawing-clarity-header{min-height:52px;padding:4px 10px;gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}.studio-drawing-clarity-context-row{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;min-height:48px;padding:3px 8px}.studio-drawing-page-position,.studio-drawing-ergonomics-bar,.studio-drawing-stage-pills,.studio-drawing-clarity-context-actions,.studio-drawing-clarity-context-actions button{flex-wrap:nowrap;flex-shrink:0;white-space:nowrap}.studio-drawing-clarity-rail{padding:8px 6px;gap:8px}}
+#studio-app-shell .studio-drawing-rail-kbd{position:absolute;inset-block-end:2px;inset-inline-end:3px;color:var(--color-fg-3);font-family:var(--font-mono);font-size:11px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1;opacity:.75;pointer-events:none}
+@media(max-height:540px){.studio-drawing-clarity-header{height:44px;min-height:44px;padding:0 8px;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}.studio-drawing-clarity-context-row{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;min-height:44px;padding:0 6px}.studio-drawing-page-position,.studio-drawing-ergonomics-bar,.studio-drawing-stage-pills,.studio-drawing-clarity-context-actions,.studio-drawing-clarity-context-actions button{flex-wrap:nowrap;flex-shrink:0;white-space:nowrap}.studio-drawing-clarity-rail{padding:4px 2px;gap:2px}}
 
-.studio-drawing-pinned-tools:empty { display: none; }
-.studio-drawing-pinned-tools:not(:empty) {
-  display: grid; gap: 2px; padding-block: 4px; border-block: 1px solid var(--color-line);
-}
-#studio-app-shell .studio-drawing-pinned-tools [data-studio-rail-tool-id] {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; padding: 3px 2px; width: 100%; min-width: 44px; min-height: 50px; height: auto;
-  background: transparent !important; color: var(--color-fg-2) !important; box-shadow: none !important;
+.studio-drawing-pinned-tools:empty{display:none}
+.studio-drawing-pinned-tools:not(:empty){display:grid;gap:2px;padding-block:4px;border-block:1px solid var(--color-line)}
+#studio-app-shell .studio-drawing-pinned-tools [data-studio-rail-tool-id]{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;padding:2px;width:44px;min-width:44px;min-height:44px;height:44px;margin-inline:auto;
+  border-radius:8px;background:transparent!important;color:var(--color-fg-2)!important;box-shadow:none!important;
 }
 #studio-app-shell .studio-drawing-pinned-tools [data-studio-rail-tool-id]:hover,
-#studio-app-shell .studio-drawing-pinned-tools [data-studio-rail-tool-id][aria-pressed=true] {
-  background: var(--color-raised) !important; color: var(--color-fg) !important;
+#studio-app-shell .studio-drawing-pinned-tools [data-studio-rail-tool-id][aria-pressed=true]{
+  background:var(--color-raised)!important;color:var(--color-fg)!important;
 }
-.studio-drawing-pinned-tools .studio-premium-tool-glyph__art { display: none; }
-#studio-app-shell .studio-drawing-pinned-tools button[aria-pressed=true]::before {
-  inset: 10px auto 10px 2px; border-inline-start: 3px solid currentColor; border-radius: 0; background: none;
+.studio-drawing-pinned-tools .studio-premium-tool-glyph__art{display:none}
+#studio-app-shell .studio-drawing-pinned-tools button[aria-pressed=true]::before{
+  inset:8px auto 8px 2px;border-inline-start:2px solid var(--color-accent);border-radius:1px;background:none;
 }
-.studio-drawing-pinned-tools button > span:not(.studio-premium-tool-glyph) { font-size: 11px; line-height: 1.2; overflow-wrap: anywhere; }
+.studio-drawing-pinned-tools button>span:not(.studio-premium-tool-glyph){position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 
 @media (forced-colors: active) {
-  #studio-app-shell :is(.studio-drawing-clarity-tools, [data-studio-mobile-primary-actions]) button[aria-pressed=true] {
-    background: ButtonFace !important;
-    border-color: Highlight !important;
-    color: ButtonText !important;
+  #studio-app-shell :is(.studio-drawing-clarity-tools,[data-studio-mobile-primary-actions]) button[aria-pressed=true]{
+    background:ButtonFace!important;border-color:Highlight!important;color:ButtonText!important;
   }
-  /* 공통 선택 규칙은 자식에 HighlightText를 지정한다. 이 레일은 ButtonFace와 짝을 이루는 글자색을 쓴다. */
-  #studio-app-shell :is(.studio-drawing-clarity-tools, [data-studio-mobile-primary-actions]) button[aria-pressed=true] * {
-    color: inherit !important;
-  }
+  #studio-app-shell :is(.studio-drawing-clarity-tools,[data-studio-mobile-primary-actions]) button[aria-pressed=true] *{color:inherit!important}
 }
 
-.studio-drawing-filter-choice { display: grid; gap: .4rem; margin-block: .75rem; font-size: .875rem; }
-.studio-drawing-filter-choice select { min-width: 0; min-height: 44px; width: 100%; padding: .5rem; border: 1px solid var(--color-line-strong); border-radius: 8px; background: var(--color-panel); color: var(--color-fg); }
+.studio-drawing-filter-choice{display:grid;gap:.4rem;margin-block:.75rem;font-size:.875rem}
+.studio-drawing-filter-choice select{min-width:0;min-height:44px;width:100%;padding:.5rem;border:1px solid var(--color-line-strong);border-radius:8px;background:var(--color-panel);color:var(--color-fg)}
 
-.studio-drawing-compact-filter-menu { display: none; }
-.studio-drawing-brush-label { font-weight: 700; }
-@media (min-width: 1024px) and (max-width: 1259px) {
-  .studio-drawing-compact-filter-menu { display: flex; flex-shrink: 0; }
-}
+.studio-drawing-brush-label{font-weight:600}
 
-.studio-drawing-filter-progress { position: fixed; left: 50%; bottom: max(5rem, calc(env(safe-area-inset-bottom) + 4rem)); z-index: 80; transform: translateX(-50%); display: flex; align-items: center; gap: .75rem; max-width: calc(100vw - 1rem); padding: 0 .5rem 0 1rem; border: 1px solid var(--color-line-strong); border-radius: .75rem; background: var(--color-panel); color: var(--color-fg); font-size: .875rem; }
-.studio-drawing-filter-progress button { flex: none; min-width: 44px; min-height: 44px; color: var(--color-accent); }
+.studio-drawing-filter-progress{position:fixed;left:50%;bottom:max(5rem,calc(env(safe-area-inset-bottom) + 4rem));z-index:80;transform:translateX(-50%);display:flex;align-items:center;gap:.75rem;max-width:calc(100vw - 1rem);padding:0 .5rem 0 1rem;border:1px solid var(--color-line-strong);border-radius:10px;background:var(--color-panel);color:var(--color-fg);font-size:.875rem}
+.studio-drawing-filter-progress button{flex:none;min-width:44px;min-height:44px;color:var(--color-accent)}
 
-.studio-drawing-selected-tools { display: none; }
-.studio-drawing-clarity-context-row:has(> .studio-drawing-selection-slot:not(:empty)) > .studio-drawing-selected-tools { display: flex; flex: none; align-items: center; gap: .25rem; }
+.studio-drawing-selected-tools{display:none}
+.studio-drawing-clarity-context-row:has(> .studio-drawing-selection-slot:not(:empty))>.studio-drawing-selected-tools{display:flex;flex:none;align-items:center;gap:.25rem}

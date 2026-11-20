@@ -92,6 +92,16 @@ describe("StudioScrollPreviewPanel rhythm analysis", () => {
     expect(html).toContain("과밀 페이지");
   });
 
+  it("renders localized OVERSIZED_PANEL insight when a single panel exceeds 1.4 screens", () => {
+    const html = renderPanel([
+      makePage("긴 컷 페이지", [{ id: "tall-frame", type: "frame", y: 40, height: 2_000 }], 2_400),
+    ]);
+
+    expect(html).toContain('data-insight-code="OVERSIZED_PANEL"');
+    expect(html).toContain("세로로 과도하게 긴 컷");
+    expect(html).toContain("한눈에 들어오도록 컷을 나누거나");
+  });
+
   it("keeps page selection optional and exposes per-page rhythm badges as read-only overlays", () => {
     const html = renderPanel([
       makePage("p1", [{ id: "f1", type: "frame", y: 100, height: 400 }]),

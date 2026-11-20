@@ -125,6 +125,24 @@ describe("analyzeStudioScrollRhythm", () => {
     );
   });
 
+  it("flags single panels taller than 1.4 smartphone screens with OVERSIZED_PANEL", () => {
+    const result = analyzeStudioScrollRhythm([
+      page("tall", 2_560, [{ type: "frame", y: 40, height: 2_000 }]),
+    ]);
+
+    expect(result.pages[0]?.oversizedPanelCount).toBe(1);
+    expect(result.insights).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "OVERSIZED_PANEL",
+          pageId: "tall",
+          severity: "warning",
+          params: { panelScreens: "1.6", count: "1" },
+        }),
+      ])
+    );
+  });
+
   it("detects monotonous beat spacing without treating two beats as evidence", () => {
     const flat = analyzeStudioScrollRhythm([
       page(

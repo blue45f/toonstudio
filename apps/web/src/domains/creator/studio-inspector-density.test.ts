@@ -17,8 +17,12 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  countActiveImageLayerEffects,
+  formatInspectorCollapsedActiveBadge,
   inspectorAdvancedSectionIds,
   inspectorDefaultLeafCount,
+  inspectorEssentialBudgetSummary,
+  inspectorEssentialGroupIds,
   inspectorGroups,
   inspectorGroupsByTier,
   inspectorTotalLeafCount,
@@ -304,5 +308,41 @@ describe("inspector density — 고급 조판은 마운트한 패널 수와 일�
       (candidate) => candidate.id === "element.typography-advanced",
     );
     expect(group?.rationale).toMatch(/패널 개수/u);
+  });
+});
+
+describe("T-UX-11 인스펙터 스티키 헤더 · 접힌 활성 배지 · essential 5~9 예산 계약", () => {
+  it("모든 패널의 essential 예산 요약이 5~9 범위를 충족한다", () => {
+    for (const panel of PANELS) {
+      const summary = inspectorEssentialBudgetSummary(panel);
+      expect(summary.withinBudget).toBe(true);
+      expect(summary.essentialCount).toBeGreaterThanOrEqual(5);
+      expect(summary.essentialCount).toBeLessThanOrEqual(9);
+      expect(inspectorEssentialGroupIds(panel).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("닫힌 <details> 활성 카운트 배지와 이미지 효과 집계가 정확하다", () => {
+    expect(formatInspectorCollapsedActiveBadge(0)).toBe("꺼짐");
+    expect(formatInspectorCollapsedActiveBadge(3)).toBe("활성 3");
+    expect(formatInspectorCollapsedActiveBadge(0, { unitLabel: "저장", emptyLabel: "0개" })).toBe("0개");
+    expect(formatInspectorCollapsedActiveBadge(2, { unitLabel: "저장", emptyLabel: "0개" })).toBe("저장 2");
+    expect(
+      countActiveImageLayerEffects({
+        borderEnabled: true,
+        halftoneEnabled: false,
+        effectsStack: [{ enabled: true }, { enabled: false }, { enabled: true }],
+      }),
+    ).toBe(3);
+  });
+
+  it("StudioInspectorAsideShell은 sticky 헤더, 접힌 <details> 배지, 12px 바닥선을 준수한다", () => {
+    const shellSource = readFileSync(path.join(__dirname, "StudioInspectorAsideShell.tsx"), "utf-8");
+    expect(shellSource).toContain('data-studio-inspector-sticky-header="true"');
+    expect(shellSource).toContain('data-studio-inspector-essential-budget="5-9"');
+    expect(shellSource).toContain('data-studio-collapsed-badge="layer-effects"');
+    expect(shellSource).toContain('data-studio-collapsed-badge="layer-comps"');
+    expect(shellSource).toContain("sticky top-0");
+    expect(shellSource).not.toContain("text-[0.65rem]");
   });
 });

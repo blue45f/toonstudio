@@ -88,16 +88,16 @@ const FILTER_LABELS: Record<StoryboardControlFilter, string> = {
 };
 
 const REVIEW_TONE: Record<PageReviewStatus, string> = {
-  draft: "border-line bg-black/45 text-white",
-  "needs-review": "border-sky-400/40 bg-sky-500/20 text-sky-100",
-  "changes-requested": "border-rose-400/40 bg-rose-500/20 text-rose-100",
-  approved: "border-emerald-400/40 bg-emerald-500/20 text-emerald-100",
+  draft: "border-line bg-panel/90 text-fg",
+  "needs-review": "border-cool/40 bg-cool/15 text-cool",
+  "changes-requested": "border-bad/40 bg-bad/15 text-bad",
+  approved: "border-good/40 bg-good/15 text-good",
 };
 
 const PRIORITY_TONE: Record<StoryboardPriority, string> = {
-  blocker: "border-rose-400/40 bg-rose-500/15 text-rose-100",
-  attention: "border-amber-400/40 bg-amber-500/15 text-amber-100",
-  ready: "border-emerald-400/40 bg-emerald-500/15 text-emerald-100",
+  blocker: "border-bad/40 bg-bad/15 text-bad",
+  attention: "border-warn/40 bg-warn/15 text-warn",
+  ready: "border-good/40 bg-good/15 text-good",
 };
 
 const PRIORITY_ORDER = ["blocker", "attention", "ready"] as const;
@@ -137,8 +137,8 @@ function MetricButton({ label, value, active = false, onClick, title }: MetricBu
       title={title}
       className={cn("min-w-[6.75rem] rounded-xl border px-3 py-2 text-left transition-colors", active ? "border-accent bg-accent-soft text-accent" : "border-line bg-card/70 text-fg-2 hover:border-accent/50 hover:bg-raised/70")}
     >
-      <span className="block text-[10px] font-semibold uppercase tracking-wide text-fg-3">{label}</span>
-      <strong className="mt-0.5 block text-sm text-fg">{value}</strong>
+      <span className="block text-xs font-semibold text-fg-3">{label}</span>
+      <strong className="mt-0.5 block text-sm tabular-nums text-fg">{value}</strong>
     </button>
   );
 }
@@ -162,11 +162,11 @@ function ReviewBadge({ status, locked }: { status: PageReviewStatus; locked: boo
   return (
     <span
       className={cn(
-        "inline-flex max-w-full items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-bold shadow-sm backdrop-blur-sm",
+        "inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold",
         REVIEW_TONE[status],
       )}
     >
-      {locked ? <Lock size={9} aria-hidden /> : null}
+      {locked ? <Lock size={10} aria-hidden /> : null}
       <span className="truncate">{PAGE_REVIEW_STATUS_LABELS[status]}</span>
     </span>
   );
@@ -180,7 +180,7 @@ function PriorityBadge({
   return (
     <span
       className={cn(
-        "inline-flex max-w-full items-center rounded-full border px-1.5 py-0.5 text-[9px] font-bold",
+        "inline-flex max-w-full items-center rounded-full border px-2 py-0.5 text-xs font-semibold",
         PRIORITY_TONE[priority],
       )}
       title={issueLabel || "진단 이슈 없음"}
@@ -313,8 +313,8 @@ export function StudioStoryboardGridPanel({
               {...dragProps}
               title={reorderEnabled ? "드래그하여 순서 변경" : undefined}
               className={cn(
-                "group relative flex flex-col gap-1 rounded-xl border p-1.5 transition-all",
-                isActive ? "border-accent bg-accent-soft/40" : "border-line bg-card hover:bg-raised/50",
+                "group relative flex flex-col gap-1 rounded-xl border p-1.5 transition-colors",
+                isActive ? "border-accent bg-accent-soft/40 shadow-[inset_2px_0_0_var(--color-accent)]" : "border-line bg-card hover:bg-raised/50",
                 reorderEnabled && dnd.dragIndex === index && "opacity-50",
               )}
             >
@@ -345,7 +345,7 @@ export function StudioStoryboardGridPanel({
               <StudioPageThumbnail page={page} className="aspect-[2/3] h-auto w-full" />
 
               <span
-                className="truncate text-[10px] font-semibold text-fg-2"
+                className="truncate text-xs font-semibold text-fg-2"
                 title={page.note ? `${displayName}\n${page.note}` : displayName}
               >
                 {hasCustomPageName(page) ? `${index + 1}. ${displayName}` : displayName}
@@ -354,12 +354,12 @@ export function StudioStoryboardGridPanel({
 
               {teamReview ? (
                 <>
-                  <div className="flex min-w-0 items-center justify-between gap-1 text-[9px] text-fg-3">
+                  <div className="flex min-w-0 items-center justify-between gap-1 text-xs text-fg-3">
                     <span className="truncate" title={review.assignee || "담당자 미지정"}>
                       {review.assignee ? `담당 ${review.assignee}` : "담당자 미지정"}
                     </span>
                     {!metadataComplete ? (
-                      <span className="shrink-0 rounded-full border border-amber-400/30 bg-amber-500/10 px-1.5 py-0.5 font-semibold text-amber-200">
+                      <span className="shrink-0 rounded-full border border-warn/35 bg-warn/12 px-1.5 py-0.5 font-semibold text-warn">
                         샷 정보 필요
                       </span>
                     ) : null}
@@ -367,7 +367,7 @@ export function StudioStoryboardGridPanel({
 
                   <div className="flex min-w-0 items-center justify-between gap-1">
                     <PriorityBadge priority={row.priority} issues={row.issues} />
-                    <span className="text-[9px] font-semibold text-fg-3">준비도 {row.readinessScore}%</span>
+                    <span className="text-xs font-semibold tabular-nums text-fg-3">준비도 {row.readinessScore}%</span>
                   </div>
                 </>
               ) : null}
@@ -393,12 +393,12 @@ export function StudioStoryboardGridPanel({
                     }}
                     aria-label={`${displayName} 포즈 추천`}
                     title="이 컷의 장면에 맞는 포즈를 추천받아 바로 적용합니다"
-                    className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-md border border-line bg-panel px-1.5 text-[10px] font-semibold text-fg-2 hover:border-accent/50 hover:text-accent"
+                    className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md border border-line bg-panel px-2 text-xs font-semibold text-fg-2 hover:border-accent/50 hover:text-accent"
                   >
-                    <PersonStanding size={11} aria-hidden /> 포즈 추천
+                    <PersonStanding size={12} aria-hidden /> 포즈 추천
                   </button>
                   {page.posePresetId ? (
-                    <span className="truncate text-[9px] font-semibold text-accent" title={cutPoseName(page, poseCatalog) ?? page.posePresetId}>
+                    <span className="truncate text-xs font-semibold text-accent" title={cutPoseName(page, poseCatalog) ?? page.posePresetId}>
                       {cutPoseName(page, poseCatalog) ?? page.posePresetId}
                     </span>
                   ) : null}
@@ -412,11 +412,11 @@ export function StudioStoryboardGridPanel({
                     event.stopPropagation();
                     onDuplicatePage(page.id);
                   }}
-                  className="grid size-11 shrink-0 place-items-center rounded-lg bg-black/55 p-1 text-white hover:bg-black/70"
+                  className="grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-panel/90 p-1 text-fg hover:bg-raised"
                   title="페이지 복제"
                   aria-label={`${label} 복제`}
                 >
-                  <Copy size={11} aria-hidden />
+                  <Copy size={12} aria-hidden />
                 </button>
                 <button
                   type="button"
@@ -436,11 +436,12 @@ export function StudioStoryboardGridPanel({
                     })();
                   }}
                   disabled={!canDelete}
-                  className="grid size-11 shrink-0 place-items-center rounded-lg bg-black/55 p-1 text-white hover:bg-bad/80 disabled:opacity-30"
-                  title="페이지 삭제"
+                  data-unavailable-reason={!canDelete ? "마지막 1페이지는 삭제할 수 없습니다." : undefined}
+                  title={canDelete ? "페이지 삭제" : "마지막 1페이지는 삭제할 수 없습니다."}
                   aria-label={`${label} 삭제`}
+                  className="grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-panel/90 p-1 text-fg hover:bg-bad/80 hover:text-on-accent disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  <Trash2 size={11} aria-hidden />
+                  <Trash2 size={12} aria-hidden />
                 </button>
               </div>
             </div>
@@ -481,19 +482,19 @@ export function StudioStoryboardGridPanel({
         <div className="flex gap-2">
           <StudioPageThumbnail page={page} className="h-20 w-[3.35rem] shrink-0 rounded-md" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[11px] font-bold text-fg">{originalIndex + 1}. {label}</p>
-            <p className="mt-1 truncate text-[10px] text-fg-3">
+            <p className="truncate text-xs font-bold text-fg">{originalIndex + 1}. {label}</p>
+            <p className="mt-1 truncate text-xs text-fg-3">
               {[page.shotType, page.cameraAngle].filter(Boolean).join(" · ") || "샷 정보 미지정"}
             </p>
-            <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-fg-2">
+            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-fg-2">
               {issueLabel || review.note || page.note || "진단 이슈 없음"}
             </p>
           </div>
         </div>
-        <div className="mt-2 flex items-center justify-between gap-2 text-[9px] text-fg-3">
+        <div className="mt-2 flex items-center justify-between gap-2 text-xs tabular-nums text-fg-3">
           <span className="truncate">{review.assignee ? `담당 ${review.assignee}` : "담당자 미지정"}</span>
           <span className="inline-flex shrink-0 items-center gap-1">
-            {review.locked ? <Lock size={9} aria-label="잠금" /> : null}
+            {review.locked ? <Lock size={10} aria-label="잠금" /> : null}
             {!metadataComplete ? "샷 정보 필요" : `준비도 ${row.readinessScore}%`}
           </span>
         </div>
@@ -509,11 +510,11 @@ export function StudioStoryboardGridPanel({
           <section key={status} className="min-w-0 rounded-2xl border border-line bg-card/40 p-2.5">
             <header className="mb-2 flex items-center justify-between gap-2">
               <ReviewBadge status={status} locked={false} />
-              <span className="rounded-full bg-raised px-2 py-0.5 text-[10px] font-bold text-fg-2">{rows.length}</span>
+              <span className="rounded-full bg-raised px-2 py-0.5 text-xs font-semibold tabular-nums text-fg-2">{rows.length}</span>
             </header>
             <div className="flex max-h-[calc(100vh-18rem)] flex-col gap-2 overflow-y-auto pr-0.5">
               {rows.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-line px-2 py-6 text-center text-[10px] text-fg-3">
+                <p className="rounded-xl border border-dashed border-line px-2 py-6 text-center text-xs text-fg-3">
                   해당 페이지 없음
                 </p>
               ) : rows.map(renderQueueCard)}
@@ -532,11 +533,11 @@ export function StudioStoryboardGridPanel({
           <section key={priority} className="min-w-0 rounded-2xl border border-line bg-card/40 p-2.5">
             <header className="mb-2 flex items-center justify-between gap-2">
               <PriorityBadge priority={priority} issues={[]} />
-              <span className="rounded-full bg-raised px-2 py-0.5 text-[10px] font-bold text-fg-2">{rows.length}</span>
+              <span className="rounded-full bg-raised px-2 py-0.5 text-xs font-semibold tabular-nums text-fg-2">{rows.length}</span>
             </header>
             <div className="flex max-h-[calc(100vh-18rem)] flex-col gap-2 overflow-y-auto pr-0.5">
               {rows.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-line px-2 py-6 text-center text-[10px] text-fg-3">
+                <p className="rounded-xl border border-dashed border-line px-2 py-6 text-center text-xs text-fg-3">
                   해당 페이지 없음
                 </p>
               ) : rows.map(renderQueueCard)}
@@ -552,14 +553,14 @@ export function StudioStoryboardGridPanel({
       role="dialog"
       aria-modal="true"
       aria-label="스토리보드 컨트롤 룸"
-      className="fixed inset-0 z-[80] bg-[oklch(0.08_0.01_70/0.82)] p-2 text-fg backdrop-blur-sm sm:p-4"
+      className="fixed inset-0 z-[80] bg-canvas/85 p-2 text-fg sm:p-4"
     >
       <div className="mx-auto flex h-full w-full max-w-[100rem] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line px-4 py-3">
           <LayoutGrid size={16} className="text-accent" aria-hidden />
           <div>
             <h2 className="text-sm font-bold text-fg">스토리보드 컨트롤 룸</h2>
-            <p className="text-[10px] text-fg-3">
+            <p className="text-xs text-fg-3">
               {teamReview
                 ? "시퀀스·샷 메타·검토 상태·제작 준비도를 한 화면에서 점검합니다."
                 : "페이지 순서를 한눈에 보고 정리합니다. 카드를 누르면 그 페이지로 이동합니다."}
@@ -752,14 +753,12 @@ export function StudioStoryboardGridPanel({
             </span>
 
             <button
-              type="button"
-              disabled={visibleRows.length === 0}
+              type="button" disabled={visibleRows.length === 0}
+              data-unavailable-reason={visibleRows.length === 0 ? "조건에 맞는 페이지가 없어 CSV를 내보낼 수 없습니다." : undefined}
               onClick={() => downloadStoryboardReviewCsv(visibleRows)}
-              title={`현재 검색·필터 결과 ${visibleRows.length}개와 준비도 진단을 CSV로 내보냅니다.`}
+              title={visibleRows.length === 0 ? "조건에 맞는 페이지가 없어 CSV를 내보낼 수 없습니다." : `현재 검색·필터 결과 ${visibleRows.length}개와 준비도 진단을 CSV로 내보냅니다.`}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-panel px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Download size={13} aria-hidden /> 검토표 CSV
-            </button>
+            ><Download size={13} aria-hidden /> 검토표 CSV</button>
           </div>
         </div>
 
@@ -782,7 +781,7 @@ export function StudioStoryboardGridPanel({
               : renderPriorityBoard()}
         </div>
 
-        <p className="shrink-0 border-t border-line px-4 py-2 text-[0.7rem] text-fg-3" role="status">
+        <p className="shrink-0 border-t border-line px-4 py-2 text-xs text-fg-3" role="status">
           {viewMode === "priority"
             ? "준비도 큐는 빈 페이지·수정 요청을 차단으로, 검토 대기·메타 누락·연속 동일 구도를 확인 필요로 분류합니다."
             : viewMode === "review"

@@ -10,7 +10,12 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { STUDIO_MENU_GROUP_SPEC } from "./studio-main-menu-group-spec";
+import {
+  projectStudioMainMenuToSevenStandardGroups,
+  STUDIO_MENU_GROUP_SPEC,
+  STUDIO_STANDARD_SEVEN_MENU_GROUPS,
+  studioStandardSevenMenuGroupFor,
+} from "./studio-main-menu-group-spec";
 import {
   STUDIO_MENU_GROUP_ORDER,
   studioMenuGroupSpec,
@@ -325,5 +330,54 @@ describe("§15.3 menu group spec", () => {
         expect(extra.note.trim(), extra.item).not.toBe("");
       }
     }
+  });
+
+  it("PRODUCT.md 7대 표준 메뉴 프로젝션이 18개 원본 그룹과 모든 commandId를 손실·중복 없이 분할 투영한다", () => {
+    expect(STUDIO_STANDARD_SEVEN_MENU_GROUPS.map((group) => group.labelKo)).toEqual([
+      "파일",
+      "편집",
+      "캔버스/레이어",
+      "웹툰/식자",
+      "3D/모션",
+      "협업/AI",
+      "보기/도움말",
+    ]);
+
+    const mappedSources = STUDIO_STANDARD_SEVEN_MENU_GROUPS.flatMap((group) => group.sourceGroupIds);
+    expect(new Set(mappedSources).size).toBe(mappedSources.length);
+    expect([...mappedSources].sort()).toEqual([...STUDIO_MENU_GROUP_ORDER].sort());
+    for (const sourceId of STUDIO_MENU_GROUP_ORDER) {
+      expect(studioStandardSevenMenuGroupFor(sourceId)).not.toBeNull();
+    }
+
+    const raw = liveMenu();
+    const projected = projectStudioMainMenuToSevenStandardGroups(raw, { lang: "ko" });
+    expect(projected).toHaveLength(7);
+    expect(projected.map((group) => group.label)).toEqual([
+      "파일",
+      "편집",
+      "캔버스/레이어",
+      "웹툰/식자",
+      "3D/모션",
+      "협업/AI",
+      "보기/도움말",
+    ]);
+
+    const rawCommandIds = raw.flatMap((group) => group.items.map((item) => item.commandId));
+    const projectedCommandIds = projected.flatMap((group) => group.items.map((item) => item.commandId));
+    expect(projectedCommandIds).toHaveLength(rawCommandIds.length);
+    expect([...projectedCommandIds].sort()).toEqual([...rawCommandIds].sort());
+
+    const withUnknown = [
+      ...raw,
+      {
+        id: "future-plugin",
+        label: "확장",
+        items: [{ id: "custom", commandId: "future.custom", label: "확장 도구", onSelect: vi.fn() }],
+      },
+    ];
+    const projectedWithUnknown = projectStudioMainMenuToSevenStandardGroups(withUnknown, { lang: "ko" });
+    const viewHelp = projectedWithUnknown.find((group) => group.id === "view-help");
+    expect(viewHelp?.items.some((item) => item.commandId === "future.custom")).toBe(true);
   });
 });

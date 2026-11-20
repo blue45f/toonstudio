@@ -10,8 +10,9 @@
  * 다이얼로그 코드를 지불하지 않게 하기 위해서다.
  */
 
-import { Search } from "lucide-react";
+import { LayoutGrid, Search } from "lucide-react";
 import { Suspense, lazy, useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import {
   subscribeStudioCommandSearchFromAppShell,
@@ -34,6 +35,12 @@ import type { ReactNode } from "react";
 const StudioCommandSearchDialog = lazy(() =>
   import("./StudioCommandSearchDialog").then((module) => ({
     default: module.StudioCommandSearchDialog,
+  })),
+);
+
+const LazyStudioExpandedToolsDrawer = lazy(() =>
+  import("./studio-cuttoon-editor/StudioExpandedToolsDrawer").then((module) => ({
+    default: module.StudioExpandedToolsDrawer,
   })),
 );
 
@@ -80,12 +87,25 @@ export function StudioCommandSearchHost({
   ...dialogProps
 }: StudioCommandSearchHostProps) {
   const [open, setOpen] = useState(false);
+  const [expandedToolsOpen, setExpandedToolsOpen] = useState(false);
   // 어느 진입점이 열었는지에 따라 첫 범위가 다르다 — 인스펙터의 찾기는 '현재 패널',
   // F1·⌘K·메뉴·모바일 도크는 '전체'. 다이얼로그 안에서는 언제든 칩으로 바꿀 수 있다.
   const [scope, setScope] = useState<StudioCommandSearchScope>("all");
   const [initialQuery, setInitialQuery] = useState("");
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const expandedToolsTriggerRef = useRef<HTMLButtonElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const closeExpandedTools = useCallback(() => {
+    setExpandedToolsOpen(false);
+    const restore = () => {
+      expandedToolsTriggerRef.current?.focus({ preventScroll: true });
+    };
+    if (globalThis.requestAnimationFrame) {
+      globalThis.requestAnimationFrame(restore);
+    } else {
+      restore();
+    }
+  }, []);
   const close = useCallback((reason: StudioCommandSearchCloseReason = "dismiss") => {
     setOpen(false);
     setInitialQuery("");
@@ -201,6 +221,30 @@ export function StudioCommandSearchHost({
               </span>
             </button>
           )}
+          {hideTrigger ? null : (
+            <button
+              ref={expandedToolsTriggerRef}
+              type="button"
+              onClick={() => {
+                onRequestOpen?.();
+                setExpandedToolsOpen(true);
+              }}
+              data-testid="studio-expanded-tools-launcher"
+              data-inspector-priority="chrome"
+              aria-label="확장 전문 도구 서랍 열기"
+              aria-expanded={expandedToolsOpen}
+              title="확장 전문 도구 서랍 (6대 분류)"
+              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              <LayoutGrid
+                size={STUDIO_ICON_SIZE.contextMenu}
+                strokeWidth={STUDIO_ICON_STROKE}
+                aria-hidden
+                className={studioChromeIconClass({ tone: "default" })}
+              />
+              <span className="hidden sm:inline">확장 도구</span>
+            </button>
+          )}
           <AiAssistLauncher />
           {trailing}
         </div>
@@ -216,6 +260,29 @@ export function StudioCommandSearchHost({
           />
         </Suspense>
       ) : null}
+      {expandedToolsOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              data-testid="studio-expanded-tools-backdrop"
+              className="fixed inset-0 z-50 flex justify-end"
+            >
+              <button
+                type="button"
+                aria-label="확장 전문 도구 배경 닫기"
+                onClick={closeExpandedTools}
+                className="absolute inset-0 bg-canvas/60"
+              />
+              <Suspense fallback={null}>
+                <LazyStudioExpandedToolsDrawer
+                  open
+                  onClose={closeExpandedTools}
+                  className="relative z-10"
+                />
+              </Suspense>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

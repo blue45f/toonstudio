@@ -171,64 +171,199 @@ function checkRectOverlap(
   );
 }
 
+function isInsidePanelBounds(
+  rect: { x: number; y: number; width: number; height: number },
+  panelBounds: { readonly x: number; readonly y: number; readonly width: number; readonly height: number },
+): boolean {
+  return (
+    rect.x >= panelBounds.x &&
+    rect.y >= panelBounds.y &&
+    rect.x + rect.width <= panelBounds.x + panelBounds.width &&
+    rect.y + rect.height <= panelBounds.y + panelBounds.height
+  );
+}
+
+function clampToPanel(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  panelBounds: { readonly x: number; readonly y: number; readonly width: number; readonly height: number },
+): { x: number; y: number } {
+  const maxX = Math.max(panelBounds.x, panelBounds.x + panelBounds.width - width);
+  const maxY = Math.max(panelBounds.y, panelBounds.y + panelBounds.height - height);
+  return {
+    x: Math.min(maxX, Math.max(panelBounds.x, x)),
+    y: Math.min(maxY, Math.max(panelBounds.y, y)),
+  };
+}
+
 /**
- * 인물 얼굴/소품 장애물과 충돌하는 말풍선의 위치를 안전한 빈 공간으로 이동시킨다.
+ * 인물 얼굴/소품/패널 경계(거터) 장애물과 충돌하는 말풍선의 위치를 안전한 빈 공간으로 이동시킨다.
+ *
+ * 불변식:
+ * 1. `panel-boundary` 장애물 및 `panelBounds` 내부 경계를 절대 침범하지 않도록 보존한다.
+ * 2. 해소 과정과 완료 후 전체 말풍선에 대해 `bounds.y` 기준 `readingOrder` 단조 비감소
+ *    (인접·비인접 모든 쌍 포함)를 전수 보장한다.
  */
 export function solveBalloonCollisions(
   balloons: readonly BalloonRecord[],
   obstacles: readonly ObstacleRect[],
   panelBounds: { readonly x: number; readonly y: number; readonly width: number; readonly height: number },
 ): readonly BalloonRecord[] {
-  const solved: BalloonRecord[] = [];
+  if (balloons.length === 0) return Object.freeze([]);
 
-  for (const b of balloons) {
+  const panelBoundaryObstacles = obstacles.filter((obs) => obs.kind === "panel-boundary");
+  const indexed = balloons.map((balloon, index) => ({ balloon, index }));
+  indexed.sort(
+    (a, b) =>
+      a.balloon.readingOrder - b.balloon.readingOrder ||
+      a.balloon.bounds.y - b.balloon.bounds.y ||
+      a.balloon.bounds.x - b.balloon.bounds.x ||
+      a.index - b.index,
+  );
+
+  const placed: Array<{ balloon: BalloonRecord; index: number }> = [];
+  const step = 20;
+  const edgeGap = 8;
+
+  for (const entry of indexed) {
+    const b = entry.balloon;
+    const minOrderY = placed.reduce((acc, prev) => {
+      if (prev.balloon.readingOrder < b.readingOrder) {
+        return Math.max(acc, prev.balloon.bounds.y);
+      }
+      return acc;
+    }, panelBounds.y);
+
     if (!b.layoutRule.avoidCollisions) {
-      solved.push(b);
+      placed.push({ balloon: b, index: entry.index });
       continue;
     }
 
-    let currX = b.bounds.x;
-    let currY = b.bounds.y;
-    let attempts = 0;
-    const step = 20;
+    const width = b.bounds.width;
+    const height = b.bounds.height;
+    const hasAnyCollision = (rect: { x: number; y: number; width: number; height: number }): boolean =>
+      !isInsidePanelBounds(rect, panelBounds) ||
+      obstacles.some((obs) => checkRectOverlap(rect, obs.bounds)) ||
+      placed.some((prev) => checkRectOverlap(rect, prev.balloon.bounds));
 
-    while (attempts < 10) {
-      const currRect = { x: currX, y: currY, width: b.bounds.width, height: b.bounds.height };
-      const hasCollision =
-        obstacles.some((obs) => checkRectOverlap(currRect, obs.bounds)) ||
-        solved.some((prev) => checkRectOverlap(currRect, prev.bounds));
+    const hasHardBoundaryCollision = (
+      rect: { x: number; y: number; width: number; height: number },
+    ): boolean =>
+      !isInsidePanelBounds(rect, panelBounds) ||
+      panelBoundaryObstacles.some((obs) => checkRectOverlap(rect, obs.bounds));
 
-      if (!hasCollision) break;
+    const initialClamped = clampToPanel(b.bounds.x, Math.max(b.bounds.y, minOrderY), width, height, panelBounds);
+    let chosenX = initialClamped.x;
+    let chosenY = initialClamped.y;
 
-      // 충돌 시 패널 상단 또는 좌/우 여백으로 회피 이동
-      if (currY - step >= panelBounds.y + 10) {
-        currY -= step;
-      } else if (currX + b.bounds.width + step <= panelBounds.x + panelBounds.width) {
-        currX += step;
-      } else {
-        currX -= step;
+    const initialRect = { x: chosenX, y: chosenY, width, height };
+    if (hasAnyCollision(initialRect)) {
+      const candidates: Array<{ x: number; y: number }> = [];
+      const seen = new Set<string>();
+      const addCandidate = (rawX: number, rawY: number): void => {
+        const clamped = clampToPanel(rawX, rawY, width, height, panelBounds);
+        if (clamped.y < minOrderY) return;
+        const rx = Math.round(clamped.x);
+        const ry = Math.round(clamped.y);
+        const key = `${rx},${ry}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        candidates.push({ x: rx, y: ry });
+      };
+
+      // 1) 장애물·선행 말풍선 경계 바깥으로 즉시 스냅하는 후보(수평·하향·허용 상향)
+      const blockers = [...obstacles.map((o) => o.bounds), ...placed.map((p) => p.balloon.bounds)];
+      for (const blk of blockers) {
+        addCandidate(blk.x + blk.width + edgeGap, b.bounds.y);
+        addCandidate(blk.x - width - edgeGap, b.bounds.y);
+        addCandidate(b.bounds.x, blk.y + blk.height + edgeGap);
+        addCandidate(b.bounds.x, blk.y - height - edgeGap);
+        addCandidate(blk.x + blk.width + edgeGap, blk.y + blk.height + edgeGap);
+        addCandidate(blk.x - width - edgeGap, blk.y + blk.height + edgeGap);
       }
-      attempts += 1;
+
+      // 2) 읽기 순서를 깨지 않는 수평·하향·제한 상향 그리드 탐색
+      const maxX = Math.max(panelBounds.x, panelBounds.x + panelBounds.width - width);
+      const maxY = Math.max(panelBounds.y, panelBounds.y + panelBounds.height - height);
+      for (let dy = 0; dy <= Math.max(step * 12, maxY - minOrderY); dy += step) {
+        const yDown = b.bounds.y + dy;
+        const yUp = b.bounds.y - dy;
+        for (let dx = 0; dx <= Math.max(step * 12, maxX - panelBounds.x); dx += step) {
+          addCandidate(b.bounds.x + dx, yDown);
+          if (dx > 0) addCandidate(b.bounds.x - dx, yDown);
+          if (dy > 0 && yUp >= minOrderY) {
+            addCandidate(b.bounds.x + dx, yUp);
+            if (dx > 0) addCandidate(b.bounds.x - dx, yUp);
+          }
+        }
+      }
+
+      // 3) 충돌 없는 최단 이동 후보 선택; 전부 충돌하면 최소한 거터/패널 경계는 침범하지 않는 후보 선택
+      let bestFree: { x: number; y: number; dist: number } | null = null;
+      let bestBoundarySafe: { x: number; y: number; dist: number } | null = null;
+
+      for (const cand of candidates) {
+        const rect = { x: cand.x, y: cand.y, width, height };
+        const dist = Math.hypot(cand.x - b.bounds.x, cand.y - b.bounds.y);
+        if (!hasAnyCollision(rect)) {
+          if (!bestFree || dist < bestFree.dist) {
+            bestFree = { ...cand, dist };
+          }
+        } else if (!hasHardBoundaryCollision(rect)) {
+          if (!bestBoundarySafe || dist < bestBoundarySafe.dist) {
+            bestBoundarySafe = { ...cand, dist };
+          }
+        }
+      }
+
+      if (bestFree) {
+        chosenX = bestFree.x;
+        chosenY = bestFree.y;
+      } else if (bestBoundarySafe) {
+        chosenX = bestBoundarySafe.x;
+        chosenY = bestBoundarySafe.y;
+      }
     }
 
-    solved.push(
-      Object.freeze({
+    placed.push({
+      index: entry.index,
+      balloon: Object.freeze({
         ...b,
         bounds: Object.freeze({
-          x: Math.round(currX),
-          y: Math.round(currY),
-          width: b.bounds.width,
-          height: b.bounds.height,
+          x: Math.round(chosenX),
+          y: Math.round(chosenY),
+          width,
+          height,
         }),
       }),
-    );
+    });
   }
 
-  return Object.freeze(solved);
+  // 해소 후 전체 말풍선을 bounds.y 기준(동률 시 bounds.x)으로 정렬해
+  // readingOrder 단조 비감소를 비인접 쌍까지 전수 보장한다.
+  const sortedOrders = balloons.map((b) => b.readingOrder).sort((a, b) => a - b);
+  const byVerticalOrder = [...placed].sort(
+    (a, b) =>
+      a.balloon.bounds.y - b.balloon.bounds.y ||
+      a.balloon.bounds.x - b.balloon.bounds.x ||
+      a.balloon.readingOrder - b.balloon.readingOrder ||
+      a.index - b.index,
+  );
+
+  const normalized = byVerticalOrder.map((entry, idx) =>
+    Object.freeze({
+      ...entry.balloon,
+      readingOrder: sortedOrders[idx] ?? idx + 1,
+    }),
+  );
+
+  return Object.freeze(normalized);
 }
 
 /**
- * 말풍선 레이아웃 무결성(충돌, 텍스트 오버플로, 꼬리 단절)을 검증한다.
+ * 말풍선 레이아웃 무결성(충돌, 꼬리 단절, 인접·비인접 읽기 순서 역전)을 검증한다.
  */
 export function validateBalloonLayout(
   balloons: readonly BalloonRecord[],
@@ -237,16 +372,16 @@ export function validateBalloonLayout(
   const diagnostics: BalloonDiagnostic[] = [];
 
   for (let i = 0; i < balloons.length; i += 1) {
-    const b = balloons[i];
+    const b = balloons[i]!;
 
-    // 1. 장애물 충돌 검사
+    // 1. 장애물(얼굴/소품/패널 경계·거터) 충돌 검사
     for (const obs of obstacles) {
       if (checkRectOverlap(b.bounds, obs.bounds)) {
         diagnostics.push({
           code: "OBSTACLE_COLLISION",
           balloonId: b.id,
           message: `말풍선 '${b.id}'이(가) 주요 요소('${obs.id}', ${obs.kind})와 겹쳐 있습니다.`,
-          severity: "warning",
+          severity: obs.kind === "panel-boundary" ? "error" : "warning",
         });
       }
     }
@@ -262,19 +397,49 @@ export function validateBalloonLayout(
         });
       }
     }
+  }
 
-    // 3. 읽기 순서 역전 검사 (상단에 있는 말풍선이 뒤늦은 readingOrder인 경우)
-    if (i > 0) {
-      const prev = balloons[i - 1];
-      if (b.bounds.y + 50 < prev.bounds.y && b.readingOrder > prev.readingOrder) {
+  // 3. 읽기 순서 역전 전수 검사 (비인접 쌍 포함):
+  //    readingOrder 오름차순으로 스캔할 때 bounds.y 는 단조 비감소해야 한다.
+  const ordered = balloons
+    .map((balloon, index) => ({ balloon, index }))
+    .sort(
+      (a, b) =>
+        a.balloon.readingOrder - b.balloon.readingOrder ||
+        a.balloon.bounds.y - b.balloon.bounds.y ||
+        a.index - b.index,
+    );
+
+  let maxPrevY = Number.NEGATIVE_INFINITY;
+  let maxPrevBalloon: BalloonRecord | null = null;
+  let groupStart = 0;
+
+  while (groupStart < ordered.length) {
+    const currentOrder = ordered[groupStart]!.balloon.readingOrder;
+    let groupEnd = groupStart;
+    while (
+      groupEnd < ordered.length &&
+      ordered[groupEnd]!.balloon.readingOrder === currentOrder
+    ) {
+      const curr = ordered[groupEnd]!.balloon;
+      if (maxPrevBalloon && curr.bounds.y < maxPrevY) {
         diagnostics.push({
           code: "READING_ORDER_INVERSION",
-          balloonId: b.id,
-          message: `말풍선 '${b.id}'이(가) 이전 말풍선보다 위쪽에 위치하지만 읽기 순서 번호(${b.readingOrder})가 더 큽니다.`,
+          balloonId: curr.id,
+          message: `말풍선 '${curr.id}'이(가) 선행 말풍선('${maxPrevBalloon.id}', order=${maxPrevBalloon.readingOrder})보다 위쪽(y=${curr.bounds.y} < ${maxPrevY})에 위치하지만 읽기 순서 번호(${curr.readingOrder})가 더 큽니다.`,
           severity: "warning",
         });
       }
+      groupEnd += 1;
     }
+    for (let k = groupStart; k < groupEnd; k += 1) {
+      const candidate = ordered[k]!.balloon;
+      if (candidate.bounds.y > maxPrevY) {
+        maxPrevY = candidate.bounds.y;
+        maxPrevBalloon = candidate;
+      }
+    }
+    groupStart = groupEnd;
   }
 
   return Object.freeze(diagnostics);

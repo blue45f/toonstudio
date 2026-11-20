@@ -39,6 +39,11 @@
  */
 
 import { layoutVerticalText, type VerticalBlockAlign } from "../studio-vertical-text";
+import {
+  adjustLineBreakForKinsoku,
+  breakWordWithKinsoku,
+  segmentGraphemes,
+} from "./studio-kinsoku-line-break";
 
 export interface BubbleTextMeasurer {
   /** text를 (fontPx, fontFamily, fontStyle)로 그렸을 때의 렌더 폭(px). 자간은 포함하지 않는다 —
@@ -185,11 +190,27 @@ export function withBubbleLetterSpacing(
   };
 }
 
-// ── 줄바꿈(그리디 워드랩 + 긴 단어 강제 분할) ────────────────────────────────
+// ── 줄바꿈(그리디 워드랩 + 금칙 追い出し + 긴 단어 강제 분할) ─────────────────
+
+export interface WrapBubbleTextOptions {
+  /**
+   * 행두·행말 금칙(`retreatToLegalBreak`, 최대 4자 追い出し) 사전 적용 여부.
+   * 기본값 `true` — 한국어 가로쓰기 줄바꿈에서 `?!`, `…`, `₩` 등의 금칙 위반을 사전 방지한다.
+   * `false`는 Konva 원시 그리디 워드랩 근사(현지화 오버플로 진단 등) 전용이다.
+   */
+  readonly kinsoku?: boolean;
+}
+
+interface DetailedWrapResult {
+  readonly lines: string[];
+  readonly hardBreakOccurred: boolean;
+  readonly widestWordWidth: number;
+}
 
 /**
- * 공백 없이 maxWidth를 넘는 단어를 글자 단위로 강제 분할한다(한글은 글자=완성형 음절이라 이
- * 단위 분할이 시각적으로 자연스럽다 — 자모 분리 입력 등 예외적 인코딩은 다루지 않는다).
+ * 공백 없이 maxWidth를 넘는 단어를 자소 군집 단위로 강제 분할한다.
+ * `applyKinsoku`가 true이면 `breakWordWithKinsoku`(`retreatToLegalBreak` 최대 4자 追い出し)를
+ * 호출해 행두·행말 금칙 위반을 사전에 방지한다.
  * 반환 배열의 마지막 요소는 "아직 줄이 안 찬 나머지"이므로 호출부가 다음 단어를 이어 붙일 수 있다.
  */
 function hardBreakWord(
@@ -198,11 +219,19 @@ function hardBreakWord(
   fontPx: number,
   fontFamily: string,
   fontStyle: string,
-  measurer: BubbleTextMeasurer
+  measurer: BubbleTextMeasurer,
+  applyKinsoku: boolean,
 ): string[] {
+  if (applyKinsoku) {
+    return breakWordWithKinsoku(word, maxWidth, (text) =>
+      measurer.measureWidth(text, fontPx, fontFamily, fontStyle),
+    );
+  }
+  const graphemes = segmentGraphemes(word);
+  if (graphemes.length === 0) return [""];
   const out: string[] = [];
   let current = "";
-  for (const ch of word) {
+  for (const ch of graphemes) {
     const candidate = current + ch;
     if (current.length > 0 && measurer.measureWidth(candidate, fontPx, fontFamily, fontStyle) > maxWidth) {
       out.push(current);
@@ -215,21 +244,20 @@ function hardBreakWord(
   return out;
 }
 
-/**
- * 텍스트를 maxWidth 안에 들어오는 줄 배열로 그리디 워드랩한다. 명시적 줄바꿈(\n)은 항상 존중하고,
- * 각 문단 안에서는 공백 단위로 그리디하게 채우다 넘치면 새 줄로 넘긴다. 공백 없이 긴 단어(URL,
- * 의성어 연타 등)는 hardBreakWord로 강제 분할한다. 빈 문단(연속 줄바꿈)은 빈 줄로 보존한다.
- */
-export function wrapBubbleTextLines(
+function wrapBubbleTextDetailed(
   text: string,
   maxWidth: number,
   fontPx: number,
   fontFamily: string,
   fontStyle: string,
-  measurer: BubbleTextMeasurer
-): string[] {
+  measurer: BubbleTextMeasurer,
+  applyKinsoku: boolean,
+): DetailedWrapResult {
   const safeMaxWidth = Math.max(1, maxWidth);
   const lines: string[] = [];
+  let hardBreakOccurred = false;
+  let widestWordWidth = 0;
+
   for (const paragraph of text.split("\n")) {
     if (paragraph.length === 0) {
       lines.push("");
@@ -238,28 +266,79 @@ export function wrapBubbleTextLines(
     let current = "";
     for (const word of paragraph.split(" ")) {
       if (word.length === 0) continue; // 연속 공백은 한 칸으로 합쳐진다(Konva 기본 동작과 동일 근사).
+      const wordWidth = measurer.measureWidth(word, fontPx, fontFamily, fontStyle);
+      if (wordWidth > widestWordWidth) widestWordWidth = wordWidth;
+
       const candidate = current.length === 0 ? word : `${current} ${word}`;
       if (measurer.measureWidth(candidate, fontPx, fontFamily, fontStyle) <= safeMaxWidth) {
         current = candidate;
         continue;
       }
-      // 후보가 넘친다 — 현재 줄을 먼저 확정.
-      if (current.length > 0) lines.push(current);
-      // 단어 하나만으로도 넘치면 글자 단위 강제 분할.
-      if (measurer.measureWidth(word, fontPx, fontFamily, fontStyle) > safeMaxWidth) {
-        const broken = hardBreakWord(word, safeMaxWidth, fontPx, fontFamily, fontStyle, measurer);
+
+      // 후보가 넘친다 — 현재 줄과 다음 단어 경계에서 금칙 위반을 사전 방지한다.
+      let nextToken = word;
+      if (current.length > 0) {
+        if (applyKinsoku) {
+          const adjusted = adjustLineBreakForKinsoku(current, word);
+          lines.push(adjusted.line);
+          nextToken = adjusted.carry;
+        } else {
+          lines.push(current);
+        }
+      }
+
+      // 단어(또는 追い出し 후 이월 문자열)가 한 줄 폭을 넘으면 자소 단위 강제 분할.
+      if (measurer.measureWidth(nextToken, fontPx, fontFamily, fontStyle) > safeMaxWidth) {
+        if (wordWidth > safeMaxWidth) hardBreakOccurred = true;
+        const broken = hardBreakWord(
+          nextToken,
+          safeMaxWidth,
+          fontPx,
+          fontFamily,
+          fontStyle,
+          measurer,
+          applyKinsoku,
+        );
         lines.push(...broken.slice(0, -1));
         current = broken[broken.length - 1] ?? "";
       } else {
-        current = word;
+        current = nextToken;
       }
     }
     lines.push(current);
   }
-  return lines;
+
+  return { lines, hardBreakOccurred, widestWordWidth };
 }
 
-// ── 폰트 크기 이진 탐색 ──────────────────────────────────────────────────────
+/**
+ * 텍스트를 maxWidth 안에 들어오는 줄 배열로 워드랩한다. 명시적 줄바꿈(\n)은 항상 존중하고,
+ * 각 문단 안에서는 공백 단위로 그리디하게 채우다 넘치면 새 줄로 넘긴다. 공백 없이 긴 단어(URL,
+ * 의성어 연타 등)는 hardBreakWord로 분할한다. 기본값(`options.kinsoku !== false`)에서는
+ * `retreatToLegalBreak`(최대 4자 追い出し)를 호출해 행두·행말 금칙 위반을 사전 방지한다.
+ */
+export function wrapBubbleTextLines(
+  text: string,
+  maxWidth: number,
+  fontPx: number,
+  fontFamily: string,
+  fontStyle: string,
+  measurer: BubbleTextMeasurer,
+  options?: WrapBubbleTextOptions,
+): string[] {
+  const applyKinsoku = options?.kinsoku !== false;
+  return wrapBubbleTextDetailed(
+    text,
+    maxWidth,
+    fontPx,
+    fontFamily,
+    fontStyle,
+    measurer,
+    applyKinsoku,
+  ).lines;
+}
+
+// ── 폰트 크기 이진 탐색 + 어절 강제 분할 시 폭 확장 우선 ──────────────────────
 
 export interface BubbleFontFitInput {
   text: string;
@@ -297,6 +376,17 @@ export interface BubbleFontFitInput {
   letterSpacing?: number;
   /** 세로쓰기 전용 — 열 안 정렬(가로쓰기 align의 세로축 대응). 판정 결과에는 영향이 없다. */
   blockAlign?: VerticalBlockAlign;
+  /**
+   * 가로쓰기 금칙(`retreatToLegalBreak`) 사전 적용 여부.
+   * 미지정 시 기존 Konva 원시 워드랩 호환(`false`)을 유지하며, `true` 지정 시
+   * `wrapBubbleTextLines(..., { kinsoku: true })`로 금칙 위반을 사전 방지한다.
+   */
+  kinsoku?: boolean;
+  /**
+   * 말풍선 폭 확장 허용 상한(px). 지정되면 어절 강제 분할(`hardBreakWord`)이나 넘침 발생 시
+   * 폰트 축소보다 말풍선 폭 확장을 우선 적용한다(`boxWidth <= resolvedBoxWidth <= maxBoxWidth`).
+   */
+  maxBoxWidth?: number;
 }
 
 export interface BubbleFontFitResult {
@@ -309,6 +399,12 @@ export interface BubbleFontFitResult {
   lines: string[];
   /** minFontSize에서도 못 맞으면 true — 호출부가 경고 표시를 보여줄 수 있다. */
   overflow: boolean;
+  /** 최종 선택된 말풍선 폭(px). `maxBoxWidth`가 지정돼 확장된 경우 확장된 폭을 반환한다. */
+  resolvedBoxWidth?: number;
+  /** 최종 결과에서 어절 내 강제 분할(`hardBreakWord`)이 발생했는지 여부. */
+  hardWordBreakDetected?: boolean;
+  /** 어절 강제 분할 없이 현재 폰트 크기로 가장 긴 어절을 수용하는 권장 말풍선 최소 폭(px). */
+  recommendedBoxWidth?: number;
 }
 
 /** fontSize 하나가 박스 안에 들어가는지 판정 — 패딩은 그 fontSize 자체 기준(모듈 상단 docstring). */
@@ -324,10 +420,11 @@ function fitsAtFontSize(
     | "vertical"
     | "letterSpacing"
     | "blockAlign"
+    | "kinsoku"
   >,
   fontSize: number,
   measurer: BubbleTextMeasurer
-): { ok: boolean; lines: string[] } {
+): { ok: boolean; lines: string[]; hardBreakOccurred: boolean; widestWordWidth: number } {
   const fontStyle = resolveBubbleFontStyle(input.fontStyle);
   const lineHeight = input.lineHeight;
   const availW = bubbleTextBoxWidth(input.boxWidth, fontSize);
@@ -348,18 +445,24 @@ function fitsAtFontSize(
       measurer
     );
     const columns = layout.columns.map((column) => column.items.map((item) => item.text.split("\n").join("")).join(""));
-    return { ok: !layout.overflow && layout.width <= availW, lines: columns };
+    return { ok: !layout.overflow && layout.width <= availW, lines: columns, hardBreakOccurred: false, widestWordWidth: 0 };
   }
-  const lines = wrapBubbleTextLines(
+  const detailed = wrapBubbleTextDetailed(
     input.text || " ",
     availW,
     fontSize,
     input.fontFamily,
     fontStyle,
-    withBubbleLetterSpacing(measurer, input.letterSpacing)
+    withBubbleLetterSpacing(measurer, input.letterSpacing),
+    input.kinsoku === true,
   );
-  const blockHeight = lines.length * fontSize * lineHeight;
-  return { ok: blockHeight <= availH, lines };
+  const blockHeight = detailed.lines.length * fontSize * lineHeight;
+  return {
+    ok: blockHeight <= availH,
+    lines: detailed.lines,
+    hardBreakOccurred: detailed.hardBreakOccurred,
+    widestWordWidth: detailed.widestWordWidth,
+  };
 }
 
 /**
@@ -379,6 +482,7 @@ export function bubbleTextFitsInBox(
     | "vertical"
     | "letterSpacing"
     | "blockAlign"
+    | "kinsoku"
   >,
   fontSize: number,
   measurer: BubbleTextMeasurer = createCanvasBubbleTextMeasurer()
@@ -388,8 +492,11 @@ export function bubbleTextFitsInBox(
 
 /**
  * 고정된 (boxWidth, boxHeight) 안에 text가 들어가는 가장 큰 폰트 크기를 이진 탐색으로 찾는다.
- * maxFontSize에서 이미 맞으면 탐색 없이 그대로 반환한다. minFontSize에서도 못 맞으면 minFontSize를
- * 돌려주며 overflow:true로 표시한다(그 이상 줄이지 않는다 — Canva/Figma와 동일하게 하한을 존중).
+ *
+ * - `maxBoxWidth > boxWidth`가 지정되면(가로쓰기), 어절 강제 분할(`hardBreakWord`)이나 넘침 발생 시
+ *   **폰트 축소보다 말풍선 폭 확장을 우선 적용**한다. 폭 확장만으로 `maxFontSize`가 수용되면 폰트를
+ *   전혀 줄이지 않고 확장된 `resolvedBoxWidth`를 돌려준다.
+ * - minFontSize에서도 못 맞으면 minFontSize를 돌려주며 overflow:true로 표시한다(그 이상 줄이지 않는다).
  */
 export function fitBubbleFontSize(
   input: BubbleFontFitInput,
@@ -397,10 +504,75 @@ export function fitBubbleFontSize(
 ): BubbleFontFitResult {
   const minFontSize = Math.max(1, input.minFontSize ?? BUBBLE_AUTO_SHRINK_MIN_FONT_DEFAULT);
   const maxFontSize = Math.max(minFontSize, input.maxFontSize);
+  const maxBoxWidth =
+    !input.vertical && typeof input.maxBoxWidth === "number" && Number.isFinite(input.maxBoxWidth)
+      ? Math.max(input.boxWidth, Math.ceil(input.maxBoxWidth))
+      : input.boxWidth;
 
-  const atMax = fitsAtFontSize(input, maxFontSize, measurer);
+  let workingWidth = input.boxWidth;
+  let atMax = fitsAtFontSize({ ...input, boxWidth: workingWidth }, maxFontSize, measurer);
+  const recommendedAtMax = !input.vertical
+    ? Math.max(
+        input.boxWidth,
+        Math.ceil(atMax.widestWordWidth) + bubbleHorizontalPadding(maxFontSize) * 2,
+      )
+    : input.boxWidth;
+
+  // 1단계(어절 보존 폭 확장 우선): maxBoxWidth 여유가 있으면 hardBreakWord 해소 및 높이 맞춤을
+  // 폰트 축소보다 먼저 시도한다.
+  if (!input.vertical && maxBoxWidth > input.boxWidth && (atMax.hardBreakOccurred || !atMax.ok)) {
+    const noHardBreakFloor = Math.min(maxBoxWidth, Math.max(input.boxWidth, recommendedAtMax));
+    const atNoHardBreak = fitsAtFontSize({ ...input, boxWidth: noHardBreakFloor }, maxFontSize, measurer);
+    if (atNoHardBreak.ok) {
+      workingWidth = noHardBreakFloor;
+      atMax = atNoHardBreak;
+    } else {
+      const atMaxW = fitsAtFontSize({ ...input, boxWidth: maxBoxWidth }, maxFontSize, measurer);
+      if (atMaxW.ok) {
+        // [noHardBreakFloor, maxBoxWidth] 안에서 maxFontSize가 맞는 최소 폭을 이진 탐색한다.
+        let loW = noHardBreakFloor;
+        let hiW = maxBoxWidth;
+        while (hiW - loW > 1) {
+          const midW = Math.floor((loW + hiW) / 2);
+          if (fitsAtFontSize({ ...input, boxWidth: midW }, maxFontSize, measurer).ok) hiW = midW;
+          else loW = midW;
+        }
+        workingWidth = hiW;
+        atMax = fitsAtFontSize({ ...input, boxWidth: workingWidth }, maxFontSize, measurer);
+      } else {
+        // 최대 폭까지 넓혀도 안 맞을 때만 최대 폭을 유지한 채 2단계 폰트 축소로 내려간다.
+        workingWidth = maxBoxWidth;
+        atMax = atMaxW;
+      }
+    }
+  }
+
+  const withMetrics = (
+    fontSize: number,
+    evalResult: { ok: boolean; lines: string[]; hardBreakOccurred: boolean; widestWordWidth: number },
+    overflow: boolean,
+  ): BubbleFontFitResult => {
+    const recommended = !input.vertical
+      ? Math.max(
+          input.boxWidth,
+          Math.ceil(evalResult.widestWordWidth) + bubbleHorizontalPadding(fontSize) * 2,
+        )
+      : input.boxWidth;
+    if (maxBoxWidth === input.boxWidth && !evalResult.hardBreakOccurred) {
+      return { fontSize, lines: evalResult.lines, overflow };
+    }
+    return {
+      fontSize,
+      lines: evalResult.lines,
+      overflow,
+      resolvedBoxWidth: workingWidth,
+      hardWordBreakDetected: evalResult.hardBreakOccurred,
+      recommendedBoxWidth: Math.max(recommendedAtMax, recommended),
+    };
+  };
+
   if (atMax.ok || maxFontSize <= minFontSize) {
-    return { fontSize: round1(maxFontSize), lines: atMax.lines, overflow: !atMax.ok };
+    return withMetrics(round1(maxFontSize), atMax, !atMax.ok);
   }
 
   // 내림차순 그리드: sizes[0]≈maxFontSize 다음 스텝, sizes[last]=minFontSize.
@@ -408,9 +580,10 @@ export function fitBubbleFontSize(
   for (let s = maxFontSize - FONT_SEARCH_STEP; s > minFontSize; s -= FONT_SEARCH_STEP) sizes.push(round1(s));
   sizes.push(round1(minFontSize));
 
-  const atMin = fitsAtFontSize(input, sizes[sizes.length - 1]!, measurer);
+  const fitInput = { ...input, boxWidth: workingWidth };
+  const atMin = fitsAtFontSize(fitInput, sizes[sizes.length - 1]!, measurer);
   if (!atMin.ok) {
-    return { fontSize: sizes[sizes.length - 1]!, lines: atMin.lines, overflow: true };
+    return withMetrics(sizes[sizes.length - 1]!, atMin, true);
   }
 
   // "처음으로 맞는(ok===true) 지점"을 찾는 표준 경계 이진 탐색 — sizes는 내림차순이라 인덱스가
@@ -419,11 +592,31 @@ export function fitBubbleFontSize(
   let hi = sizes.length - 1;
   while (lo < hi) {
     const mid = Math.floor((lo + hi) / 2);
-    if (fitsAtFontSize(input, sizes[mid]!, measurer).ok) hi = mid;
+    if (fitsAtFontSize(fitInput, sizes[mid]!, measurer).ok) hi = mid;
     else lo = mid + 1;
   }
   const chosen = sizes[lo]!;
-  return { fontSize: chosen, lines: fitsAtFontSize(input, chosen, measurer).lines, overflow: false };
+  return withMetrics(chosen, fitsAtFontSize(fitInput, chosen, measurer), false);
+}
+
+/**
+ * 한국어 작화 단계 전용 1급 맞춤 엔진:
+ * 금칙 사전 방지(`kinsoku: true`) + 어절 강제 분할(`hardBreakWord`) 시 폰트 축소보다
+ * 말풍선 폭 확장(`maxBoxWidth`, 미지정 시 기본 `boxWidth * 1.8`)을 우선 적용한다.
+ */
+export function fitBubbleTextWithWidthPriority(
+  input: BubbleFontFitInput,
+  measurer: BubbleTextMeasurer = createCanvasBubbleTextMeasurer(),
+): BubbleFontFitResult {
+  const defaultMaxWidth = Math.max(input.boxWidth, Math.round(input.boxWidth * 1.8));
+  return fitBubbleFontSize(
+    {
+      ...input,
+      kinsoku: input.kinsoku ?? true,
+      maxBoxWidth: input.maxBoxWidth ?? defaultMaxWidth,
+    },
+    measurer,
+  );
 }
 
 // ── 높이 자동 확장(기본 모드) ────────────────────────────────────────────────
@@ -438,6 +631,8 @@ export interface BubbleTextBlockInput {
   /** 반드시 resolveBubbleLineHeight() 결과를 넘긴다(경로별 기본값 불일치가 이 결함의 원인이었다). */
   lineHeight: number;
   letterSpacing?: number;
+  /** 가로쓰기 금칙 적용 여부(기본 `true`). */
+  kinsoku?: boolean;
 }
 
 export interface BubbleTextBlockMeasurement {
@@ -461,7 +656,8 @@ export function measureBubbleTextBlock(
     input.fontSize,
     input.fontFamily,
     resolveBubbleFontStyle(input.fontStyle),
-    withBubbleLetterSpacing(measurer, input.letterSpacing)
+    withBubbleLetterSpacing(measurer, input.letterSpacing),
+    { kinsoku: input.kinsoku !== false },
   );
   return {
     lines,
