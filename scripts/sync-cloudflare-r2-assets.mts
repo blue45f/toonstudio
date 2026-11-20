@@ -13,6 +13,8 @@ import {
   cloudflareR2MediaDescriptor,
 } from "../deploy/cloudflare-static/src/large-static-assets";
 
+import { isCloudflareAccountId, readLocalWranglerOAuthToken } from "./lib/cloudflare-local-oauth.mjs";
+
 export interface R2LargeAssetUpload {
   readonly absolutePath: string;
   readonly key: string;
@@ -89,7 +91,7 @@ const requestPacer = createRequestPacer(R2_REST_REQUESTS_PER_SECOND);
 async function cloudflareFetch(url: string, init: RequestInit): Promise<Response> {
   for (let attempt = 1; ; attempt += 1) {
     await requestPacer.wait();
-    const response = await fetch(url, init);
+    const response = await fetch(url, { ...init, redirect: "error" });
     const delay = response.ok
       ? null
       : r2RetryDelayMs(response.status, response.headers.get("retry-after"), attempt);
@@ -190,10 +192,12 @@ export function r2ObjectPutRequest(
 
 async function cloudflareJson(url: string, token: string): Promise<Record<string, unknown>> {
   const response = await cloudflareFetch(url, { headers: { authorization: `Bearer ${token}` } });
-  const body = await response.json() as Record<string, unknown>;
-  if (!response.ok || body.success !== true) {
-    throw new Error(`Cloudflare API ${response.status} for ${url.replace(/\?.*$/u, "")}: ${JSON.stringify(body.errors ?? body)}`);
+  if (!response.ok) {
+    await response.body?.cancel();
+    throw new Error(`Cloudflare API ${response.status} for ${url.replace(/\?.*$/u, "")}`);
   }
+  const body = await response.json().catch(() => null) as Record<string, unknown> | null;
+  if (body?.success !== true) throw new Error("Cloudflare API 응답을 확인할 수 없습니다.");
   return body;
 }
 
@@ -234,7 +238,8 @@ async function uploadObject(asset: R2LargeAssetUpload, accountId: string, token:
   const { url, headers } = r2ObjectPutRequest(asset, accountId, token);
   const response = await cloudflareFetch(url, { method: "PUT", headers, body: readFileSync(asset.absolutePath) });
   if (!response.ok) {
-    throw new Error(`R2 upload failed for ${asset.key}: HTTP ${response.status} ${await response.text()}`);
+    await response.body?.cancel();
+    throw new Error(`R2 upload failed for ${asset.key}: HTTP ${response.status}`);
   }
 }
 
@@ -252,13 +257,17 @@ async function runPool<T>(items: readonly T[], worker: (item: T) => Promise<void
 export async function syncCloudflareR2Assets(
   mode: "dry-run" | "production",
   distDirectory = resolve(process.cwd(), "dist"),
+  useLocalOAuth = false,
 ): Promise<readonly R2LargeAssetUpload[]> {
   const assets = discoverR2LargeAssets(distDirectory);
   const totalBytes = assets.reduce((sum, asset) => sum + asset.bytes, 0);
   console.log(`R2 ${mode}: ${assets.length} R2-authority files (${totalBytes} bytes)`);
   if (mode === "dry-run") return assets;
 
-  const token = process.env.CLOUDFLARE_API_TOKEN?.trim();
+  if (useLocalOAuth && !isCloudflareAccountId(process.env.CLOUDFLARE_ACCOUNT_ID)) {
+    throw new Error("--wrangler-oauth로 동기화할 계정의 CLOUDFLARE_ACCOUNT_ID를 확인해 주세요.");
+  }
+  const token = useLocalOAuth ? readLocalWranglerOAuthToken() : process.env.CLOUDFLARE_API_TOKEN?.trim();
   if (!token) throw new Error("CLOUDFLARE_API_TOKEN is required for the R2 sync");
   const accountId = await resolveAccountId(token);
   const remote = await listR2Objects(accountId, token);
@@ -288,5 +297,5 @@ if (invokedPath === fileURLToPath(import.meta.url)) {
   const mode = process.argv.includes("--production")
     ? "production"
     : "dry-run";
-  await syncCloudflareR2Assets(mode);
+  await syncCloudflareR2Assets(mode, undefined, process.argv.includes("--wrangler-oauth"));
 }

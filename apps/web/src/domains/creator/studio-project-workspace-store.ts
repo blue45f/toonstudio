@@ -52,13 +52,14 @@ export function ensureStudioProjectWorkspaceState(
   storage: StudioProjectDiagnosticSourceStorage,
   projectId: string,
   createdAt = new Date().toISOString(),
+  exportOwner?: string | null,
 ): StudioProjectWorkspaceState {
   const normalizedProjectId = requireProjectId(projectId);
-  const current = readStudioProjectDiagnosticSource(storage, normalizedProjectId);
+  const current = readStudioProjectDiagnosticSource(storage, normalizedProjectId, exportOwner);
   if (current) return current;
   const initial = createInitialStudioProjectDiagnosticSource(normalizedProjectId, requireTimestamp(createdAt));
-  writeStudioProjectDiagnosticSource(storage, initial);
-  return initial;
+  writeStudioProjectDiagnosticSource(storage, initial, exportOwner, true);
+  return readStudioProjectDiagnosticSource(storage, normalizedProjectId, exportOwner) ?? initial;
 }
 
 /** Persists one complete project snapshot; all feature areas share this storage authority. */
@@ -66,9 +67,10 @@ export function writeStudioProjectWorkspaceState(
   storage: StudioProjectDiagnosticSourceStorage,
   state: StudioProjectWorkspaceState,
   target?: StudioProjectWorkspaceEventTarget,
+  exportOwner?: string | null,
 ): StudioProjectWorkspaceState {
   const immutable = immutableClone(state);
-  writeStudioProjectDiagnosticSource(storage, immutable);
+  writeStudioProjectDiagnosticSource(storage, immutable, exportOwner);
   target?.dispatchEvent(new CustomEvent(STUDIO_PROJECT_DIAGNOSTIC_SOURCE_UPDATED_EVENT, {
     detail: immutable,
   }));
@@ -82,15 +84,16 @@ export function updateStudioProjectWorkspaceState(
   updater: StudioProjectWorkspaceUpdater,
   options: {
     readonly updatedAt?: string;
+    readonly exportOwner?: string | null;
     readonly target?: StudioProjectWorkspaceEventTarget;
   } = {},
 ): StudioProjectWorkspaceState {
   const normalizedProjectId = requireProjectId(projectId);
   const updatedAt = requireTimestamp(options.updatedAt ?? new Date().toISOString());
-  const current = ensureStudioProjectWorkspaceState(storage, normalizedProjectId, updatedAt);
+  const current = ensureStudioProjectWorkspaceState(storage, normalizedProjectId, updatedAt, options.exportOwner);
   const next = updater(current, Object.freeze({ projectId: normalizedProjectId, updatedAt }));
   if (next.projectId !== normalizedProjectId) {
     throw new Error("A Studio project mutation cannot change project identity.");
   }
-  return writeStudioProjectWorkspaceState(storage, { ...next, capturedAt: updatedAt }, options.target);
+  return writeStudioProjectWorkspaceState(storage, { ...next, capturedAt: updatedAt }, options.target, options.exportOwner);
 }

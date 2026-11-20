@@ -197,3 +197,21 @@ export async function openStudioLayerNavigator(page: Page, timeoutMs?: number): 
   await openLayers.waitFor({ state: "visible", timeout: remaining() });
   if (timeoutMs !== undefined) remaining();
 }
+
+/** 지정한 레이어를 트리 키보드로 선택하고 촬영 전에 탐색기 표시 상태를 복원한다. */
+export async function selectStudioLayerThroughNavigator(page: Page, layerId: string): Promise<void> {
+  const row = page.locator(`[id=${JSON.stringify(`studio-layer-${layerId}`)}]`);
+  const pane = page.locator("#studio-drawing-clarity-panel-layers");
+  const wasOpen = await pane.isVisible();
+  if (!await row.isVisible()) await openStudioLayerNavigator(page);
+  await row.scrollIntoViewIfNeeded();
+  // 행 중앙에는 가시성 버튼이 있을 수 있으므로 정식 트리 키보드 선택을 사용한다.
+  await row.focus();
+  await row.press("Enter");
+  await page.waitForFunction((id) => document.getElementById(`studio-layer-${id}`)
+    ?.getAttribute("aria-selected") === "true", layerId);
+  if (!wasOpen && await pane.isVisible()) {
+    await pane.getByRole("button", { name: /레이어·속성 · 닫기|Layers and properties · Close/u }).click();
+    await pane.waitFor({ state: "hidden" });
+  }
+}

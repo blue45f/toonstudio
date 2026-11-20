@@ -42,6 +42,7 @@ export interface CollectStudioProjectWorkspaceSnapshotsInput {
   readonly projectId: string;
   readonly documents: readonly StudioProjectDocumentEntry[];
   readonly authUserId?: string | null;
+  readonly allowGuestFallback?: boolean;
   readonly lastOpenedDocumentId?: string | null;
   readonly currentSnapshots?: Readonly<Record<string, StudioAutosavePayload>>;
 }
@@ -183,8 +184,9 @@ function candidateKeys(
   documentId: string,
   authUserId: string | null,
   lastOpenedDocumentId: string | null,
+  allowGuestFallback: boolean,
 ): readonly string[] {
-  const owners = authUserId ? [authUserId, null] as const : [null] as const;
+  const owners = authUserId && allowGuestFallback ? [authUserId, null] : [authUserId];
   const persistenceIds = documentId === lastOpenedDocumentId
     ? [documentId, projectId]
     : [documentId];
@@ -224,6 +226,7 @@ export async function collectStudioProjectWorkspaceSnapshots(
         document.id,
         input.authUserId ?? null,
         input.lastOpenedDocumentId ?? null,
+        input.allowGuestFallback ?? true,
       )) {
         candidates.push(await ownedReader.read(key));
       }

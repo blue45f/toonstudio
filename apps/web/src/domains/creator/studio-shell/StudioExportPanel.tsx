@@ -11,6 +11,8 @@ import {
 
 import { useMemo } from "react";
 
+import { useSession } from "@/domains/auth/public/session/auth-session-store";
+
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
@@ -38,12 +40,19 @@ import { useStudioExportPanelController } from "./useStudioExportPanelController
  * 초보자도 올릴 곳과 파일 형식만 고르면 실제 원고 해상도·선택 순서와 플랫폼 권장 규격·용량 추정치를 구분해 대조 점검하고,
  * 비로그인 로컬 편집기 파일 저장과 로그인 후 커뮤니티 공개 게시를 일치된 설정으로 이어 가는 출고 패널.
  */
-export function StudioExportPanel({
-  projectId,
-  locale,
-}: {
-  readonly projectId: string;
-  readonly locale: "ko" | "en";
+interface StudioExportPanelProps {
+  projectId: string;
+  locale: "ko" | "en";
+}
+
+export function StudioExportPanel(props: StudioExportPanelProps) {
+  const session = useSession();
+  const owner = !session.ready ? undefined : session.status === "authenticated" ? session.data.user.id : null;
+  return <StudioExportPanelContent key={JSON.stringify([props.projectId, session.ready, owner])} {...props} owner={owner} />;
+}
+
+function StudioExportPanelContent({ projectId, locale, owner }: StudioExportPanelProps & {
+  owner: string | null | undefined;
 }) {
   const bt = useBilingual("StudioExportPanel");
   const {
@@ -72,7 +81,7 @@ export function StudioExportPanel({
     handleChangeSelectionExpression,
     syncReturnStateInHistory,
     runPreflight,
-  } = useStudioExportPanelController(projectId, locale);
+  } = useStudioExportPanelController(projectId, locale, owner);
 
   const estimatedMb = Math.max(
     0.1,
@@ -88,7 +97,7 @@ export function StudioExportPanel({
         documentWidthPx: draft.width,
         documentHeightPx: draft.height,
         targetSliceHeightPx: profile.maxSegmentHeight ?? draft.height,
-        exportMode: target === "personal-archive" ? "personal-preview" : "commercial",
+        exportMode: profile.requireRightsClearance ? "commercial" : "personal-preview",
         bubbles:
           effectiveDraft.minimumTextPx && effectiveDraft.minimumTextPx > 0
             ? [
@@ -117,8 +126,8 @@ export function StudioExportPanel({
       draft.width,
       effectiveDraft.minimumTextPx,
       profile.maxSegmentHeight,
+      profile.requireRightsClearance,
       projectFacts.blockedAssets,
-      target,
     ],
   );
   const psdAndTimelapseSpec = useMemo(() => {
@@ -383,7 +392,12 @@ export function StudioExportPanel({
                   : "border-bad/40 bg-bad/10 text-bad",
               )}
             >
-              {commercialGateReport.passed
+              {!profile.requireRightsClearance
+                ? bt(
+                    `개인 백업 · 상업 이용 권리는 별도로 확인하세요 · 주의 ${commercialGateReport.warningCount}건`,
+                    `Personal backup · Check rights before commercial use · Warnings: ${commercialGateReport.warningCount}`,
+                  )
+                : commercialGateReport.passed
                 ? commercialGateReport.warningCount > 0
                   ? bt(
                       `Rights BOM 통과 · 375px 모바일 가독성 주의 ${commercialGateReport.warningCount}건`,
@@ -411,6 +425,7 @@ export function StudioExportPanel({
           <button
             type="button"
             onClick={runPreflight}
+            disabled={owner === undefined}
             className={buttonClass({
               className:
                 "min-h-11 min-w-0 gap-2 break-words focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",

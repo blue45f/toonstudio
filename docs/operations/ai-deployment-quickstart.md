@@ -25,10 +25,9 @@
 
 모든 배포는 **검토된 `origin/main` 끝의 소문자 40자리 SHA 1개**만 대상으로 하며, 변경된 배포 단위만 수동 반영한다.
 
-`deploy:web`의 운영 전제 중 스크립트가 직접 검사하는 항목은 승인 조건, `main`·clean worktree·로컬 HEAD,
-동일 SHA의 로컬 완료 원장이다. `--skip-build`이면 사전 빌드 메타의 SHA 일치도 검사한다.
-배포 시점의 원격 `origin/main` 일치, 해당 SHA의 `core`·`verify` 성공, 원격의 진행 중·완료 배포와 현재 무료 잔량은
-**운영자가 실행 전에 확인할 게이트**이며, 이 명령이 자동 조회하지 않는다. 사후 스모크도 별도로 수행한다.
+`deploy:web`는 승인 조건, clean `main`의 HEAD, 동일 SHA의 로컬 완료 원장을 확인한다. `--skip-build`이면 빌드 메타의 SHA도 대조한다.
+운영 반영을 시작할 때와 R2·Worker에 각각 게시하기 직전에 원격 `origin/main`과 정본 CI의 `core`·`verify`를 다시 확인한다.
+운영자는 원격의 진행 중·완료 배포와 무료 잔량을 확인하고, 게시 후에는 서비스 스모크를 수행한다.
 무료 우선 정책 검사 통과만으로 현재 과금 상태가 증명되지는 않는다. 추가 과금 0원이 요구되는 작업에서
 CI runner·아티팩트 보관·R2 작업량 등의 비용 가능성이 미확정이면 외부 실행을 보류한다.
 
@@ -50,6 +49,8 @@ CI runner·아티팩트 보관·R2 작업량 등의 비용 가능성이 미확�
 | 배포 전 통합 정책·Worker 검증 | `pnpm run deploy:verify` | `verify:free-infrastructure`, `verify:cloudflare-static`, `verify:cloudflare-apex-redirect`, `verify:cloudflare-realtime`, `verify:cloudflare-analytics` |
 | 정적 웹 + R2 드라이런 | `pnpm run deploy:web:dry-run` | `cloudflare:static:dry-run`, `sync:cloudflare-r2-assets:dry-run`, `prepare:cloudflare-static-assets`, `generate:cloudflare-static-rules` |
 | 정적 웹 운영 배포 | `pnpm run deploy:web` | `cloudflare:static:deploy`, `sync:cloudflare-r2-assets` |
+| PR 브랜치 푸시 전 전체 검증 | `git push` | 푸시 훅이 `pnpm run harness:verify --pre-push`를 한 번 실행한다. 같은 커밋을 푸시하기 직전에 전체 검사를 따로 실행할 필요가 없다. |
+| 현재 SHA·필수 CI·GitHub 환경·로컬 Wrangler 인증 한 번에 점검 | `pnpm run deploy:doctor` | Worker 버전과 R2 객체 각각의 HTTP 상태를 표시한다. 로컬 로그인은 `pnpm run deploy:web -- --wrangler-oauth`에서 사용한다. |
 | 로컬 env ↔ GitHub `production-deploy` 동기화 | `pnpm run deploy:auth:sync` | `deploy:auth`, `deploy:auth:check`, `deploy:info` (`scripts/setup-deploy-auth.mjs`) |
 | 로컬 env 없는 클라우드 수동 배포 디스패치 | `pnpm run deploy:cloud` | `node scripts/dispatch-cloud-deploy.mjs` (`.github/workflows/cloud-production-deploy.yml`) |
 | 서울 onpod 원점 상태 확인 | `pnpm run deploy:status:origin` | `verify:render-core-origin` (`--origin=https://toonstudio-api.onpod.ai`), `verify:product-tour-live` |

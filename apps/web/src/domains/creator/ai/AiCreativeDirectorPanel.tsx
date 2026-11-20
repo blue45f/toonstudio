@@ -75,19 +75,13 @@ interface DirectorAnswer {
   readonly model: string;
 }
 
-function mapDirectorSuggestionToSkill(id: AiDirectorSuggestionId): StudioAiSkillId {
-  switch (id) {
-    case "character-profile":
-      return "character-consistency";
-    case "cut-composition":
-    case "scene-direction":
-      return "storyboard";
-    case "dialogue-translation":
-      return "localization";
-    default:
-      return "story-outline";
-  }
-}
+const SUGGESTION_SKILLS: Readonly<Record<AiDirectorSuggestionId, StudioAiSkillId>> = {
+  "story-expand": "story-outline",
+  "character-analysis": "character-consistency",
+  "scene-composition": "storyboard",
+  "direction-style": "storyboard",
+  localize: "localization",
+};
 
 /** 개인 키 구성이 바뀔 때마다 다시 세도록 저장소 revision을 입력으로 받는다. */
 function personalTextRouteCount(revision: number): number {
@@ -179,7 +173,7 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
     const createdAt = new Date().toISOString();
     let runningJob = createStudioAiJob({
       id: jobId,
-      skill: mapDirectorSuggestionToSkill(selected.id),
+      skill: SUGGESTION_SKILLS[selected.id],
       providerId: availability.state === "personal" ? "personal-key" : "toonstudio-ai",
       privacy: "cloud-provider",
       cost: "free",

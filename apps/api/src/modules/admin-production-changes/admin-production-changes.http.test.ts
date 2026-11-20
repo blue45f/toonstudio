@@ -82,6 +82,28 @@ describe("제작 변경 HTTP 인증·CSRF·본문 경계", () => {
     }
     expect(query.mock.calls.some(([sql])=>/INSERT|UPDATE/u.test(sql))).toBe(false);
   });
+  it("관리자만 Multer에 도달하고 다른 사용자는 잘못된 파일 필드도 인증·인가에서 먼저 거부한다", async () => {
+    const cases: ReadonlyArray<{ auth: Record<string, string>; status: number }> = [
+      { auth: {}, status: 401 },
+      { auth: { "x-user-id": "admin" }, status: 401 },
+      { auth: cookie("member"), status: 403 },
+      { auth: cookie("operator"), status: 403 },
+      { auth: cookie("admin"), status: 400 },
+    ];
+    for (const { auth, status } of cases) {
+      const form = new FormData();
+      form.append("unexpectedField", new Blob(["test"]), "sample.txt");
+      const response = await fetch(base + "/api/admin/production-changes/captures", {
+        method: "POST",
+        headers: { ...auth, origin: base, "x-toonstudio-csrf": "1" },
+        body: form,
+      });
+      expect(response.status).toBe(status);
+      const body = await response.json();
+      if (status === 400) expect(body.message).toContain("unexpectedField");
+    }
+    expect(query.mock.calls.some(([sql]) => /INSERT|UPDATE/u.test(sql))).toBe(false);
+  });
   it("세션 회수 뒤에는 기존 쿠키로 기록을 읽지 못한다", async () => {
     allowed.mockResolvedValue(false);const response=await request(cookie());expect(response.status).toBe(401);await response.text();expect(query).not.toHaveBeenCalled();
   });

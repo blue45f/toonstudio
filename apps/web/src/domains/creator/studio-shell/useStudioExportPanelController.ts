@@ -74,13 +74,13 @@ function createTargetDraftState(
   };
 }
 
-export function useStudioExportPanelController(projectId: string, locale: "ko" | "en") {
+export function useStudioExportPanelController(projectId: string, locale: "ko" | "en", owner: string | null | undefined) {
   const bt = useBilingual("StudioExportPanel");
   const location = useLocation();
   const urlState = useMemo(() => parseStudioExportPanelUrlState(location.search), [location.search]);
   const loadKey = `${projectId}:${locale}:${location.key}:${location.search}`;
 
-  const workspace = useStudioProjectWorkspace(projectId, locale);
+  const workspace = useStudioProjectWorkspace(projectId, locale, owner);
   const syncManuscript =
     typeof window !== "undefined"
       ? readSyncLocalManuscriptExportFacts(window.localStorage, projectId, locale)
@@ -225,9 +225,9 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
   }, [location.search, manuscript, projectId, selectionExpression, selectionMode, target, urlState]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || owner === undefined) return;
     let cancelled = false;
-    void loadPersistedManuscriptExportFacts(window.localStorage, projectId, locale).then(
+    void loadPersistedManuscriptExportFacts(window.localStorage, projectId, locale, owner).then(
       (loaded) => {
         if (cancelled) return;
         if (loaded) {
@@ -274,7 +274,7 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
     return () => {
       cancelled = true;
     };
-  }, [loadKey, locale, projectId, selectionExpression, selectionMode]);
+  }, [loadKey, locale, owner, projectId, selectionExpression, selectionMode]);
 
   const manuscriptBasis = useMemo(
     () => computeManuscriptBasis(manuscript, selectionMode, selectionExpression),
@@ -376,7 +376,7 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
     draft.width === manuscriptBasis.sourceWidth &&
     draft.height === manuscriptBasis.sourceHeight;
 
-  const savedResult =
+  const savedResult = owner === undefined ? null :
     workspace.state?.exportPreflights.find(
       (item) => item.target === target && item.policyVersion === profile.policyVersion,
     ) ?? null;

@@ -102,6 +102,8 @@
 
 현재 로컬 Cloudflare 배포 인증(2026-10-29): 사용자가 계정 조회·Worker 배포/수정·로그인 유지를 허용한 뒤 Wrangler 기본 프로파일의 OAuth 로그인을 복구했다. `wrangler whoami`, Worker 배포 목록, R2 REST 목록 조회가 통과했다. scope는 `account:read`, `user:read`, `workers:write`, `workers_scripts:write`, `offline_access`다. 자격증명은 Wrangler의 암호화 파일 `~/Library/Preferences/.wrangler/config/default.enc`(권한 0600)와 macOS Keychain(`service=wrangler`, `account=default`)에 보관한다. 토큰 값을 별도 파일로 복사하지 않는다 [직접].
 
+현재 로컬 웹·R2 배포 도구는 `pnpm run deploy:doctor`로 기존 Wrangler 세션의 Worker 버전·R2 객체 접근을 조회한다. `pnpm run deploy:web -- --wrangler-oauth`는 같은 로그인으로 R2와 정적 웹을 배포하고, 각 쓰기 직전에 원격 main과 필수 CI를 확인한다. GitHub Actions 배포는 `production-deploy` 환경의 배포용 시크릿을 사용한다.
+
 이전 셸의 `CLOUDFLARE_API_TOKEN`·`CLOUDFLARE_API_KEY` 등은 부모 환경에서 변경하지 않았다. OAuth 명령은 자식 환경에서 `CLOUDFLARE_API_TOKEN`, `CF_API_TOKEN`, `CLOUDFLARE_API_KEY`, `CF_API_KEY`, `CLOUDFLARE_EMAIL`, `CF_EMAIL`을 제외하고 `--env-file /dev/null`을 지정한다. 이 설정이 없으면 셸·dotenv 인증이 OAuth보다 먼저 선택될 수 있다. Cloudflare MCP 연결의 자격증명은 이번 CLI 복구와 별개다. GitHub CLI의 저장소 로그인도 GHCR 패키지 업로드 권한을 뜻하지 않는다 [직접: 2026-10-29].
 
 주의: 공식 `wrangler auth token --json`은 비밀값을 출력하며 기본 로그 파일에도 기록한다. 외부 배포 도구에서 사용할 때는 자식의 `WRANGLER_WRITE_LOGS=false`, `WRANGLER_LOG=log`를 지정하고 stdout·stderr를 메모리에서만 처리한다. 실패 응답이나 JSON 파싱 오류 원문도 출력하지 않는다. 원격 Worker 시크릿·운영 환경변수·DNS는 이 로컬 인증 복구에서 변경하지 않았다.

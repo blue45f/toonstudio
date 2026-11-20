@@ -76,12 +76,17 @@ pnpm run verify
 pnpm run deploy:web
 ```
 
+먼저 저장소 루트에서 `pnpm run deploy:doctor`를 실행합니다. 원격 main SHA, 해당 SHA의 필수 CI, GitHub 배포 환경, 이 컴퓨터의 Wrangler 로그인으로 접근한 Worker 버전·R2 객체 목록의 HTTP 상태가 표시됩니다. 이 조회는 운영 리소스를 변경하지 않습니다.
+
+- 로컬 Wrangler에서 Worker·R2가 모두 200이면 `pnpm run deploy:web:dry-run -- --wrangler-oauth`로 산출물을 점검하고, 아래 배포 조건을 충족한 뒤 `pnpm run deploy:web -- --wrangler-oauth`를 실행합니다. 계정 ID는 셸, 현재 체크아웃의 `.env.infrastructure.local`, 연결된 정본 체크아웃 순으로 찾습니다. 기존 셸 토큰을 갱신하거나 GitHub에 로컬 로그인 정보를 등록할 필요가 없습니다.
+- GitHub의 `production-deploy` 환경에 웹 배포 시크릿을 등록한 팀은 `pnpm run deploy:cloud -- --web --watch`를 사용합니다. 요청한 실행의 링크를 즉시 표시하고 해당 실행이 실패하면 명령도 실패로 끝납니다. 연결이 끊겼을 때는 출력된 링크에서 진행 상황을 확인합니다.
+
 명령을 실행하기 전에 아래 조건을 모두 확인합니다. 세부 명령과 성공 판정은
 [정본 배포 안내의 5단계](docs/operations/ai-deployment-quickstart.md#2-5단계-정본-진입-명령--성공-판정--금지-사항)에만 모아 둡니다.
 
 - 검토된 clean `main`의 40자리 SHA가 배포 시점 `origin/main` 끝과 같고, 그 SHA의 필수 CI `core`·`verify`가 모두 성공해야 합니다. 로컬 커밋·오프라인 점검만으로 대체하지 않습니다.
 - `pnpm run deploy:verify`, 웹 빌드와 번들 검사, `pnpm run deploy:web:dry-run`을 통과해야 합니다. 정적 웹 목적의 환경 점검은 `pnpm run deploy:preflight --operation static-deploy --unit static-worker`입니다. `offline-contract-only`는 원격 권한·배포 완료를 뜻하지 않습니다.
-- 승인된 세션에 `CLOUDFLARE_API_TOKEN`과 `CLOUDFLARE_ACCOUNT_ID`를 제공해야 합니다. 토큰은 기존 `toonspectrum-web`의 코드·Static Assets 배포와 `toonspectrum-public-assets`의 객체 목록 조회·업로드를 수행할 수 있어야 합니다. 현재 R2 동기화는 REST API 토큰을 요구하므로 Wrangler OAuth 로그인만으로 전체 명령의 실행 가능성을 보장하지 않습니다.
+- 인증에는 배포용 `CLOUDFLARE_API_TOKEN`·`CLOUDFLARE_ACCOUNT_ID` 또는 위에서 지정한 로컬 Wrangler 로그인을 사용합니다. 두 경로 모두 `toonspectrum-web` 코드·Static Assets 배포와 `toonspectrum-public-assets` 객체 목록 조회·업로드 권한이 필요합니다. 진단의 HTTP 200은 조회 결과이며 실제 쓰기 결과는 배포 기록에서 확인합니다.
 - 직전 정상인 **컷오버 이후** Worker 버전 ID를 기록하고, 동일 SHA의 로컬 배포 원장이 없는지 확인합니다. 배포 후에는 원점 준비성·에지 출처 인증·주요 화면·로그인·제품 투어·Studio 격리 검증을 수행합니다. 실패하면 기록한 정상 Worker 버전으로 복구하고 상태 검증을 다시 수행합니다.
 
 실제 비밀값은 기존 승인된 secret store에서 필요한 세션으로만 주입합니다. 로컬 env·Keychain을

@@ -46,10 +46,22 @@ test("CLI 기본값과 상호 배타 옵션을 검증한다", () => {
     command: "verify",
     staged: false,
     full: false,
+    prePush: false,
     base: process.env.HARNESS_BASE || "origin/main",
   });
   assert.throws(
     () => parseCli(["verify", "--staged", "--base=origin/main"]),
     /함께 사용할 수 없습니다/u,
   );
+});
+
+test("푸시 전용 검증은 변경 범위를 줄이는 옵션과 섞이지 않는다", () => {
+  assert.equal(parseCli(["verify", "--pre-push"]).prePush, true);
+  for (const args of [
+    ["check", "--pre-push"], ["doctor", "--pre-push"],
+    ["verify", "--pre-push", "--staged"], ["verify", "--pre-push", "--full"],
+    ["verify", "--pre-push", "--base=HEAD"],
+  ]) {
+    assert.throws(() => parseCli(args), /--pre-push/u);
+  }
 });

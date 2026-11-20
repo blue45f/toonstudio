@@ -35,6 +35,7 @@ function humanStorageError(_locale: string): string {
 export function useStudioProjectWorkspace(
   projectId: string,
   locale: string,
+  exportOwner?: string | null,
 ): StudioProjectWorkspaceController {
   useBilingualI18nRevision();
   const [state, setState] = useState<StudioProjectWorkspaceState | null>(null);
@@ -43,12 +44,12 @@ export function useStudioProjectWorkspace(
   const reload = useCallback(() => {
     if (typeof window === "undefined" || !projectId.trim()) return;
     try {
-      setState(ensureStudioProjectWorkspaceState(window.localStorage, projectId));
+      setState(ensureStudioProjectWorkspaceState(window.localStorage, projectId, undefined, exportOwner));
       setError(null);
     } catch {
       setError(humanStorageError(locale));
     }
-  }, [locale, projectId]);
+  }, [exportOwner, locale, projectId]);
 
   useEffect(() => {
     reload();
@@ -64,8 +65,7 @@ export function useStudioProjectWorkspace(
       const detail = (event as CustomEvent<unknown>).detail;
       const parsed = parseStudioProjectDiagnosticSource(detail, projectId);
       if (!parsed) return;
-      setState(parsed);
-      setError(null);
+      reload();
     };
     const handleStorage = (event: StorageEvent) => {
       if (event.storageArea !== window.localStorage) return;
@@ -87,7 +87,7 @@ export function useStudioProjectWorkspace(
         window.localStorage,
         projectId,
         updater,
-        { target: window },
+        { target: window, exportOwner },
       );
       setState(next);
       setError(null);
@@ -96,7 +96,7 @@ export function useStudioProjectWorkspace(
       setError(humanStorageError(locale));
       return null;
     }
-  }, [locale, projectId]);
+  }, [exportOwner, locale, projectId]);
 
   return Object.freeze({ state, error, update, reload });
 }

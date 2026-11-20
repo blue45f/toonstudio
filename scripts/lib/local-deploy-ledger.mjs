@@ -4,7 +4,7 @@ import { dirname, isAbsolute, resolve } from "node:path";
 const UNIT_PATTERN = /^[a-z0-9-]+$/u;
 const SHA_PATTERN = /^[0-9a-f]{40}$/u;
 
-function resolveCommonGitDirectory(cwd) {
+export function resolveCommonGitDirectory(cwd) {
   const dotGit = resolve(cwd, ".git");
   if (!existsSync(dotGit)) return null;
   const stat = statSync(dotGit);

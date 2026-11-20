@@ -1,15 +1,28 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SessionContext } from "@/domains/auth/public/session/auth-session-store";
 import { useI18n } from "@/shared/lib/i18n";
 
+import * as commercialPreflight from "../export/studio-commercial-preflight-gate";
 import { studioAutosaveKey, writeStudioLifecycleAutosave } from "../studio-autosave";
 import { createStudioProjectDocument } from "../studio-project-document-store";
 import { createStudioProject } from "../studio-project-library-store";
+import * as manuscriptFacts from "./studio-manuscript-export-facts";
 import { StudioExportPanel } from "./StudioExportPanel";
+
+function renderGuestPanel(projectId: string) {
+  return render(
+    <SessionContext.Provider value={{ data: null, ready: true, status: "unauthenticated", update: async () => null }}>
+      <MemoryRouter>
+        <StudioExportPanel projectId={projectId} locale="ko" />
+      </MemoryRouter>
+    </SessionContext.Provider>,
+  );
+}
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -24,11 +37,7 @@ afterEach(() => {
 
 describe("StudioExportPanel", () => {
   it("필수 목적·형식 선택을 먼저 보여 주고 해상도·DPI 등 고급 설정은 기본으로 접어 둔다", () => {
-    render(
-      <MemoryRouter>
-        <StudioExportPanel projectId="proj-export-1" locale="ko" />
-      </MemoryRouter>,
-    );
+    renderGuestPanel("proj-export-1");
 
     expect(
       screen.getByRole("heading", {
@@ -49,6 +58,19 @@ describe("StudioExportPanel", () => {
     expect(finalizeLink.getAttribute("href")).toBe("/studio/work/proj-export-1/publish");
   });
 
+  it("완전한 백업을 선택하면 개인 검사로 바뀌고 게시 목적을 다시 고르면 상업 권리를 검사한다", () => {
+    const gate = vi.spyOn(commercialPreflight, "runCommercialPreflightGate");
+    renderGuestPanel("archive-rights");
+    const summary = screen.getByTestId("studio-export-commercial-gate-summary");
+    expect(gate.mock.lastCall?.[0].exportMode).toBe("commercial");
+    fireEvent.click(screen.getByRole("button", { name: /완전한 백업/u }));
+    expect(gate.mock.lastCall?.[0].exportMode).toBe("personal-preview");
+    expect(summary.textContent).toContain("상업 이용 권리는 별도로 확인");
+    fireEvent.click(screen.getByRole("button", { name: /웹툰 플랫폼/u }));
+    expect(gate.mock.lastCall?.[0].exportMode).toBe("commercial");
+    expect(summary.textContent).toContain("Rights BOM");
+  });
+
   it("로컬 원고가 있는 프로젝트는 실제 원고 크기로 규격 불일치를 잡아내고 비로그인 로컬 편집기와 공개 게시 동선을 분리한다", () => {
     createStudioProject(window.localStorage, {
       id: "proj-local-1",
@@ -63,11 +85,7 @@ describe("StudioExportPanel", () => {
       height: 8000,
     });
 
-    render(
-      <MemoryRouter>
-        <StudioExportPanel projectId="proj-local-1" locale="ko" />
-      </MemoryRouter>,
-    );
+    renderGuestPanel("proj-local-1");
 
     // 실제 로컬 원고 크기(1080×8000)가 초기 점검 대상으로 반영된다.
     const summary = screen.getByTestId("studio-export-preset-summary");
@@ -109,31 +127,33 @@ describe("StudioExportPanel", () => {
       width: 1080,
       height: 8000,
     });
+    const pagesList = [
+      {
+        id: "p-1", name: "오프닝", canvasH: 1280,
+        elements: [{ id: "opening-cut", type: "frame", x: 16, y: 16, width: 680, height: 640, fill: "#fff", stroke: "#111" }],
+      },
+      { id: "p-2", name: "전개", canvasH: 1600, elements: [] },
+      { id: "p-3", name: "엔딩", canvasH: 1280, elements: [] },
+    ];
     writeStudioLifecycleAutosave(
       window.localStorage,
       studioAutosaveKey({ userId: null, workId: "doc-pages-1" }),
       {
         version: 6,
         savedAt: "2026-11-15T05:00:00.000Z",
-        title: "1화",
-        pagesList: [
-          { id: "p-1", name: "오프닝", canvasH: 1280, elements: [] },
-          { id: "p-2", name: "전개", canvasH: 1600, elements: [] },
-          { id: "p-3", name: "엔딩", canvasH: 1280, elements: [] },
-        ],
-      } as never,
+        pagesList,
+      },
       { preservePrimary: false },
     );
 
-    render(
-      <MemoryRouter>
-        <StudioExportPanel projectId="proj-pages-1" locale="ko" />
-      </MemoryRouter>,
-    );
+    const load = vi.spyOn(manuscriptFacts, "loadPersistedManuscriptExportFacts");
+    renderGuestPanel("proj-pages-1");
 
-    await waitFor(() => {
-      expect(screen.getByTestId("studio-export-scope-summary").textContent).toContain("실제 편집 원고 연결됨");
+    await act(async () => {
+      const snapshot = await load.mock.results.at(-1)?.value;
+      expect(snapshot?.sourceAuthority).toBe("manuscript-snapshot");
     });
+    expect(screen.getByTestId("studio-export-scope-summary").textContent).toContain("실제 편집 원고 연결됨");
 
     // ① 실제 해상도·순서, ② 플랫폼 추천치, ③ 사전 추정치가 각각 독립 카드에 구분 표시된다.
     expect(screen.getByTestId("studio-export-scope-actual").textContent).toContain("720 × 1,280 px · 총 3P");
@@ -170,11 +190,7 @@ describe("StudioExportPanel", () => {
   });
 
   it("내보내기 목적을 전환해도 대상별 사용자 수정 초안을 보존하고 그룹 역할을 제공한다", () => {
-    render(
-      <MemoryRouter>
-        <StudioExportPanel projectId="proj-export-drafts" locale="ko" />
-      </MemoryRouter>,
-    );
+    renderGuestPanel("proj-export-drafts");
 
     expect(screen.getByRole("group", { name: "내보내기 목적" })).toBeTruthy();
     expect(screen.getByRole("group", { name: "최종 출력 이동" })).toBeTruthy();
@@ -196,11 +212,7 @@ describe("StudioExportPanel", () => {
   });
 
   it("저장 오류 시 다시 시도 복구 버튼을 제공하고 같은 동작의 연속 더블 클릭을 한 번만 처리한다", () => {
-    render(
-      <MemoryRouter>
-        <StudioExportPanel projectId="proj-export-retry" locale="ko" />
-      </MemoryRouter>,
-    );
+    renderGuestPanel("proj-export-retry");
 
     const failSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("storage quota exceeded");

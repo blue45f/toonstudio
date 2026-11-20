@@ -82,6 +82,7 @@ export async function loadPersistedManuscriptExportFacts(
   storage: Storage,
   projectId: string,
   locale: "ko" | "en",
+  authUserId: string | null,
 ): Promise<StudioManuscriptExportFacts | null> {
   const syncFallback = readSyncLocalManuscriptExportFacts(storage, projectId, locale);
   if (!syncFallback) return null;
@@ -99,6 +100,8 @@ export async function loadPersistedManuscriptExportFacts(
       storage,
       projectId,
       documents: docs,
+      authUserId,
+      allowGuestFallback: false,
       lastOpenedDocumentId: project?.lastOpenedDocumentId ?? syncFallback.documentId,
     });
     const activeSnapshot = snapshots.find((item) => item.documentId === syncFallback.documentId);

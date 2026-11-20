@@ -6,10 +6,19 @@ import { userInfo } from "node:os";
 import { delimiter, dirname, resolve } from "node:path";
 
 import {
+  isCloudflareAccountId,
+  isLocalWranglerOAuthAllowed,
+  localWranglerOAuthEnvironment,
+  resolveLocalCloudflareAccountId,
+} from "./lib/cloudflare-local-oauth.mjs";
+import {
   assertNoDuplicateDeploy,
   recordCompletedDeploy,
   resolveLocalDeployLedgerPath,
 } from "./lib/local-deploy-ledger.mjs";
+
+import { GITHUB_REPO_SLUG } from "./lib/deploy-auth-env.mjs";
+import { inspectReleaseCi } from "./release-required-ci.mjs";
 
 const STANDING_APPROVAL_PATH = "deploy/cloudflare-static/STANDING_APPROVAL.json";
 const ENVIRONMENT_CONTRACT_PATH = "config/deployment/environment-contract.json";
@@ -18,6 +27,7 @@ const BUILD_META_PATH = "dist/.vite/build-meta.json";
 const mode = process.argv.includes("--production") ? "production" : "dry-run";
 const skipBuild = process.argv.includes("--skip-build");
 const skipR2Sync = process.argv.includes("--skip-r2-sync");
+const useLocalOAuth = process.argv.includes("--wrangler-oauth");
 const useStandingProfile = process.argv.includes("--standing-profile");
 const coreOriginArg = process.argv
   .find((argument) => argument.startsWith("--core-origin="))
@@ -139,6 +149,20 @@ function readStandingApproval() {
   return parsed;
 }
 
+function requireCurrentRelease(sha) {
+  const options = { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 45_000 };
+  try {
+    const origin = execFileSync("git", ["ls-remote", "--exit-code", "origin", "refs/heads/main"], options).trim();
+    if (origin !== `${sha}\trefs/heads/main`) fail("원격 origin/main이 검증한 HEAD와 다릅니다.");
+    const ci = inspectReleaseCi(sha, { repoSlug: GITHUB_REPO_SLUG });
+    if (!ci.allGreen) fail(`현재 main push CI를 확인하세요 (core=${ci.gates.core}, verify=${ci.gates.verify}, ${ci.runStatus}).`);
+    const tip = execFileSync("gh", ["api", `repos/${GITHUB_REPO_SLUG}/git/ref/heads/main`, "--jq", ".object.sha"], options).trim();
+    if (tip !== sha) fail("정식 GitHub 저장소의 main이 검증한 HEAD와 다릅니다.");
+  } catch {
+    fail("원격 main 또는 GitHub 필수 CI 상태를 확인할 수 없어 배포를 중지했습니다.");
+  }
+}
+
 let productionHead = null;
 let productionApprovalMode = null;
 let productionLedgerPath = null;
@@ -192,6 +216,7 @@ if (mode === "production") {
   } catch (error) {
     fail(error instanceof Error ? error.message : String(error));
   }
+  requireCurrentRelease(head);
   routeVariables.push("--var", `RELEASE_SHA:${head}`);
 }
 
@@ -241,7 +266,15 @@ const baseChildEnvironment = {
   PATH: normalizedPathEntries.join(delimiter),
   ...(childHome ? { HOME: childHome } : {}),
 };
-const useWranglerOAuthIsolation = skipR2Sync && !process.env.CLOUDFLARE_API_TOKEN?.trim();
+if (useLocalOAuth && !isLocalWranglerOAuthAllowed(process.env)) fail("--wrangler-oauth는 로컬 배포에서만 사용할 수 있습니다.");
+const localAccountId = useLocalOAuth ? resolveLocalCloudflareAccountId(process.cwd(), baseChildEnvironment) : undefined;
+if (useLocalOAuth && mode === "production" && !isCloudflareAccountId(localAccountId)) {
+  fail("--wrangler-oauth로 배포할 계정의 CLOUDFLARE_ACCOUNT_ID를 확인해 주세요.");
+}
+const oldWorkerIsolation = skipR2Sync && !process.env.CLOUDFLARE_API_TOKEN?.trim();
+const oauthChildEnvironment = useLocalOAuth
+  ? localWranglerOAuthEnvironment({ ...baseChildEnvironment, CLOUDFLARE_ACCOUNT_ID: localAccountId })
+  : undefined;
 
 const pipelineCommands = [
   {
@@ -275,33 +308,38 @@ const pipelineCommands = [
     args: ["exec", "node", "scripts/verify-static-service-worker.mjs"],
   },
   {
+    publishes: mode === "production" && !skipR2Sync,
     executable: "pnpm",
     args: [
       "run",
       mode === "production" && !skipR2Sync
         ? "sync:cloudflare-r2-assets"
         : "sync:cloudflare-r2-assets:dry-run",
+      ...(useLocalOAuth && mode === "production" && !skipR2Sync ? ["--wrangler-oauth"] : []),
     ],
+    environment: oauthChildEnvironment,
   },
   {
+    publishes: mode === "production",
     executable: "pnpm",
     args: [
       "exec",
       "wrangler",
       "deploy",
       ...(mode === "dry-run" ? ["--dry-run"] : []),
-      ...(useWranglerOAuthIsolation ? ["--env-file", "/dev/null"] : []),
+      ...(useLocalOAuth || oldWorkerIsolation ? ["--env-file", "/dev/null"] : []),
       "--config",
       "deploy/cloudflare-static/wrangler.jsonc",
       ...routeVariables,
     ],
-    environment: useWranglerOAuthIsolation
+    environment: oauthChildEnvironment ?? (oldWorkerIsolation
       ? { ...baseChildEnvironment, WRANGLER_WRITE_LOGS: "false" }
-      : baseChildEnvironment,
+      : baseChildEnvironment),
   },
 ];
 
 for (const command of pipelineCommands) {
+  if (command.publishes) requireCurrentRelease(productionHead);
   const result = spawnSync(command.executable, command.args, {
     stdio: "inherit",
     env: command.environment ?? baseChildEnvironment,
