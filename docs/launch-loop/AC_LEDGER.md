@@ -17,16 +17,16 @@
 | AC-006 | Wave 2 | P0 | IN_PROGRESS | AI 9상태 생성 큐(`studio-ai-job.ts`) 정본 모델 UI 연결(`StudioAiJobQueuePanel.tsx` + 테스트 작성 완료, 로컬 vitest·호스트 마운트 검증 대기) | `pnpm harness:verify && pnpm verify:studio-ai-quality` |
 | AC-007 | Wave 2 | P0 | IN_PROGRESS | 저장 충돌 3선택 복구 UI(`StudioSaveConflictResolutionDialog.tsx` + 테스트 작성 완료, 기본 UI 내부 용어 잔존 점검·OPFS 검증 대기) | `pnpm verify:studio-autosave-opfs && pnpm verify:studio-autosave-two-tab` |
 | AC-008 | Wave 2 | P0 | IN_PROGRESS | 원스톱 출고 프리플라이트(`studio-commercial-preflight-gate.ts` + 테스트 구현 완료, 375px 가독성·스마트 컷 슬라이싱·Rights BOM NC/GPL 차단 UI 연결·vitest 대기) | `pnpm verify:studio-manuscript-delivery-acceptance && pnpm test:creator-bundle-rights` |
-| AC-009 | Wave 2 | P0 | TODO | 실시간 협업 장시간 안정성 및 로컬 스코프 `Y.UndoManager` 무결성 검증 | `pnpm test:collab-stability && pnpm verify:collab-stability` |
+| AC-009 | Wave 2 | P0 | IN_PROGRESS | 실시간 협업 로컬 스코프 Undo 가드(`studio-crdt-local-undo-scope-guard.ts` + 테스트 구현 완료, 장시간 안정성 게이트 실행 대기) | `pnpm test:collab-stability && pnpm verify:collab-stability` |
 | AC-010 | Wave 3 | P1 | IN_PROGRESS | F01: `rank-row.tsx` "Why This Rank" 중첩 카드 제거·스펙트럼 바 적용 완료(로컬 vitest·브라우저 검증 대기) | `pnpm harness:verify && pnpm test:fast` |
-| AC-011 | Wave 3 | P1 | TODO | F02: `TasteOnboardingPage.tsx` 첫 진입 온보딩 연결 및 `recommend.ts` 실시간 추천 전환 E2E 완성 | `pnpm harness:verify && pnpm test:fast` |
-| AC-012 | Wave 3 | P1 | IN_PROGRESS | F03: 스냅샷 Diff 무료전환·가격변동 타임라인(`pricing-transition-timeline.ts` + UI + 테스트 작성 완료, 작품 상세 마운트·vitest 대기) | `pnpm harness:verify && pnpm test:fast` |
-| AC-013 | Wave 3 | P1 | TODO | F04: 5종 읽기 상태(`hiatus` 포함) + 공개 컬렉션 공유 URL | `pnpm harness:verify && pnpm test:fast` |
-| AC-014 | Wave 3 | P1 | IN_PROGRESS | F05: `adaptation-graph.tsx` 노블코믹스 버전별 평점·완결 비교 매트릭스 구현 완료(로컬 vitest·브라우저 검증 대기) | `pnpm harness:verify && pnpm test:fast` |
-| AC-015 | Wave 3 | P1 | IN_PROGRESS | F06: `review-trust-engine.ts` + `review-trust-card.tsx` 구현 완료(작품 상세 마운트·키워드 파인더·vitest 대기) | `pnpm harness:verify && pnpm test:fast` |
+| AC-011 | Wave 3 | P1 | IN_PROGRESS | F02: `taste-onboarding-entry-bridge.ts` 첫 진입 판정·추천 피드 전환 브리지 + 테스트 구현 완료(호스트 연결·E2E 대기) | `pnpm harness:verify && pnpm test:fast` |
+| AC-012 | Wave 3 | P1 | IN_PROGRESS | F03: `TitleDetailPage.tsx`에 `PriceTransitionTimeline` 실전 마운트 및 Zustand 구독 알림 토글 연결 완료(vitest·브라우저 검증 대기) | `pnpm harness:verify && pnpm test:fast` |
+| AC-013 | Wave 3 | P1 | IN_PROGRESS | F04: `public-collection-share.ts` 5종 읽기 상태(`hiatus`)·공개 컬렉션 URL + 테스트 구현 완료(스토어·상세 연결·vitest 대기) | `pnpm harness:verify && pnpm test:fast` |
+| AC-014 | Wave 3 | P1 | IN_PROGRESS | F05: `adaptation-graph.tsx` 노블코믹스 버전별 평점·완결 비교 매트릭스(`TitleDetailPage` 라이브 연결) 구현 완료(로컬 vitest·브라우저 검증 대기) | `pnpm harness:verify && pnpm test:fast` |
+| AC-015 | Wave 3 | P1 | IN_PROGRESS | F06: `TitleDetailPage.tsx` 리뷰 섹션에 `ReviewTrustCard` 실전 마운트 및 베이즈 신뢰 보정 연결 완료(vitest·브라우저 검증 대기) | `pnpm harness:verify && pnpm test:fast` |
 | AC-016 | Wave 3 | P1 | IN_PROGRESS | F07: `T3` 압력 베지어·`T6` ColorDrop·`T9` 레이어 트리오 제스처(`studio-layer-trio-gestures.ts`) + 테스트 전수 구현 완료(호스트 연결·vitest 대기) | `pnpm test:studio-material-brush && pnpm verify:studio-brushes` |
 | AC-017 | Wave 3 | P1 | IN_PROGRESS | F08: `studio-bg3d-live-ink-bake-bridge.ts` 원클릭 3D→2D 비파괴 컷 굽기·Split-Wipe·Rights BOM 승계 + 테스트 구현 완료(WebGPU 순차 검증 대기) | `pnpm verify:studio-3d-professional-completion && pnpm verify:studio-3d-web-authoring` |
-| AC-018 | Wave 3 | P1 | IN_PROGRESS | F10: `title-to-three-cut-remix-bridge.ts` 탐색→3컷 리믹스 브리지 구현 완료(상세 UI CTA 연결·타임랩스 WebM 검증 대기) | `pnpm harness:verify && pnpm verify:studio-artist-journey` |
+| AC-018 | Wave 3 | P1 | IN_PROGRESS | F10: `TitleDetailPage.tsx` 창작 브리지에 `buildThreeCutRemixBlueprint` 실전 연결 완료(3컷 템플릿·스튜디오 딥링크 라이브, vitest 대기) | `pnpm harness:verify && pnpm verify:studio-artist-journey` |
 | AC-019 | Wave 4 | P2 | IN_PROGRESS | UI v2 에디터 크롬 계약(`studio-ui-v2-chrome-contract.ts` + 테스트 구현 완료: 44px 상단바·7대 메뉴·82%/88% 시야 판정, 셸 바인딩·브라우저 검증 대기) | `pnpm verify:studio-menus && pnpm verify:studio-canvas-chrome` |
 | AC-020 | Wave 4 | P2 | IN_PROGRESS | 표면 통합 거버넌스(`unified-surface-governance.ts` + 테스트 구현 완료: 28개 리서치 핀보드 투영·프로젝트 6→8탭·Admin 4그룹, 라우터 연결·vitest 대기) | `pnpm validate:architecture && pnpm verify:studio-wiring-reachability` |
 | AC-021 | Wave 4 | P2 | TODO | 전 화면 디자인 토큰·중첩카드 0·스켈레톤 100%·축소모션·고대비 강제색상 감사 통과 | `pnpm audit:sitewide-visual-ux:all && pnpm audit:sitewide-visual-ux:forced-colors` |
