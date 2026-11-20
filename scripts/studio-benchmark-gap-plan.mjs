@@ -20,36 +20,205 @@ const PRIORITY_WEIGHT = Object.freeze({
 });
 
 const TOKEN_ALIASES = Object.freeze({
+  // 말풍선·대사·다국어·타이포
   "speech-bubble": ["balloon", "bubble", "lettering", "text"],
   "speech-bubbles": ["balloon", "bubble", "lettering", "text"],
   "automatic-speech-bubbles": ["balloon", "bubble", "lettering", "text"],
+  "multi-language": ["text", "lettering", "translation", "typography"],
+  "multi-language-translation": ["text", "lettering", "translation", "typography"],
+  "multi-language-publishing": ["text", "lettering", "export", "delivery"],
+  "contextual-glossary-translation": ["text", "lettering", "translation", "typography"],
+  "kinetic-type": ["typography", "text", "animation", "timeline"],
+  "cjk-aware-word-budget": ["text", "lettering", "typography", "balloon"],
+  "markdown": ["text", "storyboard", "storage", "local-first"],
+  // 컷·페이지·스토리보드·기획
   "vertical-scroll": ["comic", "episode", "page", "panel", "pagination"],
   "panel-layout": ["comic", "page", "panel", "gutter", "layout"],
   "automatic-panel-layout": ["comic", "page", "panel", "gutter", "layout"],
+  "eight-portal-slice-profiles": ["export", "comic", "episode", "pagination", "delivery"],
+  "safe-slice-interval-finder": ["comic", "panel", "pagination", "export"],
+  "script": ["storyboard", "shot", "text", "episode"],
+  "script-adaptation": ["storyboard", "shot", "ai", "episode"],
+  "script-to-cuts": ["storyboard", "shot", "panel", "comic", "episode"],
+  "script-to-staged-vertical-strip": ["storyboard", "comic", "panel", "episode"],
+  "beat-sheet": ["storyboard", "shot", "episode", "revision"],
+  "manuscript": ["episode", "page", "storyboard", "text"],
+  "worldbuilding": ["storyboard", "episode", "reference", "asset"],
+  "previsualization": ["storyboard", "shot", "camera", "three-d"],
+  "multi-scene": ["storyboard", "shot", "camera", "three-d"],
+  "scene": ["three-d", "camera", "render", "storyboard"],
+  "moodboard": ["reference", "asset", "canvas", "collaboration"],
+  "visual-notes": ["reference", "canvas", "storyboard", "collaboration"],
+  "story-map": ["storyboard", "episode", "collaboration", "canvas"],
+  "three-view-live-story-conti-sync": ["storyboard", "shot", "episode", "collaboration", "panel"],
+  "ai-proposal-diff-gate": ["ai", "proposal", "revision", "history", "review"],
+  "six-perspective-incremental-review": ["review", "diagnostic", "quality", "storyboard", "collaboration"],
+  "cut-drift-detection": ["revision", "diagnostic", "storyboard", "conflict", "sync"],
+  "cut-approval-share": ["collaboration", "review", "revision", "export"],
+  // 캐릭터·에셋·일관성·소재 마켓
+  "character": ["pose", "rig", "humanoid", "morph"],
   "character-consistency": ["character", "continuity", "variant", "revision", "asset"],
+  "consistent-characters": ["variant", "revision", "asset", "ai"],
+  "character-sheet": ["asset", "revision", "storyboard", "reference"],
+  "shared-character-briefs": ["asset", "collaboration", "revision", "reference"],
+  "photo-to-manga-character-cast-lock": ["asset", "variant", "ai", "revision"],
+  "consistency-asset-strip": ["asset", "variant", "reference", "library", "reuse"],
+  "style": ["variant", "filter", "toon", "render"],
   "style-consistency": ["continuity", "variant", "revision", "asset"],
   "style-variants": ["variant", "revision", "asset"],
+  "brand-kit": ["asset", "palette", "material", "library", "reuse"],
+  "component": ["asset", "reuse", "library", "three-d"],
+  "components": ["asset", "reuse", "variant", "library"],
+  "symbols": ["asset", "reuse", "variant", "vector"],
+  "design-tokens": ["color", "palette", "asset", "property"],
+  "warehouse": ["marketplace", "library", "material", "asset"],
+  "three-d-asset-warehouse": ["material", "asset", "library", "marketplace", "three", "model"],
+  "asset-library-search": ["asset", "library", "material", "search"],
+  "license": ["marketplace", "asset", "provenance", "material"],
+  "rating": ["marketplace", "material", "library", "search"],
+  "revenue-share": ["marketplace", "delivery", "asset", "quality"],
+  "tutorial": ["material", "library", "marketplace", "workspace"],
+  "download": ["import", "export", "asset", "marketplace"],
+  // 3D·포즈·리깅·렌더
   "pose-capture": ["pose", "rig", "ik", "humanoid", "retarget"],
   "camera-pose-capture": ["pose", "rig", "ik", "humanoid", "camera"],
+  "auto-posing": ["pose", "rig", "ik", "humanoid"],
+  "posing": ["pose", "rig", "ik", "humanoid"],
+  "avatar": ["rig", "pose", "humanoid", "morph"],
+  "bone": ["rig", "skeleton", "pose", "animation"],
+  "deformer": ["morph", "rig", "warp", "animation"],
+  "deformers": ["morph", "rig", "warp", "animation"],
+  "parameter": ["property", "inspector", "morph", "rig"],
   "motion-capture": ["animation", "pose", "rig", "retarget", "timeline"],
   "single-camera-motion-capture": ["animation", "pose", "rig", "retarget", "timeline"],
+  "architecture": ["three-d", "model", "render", "scene"],
+  "background": ["three-d", "render", "scene", "material"],
+  "sculpt": ["three-d", "surface", "model", "brush"],
+  "remesh": ["three-d", "model", "surface", "compression"],
+  "surface-direct-drawing": ["surface", "uv", "texture", "paint"],
+  "multi-view": ["camera", "render", "viewport", "three-d"],
+  "viewer": ["viewport", "three-d", "render", "material"],
+  "preview": ["viewport", "render", "material", "asset"],
+  "depth-of-field": ["camera", "render", "filter", "effect"],
+  "sketchup-direct-import": ["import", "glb", "gltf", "model", "validation"],
+  "three-d-camera-and-pose-presets": ["three-d", "camera", "pose", "rig", "render"],
+  "three-d-background-line-extraction": ["three-d", "render", "line", "toon", "capture"],
+  "time-of-day-lighting-presets": ["lighting", "shadow", "render", "three-d", "tone"],
+  "auto-wall-culling-section-plane": ["three-d", "camera", "render", "viewport"],
+  "multi-shot-batch-render": ["render", "batch", "shot", "camera", "three-d"],
+  "inline-character-background-quick-edit": ["edit", "panel", "character", "three-d", "workspace"],
+  // 브러시·자연매체·벡터·래스터·효과
+  "thin-film": ["watercolor", "pigment", "fluid", "wet"],
+  "dripping": ["watercolor", "fluid", "wet", "pigment"],
+  "reverse-drift": ["fluid", "pigment", "mixing", "watercolor"],
+  "resolution-independent": ["vector", "rasterizer", "brush", "canvas"],
+  "bitmap-primitives": ["rasterizer", "layer", "brush", "canvas"],
+  "differentiable-rendering": ["render", "rasterizer", "gpu", "vector"],
+  "gaussian-splatting": ["rasterizer", "webgpu", "render", "bezier"],
+  "fast-optimization": ["performance", "rasterizer", "webgpu", "bezier"],
+  "nurbs": ["bezier", "vector", "path", "rasterizer"],
+  "closed-fill": ["vector", "path", "shape", "rasterizer"],
+  "visibility": ["rasterizer", "layer", "compositor", "vector"],
+  "boolean-operations": ["shape", "vector", "path", "node"],
+  "corner-rounding": ["shape", "vector", "path", "node"],
+  "diagram": ["shape", "vector", "canvas", "collaboration"],
+  "nudge-slice": ["selection", "transform", "vector", "path"],
+  "precision": ["snap", "align", "vector", "transform"],
+  "perspective": ["snap", "transform", "camera", "canvas"],
+  "grease-pencil": ["brush", "vector", "stroke", "animation"],
+  "hand-drawn": ["stroke", "brush", "vector", "shape"],
+  "fast-sketch": ["brush", "stroke", "storyboard", "canvas"],
+  "pixel-art": ["canvas", "brush", "layer", "palette"],
+  "wraparound": ["canvas", "surface", "texture", "tile"],
+  "plotter": ["vector", "path", "stroke", "export"],
+  "hmm": ["stroke", "brush", "assist", "proposal"],
+  "sketch-simplification": ["line", "vector", "stroke", "ai"],
+  "sketch-synthesis": ["stroke", "proposal", "cocreation", "ai"],
+  "differential-query": ["proposal", "stroke", "ai", "assist"],
+  "evolution-strategy": ["proposal", "alternative", "stroke", "cocreation"],
+  "small-data": ["ai", "generation", "stroke", "brush"],
+  "appearance": ["effect", "filter", "layer", "non-destructive"],
+  "compositing": ["compositor", "layer", "blend", "render"],
+  "glare": ["glow", "effect", "filter", "non-destructive"],
+  "halation": ["glow", "effect", "filter", "non-destructive"],
+  "kuwahara": ["filter", "effect", "non-destructive", "watercolor"],
+  "enhance": ["filter", "effect", "ai", "render"],
+  "scan-cleanup": ["filter", "line", "layer", "import"],
+  "three-layer-underpainting-marking": ["layer", "mask", "color", "ai", "blend"],
+  "auto-coloring": ["color", "layer", "ai", "mask", "assist"],
+  // 애니메이션·타임라인·비디오
+  "animated-svg": ["animation", "vector", "timeline", "export"],
+  "auto-animate": ["animation", "keyframe", "timeline", "playback"],
+  "clip-trimming": ["timeline", "frame", "playback", "animation"],
+  "data-driven": ["asset", "batch", "variant", "animation"],
+  "easing": ["keyframe", "animation", "timeline", "playback"],
+  "fast-preview": ["playback", "timeline", "performance", "viewport"],
+  "lottie": ["animation", "vector", "export", "timeline"],
+  "performing": ["animation", "keyframe", "playback", "touch"],
+  "physics": ["animation", "rig", "fluid", "simulation"],
+  "state-machine": ["animation", "timeline", "keyframe", "constraint"],
+  "timelapse": ["history", "snapshot", "playback", "export"],
+  "trajectory": ["animation", "keyframe", "pose", "path"],
+  "transparent-video": ["export", "animation", "timeline", "render"],
+  "video": ["animation", "timeline", "export", "render"],
+  "xsheet": ["exposure", "animation", "timeline", "cel"],
+  "speaker-tts": ["audio", "dialogue", "storyboard", "timeline"],
+  // AI·코크리에이션
+  "agent-automation": ["ai", "proposal", "assist", "batch", "workflow"],
+  "diffusion": ["ai", "generation", "control", "mask"],
+  "generative-fill": ["ai", "generation", "mask", "edit"],
+  "regional-prompt": ["ai", "mask", "selection", "control"],
+  "stage-by-stage-regeneration": ["structured", "layer", "mask", "control", "proposal", "alternative"],
+  "selection-reactive-ai-canvas": ["ai", "selection", "canvas", "mask", "edit"],
+  "one-click-resource-cut-generation": ["ai", "generation", "asset", "panel", "comic"],
+  // 입출력·호환성·저장·복구(storage-recovery)
   "layered-psd": ["psd", "import", "export", "interchange", "layer"],
   "layered-psd-export": ["psd", "import", "export", "interchange", "layer"],
   "psd-layer-export": ["psd", "import", "export", "interchange", "layer"],
-  "multi-language": ["text", "lettering", "translation", "typography"],
-  "multi-language-translation": ["text", "lettering", "translation", "typography"],
-  "contextual-glossary-translation": ["text", "lettering", "translation", "typography"],
-  "surface-direct-drawing": ["surface", "uv", "texture", "paint"],
-  "three-d-asset-warehouse": ["material", "asset", "library", "marketplace", "three", "model"],
-  "sketchup-direct-import": ["import", "glb", "gltf", "model", "validation"],
+  "multi-pass-psd-export": ["psd", "export", "render", "layer", "line"],
   "unreal-maya-blender-export": ["export", "interchange", "model", "animation"],
-  "stage-by-stage-regeneration": ["structured", "layer", "mask", "control", "proposal", "alternative"],
-  "offline-first": ["offline", "storage", "recovery", "sync", "conflict"],
-  "offline-first-conti": ["offline", "storage", "recovery", "sync", "storyboard"],
+  "browser-full-resolution-export": ["export", "quality", "delivery", "browser"],
+  "transparent-background": ["export", "layer", "mask", "render"],
+  "raw": ["import", "format", "color", "hdr"],
+  "offline-first": ["offline", "storage", "recovery", "autosave", "opfs", "persistence"],
+  "offline-first-conti": ["offline", "storage", "recovery", "autosave", "storyboard"],
+  "local-first": ["storage", "recovery", "opfs", "autosave", "offline", "local-first"],
+  "local-first-file": ["storage", "recovery", "opfs", "autosave", "codec", "local-first"],
+  "local-processing": ["storage", "recovery", "wasm", "worker", "offline"],
+  "local-autosave-recovery": ["storage", "autosave", "recovery", "opfs", "journal"],
+  "local-revision-recovery": ["storage", "recovery", "revision", "autosave", "journal"],
+  "persistence": ["storage", "recovery", "autosave", "opfs", "persistence"],
+  "source-control-files": ["storage", "recovery", "revision", "codec", "journal"],
+  "single-project-data-model": ["storage", "recovery", "codec", "migration", "autosave"],
+  "cloud-project": ["storage", "recovery", "collaboration", "sync"],
+  "open-format": ["import", "export", "format", "codec", "storage"],
+  "file-format": ["import", "export", "format", "codec", "storage"],
+  // 협업·작업공간·성능·배포·품질
   "creator-analytics": ["quality", "delivery", "diagnostic", "publication", "analytics"],
   "community-management": ["collaboration", "comment", "review", "publication"],
-  "browser-full-resolution-export": ["export", "quality", "delivery", "browser"],
-  "speaker-tts": ["audio", "dialogue", "storyboard", "timeline"],
+  "collaborative-panel-editor": ["collaboration", "panel", "comic", "realtime"],
+  "cycle-planning": ["episode", "revision", "collaboration", "workspace"],
+  "department-role": ["collaboration", "presence", "review", "workspace"],
+  "production-tracker": ["collaboration", "revision", "episode", "diagnostic"],
+  "task-queue": ["collaboration", "episode", "revision", "workspace"],
+  "issue-tracking": ["collaboration", "revision", "review", "diagnostic"],
+  "triage": ["diagnostic", "collaboration", "revision", "workspace"],
+  "dev-mode": ["inspector", "property", "export", "diagnostic"],
+  "extension": ["workspace", "command", "import", "asset"],
+  "plugin": ["workspace", "command", "import", "export"],
+  "python-extension": ["command", "workspace", "batch", "export"],
+  "scripting": ["command", "animation", "workspace", "timeline"],
+  "personas": ["workspace", "panel", "toolbar", "dock"],
+  "minimal-ui": ["workspace", "viewport", "mobile", "responsive"],
+  "simple-ui": ["workspace", "panel", "toolbar", "responsive"],
+  "interaction": ["viewport", "input", "pointer", "three-d"],
+  "interactive": ["viewport", "input", "timeline", "playback"],
+  "lightweight": ["performance", "startup", "memory", "latency"],
+  "real-time": ["performance", "latency", "webgpu", "fluid"],
+  "speed": ["performance", "latency", "startup", "brush"],
+  "global-distribution": ["export", "delivery", "episode", "offline"],
+  "publishing": ["export", "episode", "delivery", "comic"],
+  "open-source": ["codec", "format", "diagnostic", "quality"],
 });
 
 function asArray(value) {
@@ -212,6 +381,64 @@ export function scoreStudioBenchmarkProductAgainstLane(product, lane) { // NOSON
   };
 }
 
+/**
+ * 상위 3개 레인을 기본으로 채택하되, 명시적 `laneHints`와 나머지 매칭된 focus를
+ * 커버하는 최소 집합 레인을 추가해 다중 도메인 제품이 거짓 unmappedFocus를 남기지 않게 한다.
+ * 어떤 레인에도 매칭되지 않은 focus는 여전히 `unmappedFocus`에 정직하게 남는다.
+ */
+function selectProductLanes(product, ranked) {
+  const minScore = PRIORITY_WEIGHT[product.priority] ?? 1;
+  const eligible = ranked.filter((candidate) => candidate.score > minScore);
+  if (eligible.length === 0) return [];
+
+  const selected = [];
+  const selectedIds = new Set();
+  const coveredFocus = new Set();
+
+  const addCandidate = (candidate) => {
+    if (selectedIds.has(candidate.laneId)) return;
+    selectedIds.add(candidate.laneId);
+    selected.push(candidate);
+    for (const focus of candidate.matchedFocus) coveredFocus.add(focus);
+  };
+
+  for (const candidate of eligible.slice(0, 3)) addCandidate(candidate);
+
+  if (product.laneHints.length > 0) {
+    for (const candidate of eligible) {
+      if (product.laneHints.includes(candidate.laneId)) addCandidate(candidate);
+    }
+  }
+
+  while (coveredFocus.size < product.focus.length) {
+    let bestCandidate = null;
+    let bestNewCoverage = 0;
+    for (const candidate of eligible) {
+      if (selectedIds.has(candidate.laneId)) continue;
+      let newCoverage = 0;
+      for (const focus of candidate.matchedFocus) {
+        if (!coveredFocus.has(focus)) newCoverage += 1;
+      }
+      if (
+        newCoverage > bestNewCoverage ||
+        (newCoverage > 0 &&
+          newCoverage === bestNewCoverage &&
+          bestCandidate &&
+          (candidate.score > bestCandidate.score ||
+            (candidate.score === bestCandidate.score &&
+              candidate.laneId.localeCompare(bestCandidate.laneId) < 0)))
+      ) {
+        bestCandidate = candidate;
+        bestNewCoverage = newCoverage;
+      }
+    }
+    if (!bestCandidate) break;
+    addCandidate(bestCandidate);
+  }
+
+  return selected.sort((a, b) => b.score - a.score || a.laneId.localeCompare(b.laneId));
+}
+
 export function buildStudioBenchmarkGapPlan({ // NOSONAR javascript:S3776
   campaign,
   registries,
@@ -244,9 +471,7 @@ export function buildStudioBenchmarkGapPlan({ // NOSONAR javascript:S3776
       .map((lane) => scoreStudioBenchmarkProductAgainstLane(product, lane))
       .sort((a, b) => b.score - a.score || a.laneId.localeCompare(b.laneId));
     const topScore = ranked[0]?.score ?? 0;
-    const topLanes = ranked
-      .filter((candidate) => candidate.score > PRIORITY_WEIGHT[product.priority])
-      .slice(0, 3);
+    const topLanes = selectProductLanes(product, ranked);
     const matchedFocus = new Set(topLanes.flatMap((candidate) => candidate.matchedFocus));
     return {
       ...product,

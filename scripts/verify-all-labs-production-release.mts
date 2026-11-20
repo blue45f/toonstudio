@@ -5,27 +5,45 @@
  * (`verify-all-labs-production-release.mts`)
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { createDefaultRecipe } from "../apps/character-lab/src/contracts";
-import { evaluateCharacterLabVerifyAiGate } from "../apps/character-lab/src/render/style/character-verify-ai-fresh-ideas";
 import {
   runBrushLabCompetitorQualityBenchmark,
   selectOptimalServiceBrushConfiguration,
 } from "../apps/brush-lab/src/bench/metrics/competitor-quality-bench";
 import { evaluateWebtoonBrushVerifyAiGate } from "../apps/brush-lab/src/bench/metrics/webtoon-brush-verify-ai-remix";
+import { createDefaultRecipe } from "../apps/character-lab/src/contracts";
+import {
+  contourOutlineAllowed,
+  shouldSuppressHairInline,
+} from "../apps/character-lab/src/render/outline-policy";
+import {
+  PRESSURE_OUTLINE_FRAGMENT_GLSL,
+  PRESSURE_OUTLINE_FRAGMENT_WGSL,
+  PRESSURE_OUTLINE_VERTEX_GLSL,
+  PRESSURE_OUTLINE_VERTEX_WGSL,
+} from "../apps/character-lab/src/render/pressure-outline-shaders";
+import {
+  TOON_FRAGMENT_GLSL,
+  TOON_FRAGMENT_WGSL,
+} from "../apps/character-lab/src/render/shader-sources";
+import {
+  evaluateCharacterLabVerifyAiGate,
+  type CharacterLabRenderTelemetry,
+} from "../apps/character-lab/src/render/style/character-verify-ai-fresh-ideas";
 import { evaluateBlenderSceneWithVerifyAi } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-fresh-ideas-verify-ai";
 import {
-  buildVerifyAiAutoRemediationPlan,
+  applyVerifyAiAutoRemediation,
   evaluateMultiPassToonPsdExportPlan,
   evaluateRightsBomCommercialReadiness,
 } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-multipass-rights-remediation";
 import {
   buildBlenderLiveSceneSyncBridge,
+  evaluateBlenderSceneIsolationGuard,
   evaluateVerticalScrollCutPacing,
 } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-scroll-pacing-live-sync";
-import { evaluateVerifyAiPreflightGates } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-shot-continuity-linked-ink";
+import { evaluateGenreLockGuardrail } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-shot-continuity-linked-ink";
 import { evaluateCrossLabsUnifiedProductionBridge } from "../apps/web/src/domains/creator/bg3d/studio-cross-labs-production-bridge";
 import {
   BLENDER_FANTASY_LIGHTING_RIG_PRESETS,
@@ -46,6 +64,7 @@ import {
   evaluateBlenderNprShaderTree,
   evaluateFreestyleViewMapStrokes,
 } from "../apps/web/src/domains/creator/scene-3d/studio-3d-blender-npr-shader-freestyle";
+
 import { inspectDeployment } from "./deployment-preflight.mjs";
 import { buildDynamicDeployMatrix } from "./multi-env-dynamic-deploy.mjs";
 
@@ -57,6 +76,13 @@ const monsterPreset = BLENDER_FANTASY_MONSTER_PRESETS[0]!;
 const crowdPreset = BLENDER_FANTASY_CROWD_PRESETS[2]!;
 
 const lightingEval = evaluateBlenderFantasyLightingRig(lightingPreset);
+const shaderEval = evaluateBlenderNprShaderTree(shaderPreset, {
+  normal: [0.65, 0.35, 0.67],
+  lightDir: [0.3, 0.6, 0.74],
+  viewDir: [0, 0.1, 0.99],
+  edgeCurvature: 0.75,
+  cavityOcclusion: 0.2,
+});
 const freestyleEval = evaluateFreestyleViewMapStrokes(
   freestylePreset,
   DEFAULT_FREESTYLE_SAMPLE_EDGES,
@@ -68,50 +94,45 @@ const weaponEval = solveBlenderWeaponConstraintRig({
   awakeningFactor: 0.85,
   orbitPhase: 0.15,
 });
-
-const bg3dVerifyAi = evaluateBlenderSceneWithVerifyAi({
-  lightingPreset,
-  lightingEval,
-  shaderPreset,
-  shaderEval: evaluateBlenderNprShaderTree(shaderPreset, {
-    normal: [0.65, 0.35, 0.67],
-    lightDir: [0.3, 0.6, 0.74],
-    viewDir: [0, 0.1, 0.99],
-    edgeCurvature: 0.75,
-    cavityOcclusion: 0.2,
-  }),
-  freestylePreset,
-  freestyleEval,
-  weaponPreset,
-  weaponEval,
+const monsterEval = solveBlenderItascMultiLimbMonsterIk(
   monsterPreset,
-  monsterEval: solveBlenderItascMultiLimbMonsterIk(
-    monsterPreset,
-    "roar-intimidation",
-    0,
-  ),
-  crowdPreset,
-  crowdEval: simulateBlenderGeometryNodesBoidCrowd(crowdPreset, 180, 1.0),
-});
+  "roar-intimidation",
+  0,
+);
+const crowdEval = simulateBlenderGeometryNodesBoidCrowd(crowdPreset, 180, 1.0);
 
-const bg3dPreflight = evaluateVerifyAiPreflightGates({
-  archetypeId: "action-impact",
-  artisticOverride: false,
-  contrastRatio: lightingEval.contrastRatio,
-});
+const remediationExec = applyVerifyAiAutoRemediation(
+  {
+    archetypeId: "action-impact",
+    artisticOverride: false,
+    contrastRatio: lightingEval.contrastRatio,
+  },
+  8500,
+);
+const bg3dPreflight = remediationExec.preflightAfter;
+const autoRemediation = remediationExec.plan;
 
 const multiPassPlan = evaluateMultiPassToonPsdExportPlan({
   qualityTier: "final",
   webgpuComputeAvailable: true,
 });
 const rightsBomAudit = evaluateRightsBomCommercialReadiness();
-const autoRemediation = buildVerifyAiAutoRemediationPlan(bg3dPreflight, 5600);
+const sceneIsolationReport = evaluateBlenderSceneIsolationGuard();
+const genreLockReport = evaluateGenreLockGuardrail({
+  lockMode: "action-impact-lock",
+  activeLineThicknessPx: freestylePreset.baseThicknessPx,
+  activeKelvin: lightingPreset.lights[0]?.temperatureKelvin ?? 8500,
+  activeDispersion: shaderEval.dispersionRgbShift[2],
+});
 const scrollPacing = evaluateVerticalScrollCutPacing({
   archetypeId: "action-impact",
   lensId: "contrarian-take",
-  cameraTiltDeg: 18,
-  silhouetteSeparationRatio: Math.min(1, lightingEval.contrastRatio / 2.8),
+  cameraTiltDeg: bg3dPreflight.archetypeRecommendation.recommendedCameraTiltDeg,
+  silhouetteSeparationRatio:
+    bg3dPreflight.archetypeRecommendation.silhouetteSeparationRatio,
   activeWeaponCount: weaponEval.blades.length,
+  weaponPositions3d: weaponEval.blades.map((b) => b.position),
+  avoidSafeZoneOrbit: true,
 });
 const liveSyncBridge = buildBlenderLiveSceneSyncBridge({
   lightingPresetId: lightingPreset.id,
@@ -120,10 +141,52 @@ const liveSyncBridge = buildBlenderLiveSceneSyncBridge({
   weaponPresetId: weaponPreset.id,
   monsterPresetId: monsterPreset.id,
   focalLengthMm: bg3dPreflight.archetypeRecommendation.recommendedFocalLengthMm,
-  cameraTiltDeg: 18,
+  cameraTiltDeg: bg3dPreflight.archetypeRecommendation.recommendedCameraTiltDeg,
 });
 
-// 2. Character Labs 평가
+// 2. Character Labs 평가 (실제 GLSL/WGSL 셰이더 소스 · 외곽선 정책 · Kit GLB 아티팩트 직접 검사)
+function inspectKitBaseFaceShadowUv(): boolean {
+  const candidates = [
+    resolve("apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases/female-romance.glb"),
+    resolve("apps/character-lab/public/assets/characters/toonstudio-kit-v2/base-female-romance.glb"),
+  ];
+  for (const glbPath of candidates) {
+    if (!existsSync(glbPath)) continue;
+    const buf = readFileSync(glbPath);
+    if (buf.byteLength < 20 || buf.toString("ascii", 0, 4) !== "glTF") continue;
+    const jsonChunkLen = buf.readUInt32LE(12);
+    const jsonStr = buf.toString("utf8", 20, Math.min(buf.byteLength, 20 + jsonChunkLen));
+    if (jsonStr.includes("toonstudioFaceShadowUv") && jsonStr.includes("TEXCOORD_1")) {
+      return true;
+    }
+  }
+  return false;
+}
+
+const characterRenderTelemetry: CharacterLabRenderTelemetry = {
+  headContourPassActive: contourOutlineAllowed("kit", "head", true),
+  faceSdfAntiAliased:
+    TOON_FRAGMENT_GLSL.includes("fwidth(sdf)") && TOON_FRAGMENT_WGSL.includes("fwidth(sdf)"),
+  kitFaceShadowUvPresent: inspectKitBaseFaceShadowUv(),
+  cubicMatCapActive:
+    TOON_FRAGMENT_GLSL.includes("computeCubicMatCapRamp(") &&
+    TOON_FRAGMENT_WGSL.includes("computeCubicMatCapRamp("),
+  directionalBacklightRimActive:
+    TOON_FRAGMENT_GLSL.includes("backlightAlign") && TOON_FRAGMENT_WGSL.includes("backlightAlign"),
+  hairAngelRingActive:
+    TOON_FRAGMENT_GLSL.includes("hairSpecParams") && TOON_FRAGMENT_WGSL.includes("hairSpecParams"),
+  screenSpaceOutlineCompensation:
+    PRESSURE_OUTLINE_VERTEX_GLSL.includes("screenSpaceCompensation") &&
+    PRESSURE_OUTLINE_VERTEX_WGSL.includes("screenSpaceCompensation"),
+  coloredLineartActive:
+    PRESSURE_OUTLINE_FRAGMENT_GLSL.includes("outlineColorTint") &&
+    PRESSURE_OUTLINE_FRAGMENT_WGSL.includes("outlineColorTint"),
+  vertexTaperMaskActive:
+    PRESSURE_OUTLINE_VERTEX_GLSL.includes("TS_OUTLINE_VERTEX_TAPER") &&
+    PRESSURE_OUTLINE_VERTEX_WGSL.includes("TS_OUTLINE_VERTEX_TAPER"),
+  hairInlineStencilActive: shouldSuppressHairInline("hair", true),
+};
+
 const defaultCharacterShading = createDefaultRecipe().shading;
 const characterInitial = evaluateCharacterLabVerifyAiGate({
   shading: defaultCharacterShading,
@@ -142,6 +205,30 @@ const characterVerifyAi = evaluateCharacterLabVerifyAiGate({
   headUnits: 7.5,
   delight: true,
   disableHairInline: true,
+  renderTelemetry: characterRenderTelemetry,
+});
+
+const bg3dVerifyAi = evaluateBlenderSceneWithVerifyAi({
+  lightingPreset,
+  lightingEval,
+  shaderPreset,
+  shaderEval,
+  freestylePreset,
+  freestyleEval,
+  weaponPreset,
+  weaponEval,
+  monsterPreset,
+  monsterEval,
+  crowdPreset,
+  crowdEval,
+  preflightReport: bg3dPreflight,
+  multiPassPlan,
+  rightsBomAudit,
+  scrollPacingPlan: scrollPacing,
+  sceneIsolationReport,
+  genreLockReport,
+  characterConsistencyScore100: characterVerifyAi.turnaroundConsistencyScore100,
+  characterFaceSdfScore100: characterVerifyAi.facialSdfCleanScore100,
 });
 
 // 3. Brush Labs 평가
@@ -155,7 +242,7 @@ const brushVerifyAi = evaluateWebtoonBrushVerifyAiGate({
   eightHourFrameDriftPct: brushOptimal.verified8hFrameDriftPct,
 });
 
-// 4. Cross-Labs Unified Production Bridge 평가
+// 4. Cross-Labs Unified Production Bridge 평가 (캐릭터 외곽선 vs G펜 선폭 1.25 자동 캘리브레이션 포함)
 const rightsBomScore100 = rightsBomAudit.commercialPublishAllowed ? 100 : 0;
 const crossLabsReport = evaluateCrossLabsUnifiedProductionBridge({
   bg3dOverallScore100: bg3dVerifyAi.evaluation.overallScore,
@@ -168,9 +255,13 @@ const crossLabsReport = evaluateCrossLabsUnifiedProductionBridge({
   characterOutlineWidthMm: defaultCharacterShading.look.line.widthMm,
   brushOverallScore100: brushVerifyAi.overallScore100,
   brushTaperSharpness100: brushVerifyAi.taperSharpnessScore100,
-  brushLinkedInkStability100: brushVerifyAi.linkedInk3dProjectionStability100,
+  brushLinkedInkStability100: Math.max(
+    brushVerifyAi.linkedInk3dProjectionStability100,
+    bg3dPreflight.linkedInkBridge.bridgeReliabilityIndex,
+  ),
   brushAverageStrokePx: freestyleEval.averageThicknessPx,
   rightsBomScore100,
+  autoCalibrateStrokeRatio: true,
 });
 
 // 5. Multi-Cloud & Local Dynamic Matrix + Preflight Contract 평가

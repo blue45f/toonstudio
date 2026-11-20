@@ -44,6 +44,7 @@ import {
 } from "./studio-bg3d-fresh-ideas-verify-ai";
 import { StudioBg3dFreshIdeasVerifyAiSection } from "./StudioBg3dFreshIdeasVerifyAiSection";
 import {
+  applyVerifyAiAutoRemediation,
   buildVerifyAiAutoRemediationPlan,
   evaluateMultiPassToonPsdExportPlan,
   evaluateRightsBomCommercialReadiness,
@@ -207,6 +208,50 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
     [activeCrowdPreset, crowdAgentCount],
   );
 
+  const preflightBaseOptions = useMemo(
+    () => ({
+      archetypeId: selectedArchetypeId,
+      artisticOverride,
+      contrastRatio: lightingEvaluation.contrastRatio,
+    }),
+    [selectedArchetypeId, artisticOverride, lightingEvaluation.contrastRatio],
+  );
+  const preflightReport = useMemo(
+    () =>
+      remediationAppliedCount > 0
+        ? applyVerifyAiAutoRemediation(preflightBaseOptions, customKelvin).preflightAfter
+        : evaluateVerifyAiPreflightGates(preflightBaseOptions),
+    [preflightBaseOptions, remediationAppliedCount, customKelvin],
+  );
+  const genreLockReport = useMemo(
+    () =>
+      evaluateGenreLockGuardrail({
+        lockMode: genreLockMode,
+        activeLineThicknessPx: activeFreestylePreset.baseThicknessPx,
+        activeKelvin: customKelvin,
+        activeDispersion: shaderEvaluation.dispersionRgbShift[2],
+      }),
+    [genreLockMode, activeFreestylePreset.baseThicknessPx, customKelvin, shaderEvaluation.dispersionRgbShift],
+  );
+  const sceneIsolationReport = useMemo(() => evaluateBlenderSceneIsolationGuard(), []);
+  const multiPassPlan = useMemo(
+    () => evaluateMultiPassToonPsdExportPlan({ qualityTier: renderQualityTier, webgpuComputeAvailable: true }),
+    [renderQualityTier],
+  );
+  const rightsBomAudit = useMemo(() => evaluateRightsBomCommercialReadiness(), []);
+  const scrollPacingPlan = useMemo(
+    () =>
+      evaluateVerticalScrollCutPacing({
+        archetypeId: selectedArchetypeId,
+        lensId: selectedLensId,
+        cameraTiltDeg: selectedArchetypeId === "action-impact" ? 18 : 10,
+        silhouetteSeparationRatio: Math.min(1, lightingEvaluation.contrastRatio / 2.8),
+        activeWeaponCount: weaponSolveResult.blades.length,
+        weaponPositions3d: weaponSolveResult.blades.map((b) => b.position),
+        avoidSafeZoneOrbit: true,
+      }),
+    [selectedArchetypeId, selectedLensId, lightingEvaluation.contrastRatio, weaponSolveResult.blades],
+  );
   const verifyAiReport = useMemo(
     () =>
       evaluateBlenderSceneWithVerifyAi({
@@ -227,6 +272,12 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
           bg3dAdoptionRatioPct,
           avgStoryboardRevisionsPerEpisode: avgRevisionsPerEpisode,
         },
+        preflightReport,
+        multiPassPlan,
+        rightsBomAudit,
+        scrollPacingPlan,
+        sceneIsolationReport,
+        genreLockReport,
       }),
     [
       activeLightingRig,
@@ -243,29 +294,14 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
       crowdResult,
       bg3dAdoptionRatioPct,
       avgRevisionsPerEpisode,
+      preflightReport,
+      multiPassPlan,
+      rightsBomAudit,
+      scrollPacingPlan,
+      sceneIsolationReport,
+      genreLockReport,
     ],
   );
-
-  const preflightReport = useMemo(
-    () =>
-      evaluateVerifyAiPreflightGates({
-        archetypeId: selectedArchetypeId,
-        artisticOverride,
-        contrastRatio: lightingEvaluation.contrastRatio,
-      }),
-    [selectedArchetypeId, artisticOverride, lightingEvaluation.contrastRatio],
-  );
-  const genreLockReport = useMemo(
-    () =>
-      evaluateGenreLockGuardrail({
-        lockMode: genreLockMode,
-        activeLineThicknessPx: activeFreestylePreset.baseThicknessPx,
-        activeKelvin: customKelvin,
-        activeDispersion: shaderEvaluation.dispersionRgbShift[2],
-      }),
-    [genreLockMode, activeFreestylePreset.baseThicknessPx, customKelvin, shaderEvaluation.dispersionRgbShift],
-  );
-  const sceneIsolationReport = useMemo(() => evaluateBlenderSceneIsolationGuard(), []);
   const rejectionRoiReport = useMemo(
     () =>
       evaluateGenreCutDensityAndRejectionRoi({
@@ -299,25 +335,9 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
     [v20OpenRatioPct, verifyAiReport.weeklyEpisodeRoi.totalWeeklyHoursSaved, interactionCutRatioPct],
   );
 
-  const multiPassPlan = useMemo(
-    () => evaluateMultiPassToonPsdExportPlan({ qualityTier: renderQualityTier, webgpuComputeAvailable: true }),
-    [renderQualityTier],
-  );
-  const rightsBomAudit = useMemo(() => evaluateRightsBomCommercialReadiness(), []);
   const autoRemediationPlan = useMemo(
     () => buildVerifyAiAutoRemediationPlan(preflightReport, customKelvin),
     [preflightReport, customKelvin],
-  );
-  const scrollPacingPlan = useMemo(
-    () =>
-      evaluateVerticalScrollCutPacing({
-        archetypeId: selectedArchetypeId,
-        lensId: selectedLensId,
-        cameraTiltDeg: selectedArchetypeId === "action-impact" ? 18 : 10,
-        silhouetteSeparationRatio: Math.min(1, lightingEvaluation.contrastRatio / 2.8),
-        activeWeaponCount: weaponSolveResult.blades.length,
-      }),
-    [selectedArchetypeId, selectedLensId, lightingEvaluation.contrastRatio, weaponSolveResult.blades.length],
   );
   const liveSyncBridge = useMemo(
     () =>
@@ -678,6 +698,10 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         liveSyncBridge={liveSyncBridge}
         genreLockReport={genreLockReport}
         sceneIsolationReport={sceneIsolationReport}
+        crossLabsLiveTelemetry={{
+          lightingContrastRatio: lightingEvaluation.contrastRatio,
+          freestyleAverageThicknessPx: freestyleEvaluation.averageThicknessPx,
+        }}
         bg3dAdoptionRatioPct={bg3dAdoptionRatioPct}
         avgRevisionsPerEpisode={avgRevisionsPerEpisode}
         lookDevGateConfirmed={lookDevGateConfirmed}

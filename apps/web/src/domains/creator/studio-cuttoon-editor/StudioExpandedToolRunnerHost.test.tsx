@@ -18,6 +18,7 @@ import { filterExpandedTools } from "./studio-expanded-tools-catalog";
 
 afterEach(() => {
   cleanup();
+  localStorage.clear();
 });
 
 function getCardForLoader(loaderId: StudioEcosystemLoaderId) {
@@ -181,6 +182,7 @@ describe("StudioExpandedToolRunnerHost", () => {
       resolve(__dirname, "./StudioExpandedToolUiStage.tsx"),
       resolve(__dirname, "./studio-expanded-tool-ui-samples.ts"),
       resolve(__dirname, "./studio-expanded-tool-engine-runner.ts"),
+      resolve(__dirname, "./studio-expanded-tool-live-adapters.ts"),
       resolve(__dirname, "./StudioExpandedToolsDrawer.tsx"),
     ];
     const rawColorRe =
@@ -199,5 +201,48 @@ describe("StudioExpandedToolRunnerHost", () => {
       (cmd) => cmd.panelLoaderId === "mesh-warp-overlay",
     );
     expect(shortcutCmd?.shortcut).toBeTruthy();
+  });
+
+  it("언더페인팅 2장 연속 배치 '마킹하러 가기' 및 Rive 2D 조이스틱·SFX 라이브 작업공간 적용이 실스토어에 커밋된다", async () => {
+    const projectId = "proj-runner-live";
+
+    // 1) 언더페인팅 UI 스테이지: 2장 배치 -> 마킹하러 가기 -> 3층 적용
+    const upCard = getCardForLoader("underpainting-panel");
+    const upMod = await loadEcosystemModule("underpainting-panel");
+    const upRender = render(
+      <StudioExpandedToolRunnerHost
+        command={upCard.command}
+        card={upCard}
+        loadedModule={upMod}
+        projectId={projectId}
+        onBack={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId("underpainting-go-marking-btn")).toBeNull();
+    fireEvent.click(screen.getByTestId("underpainting-batch-2"));
+    fireEvent.click(screen.getByTestId("underpainting-go-marking-btn"));
+    expect(screen.getByTestId("underpainting-workflow-stage").textContent).toContain("마킹 진행 중");
+    fireEvent.click(screen.getByRole("button", { name: "3층 언더페인팅 적용" }));
+    expect(screen.getByTestId("underpainting-persisted-layers").textContent).toContain("Multiply 잠금");
+    upRender.unmount();
+
+    // 2) Rive 엔진 스테이지: 파라미터 제어 -> 작업공간에 적용 -> 영속 배지 표시
+    const riveCard = getCardForLoader("planned-rive-state-machine");
+    const riveMod = await loadEcosystemModule("planned-rive-state-machine");
+    render(
+      <StudioExpandedToolRunnerHost
+        command={riveCard.command}
+        card={riveCard}
+        loadedModule={riveMod}
+        projectId={projectId}
+        onBack={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("expanded-tool-live-adapter-panel")).toBeTruthy();
+    fireEvent.change(screen.getByTestId("live-param-sfxTrigger"), { target: { value: "sparkle_sfx" } });
+    fireEvent.click(screen.getByTestId("expanded-tool-engine-apply-live"));
+
+    expect(screen.getByTestId("expanded-tool-engine-result").getAttribute("data-execution-status")).toBe("ok");
+    expect(screen.getByTestId("expanded-tool-live-commit-badge").textContent).toContain("sparkle_sfx");
   });
 });

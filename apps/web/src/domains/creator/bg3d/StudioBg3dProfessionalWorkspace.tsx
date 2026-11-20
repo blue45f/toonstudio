@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 
 import { useIsMobile } from "@/shared/hooks/use-media-query";
 import {
@@ -16,6 +16,13 @@ import type {
   ReactNode,
 } from "react";
 
+import type { Axis180ShotSpec, AxisHalfPlaneSide } from "./studio-bg3d-180-axis-constraint";
+import {
+  computeGroundSnapTransform,
+  resolveBg3dStagingShortcut,
+  type GroundSnapResult,
+  type TemplateTransferResult,
+} from "./studio-bg3d-ground-snap-and-template-transfer";
 import {
   buildBakedManuscriptCutLayer,
   clampSplitWipeRatio,
@@ -51,6 +58,22 @@ import {
 import type { HeroBg3dDeliveryResolution } from "./studio-bg3d-hero-tier-selector";
 import type { Bg3dCutawayCameraInput } from "./studio-bg3d-wall-cutaway-runtime";
 
+const LazyStudioSplitWipeOverlay = lazy(() =>
+  import("../studio-cuttoon-editor/StudioSplitWipeOverlay").then((m) => ({
+    default: m.StudioSplitWipeOverlay,
+  })),
+);
+const LazyStudio3dRadialPieMenu = lazy(() =>
+  import("../studio-3d-ui/Studio3dRadialPieMenu").then((m) => ({
+    default: m.Studio3dRadialPieMenu,
+  })),
+);
+const LazyStudioBg3dProStagingDrawer = lazy(() =>
+  import("./StudioBg3dProStagingDrawer").then((m) => ({
+    default: m.StudioBg3dProStagingDrawer,
+  })),
+);
+
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("StudioBg3dProfessionalWorkspace", ko, en);
 
@@ -72,6 +95,9 @@ interface StudioBg3dProfessionalWorkspaceProps {
   readonly onWallCutawayChange?: (event: StudioBg3dWallCutawayChangeEvent) => void;
   readonly onBakeToManuscriptCut?: (layer: BakedManuscriptCutLayer) => void;
   readonly onInsertShelfAsset?: (entry: AssetShelfEntry) => void;
+  readonly onGroundSnap?: (result: GroundSnapResult) => void;
+  readonly onSelectReverseShot?: (shot: Axis180ShotSpec) => void;
+  readonly onTransferTemplatePose?: (result: TemplateTransferResult) => void;
 }
 
 interface ResizeGesture {
@@ -145,6 +171,9 @@ export function StudioBg3dProfessionalWorkspace({
   onWallCutawayChange,
   onBakeToManuscriptCut,
   onInsertShelfAsset,
+  onGroundSnap,
+  onSelectReverseShot,
+  onTransferTemplatePose,
 }: StudioBg3dProfessionalWorkspaceProps) {
   useBilingualI18nRevision();
   const isMobile = useIsMobile();
@@ -152,6 +181,10 @@ export function StudioBg3dProfessionalWorkspace({
   const [layout, setLayout] = useState(() =>
     readStudioBg3dProfessionalWorkspaceLayout(browserStorage(), scopeKey));
   const [assetShelfOpen, setAssetShelfOpen] = useState(false);
+  const [proStagingOpen, setProStagingOpen] = useState(false);
+  const [axis180Locked, setAxis180Locked] = useState(true);
+  const [axisSide, setAxisSide] = useState<AxisHalfPlaneSide>(1);
+  const [radialPieOpen, setRadialPieOpen] = useState(false);
   const [activeStage, setActiveStage] = useState<Bg3dShelfStageId>("build");
   const [placedShelfAssetIds, setPlacedShelfAssetIds] = useState<readonly string[]>([]);
   const [liveInkMode, setLiveInkMode] = useState<LiveInkPreviewMode>(defaultLiveInkMode);
@@ -159,6 +192,54 @@ export function StudioBg3dProfessionalWorkspace({
   const [bakeStatusMessage, setBakeStatusMessage] = useState<string | null>(null);
   const hydratedStorageKeyRef = useRef(canonicalStorageKey);
   const resizeGestureRef = useRef<ResizeGesture | null>(null);
+
+  const handleTriggerGroundSnap = useCallback(() => {
+    const snap = computeGroundSnapTransform({
+      currentPosition: heroCamera ? [heroCamera.target[0], 0.12, heroCamera.target[2]] : [0, 0.12, 0],
+      raycastGroundY: () => 0,
+      defaultGroundY: 0,
+    });
+    onGroundSnap?.(snap);
+    setBakeStatusMessage(
+      bi(
+        `지면 접지(X) 완료 — Y ${snap.deltaY}m 보정으로 바닥 0mm 밀착`,
+        `Ground snap (X) applied — deltaY ${snap.deltaY}m`,
+      ),
+    );
+  }, [heroCamera, onGroundSnap]);
+
+  useEffect(() => {
+    const onWindowKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isEditableTarget = Boolean(
+        target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.tagName === "SELECT" ||
+            target.isContentEditable),
+      );
+      if (isEditableTarget || event.ctrlKey || event.metaKey || event.altKey) return;
+      const shortcut = resolveBg3dStagingShortcut({
+        key: event.key,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        isEditableTarget,
+      });
+      if (shortcut === "ground-snap") {
+        event.preventDefault();
+        handleTriggerGroundSnap();
+        return;
+      }
+      if (event.key.toLowerCase() === "q" && !event.shiftKey) {
+        event.preventDefault();
+        setRadialPieOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", onWindowKeyDown);
+    return () => window.removeEventListener("keydown", onWindowKeyDown);
+  }, [handleTriggerGroundSnap]);
 
   const handleSelectShelfStage = (stage: Bg3dShelfStageId) => {
     setActiveStage(stage);
@@ -410,6 +491,49 @@ export function StudioBg3dProfessionalWorkspace({
         >
           {bi("에셋 쉘프", "Asset shelf")}
         </button>
+        <button
+          type="button"
+          aria-pressed={axis180Locked}
+          data-testid="studio-bg3d-axis180-lock-btn"
+          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
+          onClick={() => {
+            const next = !axis180Locked;
+            setAxis180Locked(next);
+            setBakeStatusMessage(
+              next
+                ? bi("180° 리버스샷 축 잠금을 켰습니다.", "180° reverse-shot axis locked.")
+                : bi("180° 리버스샷 축 잠금을 풀었습니다.", "180° reverse-shot axis unlocked."),
+            );
+          }}
+        >
+          {bi("180° 잠금", "180° lock")}
+        </button>
+        <button
+          type="button"
+          data-testid="studio-bg3d-ground-snap-btn"
+          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-fg"
+          onClick={handleTriggerGroundSnap}
+        >
+          {bi("지면 접지 (X)", "Ground snap (X)")}
+        </button>
+        <button
+          type="button"
+          aria-pressed={radialPieOpen}
+          data-testid="studio-bg3d-radial-pie-btn"
+          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
+          onClick={() => setRadialPieOpen((prev) => !prev)}
+        >
+          {bi("3D 파이 메뉴 (Q)", "3D pie menu (Q)")}
+        </button>
+        <button
+          type="button"
+          aria-pressed={proStagingOpen}
+          data-testid="studio-bg3d-pro-staging-btn"
+          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
+          onClick={() => setProStagingOpen((prev) => !prev)}
+        >
+          {bi("연출·조명 도구", "Staging & lights")}
+        </button>
         <div
           role="group"
           aria-label={bi("라이브 선화 미리보기 모드", "Live ink preview mode")}
@@ -492,6 +616,22 @@ export function StudioBg3dProfessionalWorkspace({
         onWallCutawayChange={onWallCutawayChange}
       />
 
+      {proStagingOpen ? (
+        <Suspense fallback={null}>
+          <LazyStudioBg3dProStagingDrawer
+            axis180Locked={axis180Locked}
+            axisSide={axisSide}
+            onToggleAxis180Lock={setAxis180Locked}
+            onChangeAxisSide={setAxisSide}
+            onSelectShotSpec={onSelectReverseShot}
+            onGroundSnap={onGroundSnap}
+            onTransferPose={onTransferTemplatePose}
+            onStatusMessage={setBakeStatusMessage}
+            onClose={() => setProStagingOpen(false)}
+          />
+        </Suspense>
+      ) : null}
+
       <div
         data-studio-bg3d-workspace-layout="dockable-v2"
         className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-[minmax(0,44dvh)_minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-1 xl:flex xl:flex-row"
@@ -508,10 +648,39 @@ export function StudioBg3dProfessionalWorkspace({
           data-bg3d-professional-viewport="true"
           data-bg3d-live-ink-mode={liveInkMode}
           data-bg3d-split-wipe-ratio={splitWipeRatio}
+          data-bg3d-axis180-locked={axis180Locked ? "true" : "false"}
           className="contents xl:flex xl:min-h-0 xl:min-w-0 xl:flex-1"
           style={{ order: "var(--studio-bg3d-viewport-order)" }}
         >
-          {viewport}
+          {liveInkMode === "split-wipe" ? (
+            <Suspense fallback={viewport}>
+              <LazyStudioSplitWipeOverlay
+                ratio={splitWipeRatio}
+                onRatioChange={(next) => setSplitWipeRatio(clampSplitWipeRatio(next))}
+                leftLabel={bi("3D 음영", "3D shaded")}
+                rightLabel={bi("라이브 선화", "Live ink")}
+                leftContent={viewport}
+                rightContent={
+                  <div
+                    data-testid="studio-bg3d-live-ink-wipe-pane"
+                    className="flex h-full min-h-[240px] w-full flex-col items-center justify-center gap-1.5 bg-canvas p-4 text-center text-xs text-fg-2"
+                  >
+                    <span className="font-semibold text-fg">
+                      {bi("실시간 Freestyle 선화 패스", "Live Freestyle ink pass")}
+                    </span>
+                    <span className="font-mono tabular-nums text-fg-3">
+                      {captureSnapshot
+                        ? `${captureSnapshot.widthPx}×${captureSnapshot.heightPx} · 선폭 ${captureSnapshot.inkLineWeightPx}px`
+                        : bi("손그림 LT 라인아트 패스 대기 중", "Hand-drawn LT line-art pass ready")}
+                    </span>
+                  </div>
+                }
+                className="h-full min-h-0 w-full flex-1"
+              />
+            </Suspense>
+          ) : (
+            viewport
+          )}
         </div>
         {layout.inspectorVisible ? renderSeparator("inspector") : null}
         <div
@@ -522,6 +691,20 @@ export function StudioBg3dProfessionalWorkspace({
           {inspector}
         </div>
       </div>
+
+      {radialPieOpen ? (
+        <Suspense fallback={null}>
+          <LazyStudio3dRadialPieMenu
+            open={radialPieOpen}
+            menuId="mode"
+            origin={{ x: 280, y: 260 }}
+            onSelectAction={(item) => {
+              setBakeStatusMessage(bi(`3D 파이 메뉴 실행: ${item.labelKo}`, `3D pie action: ${item.labelKo}`));
+            }}
+            onClose={() => setRadialPieOpen(false)}
+          />
+        </Suspense>
+      ) : null}
 
       {assetShelfOpen ? (
         <StudioBg3dAssetShelf

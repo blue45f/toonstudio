@@ -75,6 +75,7 @@ const LazyLoreGraph = lazy(() => import("./StudioLoreGraph").then((m) => ({ defa
 const LazyForeshadowLedgerPanel = lazy(() => import("./StudioForeshadowLedgerPanel").then((m) => ({ default: m.StudioForeshadowLedgerPanel })));
 const LazyFactConcordancePanel = lazy(() => import("./StudioFactConcordancePanel").then((m) => ({ default: m.StudioFactConcordancePanel })));
 const LazyStudioFreshIdeasWorkbenchCard = lazy(() => import("../fresh-ideas/StudioFreshIdeasV2WorkbenchCard").then((m) => ({ default: m.StudioFreshIdeasV2WorkbenchCard })));
+const LazyStudioStoryLivingSpecWorkbench = lazy(() => import("./StudioStoryLivingSpecWorkbench").then((m) => ({ default: m.StudioStoryLivingSpecWorkbench })));
 
 export interface StudioProjectStoryPlanningProps {
   readonly projectId: string;
@@ -308,6 +309,7 @@ function EpisodeSynopsisSurface({
   const targets = useStudioEpisodeDocumentTargets(projectId);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [freshIdeasMounted, setFreshIdeasMounted] = useState(false);
+  const [livingSpecMounted, setLivingSpecMounted] = useState(false);
   const [storySeedNotice, setStorySeedNotice] = useState<FreshIdeasStorySeedPayload | null>(null);
   const [planning, setPlanning] = useProjectPlanning(projectId);
   const [source] = useProjectStorySource(projectId);
@@ -316,6 +318,7 @@ function EpisodeSynopsisSurface({
   useEffect(() => {
     setSaveError(null);
     setFreshIdeasMounted(false);
+    setLivingSpecMounted(false);
     setStorySeedNotice(null);
   }, [projectId]);
 
@@ -435,6 +438,32 @@ function EpisodeSynopsisSurface({
                 sourceSummaryKo={freshIdeasContext.sourceSummaryKo}
                 sourceMetricsSummaryKo={freshIdeasContext.sourceMetricsSummaryKo}
                 onExportStorySeed={setStorySeedNotice}
+              />
+            </Suspense>
+          </div>
+        ) : null}
+      </details>
+      <details
+        data-testid="story-planning-living-spec-disclosure"
+        onToggle={(event) => { if (event.currentTarget.open) setLivingSpecMounted(true); }}
+        className="mt-4 rounded-xl border border-line bg-panel p-3"
+      >
+        <summary
+          onClick={() => setLivingSpecMounted(true)}
+          className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-2 text-sm font-semibold text-fg transition-[background-color,color] duration-150 hover:bg-raised motion-reduce:transition-none [word-break:keep-all] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <span>{t("스토리 리빙 스펙 · 3-뷰 동기화 기획실", "Story living spec · 3-view synced workbench")}</span>
+          <span className="font-mono text-xs text-fg-3">{t("텍스트 ↔ 표 ↔ 컷 · Diff · 6관점 검수", "Text ↔ Table ↔ Cut · Diff · 6-view review")}</span>
+        </summary>
+        {livingSpecMounted ? (
+          <div className="mt-3 border-t border-line pt-3">
+            <Suspense fallback={<PlanningBoardSkeleton />}>
+              <LazyStudioStoryLivingSpecWorkbench
+                projectId={projectId}
+                planning={planning}
+                characters={bibleCharacters}
+                locations={source?.story.bible.locations ?? []}
+                selectedEpisodeId={pickedEpisodeId}
               />
             </Suspense>
           </div>

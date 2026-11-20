@@ -22,7 +22,35 @@ describe("studio-bg3d-scroll-pacing-live-sync (Phase 4)", () => {
     expect(plan.bottomGutterPx).toBeGreaterThanOrEqual(350);
     expect(plan.speechBubbleSafeZoneScore).toBeGreaterThanOrEqual(90);
     expect(plan.safeZones).toHaveLength(3);
+    expect(plan.measuredWeaponSafeZoneIoU).toBe(0);
     expect(plan.summaryKo).toContain("B_SZ");
+
+    const clearOrbitPlan = evaluateVerticalScrollCutPacing({
+      archetypeId: "action-impact",
+      lensId: "contrarian-take",
+      cameraTiltDeg: 18,
+      silhouetteSeparationRatio: 1.0,
+      activeWeaponCount: 12,
+      avoidSafeZoneOrbit: true,
+    });
+    expect(clearOrbitPlan.measuredWeaponSafeZoneIoU).toBe(0);
+    expect(clearOrbitPlan.speechBubbleSafeZoneScore).toBeGreaterThanOrEqual(99.5);
+
+    // 회피 궤도를 끄고 상단 말풍선 영역에 무기를 배치하면 실측 IoU가 증가해 점수가 정직하게 하락한다.
+    const collidingPlan = evaluateVerticalScrollCutPacing({
+      archetypeId: "action-impact",
+      lensId: "contrarian-take",
+      cameraTiltDeg: 18,
+      silhouetteSeparationRatio: 1.0,
+      activeWeaponCount: 2,
+      weaponPositions3d: [
+        [-2.2, 3.6, 0],
+        [2.2, -1.2, 0],
+      ],
+      avoidSafeZoneOrbit: false,
+    });
+    expect(collidingPlan.measuredWeaponSafeZoneIoU).toBeGreaterThan(0);
+    expect(collidingPlan.speechBubbleSafeZoneScore).toBeLessThan(clearOrbitPlan.speechBubbleSafeZoneScore);
   });
 
   it("builds a deterministic Blender 5.3 live scene synchronization bridge", () => {

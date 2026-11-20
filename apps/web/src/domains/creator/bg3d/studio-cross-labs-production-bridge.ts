@@ -9,6 +9,43 @@
 
 import type { FreshIdeaLensRemix } from "./studio-bg3d-fresh-ideas-verify-ai";
 
+export interface CrossLabsStrokeCalibrationResult {
+  readonly rawCharacterOutlineWidthMm: number;
+  readonly rawBrushAverageStrokePx: number;
+  readonly targetRatio: number;
+  readonly calibratedBrushStrokePx: number;
+  readonly calibratedOutlineWidthMm: number;
+  readonly strokeScaleFactor: number;
+  readonly effectiveRatio: number;
+  readonly summaryKo: string;
+}
+
+/**
+ * 캐릭터 외곽선(mm)과 브러시 G펜 평균 선폭(px) 사이의 1.25 권장 비율을 자동 캘리브레이션한다.
+ */
+export function calibrateCrossLabsStrokeWidthRatio(
+  characterOutlineWidthMm: number,
+  brushAverageStrokePx: number,
+  targetRatio = 1.25,
+): CrossLabsStrokeCalibrationResult {
+  const safeOutlineMm = Math.max(1.0, Number.isFinite(characterOutlineWidthMm) ? characterOutlineWidthMm : 4.0);
+  const safeRawBrushPx = Math.max(0.5, Number.isFinite(brushAverageStrokePx) ? brushAverageStrokePx : 4.48);
+  const calibratedBrushStrokePx = Number((safeOutlineMm * targetRatio).toFixed(2));
+  const strokeScaleFactor = Number((calibratedBrushStrokePx / safeRawBrushPx).toFixed(4));
+  const effectiveRatio = Number((calibratedBrushStrokePx / safeOutlineMm).toFixed(4));
+
+  return Object.freeze({
+    rawCharacterOutlineWidthMm: safeOutlineMm,
+    rawBrushAverageStrokePx: safeRawBrushPx,
+    targetRatio,
+    calibratedBrushStrokePx,
+    calibratedOutlineWidthMm: safeOutlineMm,
+    strokeScaleFactor,
+    effectiveRatio,
+    summaryKo: `캐릭터 외곽선 ${safeOutlineMm}mm 기준 G펜 선폭 ${safeRawBrushPx}px → ${calibratedBrushStrokePx}px (×${strokeScaleFactor}, 비율 ${effectiveRatio})`,
+  });
+}
+
 export interface CrossLabsInputMetrics {
   readonly bg3dOverallScore100: number;
   readonly bg3dPreflightScore100: number;
@@ -23,6 +60,8 @@ export interface CrossLabsInputMetrics {
   readonly brushLinkedInkStability100: number;
   readonly brushAverageStrokePx: number;
   readonly rightsBomScore100: number;
+  /** true일 때 캐릭터 외곽선 대비 G펜 선폭 자동 1.25 비율 캘리브레이션을 적용한다. */
+  readonly autoCalibrateStrokeRatio?: boolean;
 }
 
 export interface CrossLabsCoherenceBreakdown {
@@ -37,6 +76,7 @@ export interface CrossLabsCoherenceBreakdown {
 export interface CrossLabsUnifiedProductionReport {
   readonly sceneObjectsSynced: number;
   readonly coherence: CrossLabsCoherenceBreakdown;
+  readonly strokeCalibration: CrossLabsStrokeCalibrationResult;
   readonly remixes: readonly FreshIdeaLensRemix[];
   readonly summaryBadgeKo: string;
   readonly productionReadySummaryKo: string;
@@ -62,6 +102,15 @@ export const BLENDER_WAVE2_CROSS_LABS_OBJECTS: readonly string[] = Object.freeze
 export function evaluateCrossLabsUnifiedProductionBridge(
   input: CrossLabsInputMetrics,
 ): CrossLabsUnifiedProductionReport {
+  const strokeCalibration = calibrateCrossLabsStrokeWidthRatio(
+    input.characterOutlineWidthMm,
+    input.brushAverageStrokePx,
+    1.25,
+  );
+  const effectiveBrushStrokePx = input.autoCalibrateStrokeRatio
+    ? strokeCalibration.calibratedBrushStrokePx
+    : input.brushAverageStrokePx;
+
   const contrastBonus = input.bg3dContrastRatio >= 2.0 ? 3.2 : 1.0;
   const bg3dToCharacterLightingMatch100 = Number(
     Math.min(
@@ -73,7 +122,7 @@ export function evaluateCrossLabsUnifiedProductionBridge(
   );
 
   // 캐릭터 외곽선 두께(mm)와 브러시 선화 평균 두께(px) 사이의 조화도 평가
-  const targetRatio = input.brushAverageStrokePx / Math.max(1.0, input.characterOutlineWidthMm);
+  const targetRatio = effectiveBrushStrokePx / Math.max(1.0, input.characterOutlineWidthMm);
   const ratioPenalty = Math.abs(targetRatio - 1.25) * 4.5;
   const characterToBrushLineWeightMatch100 = Number(
     Math.min(
@@ -183,6 +232,7 @@ export function evaluateCrossLabsUnifiedProductionBridge(
       unifiedVerifyAiReleaseScore100,
       releaseGatePassed,
     },
+    strokeCalibration,
     remixes,
     summaryBadgeKo: `Cross-Labs Verify AI ${releaseGatePassed ? "PASS" : "HOLD"} (${unifiedVerifyAiReleaseScore100}점 · X_LABS ${crossLabsCoherenceIndex100} · 오브젝트 ${BLENDER_WAVE2_CROSS_LABS_OBJECTS.length}종)`,
     productionReadySummaryKo: `조명 정합 ${bg3dToCharacterLightingMatch100}점 · 선폭 조화 ${characterToBrushLineWeightMatch100}점 · 원근 스냅 ${bg3dToBrushPerspectiveSnap100}점 · 상용 배포 승인(${releaseGatePassed ? "READY" : "HOLD"})`,

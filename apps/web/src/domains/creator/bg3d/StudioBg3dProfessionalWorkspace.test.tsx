@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { resolveStudioRoute } from "../studio-router/studio-route-manifest";
 
+import { STUDIO_BG3D_HERO_V1_ENTRIES } from "./studio-bg3d-hero-v1-catalog-entries";
 import { StudioBg3dProfessionalWorkspace } from "./StudioBg3dProfessionalWorkspace";
 import {
   DEFAULT_STUDIO_BG3D_PROFESSIONAL_WORKSPACE_LAYOUT,
@@ -252,7 +253,14 @@ describe("Studio BG3D professional workspace layout", () => {
     expect(disclosure.getAttribute("data-bg3d-delivery-url")).toBe(
       "/assets/3d/environments/hero-v1/kr_modern_apartment_living-mobile.glb",
     );
-    expect(Number(disclosure.getAttribute("data-bg3d-saved-bytes"))).toBe(4_904_160 - 2_734_148);
+    const aptEntry = STUDIO_BG3D_HERO_V1_ENTRIES.find((e) => e.slug === "kr_modern_apartment_living")!;
+    const cafeEntry = STUDIO_BG3D_HERO_V1_ENTRIES.find((e) => e.slug === "kr_atelier_cafe_interior")!;
+    const expectedCafeSavedBytes = cafeEntry.desktopAsset.byteSize - cafeEntry.mobileAsset.byteSize;
+    const expectedCafeSavedPercent = Math.round((expectedCafeSavedBytes / cafeEntry.desktopAsset.byteSize) * 1000) / 10;
+
+    expect(Number(disclosure.getAttribute("data-bg3d-saved-bytes"))).toBe(
+      aptEntry.desktopAsset.byteSize - aptEntry.mobileAsset.byteSize,
+    );
     expect(screen.getByTestId("bg3d-hero-delivery-badge").textContent).toContain("모바일 경량");
     expect(screen.getByTestId("bg3d-hero-delivery-badge").textContent).toContain("절감");
     expect(screen.queryByTestId("studio-bg3d-wall-cutaway-toggle")).toBeNull();
@@ -266,8 +274,8 @@ describe("Studio BG3D professional workspace layout", () => {
     expect(onSelectHeroAsset).toHaveBeenCalledWith(
       expect.objectContaining({
         tier: "mobile",
-        savedBytes: 5_430_228 - 2_708_344,
-        savedPercent: 50.1,
+        savedBytes: expectedCafeSavedBytes,
+        savedPercent: expectedCafeSavedPercent,
         asset: expect.objectContaining({
           id: "ts-bg3d-hero-v1-kr_atelier_cafe_interior-mobile",
           url: "/assets/3d/environments/hero-v1/kr_atelier_cafe_interior-mobile.glb",
@@ -285,5 +293,65 @@ describe("Studio BG3D professional workspace layout", () => {
         }),
       }),
     );
+  });
+
+  it("wires SplitWipeOverlay, X ground snap, 180-degree lock, radial pie menu, template pose transfer, LT style builder, and light switchboard", async () => {
+    const onGroundSnap = vi.fn();
+    const onSelectReverseShot = vi.fn();
+    const onTransferTemplatePose = vi.fn();
+
+    render(
+      <MemoryRouter initialEntries={["/studio/bg3d"]}>
+        <StudioBg3dProfessionalWorkspace
+          scopeKey="project-a:pro-staging"
+          outliner={<div>장면 계층</div>}
+          viewport={<main data-testid="bg3d-pro-viewport">뷰포트</main>}
+          inspector={<aside>속성</aside>}
+          onGroundSnap={onGroundSnap}
+          onSelectReverseShot={onSelectReverseShot}
+          onTransferTemplatePose={onTransferTemplatePose}
+        />
+      </MemoryRouter>,
+    );
+
+    // 1. 단축키 X 지면 접지 실동작 확인
+    fireEvent.keyDown(window, { key: "x" });
+    expect(onGroundSnap).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("studio-bg3d-bake-status").textContent).toContain("지면 접지");
+
+    // 2. 선화 분할 비교 시 Lazy StudioSplitWipeOverlay 마운트 및 비율 동기화 확인
+    fireEvent.click(screen.getByRole("button", { name: "선화 분할 비교" }));
+    const splitWipe = await screen.findByRole("slider", { name: /3D 음영과 라이브 선화 비교 분할선/u });
+    expect(splitWipe.getAttribute("aria-valuenow")).toBe("50");
+    fireEvent.keyDown(splitWipe, { key: "ArrowRight", shiftKey: true });
+    expect(screen.getByTestId("studio-bg3d-split-wipe-readout").textContent).toBe("60%");
+
+    // 3. 3D 방사형 파이 메뉴 (Q / 버튼) 열기
+    fireEvent.click(screen.getByTestId("studio-bg3d-radial-pie-btn"));
+    expect(await screen.findByTestId("studio-3d-radial-pie-menu")).toBeTruthy();
+
+    // 4. 연출·조명 도구 드로어(180도 리버스샷, 포즈 전이, 손그림 LT, 광원 스위치보드)
+    fireEvent.click(screen.getByTestId("studio-bg3d-pro-staging-btn"));
+    const drawer = await screen.findByTestId("studio-bg3d-pro-staging-drawer");
+    expect(drawer).toBeTruthy();
+
+    fireEvent.click(within(drawer).getByTestId("bg3d-pro-shot-shot-ots-b-to-a"));
+    expect(onSelectReverseShot).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "shot-ots-b-to-a", halfPlaneSide: 1 }),
+    );
+
+    fireEvent.click(within(drawer).getByTestId("bg3d-pro-pose-tpl-dialogue-confront"));
+    expect(onTransferTemplatePose).toHaveBeenCalledWith(
+      expect.objectContaining({
+        preservedAppearanceKeys: expect.arrayContaining(["characterId", "hairPresetId", "outfitSlots"]),
+        transferredChannels: expect.arrayContaining(["pose", "expression", "lookAt"]),
+      }),
+    );
+    expect(within(drawer).getByTestId("bg3d-pro-lt-readout").textContent).toContain("스트로크");
+
+    const chandelierToggle = within(drawer).getByTestId("bg3d-pro-light-group-grp-chandelier");
+    expect(chandelierToggle.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(chandelierToggle);
+    expect(chandelierToggle.getAttribute("aria-pressed")).toBe("false");
   });
 });

@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "executedAt": "2026-11-20T19:12:30.951Z",
+  "ledgerBaseline": {
+    "targetCapabilityCount": 57,
+    "verifiedCount": 45,
+    "externalValidationPendingCount": 12,
+    "incompleteCount": 0,
+    "replacementClaimAllowed": false
+  },
+  "prevalidationSummary": {
+    "totalPendingCount": 12,
+    "localPrevalidatedCount": 6,
+    "localFailedCount": 0,
+    "externalOnlyBoundaryCount": 6,
+    "replacementClaimAllowed": false,
+    "honestyPolicy": "로컬 사전 검증 6건은 합성 코퍼스·로컬 엔진·장애 주입·정적/정책 감사의 실측 증거이며, 라이선스 실파일·실제 OAuth 테넌트·실기기 하드웨어·외부 독립 감사·프로 작가 최종 서명을 대체하지 않는다. replacementClaimAllowed=false 경계를 그대로 유지한다."
+  },
+  "localPrevalidations": [
+    {
+      "sequence": 31,
+      "id": "psd-advanced",
+      "title": "PSD advanced object preservation",
+      "status": "local-prevalidated",
+      "elapsedMs": 9.08,
+      "summaryKo": "합성 다중레이어 PSD(53062B) 왕복 검증 완료: 래스터 7/7 픽셀 일치, 블렌드모드 7/7, 마스크 3/3, 조정 레이어 8/8 대칭 왕복, 8K(7680×4320) 헤더 사전 검사 통과.",
+      "metrics": {
+        "psdByteLength": 53062,
+        "psdSha256": "84331665e353555a3a8be1cc6518a2d03ee6390226e0b3bad3ba9fa6a7677fbe",
+        "flattenedLeafCount": 15,
+        "layerPixelPreservationRatio": 1,
+        "blendModePreservationRatio": 1,
+        "clippingPreservationRatio": 1,
+        "maskPreservationRatio": 1,
+        "adjustmentRoundTripRatio": 1,
+        "eightKHeaderPreflightPassed": true,
+        "eightKDimensions": "7680x4320"
+      },
+      "externalBoundaryNote": "Golden PSD corpus round-trip must be signed by the compatibility lab."
+    },
+    {
+      "sequence": 32,
+      "id": "psb-large-document",
+      "title": "PSB and large document streaming",
+      "status": "local-prevalidated",
+      "elapsedMs": 5.69,
+      "summaryKo": "PSB v2 바이너리(140618B, 2레이어) 왕복 및 8K/초과치수·16비트·CMYK fail-closed 가드(차단 코드 4종)와 메모리 예산 회계 검증 완료.",
+      "metrics": {
+        "psbByteLength": 140618,
+        "psbSha256": "a797292d29c0a75c5da2e7266dd989c610f5c12810137712ccc36dbb7061da3b",
+        "psbHeaderVersion": 2,
+        "decodedLayerCount": 2,
+        "eightKFailClosedCodes": [
+          "blockedPsb"
+        ],
+        "oversizedFailClosedCodes": [
+          "blockedBitDepth",
+          "blockedColorMode",
+          "blockedDimension",
+          "blockedPsb"
+        ],
+        "accountantTrackedBytes": 4194304,
+        "accountantSkippedOverBudgetLayers": 1,
+        "importPlanFormat": "psb",
+        "importPlanFidelity": "converted"
+      },
+      "externalBoundaryNote": "Large PSB corpus and memory-soak evidence is required."
+    },
+    {
+      "sequence": 33,
+      "id": "clip-migration",
+      "title": "Truthful CLIP migration lane",
+      "status": "local-prevalidated",
+      "elapsedMs": 60.93,
+      "summaryKo": "CSP .clip(472268B, 4계층 레이어·마스크 픽셀 100% 일치) 및 .sut(12288B, 브러시 IR 1건·내장 PNG 1건) 파서 실측 완료.",
+      "metrics": {
+        "clipByteLength": 472268,
+        "clipSha256": "5a77defe5eb4a69c1904d83b262fb4ad76ab1ec1c905e3633bb6da6ffc757dad",
+        "clipLayerCount": 4,
+        "clipBgPixelExactMatch": true,
+        "clipMaskByteLength": 9600,
+        "clipUnexpectedUnsupportedCount": 0,
+        "sutByteLength": 12288,
+        "sutSha256": "9eda2d7c7808932c85befe4b9c93d34734a9f72e8c78b0a24defdec24e6043c9",
+        "sutSupportLevel": "structured-partial",
+        "sutProgramCount": 1,
+        "sutEmbeddedAssetCount": 1
+      },
+      "externalBoundaryNote": "CLIP support remains migration-grade until licensed corpus verification is complete."
+    },
+    {
+      "sequence": 54,
+      "id": "file-roundtrip-lab",
+      "title": "File round-trip golden corpus lab",
+      "status": "local-prevalidated",
+      "elapsedMs": 11.02,
+      "summaryKo": "합성 골든 코퍼스 왕복 완료: SVG(2029자 → SceneIR 5노드), CMYK 인쇄 PDF(8815B, 도련/재단마크/중철), 벡터 PDF 1.7(794B), 위험 확장자(.exe) 차단 확인.",
+      "metrics": {
+        "svgLength": 2029,
+        "svgSha256": "ba26c1bdff3b2c8d0557ff09f17e8e6c812a6bf5cfcdc220fed2478d4c114eec",
+        "svgImportedNodeCount": 5,
+        "printPdfByteLength": 8815,
+        "printPdfSha256": "534e1ea0c1153e66af3749bb03981c6882d85c9465f347a7b41c310c6fd79db6",
+        "printPdfHasDeviceCmyk": true,
+        "printPdfHasTrimAndBleedBox": true,
+        "vectorPdfByteLength": 794,
+        "vectorPdfSha256": "45449d7ce8875ac3b01b725c15fc1ead48bbdcff798bde6029317674be7e7dce",
+        "importCompatibilityCheckedCount": 6,
+        "dangerousPayloadBlockedCount": 1
+      },
+      "externalBoundaryNote": "Licensed real-world PSD, PSB and CLIP golden corpora are required."
+    },
+    {
+      "sequence": 55,
+      "id": "collaboration-fault-lab",
+      "title": "Collaboration fault-injection lab",
+      "status": "local-prevalidated",
+      "elapsedMs": 269.84,
+      "summaryKo": "3노드 Yjs CRDT 파티션 재연결 0-충돌 수렴(SHA-256 일치), V12 장애주입(GPU 100회·워커 1000회·저널복구 64회·유실 0건), SQLite 손상 LKG 복구 및 3-Way 병합 실측 완료.",
+      "metrics": {
+        "crdtReplicaCount": 3,
+        "crdtConvergedDigestSha256": "65f26265d30c21a97f52b1f43a7f9f6aa513587f5834441ee3b6216bce24871d",
+        "crdtBitIdenticalConvergence": true,
+        "crdtMergedStrokeCount": 3,
+        "crdtConflictCount": 0,
+        "v12GpuDeviceLossCycles": 100,
+        "v12WorkerKillCycles": 1000,
+        "v12JournalCrashReopens": 64,
+        "v12LostAcceptedEdits": 0,
+        "v12CorruptBlobBytesApplied": 0,
+        "sqliteCorruptionRecoveredFrom": "last-known-good",
+        "threeWayCleanMergeConflicts": 0,
+        "threeWaySameFieldConflictDetected": 2
+      },
+      "externalBoundaryNote": "Multi-user WAN and forced process-loss runs are required."
+    },
+    {
+      "sequence": 56,
+      "id": "accessibility-security-audit",
+      "title": "Accessibility and security audit",
+      "status": "local-prevalidated",
+      "elapsedMs": 9.32,
+      "summaryKo": "접근성 WCAG 감사(준수 pass·위반 6건 차단), 보안 자문 예외 0건·핀 6종·CodeQL 회귀 0건, Rights BOM 락파일 정상 통과 및 위반 4건 차단 검증 완료.",
+      "metrics": {
+        "a11yCompliantStatus": "pass",
+        "a11yPrimaryContrastRatio": 17.74,
+        "a11yNonCompliantBlockingCount": 6,
+        "securityIgnoredGhsaCount": 0,
+        "securityVerifiedOverridesCount": 6,
+        "brandFilmZodVersion": "4.6.7",
+        "rightsBomValidIssueCount": 0,
+        "rightsBomViolationDetectedCount": 4,
+        "rightsBomViolationCodes": [
+          "conflicting-use-policy",
+          "invalid-digest",
+          "missing-license",
+          "scope-project-mismatch"
+        ]
+      },
+      "externalBoundaryNote": "Independent accessibility and security audits are required."
+    }
+  ],
+  "externalOnlyBoundaries": [
+    {
+      "sequence": 49,
+      "id": "desktop-sync-agent",
+      "title": "Desktop synchronization agent",
+      "status": "external-only-boundary-preserved",
+      "expectedExternalReference": "docs/evidence/external/desktop-sync-agent.json",
+      "externalBoundaryNote": "Signed desktop builds and OS watcher soak evidence are required."
+    },
+    {
+      "sequence": 50,
+      "id": "local-folder-binding",
+      "title": "Local folder binding",
+      "status": "external-only-boundary-preserved",
+      "expectedExternalReference": "docs/evidence/external/local-folder-binding.json",
+      "externalBoundaryNote": "Browser permission and desktop filesystem matrices require real-device validation."
+    },
+    {
+      "sequence": 51,
+      "id": "google-drive-adapter",
+      "title": "Google Drive adapter",
+      "status": "external-only-boundary-preserved",
+      "expectedExternalReference": "docs/evidence/external/google-drive-adapter.json",
+      "externalBoundaryNote": "A real Google OAuth tenant and upload/download round trip are required."
+    },
+    {
+      "sequence": 52,
+      "id": "dropbox-adapter",
+      "title": "Dropbox adapter",
+      "status": "external-only-boundary-preserved",
+      "expectedExternalReference": "docs/evidence/external/dropbox-adapter.json",
+      "externalBoundaryNote": "A real Dropbox OAuth tenant and upload/download round trip are required."
+    },
+    {
+      "sequence": 53,
+      "id": "performance-lab",
+      "title": "Input, render and long-document performance lab",
+      "status": "external-only-boundary-preserved",
+      "expectedExternalReference": "docs/evidence/external/performance-lab.json",
+      "externalBoundaryNote": "Representative pen devices and long-running hardware evidence are required."
+    },
+    {
+      "sequence": 57,
+      "id": "professional-creator-validation",
+      "title": "Professional creator end-to-end validation",
+      "status": "external-only-boundary-preserved",
+      "expectedExternalReference": "docs/evidence/external/professional-creator-validation.json",
+      "externalBoundaryNote": "A professional creator must complete and sign off an end-to-end production episode."
+    }
+  ]
+}

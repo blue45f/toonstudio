@@ -1,14 +1,17 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import nodeTest from "node:test";
 import { test as vitestTest } from "vitest";
 
 const test = process.env.VITEST ? vitestTest : nodeTest;
 
 import {
+  DEFAULT_STUDIO_BENCHMARK_REGISTRY_PATHS,
   buildStudioBenchmarkGapPlan,
   renderStudioBenchmarkGapPlanMarkdown,
   scoreStudioBenchmarkProductAgainstLane,
 } from "./studio-benchmark-gap-plan.mjs";
+import { shareStudioOfficialDomainFamily } from "./validate-studio-competitor-registry.mjs";
 
 const CAMPAIGN = {
   campaignId: "test-campaign",
@@ -186,4 +189,81 @@ test("plan and markdown are deterministic for the same inputs", () => {
   assert.match(markdown, /Studio benchmark → implementation lane plan/u);
   assert.match(markdown, /comic-pages-panels · #585/u);
   assert.match(markdown, /Creator Tool/u);
+});
+
+test("multi-domain suites cover all matched lanes while keeping unknown focus terms explicit", () => {
+  const plan = buildStudioBenchmarkGapPlan({
+    campaign: CAMPAIGN,
+    generatedAt: "2026-11-21T00:00:00.000Z",
+    registries: [
+      registry("suite", [
+        {
+          id: "all-in-one",
+          name: "All In One",
+          priority: "P0",
+          focus: [
+            "automatic-speech-bubbles",
+            "comic-panels",
+            "camera-pose-capture",
+            "layered-psd-export",
+            "creator-analytics",
+            "quantum-banjo-resonance",
+          ],
+          laneHints: ["quality-delivery"],
+        },
+      ]),
+    ],
+  });
+
+  const product = plan.products[0];
+  const laneIds = product.topLanes.map((lane) => lane.laneId);
+  assert.ok(laneIds.includes("text-lettering"));
+  assert.ok(laneIds.includes("comic-pages-panels"));
+  assert.ok(laneIds.includes("three-d-rig-pose"));
+  assert.ok(laneIds.includes("import-export"));
+  assert.ok(laneIds.includes("quality-delivery"));
+  assert.deepEqual(product.unmappedFocus, ["quantum-banjo-resonance"]);
+});
+
+test("committed four registries map 100% of products and focus terms including storage-recovery and 4 webtoon apps", () => {
+  const campaign = JSON.parse(
+    fs.readFileSync("docs/automation/studio-seven-day-campaign.json", "utf8"),
+  );
+  const registries = DEFAULT_STUDIO_BENCHMARK_REGISTRY_PATHS.map((filePath) => ({
+    id: filePath,
+    document: JSON.parse(fs.readFileSync(filePath, "utf8")),
+  }));
+
+  const plan = buildStudioBenchmarkGapPlan({
+    campaign,
+    registries,
+    generatedAt: "2026-11-21T00:00:00.000Z",
+  });
+
+  assert.equal(plan.stats.unmappedProductCount, 0);
+  assert.equal(plan.stats.unmappedFocusTermCount, 0);
+  assert.equal(
+    plan.products.filter((product) => product.priority === "P0" && product.unmappedFocus.length > 0)
+      .length,
+    0,
+  );
+
+  const storageLane = plan.lanePlans.find((lane) => lane.id === "storage-recovery");
+  assert.ok(storageLane && storageLane.assignmentCount > 0, "storage-recovery must have assignments");
+  assert.equal(
+    plan.lanePlans.filter((lane) => lane.assignmentCount === 0).length,
+    0,
+    "every campaign lane must receive at least one benchmark assignment",
+  );
+
+  for (const requiredId of ["plotr", "manyfast", "tooning-plus", "abler"]) {
+    const product = plan.products.find((candidate) => candidate.id === requiredId);
+    assert.ok(product, `missing required P0 app: ${requiredId}`);
+    assert.equal(product.priority, "P0");
+    assert.deepEqual(product.unmappedFocus, []);
+    assert.ok(product.topLanes.length > 0);
+    const officialHost = new URL(product.officialUrl).hostname;
+    const watchHost = new URL(product.watchUrl).hostname;
+    assert.equal(shareStudioOfficialDomainFamily(officialHost, watchHost), true);
+  }
 });

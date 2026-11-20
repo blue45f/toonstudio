@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applyVerifyAiAutoRemediation,
   buildVerifyAiAutoRemediationPlan,
   DEFAULT_SCENE_RIGHTS_BOM_ENTRIES,
   evaluateMultiPassToonPsdExportPlan,
@@ -67,5 +68,16 @@ describe("studio-bg3d-multipass-rights-remediation (Phase 3)", () => {
     );
     expect(remediation.styleFeedbackDelta.preferredFocalLengthDeltaMm).toBe(60);
     expect(remediation.styleFeedbackDelta.preferredKelvinDelta).toBe(-2000);
+
+    const closedLoop = applyVerifyAiAutoRemediation(
+      { archetypeId: "action-impact", contrastRatio: 3.1 },
+      8500,
+    );
+    expect(closedLoop.preflightAfter.totalGateScore).toBeGreaterThan(
+      closedLoop.preflightBefore.totalGateScore,
+    );
+    expect(closedLoop.preflightAfter.totalGateScore).toBeGreaterThanOrEqual(99.5);
+    expect(closedLoop.preflightAfter.linkedInkBridge.bridgeReliabilityIndex).toBeGreaterThanOrEqual(99.2);
+    expect(closedLoop.preflightAfter.archetypeRecommendation.presetRecommendationScore).toBeGreaterThanOrEqual(99.5);
   });
 });
