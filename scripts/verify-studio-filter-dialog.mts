@@ -810,14 +810,11 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
       && isDeepStrictEqual(document.pagesList, originalPages),
     "History traversal changed the original saved strokes");
     if (AUTHENTICATED) await selectCanonicalImage();
-    const baselineStage = await page.locator(".konvajs-content").first().boundingBox();
+    const stageLocator = page.locator(".konvajs-content").first();
+    const baselineStage = await stageLocator.boundingBox();
     invariant(baselineStage, "원본 캔버스의 문서 좌표를 확인하지 못했습니다");
-    const captureFilterPixels = async () => {
-      if (!AUTHENTICATED) return screenshotClipped(page, clip);
-      const stage = await page.locator(".konvajs-content").first().boundingBox();
-      invariant(stage, "공동 원고에서 필터를 적용한 문서 영역을 확인할 수 없습니다.");
-      return screenshotClipped(page, studioFilterDocumentClip(clip, baselineStage, stage));
-    };
+    const currentDocumentClip = async () => studioFilterDocumentClip(clip, baselineStage, await stageLocator.boundingBox());
+    const captureFilterPixels = async () => screenshotClipped(page, AUTHENTICATED ? await currentDocumentClip() : clip);
     const baseline = await (EXPECT_DENIAL ? screenshotDocumentPixels(page, clip) : screenshotClipped(page, clip));
     committedBaseline = { livePresentationDiff: await compareScreenshotPixels(page, liveBaseline, baseline),
       originalDrawCount: 2, persistedHistoryUnchanged: true };
@@ -880,8 +877,8 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
           return stage && Math.abs(stage.width - expected.width) < 0.5
             && Math.abs(stage.height - expected.height) < 0.5;
         }, baselineStage, { timeout: 10_000 });
-        const deniedStage = await page.locator(".konvajs-content").first().boundingBox();
-        invariant(deniedStage, "오류 안내 뒤 문서 위치를 확인할 수 없습니다");
+        const deniedStage = await stageLocator.boundingBox();
+        invariant(deniedStage, "오류 안내 뒤 원고의 화면 위치를 확인할 수 없습니다.");
         const alignedClip = studioFilterDocumentClip(clip, baselineStage, deniedStage);
         const restoredDeadline = Date.now() + 10_000;
         do {

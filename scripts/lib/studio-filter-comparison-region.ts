@@ -6,7 +6,8 @@ interface ComparisonRect {
 }
 
 /** 화면 안내나 패널이 원고를 밀어도 처음과 같은 문서 좌표의 픽셀을 측정한다. */
-export function studioFilterDocumentClip(clip: ComparisonRect, original: ComparisonRect, current: ComparisonRect): ComparisonRect {
+export function studioFilterDocumentClip(clip: ComparisonRect, original: ComparisonRect, current: ComparisonRect | null): ComparisonRect {
+  if (!current) throw new Error("필터를 적용한 원고의 화면 위치를 확인할 수 없습니다.");
   if (Math.abs(current.width - original.width) >= 0.5 || Math.abs(current.height - original.height) >= 0.5) {
     throw new Error("원고 배율이 달라 같은 문서 영역의 픽셀을 비교할 수 없습니다.");
   }
