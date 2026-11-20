@@ -5,12 +5,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StudioWorkflowPacksPanel } from "./StudioWebtoonAssistantWorkflowViews";
 import { BUILTIN_STUDIO_WORKFLOW_PACKS, type StudioWorkflowPack } from "./studio-workflow-pack";
 
-describe("StudioWorkflowPacksPanel Wave 7, 16, 20 & 22 full commercial & global stack", () => {
+describe("StudioWorkflowPacksPanel Wave 7–24 full 10-stage commercial, global & MovingToon stack", () => {
   beforeEach(() => {
     window.localStorage.clear();
   });
 
-  it("renders BG3D/brush labels, settlement simulator, 8-stage & 9-stage global localization cards, and remediates NC packs", () => {
+  it("renders BG3D/brush labels, settlement simulator, 8/9/10-stage cards, and remediates NC packs", () => {
     const onApplyPack = vi.fn();
     render(
       <StudioWorkflowPacksPanel
@@ -32,6 +32,7 @@ describe("StudioWorkflowPacksPanel Wave 7, 16, 20 & 22 full commercial & global 
     expect(screen.getByTestId("studio-commercial-settlement-widget")).toBeTruthy();
     expect(screen.getByTestId("studio-ip-provenance-audit-card")).toBeTruthy();
     expect(screen.getByTestId("studio-global-localization-card")).toBeTruthy();
+    expect(screen.getByTestId("studio-movingtoon-voice-consent-card")).toBeTruthy();
 
     const ncPack: StudioWorkflowPack = {
       ...BUILTIN_STUDIO_WORKFLOW_PACKS[0],
