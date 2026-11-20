@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
 
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { withInlineScriptHashes } from "../../../scripts/cloudflare-static-rules.mjs";
 
+import { createEdgeErrorDiagnostics } from "./edge-error-diagnostics";
 import {
   CLOUDFLARE_R2_MEDIA_WORKER_FIRST_PATTERNS,
   cloudflareLargeAssetDescriptor,
@@ -1691,5 +1692,284 @@ describe("NEIS creator-resource edge", () => {  it("serves keyed school metadata
       error: "invalid_creator_resource_query",
     });
     expect(upstream).not.toHaveBeenCalled();
+  });
+});
+
+describe("Cloudflare 엣지 오류 진단", () => {
+  const ENABLED = { EDGE_ERROR_DIAGNOSTICS_ENABLED: "true" };
+  const FAILURE = { route: "core", operation: "upstream_fetch", attempt: 1, retrying: false } as const;
+
+  afterEach(() => vi.restoreAllMocks());
+
+  describe("엣지 오류 진단의 수집 경계", () => {
+    it.each([undefined, "false", "1", "TRUE", " true ", ""])(
+      "명시적 true가 아닌 %j에서는 예외와 요청도 읽지 않는다",
+      (value) => {
+        const write = vi.fn();
+        const now = vi.fn(() => 1_000);
+        const inspect = vi.fn(() => { throw new Error("접근하면 안 되는 원문"); });
+        const cause = new Proxy({}, { getOwnPropertyDescriptor: inspect, getPrototypeOf: inspect });
+        const request = new Request("https://example.test/api/me");
+        Object.defineProperty(request, "headers", { get: inspect });
+
+        createEdgeErrorDiagnostics(write, now)(
+          { EDGE_ERROR_DIAGNOSTICS_ENABLED: value }, request, FAILURE, cause,
+        );
+
+        expect(write).not.toHaveBeenCalled();
+        expect(now).not.toHaveBeenCalled();
+        expect(inspect).not.toHaveBeenCalled();
+      },
+    );
+
+    it("허용된 고정 필드만 출력하고 원문 오류·경로·본문·헤더를 제외한다", () => {
+      const write = vi.fn();
+      const request = new Request("https://example.test/private-document?ticket=private-query", {
+        method: "POST",
+        headers: { authorization: "Bearer private-session", "cf-ray": "abcdef0123456789-ICN" },
+        body: "private-document-body",
+      });
+      const cause = new TypeError("private upstream URL and request payload");
+      cause.stack = "private stack with credentials";
+      const release = "a".repeat(40);
+
+      createEdgeErrorDiagnostics(write, () => 1_000)(
+        { ...ENABLED, RELEASE_SHA: release }, request, FAILURE, cause,
+      );
+
+      expect(write).toHaveBeenCalledOnce();
+      const emitted = write.mock.calls[0]?.[0] as string;
+      expect(JSON.parse(emitted)).toEqual({
+        event: "edge_dependency_failure",
+        at: 1_000,
+        dependency: "upstream",
+        route: "core",
+        operation: "upstream_fetch",
+        errorType: "TypeError",
+        attempt: 1,
+        retrying: false,
+        releaseSha: release,
+        rayId: "abcdef0123456789-ICN",
+      });
+      expect(emitted).not.toContain("private");
+      expect(new TextEncoder().encode(emitted).byteLength).toBeLessThanOrEqual(512);
+    });
+
+    it("악성 getter를 실행하지 않고 임의 오류 이름과 상관 값을 제외한다", () => {
+      const write = vi.fn();
+      const getter = vi.fn(() => { throw new Error("private accessor content"); });
+      const cause = Object.defineProperties({}, {
+        name: { get: getter }, message: { get: getter }, stack: { get: getter },
+      });
+      const request = new Request("https://example.test/api/me", {
+        headers: { "cf-ray": "private-ray-value" },
+      });
+
+      createEdgeErrorDiagnostics(write, () => 1_000)(
+        { ...ENABLED, RELEASE_SHA: "private-release-value" }, request, FAILURE, cause,
+      );
+
+      expect(getter).not.toHaveBeenCalled();
+      expect(JSON.parse(write.mock.calls[0]?.[0] as string)).toEqual({
+        event: "edge_dependency_failure", at: 1_000, dependency: "upstream", route: "core",
+        operation: "upstream_fetch", errorType: "unknown", attempt: 1, retrying: false,
+      });
+      const anotherWrite = vi.fn();
+      createEdgeErrorDiagnostics(anotherWrite, () => 1_000)(
+        ENABLED, request, FAILURE, { name: "private-error-name", message: "private-message" },
+      );
+      expect(anotherWrite.mock.calls[0]?.[0]).not.toContain("private");
+    });
+
+    it("DOMException의 native name accessor도 읽지 않고 원문 없이 unknown을 남긴다", () => {
+      const write = vi.fn();
+      const request = new Request("https://example.test/api/me");
+      const cause = new DOMException("private abort context", "AbortError");
+
+      createEdgeErrorDiagnostics(write, () => 1_000)(ENABLED, request, FAILURE, cause);
+
+      expect(write).toHaveBeenCalledOnce();
+      const emitted = write.mock.calls[0]?.[0] as string;
+      expect(JSON.parse(emitted).errorType).toBe("unknown");
+      expect(emitted).not.toContain("private abort context");
+    });
+
+    it("같은 오류 폭주를 억제하되 다음 창의 재발은 기록한다", () => {
+      const write = vi.fn();
+      let at = 1_000;
+      const report = createEdgeErrorDiagnostics(write, () => at);
+      const request = new Request("https://example.test/api/me");
+
+      for (let index = 0; index < 1_000; index += 1) report(ENABLED, request, FAILURE, new TypeError());
+      expect(write).toHaveBeenCalledOnce();
+      at += 59_999;
+      report(ENABLED, request, FAILURE, new TypeError());
+      expect(write).toHaveBeenCalledOnce();
+      at += 1;
+      report(ENABLED, request, FAILURE, new TypeError());
+      expect(write).toHaveBeenCalledTimes(2);
+    });
+
+    it("서로 다른 오류도 isolate별 60초 고정 창당 최대 20건으로 제한한다", () => {
+      const write = vi.fn();
+      const report = createEdgeErrorDiagnostics(write, () => 1_000);
+      const request = new Request("https://example.test/api/me");
+      const routes = ["core", "public-read", "social", "playground", "admin", "realtime", "large-asset"] as const;
+      for (const route of routes) {
+        for (const name of ["Error", "TypeError", "RangeError", "AbortError", "TimeoutError"]) {
+          report(ENABLED, request, { ...FAILURE, route }, { name });
+        }
+      }
+      expect(write).toHaveBeenCalledTimes(20);
+    });
+
+    it("Proxy 분류 실패와 출력 실패가 요청 코드에 전파되지 않는다", () => {
+      const request = new Request("https://example.test/api/me");
+      const cause = new Proxy({}, { getOwnPropertyDescriptor: () => { throw new Error("private"); } });
+      const write = vi.fn();
+      createEdgeErrorDiagnostics(write, () => 1_000)(ENABLED, request, FAILURE, cause);
+      expect(JSON.parse(write.mock.calls[0]?.[0] as string).errorType).toBe("unknown");
+
+      const report = createEdgeErrorDiagnostics(() => { throw new Error("출력 실패"); }, () => 1_000);
+      expect(() => report(ENABLED, request, FAILURE, cause)).not.toThrow();
+    });
+  });
+
+  function diagnosticsEnvironment(overrides: Partial<CloudflareStaticEnv> = {}): CloudflareStaticEnv {
+    return {
+      ASSETS: {
+        fetch: vi.fn(async () => new Response("static-media", {
+          headers: { "content-type": "model/gltf-binary" },
+        })),
+      },
+      CORE_API_ORIGIN: "https://core.example.test",
+      ...overrides,
+    };
+  }
+
+  describe("엣지 오류 진단과 기존 응답 계약", () => {
+    it("기본 설정에서는 R2 폴백과 상위 API 실패에도 새 로그가 없다", async () => {
+      const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const gateway = createCloudflareStaticGateway({
+        fetch: vi.fn<typeof fetch>().mockRejectedValue(new TypeError("private upstream")),
+      });
+      const env = diagnosticsEnvironment({
+        LARGE_ASSETS: {
+          get: vi.fn().mockRejectedValue(new Error("private object key")),
+          head: vi.fn(async () => null),
+        },
+      });
+
+      const asset = await gateway(new Request("https://www.toonstudio.cloud/assets/3d/room.glb"), env);
+      expect(asset.status).toBe(200);
+      expect(await asset.text()).toBe("static-media");
+      const api = await gateway(new Request("https://www.toonstudio.cloud/api/me"), env);
+      expect(api.status).toBe(502);
+      await expect(api.json()).resolves.toEqual({ error: "CORE_API_UPSTREAM_FAILED" });
+      expect(log).not.toHaveBeenCalled();
+    });
+
+    it("명시적으로 켠 경우도 R2 실패의 정적 폴백을 유지한다", async () => {
+      const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const upstream = vi.fn<typeof fetch>();
+      const gateway = createCloudflareStaticGateway({ fetch: upstream });
+      const env = diagnosticsEnvironment({
+        ...ENABLED,
+        LARGE_ASSETS: {
+          get: vi.fn().mockRejectedValue(new TypeError("private object key")),
+          head: vi.fn(async () => null),
+        },
+      });
+
+      const response = await gateway(new Request("https://www.toonstudio.cloud/assets/3d/room.glb"), env);
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe("static-media");
+      expect(upstream).not.toHaveBeenCalled();
+      expect(log).toHaveBeenCalledOnce();
+      expect(JSON.parse(log.mock.calls[0]?.[0] as string)).toMatchObject({
+        dependency: "r2", operation: "r2_get", route: "large-asset", errorType: "TypeError",
+      });
+      expect(log.mock.calls[0]?.[0]).not.toContain("private");
+    });
+
+    it("R2 HEAD 실패 후 bundle-v2의 닫힌 503 응답을 유지한다", async () => {
+      const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const upstream = vi.fn<typeof fetch>();
+      const gateway = createCloudflareStaticGateway({ fetch: upstream });
+      const env = diagnosticsEnvironment({
+        ...ENABLED,
+        LARGE_ASSETS: {
+          get: vi.fn(async () => null),
+          head: vi.fn().mockRejectedValue(new Error("private bucket detail")),
+        },
+      });
+      const response = await gateway(new Request(
+        `https://www.toonstudio.cloud/assets/studio/bundle-v2/${"d".repeat(64)}.glb`,
+        { method: "HEAD", headers: { "sec-fetch-site": "same-origin" } },
+      ), env);
+
+      expect(response.status).toBe(503);
+      expect(await response.text()).toBe("");
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(upstream).not.toHaveBeenCalled();
+      expect(JSON.parse(log.mock.calls[0]?.[0] as string).operation).toBe("r2_head");
+    });
+
+    it("진단 출력이 실패해도 공개 읽기 재시도와 성공 응답을 유지한다", async () => {
+      const log = vi.spyOn(console, "error").mockImplementation(() => { throw new Error("진단 출력 실패"); });
+      const upstream = vi.fn<typeof fetch>()
+        .mockRejectedValueOnce(new TypeError("private replica detail"))
+        .mockResolvedValueOnce(new Response("recovered", { status: 200 }));
+      const gateway = createCloudflareStaticGateway({ fetch: upstream });
+      const response = await gateway(new Request("https://www.toonstudio.cloud/api/titles"), diagnosticsEnvironment({
+        ...ENABLED,
+        PUBLIC_READ_API_ORIGINS: "https://replica-a.example.test,https://replica-b.example.test",
+      }));
+
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe("recovered");
+      expect(upstream).toHaveBeenCalledTimes(2);
+      expect(log).toHaveBeenCalledOnce();
+      expect(JSON.parse(log.mock.calls[0]?.[0] as string)).toMatchObject({
+        dependency: "upstream", route: "public-read", operation: "upstream_fetch", attempt: 1, retrying: true,
+      });
+    });
+
+    it("쓰기 실패는 재시도하지 않고 기존 502 본문과 최소 진단만 남긴다", async () => {
+      const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const upstream = vi.fn<typeof fetch>().mockRejectedValue(new TypeError("private request body"));
+      const gateway = createCloudflareStaticGateway({ fetch: upstream });
+      const response = await gateway(new Request("https://www.toonstudio.cloud/api/creator-marketplace/orders", {
+        method: "POST", body: "private request body",
+      }), diagnosticsEnvironment({
+        ...ENABLED,
+        PUBLIC_READ_API_ORIGINS: "https://replica-a.example.test,https://replica-b.example.test",
+      }));
+
+      expect(response.status).toBe(502);
+      await expect(response.json()).resolves.toEqual({ error: "CORE_API_UPSTREAM_FAILED" });
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(upstream).toHaveBeenCalledOnce();
+      expect(log).toHaveBeenCalledOnce();
+      expect(JSON.parse(log.mock.calls[0]?.[0] as string)).toMatchObject({
+        operation: "upstream_fetch", route: "core", attempt: 1, retrying: false,
+      });
+      expect(log.mock.calls[0]?.[0]).not.toContain("private");
+    });
+
+    it("응답 처리 오류를 원점 연결 오류로 잘못 분류하지 않는다", async () => {
+      const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const brokenResponse = new Response("body");
+      Object.defineProperty(brokenResponse, "headers", {
+        get: () => { throw new TypeError("private response metadata"); },
+      });
+      const gateway = createCloudflareStaticGateway({ fetch: vi.fn<typeof fetch>().mockResolvedValue(brokenResponse) });
+      const response = await gateway(new Request("https://www.toonstudio.cloud/api/me"), diagnosticsEnvironment(ENABLED));
+
+      expect(response.status).toBe(502);
+      expect(JSON.parse(log.mock.calls[0]?.[0] as string)).toMatchObject({
+        dependency: "upstream", operation: "upstream_response", errorType: "TypeError",
+      });
+    });
   });
 });

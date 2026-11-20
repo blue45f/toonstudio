@@ -71,6 +71,17 @@ core·social·playground·admin·realtime 요청의 전달 IP는 클라이언트
 
 예시는 [`.env.example`](./.env.example)을 참고한다.
 
+## 오류 진단과 무료 수집 경계
+
+R2·상위 API의 잡힌 예외에는 선택형 최소 진단이 있다. `EDGE_ERROR_DIAGNOSTICS_ENABLED`가
+정확히 `true`일 때만 출력하며 기본값은 비활성이다. 실제 계정의 Free 요금제·수집 여유를
+확인하기 전에는 켜지 않는다. 이 변경은 logs·traces·Issues를 활성화하지 않는다.
+
+원문 오류·URL·객체 key·본문·인증 헤더 없이 제한된 오류 종류와 작업 분류만 남기며,
+isolate 내 중복·빈도 제한은 계정 전체 비용 상한이 아니다. 출력 실패는 원래 응답·재시도를
+바꾸지 않는다. 설정 확인, 관측 공백, 검증과 중지 절차는
+[Observability 무료 운영 안내](../../docs/operations/cloudflare-observability-free-operation.md)를 따른다.
+
 ## 검증
 
 ```bash
