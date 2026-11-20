@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -11,6 +11,7 @@ import { STUDIO_WILL_V1_OPC_ASSURANCE } from "../studio-will-v1-opc-interchange"
 import {
   STUDIO_WILL_V1_EXPORT_DISCLAIMER,
   STUDIO_WILL_V1_EXPORT_PROFILE_LABEL,
+  type StudioWillV1PageExportResult,
 } from "./studio-will-v1-export-bridge";
 import { StudioExportMenuPanel } from "./StudioExportMenuPanel";
 
@@ -32,25 +33,8 @@ describe("StudioExportMenuPanel WILL v1 public-spec profile", () => {
     const click = vi
       .spyOn(HTMLAnchorElement.prototype, "click")
       .mockImplementation(() => undefined);
-    const exportCurrentPageToWillV1 = vi.fn(async () => ({
-      bytes: Uint8Array.from([0x50, 0x4b, 0x03, 0x04]),
-      extension: ".will" as const,
-      mediaType: "application/vnd.toonstudio.will-v1-bounded+zip" as const,
-      profileLabel: STUDIO_WILL_V1_EXPORT_PROFILE_LABEL,
-      disclaimer: STUDIO_WILL_V1_EXPORT_DISCLAIMER,
-      exportedStrokeIds: ["stroke-1", "stroke-2"],
-      skipped: [{
-        elementId: "eraser-1",
-        reason: "eraser-semantic-not-representable" as const,
-      }],
-      adaptations: [],
-      loss: {
-        status: "exact" as const,
-        quantization: "truncate-toward-zero" as const,
-        items: [],
-      },
-      assurance: STUDIO_WILL_V1_OPC_ASSURANCE,
-    }));
+    const workerResult = Promise.withResolvers<StudioWillV1PageExportResult>();
+    const exportCurrentPageToWillV1 = vi.fn(() => workerResult.promise);
 
     renderExpandedExportPanel(
       <StrictMode>
@@ -86,14 +70,39 @@ describe("StudioExportMenuPanel WILL v1 public-spec profile", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "WILL v1" }));
 
-    await waitFor(() => expect(exportCurrentPageToWillV1).toHaveBeenCalledTimes(1));
+    expect(exportCurrentPageToWillV1).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/WILL v1 내보내기 진행 중/u)).toBeTruthy();
+    expect(click).not.toHaveBeenCalled();
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+
+    workerResult.resolve({
+      bytes: Uint8Array.from([0x50, 0x4b, 0x03, 0x04]),
+      extension: ".will",
+      mediaType: "application/vnd.toonstudio.will-v1-bounded+zip",
+      profileLabel: STUDIO_WILL_V1_EXPORT_PROFILE_LABEL,
+      disclaimer: STUDIO_WILL_V1_EXPORT_DISCLAIMER,
+      exportedStrokeIds: ["stroke-1", "stroke-2"],
+      skipped: [{
+        elementId: "eraser-1",
+        reason: "eraser-semantic-not-representable",
+      }],
+      adaptations: [],
+      loss: {
+        status: "exact",
+        quantization: "truncate-toward-zero",
+        items: [],
+      },
+      assurance: STUDIO_WILL_V1_OPC_ASSURANCE,
+    });
+
+    expect(await screen.findByText(/WILL v1 2개 획을 저장했어요/u)).toBeTruthy();
     expect(URL.createObjectURL).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "application/vnd.toonstudio.will-v1-bounded+zip",
       }),
     );
     expect(click).toHaveBeenCalledTimes(1);
-    expect(screen.getByText(/WILL v1 2개 획을 저장했어요/u)).toBeTruthy();
+    expect(click.mock.contexts[0]).toMatchObject({ href: "blob:will", download: "episodewill.will" });
     expect(screen.getByText(/표현할 수 없는 1개 요소/u)).toBeTruthy();
     expect(
       screen.getAllByText(/Wacom 공식 SDK·인증 파일이 아닙니다/u),
