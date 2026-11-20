@@ -29,7 +29,7 @@ function auditDomainDir(repoRoot, relativeDir) {
 
 /**
  * 툰스튜디오 핵심 4대 도메인(assistant, bg3d, brush, export)의 테스트 비율과
- * 어시스턴트 고도화 모듈(14종) 및 크로스-도메인 브리지(20종)의 연결 무결성을 정량 스코어카드로 집계한다.
+ * 어시스턴트 고도화 모듈(14종) 및 크로스-도메인 브리지(22종)의 연결 무결성을 정량 스코어카드로 집계한다.
  */
 export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
   const assistantDir = path.join(repoRoot, "apps/web/src/domains/creator/assistant");
@@ -76,10 +76,12 @@ export function buildStudioAdvancementScorecard(repoRoot = REPO_ROOT) {
     "apps/web/src/domains/creator/export/StudioCommercialSettlementWidget.tsx",
     "apps/web/src/domains/creator/export/studio-agency-submission-preview.ts",
     "apps/web/src/domains/creator/export/studio-ip-slate-fund-dd.ts",
+    "apps/web/src/domains/creator/export/studio-ip-provenance-chain-verifier.ts",
     "apps/web/src/domains/creator/bg3d/studio-bg3d-workflow-pack-adapter.ts",
     "apps/web/src/domains/creator/brush/studio-brush-workflow-pack-adapter.ts",
     "scripts/verify-rights-bom-receipt-cli.mjs",
     "scripts/simulate-episode-settlement-cli.mjs",
+    "scripts/evaluate-ip-slate-dd-cli.mjs",
   ];
   const presentCrossDomainBridges = requiredCrossDomainBridges.filter((relPath) =>
     existsSync(path.join(repoRoot, relPath)),
