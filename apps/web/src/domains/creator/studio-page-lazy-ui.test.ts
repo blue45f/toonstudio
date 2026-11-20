@@ -115,16 +115,18 @@ describe("StudioPage optional UI registry", () => {
     expect(registry.valueImports).not.toContain("./filter/StudioFilterDialog");
     expect(page.valueImports).not.toContain("./filter/StudioFilterDialog");
     expect(page.dynamicImports).not.toContain("./filter/StudioFilterDialog");
-    for (const consumerPath of [
-      "./StudioMobileEditingDock.tsx",
-      "./StudioRasterToolRecoveryPanel.tsx",
-      "./StudioMainMenu.tsx",
-    ]) {
+    for (const [consumerPath, intentOwner] of [
+      ["./StudioMobileEditingDock.tsx", "./filter/StudioMobileFilterSelect"],
+      ["./filter/StudioMobileFilterSelect.tsx", "../studio-filter-dialog-intent"],
+      ["./StudioRasterToolRecoveryPanel.tsx", "./studio-filter-dialog-intent"],
+      ["./StudioMainMenu.tsx", "./studio-filter-dialog-intent"],
+    ] as const) {
       const consumer = moduleEdges(consumerPath);
-      expect(consumer.valueImports).toContain("./studio-filter-dialog-intent");
-      expect(consumer.valueImports).not.toContain("./studio-page-lazy-ui");
-      expect(consumer.dynamicImports).not.toContain("./filter/StudioFilterDialog");
+      expect(consumer.valueImports).toContain(intentOwner);
+      expect(consumer.valueImports.some((specifier) => /(?:^|\/)studio-page-lazy-ui$/.test(specifier))).toBe(false);
+      expect(consumer.dynamicImports.some((specifier) => /(?:^|\/)StudioFilterDialog$/.test(specifier))).toBe(false);
     }
+    expect(moduleEdges("./StudioMobileEditingDock.tsx").source).toContain("<StudioMobileFilterSelect");
     const menuIntent = moduleEdges("./studio-main-menu-intent-preload.ts");
     expect(menuIntent.valueImports).toEqual([]);
     expect(menuIntent.source).toContain("preloadFilterDialog();");

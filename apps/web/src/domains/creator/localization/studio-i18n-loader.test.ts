@@ -79,7 +79,9 @@ describe("Studio lazy i18n assets", () => {
       // 정상 동기화로 75개 팩 모두 같은 58키를 포함한다.
       // 1_794 → 1_841: 공유 모서리 치유 UI 15키·오류 24키·안내 8키를
       // studio.bg3dScene.coplanarEdgeHeal.* 정본에 추가했다(2026-10-31).
-      // 넓은 보기 메뉴와 선택한 컷에 대사 넣기 명령도 모든 언어 팩에서 읽을 수 있어야 한다.
+      // 1_841 → 1_843: 기존 넓게 보기 studio.mainMenu.item.view.wide.open과
+      // 평면 팩에만 있던 studio.bubble.insertSelectedFrame을 포함해 정본·75개 팩을 맞췄다.
+      // 기존 키를 유지하고 정상 동기화된 팩의 정확한 총 개수를 검사한다.
       expect(Object.keys(dictionary ?? {})).toHaveLength(1_843);
       expect(dictionary?.["studio.bubble.insertSelectedFrame"]).toBeTruthy();
       expect(dictionary?.["studio.mainMenu.item.view.wide.open"]).toBeTruthy();
@@ -101,6 +103,8 @@ describe("Studio lazy i18n assets", () => {
       "studio.commandSearch.label",
       "studio.mainMenu.group.tools.label",
       "studio.creativeModes.title",
+      "studio.mainMenu.item.view.wide.open",
+      "studio.bubble.insertSelectedFrame",
     ]) {
       for (const locale of STUDIO_I18N_ASSET_LOCALES) {
         expect(assetDictionary(locale)?.[key]).toBeTruthy();
@@ -109,6 +113,8 @@ describe("Studio lazy i18n assets", () => {
     }
     expect(resolveI18nValue("en", "studio.mobileDock.tool.shape")).toBe("Shape");
     expect(resolveI18nValue("ko", "studio.mobileDock.tool.shape")).toBe("도형");
+    expect(assetDictionary("ko")?.["studio.bubble.insertSelectedFrame"]).toBe("선택한 컷에 대사 넣기");
+    expect(assetDictionary("en")?.["studio.bubble.insertSelectedFrame"]).toBe("Add dialogue to the selected panel");
     // The filter menu generates a row per pack kind, but 28 kinds (the advanced blurs, the
     // clean-up filters and the whole union wave) had no locale keys, so an `en` menubar showed
     // "렌즈 블러" between English rows. Every pack now carries the keys — untranslated locales

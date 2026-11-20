@@ -472,9 +472,15 @@ describe("Studio Hybrid DCC production-preview integration evidence", () => {
     );
     expect(source).toContain("vite-production-preview-shipped-studio-ui");
     expect(source).toContain("const studioUrl = `${origin}studio/canvas`");
-    expect(source).toContain('name: "프로젝트 센터"');
-    expect(source).toContain("[data-studio-project-actions-menu=\"true\"]");
+    const entrySource = readFileSync(new URL("./lib/studio-verifier-entry-points.ts", import.meta.url), "utf8");
+    expect(source).toContain("const projectMenu = await openStudioProjectCenter(page)");
+    expect(entrySource).toContain('await openStudioMainMenu(page, "file")');
+    expect(entrySource).toContain('[data-studio-menu-item-id="project"]');
+    expect(entrySource).toContain('[data-studio-project-actions-menu="true"]');
     expect(source).toContain("[data-studio-hybrid-dcc-open=\"true\"]");
+    const openDccSource = source.slice(source.indexOf("async function openHybridDcc"), source.indexOf("function numberAttribute"));
+    expect(openDccSource).not.toContain("attempt < 10");
+    expect(openDccSource).not.toContain("catch(() => undefined)");
     expect(source).toContain('name: /^큐브 추가/u');
     expect(source).toContain('name: "면 선택 모드 (3)"');
     expect(source).toContain("page.mouse.click(");

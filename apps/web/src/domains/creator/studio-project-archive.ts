@@ -6,6 +6,7 @@ import { STUDIO_PSD_SOURCE_MIME, validateStudioPsdSourceBytes } from "./export/s
 import { z } from "zod";
 import { isStandardBase64 } from "@/shared/lib/standard-base64";
 import { resolveStudioProjectArchiveLimits as resolveLimits } from "./project/archive/studio-project-archive-limits";
+import { StudioProjectArchiveError } from "./project/archive/studio-project-archive-primitives";
 import { hasStudioSixPassBundleProjectContent } from "./studio-project-version";
 
 import { deriveStudioBg3dGlbBudgetProfiles } from "./bg3d/studio-bg3d-device-quality";
@@ -165,34 +166,8 @@ export interface StudioProjectArchiveDiagnostic {
   pointer?: string;
 }
 
-export class StudioProjectArchiveError extends Error {
-  readonly code: StudioProjectArchiveDiagnosticCode;
-  /** 구조화 메시지 서브코드 (A4 D4) — 표시 문구는 status-i18n 리졸버가 해석한다. */
-  readonly variant: string;
-  readonly params?: Readonly<Record<string, string>>;
-  readonly diagnostics: StudioProjectArchiveDiagnostic[];
-
-  constructor(
-    code: StudioProjectArchiveDiagnosticCode,
-    variant: string,
-    details: Pick<StudioProjectArchiveDiagnostic, "path" | "pointer"> = {},
-    params?: Readonly<Record<string, string>>,
-    cause?: unknown,
-  ) {
-    super(code, cause === undefined ? undefined : { cause });
-    this.name = "StudioProjectArchiveError";
-    this.code = code;
-    this.variant = variant;
-    if (params !== undefined) this.params = params;
-    this.diagnostics = [{
-      severity: "error",
-      code,
-      variant,
-      ...(params !== undefined ? { params } : {}),
-      ...details,
-    }];
-  }
-}
+// ZIP 검증기와 공개 API가 같은 오류 생성자를 사용해야 소비자의 instanceof 분류가 유지된다.
+export { StudioProjectArchiveError };
 
 export interface StudioProjectArchiveDocumentReference {
   /** RFC 6901 JSON Pointer into canonical project.json. The pointed value must already exist. */

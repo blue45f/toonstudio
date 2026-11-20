@@ -28,11 +28,12 @@ import {
 } from "../apps/web/src/domains/creator/studio-main-menu-presentation";
 
 import { studioOwnedPreviewSessionEndpoint } from "./lib/studio-collaboration-preview-session";
-import { pinStudioRailToolFromCatalog } from "./lib/studio-rail-tool-catalog-pin";
+import { assertRailTools } from "./lib/studio-menu-verifier-rail";
+import { closeStudioMenuVerifierDropdown, closeStudioMenuVerifierProject, prepareStudioMenuVerifierSurface, studioMenuVerifierRail } from "./lib/studio-menu-verifier-surface";
+import { openStudioExportPanel, showStudioProjectWindowTools, visibleStudioControl, waitForStudioShellHydration } from "./lib/studio-shell-interactions";
 import { findFreePort, spawnVitePreview, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 import { STUDIO_HEAVY_RENDER_SETTLE_TIMEOUT_MS, clickAndWaitForRenderer, selectCanvasResizeRow, waitForRendererQuiet } from "./lib/studio-verify-render-settle";
 
-import type { StudioRailToolId } from "../apps/web/src/domains/creator/studio-app-settings";
 import type { StudioMainMenuCompositeGroupId } from "../apps/web/src/domains/creator/studio-main-menu-presentation";
 import type { ChildProcess } from "node:child_process";
 
@@ -407,38 +408,9 @@ function presentedTitleFor(catalogueGroupId: string): string {
   return group?.caption ?? catalogueGroupId;
 }
 
-/** Pin the shipped first-run contract independently of the settings implementation. */
-export const FIRST_RUN_RAIL_TOOL_IDS = [
-  "select", "pen", "eraser", "fill", "marquee-rect", "smart-shape", "text", "image", "transform", "lasso",
-] as const satisfies readonly StudioRailToolId[];
+export { FIRST_RUN_RAIL_TOOL_IDS, CLARITY_RAIL_TOOL_IDS, IMAGE_RAIL_ENTRY, OPTIONAL_RAIL_TOOLS, assertRailTools } from "./lib/studio-menu-verifier-rail";
 
-export const IMAGE_RAIL_ENTRY = { id: "image", label: "이미지·소재" } as const;
 export const QUICK_ACCESS_CLOSE_LABEL = "빠른 액세스 팔레트 닫기";
-
-/** Every first-run tool and the specialized tools added below must remain reachable. */
-const PERSISTENT_RAIL_TOOLS = [
-  "선택 (V)",
-  "펜 (B)",
-  "지우개 (E)",
-  // Fill: when no raster is selected the aria-label becomes the guard reason (still exposed).
-  { anyOf: ["색 채우기 (G)", "래스터 이미지 레이어를 먼저 선택하세요."] },
-  "사각 선택 (M)",
-  "스마트 도형",
-  "색 가져오기 (I / Alt+클릭)",
-  "텍스트",
-  "말풍선",
-  IMAGE_RAIL_ENTRY.label,
-] as const;
-
-/** More uses catalogue names; the exposed rail also preserves its shortcut suffix. */
-export const OPTIONAL_RAIL_TOOLS = [
-  { id: "eyedropper", moreLabel: "색 가져오기", railLabel: "색 가져오기 (I / Alt+클릭)" },
-  { id: "bubble", moreLabel: "말풍선", railLabel: "말풍선" },
-  { id: "smart-shape", moreLabel: "스마트 도형", railLabel: "스마트 도형" },
-  { id: "shape-rect", moreLabel: "사각형 도형", railLabel: "사각형 도형" },
-  { id: "shape-ellipse", moreLabel: "타원 도형", railLabel: "타원 도형" },
-  { id: "reference", moreLabel: "참고 이미지", railLabel: "참고 이미지" },
-] as const satisfies readonly { id: StudioRailToolId; moreLabel: string; railLabel: string }[];
 
 export const DESKTOP_FLOATING_LAYOUT_DIALOG = {
   name: "보기 · 플로팅 UI",
@@ -552,19 +524,33 @@ async function waitForStableBox(target: Locator, quietMs: number, timeoutMs: num
   }
 }
 
+async function menuVerifierNav(page: Page, surface: "primary" | "action", timeoutMs = 15_000): Promise<Locator> {
+  const prepared = await prepareStudioMenuVerifierSurface(page, timeoutMs);
+  return surface === "primary" ? prepared.primary : visibleStudioControl(
+    prepared.scope.locator('[data-studio-main-menu-action="true"]'), "Studio 액션 메뉴", timeoutMs,
+  );
+}
+
+async function menuVerifierCatalogueTarget(page: Page, groupId: string) {
+  const editor = await visibleStudioControl(page.locator('[data-studio-editor="true"]'), "Studio 편집기");
+  if (await editor.getAttribute("data-studio-drawing-clarity") === "true") {
+    const group = CATALOGUE_GROUPS.find((candidate) => candidate.id === groupId);
+    if (!group) throw new Error(`검증할 원본 메뉴 그룹이 없습니다: ${groupId}`);
+    return { title: group.caption, surface: "primary" as const };
+  }
+  return { title: presentedTitleFor(groupId), surface: ACTION_ORDER.includes(studioMainMenuPresentedTitleFor(groupId))
+    ? "action" as const : "primary" as const };
+}
+
 async function openMainMenuGroup(
   page: Page,
   label: string,
   surface: "primary" | "action" = "primary",
 ): Promise<void> {
-  const nav = page.locator(
-    surface === "action"
-      ? '[data-studio-main-menu-action="true"]'
-      : '[data-studio-main-menu="true"]',
-  );
+  const nav = await menuVerifierNav(page, surface);
   await nav.waitFor({ state: "visible", timeout: 15000 });
-  // Close any open group first
-  await page.keyboard.press("Escape").catch(() => undefined);
+  // 메뉴가 닫힌 상태의 Escape는 프로젝트 도구 패널 자체를 닫으므로 열린 dropdown만 닫는다.
+  await closeStudioMenuVerifierDropdown(page);
   await page.waitForTimeout(80);
   const btn = nav.getByRole("menuitem", { name: label, exact: true });
   const menu = page.locator(`[role="menu"][aria-label="${label}"]`);
@@ -688,13 +674,9 @@ async function openMainMenuGroupWithKeyboard(
   label: string,
   surface: "primary" | "action",
 ): Promise<void> {
-  const nav = page.locator(
-    surface === "action"
-      ? '[data-studio-main-menu-action="true"]'
-      : '[data-studio-main-menu="true"]',
-  );
+  const nav = await menuVerifierNav(page, surface);
   await nav.waitFor({ state: "visible", timeout: 15_000 });
-  await page.keyboard.press("Escape").catch(() => undefined);
+  await closeStudioMenuVerifierDropdown(page);
   const trigger = nav.getByRole("menuitem", { name: label, exact: true });
   await trigger.focus();
   await trigger.press("ArrowDown");
@@ -744,22 +726,25 @@ async function hasVisibleText(page: Page | Locator, text: string): Promise<boole
  * 갈라 놓았으므로(`StudioMenubarContent` 의 `resolveStudioCommandBarSlotNames`), 검증기도
  * "액션 레인의 정확한 이름" 이라는 원래 뜻 그대로 좁혀서 묻는다.
  */
-function exportOptionsTrigger(page: Page) {
+async function exportOptionsTrigger(page: Page) {
+  const clarityExport = page.locator('[data-studio-clarity-export-btn="true"]').filter({ visible: true });
+  if (await clarityExport.count() > 0) return visibleStudioControl(clarityExport, "Studio 출고");
   return page
     .locator('[data-studio-menubar-actions="true"]')
     .getByRole("button", { name: "내보내기 옵션", exact: true });
 }
 
-async function assertChrome(page: Page): Promise<string[]> {
+export async function assertChrome(page: Page): Promise<string[]> {
   const failures: string[] = [];
+  const menu = await prepareStudioMenuVerifierSurface(page);
   const checks: { name: string; ok: () => Promise<boolean> }[] = [
     {
       name: "앱 메뉴바",
-      ok: async () => page.locator('[data-studio-app-menubar="true"]').isVisible(),
+      ok: async () => page.locator('[data-studio-app-menubar="true"]').filter({ visible: true }).isVisible(),
     },
     {
       name: "메인 메뉴",
-      ok: async () => page.locator('[data-studio-main-menu="true"]').isVisible(),
+      ok: async () => menu.primary.isVisible(),
     },
     {
       name: "툴벨트 DOM 마운트 (데스크톱은 오프스크린)",
@@ -767,17 +752,23 @@ async function assertChrome(page: Page): Promise<string[]> {
     },
     {
       name: "좌측 툴 레일",
-      ok: async () =>
-        (await page.locator('[data-studio-tool-rail="true"]').isVisible().catch(() => false)) ||
-        (await page.getByRole("button", { name: "펜 (B)" }).isVisible().catch(() => false)),
+      ok: async () => (await studioMenuVerifierRail(page)).isVisible(),
     },
     {
       name: "다운로드",
-      ok: async () => page.getByRole("button", { name: /다운로드/ }).first().isVisible(),
+      ok: async () => {
+        if (!menu.project) return page.getByRole("button", { name: /다운로드/ }).first().isVisible();
+        await closeStudioMenuVerifierProject(page);
+        const panel = await openStudioExportPanel(page);
+        const download = await panel.getByRole("button", { name: /다운로드/ }).first().isVisible();
+        await page.keyboard.press("Escape");
+        await showStudioProjectWindowTools(page);
+        return download;
+      },
     },
     {
       name: "내보내기 옵션",
-      ok: async () => exportOptionsTrigger(page).isVisible(),
+      ok: async () => (await exportOptionsTrigger(page)).isVisible(),
     },
   ];
   for (const c of checks) {
@@ -786,38 +777,45 @@ async function assertChrome(page: Page): Promise<string[]> {
   return failures;
 }
 
-async function assertMainMenus(page: Page, evidenceDir?: string): Promise<string[]> {
-  const failures: string[] = [];
-  for (const drift of PRESENTATION_TITLE_DRIFT) failures.push(drift);
-  for (const orphan of PRESENTATION_ORPHANS) {
-    failures.push(`메뉴 표현 매핑 누락: ${orphan}`);
-  }
-
-  const surfaces: readonly {
+export function menuVerifierSurfaceSpecifications(project: boolean): readonly {
     surface: "primary" | "action";
-    selector: string;
     menus: readonly PresentedMenu[];
     titles: readonly string[];
     label: string;
-  }[] = [
+  }[] {
+  if (project) return [{
+    surface: "primary",
+    menus: CATALOGUE_GROUPS.map((group) => ({ id: group.id, title: group.caption, composite: false, sections: [group] })),
+    titles: CATALOGUE_GROUPS.map((group) => group.caption),
+    label: "프로젝트 메뉴",
+  }];
+  return [
     {
       surface: "primary",
-      selector: '[data-studio-main-menu="true"]',
       menus: PRESENTED_MENUS,
       titles: PINNED_PRESENTED_TITLES,
       label: "기본 메뉴",
     },
     {
       surface: "action",
-      selector: '[data-studio-main-menu-action="true"]',
       menus: ACTION_MENUS,
       titles: PINNED_ACTION_TITLES,
       label: "액션 메뉴",
     },
   ];
+}
+
+export async function assertMainMenus(page: Page, evidenceDir?: string): Promise<string[]> {
+  const failures: string[] = [];
+  for (const drift of PRESENTATION_TITLE_DRIFT) failures.push(drift);
+  for (const orphan of PRESENTATION_ORPHANS) {
+    failures.push(`메뉴 표현 매핑 누락: ${orphan}`);
+  }
+  const prepared = await prepareStudioMenuVerifierSurface(page);
+  const surfaces = menuVerifierSurfaceSpecifications(prepared.project);
 
   for (const spec of surfaces) {
-    const nav = page.locator(spec.selector);
+    const nav = await menuVerifierNav(page, spec.surface);
     if (!(await nav.isVisible().catch(() => false))) {
       failures.push(`${spec.label} nav 미노출`);
       continue;
@@ -881,8 +879,8 @@ async function assertMainMenus(page: Page, evidenceDir?: string): Promise<string
 async function assertReferenceWindowToggle(page: Page): Promise<string[]> {
   const failures: string[] = [];
   const panel = page.getByRole("region", { name: "레퍼런스 캔버스" });
-  // 창 is owned by 보기; resolve through the presentation so this check follows the IA.
-  const windowTitle = presentedTitleFor("window");
+  // 현재 원고의 프로젝트 메뉴와 기존 합성 메뉴가 같은 창 명령을 각각 제공한다.
+  const { title: windowTitle } = await menuVerifierCatalogueTarget(page, "window");
   const openWindowMenu = async (): Promise<Locator> => {
     await openMainMenuGroup(page, windowTitle);
     return page
@@ -940,94 +938,6 @@ async function assertReferenceWindowToggle(page: Page): Promise<string[]> {
   return failures;
 }
 
-async function assertRailTools(page: Page): Promise<string[]> {
-  const rail = page.locator('[data-studio-tool-rail="true"]');
-  const failures: string[] = [];
-
-  const initialIds = await rail.locator("[data-studio-rail-tool-id]")
-    .evaluateAll((tools) => tools.map((tool) => tool.getAttribute("data-studio-rail-tool-id")));
-  if (initialIds.length !== FIRST_RUN_RAIL_TOOL_IDS.length
-    || FIRST_RUN_RAIL_TOOL_IDS.some((id) => !initialIds.includes(id))) {
-    failures.push(`좌측 레일 기본 도구 불일치: 기대 ${FIRST_RUN_RAIL_TOOL_IDS.join(", ")} / 실제 ${initialIds.join(", ")}`);
-  }
-
-  // Add through the actual More picker and retain every previous choice, including defaults.
-  const expectedIds = new Set<string>(FIRST_RUN_RAIL_TOOL_IDS);
-  for (const { id, moreLabel, railLabel } of OPTIONAL_RAIL_TOOLS) {
-    const tool = rail.locator(`[data-studio-rail-tool-id="${id}"]`);
-    try {
-      if (!(await tool.isVisible().catch(() => false))) {
-        await pinStudioRailToolFromCatalog(page, moreLabel);
-        await tool.waitFor({ state: "visible", timeout: 5_000 });
-      }
-      const exposedLabel = await tool.getAttribute("aria-label");
-      if (exposedLabel !== railLabel) {
-        failures.push(`좌측 레일 추가 도구 라벨 불일치: ${railLabel} / 실제: ${exposedLabel ?? "없음"}`);
-      }
-    } catch (error) {
-      failures.push(
-        `좌측 레일 추가 도구 활성화 실패: ${railLabel} (${error instanceof Error ? error.message : String(error)})`,
-      );
-      await page.keyboard.press("Escape").catch(() => undefined);
-    }
-    expectedIds.add(id);
-    for (const retainedId of expectedIds) {
-      if (!(await rail.locator(`[data-studio-rail-tool-id="${retainedId}"]`).isVisible().catch(() => false))) {
-        failures.push(`좌측 레일 도구가 ${moreLabel} 추가 뒤 사라짐: ${retainedId}`);
-      }
-    }
-  }
-
-  const expectedToolCount = expectedIds.size;
-  const actualToolCount = await rail.locator("[data-studio-rail-tool-id]").count();
-  if (actualToolCount < expectedToolCount) {
-    failures.push(`좌측 레일 도구 누적 실패: 기대 최소 ${expectedToolCount} / 실제 ${actualToolCount}`);
-  }
-  for (const { id, railLabel } of OPTIONAL_RAIL_TOOLS) {
-    const retained = await rail
-      .locator(`[data-studio-rail-tool-id="${id}"]`)
-      .isVisible()
-      .catch(() => false);
-    if (!retained) failures.push(`좌측 레일 추가 도구가 다음 선택 뒤 사라짐: ${railLabel}`);
-  }
-
-  for (const entry of PERSISTENT_RAIL_TOOLS) {
-    if (typeof entry === "string") {
-      const byLabel = rail.getByRole("button", { name: entry, exact: true }).first();
-      const byTitle = rail.locator(`[title="${entry}"]`).first();
-      const visible =
-        (await byLabel.isVisible().catch(() => false)) ||
-        (await byTitle.isVisible().catch(() => false));
-      if (!visible) {
-        failures.push(`좌측 레일 도구 미노출: ${entry}`);
-      }
-      continue;
-    }
-    const ok = await Promise.any(
-      entry.anyOf.map(async (label) => {
-        const visible =
-          (await rail.getByRole("button", { name: label, exact: true }).first().isVisible().catch(() => false)) ||
-          (await rail.locator(`[title="${label}"]`).first().isVisible().catch(() => false));
-        if (!visible) throw new Error("miss");
-        return true;
-      })
-    ).catch(() => false);
-    if (!ok) failures.push(`좌측 레일 도구 미노출: ${entry.anyOf.join(" | ")}`);
-  }
-  // Verify the real image action, not a hidden legacy label. An empty selection leaves the document unchanged.
-  try {
-    const [chooser] = await Promise.all([
-      page.waitForEvent("filechooser", { timeout: 5_000 }),
-      rail.locator(`[data-studio-rail-tool-id="${IMAGE_RAIL_ENTRY.id}"]`).click(),
-    ]);
-    await chooser.setFiles([]);
-    log("  image rail action ok: real file chooser opens without changing the document");
-  } catch (error) {
-    failures.push(`이미지 도구 실행 실패: ${error instanceof Error ? error.message : String(error)}`);
-  }
-  return failures;
-}
-
 export async function dismissCinematicCanvasWelcome(page: Page): Promise<boolean> {
   const welcome = page.locator('[data-studio-cinematic-canvas-welcome="true"]');
   if (!(await welcome.isVisible().catch(() => false))) return false;
@@ -1054,10 +964,7 @@ export async function closeFloatingUi(page: Page) {
 async function assertMenuDrivenPopovers(page: Page): Promise<string[]> {
   const failures: string[] = [];
   for (const entry of MENU_DRIVEN_POPOVERS) {
-    const title = presentedTitleFor(entry.groupId);
-    const surface = ACTION_ORDER.includes(studioMainMenuPresentedTitleFor(entry.groupId))
-      ? "action" as const
-      : "primary" as const;
+    const { title, surface } = await menuVerifierCatalogueTarget(page, entry.groupId);
     try {
       await closeFloatingUi(page);
       await openMainMenuGroup(page, title, surface);
@@ -1124,8 +1031,8 @@ export async function assertCurrentCanvasPlatformResize(
 ): Promise<string[]> {
   const { evidenceDir } = options;
   const failures: string[] = [];
-  const canvasMenuTitle = presentedTitleFor("canvas");
-  const windowMenuTitle = presentedTitleFor("window");
+  const { title: canvasMenuTitle } = await menuVerifierCatalogueTarget(page, "canvas");
+  const { title: windowMenuTitle } = await menuVerifierCatalogueTarget(page, "window");
 
   const waitForHeight = async (height: number): Promise<boolean> => {
     const value = page.locator(`span[aria-label="높이 ${height}px"]`);
@@ -1230,11 +1137,12 @@ export async function assertCurrentCanvasPlatformResize(
   return failures;
 }
 
-async function assertWorkspaceDeviceEditor(page: Page): Promise<string[]> {
+export async function assertWorkspaceDeviceEditor(page: Page): Promise<string[]> {
   const failures: string[] = [];
   try {
     await closeFloatingUi(page);
-    const trigger = page.getByRole("button", { name: /^작업공간:/ }).first();
+    await showStudioProjectWindowTools(page);
+    const trigger = await visibleStudioControl(page.getByRole("button", { name: /^작업공간:/ }), "Studio 작업공간", 4_000);
     await trigger.click({ timeout: 4000 });
 
     const quickDialog = page.getByRole("dialog", { name: "작업공간" });
@@ -1290,7 +1198,7 @@ async function assertDrawOptionsBar(page: Page): Promise<string[]> {
   const failures: string[] = [];
   try {
     await closeFloatingUi(page);
-    await page.getByRole("button", { name: "펜 (B)" }).click({ timeout: 4000 });
+    await (await studioMenuVerifierRail(page)).locator('[data-studio-rail-tool-id="pen"]').click({ timeout: 4000 });
     await page.waitForTimeout(400);
     const bar =
       (await page.locator('[data-studio-draw-options="true"]').isVisible().catch(() => false)) ||
@@ -1416,10 +1324,11 @@ async function assertFloatingLayoutManager(page: Page): Promise<string[]> {
   return failures;
 }
 
-async function assertExportOptions(page: Page): Promise<string[]> {
+export async function assertExportOptions(page: Page): Promise<string[]> {
   const failures: string[] = [];
   try {
-    await exportOptionsTrigger(page).click({ timeout: 4000 });
+    await closeStudioMenuVerifierProject(page);
+    await (await exportOptionsTrigger(page)).click({ timeout: 4000 });
     // 패널은 워터마크 설정을 읽고 지연 로드 청크를 받은 뒤에 열리므로(첫 부팅에서 1~수 초) 고정 대기 대신 패널을 기다린다.
     // 메뉴바 다운로드 버튼의 "2× PNG" 글자는 1536px 미만에서 숨겨지므로, 문서 전체의 첫 일치가 아니라 패널 안에서만 찾는다.
     const panel = page.locator('[data-studio-export-menu-panel="true"]');
@@ -1511,7 +1420,8 @@ async function main() {
       state: "attached",
       timeout: 20000,
     });
-    await page.locator('[data-studio-main-menu="true"]').waitFor({ state: "visible", timeout: 20000 });
+    await waitForStudioShellHydration(page, 20_000);
+    await prepareStudioMenuVerifierSurface(page, 20_000);
 
     const failures = [
       ...(await assertChrome(page)),
@@ -1532,7 +1442,7 @@ async function main() {
     await captureMenuEvidence(page, evidenceDir, "menu-verification-final");
 
     if (failures.length === 0) {
-      log("PASS: canvas-first menus exposed (9 primary + AI action + current-canvas platform resize + rail + popovers)");
+      log("PASS: complete menu catalogue exposed (project or workflow presentation + current-canvas platform resize + rail + popovers)");
       exitCode = 0;
     } else {
       log(`FAIL (${failures.length}):`);

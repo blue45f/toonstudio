@@ -16,7 +16,8 @@ import { createEmptyStudioReleaseSchedule } from "../apps/web/src/domains/creato
 import { buildStudioSavePayload } from "../apps/web/src/domains/creator/studio-save-payload";
 import { createEmptyStudioWriterRoomDocument } from "../apps/web/src/domains/creator/studio-writer-room";
 
-import { prepareFilterMenuWorkspace } from "./lib/studio-filter-menu-workspace";
+import { openStudioLayerNavigator, showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
+import { openStudioProjectCenter } from "./lib/studio-verifier-entry-points";
 
 import type { Pool } from "pg";
 import type { BrowserContext, Page } from "playwright";
@@ -98,7 +99,12 @@ export async function openStudioReviewHost(page: Page, origin: URL, workId: stri
   }
   const gate = page.getByRole("button", { name: "나중에 보기", exact: true });
   if (await gate.isVisible()) await gate.click();
-  await prepareFilterMenuWorkspace(page);
+  // 프로젝트 메뉴와 레이어·속성을 현재 사용자 명령으로 각각 준비한다.
+  const layoutMenu = page.locator('[data-studio-clarity-more-trigger="true"]:visible').first();
+  if (await layoutMenu.isVisible()) {
+    await showStudioProjectWindowTools(page);
+    await openStudioLayerNavigator(page);
+  }
 }
 
 /** Original three-pen-strokes-per-page acceptance remains unchanged. */
@@ -243,7 +249,7 @@ export async function authorStudioReviewHostSketches(page: Page, output: string)
 }
 
 export async function requestStudioReviewHostCapture(page: Page) {
-  await page.getByRole("button", { name: "프로젝트 센터", exact: true }).click();
+  await openStudioProjectCenter(page);
   await page.getByRole("button", { name: "저장된 원고로 검수본 만들기", exact: true }).click();
   await page.getByRole("button", { name: "저장 후 다시 확인", exact: true }).click();
   await page.getByText("고정 검수본이 준비됐어요.", { exact: true }).waitFor({ timeout: 60_000 });
