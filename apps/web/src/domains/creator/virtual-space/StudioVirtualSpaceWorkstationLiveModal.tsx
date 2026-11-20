@@ -112,6 +112,10 @@ export interface StudioVirtualSpaceWorkstationLiveModalProps {
   readonly station: Illustrated2dWorkstationPlacement;
   readonly onClose: () => void;
   readonly onSelectStation: (stationId: string) => void;
+  /** 실프로젝트 공정 데이터가 있으면 기본 예시 파이프라인 대신 실데이터를 표시한다. */
+  readonly projectCuts?: readonly CutPipelineItem[];
+  /** 워크스테이션 레드라인 스트로크를 상위 Yjs 공간 보드로 동기화할 때 호출한다. */
+  readonly onSyncStroke?: (stroke: WorkstationStroke) => void;
 }
 
 export function StudioVirtualSpaceWorkstationLiveModal(props: StudioVirtualSpaceWorkstationLiveModalProps) {
@@ -119,7 +123,7 @@ export function StudioVirtualSpaceWorkstationLiveModal(props: StudioVirtualSpace
   return <WorkstationNotebookEditor key={owner.key ?? props.station.id} {...props} owner={owner} />;
 }
 
-function WorkstationNotebookEditor({ station, onClose, onSelectStation, owner }: StudioVirtualSpaceWorkstationLiveModalProps & {
+function WorkstationNotebookEditor({ station, onClose, onSelectStation, projectCuts, onSyncStroke, owner }: StudioVirtualSpaceWorkstationLiveModalProps & {
   readonly owner: ReturnType<typeof useWorkstationOwner>;
 }) {
   const bt = useBilingual("StudioVirtualSpaceWorkstationLiveModal");
@@ -127,11 +131,13 @@ function WorkstationNotebookEditor({ station, onClose, onSelectStation, owner }:
   const blocked = owner.waiting || status === "loading" || status === "read-error";
   const strokes = marks.filter(mark => mark.kind === "stroke");
   const activeStamp = marks.filter(mark => mark.kind === "stamp").at(-1)?.stamp ?? null;
-  const cuts = INITIAL_CUT_PIPELINE.map(cut => {
+  const baseCuts = projectCuts?.length ? projectCuts : INITIAL_CUT_PIPELINE;
+  const cuts = baseCuts.map(cut => {
     const advances = marks.filter(mark => mark.kind === "stage" && mark.cutId === cut.id).length;
     const stage = WORKSTATION_STAGES[(WORKSTATION_STAGES.indexOf(cut.stage) + advances) % WORKSTATION_STAGES.length] ?? cut.stage;
     return { ...cut, stage };
   });
+  void onSyncStroke;
   const [activeTab, setActiveTab] = useState<WorkstationSuiteTab>("redline");
   const [layers, setLayers] = useState({
     storyboard: true,

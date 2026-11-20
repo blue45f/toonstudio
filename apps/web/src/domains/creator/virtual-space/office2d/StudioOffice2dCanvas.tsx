@@ -147,7 +147,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
     const currentClaim = claimedSeatIdRef.current;
     if (selfState.seatId && selfState.seatId !== currentClaim) {
       setClaimedSeatId(selfState.seatId);
-      rt.extensions.pushComicBurst(lang === "en" ? "📌 MY DESK SAVED!" : "📌 내 지정석 등록!", "#c084fc", selfState.self.x, selfState.self.y - 52);
+      rt.extensions.pushComicBurst(lang === "en" ? "MY DESK SAVED" : "내 지정석 등록", "#c084fc", selfState.self.x, selfState.self.y - 52);
       playOffice2dSpatialCue("desk-claim", { muted: soundMutedRef.current, roomId: roomIdRef.current });
       bridge.focusWorld();
       return;
@@ -158,7 +158,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
       return;
     }
     bridge.requestMove(targetSeat.anchor);
-    rt.extensions.pushComicBurst(lang === "en" ? "🚀 TO MY DESK!" : "🚀 내 자리로!", "#38bdf8", selfState.self.x, selfState.self.y - 52);
+    rt.extensions.pushComicBurst(lang === "en" ? "TO MY DESK" : "내 자리로 이동", "#38bdf8", selfState.self.x, selfState.self.y - 52);
     playOffice2dSpatialCue("seat-sit", { muted: soundMutedRef.current, roomId: studioWorldRoomAt(manifest, targetSeat.anchor) });
     bridge.focusWorld();
   };
@@ -437,7 +437,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
           bridge.requestMove(schematicTarget.point);
           const lang = documentLanguage();
           runtime.extensions.pushComicBurst(
-            lang === "en" ? "🗺️ WARP TO ZONE!" : "🗺️ 평면도 이동!",
+            lang === "en" ? "WARP TO ZONE" : "평면도 이동",
             "#38bdf8",
             schematicTarget.point.x,
             schematicTarget.point.y - 36,
@@ -669,8 +669,8 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
         >
           <span>
             {bt(
-              "🗺️ 평면도 오버뷰 · 방이나 좌석 마커를 클릭하면 그곳으로 이동합니다",
-              "🗺️ Schematic Overview · Click any room or seat marker to move there",
+              "평면도 오버뷰 · 방이나 좌석 마커를 클릭하면 그곳으로 이동합니다",
+              "Schematic Overview · Click any room or seat marker to move there",
             )}
           </span>
           <button

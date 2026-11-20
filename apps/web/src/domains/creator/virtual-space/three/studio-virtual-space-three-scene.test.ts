@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
+import { STUDIO_VRM_HERO_V1_SAMPLES } from "../../vrm/studio-vrm-hero-v1-catalog-entries";
 import { parseStudioVrmLicenseMetadata } from "../../vrm/studio-vrm-license-metadata";
 import {
   BUNDLED_VRM_RIGHTS_BLOCKS,
@@ -13,6 +14,7 @@ import {
 } from "../../vrm/vrm-library";
 import { CAMPUS_HEIGHT, CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_WIDTH, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
 import {
+  captureStudioThreeCanvasToCut,
   computeZonePlinthTransform,
   findClickedWorldTarget,
   formatParticipantOverlayBadge,
@@ -28,6 +30,7 @@ import {
   isVerifiedStudioThreeVrmUrl,
   resolveStudioThreeVrmUrl,
   shortestAngleLerp,
+  STUDIO_THREE_HERO_VRM_URLS,
   STUDIO_THREE_PROPS,
   STUDIO_THREE_VRM_URLS,
   threeToWorld,
@@ -97,11 +100,14 @@ describe("3D 가상 스튜디오 씬 아키텍처·디오라마·VRM·HDRI 검�
       expect(prop.heightMeters).toBeGreaterThan(0.15);
     }
 
-    expect(STUDIO_THREE_VRM_URLS).toHaveLength(9);
+    expect(STUDIO_THREE_HERO_VRM_URLS).toEqual(STUDIO_VRM_HERO_V1_SAMPLES.map((sample) => sample.url));
+    expect(STUDIO_THREE_VRM_URLS.slice(0, STUDIO_THREE_HERO_VRM_URLS.length)).toEqual(STUDIO_THREE_HERO_VRM_URLS);
+    expect(STUDIO_THREE_VRM_URLS).toHaveLength(STUDIO_THREE_HERO_VRM_URLS.length + 9);
     expect(new Set(STUDIO_THREE_VRM_URLS).size).toBe(STUDIO_THREE_VRM_URLS.length);
     const sampleByUrl = new Map(SAMPLE_VRMS.map((sample) => [sample.url, sample] as const));
     const activeIds = new Set(SAMPLE_VRM_ENTRIES.map((entry) => entry.id));
     const licensesMarkdown = readFileSync(LICENSES_MD_PATH, "utf8");
+    expect(licensesMarkdown).toContain("toonstudio-hero-v1/*.vrm");
 
     for (const url of STUDIO_THREE_VRM_URLS) {
       expect(url).toMatch(/^\/vrm\/.+\.vrm$/u);
@@ -113,24 +119,27 @@ describe("3D 가상 스튜디오 씬 아키텍처·디오라마·VRM·HDRI 검�
       expect(catalogEntry?.licenseNotice).toBeUndefined();
       expect(catalogEntry?.limitations ?? []).not.toContain("heavy-payload");
 
-      const fileName = url.replace(/^\/vrm\//u, "");
-      const licenseLines = licensesMarkdown
-        .split(/\r?\n/u)
-        .filter((line) => line.includes(`\`${fileName}\``));
-      expect(licenseLines.length).toBeGreaterThan(0);
-      expect(licenseLines.some((line) => line.includes("CC0"))).toBe(true);
-      expect(licenseLines.every((line) => !line.includes("제외"))).toBe(true);
-      expect(licenseLines.every((line) => !line.includes("조건부"))).toBe(true);
-      expect(licenseLines.every((line) => !line.includes("고지 조건"))).toBe(true);
+      const isHeroV1 = url.startsWith("/vrm/toonstudio-hero-v1/");
+      if (!isHeroV1) {
+        const fileName = url.replace(/^\/vrm\//u, "");
+        const licenseLines = licensesMarkdown
+          .split(/\r?\n/u)
+          .filter((line) => line.includes(`\`${fileName}\``));
+        expect(licenseLines.length).toBeGreaterThan(0);
+        expect(licenseLines.some((line) => line.includes("CC0"))).toBe(true);
+        expect(licenseLines.every((line) => !line.includes("제외"))).toBe(true);
+        expect(licenseLines.every((line) => !line.includes("조건부"))).toBe(true);
+        expect(licenseLines.every((line) => !line.includes("고지 조건"))).toBe(true);
+      }
 
       const diskPath = resolve(PUBLIC_ROOT, url.slice(1));
       expect(existsSync(diskPath)).toBe(true);
       const parsed = parseStudioVrmLicenseMetadata(readGlbJson(diskPath));
       expect(parsed.ok).toBe(true);
       if (parsed.ok) {
-        expect(parsed.receipt.licenseIdentifier).toBe("CC0");
+        if (!isHeroV1) expect(parsed.receipt.licenseIdentifier).toBe("CC0");
         expect(parsed.receipt.avatarPermission).toBe("everyone");
-        expect(parsed.receipt.commercial).toBe("allow");
+        expect(parsed.receipt.commercial).toBe(isHeroV1 ? "corporation" : "allow");
         expect(parsed.receipt.redistribution).toBe("allow");
         expect(parsed.receipt.modification).toBe("allow-modification-redistribution");
         expect(parsed.receipt.credit).toBe("unnecessary");
@@ -156,8 +165,8 @@ describe("3D 가상 스튜디오 씬 아키텍처·디오라마·VRM·HDRI 검�
     }
 
     expect(resolveStudioThreeVrmUrl(0)).toBe(STUDIO_THREE_VRM_URLS[0]);
-    expect(resolveStudioThreeVrmUrl(9)).toBe(STUDIO_THREE_VRM_URLS[0]);
-    expect(resolveStudioThreeVrmUrl(-1)).toBe(STUDIO_THREE_VRM_URLS[8]);
+    expect(resolveStudioThreeVrmUrl(STUDIO_THREE_VRM_URLS.length)).toBe(STUDIO_THREE_VRM_URLS[0]);
+    expect(resolveStudioThreeVrmUrl(-1)).toBe(STUDIO_THREE_VRM_URLS[STUDIO_THREE_VRM_URLS.length - 1]);
     expect(resolveStudioThreeVrmUrl(Number.NaN)).toBe(STUDIO_THREE_VRM_URLS[0]);
   });
 
@@ -258,6 +267,33 @@ describe("3D 가상 스튜디오 씬 아키텍처·디오라마·VRM·HDRI 검�
     });
 
     expect(findClickedWorldTarget({ x: 10, y: 10 }, CAMPUS_INTERACTIONS, CAMPUS_NPCS)).toBeNull();
+  });
+
+  it("포토부스 스냅샷 캡처 헬퍼가 최신 프레임을 렌더하고 2D 컷 데이터 URL을 반환한다", () => {
+    let rendered = 0;
+    const mockRenderer = {
+      render: () => { rendered += 1; },
+      domElement: {
+        width: 1280,
+        height: 720,
+        clientWidth: 1280,
+        clientHeight: 720,
+        toDataURL: () => "data:image/png;base64,iVBORw0KGgo=",
+      } as unknown as HTMLCanvasElement,
+    };
+    const capture = captureStudioThreeCanvasToCut({
+      renderer: mockRenderer,
+      scene: new THREE.Scene(),
+      camera: new THREE.PerspectiveCamera(),
+      label: "카페 룸 포토컷",
+    });
+    expect(rendered).toBe(1);
+    expect(capture).toEqual({
+      dataUrl: "data:image/png;base64,iVBORw0KGgo=",
+      label: "카페 룸 포토컷",
+      width: 1280,
+      height: 720,
+    });
   });
 });
 

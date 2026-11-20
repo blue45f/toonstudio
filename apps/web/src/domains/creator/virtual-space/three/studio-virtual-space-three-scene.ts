@@ -1,6 +1,7 @@
 import type { VRM } from "@pixiv/three-vrm";
 import * as THREE from "three";
 
+import { STUDIO_VRM_HERO_V1_SAMPLES } from "../../vrm/studio-vrm-hero-v1-catalog-entries";
 import { isStudioVrmProductionModelUrl } from "../../vrm/studio-vrm-model-quality";
 import { BUNDLED_VRM_RIGHTS_BLOCKS, SAMPLE_VRM_ENTRIES, SAMPLE_VRMS } from "../../vrm/vrm-library";
 import { CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
@@ -142,12 +143,18 @@ export function isVerifiedStudioThreeVrmUrl(value: unknown): value is string {
   return Boolean(sample && ACTIVE_SAMPLE_VRM_IDS.has(sample.id) && !sample.licenseNotice && !sample.limitations?.includes("heavy-payload"));
 }
 
-/** 플레이어(`self`)와 8명의 캠퍼스 NPC에 할당된 CC0 검증 스튜디오급 VRM 크리에이터 아바타. */
+const LEGACY_STUDIO_THREE_VRM_URLS = [
+  "/vrm/Sendagaya_Shino.vrm", "/vrm/Sendagaya_Shibu.vrm", "/vrm/Kate.vrm", "/vrm/Jennifer.vrm",
+  "/vrm/Erika.vrm", "/vrm/Olivia.vrm", "/vrm/Jimmy.vrm", "/vrm/Anna.vrm", "/vrm/Cyberpal.vrm",
+] as const;
+
+/** Hero VRM 1.0 8종을 기본 아바타 라인업 최우선(0..7)에 두고 기존 CC0 검증 VRM 9종을 호환 폴백(8..16)으로 유지한다. */
+export const STUDIO_THREE_HERO_VRM_URLS: readonly string[] = Object.freeze(
+  STUDIO_VRM_HERO_V1_SAMPLES.map((sample) => sample.url),
+);
+
 export const STUDIO_THREE_VRM_URLS: readonly string[] = Object.freeze(
-  [
-    "/vrm/Sendagaya_Shino.vrm", "/vrm/Sendagaya_Shibu.vrm", "/vrm/Kate.vrm", "/vrm/Jennifer.vrm",
-    "/vrm/Erika.vrm", "/vrm/Olivia.vrm", "/vrm/Jimmy.vrm", "/vrm/Anna.vrm", "/vrm/Cyberpal.vrm",
-  ].map((url) => {
+  [...STUDIO_THREE_HERO_VRM_URLS, ...LEGACY_STUDIO_THREE_VRM_URLS].map((url) => {
     if (!isVerifiedStudioThreeVrmUrl(url)) throw new Error(`3D 가상 스튜디오 VRM 아바타 권리/품질 게이트 실패: ${url}`);
     return url;
   }),
@@ -182,14 +189,28 @@ export interface StudioThreeActorNode {
   readonly rightArm: THREE.Mesh;
   readonly ring: THREE.Mesh;
   vrm?: VRM;
+  vrmHips?: THREE.Object3D;
+  vrmSpine?: THREE.Object3D;
+  vrmChest?: THREE.Object3D;
+  vrmNeck?: THREE.Object3D;
+  vrmHead?: THREE.Object3D;
   vrmLeftUpperLeg?: THREE.Object3D;
   vrmRightUpperLeg?: THREE.Object3D;
+  vrmLeftLowerLeg?: THREE.Object3D;
+  vrmRightLowerLeg?: THREE.Object3D;
   vrmLeftUpperArm?: THREE.Object3D;
   vrmRightUpperArm?: THREE.Object3D;
   vrmLeftLowerArm?: THREE.Object3D;
   vrmRightLowerArm?: THREE.Object3D;
+  vrmHipsBaseY?: number;
   armDownZLeft?: number;
   armDownZRight?: number;
+  firstPersonHeadHidden?: boolean;
+  nextBlinkAt?: number;
+  blinkStartedAt?: number;
+  blinkWasActive?: boolean;
+  visemeActive?: boolean;
+  lookAtProxy?: THREE.Object3D;
   targetX: number;
   targetZ: number;
   currentYaw: number;
@@ -310,19 +331,23 @@ export function createStylized3DCharacterNode(
   const head = new THREE.Mesh(headGeo, skinMat);
   head.position.set(0, 1.32, 0);
   head.castShadow = true;
+  head.userData.isHeadPart = true;
   rigGroup.add(head);
 
   const hairGeo = new THREE.SphereGeometry(0.295, 24, 18, 0, Math.PI * 2, 0, Math.PI * 0.62);
   const hair = new THREE.Mesh(hairGeo, hairMat);
   hair.position.set(0, 1.35, -0.02);
   hair.castShadow = true;
+  hair.userData.isHeadPart = true;
   rigGroup.add(hair);
 
   const eyeGeo = new THREE.SphereGeometry(0.036, 12, 12);
   const leftEye = new THREE.Mesh(eyeGeo, darkMat);
   leftEye.position.set(-0.09, 1.31, 0.25);
+  leftEye.userData.isHeadPart = true;
   const rightEye = new THREE.Mesh(eyeGeo, darkMat);
   rightEye.position.set(0.09, 1.31, 0.25);
+  rightEye.userData.isHeadPart = true;
   rigGroup.add(leftEye, rightEye);
 
   return {
@@ -545,23 +570,37 @@ export function applyNaturalVrmPosture(
   vrm?: VRM,
 ): void {
   if (vrm) node.vrm = vrm;
+  let hips: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("hips");
+  let spine: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("spine");
+  let chest: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("chest");
+  let neck: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("neck");
+  let head: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("head");
   let leftUpperArm: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("leftUpperArm");
   let rightUpperArm: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("rightUpperArm");
   let leftLowerArm: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("leftLowerArm");
   let rightLowerArm: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("rightLowerArm");
   let leftUpperLeg: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("leftUpperLeg");
   let rightUpperLeg: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("rightUpperLeg");
+  let leftLowerLeg: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("leftLowerLeg");
+  let rightLowerLeg: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("rightLowerLeg");
 
-  if (!leftUpperArm || !rightUpperArm) {
+  if (!hips || !spine || !chest || !neck || !head || !leftUpperArm || !rightUpperArm || !leftLowerLeg || !rightLowerLeg) {
     vrmScene.traverse((child) => {
       const n = child.name;
       if (!n || /robo_|twist/i.test(n)) return;
-      if (!leftUpperArm && /J_Bip_L_UpperArm|LeftArm$|upper_arm\.?L/i.test(n)) leftUpperArm = child;
+      if (!hips && /J_Bip_C_Hips|(^|[:_])Hips$/i.test(n)) hips = child;
+      else if (!spine && /J_Bip_C_Spine|(^|[:_])Spine$/i.test(n)) spine = child;
+      else if (!chest && /J_Bip_C_Chest|(^|[:_])(Chest|Spine1)$/i.test(n)) chest = child;
+      else if (!neck && /J_Bip_C_Neck|(^|[:_])Neck$/i.test(n)) neck = child;
+      else if (!head && /J_Bip_C_Head|(^|[:_])Head$/i.test(n)) head = child;
+      else if (!leftUpperArm && /J_Bip_L_UpperArm|LeftArm$|upper_arm\.?L/i.test(n)) leftUpperArm = child;
       else if (!rightUpperArm && /J_Bip_R_UpperArm|RightArm$|upper_arm\.?R/i.test(n)) rightUpperArm = child;
       else if (!leftLowerArm && /J_Bip_L_LowerArm|LeftForeArm$|forearm\.?L/i.test(n)) leftLowerArm = child;
       else if (!rightLowerArm && /J_Bip_R_LowerArm|RightForeArm$|forearm\.?R/i.test(n)) rightLowerArm = child;
       else if (!leftUpperLeg && /J_Bip_L_UpperLeg|LeftUpLeg$|thigh\.?L/i.test(n)) leftUpperLeg = child;
       else if (!rightUpperLeg && /J_Bip_R_UpperLeg|RightUpLeg$|thigh\.?R/i.test(n)) rightUpperLeg = child;
+      else if (!leftLowerLeg && /J_Bip_L_LowerLeg|LeftLeg$|shin\.?L/i.test(n)) leftLowerLeg = child;
+      else if (!rightLowerLeg && /J_Bip_R_LowerLeg|RightLeg$|shin\.?R/i.test(n)) rightLowerLeg = child;
     });
   }
 
@@ -596,6 +635,14 @@ export function applyNaturalVrmPosture(
     return bestZ;
   };
 
+  if (hips) {
+    node.vrmHips = hips;
+    node.vrmHipsBaseY = hips.position.y;
+  }
+  if (spine) node.vrmSpine = spine;
+  if (chest) node.vrmChest = chest;
+  if (neck) node.vrmNeck = neck;
+  if (head) node.vrmHead = head;
   if (leftUpperArm) {
     node.armDownZLeft = resolveDownwardArmZ(leftUpperArm, leftLowerArm, 1.16);
     node.vrmLeftUpperArm = leftUpperArm;
@@ -614,6 +661,8 @@ export function applyNaturalVrmPosture(
   }
   if (leftUpperLeg) node.vrmLeftUpperLeg = leftUpperLeg;
   if (rightUpperLeg) node.vrmRightUpperLeg = rightUpperLeg;
+  if (leftLowerLeg) node.vrmLeftLowerLeg = leftLowerLeg;
+  if (rightLowerLeg) node.vrmRightLowerLeg = rightLowerLeg;
   syncHumanoid();
 }
 

@@ -1,13 +1,17 @@
 import type { StudioBg3dGlbMetrics } from "../../../bg3d/studio-bg3d-glb-validation";
 import type { StudioBg3dAttachmentRights } from "../../../bg3d/studio-bg3d-scene-document";
 import type { StudioBg3dBundleThemePackAsset, StudioBg3dBundleThemePacks } from "../../../bg3d/studio-bg3d-bundle-theme-packs";
+import type { HeroBg3dDeliveryContext } from "../../../bg3d/studio-bg3d-hero-tier-selector";
 
 import { STUDIO_THREE_GENERATED_ASSETS } from "../studio-virtual-space-three-generated-assets";
+import { findVirtualThreeHeroBgPreset, type VirtualThreeHeroBgRoomPreset } from "./virtual-three-hero-bg-presets";
 import { findVirtualThreeThemeModelRef } from "./virtual-three-theme-models";
 import type {
+  VirtualThreeHeroSceneTheme,
   VirtualThreeThemeModelRef,
   VirtualThreeThemeModelRefBundle,
   VirtualThreeThemeModelRefGenerated,
+  VirtualThreeThemeModelRefHeroScene,
 } from "./virtual-three-theme-types";
 
 /** 검증기가 소유한 바이트만 renderer에 넘긴다. URL 자체는 GLTFLoader에 전달하지 않는다. */
@@ -52,7 +56,7 @@ function assertExpectedBytes(ref: VirtualThreeThemeModelRef): void {
   if (!Number.isSafeInteger(ref.byteLength) || ref.byteLength <= 0 || ref.byteLength > 64 * 1024 * 1024) {
     throw new TypeError("3D 테마 모델의 선언된 크기가 유효하지 않습니다.");
   }
-  const hash = ref.source === "bundle" ? ref.expectedSha256 : `sha256:${ref.sha256}`;
+  const hash = ref.source === "generated" ? `sha256:${ref.sha256}` : ref.expectedSha256;
   if (!/^sha256:[a-f0-9]{64}$/u.test(hash)) throw new TypeError("3D 테마 모델의 예상 해시가 유효하지 않습니다.");
 }
 
@@ -195,5 +199,91 @@ export async function loadVirtualThreeThemeModelSource(
   const ref = findVirtualThreeThemeModelRef(modelAssetId);
   if (!ref) throw new TypeError("3D 테마에 등록되지 않은 모델입니다.");
   assertExpectedBytes(ref);
+  if (ref.source === "hero-scene") {
+    throw new TypeError("Hero 3D 배경 씬은 loadVirtualThreeHeroSceneSource로 준비해야 합니다.");
+  }
   return ref.source === "bundle" ? loadBundleSource(ref, signal) : loadGeneratedSource(ref, signal);
+}
+
+export interface VirtualThreeVerifiedHeroSceneSource {
+  readonly ref: VirtualThreeThemeModelRefHeroScene;
+  readonly preset: VirtualThreeHeroBgRoomPreset;
+  readonly blob: Blob;
+  readonly url: string;
+  readonly tier: "desktop" | "mobile";
+  readonly contentHash: `sha256:${string}`;
+  readonly byteLength: number;
+  readonly estimatedDecodedGeometryBytes: number;
+  readonly estimatedDecodedImageBytes: number;
+  readonly assertCurrent: () => void;
+}
+
+/**
+ * Hero 3D BG 씬의 기기별 티어(Desktop 8노드 / Mobile 4노드)를 해석하고 검증된 GLB 바이트를 지연 fetch한다.
+ */
+export async function loadVirtualThreeHeroSceneSource(
+  theme: VirtualThreeHeroSceneTheme,
+  options: {
+    readonly signal?: AbortSignal;
+    readonly deliveryContext?: Partial<HeroBg3dDeliveryContext>;
+    readonly fetchImpl?: typeof fetch;
+  } = {},
+): Promise<VirtualThreeVerifiedHeroSceneSource> {
+  assertActive(options.signal);
+  const preset = findVirtualThreeHeroBgPreset(theme.id) ?? findVirtualThreeHeroBgPreset(theme.heroSlug);
+  if (!preset) {
+    throw new TypeError(`등록되지 않은 Hero 3D 배경 테마입니다: ${theme.id}`);
+  }
+  const delivery = preset.resolveDelivery(options.deliveryContext);
+  const asset = delivery.asset ?? preset.entry.desktopAsset;
+  const ref: VirtualThreeThemeModelRefHeroScene = {
+    source: "hero-scene",
+    heroSlug: preset.slug,
+    assetId: asset.id,
+    tier: delivery.tier,
+    url: asset.url,
+    expectedSha256: asset.sha256,
+    byteLength: asset.byteSize,
+  };
+  assertExpectedBytes(ref);
+
+  const fetcher = options.fetchImpl ?? globalThis.fetch;
+  if (typeof fetcher !== "function") {
+    throw new Error("Hero 3D 배경 GLB를 내려받을 fetch 런타임이 없습니다.");
+  }
+  const response = await fetcher(ref.url, {
+    credentials: "same-origin",
+    redirect: "error",
+    signal: options.signal,
+  });
+  assertActive(options.signal);
+  if (!response.ok) {
+    throw new Error(`Hero 3D 배경 씬을 불러오지 못했습니다 (HTTP ${response.status}).`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  assertActive(options.signal);
+  if (arrayBuffer.byteLength < 20) {
+    throw new TypeError("Hero 3D 배경 GLB 응답이 비어 있거나 손상되었습니다.");
+  }
+
+  const assertCurrent = () => {
+    const active = findVirtualThreeHeroBgPreset(theme.id);
+    if (!active || active.slug !== preset.slug) {
+      throw new TypeError("Hero 3D 배경 테마 등록 정보가 변경되었습니다.");
+    }
+  };
+  assertCurrent();
+
+  return {
+    ref,
+    preset,
+    blob: new Blob([arrayBuffer], { type: "model/gltf-binary" }),
+    url: ref.url,
+    tier: delivery.tier,
+    contentHash: ref.expectedSha256,
+    byteLength: arrayBuffer.byteLength,
+    estimatedDecodedGeometryBytes: Math.min(24 * 1024 * 1024, arrayBuffer.byteLength * 2),
+    estimatedDecodedImageBytes: Math.min(16 * 1024 * 1024, arrayBuffer.byteLength * 2),
+    assertCurrent,
+  };
 }

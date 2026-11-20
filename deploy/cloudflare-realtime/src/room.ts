@@ -18,22 +18,12 @@ import {
   REALTIME_SERVER_PONG_FRAME,
   REALTIME_WEBSOCKET_PROTOCOL,
   areRealtimePayloadsEquivalent,
-  isRealtimeChannel,
-  isRealtimeId,
-  parseRealtimeClientMessage,
-  serializeRealtimeServerMessage,
   utf8ByteLength,
-  type ClientPublishMessage,
-  type ClientResumeMessage,
   type PresenceCursorPayload,
   type PresenceUpdatePayload,
-  type RealtimeChannel,
   type RealtimeProtocolErrorCode,
-  type RealtimeServerMessage,
   type ScreenSignalingPayload,
   type ServerPresenceSnapshotMessage,
-  type ServerErrorMessage,
-  type ServerReplayMessage,
 } from "./protocol";
 import { createPublishReceiptFingerprints } from "./receipt-fingerprint";
 import {
@@ -46,8 +36,24 @@ import {
   resolveRealtimeRoomLimits,
   selectAlarmCoveringCleanupWindow,
   selectNextAlarmAt,
+  type RealtimeChannelRateLimit,
   type RealtimeRoomLimits,
 } from "./room-core";
+import {
+  INITIAL_SPACE_ROOM_CONTROL_STATE,
+  SPACE_KICKED_CLOSE_CODE,
+  SPACE_KICKED_CLOSE_REASON,
+  applySpaceRoomControl,
+  authorizeRoomEntry,
+  authorizeSpacePublish,
+  collectKickedTargets,
+  isValidConnectionAttachmentCore,
+  parseRealtimeWireClientMessage,
+  reconstructSpaceRoomControlState,
+  resolveSpaceChannelRateLimit,
+  serializeRealtimeWireServerMessage,
+  type SpaceRoomControlState,
+} from "./room-space-control";
 import {
   RealtimeReceiptBudgetExceededError,
   RealtimeRoomStore,
@@ -76,11 +82,23 @@ import {
   type RealtimeTicketClaims,
 } from "./ticket";
 
+import type {
+  ClientWirePublishMessage,
+  ClientWireResumeMessage,
+  RealtimeSpaceRole,
+  RealtimeTicketScope,
+  RealtimeWireChannel,
+  RealtimeWireServerMessage,
+  ServerWireErrorMessage,
+  ServerWireReplayMessage,
+  SpacePresenceUpdatePayload,
+} from "./space-protocol";
+
 const CONNECTION_ATTACHMENT_VERSION =
   "toonstudio.realtime-connection.v3" as const;
 const MAX_PROTOCOL_VIOLATIONS = 3;
 
-type ResumeFrontiers = Readonly<Record<RealtimeChannel, number | null>>;
+type ResumeFrontiers = Readonly<Record<RealtimeWireChannel, number | null>>;
 
 interface ConnectionAttachment {
   readonly version: typeof CONNECTION_ATTACHMENT_VERSION;
@@ -89,7 +107,8 @@ interface ConnectionAttachment {
   readonly connectionId: string;
   readonly actorId: string;
   readonly clientId: string;
-  readonly scopes: readonly RealtimeChannel[];
+  readonly scopes: readonly RealtimeTicketScope[];
+  readonly role?: RealtimeSpaceRole;
   readonly sessionVersion: number;
   readonly authorizationEpochMs: number;
   readonly sessionExpiresAtMs: number;
@@ -99,7 +118,7 @@ interface ConnectionAttachment {
   readonly resumeRequestCount: number;
   readonly resumeEgressBytes: number;
   readonly resumeFrontiers: ResumeFrontiers;
-  readonly completedResumeChannels: readonly RealtimeChannel[];
+  readonly completedResumeChannels: readonly RealtimeWireChannel[];
 }
 
 interface ActorDirectoryRegistration {
@@ -138,89 +157,13 @@ function jsonResponse(
   );
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function isConnectionAttachment(
   value: unknown,
 ): value is ConnectionAttachment {
-  if (!isRecord(value)) {
-    return false;
-  }
-  const expectedKeys = new Set([
-    "version",
-    "workId",
-    "roomId",
-    "connectionId",
-    "actorId",
-    "clientId",
-    "scopes",
-    "sessionVersion",
-    "authorizationEpochMs",
-    "sessionExpiresAtMs",
-    "lastClientSequence",
-    "protocolViolations",
-    "resumeWindowStartedAtMs",
-    "resumeRequestCount",
-    "resumeEgressBytes",
-    "resumeFrontiers",
-    "completedResumeChannels",
-  ]);
-  return (
-    Object.keys(value).length === expectedKeys.size &&
-    Object.keys(value).every((key) => expectedKeys.has(key)) &&
-    value.version === CONNECTION_ATTACHMENT_VERSION &&
-    isRealtimeId(value.workId) &&
-    isRealtimeId(value.roomId) &&
-    isRealtimeId(value.connectionId) &&
-    isRealtimeId(value.actorId) &&
-    isRealtimeId(value.clientId) &&
-    Array.isArray(value.scopes) &&
-    value.scopes.length >= 1 &&
-    value.scopes.length <= 3 &&
-    value.scopes.every(isRealtimeChannel) &&
-    new Set(value.scopes).size === value.scopes.length &&
-    typeof value.sessionVersion === "number" &&
-    Number.isSafeInteger(value.sessionVersion) &&
-    value.sessionVersion > 0 &&
-    typeof value.authorizationEpochMs === "number" &&
-    Number.isSafeInteger(value.authorizationEpochMs) &&
-    value.authorizationEpochMs > 0 &&
-    typeof value.sessionExpiresAtMs === "number" &&
-    Number.isSafeInteger(value.sessionExpiresAtMs) &&
-    value.sessionExpiresAtMs > 0 &&
-    typeof value.lastClientSequence === "number" &&
-    Number.isSafeInteger(value.lastClientSequence) &&
-    value.lastClientSequence >= 0 &&
-    typeof value.protocolViolations === "number" &&
-    Number.isSafeInteger(value.protocolViolations) &&
-    value.protocolViolations >= 0 &&
-    value.protocolViolations <= MAX_PROTOCOL_VIOLATIONS &&
-    typeof value.resumeWindowStartedAtMs === "number" &&
-    Number.isSafeInteger(value.resumeWindowStartedAtMs) &&
-    value.resumeWindowStartedAtMs >= 0 &&
-    typeof value.resumeRequestCount === "number" &&
-    Number.isSafeInteger(value.resumeRequestCount) &&
-    value.resumeRequestCount >= 0 &&
-    typeof value.resumeEgressBytes === "number" &&
-    Number.isSafeInteger(value.resumeEgressBytes) &&
-    value.resumeEgressBytes >= 0 &&
-    isRecord(value.resumeFrontiers) &&
-    Object.keys(value.resumeFrontiers).length === 3 &&
-    Object.keys(value.resumeFrontiers).every(isRealtimeChannel) &&
-    Object.values(value.resumeFrontiers).every(
-      (frontier) =>
-        frontier === null ||
-        (typeof frontier === "number" &&
-          Number.isSafeInteger(frontier) &&
-          frontier >= 0),
-    ) &&
-    Array.isArray(value.completedResumeChannels) &&
-    value.completedResumeChannels.length <= 3 &&
-    value.completedResumeChannels.every(isRealtimeChannel) &&
-    new Set(value.completedResumeChannels).size ===
-      value.completedResumeChannels.length
+  return isValidConnectionAttachmentCore(
+    value,
+    CONNECTION_ATTACHMENT_VERSION,
+    MAX_PROTOCOL_VIOLATIONS,
   );
 }
 
@@ -237,6 +180,7 @@ function toConnectionAttachment(
     actorId: claims.subject,
     clientId: claims.clientId,
     scopes: claims.scopes,
+    ...(claims.role === undefined ? {} : { role: claims.role }),
     sessionVersion: claims.sessionVersion,
     authorizationEpochMs: claims.authorizationEpochMs,
     sessionExpiresAtMs: claims.sessionExpiresAtMs,
@@ -249,6 +193,7 @@ function toConnectionAttachment(
       presence: null,
       comments: null,
       "screen-signaling": null,
+      "yjs-space": null,
     },
     completedResumeChannels: [],
   };
@@ -290,8 +235,11 @@ function closeSocket(
 export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
   private readonly store: RealtimeRoomStore;
   private readonly limits: RealtimeRoomLimits;
+  private readonly spaceRateLimit: RealtimeChannelRateLimit;
   private readonly allowedOrigins: ReadonlySet<string>;
   private readonly ready: Promise<void>;
+  private spaceControlState: SpaceRoomControlState =
+    INITIAL_SPACE_ROOM_CONTROL_STATE;
 
   constructor(
     private readonly roomState: DurableObjectStateLike,
@@ -300,6 +248,7 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
     super(roomState, runtimeEnv);
     this.store = new RealtimeRoomStore(roomState.storage);
     this.limits = resolveRealtimeRoomLimits(runtimeEnv);
+    this.spaceRateLimit = resolveSpaceChannelRateLimit(runtimeEnv);
     this.allowedOrigins = resolveAllowedOrigins(
       runtimeEnv.REALTIME_ALLOWED_ORIGINS,
     );
@@ -311,6 +260,9 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
     );
     this.ready = this.roomState.blockConcurrencyWhile(async () => {
       this.store.initialize();
+      this.spaceControlState = reconstructSpaceRoomControlState(
+        this.roomState.storage.sql,
+      );
       const nowMs = Date.now();
       const liveSockets = this.reconcilePersistedConnections(nowMs);
       for (const stored of this.store.cleanupExpiredSharesWithEvents(
@@ -374,6 +326,19 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
     }
     if (!this.store.bindScope(scope.workId, scope.roomId)) {
       return jsonResponse(409, "room-binding-conflict");
+    }
+    const entryAuth = authorizeRoomEntry(
+      {
+        clientId: verified.claims.clientId,
+        scopes: verified.claims.scopes,
+        ...(verified.claims.role === undefined
+          ? {}
+          : { role: verified.claims.role }),
+      },
+      this.spaceControlState,
+    );
+    if (!entryAuth.ok) {
+      return jsonResponse(entryAuth.status, entryAuth.code);
     }
     const nowMs = Date.now();
     const sockets = this.roomState.getWebSockets();
@@ -482,7 +447,9 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
       );
     }
 
-    const channelStates = this.store.getAllSequenceStates();
+    const channelStates = this.store.getAllSequenceStates(
+      verified.claims.scopes.includes("yjs-space"),
+    );
     this.sendMessage(serverSocket, {
       version: REALTIME_PROTOCOL_VERSION,
       type: "welcome",
@@ -646,7 +613,7 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
       return;
     }
 
-    const parsed = parseRealtimeClientMessage(message);
+    const parsed = parseRealtimeWireClientMessage(message);
     if (!parsed.ok) {
       this.recordProtocolViolation(webSocket, attachment, parsed.code);
       return;
@@ -829,14 +796,20 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
   private async handlePublish(
     webSocket: HibernatableWebSocket,
     attachment: ConnectionAttachment,
-    message: ClientPublishMessage,
+    message: ClientWirePublishMessage,
     nowMs: number,
     frameBytes: number,
   ): Promise<void> {
-    if (!attachment.scopes.includes(message.channel)) {
+    const authResult = authorizeSpacePublish(
+      attachment,
+      message.channel,
+      message.payload,
+      this.spaceControlState,
+    );
+    if (!authResult.ok) {
       this.sendError(
         webSocket,
-        "scope-denied",
+        authResult.code,
         false,
         message.idempotencyKey,
         undefined,
@@ -953,13 +926,17 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
       );
       return;
     }
+    const channelRateLimit =
+      message.channel === "yjs-space"
+        ? this.spaceRateLimit
+        : this.limits.channelRateLimits[message.channel];
     const rateAdmission = this.store.consumeRateBudget(
       attachment.actorId,
       message.channel,
       nowMs,
       frameBytes,
       this.limits.rateWindowMs,
-      this.limits.channelRateLimits[message.channel],
+      channelRateLimit,
     );
     if (!rateAdmission.ok) {
       this.sendError(
@@ -1073,6 +1050,7 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
             attachment.clientId,
             message.payload as
               | PresenceUpdatePayload
+              | SpacePresenceUpdatePayload
               | PresenceCursorPayload,
             nowMs,
           );
@@ -1115,12 +1093,28 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
       duplicate: false,
     });
     this.broadcastEvent(stored);
+    if (message.payload.kind === "space.room-control") {
+      this.spaceControlState = applySpaceRoomControl(this.spaceControlState, message.payload);
+      if (message.payload.action === "kick-peer" && message.payload.targetClientId !== undefined) {
+        for (const target of collectKickedTargets(
+          this.roomState.getWebSockets(),
+          message.payload.targetClientId,
+          (value) => (isConnectionAttachment(value) ? value : null),
+        )) {
+          if (!this.canConnectionReceiveEvent(target.attachment, stored)) {
+            this.sendMessage(target.socket, stored.event);
+          }
+          this.cleanupConnection(target.attachment, nowMs);
+          closeSocket(target.socket, SPACE_KICKED_CLOSE_CODE, SPACE_KICKED_CLOSE_REASON);
+        }
+      }
+    }
   }
 
   private handleResume(
     webSocket: HibernatableWebSocket,
     attachment: ConnectionAttachment,
-    message: ClientResumeMessage,
+    message: ClientWireResumeMessage,
     nowMs: number,
   ): void {
     if (!attachment.scopes.includes(message.channel)) {
@@ -1241,7 +1235,7 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
       const candidateVisibleEvents = isVisible
         ? [...visibleEvents, stored.event]
         : visibleEvents;
-      const candidateReplay: ServerReplayMessage = {
+      const candidateReplay: ServerWireReplayMessage = {
         version: REALTIME_PROTOCOL_VERSION,
         type: "replay",
         channel: message.channel,
@@ -1305,15 +1299,15 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
   private sendBudgetedResumeResponse(
     webSocket: HibernatableWebSocket,
     attachment: ConnectionAttachment,
-    message: RealtimeServerMessage,
+    message: RealtimeWireServerMessage,
     nowMs: number,
     progress?: {
-      readonly channel: RealtimeChannel;
+      readonly channel: RealtimeWireChannel;
       readonly toSequence: number;
       readonly complete: boolean;
     },
   ): boolean {
-    const serialized = serializeRealtimeServerMessage(message);
+    const serialized = serializeRealtimeWireServerMessage(message);
     const evaluated = evaluateRateBudget(
       {
         windowStartedAtMs: attachment.resumeWindowStartedAtMs,
@@ -1359,7 +1353,7 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
 
   private rejectResumeBackpressure(
     webSocket: HibernatableWebSocket,
-    channel?: RealtimeChannel,
+    channel?: RealtimeWireChannel,
   ): void {
     this.sendError(
       webSocket,
@@ -1451,9 +1445,9 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
       readonly currentSequence: number;
       readonly replayFloorSequence: number;
     },
-    channel?: RealtimeChannel,
+    channel?: RealtimeWireChannel,
   ): void {
-    const message: ServerErrorMessage = {
+    const message: ServerWireErrorMessage = {
       version: REALTIME_PROTOCOL_VERSION,
       type: "error",
       code,
@@ -1472,11 +1466,11 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
 
   private sendMessage(
     webSocket: HibernatableWebSocket,
-    message: RealtimeServerMessage,
+    message: RealtimeWireServerMessage,
   ): boolean {
     return this.sendRaw(
       webSocket,
-      serializeRealtimeServerMessage(message),
+      serializeRealtimeWireServerMessage(message),
     );
   }
 

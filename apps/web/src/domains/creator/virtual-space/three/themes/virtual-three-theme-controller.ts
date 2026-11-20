@@ -3,7 +3,12 @@ import * as THREE from "three";
 import type { StudioVirtualSpaceWorldManifest } from "../../studio-virtual-space-world-manifest";
 import { buildStudioThreeWorldArchitecture, type StudioThreeWorldArchitecture } from "../studio-virtual-space-three-world-layout";
 import { disposeStudioThreeSurfaceNodes } from "../studio-virtual-space-three-surface-art";
-import { prepareVirtualThreeThemeModels, type VirtualThreeStagedSourceInput, type VirtualThreeThemeModelStage } from "./virtual-three-theme-model-stage";
+import {
+  prepareVirtualThreeHeroSceneStage,
+  prepareVirtualThreeThemeModels,
+  type VirtualThreeStagedSourceInput,
+  type VirtualThreeThemeModelStage,
+} from "./virtual-three-theme-model-stage";
 import { assertVirtualThreeRendererCapacity } from "./virtual-three-renderer-inventory";
 import type { VirtualThreeRendererCapacityProfile } from "./virtual-three-capacity-profiles";
 import type { VirtualThreeTheme, VirtualThreeThemeId, VirtualThreeThemePreviewState } from "./virtual-three-theme-types";
@@ -21,6 +26,7 @@ interface ThemeStage {
 export interface VirtualThreeThemeLifecycleDependencies {
   readonly buildArchitecture: typeof buildStudioThreeWorldArchitecture;
   readonly prepareModels: typeof prepareVirtualThreeThemeModels;
+  readonly prepareHeroScene?: typeof prepareVirtualThreeHeroSceneStage;
   readonly assertCapacity: (staged: THREE.Scene, sources: readonly VirtualThreeStagedSourceInput[]) => unknown;
   readonly compile: (staged: THREE.Scene) => Promise<unknown>;
   readonly prepareEnvironment: (theme: VirtualThreeTheme, signal: AbortSignal) => Promise<void>;
@@ -60,6 +66,7 @@ export function createVirtualThreeThemeController(options: VirtualThreeThemeLife
   return createVirtualThreeThemeLifecycle(options, {
     buildArchitecture: buildStudioThreeWorldArchitecture,
     prepareModels: prepareVirtualThreeThemeModels,
+    prepareHeroScene: prepareVirtualThreeHeroSceneStage,
     assertCapacity: (stagedScene, sourceInputs) => {
       if (options.getPendingEnvironmentCount?.()) throw new Error("환경광 자원이 준비 중이어서 3D 자원 상한을 확정할 수 없습니다.");
       return assertVirtualThreeRendererCapacity({ ...options, activeScene: options.scene, stagedScene, sourceInputs, renderTargets: options.getRenderTargets?.() });
@@ -188,6 +195,15 @@ export function createVirtualThreeThemeLifecycle(options: VirtualThreeThemeLifec
         onBeforeDecode: (sources) => checkCapacity(ownStage, sources),
         onProgress(loaded, total) { if (current(ownStage)) publish(request.theme.id, { status: "loading", loaded, total }); },
       });
+      else if (request.theme.kind === "hero-scene") {
+        const prepareHero = dependencies.prepareHeroScene ?? prepareVirtualThreeHeroSceneStage;
+        stage.models = await prepareHero({
+          scene, manifest: options.manifest, theme: request.theme, signal: abort.signal,
+          onAssetError: options.onAssetError,
+          onBeforeDecode: (sources) => checkCapacity(ownStage, sources),
+          onProgress(loaded, total) { if (current(ownStage)) publish(request.theme.id, { status: "loading", loaded, total }); },
+        });
+      }
       if (!current(stage)) return;
       stage.models?.assertCurrent();
       // 기존 baseline의 첫 진입을 새 예산으로 막지 않는다. 추가 테마는 구·신 동시 상주량으로 판정한다.
@@ -235,7 +251,7 @@ export function createVirtualThreeThemeLifecycle(options: VirtualThreeThemeLifec
       if (resourceCleanupFailed) { publish(theme.id, { status: "error" }); return; }
       epoch += 1;
       preparing?.abort.abort();
-      publish(theme.id, { status: "loading", loaded: 0, total: theme.kind === "asset-recipe" ? theme.modelAssetIds.length : 0 });
+      publish(theme.id, { status: "loading", loaded: 0, total: theme.kind === "asset-recipe" ? theme.modelAssetIds.length : theme.kind === "hero-scene" ? 1 : 0 });
       desired = { theme, epoch };
       start();
     },

@@ -17,22 +17,18 @@ import { readStudioMediaDiagnostics, studioRtcLiveStatus, type StudioMediaPermis
 export interface StudioVirtualSpaceRtcSpotlight {
   readonly active: boolean;
   readonly presenterLabel: string;
+  /** 원격 WebRTC P2P 스포트라이트 송출 경로가 활성 연결된 경우 true. */
+  readonly liveConnected?: boolean;
 }
 
-/**
- * A-6 화면 공유 제어 상태. A-4 스포트라이트 prop과 충돌하지 않도록 별도 prop으로
- * 분리한다. 패널은 미디어를 직접 제어하지 않으며, `onStart`/`onStop`은 호출자가
- * 로컬 프리뷰 범위에서 `getDisplayMedia`를 처리한다. 실제 송출 상태가 아니다.
- *
- * T1(버블·방송 화면 공유): scope로 공유 경로를 고르고 bandwidth로 대역폭 스로틀을
- * 건다. 둘 다 optional이라 기존 호출자는 그대로 둬도 된다.
- */
 export interface StudioVirtualSpaceRtcScreenShare {
   readonly status: StudioLocalScreenShareStatus;
   readonly canShare: boolean;
   readonly error: StudioLocalScreenShareError | null;
   readonly onStart: () => void;
   readonly onStop: () => void;
+  /** 원격 WebRTC 피어 및 3D 시어터 실송출이 연결된 경우 true. */
+  readonly liveConnected?: boolean;
   /** 공유 경로. bubble=근접 그룹, broadcast=스포트라이트/메가폰 방송. */
   readonly scope?: StudioShareRoute;
   readonly onScopeChange?: (scope: StudioShareRoute) => void;
@@ -44,17 +40,24 @@ export interface StudioVirtualSpaceRtcScreenShare {
 function screenShareStatusCopy(
   status: StudioLocalScreenShareStatus,
   error: StudioLocalScreenShareError | null,
+  liveConnected: boolean,
   bt: (ko: string, en: string) => string,
 ): string {
   switch (status) {
     case "requesting": return bt("공유할 화면을 선택하는 중입니다…", "Choosing a screen to share…");
-    case "previewing": return bt("화면 미리보기를 공유 중입니다. 대형 스크린 근처 아바타에게 표시됩니다. 실제 송출이 아닙니다.", "Sharing a screen preview. It appears on large screens near your avatar. This is not a live broadcast.");
+    case "previewing":
+      return liveConnected
+        ? bt("실시간 화면 공유가 활성 상태입니다. WebRTC 피어 및 3D 리뷰 시어터 월 스크린에 송출됩니다.", "Live screen share is active and streaming to WebRTC peers and the 3D review theater wall screen.")
+        : bt("이 브라우저에서만 보이는 로컬 미리보기로 공유 중입니다. 실제 원격 송출은 연결되지 않았습니다.", "Sharing as a local preview in this browser only. Live remote streaming is not connected.");
     case "failed":
       if (error === "unsupported") return bt("이 브라우저는 화면 공유를 지원하지 않습니다. 최신 Chrome·Edge에서 다시 시도해 주세요.", "This browser does not support screen sharing. Please try the latest Chrome or Edge.");
       if (error === "denied") return bt("화면 공유 권한이 거부됐습니다. 브라우저 주소창의 권한 설정을 확인한 뒤 다시 시도해 주세요.", "Screen sharing permission was denied. Check the permission settings in your browser address bar and try again.");
       return bt("화면을 가져오지 못했습니다. 공유할 창을 다시 선택해 주세요.", "Could not capture the screen. Please choose the window to share again.");
     case "idle":
-    default: return bt("이 브라우저에서만 보이는 로컬 미리보기로 공유됩니다. 실제 송출이 아닙니다.", "Shares as a local preview visible in this browser only. This is not a live broadcast.");
+    default:
+      return liveConnected
+        ? bt("30fps 화면 또는 ToonStudio 2D 캔버스를 근처 팀원과 3D 시어터 스크린에 실시간 공유합니다.", "Stream your 30fps screen or live ToonStudio 2D canvas to nearby teammates and the 3D theater wall.")
+        : bt("이 브라우저에서만 보이는 로컬 미리보기로 공유됩니다. 실제 송출이 아닙니다.", "Shared as a local preview in this browser only. Not streamed remotely.");
   }
 }
 
@@ -95,19 +98,25 @@ export function StudioVirtualSpaceRtcPanel({ live, entryOnly = false, spotlight 
       <div><strong>{status === "ready" ? bt("실시간 팀 연결 준비됨", "Live team connection ready") : bt(copy?.[0] ?? "연결 상태를 확인해 주세요.", copy?.[1] ?? "Check the connection status.")}</strong>
         {status === "ready" ? <small>{bt("텍스트·P2P 데이터는 준비됐습니다. 회의 참여와 미디어 장치는 각각 명시적으로 선택합니다.", "Text and P2P data are ready. Meeting participation and media devices remain explicit choices.")}</small> : null}</div>
     </div> : null}
-    {spotlight?.active ? <div className="studio-vspace-live-status" data-status="fallback">
+    {spotlight?.active ? <div className="studio-vspace-live-status" data-status={spotlight.liveConnected ? "ready" : "fallback"}>
       <Presentation size={17} aria-hidden />
       <div><strong>{bt("스포트라이트 우선 송출", "Spotlight priority send")}</strong>
-        <small>{bt(`발표자 ${spotlight.presenterLabel}로 로컬 지정된 상태입니다. 원격 자동 음소거·우선 송출은 아직 연결되지 않았습니다.`, `${spotlight.presenterLabel} is designated as presenter locally. Remote auto-mute and priority send are not connected yet.`)}</small></div>
+        <small>{spotlight.liveConnected
+          ? bt(`발표자 ${spotlight.presenterLabel}의 음성과 공유 화면을 우선 송출합니다.`, `Prioritizing voice and shared screen from presenter ${spotlight.presenterLabel}.`)
+          : bt(`로컬 발표자 ${spotlight.presenterLabel}로 지정됐습니다. 원격 자동 음소거·우선 송출은 아직 연결되지 않았습니다.`, `Set local presenter ${spotlight.presenterLabel}. Remote auto-mute and priority send are not connected yet.`)}</small></div>
     </div> : null}
-    {!entryOnly && screenShare ? <div className="studio-vspace-live-status" data-status={screenShare.status === "previewing" ? "fallback" : screenShare.status === "failed" ? "error" : screenShare.status === "requesting" ? "connecting" : "idle"}>
+    {!entryOnly && screenShare ? <div className="studio-vspace-live-status" data-status={screenShare.status === "previewing" ? (screenShare.liveConnected ? "ready" : "fallback") : screenShare.status === "failed" ? "error" : screenShare.status === "requesting" ? "connecting" : "idle"}>
       {screenShare.status === "previewing" ? <ScreenShare size={17} aria-hidden /> : <ScreenShareOff size={17} aria-hidden />}
       <div><strong>{bt("화면 공유", "Screen sharing")}</strong>
-        <small>{screenShareStatusCopy(screenShare.status, screenShare.error, bt)}</small>
+        <small>{screenShareStatusCopy(screenShare.status, screenShare.error, Boolean(screenShare.liveConnected), bt)}</small>
         {screenShare.status === "previewing" && screenShare.scope
           ? <small>{screenShare.scope === "broadcast"
-            ? bt("방송 경로 미리보기 · 실제 원격 송출 미연결", "Broadcast route preview · remote broadcast not connected")
-            : bt("버블 경로 미리보기 · 실제 원격 송출 미연결", "Bubble route preview · remote broadcast not connected")}</small>
+            ? (screenShare.liveConnected
+              ? bt("방송 경로 활성 · 3D 시어터 & 스포트라이트 송출 중", "Broadcast route active · streaming to 3D theater & spotlight")
+              : bt("방송 경로 미리보기 · 실제 원격 송출 미연결", "Broadcast route preview · remote streaming not connected"))
+            : (screenShare.liveConnected
+              ? bt("버블 경로 활성 · 근접 팀원 & 3D 시어터 송출 중", "Bubble route active · streaming to nearby peers & 3D theater")
+              : bt("버블 경로 미리보기 · 실제 원격 송출 미연결", "Bubble route preview · remote streaming not connected"))}</small>
           : null}
       </div>
       {screenShare.onScopeChange ? <div className="studio-vspace-rtc-share-options" role="group" aria-label={bt("공유 경로", "Share route")}>

@@ -391,6 +391,7 @@ export function StudioVirtualSpaceWhiteboard({
     ownerSessionId === selfSessionId ? null : authorNameOf(ownerSessionId);
 
   return <section
+    data-testid="space-whiteboard-panel"
     className={cn("studio-whiteboard", docked && "is-docked")}
     data-space-interactive="true"
     aria-label={bt("협업 화이트보드", "Collaboration whiteboard")}

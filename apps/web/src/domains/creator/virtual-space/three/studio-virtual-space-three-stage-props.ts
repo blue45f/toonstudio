@@ -1,12 +1,16 @@
+import type { StudioBuildPlacedFixture } from "../studio-virtual-space-build-mode-vitality";
+import type { StudioBuildPlacementEvent } from "../studio-virtual-space-build-placement";
+import type { StudioVirtualDecorationState } from "../studio-virtual-space-customization";
 import type {
   StudioVirtualSpaceEngineStatus,
   StudioVirtualSpaceNearbyNpc,
   StudioVirtualSpaceZoneChange,
 } from "../studio-virtual-space-engine-events";
 import type { StudioVirtualSpaceEngineBridge } from "../studio-virtual-space-engine-bridge";
+import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import type { StudioVirtualRuntimeMetrics } from "../studio-virtual-space-observability";
-import type { StudioVirtualSpaceEngineLocalState } from "../studio-virtual-space-stage-state";
 import type { StudioVirtualSpaceSnapshot } from "../studio-virtual-space-presence";
+import type { StudioVirtualSpaceEngineLocalState } from "../studio-virtual-space-stage-state";
 import type {
   StudioVirtualSpaceWorldManifest,
   StudioWorldInteractionDefinition,
@@ -15,7 +19,36 @@ import type {
 } from "../studio-virtual-space-world-manifest";
 import type { VirtualThreeTheme, VirtualThreeThemeId, VirtualThreeThemePreviewState } from "./themes/virtual-three-theme-types";
 
-/** 논리 공간·협업 계약과 독립 3D 테마만 받는다. 2D 테마·원화·장식 저장값은 받지 않는다. */
+export type StudioThreeCameraMode = "quarter" | "third-person" | "first-person";
+
+export interface StudioThreeLightingState {
+  readonly timeOfDayHours: number;
+  readonly interiorDimmer: number;
+  readonly colorTemperatureK?: number;
+}
+
+export interface StudioThreeSeatedActor {
+  readonly id: string;
+  readonly anchorPoint: StudioVirtualSpacePoint;
+  readonly facing: StudioVirtualSpaceFacing;
+}
+
+export interface StudioThreeVisemeFrame {
+  readonly aa: number;
+  readonly ih: number;
+  readonly ou: number;
+  readonly ee: number;
+  readonly oh: number;
+}
+
+export interface StudioThreePhotoCapture {
+  readonly dataUrl: string;
+  readonly label: string;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** 논리 공간·협업 계약과 독립 3D 테마·카메라·조명·협업 확장 props를 받는다. */
 export interface StudioVirtualSpaceThreeStageProps {
   readonly manifest: StudioVirtualSpaceWorldManifest;
   readonly snapshot: StudioVirtualSpaceSnapshot;
@@ -35,4 +68,19 @@ export interface StudioVirtualSpaceThreeStageProps {
   readonly onNearbyNpcsChange?: (npcs: readonly StudioVirtualSpaceNearbyNpc[]) => void;
   readonly onEngineStatusChange?: (status: StudioVirtualSpaceEngineStatus) => void;
   readonly onReturnTo2d?: () => void;
+  readonly decorations?: StudioVirtualDecorationState;
+  readonly placedFixtures?: readonly StudioBuildPlacedFixture[];
+  readonly onBuildPlacementEvent?: (event: StudioBuildPlacementEvent) => void;
+  readonly seatedActors?: readonly StudioThreeSeatedActor[];
+  readonly onPeerSelect?: (sessionId: string) => void;
+  readonly onGhostModeChange?: (enabled: boolean) => void;
+  readonly onStuckChange?: (stuck: boolean) => void;
+  readonly lightingState?: StudioThreeLightingState;
+  readonly cameraMode?: StudioThreeCameraMode;
+  readonly onCameraModeChange?: (mode: StudioThreeCameraMode) => void;
+  readonly visemeByActorId?: Readonly<Record<string, StudioThreeVisemeFrame>>;
+  readonly liveScreenStream?: MediaStream | null;
+  readonly onPhotoCaptureToCut?: (capture: StudioThreePhotoCapture) => void;
+  readonly proximityRadiusPx?: number;
+  readonly ghostMode?: boolean;
 }

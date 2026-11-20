@@ -1,4 +1,4 @@
-import { ArrowLeft, Box, Layers, Lock, Search, Sparkles } from "lucide-react";
+import { Activity, ArrowLeft, Box, Layers, Lock, Search } from "lucide-react";
 import { memo, type CSSProperties } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -68,13 +68,6 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
       <Lock size={13} aria-hidden />{bt("프라이빗", "Private")}
     </span> : null}
     {pulse && !compact ? (() => {
-      const dims = pulse.dimensions;
-      const dimSummary = dims
-        ? ` [오피스 ${dims.officePresence}·딥워크 ${dims.deepWorkFlow}·협업 ${dims.reviewCollaboration}·웰니스 ${dims.wellnessVitality}·미학 ${dims.atelierAesthetics}·리듬 ${dims.autonomousRhythm}·추진 ${dims.creativeVelocity}]`
-        : "";
-      const dimData = dims
-        ? `${dims.officePresence},${dims.deepWorkFlow},${dims.reviewCollaboration},${dims.wellnessVitality},${dims.atelierAesthetics},${dims.autonomousRhythm},${dims.creativeVelocity}`
-        : undefined;
       const workBadge = bt(
         pulse.workStatusBadgeKo ?? pulse.quickActionLabelKo,
         pulse.workStatusBadgeEn ?? pulse.quickActionLabelEn,
@@ -86,15 +79,11 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
           className="space-location__pulse"
           data-tempo={pulse.tempo}
           data-atelier-pulse-tempo={pulse.tempo}
-          data-omni-tier={pulse.omniTier}
-          data-omni-score={pulse.omniScore}
-          data-quantum-score={pulse.quantumScore}
-          data-hyper-dimensions={dimData}
           onClick={onQuickAction}
-          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${workBadge}${dimSummary}${routineHint} · ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
+          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${workBadge}${routineHint} · ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
           aria-label={`${bt(pulse.headlineKo, pulse.headlineEn)} (${workBadge}) — ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
         >
-          <Sparkles size={13} aria-hidden />
+          <Activity size={13} aria-hidden />
           <span className="space-location__pulse-label">{bt(pulse.headlineKo, pulse.headlineEn)}</span>
           <strong className="space-location__pulse-score">{workBadge}</strong>
         </button>
@@ -103,13 +92,9 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
           className="space-location__pulse"
           data-tempo={pulse.tempo}
           data-atelier-pulse-tempo={pulse.tempo}
-          data-omni-tier={pulse.omniTier}
-          data-omni-score={pulse.omniScore}
-          data-quantum-score={pulse.quantumScore}
-          data-hyper-dimensions={dimData}
-          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${workBadge}${dimSummary}${routineHint}`}
+          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${workBadge}${routineHint}`}
         >
-          <Sparkles size={13} aria-hidden />
+          <Activity size={13} aria-hidden />
           <span className="space-location__pulse-label">{bt(pulse.headlineKo, pulse.headlineEn)}</span>
           <strong className="space-location__pulse-score">{workBadge}</strong>
         </span>

@@ -1,11 +1,16 @@
 import {
-  REALTIME_CHANNELS,
   REALTIME_TICKET_PROTOCOL_PREFIX,
   REALTIME_WEBSOCKET_PROTOCOL,
-  isRealtimeChannel,
   isRealtimeId,
-  type RealtimeChannel,
 } from "./protocol";
+import {
+  REALTIME_TICKET_SCOPES,
+  isRealtimeSpaceRole,
+  isRealtimeTicketScope,
+  validateTicketRoleScopeConsistency,
+  type RealtimeSpaceRole,
+  type RealtimeTicketScope,
+} from "./space-protocol";
 
 export const REALTIME_TICKET_VERSION =
   "toonstudio.realtime-ticket.v1" as const;
@@ -30,7 +35,8 @@ export interface RealtimeTicketClaims {
   readonly roomId: string;
   readonly clientId: string;
   readonly origin: string;
-  readonly scopes: readonly RealtimeChannel[];
+  readonly scopes: readonly RealtimeTicketScope[];
+  readonly role?: RealtimeSpaceRole;
   readonly nonce: string;
   readonly issuedAtMs: number;
   readonly expiresAtMs: number;
@@ -71,13 +77,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function hasExactKeys(
   value: Record<string, unknown>,
-  expected: readonly string[],
+  required: readonly string[],
+  optional: readonly string[] = [],
 ): boolean {
-  const expectedSet = new Set(expected);
+  const permitted = new Set([...required, ...optional]);
   return (
-    Object.keys(value).length === expected.length &&
-    expected.every((key) => Object.hasOwn(value, key)) &&
-    Object.keys(value).every((key) => expectedSet.has(key))
+    required.every((key) => Object.hasOwn(value, key)) &&
+    Object.keys(value).every((key) => permitted.has(key))
   );
 }
 
@@ -91,12 +97,12 @@ function isSafeTimestamp(value: unknown): value is number {
 
 function isExactScopeArray(
   value: unknown,
-): value is readonly RealtimeChannel[] {
+): value is readonly RealtimeTicketScope[] {
   return (
     Array.isArray(value) &&
     value.length >= 1 &&
-    value.length <= REALTIME_CHANNELS.length &&
-    value.every(isRealtimeChannel) &&
+    value.length <= REALTIME_TICKET_SCOPES.length &&
+    value.every(isRealtimeTicketScope) &&
     new Set(value).size === value.length
   );
 }
@@ -124,22 +130,10 @@ export function parseRealtimeTicketClaims(
   if (
     !isRecord(value) ||
     !hasExactKeys(value, [
-      "version",
-      "issuer",
-      "audience",
-      "subject",
-      "sessionVersion",
-      "authorizationEpochMs",
-      "workId",
-      "roomId",
-      "clientId",
-      "origin",
-      "scopes",
-      "nonce",
-      "issuedAtMs",
-      "expiresAtMs",
-      "sessionExpiresAtMs",
-    ]) ||
+      "version", "issuer", "audience", "subject", "sessionVersion",
+      "authorizationEpochMs", "workId", "roomId", "clientId", "origin",
+      "scopes", "nonce", "issuedAtMs", "expiresAtMs", "sessionExpiresAtMs",
+    ], ["role"]) ||
     value.version !== REALTIME_TICKET_VERSION ||
     !isRealtimeId(value.issuer) ||
     !isRealtimeId(value.audience) ||
@@ -154,6 +148,8 @@ export function parseRealtimeTicketClaims(
     !isRealtimeId(value.clientId) ||
     !isHttpsOrigin(value.origin) ||
     !isExactScopeArray(value.scopes) ||
+    (value.role !== undefined && !isRealtimeSpaceRole(value.role)) ||
+    !validateTicketRoleScopeConsistency(value.scopes, value.role) ||
     typeof value.nonce !== "string" ||
     !NONCE_PATTERN.test(value.nonce) ||
     !isSafeTimestamp(value.issuedAtMs) ||
@@ -185,11 +181,9 @@ function canonicalize(value: unknown): string {
   }
   const record = value as Record<string, unknown>;
   return `{${Object.keys(record)
+    .filter((key) => record[key] !== undefined)
     .sort()
-    .map(
-      (key) =>
-        `${JSON.stringify(key)}:${canonicalize(record[key])}`,
-    )
+    .map((key) => `${JSON.stringify(key)}:${canonicalize(record[key])}`)
     .join(",")}}`;
 }
 

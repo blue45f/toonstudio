@@ -103,6 +103,12 @@ export interface StudioVirtualSpacePresenceState extends StudioVirtualSpacePoint
    * 더 풍부한 상태를 전달하는 optional 필드. 구버전 클라이언트는 무시한다.
    */
   readonly userStatus?: StudioUserStatus;
+  /** 3D Hero VRM 1.0 모델 ID (예: "hero-v1-romance-female"). 구버전 클라이언트는 무시한다. */
+  readonly vrmModelId?: string;
+  /** toonstudio-kit-v2 손포즈·VRMA 제스처 ID. 구버전 클라이언트는 무시한다. */
+  readonly poseGestureId?: string;
+  /** 실시간 음성 립싱크 강도(0..1 양자화). 구버전 클라이언트는 무시한다. */
+  readonly visemeLevel?: number;
 }
 
 export interface StudioVirtualSpacePeer {

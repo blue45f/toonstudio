@@ -318,6 +318,20 @@ export interface StudioVirtualSpacePresenceExtras {
   readonly bubble?: string;
   readonly userStatus?: StudioUserStatus;
   readonly typing?: boolean;
+  readonly vrmModelId?: string;
+  readonly poseGestureId?: string;
+  readonly visemeLevel?: number;
+}
+
+const SAFE_MODEL_OR_GESTURE_ID = /^[a-z0-9][a-z0-9_-]{0,63}$/iu;
+
+export function parseStudioPresenceModelId(value: unknown): string | undefined {
+  return typeof value === "string" && SAFE_MODEL_OR_GESTURE_ID.test(value) ? value : undefined;
+}
+
+export function parseStudioPresenceVisemeLevel(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  return Math.round(Math.max(0, Math.min(1, value)) * 100) / 100;
 }
 
 /**
@@ -369,6 +383,9 @@ export function runtimePresenceState(
     ...(extras.bubble ? { bubble: extras.bubble } : {}),
     ...(extras.userStatus ? { userStatus: extras.userStatus } : {}),
     ...(extras.typing ? { typing: true } : {}),
+    ...(extras.vrmModelId ? { vrmModelId: extras.vrmModelId } : {}),
+    ...(extras.poseGestureId ? { poseGestureId: extras.poseGestureId } : {}),
+    ...(extras.visemeLevel !== undefined ? { visemeLevel: extras.visemeLevel } : {}),
   });
 }
 
@@ -553,6 +570,18 @@ export function parseStudioVirtualSpacePacket(raw: string): StudioVirtualSpacePa
     ...(state.typing !== undefined ? (() => {
       const typing = parseStudioPresenceTyping(state.typing);
       return typing ? { typing } : {};
+    })() : {}),
+    ...(state.vrmModelId !== undefined ? (() => {
+      const vrmModelId = parseStudioPresenceModelId(state.vrmModelId);
+      return vrmModelId ? { vrmModelId } : {};
+    })() : {}),
+    ...(state.poseGestureId !== undefined ? (() => {
+      const poseGestureId = parseStudioPresenceModelId(state.poseGestureId);
+      return poseGestureId ? { poseGestureId } : {};
+    })() : {}),
+    ...(state.visemeLevel !== undefined ? (() => {
+      const visemeLevel = parseStudioPresenceVisemeLevel(state.visemeLevel);
+      return visemeLevel !== undefined ? { visemeLevel } : {};
     })() : {}),
   };
   return {

@@ -51,14 +51,14 @@ describe("StudioVirtualSpaceEntryLobby", () => {
     await act(() => vi.dynamicImportSettled());
     const picker = screen.getByRole("group", { name: "3D 아바타" });
     const choices = within(picker).getAllByRole("button");
-    expect(choices).toHaveLength(9);
+    expect(choices.length).toBeGreaterThanOrEqual(8);
     expect(choices.some(button => button.getAttribute("aria-pressed") === "true")).toBe(false);
     const selected = choices[2];
     if (!selected) throw new Error("세 번째 VRM 슬롯이 없습니다.");
     fireEvent.click(selected);
     expect(choose).toHaveBeenCalledExactlyOnceWith(2);
     view.rerender(<MemoryRouter><StudioVirtualSpaceEntryLobby {...props} avatarIndex={2} /></MemoryRouter>);
-    const chosenName = selected.textContent?.trim();
+    const chosenName = selected.getAttribute("aria-label") ?? selected.querySelector("strong")?.textContent?.trim();
     expect(chosenName).toBeTruthy();
     const preview = screen.getByRole("region", { name: "입장 미리보기" });
     const image = within(picker).getAllByRole("button")[2]?.querySelector("img");

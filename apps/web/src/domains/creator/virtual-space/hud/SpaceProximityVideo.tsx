@@ -1,9 +1,11 @@
-import { Camera, CameraOff, Mic, MicOff, MonitorUp, PhoneOff, Video } from "lucide-react";
-import { memo, useEffect, useRef, useState } from "react";
+import { Camera, CameraOff, Maximize2, Mic, MicOff, MonitorUp, PhoneOff, Video } from "lucide-react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import type { HuddlePeer, HuddleSnapshot } from "../../live/huddle/studio-p2p-huddle-controller";
+import { StudioVirtualSpaceSpatialAudioEngine, type SpatialAudioListenerPose } from "../audio/studio-virtual-space-spatial-panner";
+import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import { SPACE_PROXIMITY_MEDIA_LIMIT } from "./space-proximity-media";
 import type { SpaceProximityMediaPhase } from "./use-space-proximity-media";
 
@@ -95,7 +97,7 @@ function peerState(peer: HuddlePeer): { readonly ko: string; readonly en: string
  * 연결 실패는 숨기지 않고 이유(회사망·일부 모바일망의 P2P 차단, 중계(TURN) 서버는 준비된 환경에서만 거침)를 그대로 알린다.
  */
 export const SpaceProximityVideo = memo(function SpaceProximityVideo({ phase, snapshot, busy, scopeNames, selfName, waitingReason,
-  onToggleCamera, onToggleMic, onToggleScreen, onStop }: {
+  listenerPose, peerPointsById, onToggleCamera, onToggleMic, onToggleScreen, onStop, onOpenTheater }: {
   readonly phase: SpaceProximityMediaPhase;
   readonly snapshot: HuddleSnapshot | null;
   readonly busy: boolean;
@@ -104,14 +106,62 @@ export const SpaceProximityVideo = memo(function SpaceProximityVideo({ phase, sn
   readonly selfName: string;
   /** 켜 두었지만 지금 연결할 수 없는 이유. */
   readonly waitingReason: string | null;
+  /** WebAudio HRTF 공간 오디오용 청자 위치 및 카메라 방향. */
+  readonly listenerPose?: SpatialAudioListenerPose | null;
+  /** WebAudio HRTF 공간 오디오용 피어 위치 맵. */
+  readonly peerPointsById?: ReadonlyMap<string, StudioVirtualSpacePoint>;
   readonly onToggleCamera: () => void;
   readonly onToggleMic: () => void;
   readonly onToggleScreen: () => void;
   readonly onStop: () => void;
+  readonly onOpenTheater?: () => void;
 }) {
   const bt = useBilingual("SpaceProximityVideo");
-  const peers = new Map((snapshot?.peers ?? []).map((peer) => [peer.participant.sessionId, peer] as const));
-  const shown = scopeNames.slice(0, SPACE_PROXIMITY_MEDIA_LIMIT);
+  const spatialEngineRef = useRef<StudioVirtualSpaceSpatialAudioEngine | null>(null);
+  const [hrtfActiveIds, setHrtfActiveIds] = useState<ReadonlySet<string>>(() => new Set());
+  const peers = useMemo(
+    () => new Map((snapshot?.peers ?? []).map((peer) => [peer.participant.sessionId, peer] as const)),
+    [snapshot?.peers],
+  );
+  const shown = useMemo(
+    () => scopeNames.slice(0, SPACE_PROXIMITY_MEDIA_LIMIT),
+    [scopeNames],
+  );
+  const hasScreenShare = Boolean(snapshot?.sharing || (snapshot?.peers ?? []).some((peer) => peer.sharing));
+
+  // WebAudio HRTF PannerNode 공간 음향 동기화(지원 브라우저에서 좌우 방향성·거리감 적용).
+  useEffect(() => {
+    if (phase !== "live" || !listenerPose || !peerPointsById) {
+      spatialEngineRef.current?.dispose();
+      spatialEngineRef.current = null;
+      setHrtfActiveIds((prev) => (prev.size === 0 ? prev : new Set()));
+      return undefined;
+    }
+    const engine = spatialEngineRef.current ?? new StudioVirtualSpaceSpatialAudioEngine();
+    spatialEngineRef.current = engine;
+    engine.unlock();
+    engine.updateListener(listenerPose);
+    const active = new Set<string>();
+    for (const item of shown) {
+      const peer = peers.get(item.id);
+      const point = peerPointsById.get(item.id);
+      if (peer?.stream && point && engine.attachPeerStream(item.id, peer.stream)) {
+        engine.updatePeerPosition(item.id, point, item.gain ?? 1, false);
+        active.add(item.id);
+      } else {
+        engine.detachPeer(item.id);
+      }
+    }
+    setHrtfActiveIds((prev) => (
+      prev.size === active.size && [...active].every((id) => prev.has(id)) ? prev : active
+    ));
+    return undefined;
+  }, [listenerPose, peerPointsById, peers, phase, shown]);
+
+  useEffect(() => () => {
+    spatialEngineRef.current?.dispose();
+    spatialEngineRef.current = null;
+  }, []);
   // 범위에서 나간 카드는 바로 지우지 않고 잠깐 옅어지게 남겨 둔다(퇴장 전이).
   const shownRef = useRef<readonly { readonly id: string; readonly name: string }[]>([]);
   const previousShownRef = useRef<readonly { readonly id: string; readonly name: string }[]>([]);
@@ -157,7 +207,7 @@ export const SpaceProximityVideo = memo(function SpaceProximityVideo({ phase, sn
       {shown.map((item) => {
         const peer = peers.get(item.id);
         return peer
-          ? <SpaceVideoBubble key={item.id} name={item.name} stream={peer.stream} visual={peer.camera || peer.sharing} muted={false} state={peerState(peer)} gain={item.gain} />
+          ? <SpaceVideoBubble key={item.id} name={item.name} stream={peer.stream} visual={peer.camera || peer.sharing} muted={hrtfActiveIds.has(item.id)} state={peerState(peer)} gain={item.gain} />
           : <SpaceVideoBubble key={item.id} name={item.name} stream={null} visual={false} muted gain={item.gain}
             state={{ ko: "근접 영상을 켜지 않았어요", en: "Hasn't turned on proximity video", tone: "info" }} />;
       })}
@@ -178,6 +228,11 @@ export const SpaceProximityVideo = memo(function SpaceProximityVideo({ phase, sn
           aria-label={snapshot?.sharing ? bt("화면 공유 중지", "Stop sharing") : bt("근처에 화면 공유하기", "Share screen nearby")} onClick={onToggleScreen}>
           <MonitorUp size={17} aria-hidden />
         </button>
+        {hasScreenShare && onOpenTheater ? (
+          <button type="button" className="space-icon-button" aria-label={bt("공유 화면 크게 보기", "Expand shared screen")} onClick={onOpenTheater}>
+            <Maximize2 size={17} aria-hidden />
+          </button>
+        ) : null}
         <button type="button" className="space-icon-button" data-tone="danger" aria-label={bt("가까이 가면 영상 끄기", "Turn off proximity video")} onClick={onStop}>
           <PhoneOff size={17} aria-hidden />
         </button>

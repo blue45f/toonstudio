@@ -676,3 +676,46 @@ export function findClickedWorldTarget(
   return null;
 }
 
+export interface StudioThreePhotoCaptureResult {
+  readonly dataUrl: string;
+  readonly label: string;
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * 포토부스 스냅샷을 2D 원고 컷 전송용 데이터 URL로 캡처한다.
+ * `preserveDrawingBuffer`가 꺼져 있어도 캡처 직전 1프레임을 강제 렌더해 빈 프레임을 방지한다.
+ */
+export function captureStudioThreeCanvasToCut(input: {
+  readonly renderer: Pick<THREE.WebGLRenderer, "render" | "domElement">;
+  readonly scene: THREE.Scene;
+  readonly camera: THREE.Camera;
+  readonly label?: string;
+  readonly mimeType?: "image/png" | "image/webp";
+  readonly quality?: number;
+}): StudioThreePhotoCaptureResult | null {
+  const canvas = input.renderer.domElement;
+  if (!canvas || typeof canvas.toDataURL !== "function") return null;
+  const width = canvas.width || canvas.clientWidth || 0;
+  const height = canvas.height || canvas.clientHeight || 0;
+  if (width <= 0 || height <= 0) return null;
+
+  try {
+    input.renderer.render(input.scene, input.camera);
+    const mimeType = input.mimeType ?? "image/png";
+    const dataUrl = input.quality !== undefined
+      ? canvas.toDataURL(mimeType, input.quality)
+      : canvas.toDataURL(mimeType);
+    if (!dataUrl || !dataUrl.startsWith("data:image/")) return null;
+    return {
+      dataUrl,
+      label: input.label?.trim() || "3D 스튜디오 포토부스 컷",
+      width,
+      height,
+    };
+  } catch {
+    return null;
+  }
+}
+

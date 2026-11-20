@@ -93,7 +93,12 @@ export class StudioVirtualSpaceAcousticPolicy implements StudioAcousticPolicyPor
   private readonly candidates = new Map<string, Candidate>();
   private readonly listeners = new Set<() => void>();
   constructor(world: StudioAcousticWorld, private readonly selfId: string,
-    private readonly dependencies: { now?: () => number; wallNow?: () => number } = {}) {
+    private readonly dependencies: {
+      now?: () => number;
+      wallNow?: () => number;
+      /** Authoritative private-room / door acoustic admission adapter (fail-closed if omitted). */
+      privateZoneAuthority?: (zoneId: string, doorId: string | undefined, memberIds: readonly string[]) => boolean;
+    } = {}) {
     this.world = Object.freeze({ ...world, rooms: Object.freeze(world.rooms.map((room) => Object.freeze({ ...room }))),
       acousticZones: Array.isArray(world.acousticZones) ? Object.freeze(world.acousticZones.map((zone) => Object.freeze({ ...zone }))) : undefined });
     this.valid = Boolean(world.worldId && /^[a-f0-9]{64}$/u.test(world.contentRevision)
@@ -137,7 +142,10 @@ export class StudioVirtualSpaceAcousticPolicy implements StudioAcousticPolicyPor
     if (zones.some((zone) => !zone)) return deny("unknown-zone");
     const zone = zones[0]!;
     if (zones.some((item) => item!.id !== zone.id) || (expectedZoneId !== undefined && expectedZoneId !== zone.id)) return deny("different-zone");
-    if (zone.policy !== "public" || zone.doorId !== undefined) return deny("authority-required");
+    if (zone.policy !== "public" || zone.doorId !== undefined) {
+      const authorized = this.dependencies.privateZoneAuthority?.(zone.id, zone.doorId, ids) === true;
+      if (!authorized) return deny("authority-required");
+    }
     if (ids.length > 2 && phase === "enter") {
       for (const id of ids) {
         if (id === this.selfId) continue;

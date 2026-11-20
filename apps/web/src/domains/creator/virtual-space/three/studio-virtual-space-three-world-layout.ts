@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 import { CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
-import { studioWorldInteractions, type StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
+import { studioWorldInteractions, studioWorldSpawn, type StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
 import { isStudioThreeCampusManifest } from "./studio-virtual-space-three-generated-assets";
 import { buildStudioThreeCampusArchitecture, STUDIO_THREE_SCALE, worldToThree, type StudioThreeWorkstationRing } from "./studio-virtual-space-three-scene";
 import { createStudioThreeFloorMaterial, createStudioThreeOfficeMural, createStudioThreeSculpturalMural, disposeStudioThreeSurfaceNodes, studioThreeRoomTone, type StudioThreeMural } from "./studio-virtual-space-three-surface-art";
@@ -9,12 +9,16 @@ import { buildStudioThreeEnvironmentFurniture } from "./studio-virtual-space-thr
 import { createStudioThreeDeferredArtLoader, type StudioThreeArtTextureLoader } from "./studio-virtual-space-three-deferred-art";
 import { studioThreeSurfaceRecipe } from "./studio-virtual-space-three-surface-recipes";
 import { DEFAULT_VIRTUAL_THREE_THEME } from "./themes/virtual-three-theme-catalog";
+import { findVirtualThreeHeroBgPreset, type VirtualThreeHeroBgRoomPreset } from "./themes/virtual-three-hero-bg-presets";
 import type { VirtualThreeTheme } from "./themes/virtual-three-theme-types";
 
 export interface StudioThreeWorldArchitecture {
   readonly floorMesh: THREE.Mesh;
   readonly waterMeshes: readonly THREE.Mesh[];
   readonly workstationRings: readonly StudioThreeWorkstationRing[];
+  readonly reviewScreenMesh?: THREE.Mesh;
+  readonly heroPreset?: VirtualThreeHeroBgRoomPreset;
+  readonly heroRootOrigin?: readonly [number, number, number];
   readonly loadDeferredArt: (onAssetError?: (url: string) => void, loadTexture?: StudioThreeArtTextureLoader, signal?: AbortSignal) => Promise<void>;
   readonly dispose: () => void;
 }
@@ -33,6 +37,87 @@ export function buildStudioThreeWorldArchitecture(scene: THREE.Scene, manifest: 
       art.dispose();
       disposeStudioThreeSurfaceNodes(owned);
     } };
+  }
+  if (theme.kind === "hero-scene") {
+    const preset = findVirtualThreeHeroBgPreset(theme.id) ?? findVirtualThreeHeroBgPreset(theme.heroSlug);
+    const owned: THREE.Object3D[] = [];
+    const addHero = (node: THREE.Object3D) => { owned.push(node); scene.add(node); };
+    const spawnAnchor = worldToThree(studioWorldSpawn(manifest).point, 0);
+    const spawnOffset = preset?.spawnMeters ?? ([0, 0, 0] as const);
+    const rootOrigin: readonly [number, number, number] = [
+      spawnAnchor.x - spawnOffset[0],
+      0,
+      spawnAnchor.z - spawnOffset[2],
+    ];
+
+    // 클릭 이동 레이캐스트용 투명 바닥 충돌 평면 (Hero GLB 바닥을 가리지 않으면서 전체 룸 영역을 커버)
+    const floorWidth = Math.max(manifest.width * STUDIO_THREE_SCALE, (preset?.entry.desktopAsset.bounds[0] ?? 16) + 8);
+    const floorDepth = Math.max(manifest.height * STUDIO_THREE_SCALE, (preset?.entry.desktopAsset.bounds[2] ?? 16) + 8);
+    const floorGeo = new THREE.PlaneGeometry(floorWidth, floorDepth);
+    floorGeo.rotateX(-Math.PI / 2);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.001,
+      depthWrite: false,
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.name = "hero-scene-walkable-floor";
+    floorMesh.position.set(rootOrigin[0], 0.002, rootOrigin[2]);
+    floorMesh.receiveShadow = true;
+    addHero(floorMesh);
+
+    // Hero 룸 내 3D 리뷰 시어터 월 스크린 (liveScreenStream VideoTexture 투사용)
+    const screenSpec = preset?.reviewScreen ?? {
+      positionMeters: [0, 1.8, -3.2] as const,
+      rotationY: 0,
+      widthMeters: 2.8,
+      heightMeters: 1.58,
+    };
+    const screenGroup = new THREE.Group();
+    screenGroup.name = `hero-scene-review-screen-rig-${theme.heroSlug}`;
+    screenGroup.position.set(
+      rootOrigin[0] + screenSpec.positionMeters[0],
+      screenSpec.positionMeters[1],
+      rootOrigin[2] + screenSpec.positionMeters[2],
+    );
+    screenGroup.rotation.y = screenSpec.rotationY;
+
+    const bezel = new THREE.Mesh(
+      new THREE.BoxGeometry(screenSpec.widthMeters + 0.14, screenSpec.heightMeters + 0.14, 0.07),
+      new THREE.MeshStandardMaterial({ color: 0x1e2436, roughness: 0.42, metalness: 0.35 }),
+    );
+    bezel.name = "hero-scene-review-screen-bezel";
+    bezel.castShadow = true;
+    bezel.receiveShadow = true;
+    screenGroup.add(bezel);
+
+    const reviewScreenMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(screenSpec.widthMeters, screenSpec.heightMeters),
+      new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.3, metalness: 0.08 }),
+    );
+    reviewScreenMesh.name = "hero-scene-review-screen";
+    reviewScreenMesh.position.z = 0.042;
+    screenGroup.add(reviewScreenMesh);
+    addHero(screenGroup);
+
+    const art = createStudioThreeDeferredArtLoader([]);
+    let disposed = false;
+    return {
+      floorMesh,
+      waterMeshes: [],
+      workstationRings: [],
+      reviewScreenMesh,
+      ...(preset ? { heroPreset: preset } : {}),
+      heroRootOrigin: rootOrigin,
+      loadDeferredArt: art.load,
+      dispose() {
+        if (disposed) return;
+        disposed = true;
+        art.dispose();
+        disposeStudioThreeSurfaceNodes(owned);
+      },
+    };
   }
   const palette = studioThreeSurfaceRecipe(theme, manifest.rooms[0]?.id);
   const hqFallbackRoomId = manifest.rooms.find((room) => room.id.startsWith("hq-"))?.id;

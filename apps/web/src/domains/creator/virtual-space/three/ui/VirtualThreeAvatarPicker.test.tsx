@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
+import { STUDIO_VRM_HERO_V1_ENTRIES } from "../../../vrm/studio-vrm-hero-v1-catalog-entries";
 import { BUNDLED_VRM_RIGHTS_BLOCKS, SAMPLE_VRMS } from "../../../vrm/vrm-library";
 import { isStudioVrmProductionThumbnailUrl } from "../../../vrm/studio-vrm-thumbnail-quality";
 import { STUDIO_THREE_VRM_URLS } from "../studio-virtual-space-three-scene";
@@ -28,12 +29,18 @@ function nameFor(index: number): string {
 }
 
 describe("독립 3D 아바타 선택기", () => {
-  it("실제 Scene의 9개 슬롯 이름과 검증된 thumbnail만 쓰며 렌더만으로 선택을 바꾸지 않는다", () => {
+  it("Hero VRM 1.0 8종을 최우선 배치하고 전체 17개 슬롯의 이름·data-testid·thumbnail만 쓴다", () => {
     const onSelect = vi.fn();
+    const total = STUDIO_THREE_VRM_URLS.length;
     const view = render(<VirtualThreeAvatarPicker avatarIndex={0} onSelect={onSelect} />);
     const group = screen.getByRole("group", { name: "3D 아바타" });
-    expect(within(group).getAllByRole("button")).toHaveLength(9);
-    for (let index = 0; index < 9; index += 1) {
+    expect(within(group).getAllByRole("button")).toHaveLength(total);
+    const heroGroup = screen.getByTestId("three-avatar-group-hero");
+    expect(within(heroGroup).getAllByRole("button")).toHaveLength(STUDIO_VRM_HERO_V1_ENTRIES.length);
+    for (const heroEntry of STUDIO_VRM_HERO_V1_ENTRIES) {
+      expect(screen.getByTestId(`three-avatar-option-hero-v1-${heroEntry.archetypeId}`)).toBeTruthy();
+    }
+    for (let index = 0; index < total; index += 1) {
       const button = within(group).getByRole("button", { name: nameFor(index) });
       expect(button.getAttribute("data-three-avatar-index")).toBe(String(index));
       expect(button.getAttribute("aria-pressed")).toBe(String(index === 0));
@@ -46,32 +53,36 @@ describe("독립 3D 아바타 선택기", () => {
 
   it("선택 callback은 필터된 화면 순번이 아닌 기존 avatarIndex 슬롯을 전달한다", () => {
     const onSelect = vi.fn();
+    const total = STUDIO_THREE_VRM_URLS.length;
+    const lastIndex = total - 1;
     const first = STUDIO_THREE_VRM_URLS[0];
     if (!first) throw new Error("첫 3D 모델이 없습니다.");
     gate.denied.add(first);
-    render(<VirtualThreeAvatarPicker avatarIndex={8} onSelect={onSelect} />);
-    expect(screen.getAllByRole("button")).toHaveLength(8);
-    const last = screen.getByRole("button", { name: nameFor(8) });
+    render(<VirtualThreeAvatarPicker avatarIndex={lastIndex} onSelect={onSelect} />);
+    expect(screen.getAllByRole("button")).toHaveLength(total - 1);
+    const last = screen.getByRole("button", { name: nameFor(lastIndex) });
     expect(last.getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(last);
-    expect(onSelect).toHaveBeenCalledExactlyOnceWith(8);
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith(lastIndex);
   });
 
   it("기존 modulo avatarIndex 표시를 따르되 명시적 선택만 기존 onSelect로 보낸다", () => {
     const onSelect = vi.fn();
-    const view = render(<VirtualThreeAvatarPicker avatarIndex={9} onSelect={onSelect} />);
+    const total = STUDIO_THREE_VRM_URLS.length;
+    const view = render(<VirtualThreeAvatarPicker avatarIndex={total} onSelect={onSelect} />);
     expect(screen.getByRole("button", { name: nameFor(0) }).getAttribute("aria-pressed")).toBe("true");
     view.rerender(<VirtualThreeAvatarPicker avatarIndex={-1} onSelect={onSelect} />);
-    expect(screen.getByRole("button", { name: nameFor(8) }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: nameFor(total - 1) }).getAttribute("aria-pressed")).toBe("true");
     expect(onSelect).not.toHaveBeenCalled();
   });
 
   it("권리 blocked·조건부·외부 모델을 추가하지 않고 클릭 시점의 gate도 다시 확인한다", () => {
     const onSelect = vi.fn();
+    const total = STUDIO_THREE_VRM_URLS.length;
     for (const blocked of BUNDLED_VRM_RIGHTS_BLOCKS) gate.extraUrls.add(blocked.url);
     gate.extraUrls.add("/vrm/AliciaSolid.vrm"); gate.extraUrls.add("https://example.com/avatar.vrm");
     render(<VirtualThreeAvatarPicker avatarIndex={0} onSelect={onSelect} />);
-    expect(screen.getAllByRole("button")).toHaveLength(9);
+    expect(screen.getAllByRole("button")).toHaveLength(total);
     const first = STUDIO_THREE_VRM_URLS[0];
     if (!first) throw new Error("첫 3D 모델이 없습니다.");
     gate.denied.add(first);
