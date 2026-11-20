@@ -5,12 +5,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StudioWorkflowPacksPanel } from "./StudioWebtoonAssistantWorkflowViews";
 import { BUILTIN_STUDIO_WORKFLOW_PACKS, type StudioWorkflowPack } from "./studio-workflow-pack";
 
-describe("StudioWorkflowPacksPanel Wave 7 remediation & cross-domain labels", () => {
+describe("StudioWorkflowPacksPanel Wave 7 & 16 remediation, cross-domain labels & settlement simulator", () => {
   beforeEach(() => {
     window.localStorage.clear();
   });
 
-  it("renders human-readable BG3D/brush preset names and remediates a CC-BY-NC pack in one click", () => {
+  it("renders human-readable BG3D/brush preset names, embedded settlement simulator, and remediates a CC-BY-NC pack in one click", () => {
     const onApplyPack = vi.fn();
     render(
       <StudioWorkflowPacksPanel
@@ -30,6 +30,9 @@ describe("StudioWorkflowPacksPanel Wave 7 remediation & cross-domain labels", ()
     // Builtin packs show resolved Korean BG3D lighting & 2D brush labels
     expect(screen.getByText("3D:궁전 골든아워 라이팅")).toBeTruthy();
     expect(screen.getByText("브러시:크리스프 G펜 (선화)")).toBeTruthy();
+
+    // Embedded commercial settlement & MG underwriting widget is mounted
+    expect(screen.getByTestId("studio-commercial-settlement-widget")).toBeTruthy();
 
     // Import a custom pack containing a CC-BY-NC asset
     const ncPack: StudioWorkflowPack = {
