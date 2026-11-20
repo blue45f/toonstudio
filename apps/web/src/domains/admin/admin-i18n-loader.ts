@@ -52,6 +52,9 @@ registerI18nLocaleEntries("en", paidOperationsI18n.en);
 registerI18nEnglishSourceEntries(paidOperationsI18n.en);
 
 registerI18nLocaleEntries("ko", {
+  "admin.productionChanges.title": "제작 변경·충돌·검증",
+  "admin.productionChanges.description": "제작 변경 요청의 승인, 로컬·원격 충돌 해결, 적용 기록과 사후 검증 증빙을 관리합니다. 코드 수정·외부 배포·운영 데이터 변경은 실행하지 않습니다.",
+  "admin.productionChanges.open": "제작 변경 보드 열기",
   "admin.workspace.title": "사업계획·운영 통합 작업실",
   "admin.workspace.description": "사업계획, 클라우드, NestJS, 의존성·CI, AI 운영 자료의 근거와 문서 버전을 함께 관리합니다. 제출 전 점검과 승인 대기 항목을 확인하세요.",
   "admin.workspace.open": "통합 작업실 열기",
@@ -67,6 +70,9 @@ registerI18nLocaleEntries("ko", {
 });
 
 registerI18nLocaleEntries("en", {
+  "admin.productionChanges.title": "Production changes & verification",
+  "admin.productionChanges.description": "Manage production change approvals, local and remote conflicts, application records and verification evidence. This board does not modify code, deploy or change production data.",
+  "admin.productionChanges.open": "Open production change board",
   "admin.workspace.title": "Business and operations workspace",
   "admin.workspace.description": "Manage evidence and document versions for business planning, cloud, NestJS, dependencies and CI, and AI operations. Review submission checks and pending approvals.",
   "admin.workspace.open": "Open integrated workspace",

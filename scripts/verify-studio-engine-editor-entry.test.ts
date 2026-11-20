@@ -24,6 +24,7 @@ describe("production engine verifier entry", () => {
   });
 
   it.each([
+    "verify-studio-brushes.mts",
     "verify-studio-brush-media.mts",
     "verify-studio-brush-latency.mts",
     "verify-studio-hokusai-live-integration.mts",
@@ -49,6 +50,12 @@ describe("production engine verifier entry", () => {
       expect(source).toContain("await waitForStudioDrawingReady(page");
       expect(source).toContain('name: brush.operation === "erase" ? "지우개 선택" : "브러시 전체 라이브러리"');
       expect(source).toContain('await catalog.waitFor({ state: "detached" })');
+    } else if (file === "verify-studio-brushes.mts") {
+      expect(source).toContain("await waitForStudioDrawingReady(page");
+      // 공통 진입이 반환한 실제 카탈로그를 사용하되 단일 세션·창 검증은 유지한다.
+      expect(source).toContain("const catalog = await openStudioBrushCatalogThroughUi(page, trigger)");
+      expect(source).toContain('invariant(await page.locator(\'[data-studio-brush-catalog-session="true"]\').count() === 1');
+      expect(source).toContain('await page.locator(\'[role="dialog"][data-studio-brush-floating]\').count() === 1');
     } else {
       expect(source).toContain("await waitForStudioDrawingReady(page");
       expect(source).toMatch(/page\.locator\('\[role="dialog"\]\[data-studio-brush-floating\]'\)\s*\.locator\('\[data-studio-brush-catalog-session="true"\]'\)/u);

@@ -9,9 +9,21 @@ vi.mock("./CiQualityAccess", () => ({ CiQualityAccess: ({ view }: { view?: strin
 vi.mock("./BusinessPlanAccess", () => ({ BusinessPlanAccess: () => <p role="status">사업계획서 권한 확인 중</p> }));
 vi.mock("./AiOperationsAccess", () => ({ AiOperationsAccess: () => <p role="status">AI·인프라 관리자 권한 확인 중</p> }));
 vi.mock("./WorkspaceAccess", () => ({ WorkspaceAccess: () => <p role="status">통합 작업실 권한 확인 중</p> }));
+vi.mock("./ProductionChangeAccess", () => ({ ProductionChangeAccess: () => <p role="status">제작 변경 권한 확인 중</p> }));
 afterEach(() => {
   cleanup();
   window.history.replaceState(null, "", "/");
+});
+
+it.each(["/admin/production/changes", "/admin/production/changes/", "/admin/production/changes/?view=conflicts"])("제작 변경 %s 경로를 별도 권한 경계와 현재 메뉴로 연다", (pathname) => {
+  window.history.replaceState(null, "", pathname);
+  render(<AdminApp />);
+  expect(screen.getByRole("status").textContent).toBe("제작 변경 권한 확인 중");
+  expect(screen.getByRole("link", { name: "제작 변경" }).getAttribute("href")).toBe("/admin/production/changes/");
+  expect(screen.getByRole("link", { name: "제작 변경" }).getAttribute("aria-current")).toBe("page");
+  expect(screen.getByRole("link", { name: "CI·QA 검증" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.getByRole("link", { name: "운영 모드·라이선스" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.queryByRole("heading", { name: "운영 모드와 라이선스" })).toBeNull();
 });
 
 it.each(["/admin/growth/business-plan", "/admin/growth/business-plan/", "/admin/growth/business-plan/?view=nestjs"])("사업계획서 %s 경로에서 전용 권한 확인과 메뉴를 연다", (pathname) => {

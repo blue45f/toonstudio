@@ -141,6 +141,9 @@ const HOST_STATUS_KEYS = [
   "studio.hostStatus.materialLoadFailedStatus",
   "studio.hostStatus.naturalMediaStrokeSaveCanceled",
   "studio.hostStatus.naturalMediaWorkerStartFailed",
+  "studio.hostStatus.newTextAuthorityChanged",
+  "studio.hostStatus.newTextAuthorityPending",
+  "studio.hostStatus.newTextInsertFailed",
   "studio.hostStatus.oraImportInputNotReady",
   "studio.hostStatus.pageStrokeCommitFailed",
   "studio.hostStatus.paletteSaveFailed",
@@ -236,6 +239,24 @@ describe("studio host status i18n batch2", () => {
     );
     expect(blocks.ko["studio.hostStatus.liveSurfaceError"]).toBe(
       "선택 표면 오류: {reason}. 다른 렌더러로 전환하지 않습니다.",
+    );
+    expect(blocks.ko["studio.hostStatus.newTextAuthorityChanged"]).toBe(
+      "원고나 편집 권한이 바뀌어 글자를 추가할 수 없습니다.",
+    );
+    expect(blocks.en["studio.hostStatus.newTextAuthorityChanged"]).toBe(
+      "The manuscript or editing permissions have changed, so text cannot be added.",
+    );
+    expect(blocks.ko["studio.hostStatus.newTextAuthorityPending"]).toBe(
+      "원고와 편집 권한을 확인한 뒤 글자를 추가해 주세요.",
+    );
+    expect(blocks.en["studio.hostStatus.newTextAuthorityPending"]).toBe(
+      "Check the manuscript and editing permissions before adding text.",
+    );
+    expect(blocks.ko["studio.hostStatus.newTextInsertFailed"]).toBe(
+      "지금은 원고에 글자를 추가할 수 없습니다.",
+    );
+    expect(blocks.en["studio.hostStatus.newTextInsertFailed"]).toBe(
+      "Text cannot be added to the manuscript right now.",
     );
   });
 

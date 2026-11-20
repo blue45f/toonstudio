@@ -28,6 +28,7 @@ import { join } from "node:path";
 
 import { studioAutosaveKey } from "../apps/web/src/domains/creator/studio-autosave";
 
+import { openStudioAllTools } from "./lib/studio-bg3d-ui-interactions";
 import {
   collectStudioInAppRuntimeErrors,
   dismissStudioInAppFirstRunSurfaces,
@@ -42,7 +43,8 @@ import {
   type StudioInAppStepOutcome,
 } from "./lib/studio-inapp-sweep-harness.mjs";
 import { createStudioQuickBrushStep } from "./lib/studio-quick-brush-interactions";
-import { showStudioProjectWindowTools, visibleStudioControl } from "./lib/studio-shell-interactions";
+import { openStudioExportPanel, openStudioLayerNavigator, openStudioMainMenu, runStudioClarityAction, showStudioProjectWindowTools, visibleStudioControl } from "./lib/studio-shell-interactions";
+import { openStudioMobileDrawSettings, openStudioProjectCenter, showStudioMobileEditOptions } from "./lib/studio-verifier-entry-points";
 import { readDurableStudioAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
 import {
   findFreePort,
@@ -153,15 +155,7 @@ async function clickInView(locator: Locator, timeout = 15_000): Promise<void> {
 }
 
 async function openDrawSettings(page: Page): Promise<Locator> {
-  // 펜 선택은 작업 메뉴를 닫으므로 도구를 먼저 고른 뒤 설정 메뉴를 펼친다.
-  const pen = dock(page).locator('button[data-studio-primary-action="draw"]');
-  if (await pen.getAttribute("aria-pressed") !== "true") await clickInView(pen);
-  await expandWorkRow(page);
-  const settings = dock(page).getByRole("button", { name: "브러시 설정 (굵기·색·프리셋)", exact: true });
-  if (await settings.getAttribute("aria-expanded") !== "true") await clickInView(settings);
-  const sheet = page.locator("#studio-mobile-draw-settings");
-  await sheet.getByRole("slider", { name: "브러시 굵기 슬라이더", exact: true }).waitFor();
-  return sheet;
+  return openStudioMobileDrawSettings(page);
 }
 
 async function openBrushLibrary(page: Page): Promise<Locator> {
@@ -172,19 +166,38 @@ async function openBrushLibrary(page: Page): Promise<Locator> {
   return library;
 }
 
-/** 작업 메뉴(2행)를 펼친다. 이미 펼쳐져 있으면 그대로 둔다. */
+/** 현재 프로젝트·창 도구를 실제 더보기 명령으로 펼친다. */
 async function expandWorkRow(page: Page): Promise<boolean> {
-  // 상세 작업 도크에 있는 기능은 사용자가 선택할 수 있는 프로젝트·창 배치로 진입한다.
   await showStudioProjectWindowTools(page);
-  const expanded = page.locator(
-    '[data-studio-mobile-editing-dock="true"][data-studio-mobile-dock-expanded="true"]',
-  );
-  if (await expanded.count() > 0) return true;
-  const toggle = dock(page).locator('[data-studio-mobile-workspace-toggle="true"]');
-  await toggle.click({ timeout: 5_000 });
-  await expanded.waitFor({ state: "visible" });
+  const panel = await visibleStudioControl(page.locator('[data-studio-drawing-project-tools="true"]'), "프로젝트·창 도구");
   await settle(page);
-  return await expanded.count() > 0;
+  return panel.isVisible();
+}
+
+async function openPagesSheet(page: Page): Promise<Locator> {
+  await runStudioClarityAction(page, "pages");
+  return visibleStudioControl(page.locator("#studio-mobile-pages-sheet"), "모바일 페이지 시트");
+}
+
+async function openInspectorSheet(page: Page): Promise<Locator> {
+  await openStudioLayerNavigator(page);
+  return visibleStudioControl(page.locator('[data-studio-sheet-id="props"]'), "모바일 레이어·속성 시트");
+}
+
+async function useCatalogTool(page: Page, id: string): Promise<void> {
+  const catalog = await openStudioAllTools(page);
+  await catalog.getByRole("searchbox", { name: "전체 도구 검색", exact: true }).fill(id);
+  const entry = await visibleStudioControl(catalog.locator(`button[data-studio-catalog-tool-id="${id}"]`), `전체 도구 ${id}`);
+  if (await entry.getAttribute("aria-disabled") === "true") throw new Error(`${id}: required catalog tool is unavailable`);
+  await clickInView(entry, 5_000);
+  await catalog.waitFor({ state: "hidden" });
+  await settle(page);
+}
+
+async function selectMenuCommand(page: Page, group: string, id: string): Promise<void> {
+  const menu = await openStudioMainMenu(page, group);
+  await clickInView(await visibleStudioControl(menu.locator(`[data-studio-menu-item-id="${id}"]`), `Studio ${group}/${id}`), 5_000);
+  await settle(page);
 }
 
 /** Click the visible instance of a required action without bypassing browser hit testing. */
@@ -199,11 +212,14 @@ async function clickLocator(
   return "ok";
 }
 
-/** 작업 메뉴가 닫혀 있어도 먼저 열고, 클릭한 도구의 선택 상태까지 확인한다. */
+/** 현재 전체 도구에서 선택하고 같은 정본 도크 모델의 활성 상태를 확인한다. */
 async function selectWorkspaceTool(page: Page, name: string): Promise<"ok"> {
-  await expandWorkRow(page);
+  const ids: Readonly<Record<string, string>> = { "선택": "select", "픽셀": "pixel-pencil", "채우기": "fill", "도형": "shape-rect" };
+  const id = ids[name];
+  if (!id) throw new Error(`unknown required workspace tool: ${name}`);
+  await useCatalogTool(page, id);
+  // 설정을 강제로 펼치지 않는다. 숨겨진 기존 도크도 같은 정본 도구 상태를 관측한다.
   const tool = dock(page).getByRole("button", { name, exact: true, includeHidden: true });
-  await clickLocator(page, tool, name);
   if (await tool.getAttribute("aria-pressed") !== "true") throw new Error(name + ": tool did not activate");
   return "ok";
 }
@@ -282,6 +298,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "undo-redo-dock",
     label: "도크 되돌리기·다시실행",
     run: async (page) => {
+      await showStudioMobileEditOptions(page);
       const undo = page.locator('button[data-studio-primary-action="undo"]');
       const redo = page.locator('button[data-studio-primary-action="redo"]');
       const undone = await clickLocator(page, undo, "undo");
@@ -398,22 +415,17 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
   // ── 작업 메뉴(2행) 서피스 ────────────────────────────────────────────────
   {
     id: "work-row-expand",
-    label: "작업 메뉴 펼치기",
-    run: async (page) => (await expandWorkRow(page) ? "ok" : { skipped: "no workspace toggle" }),
+    label: "프로젝트·창 도구 펼치기",
+    run: async (page) => {
+      if (!await expandWorkRow(page)) throw new Error("project and window tools did not open");
+      return "ok";
+    },
   },
   {
     id: "pages-sheet",
     label: "페이지 시트 · 추가·전환",
     run: async (page) => {
-      await expandWorkRow(page);
-      const opened = await clickLocator(
-        page,
-        dock(page).locator('button[aria-controls="studio-mobile-pages-sheet"]'),
-        "pages trigger",
-      );
-      if (opened !== "ok") return opened;
-      const sheet = page.locator("#studio-mobile-pages-sheet");
-      await sheet.waitFor({ state: "visible" });
+      const sheet = await openPagesSheet(page);
       await sheet.locator('[data-testid="studio-add-page"]').click();
       const second = sheet.getByRole("button", { name: /^2페이지 선택$/u });
       await second.click();
@@ -427,15 +439,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "inspector-sheet-tabs",
     label: "작업 패널 · 세 탭",
     run: async (page) => {
-      await expandWorkRow(page);
-      const opened = await clickLocator(
-        page,
-        page.getByRole("button", { name: "작업 패널", exact: true }),
-        "work panel trigger",
-      );
-      if (opened !== "ok") return opened;
-      const sheet = page.locator('[data-studio-sheet-id="props"]');
-      await sheet.waitFor({ state: "visible" });
+      const sheet = await openInspectorSheet(page);
       for (const tab of ["properties", "layers", "document"]) {
         const target = sheet.locator(`[data-studio-inspector-primary-tab="${tab}"]`);
         await clickInView(target);
@@ -452,9 +456,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "layer-navigator",
     label: "레이어 내비게이터",
     run: async (page) => {
-      await expandWorkRow(page);
-      await clickInView(page.getByRole("button", { name: "작업 패널", exact: true }));
-      const sheet = page.locator('[data-studio-sheet-id="props"]');
+      const sheet = await openInspectorSheet(page);
       const height = sheet.getByRole("slider", { name: /^작업 패널 크기 조절/u });
       await height.press("ArrowUp");
       await height.press("ArrowUp");
@@ -516,8 +518,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       await sheet.focus();
       await page.keyboard.press("Escape");
       await sheet.waitFor({ state: "hidden" });
-      await expandWorkRow(page);
-      await clickInView(page.getByRole("button", { name: "작업 패널", exact: true }));
+      await openInspectorSheet(page);
       await clickInView(sheet.locator('[data-studio-inspector-primary-tab="layers"]'));
       await compButton.waitFor({ state: "visible" });
       await idleComps.waitFor({ state: "visible" });
@@ -532,13 +533,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "command-search",
     label: "기능·설정 찾기",
     run: async (page) => {
-      await expandWorkRow(page);
-      const opened = await clickLocator(
-        page,
-        page.locator('[data-studio-mobile-search-trigger="true"]'),
-        "search trigger",
-      );
-      if (opened !== "ok") return opened;
+      await runStudioClarityAction(page, "search");
       const combobox = page.locator('input[role="combobox"]');
       await combobox.waitFor({ state: "visible", timeout: 15_000 });
       await combobox.first().fill("레이어");
@@ -554,8 +549,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "filter-dialog",
     label: "필터 다이얼로그",
     run: async (page) => {
-      await expandWorkRow(page);
-      const filter = page.locator('[data-studio-mobile-filter-select="workspace"]');
+      const filter = page.locator('[data-studio-mobile-filter-select="primary"]');
       const select = filter.locator("select");
       if (await filter.getAttribute("aria-disabled") === "true") {
         const reason = await filter.getAttribute("title");
@@ -566,8 +560,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       }
       // Earlier steps deliberately leave eraser commands on their page. A fresh page gives
       // this filter case its own supported raster target through the same UI a user follows.
-      await dock(page).locator('button[aria-controls="studio-mobile-pages-sheet"]').click();
-      const pages = page.locator("#studio-mobile-pages-sheet");
+      const pages = await openPagesSheet(page);
       await pages.locator('[data-testid="studio-add-page"]').click();
       const newPage = pages.getByRole("button", { name: /^\d+페이지 선택$/u }).last();
       await newPage.click();
@@ -579,9 +572,8 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       await settings.getByRole("button", { name: "브러시 설정 닫기", exact: true }).click();
       await page.locator('#studio-mobile-draw-settings[aria-hidden="true"][inert]').waitFor({ state: "attached" });
       await drawStroke(page);
-      await expandWorkRow(page);
       await select.waitFor({ state: "visible" });
-      await select.selectOption({ index: 1 });
+      await select.selectOption("brightness-contrast");
       await settle(page);
       const dialog = page.locator('[aria-labelledby="studio-filter-dialog-title"]');
       await dialog.waitFor({ state: "visible" });
@@ -606,14 +598,10 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "quick-actions-wheel",
     label: "퀵 액션 휠",
     run: async (page) => {
-      await expandWorkRow(page);
-      const opened = await clickLocator(
-        page,
-        page.locator('[data-studio-mobile-quick-actions-slot="right"] button'),
-        "quick actions slot",
-      );
-      if (opened !== "ok") return opened;
+      const editOptions = await showStudioMobileEditOptions(page);
+      await clickLocator(page, editOptions.locator('[data-studio-clarity-mobile-quick-actions="true"] button'), "mobile quick actions");
       const menu = page.getByRole("menu", { name: "캔버스 퀵 액션" });
+      await menu.waitFor({ state: "visible" });
       const items = menu.getByRole("menuitem");
       if (await items.count() !== 6) throw new Error("quick action wheel did not expose all six slots");
       for (const item of await items.all()) await item.waitFor({ state: "visible" });
@@ -626,13 +614,8 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "canvas-comments",
     label: "캔버스 위치 댓글",
     run: async (page) => {
-      await expandWorkRow(page);
-      const armed = await clickLocator(
-        page,
-        page.locator('[data-studio-mobile-comment-trigger="true"]'),
-        "comment trigger",
-      );
-      if (armed !== "ok") return armed;
+      await useCatalogTool(page, "comment");
+      if (await dock(page).locator('[data-studio-mobile-comment-trigger="true"]').getAttribute("aria-pressed") !== "true") throw new Error("comment pin placement did not activate");
       const viewport = page.locator('[data-studio-canvas-viewport="true"]').first();
       const box = await viewport.boundingBox();
       if (!box) throw new Error("canvas comment target has no visible box");
@@ -645,37 +628,28 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "quick-start-panel",
     label: "빠른 시작 패널",
     run: async (page) => {
-      await expandWorkRow(page);
-      return clickLocator(
-        page,
-        page.getByRole("button", { name: "빠른 시작 · 새 작업 열기" }),
-        "quick start",
-      );
+      await selectMenuCommand(page, "file", "quick-start");
+      await page.locator('[data-studio-creative-starter="true"]').waitFor({ state: "visible" });
+      return "ok";
     },
   },
   {
     id: "colour-vision-review",
     label: "색각·명암 검수",
     run: async (page) => {
-      await expandWorkRow(page);
-      return clickLocator(page, page.getByRole("button", { name: /색각/u }), "colour vision");
+      await selectMenuCommand(page, "view", "color-vision-grayscale");
+      const menu = await openStudioMainMenu(page, "view");
+      if (await menu.locator('[data-studio-menu-item-id="color-vision-grayscale"]').getAttribute("aria-checked") !== "true") throw new Error("grayscale review did not activate");
+      await clickInView(menu.locator('[data-studio-menu-item-id="color-vision-original"]'));
+      return "ok";
     },
   },
   {
     id: "dock-zoom-controls",
     label: "도크 확대·축소·맞춤",
     run: async (page) => {
-      await expandWorkRow(page);
-      let touched = 0;
-      for (const name of ["축소", "화면 폭에 맞춤", "확대"]) {
-        const result = await clickLocator(
-          page,
-          page.getByRole("button", { name, exact: true }),
-          name,
-        );
-        if (result === "ok") touched += 1;
-      }
-      return touched > 0 ? "ok" : { skipped: "no dock zoom controls" };
+      for (const id of ["zoom-out", "fit", "zoom-in"]) await selectMenuCommand(page, "view", id);
+      return "ok";
     },
   },
 
@@ -683,20 +657,12 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
   {
     id: "top-export-menu",
     label: "내보내기 옵션",
-    run: (page) => clickLocator(
-      page,
-      page.getByRole("button", { name: "내보내기 옵션" }),
-      "export options",
-    ),
+    run: async (page) => { await openStudioExportPanel(page); return "ok"; },
   },
   {
     id: "top-project-actions",
     label: "프로젝트 작업",
-    run: (page) => clickLocator(
-      page,
-      page.getByRole("button", { name: "프로젝트 센터", exact: true }),
-      "project actions",
-    ),
+    run: async (page) => { await openStudioProjectCenter(page); return "ok"; },
   },
   {
     id: "top-save-draft",
@@ -711,6 +677,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "toggle-immersive",
     label: "전체 화면 전환",
     run: async (page) => {
+      await showStudioMobileEditOptions(page);
       const toggled = await clickLocator(
         page,
         page.locator("[data-studio-mobile-app-mode]"),
@@ -725,6 +692,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "windowed-tool-belt",
     label: "도구 벨트(윈도우드)",
     run: async (page) => {
+      await showStudioMobileEditOptions(page);
       const belt = page.locator('[data-studio-tool-belt="true"]');
       const immersive = page.locator("[data-studio-mobile-app-mode]");
       const restoreImmersive = await immersive.getAttribute("aria-pressed") === "true";

@@ -24,8 +24,12 @@ import "./StudioDrawingMobileWorkspace.css";
 
 export type StudioDrawingClarityMobileSession = StudioDrawingClaritySaveSession & Pick<StudioCuttoonEditorViewSession,
   "title" | "studioMenubarActivePageLabel" | "studioMainMenuGroups" | "setMobileSheet" | "setMenu" | "location" | "activePageIndex"
-  | "mobileSheet" | "setHistoryPanelOpen" | "setExportMenuOpen" | "setTeamPanelOpen" | "setTutorialHubOpen" | "appSettings" | "saveSyncStore">
-  & { readonly studioMobileEditingDockHandlers: Pick<StudioCuttoonEditorViewSession["studioMobileEditingDockHandlers"], "openInspectorRoute"> };
+  | "mobileSheet" | "setHistoryPanelOpen" | "setExportMenuOpen" | "setTeamPanelOpen" | "setTutorialHubOpen" | "appSettings" | "saveSyncStore"
+  | "mobileImmersive" | "mobileQuickActionsButton" | "workspaceControlSide">
+  & {
+    readonly studioMobileEditingDockHandlers: Pick<StudioCuttoonEditorViewSession["studioMobileEditingDockHandlers"], "openInspectorRoute">;
+    readonly studioMenubarContentHandlers: Pick<StudioCuttoonEditorViewSession["studioMenubarContentHandlers"], "changeMobileImmersiveMode">;
+  };
 
 /** 하단 도구·모바일 시트는 그대로 두고 문서와 실제 저장 상태·빠른 검색·공유를 표시한다. */
 export function StudioDrawingClarityMobileBar({
@@ -62,6 +66,7 @@ export function StudioDrawingClarityMobileBar({
     else if (searchReady && requestStudioCommandSearch({ scope: "all" })) setSearchRequested(false);
   }, [s.mobileSheet, searchReady, searchRequested]);
   const closeHelp = () => { setHelpOpen(false); moreRef.current?.focus({ preventScroll: true }); };
+  const quickActions = <span data-studio-clarity-mobile-quick-actions="true" className="shrink-0">{s.mobileQuickActionsButton}</span>;
   if (!clarity) return null;
   return <>
     <header id="studio-menubar" role="region" tabIndex={-1} aria-label={bt("원고와 저장", "Draft and save")}
@@ -97,6 +102,7 @@ export function StudioDrawingClarityMobileBar({
     </header>
     <div id="studio-mobile-edit-options" data-compact-expanded={editBarExpanded}
       className="studio-drawing-clarity-context-row studio-drawing-clarity-mobile-context">
+      {s.workspaceControlSide === "left" ? quickActions : null}
       <button type="button" className="studio-drawing-page-position" title={s.studioMenubarActivePageLabel} onClick={() => s.setMobileSheet("pages")}>{s.studioMenubarActivePageLabel.trim() && s.studioMenubarActivePageLabel.trim() !== s.title.trim() ? s.studioMenubarActivePageLabel : `${bt("페이지", "Page")} ${s.activePageIndex + 1}`}<span aria-hidden>⌄</span></button>
       <span id="studio-document-quick-mode-slot" className="shrink-0 empty:hidden" />
       <div className="studio-drawing-clarity-context-actions">
@@ -113,6 +119,12 @@ export function StudioDrawingClarityMobileBar({
           <StudioToolArtwork tool="share" /><span>{bt("공유·초대", "Share")}</span>
         </button>
         <div id="studio-drawing-clarity-history-slot" className="studio-drawing-clarity-history" role="toolbar" aria-label={bt("편집 기록", "Edit history")} />
+        <button type="button" data-studio-mobile-app-mode="true" className="studio-drawing-ergonomics-chip"
+          aria-pressed={s.mobileImmersive}
+          onClick={() => s.studioMenubarContentHandlers.changeMobileImmersiveMode(!s.mobileImmersive)}>
+          {s.mobileImmersive ? bt("전체 화면 드로잉 종료", "Exit full-screen drawing") : bt("전체 화면 드로잉", "Full-screen drawing")}
+        </button>
+        {s.workspaceControlSide === "right" ? quickActions : null}
       </div>
     </div>
     {helpOpen ? <StudioDrawingClarityMobileHelp touch={s.appSettings.touch} onClose={closeHelp} onTutorial={() => { setHelpOpen(false); s.setTutorialHubOpen(true); }} /> : null}

@@ -159,6 +159,7 @@ export function classifyStudioServiceWorkerRequest(
   if (pathname === "/admin/platform/ai-operations" || pathname.startsWith("/admin/platform/ai-operations/")) return "passthrough";
   if (pathname === "/admin/workspace" || pathname.startsWith("/admin/workspace/")) return "passthrough";
   if (pathname === "/admin/growth/business-plan" || pathname.startsWith("/admin/growth/business-plan/")) return "passthrough";
+  if (pathname === "/admin/production/changes" || pathname.startsWith("/admin/production/changes/")) return "passthrough";
   if (SW_RUNTIME_PATHS.has(pathname)) return "sw-runtime";
   // Release catalogues change independently of audio files; never replay a cached empty catalogue.
   if (pathname === "/audio/playlist.json") return "passthrough";

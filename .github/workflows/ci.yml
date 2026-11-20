@@ -1205,6 +1205,7 @@ jobs:
           pnpm exec vitest run --no-file-parallelism
           scripts/studio-review-voice-note-backup.integration.test.mjs
           apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts
+          apps/api/src/modules/admin-production-changes/admin-production-changes.integration.test.ts
           apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts
           apps/api/src/modules/business-plan/business-plan.integration.test.ts
           apps/api/src/modules/admin/ai-operations/ai-operations.repository.integration.test.ts

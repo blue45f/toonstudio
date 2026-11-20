@@ -43,9 +43,9 @@ import { captureStudioDocumentBeforeDeadline, captureStudioDocumentRoi } from ".
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import { setStudioPrimaryColorThroughUi as setPrimaryColor } from "./lib/studio-primary-color-interactions";
-import { pinStudioRailToolInCatalog, studioRailToolDiagnosticError } from "./lib/studio-rail-tool-catalog-pin";
-import { openStudioMainMenu, showStudioProjectWindowTools, visibleStudioControl } from "./lib/studio-shell-interactions";
+import { openStudioMainMenu } from "./lib/studio-shell-interactions";
 import { clickStudioToolThroughUi } from "./lib/studio-tool-interactions";
+import { studioDocumentHistoryButtons, studioPinnedToolButton } from "./lib/studio-verifier-entry-points";
 import {
   readDurableStudioAutosaveDocument,
   readDurableStudioAutosaveError,
@@ -564,18 +564,7 @@ async function visibleLocator(locator: Locator): Promise<Locator> {
 }
 
 async function toolButton(page: Page, id: StudioRailToolId): Promise<Locator> {
-  let catalogPinConfirmed = false; try {
-    await showStudioProjectWindowTools(page);
-    const rail = page.locator('[data-studio-tool-rail="true"]');
-    const locator = rail.locator(`button[data-studio-rail-tool-id="${id}"]`);
-    if (await locator.filter({ visible: true }).count() > 0) return await visibleStudioControl(locator, `정밀 도구 ${id}`);
-    await rail.getByRole("button", { name: "전체 도구", exact: true }).click();
-    const catalog = page.getByRole("dialog", { name: "전체 도구", exact: true });
-    await catalog.waitFor({ state: "visible", timeout: 16_000 });
-    await pinStudioRailToolInCatalog(catalog, id, 16_000); catalogPinConfirmed = true;
-    await catalog.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
-    return await visibleStudioControl(locator, `정밀 도구 ${id}`);
-  } catch (error) { throw await studioRailToolDiagnosticError(page, id, error, catalogPinConfirmed); }
+  return studioPinnedToolButton(page, id);
 }
 
 async function waitForToolButton(page: Page, id: StudioRailToolId): Promise<Locator> {
@@ -2088,7 +2077,7 @@ async function enabledHistoryButton(
   page: Page,
   label: "실행취소" | "다시실행" = "실행취소",
 ): Promise<Locator> {
-  const candidates = page.locator(`button[aria-label="${label}"]:visible`);
+  const candidates = await studioDocumentHistoryButtons(page, label);
   const startedAt = Date.now();
   while (Date.now() - startedAt < 12_000) {
     const count = await candidates.count();

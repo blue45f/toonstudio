@@ -133,11 +133,14 @@ describe("Studio optional UI bundle boundaries", () => {
   it("keeps the heavy workspace manager behind the lightweight intent gate", () => {
     const page = moduleEdges("./StudioCuttoonEditorHost.tsx");
     const menubar = moduleEdges("./StudioMenubarContent.tsx");
+    const controls = moduleEdges("./studio-workspaces/StudioWorkspaceContextControls.tsx");
     const gate = moduleEdges("./StudioWorkspaceMenuGate.tsx");
 
     expect(page.valueImports).not.toContain("./StudioWorkspaceMenu");
     expect(page.valueImports).not.toContain("./StudioWorkspaceMenuGate");
-    expect(menubar.valueImports).toContain("./StudioWorkspaceMenuGate");
+    expect(menubar.valueImports).toContain("./studio-workspaces/StudioWorkspaceContextControls");
+    expect(controls.valueImports).toContain("../StudioWorkspaceMenuGate");
+    expect(controls.valueImports).not.toContain("../StudioWorkspaceMenu");
     expect(gate.valueImports).not.toContain("./StudioWorkspaceMenu");
     expect(gate.dynamicImports.filter((specifier) => specifier === "./StudioWorkspaceMenu")).toEqual([
       "./StudioWorkspaceMenu",

@@ -133,10 +133,11 @@ describe("StudioMannequinPoseSection · StudioMannequinPoserPanel — 손 포즈
     });
 
     const latestEcorcheCall = sceneMocks.setEcorcheState.mock.calls.at(-1)?.[0] as {
-      fingerPose: { right: { index: readonly [number, number, number] } };
+      fingerPose: Record<"left" | "right", { index: readonly [number, number, number] }>;
       rightSplayDeg: { index?: number };
     };
     expect(latestEcorcheCall.fingerPose.right.index[0]).toBe(95);
+    expect(latestEcorcheCall.fingerPose.left.index).toEqual([95, 95, 95]);
 
     fireEvent.click(screen.getByRole("button", { name: /검지/ }));
     const sliders = screen.getAllByRole("slider");
@@ -148,9 +149,11 @@ describe("StudioMannequinPoseSection · StudioMannequinPoserPanel — 손 포즈
 
     await waitFor(() => {
       const updated = sceneMocks.setEcorcheState.mock.calls.at(-1)?.[0] as {
+        leftSplayDeg: { index?: number };
         rightSplayDeg: { index?: number };
       };
       expect(updated.rightSplayDeg.index).toBe(9);
+      expect(updated.leftSplayDeg.index).toBe(9);
     });
   });
 });

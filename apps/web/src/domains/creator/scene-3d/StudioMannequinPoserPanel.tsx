@@ -26,9 +26,8 @@ import { studioMannequinPosesNearlyEqual, useStudioMannequinViewportGestures } f
 
 import { getProductStudioMannequinStateSqliteRepository } from "./studio-mannequin-bg3d-preset-sqlite-repository";
 import { applyStudioBodyMorph, type StudioBodyMorph } from "./studio-body-morphs";
-import {
-  mergeHandPadIntoFingerPose, type StudioMannequinFingerSplayMap, type StudioMannequinHandPadOutput, type StudioMannequinSurfaceMode,
-} from "./studio-mannequin-ecorche-anatomy";
+import type { StudioMannequinSurfaceMode } from "./studio-mannequin-ecorche-anatomy";
+import { useStudioMannequinHandPose } from "./use-studio-mannequin-hand-pose";
 import {
   analyzeStudioMannequinGesture, applyStudioMannequinBreathingParams, applyStudioMannequinGazeTarget, type StudioMannequinHandContactTargetId,
 } from "./studio-mannequin-gesture-dynamics";
@@ -36,7 +35,7 @@ import {
   STUDIO_MANNEQUIN_BODY_PRESETS, STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, STUDIO_MANNEQUIN_FINGER_NAMES,
   STUDIO_MANNEQUIN_HEAD_PRESETS, buildStudioMannequinSpec, clampStudioMannequinBodyParams,
   clampStudioMannequinFingerPose, clampStudioMannequinJointRotation, resolveStudioMannequinArchetypeParams,
-  type StudioMannequinBodyParams, type StudioMannequinFingerName, type StudioMannequinFingerPose,
+  type StudioMannequinBodyParams, type StudioMannequinFingerName,
   type StudioMannequinJointId, type StudioMannequinMaterialStyle, type StudioMannequinVec3,
 } from "./studio-mannequin-model";
 import { STUDIO_MANNEQUIN_FOV_DEFAULT_DEG, clampStudioMannequinFovDeg } from "./studio-mannequin-quad-view";
@@ -171,9 +170,10 @@ export function StudioMannequinPoserPanel({
   const [pectoralVolume, setPectoralVolume] = useState(1);
   const [muscleDefinition, setMuscleDefinition] = useState(1);
   const [breathPhase, setBreathPhase] = useState(0);
-  const [fingerPose, setFingerPose] = useState<StudioMannequinFingerPose>(() => clampStudioMannequinFingerPose(undefined));
-  const [leftSplayDeg, setLeftSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
-  const [rightSplayDeg, setRightSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
+  const {
+    fingerPose, setFingerPose, handScannerPose, leftSplayDeg, rightSplayDeg,
+    handleApplyHandPad, handleScannerHandPoseChange,
+  } = useStudioMannequinHandPose();
   const [jointLocks, setJointLocks] = useState<StudioMannequinJointLockMap>({});
   const [scapulohumeralRhythm, setScapulohumeralRhythm] = useState(true);
   const [guideVisibility, setGuideVisibility] = useState<StudioMannequinGuideVisibility>(STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY);
@@ -416,7 +416,7 @@ export function StudioMannequinPoserPanel({
       },
       getLightingRig: () => sceneRef.current?.getLightingRig() ?? lightingRigRef.current,
     }),
-    [applySemanticMeta, commitPose, groundFootPose, readCurrentSemanticMeta, recordPoseHistoryOncePerGesture],
+    [applySemanticMeta, commitPose, groundFootPose, readCurrentSemanticMeta, recordPoseHistoryOncePerGesture, setFingerPose],
   );
 
   const morphBaseParamsRef = useRef<StudioMannequinBodyParams | null>(null);
@@ -1068,15 +1068,6 @@ export function StudioMannequinPoserPanel({
     [applySemanticMeta, commitPose, readCurrentSemanticMeta, recordPoseHistoryOncePerGesture, selectedJointId],
   );
 
-  const handleApplyHandPad = useCallback(
-    (side: "left" | "right" | "both", output: StudioMannequinHandPadOutput) => {
-      setFingerPose((prev) => mergeHandPadIntoFingerPose(prev, side, output));
-      if (side === "left" || side === "both") setLeftSplayDeg(output.splayDeg);
-      if (side === "right" || side === "both") setRightSplayDeg(output.splayDeg);
-    },
-    [],
-  );
-
   const handleBreathPhaseChange = useCallback((nextBreath: number) => {
     breathPhaseRef.current = nextBreath;
     setBreathPhase(nextBreath);
@@ -1265,7 +1256,7 @@ export function StudioMannequinPoserPanel({
     };
     reader.readAsText(file);
     event.target.value = "";
-  }, [commitPoseWithHistory]);
+  }, [commitPoseWithHistory, setFingerPose]);
 
   const handleExportCspPep = useCallback(() => {
     const xml = exportMannequinPoseToCspPep(poseRef.current, "ToonStudio_Ecorche_v3", fingerPose);
@@ -1716,6 +1707,17 @@ export function StudioMannequinPoserPanel({
                     applyDisabled={capturing}
                     onMirror={handleMirrorPose}
                     onResetJoints={() => commitPoseWithHistory(createStudioMannequinRestPose(), {})}
+                    handPose={handScannerPose}
+                    onHandPoseChange={handleScannerHandPoseChange}
+                    handWebcamActive={webcamActive && handTracking}
+                    onToggleHandWebcam={async () => {
+                      if (!webcamActiveRef.current) {
+                        const pendingCamera = handleToggleWebcam(), session = webcamSessionRef.current;
+                        await pendingCamera;
+                        if (session !== webcamSessionRef.current) return;
+                      }
+                      handleToggleHandTracking();
+                    }}
                   />
                   <StudioMannequinDuoPartnerCard duo={duo} />
                 </>
