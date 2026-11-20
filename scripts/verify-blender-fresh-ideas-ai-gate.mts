@@ -25,6 +25,14 @@ import {
   evaluateVerticalScrollCutPacing,
 } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-scroll-pacing-live-sync";
 import { evaluateVerifyAiPreflightGates } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-shot-continuity-linked-ink";
+import { expandLensToChannelDraft } from "../apps/web/src/domains/creator/fresh-ideas/fresh-ideas-channels-localization";
+import { FRESH_IDEAS_100_CAPABILITIES } from "../apps/web/src/domains/creator/fresh-ideas/fresh-ideas-contracts";
+import {
+  deconstructFreshIdeasThesis,
+  ingestFreshIdeasSources,
+} from "../apps/web/src/domains/creator/fresh-ideas/fresh-ideas-ingest-deconstruct";
+import { generateFiveOrthogonalLenses } from "../apps/web/src/domains/creator/fresh-ideas/fresh-ideas-lenses-engine";
+import { auditFreshIdeasQualityAndSafety } from "../apps/web/src/domains/creator/fresh-ideas/fresh-ideas-quality-ecosystem";
 import {
   BLENDER_FANTASY_LIGHTING_RIG_PRESETS,
   evaluateBlenderFantasyLightingRig,
@@ -138,8 +146,31 @@ const preflightRows = preflight.metrics
   )
   .join("\n");
 
+const v2Bundle = ingestFreshIdeasSources([
+  {
+    id: "blender-gate-v2",
+    title: `${lightingPreset.nameKo} × ${weaponPreset.nameKo}`,
+    kind: "sheet-csv",
+    content: `${result.cycleTimeBenchmark.summaryKo} · ${result.weeklyEpisodeRoi.summaryKo}`,
+  },
+]);
+const v2Decon = deconstructFreshIdeasThesis(v2Bundle);
+const v2Lenses = generateFiveOrthogonalLenses(v2Bundle, v2Decon);
+const v2Draft = expandLensToChannelDraft(v2Lenses[0]!, "linkedin-kr");
+const v2Audit = auditFreshIdeasQualityAndSafety(
+  v2Lenses,
+  v2Draft.bodySectionsKo.join("\n"),
+  v2Bundle.preservedUrls,
+);
+
 const fullMarkdown = [
   qualityMarkdown.trimEnd(),
+  "",
+  `## Fresh Ideas v2.0 (100-Capability & @unslop Gate) — ${v2Audit.passed ? "PASS" : "HOLD"} (${v2Audit.score100}점)`,
+  "",
+  `- **Capabilities Registered:** ${FRESH_IDEAS_100_CAPABILITIES.length}/100`,
+  `- **Max Pairwise Overlap:** ${v2Audit.maxPairwiseOverlap}`,
+  `- **Violations:** ${v2Audit.violations.length}`,
   "",
   `## Phase 2 Preflight Hard Gate (V01~V10) — ${preflight.summaryBadgeKo}`,
   "",

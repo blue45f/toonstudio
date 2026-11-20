@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { evaluateCrossLabsUnifiedProductionBridge } from "./studio-cross-labs-production-bridge";
+import { StudioFreshIdeasV2WorkbenchCard } from "../fresh-ideas/StudioFreshIdeasV2WorkbenchCard";
 import type {
   BlenderSceneVerifyAiReport,
   FreshIdeaLensId,
@@ -463,6 +464,14 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
         darkroomProofingState={darkroomProofingState}
         onSelectDatumGenreId={onSelectDatumGenreId}
         onToggleDarkroomProofing={onToggleDarkroomProofing}
+      />
+
+      <StudioFreshIdeasV2WorkbenchCard
+        sourceTitle={verifyAiReport.remixHeaderKo.replace(/^[^:]+:\s*/, "").split(" · ")[0] ?? "웹툰 3D 연출"}
+        sourceSummaryKo={activeLensRemix.angleKo}
+        sourceMetricsSummaryKo={`${verifyAiReport.cycleTimeBenchmark.summaryKo} · ${verifyAiReport.weeklyEpisodeRoi.summaryKo}`}
+        disabled={disabled}
+        onStatusChange={onStatusChange}
       />
 
       <p
