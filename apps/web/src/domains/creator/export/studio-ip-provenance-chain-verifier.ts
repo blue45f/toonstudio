@@ -1,4 +1,5 @@
 import type { IpSlateFundDdReport } from "./studio-ip-slate-fund-dd";
+import type { GlobalLocalizationRightsManifest } from "./studio-localization-rights-chain";
 import type { SeriesCommercialPipelineOutput } from "./studio-rights-monetization-pipeline";
 
 export interface ProvenanceChainStageCheck {
@@ -10,7 +11,8 @@ export interface ProvenanceChainStageCheck {
     | "series-dossier"
     | "mg-readiness"
     | "advance-underwriting"
-    | "ip-slate-dd";
+    | "ip-slate-dd"
+    | "localization-rights";
   readonly valid: boolean;
   readonly hash: string;
   readonly detail: string;
@@ -38,12 +40,13 @@ function fnv1aHex(input: string): string {
 }
 
 /**
- * 스튜디오 ERP · 법무 · 투자사 감사를 위해 제작(Rights BOM)부터 정산(Escrow),
- * 선정산 심사(Underwriting), 펀드 배분(DD)까지 전체 해시 체인 참조 무결성을 대조한다.
+ * 스튜디오 ERP · 법무 · 투자사 · 글로벌 유통 감사를 위해 제작(Rights BOM)부터 정산(Escrow),
+ * 선정산 심사(Underwriting), 펀드 배분(DD), 글로벌 현지화(Localization)까지 해시 체인 참조 무결성을 대조한다.
  */
 export function verifySeriesIpProvenanceChain(
   pipeline: SeriesCommercialPipelineOutput,
   optionalDdReport?: IpSlateFundDdReport | null,
+  optionalLocalizationManifest?: GlobalLocalizationRightsManifest | null,
 ): IpProvenanceChainAuditResult {
   const stages: ProvenanceChainStageCheck[] = [];
 
@@ -140,6 +143,22 @@ export function verifySeriesIpProvenanceChain(
       detail: matchingAlloc
         ? "IP 슬레이트 펀드 배분표 ↔ 작품 선정산 심사 해시 연결 확인"
         : "IP 슬레이트 펀드 배분표에서 해당 심사 해시를 찾을 수 없음",
+    });
+  }
+
+  if (optionalLocalizationManifest) {
+    const locValid =
+      FNV_HEX_PATTERN.test(optionalLocalizationManifest.localizationChainHash) &&
+      optionalLocalizationManifest.allLocalesCleared &&
+      optionalLocalizationManifest.sourceReceiptIntegrityHash === receiptHash &&
+      optionalLocalizationManifest.sourcePackageIntegrityHash === firstPkg?.packageIntegrityHash;
+    stages.push({
+      stage: "localization-rights",
+      valid: Boolean(locValid),
+      hash: optionalLocalizationManifest.localizationChainHash,
+      detail: locValid
+        ? `글로벌 다국어(${optionalLocalizationManifest.clearedLocaleCount}개 로케일) 공급망 체인 일치`
+        : "글로벌 현지화 라이선스 보류 또는 원작 해시 불일치",
     });
   }
 

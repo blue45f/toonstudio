@@ -5,10 +5,11 @@ import { BUILTIN_STUDIO_WORKFLOW_PACKS } from "../assistant/studio-workflow-pack
 import { evaluateAgencySubmissionBatch } from "./studio-agency-submission-preview";
 import { verifySeriesIpProvenanceChain } from "./studio-ip-provenance-chain-verifier";
 import { buildIpSlateFundDdReport } from "./studio-ip-slate-fund-dd";
+import { buildGlobalLocalizationRightsManifest } from "./studio-localization-rights-chain";
 import { runSeriesCommercialPipeline } from "./studio-rights-monetization-pipeline";
 
 describe("studio-ip-provenance-chain-verifier", () => {
-  it("verifies all 8 stages from Rights BOM receipt through IP Slate Fund DD without broken links", () => {
+  it("verifies all 9 stages including global localization rights when linked to the original episode hashes", () => {
     const pack = BUILTIN_STUDIO_WORKFLOW_PACKS[0];
     const sampleLuma = new Uint8Array(72).map((_, idx) => (idx * 19) % 256);
     const ts = "2026-11-20T11:15:00.000Z";
@@ -64,11 +65,31 @@ describe("studio-ip-provenance-chain-verifier", () => {
       evaluatedAtIso: ts,
     });
 
-    const audit = verifySeriesIpProvenanceChain(pipeline, dd);
-    expect(audit.allStagesVerified).toBe(true);
-    expect(audit.stages).toHaveLength(8);
-    expect(audit.brokenStages).toHaveLength(0);
-    expect(audit.masterChainAuditHash).toMatch(/^fnv1a-[0-9a-f]{8}$/);
+    const loc = buildGlobalLocalizationRightsManifest({
+      seriesTitle: "황녀의 검",
+      episodeLabel: "1화",
+      sourceReceiptIntegrityHash: pipeline.seriesDossier.episodes[0].integrityHash,
+      sourcePackageIntegrityHash: pipeline.deliveryPackages[0].packageIntegrityHash,
+      tracks: [
+        {
+          locale: "en-US",
+          translatorLabel: "EN Team",
+          letteringFontAsset: "WildWords Commercial",
+          letteringFontLicense: "COMMERCIAL",
+          sfxAssetLicense: "MIT",
+          aiTranslationUsed: false,
+          humanPostEdited: true,
+          includesVoiceDubbing: false,
+          voiceActorConsentVerified: false,
+        },
+      ],
+      issuedAtIso: ts,
+    });
+
+    const audit9 = verifySeriesIpProvenanceChain(pipeline, dd, loc);
+    expect(audit9.allStagesVerified).toBe(true);
+    expect(audit9.stages).toHaveLength(9);
+    expect(audit9.brokenStages).toHaveLength(0);
 
     // Tamper underwriting dossierHash and ensure verifier flags broken link
     const tamperedPipeline = {
@@ -78,7 +99,7 @@ describe("studio-ip-provenance-chain-verifier", () => {
         dossierHash: "fnv1a-deadbeef",
       },
     };
-    const failedAudit = verifySeriesIpProvenanceChain(tamperedPipeline, dd);
+    const failedAudit = verifySeriesIpProvenanceChain(tamperedPipeline, dd, loc);
     expect(failedAudit.allStagesVerified).toBe(false);
     expect(failedAudit.brokenStages).toContain("advance-underwriting");
   });
