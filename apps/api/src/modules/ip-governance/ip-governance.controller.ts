@@ -1,16 +1,17 @@
 import {
   Body,
   Controller,
-  ForbiddenException,
   Get,
-  Headers,
   Inject,
   Param,
   Post,
   Query,
   Res,
+  UseGuards,
 } from "@nestjs/common";
 
+import type { CreatorGovernanceAlert } from "./ip-governance-notification.service";
+import { IpGovernanceOperatorGuard } from "./ip-governance.guard";
 import type { ApiRevocationReasonCode } from "./ip-governance.repository";
 import {
   IpGovernanceService,
@@ -22,17 +23,6 @@ interface HeaderResponseLike {
   setHeader(name: string, value: string): void;
 }
 
-const ALLOWED_GOVERNANCE_ROLES = new Set(["studio-admin", "legal-ops"]);
-
-function assertGovernanceOperatorRole(roleHeader: string | undefined): void {
-  const normalized = (roleHeader ?? "").trim().toLowerCase();
-  if (!ALLOWED_GOVERNANCE_ROLES.has(normalized)) {
-    throw new ForbiddenException(
-      "트러스트 배지 철회·재발급은 studio-admin 또는 legal-ops 권한이 필요합니다.",
-    );
-  }
-}
-
 @Controller("api/ip-governance")
 export class IpGovernanceController {
   constructor(
@@ -41,12 +31,12 @@ export class IpGovernanceController {
   ) {}
 
   @Get("titles/:slug/trust-seal")
-  getTitleTrustSeal(
+  async getTitleTrustSeal(
     @Param("slug") slug: string,
     @Query("title") title: string | undefined,
     @Res({ passthrough: true }) res?: HeaderResponseLike,
-  ): ApiTrustSealLiveResponse {
-    const result = this.governanceService.getLiveTrustSeal(slug, title);
+  ): Promise<ApiTrustSealLiveResponse> {
+    const result = await this.governanceService.getLiveTrustSeal(slug, title);
     if (res) {
       res.setHeader("TDM-Reservation", String(result.tdmReservation));
       res.setHeader("X-ToonStudio-Seal-Digest", result.seal.sealDigestHash);
@@ -55,7 +45,7 @@ export class IpGovernanceController {
   }
 
   @Post("titles/:slug/trust-seal")
-  issueTitleTrustSeal(
+  async issueTitleTrustSeal(
     @Param("slug") slug: string,
     @Body()
     body: {
@@ -68,7 +58,7 @@ export class IpGovernanceController {
       readonly globalLocalesCount?: number;
       readonly masterAuditHash?: string;
     },
-  ): ApiTrustSealLiveResponse {
+  ): Promise<ApiTrustSealLiveResponse> {
     return this.governanceService.issueTrustSeal({
       slug,
       seriesTitle: body.seriesTitle ?? slug,
@@ -83,16 +73,15 @@ export class IpGovernanceController {
   }
 
   @Post("titles/:slug/revoke")
-  revokeTitleTrustSeal(
+  @UseGuards(IpGovernanceOperatorGuard)
+  async revokeTitleTrustSeal(
     @Param("slug") slug: string,
     @Body()
     body: {
       readonly reasonCode: ApiRevocationReasonCode;
       readonly reasonDetail: string;
     },
-    @Headers("x-toonstudio-governance-role") governanceRole?: string,
-  ): ApiTrustSealLiveResponse {
-    assertGovernanceOperatorRole(governanceRole);
+  ): Promise<ApiTrustSealLiveResponse> {
     return this.governanceService.revokeTrustSeal({
       slug,
       reasonCode: body.reasonCode,
@@ -101,16 +90,15 @@ export class IpGovernanceController {
   }
 
   @Post("titles/:slug/reissue")
-  reissueTitleTrustSeal(
+  @UseGuards(IpGovernanceOperatorGuard)
+  async reissueTitleTrustSeal(
     @Param("slug") slug: string,
     @Body()
     body: {
       readonly replacementAssetLabel: string;
       readonly evidenceReferenceId: string;
     },
-    @Headers("x-toonstudio-governance-role") governanceRole?: string,
-  ): ApiTrustSealLiveResponse {
-    assertGovernanceOperatorRole(governanceRole);
+  ): Promise<ApiTrustSealLiveResponse> {
     return this.governanceService.reissueTrustSeal({
       slug,
       replacementAssetLabel: body.replacementAssetLabel,
@@ -119,7 +107,7 @@ export class IpGovernanceController {
   }
 
   @Post("titles/:slug/escrow-settlement")
-  executeTitleEscrowSettlement(
+  async executeTitleEscrowSettlement(
     @Param("slug") slug: string,
     @Body()
     body: {
@@ -127,12 +115,17 @@ export class IpGovernanceController {
       readonly unrecoupedAdvanceKrw?: number;
       readonly creatorSplitPercent?: number;
     },
-  ): ApiEscrowSettlementResponse {
+  ): Promise<ApiEscrowSettlementResponse> {
     return this.governanceService.executeEscrowSettlement({
       slug,
       grossRevenueKrw: body.grossRevenueKrw,
       unrecoupedAdvanceKrw: body.unrecoupedAdvanceKrw ?? 0,
       creatorSplitPercent: body.creatorSplitPercent ?? 60,
     });
+  }
+
+  @Get("titles/:slug/creator-alerts")
+  getTitleCreatorAlerts(@Param("slug") slug: string): readonly CreatorGovernanceAlert[] {
+    return this.governanceService.listCreatorAlerts(slug);
   }
 }

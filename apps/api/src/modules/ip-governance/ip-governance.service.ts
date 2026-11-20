@@ -1,6 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
+  IpGovernanceNotificationService,
+  type CreatorGovernanceAlert,
+} from "./ip-governance-notification.service";
+import {
   IpGovernanceRepository,
   type ApiReaderTrustSeal,
   type ApiRevocationReasonCode,
@@ -56,16 +60,19 @@ function computeSealDigest(base: Omit<ApiReaderTrustSeal, "sealDigestHash">): st
 
 /**
  * 실제 프로덕션 API 서비스: 작품별 Reader Trust Seal 발급·조회,
- * 실시간 철회 원장 등록, 대체 에셋 기반 1클릭 재발급, 철회 연동 에스크로 정산을 처리한다.
+ * 실시간 철회 원장 등록(+창작자 보류 알림), 대체 에셋 기반 1클릭 재발급(+복구 알림),
+ * 철회 연동 에스크로 정산을 영속 저장소(PostgreSQL Pool 지원)와 함께 처리한다.
  */
 @Injectable()
 export class IpGovernanceService {
   constructor(
     @Inject(IpGovernanceRepository)
     private readonly repository: IpGovernanceRepository,
+    @Inject(IpGovernanceNotificationService)
+    private readonly notifications: IpGovernanceNotificationService,
   ) {}
 
-  issueTrustSeal(input: {
+  async issueTrustSeal(input: {
     readonly slug: string;
     readonly seriesTitle: string;
     readonly verifiedStagesCount?: number;
@@ -76,7 +83,7 @@ export class IpGovernanceService {
     readonly globalLocalesCount?: number;
     readonly masterAuditHash?: string;
     readonly issuedAtIso?: string;
-  }): ApiTrustSealLiveResponse {
+  }): Promise<ApiTrustSealLiveResponse> {
     const verifiedStagesCount = input.verifiedStagesCount ?? 10;
     const totalStagesCount = input.totalStagesCount ?? 10;
     const commercialAssetsCleared = input.commercialAssetsCleared ?? true;
@@ -117,19 +124,8 @@ export class IpGovernanceService {
       ...base,
       sealDigestHash: computeSealDigest(base),
     };
-    this.repository.saveSeal(seal);
-    return this.getLiveTrustSeal(input.slug, input.seriesTitle);
-  }
-
-  getLiveTrustSeal(slug: string, fallbackTitle?: string): ApiTrustSealLiveResponse {
-    const seal = this.repository.findSealBySlug(slug);
-    if (!seal) {
-      return this.issueTrustSeal({
-        slug,
-        seriesTitle: fallbackTitle ?? slug,
-      });
-    }
-    const matchedRevocation = this.repository.findRevocationBySealHash(seal.sealDigestHash);
+    await this.repository.saveSeal(seal);
+    const matchedRevocation = await this.repository.findRevocationBySealHash(seal.sealDigestHash);
     const effectiveStatus = matchedRevocation ? "revoked" : "active";
     const effectiveLevel: ApiTrustSealLevel = matchedRevocation ? "unverified" : seal.level;
     const summary = matchedRevocation
@@ -145,39 +141,75 @@ export class IpGovernanceService {
       matchedRevocation,
       tdmReservation: seal.aiTrainingOptOut ? 1 : 0,
       summary,
-      supersededSealDigestHash: this.repository.findSupersededSealHash(slug),
+      supersededSealDigestHash: await this.repository.findSupersededSealHash(input.slug),
     };
   }
 
-  revokeTrustSeal(params: {
+  async getLiveTrustSeal(slug: string, fallbackTitle?: string): Promise<ApiTrustSealLiveResponse> {
+    const seal = await this.repository.findSealBySlug(slug);
+    if (!seal) {
+      return this.issueTrustSeal({
+        slug,
+        seriesTitle: fallbackTitle ?? slug,
+      });
+    }
+    const matchedRevocation = await this.repository.findRevocationBySealHash(seal.sealDigestHash);
+    const effectiveStatus = matchedRevocation ? "revoked" : "active";
+    const effectiveLevel: ApiTrustSealLevel = matchedRevocation ? "unverified" : seal.level;
+    const summary = matchedRevocation
+      ? `인증 철회됨 (${matchedRevocation.reasonCode}: ${matchedRevocation.reasonDetail})`
+      : seal.level === "verified-10-stage"
+        ? "클린 IP 10단계 실시간 유효"
+        : "상업 클린 에셋 실시간 유효";
+
+    return {
+      seal,
+      effectiveStatus,
+      effectiveLevel,
+      matchedRevocation,
+      tdmReservation: seal.aiTrainingOptOut ? 1 : 0,
+      summary,
+      supersededSealDigestHash: await this.repository.findSupersededSealHash(slug),
+    };
+  }
+
+  async revokeTrustSeal(params: {
     readonly slug: string;
     readonly reasonCode: ApiRevocationReasonCode;
     readonly reasonDetail: string;
     readonly revokedAtIso?: string;
-  }): ApiTrustSealLiveResponse {
-    const current = this.getLiveTrustSeal(params.slug);
+  }): Promise<ApiTrustSealLiveResponse> {
+    const current = await this.getLiveTrustSeal(params.slug);
+    const revokedAtIso = params.revokedAtIso ?? new Date().toISOString();
     const record: ApiRevocationRecord = {
       revocationId: `REV-${fnv1aHex(`${params.slug}:${params.reasonCode}:${current.seal.sealDigestHash}`).slice(6)}`,
       slug: params.slug,
       sealDigestHash: current.seal.sealDigestHash,
       reasonCode: params.reasonCode,
       reasonDetail: params.reasonDetail,
-      revokedAtIso: params.revokedAtIso ?? new Date().toISOString(),
+      revokedAtIso,
     };
-    this.repository.saveRevocation(record);
+    await this.repository.saveRevocation(record);
+    this.notifications.notifyRevocationHold({
+      slug: params.slug,
+      seriesTitle: current.seal.seriesTitle,
+      reasonCode: params.reasonCode,
+      reasonDetail: params.reasonDetail,
+      occurredAtIso: revokedAtIso,
+    });
     return this.getLiveTrustSeal(params.slug);
   }
 
-  reissueTrustSeal(params: {
+  async reissueTrustSeal(params: {
     readonly slug: string;
     readonly replacementAssetLabel: string;
     readonly evidenceReferenceId: string;
     readonly reissuedAtIso?: string;
-  }): ApiTrustSealLiveResponse {
-    const current = this.getLiveTrustSeal(params.slug);
+  }): Promise<ApiTrustSealLiveResponse> {
+    const current = await this.getLiveTrustSeal(params.slug);
     const reissuedAtIso = params.reissuedAtIso ?? new Date().toISOString();
-    this.repository.saveSupersededSealHash(params.slug, current.seal.sealDigestHash);
-    return this.issueTrustSeal({
+    await this.repository.saveSupersededSealHash(params.slug, current.seal.sealDigestHash);
+    const restored = await this.issueTrustSeal({
       slug: params.slug,
       seriesTitle: current.seal.seriesTitle,
       verifiedStagesCount: current.seal.verifiedStagesCount,
@@ -191,15 +223,22 @@ export class IpGovernanceService {
       ),
       issuedAtIso: reissuedAtIso,
     });
+    this.notifications.notifyReissuanceRestored({
+      slug: params.slug,
+      seriesTitle: current.seal.seriesTitle,
+      replacementAssetLabel: params.replacementAssetLabel,
+      occurredAtIso: reissuedAtIso,
+    });
+    return restored;
   }
 
-  executeEscrowSettlement(params: {
+  async executeEscrowSettlement(params: {
     readonly slug: string;
     readonly grossRevenueKrw: number;
     readonly unrecoupedAdvanceKrw: number;
     readonly creatorSplitPercent: number;
-  }): ApiEscrowSettlementResponse {
-    const live = this.getLiveTrustSeal(params.slug);
+  }): Promise<ApiEscrowSettlementResponse> {
+    const live = await this.getLiveTrustSeal(params.slug);
     const gross = Math.max(0, Math.round(params.grossRevenueKrw));
     const advance = Math.max(0, Math.round(params.unrecoupedAdvanceKrw));
 
@@ -240,5 +279,9 @@ export class IpGovernanceService {
         }),
       ),
     };
+  }
+
+  listCreatorAlerts(slug: string): readonly CreatorGovernanceAlert[] {
+    return this.notifications.listAlertsForSlug(slug);
   }
 }
