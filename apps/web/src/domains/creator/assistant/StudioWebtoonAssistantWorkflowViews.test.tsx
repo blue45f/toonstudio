@@ -30,6 +30,7 @@ describe("StudioWorkflowPacksPanel Wave 7–24 full 10-stage commercial, global 
     expect(screen.getByText("3D:궁전 골든아워 라이팅")).toBeTruthy();
     expect(screen.getByText("브러시:크리스프 G펜 (선화)")).toBeTruthy();
     expect(screen.getByTestId("studio-commercial-settlement-widget")).toBeTruthy();
+    expect(screen.getByTestId("studio-creator-governance-alerts-banner")).toBeTruthy();
     expect(screen.getByTestId("studio-ip-provenance-audit-card")).toBeTruthy();
     expect(screen.getByTestId("studio-global-localization-card")).toBeTruthy();
     expect(screen.getByTestId("studio-movingtoon-voice-consent-card")).toBeTruthy();

@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 import { resolveBg3dLightingConfigFromBindings } from "../bg3d/studio-bg3d-workflow-pack-adapter";
 import { resolveBrushSlotConfigFromBindings } from "../brush/studio-brush-workflow-pack-adapter";
 import { StudioCommercialSettlementWidget } from "../export/StudioCommercialSettlementWidget";
+import { StudioCreatorGovernanceAlertsBanner } from "../export/StudioCreatorGovernanceAlertsBanner";
 import { StudioGlobalLocalizationReadinessCard } from "../export/StudioGlobalLocalizationReadinessCard";
 import { StudioIpProvenanceAuditCard } from "../export/StudioIpProvenanceAuditCard";
 import { StudioMovingToonVoiceConsentCard } from "../export/StudioMovingToonVoiceConsentCard";
@@ -444,6 +445,7 @@ export function StudioWorkflowPacksPanel({
             상업 정산 · MG 선정산 · 10단계 글로벌·무빙툰·독자 트러스트 배지 ({activePackForSimulation.name})
           </summary>
           <div className="mt-2 flex flex-col gap-2">
+            <StudioCreatorGovernanceAlertsBanner titleSlug={activePackForSimulation.id} />
             <StudioCommercialSettlementWidget
               seriesTitle={activePackForSimulation.name}
               pack={activePackForSimulation}
