@@ -172,6 +172,11 @@ export async function openStudioLayerNavigator(page: Page, timeoutMs?: number): 
   const splitPane = page.locator('[data-studio-inspector-layers-split="true"]').filter({ visible: true });
   const layers = page.getByTestId("studio-inspector-navigator")
     .locator('[data-studio-inspector-primary-tab="layers"]').filter({ visible: true });
+  const selectedTab = page.getByTestId("studio-inspector-navigator")
+    .locator('[data-studio-inspector-primary-tab="layers"][aria-selected="true"]').filter({ visible: true });
+  const openLayers = splitPane.or(selectedTab).first();
+  // 이미 열린 목록은 대기나 클릭 없이 성공하며, 실제 조작부터 준비 기한을 적용한다.
+  if (await openLayers.isVisible()) return;
   if (await splitPane.count() === 0 && await layers.count() === 0) {
     const mobileLayers = page.locator('[data-studio-mobile-editing-dock="true"]')
       .getByRole("button", { name: /^(레이어 열기|Open layers)$/u }).filter({ visible: true });
@@ -179,9 +184,6 @@ export async function openStudioLayerNavigator(page: Page, timeoutMs?: number): 
     // 명시한 기한만 명령의 각 단계까지 전달하고 기존 기본 대기 동작은 보존한다.
     else await runStudioClarityAction(page, "layers", timeoutMs === undefined ? undefined : remaining());
   }
-  const selectedTab = page.getByTestId("studio-inspector-navigator")
-    .locator('[data-studio-inspector-primary-tab="layers"][aria-selected="true"]').filter({ visible: true });
-  const openLayers = splitPane.or(selectedTab).first();
   if (await openLayers.isVisible()) { if (timeoutMs !== undefined) remaining(); return; }
   await splitPane.or(layers).first().waitFor({ state: "visible", timeout: remaining() });
   if (await openLayers.isVisible()) { if (timeoutMs !== undefined) remaining(); return; }

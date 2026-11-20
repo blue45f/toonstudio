@@ -100,6 +100,8 @@ test("닫힌 레이어 패널을 실제 더보기로 열고 이미 열린 탭을
   await expect(page.locator('[data-studio-inspector-primary-tab="layers"]')).toHaveAttribute("aria-selected", "true");
   await openStudioLayerNavigator(page, 2_000);
   await expect(page.locator('[data-studio-inspector-primary-tab="layers"]')).toHaveAttribute("aria-selected", "true");
+  await openStudioLayerNavigator(page, 0);
+  await expect(page.locator('[data-studio-inspector-primary-tab="layers"]')).toHaveAttribute("aria-selected", "true");
 });
 
 test("분할 레이어에는 제거된 탭을 요구하지 않고 실제 탭 선택 실패는 거부한다", async ({ page }) => {
@@ -108,6 +110,10 @@ test("분할 레이어에는 제거된 탭을 요구하지 않고 실제 탭 선
   // 이미 보이는 목록은 추가 시간이 필요 없고, 닫힌 탭은 아래에서 실제로 선택되어야 한다.
   await openStudioLayerNavigator(page, 0);
   await page.setContent(`<aside data-testid="studio-inspector-navigator"><button
-    data-studio-inspector-primary-tab="layers" aria-selected="false">동작하지 않는 레이어 탭</button></aside>`);
+    data-studio-inspector-primary-tab="layers" aria-selected="false"
+    onclick="document.querySelector('output').textContent=String(Number(document.querySelector('output').textContent)+1)">동작하지 않는 레이어 탭</button></aside><output>0</output>`);
+  await expect(openStudioLayerNavigator(page, 0)).rejects.toThrow("레이어 탐색기 준비 기한 0ms");
+  await expect(page.locator("output")).toHaveText("0");
   await expect(openStudioLayerNavigator(page, 1_000)).rejects.toThrow();
+  await expect(page.locator("output")).toHaveText("1");
 });
