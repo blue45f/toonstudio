@@ -42,6 +42,10 @@ import {
   type StudioInAppStep,
   type StudioInAppStepOutcome,
 } from "./lib/studio-inapp-sweep-harness.mjs";
+import {
+  assertStudioSweepTool, STUDIO_SWEEP_TOOLS, studioSweepHistoryAppends, studioSweepToolState,
+  verifyStudioSweepUndoRedo, verifyStudioSweepZoom, waitForStudioSweepDrawingCommit, type StudioSweepTool,
+} from "./lib/studio-inapp-sweep-interactions";
 import { createStudioQuickBrushStep } from "./lib/studio-quick-brush-interactions";
 import { openStudioExportPanel, openStudioLayerNavigator, openStudioMainMenu, runStudioClarityAction, showStudioProjectWindowTools, visibleStudioControl } from "./lib/studio-shell-interactions";
 import { openStudioMobileDrawSettings, openStudioProjectCenter, showStudioMobileEditOptions } from "./lib/studio-verifier-entry-points";
@@ -93,7 +97,9 @@ async function dismissOverlays(page: Page): Promise<void> {
 }
 
 /** Draw a real stroke across the canvas with pointer events the editor accepts. */
-async function drawStroke(page: Page, sample = 24): Promise<"ok" | { skipped: string }> {
+async function drawStroke(page: Page, tool: StudioSweepTool = "펜", sample = 24): Promise<"ok" | { skipped: string }> {
+  await selectWorkspaceTool(page, tool);
+  const before = await studioSweepHistoryAppends(page);
   const viewport = page.locator('[data-studio-canvas-viewport="true"]').first();
   if (await viewport.count() === 0) throw new Error("required canvas viewport is missing");
   const box = await viewport.boundingBox();
@@ -112,6 +118,7 @@ async function drawStroke(page: Page, sample = 24): Promise<"ok" | { skipped: st
     );
   }
   await page.mouse.up();
+  await waitForStudioSweepDrawingCommit(page, before);
   await settle(page);
   return "ok";
 }
@@ -213,14 +220,15 @@ async function clickLocator(
 }
 
 /** 현재 전체 도구에서 선택하고 같은 정본 도크 모델의 활성 상태를 확인한다. */
-async function selectWorkspaceTool(page: Page, name: string): Promise<"ok"> {
-  const ids: Readonly<Record<string, string>> = { "선택": "select", "픽셀": "pixel-pencil", "채우기": "fill", "도형": "shape-rect" };
-  const id = ids[name];
-  if (!id) throw new Error(`unknown required workspace tool: ${name}`);
-  await useCatalogTool(page, id);
-  // 설정을 강제로 펼치지 않는다. 숨겨진 기존 도크도 같은 정본 도구 상태를 관측한다.
-  const tool = dock(page).getByRole("button", { name, exact: true, includeHidden: true });
-  if (await tool.getAttribute("aria-pressed") !== "true") throw new Error(name + ": tool did not activate");
+async function selectWorkspaceTool(page: Page, name: StudioSweepTool): Promise<"ok"> {
+  const tool = studioSweepToolState(page, name);
+  if (await tool.count() !== 1) throw new Error(`${name}: 도구 상태가 하나여야 합니다.`);
+  // 활성 그리기 도구를 다시 누르면 설정 시트가 열리므로 현재 모드이면 그대로 유지한다.
+  if (await tool.getAttribute("aria-pressed") !== "true") {
+    if (name === "펜" || name === "지우개") await clickLocator(page, tool, name);
+    else await useCatalogTool(page, STUDIO_SWEEP_TOOLS[name]);
+  }
+  await assertStudioSweepTool(page, name);
   return "ok";
 }
 
@@ -244,11 +252,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
   {
     id: "tool-pen",
     label: "펜 도구",
-    run: (page) => clickLocator(
-      page,
-      dock(page).locator('button[data-studio-primary-action="draw"]'),
-      "pen tool",
-    ),
+    run: (page) => selectWorkspaceTool(page, "펜"),
   },
   {
     id: "draw-stroke-pen",
@@ -263,21 +267,17 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
   {
     id: "draw-stroke-pixel",
     label: "픽셀로 획 긋기",
-    run: (page) => drawStroke(page, 12),
+    run: (page) => drawStroke(page, "픽셀", 12),
   },
   {
     id: "tool-eraser",
     label: "지우개",
-    run: (page) => clickLocator(
-      page,
-      dock(page).locator('button[data-studio-mobile-tool="eraser"]'),
-      "eraser tool",
-    ),
+    run: (page) => selectWorkspaceTool(page, "지우개"),
   },
   {
     id: "draw-stroke-eraser",
     label: "지우개로 지우기",
-    run: (page) => drawStroke(page, 12),
+    run: (page) => drawStroke(page, "지우개", 12),
   },
   {
     id: "tool-fill",
@@ -292,19 +292,12 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
   {
     id: "draw-shape",
     label: "도형 그리기",
-    run: (page) => drawStroke(page, 6),
+    run: (page) => drawStroke(page, "도형", 6),
   },
   {
     id: "undo-redo-dock",
     label: "도크 되돌리기·다시실행",
-    run: async (page) => {
-      await showStudioMobileEditOptions(page);
-      const undo = page.locator('button[data-studio-primary-action="undo"]');
-      const redo = page.locator('button[data-studio-primary-action="redo"]');
-      const undone = await clickLocator(page, undo, "undo");
-      if (undone !== "ok") return undone;
-      return clickLocator(page, redo, "redo");
-    },
+    run: verifyStudioSweepUndoRedo,
   },
 
   // ── 브러시 설정 시트 ─────────────────────────────────────────────────────
@@ -647,10 +640,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
   {
     id: "dock-zoom-controls",
     label: "도크 확대·축소·맞춤",
-    run: async (page) => {
-      for (const id of ["zoom-out", "fit", "zoom-in"]) await selectMenuCommand(page, "view", id);
-      return "ok";
-    },
+    run: (page) => verifyStudioSweepZoom(page, (id) => selectMenuCommand(page, "view", id)),
   },
 
   // ── 몰입형 상단 크롬 ─────────────────────────────────────────────────────
