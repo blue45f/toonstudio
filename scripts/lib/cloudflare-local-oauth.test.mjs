@@ -1,12 +1,37 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { describe, expect, it, vi } from "vitest";
 
-import { inspectLocalCloudflareOAuth, readLocalWranglerOAuthToken } from "./cloudflare-local-oauth.mjs";
+import { inspectLocalCloudflareOAuth, readLocalWranglerOAuthToken, resolveLocalCloudflareAccountId } from "./cloudflare-local-oauth.mjs";
 
 const accountId = "a".repeat(32);
 const sample = "synthetic-session";
 const unavailable = { auth: "unavailable", workerStatus: null, r2Status: null };
 
 describe("로컬 Wrangler OAuth", () => {
+  it("별도 작업 트리와 정본의 계정 설정을 배포 진단과 같은 순서로 읽는다", () => {
+    const primary = mkdtempSync(join(tmpdir(), "toonstudio-deploy-account-"));
+    try {
+      const linked = join(primary, "linked");
+      const worktreeGit = join(primary, ".git", "worktrees", "linked");
+      mkdirSync(linked);
+      mkdirSync(worktreeGit, { recursive: true });
+      writeFileSync(join(linked, ".git"), `gitdir: ${worktreeGit}\n`);
+      writeFileSync(join(worktreeGit, "commondir"), "../..\n");
+      writeFileSync(join(primary, ".env.infrastructure.local"), `CLOUDFLARE_ACCOUNT_ID="${accountId}"\n`);
+      expect(resolveLocalCloudflareAccountId(linked, {})).toBe(accountId);
+      const projectAccount = "b".repeat(32);
+      writeFileSync(join(linked, ".env.infrastructure.local"), `CLOUDFLARE_ACCOUNT_ID=${projectAccount}\n`);
+      expect(resolveLocalCloudflareAccountId(linked, {})).toBe(projectAccount);
+      expect(resolveLocalCloudflareAccountId(linked, { CLOUDFLARE_ACCOUNT_ID: accountId })).toBe(accountId);
+      expect(resolveLocalCloudflareAccountId(linked, { CI: "true" })).toBeUndefined();
+    } finally {
+      rmSync(primary, { recursive: true, force: true });
+    }
+  });
+
   it("기본 프로필을 격리된 CLI로 읽고 출력과 오류를 메모리에서만 받는다", () => {
     const run = vi.fn(() => ({ status: 0, stdout: JSON.stringify({ type: "oauth", token: sample }) }));
     const env = {

@@ -9,12 +9,16 @@ import {
   isCloudflareAccountId,
   isLocalWranglerOAuthAllowed,
   localWranglerOAuthEnvironment,
+  resolveLocalCloudflareAccountId,
 } from "./lib/cloudflare-local-oauth.mjs";
 import {
   assertNoDuplicateDeploy,
   recordCompletedDeploy,
   resolveLocalDeployLedgerPath,
 } from "./lib/local-deploy-ledger.mjs";
+
+import { GITHUB_REPO_SLUG } from "./lib/deploy-auth-env.mjs";
+import { inspectReleaseCi } from "./release-required-ci.mjs";
 
 const STANDING_APPROVAL_PATH = "deploy/cloudflare-static/STANDING_APPROVAL.json";
 const ENVIRONMENT_CONTRACT_PATH = "config/deployment/environment-contract.json";
@@ -145,6 +149,20 @@ function readStandingApproval() {
   return parsed;
 }
 
+function requireCurrentRelease(sha) {
+  const options = { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 45_000 };
+  try {
+    const origin = execFileSync("git", ["ls-remote", "--exit-code", "origin", "refs/heads/main"], options).trim();
+    if (origin !== `${sha}\trefs/heads/main`) fail("원격 origin/main이 검증한 HEAD와 다릅니다.");
+    const ci = inspectReleaseCi(sha, { repoSlug: GITHUB_REPO_SLUG });
+    if (!ci.allGreen) fail(`현재 main push CI를 확인하세요 (core=${ci.gates.core}, verify=${ci.gates.verify}, ${ci.runStatus}).`);
+    const tip = execFileSync("gh", ["api", `repos/${GITHUB_REPO_SLUG}/git/ref/heads/main`, "--jq", ".object.sha"], options).trim();
+    if (tip !== sha) fail("정식 GitHub 저장소의 main이 검증한 HEAD와 다릅니다.");
+  } catch {
+    fail("원격 main 또는 GitHub 필수 CI 상태를 확인할 수 없어 배포를 중지했습니다.");
+  }
+}
+
 let productionHead = null;
 let productionApprovalMode = null;
 let productionLedgerPath = null;
@@ -198,6 +216,7 @@ if (mode === "production") {
   } catch (error) {
     fail(error instanceof Error ? error.message : String(error));
   }
+  requireCurrentRelease(head);
   routeVariables.push("--var", `RELEASE_SHA:${head}`);
 }
 
@@ -248,11 +267,14 @@ const baseChildEnvironment = {
   ...(childHome ? { HOME: childHome } : {}),
 };
 if (useLocalOAuth && !isLocalWranglerOAuthAllowed(process.env)) fail("--wrangler-oauth는 로컬 배포에서만 사용할 수 있습니다.");
-if (useLocalOAuth && mode === "production" && !isCloudflareAccountId(process.env.CLOUDFLARE_ACCOUNT_ID)) {
+const localAccountId = useLocalOAuth ? resolveLocalCloudflareAccountId(process.cwd(), baseChildEnvironment) : undefined;
+if (useLocalOAuth && mode === "production" && !isCloudflareAccountId(localAccountId)) {
   fail("--wrangler-oauth로 배포할 계정의 CLOUDFLARE_ACCOUNT_ID를 확인해 주세요.");
 }
 const oldWorkerIsolation = skipR2Sync && !process.env.CLOUDFLARE_API_TOKEN?.trim();
-const oauthChildEnvironment = useLocalOAuth ? localWranglerOAuthEnvironment(baseChildEnvironment) : undefined;
+const oauthChildEnvironment = useLocalOAuth
+  ? localWranglerOAuthEnvironment({ ...baseChildEnvironment, CLOUDFLARE_ACCOUNT_ID: localAccountId })
+  : undefined;
 
 const pipelineCommands = [
   {
@@ -286,6 +308,7 @@ const pipelineCommands = [
     args: ["exec", "node", "scripts/verify-static-service-worker.mjs"],
   },
   {
+    publishes: mode === "production" && !skipR2Sync,
     executable: "pnpm",
     args: [
       "run",
@@ -297,6 +320,7 @@ const pipelineCommands = [
     environment: oauthChildEnvironment,
   },
   {
+    publishes: mode === "production",
     executable: "pnpm",
     args: [
       "exec",
@@ -315,6 +339,7 @@ const pipelineCommands = [
 ];
 
 for (const command of pipelineCommands) {
+  if (command.publishes) requireCurrentRelease(productionHead);
   const result = spawnSync(command.executable, command.args, {
     stdio: "inherit",
     env: command.environment ?? baseChildEnvironment,

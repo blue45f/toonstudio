@@ -1,4 +1,9 @@
 import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
+
+import { parseDotenvContent } from "./deploy-auth-env.mjs";
+import { resolveCommonGitDirectory } from "./local-deploy-ledger.mjs";
 
 const sessionUnavailable = "로컬 Wrangler OAuth 세션을 확인할 수 없습니다. wrangler whoami로 로그인 상태를 확인해 주세요.";
 
@@ -8,6 +13,23 @@ export function isLocalWranglerOAuthAllowed(env) {
 
 export function isCloudflareAccountId(value) {
   return typeof value === "string" && /^[a-f0-9]{32}$/iu.test(value);
+}
+
+/** 작업 트리의 설정을 우선하고, 연결된 정본 체크아웃에서는 계정 ID만 읽는다. */
+export function resolveLocalCloudflareAccountId(cwd, env) {
+  if (!isLocalWranglerOAuthAllowed(env)) return undefined;
+  if (env.CLOUDFLARE_ACCOUNT_ID?.trim()) return env.CLOUDFLARE_ACCOUNT_ID.trim();
+  const common = resolveCommonGitDirectory(cwd);
+  const roots = new Set([cwd]);
+  if (common && basename(common) === ".git") roots.add(dirname(common));
+  for (const root of roots) {
+    const file = join(root, ".env.infrastructure.local");
+    if (existsSync(file)) {
+      const accountId = parseDotenvContent(readFileSync(file, "utf8")).CLOUDFLARE_ACCOUNT_ID?.trim();
+      if (accountId) return accountId;
+    }
+  }
+  return undefined;
 }
 
 /** 로컬 CLI는 기본 프로필과 운영 API를 사용한다. 셸의 다른 인증·로그·엔드포인트 설정은 전달하지 않는다. */
