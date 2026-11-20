@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Vilkite yra ",
   "studio.bubble.placementHelp.cancelHint": "Galite atšaukti naudodami .",
   "studio.bubble.kindMenuAria": "Kalbos burbulų tipai",
-  "studio.bubble.chooseHint": "Jei spustelėsite arba bakstelėsite, jis bus įtrauktas į pasirinktą iškirptą / dabartinį ekraną, o jei vilksite, jis bus įtrauktas į vietą, kurioje jį įdėjote."
+  "studio.bubble.chooseHint": "Jei spustelėsite arba bakstelėsite, jis bus įtrauktas į pasirinktą iškirptą / dabartinį ekraną, o jei vilksite, jis bus įtrauktas į vietą, kurioje jį įdėjote.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

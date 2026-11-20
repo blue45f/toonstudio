@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Puedes cancelar con .",
   "studio.bubble.kindMenuAria": "Tipos de bocadillos",
   "studio.bubble.chooseHint": "Si hace clic o toca, se agregará a la pantalla de corte/actual seleccionada, y si arrastra, se agregará a la ubicación donde lo colocó.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "diseño de cola",
   "studio.bubbleTail.description": "La dirección de orientación hacia el altavoz y el ancho y curvatura de la base se ajustan por separado.",
   "studio.bubbleTail.speakerDirection": "dirección del hablante",

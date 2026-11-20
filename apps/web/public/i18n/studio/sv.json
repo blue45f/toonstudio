@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Du kan avbryta med .",
   "studio.bubble.kindMenuAria": "Typer av pratbubblor",
   "studio.bubble.chooseHint": "Om du klickar eller trycker på läggs den till på den valda klippnings-/aktuella skärmen, och om du drar läggs den till på platsen där du placerade den.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "svansdesign",
   "studio.bubbleTail.description": "Riktningen för att peka mot högtalaren och basens bredd och krökning justeras separat.",
   "studio.bubbleTail.speakerDirection": "högtalarens riktning",

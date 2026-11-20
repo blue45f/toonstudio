@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "ile iptal edebilirsiniz.",
   "studio.bubble.kindMenuAria": "Konuşma balonu türleri",
   "studio.bubble.chooseHint": "Tıklarsanız veya dokunursanız, seçilen kesme/geçerli ekrana eklenecektir; sürüklerseniz yerleştirdiğiniz konuma eklenecektir.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "kuyruk tasarımı",
   "studio.bubbleTail.description": "Hoparlöre bakma yönü ve tabanın genişliği ve eğimi ayrı ayrı ayarlanır.",
   "studio.bubbleTail.speakerDirection": "hoparlör yönü",

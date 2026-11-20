@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Galite atšaukti naudodami .",
   "studio.bubble.kindMenuAria": "Kalbos burbulų tipai",
   "studio.bubble.chooseHint": "Jei spustelėsite arba bakstelėsite, jis bus įtrauktas į pasirinktą iškirptą / dabartinį ekraną, o jei vilksite, jis bus įtrauktas į vietą, kurioje jį įdėjote.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "uodegos dizainas",
   "studio.bubbleTail.description": "Nukreipimo į garsiakalbį kryptis ir pagrindo plotis bei kreivumas reguliuojami atskirai.",
   "studio.bubbleTail.speakerDirection": "garsiakalbio kryptis",

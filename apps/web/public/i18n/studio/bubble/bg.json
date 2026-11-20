@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Плъзнете е ",
   "studio.bubble.placementHelp.cancelHint": "Можете да отмените с.",
   "studio.bubble.kindMenuAria": "Видове балончета за реч",
-  "studio.bubble.chooseHint": "Ако щракнете или докоснете, той ще бъде добавен към избрания изрязан/текущ екран, а ако плъзнете, ще бъде добавен към мястото, където сте го поставили."
+  "studio.bubble.chooseHint": "Ако щракнете или докоснете, той ще бъде добавен към избрания изрязан/текущ екран, а ако плъзнете, ще бъде добавен към мястото, където сте го поставили.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Драг је ",
   "studio.bubble.placementHelp.cancelHint": "Можете отказати са .",
   "studio.bubble.kindMenuAria": "Врсте говорних мехурића",
-  "studio.bubble.chooseHint": "Ако кликнете или додирнете, биће додат на изабрани исечени/тренутни екран, а ако превучете, биће додат на локацију на којој сте га поставили."
+  "studio.bubble.chooseHint": "Ако кликнете или додирнете, биће додат на изабрани исечени/тренутни екран, а ако превучете, биће додат на локацију на којој сте га поставили.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

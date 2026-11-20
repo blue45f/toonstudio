@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Jūs varat atcelt ar .",
   "studio.bubble.kindMenuAria": "Runas burbuļu veidi",
   "studio.bubble.chooseHint": "Noklikšķinot vai pieskaroties, tas tiks pievienots atlasītajam izgrieztajam/pašreizējam ekrānam, un, velkot, tas tiks pievienots vietai, kur to ievietojāt.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "astes dizains",
   "studio.bubbleTail.description": "Virziens, kas vērsts pret skaļruni, un pamatnes platums un izliekums tiek regulēti atsevišķi.",
   "studio.bubbleTail.speakerDirection": "skaļruņa virziens",

@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "يمكنك الإلغاء باستخدام .",
   "studio.bubble.kindMenuAria": "أنواع فقاعات الكلام",
   "studio.bubble.chooseHint": "إذا قمت بالنقر أو الضغط، فستتم إضافته إلى شاشة القطع/الحالية المحددة، وإذا قمت بالسحب، فستتم إضافته إلى الموقع الذي قمت بوضعه فيه.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "تصميم الذيل",
   "studio.bubbleTail.description": "يتم ضبط اتجاه الإشارة نحو السماعة وعرض القاعدة وانحناءها بشكل منفصل.",
   "studio.bubbleTail.speakerDirection": "اتجاه المتكلم",

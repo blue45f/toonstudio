@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "La traînée est ",
   "studio.bubble.placementHelp.cancelHint": "Vous pouvez annuler avec .",
   "studio.bubble.kindMenuAria": "Types de bulles",
-  "studio.bubble.chooseHint": "Si vous cliquez ou appuyez, il sera ajouté à l'écran coupé/actuel sélectionné, et si vous faites glisser, il sera ajouté à l'emplacement où vous l'avez placé."
+  "studio.bubble.chooseHint": "Si vous cliquez ou appuyez, il sera ajouté à l'écran coupé/actuel sélectionné, et si vous faites glisser, il sera ajouté à l'emplacement où vous l'avez placé.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

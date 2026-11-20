@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Bạn có thể hủy bằng .",
   "studio.bubble.kindMenuAria": "Các loại bong bóng lời nói",
   "studio.bubble.chooseHint": "Nếu bạn nhấp hoặc nhấn, nó sẽ được thêm vào màn hình cắt/hiện tại đã chọn và nếu bạn kéo, nó sẽ được thêm vào vị trí bạn đã đặt.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "thiết kế đuôi",
   "studio.bubbleTail.description": "Hướng hướng về phía loa và độ rộng, độ cong của đế được điều chỉnh riêng.",
   "studio.bubbleTail.speakerDirection": "hướng loa",

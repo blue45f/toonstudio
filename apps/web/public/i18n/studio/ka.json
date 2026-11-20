@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "შეგიძლიათ გააუქმოთ .",
   "studio.bubble.kindMenuAria": "მეტყველების ბუშტების სახეები",
   "studio.bubble.chooseHint": "თუ დააწკაპუნებთ ან შეეხეთ, ის დაემატება არჩეულ ამოჭრილ/მიმდინარე ეკრანს, ხოლო თუ გადაიტანეთ, დაემატება იმ ადგილას, სადაც განათავსეთ.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "კუდის დიზაინი",
   "studio.bubbleTail.description": "დინამიკისკენ მიმართვის მიმართულება და ფუძის სიგანე და გამრუდება რეგულირდება ცალკე.",
   "studio.bubbleTail.speakerDirection": "სპიკერის მიმართულება",

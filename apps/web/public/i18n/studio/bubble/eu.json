@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Arrastatu da ",
   "studio.bubble.placementHelp.cancelHint": "rekin bertan behera utzi dezakezu.",
   "studio.bubble.kindMenuAria": "Hizketa-burbuil motak",
-  "studio.bubble.chooseHint": "Klikatu edo ukitzen baduzu, hautatutako ebaki/uneko pantailan gehituko da, eta arrastatuz gero, jarri duzun tokian gehituko da."
+  "studio.bubble.chooseHint": "Klikatu edo ukitzen baduzu, hautatutako ebaki/uneko pantailan gehituko da, eta arrastatuz gero, jarri duzun tokian gehituko da.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

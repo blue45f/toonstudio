@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Вы можете отменить с помощью .",
   "studio.bubble.kindMenuAria": "Виды речевых пузырей",
   "studio.bubble.chooseHint": "Если вы щелкнете или коснетесь, он будет добавлен на выбранный вырез/текущий экран, а если вы перетащите, он будет добавлен в то место, где вы его поместили.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "дизайн хвоста",
   "studio.bubbleTail.description": "Направление на динамик, а также ширина и кривизна основания настраиваются отдельно.",
   "studio.bubbleTail.speakerDirection": "направление динамика",

@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "በ ጋር መሰረዝ ይችላሉ።",
   "studio.bubble.kindMenuAria": "የንግግር አረፋ ዓይነቶች",
   "studio.bubble.chooseHint": "ጠቅ ካደረጉት ወይም ከነካህ በተመረጠው የተቆረጠ/የአሁኑ ስክሪን ላይ ይታከላል እና ከጎተትክ ባስቀመጥክበት ቦታ ላይ ይታከላል።",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "የጅራት ንድፍ",
   "studio.bubbleTail.description": "ወደ ተናጋሪው የማመልከቻው አቅጣጫ እና የመሠረቱ ስፋቱ እና ኩርባው ተለይተው ተስተካክለዋል.",
   "studio.bubbleTail.speakerDirection": "የድምጽ ማጉያ አቅጣጫ",

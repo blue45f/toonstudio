@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "ilə ləğv edə bilərsiniz.",
   "studio.bubble.kindMenuAria": "Nitq baloncuklarının növləri",
   "studio.bubble.chooseHint": "Əgər klikləsəniz və ya klikləsəniz, o, seçilmiş kəsilmiş/cari ekrana əlavə olunacaq və sürükləsəniz, onu yerləşdirdiyiniz yerə əlavə olunacaq.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "quyruq dizaynı",
   "studio.bubbleTail.description": "Dinamikə yönəlmə istiqaməti və bazanın eni və əyriliyi ayrıca tənzimlənir.",
   "studio.bubbleTail.speakerDirection": "natiq istiqaməti",

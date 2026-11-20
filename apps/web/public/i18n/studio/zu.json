@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Ungakhansela nge-.",
   "studio.bubble.kindMenuAria": "Izinhlobo zamabhamuza enkulumo",
   "studio.bubble.chooseHint": "Uma uchofoza noma uthepha, kuzongezwa esikrinini esikhethiwe esisikiwe/samanje, futhi uma uhudula, sizokwengezwa endaweni osibeke kuyo.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "umsila design",
   "studio.bubbleTail.description": "Isiqondiso sokukhomba esipikheni kanye nobubanzi nokujika kwesisekelo kulungiswa ngokwehlukana.",
   "studio.bubbleTail.speakerDirection": "isiqondiso sesipikha",

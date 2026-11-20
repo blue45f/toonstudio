@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Ziehen ist ",
   "studio.bubble.placementHelp.cancelHint": "Sie können mit kündigen.",
   "studio.bubble.kindMenuAria": "Arten von Sprechblasen",
-  "studio.bubble.chooseHint": "Wenn Sie darauf klicken oder tippen, wird es dem ausgewählten Schnitt/aktuellen Bildschirm hinzugefügt, und wenn Sie ziehen, wird es an der Stelle hinzugefügt, an der Sie es platziert haben."
+  "studio.bubble.chooseHint": "Wenn Sie darauf klicken oder tippen, wird es dem ausgewählten Schnitt/aktuellen Bildschirm hinzugefügt, und wenn Sie ziehen, wird es an der Stelle hinzugefügt, an der Sie es platziert haben.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Mund të anuloni me.",
   "studio.bubble.kindMenuAria": "Llojet e flluskave të të folurit",
   "studio.bubble.chooseHint": "Nëse klikoni ose prekni, do të shtohet në ekranin e përzgjedhur të prerjes/aktualit dhe nëse e tërhiqni, do të shtohet në vendndodhjen ku e keni vendosur.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "dizajni i bishtit",
   "studio.bubbleTail.description": "Drejtimi i drejtimit drejt altoparlantit dhe gjerësia dhe lakimi i bazës rregullohen veçmas.",
   "studio.bubbleTail.speakerDirection": "drejtimi i altoparlantit",

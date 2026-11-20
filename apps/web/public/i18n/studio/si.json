@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "ඔබට අවලංගු කළ හැක.",
   "studio.bubble.kindMenuAria": "කථන බුබුලු වර්ග",
   "studio.bubble.chooseHint": "ඔබ ක්ලික් කළහොත් හෝ තට්ටු කළහොත්, එය තෝරාගත් කැපුම්/ධාරා තිරයට එක් කරනු ලබන අතර, ඔබ ඇදගෙන ගියහොත්, එය ඔබ තැබූ ස්ථානයට එකතු වේ.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "වලිගය නිර්මාණය",
   "studio.bubbleTail.description": "ස්පීකරය දෙසට යොමු කිරීමේ දිශාව සහ පාදයේ පළල සහ වක්රය වෙන වෙනම සකස් කර ඇත.",
   "studio.bubbleTail.speakerDirection": "කථානායක දිශාව",

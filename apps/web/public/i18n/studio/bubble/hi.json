@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "खींचें है ",
   "studio.bubble.placementHelp.cancelHint": "आप के साथ रद्द कर सकते हैं.",
   "studio.bubble.kindMenuAria": "भाषण बुलबुले के प्रकार",
-  "studio.bubble.chooseHint": "यदि आप क्लिक या टैप करते हैं, तो यह चयनित कट/करंट स्क्रीन में जुड़ जाएगा, और यदि आप खींचते हैं, तो यह उस स्थान पर जुड़ जाएगा जहां आपने इसे रखा था।"
+  "studio.bubble.chooseHint": "यदि आप क्लिक या टैप करते हैं, तो यह चयनित कट/करंट स्क्रीन में जुड़ जाएगा, और यदि आप खींचते हैं, तो यह उस स्थान पर जुड़ जाएगा जहां आपने इसे रखा था।",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "ખેંચો છે ",
   "studio.bubble.placementHelp.cancelHint": "તમે સાથે રદ કરી શકો છો.",
   "studio.bubble.kindMenuAria": "વાણી પરપોટાના પ્રકાર",
-  "studio.bubble.chooseHint": "જો તમે ક્લિક કરો અથવા ટેપ કરો છો, તો તે પસંદ કરેલ કટ/વર્તમાન સ્ક્રીનમાં ઉમેરવામાં આવશે, અને જો તમે ખેંચો છો, તો તે તે સ્થાન પર ઉમેરવામાં આવશે જ્યાં તમે તેને મૂક્યું છે."
+  "studio.bubble.chooseHint": "જો તમે ક્લિક કરો અથવા ટેપ કરો છો, તો તે પસંદ કરેલ કટ/વર્તમાન સ્ક્રીનમાં ઉમેરવામાં આવશે, અને જો તમે ખેંચો છો, તો તે તે સ્થાન પર ઉમેરવામાં આવશે જ્યાં તમે તેને મૂક્યું છે.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

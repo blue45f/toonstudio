@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Môžete zrušiť pomocou .",
   "studio.bubble.kindMenuAria": "Typy rečových bublín",
   "studio.bubble.chooseHint": "Ak kliknete alebo klepnete, pridá sa na vybranú výrez/aktuálnu obrazovku a ak potiahnete, pridá sa na miesto, kam ste ho umiestnili.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "dizajn chvosta",
   "studio.bubbleTail.description": "Smer smerovania k reproduktoru a šírka a zakrivenie základne sa nastavujú samostatne.",
   "studio.bubbleTail.speakerDirection": "smer reproduktora",

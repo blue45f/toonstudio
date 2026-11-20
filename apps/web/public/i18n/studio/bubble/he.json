@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "גרור הוא ",
   "studio.bubble.placementHelp.cancelHint": "אתה יכול לבטל עם .",
   "studio.bubble.kindMenuAria": "סוגי בועות דיבור",
-  "studio.bubble.chooseHint": "אם תלחץ או תקיש, הוא יתווסף למסך החתך/נוכחי שנבחר, ואם תגרור, הוא יתווסף למיקום שבו מיקמת אותו."
+  "studio.bubble.chooseHint": "אם תלחץ או תקיש, הוא יתווסף למסך החתך/נוכחי שנבחר, ואם תגרור, הוא יתווסף למיקום שבו מיקמת אותו.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

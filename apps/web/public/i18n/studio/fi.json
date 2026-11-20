@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Voit peruuttaa painikkeella.",
   "studio.bubble.kindMenuAria": "Puhekuplien tyypit",
   "studio.bubble.chooseHint": "Jos napsautat tai napautat, se lisätään valittuun leikkaus-/nykyiseen näyttöön, ja jos vedät, se lisätään sijaintiin, johon sen asetit.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "hännän muotoilu",
   "studio.bubbleTail.description": "Kaiuttimeen osoittamisen suunta sekä alustan leveys ja kaarevuus säädetään erikseen.",
   "studio.bubbleTail.speakerDirection": "kaiuttimen suunta",

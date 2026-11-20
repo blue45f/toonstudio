@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Перетягнути є ",
   "studio.bubble.placementHelp.cancelHint": "Ви можете скасувати за допомогою .",
   "studio.bubble.kindMenuAria": "Види мовних бульбашок",
-  "studio.bubble.chooseHint": "Якщо клацнути або торкнутися, його буде додано до вибраного вирізаного/поточного екрана, а якщо перетягнути, його буде додано до місця, де ви його розмістили."
+  "studio.bubble.chooseHint": "Якщо клацнути або торкнутися, його буде додано до вибраного вирізаного/поточного екрана, а якщо перетягнути, його буде додано до місця, де ви його розмістили.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

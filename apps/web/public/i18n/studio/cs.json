@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Zrušit můžete pomocí .",
   "studio.bubble.kindMenuAria": "Typy řečových bublin",
   "studio.bubble.chooseHint": "Pokud klepnete nebo klepnete, přidá se na vybranou vystřiženou/aktuální obrazovku, a pokud přetáhnete, přidá se na místo, kam jste jej umístili.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "design ocasu",
   "studio.bubbleTail.description": "The direction of pointing toward the speaker and the width and curvature of the base are adjusted separately.",
   "studio.bubbleTail.speakerDirection": "speaker direction",

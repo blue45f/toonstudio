@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Можете да отмените с.",
   "studio.bubble.kindMenuAria": "Видове балончета за реч",
   "studio.bubble.chooseHint": "Ако щракнете или докоснете, той ще бъде добавен към избрания изрязан/текущ екран, а ако плъзнете, ще бъде добавен към мястото, където сте го поставили.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "дизайн на опашката",
   "studio.bubbleTail.description": "Посоката на насочване към високоговорителя и ширината и извивката на основата се регулират отделно.",
   "studio.bubbleTail.speakerDirection": "посока на високоговорителя",

@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "אתה יכול לבטל עם .",
   "studio.bubble.kindMenuAria": "סוגי בועות דיבור",
   "studio.bubble.chooseHint": "אם תלחץ או תקיש, הוא יתווסף למסך החתך/נוכחי שנבחר, ואם תגרור, הוא יתווסף למיקום שבו מיקמת אותו.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "עיצוב זנב",
   "studio.bubbleTail.description": "כיוון ההצבעה לכיוון הרמקול והרוחב והעקמומיות של הבסיס מותאמים בנפרד.",
   "studio.bubbleTail.speakerDirection": "כיוון הרמקול",

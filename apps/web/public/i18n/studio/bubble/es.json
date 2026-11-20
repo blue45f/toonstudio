@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Arrastrar es ",
   "studio.bubble.placementHelp.cancelHint": "Puedes cancelar con .",
   "studio.bubble.kindMenuAria": "Tipos de bocadillos",
-  "studio.bubble.chooseHint": "Si hace clic o toca, se agregará a la pantalla de corte/actual seleccionada, y si arrastra, se agregará a la ubicación donde lo colocó."
+  "studio.bubble.chooseHint": "Si hace clic o toca, se agregará a la pantalla de corte/actual seleccionada, y si arrastra, se agregará a la ubicación donde lo colocó.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

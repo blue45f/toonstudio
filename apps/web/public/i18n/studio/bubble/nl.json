@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Slepen is ",
   "studio.bubble.placementHelp.cancelHint": "Opzeggen kan met .",
   "studio.bubble.kindMenuAria": "Soorten tekstballonnen",
-  "studio.bubble.chooseHint": "Als u klikt of tikt, wordt het toegevoegd aan het geselecteerde knip-/huidige scherm, en als u sleept, wordt het toegevoegd aan de locatie waar u het hebt geplaatst."
+  "studio.bubble.chooseHint": "Als u klikt of tikt, wordt het toegevoegd aan het geselecteerde knip-/huidige scherm, en als u sleept, wordt het toegevoegd aan de locatie waar u het hebt geplaatst.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

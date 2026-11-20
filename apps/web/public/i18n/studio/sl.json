@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Prekličete lahko z.",
   "studio.bubble.kindMenuAria": "Vrste govornih oblačkov",
   "studio.bubble.chooseHint": "Če kliknete ali tapnete, bo dodan na izbrani izrez/trenutni zaslon, če pa povlečete, bo dodan na mesto, kamor ste ga postavili.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "oblikovanje repa",
   "studio.bubbleTail.description": "Smer usmerjenosti proti zvočniku ter širina in ukrivljenost podnožja se prilagajajo ločeno.",
   "studio.bubbleTail.speakerDirection": "smer zvočnika",

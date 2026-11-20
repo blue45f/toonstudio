@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Σύρετε είναι ",
   "studio.bubble.placementHelp.cancelHint": "Μπορείτε να ακυρώσετε με .",
   "studio.bubble.kindMenuAria": "Τύποι φυσαλίδων ομιλίας",
-  "studio.bubble.chooseHint": "Εάν κάνετε κλικ ή αγγίξετε, θα προστεθεί στην επιλεγμένη οθόνη περικοπής/τρέχουσας και αν σύρετε, θα προστεθεί στην τοποθεσία όπου την τοποθετήσατε."
+  "studio.bubble.chooseHint": "Εάν κάνετε κλικ ή αγγίξετε, θα προστεθεί στην επιλεγμένη οθόνη περικοπής/τρέχουσας και αν σύρετε, θα προστεθεί στην τοποθεσία όπου την τοποθετήσατε.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

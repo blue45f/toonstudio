@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Դուք կարող եք չեղարկել հետ.",
   "studio.bubble.kindMenuAria": "Խոսքի փուչիկների տեսակները",
   "studio.bubble.chooseHint": "Եթե սեղմեք կամ հպեք, այն կավելացվի ընտրված կտրված/ընթացիկ էկրանին, իսկ եթե քաշեք, կավելացվի այն վայրում, որտեղ տեղադրել եք:",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "պոչի ձևավորում",
   "studio.bubbleTail.description": "Դեպի բարձրախոսի ուղղությունը և հիմքի լայնությունն ու կորությունը ճշգրտվում են առանձին:",
   "studio.bubbleTail.speakerDirection": "բարձրախոսի ուղղությունը",

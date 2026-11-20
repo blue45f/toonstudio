@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "I-drag ay ",
   "studio.bubble.placementHelp.cancelHint": "Maaari mong kanselahin gamit ang .",
   "studio.bubble.kindMenuAria": "Mga uri ng speech bubble",
-  "studio.bubble.chooseHint": "Kung nag-click o nag-tap ka, idaragdag ito sa napiling cut/kasalukuyang screen, at kung i-drag mo, idaragdag ito sa lokasyon kung saan mo ito inilagay."
+  "studio.bubble.chooseHint": "Kung nag-click o nag-tap ka, idaragdag ito sa napiling cut/kasalukuyang screen, at kung i-drag mo, idaragdag ito sa lokasyon kung saan mo ito inilagay.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

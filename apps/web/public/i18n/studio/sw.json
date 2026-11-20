@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Unaweza kughairi na.",
   "studio.bubble.kindMenuAria": "Aina za mapovu ya usemi",
   "studio.bubble.chooseHint": "Ukibofya au kugonga, itaongezwa kwenye skrini iliyochaguliwa ya kukata/ya sasa, na ukiburuta, itaongezwa mahali ulipoiweka.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "kubuni mkia",
   "studio.bubbleTail.description": "Mwelekeo wa kuelekeza kwa msemaji na upana na curvature ya msingi hurekebishwa tofauti.",
   "studio.bubbleTail.speakerDirection": "mwelekeo wa mzungumzaji",

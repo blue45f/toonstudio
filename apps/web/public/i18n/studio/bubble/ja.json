@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "プレス",
   "studio.bubble.placementHelp.cancelHint": "キャンセルする。",
   "studio.bubble.kindMenuAria": "泡の種類",
-  "studio.bubble.chooseHint": "クリック/タップして選択/表示されているフレームに配置し、ドラッグしてポインタの位置に配置します"
+  "studio.bubble.chooseHint": "クリック/タップして選択/表示されているフレームに配置し、ドラッグしてポインタの位置に配置します",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Arrastar é ",
   "studio.bubble.placementHelp.cancelHint": "Você pode cancelar com .",
   "studio.bubble.kindMenuAria": "Tipos de balões de fala",
-  "studio.bubble.chooseHint": "Se você clicar ou tocar, ele será adicionado à tela atual/cortada selecionada, e se você arrastar, ele será adicionado ao local onde você o colocou."
+  "studio.bubble.chooseHint": "Se você clicar ou tocar, ele será adicionado à tela atual/cortada selecionada, e se você arrastar, ele será adicionado ao local onde você o colocou.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

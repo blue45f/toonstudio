@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Tarik adalah ",
   "studio.bubble.placementHelp.cancelHint": "Anda dapat membatalkan dengan .",
   "studio.bubble.kindMenuAria": "Jenis gelembung ucapan",
-  "studio.bubble.chooseHint": "Jika Anda mengklik atau mengetuk, itu akan ditambahkan ke potongan/layar saat ini yang dipilih, dan jika Anda menyeretnya, itu akan ditambahkan ke lokasi di mana Anda meletakkannya."
+  "studio.bubble.chooseHint": "Jika Anda mengklik atau mengetuk, itu akan ditambahkan ke potongan/layar saat ini yang dipilih, dan jika Anda menyeretnya, itu akan ditambahkan ke lokasi di mana Anda meletakkannya.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

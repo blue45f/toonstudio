@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Μπορείτε να ακυρώσετε με .",
   "studio.bubble.kindMenuAria": "Τύποι φυσαλίδων ομιλίας",
   "studio.bubble.chooseHint": "Εάν κάνετε κλικ ή αγγίξετε, θα προστεθεί στην επιλεγμένη οθόνη περικοπής/τρέχουσας και αν σύρετε, θα προστεθεί στην τοποθεσία όπου την τοποθετήσατε.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "σχέδιο ουράς",
   "studio.bubbleTail.description": "Η κατεύθυνση της κατεύθυνσης προς το ηχείο και το πλάτος και η καμπυλότητα της βάσης ρυθμίζονται χωριστά.",
   "studio.bubbleTail.speakerDirection": "κατεύθυνση ηχείου",

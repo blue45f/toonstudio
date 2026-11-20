@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "bilan bekor qilishingiz mumkin.",
   "studio.bubble.kindMenuAria": "Nutq pufakchalarining turlari",
   "studio.bubble.chooseHint": "Agar siz bossangiz yoki bossangiz, u tanlangan kesilgan/joriy ekranga qo‘shiladi va sudrab tortsangiz, uni joylashtirgan joyga qo‘shiladi.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "quyruq dizayni",
   "studio.bubbleTail.description": "Karnay tomon ishora qilish yo'nalishi va taglikning kengligi va egriligi alohida o'rnatiladi.",
   "studio.bubbleTail.speakerDirection": "karnay yo'nalishi",

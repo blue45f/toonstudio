@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Drag je ",
   "studio.bubble.placementHelp.cancelHint": "Možete otkazati sa .",
   "studio.bubble.kindMenuAria": "Vrste govornih oblačića",
-  "studio.bubble.chooseHint": "Ako kliknete ili dodirnete, bit će dodan na odabrani izrezani/trenutni ekran, a ako prevučete, bit će dodan na lokaciju na kojoj ste ga postavili."
+  "studio.bubble.chooseHint": "Ako kliknete ili dodirnete, bit će dodan na odabrani izrezani/trenutni ekran, a ako prevučete, bit će dodan na lokaciju na kojoj ste ga postavili.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

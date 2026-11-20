@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "می توانید با انصراف دهید.",
   "studio.bubble.kindMenuAria": "انواع حباب گفتار",
   "studio.bubble.chooseHint": "اگر کلیک کنید یا ضربه بزنید، به صفحه برش/جاری انتخاب شده اضافه می شود و اگر بکشید، به مکانی که آن را قرار داده اید اضافه می شود.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "طراحی دم",
   "studio.bubbleTail.description": "جهت اشاره به سمت بلندگو و عرض و انحنای پایه به طور جداگانه تنظیم می شود.",
   "studio.bubbleTail.speakerDirection": "جهت بلندگو",

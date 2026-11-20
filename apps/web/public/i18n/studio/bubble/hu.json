@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Drag van ",
   "studio.bubble.placementHelp.cancelHint": "Ezzel lemondhatja.",
   "studio.bubble.kindMenuAria": "A beszédbuborékok típusai",
-  "studio.bubble.chooseHint": "Ha rákattint vagy megérinti, a rendszer hozzáadja a kiválasztott kivágott/aktuális képernyőhöz, ha pedig húzza, akkor arra a helyre, ahová elhelyezte."
+  "studio.bubble.chooseHint": "Ha rákattint vagy megérinti, a rendszer hozzáadja a kiválasztott kivágott/aktuális képernyőhöz, ha pedig húzza, akkor arra a helyre, ahová elhelyezte.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

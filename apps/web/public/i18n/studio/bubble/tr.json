@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Sürükle: ",
   "studio.bubble.placementHelp.cancelHint": "ile iptal edebilirsiniz.",
   "studio.bubble.kindMenuAria": "Konuşma balonu türleri",
-  "studio.bubble.chooseHint": "Tıklarsanız veya dokunursanız, seçilen kesme/geçerli ekrana eklenecektir; sürüklerseniz yerleştirdiğiniz konuma eklenecektir."
+  "studio.bubble.chooseHint": "Tıklarsanız veya dokunursanız, seçilen kesme/geçerli ekrana eklenecektir; sürüklerseniz yerleştirdiğiniz konuma eklenecektir.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

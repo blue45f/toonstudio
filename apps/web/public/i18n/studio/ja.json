@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "キャンセルする。",
   "studio.bubble.kindMenuAria": "泡の種類",
   "studio.bubble.chooseHint": "クリック/タップして選択/表示されているフレームに配置し、ドラッグしてポインタの位置に配置します",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "テールデザイン",
   "studio.bubbleTail.description": "スピーカーの方向とベースの幅/曲率を個別に調整します。",
   "studio.bubbleTail.speakerDirection": "スピーカーの方向",

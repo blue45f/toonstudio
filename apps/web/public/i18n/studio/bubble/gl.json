@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Arrastrar é ",
   "studio.bubble.placementHelp.cancelHint": "Podes cancelar con .",
   "studio.bubble.kindMenuAria": "Tipos de burbullas",
-  "studio.bubble.chooseHint": "Se fai clic ou toca, engadirase á pantalla de corte/actual seleccionada e, se o arrastras, engadirase á localización onde o colocou."
+  "studio.bubble.chooseHint": "Se fai clic ou toca, engadirase á pantalla de corte/actual seleccionada e, se o arrastras, engadirase á localización onde o colocou.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

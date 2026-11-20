@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Du kan avbryte med .",
   "studio.bubble.kindMenuAria": "Typer snakkebobler",
   "studio.bubble.chooseHint": "Hvis du klikker eller trykker, vil den bli lagt til den valgte klippe/gjeldende skjermen, og hvis du drar, legges den til stedet der du plasserte den.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "haledesign",
   "studio.bubbleTail.description": "Pekeretningen mot høyttaleren og bredden og krumningen til basen justeres separat.",
   "studio.bubbleTail.speakerDirection": "høyttalerretning",

@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Dra er ",
   "studio.bubble.placementHelp.cancelHint": "Du kan avbryte med .",
   "studio.bubble.kindMenuAria": "Typer snakkebobler",
-  "studio.bubble.chooseHint": "Hvis du klikker eller trykker, vil den bli lagt til den valgte klippe/gjeldende skjermen, og hvis du drar, legges den til stedet der du plasserte den."
+  "studio.bubble.chooseHint": "Hvis du klikker eller trykker, vil den bli lagt til den valgte klippe/gjeldende skjermen, og hvis du drar, legges den til stedet der du plasserte den.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

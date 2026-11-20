@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "คุณสามารถยกเลิกได้ด้วย",
   "studio.bubble.kindMenuAria": "ประเภทของฟองคำพูด",
   "studio.bubble.chooseHint": "หากคุณคลิกหรือแตะ มันจะถูกเพิ่มไปยังหน้าจอการตัด/ปัจจุบันที่เลือก และหากคุณลาก มันจะถูกเพิ่มไปยังตำแหน่งที่คุณวางไว้",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "การออกแบบหาง",
   "studio.bubbleTail.description": "ทิศทางการชี้ไปทางลำโพงและความกว้างและความโค้งของฐานจะถูกปรับแยกกัน",
   "studio.bubbleTail.speakerDirection": "ทิศทางของลำโพง",

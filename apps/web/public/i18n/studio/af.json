@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Jy kan kanselleer met.",
   "studio.bubble.kindMenuAria": "Soorte spraakborrels",
   "studio.bubble.chooseHint": "As jy klik of tik, sal dit by die geselekteerde sny/huidige skerm gevoeg word, en as jy sleep, sal dit bygevoeg word by die plek waar jy dit geplaas het.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "stert ontwerp",
   "studio.bubbleTail.description": "Die rigting van wys na die luidspreker en die breedte en kromming van die basis word afsonderlik aangepas.",
   "studio.bubbleTail.speakerDirection": "spreker rigting",

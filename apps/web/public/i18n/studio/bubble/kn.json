@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "ಡ್ರ್ಯಾಗ್ ಆಗಿದೆ ",
   "studio.bubble.placementHelp.cancelHint": "ಇದರೊಂದಿಗೆ ನೀವು ರದ್ದುಗೊಳಿಸಬಹುದು.",
   "studio.bubble.kindMenuAria": "ಮಾತಿನ ಗುಳ್ಳೆಗಳ ವಿಧಗಳು",
-  "studio.bubble.chooseHint": "ನೀವು ಕ್ಲಿಕ್ ಮಾಡಿದರೆ ಅಥವಾ ಟ್ಯಾಪ್ ಮಾಡಿದರೆ, ಆಯ್ಕೆಮಾಡಿದ ಕಟ್/ಪ್ರಸ್ತುತ ಪರದೆಗೆ ಅದನ್ನು ಸೇರಿಸಲಾಗುತ್ತದೆ ಮತ್ತು ನೀವು ಡ್ರ್ಯಾಗ್ ಮಾಡಿದರೆ, ಅದನ್ನು ನೀವು ಇರಿಸಿದ ಸ್ಥಳಕ್ಕೆ ಸೇರಿಸಲಾಗುತ್ತದೆ."
+  "studio.bubble.chooseHint": "ನೀವು ಕ್ಲಿಕ್ ಮಾಡಿದರೆ ಅಥವಾ ಟ್ಯಾಪ್ ಮಾಡಿದರೆ, ಆಯ್ಕೆಮಾಡಿದ ಕಟ್/ಪ್ರಸ್ತುತ ಪರದೆಗೆ ಅದನ್ನು ಸೇರಿಸಲಾಗುತ್ತದೆ ಮತ್ತು ನೀವು ಡ್ರ್ಯಾಗ್ ಮಾಡಿದರೆ, ಅದನ್ನು ನೀವು ಇರಿಸಿದ ಸ್ಥಳಕ್ಕೆ ಸೇರಿಸಲಾಗುತ್ತದೆ.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

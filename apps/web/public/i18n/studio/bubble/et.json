@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Lohistamine on ",
   "studio.bubble.placementHelp.cancelHint": "Saate tühistada .",
   "studio.bubble.kindMenuAria": "Kõnemullide tüübid",
-  "studio.bubble.chooseHint": "Kui klõpsate või puudutate, lisatakse see valitud lõigatud/praegusele ekraanile ja kui lohistate, lisatakse see asukohta, kuhu te selle asetasite."
+  "studio.bubble.chooseHint": "Kui klõpsate või puudutate, lisatakse see valitud lõigatud/praegusele ekraanile ja kui lohistate, lisatakse see asukohta, kuhu te selle asetasite.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

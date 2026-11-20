@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Podeu cancel·lar amb .",
   "studio.bubble.kindMenuAria": "Tipus de bombolles",
   "studio.bubble.chooseHint": "Si feu clic o toqueu, s'afegirà a la pantalla de tall/actual seleccionada, i si arrossegueu, s'afegirà a la ubicació on l'heu col·locat.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "disseny de la cua",
   "studio.bubbleTail.description": "La direcció d'apuntar cap a l'altaveu i l'amplada i la curvatura de la base s'ajusten per separat.",
   "studio.bubbleTail.speakerDirection": "direcció de l'altaveu",

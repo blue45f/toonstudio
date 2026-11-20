@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "阻力为 ",
   "studio.bubble.placementHelp.cancelHint": "您可以使用 取消。",
   "studio.bubble.kindMenuAria": "气泡的类型",
-  "studio.bubble.chooseHint": "如果您单击或点击，它将被添加到选定的剪切/当前屏幕，如果您拖动，它将被添加到您放置它的位置。"
+  "studio.bubble.chooseHint": "如果您单击或点击，它将被添加到选定的剪切/当前屏幕，如果您拖动，它将被添加到您放置它的位置。",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

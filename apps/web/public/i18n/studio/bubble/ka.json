@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "გადათრევა არის ",
   "studio.bubble.placementHelp.cancelHint": "შეგიძლიათ გააუქმოთ .",
   "studio.bubble.kindMenuAria": "მეტყველების ბუშტების სახეები",
-  "studio.bubble.chooseHint": "თუ დააწკაპუნებთ ან შეეხეთ, ის დაემატება არჩეულ ამოჭრილ/მიმდინარე ეკრანს, ხოლო თუ გადაიტანეთ, დაემატება იმ ადგილას, სადაც განათავსეთ."
+  "studio.bubble.chooseHint": "თუ დააწკაპუნებთ ან შეეხეთ, ის დაემატება არჩეულ ამოჭრილ/მიმდინარე ეკრანს, ხოლო თუ გადაიტანეთ, დაემატება იმ ადგილას, სადაც განათავსეთ.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

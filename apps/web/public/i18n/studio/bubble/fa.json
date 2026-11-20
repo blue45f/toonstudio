@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "کشیدن است ",
   "studio.bubble.placementHelp.cancelHint": "می توانید با انصراف دهید.",
   "studio.bubble.kindMenuAria": "انواع حباب گفتار",
-  "studio.bubble.chooseHint": "اگر کلیک کنید یا ضربه بزنید، به صفحه برش/جاری انتخاب شده اضافه می شود و اگر بکشید، به مکانی که آن را قرار داده اید اضافه می شود."
+  "studio.bubble.chooseHint": "اگر کلیک کنید یا ضربه بزنید، به صفحه برش/جاری انتخاب شده اضافه می شود و اگر بکشید، به مکانی که آن را قرار داده اید اضافه می شود.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

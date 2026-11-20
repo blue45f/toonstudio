@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Seret adalah ",
   "studio.bubble.placementHelp.cancelHint": "Anda boleh membatalkan dengan .",
   "studio.bubble.kindMenuAria": "Jenis buih pertuturan",
-  "studio.bubble.chooseHint": "Jika anda mengklik atau mengetik, ia akan ditambahkan pada skrin potong/semasa yang dipilih, dan jika anda menyeret, ia akan ditambahkan ke lokasi di mana anda meletakkannya."
+  "studio.bubble.chooseHint": "Jika anda mengklik atau mengetik, ia akan ditambahkan pada skrin potong/semasa yang dipilih, dan jika anda menyeret, ia akan ditambahkan ke lokasi di mana anda meletakkannya.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

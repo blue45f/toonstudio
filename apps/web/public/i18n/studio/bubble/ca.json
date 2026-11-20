@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Arrossegar és ",
   "studio.bubble.placementHelp.cancelHint": "Podeu cancel·lar amb .",
   "studio.bubble.kindMenuAria": "Tipus de bombolles",
-  "studio.bubble.chooseHint": "Si feu clic o toqueu, s'afegirà a la pantalla de tall/actual seleccionada, i si arrossegueu, s'afegirà a la ubicació on l'heu col·locat."
+  "studio.bubble.chooseHint": "Si feu clic o toqueu, s'afegirà a la pantalla de tall/actual seleccionada, i si arrossegueu, s'afegirà a la ubicació on l'heu col·locat.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

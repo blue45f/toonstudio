@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "السحب هو ",
   "studio.bubble.placementHelp.cancelHint": "يمكنك الإلغاء باستخدام .",
   "studio.bubble.kindMenuAria": "أنواع فقاعات الكلام",
-  "studio.bubble.chooseHint": "إذا قمت بالنقر أو الضغط، فستتم إضافته إلى شاشة القطع/الحالية المحددة، وإذا قمت بالسحب، فستتم إضافته إلى الموقع الذي قمت بوضعه فيه."
+  "studio.bubble.chooseHint": "إذا قمت بالنقر أو الضغط، فستتم إضافته إلى شاشة القطع/الحالية المحددة، وإذا قمت بالسحب، فستتم إضافته إلى الموقع الذي قمت بوضعه فيه.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

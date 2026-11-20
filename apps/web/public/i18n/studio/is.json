@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Hægt er að hætta við með .",
   "studio.bubble.kindMenuAria": "Tegundir talbóla",
   "studio.bubble.chooseHint": "Ef þú smellir eða pikkar verður því bætt við valinn klippa/núverandi skjá og ef þú dregur verður honum bætt við staðinn þar sem þú settir hann.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "hala hönnun",
   "studio.bubbleTail.description": "Stefnan sem vísar í átt að hátalaranum og breidd og sveigju grunnsins eru stillt sérstaklega.",
   "studio.bubbleTail.speakerDirection": "stefna hátalara",

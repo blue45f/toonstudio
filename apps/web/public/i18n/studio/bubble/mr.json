@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "ड्रॅग आहे ",
   "studio.bubble.placementHelp.cancelHint": "तुम्ही सह रद्द करू शकता.",
   "studio.bubble.kindMenuAria": "स्पीच बबलचे प्रकार",
-  "studio.bubble.chooseHint": "तुम्ही क्लिक केल्यास किंवा टॅप केल्यास, ते निवडलेल्या कट/चालू स्क्रीनवर जोडले जाईल आणि तुम्ही ड्रॅग केल्यास, ते तुम्ही ते ठेवलेल्या ठिकाणी जोडले जाईल."
+  "studio.bubble.chooseHint": "तुम्ही क्लिक केल्यास किंवा टॅप केल्यास, ते निवडलेल्या कट/चालू स्क्रीनवर जोडले जाईल आणि तुम्ही ड्रॅग केल्यास, ते तुम्ही ते ठेवलेल्या ठिकाणी जोडले जाईल.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

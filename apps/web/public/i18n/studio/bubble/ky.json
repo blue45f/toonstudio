@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Сүйрөө ",
   "studio.bubble.placementHelp.cancelHint": "менен жокко чыгара аласыз.",
   "studio.bubble.kindMenuAria": "Сүйлөө көбүкчөлөрүнүн түрлөрү",
-  "studio.bubble.chooseHint": "Эгер чыкылдатсаңыз же таптасаңыз, ал тандалган кесилген/учурдагы экранга кошулат, ал эми сүйрөсөңүз, ал сиз койгон жерге кошулат."
+  "studio.bubble.chooseHint": "Эгер чыкылдатсаңыз же таптасаңыз, ал тандалган кесилген/учурдагы экранга кошулат, ал эми сүйрөсөңүз, ал сиз койгон жерге кошулат.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

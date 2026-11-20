@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Чирэх нь ",
   "studio.bubble.placementHelp.cancelHint": "-ээр цуцалж болно.",
   "studio.bubble.kindMenuAria": "Ярианы бөмбөлөгүүдийн төрлүүд",
-  "studio.bubble.chooseHint": "Хэрэв та дарж эсвэл товшвол энэ нь сонгосон зүссэн/одоогийн дэлгэц дээр нэмэгдэх бөгөөд чи чирвэл таны байрлуулсан байршилд нэмэгдэх болно."
+  "studio.bubble.chooseHint": "Хэрэв та дарж эсвэл товшвол энэ нь сонгосон зүссэн/одоогийн дэлгэц дээр нэмэгдэх бөгөөд чи чирвэл таны байрлуулсан байршилд нэмэгдэх болно.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

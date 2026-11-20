@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Повлечете е ",
   "studio.bubble.placementHelp.cancelHint": "Можете да откажете со.",
   "studio.bubble.kindMenuAria": "Видови говорни меури",
-  "studio.bubble.chooseHint": "Ако кликнете или допрете, ќе се додаде на избраниот пресечен/тековен екран, а ако влечете, ќе се додаде на локацијата каде што сте го поставиле."
+  "studio.bubble.chooseHint": "Ако кликнете или допрете, ќе се додаде на избраниот пресечен/тековен екран, а ако влечете, ќе се додаде на локацијата каде што сте го поставиле.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

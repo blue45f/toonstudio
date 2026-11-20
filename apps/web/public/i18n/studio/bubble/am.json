@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "መጎተት ነው። ",
   "studio.bubble.placementHelp.cancelHint": "በ ጋር መሰረዝ ይችላሉ።",
   "studio.bubble.kindMenuAria": "የንግግር አረፋ ዓይነቶች",
-  "studio.bubble.chooseHint": "ጠቅ ካደረጉት ወይም ከነካህ በተመረጠው የተቆረጠ/የአሁኑ ስክሪን ላይ ይታከላል እና ከጎተትክ ባስቀመጥክበት ቦታ ላይ ይታከላል።"
+  "studio.bubble.chooseHint": "ጠቅ ካደረጉት ወይም ከነካህ በተመረጠው የተቆረጠ/የአሁኑ ስክሪን ላይ ይታከላል እና ከጎተትክ ባስቀመጥክበት ቦታ ላይ ይታከላል።",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

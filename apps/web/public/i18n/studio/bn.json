@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "আপনি এর সাথে বাতিল করতে পারেন।",
   "studio.bubble.kindMenuAria": "বক্তৃতা বুদবুদের প্রকার",
   "studio.bubble.chooseHint": "আপনি ক্লিক করলে বা আলতো চাপলে, এটি নির্বাচিত কাট/বর্তমান স্ক্রিনে যোগ করা হবে, এবং যদি আপনি টেনে আনেন, এটি যেখানে আপনি এটি রেখেছেন সেখানে যোগ করা হবে।",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "লেজ নকশা",
   "studio.bubbleTail.description": "স্পিকারের দিকে নির্দেশ করার দিক এবং বেসের প্রস্থ এবং বক্রতা আলাদাভাবে সামঞ্জস্য করা হয়।",
   "studio.bubbleTail.speakerDirection": "স্পিকারের দিকনির্দেশ",

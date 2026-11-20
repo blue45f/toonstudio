@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "ಇದರೊಂದಿಗೆ ನೀವು ರದ್ದುಗೊಳಿಸಬಹುದು.",
   "studio.bubble.kindMenuAria": "ಮಾತಿನ ಗುಳ್ಳೆಗಳ ವಿಧಗಳು",
   "studio.bubble.chooseHint": "ನೀವು ಕ್ಲಿಕ್ ಮಾಡಿದರೆ ಅಥವಾ ಟ್ಯಾಪ್ ಮಾಡಿದರೆ, ಆಯ್ಕೆಮಾಡಿದ ಕಟ್/ಪ್ರಸ್ತುತ ಪರದೆಗೆ ಅದನ್ನು ಸೇರಿಸಲಾಗುತ್ತದೆ ಮತ್ತು ನೀವು ಡ್ರ್ಯಾಗ್ ಮಾಡಿದರೆ, ಅದನ್ನು ನೀವು ಇರಿಸಿದ ಸ್ಥಳಕ್ಕೆ ಸೇರಿಸಲಾಗುತ್ತದೆ.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "ಬಾಲ ವಿನ್ಯಾಸ",
   "studio.bubbleTail.description": "ಸ್ಪೀಕರ್ ಕಡೆಗೆ ತೋರಿಸುವ ದಿಕ್ಕು ಮತ್ತು ಬೇಸ್ನ ಅಗಲ ಮತ್ತು ವಕ್ರತೆಯನ್ನು ಪ್ರತ್ಯೇಕವಾಗಿ ಸರಿಹೊಂದಿಸಲಾಗುತ್ತದೆ.",
   "studio.bubbleTail.speakerDirection": "ಸ್ಪೀಕರ್ ನಿರ್ದೇಶನ",

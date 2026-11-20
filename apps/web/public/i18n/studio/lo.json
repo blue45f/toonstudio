@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "ທ່ານສາມາດຍົກເລີກດ້ວຍ .",
   "studio.bubble.kindMenuAria": "ປະເພດຂອງຟອງປາກເວົ້າ",
   "studio.bubble.chooseHint": "ຖ້າ​ຫາກ​ທ່ານ​ຄລິກ​ໃສ່​ຫຼື​ປາດ​, ມັນ​ຈະ​ໄດ້​ຮັບ​ການ​ເພີ່ມ​ໃນ​ຫນ້າ​ຈໍ​ຕັດ / ໃນ​ປັດ​ຈຸ​ບັນ​ທີ່​ເລືອກ​, ແລະ​ຖ້າ​ຫາກ​ວ່າ​ທ່ານ drag​, ມັນ​ຈະ​ໄດ້​ຮັບ​ການ​ເພີ່ມ​ໃສ່​ສະ​ຖານ​ທີ່​ທີ່​ທ່ານ​ວາງ​ໄວ້​.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "ການອອກແບບຫາງ",
   "studio.bubbleTail.description": "ທິດທາງຂອງການຊີ້ໄປຫາລໍາໂພງແລະຄວາມກວ້າງແລະຄວາມໂຄ້ງຂອງຖານແມ່ນຖືກປັບແຍກຕ່າງຫາກ.",
   "studio.bubbleTail.speakerDirection": "ທິດທາງຂອງລໍາໂພງ",

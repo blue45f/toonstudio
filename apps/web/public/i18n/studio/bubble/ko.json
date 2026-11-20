@@ -11,6 +11,7 @@
   "studio.bubble.inputPlaceholder": "민수: 안녕?\\n지영: 오랜만이야\\n(잠시 후)",
   "studio.bubble.inputAria": "대사 스크립트",
   "studio.bubble.insertAll": "말풍선으로 한 번에 넣기",
+  "studio.bubble.insertSelectedFrame": "선택한 컷에 대사 넣기",
   "studio.bubble.batchEdit": "배치 대사 편집",
   "studio.bubble.translate": "번역 (내 API 키)",
   "studio.bubble.placementHelp.title": "클릭·탭",

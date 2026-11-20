@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Перацягнуць ёсць ",
   "studio.bubble.placementHelp.cancelHint": "Вы можаце адмяніць з дапамогай.",
   "studio.bubble.kindMenuAria": "Віды моўных бурбалак",
-  "studio.bubble.chooseHint": "Калі вы націснеце або націснеце, ён будзе дададзены да выбранага выразанага/бягучага экрана, а калі вы перацягнеце, ён будзе дададзены ў месца, дзе вы яго размясцілі."
+  "studio.bubble.chooseHint": "Калі вы націснеце або націснеце, ён будзе дададзены да выбранага выразанага/бягучага экрана, а калі вы перацягнеце, ён будзе дададзены ў месца, дзе вы яго размясцілі.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

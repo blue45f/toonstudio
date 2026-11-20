@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Podes cancelar con .",
   "studio.bubble.kindMenuAria": "Tipos de burbullas",
   "studio.bubble.chooseHint": "Se fai clic ou toca, engadirase á pantalla de corte/actual seleccionada e, se o arrastras, engadirase á localización onde o colocou.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "deseño de cola",
   "studio.bubbleTail.description": "A dirección de apuntamento cara ao altofalante e o ancho e a curvatura da base axústanse por separado.",
   "studio.bubbleTail.speakerDirection": "dirección do altofalante",

@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Przeciągnij jest ",
   "studio.bubble.placementHelp.cancelHint": "Możesz anulować za pomocą .",
   "studio.bubble.kindMenuAria": "Rodzaje dymków",
-  "studio.bubble.chooseHint": "Jeśli klikniesz lub dotkniesz, zostanie on dodany do wybranego wyciętego/bieżącego ekranu, a jeśli przeciągniesz, zostanie dodany do lokalizacji, w której go umieściłeś."
+  "studio.bubble.chooseHint": "Jeśli klikniesz lub dotkniesz, zostanie on dodany do wybranego wyciętego/bieżącego ekranu, a jeśli przeciągniesz, zostanie dodany do lokalizacji, w której go umieściłeś.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

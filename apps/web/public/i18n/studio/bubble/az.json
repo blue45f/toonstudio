@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Çək ",
   "studio.bubble.placementHelp.cancelHint": "ilə ləğv edə bilərsiniz.",
   "studio.bubble.kindMenuAria": "Nitq baloncuklarının növləri",
-  "studio.bubble.chooseHint": "Əgər klikləsəniz və ya klikləsəniz, o, seçilmiş kəsilmiş/cari ekrana əlavə olunacaq və sürükləsəniz, onu yerləşdirdiyiniz yerə əlavə olunacaq."
+  "studio.bubble.chooseHint": "Əgər klikləsəniz və ya klikləsəniz, o, seçilmiş kəsilmiş/cari ekrana əlavə olunacaq və sürükləsəniz, onu yerləşdirdiyiniz yerə əlavə olunacaq.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "您可以使用 取消。",
   "studio.bubble.kindMenuAria": "气泡的类型",
   "studio.bubble.chooseHint": "如果您单击或点击，它将被添加到选定的剪切/当前屏幕，如果您拖动，它将被添加到您放置它的位置。",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "尾部设计",
   "studio.bubbleTail.description": "指向扬声器的方向以及底座的宽度和曲率是单独调节的。",
   "studio.bubbleTail.speakerDirection": "说话者方向",

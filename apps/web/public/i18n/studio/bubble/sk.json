@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Pretiahnuť je ",
   "studio.bubble.placementHelp.cancelHint": "Môžete zrušiť pomocou .",
   "studio.bubble.kindMenuAria": "Typy rečových bublín",
-  "studio.bubble.chooseHint": "Ak kliknete alebo klepnete, pridá sa na vybranú výrez/aktuálnu obrazovku a ak potiahnete, pridá sa na miesto, kam ste ho umiestnili."
+  "studio.bubble.chooseHint": "Ak kliknete alebo klepnete, pridá sa na vybranú výrez/aktuálnu obrazovku a ak potiahnete, pridá sa na miesto, kam ste ho umiestnili.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

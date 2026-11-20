@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "లాగండి ",
   "studio.bubble.placementHelp.cancelHint": "మీరు తో రద్దు చేయవచ్చు.",
   "studio.bubble.kindMenuAria": "ప్రసంగ బుడగలు రకాలు",
-  "studio.bubble.chooseHint": "మీరు క్లిక్ చేస్తే లేదా నొక్కితే, అది ఎంచుకున్న కట్/కరెంట్ స్క్రీన్‌కి జోడించబడుతుంది మరియు మీరు లాగితే, మీరు దాన్ని ఉంచిన స్థానానికి జోడించబడుతుంది."
+  "studio.bubble.chooseHint": "మీరు క్లిక్ చేస్తే లేదా నొక్కితే, అది ఎంచుకున్న కట్/కరెంట్ స్క్రీన్‌కి జోడించబడుతుంది మరియు మీరు లాగితే, మీరు దాన్ని ఉంచిన స్థానానికి జోడించబడుతుంది.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

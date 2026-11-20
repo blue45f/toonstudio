@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "арқылы бас тартуға болады.",
   "studio.bubble.kindMenuAria": "Сөйлеу көпіршіктерінің түрлері",
   "studio.bubble.chooseHint": "Бассаңыз немесе түртсеңіз, ол таңдалған кесу/ағымдағы экранға қосылады, ал сүйреп апарсаңыз, оны орналастырған орынға қосылады.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "құйрық дизайны",
   "studio.bubbleTail.description": "Динамикке бағыттау бағыты және негіздің ені мен қисықтығы бөлек реттеледі.",
   "studio.bubbleTail.speakerDirection": "спикер бағыты",

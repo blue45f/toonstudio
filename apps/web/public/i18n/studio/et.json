@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Saate tühistada .",
   "studio.bubble.kindMenuAria": "Kõnemullide tüübid",
   "studio.bubble.chooseHint": "Kui klõpsate või puudutate, lisatakse see valitud lõigatud/praegusele ekraanile ja kui lohistate, lisatakse see asukohta, kuhu te selle asetasite.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "saba disain",
   "studio.bubbleTail.description": "Kõlari poole osutamise suunda ning aluse laiust ja kumerust reguleeritakse eraldi.",
   "studio.bubbleTail.speakerDirection": "kõlari suund",

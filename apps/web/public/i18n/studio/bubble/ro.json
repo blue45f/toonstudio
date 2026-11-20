@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "Drag este ",
   "studio.bubble.placementHelp.cancelHint": "Puteți anula cu .",
   "studio.bubble.kindMenuAria": "Tipuri de bule de vorbire",
-  "studio.bubble.chooseHint": "Dacă dați clic sau atingeți, acesta va fi adăugat la ecranul tăiat/actual selectat, iar dacă glisați, va fi adăugat la locația în care l-ați plasat."
+  "studio.bubble.chooseHint": "Dacă dați clic sau atingeți, acesta va fi adăugat la ecranul tăiat/actual selectat, iar dacă glisați, va fi adăugat la locația în care l-ați plasat.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

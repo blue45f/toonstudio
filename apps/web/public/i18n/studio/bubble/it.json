@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "La resistenza è ",
   "studio.bubble.placementHelp.cancelHint": "Puoi annullare con .",
   "studio.bubble.kindMenuAria": "Tipi di fumetti",
-  "studio.bubble.chooseHint": "Se fai clic o tocchi, verrà aggiunto alla schermata tagliata/corrente selezionata e, se trascini, verrà aggiunto alla posizione in cui lo hai posizionato."
+  "studio.bubble.chooseHint": "Se fai clic o tocchi, verrà aggiunto alla schermata tagliata/corrente selezionata e, se trascini, verrà aggiunto alla posizione in cui lo hai posizionato.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

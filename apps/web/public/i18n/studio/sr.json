@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Можете отказати са .",
   "studio.bubble.kindMenuAria": "Врсте говорних мехурића",
   "studio.bubble.chooseHint": "Ако кликнете или додирнете, биће додат на изабрани исечени/тренутни екран, а ако превучете, биће додат на локацију на којој сте га поставили.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "дизајн репа",
   "studio.bubbleTail.description": "Смер усмерености ка звучнику и ширина и закривљеност основе се подешавају засебно.",
   "studio.bubbleTail.speakerDirection": "смер говорника",

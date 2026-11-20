@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "ഡ്രാഗ് ആണ് ",
   "studio.bubble.placementHelp.cancelHint": "ഉപയോഗിച്ച് നിങ്ങൾക്ക് റദ്ദാക്കാം.",
   "studio.bubble.kindMenuAria": "സംഭാഷണ കുമിളകളുടെ തരങ്ങൾ",
-  "studio.bubble.chooseHint": "നിങ്ങൾ ക്ലിക്ക് ചെയ്യുകയോ ടാപ്പ് ചെയ്യുകയോ ചെയ്‌താൽ, അത് തിരഞ്ഞെടുത്ത കട്ട്/കറൻ്റ് സ്‌ക്രീനിലേക്ക് ചേർക്കും, നിങ്ങൾ വലിച്ചിടുകയാണെങ്കിൽ, നിങ്ങൾ അത് സ്ഥാപിച്ച ലൊക്കേഷനിലേക്ക് അത് ചേർക്കും."
+  "studio.bubble.chooseHint": "നിങ്ങൾ ക്ലിക്ക് ചെയ്യുകയോ ടാപ്പ് ചെയ്യുകയോ ചെയ്‌താൽ, അത് തിരഞ്ഞെടുത്ത കട്ട്/കറൻ്റ് സ്‌ക്രീനിലേക്ക് ചേർക്കും, നിങ്ങൾ വലിച്ചിടുകയാണെങ്കിൽ, നിങ്ങൾ അത് സ്ഥാപിച്ച ലൊക്കേഷനിലേക്ക് അത് ചേർക്കും.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

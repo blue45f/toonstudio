@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "ඇදගෙන යාමයි ",
   "studio.bubble.placementHelp.cancelHint": "ඔබට අවලංගු කළ හැක.",
   "studio.bubble.kindMenuAria": "කථන බුබුලු වර්ග",
-  "studio.bubble.chooseHint": "ඔබ ක්ලික් කළහොත් හෝ තට්ටු කළහොත්, එය තෝරාගත් කැපුම්/ධාරා තිරයට එක් කරනු ලබන අතර, ඔබ ඇදගෙන ගියහොත්, එය ඔබ තැබූ ස්ථානයට එකතු වේ."
+  "studio.bubble.chooseHint": "ඔබ ක්ලික් කළහොත් හෝ තට්ටු කළහොත්, එය තෝරාගත් කැපුම්/ධාරා තිරයට එක් කරනු ලබන අතර, ඔබ ඇදගෙන ගියහොත්, එය ඔබ තැබූ ස්ථානයට එකතු වේ.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }

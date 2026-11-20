@@ -444,6 +444,7 @@
   "studio.bubble.placementHelp.cancelHint": "Puoi annullare con .",
   "studio.bubble.kindMenuAria": "Tipi di fumetti",
   "studio.bubble.chooseHint": "Se fai clic o tocchi, verrà aggiunto alla schermata tagliata/corrente selezionata e, se trascini, verrà aggiunto alla posizione in cui lo hai posizionato.",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel",
   "studio.bubbleTail.title": "disegno della coda",
   "studio.bubbleTail.description": "La direzione di puntamento verso l'altoparlante, la larghezza e la curvatura della base vengono regolate separatamente.",
   "studio.bubbleTail.speakerDirection": "direzione dell'oratore",

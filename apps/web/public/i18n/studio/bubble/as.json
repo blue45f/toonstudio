@@ -20,5 +20,6 @@
   "studio.bubble.placementHelp.dragEscapeLead": "ড্ৰেগ হৈছে ",
   "studio.bubble.placementHelp.cancelHint": "আপুনি বাতিল কৰিব পাৰে।",
   "studio.bubble.kindMenuAria": "বাক্যৰ বুদবুদৰ প্ৰকাৰ",
-  "studio.bubble.chooseHint": "যদি আপুনি ক্লিক বা টেপ কৰে, ইয়াক নিৰ্বাচিত কাটি/বৰ্তমান পৰ্দাত যোগ কৰা হ'ব, আৰু যদি আপুনি টানি লয়, ইয়াক আপুনি ইয়াক স্থাপন কৰা অৱস্থানত যোগ কৰা হ'ব।"
+  "studio.bubble.chooseHint": "যদি আপুনি ক্লিক বা টেপ কৰে, ইয়াক নিৰ্বাচিত কাটি/বৰ্তমান পৰ্দাত যোগ কৰা হ'ব, আৰু যদি আপুনি টানি লয়, ইয়াক আপুনি ইয়াক স্থাপন কৰা অৱস্থানত যোগ কৰা হ'ব।",
+  "studio.bubble.insertSelectedFrame": "Add dialogue to the selected panel"
 }
