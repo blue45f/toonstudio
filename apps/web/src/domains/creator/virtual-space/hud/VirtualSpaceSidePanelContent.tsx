@@ -620,10 +620,22 @@ export function VirtualSpaceSidePanelContent(props: VirtualSpaceSidePanelContent
           <StudioVirtualSpaceLiveAnnotationPanel
             snapshot={yjsSpace.boardSnapshot}
             selfSessionId={selfListId}
+            authorNameOf={authorNameOf}
             onStroke={yjsSpace.addStroke}
             onNote={yjsSpace.addBoardNote}
             onRemove={yjsSpace.removeBoardEntity}
             onClearOwn={yjsSpace.clearOwnBoardEntities}
+            liveP2p={
+              !personal
+                ? {
+                    participant: live.room?.participant,
+                    port: live.room?.direct,
+                    scope: { worldId: activeWorldScope, boardId: "live-annotation", contentRevision: "v1" },
+                    storageOwnerId: privateActorId,
+                    enabled: !personal && Boolean(live.room?.participant && live.room?.direct),
+                  }
+                : undefined
+            }
           />
         </StudioVirtualSpacePanelGate>
       );

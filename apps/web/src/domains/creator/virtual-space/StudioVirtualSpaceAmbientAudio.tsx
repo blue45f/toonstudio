@@ -8,20 +8,22 @@ import {
   studioProximityCurveSamples, studioProximityDisplaySnapshot, subscribeStudioProximityDisplay, type StudioProximityDisplaySnapshot,
 } from "./studio-virtual-space-acoustics";
 import { StudioVirtualSpaceSoundEngine, registerStudioSoundEngine } from "./studio-virtual-space-sound-engine";
-import type { StudioFootstepSurface } from "./studio-virtual-space-footsteps";
+import type { StudioExtendedFootstepSurface } from "./studio-virtual-space-footsteps";
 import { studioFootstepSynthSpec, studioSfxSpec, type StudioSfxKind } from "./studio-virtual-space-sound-synth";
 import {
   readStudioVirtualSoundPreference, writeStudioVirtualSoundPreference, type StudioVirtualSoundPreference,
 } from "./studio-virtual-space-sound-preference";
 
 const FOOTSTEP_AUDITION_ITEMS: readonly {
-  readonly surface: StudioFootstepSurface;
+  readonly surface: StudioExtendedFootstepSurface;
   readonly labelKo: string;
   readonly labelEn: string;
 }[] = [
   { surface: "carpet", labelKo: "카펫 발소리 청음", labelEn: "Carpet footstep" },
   { surface: "wood", labelKo: "원목 마루 발소리 청음", labelEn: "Wood floor footstep" },
   { surface: "tile", labelKo: "타일 발소리 청음", labelEn: "Tile footstep" },
+  { surface: "stone", labelKo: "석재 홀 발소리 청음", labelEn: "Stone hall footstep" },
+  { surface: "terrace", labelKo: "야외 테라스 발소리 청음", labelEn: "Terrace footstep" },
 ];
 
 const SFX_AUDITION_ITEMS: readonly {
@@ -30,6 +32,8 @@ const SFX_AUDITION_ITEMS: readonly {
   readonly labelEn: string;
 }[] = [
   { kind: "activate", labelKo: "오브젝트 작동음 청음", labelEn: "Object activate" },
+  { kind: "jump", labelKo: "점프 도약음 청음", labelEn: "Jump takeoff" },
+  { kind: "land", labelKo: "착지음 청음", labelEn: "Jump landing" },
   { kind: "peer-join", labelKo: "동료 입장음 청음", labelEn: "Peer join" },
   { kind: "focus-start", labelKo: "집중 차임 청음", labelEn: "Focus start chime" },
   { kind: "wellness-chime", labelKo: "싱잉볼 차임 청음", labelEn: "Wellness singing bowl" },
@@ -97,7 +101,7 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
     soundEngine.current?.setPreference(next);
     if (next.effectsEnabled) soundEngine.current?.unlock();
   };
-  const auditionFootstep = (surface: StudioFootstepSurface, labelKo: string, labelEn: string) => {
+  const auditionFootstep = (surface: StudioExtendedFootstepSurface, labelKo: string, labelEn: string) => {
     soundEngine.current?.unlock();
     soundEngine.current?.playFootstep({ surface, foot: "left", volume: 0.9 });
     const spec = studioFootstepSynthSpec(surface, "left");

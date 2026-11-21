@@ -286,9 +286,9 @@ export function StudioVirtualSpaceEntryLobby({
           {!three ? <StudioLpcCreditsNotice /> : null}
         </> : null}
 
-        {resumeAvailable && resumePlace ? <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3" role="group"
+        {resumeAvailable && resumePlace ? <div className="mt-4 rounded-2xl border border-line bg-card px-4 py-3" role="group"
           aria-label={bt("지난 위치에서 이어서 시작", "Resume where you left off")}>
-          <p className="text-sm font-black text-fg">{bt("지난 위치에서 이어서 시작", "Resume where you left off")}</p>
+          <p className="text-sm font-semibold text-fg">{bt("지난 위치에서 이어서 시작", "Resume where you left off")}</p>
           <p className="mt-1 text-xs leading-5 text-fg-2">{bt(
             `지난번에는 ${resumePlace.labelKo}에 있었어요. 이어서 시작하면 그 자리에서, 처음부터 시작하면 이 공간의 시작 위치에서 출발해요.`,
             `Last time you were in ${resumePlace.labelEn}. Resume picks up in that spot; starting fresh begins at this space's start position.`,
@@ -329,18 +329,18 @@ export function StudioVirtualSpaceEntryLobby({
           </div> : null}
         </details> : null}
 
-        <details className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-black text-fg [&::-webkit-details-marker]:hidden">
+        <details className="mt-4 overflow-hidden rounded-2xl border border-line bg-card">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-semibold text-fg [&::-webkit-details-marker]:hidden">
             {bt("입장 전 조작법 미리보기", "Preview controls before entering")}
             <span aria-hidden className="text-base leading-none text-fg-3">＋</span>
           </summary>
-          <div className="border-t border-white/10 px-4 py-3">
+          <div className="border-t border-line px-4 py-3">
             <ul className="flex flex-col gap-2 text-xs leading-5 text-fg-2">
-              <li className="flex items-center gap-2"><strong className="w-14 shrink-0 text-fg">{bt("이동", "Move")}</strong><span><kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">WASD</kbd> · {bt("방향키 · 빈 공간 클릭 · 모바일 조이스틱", "arrow keys · click empty space · mobile joystick")}</span></li>
-              <li className="flex items-center gap-2"><strong className="w-14 shrink-0 text-fg">{bt("상호작용", "Interact")}</strong><span><kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">E</kbd> <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">X</kbd> · {bt("가까이 다가가 상호작용 · 모바일은 화면의 상호작용 버튼", "walk up close and interact · on-screen interact button on mobile")}</span></li>
-              <li className="flex items-center gap-2"><strong className="w-14 shrink-0 text-fg">{bt("리액션", "Reactions")}</strong><span><kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">1</kbd>–<kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">9</kbd> · {bt("바로 리액션 보내기(Z는 춤, F는 폭죽) · 모바일은 도크의 리액션 버튼", "send a reaction instantly (Z to dance, F for fireworks) · reaction button in the mobile dock")}</span></li>
+              <li className="flex items-center gap-2"><strong className="w-14 shrink-0 text-fg">{bt("이동", "Move")}</strong><span><kbd className="rounded border border-line bg-panel px-1.5 py-0.5 font-sans text-xs font-semibold">WASD</kbd> · <kbd className="rounded border border-line bg-panel px-1.5 py-0.5 font-sans text-xs font-semibold">Shift</kbd> {bt("달리기", "sprint")} · <kbd className="rounded border border-line bg-panel px-1.5 py-0.5 font-sans text-xs font-semibold">Space</kbd> {bt("점프 · 클릭 이동", "jump · click to move")}</span></li>
+              <li className="flex items-center gap-2"><strong className="w-16 shrink-0 text-fg">{bt("상호작용", "Interact")}</strong><span><kbd className="rounded border border-line bg-panel px-1.5 py-0.5 font-sans text-xs font-semibold">E</kbd> <kbd className="rounded border border-line bg-panel px-1.5 py-0.5 font-sans text-xs font-semibold">X</kbd> · {bt("작업대·동료 가까이에서 바로 열기", "open nearby desks & interactions")}</span></li>
+              <li className="flex items-center gap-2"><strong className="w-16 shrink-0 text-fg">{bt("리액션", "Reactions")}</strong><span><kbd className="rounded border border-line bg-panel px-1.5 py-0.5 font-sans text-xs font-semibold">1</kbd>–<kbd className="rounded border border-line bg-panel px-1.5 py-0.5 font-sans text-xs font-semibold">9</kbd> · {bt("바로 리액션 보내기 · 모바일은 하단 도크 리액션 버튼", "send a reaction · mobile dock reaction button")}</span></li>
             </ul>
-            <p className="mt-2 text-[0.7rem] leading-5 text-fg-3">{bt("입장하면 3단계 미니 투어가 나타나요. 화면을 막지 않고, 직접 걷고·상호작용하고·리액션하면 다음 단계로 넘어가요. 언제든 건너뛸 수 있고, 다시 보지 않기로 저장하거나 ? 도움말에서 다시 볼 수 있어요.", "A 3-step mini tour appears after you enter. It never blocks the screen and advances as you walk, interact and react. Skip it anytime, choose not to see it again, or replay it from the ? help.")}</p>
+            <p className="mt-2 text-xs leading-5 text-fg-3">{bt("입장하면 3단계 미니 투어가 나타나요. 화면을 가리지 않고 안내하며, 언제든 건너뛰거나 ? 도움말에서 다시 볼 수 있어요.", "A 3-step mini tour appears after you enter. It never blocks the screen; skip anytime or replay from ? help.")}</p>
           </div>
         </details>
 

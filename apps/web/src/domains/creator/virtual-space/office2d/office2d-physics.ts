@@ -138,16 +138,21 @@ export class Office2dPhysicsWorld {
     this.surfaceRegions = [...regions];
   }
 
-  /** 지정 좌표의 바닥 재질 물리 계수를 돌려준다. */
-  surfaceAt(x: number, y: number): Office2dSurfacePhysics {
+  /** 지정 좌표의 바닥 재질 식별자를 돌려준다. */
+  surfaceMaterialAt(x: number, y: number): Office2dSurfaceMaterial {
     for (let index = this.surfaceRegions.length - 1; index >= 0; index -= 1) {
       const region = this.surfaceRegions[index];
       if (!region) continue;
       if (x >= region.x && x <= region.x + region.width && y >= region.y && y <= region.y + region.height) {
-        return OFFICE2D_SURFACE_PHYSICS[region.material];
+        return region.material;
       }
     }
-    return OFFICE2D_SURFACE_PHYSICS.generic;
+    return "generic";
+  }
+
+  /** 지정 좌표의 바닥 재질 물리 계수를 돌려준다. */
+  surfaceAt(x: number, y: number): Office2dSurfacePhysics {
+    return OFFICE2D_SURFACE_PHYSICS[this.surfaceMaterialAt(x, y)];
   }
 
   /** 훅의 법칙 스프링-댐퍼 조인트를 추가한다. */

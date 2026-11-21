@@ -31,6 +31,7 @@ import {
   StudioThreeFollowCamera,
   StudioThreePeerMotion,
 } from "./studio-virtual-space-three-follow";
+import { StudioThreeFootstepFx } from "./studio-virtual-space-three-footstep-fx";
 import { projectStudioThreeOverlays } from "./studio-virtual-space-three-hud-projection";
 import { bindStudioThreeKeyboardInput } from "./studio-virtual-space-three-keyboard-input";
 import { applyHeroSceneInteriorLighting, applyStudioThreeLightingState, restoreBaselineShadowFrustum } from "./studio-virtual-space-three-lighting";
@@ -256,6 +257,7 @@ export function mountStudioThreeStageRuntime(
   actorNodes.set("self", selfNode);
 
   const proximityRing = createStudioThreeProximityRing(selfNode.group);
+  const footstepFx = new StudioThreeFootstepFx(scene);
   const liveScreenController = createStudioThreeLiveScreenController(scene, selfPos3);
   const decorLoader = createStudioThreeGlbLoader();
   const decorationsController = createStudioThreeDecorationsController(scene, decorLoader);
@@ -442,11 +444,9 @@ export function mountStudioThreeStageRuntime(
     keysDown.has("ArrowLeft") || keysDown.has("ArrowRight") || keysDown.has("ArrowUp") || keysDown.has("ArrowDown") ||
     keysDown.has("KeyA") || keysDown.has("KeyD") || keysDown.has("KeyW") || keysDown.has("KeyS");
   const unbindKeyboard = bindStudioThreeKeyboardInput(container, keysDown, {
-    stop: haltMovementForTextInput,
-    home: () => bridge.cameraPan.homeView(),
-    interact: () => bridge.requestInteract(),
-    onCameraMode: actions.setCameraMode,
-    onToggleGhost: actions.toggleGhostMode,
+    stop: haltMovementForTextInput, home: () => bridge.cameraPan.homeView(), interact: () => bridge.requestInteract(),
+    onJump: () => { footstepFx.unlockAudio(); footstepFx.triggerJump(currentPoint, studioWorldRoomAt(manifest, currentPoint), Boolean(selfNode.seated), getLatest().reducedMotion); },
+    onCameraMode: actions.setCameraMode, onToggleGhost: actions.toggleGhostMode,
   });
 
   const raycaster = new THREE.Raycaster();
@@ -492,12 +492,8 @@ export function mountStudioThreeStageRuntime(
 
   const handleResize = () => {
     if (disposed) return;
-    const w = Math.max(320, container.clientWidth || window.innerWidth);
-    const h = Math.max(240, container.clientHeight || window.innerHeight);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
-    postPipeline.setSize(w, h);
+    const w = Math.max(320, container.clientWidth || window.innerWidth), h = Math.max(240, container.clientHeight || window.innerHeight);
+    camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h); postPipeline.setSize(w, h);
   };
   window.addEventListener("resize", handleResize);
 
@@ -619,6 +615,10 @@ export function mountStudioThreeStageRuntime(
     selfNode.currentYaw = shortestAngleLerp(selfNode.currentYaw, selfNode.targetYaw, studioCameraLerp(dt, 0.22));
     selfNode.group.rotation.y = selfNode.currentYaw;
     selfNode.moving = moving;
+    selfNode.group.userData.jumpHeight = footstepFx.update({
+      point: currentPoint, roomId: studioWorldRoomAt(manifest, currentPoint), moving, sprinting: speedPxPerSec > 260,
+      seated: Boolean(selfNode.seated), emoteId: selfNode.emoteId, dt, reducedMotion: latest.reducedMotion,
+    });
 
     const shouldHideHead = shouldHideSelfHeadForCameraMode(latest.cameraMode);
     if (shouldHideHead !== lastHeadHidden) { lastHeadHidden = shouldHideHead; setStudioThreeActorHeadVisible(selfNode, !shouldHideHead); }
@@ -787,7 +787,7 @@ export function mountStudioThreeStageRuntime(
       unbindSelectedObjectTarget(); bridge.cameraPan.attachZoomStore(null); bridge.cameraPan.attachHomeResetCallback(null);
       setActiveMountedCameraPanStore(null); bridge.setFocusHandler(null); destMarker.removeFromParent(); campusPropsGroup.removeFromParent();
       const failures: unknown[] = [];
-      for (const release of [() => reloadActorVrm.dispose(), () => themeController.dispose(), () => decorationsController.dispose(), () => liveScreenController.dispose(), () => proximityRing.dispose(), () => destGeo.dispose(), () => destMat.dispose(), () => dirLight.dispose(), () => fillLight.dispose(), () => interiorPointLight.dispose(), () => postPipeline.dispose(), () => hdriController.dispose(), () => renderer.dispose()]) {
+      for (const release of [() => reloadActorVrm.dispose(), () => themeController.dispose(), () => decorationsController.dispose(), () => liveScreenController.dispose(), () => proximityRing.dispose(), () => footstepFx.dispose(), () => destGeo.dispose(), () => destMat.dispose(), () => dirLight.dispose(), () => fillLight.dispose(), () => interiorPointLight.dispose(), () => postPipeline.dispose(), () => hdriController.dispose(), () => renderer.dispose()]) {
         try { release(); } catch (error) { failures.push(error); }
       }
       if (failures.length) throw new AggregateError(failures, "3D 무대 자원 해제에 실패했습니다.");

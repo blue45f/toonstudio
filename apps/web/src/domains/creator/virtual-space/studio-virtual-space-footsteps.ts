@@ -10,8 +10,14 @@
 
 export const STUDIO_FOOTSTEP_SURFACES = ["carpet", "wood", "tile"] as const;
 
-/** 바닥 표면 종류. */
+/** 확장 바닥 표면 종류(기본 3종 + 석재 홀·야외 테라스). */
+export const STUDIO_ALL_FOOTSTEP_SURFACES = ["carpet", "wood", "tile", "stone", "terrace"] as const;
+
+/** 기본 바닥 표면 종류. */
 export type StudioFootstepSurface = typeof STUDIO_FOOTSTEP_SURFACES[number];
+
+/** 확장 바닥 표면 종류(2D·3D 합성 및 먼지 팔레트 공용). */
+export type StudioExtendedFootstepSurface = typeof STUDIO_ALL_FOOTSTEP_SURFACES[number];
 
 /** 발소리 발. */
 export type StudioFootstepFoot = "left" | "right";
@@ -32,16 +38,20 @@ export interface StudioFootstepSurfaceSpec {
   readonly particleLifetimeMs: number;
 }
 
-const SURFACE_SPECS: Record<StudioFootstepSurface, StudioFootstepSurfaceSpec> = {
+const SURFACE_SPECS: Record<StudioExtendedFootstepSurface, StudioFootstepSurfaceSpec> = {
   // 카펫: 조용하고 섬유(먼지 보풀) 파티클
   carpet: { loudness: 0.35, stridePx: 34, particleKind: "lint", particleColor: "#d8cfc2", particleSize: 3, particleLifetimeMs: 700 },
-  // 나무: 중간 소리, 작은 나무 조각
+  // 나무: 중간 소리, 따뜻한 원목 먼지
   wood: { loudness: 0.65, stridePx: 38, particleKind: "chip", particleColor: "#c9a06a", particleSize: 2.5, particleLifetimeMs: 500 },
   // 타일: 맑은 소리, 발밑 먼지
   tile: { loudness: 0.9, stridePx: 40, particleKind: "dust", particleColor: "#e8e4da", particleSize: 4, particleLifetimeMs: 600 },
+  // 석재 홀: 또렷하고 단단한 공명음, 밝은 석재 먼지
+  stone: { loudness: 0.82, stridePx: 40, particleKind: "dust", particleColor: "#d6dce3", particleSize: 3.6, particleLifetimeMs: 580 },
+  // 야외 테라스: 산뜻한 덱/자갈 마찰음, 풍성한 야외 먼지
+  terrace: { loudness: 0.72, stridePx: 38, particleKind: "dust", particleColor: "#d7cab5", particleSize: 4.2, particleLifetimeMs: 680 },
 };
 
-export function studioFootstepSurfaceSpec(surface: StudioFootstepSurface): StudioFootstepSurfaceSpec {
+export function studioFootstepSurfaceSpec(surface: StudioExtendedFootstepSurface): StudioFootstepSurfaceSpec {
   return SURFACE_SPECS[surface];
 }
 
@@ -49,9 +59,18 @@ function oneOfSurface(value: unknown): value is StudioFootstepSurface {
   return typeof value === "string" && (STUDIO_FOOTSTEP_SURFACES as readonly string[]).includes(value);
 }
 
-/** 표면 문자열 파싱 (월드 타일 메타데이터 → 발소리 표면). */
+function oneOfExtendedSurface(value: unknown): value is StudioExtendedFootstepSurface {
+  return typeof value === "string" && (STUDIO_ALL_FOOTSTEP_SURFACES as readonly string[]).includes(value);
+}
+
+/** 표면 문자열 파싱 (월드 타일 메타데이터 → 기본 발소리 표면). */
 export function parseStudioFootstepSurface(value: unknown): StudioFootstepSurface {
   return oneOfSurface(value) ? value : "wood";
+}
+
+/** 확장 표면 문자열 파싱 (2D/3D 공간 바닥 재질 → 5종 발소리 표면). */
+export function parseStudioExtendedFootstepSurface(value: unknown): StudioExtendedFootstepSurface {
+  return oneOfExtendedSurface(value) ? value : "wood";
 }
 
 /** 발소리 상태 (누적 거리 기반). */
@@ -72,7 +91,7 @@ export interface StudioFootstepEvent {
   readonly foot: StudioFootstepFoot;
   /** 재생 볼륨 0~1 (표면 계수 × 속도 계수). */
   readonly volume: number;
-  readonly surface: StudioFootstepSurface;
+  readonly surface: StudioExtendedFootstepSurface;
 }
 
 /** 왼발/오른발의 미세한 세기 차이. 같은 속도라도 양발이 기계적으로 똑같지 않게 한다. */
@@ -88,7 +107,7 @@ const FOOT_VOLUME_FACTOR: Record<StudioFootstepFoot, number> = { left: 0.97, rig
 export function stepStudioFootsteps(
   state: StudioFootstepState,
   distanceDelta: number,
-  surface: StudioFootstepSurface,
+  surface: StudioExtendedFootstepSurface,
   speed: number,
   stridePxOverride?: number,
 ): { readonly state: StudioFootstepState; readonly events: readonly StudioFootstepEvent[] } {
@@ -137,7 +156,7 @@ export interface StudioDustSpawnRequest {
 /** 이번 프레임의 발밑 먼지 수(studioDustSpawnRule의 count). 객체를 만들지 않는 캔버스용. */
 export function studioDustSpawnCount(
   speed: number,
-  surface: StudioFootstepSurface,
+  surface: StudioExtendedFootstepSurface,
   particleDensity: number,
   reducedMotion: boolean,
   deltaSeconds: number,
@@ -147,7 +166,13 @@ export function studioDustSpawnCount(
   const dt = Number.isFinite(deltaSeconds) ? Math.max(0, Math.min(deltaSeconds, 0.1)) : 0;
   const density = Number.isFinite(particleDensity) ? Math.min(1, Math.max(0, particleDensity)) : 1;
   if (safeSpeed < 60 || dt === 0 || density === 0) return 0;
-  const surfaceFactor = surface === "tile" ? 1.4 : surface === "carpet" ? 0.6 : 1;
+  const surfaceFactor = surface === "tile" || surface === "terrace"
+    ? 1.4
+    : surface === "stone"
+      ? 1.15
+      : surface === "carpet"
+        ? 0.6
+        : 1;
   const rate = (safeSpeed / 210) * 22 * surfaceFactor * density;
   return Math.max(0, Math.floor(rate * dt + 0.5));
 }
@@ -156,13 +181,13 @@ export function studioDustSpawnCount(
  * 이동 먼지 파티클 스폰 규칙.
  *
  * - 일정 속도(60px/s) 이상으로 이동할 때만 발밑 먼지가 난다.
- * - 카펫은 섬유 파티클이 적게, 타일은 먼지가 많이 난다.
+ * - 카펫은 섬유 파티클이 적게, 타일·야외 테라스는 먼지가 많이 난다.
  * - particleDensity(0~1) 설정으로 양을 조절한다.
  * - reducedMotion이면 스폰하지 않는다 (count 0).
  */
 export function studioDustSpawnRule(input: {
   readonly speed: number;
-  readonly surface: StudioFootstepSurface;
+  readonly surface: StudioExtendedFootstepSurface;
   readonly particleDensity: number;
   readonly reducedMotion: boolean;
   readonly deltaSeconds: number;

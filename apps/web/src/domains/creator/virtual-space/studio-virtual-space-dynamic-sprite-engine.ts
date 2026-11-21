@@ -10,7 +10,8 @@ import {
   DYNAMIC_SPRITE_EXPRESSIONS,
   DYNAMIC_SPRITE_VFX_PRESETS,
   getDynamicCreatorPersonaSpec,
-  type DynamicSpriteActionId,
+  type DynamicSpriteDirection,
+  type DynamicSpriteExtendedActionId,
   type DynamicSpriteExpressionId,
   type DynamicSpriteFrameKinematics,
   type DynamicSpriteVfxId,
@@ -18,6 +19,7 @@ import {
   type PracticalCollabZoneId,
   type PracticalCollaboratorLiveUnit,
   type PracticalSpriteWorkspaceState,
+  type StudioFullSpritePersonaId,
 } from "./studio-virtual-space-dynamic-sprite-catalog";
 import {
   renderDynamicSpriteEyesSvg,
@@ -32,8 +34,8 @@ export * from "./studio-virtual-space-dynamic-sprite-catalog";
  * 8프레임(0~7) 스프라이트 시트의 프레임별 소두(5.5~6.5등신) 인체 관절·망토·무기·표정·VFX 역학을 계산한다.
  */
 export function computeDynamicSpriteFrameKinematics(
-  personaId: IllustratedCreatorPersonaId,
-  actionId: DynamicSpriteActionId,
+  personaId: StudioFullSpritePersonaId,
+  actionId: DynamicSpriteExtendedActionId,
   expressionId: DynamicSpriteExpressionId,
   vfxId: DynamicSpriteVfxId,
   rawFrameIndex: number,
@@ -147,6 +149,46 @@ export function computeDynamicSpriteFrameKinematics(
       capeWavePx = sin2 * 15;
       afterimageCount = 3;
       break;
+    case "chair-sit":
+      bodyOffsetY = 9 + sin * 0.9;
+      bodyLeanDeg = 4 + sin * 1.5;
+      headTiltDeg = cos * 1.6;
+      leftArmDeg = -46 + sin2 * 8;
+      rightArmDeg = 46 - sin2 * 8;
+      leftLegDeg = -22;
+      rightLegDeg = 22;
+      capeWavePx = sin * 2.5;
+      break;
+    case "wave-greet":
+      bodyOffsetY = -Math.abs(sin) * 2.2;
+      bodyLeanDeg = -4 + sin * 3;
+      headTiltDeg = 6 + cos * 3;
+      leftArmDeg = -18 + sin * 5;
+      rightArmDeg = -138 + sin2 * 26;
+      leftLegDeg = -4;
+      rightLegDeg = 4;
+      capeWavePx = sin * 5;
+      break;
+    case "clap-cheer":
+      bodyOffsetY = -Math.abs(sin2) * 3.8;
+      bodyLeanDeg = sin * 3.5;
+      headTiltDeg = -4 + cos * 3;
+      leftArmDeg = -58 + Math.abs(sin2) * 22;
+      rightArmDeg = 58 - Math.abs(sin2) * 22;
+      leftLegDeg = -8 + sin * 4;
+      rightLegDeg = 8 - sin * 4;
+      capeWavePx = sin2 * 6;
+      break;
+    case "think-ponder":
+      bodyOffsetY = sin * 1.1;
+      bodyLeanDeg = -3 + sin * 1.2;
+      headTiltDeg = 9 + cos * 2.2;
+      leftArmDeg = -16;
+      rightArmDeg = -112 + sin * 6;
+      leftLegDeg = -5;
+      rightLegDeg = 5;
+      capeWavePx = sin * 3;
+      break;
     case "idle-breathe":
     default:
       break;
@@ -158,6 +200,8 @@ export function computeDynamicSpriteFrameKinematics(
       ? Number((0.35 + Math.abs(sin2) * 0.65).toFixed(2))
       : Number((0.2 + Math.abs(sin) * 0.35).toFixed(2));
   const vfxPulseScale = Number((0.88 + Math.abs(sin) * 0.28 + (vfxId === "prism-stardust-burst" ? 0.08 : 0)).toFixed(2));
+  // 머리카락 팔로우스루: 신체 바운스보다 약 0.55 rad 지연 감쇠시켜 부자연스러운 선행 흔들림을 제거한다.
+  const hairBouncePx = Number((-Math.sin(phase - 0.55) * (actionId === "idle-breathe" || actionId === "chair-sit" ? 1.4 : 2.9)).toFixed(2));
 
   return {
     frameIndex,
@@ -171,7 +215,7 @@ export function computeDynamicSpriteFrameKinematics(
     leftLegDeg: Number(leftLegDeg.toFixed(2)),
     rightLegDeg: Number(rightLegDeg.toFixed(2)),
     capeWavePx: Number(capeWavePx.toFixed(2)),
-    hairBouncePx: Number((cos * 3.8).toFixed(2)),
+    hairBouncePx,
     weaponOrbitDeg,
     isBlinkFrame,
     mouthOpenRatio,
@@ -180,18 +224,27 @@ export function computeDynamicSpriteFrameKinematics(
   };
 }
 
+const TOOL_EQUIPPED_ACTIONS: ReadonlySet<DynamicSpriteExtendedActionId> = new Set([
+  "tablet-combo-draw",
+  "dcc-3d-sculpt",
+  "whiteboard-laser-pitch",
+  "espresso-power-charge",
+  "awakening-skill-burst",
+]);
+
 /**
- * 작은 얼굴(5.5~6.5등신) 비율 · 10종 표정 · 10종 다중프레임 동작 · 8종 특수효과(VFX)가 결합된
+ * 작은 얼굴(5.5~6.5등신) 비율 · 4방향 · 10종 표정 · 14종 다중프레임 동작 · 접지 그림자 · 먼지 퍼프가 결합된
  * 고밀도 벡터 캐릭터 스프라이트 SVG 마크업을 생성한다.
  */
 export function renderDynamicCreatorSpriteSvg(input: {
-  readonly personaId: IllustratedCreatorPersonaId;
-  readonly actionId: DynamicSpriteActionId;
+  readonly personaId: StudioFullSpritePersonaId;
+  readonly actionId: DynamicSpriteExtendedActionId;
   readonly expressionId: DynamicSpriteExpressionId;
   readonly vfxId: DynamicSpriteVfxId;
   readonly frameIndex: number;
   readonly headTallUnits?: number;
   readonly showVfx?: boolean;
+  readonly facing?: DynamicSpriteDirection;
 }): string {
   const persona = getDynamicCreatorPersonaSpec(input.personaId);
   const expr =
@@ -209,31 +262,61 @@ export function renderDynamicCreatorSpriteSvg(input: {
     input.headTallUnits,
   );
 
+  const facing: DynamicSpriteDirection = input.facing ?? "down";
   const r = k.headRadiusPx;
   const headCenterY = 34;
   const shoulderY = headCenterY + r + 3;
   const hipY = shoulderY + 34;
   const showVfx = input.showVfx ?? true;
+  const isBack = facing === "up";
+  const sideFlip = facing === "left" ? -1 : 1;
+  const sideShift = facing === "left" || facing === "right" ? 1.8 : 0;
 
-  const eyesSvg = renderDynamicSpriteEyesSvg(persona, expr, k, headCenterY);
-  const mouthSvg = renderDynamicSpriteMouthSvg(expr, k, headCenterY);
+  // 발밑 접지 그림자: 캐릭터가 점프/부유할수록 자연스럽게 축소·옅어진다.
+  const lift = Math.max(0, -k.bodyOffsetY);
+  const shadowScale = Math.max(0.55, 1 - lift * 0.022);
+  const shadowAlpha = Number(Math.max(0.14, 0.34 - lift * 0.009).toFixed(2));
+  const groundShadowSvg = `<ellipse data-part="ground-shadow" cx="80" cy="142" rx="${(24 * shadowScale).toFixed(1)}" ry="${(6.5 * shadowScale).toFixed(1)}" fill="#0f172a" opacity="${shadowAlpha}"/>`;
+
+  // 걷기/질주 시 발밑 먼지 퍼프
+  const dustSvg = (input.actionId === "walk-stride" || input.actionId === "sprint-afterimage")
+    ? `<g data-part="footstep-dust" opacity="${input.actionId === "sprint-afterimage" ? "0.68" : "0.46"}">
+        <circle cx="${72 - (k.frameIndex % 4) * 3.2}" cy="${140 - (k.frameIndex % 4) * 1.4}" r="${(3.2 + (k.frameIndex % 3) * 1.1).toFixed(1)}" fill="#e2d5c3"/>
+        <circle cx="${86 + ((k.frameIndex + 2) % 4) * 2.6}" cy="${141 - ((k.frameIndex + 1) % 3) * 1.2}" r="${(2.6 + ((k.frameIndex + 1) % 3) * 0.9).toFixed(1)}" fill="#efe6d8"/>
+      </g>`
+    : "";
+
+  const eyesSvg = isBack ? "" : renderDynamicSpriteEyesSvg(persona, expr, k, headCenterY);
+  const mouthSvg = isBack ? "" : renderDynamicSpriteMouthSvg(expr, k, headCenterY);
+  const eyewearSvg = !isBack && persona.eyewear && persona.eyewear !== "none"
+    ? persona.eyewear === "round-glasses"
+      ? `<g stroke="#1e293b" stroke-width="0.95" fill="rgba(224,242,254,0.22)"><circle cx="-3.3" cy="${headCenterY - 0.3}" r="2.7"/><circle cx="3.3" cy="${headCenterY - 0.3}" r="2.7"/><line x1="-0.6" y1="${headCenterY - 0.3}" x2="0.6" y2="${headCenterY - 0.3}"/></g>`
+      : `<g stroke="#1e293b" stroke-width="1" fill="rgba(224,242,254,0.22)"><rect x="-6.2" y="${headCenterY - 2.4}" width="5.4" height="3.8" rx="1"/><rect x="0.8" y="${headCenterY - 2.4}" width="5.4" height="3.8" rx="1"/><line x1="-0.8" y1="${headCenterY - 0.5}" x2="0.8" y2="${headCenterY - 0.5}"/></g>`
+    : "";
   const headgearSvg = renderDynamicSpriteHeadgearSvg(persona, r, headCenterY, k.hairBouncePx);
-  const vfxLayerSvg = showVfx ? renderDynamicSpriteVfxLayerSvg(input.vfxId, input.actionId, vfx, k) : "";
+  const vfxLayerSvg = showVfx ? renderDynamicSpriteVfxLayerSvg(input.vfxId, input.actionId as Parameters<typeof renderDynamicSpriteVfxLayerSvg>[1], vfx, k) : "";
+  const rightPropSvg = TOOL_EQUIPPED_ACTIONS.has(input.actionId)
+    ? input.actionId === "espresso-power-charge"
+      ? `<rect x="-3.5" y="23" width="7" height="8" rx="1.6" fill="#fef3c7" stroke="#92400e" stroke-width="1"/>`
+      : `<line x1="0" y1="28" x2="18" y2="-10" stroke="${persona.accentHex}" stroke-width="2.4" stroke-linecap="round"/><circle cx="19" cy="-12" r="3.6" fill="${vfx.primaryColorHex}"/>`
+    : "";
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" data-persona="${persona.personaId}" data-action="${input.actionId}" data-expression="${input.expressionId}" data-vfx="${input.vfxId}" data-frame="${k.frameIndex}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" data-persona="${persona.personaId}" data-action="${input.actionId}" data-expression="${input.expressionId}" data-vfx="${input.vfxId}" data-facing="${facing}" data-frame="${k.frameIndex}">
     ${vfxLayerSvg}
-    <g transform="translate(80, ${18 + k.bodyOffsetY}) rotate(${k.bodyLeanDeg}, 0, ${hipY})">
+    ${groundShadowSvg}
+    ${dustSvg}
+    <g transform="translate(80, ${18 + k.bodyOffsetY}) scale(${sideFlip}, 1) rotate(${k.bodyLeanDeg}, 0, ${hipY})">
       <path d="M -13 ${shoulderY + 2} Q ${-24 + k.capeWavePx} ${hipY + 18} ${-18 + k.capeWavePx * 1.3} ${hipY + 42} L ${18 + k.capeWavePx * 1.3} ${hipY + 42} Q ${24 + k.capeWavePx} ${hipY + 18} 13 ${shoulderY + 2} Z" fill="${persona.secondaryHex}" stroke="${persona.primaryHex}" stroke-width="1.4" opacity="0.92"/>
       <g transform="translate(-5.5, ${hipY}) rotate(${k.leftLegDeg})">
         <rect x="-3.4" y="0" width="6.8" height="36" rx="3.4" fill="${persona.secondaryHex}" stroke="${persona.accentHex}" stroke-width="1"/>
-        <ellipse cx="0" cy="37" rx="5.2" ry="3.2" fill="${persona.primaryHex}"/>
+        <ellipse cx="${sideShift}" cy="37" rx="5.2" ry="3.2" fill="${persona.primaryHex}"/>
       </g>
       <g transform="translate(5.5, ${hipY}) rotate(${k.rightLegDeg})">
         <rect x="-3.4" y="0" width="6.8" height="36" rx="3.4" fill="${persona.secondaryHex}" stroke="${persona.accentHex}" stroke-width="1"/>
-        <ellipse cx="0" cy="37" rx="5.2" ry="3.2" fill="${persona.primaryHex}"/>
+        <ellipse cx="${sideShift}" cy="37" rx="5.2" ry="3.2" fill="${persona.primaryHex}"/>
       </g>
       <path d="M -11.5 ${shoulderY} L 11.5 ${shoulderY} L 9.5 ${hipY + 3} L -9.5 ${hipY + 3} Z" fill="${persona.primaryHex}" stroke="${persona.accentHex}" stroke-width="1.2"/>
-      <path d="M -4 ${shoulderY} L 0 ${shoulderY + 18} L 4 ${shoulderY}" fill="${persona.accentHex}" opacity="0.85"/>
+      ${isBack ? "" : `<path d="M -4 ${shoulderY} L 0 ${shoulderY + 18} L 4 ${shoulderY}" fill="${persona.accentHex}" opacity="0.85"/>`}
       <g transform="translate(-12, ${shoulderY + 3}) rotate(${k.leftArmDeg})">
         <rect x="-3" y="0" width="6" height="27" rx="3" fill="${persona.primaryHex}" stroke="${persona.accentHex}" stroke-width="1"/>
         <circle cx="0" cy="28.5" r="3.2" fill="${persona.skinHex}"/>
@@ -241,23 +324,22 @@ export function renderDynamicCreatorSpriteSvg(input: {
       <g transform="translate(12, ${shoulderY + 3}) rotate(${k.rightArmDeg})">
         <rect x="-3" y="0" width="6" height="27" rx="3" fill="${persona.primaryHex}" stroke="${persona.accentHex}" stroke-width="1"/>
         <circle cx="0" cy="28.5" r="3.2" fill="${persona.skinHex}"/>
-        <line x1="0" y1="28" x2="18" y2="-10" stroke="${persona.accentHex}" stroke-width="2.6" stroke-linecap="round"/>
-        <circle cx="19" cy="-12" r="4.2" fill="${vfx.primaryColorHex}"/>
+        ${rightPropSvg}
       </g>
       <g transform="rotate(${k.headTiltDeg}, 0, ${headCenterY})">
         <ellipse cx="0" cy="${headCenterY - 1 + k.hairBouncePx * 0.4}" rx="${r + 3.2}" ry="${r + 2.8}" fill="${persona.hairHex}"/>
         ${headgearSvg}
+        ${isBack ? `<ellipse cx="0" cy="${headCenterY}" rx="${r + 1.5}" ry="${r + 1.2}" fill="${persona.hairHex}"/>` : `
         <ellipse cx="0" cy="${headCenterY}" rx="${r}" ry="${r * 0.96}" fill="${persona.skinHex}" stroke="${persona.hairHex}" stroke-width="0.9"/>
         <ellipse cx="-5.2" cy="${headCenterY + 2.1}" rx="2.2" ry="1.1" fill="#fb7185" opacity="${expr.blushOpacity}"/>
         <ellipse cx="5.2" cy="${headCenterY + 2.1}" rx="2.2" ry="1.1" fill="#fb7185" opacity="${expr.blushOpacity}"/>
-        ${eyesSvg}
-        ${mouthSvg}
+        <g transform="translate(${sideShift}, 0)">${eyesSvg}${eyewearSvg}${mouthSvg}</g>
         ${
           expr.sweatDrop
             ? `<path d="M ${r - 1.5} ${headCenterY - 3} Q ${r + 1.5} ${headCenterY + 1} ${r - 1.5} ${headCenterY + 2.5} Q ${r - 4.5} ${headCenterY + 1} ${r - 1.5} ${headCenterY - 3} Z" fill="#38bdf8"/>`
             : ""
         }
-        <path d="M ${-r - 1} ${headCenterY - 2} Q 0 ${headCenterY - r - 5} ${r + 1} ${headCenterY - 2} Q ${r * 0.5} ${headCenterY - r + 3} 0 ${headCenterY - 3} Q ${-r * 0.5} ${headCenterY - r + 3} ${-r - 1} ${headCenterY - 2} Z" fill="${persona.hairHex}"/>
+        <path d="M ${-r - 1} ${headCenterY - 2} Q 0 ${headCenterY - r - 5} ${r + 1} ${headCenterY - 2} Q ${r * 0.5} ${headCenterY - r + 3} 0 ${headCenterY - 3} Q ${-r * 0.5} ${headCenterY - r + 3} ${-r - 1} ${headCenterY - 2} Z" fill="${persona.hairHex}"/>`}
         <ellipse cx="0" cy="${headCenterY - r - 2.5}" rx="${r * 0.85}" ry="2.2" fill="none" stroke="${persona.accentHex}" stroke-width="1.3"/>
       </g>
     </g>
@@ -265,13 +347,14 @@ export function renderDynamicCreatorSpriteSvg(input: {
 }
 
 export function renderDynamicCreatorSpriteDataUri(input: {
-  readonly personaId: IllustratedCreatorPersonaId;
-  readonly actionId: DynamicSpriteActionId;
+  readonly personaId: StudioFullSpritePersonaId;
+  readonly actionId: DynamicSpriteExtendedActionId;
   readonly expressionId: DynamicSpriteExpressionId;
   readonly vfxId: DynamicSpriteVfxId;
   readonly frameIndex: number;
   readonly headTallUnits?: number;
   readonly showVfx?: boolean;
+  readonly facing?: DynamicSpriteDirection;
 }): string {
   const svg = renderDynamicCreatorSpriteSvg(input).replace(/\s+/g, " ").trim();
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;

@@ -364,12 +364,12 @@ export function paintOffice2dActorSpatialAura(
     ctx.setLineDash([]);
   }
 
-  // 3) 근접 청취·대화 범위 링 (Gather ListeningRangeUI — 근처 강조된 NPC나 동료가 있을 때만 표시해 바닥을 깔끔하게 유지)
-  const nearbyPartner = actors.find(
+  // 3) 근접 청취·대화 범위 링 및 oVice 스타일 거리 감쇠 연결선
+  const nearbyPartners = actors.filter(
     (other) => other.id !== actor.id
-      && (other.highlighted || (other.kind === "peer" && Math.hypot(other.x - foot.x, other.y - foot.y) <= 160)),
+      && (other.highlighted || (other.kind === "peer" && Math.hypot(other.x - foot.x, other.y - foot.y) <= 220)),
   );
-  if (nearbyPartner) {
+  if (nearbyPartners.length > 0) {
     ctx.strokeStyle = "rgba(255, 224, 150, 0.34)";
     ctx.lineWidth = 1.5;
     ctx.setLineDash([6, 6]);
@@ -377,8 +377,52 @@ export function paintOffice2dActorSpatialAura(
     ctx.ellipse(foot.x, foot.y, 52, 21, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
+
+    // 거리 감쇠 강도(가까울수록 선명한 근접 오디오 파동 아크)
+    for (const partner of nearbyPartners.slice(0, 3)) {
+      const dist = Math.hypot(partner.x - foot.x, partner.y - foot.y);
+      const gain = Math.max(0.18, Math.min(1, 1 - Math.max(0, dist - 48) / 190));
+      const angle = Math.atan2(partner.y - foot.y, partner.x - foot.x);
+      ctx.strokeStyle = `rgba(110, 231, 183, ${(0.22 + gain * 0.42).toFixed(2)})`;
+      ctx.lineWidth = 1.2 + gain * 1.2;
+      ctx.beginPath();
+      ctx.arc(foot.x, foot.y, 24 + (1 - gain) * 14, angle - 0.38, angle + 0.38);
+      ctx.stroke();
+    }
   }
 
+  ctx.restore();
+}
+
+/**
+ * Gather Private Space / Silent Room 경계 포커스:
+ * 회의실·정숙 구역에 들어가면 바깥 영역만 은은하게 어둡혀(evenodd 클립) 방 안의 집중도와 음향 격리를 직관적으로 보여 준다.
+ */
+export function paintOffice2dPrivateRoomFocus(
+  ctx: Office2dCanvas2D,
+  scene: Office2dScene,
+  self: Office2dActor | null,
+  visible: { readonly minX: number; readonly minY: number; readonly maxX: number; readonly maxY: number },
+  reducedMotion: boolean,
+): void {
+  if (!self || scene.kind !== "toon-hq") return;
+  const foot = office2dActorFoot(self);
+  const room = findRoomContaining(foot.x, foot.y);
+  if (!room || (room.privacy !== "private" && room.privacy !== "silent")) return;
+
+  ctx.save();
+  // 바깥 구역만 살짝 어둡히고 현재 방 내부는 100% 선명하게 유지한다.
+  ctx.fillStyle = room.privacy === "silent" ? "rgba(10, 24, 22, 0.24)" : "rgba(18, 14, 28, 0.26)";
+  ctx.beginPath();
+  ctx.rect(visible.minX, visible.minY, visible.maxX - visible.minX, visible.maxY - visible.minY);
+  ctx.rect(room.x, room.y, room.width, room.height);
+  ctx.fill("evenodd");
+
+  ctx.strokeStyle = room.privacy === "silent"
+    ? (reducedMotion ? "rgba(110, 231, 183, 0.55)" : "rgba(110, 231, 183, 0.68)")
+    : (reducedMotion ? "rgba(217, 155, 78, 0.55)" : "rgba(217, 155, 78, 0.7)");
+  ctx.lineWidth = 2.4;
+  ctx.strokeRect(room.x + 1, room.y + 1, room.width - 2, room.height - 2);
   ctx.restore();
 }
 
