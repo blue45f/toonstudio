@@ -1,0 +1,389 @@
+/* Wave 21C — PPT 전문가 레이아웃·불리언·발표 · 경쟁사 특수 드로잉 6종 스위트
+ * OKLCH 컬러 계층 · 44px 이상 터치 타겟 · 명시적 트랜지션 · prefers-reduced-motion 준수
+ */
+
+.ppt-pro-suite {
+  --ppt-surface: var(--color-panel, oklch(0.19 0.014 264));
+  --ppt-card: var(--color-card, oklch(0.23 0.016 264));
+  --ppt-raised: var(--color-raised, oklch(0.27 0.018 264));
+  --ppt-canvas: oklch(0.16 0.012 264);
+  --ppt-fg: var(--color-fg, oklch(0.96 0.008 264));
+  --ppt-fg-2: var(--color-fg-2, oklch(0.79 0.014 264));
+  --ppt-line: var(--color-line, oklch(0.36 0.018 264 / 0.58));
+  --ppt-accent-layout: oklch(0.75 0.145 250);
+  --ppt-accent-present: oklch(0.76 0.155 32);
+  --ppt-accent-shape: oklch(0.78 0.145 162);
+  --ppt-accent-ruler: oklch(0.78 0.142 308);
+  --ppt-guide-snap: oklch(0.72 0.21 24);
+  --ppt-highlight-amber: oklch(0.84 0.165 88);
+  --ppt-laser: oklch(0.68 0.24 26);
+  --ppt-good: oklch(0.76 0.15 152);
+  --ppt-warn: oklch(0.81 0.15 76);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid var(--ppt-line);
+  background: var(--ppt-surface);
+  color: var(--ppt-fg);
+  word-break: keep-all;
+}
+
+:root[data-theme="light"] .ppt-pro-suite,
+:root[data-design-theme="light"] .ppt-pro-suite,
+:root[data-design-theme="sepia"] .ppt-pro-suite {
+  --ppt-surface: var(--color-panel, oklch(0.985 0.004 260));
+  --ppt-card: var(--color-card, oklch(0.96 0.006 260));
+  --ppt-raised: var(--color-raised, oklch(0.92 0.008 260));
+  --ppt-canvas: oklch(0.992 0.003 260);
+  --ppt-fg: var(--color-fg, oklch(0.20 0.018 264));
+  --ppt-fg-2: var(--color-fg-2, oklch(0.42 0.018 264));
+  --ppt-line: var(--color-line, oklch(0.80 0.012 264));
+  --ppt-accent-layout: oklch(0.48 0.16 250);
+  --ppt-accent-present: oklch(0.52 0.17 32);
+  --ppt-accent-shape: oklch(0.46 0.145 162);
+  --ppt-accent-ruler: oklch(0.48 0.15 308);
+  --ppt-guide-snap: oklch(0.54 0.22 24);
+  --ppt-good: oklch(0.44 0.145 152);
+  --ppt-warn: oklch(0.50 0.145 76);
+}
+
+.ppt-pro-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ppt-pro-heading-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ppt-pro-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+}
+
+.ppt-pro-subtitle {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--ppt-fg-2);
+  line-height: 1.45;
+}
+
+.ppt-pro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklch, var(--ppt-good) 46%, var(--ppt-line));
+  background: color-mix(in oklch, var(--ppt-good) 14%, var(--ppt-card));
+  color: var(--ppt-fg);
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ppt-pro-tablist {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .ppt-pro-tablist {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .ppt-pro-tablist {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.ppt-pro-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--ppt-line);
+  background: var(--ppt-card);
+  color: var(--ppt-fg-2);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.ppt-pro-tab:hover {
+  background: var(--ppt-raised);
+  color: var(--ppt-fg);
+}
+
+.ppt-pro-tab:focus-visible,
+.ppt-pro-btn:focus-visible,
+.ppt-pro-select:focus-visible,
+.ppt-pro-textarea:focus-visible,
+.ppt-pro-range:focus-visible {
+  outline: 2px solid var(--ppt-accent-layout);
+  outline-offset: 2px;
+}
+
+.ppt-pro-tab[aria-selected="true"] {
+  color: var(--ppt-fg);
+  border-color: var(--ppt-accent-layout);
+  background: color-mix(in oklch, var(--ppt-accent-layout) 18%, var(--ppt-card));
+}
+
+.ppt-pro-tab[data-tone="present"][aria-selected="true"] {
+  border-color: var(--ppt-accent-present);
+  background: color-mix(in oklch, var(--ppt-accent-present) 18%, var(--ppt-card));
+}
+
+.ppt-pro-tab[data-tone="shape"][aria-selected="true"] {
+  border-color: var(--ppt-accent-shape);
+  background: color-mix(in oklch, var(--ppt-accent-shape) 18%, var(--ppt-card));
+}
+
+.ppt-pro-tab[data-tone="ruler"][aria-selected="true"] {
+  border-color: var(--ppt-accent-ruler);
+  background: color-mix(in oklch, var(--ppt-accent-ruler) 18%, var(--ppt-card));
+}
+
+.ppt-pro-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+@media (min-width: 960px) {
+  .ppt-pro-grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+}
+
+.ppt-pro-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--ppt-line);
+  background: var(--ppt-card);
+}
+
+.ppt-pro-card-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ppt-fg);
+}
+
+.ppt-pro-card-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ppt-fg-2);
+  line-height: 1.45;
+}
+
+.ppt-pro-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ppt-pro-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ppt-line);
+  background: var(--ppt-raised);
+  color: var(--ppt-fg);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.ppt-pro-btn:hover {
+  border-color: var(--ppt-accent-layout);
+  background: color-mix(in oklch, var(--ppt-accent-layout) 14%, var(--ppt-raised));
+}
+
+.ppt-pro-btn[aria-pressed="true"],
+.ppt-pro-btn--active {
+  border-color: var(--ppt-accent-layout);
+  background: color-mix(in oklch, var(--ppt-accent-layout) 24%, var(--ppt-card));
+}
+
+.ppt-pro-btn:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.ppt-pro-stage {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--ppt-line);
+  background: var(--ppt-canvas);
+  overflow: hidden;
+}
+
+.ppt-pro-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: manipulation;
+}
+
+.ppt-pro-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .ppt-pro-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.ppt-pro-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--ppt-line);
+  background: var(--ppt-surface);
+}
+
+.ppt-pro-metric-label {
+  font-size: 0.75rem;
+  color: var(--ppt-fg-2);
+}
+
+.ppt-pro-metric-value {
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ppt-fg);
+}
+
+.ppt-pro-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ppt-pro-field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ppt-fg);
+}
+
+.ppt-pro-range {
+  width: 100%;
+  min-height: 44px;
+  accent-color: var(--ppt-accent-shape);
+}
+
+.ppt-pro-select,
+.ppt-pro-textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ppt-line);
+  background: var(--ppt-surface);
+  color: var(--ppt-fg);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.ppt-pro-textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.ppt-pro-status {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklch, var(--ppt-accent-layout) 40%, var(--ppt-line));
+  background: color-mix(in oklch, var(--ppt-accent-layout) 12%, var(--ppt-surface));
+  font-size: 0.8rem;
+  color: var(--ppt-fg);
+  line-height: 1.45;
+}
+
+.ppt-pro-status--warn {
+  border-color: color-mix(in oklch, var(--ppt-warn) 54%, var(--ppt-line));
+  background: color-mix(in oklch, var(--ppt-warn) 14%, var(--ppt-surface));
+}
+
+.ppt-pro-status--good {
+  border-color: color-mix(in oklch, var(--ppt-good) 54%, var(--ppt-line));
+  background: color-mix(in oklch, var(--ppt-good) 14%, var(--ppt-surface));
+}
+
+.ppt-pro-pixel-grid {
+  display: grid;
+  width: 100%;
+  max-width: 240px;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  border: 1px solid var(--ppt-line);
+  overflow: hidden;
+  background: var(--ppt-canvas);
+}
+
+.ppt-pro-shape-path {
+  fill: var(--ppt-raised);
+  stroke: var(--ppt-line);
+  stroke-width: 1.2;
+}
+
+.ppt-pro-shape-path--selected {
+  fill: color-mix(in oklch, var(--ppt-accent-layout) 24%, var(--ppt-raised));
+  stroke: var(--ppt-accent-layout);
+  stroke-width: 2;
+}
+
+.ppt-pro-boolean-path {
+  fill: color-mix(in oklch, var(--ppt-accent-shape) 34%, transparent);
+  stroke: var(--ppt-accent-shape);
+  stroke-width: 2.2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ppt-pro-tab,
+  .ppt-pro-btn {
+    transition: none;
+  }
+}
