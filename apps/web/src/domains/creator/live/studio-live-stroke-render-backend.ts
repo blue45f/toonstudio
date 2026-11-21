@@ -12,6 +12,7 @@ export type StudioLiveStrokeGpuFailureReason =
   | "frame-invalid"
   | "device-lost"
   | "surface-lost"
+  | "stroke-budget-exceeded"
   | "timeout"
   | "cancelled";
 
@@ -205,8 +206,8 @@ export interface StudioLiveStrokeGpuFailureInput
   extends StudioLiveStrokeEpochIdentity {
   readonly reason: StudioLiveStrokeGpuFailureReason;
   /**
-   * Request-scoped failures must carry the exact token. Device/surface loss may omit it because
-   * those invalidate the whole epoch rather than one submission.
+   * 요청 실패에는 정확한 토큰이 필요하다. 장치·표면 소실과 획 예산 초과는 프레임을
+   * 제출하기 전에도 현재 획 전체를 중단하므로 토큰을 생략할 수 있다.
    */
   readonly token?: StudioLiveStrokeGpuRequestToken | null;
 }
@@ -529,6 +530,7 @@ export class StudioLiveStrokeRenderBackendCoordinator {
         "frame-invalid",
         "device-lost",
         "surface-lost",
+        "stroke-budget-exceeded",
         "timeout",
         "cancelled",
       ].includes(input.reason)
@@ -536,10 +538,11 @@ export class StudioLiveStrokeRenderBackendCoordinator {
       return this.reject("gpu-failed", "invalid-input", previous);
     }
     const epochScopedFailure =
-      input.reason === "device-lost" || input.reason === "surface-lost";
+      input.reason === "device-lost" || input.reason === "surface-lost"
+      || input.reason === "stroke-budget-exceeded";
     if (!epochScopedFailure && (input.token === undefined || input.token === null)) {
       // A timeout/cancellation for an older request in the same physical contact must not evict a
-      // newer receipted frame. Only device/surface loss is authoritative for the whole epoch.
+      // newer receipted frame. Device/surface loss and source budgets invalidate the whole epoch.
       return this.reject("gpu-failed", "invalid-input", previous);
     }
     if (input.token !== undefined && input.token !== null) {
