@@ -51,12 +51,12 @@ describe("개인 활동에 따른 작업 홈", () => {
     const { project } = seedProject("auth-pending-copy", "상태 확인 중 원고");
     const pending: SessionContextValue = { status: "unauthenticated", ready: false, data: null, update: async () => null };
     render(<SessionContext.Provider value={pending}><MemoryRouter initialEntries={["/studio"]}><Harness content /></MemoryRouter></SessionContext.Provider>);
-    const card = screen.getByRole("heading", { name: project.title, exact: true }).closest("article");
+    const card = screen.getByRole("heading", { name: project.title }).closest("article");
     if (!card) throw new Error("원본 프로젝트 카드가 없습니다.");
     fireEvent.click(within(card).getByText("작업 관리", { exact: true }));
     const beforeClick = Object.entries(window.localStorage).sort();
     const beforeIds = readStudioProjectLibrary(window.localStorage).projects.map(({ id }) => id);
-    fireEvent.click(within(card).getByRole("button", { name: project.title + " 복제", exact: true }));
+    fireEvent.click(within(card).getByRole("button", { name: project.title + " 복제" }));
     expect(screen.getByText("로그인 상태를 확인 중입니다. 잠시 후 다시 시도하세요.")).toBeTruthy();
     expect(beforeIds).toContain(project.id);
     expect(readStudioProjectLibrary(window.localStorage).projects.map(({ id }) => id)).toEqual(beforeIds);
@@ -70,15 +70,15 @@ describe("개인 활동에 따른 작업 홈", () => {
       <MemoryRouter initialEntries={["/studio"]}><Harness content /></MemoryRouter>
     </SessionContext.Provider>;
     const { rerender } = render(showSession(guest));
-    const card = screen.getByRole("heading", { name: project.title, exact: true }).closest("article");
+    const card = screen.getByRole("heading", { name: project.title }).closest("article");
     if (!card) throw new Error("원본 프로젝트 카드가 없습니다.");
     fireEvent.click(within(card).getByText("작업 관리", { exact: true }));
-    fireEvent.click(within(card).getByRole("button", { name: project.title + " 복제", exact: true }));
+    fireEvent.click(within(card).getByRole("button", { name: project.title + " 복제" }));
     // 이 DOM 환경에는 OPFS/SQLite 권위가 없으므로 원고 복제가 실패하고 재시도 버튼이 나타납니다.
-    await screen.findByRole("button", { name: "다시 시도", exact: true });
+    await screen.findByRole("button", { name: "다시 시도" });
     rerender(showSession({ ...guest, ready: false }));
     const beforeRetry = Object.entries(window.localStorage).sort();
-    fireEvent.click(screen.getByRole("button", { name: "다시 시도", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
     expect(screen.getByText("로그인 상태를 확인 중입니다. 잠시 후 다시 시도하세요.")).toBeTruthy();
     expect(Object.entries(window.localStorage).sort()).toEqual(beforeRetry);
   });

@@ -25,7 +25,7 @@ export function localStudioCopyPayload(
       if (ids.has(sourcePage.id)) throw new Error("원고에 중복된 페이지 ID가 있습니다.");
       ids.set(sourcePage.id, id);
     }
-    const copy: typeof sourcePage & Pick<PageState, "review" | "dialogueReview"> = { ...sourcePage, id };
+    const copy: Omit<typeof sourcePage, "id"> & { id: string } & Pick<PageState, "review" | "dialogueReview"> = { ...sourcePage, id };
     delete copy.review;
     delete copy.dialogueReview;
     return copy;
