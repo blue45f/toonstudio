@@ -129,8 +129,7 @@ export function StudioBg3dStageStepperBar({
   bakeFlashActive = false,
   onRestoreReshoot,
 }: StudioBg3dStageStepperBarProps) {
-  const { isEn } = useBilingual();
-  const copy = (ko: string, en: string) => (isEn ? en : ko);
+  const copy = useBilingual("StudioBg3dStageStepperBar");
   const [cutawayPopoverOpen, setCutawayPopoverOpen] = useState(false);
 
   const previewEvaluation = evaluateCameraWallCutaway({

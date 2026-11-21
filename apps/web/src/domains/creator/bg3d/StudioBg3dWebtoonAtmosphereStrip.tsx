@@ -79,8 +79,7 @@ export function StudioBg3dWebtoonAtmosphereStrip({
   variant = "panel",
   onSelectPreset,
 }: StudioBg3dWebtoonAtmosphereStripProps) {
-  const { isEn } = useBilingual();
-  const copy = (ko: string, en: string) => (isEn ? en : ko);
+  const copy = useBilingual("StudioBg3dWebtoonAtmosphereStrip");
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const activePreset = STUDIO_BG3D_WEBTOON_ATMOSPHERE_PRESETS.find(
     (preset) => preset.id === activePresetId,

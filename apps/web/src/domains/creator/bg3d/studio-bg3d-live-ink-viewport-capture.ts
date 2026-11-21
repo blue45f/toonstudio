@@ -176,8 +176,11 @@ export function buildContactAoPassRgba(
 }
 
 function deriveLightingSummary(document: StudioBg3dSceneDocument): Scene3DCaptureLightingSummary {
-  const fogSpan = Math.max(1, document.background.fogFar - document.background.fogNear);
-  const estimatedDensity = document.background.fogEnabled
+  const fogActive = Boolean(document.background.fogEnabled);
+  const fogNear = document.background.fogNear ?? 10;
+  const fogFar = document.background.fogFar ?? 50;
+  const fogSpan = Math.max(1, fogFar - fogNear);
+  const estimatedDensity = fogActive
     ? Number(Math.min(1, Math.max(0.05, 18 / fogSpan)).toFixed(2))
     : 0;
   return {
@@ -186,7 +189,7 @@ function deriveLightingSummary(document: StudioBg3dSceneDocument): Scene3DCaptur
     keyColor: document.lighting.key.color,
     keyIntensity: document.lighting.key.intensity,
     exposure: document.render.exposure,
-    fogActive: document.background.fogEnabled,
+    fogActive,
     fogDensity: estimatedDensity,
   };
 }
@@ -228,9 +231,10 @@ export async function captureStudioBg3dLiveInkSnapshot(
       outputHeight: captured.height,
       extractorOptions: {
         lineThickness: targetThickness,
-        edgeThreshold: Math.max(8, Math.min(60, Math.round((1 - input.document.output.line.sensitivity) * 44 + 10))),
-        detailThreshold: 22,
-        preserveFlatFills: false,
+        threshold: Math.max(8, Math.min(60, Math.round((1 - input.document.output.line.accuracy) * 44 + 10))),
+        smoothLines: input.document.output.line.smoothing > 0.5,
+        transparentBackground: true,
+        normalAngleThresholdDeg: input.document.output.line.creaseAngleDegrees,
       },
     },
   );

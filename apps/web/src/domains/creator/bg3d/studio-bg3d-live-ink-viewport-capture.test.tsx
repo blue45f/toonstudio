@@ -54,16 +54,19 @@ function stubCanvas2d(options: { readonly failOnToDataUrl?: boolean } = {}) {
     if (tagName.toLowerCase() === "canvas") {
       const canvas = element as HTMLCanvasElement;
       createdCanvases.push(canvas);
-      vi.spyOn(canvas, "getContext").mockReturnValue({
-        createImageData: (w: number, h: number) => ({
-          data: new Uint8ClampedArray(w * h * 4),
-          width: w,
-          height: h,
-        }),
-        putImageData: vi.fn(),
-        clearRect: vi.fn(),
-        drawImage: vi.fn(),
-      } as unknown as CanvasRenderingContext2D);
+      vi.spyOn(canvas, "getContext").mockImplementation(((contextId: string) =>
+        contextId === "2d"
+          ? {
+              createImageData: (w: number, h: number) => ({
+                data: new Uint8ClampedArray(w * h * 4),
+                width: w,
+                height: h,
+              }),
+              putImageData: vi.fn(),
+              clearRect: vi.fn(),
+              drawImage: vi.fn(),
+            }
+          : null) as unknown as HTMLCanvasElement["getContext"]);
       vi.spyOn(canvas, "toDataURL").mockImplementation(() => {
         if (options.failOnToDataUrl) throw new Error("simulated-canvas-encode-failure");
         return `${STUB_PNG_PREFIX}${createdCanvases.length}`;

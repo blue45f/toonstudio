@@ -215,14 +215,29 @@ describe("절차적 Web Audio 발소리·점프·착지·스키드 효과음 & 5
     const manifest = studioVirtualToonHqManifest(false);
     const bridge = new StudioVirtualSpaceEngineBridge();
     const snapshot: StudioVirtualSpaceSnapshot = {
-      self: { x: 0, y: 0, zoneId: null, facing: "down", moving: false, activity: "available", avatarIndex: 0, pose: "stand", userStatus: "online", bubble: null, typing: false, emote: null },
+      self: {
+        x: 0,
+        y: 0,
+        zoneId: "hq-lobby",
+        facing: "down",
+        moving: false,
+        activity: "available",
+        avatarIndex: 0,
+        userStatus: "available",
+        typing: false,
+      },
       peers: [],
-      selfChatBubble: null,
-      chatBubbles: [],
-      peerTyping: [],
+      nearbyPeers: [],
+      selfReaction: null,
       peerReactions: [],
+      chatMessages: [],
+      chatBubbles: [],
+      selfChatBubble: null,
+      peerTyping: [],
+      peerImpacts: [],
+      objectStates: [],
+      peerFixtures: [],
       direct: false,
-      readyPeerIds: [],
     };
     let nowMs = 1000;
     let muted = false;

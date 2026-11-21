@@ -174,7 +174,7 @@ export interface DynamicSpriteFrameKinematics {
 }
 
 export interface PracticalCollaboratorLiveUnit {
-  readonly personaId: IllustratedCreatorPersonaId;
+  readonly personaId: StudioFullSpritePersonaId;
   readonly zoneId: PracticalCollabZoneId;
   readonly xPct: number;
   readonly yPct: number;
@@ -187,7 +187,7 @@ export interface PracticalCollaboratorLiveUnit {
   readonly dccToolBadge: string;
   readonly taskStatus: PracticalTaskStatus;
   readonly progressPercent: number;
-  readonly pairedWithPersonaId: IllustratedCreatorPersonaId | null;
+  readonly pairedWithPersonaId: StudioFullSpritePersonaId | null;
   readonly statusBubbleKo: string;
 }
 
@@ -208,14 +208,14 @@ export interface PracticalCollabZoneSpec {
 export interface PracticalCanvasPinNote {
   readonly id: string;
   readonly zoneId: PracticalCollabZoneId;
-  readonly authorPersonaId: IllustratedCreatorPersonaId;
+  readonly authorPersonaId: StudioFullSpritePersonaId;
   readonly targetTaskCode: string;
   readonly noteKo: string;
   readonly resolved: boolean;
 }
 
 export interface PracticalSpriteWorkspaceState {
-  readonly selectedPersonaId: IllustratedCreatorPersonaId;
+  readonly selectedPersonaId: StudioFullSpritePersonaId;
   readonly selectedZoneId: PracticalCollabZoneId;
   readonly globalFps: 8 | 12 | 24;
   readonly animationPaused: boolean;

@@ -179,16 +179,19 @@ describe("AC-006 OpenSKP metric/floor grounding, manifold & Z-fighting diagnosti
       if (tagName.toLowerCase() === "canvas") {
         const canvas = el as HTMLCanvasElement;
         canvases.push(canvas);
-        vi.spyOn(canvas, "getContext").mockReturnValue({
-          createImageData: (w: number, h: number) => ({
-            data: new Uint8ClampedArray(w * h * 4),
-            width: w,
-            height: h,
-          }),
-          putImageData: vi.fn(),
-          clearRect: vi.fn(),
-          drawImage: vi.fn(),
-        } as unknown as CanvasRenderingContext2D);
+        vi.spyOn(canvas, "getContext").mockImplementation(((contextId: string) =>
+          contextId === "2d"
+            ? {
+                createImageData: (w: number, h: number) => ({
+                  data: new Uint8ClampedArray(w * h * 4),
+                  width: w,
+                  height: h,
+                }),
+                putImageData: vi.fn(),
+                clearRect: vi.fn(),
+                drawImage: vi.fn(),
+              }
+            : null) as unknown as HTMLCanvasElement["getContext"]);
         vi.spyOn(canvas, "toDataURL").mockImplementation(() => {
           throw new Error("lt-encode-oom");
         });
@@ -199,7 +202,7 @@ describe("AC-006 OpenSKP metric/floor grounding, manifold & Z-fighting diagnosti
     expect(() =>
       encodeStudioBg3dLtLayers([
         {
-          role: "line",
+          role: "main-line",
           width: 32,
           height: 32,
           data: new Uint8ClampedArray(32 * 32 * 4),

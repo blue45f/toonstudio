@@ -5,7 +5,6 @@
  * 정적인 단일 이미지 대신 실시간 8프레임 스프라이트 시트와 프로시저럴 관절·머리카락·망토·무기·VFX 레이어를
  * 결합해 작은 얼굴(소두) 비율의 개성 넘치는 8인 크리에이터 캐릭터가 살아 움직이며 실무 협업을 수행한다.
  */
-import type { IllustratedCreatorPersonaId } from "./studio-virtual-office-nextgen-engine-data";
 import {
   DYNAMIC_SPRITE_EXPRESSIONS,
   DYNAMIC_SPRITE_VFX_PRESETS,
@@ -533,7 +532,7 @@ export function createInitialPracticalSpriteWorkspaceState(): PracticalSpriteWor
 
 export function updateCollaboratorSpriteConfig(
   state: PracticalSpriteWorkspaceState,
-  personaId: IllustratedCreatorPersonaId,
+  personaId: StudioFullSpritePersonaId,
   patch: Partial<
     Pick<
       PracticalCollaboratorLiveUnit,
@@ -557,7 +556,7 @@ export function updateCollaboratorSpriteConfig(
 
 export function triggerCollaboratorTaskAction(
   state: PracticalSpriteWorkspaceState,
-  personaId: IllustratedCreatorPersonaId,
+  personaId: StudioFullSpritePersonaId,
   actionType: "advance-progress" | "request-review" | "approve-cut",
 ): PracticalSpriteWorkspaceState {
   const persona = getDynamicCreatorPersonaSpec(personaId);
@@ -606,8 +605,8 @@ export function triggerCollaboratorTaskAction(
 
 export function toggleCollaboratorSynergyPair(
   state: PracticalSpriteWorkspaceState,
-  sourcePersonaId: IllustratedCreatorPersonaId,
-  targetPersonaId: IllustratedCreatorPersonaId,
+  sourcePersonaId: StudioFullSpritePersonaId,
+  targetPersonaId: StudioFullSpritePersonaId,
 ): PracticalSpriteWorkspaceState {
   if (sourcePersonaId === targetPersonaId) return state;
   const collaborators = state.collaborators.map((unit): PracticalCollaboratorLiveUnit => {
@@ -666,7 +665,7 @@ export function triggerWorkspaceFeverAwakening(
 export function addPracticalCollabPinNote(
   state: PracticalSpriteWorkspaceState,
   zoneId: PracticalCollabZoneId,
-  authorPersonaId: IllustratedCreatorPersonaId,
+  authorPersonaId: StudioFullSpritePersonaId,
   targetTaskCode: string,
   noteKo: string,
 ): PracticalSpriteWorkspaceState {

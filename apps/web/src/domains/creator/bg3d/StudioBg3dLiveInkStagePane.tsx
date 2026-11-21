@@ -27,8 +27,7 @@ export function StudioBg3dLiveInkStagePane({
   mode,
   onRequestCapture,
 }: StudioBg3dLiveInkStagePaneProps) {
-  const { isEn } = useBilingual();
-  const copy = (ko: string, en: string) => (isEn ? en : ko);
+  const copy = useBilingual("StudioBg3dLiveInkStagePane");
   const [inspectPass, setInspectPass] = useState<LiveInkInspectPass>("ink");
 
   const atmospherePreset = captureSnapshot?.atmospherePresetId
