@@ -13,6 +13,7 @@
  *   TOONSPECTRUM_SOAK_WEBGPU=1
  *   TOONSPECTRUM_SOAK_INPUT=auto|mouse|pen|touch
  *   TOONSPECTRUM_SOAK_WORKLOAD=bounded-churn|accumulate
+ *   TOONSPECTRUM_SOAK_MEASURE_POINTER_LATENCY=1  # 같은 원고의 기존 입력만 RAF까지 관측
  *   TOONSPECTRUM_SOAK_OUT=<directory>
  *   TOONSPECTRUM_SOAK_SAMPLE_HEAP_PER_STROKE=1  # 진단 실행 전용: 획마다 GC 힙을 샘플에 남긴다
  *   TOONSPECTRUM_VERIFY_ORIGIN=http://127.0.0.1:4173  # optional existing preview
@@ -40,9 +41,14 @@ import {
 import { ensureStudioSoakDesktopPen } from "./lib/studio-soak-desktop-pen";
 import { evaluateStudioSoakCompletion, parseStudioSoakWorkload, readStudioSoakBuildEvidence, shouldChurnStudioSoakHistory, studioSoakDocumentAdvanced, type StudioSoakBuildEvidence } from "./lib/studio-soak-evidence";
 import { readStudioSoakLayerCount, waitForStudioSoakLayerCount, withStudioSoakLayerNavigator } from "./lib/studio-soak-layer-count";
+import { armStudioSoakPointerLatency, drainStudioSoakPointerLatency, shouldRunStudioSoakCycle, studioSoakPointerLatencyIssues, type StudioSoakPointerLatency } from "./lib/studio-soak-pointer-latency";
 import { assertStudioSoakPointerRoute, prepareStudioSoakPointerRoute } from "./lib/studio-soak-pointer-route";
 import { drainGpuAndPerf, gcHeap, installGpuAndPerfCollector, markStudioSoakStroke, type GpuEvent, type HeapSample, type LongTaskSample } from "./lib/studio-soak-telemetry";
 import { findFreePort, spawnVitePreview, stopChildProcess, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
+
+import type { StudioSoakPixelSample as PixelSample, StudioSoakStrokeEvidence } from "./lib/studio-soak-stroke-evidence";
+import type { StudioSoakScreenshotEvidence } from "./lib/studio-soak-visual-evidence";
+
 
 const MINUTES = Math.max(1, Number(process.env.TOONSPECTRUM_SOAK_MINUTES ?? "300") || 300);
 const PROFILE_ID = process.env.TOONSPECTRUM_SOAK_PROFILE?.trim() || "desktop";
@@ -56,57 +62,13 @@ const BRUSH_CYCLES = Math.max(1, Math.floor(Number(process.env.TOONSPECTRUM_SOAK
 const STOP_ON_FAILURE = process.env.TOONSPECTRUM_SOAK_STOP_ON_FAILURE === "1";
 /** 진단 실행 전용: 획마다 GC 후 힙을 재서 "획 수 대비 유지량" 곡선을 얻는다. 기본 소크는 끈다. */
 const SAMPLE_HEAP_PER_STROKE = process.env.TOONSPECTRUM_SOAK_SAMPLE_HEAP_PER_STROKE === "1";
+const MEASURE_POINTER_LATENCY = process.env.TOONSPECTRUM_SOAK_MEASURE_POINTER_LATENCY === "1";
 const BUILD_DIRECTORY = resolve(process.env.TOONSPECTRUM_SOAK_DIST_DIR?.trim() || "dist");
 const INK_MIN_CHANGED_PIXELS = 120;
 const HISTORY_CHURN_INTERVAL = 10;
 const HISTORY_CHURN_REDO_PROBES = 3;
 const CHECKPOINT_MS = 10 * 60_000;
 const WORKLOAD = parseStudioSoakWorkload(process.env.TOONSPECTRUM_SOAK_WORKLOAD);
-
-interface PixelSample {
-  readonly cycle: number;
-  readonly atMs: number;
-  readonly changedPixels: number;
-  readonly brushId: string | null;
-  readonly brushName: string | null;
-  readonly inputMode: "mouse" | "pen" | "touch";
-  readonly pointerPoints: number;
-  readonly pressureMin: number;
-  readonly pressureMax: number;
-  readonly tiltXMin: number;
-  readonly tiltXMax: number;
-  readonly tiltYMin: number;
-  readonly tiltYMax: number;
-  readonly twistMin: number;
-  readonly twistMax: number;
-  readonly layerCountBefore: number | null;
-  readonly layerCountAfter: number | null;
-  readonly historyEntryCountBefore: number | null;
-  readonly historyUndoDepthBefore: number | null;
-  readonly historyEntryCount: number | null;
-  readonly historyUndoDepth: number | null;
-  readonly acceptedByDocument: boolean;
-  readonly rejectedStrokeCount: number;
-  /**
-   * 커밋 분리 계측 — 에디터 셸이 이미 노출하는 히스토리 진단 속성을 획 전후로 읽는다.
-   * 카운터가 평탄해도 append 자체가 일어났는지(유지 바이트·마지막 엔트리 바이트 변화),
-   * 예산 퇴출이 카운터를 상쇄했는지(퇴출 단계 누계), 커밋 게이트가 오류를 띄웠는지
-   * (오류 배너 원문)를 사후에 가를 수 있게 한다.
-   */
-  readonly historyEvictedStepsBefore: number | null;
-  readonly historyEvictedStepsAfter: number | null;
-  readonly historyRetainedBytesBefore: number | null;
-  readonly historyRetainedBytesAfter: number | null;
-  readonly historyLastEntryBytesAfter: number | null;
-  /** append 총수와 복구 보관 획 수 — 카운터가 평탄한 획이 실제로는 어디로 갔는지를 가른다. */
-  readonly historyTotalAppendsBefore: number | null;
-  readonly historyTotalAppendsAfter: number | null;
-  readonly rejectedStrokeCountBefore: number | null;
-  readonly rejectedStrokeCountAfter: number | null;
-  readonly commitErrorText: string | null;
-  /** TOONSPECTRUM_SOAK_SAMPLE_HEAP_PER_STROKE=1 일 때만 채우는 획 직후 GC 힙(바이트). */
-  readonly heapUsedBytesAfter: number | null;
-}
 
 interface SoakFailure {
   readonly atMs: number;
@@ -487,41 +449,7 @@ async function drawEvidenceStroke(
   cdp: CDPSession | null,
   cycle: number,
   inputMode: "mouse" | "pen" | "touch",
-): Promise<{
-  changed: number;
-  shot: Buffer;
-  pointer: {
-    mode: "mouse" | "pen" | "touch";
-    points: number;
-    pressureMin: number;
-    pressureMax: number;
-    tiltXMin: number;
-    tiltXMax: number;
-    tiltYMin: number;
-    tiltYMax: number;
-    twistMin: number;
-    twistMax: number;
-  };
-  layerCountBefore: number | null;
-  layerCountAfter: number | null;
-  historyEntryCountBefore: number | null;
-  historyUndoDepthBefore: number | null;
-  historyEntryCount: number | null;
-  historyUndoDepth: number | null;
-  acceptedByDocument: boolean;
-  rejectedStrokeCount: number;
-  historyEvictedStepsBefore: number | null;
-  historyEvictedStepsAfter: number | null;
-  historyRetainedBytesBefore: number | null;
-  historyRetainedBytesAfter: number | null;
-  historyLastEntryBytesAfter: number | null;
-  historyTotalAppendsBefore: number | null;
-  historyTotalAppendsAfter: number | null;
-  rejectedStrokeCountBefore: number | null;
-  rejectedStrokeCountAfter: number | null;
-  commitErrorText: string | null;
-  heapUsedBytesAfter: number | null;
-}> {
+): Promise<StudioSoakStrokeEvidence> {
   if (!(await closeBrushSurfaces(page))) {
     throw new Error("brush surfaces stayed open before drawing evidence");
   }
@@ -532,15 +460,28 @@ async function drawEvidenceStroke(
   const { box, points } = await prepareStudioSoakPointerRoute(page, cycle);
   const before = await page.screenshot({ clip: box, animations: "disabled" });
   await assertStudioSoakPointerRoute(page, points);
-  await markStudioSoakStroke(page, true);
+  let pointerLatency: StudioSoakPointerLatency | null = null;
   const pointer = await (async () => {
     try {
+      if (MEASURE_POINTER_LATENCY) await armStudioSoakPointerLatency(page, {
+        sessionId: report.sessionId, cycle, inputMode, expectedMoves: points.length - 1,
+      });
+      await markStudioSoakStroke(page, true);
       const result = await dispatchStudioPointerStroke({
         page, cdp, mode: inputMode, points, stepDelayMs: inputMode === "mouse" ? 0 : 2,
       });
       await page.waitForTimeout(500);
       return result;
-    } finally { await markStudioSoakStroke(page, false); }
+    } finally {
+      try { await markStudioSoakStroke(page, false); }
+      finally {
+        if (MEASURE_POINTER_LATENCY) try {
+          pointerLatency = await drainStudioSoakPointerLatency(page);
+          const issues = studioSoakPointerLatencyIssues(pointerLatency);
+          if (issues.length) collectionFailed("pointer-latency", issues.join(", "), cycle);
+        } catch (error) { collectionFailed("pointer-latency", error, cycle); }
+      }
+    }
   })();
   const advance = await waitForStudioDocumentAdvance(page, {
     layerCountBefore,
@@ -578,6 +519,7 @@ async function drawEvidenceStroke(
     rejectedStrokeCountAfter: diagnosticsAfter.rejectedStrokeCount,
     commitErrorText,
     heapUsedBytesAfter: heapAfter?.usedBytes ?? null,
+    pointerLatency,
   };
 }
 
@@ -619,6 +561,7 @@ const report = {
   brushCycles: BRUSH_CYCLES,
   stopOnFailure: STOP_ON_FAILURE,
   sampleHeapPerStroke: SAMPLE_HEAP_PER_STROKE,
+  measurePointerLatency: MEASURE_POINTER_LATENCY,
   actionDurationMs: 0,
   scheduledRestMs: 0,
   profile: PROFILE_ID,
@@ -651,12 +594,14 @@ const report = {
     scheduledAtMs: number;
     sessionAtMs: number;
   }>,
+  screenshotEvidence: [] as StudioSoakScreenshotEvidence[],
 };
 
 const assessCompletion = () => evaluateStudioSoakCompletion({
   ...report, requestedDurationMs: MINUTES * 60_000, checkpointIntervalMs: CHECKPOINT_MS,
   sessionDurationMs: sessionStartedAt === null ? 0 : (sessionEndedAt ?? Date.now()) - sessionStartedAt,
   telemetryErrors: report.collectionFailures.length, failures: report.failures.length, strokes: report.pixelSamples,
+  sessionStartedAt,
 });
 const writeReport = (): void => {
   const coveredBrushIds = new Set(report.pixelSamples.filter((sample) => sample.acceptedByDocument).map((sample) => sample.brushId).filter(Boolean));
@@ -694,10 +639,36 @@ let strokesSinceHistoryChurn = 0;
 let boundedLayerBaseline: number | null = null;
 let nextCheckpoint = CHECKPOINT_MS;
 let activeBrush: StudioBrushCatalogItem | null = null;
+let runtimeCollector: Awaited<ReturnType<typeof collectStudioInAppRuntimeErrors>> | null = null;
 
 function collectionFailed(kind: string, error: unknown, cycle = report.cycles): void {
   report.collectionFailures.push({ atMs: nowMs(startedAt), cycle, kind,
     detail: String(error instanceof Error ? error.message : error).slice(0, 800) });
+}
+
+function recordRuntimeErrors(): void {
+  if (!runtimeCollector || !preview) { collectionFailed("runtime-errors", "실행 오류 수집기가 없습니다."); return; }
+  try {
+    for (const error of runtimeCollector.drain()) {
+      if (isExpectedLocalPreviewRuntimeNoise(error, { origin: preview.origin, spawnedPreview: preview.child !== null })) {
+        report.environmentNoise.push(error); continue;
+      }
+      report.runtimeErrors.push(error);
+      report.failures.push({ atMs: nowMs(startedAt), cycle: report.cycles,
+        kind: `runtime-${error.channel}`, detail: `${error.step}: ${error.text}` });
+    }
+  } catch (error) { collectionFailed("runtime-errors", error); }
+}
+
+async function recordScreenshot(phase: "periodic" | "final", scheduledAtMs: number): Promise<void> {
+  if (!page || sessionStartedAt === null) { collectionFailed("screenshot-" + phase, "소크 화면 세션이 없습니다."); return; }
+  const file = phase === "final" ? "final.png" : `checkpoint-${scheduledAtMs / 60_000}m.png`;
+  try {
+    const bytes = await page.screenshot({ path: join(OUT, file) });
+    if (bytes.byteLength === 0) throw new Error("빈 소크 PNG입니다.");
+    report.screenshotEvidence.push({ phase, scheduledAtMs, sessionAtMs: nowMs(sessionStartedAt), file,
+      sha256: createHash("sha256").update(bytes).digest("hex") });
+  } catch (error) { collectionFailed("screenshot-" + phase, error); }
 }
 
 async function recordTelemetry(): Promise<void> {
@@ -767,6 +738,7 @@ try {
   await installStudioInAppFirstRunState(page);
   await installGpuAndPerfCollector(page, report.sessionId);
   const errors = await collectStudioInAppRuntimeErrors(page);
+  runtimeCollector = errors;
   cdp = await context.newCDPSession(page).catch(() => null);
   if (inputMode !== "mouse" && !cdp) {
     throw new Error(`${inputMode} soak input requires Chromium CDP; refusing a mouse downgrade.`);
@@ -793,11 +765,13 @@ try {
   // 준비·빌드·서버 대기 시간은 실제 편집 세션의 최소 시간에 포함하지 않는다.
   sessionStartedAt = Date.now();
   const deadline = sessionStartedAt + MINUTES * 60_000;
+  let terminalLatencyCycleAttempted = false;
   await recordTelemetry();
   await recordHeapCheckpoint("initial", 0);
   writeReport();
-  while (Date.now() < deadline) {
+  while (shouldRunStudioSoakCycle(Date.now(), deadline, MEASURE_POINTER_LATENCY, terminalLatencyCycleAttempted)) {
     const cycleStarted = Date.now();
+    if (cycleStarted >= deadline) terminalLatencyCycleAttempted = true;
     report.cycles += 1;
     const cycle = report.cycles;
     errors.setStep(`cycle-${cycle}`);
@@ -866,6 +840,7 @@ try {
           rejectedStrokeCountAfter: evidence.rejectedStrokeCountAfter,
           commitErrorText: evidence.commitErrorText,
           heapUsedBytesAfter: evidence.heapUsedBytesAfter,
+          pointerLatency: evidence.pointerLatency,
         });
         if (evidence.acceptedByDocument) strokesSinceHistoryChurn += 1;
         else report.failures.push({
@@ -910,27 +885,15 @@ try {
       await page.screenshot({ path: join(OUT, `action-error-cycle-${cycle}.png`) }).catch(() => undefined);
     }
 
-    const runtime = errors.drain();
-    for (const error of runtime) {
-      if (isExpectedLocalPreviewRuntimeNoise(error, {
-        origin: preview.origin,
-        spawnedPreview: preview.child !== null,
-      })) {
-        report.environmentNoise.push(error);
-        continue;
-      }
-      report.runtimeErrors.push(error);
-      report.failures.push({
-        atMs: nowMs(startedAt), cycle, kind: `runtime-${error.channel}`, detail: `${error.step}: ${error.text}`,
-      });
-    }
+    recordRuntimeErrors();
 
     await recordTelemetry();
 
-    if (nowMs(sessionStartedAt) >= nextCheckpoint) {
-      const scheduledAtMs = Math.floor(nowMs(sessionStartedAt) / CHECKPOINT_MS) * CHECKPOINT_MS;
+    const checkpointAtMs = nowMs(sessionStartedAt);
+    if (checkpointAtMs >= nextCheckpoint && checkpointAtMs < MINUTES * 60_000) {
+      const scheduledAtMs = Math.floor(checkpointAtMs / CHECKPOINT_MS) * CHECKPOINT_MS;
       const heap = await recordHeapCheckpoint("periodic", scheduledAtMs);
-      await page.screenshot({ path: join(OUT, `checkpoint-${Math.round(nowMs(startedAt) / 60000)}m.png`) }).catch(() => undefined);
+      await recordScreenshot("periodic", scheduledAtMs);
       writeReport();
       nextCheckpoint = scheduledAtMs + CHECKPOINT_MS;
       log(`checkpoint ${Math.round(nowMs(startedAt) / 60000)}m · cycle ${cycle} · failures ${report.failures.length} · heap ${heap ? Math.round(heap.usedBytes / 1048576) + " MiB" : "n/a"}`);
@@ -978,8 +941,9 @@ try {
     }
     await recordTelemetry();
     await recordHeapCheckpoint("final", MINUTES * 60_000);
-    await page.screenshot({ path: join(OUT, "final.png") }).catch(() => undefined);
+    await recordScreenshot("final", MINUTES * 60_000);
   }
+  recordRuntimeErrors();
   finalized = true;
   writeReport();
   await browser?.close().catch(() => undefined);

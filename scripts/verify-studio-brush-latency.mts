@@ -27,6 +27,7 @@ import {
 import { openStudioBrushCatalogThroughUi, selectStudioBrushCatalogItemThroughUi, waitForStudioSelectedBrushThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { createStudioBrushFirstContactCpuCapture, type StudioBrushDiagnosticInputSample } from "./lib/studio-brush-first-contact-diagnostics";
 import { assertStudioEraserLatencyFixture, prepareStudioEraserLatencyFixture } from "./lib/studio-brush-latency-eraser-fixture";
+import { evaluateStudioBrushLatencyProvenance, readStudioBrushLatencyProvenance, type StudioBrushLatencyBrowserErrors as BrowserErrors, type StudioBrushLatencyProvenance, type StudioBrushLatencyResult as BrushLatencyResult } from "./lib/studio-brush-latency-evidence";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import {
@@ -46,7 +47,6 @@ import {
   evaluateStudioBrushFrameBudget,
   type StudioBrushCompetitiveExecutionCase,
   type StudioBrushCompetitiveLongSessionEvidence,
-  type StudioBrushFrameBudgetEvaluation,
   type StudioBrushFrameBudgetMetrics,
 } from "./studio-brush-frame-budget-policy";
 import {
@@ -91,28 +91,6 @@ interface ScreenshotClip {
   readonly y: number;
   readonly width: number;
   readonly height: number;
-}
-interface BrowserErrors {
-  readonly console: string[];
-  readonly page: string[];
-  readonly responses: string[];
-  readonly staticPreviewReadinessUnavailable: string[];
-}
-interface BrushLatencyResult {
-  readonly id: StudioBrushLatencyId;
-  readonly name: string;
-  readonly source: StudioBrushCatalogItem["source"];
-  readonly runtimeMs: number;
-  readonly metrics: StudioBrushLatencyCaseMetrics;
-  readonly legacyLatencyTelemetry: ReturnType<typeof evaluateStudioBrushLatencyCase>;
-  readonly frameBudgetMetrics: StudioBrushFrameBudgetMetrics;
-  readonly frameBudgetEvaluation: StudioBrushFrameBudgetEvaluation;
-  readonly competitiveExecutionCase: StudioBrushCompetitiveExecutionCase | null;
-  readonly actualViewport: Readonly<{ width: number; height: number }>;
-  readonly actualDeviceScaleFactor: number;
-  readonly eraserFixture: Readonly<{ strokeCount: number; sampledPoints: number; minimumChangedPixels: number }> | null;
-  readonly artifacts: Readonly<{ live: string; settled: string }>;
-  readonly browserErrors: BrowserErrors;
 }
 const COMPETITIVE_LONG_STROKE_FLAG = "--competitive-long-stroke";
 function log(message: string): void {
@@ -895,6 +873,8 @@ async function main(): Promise<void> {
   let browser: Browser | null = null;
   const results: BrushLatencyResult[] = [];
   const executionFailures: Array<{ caseId: string; message: string }> = [];
+  let provenanceBefore: StudioBrushLatencyProvenance | null = null;
+  let reportWritten = false;
   try {
     await waitForServer(origin, {
       maxAttempts: 100,
@@ -902,6 +882,9 @@ async function main(): Promise<void> {
       requestInit: { redirect: "manual" },
       notReadyMessage: `Vite preview did not become ready at ${origin}`,
     });
+    provenanceBefore = await readStudioBrushLatencyProvenance({ origin, spawnedPreview: server !== null });
+    invariant(evaluateStudioBrushLatencyProvenance(provenanceBefore, provenanceBefore).ok,
+      "지연 검사 소스와 preview 빌드가 일치하지 않거나 소스가 수정되어 있습니다.");
     browser = await chromium.launch({
       headless: true,
       ...(process.env.TOONSPECTRUM_BRUSH_LATENCY_GPU === "1" ? { channel: "chromium" } : {}),
@@ -962,12 +945,15 @@ async function main(): Promise<void> {
       ...result.browserErrors.page,
       ...result.browserErrors.responses,
     ]);
+    const provenance = evaluateStudioBrushLatencyProvenance(provenanceBefore,
+      await readStudioBrushLatencyProvenance({ origin, spawnedPreview: server !== null }));
     const report = {
       kind: "toonstudio-studio-brush-latency-browser-v3",
       generatedAt: new Date().toISOString(),
       mode: competitiveLongStroke ? "competitive-long-stroke" : "smoke",
       route: studioUrl,
       scratch: SCRATCH,
+      provenance, browserVersion: browser.version(), inputEvidence: "playwright-mouse", physicalDeviceCertified: false,
       policy: {
         hardAcceptance: STUDIO_BRUSH_COMPETITIVE_FRAME_BUDGETS,
         inputTimeoutMs: INPUT_TIMEOUT_MS,
@@ -989,7 +975,7 @@ async function main(): Promise<void> {
       executionFailures,
       unexpectedBrowserErrors,
       ok:
-        results.length === representatives.length * executionCases.length
+        provenance.ok && results.length === representatives.length * executionCases.length
         && executionFailures.length === 0
         && results.every((result) => result.frameBudgetEvaluation.ok)
         && (!competitiveLongStroke || competitiveCoverage.ok)
@@ -997,12 +983,19 @@ async function main(): Promise<void> {
         && unexpectedBrowserErrors.length === 0,
     };
     writeFileSync(REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`);
+    reportWritten = true;
     log(
       `report ${REPORT_PATH} · ${results.length}/`
         + `${representatives.length * executionCases.length} cases`,
     );
     invariant(report.ok, "Studio brush latency gate failed; inspect its JSON report");
     log("ALL REPRESENTATIVE BRUSH LATENCY GATES OK");
+  } catch (error) {
+    if (!reportWritten) writeFileSync(REPORT_PATH, JSON.stringify({ ok: false, status: "incomplete",
+      provenance: evaluateStudioBrushLatencyProvenance(provenanceBefore, null), results, executionFailures,
+      inputEvidence: "playwright-mouse", physicalDeviceCertified: false,
+      error: error instanceof Error ? error.message : String(error) }, null, 2));
+    throw error;
   } finally {
     if (browser) await browser.close().catch(() => undefined);
     if (server) await stopChildProcess(server, { releaseStdio: false }).catch(() => undefined);
