@@ -1,10 +1,11 @@
 import { ArrowUpRight, MapPin } from "lucide-react";
-import { useMemo } from "react";
+import { Suspense, useMemo, useState } from "react";
 
 import type { ProductionProjectAggregate, ProductionTask } from "@toonstudio/core/production";
 
 import Link from "@/shared/navigation/router-link";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 import { rankCreatorProductionWork } from "../production-hub/creator-role-production-work";
 import {
@@ -17,6 +18,14 @@ import {
 import type { SpaceRolePreset } from "./use-space-role-preset";
 
 const MAX_ROLE_WORK = 2;
+
+const LazyStudioHyperAutomationOsPanel = lazyRetry(
+  () =>
+    import("../hyper-automation-os/StudioHyperAutomationOsPanel").then((module) => ({
+      default: module.StudioHyperAutomationOsPanel,
+    })),
+  "StudioHyperAutomationOsPanel",
+);
 
 /**
  * 작업 시작 안내 안에 들어가는 직군 가이드.
@@ -33,6 +42,7 @@ export function SpaceRoleGuide({ role, aggregate, onGuide, onGuidePlace }: {
 }) {
   const bt = useBilingual("SpaceRoleGuide");
   const { definition } = role;
+  const [hyperAutoOpen, setHyperAutoOpen] = useState(false);
 
   const ranked = useMemo(
     () => (aggregate
@@ -97,5 +107,22 @@ export function SpaceRoleGuide({ role, aggregate, onGuide, onGuidePlace }: {
         ))}
       </div>
     </div> : null}
+    <details
+      className="hyper-auto-os__disclosure"
+      data-testid="studio-hyper-automation-os-disclosure"
+      onToggle={(event) => setHyperAutoOpen(event.currentTarget.open)}
+    >
+      <summary>
+        {bt(
+          "하이퍼 오토메이션 OS: 수동 프로 0% ↔ 99% 원클릭 웹툰 자동 생성",
+          "Hyper Automation OS: Manual Pro 0% ↔ 99% One-Click Webtoon",
+        )}
+      </summary>
+      {hyperAutoOpen ? (
+        <Suspense fallback={<p>{bt("하이퍼 오토메이션 OS 불러오는 중…", "Loading Hyper Automation OS…")}</p>}>
+          <LazyStudioHyperAutomationOsPanel />
+        </Suspense>
+      ) : null}
+    </details>
   </div>;
 }
