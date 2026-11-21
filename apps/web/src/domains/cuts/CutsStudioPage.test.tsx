@@ -105,4 +105,17 @@ describe("CutsStudioPage 회차 선택 우선 배치 및 고급 모션·오디�
       expect(btn.className).toContain("focus-visible:outline-2");
     }
   });
+
+  it("독자 뷰어에서 ?fromTitle&ep&mood로 진입하면 안내를 표시하고 해당 리듬 프리셋을 미리 적용한다", () => {
+    window.localStorage.clear();
+    render(
+      <MemoryRouter initialEntries={["/cuts/studio?fromTitle=fog-signal&ep=7&mood=chase"]}>
+        <CutsStudioPage />
+      </MemoryRouter>,
+    );
+
+    const notice = screen.getByTestId("cuts-reader-handoff-notice");
+    expect(notice.textContent).toContain("7화");
+    expect(screen.queryByText(/원작을 찾지 못해/u)).toBeNull();
+  });
 });

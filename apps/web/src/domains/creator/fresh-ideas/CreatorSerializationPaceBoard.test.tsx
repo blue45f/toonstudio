@@ -50,6 +50,9 @@ describe("CreatorSerializationPaceBoard UI", () => {
   it("프리셋 전환, 공정 컷 증감/완료, 오늘 체크인 파티클 버스트와 리로드 복원이 동작한다", () => {
     const { unmount } = render(<CreatorSerializationPaceBoard />);
 
+    const stagesDisclosure = screen.getByTestId("pace-stages-disclosure") as HTMLDetailsElement;
+    expect(stagesDisclosure.open).toBe(false);
+
     fireEvent.click(screen.getByTestId("pace-preset-instatoon-8"));
     expect(screen.getByTestId("pace-preset-instatoon-8").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("pace-stage-count-storyboard").textContent).toContain("8/8");

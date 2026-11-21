@@ -167,6 +167,22 @@ export function applyRhythmToClip(clip: CutsClip, config: CutsRhythmConfig): Cut
   };
 }
 
+export function parseCutsRhythmPresetParam(
+  raw: string | null | undefined,
+): CutsRhythmPresetId | null {
+  if (!raw) return null;
+  const normalized = raw.trim();
+  if (
+    normalized === "flutter"
+    || normalized === "chase"
+    || normalized === "linger"
+    || normalized === "impact"
+  ) {
+    return normalized;
+  }
+  return null;
+}
+
 export function loadCutsRhythmConfig(): CutsRhythmConfig {
   if (typeof window === "undefined") return DEFAULT_CUTS_RHYTHM_CONFIG;
   try {

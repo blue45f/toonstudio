@@ -48,6 +48,9 @@ describe("CommunityFanPulseStrip UI", () => {
   it("1탭 응원 시 파티클 버스트·카운트 갱신·한 줄 스티커 영속 복원이 동작한다", () => {
     const { unmount } = render(<CommunityFanPulseStrip />);
 
+    const noteDisclosure = screen.getByTestId("community-pulse-note-disclosure") as HTMLDetailsElement;
+    expect(noteDisclosure.open).toBe(false);
+
     const peakBtn = screen.getByTestId("community-pulse-btn-art-peak");
     fireEvent.click(peakBtn);
     expect(peakBtn.getAttribute("aria-pressed")).toBe("true");

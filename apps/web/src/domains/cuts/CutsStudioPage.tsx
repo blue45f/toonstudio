@@ -25,8 +25,10 @@ import {
   applyPresetToRhythmConfig,
   applyRhythmToClip,
   DEFAULT_CUTS_RHYTHM_CONFIG,
+  getCutsRhythmPreset,
   loadCutsRhythmConfig,
   nudgeShotDurationOffset,
+  parseCutsRhythmPresetParam,
   saveCutsRhythmConfig,
   type CutsPlaybackRate,
   type CutsRhythmConfig,
@@ -335,7 +337,13 @@ export function CutsStudioPage() {
   const [targetFps, setTargetFps] = useState<StudioTargetFps>("60fps-webgpu");
   const [cameraCurve, setCameraCurve] = useState<"spring-impact" | "smooth-pan-25d" | "shonen-shake-burst" | "emotional-slowzoom">("spring-impact");
   const [duckingProfile, setDuckingProfile] = useState<"dialogue-minus12db" | "sfx-punch-minus6db" | "cinema-lufs14">("dialogue-minus12db");
-  const [rhythmConfig, setRhythmConfig] = useState<CutsRhythmConfig>(() => loadCutsRhythmConfig());
+  const fromTitleParam = searchParams.get("fromTitle")?.trim() || null;
+  const fromEpisodeParam = searchParams.get("ep")?.trim() || null;
+  const initialMoodPreset = parseCutsRhythmPresetParam(searchParams.get("mood"));
+  const [rhythmConfig, setRhythmConfig] = useState<CutsRhythmConfig>(() => {
+    const base = loadCutsRhythmConfig();
+    return initialMoodPreset ? applyPresetToRhythmConfig(base, initialMoodPreset) : base;
+  });
 
   const updateRhythmConfig = (updater: (prev: CutsRhythmConfig) => CutsRhythmConfig) => {
     setRhythmConfig((prev) => {
@@ -431,6 +439,20 @@ export function CutsStudioPage() {
             "원작을 찾지 못해 일반 클립 만들기로 진행해요.",
             "We couldn't find the original, so you're in standard clip creation.",
           )}
+        </p>
+      ) : null}
+
+      {fromTitleParam && !remixParamInvalid ? (
+        <p className="cuts-studio__notice" role="note" data-testid="cuts-reader-handoff-notice">
+          {initialMoodPreset
+            ? t(
+                `뷰어에서 가져온 ${fromEpisodeParam ? `${fromEpisodeParam}화 ` : ""}${getCutsRhythmPreset(initialMoodPreset).labelKo} 리듬이 미리 적용됐어요. 아래에서 회차를 골라 바로 미리보세요.`,
+                `The ${getCutsRhythmPreset(initialMoodPreset).labelEn} rhythm from the reader is preloaded. Pick an episode below to preview it right away.`,
+              )
+            : t(
+                `뷰어에서 ${fromEpisodeParam ? `${fromEpisodeParam}화 ` : ""}컷츠 만들기로 이어졌어요. 아래에서 회차를 골라 변환해 보세요.`,
+                `Opened from the reader${fromEpisodeParam ? ` (Ep.${fromEpisodeParam})` : ""}. Pick an episode below to convert.`,
+              )}
         </p>
       ) : null}
 
