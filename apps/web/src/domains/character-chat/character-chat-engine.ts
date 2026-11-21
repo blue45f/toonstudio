@@ -27,6 +27,7 @@ import {
   buildCharacterChatSystemPrompt,
   buildCharacterChatUserPrompt,
 } from "./character-chat-prompt";
+import type { PersonaToneId, SpoilerFenceId } from "./character-chat-scene-starter";
 import type {
   CharacterChatMessage,
   CharacterChatProfile,
@@ -61,6 +62,10 @@ export interface CharacterChatEngineInput {
    * 프롬프트에 "읽기 좋은 대사" 규칙이 더해진다. 생략하면 이전과 같은 프롬프트를 쓴다.
    */
   readonly readAloud?: boolean;
+  /** 팬이 선택한 회차 스포일러 안전선. */
+  readonly spoilerFence?: SpoilerFenceId;
+  /** 팬이 선택한 캐릭터 말투 온도. */
+  readonly personaTone?: PersonaToneId;
 }
 
 export interface CharacterChatEngine {
@@ -114,7 +119,11 @@ export function createByokCharacterChatEngine(
   return {
     id: "byok-user-ai",
     async generateReply(input) {
-      const system = buildCharacterChatSystemPrompt(input.profile, { readAloud: input.readAloud === true });
+      const system = buildCharacterChatSystemPrompt(input.profile, {
+        readAloud: input.readAloud === true,
+        spoilerFence: input.spoilerFence,
+        personaTone: input.personaTone,
+      });
       const user = buildCharacterChatUserPrompt(input.profile, input.history, input.userText);
       let raw: string;
       try {

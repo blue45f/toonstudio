@@ -125,11 +125,13 @@ describe("CharacterChatPage", () => {
     expect(screen.getByRole("button", { name: /하루/ })).toBeTruthy();
   });
 
-  it("REA 로어북 스포일러 펜스·페르소나 톤 워크벤치를 44px 규격으로 렌더링하고 양방향 상태를 전환한다", () => {
+  it("작품 설정 안전선·말투 온도 워크벤치를 44px 규격으로 렌더링하고 양방향 상태를 전환한다", () => {
     renderPage();
 
     const bar = screen.getByTestId("character-chat-rea-lorebook-bar");
-    expect(bar.textContent).toContain("Character.AI · Zeta · Wrtn · SillyTavern Lorebook");
+    expect(bar.textContent).toContain("작가 승인 설정 기준 · 대화에 바로 반영");
+    expect(bar.textContent).not.toContain("REA 로어북");
+    expect(bar.textContent).not.toContain("SillyTavern");
 
     const fenceEp10 = screen.getByTestId("char-chat-rea-fence-ep10-canon-lock");
     const fenceS1 = screen.getByTestId("char-chat-rea-fence-season1-finale-sync");
