@@ -253,13 +253,14 @@ describe("PageRoleAndJourneyNavigator 컴포넌트", () => {
   it("원시 HEX·transition-all·any 없이 시맨틱 OKLCH 토큰과 모션 감소 가드를 준수한다", () => {
     const baseDir = path.resolve(process.cwd(), "apps/web/src/shared/components/workspace");
     const mapSource = readFileSync(path.join(baseDir, "page-role-journey-map.ts"), "utf8");
+    const shellLiteSource = readFileSync(path.join(baseDir, "page-role-journey-shell-lite.ts"), "utf8");
     const navSource = readFileSync(path.join(baseDir, "PageRoleAndJourneyNavigator.tsx"), "utf8");
-    for (const source of [mapSource, navSource]) {
+    for (const source of [mapSource, shellLiteSource, navSource]) {
       expect(source).not.toMatch(/#[0-9a-fA-F]{3,8}\b/u);
       expect(source).not.toContain("transition-all");
       expect(source).not.toMatch(/:\s*any\b|as\s+any\b/u);
     }
-    expect(mapSource).toContain("motion-reduce:transition-none");
+    expect(shellLiteSource).toContain("motion-reduce:transition-none");
     expect(navSource).toContain("overscroll-x-contain");
     expect(navSource).toContain("min-h-11");
 

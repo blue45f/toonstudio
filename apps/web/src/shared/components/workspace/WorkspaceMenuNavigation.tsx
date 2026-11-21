@@ -6,7 +6,7 @@ import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
 import { loadChunkWithReloadRecovery } from "@/shared/lib/chunk-load-recovery";
 import { siteMobilePurposeHref } from "../site-mobile-purpose";
-import { resolvePageRoleJourney } from "./page-role-journey-map";
+import { resolveShellJourneySummary } from "./page-role-journey-shell-lite";
 import { WorkspaceNavigation } from "./WorkspaceNavigation";
 import type { WorkspaceNavigationContext } from "./workspace-navigation-model";
 
@@ -61,13 +61,13 @@ export function WorkspaceMenuNavigation({ activeId, context }: {
   useEffect(() => { if (!mobile && open) closeMenu(); }, [mobile, open, closeMenu]);
   useEffect(() => () => window.cancelAnimationFrame(frame.current), []);
   const path = canonicalSitePath(location.pathname);
-  const currentStage = resolvePageRoleJourney(path).stageNumber;
+  const currentStage = resolveShellJourneySummary(path).stageNumber;
   const isActive = (href: string, exact = false) => {
     const target = canonicalSitePath(href);
     return path === target || (!exact && target !== "/" && path.startsWith(`${target}/`));
   };
   const isPurposeActive = (href: string) =>
-    resolvePageRoleJourney(href).stageNumber === currentStage;
+    resolveShellJourneySummary(href).stageNumber === currentStage;
   return <>
     <WorkspaceNavigation activeId={activeId} context={context} navigationRef={navigation}
       onOpenMenu={mobile && Menu ? openMenu : undefined} menuOpen={open} menuId={menuId} />

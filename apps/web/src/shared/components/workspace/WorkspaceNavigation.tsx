@@ -17,8 +17,8 @@ import {
   CREATOR_JOURNEY_STAGES,
   accentToneBadgeClasses,
   accentToneChipClasses,
-  resolvePageRoleJourney,
-} from "./page-role-journey-map";
+  resolveShellJourneySummary,
+} from "./page-role-journey-shell-lite";
 import {
   workspaceNavigationActiveId,
   workspaceNavigationContext,
@@ -175,7 +175,7 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
   const { pathname, search } = useLocation();
   const railRef = useRef<HTMLDivElement>(null);
   const navigationContext = context ?? workspaceNavigationContext(pathname, search);
-  const currentJourney = resolvePageRoleJourney(pathname);
+  const currentJourney = resolveShellJourneySummary(pathname);
   const shortcutActive = workspaceShortcutActiveId(pathname);
   const [shortcutsExpanded, setShortcutsExpanded] = useState(true);
   const autoSelected = activeId ?? workspaceNavigationActiveId(pathname);
@@ -206,7 +206,7 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
       >
         {TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => {
           const Icon = item.icon;
-          const entryRole = resolvePageRoleJourney(item.href);
+          const entryRole = resolveShellJourneySummary(item.href);
           const entryTitle = `${isKo ? entryRole.stageBadgeKo : entryRole.stageBadgeEn} · ${siteNavigationText(item.description, locale)}`;
           const href = item.id === "workspace-home"
             ? studioHref ?? workspaceNavigationHref(item.href, navigationContext)
@@ -276,7 +276,7 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
         <nav className="workspace-nav-shortcuts" aria-label={isKo ? "제작 바로가기" : "Creation shortcuts"}>
           {WORKSPACE_SHORTCUTS.map((item) => {
             const Icon = item.icon;
-            const shortcutRole = resolvePageRoleJourney(item.href);
+            const shortcutRole = resolveShellJourneySummary(item.href);
             const href = item.id === "shortcut-team"
               ? teamHref ?? item.href
               : item.href;

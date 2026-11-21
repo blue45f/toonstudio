@@ -9,8 +9,8 @@ import {
 import { siteNavigationText } from "./site-navigation";
 import {
   accentToneBadgeClasses,
-  resolvePageRoleJourney,
-} from "./workspace/page-role-journey-map";
+  resolveShellJourneySummary,
+} from "./workspace/page-role-journey-shell-lite";
 
 import Link from "@/shared/navigation/router-link";
 import { cx } from "@/shared/lib/cx";
@@ -42,7 +42,7 @@ export function HeaderPrimaryNavigationEntry({
   const activeChild = highlighted ? children.find((child) => isActive(child.href, child.exact)) : undefined;
   const label = siteNavigationText(item.label, locale);
   const isKo = locale.toLowerCase().startsWith("ko");
-  const itemRole = resolvePageRoleJourney(item.href);
+  const itemRole = resolveShellJourneySummary(item.href);
   const [open, setOpen] = useState(false);
   const submenuId = useId();
   // Escape로 닫은 직후에는 트리거로 돌아온 포커스가 패널을 다시 열지 않게 한다.
@@ -130,7 +130,7 @@ export function HeaderPrimaryNavigationEntry({
                 {group.children.map((child) => {
                   const childActive = activeChild?.id === child.id;
                   const ChildIcon = child.icon;
-                  const childRole = resolvePageRoleJourney(child.href);
+                  const childRole = resolveShellJourneySummary(child.href);
                   const index = childIndex++;
                   return (
                     <li key={child.id} style={{ "--ink-i": index } as CSSProperties}>

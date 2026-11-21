@@ -1,13 +1,21 @@
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
+import {
+  CREATOR_JOURNEY_STAGES,
+  accentToneBadgeClasses,
+  accentToneChipClasses,
+  type CreatorJourneyStage,
+  type JourneyStageNumber,
+  type PageJourneyAccentTone,
+} from "./page-role-journey-shell-lite";
 
-export type JourneyStageNumber = 1 | 2 | 3 | 4 | 5;
-
-export type PageJourneyAccentTone =
-  | "creation"
-  | "three-d"
-  | "collab"
-  | "market"
-  | "support";
+export {
+  CREATOR_JOURNEY_STAGES,
+  accentToneBadgeClasses,
+  accentToneChipClasses,
+  type CreatorJourneyStage,
+  type JourneyStageNumber,
+  type PageJourneyAccentTone,
+};
 
 export interface JourneyNextStep {
   readonly href: string;
@@ -15,26 +23,6 @@ export interface JourneyNextStep {
   readonly labelEn: string;
   readonly reasonKo: string;
   readonly reasonEn: string;
-  readonly accentTone: PageJourneyAccentTone;
-}
-
-export interface CreatorJourneyStage {
-  readonly stageNumber: JourneyStageNumber;
-  readonly stepCode: "01" | "02" | "03" | "04" | "05";
-  readonly stageId:
-    | "start"
-    | "create"
-    | "collaborate"
-    | "discover-market"
-    | "support-account";
-  readonly circleBadge: "①" | "②" | "③" | "④" | "⑤";
-  readonly badgeKo: string;
-  readonly badgeEn: string;
-  readonly shortLabelKo: string;
-  readonly shortLabelEn: string;
-  readonly subtitleKo: string;
-  readonly subtitleEn: string;
-  readonly primaryHref: string;
   readonly accentTone: PageJourneyAccentTone;
 }
 
@@ -53,49 +41,6 @@ export interface PageRoleJourneyEntry {
   readonly accentTone: PageJourneyAccentTone;
   readonly recommendedNextSteps: readonly JourneyNextStep[];
 }
-
-/**
- * ToonStudio 5단계 창작 여정 단일 정본.
- * PC GNB·LNB·태블릿 드로어·모바일 전체 메뉴·페이지 역할 동선 바가
- * 모두 이 5단계 순서와 라벨·시맨틱 톤을 공유한다.
- */
-export const CREATOR_JOURNEY_STAGES: readonly CreatorJourneyStage[] = Object.freeze([
-  {
-    stageNumber: 1, stepCode: "01", stageId: "start", circleBadge: "①",
-    badgeKo: "① 시작·홈", badgeEn: "1 · Start & Home",
-    shortLabelKo: "시작·홈", shortLabelEn: "Start & Home",
-    subtitleKo: "작업 홈·새 작품 시작", subtitleEn: "Workspace home & new work",
-    primaryHref: "/home", accentTone: "creation",
-  },
-  {
-    stageNumber: 2, stepCode: "02", stageId: "create", circleBadge: "②",
-    badgeKo: "② 작품 제작", badgeEn: "2 · Studio & Create",
-    shortLabelKo: "작품 제작", shortLabelEn: "Studio & Create",
-    subtitleKo: "스튜디오·3D·AI·포토샵", subtitleEn: "Canvas, 3D, AI & layers",
-    primaryHref: "/studio", accentTone: "three-d",
-  },
-  {
-    stageNumber: 3, stepCode: "03", stageId: "collaborate", circleBadge: "③",
-    badgeKo: "③ 분업·협업", badgeEn: "3 · Collaborate",
-    shortLabelKo: "분업·협업", shortLabelEn: "Collaborate",
-    subtitleKo: "분업 OS·팀·커뮤니티", subtitleEn: "Production OS & teams",
-    primaryHref: "/production", accentTone: "collab",
-  },
-  {
-    stageNumber: 4, stepCode: "04", stageId: "discover-market", circleBadge: "④",
-    badgeKo: "④ 탐색·마켓", badgeEn: "4 · Discover & Market",
-    shortLabelKo: "탐색·마켓", shortLabelEn: "Discover & Market",
-    subtitleKo: "에셋 마켓·작품·배우기", subtitleEn: "3D/brush assets & learn",
-    primaryHref: "/market", accentTone: "market",
-  },
-  {
-    stageNumber: 5, stepCode: "05", stageId: "support-account", circleBadge: "⑤",
-    badgeKo: "⑤ 내 공간·AI 고객센터", badgeEn: "5 · Account & AI Support",
-    shortLabelKo: "AI 고객센터", shortLabelEn: "AI Support",
-    subtitleKo: "1:1 채팅상담·지원·설정", subtitleEn: "1:1 AI chat, help & settings",
-    primaryHref: "/studio/support", accentTone: "support",
-  },
-]);
 
 const nextStep = (
   href: string,
@@ -654,55 +599,4 @@ export function journeyStageForNavigationGroupId(
 ): CreatorJourneyStage {
   const stageNumber = GROUP_TO_STAGE_NUMBER[groupId] ?? 1;
   return STAGE_BY_NUMBER[stageNumber];
-}
-
-/** 시맨틱 톤별 배지 Tailwind 클래스(원시 HEX 없이 시맨틱 토큰만 사용). */
-export function accentToneBadgeClasses(tone: PageJourneyAccentTone): string {
-  switch (tone) {
-    case "creation":
-      return "border-accent/40 bg-accent-soft text-accent";
-    case "three-d":
-      return "border-info/40 bg-info-soft text-info";
-    case "collab":
-      return "border-accent-2/40 bg-accent-soft text-fg";
-    case "market":
-      return "border-warning/40 bg-warning-soft text-warning";
-    case "support":
-      return "border-success/40 bg-success-soft text-success";
-  }
-}
-
-/** 시맨틱 톤별 인터랙티브 칩 Tailwind 클래스(명시적 transition 속성 + 모션 감소 가드). */
-export function accentToneChipClasses(
-  tone: PageJourneyAccentTone,
-  active = false,
-): string {
-  const base =
-    "transition-[border-color,background-color,color,transform] duration-150 motion-reduce:transition-none";
-  if (active) {
-    switch (tone) {
-      case "creation":
-        return `${base} border-accent bg-accent-soft text-fg shadow-xs`;
-      case "three-d":
-        return `${base} border-info bg-info-soft text-fg shadow-xs`;
-      case "collab":
-        return `${base} border-accent-2 bg-accent-soft text-fg shadow-xs`;
-      case "market":
-        return `${base} border-warning bg-warning-soft text-fg shadow-xs`;
-      case "support":
-        return `${base} border-success bg-success-soft text-fg shadow-xs`;
-    }
-  }
-  switch (tone) {
-    case "creation":
-      return `${base} border-line bg-card text-fg-2 hover:border-accent/55 hover:bg-raised hover:text-fg`;
-    case "three-d":
-      return `${base} border-line bg-card text-fg-2 hover:border-info/55 hover:bg-raised hover:text-fg`;
-    case "collab":
-      return `${base} border-line bg-card text-fg-2 hover:border-accent-2/55 hover:bg-raised hover:text-fg`;
-    case "market":
-      return `${base} border-line bg-card text-fg-2 hover:border-warning/55 hover:bg-raised hover:text-fg`;
-    case "support":
-      return `${base} border-line bg-card text-fg-2 hover:border-success/55 hover:bg-raised hover:text-fg`;
-  }
 }
