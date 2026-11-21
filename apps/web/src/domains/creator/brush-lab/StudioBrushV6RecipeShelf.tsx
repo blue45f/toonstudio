@@ -1,10 +1,19 @@
-import { useId, useState } from "react";
+import { Suspense, useId, useState } from "react";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { useT } from "@/shared/lib/i18n";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 import "../studio-brush-canvas-status-i18n";
 import { BRUSH_STUDIO_V6_RECIPES } from "./brush-studio-v6-engine";
 import { BRUSH_STUDIO_V6_RECIPE_GROUPS, searchBrushStudioV6Recipes } from "./brush-studio-v6-recipe-search";
+
+const LazyStudioCspFullBrushAtelierPanel = lazyRetry(
+  () =>
+    import("../csp-brush-atelier/StudioCspFullBrushAtelierPanel").then((module) => ({
+      default: module.StudioCspFullBrushAtelierPanel,
+    })),
+  "StudioCspFullBrushAtelierPanel",
+);
 
 const FIELD = `min-h-11 rounded-xl border border-line bg-card px-3 text-sm text-fg ${STUDIO_FOCUS_RING}`;
 interface Props { readonly selectedId: string; readonly onChoose: (id: string) => void; }
@@ -14,6 +23,7 @@ export function StudioBrushV6RecipeShelf({ selectedId, onChoose }: Props) {
   const id = useId();
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState("all");
+  const [cspAtelierOpen, setCspAtelierOpen] = useState(false);
   const recipes = searchBrushStudioV6Recipes(query, group);
   const reset = () => { setQuery(""); setGroup("all"); };
   return <div className="space-y-4">
@@ -49,5 +59,42 @@ export function StudioBrushV6RecipeShelf({ selectedId, onChoose }: Props) {
         </div>
       </section>;
     })}
+    <div className="border-t border-line pt-4">
+      <details
+        data-testid="studio-csp-full-brush-atelier-disclosure"
+        className="group/csp-atelier rounded-2xl border border-line bg-panel/65"
+        onToggle={(event) => setCspAtelierOpen(event.currentTarget.open)}
+      >
+        <summary
+          className={`flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-fg [&::-webkit-details-marker]:hidden ${STUDIO_FOCUS_RING}`}
+        >
+          <span className="min-w-0 [word-break:keep-all]">
+            클립스튜디오 9대 카테고리 36종 풀 브러시 아틀리에 · 최고 수준 질감 엔진
+          </span>
+          <span
+            aria-hidden="true"
+            className="shrink-0 text-xs font-semibold text-fg-3 transition-transform group-open/csp-atelier:rotate-180 motion-reduce:transition-none"
+          >
+            ▾
+          </span>
+        </summary>
+        {cspAtelierOpen ? (
+          <div className="border-t border-line p-3 sm:p-4">
+            <Suspense
+              fallback={
+                <div
+                  role="status"
+                  className="rounded-xl border border-line bg-card px-4 py-3 text-xs text-fg-2"
+                >
+                  {t("studio.brushCanvasStatus.brushLab.connecting", "브러시 프로그램 연결 중")}
+                </div>
+              }
+            >
+              <LazyStudioCspFullBrushAtelierPanel />
+            </Suspense>
+          </div>
+        ) : null}
+      </details>
+    </div>
   </div>;
 }
