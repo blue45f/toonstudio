@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { SearchOtherTypes } from "./SearchOtherTypes";
+import { SearchSmartIntentRibbon } from "./fresh-ideas/SearchSmartIntentRibbon";
 import { useInstallLocalSearchBridge } from "./local-catalog-fallback";
 import "./search-page-layout.css";
 
@@ -29,7 +30,7 @@ const SEARCH_MODES = [
 
 export function SearchPage() {
   useInstallLocalSearchBridge();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const state = parseCatalogDiscoveryState(searchParams);
   const freeOnly =
     state.filters.pricing.length > 0 &&
@@ -77,6 +78,14 @@ export function SearchPage() {
             </details>
           </header>
         </div>
+
+        <SearchSmartIntentRibbon
+          searchParams={searchParams}
+          state={state}
+          onApplyParams={(next) =>
+            setSearchParams(next, { replace: false, preventScrollReset: true })
+          }
+        />
 
         {/* key를 바꾸거나 안내 접힘에 따라 재마운트하지 않아 입력 초안·시트·paging을 보존한다. */}
         <div
