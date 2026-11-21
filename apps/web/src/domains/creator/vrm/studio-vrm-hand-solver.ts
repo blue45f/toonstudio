@@ -1,4 +1,9 @@
 
+import {
+  STUDIO_VRM_HAND_15DOF_LIMITS,
+  refineStudioVrmHandPose15Dof,
+} from "./studio-vrm-hair-hand-equip-refiner";
+
 // MediaPipe HandLandmarker(손 21개 랜드마크) → VRM 손가락 본 회전(Euler) 솔버.
 //
 // 각 관절의 굽힘(curl) 각도를 인접 분절 사이 각으로 구해, 스튜디오의 기존 손가락 컬 규약과
@@ -49,8 +54,14 @@ const FINGERS = [
 
 const SEGMENTS = ["Proximal", "Intermediate", "Distal"] as const;
 
-/** 손가락 최대 컬(rad). 약 110°. */
-const MAX_CURL = 1.95;
+/** 마디별 해부학 최대 컬(rad): MCP 90° · PIP 105° · DIP 75°. */
+const SEGMENT_MAX_CURL = [
+  STUDIO_VRM_HAND_15DOF_LIMITS.mcpFlexMaxDeg * Math.PI / 180,
+  STUDIO_VRM_HAND_15DOF_LIMITS.pipFlexMaxDeg * Math.PI / 180,
+  STUDIO_VRM_HAND_15DOF_LIMITS.dipFlexMaxDeg * Math.PI / 180,
+] as const;
+/** 엄지 IP 최대 컬(rad). */
+const MAX_THUMB_CURL = STUDIO_VRM_HAND_15DOF_LIMITS.thumbIpZ[1] * Math.PI / 180;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -165,15 +176,15 @@ export function solveHandToFingerBones(
     ];
     const spread = fingerSpread(landmarks, fingerIndex, f.mcp, f.pip, palm);
     SEGMENTS.forEach((seg, i) => {
-      const c = clamp(curls[i], 0, MAX_CURL);
+      const c = clamp(curls[i], 0, SEGMENT_MAX_CURL[i]!);
       out[`${avatarSide}${f.name}${seg}`] = [0, i === 0 ? sign * spread : 0, sign * c];
     });
   });
 
   // 엄지는 CMC(opposition)를 반드시 출력한다. 이전 솔버는 metacarpal을 건드리지 않아 사진의
   // 엄지가 손바닥 옆에 납작하게 붙은 채 MCP/IP만 꺾이는 "집게발" 형태가 됐다.
-  const thumbProx = clamp(jointAngle(landmarks, HAND_LM.thumbCmc, HAND_LM.thumbMcp, HAND_LM.thumbIp), 0, MAX_CURL);
-  const thumbDist = clamp(jointAngle(landmarks, HAND_LM.thumbMcp, HAND_LM.thumbIp, HAND_LM.thumbTip), 0, MAX_CURL);
+  const thumbProx = clamp(jointAngle(landmarks, HAND_LM.thumbCmc, HAND_LM.thumbMcp, HAND_LM.thumbIp), 0, MAX_THUMB_CURL);
+  const thumbDist = clamp(jointAngle(landmarks, HAND_LM.thumbMcp, HAND_LM.thumbIp, HAND_LM.thumbTip), 0, MAX_THUMB_CURL);
   const thumbDirection = normalize(between(landmarks[HAND_LM.thumbCmc], landmarks[HAND_LM.thumbMcp]));
   let thumbOpposition = 0;
   let thumbOutOfPlane = 0;
@@ -190,12 +201,16 @@ export function solveHandToFingerBones(
   out[`${avatarSide}ThumbMetacarpal`] = [
     thumbOutOfPlane * 0.72,
     sign * (0.28 + thumbOpposition),
-    sign * thumbProx * 0.12,
+    sign * thumbProx * 0.14,
   ];
   out[`${avatarSide}ThumbProximal`] = [0, sign * thumbProx * 0.48, sign * thumbProx * 0.58];
   out[`${avatarSide}ThumbDistal`] = [0, 0, sign * thumbDist];
 
-  return out;
+  return refineStudioVrmHandPose15Dof(avatarSide, out, {
+    coupleDipToPip: true,
+    enforceNonCrossingSpread: true,
+    strengthenThumbCmc: false,
+  });
 }
 
 /**
