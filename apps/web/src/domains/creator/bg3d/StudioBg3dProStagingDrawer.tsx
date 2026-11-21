@@ -6,8 +6,10 @@
  * - SketchUp Style Builder × Blender Line Art 3.0 손그림 LT 아틀라스 (`studio-lt-style-builder-edge-atlas`)
  * - 16광원 시맨틱 태그 스위치보드 (`studio-bg3d-light-switchboard-water`)
  */
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 
+import type { StudioBg3dWebtoonAtmospherePresetId } from "./studio-bg3d-lighting-studio";
+import type { BakedManuscriptCutLayer } from "./studio-bg3d-live-ink-bake-bridge";
 import {
   chainProjected3dEdges,
   createDefaultLineArtModifierStackConfig,
@@ -42,6 +44,17 @@ import {
   type Bg3dLocalLightFixture,
 } from "./studio-bg3d-light-switchboard-water";
 
+const LazyStudioBg3dCharacterCompositePanel = lazy(() =>
+  import("./StudioBg3dCharacterCompositePanel").then((m) => ({
+    default: m.StudioBg3dCharacterCompositePanel,
+  })),
+);
+const LazyStudioBg3dModelingProDrawer = lazy(() =>
+  import("./StudioBg3dModelingProDrawer").then((m) => ({
+    default: m.StudioBg3dModelingProDrawer,
+  })),
+);
+
 export interface StudioBg3dProStagingDrawerProps {
   readonly axis180Locked: boolean;
   readonly axisSide: AxisHalfPlaneSide;
@@ -50,6 +63,10 @@ export interface StudioBg3dProStagingDrawerProps {
   readonly onSelectShotSpec?: (shot: Axis180ShotSpec) => void;
   readonly onGroundSnap?: (result: GroundSnapResult) => void;
   readonly onTransferPose?: (result: TemplateTransferResult) => void;
+  readonly activeAtmosphereId?: StudioBg3dWebtoonAtmospherePresetId | null;
+  readonly targetDocumentId?: string | null;
+  readonly targetCutIndex?: number;
+  readonly onBakeToManuscriptCut?: (layer: BakedManuscriptCutLayer) => void;
   readonly onStatusMessage: (messageKo: string) => void;
   readonly onClose: () => void;
 }
@@ -239,9 +256,15 @@ export function StudioBg3dProStagingDrawer({
   onSelectShotSpec,
   onGroundSnap,
   onTransferPose,
+  activeAtmosphereId = null,
+  targetDocumentId = null,
+  targetCutIndex = 0,
+  onBakeToManuscriptCut,
   onStatusMessage,
   onClose,
 }: StudioBg3dProStagingDrawerProps) {
+  const [compositeStageOpen, setCompositeStageOpen] = useState(false);
+  const [modelingProOpen, setModelingProOpen] = useState(false);
   const [activeShotId, setActiveShotId] = useState<string>("shot-establishing");
   const [characterRecord, setCharacterRecord] = useState<CharacterInstanceRecord>(DEFAULT_USER_CHARACTER);
   const [lastTransferNote, setLastTransferNote] = useState<string | null>(null);
@@ -503,6 +526,51 @@ export function StudioBg3dProStagingDrawer({
             />
           </label>
         </div>
+      </div>
+
+      {/* 5. 점진적 공개: 고밀도 배경·캐릭터 실시간 합성 & Blender/SketchUp 고급 3D 모델링 */}
+      <div className="mt-2.5 grid grid-cols-1 gap-2.5 xl:grid-cols-2">
+        <details
+          data-testid="bg3d-pro-composite-disclosure"
+          className="rounded-xl border border-line bg-card"
+          onToggle={(event) => setCompositeStageOpen(event.currentTarget.open)}
+        >
+          <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-3 py-2 text-xs font-semibold text-fg">
+            <span>캐릭터 씬에 합성 · 고밀도 웹툰 3D 배경 (6종)</span>
+            <span className="text-[11px] text-fg-3">VRM·MToon 동기화·3패스</span>
+          </summary>
+          {compositeStageOpen ? (
+            <div className="border-t border-line p-2.5">
+              <Suspense fallback={<p className="p-2 text-xs text-fg-3">합성 스테이지를 불러오는 중이에요…</p>}>
+                <LazyStudioBg3dCharacterCompositePanel
+                  activeAtmosphereId={activeAtmosphereId}
+                  targetDocumentId={targetDocumentId}
+                  targetCutIndex={targetCutIndex}
+                  onBakeToManuscriptCut={onBakeToManuscriptCut}
+                  onStatusMessage={onStatusMessage}
+                />
+              </Suspense>
+            </div>
+          ) : null}
+        </details>
+
+        <details
+          data-testid="bg3d-pro-modeling-disclosure"
+          className="rounded-xl border border-line bg-card"
+          onToggle={(event) => setModelingProOpen(event.currentTarget.open)}
+        >
+          <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-3 py-2 text-xs font-semibold text-fg">
+            <span>Blender · SketchUp 고급 3D 모델링 (8종)</span>
+            <span className="text-[11px] text-fg-3">압출·스윕·베벨·대칭·불리언</span>
+          </summary>
+          {modelingProOpen ? (
+            <div className="border-t border-line p-2.5">
+              <Suspense fallback={<p className="p-2 text-xs text-fg-3">고급 모델링 도구를 불러오는 중이에요…</p>}>
+                <LazyStudioBg3dModelingProDrawer onStatusMessage={onStatusMessage} />
+              </Suspense>
+            </div>
+          ) : null}
+        </details>
       </div>
     </section>
   );
