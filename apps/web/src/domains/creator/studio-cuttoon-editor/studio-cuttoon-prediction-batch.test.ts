@@ -109,10 +109,11 @@ function fixture(sampleCount: number, direct: boolean) {
   } satisfies Partial<StudioCuttoonStagePointersHost>;
   // 렌더러와 Stage만 테스트 경계로 두고 배치 수집 및 실제 freehand 센서 추가를 함께 실행한다.
   const host = values as unknown as StudioCuttoonStagePointersHost;
-  const api = {
+  const apiValues = {
     applyStrokeObjectSnapToPoint: (x: number, y: number) => ({ x, y }),
     publishAuthoritativeFreehandSuffix,
-  } as StudioCuttoonStagePointersApi;
+  } satisfies Partial<StudioCuttoonStagePointersApi>;
+  const api = apiValues as unknown as StudioCuttoonStagePointersApi;
   bindStudioCuttoonStagePointersFreehand(host, api);
   bindStudioCuttoonStagePointersBatch(host, api);
   const stage = { getContent: () => null, setPointersPositions: vi.fn() } as unknown as Konva.Stage;

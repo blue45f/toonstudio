@@ -40,7 +40,7 @@ export interface StudioSoakTelemetry {
 
 /** 소스 문자열로 설치하여 브라우저에서 tsx의 __name 헬퍼에 의존하지 않는다. */
 export async function installGpuAndPerfCollector(
-  page: { addInitScript(source: string): Promise<void> },
+  page: { addInitScript(source: string): Promise<unknown> },
   sessionId: string,
 ): Promise<void> {
   await page.addInitScript(`(() => {

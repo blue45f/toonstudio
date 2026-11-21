@@ -100,6 +100,7 @@ export const STUDIO_BG3D_BAKED_CUT_HANDOFF_EVENT = "toonstudio:bg3d:baked-manusc
 
 const MAX_PERSISTED_LAYERS_PER_DOCUMENT = 24;
 const inMemoryBakedCutRegistry = new Map<string, readonly BakedManuscriptCutLayer[]>();
+const pendingBakedCutRegistry = new Map<string, readonly BakedManuscriptCutLayer[]>();
 
 export function clampSplitWipeRatio(ratio: number): number {
   if (!Number.isFinite(ratio)) return 0.5;
@@ -241,29 +242,41 @@ export function saveBakedManuscriptCutLayer(
 ): { readonly persistedToStorage: boolean; readonly totalLayers: number } {
   const docId = layer.targetDocumentId.trim();
   if (!docId || !isScopedBakedLayer(layer, docId)) return { persistedToStorage: false, totalLayers: 0 };
-  const existing = listBakedManuscriptCutLayers(docId, storage);
+  const key = storageKeyForDocument(docId);
+  let stored: readonly BakedManuscriptCutLayer[] | null = null;
+  if (storage) {
+    try { stored = parsePersistedLayers(storage.getItem(key), docId); }
+    catch { /* 읽지 못한 원본은 이번 저장에서 덮어쓰지 않는다. */ }
+  }
+  const pending = pendingBakedCutRegistry.get(docId) ?? [];
+  const seen = new Set<string>();
+  // 미저장 캡처는 우선 보존하되, 이미 저장했던 오래된 캐시가 최신 저장본을 덮지 않게 한다.
   const next = [
-    layer,
-    ...existing.filter(
-      (entry) => !(entry.layerId === layer.layerId && entry.targetCutIndex === layer.targetCutIndex),
-    ),
-  ].slice(0, MAX_PERSISTED_LAYERS_PER_DOCUMENT);
+    layer, ...pending, ...(stored ?? []), ...(inMemoryBakedCutRegistry.get(docId) ?? []),
+  ].filter(entry => {
+    const identity = JSON.stringify([entry.layerId, entry.targetCutIndex]);
+    if (seen.has(identity)) return false;
+    seen.add(identity);
+    return true;
+  }).slice(0, MAX_PERSISTED_LAYERS_PER_DOCUMENT);
   inMemoryBakedCutRegistry.set(docId, Object.freeze(next));
 
   let persistedToStorage = false;
-  if (storage) {
-    const key = storageKeyForDocument(docId);
+  if (storage && stored !== null) {
     try {
-      if (parsePersistedLayers(storage.getItem(key), docId) !== null) {
-        const serialized = JSON.stringify(next);
-        storage.setItem(key, serialized);
-        persistedToStorage = storage.getItem(key) === serialized;
-      }
+      const serialized = JSON.stringify(next);
+      storage.setItem(key, serialized);
+      persistedToStorage = storage.getItem(key) === serialized;
     } catch {
       // 저장 거부 때 이전 재촬영 사본을 잘라 덮지 않고 새 인계 사본은 메모리에 유지한다.
       persistedToStorage = false;
     }
   }
+  if (persistedToStorage) pendingBakedCutRegistry.delete(docId);
+  else pendingBakedCutRegistry.set(docId, Object.freeze([
+    layer,
+    ...pending.filter(entry => entry.layerId !== layer.layerId || entry.targetCutIndex !== layer.targetCutIndex),
+  ].slice(0, MAX_PERSISTED_LAYERS_PER_DOCUMENT)));
 
   if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
     try {
@@ -316,6 +329,7 @@ export function clearBakedManuscriptCutLayers(
   const docId = targetDocumentId.trim();
   if (!docId) return;
   inMemoryBakedCutRegistry.delete(docId);
+  pendingBakedCutRegistry.delete(docId);
   if (storage) {
     try {
       storage.removeItem(storageKeyForDocument(docId));
