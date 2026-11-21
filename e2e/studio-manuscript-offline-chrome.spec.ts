@@ -19,6 +19,13 @@ async function openManuscriptHeader(page: Page) {
   const notice = summary.locator("[data-studio-offline-important=true]");
   await page.locator("[data-studio-offline-panel][data-studio-offline-presentation=status-center]").waitFor({ state: "attached", timeout: 60_000 });
   await expect(canvas).toBeVisible();
+  if ((page.viewportSize()?.width ?? 0) >= 1024) {
+    // 캔버스가 먼저 보여도 작화 초기화는 진행 중일 수 있다. 공정 버튼의 선택 상태가
+    // 바뀌며 헤더 글꼴 굵기도 달라지므로, 실제 준비 완료 뒤 오프라인 안내의 기준 폭을 잰다.
+    const drawingStage = header.locator('[data-studio-workflow-stage="draw"]');
+    await expect(drawingStage).toBeEnabled();
+    await expect(drawingStage).toHaveAttribute("aria-pressed", "true");
+  }
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   await expect(summary).toBeVisible();
   const headerBounds = await header.boundingBox();
