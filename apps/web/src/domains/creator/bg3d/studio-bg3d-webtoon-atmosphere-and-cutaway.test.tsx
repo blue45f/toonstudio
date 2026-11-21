@@ -115,11 +115,29 @@ describe("AC-005 Snaptoon 7 webtoon atmosphere presets & 1-click wall cutaway + 
       expect.objectContaining({ enabled: false }),
     );
 
-    // 세부 설정 팝오버 클릭 시 StudioBg3dWallCutawayToggle 지연 마운트
-    fireEvent.click(screen.getByTestId("studio-bg3d-toolbar-wall-cutaway-settings-btn"));
+    // 세부 설정 팝오버 클릭 시 StudioBg3dWallCutawayToggle 지연 마운트 + 모바일에서도 '벽 설정' 라벨 상시 노출
+    const wallSettingsBtn = screen.getByTestId("studio-bg3d-toolbar-wall-cutaway-settings-btn");
+    expect(wallSettingsBtn.textContent).toContain("벽 설정");
+    expect(wallSettingsBtn.innerHTML).not.toContain("hidden sm:inline");
+    fireEvent.click(wallSettingsBtn);
     await waitFor(() => {
       expect(screen.getByTestId("studio-bg3d-wall-cutaway-toggle")).toBeDefined();
     });
+
+    // 모바일 기본 툴바 수납 검증: 데스크톱 프리셋·기본 배치·선화 모드 그룹은 기본 숨김(hidden md:inline-flex) 후 '도구 더 보기' 클릭 시 펼침
+    const scenePresetBtn = screen.getByRole("button", { name: "장면" });
+    const resetLayoutBtn = screen.getByRole("button", { name: "기본 배치" });
+    const modeGroup = screen.getByRole("group", { name: "라이브 선화 미리보기 모드" });
+    expect(scenePresetBtn.className).toContain("hidden md:inline-flex");
+    expect(resetLayoutBtn.className).toContain("hidden md:inline-flex");
+    expect(modeGroup.className).toContain("hidden md:inline-flex");
+
+    const moreToolsBtn = screen.getByTestId("studio-bg3d-mobile-more-tools-btn");
+    fireEvent.click(moreToolsBtn);
+    expect(moreToolsBtn.getAttribute("aria-expanded")).toBe("true");
+    expect(scenePresetBtn.className).not.toContain("hidden md:inline-flex");
+    expect(resetLayoutBtn.className).not.toContain("hidden md:inline-flex");
+    expect(modeGroup.className).not.toContain("hidden md:inline-flex");
   });
 
   it("coordinates section planes with wall cutaway and generates closed solid section cap geometry", () => {

@@ -232,7 +232,7 @@ export function StudioBg3dStageStepperBar({
             className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1 rounded-xl border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 [word-break:keep-all] transition-[transform,border-color,color] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-accent/60 hover:text-fg active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none"
           >
             <SlidersHorizontal size={14} aria-hidden />
-            <span className="hidden sm:inline">{copy("벽 설정", "Wall opts")}</span>
+            <span>{copy("벽 설정", "Wall opts")}</span>
           </button>
 
           {cutawayPopoverOpen ? (
