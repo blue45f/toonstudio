@@ -170,13 +170,90 @@ function prepareVrmScene(vrm: VRM): void {
   vrm.scene.userData[STUDIO_VRM_BASE_ROTATION_Y_KEY] = vrm.scene.rotation.y;
 }
 
-function fallbackDisposeVrmScene(scene: THREE.Object3D): void {
+const VRM_MATERIAL_TEXTURE_SLOTS = [
+  "map",
+  "normalMap",
+  "emissiveMap",
+  "bumpMap",
+  "roughnessMap",
+  "metalnessMap",
+  "aoMap",
+  "alphaMap",
+  "lightMap",
+  "envMap",
+  "displacementMap",
+  "matcap",
+  "gradientMap",
+  "shadeMultiplyTexture",
+  "outlineWidthMultiplyTexture",
+  "matcapTexture",
+  "uvAnimationMaskTexture",
+] as const;
+
+function isDisposableTexture(value: unknown): value is THREE.Texture {
+  return typeof value === "object"
+    && value !== null
+    && (value as { readonly isTexture?: unknown }).isTexture === true
+    && typeof (value as { readonly dispose?: unknown }).dispose === "function";
+}
+
+function collectMaterialTextures(material: THREE.Material, textures: Set<THREE.Texture>): void {
+  const record = material as unknown as Record<string, unknown>;
+  for (const slot of VRM_MATERIAL_TEXTURE_SLOTS) {
+    const candidate = record[slot];
+    if (isDisposableTexture(candidate)) textures.add(candidate);
+  }
+  const uniforms = record.uniforms;
+  if (typeof uniforms === "object" && uniforms !== null) {
+    for (const uniform of Object.values(uniforms as Record<string, unknown>)) {
+      if (typeof uniform === "object" && uniform !== null) {
+        const value = (uniform as { readonly value?: unknown }).value;
+        if (isDisposableTexture(value)) textures.add(value);
+      }
+    }
+  }
+}
+
+/**
+ * VRM 씬 그래프의 모든 지오메트리·재질·텍스처(MToon 셰이더 유니폼 포함)를
+ * 개별 `try/finally` 격리로 완전 해제한다. 일부 자원 해제가 실패해도 나머지가 누수되지 않는다.
+ */
+export function disposeStudioVrmSceneGpuResources(scene: THREE.Object3D): void {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  const textures = new Set<THREE.Texture>();
   scene.traverse((object) => {
     if (!isMesh(object)) return;
-    object.geometry.dispose();
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    materials.forEach((material) => material.dispose());
+    if (object.geometry) geometries.add(object.geometry);
+    const list = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of list) {
+      if (!material) continue;
+      materials.add(material);
+      collectMaterialTextures(material, textures);
+    }
   });
+  let firstError: unknown = null;
+  const disposeSafely = (resource: { dispose: () => void }) => {
+    try {
+      resource.dispose();
+    } catch (error) {
+      if (firstError === null) firstError = error;
+    }
+  };
+  try {
+    for (const texture of textures) disposeSafely(texture);
+  } finally {
+    try {
+      for (const material of materials) disposeSafely(material);
+    } finally {
+      for (const geometry of geometries) disposeSafely(geometry);
+    }
+  }
+  if (firstError !== null) throw firstError;
+}
+
+function fallbackDisposeVrmScene(scene: THREE.Object3D): void {
+  disposeStudioVrmSceneGpuResources(scene);
 }
 
 async function preflightVrmUrl(url: string): Promise<void> {
@@ -209,23 +286,35 @@ async function loadResolvedVrm(
     loader.register((parser) => new VRMLoaderPlugin(parser));
   }
   const gltf = await loader.loadAsync(url);
-  stampStudioVrmGltfMaterialAssociations(
-    (gltf.parser as unknown as {
-      readonly associations?: ReadonlyMap<unknown, StudioVrmGltfAssociation>;
-    }).associations,
-  );
-  VRMUtils.combineSkeletons?.(gltf.scene);
-  const loadedVrm = gltf.userData.vrm as VRM | undefined;
-  if (!loadedVrm) {
-    VRMUtils.deepDispose(gltf.scene);
-    throw new Error("VRM 데이터를 찾지 못했습니다.");
+  try {
+    stampStudioVrmGltfMaterialAssociations(
+      (gltf.parser as unknown as {
+        readonly associations?: ReadonlyMap<unknown, StudioVrmGltfAssociation>;
+      }).associations,
+    );
+    VRMUtils.combineSkeletons?.(gltf.scene);
+    const loadedVrm = gltf.userData.vrm as VRM | undefined;
+    if (!loadedVrm) {
+      throw new Error("VRM 데이터를 찾지 못했습니다.");
+    }
+    stampStudioVrmAssetLicenseAuthority(
+      loadedVrm,
+      (gltf.parser as unknown as { readonly json?: unknown }).json,
+    );
+    if (loadedVrm.meta.metaVersion === "0") VRMUtils.rotateVRM0(loadedVrm);
+    return loadedVrm;
+  } catch (error) {
+    try {
+      VRMUtils.deepDispose(gltf.scene);
+    } catch {
+      try {
+        fallbackDisposeVrmScene(gltf.scene);
+      } catch {
+        // 원 예외를 보존한다.
+      }
+    }
+    throw error;
   }
-  stampStudioVrmAssetLicenseAuthority(
-    loadedVrm,
-    (gltf.parser as unknown as { readonly json?: unknown }).json,
-  );
-  if (loadedVrm.meta.metaVersion === "0") VRMUtils.rotateVRM0(loadedVrm);
-  return loadedVrm;
 }
 
 const defaultStudioVrmAssetRuntime = createStudioVrmAssetRuntime({

@@ -3,7 +3,7 @@ import "../studio-3d-ui/studio-3d-reference-workspace.css";
 // memoization until the remaining document/session controllers stop mutating that identity.
 
 import { SlidersHorizontal, Sparkles, X } from "lucide-react";
-import { useCallback, useReducer, useState } from "react";
+import { useCallback, useMemo, useReducer, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
@@ -33,6 +33,31 @@ import {
 } from "./studio-bg3d-editor-ui";
 
 import type { StudioBg3dSceneOutlinerController } from "./studio-bg3d-scene-outliner-controller";
+import type { StudioBg3dCaptureAdapter } from "./studio-bg3d-capture-adapter";
+import type {
+  StudioBg3dWebtoonAtmospherePreset,
+  StudioBg3dWebtoonAtmospherePresetId,
+} from "./studio-bg3d-lighting-studio";
+import {
+  buildReshootRestorePayload,
+  getBakedManuscriptCutLayerForCut,
+  saveBakedManuscriptCutLayer,
+  type BakedManuscriptCutLayer,
+  type Scene3DCaptureCameraSnapshot,
+  type Scene3DCaptureSnapshot,
+  type Stage3DMode,
+} from "./studio-bg3d-live-ink-bake-bridge";
+import { captureStudioBg3dLiveInkSnapshot } from "./studio-bg3d-live-ink-viewport-capture";
+import {
+  DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
+  type StudioBg3dCameraSettings,
+  type StudioBg3dSceneDocument,
+} from "./studio-bg3d-scene-document";
+import type { StudioBg3dSectionCapSummary } from "./studio-bg3d-section-cap-coordination";
+import {
+  DEFAULT_BG3D_WALL_CUTAWAY_CONFIG,
+  type Bg3dWallCutawayConfig,
+} from "./studio-bg3d-wall-cutaway-runtime";
 import type { StudioBg3dExperienceMode } from "./StudioBackground3DTypes";
 
 interface StudioBg3dShotBatchProgress {
@@ -79,6 +104,151 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
   } = h;
   const [experienceMode, setExperienceMode] = useState<StudioBg3dExperienceMode>("simple");
   const [, refreshViewport] = useReducer((version: number) => version + 1, 0);
+  const [liveCaptureSnapshot, setLiveCaptureSnapshot] = useState<Scene3DCaptureSnapshot | null>(null);
+  const [isLiveCapturing, setIsLiveCapturing] = useState(false);
+  const [localWallCutawayConfig, setLocalWallCutawayConfig] = useState<Bg3dWallCutawayConfig>(
+    DEFAULT_BG3D_WALL_CUTAWAY_CONFIG,
+  );
+  const resolvedTargetDocumentId = useMemo(() => {
+    const cutDocKey = typeof h.cutDocumentKey === "string" && h.cutDocumentKey.trim()
+      ? h.cutDocumentKey.trim()
+      : null;
+    const scope = typeof h.sharedStageSessionScopeKey === "string" && h.sharedStageSessionScopeKey.trim()
+      ? h.sharedStageSessionScopeKey.trim()
+      : null;
+    const recovery = h.recoveryScope as { readonly projectId?: string; readonly cutId?: string } | undefined;
+    const recoveryKey = recovery?.projectId?.trim() || recovery?.cutId?.trim() || null;
+    return cutDocKey ?? scope ?? recoveryKey ?? "studio-manuscript-active";
+  }, [h.cutDocumentKey, h.recoveryScope, h.sharedStageSessionScopeKey]);
+  const resolvedTargetCutIndex = useMemo(() => {
+    const candidate = h.activeCutIndex;
+    return typeof candidate === "number" && Number.isInteger(candidate) && candidate >= 0 ? candidate : 0;
+  }, [h.activeCutIndex]);
+  const [lastBakedLayer, setLastBakedLayer] = useState<BakedManuscriptCutLayer | null>(() =>
+    getBakedManuscriptCutLayerForCut(resolvedTargetDocumentId, resolvedTargetCutIndex),
+  );
+  const sceneDoc = (h.sceneBaseDocument as StudioBg3dSceneDocument | undefined)
+    ?? DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT;
+  const wallCutawayConfig = (h.wallCutawayConfig as Bg3dWallCutawayConfig | undefined)
+    ?? localWallCutawayConfig;
+  const setWallCutawayConfig = useCallback(
+    (next: Bg3dWallCutawayConfig) => {
+      setLocalWallCutawayConfig(next);
+      const setter = h.setWallCutawayConfig as ((config: Bg3dWallCutawayConfig) => void) | undefined;
+      setter?.(next);
+    },
+    [h],
+  );
+  const activeWebtoonAtmosphereId =
+    (h.activeWebtoonAtmosphereId as StudioBg3dWebtoonAtmospherePresetId | null | undefined) ?? null;
+  const handleApplyWebtoonAtmosphere = useCallback(
+    (preset: StudioBg3dWebtoonAtmospherePreset) => {
+      const applyFn = h.applyWebtoonAtmospherePreset as
+        | ((value: StudioBg3dWebtoonAtmospherePreset) => void)
+        | undefined;
+      applyFn?.(preset);
+    },
+    [h],
+  );
+  const handleRequestLiveCapture = useCallback(
+    async (stage: Stage3DMode): Promise<Scene3DCaptureSnapshot | null> => {
+      const captureRef = h.captureRef as
+        | RefObject<{ readonly adapter?: StudioBg3dCaptureAdapter } | null>
+        | undefined;
+      const adapter = captureRef?.current?.adapter ?? null;
+      if (!adapter) return liveCaptureSnapshot;
+      setIsLiveCapturing(true);
+      try {
+        const viewportApi = (
+          h.viewportApiRef as RefObject<{ readonly readView?: () => StudioBg3dCameraSettings } | null> | undefined
+        )?.current;
+        const liveView = viewportApi?.readView?.() ?? sceneDoc.camera;
+        const liveCamera: Scene3DCaptureCameraSnapshot = {
+          position: [liveView.position[0], liveView.position[1], liveView.position[2]],
+          target: [liveView.target[0], liveView.target[1], liveView.target[2]],
+          fovDegrees: liveView.fovDegrees,
+        };
+        const customModels = Array.isArray(h.customModels)
+          ? (h.customModels as ReadonlyArray<{ readonly modelId?: string; readonly id?: string }>)
+          : [];
+        const primitives = Array.isArray(h.primitives)
+          ? (h.primitives as ReadonlyArray<{ readonly id?: string }>)
+          : [];
+        const sharedCharacters = Array.isArray(h.sharedCharacters)
+          ? (h.sharedCharacters as ReadonlyArray<{ readonly elementId?: string }>)
+          : [];
+        const assetIds = [
+          ...customModels.map((item) => item.modelId ?? item.id ?? ""),
+          ...sharedCharacters.map((item) => item.elementId ?? ""),
+          ...primitives.map((item) => item.id ?? ""),
+        ].filter((id) => id.trim().length > 0);
+        const snapshot = await captureStudioBg3dLiveInkSnapshot({
+          adapter,
+          document: sceneDoc,
+          sceneId: resolvedTargetDocumentId,
+          cameraId: sceneDoc.activeShotId ?? "main-camera",
+          stage,
+          liveCamera,
+          atmospherePresetId: activeWebtoonAtmosphereId,
+          assetIds,
+          includeSceneDocumentJson: true,
+        });
+        setLiveCaptureSnapshot(snapshot);
+        return snapshot;
+      } finally {
+        setIsLiveCapturing(false);
+      }
+    },
+    [activeWebtoonAtmosphereId, h, liveCaptureSnapshot, resolvedTargetDocumentId, sceneDoc],
+  );
+  const handleBakeToManuscriptCut = useCallback(
+    (layer: BakedManuscriptCutLayer) => {
+      saveBakedManuscriptCutLayer(layer);
+      setLastBakedLayer(layer);
+      const onInsertHost = h.onInsert as ((result: Record<string, unknown>) => void) | undefined;
+      if (typeof onInsertHost === "function" && layer.inkPassRef.startsWith("data:image/")) {
+        try {
+          onInsertHost({
+            dataUrl: layer.inkPassRef,
+            shadedDataUrl: layer.shadedPassRef,
+            sceneData: layer.sceneDocumentJson ?? "",
+            bakedManuscriptCutLayer: layer,
+          });
+        } catch {
+          // 2D 호스트 삽입 콜백이 단독 모달에서 거부되어도 영속 브리지 기록은 유지한다.
+        }
+      }
+    },
+    [h],
+  );
+  const handleRestoreReshootFromBakedLayer = useCallback(
+    (layer: BakedManuscriptCutLayer) => {
+      const payload = buildReshootRestorePayload(layer);
+      if (payload.camera) {
+        const nextCameraView: StudioBg3dCameraSettings = {
+          ...sceneDoc.camera,
+          position: [...payload.camera.position] as [number, number, number],
+          target: [...payload.camera.target] as [number, number, number],
+          fovDegrees: payload.camera.fovDegrees,
+        };
+        const viewportApi = (
+          h.viewportApiRef as RefObject<{ readonly applyView?: (view: StudioBg3dCameraSettings) => boolean } | null> | undefined
+        )?.current;
+        viewportApi?.applyView?.(nextCameraView);
+        const commitCamera = h.commitCameraViewCommand as
+          | ((view: StudioBg3dCameraSettings, label?: string) => void)
+          | undefined;
+        commitCamera?.(nextCameraView, "3D 재촬영 구도 복원");
+      }
+      if (payload.atmospherePresetId) {
+        const applyFn = h.applyWebtoonAtmospherePreset as
+          | ((id: StudioBg3dWebtoonAtmospherePresetId) => void)
+          | undefined;
+        applyFn?.(payload.atmospherePresetId);
+      }
+    },
+    [h, sceneDoc.camera],
+  );
   const [viewportMount] = useState(() => {
     if (typeof document === "undefined") return null;
     const node = document.createElement("div");
@@ -290,6 +460,23 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
             <StudioBg3dProfessionalWorkspace
               cutHost={h}
               scopeKey={h.sharedStageSessionScopeKey ?? null}
+              captureSnapshot={liveCaptureSnapshot}
+              isLiveCapturing={isLiveCapturing}
+              onRequestLiveCapture={handleRequestLiveCapture}
+              targetDocumentId={resolvedTargetDocumentId}
+              targetCutIndex={resolvedTargetCutIndex}
+              heroCamera={{
+                position: sceneDoc.camera.position,
+                target: sceneDoc.camera.target,
+              }}
+              activeWebtoonAtmosphereId={activeWebtoonAtmosphereId}
+              onApplyWebtoonAtmosphere={handleApplyWebtoonAtmosphere}
+              wallCutawayConfig={wallCutawayConfig}
+              onWallCutawayConfigChange={setWallCutawayConfig}
+              sectionCapSummary={(h.sectionCapSummary as StudioBg3dSectionCapSummary | null | undefined) ?? null}
+              lastBakedLayer={lastBakedLayer}
+              onBakeToManuscriptCut={handleBakeToManuscriptCut}
+              onRestoreReshootFromBakedLayer={handleRestoreReshootFromBakedLayer}
               outliner={<StudioBg3dSceneOutliner controller={h.outlinerController} variant="dock" />}
               viewport={viewportSlot}
               inspector={(
