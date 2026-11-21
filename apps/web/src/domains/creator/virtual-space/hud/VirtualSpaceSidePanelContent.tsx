@@ -15,7 +15,7 @@ import {
   StickyNote,
   UserPlus,
 } from "lucide-react";
-import { Suspense, lazy, useState, type ReactNode } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
@@ -71,6 +71,7 @@ import {
   StudioWorkspaceInbox,
   StudioWorldPublicationPanel,
   WorkSessionWorkspace,
+  LazyVirtualThreeAvatarPicker,
 } from "./space-lazy-panels";
 import { VirtualThreeThemePanel } from "../three/ui/VirtualThreeThemePanel";
 import type { useVirtualSpaceYjsDoc } from "../crdt/studio-virtual-space-yjs-doc";
@@ -87,10 +88,6 @@ import type { StudioVirtualNpcGuideTourState } from "../studio-virtual-space-npc
 import type { StudioSpaceBooking, StudioSpaceWaitlistEntry, StudioVirtualSpace as StudioBookableSpace } from "../studio-virtual-space-space-booking";
 import type { StudioRecordingBoothConfig } from "../studio-virtual-space-recording-booth";
 import type { StudioGalleryFrame, StudioGalleryStats } from "../studio-virtual-space-gallery";
-
-const LazyVirtualThreeAvatarPicker = lazy(() =>
-  import("../three/ui/VirtualThreeAvatarPicker").then((module) => ({ default: module.VirtualThreeAvatarPicker })),
-);
 
 export interface VirtualSpaceSidePanelContentProps {
   readonly panel: StudioVirtualWorkspacePanel | null;

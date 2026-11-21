@@ -1,5 +1,5 @@
 import { LifeBuoy, PenTool, StickyNote } from "lucide-react";
-import { Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore, type ComponentProps } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -709,9 +709,9 @@ export function VirtualSpaceExperience({
 }
 
 export function StudioVirtualSpacePage(
-  props: Parameters<typeof StudioVirtualSpacePageRoot>[0] = {},
+  props: Omit<ComponentProps<typeof StudioVirtualSpacePageRoot>, "Experience"> = {},
 ) {
-  return <StudioVirtualSpacePageRoot Experience={VirtualSpaceExperience} {...props} />;
+  return <StudioVirtualSpacePageRoot {...props} Experience={VirtualSpaceExperience} />;
 }
 
 export default StudioVirtualSpacePage;

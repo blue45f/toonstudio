@@ -2,6 +2,8 @@
  * 가상 스튜디오 패널의 지연 로딩 목록. 패널은 처음 열 때만 모듈을 내려받는다.
  * Page는 이 목록만 가져다 쓰고, 각 패널 파일을 직접 가져오지 않는다.
  */
+import { lazy } from "react";
+
 import { createStudioVirtualSpacePanel } from "../StudioVirtualSpaceOnDemandPanel";
 
 export const StudioWorkspaceInbox = createStudioVirtualSpacePanel(() => import("../../workspace/StudioWorkspaceInbox").then((module) => ({ default: module.StudioWorkspaceInbox })));
@@ -34,3 +36,5 @@ export const StudioP2pHuddleLauncher = createStudioVirtualSpacePanel<{ readonly 
   () => import("../../live/huddle/StudioP2pHuddleLauncher"),
 );
 export const StudioVirtualAvatarCustomizer = createStudioVirtualSpacePanel(() => import("../StudioVirtualAvatarCustomizer").then((module) => ({ default: module.StudioVirtualAvatarCustomizer })));
+
+export const LazyVirtualThreeAvatarPicker = lazy(() => import("../three/ui/VirtualThreeAvatarPicker").then((module) => ({ default: module.VirtualThreeAvatarPicker })));
