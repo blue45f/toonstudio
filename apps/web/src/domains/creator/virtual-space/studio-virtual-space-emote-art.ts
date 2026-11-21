@@ -7,6 +7,13 @@
  *   자체의 색(빨간 하트, 노란 전구 등)은 그대로여야 알아볼 수 있으므로 예외로 둔다.
  *   말풍선 배경·테두리처럼 UI에 해당하는 색은 런타임이 CSS 토큰에서 읽는다.
  */
+import {
+  getStudioDramaticVfxSpec,
+  resolveDramaticVfxForEmoteOrAction,
+  resolveDramaticVfxRenderPlan,
+  type StudioDramaticVfxRenderPlan,
+  type StudioDramaticVfxSpec,
+} from "./studio-virtual-space-dramatic-vfx-catalog";
 import type { StudioSpaceEmoteId } from "./studio-virtual-space-emote-catalog";
 
 export const STUDIO_SPACE_EMOTE_ART_SIZE = 16;
@@ -31,6 +38,10 @@ export const STUDIO_SPACE_EMOTE_PALETTE = Object.freeze({
   n: "#5b3a26", // 짙은 갈색(입 안·커피 크레마)
   l: "#ece8f7", // 도자기
   h: "#b4acd0", // 도자기 그림자·김
+  t: "#2dd4bf", // 민트 힐링 스파크(체조)
+  a: "#fda4af", // 로판 장미·스팀 하트
+  f: "#f97316", // 집중 불꽃·폭죽 오렌지
+  i: "#38bdf8", // 네온 스카이(스포트라이트·댄스)
 } as const);
 
 export type StudioSpaceEmotePaletteKey = keyof typeof STUDIO_SPACE_EMOTE_PALETTE;
@@ -92,20 +103,20 @@ const BITMAPS: Readonly<Record<StudioSpaceEmoteId, readonly string[]>> = Object.
   ],
   fireworks: [
     "................",
-    ".y............p.",
-    "..u....y.....p..",
+    ".y......i.....a.",
+    "..f....ywi...a..",
+    "........i.......",
+    "....f..y...a....",
+    ".....f.y..a.....",
+    "......kkyk......",
+    "..i..kywwyk..i..",
+    "..g.gkywwykg.g..",
+    "......kkyk......",
+    ".....v..r.f.....",
+    "....v...r..f....",
     "................",
-    "....u..y...p....",
-    ".....u.y..p.....",
-    "......uy.p......",
-    ".......ykbbb.b..",
-    "..g.gggky.......",
-    "......v.ro......",
-    ".....v..r.o.....",
-    "....v...r..o....",
-    "................",
-    "..v.....r....o..",
-    ".b............g.",
+    "..v.....r....f..",
+    ".i............g.",
     "................",
   ],
   "thumbs-up": [
@@ -289,12 +300,12 @@ const BITMAPS: Readonly<Record<StudioSpaceEmoteId, readonly string[]>> = Object.
     "................",
   ],
   coffee: [
-    "................",
-    "................",
-    "......h..h......",
-    ".....h..h.......",
-    "......h..h......",
-    ".....h..h.......",
+    ".....aa..aa.....",
+    ".....aawaaa.....",
+    "......aaaa..h...",
+    ".......aa..h....",
+    "......h...h.....",
+    ".....h...h......",
     "...kkkkkkkk.....",
     "..kmmmmmmmmkk...",
     "..klnnnnnnhhhk..",
@@ -343,15 +354,15 @@ const BITMAPS: Readonly<Record<StudioSpaceEmoteId, readonly string[]>> = Object.
     "................",
   ],
   calisthenics: [
-    "..y...kkkk...y..",
-    ".ywy.kyyyyk.ywy.",
-    "..y..kywwyk..y..",
+    "..t...kkkk...t..",
+    ".twt.kyyyyk.twt.",
+    "..t..kywwyk..t..",
     "..kk..kkkk..kk..",
     ".kssk.kkkk.kssk.",
     "..ksskcbbckssk..",
     "...kskbbbbksk...",
-    "....kbbbbbbk....",
-    "....kbbggbbk....",
+    "....kbbttbbk....",
+    "....kttggttk....",
     "....kggggggk....",
     "...kggkkkkggk...",
     "...kgk....kgk...",
@@ -415,18 +426,18 @@ const BITMAPS: Readonly<Record<StudioSpaceEmoteId, readonly string[]>> = Object.
     "................",
   ],
   "neck-stretch": [
-    "....c......c....",
-    "..cc........cc..",
-    ".c...kkkkkk...c.",
+    "....t......t....",
+    "..tt........tt..",
+    ".t...kkkkkk...t.",
     "....ksssssssk...",
     "...ksswksswksk..",
     "...kssssssssdk..",
     "...ksspppppsdk..",
     "....kkssssskk...",
     "..kk..ksssk..kk.",
-    ".kggkkkksskkkggk",
-    ".kggggggggggggk.",
-    "..kggggggggggk..",
+    ".kttkkkksskkkttk",
+    ".kttttttttttttk.",
+    "..kttggggggttk..",
     "...kggggggggk...",
     "...kkkkkkkkkk...",
     "................",
@@ -551,4 +562,17 @@ export function studioSpaceEmotePixelRuns(id: StudioSpaceEmoteId): readonly Stud
   const frozen = Object.freeze(runs);
   RUN_CACHE.set(id, frozen);
   return frozen;
+}
+
+/** 이모트에 짝지어지는 20종 Dramatic VFX 카탈로그 스펙을 반환한다. */
+export function studioSpaceEmoteDramaticVfx(id: StudioSpaceEmoteId): StudioDramaticVfxSpec {
+  return getStudioDramaticVfxSpec(resolveDramaticVfxForEmoteOrAction(id));
+}
+
+/** 이모트 연출의 reduced-motion 감쇠 플랜(정적 배지 + 미세 글로우)을 계산한다. */
+export function studioSpaceEmoteVfxRenderPlan(
+  id: StudioSpaceEmoteId,
+  reducedMotion: boolean,
+): StudioDramaticVfxRenderPlan {
+  return resolveDramaticVfxRenderPlan(resolveDramaticVfxForEmoteOrAction(id), { reducedMotion });
 }

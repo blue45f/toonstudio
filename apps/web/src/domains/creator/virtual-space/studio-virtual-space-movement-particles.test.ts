@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   createStudioAfterimageState,
+  createStudioDashSpeedlineState,
   createStudioLandingPuffState,
+  createStudioLandingRingVfx,
   createStudioSkidDustState,
+  resolveStudioFootstepRippleVfx,
+  stepStudioDashSpeedlines,
   stepStudioLandingPuff,
   stepStudioRunAfterimage,
   stepStudioSkidDust,
@@ -138,5 +142,81 @@ describe("스키드 먼지", () => {
       skidIntensity: 1, speed: 300, deltaSeconds: 1 / 60, reducedMotion: true,
     });
     expect(request.count).toBe(0);
+  });
+});
+
+describe("대시 스피드라인 · 바닥 재질별 파문 · 착지 먼지 링", () => {
+  it("질주 시 스피드라인을 방출하고 reduced-motion에서는 정적 글로우 플랜만 반환한다", () => {
+    const state = createStudioDashSpeedlineState();
+    const fast = stepStudioDashSpeedlines(state, {
+      position: { x: 100, y: 100 },
+      facing: "right",
+      speed: 310,
+      maxSpeed: 340,
+      now: 1000,
+      reducedMotion: false,
+    });
+    expect(fast.requests).toHaveLength(3);
+    expect(fast.requests[0]?.colorOklch.startsWith("oklch(")).toBe(true);
+
+    const reduced = stepStudioDashSpeedlines(state, {
+      position: { x: 100, y: 100 },
+      facing: "right",
+      speed: 340,
+      maxSpeed: 340,
+      now: 1000,
+      reducedMotion: true,
+    });
+    expect(reduced.requests).toHaveLength(0);
+    expect(reduced.renderPlan.reducedMotion).toBe(true);
+    expect(reduced.renderPlan.effectiveBurstCount).toBe(0);
+  });
+
+  it("나무·대리석·잔디·네온타일별 파문과 착지 먼지 링을 계산한다", () => {
+    const marble = resolveStudioFootstepRippleVfx({
+      position: { x: 40, y: 80 },
+      material: "marble",
+      sprinting: true,
+      reducedMotion: false,
+    });
+    expect(marble.rippleKind).toBe("starlight-wave");
+    expect(marble.ringCount).toBeGreaterThanOrEqual(2);
+    expect(marble.sparkCount).toBeGreaterThan(2);
+
+    const neon = resolveStudioFootstepRippleVfx({
+      position: { x: 40, y: 80 },
+      material: "neon-tile",
+      sprinting: false,
+      reducedMotion: false,
+    });
+    expect(neon.rippleKind).toBe("neon-pulse");
+    expect(neon.ringRadiusPx).toBeGreaterThan(14);
+
+    const reducedRipple = resolveStudioFootstepRippleVfx({
+      position: { x: 40, y: 80 },
+      material: "grass",
+      sprinting: true,
+      reducedMotion: true,
+    });
+    expect(reducedRipple.ringCount).toBe(0);
+    expect(reducedRipple.dustCount).toBe(0);
+
+    const landing = createStudioLandingRingVfx({
+      position: { x: 90, y: 90 },
+      material: "wood",
+      impactSpeed: 280,
+      reducedMotion: false,
+    });
+    expect(landing.ringRadiusPx).toBeGreaterThan(15);
+    expect(landing.dustCount).toBeGreaterThan(4);
+
+    const reducedLanding = createStudioLandingRingVfx({
+      position: { x: 90, y: 90 },
+      material: "wood",
+      impactSpeed: 280,
+      reducedMotion: true,
+    });
+    expect(reducedLanding.ringRadiusPx).toBe(0);
+    expect(reducedLanding.dustCount).toBe(0);
   });
 });
