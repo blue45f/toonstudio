@@ -78,6 +78,11 @@
       "types": "./src/graph/recording-booth-asset.ts",
       "import": "./src/graph/recording-booth-asset.ts",
       "default": "./src/graph/recording-booth-asset.ts"
+    },
+    "./shaper-slots": {
+      "types": "./src/shaper-slots/shaper-15-slot-contract.ts",
+      "import": "./src/shaper-slots/shaper-15-slot-contract.ts",
+      "default": "./src/shaper-slots/shaper-15-slot-contract.ts"
     }
   },
   "scripts": {
