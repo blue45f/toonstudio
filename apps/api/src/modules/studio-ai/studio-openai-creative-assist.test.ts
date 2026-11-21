@@ -4,7 +4,10 @@ import { HttpException, UnauthorizedException } from "@nestjs/common";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioOpenAiRateLimiter } from "./openai-assist/studio-openai-guardrails";
-import { StudioOpenAiCreativeAssistController } from "./studio-openai-creative-assist.controller";
+import {
+  StudioFreeAiController,
+  StudioOpenAiCreativeAssistController,
+} from "./studio-openai-creative-assist.controller";
 import { StudioOpenAiCreativeAssistRequestSchema } from "./studio-openai-creative-assist.dto";
 import {
   redactCreatorSensitiveText,
@@ -96,6 +99,16 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
       "script-to-cuts",
       "dialogue-polish",
       "export-preflight-coach",
+      "character-bible-forge",
+      "continuity-plot-audit",
+      "bg3d-camera-blocking",
+      "color-mood-director",
+      "sfx-onomatopoeia-lab",
+      "photoshop-fx-recipe",
+      "scroll-pacing-auditor",
+      "thumbnail-hook-optimizer",
+      "localization-glossary-check",
+      "mcp-workflow-macro",
     ]);
     expect(JSON.stringify(status)).not.toContain("sk-");
   });
@@ -580,5 +593,39 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
     expect(result).toEqual({ abortedOnStart: true });
     expect(abortedHarness.requestEmitter.listenerCount("aborted")).toBe(0);
     expect(abortedHarness.responseEmitter.listenerCount("close")).toBe(0);
+  });
+
+  it("exposes GET /api/studio/ai/free-quota-status, modes(14), and zero-bill cascade creative-assist safely", async () => {
+    const service = new StudioOpenAiCreativeAssistService();
+    const freeController = new StudioFreeAiController(service);
+
+    const quotaStatus = freeController.freeQuotaStatus();
+    expect(quotaStatus.guaranteedZeroCostUsd).toBe(0);
+    expect(quotaStatus.guaranteedZeroCostLabel).toBe("$0.00");
+    expect(quotaStatus.paidBillingBlocked).toBe(true);
+    expect(quotaStatus.summary.localFallbackReady).toBe(true);
+
+    const modesPayload = freeController.modes();
+    expect(modesPayload.totalModes).toBe(14);
+    expect(modesPayload.costUsdGuaranteed).toBe("$0.00");
+
+    const guestHarness = createRequestResponseHarness();
+    const guestResult = await freeController.creativeAssist(
+      undefined,
+      {
+        mode: "mcp-workflow-macro",
+        inputText: "비 오는 서울 옥상 1화 원고를 만들고 림라이트 FX와 프리플라이트를 돌려 줘",
+        projectTitle: "옥상 우산",
+      },
+      guestHarness.request,
+      guestHarness.response,
+    );
+    expect(guestResult.provider).toBe("local-zero-cost-fallback");
+    expect(guestResult.costGuaranteedZeroUsd).toBe(0);
+    expect(guestResult.result.mode).toBe("mcp-workflow-macro");
+    if (guestResult.result.mode === "mcp-workflow-macro") {
+      expect(guestResult.result.data.zeroCostSafe).toBe(true);
+      expect(guestResult.result.data.steps.length).toBeGreaterThanOrEqual(2);
+    }
   });
 });

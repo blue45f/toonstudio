@@ -13,6 +13,18 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { createInterface } from "node:readline";
 
+import { createDivisionAndAiMcpTools } from "./tools-division-ai.mjs";
+import { createProMediaMcpTools } from "./tools-pro-media.mjs";
+
+function escapeXml(value) {
+  return String(value ?? "")
+    .replace(/&/gu, "&amp;")
+    .replace(/</gu, "&lt;")
+    .replace(/>/gu, "&gt;")
+    .replace(/"/gu, "&quot;")
+    .replace(/'/gu, "&apos;");
+}
+
 function createInitialState() {
   return {
     canvas: {
@@ -24,6 +36,36 @@ function createInitialState() {
       strokes: [],
       balloons: [],
       fxLayers: [],
+    },
+    photoshop: {
+      layerFx: [],
+      cameraRawAdjustments: [],
+      frequencySeparations: [],
+      batchRuns: [],
+    },
+    bg3d: {
+      scenes: [],
+    },
+    vrm: {
+      avatars: {},
+    },
+    blender: {
+      recipes: [],
+    },
+    sketchup: {
+      components: {},
+    },
+    division: {
+      cutPackets: [],
+      qaReports: [],
+      locks: {},
+      royaltyEstimates: [],
+    },
+    ai: {
+      runs: [],
+    },
+    localization: {
+      jobs: [],
     },
     cafes: {
       posts: [],
@@ -268,14 +310,14 @@ export function createToonStudioMcpEngine(options = {}) {
             const d = s.points
               .map((p, i) => `${i === 0 ? "M" : "L"} ${Number(p.x ?? p[0] ?? 0)} ${Number(p.y ?? p[1] ?? 0)}`)
               .join(" ");
-            return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-linecap="round" />`;
+            return `<path d="${d}" fill="none" stroke="${escapeXml(s.color)}" stroke-width="${Number(s.width)}" stroke-linecap="round" />`;
           })
           .join("");
         const balloons = state.canvas.balloons
           .map(
             (b) =>
-              `<g><ellipse cx="${b.x}" cy="${b.y}" rx="120" ry="44" fill="#FFFFFF" stroke="#111827" stroke-width="2" />` +
-              `<text x="${b.x}" y="${b.y + 5}" text-anchor="middle" font-size="14" fill="#111827">${b.text}</text></g>`,
+              `<g><ellipse cx="${Number(b.x)}" cy="${Number(b.y)}" rx="120" ry="44" fill="#FFFFFF" stroke="#111827" stroke-width="2" />` +
+              `<text x="${Number(b.x)}" y="${Number(b.y) + 5}" text-anchor="middle" font-size="14" fill="#111827">${escapeXml(b.text)}</text></g>`,
           )
           .join("");
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${state.canvas.width} ${state.canvas.height}" width="${state.canvas.width}" height="${state.canvas.height}"><rect width="100%" height="100%" fill="#FFFFFF" />${paths}${balloons}</svg>`;
@@ -499,6 +541,13 @@ export function createToonStudioMcpEngine(options = {}) {
       inputSchema: { type: "object", properties: {} },
       handler: () => ({ ok: true, state }),
     },
+    ...createProMediaMcpTools({ state, persistState, syncToRemoteApi }),
+    ...createDivisionAndAiMcpTools({
+      state,
+      persistState,
+      syncToRemoteApi,
+      env: options.env ?? process.env,
+    }),
   ];
 
   const toolMap = new Map(tools.map((t) => [t.name, t]));
@@ -513,7 +562,7 @@ export function createToonStudioMcpEngine(options = {}) {
         id,
         result: {
           protocolVersion: "2024-11-05",
-          serverInfo: { name: "toonstudio-mcp", version: "1.1.0" },
+          serverInfo: { name: "toonstudio-mcp", version: "2.0.0" },
           capabilities: { tools: {} },
         },
       };
