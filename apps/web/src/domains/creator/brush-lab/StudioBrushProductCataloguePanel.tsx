@@ -1,9 +1,10 @@
-import { ArrowRight, Cpu, Library, Search, Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowRight, ChevronDown, Cpu, Library, Search, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Suspense, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
 import { useT } from "@/shared/lib/i18n";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 import "../studio-brush-canvas-status-i18n";
 
@@ -13,6 +14,14 @@ import {
 } from "./brush-studio-v5-quality-catalog";
 import { BRUSH_STUDIO_V6_RECIPES } from "./brush-studio-v6-engine";
 import { resolveProductBrushV6RecipeId } from "./brush-studio-version-integration";
+
+const LazyStudioProAtelierStyleSyncPanel = lazyRetry(
+  () =>
+    import("../pro-atelier-style-sync/StudioProAtelierStyleSyncPanel").then((module) => ({
+      default: module.StudioProAtelierStyleSyncPanel,
+    })),
+  "StudioProAtelierStyleSyncPanel",
+);
 
 const INTERNALIZED_ENGINE_BADGES = [
   {
@@ -73,6 +82,7 @@ export function StudioBrushProductCataloguePanel({
     [location.search],
   );
   const [open, setOpen] = useState(true);
+  const [proAtelierOpen, setProAtelierOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
   const groups = useMemo(() => brushQualityCatalogGroups(), []);
@@ -270,6 +280,44 @@ export function StudioBrushProductCataloguePanel({
           ) : null}
         </div>
       ) : null}
+
+      <div className="mt-5 border-t border-line pt-4">
+        <details
+          data-testid="studio-pro-atelier-style-sync-disclosure"
+          className="group/pro-atelier rounded-2xl border border-line bg-panel/65"
+          onToggle={(event) => setProAtelierOpen(event.currentTarget.open)}
+        >
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent/70 [&::-webkit-details-marker]:hidden">
+            <span className="flex min-w-0 items-center gap-2.5">
+              <SlidersHorizontal size={15} className="shrink-0 text-accent" aria-hidden="true" />
+              <span className="min-w-0 [word-break:keep-all]">
+                전문가 드로잉 8선 · 실시간 컷-대-컷 화풍 일체화 엔진
+              </span>
+            </span>
+            <ChevronDown
+              size={16}
+              className="shrink-0 text-fg-3 transition-transform group-open/pro-atelier:rotate-180 motion-reduce:transition-none"
+              aria-hidden="true"
+            />
+          </summary>
+          {proAtelierOpen ? (
+            <div className="border-t border-line p-3 sm:p-4">
+              <Suspense
+                fallback={
+                  <div
+                    role="status"
+                    className="rounded-xl border border-line bg-card px-4 py-3 text-xs text-fg-2"
+                  >
+                    {t("studio.brushCanvasStatus.brushLab.connecting", "브러시 프로그램 연결 중")}
+                  </div>
+                }
+              >
+                <LazyStudioProAtelierStyleSyncPanel />
+              </Suspense>
+            </div>
+          ) : null}
+        </details>
+      </div>
     </section>
   );
 }
