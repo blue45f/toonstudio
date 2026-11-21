@@ -6,6 +6,8 @@
  * 연속 작업 스트릭을 실시간 계산하고 브라우저에 저장한다.
  */
 
+import { isStudioProjectRecordMemoryOnly, markStudioProjectRecordMemoryOnly } from "../planning/studio-local-project-record-guard";
+
 export type PaceCadencePresetId = "weekly-60" | "biweekly-50" | "instatoon-8";
 export type PaceStageId = "storyboard" | "bg3d" | "ink" | "color" | "lettering";
 
@@ -246,17 +248,20 @@ function parsePaceState(raw: string): SerializationPaceState | null {
 }
 
 export function loadSerializationPaceState(): SerializationPaceState {
-  if (typeof window === "undefined") return createInitialPaceState("weekly-60");
+  const fallback = createInitialPaceState("weekly-60");
+  if (typeof window === "undefined") return markStudioProjectRecordMemoryOnly(fallback);
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    return (raw === null ? null : parsePaceState(raw)) ?? createInitialPaceState("weekly-60");
+    if (raw === null) return fallback;
+    return parsePaceState(raw) ?? markStudioProjectRecordMemoryOnly(fallback);
   } catch {
-    return createInitialPaceState("weekly-60");
+    return markStudioProjectRecordMemoryOnly(fallback);
   }
 }
 
 export function saveSerializationPaceState(state: SerializationPaceState): boolean {
-  if (typeof window === "undefined") return false;
+  // 읽기 실패 뒤의 부분 편집은 정상 재읽기로 복원한 상태와 구분한다.
+  if (typeof window === "undefined" || isStudioProjectRecordMemoryOnly(state)) return false;
   try {
     const normalized = parsePaceState(JSON.stringify(state));
     if (!normalized) return false;

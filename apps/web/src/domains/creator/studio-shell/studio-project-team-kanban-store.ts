@@ -3,6 +3,8 @@
  * 브라우저 재방문·리로드 시에도 공정 진행 상태와 인계 메모·타임스탬프를 복원한다.
  */
 
+import { isStudioProjectRecordMemoryOnly, markStudioProjectRecordMemoryOnly } from "../planning/studio-local-project-record-guard";
+
 export const KANBAN_STAGE_ORDER = [
   "storyboard",
   "bg3d",
@@ -165,12 +167,13 @@ export function loadProjectKanbanState(
   projectId: string,
 ): ProjectKanbanBoardState {
   const fallback = createDefaultProjectKanbanState(projectId);
-  if (!storage) return fallback;
+  if (!storage) return markStudioProjectRecordMemoryOnly(fallback);
   try {
     const raw = storage.getItem(kanbanStorageKey(projectId));
-    return (raw === null ? null : parseProjectKanbanState(raw, projectId)) ?? fallback;
+    if (raw === null) return fallback;
+    return parseProjectKanbanState(raw, projectId) ?? markStudioProjectRecordMemoryOnly(fallback);
   } catch {
-    return fallback;
+    return markStudioProjectRecordMemoryOnly(fallback);
   }
 }
 
@@ -178,7 +181,7 @@ export function saveProjectKanbanState(
   storage: KanbanStorageLike | null | undefined,
   state: ProjectKanbanBoardState,
 ): boolean {
-  if (!storage) return false;
+  if (!storage || isStudioProjectRecordMemoryOnly(state)) return false;
   try {
     const normalized = parseProjectKanbanState(JSON.stringify(state), state.projectId);
     if (!normalized) return false;

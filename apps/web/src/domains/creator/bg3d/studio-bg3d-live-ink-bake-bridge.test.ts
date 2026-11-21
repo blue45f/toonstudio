@@ -34,6 +34,73 @@ function bakedLayer(documentId: string, cut = 0) {
 }
 
 describe("3D 인계 사본의 문서 범위와 저장 실패 보존", () => {
+  it("최초 읽기가 실패하면 재읽기로 덮어쓰지 않고 재시도에서 기존·메모리 사본을 합친다", () => {
+    const storage = memoryStorage(), doc = "bake-transient-read", key = `${STUDIO_BG3D_BAKED_CUT_STORAGE_KEY_PREFIX}${doc}`;
+    const saved = [bakedLayer(doc, 0), bakedLayer(doc, 1)], fresh = bakedLayer(doc, 2);
+    const original = JSON.stringify(saved);
+    clearBakedManuscriptCutLayers(doc, null);
+    storage.setItem(key, original);
+    const read = vi.spyOn(storage, "getItem").mockImplementationOnce(() => { throw new Error("일시적 읽기 거부"); });
+    const write = vi.spyOn(storage, "setItem");
+    expect(saveBakedManuscriptCutLayer(fresh, storage)).toEqual({ persistedToStorage: false, totalLayers: 1 });
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(write).not.toHaveBeenCalled();
+    expect(storage.getItem(key)).toBe(original);
+    expect(listBakedManuscriptCutLayers(doc, storage)).toEqual([fresh]);
+    expect(saveBakedManuscriptCutLayer(fresh, storage)).toEqual({ persistedToStorage: true, totalLayers: 3 });
+    expect(JSON.parse(storage.getItem(key) ?? "null")).toEqual([fresh, ...saved]);
+    clearBakedManuscriptCutLayers(doc, null);
+    expect(listBakedManuscriptCutLayers(doc, storage)).toEqual([fresh, ...saved]);
+  });
+
+  it("메모리 캐시 뒤에 저장된 다른 사본도 최신 읽기와 합쳐 보존한다", () => {
+    const storage = memoryStorage(), doc = "bake-stale-cache", key = `${STUDIO_BG3D_BAKED_CUT_STORAGE_KEY_PREFIX}${doc}`;
+    const first = bakedLayer(doc, 0), external = bakedLayer(doc, 1), fresh = bakedLayer(doc, 2);
+    saveBakedManuscriptCutLayer(first, storage);
+    storage.setItem(key, JSON.stringify([external, first]));
+    expect(saveBakedManuscriptCutLayer(fresh, storage)).toEqual({ persistedToStorage: true, totalLayers: 3 });
+    const persisted = JSON.parse(storage.getItem(key) ?? "null");
+    expect(persisted).toHaveLength(3);
+    expect(persisted).toEqual(expect.arrayContaining([first, external, fresh]));
+    clearBakedManuscriptCutLayers(doc, null);
+  });
+
+  it("이미 저장한 캐시와 같은 캡처가 다른 탭에서 갱신되면 최신 저장본을 유지한다", () => {
+    const storage = memoryStorage(), doc = "bake-refreshed-capture", key = `${STUDIO_BG3D_BAKED_CUT_STORAGE_KEY_PREFIX}${doc}`;
+    const first = bakedLayer(doc, 0), refreshed = { ...first, inkPassRef: "opfs://refreshed-ink.png" }, fresh = bakedLayer(doc, 1);
+    saveBakedManuscriptCutLayer(first, storage);
+    storage.setItem(key, JSON.stringify([refreshed]));
+    expect(saveBakedManuscriptCutLayer(fresh, storage)).toEqual({ persistedToStorage: true, totalLayers: 2 });
+    expect(JSON.parse(storage.getItem(key) ?? "null")).toEqual([fresh, refreshed]);
+    clearBakedManuscriptCutLayers(doc, null);
+  });
+
+  it("저장 거부된 재촬영은 다음 캡처를 저장할 때도 오래된 저장본으로 되돌리지 않는다", () => {
+    const storage = memoryStorage(), doc = "bake-pending-recapture", key = `${STUDIO_BG3D_BAKED_CUT_STORAGE_KEY_PREFIX}${doc}`;
+    const first = bakedLayer(doc, 0), pending = { ...first, inkPassRef: "opfs://pending-ink.png" }, fresh = bakedLayer(doc, 1);
+    saveBakedManuscriptCutLayer(first, storage);
+    const original = storage.getItem(key);
+    vi.spyOn(storage, "setItem").mockImplementationOnce(() => { throw new Error("quota"); });
+    expect(saveBakedManuscriptCutLayer(pending, storage).persistedToStorage).toBe(false);
+    expect(storage.getItem(key)).toBe(original);
+    expect(saveBakedManuscriptCutLayer(fresh, storage)).toEqual({ persistedToStorage: true, totalLayers: 2 });
+    expect(JSON.parse(storage.getItem(key) ?? "null")).toEqual([fresh, pending]);
+    clearBakedManuscriptCutLayers(doc, null);
+  });
+
+  it("쓰기 후 재읽기가 일치하지 않으면 미저장 재촬영을 다음 저장까지 보존한다", () => {
+    const storage = memoryStorage(), doc = "bake-unconfirmed-write", key = `${STUDIO_BG3D_BAKED_CUT_STORAGE_KEY_PREFIX}${doc}`;
+    const first = bakedLayer(doc, 0), pending = { ...first, shadedPassRef: "opfs://pending-shaded.png" }, fresh = bakedLayer(doc, 1);
+    saveBakedManuscriptCutLayer(first, storage);
+    const original = storage.getItem(key);
+    vi.spyOn(storage, "setItem").mockImplementationOnce(() => undefined);
+    expect(saveBakedManuscriptCutLayer(pending, storage).persistedToStorage).toBe(false);
+    expect(storage.getItem(key)).toBe(original);
+    expect(saveBakedManuscriptCutLayer(fresh, storage)).toEqual({ persistedToStorage: true, totalLayers: 2 });
+    expect(JSON.parse(storage.getItem(key) ?? "null")).toEqual([fresh, pending]);
+    clearBakedManuscriptCutLayers(doc, null);
+  });
+
   it("메모리 캐시를 비운 뒤에도 해당 문서의 캡처·출처·재촬영 사본만 복원한다", () => {
     const storage = memoryStorage(), doc = "bake/roundtrip", layer = bakedLayer(doc);
     expect(saveBakedManuscriptCutLayer(layer, storage)).toEqual({ persistedToStorage: true, totalLayers: 1 });
