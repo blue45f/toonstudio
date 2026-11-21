@@ -9,7 +9,7 @@
  *   때만 렌더링한다.
  */
 import { ArrowRight, Check, PenLine, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { EpisodePlanWithSynopsis } from "../planning/studio-episode-synopsis";
@@ -32,7 +32,16 @@ import {
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { cn } from "@/shared/lib/utils";
+
+const LazyStudioPptProDrawingPanel = lazyRetry(
+  () =>
+    import("../pro-drawing-ppt-suite/StudioPptProDrawingPanel").then((module) => ({
+      default: module.StudioPptProDrawingPanel,
+    })),
+  "StudioPptProDrawingPanel",
+);
 
 export type StageHandoffCardStatus = "ready" | "loading" | "error";
 
@@ -109,6 +118,7 @@ export function StageHandoffCard({
   // 인용을 기준 표시로 남긴다. 선택은 이 카드 인스턴스의 표시 상태일 뿐
   // 앞 단계 데이터를 바꾸지 않는다.
   const [choice, setChoice] = useState<StageHandoffChoice>("pending");
+  const [pptProDrawingOpen, setPptProDrawingOpen] = useState(false);
   const chooseUse = () => {
     setChoice("use");
     onUseHandoff?.();
@@ -285,6 +295,40 @@ export function StageHandoffCard({
         </>
       )}
       {unfrozenNotice}
+      <details
+        data-testid="studio-ppt-pro-drawing-disclosure"
+        open={pptProDrawingOpen}
+        onToggle={(event) => setPptProDrawingOpen(event.currentTarget.open)}
+        className="mt-4 rounded-xl border border-line bg-panel p-3"
+      >
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-lg px-1 text-sm font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]">
+          <span>
+            {bt(
+              "PPT 정밀 정렬·불리언·발표 · 경쟁사 특수 드로잉 6종 스위트",
+              "PPT Precision Layout, Boolean & Presentation · 6 Pro Drawing Engines",
+            )}
+          </span>
+          <span className="shrink-0 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent">
+            {bt("펼쳐서 열기", "Expand")}
+          </span>
+        </summary>
+        {pptProDrawingOpen ? (
+          <div className="mt-3">
+            <Suspense
+              fallback={
+                <p role="status" className="text-xs leading-5 text-fg-2">
+                  {bt(
+                    "PPT 정밀 레이아웃 · 특수 드로잉 스위트를 불러오는 중입니다.",
+                    "Loading PPT precision layout and special drawing suite.",
+                  )}
+                </p>
+              }
+            >
+              <LazyStudioPptProDrawingPanel projectId={projectId} />
+            </Suspense>
+          </div>
+        ) : null}
+      </details>
     </section>
   );
 }
