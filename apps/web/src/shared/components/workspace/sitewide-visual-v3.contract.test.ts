@@ -49,10 +49,13 @@ describe("sitewide visual identity v3 contract", () => {
 
   it("keeps the canvas quiet while upgrading editor chrome and the beta gate", () => {
     expect(editorCss).toContain('[data-studio-canvas-viewport]');
-    expect(editorCss).toContain('[data-studio-rail-tool-id="pen"]');
+    // 펜을 포함한 모든 레일 도구는 같은 활성 표시를 사용한다.
+    const activeRailRule = editorCss.match(/\[data-studio-editor="true"\] :where\(\[data-studio-rail-tool-id\], \[data-studio-current-tool-id\]\)\[aria-pressed="true"\]\s*\{([^}]+)\}/u)?.[1];
+    expect(activeRailRule).toContain("background: var(--color-accent-soft)");
+    expect(activeRailRule).toContain("box-shadow: inset 2px 0 0 var(--color-accent)");
     expect(editorCss).toContain('[data-studio-beta-notice="true"]');
-    expect(editorCss).toContain("@media(prefers-reduced-motion:reduce)");
-    expect(editorCss).toContain("@media(forced-colors:active)");
+    expect(editorCss).toMatch(/@media\s*\(\s*prefers-reduced-motion:\s*reduce\s*\)\s*\{[^{}]+\{[^}]*transition:\s*none/u);
+    expect(editorCss).toMatch(/@media\s*\(\s*forced-colors:\s*active\s*\)\s*\{[^{}]+\{[^}]*color:\s*CanvasText/u);
   });
 
   it("gives protected administration routes the same image-led visual language", () => {

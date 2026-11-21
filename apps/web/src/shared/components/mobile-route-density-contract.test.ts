@@ -94,7 +94,12 @@ describe("mobile route density contract", () => {
       ...SITE_UTILITY_NAVIGATION, SITE_NAVIGATION_ITEMS.allMenu,
     ].map((item) => item.href));
     for (const item of Object.values(SITE_NAVIGATION_ITEMS)) expect(reachable.has(item.href), item.id).toBe(true);
-    expect(mobileNavigation).toContain('mobileTabs.length === 5 ? "grid-cols-5" : "grid-cols-4"');
+    // 하단 탭 그리드는 탭 수에 맞는 균등 열과 최소 폭 0을 유지해 좁은 화면의 넘침을 막는다.
+    const tabGridColumns = mobileNavigation.match(/"site-bottom-tabs__grid[^"]*"\s*,\s*mobileTabs\.length\s*===\s*5\s*\?\s*"([^"]+)"\s*:\s*"([^"]+)"/u)?.slice(1);
+    expect(tabGridColumns).toEqual([
+      "grid-cols-[repeat(5,minmax(0,1fr))]",
+      "grid-cols-[repeat(4,minmax(0,1fr))]",
+    ]);
     expect(scene).toContain("min-height: 8rem");
     expect(scene).toContain(".route-purpose-scene__cards,");
     expect(workspace).toContain("grid-template-columns:repeat(5,minmax(0,1fr))");

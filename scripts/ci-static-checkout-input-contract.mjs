@@ -99,6 +99,10 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
     "/apps/web/public/vrm/LICENSES.md",
     ...["Sendagaya_Shino", "Sendagaya_Shibu", "Kate", "Jennifer", "Erika", "Olivia", "Jimmy", "Anna", "Cyberpal"].map((id) => `/apps/web/public/vrm/${id}.vrm`),
   ];
+  const heroInputs = [
+    "romance-female", "romance-male", "academy-female", "academy-male",
+    "rofan-empress", "rofan-duke", "action-hunter", "chibi-mascot",
+  ].map((id) => `/apps/web/public/vrm/toonstudio-hero-v1/${id}.vrm`);
   const routeVisualInputs = [
     `${asset}studio/generated-backgrounds/gpt25-v1/drama/gpt25-bg-drama-boardroom-vertical-depth/background.png`,
     `${asset}studio/generated-backgrounds/gpt25-v1/romance/gpt25-bg-romance-cherry-path-vertical-depth/background.png`,
@@ -146,6 +150,7 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
       `${asset}virtual-studio/toon-office-v1/characters/`, `${asset}studio/illustration-20260926/`,
       `${asset}studio/bundle-renders-v1/`, `${asset}studio/bundle-scenes-v1/`, `${asset}virtual-studio/bundle-decor-v1/`,
       ...foundationInputs,
+      ...heroInputs,
       ...routeVisualInputs,
       ...foundationDocumentInputs,
     ],
@@ -159,17 +164,23 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   assert.equal(routeVisualInputs.length, 14);
   assert.equal(new Set(routeVisualInputs).size, 14);
   assert.ok(routeVisualInputs.every((path) => path.endsWith("/background.png")), "페이지 시각 입력은 원본 PNG 개별 파일이어야 합니다.");
+  const heroSet = new Set(heroInputs);
+  assert.equal(heroSet.size, 8);
+  assert.ok(heroInputs.every((path) => path.endsWith(".vrm") && !path.includes("*")), "hero 모델은 정확한 개별 VRM 파일이어야 합니다.");
   const routeVisualSet = new Set(routeVisualInputs);
   const foundationDocumentSet = new Set(foundationDocumentInputs);
   assert.equal(foundationDocumentSet.size, 16);
   assert.ok(foundationDocumentInputs.every((path) => path.endsWith(".md") && !path.includes("*")), "문서 입력은 정확한 개별 Markdown 파일이어야 합니다.");
   assertTrackedDocumentInputs(foundationDocumentInputs, { cwd: repoRoot });
-  assert.deepEqual(Object.values(owned).map((paths) => paths.filter((path) => !routeVisualSet.has(path) && !foundationDocumentSet.has(path)).length), [13, 90, 0, 1, 7]);
-  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 120, 0, 1, 7]);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.filter((path) => !heroSet.has(path) && !routeVisualSet.has(path) && !foundationDocumentSet.has(path)).length), [13, 90, 0, 1, 7]);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 128, 0, 1, 7]);
   const declarations = [...staticJob.matchAll(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu)];
   assert.match(staticJob, /persist-credentials: false/u);
   assert.match(staticJob, /sparse-checkout-cone-mode: false/u);
-  const originalDeclarations = declarations.filter((match) => !routeVisualSet.has(match[2]) && !foundationDocumentSet.has(match[2]));
+  const originalDeclarations = declarations.filter((match) => !heroSet.has(match[2]) && !routeVisualSet.has(match[2]) && !foundationDocumentSet.has(match[2]));
+  const heroDeclarations = declarations.filter((match) => heroSet.has(match[2]));
+  assert.deepEqual(heroDeclarations.map((match) => match[2]).sort(), [...heroInputs].sort());
+  assert.ok(heroDeclarations.every((match) => match[1] === "studio-foundation"), "hero 모델은 foundation만 소유해야 합니다.");
   const routeVisualDeclarations = declarations.filter((match) => routeVisualSet.has(match[2]));
   const foundationDocumentDeclarations = declarations.filter((match) => foundationDocumentSet.has(match[2]));
   assert.equal(originalDeclarations.length, 111, "기존 48개와 foundation 63개 선언을 정확히 보존해야 합니다.");
@@ -178,8 +189,8 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   assert.ok(routeVisualDeclarations.every((match) => match[1] === "studio-foundation"), "페이지 시각 입력은 foundation만 소유해야 합니다.");
   assert.deepEqual(foundationDocumentDeclarations.map((match) => match[2]).sort(), [...foundationDocumentInputs].sort());
   assert.ok(foundationDocumentDeclarations.every((match) => match[1] === "studio-foundation"), "추가 문서 선언은 foundation만 소유해야 합니다.");
-  assert.equal(declarations.length, 141, "기존 111개와 원본 PNG 14개·문서 16개 선언을 정확히 보존해야 합니다.");
-  assert.equal(new Set(declarations.map((match) => match[2])).size, 136, "새 PNG·문서는 기존 입력이나 다른 shard 선언과 중복하지 않습니다.");
+  assert.equal(declarations.length, 149, "기존 111개와 hero VRM 8개·원본 PNG 14개·문서 16개 선언을 정확히 보존해야 합니다.");
+  assert.equal(new Set(declarations.map((match) => match[2])).size, 144, "추가 VRM·PNG·문서는 기존 입력이나 다른 shard 선언과 중복하지 않습니다.");
   for (const [shard, paths] of Object.entries(owned)) {
     assert.deepEqual(declarations.filter((match) => match[1] === shard).map((match) => match[2]).sort(), [...paths].sort(), shard);
   }
@@ -194,6 +205,7 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   const commonManifests = [world, ...["boatyard-v1", "coast-v1", "specimen-v1", "glasshouse-v1"]
     .map((pack) => `apps/web/public/assets/3d/environments/${pack}/manifest.json`)];
   const unrelated = ["apps/web/public/assets/unrelated/large.glb", "apps/web/public/vrm/unrelated.vrm", "artifacts/unrelated.bin",
+    "apps/web/public/vrm/toonstudio-hero-v1/unrelated.vrm",
     "apps/web/public/assets/virtual-studio/studio-art-v11/unrelated-large.webp",
     "apps/web/public/assets/3d/environments/bundle-v1/unrelated-large.glb"];
   const unrelatedDocuments = ["docs/third-party/unrelated.md", "docs/adr/9999-unrelated.md", "docs/unrelated/large.bin"];
@@ -228,6 +240,7 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
     writeFileSync(join(root, ".git/info/sparse-checkout"), `${sparsePatterns(typecheckJob).join("\n")}\n`);
     git("read-tree", "-mu", "HEAD");
     for (const file of commonManifests) assert.ok(existsSync(join(root, file)), `typecheck: 공통 메타데이터 누락 ${file}`);
+    for (const path of heroInputs) assert.equal(existsSync(join(root, input(path))), false, `typecheck: 불필요한 hero 모델 ${path}`);
     for (const path of foundationDocumentInputs) {
       assert.equal(existsSync(join(root, path.slice(1))), false, `preflight에 불필요한 문서 본문: ${path}`);
       assertTrackedDocumentInputs([path], { cwd: root, env });

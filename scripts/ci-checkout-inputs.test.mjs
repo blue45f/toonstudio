@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
-import { fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
+import { assertTrackedDocumentInputs, fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -68,15 +68,25 @@ test("접근성 체크아웃은 화면·글꼴·브랜드 영상과 검증 소�
   }
 });
 
-test("기반 회귀는 실제 씬 카탈로그의 모든 CC0 VRM 원본을 최초 체크아웃한다", async () => {
+test("기반 회귀는 실제 씬 카탈로그의 히어로·기존 VRM 원본을 최초 체크아웃한다", async () => {
   const workflow = await fs.readFile(path.join(root, ".github/workflows/ci.yml"), "utf8");
   const block = workflow.slice(workflow.indexOf("\n  static:\n"), workflow.indexOf("\n  serial:\n"));
   const patterns = sparsePatterns(block, { shard: "studio-foundation" });
   const scene = await fs.readFile(path.join(root, "apps/web/src/domains/creator/virtual-space/three/studio-virtual-space-three-scene.ts"), "utf8");
-  const catalog = scene.match(/export const STUDIO_THREE_VRM_URLS[^=]*= Object\.freeze\(\s*\[([^\]]+)\]/u)?.[1];
-  assert(catalog, "실제 씬의 VRM 카탈로그가 필요합니다.");
-  const models = [...catalog.matchAll(/"(\/vrm\/[^"\n]+\.vrm)"/gu)].map((match) => `apps/web/public${match[1]}`);
-  assert.equal(models.length, 9);
+  const legacyCatalog = scene.match(/const LEGACY_STUDIO_THREE_VRM_URLS = \[([^\]]+)\] as const/u)?.[1];
+  assert(legacyCatalog, "실제 씬의 기존 VRM 카탈로그가 필요합니다.");
+  assert.match(scene, /\[\.\.\.STUDIO_THREE_HERO_VRM_URLS, \.\.\.LEGACY_STUDIO_THREE_VRM_URLS\]/u);
+  const legacy = [...legacyCatalog.matchAll(/"(\/vrm\/[^"\n]+\.vrm)"/gu)].map((match) => match[1]);
+  assert.equal(legacy.length, 9);
+  const heroCatalog = await fs.readFile(path.join(root, "apps/web/src/domains/creator/vrm/studio-vrm-hero-v1-catalog-entries.ts"), "utf8");
+  assert.match(scene, /STUDIO_VRM_HERO_V1_SAMPLES\.map\(\(sample\) => sample\.url\)/u);
+  assert.match(heroCatalog, /url: `\/vrm\/toonstudio-hero-v1\/\$\{spec\.archetypeId\}\.vrm`/u);
+  const hero = [...heroCatalog.matchAll(/archetypeId: "([a-z-]+)",/gu)].map((match) => `/vrm/toonstudio-hero-v1/${match[1]}.vrm`);
+  assert.equal(hero.length, 8);
+  const models = [...hero, ...legacy].map((url) => `apps/web/public${url}`);
+  assert.equal(new Set(models).size, 17);
+  assertTrackedDocumentInputs(models.map((file) => `/${file}`), { cwd: root });
+  const omitted = ["apps/web/public/vrm/unrelated.vrm", "apps/web/public/vrm/toonstudio-hero-v1/unrelated.vrm"];
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "foundation-vrm-checkout-"));
   const git = (...args) => execFileSync("git", args, {
     cwd: directory, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
@@ -84,7 +94,7 @@ test("기반 회귀는 실제 씬 카탈로그의 모든 CC0 VRM 원본을 최�
   }).trim();
   try {
     git("init", "--quiet");
-    for (const file of [...models, "apps/web/public/vrm/LICENSES.md", "apps/web/public/vrm/unrelated.vrm"]) {
+    for (const file of [...models, "apps/web/public/vrm/LICENSES.md", ...omitted]) {
       await fs.mkdir(path.dirname(path.join(directory, file)), { recursive: true });
       await fs.writeFile(path.join(directory, file), "fixture\n");
     }
@@ -95,7 +105,7 @@ test("기반 회귀는 실제 씬 카탈로그의 모든 CC0 VRM 원본을 최�
     await fs.writeFile(path.join(directory, ".git/info/sparse-checkout"), `${patterns.join("\n")}\n`);
     git("read-tree", "-mu", tree);
     for (const file of [...models, "apps/web/public/vrm/LICENSES.md"]) assert((await fs.stat(path.join(directory, file))).isFile(), file);
-    await assert.rejects(fs.access(path.join(directory, "apps/web/public/vrm/unrelated.vrm")), { code: "ENOENT" });
+    for (const file of omitted) await assert.rejects(fs.access(path.join(directory, file)), { code: "ENOENT" });
   } finally {
     await fs.rm(directory, { recursive: true, force: true });
   }
