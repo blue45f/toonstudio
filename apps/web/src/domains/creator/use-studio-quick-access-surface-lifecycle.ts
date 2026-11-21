@@ -142,13 +142,20 @@ export function useStudioQuickAccessSurfaceLifecycle(
       // Customization and active floating-window interactions own Escape first.
       if (event.key !== "Escape" || event.defaultPrevented) return;
       if (hasActiveFloatingInteraction(surfaceRef.current)) return;
+      // Let Escape dismiss help anchored inside this desktop window before closing the window.
+      if (!isMobile) {
+        const tooltip = root.ownerDocument.querySelector('[data-app-tooltip-layer="true"][data-state="open"]');
+        if (tooltip?.id && Array.from(root.querySelectorAll("[aria-describedby]")).some(
+          element => element.getAttribute("aria-describedby")?.split(/\s+/u).includes(tooltip.id),
+        )) return;
+      }
       event.preventDefault();
       event.stopPropagation();
       onClose();
     }
     document.addEventListener("keydown", handleSurfaceShortcut);
     return () => document.removeEventListener("keydown", handleSurfaceShortcut);
-  }, [onClose]);
+  }, [isMobile, onClose]);
 
   return { descriptionId, surfaceRef } as const;
 }
