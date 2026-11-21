@@ -6,7 +6,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   computeZeroBillSafetyGauge,
@@ -21,6 +21,10 @@ import {
 } from "@/shared/ai/free-ai-zero-bill-cascade";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+
+const LazyStudioDesignStoryAi4SuitesPanel = lazy(
+  () => import("../ai-creative-suites/StudioDesignStoryAi4SuitesPanel"),
+);
 
 type CategoryFilter = "전체" | FreeAiModeCategoryKo;
 
@@ -57,6 +61,7 @@ export function StudioFreeAiAssistWorkbench({
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<FreeAiZeroBillAssistResponse | null>(null);
   const [copied, setCopied] = useState(false);
+  const [designStorySuitesOpen, setDesignStorySuitesOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const refreshQuota = useCallback(async () => {
@@ -386,6 +391,46 @@ export function StudioFreeAiAssistWorkbench({
           </ul>
         </div>
       ) : null}
+
+      <div className="mt-4 border-t border-line pt-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-xs font-extrabold text-fg [word-break:keep-all]">
+              디자인·스토리 AI 4대 스튜디오 랩 (Canva · Figma · Tooning · Plotr)
+            </p>
+            <p className="mt-0.5 text-[0.7rem] text-fg-3 [word-break:keep-all]">
+              썸네일·6종 규격 리플로우·오토레이아웃·4/8컷 컷툰·대본 콘티를 유료 과금 없이 바로 열어 쓸 수 있어요.
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-expanded={designStorySuitesOpen}
+            onClick={() => setDesignStorySuitesOpen((prev) => !prev)}
+            className={buttonClass({
+              variant: designStorySuitesOpen ? "solid" : "outline",
+              size: "sm",
+              className: "min-h-11 gap-1.5",
+            })}
+          >
+            <Sparkles size={14} aria-hidden="true" />
+            {designStorySuitesOpen ? "4대 스튜디오 랩 접기" : "4대 스튜디오 랩 열기"}
+          </button>
+        </div>
+        {designStorySuitesOpen ? (
+          <Suspense
+            fallback={
+              <p className="mt-3 text-xs text-fg-3">
+                디자인·스토리 AI 4대 스튜디오 랩을 불러오는 중…
+              </p>
+            }
+          >
+            <LazyStudioDesignStoryAi4SuitesPanel
+              projectTitle={projectTitle}
+              fetchImpl={fetchImpl}
+            />
+          </Suspense>
+        ) : null}
+      </div>
     </section>
   );
 }
