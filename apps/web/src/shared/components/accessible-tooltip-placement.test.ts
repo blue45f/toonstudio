@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveTooltipPlacement, tooltipArrowStyle, tooltipSideStyle } from "./accessible-tooltip-placement";
+import { resolveTooltipPlacement, resolveTooltipPlacementAvoidingPopup, tooltipArrowStyle, tooltipSideStyle } from "./accessible-tooltip-placement";
 
 const rect = (left: number, top: number, width: number, height: number) => ({
   left, top, width, height, right: left + width, bottom: top + height,
@@ -63,5 +63,21 @@ describe("도움말 배치와 인접 도구의 클릭 영역", () => {
     expect(tooltipSideStyle("right")).toMatchObject({ transformOrigin: "left center" });
     expect(tooltipArrowStyle({ side: "left", top: 0, left: 0, arrowOffset: 25 }))
       .toMatchObject({ top: 20, left: "auto", right: -5, borderRightWidth: 1 });
+  });
+
+  it("이전 도구막대의 도움말이 새 창과 겹치면 창 왼쪽에 배치한다", () => {
+    expect(resolveTooltipPlacementAvoidingPopup({ anchor: rect(1260, 52, 66, 44), popup, viewport,
+      avoidPopup: rect(1092, 76, 332, 720) })).toEqual({ left: 882, top: 42, side: "left", arrowOffset: 32 });
+  });
+
+  it("키보드의 기존 열린 메뉴와 앞 창을 함께 피한다", () => {
+    expect(resolveTooltipPlacementAvoidingPopup({ anchor: rect(1260, 52, 66, 44), popup, viewport,
+      controlledPopup: rect(1000, 75, 200, 250), avoidPopup: rect(1092, 76, 332, 720) }))
+      .toEqual({ left: 790, top: 42, side: "left", arrowOffset: 32 });
+  });
+
+  it("창이 화면 전체를 차지하면 clamp로 버튼을 덮지 않고 배치를 거절한다", () => {
+    expect(resolveTooltipPlacementAvoidingPopup({ anchor: rect(1260, 52, 66, 44), popup, viewport,
+      avoidPopup: rect(0, 0, 1440, 900) })).toBeNull();
   });
 });

@@ -67,6 +67,37 @@ export function resolveTooltipPlacement({
     arrowOffset: clamp(anchor.left + anchor.width / 2 - left, 14, Math.max(14, width - 14)) };
 }
 
+/** 앞에 열린 창과 겹치는 외부 도움말만 옮긴다. 안전한 공간이 없으면 표시하지 않는다. */
+export function resolveTooltipPlacementAvoidingPopup(
+  input: Parameters<typeof resolveTooltipPlacement>[0] & { avoidPopup: Rect | null },
+): TooltipPlacement | null {
+  const initial = resolveTooltipPlacement(input);
+  const obstacle = input.avoidPopup;
+  const width = input.popup.width > 0 ? input.popup.width : 160;
+  const height = input.popup.height > 0 ? input.popup.height : 36;
+  const overlaps = (placement: TooltipPlacement, rect: Rect) => placement.left < rect.right
+    && placement.left + width > rect.left && placement.top < rect.bottom && placement.top + height > rect.top;
+  if (!obstacle || !overlaps(initial, obstacle)) return initial;
+
+  const left = Math.min(obstacle.left, input.controlledPopup?.left ?? obstacle.left);
+  const top = Math.min(obstacle.top, input.controlledPopup?.top ?? obstacle.top);
+  const right = Math.max(obstacle.right, input.controlledPopup?.right ?? obstacle.right);
+  const bottom = Math.max(obstacle.bottom, input.controlledPopup?.bottom ?? obstacle.bottom);
+  const controlledPopup = { left, top, right, bottom, width: right - left, height: bottom - top };
+  const { viewport } = input;
+  // 옆 공간을 먼저 사용해 길쭉한 팔레트 아래까지 도움말을 멀리 보내지 않는다.
+  const preferred = input.preferredSide ?? "left";
+  const sides = [preferred, preferred === "left" ? "right" : "left", undefined] as const;
+  for (const preferredSide of sides) {
+    const candidate = resolveTooltipPlacement({ ...input, controlledPopup, preferredSide });
+    if (!overlaps(candidate, controlledPopup) && !overlaps(candidate, input.anchor)
+      && candidate.left >= viewport.left + VIEWPORT_PADDING && candidate.top >= viewport.top + VIEWPORT_PADDING
+      && candidate.left + width <= viewport.left + viewport.width - VIEWPORT_PADDING
+      && candidate.top + height <= viewport.top + viewport.height - VIEWPORT_PADDING) return candidate;
+  }
+  return null;
+}
+
 /** 기존 위·아래 CSS를 바꾸지 않고 측면 화살표와 진입/퇴장 방향만 함께 맞춘다. */
 export function tooltipSideStyle(side: TooltipSide): CSSProperties | undefined {
   if (side !== "left" && side !== "right") return undefined;
