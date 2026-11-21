@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { StudioBrushR8GrainHydrator } from "../../brush/studio-brush-r8-grain-hydrator";
-import { StudioFilterMaskSurfaceHydrator } from "../../filter/studio-filter-mask-surface-hydrator";
+import { StudioLazyFilterMaskSurfaceHydrator } from "../../filter/studio-filter-mask-surface-hydrator-lazy";
 import { StudioWorkAssetAdmissionCoordinator } from "../../studio-work-asset-admission";
 import { StudioWorkAssetHydrator } from "../../studio-work-asset-hydrator";
 
@@ -21,7 +21,7 @@ export function useStudioHydrationRuntime() {
     () => new StudioWorkAssetHydrator(null),
   );
   const [studioFilterMaskSurfaceHydrator] = useState(
-    () => new StudioFilterMaskSurfaceHydrator(),
+    () => new StudioLazyFilterMaskSurfaceHydrator(),
   );
   const [studioWorkAssetAdmissionCoordinator] = useState(
     () => new StudioWorkAssetAdmissionCoordinator(),

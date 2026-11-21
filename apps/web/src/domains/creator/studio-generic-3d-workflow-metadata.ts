@@ -7,9 +7,9 @@
 
 import {
   isStudioGeneric3dSourceFormat,
-  type StudioGeneric3dClassification,
   type StudioGeneric3dSourceFormat,
-} from "./studio-generic-3d-model-mode";
+} from "./generic-3d-model/studio-generic-3d-source-formats";
+import type { StudioGeneric3dClassification } from "./studio-generic-3d-model-mode";
 
 export type { StudioGeneric3dClassification, StudioGeneric3dSourceFormat };
 

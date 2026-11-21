@@ -7,7 +7,7 @@ import {
   createFuzzyNeighborhoodGate,
   runShadowComparison,
   type ShadowComparisonReport,
-} from "@toonstudio/studio-engine-registry";
+} from "@toonstudio/studio-engine-registry/tournament";
 import {
   pathBounds,
   sceneIRSchema,

@@ -38,6 +38,16 @@
       "types": "./src/linked-ink/linked-ink-barycentric-evaluator.ts",
       "import": "./src/linked-ink/linked-ink-barycentric-evaluator.ts",
       "default": "./src/linked-ink/linked-ink-barycentric-evaluator.ts"
+    },
+    "./stroke-budget": {
+      "types": "./src/stroke-budget.ts",
+      "import": "./src/stroke-budget.ts",
+      "default": "./src/stroke-budget.ts"
+    },
+    "./compile": {
+      "types": "./src/compile.ts",
+      "import": "./src/compile.ts",
+      "default": "./src/compile.ts"
     }
   },
   "scripts": {

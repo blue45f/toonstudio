@@ -1,10 +1,9 @@
-import {
-  polylineToPath,
-  type ColorIR,
-  type PathIR,
-  type RenderNodeIR,
-  type RenderSceneIR,
-  type SceneNodeIR,
+import { polylineToPath, type PathIR } from "@toonstudio/studio-project-model/path";
+import type {
+  ColorIR,
+  RenderNodeIR,
+  RenderSceneIR,
+  SceneNodeIR,
 } from "@toonstudio/studio-project-model";
 
 import { drawBounds } from "../brush/studio-draw-rendering";

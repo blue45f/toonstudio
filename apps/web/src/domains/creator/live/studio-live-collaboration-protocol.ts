@@ -1,11 +1,13 @@
-import { STUDIO_TEAM_ROLES, type StudioTeamRole } from "../studio-team-client";
-
+import { STUDIO_TEAM_ROLES, type StudioTeamRole } from "../studio-team-roles";
+import { STUDIO_LIVE_DISPLAY_NAME_MAX_LENGTH, studioLiveDisplayName } from "./studio-live-display-name";
 import {
   STUDIO_LIVE_GESTURE_PREVIEW_KIND,
   STUDIO_LIVE_GESTURE_PREVIEW_MAX_BYTES,
   parseStudioLiveGesturePreviewPayload,
   type StudioLiveGesturePreviewPayload,
 } from "./studio-live-gesture-preview";
+
+export { STUDIO_LIVE_DISPLAY_NAME_MAX_LENGTH, studioLiveDisplayName };
 
 /**
  * Ephemeral collaboration protocol shared by local BroadcastChannel and future server transports.
@@ -41,7 +43,6 @@ export const STUDIO_LIVE_MESSAGE_FUTURE_SKEW_MS = 5_000;
 export const STUDIO_LIVE_LOCK_MAX_LEASE_MS = 30_000;
 
 const MAX_ID_LENGTH = 160;
-export const STUDIO_LIVE_DISPLAY_NAME_MAX_LENGTH = 80;
 const MAX_TOOL_LENGTH = 64;
 export const STUDIO_LIVE_RESOURCE_MAX_LENGTH = 200;
 const MAX_SHARE_LABEL_LENGTH = 80;
@@ -343,50 +344,6 @@ function containsControlCharacter(value: string, allowSdpLineEndings = false): b
     if (code <= 31 || (code >= 127 && code <= 159)) return true;
   }
   return false;
-}
-
-function sanitizeDisplayNamePart(value: unknown): string {
-  if (typeof value !== "string") return "";
-  let sanitized = "";
-  for (const character of value) {
-    const codePoint = character.codePointAt(0) ?? 0;
-    sanitized += codePoint <= 31 || (codePoint >= 127 && codePoint <= 159) ? " " : character;
-  }
-  return sanitized.replace(/\s+/gu, " ").trim();
-}
-
-function truncateWithoutSplittingSurrogate(value: string, maximumCodeUnits: number): string {
-  let result = "";
-  for (const character of value) {
-    if (result.length + character.length > maximumCodeUnits) break;
-    result += character;
-  }
-  return result.trim();
-}
-
-/** Safely adapts profile copy to the stricter ephemeral participant-name contract. */
-export function studioLiveDisplayName(
-  value: unknown,
-  options: { suffix?: string; fallback?: string } = {}
-): string {
-  const suffix = truncateWithoutSplittingSurrogate(
-    sanitizeDisplayNamePart(options.suffix),
-    STUDIO_LIVE_DISPLAY_NAME_MAX_LENGTH
-  );
-  const separator = suffix ? " " : "";
-  const maximumBaseLength =
-    STUDIO_LIVE_DISPLAY_NAME_MAX_LENGTH - suffix.length - separator.length;
-  const preferred = truncateWithoutSplittingSurrogate(
-    sanitizeDisplayNamePart(value),
-    maximumBaseLength
-  );
-  const fallback = truncateWithoutSplittingSurrogate(
-    sanitizeDisplayNamePart(options.fallback) || "팀원",
-    maximumBaseLength
-  );
-  const base = preferred || fallback;
-  if (base) return `${base}${separator}${suffix}`;
-  return suffix || "팀원";
 }
 
 function exactString(value: unknown, maximum: number, allowEmpty = false): value is string {

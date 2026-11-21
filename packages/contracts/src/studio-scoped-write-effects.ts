@@ -1,7 +1,7 @@
-import { canonicalJson } from "@toonstudio/studio-project-model";
+import { canonicalJson } from "@toonstudio/studio-project-model/digest";
 import { studioFrameClip } from "@toonstudio/studio-project-model/frame-clip";
 
-import { studioCrdtProjectionGroupKey } from "@toonstudio/contracts/studio-crdt-authoring";
+import { studioCrdtProjectionGroupKey } from "./studio-crdt-authoring/group-key";
 
 import type { StudioScopedEntityKind, StudioScopedWriteContext, StudioScopedWriteTarget } from "./studio-scoped-write";
 

@@ -1,45 +1,70 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
-import { StudioLayerLiftComposeWorkerClient } from "../../layer/studio-layer-lift-compose-worker-client";
-import { createStudioLayerLiftLocalForegroundProvider } from "../../layer/studio-layer-lift-local-provider";
-import { loadStudioLayerLiftMediaPipeInference } from "../../layer/studio-layer-lift-mediapipe-inference";
-import { createStudioLayerLiftOnnxInferenceLoader } from "../../layer/studio-layer-lift-onnx-inference";
-import { StudioLayerLiftOperationRegistry } from "../../layer/studio-layer-lift-operation-context";
+import { createStudioIntentLazyLoader } from "../../studio-intent-lazy-loader";
 
+import type { StudioLayerLiftComposeWorkerClient } from "../../layer/studio-layer-lift-compose-worker-client";
+import type { createStudioLayerLiftLocalForegroundProvider } from "../../layer/studio-layer-lift-local-provider";
+import type { StudioLayerLiftOperationRegistry } from "../../layer/studio-layer-lift-operation-context";
 import type { StudioLayerLiftReviewPreviewResource } from "../../layer/studio-layer-lift-review-preview";
 
-/** Owns document-scoped foreground inference and composition resources. */
+const layerLiftRuntimeLoader = createStudioIntentLazyLoader(async () => {
+  const [compositorMod, localProviderMod, mediaPipeMod, onnxMod, registryMod] = await Promise.all([
+    import("../../layer/studio-layer-lift-compose-worker-client"),
+    import("../../layer/studio-layer-lift-local-provider"),
+    import("../../layer/studio-layer-lift-mediapipe-inference"),
+    import("../../layer/studio-layer-lift-onnx-inference"),
+    import("../../layer/studio-layer-lift-operation-context"),
+  ]);
+  return {
+    StudioLayerLiftComposeWorkerClient: compositorMod.StudioLayerLiftComposeWorkerClient,
+    createStudioLayerLiftLocalForegroundProvider: localProviderMod.createStudioLayerLiftLocalForegroundProvider,
+    loadStudioLayerLiftMediaPipeInference: mediaPipeMod.loadStudioLayerLiftMediaPipeInference,
+    createStudioLayerLiftOnnxInferenceLoader: onnxMod.createStudioLayerLiftOnnxInferenceLoader,
+    StudioLayerLiftOperationRegistry: registryMod.StudioLayerLiftOperationRegistry,
+  };
+});
+
+/** Owns document-scoped foreground inference and composition resources, loaded on first Layer Lift use. */
 export function useStudioLayerLiftRuntime() {
   const studioLayerLiftRegistryRef = useRef<StudioLayerLiftOperationRegistry | null>(null);
-  studioLayerLiftRegistryRef.current ??= new StudioLayerLiftOperationRegistry();
-
   const studioLayerLiftProviderRef = useRef<ReturnType<
     typeof createStudioLayerLiftLocalForegroundProvider
   > | null>(null);
-  studioLayerLiftProviderRef.current ??= createStudioLayerLiftLocalForegroundProvider({
-    loadInference: loadStudioLayerLiftMediaPipeInference,
-  });
-
-  // General-subject profile on the ONNX U-2-Netp engine. The provider and
-  // its loader are inert until first analysis: no runtime or model bytes
-  // load while the artist stays on the person profile.
   const studioLayerLiftGeneralProviderRef = useRef<ReturnType<
     typeof createStudioLayerLiftLocalForegroundProvider
   > | null>(null);
-  studioLayerLiftGeneralProviderRef.current ??= createStudioLayerLiftLocalForegroundProvider({
-    subjectKind: "general-subject",
-    loadInference: createStudioLayerLiftOnnxInferenceLoader(),
-  });
-
   const studioLayerLiftCompositorRef = useRef<StudioLayerLiftComposeWorkerClient | null>(null);
-  studioLayerLiftCompositorRef.current ??= new StudioLayerLiftComposeWorkerClient();
-
   const studioLayerLiftAbortRef = useRef<AbortController | null>(null);
   const studioLayerLiftRunIdRef = useRef(0);
   const studioLayerLiftPreviewResourceRef = useRef<StudioLayerLiftReviewPreviewResource | null>(null);
+  const disposedRef = useRef(false);
+
+  const ensureStudioLayerLiftRuntime = useCallback(async () => {
+    if (
+      studioLayerLiftRegistryRef.current
+      && studioLayerLiftProviderRef.current
+      && studioLayerLiftGeneralProviderRef.current
+      && studioLayerLiftCompositorRef.current
+    ) {
+      return;
+    }
+    const mod = await layerLiftRuntimeLoader.load();
+    if (disposedRef.current) return;
+    studioLayerLiftRegistryRef.current ??= new mod.StudioLayerLiftOperationRegistry();
+    studioLayerLiftProviderRef.current ??= mod.createStudioLayerLiftLocalForegroundProvider({
+      loadInference: mod.loadStudioLayerLiftMediaPipeInference,
+    });
+    studioLayerLiftGeneralProviderRef.current ??= mod.createStudioLayerLiftLocalForegroundProvider({
+      subjectKind: "general-subject",
+      loadInference: mod.createStudioLayerLiftOnnxInferenceLoader(),
+    });
+    studioLayerLiftCompositorRef.current ??= new mod.StudioLayerLiftComposeWorkerClient();
+  }, []);
 
   useEffect(() => {
+    disposedRef.current = false;
     return () => {
+      disposedRef.current = true;
       studioLayerLiftRunIdRef.current += 1;
       studioLayerLiftAbortRef.current?.abort();
       studioLayerLiftAbortRef.current = null;
@@ -55,6 +80,7 @@ export function useStudioLayerLiftRuntime() {
   }, []);
 
   return {
+    ensureStudioLayerLiftRuntime,
     studioLayerLiftAbortRef,
     studioLayerLiftCompositorRef,
     studioLayerLiftGeneralProviderRef,

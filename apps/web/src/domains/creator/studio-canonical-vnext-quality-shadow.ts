@@ -23,14 +23,8 @@ import {
   type StudioBrushBackendId,
   type StudioBrushBackendQualityFamily,
 } from "./brush/studio-brush-backend-quality-policy";
-import {
-  adaptStudioDrawElementToCanonicalBrushPlan,
-  type StudioCanonicalBrushDrawAdapterRequirement,
-} from "./studio-canonical-brush-draw-adapter";
-import {
-  hashStudioCanonicalBrushPlan,
-  type StudioCanonicalBrushPlan,
-} from "./studio-canonical-brush-plan";
+import type { StudioCanonicalBrushDrawAdapterRequirement } from "./studio-canonical-brush-draw-adapter";
+import type { StudioCanonicalBrushPlan } from "./studio-canonical-brush-plan";
 import {
   requireQualityShadowStagePosture,
   type AuthorityStage,
@@ -574,6 +568,14 @@ export async function submitStudioCanonicalVNextQualityShadowFinalParity(
   ) {
     return Object.freeze({ status: "skipped", reason: "route-not-vnext" });
   }
+
+  const [
+    { adaptStudioDrawElementToCanonicalBrushPlan },
+    { hashStudioCanonicalBrushPlan },
+  ] = await Promise.all([
+    import("./studio-canonical-brush-draw-adapter"),
+    import("./studio-canonical-brush-plan"),
+  ]);
 
   const epoch = nextEpoch();
   const adapted = adaptStudioDrawElementToCanonicalBrushPlan({

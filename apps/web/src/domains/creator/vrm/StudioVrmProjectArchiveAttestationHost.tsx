@@ -20,6 +20,7 @@ import "../status-i18n/studio-vrm-panel-status-i18n-core";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { STUDIO_Z_CLASS } from "../studio-z-index";
+import { ensureStudioVrmProjectArchiveAttestationHostMounted } from "../studio-vrm-archive-attestation-lazy-bridge";
 import { useStudioModalSheet } from "../useStudioModalSheet";
 
 import type {
@@ -87,7 +88,10 @@ function onceOnly(
 export function requestStudioVrmProjectArchiveUseContext(
   plan: ReadyArchiveAttestationPlan,
 ): Promise<ArchiveAttestationResult> {
-  return presenterRegistration?.present(plan) ?? Promise.resolve(null);
+  if (presenterRegistration) return presenterRegistration.present(plan);
+  return ensureStudioVrmProjectArchiveAttestationHostMounted().then((mounted) =>
+    mounted ? (presenterRegistration?.present(plan) ?? null) : null,
+  );
 }
 
 interface ChunkErrorBoundaryProps {

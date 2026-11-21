@@ -4,8 +4,14 @@ import {
   type PublicCreatorRoleProfile,
 } from "@/shared/lib/creator-role-contract";
 
-export const STUDIO_TEAM_ROLES = ["owner", "admin", "editor", "commenter", "viewer"] as const;
-export const STUDIO_TEAM_ASSIGNABLE_ROLES = ["admin", "editor", "commenter", "viewer"] as const;
+import {
+  STUDIO_TEAM_ASSIGNABLE_ROLES,
+  STUDIO_TEAM_ROLES,
+  type StudioTeamAssignableRole,
+  type StudioTeamRole,
+} from "./studio-team-roles";
+
+export { STUDIO_TEAM_ASSIGNABLE_ROLES, STUDIO_TEAM_ROLES, type StudioTeamAssignableRole, type StudioTeamRole };
 export const STUDIO_TEAM_STATUSES = ["active", "pending", "declined"] as const;
 export const STUDIO_TEAM_ACTIVITY_ACTIONS = [
   "invite",
@@ -16,8 +22,6 @@ export const STUDIO_TEAM_ACTIVITY_ACTIONS = [
   "remove",
 ] as const;
 
-export type StudioTeamRole = (typeof STUDIO_TEAM_ROLES)[number];
-export type StudioTeamAssignableRole = (typeof STUDIO_TEAM_ASSIGNABLE_ROLES)[number];
 export type StudioTeamStatus = (typeof STUDIO_TEAM_STATUSES)[number];
 export type StudioTeamActivityAction = (typeof STUDIO_TEAM_ACTIVITY_ACTIONS)[number];
 
