@@ -193,7 +193,8 @@ describe("Plotr Wave 4 — 아이디어→4컷 비주얼 웹툰 & 캐릭터 일�
       createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
     } as unknown as CanvasRenderingContext2D;
     const mockCanvas = document.createElement("canvas");
-    vi.spyOn(mockCanvas, "getContext").mockReturnValue(mockCtx);
+    vi.spyOn(mockCanvas, "getContext").mockImplementation(((contextId: string) =>
+      contextId === "2d" ? mockCtx : null) as typeof mockCanvas.getContext);
     vi.spyOn(mockCanvas, "toDataURL").mockReturnValue("data:image/png;base64,PLOTR4CUT");
 
     const okRes = renderVisualStoryboardToCanvas(mockCanvas, doc);
