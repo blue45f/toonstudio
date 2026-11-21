@@ -392,3 +392,27 @@ it("Luminous Atelier 엠블럼과 44px 빠른 라이선스·소재 필터 칩을
   expect(screen.queryByTestId("resource-cc0-bg")).toBeNull();
   expect(screen.getByTestId("resource-nc-brush")).toBeTruthy();
 });
+
+it("초보자 3초 스타터 바에서 작업을 고르면 실제 목록이 즉시 걸러지고 선택 해제로 복원된다", () => {
+  window.localStorage.clear();
+  useResources.mockReturnValue(
+    marketPage({
+      items: [
+        { ...cachedRecord, id: "starter-3d", kind: "3d-asset", license: "cc0-1.0" },
+        { ...cachedRecord, id: "starter-brush", kind: "brush", license: "cc-by-4.0" },
+      ],
+    }),
+  );
+  render(<MemoryRouter><MarketHomePage /></MemoryRouter>);
+
+  const starter = screen.getByTestId("market-beginner-starter-bar");
+  fireEvent.click(within(starter).getByRole("button", { name: "배경 3D 빨리 채우기" }));
+  expect(screen.getByTestId("resource-starter-3d")).toBeTruthy();
+  expect(screen.queryByTestId("resource-starter-brush")).toBeNull();
+  expect(screen.getByTestId("market-beginner-starter-guide").textContent).toContain("1개 바로 확인 가능");
+
+  fireEvent.click(within(starter).getByRole("button", { name: "선택 해제" }));
+  expect(screen.getByTestId("resource-starter-3d")).toBeTruthy();
+  expect(screen.getByTestId("resource-starter-brush")).toBeTruthy();
+  window.localStorage.clear();
+});

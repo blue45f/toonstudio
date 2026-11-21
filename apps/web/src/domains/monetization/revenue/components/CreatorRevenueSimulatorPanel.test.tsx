@@ -48,6 +48,9 @@ describe("CreatorRevenueSimulatorPanel UI", () => {
   it("시나리오 프리셋 전환, 슬라이더 스텝 증감, 세무 전환 및 로컬 복원이 동작한다", () => {
     const { unmount } = render(<CreatorRevenueSimulatorPanel isKo />);
 
+    const fineTune = screen.getByTestId("revenue-sim-fine-tune-disclosure") as HTMLDetailsElement;
+    expect(fineTune.open).toBe(false);
+
     const initialNet = screen.getByTestId("revenue-sim-net-output").textContent;
     fireEvent.click(screen.getByTestId("revenue-sim-preset-studio-team"));
     expect(screen.getByTestId("revenue-sim-preset-studio-team").getAttribute("aria-pressed")).toBe("true");

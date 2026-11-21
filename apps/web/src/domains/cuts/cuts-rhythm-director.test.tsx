@@ -85,6 +85,9 @@ describe("CutsRhythmDirectorPanel & CutsPlayer & CutsReactionBurstRail UI", () =
       />,
     );
 
+    const fineTune = screen.getByTestId("cuts-rhythm-fine-tune-disclosure") as HTMLDetailsElement;
+    expect(fineTune.open).toBe(false);
+
     fireEvent.click(screen.getByTestId("cuts-rhythm-preset-linger"));
     expect(onSelectPreset).toHaveBeenCalledWith("linger");
 

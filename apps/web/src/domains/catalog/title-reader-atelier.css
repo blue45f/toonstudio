@@ -1,0 +1,309 @@
+/* 독자 뷰어 OKLCH 아틀리에 스타일 — 원시 색상 리터럴 없이 시맨틱 토큰과 color-mix(in oklch)만 사용한다. */
+
+.reader-reference-root {
+  --reader-bg: var(--color-reader-canvas);
+  --reader-panel: var(--color-reader-panel);
+  --reader-chrome-bg: color-mix(in oklch, var(--reader-bg) 90%, transparent);
+  --reader-surface: color-mix(in oklch, var(--reader-panel) 84%, transparent);
+  --reader-surface-hover: color-mix(in oklch, var(--reader-panel) 92%, var(--art-on, var(--color-fg)) 8%);
+  --reader-border: color-mix(in oklch, var(--art-on, var(--color-fg)) 14%, transparent);
+  --reader-border-strong: color-mix(in oklch, var(--art-on, var(--color-fg)) 28%, transparent);
+  --reader-ink: var(--art-on, var(--color-fg));
+  --reader-ink-muted: color-mix(in oklch, var(--reader-ink) 78%, var(--reader-bg));
+  --reader-ink-subtle: color-mix(in oklch, var(--reader-ink) 64%, var(--reader-bg));
+  --reader-ink-disabled: color-mix(in oklch, var(--reader-ink) 34%, var(--reader-bg));
+  --reader-active-bg: var(--color-accent);
+  --reader-active-fg: var(--color-on-accent);
+  --reader-prism: linear-gradient(
+    90deg,
+    var(--color-accent),
+    var(--color-accent-2),
+    var(--color-cool)
+  );
+
+  background-color: var(--reader-bg);
+  color: var(--reader-ink);
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+.reader-reference-root[data-reader-theme="oled"] {
+  --reader-bg: var(--color-reader-canvas);
+  --reader-panel: var(--color-reader-canvas);
+  --reader-chrome-bg: color-mix(in oklch, var(--color-reader-canvas) 96%, transparent);
+  --reader-surface: color-mix(in oklch, var(--color-reader-canvas) 92%, var(--art-on, var(--color-fg)) 4%);
+}
+
+.reader-reference-root[data-reader-theme="sepia"] {
+  --reader-bg: color-mix(in oklch, var(--color-reader-canvas) 87%, var(--color-warn) 13%);
+  --reader-panel: color-mix(in oklch, var(--color-reader-panel) 84%, var(--color-warn) 16%);
+  --reader-ink: color-mix(in oklch, var(--art-on, var(--color-fg)) 88%, var(--color-warn) 12%);
+}
+
+.reader-reference-root[data-reader-theme="paper"] {
+  --reader-bg: color-mix(in oklch, var(--color-reader-panel) 86%, var(--art-on, var(--color-fg)) 14%);
+  --reader-panel: color-mix(in oklch, var(--color-reader-panel) 78%, var(--art-on, var(--color-fg)) 22%);
+}
+
+.reader-chrome-bar {
+  background-color: var(--reader-chrome-bg);
+  border-color: var(--reader-border);
+  backdrop-filter: blur(12px);
+}
+
+.reader-prism-hairline {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 2px;
+  background: var(--reader-prism);
+  opacity: 0;
+  transform: scaleX(0.4);
+  transform-origin: center;
+  transition: opacity 220ms ease, transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.reader-reference-root[data-reader-focus="calm"] .reader-prism-hairline {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.reader-reference-root[data-reader-focus="calm"] [data-testid="reader-rea-finish-bridge"],
+.reader-reference-root[data-reader-focus="calm"] [data-testid="reader-spatial-creation-bar"] {
+  opacity: 0.72;
+  transition: opacity 200ms ease;
+}
+
+.reader-reference-root[data-reader-focus="calm"] [data-testid="reader-rea-finish-bridge"]:hover,
+.reader-reference-root[data-reader-focus="calm"] [data-testid="reader-rea-finish-bridge"]:focus-within,
+.reader-reference-root[data-reader-focus="calm"] [data-testid="reader-rea-finish-bridge"][open],
+.reader-reference-root[data-reader-focus="calm"] [data-testid="reader-spatial-creation-bar"]:hover,
+.reader-reference-root[data-reader-focus="calm"] [data-testid="reader-spatial-creation-bar"]:focus-within,
+.reader-reference-root[data-reader-focus="calm"] [data-testid="reader-spatial-creation-bar"][open] {
+  opacity: 1;
+}
+
+.reader-icon-btn {
+  color: var(--reader-ink-muted);
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.reader-icon-btn:hover {
+  background-color: var(--reader-surface-hover);
+  color: var(--reader-ink);
+}
+
+.reader-icon-btn:focus-visible,
+.reader-chip:focus-visible,
+.reader-cta-btn:focus-visible,
+.reader-rhythm-chip:focus-visible,
+.reader-bridge-card:focus-visible,
+.reader-bridge-summary:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.reader-chip {
+  border-color: var(--reader-border);
+  background-color: var(--reader-surface);
+  color: var(--reader-ink-muted);
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.reader-chip:hover {
+  background-color: var(--reader-surface-hover);
+  border-color: var(--reader-border-strong);
+  color: var(--reader-ink);
+}
+
+.reader-chip[data-active="true"] {
+  border-color: var(--reader-active-bg);
+  background-color: var(--reader-active-bg);
+  color: var(--reader-active-fg);
+}
+
+.reader-ink-muted {
+  color: var(--reader-ink-muted);
+}
+
+.reader-ink-subtle {
+  color: var(--reader-ink-subtle);
+}
+
+.reader-ink-disabled {
+  color: var(--reader-ink-disabled);
+}
+
+.reader-divider {
+  border-color: var(--reader-border);
+}
+
+.reader-cta-btn {
+  background-color: var(--reader-active-bg);
+  color: var(--reader-active-fg);
+  transition: opacity 150ms ease, transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reader-cta-btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.reader-outline-btn {
+  border-color: var(--reader-border-strong);
+  background-color: var(--reader-surface);
+  color: var(--reader-ink);
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.reader-outline-btn:hover {
+  background-color: var(--reader-surface-hover);
+  border-color: var(--color-accent);
+}
+
+/* 스켈레톤 — GPU opacity 호흡 애니메이션 */
+@keyframes reader-skeleton-breathe {
+  0%, 100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.reader-skeleton-block {
+  border-radius: 1rem;
+  background-color: color-mix(in oklch, var(--reader-ink) 8%, var(--reader-panel));
+  animation: reader-skeleton-breathe 1.6s ease-in-out infinite;
+}
+
+/* 컷츠 리믹스 · 집중 읽기 컴패니언 바 */
+.reader-rhythm-bar {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--reader-border);
+  background-color: var(--reader-surface);
+  padding: 0.75rem;
+}
+
+.reader-rhythm-bar[data-focus-calm="true"] {
+  border-color: color-mix(in oklch, var(--color-accent) 46%, var(--reader-border));
+}
+
+.reader-rhythm-bar[data-focus-calm="true"]::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 2px;
+  background: var(--reader-prism);
+}
+
+.reader-rhythm-chip {
+  --rhythm-tone: var(--color-accent);
+  position: relative;
+  border: 1px solid var(--reader-border);
+  background-color: color-mix(in oklch, var(--reader-panel) 74%, transparent);
+  color: var(--reader-ink-muted);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reader-rhythm-chip[data-tone="accent"] {
+  --rhythm-tone: var(--color-accent);
+}
+
+.reader-rhythm-chip[data-tone="accent-2"] {
+  --rhythm-tone: var(--color-accent-2);
+}
+
+.reader-rhythm-chip[data-tone="cool"] {
+  --rhythm-tone: var(--color-cool);
+}
+
+.reader-rhythm-chip[data-tone="good"] {
+  --rhythm-tone: var(--color-good);
+}
+
+.reader-rhythm-chip:hover {
+  border-color: color-mix(in oklch, var(--rhythm-tone) 55%, var(--reader-border));
+  color: var(--reader-ink);
+}
+
+.reader-rhythm-chip[aria-pressed="true"] {
+  border-color: var(--rhythm-tone);
+  background-color: color-mix(in oklch, var(--rhythm-tone) 22%, var(--reader-panel));
+  color: var(--reader-ink);
+  transform: translateY(-1px);
+}
+
+.reader-rhythm-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: var(--rhythm-tone);
+  flex-shrink: 0;
+}
+
+/* 후속 브리지 카드 */
+.reader-bridge-panel {
+  border: 1px solid var(--reader-border);
+  background-color: var(--reader-surface);
+  color: var(--reader-ink);
+}
+
+.reader-bridge-card {
+  border: 1px solid var(--reader-border);
+  background-color: color-mix(in oklch, var(--reader-panel) 65%, transparent);
+  color: var(--reader-ink);
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.reader-bridge-card:hover {
+  border-color: color-mix(in oklch, var(--color-accent) 45%, var(--reader-border-strong));
+  background-color: var(--reader-surface-hover);
+}
+
+.reader-bridge-icon {
+  background-color: color-mix(in oklch, var(--color-accent) 14%, var(--reader-panel));
+  color: var(--reader-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-reference-root,
+  .reader-prism-hairline,
+  .reader-icon-btn,
+  .reader-chip,
+  .reader-cta-btn,
+  .reader-outline-btn,
+  .reader-rhythm-chip,
+  .reader-bridge-card,
+  .reader-reference-root[data-reader-focus="calm"] [data-testid="reader-rea-finish-bridge"],
+  .reader-reference-root[data-reader-focus="calm"] [data-testid="reader-spatial-creation-bar"] {
+    transition: none;
+    transform: none;
+  }
+
+  .reader-skeleton-block {
+    animation: none;
+    opacity: 0.65;
+  }
+}
+
+:root[data-design-theme="contrast"] .reader-reference-root {
+  --reader-border: var(--color-line-strong);
+  --reader-border-strong: var(--reader-ink);
+}
+
+@media (forced-colors: active) {
+  .reader-prism-hairline,
+  .reader-rhythm-bar[data-focus-calm="true"]::before {
+    display: none;
+  }
+
+  .reader-chip[data-active="true"],
+  .reader-rhythm-chip[aria-pressed="true"],
+  .reader-cta-btn {
+    border: 2px solid Highlight;
+  }
+}
