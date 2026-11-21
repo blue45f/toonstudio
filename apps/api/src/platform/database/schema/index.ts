@@ -44,3 +44,4 @@ export * from "./studio-op-log.schema";
 export * from "./studio-virtual-space-booking.schema";
 export * from "./collaboration.schema";
 export * from "./studio-scoped-write.schema";
+export * from "./production-division-os.schema";

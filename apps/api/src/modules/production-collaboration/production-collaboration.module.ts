@@ -14,12 +14,22 @@ import { PresenceService } from "./presence.service";
 import { ProductionVoiceCommentaryController } from "./production-voice-commentary.controller";
 import { ProductionVoiceCommentaryRepository } from "./production-voice-commentary.repository";
 import { ProductionVoiceCommentaryService } from "./production-voice-commentary.service";
+import { ProductionDivisionOsController } from "./production-division-os.controller";
+import { ProductionDivisionOsRepository } from "./production-division-os.repository";
+import { ProductionDivisionOsService } from "./production-division-os.service";
 
 const privateObjectStorageModule = PrivateObjectStorageModule.fromEnvironment(process.env);
 
 @Module({
   imports: [...(privateObjectStorageModule ? [privateObjectStorageModule] : [])],
-  controllers: [ProductionCollaborationController, ProductionIntegrationController, TeamWorkspaceController, PresenceController, ProductionVoiceCommentaryController],
+  controllers: [
+    ProductionCollaborationController,
+    ProductionIntegrationController,
+    TeamWorkspaceController,
+    PresenceController,
+    ProductionVoiceCommentaryController,
+    ProductionDivisionOsController,
+  ],
   providers: [
     { provide: PRODUCTION_TEAM_POOL, useValue: dbPool },
     PresenceService,
@@ -30,7 +40,9 @@ const privateObjectStorageModule = PrivateObjectStorageModule.fromEnvironment(pr
     ProductionIntegrationService,
     ProductionVoiceCommentaryRepository,
     ProductionVoiceCommentaryService,
+    ProductionDivisionOsRepository,
+    ProductionDivisionOsService,
   ],
-  exports: [ProductionCollaborationService],
+  exports: [ProductionCollaborationService, ProductionDivisionOsService],
 })
 export class ProductionCollaborationModule {}
