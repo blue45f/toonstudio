@@ -435,18 +435,19 @@ async function drawEvidenceStroke(
       await page.waitForTimeout(500);
       return result;
     } finally {
-      try { await markStudioSoakStroke(page, false); }
+      try { await markStudioSoakStroke(page, false); } catch (error) { collectionFailed("stroke-mark-stop", error, cycle); }
       finally {
         if (MEASURE_POINTER_LATENCY) try {
           pointerLatency = await drainStudioSoakPointerLatency(page);
           const issues = studioSoakPointerLatencyIssues(pointerLatency);
           if (issues.length) collectionFailed("pointer-latency", issues.join(", "), cycle);
         } catch (error) { collectionFailed("pointer-latency", error, cycle); }
+        if (CPU_DIAGNOSTIC) try { await cpuDiagnostic?.completeStroke(cycle); }
+        catch (error) { collectionFailed("diagnostic-cpu", error, cycle); }
       }
     }
   })();
-  const advance = await waitForStudioDocumentAdvance(page, {
-    layerCountBefore,
+  const advance = await waitForStudioDocumentAdvance(page, { layerCountBefore,
     historyUndoDepthBefore: historyBefore.undoDepth,
     historyTotalAppendsBefore: diagnosticsBefore.totalAppends,
     rejectedStrokeCountBefore: diagnosticsBefore.rejectedStrokeCount,
@@ -462,8 +463,7 @@ async function drawEvidenceStroke(
     changed: changedPixels(before, after),
     shot: after,
     pointer,
-    layerCountBefore,
-    layerCountAfter: advance.layerCountAfter,
+    layerCountBefore, layerCountAfter: advance.layerCountAfter,
     historyEntryCountBefore: historyBefore.entryCount,
     historyUndoDepthBefore: historyBefore.undoDepth,
     historyEntryCount: advance.historyEntryCount,

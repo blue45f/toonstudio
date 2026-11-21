@@ -107,12 +107,18 @@ GitHub Actions의 `Studio 5h stability soak` 수동 실행은 다음 입력을 �
 수락 검사의 작업 제한은 기존 345분, 짧은 진단은 25분이다. 임시 진단 기본값이 정기
 300분 검사를 가로막지 않도록 실제 workflow 배선과 기본값을 함께 회귀로 확인한다.
 
-첫 접촉 진단은 실제 canvas의 pointerdown·첫 pointermove·pointerup·down 뒤 첫 RAF에
+첫 접촉 native Trace는 첫 실제 입력 시도 한 획의 직전에만 시작하고, 해당 입력·500ms 정착·
+포인터 지연 회수가 끝나면 닫는다. CPU profile은 진단 세션 끝까지 수집한다. 첫 시도가
+실패해도 뒤 획으로 대체하지 않으며, 캡처 범위와 실제 cycle을 메타데이터에 남긴다.
+실제 canvas의 pointerdown·첫 pointermove·pointerup·down 뒤 첫 RAF에
 세션과 cycle이 붙은 user timing marker를 남긴다. 원본 native trace의 marker 시각과
 브라우저 `PerformanceMark.startTime`을 같은 frame·thread에서 대조하고 EventDispatch,
 RunTask, style/layout, GC를 함께 보존한다. 첫 RAF는 잉크 픽셀이나 디스플레이 발광의
 증명이 아니다. 기존 CPU profile의 호출 전후 시계 범위는 별도로 유지한다. marker 누락,
 frame 변경, trace 유실·상한 초과·수집 timeout·정리 실패는 부분 원본과 함께 실패로 남긴다.
+[Chromium의 추적 범주 목록](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/content/public/browser/tracing_controller.h)은 실행한 코드 경로에 따라 달라질 수 있으므로 요청 목록·응답
+목록·차집합을 보존하고, 실제 RunTask·EventDispatch·UserTiming 증거로 수집 완전성을 판정한다.
+입력 오류와 관측 종료 오류가 동시에 발생하면 둘 다 보존하고 수락 검사를 실패시킨다.
 진단 수집을 마친 뒤 생긴 페이지·GPU 오류도 마지막에 다시 수집한다.
 
 ### 2026-11-22 관측: Linux 소프트웨어 WebGPU 표시 경로

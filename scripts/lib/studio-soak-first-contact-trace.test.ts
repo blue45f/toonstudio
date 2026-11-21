@@ -222,10 +222,34 @@ describe("진단 trace의 원본 실패 보존과 제한", () => {
     expect(result.issues.join(" ")).toContain("초과"); expect(f.transport.close).toHaveBeenCalledOnce(); expect(f.activeListeners()).toBe(0);
   });
 
-  it("필수 범주나 깨끗한 동일 source/build가 없으면 trace를 시작하지 않는다", async () => {
+  it("사전 catalog에 없는 요청 범주도 실제 native 증거로 검증하고 전체 목록·차집합을 보존한다", async () => {
     const f = fixture(); vi.mocked(f.transport.categories).mockResolvedValue(["blink.user_timing"]);
-    await expect(f.trace.start()).rejects.toThrow("필수 trace 범주"); await f.trace.finish();
+    await f.trace.start(); await f.trace.armStroke(1, "pen"); f.stroke();
+    expect(await f.trace.finish()).toMatchObject({ completed: true, issues: [],
+      requestedCategories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES], advertisedCategories: ["blink.user_timing"],
+      missingRequestedCategories: STUDIO_FIRST_CONTACT_TRACE_CATEGORIES.filter((category) => category !== "blink.user_timing") });
+    expect(f.metadata().advertisedCategories).toEqual(["blink.user_timing"]);
+  });
+
+  it("비어 있는 catalog를 수집해도 실제 RunTask가 없으면 성공으로 바꾸지 않는다", async () => {
+    const f = fixture(); vi.mocked(f.transport.categories).mockResolvedValue([]);
+    f.transform((events) => events.filter((event) => !event.name.includes("RunTask")));
+    await f.trace.start(); await f.trace.armStroke(1, "pen"); f.stroke();
+    const result = await f.trace.finish();
+    expect(result).toMatchObject({ completed: false, advertisedCategories: [], missingRequestedCategories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES] });
+    expect(result.issues.join(" ")).toContain("first-contact-task");
+    expect(result.rawTraceSha256).toMatch(/^[a-f0-9]{64}$/u);
+  });
+
+  it("catalog 조회 오류를 숨기거나 trace를 시작하지 않는다", async () => {
+    const f = fixture(); vi.mocked(f.transport.categories).mockRejectedValue(new Error("catalog unavailable"));
+    await expect(f.trace.start()).rejects.toThrow("catalog unavailable");
+    expect(await f.trace.finish()).toMatchObject({ completed: false, advertisedCategories: null, missingRequestedCategories: null });
     expect(f.transport.start).not.toHaveBeenCalled();
+  });
+
+  it("깨끗한 동일 source/build가 없으면 trace를 시작하지 않는다", async () => {
+    const f = fixture();
     const bad = createStudioFirstContactTrace({ page: f.page, transport: f.transport, directory: f.directory,
       source: { ...source, buildGitSha: "b".repeat(40) } });
     await expect(bad.start()).rejects.toThrow("정체성"); await bad.finish();
@@ -258,9 +282,73 @@ describe("CDP 종료 listener 순서와 CPU 진단 옵션 경계", () => {
     const f = fixture(); const send = vi.fn(), factory = vi.fn(async () => f.transport);
     const diagnostic = createStudioSoakCpuDiagnostic({ enabled: false, page: f.page, cdp: { send } as unknown as CDPSession,
       directory: f.directory, source, createTraceTransport: factory });
-    await diagnostic.start(); await diagnostic.armStroke(1, "pen"); await expect(diagnostic.finish()).resolves.toBeNull();
+    await diagnostic.start(); await diagnostic.armStroke(1, "pen"); await diagnostic.completeStroke(1); await expect(diagnostic.finish()).resolves.toBeNull();
     expect(factory).not.toHaveBeenCalled(); expect(send).not.toHaveBeenCalled(); expect(f.page.evaluate).not.toHaveBeenCalled();
     expect(readdirSync(f.directory)).toEqual([]); expect(f.activeListeners()).toBe(0); expect(f.pendingRafs.size).toBe(0);
+  });
+
+  it("첫 입력 직전에만 trace를 시작해 한 획 뒤 닫고 CPU는 전체 실행 종료까지 유지한다", async () => {
+    const f = fixture(), factory = vi.fn(async () => f.transport);
+    const profile = { samples: [1], timeDeltas: [1000], nodes: [] };
+    const send = vi.fn(async (method: string) => method === "Profiler.stop" ? { profile } : {});
+    const diagnostic = createStudioSoakCpuDiagnostic({ enabled: true, page: f.page, cdp: { send } as unknown as CDPSession,
+      directory: f.directory, source, createTraceTransport: factory });
+    await diagnostic.start();
+    expect(factory).not.toHaveBeenCalled(); expect(f.transport.start).not.toHaveBeenCalled(); expect(f.activeListeners()).toBe(0);
+    expect(send.mock.calls.map(([method]) => method)).toEqual(["Profiler.enable", "Profiler.setSamplingInterval", "Profiler.start"]);
+    await diagnostic.armStroke(3, "pen"); f.stroke(); await diagnostic.completeStroke(3);
+    const firstBytes = readFileSync(join(f.directory, "diagnostic-first-contact.trace.json"));
+    expect(f.metadata()).toMatchObject({ completed: true, captureScope: { kind: "first-input-attempt", maxCycles: 1, cycle: 3 },
+      probe: { cycles: [{ cycle: 3, inputMode: "pen" }] } });
+    expect(f.activeListeners()).toBe(0); expect(f.transport.detach).toHaveBeenCalledOnce();
+    expect(send).not.toHaveBeenCalledWith("Profiler.stop");
+    await diagnostic.armStroke(4, "pen"); f.stroke(100); await diagnostic.completeStroke(4); await diagnostic.completeStroke(3);
+    const pending = diagnostic.finish(); expect(diagnostic.finish()).toBe(pending);
+    expect(await pending).toMatchObject({ captured: true, traceCaptured: true, issues: [] });
+    expect(factory).toHaveBeenCalledOnce(); expect(f.transport.start).toHaveBeenCalledOnce(); expect(f.transport.stop).toHaveBeenCalledOnce();
+    expect(readFileSync(join(f.directory, "diagnostic-first-contact.trace.json"))).toEqual(firstBytes);
+    expect(JSON.parse(readFileSync(join(f.directory, "diagnostic-cpu.cpuprofile"), "utf8"))).toEqual(profile);
+    expect(JSON.parse(readFileSync(join(f.directory, "diagnostic-cpu-metadata.json"), "utf8"))).toMatchObject({
+      nativeTraceCaptureScope: { kind: "first-input-attempt", maxCycles: 1, attemptedCycle: 3 },
+      startClock: { beforeStartMs: 10, afterStartMs: 10 }, stopClock: { beforeStopMs: 150, afterStopMs: 150 } });
+  });
+
+  it("첫 dispatch 시도가 중단돼도 부분 입력과 실패를 보존하고 다음 획을 대체 캡처하지 않는다", async () => {
+    const f = fixture(), factory = vi.fn(async () => f.transport);
+    const send = vi.fn(async (method: string) => method === "Profiler.stop" ? { profile: { samples: [] } } : {});
+    const diagnostic = createStudioSoakCpuDiagnostic({ enabled: true, page: f.page, cdp: { send } as unknown as CDPSession,
+      directory: f.directory, source, createTraceTransport: factory });
+    await diagnostic.start(); await diagnostic.armStroke(1, "pen"); f.dispatch("pointerdown", 20);
+    await diagnostic.completeStroke(1);
+    expect(f.metadata()).toMatchObject({ completed: false, streamComplete: true, rawTraceSha256: expect.stringMatching(/^[a-f0-9]{64}$/u) });
+    expect(f.activeListeners()).toBe(0); expect(f.pendingRafs.size).toBe(0);
+    await diagnostic.armStroke(2, "pen"); f.stroke(100); await diagnostic.completeStroke(2);
+    expect(await diagnostic.finish()).toMatchObject({ captured: true, traceCaptured: false, issues: expect.arrayContaining([expect.stringContaining("marker-session-or-probe-errors")]) });
+    expect(factory).toHaveBeenCalledOnce(); expect(f.transport.stop).toHaveBeenCalledOnce();
+  });
+
+  it("첫 trace 시작 실패도 전체 CPU 원본·실패로 남기며 다른 획으로 재시도하지 않는다", async () => {
+    const f = fixture(), factory = vi.fn(async () => f.transport);
+    vi.mocked(f.transport.start).mockRejectedValue(new Error("trace unavailable"));
+    const send = vi.fn(async (method: string) => method === "Profiler.stop" ? { profile: { samples: [] } } : {});
+    const diagnostic = createStudioSoakCpuDiagnostic({ enabled: true, page: f.page, cdp: { send } as unknown as CDPSession,
+      directory: f.directory, source, createTraceTransport: factory });
+    await diagnostic.start(); await expect(diagnostic.armStroke(1, "pen")).rejects.toThrow("trace unavailable");
+    await diagnostic.completeStroke(1); await diagnostic.armStroke(2, "pen"); await diagnostic.completeStroke(2);
+    const result = await diagnostic.finish();
+    expect(result).toMatchObject({ captured: true, traceCaptured: false }); expect(result?.issues.join(" ")).toContain("trace unavailable");
+    expect(factory).toHaveBeenCalledOnce(); expect(f.transport.start).toHaveBeenCalledOnce(); expect(f.transport.stop).not.toHaveBeenCalled();
+    expect(f.transport.detach).toHaveBeenCalledOnce();
+  });
+
+  it("첫 입력이 전혀 없는 CPU 진단을 trace 완료로 인정하지 않는다", async () => {
+    const f = fixture(), factory = vi.fn(async () => f.transport);
+    const send = vi.fn(async (method: string) => method === "Profiler.stop" ? { profile: { samples: [] } } : {});
+    const diagnostic = createStudioSoakCpuDiagnostic({ enabled: true, page: f.page, cdp: { send } as unknown as CDPSession,
+      directory: f.directory, source, createTraceTransport: factory });
+    await diagnostic.start();
+    expect(await diagnostic.finish()).toMatchObject({ captured: true, traceCaptured: false, issues: [expect.stringContaining("native-trace-missing")] });
+    expect(factory).not.toHaveBeenCalled(); expect(f.activeListeners()).toBe(0);
   });
 
   it("CPU stop 실패가 독립 native trace 원본·cleanup을 지우지 않는다", async () => {

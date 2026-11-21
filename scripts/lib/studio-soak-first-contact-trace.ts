@@ -85,6 +85,7 @@ export function createStudioFirstContactTrace(input: {
   transport: StudioFirstContactTraceTransport;
   directory: string;
   source: StudioFirstContactTraceSource;
+  captureScope?: { kind: "first-input-attempt"; maxCycles: 1; cycle: number; stopBoundary: string };
   limits?: { maxTraceBytes?: number; timeoutMs?: number };
 }) {
   const { page, transport, directory } = input;
@@ -94,7 +95,11 @@ export function createStudioFirstContactTrace(input: {
   if (!Number.isSafeInteger(maxTraceBytes) || maxTraceBytes < 1 || maxTraceBytes > MAX_TRACE_BYTES
     || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > DEADLINE_MS) throw new Error("trace 수집 한도를 확인해 주세요.");
   const metadata = { schemaVersion: 1, diagnosticOnly: true, acceptanceProven: false, ...source,
-    categories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES], mainFrameId: null as string | null, endFrameId: null as string | null,
+    captureScope: input.captureScope ?? { kind: "armed-strokes", maxCycles: 64 },
+    categories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES], requestedCategories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES],
+    advertisedCategories: null as readonly string[] | null, missingRequestedCategories: null as readonly string[] | null,
+    categoryEvidenceAuthority: "captured native RunTask/EventDispatch/UserTiming evidence; the advertised catalog can change as code paths are reached",
+    mainFrameId: null as string | null, endFrameId: null as string | null,
     started: false, completed: false, dataLossOccurred: null as boolean | null,
     rawTraceFile: null as string | null, rawTraceBytes: 0, rawTraceSha256: null as string | null, streamComplete: false,
     probe: null as unknown, correlation: null as ReturnType<typeof summarizeStudioFirstContactTrace> | null, issues: [] as string[],
@@ -143,9 +148,10 @@ export function createStudioFirstContactTrace(input: {
         metadata.mainFrameId = await within(transport.frameId(), timeoutMs);
         if (!metadata.mainFrameId) throw new Error("trace의 최상위 frame ID가 없습니다.");
         const categories = await within(transport.categories(), timeoutMs);
-        for (const required of STUDIO_FIRST_CONTACT_TRACE_CATEGORIES) if (!categories.includes(required)) {
-          throw new Error(`필수 trace 범주가 없습니다: ${required}`);
-        }
+        if (!Array.isArray(categories) || categories.some((category) => typeof category !== "string")) throw new Error("trace 범주 목록 형식이 잘못되었습니다.");
+        metadata.advertisedCategories = [...categories];
+        metadata.missingRequestedCategories = STUDIO_FIRST_CONTACT_TRACE_CATEGORIES.filter((category) => !categories.includes(category));
+        // Chromium GetCategories의 목록은 도달한 코드 경로에 따라 바뀐다. 실제 native 증거의 누락은 finish에서 거절한다.
         startPromise = transport.start().then((value) => { traceStarted = true; metadata.started = true; return value; });
         await within(startPromise, timeoutMs);
         probeAttempted = true;
@@ -156,6 +162,7 @@ export function createStudioFirstContactTrace(input: {
     async armStroke(cycle: number, inputMode: string) {
       try {
         if (!traceStarted || finished) throw new Error("첫 접촉 trace가 활성 상태가 아닙니다.");
+        if (input.captureScope && input.captureScope.cycle !== cycle) throw new Error("첫 입력 시도 trace의 획 범위를 벗어났습니다.");
         await within(armStudioFirstContactTrace(page, identity(), cycle, inputMode), timeoutMs);
       } catch (error) { issue("arm-stroke", error); save(); throw error; }
     },
