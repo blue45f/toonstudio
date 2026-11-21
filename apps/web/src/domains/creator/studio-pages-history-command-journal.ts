@@ -7,6 +7,11 @@ import {
   type StudioCommandReplayPlan,
 } from "./studio-command-journal";
 
+import {
+  STUDIO_COMMAND_IDENTITY_POLICY_KEY,
+  STUDIO_COMMAND_SEQUENCE_IDENTITY_POLICY,
+} from "./studio-cuttoon-editor/runtime/history/studio-command-journal-identity";
+
 const STUDIO_HISTORY_JOURNAL_ACTOR_ID = "actor:local-studio";
 const DEFAULT_HISTORY_JOURNAL_MAX_RECORDS = 512;
 const DEFAULT_HISTORY_JOURNAL_COMPACT_AT = 448;
@@ -240,7 +245,9 @@ export class StudioPagesHistoryCommandJournal {
     if (options.serialized !== undefined) {
       if (
         this.journalValue.extensions.integration !== "studio-pages-history"
-        || this.journalValue.extensions.version !== 1
+        || (this.journalValue.extensions.version !== 1 && this.journalValue.extensions.version !== 2)
+        || (this.journalValue.extensions.version === 2)
+          !== (this.journalValue.identityPolicy === STUDIO_COMMAND_SEQUENCE_IDENTITY_POLICY)
       ) {
         throw new Error("Restored Studio history journal belongs to another integration.");
       }
@@ -259,7 +266,8 @@ export class StudioPagesHistoryCommandJournal {
       },
       extensions: {
         integration: "studio-pages-history",
-        version: 1,
+        version: 2,
+        [STUDIO_COMMAND_IDENTITY_POLICY_KEY]: STUDIO_COMMAND_SEQUENCE_IDENTITY_POLICY,
       },
     });
   }
@@ -300,7 +308,7 @@ export class StudioPagesHistoryCommandJournal {
     );
     this.journalValue = this.createJournal();
     this.journalValue.compact({
-      id: "checkpoint:history-rebase",
+      id: `checkpoint:${this.journalValue.nextSequence}`,
       state: snapshot as unknown as StudioCommandJsonValue,
       extensions: {
         integration: "studio-pages-history",
@@ -415,7 +423,8 @@ export class StudioPagesHistoryCommandJournal {
     const groupId = this.journalValue.peekUndoGroup(
       STUDIO_HISTORY_JOURNAL_ACTOR_ID
     );
-    if (!groupId) {
+    // 탐색만 반복해도 기록 상한에 닿기 전에 authoritative snapshot으로 horizon을 옮긴다.
+    if (!groupId || this.journalValue.length >= this.compactAt) {
       this.rebase(target);
       return "rebased";
     }
@@ -437,7 +446,7 @@ export class StudioPagesHistoryCommandJournal {
     const groupId = this.journalValue.peekRedoGroup(
       STUDIO_HISTORY_JOURNAL_ACTOR_ID
     );
-    if (!groupId) {
+    if (!groupId || this.journalValue.length >= this.compactAt) {
       this.rebase(target);
       return "rebased";
     }

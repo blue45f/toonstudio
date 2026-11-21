@@ -103,7 +103,11 @@ PC의 활성 브러시 pill은 떠 있는 라이브러리를 연다. 소크는 �
 가리지 않도록 한다. 라이브러리 중복, 적용 지연, 닫기 실패는 검사 실패로 남긴다.
 
 Undo/Redo는 공통 history selector를 재사용해 현재 Clarity 기록 막대의 사용자 버튼을
-우선한다. 중복되거나 비활성인 버튼을 성공으로 처리하지 않는다. `bounded-churn`은
+우선한다. 모바일에서 기본적으로 접힌 상단 편집 행은 실제 편집 버튼으로 펼친 뒤
+기록 명령을 실행한다. 검사기가 펼친 행은 성공·실패 모두 실제 버튼으로 다시 접고,
+원래 펼쳐져 있던 행은 유지한다. 펼침·접힘 상태와 실제 가시성을 함께 확인하며,
+명령과 정리가 모두 실패하면 두 오류를 보존한다.
+중복되거나 비활성인 버튼을 성공으로 처리하지 않는다. `bounded-churn`은
 기존 Undo 10회·Redo 3회·Undo 3회의 실제 레이어 수 복귀를 계속 확인한다.
 `accumulate`는 이 정리를 수행하지 않으므로 기록 복원 경로는 `bounded-churn` 실행으로
 별도 확인해야 한다. DOM 회귀 검사는 소크의 실제 선택·기록 함수를 실행하며, 브라우저
@@ -154,3 +158,43 @@ Service Worker 또는 worker 내부에서 처리된 오류까지 검증했다고
 완료 보고에는 `status=pass`, `ok=true`, `acceptance.fiveHourProofComplete=true`,
 소크와 시각 분석의 실제 exit 0을 함께 확인한다. 짧은 사전 검사, 중단된 실행,
 서로 다른 페이지의 시간을 합친 결과를 5시간 통과로 보고하지 않는다.
+
+## 2026-11-22 현재 구현: 장시간 명령 기록의 중복 판정
+
+기존 482회 paint 검사는 241종을 두 번 그리는 검사다. eraser 5종을 두 번 사용한
+10회를 합치면 246종·492회 작업이다. 실제 브라우저에서 개별 작업은 모두 성공한 뒤
+명령 journal의 중복 판정 오류가 console 검사에 걸렸다. 별도의 결정적 제품 재현에서는
+draw→Undo→Redo→Undo의 737번째 반복에서 한 번도 사용하지 않은 `undo:2948`이
+기존 ID로 판정됐다. 두 실행의 정확한 명령 순서가 같다고 주장하지 않는다.
+
+새 Studio history journal은 명시적인 `sequence-v1` 정책을 사용한다. 새 record ID는
+`recordType:nextSequence`, 새 group과 transaction ID는 해당 생성 순번,
+checkpoint ID는 다음 record 순번과 일치해야 한다. 보관된 동일 요청의 재시도는
+기존 정확한 ID·요청 checksum 대조를 먼저 수행한다. 오래된 순번, 미래 순번,
+다른 명령 종류의 ID를 새 명령으로 받아들이지 않는다. 정책 metadata는 journal과
+checkpoint의 checksum 대상이며, append·compaction·직렬화 복구에 같은 계약을 적용한다.
+
+4096개 exact retry 기록, 8KiB 확률 필터, bridge의 512개 record와 4MiB 직렬화 상한은
+유지한다. 새 정책은 필터가 포화돼도 정확한 순번 계약으로 새 ID와 과거 ID를 구분한다.
+회귀 검사는 기존 737번째 실패, 26,000개 명령과 다섯 번의 재열기, 보관 한계 초과,
+포화 필터, 실제 중복 거부 및 저장 metadata 한도를 확인한다. 이는 기록 수·직렬화
+크기와 동작의 검증이며, 실제 브라우저의 5시간 heap 측정 결과를 대신하지 않는다.
+
+새 획 없이 Undo/Redo만 반복하는 경우도 같은 448개 압축 경계를 적용한다. 기존에는
+새 transition에서만 압축해 256번째 Redo가 512개 record 한도에 걸렸다. 현재는 경계에
+도달한 탐색에서 호출자가 선택한 authoritative snapshot을 journal의 새 horizon으로
+기록한다. 사용자 snapshot history와 원고는 보존하며, 경계 전의 탐색은 계속 기록한다.
+1,400회 탐색, Undo와 Redo 각각의 경계, pending coalesced 편집 flush, 재열기 후
+새 편집 재개를 회귀로 확인한다. 신규 명령 ID와 이 탐색 경계의 회귀는 기존 bridge·client·
+durable runtime 검증과 함께 필수 `studio-foundation` shard에서 실행한다.
+
+### Legacy exception: 기존 임의 ID 기록
+
+정책 metadata가 없는 기존 journal은 기존 계약으로 그대로 복구한다. 구판 integration의
+내용이 현재 authoritative snapshot과 맞으면 자동으로 기록을 버리거나 새 정책을
+추정하지 않는다. 기존의 명시적 rebase/reset 또는 history horizon 복구가 일어날 때
+새 정책의 journal을 생성한다. 구판 checkpoint가 1번부터 마지막 순번까지의 모든
+record ID를 정확히 보관했음을 확인한 경우에만 불필요한 record 확률 판정을 생략한다.
+checkpoint ID의 재사용 방지와 불완전한 이전 기록의 보호는 유지한다. 4096개 보관
+범위를 넘어 과거 ID를 증명할 수 없는 구판 기록에는 확률 필터의 한계가 남는다.
+이를 감추기 위한 필터 초기화나 기존 문서·Undo 삭제는 수행하지 않는다.

@@ -6,22 +6,31 @@
  * mutations and are responsible for atomically snapshotting application state at compaction.
  */
 
+import {
+  STUDIO_COMMAND_IDENTITY_POLICY_KEY,
+  STUDIO_COMMAND_IDENTITY_FILTER_PATTERN as IDENTITY_FILTER_PATTERN,
+  addStudioCommandIdentityToFilter as addIdentityToFilter,
+  checksumStudioCommandText as checksumText,
+  decodeStudioCommandIdentityFilter as decodeIdentityFilter,
+  encodeStudioCommandIdentityFilter as encodeIdentityFilter,
+  readStudioCommandIdentityPolicy,
+  studioCommandCheckpointIdentityConflicts,
+  studioCommandCheckpointIdentityPolicyMatches,
+  studioCommandNewGroupIdentityConflicts,
+  studioCommandNewTransactionIdentityConflicts,
+  studioCommandRecordIdentityConflicts,
+  type StudioCommandIdentityPolicy,
+} from "./studio-cuttoon-editor/runtime/history/studio-command-journal-identity";
+
 export const STUDIO_COMMAND_JOURNAL_FORMAT = "toonspectrum:studio-command-journal" as const;
 export const STUDIO_COMMAND_JOURNAL_VERSION = 1 as const;
 
-const CHECKSUM_PREFIX = "scj1-";
 const CHECKSUM_PATTERN = /^scj1-[0-9a-f]{16}$/u;
 const SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:@/-]*$/u;
 const SAFE_KIND_PATTERN = /^[A-Za-z][A-Za-z0-9._:@/-]*$/u;
 const MAX_ID_LENGTH = 160;
 const MAX_KIND_LENGTH = 160;
 const HARD_MAX_SERIALIZED_BYTES = 64 * 1024 * 1024;
-const IDENTITY_FILTER_BYTE_LENGTH = 8 * 1024;
-const IDENTITY_FILTER_HEX_LENGTH = IDENTITY_FILTER_BYTE_LENGTH * 2;
-const IDENTITY_FILTER_PATTERN = new RegExp(
-  `^[0-9a-f]{${IDENTITY_FILTER_HEX_LENGTH}}$`,
-  "u",
-);
 const TEXT_ENCODER = new TextEncoder();
 
 export type StudioCommandJsonPrimitive = null | boolean | number | string;
@@ -217,66 +226,8 @@ export function canonicalStudioCommandJson(
   return canonical;
 }
 
-function checksumText(value: string): string {
-  const bytes = TEXT_ENCODER.encode(value);
-  let first = 0x811c9dc5;
-  let second = 0x9e3779b9;
-  for (const byte of bytes) {
-    first = Math.imul(first ^ byte, 0x01000193);
-    second = Math.imul(second ^ byte, 0x85ebca6b);
-    second ^= second >>> 13;
-  }
-  const firstHex = (first >>> 0).toString(16).padStart(8, "0");
-  const secondHex = (second >>> 0).toString(16).padStart(8, "0");
-  return `${CHECKSUM_PREFIX}${firstHex}${secondHex}`;
-}
-
 function checksumJson(value: unknown, maxBytes = HARD_MAX_SERIALIZED_BYTES): string {
   return checksumText(canonicalStudioCommandJson(value, maxBytes));
-}
-
-function decodeIdentityFilter(value?: string): Uint8Array {
-  if (value === undefined) return new Uint8Array(IDENTITY_FILTER_BYTE_LENGTH);
-  const bytes = new Uint8Array(IDENTITY_FILTER_BYTE_LENGTH);
-  for (let index = 0; index < bytes.length; index += 1) {
-    bytes[index] = Number.parseInt(value.slice(index * 2, index * 2 + 2), 16);
-  }
-  return bytes;
-}
-
-function encodeIdentityFilter(bytes: Uint8Array): string {
-  let encoded = "";
-  for (const byte of bytes) encoded += byte.toString(16).padStart(2, "0");
-  return encoded;
-}
-
-function identityFilterPositions(identity: string): readonly number[] {
-  const digest = checksumText(identity).slice(CHECKSUM_PREFIX.length);
-  const first = Number.parseInt(digest.slice(0, 8), 16) >>> 0;
-  const second = (Number.parseInt(digest.slice(8), 16) | 1) >>> 0;
-  const bitLength = IDENTITY_FILTER_BYTE_LENGTH * 8;
-  return Object.freeze([
-    first % bitLength,
-    ((first + second) >>> 0) % bitLength,
-    ((first + Math.imul(second, 2)) >>> 0) % bitLength,
-    ((first + Math.imul(second, 3)) >>> 0) % bitLength,
-  ]);
-}
-
-function addIdentityToFilter(bytes: Uint8Array, identity: string): void {
-  for (const position of identityFilterPositions(identity)) {
-    const byteIndex = Math.floor(position / 8);
-    bytes[byteIndex] = (bytes[byteIndex] ?? 0) | (1 << (position % 8));
-  }
-}
-
-function identityFilterMayContain(filter: string | undefined, identity: string): boolean {
-  if (!filter) return false;
-  const bytes = decodeIdentityFilter(filter);
-  return identityFilterPositions(identity).every((position) => {
-    const byte = bytes[Math.floor(position / 8)] ?? 0;
-    return (byte & (1 << (position % 8))) !== 0;
-  });
 }
 
 export function studioCommandPayloadChecksum(payload: StudioCommandJsonValue): string {
@@ -986,12 +937,22 @@ function sameJson(left: unknown, right: unknown): boolean {
   return canonicalStudioCommandJson(left) === canonicalStudioCommandJson(right);
 }
 
+function resolveIdentityPolicy(extensions: StudioCommandExtensionMetadata): StudioCommandIdentityPolicy {
+  const policy = readStudioCommandIdentityPolicy(extensions);
+  if (policy === undefined) journalError("UNSUPPORTED_VERSION", "Journal identity policy is not supported.");
+  return policy;
+}
+
 function scanJournal(
   checkpoint: StudioCommandJournalCheckpoint | null,
   records: readonly StudioCommandJournalRecord[],
   limits: StudioCommandJournalLimits,
   verifiedPrefix?: ScanState,
+  identityPolicy: StudioCommandIdentityPolicy = null,
 ): ScanState {
+  if (!verifiedPrefix && !studioCommandCheckpointIdentityPolicyMatches(checkpoint, identityPolicy)) {
+    journalError("CORRUPT_CHECKPOINT", "Checkpoint identities do not match the journal identity policy.");
+  }
   if (!verifiedPrefix && records.length > limits.maxRecords) {
     journalError("JOURNAL_LIMIT_EXCEEDED", "Restored journal exceeds its configured record bound.");
   }
@@ -1084,8 +1045,7 @@ function scanJournal(
       });
     }
     if (
-      identityFilterMayContain(checkpoint?.identityFilter, `record:${record.id}`)
-      || identityFilterMayContain(checkpoint?.identityFilter, `checkpoint:${record.id}`)
+      studioCommandRecordIdentityConflicts(checkpoint, identityPolicy, record.id, record.recordType, record.sequence)
     ) {
       journalError("DUPLICATE_CONFLICT", "Record identity may already exist before the checkpoint.", {
         recordId: record.id,
@@ -1123,10 +1083,7 @@ function scanJournal(
       const key = groupKey(record.actorId, record.groupId);
       if (
         usedTransactionIds.has(record.transactionId)
-        || identityFilterMayContain(
-          checkpoint?.identityFilter,
-          `transaction:${record.transactionId}`,
-        )
+        || studioCommandNewTransactionIdentityConflicts(checkpoint, identityPolicy, record.transactionId, record.sequence)
       ) {
         journalError("TRANSACTION_REUSED", "A transaction ID cannot be reused.", {
           recordId: record.id,
@@ -1137,7 +1094,7 @@ function scanJournal(
           recordId: record.id,
         });
       }
-      if (identityFilterMayContain(checkpoint?.identityFilter, `group:${key}`)) {
+      if (studioCommandNewGroupIdentityConflicts(checkpoint, identityPolicy, record.actorId, record.groupId, record.sequence)) {
         journalError("GROUP_REOPENED", "A pre-checkpoint group ID cannot be reused.", {
           recordId: record.id,
         });
@@ -1197,7 +1154,7 @@ function scanJournal(
             commands: [...current.commands, record],
           };
         } else {
-          if (identityFilterMayContain(checkpoint?.identityFilter, `group:${key}`)) {
+          if (studioCommandNewGroupIdentityConflicts(checkpoint, identityPolicy, record.actorId, record.groupId, record.sequence)) {
             journalError("GROUP_REOPENED", "A pre-checkpoint group ID cannot be reused.", {
               recordId: record.id,
             });
@@ -1698,6 +1655,7 @@ export class StudioCommandJournal<
 > {
   private readonly limitsValue: StudioCommandJournalLimits;
   private readonly extensionsValue: StudioCommandExtensionMetadata;
+  private readonly identityPolicyValue: StudioCommandIdentityPolicy;
   private recordsValue: readonly StudioCommandJournalRecord[];
   private checkpointValue: StudioCommandJournalCheckpoint<TCheckpointState> | null;
   private scanValue: ScanState;
@@ -1711,9 +1669,10 @@ export class StudioCommandJournal<
       this.limitsValue.maxPayloadBytes,
       "$.journal.extensions",
     );
+    this.identityPolicyValue = resolveIdentityPolicy(this.extensionsValue);
     this.recordsValue = Object.freeze([]);
     this.checkpointValue = null;
-    this.scanValue = scanJournal(null, [], this.limitsValue);
+    this.scanValue = scanJournal(null, [], this.limitsValue, undefined, this.identityPolicyValue);
     this.fullScanCountValue += 1;
   }
 
@@ -1723,6 +1682,10 @@ export class StudioCommandJournal<
 
   get extensions(): StudioCommandExtensionMetadata {
     return this.extensionsValue;
+  }
+
+  get identityPolicy(): StudioCommandIdentityPolicy {
+    return this.identityPolicyValue;
   }
 
   get records(): readonly StudioCommandJournalRecord[] {
@@ -1793,12 +1756,12 @@ export class StudioCommandJournal<
         });
       }
       if (
-        identityFilterMayContain(this.checkpointValue?.identityFilter, `record:${id}`)
-        || identityFilterMayContain(this.checkpointValue?.identityFilter, `checkpoint:${id}`)
+        studioCommandRecordIdentityConflicts(this.checkpointValue, this.identityPolicyValue, id, recordType, this.nextSequence)
       ) {
         journalError(
           "DUPLICATE_CONFLICT",
-          "Record identity may already exist outside exact retry retention.",
+          this.identityPolicyValue === null ? "Record identity may already exist outside exact retry retention."
+            : "Generated record identity does not match the next sequence.",
           { recordId: id },
         );
       }
@@ -1860,6 +1823,7 @@ export class StudioCommandJournal<
       [appended],
       this.limitsValue,
       this.scanValue,
+      this.identityPolicyValue,
     );
     this.recordsValue = nextRecords;
     this.scanValue = nextScan;
@@ -1918,7 +1882,7 @@ export class StudioCommandJournal<
           });
         }
       } else if (
-        identityFilterMayContain(this.checkpointValue?.identityFilter, `group:${key}`)
+        studioCommandNewGroupIdentityConflicts(this.checkpointValue, this.identityPolicyValue, envelope.actorId, envelope.groupId, this.nextSequence)
       ) {
         journalError("GROUP_REOPENED", "A pre-checkpoint group ID cannot be reused.", {
           recordId: envelope.id,
@@ -1955,10 +1919,7 @@ export class StudioCommandJournal<
     }
     if (
       this.scanValue.usedTransactionIds.has(metadata.transactionId)
-      || identityFilterMayContain(
-        this.checkpointValue?.identityFilter,
-        `transaction:${metadata.transactionId}`,
-      )
+      || studioCommandNewTransactionIdentityConflicts(this.checkpointValue, this.identityPolicyValue, metadata.transactionId, this.nextSequence)
     ) {
       journalError("TRANSACTION_REUSED", "A transaction ID cannot be reused.", {
         recordId: metadata.id,
@@ -1970,10 +1931,7 @@ export class StudioCommandJournal<
       });
     }
     if (
-      identityFilterMayContain(
-        this.checkpointValue?.identityFilter,
-        `group:${groupKey(metadata.actorId, metadata.groupId)}`,
-      )
+      studioCommandNewGroupIdentityConflicts(this.checkpointValue, this.identityPolicyValue, metadata.actorId, metadata.groupId, this.nextSequence)
     ) {
       journalError("GROUP_REOPENED", "A pre-checkpoint group ID cannot be reused.", {
         recordId: metadata.id,
@@ -2157,19 +2115,21 @@ export class StudioCommandJournal<
     if (
       this.scanValue.seen.has(id)
       || this.checkpointValue?.id === id
-      || identityFilterMayContain(this.checkpointValue?.identityFilter, `record:${id}`)
-      || identityFilterMayContain(this.checkpointValue?.identityFilter, `checkpoint:${id}`)
+      || studioCommandCheckpointIdentityConflicts(this.checkpointValue, this.identityPolicyValue, id, this.nextSequence)
     ) {
       journalError("DUPLICATE_CONFLICT", "Checkpoint ID collides with retained journal identity.", {
         recordId: id,
       });
     }
     const state = cloneJson(input.state, this.limitsValue.maxPayloadBytes);
-    const extensions = normalizeExtensions(
-      input.extensions,
-      this.limitsValue.maxPayloadBytes,
-      "$.checkpoint.extensions",
-    );
+    const suppliedExtensions = normalizeExtensions(input.extensions, this.limitsValue.maxPayloadBytes, "$.checkpoint.extensions");
+    const suppliedPolicy = readStudioCommandIdentityPolicy(suppliedExtensions);
+    if (suppliedPolicy !== null && suppliedPolicy !== this.identityPolicyValue) {
+      journalError("INVALID_COMPACTION", "Checkpoint identity policy cannot override its journal.");
+    }
+    const extensions = this.identityPolicyValue === null ? suppliedExtensions : normalizeExtensions({
+      ...suppliedExtensions, [STUDIO_COMMAND_IDENTITY_POLICY_KEY]: this.identityPolicyValue,
+    }, this.limitsValue.maxPayloadBytes, "$.checkpoint.extensions");
     const retainedIdempotency = [...this.scanValue.seen.values()]
       .slice(-this.limitsValue.maxIdempotencyKeys)
       .map(({ id: recordId, recordType, requestChecksum: checksum, sequence }) =>
@@ -2224,6 +2184,8 @@ export class StudioCommandJournal<
       checkpoint as StudioCommandJournalCheckpoint,
       [],
       this.limitsValue,
+      undefined,
+      this.identityPolicyValue,
     );
     this.checkpointValue = checkpoint;
     this.recordsValue = Object.freeze([]);
@@ -2237,6 +2199,8 @@ export class StudioCommandJournal<
       this.checkpointValue as StudioCommandJournalCheckpoint | null,
       this.recordsValue,
       this.limitsValue,
+      undefined,
+      this.identityPolicyValue,
     );
     this.fullScanCountValue += 1;
     return deepFreezeJson({
@@ -2313,6 +2277,7 @@ export class StudioCommandJournal<
       limits.maxPayloadBytes,
       "$.journal.extensions",
     );
+    const identityPolicy = resolveIdentityPolicy(extensions);
     const checkpoint = parseCheckpoint(raw.checkpoint, limits);
     if (!Array.isArray(raw.records)) {
       journalError("CORRUPT_SERIALIZATION", "Serialized journal records must be an array.");
@@ -2320,7 +2285,7 @@ export class StudioCommandJournal<
     const records = raw.records.map((record) => parseStoredRecord(record, limits));
     // Validate payloads, record hashes, transaction/group semantics, and the chain before consulting
     // the outer manifest so callers receive the most specific corruption classification.
-    const scan = scanJournal(checkpoint, records, limits);
+    const scan = scanJournal(checkpoint, records, limits, undefined, identityPolicy);
     const headChecksum = assertChecksum(
       raw.headChecksum,
       "CORRUPT_SERIALIZATION",
