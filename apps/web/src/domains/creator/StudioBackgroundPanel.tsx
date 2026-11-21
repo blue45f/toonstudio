@@ -3,6 +3,7 @@
  * Tabs: 채우기 (fill) · 크기 (canvas resizer). Friendly copy, icons, recent, search.
  */
 import {
+  ChevronDown,
   Droplets,
   Grid3X3,
   Layers,
@@ -13,7 +14,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
+import React, { Suspense, useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
 
 import {
   findStudioBackgroundPreset,
@@ -41,6 +42,10 @@ import {
 
 import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
+
+const LazyStudioAutoBgCrowdDrawerPanel = React.lazy(
+  () => import("./auto-bg-crowd/StudioAutoBgCrowdDrawerPanel"),
+);
 
 export type StudioBackgroundEditorTab = "fill" | "size";
 
@@ -133,6 +138,7 @@ export function StudioBackgroundPanel({
   const [query, setQuery] = useState("");
   const [customColor, setCustomColor] = useState(currentBg || "#f7f1e6");
   const [recentIds, setRecentIds] = useState<string[]>([]);
+  const [autoBgCrowdOpen, setAutoBgCrowdOpen] = useState(false);
   const [preferenceAuthority, setPreferenceAuthority] = useState<
     "loading" | "sqlite-opfs" | "memory-only"
   >("loading");
@@ -314,6 +320,59 @@ export function StudioBackgroundPanel({
               onPlace={onPlacePhotoLtBackground}
             />
           ) : null}
+
+          {/* 어울리는 배경·군중 자동 그리기 (지연 마운트 진입점) */}
+          <div
+            className="rounded-xl border border-line bg-card/90 p-2"
+            data-studio-auto-bg-crowd-entry="true"
+          >
+            <button
+              type="button"
+              aria-expanded={autoBgCrowdOpen}
+              onClick={() => setAutoBgCrowdOpen((prev) => !prev)}
+              className={cn(
+                "flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-bold text-fg [word-break:keep-all] transition-colors duration-150 hover:bg-raised motion-reduce:transition-none",
+                STUDIO_FOCUS_RING,
+              )}
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
+                  <Sparkles size={14} aria-hidden />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate">어울리는 배경·군중 자동 그리기</span>
+                  <span className="block truncate text-[0.65rem] font-normal text-fg-3">
+                    장면 한 줄로 투시 배경과 엑스트라를 맞춰 그려요
+                  </span>
+                </span>
+              </span>
+              <ChevronDown
+                size={14}
+                aria-hidden
+                className={cn(
+                  "shrink-0 text-fg-3 transition-transform duration-150 motion-reduce:transition-none",
+                  autoBgCrowdOpen && "rotate-180",
+                )}
+              />
+            </button>
+            {autoBgCrowdOpen ? (
+              <div className="mt-2 border-t border-line/70 pt-2">
+                <Suspense
+                  fallback={
+                    <p role="status" className="px-2 py-3 text-xs text-fg-3">
+                      배경·군중 자동 그리기 도구를 준비하는 중…
+                    </p>
+                  }
+                >
+                  <LazyStudioAutoBgCrowdDrawerPanel
+                    canvasW={canvasW}
+                    canvasH={canvasH}
+                    onApply={onApply}
+                  />
+                </Suspense>
+              </div>
+            ) : null}
+          </div>
 
           {/* Custom + quick solids */}
           <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-line bg-card/80 p-2">
