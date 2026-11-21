@@ -690,6 +690,7 @@ apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal.test.t
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-cuttoon-stage-pointers-admission.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-pending-stroke-pointer-lifecycle.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-touch-gesture-policy.test.ts
+apps/web/src/domains/creator/studio-cuttoon-editor/studio-workspace-applied-device.test.tsx
 apps/web/src/domains/creator/studio-document-workspace.test.ts
 apps/web/src/domains/creator/studio-draft-save-center-product-boundary.test.ts
 apps/web/src/domains/creator/studio-dynamic-brush-coverage-renderer.test.ts

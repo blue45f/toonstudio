@@ -3210,11 +3210,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     ownerScope: string;
     layout: StudioWorkspaceLayout;
   } | null>(null);
-  // Device adaptation is *applied* only when a workspace is applied, never continuously: docks that
-  // re-arrange because the artist reached for the keyboard mid-drawing would be worse than docks
-  // that stay where the profile put them. A pointer press writes a ref and, on the rare press that
-  // changes the classification, one state update — never per stroke, so the drawing route keeps its
-  // zero-render contract.
+  // 관측한 입력은 다음 배치 적용에만 쓴다. 그리다 다른 입력을 잡아도 현재 도크는 움직이지 않는다.
+  // 화면을 역캡처할 기기축은 아래 적용 상태가 소유하며, 포인터 관측만으로 렌더를 예약하지 않는다.
   const workspaceDevicePointerTypeRef = useRef<string | null>(null);
   const [workspaceControlSide, setWorkspaceControlSide] = useState<StudioMobileControlSide>(() =>
     resolveStudioWorkspaceControlSide(
@@ -3228,8 +3225,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       readStudioWorkspaceDeviceSignalsFromGlobals(workspaceDevicePointerTypeRef.current)
     );
   }
-  // 기기 종류는 layout을 저자형으로 되돌릴 때(캡처) 필요해서 렌더가 읽을 수 있어야 한다. 다만 획마다
-  // 리렌더가 나면 안 되므로, 실제로 종류가 *바뀔 때만* 상태를 옮긴다 — 보통 세션당 0~1회다.
+  // 현재 화면에 실제 적용한 기기로 역캡처한다. 마지막 입력 기기를 쓰면 pen 도크가 mouse의
+  // 저자 배치로 저장되거나, 아직 적용하지 않은 기기 override를 덮어쓸 수 있다.
   const [workspaceDeviceKind, setWorkspaceDeviceKind] =
     useState<StudioWorkspaceDeviceKind | null>(() =>
       resolveStudioWorkspaceDeviceKind(readStudioWorkspaceDeviceSignalsFromGlobals(null))
@@ -3239,8 +3236,6 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       const pointerType = event.pointerType || null;
       if (workspaceDevicePointerTypeRef.current === pointerType) return;
       workspaceDevicePointerTypeRef.current = pointerType;
-      const next = currentStudioWorkspaceDeviceKind();
-      setWorkspaceDeviceKind((current) => (current === next ? current : next));
     };
     globalThis.addEventListener("pointerdown", recordPointerType, { passive: true, capture: true });
     return () =>
@@ -3860,6 +3855,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     // artist who saved a workspace on a desktop still gets that workspace back on a desktop.
     const deviceKind = currentStudioWorkspaceDeviceKind();
     const presented = resolveStudioWorkspaceDeviceLayout(layout, deviceKind);
+    setWorkspaceDeviceKind(deviceKind);
     const preserveSaveStep = (source === "owner-hydration" || source === "owner-scope-change") && pendingSaveIntent !== null;
     const preserveOpenInspector = preserveSaveStep || (source === "owner-hydration" && mobileSheet === "props");
     if (!preserveOpenInspector) setInspectorLayout(presented.inspector);
