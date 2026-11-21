@@ -12,7 +12,7 @@ import type {
   CharacterCanonicalPartSelector,
   CharacterCanonicalPartSlot,
 } from "./character-canonical-manifest";
-import type { VRM } from "@pixiv/three-vrm";
+import { MToonMaterial, type VRM } from "@pixiv/three-vrm";
 
 const HUMAN_BONES = Object.freeze([
   "hips",
@@ -229,15 +229,71 @@ function targetSlotMatches(object: THREE.Object3D, slot: CharacterCanonicalPartS
   return false;
 }
 
-function cloneMaterial(material: THREE.Material): THREE.Material {
+function targetUsesMToon(targetVrm: VRM): boolean {
+  let found = false;
+  targetVrm.scene.traverse((object) => {
+    if (found) return;
+    const mesh = object as THREE.Mesh;
+    if (mesh.isMesh !== true || !mesh.material) return;
+    const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    if (list.some((mat) => (mat as { isMToonMaterial?: boolean; isMToonNodeMaterial?: boolean }).isMToonMaterial === true
+      || (mat as { isMToonNodeMaterial?: boolean }).isMToonNodeMaterial === true)) {
+      found = true;
+    }
+  });
+  return found;
+}
+
+function cloneMaterial(material: THREE.Material, harmonizeMToon = false): THREE.Material {
+  const isMToon = (material as { isMToonMaterial?: boolean; isMToonNodeMaterial?: boolean }).isMToonMaterial === true
+    || (material as { isMToonNodeMaterial?: boolean }).isMToonNodeMaterial === true;
+  if (harmonizeMToon && !isMToon && (material as THREE.MeshStandardMaterial).color?.isColor) {
+    const std = material as THREE.MeshStandardMaterial;
+    const baseColor = std.color.clone();
+    const shadeColor = baseColor.clone().multiply(new THREE.Color("#cfd6ee")).multiplyScalar(0.68);
+    const mtoon = new MToonMaterial({
+      color: baseColor,
+      map: std.map ?? undefined,
+      normalMap: std.normalMap ?? undefined,
+      normalScale: std.normalScale ? std.normalScale.clone() : new THREE.Vector2(1, 1),
+      alphaTest: std.alphaTest ?? 0,
+      transparent: std.transparent === true || std.opacity < 0.99,
+      opacity: std.opacity,
+      depthWrite: std.transparent === true || std.opacity < 0.99 ? false : std.depthWrite,
+      side: std.side,
+      vertexColors: std.vertexColors === true,
+      ignoreVertexColor: std.vertexColors !== true,
+      emissive: std.emissive?.isColor ? std.emissive.clone() : new THREE.Color(0x000000),
+      emissiveMap: std.emissiveMap ?? undefined,
+      emissiveIntensity: typeof std.emissiveIntensity === "number" ? std.emissiveIntensity : 1,
+      shadeColorFactor: shadeColor,
+      shadingToonyFactor: 0.86,
+      shadingShiftFactor: -0.08,
+      giEqualizationFactor: 0.88,
+      parametricRimColorFactor: baseColor.clone().lerp(new THREE.Color("#fff7ee"), 0.6),
+      rimLightingMixFactor: 0.42,
+      outlineWidthMode: std.transparent ? "none" : "worldCoordinates",
+      outlineWidthFactor: std.transparent ? 0 : 0.0018,
+      outlineColorFactor: shadeColor.clone().multiplyScalar(0.4),
+      outlineLightingMixFactor: 0.55,
+    });
+    mtoon.name = material.name;
+    mtoon.userData = { ...material.userData };
+    return mtoon;
+  }
   const cloned = material.clone();
   cloned.name = material.name;
   cloned.userData = { ...material.userData };
   return cloned;
 }
 
-function cloneMaterials(material: THREE.Material | THREE.Material[]): THREE.Material | THREE.Material[] {
-  return Array.isArray(material) ? material.map(cloneMaterial) : cloneMaterial(material);
+function cloneMaterials(
+  material: THREE.Material | THREE.Material[],
+  harmonizeMToon = false,
+): THREE.Material | THREE.Material[] {
+  return Array.isArray(material)
+    ? material.map((item) => cloneMaterial(item, harmonizeMToon))
+    : cloneMaterial(material, harmonizeMToon);
 }
 
 function humanoidBoneMap(vrm: VRM): Map<THREE.Object3D, HumanBoneName> {
@@ -294,14 +350,36 @@ function bakeRestGeometryToTarget(
   }
   const sourceBoneInverseWorld = source.skeleton.bones.map((bone) => bone.matrixWorld.clone().invert());
   const targetRootInverse = targetVrm.scene.matrixWorld.clone().invert();
+  const normalAttr = geometry.getAttribute("normal");
   const sourcePoint = new THREE.Vector3();
   const bonePoint = new THREE.Vector3();
   const targetPoint = new THREE.Vector3();
   const output = new THREE.Vector3();
+  const sourceNormal = new THREE.Vector3();
+  const normalAccumulator = new THREE.Vector3();
+  const boneNormal = new THREE.Vector3();
+  const normalMatrixSource = new THREE.Matrix3().getNormalMatrix(source.matrixWorld);
+  const normalMatrixTargetRoot = new THREE.Matrix3().getNormalMatrix(targetRootInverse);
+  const boneDeltaNormalMatrices = source.skeleton.bones.map((_, idx) => {
+    const inv = sourceBoneInverseWorld[idx];
+    const targetBone = targetBones[idx];
+    if (!inv || !targetBone) return null;
+    const delta = targetBone.matrixWorld.clone().multiply(inv);
+    return new THREE.Matrix3().getNormalMatrix(delta);
+  });
+  const invScaleX = Math.abs(scale.x) > 1e-6 ? 1 / scale.x : 1;
+  const invScaleY = Math.abs(scale.y) > 1e-6 ? 1 / scale.y : 1;
+  const invScaleZ = Math.abs(scale.z) > 1e-6 ? 1 / scale.z : 1;
   const indices = new THREE.Vector4();
   const weights = new THREE.Vector4();
   for (let vertex = 0; vertex < position.count; vertex += 1) {
     sourcePoint.set(position.getX(vertex), position.getY(vertex), position.getZ(vertex)).applyMatrix4(source.matrixWorld);
+    if (normalAttr) {
+      sourceNormal.set(normalAttr.getX(vertex), normalAttr.getY(vertex), normalAttr.getZ(vertex))
+        .applyMatrix3(normalMatrixSource)
+        .normalize();
+      normalAccumulator.set(0, 0, 0);
+    }
     indices.set(
       skinIndex.getX(vertex),
       skinIndex.getY(vertex),
@@ -323,15 +401,37 @@ function bakeRestGeometryToTarget(
       bonePoint.copy(sourcePoint).applyMatrix4(sourceBoneInverseWorld[boneIndex]!);
       targetPoint.copy(bonePoint).applyMatrix4(targetBones[boneIndex]!.matrixWorld);
       output.addScaledVector(targetPoint, weight);
+      if (normalAttr && boneDeltaNormalMatrices[boneIndex]) {
+        boneNormal.copy(sourceNormal).applyMatrix3(boneDeltaNormalMatrices[boneIndex]!);
+        normalAccumulator.addScaledVector(boneNormal, weight);
+      }
       totalWeight += weight;
     }
-    if (totalWeight <= 1e-6) output.copy(sourcePoint);
-    else if (Math.abs(totalWeight - 1) > 1e-6) output.multiplyScalar(1 / totalWeight);
+    if (totalWeight <= 1e-6) {
+      output.copy(sourcePoint);
+      if (normalAttr) normalAccumulator.copy(sourceNormal);
+    } else if (Math.abs(totalWeight - 1) > 1e-6) {
+      output.multiplyScalar(1 / totalWeight);
+    }
     output.applyMatrix4(targetRootInverse);
     output.set(output.x * scale.x, output.y * scale.y, output.z * scale.z);
     position.setXYZ(vertex, output.x, output.y, output.z);
+    if (normalAttr) {
+      normalAccumulator.applyMatrix3(normalMatrixTargetRoot);
+      normalAccumulator.set(
+        normalAccumulator.x * invScaleX,
+        normalAccumulator.y * invScaleY,
+        normalAccumulator.z * invScaleZ,
+      );
+      if (normalAccumulator.lengthSq() > 1e-10) {
+        normalAccumulator.normalize();
+        normalAttr.setXYZ(vertex, normalAccumulator.x, normalAccumulator.y, normalAccumulator.z);
+      }
+    }
   }
   position.needsUpdate = true;
+  if (normalAttr) normalAttr.needsUpdate = true;
+  else geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
   return geometry;
@@ -345,7 +445,7 @@ function createSkinnedTransplant(
 ): THREE.SkinnedMesh {
   const targetBones = mappedTargetBones(source, sourceVrm, targetVrm);
   const geometry = bakeRestGeometryToTarget(source, targetVrm, targetBones, plan.scale);
-  const mesh = new THREE.SkinnedMesh(geometry, cloneMaterials(source.material));
+  const mesh = new THREE.SkinnedMesh(geometry, cloneMaterials(source.material, targetUsesMToon(targetVrm)));
   mesh.name = `CanonicalPart:${source.name || "SkinnedMesh"}`;
   mesh.castShadow = source.castShadow;
   mesh.receiveShadow = source.receiveShadow;
@@ -408,8 +508,9 @@ function cloneRigidToAnchor(
   sourceRoot: THREE.Object3D,
   targetAnchorNode: THREE.Object3D,
   plan: CharacterCanonicalPartPlan,
+  harmonizeMToon = false,
 ): THREE.Mesh {
-  const mesh = new THREE.Mesh(source.geometry.clone(), cloneMaterials(source.material));
+  const mesh = new THREE.Mesh(source.geometry.clone(), cloneMaterials(source.material, harmonizeMToon));
   mesh.name = `CanonicalPart:${source.name || "Mesh"}`;
   mesh.castShadow = source.castShadow;
   mesh.receiveShadow = source.receiveShadow;
@@ -430,14 +531,25 @@ function cloneRigidToAnchor(
 }
 
 function disposeInstalledRoot(root: THREE.Object3D): void {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  const skeletons = new Set<THREE.Skeleton>();
   root.parent?.remove(root);
   root.traverse((object) => {
     const mesh = object as THREE.Mesh;
     if (mesh.isMesh !== true) return;
-    mesh.geometry?.dispose();
-    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    materials.forEach((material) => material?.dispose());
+    if ((mesh as THREE.SkinnedMesh).isSkinnedMesh && (mesh as THREE.SkinnedMesh).skeleton) {
+      skeletons.add((mesh as THREE.SkinnedMesh).skeleton);
+    }
+    if (mesh.geometry) geometries.add(mesh.geometry);
+    const meshMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    meshMaterials.forEach((material) => {
+      if (material) materials.add(material);
+    });
   });
+  skeletons.forEach((skeleton) => skeleton.dispose());
+  geometries.forEach((geometry) => geometry.dispose());
+  materials.forEach((material) => material.dispose());
 }
 
 function semanticLayerForSlot(slot: CharacterCanonicalPartSlot): string {
@@ -541,7 +653,14 @@ export class CharacterCanonicalPartSession {
         const sourceAnchor = sourceAnchorForRigid(sourceLease.vrm, part);
         for (const sourceMesh of sourceMeshes) {
           if (sourceMesh instanceof THREE.SkinnedMesh) continue;
-          const cloned = cloneRigidToAnchor(sourceMesh, sourceAnchor, sourceLease.scene, target, plan);
+          const cloned = cloneRigidToAnchor(
+            sourceMesh,
+            sourceAnchor,
+            sourceLease.scene,
+            target,
+            plan,
+            targetUsesMToon(this.#targetVrm),
+          );
           cloned.userData.characterCanonicalPart = true;
           cloned.userData.characterCanonicalPartId = part.id;
           cloned.userData.characterSemanticLayer = semanticLayerForSlot(part.slot);

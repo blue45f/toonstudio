@@ -1,4 +1,5 @@
-import { BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, MeshStandardMaterial } from "three";
+import { MToonMaterial } from "@pixiv/three-vrm";
+import { BufferAttribute, BufferGeometry, Color, DoubleSide, Group, Mesh } from "three";
 
 import { validateCharacterGeometryStrokeDocument } from "../surface-ink/character-geometry-stroke";
 import { executeCharacterAuthoringTaskInBrowser } from "./character-authoring-worker-client";
@@ -68,8 +69,20 @@ export class CharacterGeometryStrokeThreeRuntime {
         geometry.computeBoundingSphere();
         const alpha = stroke.style.color.length === 9 ? Number.parseInt(stroke.style.color.slice(7), 16) / 255 : 1;
         const opacity = stroke.style.opacity * alpha;
-        const material = new MeshStandardMaterial({ color: stroke.style.color.slice(0, 7), opacity, transparent: opacity < 1,
-          side: DoubleSide, roughness: 0.8, metalness: 0, wireframe: stroke.style.lineOnly || !stroke.style.fill });
+        const baseColor = new Color(stroke.style.color.slice(0, 7));
+        const shadeColor = baseColor.clone().multiply(new Color("#cfd6ee")).multiplyScalar(0.68);
+        const material = new MToonMaterial({
+          color: baseColor,
+          shadeColorFactor: shadeColor,
+          shadingToonyFactor: 0.86,
+          shadingShiftFactor: -0.08,
+          giEqualizationFactor: 0.88,
+          opacity,
+          transparent: opacity < 1,
+          depthWrite: opacity >= 1,
+          side: DoubleSide,
+          wireframe: stroke.style.lineOnly || !stroke.style.fill,
+        });
         material.name = `geometry-stroke:${stroke.strokeId}`;
         material.userData.toonstudioComponent = "props";
         const mesh = new Mesh(geometry, material);

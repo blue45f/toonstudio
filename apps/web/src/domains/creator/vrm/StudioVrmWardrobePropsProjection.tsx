@@ -9,16 +9,19 @@ import {
   type BodySilhouette,
   type BodySilhouetteSample,
 } from "./studio-vrm-body-silhouette";
+import { harmonizeStudioVrmPropObject } from "./studio-vrm-custom-part-harmonizer";
 import {
-  buildLimbSegmentProfile,
-  projectLimbSample,
-  sanitizeLimbProfiles,
-  type LimbProfileSample,
-  type LimbProfiles,
-  type LimbSegmentId,
-  type LimbSide,
+  STUDIO_VRM_CUSTOM_PART_OUTLINE_KEY, applyStudioVrmGarmentMToonStyle,
+  attachStudioVrmGarmentOutlineMesh, createStudioVrmGarmentMToonMaterial,
+  createStudioVrmGarmentWeaveNormalTexture, disposeStudioVrmGarmentOwnedMatcap,
+  sampleStudioVrmBodyMtoonProfile, syncStudioVrmCustomPartToActiveVrm,
+  syncStudioVrmGarmentOutlineColor, type StudioVrmBodyMtoonProfile,
+} from "./studio-vrm-custom-part-material";
+import {
+  buildLimbSegmentProfile, projectLimbSample, sanitizeLimbProfiles,
+  type LimbProfileSample, type LimbProfiles, type LimbSegmentId, type LimbSide,
 } from "./studio-vrm-limb-profile";
-import { sampleStudioVrmGarmentWeave, studioVrmGarmentBumpScaleM } from "./studio-vrm-garment-weave";
+import { isStudioVrmMtoonMaterial } from "./studio-vrm-mtoon-brand";
 import { PHYSICS_PREVIEW_MAX_DELTA } from "./studio-vrm-physics";
 import { refineVrmGripFingerWrap } from "./studio-vrm-poser-utils";
 import {
@@ -51,10 +54,8 @@ import {
 } from "./studio-vrm-skinned-garment";
 import { createStudioVrmSurfaceVertexSampler } from "./studio-vrm-surface-vertex-sampler";
 import {
-  WARDROBE_FABRICS,
   buildGarmentParts,
   sanitizeWardrobeMetrics,
-  wardrobeFabricById,
   wardrobeItemById,
   type GarmentPart,
   type LimbMetric,
@@ -71,19 +72,26 @@ import {
   type StudioVrmXpbdSkirtSurfaceReceipt,
 } from "./StudioVrmXpbdSkirtAttachment";
 
-import type { VRM, VRMHumanBoneName } from "@pixiv/three-vrm";
+import type { MToonMaterial, VRM, VRMHumanBoneName } from "@pixiv/three-vrm";
 
 const pendingPropDisposals = new WeakMap<THREE.Object3D, object>();
 
 function disposePropObject(object: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>();
   const materials = new Set<THREE.Material>();
+  const textures = new Set<THREE.Texture>();
   object.traverse((child) => {
     const mesh = child as THREE.Mesh;
     if (mesh.geometry) geometries.add(mesh.geometry);
     const meshMaterials = Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : [];
-    meshMaterials.forEach((material) => materials.add(material));
+    meshMaterials.forEach((material) => {
+      materials.add(material);
+      for (const value of Object.values(material)) {
+        if ((value as THREE.Texture | null)?.isTexture === true) textures.add(value as THREE.Texture);
+      }
+    });
   });
+  textures.forEach((texture) => texture.dispose());
   geometries.forEach((geometry) => geometry.dispose());
   materials.forEach((material) => material.dispose());
 }
@@ -279,9 +287,16 @@ export function StudioVrmPropAttachment({
   const secondaryBone = secondary?.bone ?? null;
 
   useEffect(() => {
-    if (!gltfObject || instance.color === null) return;
-    return applyStudioVrmPropTint(gltfObject, instance.propId, instance.color);
-  }, [gltfObject, instance.color, instance.propId]);
+    if (!object) return;
+    const restoreTint = gltfObject && instance.color !== null
+      ? applyStudioVrmPropTint(gltfObject, instance.propId, instance.color)
+      : null;
+    const restoreHarmonize = harmonizeStudioVrmPropObject(object, vrm, { propId: instance.propId });
+    return () => {
+      restoreHarmonize();
+      restoreTint?.();
+    };
+  }, [gltfObject, instance.color, instance.propId, object, vrm]);
 
   function reportAttachmentStatus(status: StudioVrmProjectionAttachmentStatus) {
     if (attachmentStatusRef.current === status) return;
@@ -1039,26 +1054,7 @@ const GARMENT_Y = new THREE.Vector3(0, 1, 0);
 const GARMENT_Z = new THREE.Vector3(0, 0, 1);
 
 function createGarmentWeaveTexture(fabricId: WardrobeEquip["fabricId"]): THREE.DataTexture | null {
-  const fabric = wardrobeFabricById(fabricId);
-  if (!fabric || fabric.weaveStrength <= 0) return null;
-  const size = 128;
-  const data = new Uint8Array(size * size);
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const u = x / size;
-      const v = y / size;
-      data[y * size + x] = sampleStudioVrmGarmentWeave(fabric, u, v);
-    }
-  }
-  const texture = new THREE.DataTexture(data, size, size, THREE.RedFormat, THREE.UnsignedByteType);
-  texture.name = `wardrobe-weave:${fabricId}`;
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = true;
-  texture.needsUpdate = true;
-  return texture;
+  return createStudioVrmGarmentWeaveNormalTexture(fabricId);
 }
 
 function createGarmentMaterial(
@@ -1066,46 +1062,27 @@ function createGarmentMaterial(
   itemColor: string,
   fabricId: WardrobeEquip["fabricId"],
   weaveTexture: THREE.DataTexture | null,
-): THREE.MeshPhysicalMaterial {
-  const material = new THREE.MeshPhysicalMaterial({ side: THREE.DoubleSide });
-  applyGarmentMaterialStyle(material, part, itemColor, fabricId, weaveTexture);
-  return material;
+  profile: StudioVrmBodyMtoonProfile,
+): MToonMaterial {
+  return createStudioVrmGarmentMToonMaterial(part, itemColor, fabricId, weaveTexture, profile);
 }
 
 function applyGarmentMaterialStyle(
-  material: THREE.MeshPhysicalMaterial,
+  material: MToonMaterial,
   part: GarmentPart,
   itemColor: string,
   fabricId: WardrobeEquip["fabricId"],
   weaveTexture: THREE.DataTexture | null,
 ) {
-  const fabric = wardrobeFabricById(fabricId) ?? WARDROBE_FABRICS[0];
-  const color = new THREE.Color(part.color ?? itemColor);
-  const roughness = part.metalness !== undefined && part.metalness > 0.35
-    ? part.roughness ?? fabric.roughness
-    : fabric.roughness;
-  const metalness = part.metalness ?? fabric.metalness;
-  const fabricSurface = metalness < 0.35;
-  material.color.copy(color);
-  material.roughness = roughness;
-  material.metalness = metalness;
-  material.sheen = fabricSurface ? fabric.sheen : 0;
-  material.sheenRoughness = fabricSurface ? fabric.sheenRoughness : 1;
-  material.sheenColor.copy(color).lerp(new THREE.Color("#ffffff"), 0.12);
-  material.clearcoat = fabric.clearcoat;
-  material.clearcoatRoughness = fabric.clearcoatRoughness;
-  material.bumpMap = fabricSurface ? weaveTexture : null;
-  material.bumpScale = fabricSurface ? studioVrmGarmentBumpScaleM(fabric) : 0;
-  material.userData.studioVrmGarmentPart = part;
-  material.userData.studioVrmGarmentFabricId = fabricId;
-  material.needsUpdate = true;
+  applyStudioVrmGarmentMToonStyle(material, part, itemColor, fabricId, weaveTexture);
 }
 
 function disposeGarmentMaterials(materials: readonly THREE.Material[]) {
   const textures = new Set<THREE.Texture>();
   for (const material of materials) {
-    const physical = material as THREE.MeshPhysicalMaterial;
-    if (physical.bumpMap) textures.add(physical.bumpMap);
+    const mtoon = material as MToonMaterial;
+    if (mtoon.normalMap) textures.add(mtoon.normalMap);
+    disposeStudioVrmGarmentOwnedMatcap(material);
     material.dispose();
   }
   textures.forEach((texture) => texture.dispose());
@@ -1117,8 +1094,10 @@ function assembleGarmentGroups(
   itemColor: string,
   fabricId: WardrobeEquip["fabricId"],
   name: string,
+  vrm: VRM,
 ): Map<WardrobeBone, THREE.Group> {
   const groups = new Map<WardrobeBone, THREE.Group>();
+  const profile = sampleStudioVrmBodyMtoonProfile(vrm);
   const weaveTexture = createGarmentWeaveTexture(fabricId);
   for (const part of parts) {
     let group = groups.get(part.bone);
@@ -1127,7 +1106,7 @@ function assembleGarmentGroups(
       group.name = `${name}:${part.bone}`;
       groups.set(part.bone, group);
     }
-    const material = createGarmentMaterial(part, itemColor, fabricId, weaveTexture);
+    const material = createGarmentMaterial(part, itemColor, fabricId, weaveTexture, profile);
     const geometry = buildStudioVrmGarmentGeometry(part.shape);
     // Preserve analytic seam normals; UV duplicates are not separate cloth surfaces.
     if (!geometry.hasAttribute("normal")) geometry.computeVertexNormals();
@@ -1142,8 +1121,10 @@ function assembleGarmentGroups(
       if (target.lengthSq() > 1e-8) mesh.quaternion.setFromUnitVectors(source, target);
     }
     if (part.squash) mesh.scale.set(part.squash[0], part.squash[1], part.squash[2]);
+    attachStudioVrmGarmentOutlineMesh(mesh, material, profile);
     group.add(mesh);
   }
+  groups.forEach((group) => syncStudioVrmCustomPartToActiveVrm(group, vrm));
   return groups;
 }
 
@@ -1164,8 +1145,9 @@ function assembleSkinnedGarment(
   fabricId: WardrobeEquip["fabricId"],
   name: string,
 ) {
+  const profile = sampleStudioVrmBodyMtoonProfile(vrm);
   const weaveTexture = createGarmentWeaveTexture(fabricId);
-  const materials = parts.map((part) => createGarmentMaterial(part, itemColor, fabricId, weaveTexture));
+  const materials = parts.map((part) => createGarmentMaterial(part, itemColor, fabricId, weaveTexture, profile));
   const sourceBones = collectVrmSourceSkeletonBones(vrm);
   const built = buildStudioVrmSkinnedGarment({
     name,
@@ -1177,26 +1159,39 @@ function assembleSkinnedGarment(
       return node && sourceBones.has(node as THREE.Bone) ? node : null;
     },
   });
-  if (!built.surface) disposeGarmentMaterials(materials);
+  if (!built.surface) {
+    disposeGarmentMaterials(materials);
+  } else {
+    if (materials[0]) attachStudioVrmGarmentOutlineMesh(built.surface.mesh, materials[0], profile);
+    syncStudioVrmCustomPartToActiveVrm(built.surface.mesh, vrm);
+  }
   return built;
 }
 
 function disposeGarmentObject(group: THREE.Object3D) {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const skeletons = new Set<THREE.Skeleton>();
+  const materials = new Set<THREE.Material>();
   const textures = new Set<THREE.Texture>();
   group.traverse((obj) => {
     const mesh = obj as THREE.Mesh;
     if (!mesh.isMesh) return;
-    if ((mesh as THREE.SkinnedMesh).isSkinnedMesh) {
-      (mesh as THREE.SkinnedMesh).skeleton.dispose();
+    if ((mesh as THREE.SkinnedMesh).isSkinnedMesh && (mesh as THREE.SkinnedMesh).skeleton) {
+      skeletons.add((mesh as THREE.SkinnedMesh).skeleton);
     }
-    mesh.geometry?.dispose();
-    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    materials.forEach((m) => {
-      const physical = m as THREE.MeshPhysicalMaterial | undefined;
-      if (physical?.bumpMap) textures.add(physical.bumpMap);
-      m?.dispose();
+    if (mesh.geometry) geometries.add(mesh.geometry);
+    const meshMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    meshMaterials.forEach((m) => {
+      if (!m) return;
+      materials.add(m);
+      const mtoon = m as MToonMaterial;
+      if (mtoon.normalMap) textures.add(mtoon.normalMap);
+      disposeStudioVrmGarmentOwnedMatcap(m);
     });
   });
+  skeletons.forEach((skeleton) => skeleton.dispose());
+  geometries.forEach((geometry) => geometry.dispose());
+  materials.forEach((material) => material.dispose());
   textures.forEach((texture) => texture.dispose());
 }
 
@@ -1323,6 +1318,7 @@ function StudioVrmSelectedWardrobeAttachment({
       def.defaultColor,
       def.defaultFabricId,
       `wardrobe:${def.slot}:${def.id}`,
+      vrm,
     );
     const entries: { key: string; node: THREE.Object3D; object: THREE.Object3D }[] = [];
     for (const [bone, object] of groups) {
@@ -1351,16 +1347,15 @@ function StudioVrmSelectedWardrobeAttachment({
   // 색상·원단만 바뀔 때 geometry/Skeleton을 다시 만들면 현재 포즈가 새 bind pose가 된다.
   // 재질만 제자리에서 갱신해 포즈·핏·스키닝 표면을 그대로 유지한다.
   useLayoutEffect(() => {
-    const materials = new Set<THREE.MeshPhysicalMaterial>();
+    const materials = new Set<MToonMaterial>();
     for (const entry of entries) {
       entry.object.traverse((object) => {
         const mesh = object as THREE.Mesh;
-        if (!mesh.isMesh) return;
+        if (!mesh.isMesh || mesh.userData[STUDIO_VRM_CUSTOM_PART_OUTLINE_KEY] === true) return;
         const meshMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
         for (const material of meshMaterials) {
-          if ((material as THREE.MeshPhysicalMaterial).isMeshPhysicalMaterial) {
-            materials.add(material as THREE.MeshPhysicalMaterial);
-          }
+          const mtoon = material as MToonMaterial;
+          if (isStudioVrmMtoonMaterial(mtoon) && mtoon.isOutline !== true) materials.add(mtoon);
         }
       });
     }
@@ -1376,11 +1371,15 @@ function StudioVrmSelectedWardrobeAttachment({
     for (const material of materials) {
       const part = material.userData.studioVrmGarmentPart as GarmentPart | undefined;
       if (!part) continue;
-      const previousBump = material.bumpMap;
-      const nextWeave = fabricChanged ? replacementWeave : previousBump as THREE.DataTexture | null;
+      const previousWeave = material.normalMap;
+      const nextWeave = fabricChanged ? replacementWeave : previousWeave as THREE.DataTexture | null;
       applyGarmentMaterialStyle(material, part, equip.color, equip.fabricId, nextWeave);
-      if (replacementWeave && material.bumpMap === replacementWeave) replacementUsed = true;
-      if (previousBump && previousBump !== material.bumpMap) retiredTextures.add(previousBump);
+      if (replacementWeave && material.normalMap === replacementWeave) replacementUsed = true;
+      if (previousWeave && previousWeave !== material.normalMap) retiredTextures.add(previousWeave);
+    }
+    const primary = [...materials][0];
+    if (primary) {
+      for (const entry of entries) syncStudioVrmGarmentOutlineColor(entry.object, primary);
     }
 
     retiredTextures.forEach((texture) => texture.dispose());
