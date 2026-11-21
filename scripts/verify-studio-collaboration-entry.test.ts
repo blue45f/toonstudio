@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 
+import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
 
 import { resolveStudioRoute } from "../apps/web/src/domains/creator/studio-router/studio-route-manifest";
@@ -14,6 +16,78 @@ import type { Route } from "playwright";
 
 const source = readFileSync("scripts/verify-studio-collaboration-sync.mts", "utf8");
 const drawingCaptureSource = readFileSync("scripts/lib/studio-collaboration-drawing-capture.ts", "utf8");
+
+function drawingViewFixture(inputState = "ready", fontsLoaded = true) {
+  const calls: string[] = [];
+  const state = { inputState, stageWidth: 72, fonts: { status: fontsLoaded ? "loaded" : "loading" } };
+  const pending: Array<{ check: () => boolean; resolve: () => void; reject: (error: Error) => void }> = [];
+  const stage = { getBoundingClientRect: () => ({ width: state.stageWidth }) };
+  const viewport = { clientWidth: 1377,
+    getAttribute: (name: string) => name === "data-studio-canvas-input-state" ? state.inputState : null,
+    querySelector: (selector: string) => selector === ".konvajs-content" ? stage : null };
+  const fit = { click: vi.fn(async () => { calls.push("fit-width"); }) };
+  const getByRole = vi.fn(() => fit);
+  const page = {
+    locator: vi.fn((selector: string) => selector === '[data-studio-clarity-entry="true"]'
+      ? { isVisible: async () => false } : { getByRole }),
+    waitForFunction: vi.fn(async (check: () => boolean, _arg: undefined, _options: { timeout: number }) => {
+      if (!check()) await new Promise<void>((resolve, reject) => pending.push({ check, resolve, reject }));
+    }),
+  };
+  const functionSource = source.slice(source.indexOf("async function enableBrushTool("), source.indexOf("async function canvasFingerprint("));
+  const compiled = ts.transpileModule(functionSource, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+  const prepare: unknown = runInNewContext(compiled + "\nenableBrushTool", {
+    document: { fonts: state.fonts, querySelector: (selector: string) => selector === '[data-studio-canvas-viewport="true"]' ? viewport : null },
+    dismissOverlays: async () => { calls.push("overlays"); },
+    selectStudioCollaborationPen: async () => { calls.push("pen"); },
+  });
+  if (typeof prepare !== "function") throw new Error("enableBrushTool fixture is not callable");
+  const poll = () => {
+    for (const waiter of [...pending]) if (waiter.check()) { pending.splice(pending.indexOf(waiter), 1); waiter.resolve(); }
+  };
+  return { page, state, calls, pending, fit, getByRole, prepare: async () => { await prepare(page); }, poll };
+}
+
+describe("협업 픽셀 측정 전 실제 보기 맞춤 준비", () => {
+  it.each(["ready", "follower"])("%s 상태를 바꾸지 않고 정상 맞춤 클릭 뒤 Stage 너비 반영을 기다린다", async (inputState) => {
+    const f = drawingViewFixture(inputState), done = vi.fn();
+    const preparing = f.prepare().then(done);
+    await vi.waitFor(() => expect(f.pending).toHaveLength(1));
+    expect(f.calls).toEqual(["overlays", "pen", "fit-width"]);
+    expect(f.page.locator).toHaveBeenCalledWith('[data-studio-status-bar="true"]:visible');
+    expect(f.getByRole).toHaveBeenCalledWith("button", { name: "맞춤", exact: true });
+    expect(f.fit.click).toHaveBeenCalledExactlyOnceWith();
+    expect(done).not.toHaveBeenCalled();
+    f.state.stageWidth = 1377; f.poll(); await preparing;
+    expect(done).toHaveBeenCalledOnce();
+    expect(f.state.inputState).toBe(inputState);
+    expect(f.page.waitForFunction.mock.calls.map((call) => call[2])).toEqual([{ timeout: 20_000 }, { timeout: 20_000 }]);
+  });
+
+  it("글꼴이 준비되기 전에 보기 맞춤으로 측정 기준을 정하지 않는다", async () => {
+    const f = drawingViewFixture("follower", false);
+    const preparing = f.prepare();
+    await vi.waitFor(() => expect(f.pending).toHaveLength(1));
+    expect(f.fit.click).not.toHaveBeenCalled();
+    f.state.fonts.status = "loaded"; f.poll();
+    await vi.waitFor(() => expect(f.fit.click).toHaveBeenCalledOnce());
+    f.state.stageWidth = 1377; f.poll(); await preparing;
+  });
+
+  it("맞춤 클릭 실패나 계속 좁은 Stage를 준비 성공으로 바꾸지 않는다", async () => {
+    const click = drawingViewFixture(), clickError = new Error("fit control obstructed");
+    click.fit.click.mockRejectedValueOnce(clickError);
+    await expect(click.prepare()).rejects.toBe(clickError);
+    expect(click.page.waitForFunction).toHaveBeenCalledOnce();
+    const narrow = drawingViewFixture(), timeout = new Error("Stage width not ready");
+    const rejected = expect(narrow.prepare()).rejects.toBe(timeout);
+    await vi.waitFor(() => expect(narrow.pending).toHaveLength(1));
+    const waiter = narrow.pending[0];
+    if (!waiter) throw new Error("Stage width waiter was not registered");
+    waiter.reject(timeout); await rejected;
+    expect(narrow.state.stageWidth).toBe(72);
+  });
+});
 
 describe("collaboration browser entry contract", () => {
   it("opens the canonical editor rather than the non-editor Studio home", () => {
@@ -126,6 +200,7 @@ describe("static preview signed-out session boundary", () => {
     const route = vi.fn(async (matcher: unknown, handler: unknown) => {
       matches = matcher as (url: URL) => boolean;
       respond = handler as (route: Route) => Promise<void>;
+      return { dispose: async () => undefined, [Symbol.asyncDispose]: async () => undefined };
     });
     expect(await installStudioCollaborationPreviewSession({ route }, "http://127.0.0.1:4173"))
       .toBe("static-preview-signed-out-session-fixture");
