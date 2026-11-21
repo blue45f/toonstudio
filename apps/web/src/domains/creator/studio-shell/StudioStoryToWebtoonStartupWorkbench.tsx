@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 
 import type { StudioDefaultWorkspaceId } from "../studio-workspaces";
+import { TooningPlusAllInOneSection } from "./TooningPlusAllInOneSection";
 
 export type StoryToWebtoonEngineModeId =
   | "llamagen-tooning-ai"
@@ -317,6 +318,16 @@ export function StudioStoryToWebtoonStartupWorkbench({
       data-testid="studio-story-to-webtoon-workbench"
       className="mt-3 rounded-xl border border-accent/35 bg-panel/75 p-3"
     >
+      <TooningPlusAllInOneSection
+        locale={locale}
+        onSelectWorkspacePreset={onSelectWorkspacePreset}
+        onTransferCutsToScript={(fountainScript) => {
+          setEngineMode("mangaplay-fountain-markup");
+          setCustomScript(fountainScript);
+          setInpaintedCutIndex(null);
+        }}
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <Wand2 size={14} className="text-accent" aria-hidden="true" />
