@@ -1,5 +1,5 @@
-import { Camera, Check, Copy, ImagePlus, Layers, Plus, Trash2 } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { Camera, Check, Copy, ImagePlus, Layers, Plus, Sparkles, Trash2 } from "lucide-react";
+import React, { Suspense, useId, useMemo, useState } from "react";
 
 import { studioEcosystemClient } from "@/platform/studio-ecosystem-client";
 
@@ -14,6 +14,10 @@ import {
   type WebtoonLightingPreset,
   type WebtoonModelerSceneSpec,
 } from "./webtoon-modeler-imagegen";
+
+const LazyStudioVisualAi4SuitesPanel = React.lazy(
+  () => import("../ai-creative-suites/StudioVisualAi4SuitesPanel"),
+);
 
 export interface StudioWebtoonModelerImageGenPanelProps {
   readonly onGenerateCutImage?: (request: CompiledWebtoonImageGenRequest) => void;
@@ -47,6 +51,7 @@ export function StudioWebtoonModelerImageGenPanel({
   const [historyCount, setHistoryCount] = useState(0);
   const [syncLabel, setSyncLabel] = useState<string | null>(null);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [visualSuitesLabOpen, setVisualSuitesLabOpen] = useState(false);
   const previewGradientId = useId();
 
   const compiled = useMemo(() => compileWebtoonModelerToImageGen(scene), [scene]);
@@ -378,6 +383,32 @@ export function StudioWebtoonModelerImageGenPanel({
           </button>
         </div>
       </details>
+
+      <div className="rounded-lg border border-line bg-card px-3 py-2 text-xs">
+        <button
+          type="button"
+          aria-expanded={visualSuitesLabOpen}
+          onClick={() => setVisualSuitesLabOpen((prev) => !prev)}
+          className="flex min-h-11 w-full items-center justify-between gap-2 text-left font-medium text-fg transition-colors duration-150 hover:text-accent"
+        >
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <Sparkles className="size-3.5 shrink-0 text-accent" strokeWidth={1.6} aria-hidden="true" />
+            <span>비주얼 AI 4대 스튜디오 랩 (Firefly · CSP · Krita/ComfyUI · AI 페인터)</span>
+          </span>
+          <span className="shrink-0 text-fg-3">{visualSuitesLabOpen ? "접기" : "펼치기"}</span>
+        </button>
+        {visualSuitesLabOpen ? (
+          <div className="mt-3 border-t border-line pt-3">
+            <Suspense
+              fallback={
+                <p className="py-2 text-xs text-fg-3">비주얼 AI 4대 스튜디오 랩을 불러오는 중…</p>
+              }
+            >
+              <LazyStudioVisualAi4SuitesPanel />
+            </Suspense>
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }
