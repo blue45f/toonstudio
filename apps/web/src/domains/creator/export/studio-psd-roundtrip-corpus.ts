@@ -710,9 +710,14 @@ export const PSD_ROUNDTRIP_FIXTURES: readonly PsdRoundtripFixture[] = [
   },
 ];
 
-/** 픽스처 명세 → 실제 PSD 바이트. writePsd는 결정적이라 같은 명세는 같은 바이트를 만든다. */
+/** 픽스처는 읽기 쉽게 패널의 위→아래 순서로 기술한다. 실제 PSD는 각 형제를 뒤→앞으로 기록한다. */
 export function buildPsdFixtureBytes(fixture: PsdRoundtripFixture): ArrayBuffer {
-  return writePsd(fixture.build(), { noBackground: true });
+  const psd = fixture.build();
+  const bottomFirst = (panelOrder: readonly Layer[]): Layer[] =>
+    [...panelOrder].reverse().map((layer) => layer.children
+      ? { ...layer, children: bottomFirst(layer.children) }
+      : layer);
+  return writePsd({ ...psd, children: bottomFirst(psd.children ?? []) }, { noBackground: true });
 }
 
 export function fixtureById(id: string): PsdRoundtripFixture {

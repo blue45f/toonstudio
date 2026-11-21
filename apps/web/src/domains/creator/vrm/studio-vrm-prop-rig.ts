@@ -1,5 +1,9 @@
 import * as THREE from "three";
 
+import {
+  resolveStudioVrmHeadwearCrownCompression,
+  type StudioVrmHeadwearCrownCompression,
+} from "./studio-vrm-hair-hand-equip-refiner";
 import { measureStudioVrmHeadSurface, studioVrmHeadwearSurfaceSocket } from "./studio-vrm-head-surface";
 import { clampStudioVrmJointRotation } from "./studio-vrm-joint-limits";
 import {
@@ -779,6 +783,8 @@ export interface ResolvedPropAttachment {
   mirrored: boolean;
   /** false면 rig 없는 V1 인스턴스를 그대로 통과시킨 결과다. */
   usesSmartRig: boolean;
+  /** 모자·헬멧 등 두상 밀착 소품 장착 시 상단 헤어 볼륨 자동 눌림 연동 값. */
+  crownCompression?: StudioVrmHeadwearCrownCompression;
 }
 
 /**
@@ -873,22 +879,14 @@ export function resolvePropAttachment(
   const visualOffset: Vec3 = [rotatedOffset.x, rotatedOffset.y, rotatedOffset.z];
   const position = addVec3(socketPosition, visualOffset);
 
+  const crownCompression = resolveStudioVrmHeadwearCrownCompression(def.id, instance.bone, scale);
   return {
-    bone: instance.bone,
-    anchorId: anchor.id,
-    anchor,
-    socketPosition,
+    bone: instance.bone, anchorId: anchor.id, anchor, socketPosition,
     socketRotationQuaternion: quaternionToTuple(socketBasis),
     socketRotationDeg: quaternionDegrees(quaternionToTuple(socketBasis)),
     socketSource: activeSocket?.source ?? "fallback",
-    anchorInverseLocal,
-    visualOffset,
-    position,
-    rotationDeg,
-    scale,
-    fit,
-    mirrored,
-    usesSmartRig: true,
+    anchorInverseLocal, visualOffset, position, rotationDeg, scale, fit, mirrored, usesSmartRig: true,
+    ...(crownCompression.active ? { crownCompression } : {}),
   };
 }
 
@@ -1052,19 +1050,19 @@ const AUTO_GRIP_SEGMENT_WEIGHTS: Record<PropGripKind, Record<AutoGripSegment, nu
 };
 
 type ThumbAxisWeights = {
-  readonly metacarpal: readonly [y: number, z: number];
-  readonly proximal: readonly [y: number, z: number];
-  readonly distal: readonly [y: number, z: number];
+  readonly metacarpal: readonly [x: number, y: number, z: number];
+  readonly proximal: readonly [x: number, y: number, z: number];
+  readonly distal: readonly [x: number, y: number, z: number];
 };
 
-/** 엄지 대립 각도를 세 관절에 분배한다. 같은 각도를 중복 가산하지 않는다. */
+/** 엄지 CMC 3축 대립 각도를 세 관절에 분배한다. 같은 각도를 중복 가산하지 않는다. */
 const AUTO_GRIP_THUMB_WEIGHTS: Record<PropGripKind, ThumbAxisWeights> = {
-  cylinder: { metacarpal: [0.34, 0.13], proximal: [0.46, 0.32], distal: [0, 0.24] },
-  handle: { metacarpal: [0.36, 0.15], proximal: [0.48, 0.34], distal: [0, 0.25] },
-  flat: { metacarpal: [0.3, 0.1], proximal: [0.38, 0.22], distal: [0, 0.14] },
-  pinch: { metacarpal: [0.4, 0.1], proximal: [0.42, 0.24], distal: [0, 0.16] },
-  support: { metacarpal: [0.26, 0.08], proximal: [0.32, 0.18], distal: [0, 0.12] },
-  wear: { metacarpal: [0, 0], proximal: [0, 0], distal: [0, 0] },
+  cylinder: { metacarpal: [0.22, 0.34, 0.13], proximal: [0.08, 0.46, 0.32], distal: [0, 0, 0.24] },
+  handle: { metacarpal: [0.24, 0.36, 0.15], proximal: [0.1, 0.48, 0.34], distal: [0, 0, 0.25] },
+  flat: { metacarpal: [0.18, 0.3, 0.1], proximal: [0.06, 0.38, 0.22], distal: [0, 0, 0.14] },
+  pinch: { metacarpal: [0.26, 0.4, 0.1], proximal: [0.1, 0.42, 0.24], distal: [0, 0, 0.16] },
+  support: { metacarpal: [0.16, 0.26, 0.08], proximal: [0.05, 0.32, 0.18], distal: [0, 0, 0.12] },
+  wear: { metacarpal: [0, 0, 0], proximal: [0, 0, 0], distal: [0, 0, 0] },
 };
 
 const AUTO_GRIP_REQUIRED_BONES: Record<PropHandBone, readonly VrmPropMetricBone[]> = {
@@ -1274,11 +1272,11 @@ function fingerPoseForGrip(
     ["Proximal", thumbWeights.proximal],
     ["Distal", thumbWeights.distal],
   ] as const;
-  for (const [segment, [yWeight, zWeight]] of thumbRotations) {
+  for (const [segment, [xWeight, yWeight, zWeight]] of thumbRotations) {
     const boneName = `${prefix}Thumb${segment}`;
     result[boneName] = clampedFingerRotation(
       boneName,
-      [0, sign * thumb * yWeight, sign * thumb * zWeight]
+      [thumb * xWeight, sign * thumb * yWeight, sign * thumb * zWeight]
     );
   }
   return result;

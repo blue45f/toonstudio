@@ -33,7 +33,7 @@ function openWithEnter() {
 describe("SpaceChatInput", () => {
   it("닫힌 상태에서는 힌트 버튼만 보이고, Enter로 입력이 열린다", () => {
     renderChat();
-    expect(screen.getByRole("button", { name: "채팅 열기" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Enter 채팅하기 · 채팅 열기" })).toBeTruthy();
     const input = openWithEnter();
     expect(document.activeElement).toBe(input);
   });
@@ -81,14 +81,14 @@ describe("SpaceChatInput", () => {
 
   it("blocked면 힌트도 Enter 열기도 동작하지 않는다", () => {
     renderChat({ blocked: true });
-    expect(screen.queryByRole("button", { name: "채팅 열기" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /채팅 열기/u })).toBeNull();
     fireEvent.keyDown(window, { key: "Enter" });
     expect(screen.queryByLabelText("근처 사람들에게 보낼 말")).toBeNull();
   });
 
   it("버튼에 포커스가 있을 때의 Enter는 가로채지 않는다", () => {
     renderChat();
-    const hint = screen.getByRole("button", { name: "채팅 열기" });
+    const hint = screen.getByRole("button", { name: "Enter 채팅하기 · 채팅 열기" });
     hint.focus();
     fireEvent.keyDown(hint, { key: "Enter" });
     expect(screen.queryByLabelText("근처 사람들에게 보낼 말")).toBeNull();
@@ -114,8 +114,8 @@ describe("SpaceChatInput", () => {
   it("WorkAdventure 생각풍선(💭 생각) 모드로 전환하면 생각풍선 접두사를 붙여 전송한다", () => {
     const props = renderChat();
     const input = openWithEnter();
-    fireEvent.click(screen.getByRole("button", { name: "말풍선 모드 (눌러서 생각풍선으로)" }));
-    expect(screen.getByRole("button", { name: "생각풍선 모드 (눌러서 일반 말풍선으로)" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "근처 · 말풍선 모드 (눌러서 생각풍선으로)" }));
+    expect(screen.getByRole("button", { name: "생각 · 생각풍선 모드 (눌러서 일반 말풍선으로)" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.change(input, { target: { value: "콘티 구상 중" } });
     fireEvent.submit(input.closest("form")!);
     expect(props.onSend).toHaveBeenCalledWith("💭 콘티 구상 중");

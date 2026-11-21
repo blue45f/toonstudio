@@ -18,12 +18,15 @@ import {
 
 import * as localOAuth from "./lib/cloudflare-local-oauth.mjs";
 import {
+  computeCandidateMd5s,
   createRequestPacer,
   discoverR2LargeAssets,
   fileMd5,
+  normalizeEtag,
   planR2Uploads,
   r2ObjectPutRequest,
   r2RetryDelayMs,
+  runPool,
   syncCloudflareR2Assets,
   type R2LargeAssetUpload,
 } from "./sync-cloudflare-r2-assets.mts";
@@ -235,5 +238,101 @@ describe("Cloudflare R2 REST rate limit", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("R2 차분 해싱·캐시·동시성·네트워크 재시도 최적화", () => {
+  it("따옴표로 감싼 원격 ETag도 정규화해 동일 파일 재업로드를 생략한다", async () => {
+    const dist = temporaryDist();
+    smallFile(join(dist, "vrm/quoted.vrm"), "quoted-payload");
+    const assets = discoverR2LargeAssets(dist);
+    const md5 = await fileMd5(assets[0]!.absolutePath);
+    expect(normalizeEtag(`"${md5.toUpperCase()}"`)).toBe(md5);
+
+    const plan = planR2Uploads(
+      assets,
+      new Map([["vrm/quoted.vrm", md5]]),
+      new Map([["vrm/quoted.vrm", { size: assets[0]!.bytes, etag: `"${md5.toUpperCase()}"` }]]),
+    );
+    expect(plan.unchanged.map((item) => item.key)).toEqual(["vrm/quoted.vrm"]);
+    expect(plan.uploads).toEqual([]);
+  });
+
+  it("원격 누락·크기 불일치·멀티파트 ETag 파일은 디스크 MD5를 생략하고 stat 캐시로 재검증한다", async () => {
+    const dist = temporaryDist();
+    const cachePath = join(dist, ".r2-md5-cache.json");
+    smallFile(join(dist, "vrm/same.vrm"), "same-bytes");
+    smallFile(join(dist, "vrm/size-diff.vrm"), "size-diff-bytes");
+    smallFile(join(dist, "vrm/missing.vrm"), "missing-bytes");
+    smallFile(join(dist, "vrm/multi.vrm"), "multipart-bytes");
+    const assets = discoverR2LargeAssets(dist);
+    const sameMd5 = await fileMd5(join(dist, "vrm/same.vrm"));
+
+    const remote = new Map([
+      ["vrm/same.vrm", { size: 10, etag: sameMd5 }],
+      ["vrm/size-diff.vrm", { size: 999, etag: "0".repeat(32) }],
+      ["vrm/multi.vrm", { size: 15, etag: `${sameMd5}-2` }],
+    ]);
+
+    const first = await computeCandidateMd5s(assets, remote, { hashConcurrency: 4, hashCachePath: cachePath });
+    expect(first.hashedCount).toBe(1);
+    expect(first.cacheHits).toBe(0);
+    expect(first.skippedHashCount).toBe(3);
+    expect(first.localMd5.get("vrm/same.vrm")).toBe(sameMd5);
+    expect(first.localMd5.has("vrm/missing.vrm")).toBe(false);
+
+    // 두 번째 실행은 stat(size+mtimeMs+ctimeMs) 캐시 적중으로 디스크 MD5 0건
+    const second = await computeCandidateMd5s(assets, remote, { hashConcurrency: 4, hashCachePath: cachePath });
+    expect(second.hashedCount).toBe(0);
+    expect(second.cacheHits).toBe(1);
+    expect(second.skippedHashCount).toBe(3);
+    expect(second.localMd5.get("vrm/same.vrm")).toBe(sameMd5);
+
+    // 파일 내용이 변경되면 즉시 캐시를 무효화하고 새 MD5를 계산한다
+    smallFile(join(dist, "vrm/same.vrm"), "changed-10");
+    const third = await computeCandidateMd5s(assets, remote, { hashConcurrency: 4, hashCachePath: cachePath });
+    expect(third.hashedCount).toBe(1);
+    expect(third.cacheHits).toBe(0);
+    expect(third.localMd5.get("vrm/same.vrm")).not.toBe(sameMd5);
+  });
+
+  it("runPool은 동시성 상한을 지키면서 일시 네트워크 오류 재시도 후 안전하게 업로드를 완료한다", async () => {
+    let active = 0;
+    let peak = 0;
+    await runPool([1, 2, 3, 4, 5, 6], async () => {
+      active += 1;
+      peak = Math.max(peak, active);
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, 5));
+      active -= 1;
+    }, 3);
+    expect(peak).toBeLessThanOrEqual(3);
+    expect(peak).toBeGreaterThan(1);
+
+    const account = "b".repeat(32);
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", account);
+    vi.stubEnv("CLOUDFLARE_API_TOKEN", "retry-fixture-token");
+    const dist = temporaryDist();
+    smallFile(join(dist, "vrm/retry.vrm"), "retry-payload");
+
+    let putAttempts = 0;
+    vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
+      const method = init.method ?? "GET";
+      if (method === "GET") {
+        return Response.json({ success: true, result: [] });
+      }
+      putAttempts += 1;
+      if (putAttempts === 1) {
+        throw new TypeError("fetch failed: ECONNRESET");
+      }
+      return new Response(null, { status: 200 });
+    });
+
+    const uploads = await syncCloudflareR2Assets("production", dist, false, {
+      concurrency: 6,
+      hashCachePath: null,
+      networkRetryBaseMs: 1,
+    });
+    expect(putAttempts).toBe(2);
+    expect(uploads.map((item) => item.key)).toEqual(["vrm/retry.vrm"]);
   });
 });

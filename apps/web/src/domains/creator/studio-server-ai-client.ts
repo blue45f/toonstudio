@@ -87,25 +87,7 @@ export function studioTextKeyOrder(configuration = getUserAiSnapshot().configura
   return userAiTextKeyOrder(configuration);
 }
 
-export function resolveActiveServerAiProviderLabel(
-  preference: StudioServerAiProviderPreference,
-  status: Pick<StudioServerAiStatus, "configured" | "providers"> | null,
-): string {
-  if (preference === "auto") {
-    // 실제 순서대로 적는다(completeStudioServerText와 같은 규칙): 내 키(무료 키·먼저 쓰기로 한 유료 키)가 먼저면 앞에 적는다.
-    const keyOrder = userAiTextKeyOrder();
-    // "하나만 고정"은 고른 내 키만 쓰고 다른 경로로 넘어가지 않는다.
-    if (keyOrder === "fixed") return "고정: 내 키";
-    const myKeysFirst = keyOrder === "first";
-    const prefix = myKeysFirst ? "내 키 → " : "";
-    if (status?.providers?.some((provider) => provider.id === "anthropic" && provider.configured)) {
-      return `자동: ${prefix}ToonStudio 고성능 AI → 무료 AI`;
-    }
-    if (myKeysFirst) return status?.configured ? "자동: 내 키 → 무료 AI" : "자동: 내 키";
-    return status?.configured ? "자동 무료 AI" : "자동 무료 AI → 내 무료 키";
-  }
-  return status?.providers?.find((provider) => provider.id === preference)?.label ?? "선택한 무료 AI";
-}
+export { resolveActiveServerAiProviderLabel } from "./ai/studio-ai-client-config";
 
 export type StudioServerAiCompletion = {
   content: string;

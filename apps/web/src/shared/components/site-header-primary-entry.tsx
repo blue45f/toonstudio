@@ -7,6 +7,10 @@ import {
   type HeaderSectionId,
 } from "./site-header-navigation";
 import { siteNavigationText } from "./site-navigation";
+import {
+  accentToneBadgeClasses,
+  resolveShellJourneySummary,
+} from "./workspace/page-role-journey-shell-lite";
 
 import Link from "@/shared/navigation/router-link";
 import { cx } from "@/shared/lib/cx";
@@ -37,6 +41,8 @@ export function HeaderPrimaryNavigationEntry({
   const hasPanel = children.length > 0;
   const activeChild = highlighted ? children.find((child) => isActive(child.href, child.exact)) : undefined;
   const label = siteNavigationText(item.label, locale);
+  const isKo = locale.toLowerCase().startsWith("ko");
+  const itemRole = resolveShellJourneySummary(item.href);
   const [open, setOpen] = useState(false);
   const submenuId = useId();
   // Escape로 닫은 직후에는 트리거로 돌아온 포커스가 패널을 다시 열지 않게 한다.
@@ -69,8 +75,10 @@ export function HeaderPrimaryNavigationEntry({
       aria-haspopup={hasPanel ? "true" : undefined}
       aria-expanded={hasPanel ? open : undefined}
       aria-controls={hasPanel ? submenuId : undefined}
-      title={siteNavigationText(item.description, locale)}
+      title={`${isKo ? itemRole.stageBadgeKo : itemRole.stageBadgeEn} · ${siteNavigationText(item.description, locale)}`}
       data-navigation-entry={item.id}
+      data-journey-stage={itemRole.stageNumber}
+      data-accent-tone={itemRole.accentTone}
       className="site-header__primary-link group"
       onKeyDown={hasPanel ? (event) => {
         if (event.key !== "ArrowDown") return;
@@ -122,19 +130,33 @@ export function HeaderPrimaryNavigationEntry({
                 {group.children.map((child) => {
                   const childActive = activeChild?.id === child.id;
                   const ChildIcon = child.icon;
+                  const childRole = resolveShellJourneySummary(child.href);
                   const index = childIndex++;
                   return (
                     <li key={child.id} style={{ "--ink-i": index } as CSSProperties}>
                       <Link
                         href={child.href}
                         aria-current={childActive ? "page" : undefined}
+                        data-journey-stage={childRole.stageNumber}
+                        data-accent-tone={childRole.accentTone}
                         className={cx("site-header__panel-link", childActive && "is-current")}
                       >
                         <span className="site-header__panel-icon" aria-hidden="true">
                           <ChildIcon size={16} strokeWidth={1.5} />
                         </span>
                         <span className="min-w-0">
-                          <span className="site-header__panel-label">{siteNavigationText(child.label, locale)}</span>
+                          <span className="flex items-center gap-1.5">
+                            <span className="site-header__panel-label">{siteNavigationText(child.label, locale)}</span>
+                            <span
+                              aria-hidden="true"
+                              className={cx(
+                                "shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+                                accentToneBadgeClasses(childRole.accentTone),
+                              )}
+                            >
+                              {isKo ? childRole.stageBadgeKo : childRole.stageBadgeEn}
+                            </span>
+                          </span>
                           <span className="site-header__panel-description">{siteNavigationText(child.description, locale)}</span>
                         </span>
                       </Link>

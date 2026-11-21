@@ -1,6 +1,92 @@
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
+
+import ts from "typescript";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { STUDIO_GPU_PIN_REQUEST_TIMEOUT_MS, STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS } from "../studio-page-shell-runtime";
+
 import { StudioGpuPinReceiptWatchdog } from "./studio-webgpu-pin-receipt-watchdog";
+
+import type { DrawEl } from "../studio-element-model";
+
+const host = ts.createSourceFile("Host.tsx", readFileSync(
+  new URL("../StudioCuttoonEditorHost.tsx", import.meta.url), "utf8",
+), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const appendDeclarations: ts.FunctionDeclaration[] = [];
+const appendBindings: ts.VariableStatement[] = [];
+function findHostAppend(node: ts.Node): void {
+  if (ts.isFunctionDeclaration(node) && node.name?.text === "appendGpuLiveSourceJournalSuffix") appendDeclarations.push(node);
+  if (ts.isVariableStatement(node) && node.declarationList.declarations.some((declaration) => (
+    ts.isIdentifier(declaration.name) && declaration.name.text === "gpuLiveSourceJournalAppend"
+    && declaration.initializer && ts.isCallExpression(declaration.initializer)
+    && ts.isIdentifier(declaration.initializer.expression)
+    && declaration.initializer.expression.text === "createStudioLiveStrokeGpuAppend"
+  ))) appendBindings.push(node);
+  ts.forEachChild(node, findHostAppend);
+}
+findHostAppend(host);
+const [hostAppend] = appendDeclarations;
+const [hostBinding] = appendBindings;
+if (appendDeclarations.length !== 1 || !hostAppend || appendBindings.length !== 1 || !hostBinding) {
+  throw new Error("실제 Host GPU append 함수와 helper 연결이 각각 하나여야 합니다.");
+}
+const helper = ts.createSourceFile("studio-live-stroke-gpu-append.ts", readFileSync(
+  new URL("./studio-live-stroke-gpu-append.ts", import.meta.url), "utf8",
+), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+const helperFactory = helper.statements.find((statement): statement is ts.FunctionDeclaration => (
+  ts.isFunctionDeclaration(statement) && statement.name?.text === "createStudioLiveStrokeGpuAppend"
+));
+if (!helperFactory) throw new Error("실제 GPU append helper가 없습니다.");
+const hostAppendExecutable = ts.transpileModule([
+  helperFactory.getText(helper), hostBinding.getText(host), hostAppend.getText(host),
+].join("\n"), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+}).outputText;
+
+function hostJournalAppend(watchdog: StudioGpuPinReceiptWatchdog) {
+  let requestSequence = 1;
+  const journal = { identity: { epoch: 1, variations: [] } };
+  const failSelectedGpuLiveInk = vi.fn();
+  const armGpuPinnedRequestWatchdog = vi.fn((requestId: string, timeoutMs?: number) => watchdog.request(requestId, timeoutMs));
+  // 기하 계산·GPU 제출은 대역으로 두고, 실제 Host 연결·추출된 append 본문·시한 관리를 실행한다.
+  const runAppend: unknown = runInNewContext(`${hostAppendExecutable}\nappendGpuLiveSourceJournalSuffix`, {
+    exports: {},
+    gpuLiveSourceJournalRef: { current: journal },
+    webGpuCanvasHandleRef: { current: {
+      appendPinnedJournalSuffixBatch: () => ({ status: "accepted", requestId: `frame:${++requestSequence}` }),
+    } },
+    gpuLiveSourceJournalFirstStrokeIndexRef: { current: 0 },
+    liveDraftVisualRef: { current: null },
+    gpuLiveInkPinnedRef: { current: false },
+    liveStrokeBackendAuditActiveIdRef: { current: null },
+    liveStrokeBackendAuditSessionsRef: { current: new Map() },
+    gpuPinReceiptWatchdog: () => watchdog,
+    gpuLiveSourceJournalIdentityFor: () => journal.identity,
+    advanceStudioGpuLiveSourceJournal: () => ({
+      status: "advanced", state: journal,
+      suffixes: [{ previousRenderedPointCount: 2, points: [2, 2], pressures: [0.5] }],
+    }),
+    prepareLiveStrokeGpuSubmission: () => true,
+    registerLiveStrokeGpuRequest: () => true,
+    gpuLiveAcceptedRequestIdRef: { current: null },
+    armGpuPinnedRequestWatchdog,
+    STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS,
+    applyLiveStrokeBackendPresentationEffects: vi.fn(),
+    failSelectedGpuLiveInk,
+  });
+  const append = (element: DrawEl, sealEndpoint?: boolean) => {
+    if (typeof runAppend !== "function") throw new Error("Host append가 실행 가능한 함수가 아닙니다.");
+    const outcome: unknown = runAppend(element, sealEndpoint);
+    if (outcome !== "advanced" && outcome !== "retained" && outcome !== "rejected") {
+      throw new Error("Host append 결과가 실제 계약과 다릅니다.");
+    }
+    return outcome;
+  };
+  return { append, armGpuPinnedRequestWatchdog, failSelectedGpuLiveInk };
+}
+
+const liveStroke: DrawEl = { id: "stroke:1", type: "draw", points: [0, 0, 2, 2], stroke: "#000000", strokeWidth: 4 };
 
 afterEach(() => {
   vi.useRealTimers();
@@ -119,5 +205,51 @@ describe("StudioGpuPinReceiptWatchdog", () => {
     vi.advanceTimersByTime(301);
 
     expect(onTimeout).toHaveBeenCalledWith("progress", "frame:2");
+  });
+
+  it("실제 Host의 연속 일반 append는 첫 receipt 이후 300 ms progress 시한을 미루지 않는다", () => {
+    vi.useFakeTimers();
+    const onTimeout = vi.fn();
+    const watchdog = new StudioGpuPinReceiptWatchdog({ timeoutMs: STUDIO_GPU_PIN_REQUEST_TIMEOUT_MS, onTimeout });
+    const { append, armGpuPinnedRequestWatchdog, failSelectedGpuLiveInk } = hostJournalAppend(watchdog);
+    watchdog.begin("frame:1");
+    expect(watchdog.receipt("frame:1")).toBe(true);
+
+    expect(append(liveStroke)).toBe("advanced");
+    vi.advanceTimersByTime(100);
+    expect(append(liveStroke)).toBe("advanced");
+    vi.advanceTimersByTime(100);
+    expect(append(liveStroke)).toBe("advanced");
+    vi.advanceTimersByTime(99);
+    expect(onTimeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+
+    expect(onTimeout).toHaveBeenCalledExactlyOnceWith("progress", "frame:4");
+    expect(armGpuPinnedRequestWatchdog.mock.calls).toEqual([
+      ["frame:2", undefined], ["frame:3", undefined], ["frame:4", undefined],
+    ]);
+    expect(failSelectedGpuLiveInk).not.toHaveBeenCalled();
+  });
+
+  it("실제 Host의 seal append만 대기 중인 live 시한을 2000 ms terminal 예산으로 바꾼다", () => {
+    vi.useFakeTimers();
+    const onTimeout = vi.fn();
+    const watchdog = new StudioGpuPinReceiptWatchdog({ timeoutMs: STUDIO_GPU_PIN_REQUEST_TIMEOUT_MS, onTimeout });
+    const { append, armGpuPinnedRequestWatchdog, failSelectedGpuLiveInk } = hostJournalAppend(watchdog);
+    watchdog.begin("frame:1");
+    expect(watchdog.receipt("frame:1")).toBe(true);
+
+    expect(append(liveStroke)).toBe("advanced");
+    vi.advanceTimersByTime(120);
+    expect(append(liveStroke, true)).toBe("advanced");
+    vi.advanceTimersByTime(1_999);
+    expect(onTimeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+
+    expect(onTimeout).toHaveBeenCalledExactlyOnceWith("progress", "frame:3");
+    expect(armGpuPinnedRequestWatchdog.mock.calls).toEqual([
+      ["frame:2", undefined], ["frame:3", STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS],
+    ]);
+    expect(failSelectedGpuLiveInk).not.toHaveBeenCalled();
   });
 });

@@ -3,11 +3,14 @@ import {
   GatewayTimeoutException,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
+  Optional,
   ServiceUnavailableException,
   UnprocessableEntityException,
 } from "@nestjs/common";
 
+import { buildDeterministicAssistResult } from "./openai-assist/studio-assist-deterministic-fallback";
 import {
   DEFAULT_OPENAI_MODEL,
   redactCreatorSensitiveText,
@@ -21,10 +24,11 @@ import {
   STUDIO_OPENAI_MODE_DESCRIPTORS,
 } from "./openai-assist/studio-openai-prompt-catalog";
 import {
-  OpenAiDialoguePolishOutputSchema,
-  OpenAiExportCoachOutputSchema,
-  OpenAiIdeaRemixOutputSchema,
-  OpenAiScriptToCutsOutputSchema,
+  StudioFreeAiZeroBillRouter,
+  type ZeroBillFreeQuotaStatusReport,
+} from "./studio-free-ai-zero-bill-router";
+import {
+  validateAssistModeStructuredOutput,
   type OpenAiAssistStructuredResult,
   type StudioOpenAiAssistMode,
   type StudioOpenAiCreativeAssistRequest,
@@ -46,15 +50,38 @@ const MAX_ERROR_BODY_BYTES = 8_192;
 @Injectable()
 export class StudioOpenAiCreativeAssistService {
   private readonly rateLimiter = new StudioOpenAiRateLimiter();
+  private readonly zeroBillRouter: StudioFreeAiZeroBillRouter;
+
+  constructor(zeroBillRouter?: StudioFreeAiZeroBillRouter) {
+    this.zeroBillRouter = zeroBillRouter ?? new StudioFreeAiZeroBillRouter();
+  }
+
+  listModes() {
+    return {
+      totalModes: STUDIO_OPENAI_MODE_DESCRIPTORS.length,
+      costUsdGuaranteed: "$0.00" as const,
+      paidBillingBlocked: true as const,
+      modes: STUDIO_OPENAI_MODE_DESCRIPTORS,
+    };
+  }
+
+  freeQuotaStatus(
+    env: EnvLike = process.env,
+    nowMs = Date.now(),
+  ): ZeroBillFreeQuotaStatusReport {
+    return this.zeroBillRouter.getFreeQuotaStatus(env, nowMs);
+  }
 
   status(env: EnvLike = process.env) {
     const config = resolveStudioOpenAiCreativeConfig(env);
+    const freeQuota = this.zeroBillRouter.getFreeQuotaStatus(env);
     return {
       configured: config.configured,
       provider: "openai" as const,
-      model: config.configured || config.modelConfigurationError === "retired"
-        ? config.model
-        : DEFAULT_OPENAI_MODEL,
+      model:
+        config.configured || config.modelConfigurationError === "retired"
+          ? config.model
+          : DEFAULT_OPENAI_MODEL,
       modelConfigurationError: config.modelConfigurationError,
       keyLocation: "server-env-only" as const,
       storeData: false as const,
@@ -62,17 +89,127 @@ export class StudioOpenAiCreativeAssistService {
       // 계정의 잔액·자동 충전 설정을 조회하지 않으므로 과금 차단 여부는 미확인이다.
       autoBillingDisabled: null,
       modes: STUDIO_OPENAI_MODE_DESCRIPTORS,
+      freeQuotaSummary: {
+        guaranteedZeroCostLabel: freeQuota.guaranteedZeroCostLabel,
+        paidBillingBlocked: freeQuota.paidBillingBlocked,
+        safetyCutoffRatio: freeQuota.safetyCutoffRatio,
+        activeCloudCount: freeQuota.summary.activeCloudCount,
+        localFallbackReady: freeQuota.summary.localFallbackReady,
+      },
       limits: {
         burstPerMinute: config.limits.burstPerMinute,
         hourlyRequests: config.limits.hourlyRequests,
         dailyRequests: config.limits.dailyRequests,
         maxInputChars: 6_000,
       },
-      setupNoticeKo: config.modelConfigurationError === "retired"
-        ? `설정된 OpenAI 모델(${config.model})은 서비스가 종료되어 호출을 차단했습니다. 지원 모델을 확인해 서버 설정을 변경해야 합니다.`
-        : config.configured
-          ? "서버 로컬 환경변수(OPENAI_API_KEY)가 설정되어 있습니다. 응답 저장 비활성화(store: false)로 요청하며, 계정 잔액과 자동 충전 설정은 별도로 확인해야 합니다."
-          : "현재 서버 로컬 환경변수에 OPENAI_API_KEY가 설정되어 있지 않습니다. 서버의 .env.local에 OPENAI_API_KEY를 설정하면 사용할 수 있으며, 설정 전에도 기획·편집·내보내기 기능은 모두 그대로 작동합니다.",
+      setupNoticeKo:
+        config.modelConfigurationError === "retired"
+          ? `설정된 OpenAI 모델(${config.model})은 서비스가 종료되어 호출을 차단했습니다. 지원 모델을 확인해 서버 설정을 변경해야 합니다.`
+          : config.configured
+            ? "서버 로컬 환경변수(OPENAI_API_KEY)가 설정되어 있습니다. 응답 저장 비활성화(store: false)로 요청하며, 계정 잔액과 자동 충전 설정은 별도로 확인해야 합니다."
+            : "현재 서버 로컬 환경변수에 OPENAI_API_KEY가 설정되어 있지 않습니다. 서버의 .env.local에 OPENAI_API_KEY를 설정하면 사용할 수 있으며, 설정 전에도 기획·편집·내보내기 기능은 모두 그대로 작동합니다.",
+    };
+  }
+
+  async assistWithZeroBillCascade(
+    actorIdentifier: string | null,
+    input: StudioOpenAiCreativeAssistRequest,
+    options: {
+      readonly env?: EnvLike;
+      readonly signal?: AbortSignal;
+      readonly fetchImpl?: typeof fetch;
+      readonly nowMs?: number;
+      readonly localOnly?: boolean;
+    } = {},
+  ) {
+    const env = options.env ?? process.env;
+    const config = resolveStudioOpenAiCreativeConfig(env);
+
+    if (options.signal?.aborted) {
+      throw new HttpException(
+        { code: "CLIENT_ABORTED", message: "요청이 취소되었어요." },
+        499,
+      );
+    }
+
+    const effectiveLocalOnly = options.localOnly === true || !actorIdentifier;
+    const quota = actorIdentifier
+      ? this.rateLimiter.consume(actorIdentifier, config.limits, options.nowMs)
+      : { remainingDaily: config.limits.dailyRequests, release: () => undefined };
+
+    const { userPrompt, piiRedactedCount } = this.prepareMaskedUserPrompt(input);
+    const schemaSpec = MODE_JSON_SCHEMAS[input.mode];
+    const fallbackResult = buildDeterministicAssistResult(input.mode, input);
+
+    const cascade = await this.zeroBillRouter.executeCascade(
+      {
+        systemInstruction: buildModeSystemInstruction(input.mode),
+        userPrompt,
+        jsonSchema: schemaSpec,
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+        localOnly: effectiveLocalOnly,
+        allowLocalDeterministicFallback: true,
+        localDeterministicOutput: () => JSON.stringify(fallbackResult.data),
+      },
+      {
+        env,
+        fetchImpl: options.fetchImpl,
+        signal: options.signal,
+        nowMs: options.nowMs,
+        validateContent: (raw) => {
+          try {
+            return validateAssistModeStructuredOutput(input.mode, JSON.parse(raw)) !== null;
+          } catch {
+            return false;
+          }
+        },
+      },
+    );
+
+    if (!cascade.ok) {
+      quota.release();
+      if (cascade.errorCode === "CLIENT_ABORTED") {
+        throw new HttpException(
+          { code: "CLIENT_ABORTED", message: "요청이 취소되었어요." },
+          499,
+        );
+      }
+      throw new HttpException(
+        {
+          code: cascade.errorCode ?? "FREE_AI_CASCADE_BLOCKED",
+          message:
+            cascade.errorMessageKo ??
+            "무료 AI 할당량 보호 한도에 도달해 유료 전환 없이 중단했어요.",
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    let structured: OpenAiAssistStructuredResult;
+    try {
+      const parsed = JSON.parse(cascade.content) as unknown;
+      structured = validateAssistModeStructuredOutput(input.mode, parsed) ?? fallbackResult;
+    } catch {
+      structured = fallbackResult;
+    }
+
+    return {
+      provider: cascade.providerId,
+      providerTier: cascade.providerTier,
+      model: cascade.model,
+      result: structured,
+      costGuaranteedZeroUsd: 0 as const,
+      paidBillingBlocked: true as const,
+      privacy: {
+        storeData: false as const,
+        piiRedactedCount,
+      },
+      quota: {
+        remainingDaily: quota.remainingDaily,
+        dailyLimit: config.limits.dailyRequests,
+      },
+      usage: cascade.usage,
+      attempts: cascade.attempts,
     };
   }
 
@@ -85,7 +222,12 @@ export class StudioOpenAiCreativeAssistService {
       readonly fetchImpl?: typeof fetch;
     } = {},
   ) {
-    const config = resolveStudioOpenAiCreativeConfig(options.env ?? process.env);
+    if (input.allowZeroBillCascade === true) {
+      return this.assistWithZeroBillCascade(actorIdentifier, input, options);
+    }
+
+    const env = options.env ?? process.env;
+    const config = resolveStudioOpenAiCreativeConfig(env);
     if (!config.configured) {
       throw new ServiceUnavailableException({
         code: "OPENAI_API_KEY_NOT_CONFIGURED",
@@ -110,27 +252,8 @@ export class StudioOpenAiCreativeAssistService {
     }
 
     const quota = this.rateLimiter.consume(actorIdentifier, config.limits);
-    const redactedInput = redactCreatorSensitiveText(input.inputText);
-    const redactedTitle = input.projectTitle
-      ? redactCreatorSensitiveText(input.projectTitle)
-      : { sanitizedText: "", redactedCount: 0 };
-    const redactedTone = input.genreOrTone
-      ? redactCreatorSensitiveText(input.genreOrTone)
-      : { sanitizedText: "", redactedCount: 0 };
-    const piiRedactedCount =
-      redactedInput.redactedCount + redactedTitle.redactedCount + redactedTone.redactedCount;
-
+    const { userPrompt, piiRedactedCount } = this.prepareMaskedUserPrompt(input);
     const schemaSpec = MODE_JSON_SCHEMAS[input.mode];
-    const contextLines = [
-      redactedTitle.sanitizedText ? `작품 제목: ${redactedTitle.sanitizedText}` : null,
-      redactedTone.sanitizedText ? `장르·분위기: ${redactedTone.sanitizedText}` : null,
-      input.targetPlatform ? `목표 형식: ${input.targetPlatform}` : null,
-    ].filter((line): line is string => Boolean(line));
-
-    const userPrompt =
-      contextLines.length > 0
-        ? `${contextLines.join("\n")}\n\n[창작자 입력]\n${redactedInput.sanitizedText}`
-        : `[창작자 입력]\n${redactedInput.sanitizedText}`;
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${config.apiKey}`,
@@ -206,6 +329,18 @@ export class StudioOpenAiCreativeAssistService {
           quota.release();
         }
         const errorCode = this.readSafeOpenAiErrorCode(responseText);
+        if (response.status === 402 || response.status === 429) {
+          this.zeroBillRouter.blockProviderUntilUtcMidnight(
+            "openai-free-share",
+            response.status === 402
+              ? "http_402_payment_required"
+              : errorCode === "insufficient_quota"
+                ? "insufficient_quota"
+                : errorCode === "billing_hard_limit_reached"
+                  ? "billing_hard_limit"
+                  : "http_429_rate_limit",
+          );
+        }
         throw this.mapUpstreamHttpError(response.status, errorCode);
       }
 
@@ -260,6 +395,9 @@ export class StudioOpenAiCreativeAssistService {
         payload.usage && typeof payload.usage === "object"
           ? (payload.usage as Record<string, unknown>)
           : {};
+      const totalTokens =
+        typeof usageRecord.total_tokens === "number" ? usageRecord.total_tokens : 0;
+      this.zeroBillRouter.recordProviderUsage("openai-free-share", totalTokens, env);
 
       return {
         provider: "openai" as const,
@@ -281,14 +419,41 @@ export class StudioOpenAiCreativeAssistService {
             typeof usageRecord.prompt_tokens === "number" ? usageRecord.prompt_tokens : 0,
           completionTokens:
             typeof usageRecord.completion_tokens === "number" ? usageRecord.completion_tokens : 0,
-          totalTokens:
-            typeof usageRecord.total_tokens === "number" ? usageRecord.total_tokens : 0,
+          totalTokens,
         },
       };
     } finally {
       clearTimeout(timer);
       options.signal?.removeEventListener("abort", onClientAbort);
     }
+  }
+
+  private prepareMaskedUserPrompt(input: StudioOpenAiCreativeAssistRequest): {
+    readonly userPrompt: string;
+    readonly piiRedactedCount: number;
+  } {
+    const redactedInput = redactCreatorSensitiveText(input.inputText);
+    const redactedTitle = input.projectTitle
+      ? redactCreatorSensitiveText(input.projectTitle)
+      : { sanitizedText: "", redactedCount: 0 };
+    const redactedTone = input.genreOrTone
+      ? redactCreatorSensitiveText(input.genreOrTone)
+      : { sanitizedText: "", redactedCount: 0 };
+    const piiRedactedCount =
+      redactedInput.redactedCount + redactedTitle.redactedCount + redactedTone.redactedCount;
+
+    const contextLines = [
+      redactedTitle.sanitizedText ? `작품 제목: ${redactedTitle.sanitizedText}` : null,
+      redactedTone.sanitizedText ? `장르·분위기: ${redactedTone.sanitizedText}` : null,
+      input.targetPlatform ? `목표 형식: ${input.targetPlatform}` : null,
+    ].filter((line): line is string => Boolean(line));
+
+    const userPrompt =
+      contextLines.length > 0
+        ? `${contextLines.join("\n")}\n\n[창작자 입력]\n${redactedInput.sanitizedText}`
+        : `[창작자 입력]\n${redactedInput.sanitizedText}`;
+
+    return { userPrompt, piiRedactedCount };
   }
 
   private parseModeOutput(
@@ -305,45 +470,14 @@ export class StudioOpenAiCreativeAssistService {
       });
     }
 
-    if (mode === "idea-remix") {
-      const checked = OpenAiIdeaRemixOutputSchema.safeParse(parsedJson);
-      if (!checked.success) {
-        throw new BadGatewayException({
-          code: "OPENAI_SCHEMA_MISMATCH",
-          message: "발상 리믹스 결과 형식이 맞지 않아 적용하지 않았어요. 다시 시도해 주세요.",
-        });
-      }
-      return { mode, data: checked.data };
-    }
-    if (mode === "script-to-cuts") {
-      const checked = OpenAiScriptToCutsOutputSchema.safeParse(parsedJson);
-      if (!checked.success) {
-        throw new BadGatewayException({
-          code: "OPENAI_SCHEMA_MISMATCH",
-          message: "컷 분할 결과 형식이 맞지 않아 적용하지 않았어요. 다시 시도해 주세요.",
-        });
-      }
-      return { mode, data: checked.data };
-    }
-    if (mode === "dialogue-polish") {
-      const checked = OpenAiDialoguePolishOutputSchema.safeParse(parsedJson);
-      if (!checked.success) {
-        throw new BadGatewayException({
-          code: "OPENAI_SCHEMA_MISMATCH",
-          message: "대사 다듬기 결과 형식이 맞지 않아 적용하지 않았어요. 다시 시도해 주세요.",
-        });
-      }
-      return { mode, data: checked.data };
-    }
-
-    const checked = OpenAiExportCoachOutputSchema.safeParse(parsedJson);
-    if (!checked.success) {
+    const validated = validateAssistModeStructuredOutput(mode, parsedJson);
+    if (!validated) {
       throw new BadGatewayException({
         code: "OPENAI_SCHEMA_MISMATCH",
-        message: "마감 점검 결과 형식이 맞지 않아 적용하지 않았어요. 다시 시도해 주세요.",
+        message: "AI 보조 결과 형식이 맞지 않아 적용하지 않았어요. 다시 시도해 주세요.",
       });
     }
-    return { mode, data: checked.data };
+    return validated;
   }
 
   private readSafeOpenAiErrorCode(text: string): string | null {
@@ -413,3 +547,8 @@ export class StudioOpenAiCreativeAssistService {
     });
   }
 }
+
+// 루트 tsconfig(표준 데코레이터)와 API tsconfig(experimentalDecorators) 양쪽에서
+// 파라미터 데코레이터 문법(TS1206) 없이 동일한 NestJS 선택적 DI 메타데이터를 등록한다.
+Inject(StudioFreeAiZeroBillRouter)(StudioOpenAiCreativeAssistService, undefined, 0);
+Optional()(StudioOpenAiCreativeAssistService, undefined, 0);

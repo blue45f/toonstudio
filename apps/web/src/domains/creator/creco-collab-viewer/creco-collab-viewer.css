@@ -1,0 +1,612 @@
+/* CRECO++ 클린룸 협업 비교 뷰어 · 무료 AI 음영 · 세부 ACL · 해시 체인 활동 로그 스타일시트
+ * 규칙: 원시 HEX 0% · OKLCH 고대비(>= 4.5:1) · 명시적 속성 전이만 허용 · >= 44x44px 터치 타겟 · reduced-motion 준수 */
+
+.ccv-shell {
+  --ccv-bg: oklch(0.976 0.008 86);
+  --ccv-surface: oklch(0.954 0.011 86);
+  --ccv-card: oklch(0.996 0.004 86);
+  --ccv-ink: oklch(0.21 0.025 255);
+  --ccv-ink-2: oklch(0.42 0.024 255);
+  --ccv-border: oklch(0.84 0.018 250);
+  --ccv-accent: oklch(0.45 0.15 255);
+  --ccv-accent-soft: oklch(0.93 0.036 255);
+  --ccv-accent-ink: oklch(0.99 0.005 255);
+  --ccv-ok: oklch(0.45 0.13 152);
+  --ccv-ok-soft: oklch(0.93 0.04 152);
+  --ccv-warn: oklch(0.50 0.14 68);
+  --ccv-warn-soft: oklch(0.94 0.048 72);
+  --ccv-danger: oklch(0.49 0.18 25);
+  --ccv-danger-soft: oklch(0.94 0.042 25);
+  --ccv-redline-crimson: oklch(0.54 0.21 24);
+  --ccv-redline-amber: oklch(0.62 0.17 72);
+  --ccv-redline-cobalt: oklch(0.50 0.18 256);
+
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--ccv-border);
+  border-radius: 1.125rem;
+  background-color: var(--ccv-bg);
+  color: var(--ccv-ink);
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.ccv-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    oklch(0.55 0.15 255) 0%,
+    oklch(0.58 0.14 165) 50%,
+    oklch(0.62 0.15 55) 100%
+  );
+  pointer-events: none;
+}
+
+:root[data-theme="dark"] .ccv-shell {
+  --ccv-bg: oklch(0.19 0.018 258);
+  --ccv-surface: oklch(0.24 0.02 258);
+  --ccv-card: oklch(0.22 0.018 258);
+  --ccv-ink: oklch(0.95 0.008 255);
+  --ccv-ink-2: oklch(0.77 0.016 255);
+  --ccv-border: oklch(0.36 0.022 258);
+  --ccv-accent: oklch(0.72 0.14 252);
+  --ccv-accent-soft: oklch(0.30 0.05 255);
+  --ccv-accent-ink: oklch(0.16 0.02 258);
+  --ccv-ok: oklch(0.73 0.13 152);
+  --ccv-ok-soft: oklch(0.28 0.05 152);
+  --ccv-warn: oklch(0.78 0.13 74);
+  --ccv-warn-soft: oklch(0.30 0.05 70);
+  --ccv-danger: oklch(0.74 0.16 26);
+  --ccv-danger-soft: oklch(0.30 0.06 25);
+}
+
+.ccv-shell :is(h2, h3, h4, p, button, label, span, li, td, th, kbd, summary) {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.ccv-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.ccv-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .ccv-stack {
+    gap: 1.375rem;
+    padding: 1.375rem;
+  }
+}
+
+/* 헤더 및 ₩0 무제한 시트 / 단일 공유 링크 바 */
+.ccv-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--ccv-border);
+  padding-bottom: 0.875rem;
+}
+
+.ccv-header-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 900px) {
+  .ccv-header-row {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.ccv-kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ccv-accent);
+}
+
+.ccv-title {
+  margin: 0.25rem 0 0;
+  font-size: 1.1875rem;
+  font-weight: 800;
+  line-height: 1.32;
+  color: var(--ccv-ink);
+}
+
+.ccv-subtitle {
+  margin: 0.375rem 0 0;
+  max-width: 68ch;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--ccv-ink-2);
+}
+
+.ccv-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ccv-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  border: 1px solid var(--ccv-border);
+  background-color: var(--ccv-card);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ccv-ink);
+}
+
+.ccv-pill-ok {
+  border-color: var(--ccv-ok);
+  background-color: var(--ccv-ok-soft);
+  color: var(--ccv-ok);
+}
+
+.ccv-pill-accent {
+  border-color: var(--ccv-accent);
+  background-color: var(--ccv-accent-soft);
+  color: var(--ccv-accent);
+}
+
+.ccv-pill-warn {
+  border-color: var(--ccv-warn);
+  background-color: var(--ccv-warn-soft);
+  color: var(--ccv-warn);
+}
+
+.ccv-pill-danger {
+  border-color: var(--ccv-danger);
+  background-color: var(--ccv-danger-soft);
+  color: var(--ccv-danger);
+}
+
+/* 공통 버튼·입력·셀렉트 (>= 44x44px 터치 타겟) */
+.ccv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--ccv-border);
+  background-color: var(--ccv-card);
+  color: var(--ccv-ink);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.ccv-btn:hover:not(:disabled) {
+  border-color: var(--ccv-accent);
+  background-color: var(--ccv-accent-soft);
+}
+
+.ccv-btn:focus-visible,
+.ccv-input:focus-visible,
+.ccv-select:focus-visible,
+.ccv-range:focus-visible {
+  outline: 2px solid var(--ccv-accent);
+  outline-offset: 2px;
+}
+
+.ccv-btn-primary {
+  border-color: var(--ccv-accent);
+  background-color: var(--ccv-accent);
+  color: var(--ccv-accent-ink);
+}
+
+.ccv-btn-primary:hover:not(:disabled) {
+  background-color: oklch(0.40 0.16 255);
+  color: var(--ccv-accent-ink);
+}
+
+.ccv-btn[aria-pressed="true"],
+.ccv-tab[aria-selected="true"] {
+  border-color: var(--ccv-accent);
+  background-color: var(--ccv-accent);
+  color: var(--ccv-accent-ink);
+}
+
+.ccv-btn:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.ccv-input,
+.ccv-select {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--ccv-border);
+  background-color: var(--ccv-card);
+  color: var(--ccv-ink);
+  font-size: 0.8125rem;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.ccv-range {
+  width: 100%;
+  min-height: 44px;
+  accent-color: var(--ccv-accent);
+  cursor: pointer;
+}
+
+/* 탭 바 및 단축키 스트립 */
+.ccv-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ccv-shortcut-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--ccv-border);
+  background-color: var(--ccv-surface);
+  font-size: 0.75rem;
+  color: var(--ccv-ink-2);
+}
+
+.ccv-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.375rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--ccv-border);
+  background-color: var(--ccv-card);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ccv-ink);
+}
+
+/* 카드 & 섹션 */
+.ccv-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1rem;
+  border-radius: 0.875rem;
+  border: 1px solid var(--ccv-border);
+  background-color: var(--ccv-card);
+}
+
+.ccv-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+}
+
+.ccv-card-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--ccv-ink);
+}
+
+.ccv-status-banner {
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--ccv-accent);
+  background-color: var(--ccv-accent-soft);
+  color: var(--ccv-ink);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+/* 5계층 불변 버전 트리 & 단일 공유 링크 */
+.ccv-version-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 860px) {
+  .ccv-version-grid {
+    grid-template-columns: 1.25fr 1fr;
+  }
+}
+
+.ccv-stage-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ccv-version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.ccv-version-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--ccv-border);
+  background-color: var(--ccv-surface);
+  font-size: 0.8125rem;
+}
+
+/* 4열 동시 동기 비교 뷰어 */
+.ccv-lanes-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 680px) {
+  .ccv-lanes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1120px) {
+  .ccv-lanes-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.ccv-horizontal-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(15rem, 1fr);
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.375rem;
+}
+
+.ccv-lane {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--ccv-border);
+  background-color: var(--ccv-surface);
+}
+
+.ccv-lane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.ccv-cut-frame {
+  position: relative;
+  min-height: 10.5rem;
+  padding: 0.75rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--ccv-border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+/* 와이프 핸들 비교 스테이지 */
+.ccv-wipe-stage {
+  position: relative;
+  min-height: 15rem;
+  border-radius: 0.875rem;
+  border: 1px solid var(--ccv-border);
+  overflow: hidden;
+  background-color: var(--ccv-surface);
+}
+
+.ccv-wipe-layer {
+  position: absolute;
+  inset: 0;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.ccv-wipe-after {
+  clip-path: inset(0 calc(100% - var(--ccv-wipe-pct, 50%)) 0 0);
+}
+
+.ccv-wipe-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--ccv-wipe-pct, 50%);
+  width: 2px;
+  background-color: var(--ccv-accent);
+  pointer-events: none;
+}
+
+.ccv-wipe-knob {
+  position: absolute;
+  top: 50%;
+  left: var(--ccv-wipe-pct, 50%);
+  transform: translate(-50%, -50%);
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--ccv-accent);
+  background-color: var(--ccv-card);
+  color: var(--ccv-accent);
+  font-size: 0.75rem;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+/* 핀 + 레드라인 인터랙티브 캔버스 */
+.ccv-pin-stage {
+  position: relative;
+  min-height: 14rem;
+  border-radius: 0.875rem;
+  border: 1px dashed var(--ccv-accent);
+  background-color: var(--ccv-surface);
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+.ccv-redline-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.ccv-pin-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 999px;
+  border: 2px solid var(--ccv-card);
+  background-color: var(--ccv-danger);
+  color: var(--ccv-accent-ink);
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 120ms ease, background-color 140ms ease;
+}
+
+.ccv-pin-marker[data-status="resolved"] {
+  background-color: var(--ccv-ok);
+}
+
+.ccv-pin-marker[data-status="in-progress"] {
+  background-color: var(--ccv-warn);
+}
+
+/* 무료 AI 음영 비교 스튜디오 */
+.ccv-shading-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.875rem;
+}
+
+@media (min-width: 900px) {
+  .ccv-shading-grid {
+    grid-template-columns: 1.15fr 1fr;
+  }
+}
+
+.ccv-shading-preview {
+  position: relative;
+  min-height: 15.5rem;
+  border-radius: 0.875rem;
+  border: 1px solid var(--ccv-border);
+  background: linear-gradient(180deg, oklch(0.95 0.015 86) 0%, oklch(0.89 0.024 245) 100%);
+  overflow: hidden;
+}
+
+.ccv-shading-overlay {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: multiply;
+  clip-path: inset(0 calc(100% - var(--ccv-wipe-pct, 50%)) 0 0);
+  pointer-events: none;
+}
+
+.ccv-shading-rim {
+  position: absolute;
+  inset: 1rem;
+  border-radius: 0.75rem;
+  border: 3px solid transparent;
+  clip-path: inset(0 calc(100% - var(--ccv-wipe-pct, 50%)) 0 0);
+  pointer-events: none;
+}
+
+/* ACL 테이블 & 로그 */
+.ccv-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ccv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.ccv-table th,
+.ccv-table td {
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--ccv-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.ccv-table th {
+  font-weight: 700;
+  color: var(--ccv-ink-2);
+  background-color: var(--ccv-surface);
+}
+
+.ccv-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: 0.625rem;
+}
+
+.ccv-metric-card {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--ccv-border);
+  background-color: var(--ccv-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ccv-shell,
+  .ccv-shell *,
+  .ccv-shell *::before,
+  .ccv-shell *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

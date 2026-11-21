@@ -83,8 +83,8 @@ export function createRasterMeshLattice(
   rows = 4,
   cols = 4,
 ): RasterMeshLattice {
-  const safeW = Math.max(1, Math.trunc(width));
-  const safeH = Math.max(1, Math.trunc(height));
+  const safeW = Number.isFinite(width) ? Math.max(1, Math.trunc(width)) : 1;
+  const safeH = Number.isFinite(height) ? Math.max(1, Math.trunc(height)) : 1;
   const safeRows = clampGridCount(rows, 4);
   const safeCols = clampGridCount(cols, 4);
   const maxX = Math.max(0, safeW - 1);
@@ -244,8 +244,10 @@ export function applyRasterMeshTransform(
   options: RasterMeshTransformOptions = {},
 ): StudioImageDataLike {
   const { width, height, data } = source;
-  const outW = Math.max(1, Math.trunc(options.outputWidth ?? width));
-  const outH = Math.max(1, Math.trunc(options.outputHeight ?? height));
+  const rawOutW = options.outputWidth ?? width;
+  const rawOutH = options.outputHeight ?? height;
+  const outW = Number.isFinite(rawOutW) ? Math.max(1, Math.trunc(rawOutW)) : Math.max(1, Math.trunc(width) || 1);
+  const outH = Number.isFinite(rawOutH) ? Math.max(1, Math.trunc(rawOutH)) : Math.max(1, Math.trunc(height) || 1);
   const out = new Uint8ClampedArray(outW * outH * 4);
   if (width <= 0 || height <= 0 || data.length < width * height * 4) {
     return { width: outW, height: outH, data: out };

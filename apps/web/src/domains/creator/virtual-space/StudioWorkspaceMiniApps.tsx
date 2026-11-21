@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { getAuthUserId, useSession } from "@/domains/auth/public/session/auth-session-store";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { resetFailedStudioLocalDatabaseOwnership } from "../studio-local-database-runtime";
 import { readStudioLiveRoomQuery } from "../live/studio-live-jam-session";
 import { StudioVirtualSpaceAppHost } from "./StudioVirtualSpaceAppHost";
@@ -10,13 +11,54 @@ import { listStoreApps } from "./studio-virtual-space-app-store";
 import { accessStudioSpaceRecord, observeStudioSpaceRecords } from "./studio-space-device-record";
 
 const appIds = listStoreApps().map(app => app.id);
+const LazyStudioIpCreativeEnginesPanel = lazyRetry(
+  () =>
+    import("../ip-creative-engines/StudioIpCreativeEnginesPanel").then((module) => ({
+      default: module.StudioIpCreativeEnginesPanel,
+    })),
+  "StudioIpCreativeEnginesPanel",
+);
 
 export function StudioWorkspaceMiniApps({ projectId }: { readonly projectId?: string }) {
   const actor = useSession().data?.user.id ?? null;
   const { workId } = useParams();
   const room = readStudioLiveRoomQuery(useLocation().search);
   const prefix = "toonstudio:workspace-apps:v1:" + JSON.stringify([actor, workId ?? projectId ?? room]) + ":";
-  return <ScopedMiniApps key={prefix} prefix={prefix} actor={actor} />;
+  return (
+    <>
+      <ScopedMiniApps key={prefix} prefix={prefix} actor={actor} />
+      <IpCreativeEnginesDisclosure projectId={workId ?? projectId} />
+    </>
+  );
+}
+
+function IpCreativeEnginesDisclosure({ projectId }: { readonly projectId?: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <details
+      data-testid="studio-ip-creative-engines-disclosure"
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+      className="mt-4 rounded-2xl border border-line bg-card/90 p-3"
+    >
+      <summary
+        data-testid="studio-ip-creative-engines-summary"
+        className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-xl px-1 text-sm font-bold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]"
+      >
+        <span>IP 창작·가독성·컷재활용·텐션·오디오/트레일러·현지화·클린룸 스위트</span>
+        <span className="shrink-0 rounded-full border border-line bg-panel px-2.5 py-0.5 text-xs font-semibold text-fg-2">
+          과금 ₩0 · 펼쳐서 열기
+        </span>
+      </summary>
+      {open ? (
+        <div className="mt-3">
+          <Suspense fallback={<p role="status">IP 창작 스위트를 불러오는 중입니다.</p>}>
+            <LazyStudioIpCreativeEnginesPanel projectId={projectId} />
+          </Suspense>
+        </div>
+      ) : null}
+    </details>
+  );
 }
 
 function ScopedMiniApps({ prefix, actor }: { readonly prefix: string; readonly actor: string | null }) {

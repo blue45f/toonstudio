@@ -1,7 +1,10 @@
+import type { StudioDramaticVfxId } from "./studio-virtual-space-dramatic-vfx-catalog";
+import type { StudioMasterSpritePersonaId } from "./studio-virtual-space-dynamic-sprite-catalog";
 import type {
   StudioVirtualAvatarAccessory,
   StudioVirtualAvatarHairStyle,
   StudioVirtualAvatarOutfitStyle,
+  StudioVirtualAvatarProfile,
 } from "./studio-virtual-space-model";
 
 /**
@@ -166,3 +169,268 @@ export const STUDIO_AVATAR_EXPRESSION_OPTIONS: readonly StudioAvatarKeyOption<St
   { key: "sparkle", labelKo: "반짝", labelEn: "Sparkle" },
   { key: "smile", labelKo: "미소", labelEn: "Smile" },
 ];
+
+export type StudioWebtoonAvatarGenreId =
+  | "rofan"
+  | "hunter-action"
+  | "academy-romance"
+  | "cyberpunk-3d"
+  | "murim"
+  | "studio-pro"
+  | "cafe-companion";
+
+export interface StudioWebtoonAvatarArchetypePreset {
+  readonly id: string;
+  readonly personaId: StudioMasterSpritePersonaId;
+  readonly genreId: StudioWebtoonAvatarGenreId;
+  readonly genreKo: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly taglineKo: string;
+  readonly companionLabelKo?: string;
+  readonly recommendedDramaticVfxId: StudioDramaticVfxId;
+  readonly profile: StudioVirtualAvatarProfile;
+}
+
+function buildPresetProfile(input: {
+  readonly skinIdx: number;
+  readonly hairColorIdx: number;
+  readonly outfitColorIdx: number;
+  readonly accentIdx: number;
+  readonly hairStyle: StudioVirtualAvatarHairStyle;
+  readonly outfitStyle: StudioVirtualAvatarOutfitStyle;
+  readonly accessory: StudioVirtualAvatarAccessory;
+  readonly expression: StudioAvatarExpression;
+}): StudioVirtualAvatarProfile {
+  const skin = STUDIO_AVATAR_SKIN_OPTIONS[input.skinIdx] ?? STUDIO_AVATAR_SKIN_OPTIONS[0];
+  const hair = STUDIO_AVATAR_HAIR_COLOR_OPTIONS[input.hairColorIdx] ?? STUDIO_AVATAR_HAIR_COLOR_OPTIONS[0];
+  const outfit = STUDIO_AVATAR_OUTFIT_COLOR_OPTIONS[input.outfitColorIdx] ?? STUDIO_AVATAR_OUTFIT_COLOR_OPTIONS[0];
+  const accent = STUDIO_AVATAR_ACCENT_OPTIONS[input.accentIdx] ?? STUDIO_AVATAR_ACCENT_OPTIONS[0];
+  return Object.freeze({
+    skin: skin.value,
+    hair: hair.value,
+    hairHighlight: hair.highlight,
+    outfit: outfit.value,
+    accent: accent.value,
+    hairStyle: input.hairStyle,
+    outfitStyle: input.outfitStyle,
+    accessory: input.accessory,
+    expression: input.expression,
+  });
+}
+
+/** 한국 웹툰 대표 18종 캐릭터 아키타입 아바타 프리셋 (기존 저장 포맷 100% 호환). */
+export const STUDIO_WEBTOON_AVATAR_ARCHETYPE_PRESETS: readonly StudioWebtoonAvatarArchetypePreset[] = Object.freeze([
+  {
+    id: "archetype-rofan-duchess",
+    personaId: "rofan-duchess",
+    genreId: "rofan",
+    genreKo: "로판",
+    labelKo: "로판 공녀 세라피나",
+    labelEn: "Rofan Duchess Seraphina",
+    taglineKo: "금발 롤웨이브와 장미빛 드레스, 우아한 꽃핀 장식",
+    recommendedDramaticVfxId: "rofan-rose-petals",
+    profile: buildPresetProfile({ skinIdx: 4, hairColorIdx: 4, outfitColorIdx: 1, accentIdx: 3, hairStyle: "wave", outfitStyle: "dress", accessory: "flower", expression: "sparkle" }),
+  },
+  {
+    id: "archetype-rofan-crown-prince",
+    personaId: "rofan-crown-prince",
+    genreId: "rofan",
+    genreKo: "로판",
+    labelKo: "로판 황태자 카엘",
+    labelEn: "Rofan Crown Prince Kael",
+    taglineKo: "딥 네이비 흑발·제국 수트와 황금 포인트 카리스마",
+    recommendedDramaticVfxId: "martial-fantasy-magic-circle",
+    profile: buildPresetProfile({ skinIdx: 0, hairColorIdx: 10, outfitColorIdx: 6, accentIdx: 3, hairStyle: "side-part", outfitStyle: "suit", accessory: "star", expression: "calm" }),
+  },
+  {
+    id: "archetype-modern-hunter",
+    personaId: "modern-hunter-awakener",
+    genreId: "hunter-action",
+    genreKo: "현대 헌터",
+    labelKo: "현대 헌터 각성자 성진",
+    labelEn: "Modern Hunter Awakener",
+    taglineKo: "투블록 다크 롱코트에 각성 네온 스카이 포인트",
+    recommendedDramaticVfxId: "focus-flame-aura",
+    profile: buildPresetProfile({ skinIdx: 1, hairColorIdx: 10, outfitColorIdx: 6, accentIdx: 6, hairStyle: "undercut", outfitStyle: "coat", accessory: "none", expression: "calm" }),
+  },
+  {
+    id: "archetype-seoul-academy",
+    personaId: "seoul-academy-student",
+    genreId: "academy-romance",
+    genreKo: "서울 학원물",
+    labelKo: "서울 학원물 하린",
+    labelEn: "Seoul Academy Harin",
+    taglineKo: "히메컷·세일러 교복과 분홍 리본의 청춘 실루엣",
+    recommendedDramaticVfxId: "entrance-spotlight-beam",
+    profile: buildPresetProfile({ skinIdx: 10, hairColorIdx: 0, outfitColorIdx: 2, accentIdx: 0, hairStyle: "hime", outfitStyle: "sailor", accessory: "bow", expression: "bright" }),
+  },
+  {
+    id: "archetype-cyberpunk-hacker",
+    personaId: "cyberpunk-hacker",
+    genreId: "cyberpunk-3d",
+    genreKo: "사이버펑크",
+    labelKo: "사이버펑크 해커 네오-K",
+    labelEn: "Cyberpunk Hacker Neo-K",
+    taglineKo: "라벤더 울프컷·테크 재킷과 네온 선글라스",
+    companionLabelKo: "스캐너 드론 동행",
+    recommendedDramaticVfxId: "cyber-holo-grid",
+    profile: buildPresetProfile({ skinIdx: 1, hairColorIdx: 8, outfitColorIdx: 10, accentIdx: 8, hairStyle: "wolf", outfitStyle: "jacket", accessory: "sunglasses", expression: "sparkle" }),
+  },
+  {
+    id: "archetype-murim-swordsman",
+    personaId: "murim-swordsman",
+    genreId: "murim",
+    genreKo: "무협",
+    labelKo: "무협 협객 청운",
+    labelEn: "Murim Swordsman Cheongun",
+    taglineKo: "비취빛 한복 도포와 묵직한 검객 포니테일",
+    recommendedDramaticVfxId: "ink-calligraphy-slash",
+    profile: buildPresetProfile({ skinIdx: 2, hairColorIdx: 10, outfitColorIdx: 10, accentIdx: 8, hairStyle: "ponytail", outfitStyle: "hanbok", accessory: "headband", expression: "calm" }),
+  },
+  {
+    id: "archetype-atelier-barista",
+    personaId: "atelier-barista",
+    genreId: "cafe-companion",
+    genreKo: "감성 카페",
+    labelKo: "감성 카페 바리스타 모카",
+    labelEn: "Atelier Barista Mocha",
+    taglineKo: "카라멜 번 헤어·앞치마·베레모와 따뜻한 라떼 스팀",
+    recommendedDramaticVfxId: "coffee-healing-steam",
+    profile: buildPresetProfile({ skinIdx: 5, hairColorIdx: 13, outfitColorIdx: 5, accentIdx: 7, hairStyle: "bun", outfitStyle: "apron", accessory: "beret", expression: "smile" }),
+  },
+  {
+    id: "archetype-star-pd",
+    personaId: "chief-pd",
+    genreId: "studio-pro",
+    genreKo: "스튜디오 프로",
+    labelKo: "스타 웹툰 PD 박슬기",
+    labelEn: "Star Webtoon PD",
+    taglineKo: "단정한 단발·포레스트 블레이저와 명쾌한 프로듀싱",
+    recommendedDramaticVfxId: "highfive-shockwave",
+    profile: buildPresetProfile({ skinIdx: 0, hairColorIdx: 0, outfitColorIdx: 3, accentIdx: 2, hairStyle: "bob", outfitStyle: "blazer", accessory: "glasses", expression: "smile" }),
+  },
+  {
+    id: "archetype-art-director",
+    personaId: "editorial-chief",
+    genreId: "studio-pro",
+    genreKo: "스튜디오 프로",
+    labelKo: "AD 아트디렉터 정호",
+    labelEn: "Art Director Jeongho",
+    taglineKo: "애쉬 그레이 가르마·테일러드 수트와 날카로운 검수 안목",
+    recommendedDramaticVfxId: "marble-starlight-ripple",
+    profile: buildPresetProfile({ skinIdx: 2, hairColorIdx: 11, outfitColorIdx: 6, accentIdx: 1, hairStyle: "side-part", outfitStyle: "suit", accessory: "glasses", expression: "calm" }),
+  },
+  {
+    id: "archetype-bg3d-artist",
+    personaId: "cgi-director",
+    genreId: "cyberpunk-3d",
+    genreKo: "3D 배경",
+    labelKo: "배경 3D 아티스트 윤진",
+    labelEn: "3D Background Artist Yunjin",
+    taglineKo: "스카이 블루 포니테일과 3D 공간 모델링 트렌치",
+    companionLabelKo: "홀로 드론 동행",
+    recommendedDramaticVfxId: "cyber-holo-grid",
+    profile: buildPresetProfile({ skinIdx: 1, hairColorIdx: 3, outfitColorIdx: 2, accentIdx: 6, hairStyle: "ponytail", outfitStyle: "coat", accessory: "headphones", expression: "sparkle" }),
+  },
+  {
+    id: "archetype-color-master",
+    personaId: "colorist",
+    genreId: "studio-pro",
+    genreKo: "채색 마스터",
+    labelKo: "채색 마스터 한미아",
+    labelEn: "Color Master Mia",
+    taglineKo: "핑크 트윈테일·아틀리에 앞치마와 프리즘 광원 감각",
+    recommendedDramaticVfxId: "rofan-rose-petals",
+    profile: buildPresetProfile({ skinIdx: 10, hairColorIdx: 2, outfitColorIdx: 11, accentIdx: 0, hairStyle: "twin", outfitStyle: "apron", accessory: "star", expression: "sparkle" }),
+  },
+  {
+    id: "archetype-line-master",
+    personaId: "line-artist",
+    genreId: "studio-pro",
+    genreKo: "수석 선화",
+    labelKo: "수석 선화 장인 강하루",
+    labelEn: "Lead Line Artist Haru",
+    taglineKo: "샤기컷·크림슨 코트와 작가 시그니처 베레모",
+    recommendedDramaticVfxId: "ink-calligraphy-slash",
+    profile: buildPresetProfile({ skinIdx: 0, hairColorIdx: 0, outfitColorIdx: 1, accentIdx: 4, hairStyle: "shaggy", outfitStyle: "coat", accessory: "beret", expression: "bright" }),
+  },
+  {
+    id: "archetype-cat-companion",
+    personaId: "studio-cat-mascot",
+    genreId: "cafe-companion",
+    genreKo: "반려 마스코트",
+    labelKo: "소피아 & 치즈냥 동행",
+    labelEn: "Sophia & Cheese Cat",
+    taglineKo: "치즈냥 마스코트와 고양이 귀·민트 가디건 힐링 조합",
+    companionLabelKo: "치즈냥 동행",
+    recommendedDramaticVfxId: "mascot-clover-blessing",
+    profile: buildPresetProfile({ skinIdx: 4, hairColorIdx: 4, outfitColorIdx: 10, accentIdx: 8, hairStyle: "double-bun", outfitStyle: "cardigan", accessory: "cat", expression: "bright" }),
+  },
+  {
+    id: "archetype-corgi-companion",
+    personaId: "companion-corgi-director",
+    genreId: "cafe-companion",
+    genreKo: "반려 마스코트",
+    labelKo: "해피 & 웰시코기 동행",
+    labelEn: "Happy & Welsh Corgi",
+    taglineKo: "웰시코기 단짝과 포근한 머스타드 스웨터·목도리",
+    companionLabelKo: "웰시코기 동행",
+    recommendedDramaticVfxId: "mascot-clover-blessing",
+    profile: buildPresetProfile({ skinIdx: 5, hairColorIdx: 13, outfitColorIdx: 4, accentIdx: 3, hairStyle: "bob", outfitStyle: "sweater", accessory: "scarf", expression: "smile" }),
+  },
+  {
+    id: "archetype-story-architect",
+    personaId: "story-writer",
+    genreId: "studio-pro",
+    genreKo: "콘티 작가",
+    labelKo: "콘티·세계관 작가 서이안",
+    labelEn: "Storyboard Writer Ian",
+    taglineKo: "브라운 웨이브·베이지 터틀넥과 끝없는 서사 영감",
+    recommendedDramaticVfxId: "eureka-spark-aura",
+    profile: buildPresetProfile({ skinIdx: 1, hairColorIdx: 0, outfitColorIdx: 7, accentIdx: 3, hairStyle: "wave", outfitStyle: "turtleneck", accessory: "tote", expression: "bright" }),
+  },
+  {
+    id: "archetype-sound-letterer",
+    personaId: "sound-letterer",
+    genreId: "studio-pro",
+    genreKo: "식자·사운드",
+    labelKo: "사운드·식자 아티스트 유나",
+    labelEn: "Sound & Lettering Yuna",
+    taglineKo: "미드나잇 퍼플·스트리트 후드와 헤드폰 리듬 감각",
+    recommendedDramaticVfxId: "rhythm-note-wave",
+    profile: buildPresetProfile({ skinIdx: 8, hairColorIdx: 1, outfitColorIdx: 0, accentIdx: 5, hairStyle: "pigtails", outfitStyle: "hoodie", accessory: "headphones", expression: "sparkle" }),
+  },
+  {
+    id: "archetype-action-mocap",
+    personaId: "action-mocap-actor",
+    genreId: "hunter-action",
+    genreKo: "액션 모캡",
+    labelKo: "액션 모캡 디렉터 레오",
+    labelEn: "Action Mocap Leo",
+    taglineKo: "레드 숏컷·스포츠웨어와 역동적 캡모자 액션 포즈",
+    recommendedDramaticVfxId: "dash-speedlines",
+    profile: buildPresetProfile({ skinIdx: 3, hairColorIdx: 6, outfitColorIdx: 5, accentIdx: 4, hairStyle: "crop", outfitStyle: "sportswear", accessory: "cap", expression: "bright" }),
+  },
+  {
+    id: "archetype-bg-architect",
+    personaId: "bg-architect",
+    genreId: "cyberpunk-3d",
+    genreKo: "건축 배경",
+    labelKo: "배경 원화 디렉터 아마라",
+    labelEn: "Background Architect Amara",
+    taglineKo: "에메랄드 감성·데님 재킷과 자연 채광 건축 스케치",
+    recommendedDramaticVfxId: "grass-petal-ripple",
+    profile: buildPresetProfile({ skinIdx: 6, hairColorIdx: 12, outfitColorIdx: 8, accentIdx: 2, hairStyle: "braid", outfitStyle: "denim", accessory: "leaf", expression: "calm" }),
+  },
+]);
+
+export function resolveStudioWebtoonAvatarPreset(
+  idOrPersonaId: string,
+): StudioWebtoonAvatarArchetypePreset | null {
+  return (
+    STUDIO_WEBTOON_AVATAR_ARCHETYPE_PRESETS.find(
+      (preset) => preset.id === idOrPersonaId || preset.personaId === idOrPersonaId,
+    ) ?? null
+  );
+}

@@ -1,4 +1,11 @@
 import { studioDeterministicContentId } from "../studio-deterministic-serialization";
+import {
+  resolveStudioVrmEquipSocketSnap,
+  resolveStudioVrmHeadwearCrownCompression,
+  type StudioVrmEquipSocketKind,
+  type StudioVrmEquipSocketSnapMetrics,
+  type StudioVrmHeadwearCrownCompression,
+} from "./studio-vrm-hair-hand-equip-refiner";
 
 export interface StudioVec3 {
   readonly x: number;
@@ -108,8 +115,28 @@ function rotateVector(vector: StudioVec3, rotation: StudioEulerDegrees): StudioV
   });
 }
 
+/** `rotateVector`(Rz·Ry·Rx)의 정확한 역회전(Rx⁻¹·Ry⁻¹·Rz⁻¹) — 다축 회전 부모에서도 0mm 정합을 보존한다. */
 function inverseRotateVector(vector: StudioVec3, rotation: StudioEulerDegrees): StudioVec3 {
-  return rotateVector(vector, { x: -rotation.x, y: -rotation.y, z: -rotation.z });
+  const rx = (-rotation.x * Math.PI) / 180;
+  const ry = (-rotation.y * Math.PI) / 180;
+  const rz = (-rotation.z * Math.PI) / 180;
+  const cosZ = Math.cos(rz);
+  const sinZ = Math.sin(rz);
+  const cosY = Math.cos(ry);
+  const sinY = Math.sin(ry);
+  const cosX = Math.cos(rx);
+  const sinX = Math.sin(rx);
+  const x1 = vector.x * cosZ - vector.y * sinZ;
+  const y1 = vector.x * sinZ + vector.y * cosZ;
+  const z1 = vector.z;
+  const x2 = x1 * cosY + z1 * sinY;
+  const y2 = y1;
+  const z2 = -x1 * sinY + z1 * cosY;
+  return Object.freeze({
+    x: x2,
+    y: y2 * cosX - z2 * sinX,
+    z: y2 * sinX + z2 * cosX,
+  });
 }
 
 function composeTransform(parent: StudioTransform3d, local: StudioTransform3d): StudioTransform3d {
@@ -323,7 +350,11 @@ export const STUDIO_ATTACHMENT_SOCKET_CATALOG: readonly StudioAttachmentSocketDe
   Object.freeze({ id: "back-carrier", label: "등 부착", contact: "surface", defaultLocalTransform: socketTransform(0, 0, -0.12) }),
   Object.freeze({ id: "neck-loop", label: "목 걸이", contact: "loop", defaultLocalTransform: socketTransform(0, -0.04, 0.03) }),
   Object.freeze({ id: "head-top", label: "머리 위", contact: "surface", defaultLocalTransform: socketTransform(0, 0.1, 0) }),
+  Object.freeze({ id: "head-crown", label: "정수리 왕관/모자", contact: "surface", defaultLocalTransform: socketTransform(0, 0.098, 0) }),
   Object.freeze({ id: "face-bridge", label: "콧등", contact: "surface", defaultLocalTransform: socketTransform(0, 0.02, 0.07) }),
+  Object.freeze({ id: "ear-left-lobe", label: "왼쪽 귓불", contact: "loop", defaultLocalTransform: socketTransform(0.098, -0.014, -0.008) }),
+  Object.freeze({ id: "ear-right-lobe", label: "오른쪽 귓불", contact: "loop", defaultLocalTransform: socketTransform(-0.098, -0.014, -0.008) }),
+  Object.freeze({ id: "shoulder-cape-collar", label: "어깨 망토 칼라", contact: "strap", defaultLocalTransform: socketTransform(0, 0.054, -0.04) }),
   Object.freeze({ id: "waist-right", label: "오른쪽 허리", contact: "strap", defaultLocalTransform: socketTransform(0.14, -0.02, 0) }),
   Object.freeze({ id: "waist-left", label: "왼쪽 허리", contact: "strap", defaultLocalTransform: socketTransform(-0.14, -0.02, 0) }),
 ]);
@@ -342,7 +373,10 @@ export type StudioGripPresetId =
   | "shoulder-strap"
   | "back-carrier"
   | "neck-loop"
-  | "head-wear";
+  | "head-wear"
+  | "face-wear"
+  | "ear-wear"
+  | "cape-drape";
 
 export interface StudioGripPreset {
   readonly id: StudioGripPresetId;
@@ -377,6 +411,9 @@ export const STUDIO_ATTACHMENT_GRIP_PRESETS: readonly StudioGripPreset[] = Objec
   Object.freeze({ id: "back-carrier", label: "등 부착", contact: "surface", primarySocketId: () => "back-carrier" }),
   Object.freeze({ id: "neck-loop", label: "목 걸이", contact: "loop", primarySocketId: () => "neck-loop" }),
   Object.freeze({ id: "head-wear", label: "머리 착용", contact: "surface", primarySocketId: () => "head-top" }),
+  Object.freeze({ id: "face-wear", label: "얼굴 착용", contact: "surface", primarySocketId: () => "face-bridge" }),
+  Object.freeze({ id: "ear-wear", label: "귀 착용", contact: "loop", primarySocketId: (side: "left" | "right") => `ear-${side}-lobe` }),
+  Object.freeze({ id: "cape-drape", label: "망토 착용", contact: "strap", primarySocketId: () => "shoulder-cape-collar" }),
 ]);
 
 const GRIP_PRESET_BY_ID = new Map(STUDIO_ATTACHMENT_GRIP_PRESETS.map((preset) => [preset.id, preset]));
@@ -451,5 +488,47 @@ export function createStudioAttachmentTransaction(
     after,
     beforeHash: studioDeterministicContentId(before),
     afterHash: studioDeterministicContentId(after),
+  });
+}
+
+export interface StudioAttachmentSocketSnapReceipt {
+  readonly graph: StudioAttachmentGraph;
+  readonly crownCompression: StudioVrmHeadwearCrownCompression;
+}
+
+/** 두피·코받침·귓불·어깨·손바닥 소켓으로 부착 노드를 자동 영점 스냅하고 모자 장착 시 상단 헤어 눌림 정보를 함께 반환한다. */
+export function snapStudioAttachmentNodeToEquipSocket(input: {
+  readonly graph: StudioAttachmentGraph;
+  readonly nodeId: string;
+  readonly socketKind: StudioVrmEquipSocketKind;
+  readonly metrics: StudioVrmEquipSocketSnapMetrics;
+  readonly propId?: string;
+  readonly side?: "left" | "right";
+}): StudioAttachmentSocketSnapReceipt {
+  validateStudioAttachmentGraph(input.graph);
+  const snap = resolveStudioVrmEquipSocketSnap(input.socketKind, input.metrics, input.side ?? "right");
+  const bone = input.socketKind === "scalp" || input.socketKind === "nose-bridge" || input.socketKind === "earlobe"
+    ? "head"
+    : input.socketKind === "shoulder-collar"
+      ? "chest"
+      : `${input.side ?? "right"}Hand`;
+  let targetScale = 1;
+  const nodes = input.graph.nodes.map((node) => {
+    if (node.id !== input.nodeId) return node;
+    targetScale = (Math.abs(node.localTransform.scale.x) + Math.abs(node.localTransform.scale.y) + Math.abs(node.localTransform.scale.z)) / 3;
+    return Object.freeze({
+      ...node,
+      localTransform: Object.freeze({
+        position: Object.freeze({ x: snap.localPosition[0], y: snap.localPosition[1], z: snap.localPosition[2] }),
+        rotation: Object.freeze({ x: snap.localRotationDeg[0], y: snap.localRotationDeg[1], z: snap.localRotationDeg[2] }),
+        scale: node.localTransform.scale,
+      }),
+    });
+  });
+  const next = Object.freeze({ ...input.graph, revision: input.graph.revision + 1, nodes: Object.freeze(nodes) });
+  validateStudioAttachmentGraph(next);
+  return Object.freeze({
+    graph: next,
+    crownCompression: resolveStudioVrmHeadwearCrownCompression(input.propId ?? "", bone, targetScale),
   });
 }

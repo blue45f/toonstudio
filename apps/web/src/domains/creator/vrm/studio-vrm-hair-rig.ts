@@ -30,6 +30,14 @@
  */
 
 import {
+  buildStudioVrmHairBodyColliders,
+  resolveStudioVrmHairColliderPushout,
+  resolveStudioVrmHairZone,
+  resolveStudioVrmHairZoneSpringTuning,
+  type StudioVrmHairBodyCollider,
+  type StudioVrmHairZone,
+} from "./studio-vrm-hair-hand-equip-refiner";
+import {
   applyTrs,
   meshClamp,
   type MeshMat3,
@@ -37,6 +45,8 @@ import {
 } from "./studio-vrm-humanoid-mesh-geometry";
 
 import type { AvatarForgeHairPart } from "./studio-vrm-avatar-forge";
+
+export { buildStudioVrmHairBodyColliders, type StudioVrmHairBodyCollider, type StudioVrmHairZone };
 
 export const STUDIO_VRM_HAIR_RIG_VERSION = 2 as const;
 
@@ -88,6 +98,8 @@ export type StudioVrmHairJoint = {
 
 export type StudioVrmHairChain = {
   readonly id: string;
+  /** 앞머리(front) · 옆머리(side) · 뒷머리(back) 3구역 스프링 분류. */
+  readonly zone: StudioVrmHairZone;
   /** 뿌리 → 끝 순서. 앞 조인트가 항상 부모다. */
   readonly joints: readonly StudioVrmHairJoint[];
   /** 펼친 조인트 목록에서 이 체인의 첫 조인트 위치. */
@@ -175,6 +187,7 @@ const BRAID_SEGMENT_ID = /^(.+)-seg-(\d+)$/u;
 
 type ChainDraft = {
   readonly id: string;
+  readonly zone: StudioVrmHairZone;
   readonly joints: readonly StudioVrmHairJoint[];
   readonly length: number;
   /** 이 체인에 강체로 묶일 파츠 id → 체인 안 마디 번호. */
@@ -184,23 +197,16 @@ type ChainDraft = {
 };
 
 /**
- * 체인 길이로 흔들림 세기를 정한다 — 0.10 m 안팎의 삐침머리는 거의 굳게, 0.45 m 롱헤어는
- * 느슨하게. 짧은 가닥이 롱헤어처럼 출렁이면 어색하다.
- *
- * **길이는 조형 스케일까지 반영된 값**이어야 한다. 두신비를 키우면 같은 가닥이 실제로
- * 길어지므로(두신비 3.6 에서 0.175 m → 0.630 m), 스케일 이전 길이로 굳혀 두면 60cm 짜리
- * 머리카락이 17cm 용 튜닝(거의 강체)으로 남는다.
+ * 3구역(앞머리·옆머리·뒷머리) 및 체인 길이로 흔들림 세기와 감쇠 상한을 정한다.
+ * 길이는 조형 스케일까지 반영된 값이어야 하며, 구역별 감쇠 상한으로 앞머리 눈 관통과
+ * 긴 머리의 과진동을 동시에 방지한다.
  */
 function springTuning(
   length: number,
   heightScale: number,
+  zone: StudioVrmHairZone,
 ): { stiffness: number; gravityPower: number; dragForce: number } {
-  const slack = meshClamp((length - 0.08 * heightScale) / (0.32 * heightScale), 0, 1);
-  return {
-    stiffness: 1.6 - 0.9 * slack,
-    gravityPower: 0.06 + 0.14 * slack,
-    dragForce: 0.72 - 0.3 * slack,
-  };
+  return resolveStudioVrmHairZoneSpringTuning(length, heightScale, zone);
 }
 
 function chainLength(joints: readonly StudioVrmHairJoint[]): number {
@@ -250,6 +256,7 @@ function draftStrandChain(input: StudioVrmHairPartInput, headWorldRest: MeshVec3
   const joints = jointsFrom(samples, part.id, headWorldRest);
   return {
     id: part.id,
+    zone: resolveStudioVrmHairZone(part.role, part.id),
     joints,
     length: chainLength(joints),
     rigid: new Map(),
@@ -269,6 +276,7 @@ function draftBlobChain(input: StudioVrmHairPartInput, headWorldRest: MeshVec3):
   const joints = jointsFrom(samples, part.id, headWorldRest);
   return {
     id: part.id,
+    zone: resolveStudioVrmHairZone(part.role, part.id),
     joints,
     length: chainLength(joints),
     rigid: new Map(),
@@ -301,7 +309,7 @@ function draftBraidChain(
     if (tie !== undefined && index === 0) return;
     rigid.set(member.part.id, index);
   });
-  return { id: prefix, joints, length: chainLength(joints), rigid, blend: [] };
+  return { id: prefix, zone: "back", joints, length: chainLength(joints), rigid, blend: [] };
 }
 
 /**
@@ -394,9 +402,10 @@ export function buildStudioVrmHairRig(
   for (const draft of drafts) {
     const chain: StudioVrmHairChain = {
       id: draft.id,
+      zone: draft.zone,
       joints: draft.joints,
       jointOffset: joints.length,
-      ...springTuning(draft.length, heightScale),
+      ...springTuning(draft.length, heightScale, draft.zone),
     };
     chains.push(chain);
     joints.push(...draft.joints);
@@ -480,8 +489,48 @@ export function shapeStudioVrmHairRig(
   const joints = rig.joints.map(shapeJoint);
   const chains = rig.chains.map((chain) => {
     const shapedJoints = chain.joints.map(shapeJoint);
-    // 길이가 달라졌으므로 흔들림 세기를 다시 뽑는다.
-    return { ...chain, joints: shapedJoints, ...springTuning(chainLength(shapedJoints), heightScale) };
+    // 길이가 달라졌으므로 3구역 감쇠 상한을 유지하며 흔들림 세기를 다시 뽑는다.
+    return {
+      ...chain,
+      joints: shapedJoints,
+      ...springTuning(chainLength(shapedJoints), heightScale, chain.zone),
+    };
+  });
+  const chainById = new Map(chains.map((chain) => [chain.id, chain]));
+  const bindings = new Map<string, StudioVrmHairBinding>();
+  for (const [partId, binding] of rig.bindings) {
+    bindings.set(
+      partId,
+      binding.kind === "blend"
+        ? { kind: "blend", chain: chainById.get(binding.chain.id) ?? binding.chain }
+        : binding,
+    );
+  }
+  return { version: rig.version, chains, joints, bindings };
+}
+
+/** 머리·목·좌우 어깨 캡슐 콜라이더로 헤어 체인의 관통 조인트를 0mm 밖으로 밀어낸다. */
+export function applyStudioVrmHairRigBodyColliders(
+  rig: StudioVrmHairRig,
+  colliders: readonly StudioVrmHairBodyCollider[],
+  headWorldRest: MeshVec3,
+): StudioVrmHairRig {
+  const joints: StudioVrmHairJoint[] = [...rig.joints];
+  const chains: StudioVrmHairChain[] = rig.chains.map((chain) => {
+    const pushout = resolveStudioVrmHairColliderPushout(chain.joints, colliders);
+    let previous = headWorldRest;
+    const nextJoints = chain.joints.map((joint, index) => {
+      const world = pushout.positions[index]!;
+      const updated: StudioVrmHairJoint = {
+        ...joint,
+        localTranslation: subtract(world, previous),
+        worldRest: world,
+      };
+      previous = world;
+      joints[chain.jointOffset + index] = updated;
+      return updated;
+    });
+    return { ...chain, joints: nextJoints };
   });
   const chainById = new Map(chains.map((chain) => [chain.id, chain]));
   const bindings = new Map<string, StudioVrmHairBinding>();

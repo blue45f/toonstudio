@@ -102,7 +102,7 @@ GitHub Actions의 `Studio 5h stability soak` 수동 실행은 다음 입력을 �
 
 수동·정기 수락 검사의 기본 시간은 300분이며 CPU profiler와 별도 GPU 비교 진단은
 꺼져 있다. 수동 `diagnostic=true`는 1~3분에만 허용하고 대표 17종 수락 검사와 함께
-요청하면 빌드 전에 실패한다. 이 모드에서 수집한 CPU·Trace와 GPU 비교는 원인 분석용이며,
+요청하면 빌드 전에 실패한다. 이 모드에서 수집한 CPU·native trace와 GPU 비교는 원인 분석용이며,
 제품 동작이 모두 정상이어도 `diagnostic-only` 실패를 남겨 수락 통과로 사용할 수 없다.
 수락 검사의 작업 제한은 기존 345분, 짧은 진단은 25분이다. 임시 진단 기본값이 정기
 300분 검사를 가로막지 않도록 실제 workflow 배선과 기본값을 함께 회귀로 확인한다.
@@ -110,14 +110,19 @@ GitHub Actions의 `Studio 5h stability soak` 수동 실행은 다음 입력을 �
 첫 접촉 native Trace는 첫 실제 입력 시도 한 획의 직전에만 시작하고, 해당 입력·500ms 정착·
 포인터 지연 회수가 끝나면 닫는다. CPU profile은 진단 세션 끝까지 수집한다. 첫 시도가
 실패해도 뒤 획으로 대체하지 않으며, 캡처 범위와 실제 cycle을 메타데이터에 남긴다.
+준비 화면 캡처·이후 획·휴식·종료 history 정리와 GC는 이 native 수집 범위에 포함하지 않는다.
 실제 canvas의 pointerdown·첫 pointermove·pointerup·down 뒤 첫 RAF에
 세션과 cycle이 붙은 user timing marker를 남긴다. 원본 native trace의 marker 시각과
 브라우저 `PerformanceMark.startTime`을 같은 frame·thread에서 대조하고 EventDispatch,
-RunTask, style/layout, GC를 함께 보존한다. 첫 RAF는 잉크 픽셀이나 디스플레이 발광의
-증명이 아니다. 기존 CPU profile의 호출 전후 시계 범위는 별도로 유지한다. marker 누락,
-frame 변경, trace 유실·상한 초과·수집 timeout·정리 실패는 부분 원본과 함께 실패로 남긴다.
+RunTask, style/layout, GC를 함께 보존한다. 이후 획의 원인이나 첫 잉크 표시·디스플레이 발광·
+물리 펜 지연의 증명이 아니다. 기존 CPU profile의 호출 전후 시계 범위는 별도로 유지한다.
+
+원본은 64MiB로 제한하며, 이 상한은 JSON 파싱을 포함한 Node 전체 메모리의 상한이 아니다.
+marker 누락·시계 불일치·frame 변경·trace 유실·상한 초과·수집 timeout·정리 실패는
+부분 원본과 함께 실패로 남긴다.
 [Chromium의 추적 범주 목록](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/content/public/browser/tracing_controller.h)은 실행한 코드 경로에 따라 달라질 수 있으므로 요청 목록·응답
-목록·차집합을 보존하고, 실제 RunTask·EventDispatch·UserTiming 증거로 수집 완전성을 판정한다.
+목록·차집합을 보존하고, 실제 RunTask·pointerdown EventDispatch·native UserTiming 증거로
+수집 완전성을 판정한다. 일반 300분 경로에서는 CPU·native trace 계측을 시작하지 않는다.
 입력 오류와 관측 종료 오류가 동시에 발생하면 둘 다 보존하고 수락 검사를 실패시킨다.
 진단 수집을 마친 뒤 생긴 페이지·GPU 오류도 마지막에 다시 수집한다.
 
@@ -136,9 +141,10 @@ Linux SwiftShader의 기존 `--use-gl=swiftshader` 조합은 offscreen 연산은
 현재 소크의 Linux WebGPU 실행은 위 재현에서 확인한 Vulkan·ANGLE·SwiftShader 설정을
 공통 helper로 사용한다. 비 WebGPU profile도 [Chromium의 현재 OpenGL ES 실행 경로](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/gpu/swiftshader.md)에
 맞춰 ANGLE·SwiftShader를 사용한다. Vulkan 조합은 실측한 Linux WebGPU에만 적용한다.
-설치된 Playwright·Chromium·CDP 버전과 요청·실제 실행 인자를 함께 남기며, 같은 스위치가
-뒤에서 다른 값으로 덮어써진 경우도 실패한다. 실행 정보 수집·정리 실패를 정상 실행으로
-표시하지 않는다. 이 정보 수집은 입력 전에 끝내고 일반 수락 경로에는 CPU·Trace를 켜지 않는다.
+소크와 비교 진단은 설치된 Playwright·Chromium·CDP 버전과 요청·실제 실행 인자를 함께
+남긴다. 실제 인자가 누락되거나 같은 스위치가 뒤에서 다른 값으로 덮어써진 경우도 실패한다.
+실행 정보 수집·정리 실패를 정상 실행으로 표시하지 않는다. 이 정보 수집은 입력 전에
+끝내고 일반 수락 경로에는 CPU·Trace를 켜지 않는다.
 실제 제품 세션의 장치 손실·거절 획·시각 오류·성능·시간 기준은 그대로 적용하고,
 이 설정 변경의 수락 여부는 새 소크 결과로 판단한다. 소프트웨어 adapter 결과를
 물리 GPU·모바일 운영체제·실제 펜 장치 인증으로 간주하지 않는다.
@@ -147,9 +153,12 @@ Linux SwiftShader의 기존 `--use-gl=swiftshader` 조합은 offscreen 연산은
 `daba54f6380b1b5d534afdef7b7f3cd63a7fe092` 실행에서 desktop·Kakao·Naver는
 조회 범주의 `toplevel` 누락을 잘못 거절해 실제 입력 전에 종료했다. Instagram·WebGPU는
 3분 native Trace의 자료 손실과 64MiB 초과가 확인되어 추적 완료로 인정하지 않았다.
-WebGPU 독립 비교의 Vulkan 네 조건은 픽셀 readback과 메타데이터를 확보했지만,
-Studio의 실제 여섯 획은 `timeout`으로 거절됐다. 장치 손실 0건만으로 제품 성공을
-판정하지 않으며, 위 두 진단 실행은 300분 수락의 근거가 아니다.
+이 결과 때문에 범주 조회와 실제 원본 검증을 구분하고 native 수집 범위를 첫 시도로 줄였다.
+WebGPU 독립 비교의 Vulkan/ANGLE 네 조건은 픽셀 readback과 메타데이터를 확보했지만,
+Studio의 실제 여섯 획은 live-ink `timeout`으로 거절됐다. 이 세션의 GPU 장치 손실은
+0건이며 receipt 지연·누락·정체성 불일치 중 어떤 하위 원인인지는 이 원본만으로 확정하지
+않았다. 장치 손실 0건만으로 제품 성공을 판정하지 않으며, 위 두 진단 실행은 300분 수락
+검사나 물리 장치 인증의 근거가 아니다.
 
 ### 대표 17종 지연 보고서의 측정 경계
 
@@ -272,3 +281,56 @@ record ID를 정확히 보관했음을 확인한 경우에만 불필요한 recor
 checkpoint ID의 재사용 방지와 불완전한 이전 기록의 보호는 유지한다. 4096개 보관
 범위를 넘어 과거 ID를 증명할 수 없는 구판 기록에는 확률 필터의 한계가 남는다.
 이를 감추기 위한 필터 초기화나 기존 문서·Undo 삭제는 수행하지 않는다.
+
+## 2026-11-22 추가 검증: 진행 시한과 실제 첫 입력 원본
+
+### GPU 진행 시한의 실제 Host 배선
+
+일반 `appendGpuLiveSourceJournalSuffix`도 매번 terminal 전용 2,000ms override를
+전달해, 첫 receipt 이후 시작한 progress 시한이 연속 입력마다 뒤로 밀렸다.
+현재 일반 append는 override 없이 기존 300ms 시한을 유지하며, `sealEndpoint=true`
+종료 요청과 후보정 terminal baseline만 기존 2초 예산을 사용한다. 실제 Host 함수를
+AST에서 추출해 실제 watchdog과 실행하는 두 회귀는 수정 전 실패하고 수정 후 통과했다.
+기존 watchdog·GPU audit와 합쳐 10/10이며, Host 줄 수는 증가하지 않았다.
+
+이 수정은 최초 receipt의 300ms 절대시한을 바꾸지 않는다. 아래 실행은 이 변경 전
+소스이므로 새 progress 수정의 브라우저 검증으로 합산하지 않는다. 이전 #124의
+first-visible timeout도 이 수정으로 해결됐다고 주장하지 않는다.
+
+### 일반 실행 #126·#128
+
+[300분 누적 후보 #126](https://github.com/blue45f/toonstudio/actions/runs/44932843133)의
+소스는 `7bc397814c8eef65181ca5f0b87f3526b2040a5a`다. CPU/native 진단을 끈 실제
+3분 사전 검사에서 다음 조기 중단을 확인했다. 두 환경 모두 첫 획 수락 1회·거절 0회·
+history append 1회·GPU/runtime 오류 0회였지만 긴 작업 기준을 통과하지 못했다.
+
+| 화면 프로필 | 입력과 겹친 긴 작업 | 시간 정합과 판정 |
+| --- | --- | --- |
+| instagram-ios | 51ms 1건 | pointerup 0.355ms 전부터 50.645ms 뒤까지 겹쳤다. 18.135초에 중단, 300분 본 검사 생략. |
+| desktop | 84ms·87ms | 각각 pointerdown 전후와 pointerup 전후에 겹쳤다. 22.068초에 중단, 300분 본 검사 생략. |
+
+관측 시각은 페이지 epoch를 보고서 시계에 맞춰 비교했다. 함수별 attribution이 없어
+JS·layout·GC 중 무엇이 원인인지는 확정하지 않는다. iOS의 51ms를 첫 접촉 지연으로
+분류하지 않으며, 조기 중단 뒤의 시각 분석 실패도 별도의 GPU 제품 결함으로 더하지 않는다.
+
+[일반 3분 후보 #128](https://github.com/blue45f/toonstudio/actions/runs/44933128643)의
+소스는 `46c884d0c1f5bbe5c77acc1d19b3c23492be30fe`다. Naver 화면 프로필은
+185.668초·획 수락 7회·거절 0회·history action 13회·입력 중 긴 작업 0회로 통과했다.
+이전 non-WebGPU 실행 인자를 쓴 별도 소스의 짧은 검사이며, 300분 증거나 물리 모바일
+장치 인증으로 해석하지 않는다. pointermove→다음 RAF p95 1.475ms·p99 2.305ms는
+실제 잉크 표시나 디스플레이 발광 시각이 아니다.
+
+### 첫 입력 native 원본 #127
+
+[진단 #127](https://github.com/blue45f/toonstudio/actions/runs/44933071786)은
+`46c884d0` 소스의 첫 입력 한 번과 종료 뒤 500ms 구간을 수집했다. Instagram 원본은
+11,917,563바이트이며 수집·stream 모두 완료, `dataLossOccurred=false`, 검증 issue 0개다.
+SHA-256은 `f0402c7117fcaa90062c9437b170253a84b3871b2a1c7b3ce4d67767198c9412`다.
+이 환경에서 이전 64MiB 손실은 해소됐지만 다른 환경의 완료를 대신하지 않는다.
+
+첫 renderer `RunTask` 17.536ms를 같은 thread의 중첩 이벤트를 제거해 분류하면
+style 0.288ms·layout 0ms·기록된 GC 0ms·JS/V8 13.949ms·기타 3.299ms다.
+pointerdown EventDispatch 13.332ms와 Konva callback 10.989ms는 이 총계 안에
+포함되므로 더하지 않는다. #124에서 보인 큰 style/layout 비용은 이 첫 task에서는
+재현되지 않았다. 진단 실행의 7회 획 수락과 원본 수집 완료는 일반 성능 수락을
+의미하지 않으며, 의도한 `diagnostic-only` 종료 상태를 그대로 유지한다.

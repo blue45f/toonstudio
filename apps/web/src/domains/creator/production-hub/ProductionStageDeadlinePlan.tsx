@@ -1,5 +1,5 @@
-import { AlertTriangle, CalendarClock, CheckCircle2, ChevronRight } from "lucide-react";
-import { useMemo } from "react";
+import { AlertTriangle, CalendarClock, CheckCircle2, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+import { Suspense, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
@@ -12,7 +12,16 @@ import {
 } from "./production-stage-deadline-plan";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { cn } from "@/shared/lib/utils";
+
+const LazyStudioRoleAiRescuePanel = lazyRetry(
+  () =>
+    import("../role-ai-rescue-kit/StudioRoleAiRescuePanel").then((module) => ({
+      default: module.StudioRoleAiRescuePanel,
+    })),
+  "StudioRoleAiRescuePanel",
+);
 
 const RELEASE_SOURCE_LABELS: Readonly<Record<EpisodeReleaseSource, string>> = {
   "release-plan": "게시 캘린더 예약 기준",
@@ -72,6 +81,7 @@ export function ProductionStageDeadlinePlan({
   readonly aggregate: ProductionProjectAggregate;
   readonly episodeId: string;
 }) {
+  const [roleAiPanelOpen, setRoleAiPanelOpen] = useState(false);
   const plan = useMemo(
     () => buildStageDeadlinePlan(aggregate, episodeId),
     [aggregate, episodeId],
@@ -143,6 +153,39 @@ export function ProductionStageDeadlinePlan({
           </li>
         ))}
       </ol>
+
+      <details
+        data-testid="studio-role-ai-rescue-disclosure"
+        className="group/role-ai-rescue mt-3 rounded-xl border border-line bg-panel"
+        aria-label="7대 직군별 AI 특화 자동화 · 6대 작가 노가다 박멸 보정 스위트"
+        onToggle={(event) => setRoleAiPanelOpen(event.currentTarget.open)}
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3.5 py-2.5 text-xs font-bold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+          <span className="flex min-w-0 items-center gap-2">
+            <Sparkles className="size-4 shrink-0 text-accent" aria-hidden="true" />
+            <span className="min-w-0 [word-break:keep-all]">
+              7대 직군별 AI 특화 자동화 · 6대 작가 노가다 박멸 보정 스위트
+            </span>
+          </span>
+          <ChevronDown
+            className="size-4 shrink-0 text-fg-3 transition-transform group-open/role-ai-rescue:rotate-180 motion-reduce:transition-none"
+            aria-hidden="true"
+          />
+        </summary>
+        {roleAiPanelOpen ? (
+          <div className="border-t border-line p-3">
+            <Suspense
+              fallback={
+                <div role="status" className="rounded-lg border border-line bg-card p-3 text-xs text-fg-2">
+                  7대 직군별 AI 자동화 · 6대 노가다 박멸 보정 스위트를 불러오는 중입니다.
+                </div>
+              }
+            >
+              <LazyStudioRoleAiRescuePanel />
+            </Suspense>
+          </div>
+        ) : null}
+      </details>
     </section>
   );
 }

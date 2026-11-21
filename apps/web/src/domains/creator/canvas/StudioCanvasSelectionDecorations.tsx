@@ -1,13 +1,14 @@
 import { Fragment, Suspense, type ReactNode, type RefObject } from "react";
 import { Group, Rect, Text } from "react-konva/lib/ReactKonvaCore";
 
+import { lazyRetry } from "@/shared/lib/lazy-retry";
+
 import { CANVAS_W } from "../studio-assets";
 import { elBounds } from "../studio-element-geometry";
 import { isEffectivelyHidden, isEffectivelyLocked, type LayerGroup } from "../studio-layers";
 import { StudioDrawSelectionOverlay } from "../studio-page-lazy-ui";
 import { unionBounds } from "../studio-selection";
 import { STUDIO_GROUP_SELECTION_OVERLAY_NAME } from "../studio-selection-chrome-mirror";
-import { StudioGroupUniformResizeProxy } from "../StudioGroupUniformResizeProxy";
 import { StudioNaturalTransformer } from "../StudioNaturalTransformer";
 import {
   constrainStudioTransformBox,
@@ -20,6 +21,14 @@ import type { StudioGroupUniformResizeBounds } from "../studio-group-uniform-res
 import type { StudioLiveTransformDraftStore } from "../studio-live-transform-draft-store";
 import type Konva from "konva";
 import type { Box as KonvaTransformerBox } from "konva/lib/shapes/Transformer";
+
+const StudioGroupUniformResizeProxy = lazyRetry(
+  () =>
+    import("../StudioGroupUniformResizeProxy").then((mod) => ({
+      default: mod.StudioGroupUniformResizeProxy,
+    })),
+  "StudioGroupUniformResizeProxy",
+);
 
 /**
  * Konva selection decorations for the main Studio layer — the union-bounds ghost with its label
@@ -234,7 +243,8 @@ export function renderStudioCanvasSelectionDecorations({
           );
         })()}
       {(marqueeIds.length > 1 || singleDrawFreeScale) && multiSelectionBounds ? (
-        <StudioGroupUniformResizeProxy
+        <Suspense fallback={null}>
+          <StudioGroupUniformResizeProxy
           bounds={{
             x: multiSelectionBounds.x,
             y: multiSelectionBounds.y,
@@ -293,6 +303,7 @@ export function renderStudioCanvasSelectionDecorations({
             cancel: cancelCanvasSelectionResize,
           }}
         />
+        </Suspense>
       ) : null}
       <StudioNaturalTransformer
         ref={trRef}

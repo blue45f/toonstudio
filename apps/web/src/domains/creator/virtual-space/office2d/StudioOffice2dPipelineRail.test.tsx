@@ -17,19 +17,21 @@ function renderRail(overrides: Partial<Parameters<typeof StudioOffice2dPipelineR
 }
 
 describe("StudioOffice2dPipelineRail", () => {
-  it("공정 일곱 단계의 접근성 이름이 방 이름 받침에 맞는 조사(으로/로)를 쓴다", () => {
+  it("공정 일곱 단계의 접근성 이름이 가시 텍스트(번호·약칭)와 방 이름 받침에 맞는 조사(으로/로)를 함께 포함한다", () => {
     renderRail();
     const expected: Readonly<Record<string, string>> = {
-      "1단계 시나리오·콘티 · 콘티·시나리오 룸으로 이동": "hq-story-room",
-      "2단계 스케치·선화 · 작화 오픈 데스크로 이동": "hq-ink-bay",
-      "3단계 채색 · 채색 랩으로 이동": "hq-color-lab",
-      "4단계 배경·3D · 배경·3D 랩으로 이동": "hq-bg3d-lab",
-      "5단계 식자 · 식자·편집 데스크로 이동": "hq-lettering-desk",
-      "6단계 PD 검수 · PD 리뷰룸으로 이동": "hq-review-room",
-      "7단계 연재 업로드 · 연재 데스크로 이동": "hq-publish-desk",
+      "1 콘티 · 1단계 시나리오·콘티 · 콘티·시나리오 룸으로 이동": "hq-story-room",
+      "2 작화 · 2단계 스케치·선화 · 작화 오픈 데스크로 이동": "hq-ink-bay",
+      "3 채색 · 3단계 채색 · 채색 랩으로 이동": "hq-color-lab",
+      "4 배경 · 4단계 배경·3D · 배경·3D 랩으로 이동": "hq-bg3d-lab",
+      "5 식자 · 5단계 식자 · 식자·편집 데스크로 이동": "hq-lettering-desk",
+      "6 검수 · 6단계 PD 검수 · PD 리뷰룸으로 이동": "hq-review-room",
+      "7 연재 · 7단계 연재 업로드 · 연재 데스크로 이동": "hq-publish-desk",
     };
     for (const name of Object.keys(expected)) {
-      expect(screen.getByRole("button", { name }), name).toBeTruthy();
+      const button = screen.getByRole("button", { name });
+      expect(button, name).toBeTruthy();
+      expect(name).toContain(button.textContent?.trim() ?? "");
     }
     // 방 목록이 바뀌면 이 표도 함께 갱신해야 하므로 개수를 고정한다.
     expect(toonHqPipelineRooms().map((room) => room.id).sort()).toEqual(Object.values(expected).sort());
@@ -39,10 +41,30 @@ describe("StudioOffice2dPipelineRail", () => {
 
   it("공정 버튼을 누르면 그 방 시작 지점으로 이동을 요청하고 월드에 초점을 돌려준다", () => {
     const { requestMove, focusWorld } = renderRail({ currentRoomId: "hq-ink-bay" });
-    fireEvent.click(screen.getByRole("button", { name: "3단계 채색 · 채색 랩으로 이동" }));
+    fireEvent.click(screen.getByRole("button", { name: "3 채색 · 3단계 채색 · 채색 랩으로 이동" }));
     const room = toonHqPipelineRooms().find((candidate) => candidate.id === "hq-color-lab");
     expect(requestMove).toHaveBeenCalledExactlyOnceWith(room?.spawn);
     expect(focusWorld).toHaveBeenCalledOnce();
-    expect(screen.getByRole("button", { name: "2단계 스케치·선화 · 작화 오픈 데스크로 이동" }).getAttribute("aria-current")).toBe("location");
+    expect(screen.getByRole("button", { name: "2 작화 · 2단계 스케치·선화 · 작화 오픈 데스크로 이동" }).getAttribute("aria-current")).toBe("location");
+  });
+
+  it("우측 도구 버튼 4종(협업창·내 자리·평면도·공간음)의 접근성 이름이 가시 텍스트를 포함한다", () => {
+    renderRail({
+      onOpenWorkstation: vi.fn(),
+      onMyDeskAction: vi.fn(),
+      onToggleSchematic: vi.fn(),
+      onToggleSound: vi.fn(),
+    });
+    for (const testId of [
+      "office2d-open-workstation-modal-btn",
+      "office2d-my-desk-btn",
+      "office2d-toggle-schematic-btn",
+      "office2d-toggle-sound-btn",
+    ]) {
+      const button = screen.getByTestId(testId);
+      const visible = button.textContent?.trim() ?? "";
+      const ariaLabel = button.getAttribute("aria-label") ?? "";
+      expect(ariaLabel, testId).toContain(visible);
+    }
   });
 });

@@ -142,9 +142,9 @@ describe("PSD 내보내기 조정 레이어 라운드트립 (exportPagePsd 경�
     const psd = readPsd(await result.blob.arrayBuffer(), {
       useImageData: true, skipCompositeImageData: true,
     });
-    // ag-psd children 은 위→아래(Studio 순서의 역순).
+    // CSP에서 확인한 PSD 레코드 순서: ag-psd children은 Studio와 같은 뒤→앞이다.
     expect(psd.children).toHaveLength(2);
-    const [top, bottom] = psd.children!;
+    const [bottom, top] = psd.children!;
     expect(top!.name).toBe("곡선 보정");
     expect(top!.clipping).toBe(true);
     // PSD 불투명도는 바이트로 저장되므로 0.5 → 128/255 로 되돌아온다.
@@ -158,8 +158,7 @@ describe("PSD 내보내기 조정 레이어 라운드트립 (exportPagePsd 경�
       expect(child.adjustment).toBeDefined();
       return convertPsdAdjustmentLayer(child.adjustment!);
     });
-    // children 은 역순이므로 Studio 순서(뒤→앞)로 되돌려 비교한다.
-    const [levelsBack, curvesBack] = [...roundTripped].reverse();
+    const [levelsBack, curvesBack] = roundTripped;
     expect(levelsBack).toMatchObject({
       status: "converted", kind: "levels",
       parameters: elements[0]!.type === "adjustment" ? elements[0].parameters : {},

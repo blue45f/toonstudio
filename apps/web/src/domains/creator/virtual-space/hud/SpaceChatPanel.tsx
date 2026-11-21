@@ -116,7 +116,7 @@ export const SpaceChatPanel = memo(function SpaceChatPanel({
         </p>)}
       </div> : null}
       <button type="button" className="space-chat__open-button" onClick={() => onOpenChange(true)}
-        aria-label={bt("말풍선 채팅 열기", "Open bubble chat")} title={bt("말 걸기 (Enter)", "Say something (Enter)")}>
+        aria-label={bt("말 걸기 · 말풍선 채팅 열기", "Chat · Open bubble chat")} title={bt("말 걸기 (Enter)", "Say something (Enter)")}>
         <MessageCircle size={17} aria-hidden />{bt("말 걸기", "Chat")}
       </button>
     </div>;
@@ -129,7 +129,7 @@ export const SpaceChatPanel = memo(function SpaceChatPanel({
       <strong>{pinnedMessage.displayName}</strong>
       <span>{pinnedMessage.text}</span>
       <button type="button" className="space-pill-button" onClick={() => setPinnedMessageId(null)}
-        aria-label={bt("고정 메시지 해제", "Unpin message")}>{bt("고정 해제", "Unpin")}</button>
+        aria-label={bt("고정 해제 · 고정 메시지 해제", "Unpin · Unpin message")}>{bt("고정 해제", "Unpin")}</button>
     </div> : null}
     <div className="space-chat__log" role="log" aria-label={bt("채팅 기록", "Chat history")} ref={logRef}>
       {messages.length === 0 ? <p className="space-chat__empty">
@@ -157,7 +157,7 @@ export const SpaceChatPanel = memo(function SpaceChatPanel({
       <button type="button" className="space-pill-button" onClick={() => insertMention("@all", "all")}
         aria-label={bt("@all 전체 멘션 넣기", "Insert @all mention")}>@all</button>
       {messages.length > 0 ? <button type="button" className="space-pill-button" onClick={exportCsv}
-        aria-label={bt("채팅 내역 CSV 내보내기", "Export chat history as CSV")}>
+        aria-label={bt("채팅 내역 CSV 내보내기", "Export CSV · Export chat history")}>
         <Download size={12} aria-hidden />{bt("CSV 내보내기", "Export CSV")}
       </button> : null}
     </div>

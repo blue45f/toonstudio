@@ -1,10 +1,19 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useLayoutEffect, useRef, useState } from "react";
 import { getAuthSessionRevision, getAuthUserId } from "@/domains/auth/public/session/auth-session-state";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { newStudioProjectGraphId } from "../project-graph/studio-project-graph-client";
 import { StudioReviewAnnotationLocation } from "./StudioReviewSpatialAnnotation";
 import { acquireReviewDraftRepository, reviewDraftScopeKey, type ReviewDraftInput, type ReviewDraftScope, type ReviewPrivateDraft } from "./studio-review-draft-shelf";
 import { publishReviewDrafts } from "./studio-review-draft-publish";
+
+const LazyStudioGrowthVisionOsPanel = lazyRetry(
+  () =>
+    import("../growth-vision-os/StudioGrowthVisionOsPanel").then((module) => ({
+      default: module.StudioGrowthVisionOsPanel,
+    })),
+  "StudioGrowthVisionOsPanel",
+);
 
 const button = "min-h-11 rounded-lg border border-line px-3 text-sm disabled:opacity-50";
 export function StudioReviewDraftShelf(props: Parameters<typeof ReviewDraftShelfForScope>[0]) {
@@ -19,6 +28,7 @@ function ReviewDraftShelfForScope({ scope, compose, disabled, onBusy, onStored, 
   const [entries, setEntries] = useState<ReviewPrivateDraft[] | null>(null), [notice, setNotice] = useState("");
   const [selected, setSelected] = useState<string[]>([]), [confirm, setConfirm] = useState(false);
   const [edits, setEdits] = useState<Record<string, string>>({});
+  const [growthVisionOpen, setGrowthVisionOpen] = useState(false);
   const generation = useRef(0), pending = useRef(false);
   const invalidate = useCallback(() => { ++generation.current; }, []);
   const releaseOwnAction = useCallback(() => {
@@ -61,7 +71,8 @@ function ReviewDraftShelfForScope({ scope, compose, disabled, onBusy, onStored, 
     } finally { pending.current = false; if (own === generation.current) onBusy(false); }
   };
   const edited = (entry: ReviewPrivateDraft) => Object.hasOwn(edits, entry.input.id) ? edits[entry.input.id]! : entry.input.body;
-  return <details className="mt-4 rounded-xl border border-line p-3">
+  return <>
+    <details className="mt-4 rounded-xl border border-line p-3">
     <summary className="min-h-11 cursor-pointer text-sm font-semibold">{bt("개인 초안·묶음 발행", "Private drafts and batch publication")}</summary>
     <p className="my-2 text-xs text-fg-2">{bt("현재 계정과 고정 검수본에만 연결된 기기 저장입니다. 팀 공유·클라우드 백업이 아닙니다. 발행은 항목별로 확인하며 일부 실패를 전체 성공으로 처리하지 않습니다.", "Device-local storage for this account and pinned review only, not team sharing or cloud backup. Each publication is confirmed individually; partial failure is not full success.")}</p>
     <div className="flex flex-wrap gap-2">
@@ -94,5 +105,36 @@ function ReviewDraftShelfForScope({ scope, compose, disabled, onBusy, onStored, 
       <button type="button" className={button} disabled={disabled || !confirm || !selected.length} onClick={() => void run("publish")}>{bt("선택한 초안 발행·결과 확인", "Publish or reconcile selected drafts")}</button>
     </div> : null}
     {notice ? <p className="mt-3 text-xs" role="status">{notice}</p> : null}
-  </details>;
+  </details>
+  <details
+    data-testid="studio-growth-vision-os-disclosure"
+    className="mt-3 rounded-xl border border-line bg-panel p-3"
+    onToggle={(event) => setGrowthVisionOpen(event.currentTarget.open)}
+  >
+    <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-fg">
+      <span className="min-w-0 [word-break:keep-all]">
+        {bt(
+          "ToonStudio OS 한눈에 지도 · 라이브 방송 · 바이어 피치 룸 · 첨삭 교실 · 이어 그리기 · 팬 Q&A",
+          "ToonStudio OS Vision Map · Live Broadcast · Buyer Pitch Room · Critique · Handoff · Fan Q&A",
+        )}
+      </span>
+    </summary>
+    {growthVisionOpen ? (
+      <div className="mt-3 border-t border-line pt-3">
+        <Suspense
+          fallback={
+            <div className="rounded-xl border border-line bg-card p-3 text-xs text-fg-2">
+              {bt(
+                "ToonStudio OS 비주얼 비전 지도와 성장 5대 워크벤치를 불러오는 중입니다.",
+                "Loading ToonStudio OS Vision Map and Growth Workbench.",
+              )}
+            </div>
+          }
+        >
+          <LazyStudioGrowthVisionOsPanel />
+        </Suspense>
+      </div>
+    ) : null}
+  </details>
+  </>;
 }

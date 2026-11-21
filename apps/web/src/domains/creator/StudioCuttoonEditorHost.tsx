@@ -100,7 +100,7 @@ import {
   type StudioAiSettings,
   type StudioTextAiProvenance,
   type StudioTextAiTransport,
-} from "./ai/studio-ai-client";
+} from "./ai/studio-ai-client-lazy";
 import {
   captureStudioAiGeneratedAssetProvenance,
   finalizeStudioAiGeneratedAssetProvenance,
@@ -120,11 +120,12 @@ import {
   type StudioAiObservableResult,
   type StudioAiPendingOperationInput,
 } from "./ai/studio-ai-provenance-recorder";
-import { createStudioScenarioImageGenerationExecutors } from "./ai/studio-scenario-image-generation";
+import {
+  createStudioScenarioImageGenerationExecutors,
+  getStudioServerAiStatus,
+  resolveActiveServerAiProviderLabel,
+} from "./ai/studio-ai-client-lazy";
 import type { StudioAiComicComposerHandoff } from "./ai/studio-ai-comic-composer-handoff";
-
-
-
 import { StudioBg3dRecoveryAccessGate } from "./bg3d/studio-bg3d-recovery-access-lease";
 import { isStudioBrushAliasId, isStudioBrushEraserAliasId } from "./brush/studio-brush-alias-profile";
 import {
@@ -648,9 +649,9 @@ import { clampIsometricCellSize, type IsometricAxisRay } from "./studio-isometri
 import type { ImageFilterFields } from "./render/studio-konva-filter-fields";
 import { studioKonvaRuntime as KonvaRuntime } from "./render/studio-konva-runtime";
 import {
-  createStudioLayerLiftSession,
+  createStudioLayerLiftSessionLazy,
   resolveStudioLayerLiftDisabledReason,
-} from "./layer/studio-layer-lift-session";
+} from "./layer/studio-layer-lift-session-lazy";
 import {
   bakeLayerMaskStroke,
   canLayerMask,
@@ -750,7 +751,7 @@ import {
 import {
   DEFAULT_STUDIO_LIVING_INK_MATERIAL_CONTROLS,
   type StudioLivingInkMaterialControls,
-} from "./studio-living-ink-gpu-protocol";
+} from "./runtime-leaves/studio-living-ink-gpu-constants";
 import {
   createDefaultLivingInkInputRoutingState,
   resolveLivingInkStrokeRoute,
@@ -1191,11 +1192,9 @@ import {
   studioMagneticLassoFieldKey,
   type StudioMagneticLassoFieldState,
 } from "./studio-magnetic-lasso-authority";
-import {
-  getStudioServerAiStatus,
-  resolveActiveServerAiProviderLabel,
-  type StudioServerAiProviderPreference,
-  type StudioServerAiStatus,
+import type {
+  StudioServerAiProviderPreference,
+  StudioServerAiStatus,
 } from "./studio-server-ai-client";
 
 import {
@@ -1230,7 +1229,7 @@ import {
   noteStudioSaveSucceeded,
   reportStudioAutosaveFailure,
   reportStudioSaveAuthorityDegraded,
-} from "./studio-storage-recovery-runtime";
+} from "./runtime-leaves/studio-storage-recovery-runtime-lazy";
 import type { StudioStrokeObjectSnapCache } from "./brush/studio-stroke-object-snap-cache";
 import { StudioStrokePostprocessWorkerClient } from "./brush/studio-stroke-postprocess-worker-client";
 import { DEFAULT_SHAPE_PARAMS } from "./brush/studio-stroke-shapes";
@@ -1354,8 +1353,7 @@ import {
   type StudioWorkspaceLoadResult,
 } from "./studio-workspaces";
 import type { StudioWriterRoomDocument, StudioWriterRoomStage } from "./studio-writer-room";
-import { projectStudioWriterRoomToCanvasPlan, type StudioWriterRoomCanvasProjectionResult } from "./studio-writer-room-canvas-projection";
-import { buildStudioWriterRoomCanvasPages, insertStudioWriterRoomCanvasPages } from "./writer-room/buildStudioWriterRoomCanvasPages";
+import { useStudioWriterRoomCanvasProjection } from "./writer-room/useStudioWriterRoomCanvasProjection";
 import { shouldSuppressStudioQuickStartAutoOpen } from "./studio-quick-start-auto-open";
 import type {
   StudioCanvasViewportHandlers,
@@ -1387,7 +1385,7 @@ import { createStudioInitialRecoveryAdmission, guardStudioInitialRecoveryPointer
 import { useStudioRasterExportOrchestration } from "./useStudioRasterExportOrchestration";
 import { StudioPendingStrokeAdmissionQueue } from "./live/studio-pending-stroke-admission";
 import { hasUnpersistedStudioPendingStrokeCheckpoints } from "./studio-rejected-stroke-recovery";
-import { requestStudioVrmProjectArchiveUseContext } from "./vrm/StudioVrmProjectArchiveAttestationHost";
+import { requestStudioVrmProjectArchiveUseContext } from "./runtime-leaves/studio-vrm-archive-attestation-lazy-bridge";
 import { useStudioLiveTransportAuth } from "./live/use-studio-live-transport-auth";
 import { useStudioBrushBaselineController } from "./brush/useStudioBrushBaselineController";
 import type { StudioBg3dSceneDocument } from "./bg3d/studio-bg3d-scene-document";
@@ -1882,6 +1880,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     sourceHydrationPending,
     studioCrdtDocumentReady,
     studioCrdtOperationSyncReady,
+    ensureStudioLayerLiftRuntime,
     studioLayerLiftAbortRef,
     studioLayerLiftCompositorRef,
     studioLayerLiftGeneralProviderRef,
@@ -2883,17 +2882,15 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const [characterBibleOpen, setCharacterBibleOpen] = useState(false);
   const [writerRoomOpen, setWriterRoomOpen] = useState(false);
   const [aiProvenanceOpen, setAiProvenanceOpen] = useState(false);
-  const writerRoomCanvasPlan: StudioWriterRoomCanvasProjectionResult | null = writerRoomOpen
-    ? projectStudioWriterRoomToCanvasPlan(writerRoom, {
-        characterBible,
-        canvasWidth: CANVAS_W,
-        minimumPageHeight: 1080,
-        targetPageHeight: 8_000,
-        maxPanelsPerPage: 12,
-        maxDialogueLinesPerPanel: 12,
-        maxSfxLabelsPerPanel: 8,
-      })
-    : null;
+  const {
+    writerRoomCanvasPlan,
+    buildAndInsertWriterRoomPages,
+  } = useStudioWriterRoomCanvasProjection({
+    writerRoomOpen,
+    writerRoom,
+    characterBible,
+    canvasWidth: CANVAS_W,
+  });
   const [pageReviewOpen, setPageReviewOpen] = useState(false);
   const [commentsOpen, setCommentsOpenState] = useState(false);
   const [commentsPanelMounted, setCommentsPanelMounted] = useState(false);
@@ -13163,7 +13160,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     correctStudioLayerLift,
     openStudioLayerLift,
     runStudioLayerLiftAnalysis,
-  } = createStudioLayerLiftSession({
+  } = createStudioLayerLiftSessionLazy({
     activeElementsRef,
     activeGroupsRef,
     announceDrawingShortcut,
@@ -13179,6 +13176,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     selectedIdRef,
     setError: (message) => setError(message),
     setStudioLayerLiftUi,
+    ensureStudioLayerLiftRuntime,
     studioLayerLiftAbortRef,
     studioLayerLiftCompositorRef,
     studioLayerLiftDisabledReason,
@@ -15026,8 +15024,9 @@ const puppetWarpArmed =
     }
 
     try {
-      const createdPages = buildStudioWriterRoomCanvasPages({ plan, writerRoom });
-      const nextPages = insertStudioWriterRoomCanvasPages(pages, activePage.id, createdPages);
+      const built = buildAndInsertWriterRoomPages({ plan, pages, activePageId: activePage.id });
+      if (!built) return;
+      const { createdPages, nextPages } = built;
       if (!commitPages(nextPages)) return;
       const firstCreatedPage = createdPages[0];
       if (!firstCreatedPage) return;
@@ -29003,7 +29002,7 @@ function clearSelectionForEdit() {
       studioHistorySidecarUndoAvailable={studioHistorySidecarUndoAvailable}
       studioInspectorAsideHandlers={studioInspectorAsideHandlers}
       studioLayerLiftDisabledReason={studioLayerLiftDisabledReason}
-      studioLayerLiftGeneralSubjectAvailable={studioLayerLiftGeneralProviderRef.current !== null}
+      studioLayerLiftGeneralSubjectAvailable={studioLayerLiftGeneralProviderRef.current !== null || Boolean(ensureStudioLayerLiftRuntime)}
       studioLayerLiftOptions={studioLayerLiftOptions}
       studioLayerLiftUi={studioLayerLiftUi}
       studioLayerLiftUiRef={studioLayerLiftUiRef}

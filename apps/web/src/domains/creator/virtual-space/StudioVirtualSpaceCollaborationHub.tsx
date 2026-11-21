@@ -1,5 +1,6 @@
-import { useId, useMemo, useState } from "react";
+import { Suspense, useId, useMemo, useState } from "react";
 
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { navigateStudioSpaceTab } from "./studio-space-tab-navigation";
 import { StudioCollaborationSessionTools } from "./StudioCollaborationSessionTools";
 import { useStudioCollaborationSpaceTarget } from "./use-studio-collaboration-space-target";
@@ -94,6 +95,14 @@ import {
 import { getStudioWeatherLabels } from "./studio-virtual-space-weather-labels";
 import { DEFAULT_STUDIO_WORLD_MANIFEST } from "./studio-virtual-space-world-manifest";
 
+const StudioGlobalMmorpgPlazaPanel = lazyRetry(
+  () =>
+    import("../global-plaza-physics/StudioGlobalMmorpgPlazaPanel").then((module) => ({
+      default: module.StudioGlobalMmorpgPlazaPanel,
+    })),
+  "StudioGlobalMmorpgPlazaPanel",
+);
+
 export interface StudioVirtualSpaceCollaborationHubProps {
   readonly className?: string;
 }
@@ -104,7 +113,8 @@ type CollabSubTabId =
   | "apps-bot-clone"
   | "spatial-npc-engine"
   | "dynamic-sprite-workspace"
-  | "enterprise-virtual-office";
+  | "enterprise-virtual-office"
+  | "global-mmorpg-plaza";
 
 const SELF_SESSION_ID = "session-self-01";
 
@@ -280,6 +290,7 @@ export function StudioVirtualSpaceCollaborationHub({
               ["spatial-npc-engine", "공간·NPC 동작"],
               ["dynamic-sprite-workspace", "캐릭터 동작·효과"],
               ["enterprise-virtual-office", "가상 사무실 운영"],
+              ["global-mmorpg-plaza", "글로벌 외주 광장 · 물리/회의실"],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -402,6 +413,21 @@ export function StudioVirtualSpaceCollaborationHub({
       {subTab === "dynamic-sprite-workspace" ? <StudioVirtualDynamicSpriteWorkspace /> : null}
 
       {subTab === "enterprise-virtual-office" ? <StudioVirtualOfficeEnterpriseSuite /> : null}
+
+      {subTab === "global-mmorpg-plaza" ? (
+        <Suspense
+          fallback={
+            <div className="rounded-lg border border-line bg-panel p-4 text-xs text-fg-2">
+              글로벌 외주 광장 불러오는 중...
+            </div>
+          }
+        >
+          <StudioGlobalMmorpgPlazaPanel
+            entryContext="virtual-space"
+            projectId={target.projectId ?? undefined}
+          />
+        </Suspense>
+      ) : null}
       </div>
     </section>
   );

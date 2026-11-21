@@ -272,6 +272,43 @@ describe("진단 trace의 원본 실패 보존과 제한", () => {
     expect(f.transport.start).not.toHaveBeenCalled();
   });
 
+  it.each(["complete", "RunTask", "EventDispatch", "UserTiming"] as const)("조회 목록에 toplevel이 없어도 요청을 유지하며 실제 %s 증거로 완료를 판정한다", async (missing) => {
+    const f = fixture();
+    const available = STUDIO_FIRST_CONTACT_TRACE_CATEGORIES.filter((category) => category !== "toplevel");
+    vi.mocked(f.transport.categories).mockResolvedValue(available);
+    if (missing !== "complete") f.transform((events) => events.filter((event) => missing === "UserTiming"
+      ? event.cat !== "blink.user_timing" : !event.name.includes(missing)));
+    await f.trace.start(); available.push("toplevel");
+    await f.trace.armStroke(1, "pen"); f.stroke();
+    const result = await f.trace.finish();
+    expect(result).toMatchObject({ started: true, completed: missing === "complete", streamComplete: true,
+      categories: STUDIO_FIRST_CONTACT_TRACE_CATEGORIES,
+      requestedCategories: STUDIO_FIRST_CONTACT_TRACE_CATEGORIES,
+      advertisedCategories: STUDIO_FIRST_CONTACT_TRACE_CATEGORIES.filter((category) => category !== "toplevel"),
+      missingRequestedCategories: ["toplevel"],
+      rawTraceSha256: expect.stringMatching(/^[a-f0-9]{64}$/u) });
+    expect(f.transport.start).toHaveBeenCalledOnce();
+    if (missing === "complete") expect(result.issues).toEqual([]);
+    else {
+      expect(result.correlation).toBeNull();
+      expect(result.issues.join(" ")).toContain(missing === "UserTiming" ? "native-marker-count" : "first-contact-task-or-pointerdown-dispatch");
+    }
+    expect(f.metadata()).toMatchObject({ advertisedCategories: result.advertisedCategories,
+      missingRequestedCategories: ["toplevel"], completed: missing === "complete" });
+  });
+
+  it.each(["rejected", "malformed"] as const)("범주 조회의 %s 결과는 시작 실패와 metadata에 남긴다", async (failure) => {
+    const f = fixture();
+    if (failure === "rejected") vi.mocked(f.transport.categories).mockRejectedValue(new Error("category discovery failed"));
+    else vi.mocked(f.transport.categories).mockResolvedValue("toplevel" as unknown as readonly string[]);
+    await expect(f.trace.start()).rejects.toThrow();
+    const result = await f.trace.finish();
+    expect(result).toMatchObject({ completed: false, advertisedCategories: null, missingRequestedCategories: null });
+    expect(result.issues.join(" ")).toContain(failure === "rejected" ? "category discovery failed" : "범주 목록 형식");
+    expect(f.transport.start).not.toHaveBeenCalled();
+    expect(f.transport.detach).toHaveBeenCalledOnce();
+  });
+
   it("깨끗한 동일 source/build가 없으면 trace를 시작하지 않는다", async () => {
     const f = fixture();
     const bad = createStudioFirstContactTrace({ page: f.page, transport: f.transport, directory: f.directory,
@@ -282,6 +319,16 @@ describe("진단 trace의 원본 실패 보존과 제한", () => {
 });
 
 describe("CDP 종료 listener 순서와 CPU 진단 옵션 경계", () => {
+  it("조회 목록과 별개로 Tracing.start에 모든 요청 범주와 기존 수집 한도를 전달한다", async () => {
+    const send = vi.fn(async (method: string) => method === "Tracing.getCategories" ? { categories: ["blink.user_timing"] } : {});
+    const transport = createStudioFirstContactTraceTransport({ send } as unknown as CDPSession);
+    await expect(transport.categories()).resolves.toEqual(["blink.user_timing"]);
+    await transport.start();
+    expect(send).toHaveBeenLastCalledWith("Tracing.start", { transferMode: "ReturnAsStream", streamFormat: "json", streamCompression: "none",
+      bufferUsageReportingInterval: 1000, traceConfig: { recordMode: "recordUntilFull", traceBufferSizeInKb: 65536,
+        includedCategories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES], enableSampling: false } });
+  });
+
   it("CPU와 native metadata에 실행한 Playwright·전체 argv·protocol 버전을 복사해 보존한다", async () => {
     const f = fixture(), actualArgs = ["/chromium", "--headless", ...source.browserLaunchArgs];
     const protocolVersion = { protocolVersion: "1.3", product: "Chrome/158.0.8127.18", revision: "fixture-revision",

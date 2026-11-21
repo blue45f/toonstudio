@@ -77,12 +77,25 @@ function safeUrl(value: string) {
     return (url.protocol === "https:" || url.protocol === "http:") && !!url.hostname && !url.username && !url.password;
   } catch { return false; }
 }
+const TRAILING_EVIDENCE_PUNCTUATION = new Set<string>([
+  ")", "]", "}", ">", ".", ",", "!", "?", ";", ":", "…", "。", "、", "*", "`",
+]);
+
+/** 닫는 구두점을 정규식 역추적 없이 O(n) 후방 스캔으로 제거한다. */
+function trimTrailingEvidencePunctuation(value: string): string {
+  let end = value.length;
+  while (end > 0 && TRAILING_EVIDENCE_PUNCTUATION.has(value[end - 1]!)) {
+    end -= 1;
+  }
+  return end === value.length ? value : value.slice(0, end);
+}
+
 /** 설명 안의 근거도 URL과 같은 검증을 적용하고 문장·Markdown의 닫는 구두점만 제외한다. */
 function hasResolutionEvidence(summary: string): boolean {
   for (const match of summary.matchAll(/https?:\/\/[^\s<>"']+|\/api\/admin\/production-changes\/captures\/[^\s<>"']+/giu)) {
     const index = match.index ?? 0;
     if (index > 0 && /[\p{L}\p{N}_/]/u.test(summary[index - 1]!)) continue;
-    const candidate = match[0].replace(/[)\]}>.,!?;:…。、*`]+$/u, "");
+    const candidate = trimTrailingEvidencePunctuation(match[0]);
     if (candidate && safeUrl(candidate)) return true;
   }
   return false;

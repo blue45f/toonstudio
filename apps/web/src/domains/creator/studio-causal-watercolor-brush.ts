@@ -15,7 +15,7 @@ import {
   DEFAULT_STUDIO_STROKE_BUDGET,
   resolveStrokeDabCapacity,
   STUDIO_CAUSAL_WATERCOLOR_DAB_RESIDENT_BYTES,
-} from "@toonstudio/studio-brush-platform";
+} from "@toonstudio/studio-brush-platform/stroke-budget";
 
 import {
   normalizeWatercolorBrushPlanSettings,

@@ -11,7 +11,7 @@
  */
 
 import { STUDIO_LIVING_INK_FIELD_VERSION } from "../studio-living-ink-field";
-import { STUDIO_LIVING_INK_GPU_PROTOCOL_VERSION } from "../studio-living-ink-gpu-protocol";
+import { STUDIO_LIVING_INK_GPU_PROTOCOL_VERSION } from "../runtime-leaves/studio-living-ink-gpu-constants";
 
 import { isStudioInkwashFluidBrush } from "./studio-inkwash-fluid-brushes";
 import {

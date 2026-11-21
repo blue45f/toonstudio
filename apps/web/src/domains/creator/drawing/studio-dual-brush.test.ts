@@ -7,6 +7,7 @@ import {
   applyDualBrushStrength,
   blendDualBrushValue,
   clearDualBrushTileCache,
+  compositeCrayonWaxDualBrushBuffer,
   compositeDualBrushFloatBuffer,
   evaluateDynamicDualBrushModulation,
   generateTextureTile,
@@ -243,6 +244,29 @@ describe("STUDIO_EXPRESSIVE_DUAL_BRUSH_PROFILES & evaluateDynamicDualBrushModula
     expect(lightFastGrazing.anisotropicScaleX).toBeGreaterThan(
       heavySlowSaturated.anisotropicScaleX,
     );
+  });
+
+  it("paper 타일이 황목 종이 산·골 대비를 제공하고 크레용 왁스 이중 브러시가 재사용 버퍼로 합성된다", () => {
+    const paper = generateTextureTile("paper", { size: 64, seed: 42 });
+    let min = 1;
+    let max = 0;
+    for (const v of paper) {
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    expect(max - min).toBeGreaterThan(0.45);
+
+    const stampBuf = new Float32Array(64 * 64);
+    const outBuf = new Float32Array(64 * 64);
+    const res = compositeCrayonWaxDualBrushBuffer(
+      { size: 64, pressure01: 0.25, velocity01: 0.5, tilt01: 0.3, seed: 42 },
+      stampBuf,
+      outBuf,
+    );
+    expect(res.stamp.reusedBuffer).toBe(true);
+    expect(res.composited).toBe(outBuf);
+    expect(res.stamp.crumbCount).toBeGreaterThanOrEqual(8);
+    expect(res.stamp.drySkipFraction).toBeGreaterThan(0.15);
   });
 });
 

@@ -20,17 +20,17 @@ const page: PageState = { id: "page", elements: [], bg: "#fff", bgGrad: null, ca
 describe("PSD 편집·외관·원본 교환 계약", () => {
   it("중첩 폴더 경로와 클리핑을 보존하고 편집 후에도 z-order를 바꾸지 않는다", async () => {
     const result = await imported([{ name: "외부", children: [
-      leaf("위"), { name: "내부", children: [leaf("클리핑", { clipping: true }), leaf("기준")] }, leaf("아래"),
+      leaf("아래"), { name: "내부", children: [leaf("기준"), leaf("클리핑", { clipping: true })] }, leaf("위"),
     ] }]);
     expect(result.elements.map((element) => element.name)).toEqual(["아래", "기준", "클리핑", "위"]);
     expect(result.elements[2]?.clipBelow).toBe(true);
     expect(result.groups?.map((group) => group.name)).toEqual(["외부", "외부 / 내부", "외부"]);
     expect(result.elements[0]?.groupId).not.toBe(result.elements[3]?.groupId);
     const layers = groupPsdExportLayers(
-      [...result.elements].reverse().map((element) => ({ name: element.name })), [...result.elements].reverse(),
+      result.elements.map((element) => ({ name: element.name })), result.elements,
     );
     expect(layers).toMatchObject([{ name: "외부", children: [
-      { name: "위" }, { name: "내부", children: [{ name: "클리핑" }, { name: "기준" }] }, { name: "아래" },
+      { name: "아래" }, { name: "내부", children: [{ name: "기준" }, { name: "클리핑" }] }, { name: "위" },
     ] }]);
     expect(psdExportFolderPath({ ...result.elements[1], groupId: undefined })).toEqual([]);
   });

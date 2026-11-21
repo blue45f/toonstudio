@@ -8,7 +8,7 @@ import {
   type ShadowComparisonReport,
   type VisualEquivalenceGate,
   type WinnerCacheEntry,
-} from "@toonstudio/studio-engine-registry";
+} from "@toonstudio/studio-engine-registry/tournament";
 
 /**
  * V12 §5 runtime wiring — RUNTIME_RENDERER_TOURNAMENT + SHADOW_RENDERING.

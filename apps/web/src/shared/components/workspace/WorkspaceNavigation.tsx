@@ -1,8 +1,9 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type Ref, type RefObject } from "react";
-import { ChevronDown, Palette } from "lucide-react";
+import { ArrowRight, ChevronDown, Palette } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
+import { cx } from "@/shared/lib/cx";
 import { useI18n } from "@/shared/lib/i18n";
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
 
@@ -12,6 +13,12 @@ import {
   siteNavigationText,
   type SiteNavigationItem,
 } from "../site-navigation";
+import {
+  CREATOR_JOURNEY_STAGES,
+  accentToneBadgeClasses,
+  accentToneChipClasses,
+  resolveShellJourneySummary,
+} from "./page-role-journey-shell-lite";
 import {
   workspaceNavigationActiveId,
   workspaceNavigationContext,
@@ -164,9 +171,11 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
   readonly teamHref?: string;
 }) {
   const locale = useI18n((state) => state.lang);
+  const isKo = locale.toLowerCase().startsWith("ko");
   const { pathname, search } = useLocation();
   const railRef = useRef<HTMLDivElement>(null);
   const navigationContext = context ?? workspaceNavigationContext(pathname, search);
+  const currentJourney = resolveShellJourneySummary(pathname);
   const shortcutActive = workspaceShortcutActiveId(pathname);
   const [shortcutsExpanded, setShortcutsExpanded] = useState(true);
   const autoSelected = activeId ?? workspaceNavigationActiveId(pathname);
@@ -182,16 +191,23 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
   const ink = useWorkspaceRailInk(railRef, shortcutActive, selected, detailsOpen);
 
   return (
-    <div ref={railRef} className="workspace-nav-rail">
+    <div
+      ref={railRef}
+      className="workspace-nav-rail"
+      data-journey-stage={currentJourney.stageNumber}
+      data-accent-tone={currentJourney.accentTone}
+    >
       <nav
         ref={navigationRef}
         className="workspace-nav"
         data-slot="workspace-nav"
         data-site-mobile-utilities={onOpenMenu ? "available" : undefined}
-        aria-label={locale.startsWith("ko") ? "주 메뉴" : "Main navigation"}
+        aria-label={isKo ? "주 메뉴" : "Main navigation"}
       >
         {TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => {
           const Icon = item.icon;
+          const entryRole = resolveShellJourneySummary(item.href);
+          const entryTitle = `${isKo ? entryRole.stageBadgeKo : entryRole.stageBadgeEn} · ${siteNavigationText(item.description, locale)}`;
           const href = item.id === "workspace-home"
             ? studioHref ?? workspaceNavigationHref(item.href, navigationContext)
             : item.id === "workspace-team"
@@ -216,12 +232,14 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
                 key={item.id}
                 type="button"
                 data-navigation-entry={item.id}
+                data-journey-stage={entryRole.stageNumber}
+                data-accent-tone={entryRole.accentTone}
                 data-site-mobile-menu-trigger="true"
                 data-workspace-menu-trigger="true"
                 aria-haspopup="dialog"
                 aria-expanded={menuOpen ?? false}
                 aria-controls={menuOpen ? menuId : undefined}
-                title={siteNavigationText(item.description, locale)}
+                title={entryTitle}
                 onClick={(event) => onOpenMenu(event.currentTarget)}
               >
                 {content}
@@ -234,7 +252,9 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
               href={href}
               aria-current={selected === item.id ? "page" : undefined}
               data-navigation-entry={item.id}
-              title={siteNavigationText(item.description, locale)}
+              data-journey-stage={entryRole.stageNumber}
+              data-accent-tone={entryRole.accentTone}
+              title={entryTitle}
             >
               {content}
             </Link>
@@ -250,12 +270,13 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
           }}
         >
           <Palette size={16} strokeWidth={1.6} aria-hidden="true" />
-          <span>{locale.startsWith("ko") ? "제작 바로가기" : "Creation shortcuts"}</span>
+          <span>{isKo ? "제작 바로가기" : "Creation shortcuts"}</span>
           <ChevronDown size={15} strokeWidth={1.6} aria-hidden="true" />
         </summary>
-        <nav className="workspace-nav-shortcuts" aria-label={locale.startsWith("ko") ? "제작 바로가기" : "Creation shortcuts"}>
+        <nav className="workspace-nav-shortcuts" aria-label={isKo ? "제작 바로가기" : "Creation shortcuts"}>
           {WORKSPACE_SHORTCUTS.map((item) => {
             const Icon = item.icon;
+            const shortcutRole = resolveShellJourneySummary(item.href);
             const href = item.id === "shortcut-team"
               ? teamHref ?? item.href
               : item.href;
@@ -265,7 +286,9 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
                 href={href}
                 aria-current={shortcutActive === item.id ? "page" : undefined}
                 data-navigation-entry={item.id}
-                title={siteNavigationText(item.description, locale)}
+                data-journey-stage={shortcutRole.stageNumber}
+                data-accent-tone={shortcutRole.accentTone}
+                title={`${isKo ? shortcutRole.stageBadgeKo : shortcutRole.stageBadgeEn} · ${isKo ? shortcutRole.roleHeadlineKo : shortcutRole.roleHeadlineEn}`}
               >
                 <span className="workspace-nav-visual" aria-hidden="true">
                   <Icon
@@ -280,6 +303,66 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
           })}
         </nav>
       </details>
+      <section
+        data-workspace-journey-hub="true"
+        data-journey-stage={currentJourney.stageNumber}
+        data-accent-tone={currentJourney.accentTone}
+        aria-label={isKo ? "5단계 창작 여정" : "5-stage creation journey"}
+        className="mt-3 hidden border-t border-line pt-3 xl:block"
+      >
+        <div className="mb-2 px-2">
+          <span
+            data-accent-tone={currentJourney.accentTone}
+            className={cx(
+              "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold tabular-nums [word-break:keep-all]",
+              accentToneBadgeClasses(currentJourney.accentTone),
+            )}
+          >
+            {isKo ? currentJourney.stageBadgeKo : currentJourney.stageBadgeEn}
+          </span>
+          <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-fg-3 [word-break:keep-all]">
+            {isKo ? currentJourney.roleHeadlineKo : currentJourney.roleHeadlineEn}
+          </p>
+        </div>
+        <ol className="flex flex-col gap-1" aria-label={isKo ? "창작 여정 단계 이동" : "Jump by journey stage"}>
+          {CREATOR_JOURNEY_STAGES.map((stage) => {
+            const isCurrentStage = stage.stageNumber === currentJourney.stageNumber;
+            const stageHref = workspaceNavigationHref(stage.primaryHref, navigationContext);
+            return (
+              <li key={stage.stageId}>
+                <Link
+                  href={stageHref}
+                  data-journey-stage={stage.stageNumber}
+                  data-accent-tone={stage.accentTone}
+                  data-current-stage={isCurrentStage ? "true" : undefined}
+                  title={isKo ? stage.subtitleKo : stage.subtitleEn}
+                  className={cx(
+                    "flex min-h-9 items-center gap-2 rounded-lg border px-2 py-1 text-xs font-medium outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]",
+                    accentToneChipClasses(stage.accentTone, isCurrentStage),
+                  )}
+                >
+                  <span aria-hidden="true" className="font-mono text-[10px] font-bold tabular-nums text-fg-3">
+                    {stage.stepCode}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">
+                    {isKo ? stage.shortLabelKo : stage.shortLabelEn}
+                  </span>
+                  <ArrowRight size={12} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-fg-3" />
+                </Link>
+              </li>
+            );
+          })}
+        </ol>
+        <Link
+          href="/creator-support"
+          data-journey-stage={5}
+          data-accent-tone="support"
+          className="mt-1.5 flex min-h-9 items-center justify-between rounded-lg border border-success/35 bg-success-soft/55 px-2.5 py-1 text-[11px] font-semibold text-fg transition-[border-color,background-color] duration-150 hover:border-success hover:bg-success-soft motion-reduce:transition-none [word-break:keep-all]"
+        >
+          <span>{isKo ? "창작자 지원 프로그램" : "Creator support"}</span>
+          <ArrowRight size={12} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-success" />
+        </Link>
+      </section>
       <span
         className="workspace-nav-ink"
         aria-hidden="true"

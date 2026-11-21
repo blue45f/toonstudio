@@ -8,7 +8,11 @@ import type {
 } from "./bg3d/studio-bg3d-glb-validation";
 import type { StudioBg3dObjWorkerCanonicalResult } from "./bg3d/studio-bg3d-obj-worker-protocol";
 import type { StudioBg3dAttachmentRights } from "./bg3d/studio-bg3d-scene-document";
-import { STUDIO_GENERIC_3D_SOURCE_FORMATS, type StudioGeneric3dSourceFormat } from "./generic-3d-model/studio-generic-3d-source-formats";
+import {
+  isStudioGeneric3dSourceFormat,
+  STUDIO_GENERIC_3D_SOURCE_FORMATS,
+  type StudioGeneric3dSourceFormat,
+} from "./generic-3d-model/studio-generic-3d-source-formats";
 import type {
   StudioGeneric3dAdmissionMessageCode,
   StudioGeneric3dCapabilityDetailCode,
@@ -22,7 +26,7 @@ export type {
   StudioGeneric3dLimitationDetailCode,
 } from "./studio-generic-3d-model-mode-codes";
 
-export { STUDIO_GENERIC_3D_SOURCE_FORMATS };
+export { isStudioGeneric3dSourceFormat, STUDIO_GENERIC_3D_SOURCE_FORMATS };
 export type { StudioGeneric3dSourceFormat };
 export type StudioGeneric3dClassification = "character" | "creature" | "prop";
 export type StudioGeneric3dRigStatus = "skinned" | "rigged" | "static" | "unverified";
@@ -172,7 +176,6 @@ export interface StudioGeneric3dVerifiedManifestInput extends StudioGeneric3dMan
   readonly rights?: StudioGeneric3dRightsEvidence;
 }
 
-const SOURCE_FORMATS = new Set<string>(STUDIO_GENERIC_3D_SOURCE_FORMATS);
 const MAX_TEXT_CODE_POINTS = 160;
 const MAX_HINTS = 4_096;
 
@@ -277,12 +280,6 @@ export function createStudioGeneric3dRightsFromAttachment(
       || (rights.status === "licensed" && !rightsText(rights.licenseName))
       || (rights.attributionRequired && !rightsText(rights.attribution)),
   });
-}
-
-export function isStudioGeneric3dSourceFormat(
-  value: unknown,
-): value is StudioGeneric3dSourceFormat {
-  return typeof value === "string" && SOURCE_FORMATS.has(value);
 }
 
 function foldedSearchText(input: {

@@ -18,7 +18,7 @@ import {
 } from "../studio-oncanvas-command-surfaces";
 import { StudioInlineScrubber } from "../StudioInlineScrubber";
 
-import { STUDIO_BRUSH_SIZE_RANGE } from "./studio-draw-ux";
+import { STUDIO_BRUSH_SIZE_RANGE } from "./studio-brush-size-range";
 
 import { cn } from "@/shared/lib/utils";
 

@@ -126,7 +126,7 @@ describe("Studio canvas selection interaction guards", () => {
       "utf8",
     );
     const proxyStart = decorations.indexOf("<StudioGroupUniformResizeProxy");
-    const proxyEnd = decorations.indexOf("/>\n      ) : null}", proxyStart);
+    const proxyEnd = decorations.indexOf("/>\n        </Suspense>\n      ) : null}", proxyStart);
     expect(proxyStart).toBeGreaterThanOrEqual(0);
     expect(proxyEnd).toBeGreaterThan(proxyStart);
     const resizeProxy = decorations.slice(proxyStart, proxyEnd);

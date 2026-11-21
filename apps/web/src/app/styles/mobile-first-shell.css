@@ -1,8 +1,258 @@
 /* 화면별 작업은 유지하고 탐색·설정의 간격과 이름을 같은 규칙으로 묶는다. */
+/* OKLCH 5색 스펙트럼 비주얼 토큰 & PC·태블릿·모바일 3단 반응형 셸 (2026-11-21).
+ * 전 테마에서 WCAG AA(>= 4.5:1) 대비와 sRGB 가멋을 만족하며, 원시 HEX·transition: all을 금지한다. */
+:root {
+  --ts-spectrum-creation: oklch(0.77 0.135 16);
+  --ts-spectrum-3d: oklch(0.81 0.132 192);
+  --ts-spectrum-collab: oklch(0.77 0.118 280);
+  --ts-spectrum-market: oklch(0.83 0.145 78);
+  --ts-spectrum-support: oklch(0.80 0.148 156);
+  --ts-spectrum-ribbon: linear-gradient(
+    90deg,
+    var(--ts-spectrum-creation) 0%,
+    var(--ts-spectrum-market) 26%,
+    var(--ts-spectrum-support) 52%,
+    var(--ts-spectrum-3d) 76%,
+    var(--ts-spectrum-collab) 100%
+  );
+  --ts-radius-outer: 16px;
+  --ts-radius-mid: 12px;
+  --ts-radius-inner: 8px;
+  --ts-motion-fast: 150ms;
+  --ts-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-theme="light"],
+:root[data-design-theme="light"],
+:root[data-design-theme="aurora"],
+:root[data-design-theme="blossom"],
+:root[data-design-theme="sepia"] {
+  --ts-spectrum-creation: oklch(0.47 0.175 16);
+  --ts-spectrum-3d: oklch(0.44 0.074 192);
+  --ts-spectrum-collab: oklch(0.45 0.185 280);
+  --ts-spectrum-market: oklch(0.455 0.095 72);
+  --ts-spectrum-support: oklch(0.44 0.105 156);
+}
+
+:root[data-design-theme="contrast"] {
+  --ts-spectrum-creation: oklch(0.84 0.092 16);
+  --ts-spectrum-3d: oklch(0.88 0.115 192);
+  --ts-spectrum-collab: oklch(0.85 0.078 280);
+  --ts-spectrum-market: oklch(0.90 0.105 78);
+  --ts-spectrum-support: oklch(0.87 0.132 156);
+}
+
+@media (color-gamut: p3) {
+  :root {
+    --ts-spectrum-creation: oklch(0.77 0.155 16);
+    --ts-spectrum-3d: oklch(0.81 0.148 192);
+    --ts-spectrum-collab: oklch(0.77 0.138 280);
+    --ts-spectrum-market: oklch(0.83 0.162 78);
+    --ts-spectrum-support: oklch(0.80 0.165 156);
+  }
+  :root[data-theme="light"],
+  :root[data-design-theme="light"],
+  :root[data-design-theme="aurora"],
+  :root[data-design-theme="blossom"],
+  :root[data-design-theme="sepia"] {
+    --ts-spectrum-creation: oklch(0.47 0.195 16);
+    --ts-spectrum-3d: oklch(0.44 0.095 192);
+    --ts-spectrum-collab: oklch(0.45 0.205 280);
+    --ts-spectrum-market: oklch(0.455 0.115 72);
+    --ts-spectrum-support: oklch(0.44 0.128 156);
+  }
+}
+
 /* 연결된 전체 메뉴가 있는 화면만 접힌 고정 진입을 대신한다. 열린 패널은 유지한다. */
 :root:has([data-site-menu-entry="available"]) :is([data-floating-controls-mobile="disabled"]:not([data-floating-controls-open]), [data-site-ost]:not([data-site-ost-expanded]) [data-site-ost-pill]) { display: none; }
 [data-site-menu-music-enabled] { display: none; font-size: 0.75rem; }
 :root:has([data-site-ost-enabled]) [data-site-menu-music-enabled] { display: block; }
+
+/* 전역 공개 GNB 스펙트럼 헤어라인 및 활성 필 */
+.site-header {
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--ts-spectrum-creation) 34%, transparent) 0%,
+    color-mix(in oklch, var(--ts-spectrum-market) 30%, transparent) 26%,
+    color-mix(in oklch, var(--ts-spectrum-support) 30%, transparent) 52%,
+    color-mix(in oklch, var(--ts-spectrum-3d) 32%, transparent) 76%,
+    color-mix(in oklch, var(--ts-spectrum-collab) 34%, transparent) 100%
+  );
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 2px;
+}
+
+.site-header__ink {
+  height: 2.5px;
+  border-radius: 999px;
+  background: var(--ts-spectrum-ribbon, var(--color-accent));
+}
+
+.site-header__primary-link {
+  border: 1px solid transparent;
+  transition:
+    background-color var(--ts-motion-fast) var(--ts-motion-ease),
+    border-color var(--ts-motion-fast) var(--ts-motion-ease),
+    color var(--ts-motion-fast) var(--ts-motion-ease),
+    transform var(--ts-motion-fast) var(--ts-motion-ease);
+}
+
+.site-header__primary-link:is([aria-current="page"], [aria-current="true"]) {
+  border-color: color-mix(in oklch, var(--ts-spectrum-creation) 36%, var(--color-line));
+  background: color-mix(in oklch, var(--ts-spectrum-creation) 11%, var(--color-raised));
+  color: var(--color-fg);
+  font-weight: 600;
+}
+
+.site-header__primary-link:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+/* 페이지 역할·5단계 여정·다음 동선 바 ([data-role-journey-bar]) 공통 스펙트럼 스타일 */
+[data-role-journey-bar] {
+  --ts-journey-tone: var(--ts-spectrum-creation);
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin-block-end: 14px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in oklch, var(--ts-journey-tone) 32%, var(--color-line));
+  border-radius: var(--ts-radius-outer);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--ts-journey-tone) 11%, var(--color-panel)) 0%,
+      var(--color-panel) 58%
+    );
+  color: var(--color-fg);
+  overflow: hidden;
+  transition:
+    background-color var(--ts-motion-fast) var(--ts-motion-ease),
+    border-color var(--ts-motion-fast) var(--ts-motion-ease),
+    color var(--ts-motion-fast) var(--ts-motion-ease),
+    transform var(--ts-motion-fast) var(--ts-motion-ease);
+}
+
+[data-role-journey-bar]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2.5px;
+  background: linear-gradient(
+    90deg,
+    var(--ts-journey-tone) 0%,
+    color-mix(in oklch, var(--ts-journey-tone) 45%, var(--ts-spectrum-3d)) 65%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+[data-role-journey-bar][data-accent-tone="creation"],
+[data-role-journey-bar][data-stage-tone="creation"] { --ts-journey-tone: var(--ts-spectrum-creation); }
+[data-role-journey-bar][data-accent-tone="three-d"],
+[data-role-journey-bar][data-accent-tone="3d"],
+[data-role-journey-bar][data-stage-tone="three-d"],
+[data-role-journey-bar][data-stage-tone="3d"] { --ts-journey-tone: var(--ts-spectrum-3d); }
+[data-role-journey-bar][data-accent-tone="collab"],
+[data-role-journey-bar][data-stage-tone="collab"] { --ts-journey-tone: var(--ts-spectrum-collab); }
+[data-role-journey-bar][data-accent-tone="market"],
+[data-role-journey-bar][data-stage-tone="market"] { --ts-journey-tone: var(--ts-spectrum-market); }
+[data-role-journey-bar][data-accent-tone="support"],
+[data-role-journey-bar][data-stage-tone="support"] { --ts-journey-tone: var(--ts-spectrum-support); }
+
+[data-role-journey-bar] :is([data-role-journey-badge], [data-stage-badge]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in oklch, var(--ts-journey-tone) 42%, var(--color-line));
+  border-radius: var(--ts-radius-inner);
+  background: color-mix(in oklch, var(--ts-journey-tone) 14%, var(--color-card));
+  color: var(--ts-journey-tone);
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+[data-role-journey-bar] :is(p, [data-role-journey-headline]) {
+  color: var(--color-fg);
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+[data-role-journey-bar] :is([data-role-journey-steps], [data-role-journey-next], ol, ul) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+[data-role-journey-bar] :is(a, button) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in oklch, var(--ts-journey-tone) 30%, var(--color-line));
+  border-radius: var(--ts-radius-inner);
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    background-color var(--ts-motion-fast) var(--ts-motion-ease),
+    border-color var(--ts-motion-fast) var(--ts-motion-ease),
+    color var(--ts-motion-fast) var(--ts-motion-ease),
+    transform var(--ts-motion-fast) var(--ts-motion-ease);
+}
+
+[data-role-journey-bar] :is(a, button):is([aria-current="page"], [aria-current="step"], [data-stage-active="true"]) {
+  border-color: color-mix(in oklch, var(--ts-journey-tone) 56%, var(--color-line));
+  background: color-mix(in oklch, var(--ts-journey-tone) 14%, var(--color-raised));
+  color: var(--ts-journey-tone);
+}
+
+[data-role-journey-bar] :is(a, button):focus-visible {
+  outline: 2px solid var(--ts-journey-tone);
+  outline-offset: 2px;
+}
+
+[data-role-journey-bar] :is(a, button):not(:disabled):active {
+  transform: scale(0.96);
+}
+
+@media (hover: hover) {
+  .site-header__primary-link:hover {
+    border-color: color-mix(in oklch, var(--ts-spectrum-collab) 34%, var(--color-line));
+    background: color-mix(in oklch, var(--ts-spectrum-collab) 10%, var(--color-raised));
+    color: var(--color-fg);
+    transform: translateY(-1px);
+  }
+  [data-role-journey-bar] :is(a, button):hover {
+    border-color: var(--ts-journey-tone);
+    background: color-mix(in oklch, var(--ts-journey-tone) 14%, var(--color-raised));
+    color: var(--ts-journey-tone);
+    transform: translateY(-1px);
+  }
+}
+
+/* 일반 셸 탐색 전환 경계 (1179px 단일 선언 유지 — layout-token-contract 계약) */
 @media (max-width: 1179px) {
   :root { --site-control-size: 48px; }
   [data-slot="button"]:not([data-own-control-size]) { min-block-size: 48px; }
@@ -21,10 +271,82 @@
   }
 }
 
+/* 태블릿 (768px~1279px): 균형 패딩·유연한 그리드·44×44px 터치 타깃 보장 */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .site-header__inner {
+    gap: 10px;
+    padding-inline: var(--layout-gutter, 1.5rem);
+  }
+  :is(.site-header__primary-link, .site-bottom-tabs__link, [data-role-journey-bar] a, [data-role-journey-bar] button) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  [data-role-journey-bar] {
+    gap: 10px 12px;
+    padding: 12px 14px;
+  }
+  [data-role-journey-bar] :is([data-role-journey-steps], [data-role-journey-next], ol, ul) {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+}
+
+/* PC (>= 1280px): 넉넉한 상단바·역할/다음 동선 바 가로 정렬 */
+@media (min-width: 1280px) {
+  .site-header__primary {
+    gap: 4px;
+  }
+  .site-header__primary-link {
+    padding: 8px 12px;
+    border-radius: var(--ts-radius-inner);
+  }
+  [data-role-journey-bar] {
+    flex-wrap: nowrap;
+    padding: 12px 16px;
+  }
+}
+
 /* 실제 공통 메뉴가 연결된 Workspace의 새 기본 메뉴 버튼만 기존 5탭과 맞춘다. */
 @media (max-width: 767px) {
+  html,
+  body,
+  #root,
+  #main-content {
+    overflow-x: clip;
+  }
   .workspace-nav > [data-workspace-menu-trigger] { display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:0; min-height:66px; gap:3px; padding:5px 2px; border:1px solid transparent; border-radius:12px; background:transparent; color:var(--color-fg-2); font-size:12px; word-break:keep-all; overflow-wrap:break-word; }
-  .workspace-nav > [data-workspace-menu-trigger]:is(:hover,:focus-visible) { border-color:var(--color-line-strong); background:var(--color-raised); }
+  .workspace-nav > [data-workspace-menu-trigger]:is(:hover,:focus-visible) { border-color:color-mix(in oklch, var(--ts-spectrum-support) 42%, var(--color-line-strong)); background:color-mix(in oklch, var(--ts-spectrum-support) 12%, var(--color-raised)); color:var(--ts-spectrum-support); }
+  nav[data-site-product].site-bottom-tabs {
+    background: color-mix(in oklch, var(--color-panel) 94%, transparent);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav[data-site-product].site-bottom-tabs .site-bottom-tabs__link {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  [data-role-journey-bar] {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--ts-radius-mid);
+  }
+  [data-role-journey-bar] :is([data-role-journey-steps], [data-role-journey-next], ol, ul),
+  [data-scroll-chips] {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    padding-block: 2px;
+  }
+  [data-role-journey-bar] :is(a, button),
+  [data-scroll-chips] > :is(a, button) {
+    min-height: 44px;
+    scroll-snap-align: start;
+  }
 }
 
 /* 작은 화면의 검색·작성·선택 입력은 본문과 같은 읽기 크기를 유지하고, 한글 제목·버튼은 어절 단위로 줄바꿈한다. */
@@ -35,5 +357,77 @@
   #main-content :is(h1, h2, h3, button, summary) {
     word-break: keep-all;
     overflow-wrap: break-word;
+  }
+}
+
+/* 차세대 CSS 모던 전환: @starting-style 부드러운 열림 & animation-timeline: view() 미세 등장 */
+@media (prefers-reduced-motion: no-preference) {
+  :is(dialog[open], .site-header__panel[data-open], [data-role-journey-bar]) {
+    transition:
+      opacity 180ms var(--ts-motion-ease),
+      transform 180ms var(--ts-motion-ease),
+      background-color var(--ts-motion-fast) var(--ts-motion-ease),
+      border-color var(--ts-motion-fast) var(--ts-motion-ease);
+  }
+  @starting-style {
+    :is(dialog[open], .site-header__panel[data-open]) {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.985);
+    }
+    [data-role-journey-bar] {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+  @keyframes ts-shell-scroll-reveal {
+    from {
+      opacity: 0.72;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @supports (animation-timeline: view()) {
+    [data-spectrum-reveal] {
+      animation: ts-shell-scroll-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 18%;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header,
+  .site-header__primary-link,
+  .site-header__ink,
+  [data-role-journey-bar],
+  [data-role-journey-bar] :is(a, button),
+  [data-spectrum-reveal],
+  dialog[open] {
+    animation: none !important;
+    animation-timeline: auto !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .site-header {
+    background-image: none;
+  }
+  [data-role-journey-bar] {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+  [data-role-journey-bar]::before {
+    display: none;
+  }
+  [data-role-journey-bar] :is(a, button):is([aria-current="page"], [aria-current="step"], [data-stage-active="true"]) {
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
   }
 }

@@ -32,8 +32,8 @@ describe("모바일 위치 칩의 공간 전환 입구", () => {
     />);
 
     const toggle = screen.getByRole("button", { name: engineMode === "3d"
-      ? "현재 3D 스튜디오 공간 · 클릭하여 2D 캠퍼스로 전환"
-      : "현재 2D 캠퍼스 · 클릭하여 3D 스튜디오 공간으로 전환" });
+      ? "3D 공간 · 클릭하여 2D 캠퍼스로 전환"
+      : "3D 전환 · 현재 2D 캠퍼스에서 3D 스튜디오 공간으로 전환" });
     expect(toggle.getAttribute("aria-pressed")).toBe(String(engineMode === "3d"));
     expect(toggle.getAttribute("type")).toBe("button");
     expect(screen.getByText(zoneLabel)).toBeTruthy();

@@ -1,5 +1,5 @@
-import { ArrowRight } from "lucide-react";
-import { useMemo } from "react";
+import { ArrowRight, ChevronDown, FileCheck2 } from "lucide-react";
+import { Suspense, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
@@ -9,6 +9,15 @@ import { productionSurfaceDefinition, productionSurfacePath, type ProductionProj
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
+
+const StudioPublishingPreflightPanel = lazyRetry(
+  () =>
+    import("../publishing-preflight-pro/StudioPublishingPreflightPanel").then((module) => ({
+      default: module.StudioPublishingPreflightPanel,
+    })),
+  "StudioPublishingPreflightPanel",
+);
 
 /**
  * 각 화면 맨 위: 무엇을 하는 화면인지 한 줄로 설명하고, 이어서 할 행동 하나를 제시한다.
@@ -25,6 +34,7 @@ export function ProductionSurfaceHeader({
   readonly surface: ProductionProjectSurface;
 }) {
   const bt = useBilingual("ProductionSurfaceHeader");
+  const [preflightOpen, setPreflightOpen] = useState(false);
   const definition = useMemo(() => productionSurfaceDefinition(surface), [surface]);
   const Icon = definition.icon;
   // 개요의 다음 행동은 평소 공정 보드지만, 기획 문서가 비어 있으면 기획이 먼저다.
@@ -66,31 +76,73 @@ export function ProductionSurfaceHeader({
       </Link>
     </>
   );
+  const preflightDisclosure = (
+    <details
+      data-testid="studio-publishing-preflight-disclosure"
+      className="group rounded-2xl border border-line bg-card/80 shadow-sm"
+      onToggle={(event) => setPreflightOpen(event.currentTarget.open)}
+    >
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-sm font-semibold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
+            <FileCheck2 className="size-4" aria-hidden="true" />
+          </span>
+          <span className="truncate">
+            {bt(
+              "6대 플랫폼 납품 프리플라이트 · 멀티포맷 리플로우 · 독자 이탈/크래시/외주 검증",
+              "6-platform publishing preflight, multi-format reflow, reader/OOM/outsource guard",
+            )}
+          </span>
+        </span>
+        <ChevronDown
+          className="size-4 shrink-0 text-fg-3 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+          aria-hidden="true"
+        />
+      </summary>
+      {preflightOpen ? (
+        <div className="border-t border-line p-3">
+          <Suspense fallback={<p className="px-2 py-3 text-xs text-fg-2">{bt("출판 프리플라이트 스위트를 불러오는 중입니다…", "Loading publishing preflight suite…")}</p>}>
+            <StudioPublishingPreflightPanel
+              projectId={aggregate.projectId}
+              seriesTitle={aggregate.title}
+              episodeNumber={Math.max(1, aggregate.episodes.length)}
+            />
+          </Suspense>
+        </div>
+      ) : null}
+    </details>
+  );
   if (!scene) {
     return (
-      <header
-        data-production-surface-header={surface}
-        className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-card/80 px-4 py-3 shadow-sm"
-      >
-        {content}
-      </header>
+      <div className="mb-4 space-y-2">
+        <header
+          data-production-surface-header={surface}
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-card/80 px-4 py-3 shadow-sm"
+        >
+          {content}
+        </header>
+        {preflightDisclosure}
+      </div>
     );
   }
   return (
-    <header
-      data-production-surface-header={surface}
-      data-production-surface-header-scene="cover"
-      className="relative mb-4 overflow-hidden rounded-2xl border border-line bg-panel shadow-sm"
-    >
-      <img
-        src={coverImageUrl}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full scale-110 object-cover opacity-25 blur-md"
-        loading="lazy"
-      />
-      <div className="absolute inset-0 bg-gradient-to-r from-panel via-panel/70 to-panel/20" aria-hidden="true" />
-      <div className="relative flex flex-wrap items-center justify-between gap-3 px-5 py-4">{content}</div>
-    </header>
+    <div className="mb-4 space-y-2">
+      <header
+        data-production-surface-header={surface}
+        data-production-surface-header-scene="cover"
+        className="relative overflow-hidden rounded-2xl border border-line bg-panel shadow-sm"
+      >
+        <img
+          src={coverImageUrl}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full scale-110 object-cover opacity-25 blur-md"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-panel via-panel/70 to-panel/20" aria-hidden="true" />
+        <div className="relative flex flex-wrap items-center justify-between gap-3 px-5 py-4">{content}</div>
+      </header>
+      {preflightDisclosure}
+    </div>
   );
 }

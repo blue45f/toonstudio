@@ -33,7 +33,7 @@ describe("SpaceChatPanel", () => {
     const { props } = renderPanel({ messages });
     expect(screen.getByText("안녕하세요!")).toBeTruthy();
     expect(screen.getByText("모두 반가워요")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "말풍선 채팅 열기" }));
+    fireEvent.click(screen.getByRole("button", { name: "말 걸기 · 말풍선 채팅 열기" }));
     expect(props.onOpenChange).toHaveBeenCalledWith(true);
   });
 
@@ -95,7 +95,7 @@ describe("SpaceChatPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "민준 메시지 고정" }));
     const pinnedRegion = screen.getByRole("region", { name: "고정된 메시지" });
     expect(pinnedRegion.textContent).toContain("안녕하세요!");
-    fireEvent.click(screen.getByRole("button", { name: "고정 메시지 해제" }));
+    fireEvent.click(screen.getByRole("button", { name: "고정 해제 · 고정 메시지 해제" }));
     expect(screen.queryByRole("region", { name: "고정된 메시지" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "@all 전체 멘션 넣기" }));

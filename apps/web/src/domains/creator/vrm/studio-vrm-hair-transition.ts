@@ -3,6 +3,11 @@ import {
   sanitizeAvatarForgeState,
   type AvatarForgeHairParams,
 } from "./studio-vrm-avatar-forge";
+import {
+  resolveStudioVrmHairTransitionGuard,
+  type StudioVrmHairHighlightRingSpec,
+  type StudioVrmHairSwapPolicy,
+} from "./studio-vrm-hair-hand-equip-refiner";
 
 export interface StudioVrmHairTransitionPlan {
   readonly version: 1;
@@ -14,6 +19,14 @@ export interface StudioVrmHairTransitionPlan {
   readonly shouldRender: boolean;
   /** A style/shape replacement must not reuse spring or geometry state owned by the previous hair. */
   readonly resetDynamicState: boolean;
+  /** 교체 전환 시 1프레임 깜빡임 방지 원자적 커밋 정책. */
+  readonly swapPolicy: StudioVrmHairSwapPolicy;
+  /** 전환 직후 스프링 초기 충격으로 머리가 기울어지지 않도록 안정화하는 프레임 수. */
+  readonly springSettleFrames: number;
+  /** 새 헤어 마운트 시 루트 로컬 회전 영점 고정 여부. */
+  readonly lockNeutralRootBasis: boolean;
+  /** 스타일·광택에 맞춘 웹툰 툰 하이라이트 링 정합 스펙. */
+  readonly highlightRing: StudioVrmHairHighlightRingSpec;
 }
 
 function hash(value: string): string {
@@ -72,14 +85,27 @@ export function planStudioVrmHairTransition(
   const identity = buildStudioVrmHairGeometryIdentity(next);
   const previousIdentity = previous ? buildStudioVrmHairGeometryIdentity(previous) : null;
   const geometryChanged = previousIdentity !== identity;
+  const styleChanged = previous?.style !== next.style;
+  const shouldRender = next.style !== "none";
+  const guard = resolveStudioVrmHairTransitionGuard({
+    style: next.style,
+    shine: next.shine,
+    shouldRender,
+    styleChanged,
+    geometryChanged,
+  });
   return Object.freeze({
     version: 1,
     previousIdentity,
     identity,
-    styleChanged: previous?.style !== next.style,
+    styleChanged,
     geometryChanged,
     visibilityChanged: previous?.replaceOriginal !== next.replaceOriginal,
-    shouldRender: next.style !== "none",
+    shouldRender,
     resetDynamicState: geometryChanged,
+    swapPolicy: guard.swapPolicy,
+    springSettleFrames: guard.springSettleFrames,
+    lockNeutralRootBasis: guard.lockNeutralRootBasis,
+    highlightRing: guard.highlightRing,
   });
 }

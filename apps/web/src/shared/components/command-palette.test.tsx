@@ -346,6 +346,16 @@ describe("CommandPaletteHost", () => {
     expect(useUi.getState().commandPaletteOpen).toBe(false);
   });
 
+  it("Cmd+Shift+K / Ctrl+Shift+K 입력은 소재 검색 팔레트에 양보하고 전역 팔레트를 열지 않는다", () => {
+    render(<CommandPaletteHost />);
+
+    fireEvent.keyDown(window, { key: "k", metaKey: true, shiftKey: true });
+    expect(useUi.getState().commandPaletteOpen).toBe(false);
+
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true, shiftKey: true });
+    expect(useUi.getState().commandPaletteOpen).toBe(false);
+  });
+
   it("F1 단축키 입력 시 전역 커맨드 팔레트가 토글된다", () => {
     window.history.replaceState({}, "", "/");
     render(<CommandPaletteHost />);

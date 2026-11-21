@@ -275,34 +275,90 @@ export interface StudioMotionRenderSample {
   readonly cycleRate: number;
 }
 
+function clampValue(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function smoothstepUnit(value: number): number {
+  const t = clampValue(value, 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+/** C1 연속 공격·해제 엔벨로프(0~1). 모션 시작·종료 시 뚝 끊기는 팝을 제거한다. */
+function smoothEnvelope(elapsedMs: number, durationMs: number, attackMs: number, releaseMs: number): number {
+  const attack = attackMs > 0 ? smoothstepUnit(elapsedMs / attackMs) : 1;
+  if (!(durationMs > 0)) return attack;
+  const remaining = durationMs - elapsedMs;
+  if (remaining <= 0) return 0;
+  const release = releaseMs > 0 ? smoothstepUnit(remaining / releaseMs) : 1;
+  return Math.min(attack, release);
+}
+
 /** 렌더러(Phaser 오버레이·2D 미리보기)가 매 프레임 호출한다. */
-export function sampleMotionRender(machine: StudioMotionState, now: number): StudioMotionRenderSample {
+export function sampleMotionRender(
+  machine: StudioMotionState,
+  now: number,
+  options: { readonly reducedMotion?: boolean; readonly speedRatio?: number } = {},
+): StudioMotionRenderSample {
   const profile = STUDIO_MOTION_PROFILES[machine.kind];
-  const elapsedMs = Math.max(0, now - machine.startedAt);
-  let offsetYPx = profile.offsetYPx;
-  let tiltRad = profile.tiltRad;
-  if (machine.kind === "jump" && profile.oneShotMs > 0) {
-    const phase = Math.min(1, elapsedMs / profile.oneShotMs);
-    offsetYPx += -profile.hopHeightPx * Math.sin(Math.PI * phase);
+  const safeNow = Number.isFinite(now) ? now : machine.startedAt;
+  const elapsedMs = Math.max(0, safeNow - machine.startedAt);
+  const blendFactor = motionBlendFactor(machine, safeNow);
+  const reducedMotion = options.reducedMotion === true;
+  const speedGate = options.speedRatio === undefined
+    ? 1
+    : smoothstepUnit(Number.isFinite(options.speedRatio) ? options.speedRatio : 0);
+
+  let targetOffsetY = profile.offsetYPx;
+  let targetTiltRad = reducedMotion ? 0 : profile.tiltRad * (machine.kind === "run" || machine.kind === "walk" ? speedGate : 1);
+  const targetRotationDeg = profile.rotationDeg;
+  const targetScaleY = profile.scaleY;
+  const targetCycleRate = reducedMotion ? 0 : profile.cycleRate;
+
+  if (!reducedMotion) {
+    if (machine.kind === "jump" && profile.oneShotMs > 0) {
+      const phase = Math.min(1, elapsedMs / profile.oneShotMs);
+      targetOffsetY += -profile.hopHeightPx * Math.sin(Math.PI * phase);
+    } else if (machine.kind === "greet" && profile.oneShotMs > 0) {
+      const phase = Math.min(1, elapsedMs / profile.oneShotMs);
+      targetTiltRad *= Math.sin(Math.PI * phase);
+    } else if (machine.kind === "dance") {
+      const attack = smoothstepUnit(elapsedMs / 160);
+      const beat = elapsedMs * 0.012;
+      targetTiltRad *= Math.sin(beat) * attack;
+      // Math.abs(Math.sin)의 첨점(cusp) 대신 C1 연속 raised-cosine으로 부드러운 바운스를 만든다.
+      targetOffsetY += -((1 - Math.cos(beat * 2)) * 0.5) * 4 * attack;
+    }
   }
-  if (machine.kind === "greet" && profile.oneShotMs > 0) {
-    const phase = Math.min(1, elapsedMs / profile.oneShotMs);
-    tiltRad *= Math.sin(Math.PI * phase);
+
+  let offsetYPx = targetOffsetY;
+  let rotationDeg = targetRotationDeg;
+  let tiltRad = targetTiltRad;
+  let scaleY = targetScaleY;
+  let cycleRate = targetCycleRate;
+
+  // 전이 블렌딩 구간 동안 이전 모션 포즈에서 목표 모션 포즈로 부드럽게 보간해 1프레임 스냅을 제거한다.
+  if (machine.blendFrom && blendFactor < 1) {
+    const fromProfile = STUDIO_MOTION_PROFILES[machine.blendFrom];
+    const fromTilt = reducedMotion ? 0 : fromProfile.tiltRad;
+    const fromCycle = reducedMotion ? 0 : fromProfile.cycleRate;
+    offsetYPx = fromProfile.offsetYPx + (targetOffsetY - fromProfile.offsetYPx) * blendFactor;
+    rotationDeg = fromProfile.rotationDeg + (targetRotationDeg - fromProfile.rotationDeg) * blendFactor;
+    tiltRad = fromTilt + (targetTiltRad - fromTilt) * blendFactor;
+    scaleY = fromProfile.scaleY + (targetScaleY - fromProfile.scaleY) * blendFactor;
+    cycleRate = fromCycle + (targetCycleRate - fromCycle) * blendFactor;
   }
-  if (machine.kind === "dance") {
-    tiltRad *= Math.sin(elapsedMs * 0.012);
-    offsetYPx += -Math.abs(Math.sin(elapsedMs * 0.012)) * 4;
-  }
+
   return Object.freeze({
     kind: machine.kind,
     elapsedMs,
-    blendFactor: motionBlendFactor(machine, now),
+    blendFactor,
     blendFrom: machine.blendFrom,
     offsetYPx,
-    rotationDeg: profile.rotationDeg,
+    rotationDeg,
     tiltRad,
-    scaleY: profile.scaleY,
-    cycleRate: profile.cycleRate,
+    scaleY,
+    cycleRate,
   });
 }
 
@@ -329,8 +385,9 @@ export function sampleCustomSheetMotionCell(
   reducedMotion: boolean,
 ): StudioMotionCellSample {
   const profile = STUDIO_MOTION_PROFILES[machine.kind];
-  const render = sampleMotionRender(machine, now);
+  const render = sampleMotionRender(machine, now, { reducedMotion });
   const walkFrames = spriteSheetWalkFrameCount(config);
+  const ramp = smoothstepUnit(render.elapsedMs / Math.max(80, profile.blendMs));
   let row: number;
   let column: number;
   let bobYPx = 0;
@@ -348,25 +405,25 @@ export function sampleCustomSheetMotionCell(
       const frame = spriteSheetPreviewFrame(elapsed, config.frameRate * 1.4, Math.min(2, walkFrames), reducedMotion);
       const cell = spriteSheetCell(config, direction, frame);
       row = cell.row; column = cell.column;
-      bobYPx = reducedMotion ? 0 : -Math.abs(Math.sin(elapsed * 0.02)) * 3;
+      bobYPx = reducedMotion ? 0 : -((1 - Math.cos(elapsed * 0.04)) * 0.5) * 2.6 * ramp;
     } else if (machine.kind === "clap") {
       const frame = spriteSheetPreviewFrame(elapsed, config.frameRate * 1.2, walkFrames, reducedMotion);
       const cell = spriteSheetCell(config, direction, frame);
       row = cell.row; column = cell.column;
-      bobYPx = reducedMotion ? 0 : -Math.abs(Math.sin(elapsed * 0.025)) * 2;
+      bobYPx = reducedMotion ? 0 : -((1 - Math.cos(elapsed * 0.05)) * 0.5) * 2 * ramp;
     } else {
       const frame = spriteSheetPreviewFrame(elapsed, config.frameRate * profile.cycleRate, walkFrames, reducedMotion);
       const cell = spriteSheetCell(config, direction, frame);
       row = cell.row; column = cell.column;
       if (machine.kind === "dance") bobYPx = render.offsetYPx;
-      else if (machine.kind === "run") bobYPx = reducedMotion ? 0 : -Math.abs(Math.sin(elapsed * 0.03)) * 3;
+      else if (machine.kind === "run") bobYPx = reducedMotion ? 0 : -((1 - Math.cos(elapsed * 0.06)) * 0.5) * 2.8 * ramp;
     }
   } else {
     const cell = spriteSheetIdleCell(config, spriteDirectionToFacing(direction));
     row = cell.row; column = cell.column;
     if (!reducedMotion) {
       if (machine.kind === "idle") bobYPx = Math.sin(render.elapsedMs * (Math.PI * 2 / 2400)) * 1.5;
-      else if (machine.kind === "work") bobYPx = -Math.abs(Math.sin(render.elapsedMs * 0.03)) * 1.2;
+      else if (machine.kind === "work") bobYPx = -((1 - Math.cos(render.elapsedMs * 0.06)) * 0.5) * 1.2 * ramp;
     }
     extraOffsetY = render.offsetYPx;
   }
@@ -391,4 +448,314 @@ export function facingToSpriteDirection(facing: StudioVirtualSpaceFacing): Studi
     case "down":
     default: return "down";
   }
+}
+
+/* ---------------------------------------------------------------------------------------------- */
+/* 확장 18종 자연 모션 레퍼토리 (기본 12종 + 작가 건강 체조 3종 + 신나는 댄스 3종)                      */
+/* ---------------------------------------------------------------------------------------------- */
+
+/** 작가 건강 체조 3종(목·어깨, 손목 풀기, 전신 스트레칭). */
+export const STUDIO_GYMNASTICS_MOTION_IDS = Object.freeze([
+  "neck-shoulder-stretch",
+  "wrist-roll-break",
+  "standing-gymnastics",
+] as const);
+
+/** 신나는 댄스 3종(리듬 댄스, 마감 축하 댄스, 팀 동기화 댄스). */
+export const STUDIO_DANCE_MOTION_IDS = Object.freeze([
+  "groove-dance",
+  "deadline-victory-dance",
+  "sync-group-dance",
+] as const);
+
+/** 가상 스튜디오 공통 18종 풍부한 모션 프로파일 ID. */
+export const STUDIO_RICH_MOTION_IDS = Object.freeze([
+  "idle-breathe",
+  "walk-natural",
+  "jog-brisk",
+  "sprint-dash",
+  "tiptoe-sneak",
+  "hop-skip",
+  "sit-draw",
+  "stretch-break",
+  "celebrate-spin",
+  "wave-greet",
+  "focus-typing",
+  "dramatic-entrance",
+  ...STUDIO_GYMNASTICS_MOTION_IDS,
+  ...STUDIO_DANCE_MOTION_IDS,
+] as const);
+
+export type StudioRichMotionId = (typeof STUDIO_RICH_MOTION_IDS)[number];
+export type StudioRichMotionCategory = "locomotion" | "work" | "expression" | "gymnastics" | "dance";
+
+export interface StudioRichMotionProfile {
+  readonly id: StudioRichMotionId;
+  readonly category: StudioRichMotionCategory;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly glyph: string;
+  readonly legacyMotionKind: StudioMotionKind;
+  readonly defaultDurationMs: number;
+  readonly oneShot: boolean;
+  readonly attackMs: number;
+  readonly releaseMs: number;
+  readonly maxBouncePx: number;
+  readonly maxTiltRad: number;
+  readonly staticScaleY: number;
+  /** true이면 전역 시각(nowMs)에 위상을 고정해 여러 캐릭터가 한 박자로 동기화된다. */
+  readonly globalPhaseSync: boolean;
+}
+
+function richProfile(spec: StudioRichMotionProfile): StudioRichMotionProfile {
+  return Object.freeze(spec);
+}
+
+export const STUDIO_RICH_MOTION_PROFILES: Readonly<Record<StudioRichMotionId, StudioRichMotionProfile>> = Object.freeze({
+  "idle-breathe": richProfile({ id: "idle-breathe", category: "locomotion", labelKo: "자연 호흡 대기", labelEn: "Idle Breathe", glyph: "😌", legacyMotionKind: "idle", defaultDurationMs: 0, oneShot: false, attackMs: 140, releaseMs: 160, maxBouncePx: 1.5, maxTiltRad: 0.018, staticScaleY: 1, globalPhaseSync: false }),
+  "walk-natural": richProfile({ id: "walk-natural", category: "locomotion", labelKo: "자연 보행", labelEn: "Natural Walk", glyph: "🚶", legacyMotionKind: "walk", defaultDurationMs: 0, oneShot: false, attackMs: 120, releaseMs: 160, maxBouncePx: 2.4, maxTiltRad: 0.045, staticScaleY: 1, globalPhaseSync: false }),
+  "jog-brisk": richProfile({ id: "jog-brisk", category: "locomotion", labelKo: "경쾌한 조깅", labelEn: "Brisk Jog", glyph: "🏃", legacyMotionKind: "run", defaultDurationMs: 0, oneShot: false, attackMs: 110, releaseMs: 160, maxBouncePx: 3.8, maxTiltRad: 0.068, staticScaleY: 1, globalPhaseSync: false }),
+  "sprint-dash": richProfile({ id: "sprint-dash", category: "locomotion", labelKo: "전력 질주 대시", labelEn: "Sprint Dash", glyph: "💨", legacyMotionKind: "run", defaultDurationMs: 0, oneShot: false, attackMs: 90, releaseMs: 160, maxBouncePx: 4.6, maxTiltRad: 0.095, staticScaleY: 1, globalPhaseSync: false }),
+  "tiptoe-sneak": richProfile({ id: "tiptoe-sneak", category: "locomotion", labelKo: "살금살금 발끝 걷기", labelEn: "Tiptoe Sneak", glyph: "🤫", legacyMotionKind: "walk", defaultDurationMs: 0, oneShot: false, attackMs: 150, releaseMs: 180, maxBouncePx: 2.8, maxTiltRad: 0.062, staticScaleY: 1, globalPhaseSync: false }),
+  "hop-skip": richProfile({ id: "hop-skip", category: "locomotion", labelKo: "깡충 스킵", labelEn: "Hop & Skip", glyph: "🐇", legacyMotionKind: "walk", defaultDurationMs: 0, oneShot: false, attackMs: 120, releaseMs: 180, maxBouncePx: 6.4, maxTiltRad: 0.085, staticScaleY: 1, globalPhaseSync: false }),
+  "sit-draw": richProfile({ id: "sit-draw", category: "work", labelKo: "착석 원고 드로잉", labelEn: "Seated Drawing", glyph: "✏️", legacyMotionKind: "draw", defaultDurationMs: 0, oneShot: false, attackMs: 200, releaseMs: 200, maxBouncePx: 1.4, maxTiltRad: 0.055, staticScaleY: 0.88, globalPhaseSync: false }),
+  "stretch-break": richProfile({ id: "stretch-break", category: "work", labelKo: "기지개 휴식", labelEn: "Stretch Break", glyph: "🙆", legacyMotionKind: "idle", defaultDurationMs: 3_200, oneShot: true, attackMs: 260, releaseMs: 320, maxBouncePx: 4.2, maxTiltRad: 0.08, staticScaleY: 1, globalPhaseSync: false }),
+  "celebrate-spin": richProfile({ id: "celebrate-spin", category: "expression", labelKo: "축하 회전 점프", labelEn: "Celebrate Spin", glyph: "🎉", legacyMotionKind: "dance", defaultDurationMs: 2_800, oneShot: true, attackMs: 150, releaseMs: 240, maxBouncePx: 7.5, maxTiltRad: 0.12, staticScaleY: 1, globalPhaseSync: false }),
+  "wave-greet": richProfile({ id: "wave-greet", category: "expression", labelKo: "손 흔들어 인사", labelEn: "Wave Greet", glyph: "👋", legacyMotionKind: "wave", defaultDurationMs: 2_200, oneShot: true, attackMs: 140, releaseMs: 220, maxBouncePx: 3.0, maxTiltRad: 0.11, staticScaleY: 1, globalPhaseSync: false }),
+  "focus-typing": richProfile({ id: "focus-typing", category: "work", labelKo: "집중 타이핑", labelEn: "Focus Typing", glyph: "⌨️", legacyMotionKind: "work", defaultDurationMs: 0, oneShot: false, attackMs: 160, releaseMs: 180, maxBouncePx: 1.4, maxTiltRad: 0.045, staticScaleY: 0.96, globalPhaseSync: false }),
+  "dramatic-entrance": richProfile({ id: "dramatic-entrance", category: "expression", labelKo: "화려한 등장", labelEn: "Dramatic Entrance", glyph: "✨", legacyMotionKind: "jump", defaultDurationMs: 1_400, oneShot: true, attackMs: 110, releaseMs: 260, maxBouncePx: 8.5, maxTiltRad: 0.14, staticScaleY: 1, globalPhaseSync: false }),
+  "neck-shoulder-stretch": richProfile({ id: "neck-shoulder-stretch", category: "gymnastics", labelKo: "목·어깨 체조", labelEn: "Neck & Shoulder Stretch", glyph: "💆", legacyMotionKind: "idle", defaultDurationMs: 3_800, oneShot: false, attackMs: 260, releaseMs: 300, maxBouncePx: 3.4, maxTiltRad: 0.13, staticScaleY: 1, globalPhaseSync: false }),
+  "wrist-roll-break": richProfile({ id: "wrist-roll-break", category: "gymnastics", labelKo: "손목 풀기 체조", labelEn: "Wrist Roll Break", glyph: "🙌", legacyMotionKind: "wave", defaultDurationMs: 3_400, oneShot: false, attackMs: 220, releaseMs: 260, maxBouncePx: 2.6, maxTiltRad: 0.09, staticScaleY: 1, globalPhaseSync: false }),
+  "standing-gymnastics": richProfile({ id: "standing-gymnastics", category: "gymnastics", labelKo: "전신 스트레칭 체조", labelEn: "Standing Gymnastics", glyph: "🤸", legacyMotionKind: "dance", defaultDurationMs: 4_000, oneShot: false, attackMs: 240, releaseMs: 280, maxBouncePx: 5.4, maxTiltRad: 0.15, staticScaleY: 1, globalPhaseSync: false }),
+  "groove-dance": richProfile({ id: "groove-dance", category: "dance", labelKo: "리듬 댄스", labelEn: "Groove Dance", glyph: "🕺", legacyMotionKind: "dance", defaultDurationMs: 4_000, oneShot: false, attackMs: 180, releaseMs: 240, maxBouncePx: 5.8, maxTiltRad: 0.14, staticScaleY: 1, globalPhaseSync: false }),
+  "deadline-victory-dance": richProfile({ id: "deadline-victory-dance", category: "dance", labelKo: "마감 축하 댄스", labelEn: "Deadline Victory Dance", glyph: "🏆", legacyMotionKind: "dance", defaultDurationMs: 4_000, oneShot: false, attackMs: 160, releaseMs: 240, maxBouncePx: 7.4, maxTiltRad: 0.16, staticScaleY: 1, globalPhaseSync: false }),
+  "sync-group-dance": richProfile({ id: "sync-group-dance", category: "dance", labelKo: "팀 동기화 댄스", labelEn: "Sync Group Dance", glyph: "🪩", legacyMotionKind: "dance", defaultDurationMs: 4_000, oneShot: false, attackMs: 180, releaseMs: 240, maxBouncePx: 6.2, maxTiltRad: 0.15, staticScaleY: 1, globalPhaseSync: true }),
+});
+
+const RICH_MOTION_ID_SET = new Set<string>(STUDIO_RICH_MOTION_IDS);
+
+export function isStudioRichMotionId(value: string | null | undefined): value is StudioRichMotionId {
+  return typeof value === "string" && RICH_MOTION_ID_SET.has(value);
+}
+
+const EMOTE_TO_RICH_MOTION: Readonly<Record<string, StudioRichMotionId>> = Object.freeze({
+  wave: "wave-greet",
+  greet: "wave-greet",
+  "neck-stretch": "neck-shoulder-stretch",
+  calisthenics: "standing-gymnastics",
+  yoga: "stretch-break",
+  "tai-chi": "stretch-break",
+  coffee: "wrist-roll-break",
+  dance: "groove-dance",
+  shuffle: "groove-dance",
+  moonwalk: "groove-dance",
+  cheers: "deadline-victory-dance",
+  party: "celebrate-spin",
+  fireworks: "deadline-victory-dance",
+  "kpop-dance": "sync-group-dance",
+  draw: "sit-draw",
+  work: "focus-typing",
+});
+
+/** 이모트·모션 식별자를 18종 풍부한 모션 프로파일 ID로 해석한다. */
+export function resolveStudioRichMotionId(kindOrEmote: string | null | undefined): StudioRichMotionId | null {
+  if (!kindOrEmote) return null;
+  if (isStudioRichMotionId(kindOrEmote)) return kindOrEmote;
+  return EMOTE_TO_RICH_MOTION[kindOrEmote] ?? null;
+}
+
+export interface StudioRichMotionSampleInput {
+  readonly elapsedMs: number;
+  /** 전역 시각(ms). `sync-group-dance`처럼 팀 동기화 모션의 공용 위상에 쓴다. */
+  readonly nowMs?: number;
+  /** 총 길이(ms). 0이면 무한 루프. */
+  readonly durationMs?: number;
+  /** 이동 속도 비율(0=정지, 1=표준 걷기, 1.5=질주). 보행 계열 바운스·기울기 램프인/아웃에 쓴다. */
+  readonly speedRatio?: number;
+  /** 거리 기반 보행 위상(rad). 주어지면 시간 대신 실제 이동 위상에 바운스를 잠근다. */
+  readonly stridePhase?: number;
+  readonly reducedMotion?: boolean;
+}
+
+export interface StudioRichMotionPose {
+  readonly id: StudioRichMotionId;
+  readonly category: StudioRichMotionCategory;
+  readonly offsetX: number;
+  readonly offsetY: number;
+  readonly scaleX: number;
+  readonly scaleY: number;
+  readonly tiltRad: number;
+  /** 3D 요(yaw) 회전(rad). 2D에서는 무시하거나 방향 순환 힌트로 쓴다. */
+  readonly yawRad: number;
+  /** 팔 스윙 위상(-1~1, rad 기준). */
+  readonly armSwingRad: number;
+  /** 다리 스윙 위상(-1~1, rad 기준). */
+  readonly legSwingRad: number;
+  /** 방향 순환 인덱스(0~3, 없으면 null). */
+  readonly facingCycleIndex: number | null;
+  readonly shadowScale: number;
+  readonly intensity: number;
+}
+
+/**
+ * 18종 풍부한 캐릭터 모션의 공통 수학 평가기(2D·Phaser·3D 공유).
+ * - 모든 모션은 C1 smoothstep 공격·해제 엔벨로프로 시작/종료 시 끊김이 없다.
+ * - 보행 계열은 `speedRatio`에 비례해 부드럽게 램프인·램프아웃하며 과도 진폭 상한을 지킨다.
+ * - `reducedMotion=true`에서는 모든 동적 진동·회전·스윙을 0으로 감쇠해 전정 안전을 보장한다.
+ */
+export function sampleStudioRichMotion(
+  id: StudioRichMotionId,
+  input: StudioRichMotionSampleInput,
+): StudioRichMotionPose {
+  const profile = STUDIO_RICH_MOTION_PROFILES[id];
+  if (input.reducedMotion) {
+    return Object.freeze({
+      id, category: profile.category, offsetX: 0, offsetY: 0, scaleX: 1, scaleY: profile.staticScaleY,
+      tiltRad: 0, yawRad: 0, armSwingRad: 0, legSwingRad: 0, facingCycleIndex: null, shadowScale: 1, intensity: 0,
+    });
+  }
+
+  const elapsedMs = Math.max(0, Number.isFinite(input.elapsedMs) ? input.elapsedMs : 0);
+  const durationMs = input.durationMs !== undefined && Number.isFinite(input.durationMs)
+    ? Math.max(0, input.durationMs) : profile.defaultDurationMs;
+  const env = smoothEnvelope(elapsedMs, durationMs, profile.attackMs, profile.releaseMs);
+  const clockMs = profile.globalPhaseSync && Number.isFinite(input.nowMs) ? Math.max(0, input.nowMs ?? elapsedMs) : elapsedMs;
+  const speedRatio = clampValue(Number.isFinite(input.speedRatio) ? (input.speedRatio ?? 1) : 1, 0, 1.8);
+  const speedGate = smoothstepUnit(speedRatio);
+  const stride = Number.isFinite(input.stridePhase) ? (input.stridePhase ?? 0) : null;
+  const wave = (periodMs: number) => (clockMs / periodMs) * Math.PI * 2;
+  const liftCos = (rad: number) => (1 - Math.cos(rad)) * 0.5;
+
+  let offsetX = 0;
+  let offsetY: number;
+  let scaleYDelta = 0;
+  let tiltRad: number;
+  let yawRad = 0;
+  let armSwingRad = 0;
+  let legSwingRad = 0;
+  let facingCycleIndex: number | null = null;
+
+  if (id === "walk-natural" || id === "jog-brisk" || id === "sprint-dash" || id === "tiptoe-sneak" || id === "hop-skip") {
+    const spec = id === "walk-natural" ? { period: 560, bounce: 2.2, scale: 0.016, lean: 0, sway: 0.032, arm: 0.42, leg: 0.46, xAmp: 0 }
+      : id === "jog-brisk" ? { period: 400, bounce: 3.5, scale: 0.024, lean: 0.042, sway: 0.022, arm: 0.65, leg: 0.68, xAmp: 0 }
+      : id === "sprint-dash" ? { period: 290, bounce: 4.4, scale: 0.032, lean: 0.072, sway: 0.022, arm: 0.88, leg: 0.85, xAmp: 0 }
+      : id === "tiptoe-sneak" ? { period: 780, bounce: 2.6, scale: 0.018, lean: 0, sway: 0.055, arm: 0.24, leg: 0.28, xAmp: 1.4 }
+      : { period: 460, bounce: 6.0, scale: 0.045, lean: 0, sway: 0.072, arm: 0.72, leg: 0.64, xAmp: 0 };
+    const p = stride ?? wave(spec.period);
+    const g = env * speedGate;
+    const lift = liftCos(p * 2);
+    offsetX = Math.sin(p) * spec.xAmp * g;
+    offsetY = -lift * spec.bounce * g;
+    scaleYDelta = (id === "hop-skip" ? lift * spec.scale - (1 - lift) * 0.028 : id === "tiptoe-sneak" ? spec.scale : Math.cos(p * 2) * spec.scale) * g;
+    tiltRad = (spec.lean + Math.sin(p) * spec.sway) * g;
+    armSwingRad = Math.sin(p) * spec.arm * g;
+    legSwingRad = -Math.sin(p) * spec.leg * g;
+  } else if (id === "idle-breathe") {
+    const p = wave(3_800);
+    offsetY = -liftCos(p) * 1.1 * env;
+    scaleYDelta = Math.sin(p) * 0.012 * env;
+    tiltRad = Math.sin(p * 0.5) * 0.01 * env;
+  } else if (id === "sit-draw") {
+    const p = wave(920);
+    offsetX = Math.sin(p) * 0.9 * env;
+    offsetY = -liftCos(p * 2) * 1.0 * env;
+    tiltRad = (0.035 + Math.sin(p * 0.5) * 0.018) * env;
+    armSwingRad = Math.sin(p * 2) * 0.22 * env;
+  } else if (id === "focus-typing") {
+    const p = wave(420);
+    offsetY = -liftCos(p) * 1.1 * env;
+    tiltRad = (0.03 + Math.sin(p * 0.5) * 0.012) * env;
+    armSwingRad = Math.sin(p) * 0.26 * env;
+  } else if (id === "stretch-break") {
+    const p = wave(2_800);
+    const lift = liftCos(p);
+    offsetY = -lift * 3.8 * env;
+    scaleYDelta = lift * 0.052 * env;
+    tiltRad = Math.sin(p) * 0.068 * env;
+    armSwingRad = -(0.5 + lift * 0.85) * env;
+  } else if (id === "celebrate-spin") {
+    const p = wave(700);
+    const lift = liftCos(p);
+    offsetX = Math.sin(p * 0.5) * 3.2 * env;
+    offsetY = -lift * 7.2 * env;
+    scaleYDelta = (lift * 0.045 - 0.015) * env;
+    tiltRad = Math.sin(p * 0.5) * 0.1 * env;
+    yawRad = (elapsedMs / Math.max(700, durationMs)) * Math.PI * 2 * env;
+    armSwingRad = -(0.9 + Math.sin(p) * 0.35) * env;
+    facingCycleIndex = Math.floor(elapsedMs / 220) % 4;
+  } else if (id === "wave-greet") {
+    const p = wave(460);
+    offsetY = -liftCos(p) * 2.6 * env;
+    tiltRad = (0.055 + Math.sin(p * 0.5) * 0.045) * env;
+    armSwingRad = (-1.15 + Math.sin(p) * 0.45) * env;
+  } else if (id === "dramatic-entrance") {
+    const u = clampValue(elapsedMs / Math.max(800, durationMs || 1_400), 0, 1);
+    const arc = Math.sin(Math.PI * Math.min(1, u * 1.45));
+    const settle = u > 0.65 ? Math.sin(((u - 0.65) / 0.35) * Math.PI) : 0;
+    offsetX = (1 - smoothstepUnit(u * 1.3)) * -5.2 * env;
+    offsetY = (-arc * 8.2 + settle * 1.8) * env;
+    scaleYDelta = (arc * 0.048 - settle * 0.055) * env;
+    tiltRad = ((1 - smoothstepUnit(u)) * 0.12 - settle * 0.04) * env;
+    yawRad = (1 - smoothstepUnit(u * 1.2)) * Math.PI * 0.75 * env;
+    armSwingRad = (-0.85 * arc - 0.35 * settle) * env;
+  } else if (id === "neck-shoulder-stretch") {
+    // 작가 건강 체조 1: 목 좌우 천천히 기울이기 + 어깨 으쓱 이완 (저속 C1 웨이브)
+    const p = wave(1_800);
+    const shrug = liftCos(p * 2);
+    offsetX = Math.sin(p) * 2.1 * env;
+    offsetY = (-1.2 - shrug * 2.0) * env;
+    scaleYDelta = (shrug * 0.032 - 0.01) * env;
+    tiltRad = Math.sin(p) * 0.12 * env;
+    yawRad = Math.sin(p) * 0.18 * env;
+    armSwingRad = (-0.25 - shrug * 0.32) * env;
+  } else if (id === "wrist-roll-break") {
+    // 작가 건강 체조 2: 팔뚝을 들고 부드러운 8자 손목 풀기 리듬
+    const p = wave(860);
+    offsetX = Math.sin(p) * 2.4 * env;
+    offsetY = (-1.0 - liftCos(p * 2) * 1.5) * env;
+    scaleYDelta = Math.sin(p * 2) * 0.016 * env;
+    tiltRad = Math.sin(p) * 0.075 * env;
+    armSwingRad = (-0.72 + Math.sin(p * 2) * 0.32) * env;
+  } else if (id === "standing-gymnastics") {
+    // 작가 건강 체조 3: 전신 좌우 옆구리 스트레칭 + 머리 위 기지개 + 무릎 반동
+    const p = wave(1_100);
+    const reach = liftCos(p * 2);
+    offsetX = Math.sin(p) * 4.0 * env;
+    offsetY = -reach * 5.0 * env;
+    scaleYDelta = (reach * 0.048 - 0.02) * env;
+    tiltRad = Math.sin(p) * 0.14 * env;
+    yawRad = Math.sin(p * 0.5) * 0.22 * env;
+    armSwingRad = (-0.95 - reach * 0.55) * env;
+    legSwingRad = Math.sin(p) * 0.24 * env;
+  } else {
+    // 신나는 댄스 3종: groove-dance / deadline-victory-dance / sync-group-dance(전역 박자 동기화)
+    const spec = id === "groove-dance" ? { period: 640, x: 4.8, y: 5.4, sc: 0.04, tilt: 0.125, yaw: 0.36, leg: 0.36, cycleMs: 0 }
+      : id === "deadline-victory-dance" ? { period: 500, x: 5.2, y: 7.0, sc: 0.048, tilt: 0.145, yaw: 0.55, leg: 0.42, cycleMs: 360 }
+      : { period: 560, x: 5.4, y: 6.0, sc: 0.042, tilt: 0.135, yaw: 0.48, leg: 0.38, cycleMs: 560 };
+    const beat = wave(spec.period);
+    const bounce = liftCos(beat * 2);
+    offsetX = Math.sin(beat) * spec.x * env;
+    offsetY = -bounce * spec.y * env;
+    scaleYDelta = (bounce * spec.sc - 0.022) * env;
+    tiltRad = (id === "deadline-victory-dance" ? Math.sin(beat) : Math.cos(beat)) * spec.tilt * env;
+    yawRad = Math.sin(id === "groove-dance" ? beat : beat * 0.5) * spec.yaw * env;
+    armSwingRad = (id === "groove-dance" ? Math.sin(beat) * 0.85 : id === "deadline-victory-dance" ? -1.15 + Math.sin(beat * 2) * 0.45 : -0.85 + Math.cos(beat) * 0.55) * env;
+    legSwingRad = Math.sin(beat) * spec.leg * env;
+    if (spec.cycleMs > 0) facingCycleIndex = Math.floor((profile.globalPhaseSync ? clockMs : elapsedMs) / spec.cycleMs) % 4;
+  }
+
+  const cleanZero = (value: number) => (Object.is(value, -0) || Math.abs(value) < 1e-12 ? 0 : value);
+  const clampedOffsetX = cleanZero(clampValue(offsetX, -8, 8));
+  const clampedOffsetY = cleanZero(clampValue(offsetY, -profile.maxBouncePx, 8));
+  const clampedTilt = cleanZero(clampValue(tiltRad, -profile.maxTiltRad, profile.maxTiltRad));
+  const scaleY = clampValue(profile.staticScaleY + scaleYDelta, 0.82, 1.1);
+  const scaleX = clampValue(1 / Math.sqrt(scaleY / profile.staticScaleY), 0.9, 1.1);
+  const shadowScale = clampValue(1 - clampValue(-clampedOffsetY / 10, 0, 1) * 0.22, 0.72, 1.12);
+
+  return Object.freeze({
+    id, category: profile.category, offsetX: clampedOffsetX, offsetY: clampedOffsetY, scaleX, scaleY,
+    tiltRad: clampedTilt, yawRad: cleanZero(yawRad), armSwingRad: cleanZero(armSwingRad), legSwingRad: cleanZero(legSwingRad),
+    facingCycleIndex, shadowScale,
+    intensity: cleanZero(env * (profile.category === "locomotion" && id !== "idle-breathe" ? speedGate : 1)),
+  });
 }

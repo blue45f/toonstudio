@@ -64,3 +64,22 @@ test("로컬 OAuth 진단은 쓰기·원격 드라이런 명령과 함께 실행
     assert.throws(() => parseCloudDispatchArgs(["--check-local-oauth", flag]), /읽기 전용/u);
   }
 });
+
+test("--watch-interval 옵션을 5~60초 범위로 검증하고 감시 명령에 전달한다", () => {
+  assert.equal(parseCloudDispatchArgs(["--web", "--watch"]).watchIntervalSec, 15);
+  assert.equal(parseCloudDispatchArgs(["--web", "--watch", "--watch-interval=8"]).watchIntervalSec, 8);
+  for (const bad of ["--watch-interval=4", "--watch-interval=61", "--watch-interval=abc"]) {
+    assert.throws(() => parseCloudDispatchArgs(["--web", "--watch", bad]), /5~60초/u);
+  }
+  const calls = [];
+  dispatchCloudWorkflow(fields, {
+    watch: true,
+    watchIntervalSec: 8,
+    log: () => {},
+    exec(_program, args) {
+      calls.push(args);
+      return args[0] === "api" ? '{"workflow_run_id":456}' : "";
+    },
+  });
+  assert.deepEqual(calls[1].slice(-2), ["--interval", "8"]);
+});

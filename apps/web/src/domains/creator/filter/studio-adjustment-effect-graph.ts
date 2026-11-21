@@ -447,7 +447,7 @@ function sameEdge(left: StudioEffectGraphEdge, right: StudioEffectGraphEdge): bo
   return left.from === right.from && left.to === right.to && left.input === right.input;
 }
 
-export function mutateStudioAdjustmentEffectGraph(
+function applyStudioAdjustmentEffectGraphMutation(
   graph: StudioAdjustmentEffectGraph,
   mutation: StudioEffectGraphMutation,
 ): StudioAdjustmentEffectGraph {
@@ -479,13 +479,20 @@ export function mutateStudioAdjustmentEffectGraph(
       outputNodeId = mutation.nodeId;
       break;
   }
-  const next = Object.freeze({
+  return Object.freeze({
     ...graph,
     revision: graph.revision + 1,
     nodes: Object.freeze(nodes.map((node) => Object.freeze(node))),
     edges: Object.freeze(edges.map((edge) => Object.freeze(edge))),
     outputNodeId,
   });
+}
+
+export function mutateStudioAdjustmentEffectGraph(
+  graph: StudioAdjustmentEffectGraph,
+  mutation: StudioEffectGraphMutation,
+): StudioAdjustmentEffectGraph {
+  const next = applyStudioAdjustmentEffectGraphMutation(graph, mutation);
   validateStudioAdjustmentEffectGraph(next);
   return next;
 }
@@ -504,8 +511,13 @@ export function transactStudioEffectGraph(
   mutations: readonly StudioEffectGraphMutation[],
 ): StudioEffectGraphHistoryEntry {
   if (!transactionId.trim()) throw new TypeError("effect graph transaction id is required.");
+  // 트랜잭션은 여러 변이(예: 활성 필터 노드 추가/제거 + 간선 재배선)를 한 번에 커밋한다.
+  // 중간 상태의 일시적 미연결로 실패하지 않도록 전체 변이를 적용한 최종 그래프를 검증한다.
   let after = graph;
-  for (const mutation of mutations) after = mutateStudioAdjustmentEffectGraph(after, mutation);
+  for (const mutation of mutations) {
+    after = applyStudioAdjustmentEffectGraphMutation(after, mutation);
+  }
+  validateStudioAdjustmentEffectGraph(after);
   return Object.freeze({
     transactionId: transactionId.trim(),
     before: graph,

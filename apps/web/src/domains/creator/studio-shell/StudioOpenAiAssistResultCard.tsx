@@ -1,5 +1,5 @@
-import { Check, Copy, ListPlus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Check, Copy, ListPlus, ShieldCheck } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -10,6 +10,12 @@ import type {
   StudioOpenAiScriptToCutsData,
 } from "../ai/studio-openai-creative-assist-client";
 import type { StudioStoryBeat } from "../studio-storyboard-planner";
+
+const LazyStudioFreeAiAssistWorkbench = lazy(() =>
+  import("./StudioFreeAiAssistWorkbench").then((mod) => ({
+    default: mod.StudioFreeAiAssistWorkbench,
+  })),
+);
 
 async function copyPlainText(text: string): Promise<boolean> {
   try {
@@ -47,6 +53,7 @@ export function StudioOpenAiAssistResultCard({
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [appendedResponse, setAppendedResponse] =
     useState<StudioOpenAiAssistSuccess | null>(null);
+  const [freeLabOpen, setFreeLabOpen] = useState(false);
   const appended = appendedResponse === response;
 
   useEffect(() => {
@@ -304,6 +311,43 @@ export function StudioOpenAiAssistResultCard({
           </ul>
         </div>
       ) : null}
+
+      <div className="mt-4 border-t border-line pt-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-fg-2">
+            <ShieldCheck size={14} className="text-success" aria-hidden="true" />
+            {bt(
+              "유료 과금 0원 보호 ON · 무료 소진 시 자동 중지 (14모드 확장 랩)",
+              "Zero-bill protection ON · stops on free-tier cutoff (14-mode lab)",
+            )}
+          </span>
+          <button
+            type="button"
+            aria-expanded={freeLabOpen}
+            onClick={() => setFreeLabOpen((prev) => !prev)}
+            className={buttonClass({
+              variant: "outline",
+              size: "sm",
+              className: "min-h-10 gap-1.5",
+            })}
+          >
+            {freeLabOpen
+              ? bt("무과금 14모드 AI 랩 닫기", "Close 14-mode free AI lab")
+              : bt("무과금 14모드 AI 랩 열기", "Open 14-mode free AI lab")}
+          </button>
+        </div>
+        {freeLabOpen ? (
+          <Suspense
+            fallback={
+              <p className="mt-3 text-xs text-fg-3">
+                {bt("무과금 AI 14모드 랩을 불러오는 중…", "Loading 14-mode free AI lab…")}
+              </p>
+            }
+          >
+            <LazyStudioFreeAiAssistWorkbench />
+          </Suspense>
+        ) : null}
+      </div>
     </div>
   );
 }

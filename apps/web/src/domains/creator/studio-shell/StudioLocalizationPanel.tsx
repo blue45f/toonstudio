@@ -1,5 +1,5 @@
-import { CheckCircle2, Languages, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, ChevronDown, Languages, Plus, RotateCcw, Save, Sparkles, Trash2 } from "lucide-react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 
 import { createStudioLocalizationUnit, evaluateStudioLocalizationQa, summarizeStudioLocalization, transitionStudioLocalizationUnit, type StudioLocalizationStatus, type StudioLocalizationUnit, type StudioLocalizationUnitKind } from "../studio-localization-workflow";
 import { projectLocalizationDiagnostics, readStudioLocalizationProject, STUDIO_LOCALIZATION_PROJECT_UPDATED_EVENT, writeStudioLocalizationProject, type StudioLocalizationProjectDocument } from "../studio-localization-project-store";
@@ -10,6 +10,10 @@ import { useBilingualLocalizer, type BilingualText } from "@/shared/lib/i18n-bil
 import { cn } from "@/shared/lib/utils";
 
 import { useStudioProjectWorkspace } from "./useStudioProjectWorkspace";
+
+const StudioLocalizationAiSyncPanel = React.lazy(
+  () => import("../localization-sync-pro/StudioLocalizationAiSyncPanel"),
+);
 
 
 interface LayoutDraft {
@@ -134,6 +138,7 @@ export function StudioLocalizationPanel({
   const [layoutDraft, setLayoutDraft] = useState<LayoutDraft>(() => layoutDraftFor(null));
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [proSuiteOpen, setProSuiteOpen] = useState(false);
 
   useEffect(() => {
     const load = () => {
@@ -613,6 +618,39 @@ export function StudioLocalizationPanel({
           )}
         </div>
       </div>
+
+      <details
+        data-testid="localization-ai-sync-pro-disclosure"
+        className="group/loc-pro mt-5 rounded-2xl border border-line bg-panel"
+        aria-label={bt("글로벌 현지화·인쇄·로컬 AI 프로", "Global Localization · Print · Local AI Pro")}
+        onToggle={(event) => setProSuiteOpen(event.currentTarget.open)}
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+          <span className="flex min-w-0 items-center gap-2.5">
+            <Sparkles className="size-4 shrink-0 text-accent" aria-hidden="true" />
+            <span className="min-w-0 [word-break:keep-all]">
+              {bt("글로벌 현지화·인쇄·로컬 AI 프로", "Global Localization · Print · Local AI Pro")}
+            </span>
+          </span>
+          <ChevronDown className="size-4 shrink-0 text-fg-3 transition-transform group-open/loc-pro:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+        </summary>
+        {proSuiteOpen ? (
+          <div className="border-t border-line p-3 sm:p-4">
+            <Suspense
+              fallback={
+                <div className="grid min-h-32 place-items-center rounded-xl border border-line bg-card p-4 text-xs font-semibold text-fg-3">
+                  {bt("글로벌 현지화·인쇄·로컬 AI 프로 작업대를 불러오는 중...", "Loading Global Localization · Print · Local AI Pro...")}
+                </div>
+              }
+            >
+              <StudioLocalizationAiSyncPanel
+                projectId={projectId}
+                sourceLines={document.units.map((unit) => ({ id: unit.id, sourceText: unit.sourceText }))}
+              />
+            </Suspense>
+          </div>
+        ) : null}
+      </details>
     </section>
   );
 }
