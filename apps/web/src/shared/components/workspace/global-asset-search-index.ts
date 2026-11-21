@@ -65,14 +65,6 @@ function isChoseongOnlyToken(token: string): boolean {
   return true;
 }
 
-/** 입력 요소 포커스 여부를 판별해 `/` 단축키가 텍스트 입력을 가로채지 않게 보호한다. */
-export function isEditableEventTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName.toLowerCase();
-  if (tag === "input" || tag === "textarea" || tag === "select") return true;
-  return target.isContentEditable || target.getAttribute("role") === "textbox";
-}
-
 /** 바로 열기 핵심 소재/작업 허브 경로 (appRoutes 등록 정본 경로만 사용). */
 export const GLOBAL_ASSET_QUICK_HUBS: readonly {
   readonly id: string;

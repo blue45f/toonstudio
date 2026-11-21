@@ -227,6 +227,9 @@ export function StudioGlobalPlazaVoiceChatDock({
         className="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-line bg-canvas p-2.5"
         role="log"
         aria-live="polite"
+        aria-label="실시간 번역 채팅 피드"
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- 실시간 번역 채팅 로그 스크롤 영역을 키보드만으로 읽을 수 있도록 영역 자체에 포커스가 필요하다(WCAG 2.1.1).
+        tabIndex={0}
         data-testid="gpp-chat-feed"
       >
         {messages.map((msg) => {

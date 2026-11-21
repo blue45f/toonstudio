@@ -85,7 +85,6 @@ export function MaterialTrendingCarousel({
               type="button"
               className="md-trending-card"
               onClick={() => onSelect(assetItem)}
-              aria-label={`${assetItem.title} 소재 보기`}
             >
               <span className="md-trending-rank" aria-hidden="true">
                 {index + 1}

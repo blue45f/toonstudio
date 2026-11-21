@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { creatorRoleDefinition } from "@/shared/lib/creator-role-contract";
 import { createProductionDemoProject } from "../production-hub/production-demo";
 import { StudioVirtualSpaceOfficeStart } from "./StudioVirtualSpaceOfficeStart";
+import { studioVirtualSpaceRolePreset } from "./studio-virtual-space-role-preset";
 import type { StudioVirtualOperationsSnapshot } from "./use-studio-virtual-space-operations";
 
 afterEach(cleanup);
@@ -107,5 +109,42 @@ describe("가상 사무실의 첫 작업", () => {
     expect(props.onOpenSeats).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole("button", { name: "작업 시작 안내 접기" }));
     expect(props.onDismiss).toHaveBeenCalledOnce();
+  });
+
+  it("비로그인 게스트·직군 미설정 상태에서도 하이퍼 오토메이션 OS 접이식 진입점에 1클릭 도달하고 열 때 지연 마운트한다", async () => {
+    const props = options();
+    render(<MemoryRouter><StudioVirtualSpaceOfficeStart {...props} personal rolePreset={null} /></MemoryRouter>);
+
+    const disclosures = screen.getAllByTestId("studio-hyper-automation-os-disclosure");
+    expect(disclosures).toHaveLength(1);
+    expect(screen.queryByTestId("studio-hyper-automation-os-panel")).toBeNull();
+
+    const disclosure = disclosures[0] as HTMLDetailsElement;
+    disclosure.open = true;
+    fireEvent(disclosure, new Event("toggle"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("studio-hyper-automation-os-panel")).toBeTruthy();
+    });
+  });
+
+  it("직군 프리셋이 있는 사용자 화면에서도 하이퍼 오토메이션 OS 진입점은 중복 없이 1개만 노출된다", () => {
+    const props = options();
+    render(
+      <MemoryRouter>
+        <StudioVirtualSpaceOfficeStart
+          {...props}
+          rolePreset={{
+            attempted: true,
+            userId: "demo-art",
+            activeRole: "reviewer",
+            definition: creatorRoleDefinition("reviewer"),
+            customRoleLabel: null,
+            preset: studioVirtualSpaceRolePreset("reviewer", false),
+          }}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getAllByTestId("studio-hyper-automation-os-disclosure")).toHaveLength(1);
   });
 });

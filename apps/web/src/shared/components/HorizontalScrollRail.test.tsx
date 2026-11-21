@@ -206,4 +206,24 @@ describe("HorizontalScrollRail", () => {
     expect(css).toContain("min-height: 2.75rem");
     expect(css).toContain("prefers-reduced-motion: reduce");
   });
+
+  it("trackRole이 group·list이거나 라벨이 생략되어도 키보드 포커스(tabIndex=0)와 접근성 이름을 보장한다", () => {
+    const { rerender } = render(
+      <HorizontalScrollRail trackRole="group" ariaLabel="빠른 소재 유형" trackTestId="rail-group">
+        <div>칩 A</div>
+      </HorizontalScrollRail>,
+    );
+    const groupTrack = screen.getByTestId("rail-group");
+    expect(groupTrack.getAttribute("tabindex")).toBe("0");
+    expect(groupTrack.getAttribute("aria-label")).toBe("빠른 소재 유형");
+
+    rerender(
+      <HorizontalScrollRail trackRole="list" trackTestId="rail-list">
+        <div role="listitem">항목 A</div>
+      </HorizontalScrollRail>,
+    );
+    const listTrack = screen.getByTestId("rail-list");
+    expect(listTrack.getAttribute("tabindex")).toBe("0");
+    expect(listTrack.getAttribute("aria-label")).toBe("가로 스크롤 영역");
+  });
 });

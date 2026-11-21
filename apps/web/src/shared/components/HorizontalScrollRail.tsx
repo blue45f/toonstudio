@@ -211,9 +211,9 @@ export function HorizontalScrollRail({
           <div
             ref={internalTrackRef}
             role={trackRole}
-            aria-label={ariaLabel}
+            aria-label={ariaLabel ?? (ariaLabelledBy ? undefined : "가로 스크롤 영역")}
             aria-labelledby={ariaLabelledBy}
-            tabIndex={trackRole === "region" ? 0 : undefined}
+            tabIndex={0}
             className={cn("ts-hscroll-track", trackClassName)}
             data-testid={trackTestId}
           >

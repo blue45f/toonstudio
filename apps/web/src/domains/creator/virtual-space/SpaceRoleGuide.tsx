@@ -28,21 +28,58 @@ const LazyStudioHyperAutomationOsPanel = lazyRetry(
 );
 
 /**
+ * 수동 프로 0% ↔ 99% 원클릭 하이퍼 오토메이션 OS 접이식 진입점.
+ * 비로그인 게스트와 직군 미설정 사용자도 /studio/space 작업 시작 팝오버에서
+ * 1클릭으로 도달할 수 있도록 독립 노출하고, 펼칠 때만 본체를 지연 마운트한다.
+ */
+export function HyperAutomationOsDisclosure() {
+  const bt = useBilingual("SpaceRoleGuide");
+  const [hyperAutoOpen, setHyperAutoOpen] = useState(false);
+
+  return (
+    <details
+      className="hyper-auto-os__disclosure"
+      data-testid="studio-hyper-automation-os-disclosure"
+      onToggle={(event) => setHyperAutoOpen(event.currentTarget.open)}
+    >
+      <summary>
+        {bt(
+          "하이퍼 오토메이션 OS: 수동 프로 0% ↔ 99% 원클릭 웹툰 자동 생성",
+          "Hyper Automation OS: Manual Pro 0% ↔ 99% One-Click Webtoon",
+        )}
+      </summary>
+      {hyperAutoOpen ? (
+        <Suspense fallback={<p>{bt("하이퍼 오토메이션 OS 불러오는 중…", "Loading Hyper Automation OS…")}</p>}>
+          <LazyStudioHyperAutomationOsPanel />
+        </Suspense>
+      ) : null}
+    </details>
+  );
+}
+
+/**
  * 작업 시작 안내 안에 들어가는 직군 가이드.
  *
  * 직군이 정한 순서대로 ① 직군 우선 업무 (기존 랭킹 재사용) ② 직군 빠른 실행
  * ③ 추천 공간 이동을 보여 준다. 직군이 없으면 아무것도 그리지 않고,
  * 추천에 없는 업무·공간도 기존 동선으로 전부 닿을 수 있다 (프리셋은 강조만).
  */
-export function SpaceRoleGuide({ role, aggregate, onGuide, onGuidePlace }: {
+export function SpaceRoleGuide({
+  role,
+  aggregate,
+  onGuide,
+  onGuidePlace,
+  showHyperAutomationDisclosure = true,
+}: {
   readonly role: SpaceRolePreset;
   readonly aggregate: ProductionProjectAggregate | null;
   readonly onGuide?: (destination: StudioVirtualProductionDestination) => void;
   readonly onGuidePlace?: (roomId: string) => void;
+  /** 바깥 컨테이너(StudioVirtualSpaceOfficeStart)가 이미 노출 중이면 중복 렌더를 막기 위해 false로 둔다. */
+  readonly showHyperAutomationDisclosure?: boolean;
 }) {
   const bt = useBilingual("SpaceRoleGuide");
   const { definition } = role;
-  const [hyperAutoOpen, setHyperAutoOpen] = useState(false);
 
   const ranked = useMemo(
     () => (aggregate
@@ -107,22 +144,6 @@ export function SpaceRoleGuide({ role, aggregate, onGuide, onGuidePlace }: {
         ))}
       </div>
     </div> : null}
-    <details
-      className="hyper-auto-os__disclosure"
-      data-testid="studio-hyper-automation-os-disclosure"
-      onToggle={(event) => setHyperAutoOpen(event.currentTarget.open)}
-    >
-      <summary>
-        {bt(
-          "하이퍼 오토메이션 OS: 수동 프로 0% ↔ 99% 원클릭 웹툰 자동 생성",
-          "Hyper Automation OS: Manual Pro 0% ↔ 99% One-Click Webtoon",
-        )}
-      </summary>
-      {hyperAutoOpen ? (
-        <Suspense fallback={<p>{bt("하이퍼 오토메이션 OS 불러오는 중…", "Loading Hyper Automation OS…")}</p>}>
-          <LazyStudioHyperAutomationOsPanel />
-        </Suspense>
-      ) : null}
-    </details>
+    {showHyperAutomationDisclosure ? <HyperAutomationOsDisclosure /> : null}
   </div>;
 }
