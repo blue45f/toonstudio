@@ -75,4 +75,39 @@ describe("StudioRadialQuickWheel", () => {
     );
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("T2: 6슬롯 커스텀 편집 모드에서 assignQuickMenuSlot으로 액션을 교체하고 로컬 저장소에 보존한다", () => {
+    window.localStorage.clear();
+    const onSlotsChange = vi.fn();
+
+    render(
+      <StudioRadialQuickWheel
+        open
+        anchor={{ x: 500, y: 400 }}
+        onSelectAction={vi.fn()}
+        onSlotsChange={onSlotsChange}
+        onClose={vi.fn()}
+      />,
+    );
+
+    // 슬롯 편집 모드 열기
+    fireEvent.click(screen.getByRole("button", { name: "슬롯 편집" }));
+    expect(screen.getByRole("region", { name: "빠른 메뉴 6슬롯 편집" })).toBeTruthy();
+
+    // 2번 슬롯(index=1, 기본 좌우 반전) 선택 후 스포이드로 교체
+    fireEvent.click(screen.getByRole("menuitem", { name: /2\. 좌우 반전/ }));
+    fireEvent.click(screen.getByRole("button", { name: "스포이드" }));
+
+    expect(onSlotsChange).toHaveBeenCalled();
+    const updatedSlots = onSlotsChange.mock.calls.at(-1)?.[0];
+    expect(updatedSlots[1]).toEqual(
+      expect.objectContaining({ index: 1, actionId: "eyedropper", labelKo: "스포이드" }),
+    );
+    expect(window.localStorage.getItem("toonstudio.quick-menu-slots.v1")).toContain("eyedropper");
+
+    // 기본값 복원
+    fireEvent.click(screen.getByRole("button", { name: "기본값" }));
+    const resetSlots = onSlotsChange.mock.calls.at(-1)?.[0];
+    expect(resetSlots[1]).toEqual(expect.objectContaining({ index: 1, actionId: "flip-canvas-h" }));
+  });
 });

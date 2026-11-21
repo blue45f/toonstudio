@@ -2,13 +2,12 @@ import { useStudioFilterTargetDescription, type StudioFilterTargetKind } from ".
 import {
   ChevronDown,
   Clock3,
-  Eye,
-  RotateCcw,
   Search,
   SlidersHorizontal,
   Star,
   X,
 } from "lucide-react";
+import { StudioFilterCompareAndQuickBar } from "./StudioFilterCompareAndQuickBar";
 import {
   useEffect,
   useEffectEvent,
@@ -1496,59 +1495,18 @@ export function StudioFilterDialog({
             ) : null}
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-3">
-            <button
-              type="button"
-              disabled={applying}
-              onClick={resetDraft}
-              className={buttonClass({
-                size: "sm",
-                variant: "quiet",
-                className: "min-h-11 sm:min-h-8 pointer-coarse:min-h-11",
-              })}
-            >
-              <RotateCcw className="size-3.5" aria-hidden />
-              기본값
-            </button>
-            {/*
-              Judging a filter means seeing what it replaced. Toggling 캔버스 미리보기 off and on
-              costs two clicks and loses the moment of comparison, so this reverts the canvas only
-              for as long as the control is held — pointer or key — and never leaves it reverted.
-            */}
-            <button
-              type="button"
-              disabled={applying || !previewEnabled}
-              aria-pressed={comparingOriginal}
-              title="누르고 있는 동안 원본을 보여줍니다"
-              onPointerDown={(event) => {
-                if (event.button !== 0) return;
-                event.preventDefault();
-                setComparingOriginal(true);
-              }}
-              onKeyDown={(event) => {
-                if (event.key !== " " && event.key !== "Enter") return;
-                event.preventDefault();
-                setComparingOriginal(true);
-              }}
-              className={buttonClass({
-                size: "sm",
-                variant: comparingOriginal ? "outline" : "quiet",
-                className: "min-h-11 select-none sm:min-h-8 pointer-coarse:min-h-11",
-              })}
-            >
-              <Eye className="size-3.5" aria-hidden />
-              원본 비교
-            </button>
-            <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-2 text-xs font-semibold text-fg-2 hover:bg-raised">
-              <input
-                type="checkbox"
-                checked={previewEnabled}
-                onChange={(event) => setPreviewEnabled(event.target.checked)}
-                className="size-4 accent-accent"
-              />
-              캔버스 미리보기
-            </label>
-          </div>
+          <StudioFilterCompareAndQuickBar
+            activeKind={activeKind}
+            draft={draft}
+            imageSrc={imageSrc}
+            applying={applying}
+            previewEnabled={previewEnabled}
+            comparingOriginal={comparingOriginal}
+            onResetDraft={resetDraft}
+            onStartCompareOriginal={() => setComparingOriginal(true)}
+            onPreviewEnabledChange={setPreviewEnabled}
+            onSelectQuickFilter={selectGalleryFilter}
+          />
           {/* 낮은 가로 화면에서도 실행 버튼을 밀어내지 않도록 선택 범위와 안내는 본문에서 스크롤한다. */}
           {canUseSelectionScope ? (
             <fieldset

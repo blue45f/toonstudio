@@ -712,3 +712,12 @@ export function releaseStudioWetPaperBakeRequesters(prefix: string): void {
 export function releaseStudioDryBrushLiveBakeRequester(requester?: string): void {
   if (requester) { dryWaiting.delete(requester); dryModule?.releaseStudioDryBrushLiveHost(requester); }
 }
+
+/** WebGPU D2Q9 LBM 습식 수채 가속기를 지연 로드한다(실패 시 CPU 8ms 솔버 유지). */
+export async function acquireStudioWetPaperLbmWebGpuAccelerator(
+  device: GPUDevice | null,
+  config: { readonly width: number; readonly height: number },
+) {
+  const { StudioWetPaperLbmWebGpuRuntime } = await import("./studio-wet-paper-lbm-webgpu-runtime");
+  return new StudioWetPaperLbmWebGpuRuntime(device, config);
+}

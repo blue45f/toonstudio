@@ -1,6 +1,8 @@
 import { GitBranch, Plus, Spline, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 import type { BubbleTailDirection, BubbleTailSide, BubbleTailSpec } from "./studio-bubble-path";
+import { buildSpeechBubbleTailBooleanUnion } from "./studio-korean-bubble-boolean-typesetting";
 
 import { useT } from "@/shared/lib/i18n";
 
@@ -110,6 +112,26 @@ export function StudioBubbleTailControls({
   onChangeExtraTails,
 }: StudioBubbleTailControlsProps) {
   const t = useT();
+  const [unionSummary, setUnionSummary] = useState<string | null>(null);
+  const runTailBooleanPreview = () => {
+    void buildSpeechBubbleTailBooleanUnion({
+      x: 0,
+      y: 0,
+      width: 220,
+      height: 120,
+      tailSide: tail,
+      tailXRatio: ratio,
+      tailHeight: length,
+      tailBase: base,
+      tailBend: bend * 24,
+    }).then((result) => {
+      setUnionSummary(
+        result.ok
+          ? `단일 외곽선 불리언 합집합 준비됨 (${result.polygons.length}개 외곽 패스)`
+          : "꼬리 합집합을 계산하지 못했습니다.",
+      );
+    });
+  };
   const visible = tail !== "none";
 
   const extraDirectionMap: Record<BubbleTailDirection, string> = {
@@ -388,6 +410,22 @@ export function StudioBubbleTailControls({
               {t("studio.bubbleTail.continueSpeechSingleTail")}
             </p>
           )}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <button
+              type="button"
+              data-studio-bubble-tail-boolean-preview="true"
+              onClick={runTailBooleanPreview}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+            >
+              <Spline size={13} aria-hidden="true" />
+              꼬리 외곽선 합집합 확인
+            </button>
+            {unionSummary ? (
+              <span role="status" className="text-[0.68rem] font-medium text-good">
+                {unionSummary}
+              </span>
+            ) : null}
+          </div>
         </>
       ) : null}
     </section>

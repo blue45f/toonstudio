@@ -6,8 +6,8 @@
  * 상단에 `StudioShadingLightBallOverlay` 구면 광원 볼 기즈모를 통합하며, 캔버스 위 플로팅
  * 광원 볼 띄우기도 지원한다.
  */
-import { Eye, Layers, Loader2, Sparkles, WandSparkles } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Compass, Eye, Layers, Sparkles, WandSparkles } from "lucide-react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -40,7 +40,13 @@ import type { El } from "../studio-element-model";
 import type { StudioImageDataLike } from "../studio-filters";
 import type { ReactElement } from "react";
 
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { cn } from "@/shared/lib/utils";
+
+const LazyQuickShadingAssistPanel = lazyRetry(
+  () => import("./StudioShadingAssistPanel").then((mod) => ({ default: mod.StudioShadingAssistPanel })),
+  "StudioShadingAssistPanel",
+);
 
 /* eslint-disable react-refresh/only-export-components -- pure shading layer output resolver and mood presets co-exported with panel */
 
@@ -199,6 +205,7 @@ export function StudioShadingAssistWiredPanel({
   const [elevationDeg, setElevationDeg] = useState<number>(45);
   const [linkElevationCoverage, setLinkElevationCoverage] = useState<boolean>(true);
   const [moodId, setMoodId] = useState<string>(SHADING_MOOD_PRESETS[0]!.id);
+  const [quickCompassOpen, setQuickCompassOpen] = useState<boolean>(false);
   const [canvasBallOpen, setCanvasBallOpen] = useState<boolean>(false);
   const [canvasBallAnchor, setCanvasBallAnchor] = useState<{ readonly x: number; readonly y: number }>({
     x: 0.5,
@@ -388,28 +395,76 @@ export function StudioShadingAssistWiredPanel({
         className,
       )}
     >
-      {/* 상단: 광원 볼 캔버스 띄우기 토글 */}
-      <div className="flex items-center justify-between gap-2">
+      {/* 상단: 간편 9방향 광원 프리셋 + 캔버스 광원 볼 토글 */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[0.72rem] leading-relaxed text-fg-3">
           3D 구면 볼륨과 림라이트로 음영 레이어를 바로 생성합니다.
         </p>
-        <button
-          type="button"
-          disabled={busy}
-          aria-pressed={canvasBallOpen}
-          onClick={() => setCanvasBallOpen((prev) => !prev)}
-          className={cn(
-            CHIP_BUTTON_CLASS,
-            "shrink-0 px-2.5",
-            canvasBallOpen
-              ? "border-accent bg-accent-soft text-fg"
-              : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
-          )}
-        >
-          <Eye size={14} aria-hidden />
-          <span>{canvasBallOpen ? "광원 볼 숨기기" : "캔버스 광원 볼"}</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            disabled={busy}
+            aria-pressed={quickCompassOpen}
+            data-studio-shading-quick-compass-toggle="true"
+            onClick={() => setQuickCompassOpen((prev) => !prev)}
+            className={cn(
+              CHIP_BUTTON_CLASS,
+              "shrink-0 px-2.5",
+              quickCompassOpen
+                ? "border-accent bg-accent-soft text-fg"
+                : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
+            )}
+          >
+            <Compass size={14} aria-hidden />
+            <span>간편 9방향</span>
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            aria-pressed={canvasBallOpen}
+            onClick={() => setCanvasBallOpen((prev) => !prev)}
+            className={cn(
+              CHIP_BUTTON_CLASS,
+              "shrink-0 px-2.5",
+              canvasBallOpen
+                ? "border-accent bg-accent-soft text-fg"
+                : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
+            )}
+          >
+            <Eye size={14} aria-hidden />
+            <span>{canvasBallOpen ? "광원 볼 숨기기" : "캔버스 광원 볼"}</span>
+          </button>
+        </div>
       </div>
+
+      {quickCompassOpen ? (
+        <Suspense
+          fallback={
+            <div aria-busy="true" className="h-24 rounded-xl bg-raised/60 motion-safe:animate-pulse" />
+          }
+        >
+          <LazyQuickShadingAssistPanel
+            onApplyShading={(params) => {
+              patchOptions({
+                azimuthDeg: normalizeAzimuthDeg(params.directionAngleDeg),
+                strength: Math.round(params.opacity * 100),
+                coverage: Math.round(params.shadowCoverage * 100),
+                softness: Math.round(params.edgeSoftness * 100),
+              });
+              setStatusMessage("간편 9방향 광원 설정을 반영했습니다.");
+            }}
+            onGenerateShadingLayer={(params) => {
+              patchOptions({
+                azimuthDeg: normalizeAzimuthDeg(params.directionAngleDeg),
+                strength: Math.round(params.opacity * 100),
+                coverage: Math.round(params.shadowCoverage * 100),
+                softness: Math.round(params.edgeSoftness * 100),
+              });
+              void runShadingCommit("new-layer");
+            }}
+          />
+        </Suspense>
+      ) : null}
 
       {/* 내장 구면 광원 볼 기즈모 */}
       <StudioShadingLightBallOverlay
@@ -637,12 +692,8 @@ export function StudioShadingAssistWiredPanel({
             "w-full border-accent bg-accent text-on-accent hover:bg-accent-2",
           )}
         >
-          {busy ? (
-            <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />
-          ) : (
-            <Layers size={14} aria-hidden />
-          )}
-          <span>{onCreateShadingLayer ? "음영 레이어 만들기" : "음영 적용하기"}</span>
+          <Layers size={14} aria-hidden />
+          <span>{busy ? "음영 계산 중..." : onCreateShadingLayer ? "음영 레이어 만들기" : "음영 적용하기"}</span>
         </button>
 
         {onCreateShadingLayer && !destructiveEditDisabledReason ? (

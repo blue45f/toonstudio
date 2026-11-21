@@ -1659,26 +1659,17 @@ export function resolveStudioBrushBackendQualityRoute(
     }
   }
   if (hasLoadingCandidate) {
-    return {
-      status: "pending",
-      reason: "backend-loading",
-      identity,
-      policy,
-      preserveExistingSurface: true,
-      emitApproximation: false,
-    };
+    return { status: "pending", reason: "backend-loading", identity, policy, preserveExistingSurface: true, emitApproximation: false };
   }
-  return {
-    status: "rejected",
-    reason: "backend-unavailable",
-    identity,
-    policy,
-    preserveExistingSurface: true,
-    emitApproximation: false,
-  };
+  return { status: "rejected", reason: "backend-unavailable", identity, policy, preserveExistingSurface: true, emitApproximation: false };
 }
 
 /** Core runtime inventory used by policy-audit tests without duplicating the source catalogue. */
 export function listStudioCoreBrushBackendQualityIds(): readonly string[] {
   return STUDIO_BRUSH_RUNTIME_CONTRACT.map((contract) => contract.id);
+}
+
+/** 오일·임파스토 WebGPU Zero-Copy Indirect 브러시 런타임을 지연 로드한다(진입 그래프 +0B). */
+export async function loadStudioZeroCopyIndirectBrushRuntime() {
+  return import("../render/studio-webgpu-zero-copy-indirect-runtime");
 }

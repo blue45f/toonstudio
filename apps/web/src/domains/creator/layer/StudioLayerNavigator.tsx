@@ -118,7 +118,7 @@ type LiveOwnershipCache = {
   elementKey: string;
   map: ReadonlyMap<string, StudioLiveLayerOwnership>;
 };
-export type StudioLayerNavigatorItemFlag = "alphaLocked" | "fillReference" | "maskEnabled";
+export type StudioLayerNavigatorItemFlag = "alphaLocked" | "fillReference" | "maskEnabled" | "clipBelow";
 
 export type StudioLayerNavigatorAction =
   | { type: "group-selection" }
@@ -1194,21 +1194,19 @@ export function StudioLayerNavigator({
       if (isLayerRowControl(event.target)) return;
       beginRename("item", itemId, label);
     },
-    onToggleItemHidden: (itemId, hidden) => {
-      onAction({ type: "set-items-hidden", ids: [itemId], hidden });
+    onToggleItemHidden: (itemId, hidden) => { onAction({ type: "set-items-hidden", ids: [itemId], hidden }); },
+    onToggleItemLocked: (itemId, locked) => { onAction({ type: "set-items-locked", ids: [itemId], locked }); },
+    onSetItemOpacity: (itemId, opacity) => { onAction({ type: "set-items-opacity", ids: [itemId], opacity }); },
+    onPreviewItemOpacity: (itemId, opacity) => { onAction({ type: "set-items-opacity", ids: [itemId], opacity, live: true }); },
+    onToggleItemClipBelow: (itemId, value) => { onAction({ type: "set-item-flag", id: itemId, flag: "clipBelow", value }); },
+    onToggleItemAlphaLock: (itemId, value) => { onAction({ type: "set-item-flag", id: itemId, flag: "alphaLocked", value }); },
+    onToggleItemReference: (itemId, value) => { onAction({ type: "set-item-flag", id: itemId, flag: "fillReference", value }); },
+    onToggleItemMultiSelect: (itemId) => { applyItemSelection(itemId, "toggle"); },
+    onPinchMergeItem: (itemId) => {
+      if (selectedIds.length >= 2 && selectedIdSet.has(itemId)) onAction({ type: "merge-selected", ids: selectedIds });
+      else onAction({ type: "merge-down", id: itemId });
     },
-    onToggleItemLocked: (itemId, locked) => {
-      onAction({ type: "set-items-locked", ids: [itemId], locked });
-    },
-    onSetItemOpacity: (itemId, opacity) => {
-      onAction({ type: "set-items-opacity", ids: [itemId], opacity });
-    },
-    onPreviewItemOpacity: (itemId, opacity) => {
-      onAction({ type: "set-items-opacity", ids: [itemId], opacity, live: true });
-    },
-    onOpenItemActionMenu: (event, itemId) => {
-      openActionMenu(event, { kind: "item", id: itemId });
-    },
+    onOpenItemActionMenu: (event, itemId) => { openActionMenu(event, { kind: "item", id: itemId }); },
     onItemDragStart: (event, itemId) => beginItemLayerDrag(event, itemId),
     onItemDragEnd: finishLayerDrag,
     onItemDragOver: (event, itemId, key) => updateItemLayerDrop(event, itemId, key),

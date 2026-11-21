@@ -11,7 +11,7 @@ import {
 import {
   evaluateDipPenRailroadingProfile,
   MANGA_NIB_PERSONALITY_PROFILES,
-} from "@toonstudio/studio-brush-platform";
+} from "@toonstudio/studio-brush-platform/natural-media";
 
 import { STUDIO_FOCUS_RING, StudioContextPill } from "../studio-panel-ui";
 import { mixStudioSpectralWgm } from "../studio-spectral-wgm-mix-v1";

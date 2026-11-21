@@ -2,9 +2,17 @@ import {
   Check, CircleDot, CornerDownRight, Droplets, Eye, EyeOff, Film, Ghost,
   Grid2X2, GripVertical, Layers3, Lock, LockOpen, MoreHorizontal, ScanLine, Sparkles,
 } from "lucide-react";
-import { memo, useState } from "react";
+import { memo, useRef, useState } from "react";
 
 import { StudioInlineScrubber } from "../StudioInlineScrubber";
+import {
+  evaluateLayerRowTrioToggle,
+  finishLayerRowTouchEnd,
+  startLayerRowTouchGesture,
+  stepLayerRowTouchMove,
+  type LayerRowTouchGestureSession,
+  type LayerRowTouchPoint,
+} from "./studio-layer-row-trio-gestures";
 
 import {
   BLUE_LINE_ROUGH_LAYER_COLOR_PRESET,
@@ -39,6 +47,7 @@ import type {
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
   ReactNode,
+  TouchEvent as ReactTouchEvent,
 } from "react";
 
 import { cn } from "@/shared/lib/utils";
@@ -99,6 +108,13 @@ export interface LayerNavigatorRowHandlers {
   ) => void;
   /** CSP 레이어 속성(`layerpropuselayercolor`) 주색·파란선 표시 빠른 토글. */
   onToggleItemLayerColorTint?: (itemId: string, enabled: boolean) => void;
+  /** T9 레이어 트리오(클리핑 마스크 · 알파 잠금 · 참조 레이어) 빠른 토글. */
+  onToggleItemClipBelow?: (itemId: string, clipBelow: boolean) => void;
+  onToggleItemAlphaLock?: (itemId: string, alphaLocked: boolean) => void;
+  onToggleItemReference?: (itemId: string, fillReference: boolean) => void;
+  /** T9 우측 스와이프 다중 선택 토글 / 핀치 병합. */
+  onToggleItemMultiSelect?: (itemId: string) => void;
+  onPinchMergeItem?: (itemId: string) => void;
   onItemDragStart?: (event: ReactDragEvent<HTMLElement>, itemId: string, key: string) => void;
   onItemDragEnd?: () => void;
   onItemDragOver?: (event: ReactDragEvent<HTMLElement>, itemId: string, key: string) => void;
@@ -151,6 +167,8 @@ export interface StudioLayerNavigatorItemRowProps {
   dragEnabled?: boolean;
   dropSide?: LayerSelectionDropSide | null;
   dragHelpId?: string;
+  /** 최하단(zIndex === 0)이 아닐 때 true. false면 클리핑 마스크·핀치 병합 불가. */
+  canClipBelow?: boolean;
 }
 
 /**
@@ -186,7 +204,9 @@ export const StudioLayerNavigatorItemRow = memo(
     dragEnabled = false,
     dropSide = null,
     dragHelpId,
+    canClipBelow = item.zIndex > 0,
   }: StudioLayerNavigatorItemRowProps) {
+    const touchGestureRef = useRef<LayerRowTouchGestureSession | null>(null);
     const Icon = STUDIO_LAYER_NAVIGATOR_KIND_ICONS[kind];
     const peerBlocked = liveOwnership?.blocksLocalEdit === true;
     const [localLayerColorEnabled, setLocalLayerColorEnabled] = useState<boolean | null>(null);
@@ -275,6 +295,49 @@ export const StudioLayerNavigatorItemRow = memo(
     // never comes back as `item.opacity`, and the row must still track the pointer.
     const [opacityDraft, setOpacityDraft] = useState<number | null>(null);
     const opacityPercent = opacityDraft ?? committedOpacityPercent;
+    const toTouchPoints = (list: ReactTouchEvent<HTMLElement>["touches"]): LayerRowTouchPoint[] =>
+      Array.from({ length: list.length }, (_, idx) => {
+        const pt = typeof list.item === "function" ? list.item(idx) : (list as unknown as readonly Touch[])[idx];
+        return pt ? { identifier: pt.identifier, clientX: pt.clientX, clientY: pt.clientY } : null;
+      }).filter((pt): pt is LayerRowTouchPoint => pt !== null);
+    const trioDisabled = readOnly || effectivelyLocked || peerBlocked;
+    const handleTrioToggle = (flag: "clippingMask" | "alphaLock" | "reference") => {
+      const nextValue = evaluateLayerRowTrioToggle({
+        id: item.id, label: item.label, locked: trioDisabled, selected, opacity: committedOpacityPercent / 100,
+        clipBelow: item.clipBelow, alphaLocked: item.alphaLocked, fillReference: item.fillReference, canClipBelow, flag,
+      });
+      if (nextValue === null) return;
+      if (flag === "clippingMask") stableHandlers.onToggleItemClipBelow?.(item.id, nextValue);
+      else if (flag === "alphaLock") stableHandlers.onToggleItemAlphaLock?.(item.id, nextValue);
+      else stableHandlers.onToggleItemReference?.(item.id, nextValue);
+    };
+    const handleRowTouchStart = (event: ReactTouchEvent<HTMLElement>) => {
+      if (readOnly || peerBlocked) return;
+      touchGestureRef.current = startLayerRowTouchGesture(toTouchPoints(event.touches), committedOpacityPercent / 100);
+    };
+    const handleRowTouchMove = (event: ReactTouchEvent<HTMLElement>) => {
+      const session = touchGestureRef.current;
+      if (!session || readOnly || peerBlocked) return;
+      const result = stepLayerRowTouchMove(session, toTouchPoints(event.touches), {
+        id: item.id, label: item.label, locked: effectivelyLocked, selected, canMergeDown: canClipBelow,
+      });
+      if (result.kind === "merged") stableHandlers.onPinchMergeItem?.(item.id);
+      else if (result.kind === "opacity-changed") {
+        setOpacityDraft(Math.round(result.opacity * 100));
+        stableHandlers.onPreviewItemOpacity(item.id, result.opacity);
+      }
+    };
+    const handleRowTouchEnd = (event: ReactTouchEvent<HTMLElement>) => {
+      const session = touchGestureRef.current;
+      if (!session) return;
+      if (event.touches.length > 0) return;
+      touchGestureRef.current = null;
+      const changed = toTouchPoints(event.changedTouches)[0];
+      const result = finishLayerRowTouchEnd(session, changed, { id: item.id, label: item.label, locked: effectivelyLocked, selected });
+      if (result.kind === "opacity-changed") { setOpacityDraft(null); stableHandlers.onSetItemOpacity(item.id, result.opacity); }
+      else if (result.kind === "toggled-lock" && !lockedByGroup) stableHandlers.onToggleItemLocked(item.id, result.locked);
+      else if (result.kind === "toggled-select") stableHandlers.onToggleItemMultiSelect?.(item.id);
+    };
 
     return (
       <li role="none">
@@ -297,6 +360,10 @@ export const StudioLayerNavigatorItemRow = memo(
           onDragOver={(event) => stableHandlers.onItemDragOver?.(event, item.id, rowKey)}
           onDragLeave={(event) => stableHandlers.onItemDragLeave?.(event, rowKey)}
           onDrop={(event) => stableHandlers.onItemDrop?.(event)}
+          onTouchStart={handleRowTouchStart}
+          onTouchMove={handleRowTouchMove}
+          onTouchEnd={handleRowTouchEnd}
+          onTouchCancel={() => { touchGestureRef.current = null; setOpacityDraft(null); }}
           className={cn(
             "group/layer relative flex min-h-9 items-center gap-1 rounded-lg border px-1 py-0.5 text-left transition-[border-color,background-color,box-shadow] duration-150 [contain-intrinsic-size:44px] [content-visibility:auto] motion-reduce:transition-none max-lg:min-h-11 pointer-coarse:min-h-11",
             current
@@ -547,6 +614,43 @@ export const StudioLayerNavigatorItemRow = memo(
                 >
                   +{visibleStatuses.hiddenCount}
                 </span>
+              ) : null}
+            </span>
+          ) : null}
+          {stableHandlers.onToggleItemClipBelow || stableHandlers.onToggleItemAlphaLock || stableHandlers.onToggleItemReference ? (
+            <span className="flex shrink-0 items-center gap-0.5" role="group" aria-label={`${item.label} 레이어 트리오`} data-studio-layer-trio-controls="true">
+              {stableHandlers.onToggleItemClipBelow ? (
+                <button type="button" tabIndex={-1} data-layer-row-control data-studio-layer-trio-action="clippingMask"
+                  disabled={trioDisabled || !canClipBelow} aria-pressed={item.clipBelow === true}
+                  aria-label={item.clipBelow ? `${item.label} 클리핑 마스크 해제` : `${item.label} 클리핑 마스크`}
+                  title={canClipBelow ? "아래 레이어에 클리핑 마스크" : "최하단 레이어에는 클리핑 마스크를 적용할 수 없습니다"}
+                  onClick={(event) => { event.stopPropagation(); handleTrioToggle("clippingMask"); }}
+                  onDoubleClick={(event) => event.stopPropagation()}
+                  className={cn("grid size-7 shrink-0 place-items-center rounded border transition-colors disabled:opacity-30", item.clipBelow ? STATUS_CLASSES.clipping : "border-transparent text-fg-3 hover:bg-raised hover:text-fg", STUDIO_LAYER_NAVIGATOR_COARSE_TARGET, STUDIO_LAYER_NAVIGATOR_FOCUS_RING)}>
+                  <CornerDownRight size={12} aria-hidden />
+                </button>
+              ) : null}
+              {stableHandlers.onToggleItemAlphaLock ? (
+                <button type="button" tabIndex={-1} data-layer-row-control data-studio-layer-trio-action="alphaLock"
+                  disabled={trioDisabled} aria-pressed={item.alphaLocked === true}
+                  aria-label={item.alphaLocked ? `${item.label} 알파 잠금 해제` : `${item.label} 알파 잠금`}
+                  title="알파 잠금(투명 픽셀 보호)"
+                  onClick={(event) => { event.stopPropagation(); handleTrioToggle("alphaLock"); }}
+                  onDoubleClick={(event) => event.stopPropagation()}
+                  className={cn("grid size-7 shrink-0 place-items-center rounded border transition-colors disabled:opacity-30", item.alphaLocked ? STATUS_CLASSES["alpha-locked"] : "border-transparent text-fg-3 hover:bg-raised hover:text-fg", STUDIO_LAYER_NAVIGATOR_COARSE_TARGET, STUDIO_LAYER_NAVIGATOR_FOCUS_RING)}>
+                  <Grid2X2 size={12} aria-hidden />
+                </button>
+              ) : null}
+              {stableHandlers.onToggleItemReference ? (
+                <button type="button" tabIndex={-1} data-layer-row-control data-studio-layer-trio-action="reference"
+                  disabled={trioDisabled} aria-pressed={item.fillReference === true}
+                  aria-label={item.fillReference ? `${item.label} 참조 레이어 해제` : `${item.label} 참조 레이어`}
+                  title="채우기 참조 레이어(문서 내 1개)"
+                  onClick={(event) => { event.stopPropagation(); handleTrioToggle("reference"); }}
+                  onDoubleClick={(event) => event.stopPropagation()}
+                  className={cn("grid size-7 shrink-0 place-items-center rounded border transition-colors disabled:opacity-30", item.fillReference ? STATUS_CLASSES.reference : "border-transparent text-fg-3 hover:bg-raised hover:text-fg", STUDIO_LAYER_NAVIGATOR_COARSE_TARGET, STUDIO_LAYER_NAVIGATOR_FOCUS_RING)}>
+                  <ScanLine size={12} aria-hidden />
+                </button>
               ) : null}
             </span>
           ) : null}

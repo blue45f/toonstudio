@@ -21,7 +21,7 @@ import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSe
 import { useStudioMarketplaceCloudSyncFocus } from "./studio-marketplace-cloud-sync-focus";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
-import { StudioDrawingClarityBarFallback } from "./StudioDrawingClarityEntry";
+import { StudioDrawingClarityBarFallback, StudioDrawingClarityEntry } from "./StudioDrawingClarityEntry";
 import { StudioProjectOpenRecoveryActions } from "./StudioProjectOpenRecoveryActions";
 
 const StudioOptionsBars = lazyRetry(() => import("../StudioOptionsBars").then((module) => ({ default: module.StudioOptionsBars })), "StudioOptionsBars");
@@ -436,6 +436,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
         >
           {menubarContent}
         </Suspense>
+        <StudioDrawingClarityEntry />
         <StudioToolHintTarget
           preferredSide="bottom"
           className="hidden shrink-0 lg:inline-flex"
