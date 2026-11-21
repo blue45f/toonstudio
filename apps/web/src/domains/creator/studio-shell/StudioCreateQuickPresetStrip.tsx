@@ -1,4 +1,5 @@
 import { ArrowRight, Sparkles } from "lucide-react";
+import React, { Suspense, useCallback, useState } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -9,7 +10,29 @@ import {
   type GuidedGenreStarterSpec,
 } from "./guided-flow/studio-guided-flow-catalog";
 
+const StudioSmartAutofillAssistantCard = React.lazy(
+  () => import("../smart-form-autofill/StudioSmartAutofillAssistantCard"),
+);
+
 export type StudioCreateQuickPreset = GuidedGenreStarterSpec;
+
+function resolveStarterForSmartAutofill(payload: {
+  readonly genre: string | null;
+  readonly targetPlatformSpec: string | null;
+}): GuidedGenreStarterSpec {
+  const spec = payload.targetPlatformSpec ?? "";
+  const genre = payload.genre ?? "";
+  if (spec.includes("컷툰") || genre.includes("일상")) {
+    return STUDIO_GUIDED_GENRE_STARTERS[2] ?? STUDIO_GUIDED_GENRE_STARTERS[0];
+  }
+  if (spec.includes("단행본") || genre.includes("미스터리")) {
+    return STUDIO_GUIDED_GENRE_STARTERS[3] ?? STUDIO_GUIDED_GENRE_STARTERS[0];
+  }
+  if (genre.includes("액션") || genre.includes("SF")) {
+    return STUDIO_GUIDED_GENRE_STARTERS[1] ?? STUDIO_GUIDED_GENRE_STARTERS[0];
+  }
+  return STUDIO_GUIDED_GENRE_STARTERS[0];
+}
 
 export function StudioCreateQuickPresetStrip({
   activePresetId,
@@ -27,9 +50,17 @@ export function StudioCreateQuickPresetStrip({
   readonly quickStartLabel?: string;
 }) {
   const bt = useBilingual("StudioCreateQuickPresetStrip");
+  const [autofillOpen, setAutofillOpen] = useState(false);
   const activePreset = STUDIO_GUIDED_GENRE_STARTERS.find(
     (item) => item.quickPresetId === activePresetId,
   ) ?? null;
+
+  const handleSmartAutofillApply = useCallback(
+    (payload: { readonly genre: string | null; readonly targetPlatformSpec: string | null }) => {
+      onSelectPreset(resolveStarterForSmartAutofill(payload));
+    },
+    [onSelectPreset],
+  );
 
   return (
     <section
@@ -140,6 +171,50 @@ export function StudioCreateQuickPresetStrip({
           </button>
         </div>
       ) : null}
+
+      <details
+        data-testid="studio-smart-autofill-disclosure"
+        open={autofillOpen}
+        onToggle={(event) => setAutofillOpen(event.currentTarget.open)}
+        className="mt-3.5 rounded-2xl border border-accent/30 bg-card/90 p-3"
+      >
+        <summary
+          data-testid="studio-smart-autofill-summary"
+          className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-xl px-1 text-sm font-extrabold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]"
+        >
+          <span className="inline-flex items-center gap-2">
+            <Sparkles size={15} className="shrink-0 text-accent" aria-hidden="true" />
+            <span>
+              {bt("필수 1개 · AI 자동 채우기 도우미", "1-Required Field · AI Autofill Helper")}
+            </span>
+          </span>
+          <span className="shrink-0 rounded-full border border-good/40 bg-good-soft px-2.5 py-0.5 text-xs font-bold text-good tabular-nums">
+            {bt("과금 ₩0 · 펼쳐서 사용", "₩0 Free · Expand")}
+          </span>
+        </summary>
+        {autofillOpen ? (
+          <div className="mt-3">
+            <Suspense
+              fallback={
+                <div
+                  role="status"
+                  className="rounded-xl border border-line bg-panel p-4 text-xs font-semibold text-fg-2"
+                >
+                  {bt(
+                    "필수 1개 · AI 자동 채우기 도우미를 불러오는 중입니다…",
+                    "Loading 1-required AI autofill helper…",
+                  )}
+                </div>
+              }
+            >
+              <StudioSmartAutofillAssistantCard
+                initialWorkflowId="project-create"
+                onApplyRecommendation={handleSmartAutofillApply}
+              />
+            </Suspense>
+          </div>
+        ) : null}
+      </details>
     </section>
   );
 }
