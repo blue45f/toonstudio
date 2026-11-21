@@ -26,25 +26,48 @@ import {
   rasterizeCspScreentoneLayer,
   splitCspComicFramePolygon,
 } from "./studio-csp-core-features-engine";
-import {
-  CSP_REA_INTERNALIZATION_OBLIGATIONS,
-  CSP_REA_STATIC_EVIDENCE_RECORDS,
-  evaluateCspReaInternalizationCoverage,
-} from "./studio-csp-rea-obligation-ledger";
+import { evaluateCspReaInternalizationCoverage } from "./studio-csp-rea-obligation-ledger";
 
-export type CspReaWorkbenchTabId = "brush" | "filter" | "core" | "evidence";
+export type CspReaWorkbenchTabId = "brush" | "filter" | "core";
 
 export interface StudioCspReaCompleteWorkbenchSectionProps {
   readonly initialTab?: CspReaWorkbenchTabId;
   readonly onSelectPresetId?: (presetId: string) => void;
   readonly onApplyFilterId?: (filterId: CspReaFilterId) => void;
+  readonly onRunCoreFeature?: (featureId: string) => void;
 }
 
-const TABS: readonly { readonly id: CspReaWorkbenchTabId; readonly labelKo: string }[] = [
-  { id: "brush", labelKo: "브러시 엔진 (24종)" },
-  { id: "filter", labelKo: "필터 · 색조 (46종)" },
-  { id: "core", labelKo: "만화 · 애니 제작" },
-  { id: "evidence", labelKo: "검증 원장" },
+const TABS: readonly {
+  readonly id: CspReaWorkbenchTabId;
+  readonly labelKo: string;
+  readonly guideKo: string;
+}[] = [
+  {
+    id: "brush",
+    labelKo: "브러시 고르기",
+    guideKo: "원하는 펜·수채·유화 브러시를 고른 뒤 바로 그리기를 눌러 캔버스에 적용하세요.",
+  },
+  {
+    id: "filter",
+    labelKo: "필터·색조 보정",
+    guideKo: "흐리기·왜곡·색조 보정 46종 가운데 효과를 고르고 현재 레이어에 바로 적용하세요.",
+  },
+  {
+    id: "core",
+    labelKo: "만화·애니 도구",
+    guideKo: "오토 액션·대칭 자·컷 분할·스크린톤·어니언 스킨을 원클릭으로 바로 실행하세요.",
+  },
+];
+
+const SUPPORTED_CAPABILITY_HIGHLIGHTS_KO: readonly string[] = [
+  "펜·연필·수채·유화·먹붓·에어브러시·혼색·데코·지우개 24종 브러시 프리셋",
+  "이중 브러시·종이 질감·리본·스프레이·수채 경계·손떨림 보정·벡터 선폭 다듬기",
+  "가우시안·모션·방사형 흐리기와 어안·물결·소용돌이·색수차 등 효과 필터 31종",
+  "밝기·대비·색조·레벨·톤 커브·컬러 밸런스·그라데이션 맵·경계 효과 등 색조 보정 12종",
+  "배경 선·톤 추출, 래스터-벡터 선 변환, 참고 이미지 색감 맞추기 3종",
+  "틈 닫기·영역 확장 스마트 채우기와 선택 영역 확장·축소·테두리·흐리기",
+  "대칭·퍼스·동심원·방사형·평행선 자 스냅 및 컷 테두리 분할·22종 스크린톤·집중선",
+  "원클릭 오토 액션 일괄 실행, 2D 셀 어니언 스킨·라이트 테이블, 다중 페이지 펼침 관리",
 ];
 
 const FILTER_CATEGORY_LABELS_KO: Readonly<Record<CspReaFilterCategory, string>> = {
@@ -69,25 +92,54 @@ const BRUSH_CATEGORY_LABELS_KO: Readonly<Record<string, string>> = {
   eraser: "지우개",
 };
 
+const SPECTRUM_RIBBON_STYLE = {
+  backgroundImage:
+    "linear-gradient(90deg, color-mix(in oklch, var(--color-accent) 88%, transparent), color-mix(in oklch, var(--color-info, var(--color-accent)) 82%, transparent), color-mix(in oklch, var(--color-success, var(--color-accent)) 78%, transparent))",
+} as const;
+
+const HEADER_TINT_STYLE = {
+  backgroundImage:
+    "radial-gradient(70% 120% at 10% 0%, color-mix(in oklch, var(--color-accent) 14%, transparent), transparent 72%)",
+} as const;
+
+const ACTIVE_TAB_GLOW_STYLE = {
+  boxShadow:
+    "0 0 0 1px color-mix(in oklch, var(--color-accent) 46%, transparent), 0 6px 16px -8px color-mix(in oklch, var(--color-accent) 48%, transparent)",
+} as const;
+
+const PRIMARY_CTA_STYLE = {
+  backgroundColor: "var(--color-accent)",
+  color: "var(--color-on-accent)",
+  boxShadow:
+    "0 0 0 1px color-mix(in oklch, var(--color-accent) 55%, transparent), 0 8px 18px -8px color-mix(in oklch, var(--color-accent) 58%, transparent)",
+} as const;
+
+const APPLIED_BADGE_STYLE = {
+  backgroundColor:
+    "color-mix(in oklch, var(--color-success, var(--color-accent)) 14%, var(--color-card))",
+  borderColor:
+    "color-mix(in oklch, var(--color-success, var(--color-accent)) 45%, transparent)",
+} as const;
+
 function formatBrushFeatureLabelKo(featureCode: string): string {
-  if (featureCode === "aa-level-0") return "도트 1비트(무안티)";
-  if (featureCode === "aa-level-1") return "안티에일리어싱(약)";
-  if (featureCode === "aa-level-2") return "안티에일리어싱(중)";
-  if (featureCode === "aa-level-3") return "안티에일리어싱(강)";
+  if (featureCode === "aa-level-0") return "도트 1비트 선";
+  if (featureCode === "aa-level-1") return "부드러운 외곽(약)";
+  if (featureCode === "aa-level-2") return "부드러운 외곽(중)";
+  if (featureCode === "aa-level-3") return "부드러운 외곽(강)";
   if (featureCode === "stabilizer") return "손떨림 보정";
-  if (featureCode === "in-out-taper") return "들어가기·빼기 테이퍼";
-  if (featureCode === "ribbon") return "리본 스트로크";
+  if (featureCode === "in-out-taper") return "필압 끝 가늘게";
+  if (featureCode === "ribbon") return "리본 무늬 이어 그리기";
   if (featureCode === "spray") return "스프레이 입자 분산";
-  if (featureCode === "color-jitter") return "색상 지터";
-  if (featureCode === "wet-perceptual-lms") return "지각 LMS 습식 혼색";
-  if (featureCode === "wet-standard-rgb") return "표준 습식 혼색";
-  if (featureCode.startsWith("water-edge-")) return "수채 경계";
-  if (featureCode.startsWith("dual-")) return "이중 브러시";
-  if (featureCode.startsWith("texture-")) return "종이 텍스처";
+  if (featureCode === "color-jitter") return "색상 자연 변동";
+  if (featureCode === "wet-perceptual-lms") return "자연 수채 혼색";
+  if (featureCode === "wet-standard-rgb") return "표준 물감 혼색";
+  if (featureCode.startsWith("water-edge-")) return "수채 물감 경계";
+  if (featureCode.startsWith("dual-")) return "이중 브러시 질감";
+  if (featureCode.startsWith("texture-")) return "종이 결 텍스처";
   return featureCode;
 }
 
-function createDemoSampleRgba(width: number, height: number): Uint8ClampedArray {
+function createDemoSamplePixels(width: number, height: number): Uint8ClampedArray {
   const buf = new Uint8ClampedArray(width * height * 4);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
@@ -103,13 +155,14 @@ function createDemoSampleRgba(width: number, height: number): Uint8ClampedArray 
 }
 
 /**
- * CSP 5.1.5 호환 브러시·필터·만화/애니 제작 통합 워크벤치 섹션.
- * 지연 로딩 전용이며 OKLCH 의미 토큰과 44px 터치 영역, 모션 축소 접근성을 준수한다.
+ * 창작자 중심 브러시·필터·만화/애니 제작 통합 워크벤치 섹션.
+ * 지연 로딩 전용이며 OKLCH 의미 토큰·스펙트럼 연출·44px 터치 타깃·모션 축소를 준수한다.
  */
 export function StudioCspReaCompleteWorkbenchSection({
   initialTab = "brush",
   onSelectPresetId,
   onApplyFilterId,
+  onRunCoreFeature,
 }: StudioCspReaCompleteWorkbenchSectionProps): ReactElement {
   const [activeTab, setActiveTab] = useState<CspReaWorkbenchTabId>(initialTab);
   const [selectedBrushId, setSelectedBrushId] = useState<string>(
@@ -120,8 +173,13 @@ export function StudioCspReaCompleteWorkbenchSection({
   const [symmetryAxes, setSymmetryAxes] = useState<number>(6);
   const [gutterPx, setGutterPx] = useState<number>(12);
   const [spreadMerged, setSpreadMerged] = useState<boolean>(false);
+  const [appliedNoticeKo, setAppliedNoticeKo] = useState<string | null>(null);
 
   const coverage = useMemo(() => evaluateCspReaInternalizationCoverage(), []);
+  const activeTabMeta = useMemo(
+    () => TABS.find((t) => t.id === activeTab) ?? TABS[0]!,
+    [activeTab],
+  );
 
   const brushEvaluation = useMemo(() => {
     const preset =
@@ -161,7 +219,7 @@ export function StudioCspReaCompleteWorkbenchSection({
     const spec =
       CSP_REA_ALL_FILTER_SPECS.find((f) => f.id === selectedFilterId) ??
       CSP_REA_ALL_FILTER_SPECS[0]!;
-    const src = createDemoSampleRgba(16, 16);
+    const src = createDemoSamplePixels(16, 16);
     const out = executeCspReaFilter(spec.id, src, 16, 16);
     let diffCount = 0;
     for (let i = 0; i < src.length; i += 4) {
@@ -178,7 +236,7 @@ export function StudioCspReaCompleteWorkbenchSection({
   }, [selectedFilterId]);
 
   const coreEvaluation = useMemo(() => {
-    const sampleDoc = createCspAutoActionDocumentState(16, 16, createDemoSampleRgba(16, 16));
+    const sampleDoc = createCspAutoActionDocumentState(16, 16, createDemoSamplePixels(16, 16));
     const action =
       CSP_DEFAULT_LAF_AUTO_ACTION_SET.actions[selectedActionIdx] ??
       CSP_DEFAULT_LAF_AUTO_ACTION_SET.actions[0]!;
@@ -242,9 +300,9 @@ export function StudioCspReaCompleteWorkbenchSection({
     const onionRgba = compositeCspOnionSkinRgba({
       width: 8,
       height: 8,
-      currentFrameRgba: createDemoSampleRgba(8, 8),
-      prevFrames: [createDemoSampleRgba(8, 8)],
-      nextFrames: [createDemoSampleRgba(8, 8)],
+      currentFrameRgba: createDemoSamplePixels(8, 8),
+      prevFrames: [createDemoSamplePixels(8, 8)],
+      nextFrames: [createDemoSamplePixels(8, 8)],
     });
     let onionVisiblePixels = 0;
     for (let i = 3; i < onionRgba.length; i += 4) {
@@ -255,6 +313,7 @@ export function StudioCspReaCompleteWorkbenchSection({
     const story = spreadMerged ? combineCspStoryPagesToSpread(baseStory, 1) : baseStory;
 
     return {
+      actionUuid: action.actionUuid,
       actionName: action.actionName,
       executedStepCount: actionRun.executedStepCount,
       resultingLayers: actionRun.nextDoc.layers.length,
@@ -269,222 +328,363 @@ export function StudioCspReaCompleteWorkbenchSection({
     };
   }, [selectedActionIdx, gutterPx, symmetryAxes, spreadMerged]);
 
+  const handleApplyBrush = (): void => {
+    onSelectPresetId?.(brushEvaluation.preset.id);
+    setAppliedNoticeKo(`'${brushEvaluation.preset.nameKo}' 브러시 적용됨 · 언제든 되돌리기 가능`);
+  };
+
+  const handleApplyFilter = (): void => {
+    onApplyFilterId?.(filterEvaluation.spec.id);
+    setAppliedNoticeKo(`'${filterEvaluation.spec.labelKo}' 필터 적용됨 · 언제든 되돌리기 가능`);
+  };
+
+  const handleRunCoreFeature = (): void => {
+    const featureId = `auto-action:${coreEvaluation.actionUuid}`;
+    onRunCoreFeature?.(featureId);
+    setAppliedNoticeKo(`'${coreEvaluation.actionName}' 도구 적용됨 · 언제든 되돌리기 가능`);
+  };
+
+  const tactileButtonClass =
+    "min-h-11 min-w-11 rounded-lg px-3 py-1.5 text-xs font-semibold transition-[background-color,border-color,color,transform,box-shadow] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none";
+
   return (
     <section
       data-testid="csp-rea-complete-workbench"
-      className="space-y-3 rounded-xl border border-line bg-panel p-3 text-xs text-fg [word-break:keep-all]"
+      className="overflow-hidden rounded-xl border border-line bg-panel text-xs text-fg [word-break:keep-all]"
     >
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
-        <div>
-          <h3 className="text-sm font-semibold text-fg">
-            브러시 · 필터 · 만화 제작 스튜디오
-          </h3>
-          <p className="text-xs text-fg-2">
-            브러시 {coverage.brushEngineSummary.executablePresetCount}종 · 필터·색조{" "}
-            {coverage.filterEngineSummary.totalExecutableFilters}종 · 제작 도구{" "}
-            {coverage.coreFeatureSummary.executableCoreSubsystemCount}모듈 · 내재화{" "}
-            {coverage.coveragePercent}%
-          </p>
-        </div>
-        <div role="tablist" aria-label="스튜디오 제작 도구 영역" className="flex flex-wrap gap-1.5">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`min-h-11 min-w-11 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors motion-reduce:transition-none ${STUDIO_FOCUS_RING} ${
-                activeTab === tab.id
-                  ? "border-accent bg-accent-soft text-accent"
-                  : "border-line bg-card text-fg-2 hover:bg-raised"
-              }`}
-            >
-              {tab.labelKo}
-            </button>
-          ))}
-        </div>
-      </header>
+      {/* 상단 OKLCH 스펙트럼 리본 */}
+      <div
+        aria-hidden="true"
+        data-testid="csp-rea-spectrum-ribbon"
+        className="h-1 w-full"
+        style={SPECTRUM_RIBBON_STYLE}
+      />
 
-      {activeTab === "brush" && (
-        <div data-testid="csp-rea-tab-brush" className="space-y-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <label htmlFor="csp-rea-brush-select" className="font-medium text-fg-2">
-              서브툴 프리셋
-            </label>
-            <select
-              id="csp-rea-brush-select"
-              value={selectedBrushId}
-              onChange={(e) => {
-                setSelectedBrushId(e.target.value);
-                onSelectPresetId?.(e.target.value);
-              }}
-              className={`min-h-11 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-fg ${STUDIO_FOCUS_RING}`}
-            >
-              {CSP_REA_EXECUTABLE_BRUSH_PRESETS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nameKo} ({BRUSH_CATEGORY_LABELS_KO[p.category] ?? p.category})
-                </option>
-              ))}
-            </select>
+      <div className="space-y-3 p-3" style={HEADER_TINT_STYLE}>
+        <header className="flex flex-wrap items-start justify-between gap-2.5 border-b border-line pb-2.5">
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-semibold text-fg">
+              브러시 · 필터 · 만화 제작 스튜디오
+            </h3>
+            <p className="text-xs text-fg-2">{activeTabMeta.guideKo}</p>
           </div>
           <div
-            data-testid="csp-rea-brush-readout"
-            className="grid grid-cols-1 gap-2 rounded-lg bg-card p-2.5 md:grid-cols-3"
+            role="tablist"
+            aria-label="제작 도구 선택"
+            className="flex flex-wrap gap-1.5"
           >
-            <div>
-              <div className="text-fg-3">실시간 브러시 스트로크 시뮬레이션</div>
-              <div className="font-semibold tabular-nums">
-                스탬프 {brushEvaluation.stroke.dabCount}회 · 변경 픽셀{" "}
-                {brushEvaluation.stroke.modifiedPixelCount}px
-              </div>
-            </div>
-            <div>
-              <div className="text-fg-3">적용된 브러시 효과</div>
-              <div className="font-medium text-fg">
-                {brushEvaluation.featureLabelsKo.join(" · ")}
-              </div>
-            </div>
-            <div>
-              <div className="text-fg-3">벡터 선폭 보정</div>
-              <div className="font-semibold tabular-nums">
-                5.0px → {brushEvaluation.widenedEndWidth}px
-              </div>
-            </div>
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setActiveTab(tab.id)}
+                  style={isActive ? ACTIVE_TAB_GLOW_STYLE : undefined}
+                  className={`${tactileButtonClass} border ${STUDIO_FOCUS_RING} ${
+                    isActive
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-line bg-card text-fg-2 hover:bg-raised"
+                  }`}
+                >
+                  {tab.labelKo}
+                </button>
+              );
+            })}
           </div>
-        </div>
-      )}
+        </header>
 
-      {activeTab === "filter" && (
-        <div data-testid="csp-rea-tab-filter" className="space-y-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <label htmlFor="csp-rea-filter-select" className="font-medium text-fg-2">
-              필터 · 색조 보정 ({CSP_REA_ALL_FILTER_SPECS.length}종)
-            </label>
-            <select
-              id="csp-rea-filter-select"
-              value={selectedFilterId}
-              onChange={(e) => {
-                const next = e.target.value as CspReaFilterId;
-                setSelectedFilterId(next);
-                onApplyFilterId?.(next);
-              }}
-              className={`min-h-11 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-fg ${STUDIO_FOCUS_RING}`}
-            >
-              {CSP_REA_ALL_FILTER_SPECS.map((f) => (
-                <option key={f.id} value={f.id}>
-                  [{FILTER_CATEGORY_LABELS_KO[f.category]}] {f.labelKo}
-                </option>
-              ))}
-            </select>
-          </div>
+        {appliedNoticeKo !== null && (
           <div
-            data-testid="csp-rea-filter-readout"
-            className="grid grid-cols-1 gap-2 rounded-lg bg-card p-2.5 md:grid-cols-3"
+            role="status"
+            aria-live="polite"
+            data-testid="csp-rea-applied-feedback"
+            style={APPLIED_BADGE_STYLE}
+            className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs font-semibold text-fg"
           >
-            <div>
-              <div className="text-fg-3">선택 필터</div>
-              <div className="font-semibold">{filterEvaluation.spec.labelKo}</div>
-            </div>
-            <div>
-              <div className="text-fg-3">실제 픽셀 처리 결과</div>
-              <div className="font-semibold tabular-nums">
-                변환 픽셀 {filterEvaluation.changedPixels}/256
-              </div>
-            </div>
-            <div>
-              <div className="text-fg-3">세부 조절 항목</div>
-              <div className="font-semibold tabular-nums">
-                {filterEvaluation.spec.parameters.length}개 파라미터
-              </div>
-            </div>
+            <span>✓ {appliedNoticeKo}</span>
+            <button
+              type="button"
+              onClick={() => setAppliedNoticeKo(null)}
+              className={`min-h-11 min-w-11 rounded-md px-2 text-xs font-medium text-fg-2 hover:text-fg ${STUDIO_FOCUS_RING}`}
+            >
+              닫기
+            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {activeTab === "core" && (
-        <div data-testid="csp-rea-tab-core" className="space-y-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              aria-label="오토 액션 선택"
-              value={selectedActionIdx}
-              onChange={(e) => setSelectedActionIdx(Number(e.target.value))}
-              className={`min-h-11 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-fg ${STUDIO_FOCUS_RING}`}
+        {activeTab === "brush" && (
+          <div data-testid="csp-rea-tab-brush" className="space-y-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <label htmlFor="csp-rea-brush-select" className="font-medium text-fg-2">
+                브러시 선택
+              </label>
+              <select
+                id="csp-rea-brush-select"
+                value={selectedBrushId}
+                onChange={(e) => {
+                  setSelectedBrushId(e.target.value);
+                  onSelectPresetId?.(e.target.value);
+                }}
+                className={`min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-fg sm:flex-initial ${STUDIO_FOCUS_RING}`}
+              >
+                {CSP_REA_EXECUTABLE_BRUSH_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nameKo} ({BRUSH_CATEGORY_LABELS_KO[p.category] ?? p.category})
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                data-testid="csp-rea-brush-primary-cta"
+                onClick={handleApplyBrush}
+                style={PRIMARY_CTA_STYLE}
+                className={`${tactileButtonClass} px-4 hover:brightness-105 ${STUDIO_FOCUS_RING}`}
+              >
+                이 브러시로 그리기
+              </button>
+            </div>
+            <div
+              data-testid="csp-rea-brush-readout"
+              className="hidden grid-cols-1 gap-2 rounded-lg bg-card p-2.5 md:grid md:grid-cols-3"
             >
-              {CSP_DEFAULT_LAF_AUTO_ACTION_SET.actions.map((a, idx) => (
-                <option key={a.actionUuid} value={idx}>
-                  오토 액션: {a.actionName}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => setSymmetryAxes((prev) => (prev >= 12 ? 2 : prev + 2))}
-              className={`min-h-11 min-w-11 rounded-lg border border-line bg-card px-3 py-1.5 text-xs font-medium transition-colors hover:bg-raised motion-reduce:transition-none ${STUDIO_FOCUS_RING}`}
-            >
-              대칭 자: {symmetryAxes}축
-            </button>
-            <button
-              type="button"
-              onClick={() => setGutterPx((prev) => (prev >= 24 ? 6 : prev + 6))}
-              className={`min-h-11 min-w-11 rounded-lg border border-line bg-card px-3 py-1.5 text-xs font-medium transition-colors hover:bg-raised motion-reduce:transition-none ${STUDIO_FOCUS_RING}`}
-            >
-              컷 간격: {gutterPx}px
-            </button>
-            <button
-              type="button"
-              onClick={() => setSpreadMerged((prev) => !prev)}
-              className={`min-h-11 min-w-11 rounded-lg border border-line bg-card px-3 py-1.5 text-xs font-medium transition-colors hover:bg-raised motion-reduce:transition-none ${STUDIO_FOCUS_RING}`}
-            >
-              {spreadMerged ? "펼침 페이지 분할" : "2·3쪽 펼침 결합"}
-            </button>
+              <div>
+                <div className="text-fg-3">실시간 필압 미리보기</div>
+                <div className="font-semibold tabular-nums">
+                  찍힘 {brushEvaluation.stroke.dabCount}회 · 채워진 영역{" "}
+                  {brushEvaluation.stroke.modifiedPixelCount}px
+                </div>
+              </div>
+              <div>
+                <div className="text-fg-3">적용되는 브러시 질감</div>
+                <div className="font-medium text-fg">
+                  {brushEvaluation.featureLabelsKo.join(" · ")}
+                </div>
+              </div>
+              <div>
+                <div className="text-fg-3">벡터 선 굵기 조절</div>
+                <div className="font-semibold tabular-nums">
+                  5.0px → {brushEvaluation.widenedEndWidth}px
+                </div>
+              </div>
+            </div>
+            <details className="rounded-lg bg-card px-2.5 py-1.5 md:hidden">
+              <summary
+                className={`flex min-h-11 cursor-pointer items-center font-medium text-fg-2 ${STUDIO_FOCUS_RING}`}
+              >
+                브러시 질감 미리보기 수치 보기
+              </summary>
+              <div className="space-y-1 pb-2 text-fg-2 tabular-nums">
+                <div>
+                  찍힘 {brushEvaluation.stroke.dabCount}회 · 채워진 영역{" "}
+                  {brushEvaluation.stroke.modifiedPixelCount}px
+                </div>
+                <div>질감: {brushEvaluation.featureLabelsKo.join(" · ")}</div>
+              </div>
+            </details>
           </div>
-          <div
-            data-testid="csp-rea-core-readout"
-            className="grid grid-cols-1 gap-2 rounded-lg bg-card p-2.5 md:grid-cols-3"
+        )}
+
+        {activeTab === "filter" && (
+          <div data-testid="csp-rea-tab-filter" className="space-y-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <label htmlFor="csp-rea-filter-select" className="font-medium text-fg-2">
+                필터·색조 선택 ({CSP_REA_ALL_FILTER_SPECS.length}종)
+              </label>
+              <select
+                id="csp-rea-filter-select"
+                value={selectedFilterId}
+                onChange={(e) => {
+                  const next = e.target.value as CspReaFilterId;
+                  setSelectedFilterId(next);
+                  onApplyFilterId?.(next);
+                }}
+                className={`min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-fg sm:flex-initial ${STUDIO_FOCUS_RING}`}
+              >
+                {CSP_REA_ALL_FILTER_SPECS.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    [{FILTER_CATEGORY_LABELS_KO[f.category]}] {f.labelKo}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                data-testid="csp-rea-filter-primary-cta"
+                onClick={handleApplyFilter}
+                style={PRIMARY_CTA_STYLE}
+                className={`${tactileButtonClass} px-4 hover:brightness-105 ${STUDIO_FOCUS_RING}`}
+              >
+                이 필터 바로 적용
+              </button>
+            </div>
+            <div
+              data-testid="csp-rea-filter-readout"
+              className="hidden grid-cols-1 gap-2 rounded-lg bg-card p-2.5 md:grid md:grid-cols-3"
+            >
+              <div>
+                <div className="text-fg-3">선택한 효과</div>
+                <div className="font-semibold">{filterEvaluation.spec.labelKo}</div>
+              </div>
+              <div>
+                <div className="text-fg-3">미리보기 변화 영역</div>
+                <div className="font-semibold tabular-nums">
+                  변환 픽셀 {filterEvaluation.changedPixels}/256
+                </div>
+              </div>
+              <div>
+                <div className="text-fg-3">조절 가능 항목</div>
+                <div className="font-semibold tabular-nums">
+                  세부 조절 {filterEvaluation.spec.parameters.length}개
+                </div>
+              </div>
+            </div>
+            <details className="rounded-lg bg-card px-2.5 py-1.5 md:hidden">
+              <summary
+                className={`flex min-h-11 cursor-pointer items-center font-medium text-fg-2 ${STUDIO_FOCUS_RING}`}
+              >
+                필터 미리보기 수치 보기
+              </summary>
+              <div className="space-y-1 pb-2 text-fg-2 tabular-nums">
+                <div>
+                  {filterEvaluation.spec.labelKo} · 변환 픽셀 {filterEvaluation.changedPixels}/256
+                </div>
+                <div>세부 조절 {filterEvaluation.spec.parameters.length}개</div>
+              </div>
+            </details>
+          </div>
+        )}
+
+        {activeTab === "core" && (
+          <div data-testid="csp-rea-tab-core" className="space-y-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                aria-label="오토 액션 선택"
+                value={selectedActionIdx}
+                onChange={(e) => setSelectedActionIdx(Number(e.target.value))}
+                className={`min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-fg sm:flex-initial ${STUDIO_FOCUS_RING}`}
+              >
+                {CSP_DEFAULT_LAF_AUTO_ACTION_SET.actions.map((a, idx) => (
+                  <option key={a.actionUuid} value={idx}>
+                    오토 액션: {a.actionName}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                data-testid="csp-rea-core-primary-cta"
+                onClick={handleRunCoreFeature}
+                style={PRIMARY_CTA_STYLE}
+                className={`${tactileButtonClass} px-4 hover:brightness-105 ${STUDIO_FOCUS_RING}`}
+              >
+                선택 도구 바로 실행
+              </button>
+              <div className="hidden flex-wrap items-center gap-1.5 md:flex">
+                <button
+                  type="button"
+                  onClick={() => setSymmetryAxes((prev) => (prev >= 12 ? 2 : prev + 2))}
+                  className={`${tactileButtonClass} border border-line bg-card font-medium text-fg hover:bg-raised ${STUDIO_FOCUS_RING}`}
+                >
+                  대칭 자: {symmetryAxes}축
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGutterPx((prev) => (prev >= 24 ? 6 : prev + 6))}
+                  className={`${tactileButtonClass} border border-line bg-card font-medium text-fg hover:bg-raised ${STUDIO_FOCUS_RING}`}
+                >
+                  컷 간격: {gutterPx}px
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSpreadMerged((prev) => !prev)}
+                  className={`${tactileButtonClass} border border-line bg-card font-medium text-fg hover:bg-raised ${STUDIO_FOCUS_RING}`}
+                >
+                  {spreadMerged ? "펼침 페이지 분할" : "2·3쪽 펼침 결합"}
+                </button>
+              </div>
+            </div>
+            <details className="rounded-lg bg-card px-2.5 py-1.5 md:hidden">
+              <summary
+                className={`flex min-h-11 cursor-pointer items-center font-medium text-fg-2 ${STUDIO_FOCUS_RING}`}
+              >
+                대칭 자 · 컷 간격 · 펼침 세부 설정
+              </summary>
+              <div className="flex flex-wrap gap-1.5 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setSymmetryAxes((prev) => (prev >= 12 ? 2 : prev + 2))}
+                  className={`${tactileButtonClass} border border-line bg-panel font-medium text-fg ${STUDIO_FOCUS_RING}`}
+                >
+                  대칭 자: {symmetryAxes}축
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGutterPx((prev) => (prev >= 24 ? 6 : prev + 6))}
+                  className={`${tactileButtonClass} border border-line bg-panel font-medium text-fg ${STUDIO_FOCUS_RING}`}
+                >
+                  컷 간격: {gutterPx}px
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSpreadMerged((prev) => !prev)}
+                  className={`${tactileButtonClass} border border-line bg-panel font-medium text-fg ${STUDIO_FOCUS_RING}`}
+                >
+                  {spreadMerged ? "펼침 페이지 분할" : "2·3쪽 펼침 결합"}
+                </button>
+              </div>
+            </details>
+            <div
+              data-testid="csp-rea-core-readout"
+              className="grid grid-cols-1 gap-2 rounded-lg bg-card p-2.5 md:grid-cols-3"
+            >
+              <div>
+                <div className="text-fg-3">오토 액션 · 스마트 채우기</div>
+                <div className="font-medium tabular-nums">
+                  {coreEvaluation.actionName} ({coreEvaluation.executedStepCount}단계 →{" "}
+                  {coreEvaluation.resultingLayers}레이어) · 채움 {coreEvaluation.filledPixels}px
+                </div>
+              </div>
+              <div>
+                <div className="text-fg-3">컷 분할 · 스크린톤 · 집중선</div>
+                <div className="font-medium tabular-nums">
+                  컷 분할 {coreEvaluation.splitVerticesA}+{coreEvaluation.splitVerticesB} · 톤{" "}
+                  {coreEvaluation.toneInkPixels}px · 집중선 {coreEvaluation.focusInkPixels}px
+                </div>
+              </div>
+              <div>
+                <div className="text-fg-3">대칭 자 · 어니언 스킨 · 스토리</div>
+                <div className="font-medium tabular-nums">
+                  대칭선 {coreEvaluation.rulerBranchCount}줄 · 어니언 합성{" "}
+                  {coreEvaluation.onionVisiblePixels}px · 페이지 {coreEvaluation.storyNodeCount}개
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 하단 기본 접힘 호환 기능 요약 (쉬운 한글 전용) */}
+        <details
+          data-testid="csp-rea-compatibility-summary"
+          className="rounded-lg bg-card px-3 py-1"
+        >
+          <summary
+            className={`flex min-h-11 cursor-pointer items-center justify-between gap-2 text-xs font-medium text-fg-2 ${STUDIO_FOCUS_RING}`}
           >
-            <div>
-              <div className="text-fg-3">오토 액션 · 스마트 채우기</div>
-              <div className="font-medium tabular-nums">
-                {coreEvaluation.actionName} ({coreEvaluation.executedStepCount}단계 →{" "}
-                {coreEvaluation.resultingLayers}레이어) · 채움 {coreEvaluation.filledPixels}px
-              </div>
-            </div>
-            <div>
-              <div className="text-fg-3">컷 분할 · 스크린톤 · 집중선</div>
-              <div className="font-medium tabular-nums">
-                컷 정점 {coreEvaluation.splitVerticesA}+{coreEvaluation.splitVerticesB} · 톤{" "}
-                {coreEvaluation.toneInkPixels}px · 집중선 {coreEvaluation.focusInkPixels}px
-              </div>
-            </div>
-            <div>
-              <div className="text-fg-3">대칭 자 · 어니언 스킨 · 스토리</div>
-              <div className="font-medium tabular-nums">
-                복제 경로 {coreEvaluation.rulerBranchCount}줄 · 어니언 합성{" "}
-                {coreEvaluation.onionVisiblePixels}px · 페이지 {coreEvaluation.storyNodeCount}개
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === "evidence" && (
-        <div data-testid="csp-rea-tab-evidence" className="rounded-lg bg-card p-2.5">
-          <div className="font-semibold text-fg">
-            클린룸 분석 증거 {CSP_REA_STATIC_EVIDENCE_RECORDS.length}건 · 검증 완료{" "}
-            {coverage.obligationVerifiedCount}/{coverage.obligationTotal} ({coverage.coveragePercent}
-            %) · 분석 엔진: {coverage.analysisProviderEnforced}
-          </div>
-          <ul className="mt-1.5 divide-y divide-line text-fg-2">
-            {CSP_REA_INTERNALIZATION_OBLIGATIONS.map((item) => (
-              <li key={item.obligationId} className="py-1">
-                <span className="font-semibold text-accent">[{item.obligationId}]</span>{" "}
-                {item.titleKo}
-              </li>
+            <span>지원 호환 기능 한눈에 보기</span>
+            <span className="tabular-nums text-fg-3">
+              브러시 {coverage.brushEngineSummary.executablePresetCount}종 · 필터{" "}
+              {coverage.filterEngineSummary.totalExecutableFilters}종 · 제작 도구{" "}
+              {coverage.coreFeatureSummary.executableCoreSubsystemCount}종
+            </span>
+          </summary>
+          <ul className="space-y-1 border-t border-line py-2 text-fg-2">
+            {SUPPORTED_CAPABILITY_HIGHLIGHTS_KO.map((line) => (
+              <li key={line}>· {line}</li>
             ))}
           </ul>
-        </div>
-      )}
+        </details>
+      </div>
     </section>
   );
 }
