@@ -1,4 +1,5 @@
 import { Check, Vote } from "lucide-react";
+import { useState, type CSSProperties } from "react";
 
 import {
   FAN_VOTE_TOPIC_LABELS,
@@ -7,6 +8,17 @@ import {
 } from "../fan-vote";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+
+import "../community-kinetic-fx.css";
+
+const VOTE_SPARKS: readonly { readonly sx: string; readonly sy: string; readonly tone: string }[] = [
+  { sx: "-24px", sy: "-20px", tone: "var(--color-accent)" },
+  { sx: "-4px", sy: "-28px", tone: "var(--color-accent-2)" },
+  { sx: "18px", sy: "-24px", tone: "var(--color-cool)" },
+  { sx: "26px", sy: "-6px", tone: "var(--color-good)" },
+  { sx: "-20px", sy: "12px", tone: "var(--color-accent-2)" },
+  { sx: "18px", sy: "14px", tone: "var(--color-accent)" },
+];
 
 /**
  * 다음 장면 투표 — 독자용 카드 (작품 페이지·커뮤니티 표면).
@@ -25,6 +37,7 @@ export function FanVoteCard({
   onVote: (optionId: string) => void;
 }) {
   const t = useBilingual("domains.community.FanVoteCard");
+  const [burst, setBurst] = useState<{ readonly optionId: string; readonly nonce: number } | null>(null);
   const view = readerFanVoteView(poll, readerId);
   const topicLabel = FAN_VOTE_TOPIC_LABELS[view.topic];
   const isOpen = view.status === "open";
@@ -32,21 +45,22 @@ export function FanVoteCard({
   return (
     <section
       aria-label={t("팬 투표", "Fan vote")}
-      className="rounded-3xl border border-line bg-panel p-5 sm:p-6"
+      className="community-kinetic-card break-keep rounded-3xl p-5 sm:p-6"
     >
+      <span className="community-kinetic-ribbon" aria-hidden="true" />
       <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-black text-on-accent">
-          <Vote size={13} aria-hidden="true" />
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-on-accent">
+          <Vote size={13} strokeWidth={1.5} aria-hidden="true" />
           {t(topicLabel.ko, topicLabel.en)}
         </span>
-        <span className="text-xs font-semibold text-fg-3">
+        <span className="text-xs font-semibold tabular-nums text-fg-3">
           {view.totalVoters > 0
             ? t(`${view.totalVoters}명 참여 중`, `${view.totalVoters} readers joined`)
             : t("첫 참여를 기다리고 있어요", "Be the first to join")}
         </span>
       </div>
 
-      <h3 className="mt-3 text-lg font-black leading-snug text-fg">{view.question}</h3>
+      <h3 className="mt-3 text-lg font-semibold leading-snug text-fg">{view.question}</h3>
       <p className="mt-1.5 text-xs leading-5 text-fg-3">
         {t(
           "이 투표는 본편 이야기 전개와 무관해요. 결과는 작가에게만 집계로 전달됩니다.",
@@ -57,26 +71,45 @@ export function FanVoteCard({
       <div className="mt-4 grid gap-2" role="group" aria-label={t("선택지", "Options")}>
         {view.options.map((option) => {
           const mine = view.myOptionId === option.id;
+          const bursting = burst?.optionId === option.id;
           return (
             <button
               key={option.id}
               type="button"
               disabled={!isOpen}
               aria-pressed={mine}
-              onClick={() => onVote(option.id)}
+              onClick={() => {
+                setBurst((prev) => ({ optionId: option.id, nonce: (prev?.nonce ?? 0) + 1 }));
+                onVote(option.id);
+              }}
               className={cn(
-                "flex min-h-11 items-center justify-between gap-3 rounded-2xl border px-4 py-2.5 text-left text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                "community-vote-option flex min-h-11 items-center justify-between gap-3 rounded-2xl border px-4 py-2.5 text-left text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                 mine
-                  ? "border-accent bg-accent/10 text-fg"
+                  ? "community-vote-option--mine text-fg"
                   : "border-line bg-raised text-fg-2 hover:border-line-strong hover:text-fg",
                 !isOpen && "cursor-not-allowed opacity-60 hover:border-line hover:text-fg-2",
               )}
             >
               <span>{option.label}</span>
               {mine ? (
-                <span className="inline-flex items-center gap-1 text-xs font-black text-accent">
-                  <Check size={14} aria-hidden="true" />
+                <span className="community-pop-badge inline-flex items-center gap-1 text-xs font-semibold text-accent">
+                  <Check size={14} strokeWidth={1.5} aria-hidden="true" />
                   {t("내 선택", "My pick")}
+                </span>
+              ) : null}
+              {bursting ? (
+                <span key={burst.nonce} className="community-burst-layer" aria-hidden="true">
+                  {VOTE_SPARKS.map((spark, index) => (
+                    <span
+                      key={index}
+                      className="community-burst-dot"
+                      style={{
+                        "--burst-tone": spark.tone,
+                        "--sx": spark.sx,
+                        "--sy": spark.sy,
+                      } as CSSProperties}
+                    />
+                  ))}
                 </span>
               ) : null}
             </button>

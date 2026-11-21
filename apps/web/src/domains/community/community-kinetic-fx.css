@@ -1,0 +1,196 @@
+/*
+ * community-kinetic-fx.css — 커뮤니티·팬 투표·좋아요 OKLCH 스펙트럼 마이크로 버스트.
+ *
+ * community-page-layout.css의 44px 규칙 파싱 계약을 건드리지 않기 위해 별도 시트로 분리한다.
+ * GPU 합성 속성(transform, opacity) 중심 · OKLCH 의미 토큰 전용 · reduced-motion 100% 폴백.
+ */
+
+.community-kinetic-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+}
+
+.community-kinetic-ribbon {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-accent),
+    var(--color-accent-2) 35%,
+    var(--color-cool) 70%,
+    var(--color-good)
+  );
+}
+
+.community-vote-option {
+  position: relative;
+  overflow: visible;
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 180ms ease;
+}
+
+.community-vote-option:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.community-vote-option--mine {
+  border-color: var(--color-accent);
+  background: color-mix(in oklch, var(--color-accent) 13%, var(--color-raised));
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-accent) 30%, transparent);
+}
+
+.community-pulse-chip {
+  position: relative;
+  overflow: visible;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  transition:
+    transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 180ms ease;
+}
+
+.community-pulse-chip:hover {
+  border-color: color-mix(in oklch, var(--pulse-tone, var(--color-accent)) 60%, var(--color-line));
+  background: color-mix(in oklch, var(--pulse-tone, var(--color-accent)) 9%, var(--color-card));
+}
+
+.community-pulse-chip:active {
+  transform: scale(0.96);
+}
+
+.community-pulse-chip[aria-pressed="true"] {
+  border-color: var(--pulse-tone, var(--color-accent));
+  background: color-mix(in oklch, var(--pulse-tone, var(--color-accent)) 14%, var(--color-card));
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--pulse-tone, var(--color-accent)) 32%, transparent);
+}
+
+.community-pulse-bar-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--pulse-tone, var(--color-accent)),
+    color-mix(in oklch, var(--pulse-tone, var(--color-accent)) 65%, var(--color-accent-2))
+  );
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes community-pop-check {
+  0% {
+    opacity: 0;
+    transform: scale(0.65);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.community-pop-badge {
+  animation: community-pop-check 260ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes community-spark-fly {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  70% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--sx, 0px)), calc(-50% + var(--sy, -22px))) scale(1.1);
+  }
+}
+
+.community-burst-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.community-burst-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--burst-tone, var(--color-accent));
+  animation: community-spark-fly 460ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes community-heart-pop {
+  0% {
+    transform: scale(0.8);
+  }
+  55% {
+    transform: scale(1.24);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.community-like-btn {
+  position: relative;
+  overflow: visible;
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.community-like-btn:active {
+  transform: scale(0.95);
+}
+
+.community-like-heart--pop {
+  animation: community-heart-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-vote-option,
+  .community-pulse-chip,
+  .community-pulse-bar-fill,
+  .community-like-btn {
+    transition: none !important;
+  }
+  .community-pop-badge,
+  .community-burst-dot,
+  .community-like-heart--pop {
+    animation: none !important;
+  }
+  .community-burst-dot {
+    display: none;
+  }
+}
+
+:root[data-design-theme="contrast"] .community-kinetic-ribbon {
+  display: none;
+}
+
+@media (forced-colors: active) {
+  .community-kinetic-ribbon {
+    display: none;
+  }
+}
