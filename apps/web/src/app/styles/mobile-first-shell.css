@@ -116,8 +116,9 @@
   --ts-journey-tone: var(--ts-spectrum-creation);
   position: relative;
   display: flex;
+  flex-direction: column;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   gap: 10px 14px;
   margin-block-end: 14px;
@@ -137,6 +138,12 @@
     border-color var(--ts-motion-fast) var(--ts-motion-ease),
     color var(--ts-motion-fast) var(--ts-motion-ease),
     transform var(--ts-motion-fast) var(--ts-motion-ease);
+}
+
+/* 단계 목록과 페이지 설명은 각각 한 행을 사용하고, 긴 목록도 검색 버튼의 행을 침범하지 않는다. */
+[data-role-journey-bar] > ol {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 [data-role-journey-bar]::before {
