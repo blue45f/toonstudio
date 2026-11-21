@@ -46,7 +46,7 @@ const PROTECT_PATTERNS: { re: RegExp; cat: ProtectedCategory }[] = [
   { re: /\b(face|head)\b|_face|face_|_head|head_|facemouth|faceeyeline|facebrow|faceeyelash/i, cat: "face" },
   { re: /eye(ball|iris|white|line|lash|highlight|extra)?|_eye|iris|cornea|sclera|hitomi/i, cat: "eye" },
   { re: /\bskin\b|_skin|skin_|body_?skin|onskin|bodyskin/i, cat: "skin" },
-  { re: /\bhair\b|_hair|hair_|hairback|hairfront|hairside|backhair|banghair/i, cat: "hair" },
+  { re: /\bhair\b|_hair|hair_(?!accessory)|hair\d+|hair(?:back|front|side|long|short|bangs?|fringe|tail|mesh|cap|root|tip|strand|base|top|inner|outer|sub)|(?:front|back|side|long|short|top|base|inner|outer|sub)hair|ponytail|twintail|ahoge|\bbangs?\b|\bfringe\b|髪|前髪|後髪|横髪|머리|앞머리|뒷머리/i, cat: "hair" },
   { re: /\bbody\b(?!.*wear)|_body(?!wear)|naked|nude/i, cat: "body" },
 ];
 

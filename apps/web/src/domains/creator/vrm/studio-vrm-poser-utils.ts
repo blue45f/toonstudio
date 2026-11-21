@@ -1774,11 +1774,11 @@ interface VrmMaterialFxOriginal {
  * 1회만 캐시해 두고, 필드가 꺼진 경우 그 원본으로 되돌린다.
  */
 export function applyVrmMaterialFx(vrm: VRM, fx: VrmMaterialFx) {
+  if (vrm.scene?.userData) vrm.scene.userData.__studioVrmActiveMaterialFx = { ...fx };
   vrm.scene.traverse((obj) => {
     if (!(obj as Partial<THREE.Mesh>).isMesh) return;
     const mesh = obj as THREE.Mesh;
-    // 눈/얼굴 하이라이트 텍스처가 emissive를 쓰는 모델이 많아, 발광색만은 보호 카테고리를 피한다
-    // (studio-vrm-costume의 protected 판정 재사용 — 의상 보호 로직과 동일한 안전장치).
+    // 눈/얼굴 하이라이트 텍스처 보호(의상 보호 로직과 동일).
     const { protected: guard } = classifyMeshName(mesh.name);
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
 

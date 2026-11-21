@@ -5,14 +5,19 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 import {
+  applyStudioVrmGarmentMToonStyle, attachStudioVrmGarmentOutlineMesh,
+  createStudioVrmGarmentMToonMaterial, createStudioVrmGarmentWeaveNormalTexture,
+  disposeStudioVrmGarmentOwnedMatcap, sampleStudioVrmBodyMtoonProfile,
+  syncStudioVrmCustomPartToActiveVrm, syncStudioVrmGarmentOutlineColor,
+  type StudioVrmBodyMtoonProfile,
+} from "./studio-vrm-custom-part-material";
+import {
   measureStudioVrmSkirtBodyProfile,
   readStudioVrmSkirtBodyProfileSignature,
   type StudioVrmSkirtBodyProfile,
 } from "./studio-vrm-skirt-body-profile";
 import {
-  WARDROBE_FABRICS,
   sanitizeWardrobeMetrics,
-  wardrobeFabricById,
   type WardrobeEquip,
   type WardrobeMetrics,
   type WardrobeSlot,
@@ -32,7 +37,7 @@ import {
   type StudioVrmXpbdSkirtWaistFrame,
 } from "./studio-vrm-xpbd-skirt";
 
-import type { VRM, VRMHumanBoneName } from "@pixiv/three-vrm";
+import type { MToonMaterial, VRM, VRMHumanBoneName } from "@pixiv/three-vrm";
 
 /** Runs after normalized pose/prop IK/VRM raw-bone commit and before R3F's automatic render. */
 export const VRM_FRAME_XPBD_SKIRT_PRIORITY = -0.5;
@@ -149,9 +154,9 @@ export interface StudioVrmXpbdSkirtSurfaceReceipt {
 }
 
 export interface StudioVrmXpbdSkirtSurface {
-  readonly mesh: THREE.SkinnedMesh<THREE.BufferGeometry, THREE.MeshPhysicalMaterial>;
+  readonly mesh: THREE.SkinnedMesh<THREE.BufferGeometry, MToonMaterial>;
   readonly geometry: THREE.BufferGeometry;
-  readonly material: THREE.MeshPhysicalMaterial;
+  readonly material: MToonMaterial;
   readonly skeleton: THREE.Skeleton;
   readonly receipt: StudioVrmXpbdSkirtSurfaceReceipt;
   readonly disposed: boolean;
@@ -532,51 +537,18 @@ export function deriveStudioVrmXpbdSkirtMetrics(
   });
 }
 
-function createWeaveTexture(fabricId: WardrobeEquip["fabricId"]): THREE.DataTexture | null {
-  const fabric = wardrobeFabricById(fabricId);
-  if (!fabric || fabric.weaveStrength <= 0) return null;
-  const size = 32;
-  const data = new Uint8Array(size * size);
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const warp = Math.sin((x / size) * Math.PI * 2 * fabric.weaveFrequency);
-      const weft = Math.sin((y / size) * Math.PI * 2 * fabric.weaveFrequency * 0.92);
-      data[y * size + x] = Math.round(clamp(128 + warp * 32 + weft * 24, 0, 255));
-    }
-  }
-  const texture = new THREE.DataTexture(data, size, size, THREE.RedFormat, THREE.UnsignedByteType);
-  texture.name = `wardrobe-xpbd-weave:${fabricId}`;
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = true;
-  texture.needsUpdate = true;
-  return texture;
-}
-
 function applySurfaceMaterial(
-  material: THREE.MeshPhysicalMaterial,
+  material: MToonMaterial,
   color: string,
   fabricId: WardrobeEquip["fabricId"],
+  hostMesh?: THREE.Object3D,
 ) {
-  const fabric = wardrobeFabricById(fabricId) ?? WARDROBE_FABRICS[0];
-  const previousTexture = material.bumpMap;
-  const nextTexture = previousTexture?.name === `wardrobe-xpbd-weave:${fabricId}`
-    ? previousTexture
-    : createWeaveTexture(fabricId);
-  material.color.set(color);
-  material.roughness = fabric.roughness;
-  material.metalness = fabric.metalness;
-  material.sheen = fabric.sheen;
-  material.sheenRoughness = fabric.sheenRoughness;
-  material.sheenColor.copy(material.color).lerp(new THREE.Color("#ffffff"), 0.12);
-  material.clearcoat = fabric.clearcoat;
-  material.clearcoatRoughness = fabric.clearcoatRoughness;
-  material.bumpMap = nextTexture;
-  material.bumpScale = fabric.weaveStrength;
-  material.userData.studioVrmGarmentFabricId = fabricId;
-  material.needsUpdate = true;
+  const previousTexture = material.normalMap;
+  const nextTexture = previousTexture?.name === `wardrobe-weave-normal:${fabricId}`
+    ? (previousTexture as THREE.DataTexture)
+    : createStudioVrmGarmentWeaveNormalTexture(fabricId);
+  applyStudioVrmGarmentMToonStyle(material, null, color, fabricId, nextTexture);
+  if (hostMesh) syncStudioVrmGarmentOutlineColor(hostMesh, material);
   if (previousTexture && previousTexture !== nextTexture) previousTexture.dispose();
 }
 
@@ -585,6 +557,7 @@ export function createStudioVrmXpbdSkirtSurface(
   color: string,
   fabricId: WardrobeEquip["fabricId"],
   devicePlan: StudioVrmXpbdSkirtDevicePlan,
+  profile?: StudioVrmBodyMtoonProfile,
 ): StudioVrmXpbdSkirtSurface {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(topology.restPositions), 3));
@@ -599,8 +572,8 @@ export function createStudioVrmXpbdSkirtSurface(
   geometry.setAttribute("skinWeight", new THREE.BufferAttribute(skinWeight, 4));
   geometry.computeVertexNormals();
 
-  const material = new THREE.MeshPhysicalMaterial({ side: THREE.DoubleSide });
-  applySurfaceMaterial(material, color, fabricId);
+  const weaveNormal = createStudioVrmGarmentWeaveNormalTexture(fabricId);
+  const material = createStudioVrmGarmentMToonMaterial(null, color, fabricId, weaveNormal, profile);
   const mesh = new THREE.SkinnedMesh(geometry, material);
   const rootBone = new THREE.Bone();
   rootBone.name = `wardrobe-xpbd:${topology.kind}:surface-root`;
@@ -613,6 +586,7 @@ export function createStudioVrmXpbdSkirtSurface(
   // The bounded cloth can leave its authored rest bounds on the very next frame.
   mesh.frustumCulled = false;
   mesh.userData.studioVrmXpbdSkirtTopologySha256 = topology.topologySha256;
+  const outlineMesh = profile ? attachStudioVrmGarmentOutlineMesh(mesh, material, profile) : null;
 
   const restToPoseSteps = topology.kind === "pleated"
     ? devicePlan.pleatedRestToPoseSteps
@@ -637,9 +611,15 @@ export function createStudioVrmXpbdSkirtSurface(
   const disposeNow = () => {
     if (disposed) return;
     disposed = true;
-    const bumpMap = material.bumpMap;
-    material.bumpMap = null;
-    bumpMap?.dispose();
+    if (outlineMesh) {
+      outlineMesh.removeFromParent();
+      const outlineMat = outlineMesh.material as THREE.Material;
+      outlineMat.dispose();
+    }
+    const normalMap = material.normalMap;
+    material.normalMap = null;
+    normalMap?.dispose();
+    disposeStudioVrmGarmentOwnedMatcap(material);
     skeleton.dispose();
     geometry.dispose();
     material.dispose();
@@ -674,7 +654,7 @@ export function createStudioVrmXpbdSkirtSurface(
       });
     },
     updateMaterial(nextColor, nextFabricId) {
-      if (!disposed) applySurfaceMaterial(material, nextColor, nextFabricId);
+      if (!disposed) applySurfaceMaterial(material, nextColor, nextFabricId, mesh);
     },
   };
   return surface;
@@ -751,7 +731,9 @@ export function createStudioVrmXpbdSkirtAttachmentRuntime({
     );
   }
   let topology = topologyResult.topology;
-  const surface = createStudioVrmXpbdSkirtSurface(topology, color, fabricId, devicePlan);
+  const mtoonProfile = sampleStudioVrmBodyMtoonProfile(vrm);
+  const surface = createStudioVrmXpbdSkirtSurface(topology, color, fabricId, devicePlan, mtoonProfile);
+  syncStudioVrmCustomPartToActiveVrm(surface.mesh, vrm);
   let lastPoseGeneration = -1;
   let solveCount = 0;
   const runtime: StudioVrmXpbdSkirtAttachmentRuntime = {

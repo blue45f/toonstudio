@@ -10,8 +10,18 @@ import {
   type AvatarForgeHairParams,
   type AvatarForgeState,
 } from "./studio-vrm-avatar-forge";
-import { addAvatarForgeHairParts, disposeAvatarForgeObject } from "./studio-vrm-avatar-forge-hair-object";
+import {
+  AVATAR_FORGE_OWNED_TEXTURES,
+  addAvatarForgeHairParts,
+  disposeAvatarForgeObject,
+} from "./studio-vrm-avatar-forge-hair-object";
 import { classifyMeshName } from "./studio-vrm-costume";
+import {
+  createStudioVrmFeatheredDiscAlphaTexture,
+  sampleStudioVrmBodyMtoonProfile,
+  syncStudioVrmCustomPartToActiveVrm,
+  type StudioVrmBodyMtoonProfile,
+} from "./studio-vrm-custom-part-material";
 import { planStudioVrmHairTransition } from "./studio-vrm-hair-transition";
 import { measureStudioVrmHeadFit } from "./studio-vrm-head-measure";
 import { publishStudioVrmHairPreviewHair, publishStudioVrmHairPreviewHead } from "./studio-vrm-hair-preview-source";
@@ -31,10 +41,19 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function normalizeMaterialName(name: string): string {
+  return name.replace(/\s*\((?:outline|instance)\)\s*/giu, " ").trim();
+}
+
 function materialNames(mesh: THREE.Mesh): string[] {
   const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-  return materials.map((material) => material?.name?.trim()).filter((name): name is string => Boolean(name));
+  return materials
+    .map((material) => (material?.name ? normalizeMaterialName(material.name) : ""))
+    .filter((name): name is string => Boolean(name));
 }
+
+/** GLTFLoader가 다중 프리미티브 Head/Body 노드를 재질별로 분리해 붙이는 자동 이름(`Head_4`, `Body_5`). */
+const SPLIT_PRIMITIVE_NODE_RE = /^(?:head|body)_\d+$/iu;
 
 function isGeneratedForgeObject(object: THREE.Object3D) {
   let current: THREE.Object3D | null = object;
@@ -48,6 +67,8 @@ function isGeneratedForgeObject(object: THREE.Object3D) {
 /**
  * 보수적으로 "독립 교체 가능한" 헤어 메시만 찾는다.
  * Body/Face 하나에 skin+hair material이 함께 구워진 VRoid 메시 등은 절대 숨기지 않는다.
+ * 단 GLTFLoader가 단일 헤어 재질 프리미티브를 `Head_4`/`Body_5`로 분리한 경우, 모든 재질이
+ * 명시적 헤어이고 반대 재질이 0건이면 독립 헤어 프리미티브로 판정해 이중 머리를 방지한다.
  */
 function detectReplaceableHairMeshes(vrm: VRM | null): THREE.Mesh[] {
   if (!vrm) return [];
@@ -64,10 +85,19 @@ function detectReplaceableHairMeshes(vrm: VRM | null): THREE.Mesh[] {
       (classification) =>
         (classification.protected !== null && classification.protected !== "hair") || classification.slot !== null
     );
+    const allMaterialsHair = names.length > 0
+      && materialClasses.every((classification) => classification.protected === "hair");
+
+    if (meshClass.slot !== null || hasContraryMaterial) return;
+
+    // GLTFLoader가 재질별로 분리한 `Head_4`·`Body_5` 단일 헤어 프리미티브는 안전하게 교체 대상에 포함한다.
+    if (SPLIT_PRIMITIVE_NODE_RE.test(mesh.name.trim()) && allMaterialsHair) {
+      detected.push(mesh);
+      return;
+    }
 
     // 이름 자체가 얼굴/피부/눈/몸통이면 결합 메시로 간주한다. Hair 재질이 섞여 있어도 안전 우선.
     if (meshClass.protected !== null && meshClass.protected !== "hair") return;
-    if (meshClass.slot !== null || hasContraryMaterial) return;
 
     if (meshClass.protected === "hair") {
       detected.push(mesh);
@@ -75,7 +105,7 @@ function detectReplaceableHairMeshes(vrm: VRM | null): THREE.Mesh[] {
     }
 
     // 일반 노드명(Node_001 등)은 모든 명시적 재질이 헤어일 때만 허용한다.
-    if (names.length > 0 && materialClasses.every((classification) => classification.protected === "hair")) {
+    if (allMaterialsHair) {
       detected.push(mesh);
     }
   });
@@ -158,9 +188,14 @@ function faceSurfaceZ(fit: StudioVrmHeadFit, x: number, y: number, outset: numbe
   return fit.center[2] + fit.frontSign * (fit.radiusZ * surface + outset);
 }
 
-function createAccentMaterial(accent: AvatarForgeFaceAccent, opacityMultiplier = 1) {
+function createAccentMaterial(
+  accent: AvatarForgeFaceAccent,
+  alphaMap: THREE.Texture,
+  opacityMultiplier = 1,
+) {
   return new THREE.MeshBasicMaterial({
     color: accent.color,
+    alphaMap,
     transparent: true,
     opacity: clamp(accent.intensity * opacityMultiplier, 0.04, 0.82),
     depthWrite: false,
@@ -175,6 +210,7 @@ function addFaceDisc(
   group: THREE.Group,
   fit: StudioVrmHeadFit,
   accent: AvatarForgeFaceAccent,
+  alphaMap: THREE.Texture,
   id: string,
   x: number,
   y: number,
@@ -182,33 +218,55 @@ function addFaceDisc(
   scaleX = 1,
   opacityMultiplier = 1
 ) {
-  const geometry = new THREE.CircleGeometry(radius, 18);
-  const material = createAccentMaterial(accent, opacityMultiplier);
+  const geometry = new THREE.CircleGeometry(radius, 24);
+  const material = createAccentMaterial(accent, alphaMap, opacityMultiplier);
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = `ToonStudioAvatarForgeFaceAccent_${id}`;
   mesh.position.set(x, y, faceSurfaceZ(fit, x, y, radius * 0.06));
   mesh.scale.x = scaleX;
   if (fit.frontSign < 0) mesh.rotation.y = Math.PI;
-  mesh.renderOrder = 12;
+  // 불투명 피부·헤어 위, VRM 눈썹·눈 하이라이트(18/19) 아래에 배치해 경계 겹침을 방지한다.
+  mesh.renderOrder = 17;
   group.add(mesh);
 }
 
 function addFaceAccents(group: THREE.Group, state: AvatarForgeState, fit: StudioVrmHeadFit) {
   // 얼굴이 −z 인 VRM0 은 캐릭터 기준 좌우가 x 부호와 반대다. 비대칭 장식(매력점)의 위치를 맞춘다.
   const side = fit.frontSign;
-  for (const accent of state.faceAccents ?? []) {
-    if (!accent.enabled || accent.intensity <= 0) continue;
+  const activeAccents = (state.faceAccents ?? []).filter((accent) => accent.enabled && accent.intensity > 0);
+  if (activeAccents.length === 0) return;
 
+  const ownedTextures: THREE.Texture[] = [];
+  let blushAlpha: THREE.Texture | null = null;
+  let spotAlpha: THREE.Texture | null = null;
+  const ensureBlushAlpha = () => {
+    if (!blushAlpha) {
+      blushAlpha = createStudioVrmFeatheredDiscAlphaTexture(0.78);
+      ownedTextures.push(blushAlpha);
+    }
+    return blushAlpha;
+  };
+  const ensureSpotAlpha = () => {
+    if (!spotAlpha) {
+      spotAlpha = createStudioVrmFeatheredDiscAlphaTexture(0.38);
+      ownedTextures.push(spotAlpha);
+    }
+    return spotAlpha;
+  };
+
+  for (const accent of activeAccents) {
     if (accent.id === "blush") {
       const cheekY = fit.eyeCenter[1] - fit.radiusY * (0.22 + state.face.chinLength * 0.03);
       const cheekX = fit.radiusX * (0.52 + state.face.cheekVolume * 0.07);
       const radius = fit.radiusY * (0.105 + state.face.cheekVolume * 0.035);
-      addFaceDisc(group, fit, accent, "blush-left", fit.center[0] - cheekX, cheekY, radius, 1.75, 0.52);
-      addFaceDisc(group, fit, accent, "blush-right", fit.center[0] + cheekX, cheekY, radius, 1.75, 0.52);
+      const alphaMap = ensureBlushAlpha();
+      addFaceDisc(group, fit, accent, alphaMap, "blush-left", fit.center[0] - cheekX, cheekY, radius, 1.75, 0.56);
+      addFaceDisc(group, fit, accent, alphaMap, "blush-right", fit.center[0] + cheekX, cheekY, radius, 1.75, 0.56);
       continue;
     }
 
     if (accent.id === "freckles") {
+      const alphaMap = ensureSpotAlpha();
       const points = [
         [-0.38, -0.11], [-0.25, -0.16], [-0.11, -0.13],
         [0.12, -0.12], [0.26, -0.17], [0.39, -0.1],
@@ -218,6 +276,7 @@ function addFaceAccents(group: THREE.Group, state: AvatarForgeState, fit: Studio
           group,
           fit,
           accent,
+          alphaMap,
           `freckle-${index}`,
           fit.center[0] + side * fit.radiusX * x,
           fit.eyeCenter[1] + fit.radiusY * y,
@@ -234,6 +293,7 @@ function addFaceAccents(group: THREE.Group, state: AvatarForgeState, fit: Studio
         group,
         fit,
         accent,
+        ensureSpotAlpha(),
         "beauty-mark",
         fit.center[0] + side * fit.radiusX * 0.34,
         fit.eyeCenter[1] - fit.radiusY * 0.28,
@@ -243,14 +303,25 @@ function addFaceAccents(group: THREE.Group, state: AvatarForgeState, fit: Studio
       );
     }
   }
+
+  if (ownedTextures.length > 0) {
+    const existing = Array.isArray(group.userData[AVATAR_FORGE_OWNED_TEXTURES])
+      ? (group.userData[AVATAR_FORGE_OWNED_TEXTURES] as THREE.Texture[])
+      : [];
+    group.userData[AVATAR_FORGE_OWNED_TEXTURES] = [...existing, ...ownedTextures];
+  }
 }
 
-function buildAvatarForgeObject(state: AvatarForgeState, fit: StudioVrmHeadFit) {
+function buildAvatarForgeObject(
+  state: AvatarForgeState,
+  fit: StudioVrmHeadFit,
+  profile?: StudioVrmBodyMtoonProfile,
+) {
   const group = new THREE.Group();
   group.name = "ToonStudioAvatarForge";
   group.userData[AVATAR_FORGE_MARKER] = true;
   group.userData[AVATAR_FORGE_HEAD_FIT] = fit;
-  addAvatarForgeHairParts(group, state, fit);
+  addAvatarForgeHairParts(group, state, fit, profile);
   addFaceAccents(group, state, fit);
   return group;
 }
@@ -328,10 +399,12 @@ export function StudioVrmAvatarForge({
   );
   const object = useMemo(() => {
     if (!fit) return null;
-    const next = buildAvatarForgeObject(stableObjectState, fit);
+    const profile = sampleStudioVrmBodyMtoonProfile(vrm);
+    const next = buildAvatarForgeObject(stableObjectState, fit, profile);
     next.userData[AVATAR_FORGE_HAIR_IDENTITY] = hairGeometryIdentity;
+    syncStudioVrmCustomPartToActiveVrm(next, vrm);
     return next;
-  }, [fit, hairGeometryIdentity, stableObjectState]);
+  }, [fit, hairGeometryIdentity, stableObjectState, vrm]);
   // 헤어 카드 썸네일이 선택된 카드를 지금 헤어 그대로 그리도록 알린다.
   useLayoutEffect(() => {
     publishStudioVrmHairPreviewHair(stableObjectState.hair);
