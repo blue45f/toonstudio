@@ -34,6 +34,7 @@ export { StudioCommandJournalError, canonicalStudioCommandJson, type StudioComma
 export const STUDIO_COMMAND_JOURNAL_FORMAT = "toonspectrum:studio-command-journal" as const;
 export const STUDIO_COMMAND_JOURNAL_VERSION = 1 as const;
 
+const TEXT_ENCODER = new TextEncoder();
 const CHECKSUM_PATTERN = /^scj1-[0-9a-f]{16}$/u;
 const SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:@/-]*$/u;
 const SAFE_KIND_PATTERN = /^[A-Za-z][A-Za-z0-9._:@/-]*$/u;
