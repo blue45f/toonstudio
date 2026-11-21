@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
+import { createPortal } from "react-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -17,7 +19,7 @@ import {
 } from "../studio-save-sync-signals";
 
 import type { StudioConnectivitySnapshot } from "../offline/studio-connectivity";
-import { getActiveEditorStatusSlot, getActiveServiceStatusSlot } from "@/shared/lib/modal-status-slot";
+import { getActiveEditorStatusSlot, getActiveServiceStatusSlot, useEditorStatusSlot, useServiceStatusSlot } from "@/shared/lib/modal-status-slot";
 
 afterEach(() => {
   cleanup();
@@ -375,6 +377,50 @@ function drawingDialog(): HTMLDialogElement {
   node.close = vi.fn(() => { node.removeAttribute("open"); node.dispatchEvent(new Event("close")); });
   return node;
 }
+
+function PortalledSaveNotice() {
+  const editor = useEditorStatusSlot(), active = useServiceStatusSlot();
+  if (!editor) return null;
+  return createPortal(<span role="status">연결 없이 작업 중이에요</span>,
+    active?.kind === "modal" ? active.element : editor.summary);
+}
+
+describe("저장 안내 포털의 사용자 클릭", () => {
+  it.each([
+    ["default", false], ["default", true], ["drawing", false], ["drawing", true],
+  ] as const)("%s · StrictMode=%s에서 안내 클릭과 키보드 활성화를 한 번씩 처리한다", (presentation, strict) => {
+    const fixture = <>
+      <StudioSaveSyncStatusCenter presentation={presentation} journal={createEmptyOperationJournal("portal-click")} />
+      <PortalledSaveNotice />
+    </>;
+    const view = render(strict ? <StrictMode>{fixture}</StrictMode> : fixture);
+    const dialog = presentation === "drawing" ? drawingDialog() :
+      screen.getByRole("dialog", { hidden: true });
+    const trigger = screen.getByRole("button", { name: /^저장 상태 열기/u });
+    const notice = () => screen.getByText("연결 없이 작업 중이에요");
+    expect(trigger.contains(notice())).toBe(true);
+    fireEvent.click(notice());
+    expect(dialog.hidden).toBe(false);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    if (presentation === "drawing") {
+      expect(dialog.contains(notice())).toBe(true);
+      fireEvent.click(notice());
+      expect(dialog.hidden).toBe(false);
+    }
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(dialog.hidden).toBe(true);
+    expect(document.activeElement).toBe(trigger);
+    expect(trigger.contains(notice())).toBe(true);
+    fireEvent.click(trigger, { detail: 0 });
+    expect(dialog.hidden).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태 닫기" }));
+    fireEvent.click(notice());
+    expect(dialog.hidden).toBe(false);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    view.unmount();
+    expect(getActiveEditorStatusSlot()).toBeNull();
+  });
+});
 
 describe("drawing save purpose screen", () => {
   const savedAt = Date.parse("2026-11-12T08:35:20.156Z");

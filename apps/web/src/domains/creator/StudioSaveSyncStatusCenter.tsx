@@ -155,6 +155,15 @@ export function StudioSaveSyncStatusCenter({
     ? registerEditorStatusSlot(noticeElement, noticeSummary)
     : undefined, [noticeElement, noticeSummary]);
 
+  useEffect(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    // 별도 컴포넌트가 넣은 안내 포털도 같은 버튼의 DOM 클릭으로 처리한다.
+    const toggle = () => setOpen((current) => !current);
+    trigger.addEventListener("click", toggle);
+    return () => trigger.removeEventListener("click", toggle);
+  }, []);
+
   const closeAndRestoreFocus = useCallback(() => {
     if (drawing && closeRequested.current) return;
     closeRequested.current = true;
@@ -453,7 +462,6 @@ export function StudioSaveSyncStatusCenter({
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={`저장 상태 열기: ${drawing ? drawingName : saveLabel}`}
