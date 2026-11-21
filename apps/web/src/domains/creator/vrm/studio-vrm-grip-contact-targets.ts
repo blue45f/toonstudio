@@ -1,5 +1,10 @@
 import * as THREE from "three";
 
+import {
+  alignStudioVrmPropGripToPalm,
+  type StudioVrmEquipGripKind,
+} from "./studio-vrm-hair-hand-equip-refiner";
+
 export type StudioVrmGripFingerOrdinal = 0 | 1 | 2 | 3;
 export type StudioVrmGripDigitOrdinal = "thumb" | StudioVrmGripFingerOrdinal;
 
@@ -13,12 +18,19 @@ export interface StudioVrmGripContactTargetInput {
   readonly gripRadius: number;
   readonly handSize: number;
   readonly side: "left" | "right";
+  /** 손바닥 내측 법선이 주어지면 소품 그립 축 ↔ 손바닥 내측 법선을 자동 직교 정렬한다. */
+  readonly palmNormal?: THREE.Vector3;
+  readonly gripKind?: StudioVrmEquipGripKind;
 }
 
 export interface StudioVrmGripContactTargets {
   readonly targets: readonly THREE.Vector3[];
   readonly tolerance: number;
   readonly surfaceRadius: number;
+  /** 손바닥 내측 법선 정렬 시 소품 그립 축과의 직교 오차(0에 가까울수록 완벽 정렬). */
+  readonly palmAxisOrthogonality?: number;
+  /** 손바닥 내측 밀착 중심점(공중 부양/손바닥 관통 0mm). */
+  readonly alignedCenter?: THREE.Vector3;
 }
 
 const DIGIT_AXIAL_FACTORS: Readonly<Record<StudioVrmGripDigitOrdinal, number>> = Object.freeze({
@@ -88,7 +100,21 @@ export function createStudioVrmGripContactTargets(
     || input.handSize > 0.28
   ) return null;
 
-  const axis = safeNormalized(input.axis, new THREE.Vector3(0, 1, 0));
+  const rawAxis = safeNormalized(input.axis, new THREE.Vector3(0, 1, 0));
+  const palmAlignment = input.palmNormal && finiteVector(input.palmNormal) && input.palmNormal.lengthSq() > 1e-10
+    ? alignStudioVrmPropGripToPalm({
+        gripAxis: rawAxis,
+        palmNormal: input.palmNormal,
+        palmForward: input.fallbackRadial,
+        palmCenter: input.center,
+        gripRadius: input.gripRadius,
+        handSize: input.handSize,
+        side: input.side,
+        gripKind: input.gripKind,
+      })
+    : null;
+  const axis = palmAlignment ? palmAlignment.alignedGripAxis : rawAxis;
+  const activeCenter = palmAlignment ? palmAlignment.contactCenter : input.center;
   let fallbackRadial = input.fallbackRadial.clone().addScaledVector(
     axis,
     -input.fallbackRadial.dot(axis),
@@ -104,7 +130,7 @@ export function createStudioVrmGripContactTargets(
   const handedness = input.side === "left" ? -1 : 1;
 
   const targets = input.fingertipWorldPositions.map((point, index) => {
-    const fromCenter = point.clone().sub(input.center);
+    const fromCenter = point.clone().sub(activeCenter);
     const radial = fromCenter.clone().addScaledVector(axis, -fromCenter.dot(axis));
     const ordinal = ordinals[index]!;
     const fallbackSign = ordinal === "thumb" ? -handedness : handedness;
@@ -114,7 +140,7 @@ export function createStudioVrmGripContactTargets(
     );
     // Preserve the actual authored side. Fallback opposition only resolves a point on the axis.
     if (radial.lengthSq() > 1e-10) radialDirection.copy(radial.normalize());
-    return input.center.clone()
+    return activeCenter.clone()
       .addScaledVector(axis, axialSpan * DIGIT_AXIAL_FACTORS[ordinal])
       .addScaledVector(radialDirection, surfaceRadius);
   });
@@ -129,5 +155,11 @@ export function createStudioVrmGripContactTargets(
     targets: Object.freeze(targets),
     tolerance,
     surfaceRadius,
+    ...(palmAlignment
+      ? {
+          palmAxisOrthogonality: palmAlignment.palmNormalOrthogonality,
+          alignedCenter: palmAlignment.contactCenter,
+        }
+      : {}),
   });
 }

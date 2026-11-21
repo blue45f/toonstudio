@@ -3,6 +3,11 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import { avatarForgeHairTipMix } from "./studio-vrm-avatar-forge-hair-color";
 import { smoothStudioVrmCoincidentNormals } from "./studio-vrm-custom-part-material";
+import {
+  evaluateStudioVrmHairHighlightRing,
+  fitStudioVrmHairScalpVertex,
+  type StudioVrmHairScalpFitOptions,
+} from "./studio-vrm-hair-hand-equip-refiner";
 
 import type { AvatarForgeHairPart } from "./studio-vrm-avatar-forge";
 
@@ -254,13 +259,20 @@ function setShellColors(geometry: THREE.BufferGeometry, part: AvatarForgeHairPar
   const box = geometry.boundingBox;
   if (!position || !box) return;
   const height = Math.max(1e-5, box.max.y - box.min.y);
+  const highlight = resolvedHighlight(part);
   const colors = new Float32Array(position.count * 3);
   for (let index = 0; index < position.count; index += 1) {
-    const t = clamp01((box.max.y - position.getY(index)) / height);
+    const py = position.getY(index);
+    const t = clamp01((box.max.y - py) / height);
     const cross = position.getX(index) / Math.max(1e-5, Math.max(Math.abs(box.min.x), Math.abs(box.max.x)));
     const front = normal ? Math.max(0, normal.getZ(index)) : 0.5;
-    const accent = shellAccent(part, position.getX(index), position.getY(index), position.getZ(index), normal ? normal.getZ(index) : 0);
+    const accent = shellAccent(part, position.getX(index), py, position.getZ(index), normal ? normal.getZ(index) : 0);
     const color = paletteColor(part, t * 0.55, cross, front < 0.1, accent);
+    if (front >= 0.1 && (part.role === "cap" || part.role === "back")) {
+      // 웹툰 툰 하이라이트 링(엔젤링)을 두상 수직 위도에 맞춰 정합한다.
+      const ringLift = evaluateStudioVrmHairHighlightRing(py, part.shine, cross);
+      if (ringLift > 0) color.lerp(highlight, ringLift);
+    }
     colors[index * 3] = color.r;
     colors[index * 3 + 1] = color.g;
     colors[index * 3 + 2] = color.b;
@@ -268,29 +280,20 @@ function setShellColors(geometry: THREE.BufferGeometry, part: AvatarForgeHairPar
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 }
 
-function shapeCapToScalp(geometry: THREE.BufferGeometry): void {
+function shapeCapToScalp(
+  geometry: THREE.BufferGeometry,
+  options?: StudioVrmHairScalpFitOptions,
+): void {
   const position = geometry.getAttribute("position");
   if (!position) return;
   for (let index = 0; index < position.count; index += 1) {
-    const x = position.getX(index);
-    const y = position.getY(index);
-    const z = position.getZ(index);
-    // The lower front of a raw sphere reads as a helmet. Pull that region toward the skull while
-    // retaining crown volume and a little extra occipital mass at the back.
-    const lower = clamp01((0.58 - y) / 1.18);
-    const front = clamp01(z);
-    const side = clamp01(Math.abs(x));
-    const foreheadRelief = lower * front * (0.72 + side * 0.28);
-    const templeRelief = lower * side;
-    const crown = clamp01((y + 0.1) / 1.1);
-    position.setXYZ(
-      index,
-      x * (1 + crown * 0.025 - templeRelief * 0.075),
-      y + crown * (1 - side) * 0.025,
-      z >= 0
-        ? z * (1 - foreheadRelief * 0.24)
-        : z * (1 + lower * 0.075),
+    const [nx, ny, nz] = fitStudioVrmHairScalpVertex(
+      position.getX(index),
+      position.getY(index),
+      position.getZ(index),
+      options,
     );
+    position.setXYZ(index, nx, ny, nz);
   }
   position.needsUpdate = true;
   geometry.computeVertexNormals();
@@ -381,9 +384,12 @@ function shapeBackShellToDrape(geometry: THREE.BufferGeometry, part: AvatarForge
   smoothStudioVrmCoincidentNormals(geometry, { creaseAngleDeg: 180 });
 }
 
-function createShellGeometry(part: AvatarForgeHairPart): THREE.BufferGeometry {
+function createShellGeometry(
+  part: AvatarForgeHairPart,
+  options?: StudioVrmHairScalpFitOptions,
+): THREE.BufferGeometry {
   const geometry = part.role === "cap" ? createCapGeometry() : new THREE.SphereGeometry(1, 28, 20);
-  if (part.role === "cap") shapeCapToScalp(geometry);
+  if (part.role === "cap") shapeCapToScalp(geometry, options);
   else if (part.role === "back") shapeBackShellToDrape(geometry, part);
   else smoothStudioVrmCoincidentNormals(geometry, { creaseAngleDeg: 180 });
   setShellColors(geometry, part);
@@ -394,10 +400,11 @@ function createShellGeometry(part: AvatarForgeHairPart): THREE.BufferGeometry {
 
 export function createStudioVrmAuthoredHairGeometry(
   part: AvatarForgeHairPart,
+  options?: StudioVrmHairScalpFitOptions,
 ): THREE.BufferGeometry {
   return part.primitive === "tapered-capsule"
     ? createStudioVrmAuthoredHairClumpGeometry(part)
-    : createShellGeometry(part);
+    : createShellGeometry(part, options);
 }
 
 /**
@@ -415,9 +422,16 @@ export function bendStudioVrmAuthoredHairAlongSpine(
   const frames = spine.points.slice(0, count).map((point, index) => {
     const before = spine.points[Math.max(0, index - 1)]!;
     const after = spine.points[Math.min(last, index + 1)]!;
-    const tangent = after.clone().sub(before).normalize();
+    const tangent = after.clone().sub(before);
+    if (tangent.lengthSq() <= 1e-10) tangent.set(0, -1, 0);
+    else tangent.normalize();
     const normal = spine.normals[index]!.clone();
-    normal.addScaledVector(tangent, -normal.dot(tangent)).normalize();
+    normal.addScaledVector(tangent, -normal.dot(tangent));
+    if (normal.lengthSq() <= 1e-10) {
+      normal.set(Math.abs(tangent.z) < 0.9 ? 0 : 1, 0, Math.abs(tangent.z) < 0.9 ? 1 : 0);
+      normal.addScaledVector(tangent, -normal.dot(tangent));
+    }
+    normal.normalize();
     const across = new THREE.Vector3().crossVectors(normal, tangent).normalize();
     return { point, normal, across };
   });
@@ -431,8 +445,12 @@ export function bendStudioVrmAuthoredHairAlongSpine(
     const a = frames[lower]!;
     const b = frames[lower + 1]!;
     sample.copy(a.point).lerp(b.point, mix);
-    normal.copy(a.normal).lerp(b.normal, mix).normalize();
-    across.copy(a.across).lerp(b.across, mix).normalize();
+    normal.copy(a.normal).lerp(b.normal, mix);
+    if (normal.lengthSq() <= 1e-10) normal.copy(a.normal);
+    else normal.normalize();
+    across.copy(a.across).lerp(b.across, mix);
+    if (across.lengthSq() <= 1e-10) across.copy(a.across);
+    else across.normalize();
     sample
       .addScaledVector(across, position.getX(index) * spine.halfWidth)
       .addScaledVector(normal, position.getZ(index) * spine.thickness);
@@ -468,9 +486,10 @@ export function studioVrmAuthoredCapHairlineHeight(lateral: number): number {
 /** Bakes every authored clump into one head-local buffer, reducing a style to two draw calls. */
 export function mergeStudioVrmAuthoredHairGeometry(
   instances: readonly StudioVrmAuthoredHairInstance[],
+  options?: StudioVrmHairScalpFitOptions,
 ): THREE.BufferGeometry | null {
   const geometries = instances.map(({ part, matrix, spine }) => {
-    const geometry = createStudioVrmAuthoredHairGeometry(part);
+    const geometry = createStudioVrmAuthoredHairGeometry(part, options);
     if (spine && part.primitive === "tapered-capsule") bendStudioVrmAuthoredHairAlongSpine(geometry, spine);
     else geometry.applyMatrix4(matrix);
     return geometry;
