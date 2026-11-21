@@ -15,7 +15,7 @@ import { OUTLINE_MESH_SUFFIX, failVisible, parseAuthoredHairMeshName } from "../
 import { sha256Hex } from "../../shared/hash";
 import { ROLE_COLOR_KEY, ROLE_DEFAULT_PRESET, resolvePartColorHex } from "../material-presets";
 
-import { attachExtraRigPart, detachExtraRigPart } from "./character-rig";
+import { attachExtraRigPart, detachExtraRigPart, disposePartToonMaterials } from "./character-rig";
 import {
   PARTNER_EXPRESSION_WEIGHTS,
   PARTNER_GRIP_RIGHT_ARM_DEG,
@@ -164,6 +164,33 @@ function stripPartnerBaseName(meshName: string): { readonly baseName: string; re
   const isOutline = baseName.endsWith(OUTLINE_MESH_SUFFIX);
   if (isOutline) baseName = baseName.slice(0, -OUTLINE_MESH_SUFFIX.length);
   return { baseName, isOutline };
+}
+
+/**
+ * 3D 듀오 상대역 캐릭터의 메시·재질 이름에서 실제 파츠 역할(PartRole)을 추론한다.
+ * 전체 파츠를 `"accessory"`(plastic)로 고정하던 품질 급락을 없애고 피부 SSS·헤어 이방성·의상 시인을 일관되게 적용한다.
+ */
+export function inferDuoPartnerPartRole(meshes: readonly Mesh[]): PartRole {
+  const haystack = meshes
+    .map((m) => `${m.name} ${m.material?.name ?? ""}`)
+    .join(" ")
+    .toLowerCase();
+  if (/(?:highlight|glint|catchlight)/u.test(haystack)) return "eye-highlight";
+  if (/(?:iris|pupil|cornea)/u.test(haystack)) return "iris";
+  if (/(?:eyeball|sclera|eye_white|eyes?\b)/u.test(haystack)) return "eyeball";
+  if (/(?:eyelash|lash)/u.test(haystack)) return "lash";
+  if (/(?:eyebrow|brow)/u.test(haystack)) return "brow";
+  if (/(?:hair|bang|ponytail|twintail|braid|ahoge|scalp)/u.test(haystack)) return "hair";
+  if (/(?:teeth|tooth)/u.test(haystack)) return "teeth";
+  if (/(?:tongue)/u.test(haystack)) return "tongue";
+  if (/(?:head|face)/u.test(haystack)) return "head";
+  if (/(?:skin|body|arm|leg|hand|neck)/u.test(haystack) && !/(?:cloth|shirt|pant|skirt|shoe|boot|jacket|coat|dress)/u.test(haystack)) return "skin";
+  if (/(?:shoe|boot|sneaker|loafer|sandal|heel|sole)/u.test(haystack)) return "shoes";
+  if (/(?:sock|stocking|tight|legwear)/u.test(haystack)) return "legwear";
+  if (/(?:pant|jean|skirt|short|bottom|trouser|slack)/u.test(haystack)) return "bottom";
+  if (/(?:coat|jacket|blazer|hoodie|cardigan|outer|cape|cloak)/u.test(haystack)) return "outer";
+  if (/(?:shirt|top|tee|blouse|sweater|vest|dress|uniform|sailor|torso_cloth|outfit)/u.test(haystack)) return "top";
+  return "accessory";
 }
 
 function degToQuat(rxDeg: number, ryDeg: number, rzDeg: number): Quaternion {
@@ -391,7 +418,7 @@ async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly
       if (disposed) return;
       disposed = true;
       detachExtraRigPart(input.rig, input.partId);
-      part.toon?.dispose(true, false);
+      disposePartToonMaterials(part);
       container.dispose();
       anchor.dispose(false, false);
     },
@@ -573,13 +600,14 @@ export async function attachDuoPartnerToRig(
     throw failVisible("duo-partner-empty-mesh", `3D 상대역('${attachment.characterId}') GLB에 유효한 메쉬가 없습니다.`, undefined, now);
   }
 
-  const role: PartRole = "accessory";
-  const materialPreset = ROLE_DEFAULT_PRESET[role];
   const createdParts: RigPart[] = [];
   let idx = 0;
   for (const group of groupsByMat.values()) {
     const partId = DUO_PARTNER_PART_ID + idx;
     const partKey = idx === 0 ? DUO_PARTNER_PART_KEY : `${DUO_PARTNER_PART_KEY}:${idx}`;
+    const role = inferDuoPartnerPartRole(group.meshes);
+    const materialPreset = ROLE_DEFAULT_PRESET[role];
+    const colorKey = ROLE_COLOR_KEY[role];
     const firstMesh = group.meshes[0]!;
     const pbr = deps.adaptMaterial(role, firstMesh);
     for (const mesh of group.meshes) {
@@ -593,13 +621,14 @@ export async function attachDuoPartnerToRig(
       ? "#ffffff"
       : pbr.albedoColor
         ? pbr.albedoColor.toHexString().slice(0, 7).toLowerCase()
-        : "#d4af37";
+        : resolvePartColorHex({ materialPreset, ...(colorKey !== undefined ? { colorKey } : {}) }, null);
     const part: RigPart = {
       id: partKey,
       partId,
       materialId: partId,
       role,
       materialPreset,
+      ...(colorKey !== undefined ? { colorKey } : {}),
       meshes: group.meshes,
       outlineMeshes: [],
       pbr,
@@ -647,7 +676,7 @@ export async function attachDuoPartnerToRig(
     } catch (error) {
       for (const p of createdParts) {
         detachExtraRigPart(rig, p.partId);
-        p.toon?.dispose(true, false);
+        disposePartToonMaterials(p);
       }
       container.dispose();
       anchor.dispose(false, false);
@@ -668,7 +697,7 @@ export async function attachDuoPartnerToRig(
       for (const p of createdParts) {
         if (p.partId === DUO_PARTNER_PROP_PART_ID) continue;
         detachExtraRigPart(rig, p.partId);
-        p.toon?.dispose(true, false);
+        disposePartToonMaterials(p);
       }
       container.dispose();
       anchor.dispose(false, false);

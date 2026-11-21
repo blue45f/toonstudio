@@ -1,11 +1,16 @@
 
-import { Grid3X3 } from "lucide-react";
+import { Grid3X3, Sun } from "lucide-react";
 import { useState } from "react";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { STUDIO_VRM_INSPECTION_VIEWS } from "../vrm/studio-vrm-inspection-framing";
 import { CAMERA_PRESETS } from "../vrm/studio-vrm-poser-catalogs";
 
+import {
+  applyCameraFocalLengthToCamera,
+  applyFrontLightLockToScene,
+  SHAPER_CAMERA_FOCAL_PRESETS,
+} from "./character-shaper-custom-quality";
 import {
   DEFAULT_CHARACTER_SHAPER_GAZE_OFFSET,
   useCharacterShaperSessionSettings,
@@ -43,6 +48,8 @@ function isCharacterShaperGazeMode(value: string): value is CharacterShaperGazeM
 
 /** 단일 44px 컴팩트 카메라 필 바 — 프리셋·부위 확대·조작 방식·4모드 안구 시선과 3×3 시선 그리드를 한 줄에 배치한다. */
 export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShaperViewportHudProps, "h" | "compact">) {
+  const [focalMm, setFocalMm] = useState(50);
+  const [frontLightLocked, setFrontLightLocked] = useState(false);
   const activeCameraId = typeof h.activeCameraId === "string" ? h.activeCameraId : "front";
   const cameraLocked = Boolean(h.viewportCameraInteractionLocked || h.isCapturing || h.isSharingPose || h.isThumbnailCapturing);
   const disabled = cameraLocked || h.status !== "ready";
@@ -54,6 +61,22 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
     "disabled:cursor-not-allowed disabled:opacity-40",
     STUDIO_FOCUS_RING,
   );
+  const handleFocalChange = (nextMm: number) => {
+    setFocalMm(nextMm);
+    const runtime = h.captureRef?.current as { readonly camera?: Parameters<typeof applyCameraFocalLengthToCamera>[0] } | null | undefined;
+    applyCameraFocalLengthToCamera(runtime?.camera, nextMm);
+    if (typeof h.invalidateViewport === "function") h.invalidateViewport();
+  };
+  const handleToggleFrontLight = () => {
+    const next = !frontLightLocked;
+    setFrontLightLocked(next);
+    const runtime = h.captureRef?.current as {
+      readonly scene?: Parameters<typeof applyFrontLightLockToScene>[0];
+      readonly camera?: { readonly position?: { readonly x: number; readonly y: number; readonly z: number } };
+    } | null | undefined;
+    applyFrontLightLockToScene(runtime?.scene, runtime?.camera?.position, next);
+    if (typeof h.invalidateViewport === "function") h.invalidateViewport();
+  };
   const pillBar = (
     <div
       data-character-shaper-camera-pill-bar="true"
@@ -99,6 +122,41 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
           <option value="" disabled>부위·방향 확대 검사</option>
           {STUDIO_VRM_INSPECTION_VIEWS.map((view) => <option key={view.id} value={view.id}>{view.label}</option>)}
         </select>
+        <select
+          aria-label="카메라 렌즈 초점거리"
+          data-testid="shaper-camera-focal-select"
+          title="초점거리를 바꿉니다(24mm 광각 ~ 135mm 망원)."
+          disabled={disabled}
+          value={String(focalMm)}
+          onChange={(event) => handleFocalChange(Number(event.currentTarget.value))}
+          className={cn(selectClass, "max-w-[7.5rem]")}
+        >
+          {SHAPER_CAMERA_FOCAL_PRESETS.map((lens) => (
+            <option key={lens.focalMm} value={String(lens.focalMm)}>
+              {lens.labelKo}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          data-testid="shaper-front-light-toggle"
+          aria-pressed={frontLightLocked}
+          aria-label="정면 조명 고정"
+          title="조명을 정면에 고정해 얼굴 그림자를 깔끔하게 정리합니다."
+          disabled={disabled}
+          onClick={handleToggleFrontLight}
+          className={cn(
+            "inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold",
+            "transition-[border-color,background-color,color] duration-150 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
+            STUDIO_FOCUS_RING,
+            frontLightLocked
+              ? "border-accent bg-accent-soft text-accent"
+              : "border-line/70 bg-card text-fg-2 hover:bg-raised hover:text-fg",
+          )}
+        >
+          <Sun size={13} aria-hidden />
+          <span>정면광</span>
+        </button>
         <CharacterShaperCameraStyleSelect disabled={disabled} compactPill />
         <CharacterShaperGazeSelect h={h} compactPill />
       </div>

@@ -11,7 +11,7 @@ import { CHAIN_HIT_RADIUS_DEFAULTS, CHAIN_PARAM_DEFAULTS } from "../../contracts
 import { v3Add, v3Normalize, v3Scale, v3Sub } from "../../shared/math";
 
 import { buildNearestMapping, extractOffsetShell, inheritSkinWeights, propagateBodyMorphs, regionBounds, regionCentroid, selectBodyVertices } from "./follow-body";
-import { MeshAccumulator, appendBox, appendCardStrip, appendSphereShell, appendTube, arcPoints, blendJoints, circlePoints, singleJoint } from "./geometry";
+import { MeshAccumulator, appendCardStrip, appendContouredCardStrip, appendContouredSole, appendSphereShell, appendTube, arcPoints, blendJoints, circlePoints, singleJoint } from "./geometry";
 import { OUTFIT_AUX_BONE_INDEX_BASE } from "./hair-builder";
 
 import type { BodyMapping } from "./follow-body";
@@ -229,7 +229,7 @@ function ribbonTails(env: GarmentEnv, acc: MeshAccumulator, root: Vec3, parent: 
     const points = hangingCurve(root, dir, length, 5, 0.85);
     const skins = registerChain(env, "ribbon", "ribbon", env.counters.ribbon, points, parent, pivot);
     env.counters.ribbon += 1;
-    appendCardStrip(acc, { points, widths: points.map(() => width), outward: points.map(() => outward), skins });
+    appendContouredCardStrip(acc, { points, widths: points.map(() => width), outward: points.map(() => outward), skins, archRatio: 0.14 });
   }
 }
 
@@ -290,8 +290,8 @@ export function buildTop(id: TopStyleId, env: GarmentEnv): GarmentBuild {
       elevationEnd: Math.PI * 0.6,
       azimuthStart: Math.PI * 0.55,
       azimuthEnd: Math.PI * 1.45,
-      rings: 6,
-      segments: 10,
+      rings: 10,
+      segments: 18,
       skin: singleJoint(0),
     });
     pieces.push(proceduralPiece(env, acc.build(), ["head", "neck", "torso"], true));
@@ -299,8 +299,8 @@ export function buildTop(id: TopStyleId, env: GarmentEnv): GarmentBuild {
   if (spec.extra === "collar" && neck) {
     const acc = new MeshAccumulator();
     const radius = Math.max(neck.radiusX, neck.radiusZ) + 0.014;
-    const points = circlePoints([neck.center[0], neck.yMin + 0.012, neck.center[2]], UP, radius, 16);
-    appendTube(acc, { points, radii: points.map(() => 0.011), sides: 6, skins: points.map(() => singleJoint(0)), sideHint: UP });
+    const points = circlePoints([neck.center[0], neck.yMin + 0.012, neck.center[2]], UP, radius, 24);
+    appendTube(acc, { points, radii: points.map(() => 0.011), sides: 10, skins: points.map(() => singleJoint(0)), sideHint: UP });
     pieces.push(proceduralPiece(env, acc.build(), ["neck", "torso"], true));
   }
   if (spec.extra === "lapel" && torso) {
@@ -361,8 +361,8 @@ interface BottomSpec {
 export const BOTTOM_SPECS: Readonly<Record<BottomStyleId, BottomSpec>> = {
   jeans: { labelKo: "청바지", material: "cloth-denim", offset: 0.007, legs: 1, skirt: null },
   shorts: { labelKo: "반바지", material: "cloth-denim", offset: 0.007, legs: 0.4, skirt: null },
-  "pleated-skirt": { labelKo: "플리츠 스커트", material: "cloth-cotton", offset: 0.008, legs: 0, skirt: { columns: 24, rows: 6, length: 0.32, flare: 1.25, pleat: 0.012, strips: 12 } },
-  "long-skirt": { labelKo: "롱 스커트", material: "cloth-silk", offset: 0.008, legs: 0, skirt: { columns: 20, rows: 10, length: 0.78, flare: 1.5, pleat: 0, strips: 10 } },
+  "pleated-skirt": { labelKo: "플리츠 스커트", material: "cloth-cotton", offset: 0.008, legs: 0, skirt: { columns: 36, rows: 6, length: 0.32, flare: 1.25, pleat: 0.012, strips: 12 } },
+  "long-skirt": { labelKo: "롱 스커트", material: "cloth-silk", offset: 0.008, legs: 0, skirt: { columns: 32, rows: 10, length: 0.78, flare: 1.5, pleat: 0, strips: 10 } },
   slacks: { labelKo: "슬랙스", material: "cloth-cotton", offset: 0.011, legs: 1, skirt: null },
 };
 
@@ -454,7 +454,7 @@ interface ShoesSpec {
 }
 
 export const SHOES_SPECS: Readonly<Record<ShoesStyleId, ShoesSpec>> = {
-  sneakers: { labelKo: "스니커즈", material: "plastic", upper: 0.012, shaft: 0, sole: 0.025, straps: false },
+  sneakers: { labelKo: "스니커즈", material: "cloth-cotton", upper: 0.012, shaft: 0, sole: 0.025, straps: false },
   loafers: { labelKo: "로퍼", material: "leather", upper: 0.008, shaft: 0, sole: 0.012, straps: false },
   boots: { labelKo: "부츠", material: "leather", upper: 0.012, shaft: 0.35, sole: 0.02, straps: false },
   sandals: { labelKo: "샌들", material: "leather", upper: null, shaft: 0, sole: 0.015, straps: true },
@@ -476,13 +476,13 @@ export function buildShoes(id: ShoesStyleId, env: GarmentEnv): GarmentBuild {
     const acc = new MeshAccumulator();
     const pad = 0.008;
     const center: Vec3 = [(bounds.min[0] + bounds.max[0]) / 2, bounds.min[1] - spec.sole / 2 + 0.003, (bounds.min[2] + bounds.max[2]) / 2];
-    appendBox(acc, center, [(bounds.max[0] - bounds.min[0]) / 2 + pad, spec.sole / 2, (bounds.max[2] - bounds.min[2]) / 2 + pad + 0.004], singleJoint(0));
+    appendContouredSole(acc, center, [(bounds.max[0] - bounds.min[0]) / 2 + pad, spec.sole / 2, (bounds.max[2] - bounds.min[2]) / 2 + pad + 0.004], singleJoint(0), 24);
     if (spec.straps) {
       const width = (bounds.max[0] - bounds.min[0]) / 2 + 0.006;
       for (const t of [0.35, 0.7]) {
         const z = bounds.min[2] + (bounds.max[2] - bounds.min[2]) * t;
-        const points = arcPoints([center[0], bounds.min[1] + 0.004, z], RIGHT, UP, width, 0, Math.PI, 8);
-        appendTube(acc, { points, radii: points.map(() => 0.004), sides: 5, skins: points.map(() => singleJoint(0)), sideHint: FORWARD });
+        const points = arcPoints([center[0], bounds.min[1] + 0.004, z], RIGHT, UP, width, 0, Math.PI, 14);
+        appendTube(acc, { points, radii: points.map(() => 0.004), sides: 8, skins: points.map(() => singleJoint(0)), sideHint: FORWARD });
       }
     }
     pieces.push(proceduralPiece(env, acc.build(), [foot], true));
@@ -507,7 +507,7 @@ export const ACCESSORY_SPECS: Readonly<Record<AccessoryStyleId, AccessorySpec>> 
   headphones: { labelKo: "헤드폰", material: "plastic" },
 };
 
-function tubeAlong(acc: MeshAccumulator, points: readonly Vec3[], radius: number, sides = 6, caps = false): void {
+function tubeAlong(acc: MeshAccumulator, points: readonly Vec3[], radius: number, sides = 10, caps = false): void {
   appendTube(acc, { points, radii: points.map(() => radius), sides, skins: points.map(() => singleJoint(0)), capStart: caps, capEnd: caps, sideHint: UP });
 }
 
@@ -522,44 +522,74 @@ export function buildAccessory(id: AccessoryStyleId, env: GarmentEnv): GarmentBu
     const R = head.radius;
     const C = head.center;
     const eyeY = C[1] + R * 0.08;
-    const frontZ = C[2] + R * 0.98;
+    // 코 브리지·귀 라인에 밀착하도록 z 오프셋을 정밀 보정(기존 R*0.98+0.01 공중 부양 해소)
+    const frontZ = C[2] + R * 0.96;
     if (id === "glasses") {
       const lensR = R * 0.22;
       const inner: Vec3[] = [];
       for (const side of [-1, 1] as const) {
-        const center: Vec3 = [C[0] + side * R * 0.33, eyeY, frontZ + 0.01];
-        tubeAlong(acc, circlePoints(center, FORWARD, lensR, 12), 0.005);
-        inner.push([center[0] - side * lensR, eyeY, frontZ + 0.01]);
-        const outer: Vec3 = [center[0] + side * lensR, eyeY, frontZ + 0.006];
-        const earTop: Vec3 = [C[0] + side * R * 0.98, eyeY + 0.01, C[2]];
-        const earBack: Vec3 = [C[0] + side * R * 0.98, eyeY - 0.02, C[2] - R * 0.3];
-        tubeAlong(acc, [outer, earTop, earBack], 0.004, 5);
+        const center: Vec3 = [C[0] + side * R * 0.33, eyeY, frontZ + 0.005];
+        tubeAlong(acc, circlePoints(center, FORWARD, lensR, 20), 0.0045, 10);
+        inner.push([center[0] - side * lensR, eyeY, frontZ + 0.005]);
+        const outer: Vec3 = [center[0] + side * lensR, eyeY, frontZ + 0.002];
+        const earTop: Vec3 = [C[0] + side * R * 0.96, eyeY + 0.008, C[2]];
+        const earBack: Vec3 = [C[0] + side * R * 0.96, eyeY - 0.018, C[2] - R * 0.28];
+        tubeAlong(acc, [outer, earTop, earBack], 0.0036, 8, true);
       }
-      tubeAlong(acc, inner, 0.004, 5);
+      tubeAlong(acc, inner, 0.0038, 8);
       pieces.push(proceduralPiece(env, acc.build(), ["head"], true));
     } else if (id === "cap") {
-      appendSphereShell(acc, { center: v3Add(C, [0, 0.012, 0]), radius: R * 1.1, up: UP, forward: FORWARD, elevationStart: 0, elevationEnd: Math.PI * 0.42, azimuthStart: 0, azimuthEnd: Math.PI * 2, rings: 5, segments: 16, skin: singleJoint(0) });
-      // 챙: 앞쪽 부채꼴 2행
-      const brimY = C[1] + 0.012 + R * 1.1 * Math.cos(Math.PI * 0.42);
-      const rows: number[][] = [];
-      for (const [ri, radius] of [R * 1.05, R * 1.6].entries()) {
-        const row: number[] = [];
-        for (let s = 0; s <= 12; s += 1) {
-          const az = -Math.PI * 0.32 + (Math.PI * 0.64 * s) / 12;
-          const p: Vec3 = [C[0] + Math.sin(az) * radius, brimY - ri * 0.012, C[2] + Math.cos(az) * radius];
-          row.push(acc.pushVertex(p, UP, [s / 12, ri], singleJoint(0)));
+      appendSphereShell(acc, { center: v3Add(C, [0, 0.01, 0]), radius: R * 1.07, up: UP, forward: FORWARD, elevationStart: 0, elevationEnd: Math.PI * 0.42, azimuthStart: 0, azimuthEnd: Math.PI * 2, rings: 9, segments: 28, skin: singleJoint(0) });
+      // 두께감과 곡면을 갖춘 3D 챙(윗면·아랫면·앞 테두리 베벨)
+      const brimY = C[1] + 0.01 + R * 1.07 * Math.cos(Math.PI * 0.42);
+      const brimSegs = 20;
+      const brimThickness = 0.005;
+      const topRows: number[][] = [];
+      const bottomRows: number[][] = [];
+      for (const [ri, radius] of [R * 1.03, R * 1.32, R * 1.56].entries()) {
+        const tRow: number[] = [];
+        const bRow: number[] = [];
+        for (let s = 0; s <= brimSegs; s += 1) {
+          const frac = s / brimSegs;
+          const az = -Math.PI * 0.34 + Math.PI * 0.68 * frac;
+          const archDrop = Math.pow((frac - 0.5) * 2, 2) * 0.01 * ri;
+          const yTop = brimY - ri * 0.008 - archDrop;
+          const x = C[0] + Math.sin(az) * radius;
+          const z = C[2] + Math.cos(az) * radius;
+          tRow.push(acc.pushVertex([x, yTop, z], v3Normalize([Math.sin(az) * 0.12, 0.98, Math.cos(az) * 0.12]), [frac, ri / 2], singleJoint(0)));
+          bRow.push(acc.pushVertex([x, yTop - brimThickness, z], [0, -1, 0], [frac, ri / 2], singleJoint(0)));
         }
-        rows.push(row);
+        topRows.push(tRow);
+        bottomRows.push(bRow);
       }
-      for (let s = 0; s < 12; s += 1) acc.pushQuad(rows[0][s], rows[0][s + 1], rows[1][s + 1], rows[1][s]);
+      for (let ri = 0; ri < 2; ri += 1) {
+        for (let s = 0; s < brimSegs; s += 1) {
+          acc.pushQuad(topRows[ri][s], topRows[ri][s + 1], topRows[ri + 1][s + 1], topRows[ri + 1][s]);
+          acc.pushQuad(bottomRows[ri][s + 1], bottomRows[ri][s], bottomRows[ri + 1][s], bottomRows[ri + 1][s + 1]);
+        }
+      }
+      for (let s = 0; s < brimSegs; s += 1) {
+        acc.pushQuad(topRows[2][s], topRows[2][s + 1], bottomRows[2][s + 1], bottomRows[2][s]);
+      }
       pieces.push(proceduralPiece(env, acc.build(), ["head"], true));
     } else if (id === "headphones") {
-      const band = arcPoints(C, RIGHT, UP, R * 1.12, 0, Math.PI, 14);
-      tubeAlong(acc, band, 0.011, 6);
+      const band = arcPoints(C, RIGHT, UP, R * 1.09, 0, Math.PI, 24);
+      tubeAlong(acc, band, 0.011, 10, true);
       for (const side of [-1, 1] as const) {
-        const ear: Vec3 = [C[0] + side * R * 0.98, C[1] - 0.01, C[2]];
-        const outer: Vec3 = [C[0] + side * (R * 0.98 + 0.03), C[1] - 0.01, C[2]];
-        appendTube(acc, { points: [ear, outer], radii: [0.035, 0.035], sides: 12, skins: [singleJoint(0), singleJoint(0)], capStart: true, capEnd: true, sideHint: UP });
+        // 3단 베벨 쿠션 이어컵(귀 측면 R*0.95 밀착)
+        const cupInner: Vec3 = [C[0] + side * R * 0.95, C[1] - 0.008, C[2]];
+        const cupMid: Vec3 = [C[0] + side * (R * 0.95 + 0.014), C[1] - 0.008, C[2]];
+        const cupRim: Vec3 = [C[0] + side * (R * 0.95 + 0.028), C[1] - 0.008, C[2]];
+        const cupCap: Vec3 = [C[0] + side * (R * 0.95 + 0.034), C[1] - 0.008, C[2]];
+        appendTube(acc, {
+          points: [cupInner, cupMid, cupRim, cupCap],
+          radii: [0.031, 0.037, 0.035, 0.025],
+          sides: 20,
+          skins: [singleJoint(0), singleJoint(0), singleJoint(0), singleJoint(0)],
+          capStart: true,
+          capEnd: true,
+          sideHint: UP,
+        });
       }
       pieces.push(proceduralPiece(env, acc.build(), ["head"], true));
     } else if (id === "ribbon") {
@@ -567,12 +597,12 @@ export function buildAccessory(id: AccessoryStyleId, env: GarmentEnv): GarmentBu
       const az = Math.PI / 3;
       const el = Math.PI * 0.2;
       const dir: Vec3 = v3Normalize([Math.sin(az) * Math.sin(el), Math.cos(el), Math.cos(az) * Math.sin(el)]);
-      const base = v3Add(C, v3Scale(dir, R * 1.05));
-      appendSphereShell(acc, { center: base, radius: R * 0.09, up: UP, forward: FORWARD, elevationStart: 0, elevationEnd: Math.PI, azimuthStart: 0, azimuthEnd: Math.PI * 2, rings: 4, segments: 8, skin: singleJoint(0) });
+      const base = v3Add(C, v3Scale(dir, R * 1.04));
+      appendSphereShell(acc, { center: base, radius: R * 0.09, up: UP, forward: FORWARD, elevationStart: 0, elevationEnd: Math.PI, azimuthStart: 0, azimuthEnd: Math.PI * 2, rings: 8, segments: 14, skin: singleJoint(0) });
       const sideAxis: Vec3 = v3Normalize([dir[2], 0, -dir[0]]);
       for (const side of [-1, 1] as const) {
         const loopCenter = v3Add(base, v3Scale(sideAxis, side * R * 0.14));
-        tubeAlong(acc, circlePoints(loopCenter, dir, R * 0.11, 10), 0.006);
+        tubeAlong(acc, circlePoints(loopCenter, dir, R * 0.11, 18), 0.006, 10);
       }
       pieces.push(proceduralPiece(env, acc.build(), ["head"], true));
       const tails = new MeshAccumulator();
@@ -580,22 +610,22 @@ export function buildAccessory(id: AccessoryStyleId, env: GarmentEnv): GarmentBu
       pieces.push(proceduralPiece(env, tails.build(), ["head"], false));
     } else if (id === "earrings") {
       for (const side of [-1, 1] as const) {
-        const root: Vec3 = [C[0] + side * R * 0.98, eyeY - 0.02, C[2]];
+        const root: Vec3 = [C[0] + side * R * 0.96, eyeY - 0.02, C[2]];
         const points = hangingCurve(root, [0, -1, 0], 0.03, 2, 1);
         const skins = registerChain(env, "ribbon", "ribbon", env.counters.ribbon, points, "head", pivots.head ?? C, { stiffness: 2, damping: 0.7, gravityScale: 0.3 });
         env.counters.ribbon += 1;
-        tubeAlong(acc, [root, points[1]], 0.0015, 4);
+        tubeAlong(acc, [root, points[1]], 0.0015, 8);
         for (let j = 1; j < points.length; j += 1) {
-          appendSphereShell(acc, { center: points[j], radius: j === points.length - 1 ? 0.007 : 0.004, up: UP, forward: FORWARD, elevationStart: 0, elevationEnd: Math.PI, azimuthStart: 0, azimuthEnd: Math.PI * 2, rings: 3, segments: 6, skin: skins[j] });
+          appendSphereShell(acc, { center: points[j], radius: j === points.length - 1 ? 0.007 : 0.004, up: UP, forward: FORWARD, elevationStart: 0, elevationEnd: Math.PI, azimuthStart: 0, azimuthEnd: Math.PI * 2, rings: 7, segments: 12, skin: skins[j] });
         }
       }
       pieces.push(proceduralPiece(env, acc.build(), ["head"], false));
     }
   }
   if (id === "choker" && neck) {
-    const radius = Math.max(neck.radiusX, neck.radiusZ) + 0.004;
-    const points = circlePoints([neck.center[0], neck.center[1] + 0.005, neck.center[2]], UP, radius, 16);
-    tubeAlong(acc, points, 0.006, 6);
+    const radius = Math.max(neck.radiusX, neck.radiusZ) + 0.002;
+    const points = circlePoints([neck.center[0], neck.center[1] + 0.005, neck.center[2]], UP, radius, 24);
+    tubeAlong(acc, points, 0.0055, 10);
     pieces.push(proceduralPiece(env, acc.build(), ["neck"], true));
   }
   const main = finishPart(env, `accessory-${id}`, "accessory", spec.material, "accessory", pieces);

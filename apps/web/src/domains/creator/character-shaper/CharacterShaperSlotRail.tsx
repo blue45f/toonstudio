@@ -125,6 +125,7 @@ export function CharacterShaperSlotRail({ binding, activeSlot, onSelectSlot, ori
                 key={meta.id}
                 type="button"
                 data-character-slot={meta.id}
+                data-character-slot-group={group.group}
                 data-character-slot-support={support.status}
                 aria-current={active ? "true" : undefined}
                 aria-keyshortcuts={hotkey ?? undefined}
@@ -133,7 +134,7 @@ export function CharacterShaperSlotRail({ binding, activeSlot, onSelectSlot, ori
                 onClick={() => onSelectSlot(meta.id)}
                 className={cn(
                   "relative flex shrink-0 items-center justify-center rounded-xl border text-[0.62rem] font-semibold leading-none",
-                  "transition-colors duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+                  "transition-[transform,border-color,background-color,color,box-shadow] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none",
                   STUDIO_FOCUS_RING,
                   vertical ? "min-h-12 w-full flex-col gap-1 px-1 py-1.5" : "min-h-11 min-w-11 flex-col gap-1 px-2.5 py-1.5",
                   active

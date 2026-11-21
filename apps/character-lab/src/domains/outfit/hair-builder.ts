@@ -13,7 +13,7 @@ import { fnv1a32 } from "../../shared/hash";
 import { degToRad, qFromAxisAngle, qRotateVec3, v3Add, v3Cross, v3Dot, v3Length, v3Normalize, v3Scale, v3Sub } from "../../shared/math";
 import { createPrng } from "../../shared/prng";
 
-import { MeshAccumulator, appendCardStrip, appendSphereShell, appendTube, singleJoint, sphericalDirection } from "./geometry";
+import { MeshAccumulator, appendContouredCardStrip, appendSphereShell, appendTube, singleJoint, sphericalDirection } from "./geometry";
 import { HAIR_STYLE_SPECS } from "./hair-styles";
 
 import type { MeshBuffers, SkinWeight4 } from "./geometry";
@@ -30,9 +30,9 @@ export const HEAD_SIZE_MORPH_SCALE = 0.1;
 /** 두피 위 카드 시작 높이(반경 배수) */
 const SCALP_LIFT = 1.012;
 const CAP_LIFT = 1.016;
-const CAP_RINGS = 6;
-const CAP_SEGMENTS = 24;
-const BUNDLE_SIDES = 6;
+const CAP_RINGS = 12;
+const CAP_SEGMENTS = 36;
+const BUNDLE_SIDES = 12;
 
 export function assumedHeadPivot(scalp: ScalpSurface): Vec3 {
   return v3Sub(scalp.center, v3Scale(v3Normalize(scalp.up), scalp.radius * HEAD_PIVOT_RATIO));
@@ -248,8 +248,8 @@ export function buildHair(style: HairStyleId, scalp: ScalpSurface, context: Outf
         elevationEnd: Math.PI,
         azimuthStart: 0,
         azimuthEnd: Math.PI * 2,
-        rings: 4,
-        segments: 8,
+        rings: 8,
+        segments: 16,
         skin: headSkin,
       });
     }
@@ -263,7 +263,7 @@ export function buildHair(style: HairStyleId, scalp: ScalpSurface, context: Outf
       } else {
         const w0 = zone.width * scalp.radius;
         const widths = strand.points.map((_, k) => w0 * (1 - 0.45 * (k / Math.max(1, n - 1))));
-        appendCardStrip(strands, { points: strand.points, widths, outward: strand.outward, skins });
+        appendContouredCardStrip(strands, { points: strand.points, widths, outward: strand.outward, skins, archRatio: 0.16 });
       }
       strandIndex += 1;
     });

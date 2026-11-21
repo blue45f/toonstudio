@@ -28,6 +28,7 @@ import {
   moveCharacterGridIndex,
   pushCharacterShaperKeyLayer,
 } from "./character-shaper-ui-model";
+import { CharacterShaperGenreStarters } from "./CharacterShaperGenreStarters";
 import { CharacterSlotCard } from "./CharacterSlotCard";
 import { useCharacterPresetInteraction } from "./useCharacterPresetInteraction";
 import { useCharacterShaperFavorites } from "./useCharacterShaperFavorites";
@@ -263,6 +264,7 @@ function CharacterShaperShelfContent({
         <p className="mt-1 text-[0.62rem] leading-relaxed text-fg-3" data-character-capability-counts="true">
           완전 지원 {counts.available} · 일부 적용 {counts.partial} · 적용 불가 {counts.unavailable}
         </p>
+        <CharacterShaperGenreStarters binding={binding} disabled={lockReason !== null} compact={compact} />
         <div
           data-testid="shaper-tripo-visual-studio"
           className="mt-2 rounded-xl border border-line bg-card p-2 text-[0.66rem]"

@@ -34,17 +34,10 @@ import { STUDIO_VRM_PROPORTION_PRESETS } from "../vrm/studio-vrm-proportion-core
 import { createPropInstance } from "../vrm/studio-vrm-props";
 import { applyWardrobeItemSelection, applyWardrobeSet, createWardrobeEquip, selectableWardrobeSetById } from "../vrm/studio-vrm-wardrobe";
 
-import {
-  planCharacterSlotApply,
-  planCharacterSlotClear,
-  planCharacterSlotRemove,
-} from "./character-shaper-apply-plan";
-import {
-  EMPTY_CHARACTER_CAPABILITY_PROFILE,
-  createCharacterCapabilityProfile,
-  evaluateCharacterSlotEntry,
-} from "./character-shaper-capability";
+import { planCharacterSlotApply, planCharacterSlotClear, planCharacterSlotRemove } from "./character-shaper-apply-plan";
+import { EMPTY_CHARACTER_CAPABILITY_PROFILE, createCharacterCapabilityProfile, evaluateCharacterSlotEntry } from "./character-shaper-capability";
 import { CHARACTER_SLOT_CATALOG, characterSlotMeta, findCharacterSlotEntry } from "./character-shaper-catalog";
+import { resolveHairCommitPatch, syncHostCostumeVisibilityForWardrobe } from "./character-shaper-custom-quality";
 import { characterPresetWornSlots, planCharacterPresetApplication } from "./character-shaper-preset-plan";
 import { applyCharacterIrisTint } from "./character-shaper-iris-tint";
 import { createEmptyCharacterRecipe, deriveCharacterRecipe } from "./character-shaper-recipe";
@@ -523,6 +516,8 @@ export function useCharacterShaperBinding(
     const host = hostRef.current;
     let wardrobeDraft = readRecord<WardrobeEquip>(host.wardrobeState) as WardrobeState;
     let wardrobeChanged = false;
+    const changedWardrobeSlots: WardrobeSlot[] = [];
+    let explicitCostumeVisibility = false;
     let mergedForge: AvatarForgeState | null = null;
     const forgeDraft = (): AvatarForgeState => {
       mergedForge ??= forgeOfHost(host);
@@ -554,11 +549,8 @@ export function useCharacterShaperBinding(
         }
         case "forge-hair": {
           const base = forgeDraft();
-          mergedForge = sanitizeAvatarForgeState({
-            ...base,
-            presetId: undefined,
-            hair: { ...base.hair, ...step.hair },
-          });
+          const hairPatch = resolveHairCommitPatch(step.hair, base.hair);
+          mergedForge = sanitizeAvatarForgeState({ ...base, presetId: undefined, hair: { ...base.hair, ...hairPatch } });
           break;
         }
         case "proportion": {
@@ -587,6 +579,7 @@ export function useCharacterShaperBinding(
           const equip = wardrobeDraft[step.slot];
           if (equip && step.color) wardrobeDraft = { ...wardrobeDraft, [step.slot]: { ...equip, color: step.color } };
           wardrobeChanged = true;
+          changedWardrobeSlots.push(step.slot);
           if (!runtimeReplay) {
             host.equipWardrobeItem?.(step.slot, step.itemId);
             if (step.itemId !== null && step.color) host.updateWardrobeEquip?.(step.slot, { color: step.color });
@@ -598,10 +591,12 @@ export function useCharacterShaperBinding(
           if (!set) throw new Error("옷 세트를 찾을 수 없습니다.");
           wardrobeDraft = applyWardrobeSet(set);
           wardrobeChanged = true;
+          changedWardrobeSlots.push("top", "outer", "bottom", "shoes");
           if (!runtimeReplay) host.equipWardrobeSetById?.(step.setId);
           break;
         }
         case "costume-visibility": {
+          explicitCostumeVisibility = true;
           const costume = (host.costumeState ?? null) as CharacterCostumeState | null;
           if (!costume) break;
           const meshes = Array.isArray(host.costumeMeshes)
@@ -713,6 +708,9 @@ export function useCharacterShaperBinding(
       }
     }
     if (customColorsChanged) host.setCustomColors?.(colors);
+    if (!explicitCostumeVisibility && changedWardrobeSlots.length > 0) {
+      syncHostCostumeVisibilityForWardrobe(host as Parameters<typeof syncHostCostumeVisibilityForWardrobe>[0], changedWardrobeSlots, wardrobeDraft);
+    }
     if (runtimeReplay && wardrobeChanged) {
       if (typeof host.setWardrobeState !== "function") throw new Error("의상 원본을 재생할 수 있는 편집기가 필요합니다.");
       host.setWardrobeState(wardrobeDraft);
