@@ -9,6 +9,7 @@ import {
   shouldChurnStudioSoakHistory, studioSoakDocumentAdvanced, summarizeStudioSoakAccumulation,
 } from "./studio-soak-evidence";
 
+import type { StudioSoakPointerLatency } from "./studio-soak-pointer-latency";
 import type { HeapSample } from "./studio-soak-telemetry";
 
 const minute = 60_000;
@@ -93,7 +94,7 @@ describe("소크 결과는 수집한 시간·증거만으로 판정한다", () =
     const input = evidence();
     input.longTasks = [{ atMs: 10, durationMs: 900, duringStroke: false }];
     expect(evaluateStudioSoakCompletion(input).status).toBe("pass");
-    input.longTasks.push({ atMs: 20, durationMs: 50, duringStroke: true });
+    input.longTasks = [...input.longTasks, { atMs: 20, durationMs: 50, duringStroke: true }];
     expect(evaluateStudioSoakCompletion(input)).toMatchObject({ status: "fail",
       drawingPerformance: { limitMs: 50, violations: 1, pointerLatencyMeasured: false } });
   });
@@ -139,6 +140,49 @@ describe("기본 Undo와 opt-in 누적 사용", () => {
       validStroke, { ...validStroke, acceptedByDocument: false, rejectedStrokeCountAfter: 1 },
     ], 3)).toMatchObject({ attemptedStrokes: 3, acceptedStrokes: 1, missingStrokeEvidence: 1,
       historyBudgetEvictedSteps: 2, maximumHistoryRetainedBytes: 1_024, rejectedStrokes: 1 });
+  });
+});
+
+describe("요청한 동일 페이지 입력 지연의 완료 경계", () => {
+  const latency = (cycle: number, down: number): StudioSoakPointerLatency => ({
+    sessionId: "session", cycle, pageEpoch: 1_000, documentUrl: "http://preview/studio/canvas",
+    inputMode: "pen", expectedMoves: 1, observedMoves: 1, observedPointerTypes: ["pen"],
+    pointerDownAtMs: down, pointerUpAtMs: down + 2, pendingMoves: 0, cancelled: false, errors: [],
+    events: [{ observedAtMs: down + 1, nextRafAtMs: down + 6, latencyMs: 5 }],
+  });
+  const observed = (): Parameters<typeof evaluateStudioSoakCompletion>[0] => ({
+    ...evidence(), sessionId: "session", sessionStartedAt: 1_000, measurePointerLatency: true,
+    requestedDurationMs: 100, sessionDurationMs: 110, cycles: 2, attemptedStrokes: 2, telemetryChecks: 4,
+    checkpoints: [{ phase: "initial", scheduledAtMs: 0, sessionAtMs: 0, heapBytes: 1 },
+      { phase: "final", scheduledAtMs: 100, sessionAtMs: 110, heapBytes: 1 }],
+    heapSamples: [heap(1), heap(110)],
+    strokes: [1, 2].map((cycle) => ({ ...validStroke, cycle, inputMode: "pen", pointerPoints: 2,
+      pointerLatency: latency(cycle, cycle === 1 ? 1 : 101) })),
+  });
+
+  it("요청 시간 이후 정상 획의 실제 표본이 있어야 측정 완료라고 기록한다", () => {
+    expect(evaluateStudioSoakCompletion(observed())).toMatchObject({ status: "pass",
+      drawingPerformance: { pointerLatencyMeasured: true, limitMs: 50 },
+      pointerLatency: { metric: "pointermove-capture-to-next-raf", lastStrokeAgeMs: 101,
+        measuredStrokes: 2, physicalDeviceCertified: false, appendCompletionMeasured: false,
+        pixelPresentationMeasured: false, windows: [{ sampleCount: 2, p95Ms: 5, p99Ms: 5 }] } });
+  });
+
+  it.each(["missing", "cancelled", "early", "wrong-epoch"] as const)("%s 관측을 성공이나 소크 시간으로 덮지 않는다", (fault) => {
+    const input = observed();
+    const pointerLatency = fault === "missing" ? null : fault === "early" ? latency(2, 99)
+      : { ...latency(2, 101), ...(fault === "cancelled" ? { cancelled: true } : { pageEpoch: 2_000 }) };
+    input.strokes = input.strokes.map((stroke, index) => index === 1 ? { ...stroke, pointerLatency } : stroke);
+    const result = evaluateStudioSoakCompletion(input);
+    expect(result.status).toBe("incomplete");
+    expect(result.incomplete).toContain("pointer-latency-evidence");
+    expect(result.drawingPerformance.pointerLatencyMeasured).toBe(false);
+  });
+
+  it("입력 지연 관측 성공 뒤에도 기존 50ms 그리기 longtask는 실패한다", () => {
+    const input = observed(); input.longTasks = [{ atMs: 20, durationMs: 50, duringStroke: true }];
+    expect(evaluateStudioSoakCompletion(input)).toMatchObject({ status: "fail",
+      failed: ["drawing-longtask"], drawingPerformance: { pointerLatencyMeasured: true, violations: 1 } });
   });
 });
 

@@ -933,6 +933,7 @@ scripts/lib/studio-3d-production-audit-policy.test.mjs
 scripts/lib/studio-bg3d-rotation-ring.test.ts
 scripts/lib/studio-brush-first-contact-diagnostics.test.ts
 scripts/lib/studio-brush-latency-eraser-fixture.test.ts
+scripts/lib/studio-brush-latency-evidence.test.ts
 scripts/lib/studio-capture-cpu-profile.test.ts
 scripts/lib/studio-capture-native-trace.test.ts
 scripts/lib/studio-companion-preview-diagnostics.test.ts
@@ -950,7 +951,15 @@ scripts/lib/studio-preview-navigation-settlement.test.ts
 scripts/lib/studio-quick-brush-interactions.test.ts
 scripts/lib/studio-shell-readiness.test.ts
 scripts/lib/studio-smart-shape-visible-grid.test.ts
+scripts/lib/studio-soak-desktop-pen.test.ts
+scripts/lib/studio-soak-evidence.test.ts
+scripts/lib/studio-soak-layer-count.test.ts
+scripts/lib/studio-soak-pointer-latency.test.ts
+scripts/lib/studio-soak-pointer-route.test.ts
+scripts/lib/studio-soak-telemetry.test.ts
+scripts/lib/studio-soak-visual-evidence.test.ts
 scripts/lib/studio-verify-shape-readiness.test.tsx
+scripts/lib/studio-worker-error-observer.test.ts
 scripts/multi-env-dynamic-deploy.test.mjs
 scripts/nonstudio-journey-contract.test.mjs
 scripts/pigment-dependency-install-policy.test.mjs
@@ -973,6 +982,7 @@ scripts/studio-bg3d-bundle-runtime-acl.test.mjs
 scripts/studio-openai-credit-evaluation.test.ts
 scripts/studio-production-realtime.test.ts
 scripts/studio-review-local-storage-certificates.test.mjs
+scripts/studio-soak-workflow-plan.test.mjs
 scripts/sync-cloudflare-r2-assets.test.ts
 scripts/toonstudio-integration-disk-policy.test.mjs
 scripts/ux-audit/aggregate.test.mjs
@@ -1000,6 +1010,7 @@ scripts/verify-studio-hybrid-dcc-opfs-race.test.ts
 scripts/verify-studio-launch.test.ts
 scripts/verify-studio-living-ink-integration.test.ts
 scripts/verify-studio-menus.test.ts
+scripts/verify-studio-soak-completion-observers.test.ts
 scripts/verify-typechecked-build-inputs.test.mjs
 scripts/verify-virtual-studio-art-manifest.test.mjs
 scripts/workflow-injection-policy.test.mjs

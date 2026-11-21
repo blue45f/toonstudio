@@ -4,6 +4,8 @@ import { join } from "node:path";
 
 import { decodePng } from "image-js";
 
+import { evaluateStudioSoakVisualCoverage } from "./lib/studio-soak-visual-evidence";
+
 const ROOT = process.env.TOONSPECTRUM_SOAK_OUT?.trim()
   || process.argv[2]
   || "artifacts/studio-five-hour-soak/desktop";
@@ -106,10 +108,18 @@ if (!existsSync(ROOT)) throw new Error(`Studio soak evidence directory not found
 const files = readdirSync(ROOT)
   .filter((name) => /^checkpoint-\d+m\.png$/u.test(name) || name === "final.png")
   .sort((left, right) => checkpointOrder(left) - checkpointOrder(right));
-if (files.length === 0) throw new Error(`No visual checkpoints found in ${ROOT}`);
 
 const rows = files.map(inspect);
 const failures: Array<{ file: string; reason: string }> = [];
+let sourceReport: unknown = null;
+try {
+  sourceReport = JSON.parse(readFileSync(join(ROOT, "report.json"), "utf8"));
+} catch (error) {
+  failures.push({ file: "report.json", reason: `소크 보고서를 읽을 수 없습니다: ${String(error)}` });
+}
+const coverage = evaluateStudioSoakVisualCoverage(sourceReport, rows);
+failures.push(...coverage.failures);
+if (rows.length === 0) failures.push({ file: "checkpoint-sequence", reason: "분석할 시각 체크포인트 PNG가 없습니다." });
 for (const row of rows) {
   for (const reason of row.reasons) failures.push({ file: row.file, reason });
 }
@@ -143,6 +153,7 @@ for (const row of rows.slice(1)) {
 
 const report = {
   root: ROOT,
+  coverage,
   thresholds: {
     dominantRatioLimit: DOMINANT_RATIO_LIMIT,
     extremeRatioLimit: EXTREME_RATIO_LIMIT,
@@ -152,7 +163,7 @@ const report = {
     sampleStride: SAMPLE_STRIDE,
   },
   rows,
-  longestExactDuplicateRun: longestDuplicateStreak + 1,
+  longestExactDuplicateRun: rows.length === 0 ? 0 : longestDuplicateStreak + 1,
   failures,
 };
 writeFileSync(OUT, JSON.stringify(report, null, 2));

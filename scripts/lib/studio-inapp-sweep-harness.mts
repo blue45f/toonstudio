@@ -14,6 +14,7 @@
 import { chromium, type Browser, type ConsoleMessage, type Locator, type Page, type Request } from "playwright";
 
 import { isStaticPreviewReadinessUnavailable } from "./studio-preview-readiness";
+import { installStudioWorkerErrorObserver } from "./studio-worker-error-observer";
 
 /** API가 없는 격리 프리뷰의 정확한 502만 별도 기록한다. 운영 오류와 저장 요청은 제외하지 않는다. */
 export function createStudioInAppPreviewApiDiagnostics(previewUrl?: string) {
@@ -163,7 +164,7 @@ export interface StudioInAppErrorCollector {
 }
 
 /**
- * Attaches every error channel the browser exposes and tags each arrival with the current step.
+ * 페이지 오류와 관측 가능한 dedicated Worker 오류를 현재 단계에 연결한다.
  *
  * `unhandledrejection` needs an init script: Playwright surfaces uncaught exceptions through
  * `pageerror` but not rejected promises, and an editor this asynchronous produces far more of the
@@ -213,11 +214,7 @@ export async function collectStudioInAppRuntimeErrors(
     if (errorText.includes("ERR_ABORTED")) return;
     push("requestfailed", `${request.url()} — ${errorText}`, null);
   });
-  // 15개가 넘는 전용 워커가 도는데 어떤 프로브도 워커 예외를 보지 않았다. 워커 안에서 터진
-  // 예외는 페이지의 pageerror 로 오지 않는다.
-  page.on("worker", (worker) => {
-    worker.on("close", () => undefined);
-  });
+  await installStudioWorkerErrorObserver(page, (text, stack) => push("workererror", text, stack));
 
   await page.exposeFunction(
     "__studioSweepRejection",

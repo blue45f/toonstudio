@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { STUDIO_BRUSH_COMPETITIVE_FRAME_BUDGETS } from "../studio-brush-frame-budget-policy";
 
 import { STUDIO_SOAK_HEAP_MIN_SLOPE_SAMPLES, STUDIO_SOAK_HEAP_MIN_SLOPE_WINDOW_MS } from "./studio-memory-growth-policy.mjs";
+import { summarizeStudioSoakPointerLatency, type StudioSoakPointerLatencyStroke } from "./studio-soak-pointer-latency";
 
 import type { HeapSample, LongTaskSample } from "./studio-soak-telemetry";
 
@@ -48,7 +49,7 @@ export function studioSoakDocumentAdvanced(evidence: AdvanceEvidence): boolean {
     || advanced(evidence.historyTotalAppendsBefore, evidence.historyTotalAppendsAfter);
 }
 
-interface StrokeEvidence {
+interface StrokeEvidence extends StudioSoakPointerLatencyStroke {
   acceptedByDocument: boolean;
   historyTotalAppendsBefore: number | null;
   historyTotalAppendsAfter: number | null;
@@ -156,6 +157,9 @@ export function evaluateStudioSoakCompletion(input: {
   workload: StudioSoakWorkload;
   strokes: readonly StrokeEvidence[];
   longTasks: readonly LongTaskSample[];
+  measurePointerLatency?: boolean;
+  sessionId?: string;
+  sessionStartedAt?: number | null;
 }) {
   if (!Number.isFinite(input.requestedDurationMs) || input.requestedDurationMs <= 0
     || !Number.isFinite(input.checkpointIntervalMs) || input.checkpointIntervalMs <= 0) {
@@ -204,6 +208,12 @@ export function evaluateStudioSoakCompletion(input: {
     && task.durationMs >= STUDIO_BRUSH_COMPETITIVE_FRAME_BUDGETS.longTaskMs);
   if (drawingLongTasks.length > 0) failed.push("drawing-longtask");
   if (input.failures > 0) failed.push("recorded-failures");
+  const pointerLatency = summarizeStudioSoakPointerLatency({
+    requested: input.measurePointerLatency === true, sessionId: input.sessionId,
+    sessionStartedAt: input.sessionStartedAt, requestedDurationMs: input.requestedDurationMs,
+    pageEpochs: input.pageEpochs, attemptedStrokes: input.attemptedStrokes, strokes: input.strokes,
+  });
+  if (pointerLatency.requested && !pointerLatency.measured) incomplete.push("pointer-latency-evidence");
   const status = failed.length > 0 ? "fail" : incomplete.length > 0 ? "incomplete" : "pass";
   return {
     status, ok: status === "pass", incomplete, failed, accumulation,
@@ -211,6 +221,7 @@ export function evaluateStudioSoakCompletion(input: {
     checkpointCoverage: { expected: expected.length, valid: valid.length, missing: missing.map(key) },
     heapSlopeCoverage: { ready: slopeReady, samples: slopeSamples.length, windowMs: slopeWindowMs },
     drawingPerformance: { policy: "competitive-longtask", limitMs: STUDIO_BRUSH_COMPETITIVE_FRAME_BUDGETS.longTaskMs,
-      violations: drawingLongTasks.length, pointerLatencyMeasured: false },
+      violations: drawingLongTasks.length, pointerLatencyMeasured: pointerLatency.measured },
+    pointerLatency,
   };
 }
