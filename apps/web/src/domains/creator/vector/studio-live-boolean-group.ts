@@ -131,7 +131,11 @@ function ringArea(ring: StudioPathRing): number {
 
 function applyTransformToPolygon(polygon: StudioPathPolygon, transform?: LiveBooleanTransform): StudioPathPolygon {
   if (!transform || polygon.length === 0) return polygon;
-  const { tx, ty, rotationDeg, scaleX, scaleY } = transform;
+  const tx = Number.isFinite(transform.tx) ? transform.tx : 0;
+  const ty = Number.isFinite(transform.ty) ? transform.ty : 0;
+  const rotationDeg = Number.isFinite(transform.rotationDeg) ? transform.rotationDeg : 0;
+  const scaleX = Number.isFinite(transform.scaleX) ? transform.scaleX : 1;
+  const scaleY = Number.isFinite(transform.scaleY) ? transform.scaleY : 1;
   if (Math.abs(tx) < EPS && Math.abs(ty) < EPS && Math.abs(rotationDeg) < EPS && Math.abs(scaleX - 1) < EPS && Math.abs(scaleY - 1) < EPS) {
     return polygon;
   }
@@ -286,8 +290,9 @@ export function updateLiveBooleanNode(
   let changed = false;
   const nextChildren = root.children.map((child) => {
     if (child.id === targetId) {
-      changed = true;
-      return updater(child);
+      const updated = updater(child);
+      if (updated !== child) changed = true;
+      return updated;
     }
     if (child.kind === "group") {
       const updated = updateLiveBooleanNode(child, targetId, updater);
@@ -310,7 +315,10 @@ export function insertLiveBooleanChild(
   return updateLiveBooleanNode(root, parentGroupId, (node) => {
     if (node.kind !== "group") return node;
     const next = [...node.children];
-    const idx = index === undefined ? next.length : Math.max(0, Math.min(next.length, Math.floor(index)));
+    const idx =
+      index === undefined || !Number.isFinite(index)
+        ? next.length
+        : Math.max(0, Math.min(next.length, Math.floor(index)));
     next.splice(idx, 0, child);
     return { ...node, children: next };
   });
@@ -344,7 +352,15 @@ export function reorderLiveBooleanChild(
 ): LiveBooleanGroupNode {
   return updateLiveBooleanNode(root, groupId, (node) => {
     if (node.kind !== "group") return node;
-    if (fromIndex < 0 || fromIndex >= node.children.length || toIndex < 0 || toIndex >= node.children.length || fromIndex === toIndex) {
+    if (
+      !Number.isInteger(fromIndex) ||
+      !Number.isInteger(toIndex) ||
+      fromIndex < 0 ||
+      fromIndex >= node.children.length ||
+      toIndex < 0 ||
+      toIndex >= node.children.length ||
+      fromIndex === toIndex
+    ) {
       return node;
     }
     const next = [...node.children];
