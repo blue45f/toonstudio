@@ -1,12 +1,27 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioFreshIdeasV2WorkbenchCard } from "./StudioFreshIdeasV2WorkbenchCard";
 
+const { database } = vi.hoisted(() => {
+  let value: string | null = null;
+  return {
+    database: {
+      kvGet: vi.fn(async () => value),
+      kvSet: vi.fn(async (_namespace: string, _key: string, raw: string) => { value = raw; }),
+      reset: () => { value = null; },
+    },
+  };
+});
+vi.mock("../studio-local-database-runtime", () => ({ acquireStudioLocalDatabase: async () => database }));
 beforeEach(() => {
   window.localStorage.clear();
+  database.reset();
+  database.kvSet.mockClear();
 });
+
+afterEach(cleanup);
 
 describe("StudioFreshIdeasV2WorkbenchCard (@unslop 9-pass UI v2.2)", () => {
   it("renders 100/100 badge, supports cold-start/multi-source drawer, contrarian modes, 9 extended lenses, streaming, OSMU, and Idea Bank status switching", async () => {
@@ -74,12 +89,12 @@ describe("StudioFreshIdeasV2WorkbenchCard (@unslop 9-pass UI v2.2)", () => {
     fireEvent.click(screen.getByTestId("fresh-ideas-mode-mode-c-ecosystem"));
     fireEvent.click(screen.getByTestId("fresh-ideas-osmu-newsletter"));
     fireEvent.click(screen.getByTestId("fresh-ideas-save-bank-btn"));
-    expect(screen.getByTestId("fresh-ideas-bank-count").textContent).toContain("5건");
+    await waitFor(() => expect(screen.getByTestId("fresh-ideas-bank-count").textContent).toContain("5건"));
 
     const statusSelects = screen.getAllByLabelText(/진행 상태/u);
     expect(statusSelects.length).toBeGreaterThanOrEqual(1);
     fireEvent.change(statusSelects[0]!, { target: { value: "Published" } });
-    expect((statusSelects[0] as HTMLSelectElement).value).toBe("Published");
+    await waitFor(() => expect((statusSelects[0] as HTMLSelectElement).value).toBe("Published"));
 
     fireEvent.click(screen.getByTestId("fresh-ideas-export-csv-btn"));
     await waitFor(() => {
@@ -87,4 +102,15 @@ describe("StudioFreshIdeasV2WorkbenchCard (@unslop 9-pass UI v2.2)", () => {
     });
     expect(onStatusChange).toHaveBeenCalled();
   });
+  it("저장 실패를 완료로 표시하거나 저장 건수를 늘리지 않는다", async () => {
+    database.kvSet.mockRejectedValueOnce(new Error("디스크 쓰기 거부"));
+    const onStatusChange = vi.fn();
+    render(<StudioFreshIdeasV2WorkbenchCard sourceTitle="작업 소재" sourceSummaryKo="새 초안" onStatusChange={onStatusChange} />);
+    fireEvent.click(screen.getByTestId("fresh-ideas-mode-mode-c-ecosystem"));
+    fireEvent.click(screen.getByTestId("fresh-ideas-save-bank-btn"));
+    expect(await screen.findByText(/아이디어 뱅크에 저장하지 못했습니다/u)).toBeTruthy();
+    expect(screen.getByTestId("fresh-ideas-bank-count").textContent).toContain("0건");
+    expect(onStatusChange.mock.calls.flat()).not.toContainEqual(expect.stringContaining("뱅크 저장 완료"));
+  });
+
 });

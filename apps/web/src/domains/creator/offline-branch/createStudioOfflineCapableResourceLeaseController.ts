@@ -40,6 +40,10 @@ function requiresOfflineAuthorityFallback(
   // transforms, filters, and every other destructive edit in ordinary local Studio documents.
   if (!room) return requiresSharedAuthority;
   if (room.mode !== "server") return false;
+  // 개인 원고의 준비된 P2P 문서는 시그널링 서버를 사용해도 협력 잠금으로 편집한다.
+  // 팀 원고의 정본 권한·잠금 정책은 그대로 유지한다.
+  if (!requiresSharedAuthority && room.ready && room.crdtFanout === "mesh"
+    && room.canvasLockPolicy === "cooperative") return false;
   return !room.ready
     || room.canvasLockPolicy === "append-only"
     || room.serverLockSupported === false;

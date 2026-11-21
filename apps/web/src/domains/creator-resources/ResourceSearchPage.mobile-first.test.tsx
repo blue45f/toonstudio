@@ -58,13 +58,17 @@ describe("기관 자료 검색의 모바일 우선 동선", () => {
     const before = screen.getByTestId("resource-location").textContent;
     fireEvent.click(menu.summary);
     const reached = new Set<string>();
+    // 목적지 그룹을 그대로 유지하되 현재 제공처의 핀보드 바로가기도 포함한다.
+    const pinboardHref = "/research?category=costume-props&source=music-metadata";
+    expect(within(menu.element).getByTestId("research-pinboard-projection-link").getAttribute("href")).toBe(pinboardHref);
+    const menuHomeHrefs = ["/research", pinboardHref];
     for (const group of RESOURCE_MENU_GROUPS) {
       fireEvent.click(within(menu.element).getByRole("button", { name: group.title[0] }));
       const hrefs = within(menu.element).getAllByRole("link").map(link => link.getAttribute("href"));
-      expect(hrefs).toEqual(["/research", ...resourceMenuGroupPages(group).map(page => page.path)]);
+      expect(hrefs).toEqual([...menuHomeHrefs, ...resourceMenuGroupPages(group).map(page => page.path)]);
       for (const href of hrefs) if (href) reached.add(href);
     }
-    expect([...reached].sort()).toEqual(["/research", ...RESOURCE_MENU_GROUPS.flatMap(group => group.paths)].sort());
+    expect([...reached].sort()).toEqual([...menuHomeHrefs, ...RESOURCE_MENU_GROUPS.flatMap(group => group.paths)].sort());
     const links = within(menu.element).getAllByRole("link");
     const last = links[links.length - 1]; if (!last) throw new Error("마지막 링크가 필요합니다.");
     last.focus(); fireEvent.keyDown(last, { key: "Escape" });

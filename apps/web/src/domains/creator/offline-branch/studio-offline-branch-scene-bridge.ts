@@ -356,6 +356,10 @@ export function planStudioOfflineSceneTransition(
     ) {
       unsupported.push(`${page.id}: 페이지 배경·크기 변경은 온라인 정본 연결이 필요합니다.`);
     }
+    if (stableStudioOfflineBranchJson(previous.layerComps ?? [])
+      !== stableStudioOfflineBranchJson(page.layerComps ?? [])) {
+      unsupported.push(`${page.id}: 레이어 보기 변경은 온라인 정본 연결이 필요합니다.`);
+    }
     mutations.push(...planElementMutations(previous, page, movedIds, unsupported));
     mutations.push(...planGroupMutations(previous, page, unsupported));
   }

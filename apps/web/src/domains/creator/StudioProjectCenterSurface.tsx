@@ -37,8 +37,16 @@ export function StudioProjectCenterSurface({
 }: StudioProjectCenterSurfaceProps) {
   // 이 표면은 열려 있는 동안에만 마운트된다. 메뉴바의 "프로젝트 센터" 단추를 키보드로 눌렀다면 포커스를 받는다.
   useStudioWindowKeyboardFocus("#studio-project-actions-menu", true);
+  const mobileDialogProps = {
+    id: "studio-project-actions-menu",
+    "data-studio-project-actions-menu": "true",
+    role: "dialog",
+    "aria-label": "프로젝트 센터",
+    tabIndex: -1,
+  } as const;
   const content = (
     <div
+      {...(desktop ? {} : mobileDialogProps)}
       onClickCapture={(event) => handleProjectAction(event, onClose)}
       className={desktop
         ? "grid h-full min-h-0 grid-cols-2 gap-2 overflow-y-auto overscroll-contain p-2.5 [scrollbar-gutter:stable] @xl:grid-cols-3 [&>button]:min-h-11 [&>button]:min-w-0 [&>button]:justify-start [&>label]:min-h-11 [&>label]:min-w-0 [&>label]:justify-start"
@@ -48,19 +56,7 @@ export function StudioProjectCenterSurface({
     </div>
   );
 
-  if (!desktop) {
-    return (
-      <div
-        id="studio-project-actions-menu"
-        data-studio-project-actions-menu="true"
-        role="dialog"
-        aria-label="프로젝트 센터"
-        tabIndex={-1}
-      >
-        {content}
-      </div>
-    );
-  }
+  if (!desktop) return content;
   return (
     <StudioDesktopFloatingSurface
       id="studio-project-actions-menu"

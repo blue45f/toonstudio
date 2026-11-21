@@ -541,7 +541,7 @@ export const StudioPageListPane = memo(function StudioPageListPane({
                 : { width: leftResize.width, minWidth: STUDIO_WORKSPACE_LEFT_PANEL_WIDTH.minimum }
           }
         >
-          <div className="shrink-0 border-b border-line/50 pb-1.5">
+          <div className={cn("border-b border-line/50 pb-1.5", isMobile ? "min-h-0 shrink overflow-y-auto overscroll-y-contain" : "shrink-0")}>
             {isMobile ? (
               <Suspense fallback={<div aria-hidden className="min-h-11" />}>
                 <LazyStudioMobileSheetHandle
@@ -903,7 +903,7 @@ export const StudioPageListPane = memo(function StudioPageListPane({
             aria-label="페이지 검색 결과"
             aria-busy={pageQuery !== deferredPageQuery}
             data-studio-page-navigation-active={navigationActive ? "true" : undefined}
-            className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain pr-0.5"
+            className={cn("flex flex-1 flex-col gap-1 overflow-y-auto overscroll-contain pr-0.5", isMobile ? "min-h-[min(7rem,40%)]" : "min-h-0")}
           >
             {navigationEntries.length === 0 ? (
               <div aria-live="polite" className="grid min-h-40 place-items-center rounded-xl border border-dashed border-line bg-card/50 p-5 text-center">

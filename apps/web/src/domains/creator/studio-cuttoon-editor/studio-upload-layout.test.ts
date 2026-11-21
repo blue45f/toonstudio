@@ -25,8 +25,10 @@ describe("studio upload mobile layout contract", () => {
     );
     expect(STUDIO_UPLOAD_PAGE_CONTROLS_CLASS).toContain("col-span-3");
     expect(STUDIO_UPLOAD_PAGE_CONTROLS_CLASS).toContain("grid-cols-3");
-    expect(STUDIO_UPLOAD_PAGE_CONTROL_CLASS).toContain("pointer-coarse:h-11");
-    expect(STUDIO_UPLOAD_PAGE_CONTROL_CLASS).toContain("pointer-coarse:min-w-11");
+    // 모든 입력 장치에서 최소 44px이므로 coarse pointer도 같은 기준을 보장한다.
+    const controlClasses = STUDIO_UPLOAD_PAGE_CONTROL_CLASS.split(/\s+/u);
+    expect(controlClasses).toContain("min-h-11");
+    expect(controlClasses).toContain("min-w-11");
   });
 
   it("모바일 저장 도크는 입력을 덮지 않고 도달한 뒤 상단 safe-area에 머문다", () => {

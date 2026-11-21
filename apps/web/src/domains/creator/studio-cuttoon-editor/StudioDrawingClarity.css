@@ -272,6 +272,13 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 }
 /* 데스크톱에서도 자동저장 복구·팔로워·내부편집·채우기 미리보기 배너가 마운트될 때 캔버스 원점(77.5px)이 밀리지 않도록 오버레이로 고정한다. */
 [data-studio-editor=true] [data-studio-canvas-status-rail]:not([data-studio-canvas-status-rail-filled])>:not([data-studio-selection-command-lane=true]){position:absolute;inset:3.5rem .75rem auto;z-index:25;margin-bottom:0}
+/* 패널 뒤에 미리보기 버튼이 가려지지 않게 실제 도킹 방향만큼 배너를 줄인다. */
+[data-studio-drawing-clarity-panel=layers]:not([data-studio-drawing-clarity-mobile=true]) [data-studio-inspector-dock=right] [data-studio-fill-preview-notice=true] {
+  right: calc(var(--studio-drawing-inspector-width) + .75rem);
+}
+[data-studio-drawing-clarity-panel=layers]:not([data-studio-drawing-clarity-mobile=true]) [data-studio-inspector-dock=left] [data-studio-fill-preview-notice=true] {
+  left: calc(var(--studio-drawing-inspector-width) + .75rem);
+}
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-editing-dock=true]{
   background:color-mix(in oklch,var(--color-panel) 92%,transparent);backdrop-filter:blur(18px) saturate(1.2)
 }

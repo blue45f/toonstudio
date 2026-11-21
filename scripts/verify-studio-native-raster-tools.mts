@@ -43,7 +43,7 @@ import { captureStudioDocumentBeforeDeadline, captureStudioDocumentRoi } from ".
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import { setStudioPrimaryColorThroughUi as setPrimaryColor } from "./lib/studio-primary-color-interactions";
-import { openStudioMainMenu } from "./lib/studio-shell-interactions";
+import { openStudioLayerNavigator, openStudioMainMenu, visibleStudioControl } from "./lib/studio-shell-interactions";
 import { clickStudioToolThroughUi } from "./lib/studio-tool-interactions";
 import { studioDocumentHistoryButtons, studioPinnedToolButton } from "./lib/studio-verifier-entry-points";
 import {
@@ -1638,6 +1638,8 @@ async function capturePreparedRasterOnlyControl(
     await prepareStudio(page, studioUrl, configuredCanvasHeight);
     const fixture = await drawNativeFixture(page, null);
     if (id === "wet-mix") await setPrimaryColor(page, "#e11d48");
+    const inspector = page.getByTestId("studio-inspector-navigator");
+    if (!await inspector.isVisible()) await openStudioLayerNavigator(page);
     const button = await toolButton(page, RETOUCH_TOOL_IDS[id]);
     await armRasterImagePresentationProbe(page);
     await button.click();
@@ -2148,23 +2150,28 @@ async function readPixelSelectionUiState(page: Page): Promise<PixelSelectionUiSt
   });
 }
 
-async function exposePixelSelectionUi(page: Page): Promise<PixelSelectionUiState> {
-  const propertiesTab = page.locator(
-    '[data-studio-inspector-primary-tab="properties"]:visible',
+/** Clarity에서는 도구가 경로를 골라도 사용자가 닫아 둔 패널은 붙지 않는다. */
+async function exposeRasterInspector(page: Page, tab: "retouch" | "transform"): Promise<void> {
+  const inspector = page.getByTestId("studio-inspector-navigator");
+  if (!await inspector.isVisible()) await openStudioLayerNavigator(page);
+  await inspector.waitFor({ state: "visible" });
+  const properties = await visibleStudioControl(
+    inspector.locator('[data-studio-inspector-primary-tab="properties"]'),
+    "선택 항목 속성",
   );
-  await propertiesTab.first().waitFor({ state: "visible", timeout: 10_000 });
-  if (await propertiesTab.first().getAttribute("aria-selected") !== "true") {
-    await propertiesTab.first().click();
-  }
+  if (await properties.getAttribute("aria-selected") !== "true") await properties.click();
+  const label = tab === "retouch" ? "선택·보정" : "크기·회전";
+  const toolTab = await visibleStudioControl(
+    inspector.getByRole("tab", { name: label, exact: true }),
+    label,
+  );
+  if (await toolTab.getAttribute("aria-selected") !== "true") await toolTab.click();
+  await inspector.getByRole("tab", { name: label, exact: true, selected: true })
+    .waitFor({ state: "visible" });
+}
 
-  const retouchTab = page
-    .locator('[role="tab"]:visible')
-    .filter({ hasText: /^선택·보정$/u });
-  await retouchTab.first().waitFor({ state: "visible", timeout: 10_000 });
-  if (await retouchTab.first().getAttribute("aria-selected") !== "true") {
-    await retouchTab.first().click();
-  }
-
+async function exposePixelSelectionUi(page: Page): Promise<PixelSelectionUiState> {
+  await exposeRasterInspector(page, "retouch");
   await page.locator('[data-studio-pixel-selection="true"]:visible').first().waitFor({
     state: "visible",
     timeout: 10_000,
@@ -2269,6 +2276,8 @@ async function performRetouchGesture(
   performance: StudioNativeRasterPerformanceEvidence;
 }> {
   if (id === "wet-mix") await setPrimaryColor(page, "#e11d48");
+  const inspector = page.getByTestId("studio-inspector-navigator");
+  if (!await inspector.isVisible()) await openStudioLayerNavigator(page);
   const button = await toolButton(page, RETOUCH_TOOL_IDS[id]);
   const inactiveBefore = await button.getAttribute("aria-pressed") !== "true";
   const documentPath = id === "liquify"
@@ -2303,10 +2312,10 @@ async function performRetouchGesture(
   await drawMeasuredPointerPath(page, path, moveStepsPerSegment, configuredStepDelayMs);
   await page.mouse.move(4, 4);
   await waitForPressed(button, true);
-  const activePanelToggle = page.getByRole("button", {
+  const activePanelToggle = page.locator("#studio-inspector").getByRole("button", {
     name: RETOUCH_ACTIVE_PANEL_LABELS[id],
   });
-  const busyControl = await visibleLocator(activePanelToggle);
+  const busyControl = await visibleStudioControl(activePanelToggle, `${id} 활성 보정 도구`);
   const coldSettle = await waitForRasterEffectBusyAndDurableAutosave(page, {
     baselineImageSignature,
     busyControl,
@@ -2393,9 +2402,7 @@ async function performHealGesture(
   );
   await waitForPressed(rectangle, true);
 
-  const retouchTab = page.getByRole("tab", { name: "선택·보정", exact: true });
-  await retouchTab.waitFor({ state: "visible", timeout: 10_000 });
-  await retouchTab.click();
+  await exposeRasterInspector(page, "retouch");
   const healCandidates = page.getByRole("button", {
     name: "복구 브러시",
     exact: true,
@@ -2563,6 +2570,7 @@ async function performCrop(
     "crop editable raster target did not draw its exact prepared src",
     24_000,
   );
+  await exposeRasterInspector(page, "transform");
   const preparedBaselineScreenshot = await captureClip(page);
   const preparedSignature = imageSignature(prepared);
   const [start, end] = await documentPointsToScreen(page, [
@@ -2727,6 +2735,7 @@ async function performPixelTransform(
   const transform = await waitForToolButton(page, "transform");
   await waitForEnabled(transform);
   await transform.click();
+  await exposeRasterInspector(page, "retouch");
   const flip = page.getByRole("button", { name: "픽셀 내용 좌우 반전", exact: true });
   await waitForEnabled(flip, 18_000);
   // Capture the visual Undo baseline only after transform mode has mounted. A selection-only
