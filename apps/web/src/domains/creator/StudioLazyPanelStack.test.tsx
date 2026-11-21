@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { resetStudioBg3dRetainedOwnerForTests } from "./bg3d/studio-bg3d-retained-owner";
@@ -274,14 +274,15 @@ describe("StudioLazyPanelStack", () => {
     expect(setPoserInitialElementId).toHaveBeenCalledWith(undefined);
   });
 
-  it("6패스 수신 문서 capability를 실제 3D 편집기 경계까지 전달한다", () => {
+  it("6패스 수신 문서 capability를 실제 3D 편집기 경계까지 전달한다", async () => {
     render(withRetainedBg3dHost(<StudioLazyPanelStack {...createProps({ bg3dOpen: true,
       bg3dSixPassLtUnavailableReason: "six-pass-unsupported-document-surface" })} />));
+    await act(async () => { await vi.dynamicImportSettled(); });
     expect(document.querySelector('[data-optional-panel="bg3d"]')?.getAttribute("data-six-pass-unavailable-reason"))
       .toBe("six-pass-unsupported-document-surface");
   });
 
-  it("delegates semantic BG3D insertion and clears every caller-owned initial value on close", () => {
+  it("delegates semantic BG3D insertion and clears every caller-owned initial value on close", async () => {
     const stableHandlers = createHandlers();
     const setBg3dInitialDataUrl = vi.fn();
     const setBg3dInitialElementId = vi.fn();
@@ -300,6 +301,7 @@ describe("StudioLazyPanelStack", () => {
       />
     ));
 
+    await act(async () => { await vi.dynamicImportSettled(); });
     fireEvent.click(screen.getByRole("button", { name: "BG3D 삽입" }));
     expect(stableHandlers.insertBg3dResult).toHaveBeenCalledWith({ kind: "bg3d" });
 
