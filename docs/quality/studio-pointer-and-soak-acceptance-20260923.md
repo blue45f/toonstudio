@@ -465,3 +465,53 @@ WebGPU 181.104초·Naver 185.347초 동안 각각 7회 모두 입력 영역 준�
 실행했다. 새 관측 hook 두 개와 대응 테스트의 부분 strict TypeScript program은
 330개 source·진단 0개였으며 Host는 포함하지 않았다. 전체 Host/프로젝트 타입 검사,
 필수 전체 CI, 새 소스의 브라우저 성능 및 300분 수락은 이 로컬 결과와 구분한다.
+
+### 협업 모듈 로딩에서도 같은 원고 DOM과 입력 소유권 유지
+
+기존 지연 협업 공급자는 idle/fallback과 실제 runtime의 서로 다른 분기에 편집기
+children을 넣었다. 모듈 준비 뒤 분기가 바뀌면 viewport DOM은 재설치되지만 바깥
+Host의 mount effect가 보관한 scroll·pointerdown·wheel·touch 대상은 이전 노드에
+남을 수 있다. 이는 소스에서 확인한 구체적인 소유권 경로다. 이전 소크에 callback
+이력이 없으므로 해당 실행의 모든 표시·입력 실패를 이 경로 하나로 확정하지 않는다.
+
+완료된 `6b3b72a4bb22ff39df03cb763a9f989dea1fb3bd`의 수정을 통합해 편집기
+children을 항상 같은 바깥 context 아래 두고 협업 runtime만 형제로 지연 설치한다.
+runtime 인스턴스를 계속 유지하므로 복구·철회 래치도 유지된다. 원고·outbox 소유자·
+역할·연결 정책이 달라진 첫 render에는 이전 범위의 context를 다시 노출하지 않는다.
+같은 runtime 값의 반복 발행과 children 변경에 의한 전달 루프도 막는다.
+
+추가 검토에서는 같은 transport factory로 `serverRequired`만 false→true로 바꿀 때
+이전 room이 새 범위의 context에 한 번 다시 나타나는 현상을 일반·StrictMode에서
+각각 재현했다. 실제 Provider는 policy effect에서 transport preference를 바꾼 다음
+passive effect에서 room·outbox를 초기화한다. relay도 관측·확정을 두 단계로 나눠
+이 중간 render를 발행하지 않도록 수정했다. 이는 현재 초기화 순서에 대한 방어이며,
+서버 연결이나 초기 문서 동기화의 완료를 대신 보장하는 신호가 아니다.
+
+실제 Provider의 두 effect 본문·의존성 배열·순서를 실행한 회귀와 실제 Host의 남은
+세 입력 effect·viewport 배율 hook을 연결한 두 테스트 파일에서 15개 모두 통과했다.
+새 정책 전환 두 건은 수정 전 실패·수정 후 통과를 확인했다. DOM 동일성·포커스,
+양수 resize, scroll·pointer·wheel·touch, cleanup, 원고·소유자·역할 변경과 기존
+복구 래치를 검사했다. 이 결과는 전체 타입 검사나 실제 브라우저의 장시간 수락과
+별개이며, `1445eebf94d2811d5e97644628b850781b8d3af8` 실행에는 포함되지 않는다.
+
+### 같은 CI 소스에서 확인한 패널 준비와 검색 버튼 가림
+
+`1445eebf`의 [session goals](https://github.com/blue45f/toonstudio/actions/runs/44946596391)와
+[finishing quality](https://github.com/blue45f/toonstudio/actions/runs/44946596204)는
+BG3D 패널 두 검사에서 같은 실패를 보였다. 실제 lazy RouteBridge와 retained Host가
+패널을 설치하기 전에 동기 DOM 검사가 끝났으며, capability 값이 잘못 전달됐다는
+증거는 아니었다. 실제 bridge/Host는 유지하고 무거운 공유 3D 세션 빌더의 비동기
+포트만 타입 있는 fixture로 대체했다. 패널 준비 후 기존 capability·삽입 payload·
+닫기 초기값 삭제를 검사하며, 모든 패널이 닫혔을 때 빌더를 호출하지 않음도 확인한다.
+대상 8개와 실제 retained bridge·WebXR 경계 10개, 총 18개가 unhandled error 없이
+통과했고 정상 커밋 훅도 통과했다.
+
+같은 소스의 [필수 접근성 검사](https://github.com/blue45f/toonstudio/actions/runs/44946596222/job/136975262141)는
+`/production`, `/production/projects`, `/settings`에서 소재 검색 버튼의 일부 가림을
+보고했다. 버튼 rect는 약 136×44px였지만 Axe가 측정한 유효 높이는 5.6px였다.
+완료된 `d203bb07dd05a0dc3a7669ca2f5f0085bc4f2a48`의 행 분리 수정을 통합하고,
+1280·1024·390px에서 단계 목록 스크롤·검색 영역의 겹침·9점 hit test·실제 클릭과
+Enter/Escape를 검사하는 E2E를 유지했다. 기존 Axe와 44px 입력 기준은 낮추지 않는다.
+로컬에서는 기존 실패 세 경로와 새 시나리오를 선택했지만 Chromium이 socket 생성
+권한 오류로 launch 중 종료돼 페이지·Axe·입력 검사는 실행되지 않았다. 이 수정의
+실제 브라우저 통과는 후속 원격 CI에서 확인해야 한다.
