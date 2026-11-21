@@ -6,9 +6,50 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
 import { assertTrackedDocumentInputs, fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
+import { assertCompleteCoverage, parseArguments, partitionFiles } from "./typecheck-shards.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const root = fileURLToPath(new URL("../", import.meta.url));
+
+test("수동 후보 편집 하네스도 전체 타입 검사를 6MiB 묶음과 65분 예산으로 끝까지 수행한다", async () => {
+  const workflow = parse(await fs.readFile(path.join(root, ".github/workflows/ci.yml"), "utf8"));
+  const job = workflow.jobs.static;
+  const manual = job.steps.find((step) => step.name === "수동 후보의 전체 하네스 검증");
+  const required = workflow.jobs.typecheck.steps.find((step) => step.name === "Typecheck application, API and realtime worker");
+  assert(manual && required, "실제 수동 하네스와 필수 타입 검사 단계가 모두 있어야 합니다.");
+  assert.equal(manual.env?.TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES, "6291456");
+  assert.equal(manual.env.TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES, required.env.TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES);
+  assert.equal(job["timeout-minutes"], "${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && matrix.shard == 'studio-editing' && 65 || 25 }}");
+  assert.equal(manual.if, "github.event_name == 'workflow_dispatch' && matrix.shard == 'studio-editing'");
+  assert.equal(job["continue-on-error"], undefined);
+  assert.equal(manual["continue-on-error"], undefined);
+  assert.match(manual.run, /^set -euo pipefail\n/u);
+  assert.match(manual.run, /^git merge-base --is-ancestor "\$HARNESS_BASE" HEAD$/mu);
+  assert.match(manual.run, /\npnpm harness:verify --base="\$HARNESS_BASE"\n$/u);
+  assert.doesNotMatch(manual.run, /\|\|\s*true|set\s+\+e|--skip/u);
+  assert(workflow.jobs.core.needs.includes("typecheck") && workflow.jobs.core.needs.includes("static"));
+  assert.equal(workflow.jobs.verify.needs, "core");
+
+  const pkg = JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8"));
+  const args = pkg.scripts["typecheck:web"].split(/\s+/u).slice(2);
+  const ordinary = parseArguments(args, {}), inherited = parseArguments(args, manual.env);
+  assert.equal(ordinary.maxBytes, 12582912);
+  assert.equal(inherited.maxBytes, 6291456, "step env가 기존 12MiB CLI 값보다 우선해야 합니다.");
+  assert.equal(inherited.heapMb, ordinary.heapMb);
+  assert.equal(inherited.project, ordinary.project);
+  const identity = { options: { skipLibCheck: true }, files: [
+    { path: "first.ts", bytes: 4 * 1024 * 1024 },
+    { path: "second.ts", bytes: 4 * 1024 * 1024 },
+    { path: "third.ts", bytes: 4 * 1024 * 1024 },
+    { path: "ambient.d.ts", bytes: 4 * 1024 * 1024, declaration: true },
+  ] };
+  const expected = identity.files.map((file) => file.path);
+  const ordinaryGroups = partitionFiles(identity, ordinary.maxBytes);
+  const smallerGroups = partitionFiles(identity, inherited.maxBytes);
+  assert(smallerGroups.length > ordinaryGroups.length);
+  assert.deepEqual(smallerGroups.flat(), expected, "작은 묶음도 선언을 포함한 전체 SourceFile을 보존해야 합니다.");
+  assert.doesNotThrow(() => assertCompleteCoverage(expected, smallerGroups));
+});
 
 test("접근성 체크아웃은 화면·글꼴·브랜드 영상과 검증 소스를 보존한다", async () => {
   const workflow = parse(await fs.readFile(path.join(root, ".github/workflows/ci.yml"), "utf8"));
