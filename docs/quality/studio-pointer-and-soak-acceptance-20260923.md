@@ -95,6 +95,20 @@ GitHub Actions의 `Studio 5h stability soak` 수동 실행은 다음 입력을 �
 `profile=all`과 `latency_baseline=true` 조합은 빌드 전에 거부한다. 여러 환경 중 하나의
 지연 검사만 실패하고 나머지 환경이 본 검사를 계속하는 모호한 선행 조건을 만들지 않는다.
 
+### 현재 화면의 브러시 선택과 Undo/Redo
+
+PC의 활성 브러시 pill은 떠 있는 라이브러리를 연다. 소크는 실제 보이는 floating 또는
+기존 dock의 단일 라이브러리에서 정확한 브러시 ID를 선택하고, `aria-pressed`와 비동기
+적용 완료를 모두 확인한다. 떠 있는 창은 실제 닫기 버튼으로 닫아 다음 획의 캔버스를
+가리지 않도록 한다. 라이브러리 중복, 적용 지연, 닫기 실패는 검사 실패로 남긴다.
+
+Undo/Redo는 공통 history selector를 재사용해 현재 Clarity 기록 막대의 사용자 버튼을
+우선한다. 중복되거나 비활성인 버튼을 성공으로 처리하지 않는다. `bounded-churn`은
+기존 Undo 10회·Redo 3회·Undo 3회의 실제 레이어 수 복귀를 계속 확인한다.
+`accumulate`는 이 정리를 수행하지 않으므로 기록 복원 경로는 `bounded-churn` 실행으로
+별도 확인해야 한다. DOM 회귀 검사는 소크의 실제 선택·기록 함수를 실행하며, 브라우저
+검사의 결과와 함께 확인한다.
+
 ### 같은 원고의 p95·p99
 
 `measure_pointer_latency=true`는 원래 그리던 획의 `pointermove`를 수동으로 관측한다.
