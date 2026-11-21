@@ -94,7 +94,10 @@ describe("mobile route density contract", () => {
       ...SITE_UTILITY_NAVIGATION, SITE_NAVIGATION_ITEMS.allMenu,
     ].map((item) => item.href));
     for (const item of Object.values(SITE_NAVIGATION_ITEMS)) expect(reachable.has(item.href), item.id).toBe(true);
-    expect(mobileNavigation).toContain('mobileTabs.length === 5 ? "grid-cols-5" : "grid-cols-4"');
+    // 탭 수에 맞는 균등 열과 최소 너비 0을 확인해 긴 이름이 휴대폰 너비를 밀어내지 않게 한다.
+    expect(mobileNavigation).toMatch(
+      /mobileTabs\.length === 5\s*\?\s*"grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]"\s*:\s*"grid-cols-\[repeat\(4,minmax\(0,1fr\)\)\]"/u,
+    );
     expect(scene).toContain("min-height: 8rem");
     expect(scene).toContain(".route-purpose-scene__cards,");
     expect(workspace).toContain("grid-template-columns:repeat(5,minmax(0,1fr))");
