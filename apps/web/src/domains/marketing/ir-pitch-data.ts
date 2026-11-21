@@ -18,11 +18,12 @@ import { productTourChapterById } from "./product-tour-content";
 export const IR_FILM_SRC = "/brand/toonstudio-ir-tour.mp4";
 export const IR_FILM_POSTER = "/brand/toonstudio-product-tour-poster.jpg";
 
-/** 보존한 정적 발표 참고자료. 최신 코드·수치·검증 결과를 반영한 제출본이 아니다. */
+/** 웹 발표의 24개 주제에 최신 확인 근거를 반영한 검토용 발표자료. */
 export const IR_DECK_PPTX = "/brand/toonstudio-ir-deck.pptx";
 export const IR_DECK_PDF = "/brand/toonstudio-ir-deck.pdf";
-export const IR_DECK_UPDATED_AT = "2026-10-22";
-export const IR_DECK_STATUS = "reference";
+export const IR_DECK_UPDATED_AT = "2026-11-21";
+export const IR_DECK_STATUS = "review";
+export const IR_DECK_SLIDE_COUNT = 24;
 
 /** 발표 중 질의가 나오면 전체 투어의 해당 챕터로 바로 점프한다. 시작 초는 product-tour-content의 챕터 정본을 쓴다. */
 export const CHAPTER_JUMPS = [

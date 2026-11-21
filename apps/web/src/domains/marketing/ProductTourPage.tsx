@@ -11,7 +11,7 @@ import { useI18n } from "@/shared/lib/i18n";
 import { ServiceStoryJourney } from "@/shared/components/service-story-journey";
 
 import { creatorHomeLocale } from "./creator-home-content";
-import { IR_DECK_PDF, IR_DECK_PPTX, IR_DECK_STATUS, IR_DECK_UPDATED_AT } from "./ir-pitch-data";
+import { IR_DECK_PDF, IR_DECK_PPTX, IR_DECK_SLIDE_COUNT, IR_DECK_STATUS, IR_DECK_UPDATED_AT } from "./ir-pitch-data";
 import { ProductTourPlayer } from "./ProductTourPlayer";
 import { ProductTourAdditions } from "./ProductTourAdditions";
 import { ProductTourShorts } from "./ProductTourShorts";
@@ -213,9 +213,9 @@ export function ProductTourPage() {
           <p className="mk-eyebrow">{bi("자료 다운로드", "Downloads")}</p>
           <h2 id="product-tour-downloads-title" className="mk-h2">{bi("문서로 받아 가세요", "Take the documents with you")}</h2>
         </div>
-        <p className="mk-body product-tour__note">{bi("제품 소개서와 IR 참고본을 파일로 읽어 보세요.", "Read the product brief and the IR reference deck as files.")}</p>
+        <p className="mk-body product-tour__note">{bi("제품 소개서와 IR 검토본을 파일로 읽어 보세요.", "Read the product brief and the IR review deck as files.")}</p>
         <p className="mk-body product-tour__note" data-ir-deck-status={IR_DECK_STATUS}>
-          {bi(`IR 파일은 ${IR_DECK_UPDATED_AT} 기준 참고본입니다. 최신 내용은 웹 발표에서 확인하세요.`, `The IR files are reference copies dated ${IR_DECK_UPDATED_AT}. See the web presentation for current content.`)}{" "}
+          {bi(`IR 파일은 ${IR_DECK_UPDATED_AT} 기준 검토본입니다. 웹 발표의 ${IR_DECK_SLIDE_COUNT}개 주제와 확인 근거를 반영했습니다.`, `The IR files are review copies dated ${IR_DECK_UPDATED_AT}, covering the web presentation’s ${IR_DECK_SLIDE_COUNT} topics and supporting evidence.`)}{" "}
           <Link className="mk-link" href="/ir/present">{bi("최신 웹 발표 보기", "View the current web presentation")}<ArrowRight size={14} aria-hidden="true" /></Link>
         </p>
         <div className="product-tour__role-grid mk-rail">
@@ -227,14 +227,14 @@ export function ProductTourPage() {
           </a>
           <a className="product-tour__role mk-card" href={IR_DECK_PDF} download>
             <span className="mk-badge"><FileText size={13} aria-hidden="true" />PDF</span>
-            <h3>{bi("IR 참고본 · PDF", "IR reference deck · PDF")}</h3>
-            <p>{bi(`${IR_DECK_UPDATED_AT} 기준 27쪽 참고본입니다. 현재 웹 발표와 내용이 다를 수 있어요.`, `A 27-page reference copy dated ${IR_DECK_UPDATED_AT}. Its content may differ from the current web presentation.`)}</p>
+            <h3>{bi("IR 검토본 · PDF", "IR review deck · PDF")}</h3>
+            <p>{bi(`${IR_DECK_UPDATED_AT} 기준 ${IR_DECK_SLIDE_COUNT}쪽 검토본입니다. 제품·가격 조건·검증 계획을 함께 확인하세요.`, `A ${IR_DECK_SLIDE_COUNT}-page review copy dated ${IR_DECK_UPDATED_AT}, covering the product, pricing qualifications and validation plans.`)}</p>
             <small>{bi("PDF 내려받기", "Download the PDF")}<Download size={14} aria-hidden="true" /></small>
           </a>
           <a className="product-tour__role mk-card" href={IR_DECK_PPTX} download>
             <span className="mk-badge"><FileText size={13} aria-hidden="true" />PPTX</span>
-            <h3>{bi("IR 참고본 · PPTX (편집용)", "IR reference deck · PPTX (editable)")}</h3>
-            <p>{bi(`${IR_DECK_UPDATED_AT} 기준 편집용 참고본입니다. 최신 문안과 대조한 뒤 사용하세요.`, `An editable reference copy dated ${IR_DECK_UPDATED_AT}. Check it against the current presentation before use.`)}</p>
+            <h3>{bi("IR 검토본 · PPTX (편집용)", "IR review deck · PPTX (editable)")}</h3>
+            <p>{bi(`${IR_DECK_UPDATED_AT} 기준 ${IR_DECK_SLIDE_COUNT}장 검토본입니다. 문구와 도형을 편집할 수 있어요.`, `An editable ${IR_DECK_SLIDE_COUNT}-slide review copy dated ${IR_DECK_UPDATED_AT}, including editable text and shapes.`)}</p>
             <small>{bi("PPTX 내려받기", "Download the PPTX")}<Download size={14} aria-hidden="true" /></small>
           </a>
         </div>

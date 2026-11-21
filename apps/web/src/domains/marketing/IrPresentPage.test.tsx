@@ -3,7 +3,9 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { IrPresentPage } from "./IrPresentPage";
-import { IR_PRESENT_CONTENT_REVISION, isIrNarrationCurrent } from "./ir-present-narration";
+import * as narration from "./ir-present-narration";
+import { getIrNarrationSource, IR_PRESENT_CONTENT_REVISION, isIrNarrationCurrent } from "./ir-present-narration";
+import { IR_NARRATION_ASSETS } from "./ir-present-narration-assets.generated";
 import { SCENE_META } from "./ir-present-scene-data";
 
 vi.mock("@/shared/seo/use-document-title", () => ({ useDocumentTitle: vi.fn() }));
@@ -34,6 +36,19 @@ afterEach(() => {
 });
 
 describe("IR 내레이션 문안 검증", () => {
+  it("검수한 음원만 해시로 버전이 구분된 주소를 만든다", () => {
+    const assets: typeof IR_NARRATION_ASSETS = {
+      status: "verified", contentRevision: IR_PRESENT_CONTENT_REVISION,
+      sourceSha256: "a".repeat(64), scriptSha256: "b".repeat(64),
+      clips: [{ audio: "n01.mp3", sha256: "c".repeat(64), duration: 18 }],
+    };
+    expect(getIrNarrationSource("n01.mp3")).toBeNull();
+    expect(getIrNarrationSource("n01.mp3", assets)).toBe(`/brand/ir-present/audio/n01.mp3?v=${"c".repeat(16)}`);
+    expect(getIrNarrationSource("n02.mp3", assets)).toBeNull();
+    expect(getIrNarrationSource("n01.mp3", { ...assets, contentRevision: "older-copy" })).toBeNull();
+    expect(getIrNarrationSource("n01.mp3", { ...assets, clips: [{ audio: "n01.mp3", sha256: "bad", duration: 18 }] })).toBeNull();
+  });
+
   it("검증 완료와 현재 문안 revision이 모두 맞아야 음성을 허용한다", () => {
     expect(isIrNarrationCurrent()).toBe(false);
     expect(isIrNarrationCurrent({ status: "unverified", contentRevision: IR_PRESENT_CONTENT_REVISION })).toBe(false);
@@ -57,6 +72,30 @@ describe("IR 내레이션 문안 검증", () => {
     expect(container.querySelector('[src*="/ir-present/audio/"]')).toBeNull();
     expect(screen.queryByText("내레이션 재생 중")).toBeNull();
     expect(screen.getByText("화면 문안으로 진행")).toBeTruthy();
+  });
+
+  it("검증 상태여도 24장 중 음원 하나가 없으면 음성을 활성화하지 않는다", () => {
+    vi.spyOn(narration, "isIrNarrationCurrent").mockReturnValue(true);
+    vi.spyOn(narration, "getIrNarrationSource").mockImplementation((audio) => audio === "n24.mp3" ? null : `/brand/ir-present/audio/${audio}?v=checked`);
+    const { container } = render(<IrPresentPage />);
+    fireEvent.click(screen.getByRole("button", { name: "재생" }));
+    expect(container.querySelectorAll("audio")).toHaveLength(1);
+    expect(playedSources.every((source) => source?.includes("product-tour-bgm.m4a"))).toBe(true);
+  });
+
+  it("24장 음원이 확인되면 해시 주소로 재생하고 종료 뒤 다음 장면으로 이동한다", () => {
+    vi.spyOn(narration, "isIrNarrationCurrent").mockReturnValue(true);
+    vi.spyOn(narration, "getIrNarrationSource").mockImplementation((audio) => `/brand/ir-present/audio/${audio}?v=checked`);
+    const { container } = render(<IrPresentPage />);
+    fireEvent.click(screen.getByRole("button", { name: "재생" }));
+    expect(container.querySelectorAll("audio")).toHaveLength(2);
+    expect(playedSources).toContain("/brand/ir-present/audio/n01.mp3?v=checked");
+    const audio = container.querySelector("audio");
+    if (!audio) throw new Error("검증한 내레이션의 오디오 요소가 없습니다.");
+    fireEvent.ended(audio);
+    act(() => vi.advanceTimersByTime(1700));
+    expect(container.querySelector(".scene.active")?.textContent).toBe("장면 2");
+    expect(playedSources).toContain("/brand/ir-present/audio/n02.mp3?v=checked");
   });
 
   it("화면 문안의 체류 시간대로 진행하고 정지하면 다음 씬으로 넘어가지 않는다", () => {

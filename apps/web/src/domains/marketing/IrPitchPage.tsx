@@ -28,6 +28,7 @@ import {
   INVESTOR_QA_ITEMS,
   IR_DECK_PDF,
   IR_DECK_PPTX,
+  IR_DECK_SLIDE_COUNT,
   IR_DECK_UPDATED_AT,
   IR_FILM_POSTER,
   IR_FILM_SRC,
@@ -610,16 +611,16 @@ export function IrPitchPage() {
       </IrBriefSection>
 
       <IrBriefSection id="downloads">
-        <IntroSectionHeading id="ir-downloads-title" eyebrow={eyebrow("DOWNLOADS")} title={bi("이전 발표 자료를 참고용으로 내려받기", "Download the earlier presentation for reference")} />
-        <p className="mt-3 break-keep text-sm leading-6 text-fg-2">{bi(`${IR_DECK_UPDATED_AT} 참고본입니다. 최신 문안과 차이가 있으므로 일정·가격·기능 안내는 웹 발표에서 확인해 주세요.`, `Reference edition dated ${IR_DECK_UPDATED_AT}. It differs from the current copy; check the web presentation for current schedules, pricing and feature descriptions.`)} <Link href="/ir/present" className="font-bold text-accent underline">{bi("최신 웹 발표 보기", "View the current web presentation")}</Link></p>
+        <IntroSectionHeading id="ir-downloads-title" eyebrow={eyebrow("DOWNLOADS")} title={bi("최신 발표 검토본 내려받기", "Download the current presentation for review")} />
+        <p className="mt-3 break-keep text-sm leading-6 text-fg-2">{bi(`${IR_DECK_UPDATED_AT} 검토본입니다. 웹 발표의 ${IR_DECK_SLIDE_COUNT}개 주제에 확인된 일정·가격 조건·기능 안내를 반영했습니다.`, `Review edition dated ${IR_DECK_UPDATED_AT}. It covers the web presentation’s ${IR_DECK_SLIDE_COUNT} topics with verified schedules, pricing qualifications and feature descriptions.`)} <Link href="/ir/present" className="font-bold text-accent underline">{bi("최신 웹 발표 보기", "View the current web presentation")}</Link></p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <a href={IR_DECK_PPTX} download className="group rounded-2xl border border-line/70 bg-card/65 p-5 transition-colors hover:border-accent/50 sm:p-6">
             <p className="flex items-center gap-2 font-display text-base font-black text-fg">
               <Presentation size={17} className="text-accent" aria-hidden="true" />
-              {bi("IR 참고본 · PPTX", "IR reference edition · PPTX")}
+              {bi("IR 검토본 · PPTX", "IR review edition · PPTX")}
             </p>
             <p className="mt-2 break-keep text-sm leading-6 text-fg-2">
-              {bi(`${IR_DECK_UPDATED_AT} 기준 편집 가능한 발표자료입니다.`, `Editable presentation dated ${IR_DECK_UPDATED_AT}.`)}
+              {bi(`${IR_DECK_UPDATED_AT} 기준 ${IR_DECK_SLIDE_COUNT}장 발표자료입니다. 문구와 도형을 편집할 수 있어요.`, `${IR_DECK_SLIDE_COUNT} editable slides dated ${IR_DECK_UPDATED_AT}, including editable text and shapes.`)}
             </p>
             <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-accent group-hover:text-accent-2">
               <Download size={14} aria-hidden="true" />{bi("PPTX 내려받기", "Download the PPTX")}
@@ -628,10 +629,10 @@ export function IrPitchPage() {
           <a href={IR_DECK_PDF} download className="group rounded-2xl border border-line/70 bg-card/65 p-5 transition-colors hover:border-accent/50 sm:p-6">
             <p className="flex items-center gap-2 font-display text-base font-black text-fg">
               <FileText size={17} className="text-accent" aria-hidden="true" />
-              {bi("IR 참고본 · PDF", "IR reference edition · PDF")}
+              {bi("IR 검토본 · PDF", "IR review edition · PDF")}
             </p>
             <p className="mt-2 break-keep text-sm leading-6 text-fg-2">
-              {bi(`${IR_DECK_UPDATED_AT} 기준 열람용 발표자료입니다.`, `Read-only presentation dated ${IR_DECK_UPDATED_AT}.`)}
+              {bi(`${IR_DECK_UPDATED_AT} 기준 ${IR_DECK_SLIDE_COUNT}쪽 열람용 발표자료입니다.`, `${IR_DECK_SLIDE_COUNT} pages for review, dated ${IR_DECK_UPDATED_AT}.`)}
             </p>
             <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-accent group-hover:text-accent-2">
               <Download size={14} aria-hidden="true" />{bi("PDF 내려받기", "Download the PDF")}
