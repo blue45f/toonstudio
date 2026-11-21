@@ -36,7 +36,8 @@ concurrency:
 jobs:
   handoff:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # 3MiB 약 70묶음 추산·worker 48~75초 뒤 실제 파일·브라우저 검증까지 110분을 둔다.
+    timeout-minutes: 110
     steps:
       - uses: actions/checkout@v7
         with:
@@ -51,6 +52,7 @@ jobs:
       - name: Verify source identities, legacy behavior and real browser persistence
         env:
           NODE_OPTIONS: --max-old-space-size=8192
+          TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'
         run: |
           set -euo pipefail
           mkdir -p artifacts/market-cc0

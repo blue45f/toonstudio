@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { runInNewContext } from "node:vm";
 import { parse } from "yaml";
 import { assertTrackedDocumentInputs, fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
 import { assertCompleteCoverage, parseArguments, partitionFiles } from "./typecheck-shards.mjs";
@@ -11,15 +12,66 @@ import { assertCompleteCoverage, parseArguments, partitionFiles } from "./typech
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const root = fileURLToPath(new URL("../", import.meta.url));
 
-test("수동 후보 편집 하네스도 전체 타입 검사를 6MiB 묶음과 65분 예산으로 끝까지 수행한다", async () => {
+test("CC0 인계는 작은 타입 묶음을 실제 하위 명령에 전달하고 전체 검증을 실패 시 중단한다", async () => {
+  const workflow = parse(await fs.readFile(path.join(root, ".github/workflows/market-cc0-handoff.yml"), "utf8"));
+  const job = workflow.jobs.handoff;
+  const verify = job.steps.find((step) => step.name === "Verify source identities, legacy behavior and real browser persistence");
+  assert(verify, "실제 CC0 전체 검증 단계가 있어야 합니다.");
+  assert.equal(job["timeout-minutes"], 110);
+  assert.equal(job["continue-on-error"], undefined);
+  assert.equal(verify["continue-on-error"], undefined);
+  assert.equal(verify.env?.TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES, "3145728");
+  assert.match(verify.run, /^set -euo pipefail\n/u);
+  assert.match(verify.run, /node scripts\/verify-market-cc0\.mjs 2>&1 \| tee artifacts\/market-cc0\/verification\.log/u);
+  assert.doesNotMatch(verify.run, /\|\|\s*true|set\s+\+e|--skip/u);
+  const pkg = JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8"));
+  const args = pkg.scripts["typecheck:web"].split(/\s+/u).slice(2);
+  const original = parseArguments(args, {}), inherited = parseArguments(args, verify.env);
+  assert.equal(original.maxBytes, 12582912);
+  assert.equal(inherited.maxBytes, 3145728);
+  assert.equal(inherited.heapMb, original.heapMb);
+  assert.equal(inherited.project, original.project);
+
+  const source = (await fs.readFile(path.join(root, "scripts/verify-market-cc0.mjs"), "utf8"))
+    .replace(/^import \{ spawnSync \} from "node:child_process";\r?\n/u, "");
+  const run = (failAt = -1) => {
+    const calls = [], stopped = new Error("하위 검증 실패");
+    const execute = () => runInNewContext(source, {
+      console: { log: () => undefined },
+      process: { env: verify.env, exit: (code) => { assert.equal(code, 17); throw stopped; } },
+      spawnSync: (command, childArgs, options) => {
+        calls.push({ command, args: Array.from(childArgs), env: options.env });
+        return { status: calls.length - 1 === failAt ? 17 : 0 };
+      },
+    });
+    if (failAt === -1) execute(); else assert.throws(execute, (error) => error === stopped);
+    return calls;
+  };
+  const calls = run();
+  assert.equal(calls.length, 4);
+  assert.deepEqual(calls[0].args.slice(0, 3), ["exec", "vitest", "run"]);
+  assert.equal(calls[0].args.length - 3, 11, "기존 11개 동작 회귀를 모두 유지해야 합니다.");
+  assert.deepEqual(calls.slice(1).map((call) => call.args), [
+    ["run", "typecheck"],
+    ["exec", "tsx", "scripts/verify-market-cc0-bytes.mts"],
+    ["exec", "tsx", "scripts/verify-market-cc0-browser.mts"],
+  ]);
+  for (const call of calls) {
+    assert.equal(call.command, "pnpm");
+    assert.equal(call.env.TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES, "3145728");
+  }
+  for (let failed = 0; failed < 4; failed += 1) assert.equal(run(failed).length, failed + 1);
+});
+
+test("수동 후보 편집 하네스도 전체 타입 검사를 3MiB 묶음과 120분 예산으로 끝까지 수행한다", async () => {
   const workflow = parse(await fs.readFile(path.join(root, ".github/workflows/ci.yml"), "utf8"));
   const job = workflow.jobs.static;
   const manual = job.steps.find((step) => step.name === "수동 후보의 전체 하네스 검증");
   const required = workflow.jobs.typecheck.steps.find((step) => step.name === "Typecheck application, API and realtime worker");
   assert(manual && required, "실제 수동 하네스와 필수 타입 검사 단계가 모두 있어야 합니다.");
-  assert.equal(manual.env?.TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES, "6291456");
+  assert.equal(manual.env?.TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES, "3145728");
   assert.equal(manual.env.TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES, required.env.TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES);
-  assert.equal(job["timeout-minutes"], "${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && matrix.shard == 'studio-editing' && 65 || 25 }}");
+  assert.equal(job["timeout-minutes"], "${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && matrix.shard == 'studio-editing' && 120 || 25 }}");
   assert.equal(manual.if, "github.event_name == 'workflow_dispatch' && matrix.shard == 'studio-editing'");
   assert.equal(job["continue-on-error"], undefined);
   assert.equal(manual["continue-on-error"], undefined);
@@ -34,7 +86,7 @@ test("수동 후보 편집 하네스도 전체 타입 검사를 6MiB 묶음과 6
   const args = pkg.scripts["typecheck:web"].split(/\s+/u).slice(2);
   const ordinary = parseArguments(args, {}), inherited = parseArguments(args, manual.env);
   assert.equal(ordinary.maxBytes, 12582912);
-  assert.equal(inherited.maxBytes, 6291456, "step env가 기존 12MiB CLI 값보다 우선해야 합니다.");
+  assert.equal(inherited.maxBytes, 3145728, "step env가 기존 12MiB CLI 값보다 우선해야 합니다.");
   assert.equal(inherited.heapMb, ordinary.heapMb);
   assert.equal(inherited.project, ordinary.project);
   const identity = { options: { skipLibCheck: true }, files: [

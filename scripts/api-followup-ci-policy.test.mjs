@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse } from "yaml";
 
 import { restoreDocumentationCheckout } from "./restore-documentation-checkout.mjs";
 import { fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
@@ -33,7 +34,7 @@ function workflowRun(step) {
 }
 
 function assertManualHarnessEnvironment(step) {
-  const sourceBudget = /^ {8}env: \{ TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '6291456' \}$/mu;
+  const sourceBudget = /^ {8}env: \{ TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728' \}$/mu;
   assert.match(step, sourceBudget, "수동 하네스 env는 정해진 source budget 하나만 허용합니다.");
   // 정확히 한 블록만 제외하므로 추가 변수·두 번째 env·인증 및 fetch 명령은 계속 거절한다.
   assert.doesNotMatch(step.replace(sourceBudget, ""), /env:|TOONSTUDIO_CHECKOUT_TOKEN|GIT_CONFIG_|GIT_TERMINAL_PROMPT|credential|git fetch|restore-documentation-checkout|\bunset\b/u);
@@ -133,10 +134,14 @@ test "$#" = 1 && test "$1" = scripts/restore-documentation-checkout.mjs
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-test("수동 전체 하네스 단계는 이미 확보한 main만 쓰고 토큰·문서 복원을 다시 받지 않는다", () => {
-  const step = workflowStep("수동 후보의 전체 하네스 검증");
+function assertManualHarnessStep(step) {
   assert.match(step, /^ {8}if: github\.event_name == 'workflow_dispatch' && matrix\.shard == 'studio-editing'$/mu);
   assertManualHarnessEnvironment(step);
+  assert.doesNotMatch(step, /TOONSTUDIO_CHECKOUT_TOKEN|GIT_CONFIG_|GIT_TERMINAL_PROMPT|credential|secrets\s*\.|git fetch|restore-documentation-checkout|\bunset\b/u);
+  const parsedSteps = parse(step);
+  assert.ok(Array.isArray(parsedSteps));
+  assert.equal(parsedSteps.length, 1);
+  assert.deepEqual(parsedSteps[0].env, { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "3145728" });
   assert.deepEqual(workflowRun(step).split("\n"), [
     "set -euo pipefail",
     "HARNESS_BASE=$(git rev-parse refs/remotes/origin/main)",
@@ -144,6 +149,28 @@ test("수동 전체 하네스 단계는 이미 확보한 main만 쓰고 토큰·
     'printf \'하네스 비교 기준: %s\\n\' "$HARNESS_BASE"',
     'pnpm harness:verify --base="$HARNESS_BASE"',
   ]);
+}
+
+test("수동 전체 하네스 단계는 이미 확보한 main만 쓰고 토큰·문서 복원을 다시 받지 않는다", () => {
+  assertManualHarnessStep(workflowStep("수동 후보의 전체 하네스 검증"));
+});
+
+test("수동 하네스 환경 계약은 추가 변수와 예산 값 변경을 거부한다", () => {
+  const step = workflowStep("수동 후보의 전체 하네스 검증");
+  const environment = parse(step)[0].env;
+  for (const changed of [
+    { ...environment, EXTRA_TYPECHECK_FLAG: "1" },
+    { ...environment, TOONSTUDIO_CHECKOUT_TOKEN: "fixture-token-for-test-only" },
+    { ...environment, OTHER_TOKEN: "${{ secrets.FIXTURE_TOKEN }}" },
+    { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "6291456" },
+    { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "12582912" },
+    { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: 3145728 },
+    {},
+  ]) {
+    const mutated = step.replace(/^ {8}env: .+$/mu, `        env: ${JSON.stringify(changed)}`);
+    assert.notEqual(mutated, step, "실제 하네스의 환경 설정을 바꾼 입력이어야 합니다.");
+    assert.throws(() => assertManualHarnessStep(mutated), assert.AssertionError);
+  }
 });
 
 test("수동 하네스 source budget 허용은 추가 env와 기존 인증·이력 변경 금지를 풀지 않는다", () => {
@@ -151,7 +178,7 @@ test("수동 하네스 source budget 허용은 추가 env와 기존 인증·이�
   const envLine = step.match(/^ {8}env: .+$/mu)?.[0];
   assert.ok(envLine, "실제 수동 하네스 env가 필요합니다.");
   for (const replacement of [
-    "", envLine.replace("6291456", "6291457"),
+    "", envLine.replace("3145728", "3145729"),
     envLine.replace(" }", ", EXTRA_VALUE: 'fixture' }"),
     `${envLine}\n${envLine}`,
   ]) {
