@@ -53,8 +53,10 @@ import {
 import { patchRegionSettings, type RegionSettings, type RegionSettingsPatch } from "@/shared/lib/region-settings";
 import { getMyProfile, updateMyProfile } from "@/platform/me-client";
 
-const ChromeWasm64PerformancePanel = lazy(
-  () => import("@/domains/creator/public/chrome-wasm64-performance-panel"),
+const ChromeWasm64PerformancePanel = lazy(() =>
+  import("@/domains/creator/public/chrome-wasm64-performance-panel").then((m) =>
+    m.loadChromeWasm64PerformancePanel(),
+  ),
 );
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>

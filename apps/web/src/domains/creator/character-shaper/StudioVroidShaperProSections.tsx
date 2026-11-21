@@ -51,7 +51,7 @@ import { cn } from "@/shared/lib/utils";
 
 const FOCUS = STUDIO_FOCUS_RING;
 
-export function ProCollapsibleGroup({
+function ProCollapsibleGroup({
   title,
   badge,
   defaultOpen = false,
