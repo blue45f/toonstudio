@@ -248,7 +248,7 @@ export const STUDIO_BRUSH_DYNAMICS_VARIANTS_MEDIA: Readonly<Record<string, Studi
       },
       flow: {
         base: 0.3,
-        mappings: [{ source: "pressure", from: 0.65, to: 1 }],
+        mappings: [{ source: "pressure", from: 0.48, to: 1 }],
         jitter: { mode: "multiply", amount: 0.12 },
       },
       spacingRatio: 0.34,
