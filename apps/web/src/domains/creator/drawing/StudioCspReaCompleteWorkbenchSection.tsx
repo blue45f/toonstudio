@@ -9,6 +9,7 @@ import {
 } from "../filter/csp-rea/csp-rea-unified-filter-registry";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
+import { StudioCspProExToolsPanel } from "./StudioCspProExToolsPanel";
 import {
   CSP_REA_EXECUTABLE_BRUSH_PRESETS,
   adjustCspVectorLineWidth,
@@ -29,9 +30,11 @@ import {
 import { evaluateCspReaInternalizationCoverage } from "./studio-csp-rea-obligation-ledger";
 
 export type CspReaWorkbenchTabId = "brush" | "filter" | "core";
+export type CspCoreToolSegmentId = "basic" | "pro-ex";
 
 export interface StudioCspReaCompleteWorkbenchSectionProps {
   readonly initialTab?: CspReaWorkbenchTabId;
+  readonly initialCoreSegment?: CspCoreToolSegmentId;
   readonly onSelectPresetId?: (presetId: string) => void;
   readonly onApplyFilterId?: (filterId: CspReaFilterId) => void;
   readonly onRunCoreFeature?: (featureId: string) => void;
@@ -55,7 +58,8 @@ const TABS: readonly {
   {
     id: "core",
     labelKo: "만화·애니 도구",
-    guideKo: "오토 액션·대칭 자·컷 분할·스크린톤·어니언 스킨을 원클릭으로 바로 실행하세요.",
+    guideKo:
+      "오토 액션·대칭 자·컷 분할·어니언 스킨과 프로·자동 도구(벡터 교차 지우개·힌트 채색·그라데이션 맵 8종 등)를 바로 실행하세요.",
   },
 ];
 
@@ -68,6 +72,8 @@ const SUPPORTED_CAPABILITY_HIGHLIGHTS_KO: readonly string[] = [
   "틈 닫기·영역 확장 스마트 채우기와 선택 영역 확장·축소·테두리·흐리기",
   "대칭·퍼스·동심원·방사형·평행선 자 스냅 및 컷 테두리 분할·22종 스크린톤·집중선",
   "원클릭 오토 액션 일괄 실행, 2D 셀 어니언 스킨·라이트 테이블, 다중 페이지 펼침 관리",
+  "벡터 교차점 지우개 3모드·선 단순화·제어점 당기기 및 선화 경계 인식 힌트 자동 채색",
+  "웹툰 그라데이션 맵 8종·서브뷰 대표색 팔레트 추출·퀵 마스크·타임랩스·3D 데생 인형 프리셋 6종",
 ];
 
 const FILTER_CATEGORY_LABELS_KO: Readonly<Record<CspReaFilterCategory, string>> = {
@@ -160,11 +166,13 @@ function createDemoSamplePixels(width: number, height: number): Uint8ClampedArra
  */
 export function StudioCspReaCompleteWorkbenchSection({
   initialTab = "brush",
+  initialCoreSegment = "basic",
   onSelectPresetId,
   onApplyFilterId,
   onRunCoreFeature,
 }: StudioCspReaCompleteWorkbenchSectionProps): ReactElement {
   const [activeTab, setActiveTab] = useState<CspReaWorkbenchTabId>(initialTab);
+  const [coreSegment, setCoreSegment] = useState<CspCoreToolSegmentId>(initialCoreSegment);
   const [selectedBrushId, setSelectedBrushId] = useState<string>(
     CSP_REA_EXECUTABLE_BRUSH_PRESETS[0]!.id,
   );
@@ -558,108 +566,154 @@ export function StudioCspReaCompleteWorkbenchSection({
 
         {activeTab === "core" && (
           <div data-testid="csp-rea-tab-core" className="space-y-2.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <select
-                aria-label="오토 액션 선택"
-                value={selectedActionIdx}
-                onChange={(e) => setSelectedActionIdx(Number(e.target.value))}
-                className={`min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-fg sm:flex-initial ${STUDIO_FOCUS_RING}`}
-              >
-                {CSP_DEFAULT_LAF_AUTO_ACTION_SET.actions.map((a, idx) => (
-                  <option key={a.actionUuid} value={idx}>
-                    오토 액션: {a.actionName}
-                  </option>
-                ))}
-              </select>
+            <div
+              role="group"
+              aria-label="만화·애니 도구 하위 영역"
+              className="flex flex-wrap items-center gap-1.5"
+            >
               <button
                 type="button"
-                data-testid="csp-rea-core-primary-cta"
-                onClick={handleRunCoreFeature}
-                style={PRIMARY_CTA_STYLE}
-                className={`${tactileButtonClass} px-4 hover:brightness-105 ${STUDIO_FOCUS_RING}`}
+                data-testid="csp-rea-core-segment-basic"
+                aria-pressed={coreSegment === "basic"}
+                onClick={() => setCoreSegment("basic")}
+                style={coreSegment === "basic" ? ACTIVE_TAB_GLOW_STYLE : undefined}
+                className={`${tactileButtonClass} border ${STUDIO_FOCUS_RING} ${
+                  coreSegment === "basic"
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-line bg-card text-fg-2 hover:bg-raised"
+                }`}
               >
-                선택 도구 바로 실행
+                기본 만화·애니
               </button>
-              <div className="hidden flex-wrap items-center gap-1.5 md:flex">
-                <button
-                  type="button"
-                  onClick={() => setSymmetryAxes((prev) => (prev >= 12 ? 2 : prev + 2))}
-                  className={`${tactileButtonClass} border border-line bg-card font-medium text-fg hover:bg-raised ${STUDIO_FOCUS_RING}`}
-                >
-                  대칭 자: {symmetryAxes}축
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGutterPx((prev) => (prev >= 24 ? 6 : prev + 6))}
-                  className={`${tactileButtonClass} border border-line bg-card font-medium text-fg hover:bg-raised ${STUDIO_FOCUS_RING}`}
-                >
-                  컷 간격: {gutterPx}px
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSpreadMerged((prev) => !prev)}
-                  className={`${tactileButtonClass} border border-line bg-card font-medium text-fg hover:bg-raised ${STUDIO_FOCUS_RING}`}
-                >
-                  {spreadMerged ? "펼침 페이지 분할" : "2·3쪽 펼침 결합"}
-                </button>
-              </div>
-            </div>
-            <details className="rounded-lg bg-card px-2.5 py-1.5 md:hidden">
-              <summary
-                className={`flex min-h-11 cursor-pointer items-center font-medium text-fg-2 ${STUDIO_FOCUS_RING}`}
+              <button
+                type="button"
+                data-testid="csp-rea-core-segment-pro-ex"
+                aria-pressed={coreSegment === "pro-ex"}
+                onClick={() => setCoreSegment("pro-ex")}
+                style={coreSegment === "pro-ex" ? ACTIVE_TAB_GLOW_STYLE : undefined}
+                className={`${tactileButtonClass} border ${STUDIO_FOCUS_RING} ${
+                  coreSegment === "pro-ex"
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-line bg-card text-fg-2 hover:bg-raised"
+                }`}
               >
-                대칭 자 · 컷 간격 · 펼침 세부 설정
-              </summary>
-              <div className="flex flex-wrap gap-1.5 pb-2">
-                <button
-                  type="button"
-                  onClick={() => setSymmetryAxes((prev) => (prev >= 12 ? 2 : prev + 2))}
-                  className={`${tactileButtonClass} border border-line bg-panel font-medium text-fg ${STUDIO_FOCUS_RING}`}
-                >
-                  대칭 자: {symmetryAxes}축
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGutterPx((prev) => (prev >= 24 ? 6 : prev + 6))}
-                  className={`${tactileButtonClass} border border-line bg-panel font-medium text-fg ${STUDIO_FOCUS_RING}`}
-                >
-                  컷 간격: {gutterPx}px
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSpreadMerged((prev) => !prev)}
-                  className={`${tactileButtonClass} border border-line bg-panel font-medium text-fg ${STUDIO_FOCUS_RING}`}
-                >
-                  {spreadMerged ? "펼침 페이지 분할" : "2·3쪽 펼침 결합"}
-                </button>
-              </div>
-            </details>
-            <div
-              data-testid="csp-rea-core-readout"
-              className="grid grid-cols-1 gap-2 rounded-lg bg-card p-2.5 md:grid-cols-3"
-            >
-              <div>
-                <div className="text-fg-3">오토 액션 · 스마트 채우기</div>
-                <div className="font-medium tabular-nums">
-                  {coreEvaluation.actionName} ({coreEvaluation.executedStepCount}단계 →{" "}
-                  {coreEvaluation.resultingLayers}레이어) · 채움 {coreEvaluation.filledPixels}px
-                </div>
-              </div>
-              <div>
-                <div className="text-fg-3">컷 분할 · 스크린톤 · 집중선</div>
-                <div className="font-medium tabular-nums">
-                  컷 분할 {coreEvaluation.splitVerticesA}+{coreEvaluation.splitVerticesB} · 톤{" "}
-                  {coreEvaluation.toneInkPixels}px · 집중선 {coreEvaluation.focusInkPixels}px
-                </div>
-              </div>
-              <div>
-                <div className="text-fg-3">대칭 자 · 어니언 스킨 · 스토리</div>
-                <div className="font-medium tabular-nums">
-                  대칭선 {coreEvaluation.rulerBranchCount}줄 · 어니언 합성{" "}
-                  {coreEvaluation.onionVisiblePixels}px · 페이지 {coreEvaluation.storyNodeCount}개
-                </div>
-              </div>
+                프로·자동 도구 (7종)
+              </button>
             </div>
+
+            {coreSegment === "pro-ex" ? (
+              <StudioCspProExToolsPanel
+                onExecuteProExTool={(toolId, summaryKo) => {
+                  onRunCoreFeature?.(toolId);
+                  setAppliedNoticeKo(`${summaryKo} 적용됨 · 언제든 되돌리기 가능`);
+                }}
+              />
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    aria-label="오토 액션 선택"
+                    value={selectedActionIdx}
+                    onChange={(e) => setSelectedActionIdx(Number(e.target.value))}
+                    className={`min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-fg sm:flex-initial ${STUDIO_FOCUS_RING}`}
+                  >
+                    {CSP_DEFAULT_LAF_AUTO_ACTION_SET.actions.map((a, idx) => (
+                      <option key={a.actionUuid} value={idx}>
+                        오토 액션: {a.actionName}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    data-testid="csp-rea-core-primary-cta"
+                    onClick={handleRunCoreFeature}
+                    style={PRIMARY_CTA_STYLE}
+                    className={`${tactileButtonClass} px-4 hover:brightness-105 ${STUDIO_FOCUS_RING}`}
+                  >
+                    선택 도구 바로 실행
+                  </button>
+                  <div className="hidden flex-wrap items-center gap-1.5 md:flex">
+                    <button
+                      type="button"
+                      onClick={() => setSymmetryAxes((prev) => (prev >= 12 ? 2 : prev + 2))}
+                      className={`${tactileButtonClass} border border-line bg-card font-medium text-fg hover:bg-raised ${STUDIO_FOCUS_RING}`}
+                    >
+                      대칭 자: {symmetryAxes}축
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGutterPx((prev) => (prev >= 24 ? 6 : prev + 6))}
+                      className={`${tactileButtonClass} border border-line bg-card font-medium text-fg hover:bg-raised ${STUDIO_FOCUS_RING}`}
+                    >
+                      컷 간격: {gutterPx}px
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSpreadMerged((prev) => !prev)}
+                      className={`${tactileButtonClass} border border-line bg-card font-medium text-fg hover:bg-raised ${STUDIO_FOCUS_RING}`}
+                    >
+                      {spreadMerged ? "펼침 페이지 분할" : "2·3쪽 펼침 결합"}
+                    </button>
+                  </div>
+                </div>
+                <details className="rounded-lg bg-card px-2.5 py-1.5 md:hidden">
+                  <summary
+                    className={`flex min-h-11 cursor-pointer items-center font-medium text-fg-2 ${STUDIO_FOCUS_RING}`}
+                  >
+                    대칭 자 · 컷 간격 · 펼침 세부 설정
+                  </summary>
+                  <div className="flex flex-wrap gap-1.5 pb-2">
+                    <button
+                      type="button"
+                      onClick={() => setSymmetryAxes((prev) => (prev >= 12 ? 2 : prev + 2))}
+                      className={`${tactileButtonClass} border border-line bg-panel font-medium text-fg ${STUDIO_FOCUS_RING}`}
+                    >
+                      대칭 자: {symmetryAxes}축
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGutterPx((prev) => (prev >= 24 ? 6 : prev + 6))}
+                      className={`${tactileButtonClass} border border-line bg-panel font-medium text-fg ${STUDIO_FOCUS_RING}`}
+                    >
+                      컷 간격: {gutterPx}px
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSpreadMerged((prev) => !prev)}
+                      className={`${tactileButtonClass} border border-line bg-panel font-medium text-fg ${STUDIO_FOCUS_RING}`}
+                    >
+                      {spreadMerged ? "펼침 페이지 분할" : "2·3쪽 펼침 결합"}
+                    </button>
+                  </div>
+                </details>
+                <div
+                  data-testid="csp-rea-core-readout"
+                  className="grid grid-cols-1 gap-2 rounded-lg bg-card p-2.5 md:grid-cols-3"
+                >
+                  <div>
+                    <div className="text-fg-3">오토 액션 · 스마트 채우기</div>
+                    <div className="font-medium tabular-nums">
+                      {coreEvaluation.actionName} ({coreEvaluation.executedStepCount}단계 →{" "}
+                      {coreEvaluation.resultingLayers}레이어) · 채움 {coreEvaluation.filledPixels}px
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-fg-3">컷 분할 · 스크린톤 · 집중선</div>
+                    <div className="font-medium tabular-nums">
+                      컷 분할 {coreEvaluation.splitVerticesA}+{coreEvaluation.splitVerticesB} · 톤{" "}
+                      {coreEvaluation.toneInkPixels}px · 집중선 {coreEvaluation.focusInkPixels}px
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-fg-3">대칭 자 · 어니언 스킨 · 스토리</div>
+                    <div className="font-medium tabular-nums">
+                      대칭선 {coreEvaluation.rulerBranchCount}줄 · 어니언 합성{" "}
+                      {coreEvaluation.onionVisiblePixels}px · 페이지 {coreEvaluation.storyNodeCount}개
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 

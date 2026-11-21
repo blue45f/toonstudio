@@ -264,6 +264,45 @@ export const CSP_REA_INTERNALIZATION_OBLIGATIONS: readonly CspReaObligationItem[
     executableEntryExport: "compositeCspOnionSkinRgba / compositeCspLightTableCelRgba / combineCspStoryPagesToSpread",
     status: "internalized-verified",
   },
+  {
+    obligationId: "OBL-PROEX-VECTOR-ERASER-SIMPLIFY-PINCH",
+    domain: "brush",
+    titleKo: "벡터 지우개 3모드(닿은 부분·교차점까지·선 전체), RDP 선 단순화 및 반경 제어점 핀치",
+    evidenceIds: ["ev_f396cfb603d02902906ad872140302dd4ce4da78a87179a7fe3e3d902e00c68d"],
+    implementationModule: "apps/web/src/domains/creator/drawing/studio-csp-pro-ex-extensions.ts",
+    executableEntryExport: "eraseCspVectorStrokes / simplifyCspVectorStroke / pinchCspVectorStroke",
+    status: "internalized-verified",
+  },
+  {
+    obligationId: "OBL-PROEX-COLORIZE-HINT-AUTOFILL",
+    domain: "core-feature",
+    titleKo: "컬러라이즈(Colorize) 힌트 좌표 기반 선화 경계 인식 다중 소스 자동 채색 RGBA 엔진",
+    evidenceIds: ["ev_d480a3e839a1c471e3be17599d5e8a04f7a21c76554b848c70e1b23da61bcb08"],
+    implementationModule: "apps/web/src/domains/creator/drawing/studio-csp-pro-ex-extensions.ts",
+    executableEntryExport: "applyCspColorizeHintAutoFill",
+    status: "internalized-verified",
+  },
+  {
+    obligationId: "OBL-PROEX-WEBTOON-GRADIENT-MAPS-8",
+    domain: "filter",
+    titleKo: "웹툰 전용 그라데이션 맵 8종 프리셋(노을·새벽안개·네온사이버·빈티지세피아·로판골드·공포청록·벚꽃파스텔·흑백만화)",
+    evidenceIds: ["ev_d480a3e839a1c471e3be17599d5e8a04f7a21c76554b848c70e1b23da61bcb08"],
+    implementationModule: "apps/web/src/domains/creator/drawing/studio-csp-pro-ex-extensions.ts",
+    executableEntryExport: "CSP_WEBTOON_GRADIENT_MAPS / applyCspWebtoonGradientMap",
+    status: "internalized-verified",
+  },
+  {
+    obligationId: "OBL-PROEX-SUBVIEW-QUICKMASK-TIMELAPSE-FIGURE",
+    domain: "core-feature",
+    titleKo: "서브뷰 대표색 팔레트 추출(OKLCH/RGB), 퀵 마스크 합성, 타임랩스 링버퍼 레코더, 3D 데생 인형 비율·광원 프리셋 6종",
+    evidenceIds: [
+      "ev_ac8bbc9d0fb21450b3ae5b8192104c15638fc805c488c3950a5fc44e71c88c00",
+      "ev_d480a3e839a1c471e3be17599d5e8a04f7a21c76554b848c70e1b23da61bcb08",
+    ],
+    implementationModule: "apps/web/src/domains/creator/drawing/studio-csp-pro-ex-extensions.ts",
+    executableEntryExport: "extractCspSubViewReferencePalette / renderCspQuickMaskOverlay / createCspTimelapseSession / CSP_DRAWING_FIGURE_PRESETS",
+    status: "internalized-verified",
+  },
 ]);
 
 export function evaluateCspReaInternalizationCoverage(): CspReaInternalizationCoverageReport {
@@ -307,7 +346,7 @@ export function evaluateCspReaInternalizationCoverage(): CspReaInternalizationCo
     coreFeatureSummary: {
       toneDotShapeCount: CSP_TONE_DOT_SHAPES.length,
       rulerTypeCount: CSP_RULER_TYPES.length,
-      executableCoreSubsystemCount: 6,
+      executableCoreSubsystemCount: 13,
     },
     observedFactsKo: [
       "App/PlugIn/PAINT 산하 37개 번들(포맷 6종 + 필터 31종) 및 EditImageTool.todb 255 Node · 507 Variant 컬럼 · workspaceshortcutmenu 874행 직접 관측",
