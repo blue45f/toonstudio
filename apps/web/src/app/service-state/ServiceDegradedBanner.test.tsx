@@ -236,7 +236,12 @@ describe("절전 해제 안내", () => {
     const { container } = renderBanner(false);
     const notice = screen.getByRole("status");
     expect(notice.getAttribute("data-service-degraded-banner")).toBe("warming");
+    expect(notice.getAttribute("data-service-status-placement")).toBe("page-inline");
+    expect(notice.getAttribute("aria-live")).toBe("polite");
     expect(notice.textContent).toContain("온라인 기능을 연결하는 중이에요.");
+    expect(notice.textContent).toContain("탐색과 로컬 작업은 지금 바로 할 수 있어요.");
+    expect(within(notice).queryByRole("button")).toBeNull();
+    expect(within(notice).queryByRole("link")).toBeNull();
     expect(screen.queryByRole("button", { name: "다시 확인" })).toBeNull();
     expect(container.querySelector('[data-service-degraded-banner="degraded"]')).toBeNull();
   });

@@ -228,6 +228,9 @@ jobs:
           restore-keys: |
             core-ts-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'tsconfig*.json', 'apps/**/tsconfig*.json', 'deploy/**/tsconfig*.json', 'packages/**/tsconfig*.json') }}-
       - name: Typecheck application, API and realtime worker
+        env:
+          # 작은 초기 그룹으로 메모리 한도 재시도를 줄이되 전체 프로그램·파일·검사 기준은 유지한다.
+          TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '6291456'
         run: |
           set -euo pipefail
           pnpm run typecheck
@@ -444,6 +447,14 @@ jobs:
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/Jimmy.vrm' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/Anna.vrm' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/Cyberpal.vrm' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/romance-female.vrm' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/romance-male.vrm' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/academy-female.vrm' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/academy-male.vrm' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/rofan-empress.vrm' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/rofan-duke.vrm' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/action-hunter.vrm' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/chibi-mascot.vrm' || '' }}
             ${{ matrix.shard == 'studio-3d' && '/apps/web/public/assets/3d/environments/authored-v1/' || '' }}
             ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/Sendagaya_Shibu.vrm' || '' }}
             ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/Sendagaya_Shino.vrm' || '' }}

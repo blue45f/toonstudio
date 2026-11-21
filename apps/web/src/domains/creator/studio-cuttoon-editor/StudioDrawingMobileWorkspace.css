@@ -28,6 +28,21 @@
   text-overflow: ellipsis;
 }
 
+/* 두 상태 문구가 있을 때 저장 아이콘을 제목 줄에 두어 안내 너비를 확보한다. */
+.studio-drawing-clarity-mobile-header .studio-drawing-clarity-title:has([data-studio-connection-notice-summary]:not(:empty)) h1 {
+  padding-inline-start: 19px;
+}
+
+.studio-drawing-clarity-mobile-header button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) {
+  position: relative;
+}
+
+.studio-drawing-clarity-mobile-header button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > svg {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 4px;
+}
+
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-context {
   height: auto;
   min-height: 44px;
