@@ -15,7 +15,7 @@
  * 전부 순수 함수이고 프레임당 할당은 호출자 캐시 재사용으로 피한다.
  */
 
-import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
+import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 
 /** 표시 전용 좌표. 논리 좌표와 같은 단위지만 충돌·판정에는 쓰지 않는다. */
 export type StudioDisplayPoint = StudioVirtualSpacePoint;
@@ -25,6 +25,12 @@ export const STUDIO_DISPLAY_DAMP_TAU_SECONDS = 0.05;
 
 /** 이 거리(px)보다 멀면 텔레포트·포털·좌석 강제 이동으로 보고 즉시 스냅한다. */
 export const STUDIO_DISPLAY_SNAP_DISTANCE_PX = 96;
+
+/** 프레임 스파이크(백그라운드 탭·GC 지연 등)에서 감쇠가 한 번에 튀지 않도록 막는 최대 델타 시간(초). */
+export const STUDIO_DISPLAY_MAX_DELTA_SECONDS = 0.1;
+
+/** 정지 직전 미세 진동(0.1px 이하 서브픽셀 떨림)을 0%로 차단하는 스냅 데드존(px). */
+export const STUDIO_DISPLAY_STOP_EPSILON_PX = 0.08;
 
 /**
  * 상태 전환 크로스페이드 시간(ms).
@@ -54,6 +60,7 @@ function finiteOr(value: number, fallback: number): number {
  * - current가 없으면(첫 표시) 목표를 그대로 반환한다.
  * - enabled=false(모션 감소 등)면 항상 스냅한다.
  * - 목표와의 거리가 스냅 임계보다 크면 텔레포트로 보고 스냅한다.
+ * - dt 스파이크(> 100ms)를 클램프하고, 정지 직전 스냅 데드존(dist <= epsilon)으로 미세 떨림을 차단한다.
  */
 export function dampStudioDisplayPoint(
   current: StudioVirtualSpacePoint | null,
@@ -62,19 +69,32 @@ export function dampStudioDisplayPoint(
   options: {
     readonly tauSeconds?: number;
     readonly snapDistancePx?: number;
+    readonly stopEpsilonPx?: number;
+    readonly maxDeltaSeconds?: number;
     readonly enabled?: boolean;
   } = {},
 ): StudioVirtualSpacePoint {
   if (!current || options.enabled === false) return { x: target.x, y: target.y };
+  if (!Number.isFinite(target.x) || !Number.isFinite(target.y)) return { x: current.x, y: current.y };
   const tau = finiteOr(options.tauSeconds ?? STUDIO_DISPLAY_DAMP_TAU_SECONDS, STUDIO_DISPLAY_DAMP_TAU_SECONDS);
   const snap = finiteOr(options.snapDistancePx ?? STUDIO_DISPLAY_SNAP_DISTANCE_PX, STUDIO_DISPLAY_SNAP_DISTANCE_PX);
   const dx = target.x - current.x;
   const dy = target.y - current.y;
-  if (Math.hypot(dx, dy) > snap) return { x: target.x, y: target.y };
-  const dt = Math.max(0, finiteOr(deltaSeconds, 0));
-  if (dt <= 0 || tau <= 0) return { x: current.x, y: current.y };
+  const dist = Math.hypot(dx, dy);
+  if (dist > snap) return { x: target.x, y: target.y };
+  const rawDt = Math.max(0, finiteOr(deltaSeconds, 0));
+  if (rawDt <= 0 || tau <= 0) return { x: current.x, y: current.y };
+  const stopEpsilon = Math.max(0, finiteOr(options.stopEpsilonPx ?? STUDIO_DISPLAY_STOP_EPSILON_PX, STUDIO_DISPLAY_STOP_EPSILON_PX));
+  if (dist <= stopEpsilon) return { x: target.x, y: target.y };
+  const maxDt = Math.max(0.016, finiteOr(options.maxDeltaSeconds ?? STUDIO_DISPLAY_MAX_DELTA_SECONDS, STUDIO_DISPLAY_MAX_DELTA_SECONDS));
+  const dt = Math.min(maxDt, rawDt);
   const alpha = 1 - Math.exp(-dt / tau);
-  return { x: current.x + dx * alpha, y: current.y + dy * alpha };
+  const nextX = current.x + dx * alpha;
+  const nextY = current.y + dy * alpha;
+  if (Math.hypot(target.x - nextX, target.y - nextY) <= stopEpsilon) {
+    return { x: target.x, y: target.y };
+  }
+  return { x: nextX, y: nextY };
 }
 
 /** 식별자 해시 → 0~1 위상 시드. 같은 캐릭터는 항상 같은 위상을 유지한다. */
@@ -395,4 +415,265 @@ export function studioDisplayDampTauSeconds(speed: number): number {
   if (safeSpeed <= STUDIO_DISPLAY_DAMP_TAU_REFERENCE_SPEED) return STUDIO_DISPLAY_DAMP_TAU_SECONDS;
   const ratio = STUDIO_DISPLAY_DAMP_TAU_REFERENCE_SPEED / safeSpeed;
   return Math.max(STUDIO_DISPLAY_DAMP_TAU_MIN_SECONDS, STUDIO_DISPLAY_DAMP_TAU_SECONDS * ratio);
+}
+
+/* ---------------------------------------------------------------------------------------------- */
+/* 임계감쇠(Critically Damped) 스무딩 & 방향 뒤집힘(Flip) 히스테리시스                                 */
+/* ---------------------------------------------------------------------------------------------- */
+
+/** 임계감쇠 스칼라 상태(위치 + 속도). 오버슈트와 발산 없이 프레임 독립적으로 수렴한다. */
+export interface StudioCriticallyDampedScalarState {
+  readonly value: number;
+  readonly velocity: number;
+}
+
+/** 임계감쇠 2D 좌표 상태. */
+export interface StudioCriticallyDampedPointState {
+  readonly x: number;
+  readonly y: number;
+  readonly vx: number;
+  readonly vy: number;
+}
+
+/**
+ * 닫힌해(Closed-form) 임계감쇠 스칼라 스무딩.
+ * Padé 근사 대신 정확한 `exp(-ω·dt)`를 사용해 8ms~120ms 가변 프레임에서도
+ * 발산·진동·오버슈트가 원천 발생하지 않으며, 정지 직전 데드존으로 미세 떨림을 차단한다.
+ */
+export function stepCriticallyDampedScalar(
+  state: StudioCriticallyDampedScalarState,
+  target: number,
+  deltaSeconds: number,
+  options: {
+    readonly smoothTimeSeconds?: number;
+    readonly maxSpeed?: number;
+    readonly stopEpsilon?: number;
+    readonly maxDeltaSeconds?: number;
+    readonly enabled?: boolean;
+  } = {},
+): StudioCriticallyDampedScalarState {
+  const safeTarget = finiteOr(target, state.value);
+  const currentValue = finiteOr(state.value, safeTarget);
+  const currentVelocity = finiteOr(state.velocity, 0);
+  if (options.enabled === false) return { value: safeTarget, velocity: 0 };
+  const smoothTime = finiteOr(options.smoothTimeSeconds ?? STUDIO_DISPLAY_DAMP_TAU_SECONDS, STUDIO_DISPLAY_DAMP_TAU_SECONDS);
+  if (smoothTime <= 0) return { value: safeTarget, velocity: 0 };
+  const rawDt = Math.max(0, finiteOr(deltaSeconds, 0));
+  if (rawDt <= 0) return { value: currentValue, velocity: currentVelocity };
+
+  const stopEpsilon = Math.max(0, finiteOr(options.stopEpsilon ?? STUDIO_DISPLAY_STOP_EPSILON_PX, STUDIO_DISPLAY_STOP_EPSILON_PX));
+  const initialDiff = currentValue - safeTarget;
+  const omega = 2 / smoothTime;
+  if (Math.abs(initialDiff) <= stopEpsilon && Math.abs(currentVelocity) <= stopEpsilon * omega * 2) {
+    return { value: safeTarget, velocity: 0 };
+  }
+
+  const maxDt = Math.max(0.016, finiteOr(options.maxDeltaSeconds ?? STUDIO_DISPLAY_MAX_DELTA_SECONDS, STUDIO_DISPLAY_MAX_DELTA_SECONDS));
+  const dt = Math.min(maxDt, rawDt);
+  const maxSpeed = options.maxSpeed !== undefined && Number.isFinite(options.maxSpeed) && options.maxSpeed > 0
+    ? options.maxSpeed
+    : Number.POSITIVE_INFINITY;
+
+  const clampedDiff = Number.isFinite(maxSpeed)
+    ? Math.max(-maxSpeed * smoothTime, Math.min(maxSpeed * smoothTime, initialDiff))
+    : initialDiff;
+  const effectiveTarget = currentValue - clampedDiff;
+  const exp = Math.exp(-omega * dt);
+  const temp = (currentVelocity + omega * clampedDiff) * dt;
+  let nextVelocity = (currentVelocity - omega * temp) * exp;
+  let nextValue = effectiveTarget + (clampedDiff + temp) * exp;
+
+  // 단일 스텝 변위가 속도 상한을 넘지 않도록 제한
+  if (Number.isFinite(maxSpeed)) {
+    const stepDelta = nextValue - currentValue;
+    const maxStep = maxSpeed * dt;
+    if (Math.abs(stepDelta) > maxStep) {
+      const sign = Math.sign(stepDelta);
+      nextValue = currentValue + sign * maxStep;
+      nextVelocity = sign * maxSpeed;
+    }
+  }
+
+  // 목표점을 지나치는 오버슈트 차단
+  if ((safeTarget - currentValue) * (nextValue - safeTarget) > 0) {
+    return { value: safeTarget, velocity: 0 };
+  }
+  if (Math.abs(safeTarget - nextValue) <= stopEpsilon && Math.abs(nextVelocity) <= stopEpsilon * omega * 2) {
+    return { value: safeTarget, velocity: 0 };
+  }
+  return { value: nextValue, velocity: nextVelocity };
+}
+
+/**
+ * 2D 임계감쇠 좌표 스무딩.
+ * 대각선 이동 시에도 방사형 속도 상한이 등방적으로 적용되며, 텔레포트 거리 초과 시 즉시 스냅한다.
+ */
+export function stepCriticallyDampedPoint(
+  state: StudioCriticallyDampedPointState | null,
+  target: StudioVirtualSpacePoint,
+  deltaSeconds: number,
+  options: {
+    readonly smoothTimeSeconds?: number;
+    readonly maxSpeed?: number;
+    readonly snapDistancePx?: number;
+    readonly stopEpsilonPx?: number;
+    readonly maxDeltaSeconds?: number;
+    readonly enabled?: boolean;
+  } = {},
+): StudioCriticallyDampedPointState {
+  const safeTargetX = finiteOr(target.x, state?.x ?? 0);
+  const safeTargetY = finiteOr(target.y, state?.y ?? 0);
+  if (!state || options.enabled === false) {
+    return { x: safeTargetX, y: safeTargetY, vx: 0, vy: 0 };
+  }
+  const snap = finiteOr(options.snapDistancePx ?? STUDIO_DISPLAY_SNAP_DISTANCE_PX, STUDIO_DISPLAY_SNAP_DISTANCE_PX);
+  const dx = safeTargetX - state.x;
+  const dy = safeTargetY - state.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist > snap) {
+    return { x: safeTargetX, y: safeTargetY, vx: 0, vy: 0 };
+  }
+  const rawDt = Math.max(0, finiteOr(deltaSeconds, 0));
+  if (rawDt <= 0) {
+    return { x: state.x, y: state.y, vx: finiteOr(state.vx, 0), vy: finiteOr(state.vy, 0) };
+  }
+
+  const maxDt = Math.max(0.016, finiteOr(options.maxDeltaSeconds ?? STUDIO_DISPLAY_MAX_DELTA_SECONDS, STUDIO_DISPLAY_MAX_DELTA_SECONDS));
+  const dt = Math.min(maxDt, rawDt);
+  const stopEpsilon = Math.max(0, finiteOr(options.stopEpsilonPx ?? STUDIO_DISPLAY_STOP_EPSILON_PX, STUDIO_DISPLAY_STOP_EPSILON_PX));
+  const smoothTime = finiteOr(options.smoothTimeSeconds ?? STUDIO_DISPLAY_DAMP_TAU_SECONDS, STUDIO_DISPLAY_DAMP_TAU_SECONDS);
+  const omega = smoothTime > 0 ? 2 / smoothTime : 0;
+  if (dist <= stopEpsilon && Math.hypot(state.vx, state.vy) <= stopEpsilon * omega * 2) {
+    return { x: safeTargetX, y: safeTargetY, vx: 0, vy: 0 };
+  }
+
+  const nextX = stepCriticallyDampedScalar({ value: state.x, velocity: state.vx }, safeTargetX, dt, {
+    smoothTimeSeconds: smoothTime,
+    stopEpsilon: 0,
+    maxDeltaSeconds: maxDt,
+    enabled: options.enabled,
+  });
+  const nextY = stepCriticallyDampedScalar({ value: state.y, velocity: state.vy }, safeTargetY, dt, {
+    smoothTimeSeconds: smoothTime,
+    stopEpsilon: 0,
+    maxDeltaSeconds: maxDt,
+    enabled: options.enabled,
+  });
+
+  let outX = nextX.value;
+  let outY = nextY.value;
+  let outVx = nextX.velocity;
+  let outVy = nextY.velocity;
+
+  // 대각선 속도 초과를 막는 등방 방사형 속도 상한
+  const maxSpeed = options.maxSpeed !== undefined && Number.isFinite(options.maxSpeed) && options.maxSpeed > 0
+    ? options.maxSpeed
+    : Number.POSITIVE_INFINITY;
+  if (Number.isFinite(maxSpeed)) {
+    const stepX = outX - state.x;
+    const stepY = outY - state.y;
+    const stepDist = Math.hypot(stepX, stepY);
+    const maxStep = maxSpeed * dt;
+    if (stepDist > maxStep && stepDist > 1e-9) {
+      const ratio = maxStep / stepDist;
+      outX = state.x + stepX * ratio;
+      outY = state.y + stepY * ratio;
+      outVx = (stepX * ratio) / dt;
+      outVy = (stepY * ratio) / dt;
+    }
+  }
+
+  if (Math.hypot(safeTargetX - outX, safeTargetY - outY) <= stopEpsilon
+    && Math.hypot(outVx, outVy) <= Math.max(2, stopEpsilon * omega * 2)) {
+    return { x: safeTargetX, y: safeTargetY, vx: 0, vy: 0 };
+  }
+  return { x: outX, y: outY, vx: outVx, vy: outVy };
+}
+
+/** 방향 전환 미세 속도 데드존(px/s). 이 속도 미만에서는 절대 facing을 뒤집지 않는다. */
+export const STUDIO_FACING_DEADZONE_SPEED = 10;
+/** 대각선 축 전환 히스테리시스 배수. ±15% 속도 노이즈에서도 대각선 채터링을 막도록 1.42배 우세 시 전환한다. */
+export const STUDIO_FACING_AXIS_HYSTERESIS = 1.42;
+/** 방향 전환 최소 유지 시간(ms). 짧은 노이즈로 인한 좌↔우 채터링을 차단한다. */
+export const STUDIO_FACING_MIN_HOLD_MS = 85;
+/** 의도적인 180도 급반전을 허용하는 최소 속도(px/s). */
+export const STUDIO_FACING_REVERSAL_SPEED = 75;
+
+export interface StudioFacingHysteresisState {
+  readonly facing: StudioVirtualSpaceFacing;
+  readonly lastChangedAtMs: number;
+}
+
+export function createStudioFacingHysteresis(
+  initial: StudioVirtualSpaceFacing = "down",
+  nowMs = 0,
+): StudioFacingHysteresisState {
+  return { facing: initial, lastChangedAtMs: finiteOr(nowMs, 0) };
+}
+
+function isOppositeFacing(a: StudioVirtualSpaceFacing, b: StudioVirtualSpaceFacing): boolean {
+  return (a === "left" && b === "right")
+    || (a === "right" && b === "left")
+    || (a === "up" && b === "down")
+    || (a === "down" && b === "up");
+}
+
+/**
+ * 방향 뒤집힘(Flip) 채터링 차단 필터.
+ * - 속도 데드존(`|v| < deadzoneSpeed`)에서 방향을 고정한다.
+ * - 대각선 구간에서는 현재 축 성분이 1.28배 이상 밀리지 않으면 기존 방향을 유지한다.
+ * - 최소 유지 시간(`minHoldMs`) 동안 미세 요동으로 인한 깜빡임을 막고, 고속 180도 급반전만 빠르게 반응한다.
+ */
+export function stepStudioFacingHysteresis(
+  state: StudioFacingHysteresisState,
+  vx: number,
+  vy: number,
+  nowMs: number,
+  options: {
+    readonly deadzoneSpeed?: number;
+    readonly axisFlipThreshold?: number;
+    readonly axisHysteresis?: number;
+    readonly minHoldMs?: number;
+    readonly reversalSpeed?: number;
+    readonly reversalMinHoldMs?: number;
+  } = {},
+): StudioFacingHysteresisState {
+  if (!Number.isFinite(vx) || !Number.isFinite(vy) || !Number.isFinite(nowMs)) return state;
+  const deadzone = Math.max(0, finiteOr(options.deadzoneSpeed ?? STUDIO_FACING_DEADZONE_SPEED, STUDIO_FACING_DEADZONE_SPEED));
+  const ax = Math.abs(vx);
+  const ay = Math.abs(vy);
+  const speed = Math.hypot(ax, ay);
+  if (speed < deadzone) return state;
+
+  const axisFlip = Math.max(deadzone * 0.5, finiteOr(options.axisFlipThreshold ?? deadzone * 1.15, deadzone * 1.15));
+  const hysteresis = Math.max(1, finiteOr(options.axisHysteresis ?? STUDIO_FACING_AXIS_HYSTERESIS, STUDIO_FACING_AXIS_HYSTERESIS));
+  const wasHorizontal = state.facing === "left" || state.facing === "right";
+
+  let candidate: StudioVirtualSpaceFacing = state.facing;
+  if (wasHorizontal) {
+    if (ay > ax * hysteresis && ay >= axisFlip) {
+      candidate = vy < 0 ? "up" : "down";
+    } else if (ax >= axisFlip) {
+      candidate = vx < 0 ? "left" : "right";
+    }
+  } else if (ax > ay * hysteresis && ax >= axisFlip) {
+    candidate = vx < 0 ? "left" : "right";
+  } else if (ay >= axisFlip) {
+    candidate = vy < 0 ? "up" : "down";
+  }
+
+  if (candidate === state.facing) return state;
+
+  const elapsedMs = Math.max(0, nowMs - state.lastChangedAtMs);
+  const minHoldMs = Math.max(0, finiteOr(options.minHoldMs ?? STUDIO_FACING_MIN_HOLD_MS, STUDIO_FACING_MIN_HOLD_MS));
+  const reversalSpeed = Math.max(deadzone, finiteOr(options.reversalSpeed ?? STUDIO_FACING_REVERSAL_SPEED, STUDIO_FACING_REVERSAL_SPEED));
+  const reversalMinHoldMs = Math.max(0, finiteOr(options.reversalMinHoldMs ?? 24, 24));
+  const opposingComponent = candidate === "left" || candidate === "right" ? ax : ay;
+  const deliberateReversal = isOppositeFacing(state.facing, candidate)
+    && speed >= reversalSpeed
+    && opposingComponent >= reversalSpeed * 0.65;
+  const requiredHoldMs = deliberateReversal ? reversalMinHoldMs : minHoldMs;
+  if (elapsedMs < requiredHoldMs) return state;
+
+  return { facing: candidate, lastChangedAtMs: nowMs };
 }
