@@ -1,10 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { validateStudioReviewSpatialAnchor } from "@toonstudio/studio-project-model";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import type { StudioVirtualSpaceReviewPreview } from "./studio-virtual-space-review-preview";
 import type { StudioVirtualSpaceReviewSubject } from "./studio-virtual-space-review-subject";
 import { useStudioPinnedReviewPreviews } from "./use-studio-pinned-review-previews";
 import { StudioReviewSpatialAnnotation, type StudioReviewAnnotationControl, type StudioReviewAnnotationNote } from "./StudioReviewSpatialAnnotation";
+
+const LazyStudioCrecoCollabViewerPanel = lazyRetry(
+  () =>
+    import("../creco-collab-viewer/StudioCrecoCollabViewerPanel").then((module) => ({
+      default: module.StudioCrecoCollabViewerPanel,
+    })),
+  "StudioCrecoCollabViewerPanel",
+);
 
 export function StudioReviewImage({ preview, label, className = "block h-auto w-full rounded-lg", figureClassName = "mt-3" }: {
   readonly preview: StudioVirtualSpaceReviewPreview; readonly label: string; readonly className?: string;
@@ -32,6 +41,7 @@ export function StudioPinnedReviewPreview({ subject, onRevoked, annotation, note
   readonly onPreviewsChange?: (previews: readonly StudioVirtualSpaceReviewPreview[]) => void;
 }) {
   const bt = useBilingual("StudioPinnedReviewPreview");
+  const [crecoViewerOpen, setCrecoViewerOpen] = useState(false);
   const { result, cursor, setCursor, refresh } = useStudioPinnedReviewPreviews(subject, onRevoked);
   useEffect(() => {
     if (result?.ok) onPreviewsChange?.(result.previews);
@@ -69,5 +79,35 @@ export function StudioPinnedReviewPreview({ subject, onRevoked, annotation, note
       ? bt("이 검수 버전에 연결된 미리보기가 아직 준비되지 않았어요. 검토 기록은 아래에서 확인할 수 있어요.", "A preview for this exact review version is not ready. Its review notes are available below.")
       : bt("검수 미리보기를 확인 중…", "Checking snapshot previews…")}</p>}
     {result && !result.ok ? <button type="button" className="min-h-11 px-3" onClick={() => { annotation?.onSelect(null); refresh(); }}>{bt("미리보기 다시 확인", "Check preview again")}</button> : null}
+    <details
+      data-testid="studio-creco-collab-viewer-disclosure"
+      className="mt-4 rounded-xl border border-line bg-panel p-3"
+      onToggle={(event) => setCrecoViewerOpen(event.currentTarget.open)}
+    >
+      <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-fg">
+        <span className="min-w-0 [word-break:keep-all]">
+          {bt(
+            "CRECO++ 웹툰 공정 비교·뷰어 핀 피드백·AI 음영·버전·활동 로그",
+            "CRECO++ Webtoon Stage Compare · Pin Feedback · AI Shading · Versions · Activity Log",
+          )}
+        </span>
+      </summary>
+      {crecoViewerOpen ? (
+        <div className="mt-3 border-t border-line pt-3">
+          <Suspense
+            fallback={
+              <div className="rounded-xl border border-line bg-card p-3 text-xs text-fg-2">
+                {bt(
+                  "CRECO++ 웹툰 협업 비교 뷰어와 무료 AI 음영 스튜디오를 불러오는 중입니다.",
+                  "Loading CRECO++ collaboration compare viewer and free AI shading studio.",
+                )}
+              </div>
+            }
+          >
+            <LazyStudioCrecoCollabViewerPanel />
+          </Suspense>
+        </div>
+      ) : null}
+    </details>
   </div>;
 }
