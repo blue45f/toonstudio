@@ -26,6 +26,8 @@ function fixture(files = {}) {
   for (const [file, source] of Object.entries({
     "config/free-infrastructure-policy.json": JSON.stringify(policy),
     "deploy/cloudflare-static/wrangler.jsonc": "{}",
+    "deploy/cloudflare-realtime/wrangler.jsonc": "{}",
+    "deploy/cloudflare-apex-redirect/wrangler.jsonc": "{}",
     "deploy/cloudflare-static/src/index.ts": "",
     "apps/web/public/_headers": "",
     "docs/FREE_INFRASTRUCTURE.md": "",
@@ -81,6 +83,15 @@ describe("free infrastructure policy", () => {
         "automaticPaidFailover must remain false",
       ]),
     );
+  });
+
+  it("계정 근거 없는 관측 활성화를 기존 무료 인프라 게이트에서 차단한다", () => {
+    const root = fixture({
+      "deploy/cloudflare-static/wrangler.jsonc": JSON.stringify({ observability: { traces: { enabled: true } } }),
+    });
+    expect(validateFreeInfrastructureRepository(root)).toEqual([
+      expect.stringContaining("observability.traces.enabled: 관측 수집을 명시 활성화했습니다"),
+    ]);
   });
 
   it("rejects provider caps above the central-write stop boundary", () => {

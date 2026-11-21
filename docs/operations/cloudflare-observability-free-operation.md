@@ -1,7 +1,7 @@
 # Cloudflare Observability 무료 운영과 엣지 오류 진단
 
-상태: **current** — 기본 비활성 오류 진단 코드와 운영 확인 절차.
-기준일: **2026-11-20**. 아래 계정 상태는 미확인이며, 코드 준비를 운영 활성화 완료로 해석하지 않는다.
+상태: **current** — 기본 비활성 오류 진단, 관측 설정 회귀 검사와 실측 입력 계산 절차.
+기준일: **2026-11-21**. 아래 계정 상태는 미확인이며, 코드 준비를 운영 활성화 완료로 해석하지 않는다.
 
 ## 1. 비용 경계와 현재 확인 상태
 
@@ -9,14 +9,19 @@
 유료 초과 사용, 새 유료 내보내기 대상은 이 승인에 포함되지 않는다. 실제 계정 상태를 확인할 수
 없으면 새 수집을 활성화하지 않는다. 기존 데이터 수집을 임의로 끄거나 진단을 삭제하지 않는다.
 
-| 항목 | 2026-11-20 확인 상태 |
+| 항목 | 2026-11-21 확인 상태 |
 | --- | --- |
-| Cloudflare 계정 요금제·Observability 사용량·활성 데이터 세트 | 미확인. 사용량 화면이 로그인으로 연결됨 |
+| Cloudflare 계정 요금제·Observability 사용량·활성 데이터 세트 | 미확인. 2026-11-20 조회는 로그인으로 연결됐으며, 2026-11-21에는 연결된 브라우저 문맥이 없어 계정 화면에 도달하지 못함 |
 | 운영 Worker의 배포 SHA·샘플링·보관·Issues | 미확인 |
-| 로컬 운영 접근 | 연결된 Desktop Commander 기기 오프라인, 작업 환경에 Cloudflare 인증 없음 |
+| 로컬 운영 접근 | 연결된 Desktop Commander 기기 오프라인, 작업 환경에 Cloudflare 인증 없음. 계정 설정 변경·배포 없음 |
 | 웹·실시간·apex Worker 저장소 설정 | Observability 정책 미선언. 실제 운영 비활성을 뜻하지 않음 |
 | Analytics Worker 설정 생성기 | `observability: { enabled: false }` 선언. 실제 배포 적용 여부 미확인 |
 | 새 웹 Worker 오류 진단 | 환경변수 미설정 시 출력 0건. 이 변경은 활성화 변수를 등록하지 않음 |
+
+기본 비활성 오류 진단은 [PR #2848](https://github.com/blue45f/toonstudio/pull/2848)로 이미
+병합됐다. 이번 후속 작업은 실제 사용량을 확보했을 때의 계산과 저장소 설정 회귀 검사를 보강한다.
+`keep_vars: true`인 웹 Worker는 dashboard의 변수가 유지될 수 있으므로 저장소에 진단 변수가
+없다는 사실만으로 운영에서도 비활성이라고 판단하지 않는다.
 
 요금제와 사용량의 과거 기록은 현재 증거가 아니다. 도메인의 Free 표시, R2 바인딩 존재,
 Wrangler 설정 생략만으로 현재 Observability Free를 확정하지 않는다.
@@ -29,6 +34,10 @@ Wrangler 설정 생략만으로 현재 Observability Free를 확정하지 않는
 | 2026-11-30까지 Workers Logs Paid | 2,000만 이벤트/월, 7일 보관 | 초과 이벤트 요금 가능 |
 | 2026-12-01부터 Observability Free | 계정 전체 0.5GB/일, 7일 보관 | 신규 수집 중단. 추가 수집 과금 없음 |
 | 2026-12-01부터 Observability Paid | 수집 50GB/청구 주기, 저장 10GB-월/청구 주기 | 수집·저장 초과분을 각각 과금 |
+
+[공식 전환 안내](https://developers.cloudflare.com/observability/pricing/#existing-customers)에서
+기존 Free·Pro·Business 고객은 2026-12-01 자동 전환, Enterprise는 다음 계약 갱신 때 적용하며
+그전에는 기존 계약을 유지한다. 이 구분과 Observability Free/Paid 적용 상태를 각각 확인한다.
 
 새 Free의 일일 한도는 00:00 UTC, 한국 시간 09:00에 재설정된다. 이미 저장한 자료는 보관
 기간까지 조회할 수 있다. Paid의 수집·저장 포함량은 독립적이다. 새 수집 요금은 2026-12-01
@@ -97,7 +106,8 @@ head sampling이나 기존 공급자 수집 설정도 바꾸지 않는다. 이 �
 3. 웹·실시간·apex·analytics Worker별 실제 logs, invocation logs, traces, Issues, sampling,
    persist와 배포 버전을 확인한다. 도메인 trace rule, R2 버킷 로그, AI Gateway와 export도 확인한다.
 4. 같은 계정의 다른 프로젝트 사용량을 합산한다. 새 정책의 내부 운영 목표로 **0.35GB/일 이하**를
-   검토할 수 있지만, 이는 공식 cap이나 무제한 오류 보존 보장이 아니다.
+   검토하고, **0.4GB/일**을 내부 경고값으로 사용할 수 있다. 앞의 값은 운영 목표, 뒤의 값은
+   공식 일일 한도 0.5GB의 80% 경고다. 둘 다 공급자 cap이나 무제한 오류 보존 보장이 아니다.
 5. 새 오류 이벤트와 이미 활성인 Issues의 중복 사용량을 고려하고, 무료 조건과 실제 수집 여유를
    확인한 경우에만 진단 변수의 활성화를 검토한다. trace나 새 저장 서비스를 함께 켜지 않는다.
 
@@ -109,11 +119,111 @@ R2 Data Access Logs는 상태 400 이상 요청을 제외하고 비동기·최�
 완전한 진단·감사 장부가 아니다. 자동 invocation 기록을 끄면 요청 문맥이, trace를 줄이면 호출
 시간 분해가 사라진다. 계정 실측 없이 이를 일괄 비활성화하지 않는다.
 
-## 4. 검증·반영·중지
+## 4. 실제 계정 자료로 비용 계산
+
+[`cloudflare-observability-cost.mjs`](../../scripts/cloudflare-observability-cost.mjs)는 계정 접속이나
+설정 변경 없이 입력 JSON을 계산한다. `confirmed`는 입력자가 근거를 확인했다는 표시이며,
+도구가 계정·계약·청구서를 검증했다는 뜻이 아니다. 계정 식별자, 토큰, 원문 로그는 입력에 필요 없다.
+
+저장소 루트에서 템플릿을 저장소 밖 임시 파일로 만든다. `paid` 대신 `free`도 가능하다.
+
+```bash
+usage_file="$(mktemp /tmp/toonstudio-observability-usage.XXXXXX.json)"
+node scripts/cloudflare-observability-cost.mjs --template paid > "$usage_file"
+# 실제 계정 자료를 확인한 뒤 위 파일의 null·미확인 값을 채운다.
+node scripts/cloudflare-observability-cost.mjs --input "$usage_file" --json
+```
+
+빈 템플릿의 계산 종료 코드 2는 정상적인 **근거 부족** 판정이다. 값이 없다는 이유로 0을 입력하거나
+`confirmed`를 true로 바꾸지 않는다. 입력 파일은 PR·CI artifact에 올리지 않는다.
+
+| 확보할 항목 | 입력·계산 규칙 | 누락 시 의미 |
+| --- | --- | --- |
+| 실제 Observability 플랜·표준 요금 적용 근거 | `plan`, `pricing.model`, `pricing.confirmed` | Free/Paid 추정 금지. 별도 계약은 표준 요금으로 계산하지 않음 |
+| 계정 전체 범위·조회 시각 | `evidence`에 같은 계정의 다른 프로젝트와 기존 저장 데이터 포함 여부를 표시 | ToonStudio 일부만으로 계정 초과요금 판정 금지 |
+| Paid의 단일 청구 주기 여부 | `evidence.singleBillingCycle`로 한 번에 하나의 실제 청구 주기 안만 계산하는지 확인 | 서로 다른 주기의 사용량·포함량을 합산해 남는 포함량을 이월하지 않음 |
+| 계산 대상 기간과 관측 완료일 | `period`에 새 요금 적용 구간의 시작·끝·자료 확보일까지 표시 | 실제 청구 주기, 전환일의 적용 시각·시간대와 부분일 처리 확인 필요 |
+| Paid 실제 포함량 | `ingestionAllowanceGB`, `storageAllowanceGBMonth`를 명시 | 표준 50GB·10GB-월의 전환 주기 적용·일할 계산을 임의 가정하지 않음 |
+| Paid 계정 수집량 | `usage.ingestionGB`, 비압축 GB 기준 | 이벤트 수·요청 수·R2 객체 크기로 대신 계산하지 않음 |
+| Paid 일별 최대 조회 가능 용량 | `usage.dailyStorage`에 계산 구간의 모든 날짜와 최대 GB | 월말 용량·현재 용량·7일 보관 근사로 실측 저장량을 대체하지 않음 |
+| Free UTC 일별 수집량 | `usage.dailyIngestion`에 누락·중복 없는 UTC 날짜별 GB | 월 합계·평균만으로 일일 한도 충족 판정 금지 |
+| 동일 범위·동일 기간의 이전 추가요금 | `comparison.oldAdditionalUsd`, `sameScopeAndPeriod` | 미확인이면 비용 증가분은 계산하지 않음 |
+
+일별 배열의 한 행은 Paid에서 `{ "date": "YYYY-MM-DD", "maxQueryableGB": null }`, Free에서
+`{ "date": "YYYY-MM-DD", "ingestionGB": null }` 형식이다. 실제 날짜·실측값으로 바꾸고 대상 날짜를
+모두 포함한다. `null`은 0이 아닌 미확인 값이며, 무수집일도 실제 0이 확인됐을 때만 0을 기록한다.
+
+GB는 공급자 화면·내보내기의 비압축 GB 단위를 사용한다. 별도 과금인 Log Explorer (Legacy)의
+사용량을 공용 포함량에 섞지 않는다. 별도 계약, 표준 요금 적용 전 기간, 임의의 보관 연장 요금은
+이 계산기의 지원 범위가 아니며 해당 계약·요금표로 따로 검증한다.
+
+Free의 날짜 경계는 UTC다. Paid의 `evidence.capturedAt`은 공급자가 일별 집계에 사용하는
+시간대의 offset으로 기록한다. 자료 확보일보다 미래인 날짜를 실측으로 표시하면 입력 오류다.
+`observed_complete`는 마지막 집계일이 끝난 뒤에만 사용하며, 당일 진행 중인 자료에는
+`in_progress`, 미래 시나리오에는 `forecast`를 사용한다. 날짜가 지났더라도 공급자 집계 반영이
+완료됐는지 따로 확인해야 한다.
+
+표준 Paid 요금이 실제 적용된다는 근거가 있을 때만 다음을 계산한다.
+
+```text
+I = 해당 구간 계정 전체 수집 GB
+S = 해당 구간 일별 최대 queryable GB의 합계 / 30
+C_new_USD = 0.25 × max(I − 실제 수집 포함량, 0)
+          + 0.10 × max(S − 실제 저장 포함량, 0)
+delta_USD = C_new_USD − 동일 범위·동일 기간의 이전 추가요금
+```
+
+`C_new_USD`는 새 Observability 수집·저장 초과분의 참고 계산이다. 고정 구독료, Workers 요청·CPU,
+R2, 외부 내보내기, 세금·환율을 포함한 월 청구액이 아니다. 크레딧을 적용해 최종 결제가 0이어도
+초과 사용량이 없었다는 뜻은 아니다. 아주 작은 양수 초과분도 반올림해 0원 달성으로 판정하지 않는다.
+
+| 결과 | 해석·후속 조치 |
+| --- | --- |
+| `needs_evidence`, `unsupported_plan`, `invalid_input` | 판정 보류. 부족한 자료나 형식을 보완하고 다시 실행 |
+| `observed_within_allowance` | 입력한 관측 구간은 포함량 이내. 진행 중 주기의 나머지 기간까지 0원이라는 뜻은 아님 |
+| `observed_overage`, `forecast_overage` | 입력 범위에서 양수 초과분. 원인을 데이터 세트별로 확인하고 조건부 조정 |
+| `forecast_within_allowance` | 예상 입력에서만 포함량 이내. 실제 사용량·청구 결과와 분리 |
+| `free_cap_reached` | Free 금전 초과요금과 별개로 수집 중단·오류 진단 누락 위험 확인 |
+
+종료 코드 0은 입력 구간에서 포함량 이내, 1은 초과 또는 Free 한도 도달, 2는 입력·근거 부족이다.
+계산기는 어떤 경우에도 최종 청구 검증 완료를 반환하지 않는다. 최종 상태는 실제 청구서의 해당
+항목까지 확인한 뒤 **해당 청구 주기 0원 검증 완료**로 기록한다.
+
+### 적용 전·후 우선순위
+
+| 우선순위·시점 | 확인·작업 | 완료 근거 |
+| --- | --- | --- |
+| P0 · 2026-11-23~24 | 요금제, 실제 청구 주기·포함량, 계정 공용 데이터 세트, 실제 배포 설정 확보 | 조회 시각과 출처를 남긴 비밀 제외 목록 |
+| P0 · 2026-11-25 | 평시·피크·수집 중지 시나리오를 계산. 기존 잔존 저장량 포함 | 각 입력의 관측·예상 구분, 수집·저장 독립 계산 |
+| P1 · 2026-11-27~29 | 초과 가능성이 확인된 경우에만 불필요한 로그·속성·중복 수집 또는 샘플링 조정 검토 | 변경 전후 계정 사용량, 오류 진단·요청 응답 보존 확인 |
+| P0 · 2026-11-30 | 적용 플랜·시각, 배포된 설정, 잔여 포함량과 관측 가능성 최종 확인 | 0원 예상 조건 충족 또는 판정 보류를 명시 |
+| P0 · 2026-12-01 적용 직후·첫 주 | 수집 GB, 일별 최대 저장 GB, 초과 항목, Free 수집 중단과 진단 누락 확인 | 자료 반영 지연을 고려한 일별 비교 |
+| P1 · 보관 만료·첫 실제 청구 마감 | 잔존 데이터 감소와 누적 저장 사용량, 최종 항목 대조 | 해당 청구 주기 검증 결과와 다음 주기 잔여 위험 |
+
+수집을 중지해도 기존 데이터가 만료되기 전 저장 비용이 남을 수 있고, 이미 누적된 GB-월과
+초과분은 되돌아가지 않는다. Paid의 내부 경고는 **실제 적용 포함량의 80%**를 기준으로 관측 누적과
+주기 말 예측을 각각 확인한다. 표준 전체 포함량이 확인된 경우에만 40GB·8GB-월에 해당한다.
+경고는 자동 차단이나 비용 보장이 아니다.
+
+## 5. 저장소에서 새 수집의 우발적 활성화 방지
+
+[`cloudflare-observability-policy.mjs`](../../scripts/cloudflare-observability-policy.mjs)를 기존
+무료 인프라 검증기에 연결한다. 웹·실시간·apex Wrangler의 명시적인 관측 활성화, 환경별 override,
+진단 opt-in과 Analytics 생성 결과를 검사한다. 새 명시 활성화는 계정·요금·사용량 근거와 함께
+정책을 별도 검토해야 한다. 검사 통과가 운영 계정의 수집 중단 또는 0원 보장을 뜻하지 않는다.
+
+미선언인 기존 설정은 그대로 둔다. 계정 확인 없이 `observability.enabled=false`를 일괄 삽입하지
+않으며, 배포된 dashboard 설정이나 이미 저장된 데이터를 수정하지 않는다. 기존 요청 처리와
+진단 코드의 기본 비활성 동작은 유지한다.
+
+## 6. 검증·반영·중지
 
 저장소 루트, 설치된 프로젝트 의존성으로 실행한다. 아래 명령은 계정 변경이나 운영 배포를 하지 않는다.
 
 ```bash
+node --test scripts/cloudflare-observability-cost.test.mjs scripts/cloudflare-observability-policy.test.mjs
+pnpm exec vitest run scripts/free-infrastructure-policy.test.mjs scripts/deploy-cloudflare-analytics.test.mjs
+node scripts/verify-free-infrastructure-policy.mjs
 pnpm exec vitest run deploy/cloudflare-static/src/index.test.ts
 pnpm run typecheck:cloudflare-static
 pnpm harness:verify
@@ -150,6 +260,18 @@ Cloudflare 설정·소스와 겹치지 않았다.
   초기 실패 기록을 통과로 바꾸거나 CI·테스트·보호 설정을 약화하지 않는다.
 - Cloudflare 계정 조회·진단 활성화·운영 배포는 완료되지 않았다. 이미 받은 무료 범위 승인은
   유효하며, 필요한 것은 추가 승인 대신 계정 접근과 검증 조건이다.
+
+### 2026-11-21 후속 검증 기록
+
+- Node에서 계산기 49개·관측 정책 30개, 총 **79개 테스트 통과**. 누락 근거·미래 실측·단일 청구
+  주기·독립 저장 초과·소액 양수·Free UTC 한도·Wrangler 환경별 활성화를 포함한다.
+- Vitest에서 계산기·관측 정책·기존 무료 인프라·Analytics **4개 파일, 348개 테스트 통과**.
+  새 두 테스트는 기존 필수 CI 회귀 목록에 등록했다.
+- 전체 `pnpm typecheck`는 전체 프로그램 목록 생성 중 `SIGKILL`로 **미완료**다. 이 실행에서
+  Web 또는 API 전체 타입 검사를 통과했다고 보고하지 않는다. 필수 원격 CI 결과는 해당 PR의
+  실제 커밋을 기준으로 확인해야 하며, 기존 main의 실패를 새 변경의 성공으로 바꾸지 않는다.
+- 계정 조회·플랜 전환·수집 설정 변경·진단 활성화·Worker 배포는 수행하지 않았다. 실측값을
+  확보하지 않았으므로 실제 월 청구액, 비용 증가분, 추가 요금 0원 달성 여부는 미확정이다.
 
 ## 공식 근거
 
