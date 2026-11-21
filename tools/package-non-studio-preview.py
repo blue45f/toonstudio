@@ -7,9 +7,10 @@ import tarfile
 
 MAX_PREVIEW_BYTES = 250_000_000
 ALLOWED_SUFFIXES = {".html", ".js", ".mjs", ".css", ".json", ".svg", ".ico", ".png", ".jpg", ".jpeg", ".webp", ".woff", ".woff2", ".webmanifest", ".txt"}
-# 현재 Vite의 8자리 해시 출력 중 Studio 전용 CV/BIM CV·BIM·물리 엔진만 제외한다.
+# 현재 Vite의 8자리 해시 출력 중 Studio 전용 CV·BIM·물리·오프라인 분기 엔진만 제외한다.
+# 오프라인 분기 worker는 creator/offline-branch에서만 생성하며 공개 페이지의 QA 사본에는 필요하지 않다.
 # 비슷한 이름의 공개 페이지 코드와 전체 dist는 그대로 보존한다.
-STUDIO_RUNTIME_CHUNK = re.compile(r"^(?:opencv|web-ifc-api|studio-bg3d-physics\.worker)-[A-Za-z0-9_-]{8}\.js$")
+STUDIO_RUNTIME_CHUNK = re.compile(r"^(?:opencv|web-ifc-api|studio-bg3d-physics\.worker|studio-offline-branch\.worker)-[A-Za-z0-9_-]{8}\.js$")
 
 
 def select_preview_files(root: Path) -> set[Path]:
