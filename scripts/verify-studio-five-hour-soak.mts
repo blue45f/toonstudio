@@ -38,8 +38,10 @@ import {
   parseStudioPointerInputMode,
   resolveStudioPointerInputMode,
 } from "./lib/studio-pointer-input-driver.mjs";
+import { closeStudioSoakBrushSurfaces, selectStudioSoakDesktopBrush } from "./lib/studio-soak-brush-selection";
 import { ensureStudioSoakDesktopPen } from "./lib/studio-soak-desktop-pen";
 import { evaluateStudioSoakCompletion, parseStudioSoakWorkload, readStudioSoakBuildEvidence, shouldChurnStudioSoakHistory, studioSoakDocumentAdvanced, type StudioSoakBuildEvidence } from "./lib/studio-soak-evidence";
+import { clickStudioSoakHistoryAction } from "./lib/studio-soak-history-ui";
 import { readStudioSoakLayerCount, waitForStudioSoakLayerCount, withStudioSoakLayerNavigator } from "./lib/studio-soak-layer-count";
 import { armStudioSoakPointerLatency, drainStudioSoakPointerLatency, shouldRunStudioSoakCycle, studioSoakPointerLatencyIssues, type StudioSoakPointerLatency } from "./lib/studio-soak-pointer-latency";
 import { assertStudioSoakPointerRoute, prepareStudioSoakPointerRoute } from "./lib/studio-soak-pointer-route";
@@ -107,29 +109,7 @@ function changedPixels(before: Buffer, after: Buffer): number {
 }
 
 async function closeBrushSurfaces(page: Page): Promise<boolean> {
-  const floating = page.locator('[role="dialog"][data-studio-brush-floating]:visible');
-  if (await floating.isVisible().catch(() => false)) {
-    await floating.getByRole("button", { name: / 닫기$/u }).click({ timeout: 3_000 });
-    if (!(await floating.waitFor({ state: "hidden", timeout: 3_000 })
-      .then(() => true).catch(() => false))) return false;
-  }
-  const surfaces = [
-    page.locator('[data-studio-brush-catalog-session="true"]'),
-    page.locator('[data-studio-brush-library="true"]').first(),
-    page.locator('[data-studio-mobile-sheet="draw"]'),
-  ];
-  for (const surface of surfaces) {
-    if (!(await surface.isVisible().catch(() => false))) continue;
-    const docked = await surface.evaluate((element) => Boolean(element.closest('[data-studio-brush-workbench-dock="true"]')))
-      .catch(() => false);
-    if (docked) continue;
-    await page.keyboard.press("Escape").catch(() => undefined);
-    const closed = await surface.waitFor({ state: "hidden", timeout: 3_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (!closed) return false;
-  }
-  return true;
+  return closeStudioSoakBrushSurfaces(page);
 }
 
 async function openMobileBrushLibrary(page: Page, timeoutMs = 10_000): Promise<Locator | null> {
@@ -190,28 +170,7 @@ async function selectBrush(page: Page, item: StudioBrushCatalogItem): Promise<bo
 
   if (!(await closeBrushSurfaces(page))) return false;
   if (!(await ensurePenReady(page))) return false;
-  const dockedLibrary = page.locator('[data-studio-brush-workbench-dock="true"] [data-studio-brush-library="true"]').first();
-  if (!(await dockedLibrary.isVisible({ timeout: 500 }).catch(() => false))) {
-    const toolbar = page.locator('[data-studio-draw-options="true"]');
-    const pill = toolbar.locator('[data-studio-brush-active-pill="true"]');
-    if (!(await pill.isVisible().catch(() => false))) return false;
-    await pill.click({ timeout: 5_000 });
-    if (!(await dockedLibrary.waitFor({ state: "visible", timeout: 5_000 })
-      .then(() => true).catch(() => false))) return false;
-  }
-  // 현재 PC 진입점은 먼저 도킹 라이브러리를 연다. 실제 선택과 비동기 적용을 모두 확인한다.
-  await dockedLibrary.getByRole("searchbox").fill(item.name);
-  const option = dockedLibrary.getByRole("button", { name: `${item.name} 선택`, exact: true });
-  if (!(await option.waitFor({ state: "visible", timeout: 5_000 }).then(() => true).catch(() => false))) return false;
-  await option.scrollIntoViewIfNeeded();
-  await option.click({ timeout: 5_000 });
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    const active = await option.getAttribute("aria-pressed") === "true";
-    const pending = await dockedLibrary.getAttribute("data-studio-brush-selection-pending") === "true";
-    if (active && !pending) return true;
-    await page.waitForTimeout(50);
-  }
-  return false;
+  return selectStudioSoakDesktopBrush(page, item);
 }
 
 async function ensurePenReady(page: Page, timeoutMs = 4_000): Promise<boolean> {
@@ -372,13 +331,7 @@ async function clickStudioHistoryAction(
   page: Page,
   action: "undo" | "redo",
 ): Promise<boolean> {
-  const button = page.locator(
-    `[data-studio-primary-action="${action}"]:visible, [data-studio-command-bar-command="${action}"]:visible`,
-  ).first();
-  if (!(await button.isVisible({ timeout: 1_000 }).catch(() => false))) return false;
-  if (await button.isDisabled().catch(() => true)) return false;
-  await button.click({ timeout: 5_000 });
-  return true;
+  return clickStudioSoakHistoryAction(page, action);
 }
 
 async function exerciseBoundedHistoryChurn(

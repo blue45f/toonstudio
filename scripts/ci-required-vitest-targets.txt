@@ -957,6 +957,7 @@ scripts/lib/studio-soak-layer-count.test.ts
 scripts/lib/studio-soak-pointer-latency.test.ts
 scripts/lib/studio-soak-pointer-route.test.ts
 scripts/lib/studio-soak-telemetry.test.ts
+scripts/lib/studio-soak-ui-actions.test.ts
 scripts/lib/studio-soak-visual-evidence.test.ts
 scripts/lib/studio-verify-shape-readiness.test.tsx
 scripts/lib/studio-worker-error-observer.test.ts

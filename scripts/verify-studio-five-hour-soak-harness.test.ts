@@ -9,6 +9,8 @@ const source = readFileSync(new URL("./verify-studio-five-hour-soak.mts", import
 const desktopPen = readFileSync(new URL("./lib/studio-soak-desktop-pen.ts", import.meta.url), "utf8");
 const pointerRoute = readFileSync(new URL("./lib/studio-soak-pointer-route.ts", import.meta.url), "utf8");
 const layerCountUi = readFileSync(new URL("./lib/studio-soak-layer-count.ts", import.meta.url), "utf8");
+const brushSelectionUi = readFileSync(new URL("./lib/studio-soak-brush-selection.ts", import.meta.url), "utf8");
+const historyUi = readFileSync(new URL("./lib/studio-soak-history-ui.ts", import.meta.url), "utf8");
 
 function sliceFunction(name: string, nextName: string): string {
   const start = source.indexOf(`async function ${name}`);
@@ -20,17 +22,18 @@ function sliceFunction(name: string, nextName: string): string {
 
 describe("Studio five-hour soak browser state isolation", () => {
   it("closes every brush surface that can cover mobile or desktop drawing", () => {
-    const close = sliceFunction("closeBrushSurfaces", "openMobileBrushLibrary");
+    expect(sliceFunction("closeBrushSurfaces", "openMobileBrushLibrary")).toContain("return closeStudioSoakBrushSurfaces(page)");
+    const close = brushSelectionUi.slice(0, brushSelectionUi.indexOf("export async function selectStudioSoakDesktopBrush"));
     expect(close).toContain('[data-studio-brush-catalog-session="true"]');
     expect(close).toContain('[data-studio-brush-library="true"]');
     expect(close).toContain('[data-studio-mobile-sheet="draw"]');
     expect(close).toContain('page.keyboard.press("Escape")');
     expect(close).toContain('data-studio-brush-workbench-dock="true"');
-    expect(close).toContain('[role="dialog"][data-studio-brush-floating]:visible');
-    expect(close).toContain('floating.getByRole("button", { name: / 닫기$/u })');
+    expect(close).toContain('[role="dialog"][data-studio-brush-floating]');
+    expect(close).toContain('surface.getByRole("button", { name: / 닫기$/u })');
     expect(close).toContain('if (docked) continue');
     expect(close).toContain('state: "hidden"');
-    expect(close).toContain(".catch(() => false)");
+    expect(close).toContain('filter({ visible: true })');
   });
 
   it("모바일 카탈로그는 공통 실제 설정 진입과 같은 잔여 예산을 사용한다", () => {
@@ -47,14 +50,14 @@ describe("Studio five-hour soak browser state isolation", () => {
     const select = sliceFunction("selectBrush", "ensurePenReady");
     expect(select).toContain("await openMobileBrushLibrary(page)");
     expect(select).toContain('library.getByRole("searchbox")');
-    expect(select).toContain('[data-studio-brush-workbench-dock="true"] [data-studio-brush-library="true"]');
-    expect(select).toContain('dockedLibrary.getByRole("searchbox")');
+    expect(brushSelectionUi).toContain('[data-studio-brush-workbench-dock="true"] [data-studio-brush-library="true"]');
+    expect(brushSelectionUi).toContain('[role="dialog"][data-studio-brush-floating] [data-studio-brush-library="true"]');
+    expect(brushSelectionUi).toContain('library.getByRole("searchbox")');
     expect(select).toContain('data-studio-brush-selection-pending');
-    expect(select).toContain('if (active && !pending) return true');
     expect(select).toContain("await ensurePenReady(page)");
-    expect(select).toContain('dockedLibrary.waitFor({ state: "visible"');
+    expect(select).toContain("return selectStudioSoakDesktopBrush(page, item)");
     expect(select).toContain('option.click({ timeout: 5_000 })');
-    expect(select).toContain('[data-studio-brush-active-pill="true"]');
+    expect(brushSelectionUi).toContain('[data-studio-brush-active-pill="true"]');
     expect(select).toContain("return closeBrushSurfaces(page)");
   });
 
@@ -82,15 +85,13 @@ describe("Studio five-hour soak browser state isolation", () => {
     expect(desktopPen).not.toContain("activateDesktopPen(page)");
   });
 
-  it("실제 PC 도크를 열고 브러시 선택 적용을 확인한 뒤 그리기를 시작한다", () => {
+  it("실제 PC 선택 표면과 비동기 적용을 확인한 뒤 그리기로 복귀한다", () => {
     const select = sliceFunction("selectBrush", "ensurePenReady");
-    const desktop = select.slice(select.indexOf("if (!(await closeBrushSurfaces(page))) return false;"));
-    expect(desktop.indexOf("await pill.click")).toBeLessThan(desktop.indexOf("dockedLibrary.waitFor"));
-    expect(desktop.indexOf("dockedLibrary.waitFor")).toBeLessThan(desktop.indexOf('dockedLibrary.getByRole("searchbox")'));
-    expect(desktop).toContain('getAttribute("aria-pressed") === "true"');
-    expect(desktop).toContain('getAttribute("data-studio-brush-selection-pending") === "true"');
-    expect(desktop).toContain("if (active && !pending) return true");
-    expect(desktop).not.toContain("force: true");
+    expect(select).toContain("return selectStudioSoakDesktopBrush(page, item)");
+    expect(brushSelectionUi).toContain('option.getAttribute("aria-pressed"');
+    expect(brushSelectionUi).toContain('library.getAttribute("data-studio-brush-selection-pending"');
+    expect(brushSelectionUi).toContain("if (active && !pending && Date.now() < deadline) return closeStudioSoakBrushSurfaces(page)");
+    expect(brushSelectionUi).not.toContain("force: true");
   });
 
   it("never measures ink while a brush surface is covering the canvas", () => {
@@ -130,8 +131,10 @@ describe("Studio five-hour soak browser state isolation", () => {
   it("keeps document size bounded while repeatedly exercising real undo and redo controls", () => {
     expect(source).toContain("HISTORY_CHURN_INTERVAL = 10");
     expect(source).toContain("clickStudioHistoryAction(");
-    expect(source).toContain('[data-studio-primary-action="');
-    expect(source).toContain('[data-studio-command-bar-command="');
+    expect(source).toContain("return clickStudioSoakHistoryAction(page, action)");
+    expect(historyUi).toContain("studioHistoryControlSelector(action)");
+    expect(historyUi).toContain('.studio-drawing-clarity-history');
+    expect(historyUi).toContain("if (await button.isDisabled()) return false");
     expect(source).toContain("N strokes == N layer rows");
     expect(source).toContain('clickStudioHistoryAction(page, "undo")');
     expect(source).toContain('clickStudioHistoryAction(page, "redo")');
