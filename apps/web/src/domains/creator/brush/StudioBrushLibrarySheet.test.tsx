@@ -598,7 +598,7 @@ describe("StudioBrushLibrarySheet", () => {
         catalogId: "material-fern-frond",
         catalogName: "고사리 깃잎",
         runtimeBrushId: "ink-particle",
-        defaultWidth: 38,
+        defaultWidth: 42,
         defaultOpacity: 0.94,
         brushDynamics: expect.objectContaining({
           version: 1,

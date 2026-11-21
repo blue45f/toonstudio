@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 
+import Color from "colorjs.io";
 import { describe, expect, it } from "vitest";
 
 import { readThemeCustomProperties, resolveThemeCustomProperty } from "../../shared/lib/theme-css-test-kit";
@@ -10,16 +11,12 @@ const SEMANTIC_PALETTE = [
   "accent", "accent-2", "accent-soft", "on-accent",
 ] as const;
 
-function luminance(hex: string): number {
-  if (!/^#[a-f0-9]{6}$/iu.test(hex)) throw new Error(`불투명 별빛 대비 색을 해석할 수 없습니다: ${hex}`);
-  const rgb = [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16) / 255);
-  const linear = rgb.map((value) => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
-  return linear[0] * .2126 + linear[1] * .7152 + linear[2] * .0722;
-}
-
 function contrast(a: string, b: string): number {
-  const pair = [luminance(a), luminance(b)].sort((left, right) => right - left);
-  return (pair[0] + .05) / (pair[1] + .05);
+  const foreground = new Color(a);
+  const background = new Color(b);
+  expect(foreground.alpha, a).toBe(1);
+  expect(background.alpha, b).toBe(1);
+  return foreground.contrast(background, "WCAG21");
 }
 
 describe("공통 일러스트 표면의 테마·접근성 계약", () => {

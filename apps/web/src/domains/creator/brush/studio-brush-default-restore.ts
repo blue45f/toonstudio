@@ -15,11 +15,7 @@ import {
   type StudioSavedBrush,
 } from "./studio-brush-library";
 import { studioCoreBrushCatalogSelection } from "./studio-brush-selection";
-import {
-  resolveStudioStampBrushKind,
-  STUDIO_STAMP_BRUSH_DEFAULTS,
-} from "./studio-brush-stamp-engine";
-
+import { defaultStampTuningForBrushId } from "./studio-brush-stamp-authoring-defaults";
 
 import type { StudioBrushCatalogSelection } from "./studio-brush-selection";
 
@@ -110,17 +106,6 @@ function cloneStampTuning(
     : null;
 }
 
-function defaultStampTuning(brushId: string): StudioBrushStampTuning | null {
-  const kind = resolveStudioStampBrushKind(brushId);
-  if (!kind) return null;
-  const defaults = STUDIO_STAMP_BRUSH_DEFAULTS[kind];
-  return {
-    flow: defaults.flow,
-    hardness: defaults.hardness,
-    minSize: defaults.minSizeRatio,
-  };
-}
-
 export function studioBrushDefaultRestoreValuesFromSnapshot(
   snapshot: StudioBrushSnapshot,
 ): StudioBrushDefaultRestoreValues {
@@ -165,7 +150,7 @@ export function createStudioBuiltInBrushDefaultRestoreProfile(
       brushDynamics: normalizeStudioBrushDynamicsSettings(
         selection.brushDynamics ?? neutral.brushDynamics,
       ),
-      stampTuning: defaultStampTuning(selection.runtimeBrushId),
+      stampTuning: defaultStampTuningForBrushId(selection.runtimeBrushId),
       // V6 selections own an exact physical-program receipt; classic brushes own no override.
       enginePrograms: selection.enginePrograms ?? null,
       stabilizer: neutral.stabilizer,

@@ -117,19 +117,26 @@ function readLocalBase64(key: string): string | null {
   }
 }
 
-function writeLocalBase64(key: string, value: string): void {
+function writeLocalBase64(key: string, value: string): boolean {
   try {
-    globalThis.localStorage?.setItem(key, value);
+    const storage = globalThis.localStorage;
+    if (!storage) return false;
+    storage.setItem(key, value);
+    return storage.getItem(key) === value;
   } catch {
-    // Storage quota failures should not interrupt live editing.
+    // 저장 실패 때도 실시간 편집은 유지하되 원본 삭제의 성공 조건으로 쓰지 않는다.
+    return false;
   }
 }
 
-function removeLocalKey(key: string): void {
+function removeLocalKey(key: string, expected: string): boolean {
   try {
-    globalThis.localStorage?.removeItem(key);
+    const storage = globalThis.localStorage;
+    if (!storage || storage.getItem(key) !== expected) return false;
+    storage.removeItem(key);
+    return storage.getItem(key) === null;
   } catch {
-    // Ignore storage removal errors.
+    return false;
   }
 }
 
@@ -452,16 +459,40 @@ export function useVirtualSpaceYjsDoc(input: {
   }, [input.canEdit]);
 
   const mergeSoloToCloud = useCallback((): boolean => {
+    if (!input.canEdit || input.personal || !input.signedIn || storageKey === soloStorageKey || scopeRef.current !== storageKey) return false;
     const rawSolo = readLocalBase64(soloStorageKey);
     const doc = docRef.current;
     if (!rawSolo || !doc) return false;
-    const soloDoc = createVirtualSpaceYjsDoc(rawSolo);
-    mergeLocalSpaceDocIntoRemote(soloDoc, doc);
-    soloDoc.destroy();
-    removeLocalKey(soloStorageKey);
+    const update = decodeYjsUpdateBase64(rawSolo);
+    if (!update?.byteLength) return false;
+    let rawTarget: string | null;
+    try {
+      const storage = globalThis.localStorage;
+      if (!storage) return false;
+      rawTarget = storage.getItem(storageKey);
+    } catch { return false; }
+    const mergeDoc = new Y.Doc();
+    try {
+      // 최초 읽기가 실패했거나 다른 탭이 저장했을 수 있으므로 현재 대상을 먼저 복원한다.
+      // 양쪽 원본 검증이 끝나기 전에는 활성 문서의 저장·브로드캐스트를 유발하지 않는다.
+      if (rawTarget !== null) {
+        const targetUpdate = decodeYjsUpdateBase64(rawTarget);
+        if (!targetUpdate?.byteLength) return false;
+        Y.applyUpdate(mergeDoc, targetUpdate, "hydrate");
+      }
+      Y.applyUpdate(mergeDoc, update, "hydrate");
+      mergeLocalSpaceDocIntoRemote(mergeDoc, doc);
+    } catch {
+      return false;
+    } finally {
+      mergeDoc.destroy();
+    }
+    // 다른 방이나 아직 저장하지 못한 대상에 병합한 뒤 개인 원본을 지우지 않는다.
+    const merged = encodeYjsUpdateBase64(Y.encodeStateAsUpdate(doc));
+    if (!writeLocalBase64(storageKey, merged) || !removeLocalKey(soloStorageKey, rawSolo)) return false;
     setHasPendingSoloMerge(false);
     return true;
-  }, [soloStorageKey]);
+  }, [input.canEdit, input.personal, input.signedIn, soloStorageKey, storageKey]);
 
   const boardSnapshot = useMemo<StudioP2pBoardSnapshot>(() => ({
     available: true,

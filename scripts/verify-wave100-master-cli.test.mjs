@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { verifyWave100MasterJson } from "./verify-wave100-master-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("verifyWave100MasterJson passes Wave 100 mastery criteria and blocks single-region or burnout", () => {
   assert.equal(

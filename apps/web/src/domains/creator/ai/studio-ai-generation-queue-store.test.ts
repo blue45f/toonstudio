@@ -21,6 +21,89 @@ function createMemoryStorage() {
 }
 
 describe("studio-ai-generation-queue-store (AC-001 9-state lifecycle)", () => {
+  it("빈 저장소에서 시작한 연속 초안은 복원 호출 전에도 같은 인스턴스가 계속 저장한다", () => {
+    const storage = createMemoryStorage();
+    const store = createStudioAiGenerationQueueStore({ documentId: "new-queue", storage });
+    store.createDraft({ id: "first", skill: "story-outline", prompt: "첫 초안" });
+    store.createDraft({ id: "second", skill: "story-outline", prompt: "다음 초안" });
+    const payload = JSON.parse(storage.getItem("toonstudio.ai-generation-queue.v1:new-queue") ?? "null");
+    expect(payload.jobs.map((job: { id: string }) => job.id)).toEqual(["second", "first"]);
+  });
+
+  it("문서별로 초안을 분리하고 복원 전에 만든 초안도 기존 대기열과 함께 보존한다", async () => {
+    const storage = createMemoryStorage();
+    const first = createStudioAiGenerationQueueStore({ documentId: "queue-a", storage });
+    await first.hydrate();
+    first.createDraft({ id: "saved", skill: "story-outline", prompt: "기존 초안" });
+    const original = storage.getItem("toonstudio.ai-generation-queue.v1:queue-a");
+    const reopened = createStudioAiGenerationQueueStore({ documentId: "queue-a", storage });
+    reopened.createDraft({ id: "early", skill: "story-outline", prompt: "복원 중 새 초안" });
+    expect(storage.getItem("toonstudio.ai-generation-queue.v1:queue-a")).toBe(original);
+    expect(await reopened.hydrate()).toBe(true);
+    expect(reopened.getSnapshot().jobs.map(job => job.id)).toEqual(["early", "saved"]);
+    const other = createStudioAiGenerationQueueStore({ documentId: "queue-b", storage });
+    await other.hydrate();
+    expect(other.getSnapshot().jobs).toEqual([]);
+    const payload = JSON.parse(storage.getItem("toonstudio.ai-generation-queue.v1:queue-a") ?? "null");
+    expect(payload.documentId).toBe("queue-a");
+    expect(payload.jobs.map((job: { id: string }) => job.id)).toEqual(["early", "saved"]);
+  });
+
+  it.each([
+    "{broken", "null", JSON.stringify({ schemaVersion: 2, jobs: [], artifacts: {} }),
+    JSON.stringify({ schemaVersion: 1, documentId: "another-document", jobs: [], artifacts: {} }),
+    JSON.stringify({ schemaVersion: 1, jobs: [{}], artifacts: {} }),
+  ])("손상·미지원·다른 문서 대기열 원본을 새 초안으로 덮지 않는다: %s", async original => {
+    const storage = createMemoryStorage(), key = "toonstudio.ai-generation-queue.v1:protected";
+    storage.setItem(key, original);
+    const store = createStudioAiGenerationQueueStore({ documentId: "protected", storage });
+    expect(await store.hydrate()).toBe(false);
+    store.createDraft({ id: "memory", skill: "story-outline", prompt: "메모리 초안" });
+    expect(store.getSnapshot().jobs[0]?.id).toBe("memory");
+    expect(store.getSnapshot().storageError).not.toBeNull();
+    expect(storage.getItem(key)).toBe(original);
+  });
+
+  it("저장 거부 시 이전 원본과 메모리 초안을 보존하며 저장 성공을 보고하지 않는다", async () => {
+    const storage = createMemoryStorage(), key = "toonstudio.ai-generation-queue.v1:quota";
+    const store = createStudioAiGenerationQueueStore({ documentId: "quota", storage });
+    await store.hydrate();
+    store.createDraft({ id: "saved", skill: "story-outline", prompt: "저장된 초안" });
+    const original = storage.getItem(key);
+    vi.spyOn(storage, "setItem").mockImplementation(() => { throw new Error("quota"); });
+    store.createDraft({ id: "memory", skill: "story-outline", prompt: "새 초안" });
+    expect(storage.getItem(key)).toBe(original);
+    expect(store.getSnapshot().jobs.map(job => job.id)).toEqual(["memory", "saved"]);
+    expect(store.getSnapshot().storageError).not.toBeNull();
+  });
+
+  it("최초 읽기 실패 후 편집해도 원본을 유지하고 재시도에서 두 대기열을 병합한다", async () => {
+    const storage = createMemoryStorage(), key = "toonstudio.ai-generation-queue.v1:read-retry";
+    const initial = createStudioAiGenerationQueueStore({ documentId: "read-retry", storage });
+    initial.createDraft({ id: "saved", skill: "story-outline", prompt: "저장된 초안" });
+    const original = storage.getItem(key);
+    const reopened = createStudioAiGenerationQueueStore({ documentId: "read-retry", storage });
+    vi.spyOn(storage, "getItem").mockImplementationOnce(() => { throw new Error("read unavailable"); });
+    expect(await reopened.hydrate()).toBe(false);
+    reopened.createDraft({ id: "memory", skill: "story-outline", prompt: "읽기 실패 후 새 초안" });
+    expect(storage.getItem(key)).toBe(original);
+    expect(reopened.getSnapshot().storageError).not.toBeNull();
+    expect(await reopened.hydrate()).toBe(true);
+    expect(reopened.getSnapshot().jobs.map(job => job.id)).toEqual(["memory", "saved"]);
+    expect(reopened.getSnapshot().storageError).toBeNull();
+    expect(JSON.parse(storage.getItem(key) ?? "null").jobs.map((job: { id: string }) => job.id)).toEqual(["memory", "saved"]);
+  });
+
+  it("기존 키의 문서 ID 없는 v1 기록은 복원하고 작업 사본은 24개로 제한한다", async () => {
+    const storage = createMemoryStorage(), key = "toonstudio.ai-generation-queue.v1:legacy";
+    storage.setItem(key, JSON.stringify({ schemaVersion: 1, jobs: [], artifacts: {} }));
+    const store = createStudioAiGenerationQueueStore({ documentId: "legacy", storage });
+    expect(await store.hydrate()).toBe(true);
+    for (let index = 0; index < 25; index += 1) store.createDraft({ id: `job-${index}`, skill: "story-outline", prompt: "초안" });
+    expect(store.getSnapshot().jobs).toHaveLength(24);
+    expect(JSON.parse(storage.getItem(key) ?? "null").jobs).toHaveLength(24);
+  });
+
   it("runs all 9 canonical states cleanly and blocks apply until approved", async () => {
     const storage = createMemoryStorage();
     let tick = 0;

@@ -31,8 +31,8 @@ describe("3D 스튜디오 예시 일러스트", () => {
     // 항상 낮은 비율인 compact와는 별개 표식이다.
     expect(container.querySelector("figure[data-compact]")).toBeNull();
     for (const image of container.querySelectorAll("img")) {
-      // 4:5 고해상도(960×1200) Retina DPR 2 대응 파생본(320·640·960·1200w)을 후보로 제공한다.
-      expect(image.getAttribute("srcset")).toMatch(/-320\.webp 320w,.*-640\.webp 640w,.*-960\.webp 960w,.*\.webp 1200w/u);
+      // 너비 서술자는 4:5 파생본의 실제 폭(320·640·960)에 맞추며 높이 1200을 폭으로 쓰지 않는다.
+      expect(image.getAttribute("srcset")).toMatch(/-320\.webp 320w,.*-640\.webp 640w,.*-960\.webp 960w$/u);
       expect(image.getAttribute("sizes")).toContain("190px");
       expect(image.getAttribute("sizes")).toContain("640px");
       expect(image.getAttribute("width")).toBe("960");

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AccessibleTooltipLayer } from "./AccessibleTooltipLayer";
@@ -104,6 +104,46 @@ describe("AccessibleTooltipLayer", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("tooltip")).toBeNull();
     expect(button.getAttribute("title")).toBe("선택 · V");
+  });
+
+  it.each([false, true])("Shift+Q keeps Quick Access usable when a previous tooltip is pending/open (%s)", async (alreadyOpen) => {
+    vi.useFakeTimers();
+    const onEdit = vi.fn();
+    function QuickAccessFixture() {
+      const [open, setOpen] = useState(false);
+      return <>
+        <button type="button" title="다시 · Ctrl/⌘+Shift+Z">다시실행</button>
+        <button type="button" onKeyDown={(event) => {
+          if (event.key === "Q" && event.shiftKey) setOpen(true);
+        }}>캔버스</button>
+        {open && <section data-studio-quick-access-surface="true" data-mobile="false" aria-label="빠른 액세스">
+          <button type="button" title="명령 편집" onClick={onEdit}>빠른 액세스 편집</button>
+        </section>}
+      </>;
+    }
+    renderLayer(<QuickAccessFixture />);
+    const redo = screen.getByRole("button", { name: "다시실행" });
+    fireEvent.pointerOver(redo, { pointerType: "mouse" });
+    if (alreadyOpen) {
+      act(() => vi.advanceTimersByTime(360));
+      expect(screen.getByRole("tooltip").textContent).toContain("다시");
+    }
+    const canvas = screen.getByRole("button", { name: "캔버스" });
+    canvas.focus();
+    await act(async () => {
+      fireEvent.keyDown(canvas, { key: "Q", shiftKey: true });
+    });
+    act(() => vi.advanceTimersByTime(600));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(redo.getAttribute("aria-describedby")).toBeNull();
+
+    const edit = screen.getByRole("button", { name: "빠른 액세스 편집" });
+    expect(revealByHover(edit).textContent).toContain("명령 편집");
+    fireEvent.keyDown(edit, { key: "Escape" });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(screen.getByRole("region", { name: "빠른 액세스" })).toBeTruthy();
+    fireEvent.click(edit);
+    expect(onEdit).toHaveBeenCalledOnce();
   });
 
   it("adds friendly state and shortcut guidance to an icon-only accessible control", () => {

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { simulateEpisodeSettlementFromPackJson } from "./simulate-episode-settlement-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("simulateEpisodeSettlementFromPackJson computes exact 1-won payouts and blocks CC-BY-NC packs", () => {
   const cleanPack = {

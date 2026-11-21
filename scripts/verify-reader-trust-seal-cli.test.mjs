@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { verifyReaderTrustSealJson } from "./verify-reader-trust-seal-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 function fnv1aHex(input) {
   let hash = 0x811c9dc5;

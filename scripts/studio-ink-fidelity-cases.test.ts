@@ -5,10 +5,16 @@ import { STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS } from "../apps/web/src/domains/c
 import { FIDELITY_CASES, resolveCase } from "./studio-ink-fidelity-cases";
 
 describe("ink fidelity cases use the shipped brush picker", () => {
-  it("keeps both required fidelity IDs reachable with their shipped width and operation", () => {
+  it("대표 매체 8종의 ID·기본 폭·동작이 실제 브러시 목록에서 도달 가능하다", () => {
     expect(FIDELITY_CASES.map((definition) => resolveCase(definition))).toMatchObject([
       { id: "inkwash-pen", brushWidth: 8, brushOperation: "paint" },
       { id: "pen", brushWidth: 6, brushOperation: "paint" },
+      { id: "gpen", brushWidth: 7, brushOperation: "paint" },
+      { id: "maru-pen", brushWidth: 2.4, brushOperation: "paint" },
+      { id: "watercolor", brushWidth: 28, brushOperation: "paint" },
+      { id: "oil", brushWidth: 22, brushOperation: "paint" },
+      { id: "pencil", brushWidth: 2.5, brushOperation: "paint" },
+      { id: "airbrush", brushWidth: 32, brushOperation: "paint" },
     ]);
     for (const definition of FIDELITY_CASES) {
       const shipped = STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS.find((item) => item.id === definition.id);

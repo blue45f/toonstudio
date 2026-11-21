@@ -291,9 +291,11 @@ describe("Studio exhaustive long-brush quality policy", () => {
     expect(verifierSource).toContain("const cursorIgnoreRadius = 0;");
   });
 
-  it("먹 번짐과 백런만 원고 지름을 화면 지름으로 환산한다", () => {
+  it("번짐·백런·안료 후광이 설정된 입자 침전만 원고 지름을 화면 지름으로 환산한다", () => {
     expect(STUDIO_ALL_BRUSH_CATALOG_ITEMS.filter(({ id }) => studioLongBrushHasSettledDiffusion(id))
-      .map(({ id }) => id).sort()).toEqual(["ink-wash--moxi-bake", "watercolor--curtis-bake"]);
+      .map(({ id }) => id).sort()).toEqual([
+      "ink-wash--moxi-bake", "watercolor--curtis-bake", "watercolor--granulating-bake",
+    ]);
     const wash = stroke();
     const halo = image((x, y) =>
       x >= 10 && x <= 158 && Math.abs(y - HEIGHT / 2) <= 6 ? 130 : 0);

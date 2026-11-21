@@ -94,4 +94,23 @@ describe("studio-custom-pattern-tip-registrar", () => {
     expect(restored.list({ tag: "선화" })).toHaveLength(1);
     expect(restored.get(merged.tipId)?.name).toBe("수정된 이름");
   });
+
+  it("기본 저장소는 메모리이며 주입 저장소 실패를 숨기거나 기존 원본을 지우지 않는다", () => {
+    const source = makeCanvasPixels(24, 24, { x: 4, y: 4, w: 12, h: 12, rgba: [0, 0, 0, 255] });
+    const tip = registerCustomPatternTipFromPixels(source, { name: "보존할 팁", mode: "stamp", targetSize: 32 });
+    const memory = new StudioCustomPatternTipRegistry();
+    memory.register(tip);
+    expect(memory.get(tip.tipId)).toEqual(tip);
+    expect(new StudioCustomPatternTipRegistry().list()).toEqual([]);
+
+    const stored = new Map([["toonstudio:custom-pattern-tips:v1", JSON.stringify([tip])]]);
+    const storage: PatternTipStorageLike = {
+      getItem: (key) => stored.get(key) ?? null,
+      setItem: () => { throw new Error("저장 거부"); },
+    };
+    const registry = new StudioCustomPatternTipRegistry({ storage });
+    expect(() => registry.register({ ...tip, name: "메모리 편집" })).toThrow("저장 거부");
+    expect(registry.get(tip.tipId)?.name).toBe("메모리 편집");
+    expect(new StudioCustomPatternTipRegistry({ storage }).get(tip.tipId)?.name).toBe("보존할 팁");
+  });
 });

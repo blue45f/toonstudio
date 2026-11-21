@@ -20,8 +20,13 @@ import {
   executeLiveEngineAdapterAndCommit,
   readDialoguePagesFromLivePlanning,
   readExpandedLiveWorkspace,
+  readProjectStoryLivingSpecRecord,
+  studioExpandedWorkspaceStorageKey,
+  studioStoryLivingSpecStorageKey,
   subscribeExpandedToolCommits,
   updateUnderpaintingBatchCuts,
+  writeExpandedLiveWorkspace,
+  writeProjectStoryLivingSpecRecord,
   type ExpandedToolCommitEnvelope,
 } from "./studio-expanded-tool-live-adapters";
 
@@ -34,6 +39,97 @@ afterEach(() => {
 });
 
 describe("studio-expanded-tool-live-adapters", () => {
+  it.each(["unavailable", "malformed"])("읽지 않은 fallback은 정상 원본이 복구돼도 덮어쓰기나 갱신 이벤트 권한을 얻지 않는다: %s", (readFailure) => {
+    const projectId = "project-read-recovered";
+    const workspaceKey = studioExpandedWorkspaceStorageKey(projectId);
+    const storyKey = studioStoryLivingSpecStorageKey(projectId);
+    writeExpandedLiveWorkspace({ ...readExpandedLiveWorkspace(projectId, null), activeCutId: "original-cut" });
+    writeProjectStoryLivingSpecRecord(projectId, readProjectStoryLivingSpecRecord(projectId, null));
+    const originalWorkspace = localStorage.getItem(workspaceKey);
+    const originalStory = localStorage.getItem(storyKey);
+    const getItem = Storage.prototype.getItem;
+    const unreadKeys = new Set([workspaceKey, storyKey]);
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(function (this: Storage, key: string) {
+      if (unreadKeys.delete(key)) {
+        if (readFailure === "unavailable") throw new Error("일시적 읽기 실패");
+        return "{broken-json";
+      }
+      return getItem.call(this, key);
+    });
+    const memoryWorkspace = { ...readExpandedLiveWorkspace(projectId), activeCutId: "memory-cut" };
+    const memoryStory = { ...readProjectStoryLivingSpecRecord(projectId), updatedAt: "2099-01-01T00:00:00.000Z" };
+    const target = { dispatchEvent: vi.fn(() => true) };
+    expect(writeExpandedLiveWorkspace(memoryWorkspace)).toBe(memoryWorkspace);
+    expect(writeProjectStoryLivingSpecRecord(projectId, memoryStory, { target }).state).toEqual(memoryStory.state);
+    expect(localStorage.getItem(workspaceKey)).toBe(originalWorkspace);
+    expect(localStorage.getItem(storyKey)).toBe(originalStory);
+    expect(target.dispatchEvent).not.toHaveBeenCalled();
+    writeExpandedLiveWorkspace({ ...readExpandedLiveWorkspace(projectId), activeCutId: "reloaded-cut" });
+    writeProjectStoryLivingSpecRecord(projectId, readProjectStoryLivingSpecRecord(projectId), { target });
+    expect(readExpandedLiveWorkspace(projectId).activeCutId).toBe("reloaded-cut");
+    expect(target.dispatchEvent).toHaveBeenCalledOnce();
+  });
+
+  it("다른 작품 및 손상된 작업 사본을 기본값으로 덮어쓰지 않는다", () => {
+    const projectId = "project-protected";
+    const workspaceKey = studioExpandedWorkspaceStorageKey(projectId);
+    const storyKey = studioStoryLivingSpecStorageKey(projectId);
+    const foreignWorkspace = JSON.stringify(readExpandedLiveWorkspace("foreign", null));
+    const foreignStory = JSON.stringify(readProjectStoryLivingSpecRecord("foreign", null));
+    for (const original of ["{broken-json", foreignWorkspace]) {
+      localStorage.setItem(workspaceKey, original);
+      const fallback = readExpandedLiveWorkspace(projectId);
+      expect(fallback.projectId).toBe(projectId);
+      writeExpandedLiveWorkspace(fallback);
+      expect(localStorage.getItem(workspaceKey)).toBe(original);
+    }
+    for (const original of ["{broken-json", foreignStory]) {
+      localStorage.setItem(storyKey, original);
+      const fallback = readProjectStoryLivingSpecRecord(projectId);
+      expect(fallback.state.projectId).toBe(projectId);
+      writeProjectStoryLivingSpecRecord(projectId, fallback);
+      expect(localStorage.getItem(storyKey)).toBe(original);
+    }
+  });
+
+  it("기획 봉투와 중첩 state의 작품 ID가 모두 맞아야 저장하고 다른 작품 쓰기를 거절한다", () => {
+    const projectId = "project-scoped";
+    const storyKey = studioStoryLivingSpecStorageKey(projectId);
+    const record = readProjectStoryLivingSpecRecord(projectId, null);
+    writeProjectStoryLivingSpecRecord(projectId, record);
+    expect(readProjectStoryLivingSpecRecord(projectId).state).toEqual(record.state);
+    const original = localStorage.getItem(storyKey);
+    writeProjectStoryLivingSpecRecord(projectId, { ...record, projectId: "foreign" });
+    writeProjectStoryLivingSpecRecord(projectId, { ...record, state: { ...record.state, projectId: "foreign" } });
+    expect(localStorage.getItem(storyKey)).toBe(original);
+    const forged = JSON.stringify({ ...record, state: { ...record.state, projectId: "foreign" } });
+    localStorage.setItem(storyKey, forged);
+    expect(readProjectStoryLivingSpecRecord(projectId).state.projectId).toBe(projectId);
+    writeProjectStoryLivingSpecRecord(projectId, record);
+    expect(localStorage.getItem(storyKey)).toBe(forged);
+  });
+
+  it("저장·읽기 거부 때 기존 원본을 남기고 메모리 작업 결과를 돌려준다", () => {
+    const projectId = "project-quota";
+    const workspace = readExpandedLiveWorkspace(projectId, null);
+    const story = readProjectStoryLivingSpecRecord(projectId, null);
+    writeExpandedLiveWorkspace(workspace);
+    writeProjectStoryLivingSpecRecord(projectId, story);
+    const originalWorkspace = localStorage.getItem(studioExpandedWorkspaceStorageKey(projectId));
+    const originalStory = localStorage.getItem(studioStoryLivingSpecStorageKey(projectId));
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("저장 거부"); });
+    const memory = { ...workspace, activeCutId: "edited-cut" };
+    expect(writeExpandedLiveWorkspace(memory)).toBe(memory);
+    expect(writeProjectStoryLivingSpecRecord(projectId, story).state).toEqual(story.state);
+    expect(localStorage.getItem(studioExpandedWorkspaceStorageKey(projectId))).toBe(originalWorkspace);
+    expect(localStorage.getItem(studioStoryLivingSpecStorageKey(projectId))).toBe(originalStory);
+    setItem.mockClear();
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("읽기 거부"); });
+    writeExpandedLiveWorkspace(memory);
+    writeProjectStoryLivingSpecRecord(projectId, story);
+    expect(setItem).not.toHaveBeenCalled();
+  });
+
   it("Top 15 엔진 라이브 어댑터 15종 전체가 실제 모듈을 실행·영속 저장하고 commit 이벤트를 브로드캐스트한다", async () => {
     expect(TOP15_LIVE_ENGINE_ADAPTER_IDS).toHaveLength(15);
     const projectId = "proj-top15-engines";

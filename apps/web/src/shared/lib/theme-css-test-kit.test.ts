@@ -44,8 +44,8 @@ describe("테마 토큰 파서의 조건·별칭 경계", () => {
   it("실제 별빛 정본의 일반 팔레트와 forced-colors는 별도 의미를 갖는다", () => {
     const normal = readThemeCustomProperties("starlight", true);
     const forced = readThemeCustomProperties("starlight", true, "forced-colors");
-    expect(resolveThemeCustomProperty(normal, "--color-canvas")).toBe("#070a14");
-    expect(resolveThemeCustomProperty(normal, "--unified-canvas")).toBe("#070a14");
+    expect(resolveThemeCustomProperty(normal, "--color-canvas")).toBe("oklch(0.147 0.022 269.5)");
+    expect(resolveThemeCustomProperty(normal, "--unified-canvas")).toBe("oklch(0.147 0.022 269.5)");
     expect(resolveThemeCustomProperty(forced, "--color-canvas")).toBe("Canvas");
     expect(resolveThemeCustomProperty(forced, "--unified-fg")).toBe("CanvasText");
   });

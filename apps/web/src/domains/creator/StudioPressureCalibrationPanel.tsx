@@ -92,8 +92,8 @@ function loadStoredColorDropConfig(): StoredColorDropConfig {
     if (!raw) return { thresholdPercent: 35, holdDelayMs: 450 };
     const parsed = JSON.parse(raw) as Partial<StoredColorDropConfig>;
     return {
-      thresholdPercent: Math.round(clamp(Number(parsed.thresholdPercent ?? 35), 0, 100)),
-      holdDelayMs: Math.round(clamp(Number(parsed.holdDelayMs ?? 450), 200, 800)),
+      thresholdPercent: Math.round(clamp(typeof parsed.thresholdPercent === "number" && Number.isFinite(parsed.thresholdPercent) ? parsed.thresholdPercent : 35, 0, 100)),
+      holdDelayMs: Math.round(clamp(typeof parsed.holdDelayMs === "number" && Number.isFinite(parsed.holdDelayMs) ? parsed.holdDelayMs : 450, 200, 800)),
     };
   } catch {
     return { thresholdPercent: 35, holdDelayMs: 450 };

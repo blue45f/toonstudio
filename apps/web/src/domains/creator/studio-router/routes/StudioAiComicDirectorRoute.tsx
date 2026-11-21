@@ -141,7 +141,7 @@ function DirectorDeviceSession({ resolution }: StudioAiComicDirectorRouteProps) 
     return () => { active = false; };
   }, [id, workId, remixSourceWorkId, attempt, issuedHere]);
   if (draft) return <DirectorWorkspace resolution={resolution} draft={draft}/>;
-  return <main className="mx-auto max-w-xl space-y-3 p-6">
+  return <div className="mx-auto max-w-xl space-y-3 p-6">
     <p role={failed ? "alert" : "status"}>{failed
       ? creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.deviceLoadFailed", "이 기기의 대본을 열지 못했어요. 다른 편집 탭을 닫고 다시 시도하세요.")
       : creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.deviceLoading", "대본을 여는 중…")}</p>
@@ -153,7 +153,7 @@ function DirectorDeviceSession({ resolution }: StudioAiComicDirectorRouteProps) 
       }}>
       {creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.retryDeviceLoad", "대본 다시 열기")}
     </button>}
-  </main>;
+  </div>;
 }
 
 function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProps & { draft: StudioDirectorDraftSync }): ReactElement {
