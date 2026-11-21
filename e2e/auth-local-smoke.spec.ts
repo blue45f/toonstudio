@@ -541,4 +541,81 @@ test.describe("로컬 mock 세션 기반 인증 스모크 (7대 수락 기준)",
     ).toBeVisible();
     expect(pageErrors).toEqual([]);
   });
+
+  test("회귀) /api/health/capabilities 503(warming) 상태에서도 /studio 헤더 인증 버튼이 데스크톱·태블릿·모바일에서 겹침 없이 클릭된다", async ({
+    page,
+  }) => {
+    const pageErrors = trackPageErrors(page);
+    const controller = createAuthController({
+      authenticated: true,
+      capabilitiesMode: "503",
+    });
+    await installMockAuthApi(page, controller);
+
+    await page.goto("/studio", { waitUntil: "domcontentloaded" });
+    const warmingBanner = page.locator(
+      '[data-service-degraded-banner="warming"][data-service-status-placement="page-inline"]',
+    );
+    await expect(warmingBanner).toBeVisible({ timeout: 15_000 });
+    await expect(warmingBanner.locator("button, a")).toHaveCount(0);
+
+    for (const viewport of [
+      { width: 1280, height: 720, label: "desktop" },
+      { width: 768, height: 1024, label: "tablet" },
+      { width: 390, height: 844, label: "mobile" },
+    ]) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      const accountTrigger = page.locator('button[data-auth-trigger="signed-in"]:visible').first();
+      await expect(accountTrigger, `${viewport.label} auth trigger visible`).toBeVisible({
+        timeout: 10_000,
+      });
+
+      const geometry = await page.evaluate(() => {
+        const notice = document.querySelector<HTMLElement>(
+          '[data-service-degraded-banner="warming"][data-service-status-placement="page-inline"]',
+        );
+        const triggers = Array.from(
+          document.querySelectorAll<HTMLButtonElement>('button[data-auth-trigger="signed-in"]'),
+        ).filter((el) => {
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
+        });
+        const trigger = triggers[0];
+        if (!notice || !trigger) return { ok: false };
+        const nr = notice.getBoundingClientRect();
+        const tr = trigger.getBoundingClientRect();
+        const overlaps = !(
+          nr.right <= tr.left ||
+          tr.right <= nr.left ||
+          nr.bottom <= tr.top ||
+          tr.bottom <= nr.top
+        );
+        const cx = tr.left + tr.width / 2;
+        const cy = tr.top + tr.height / 2;
+        const topEl = document.elementFromPoint(cx, cy);
+        const hitTrigger = Boolean(topEl && trigger.contains(topEl));
+        return {
+          ok: true,
+          overlaps,
+          hitTrigger,
+          noticeHeight: nr.height,
+          noticeBottom: nr.bottom,
+          triggerTop: tr.top,
+        };
+      });
+
+      expect(geometry.ok, `${viewport.label} elements present`).toBe(true);
+      expect(geometry.noticeHeight, `${viewport.label} notice in-flow height > 0`).toBeGreaterThan(0);
+      expect(geometry.overlaps, `${viewport.label} zero bounding-box overlap`).toBe(false);
+      expect(geometry.hitTrigger, `${viewport.label} pointer hits auth trigger`).toBe(true);
+
+      await accountTrigger.click();
+      const accountMenu = page.getByRole("menu", { name: "계정 메뉴" });
+      await expect(accountMenu, `${viewport.label} menu opens on click`).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(accountMenu).toHaveCount(0);
+    }
+
+    expect(pageErrors).toEqual([]);
+  });
 });

@@ -7,7 +7,11 @@ import { announceStudioRenderFailure } from "../../shared/lib/render-failure-eve
 import { classifyRuntimeError, type ErrorAnalysis } from "../../platform/browser/runtime-error-classification";
 
 import { BrowserCompatModal } from "./browser-compat/browser-compat-modal";
-import { hasAttemptedChunkReload, markChunkReloadAttempted } from "./chunk-reload-guard";
+import {
+  hasAttemptedChunkReload,
+  isOfflineChunkReloadBlocked,
+  markChunkReloadAttempted,
+} from "./chunk-reload-guard";
 
 interface Props {
   children: ReactNode;
@@ -66,6 +70,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     if (
       this.state.analysis?.type === "chunk_load"
+      && !isOfflineChunkReloadBlocked()
       && !hasAttemptedChunkReload()
       && markChunkReloadAttempted()
     ) {

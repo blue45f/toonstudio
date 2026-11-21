@@ -309,4 +309,35 @@ describe("loadChunkWithReloadRecovery", () => {
     await loadChunkWithReloadRecovery(async () => "ready", "animation");
     expect(hasAttemptedChunkReload()).toBe(false);
   });
+
+  it("never reloads or consumes guards while the browser is offline, and still recovers once back online", async () => {
+    const storage = createStorage();
+    const reload = vi.fn();
+    vi.stubGlobal("sessionStorage", storage);
+    vi.stubGlobal("location", { reload });
+    vi.stubGlobal("navigator", { onLine: false });
+
+    const offlineError = new TypeError("Failed to fetch dynamically imported module");
+    await expect(
+      loadChunkWithReloadRecovery(async () => { throw offlineError; }, "studio-offline"),
+    ).rejects.toBe(offlineError);
+    expect(reload).not.toHaveBeenCalled();
+    expect(hasAttemptedChunkReload()).toBe(false);
+    expect(storage.getItem("chunk-reload:studio-offline")).toBeNull();
+    expect(storage.getItem(ownerKey)).toBeNull();
+
+    // 온라인 복귀 후 구 배포 청크 오류가 발생하면 1회 정상 복구 새로고침을 허용해야 한다.
+    vi.stubGlobal("navigator", { onLine: true });
+    let settled = false;
+    void loadChunkWithReloadRecovery(async () => { throw new TypeError("stale chunk"); }, "studio-offline")
+      .finally(() => { settled = true; });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(reload).toHaveBeenCalledOnce();
+    expect(hasAttemptedChunkReload()).toBe(true);
+    expect(storage.getItem("chunk-reload:studio-offline")).toBe("1");
+    expect(storage.getItem(ownerKey)).toBe("chunk-reload:studio-offline");
+    expect(settled).toBe(false);
+  });
 });

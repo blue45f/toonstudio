@@ -21,12 +21,28 @@
 @source not "../../**/*.test.tsx";
 @source not "../../**/*.spec.ts";
 @source not "../../**/*.spec.tsx";
+@source not "../../**/*.test-fixture.ts";
+@source not "../../**/*.test-fixture.tsx";
+@source not "../../**/*.fixture.ts";
+@source not "../../**/*.fixture.tsx";
 @source not "../../**/__tests__";
 @source not "../../../public";
 @source not "../../../tools";
 @source not "../../../../../services";
 @source not "../../../../../packages/**/*.test.ts";
 @source not "../../../../../packages/**/*.test.tsx";
+@source not "../../../../../packages/contracts";
+@source not "../../../../../packages/play-core";
+@source not "../../../../../packages/product-tour-film";
+@source not "../../../../../packages/studio-brush-platform";
+@source not "../../../../../packages/studio-command-registry";
+@source not "../../../../../packages/studio-engine-registry";
+@source not "../../../../../packages/studio-engine-skia";
+@source not "../../../../../packages/studio-engine-thorvg";
+@source not "../../../../../packages/studio-engine-vello";
+@source not "../../../../../packages/studio-format-gateway";
+@source not "../../../../../packages/studio-hokusai-wasm";
+@source not "../../../../../packages/studio-project-model";
 @source not "../../../../../*.md";
 @source not "../../../../../.agents";
 @source not "../../../../../.claude";
@@ -36,7 +52,11 @@
 @source not "../../../../../.opencode";
 @source not "../../../../../config";
 @source not "../../../../../data";
+@source not "../../../../../dist";
+@source not "../../../../../loop-stack";
 @source not "../../../../../onnx-poc";
+@source not "../../../../../patches";
+@source not "../../../../../test-results";
 
 /* 스튜디오 전용 규칙은 `studio-route.css`가 정본이며 스튜디오 라우트 청크에서만 로드된다(docs/perf/bundle-gate.md). */
 /* 툰스튜디오 — 활자와 스펙트럼 (Type & Spectrum): 따뜻한 잉크-블랙 위의 에디토리얼 다크 OKLCH 토큰 */
