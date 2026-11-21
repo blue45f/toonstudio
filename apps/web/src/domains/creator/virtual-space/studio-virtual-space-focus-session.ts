@@ -110,6 +110,20 @@ export function stopStudioFocusSession(session: StudioFocusSession): StudioFocus
   return Object.freeze({ ...createStudioFocusSession(session.durationMs), completedCount: session.completedCount });
 }
 
+/** 진행·일시정지 중인 집중 구간을 즉시 완료 처리하고 휴식 구간으로 전이한다. */
+export function completeStudioFocusSessionNow(session: StudioFocusSession, now: number): StudioFocusSession {
+  if (session.phase !== "running" && session.phase !== "paused") return session;
+  const at = cleanNow(now);
+  return Object.freeze({
+    ...session,
+    phase: "break",
+    startedAt: at,
+    endsAt: at + STUDIO_FOCUS_BREAK_MS,
+    pausedRemainingMs: 0,
+    completedCount: session.completedCount + 1,
+  });
+}
+
 export type StudioFocusTickEvent = "focus-completed" | "break-completed";
 
 /**

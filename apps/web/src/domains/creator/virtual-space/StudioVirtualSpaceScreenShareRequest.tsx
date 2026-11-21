@@ -89,7 +89,7 @@ const heroButton = cn(
   "inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-semibold text-white",
   "bg-gradient-to-r from-sky-500 to-indigo-600 shadow-lg shadow-sky-500/25",
   "hover:from-sky-600 hover:to-indigo-700 hover:shadow-sky-500/40",
-  "active:scale-[0.99] transition-all motion-reduce:transition-none motion-reduce:transform-none",
+  "active:scale-[0.99] transition-[transform,box-shadow,background-color] motion-reduce:transition-none motion-reduce:transform-none",
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600",
   "dark:from-sky-500 dark:to-indigo-500 dark:hover:from-sky-400 dark:hover:to-indigo-600",
 );
@@ -385,7 +385,7 @@ function ScreenOption({
     <label
       className={cn(
         "flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm",
-        "transition-all motion-reduce:transition-none",
+        "transition-colors motion-reduce:transition-none",
         selected
           ? "border-sky-500 bg-sky-50 shadow-sm shadow-sky-500/20 dark:border-sky-400 dark:bg-sky-950"
           : "border-neutral-200 hover:border-sky-300 hover:bg-sky-50/50 dark:border-neutral-700 dark:hover:border-sky-800 dark:hover:bg-sky-950/40",

@@ -101,7 +101,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
     <section
       aria-label="REA 역공학 기반 인터랙티브 공간 플로어 레이더 및 글래스모피즘 플로팅 HUD"
       data-testid="studio-virtual-office-spatial-canvas-hud"
-      className="space-y-3 rounded-xl border border-line bg-card/90 p-3.5 shadow-sm backdrop-blur-md transition-all duration-200"
+      className="space-y-3 rounded-xl border border-line bg-card/90 p-3.5 shadow-sm backdrop-blur-md transition-colors duration-200 motion-reduce:transition-none"
     >
       {/* Top UX Control Ribbon */}
       <div className="flex flex-wrap items-center justify-between gap-2">

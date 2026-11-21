@@ -1,0 +1,301 @@
+/*
+ * 웹툰 업무 상태 배지 바 & 집중 완료 OKLCH 스펙트럼 축하 리본.
+ * OKLCH 토큰·명시적 transition 속성만 사용한다.
+ * 모든 컨트롤 44px 이상, tabular-nums, keep-all, prefers-reduced-motion 존중.
+ */
+
+.space-work-status-bar {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(
+    100vw - var(--space-minimap-width, 248px) - var(--space-gutter, 12px) * 3
+    - var(--space-safe-left, 0px) - var(--space-safe-right, 0px)
+  );
+  padding: 4px 6px;
+  border: 1px solid var(--space-border, var(--color-line));
+  border-radius: 999px;
+  background: var(--space-surface, color-mix(in oklch, var(--color-panel) 88%, transparent));
+  backdrop-filter: blur(12px) saturate(1.15);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  font-variant-numeric: tabular-nums;
+  word-break: keep-all;
+}
+
+.space-work-status-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.space-hud[data-panel-open][data-hud-layout="desktop"] .space-work-status-bar {
+  max-width: calc(
+    100vw - var(--space-panel-width, 380px) - var(--space-minimap-width, 248px)
+    - var(--space-gutter, 12px) * 4 - var(--space-safe-left, 0px) - var(--space-safe-right, 0px)
+  );
+}
+
+@media (max-width: 1023.98px) {
+  .space-work-status-bar {
+    width: 100%;
+    max-width: calc(100vw - var(--space-gutter, 12px) * 2 - var(--space-safe-left, 0px) - var(--space-safe-right, 0px));
+    border-radius: 16px;
+  }
+}
+
+.space-work-status-bar__group {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.space-work-status-bar__divider {
+  flex: none;
+  width: 1px;
+  height: 22px;
+  margin-inline: 2px;
+  background: var(--space-border, var(--color-line));
+}
+
+.space-work-status-bar__chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 0 11px;
+  border: 1px solid var(--space-border, var(--color-line));
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  word-break: keep-all;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.space-work-status-bar__chip:hover {
+  border-color: var(--work-status-accent, var(--color-accent));
+  background: var(--color-raised);
+}
+
+.space-work-status-bar__chip[aria-pressed="true"] {
+  border-color: var(--work-status-accent, var(--color-accent));
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.space-work-status-bar__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--work-status-accent, var(--color-accent));
+  flex: none;
+}
+
+.space-work-status-bar__chip[aria-pressed="true"] .space-work-status-bar__dot {
+  background: var(--color-on-accent);
+}
+
+.space-work-status-bar__action {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in oklch, var(--color-accent) 55%, var(--color-line));
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  word-break: keep-all;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.space-work-status-bar__action:hover {
+  border-color: var(--color-accent);
+  background: var(--color-raised);
+}
+
+.space-work-status-bar__action--celebrate {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.space-work-status-bar__action--celebrate:hover {
+  background: color-mix(in oklch, var(--color-accent) 88%, var(--color-fg));
+}
+
+/* ── OKLCH 스펙트럼 축하 리본 + 미세 파티클 버스트 ───────────────────────── */
+@keyframes space-celebration-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes space-celebration-spark {
+  0% {
+    opacity: 0.95;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--spark-x, 18px), var(--spark-y, -24px)) scale(0.35);
+  }
+}
+
+.space-celebration-ribbon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 10px 12px 10px 14px;
+  border: 1px solid color-mix(in oklch, var(--color-accent) 58%, var(--color-line));
+  border-radius: 16px;
+  background: var(--space-surface-solid, var(--color-panel));
+  color: var(--color-fg);
+  overflow: visible;
+  word-break: keep-all;
+  font-variant-numeric: tabular-nums;
+  animation: space-celebration-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.space-celebration-ribbon::before {
+  content: "";
+  position: absolute;
+  inset: 0 12px auto 12px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    oklch(0.76 0.16 250),
+    oklch(0.75 0.16 296),
+    oklch(0.78 0.16 162),
+    oklch(0.82 0.16 82),
+    oklch(0.76 0.16 32)
+  );
+}
+
+.space-celebration-ribbon__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.space-celebration-ribbon__copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.space-celebration-ribbon__title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-fg);
+  line-height: 1.3;
+}
+
+.space-celebration-ribbon__detail {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-fg-2);
+  line-height: 1.35;
+}
+
+.space-celebration-ribbon__close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--space-border, var(--color-line));
+  border-radius: 12px;
+  background: var(--color-card);
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.space-celebration-ribbon__close:hover {
+  border-color: var(--color-accent);
+  background: var(--color-raised);
+}
+
+.space-celebration-ribbon__sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.space-celebration-ribbon__spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--spark-color, oklch(0.78 0.16 290));
+  animation: space-celebration-spark 950ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-work-status-bar__chip,
+  .space-work-status-bar__action,
+  .space-celebration-ribbon__close {
+    transition: none;
+  }
+
+  .space-celebration-ribbon {
+    animation: none;
+  }
+
+  .space-celebration-ribbon__sparks {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .space-work-status-bar,
+  .space-work-status-bar__chip,
+  .space-work-status-bar__action,
+  .space-celebration-ribbon,
+  .space-celebration-ribbon__close {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .space-work-status-bar__chip[aria-pressed="true"],
+  .space-work-status-bar__action--celebrate {
+    background: Highlight;
+    color: HighlightText;
+  }
+}

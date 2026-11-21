@@ -1,5 +1,9 @@
 import { readStudioVirtualAvatarProfile } from "../studio-virtual-space-avatar-store";
-import { readStudioVirtualCharacterCustomization } from "../studio-virtual-space-customization";
+import {
+  readStudioVirtualCharacterCustomization,
+  STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION_EVENT,
+  type StudioVirtualNameplateKey,
+} from "../studio-virtual-space-customization";
 import {
   studioVirtualAvatarProfile,
   type StudioVirtualAvatarAccessory,
@@ -63,38 +67,58 @@ export function mapOffice2dCustomizationAccessory(
   }
 }
 
-function resolveOffice2dAvatarProfile(): StudioVirtualAvatarProfile | null {
+const NAMEPLATE_ACCENT_COLORS: Readonly<Record<StudioVirtualNameplateKey, string>> = Object.freeze({
+  violet: "#8b5cf6",
+  rose: "#f43f5e",
+  sky: "#0ea5e9",
+  amber: "#f59e0b",
+  emerald: "#10b981",
+  cyber: "#06b6d4",
+  gold: "#eab308",
+  obsidian: "#64748b",
+});
+
+function resolveOffice2dAvatarProfile(preferCustomization = false): StudioVirtualAvatarProfile | null {
   const base = readStudioVirtualAvatarProfile();
-  if (base && base.accessory !== "none") return base;
-  const mapped = mapOffice2dCustomizationAccessory(
-    readStudioVirtualCharacterCustomization().accessoryKey,
-  );
+  const customization = readStudioVirtualCharacterCustomization();
+  const mapped = mapOffice2dCustomizationAccessory(customization.accessoryKey);
+  if (!preferCustomization && base && base.accessory !== "none") return base;
   if (mapped === "none") return base;
   const fallback = base ?? studioVirtualAvatarProfile("local");
   return {
     ...fallback,
+    accent: preferCustomization ? (NAMEPLATE_ACCENT_COLORS[customization.nameplateKey] ?? fallback.accent) : fallback.accent,
     accessory: mapped as StudioVirtualAvatarAccessory,
   };
 }
 
-/** 기존 꾸미기 저장/초기화 알림을 재사용하고 프레임마다 저장소를 읽지 않는다. */
+/** 기존 꾸미기 저장/초기화 알림과 오피스 직군 프리셋 변경 이벤트를 함께 수신하고 프레임마다 저장소를 읽지 않는다. */
 export function createOffice2dAvatarProfileSource(): {
   readonly get: () => StudioVirtualAvatarProfile | null;
   readonly refresh: () => void;
   readonly dispose: () => void;
 } {
-  let profile = resolveOffice2dAvatarProfile();
+  let profile = resolveOffice2dAvatarProfile(false);
   const refresh = () => {
-    profile = resolveOffice2dAvatarProfile();
+    profile = resolveOffice2dAvatarProfile(false);
+  };
+  const refreshFromCustomization = () => {
+    profile = resolveOffice2dAvatarProfile(true);
   };
   const unsubscribe = onSpriteSheetConfigChanged(refresh);
-  if (typeof window !== "undefined") window.addEventListener("storage", refresh);
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", refresh);
+    window.addEventListener(STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION_EVENT, refreshFromCustomization);
+  }
   return {
     get: () => profile,
     refresh,
     dispose: () => {
       unsubscribe();
-      if (typeof window !== "undefined") window.removeEventListener("storage", refresh);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", refresh);
+        window.removeEventListener(STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION_EVENT, refreshFromCustomization);
+      }
     },
   };
 }

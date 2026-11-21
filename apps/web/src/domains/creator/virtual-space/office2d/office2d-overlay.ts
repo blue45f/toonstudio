@@ -104,6 +104,10 @@ export function office2dStatusDotColor(status: string | null | undefined): strin
   if (status.startsWith("🎯")) return "#3b82f6";
   if (status.startsWith("🟡")) return "#eab308";
   if (status.startsWith("☕")) return "#f97316";
+  if (status.startsWith("📝")) return "#60a5fa";
+  if (status.startsWith("✒️")) return "#a78bfa";
+  if (status.startsWith("🎨")) return "#34d399";
+  if (status.startsWith("🔍")) return "#fbbf24";
   return null;
 }
 

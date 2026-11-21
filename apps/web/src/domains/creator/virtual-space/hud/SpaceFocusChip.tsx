@@ -1,4 +1,4 @@
-import { Coffee, Pause, Play, Square, Timer } from "lucide-react";
+import { CheckCircle2, Coffee, Pause, Play, Square, Timer } from "lucide-react";
 import { memo } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -22,6 +22,7 @@ export const SpaceFocusChip = memo(function SpaceFocusChip({
   onPause,
   onResume,
   onStop,
+  onCompleteNow,
   onEmote,
 }: {
   readonly session: StudioFocusSession;
@@ -30,6 +31,7 @@ export const SpaceFocusChip = memo(function SpaceFocusChip({
   readonly onPause: () => void;
   readonly onResume: () => void;
   readonly onStop: () => void;
+  readonly onCompleteNow?: () => void;
   readonly onEmote?: (id: StudioSpaceEmoteId) => void;
 }) {
   const bt = useBilingual("SpaceFocusChip");
@@ -52,7 +54,7 @@ export const SpaceFocusChip = memo(function SpaceFocusChip({
       data-focus-progress={progressPercent}
     >
       {onBreak ? <Coffee size={16} aria-hidden /> : <Timer size={16} aria-hidden />}
-      <p role="timer" aria-label={label}>
+      <p role="timer" aria-label={label} className="tabular-nums">
         <strong>{label}</strong>
       </p>
       {session.completedCount > 0 ? (
@@ -87,6 +89,17 @@ export const SpaceFocusChip = memo(function SpaceFocusChip({
               {bt("🧘 요가", "🧘 Yoga")}
             </button>
           </>
+        ) : null}
+        {(session.phase === "running" || session.phase === "paused") && onCompleteNow ? (
+          <button
+            type="button"
+            className="space-pill-button space-pill-button--primary"
+            data-testid="space-focus-chip-complete-btn"
+            onClick={onCompleteNow}
+          >
+            <CheckCircle2 size={14} aria-hidden />
+            {bt("완료 체크", "Complete")}
+          </button>
         ) : null}
         {session.phase === "running" ? (
           <button type="button" className="space-pill-button" onClick={onPause}>
