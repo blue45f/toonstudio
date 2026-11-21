@@ -479,6 +479,13 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       await settle(page);
       if (!await sheet.isVisible()) throw new Error("Escape closed the inspector with its layer menu");
       const comps = sheet.getByTestId("studio-layer-comps-panel");
+      const compsDetails = sheet.locator("details").filter({ has: comps }).first();
+      const ensureCompsExpanded = async (): Promise<void> => {
+        if (await compsDetails.count() > 0 && await compsDetails.getAttribute("open") === null) {
+          await clickInView(compsDetails.locator("summary").first());
+        }
+      };
+      await ensureCompsExpanded();
       const idleComps = sheet.locator('[data-testid="studio-layer-comps-panel"][aria-busy="false"]:enabled');
       await idleComps.waitFor({ state: "visible" });
       const visibility = rows.first().locator('[data-studio-layer-row-action="visibility"]');
@@ -526,10 +533,12 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       await sheet.waitFor({ state: "hidden" });
       await openInspectorSheet(page);
       await clickInView(sheet.locator('[data-studio-inspector-primary-tab="layers"]'));
+      await ensureCompsExpanded();
       await compButton.waitFor({ state: "visible" });
       await idleComps.waitFor({ state: "visible" });
       await clickInView(comps.getByRole("button", { name: "저장한 보기 삭제", exact: true }));
       await compButton.waitFor({ state: "detached" });
+      await ensureCompsExpanded();
       await idleComps.waitFor({ state: "visible" });
       if (await compButton.count() !== 0) throw new Error("layer comp was not deleted");
       return "ok";
