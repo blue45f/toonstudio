@@ -1,5 +1,5 @@
 import { BookOpenText, Download, Headphones, HeartHandshake, MonitorSmartphone, PlayCircle, Scale, Sparkles, Users, Volume2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { Container } from "@/shared/components/section";
@@ -11,6 +11,10 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 type SupportCategory = "story" | "production" | "staffing" | "rights" | "localization" | "environment";
 
 const REQUEST_KEY = "toonstudio:creator-support-request:v1";
+
+const StudioAiSupportCenterChat = React.lazy(
+  () => import("../support-chat-ai/StudioAiSupportCenterChat"),
+);
 
 export function StudioCreatorSupportPage() {
   const bt = useBilingual("StudioCreatorSupportPage");
@@ -111,6 +115,27 @@ export function StudioCreatorSupportPage() {
             </div>
           </div>
         </section>
+
+        <Suspense
+          fallback={(
+            <section
+              aria-label={bt("AI 고객센터 불러오는 중", "Loading AI support center")}
+              className="mt-5 rounded-3xl border border-line bg-card p-6 text-sm text-fg-2 shadow-sm"
+            >
+              {bt("AI 고객센터 · 1:1 실시간 채팅상담실을 준비하고 있습니다…", "Preparing AI support center live chat…")}
+            </section>
+          )}
+        >
+          <StudioAiSupportCenterChat
+            onApplyToBrief={(payload) => {
+              setCategory(payload.category);
+              setSummary(payload.summary.slice(0, 6000));
+              if (payload.contact) setContact(payload.contact.slice(0, 500));
+              clearSaveStatus();
+              if (brief.current) brief.current.open = true;
+            }}
+          />
+        </Suspense>
 
         <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label={bt("지원 영역", "Support areas")}>
           {cards.map(({ icon: Icon, title, body, to, action }) => (
