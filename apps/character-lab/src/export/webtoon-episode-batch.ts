@@ -637,6 +637,15 @@ export function exportEpisodeCutsheetWebVtt(
   };
 }
 
+function escapeMarkdownTableCell(value: string): string {
+  // 역슬래시를 먼저 이스케이프해 `\|` 조합이 마크다운 표 셀 경계를 깨뜨리지 않도록 막는다.
+  return value
+    .replace(/\\/gu, "\\\\")
+    .replace(/\|/gu, "\\|")
+    .replace(/\r?\n/gu, " ")
+    .trim();
+}
+
 /**
  * PD·배경·식자 파트 협업 전달용 한국어 에피소드 스토리보드 연출 큐시트(`.storyboard.md`)를 생성한다.
  */
@@ -659,6 +668,7 @@ export function buildEpisodeStoryboardMarkdown(
   for (let bIdx = 0; bIdx < beats.length; bIdx += 1) {
     const beat = beats[bIdx]!;
     const snap = beat.snapshot;
+    const safeBeatTitle = escapeMarkdownTableCell(beat.titleKo);
     for (let cIdx = 0; cIdx < 4; cIdx += 1) {
       const cutNum = bIdx * 4 + cIdx + 1;
       const camLabel = WEBTOON_CUT_CAMERA_PRESETS[snap.cutCameraPresets[cIdx as 0 | 1 | 2 | 3]].labelKo;
@@ -666,9 +676,9 @@ export function buildEpisodeStoryboardMarkdown(
       const shapeLabel = WEBTOON_STRIP_BUBBLE_SHAPE_LABELS_KO[snap.bubbleShapes[cIdx as 0 | 1 | 2 | 3]];
       const sfx = snap.sfxStamps[cIdx as 0 | 1 | 2 | 3];
       const sfxLabel = sfx === "none" ? "-" : resolveSfxGlyphByLocale(sfx, snap.locale);
-      const dialogue = snap.dialogueLines[cIdx as 0 | 1 | 2 | 3].replace(/\|/gu, "\\|").trim() || "-";
+      const dialogue = escapeMarkdownTableCell(snap.dialogueLines[cIdx as 0 | 1 | 2 | 3]) || "-";
       lines.push(
-        `| ${cutNum}컷 | ${beat.titleKo.replace(/\|/gu, "\\|")} | ${camLabel} | ${toneLabel} | ${shapeLabel} | ${sfxLabel} | ${dialogue} |`,
+        `| ${cutNum}컷 | ${safeBeatTitle} | ${camLabel} | ${toneLabel} | ${shapeLabel} | ${sfxLabel} | ${dialogue} |`,
       );
     }
   }

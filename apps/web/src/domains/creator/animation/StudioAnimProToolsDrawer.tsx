@@ -163,13 +163,63 @@ async function rasterizeFrameToWebpBytes(frame: StudioAnimFrame): Promise<Uint8A
   return new Uint8Array(await blob.arrayBuffer());
 }
 
+const ALLOWED_VIDEO_MIME_BY_VALUE: ReadonlyMap<string, string> = new Map<string, string>([
+  ["video/mp4", "video/mp4"],
+  ["video/webm", "video/webm"],
+  ["video/ogg", "video/ogg"],
+  ["video/quicktime", "video/quicktime"],
+  ["video/x-matroska", "video/x-matroska"],
+  ["video/x-m4v", "video/x-m4v"],
+  ["video/mpeg", "video/mpeg"],
+  ["video/3gpp", "video/3gpp"],
+]);
+
+const ALLOWED_VIDEO_MIME_BY_EXT: ReadonlyMap<string, string> = new Map<string, string>([
+  [".mp4", "video/mp4"],
+  [".webm", "video/webm"],
+  [".ogv", "video/ogg"],
+  [".mov", "video/quicktime"],
+  [".mkv", "video/x-matroska"],
+  [".m4v", "video/x-m4v"],
+  [".mpeg", "video/mpeg"],
+  [".mpg", "video/mpeg"],
+]);
+
+function resolveAllowedVideoMime(file: File): string | null {
+  const normalizedType = file.type.split(";")[0]?.trim().toLowerCase() ?? "";
+  if (normalizedType) {
+    return ALLOWED_VIDEO_MIME_BY_VALUE.get(normalizedType) ?? null;
+  }
+  const lowerName = file.name.trim().toLowerCase();
+  const dotIdx = lowerName.lastIndexOf(".");
+  if (dotIdx < 0) return null;
+  return ALLOWED_VIDEO_MIME_BY_EXT.get(lowerName.slice(dotIdx)) ?? null;
+}
+
 function createDomVideoDecodeAdapter(file: File): VideoFrameDecodeAdapter {
-  const url = URL.createObjectURL(file);
+  const safeVideoMime = resolveAllowedVideoMime(file);
+  if (!safeVideoMime) {
+    throw new Error("지원하지 않는 동영상 파일 형식입니다.");
+  }
+  // 허용된 video/* MIME으로 새 Blob을 감싸고 blob: 스킴과 URI 인코딩을 강제해 DOM XSS 경로를 차단한다.
+  const safeVideoBlob = new Blob([file], { type: safeVideoMime });
+  const rawUrl = URL.createObjectURL(safeVideoBlob);
+  let safeBlobUrl: string;
+  try {
+    const parsedUrl = new URL(rawUrl);
+    if (parsedUrl.protocol !== "blob:") {
+      throw new Error("유효하지 않은 동영상 리소스 주소입니다.");
+    }
+    safeBlobUrl = encodeURI(parsedUrl.href);
+  } catch (err) {
+    URL.revokeObjectURL(rawUrl);
+    throw err instanceof Error ? err : new Error("유효하지 않은 동영상 리소스 주소입니다.");
+  }
   const video = document.createElement("video");
   video.preload = "auto";
   video.muted = true;
   video.playsInline = true;
-  video.src = url;
+  video.src = safeBlobUrl;
   const canvas = document.createElement("canvas");
   let readyPromise: Promise<void> | null = null;
   const ensureReady = (): Promise<void> => {
@@ -202,7 +252,7 @@ function createDomVideoDecodeAdapter(file: File): VideoFrameDecodeAdapter {
     },
     close() {
       video.removeAttribute("src");
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(rawUrl);
     },
   };
 }

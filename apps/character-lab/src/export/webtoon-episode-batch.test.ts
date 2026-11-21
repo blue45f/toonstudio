@@ -6,6 +6,7 @@ import { MAX_PNG_EXPORT_DIMENSION } from "./export-session";
 import { isPng } from "./png-encoder";
 import {
   buildEpisodeCutsheetWebVtt,
+  buildEpisodeStoryboardMarkdown,
   exportEpisodeCutsheetAudioWav,
   exportEpisodeCutsheetLongStripPng,
   exportEpisodeCutsheetMotionWebm,
@@ -146,5 +147,21 @@ describe("webtoon-episode-batch", () => {
     const mdText = new TextDecoder().decode(mdOut.bytes);
     expect(mdText).toContain("| 8컷 | 신탁 각성 |");
     expect(mdOut.receipt.fileName).toBe("20화-성전-결전-8cuts.storyboard.md");
+  });
+
+  it("스토리보드 마크다운 표에서 역슬래시와 파이프·줄바꿈을 완전 이스케이프해 셀 경계를 보존한다", () => {
+    const store = createEpisodeCutsheetStore({ episodeTitleKo: "이스케이프 회차" });
+    store.addBeat("비트\\|제목\n줄바꿈", {
+      ...DEFAULT_EPISODE_CUTSHEET_SNAPSHOT,
+      dialogueLines: ["경로\\|대사", "단독\\역슬래시", "파이프|대사\r\n둘째줄", "정상 대사"],
+      sfxStamps: ["none", "none", "none", "none"],
+    });
+    const md = buildEpisodeStoryboardMarkdown("이스케이프 회차", store.getState().beats, 4_000);
+    const tableRows = md.split("\n").filter((line) => line.startsWith("| ") && line.includes("컷 |"));
+    expect(tableRows).toHaveLength(4);
+    expect(tableRows[0]).toContain("| 비트\\\\\\|제목 줄바꿈 |");
+    expect(tableRows[0]).toContain("| 경로\\\\\\|대사 |");
+    expect(tableRows[1]).toContain("| 단독\\\\역슬래시 |");
+    expect(tableRows[2]).toContain("| 파이프\\|대사 둘째줄 |");
   });
 });

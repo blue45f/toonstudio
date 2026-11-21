@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, scryptSync, timingSafeEqual } from "node:crypto";
 import { performance } from "node:perf_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 
@@ -25,7 +25,15 @@ const PRICES = {
   "gpt-4.1-mini": { input: 0.40, output: 1.60, snapshot: "gpt-4.1-mini-2025-04-14" },
 } as const;
 
+const API_KEY_FINGERPRINT_DOMAIN = "toonstudio-openai-credit-evaluation-v1";
+const API_KEY_FINGERPRINT_BYTES = 32;
+
 export function sha256(value: string): string { return createHash("sha256").update(value).digest("hex"); }
+/** 비밀 API 키 일치 확인에는 고속 SHA-256 대신 메모리 경화 KDF(scrypt) 지문을 사용한다. */
+export function fingerprintApiKey(apiKey: string, organizationId: string, projectId: string): string {
+  const salt = `${API_KEY_FINGERPRINT_DOMAIN}:${organizationId.trim()}:${projectId.trim()}`;
+  return scryptSync(apiKey.trim(), salt, API_KEY_FINGERPRINT_BYTES, { N: 16_384, r: 8, p: 1 }).toString("hex");
+}
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function costUsd(model: Model, promptTokens: number, completionTokens: number): number {
   // 캐시 할인을 적용하지 않은 보수적 추정이다. 실제 청구·크레딧 차감은 계정에서 따로 확인한다.
@@ -88,7 +96,7 @@ export const CreditExecutionEvidenceSchema = z.object({
   creditExpiresOn: z.iso.date().optional(),
   organizationId: z.string().regex(/^org-[A-Za-z0-9_-]{4,80}$/u),
   projectId: z.string().regex(/^proj_[A-Za-z0-9_-]{4,80}$/u),
-  apiKeySha256: z.string().regex(/^[a-f0-9]{64}$/u),
+  apiKeyFingerprint: z.string().regex(/^[a-f0-9]{64}$/u),
   availablePromotionalCreditUsd: z.number().finite().min(MAX_CREDIT_USD),
   eligibleModels: z.array(z.enum(CREDIT_EVALUATION_MODELS)).length(2).refine((models) => new Set(models).size === 2),
   keyOrganizationConfirmed: z.literal(true),
@@ -111,12 +119,39 @@ export interface CreditExpirationEvidence {
   note: string;
 }
 
-function checkEvidence(raw: unknown, env: EnvLike, planHash: string, now: number): CreditExpirationEvidence {
+interface CachedKeyFingerprint {
+  readonly key: string;
+  readonly organizationId: string;
+  readonly projectId: string;
+  readonly digest: Buffer;
+}
+
+function checkEvidence(
+  raw: unknown,
+  env: EnvLike,
+  planHash: string,
+  now: number,
+  keyFingerprintCache?: { current: CachedKeyFingerprint | null },
+): CreditExpirationEvidence {
   const parsed = CreditExecutionEvidenceSchema.safeParse(raw);
   if (!parsed.success) throw new Error("실행 증거가 없거나 불완전합니다. 조직·키 귀속·잔액·만료시각 또는 관측된 만료날짜·모델 적격·추가 유료 지출 차단의 실제 근거를 먼저 확인하세요.");
   const evidence = parsed.data;
   const key = env.OPENAI_API_KEY?.trim();
-  if (!key || evidence.apiKeySha256 !== sha256(key) || env.OPENAI_ORG_ID?.trim() !== evidence.organizationId || env.OPENAI_PROJECT_ID?.trim() !== evidence.projectId) {
+  const orgId = env.OPENAI_ORG_ID?.trim();
+  const projId = env.OPENAI_PROJECT_ID?.trim();
+  if (!key || orgId !== evidence.organizationId || projId !== evidence.projectId) {
+    throw new Error("현재 프로세스의 키·조직·프로젝트가 확인한 증거와 일치하지 않습니다. 비밀값을 출력하지 말고 주입 경로를 확인하세요.");
+  }
+  const cached = keyFingerprintCache?.current;
+  const actualDigest =
+    cached && cached.key === key && cached.organizationId === evidence.organizationId && cached.projectId === evidence.projectId
+      ? cached.digest
+      : Buffer.from(fingerprintApiKey(key, evidence.organizationId, evidence.projectId), "hex");
+  if (keyFingerprintCache && (!cached || cached.digest !== actualDigest)) {
+    keyFingerprintCache.current = { key, organizationId: evidence.organizationId, projectId: evidence.projectId, digest: actualDigest };
+  }
+  const expectedDigest = Buffer.from(evidence.apiKeyFingerprint, "hex");
+  if (expectedDigest.length !== actualDigest.length || !timingSafeEqual(expectedDigest, actualDigest)) {
     throw new Error("현재 프로세스의 키·조직·프로젝트가 확인한 증거와 일치하지 않습니다. 비밀값을 출력하지 말고 주입 경로를 확인하세요.");
   }
   const age = now - Date.parse(evidence.verifiedAt);
@@ -251,8 +286,9 @@ export async function runCreditEvaluation(options: CreditEvaluationOptions = {})
     humanCriteria: CREDIT_EVALUATION_FIXTURES.map(({ id, humanCriteria }) => ({ fixtureId: id, criteria: humanCriteria })), results: [],
   };
   const env = options.execute ? options.env ?? process.env : {};
+  const keyFingerprintCache: { current: CachedKeyFingerprint | null } = { current: null };
   if (options.execute) {
-    report.creditExpiration = checkEvidence(options.evidence, env, planHash, Date.now());
+    report.creditExpiration = checkEvidence(options.evidence, env, planHash, Date.now(), keyFingerprintCache);
     if (!options.checkpoint) throw new Error("실행에는 전송 전 비용 예약을 영속 기록하는 checkpoint가 필요합니다. CLI의 --execute 경로를 사용하세요.");
     if (report.plannedMaximumUsd > MAX_CREDIT_USD) throw new Error("전체 계획의 보수적 예약이 승인된 $1을 넘습니다. 호출 없이 계획을 다시 검토하세요.");
     report.evidenceStatus = "provided-and-matched";
@@ -273,7 +309,7 @@ export async function runCreditEvaluation(options: CreditEvaluationOptions = {})
     try {
       if (report.attempts > 0) await pause(CALL_INTERVAL_MS, options.signal);
       if (options.signal?.aborted) throw new Error("cancelled");
-      checkEvidence(options.evidence, env, planHash, Date.now());
+      checkEvidence(options.evidence, env, planHash, Date.now(), keyFingerprintCache);
       if (report.attempts >= MAX_ATTEMPTS || report.estimatedUsd + report.unconfirmedReservedUsd + entry.reservedUsd > MAX_CREDIT_USD) {
         boundaryError = "attempt-or-budget-cap";
         throw new Error(boundaryError);
