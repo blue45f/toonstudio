@@ -91,6 +91,7 @@ export function StudioDrawingClarityMobileBar({
       </button>
       <button type="button" className="studio-drawing-compact-edit-toggle"
         aria-controls="studio-mobile-edit-options" aria-expanded={editBarExpanded}
+        title={bt("페이지·검색·공유 옵션을 펼칩니다", "Toggle page, search, and share options")}
         onClick={() => setEditBarExpanded(value => !value)}>
         {bt("편집", "Edit")}<span aria-hidden="true">{editBarExpanded ? "▴" : "▾"}</span>
       </button>

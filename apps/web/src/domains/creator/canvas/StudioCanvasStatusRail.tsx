@@ -1,10 +1,11 @@
-import { ArrowDownToLine, ArrowUpToLine, AlignCenter, AlignLeft, AlignRight, Combine, FlipHorizontal2, FlipVertical2, FolderMinus, FolderPlus, Lock, LockOpen, Loader2, PaintBucket, ScanSearch, type LucideIcon } from "lucide-react";
+import { ArrowDownToLine, ArrowUpToLine, AlignCenter, AlignLeft, AlignRight, Combine, FlipHorizontal2, FlipVertical2, FolderMinus, FolderPlus, Lock, LockOpen, PaintBucket, ScanSearch, type LucideIcon } from "lucide-react";
 import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { useStudioDrawingClarity } from "../studio-cuttoon-editor/StudioDrawingClarityContext";
 import { presentStudioAutosaveDocumentLeadership, type StudioAutosaveDocumentLeadershipBasis, type StudioAutosaveDocumentRole } from "../studio-autosave-document-leader";
 import { StudioRecoveryNotice } from "./StudioRecoveryNotice";
+import { observeStudioCanvasNoticePlacement } from "./studio-canvas-notice-placement";
 import { useStudioRejectedStrokeStorageError } from "../use-studio-reliability-status";
 import { StudioReliabilityStatusRail, StudioStrokeRecoveryReadNotice } from "../StudioReliabilityStatusRail";
 import { StudioToolHintTarget } from "../StudioToolHint";
@@ -372,29 +373,10 @@ export function StudioCanvasStatusRail({
 
   const noticeRailRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    if (!mobileImmersive || !mobileNoticeStripFilled) return;
+    if (!mobileNoticeStripFilled) return;
     const rail = noticeRailRef.current;
-    const host = rail?.parentElement;
-    if (!rail || !host) return;
-    const controls = host.querySelector("[data-studio-floating-controls]");
-    if (!controls) return;
-    const placeBelowControls = () => {
-      const hostTop = host.getBoundingClientRect().top;
-      const bottom = Math.max(64, ...Array.from(controls.children, (child) =>
-        child.getBoundingClientRect().bottom - hostTop));
-      rail.style.top = `${Math.ceil(bottom + 8)}px`;
-    };
-    const resize = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(placeBelowControls);
-    const observeChildren = () => {
-      resize?.disconnect();
-      resize?.observe(host);
-      for (const child of controls.children) resize?.observe(child);
-      placeBelowControls();
-    };
-    const mutations = new MutationObserver(observeChildren);
-    mutations.observe(controls, { childList: true });
-    observeChildren();
-    return () => { resize?.disconnect(); mutations.disconnect(); };
+    if (!rail) return;
+    return observeStudioCanvasNoticePlacement(rail, mobileImmersive);
   }, [mobileImmersive, mobileNoticeStripFilled]);
 
   return (
@@ -746,7 +728,10 @@ export function StudioCanvasStatusRail({
         >
           <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-panel/80 text-accent">
             {advancedFillBusy ? (
-              <Loader2 size={16} className="animate-spin motion-reduce:animate-none" aria-hidden />
+              <span
+                aria-hidden="true"
+                className="block h-2 w-5 rounded-full bg-accent/70 motion-safe:animate-pulse motion-reduce:animate-none"
+              />
             ) : (
               <PaintBucket size={16} aria-hidden />
             )}

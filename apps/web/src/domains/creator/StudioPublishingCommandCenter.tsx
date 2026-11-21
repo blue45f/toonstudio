@@ -1,7 +1,7 @@
 import "./studio-shell/creator-workflow-surfaces.css";
 import {
   ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarClock, Check, ChevronLeft, ChevronRight,
-  Eye, Globe2, ImagePlus, Link2, Loader2, LockKeyhole, PenLine, RefreshCw, Save, Send,
+  Eye, Globe2, ImagePlus, Link2, LockKeyhole, PenLine, RefreshCw, Save, Send,
   ShieldCheck, Star, Trash2, Upload,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -1564,14 +1564,13 @@ export function StudioPublishingCommandCenter({
       />
 
       <StudioPublishContextBanner context={publishContext} />
-
       {handoffLoading ? (
         <div
           className="mb-4 flex items-center gap-2 rounded-xl border border-accent/35 bg-accent/8 px-3 py-2 text-sm text-fg-2"
           role="status"
           aria-busy="true"
         >
-          <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />
+          <span aria-hidden className="inline-block h-2 w-4 shrink-0 rounded-full bg-accent/70 motion-safe:animate-pulse motion-reduce:animate-none" />
           {frozenStatus2Text("studio.frozenStatus2.pub.handoffChecking", "편집기에서 전달한 원고를 확인하고 있어요…")}
         </div>
       ) : null}
@@ -1648,7 +1647,7 @@ export function StudioPublishingCommandCenter({
       ) : null}
       {hydrating && (
         <div className="mb-4 flex items-center gap-2 rounded-xl border border-line bg-card/60 px-3 py-2 text-sm text-fg-2" role="status" aria-busy="true">
-          <Loader2 size={14} className="animate-spin motion-reduce:animate-none" />
+          <span aria-hidden className="inline-block h-2 w-4 shrink-0 rounded-full bg-accent/70 motion-safe:animate-pulse motion-reduce:animate-none" />
           {frozenStatus2Text("studio.frozenStatus2.pub.hydratingExisting", "기존 작품과 게시 정책을 불러오는 중…")}
         </div>
       )}
@@ -1731,7 +1730,7 @@ export function StudioPublishingCommandCenter({
                 <p className="mt-1 text-xs text-fg-3">PNG·JPG·WebP, 최대 {MAX_PAGES}장 · 표지 페이지와 3:4 초점을 직접 선택할 수 있습니다.</p>
               </div>
               <label className={cn(buttonClass({ size: "sm", variant: "outline", className: "ml-auto min-h-11 gap-1.5" }), mutationLocked && "pointer-events-none opacity-60")}>
-                {loadingFiles ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
+                {loadingFiles ? <span aria-hidden className="inline-block h-2 w-4 rounded-full bg-accent/70 motion-safe:animate-pulse motion-reduce:animate-none" /> : <ImagePlus size={14} />}
                 이미지 추가
                 <input
                   type="file"
@@ -1815,7 +1814,7 @@ export function StudioPublishingCommandCenter({
                     className="h-full w-full object-cover"
                     style={{ objectPosition: `${coverFocalX * 100}% ${coverFocalY * 100}%` }}
                   />
-                  <span className="absolute bottom-2 right-2 rounded-full bg-black/70 px-2 py-0.5 text-[0.65rem] font-bold text-white">3:4</span>
+                  <span className="absolute bottom-2 right-2 rounded-full bg-[oklch(0.14_0.015_70/0.82)] px-2 py-0.5 text-[0.65rem] font-bold text-[oklch(0.96_0.008_85)]">3:4</span>
                 </div>
                 <div className="min-w-0">
                   <h3 id="studio-publish-cover-heading" className="text-sm font-bold text-fg">표지 크롭과 초점</h3>
@@ -1941,7 +1940,7 @@ export function StudioPublishingCommandCenter({
               </span>
             </div>
             <div className="mt-4 rounded-2xl border border-line bg-canvas p-3 sm:p-5">
-              <div className="mx-auto max-w-[720px] overflow-hidden rounded-xl bg-black/5">
+              <div className="mx-auto max-w-[720px] overflow-hidden rounded-xl bg-raised/60">
                 {pages.length === 0 ? (
                   <div className="grid min-h-80 place-items-center text-sm text-fg-3">{frozenStatus2Text("studio.frozenStatus2.pub.noPagesToShow", "표시할 원고가 없습니다.")}</div>
                 ) : directive.readingMode === "vertical" ? (
@@ -1949,7 +1948,7 @@ export function StudioPublishingCommandCenter({
                 ) : (
                   <div className="relative">
                     <img src={pages[0].src} alt={`${title || "작품"} 첫 페이지`} className="block h-auto w-full" />
-                    <span className="absolute bottom-3 right-3 rounded-full bg-black/65 px-2.5 py-1 text-xs text-white">1 / {pages.length}</span>
+                    <span className="absolute bottom-3 right-3 rounded-full bg-[oklch(0.14_0.015_70/0.82)] px-2.5 py-1 text-xs text-[oklch(0.96_0.008_85)]">1 / {pages.length}</span>
                   </div>
                 )}
               </div>
@@ -2023,7 +2022,6 @@ export function StudioPublishingCommandCenter({
           </aside>
         </div>
       )}
-
       <div className={cn("mt-5", STUDIO_UPLOAD_ACTION_DOCK_CLASS)}>
         <div className="flex min-w-0 flex-1 items-center gap-2 text-xs text-fg-3">
           <StudioPublishingPersistenceDockStatus status={persistenceStatus} savingLabel={savingBusyLabel} />
@@ -2032,24 +2030,26 @@ export function StudioPublishingCommandCenter({
         <button
           type="button"
           disabled={!loggedIn || mutationLocked || saving || pages.length === 0 || !title.trim()}
+          title={!loggedIn ? "로그인 후 초안을 저장할 수 있습니다." : pages.length === 0 ? "원고 이미지를 1장 이상 추가하면 저장할 수 있습니다." : !title.trim() ? "작품 제목을 입력하면 저장할 수 있습니다." : undefined}
+          data-unavailable-reason={!loggedIn ? "로그인 후 초안을 저장할 수 있습니다." : pages.length === 0 ? "원고 이미지를 1장 이상 추가하면 저장할 수 있습니다." : !title.trim() ? "작품 제목을 입력하면 저장할 수 있습니다." : undefined}
           className={buttonClass({ size: "sm", variant: "outline", className: "min-h-11 gap-1.5" })}
           onClick={() => void handleSave("draft")}
         >
-          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          {saving ? <span aria-hidden className="inline-block h-2 w-4 rounded-full bg-accent/70 motion-safe:animate-pulse motion-reduce:animate-none" /> : <Save size={14} />}
           초안 저장
         </button>
         {step !== "content" && (
-          <button type="button" disabled={workspaceLocked} className={buttonClass({ size: "sm", variant: "ghost", className: "min-h-11 gap-1" })} onClick={() => setStep(step === "review" ? "distribution" : "content")}><ChevronLeft size={15} /> 이전</button>
+          <button type="button" disabled={workspaceLocked} title={workspaceLocked ? "작품을 불러오는 중입니다." : undefined} data-unavailable-reason={workspaceLocked ? "작품을 불러오는 중입니다." : undefined} className={buttonClass({ size: "sm", variant: "ghost", className: "min-h-11 gap-1" })} onClick={() => setStep(step === "review" ? "distribution" : "content")}><ChevronLeft size={15} /> 이전</button>
         )}
         {step === "content" && (
-          <button type="button" disabled={workspaceLocked} className={buttonClass({ size: "sm", variant: "solid", className: "min-h-11 gap-1.5" })} onClick={openDistribution}>게시 설정 <ArrowRight size={15} /></button>
+          <button type="button" disabled={workspaceLocked} title={workspaceLocked ? "작품을 불러오는 중입니다." : undefined} data-unavailable-reason={workspaceLocked ? "작품을 불러오는 중입니다." : undefined} className={buttonClass({ size: "sm", variant: "solid", className: "min-h-11 gap-1.5" })} onClick={openDistribution}>게시 설정 <ArrowRight size={15} /></button>
         )}
         {step === "distribution" && (
-          <button type="button" disabled={workspaceLocked} className={buttonClass({ size: "sm", variant: "solid", className: "min-h-11 gap-1.5" })} onClick={openReview}>최종 확인 <ChevronRight size={15} /></button>
+          <button type="button" disabled={workspaceLocked} title={workspaceLocked ? "작품을 불러오는 중입니다." : undefined} data-unavailable-reason={workspaceLocked ? "작품을 불러오는 중입니다." : undefined} className={buttonClass({ size: "sm", variant: "solid", className: "min-h-11 gap-1.5" })} onClick={openReview}>최종 확인 <ChevronRight size={15} /></button>
         )}
         {step === "review" && (
-          <button type="button" disabled={primaryDisabled} className={buttonClass({ size: "sm", variant: "solid", className: "min-h-11 gap-1.5" })} onClick={() => void handleSave("publish")}>
-            {saving ? <Loader2 size={14} className="animate-spin" /> : directive.mode === "scheduled" ? <CalendarClock size={14} /> : <Send size={14} />}
+          <button type="button" disabled={primaryDisabled} title={primaryDisabled ? (!loggedIn ? "로그인 후 게시할 수 있습니다." : preflight.errors.length > 0 ? "사전검사 오류를 해결하면 게시할 수 있습니다." : !publisherConfirmed ? "게시 계정 확인에 체크하면 게시할 수 있습니다." : "필수 입력과 저장 상태를 확인해 주세요.") : undefined} data-unavailable-reason={primaryDisabled ? (!loggedIn ? "로그인 후 게시할 수 있습니다." : preflight.errors.length > 0 ? "사전검사 오류를 해결하면 게시할 수 있습니다." : !publisherConfirmed ? "게시 계정 확인에 체크하면 게시할 수 있습니다." : "필수 입력과 저장 상태를 확인해 주세요.") : undefined} className={buttonClass({ size: "sm", variant: "solid", className: "min-h-11 gap-1.5" })} onClick={() => void handleSave("publish")}>
+            {saving ? <span aria-hidden className="inline-block h-2 w-4 rounded-full bg-on-accent/80 motion-safe:animate-pulse motion-reduce:animate-none" /> : directive.mode === "scheduled" ? <CalendarClock size={14} /> : <Send size={14} />}
             {publicationActionLabel(directive, Boolean(workId))}
           </button>
         )}

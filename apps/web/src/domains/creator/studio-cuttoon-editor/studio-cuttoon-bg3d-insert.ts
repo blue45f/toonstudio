@@ -585,8 +585,8 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
         }
         setError(
           cause instanceof Error
-            ? `연결형 3D line pass를 OPFS/CAS에 저장하지 못했습니다: ${cause.message}`
-            : "연결형 3D line pass를 OPFS/CAS에 저장하지 못했습니다.",
+            ? `연결형 3D 선화 결과를 이 기기 저장소에 저장하지 못했습니다: ${cause.message}`
+            : "연결형 3D 선화 결과를 이 기기 저장소에 저장하지 못했습니다.",
         );
         return false;
       }

@@ -37,6 +37,7 @@ export function buildStudioProductionMenuItems({
     {
       id: "tone",
       commandId: "comic.tone",
+      searchActivation: "execute",
       label: "톤 · 스크린톤",
       icon: Wallpaper,
       separatorAfter: true,

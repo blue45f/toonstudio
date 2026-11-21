@@ -225,11 +225,12 @@
 .studio-unified-assets__detail-actions {
   position: sticky;
   inset-block-end: 0;
-  z-index: 1;
+  z-index: 2;
   margin-block-start: 0.75rem;
   border-block-start: 1px solid var(--color-line);
   padding-block: 0.5rem;
   background: var(--color-panel);
+  box-shadow: 0 -8px 18px color-mix(in oklch, var(--color-panel) 88%, transparent);
 }
 .studio-unified-assets__detail-action-row {
   display: flex;
@@ -292,9 +293,7 @@
   }
   .studio-unified-assets [data-studio-asset-detail-pane="true"] {
     display: block;
-    max-block-size: min(64dvh, 43rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    align-self: start;
     border-block-start: 0;
     border-inline-start: 1px solid var(--color-line);
     padding: 0 0.25rem 0 0.75rem;

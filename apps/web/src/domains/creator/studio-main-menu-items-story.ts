@@ -53,6 +53,7 @@ export function buildStudioTextMenuItems({
     {
       id: "bubble",
       commandId: "insert.balloon",
+      searchActivation: "execute",
       legacyPath: "insert/bubble",
       label: "말풍선",
       icon: MessageCircle,
@@ -123,6 +124,7 @@ export function buildStudio3dMenuItems({
     {
       id: "bg3d",
       commandId: "insert.background-3d",
+      searchActivation: "execute",
       legacyPath: "insert/bg3d",
       label: "장면 도우미",
       icon: Boxes,
@@ -134,6 +136,7 @@ export function buildStudio3dMenuItems({
     {
       id: "mannequin3d",
       commandId: "insert.mannequin-3d",
+      searchActivation: "execute",
       legacyPath: "insert/mannequin3d",
       label: "기본 데생 인형",
       icon: PersonStanding,

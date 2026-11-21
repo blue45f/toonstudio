@@ -1,11 +1,21 @@
 import { lazy, Suspense, useEffect } from "react";
-import { requestStudioCommandSearchFromAppShell } from "@/shared/lib/studio-command-search-bridge";
+import {
+  requestStudioCommandSearchFromAppShell,
+  studioCommandSearchBridgeListenerCount,
+} from "@/shared/lib/studio-command-search-bridge";
 import { useUi } from "@/shared/lib/ui-store";
 
 const CommandPalette = lazy(() => import("./command-palette").then((mod) => ({ default: mod.CommandPalette })));
 
 function isStudioPathname(pathname: string): boolean {
   return pathname === "/studio" || pathname.startsWith("/studio/");
+}
+
+function isEditableElement(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 }
 
 export function CommandPaletteHost() {
@@ -27,11 +37,21 @@ export function CommandPaletteHost() {
         return;
       }
 
-      // 2. '/' shortcut outside of editable fields and studio canvas
+      // 2. F1: 스튜디오에 통합 검색 호스트가 붙어 있으면 스튜디오 호스트가 처리하고,
+      // 그 외 페이지나 호스트 마운트 전에는 전역 커맨드 팔레트를 열어 경쟁 앱 용어 검색을 즉시 제공한다.
+      if (e.key === "F1" && !e.metaKey && !e.ctrlKey && !e.altKey && !e.defaultPrevented) {
+        if (isStudioPathname(window.location.pathname) && studioCommandSearchBridgeListenerCount() > 0) {
+          return;
+        }
+        if (!open && isEditableElement(e.target)) return;
+        e.preventDefault();
+        toggle();
+        return;
+      }
+
+      // 3. '/' shortcut outside of editable fields and studio canvas
       if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && typeof window !== "undefined" && !window.location.pathname.startsWith("/studio")) {
-        const target = e.target as HTMLElement | null;
-        const tag = target?.tagName;
-        if (!(target?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT")) {
+        if (!isEditableElement(e.target)) {
           e.preventDefault();
           setOpen(true);
         }
@@ -39,7 +59,7 @@ export function CommandPaletteHost() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [toggle, setOpen]);
+  }, [open, toggle, setOpen]);
 
   useEffect(() => {
     if (!open) return;

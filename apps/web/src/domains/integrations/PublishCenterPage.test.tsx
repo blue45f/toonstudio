@@ -500,4 +500,17 @@ describe("게시 정보 준비의 단계·복귀 계약", () => {
     await waitFor(() => expectContext("project"));
     expect(mocks.buildPublishPackage).toHaveBeenCalledTimes(1);
   });
+
+  it("320px~1179px 하단 탭바와 겹치지 않도록 액션 바가 --site-float-base 여백을 확보하고 비활성 단계 사유를 노출한다 (AC-009c)", async () => {
+    renderPage();
+    await screen.findByRole("link", { name: "선택한 프로젝트로 돌아가기" });
+    const actions = document.querySelector("[data-publish-preparation-actions]");
+    expect(actions).not.toBeNull();
+    expect(actions?.className).toContain("--site-float-base");
+    expect(actions?.className).toContain("min-[1180px]:bottom-0");
+    expect(actions?.className).not.toContain("3.75rem");
+    const filesStep = stepButton(3);
+    expect(filesStep.disabled).toBe(true);
+    expect(filesStep.getAttribute("data-unavailable-reason")).toBeTruthy();
+  });
 });

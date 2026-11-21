@@ -1,17 +1,8 @@
 import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import { r4CreatorStatusText } from "./r4-cat1-status-i18n";
 /**
- * 통합 Command Search — 감사 §2.8 이 지적한 네 개의 부분 검색창을 대신하는
- * 단일 표면.
- *
- * 코퍼스는 `studio-command-search.ts` 가 만든 하나의 색인(명령 155 + 속성·패널
- * + 인스펙터 라우트 + 튜토리얼)이고, 타사 용어 별칭은 Wave A 카탈로그의
- * `aliases` 를 그대로 소비한다. "Paint Bucket", "스포이트", "QuickShape",
- * "Inherit Alpha" 같이 CSP·Photoshop·Krita·Procreate 에서 쓰던 이름으로 우리
- * 기능이 나온다.
- *
- * 결과가 쏟아지지 않게 하는 장치는 세 겹이다 — 토큰 AND, 구획별 상한, 전체
- * 상한. 잘린 개수는 감추지 않고 "외 N건"으로 보고한다.
+ * 통합 Command Search — 스튜디오 F1 / ⌘K 단일 검색 표면.
+ * CSP · Photoshop · SketchUp · Krita · Procreate 용어 별칭을 지원한다.
  */
 
 import { Ban, ChevronRight, HelpCircle, Play, Search, X } from "lucide-react";
@@ -19,6 +10,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExtern
 import { createPortal } from "react-dom";
 
 import { usePaletteImeGuard } from "@/shared/lib/palette-ime-guard";
+import "@/shared/components/command-palette-motion.css";
 
 import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, studioChromeIconClass } from "./studio-chrome-ui";
 import { StudioCommandSearchBeginnerGuide } from "./planning/StudioCommandSearchBeginnerGuide";
@@ -210,24 +202,32 @@ const ACTION_ICON: Readonly<
   none: Ban,
 });
 
-/** 어떤 이름으로 맞았는지 — 타사 용어로 찾아온 사람에게 확인을 준다. */
 function matchNote(result: StudioSearchResult): string | null {
-  if (result.matchedOn === "alias" && result.matchedAlias) {
+  if (result.matchedAlias) {
     const vendor = result.matchedAlias.vendor;
     const vendorLabel =
       vendor === "csp"
         ? "Clip Studio"
         : vendor === "photoshop"
           ? "Photoshop"
-          : vendor === "krita"
-            ? "Krita"
-            : vendor === "procreate"
-              ? "Procreate"
-              : "이전 이름";
+          : vendor === "sketchup"
+            ? "SketchUp"
+            : vendor === "krita"
+              ? "Krita"
+              : vendor === "procreate"
+                ? "Procreate"
+                : "이전 이름";
     return `${vendorLabel} "${result.matchedAlias.term}"`;
   }
   return null;
 }
+
+const VENDOR_PILL_TONE: Readonly<Record<string, string>> = Object.freeze({
+  csp: "border-accent/45 bg-accent-soft text-accent",
+  photoshop: "border-cool/45 bg-cool/15 text-cool",
+  sketchup: "border-warn/45 bg-warn/15 text-warn",
+  procreate: "border-good/45 bg-good-soft text-good",
+});
 
 export function StudioCommandSearchDialog({
   open,
@@ -538,7 +538,7 @@ export function StudioCommandSearchDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[120] flex items-start justify-center bg-black/45 px-4 pt-[12vh] backdrop-blur-sm"
+      className="fixed inset-0 z-[120] flex items-start justify-center bg-[oklch(0.12_0.012_70/0.62)] px-4 pt-[12vh] backdrop-blur-sm"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -548,8 +548,12 @@ export function StudioCommandSearchDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl"
+        className="flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-line-strong bg-panel shadow-2xl motion-safe:animate-[command-palette-spring_0.24s_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none"
       >
+        <div
+          aria-hidden="true"
+          className="h-[3px] w-full shrink-0 bg-[linear-gradient(90deg,var(--color-accent),var(--color-cool),var(--color-good),var(--color-warn),var(--color-accent-2))] bg-[length:200%_100%] motion-safe:animate-[command-spectrum-shift_7s_ease-in-out_infinite] motion-reduce:animate-none"
+        />
         <div className="flex items-center gap-2 border-b border-line px-3">
           <Search
             size={STUDIO_ICON_SIZE.context}
@@ -560,13 +564,6 @@ export function StudioCommandSearchDialog({
           <h2 id={titleId} className="sr-only">
             기능·설정 찾기
           </h2>
-          {/*
-            콤보박스 계약(WAI-ARIA APG). `role="searchbox"` 였을 때는 결과 목록이
-            보조기술에 아예 존재하지 않았고 ↑↓ 하이라이트도 `data-active` 라는
-            시각 전용 속성으로만 움직였다 — 스크린리더 사용자에게는 검색 결과가
-            없는 화면이었다. 이제 포커스는 입력에 남고 활성 행은
-            `aria-activedescendant` 로 전달된다.
-          */}
           <input
             ref={inputRef}
             id={inputId}
@@ -582,14 +579,14 @@ export function StudioCommandSearchDialog({
             value={query}
             autoComplete="off"
             onChange={(event) => setQuery(event.currentTarget.value)}
-            placeholder="기능 이름 또는 다른 앱 용어 (예: 채우기, 레벨, 서브 도구)"
+            placeholder="기능 이름 또는 CSP·포토샵·스케치업·프로크리에이트 용어 검색"
             className="min-h-11 min-w-0 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-3"
           />
           <button
             type="button"
             onClick={() => onClose()}
             title="닫기 (Esc)"
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="flex size-11 shrink-0 items-center justify-center rounded-lg text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <X
               size={STUDIO_ICON_SIZE.context}
@@ -601,10 +598,6 @@ export function StudioCommandSearchDialog({
           </button>
         </div>
 
-        {/*
-          범위 칩. 검색 표면은 하나이고 여기서 범위만 바꾼다 — 인스펙터 안의 "패널 찾기"와
-          전역 검색이 따로 있던 것을 대신한다.
-        */}
         <div
           role="radiogroup"
           aria-label="검색 범위"
@@ -622,9 +615,9 @@ export function StudioCommandSearchDialog({
                 aria-checked={checked}
                 data-scope={candidate}
                 onClick={() => setScope(candidate)}
-                className={`min-h-8 rounded-full border px-2.5 text-[0.6875rem] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                className={`min-h-11 rounded-full border px-3 text-xs font-semibold break-keep transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   checked
-                    ? "border-accent bg-accent-soft text-accent"
+                    ? "border-accent bg-accent-soft text-accent shadow-sm"
                     : "border-line text-fg-3 hover:bg-raised hover:text-fg"
                 }`}
               >
@@ -667,18 +660,14 @@ export function StudioCommandSearchDialog({
                   type="button"
                   onClick={() => setScope("all")}
                   data-studio-command-search-widen="true"
-                  className="mt-2 inline-flex min-h-9 items-center rounded-lg border border-accent/40 bg-accent-soft px-3 text-xs font-semibold text-accent transition-colors hover:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="mt-2 inline-flex min-h-11 items-center rounded-lg border border-accent/40 bg-accent-soft px-3 text-xs font-semibold text-accent transition-colors hover:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   전체에서 {fallbackOutcome.totalMatched}건 보기
                 </button>
               ) : null}
             </div>
           ) : null}
-          {/*
-            콤보박스의 `aria-controls` 는 언제나 실재하는 id 를 가리켜야 하므로
-            목록 컨테이너는 항상 남기고, 결과가 없을 때만 `hidden` 으로 접근성
-            트리에서 뺀다(APG collapsed combobox 와 같은 처리).
-          */}
+          {/* APG collapsed combobox: aria-controls 대상 유지, 결과 없을 때만 hidden */}
           <div
             id={listboxId}
             role="listbox"
@@ -736,12 +725,18 @@ export function StudioCommandSearchDialog({
                               }`}
                             >
                               <span className="min-w-0">
-                                <span className="block truncate text-sm text-fg">
-                                  {result.entry.label}
+                                <span className="flex flex-wrap items-center gap-1.5">
+                                  <span className="truncate text-sm text-fg break-keep">
+                                    {result.entry.label}
+                                  </span>
+                                  {note && result.matchedAlias ? (
+                                    <span className={`inline-flex shrink-0 items-center rounded-full border px-1.5 py-px text-[10px] font-semibold break-keep ${VENDOR_PILL_TONE[result.matchedAlias.vendor] ?? "border-line bg-card text-fg-2"}`}>
+                                      {note}
+                                    </span>
+                                  ) : null}
                                 </span>
                                 <span className="block truncate text-[0.66rem] text-fg-3">
                                   {result.entry.location}
-                                  {note ? ` · ${note}` : ""}
                                 </span>
                                 {unavailability ? (
                                   <StudioCommandSearchOptionUnavailableMeta
