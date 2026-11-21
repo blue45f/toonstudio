@@ -165,10 +165,10 @@ describe("A. ag-psd 직렬화 왕복 (파서·직렬화기 대칭성)", () => {
   it("flat-basic — 이름·순서·경계·픽셀이 그대로다", () => {
     const fixture = fixtureById("flat-basic");
     const psd = readFixtureBytes(buildPsdFixtureBytes(fixture));
-    expect(psd.children?.map((layer) => layer.name)).toEqual(["전경 점", "중간 도형", "배경판"]);
-    const front = psd.children![0]!;
+    expect(psd.children?.map((layer) => layer.name)).toEqual(["배경판", "중간 도형", "전경 점"]);
+    const front = psd.children![2]!;
     expect([front.left, front.top, front.right, front.bottom]).toEqual([10, 1, 14, 5]);
-    expectPixelsClose(psd.children![2]!.imageData!, coordPixels(16, 12), 0, "배경판 픽셀");
+    expectPixelsClose(psd.children![0]!.imageData!, coordPixels(16, 12), 0, "배경판 픽셀");
   });
 
   it("blend-opacity — 블렌드·클리핑·숨김이 직렬화에서는 전부 보존된다", () => {
@@ -190,7 +190,7 @@ describe("A. ag-psd 직렬화 왕복 (파서·직렬화기 대칭성)", () => {
     expect(outer.name).toBe("외부");
     expect(outer.blendMode).toBe("pass through");
     expect(outer.opacity).toBeCloseTo(0.8, 2);
-    const inner = outer.children![0]!;
+    const inner = outer.children![1]!;
     expect(inner.name).toBe("내부");
     expect(inner.blendMode).toBe("multiply");
     expect(inner.children![0]!.name).toBe("안쪽 리프");
@@ -199,31 +199,31 @@ describe("A. ag-psd 직렬화 왕복 (파서·직렬화기 대칭성)", () => {
   it("mask-basic — 마스크 채널 픽셀·비활성 플래그가 보존된다", () => {
     const fixture = fixtureById("mask-basic");
     const psd = readFixtureBytes(buildPsdFixtureBytes(fixture));
-    const masked = psd.children![0]!;
+    const masked = psd.children![1]!;
     expect(masked.mask?.imageData).toBeDefined();
     const gradient = fixture.build().children![0]!.mask!.imageData!;
     expectPixelsClose(masked.mask!.imageData!, gradient, 0, "마스크 그라데이션");
-    expect(psd.children![1]!.mask?.disabled).toBe(true);
+    expect(psd.children![0]!.mask?.disabled).toBe(true);
   });
 
   it("adjustment-effects — 조정 타입과 효과가 직렬화에서는 보존된다", () => {
     const fixture = fixtureById("adjustment-effects");
     const psd = readFixtureBytes(buildPsdFixtureBytes(fixture));
-    expect(psd.children![0]!.adjustment?.type).toBe("brightness/contrast");
+    expect(psd.children![2]!.adjustment?.type).toBe("brightness/contrast");
     expect(psd.children![1]!.effects?.dropShadow?.length).toBe(1);
   });
 
   it("text-basic — 텍스트 내용·크기·색이 직렬화에서는 보존된다", () => {
     const fixture = fixtureById("text-basic");
     const psd = readFixtureBytes(buildPsdFixtureBytes(fixture));
-    const caption = psd.children![0]!;
+    const caption = psd.children![1]!;
     expect(caption.text?.text.replace(/\r\n?/gu, "\n")).toBe("안녕\n세계");
     expect(caption.text?.style?.fontSize).toBe(18);
     const fill = caption.text?.style?.fillColor as { r: number; g: number; b: number } | undefined;
     expect(Math.abs((fill?.r ?? 0) - 12)).toBeLessThanOrEqual(1);
     expect(Math.abs((fill?.g ?? 0) - 34)).toBeLessThanOrEqual(1);
     expect(Math.abs((fill?.b ?? 0) - 56)).toBeLessThanOrEqual(1);
-    expect(psd.children![1]!.text?.orientation).toBe("vertical");
+    expect(psd.children![0]!.text?.orientation).toBe("vertical");
   });
 });
 
@@ -471,7 +471,7 @@ describe("C. 제품 왕복 (가져오기 → 재내보내기 → 다시 가져�
     expect(elementByName(second, "안쪽 리프").opacity).toBeCloseTo(0.4, 2);
     const tree = summarizePsd(readFixtureBytes(exportedBytes));
     expect(tree[0]?.name).toBe("외부");
-    expect(tree[0]?.children.map((child) => child.name)).toEqual(expect.arrayContaining(["내부", "바깥 리프"]));
+    expect(tree[0]?.children.map((child) => child.name)).toEqual(["바깥 리프", "내부"]);
   });
 
   it("text-basic — 래스터 레이어 자체는 왕복 후에도 남는다", async () => {
