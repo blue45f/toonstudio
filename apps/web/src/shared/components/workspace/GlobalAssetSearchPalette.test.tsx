@@ -14,7 +14,6 @@ import {
   GLOBAL_ASSET_QUICK_HUBS,
   extractKoreanChoseong,
   filterGlobalAssetCatalog,
-  isEditableEventTarget,
   type GlobalAssetCatalogEntry,
 } from "./global-asset-search-index";
 import { GlobalAssetSearchPalette } from "./GlobalAssetSearchPalette";
@@ -51,7 +50,7 @@ afterEach(() => {
   cleanup();
 });
 
-describe("GlobalAssetSearchPalette — 전역 통합 소재 검색 (⌘K / /)", () => {
+describe("GlobalAssetSearchPalette — 전역 통합 소재 검색 (⌘⇧K)", () => {
   it("한글 초성 추출과 초성·한영 다중 키워드 검색이 정확히 동작한다", () => {
     expect(extractKoreanChoseong("로판 황궁")).toBe("ㄹㅍ ㅎㄱ");
     expect(extractKoreanChoseong("서울 홍대 야경")).toBe("ㅅㅇ ㅎㄷ ㅇㄱ");
@@ -110,23 +109,30 @@ describe("GlobalAssetSearchPalette — 전역 통합 소재 검색 (⌘K / /)", 
     ]);
   });
 
-  it("⌘K / Ctrl+K 및 입력창 밖 `/`로 열리고, 입력창 안 `/`는 입력을 방해하지 않는다", () => {
+  it("⌘⇧K / Ctrl+Shift+K 전용 단축키로 열리고, 전역 ⌘K·/는 가로채지 않는다", () => {
     render(<StandalonePaletteHarness />);
     expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
 
-    const outsideInput = screen.getByLabelText("외부 입력창");
-    expect(isEditableEventTarget(outsideInput)).toBe(true);
-    fireEvent.keyDown(outsideInput, { key: "/" });
+    // 전역 CommandPaletteHost 소유의 ⌘K, Ctrl+K, / 는 가로채지 않는다.
+    fireEvent.keyDown(window, { key: "/" });
+    expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
 
-    fireEvent.keyDown(window, { key: "/" });
+    // 전용 단축키 Cmd+Shift+K / Ctrl+Shift+K로 토글되고 Escape로 닫힌다.
+    fireEvent.keyDown(window, { key: "k", metaKey: true, shiftKey: true });
     expect(screen.getByTestId("global-asset-search-dialog")).not.toBeNull();
 
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
 
-    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true, shiftKey: true });
     expect(screen.getByTestId("global-asset-search-dialog")).not.toBeNull();
+
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true, shiftKey: true });
+    expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
   });
 
   it("화살표·Home·End·Enter 키보드 탐색과 1클릭 캔버스/소재 허브 이동을 지원한다", () => {

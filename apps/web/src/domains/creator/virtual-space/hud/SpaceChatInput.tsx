@@ -77,10 +77,10 @@ export const SpaceChatInput = memo(function SpaceChatInput({ blocked, touch, onT
     if (blocked) return null;
     return <button type="button" className="space-chat-input__hint" data-space-interactive="true"
       aria-keyshortcuts={touch ? undefined : "Enter"}
-      aria-label={bt("채팅 열기", "Open chat")}
+      aria-label={touch ? bt("채팅 열기", "Chat · Open chat") : bt("Enter 채팅하기 · 채팅 열기", "Enter Chat · Open chat")}
       onClick={() => setOpen(true)}>
       <MessageCircle size={16} aria-hidden />
-      {touch ? <span>{bt("채팅", "Chat")}</span> : <><kbd aria-hidden>Enter</kbd><span aria-hidden>{bt("채팅하기", "Chat")}</span></>}
+      {touch ? <span>{bt("채팅", "Chat")}</span> : <><kbd aria-hidden>Enter</kbd>{" "}<span aria-hidden>{bt("채팅하기", "Chat")}</span></>}
     </button>;
   }
 
@@ -89,7 +89,7 @@ export const SpaceChatInput = memo(function SpaceChatInput({ blocked, touch, onT
     onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) close(false); }}>
     <button type="button" className="space-chat-input__channel"
       aria-pressed={bubbleKind === "thought"}
-      aria-label={bubbleKind === "thought" ? bt("생각풍선 모드 (눌러서 일반 말풍선으로)", "Thought bubble mode (press for speech bubble)") : bt("말풍선 모드 (눌러서 생각풍선으로)", "Speech bubble mode (press for thought bubble)")}
+      aria-label={bubbleKind === "thought" ? bt("생각 · 생각풍선 모드 (눌러서 일반 말풍선으로)", "Thought · Thought bubble mode (press for speech bubble)") : bt("근처 · 말풍선 모드 (눌러서 생각풍선으로)", "Nearby · Speech bubble mode (press for thought bubble)")}
       onClick={() => {
         setBubbleKind((current) => (current === "say" ? "thought" : "say"));
         inputRef.current?.focus();

@@ -5,6 +5,7 @@ import { cx } from "@/shared/lib/cx";
 import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
+import { useUi } from "@/shared/lib/ui-store";
 import Link from "@/shared/navigation/router-link";
 
 import {
@@ -26,13 +27,6 @@ const GlobalAssetSearchPalette = lazyRetry(
   "GlobalAssetSearchPalette",
 );
 
-function isEditableElement(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName.toLowerCase();
-  if (tag === "input" || tag === "textarea" || tag === "select") return true;
-  return target.isContentEditable || target.getAttribute("role") === "textbox";
-}
-
 interface PageRoleAndJourneyNavigatorProps {
   readonly pathname: string;
   readonly context?: WorkspaceNavigationContext;
@@ -42,7 +36,7 @@ interface PageRoleAndJourneyNavigatorProps {
 /**
  * PC·태블릿·모바일 공통 5단계 창작 여정 진행 바 + 현재 페이지 역할 1줄 안내 + 다음 추천 동선 칩.
  * WorkspaceTaskFrame에 지연 연결되어 진입 번들 비용 없이 현재 위치와 다음 행동을 즉시 안내하며,
- * 전역 소재 검색 커맨드 팔레트(⌘K / /)를 지연 로딩 런처로 함께 제공한다.
+ * 전역 소재 검색 커맨드 팔레트(⌘⇧K)를 지연 로딩 런처로 함께 제공한다.
  */
 export function PageRoleAndJourneyNavigator({
   pathname,
@@ -54,25 +48,31 @@ export function PageRoleAndJourneyNavigator({
   const entry = resolvePageRoleJourney(pathname);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  const openPalette = useCallback(() => setPaletteOpen(true), []);
+  const openPalette = useCallback(() => {
+    if (useUi.getState().commandPaletteOpen) {
+      useUi.getState().setCommandPaletteOpen(false);
+    }
+    setPaletteOpen(true);
+  }, []);
   const closePalette = useCallback(() => setPaletteOpen(false), []);
 
   useEffect(() => {
     const handleGlobalShortcut = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      const isK = event.key.toLowerCase() === "k";
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && !event.altKey && isK) {
         event.preventDefault();
-        setPaletteOpen((prev) => !prev);
+        setPaletteOpen((prev) => {
+          const next = !prev;
+          if (next && useUi.getState().commandPaletteOpen) {
+            useUi.getState().setCommandPaletteOpen(false);
+          }
+          return next;
+        });
         return;
       }
-      if (
-        event.key === "/" &&
-        !event.metaKey &&
-        !event.ctrlKey &&
-        !event.altKey &&
-        !isEditableElement(event.target)
-      ) {
-        event.preventDefault();
-        setPaletteOpen(true);
+      // 전역 CommandPaletteHost(⌘K)가 열릴 때 소재 검색 팔레트가 겹쳐 남지 않도록 즉시 닫는다.
+      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && isK) {
+        setPaletteOpen(false);
       }
     };
     window.addEventListener("keydown", handleGlobalShortcut);
@@ -167,14 +167,14 @@ export function PageRoleAndJourneyNavigator({
               aria-haspopup="dialog"
               aria-expanded={paletteOpen}
               onClick={openPalette}
-              title={bt("어느 화면에서든 ⌘K 또는 / 로 통합 소재 검색 열기", "Open unified asset search anywhere with ⌘K or /")}
+              title={bt("어느 화면에서든 ⌘⇧K로 통합 소재 검색 열기", "Open unified asset search anywhere with ⌘⇧K")}
               className={cx(
                 "ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]",
                 accentToneChipClasses("market", paletteOpen),
               )}
             >
               <Search size={14} strokeWidth={2} aria-hidden="true" className="shrink-0 text-warning" />
-              <span>{bt("소재 검색 (⌘K)", "Asset Search (⌘K)")}</span>
+              <span>{bt("소재 검색 (⌘⇧K)", "Assets (⌘⇧K)")}</span>
             </button>
           </div>
           <p className="mt-1 text-sm font-semibold leading-snug text-fg [word-break:keep-all]">

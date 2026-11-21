@@ -59,18 +59,23 @@ export function StudioOffice2dPipelineRail({
         {pipeline.map((room) => {
           const step = room.pipelineStep ?? 0;
           const state = currentStep === null ? "idle" : step < currentStep ? "done" : step === currentStep ? "current" : "next";
+          const shortKo = room.pipelineShortKo ?? room.labelKo;
+          const shortEn = room.pipelineShortEn ?? room.labelEn;
           return (
             <li key={room.id} className="studio-office2d-pipeline__item" data-state={state}>
               <button
                 type="button"
                 className="studio-office2d-pipeline__step"
                 aria-current={state === "current" ? "location" : undefined}
-                aria-label={bt(`${step + 1}단계 ${room.pipelineKo ?? room.labelKo} · ${spaceKoParticle(room.labelKo, "으로")} 이동`, `Step ${step + 1} ${room.pipelineEn ?? room.labelEn} · go to ${room.labelEn}`)}
+                aria-label={bt(
+                  `${step + 1} ${shortKo} · ${step + 1}단계 ${room.pipelineKo ?? room.labelKo} · ${spaceKoParticle(room.labelKo, "으로")} 이동`,
+                  `${step + 1} ${shortEn} · Step ${step + 1} ${room.pipelineEn ?? room.labelEn} · go to ${room.labelEn}`,
+                )}
                 title={bt(room.labelKo, room.labelEn)}
                 onClick={() => go(room)}
               >
-                <span className="studio-office2d-pipeline__index" aria-hidden="true">{step + 1}</span>
-                <span className="studio-office2d-pipeline__label" aria-hidden="true">{bt(room.pipelineShortKo ?? room.labelKo, room.pipelineShortEn ?? room.labelEn)}</span>
+                <span className="studio-office2d-pipeline__index" aria-hidden="true">{step + 1}</span>{" "}
+                <span className="studio-office2d-pipeline__label" aria-hidden="true">{bt(shortKo, shortEn)}</span>
               </button>
             </li>
           );
@@ -81,7 +86,7 @@ export function StudioOffice2dPipelineRail({
               type="button"
               data-testid="office2d-open-workstation-modal-btn"
               className="studio-office2d-pipeline__step studio-office2d-pipeline__step--action"
-              aria-label={bt("현재 구역 워크스테이션 라이브 협업창 열기", "Open live workstation collaboration studio")}
+              aria-label={bt("협업창 · 현재 구역 워크스테이션 라이브 열기", "Studio · Open live workstation collaboration")}
               title={bt("워크스테이션 라이브 협업창 (레드라인 · 컷 칸반 · 3D 턴테이블/SFX)", "Workstation Live Studio (Redline · Cut Kanban · 3D Turntable/SFX)")}
               onClick={onOpenWorkstation}
             >
@@ -97,7 +102,7 @@ export function StudioOffice2dPipelineRail({
               data-testid="office2d-my-desk-btn"
               className="studio-office2d-pipeline__step studio-office2d-pipeline__step--desk"
               aria-keyshortcuts="H"
-              aria-label={bt("내 지정석으로 이동, 다른 좌석에 앉아 있으면 그 좌석을 지정석으로 저장 (H)", "Go to my desk, or save the current seat as my desk while seated (H)")}
+              aria-label={bt("내 자리 · 내 지정석으로 이동, 다른 좌석에 앉아 있으면 그 좌석을 지정석으로 저장 (H)", "My Desk · Go to my desk, or save the current seat as my desk while seated (H)")}
               title={bt("내 자리로 이동 · 앉은 좌석을 내 자리로 저장 (단축키 H)", "Go to my desk · save current seat as my desk (H)")}
               onClick={onMyDeskAction}
             >
@@ -113,7 +118,7 @@ export function StudioOffice2dPipelineRail({
               data-testid="office2d-toggle-schematic-btn"
               className="studio-office2d-pipeline__step studio-office2d-pipeline__step--schematic"
               aria-pressed={schematicMode}
-              aria-label={bt("스튜디오 평면도 오버뷰 전환", "Toggle studio schematic overview")}
+              aria-label={bt("평면도 · 스튜디오 평면도 오버뷰 전환", "Plan · Toggle studio schematic overview")}
               title={bt("스튜디오 전체 평면도 보기 · 방이나 좌석을 클릭하여 이동", "Toggle schematic overview · click any room or seat to move there")}
               onClick={onToggleSchematic}
             >
@@ -129,7 +134,7 @@ export function StudioOffice2dPipelineRail({
               data-testid="office2d-toggle-sound-btn"
               className="studio-office2d-pipeline__step studio-office2d-pipeline__step--sound"
               aria-pressed={!soundMuted}
-              aria-label={bt(soundMuted ? "스튜디오 공간 음향 켜기" : "스튜디오 공간 음향 끄기", soundMuted ? "Unmute studio spatial audio" : "Mute studio spatial audio")}
+              aria-label={bt(soundMuted ? "음소거 · 스튜디오 공간 음향 켜기" : "공간음 · 스튜디오 공간 음향 끄기", soundMuted ? "Muted · Unmute studio spatial audio" : "Audio · Mute studio spatial audio")}
               title={bt("방 이동과 이모트·지정석 동작의 효과음 켜기/끄기", "Toggle sound cues for room changes, emotes and desk actions")}
               onClick={onToggleSound}
             >

@@ -22,7 +22,6 @@ import {
   GLOBAL_ASSET_CATALOG,
   GLOBAL_ASSET_QUICK_HUBS,
   filterGlobalAssetCatalog,
-  isEditableEventTarget,
   type GlobalAssetCatalogEntry,
   type GlobalAssetCategory,
 } from "./global-asset-search-index";
@@ -60,7 +59,7 @@ function CategoryGlyph({ category }: { readonly category: GlobalAssetCatalogEntr
 }
 
 /**
- * 어느 페이지에서든 ⌘K / Ctrl+K (또는 입력창 밖에서 `/`)로 여는
+ * 어느 페이지에서든 ⌘⇧K / Ctrl+Shift+K 또는 런처 버튼으로 여는
  * ToonStudio 전역 통합 소재 검색 커맨드 팔레트.
  */
 export function GlobalAssetSearchPalette({
@@ -99,7 +98,7 @@ export function GlobalAssetSearchPalette({
     [navigate, onClose, onSelectAsset],
   );
 
-  // 단독 마운트 단축키 지원 (⌘K / Ctrl+K / 입력창 밖 `/`) 및 열림 상태 Escape 닫기
+  // 단독 마운트 단축키 지원 (⌘⇧K / Ctrl+Shift+K) 및 열림 상태 Escape 닫기
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (open && event.key === "Escape") {
@@ -108,15 +107,10 @@ export function GlobalAssetSearchPalette({
         return;
       }
       if (!enableGlobalShortcut || !onOpenRequest) return;
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && !event.altKey && event.key.toLowerCase() === "k") {
         event.preventDefault();
         if (open) onClose();
         else onOpenRequest();
-        return;
-      }
-      if (!open && event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey && !isEditableEventTarget(event.target)) {
-        event.preventDefault();
-        onOpenRequest();
       }
     };
     window.addEventListener("keydown", handleKeyDown);

@@ -34,5 +34,8 @@
 .studio-vspace-role-guide__places>span{display:inline-flex;align-items:center;gap:4px;font-size:.6875rem;font-weight:800;color:var(--color-fg-2)}
 .studio-vspace-role-guide__places>div{display:flex;flex-wrap:wrap;gap:6px}
 .studio-vspace-role-guide__places button{min-height:36px;padding:6px 10px;font-size:.75rem}
+.studio-vspace-office-start>.hyper-auto-os__disclosure{margin:0 0 12px;padding:0 12px;border:1px solid var(--color-line);border-radius:12px;background:var(--color-raised)}
+.studio-vspace-office-start>.hyper-auto-os__disclosure>summary{display:flex;align-items:center;min-height:44px;font-size:.8125rem;font-weight:800;color:var(--color-fg);cursor:pointer}
+.studio-vspace-office-start>.hyper-auto-os__disclosure>summary:focus-visible{outline:2px solid var(--color-accent);outline-offset:3px;border-radius:8px}
 @media(max-width:480px){.studio-vspace-office-start{padding:12px;border-radius:14px}.studio-vspace-office-actions{gap:6px}.studio-vspace-office-actions>:is(button,a){padding:9px 8px}.studio-vspace-office-next{grid-template-columns:minmax(0,1fr)}.studio-vspace-office-next>button{grid-column:1;grid-row:auto;justify-self:start;margin-top:6px}.studio-vspace-office-start footer{justify-content:stretch}.studio-vspace-office-start footer a{justify-content:center;width:100%}}
 @media(forced-colors:active){.studio-vspace-office-start,.studio-vspace-office-next{border:1px solid CanvasText}.studio-vspace-office-start :is(button,a){border:1px solid ButtonText}}

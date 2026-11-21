@@ -7,7 +7,9 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
+import { useUi } from "@/shared/lib/ui-store";
 
+import { CommandPaletteHost } from "../command-palette-host";
 import { SiteMenuDestinations } from "../SiteMenuDestinations";
 import { PageRoleAndJourneyNavigator } from "./PageRoleAndJourneyNavigator";
 import { WorkspaceNavigation } from "./WorkspaceNavigation";
@@ -43,6 +45,7 @@ vi.mock("@/domains/auth/public/session/auth-session-store", () => ({
 
 beforeEach(() => {
   useI18n.getState().setLang("ko");
+  useUi.setState({ commandPaletteOpen: false });
 });
 
 afterEach(() => {
@@ -277,31 +280,65 @@ describe("PageRoleAndJourneyNavigator 컴포넌트", () => {
     }
   });
 
-  it("소재 검색 (⌘K) 런처 버튼 클릭 및 Ctrl+K 단축키로 전역 소재 검색 팔레트를 지연 마운트한다", async () => {
+  it("소재 검색 (⌘⇧K) 런처 버튼 클릭 및 Ctrl/Cmd+Shift+K 단축키로 전역 소재 검색 팔레트를 단독 지연 마운트하고 ⌘K·/와 충돌하지 않는다", async () => {
+    window.history.replaceState({}, "", "/production");
     render(
-      <MemoryRouter initialEntries={["/studio"]}>
-        <PageRoleAndJourneyNavigator pathname="/studio" />
+      <MemoryRouter initialEntries={["/production"]}>
+        <CommandPaletteHost />
+        <PageRoleAndJourneyNavigator pathname="/production" />
       </MemoryRouter>,
     );
 
     const launcher = screen.getByTestId("journey-asset-search-launcher");
-    expect(launcher.textContent).toContain("소재 검색 (⌘K)");
+    expect(launcher.textContent).toContain("소재 검색 (⌘⇧K)");
     expect(launcher.className).toContain("min-h-11");
     expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
 
-    fireEvent.click(launcher);
+    // 전역 Cmd+K와 /는 CommandPaletteHost만 열고 소재 검색 팔레트를 중복 오픈하지 않는다.
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    expect(useUi.getState().commandPaletteOpen).toBe(true);
+    expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
+
+    // Cmd+Shift+K는 전역 커맨드 팔레트를 닫고 소재 검색 팔레트만 단독 오픈한다.
+    fireEvent.keyDown(window, { key: "k", metaKey: true, shiftKey: true });
+    expect(useUi.getState().commandPaletteOpen).toBe(false);
     await waitFor(() => {
       expect(screen.getByTestId("global-asset-search-dialog")).not.toBeNull();
     });
 
-    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    // Ctrl+Shift+K로 닫기 토글
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true, shiftKey: true });
     await waitFor(() => {
       expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
     });
 
-    fireEvent.keyDown(window, { key: "/" });
+    // '/'는 소재 검색 팔레트를 가로채지 않는다.
+    fireEvent.keyDown(document.body, { key: "/" });
+    expect(useUi.getState().commandPaletteOpen).toBe(true);
+    expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
+
+    // 런처 버튼 클릭 시 기존 전역 커맨드 팔레트를 닫고 소재 검색 팔레트만 단독 오픈한다.
+    fireEvent.click(launcher);
+    expect(useUi.getState().commandPaletteOpen).toBe(false);
     await waitFor(() => {
       expect(screen.getByTestId("global-asset-search-dialog")).not.toBeNull();
     });
+
+    // 소재 검색 팔레트가 열린 상태에서 Ctrl+K를 누르면 소재 검색 팔레트를 닫아 이중 모달을 방지한다.
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    await waitFor(() => {
+      expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
+    });
+    expect(useUi.getState().commandPaletteOpen).toBe(true);
+  });
+
+  it("영문 로케일에서는 소재 검색 런처 라벨이 Assets (⌘⇧K)로 표시된다", () => {
+    useI18n.getState().setLang("en");
+    render(
+      <MemoryRouter initialEntries={["/production"]}>
+        <PageRoleAndJourneyNavigator pathname="/production" />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("journey-asset-search-launcher").textContent).toContain("Assets (⌘⇧K)");
   });
 });

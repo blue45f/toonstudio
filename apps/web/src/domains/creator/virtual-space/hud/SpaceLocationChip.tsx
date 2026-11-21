@@ -72,6 +72,8 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
         pulse.workStatusBadgeKo ?? pulse.quickActionLabelKo,
         pulse.workStatusBadgeEn ?? pulse.quickActionLabelEn,
       );
+      const pulseHeadline = bt(pulse.headlineKo, pulse.headlineEn);
+      const pulseQuickAction = bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn);
       const routineHint = pulse.recommendedRoutineKo ? ` · ${bt(pulse.recommendedRoutineKo, pulse.recommendedRoutineEn)}` : "";
       return onQuickAction && pulse.quickActionId ? (
         <button
@@ -80,11 +82,11 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
           data-tempo={pulse.tempo}
           data-atelier-pulse-tempo={pulse.tempo}
           onClick={onQuickAction}
-          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${workBadge}${routineHint} · ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
-          aria-label={`${bt(pulse.headlineKo, pulse.headlineEn)} (${workBadge}) — ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
+          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${workBadge}${routineHint} · ${pulseQuickAction}`}
+          aria-label={`${pulseHeadline} ${workBadge} · ${pulseQuickAction}`}
         >
           <Activity size={13} aria-hidden />
-          <span className="space-location__pulse-label">{bt(pulse.headlineKo, pulse.headlineEn)}</span>
+          <span className="space-location__pulse-label">{pulseHeadline}</span>{" "}
           <strong className="space-location__pulse-score">{workBadge}</strong>
         </button>
       ) : (
@@ -95,7 +97,7 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
           title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${workBadge}${routineHint}`}
         >
           <Activity size={13} aria-hidden />
-          <span className="space-location__pulse-label">{bt(pulse.headlineKo, pulse.headlineEn)}</span>
+          <span className="space-location__pulse-label">{pulseHeadline}</span>{" "}
           <strong className="space-location__pulse-score">{workBadge}</strong>
         </span>
       );
@@ -108,8 +110,8 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
         onClick={onToggleEngineMode}
         aria-pressed={engineMode === "3d"}
         aria-label={engineMode === "3d"
-          ? bt("현재 3D 스튜디오 공간 · 클릭하여 2D 캠퍼스로 전환", "Currently 3D Studio Space · Click to switch to 2D Campus")
-          : bt("현재 2D 캠퍼스 · 클릭하여 3D 스튜디오 공간으로 전환", "Currently 2D Campus · Click to switch to 3D Studio Space")}
+          ? bt("3D 공간 · 클릭하여 2D 캠퍼스로 전환", "3D Space · Click to switch to 2D Campus")
+          : bt("3D 전환 · 현재 2D 캠퍼스에서 3D 스튜디오 공간으로 전환", "3D View · Currently 2D Campus, click to switch to 3D Studio Space")}
         title={engineMode === "3d"
           ? bt("3D 스튜디오 공간 활성 · 2D 캠퍼스로 전환", "3D Studio Space active · Switch to 2D Campus")
           : bt("3D 스튜디오 공간으로 전환", "Switch to 3D Studio Space")}
@@ -126,7 +128,7 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
         type="button"
         className="space-location__search"
         onClick={onOpenSearch}
-        aria-label={bt("구역·팀원 빠른 찾기 (단축키 K)", "Quick find rooms & teammates (Shortcut K)")}
+        aria-label={bt("구역·팀원 빠른 찾기 · 단축키 K", "Quick find rooms & teammates · Shortcut K")}
         title={bt("빠른 찾기 (K)", "Quick Find (K)")}
       >
         <Search size={13} aria-hidden />

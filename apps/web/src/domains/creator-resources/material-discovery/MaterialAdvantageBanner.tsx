@@ -108,14 +108,12 @@ const WORKFLOW_PILLARS = [
 function SafeBannerLink({
   href,
   className,
-  ariaLabel,
   dataTone,
   onClick,
   children,
 }: {
   readonly href: string;
   readonly className: string;
-  readonly ariaLabel?: string;
   readonly dataTone?: string;
   readonly onClick?: () => void;
   readonly children: ReactNode;
@@ -126,7 +124,6 @@ function SafeBannerLink({
       <Link
         to={href}
         className={className}
-        aria-label={ariaLabel}
         data-tone={dataTone}
         onClick={onClick}
       >
@@ -138,7 +135,6 @@ function SafeBannerLink({
     <a
       href={href}
       className={className}
-      aria-label={ariaLabel}
       data-tone={dataTone}
       onClick={onClick}
     >
@@ -239,14 +235,13 @@ export function MaterialAdvantageBanner({
               href={href}
               className="md-jump-chip"
               dataTone={tone}
-              ariaLabel={`${label} — ${summary}`}
               onClick={scrollToSearch ? scrollSearchIntoView : undefined}
             >
               <span className="md-jump-chip-icon" aria-hidden="true">
                 <Icon size={16} />
               </span>
               <span className="md-jump-chip-copy">
-                <strong>{label}</strong>
+                <strong>{label}</strong>{" "}
                 <small>{summary}</small>
               </span>
             </SafeBannerLink>
