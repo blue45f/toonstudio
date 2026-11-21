@@ -1,0 +1,345 @@
+{
+  "schemaVersion": 1,
+  "title": "Onpod 활용 증빙 원장",
+  "status": "current evidence index; historical observations",
+  "checkedAt": "2026-11-21T22:17:22+09:00",
+  "repository": "blue45f/toonstudio",
+  "mainAtCheck": "4aebc4f56fdb6b3c20aba94ed00515bbd2b8a67c",
+  "discoverySources": [
+    "https://api.github.com/repos/blue45f/toonstudio/branches/main",
+    "https://api.github.com/repos/blue45f/toonstudio/actions/runs?per_page=100&event=workflow_dispatch"
+  ],
+  "latestObservedDeployRunId": 44734735467,
+  "latestObservedAuditRunId": 44758053210,
+  "timeNote": "원본 timestamp는 UTC, 보고서 표시는 Asia/Seoul(KST). checkedAt은 자료 확인 시각이며 운영 관측 시각이 아님.",
+  "deploymentRuns": [
+    {
+      "evidenceId": "D1",
+      "id": 44729470779,
+      "name": "Cloud production deploy",
+      "head_sha": "277200bfb2f637c71526a084815aba3b673361e1",
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-20T11:40:10Z",
+      "updated_at": "2026-11-20T11:51:20Z",
+      "html_url": "https://github.com/blue45f/toonstudio/actions/runs/44729470779",
+      "jobs": [
+        {
+          "id": 136265240540,
+          "name": "Verify main SHA & required CI gates",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 136266161954,
+          "name": "Build & publish immutable Core API GHCR image",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 136266163867,
+          "name": "Build & deploy Cloudflare static web + R2",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 136266164570,
+          "name": "Deploy Cloudflare apex redirect Worker",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 136268589069,
+          "name": "Deploy Core API to Seoul onpod (toonstudio-api)",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "evidenceId": "D2",
+      "id": 44730113606,
+      "name": "Cloud production deploy",
+      "head_sha": "277200bfb2f637c71526a084815aba3b673361e1",
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-11-20T11:45:00Z",
+      "updated_at": "2026-11-20T11:53:47Z",
+      "html_url": "https://github.com/blue45f/toonstudio/actions/runs/44730113606",
+      "jobs": [
+        {
+          "id": 136270294324,
+          "name": "Verify main SHA & required CI gates",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "id": 136271422338,
+          "name": "Deploy Cloudflare apex redirect Worker",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 136271422449,
+          "name": "Deploy Core API to Seoul onpod (toonstudio-api)",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 136271422468,
+          "name": "Build & deploy Cloudflare static web + R2",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 136271422701,
+          "name": "Build & publish immutable Core API GHCR image",
+          "status": "completed",
+          "conclusion": "skipped"
+        }
+      ],
+      "failureEvidence": {
+        "jobId": 136270294324,
+        "sourceUrl": "https://github.com/blue45f/toonstudio/actions/runs/44730113606/job/136270294324",
+        "stage": "SHA 검증",
+        "requestedSha": "277200bfb2f637c71526a084815aba3b673361e1",
+        "observedMainSha": "e4bc3215097cbd6c0578f6b14a644b9430b8f203",
+        "interpretation": "배포 전 SHA 불일치로 중단. 기존 서비스 장애나 배포 취소를 입증하지 않음."
+      }
+    },
+    {
+      "evidenceId": "D3",
+      "id": 44734735467,
+      "name": "Cloud production deploy",
+      "head_sha": "e4bc3215097cbd6c0578f6b14a644b9430b8f203",
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-20T12:18:53Z",
+      "updated_at": "2026-11-20T12:30:57Z",
+      "html_url": "https://github.com/blue45f/toonstudio/actions/runs/44734735467",
+      "jobs": [
+        {
+          "id": 136283169304,
+          "name": "Verify main SHA & required CI gates",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 136284284432,
+          "name": "Build & publish immutable Core API GHCR image",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 136284286314,
+          "name": "Build & deploy Cloudflare static web + R2",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 136284286386,
+          "name": "Deploy Cloudflare apex redirect Worker",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 136287060824,
+          "name": "Deploy Core API to Seoul onpod (toonstudio-api)",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "verificationArtifacts": [
+    {
+      "evidenceId": "H1",
+      "runId": 44729470779,
+      "artifactId": 14625494079,
+      "sourceUrl": "https://github.com/blue45f/toonstudio/actions/runs/44729470779/artifacts/14625494079",
+      "sourceMember": "onpod-verification.json",
+      "sourceArchiveSha256": "2a480d0deb80770f19681fd3223b7a85ea43db83de015344670fae2e3581c43a",
+      "expiresAt": "2026-12-04T11:51:16Z",
+      "extractionNote": "다운로드한 원본 JSON에서 지정 필드를 값 변경 없이 발췌. ZIP 전체를 대체하지 않음.",
+      "verificationExcerpt": {
+        "app": "toonstudio-api",
+        "origin": "https://toonstudio-api.onpod.ai",
+        "targetImage": "ghcr.io/blue45f/toonspectrum-core-api:277200bfb2f637c71526a084815aba3b673361e1",
+        "recordedAt": "2026-11-20T11:51:02.068Z",
+        "result": "success",
+        "finalStatus": {
+          "state": "running",
+          "image": "ghcr.io/blue45f/toonspectrum-core-api:277200bfb2f637c71526a084815aba3b673361e1",
+          "previousImage": "ghcr.io/blue45f/toonspectrum-core-api:7e222dda5c63e1962242c4f49262f259e03e8d8f",
+          "plan": "free",
+          "freeTier": true
+        },
+        "healthAttempts": [
+          {
+            "timestamp": "2026-11-20T11:51:04.333Z",
+            "path": "/api/health/live",
+            "status": 503,
+            "attempt": 1,
+            "elapsedMs": 929,
+            "retryAfterMs": 10000,
+            "errorCode": "HTTP_503"
+          },
+          {
+            "timestamp": "2026-11-20T11:51:14.613Z",
+            "path": "/api/health/live",
+            "status": 200,
+            "attempt": 2,
+            "elapsedMs": 11208,
+            "retryAfterMs": null,
+            "errorCode": null
+          },
+          {
+            "timestamp": "2026-11-20T11:51:15.061Z",
+            "path": "/api/health/ready",
+            "status": 200,
+            "attempt": 3,
+            "elapsedMs": 11657,
+            "retryAfterMs": null,
+            "errorCode": null
+          }
+        ],
+        "directAuthStatus": 403,
+        "failureStage": null,
+        "updatedAt": "2026-11-20T11:51:16.539Z"
+      }
+    },
+    {
+      "evidenceId": "H2",
+      "runId": 44734735467,
+      "artifactId": 14628078733,
+      "sourceUrl": "https://github.com/blue45f/toonstudio/actions/runs/44734735467/artifacts/14628078733",
+      "sourceMember": "onpod-verification.json",
+      "sourceArchiveSha256": "dbcb69c922335ce8a4dbe979df5cf599f2f39514dd5f285427dd023ab421c95d",
+      "expiresAt": "2026-12-04T12:30:54Z",
+      "extractionNote": "다운로드한 원본 JSON에서 지정 필드를 값 변경 없이 발췌. ZIP 전체를 대체하지 않음.",
+      "verificationExcerpt": {
+        "app": "toonstudio-api",
+        "origin": "https://toonstudio-api.onpod.ai",
+        "targetImage": "ghcr.io/blue45f/toonspectrum-core-api:e4bc3215097cbd6c0578f6b14a644b9430b8f203",
+        "recordedAt": "2026-11-20T12:30:41.314Z",
+        "result": "success",
+        "finalStatus": {
+          "state": "running",
+          "image": "ghcr.io/blue45f/toonspectrum-core-api:e4bc3215097cbd6c0578f6b14a644b9430b8f203",
+          "previousImage": "ghcr.io/blue45f/toonspectrum-core-api:277200bfb2f637c71526a084815aba3b673361e1",
+          "plan": "free",
+          "freeTier": true
+        },
+        "healthAttempts": [
+          {
+            "timestamp": "2026-11-20T12:30:42.308Z",
+            "path": "/api/health/live",
+            "status": 503,
+            "attempt": 1,
+            "elapsedMs": 293,
+            "retryAfterMs": 10000,
+            "errorCode": "HTTP_503"
+          },
+          {
+            "timestamp": "2026-11-20T12:30:52.562Z",
+            "path": "/api/health/live",
+            "status": 200,
+            "attempt": 2,
+            "elapsedMs": 10548,
+            "retryAfterMs": null,
+            "errorCode": null
+          },
+          {
+            "timestamp": "2026-11-20T12:30:53.043Z",
+            "path": "/api/health/ready",
+            "status": 200,
+            "attempt": 3,
+            "elapsedMs": 11029,
+            "retryAfterMs": null,
+            "errorCode": null
+          }
+        ],
+        "directAuthStatus": 403,
+        "failureStage": null,
+        "updatedAt": "2026-11-20T12:30:53.997Z"
+      }
+    }
+  ],
+  "readonlyAudit": {
+    "evidenceId": "O1",
+    "sourceRun": "https://github.com/blue45f/toonstudio/actions/runs/44758053210",
+    "sourceJob": "https://github.com/blue45f/toonstudio/actions/runs/44758053210/job/136362924643",
+    "evidenceTimestampUTC": "2026-11-20T14:55:22.6502350Z",
+    "run": {
+      "id": 44758053210,
+      "name": "Onpod admin read-only audit",
+      "head_sha": "7a6339dc635333d48a814a64f41a9d14646fd2fe",
+      "conclusion": "success",
+      "created_at": "2026-11-20T14:55:00Z",
+      "updated_at": "2026-11-20T14:55:24Z"
+    },
+    "artifactCount": 0,
+    "extractionNote": "공개 job 결과의 앱·감사·DB 검사 필드 발췌와 migration 상태 집계. 사용자·소유자별 행 수와 연결 정보는 포함하지 않음.",
+    "app": {
+      "state": "running",
+      "image": "ghcr.io/blue45f/toonspectrum-core-api:e4bc3215097cbd6c0578f6b14a644b9430b8f203",
+      "previousImage": "ghcr.io/blue45f/toonspectrum-core-api:277200bfb2f637c71526a084815aba3b673361e1",
+      "plan": "free",
+      "freeTier": true
+    },
+    "auditCodeSha": "7a6339dc635333d48a814a64f41a9d14646fd2fe",
+    "runtimeImageSha": "e4bc3215097cbd6c0578f6b14a644b9430b8f203",
+    "auditStatus": "ok",
+    "databaseReadResult": {
+      "hostMatched": true,
+      "readOnly": true,
+      "rolledBack": true,
+      "connectionClosed": true
+    },
+    "databaseSecurityLimitations": {
+      "authorized": false,
+      "hostnameMatches": false,
+      "configuredMode": "no-verify",
+      "migrationTransportVerified": false,
+      "limitation": "EXISTING_RUNTIME_CONNECTION_ONLY_NOT_MIGRATION_TLS_PROOF"
+    },
+    "migrationSummary": {
+      "integrity": "verified",
+      "orderValid": true,
+      "unknownRowsCount": 0,
+      "truncated": false,
+      "ledgerEntryCount": 133,
+      "comparisonCount": 132,
+      "statusCounts": {
+        "applied": 132
+      }
+    },
+    "cloudflare": {
+      "tokenConfigured": false,
+      "status": "not-configured",
+      "deploymentId": null,
+      "versionIds": [],
+      "releaseSha": null
+    }
+  },
+  "interpretation": {
+    "deployment": "해당 API 이미지의 배포 작업 성공",
+    "operation": "배포 직후 origin health 및 2026-11-20 23:55 KST 앱 가동 관측",
+    "usage": "미확인",
+    "creditDeduction": "미확인",
+    "currentCreditBalance": "미확인",
+    "accountTotalCost": "미확인",
+    "costSavings": "미확인",
+    "performanceImprovement": "미확인",
+    "limitations": [
+      "free/freeTier는 조회한 앱의 플랜 표기이며 사용액·크레딧 원장이 아님.",
+      "elapsedMs는 재시도 대기 포함 검증 경과 시간으로 API 지연 측정값이 아님.",
+      "감사 코드 SHA와 실제 앱 이미지 SHA가 다르며 최신 main 배포 완료를 입증하지 않음.",
+      "Cloudflare 배포 작업은 건너뛰었고 읽기 전용 감사의 Cloudflare 상태는 not-configured.",
+      "감사 ok는 전체 서비스 기능·상시 가용성 또는 DB TLS 검증 완료를 뜻하지 않음."
+    ]
+  }
+}
