@@ -5,13 +5,31 @@ import { HttpException, HttpStatus } from "@nestjs/common";
 export type EnvLike = Partial<Record<string, string | undefined>>;
 
 export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+export const DEFAULT_FREE_SAFETY_CUTOFF_RATIO = 0.9;
 
-const ALLOWED_OPENAI_MODELS = new Set([
+export const OPENAI_FREE_DATA_SHARE_MODELS = new Set([
   "gpt-4o-mini",
   "gpt-4.1-mini",
   "gpt-4o",
 ]);
+export const GEMINI_FREE_TIER_MODELS = new Set([
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+]);
+const ALLOWED_OPENAI_MODELS = OPENAI_FREE_DATA_SHARE_MODELS;
 const RETIRED_OPENAI_MODELS = new Set(["gpt-4.1-nano", "gpt-4.1-nano-2025-04-14"]);
+
+export function isOpenAiFreeShareModel(model: string): boolean {
+  return OPENAI_FREE_DATA_SHARE_MODELS.has(model.trim().toLowerCase());
+}
+
+export function isOpenAiRetiredModel(model: string): boolean {
+  return RETIRED_OPENAI_MODELS.has(model.trim().toLowerCase());
+}
+
+export function isGeminiFreeTierModel(model: string): boolean {
+  return GEMINI_FREE_TIER_MODELS.has(model.trim().toLowerCase());
+}
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_BURST_LIMIT_PER_MINUTE = 5;

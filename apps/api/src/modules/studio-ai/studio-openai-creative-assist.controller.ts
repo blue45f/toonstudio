@@ -75,6 +75,12 @@ export class StudioOpenAiCreativeAssistController {
     return this.assistService.status();
   }
 
+  @Get("free-quota-status")
+  @Header("Cache-Control", "no-store, max-age=0")
+  freeQuotaStatus() {
+    return this.assistService.freeQuotaStatus();
+  }
+
   @Post()
   @HttpCode(HttpStatus.OK)
   @Header("Cache-Control", "no-store, max-age=0")
@@ -87,6 +93,50 @@ export class StudioOpenAiCreativeAssistController {
     const actor = resolveOpenAiAssistActorKey(userId, request);
     return withRequestAbort(request, response, (signal) =>
       this.assistService.assist(actor, body, { signal }),
+    );
+  }
+}
+
+/**
+ * ₩0 Fail-Closed 다중 무료 AI 상태·14모드 창작 보조 전용 컨트롤러.
+ * 글로벌 프리픽스(`/api`)와 결합해 `GET /api/studio/ai/free-quota-status` 등을 제공한다.
+ */
+@Controller("studio/ai")
+export class StudioFreeAiController {
+  constructor(
+    @Inject(StudioOpenAiCreativeAssistService)
+    private readonly assistService: StudioOpenAiCreativeAssistService,
+  ) {}
+
+  @Get("free-quota-status")
+  @Header("Cache-Control", "no-store, max-age=0")
+  freeQuotaStatus() {
+    return this.assistService.freeQuotaStatus();
+  }
+
+  @Get("modes")
+  @Header("Cache-Control", "no-store, max-age=0")
+  modes() {
+    return this.assistService.listModes();
+  }
+
+  @Post("creative-assist")
+  @HttpCode(HttpStatus.OK)
+  @Header("Cache-Control", "no-store, max-age=0")
+  async creativeAssist(
+    @Headers("x-user-id") userId: string | undefined,
+    @Body() body: StudioOpenAiCreativeAssistDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const normalizedUser = userId?.trim();
+    const actor = normalizedUser ? `user:${normalizedUser}` : null;
+    return withRequestAbort(request, response, (signal) =>
+      this.assistService.assistWithZeroBillCascade(actor, body, {
+        signal,
+        // 미로그인 게스트는 서버 클라우드 무료 풀을 소비하지 않고 즉시 ₩0 로컬 코치로 처리한다.
+        localOnly: actor === null,
+      }),
     );
   }
 }
