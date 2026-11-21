@@ -346,8 +346,15 @@ describe("AC-004 Live Ink multipass capture, 2D cut persistence & 3D re-shoot re
       );
     });
 
-    // 깊이 / AO 패스 전환 확인
-    fireEvent.click(screen.getByTestId("studio-bg3d-live-ink-pass-btn-depth"));
+    // 깊이 / AO 패스 전환 및 44px 터치 타깃·무스피너 규칙 확인
+    const depthBtn = screen.getByTestId("studio-bg3d-live-ink-pass-btn-depth");
+    const refreshBtn = screen.getByTestId("studio-bg3d-live-ink-refresh-btn");
+    expect(depthBtn.className).toContain("min-h-11");
+    expect(refreshBtn.className).toContain("min-h-11");
+    expect(refreshBtn.innerHTML).not.toContain("animate-spin");
+    expect(refreshBtn.getAttribute("title")).toBeTruthy();
+
+    fireEvent.click(depthBtn);
     expect(screen.getByTestId("studio-bg3d-live-ink-wipe-pane").getAttribute("data-live-ink-pass")).toBe("depth");
     fireEvent.click(screen.getByTestId("studio-bg3d-live-ink-pass-btn-ao"));
     expect(screen.getByTestId("studio-bg3d-live-ink-wipe-pane").getAttribute("data-live-ink-pass")).toBe("ao");

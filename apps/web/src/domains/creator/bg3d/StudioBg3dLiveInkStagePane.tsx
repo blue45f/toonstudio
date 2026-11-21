@@ -108,9 +108,17 @@ export function StudioBg3dLiveInkStagePane({
             <button
               type="button"
               disabled={isCapturing}
+              title={
+                isCapturing
+                  ? copy(
+                      "현재 3D 멀티패스 캡처가 진행 중입니다. 완료 후 다시 누를 수 있습니다.",
+                      "3D multipass capture is in progress. Try again once finished.",
+                    )
+                  : copy("현재 3D 뷰포트에서 선화·음영·깊이·AO 패스를 캡처합니다.", "Capture live 3D passes now.")
+              }
               data-testid="studio-bg3d-live-ink-capture-now"
               onClick={onRequestCapture}
-              className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-xl border border-accent bg-accent px-4 text-xs font-bold text-on-accent transition-[transform,background-color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:bg-accent-2 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:transform-none"
+              className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-accent bg-accent px-4 text-xs font-bold text-on-accent [word-break:keep-all] transition-[transform,background-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:bg-accent-2 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:transform-none"
             >
               <Camera size={14} aria-hidden />
               {isCapturing ? copy("캡처 중…", "Capturing…") : copy("지금 선화 패스 캡처", "Capture Live Ink now")}
@@ -180,7 +188,7 @@ export function StudioBg3dLiveInkStagePane({
                     aria-pressed={resolvedPass === item.id}
                     data-testid={`studio-bg3d-live-ink-pass-btn-${item.id}`}
                     onClick={() => setInspectPass(item.id)}
-                    className="inline-flex min-h-9 cursor-pointer items-center rounded-lg border border-line bg-card px-2.5 text-[0.6875rem] font-semibold text-fg-2 transition-[transform,border-color,background-color,color] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-accent/60 hover:text-fg active:scale-[0.97] aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent motion-reduce:transition-none motion-reduce:transform-none"
+                    className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 [word-break:keep-all] transition-[transform,border-color,background-color,color] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-accent/60 hover:text-fg active:scale-[0.97] aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent motion-reduce:transition-none motion-reduce:transform-none"
                   >
                     {copy(item.ko, item.en)}
                   </button>
@@ -191,12 +199,24 @@ export function StudioBg3dLiveInkStagePane({
             <button
               type="button"
               disabled={isCapturing}
+              title={
+                isCapturing
+                  ? copy(
+                      "현재 3D 멀티패스 캡처가 진행 중입니다. 완료 후 다시 촬영할 수 있습니다.",
+                      "3D multipass capture is in progress. Wait to refresh.",
+                    )
+                  : copy("현재 3D 구도·조명으로 선화 패스를 다시 촬영합니다.", "Refresh Live Ink passes from current 3D view.")
+              }
               data-testid="studio-bg3d-live-ink-refresh-btn"
               onClick={onRequestCapture}
-              className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-lg border border-line bg-card px-2.5 text-[0.6875rem] font-semibold text-fg-2 transition-[transform,border-color,color] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-accent hover:text-accent active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-45 motion-reduce:transition-none motion-reduce:transform-none"
+              className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 [word-break:keep-all] transition-[transform,border-color,color,opacity] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-accent hover:text-accent active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-45 motion-reduce:transition-none motion-reduce:transform-none"
             >
-              <RefreshCw size={12} className={isCapturing ? "animate-spin motion-reduce:animate-none" : ""} aria-hidden />
-              {copy("재촬영", "Refresh")}
+              <RefreshCw
+                size={13}
+                className={isCapturing ? "opacity-60 transition-opacity duration-200 motion-reduce:transition-none" : "shrink-0"}
+                aria-hidden
+              />
+              {isCapturing ? copy("캡처 중…", "Capturing…") : copy("재촬영", "Refresh")}
             </button>
           ) : null}
         </div>

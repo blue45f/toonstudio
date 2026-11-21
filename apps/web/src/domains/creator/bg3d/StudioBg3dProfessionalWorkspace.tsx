@@ -617,6 +617,7 @@ export function StudioBg3dProfessionalWorkspace({
           <button
             type="button"
             disabled={isLiveCapturing}
+            title={isLiveCapturing ? bi("현재 3D 멀티패스 캡처가 끝난 뒤 원고 컷에 구울 수 있습니다.", "Wait for capture to finish before baking.") : bi("현재 3D 장면을 비파괴 레이어로 원고 컷에 바로 굽습니다.", "Bake current 3D view into manuscript cut.")}
             data-testid="studio-bg3d-bake-to-cut"
             onClick={() => void handleBakeToManuscriptCut()}
             className="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-accent bg-accent-soft px-3.5 text-xs font-bold text-accent transition-[transform,background-color,color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:bg-accent hover:text-on-accent active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:transform-none"
