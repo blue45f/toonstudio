@@ -50,11 +50,8 @@ import {
 } from "./fresh-ideas-quality-ecosystem";
 import { streamFreshIdeasRemixDraft } from "./fresh-ideas-streaming-cloud-bridge";
 import {
-  appendIdeaBankRows,
   buildStructuredGoogleDocMarkdown,
-  loadIdeaBankSnapshot,
   serializeIdeaBankCsv,
-  updateIdeaBankRecordStatus,
   type StoredIdeaBankRecord,
 } from "./fresh-ideas-workspace-export-bridge";
 import {
@@ -66,6 +63,8 @@ import {
   buildFreshIdeasStorySeedPayload,
   type FreshIdeasStorySeedPayload,
 } from "./fresh-ideas-story-seed-bridge";
+import { studioLocalDatabaseOwnershipBusyUserMessage } from "../studio-local-database-ownership";
+import { freshIdeasIdeaBank } from "./fresh-ideas-idea-bank-repository";
 import { FreshIdeasModeBChannelPanel } from "./StudioFreshIdeasV2ModeBPanel";
 import {
   FreshIdeasModeCEcosystemPanel,
@@ -75,6 +74,13 @@ import {
 
 const MOTION_BTN =
   "transition-[background-color,border-color,color,opacity,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
+
+const IDEA_BANK_BUSY_MESSAGE =
+  "다른 Studio 탭이 로컬 저장소를 사용 중입니다. 그 탭을 닫고 다시 열어 주세요.";
+
+function ideaBankErrorMessage(cause: unknown, fallback: string): string {
+  return studioLocalDatabaseOwnershipBusyUserMessage(cause, IDEA_BANK_BUSY_MESSAGE) ?? fallback;
+}
 
 const CORE_LENS_ID_SET = new Set<string>([
   "contrarian-take",
@@ -138,9 +144,8 @@ export function StudioFreshIdeasV2WorkbenchCard({
   const [streamedText, setStreamedText] = useState<string>("");
   const [streamProgressPct, setStreamProgressPct] = useState<number>(0);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
-  const [savedRecords, setSavedRecords] = useState<readonly StoredIdeaBankRecord[]>(() =>
-    loadIdeaBankSnapshot(),
-  );
+  const [savedRecords, setSavedRecords] = useState<readonly StoredIdeaBankRecord[]>([]);
+  const [bankError, setBankError] = useState("");
   const [exportNoticeKo, setExportNoticeKo] = useState<string>("");
   const streamAbortRef = useRef<AbortController | null>(null);
 
@@ -149,6 +154,23 @@ export function StudioFreshIdeasV2WorkbenchCard({
       streamAbortRef.current?.abort();
     };
   }, []);
+
+  useEffect(() => {
+    if (activeMode !== "mode-c-ecosystem") return;
+    let active = true;
+    void freshIdeasIdeaBank.list().then(
+      (records) => {
+        if (active) {
+          setSavedRecords(records);
+          setBankError("");
+        }
+      },
+      (cause: unknown) => {
+        if (active) setBankError(ideaBankErrorMessage(cause, "아이디어 뱅크를 열지 못했습니다."));
+      },
+    );
+    return () => { active = false; };
+  }, [activeMode]);
 
   const pipeline = useMemo(() => {
     const effectiveTitle =
@@ -340,53 +362,79 @@ export function StudioFreshIdeasV2WorkbenchCard({
     setIsStreaming(false);
   };
 
-  const handleSaveToIdeaBank = () => {
-    const saved = appendIdeaBankRows(pipeline.modeC.ideaBankRows);
-    setSavedRecords(saved);
-    const msg = `로컬 아이디어 뱅크 저장 완료 (누적 ${saved.length}건)`;
-    setExportNoticeKo(msg);
-    onStatusChange?.(msg);
+  const runIdeaBankTask = async (
+    task: () => Promise<{ readonly records: readonly StoredIdeaBankRecord[]; readonly notice?: string; readonly emitStatus?: boolean }>,
+    fallbackError: string,
+    clearNotice = true,
+  ) => {
+    if (clearNotice) setExportNoticeKo("");
+    try {
+      const { records, notice, emitStatus } = await task();
+      setSavedRecords(records);
+      setBankError("");
+      if (notice) {
+        setExportNoticeKo(notice);
+        if (emitStatus) onStatusChange?.(notice);
+      }
+    } catch (cause) {
+      setBankError(ideaBankErrorMessage(cause, fallbackError));
+    }
   };
 
-  const handleChangeBankStatus = (
-    recordId: string,
-    status: IdeaBankSpreadsheetRow["draftStatus"],
-  ) => {
-    const updated = updateIdeaBankRecordStatus(recordId, status);
-    setSavedRecords(updated);
-    onStatusChange?.(`아이디어 뱅크 상태 변경: ${status}`);
+  const handleSaveToIdeaBank = () =>
+    runIdeaBankTask(async () => {
+      const records = await freshIdeasIdeaBank.append(pipeline.modeC.ideaBankRows);
+      return { records, notice: `로컬 아이디어 뱅크 저장 완료 (누적 ${records.length}건)`, emitStatus: true };
+    }, "아이디어 뱅크에 저장하지 못했습니다. 필요하면 CSV로 복사하세요.");
+
+  const handleChangeBankStatus = (recordId: string, status: IdeaBankSpreadsheetRow["draftStatus"]) =>
+    runIdeaBankTask(async () => {
+      const records = await freshIdeasIdeaBank.updateStatus(recordId, status);
+      return { records, notice: `아이디어 뱅크 상태 변경: ${status}`, emitStatus: true };
+    }, "아이디어 뱅크 상태를 변경하지 못했습니다.");
+
+  const handleImportLegacyBank = () =>
+    runIdeaBankTask(async () => {
+      const { records, imported } = await freshIdeasIdeaBank.importLegacy();
+      return { records, notice: imported > 0 ? `기존 아이디어 뱅크에서 ${imported}건을 가져왔습니다.` : "가져올 새 브라우저 기록이 없습니다." };
+    }, "기존 기록을 가져오지 못했습니다. 브라우저 원본은 바뀌지 않았습니다.");
+
+  const handleReopenBank = () =>
+    runIdeaBankTask(async () => {
+      const { retryFailedStudioLocalDatabaseOpen } = await import("../studio-local-database-runtime");
+      await retryFailedStudioLocalDatabaseOpen();
+      return { records: await freshIdeasIdeaBank.list() };
+    }, "아이디어 뱅크를 다시 열지 못했습니다.", false);
+
+  const publishWithClipboard = async (text: string, formatMessage: (copied: boolean) => string) => {
+    let copied = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      }
+    } catch {
+      copied = false;
+    }
+    const msg = formatMessage(copied);
+    setExportNoticeKo(msg);
+    onStatusChange?.(msg);
   };
 
   const handleCopyDocsMarkdown = async () => {
     const md = buildStructuredGoogleDocMarkdown(pipeline.modeC);
-    let copied = false;
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(md);
-        copied = true;
-      }
-    } catch {
-      copied = false;
-    }
-    const msg = `Google Docs 마크다운+4시드 부록 준비 (${md.length}자${copied ? " · 클립보드 복사됨" : ""})`;
-    setExportNoticeKo(msg);
-    onStatusChange?.(msg);
+    await publishWithClipboard(
+      md,
+      (copied) => `Google Docs 마크다운+4시드 부록 준비 (${md.length}자${copied ? " · 클립보드 복사됨" : ""})`,
+    );
   };
 
   const handleExportSheetsCsv = async () => {
     const csv = serializeIdeaBankCsv(pipeline.modeC.ideaBankRows);
-    let copied = false;
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(csv);
-        copied = true;
-      }
-    } catch {
-      copied = false;
-    }
-    const msg = `Google Sheets 7열 CSV 직렬화 완료 (${pipeline.modeC.ideaBankRows.length}행${copied ? " · 클립보드 복사됨" : ""})`;
-    setExportNoticeKo(msg);
-    onStatusChange?.(msg);
+    await publishWithClipboard(
+      csv,
+      (copied) => `Google Sheets 7열 CSV 직렬화 완료 (${pipeline.modeC.ideaBankRows.length}행${copied ? " · 클립보드 복사됨" : ""})`,
+    );
   };
 
   const handleExportStorySeed = async () => {
@@ -399,19 +447,8 @@ export function StudioFreshIdeasV2WorkbenchCard({
       register: selectedRegister,
       preservedUrls: pipeline.bundle.preservedUrls,
     });
-    let copied = false;
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(payload.clipboardTextKo);
-        copied = true;
-      }
-    } catch {
-      copied = false;
-    }
     onExportStorySeed?.(payload);
-    const msg = `${payload.summaryKo}${copied ? " · 클립보드 복사됨" : ""}`;
-    setExportNoticeKo(msg);
-    onStatusChange?.(msg);
+    await publishWithClipboard(payload.clipboardTextKo, (copied) => `${payload.summaryKo}${copied ? " · 클립보드 복사됨" : ""}`);
   };
 
   return (
@@ -739,12 +776,15 @@ export function StudioFreshIdeasV2WorkbenchCard({
           lenses={pipeline.activeLenses}
           modeC={pipeline.modeC}
           exportNoticeKo={exportNoticeKo}
+          bankError={bankError}
+          onImportLegacyBank={() => void handleImportLegacyBank()}
+          onReopenBank={() => void handleReopenBank()}
           savedRecords={savedRecords}
-          onSaveToIdeaBank={handleSaveToIdeaBank}
+          onSaveToIdeaBank={() => void handleSaveToIdeaBank()}
           onCopyDocsMarkdown={() => void handleCopyDocsMarkdown()}
           onExportSheetsCsv={() => void handleExportSheetsCsv()}
           onExportStorySeed={() => void handleExportStorySeed()}
-          onChangeRecordStatus={handleChangeBankStatus}
+          onChangeRecordStatus={(id, status) => void handleChangeBankStatus(id, status)}
         />
       )}
     </section>

@@ -652,8 +652,17 @@ describe("Studio native-raster browser gate policy", () => {
     expect(source).toContain("markRasterOperationSettled");
     expect(source).toContain("waitForClearedPixelSelectionUiState");
     expect(source).toContain("exposePixelSelectionUi");
-    expect(source).toContain('[data-studio-inspector-primary-tab="properties"]:visible');
-    expect(source).toContain("/^선택·보정$/u");
+    const inspectorEntry = source.slice(
+      source.indexOf("async function exposeRasterInspector("),
+      source.indexOf("async function waitForClearedPixelSelectionUiState("),
+    );
+    expect(inspectorEntry).toContain('page.getByTestId("studio-inspector-navigator")');
+    expect(inspectorEntry).toContain("if (!await inspector.isVisible()) await openStudioLayerNavigator(page)");
+    expect(inspectorEntry).toContain(`inspector.locator('[data-studio-inspector-primary-tab="properties"]')`);
+    expect(inspectorEntry).toContain('tab === "retouch" ? "선택·보정" : "크기·회전"');
+    expect(inspectorEntry).toContain('inspector.getByRole("tab", { name: label, exact: true, selected: true })');
+    expect(inspectorEntry).toContain('await exposeRasterInspector(page, "retouch")');
+    expect(inspectorEntry).toContain('[data-studio-pixel-selection="true"]:visible');
     const shellSource = readFileSync(new URL("./lib/studio-shell-interactions.ts", import.meta.url), "utf8");
     expect(source).toContain('await openStudioMainMenu(page, "view")');
     expect(source).toContain('await openStudioMainMenu(page, "filter")');

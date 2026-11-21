@@ -1,6 +1,6 @@
 /**
- * Fresh Ideas v2.2 Workspace Export Bridge & Persistent Local Idea Bank.
- * Produces RFC-4180 Google Sheets CSV, Google Docs Markdown + 4-Seed Appendix, and local persistence.
+ * Fresh Ideas v2.2 Workspace Export Bridge.
+ * Produces RFC-4180 Google Sheets CSV, Google Docs Markdown + 4-Seed Appendix, and composable Idea Bank records.
  */
 
 import type {
@@ -8,16 +8,11 @@ import type {
   ModeCEcosystemBundle,
 } from "./fresh-ideas-quality-ecosystem";
 
-export const FRESH_IDEAS_BANK_STORAGE_KEY = "toonstudio:fresh-ideas:idea-bank:v2";
+export const IDEA_BANK_LIMIT = 200;
 
 export interface StoredIdeaBankRecord extends IdeaBankSpreadsheetRow {
   readonly id: string;
   readonly savedAtIso: string;
-}
-
-export interface StorageLike {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
 }
 
 function escapeCsvCell(value: string): string {
@@ -76,87 +71,53 @@ export function buildStructuredGoogleDocMarkdown(bundle: ModeCEcosystemBundle): 
   return lines.join("\n");
 }
 
-function resolveStorage(customStorage?: StorageLike): StorageLike | null {
-  if (customStorage) return customStorage;
-  if (typeof globalThis !== "undefined" && "localStorage" in globalThis) {
-    try {
-      return globalThis.localStorage;
-    } catch {
-      return null;
-    }
-  }
-  return null;
+function isIdeaBankRecord(value: unknown): value is StoredIdeaBankRecord {
+  if (typeof value !== "object" || value === null) return false;
+  const row = value as Record<string, unknown>;
+  return ["id", "savedAtIso", "dateIso", "sourceTitleAndUrl", "lensId", "headlineKo",
+    "targetPersonaAndChannel", "effortTagKo"].every((key) => typeof row[key] === "string")
+    && (row.draftStatus === "Seed" || row.draftStatus === "Drafted" || row.draftStatus === "Published");
 }
 
-export function loadIdeaBankSnapshot(customStorage?: StorageLike): readonly StoredIdeaBankRecord[] {
-  const storage = resolveStorage(customStorage);
-  if (!storage) return [];
-  try {
-    const raw = storage.getItem(FRESH_IDEAS_BANK_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (item): item is StoredIdeaBankRecord =>
-        typeof item === "object" &&
-        item !== null &&
-        typeof (item as Record<string, unknown>).id === "string" &&
-        typeof (item as Record<string, unknown>).headlineKo === "string",
-    );
-  } catch {
-    return [];
+export function parseIdeaBankSnapshot(parsed: unknown): readonly StoredIdeaBankRecord[] {
+  if (!Array.isArray(parsed) || parsed.length > IDEA_BANK_LIMIT || !parsed.every(isIdeaBankRecord)) {
+    throw new Error("아이디어 뱅크 저장 형식이 올바르지 않습니다.");
   }
+  return parsed;
 }
 
 export function appendIdeaBankRows(
+  existing: readonly StoredIdeaBankRecord[],
   rows: readonly IdeaBankSpreadsheetRow[],
-  options?: { readonly storage?: StorageLike; readonly nowIso?: string; readonly maxRecords?: number },
+  nowIso: string,
 ): readonly StoredIdeaBankRecord[] {
-  const storage = resolveStorage(options?.storage);
-  const nowIso = options?.nowIso ?? new Date().toISOString();
-  const maxRecords = options?.maxRecords ?? 200;
-  const existing = loadIdeaBankSnapshot(storage ?? undefined);
-  const existingKeys = new Set(existing.map((item) => `${item.lensId}::${item.headlineKo}`));
-
+  const existingKeys = new Set(existing.map((item) => JSON.stringify([item.lensId, item.headlineKo])));
+  const existingIds = new Set(existing.map((item) => item.id));
   const additions: StoredIdeaBankRecord[] = [];
+  let idSuffix = existing.length + 1;
   for (const row of rows) {
-    const key = `${row.lensId}::${row.headlineKo}`;
+    const key = JSON.stringify([row.lensId, row.headlineKo]);
     if (existingKeys.has(key)) continue;
     existingKeys.add(key);
-    additions.push({
-      ...row,
-      id: `gfi-${row.dateIso}-${row.lensId}-${existing.length + additions.length + 1}`,
-      savedAtIso: nowIso,
-    });
+    let id: string;
+    do {
+      id = `gfi-${row.dateIso}-${row.lensId}-${idSuffix++}`;
+    } while (existingIds.has(id));
+    existingIds.add(id);
+    additions.push({ ...row, id, savedAtIso: nowIso });
   }
-
-  const merged = [...additions, ...existing].slice(0, maxRecords);
-  if (storage) {
-    try {
-      storage.setItem(FRESH_IDEAS_BANK_STORAGE_KEY, JSON.stringify(merged));
-    } catch {
-      // Non-fatal quota handling
-    }
-  }
-  return Object.freeze(merged);
+  return Object.freeze([...additions, ...existing].slice(0, IDEA_BANK_LIMIT));
 }
 
 export function updateIdeaBankRecordStatus(
+  existing: readonly StoredIdeaBankRecord[],
   recordId: string,
   nextStatus: IdeaBankSpreadsheetRow["draftStatus"],
-  customStorage?: StorageLike,
 ): readonly StoredIdeaBankRecord[] {
-  const storage = resolveStorage(customStorage);
-  const existing = loadIdeaBankSnapshot(storage ?? undefined);
-  const updated = existing.map((item) =>
-    item.id === recordId ? { ...item, draftStatus: nextStatus } : item,
-  );
-  if (storage) {
-    try {
-      storage.setItem(FRESH_IDEAS_BANK_STORAGE_KEY, JSON.stringify(updated));
-    } catch {
-      // Non-fatal quota handling
-    }
+  if (!existing.some((item) => item.id === recordId)) {
+    throw new Error("변경할 아이디어를 찾을 수 없습니다.");
   }
-  return Object.freeze(updated);
+  return Object.freeze(existing.map((item) =>
+    item.id === recordId ? { ...item, draftStatus: nextStatus } : item,
+  ));
 }

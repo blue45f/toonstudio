@@ -96,7 +96,7 @@ import {
 
 import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { eraserLiftMatchesPreset, type EraserLiftRatio } from "./lib/studio-brush-eraser-evidence";
-import { hasMeaningfulPixelChange, matchesStudioBrushHistoryBaseline, prepareStudioBrushHistoryEvidence } from "./lib/studio-brush-history-evidence";
+import { hasMeaningfulPixelChange, matchesStudioBrushHistoryBaseline, prepareStudioBrushHistoryEvidence, verifySettledBrushUndo } from "./lib/studio-brush-history-evidence";
 import { studioLongBrushRoute } from "./lib/studio-brush-long-route";
 import { initializeStudioVerifierPageOnce, installStudioCanvasScaleDiagnostics } from "./lib/studio-brush-verifier-session";
 import { studioLongBrushHasSettledDiffusion, waitForWetPaperFrame } from "./lib/studio-brush-wet-paper-evidence";
@@ -3800,7 +3800,11 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
         await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true, dismissToolHints: true });
         const undone = await captureStableEvidence(page, clip);
         const undoDiff = await compareScreenshotPixels(page, before, undone, 20);
-        const undoRestoredPixels = undoDiff.changedPixels <= 3;
+        const undoRestoredPixels = wetPaper && wetPaperSettled
+          ? await verifySettledBrushUndo({ surface: wetPaper, settled: wetPaperSettled, presetId: preset.id,
+            screenDiff: undoDiff, directory: dirname(qualityArtifacts.settled.absolute), log,
+            compare: (first, second) => compareScreenshotPixels(page, first, second) })
+          : undoDiff.changedPixels <= 3;
         if (REQUESTED_BRUSH_VERIFY_IDS.length > 0) {
           log(
             `${preset.id}: long Undo durable+visual settle `

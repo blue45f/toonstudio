@@ -735,6 +735,7 @@ export function StudioCanvasStatusRail({
       {(advancedFillBusy || hasAdvancedFillPreview) && (
         <div
           role="status"
+          data-studio-fill-preview-notice="true"
           aria-live="polite"
           className={cn(
             "mb-2 flex min-h-12 flex-wrap items-center gap-2 rounded-xl border px-3 py-2 text-xs shadow-sm",

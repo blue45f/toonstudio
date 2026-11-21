@@ -269,6 +269,7 @@ export function StudioDrawingClarityRail({ session: s, pinnedHostRef }: { readon
         onOpenFill: (trigger) => {
           clarity.reveal("layers", trigger);
           s.studioMobileEditingDockHandlers.openInspectorRoute({ primary: "properties", image: "fill" });
+          s.studioLeftToolRailHandlers.toggleAdvancedFill();
         },
         onOpenCutSplit: (trigger) => clarity.open("pages", trigger),
         onOpenBubble: () => {

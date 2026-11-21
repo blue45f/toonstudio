@@ -222,6 +222,49 @@ test("같은 원고에서 간단한 그리기와 퀵·일반 모드를 전환하
   expect(await firstEditor?.evaluate((node) => node === document.querySelector("[data-studio-editor=true]"))).toBe(true);
 });
 
+test("간단한 그리기 채우기 버튼은 캔버스 도구와 속성의 실행 상태를 함께 바꾼다", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/studio/draft/drawing-compact-fill-rail?uiMode=basic", { waitUntil: "domcontentloaded" });
+  await expectManuscriptChrome(page);
+  // 원고가 정규 room으로 연결된 뒤에 실제 벡터 선화를 그린다. 진입 경로 전환에 도구 상태를 잃지 않는다.
+  await expect(page).toHaveURL(/[?&]room=[^&]+/u, { timeout: 60_000 });
+  const canvas = page.locator("[data-studio-canvas-viewport]").first();
+  await expect(canvas).toHaveAttribute("data-studio-canvas-input-state", "ready");
+  const startDrawing = page.getByRole("button", { name: "바로 그리기", exact: true });
+  if (await startDrawing.isVisible()) await startDrawing.click();
+  const pen = drawingTool(page, "pen");
+  if (await pen.getAttribute("aria-pressed") !== "true") await pen.click();
+  const bounds = await canvas.boundingBox();
+  if (!bounds) throw new Error("원고 캔버스가 표시되지 않았습니다.");
+  await page.mouse.move(bounds.x + bounds.width * 0.48, bounds.y + bounds.height * 0.43);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + bounds.width * 0.56, bounds.y + bounds.height * 0.53, { steps: 12 });
+  await page.mouse.up();
+  await expect(page.getByRole("button", { name: "되돌리기 · 실행취소", exact: true }).filter({ visible: true }))
+    .toBeEnabled();
+
+  const fill = page.getByRole("toolbar", { name: "그리기 도구", exact: true })
+    .getByRole("button", { name: "채우기", exact: true });
+  const inspector = page.locator("#studio-drawing-clarity-panel-layers");
+  await expect(fill).toHaveAttribute("aria-pressed", "false");
+  await expect(inspector).toBeHidden();
+
+  await fill.click();
+  await expect(fill).toHaveAttribute("aria-pressed", "true");
+  await expect(inspector).toBeVisible();
+  await expect.poll(() => inspector.evaluate((panel) => panel.contains(document.activeElement))).toBe(true);
+  const activePanelFill = inspector.getByRole("button", { name: "채우기 도구 종료", exact: true });
+  await expect(activePanelFill).toHaveAttribute("aria-pressed", "true");
+
+  await fill.press("Enter");
+  await expect(fill).toHaveAttribute("aria-pressed", "false");
+  await expect(activePanelFill).toBeHidden();
+  await expect(inspector).toBeVisible();
+  await inspector.getByRole("button", { name: "레이어·속성 · 닫기", exact: true }).click();
+  await expect(inspector).toBeHidden();
+  await expect(fill).toBeFocused();
+});
+
 test("데스크톱 원고의 첫 도구 검색에서 찾은 채우기 속성을 실행한다", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.goto("/studio/canvas?uiMode=basic", { waitUntil: "domcontentloaded" });

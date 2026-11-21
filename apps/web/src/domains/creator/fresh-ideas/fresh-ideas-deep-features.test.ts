@@ -10,25 +10,13 @@ import { streamFreshIdeasRemixDraft } from "./fresh-ideas-streaming-cloud-bridge
 import {
   appendIdeaBankRows,
   buildStructuredGoogleDocMarkdown,
-  loadIdeaBankSnapshot,
   serializeIdeaBankCsv,
   updateIdeaBankRecordStatus,
-  type StorageLike,
 } from "./fresh-ideas-workspace-export-bridge";
 import {
   parseCrossLabFreshIdeasEnvelope,
   synthesizeCrossLabsUnifiedRemix,
 } from "./fresh-ideas-cross-labs-adapter";
-
-function createMemoryStorage(): StorageLike {
-  const map = new Map<string, string>();
-  return {
-    getItem: (key) => map.get(key) ?? null,
-    setItem: (key, value) => {
-      map.set(key, value);
-    },
-  };
-}
 
 describe("Fresh Ideas v2.2 Deep Features (Streaming, Export/IdeaBank, Cross-Labs DTO)", () => {
   it("streams progressive Mode B chunks cleanly and respects AbortSignal cancellation", async () => {
@@ -101,13 +89,14 @@ describe("Fresh Ideas v2.2 Deep Features (Streaming, Export/IdeaBank, Cross-Labs
     expect(docMd).toContain("부록 1 · 잔여 4개 아이디어 씨앗");
     expect(docMd).toContain("부록 2 · 5부작 연재 커리큘럼");
 
-    const storage = createMemoryStorage();
-    const saved = appendIdeaBankRows(modeC.ideaBankRows, { storage, nowIso: "2026-11-20T12:00:00Z" });
+    const saved = appendIdeaBankRows([], modeC.ideaBankRows, "2026-11-20T12:00:00Z");
     expect(saved).toHaveLength(5);
-    expect(loadIdeaBankSnapshot(storage)).toHaveLength(5);
+    expect(appendIdeaBankRows(saved, modeC.ideaBankRows, "2026-11-21T12:00:00Z")).toEqual(saved);
 
-    const updated = updateIdeaBankRecordStatus(saved[0]!.id, "Published", storage);
-    expect(updated[0]!.draftStatus).toBe("Published");
+    const recordId = saved[0]?.id;
+    if (!recordId) throw new Error("저장된 아이디어가 필요합니다.");
+    const updated = updateIdeaBankRecordStatus(saved, recordId, "Published");
+    expect(updated[0]?.draftStatus).toBe("Published");
   });
 
   it("validates Cross-Labs DTO strictly and synthesizes unified BG3D + Brush + Character remix", () => {

@@ -420,11 +420,12 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     run: async (page) => {
       const sheet = await openPagesSheet(page);
       await sheet.locator('[data-testid="studio-add-page"]').click();
+      const first = sheet.getByRole("button", { name: /^1페이지 선택$/u });
       const second = sheet.getByRole("button", { name: /^2페이지 선택$/u });
-      await second.click();
-      if (await second.getAttribute("aria-pressed") !== "true") throw new Error("new page was not selected");
-      // Restore the page containing this sweep's ink so the next layer actions have a real target.
-      await sheet.getByRole("button", { name: /^1페이지 선택$/u }).click();
+      for (const target of [first, second, first]) {
+        await clickInView(target);
+        if (await target.getAttribute("aria-current") !== "page") throw new Error("page card did not become current");
+      }
       return "ok";
     },
   },
@@ -483,12 +484,24 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       const visibility = rows.first().locator('[data-studio-layer-row-action="visibility"]');
       const capturedVisibility = await visibility.getAttribute("aria-label");
       await clickInView(comps.getByRole("button", { name: "현재 보기 저장", exact: true }));
-      await comps.getByPlaceholder("이름 (예: 대사 없는 클린본)").fill("PR831 레이어 상태");
+      const compName = comps.getByRole("textbox", { name: "저장할 보기 이름", exact: true });
+      await compName.fill("PR831 레이어 상태");
+      if (await compName.inputValue() !== "PR831 레이어 상태") throw new Error("layer comp name was not entered");
       await clickInView(comps.getByRole("button", { name: "보기 저장", exact: true }));
       // Capture and delivery are asynchronous; wait for both before another document edit.
-      const savedComp = comps.getByRole("button", { name: /^PR831 레이어 상태/u });
-      await savedComp.waitFor({ state: "visible" });
+      const savedComp = comps.getByRole("button", { name: /^PR831 레이어 상태 보이는 레이어/u });
       await idleComps.waitFor({ state: "visible" });
+      try {
+        await savedComp.waitFor({ state: "visible" });
+      } catch (cause) {
+        const alerts = await page.locator('[role="alert"]').allTextContents();
+        const labels = await comps.getByRole("button").allTextContents();
+        const durable = await readDurableStudioAutosaveDocument(page, studioAutosaveKey({}));
+        throw new Error(
+          `layer comp capture not shown; persisted=${durable?.raw.includes('"name":"PR831 레이어 상태"') ?? false}; alerts=${JSON.stringify(alerts)}; panel buttons=${JSON.stringify(labels)}`,
+          { cause },
+        );
+      }
       await clickInView(visibility);
       await settle(page);
       await clickInView(savedComp);
@@ -556,8 +569,8 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       const pages = await openPagesSheet(page);
       await pages.locator('[data-testid="studio-add-page"]').click();
       const newPage = pages.getByRole("button", { name: /^\d+페이지 선택$/u }).last();
-      await newPage.click();
-      if (await newPage.getAttribute("aria-pressed") !== "true") throw new Error("filter page was not selected");
+      await clickInView(newPage);
+      if (await newPage.getAttribute("aria-current") !== "page") throw new Error("filter page was not selected");
       await page.keyboard.press("Escape");
       await page.locator('#studio-mobile-pages-sheet[aria-hidden="true"][inert]').waitFor({ state: "attached" });
       const settings = await openDrawSettings(page);
@@ -594,11 +607,13 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       const editOptions = await showStudioMobileEditOptions(page);
       await clickLocator(page, editOptions.locator('[data-studio-clarity-mobile-quick-actions="true"] button'), "mobile quick actions");
       const menu = page.getByRole("menu", { name: "캔버스 퀵 액션" });
-      await menu.waitFor({ state: "visible" });
+      // The accessible menu anchors its radial children at a zero-size point.
+      // Verify the actual visible portal and each slot, not the anchor's layout box.
+      await page.locator('[data-quick-actions-overlay="true"]').waitFor({ state: "visible" });
       const items = menu.getByRole("menuitem");
       if (await items.count() !== 6) throw new Error("quick action wheel did not expose all six slots");
       for (const item of await items.all()) await item.waitFor({ state: "visible" });
-      await clickLocator(page, items.first(), "wheel slot");
+      await clickLocator(page, menu.locator('button[role="menuitem"]:enabled').first(), "wheel slot");
       await menu.waitFor({ state: "detached" });
       return "ok";
     },

@@ -22,7 +22,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function setup(withOfflineBranch: boolean) {
+async function setup(withOfflineBranch: boolean, requiresSharedAuthority = true) {
   const primary = createStudioLiveSignalingServerTransport();
   const purpose = createStudioPurposeRoutedLiveTransportFactory({
     primaryFactory: () => primary,
@@ -66,7 +66,7 @@ async function setup(withOfflineBranch: boolean) {
     pendingMutationRef: { current: null },
     reportError,
     reportNotice,
-    requiresSharedAuthority: true,
+    requiresSharedAuthority,
     roomRef: { current: room },
     runtimeRef: { current: withOfflineBranch ? { offlineBranch } : null },
   });
@@ -148,6 +148,41 @@ describe("createStudioOfflineCapableResourceLeaseController", () => {
     controller.end();
     expect(endProposal).toHaveBeenCalledOnce();
     expect(reportNotice).toHaveBeenLastCalledWith(null);
+  });
+
+  it("개인 원고의 준비된 mesh에는 협력 잠금을 사용하고 다른 작업자의 잠금은 존중한다", async () => {
+    const { controller, room, beginProposal, reportError } = await setup(true, false);
+    const claim = vi.spyOn(room, "claimLockAsync");
+    expect(room.mode).toBe("server");
+    expect(room.crdtFanout).toBe("mesh");
+    expect(room.canvasLockPolicy).toBe("cooperative");
+    expect(await controller.beginAsync(null, "transform")).toBe(true);
+    expect(claim).toHaveBeenCalledWith("page:page-1");
+    expect(beginProposal).not.toHaveBeenCalled();
+    controller.end();
+
+    vi.spyOn(room, "getLocks").mockReturnValueOnce([{
+      resource: "page:page-1",
+      claimId: "peer-lock",
+      owner: { ...participant, sessionId: "peer", displayName: "다른 작업자" },
+      leaseUntil: Date.now() + 10_000,
+    }]);
+    expect(await controller.beginAsync(null, "transform")).toBe(false);
+    expect(claim).toHaveBeenCalledTimes(1);
+    expect(beginProposal).not.toHaveBeenCalled();
+    expect(reportError).toHaveBeenLastCalledWith(expect.any(String));
+  });
+
+  it("개인 원고라도 연결 미준비·추가 전용 mesh는 협력 잠금 예외에 포함하지 않는다", async () => {
+    const { controller, room, beginProposal } = await setup(false, false);
+    const claim = vi.spyOn(room, "claimLockAsync");
+    const ready = vi.spyOn(room, "ready", "get").mockReturnValue(false);
+    expect(await controller.beginAsync(null, "transform")).toBe(false);
+    ready.mockReturnValue(true);
+    vi.spyOn(room, "canvasLockPolicy", "get").mockReturnValue("append-only");
+    expect(await controller.beginAsync(null, "transform")).toBe(false);
+    expect(claim).not.toHaveBeenCalled();
+    expect(beginProposal).not.toHaveBeenCalled();
   });
 
   it("keeps additive strokes on the established append-only path", async () => {

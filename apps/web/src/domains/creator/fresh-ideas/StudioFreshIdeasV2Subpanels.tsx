@@ -314,6 +314,9 @@ export function FreshIdeasModeCEcosystemPanel({
   lenses,
   modeC,
   exportNoticeKo,
+  bankError,
+  onImportLegacyBank,
+  onReopenBank,
   savedRecords,
   onSaveToIdeaBank,
   onCopyDocsMarkdown,
@@ -325,6 +328,9 @@ export function FreshIdeasModeCEcosystemPanel({
   readonly lenses: readonly FreshIdeaLensCardV2[];
   readonly modeC: ModeCEcosystemBundle;
   readonly exportNoticeKo: string;
+  readonly bankError: string;
+  readonly onImportLegacyBank: () => void;
+  readonly onReopenBank: () => void;
   readonly savedRecords: readonly StoredIdeaBankRecord[];
   readonly onSaveToIdeaBank: () => void;
   readonly onCopyDocsMarkdown: () => void;
@@ -373,6 +379,14 @@ export function FreshIdeasModeCEcosystemPanel({
           <button
             type="button"
             disabled={disabled}
+            onClick={onImportLegacyBank}
+            className="min-h-11 rounded-lg border border-line bg-card px-3 text-xs text-fg-2 hover:bg-raised"
+          >
+            이전 브라우저 기록 가져오기
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
             data-testid="fresh-ideas-copy-docs-btn"
             onClick={onCopyDocsMarkdown}
             className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-1.5 text-xs text-fg-2 hover:bg-raised ${MOTION_BTN}`}
@@ -392,11 +406,21 @@ export function FreshIdeasModeCEcosystemPanel({
           </button>
         </div>
         {exportNoticeKo && (
-          <span data-testid="fresh-ideas-export-notice" className="font-mono text-xs text-fg-2">
+          <span role="status" data-testid="fresh-ideas-export-notice" className="font-mono text-xs text-fg-2">
             {exportNoticeKo}
           </span>
         )}
       </div>
+
+      {bankError && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-fg-2">
+          <p role="alert">{bankError}</p>
+          <button type="button" disabled={disabled} onClick={onReopenBank}
+            className="min-h-11 rounded-lg border border-line bg-card px-3 hover:bg-raised">
+            아이디어 뱅크 다시 열기
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
         <div className="rounded-lg border border-line bg-card p-3">

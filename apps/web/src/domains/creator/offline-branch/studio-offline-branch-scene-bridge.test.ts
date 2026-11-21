@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { captureLayerComp } from "../layer/studio-layer-comps";
+
 import {
   currentStudioOfflineBranchFingerprint,
   planStudioOfflineSceneTransition,
@@ -52,6 +54,22 @@ function operation(
 }
 
 describe("studio offline branch scene bridge", () => {
+  it("오프라인으로 재생할 수 없는 레이어 보기 추가·이름 변경·삭제를 성공으로 돌려주지 않는다", () => {
+    const empty = page();
+    const captured = { ...empty, layerComps: [captureLayerComp("선화", [], "comp-1", 1)] };
+    const renamed = { ...captured, layerComps: [{ ...captured.layerComps[0], name: "선화 검토" }] };
+    const deleted = { ...empty, layerComps: [] };
+    for (const [previous, next] of [[empty, captured], [captured, renamed], [renamed, deleted]]) {
+      expect(planStudioOfflineSceneTransition([previous], [next])).toEqual({
+        mutations: [],
+        unsupported: ["page-1: 레이어 보기 변경은 온라인 정본 연결이 필요합니다."],
+      });
+    }
+    expect(planStudioOfflineSceneTransition([captured], [structuredClone(captured)])).toEqual({
+      mutations: [],
+      unsupported: [],
+    });
+  });
   it("projects and reverses an update using its previous CAS payload", () => {
     const previous = [page("선화")];
     const next = [page("채색")];
