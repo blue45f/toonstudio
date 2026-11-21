@@ -331,3 +331,54 @@ export function studioMaterialBrushToSvg(element: StudioMaterialBrushElement): s
   writeStudioMaterialBrushSvg(element, (chunk) => chunks.push(chunk));
   return chunks.join("");
 }
+
+type Wasm64LiveCanvasBridgeModule = typeof import("../kernel/wasm64-live-canvas-bridge");
+let wasm64BridgePromise: Promise<Wasm64LiveCanvasBridgeModule> | null = null;
+
+/** Wasm64 + 240Hz 스타일러스 브리지를 동적 import로 지연 로드한다(eager 그래프 증가 0). */
+export function loadStudioMaterialBrushWasm64Bridge(): Promise<Wasm64LiveCanvasBridgeModule> {
+  if (!wasm64BridgePromise) wasm64BridgePromise = import("../kernel/wasm64-live-canvas-bridge");
+  return wasm64BridgePromise;
+}
+
+/** 240Hz 스타일러스 입력에 1-Euro 보정과 확정/예측 꼬리 분리를 적용해 브러시 댑을 계획한다. */
+export async function planStudioMaterialBrushFrom240HzStylus(
+  baseElement: Omit<StudioMaterialBrushElement, "points" | "pressures" | "tiltXs" | "tiltYs" | "twists">,
+  inputs: Parameters<Wasm64LiveCanvasBridgeModule["process240HzStylusStrokeStream"]>[0],
+  options?: Parameters<Wasm64LiveCanvasBridgeModule["process240HzStylusStrokeStream"]>[1],
+) {
+  const bridge = await loadStudioMaterialBrushWasm64Bridge();
+  const stream = bridge.process240HzStylusStrokeStream(inputs, options);
+  const toEl = (samples: typeof stream.committedSamples): StudioMaterialBrushElement => ({
+    ...baseElement,
+    points: samples.flatMap((s) => [s.x, s.y]),
+    pressures: samples.map((s) => s.pressure),
+    tiltXs: samples.map((s) => s.tiltX),
+    tiltYs: samples.map((s) => s.tiltY),
+    twists: samples.map((s) => s.twist),
+  });
+  const committedElement = toEl(stream.committedSamples);
+  const committedMarks = planStudioMaterialBrush(committedElement);
+  const anchor = stream.committedSamples[stream.committedSamples.length - 1];
+  const predictedOverlayMarks =
+    stream.predictedTail.length > 0 && anchor
+      ? planStudioMaterialBrush(toEl([anchor, ...stream.predictedTail]))
+      : [];
+  return { stream, committedElement, committedMarks, predictedOverlayMarks };
+}
+
+/** 머티리얼 브러시 획을 지연 로드된 Wasm64 256×256 더티 타일 파이프라인에 래스터화한다. */
+export async function rasterizeStudioMaterialBrushWithWasm64(
+  element: StudioMaterialBrushElement,
+  surfaceWidth: number,
+  surfaceHeight: number,
+  options?: Parameters<Wasm64LiveCanvasBridgeModule["rasterizeMaterialBrushMarksWithWasm64"]>[3],
+) {
+  const bridge = await loadStudioMaterialBrushWasm64Bridge();
+  return bridge.rasterizeMaterialBrushMarksWithWasm64(
+    planStudioMaterialBrush(element),
+    surfaceWidth,
+    surfaceHeight,
+    options,
+  );
+}
