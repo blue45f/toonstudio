@@ -135,7 +135,8 @@ describe("StudioEdgeQuickSlidersAndHoldEyedropper (AC-002 T1 · T4 · T5 · T12)
     });
     expect(screen.getByText("손바닥 터치를 무시했습니다")).toBeTruthy();
 
-    // T1: 2-finger tap -> Undo
+    // T1: 2-finger tap -> Undo (with realistic DOMHighResTimeStamp vs Unix Epoch Date.now() clock separation regression test!)
+    vi.setSystemTime(1_760_000_000_000);
     const dispatchPointer = (type: string, init: Record<string, unknown>) => {
       const ev = new Event(type, { bubbles: true });
       for (const [k, v] of Object.entries(init)) {
@@ -146,19 +147,38 @@ describe("StudioEdgeQuickSlidersAndHoldEyedropper (AC-002 T1 · T4 · T5 · T12)
       });
     };
 
-    dispatchPointer("pointerdown", { pointerId: 1, pointerType: "touch", clientX: 50, clientY: 50, width: 10, height: 10, timeStamp: 1000 });
-    dispatchPointer("pointerdown", { pointerId: 2, pointerType: "touch", clientX: 80, clientY: 50, width: 10, height: 10, timeStamp: 1020 });
-    dispatchPointer("pointerup", { pointerId: 1, pointerType: "touch", clientX: 50, clientY: 50, timeStamp: 1120 });
-    dispatchPointer("pointerup", { pointerId: 2, pointerType: "touch", clientX: 80, clientY: 50, timeStamp: 1140 });
+    // Simulate real browser: event.timeStamp is small DOMHighResTimeStamp (420ms) while Date.now() is Unix Epoch (1.76e12).
+    // Advancing 130ms triggers the 120ms hold-scrub interval — must NOT misfire hold-scrub on a 130ms 2-finger tap!
+    dispatchPointer("pointerdown", { pointerId: 1, pointerType: "touch", clientX: 50, clientY: 50, width: 10, height: 10, timeStamp: 420 });
+    dispatchPointer("pointerdown", { pointerId: 2, pointerType: "touch", clientX: 80, clientY: 50, width: 10, height: 10, timeStamp: 430 });
+    act(() => {
+      vi.advanceTimersByTime(130);
+    });
+    expect(onUndo).toHaveBeenCalledTimes(0);
+    dispatchPointer("pointerup", { pointerId: 1, pointerType: "touch", clientX: 50, clientY: 50, timeStamp: 550 });
+    dispatchPointer("pointerup", { pointerId: 2, pointerType: "touch", clientX: 80, clientY: 50, timeStamp: 560 });
     expect(onUndo).toHaveBeenCalledTimes(1);
+
+    // T1: 2-finger hold (> 450ms) triggers continuous hold-scrub Undo cleanly on the unified monotonic clock
+    dispatchPointer("pointerdown", { pointerId: 6, pointerType: "touch", clientX: 50, clientY: 50, width: 10, height: 10, timeStamp: 900 });
+    dispatchPointer("pointerdown", { pointerId: 7, pointerType: "touch", clientX: 80, clientY: 50, width: 10, height: 10, timeStamp: 910 });
+    act(() => {
+      vi.advanceTimersByTime(620);
+    });
+    expect(onUndo.mock.calls.length).toBeGreaterThanOrEqual(2);
+    dispatchPointer("pointerup", { pointerId: 6, pointerType: "touch", clientX: 50, clientY: 50, timeStamp: 1520 });
+    dispatchPointer("pointerup", { pointerId: 7, pointerType: "touch", clientX: 80, clientY: 50, timeStamp: 1530 });
 
     // T1: 3-finger tap -> Redo
     dispatchPointer("pointerdown", { pointerId: 3, pointerType: "touch", clientX: 50, clientY: 50, width: 10, height: 10, timeStamp: 2000 });
     dispatchPointer("pointerdown", { pointerId: 4, pointerType: "touch", clientX: 80, clientY: 50, width: 10, height: 10, timeStamp: 2010 });
     dispatchPointer("pointerdown", { pointerId: 5, pointerType: "touch", clientX: 110, clientY: 50, width: 10, height: 10, timeStamp: 2020 });
-    dispatchPointer("pointerup", { pointerId: 3, pointerType: "touch", clientX: 50, clientY: 50, timeStamp: 2100 });
-    dispatchPointer("pointerup", { pointerId: 4, pointerType: "touch", clientX: 80, clientY: 50, timeStamp: 2110 });
-    dispatchPointer("pointerup", { pointerId: 5, pointerType: "touch", clientX: 110, clientY: 50, timeStamp: 2120 });
+    act(() => {
+      vi.advanceTimersByTime(80);
+    });
+    dispatchPointer("pointerup", { pointerId: 3, pointerType: "touch", clientX: 50, clientY: 50, timeStamp: 2080 });
+    dispatchPointer("pointerup", { pointerId: 4, pointerType: "touch", clientX: 80, clientY: 50, timeStamp: 2090 });
+    dispatchPointer("pointerup", { pointerId: 5, pointerType: "touch", clientX: 110, clientY: 50, timeStamp: 2100 });
     expect(onRedo).toHaveBeenCalledTimes(1);
 
     // T4: Stylus hover projection

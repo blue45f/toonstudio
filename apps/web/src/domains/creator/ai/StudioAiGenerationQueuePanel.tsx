@@ -198,6 +198,18 @@ export function StudioAiGenerationQueuePanel({
     setPrompt("");
   };
 
+  const handleQuickStartRecommended = () => {
+    setApplyError(null);
+    store.submitForConfirmation({
+      skill: "line-cleanup",
+      prompt: "선택 컷의 러프 선화를 깔끔한 웹툰 먹선으로 정리해 주세요",
+      privacy,
+      ...(selectionId ? { selectionId } : {}),
+    });
+    setFilter("all");
+    announce("추천 선화 정리 초안을 확인 단계로 올렸습니다.");
+  };
+
   const runJob = async (jobId: string) => {
     const result = await store.executeQueuedJob(jobId, { runner, stepDelayMs });
     if (result.status === "preview-ready") {
@@ -421,7 +433,7 @@ export function StudioAiGenerationQueuePanel({
               aria-selected={filter === tab.id}
               onClick={() => setFilter(tab.id)}
               className={cn(
-                "min-h-10 rounded-full border px-3 text-xs font-semibold transition-colors",
+                "min-h-11 rounded-full border px-3 text-xs font-semibold transition-[transform,background-color,border-color,color] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none",
                 filter === tab.id
                   ? "border-accent bg-accent-soft text-accent"
                   : "border-line bg-card text-fg-3 hover:bg-raised hover:text-fg",
@@ -439,7 +451,7 @@ export function StudioAiGenerationQueuePanel({
               store.clearSettled();
               announce("완료·취소된 작업을 대기열에서 정리했습니다.");
             }}
-            className="inline-flex min-h-10 items-center gap-1 rounded-lg px-2.5 text-xs font-medium text-fg-3 transition-colors hover:bg-raised hover:text-fg"
+            className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2.5 text-xs font-medium text-fg-3 transition-[transform,background-color,color] duration-150 hover:bg-raised hover:text-fg active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none"
           >
             <Trash2 size={13} aria-hidden="true" />
             완료 정리
@@ -461,11 +473,24 @@ export function StudioAiGenerationQueuePanel({
           ))}
         </div>
       ) : visibleJobs.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-line bg-card/45 p-4 text-xs leading-relaxed text-fg-2">
-          <p className="font-semibold text-fg">표시할 생성 작업이 없습니다</p>
-          <p className="mt-1 text-fg-3">
-            위에서 선화 정리·밑색 채색·대사 다듬기를 요청하면 확인 게이트와 미리보기를 거쳐 안전하게 새 레이어로 넣을 수 있습니다.
-          </p>
+        <div className="space-y-2.5 rounded-xl border border-dashed border-accent/35 bg-[linear-gradient(140deg,color-mix(in_oklch,var(--color-accent)_8%,var(--color-card)),var(--color-card))] p-4 text-xs leading-relaxed text-fg-2">
+          <div>
+            <p className="font-semibold text-fg">표시할 생성 작업이 없습니다</p>
+            <p className="mt-1 text-fg-3">
+              선화 정리·밑색 채색·대사 다듬기를 요청하면 확인 게이트와 미리보기를 거쳐 원본을 덮어쓰지 않고 새 레이어로 넣습니다.
+            </p>
+          </div>
+          {filter === "all" ? (
+            <button
+              type="button"
+              data-studio-ai-empty-first-cta="true"
+              onClick={handleQuickStartRecommended}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[linear-gradient(120deg,var(--color-accent),var(--color-accent-2))] px-3.5 text-xs font-semibold text-on-accent shadow-[0_6px_18px_color-mix(in_oklch,var(--color-accent)_28%,transparent)] transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:opacity-95 active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none"
+            >
+              <Sparkles size={14} aria-hidden="true" />
+              추천 선화 정리 바로 시작
+            </button>
+          ) : null}
         </div>
       ) : (
         <ul className="divide-y divide-line/70" aria-live="polite">
@@ -540,15 +565,29 @@ export function StudioAiGenerationQueuePanel({
                       className="h-2 w-full overflow-hidden rounded-full bg-raised"
                     >
                       <div
-                        className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-accent),var(--color-accent-2),var(--color-cool))] transition-[width] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+                        data-studio-ai-progress-shimmer="true"
+                        className="relative h-full overflow-hidden rounded-full bg-[linear-gradient(90deg,var(--color-accent),var(--color-accent-2),var(--color-cool))] transition-[width] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
                         style={{ width: `${percent}%` }}
-                      />
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,transparent_20%,color-mix(in_oklch,var(--color-on-accent)_40%,transparent)_50%,transparent_80%)] motion-safe:animate-pulse"
+                        />
+                      </div>
                     </div>
                   </div>
                 ) : null}
 
                 {job.preview ? (
-                  <div className="flex flex-col gap-2 rounded-xl border border-accent/40 bg-card/75 p-2.5 text-xs ring-1 ring-accent/20">
+                  <div
+                    data-studio-ai-preview-ring={job.status === "preview-ready" ? "glow" : "steady"}
+                    className={cn(
+                      "flex flex-col gap-2 rounded-xl border bg-card/75 p-2.5 text-xs transition-[box-shadow,border-color] duration-200 motion-reduce:transition-none",
+                      job.status === "preview-ready"
+                        ? "border-accent/65 ring-2 ring-accent/35 shadow-[0_0_20px_color-mix(in_oklch,var(--color-accent)_24%,transparent)]"
+                        : "border-accent/35 ring-1 ring-accent/15",
+                    )}
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <span className="inline-flex items-center gap-1.5 font-semibold text-fg">
                         <Layers size={13} className="text-accent" aria-hidden="true" />
@@ -587,13 +626,19 @@ export function StudioAiGenerationQueuePanel({
                 ) : null}
 
                 {job.application ? (
-                  <p className="text-xs font-medium text-good">
-                    {job.application.mode === "selection" ? "선택 영역" : "새 사본 레이어"}에{" "}
-                    <span className="font-bold tabular-nums">
-                      {job.application.createdObjectIds.length}
+                  <div
+                    data-studio-ai-applied-burst="true"
+                    className="inline-flex flex-wrap items-center gap-1.5 rounded-xl border border-good/45 bg-[linear-gradient(120deg,color-mix(in_oklch,var(--color-good)_20%,var(--color-card)),color-mix(in_oklch,var(--color-cool)_14%,var(--color-card)))] px-3 py-2 text-xs font-semibold text-good shadow-[0_0_14px_color-mix(in_oklch,var(--color-good)_18%,transparent)]"
+                  >
+                    <Sparkles size={13} aria-hidden="true" />
+                    <span>
+                      {job.application.mode === "selection" ? "선택 영역" : "새 사본 레이어"}에{" "}
+                      <span className="font-bold tabular-nums">
+                        {job.application.createdObjectIds.length}
+                      </span>
+                      개 초안 요소를 비파괴 반영했습니다.
                     </span>
-                    개 초안 요소를 비파괴 반영했습니다.
-                  </p>
+                  </div>
                 ) : null}
 
                 {job.error ? (
@@ -610,7 +655,7 @@ export function StudioAiGenerationQueuePanel({
                         store.requestConfirmation(job.id);
                         announce("전송 확인 단계로 넘겼습니다.");
                       }}
-                      className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-on-accent"
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-on-accent transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none"
                     >
                       <Play size={13} aria-hidden="true" />
                       전송 확인 요청
@@ -622,7 +667,7 @@ export function StudioAiGenerationQueuePanel({
                       <button
                         type="button"
                         onClick={() => handleConfirm(job.id, true)}
-                        className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-on-accent"
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-on-accent transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none"
                       >
                         <Play size={13} aria-hidden="true" />
                         {job.requiresExternalTransfer ? "외부 전송 동의 후 시작" : "확인 후 시작"}
@@ -641,7 +686,7 @@ export function StudioAiGenerationQueuePanel({
                     <button
                       type="button"
                       onClick={() => void runJob(job.id)}
-                      className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-on-accent"
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-on-accent transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none"
                     >
                       <Play size={13} aria-hidden="true" />
                       지금 실행
@@ -655,7 +700,7 @@ export function StudioAiGenerationQueuePanel({
                         store.approve(job.id);
                         announce("미리보기를 승인했습니다. 이제 사본 레이어로 삽입할 수 있습니다.");
                       }}
-                      className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-on-accent"
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-on-accent transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none"
                     >
                       <CheckCircle2 size={13} aria-hidden="true" />
                       결과 승인
@@ -668,7 +713,7 @@ export function StudioAiGenerationQueuePanel({
                         type="button"
                         disabled={isApplying}
                         onClick={() => void handleApply(job.id, "copy")}
-                        className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-on-accent disabled:opacity-50"
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-on-accent transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none motion-reduce:transform-none"
                       >
                         <CopyPlus size={13} aria-hidden="true" />
                         {isApplying ? "삽입 중..." : "비파괴 초안 레이어 삽입"}

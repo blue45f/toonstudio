@@ -4,57 +4,105 @@ import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioFilterDialog } from "./StudioFilterDialog";
+import { createStudioFilterDraft } from "./studio-filter-menu";
+import {
+  applyStudioFilterDraftToRgba,
+  createStudioFilterPreviewSwatchRgba,
+} from "./studio-filter-split-preview";
 
-describe("StudioFilterDialog AC-003 Split-Wipe & CSP Quick Filters", () => {
-  afterEach(cleanup);
+describe("StudioFilterDialog Split-Wipe & CSP Quick Filters (AC-003)", () => {
+  afterEach(() => {
+    cleanup();
+  });
 
-  it("toggles live draggable Split-Wipe Before/After slider and switches directly to Lens Blur and Line Extraction", () => {
+  it("renders draggable Split-Wipe real pixel canvases alongside binary compare and switches to Lens Blur / Line Extraction", () => {
     const rootRef = createRef<HTMLDivElement>();
-    const onPreview = vi.fn();
-    const onApply = vi.fn();
-    const onClose = vi.fn();
-
     render(
       <div ref={rootRef}>
         <StudioFilterDialog
-          activeKey="filter-ac003"
           kind="gaussian-blur"
-          image={{ blur: 4 }}
-          imageSrc="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII="
+          image={{}}
           rootRef={rootRef}
-          onPreview={onPreview}
-          onApply={onApply}
-          onClose={onClose}
+          targetName="캐릭터 레이어"
+          targetKind="image"
+          imageSrc="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+          onPreview={vi.fn()}
+          onApply={vi.fn()}
+          onClose={vi.fn()}
         />
       </div>,
     );
 
-    // 1. Open live Split-Wipe comparison
-    const splitToggle = screen.getByRole("button", { name: "분할 비교" });
+    // Binary 원본 비교 button stays intact
+    expect(screen.getByRole("button", { name: "원본 비교" })).toBeTruthy();
+
+    // Open Split-Wipe Before/After preview
+    const splitToggle = document.querySelector('[data-studio-filter-split-compare-toggle="true"]') as HTMLButtonElement;
+    expect(splitToggle).not.toBeNull();
     fireEvent.click(splitToggle);
-    expect(splitToggle.getAttribute("aria-pressed")).toBe("true");
 
-    const wipeSlider = screen.getByRole("slider", { name: /분할 비교 슬라이더/ });
-    expect(wipeSlider.getAttribute("aria-valuenow")).toBe("50");
+    const stage = document.querySelector('[data-studio-filter-split-compare-stage="true"]');
+    expect(stage?.getAttribute("data-studio-filter-real-kernel")).toBe("true");
+    const beforeCanvas = document.querySelector('[data-studio-filter-pixel-canvas="before"]');
+    const afterCanvas = document.querySelector('[data-studio-filter-pixel-canvas="after"]');
+    expect(beforeCanvas?.tagName).toBe("CANVAS");
+    expect(afterCanvas?.tagName).toBe("CANVAS");
+    // Ensure zero CSS filter approximation is used on afterCanvas
+    expect((afterCanvas as HTMLElement).style.filter).toBe("");
 
-    // Keyboard slide shifts ratio cleanly
-    fireEvent.keyDown(wipeSlider, { key: "ArrowRight", shiftKey: true });
-    expect(wipeSlider.getAttribute("aria-valuenow")).toBe("60");
-    fireEvent.keyDown(wipeSlider, { key: "Home" });
-    expect(wipeSlider.getAttribute("aria-valuenow")).toBe("0");
+    const slider = document.querySelector('[data-studio-split-wipe-handle="true"]') as HTMLElement;
+    expect(slider).not.toBeNull();
+    expect(slider.getAttribute("aria-valuenow")).toBe("50");
 
-    // 2. Quick-switch directly to Lens Blur (렌즈 블러)
-    const lensBlurBtn = document.querySelector<HTMLButtonElement>(
-      '[data-studio-filter-quick-kind="lens-blur"]',
-    )!;
+    // Keyboard slide shifts wipe ratio smoothly
+    fireEvent.keyDown(slider, { key: "ArrowRight", shiftKey: true });
+    expect(slider.getAttribute("aria-valuenow")).toBe("60");
+
+    // Switch immediately to Lens Blur via quick shortcut
+    const lensBlurBtn = document.querySelector('[data-studio-filter-quick-kind="lens-blur"]') as HTMLButtonElement;
     fireEvent.click(lensBlurBtn);
+    expect(lensBlurBtn.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("heading", { name: "렌즈 블러" })).toBeTruthy();
 
-    // 3. Quick-switch directly to Image -> Line Extraction (가우시안 차분 선화)
-    const lineExtractBtn = document.querySelector<HTMLButtonElement>(
+    // Switch immediately to Image->Line Extraction (Difference of Gaussians)
+    const lineExtractBtn = document.querySelector(
       '[data-studio-filter-quick-kind="difference-of-gaussians"]',
-    )!;
+    ) as HTMLButtonElement;
     fireEvent.click(lineExtractBtn);
-    expect(screen.getByRole("heading", { name: "가우시안 차분 선화" })).toBeTruthy();
+    expect(lineExtractBtn.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("executes real ToonStudio pixel filter kernels (Lens Blur & Line Extraction) on RGBA buffers without CSS approximation", async () => {
+    const swatch = createStudioFilterPreviewSwatchRgba(64, 48);
+
+    const lensResult = await applyStudioFilterDraftToRgba(
+      swatch,
+      createStudioFilterDraft("lens-blur", {}),
+    );
+    expect(lensResult.filterCount).toBeGreaterThanOrEqual(1);
+    let lensDiffPixels = 0;
+    for (let i = 0; i < swatch.data.length; i += 4) {
+      if (
+        lensResult.data[i] !== swatch.data[i] ||
+        lensResult.data[i + 1] !== swatch.data[i + 1] ||
+        lensResult.data[i + 2] !== swatch.data[i + 2]
+      ) {
+        lensDiffPixels += 1;
+      }
+    }
+    expect(lensDiffPixels).toBeGreaterThan(20);
+
+    const lineResult = await applyStudioFilterDraftToRgba(
+      swatch,
+      createStudioFilterDraft("difference-of-gaussians", {}),
+    );
+    expect(lineResult.filterCount).toBeGreaterThanOrEqual(1);
+    let lineDiffPixels = 0;
+    for (let i = 0; i < swatch.data.length; i += 4) {
+      if (lineResult.data[i] !== swatch.data[i]) {
+        lineDiffPixels += 1;
+      }
+    }
+    expect(lineDiffPixels).toBeGreaterThan(20);
   });
 });

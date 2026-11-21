@@ -1638,6 +1638,7 @@ export function resolveStudioBrushBackendQualityRoute(
     const liveAvailability = availabilityOf(candidate.live, input.availability);
     const commitAvailability = availabilityOf(candidate.commit, input.availability);
     if (liveAvailability === "ready" && commitAvailability === "ready") {
+      if (candidate.live === "webgpu-live-causal-ink") warmStudioZeroCopyIndirectBrushRuntime(identity.runtimeBrushId);
       return Object.freeze({
         status: "ready",
         identity,
@@ -1669,7 +1670,13 @@ export function listStudioCoreBrushBackendQualityIds(): readonly string[] {
   return STUDIO_BRUSH_RUNTIME_CONTRACT.map((contract) => contract.id);
 }
 
+let zeroCopyIndirectLoad: Promise<typeof import("../render/studio-webgpu-zero-copy-indirect-runtime")> | null = null;
+const promotedZeroCopyBrushIds = new Set<string>();
+function warmStudioZeroCopyIndirectBrushRuntime(brushId: string): void {
+  if (promotedZeroCopyBrushIds.has(brushId)) return;
+  void loadStudioZeroCopyIndirectBrushRuntime().then((mod) => { if (mod.isStudioGpuBristlePromotedBrushId(brushId)) promotedZeroCopyBrushIds.add(brushId); }).catch(() => undefined);
+}
 /** 오일·임파스토 WebGPU Zero-Copy Indirect 브러시 런타임을 지연 로드한다(진입 그래프 +0B). */
 export async function loadStudioZeroCopyIndirectBrushRuntime() {
-  return import("../render/studio-webgpu-zero-copy-indirect-runtime");
+  return (zeroCopyIndirectLoad ??= import("../render/studio-webgpu-zero-copy-indirect-runtime"));
 }

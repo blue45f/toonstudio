@@ -70,17 +70,23 @@ function polarSectorPosition(index: number): { readonly left: number; readonly t
 function clampAnchor(anchor: { readonly x: number; readonly y: number } | null | undefined): {
   readonly x: number;
   readonly y: number;
+  readonly wheelScale: number;
 } {
   const vw = typeof window !== "undefined" && window.innerWidth > 0 ? window.innerWidth : 1280;
   const vh = typeof window !== "undefined" && window.innerHeight > 0 ? window.innerHeight : 800;
+  // 320px 초소형 모바일 화면에서도 휠·하단 상태바가 잘리지 않도록 반경을 안전하게 축소·클램프한다.
+  const wheelScale = vw < 360 ? Math.max(0.84, (vw - 32) / (WHEEL_SIZE + 24)) : 1;
+  const effectiveHalf = Math.ceil((WHEEL_SIZE * wheelScale) / 2);
+  const marginX = Math.min(Math.floor(vw / 2) - 4, effectiveHalf + 12);
+  const marginY = Math.min(Math.floor(vh / 2) - 4, effectiveHalf + 24);
   const fallbackX = Math.round(vw / 2);
   const fallbackY = Math.round(vh / 2);
   const rawX = anchor && Number.isFinite(anchor.x) ? anchor.x : fallbackX;
   const rawY = anchor && Number.isFinite(anchor.y) ? anchor.y : fallbackY;
-  const margin = WHEEL_CENTER + 16;
   return {
-    x: Math.max(margin, Math.min(vw - margin, rawX)),
-    y: Math.max(margin, Math.min(vh - margin, rawY)),
+    x: Math.max(marginX, Math.min(vw - marginX, rawX)),
+    y: Math.max(marginY, Math.min(vh - marginY, rawY)),
+    wheelScale,
   };
 }
 
@@ -118,6 +124,23 @@ export function StudioRadialQuickWheel({
   const [flickOrigin, setFlickOrigin] = useState<{ readonly x: number; readonly y: number } | null>(null);
   const [editingSlots, setEditingSlots] = useState(false);
   const [editingSlotIndex, setEditingSlotIndex] = useState<QuickMenuSlot["index"]>(0);
+  const [bloomed, setBloomed] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setBloomed(false);
+      return;
+    }
+    const raf =
+      typeof requestAnimationFrame === "function"
+        ? requestAnimationFrame(() => setBloomed(true))
+        : globalThis.setTimeout(() => setBloomed(true), 0);
+    return () => {
+      if (typeof cancelAnimationFrame === "function" && typeof raf === "number") {
+        cancelAnimationFrame(raf);
+      }
+    };
+  }, [open]);
   const [uncontrolledSlots, setUncontrolledSlots] = useState<readonly QuickMenuSlot[]>(
     () => slots ?? DEFAULT_QUICK_MENU_SLOTS,
   );
@@ -255,8 +278,12 @@ export function StudioRadialQuickWheel({
           top: `${clamped.y}px`,
           width: `${WHEEL_SIZE}px`,
           height: `${WHEEL_SIZE}px`,
+          transform: `translate(-50%, -50%) scale(${bloomed ? clamped.wheelScale : clamped.wheelScale * 0.9})`,
         }}
-        className="fixed -translate-x-1/2 -translate-y-1/2 select-none rounded-full border border-line-strong bg-panel/95 shadow-[var(--atelier-elevation-floating)] transition-opacity duration-150 motion-reduce:transition-none"
+        className={cn(
+          "fixed select-none rounded-full border border-line-strong bg-panel/95 shadow-[var(--atelier-elevation-floating)] transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:transform-none",
+          bloomed ? "opacity-100" : "opacity-0",
+        )}
       >
         <svg
           width={WHEEL_SIZE}
@@ -326,10 +353,11 @@ export function StudioRadialQuickWheel({
                 transitionDelay: `${index * 24}ms`,
               }}
               className={cn(
-                "absolute grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-fg transition-[transform,background-color,border-color,color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.94] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:transform-none",
-                highlighted
-                  ? "scale-105 border-accent bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-2))] text-on-accent shadow-[0_0_0_4px_color-mix(in_oklch,var(--color-accent)_26%,transparent)]"
-                  : "border-transparent bg-transparent text-fg-2 hover:scale-105 hover:text-fg",
+                "absolute grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-fg transition-[transform,opacity,background-color,border-color,color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.94] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:transform-none",
+                !bloomed && "scale-75 opacity-0",
+                bloomed && (highlighted
+                  ? "scale-105 opacity-100 border-accent bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-2))] text-on-accent shadow-[0_0_0_4px_color-mix(in_oklch,var(--color-accent)_26%,transparent)]"
+                  : "scale-100 opacity-100 border-transparent bg-transparent text-fg-2 hover:scale-105 hover:text-fg"),
               )}
             >
               <Icon size={16} strokeWidth={1.7} aria-hidden="true" />
@@ -347,10 +375,10 @@ export function StudioRadialQuickWheel({
           <X size={14} strokeWidth={1.75} aria-hidden="true" />
         </button>
 
-        <div className="absolute -bottom-11 left-1/2 flex w-max -translate-x-1/2 items-center gap-1.5">
+        <div className="absolute -bottom-12 left-1/2 flex max-w-[calc(100vw-16px)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5">
           <div
             aria-live="polite"
-            className="pointer-events-none max-w-48 rounded-lg border border-line-strong bg-panel/95 px-2.5 py-1 text-center text-xs font-semibold text-fg shadow-[var(--atelier-elevation-dock)] break-keep"
+            className="pointer-events-none max-w-[min(12rem,calc(100vw-8.5rem))] truncate rounded-lg border border-line-strong bg-panel/95 px-2.5 py-1 text-center text-xs font-semibold text-fg shadow-[var(--atelier-elevation-dock)] break-keep"
           >
             {editingSlots
               ? bt(
@@ -371,7 +399,7 @@ export function StudioRadialQuickWheel({
               setEditingSlots((prev) => !prev);
             }}
             className={cn(
-              "inline-flex min-h-11 items-center gap-1 rounded-lg border px-2.5 text-xs font-semibold shadow-[var(--atelier-elevation-dock)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+              "inline-flex min-h-11 items-center gap-1 rounded-lg border px-2.5 text-xs font-semibold shadow-[var(--atelier-elevation-dock)] transition-[transform,background-color,border-color,color] duration-150 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:transform-none",
               editingSlots
                 ? "border-accent bg-accent text-on-accent"
                 : "border-line-strong bg-panel/95 text-fg-2 hover:bg-raised hover:text-fg",
@@ -388,7 +416,7 @@ export function StudioRadialQuickWheel({
             aria-label={bt("빠른 메뉴 6슬롯 편집", "Customize 6 QuickMenu slots")}
             data-studio-radial-edit-panel="true"
             onPointerDown={(event) => event.stopPropagation()}
-            className="absolute left-1/2 top-[calc(100%+3.25rem)] z-20 w-72 -translate-x-1/2 rounded-2xl border border-line-strong bg-panel p-3 text-fg shadow-[var(--atelier-elevation-floating)] break-keep"
+            className="absolute left-1/2 top-[calc(100%+3.5rem)] z-20 w-[min(18rem,calc(100vw-16px))] -translate-x-1/2 rounded-2xl border border-line-strong bg-panel p-3 text-fg shadow-[var(--atelier-elevation-floating)] break-keep"
           >
             <div className="flex items-center justify-between gap-2 border-b border-line/70 pb-2">
               <span className="text-xs font-bold text-fg">
@@ -398,7 +426,7 @@ export function StudioRadialQuickWheel({
                 type="button"
                 data-studio-radial-reset-slots="true"
                 onClick={() => commitSlotUpdate(DEFAULT_QUICK_MENU_SLOTS)}
-                className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-line bg-card px-2 text-[0.7rem] font-semibold text-fg-2 hover:bg-raised hover:text-fg"
+                className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 transition-[transform,background-color] duration-150 hover:bg-raised hover:text-fg active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none"
               >
                 <RotateCcw size={12} aria-hidden="true" />
                 {bt("기본값", "Reset")}

@@ -182,7 +182,7 @@ export function StudioPuppetWarpPanel({
                       title="이 핀 삭제"
                       disabled={busy}
                       onClick={() => onRemovePin(p.id)}
-                      className="grid size-11 shrink-0 place-items-center rounded-lg border border-line text-fg-3 transition-colors hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-45 sm:size-8 pointer-coarse:size-11"
+                      className="grid size-11 shrink-0 place-items-center rounded-lg border border-line text-fg-3 transition-[transform,background-color,color] duration-150 hover:bg-raised hover:text-fg active:scale-[0.95] disabled:cursor-not-allowed disabled:opacity-45 motion-reduce:transition-none motion-reduce:transform-none"
                     >
                       <Trash2 className="size-3.5" aria-hidden />
                     </button>
@@ -210,7 +210,7 @@ export function StudioPuppetWarpPanel({
               aria-describedby={statusId}
               className={cn(
                 buttonClass({ size: "sm", variant: "solid" }),
-                "min-h-11 flex-1 gap-1 active:scale-[0.97] motion-reduce:transform-none sm:min-h-9 pointer-coarse:min-h-11",
+                "min-h-11 flex-1 gap-1 active:scale-[0.97] motion-reduce:transform-none",
               )}
               title={
                 busy
@@ -233,7 +233,7 @@ export function StudioPuppetWarpPanel({
               className={buttonClass({
                 size: "sm",
                 variant: "quiet",
-                className: "min-h-11 sm:min-h-9 pointer-coarse:min-h-11",
+                className: "min-h-11 active:scale-[0.97] motion-reduce:transform-none",
               })}
               title={
                 busy
@@ -256,7 +256,7 @@ export function StudioPuppetWarpPanel({
               className={buttonClass({
                 size: "sm",
                 variant: "quiet",
-                className: "min-h-11 sm:min-h-9 pointer-coarse:min-h-11",
+                className: "min-h-11 active:scale-[0.97] motion-reduce:transform-none",
               })}
               title="핀을 전부 버리고 퍼펫 워프를 종료합니다(Esc)."
             >

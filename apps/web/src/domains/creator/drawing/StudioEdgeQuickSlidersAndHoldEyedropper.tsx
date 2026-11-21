@@ -177,6 +177,11 @@ export function StudioEdgeQuickSlidersAndHoldEyedropper({
     const guard = gestureGuardRef.current;
     const activeTouchIds = new Set<number>();
 
+    const readMonotonicNowMs = (): number =>
+      typeof performance !== "undefined" && typeof performance.now === "function"
+        ? performance.now()
+        : Date.now();
+
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Element | null;
       if (target?.closest("[data-studio-edge-quick-sliders], button, input, [role='dialog']")) {
@@ -184,6 +189,7 @@ export function StudioEdgeQuickSlidersAndHoldEyedropper({
       }
       const pointerType =
         event.pointerType === "pen" || event.pointerType === "touch" ? event.pointerType : "mouse";
+      const nowMs = readMonotonicNowMs();
       const sample = {
         pointerId: event.pointerId,
         pointerType,
@@ -191,7 +197,7 @@ export function StudioEdgeQuickSlidersAndHoldEyedropper({
         y: event.clientY,
         width: event.width,
         height: event.height,
-        timestampMs: event.timeStamp || Date.now(),
+        timestampMs: nowMs,
       };
       const decision = guard.onPointerDown(sample);
       if (palmRejectionEnabled && decision.rejected) {
@@ -206,13 +212,13 @@ export function StudioEdgeQuickSlidersAndHoldEyedropper({
 
       activeTouchIds.add(event.pointerId);
       if (activeTouchIds.size === 1) {
-        eyedropperRef.current.beginTouch(event.clientX, event.clientY, sample.timestampMs);
+        eyedropperRef.current.beginTouch(event.clientX, event.clientY, nowMs);
         clearHoldTimer();
         holdTimerRef.current = globalThis.setTimeout(() => {
           const state = eyedropperRef.current.updateTouch(
             event.clientX,
             event.clientY,
-            sample.timestampMs + holdDelayMs,
+            readMonotonicNowMs(),
           );
           if (state.phase === "sampling") {
             setSampling({
@@ -224,12 +230,13 @@ export function StudioEdgeQuickSlidersAndHoldEyedropper({
         }, holdDelayMs);
       } else {
         // 멀티터치(2~3손가락) 진입 시 단일 터치 스포이드 취소 및 홀드 스크럽 폴링 시작
+        // 모든 이벤트와 폴링이 동일한 단일 시계(readMonotonicNowMs)를 사용해 DOMHighResTimeStamp vs Epoch 불일치를 차단한다.
         clearHoldTimer();
         eyedropperRef.current.endTouch();
         setSampling(null);
         if (scrubTimerRef.current === null) {
           scrubTimerRef.current = globalThis.setInterval(() => {
-            const action = guard.pollHoldScrub(Date.now());
+            const action = guard.pollHoldScrub(readMonotonicNowMs());
             if (action.type === "undo") {
               onUndo?.();
               showGestureHud("연속 실행 취소");
@@ -257,7 +264,7 @@ export function StudioEdgeQuickSlidersAndHoldEyedropper({
         return;
       }
       if (event.pointerType !== "touch") return;
-      const nowMs = event.timeStamp || Date.now();
+      const nowMs = readMonotonicNowMs();
       guard.onPointerMove({
         pointerId: event.pointerId,
         pointerType: "touch",
@@ -283,7 +290,7 @@ export function StudioEdgeQuickSlidersAndHoldEyedropper({
     const onPointerUp = (event: PointerEvent) => {
       const pointerType =
         event.pointerType === "pen" || event.pointerType === "touch" ? event.pointerType : "mouse";
-      const nowMs = event.timeStamp || Date.now();
+      const nowMs = readMonotonicNowMs();
       const action = guard.onPointerUp({
         pointerId: event.pointerId,
         pointerType,

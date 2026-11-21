@@ -175,3 +175,26 @@ export async function buildSpeechBubbleTailBooleanUnion(
 
   return evaluateLiveBooleanGroup(unionGroup, { curveSegments: 64 });
 }
+
+/**
+ * 불리언 합집합 결과 폴리곤 배열(`StudioPathPolygon[]`, 각 폴리곤은 `[outerRing, ...holes]`,
+ * 각 링은 `[x, y][]`)을 단일 SVG `<path d="...">` 문자열로 변환한다.
+ * 빈 링은 제외하고 모든 좌표를 소수 둘째 자리로 결정적 반올림한다.
+ */
+export function speechBubbleBooleanPolygonsToSvgPath(
+  polygons: readonly (readonly (readonly (readonly [number, number])[])[])[],
+): string {
+  const parts: string[] = [];
+  for (const polygon of polygons) {
+    for (const ring of polygon) {
+      if (ring.length < 3) continue;
+      const cmds = ring.map(([rawX, rawY], index) => {
+        const x = Number(rawX.toFixed(2));
+        const y = Number(rawY.toFixed(2));
+        return `${index === 0 ? "M" : "L"}${x} ${y}`;
+      });
+      parts.push(`${cmds.join(" ")} Z`);
+    }
+  }
+  return parts.join(" ");
+}

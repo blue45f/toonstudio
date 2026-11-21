@@ -294,6 +294,8 @@ export const StudioLayerNavigatorItemRow = memo(
     // gesture at once. The draft is kept because a rejected preview (locked page, save in flight)
     // never comes back as `item.opacity`, and the row must still track the pointer.
     const [opacityDraft, setOpacityDraft] = useState<number | null>(null);
+    const [gestureFeedback, setGestureFeedback] = useState<string | null>(null);
+    const flashGesture = (msg: string) => { setGestureFeedback(msg); globalThis.setTimeout(() => setGestureFeedback((cur) => (cur === msg ? null : cur)), 1300); };
     const opacityPercent = opacityDraft ?? committedOpacityPercent;
     const toTouchPoints = (list: ReactTouchEvent<HTMLElement>["touches"]): LayerRowTouchPoint[] =>
       Array.from({ length: list.length }, (_, idx) => {
@@ -321,10 +323,12 @@ export const StudioLayerNavigatorItemRow = memo(
       const result = stepLayerRowTouchMove(session, toTouchPoints(event.touches), {
         id: item.id, label: item.label, locked: effectivelyLocked, selected, canMergeDown: canClipBelow,
       });
-      if (result.kind === "merged") stableHandlers.onPinchMergeItem?.(item.id);
+      if (result.kind === "merged") { stableHandlers.onPinchMergeItem?.(item.id); flashGesture("아래 레이어와 합침"); }
       else if (result.kind === "opacity-changed") {
-        setOpacityDraft(Math.round(result.opacity * 100));
+        const pct = Math.round(result.opacity * 100);
+        setOpacityDraft(pct);
         stableHandlers.onPreviewItemOpacity(item.id, result.opacity);
+        flashGesture(`불투명도 ${pct}%`);
       }
     };
     const handleRowTouchEnd = (event: ReactTouchEvent<HTMLElement>) => {
@@ -335,8 +339,8 @@ export const StudioLayerNavigatorItemRow = memo(
       const changed = toTouchPoints(event.changedTouches)[0];
       const result = finishLayerRowTouchEnd(session, changed, { id: item.id, label: item.label, locked: effectivelyLocked, selected });
       if (result.kind === "opacity-changed") { setOpacityDraft(null); stableHandlers.onSetItemOpacity(item.id, result.opacity); }
-      else if (result.kind === "toggled-lock" && !lockedByGroup) stableHandlers.onToggleItemLocked(item.id, result.locked);
-      else if (result.kind === "toggled-select") stableHandlers.onToggleItemMultiSelect?.(item.id);
+      else if (result.kind === "toggled-lock" && !lockedByGroup) { stableHandlers.onToggleItemLocked(item.id, result.locked); flashGesture(result.locked ? "레이어 잠금" : "잠금 해제"); }
+      else if (result.kind === "toggled-select") { stableHandlers.onToggleItemMultiSelect?.(item.id); flashGesture("다중 선택 전환"); }
     };
 
     return (
@@ -617,38 +621,43 @@ export const StudioLayerNavigatorItemRow = memo(
               ) : null}
             </span>
           ) : null}
+          {gestureFeedback ? (
+            <span role="status" data-studio-layer-gesture-feedback="true" className="shrink-0 rounded-full border border-accent/45 bg-accent-soft px-2 py-0.5 text-[0.62rem] font-semibold text-accent transition-[transform,opacity] duration-150 motion-reduce:transition-none">
+              {gestureFeedback}
+            </span>
+          ) : null}
           {stableHandlers.onToggleItemClipBelow || stableHandlers.onToggleItemAlphaLock || stableHandlers.onToggleItemReference ? (
             <span className="flex shrink-0 items-center gap-0.5" role="group" aria-label={`${item.label} 레이어 트리오`} data-studio-layer-trio-controls="true">
               {stableHandlers.onToggleItemClipBelow ? (
                 <button type="button" tabIndex={-1} data-layer-row-control data-studio-layer-trio-action="clippingMask"
                   disabled={trioDisabled || !canClipBelow} aria-pressed={item.clipBelow === true}
-                  aria-label={item.clipBelow ? `${item.label} 클리핑 마스크 해제` : `${item.label} 클리핑 마스크`}
-                  title={canClipBelow ? "아래 레이어에 클리핑 마스크" : "최하단 레이어에는 클리핑 마스크를 적용할 수 없습니다"}
+                  aria-label={item.clipBelow ? `${item.label} 아래 레이어 모양 안에서만 그리기 해제 (클리핑 마스크)` : `${item.label} 아래 레이어 모양 안에서만 그리기 (클리핑 마스크)`}
+                  title={canClipBelow ? "아래 레이어 모양 안에서만 그리기 (클리핑 마스크)" : "맨 아래 레이어에는 아래 레이어 기준 클리핑을 적용할 수 없습니다"}
                   onClick={(event) => { event.stopPropagation(); handleTrioToggle("clippingMask"); }}
                   onDoubleClick={(event) => event.stopPropagation()}
-                  className={cn("grid size-7 shrink-0 place-items-center rounded border transition-colors disabled:opacity-30", item.clipBelow ? STATUS_CLASSES.clipping : "border-transparent text-fg-3 hover:bg-raised hover:text-fg", STUDIO_LAYER_NAVIGATOR_COARSE_TARGET, STUDIO_LAYER_NAVIGATOR_FOCUS_RING)}>
+                  className={cn("grid size-7 shrink-0 place-items-center rounded border transition-[transform,background-color,border-color,color] duration-150 active:scale-[0.94] disabled:opacity-30 motion-reduce:transition-none motion-reduce:transform-none", item.clipBelow ? STATUS_CLASSES.clipping : "border-transparent text-fg-3 hover:bg-raised hover:text-fg", STUDIO_LAYER_NAVIGATOR_COARSE_TARGET, STUDIO_LAYER_NAVIGATOR_FOCUS_RING)}>
                   <CornerDownRight size={12} aria-hidden />
                 </button>
               ) : null}
               {stableHandlers.onToggleItemAlphaLock ? (
                 <button type="button" tabIndex={-1} data-layer-row-control data-studio-layer-trio-action="alphaLock"
                   disabled={trioDisabled} aria-pressed={item.alphaLocked === true}
-                  aria-label={item.alphaLocked ? `${item.label} 알파 잠금 해제` : `${item.label} 알파 잠금`}
-                  title="알파 잠금(투명 픽셀 보호)"
+                  aria-label={item.alphaLocked ? `${item.label} 선 밖으로 안 번지게 잠그기 해제 (알파 잠금)` : `${item.label} 선 밖으로 안 번지게 잠그기 (알파 잠금)`}
+                  title="선 밖으로 안 번지게 잠그기 (알파 잠금 · 투명 픽셀 보호)"
                   onClick={(event) => { event.stopPropagation(); handleTrioToggle("alphaLock"); }}
                   onDoubleClick={(event) => event.stopPropagation()}
-                  className={cn("grid size-7 shrink-0 place-items-center rounded border transition-colors disabled:opacity-30", item.alphaLocked ? STATUS_CLASSES["alpha-locked"] : "border-transparent text-fg-3 hover:bg-raised hover:text-fg", STUDIO_LAYER_NAVIGATOR_COARSE_TARGET, STUDIO_LAYER_NAVIGATOR_FOCUS_RING)}>
+                  className={cn("grid size-7 shrink-0 place-items-center rounded border transition-[transform,background-color,border-color,color] duration-150 active:scale-[0.94] disabled:opacity-30 motion-reduce:transition-none motion-reduce:transform-none", item.alphaLocked ? STATUS_CLASSES["alpha-locked"] : "border-transparent text-fg-3 hover:bg-raised hover:text-fg", STUDIO_LAYER_NAVIGATOR_COARSE_TARGET, STUDIO_LAYER_NAVIGATOR_FOCUS_RING)}>
                   <Grid2X2 size={12} aria-hidden />
                 </button>
               ) : null}
               {stableHandlers.onToggleItemReference ? (
                 <button type="button" tabIndex={-1} data-layer-row-control data-studio-layer-trio-action="reference"
                   disabled={trioDisabled} aria-pressed={item.fillReference === true}
-                  aria-label={item.fillReference ? `${item.label} 참조 레이어 해제` : `${item.label} 참조 레이어`}
-                  title="채우기 참조 레이어(문서 내 1개)"
+                  aria-label={item.fillReference ? `${item.label} 채우기 기준 선화로 쓰기 해제 (참조 레이어)` : `${item.label} 채우기 기준 선화로 쓰기 (참조 레이어)`}
+                  title="채우기 기준 선화로 쓰기 (참조 레이어 · 문서 내 1개)"
                   onClick={(event) => { event.stopPropagation(); handleTrioToggle("reference"); }}
                   onDoubleClick={(event) => event.stopPropagation()}
-                  className={cn("grid size-7 shrink-0 place-items-center rounded border transition-colors disabled:opacity-30", item.fillReference ? STATUS_CLASSES.reference : "border-transparent text-fg-3 hover:bg-raised hover:text-fg", STUDIO_LAYER_NAVIGATOR_COARSE_TARGET, STUDIO_LAYER_NAVIGATOR_FOCUS_RING)}>
+                  className={cn("grid size-7 shrink-0 place-items-center rounded border transition-[transform,background-color,border-color,color] duration-150 active:scale-[0.94] disabled:opacity-30 motion-reduce:transition-none motion-reduce:transform-none", item.fillReference ? STATUS_CLASSES.reference : "border-transparent text-fg-3 hover:bg-raised hover:text-fg", STUDIO_LAYER_NAVIGATOR_COARSE_TARGET, STUDIO_LAYER_NAVIGATOR_FOCUS_RING)}>
                   <ScanLine size={12} aria-hidden />
                 </button>
               ) : null}

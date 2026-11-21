@@ -1,8 +1,14 @@
 import { readPsd, writePsd } from "ag-psd";
 import { describe, expect, it } from "vitest";
 
-import { loadStudioZeroCopyIndirectBrushRuntime } from "../brush/studio-brush-backend-quality-policy";
-import { acquireStudioWetPaperLbmWebGpuAccelerator } from "../brush/wet-paper/studio-wet-paper-host";
+import {
+  loadStudioZeroCopyIndirectBrushRuntime,
+  resolveStudioBrushBackendQualityRoute,
+} from "../brush/studio-brush-backend-quality-policy";
+import {
+  acquireStudioWetPaperLbmWebGpuAccelerator,
+  getStudioWetPaperLbmWebGpuStatus,
+} from "../brush/wet-paper/studio-wet-paper-host";
 import { groupPsdExportLayers } from "../export/studio-psd-folder-structure";
 import { buildWebtoonPsdExportManifest } from "../export/studio-timelapse-and-psd-exporter";
 import { createVectorLayer, createVectorStroke } from "../vector-layer/vector-layer-model";
@@ -14,6 +20,7 @@ import {
   buildSpeechBubbleTailBooleanUnion,
   formatKoreanBubbleLines,
   koreanTailSyllableHasBatchim,
+  speechBubbleBooleanPolygonsToSvgPath,
 } from "./studio-korean-bubble-boolean-typesetting";
 
 describe("AC-003 CSP 4.0+ Native Browser Capabilities & (A-1) Connected Engines", () => {
@@ -93,6 +100,8 @@ describe("AC-003 CSP 4.0+ Native Browser Capabilities & (A-1) Connected Engines"
       // United body + tail merges into 1 contiguous outer polygon extending down into tail tip
       expect(unionResult.polygons.length).toBe(1);
       expect(unionResult.bounds.y + unionResult.bounds.height).toBeGreaterThan(40 + 120 + 40);
+      const svgPath = speechBubbleBooleanPolygonsToSvgPath(unionResult.polygons);
+      expect(svgPath).toMatch(/^M[\d.-]+ [\d.-]+ L.+ Z$/);
     }
   });
 
@@ -153,10 +162,23 @@ describe("AC-003 CSP 4.0+ Native Browser Capabilities & (A-1) Connected Engines"
     expect(shadeLayer?.clipping).toBe(true);
   });
 
-  it("lazy-loads (A-1) WebGPU LBM wet-paper and Zero-Copy Indirect brush runtimes safely with CPU fallback", async () => {
+  it("wires (A-1) WebGPU LBM wet-paper and Zero-Copy Indirect runtimes into production route/bake hooks safely with CPU fallback", async () => {
     const wetPaperGpu = await acquireStudioWetPaperLbmWebGpuAccelerator(null, { width: 32, height: 32 });
     expect(wetPaperGpu.getStatus()).toBe("cpu-fallback");
     wetPaperGpu.dispose();
+    expect(["idle", "ready", "cpu-fallback"]).toContain(getStudioWetPaperLbmWebGpuStatus());
+
+    const routed = resolveStudioBrushBackendQualityRoute({
+      brushId: "pen",
+      availability: {
+        "webgpu-live-causal-ink": "ready",
+        "canvas2d-causal-ink": "ready",
+      },
+    });
+    expect(routed.status).toBe("ready");
+    if (routed.status === "ready") {
+      expect(routed.liveBackend).toBe("webgpu-live-causal-ink");
+    }
 
     const zeroCopyMod = await loadStudioZeroCopyIndirectBrushRuntime();
     expect(zeroCopyMod.isStudioGpuBristlePromotedBrushId("oil--impasto-ribbon")).toBe(true);

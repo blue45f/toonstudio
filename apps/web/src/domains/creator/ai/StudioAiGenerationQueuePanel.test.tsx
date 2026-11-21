@@ -74,13 +74,26 @@ describe("StudioAiGenerationQueuePanel (AC-001)", () => {
     const applyBtn = await screen.findByRole("button", { name: "비파괴 초안 레이어 삽입" });
     expect(screen.getByRole("button", { name: "선택 영역에 적용" })).toBeTruthy();
 
-    // Apply inserts real draft layer
+    // Apply inserts real draft layer and renders celebratory applied burst badge
     fireEvent.click(applyBtn);
     await waitFor(() => {
       expect(onInsertDraftLayer).toHaveBeenCalledTimes(1);
     });
     expect(await screen.findByText(/새 사본 레이어에/)).toBeTruthy();
+    expect(document.querySelector('[data-studio-ai-applied-burst="true"]')).not.toBeNull();
     expect(onAnnounce).toHaveBeenCalled();
+  });
+
+  it("provides a 1-click recommended first CTA in the empty state", async () => {
+    const store = createStudioAiGenerationQueueStore({
+      documentId: "doc-empty-cta",
+      storage: createMemoryStorage(),
+    });
+    render(<StudioAiGenerationQueuePanel documentId="doc-empty-cta" store={store} />);
+    const firstCta = await screen.findByRole("button", { name: "추천 선화 정리 바로 시작" });
+    expect(firstCta.getAttribute("data-studio-ai-empty-first-cta")).toBe("true");
+    fireEvent.click(firstCta);
+    expect(await screen.findByRole("button", { name: "확인 후 시작" })).toBeTruthy();
   });
 
   it("supports decline, failure retry, cancel, and restores persisted jobs on remount", async () => {

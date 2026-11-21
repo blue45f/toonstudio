@@ -80,13 +80,13 @@ describe("StudioLayerNavigatorItemRow T9 Layer Trio & Touch Gestures", () => {
     const handlers = makeHandlers();
     const { rerender } = renderItemRow(handlers);
 
-    fireEvent.click(screen.getByRole("button", { name: "펜선 레이어 클리핑 마스크" }));
+    fireEvent.click(screen.getByRole("button", { name: /펜선 레이어.*클리핑 마스크/ }));
     expect(handlers.onToggleItemClipBelow).toHaveBeenCalledWith("ink-layer", true);
 
-    fireEvent.click(screen.getByRole("button", { name: "펜선 레이어 알파 잠금" }));
+    fireEvent.click(screen.getByRole("button", { name: /펜선 레이어.*알파 잠금/ }));
     expect(handlers.onToggleItemAlphaLock).toHaveBeenCalledWith("ink-layer", true);
 
-    fireEvent.click(screen.getByRole("button", { name: "펜선 레이어 참조 레이어" }));
+    fireEvent.click(screen.getByRole("button", { name: /펜선 레이어.*참조 레이어/ }));
     expect(handlers.onToggleItemReference).toHaveBeenCalledWith("ink-layer", true);
 
     // Bottom layer (zIndex=0, canClipBelow=false) disables clipping mask
@@ -119,7 +119,7 @@ describe("StudioLayerNavigatorItemRow T9 Layer Trio & Touch Gestures", () => {
       </ul>,
     );
     expect(
-      (screen.getByRole("button", { name: "펜선 레이어 클리핑 마스크" }) as HTMLButtonElement).disabled,
+      (screen.getByRole("button", { name: /펜선 레이어.*클리핑 마스크/ }) as HTMLButtonElement).disabled,
     ).toBe(true);
   });
 

@@ -84,6 +84,9 @@ let sliceScheduled = false;
 let runtime: WetPaperRuntime | null = null;
 let runtimeLoad: Promise<void> | null = null;
 let runtimeFailed = false;
+let lbmGpuAccelerator: { dispose(): void; getStatus(): string } | null = null;
+let lbmGpuPrewarmStarted = false;
+let lbmGpuStatus: "idle" | "ready" | "cpu-fallback" = "idle";
 
 function nowMs(): number {
   return globalThis.performance?.now?.() ?? 0;
@@ -339,7 +342,27 @@ function resolveIdleWaiters(): void {
   for (const resolve of waiters) resolve();
 }
 
+function prewarmWetPaperLbmWebGpuIfAvailable(): void {
+  if (lbmGpuPrewarmStarted) return;
+  lbmGpuPrewarmStarted = true;
+  const gpu = (globalThis as { navigator?: { gpu?: { requestAdapter?: () => Promise<{ requestDevice?: () => Promise<GPUDevice> } | null> } } }).navigator?.gpu;
+  if (!gpu || typeof gpu.requestAdapter !== "function") {
+    lbmGpuStatus = "cpu-fallback";
+    return;
+  }
+  void gpu.requestAdapter().then(async (adapter) => {
+    const device = adapter && typeof adapter.requestDevice === "function" ? await adapter.requestDevice() : null;
+    const accelerator = await acquireStudioWetPaperLbmWebGpuAccelerator(device, { width: 256, height: 256 });
+    lbmGpuAccelerator?.dispose();
+    lbmGpuAccelerator = accelerator;
+    lbmGpuStatus = accelerator.getStatus() === "ready" ? "ready" : "cpu-fallback";
+  }).catch(() => {
+    lbmGpuStatus = "cpu-fallback";
+  });
+}
+
 function ensureRuntime(): void {
+  prewarmWetPaperLbmWebGpuIfAvailable();
   if (runtime || runtimeLoad || runtimeFailed) return;
   runtimeLoad = import("./studio-wet-paper-runtime").then(
     (module) => {
@@ -624,6 +647,10 @@ export function resetStudioWetPaperBakeHostForTests(): void {
   refusedAt.clear();
   preferComposite = true;
   runtimeFailed = false;
+  lbmGpuAccelerator?.dispose();
+  lbmGpuAccelerator = null;
+  lbmGpuPrewarmStarted = false;
+  lbmGpuStatus = "idle";
   resolveIdleWaiters();
 }
 
@@ -720,4 +747,9 @@ export async function acquireStudioWetPaperLbmWebGpuAccelerator(
 ) {
   const { StudioWetPaperLbmWebGpuRuntime } = await import("./studio-wet-paper-lbm-webgpu-runtime");
   return new StudioWetPaperLbmWebGpuRuntime(device, config);
+}
+
+/** 현재 세션의 WebGPU D2Q9 LBM 수채 가속기 준비 상태. */
+export function getStudioWetPaperLbmWebGpuStatus(): "idle" | "ready" | "cpu-fallback" {
+  return lbmGpuStatus;
 }

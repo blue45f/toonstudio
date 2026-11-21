@@ -1,8 +1,11 @@
 import { GitBranch, Plus, Spline, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { BubbleTailDirection, BubbleTailSide, BubbleTailSpec } from "./studio-bubble-path";
-import { buildSpeechBubbleTailBooleanUnion } from "./studio-korean-bubble-boolean-typesetting";
+import {
+  buildSpeechBubbleTailBooleanUnion,
+  speechBubbleBooleanPolygonsToSvgPath,
+} from "./studio-korean-bubble-boolean-typesetting";
 
 import { useT } from "@/shared/lib/i18n";
 
@@ -24,11 +27,17 @@ export interface StudioBubbleTailControlsProps {
   length: number;
   base: number;
   bend: number;
+  /** 실제 선택된 말풍선 요소 너비(px). 없으면 기본 미리보기 크기(220px)를 사용한다. */
+  bubbleWidth?: number;
+  /** 실제 선택된 말풍선 요소 높이(px). 없으면 기본 미리보기 크기(120px)를 사용한다. */
+  bubbleHeight?: number;
   extraTails: readonly BubbleTailSpec[];
   anchored: boolean;
   allowMultiple?: boolean;
   onPatchPrimary: (patch: StudioBubblePrimaryTailPatch) => void;
   onChangeExtraTails: (tails: readonly BubbleTailSpec[]) => void;
+  /** 계산된 불리언 합집합 단일 외곽선 SVG 경로를 상위 문서/요소에 반영한다. */
+  onApplyBooleanOutlinePath?: (svgPath: string) => void;
 }
 
 const SEGMENT_CLASS =
@@ -105,32 +114,76 @@ export function StudioBubbleTailControls({
   length,
   base,
   bend,
+  bubbleWidth,
+  bubbleHeight,
   extraTails,
   anchored,
   allowMultiple = true,
   onPatchPrimary,
   onChangeExtraTails,
+  onApplyBooleanOutlinePath,
 }: StudioBubbleTailControlsProps) {
   const t = useT();
-  const [unionSummary, setUnionSummary] = useState<string | null>(null);
-  const runTailBooleanPreview = () => {
+  const safeBubbleW = Math.max(80, Math.round(bubbleWidth && Number.isFinite(bubbleWidth) ? bubbleWidth : 220));
+  const safeBubbleH = Math.max(56, Math.round(bubbleHeight && Number.isFinite(bubbleHeight) ? bubbleHeight : 120));
+  const [unionPreview, setUnionPreview] = useState<{
+    readonly pathD: string;
+    readonly viewBox: string;
+    readonly polygonCount: number;
+    readonly applied: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (tail === "none") {
+      setUnionPreview(null);
+      return;
+    }
+    let cancelled = false;
     void buildSpeechBubbleTailBooleanUnion({
-      x: 0,
-      y: 0,
-      width: 220,
-      height: 120,
+      x: 12,
+      y: 12,
+      width: safeBubbleW,
+      height: safeBubbleH,
       tailSide: tail,
       tailXRatio: ratio,
       tailHeight: length,
       tailBase: base,
       tailBend: bend * 24,
     }).then((result) => {
-      setUnionSummary(
-        result.ok
-          ? `단일 외곽선 불리언 합집합 준비됨 (${result.polygons.length}개 외곽 패스)`
-          : "꼬리 합집합을 계산하지 못했습니다.",
-      );
+      if (cancelled || !result.ok) return;
+      const pathD = speechBubbleBooleanPolygonsToSvgPath(result.polygons);
+      if (!pathD) return;
+      const pad = 10;
+      const vx = Math.floor(result.bounds.x - pad);
+      const vy = Math.floor(result.bounds.y - pad);
+      const vw = Math.max(40, Math.ceil(result.bounds.width + pad * 2));
+      const vh = Math.max(40, Math.ceil(result.bounds.height + pad * 2));
+      setUnionPreview({
+        pathD,
+        viewBox: `${vx} ${vy} ${vw} ${vh}`,
+        polygonCount: result.polygons.length,
+        applied: false,
+      });
     });
+    return () => {
+      cancelled = true;
+    };
+  }, [tail, safeBubbleW, safeBubbleH, ratio, length, base, bend]);
+
+  const applySeamlessBooleanTail = () => {
+    // 말풍선 본체 폭 대비 이음새 겹침을 방지하는 안전 밑동/비율로 정렬하고 단일 외곽선 경로를 전달한다.
+    const maxSafeBase = Math.max(10, Math.round(safeBubbleW * 0.45));
+    const safeRatio = Math.max(0.15, Math.min(0.85, ratio));
+    const safeBase = Math.min(base, maxSafeBase);
+    onPatchPrimary({
+      tail,
+      tailXRatio: safeRatio,
+      tailBase: safeBase,
+    });
+    if (unionPreview?.pathD) {
+      onApplyBooleanOutlinePath?.(unionPreview.pathD);
+      setUnionPreview((prev) => (prev ? { ...prev, applied: true } : prev));
+    }
   };
   const visible = tail !== "none";
 
@@ -410,20 +463,45 @@ export function StudioBubbleTailControls({
               {t("studio.bubbleTail.continueSpeechSingleTail")}
             </p>
           )}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-            <button
-              type="button"
-              data-studio-bubble-tail-boolean-preview="true"
-              onClick={runTailBooleanPreview}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg"
-            >
-              <Spline size={13} aria-hidden="true" />
-              꼬리 외곽선 합집합 확인
-            </button>
-            {unionSummary ? (
-              <span role="status" className="text-[0.68rem] font-medium text-good">
-                {unionSummary}
-              </span>
+          <div className="space-y-2 rounded-xl border border-line bg-card/45 p-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-fg">단일 외곽선 합집합 미리보기</p>
+                <p className="text-[0.65rem] text-fg-3">
+                  본체({safeBubbleW}×{safeBubbleH}px)와 꼬리 이음새 선을 실시간 합집합으로 합칩니다
+                </p>
+              </div>
+              <button
+                type="button"
+                data-studio-bubble-tail-boolean-apply="true"
+                disabled={!unionPreview}
+                onClick={applySeamlessBooleanTail}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-accent/45 bg-accent-soft px-3 text-xs font-semibold text-accent transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-accent hover:text-on-accent active:scale-[0.97] disabled:opacity-45 motion-reduce:transition-none motion-reduce:transform-none"
+              >
+                <Spline size={13} aria-hidden="true" />
+                {unionPreview?.applied ? "단일 외곽선 정렬됨" : "단일 외곽선 정렬 적용"}
+              </button>
+            </div>
+            {unionPreview ? (
+              <div className="flex items-center gap-3 rounded-lg border border-line/70 bg-canvas/85 p-2">
+                <svg
+                  data-studio-bubble-boolean-svg="true"
+                  viewBox={unionPreview.viewBox}
+                  aria-label="말풍선 본체와 꼬리 단일 외곽선 합집합 미리보기"
+                  className="h-16 w-28 shrink-0"
+                >
+                  <path
+                    d={unionPreview.pathD}
+                    className="fill-card stroke-accent"
+                    strokeWidth={3}
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <p role="status" className="text-[0.68rem] leading-relaxed text-fg-2">
+                  외곽선 {unionPreview.polygonCount}개로 깔끔하게 결합됨
+                  {unionPreview.applied ? " · 선택 말풍선 꼬리 비율을 안전 범위로 맞췄습니다." : ""}
+                </p>
+              </div>
             ) : null}
           </div>
         </>

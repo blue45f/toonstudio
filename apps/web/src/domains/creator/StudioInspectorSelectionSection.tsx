@@ -323,6 +323,8 @@ export function StudioInspectorSelectionSection({
                     length={selected.tailHeight ?? 30}
                     base={selectedBubbleTailGeometry?.tailSpec?.base ?? selected.tailBase ?? 18}
                     bend={selected.tailBend ?? 0}
+                    bubbleWidth={selected.w}
+                    bubbleHeight={selected.h}
                     extraTails={normalizeExtraTails(selected.extraTails)}
                     anchored={Boolean(selected.tailAnchorId || selected.tailAnchorPoint)}
                     allowMultiple={selected.variant !== "double"}
