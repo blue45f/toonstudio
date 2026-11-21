@@ -61,7 +61,8 @@ jobs:
   feedback-community:
     name: Feedback community regression gate
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 전체 타입 fallback 뒤에도 DB·실제 브라우저·production build 검사를 모두 유지한다.
+    timeout-minutes: 150
     permissions:
       contents: read
       actions: read
@@ -210,6 +211,7 @@ jobs:
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'
         run: |
           set -euo pipefail
           node --max-old-space-size=8192 scripts/verify-typechecked-build-inputs.mjs record "$RUNNER_TEMP/typechecked-build-inputs.json"

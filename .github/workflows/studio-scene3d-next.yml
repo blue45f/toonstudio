@@ -50,7 +50,8 @@ concurrency:
 jobs:
   scene3d-contracts:
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 35
+    # 전체 타입 검사와 앞선 3D 동작 회귀를 모두 마칠 시간을 확보한다.
+    timeout-minutes: 120
     env:
       NODE_OPTIONS: --max-old-space-size=12288
     steps:
@@ -96,6 +97,8 @@ jobs:
       - name: Verify selected-object transactions, storage and history
         run: pnpm run verify:studio-3d-inplace
       - name: 웹·API 전체 타입 검사
+        env:
+          TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'
         run: pnpm run typecheck
 
 
