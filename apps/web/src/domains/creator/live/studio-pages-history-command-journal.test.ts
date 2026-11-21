@@ -262,7 +262,7 @@ describe("StudioPagesHistoryCommandJournal", () => {
 
     expect(bridge.replayPlan()).toMatchObject({
       checkpoint: {
-        id: "checkpoint:history-rebase",
+        id: "checkpoint:1",
         upToSequence: 0,
         state: {
           historyIndex: 7,

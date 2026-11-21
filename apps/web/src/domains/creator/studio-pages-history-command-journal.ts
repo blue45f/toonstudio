@@ -7,6 +7,11 @@ import {
   type StudioCommandReplayPlan,
 } from "./studio-command-journal";
 
+import {
+  STUDIO_COMMAND_IDENTITY_POLICY_KEY,
+  STUDIO_COMMAND_SEQUENCE_IDENTITY_POLICY,
+} from "./studio-cuttoon-editor/runtime/history/studio-command-journal-identity";
+
 const STUDIO_HISTORY_JOURNAL_ACTOR_ID = "actor:local-studio";
 const DEFAULT_HISTORY_JOURNAL_MAX_RECORDS = 512;
 const DEFAULT_HISTORY_JOURNAL_COMPACT_AT = 448;
@@ -240,7 +245,9 @@ export class StudioPagesHistoryCommandJournal {
     if (options.serialized !== undefined) {
       if (
         this.journalValue.extensions.integration !== "studio-pages-history"
-        || this.journalValue.extensions.version !== 1
+        || (this.journalValue.extensions.version !== 1 && this.journalValue.extensions.version !== 2)
+        || (this.journalValue.extensions.version === 2)
+          !== (this.journalValue.identityPolicy === STUDIO_COMMAND_SEQUENCE_IDENTITY_POLICY)
       ) {
         throw new Error("Restored Studio history journal belongs to another integration.");
       }
@@ -259,7 +266,8 @@ export class StudioPagesHistoryCommandJournal {
       },
       extensions: {
         integration: "studio-pages-history",
-        version: 1,
+        version: 2,
+        [STUDIO_COMMAND_IDENTITY_POLICY_KEY]: STUDIO_COMMAND_SEQUENCE_IDENTITY_POLICY,
       },
     });
   }
@@ -300,7 +308,7 @@ export class StudioPagesHistoryCommandJournal {
     );
     this.journalValue = this.createJournal();
     this.journalValue.compact({
-      id: "checkpoint:history-rebase",
+      id: `checkpoint:${this.journalValue.nextSequence}`,
       state: snapshot as unknown as StudioCommandJsonValue,
       extensions: {
         integration: "studio-pages-history",
