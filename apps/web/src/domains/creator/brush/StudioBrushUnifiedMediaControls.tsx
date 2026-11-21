@@ -3,7 +3,7 @@ import { ChevronDown, Droplets, Layers, PenTool } from "lucide-react";
 import {
   MANGA_NIB_PERSONALITY_PROFILES,
   type MangaNibPersonalityId,
-} from "@toonstudio/studio-brush-platform";
+} from "@toonstudio/studio-brush-platform/natural-media";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { STUDIO_SPECTRAL_WGM_COLOR_MIX_PROGRAM_ID } from "../studio-spectral-wgm-mix-v1";
