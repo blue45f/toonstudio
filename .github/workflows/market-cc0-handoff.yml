@@ -36,7 +36,8 @@ concurrency:
 jobs:
   handoff:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # 6MiB 전체 타입 검사 실측 42분 9초 뒤에도 설치·실바이트·브라우저 검증을 끝낼 시간을 둔다.
+    timeout-minutes: 65
     steps:
       - uses: actions/checkout@v7
         with:
@@ -51,6 +52,7 @@ jobs:
       - name: Verify source identities, legacy behavior and real browser persistence
         env:
           NODE_OPTIONS: --max-old-space-size=8192
+          TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '6291456'
         run: |
           set -euo pipefail
           mkdir -p artifacts/market-cc0
