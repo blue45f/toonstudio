@@ -4,13 +4,14 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { SessionContext, type SessionContextValue } from "@/domains/auth/public/session/auth-session-store";
 import { useI18n } from "@/shared/lib/i18n";
 
 import { ensureStudioSaveProfile } from "../save-first/studio-save-profile";
 import { EXAMPLE_PROJECT_ID } from "../studio-example-project-content";
 import { writeStudioExactResumeContext } from "../studio-exact-resume-context";
 import { ensureInitialStudioProjectDocument } from "../studio-project-document-store";
-import { archiveStudioProject, createStudioProject, markStudioProjectOpened } from "../studio-project-library-store";
+import { archiveStudioProject, createStudioProject, markStudioProjectOpened, readStudioProjectLibrary } from "../studio-project-library-store";
 import { resolveStudioProjectResumeTarget } from "../studio-project-resume-target";
 import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
 import { studioLibraryRecentWork } from "./studio-library-recent-work";
@@ -46,6 +47,42 @@ beforeEach(() => { window.localStorage.clear(); useI18n.setState({ lang: "ko" })
 afterEach(() => { cleanup(); window.localStorage.clear(); useI18n.setState({ lang: "ko" }); });
 
 describe("개인 활동에 따른 작업 홈", () => {
+  it("로그인 상태 확인 중에는 복제를 시도해도 기기에 새 기록을 쓰지 않는다", () => {
+    const { project } = seedProject("auth-pending-copy", "상태 확인 중 원고");
+    const pending: SessionContextValue = { status: "unauthenticated", ready: false, data: null, update: async () => null };
+    render(<SessionContext.Provider value={pending}><MemoryRouter initialEntries={["/studio"]}><Harness content /></MemoryRouter></SessionContext.Provider>);
+    const card = screen.getByRole("heading", { name: project.title, exact: true }).closest("article");
+    if (!card) throw new Error("원본 프로젝트 카드가 없습니다.");
+    fireEvent.click(within(card).getByText("작업 관리", { exact: true }));
+    const beforeClick = Object.entries(window.localStorage).sort();
+    const beforeIds = readStudioProjectLibrary(window.localStorage).projects.map(({ id }) => id);
+    fireEvent.click(within(card).getByRole("button", { name: project.title + " 복제", exact: true }));
+    expect(screen.getByText("로그인 상태를 확인 중입니다. 잠시 후 다시 시도하세요.")).toBeTruthy();
+    expect(beforeIds).toContain(project.id);
+    expect(readStudioProjectLibrary(window.localStorage).projects.map(({ id }) => id)).toEqual(beforeIds);
+    expect(Object.entries(window.localStorage).sort()).toEqual(beforeClick);
+  });
+
+  it("복제 재시도는 저장한 이전 콜백 대신 현재 로그인 준비 상태를 검사한다", async () => {
+    const { project } = seedProject("auth-retry-copy", "재시도 원고");
+    const guest: SessionContextValue = { status: "unauthenticated", ready: true, data: null, update: async () => null };
+    const showSession = (session: SessionContextValue) => <SessionContext.Provider value={session}>
+      <MemoryRouter initialEntries={["/studio"]}><Harness content /></MemoryRouter>
+    </SessionContext.Provider>;
+    const { rerender } = render(showSession(guest));
+    const card = screen.getByRole("heading", { name: project.title, exact: true }).closest("article");
+    if (!card) throw new Error("원본 프로젝트 카드가 없습니다.");
+    fireEvent.click(within(card).getByText("작업 관리", { exact: true }));
+    fireEvent.click(within(card).getByRole("button", { name: project.title + " 복제", exact: true }));
+    // 이 DOM 환경에는 OPFS/SQLite 권위가 없으므로 원고 복제가 실패하고 재시도 버튼이 나타납니다.
+    await screen.findByRole("button", { name: "다시 시도", exact: true });
+    rerender(showSession({ ...guest, ready: false }));
+    const beforeRetry = Object.entries(window.localStorage).sort();
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도", exact: true }));
+    expect(screen.getByText("로그인 상태를 확인 중입니다. 잠시 후 다시 시도하세요.")).toBeTruthy();
+    expect(Object.entries(window.localStorage).sort()).toEqual(beforeRetry);
+  });
+
   it("시딩된 예제만 있으면 새 작업을 우선하고 개인 최근 작업으로 오인시키지 않는다", () => {
     seedExamples();
     const { container } = show(true);
