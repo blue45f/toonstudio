@@ -596,7 +596,15 @@ describe("PSD 가져오기(ag-psd 실바이트 왕복)", () => {
         width: 100,
         height: 60,
         children: [
-          // ag-psd 순서: [0]=패널 맨 위. Studio로 오면 뒤집힌다.
+          // CSP 실물에서 확인한 레코드 순서: [0]=맨 뒤(아래), [1]=맨 앞(위).
+          {
+            name: "Bottom Layer",
+            left: 0,
+            top: 0,
+            right: 4,
+            bottom: 2,
+            imageData: stubImageData(4, 2, red) as unknown as ImageData,
+          },
           {
             name: "Top Layer",
             left: 10,
@@ -607,14 +615,6 @@ describe("PSD 가져오기(ag-psd 실바이트 왕복)", () => {
             opacity: 0.5,
             blendMode: "multiply",
             hidden: true,
-          },
-          {
-            name: "Bottom Layer",
-            left: 0,
-            top: 0,
-            right: 4,
-            bottom: 2,
-            imageData: stubImageData(4, 2, red) as unknown as ImageData,
           },
         ],
       },

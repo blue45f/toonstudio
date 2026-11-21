@@ -178,7 +178,7 @@ describe("flattenPsdLayers", () => {
   });
 
   it("이름 없는 레이어는 최종 Studio 순서 기준 순번으로 '레이어 N' 폴백을 받는다", () => {
-    const psd = samplePsd([leaf(), leaf()]); // ag-psd 순서: 1번째=맨 위, 2번째=맨 아래
+    const psd = samplePsd([leaf(), leaf()]); // ag-psd 순서: 1번째=맨 아래, 2번째=맨 위
     expect(flattenPsdLayers(psd).map((f) => f.name)).toEqual(["레이어 1", "레이어 2"]);
   });
 });
