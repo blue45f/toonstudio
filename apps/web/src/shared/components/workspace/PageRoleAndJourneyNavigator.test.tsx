@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -133,12 +133,15 @@ describe("페이지 역할 · 5단계 창작 여정 단일 지도", () => {
     expect(journeyStageForNavigationGroupId("connect").stageNumber).toBe(3);
     expect(journeyStageForNavigationGroupId("discover").stageNumber).toBe(4);
     expect(CORE_SURFACE_QUICK_LINKS.map((item) => item.href)).toEqual([
+      "/research/materials",
       "/studio/bg3d",
       "/production",
       "/market",
       "/studio/support",
       "/creator-support",
     ]);
+    expect(resolvePageRoleJourney("/research/materials").stageNumber).toBe(4);
+    expect(resolvePageRoleJourney("/research/materials").accentTone).toBe("market");
   });
 });
 
@@ -271,5 +274,33 @@ describe("PageRoleAndJourneyNavigator 컴포넌트", () => {
       expect(link.className).toContain("motion-reduce:transition-none");
       expect(link.className).toContain("min-h-11");
     }
+  });
+
+  it("소재 검색 (⌘K) 런처 버튼 클릭 및 Ctrl+K 단축키로 전역 소재 검색 팔레트를 지연 마운트한다", async () => {
+    render(
+      <MemoryRouter initialEntries={["/studio"]}>
+        <PageRoleAndJourneyNavigator pathname="/studio" />
+      </MemoryRouter>,
+    );
+
+    const launcher = screen.getByTestId("journey-asset-search-launcher");
+    expect(launcher.textContent).toContain("소재 검색 (⌘K)");
+    expect(launcher.className).toContain("min-h-11");
+    expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
+
+    fireEvent.click(launcher);
+    await waitFor(() => {
+      expect(screen.getByTestId("global-asset-search-dialog")).not.toBeNull();
+    });
+
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    await waitFor(() => {
+      expect(screen.queryByTestId("global-asset-search-dialog")).toBeNull();
+    });
+
+    fireEvent.keyDown(window, { key: "/" });
+    await waitFor(() => {
+      expect(screen.getByTestId("global-asset-search-dialog")).not.toBeNull();
+    });
   });
 });
