@@ -131,8 +131,11 @@ describe("Studio menubar ownership boundary", () => {
     expect(menubar).toContain('data-studio-menubar-actions="true"');
     expect(menubar).toContain('data-studio-export-menu-panel="true"');
     expect(menubar).toContain("<StudioProjectCenterSurface");
-    expect(projectCenterSurface).toContain('data-studio-project-actions-menu="true"');
-    expect(projectCenterSurface).toContain('"data-studio-project-actions-menu": "true"');
+    expect(projectCenterSurface.match(/"data-studio-project-actions-menu": "true"/g)).toHaveLength(2);
+    expect(projectCenterSurface).toContain('{...(desktop ? {} : mobileDialogProps)}');
+    expect(projectCenterSurface).toContain('role: "dialog"');
+    expect(projectCenterSurface).toContain('useStudioWindowKeyboardFocus("#studio-project-actions-menu", true, onClose)');
+    expect(projectCenterSurface).toContain('rootDataAttributes={{');
     expect(menubar).toContain('data-studio-menubar-overflow-panel="true"');
     // Export, project actions, the measured overflow menu, and the command bar
     // settings dialog each escape clipping through one portal (2026-08-20).

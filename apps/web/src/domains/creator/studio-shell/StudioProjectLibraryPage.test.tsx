@@ -74,11 +74,9 @@ afterEach(() => {
 
 describe("StudioProjectLibraryPage", () => {
   it("핵심 생성과 가져오기는 유지하고 부가 관리 도구만 접는다", () => {
-    render(
-      <MemoryRouter initialEntries={["/studio"]}>
-        <StudioProjectLibraryPage />
-      </MemoryRouter>,
-    );
+    render(<MemoryRouter initialEntries={["/studio"]}>
+      <StudioProjectLibraryPage />
+    </MemoryRouter>);
     const title = screen.getByRole("heading", { level: 1, name: /내 작업|My work/u });
     const toolbar = title.closest("section");
     if (!toolbar) throw new Error("내 작업 도구 영역이 없습니다.");
@@ -88,7 +86,8 @@ describe("StudioProjectLibraryPage", () => {
     expect(create.closest("details")).toBeNull();
     expect(importFiles.closest("details")).toBeNull();
     expect(create.compareDocumentPosition(importFiles) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    const summary = screen.getByText(/저장·내보내기·제작 관리|Save, export and production/u);
+    const summary = screen.getByText(/^보관함·저장·제작 관리$|^Archive, storage & production$/u).closest("summary");
+    if (!summary) throw new Error("부가 관리 도구의 공개 접기 제목이 없습니다.");
     expect(summary.closest('[data-studio-library-toolbar="true"]')).toBeNull();
     const projects = document.querySelector('[data-studio-project-sections="true"]');
     if (!projects) throw new Error("관리 도구 앞의 작품 목록이 없습니다.");
@@ -99,6 +98,9 @@ describe("StudioProjectLibraryPage", () => {
     fireEvent.click(summary);
     expect(details.open).toBe(true);
     expect(within(details).getByRole("link", { name: /저장·백업|Save & backup/u }).getAttribute("href")).toBe("/studio?view=storage");
+    expect(within(details).getByRole("link", { name: /보관함|Archive/u }).getAttribute("href")).toBe("/studio?view=archived");
+    expect(within(details).getByRole("link", { name: /^내보내기$|^Export$/u }).getAttribute("href")).toBe("/studio?view=exports");
+    expect(within(details).getByRole("link", { name: /^게시$|^Publishing$/u }).getAttribute("href")).toBe("/studio?view=publications");
     expect(within(details).getByRole("link", { name: /^제작 관리$|^Production management$/u }).getAttribute("href")).toBe("/production");
     expect(within(details).getByRole("link", { name: /^작업 복구$|^Recover work$/u }).getAttribute("href")).toBe("/studio/recovery");
     fireEvent.click(summary);

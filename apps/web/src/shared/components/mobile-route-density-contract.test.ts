@@ -94,7 +94,16 @@ describe("mobile route density contract", () => {
       ...SITE_UTILITY_NAVIGATION, SITE_NAVIGATION_ITEMS.allMenu,
     ].map((item) => item.href));
     for (const item of Object.values(SITE_NAVIGATION_ITEMS)) expect(reachable.has(item.href), item.id).toBe(true);
-    expect(mobileNavigation).toContain('mobileTabs.length === 5 ? "grid-cols-5" : "grid-cols-4"');
+    // 네 목적과 전체 메뉴를 같은 폭의 다섯 칸에 둔다. minmax(0,1fr)는 긴 이름이
+    // 열의 최소 폭을 늘리지 않게 하므로 축약 유틸리티 이름 대신 실제 열 수·폭 계약을 확인한다.
+    expect(mobileNavigation).toMatch(/const mobileTabs\s*=\s*\[\.\.\.mobileSiteTabsForPath\(pathname\),\s*SITE_NAVIGATION_ITEMS\.allMenu\]/u);
+    const mobileGridColumns = mobileNavigation.match(
+      /mobileTabs\.length\s*===\s*(\d+)\s*\?\s*"grid-cols-\[repeat\((\d+),minmax\(0,1fr\)\)\]"\s*:\s*"grid-cols-\[repeat\((\d+),minmax\(0,1fr\)\)\]"/u,
+    );
+    expect(mobileGridColumns?.slice(1).map(Number)).toEqual([purposes.length + 1, purposes.length + 1, purposes.length]);
+    const mobileTabLinkClasses = mobileNavigation.match(/"site-bottom-tabs__link\s+([^"]*)"/u)?.[1]?.split(/\s+/u) ?? [];
+    expect(mobileTabLinkClasses).toEqual(expect.arrayContaining(["min-h-[3.75rem]", "min-w-0", "overflow-hidden"]));
+    expect(mobileNavigation).toContain('className="min-w-0 max-w-full truncate text-[11px] leading-tight"');
     expect(scene).toContain("min-height: 8rem");
     expect(scene).toContain(".route-purpose-scene__cards,");
     expect(workspace).toContain("grid-template-columns:repeat(5,minmax(0,1fr))");
