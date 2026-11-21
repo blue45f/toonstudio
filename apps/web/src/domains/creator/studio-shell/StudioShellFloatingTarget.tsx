@@ -56,6 +56,7 @@ import {
   studioShellFloatingSurfaceById,
   type StudioShellFloatingSurfaceId,
 } from "./studio-shell-floating-layout";
+import { useStudioShellFloatingTargetNode } from "./use-studio-shell-floating-target-node";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -201,8 +202,7 @@ export function StudioShellFloatingTarget({
   const shell = useStudioShellFloatingLayout();
   const { setSurfaceMounted } = shell;
   const preferredVisible = shell.isVisible(definition.visibilityId);
-  const [node, setNode] = useState<HTMLElement | null>(null);
-  const [forceVisible, setForceVisible] = useState(false);
+  const { node, forceVisible } = useStudioShellFloatingTargetNode(definition.selector);
   const [size, setSize] = useState(() => ({
     width: definition.defaultLayout.width,
     height: definition.defaultLayout.height,
@@ -271,29 +271,6 @@ export function StudioShellFloatingTarget({
   }, [surfaceId]);
   const resetRevision = shell.resetRevisions[surfaceId];
   const seenResetRevision = useRef(resetRevision);
-
-  useLayoutEffect(() => {
-    if (typeof document === "undefined") return undefined;
-    let active = true;
-    const locate = (): void => {
-      if (!active) return;
-      const candidate = document.querySelector<HTMLElement>(definition.selector);
-      setNode((current) => current === candidate ? current : candidate);
-      setForceVisible(candidate?.dataset.studioShellForceVisible === "true");
-    };
-    locate();
-    const observer = new MutationObserver(locate);
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["data-studio-shell-force-visible"],
-    });
-    return () => {
-      active = false;
-      observer.disconnect();
-    };
-  }, [definition.selector]);
 
   useEffect(() => {
     setSurfaceMounted(surfaceId, node !== null);

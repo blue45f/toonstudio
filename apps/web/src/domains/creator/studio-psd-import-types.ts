@@ -2,7 +2,7 @@
  * PSD 가져오기 — 결과·교환 명세 타입 계층.
  *
  * `studio-psd-import.ts`의 실행 로직에서 타입 계약만 분리했다(동작 없음).
- * ag-psd의 앞→뒤 순서를 Studio의 뒤→앞 순서로 반전한 결과 형태를 기술한다.
+ * ag-psd children의 뒤→앞 순서를 Studio elements에도 보존한 결과 형태를 기술한다.
  */
 
 import type { Layer, Psd, ReadOptions } from "ag-psd";

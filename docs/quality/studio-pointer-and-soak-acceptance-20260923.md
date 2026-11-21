@@ -398,3 +398,70 @@ issue 0을 확인했다. 같은 `46c884d0`의 #128 일반 실행은 모바일 �
 한다. 새 helper까지 포함한 로컬 부분 타입 검사도 4GiB Node heap 한도에서 OOM으로
 종료되어 전체 타입 통과 근거로 쓰지 않는다. 대표 17종의 기존 엄격 판정 6종 통과·
 11종 실패와 실제 300분 수락 미완료 상태를 유지하며, 기준값을 완화하지 않는다.
+
+## 2026-11-22 추가 분석: 첫 입력의 상태 갱신과 캔버스 표시 수명
+
+### 실행 코드와 대조한 첫 입력 #130
+
+[진단 #130](https://github.com/blue45f/toonstudio/actions/runs/44938045596)의
+소스는 `ecd2cebdbbeedc8a5b80c125319e23bd71d5019b`다. API digest, native·CPU
+원본과 선택된 실행 JavaScript의 해시를 확인했다. native 수집·stream은 완료됐고
+data loss와 검증 issue는 없었다. 실제 CPU 표본의 함수·URL·위치·호출 조상과
+native 시계를 대조했으며, 표본 수를 함수별 CPU 시간 비율로 해석하지 않는다.
+
+첫 pointerdown에서 `recordPointerType`의 상태 갱신 뒤 실제 Host와 작업공간 배치
+계산을 포함한 React callback 18.599ms를 확인했다. 현재 입력 기기 관측은 해당
+상태 갱신을 제거한 ref 경로다. 이 callback 전체를 그 setter 하나의 비용으로
+귀속하거나 새 코드가 정확히 18.599ms 빨라졌다고 주장하지 않는다.
+
+pointerup에는 Host를 포함한 두 React callback 29.877ms·25.350ms와 Konva의
+좌표 측정 경로에 겹친 style/layout 27.492ms가 있었다. callback은 task 내부
+구간이므로 전체 108.533ms에 중복해서 더하지 않는다. 두 React 구간 사이에 실제
+`StudioShellFloatingTarget`의 같은 대상 탐색 callback이 10회 실행됐다. 새 hook은
+마지막 요청의 DOM node와 force-visible 값이 같으면 React dispatch 전에 반환하고,
+변경되면 두 값을 하나의 snapshot으로 전달한다. React 반영 전 A→B→A 관측도
+마지막 요청 ref를 먼저 갱신해 보존한다. 이 수정의 동작 회귀와 실제 지연 개선은
+별도 판정이며, 두 번째 Host callback 전체의 제거를 증명한 것은 아니다.
+
+### 사전 검사 #131의 입력 전 표시 실패
+
+[300분 후보 #131](https://github.com/blue45f/toonstudio/actions/runs/44940293374)의
+소스는 `6becda63049a3e7a94eedfec100a550c543a8464`다. Naver·Instagram iOS·
+Desktop WebGPU 화면 프로필에서 실제 원고가 약 72×108 CSS px로 표시됐다.
+Desktop의 공개 배율 표시도 10%였다. 세 환경은 120×120 이상의 가리지 않은
+입력 영역을 찾지 못해 각각 8.542초·11.829초·6.654초에 첫 입력 준비를 끝냈다.
+완료 획·픽셀 표본·입력 중 긴 작업은 모두 0이며 300분 본 검사는 시작하지 않았다.
+이 결과를 GPU receipt 또는 브러시 성능의 성공·실패로 계산하지 않는다.
+
+상위 Host의 폭 관측은 최초 DOM 참조를 계속 보관하고 숨김 상태의 0폭도 배율에
+반영할 수 있었다. 후속 구현은 실제 `StudioCanvasViewport`의 layout effect에서
+관측을 소유해 표시·숨김·재마운트 수명에 맞춰 다시 측정한다. 0폭·분리된 노드·
+cleanup 뒤 callback은 기존 배율을 덮지 않는다. 회전은 최신 문서 폭 ref만 갱신하고
+다음 실제 크기 변화에 사용하며, 배율 하한 0.1과 상한 2.5/4는 유지한다.
+기존 artifact에는 초기 ref·폭 관측 이력이 없어 이 수명 문제가 #131의 유일한
+원인이었다고 확정하지 않는다. 소크에 강제 맞춤 동작을 넣거나 입력 영역·지연
+기준을 낮추지 않으며, 새 SHA의 실제 첫 화면과 입력 결과로 후속 수락을 확인한다.
+
+같은 관측 코드가 있는 `471a970c69eeea60560fd25cfaff20162b8a3793`의
+[진단 #134](https://github.com/blue45f/toonstudio/actions/runs/44942289825)도
+WebGPU 181.104초·Naver 185.347초 동안 각각 7회 모두 입력 영역 준비에서 실패했다.
+작은 보고서 ZIP의 전체 API digest와 내부 파일 무결성을 검증했다. 실제 입력이
+없어 첫 입력 native trace가 없으며, 긴 세션 CPU 표본만으로 receipt나 입력 지연의
+개선을 판정하지 않는다. 이 두 환경의 결과는 후속 관측 수정 이전 증거다.
+
+### 복수의 정상 진단 실행 파일 보존
+
+#134의 검증한 빌드에는 `studio-konva-runtime-CgWvCJDQ.js`와
+`studio-konva-runtime-Dq2AFIuE.js`가 함께 있었다. 수집기의 이름군당 한 파일
+가정이 정상 runtime·facade를 중복으로 거부했다. 후속 수집기는 필수 이름군 세 개를
+계속 요구하고, 이름군마다 서로 다른 실행 파일을 최대 네 개까지 이름·바이트·해시
+그대로 보존한다. 가장 큰 파일 하나로 추정해 대체하지 않는다. 다섯 번째 파일,
+동일 실파일의 하드링크 중복, symlink, 필수 파일 누락은 출력 전에 거부한다.
+개별 16MiB·합계 32MiB와 source/build/session/index/metadata·복사 후 해시 검증을
+유지하며, 보고서의 schemaVersion 1과 files 배열 계약은 바꾸지 않는다.
+
+새 캔버스 관측 수명 11개, 기존 보기·입력 33개, PSD·협업 준비·부동 대상 90개,
+필수 테스트 manifest 계약 74개, 진단 실행 계획·수집기 60개 회귀를 각 영향 범위에서
+실행했다. 새 관측 hook 두 개와 대응 테스트의 부분 strict TypeScript program은
+330개 source·진단 0개였으며 Host는 포함하지 않았다. 전체 Host/프로젝트 타입 검사,
+필수 전체 CI, 새 소스의 브라우저 성능 및 300분 수락은 이 로컬 결과와 구분한다.

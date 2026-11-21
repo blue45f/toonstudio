@@ -6935,31 +6935,6 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const studioViewDocumentWidth = canvasRotation === 90 || canvasRotation === 270
     ? canvasH
     : CANVAS_W;
-  const studioViewDocumentWidthRef = useRef(studioViewDocumentWidth);
-  useLayoutEffect(() => {
-    studioViewDocumentWidthRef.current = studioViewDocumentWidth;
-  }, [studioViewDocumentWidth]);
-  useEffect(() => {
-    const el = wrapRef.current;
-    // 컨테이너 폭에 맞춰 캔버스를 채운다. 전체화면이면 초광폭 모니터도 채우게 상한을 4배로 올린다.
-    // ResizeObserver로 패널 접기·전체화면 등 레이아웃 변화까지 감지(예전엔 window resize만 들어 접어도 안 넓어졌다).
-    const cap = isFullscreen || maximized || mobileImmersive || canvasOnlyMode ? 4 : 2.5;
-    const measure = () => {
-      const w = (el ?? wrapRef.current)?.clientWidth ?? CANVAS_W;
-      setScale(Math.min(cap, Math.max(0.1, w / studioViewDocumentWidthRef.current)));
-    };
-    measure();
-    let ro: ResizeObserver | null = null;
-    if (el && typeof ResizeObserver !== "undefined") {
-      ro = new ResizeObserver(measure);
-      ro.observe(el);
-    }
-    globalThis.addEventListener("resize", measure);
-    return () => {
-      ro?.disconnect();
-      globalThis.removeEventListener("resize", measure);
-    };
-  }, [canvasOnlyMode, isFullscreen, maximized, mobileImmersive]);
 
   // 휠·핀치 줌 제스처 엔진 — canvas/studio-zoom-gesture-engine 훅으로 추출. 틱은 ref 와 CSS
   // transform 만 만지고 정착 시 한 번만 setZoom 하는 제로 렌더 핫패스 계약이 훅 안에 그대로 있다.

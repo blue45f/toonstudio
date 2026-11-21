@@ -442,6 +442,7 @@ apps/web/src/domains/creator/canvas/StudioLiveAdjustmentGroup.test.tsx
 apps/web/src/domains/creator/canvas/StudioRecoveryNotice.test.tsx
 apps/web/src/domains/creator/canvas/studio-canvas-notice-placement.test.ts
 apps/web/src/domains/creator/canvas/studio-stage-document-raster-contract.test.ts
+apps/web/src/domains/creator/canvas/use-studio-canvas-auto-scale.test.tsx
 apps/web/src/domains/creator/catalog/StudioBundleAssetLibraryPanel.save.test.tsx
 apps/web/src/domains/creator/catalog/StudioIllustrationScenePreview.test.tsx
 apps/web/src/domains/creator/catalog/studio-bundle-backgrounds.test.ts
@@ -752,12 +753,14 @@ apps/web/src/domains/creator/studio-shell/StudioVisualGuidance.test.tsx
 apps/web/src/domains/creator/studio-shell/studio-creator-lobby-layout.contract.test.ts
 apps/web/src/domains/creator/studio-shell/studio-shell-default-safe-viewport.test.ts
 apps/web/src/domains/creator/studio-shell/use-studio-floating-surface-layout.test.tsx
+apps/web/src/domains/creator/studio-shell/use-studio-shell-floating-target-node.test.tsx
 apps/web/src/domains/creator/studio-shell/useStudioModalSheet.details.test.ts
 apps/web/src/domains/creator/studio-shell/useStudioProjectLibrary.test.tsx
 apps/web/src/domains/creator/studio-smart-filter-opacity.test.ts
 apps/web/src/domains/creator/studio-source-hydration-recovery-boundary.test.ts
 apps/web/src/domains/creator/studio-team-client.test.ts
 apps/web/src/domains/creator/studio-unsaved-work-guard.test.ts
+apps/web/src/domains/creator/studio-view-integration-contract.test.ts
 apps/web/src/domains/creator/studio-workspace-route.test.ts
 apps/web/src/domains/creator/studio-workspaces.test.ts
 apps/web/src/domains/creator/submission-package/StudioSubmissionPackagePanel.test.tsx

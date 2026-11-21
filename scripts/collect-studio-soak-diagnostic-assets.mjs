@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 const SHA = /^[0-9a-f]{40}$/u;
 const MAX_ASSET_BYTES = 16 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 32 * 1024 * 1024;
+const MAX_FILES_PER_FAMILY = 4;
 const PREFIXES = ["studio-legacy-editor-adapter", "studio-konva-runtime", "react-runtime",
   "StudioShellFloatingLayoutHost", "StudioEdgeQuickSlidersAndHoldEyedropper"];
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -35,15 +36,23 @@ export function collectStudioSoakDiagnosticAssets({ distDirectory, evidenceDirec
   const names = readdirSync(assetsDirectory).sort();
   const selected = PREFIXES.flatMap((prefix, index) => {
     const matches = names.filter((name) => name.startsWith(prefix + "-") && /^[A-Za-z0-9_-]+\.js$/u.test(name));
-    requireValue(matches.length <= 1 && (index >= 3 || matches.length === 1), `진단 번들이 누락되거나 중복됩니다: ${prefix}`);
+    requireValue(index >= 3 || matches.length > 0, `필수 진단 번들이 누락되었습니다: ${prefix}`);
+    // 수동 runtime 청크와 같은 이름의 facade도 각 원본 URL과 함께 보존한다.
+    requireValue(matches.length <= MAX_FILES_PER_FAMILY,
+      `진단 번들 이름군의 파일 수가 ${MAX_FILES_PER_FAMILY}개를 넘었습니다: ${prefix}`);
     return matches;
   });
   let totalBytes = 0;
+  const identities = new Set();
   // 먼저 모든 경계와 바이트를 검증해 일부 파일만 정상 증거처럼 남기지 않는다.
   const files = selected.map((name) => {
     const path = join(assetsDirectory, name), stat = lstatSync(path);
     requireValue(stat.isFile() && !stat.isSymbolicLink() && stat.size > 0 && stat.size <= MAX_ASSET_BYTES,
       `진단 번들은 16MiB 이내의 일반 JS 파일이어야 합니다: ${name}`);
+    // 이름만 바꾼 하드링크도 같은 실파일을 중복 보존한 증거가 되지 않게 한다.
+    const identity = `${stat.dev}:${stat.ino}`;
+    requireValue(!identities.has(identity), `동일한 진단 파일을 중복으로 보존할 수 없습니다: ${name}`);
+    identities.add(identity);
     totalBytes += stat.size;
     requireValue(totalBytes <= MAX_TOTAL_BYTES, "진단 번들의 합계가 32MiB를 넘었습니다.");
     return { file: name, bytes: stat.size, sha256: digest(readFileSync(path)) };

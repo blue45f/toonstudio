@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
-  copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
+  copyFileSync, existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
   renameSync, rmSync, symlinkSync, truncateSync, writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -249,6 +249,26 @@ test("선택 진단 청크가 없는 빌드도 필수 세 청크가 있으면 �
   withDiagnosticFixture((fixture) => assert.equal(fixture.collect().files.length, 3));
 });
 
+test("한 빌드의 Konva runtime과 facade를 이름과 바이트 그대로 함께 보존한다", () => {
+  withDiagnosticFixture((fixture) => {
+    rmSync(join(fixture.assetsDirectory, fixture.assetName("studio-konva-runtime")));
+    const assets = new Map([
+      ["studio-konva-runtime-CgWvCJDQ.js", Buffer.from('export { 도형 } from "./studio-konva-runtime-Dq2AFIuE.js";\n')],
+      ["studio-konva-runtime-Dq2AFIuE.js", Buffer.from('export const 도형 = "실제 runtime fixture";\n')],
+    ]);
+    for (const [name, bytes] of assets) writeFileSync(join(fixture.assetsDirectory, name), bytes);
+    const manifest = fixture.collect();
+    const selected = manifest.files.filter((file) => file.file.startsWith("studio-konva-runtime-"));
+    assert.deepEqual(selected, [...assets].map(([file, bytes]) => ({
+      file, bytes: bytes.length, sha256: sha256(bytes),
+    })));
+    assert.equal(manifest.files.length, 4);
+    assert.equal(manifest.schemaVersion, 1);
+    assert.equal(manifest.totalBytes, manifest.files.reduce((total, file) => total + file.bytes, 0));
+    for (const [name, bytes] of assets) assert.deepEqual(readFileSync(join(fixture.output, name)), bytes);
+  });
+});
+
 for (const [label, mutate] of [
   ["일반 실행", (report) => { report.cpuDiagnostic.diagnosticOnly = false; }],
   ["요청하지 않은 계측", (report) => { report.cpuDiagnostic.requested = false; }],
@@ -367,17 +387,46 @@ for (const prefix of REQUIRED_ASSETS) {
   test(`필수 진단 청크 ${prefix} 누락은 출력 전에 거절한다`, () => {
     withDiagnosticFixture((fixture) => {
       rmSync(join(fixture.assetsDirectory, fixture.assetName(prefix)));
-      fixture.rejectBeforeOutput(/누락되거나 중복/u);
+      fixture.rejectBeforeOutput(/필수 진단 번들이 누락/u);
     });
   });
 }
 
 for (const prefix of [...REQUIRED_ASSETS, ...OPTIONAL_ASSETS]) {
-  test(`진단 청크 ${prefix}의 서로 다른 두 해시 이름은 모호한 증거로 거절한다`, () => {
+  test(`진단 이름군 ${prefix}는 서로 다른 해시의 파일 네 개까지 모두 보존한다`, () => {
     withDiagnosticFixture((fixture) => {
-      writeFileSync(join(fixture.assetsDirectory, fixture.assetName(prefix)), "첫 청크");
-      writeFileSync(join(fixture.assetsDirectory, `${prefix}-another456.js`), "두 번째 청크");
-      fixture.rejectBeforeOutput(/누락되거나 중복/u);
+      rmSync(join(fixture.assetsDirectory, fixture.assetName(prefix)), { force: true });
+      const names = Array.from({ length: 4 }, (_, index) => `${prefix}-part${index}.js`);
+      for (const name of names) writeFileSync(join(fixture.assetsDirectory, name), `export const 이름 = ${JSON.stringify(name)};`);
+      const selected = fixture.collect().files.filter((file) => file.file.startsWith(prefix + "-"));
+      assert.deepEqual(selected.map((file) => file.file), names);
+      for (const file of selected) {
+        const source = readFileSync(join(fixture.assetsDirectory, file.file));
+        assert.deepEqual(readFileSync(join(fixture.output, file.file)), source);
+        assert.equal(file.sha256, sha256(source));
+      }
+    });
+  });
+  test(`진단 이름군 ${prefix}의 다섯 번째 파일은 출력 전에 거절한다`, () => {
+    withDiagnosticFixture((fixture) => {
+      rmSync(join(fixture.assetsDirectory, fixture.assetName(prefix)), { force: true });
+      for (let index = 0; index < 5; index += 1) {
+        writeFileSync(join(fixture.assetsDirectory, `${prefix}-part${index}.js`), `청크 ${index}`);
+      }
+      fixture.rejectBeforeOutput(/파일 수가 4개를 넘었습니다/u);
+    });
+  });
+}
+
+for (const sameFamily of [true, false]) {
+  test(`${sameFamily ? "같은" : "다른 필수"} 이름군의 하드링크로 동일 파일을 중복 보존하지 않는다`, () => {
+    withDiagnosticFixture((fixture) => {
+      const source = join(fixture.assetsDirectory, fixture.assetName(REQUIRED_ASSETS[0]));
+      const alias = join(fixture.assetsDirectory, sameFamily
+        ? `${REQUIRED_ASSETS[0]}-alias456.js` : fixture.assetName(REQUIRED_ASSETS[1]));
+      if (!sameFamily) rmSync(alias);
+      linkSync(source, alias);
+      fixture.rejectBeforeOutput(/동일한 진단 파일을 중복/u);
     });
   });
 }
@@ -437,6 +486,16 @@ test("개별 한도 안에서도 합계가 32MiB보다 1바이트 크면 일부 
     fixture.writeSizedAsset(REQUIRED_ASSETS[0], 16 * 1024 * 1024);
     fixture.writeSizedAsset(REQUIRED_ASSETS[1], 16 * 1024 * 1024);
     fixture.writeSizedAsset(REQUIRED_ASSETS[2], 1);
+    fixture.rejectBeforeOutput(/합계가 32MiB/u);
+  });
+});
+
+test("같은 이름군의 여러 해시 파일도 합계 32MiB 한도를 공유한다", () => {
+  withDiagnosticFixture((fixture) => {
+    fixture.writeSizedAsset(REQUIRED_ASSETS[0], 16 * 1024 * 1024);
+    const second = join(fixture.assetsDirectory, `${REQUIRED_ASSETS[0]}-another456.js`);
+    writeFileSync(second, "두 번째 청크");
+    truncateSync(second, 16 * 1024 * 1024);
     fixture.rejectBeforeOutput(/합계가 32MiB/u);
   });
 });

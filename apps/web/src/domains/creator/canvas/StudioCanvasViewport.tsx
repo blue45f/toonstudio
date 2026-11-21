@@ -11,6 +11,7 @@ import { StudioCinematicCanvasWelcome } from "./StudioCinematicCanvasWelcome";
 import { shouldShowStudioCinematicCanvasWelcome } from "./studio-cinematic-canvas-welcome-visibility";
 import { useStudioCanvasViewportInteraction } from "./studio-canvas-viewport-interaction";
 import { useStudioCanvasViewportLiveSurfaces } from "./studio-canvas-viewport-live-surfaces";
+import { useStudioCanvasAutoScale } from "./use-studio-canvas-auto-scale";
 import { localizeText } from "./studio-canvas-viewport-primitives";
 import { useStudioHandNavigation } from "./useStudioHandNavigation";
 import { useStudioHandShortcutController } from "./useStudioHandShortcutController";
@@ -41,6 +42,12 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
   ...rest
 }: StudioCanvasViewportProps) {
   const props: StudioCanvasViewportProps = { zoomHostRef, ...rest };
+  useStudioCanvasAutoScale({
+    wrapRef: props.wrapRef,
+    documentWidth: props.canvasRotation === 90 || props.canvasRotation === 270 ? props.canvasH : CANVAS_W,
+    maximumScale: props.autoFitMaximumScale,
+    setScale: props.setScale,
+  });
   const clarity = useStudioDrawingClarity();
   const inputNoticeId = useId();
   const existingSourceNotice = props.sourceHydrationPending || props.collaborationDocumentUnavailable;
