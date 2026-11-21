@@ -7,7 +7,7 @@ import { registerI18nLocaleEntries, setAppI18nAssetSource } from "@/shared/lib/i
 import { parseStudioI18nDictionary, STUDIO_I18N_ASSET_LOCALES } from "@/domains/creator/localization/studio-i18n-loader";
 import "@/domains/catalog/references/reference-i18n";
 
-const WEB_PUBLIC = path.resolve(process.cwd(), "apps/web/public");
+const WEB_PUBLIC = path.resolve(import.meta.dirname, "apps/web/public");
 for (const locale of STUDIO_I18N_ASSET_LOCALES) {
   const merged: Record<string, string> = {};
   for (const namespace of STUDIO_I18N_NAMESPACES) {

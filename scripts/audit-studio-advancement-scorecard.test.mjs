@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { buildStudioAdvancementScorecard } from "./audit-studio-advancement-scorecard.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("buildStudioAdvancementScorecard reports wired multi-domain readiness, 14/14 capabilities, and 62/62 cross-domain bridges", () => {
   const scorecard = buildStudioAdvancementScorecard();

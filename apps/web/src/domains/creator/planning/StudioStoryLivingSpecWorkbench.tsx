@@ -16,6 +16,7 @@ import { StudioAiProposalDiffGate } from "./StudioAiProposalDiffGate";
 import { StudioSixPerspectiveReviewDrawer } from "./StudioSixPerspectiveReviewDrawer";
 import { StudioStoryThreeViewWorkspace } from "./StudioStoryThreeViewWorkspace";
 import type { StudioProjectPlanningState } from "./studio-planning-store";
+import { canReplaceScopedStudioProjectRecord, isScopedStudioProjectRecord, markStudioProjectRecordMemoryOnly } from "./studio-local-project-record-guard";
 import {
   answerCutReadinessQuestion,
   approveAiProposal,
@@ -190,20 +191,25 @@ function readOrSeedLivingSpec(
   characters: readonly { readonly id: string; readonly name: string }[],
   locations: readonly { readonly id: string; readonly name: string }[],
 ): PersistedStoryLivingSpecRecord {
+  let originalUnreadable = false;
   if (typeof window !== "undefined") {
     try {
       const raw = window.localStorage.getItem(storyLivingSpecStorageKey(projectId));
-      if (raw) {
+      if (raw !== null) {
         const parsed = JSON.parse(raw) as Partial<PersistedStoryLivingSpecRecord> | null;
-        if (parsed && parsed.schemaVersion === 1 && parsed.state && Array.isArray(parsed.state.nodes)) {
+        if (parsed?.state && isScopedStudioProjectRecord(parsed, projectId, "story")) {
           return { schemaVersion: 1, projectId, state: parsed.state, cutApprovals: parsed.cutApprovals ?? {}, updatedAt: parsed.updatedAt ?? new Date().toISOString() };
         }
+        originalUnreadable = true;
       }
-    } catch { /* 파싱 실패 시 재시드 */ }
+    } catch { originalUnreadable = true; }
   }
   const seeded = buildInitialLivingSpecFromPlanning(projectId, planning, characters, locations);
+  if (originalUnreadable) markStudioProjectRecordMemoryOnly(seeded);
   if (typeof window !== "undefined") {
-    try { window.localStorage.setItem(storyLivingSpecStorageKey(projectId), JSON.stringify(seeded)); } catch { /* 저장 한도 초과 시 유지 */ }
+    try {
+      if (canReplaceScopedStudioProjectRecord(window.localStorage, storyLivingSpecStorageKey(projectId), projectId, "story", seeded)) window.localStorage.setItem(storyLivingSpecStorageKey(projectId), JSON.stringify(seeded));
+    } catch { /* 읽지 못한 원본은 보존하고 시드 초안은 메모리에 유지한다. */ }
   }
   return seeded;
 }
@@ -230,9 +236,11 @@ export function StudioStoryLivingSpecWorkbench({
     (updater: (prev: PersistedStoryLivingSpecRecord, now: string) => PersistedStoryLivingSpecRecord) => {
       const now = new Date().toISOString();
       setRecord((prev) => {
-        const next = { ...updater(prev, now), schemaVersion: 1 as const, projectId, updatedAt: now };
-        if (typeof window !== "undefined") {
+        if (prev.projectId !== projectId || prev.state.projectId !== projectId) return prev;
+        const next = { ...prev, ...updater(prev, now), schemaVersion: 1 as const, projectId, updatedAt: now };
+        if (typeof window !== "undefined" && prev.projectId === projectId && next.state.projectId === projectId) {
           try {
+            if (!canReplaceScopedStudioProjectRecord(window.localStorage, storyLivingSpecStorageKey(projectId), projectId, "story", next)) return next;
             window.localStorage.setItem(storyLivingSpecStorageKey(projectId), JSON.stringify(next));
             window.dispatchEvent(new CustomEvent(LIVING_SPEC_UPDATED_EVENT, { detail: next }));
           } catch { /* 저장 실패 시 초안 유지 */ }
@@ -247,7 +255,8 @@ export function StudioStoryLivingSpecWorkbench({
     if (typeof window === "undefined") return undefined;
     const onExpandedCommit = (event: Event) => {
       if (!(event instanceof CustomEvent) || !event.detail) return;
-      const detail = event.detail as { readonly cutId?: string; readonly id?: string; readonly summaryKo?: string };
+      const detail = event.detail as { readonly projectId?: string; readonly cutId?: string; readonly id?: string; readonly summaryKo?: string };
+      if (detail.projectId !== projectId) return;
       persistRecord((prev) => {
         const cutNodes = prev.state.nodes.filter((n) => n.id.prefix === "CUT");
         const target = cutNodes.find((n) => n.key === detail.cutId || n.id.code.toLowerCase() === detail.cutId?.toLowerCase()) ?? cutNodes[0];
@@ -258,7 +267,7 @@ export function StudioStoryLivingSpecWorkbench({
     const onExternalSpecUpdate = (event: Event) => {
       if (!(event instanceof CustomEvent) || !event.detail) return;
       const incoming = event.detail as Partial<PersistedStoryLivingSpecRecord>;
-      if (incoming.projectId === projectId && incoming.state && incoming.updatedAt) {
+      if (incoming.state && incoming.updatedAt && isScopedStudioProjectRecord(incoming, projectId, "story")) {
         setRecord((prev) => (incoming.updatedAt && incoming.updatedAt > prev.updatedAt ? { schemaVersion: 1, projectId, state: incoming.state!, cutApprovals: incoming.cutApprovals ?? prev.cutApprovals, updatedAt: incoming.updatedAt } : prev));
       }
     };

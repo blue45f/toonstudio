@@ -417,7 +417,7 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
       );
       expect(
         screen.getByTestId("bg3d-asset-mobile-savings-ts-bg3d-hero-v1-kr_modern_apartment_living-desktop").textContent,
-      ).toContain("모바일 경량 -44.2%");
+      ).toContain("모바일 경량 -43.4% (2.0 MB 절감)");
 
       fireEvent.click(apartmentButton);
       expect(host.addCustomModelToScene).toHaveBeenCalledWith(

@@ -118,21 +118,24 @@ function normalizeHandoffEntry(raw: unknown): KanbanHandoffEntry | null {
   };
 }
 
-export function loadProjectKanbanState(
-  storage: KanbanStorageLike | null | undefined,
-  projectId: string,
-): ProjectKanbanBoardState {
-  const fallback = createDefaultProjectKanbanState(projectId);
-  if (!storage) return fallback;
+function parseProjectKanbanState(raw: string, projectId: string): ProjectKanbanBoardState | null {
   try {
-    const raw = storage.getItem(kanbanStorageKey(projectId));
-    if (!raw) return fallback;
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return fallback;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)
+      || parsed.version !== 1 || parsed.projectId !== projectId
+      || !Array.isArray(parsed.handoffs)) return null;
     const rawStages =
       parsed.stages && typeof parsed.stages === "object" && !Array.isArray(parsed.stages)
         ? (parsed.stages as Record<string, unknown>)
         : {};
+    if (!KANBAN_STAGE_ORDER.every(id => {
+      const stage = rawStages[id];
+      if (!stage || typeof stage !== "object" || Array.isArray(stage)) return false;
+      const record = stage as Record<string, unknown>;
+      return typeof record.status === "string" && STATUS_SET.has(record.status)
+        && typeof record.assignee === "string" && typeof record.lastHandoffMemo === "string"
+        && (record.updatedAt === null || typeof record.updatedAt === "string");
+    }) || !parsed.handoffs.every(entry => normalizeHandoffEntry(entry) !== null)) return null;
     const stages = {
       storyboard: normalizeStageRecord(rawStages.storyboard),
       bg3d: normalizeStageRecord(rawStages.bg3d),
@@ -153,6 +156,20 @@ export function loadProjectKanbanState(
       handoffs,
     };
   } catch {
+    return null;
+  }
+}
+
+export function loadProjectKanbanState(
+  storage: KanbanStorageLike | null | undefined,
+  projectId: string,
+): ProjectKanbanBoardState {
+  const fallback = createDefaultProjectKanbanState(projectId);
+  if (!storage) return fallback;
+  try {
+    const raw = storage.getItem(kanbanStorageKey(projectId));
+    return (raw === null ? null : parseProjectKanbanState(raw, projectId)) ?? fallback;
+  } catch {
     return fallback;
   }
 }
@@ -163,8 +180,13 @@ export function saveProjectKanbanState(
 ): boolean {
   if (!storage) return false;
   try {
-    storage.setItem(kanbanStorageKey(state.projectId), JSON.stringify(state));
-    return true;
+    const normalized = parseProjectKanbanState(JSON.stringify(state), state.projectId);
+    if (!normalized) return false;
+    const raw = storage.getItem(kanbanStorageKey(state.projectId));
+    if (raw !== null && !parseProjectKanbanState(raw, state.projectId)) return false;
+    const serialized = JSON.stringify(normalized);
+    storage.setItem(kanbanStorageKey(state.projectId), serialized);
+    return storage.getItem(kanbanStorageKey(state.projectId)) === serialized;
   } catch {
     return false;
   }

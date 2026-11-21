@@ -137,14 +137,14 @@ export function buildBakedManuscriptCutLayer(input: {
   readonly splitWipeRatio: number;
 }): BakeToCutResult {
   const { capture, targetDocumentId, targetCutIndex } = input;
-  if (!targetDocumentId.trim() || targetCutIndex < 0) {
+  if (!targetDocumentId.trim() || !Number.isInteger(targetCutIndex) || targetCutIndex < 0) {
     return {
       ok: false,
       code: "INVALID_TARGET",
       messageKo: "유효한 대상 원고 문서와 컷 번호를 먼저 선택해 주세요.",
     };
   }
-  if (capture.widthPx <= 0 || capture.heightPx <= 0) {
+  if (!Number.isFinite(capture.widthPx) || !Number.isFinite(capture.heightPx) || capture.widthPx <= 0 || capture.heightPx <= 0) {
     return {
       ok: false,
       code: "INVALID_DIMENSIONS",
@@ -203,22 +203,31 @@ function storageKeyForDocument(targetDocumentId: string): string {
   return `${STUDIO_BG3D_BAKED_CUT_STORAGE_KEY_PREFIX}${encodeURIComponent(targetDocumentId.trim())}`;
 }
 
-function parsePersistedLayers(raw: string | null): readonly BakedManuscriptCutLayer[] {
-  if (!raw) return [];
+function isScopedBakedLayer(value: unknown, documentId: string): value is BakedManuscriptCutLayer {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const layer = value as Partial<BakedManuscriptCutLayer>;
+  return typeof layer.layerId === "string" && layer.layerId.length > 0
+    && layer.targetDocumentId === documentId
+    && typeof layer.targetCutIndex === "number" && Number.isInteger(layer.targetCutIndex) && layer.targetCutIndex >= 0
+    && layer.nonDestructive === true
+    && typeof layer.sourceSceneId === "string" && typeof layer.sourceCameraId === "string"
+    && typeof layer.inkPassRef === "string" && layer.inkPassRef.length > 0
+    && typeof layer.shadedPassRef === "string" && layer.shadedPassRef.length > 0
+    && Array.isArray(layer.rightsBomAssetIds) && layer.rightsBomAssetIds.every(id => typeof id === "string")
+    && typeof layer.createdAt === "string"
+    && (layer.previewMode === "shaded-3d" || layer.previewMode === "split-wipe" || layer.previewMode === "live-ink-only")
+    && typeof layer.splitWipeRatio === "number" && Number.isFinite(layer.splitWipeRatio)
+    && typeof layer.inkLineWeightPx === "number" && Number.isFinite(layer.inkLineWeightPx);
+}
+
+function parsePersistedLayers(raw: string | null, documentId: string): readonly BakedManuscriptCutLayer[] | null {
+  if (raw === null) return [];
   try {
     const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (item): item is BakedManuscriptCutLayer =>
-        typeof item === "object"
-        && item !== null
-        && typeof (item as BakedManuscriptCutLayer).layerId === "string"
-        && typeof (item as BakedManuscriptCutLayer).targetDocumentId === "string"
-        && typeof (item as BakedManuscriptCutLayer).targetCutIndex === "number"
-        && (item as BakedManuscriptCutLayer).nonDestructive === true,
-    );
+    if (!Array.isArray(parsed) || !parsed.every(item => isScopedBakedLayer(item, documentId))) return null;
+    return parsed.slice(0, MAX_PERSISTED_LAYERS_PER_DOCUMENT);
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -231,6 +240,7 @@ export function saveBakedManuscriptCutLayer(
   storage: Storage | null = defaultStorage(),
 ): { readonly persistedToStorage: boolean; readonly totalLayers: number } {
   const docId = layer.targetDocumentId.trim();
+  if (!docId || !isScopedBakedLayer(layer, docId)) return { persistedToStorage: false, totalLayers: 0 };
   const existing = listBakedManuscriptCutLayers(docId, storage);
   const next = [
     layer,
@@ -244,16 +254,14 @@ export function saveBakedManuscriptCutLayer(
   if (storage) {
     const key = storageKeyForDocument(docId);
     try {
-      storage.setItem(key, JSON.stringify(next));
-      persistedToStorage = true;
-    } catch {
-      // 대용량 DataURL로 용량 한도를 넘으면 최신 항목만 유지해 메타데이터+패스 영속성을 보전한다.
-      try {
-        storage.setItem(key, JSON.stringify(next.slice(0, 4)));
-        persistedToStorage = true;
-      } catch {
-        persistedToStorage = false;
+      if (parsePersistedLayers(storage.getItem(key), docId) !== null) {
+        const serialized = JSON.stringify(next);
+        storage.setItem(key, serialized);
+        persistedToStorage = storage.getItem(key) === serialized;
       }
+    } catch {
+      // 저장 거부 때 이전 재촬영 사본을 잘라 덮지 않고 새 인계 사본은 메모리에 유지한다.
+      persistedToStorage = false;
     }
   }
 
@@ -282,7 +290,7 @@ export function listBakedManuscriptCutLayers(
   if (inMemory && inMemory.length > 0) return inMemory;
   if (!storage) return [];
   try {
-    const parsed = parsePersistedLayers(storage.getItem(storageKeyForDocument(docId)));
+    const parsed = parsePersistedLayers(storage.getItem(storageKeyForDocument(docId)), docId) ?? [];
     if (parsed.length > 0) {
       inMemoryBakedCutRegistry.set(docId, Object.freeze(parsed));
     }

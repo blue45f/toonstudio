@@ -11,7 +11,7 @@ function Portrait({ name }: { readonly name: "character-pink" | "character-blue"
   return (
     <img
       src={`${ART_BASE}/${name}.webp`}
-      srcSet={`${ART_BASE}/${name}-320.webp 320w, ${ART_BASE}/${name}-640.webp 640w, ${ART_BASE}/${name}-960.webp 960w, ${ART_BASE}/${name}.webp 1200w`}
+      srcSet={`${ART_BASE}/${name}-320.webp 320w, ${ART_BASE}/${name}-640.webp 640w, ${ART_BASE}/${name}-960.webp 960w`}
       sizes={PORTRAIT_SIZES}
       alt=""
       width={960}

@@ -90,7 +90,8 @@ describe("VRM V12 surface-paint product boundary", () => {
 
   it("preserves pressure and tilt IR while retaining seam-safe measured projection", () => {
     expect(toolSource).toContain("modelRawInput(");
-    expect(toolSource).toContain("pressure: sample.pressure");
+    expect(toolSource).toContain("toRawSamples(transaction.samples, transaction.settings.pressureMode)");
+    expect(toolSource).toContain("pressure: resolveStudioVrmSurfaceStrokePressure(sample.pressure, index / denom, pressureMode)");
     expect(toolSource).toContain("tiltXDeg: sample.tiltX");
     expect(toolSource).toContain("tiltYDeg: sample.tiltY");
     expect(toolSource).toContain("brushProgram: built.brushProgram");

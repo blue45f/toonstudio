@@ -156,7 +156,8 @@ describe("Wave V2-W3B: RenderPanel·ParamPanel·테마 통합", () => {
   });
 
   it("shaper-studio-theme.css가 --atelier-specular-top 및 2px inset 활성 라인 토큰을 동기화하고 forced-colors에서 해제한다", () => {
-    const css = readFileSync(path.resolve(process.cwd(), "src", "app", "styles", "shaper-studio-theme.css"), "utf8");
+    const cssPath = path.resolve(import.meta.dirname, "../../styles/shaper-studio-theme.css");
+    const css = readFileSync(cssPath, "utf8");
     expect(css).toContain("--atelier-specular-top:");
     expect(css).toContain("--atelier-specular-active:");
     expect(css).toContain("--atelier-active-line-bottom: inset 0 -2px 0 var(--lab-accent);");

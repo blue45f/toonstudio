@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { verifyReaderEcosystemJson } from "./verify-reader-ecosystem-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("verifyReaderEcosystemJson passes compliant reader ecosystem and blocks missing TDMRep", () => {
   assert.equal(

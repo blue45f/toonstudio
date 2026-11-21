@@ -2,12 +2,12 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioProjectStoryPlanning } from "./StudioProjectStoryPlanning";
-import { StudioStoryLivingSpecWorkbench } from "./StudioStoryLivingSpecWorkbench";
+import { StudioStoryLivingSpecWorkbench, type PersistedStoryLivingSpecRecord } from "./StudioStoryLivingSpecWorkbench";
 import { ensureStudioProjectPlanning, saveStudioEpisodePlan } from "./studio-planning-store";
 
 vi.mock("@/platform/use-api-resource", () => ({
@@ -36,6 +36,99 @@ function seedPlanning(projectId: string) {
 }
 
 describe("StudioStoryLivingSpecWorkbench (Manyfast 3-뷰 라이브 연동)", () => {
+  it("첫 읽기만 실패해도 복구된 정상 원본을 초기 시드로 덮어쓰지 않는다", () => {
+    const projectId = "project-read-recovered";
+    const key = `toonstudio:story-living-spec:v1:${projectId}`;
+    const planning = seedPlanning(projectId);
+    const firstView = render(<StudioStoryLivingSpecWorkbench projectId={projectId} planning={planning} />);
+    fireEvent.change(screen.getByTestId("manyfast-story-title-input"), { target: { value: "이미 저장한 작품 제목" } });
+    const original = localStorage.getItem(key);
+    firstView.unmount();
+    const getItem = Storage.prototype.getItem;
+    let firstRead = true;
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(function (this: Storage, requestedKey: string) {
+      if (requestedKey === key && firstRead) { firstRead = false; throw new Error("일시적 읽기 실패"); }
+      return getItem.call(this, requestedKey);
+    });
+    render(<StudioStoryLivingSpecWorkbench projectId={projectId} planning={planning} />);
+    expect(localStorage.getItem(key)).toBe(original);
+    expect(screen.getByTestId<HTMLInputElement>("manyfast-story-title-input").value).toBe("이미 저장한 작품 제목");
+  });
+
+  it("읽기 실패로 만든 초안은 접근이 복구돼도 원본을 다시 읽기 전까지 메모리에 유지한다", () => {
+    const projectId = "project-draft-without-read";
+    const key = `toonstudio:story-living-spec:v1:${projectId}`;
+    const planning = seedPlanning(projectId);
+    const firstView = render(<StudioStoryLivingSpecWorkbench projectId={projectId} planning={planning} />);
+    fireEvent.change(screen.getByTestId("manyfast-story-title-input"), { target: { value: "복구할 정상 원본" } });
+    const original = localStorage.getItem(key);
+    firstView.unmount();
+    const getItem = Storage.prototype.getItem;
+    let unavailable = true;
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(function (this: Storage, requestedKey: string) {
+      if (requestedKey === key && unavailable) throw new Error("읽기 실패");
+      return getItem.call(this, requestedKey);
+    });
+    const memoryView = render(<StudioStoryLivingSpecWorkbench projectId={projectId} planning={planning} />);
+    unavailable = false;
+    fireEvent.change(screen.getByTestId("manyfast-story-title-input"), { target: { value: "읽지 않은 초안의 편집" } });
+    expect(screen.getByTestId<HTMLInputElement>("manyfast-story-title-input").value).toBe("읽지 않은 초안의 편집");
+    expect(localStorage.getItem(key)).toBe(original);
+    memoryView.unmount();
+    render(<StudioStoryLivingSpecWorkbench projectId={projectId} planning={planning} />);
+    expect(screen.getByTestId<HTMLInputElement>("manyfast-story-title-input").value).toBe("복구할 정상 원본");
+    fireEvent.change(screen.getByTestId("manyfast-story-title-input"), { target: { value: "원본 복원 후 편집" } });
+    expect(localStorage.getItem(key)).toContain("원본 복원 후 편집");
+  });
+
+  it.each(["broken", "envelope", "state"])("읽지 못한 기획 원본을 시드나 편집으로 덮어쓰지 않는다: %s", (kind) => {
+    const projectId = "project-preserved";
+    const key = `toonstudio:story-living-spec:v1:${projectId}`;
+    const planning = seedPlanning(projectId);
+    const view = render(<StudioStoryLivingSpecWorkbench projectId={projectId} planning={planning} />);
+    const record = JSON.parse(localStorage.getItem(key) ?? "null") as PersistedStoryLivingSpecRecord;
+    expect(record.projectId).toBe(projectId);
+    view.unmount();
+    const original = kind === "broken" ? "{broken-json" : JSON.stringify({
+      ...record,
+      projectId: kind === "envelope" ? "other-project" : projectId,
+      state: { ...record.state, projectId: kind === "state" ? "other-project" : projectId },
+    });
+    localStorage.setItem(key, original);
+    render(<StudioStoryLivingSpecWorkbench projectId={projectId} planning={planning} />);
+    expect(localStorage.getItem(key)).toBe(original);
+    fireEvent.change(screen.getByTestId("manyfast-story-title-input"), { target: { value: "메모리에 남긴 편집" } });
+    expect(screen.getByTestId<HTMLInputElement>("manyfast-story-title-input").value).toBe("메모리에 남긴 편집");
+    expect(localStorage.getItem(key)).toBe(original);
+  });
+
+  it("저장 거부 때 메모리 초안과 마지막 정상 저장본을 보존한다", () => {
+    const projectId = "project-quota";
+    const planning = seedPlanning(projectId);
+    render(<StudioStoryLivingSpecWorkbench projectId={projectId} planning={planning} />);
+    const key = `toonstudio:story-living-spec:v1:${projectId}`;
+    const original = localStorage.getItem(key);
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("저장 거부"); });
+    fireEvent.change(screen.getByTestId("manyfast-story-title-input"), { target: { value: "복구할 메모리 초안" } });
+    expect(screen.getByTestId<HTMLInputElement>("manyfast-story-title-input").value).toBe("복구할 메모리 초안");
+    expect(localStorage.getItem(key)).toBe(original);
+  });
+
+  it("다른 작품의 커밋과 중첩 작품 ID가 다른 갱신 이벤트를 거절한다", () => {
+    const projectId = "project-events";
+    const planning = seedPlanning(projectId);
+    render(<StudioStoryLivingSpecWorkbench projectId={projectId} planning={planning} />);
+    const key = `toonstudio:story-living-spec:v1:${projectId}`;
+    const original = localStorage.getItem(key);
+    const record = JSON.parse(original ?? "null") as PersistedStoryLivingSpecRecord;
+    act(() => {
+      window.dispatchEvent(new CustomEvent("toonstudio:expanded-tool-commit", { detail: { projectId: "other-project", id: "other-commit", cutId: "CUT:EP-01-C01", summaryKo: "다른 작품" } }));
+      window.dispatchEvent(new CustomEvent("toonstudio:story-living-spec-updated", { detail: { ...record, updatedAt: "2099-01-01T00:00:00Z", state: { ...record.state, projectId: "other-project", nodes: [] } } }));
+    });
+    expect(screen.getByTestId("manyfast-story-title-input")).toBeTruthy();
+    expect(localStorage.getItem(key)).toBe(original);
+  });
+
   it("StudioProjectStoryPlanning episodes 뷰에서 점진 노출로 지연 마운트된다", async () => {
     const projectId = "proj-living-lazy";
     seedPlanning(projectId);
@@ -116,7 +209,7 @@ describe("StudioStoryLivingSpecWorkbench (Manyfast 3-뷰 라이브 연동)", () 
     // 확장 도구 원고 커밋 이벤트 발행 -> 드리프트 자동 감지
     window.dispatchEvent(
       new CustomEvent("toonstudio:expanded-tool-commit", {
-        detail: { id: "commit-99", cutId: firstCutKey, summaryKo: "메쉬 워프 확정" },
+        detail: { projectId, id: "commit-99", cutId: firstCutKey, summaryKo: "메쉬 워프 확정" },
       }),
     );
 
