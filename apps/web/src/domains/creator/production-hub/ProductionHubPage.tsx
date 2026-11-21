@@ -1,5 +1,5 @@
 import "../studio-shell/creator-workflow-surfaces.css";
-import { ChevronDown, Network, RefreshCw } from "lucide-react";
+import { ChevronDown, Globe2, Network, RefreshCw } from "lucide-react";
 import { Suspense, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
@@ -49,6 +49,7 @@ const ProductionTeamSurface = lazyRetry(() => import("./ProductionTeamSurface").
 const ProductionOverviewCoverStage = lazyRetry(() => import("./ProductionOverviewCoverStage").then((module) => ({ default: module.ProductionOverviewCoverStage })), "ProductionOverviewCoverStage");
 const EpisodeRoomPage = lazyRetry(() => import("./ProductionEpisodeRoomPage").then((module) => ({ default: module.ProductionEpisodeRoomPage })), "ProductionEpisodeRoomPage");
 const StudioDivisionOsHub = lazyRetry(() => import("./division-os/StudioDivisionOsHub").then((module) => ({ default: module.StudioDivisionOsHub })), "StudioDivisionOsHub");
+const StudioGlobalMmorpgPlazaPanel = lazyRetry(() => import("../global-plaza-physics/StudioGlobalMmorpgPlazaPanel").then((module) => ({ default: module.StudioGlobalMmorpgPlazaPanel })), "StudioGlobalMmorpgPlazaPanel");
 
 export function ProductionEpisodeRoomPage() {
   return <Suspense fallback={<ProductionProjectLoading />}><EpisodeRoomPage /></Suspense>;
@@ -125,6 +126,7 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
   const project = useProductionProjectSession(projectId, actorId, productionDemoAdapter, { authReady });
   const [roleLens, setRoleLens] = usePreferredRoleLens("producer");
   const [divisionOsOpen, setDivisionOsOpen] = useState(false);
+  const [globalPlazaOpen, setGlobalPlazaOpen] = useState(false);
   const bt = useBilingual("ProductionProjectPage");
 
   if (!projectId) return <Navigate to="/production" replace />;
@@ -204,6 +206,33 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
               <div className="border-t border-line p-3 sm:p-4">
                 <Suspense fallback={<ProductionProjectLoading />}>
                   <StudioDivisionOsHub aggregate={aggregate} />
+                </Suspense>
+              </div>
+            ) : null}
+          </details>
+          <details
+            data-testid="studio-global-plaza-disclosure"
+            className="group/global-plaza mt-4 rounded-2xl border border-line bg-panel"
+            aria-label={bt("글로벌 MMORPG 외주 광장 · 실시간 프리랜서 모집 (동남아·해외 번역)", "Global MMORPG Outsourcing Plaza · Live Freelancer Recruiting")}
+            onToggle={(event) => setGlobalPlazaOpen(event.currentTarget.open)}
+          >
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+              <span className="flex min-w-0 items-center gap-2.5">
+                <Globe2 className="size-4 shrink-0 text-accent" aria-hidden="true" />
+                <span className="min-w-0 [word-break:keep-all]">
+                  {bt("글로벌 MMORPG 외주 광장 · 실시간 프리랜서 모집 (동남아·해외 번역)", "Global MMORPG Outsourcing Plaza · Live Freelancer Recruiting (SEA & Global Translation)")}
+                </span>
+              </span>
+              <ChevronDown className="size-4 shrink-0 text-fg-3 transition-transform group-open/global-plaza:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+            </summary>
+            {globalPlazaOpen ? (
+              <div className="border-t border-line p-3 sm:p-4">
+                <Suspense fallback={<ProductionProjectLoading />}>
+                  <StudioGlobalMmorpgPlazaPanel
+                    entryContext="production-hub"
+                    projectId={aggregate.projectId}
+                    episodeId={aggregate.episodes[0]?.id ?? "episode-12"}
+                  />
                 </Suspense>
               </div>
             ) : null}
