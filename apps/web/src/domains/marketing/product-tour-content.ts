@@ -110,8 +110,8 @@ const CHAPTERS = [
     ko: "캐릭터·포즈·3D 장면",
     en: "Characters, posing and 3D",
     summary: {
-      ko: "캐릭터 포즈, 배경, 카메라와 공간을 구성해 어려운 구도를 탐색하고 현재 컷의 2D 제작으로 다시 연결합니다. 배경은 테마 팩 42개, 배치할 수 있는 에셋 14,928개와 프리셋 9개로 빠르게 구성할 수 있습니다.",
-      en: "Explore difficult compositions with character poses, environments, cameras and space, then return that context to 2D production. Environments come together quickly from 42 theme packs, 14,928 placeable assets and 9 presets.",
+      ko: "캐릭터 포즈, 배경, 카메라와 공간을 구성해 어려운 구도를 탐색하고 현재 컷의 2D 제작으로 다시 연결합니다. 사용할 소재의 이용 조건과 각 도구의 준비 상태를 확인해 장면을 구성합니다.",
+      en: "Explore difficult compositions with character poses, environments, cameras and space, then return that context to 2D production. Check each asset's terms and tool readiness when composing a scene.",
     },
     feature: { href: "/studio/bg3d", ko: "3D 배경 스튜디오", en: "3D background studio" },
     related: [
@@ -224,6 +224,14 @@ export const PRODUCT_TOUR = {
 } as const;
 
 export type ProductTourLocale = "ko" | "en";
+export type ProductTourChapterId = (typeof PRODUCT_TOUR.chapters)[number]["id"];
+
+/** 영상 구성이 바뀌어도 기능 이름에 맞는 챕터를 열도록 정본 ID로 찾는다. */
+export function productTourChapterById(id: ProductTourChapterId) {
+  const chapter = PRODUCT_TOUR.chapters.find((item) => item.id === id);
+  if (!chapter) throw new Error(`제품 투어 챕터를 찾을 수 없습니다: ${id}`);
+  return chapter;
+}
 
 /** 투어 링크의 공유 가능한 딥링크(재생은 사용자가 포스터를 눌렀을 때만 시작한다). */
 export function productTourChapterHref(start: number): string {
@@ -237,7 +245,7 @@ export function formatProductTourTime(seconds: number): string {
   return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }
 
-/** 영상 길이를 말로 읽히는 형태로: ko "8분 24초", en "8m 24s". 스크린 리더는 "8:24" 같은 시계 표기를 길이로 읽지 못한다. */
+/** 영상 길이를 말로 읽히는 형태로: ko "9분 18초", en "9m 18s". 스크린 리더에도 재생 시간을 명시한다. */
 export function formatProductTourDuration(
   seconds: number,
   locale: ProductTourLocale,
@@ -279,7 +287,7 @@ export const PRODUCT_TOUR_COPY = {
     metaDescription: `기획, 드로잉, 컷 연출, 3D, AI 보조, 협업, 학습과 게시 준비까지 툰스튜디오 전체 창작 흐름을 ${TOUR_DURATION_KO} Remotion 제품 투어로 살펴보세요. 제품 화면 캡처와 개념 도해로 구성했습니다.`,
     eyebrow: `PRODUCT TOUR · ${formatProductTourTime(PRODUCT_TOUR.duration)}`,
     eyebrowSr: `제품 투어, 재생 시간 ${TOUR_DURATION_KO}`,
-    title: ["아이디어에서 연재·운영까지,", "9분 안에 한눈에."],
+    title: ["아이디어에서 연재·운영까지,", `${TOUR_DURATION_KO} 투어로 한눈에.`],
     intro: `실제 제작 순서대로 기획·드로잉·컷 연출·3D·AI 보조·협업·게시 준비를 ${TOUR_CHAPTER_COUNT}개 챕터로 보여 드립니다. 챕터마다 해당 기능을 바로 열 수 있어요.`,
     watch: "제품 투어 재생",
     start: "새 작품 시작하기",
@@ -316,10 +324,10 @@ export const PRODUCT_TOUR_COPY = {
   },
   en: {
     pageTitle: "ToonStudio full product tour",
-    metaDescription: `Explore ToonStudio's whole creative flow, from planning and drawing to 3D, AI help, teamwork and publishing prep, in an ${TOUR_DURATION_EN} Remotion tour of product captures and concept illustrations.`,
+    metaDescription: `Explore ToonStudio's whole creative flow, from planning and drawing to 3D, AI help, teamwork and publishing prep, in a ${TOUR_DURATION_EN} Remotion tour of product captures and concept illustrations.`,
     eyebrow: `PRODUCT TOUR · ${formatProductTourTime(PRODUCT_TOUR.duration)}`,
     eyebrowSr: `Product tour, running time ${TOUR_DURATION_EN_LONG}`,
-    title: ["From the first idea to a running series,", "the whole studio in 9 minutes."],
+    title: ["From the first idea to a running series,", `explore the studio in a ${TOUR_DURATION_EN} tour.`],
     intro: `Follow the real production order—planning, drawing, panels, 3D, AI assistance, collaboration and publishing—across ${TOUR_CHAPTER_COUNT} chapters. Every chapter opens the matching workspace.`,
     watch: "Play the product tour",
     start: "Start a new work",

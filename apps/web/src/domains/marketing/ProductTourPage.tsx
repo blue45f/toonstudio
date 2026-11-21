@@ -11,6 +11,7 @@ import { useI18n } from "@/shared/lib/i18n";
 import { ServiceStoryJourney } from "@/shared/components/service-story-journey";
 
 import { creatorHomeLocale } from "./creator-home-content";
+import { IR_DECK_PDF, IR_DECK_PPTX, IR_DECK_STATUS, IR_DECK_UPDATED_AT } from "./ir-pitch-data";
 import { ProductTourPlayer } from "./ProductTourPlayer";
 import { ProductTourAdditions } from "./ProductTourAdditions";
 import { ProductTourShorts } from "./ProductTourShorts";
@@ -212,7 +213,11 @@ export function ProductTourPage() {
           <p className="mk-eyebrow">{bi("자료 다운로드", "Downloads")}</p>
           <h2 id="product-tour-downloads-title" className="mk-h2">{bi("문서로 받아 가세요", "Take the documents with you")}</h2>
         </div>
-        <p className="mk-body product-tour__note">{bi("제품 소개서와 IR 발표 덱을 파일로 준비해 뒀어요. 영상에서 본 내용을 문서로 천천히 읽어 보세요.", "The product brief and the IR deck are ready as files — read what you saw in the film, in document form.")}</p>
+        <p className="mk-body product-tour__note">{bi("제품 소개서와 IR 참고본을 파일로 읽어 보세요.", "Read the product brief and the IR reference deck as files.")}</p>
+        <p className="mk-body product-tour__note" data-ir-deck-status={IR_DECK_STATUS}>
+          {bi(`IR 파일은 ${IR_DECK_UPDATED_AT} 기준 참고본입니다. 최신 내용은 웹 발표에서 확인하세요.`, `The IR files are reference copies dated ${IR_DECK_UPDATED_AT}. See the web presentation for current content.`)}{" "}
+          <Link className="mk-link" href="/ir/present">{bi("최신 웹 발표 보기", "View the current web presentation")}<ArrowRight size={14} aria-hidden="true" /></Link>
+        </p>
         <div className="product-tour__role-grid mk-rail">
           <a className="product-tour__role mk-card" href="/brand/toonstudio-intro.pdf" download>
             <span className="mk-badge"><FileText size={13} aria-hidden="true" />PDF</span>
@@ -220,16 +225,16 @@ export function ProductTourPage() {
             <p>{bi("ToonStudio가 뭘 하는 서비스인지, 네 쪽으로 정리했어요.", "What ToonStudio does, in four pages.")}</p>
             <small>{bi("PDF 내려받기", "Download the PDF")}<Download size={14} aria-hidden="true" /></small>
           </a>
-          <a className="product-tour__role mk-card" href="/brand/toonstudio-ir-deck.pdf" download>
+          <a className="product-tour__role mk-card" href={IR_DECK_PDF} download>
             <span className="mk-badge"><FileText size={13} aria-hidden="true" />PDF</span>
-            <h3>{bi("IR 발표 덱", "IR pitch deck")}</h3>
-            <p>{bi("시장과 경쟁, 제품과 만드는 사람까지 담은 발표 자료예요. 27쪽이에요.", "The full pitch — market, landscape, product and the builder. 27 pages.")}</p>
+            <h3>{bi("IR 참고본 · PDF", "IR reference deck · PDF")}</h3>
+            <p>{bi(`${IR_DECK_UPDATED_AT} 기준 27쪽 참고본입니다. 현재 웹 발표와 내용이 다를 수 있어요.`, `A 27-page reference copy dated ${IR_DECK_UPDATED_AT}. Its content may differ from the current web presentation.`)}</p>
             <small>{bi("PDF 내려받기", "Download the PDF")}<Download size={14} aria-hidden="true" /></small>
           </a>
-          <a className="product-tour__role mk-card" href="/brand/toonstudio-ir-deck.pptx" download>
+          <a className="product-tour__role mk-card" href={IR_DECK_PPTX} download>
             <span className="mk-badge"><FileText size={13} aria-hidden="true" />PPTX</span>
-            <h3>{bi("IR 발표 덱 (편집용)", "IR pitch deck (editable)")}</h3>
-            <p>{bi("파워포인트에서 바로 열리고, 필요하면 고쳐 쓸 수 있어요.", "Opens right in PowerPoint, ready to edit if you need to.")}</p>
+            <h3>{bi("IR 참고본 · PPTX (편집용)", "IR reference deck · PPTX (editable)")}</h3>
+            <p>{bi(`${IR_DECK_UPDATED_AT} 기준 편집용 참고본입니다. 최신 문안과 대조한 뒤 사용하세요.`, `An editable reference copy dated ${IR_DECK_UPDATED_AT}. Check it against the current presentation before use.`)}</p>
             <small>{bi("PPTX 내려받기", "Download the PPTX")}<Download size={14} aria-hidden="true" /></small>
           </a>
         </div>

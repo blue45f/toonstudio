@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import type { PlanTable } from "./business-plan-data";
-import { BUSINESS_PLAN_SECTIONS } from "./business-plan-data";
+import { BUSINESS_PLAN_DOCUMENT_BASIS, BUSINESS_PLAN_SECTIONS } from "./business-plan-data";
 
 import { Container } from "@/shared/components/section";
 import { HeroBlock } from "@/shared/components/layout";
@@ -10,7 +10,7 @@ import { useDocumentTitle, useMetaDescription } from "@/shared/seo/use-document-
 /**
  * 사업계획서 페이지 (/business-plan).
  * IR 페이지(/ir, /ir/present)와 같은 마케팅 도메인에 두되, 발표 플레이어가 아니라
- * 2026-11-04 고도화 초안 v11의 Q1–Q4와 붙임을 문항 순서대로 읽는 별도 페이지다.
+ * 2026-11-04 초안의 Q1–Q4와 붙임에 2026-11-21 확인 근거를 반영한 별도 페이지다.
  * 제출용 docx가 아니며, 팀 가격은 미결정, 검증 목표는 결과로 적지 않는다.
  * 표의 “입력 필요” 셀은 단가를 지어내지 않았다는 뜻이지, 빈칸 오류가 아니다.
  */
@@ -85,6 +85,7 @@ export function BusinessPlanPage() {
           }
           lede="기획·콘티·작화·배경·채색·검수·연재를 한 파일·한 화면에서 잇는 방향을, 문제 인식부터 성장전략과 향후 발전방안까지 문항 순서대로 정리했다. 작성자 김희준(1인 예비창업자, 팀 없음), 멘토기관 한국핀테크지원센터."
         />
+        <p className="mt-3 text-sm text-muted-foreground">{BUSINESS_PLAN_DOCUMENT_BASIS}</p>
         <section aria-labelledby="business-plan-download-title" className="mt-6 rounded-2xl border p-4 sm:p-5">
           <h2 id="business-plan-download-title" className="text-base font-bold">
             사업계획서 내려받기

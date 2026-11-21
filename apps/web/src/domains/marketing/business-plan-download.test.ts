@@ -12,7 +12,7 @@ import {
   buildBusinessPlanPdf,
   type BusinessPlanPdfFontBytes,
 } from "./business-plan-download";
-import { BUSINESS_PLAN_SECTIONS } from "./business-plan-data";
+import { BUSINESS_PLAN_DOCUMENT_BASIS, BUSINESS_PLAN_SECTIONS } from "./business-plan-data";
 
 /**
  * 사업계획서 내려받기 검증.
@@ -28,7 +28,7 @@ const EXPECTED_HEADINGS = [
   "클립스튜디오 하나와 경쟁할 수 있으면",
   "가격 정책은 심플하게",
   "순서를 건너뛰지 않는다",
-  "실제 수치와 검증 목표는 계속 구분한다",
+  "확인된 기능과 검증 목표는 계속 구분한다",
 ];
 
 function loadPdfFonts(): BusinessPlanPdfFontBytes {
@@ -53,6 +53,18 @@ function expectPublicIdentity(text: string): void {
   expect(text).not.toMatch(/사업자\s*등록/);
   expect(text).toContain("멘토기관 한국핀테크지원센터");
   expect(text).toContain("작성자 김희준 (1인 예비창업자, 팀 없음)");
+}
+
+/** 화면에서 갱신한 일정·기준일이 생성 파일과 부분집합 폰트에서도 유지되어야 한다. */
+function expectCurrentEvidence(text: string): void {
+  const compact = text.replace(/\s+/g, "");
+  expect(compact).toContain(BUSINESS_PLAN_DOCUMENT_BASIS.replace(/\s+/g, ""));
+  expect(compact).toContain("11월22일사전제출요청은철회됐다");
+  expect(compact).toContain("2026-12-0113:00(KST)");
+  expect(compact).toContain("최종마감전까지수정할수있다");
+  expect(compact).toContain("2026-12-04");
+  expect(compact).toContain("개인Pro월19,900원은예시가격이며미확정");
+  expect(compact).not.toContain("배경생성프리셋");
 }
 
 async function extractPdfText(bytes: Uint8Array): Promise<string> {
@@ -81,6 +93,7 @@ describe("사업계획서 DOCX 내려받기", () => {
     expect(documentXml).toContain('w:h="16839"');
     expect(documentXml).toContain("맑은 고딕");
     expectPublicIdentity(documentXml);
+    expectCurrentEvidence(documentXml);
     const coreXml = new TextDecoder().decode(files["docProps/core.xml"]);
     expect(coreXml).toContain("<dc:creator>김희준</dc:creator>");
     expect(coreXml).not.toMatch(/사업자\s*등록|멘토\s*[:·]?\s+[가-힣]{2,4}\s*[,·]/);
@@ -118,9 +131,10 @@ describe("사업계획서 PDF 내려받기", () => {
     expect(firstPage.getHeight()).toBeCloseTo(841.89, 1);
     const text = await extractPdfText(bytes);
     expectPublicIdentity(text);
+    expectCurrentEvidence(text);
     expect(loaded.getAuthor()).toBe("김희준");
     expect(loaded.getSubject()).toBe(
-      "웹툰 제작 전 과정의 협업 업무툴 — 작성 기준 2026-11-04 고도화 초안 v11",
+      `웹툰 제작 전 과정의 협업 업무툴 — ${BUSINESS_PLAN_DOCUMENT_BASIS}`,
     );
     for (const heading of EXPECTED_HEADINGS) {
       expect(text).toContain(heading);
