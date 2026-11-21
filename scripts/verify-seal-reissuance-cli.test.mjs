@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { verifySealReissuanceRecordJson } from "./verify-seal-reissuance-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 function fnv1aHex(input) {
   let hash = 0x811c9dc5;

@@ -71,12 +71,15 @@ describe("툴벨트 전용 기능 도달성", () => {
   );
 
   it("대체 진입점 호스트에는 벨트를 죽였던 뷰포트 게이트가 없다", () => {
-    const dialogStart = projectCenterSurface.indexOf('data-studio-project-actions-menu="true"');
+    const dialogStart = projectCenterSurface.indexOf("const mobileDialogProps = {");
     const mountPoint = menubar.indexOf("<StudioProjectReviewActions");
     expect(dialogStart).toBeGreaterThan(-1);
     expect(mountPoint).toBeGreaterThan(-1);
 
     const dialog = projectCenterSurface.slice(dialogStart);
+    expect(dialog.match(/"data-studio-project-actions-menu": "true"/gu)).toHaveLength(2);
+    expect(dialog).toContain("{...(desktop ? {} : mobileDialogProps)}");
+    expect(dialog).toContain("rootDataAttributes={{");
     expect(dialog).not.toMatch(/\blg:hidden\b/u);
     expect(dialog).not.toMatch(/\bmax-lg:hidden\b/u);
     expect(dialog).not.toContain("mobileImmersive");

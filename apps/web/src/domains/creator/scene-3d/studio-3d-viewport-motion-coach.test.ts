@@ -114,7 +114,7 @@ describe("Studio 3D viewport Motion Coach integration", () => {
       '"absolute left-2 top-2 z-10 grid grid-cols-3 gap-1.5 sm:left-2.5 sm:top-2.5 sm:flex sm:flex-col"'
     );
     expect(backgroundSource).toContain(
-      'className="col-span-3 grid grid-cols-3 gap-1 rounded-lg border border-line/70 bg-panel/80 p-1 shadow-sm backdrop-blur sm:flex sm:flex-col"'
+      'className="col-span-3 grid grid-cols-3 gap-1 rounded-lg border border-line bg-panel/95 p-1 shadow-sm sm:flex sm:flex-col"'
     );
     expect(backgroundSource).toContain(
       '"absolute right-2 top-2 z-10 grid grid-cols-2 gap-1.5 sm:right-2.5 sm:top-2.5 sm:flex sm:flex-col"'

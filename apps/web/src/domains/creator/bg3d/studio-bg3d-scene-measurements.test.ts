@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   createStudioSpatialMeasurementDocument,
@@ -123,9 +124,14 @@ describe("장면 측정 가이드 선택 필드", () => {
   });
 
   it("측정 필드가 없는 기존 기본 문서의 해시와 왕복 바이트를 유지한다", () => {
-    const original = serializedDocument(createDefaultStudioBg3dSceneDocument());
+    // 신규 문서의 기본 DPR 변경과 관계없이 8ef318ad5의 실제 저장 바이트를 다시 연다.
+    const original = readFileSync(
+      new URL("./fixtures/legacy-scene-document-20261023.json", import.meta.url), "utf8",
+    ).trimEnd();
     expect(createHash("sha256").update(original).digest("hex")).toBe(DEFAULT_DOCUMENT_SHA256);
     const reopened = canonicalDocument(JSON.parse(original));
+    expect(reopened.quality.mobile.dprMax).toBe(1.5);
+    expect(createDefaultStudioBg3dSceneDocument().quality.mobile.dprMax).toBe(2);
     expect(Object.prototype.hasOwnProperty.call(reopened, "measurements")).toBe(false);
     expect(serializedDocument(reopened)).toBe(original);
     expect(serializedDocument(normalizeStudioBg3dSceneDocument(original))).toBe(original);

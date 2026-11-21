@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { verifyCreativeLineageJson } from "./verify-creative-lineage-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("verifyCreativeLineageJson approves clean lineage and blocks unresolved CRDT conflicts", () => {
   assert.equal(

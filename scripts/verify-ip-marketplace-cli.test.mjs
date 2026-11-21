@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { verifyIpMarketplaceSettlementJson } from "./verify-ip-marketplace-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("verifyIpMarketplaceSettlementJson passes 1-won exact waterfall and rejects mismatch", () => {
   assert.equal(

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { evaluateSlateDdFromJson } from "./evaluate-ip-slate-dd-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("evaluateSlateDdFromJson allocates capital across clean titles and excludes CC-BY-NC submissions", () => {
   const input = {

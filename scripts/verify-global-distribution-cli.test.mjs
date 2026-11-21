@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { verifyGlobalDistributionPlanJson } from "./verify-global-distribution-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("verifyGlobalDistributionPlanJson approves compliant simulpub plan and blocks bubble overflow", () => {
   const okRes = verifyGlobalDistributionPlanJson(
