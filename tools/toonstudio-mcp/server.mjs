@@ -13,7 +13,14 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { createInterface } from "node:readline";
 
-import { createDivisionAndAiMcpTools } from "./tools-division-ai.mjs";
+import { createDivisionAndAiMcpTools, inspectSafeFreeQuotaStatus } from "./tools-division-ai.mjs";
+import {
+  buildMcpPromptMessages,
+  createEcosystemV2McpTools,
+  MCP_PROMPTS_CATALOG,
+  MCP_RESOURCES_CATALOG,
+  readMcpResourceByUri,
+} from "./tools-ecosystem-v2.mjs";
 import { createProMediaMcpTools } from "./tools-pro-media.mjs";
 
 function escapeXml(value) {
@@ -110,19 +117,37 @@ function createInitialState() {
       { code: "001.027", labelKo: "긴급 마감 대타 멀티 어시" },
       { code: "001.028", labelKo: "전용 브러시·소품 제작자" },
     ],
+    ecosystemV2: {
+      preflightReports: [],
+      hyperAutoRuns: [],
+      sosMatches: [],
+      plazaQuotes: [],
+      osmuPackages: [],
+      complianceScans: [],
+      c2paPackages: [],
+      bepTaxReports: [],
+      brushAudits: [],
+      vrmFitAudits: [],
+      pluginVerifications: [],
+    },
   };
 }
 
 export function createToonStudioMcpEngine(options = {}) {
   const stateFile = options.stateFile ? resolve(String(options.stateFile)) : null;
   const apiUrl = options.apiUrl ? String(options.apiUrl).trim().replace(/\/+$/, "") : null;
+  const env = options.env ?? process.env;
   let state = createInitialState();
 
   if (stateFile && existsSync(stateFile)) {
     try {
       const loaded = JSON.parse(readFileSync(stateFile, "utf8"));
       if (loaded && typeof loaded === "object" && loaded.canvas) {
-        state = { ...state, ...loaded };
+        state = {
+          ...state,
+          ...loaded,
+          ecosystemV2: { ...state.ecosystemV2, ...(loaded.ecosystemV2 ?? {}) },
+        };
       }
     } catch {
       // 손상된 로컬 상태 파일은 초기 상태로 안전하게 복구한다.
@@ -546,8 +571,9 @@ export function createToonStudioMcpEngine(options = {}) {
       state,
       persistState,
       syncToRemoteApi,
-      env: options.env ?? process.env,
+      env,
     }),
+    ...createEcosystemV2McpTools({ state, persistState }),
   ];
 
   const toolMap = new Map(tools.map((t) => [t.name, t]));
@@ -556,14 +582,22 @@ export function createToonStudioMcpEngine(options = {}) {
     const id = request?.id ?? null;
     const method = request?.method;
 
+    if (method === "notifications/initialized") {
+      return id === null ? null : { jsonrpc: "2.0", id, result: {} };
+    }
+
+    if (method === "ping") {
+      return { jsonrpc: "2.0", id, result: {} };
+    }
+
     if (method === "initialize") {
       return {
         jsonrpc: "2.0",
         id,
         result: {
           protocolVersion: "2024-11-05",
-          serverInfo: { name: "toonstudio-mcp", version: "2.0.0" },
-          capabilities: { tools: {} },
+          serverInfo: { name: "toonstudio-mcp", version: "2.4.0" },
+          capabilities: { tools: {}, resources: {}, prompts: {} },
         },
       };
     }
@@ -604,6 +638,54 @@ export function createToonStudioMcpEngine(options = {}) {
       };
     }
 
+    if (method === "resources/list") {
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: { resources: MCP_RESOURCES_CATALOG },
+      };
+    }
+
+    if (method === "resources/read") {
+      const uri = request?.params?.uri;
+      const loaded = readMcpResourceByUri(uri, {
+        state,
+        inspectQuota: () => inspectSafeFreeQuotaStatus(env),
+      });
+      if (!loaded.ok) {
+        return { jsonrpc: "2.0", id, error: { code: -32602, message: loaded.error } };
+      }
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          contents: [{ uri, mimeType: loaded.mimeType, text: loaded.text }],
+        },
+      };
+    }
+
+    if (method === "prompts/list") {
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: { prompts: MCP_PROMPTS_CATALOG },
+      };
+    }
+
+    if (method === "prompts/get") {
+      const promptName = request?.params?.name;
+      const promptArgs = request?.params?.arguments ?? {};
+      const built = buildMcpPromptMessages(promptName, promptArgs);
+      if (!built.ok) {
+        return { jsonrpc: "2.0", id, error: { code: -32602, message: built.error } };
+      }
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: { description: built.description, messages: built.messages },
+      };
+    }
+
     return {
       jsonrpc: "2.0",
       id,
@@ -623,7 +705,9 @@ export function startStdioMcpServer(options = {}) {
     try {
       const parsed = JSON.parse(trimmed);
       const response = engine.handleJsonRpcRequest(parsed);
-      process.stdout.write(`${JSON.stringify(response)}\n`);
+      if (response !== null) {
+        process.stdout.write(`${JSON.stringify(response)}\n`);
+      }
     } catch (error) {
       process.stdout.write(
         `${JSON.stringify({
