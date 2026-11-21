@@ -3297,7 +3297,7 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
         const viewport = view.viewport;
         const hasWetDiffusion = studioLongBrushHasSettledDiffusion(expectedSelection.runtimeBrushId);
         const screenScale = Math.hypot(view.documentToScreen[0], view.documentToScreen[1]);
-        // 두 재료는 붓끝 밖으로 번진다. 확대된 화면에서 끝과 후광이 비교 영역에 잘리지 않게 한다.
+        // 정착 번짐 재료는 붓끝 밖으로 번진다. 확대된 화면에서 끝과 후광이 비교 영역에 잘리지 않게 한다.
         const diffusionMargin = hasWetDiffusion ? Math.ceil(expectedSelection.defaultWidth * screenScale * 2) : 0;
         const qualityMarginX = Math.max(
           32, diffusionMargin,

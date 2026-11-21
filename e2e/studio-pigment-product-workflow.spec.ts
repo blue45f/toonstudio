@@ -29,7 +29,7 @@ import { waitForPigmentEditorSettled as waitForEditorSettled } from "./helpers/s
 import type { BrushStudioV6MaterialConfig } from "../apps/web/src/domains/creator/brush-lab/brush-studio-v6-material-engine";
 import type { DrawEl } from "../apps/web/src/domains/creator/studio-element-model";
 import type { PageState } from "../apps/web/src/domains/creator/studio-page-state";
-import type { Download, Page, TestInfo } from "@playwright/test";
+import type { Download, Locator, Page, TestInfo } from "@playwright/test";
 
 const INTERNAL_PROVIDER = "toonstudio-latent-pigment-v1";
 const RECIPE_ID = "mixbox-pigment-spray";
@@ -418,6 +418,13 @@ function assertPreserved(source: DrawEl, before: Record<string, unknown>, after:
   expect(after.animTimeline).toEqual(before.animTimeline);
 }
 
+async function dismissObservedPigmentExportError(page: Page, error: Locator) {
+  const alert = page.locator('[data-studio-global-status-rail="true"]').getByRole("alert").filter({ has: error });
+  await expect(alert).toBeVisible();
+  await alert.getByRole("button", { name: "오류 메시지 닫기", exact: true }).click();
+  await expect(error).toHaveCount(0);
+}
+
 for (const version of [1, 2] as const) {
   test(`실제 V${version} 원고의 원본 다운로드·명시 전환·undo/redo·재열기·내보내기`, async ({ page }, testInfo) => {
     const errors: string[] = [];
@@ -457,6 +464,7 @@ for (const version of [1, 2] as const) {
     await expect(exportError).toBeVisible();
     expect(unexpected).toHaveLength(0);
     page.off("download", observe);
+    await dismissObservedPigmentExportError(page, exportError);
     await warning.getByRole("button", { name: "원본 보존·자체 혼색 사본 만들기", exact: true }).click();
     await expect(warning).toHaveCount(0);
     await expect.poll(async () => records((await savedPage(page, key, fixture.page.id)).elements)
@@ -535,6 +543,7 @@ if (process.env.TOONSTUDIO_PIGMENT_CLIP_CONTRAST === "1") {
       await expect(exportError).toBeVisible();
       expect(unexpected).toHaveLength(0);
       page.off("download", observe);
+      await dismissObservedPigmentExportError(page, exportError);
       await warning.getByRole("button", { name: "원본 보존·자체 혼색 사본 만들기", exact: true }).click();
       await expect(warning).toHaveCount(0);
       await expect.poll(async () => records((await savedPage(page, key, fixture.page.id)).elements)

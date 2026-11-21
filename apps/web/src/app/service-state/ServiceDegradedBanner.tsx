@@ -213,34 +213,6 @@ function ServiceWarmupNotice({ immersive }: { readonly immersive: boolean }) {
   const bt = useBilingual(COPY_SCOPE);
   const chipRef = useRef<HTMLDivElement>(null);
   useOverlayClearance(chipRef, immersive);
-  const titleText = bt("온라인 기능을 연결하는 중이에요.", "Connecting online features.");
-  const descText = bt("탐색과 로컬 작업은 지금 바로 할 수 있어요.", "You can browse and work locally right now.");
-
-  if (!immersive) {
-    return (
-      <div
-        ref={chipRef}
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        data-service-degraded-banner="warming"
-        data-service-status-placement="page-inline"
-        data-service-status-dot="true"
-        title={`${titleText} ${descText}`}
-        className="mx-auto flex w-full max-w-[var(--site-content-max,82.5rem)] min-w-0 items-center justify-end gap-1.5 px-[var(--site-page-gutter,1rem)] py-1 text-[11.5px] leading-snug text-fg-3"
-      >
-        <span
-          aria-hidden="true"
-          className="size-2 shrink-0 rounded-full bg-accent motion-safe:[animation:pulse-soft_2.8s_ease-in-out_infinite]"
-        />
-        <span className="min-w-0 truncate break-keep">
-          <strong className="font-normal text-fg-3">{titleText}</strong>{" "}
-          <span className="sr-only">{descText}</span>
-        </span>
-      </div>
-    );
-  }
-
   return (
     <div
       ref={chipRef}
@@ -248,16 +220,17 @@ function ServiceWarmupNotice({ immersive }: { readonly immersive: boolean }) {
       aria-live="polite"
       aria-atomic="true"
       data-service-degraded-banner="warming"
-      data-service-status-placement="floating"
-      className={WARMUP_CHIP_CLASS}
+      data-service-status-placement={immersive ? "floating" : "page-inline"}
+      data-service-status-dot={immersive ? undefined : "true"}
+      className={immersive ? WARMUP_CHIP_CLASS : "mx-auto flex w-full max-w-[var(--site-content-max,82.5rem)] min-w-0 items-center justify-end gap-1.5 px-[var(--site-page-gutter,1rem)] pt-1.5 text-[11.5px] text-fg-2"}
     >
       <span
         aria-hidden="true"
-        className="size-2 shrink-0 rounded-full bg-accent motion-safe:[animation:pulse-soft_2.8s_ease-in-out_infinite]"
+        className="size-1.5 shrink-0 rounded-full bg-fg-3/70 motion-safe:[animation:pulse-soft_2.8s_ease-in-out_infinite]"
       />
       <span className="min-w-0 break-keep">
-        <strong className="font-normal text-fg-3">{titleText}</strong>{" "}
-        <span className="sr-only">{descText}</span>
+        <strong className="font-normal text-fg-2">{bt("온라인 기능을 연결하는 중이에요.", "Connecting online features.")}</strong>{" "}
+        <span className="sr-only">{bt("탐색과 로컬 작업은 지금 바로 할 수 있어요.", "You can browse and work locally right now.")}</span>
       </span>
     </div>
   );

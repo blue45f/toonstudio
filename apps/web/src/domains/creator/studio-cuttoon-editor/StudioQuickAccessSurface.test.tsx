@@ -229,6 +229,33 @@ describe("StudioQuickAccessSurface", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("gives the desktop palette's own open tooltip first claim on Escape", () => {
+    render(<SurfaceHarness isMobile={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "빠른 액세스 열기" }));
+    const palette = screen.getByRole("dialog", { name: "빠른 액세스 팔레트" });
+    const edit = screen.getByRole("button", { name: "빠른 액세스 편집" });
+    const tooltip = document.createElement("div");
+    tooltip.id = "quick-access-test-tooltip";
+    tooltip.dataset.appTooltipLayer = "true";
+    tooltip.dataset.state = "open";
+    edit.setAttribute("aria-describedby", tooltip.id);
+    document.body.append(tooltip);
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key === "Escape") tooltip.remove();
+    };
+    window.addEventListener("keydown", dismiss);
+    try {
+      fireEvent.keyDown(edit, { key: "Escape" });
+      expect(tooltip.isConnected).toBe(false);
+      expect(palette.isConnected).toBe(true);
+      fireEvent.keyDown(edit, { key: "Escape" });
+      expect(palette.isConnected).toBe(false);
+    } finally {
+      window.removeEventListener("keydown", dismiss);
+      tooltip.remove();
+    }
+  });
+
   it("cancels a floating drag with Escape without closing the palette", () => {
     render(<SurfaceHarness isMobile={false} />);
     fireEvent.click(screen.getByRole("button", {

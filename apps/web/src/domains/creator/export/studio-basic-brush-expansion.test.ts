@@ -10,6 +10,7 @@ import {
   studioBrushCatalogItemById,
 } from "../brush/studio-brush-catalog";
 import { studioBrushIconId } from "../brush/studio-brush-icons";
+import { resolveNaturalMediaDipPenNibId } from "../brush/studio-brush-natural-media-dab-bridge";
 import { isStudioBrushQuarantinedPresetId } from "../brush/studio-brush-quarantine";
 import {
   resolveStudioBrushRuntimeContract,
@@ -124,11 +125,13 @@ describe("commercial basic brush expansion", () => {
       });
     }
 
-    // Search coverage is a LISTING promise, so it is asserted per partition. school-pen and
-    // gel-pen were delisted in the 2026-08-21 roster reduction (both share pen/gpen's execution
-    // signature), and a delisted id must be unreachable from every picker path including alias
-    // search — its aliases keep resolving metadata for saved documents, nothing more.
+    // 스쿨펜은 별도 만화 딥펜 물리 프로필이 연결돼 복귀했다. 젤펜은 여전히 등록만 유지한다.
+    expect(isStudioBrushQuarantinedPresetId("school-pen")).toBe(false);
+    expect(resolveNaturalMediaDipPenNibId("school-pen")).toBe("school-pen");
+    expect(resolveNaturalMediaDipPenNibId("gpen")).toBe("g-pen");
     const listedDiscoveryQueries = [
+      ["school-pen", "학생 펜"],
+      ["school-pen", "school nib"],
       ["fountain-pen", "잉크 만년필"],
       ["fountain-pen", "fountain nib"],
       ["kneaded-eraser", "말랑 지우개"],
@@ -145,8 +148,6 @@ describe("commercial basic brush expansion", () => {
       ).toBe(true);
     }
     const delistedDiscoveryQueries = [
-      ["school-pen", "학생 펜"],
-      ["school-pen", "school nib"],
       ["gel-pen", "중성펜"],
       ["gel-pen", "gel ink pen"],
     ] as const;

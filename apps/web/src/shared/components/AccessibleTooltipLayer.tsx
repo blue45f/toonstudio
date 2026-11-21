@@ -26,6 +26,7 @@ const EXIT_DURATION_MS = 100;
 const VIEWPORT_PADDING = 10;
 const TOUCH_HOLD_DELAY_MS = 520;
 const TOUCH_MOVE_TOLERANCE_PX = 10;
+const QUICK_ACCESS_DESKTOP_SELECTOR = '[data-studio-quick-access-surface="true"][data-mobile="false"]';
 const CANDIDATE_SELECTOR = [
   "[data-tooltip]", "[data-app-tooltip]", "[title]", "button[aria-label]", "a[aria-label]",
   '[role="button"][aria-label]', '[role="tab"][aria-label]', '[role="menuitem"][aria-label]',
@@ -613,8 +614,26 @@ export function AccessibleTooltipLayer(): ReactElement | null {
     globalThis.visualViewport?.addEventListener("scroll", onViewportChange);
     document.addEventListener("visibilitychange", onVisibilityChange);
 
+    let quickAccessSurface = document.querySelector(QUICK_ACCESS_DESKTOP_SELECTOR);
     const mutationObserver = typeof MutationObserver === "function"
-      ? new MutationObserver(() => {
+      ? new MutationObserver((records) => {
+          const nextSurface = records.some(record => record.type === "childList")
+            ? document.querySelector(QUICK_ACCESS_DESKTOP_SELECTOR)
+            : quickAccessSurface;
+          const mountedQuickAccess = nextSurface !== null && nextSurface !== quickAccessSurface;
+          quickAccessSurface = nextSurface;
+          if (mountedQuickAccess) {
+            // Shift+Q can mount a window under the hovered control's existing help.
+            // Clear both visible and queued background help, but keep help within the new window.
+            if (!nextSurface.contains(hoveredTarget)) hoveredTarget = null;
+            if (!nextSurface.contains(focusedTarget)) focusedTarget = null;
+            if (touchIntent && !nextSurface.contains(touchIntent.source.target)) cancelTouchIntent();
+            if ((activeRef.current && !nextSurface.contains(activeRef.current.target))
+              || (!activeRef.current && !hoveredTarget && !focusedTarget)) {
+              bubbleHovered = false;
+              close(true);
+            }
+          }
           const current = activeRef.current;
           if (!current) return;
           if (!current.target.isConnected || isTooltipSuppressedTarget(current.target)) {
