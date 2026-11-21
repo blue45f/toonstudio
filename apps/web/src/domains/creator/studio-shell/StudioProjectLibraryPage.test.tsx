@@ -74,11 +74,7 @@ afterEach(() => {
 
 describe("StudioProjectLibraryPage", () => {
   it("핵심 생성과 가져오기는 유지하고 부가 관리 도구만 접는다", () => {
-    render(
-      <MemoryRouter initialEntries={["/studio"]}>
-        <StudioProjectLibraryPage />
-      </MemoryRouter>,
-    );
+    render(<MemoryRouter initialEntries={["/studio"]}><StudioProjectLibraryPage /></MemoryRouter>);
     const title = screen.getByRole("heading", { level: 1, name: /내 작업|My work/u });
     const toolbar = title.closest("section");
     if (!toolbar) throw new Error("내 작업 도구 영역이 없습니다.");

@@ -94,10 +94,12 @@ describe("mobile route density contract", () => {
       ...SITE_UTILITY_NAVIGATION, SITE_NAVIGATION_ITEMS.allMenu,
     ].map((item) => item.href));
     for (const item of Object.values(SITE_NAVIGATION_ITEMS)) expect(reachable.has(item.href), item.id).toBe(true);
-    // 탭 수에 맞는 균등 열과 최소 너비 0을 확인해 긴 이름이 휴대폰 너비를 밀어내지 않게 한다.
-    expect(mobileNavigation).toMatch(
-      /mobileTabs\.length === 5\s*\?\s*"grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]"\s*:\s*"grid-cols-\[repeat\(4,minmax\(0,1fr\)\)\]"/u,
-    );
+    // 하단 탭 그리드는 탭 수에 맞는 균등 열과 최소 폭 0을 유지해 좁은 화면의 넘침을 막는다.
+    const tabGridColumns = mobileNavigation.match(/"site-bottom-tabs__grid[^"]*"\s*,\s*mobileTabs\.length\s*===\s*5\s*\?\s*"([^"]+)"\s*:\s*"([^"]+)"/u)?.slice(1);
+    expect(tabGridColumns).toEqual([
+      "grid-cols-[repeat(5,minmax(0,1fr))]",
+      "grid-cols-[repeat(4,minmax(0,1fr))]",
+    ]);
     expect(scene).toContain("min-height: 8rem");
     expect(scene).toContain(".route-purpose-scene__cards,");
     expect(workspace).toContain("grid-template-columns:repeat(5,minmax(0,1fr))");
