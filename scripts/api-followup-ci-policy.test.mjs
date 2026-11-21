@@ -129,7 +129,8 @@ test "$#" = 1 && test "$1" = scripts/restore-documentation-checkout.mjs
 test("수동 전체 하네스 단계는 이미 확보한 main만 쓰고 토큰·문서 복원을 다시 받지 않는다", () => {
   const step = workflowStep("수동 후보의 전체 하네스 검증");
   assert.match(step, /^ {8}if: github\.event_name == 'workflow_dispatch' && matrix\.shard == 'studio-editing'$/mu);
-  assert.doesNotMatch(step, /env:|TOONSTUDIO_CHECKOUT_TOKEN|GIT_CONFIG_|GIT_TERMINAL_PROMPT|credential|git fetch|restore-documentation-checkout|\bunset\b/u);
+  assert.match(step, /^ {8}env: \{ TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '6291456' \}$/mu);
+  assert.doesNotMatch(step, /TOONSTUDIO_CHECKOUT_TOKEN|GIT_CONFIG_|GIT_TERMINAL_PROMPT|credential|git fetch|restore-documentation-checkout|\bunset\b/u);
   assert.deepEqual(workflowRun(step).split("\n"), [
     "set -euo pipefail",
     "HARNESS_BASE=$(git rev-parse refs/remotes/origin/main)",

@@ -6948,7 +6948,9 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     // ResizeObserver로 패널 접기·전체화면 등 레이아웃 변화까지 감지(예전엔 window resize만 들어 접어도 안 넓어졌다).
     const cap = isFullscreen || maximized || mobileImmersive || canvasOnlyMode ? 4 : 2.5;
     const measure = () => {
-      const w = (el ?? wrapRef.current)?.clientWidth ?? CANVAS_W;
+      const node = el ?? wrapRef.current;
+      const w = node ? node.clientWidth : CANVAS_W;
+      if (node && w <= 0) return;
       setScale(Math.min(cap, Math.max(0.1, w / studioViewDocumentWidthRef.current)));
     };
     measure();

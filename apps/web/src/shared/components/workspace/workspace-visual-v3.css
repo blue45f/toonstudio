@@ -272,7 +272,7 @@
   .workspace-support-nav{margin-top:auto;padding-top:10px;gap:3px}
   .workspace-support-nav a{flex-direction:row;justify-content:flex-start;min-height:38px;gap:10px;padding:0 10px 0 12px;border-radius:var(--ts-radius-inner);font-size:13px;font-weight:500}
   .workspace-support-nav a svg{width:17px;height:17px;margin-inline:1.5px;flex:none}
-  .workspace-shell [data-role-journey-bar]{flex-wrap:nowrap;padding:12px 16px}
+  .workspace-shell [data-role-journey-bar]{padding:12px 16px}
 }
 @media (min-width:1280px) and (pointer:coarse){
   .workspace-sidebar .workspace-nav :is(a,button),
