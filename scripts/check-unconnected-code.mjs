@@ -61,7 +61,8 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "
 import { dirname, extname, join, normalize, relative, resolve, sep } from "node:path";
 
 const SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
-const TEST_FILE_PATTERN = /(?:\.test|\.spec)\.[tj]sx?$|__tests__\//;
+const TEST_FILE_PATTERN =
+  /(?:\.test|\.spec|[.-]test-fixtures?|\.test-support|\.test-utils)\.[tj]sx?$|(?:__tests__|__fixtures__)\//;
 
 function parseArgs(argv) {
   const args = {
