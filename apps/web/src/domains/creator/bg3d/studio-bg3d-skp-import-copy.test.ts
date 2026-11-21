@@ -116,6 +116,8 @@ describe("describeStudioBg3dSkpWarning", () => {
       "unit-override-applied",
       "high-polygon-count",
       "flipped-faces",
+      "non-manifold-edges",
+      "coplanar-z-fighting",
       "orientation-check-skipped",
       "texture-missing",
       "texture-unsupported-format",

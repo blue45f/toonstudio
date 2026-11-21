@@ -11,9 +11,38 @@ import {
 } from "./studio-bg3d-section-cap-coordination";
 import {
   createBg3dWallCutawayRuntime,
+  type Bg3dCutawayRoomBounds,
   type Bg3dWallCutawayConfig,
-  type Bg3dWallCutawayRuntime,
+  type Bg3dWallCutawayRuntimeController,
 } from "./studio-bg3d-wall-cutaway-runtime";
+
+const DEFAULT_CUTAWAY_ROOM_BOUNDS: Bg3dCutawayRoomBounds = {
+  center: [0, 1.5, 0],
+  size: [6, 3, 6],
+};
+
+function resolveCutawayRoomBounds(
+  targets: Bg3dWallCutawayRuntimeController["targets"],
+): Bg3dCutawayRoomBounds {
+  const box = new THREE.Box3();
+  for (const entry of targets) {
+    if (entry.object instanceof THREE.Object3D) {
+      box.expandByObject(entry.object);
+    }
+  }
+  if (box.isEmpty()) return DEFAULT_CUTAWAY_ROOM_BOUNDS;
+  const center = new THREE.Vector3();
+  const size = new THREE.Vector3();
+  box.getCenter(center);
+  box.getSize(size);
+  if (size.x < 0.1 || size.y < 0.1 || size.z < 0.1) {
+    return DEFAULT_CUTAWAY_ROOM_BOUNDS;
+  }
+  return {
+    center: [center.x, center.y, center.z],
+    size: [size.x, size.y, size.z],
+  };
+}
 
 export interface StudioBg3dWallCutawayControllerProps {
   readonly cutawayConfig: Bg3dWallCutawayConfig;
@@ -34,17 +63,20 @@ export function StudioBg3dWallCutawayController({
 }: StudioBg3dWallCutawayControllerProps) {
   const scene = useThree((state) => state.scene);
   const camera = useThree((state) => state.camera);
-  const runtimeRef = useRef<Bg3dWallCutawayRuntime | null>(null);
+  const runtimeRef = useRef<Bg3dWallCutawayRuntimeController | null>(null);
+  const roomBoundsRef = useRef<Bg3dCutawayRoomBounds>(DEFAULT_CUTAWAY_ROOM_BOUNDS);
   const hiddenWallCountRef = useRef<number>(0);
 
   useEffect(() => {
-    const runtime = createBg3dWallCutawayRuntime(scene, cutawayConfig);
+    const runtime = createBg3dWallCutawayRuntime(scene);
     runtimeRef.current = runtime;
+    roomBoundsRef.current = resolveCutawayRoomBounds(runtime.targets);
     return () => {
       try {
-        runtime.reset();
+        runtime.restoreAll();
       } finally {
         runtimeRef.current = null;
+        hiddenWallCountRef.current = 0;
       }
     };
   }, [scene, cutawayConfig]);
@@ -52,18 +84,22 @@ export function StudioBg3dWallCutawayController({
   useFrame(() => {
     const runtime = runtimeRef.current;
     if (!runtime) return;
-    if (!cutawayConfig.enabled) {
+    if (!cutawayConfig.enabled && !(cutawayConfig.forcedHiddenWalls?.length)) {
       if (hiddenWallCountRef.current !== 0) {
-        runtime.reset();
+        runtime.restoreAll();
         hiddenWallCountRef.current = 0;
       }
       return;
     }
-    const evaluation = runtime.update({
-      position: [camera.position.x, camera.position.y, camera.position.z],
-      target,
-    });
-    hiddenWallCountRef.current = evaluation.hiddenWalls.length;
+    const result = runtime.update(
+      {
+        position: [camera.position.x, camera.position.y, camera.position.z],
+        target,
+      },
+      roomBoundsRef.current,
+      cutawayConfig,
+    );
+    hiddenWallCountRef.current = result.evaluation.hiddenWalls.length;
   });
 
   const coordination = useMemo(

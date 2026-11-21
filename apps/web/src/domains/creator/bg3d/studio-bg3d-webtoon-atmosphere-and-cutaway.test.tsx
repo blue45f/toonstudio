@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { useI18n } from "@/shared/lib/i18n-core";
 
 import {
   STUDIO_BG3D_WEBTOON_ATMOSPHERE_PRESETS,
@@ -13,11 +15,15 @@ import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } from "./studio-bg3d-scene-document
 import { DEFAULT_STUDIO_BG3D_SECTION_PLANE_STATE } from "./studio-bg3d-section-plane";
 import { DEFAULT_BG3D_WALL_CUTAWAY_CONFIG } from "./studio-bg3d-wall-cutaway-runtime";
 import { StudioBg3dLightingStudio } from "./StudioBg3dLightingStudio";
+import { StudioBg3dLiveInkStagePane } from "./StudioBg3dLiveInkStagePane";
 import { StudioBg3dProfessionalWorkspace } from "./StudioBg3dProfessionalWorkspace";
+import { StudioBg3dStageStepperBar } from "./StudioBg3dStageStepperBar";
+import { StudioBg3dWebtoonAtmosphereStrip } from "./StudioBg3dWebtoonAtmosphereStrip";
 import { evaluateStudioBg3dSectionCapCoordination } from "./studio-bg3d-section-cap-coordination";
 
 afterEach(() => {
   cleanup();
+  useI18n.getState().setLang("ko");
 });
 
 describe("AC-005 Snaptoon 7 webtoon atmosphere presets & 1-click wall cutaway + section cap coordination", () => {
@@ -35,6 +41,8 @@ describe("AC-005 Snaptoon 7 webtoon atmosphere presets & 1-click wall cutaway + 
       expect(applied).not.toBeNull();
       expect(applied!.lighting.key.color.toLowerCase()).toBe(preset.lighting.key.color.toLowerCase());
       expect(applied!.render.exposure).toBeCloseTo(preset.exposure, 3);
+      expect(applied!.render.toneMapping).toBe("aces");
+      expect(applied!.background.mode).toBe("sky-preset");
       expect(applied!.background.fogEnabled).toBe(preset.fog.active);
       expect(applied!.background.fogNear).toBeCloseTo(preset.fog.near, 3);
       expect(applied!.background.fogFar).toBeCloseTo(preset.fog.far, 3);
@@ -165,5 +173,34 @@ describe("AC-005 Snaptoon 7 webtoon atmosphere presets & 1-click wall cutaway + 
     expect(result.summary.capAreaM2).toBeGreaterThan(0);
     expect(result.capPositions).not.toBeNull();
     expect(result.capIndices).not.toBeNull();
+  });
+
+  it("switches ko/en copy at runtime across LiveInkStagePane, StageStepperBar, and WebtoonAtmosphereStrip via useBilingual", () => {
+    useI18n.getState().setLang("ko");
+    render(
+      <>
+        <StudioBg3dLiveInkStagePane captureSnapshot={null} mode="live-ink-only" onRequestCapture={vi.fn()} />
+        <StudioBg3dStageStepperBar
+          activeStage="live-ink"
+          onSelectStage={vi.fn()}
+          wallCutawayConfig={DEFAULT_BG3D_WALL_CUTAWAY_CONFIG}
+          onToggleWallCutaway={vi.fn()}
+          onChangeWallCutawayConfig={vi.fn()}
+        />
+        <StudioBg3dWebtoonAtmosphereStrip variant="toolbar" activePresetId="morning" onSelectPreset={vi.fn()} />
+      </>,
+    );
+
+    expect(screen.getByText("실시간 라이브 선화 패스 대기 중")).toBeTruthy();
+    expect(screen.getByText("가림 벽 자동 숨김")).toBeTruthy();
+    expect(screen.getByText("분위기 7종")).toBeTruthy();
+
+    act(() => {
+      useI18n.getState().setLang("en");
+    });
+
+    expect(screen.getByText("Live Ink pass ready")).toBeTruthy();
+    expect(screen.getByText("Auto-hide walls")).toBeTruthy();
+    expect(screen.getByText("7 Moods")).toBeTruthy();
   });
 });

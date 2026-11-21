@@ -144,6 +144,9 @@ const LIVE_INK_MODE_ENTRIES: ReadonlyArray<{ readonly id: LiveInkPreviewMode; re
   { id: "live-ink-only", ko: "선화 전용", en: "Live ink only" },
 ];
 
+const shelfStageToStage3DMode = (stage: Bg3dShelfStageId): Stage3DMode => (stage === "ink" ? "live-ink" : stage);
+const stage3DModeToShelfStage = (stage: Stage3DMode): Bg3dShelfStageId => (stage === "live-ink" ? "ink" : stage);
+
 function browserStorage(): Storage | null {
   if (typeof window === "undefined") return null;
   try {
@@ -321,7 +324,7 @@ export function StudioBg3dProfessionalWorkspace({
   const handleSelectLiveInkMode = (mode: LiveInkPreviewMode) => {
     setLiveInkMode(mode);
     if (mode !== "shaded-3d") {
-      setActiveStage("live-ink");
+      setActiveStage("ink");
       if (!captureSnapshot) triggerLiveCaptureIfNeeded("live-ink");
     }
   };
@@ -397,7 +400,7 @@ export function StudioBg3dProfessionalWorkspace({
     let resolvedCapture = captureSnapshot;
     if (!resolvedCapture && onRequestLiveCapture) {
       try {
-        resolvedCapture = await Promise.resolve(onRequestLiveCapture(activeStage));
+        resolvedCapture = await Promise.resolve(onRequestLiveCapture(shelfStageToStage3DMode(activeStage)));
       } catch {
         setBakeStatusMessage(bi("3D 뷰포트 실캡처 중 오류가 발생했습니다. 다시 시도해 주세요.", "Live viewport capture failed."));
         return;
@@ -629,8 +632,8 @@ export function StudioBg3dProfessionalWorkspace({
       </div>
 
       <StudioBg3dStageStepperBar
-        activeStage={activeStage}
-        onSelectStage={handleSelectShelfStage}
+        activeStage={shelfStageToStage3DMode(activeStage)}
+        onSelectStage={(stage) => handleSelectShelfStage(stage3DModeToShelfStage(stage))}
         wallCutawayConfig={effectiveWallCutawayConfig}
         onToggleWallCutaway={handleToggleWallCutaway}
         onChangeWallCutawayConfig={handleWallCutawayConfigChange}
