@@ -1,4 +1,4 @@
-import { STUDIO_TEAM_ROLES, type StudioTeamRole } from "../studio-team-roles";
+import { STUDIO_TEAM_ROLES, type StudioTeamRole } from "../runtime-leaves/studio-team-roles";
 import { STUDIO_LIVE_DISPLAY_NAME_MAX_LENGTH, studioLiveDisplayName } from "./studio-live-display-name";
 import {
   STUDIO_LIVE_GESTURE_PREVIEW_KIND,

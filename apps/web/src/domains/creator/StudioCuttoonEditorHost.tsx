@@ -751,7 +751,7 @@ import {
 import {
   DEFAULT_STUDIO_LIVING_INK_MATERIAL_CONTROLS,
   type StudioLivingInkMaterialControls,
-} from "./studio-living-ink-gpu-constants";
+} from "./runtime-leaves/studio-living-ink-gpu-constants";
 import {
   createDefaultLivingInkInputRoutingState,
   resolveLivingInkStrokeRoute,
@@ -1229,7 +1229,7 @@ import {
   noteStudioSaveSucceeded,
   reportStudioAutosaveFailure,
   reportStudioSaveAuthorityDegraded,
-} from "./studio-storage-recovery-runtime-lazy";
+} from "./runtime-leaves/studio-storage-recovery-runtime-lazy";
 import type { StudioStrokeObjectSnapCache } from "./brush/studio-stroke-object-snap-cache";
 import { StudioStrokePostprocessWorkerClient } from "./brush/studio-stroke-postprocess-worker-client";
 import { DEFAULT_SHAPE_PARAMS } from "./brush/studio-stroke-shapes";
@@ -1384,7 +1384,7 @@ import { createStudioInitialRecoveryAdmission, guardStudioInitialRecoveryPointer
 import { useStudioRasterExportOrchestration } from "./useStudioRasterExportOrchestration";
 import { StudioPendingStrokeAdmissionQueue } from "./live/studio-pending-stroke-admission";
 import { hasUnpersistedStudioPendingStrokeCheckpoints } from "./studio-rejected-stroke-recovery";
-import { requestStudioVrmProjectArchiveUseContext } from "./studio-vrm-archive-attestation-lazy-bridge";
+import { requestStudioVrmProjectArchiveUseContext } from "./runtime-leaves/studio-vrm-archive-attestation-lazy-bridge";
 import { useStudioLiveTransportAuth } from "./live/use-studio-live-transport-auth";
 import { useStudioBrushBaselineController } from "./brush/useStudioBrushBaselineController";
 import type { StudioBg3dSceneDocument } from "./bg3d/studio-bg3d-scene-document";

@@ -2,20 +2,20 @@
  * 공유 3D 장면에서 캐릭터 레이어의 정규화·식별자(sourceHash·modelRuntimeKey·stageTransform)만
  * 계산하는 경량 모듈. 옷장·소품·아바타 포지 호환성 투영(vrm/*)은 끌어오지 않는다.
  */
-import { isEffectivelyHidden, type LayerGroup } from "./studio-layers";
-import { sha256HexPortable } from "./studio-sha256";
-import { studioShared3dCharacterWorldTransform } from "./studio-shared-3d-scene-runtime";
+import { isEffectivelyHidden, type LayerGroup } from "../studio-layers";
+import { sha256HexPortable } from "../studio-sha256";
+import { studioShared3dCharacterWorldTransform } from "../studio-shared-3d-scene-runtime";
 import {
   parseStudioVrmSceneDocument,
   serializeStudioVrmSceneDocument,
   type StudioVrmSceneDocument,
-} from "./vrm/studio-vrm-scene-document";
+} from "../vrm/studio-vrm-scene-document";
 
 import type {
   StudioShared3dCharacterStageTransform,
   StudioShared3dElementSource,
   StudioShared3dSceneSession,
-} from "./studio-shared-3d-scene-bridge";
+} from "../studio-shared-3d-scene-bridge";
 
 export const STUDIO_SHARED_3D_MAX_CHARACTERS_CORE = 12;
 

@@ -19,7 +19,7 @@ import {
   type StudioBg3dLtLayerRole,
   type StudioBg3dLtPageElementLike,
   type StudioBg3dLtRenderMode,
-} from "../studio-bg3d-lt-layer-anchor";
+} from "../runtime-leaves/studio-bg3d-lt-layer-anchor";
 
 export {
   preserveStudioBg3dLtSceneAnchorAfterRemoval,

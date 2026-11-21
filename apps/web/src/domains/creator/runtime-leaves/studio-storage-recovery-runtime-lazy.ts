@@ -2,15 +2,15 @@
  * 저장 실패·권위 저하 복구 런타임의 지연 경계.
  * 정상 저장 경로에서는 OPFS/자동저장 오류 사전을 로드하지 않고 신뢰성 채널만 정리한다.
  */
-import { createStudioIntentLazyLoader } from "./studio-intent-lazy-loader";
+import { createStudioIntentLazyLoader } from "../studio-intent-lazy-loader";
 import {
   clearStudioReliabilityChannel,
   getStudioReliabilityStatusSnapshot,
   resolveStudioSafeModeReason,
-} from "./studio-reliability-status-store";
+} from "../studio-reliability-status-store";
 
 const storageRecoveryLoader = createStudioIntentLazyLoader(
-  () => import("./studio-storage-recovery-runtime"),
+  () => import("../studio-storage-recovery-runtime"),
 );
 
 export function noteStudioSaveSucceeded(

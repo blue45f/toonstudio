@@ -20,7 +20,7 @@ import "../status-i18n/studio-vrm-panel-status-i18n-core";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { STUDIO_Z_CLASS } from "../studio-z-index";
-import { ensureStudioVrmProjectArchiveAttestationHostMounted } from "../studio-vrm-archive-attestation-lazy-bridge";
+import { ensureStudioVrmProjectArchiveAttestationHostMounted } from "../runtime-leaves/studio-vrm-archive-attestation-lazy-bridge";
 import { useStudioModalSheet } from "../useStudioModalSheet";
 
 import type {

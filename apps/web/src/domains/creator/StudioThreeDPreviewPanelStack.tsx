@@ -23,12 +23,12 @@ import { pageDisplayName } from "./studio-page-meta";
 import {
   EMPTY_STUDIO_SHARED_3D_SCENE_SESSION,
   selectStudioShared3dVisibleSceneElements,
-} from "./studio-shared-3d-character-identity";
+} from "./runtime-leaves/studio-shared-3d-character-identity";
 import {
   loadStudioShared3dSceneSessionModules,
   StudioBg3dRetainedOwnerRouteBridge,
   type StudioShared3dSceneSessionModules,
-} from "./studio-shared-3d-scene-session-loader";
+} from "./runtime-leaves/studio-shared-3d-scene-session-loader";
 import {
   findStudioShared3dStageEntryByBundleId,
   migrateStudioShared3dStageCollectionDocument,

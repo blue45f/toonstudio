@@ -3,7 +3,7 @@ import { sha256HexPortable } from "./studio-sha256";
 import {
   resolveExactStudioShared3dCharacterIdentity,
   resolveStudioShared3dCharacterIdentitiesFromElements,
-} from "./studio-shared-3d-character-identity";
+} from "./runtime-leaves/studio-shared-3d-character-identity";
 
 import type { StudioShared3dElementSource } from "./studio-shared-3d-scene-bridge";
 import type { StudioVrmSceneDocument } from "./vrm/studio-vrm-scene-document";

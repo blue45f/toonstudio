@@ -5,7 +5,7 @@
 import type {
   StudioVrmProjectArchiveAttestationPlan,
   StudioVrmProjectArchiveUseContextInput,
-} from "./vrm/studio-vrm-license-product-gate";
+} from "../vrm/studio-vrm-license-product-gate";
 
 export type ReadyArchiveAttestationPlan = Extract<
   StudioVrmProjectArchiveAttestationPlan,
@@ -47,7 +47,7 @@ export async function requestStudioVrmProjectArchiveUseContext(
   if (!activeLazyHostOwner) return null;
   const [mounted, mod] = await Promise.all([
     activeLazyHostOwner.activate(),
-    import("./vrm/StudioVrmProjectArchiveAttestationHost"),
+    import("../vrm/StudioVrmProjectArchiveAttestationHost"),
   ]);
   if (!mounted) return null;
   return mod.requestStudioVrmProjectArchiveUseContext(plan);

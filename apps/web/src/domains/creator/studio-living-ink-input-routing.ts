@@ -10,12 +10,12 @@
  * Pure policy: no DOM. StudioPage applies the resolved mode to admitStroke.
  */
 
-import { DEFAULT_STUDIO_LIVING_INK_INPUT_POLICY } from "./studio-living-ink-gpu-constants";
+import { DEFAULT_STUDIO_LIVING_INK_INPUT_POLICY } from "./runtime-leaves/studio-living-ink-gpu-constants";
 
 import type {
   StudioLivingInkInputPolicy,
   StudioLivingInkMaterialControls,
-} from "./studio-living-ink-gpu-constants";
+} from "./runtime-leaves/studio-living-ink-gpu-constants";
 import type { StudioLivingInkStrokeMode } from "./studio-living-ink-studio-coordinator";
 
 export const STUDIO_LIVING_INK_INPUT_ROUTING_VERSION = 1 as const;

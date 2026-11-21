@@ -1,7 +1,7 @@
 import type { El, ImageEl } from "../studio-element-model";
 import { studioScopedWriteAuthority } from "./studio-scoped-write-authority";
 import { createStudioWorkAssetInitialImageDescriptor, readBoundedStudioWorkAssetLocalImage } from "../studio-work-asset-admission";
-import { uploadStudioWorkAsset } from "../studio-work-asset-client-lazy";
+import { uploadStudioWorkAsset } from "../runtime-leaves/studio-work-asset-client-lazy";
 import { studioWorkAssetSourceUri } from "@toonstudio/contracts/studio-work-asset-contract";
 import { sha256HexPortable } from "@toonstudio/contracts/sha256-portable";
 import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";

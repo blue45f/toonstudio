@@ -1,7 +1,7 @@
 import {
   resolveExactStudioShared3dCharacterIdentity,
   type StudioShared3dCharacterIdentity,
-} from "./studio-shared-3d-character-identity";
+} from "./runtime-leaves/studio-shared-3d-character-identity";
 import {
   parseStudioShared3dCharacterStageTransform,
   studioShared3dCharacterStageTransformHash,

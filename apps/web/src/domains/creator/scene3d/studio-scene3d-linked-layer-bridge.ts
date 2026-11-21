@@ -6,7 +6,7 @@ import {
   type StudioLinked3dRenderLink,
 } from "../studio-linked-3d-render-document";
 import type { StudioShared3dStagePersistedState } from "../studio-shared-3d-stage-collection";
-import { createStudioShared3dSceneSessionForStage } from "../studio-shared-3d-stage-session";
+import { createStudioShared3dSceneSessionForStage } from "../runtime-leaves/studio-shared-3d-stage-session";
 import type { StudioShared3dStageElementSource } from "../studio-shared-3d-stage-document";
 import {
   createStudioScene3dAuthority,

@@ -1,5 +1,5 @@
 import { sha256HexPortable } from "../studio-sha256";
-import { downloadStudioWorkAsset } from "../studio-work-asset-client-lazy";
+import { downloadStudioWorkAsset } from "../runtime-leaves/studio-work-asset-client-lazy";
 
 import {
   normalizeStudioBrushR8TextureGrainSource,

@@ -9,7 +9,7 @@ import {
   STUDIO_TEAM_ROLES,
   type StudioTeamAssignableRole,
   type StudioTeamRole,
-} from "./studio-team-roles";
+} from "./runtime-leaves/studio-team-roles";
 
 export { STUDIO_TEAM_ASSIGNABLE_ROLES, STUDIO_TEAM_ROLES, type StudioTeamAssignableRole, type StudioTeamRole };
 export const STUDIO_TEAM_STATUSES = ["active", "pending", "declined"] as const;

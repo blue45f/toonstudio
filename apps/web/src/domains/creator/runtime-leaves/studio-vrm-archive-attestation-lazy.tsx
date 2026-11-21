@@ -7,7 +7,7 @@ import { Suspense, lazy, useCallback, useEffect, useRef, useState, type ReactEle
 import { registerStudioVrmArchiveAttestationLazyHostOwner } from "./studio-vrm-archive-attestation-lazy-bridge";
 
 const LazyStudioVrmProjectArchiveAttestationHost = lazy(() =>
-  import("./vrm/StudioVrmProjectArchiveAttestationHost").then((mod) => ({
+  import("../vrm/StudioVrmProjectArchiveAttestationHost").then((mod) => ({
     default: mod.StudioVrmProjectArchiveAttestationHost,
   })),
 );

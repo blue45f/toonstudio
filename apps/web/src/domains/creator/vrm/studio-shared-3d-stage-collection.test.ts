@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } from "../bg3d/studio-bg3d-scene-document";
 import { createStudioShared3dSceneSessionFromElements } from "../studio-shared-3d-scene-bridge";
-import { createStudioShared3dSceneSessionForStage } from "../studio-shared-3d-stage-session";
+import { createStudioShared3dSceneSessionForStage } from "../runtime-leaves/studio-shared-3d-stage-session";
 import {
   createStudioShared3dStageCollectionDocument,
   STUDIO_SHARED_3D_STAGE_COLLECTION_KIND,

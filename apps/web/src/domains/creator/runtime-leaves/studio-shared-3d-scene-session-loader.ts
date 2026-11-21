@@ -3,17 +3,17 @@
  */
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
-import { createStudioIntentLazyLoader } from "./studio-intent-lazy-loader";
+import { createStudioIntentLazyLoader } from "../studio-intent-lazy-loader";
 
 export interface StudioShared3dSceneSessionModules {
-  readonly createStudioShared3dSceneSessionFromElements: typeof import("./studio-shared-3d-scene-bridge").createStudioShared3dSceneSessionFromElements;
+  readonly createStudioShared3dSceneSessionFromElements: typeof import("../studio-shared-3d-scene-bridge").createStudioShared3dSceneSessionFromElements;
   readonly createStudioShared3dSceneSessionForStage: typeof import("./studio-shared-3d-stage-session").createStudioShared3dSceneSessionForStage;
 }
 
 const shared3dSceneSessionLoader = createStudioIntentLazyLoader<StudioShared3dSceneSessionModules>(
   async () => {
     const [bridge, stageSession] = await Promise.all([
-      import("./studio-shared-3d-scene-bridge"),
+      import("../studio-shared-3d-scene-bridge"),
       import("./studio-shared-3d-stage-session"),
     ]);
     return {
@@ -27,7 +27,7 @@ export const loadStudioShared3dSceneSessionModules = shared3dSceneSessionLoader.
 export const preloadStudioShared3dSceneSessionModules = shared3dSceneSessionLoader.preload;
 
 export const StudioBg3dRetainedOwnerRouteBridge = lazyRetry(
-  () => import("./bg3d/StudioBg3dRetainedOwnerRouteBridge").then((mod) => ({
+  () => import("../bg3d/StudioBg3dRetainedOwnerRouteBridge").then((mod) => ({
     default: mod.StudioBg3dRetainedOwnerRouteBridge,
   })),
   "StudioBg3dRetainedOwnerRouteBridge",

@@ -9,7 +9,7 @@ import { StudioAiProjectHandoffHost } from "../ai/StudioAiProjectHandoffHost";
 import { STUDIO_BRUSH_PACK_ACCEPT } from "../brush/studio-brush-pack-format";
 import { STUDIO_CANVAS_IMAGE_ACCEPT } from "../studio-legacy-editor-runtime-helpers";
 import { StudioDestructiveConfirmHost } from "../StudioDestructiveConfirmHost";
-import { StudioVrmProjectArchiveAttestationHost } from "../studio-vrm-archive-attestation-lazy";
+import { StudioVrmProjectArchiveAttestationHost } from "../runtime-leaves/studio-vrm-archive-attestation-lazy";
 import { StudioImportHandoffHost } from "./StudioImportHandoffHost";
 import { StudioMobileBackStackHost } from "./StudioMobileBackStackHost";
 import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";

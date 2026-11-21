@@ -12,7 +12,7 @@ import {
   canonicalStudioCommandJson,
   isPlainCommandRecord as isPlainRecord,
   type StudioCommandJournalErrorCode,
-} from "./studio-canonical-command-json";
+} from "./runtime-leaves/studio-canonical-command-json";
 
 export { StudioCommandJournalError, canonicalStudioCommandJson, type StudioCommandJournalErrorCode };
 

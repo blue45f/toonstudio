@@ -6,10 +6,10 @@ import {
   createStudioShared3dSceneSession,
   createStudioShared3dSceneSessionFromElements,
   type StudioShared3dSceneSession,
-} from "./studio-shared-3d-scene-bridge";
-import { findStudioShared3dStageEntryByBundleId } from "./studio-shared-3d-stage-collection";
+} from "../studio-shared-3d-scene-bridge";
+import { findStudioShared3dStageEntryByBundleId } from "../studio-shared-3d-stage-collection";
 
-import type { StudioShared3dStageElementSource } from "./studio-shared-3d-stage-document";
+import type { StudioShared3dStageElementSource } from "../studio-shared-3d-stage-document";
 
 export function createStudioShared3dSceneSessionForStage(
   value: unknown,

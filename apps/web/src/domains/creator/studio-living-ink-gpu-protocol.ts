@@ -17,7 +17,7 @@ import {
   STUDIO_LIVING_INK_GPU_PROTOCOL_VERSION,
   type StudioLivingInkInputPolicy,
   type StudioLivingInkMaterialControls,
-} from "./studio-living-ink-gpu-constants";
+} from "./runtime-leaves/studio-living-ink-gpu-constants";
 
 import type {
   StudioLivingInkBounds,
