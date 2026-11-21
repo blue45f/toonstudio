@@ -36,12 +36,18 @@ interface FadeSnapshot extends StudioSpriteVisualIdentity {
   readonly angle: number;
   readonly flipX: boolean;
   readonly flipY: boolean;
+  /** 직전 연속 애니메이션 정규화 진행률(0~1). 방향·속도 클립 교체 시 프레임 0 리셋 끊김을 막는다. */
+  readonly animProgress: number | null;
 }
 
 interface CrossfadeEntry {
   sprite: Phaser.GameObjects.Sprite | null;
   state: StudioSpriteCrossfadeState;
   pending: FadeSnapshot | null;
+  /** 페이드 아웃 중인 이전 포즈의 반전·원점·시작 각도. step()에서 새 flip으로 덮어쓰지 않아 역반전 팝을 막는다. */
+  fadeFlipX: boolean;
+  fadeFlipY: boolean;
+  fadeBaseAngle: number;
 }
 
 function identityOf(sprite: Phaser.GameObjects.Sprite): StudioSpriteVisualIdentity {
@@ -64,6 +70,31 @@ function identityOf(sprite: Phaser.GameObjects.Sprite): StudioSpriteVisualIdenti
   };
 }
 
+function readAnimProgress(sprite: Phaser.GameObjects.Sprite): number | null {
+  const anims = sprite.anims as unknown as {
+    readonly isPlaying?: boolean;
+    readonly getProgress?: () => number;
+  } | undefined;
+  if (!anims?.isPlaying || typeof anims.getProgress !== "function") return null;
+  const progress = anims.getProgress();
+  return Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : null;
+}
+
+function preserveWalkAnimPhase(owner: Phaser.GameObjects.Sprite, pending: FadeSnapshot, next: StudioSpriteVisualIdentity): void {
+  if (!pending.animated || !next.animated) return;
+  if (pending.state !== "walk" || next.state !== "walk" || pending.key === next.key) return;
+  if (pending.animProgress === null || pending.animProgress <= 0.08 || pending.animProgress >= 0.95) return;
+  const anims = owner.anims as unknown as {
+    readonly getProgress?: () => number;
+    readonly setProgress?: (value: number) => void;
+  } | undefined;
+  if (typeof anims?.getProgress !== "function" || typeof anims?.setProgress !== "function") return;
+  const current = anims.getProgress();
+  if (Number.isFinite(current) && current < 0.05) {
+    anims.setProgress(pending.animProgress);
+  }
+}
+
 function snapshotOf(sprite: Phaser.GameObjects.Sprite): FadeSnapshot {
   return {
     ...identityOf(sprite),
@@ -76,6 +107,7 @@ function snapshotOf(sprite: Phaser.GameObjects.Sprite): FadeSnapshot {
     angle: sprite.angle,
     flipX: sprite.flipX,
     flipY: sprite.flipY,
+    animProgress: readAnimProgress(sprite),
   };
 }
 
@@ -94,24 +126,30 @@ export class StudioSpriteCrossfadeRuntime {
     const entry = this.entryOf(owner);
     const pending = entry.pending;
     entry.pending = null;
-    if (!pending) return;
+    if (!pending || !Number.isFinite(time)) return;
+    const nextIdentity = identityOf(owner);
+    // 보행 방향·속도 클립 교체 시 프레임 0으로 강제 초기화되지 않게 직전 보행 위상을 이어받는다.
+    if (enabled) preserveWalkAnimPhase(owner, pending, nextIdentity);
     // 캡처 시점의 정체성을 상태 머신의 "이전 그림"으로 먼저 맞춘 뒤 전이를 계산한다.
     // (capture/commit 쌍이 매 프레임 돌므로 상태는 항상 직전 프레임과 동기화된다.)
     entry.state = { identity: pending, fade: entry.state.fade, lastChangeAtMs: entry.state.lastChangeAtMs };
-    const { state, started } = transitionStudioSpriteCrossfade(entry.state, identityOf(owner), time, {
+    const { state, started } = transitionStudioSpriteCrossfade(entry.state, nextIdentity, time, {
       fadeMs: STUDIO_SPRITE_CROSSFADE_MS,
       enabled,
     });
     entry.state = state;
-    if (!started) return;
+    if (!started || !(pending.displayWidth > 0) || !(pending.displayHeight > 0)) return;
+    entry.fadeFlipX = pending.flipX;
+    entry.fadeFlipY = pending.flipY;
+    entry.fadeBaseAngle = Number.isFinite(pending.angle) ? pending.angle : 0;
     const fadeSprite = this.fadeSpriteOf(entry, owner);
     fadeSprite
       .setTexture(pending.textureKey, pending.frame)
       .setOrigin(pending.originX, pending.originY)
       .setDisplaySize(pending.displayWidth, pending.displayHeight)
       .setPosition(pending.x, pending.y)
-      .setAngle(pending.angle)
-      .setFlip(pending.flipX, pending.flipY)
+      .setAngle(entry.fadeBaseAngle)
+      .setFlip(entry.fadeFlipX, entry.fadeFlipY)
       .setDepth(owner.depth - 0.5)
       .setVisible(owner.visible)
       .setAlpha(owner.alpha);
@@ -124,6 +162,7 @@ export class StudioSpriteCrossfadeRuntime {
 
   /** 프레임 끝에 불러 진행 중인 페이드를 배우 변환에 맞추고 알파를 진행시킨다. */
   step(time: number): void {
+    if (!Number.isFinite(time)) return;
     for (const [owner, entry] of this.entries) {
       if (!owner.active) {
         this.release(owner);
@@ -137,10 +176,12 @@ export class StudioSpriteCrossfadeRuntime {
         fadeSprite.setVisible(false);
         continue;
       }
+      // 이전 포즈의 flip을 유지하고 각도만 완만하게 따라가 방향 전환 순간의 역반전 팝을 막는다.
+      const blendedAngle = entry.fadeBaseAngle + (owner.angle - entry.fadeBaseAngle) * (1 - alpha);
       fadeSprite
         .setPosition(owner.x, owner.y)
-        .setAngle(owner.angle)
-        .setFlip(owner.flipX, owner.flipY)
+        .setAngle(blendedAngle)
+        .setFlip(entry.fadeFlipX, entry.fadeFlipY)
         .setDepth(owner.depth - 0.5)
         .setVisible(owner.visible)
         .setAlpha(alpha * owner.alpha);
@@ -168,7 +209,14 @@ export class StudioSpriteCrossfadeRuntime {
   private entryOf(owner: Phaser.GameObjects.Sprite): CrossfadeEntry {
     let entry = this.entries.get(owner);
     if (!entry) {
-      entry = { sprite: null, state: createStudioSpriteCrossfadeState(), pending: null };
+      entry = {
+        sprite: null,
+        state: createStudioSpriteCrossfadeState(),
+        pending: null,
+        fadeFlipX: false,
+        fadeFlipY: false,
+        fadeBaseAngle: 0,
+      };
       this.entries.set(owner, entry);
     }
     return entry;

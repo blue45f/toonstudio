@@ -1,5 +1,11 @@
 import * as THREE from "three";
 
+import {
+  STUDIO_RICH_MOTION_PROFILES,
+  isStudioRichMotionId,
+  sampleStudioRichMotion,
+  type StudioRichMotionId,
+} from "../studio-virtual-space-character-motion";
 import { studioCameraLerp, STUDIO_GAIT_DISTANCE_PER_CYCLE, STUDIO_PEER_TELEPORT_DISTANCE } from "../studio-virtual-space-presentation";
 import {
   studioSpaceEmoteById,
@@ -7,6 +13,7 @@ import {
 } from "../studio-virtual-space-emote-catalog";
 import type { StudioVirtualSpaceEngineBridge } from "../studio-virtual-space-engine-bridge";
 import type { StudioVirtualSpaceSnapshot } from "../studio-virtual-space-presence";
+import { STUDIO_DISPLAY_MAX_DELTA_SECONDS } from "../studio-virtual-space-sprite-smoothing";
 import { STUDIO_THREE_SCALE } from "./studio-virtual-space-three-coordinates";
 import type { StudioThreeLightingPreset } from "./studio-virtual-space-three-hdri-controller";
 import type { StudioThreeActorNode } from "./studio-virtual-space-three-scene";
@@ -43,7 +50,29 @@ const EMOTE_CUSTOM_EXPRESSION_MAP: Readonly<Record<string, (typeof STUDIO_THREE_
   cheers: "wink",
   "kpop-dance": "wink",
   think: "smirk",
+  "deadline-victory-dance": "big-smile",
+  "sync-group-dance": "wink",
+  "celebrate-spin": "big-smile",
 });
+
+function clampMotionDt(dt: number): number {
+  return Number.isFinite(dt) ? Math.min(STUDIO_DISPLAY_MAX_DELTA_SECONDS, Math.max(0, dt)) : 0;
+}
+
+function lerpSnap(current: number, target: number, alpha: number, epsilon = 1e-4): number {
+  const next = THREE.MathUtils.lerp(current, target, alpha);
+  return Math.abs(target - next) <= epsilon ? target : next;
+}
+
+function smoothstepUnit(value: number): number {
+  const t = Math.max(0, Math.min(1, value));
+  return t * t * (3 - 2 * t);
+}
+
+function emoteEnvelope(elapsedMs: number, durationMs: number, attackMs = 100, releaseMs = 180): number {
+  if (!(durationMs > 0) || elapsedMs < 0 || elapsedMs >= durationMs) return 0;
+  return Math.min(smoothstepUnit(elapsedMs / attackMs), smoothstepUnit((durationMs - elapsedMs) / releaseMs));
+}
 
 export function isStudioThreeLightingPreset(value: unknown): value is StudioThreeLightingPreset {
   return value === "day" || value === "studio" || value === "night";
@@ -104,7 +133,7 @@ export function computeStudioThreeCameraOrbitDelta(input: {
   if (input.keysDown.has("BracketRight") || (input.keysDown.has("KeyE") && canUseKeyEForCamera)) {
     direction += 1;
   }
-  return direction * 1.45 * input.dt;
+  return direction * 1.45 * clampMotionDt(input.dt);
 }
 
 /** 18 프리셋 및 8 커스텀 표정을 안전하게 설정한다. */
@@ -193,17 +222,18 @@ export function updateStudioThreeActorLookAt(
   targetWorldPos: THREE.Vector3 | null,
   dt = 0.016,
 ): void {
-  const blend = studioCameraLerp(dt, 0.14);
+  const safeDt = clampMotionDt(dt);
+  const blend = studioCameraLerp(safeDt, 0.14);
   const lookAt = node.vrm?.lookAt;
   if (!targetWorldPos) {
     if (lookAt) lookAt.target = null;
     if (node.vrmNeck) {
-      node.vrmNeck.rotation.y = THREE.MathUtils.lerp(node.vrmNeck.rotation.y, 0, blend);
-      node.vrmNeck.rotation.x = THREE.MathUtils.lerp(node.vrmNeck.rotation.x, 0, blend);
+      node.vrmNeck.rotation.y = lerpSnap(node.vrmNeck.rotation.y, 0, blend);
+      node.vrmNeck.rotation.x = lerpSnap(node.vrmNeck.rotation.x, 0, blend);
     }
     if (node.vrmHead) {
-      node.vrmHead.rotation.y = THREE.MathUtils.lerp(node.vrmHead.rotation.y, 0, blend);
-      node.vrmHead.rotation.x = THREE.MathUtils.lerp(node.vrmHead.rotation.x, 0, blend);
+      node.vrmHead.rotation.y = lerpSnap(node.vrmHead.rotation.y, 0, blend);
+      node.vrmHead.rotation.x = lerpSnap(node.vrmHead.rotation.x, 0, blend);
     }
     return;
   }
@@ -361,10 +391,13 @@ function applyVrmEmoteExpression(node: StudioThreeActorNode, emoteId: string | n
   }
 
   const def = studioSpaceEmoteById(emoteId);
+  const richCategory = isStudioRichMotionId(emoteId) ? STUDIO_RICH_MOTION_PROFILES[emoteId].category : null;
   const expression = def?.expression ?? (
     emoteId === "wave" || emoteId === "dance" || emoteId === "cheer" || emoteId === "celebrate"
+      || richCategory === "dance" || richCategory === "expression"
       ? "happy"
       : emoteId === "sit" || emoteId === "sleep" || emoteId === "bow"
+        || richCategory === "gymnastics" || richCategory === "work"
         ? "calm"
         : null
   );
@@ -378,20 +411,24 @@ function applyVrmEmoteExpression(node: StudioThreeActorNode, emoteId: string | n
 }
 
 function updateWalkPhase(node: StudioThreeActorNode, dt: number): { readonly phase: number; readonly blend: number } {
+  const safeDt = clampMotionDt(dt);
   const { x, z } = node.group.position;
   const gait = node.gait ??= { x, z, phase: 0 };
   const distance = Math.hypot(x - gait.x, z - gait.z) / STUDIO_THREE_SCALE;
   const prevBlend = typeof node.group.userData.gaitBlend === "number" ? node.group.userData.gaitBlend : 0;
   let nextBlend: number;
   if (node.moving && distance <= STUDIO_PEER_TELEPORT_DISTANCE) {
-    gait.phase = (gait.phase + distance * 2 * Math.PI / STUDIO_GAIT_DISTANCE_PER_CYCLE) % (2 * Math.PI);
-    nextBlend = Math.min(1, prevBlend + (1 - prevBlend) * Math.min(1, dt * 14));
+    // 0.02px 미만 미세 진동에서는 다리 위상을 흔들지 않는다.
+    if (distance >= 0.02) {
+      gait.phase = (gait.phase + distance * 2 * Math.PI / STUDIO_GAIT_DISTANCE_PER_CYCLE) % (2 * Math.PI);
+    }
+    nextBlend = Math.min(1, prevBlend + (1 - prevBlend) * (1 - Math.exp(-safeDt * 14)));
   } else {
-    // 정지 시 위상을 0으로 강제 초기화해 다리가 뚝 끊기는 스냅을 방지하고 가장 가까운 접지 위상으로 부드럽게 감쇠한다.
+    // 정지 시 위상을 0으로 강제 초기화해 다리가 뚝 끊기는 스냅을 방지하고 가장 가까운 접지 위상으로 지수 감쇠한다.
     const nearestRest = Math.round(gait.phase / Math.PI) * Math.PI;
-    gait.phase += (nearestRest - gait.phase) * Math.min(1, dt * 12);
-    nextBlend = prevBlend * Math.exp(-dt * 12);
-    if (nextBlend < 0.02) {
+    gait.phase += (nearestRest - gait.phase) * (1 - Math.exp(-safeDt * 12));
+    nextBlend = prevBlend * Math.exp(-safeDt * 12);
+    if (nextBlend < 0.015) {
       nextBlend = 0;
       gait.phase = 0;
     }
@@ -412,16 +449,84 @@ function applySeatedLegsAndHips(node: StudioThreeActorNode): void {
   if (node.vrmHips) node.vrmHips.position.y = (node.vrmHipsBaseY ?? 0) - 0.32;
 }
 
-function applyBreathingPose(node: StudioThreeActorNode, now: number): void {
+function applyBreathingPose(node: StudioThreeActorNode, now: number, reducedMotion: boolean): void {
+  if (reducedMotion) {
+    if (node.vrmSpine) node.vrmSpine.rotation.x = 0;
+    if (node.vrmChest) node.vrmChest.rotation.x = 0;
+    return;
+  }
   if (node.vrmSpine) node.vrmSpine.rotation.x = Math.sin(now * 0.0022) * 0.018;
   if (node.vrmChest) node.vrmChest.rotation.x = Math.sin(now * 0.0022 - 0.35) * 0.024;
+}
+
+/** 18종 확장 모션(작가 건강 체조 3종·신나는 댄스 3종 포함)을 3D VRM/스타일라이즈드 리그에 적용한다. */
+function applyStudioThreeRichMotionPose(
+  node: StudioThreeActorNode,
+  richId: StudioRichMotionId,
+  elapsedMs: number,
+  now: number,
+  durationMs: number,
+  baseLeftZ: number,
+  baseRightZ: number,
+  reducedMotion: boolean,
+): void {
+  const pose = sampleStudioRichMotion(richId, { elapsedMs, nowMs: now, durationMs, reducedMotion });
+  const baseY = node.seated ? -0.22 : 0;
+  const liftMeters = Math.max(0, -pose.offsetY) * 0.026;
+  node.rigGroup.position.y = baseY + liftMeters;
+  node.rigGroup.rotation.set(0, pose.yawRad, pose.tiltRad);
+
+  if (richId === "neck-shoulder-stretch") {
+    const neckTilt = pose.tiltRad * 1.9;
+    const shrug = Math.max(0, -pose.offsetY) * 0.06;
+    node.leftArm.rotation.set(-0.22 - shrug, 0, 0.14);
+    node.rightArm.rotation.set(-0.22 - shrug, 0, -0.14);
+    if (node.vrmNeck) node.vrmNeck.rotation.set(0.06, pose.yawRad * 0.5, neckTilt * 0.55);
+    if (node.vrmHead) node.vrmHead.rotation.set(0.05, pose.yawRad * 0.7, neckTilt * 0.75);
+    if (node.vrmLeftUpperArm) node.vrmLeftUpperArm.rotation.set(-0.18 - shrug, 0, baseLeftZ * 0.84);
+    if (node.vrmRightUpperArm) node.vrmRightUpperArm.rotation.set(-0.18 - shrug, 0, baseRightZ * 0.84);
+  } else if (richId === "wrist-roll-break") {
+    const roll = Math.sin(elapsedMs * 0.009) * 0.42 * pose.intensity;
+    node.leftArm.rotation.set(-0.85, 0, 0.18 + roll * 0.25);
+    node.rightArm.rotation.set(-0.85, 0, -0.18 - roll * 0.25);
+    if (node.vrmLeftUpperArm) node.vrmLeftUpperArm.rotation.set(-0.62, 0.18, baseLeftZ * 0.62);
+    if (node.vrmRightUpperArm) node.vrmRightUpperArm.rotation.set(-0.62, -0.18, baseRightZ * 0.62);
+    if (node.vrmLeftLowerArm) node.vrmLeftLowerArm.rotation.set(-0.45, -0.3 + roll, roll * 0.6);
+    if (node.vrmRightLowerArm) node.vrmRightLowerArm.rotation.set(-0.45, 0.3 - roll, -roll * 0.6);
+  } else if (richId === "standing-gymnastics" || richId === "stretch-break") {
+    const reach = pose.armSwingRad;
+    node.leftArm.rotation.set(reach, 0, 0.28 * pose.intensity);
+    node.rightArm.rotation.set(reach, 0, -0.28 * pose.intensity);
+    if (node.vrmSpine) node.vrmSpine.rotation.set(0, 0, pose.tiltRad * 0.7);
+    if (node.vrmChest) node.vrmChest.rotation.set(-0.08 * pose.intensity, 0, pose.tiltRad * 0.6);
+    if (node.vrmLeftUpperArm) node.vrmLeftUpperArm.rotation.set(reach * 0.85, 0, baseLeftZ * 0.35);
+    if (node.vrmRightUpperArm) node.vrmRightUpperArm.rotation.set(reach * 0.85, 0, baseRightZ * 0.35);
+  } else {
+    // 댄스 3종(groove-dance / deadline-victory-dance / sync-group-dance) 및 celebrate/wave/dramatic/work
+    const arm = pose.armSwingRad;
+    const leg = pose.legSwingRad;
+    const alt = richId === "groove-dance" ? -1 : 1;
+    node.leftArm.rotation.set(-0.95 * pose.intensity + arm * 0.65, 0, 0.16 * pose.intensity);
+    node.rightArm.rotation.set(-0.95 * pose.intensity + arm * alt * 0.65, 0, -0.16 * pose.intensity);
+    node.leftLeg.rotation.x = node.seated ? -1.35 : leg;
+    node.rightLeg.rotation.x = node.seated ? -1.35 : -leg;
+    if (node.vrmLeftUpperArm) node.vrmLeftUpperArm.rotation.set(-0.65 * pose.intensity + arm * 0.5, 0, baseLeftZ * 0.48);
+    if (node.vrmRightUpperArm) node.vrmRightUpperArm.rotation.set(-0.65 * pose.intensity + arm * alt * 0.5, 0, baseRightZ * 0.48);
+    if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = node.seated ? -1.35 : leg * 0.85;
+    if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = node.seated ? -1.35 : -leg * 0.85;
+    if (node.vrmLeftLowerLeg) node.vrmLeftLowerLeg.rotation.x = node.seated ? 1.35 : Math.max(0, -leg * 0.7);
+    if (node.vrmRightLowerLeg) node.vrmRightLowerLeg.rotation.x = node.seated ? 1.35 : Math.max(0, leg * 0.7);
+  }
 }
 
 export function applyStudioThreeActorPose(
   node: StudioThreeActorNode,
   now: number,
   dt: number,
+  options: { readonly reducedMotion?: boolean; readonly motionProfileId?: StudioRichMotionId } = {},
 ): void {
+  const safeDt = clampMotionDt(dt);
+  const reducedMotion = options.reducedMotion === true || node.group.userData.reducedMotion === true;
   const baseLeftZ = node.armDownZLeft ?? 1.16;
   const baseRightZ = node.armDownZRight ?? -1.16;
   const hadEmote = Boolean(node.emoteId);
@@ -438,9 +543,9 @@ export function applyStudioThreeActorPose(
   const emoteActive = !node.moving && Boolean(node.emoteId) && (node.emoteUntil ?? 0) > now;
   applyVrmEmoteExpression(node, emoteActive ? (node.emoteId ?? null) : null);
 
-  const { phase: walkPhase, blend: walkBlend } = updateWalkPhase(node, dt);
+  const { phase: walkPhase, blend: walkBlend } = updateWalkPhase(node, safeDt);
   const jumpHeight = typeof node.group.userData.jumpHeight === "number" ? Math.max(0, node.group.userData.jumpHeight) : 0;
-  const restBlend = studioCameraLerp(dt, 0.2);
+  const restBlend = studioCameraLerp(safeDt, 0.2);
   if (node.moving || (!node.seated && !emoteActive && walkBlend > 0.05)) {
     const swing = Math.sin(walkPhase) * 0.42 * (node.moving ? 1 : walkBlend);
     const elbowLeft = Math.max(0.05, -swing * 0.55);
@@ -474,112 +579,116 @@ export function applyStudioThreeActorPose(
       node.vrmRightLowerArm.rotation.x = elbowRight;
       node.vrmRightLowerArm.rotation.z = 0;
     }
-    node.rigGroup.position.y = Math.sin(walkPhase) ** 2 * 0.012 * (node.moving ? 1 : walkBlend) + jumpHeight;
+    const walkBob = reducedMotion ? 0 : Math.min(0.018, Math.sin(walkPhase) ** 2 * 0.012 * (node.moving ? 1 : walkBlend));
+    node.rigGroup.position.y = walkBob + jumpHeight;
     node.rigGroup.rotation.set(0, 0, 0);
   } else if (emoteActive && node.emoteId) {
     const emoteId = node.emoteId;
-    const motion = studioSpaceEmoteById(emoteId)?.motion ?? emoteId;
-    const elapsedSec = Math.max(0, (now - (node.emoteStartedAt ?? now)) / 1000);
-    if (emoteId === "wave" || motion === "pop") {
-      const wave = Math.sin(now * 0.016) * 0.45;
-      node.rightArm.rotation.x = -2.2 + wave * 0.35;
-      node.rightArm.rotation.z = -0.45 + wave;
-      node.leftArm.rotation.x = 0;
-      node.leftArm.rotation.z = 0;
-      if (node.vrmRightUpperArm) {
-        node.vrmRightUpperArm.rotation.z = 0.65 + wave * 0.5;
-        node.vrmRightUpperArm.rotation.x = -0.35;
-      }
-      if (node.vrmRightLowerArm) node.vrmRightLowerArm.rotation.z = wave * 0.6;
-      if (node.vrmLeftUpperArm) {
-        node.vrmLeftUpperArm.rotation.z = baseLeftZ;
-        node.vrmLeftUpperArm.rotation.x = 0.06;
-      }
-      node.rigGroup.position.y = node.seated ? -0.22 : Math.abs(Math.sin(now * 0.008)) * 0.04;
+    const startedAt = node.emoteStartedAt ?? now;
+    const durationMs = Math.max(400, (node.emoteUntil ?? startedAt + 2_400) - startedAt);
+    const elapsedMs = Math.max(0, now - startedAt);
+    const elapsedSec = elapsedMs / 1000;
+    const env = reducedMotion ? 0 : emoteEnvelope(elapsedMs, durationMs);
+    if (isStudioRichMotionId(emoteId)) {
+      applyStudioThreeRichMotionPose(node, emoteId, elapsedMs, now, durationMs, baseLeftZ, baseRightZ, reducedMotion);
+      if (node.seated && STUDIO_RICH_MOTION_PROFILES[emoteId].category !== "dance") applySeatedLegsAndHips(node);
+    } else if (reducedMotion) {
+      node.rigGroup.position.y = node.seated ? -0.22 : 0;
       node.rigGroup.rotation.set(0, 0, 0);
-    } else if (
-      motion === "dance"
-      || motion === "kpop-dance"
-      || motion === "shuffle"
-      || motion === "moonwalk"
-    ) {
-      const beat = now * 0.015;
-      const bounce = Math.abs(Math.sin(beat)) * 0.16 + 0.02;
-      const spin = Math.sin(beat * 0.5) * 0.55 + 0.08;
-      node.rigGroup.position.y = (node.seated ? -0.22 : 0) + bounce;
-      node.rigGroup.rotation.set(0, spin, Math.cos(beat * 0.5) * 0.12);
-      node.leftArm.rotation.x = -1.15 + Math.sin(beat) * 0.65;
-      node.rightArm.rotation.x = -1.15 - Math.sin(beat) * 0.65;
-      node.leftLeg.rotation.x = node.seated ? -1.35 : Math.sin(beat) * 0.38;
-      node.rightLeg.rotation.x = node.seated ? -1.35 : -Math.sin(beat) * 0.38;
-      if (node.vrmLeftUpperArm) {
-        node.vrmLeftUpperArm.rotation.z = baseLeftZ * 0.45 + Math.sin(beat) * 0.35;
-        node.vrmLeftUpperArm.rotation.x = -0.65 + Math.cos(beat) * 0.4;
-      }
-      if (node.vrmRightUpperArm) {
-        node.vrmRightUpperArm.rotation.z = baseRightZ * 0.45 + Math.sin(beat) * 0.35;
-        node.vrmRightUpperArm.rotation.x = -0.65 - Math.cos(beat) * 0.4;
-      }
-      if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = node.seated ? -1.35 : Math.sin(beat) * 0.35;
-      if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = node.seated ? -1.35 : -Math.sin(beat) * 0.35;
-      if (node.vrmLeftLowerLeg) node.vrmLeftLowerLeg.rotation.x = node.seated ? 1.35 : Math.max(0, -Math.sin(beat) * 0.3);
-      if (node.vrmRightLowerLeg) node.vrmRightLowerLeg.rotation.x = node.seated ? 1.35 : Math.max(0, Math.sin(beat) * 0.3);
-    } else if (
-      motion === "sway"
-      || motion === "yoga"
-      || motion === "doze"
-      || motion === "neck-stretch"
-      || motion === "tai-chi"
-      || motion === "shake"
-      || emoteId === "think"
-      || emoteId === "yoga"
-      || emoteId === "bow"
-    ) {
-      const tilt = Math.sin(now * 0.006) * 0.16 + 0.12;
-      node.rigGroup.rotation.set(emoteId === "bow" ? 0.45 : 0.1, 0, tilt);
-      node.rigGroup.position.y = (node.seated ? -0.22 : 0) + Math.sin(now * 0.005) * 0.025;
-      node.rightArm.rotation.x = -0.95;
-      node.leftArm.rotation.x = -0.35;
-      if (node.vrmRightUpperArm) {
-        node.vrmRightUpperArm.rotation.z = baseRightZ * 0.65;
-        node.vrmRightUpperArm.rotation.x = -0.85;
-      }
-      if (node.vrmLeftUpperArm) {
-        node.vrmLeftUpperArm.rotation.z = baseLeftZ * 0.8;
-        node.vrmLeftUpperArm.rotation.x = -0.25;
-      }
+      if (node.seated) applySeatedLegsAndHips(node);
     } else {
-      // hop / cheers / celebratory bounce
-      const bounce = Math.abs(Math.sin(now * 0.014)) * 0.22 + 0.04;
-      const armSwing = Math.sin(now * 0.018) * 0.35;
-      node.rigGroup.position.y = (node.seated ? -0.22 : 0) + bounce;
-      node.rigGroup.rotation.set(0, 0, 0);
-      node.leftArm.rotation.x = -1.6 + armSwing;
-      node.rightArm.rotation.x = -1.6 - armSwing;
-      if (node.vrmLeftUpperArm) {
-        node.vrmLeftUpperArm.rotation.z = baseLeftZ * 0.35;
-        node.vrmLeftUpperArm.rotation.x = -1.1 + armSwing;
+      const motion = studioSpaceEmoteById(emoteId)?.motion ?? emoteId;
+      if (emoteId === "wave" || motion === "pop") {
+        const wave = Math.sin(now * 0.016) * 0.45 * env;
+        node.rightArm.rotation.x = (-2.2 + Math.sin(now * 0.016) * 0.45 * 0.35) * env;
+        node.rightArm.rotation.z = -0.45 * env + wave;
+        node.leftArm.rotation.x = 0;
+        node.leftArm.rotation.z = 0;
+        if (node.vrmRightUpperArm) {
+          node.vrmRightUpperArm.rotation.z = baseRightZ + (0.65 - baseRightZ) * env + wave * 0.5;
+          node.vrmRightUpperArm.rotation.x = 0.06 + (-0.35 - 0.06) * env;
+        }
+        if (node.vrmRightLowerArm) node.vrmRightLowerArm.rotation.z = wave * 0.6;
+        if (node.vrmLeftUpperArm) {
+          node.vrmLeftUpperArm.rotation.z = baseLeftZ;
+          node.vrmLeftUpperArm.rotation.x = 0.06;
+        }
+        node.rigGroup.position.y = node.seated ? -0.22 : ((1 - Math.cos(now * 0.016)) * 0.5) * 0.04 * env;
+        node.rigGroup.rotation.set(0, 0, 0);
+      } else if (motion === "dance" || motion === "kpop-dance" || motion === "shuffle" || motion === "moonwalk") {
+        const beat = now * 0.015;
+        const bounce = (((1 - Math.cos(beat * 2)) * 0.5) * 0.16 + 0.02) * env;
+        const spin = (Math.sin(beat * 0.5) * 0.55 + 0.08) * env;
+        node.rigGroup.position.y = (node.seated ? -0.22 : 0) + bounce;
+        node.rigGroup.rotation.set(0, spin, Math.cos(beat * 0.5) * 0.12 * env);
+        node.leftArm.rotation.x = (-1.15 + Math.sin(beat) * 0.65) * env;
+        node.rightArm.rotation.x = (-1.15 - Math.sin(beat) * 0.65) * env;
+        node.leftLeg.rotation.x = node.seated ? -1.35 : Math.sin(beat) * 0.38 * env;
+        node.rightLeg.rotation.x = node.seated ? -1.35 : -Math.sin(beat) * 0.38 * env;
+        if (node.vrmLeftUpperArm) {
+          node.vrmLeftUpperArm.rotation.z = baseLeftZ * (1 - 0.55 * env) + Math.sin(beat) * 0.35 * env;
+          node.vrmLeftUpperArm.rotation.x = (-0.65 + Math.cos(beat) * 0.4) * env;
+        }
+        if (node.vrmRightUpperArm) {
+          node.vrmRightUpperArm.rotation.z = baseRightZ * (1 - 0.55 * env) + Math.sin(beat) * 0.35 * env;
+          node.vrmRightUpperArm.rotation.x = (-0.65 - Math.cos(beat) * 0.4) * env;
+        }
+        if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = node.seated ? -1.35 : Math.sin(beat) * 0.35 * env;
+        if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = node.seated ? -1.35 : -Math.sin(beat) * 0.35 * env;
+        if (node.vrmLeftLowerLeg) node.vrmLeftLowerLeg.rotation.x = node.seated ? 1.35 : Math.max(0, -Math.sin(beat) * 0.3 * env);
+        if (node.vrmRightLowerLeg) node.vrmRightLowerLeg.rotation.x = node.seated ? 1.35 : Math.max(0, Math.sin(beat) * 0.3 * env);
+      } else if (
+        motion === "sway" || motion === "yoga" || motion === "doze" || motion === "neck-stretch"
+        || motion === "tai-chi" || motion === "shake" || emoteId === "think" || emoteId === "yoga" || emoteId === "bow"
+      ) {
+        const tilt = (Math.sin(now * 0.006) * 0.16 + 0.12) * env;
+        node.rigGroup.rotation.set((emoteId === "bow" ? 0.45 : 0.1) * env, 0, tilt);
+        node.rigGroup.position.y = (node.seated ? -0.22 : 0) + Math.sin(now * 0.005) * 0.025 * env;
+        node.rightArm.rotation.x = -0.95 * env;
+        node.leftArm.rotation.x = -0.35 * env;
+        if (node.vrmRightUpperArm) {
+          node.vrmRightUpperArm.rotation.z = baseRightZ * (1 - 0.35 * env);
+          node.vrmRightUpperArm.rotation.x = -0.85 * env;
+        }
+        if (node.vrmLeftUpperArm) {
+          node.vrmLeftUpperArm.rotation.z = baseLeftZ * (1 - 0.2 * env);
+          node.vrmLeftUpperArm.rotation.x = -0.25 * env;
+        }
+      } else {
+        const bounce = (((1 - Math.cos(now * 0.028)) * 0.5) * 0.22 + 0.04) * env;
+        const armSwing = Math.sin(now * 0.018) * 0.35 * env;
+        node.rigGroup.position.y = (node.seated ? -0.22 : 0) + bounce;
+        node.rigGroup.rotation.set(0, 0, 0);
+        node.leftArm.rotation.x = -1.6 * env + armSwing;
+        node.rightArm.rotation.x = -1.6 * env - armSwing;
+        if (node.vrmLeftUpperArm) {
+          node.vrmLeftUpperArm.rotation.z = baseLeftZ * (1 - 0.65 * env);
+          node.vrmLeftUpperArm.rotation.x = -1.1 * env + armSwing;
+        }
+        if (node.vrmRightUpperArm) {
+          node.vrmRightUpperArm.rotation.z = baseRightZ * (1 - 0.65 * env);
+          node.vrmRightUpperArm.rotation.x = -1.1 * env - armSwing;
+        }
       }
-      if (node.vrmRightUpperArm) {
-        node.vrmRightUpperArm.rotation.z = baseRightZ * 0.35;
-        node.vrmRightUpperArm.rotation.x = -1.1 - armSwing;
+      // kit-v2 16종 손포즈·제스처 프로시저럴 손가락·팔 관절 연동
+      applyStudioThreeVrmaGesturePose(node, emoteId, elapsedSec);
+      if (node.seated && motion !== "dance" && motion !== "kpop-dance" && motion !== "shuffle" && motion !== "moonwalk") {
+        applySeatedLegsAndHips(node);
       }
     }
-    // kit-v2 16종 손포즈·제스처 프로시저럴 손가락·팔 관절 연동
-    applyStudioThreeVrmaGesturePose(node, emoteId, elapsedSec);
-    if (node.seated && motion !== "dance" && motion !== "kpop-dance" && motion !== "shuffle" && motion !== "moonwalk") {
-      applySeatedLegsAndHips(node);
-    }
+  } else if (options.motionProfileId && !reducedMotion) {
+    applyStudioThreeRichMotionPose(node, options.motionProfileId, now, now, 0, baseLeftZ, baseRightZ, false);
+    if (node.seated) applySeatedLegsAndHips(node);
   } else if (node.seated) {
     node.group.userData.gaitBlend = 0;
     applySeatedLegsAndHips(node);
-    applyBreathingPose(node, now);
-    // 데스크 착석 중 은은한 작화·타이핑 팔 움직임으로 생동감을 더한다.
-    const deskWork = Math.sin(now * 0.008) * 0.07;
-    node.leftArm.rotation.x = THREE.MathUtils.lerp(node.leftArm.rotation.x, -0.34 + deskWork * 0.4, restBlend);
-    node.rightArm.rotation.x = THREE.MathUtils.lerp(node.rightArm.rotation.x, -0.36 - deskWork, restBlend);
-    node.leftArm.rotation.z = THREE.MathUtils.lerp(node.leftArm.rotation.z, 0.06, restBlend);
-    node.rightArm.rotation.z = THREE.MathUtils.lerp(node.rightArm.rotation.z, -0.06, restBlend);
+    applyBreathingPose(node, now, reducedMotion);
+    // 데스크 착석 중 은은한 작화·타이핑 팔 움직임(reducedMotion이면 정적 자세 유지).
+    const deskWork = reducedMotion ? 0 : Math.sin(now * 0.008) * 0.07;
+    node.leftArm.rotation.x = lerpSnap(node.leftArm.rotation.x, -0.34 + deskWork * 0.4, restBlend);
+    node.rightArm.rotation.x = lerpSnap(node.rightArm.rotation.x, -0.36 - deskWork, restBlend);
+    node.leftArm.rotation.z = lerpSnap(node.leftArm.rotation.z, 0.06, restBlend);
+    node.rightArm.rotation.z = lerpSnap(node.rightArm.rotation.z, -0.06, restBlend);
     if (node.vrmLeftUpperArm) {
       node.vrmLeftUpperArm.rotation.z = baseLeftZ;
       node.vrmLeftUpperArm.rotation.x = -0.28 + deskWork * 0.35;
@@ -591,41 +700,42 @@ export function applyStudioThreeActorPose(
     node.rigGroup.position.y = -0.22;
     node.rigGroup.rotation.set(0, 0, 0);
   } else {
-    applyBreathingPose(node, now);
-    node.leftLeg.rotation.x = THREE.MathUtils.lerp(node.leftLeg.rotation.x, jumpHeight > 0.05 ? -0.25 : 0, restBlend);
-    node.rightLeg.rotation.x = THREE.MathUtils.lerp(node.rightLeg.rotation.x, jumpHeight > 0.05 ? 0.22 : 0, restBlend);
-    node.leftArm.rotation.x = THREE.MathUtils.lerp(node.leftArm.rotation.x, jumpHeight > 0.05 ? -0.45 : 0, restBlend);
-    node.rightArm.rotation.x = THREE.MathUtils.lerp(node.rightArm.rotation.x, jumpHeight > 0.05 ? -0.45 : 0, restBlend);
-    node.leftArm.rotation.z = THREE.MathUtils.lerp(node.leftArm.rotation.z, 0, restBlend);
-    node.rightArm.rotation.z = THREE.MathUtils.lerp(node.rightArm.rotation.z, 0, restBlend);
-    if (node.vrmHips) node.vrmHips.position.y = THREE.MathUtils.lerp(node.vrmHips.position.y, node.vrmHipsBaseY ?? 0, restBlend);
-    if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperLeg.rotation.x, jumpHeight > 0.05 ? -0.25 : 0, restBlend);
-    if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperLeg.rotation.x, jumpHeight > 0.05 ? 0.2 : 0, restBlend);
-    if (node.vrmLeftLowerLeg) node.vrmLeftLowerLeg.rotation.x = THREE.MathUtils.lerp(node.vrmLeftLowerLeg.rotation.x, jumpHeight > 0.05 ? 0.35 : 0, restBlend);
-    if (node.vrmRightLowerLeg) node.vrmRightLowerLeg.rotation.x = THREE.MathUtils.lerp(node.vrmRightLowerLeg.rotation.x, jumpHeight > 0.05 ? 0.25 : 0, restBlend);
+    applyBreathingPose(node, now, reducedMotion);
+    node.leftLeg.rotation.x = lerpSnap(node.leftLeg.rotation.x, jumpHeight > 0.05 ? -0.25 : 0, restBlend);
+    node.rightLeg.rotation.x = lerpSnap(node.rightLeg.rotation.x, jumpHeight > 0.05 ? 0.22 : 0, restBlend);
+    node.leftArm.rotation.x = lerpSnap(node.leftArm.rotation.x, jumpHeight > 0.05 ? -0.45 : 0, restBlend);
+    node.rightArm.rotation.x = lerpSnap(node.rightArm.rotation.x, jumpHeight > 0.05 ? -0.45 : 0, restBlend);
+    node.leftArm.rotation.z = lerpSnap(node.leftArm.rotation.z, 0, restBlend);
+    node.rightArm.rotation.z = lerpSnap(node.rightArm.rotation.z, 0, restBlend);
+    if (node.vrmHips) node.vrmHips.position.y = lerpSnap(node.vrmHips.position.y, node.vrmHipsBaseY ?? 0, restBlend);
+    if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = lerpSnap(node.vrmLeftUpperLeg.rotation.x, jumpHeight > 0.05 ? -0.25 : 0, restBlend);
+    if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = lerpSnap(node.vrmRightUpperLeg.rotation.x, jumpHeight > 0.05 ? 0.2 : 0, restBlend);
+    if (node.vrmLeftLowerLeg) node.vrmLeftLowerLeg.rotation.x = lerpSnap(node.vrmLeftLowerLeg.rotation.x, jumpHeight > 0.05 ? 0.35 : 0, restBlend);
+    if (node.vrmRightLowerLeg) node.vrmRightLowerLeg.rotation.x = lerpSnap(node.vrmRightLowerLeg.rotation.x, jumpHeight > 0.05 ? 0.25 : 0, restBlend);
     const idleLeftZ = node.vrm ? Math.sign(baseLeftZ || 1) * 1.36 : baseLeftZ;
     const idleRightZ = node.vrm ? Math.sign(baseRightZ || -1) * 1.36 : baseRightZ;
+    const breathArm = reducedMotion ? 0 : Math.sin(now * 0.0022) * 0.018;
     if (node.vrmLeftUpperArm) {
-      node.vrmLeftUpperArm.rotation.z = idleLeftZ + Math.sin(now * 0.0022) * 0.018;
-      node.vrmLeftUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperArm.rotation.x, jumpHeight > 0.05 ? -0.35 : 0.05, restBlend);
+      node.vrmLeftUpperArm.rotation.z = idleLeftZ + breathArm;
+      node.vrmLeftUpperArm.rotation.x = lerpSnap(node.vrmLeftUpperArm.rotation.x, jumpHeight > 0.05 ? -0.35 : 0.05, restBlend);
     }
     if (node.vrmRightUpperArm) {
-      node.vrmRightUpperArm.rotation.z = idleRightZ - Math.sin(now * 0.0022) * 0.018;
-      node.vrmRightUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperArm.rotation.x, jumpHeight > 0.05 ? -0.35 : 0.05, restBlend);
+      node.vrmRightUpperArm.rotation.z = idleRightZ - breathArm;
+      node.vrmRightUpperArm.rotation.x = lerpSnap(node.vrmRightUpperArm.rotation.x, jumpHeight > 0.05 ? -0.35 : 0.05, restBlend);
     }
     if (node.vrmLeftLowerArm) {
-      node.vrmLeftLowerArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftLowerArm.rotation.x, node.vrm ? 0.06 : 0, restBlend);
-      node.vrmLeftLowerArm.rotation.y = THREE.MathUtils.lerp(node.vrmLeftLowerArm.rotation.y, node.vrm ? -0.16 : 0, restBlend);
-      node.vrmLeftLowerArm.rotation.z = THREE.MathUtils.lerp(node.vrmLeftLowerArm.rotation.z, 0, restBlend);
+      node.vrmLeftLowerArm.rotation.x = lerpSnap(node.vrmLeftLowerArm.rotation.x, node.vrm ? 0.06 : 0, restBlend);
+      node.vrmLeftLowerArm.rotation.y = lerpSnap(node.vrmLeftLowerArm.rotation.y, node.vrm ? -0.16 : 0, restBlend);
+      node.vrmLeftLowerArm.rotation.z = lerpSnap(node.vrmLeftLowerArm.rotation.z, 0, restBlend);
     }
     if (node.vrmRightLowerArm) {
-      node.vrmRightLowerArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.x, node.vrm ? 0.06 : 0, restBlend);
-      node.vrmRightLowerArm.rotation.y = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.y, node.vrm ? 0.16 : 0, restBlend);
-      node.vrmRightLowerArm.rotation.z = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.z, 0, restBlend);
+      node.vrmRightLowerArm.rotation.x = lerpSnap(node.vrmRightLowerArm.rotation.x, node.vrm ? 0.06 : 0, restBlend);
+      node.vrmRightLowerArm.rotation.y = lerpSnap(node.vrmRightLowerArm.rotation.y, node.vrm ? 0.16 : 0, restBlend);
+      node.vrmRightLowerArm.rotation.z = lerpSnap(node.vrmRightLowerArm.rotation.z, 0, restBlend);
     }
-    node.rigGroup.position.y = jumpHeight > 0.01 ? jumpHeight : THREE.MathUtils.lerp(node.rigGroup.position.y, 0, restBlend);
+    node.rigGroup.position.y = jumpHeight > 0.01 ? jumpHeight : lerpSnap(node.rigGroup.position.y, 0, restBlend);
     node.rigGroup.rotation.set(0, 0, 0);
   }
 
-  node.vrm?.update(dt);
+  node.vrm?.update(safeDt);
 }

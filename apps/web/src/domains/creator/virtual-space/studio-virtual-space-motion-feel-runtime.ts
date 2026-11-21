@@ -29,6 +29,7 @@ import {
   studioLandingPuffCount,
   studioSkidDustAmount,
 } from "./studio-virtual-space-movement-particles";
+import { STUDIO_DISPLAY_MAX_DELTA_SECONDS } from "./studio-virtual-space-sprite-smoothing";
 import type { StudioWorldTilemap } from "@toonstudio/studio-project-model/world-publication";
 
 /** 규칙 함수가 맞춰진 기준 달리기 속도(main 기본 걷기 205px/s × 달리기 1.35). 아바타별 속도를 이 기준으로 정규화한다. */
@@ -144,6 +145,8 @@ const GHOST_TINT = 0xbfe3ff;
 const LANDING_COLOR = 0xe8e4da;
 /** 이동 중 보폭이 64px를 넘게 튀면(순간이동·보정) 발걸음으로 세지 않는다. */
 const MAX_STEP_DELTA = 64;
+/** 정지 직전 미세 떨림(0.15px 미만)으로 유령 발걸음·먼지가 발생하지 않도록 막는 데드존(px). */
+const MIN_STEP_DELTA = 0.15;
 
 interface Ghost {
   readonly sprite: Phaser.GameObjects.Sprite;
@@ -198,48 +201,57 @@ export class StudioMotionFeelRuntime {
 
   /** 발밑 효과를 한 프레임 진행한다. source는 잔상으로 복제할 내 캐릭터 스프라이트다. */
   step(frame: StudioMotionFeelFrame, source: Phaser.GameObjects.Sprite | null): void {
-    this.fadeGhosts(frame.time);
-    const scale = STUDIO_MOTION_FEEL_REFERENCE_SPRINT / Math.max(1, frame.sprintSpeed);
-    const speed = frame.speed * scale;
-    const density = frame.reducedMotion ? 0 : Math.min(1, Math.max(0, frame.particleDensity));
+    const safeTime = Number.isFinite(frame.time) ? frame.time : 0;
+    const safeDt = Number.isFinite(frame.deltaSeconds)
+      ? Math.min(STUDIO_DISPLAY_MAX_DELTA_SECONDS, Math.max(0, frame.deltaSeconds))
+      : 0;
+    const safeX = Number.isFinite(frame.x) ? frame.x : (Number.isFinite(this.lastX) ? this.lastX : 0);
+    const safeY = Number.isFinite(frame.y) ? frame.y : (Number.isFinite(this.lastY) ? this.lastY : 0);
+    const rawSpeed = Number.isFinite(frame.speed) ? Math.max(0, frame.speed) : 0;
+    const rawInputSpeed = Number.isFinite(frame.inputSpeed) ? Math.max(0, frame.inputSpeed) : 0;
+    this.fadeGhosts(safeTime);
+    const scale = STUDIO_MOTION_FEEL_REFERENCE_SPRINT / Math.max(1, Number.isFinite(frame.sprintSpeed) ? frame.sprintSpeed : 1);
+    const speed = rawSpeed * scale;
+    const density = frame.reducedMotion ? 0 : Math.min(1, Math.max(0, Number.isFinite(frame.particleDensity) ? frame.particleDensity : 0));
     this.density = density;
-    const moved = Number.isFinite(this.lastX) ? Math.hypot(frame.x - this.lastX, frame.y - this.lastY) : 0;
-    this.lastX = frame.x;
-    this.lastY = frame.y;
+    const hadLast = Number.isFinite(this.lastX) && Number.isFinite(this.lastY);
+    const moved = hadLast ? Math.hypot(safeX - this.lastX, safeY - this.lastY) : 0;
+    this.lastX = safeX;
+    this.lastY = safeY;
     this.emitter.setDepth(frame.depth - 2);
-    // 1) 이동 먼지: 속도·표면·밀도에 비례(규칙: studioDustSpawnRule).
-    const dust = density > 0 ? studioDustSpawnCount(speed, frame.surface.surface, density, frame.reducedMotion, frame.deltaSeconds) : 0;
-    if (dust > 0) this.emit(dust, frame.x, frame.y + 3, frame.surface.color);
+    // 1) 이동 먼지: 속도·표면·밀도에 비례(규칙: studioDustSpawnRule). dt 스파이크 클램프 적용.
+    const dust = density > 0 ? studioDustSpawnCount(speed, frame.surface.surface, density, frame.reducedMotion, safeDt) : 0;
+    if (dust > 0) this.emit(dust, safeX, safeY + 3, frame.surface.color);
     // 2) 발걸음 조각·발소리: 표면 보폭마다 한 걸음(규칙: stepStudioFootsteps).
-    //    파티클 밀도가 0이어도(모션 줄이기가 아닌 한) 발소리는 정상 재생한다.
-    if (!frame.reducedMotion && moved > 0 && moved < MAX_STEP_DELTA && speed >= 8) {
+    //    파티클 밀도가 0이어도(모션 줄이기가 아닌 한) 발소리는 정상 재생하되 미세 떨림은 무시한다.
+    if (!frame.reducedMotion && moved >= MIN_STEP_DELTA && moved < MAX_STEP_DELTA && speed >= 8) {
       const strideOverride = Number.isFinite(frame.stepPx) && frame.stepPx > 0 ? frame.stepPx : undefined;
       const stepped = stepStudioFootsteps(this.footstepState, moved, frame.surface.surface, speed, strideOverride);
       this.footstepState = stepped.state;
       for (const event of stepped.events) {
-        if (density > 0) this.emit(1, frame.x, frame.y + 2, frame.surface.color);
+        if (density > 0) this.emit(1, safeX, safeY + 2, frame.surface.color);
         playStudioFootstepSound(event);
       }
     }
     // 3) 미끄럼 먼지: 입력을 놓아 급감속할 때(규칙: stepStudioSkidDust).
-    const skid = skidIntensity(frame.speed, frame.inputSpeed, frame.sprintSpeed);
-    this.skidCarry += density > 0 ? studioSkidDustAmount(skid, speed, frame.deltaSeconds, frame.reducedMotion) * density : 0;
+    const skid = skidIntensity(rawSpeed, rawInputSpeed, frame.sprintSpeed);
+    this.skidCarry += density > 0 ? studioSkidDustAmount(skid, speed, safeDt, frame.reducedMotion) * density : 0;
     if (density <= 0 || skid < 0.15) this.skidCarry = 0;
     const skidCount = Math.floor(this.skidCarry);
     if (skidCount > 0) {
       this.skidCarry -= skidCount;
-      this.emit(skidCount, frame.x, frame.y + 4, frame.surface.color);
+      this.emit(skidCount, safeX, safeY + 4, frame.surface.color);
     }
     // 4) 급정지 퍼프(규칙: stepStudioLandingPuff).
     const puff = density > 0 ? studioLandingPuffCount(this.previousSpeed, speed, frame.reducedMotion) : 0;
     this.previousSpeed = speed;
-    if (puff > 0) this.emit(Math.max(1, Math.round(puff * density)), frame.x, frame.y + 4, LANDING_COLOR);
+    if (puff > 0) this.emit(Math.max(1, Math.round(puff * density)), safeX, safeY + 4, LANDING_COLOR);
     // 5) 달리기 잔상: 달리기 최고속 80% 이상에서 90ms마다(규칙: stepStudioRunAfterimage).
-    if (frame.reducedMotion || !studioAfterimageFastEnough(frame.speed, frame.sprintSpeed)) {
-      if (this.nextGhostAt > frame.time) this.nextGhostAt = frame.time;
-    } else if (frame.time >= this.nextGhostAt && source) {
-      this.nextGhostAt = frame.time + STUDIO_AFTERIMAGE_INTERVAL_MS;
-      this.spawnGhost(source, frame.time);
+    if (frame.reducedMotion || !studioAfterimageFastEnough(rawSpeed, frame.sprintSpeed)) {
+      if (this.nextGhostAt > safeTime) this.nextGhostAt = safeTime;
+    } else if (safeTime >= this.nextGhostAt && source && source.visible && (!hadLast || moved >= MIN_STEP_DELTA)) {
+      this.nextGhostAt = safeTime + STUDIO_AFTERIMAGE_INTERVAL_MS;
+      this.spawnGhost(source, safeTime);
     }
   }
 
@@ -291,6 +303,7 @@ export class StudioMotionFeelRuntime {
   private fadeGhosts(time: number): void {
     for (const ghost of this.ghosts) {
       if (!ghost.sprite.visible) continue;
+      if (!Number.isFinite(time) || !(ghost.lifetime > 0)) { ghost.sprite.setVisible(false); continue; }
       const progress = (time - ghost.bornAt) / ghost.lifetime;
       if (progress >= 1 || progress < 0) { ghost.sprite.setVisible(false); continue; }
       // Cubic ease-out으로 빠르게 옅어진다.
