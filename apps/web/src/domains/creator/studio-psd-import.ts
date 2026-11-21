@@ -1,7 +1,7 @@
 /** PSD 원본 픽셀, 폴더 경로와 클리핑을 보존하는 교환 경계.
  * 조정 레이어는 파라미터를 변환해 Studio 조정 레이어 명세(adjustmentLayers)로
  * 복원하고, 효과·격리 그룹은 임의 재현하지 않고 원본 합성본과 편집 레이어를 함께 준비한다.
- * ag-psd의 앞→뒤 순서를 Studio의 뒤→앞 순서로 반전한다.
+ * ag-psd children과 Studio elements의 뒤→앞 순서를 그대로 보존한다.
  */
 
 import { readPsd, type BlendMode, type Layer, type Psd, type ReadOptions } from "ag-psd";
