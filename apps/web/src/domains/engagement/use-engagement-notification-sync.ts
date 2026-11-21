@@ -103,6 +103,7 @@ function marketNotification(item: CreatorMarketplaceCloudLibraryItem): Engagemen
 /** Synchronize durable reader signals and the authenticated production inbox into one presentation inbox. */
 export function useEngagementNotificationSync(): void {
   const subscriptions = useApp((state) => state.subscriptions);
+  const reads = useApp((state) => state.reads);
   const userId = useApp((state) => state.userId);
   const libraryOwnerId = useApp((state) => state.libraryOwnerId);
   const libraryMergeOwnerId = useApp((state) => state.libraryMergeOwnerId);
@@ -207,6 +208,17 @@ export function useEngagementNotificationSync(): void {
       .sort((left, right) => left.localeCompare(right)),
     [subscriptions],
   );
+  const hiatusReadIds = useMemo(
+    () => Object.entries(reads)
+      .filter(([, readState]) => readState === "hiatus")
+      .map(([titleId]) => titleId)
+      .sort((left, right) => left.localeCompare(right)),
+    [reads],
+  );
+  const trackedReleaseIds = useMemo(
+    () => [...new Set([...subscriptionIds, ...hiatusReadIds])].sort((a, b) => a.localeCompare(b)),
+    [hiatusReadIds, subscriptionIds],
+  );
   useEffect(() => {
     if (!ready || !appHydrated || !engagementHydrated
       || userId !== sessionOwnerId || libraryOwnerId !== sessionOwnerId
@@ -218,7 +230,7 @@ export function useEngagementNotificationSync(): void {
     // 구독 해제와 날짜 전환은 네트워크 성공을 기다리지 않고 즉시 반영한다.
     replaceNotificationsBySourcePrefix("catalog-release:", useEngagement.getState().notifications
       .filter((item) => sourceKeys.has(item.sourceKey)));
-    if (subscriptionIds.length === 0) {
+    if (trackedReleaseIds.length === 0) {
       failedSourcesRef.current.delete("release");
       if (pendingRef.current === 0) {
         setNotificationSyncStatus(failedSourcesRef.current.size > 0 ? "error" : "idle");
@@ -227,19 +239,26 @@ export function useEngagementNotificationSync(): void {
     }
 
     const controller = new AbortController();
-    void trackRequest(fetchTitles(subscriptionIds, controller.signal), "release", controller.signal)
+    void trackRequest(fetchTitles(trackedReleaseIds, controller.signal), "release", controller.signal)
       .then((titles) => {
         const current = useApp.getState();
         if (!titles || controller.signal.aborted
           || current.authGeneration !== authGeneration
           || current.subscriptions !== subscriptions
+          || current.reads !== reads
           || useEngagement.getState().activeOwnerId !== sessionOwnerId
           || localDateKey(new Date()) !== dateKey) return;
         const subscribed = new Set(subscriptionIds);
-        syncReleaseNotifications(titles.filter((title) => subscribed.has(title.id)));
+        const hiatusSet = new Set(hiatusReadIds);
+        syncReleaseNotifications(
+          titles.filter((title) => subscribed.has(title.id) || hiatusSet.has(title.id)),
+          new Date(),
+          hiatusSet,
+        );
       });
     return () => controller.abort();
-  }, [notificationSyncNonce, releaseRefresh, subscriptionIds, subscriptions, ready, appHydrated,
+  }, [notificationSyncNonce, releaseRefresh, subscriptionIds, hiatusReadIds, trackedReleaseIds,
+    subscriptions, reads, ready, appHydrated,
     engagementHydrated, userId, libraryOwnerId, libraryMergeOwnerId, activeOwnerId, sessionOwnerId,
     sessionToken, status, authGeneration,
     replaceNotificationsBySourcePrefix, syncReleaseNotifications, setNotificationSyncStatus, trackRequest]);

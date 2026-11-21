@@ -26,6 +26,19 @@ export function isLocalUndoableOrigin(origin: unknown): boolean {
   return origin === LOCAL_USER_ORIGIN;
 }
 
+/** Y.UndoManager `trackedOrigins` 옵션에 전달할 로컬 전용 origin 집합을 생성한다. */
+export function createLocalUndoTrackedOrigins(): Set<CrdtTransactionOrigin> {
+  return new Set<CrdtTransactionOrigin>([LOCAL_USER_ORIGIN]);
+}
+
+/** trackedOrigins 집합이 원격 피어·초기 동기화 origin을 제외하고 로컬 origin만 포함하는지 검증한다. */
+export function isStrictlyLocalUndoScope(trackedOrigins: ReadonlySet<unknown>): boolean {
+  if (trackedOrigins.size !== 1 || !trackedOrigins.has(LOCAL_USER_ORIGIN)) {
+    return false;
+  }
+  return !trackedOrigins.has(REMOTE_PEER_ORIGIN) && !trackedOrigins.has(SYNC_HYDRATION_ORIGIN);
+}
+
 /**
  * 로컬 사용자 origin 트랜잭션만 undo/redo 스택에 적재하는 결정적 스코프 컨트롤러.
  * 실제 Y.UndoManager 바인딩 전후의 불변식을 단위 테스트로 보장한다.

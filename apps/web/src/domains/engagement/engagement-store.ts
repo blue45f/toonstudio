@@ -12,6 +12,7 @@ import {
   availabilitySnapshotFingerprint,
   availabilitySnapshotOf,
   diffAvailabilitySnapshots,
+  hiatusResumeNotificationForTitle,
   incrementGrowthMetric,
   releaseNotificationForTitle,
   zeroGrowthMetrics,
@@ -145,7 +146,11 @@ export interface EngagementState {
   readonly archiveNotification: (id: string) => void;
   readonly snoozeNotification: (id: string, until: string | null) => void;
   readonly deleteArchivedNotifications: () => void;
-  readonly syncReleaseNotifications: (titles: readonly Title[], now?: Date) => void;
+  readonly syncReleaseNotifications: (
+    titles: readonly Title[],
+    now?: Date,
+    hiatusWatchTitleIds?: ReadonlySet<string>,
+  ) => void;
   readonly setNotificationCategoryEnabled: (category: EngagementNotificationCategory, enabled: boolean) => void;
   readonly setNotificationSyncStatus: (status: NotificationSyncStatus) => void;
   readonly requestNotificationSyncRetry: () => void;
@@ -268,12 +273,25 @@ export const useEngagement = create<EngagementState>()(
       deleteArchivedNotifications: () => set((state) => ({
         notifications: state.notifications.filter((item) => !item.archivedAt),
       })),
-      syncReleaseNotifications: (titles, date = new Date()) => {
+      syncReleaseNotifications: (titles, date = new Date(), hiatusWatchTitleIds) => {
         const notifications = titles.flatMap((title) => {
           const item = releaseNotificationForTitle(title, date);
           return item ? [item] : [];
         });
         get().replaceNotificationsBySourcePrefix("catalog-release:", notifications);
+
+        const history = get().availabilityHistory;
+        const resumeNotifications = titles.flatMap((title) => {
+          if (title.status !== "ongoing") return [];
+          const wasHiatus = history[title.id]?.current.status === "hiatus";
+          const watchedAsHiatus = hiatusWatchTitleIds?.has(title.id) === true;
+          if (!wasHiatus && !watchedAsHiatus) return [];
+          const resumeNotice = hiatusResumeNotificationForTitle(title, date.toISOString());
+          return resumeNotice ? [resumeNotice] : [];
+        });
+        if (resumeNotifications.length > 0) {
+          get().upsertNotifications(resumeNotifications);
+        }
       },
       setNotificationCategoryEnabled: (category, enabled) => set((state) => ({
         notificationCategorySettings: {
@@ -370,6 +388,13 @@ export const useEngagement = create<EngagementState>()(
           snoozedUntil: null,
           sourceKey: `availability:${title.id}`,
         };
+        const resumedFromHiatus =
+          previous.current.status === "hiatus" && snapshot.status === "ongoing";
+        const extraNotifications: EngagementNotification[] = [notification];
+        if (resumedFromHiatus) {
+          const resumeNotice = hiatusResumeNotificationForTitle(title, observedAt);
+          if (resumeNotice) extraNotifications.push(resumeNotice);
+        }
         set((state) => ({
           availabilityHistory: {
             ...state.availabilityHistory,
@@ -380,7 +405,7 @@ export const useEngagement = create<EngagementState>()(
               events: [event, ...previous.events].slice(0, MAX_AVAILABILITY_EVENTS),
             },
           },
-          notifications: upsertNotificationList(state.notifications, [notification]),
+          notifications: upsertNotificationList(state.notifications, extraNotifications),
         }));
       },
 

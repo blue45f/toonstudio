@@ -161,6 +161,14 @@ function NotificationCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-[0.65rem] font-bold text-fg-3">{meta.label}</span>
+            {notification.sourceKey.startsWith("hiatus-resume:") ? (
+              <span
+                data-testid="notification-hiatus-resume-badge"
+                className="rounded-full border border-good/40 bg-good/15 px-2 py-0.5 text-[0.65rem] font-bold text-good"
+              >
+                휴재 복귀
+              </span>
+            ) : null}
             <time className="text-[0.68rem] text-fg-3" dateTime={notification.createdAt}>{formatTime(notification.createdAt)}</time>
             {isNew ? (
               <span className="rounded-full bg-accent px-2 py-0.5 text-[0.65rem] font-black text-on-accent">새 알림</span>

@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { availabilitySnapshotFingerprint, availabilitySnapshotOf } from "./engagement-model";
 import { useEngagement, useEngagementHydrated } from "./engagement-store";
 
+import { buildPricingTransitionsFromSnapshots } from "@/shared/lib/pricing-transition-timeline";
 import type { Title } from "@/shared/lib/types";
 
 const DATE_TIME = new Intl.DateTimeFormat("ko-KR", {
@@ -34,23 +35,59 @@ export function AvailabilityHistoryPanel({ title }: { readonly title: Title }) {
     if (hydrated) observeAvailability(title);
   }, [hydrated, fingerprint, observeAvailability, title]);
 
-  const events = record?.events ?? [];
+  const events = record?.events;
+  const pricingHighlights = useMemo(
+    () =>
+      buildPricingTransitionsFromSnapshots(
+        (events ?? []).map((event) => ({
+          observedAt: event.observedAt,
+          status: event.snapshot.status,
+          availability: event.snapshot.availability.map((entry) => ({
+            platformId: entry.platformId,
+            pricing: entry.pricing,
+            isOriginal: entry.isOriginal,
+          })),
+        })),
+      ),
+    [events],
+  );
+  const eventList = events ?? [];
+
   return (
-    <section className="rounded-2xl border border-line bg-panel/50 p-4">
+    <section
+      data-testid="availability-history-panel"
+      className="rounded-2xl border border-line bg-panel/50 p-4"
+    >
       <div className="flex items-start gap-2">
         <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
           <History size={15} aria-hidden="true" />
         </span>
         <div>
           <h3 className="text-sm font-semibold text-fg">이 기기에서 본 변화</h3>
-          <p className="mt-1 text-[0.68rem] leading-5 text-fg-3">
+          <p className="mt-1 text-[0.68rem] leading-5 text-fg-3 break-keep">
             방문할 때 확인된 공개 메타데이터만 비교합니다. 플랫폼 공식 가격 이력이나 실제 새 회차 공개를 보증하지 않습니다.
           </p>
         </div>
       </div>
 
-      {events.length <= 1 ? (
-        <div className="mt-4 flex items-start gap-2 rounded-xl border border-dashed border-line bg-card/60 p-3 text-xs leading-5 text-fg-3">
+      {pricingHighlights.length > 0 ? (
+        <div
+          data-testid="availability-history-pricing-highlights"
+          className="mt-3 flex flex-wrap gap-1.5 border-t border-line/60 pt-3"
+        >
+          {pricingHighlights.slice(0, 3).map((highlight) => (
+            <span
+              key={highlight.id}
+              className="rounded-full border border-good/40 bg-good/12 px-2.5 py-0.5 text-[0.68rem] font-bold text-good break-keep"
+            >
+              {highlight.previousLabel} → {highlight.currentLabel}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {eventList.length <= 1 ? (
+        <div className="mt-4 flex items-start gap-2 border-t border-line/60 pt-3 text-xs leading-5 text-fg-3 break-keep">
           <Eye className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <p>
             {record
@@ -59,19 +96,19 @@ export function AvailabilityHistoryPanel({ title }: { readonly title: Title }) {
           </p>
         </div>
       ) : (
-        <ol className="mt-4 space-y-3">
-          {events.slice(0, 6).map((event) => (
-            <li key={event.id} className="rounded-xl border border-line bg-card p-3">
-              <div className="flex items-center gap-1.5 text-[0.65rem] text-fg-3">
+        <ol className="mt-4 divide-y divide-line/60 border-t border-line/60">
+          {eventList.slice(0, 6).map((event) => (
+            <li key={event.id} className="py-3 first:pt-2.5 last:pb-0">
+              <div className="flex items-center gap-1.5 text-[0.65rem] tabular-nums text-fg-3">
                 <Clock3 size={12} aria-hidden="true" />
                 <time dateTime={event.observedAt}>{formatObservedAt(event.observedAt)}</time>
               </div>
               {event.changes.length === 0 ? (
-                <p className="mt-2 text-xs text-fg-2">첫 관찰 기준점</p>
+                <p className="mt-1.5 text-xs text-fg-2">첫 관찰 기준점</p>
               ) : (
-                <ul className="mt-2 space-y-1.5">
+                <ul className="mt-1.5 space-y-1">
                   {event.changes.map((change, index) => (
-                    <li key={`${change.kind}-${index}`} className="text-xs leading-5 text-fg-2">
+                    <li key={`${change.kind}-${index}`} className="text-xs leading-5 text-fg-2 break-keep">
                       <strong className="font-semibold text-fg">{change.label}</strong>
                       {(change.before || change.after) ? (
                         <span className="ml-1 text-fg-3">{change.before ?? "없음"} → {change.after ?? "없음"}</span>
@@ -85,7 +122,7 @@ export function AvailabilityHistoryPanel({ title }: { readonly title: Title }) {
         </ol>
       )}
 
-      <div className="mt-3 flex items-start gap-2 text-[0.65rem] leading-5 text-fg-3">
+      <div className="mt-3 flex items-start gap-2 border-t border-line/50 pt-2.5 text-[0.65rem] leading-5 text-fg-3 break-keep">
         <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warn" aria-hidden="true" />
         <p>브라우저 데이터 삭제·기기 변경 시 이 관찰 기록도 사라질 수 있습니다.</p>
       </div>
