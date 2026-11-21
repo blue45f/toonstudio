@@ -276,7 +276,7 @@ export function TasteOnboardingPage() {
               })}
             </div>
 
-            <h3 className="mt-6 text-sm font-black text-fg">
+            <h3 className="mt-6 text-sm font-bold text-fg">
               선호 전개·코드가 있다면 골라 주세요 <span className="font-semibold text-fg-3">(5문항 중 2번 · 선택)</span>
             </h3>
             <div role="group" aria-label="선호 전개 코드" className="mt-2.5 flex flex-wrap gap-2">
@@ -306,7 +306,7 @@ export function TasteOnboardingPage() {
               })}
             </div>
 
-            <h3 className="mt-6 text-sm font-black text-fg">재미있게 본 작품이 있으면 골라 주세요 <span className="font-semibold text-fg-3">(선택)</span></h3>
+            <h3 className="mt-6 text-sm font-bold text-fg">재미있게 본 작품이 있으면 골라 주세요 <span className="font-semibold text-fg-3">(선택)</span></h3>
             {popular.length > 0 ? (
               <div className="mt-3 grid max-h-[300px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
                 {popular.slice(0, 12).map((title) => {
@@ -499,7 +499,7 @@ export function TasteOnboardingPage() {
               </div>
             </div>
 
-            <h3 className="mt-6 text-sm font-black text-fg">
+            <h3 className="mt-6 text-sm font-bold text-fg">
               {recommendedTitles.matched > 0 ? "고른 장르로 골라 본 추천 작품" : "지금 인기 있는 작품"}
             </h3>
             {recommendedTitles.titles.length > 0 ? (

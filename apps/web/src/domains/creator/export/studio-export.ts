@@ -275,7 +275,22 @@ export async function canvasToBlob(
       detectedMime,
     });
   }
-  return tagStudioRasterBlobResolution(blob, requestedMime);
+  const taggedBlob = await tagStudioRasterBlobResolution(blob, requestedMime);
+  if (requestedMime === "image/png") {
+    try {
+      const { embedRightsBomIntoPngBytes } = await import("./studio-unified-preflight-contract");
+      const bytes = new Uint8Array(await taggedBlob.arrayBuffer());
+      const embedded = embedRightsBomIntoPngBytes(bytes);
+      if (embedded.embedded) {
+        const owned = new Uint8Array(embedded.bytes.byteLength);
+        owned.set(embedded.bytes);
+        return new Blob([owned.buffer], { type: "image/png" });
+      }
+    } catch {
+      // PNG 권한 청크 부착은 보조 메타데이터이므로 원본 PNG 출력을 깨뜨리지 않는다.
+    }
+  }
+  return taggedBlob;
 }
 
 /**

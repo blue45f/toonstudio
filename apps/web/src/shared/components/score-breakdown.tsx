@@ -90,7 +90,7 @@ export function ScoreBreakdown({
           </div>
           <Link
             href="/guide"
-            className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg px-2 text-[0.72rem] font-semibold text-accent hover:underline"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg px-2 text-[0.72rem] font-semibold text-accent hover:underline"
           >
             {bt("산정 방식", "Methodology")}
             <ArrowUpRight size={12} aria-hidden="true" />
