@@ -54,7 +54,7 @@ export function StudioOffice2dPipelineRail({
   }, [currentStep]);
 
   return (
-    <nav className="studio-office2d-pipeline" aria-label={bt("웹툰 제작 공정 바로 가기", "Webtoon production pipeline shortcuts")} data-space-interactive="true">
+    <nav className="studio-office2d-pipeline" aria-label={bt("웹툰 제작 공정 바로 가기", "Webtoon production pipeline shortcuts")} data-space-interactive="true" data-app-tooltip-exclude="true">
       <ol ref={listRef} className="studio-office2d-pipeline__steps">
         {pipeline.map((room) => {
           const step = room.pipelineStep ?? 0;

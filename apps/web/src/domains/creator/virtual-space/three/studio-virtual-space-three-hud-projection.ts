@@ -5,6 +5,7 @@ import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import { studioNpcLabel } from "../studio-virtual-space-npc-director";
 import type { StudioVirtualSpaceSnapshot } from "../studio-virtual-space-presence";
 import type { StudioVirtualSpaceWorldManifest, StudioWorldInteractionDefinition } from "../studio-virtual-space-world-manifest";
+import { readStudioWebtoonWorkStatusBadge } from "../studio-virtual-space-work-status";
 import { DUPLICATE_ARCADE_IDS, formatParticipantOverlayBadge, resolveOverlayCollisions, WORKSTATION_ACTION_BADGES, type ProjectedOverlayItem } from "./studio-virtual-space-three-dioramas";
 import { STUDIO_THREE_SCALE, type StudioThreeActorNode } from "./studio-virtual-space-three-scene";
 import type { studioThreeRoomSigns } from "./studio-virtual-space-three-world-layout";
@@ -47,6 +48,7 @@ export function projectStudioThreeOverlays(input: StudioThreeOverlayProjection):
       chatBubbleText: selfChatText,
       reactionId: selfReactionId,
       chatTyping: Boolean(snapshot.self.typing),
+      workStatusLabel: readStudioWebtoonWorkStatusBadge(isEn ? "en" : "ko"),
     });
     projected.push({ id: "self", label: selfLabel, sublabel: badge.sublabel, kind: "self", x: selfHead.x, y: selfHead.y, accent: badge.accent });
   }

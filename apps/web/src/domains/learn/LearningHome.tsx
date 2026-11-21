@@ -26,6 +26,7 @@ import { defineBilingualText, useBilingualI18nRevision } from "@/shared/lib/i18n
 import { LEARN_CURRICULUM_ROADMAP_TRACKS } from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 import { LESSONS, TERMS } from "./learning-content";
+import { LearningBottleneckSprintBar } from "./LearningBottleneckSprintBar";
 import { PathCard, SkillCard } from "./LearningHomeCards";
 import { LEVEL_LABELS, STATUS_LABELS } from "./learning-home-constants";
 import { LearningLibrarySection, LearningPlanDisclosure } from "./LearningHomePanels";
@@ -215,6 +216,11 @@ export function LearningHome() {
 
         <SiteTabPanel idPrefix={LEARN_TAB_PREFIX} id="today" active={activeTab === "today"} mounted={isMounted("today")} className="learn-hub-panel">
           <div className={activeTab === "today" ? "ink-cascade" : undefined}>
+            <LearningBottleneckSprintBar
+              profile={profile}
+              progress={store.progress}
+              onUpdateProfile={updateProfile}
+            />
             <section className="learn-classroom-session" aria-labelledby="learn-session-title">
               <article className="learn-classroom-feature">
                 <div className="learn-classroom-feature-copy">

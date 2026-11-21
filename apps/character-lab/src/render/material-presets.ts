@@ -147,6 +147,22 @@ export function toonShadeTint(role: PartRole): readonly [number, number, number]
   }
 }
 
+/** 한국 웹툰 2단 셀 음영 기본 틴트: 회색 탁한 그림자 대신 따뜻한 복숭아/장미 피부 음영·채도 보정 헤어/의상 음영 */
+export function kwebtoonShadeTint(role: PartRole): readonly [number, number, number] {
+  switch (role) {
+    case "skin":
+    case "head":
+    case "tongue":
+      return [0.92, 0.67, 0.65];
+    case "hair":
+    case "brow":
+    case "lash":
+      return [0.64, 0.58, 0.75];
+    default:
+      return [0.69, 0.66, 0.8];
+  }
+}
+
 /** 시인 색: 알베도를 밝게(0.6 섞음) 또는 흰색 */
 export function sheenColor(albedoLinear: readonly [number, number, number], sheen: SheenParams): readonly [number, number, number] {
   if (!sheen.tintFromAlbedo) return [1, 1, 1];

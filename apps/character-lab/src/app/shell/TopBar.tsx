@@ -6,7 +6,14 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ENGINE_BACKENDS, ENGINE_BACKEND_LABELS_KO, QUALITY_PRESETS, QUALITY_PRESET_LABELS_KO, applyQualityPreset, failVisible } from "../../contracts";
-import { SHAPER_TOON_SHADER_PRESETS, buildShaperToonShadingProfile } from "../../presets";
+import {
+  KWEBTOON_ARCHETYPE_LIST,
+  SHAPER_TOON_SHADER_PRESETS,
+  buildShaperToonShadingProfile,
+  composeKWebtoonArchetypeRecipe,
+  detectKWebtoonArchetypeId,
+  isKWebtoonArchetypeId,
+} from "../../presets";
 import { stableStringify } from "../../shared/stable-json";
 
 import { describeEngineStatus } from "./engine-status-text";
@@ -277,6 +284,33 @@ export function TopBar() {
               {preset.label}
             </button>
           ))}
+        </div>
+        <div className="cl-topbar-group" role="group" aria-label="K-웹툰 캐릭터 10종 아키타입">
+          <label className="cl-select-label">
+            K-웹툰 캐릭터
+            <select
+              className="cl-select"
+              data-testid="topbar-kwebtoon-archetype-select"
+              aria-label="K-웹툰 캐릭터 프리셋"
+              value={detectKWebtoonArchetypeId(state.recipe) ?? ""}
+              onChange={(event) => {
+                const nextId = event.target.value;
+                if (isKWebtoonArchetypeId(nextId)) {
+                  dispatch({
+                    type: "recipe/load",
+                    recipe: composeKWebtoonArchetypeRecipe(nextId, state.recipe),
+                  });
+                }
+              }}
+            >
+              <option value="">10종 아키타입 선택…</option>
+              {KWEBTOON_ARCHETYPE_LIST.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.shortLabelKo} ({preset.proportion.headsTall.toFixed(1)}등신 · {preset.genreKo})
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <div className="cl-topbar-group" role="group" aria-label="웹툰 셀·외곽선 퀵 프리셋" data-testid="topbar-toon-shader-presets">
           {SHAPER_TOON_SHADER_PRESETS.map((preset) => {

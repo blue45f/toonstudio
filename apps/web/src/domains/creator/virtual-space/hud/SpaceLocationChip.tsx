@@ -111,8 +111,8 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
           ? bt("현재 3D 스튜디오 공간 · 클릭하여 2D 캠퍼스로 전환", "Currently 3D Studio Space · Click to switch to 2D Campus")
           : bt("현재 2D 캠퍼스 · 클릭하여 3D 스튜디오 공간으로 전환", "Currently 2D Campus · Click to switch to 3D Studio Space")}
         title={engineMode === "3d"
-          ? bt("3D 스튜디오 (Three.js + GLB/VRM) 활성 · 2D 캠퍼스로 전환", "3D Studio (Three.js + GLB/VRM) active · Switch to 2D Campus")
-          : bt("3D 스튜디오 (Three.js + GLB/VRM) 공간으로 전환", "Switch to 3D Studio (Three.js + GLB/VRM) Space")}
+          ? bt("3D 스튜디오 공간 활성 · 2D 캠퍼스로 전환", "3D Studio Space active · Switch to 2D Campus")
+          : bt("3D 스튜디오 공간으로 전환", "Switch to 3D Studio Space")}
       >
         {engineMode === "3d" ? <Box size={13} aria-hidden /> : <Layers size={13} aria-hidden />}
         <span>{engineMode === "3d" ? bt("3D 공간", "3D Space") : bt("3D 전환", "3D View")}</span>

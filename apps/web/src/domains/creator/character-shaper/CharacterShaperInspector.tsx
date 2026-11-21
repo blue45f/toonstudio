@@ -58,6 +58,7 @@ import { CharacterShaperSkinSection } from "./CharacterShaperSkinSection";
 import { CharacterShaperStcSection } from "./CharacterShaperStcSection";
 import { Studio3dHeadMixerPanel } from "./Studio3dHeadMixerPanel";
 import { StudioBodyRatioMatrixPad } from "./StudioBodyRatioMatrixPad";
+import { StudioVroidShaperProPanel } from "./StudioVroidShaperProPanel";
 import {
   createDefaultHeadMixerState,
   resolveHeadMixerMorphTargets,
@@ -758,7 +759,10 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
 
       <div className="min-h-0 flex-1 pb-3">
         {modelReady ? (
-          renderSection()
+          <>
+            {renderSection()}
+            <StudioVroidShaperProPanel h={h} binding={binding} locked={locked} slot={slot} collapsible defaultOpen={false} />
+          </>
         ) : (
           <div className="px-3 py-3">
             <Note>{frozenStatus3Text("studio.frozenStatus3.shaper.emptyModelNotLoaded", "모델을 불러오면 이 슬롯의 정밀 조절이 열립니다.")}</Note>

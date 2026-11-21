@@ -205,6 +205,13 @@ export function appendCardStrip(acc: MeshAccumulator, options: CardStripOptions)
 export interface ContouredCardStripOptions extends CardStripOptions {
   /** 중앙 능선의 바깥쪽 아치 융기 비율(폭 대비, 기본 0.16) */
   readonly archRatio?: number;
+  /**
+   * 한국 웹툰 헤어 용접(Normal Transfer) 구체 중심: 지정 시 각 정점 법선을 두상 구면 바깥 법선과
+   * 블렌딩해 가닥 간 음영 끊김을 없애고 정수리 엔젤링 하이라이트가 매끄럽게 이어지게 한다.
+   */
+  readonly normalSphereCenter?: Vec3;
+  /** 구체 법선 블렌딩 비율(0..1, 기본 0) */
+  readonly normalSphereBlend?: number;
 }
 
 /**
@@ -220,6 +227,16 @@ export function appendContouredCardStrip(acc: MeshAccumulator, options: Contoure
   const [u0, u1] = options.uRange ?? [0, 1];
   const uMid = (u0 + u1) * 0.5;
   const archRatio = options.archRatio ?? 0.16;
+  const sphereCenter = options.normalSphereCenter;
+  const sphereBlend = Math.min(1, Math.max(0, options.normalSphereBlend ?? 0));
+  const blendNormal = (pos: Vec3, localNormal: Vec3): Vec3 => {
+    if (!sphereCenter || sphereBlend <= 0) return localNormal;
+    const fromCenter = v3Sub(pos, sphereCenter);
+    if (v3Length(fromCenter) <= 1e-9) return localNormal;
+    const radial = v3Normalize(fromCenter);
+    const mixed = v3Add(v3Scale(localNormal, 1 - sphereBlend), v3Scale(radial, sphereBlend));
+    return v3Length(mixed) > 1e-9 ? v3Normalize(mixed) : localNormal;
+  };
   const left: number[] = [];
   const mid: number[] = [];
   const right: number[] = [];
@@ -232,11 +249,15 @@ export function appendContouredCardStrip(acc: MeshAccumulator, options: Contoure
     const half = w * 0.5;
     const arch = w * archRatio;
     const v = n > 1 ? i / (n - 1) : 0;
-    const nLeft = v3Normalize(v3Add(v3Scale(normal, 0.88), v3Scale(side, -0.47)));
-    const nRight = v3Normalize(v3Add(v3Scale(normal, 0.88), v3Scale(side, 0.47)));
-    left.push(acc.pushVertex(v3Add(points[i], v3Scale(side, -half)), nLeft, [u0, v], skins[i]));
-    mid.push(acc.pushVertex(v3Add(points[i], v3Scale(normal, arch)), normal, [uMid, v], skins[i]));
-    right.push(acc.pushVertex(v3Add(points[i], v3Scale(side, half)), nRight, [u1, v], skins[i]));
+    const pLeft = v3Add(points[i], v3Scale(side, -half));
+    const pMid = v3Add(points[i], v3Scale(normal, arch));
+    const pRight = v3Add(points[i], v3Scale(side, half));
+    const nLeft = blendNormal(pLeft, v3Normalize(v3Add(v3Scale(normal, 0.88), v3Scale(side, -0.47))));
+    const nMid = blendNormal(pMid, normal);
+    const nRight = blendNormal(pRight, v3Normalize(v3Add(v3Scale(normal, 0.88), v3Scale(side, 0.47))));
+    left.push(acc.pushVertex(pLeft, nLeft, [u0, v], skins[i]));
+    mid.push(acc.pushVertex(pMid, nMid, [uMid, v], skins[i]));
+    right.push(acc.pushVertex(pRight, nRight, [u1, v], skins[i]));
   }
   for (let i = 0; i + 1 < n; i += 1) {
     acc.pushQuad(left[i], mid[i], mid[i + 1], left[i + 1]);

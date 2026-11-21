@@ -3,6 +3,8 @@
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
+import { lazy as createSidebarLazy, Suspense as SidebarSuspense, useState as useSidebarState } from "react";
+
 import { DEFAULT_STUDIO_BG3D_SIX_PASS_LT_SETTINGS } from "../contracts/studio-bg3d-six-pass-settings";
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { StudioMarketplaceModelImportMount } from "./StudioMarketplaceModelImportMount";
@@ -19,6 +21,17 @@ import { listOfferedStudio3dCommands } from "./studio-bg3d-grade-plates";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
 import { useT } from "@/shared/lib/i18n";
 import { hasStudioBg3dTemplateContent } from "./studio-bg3d-measurement-template";
+
+const LazySidebarCharacterCompositePanel = createSidebarLazy(() =>
+  import("./StudioBg3dCharacterCompositePanel").then((m) => ({
+    default: m.StudioBg3dCharacterCompositePanel,
+  })),
+);
+const LazySidebarModelingProDrawer = createSidebarLazy(() =>
+  import("./StudioBg3dModelingProDrawer").then((m) => ({
+    default: m.StudioBg3dModelingProDrawer,
+  })),
+);
 
 export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro = () => {} }: { h: Record<string, any>; experienceMode?: "simple" | "pro"; onOpenPro?: () => void }) {
   const t = useT();
@@ -345,6 +358,8 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
   // 안내하고 한 번에 되돌리는 버튼을 준다), 방 만들기는 기본 꺼짐(예전 "방 추가"와 같은 동작)이라 따로 둔다.
   const [webtoonAutoCutaway, setWebtoonAutoCutaway] = useState(true);
   const [roomPanelAutoCutaway, setRoomPanelAutoCutaway] = useState(false);
+  const [sidebarModelingProOpen, setSidebarModelingProOpen] = useSidebarState(false);
+  const [sidebarCompositeStageOpen, setSidebarCompositeStageOpen] = useSidebarState(false);
   const simplePanelCopy: Record<string, { label: string; hint: string }> = {
     shapes: { label: "소품", hint: "가구·물건·기본 도형을 장면에 배치" },
     templates: { label: "배경", hint: "교실·거리·카페 같은 장소를 빠르게 구성" },
@@ -537,6 +552,26 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                 />
               ) : null}
 
+              {open && activePanelTab === "shapes" ? (
+                <details
+                  data-testid="bg3d-sidebar-modeling-pro-disclosure"
+                  className="rounded-xl border border-line bg-card [word-break:keep-all]"
+                  onToggle={(event) => setSidebarModelingProOpen(event.currentTarget.open)}
+                >
+                  <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-3 py-2 text-xs font-semibold text-fg">
+                    <span>Blender · SketchUp 고급 3D 모델링</span>
+                    <span className="text-[11px] text-fg-3">압출·스윕·베벨·대칭</span>
+                  </summary>
+                  {sidebarModelingProOpen ? (
+                    <div className="border-t border-line p-2.5">
+                      <SidebarSuspense fallback={<p className="p-2 text-xs text-fg-3">고급 모델링 도구를 불러오는 중이에요…</p>}>
+                        <LazySidebarModelingProDrawer disabled={isCapturing || isRestoringScene || physicsInteractionLocked} />
+                      </SidebarSuspense>
+                    </div>
+                  ) : null}
+                </details>
+              ) : null}
+
               <section hidden={hideOnTab("templates")}>
                 {activePanelTab === "templates" ? (
                   <div className="mb-5 border-b border-line pb-4">
@@ -629,6 +664,31 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                     </Suspense>
                   ) : null}
                 </div>
+
+                {activePanelTab === "templates" ? (
+                  <div className="mt-5 border-t border-line pt-4">
+                    <details
+                      data-testid="bg3d-sidebar-composite-stage-disclosure"
+                      className="rounded-xl border border-line bg-card [word-break:keep-all]"
+                      onToggle={(event) => setSidebarCompositeStageOpen(event.currentTarget.open)}
+                    >
+                      <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-3 py-2 text-xs font-semibold text-fg">
+                        <span>고밀도 웹툰 배경 · 캐릭터 실시간 합성</span>
+                        <span className="text-[11px] text-fg-3">6종 세트 · VRM 동기화</span>
+                      </summary>
+                      {sidebarCompositeStageOpen ? (
+                        <div className="border-t border-line p-2.5">
+                          <SidebarSuspense fallback={<p className="p-2 text-xs text-fg-3">실시간 합성 스테이지를 불러오는 중이에요…</p>}>
+                            <LazySidebarCharacterCompositePanel
+                              disabled={isCapturing || isRestoringScene || physicsInteractionLocked}
+                              activeAtmosphereId={h.activeWebtoonAtmosphereId ?? null}
+                            />
+                          </SidebarSuspense>
+                        </div>
+                      ) : null}
+                    </details>
+                  </div>
+                ) : null}
               </section>
 
             <StudioBg3dEditorSidebarExtras h={h} />

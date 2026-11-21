@@ -366,3 +366,23 @@ it("역할을 고르지 않아도 검색은 전체 바로가기를 찾고 공유
   expect(within(screen.getByTestId("my-space-destination-results")).getAllByRole("link")).toHaveLength(1);
   expect(screen.getByRole("link", { name: /AI 연결 설정/u }).getAttribute("href")).toBe("/settings/ai");
 });
+
+it("상단 오늘의 작업 리듬 리본이 내 공간 바로가기 위에 표시되고 1탭으로 역할 필터를 전환·해제한다", () => {
+  renderPage();
+  const ribbon = screen.getByTestId("my-space-daily-pulse-ribbon");
+  const destinations = screen.getByTestId("my-space-hub-root").querySelector("#my-space-destinations")?.closest("section");
+  expect(destinations).toBeTruthy();
+  if (destinations) {
+    expect(Boolean(ribbon.compareDocumentPosition(destinations) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+  }
+  expect(within(ribbon).getByTestId("my-space-pulse-summary-reader").textContent).toBe("아직 기록 없음 · 지금 시작");
+  expect(within(ribbon).getByTestId("my-space-pulse-summary-creator").textContent).toBe("아직 기록 없음 · 지금 시작");
+
+  fireEvent.click(within(ribbon).getByTestId("my-space-pulse-mode-creator"));
+  expect(screen.getByTestId("my-space-role-filter-creator").getAttribute("aria-pressed")).toBe("true");
+  expect(within(screen.getByTestId("my-space-destination-results")).getAllByRole("link")).toHaveLength(6);
+
+  fireEvent.click(within(ribbon).getByTestId("my-space-pulse-mode-creator"));
+  expect(screen.getByTestId("my-space-role-filter-all").getAttribute("aria-pressed")).toBe("true");
+  expect(within(screen.getByTestId("my-space-destination-results")).getAllByRole("link")).toHaveLength(14);
+});

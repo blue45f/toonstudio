@@ -149,10 +149,9 @@ export function ShowcaseStepStrip({
   readonly className?: string;
 }) {
   return (
-    <ol
-      aria-label={label}
-      className={cn(
-        "flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:thin]",
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- 모바일 가로 레일을 키보드만으로 스크롤할 수 있어야 하므로 포커스가 필요하다(WCAG 2.1.1).
+    <ol tabIndex={0} aria-label={label} className={cn(
+        "flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:thin] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         "sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0",
         className,
       )}

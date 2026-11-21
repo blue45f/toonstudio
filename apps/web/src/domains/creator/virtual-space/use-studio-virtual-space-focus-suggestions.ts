@@ -16,6 +16,7 @@ import {
   type StudioSuggestionState,
 } from "./studio-virtual-space-context-suggestions";
 import {
+  completeStudioFocusSessionNow,
   createStudioFocusSession,
   pauseStudioFocusSession,
   resumeStudioFocusSession,
@@ -43,6 +44,7 @@ export interface UseStudioVirtualSpaceFocusSuggestionsInput {
   readonly notify: (message: string, tone?: "info" | "success" | "warn" | "error") => void;
   readonly onApplyWorkStatus: (userStatus: StudioUserStatus, nextActivity?: "focused" | "available") => void;
   readonly onApplyWorkDecisions: (decisions: readonly StudioWorkDecision[], setFocusSession: React.Dispatch<React.SetStateAction<StudioFocusSession>>) => void;
+  readonly onFocusCompleted?: (completedCount: number) => void;
 }
 
 export interface StudioVirtualSpaceFocusSuggestionsResult {
@@ -54,6 +56,7 @@ export interface StudioVirtualSpaceFocusSuggestionsResult {
   readonly acceptSuggestion: () => void;
   readonly dismissSuggestion: () => void;
   readonly startFocusPulse: () => void;
+  readonly completeFocusSprintNow: () => void;
   readonly pauseFocusSession: () => void;
   readonly resumeFocusSession: () => void;
   readonly stopFocusSession: () => void;
@@ -77,7 +80,10 @@ export function useStudioVirtualSpaceFocusSuggestions({
   notify,
   onApplyWorkStatus,
   onApplyWorkDecisions,
+  onFocusCompleted,
 }: UseStudioVirtualSpaceFocusSuggestionsInput): StudioVirtualSpaceFocusSuggestionsResult {
+  const onFocusCompletedRef = useRef(onFocusCompleted);
+  onFocusCompletedRef.current = onFocusCompleted;
   const [focusSession, setFocusSession] = useState<StudioFocusSession>(() => createStudioFocusSession());
   const [focusNow, setFocusNow] = useState(() => Date.now());
   const [clockNow, setClockNow] = useState(() => Date.now());
@@ -119,6 +125,7 @@ export function useStudioVirtualSpaceFocusSuggestions({
       if (event === "focus-completed") {
         notify(bt("집중 세션을 마쳤어요. 잠깐 쉬어 가세요.", "Focus session complete. Take a short break."), "success");
         setSuggestionState((current) => reduceStudioSuggestion(current, { kind: "focus-completed" }));
+        onFocusCompletedRef.current?.(session.completedCount);
       } else if (event === "break-completed") {
         notify(bt("휴식이 끝났어요.", "Your break is over."), "info");
       }
@@ -166,6 +173,18 @@ export function useStudioVirtualSpaceFocusSuggestions({
     );
   };
 
+  const completeFocusSprintNow = () => {
+    const current = focusSessionRef.current;
+    if (current.phase !== "running" && current.phase !== "paused") return;
+    const now = Date.now();
+    const next = completeStudioFocusSessionNow(current, now);
+    setFocusNow(now);
+    setFocusSession(next);
+    setSuggestionState((state) => reduceStudioSuggestion(state, { kind: "focus-completed" }));
+    notify(bt("집중 세션을 마쳤어요. 잠깐 쉬어 가세요.", "Focus session complete. Take a short break."), "success");
+    onFocusCompletedRef.current?.(next.completedCount);
+  };
+
   const pauseFocusSession = () => setFocusSession((current) => pauseStudioFocusSession(current, Date.now()));
   const resumeFocusSession = () => setFocusSession((current) => resumeStudioFocusSession(current, Date.now()));
   const stopFocusSession = () => {
@@ -198,6 +217,7 @@ export function useStudioVirtualSpaceFocusSuggestions({
     acceptSuggestion,
     dismissSuggestion,
     startFocusPulse,
+    completeFocusSprintNow,
     pauseFocusSession,
     resumeFocusSession,
     stopFocusSession,

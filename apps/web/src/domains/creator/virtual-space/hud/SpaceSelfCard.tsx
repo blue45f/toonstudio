@@ -5,6 +5,7 @@ import { memo } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import type { StudioVirtualSpacePresenceState } from "../studio-virtual-space-model";
+import { useStudioWebtoonWorkStatus } from "../studio-virtual-space-work-status";
 import { SpaceAvatar } from "./SpaceAvatar";
 import {
   spaceActiveDccOptionById,
@@ -41,6 +42,7 @@ export const SpaceSelfCard = memo(function SpaceSelfCard({
 }) {
   const bt = useBilingual("SpaceSelfCard");
   const extras = useSpaceStatusExtras();
+  const { option: workStatus } = useStudioWebtoonWorkStatus();
   const status = spaceStatusOption(self.activity, self.userStatus);
   const companion = spaceCompanionOptionById(companionId ?? extras.companionId);
   const urgency = spaceStatusUrgencyOptionById(statusUrgency ?? extras.statusUrgency);
@@ -51,6 +53,7 @@ export const SpaceSelfCard = memo(function SpaceSelfCard({
     <div>
       <strong>{name} · {bt("나", "Me")}{roleLabelKo ? <span className="space-self-card__role">{bt(roleLabelKo, roleLabelEn ?? roleLabelKo)}</span> : null}</strong>
       <small><span className="space-status-dot" data-activity={self.activity} data-status={status.id} aria-hidden />{bt(status.labelKo, status.labelEn)}
+        {workStatus ? <span data-testid="space-self-card-work-status">{` · ${workStatus.glyph} ${bt(workStatus.labelKo, workStatus.labelEn)}`}</span> : null}
         {urgency.id !== "normal" ? ` · ${urgency.badge} ${bt(urgency.labelKo, urgency.labelEn)}` : null}
         {hat.id !== "none" ? ` · ${hat.emoji} ${bt(hat.labelKo, hat.labelEn)}` : null}
         {dcc.id !== "none" ? ` · ${dcc.badge} ${bt(dcc.labelKo, dcc.labelEn)}` : null}

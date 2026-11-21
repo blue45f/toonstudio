@@ -24,6 +24,7 @@ import type { BodyParamKey, FaceParamKey, HumanoidBoneName, IkChainId, LabFailur
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
 
 export {
+  KWEBTOON_BUILTIN_ARCHETYPE_PRESETS,
   SHAPER_BUILTIN_ARCHETYPE_PRESETS,
   SHAPER_BUILTIN_PART_PRESETS,
   SHAPER_BUILTIN_POSE_PRESETS,

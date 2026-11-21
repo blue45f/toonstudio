@@ -1,0 +1,93 @@
+/*
+ * my-space-daily-pulse.css — `/my` 내 공간 "오늘의 작업 리듬" 모멘텀 리본 OKLCH 스펙트럼 스타일.
+ */
+
+.daily-pulse-ribbon {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in oklch, var(--pulse-lead-tone, var(--color-accent)) 30%, var(--color-line));
+  background:
+    radial-gradient(
+      110% 90% at 0% 0%,
+      color-mix(in oklch, var(--pulse-lead-tone, var(--color-accent)) 10%, transparent),
+      transparent 58%
+    ),
+    var(--color-panel);
+}
+
+.daily-pulse-ribbon__spectrum {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-cool),
+    var(--color-accent) 50%,
+    var(--color-good)
+  );
+}
+
+.daily-pulse-mode-btn {
+  position: relative;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 180ms ease;
+}
+
+.daily-pulse-mode-btn:hover {
+  border-color: color-mix(in oklch, var(--pulse-tone, var(--color-accent)) 55%, var(--color-line));
+  background: color-mix(in oklch, var(--pulse-tone, var(--color-accent)) 7%, var(--color-card));
+}
+
+.daily-pulse-mode-btn:active {
+  transform: scale(0.985);
+}
+
+.daily-pulse-mode-btn[aria-pressed="true"] {
+  border-color: var(--pulse-tone, var(--color-accent));
+  background: color-mix(in oklch, var(--pulse-tone, var(--color-accent)) 13%, var(--color-card));
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--pulse-tone, var(--color-accent)) 32%, transparent);
+}
+
+.daily-pulse-meter-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--pulse-tone, var(--color-accent)),
+    color-mix(in oklch, var(--pulse-tone, var(--color-accent)) 72%, var(--color-fg))
+  );
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .daily-pulse-mode-btn,
+  .daily-pulse-meter-fill {
+    transition: none !important;
+  }
+  .daily-pulse-mode-btn:active {
+    transform: none !important;
+  }
+}
+
+:root[data-design-theme="contrast"] .daily-pulse-ribbon__spectrum {
+  display: none;
+}
+
+:root[data-design-theme="contrast"] .daily-pulse-ribbon {
+  background: var(--color-panel);
+}
+
+@media (forced-colors: active) {
+  .daily-pulse-ribbon__spectrum {
+    display: none;
+  }
+}

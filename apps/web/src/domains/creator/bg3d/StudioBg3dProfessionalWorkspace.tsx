@@ -672,6 +672,7 @@ export function StudioBg3dProfessionalWorkspace({
             onSelectShotSpec={onSelectReverseShot}
             onGroundSnap={onGroundSnap}
             onTransferPose={onTransferTemplatePose}
+            activeAtmosphereId={activeAtmosphereId} targetDocumentId={targetDocumentId} targetCutIndex={targetCutIndex} onBakeToManuscriptCut={onBakeToManuscriptCut}
             onStatusMessage={setBakeStatusMessage}
             onClose={() => setProStagingOpen(false)}
           />

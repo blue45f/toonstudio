@@ -7,6 +7,7 @@ import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 import { Viewport } from "@babylonjs/core/Maths/math.viewport.js";
 
 import { clamp, v3Cross, v3Length, v3Normalize, v3Sub } from "../../shared/math";
+import { isLookV2Identity, resolveKWebtoonFeatureParams, resolveLookRimColor, resolveLookShadeTint } from "../kwebtoon-shading";
 import { computeEyeballHighlightTransform } from "../toon-reference";
 
 import { isKitPart, rigBoneWorld } from "./character-rig";
@@ -102,9 +103,9 @@ export function evaluateAndApplyEyeballHighlight(input: {
   };
 }
 
-/** 툰 셰이더 확장 유니폼(3차 MatCap · 방향성 역광 림 · Kajiya-Kay 헤어 엔젤링) 값을 산출한다. */
+/** 툰 셰이더 확장 유니폼(3차 MatCap · 방향성 역광 림 · Kajiya-Kay 헤어 엔젤링 · K-웹툰 2단 셀/블러셔/홍채) 값을 산출한다. */
 export function resolveEnhancedToonParams(
-  part: Pick<RigPart, "role" | "hairFlowUv">,
+  part: Pick<RigPart, "role" | "hairFlowUv"> & { readonly colorHex?: string },
   shading: ShadingProfile,
 ): Pick<
   ToonParams,
@@ -117,19 +118,38 @@ export function resolveEnhancedToonParams(
   | "hairAngelRingWidth"
   | "hairAngelRingSecondaryWeight"
   | "smoothFaceSdf"
-> {
+  | "kwebtoonFaceMakeup"
+  | "kwebtoonIrisGradient"
+  | "kwebtoonLipTint"
+  | "kwebtoonCheekBlush"
+> &
+  Partial<Pick<ToonParams, "shadeTint" | "rimColor">> {
   const softness = clamp(shading.look.ramp.softness, 0, 1);
   const isHair = part.role === "hair";
+  const v2Identity = isLookV2Identity(shading.look);
+  const specStrength = shading.look.specular.hairBand !== "none" ? shading.look.specular.strength : 0;
+  const hairBoost = !v2Identity && specStrength > 0 ? clamp(0.42 + specStrength * 0.34, 0.36, 0.78) : part.hairFlowUv ? 0.48 : 0.36;
+  const kw = resolveKWebtoonFeatureParams(part.role, shading);
   return {
+    ...(v2Identity
+      ? {}
+      : {
+          shadeTint: resolveLookShadeTint(part.role, part.colorHex ?? "#f3d3bd", shading.look),
+          rimColor: resolveLookRimColor(shading.look),
+        }),
     cubicMatCapWeight: 0.25 + softness * 0.25,
     cubicMatCapPos: 0.5,
     cubicMatCapWidth: clamp(0.62 + softness * 0.28, 0.2, 0.95),
     directionalBacklightRimGate: shading.toon.rim ? 1 : 0,
-    hairAngelRingIntensity: isHair ? (part.hairFlowUv ? 0.48 : 0.36) : 0,
-    hairAngelRingCenter: 0.58,
-    hairAngelRingWidth: 0.11,
-    hairAngelRingSecondaryWeight: 0.35,
+    hairAngelRingIntensity: isHair ? hairBoost : 0,
+    hairAngelRingCenter: !v2Identity && shading.look.specular.hairBand !== "none" ? shading.look.specular.center : 0.58,
+    hairAngelRingWidth: !v2Identity && shading.look.specular.width > 0.02 ? shading.look.specular.width : 0.11,
+    hairAngelRingSecondaryWeight: 0.38,
     smoothFaceSdf: true,
+    kwebtoonFaceMakeup: kw.faceMakeupIntensity,
+    kwebtoonIrisGradient: kw.irisGradientIntensity,
+    kwebtoonLipTint: kw.lipTintIntensity,
+    kwebtoonCheekBlush: kw.cheekBlushIntensity,
   };
 }
 

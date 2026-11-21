@@ -42,6 +42,7 @@ import { ErrorState } from "@/shared/components/feedback/error-state";
 import { useApiResource } from "@/platform/use-api-resource";
 
 import { CalendarFilters } from "./CalendarFilters";
+import { CalendarTodayPulseRibbon } from "./fresh-ideas/CalendarTodayPulseRibbon";
 import { useLocalCatalogFallback } from "./local-catalog-fallback";
 import { useCatalogInkIndicator } from "./use-catalog-ink-indicator";
 
@@ -379,6 +380,18 @@ export function CalendarPage() {
       />
 
       {!loading && !error && (
+        <>
+        <CalendarTodayPulseRibbon
+          days={days}
+          rawDays={rawDays}
+          todayIdx={todayIdx}
+          selectedDayIdx={selDay}
+          savedIds={savedIds}
+          savedOnly={filters.savedOnly}
+          onSelectDay={(index) => selectDay(index)}
+          onJumpToToday={jumpToToday}
+          onToggleSavedOnly={() => setFilters({ ...filters, savedOnly: !filters.savedOnly })}
+        />
         <section
           aria-label={bt("오늘 연재 하이라이트", "Today's release highlights")}
           className="sticky top-[var(--site-header-sticky-offset,5rem)] z-30 mb-5 overflow-hidden rounded-xl border border-line bg-card/92 backdrop-blur-md [-webkit-backdrop-filter:blur(12px)]"
@@ -406,6 +419,7 @@ export function CalendarPage() {
             </button>
           </div>
         </section>
+        </>
       )}
 
       {error ? (

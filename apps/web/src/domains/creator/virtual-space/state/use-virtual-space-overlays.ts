@@ -31,6 +31,12 @@ export interface UseVirtualSpaceOverlaysInput {
   readonly zoomAvailable: boolean;
   readonly onDeskShortcut: () => void;
   readonly onToggleQuietMode: () => void;
+  readonly soloBoardOpen?: boolean;
+  readonly onCloseSoloBoard?: () => void;
+  readonly appEffectOpen?: boolean;
+  readonly onCloseAppEffect?: () => void;
+  readonly tileMediaOpen?: boolean;
+  readonly onCloseTileMedia?: () => void;
 }
 
 /**
@@ -53,6 +59,12 @@ export function useVirtualSpaceOverlays({
   zoomAvailable,
   onDeskShortcut,
   onToggleQuietMode,
+  soloBoardOpen = false,
+  onCloseSoloBoard,
+  appEffectOpen = false,
+  onCloseAppEffect,
+  tileMediaOpen = false,
+  onCloseTileMedia,
 }: UseVirtualSpaceOverlaysInput) {
   const [requestedPanel, setPanel] = useState<StudioVirtualWorkspacePanel | null>(() => initialPanel(search));
   const panel = studioVirtualWorkspacePanelForScope(requestedPanel, personal);
@@ -124,7 +136,12 @@ export function useVirtualSpaceOverlays({
 
   const closeTopLayer = useCallback((): boolean => {
     if (theaterOpen) { setTheaterOpen(false); engineBridge.focusWorld(); return true; }
+    if (soloBoardOpen && onCloseSoloBoard) { onCloseSoloBoard(); engineBridge.focusWorld(); return true; }
     if (inviteOpen) { setInviteOpen(false); engineBridge.focusWorld(); return true; }
+    if (mediaConsentOpen) { setMediaConsentOpen(false); engineBridge.focusWorld(); return true; }
+    if (coworkOpen) { setCoworkOpen(false); engineBridge.focusWorld(); return true; }
+    if (appEffectOpen && onCloseAppEffect) { onCloseAppEffect(); engineBridge.focusWorld(); return true; }
+    if (tileMediaOpen && onCloseTileMedia) { onCloseTileMedia(); engineBridge.focusWorld(); return true; }
     if (chatOpen) { setChatOpen(false); engineBridge.focusWorld(); return true; }
     if (dockPopover) { setDockPopover(null); engineBridge.focusWorld(); return true; }
     if (helpOpen) { setHelpOpen(false); engineBridge.focusWorld(); return true; }
@@ -134,24 +151,38 @@ export function useVirtualSpaceOverlays({
     if (panel) { setPanel(null); engineBridge.focusWorld(); return true; }
     return false;
   }, [
+    appEffectOpen,
     chatOpen,
     closeDialogue,
     closePendingInteraction,
+    coworkOpen,
     dialogueNpc,
     dockPopover,
     engineBridge,
     helpOpen,
     inviteOpen,
     mapOpen,
+    mediaConsentOpen,
+    onCloseAppEffect,
+    onCloseSoloBoard,
+    onCloseTileMedia,
     panel,
     pendingInteraction,
     setChatOpen,
+    soloBoardOpen,
     theaterOpen,
+    tileMediaOpen,
   ]);
 
   const modalSurfaceOpen = searchOpen
     || inviteOpen
     || theaterOpen
+    || soloBoardOpen
+    || coworkOpen
+    || mediaConsentOpen
+    || helpOpen
+    || appEffectOpen
+    || tileMediaOpen
     || (!desktop && (panel !== null || (dockPopover !== null && dockPopover !== "react") || mapOpen || pendingInteraction !== null || dialogueNpc !== null));
 
   useEffect(() => {

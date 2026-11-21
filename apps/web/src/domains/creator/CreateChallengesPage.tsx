@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { WorkGridSkeleton } from "./creator-community-ui";
 import { buildStudioHref } from "./creator-studio-links";
+import { ChallengeSparkRemixBar } from "./fresh-ideas/ChallengeSparkRemixBar";
 import { StudioPageIntro } from "./page-intro/StudioPageIntro";
 import { SHOWCASE_HOME_PATH, showcaseChallengeHref } from "./publishing/showcase-links";
 import { ShowcaseRail } from "./publishing/ShowcaseRail";
@@ -362,6 +363,7 @@ export function CreateChallengesPage() {
                   {selected.theme}
                 </p>
               ) : null}
+              {selected.state !== "ended" ? <ChallengeSparkRemixBar challenge={selected} /> : null}
               <ChallengeEntries challenge={selected} />
             </section>
           ) : null}

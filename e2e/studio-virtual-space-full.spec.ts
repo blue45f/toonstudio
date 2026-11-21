@@ -420,4 +420,154 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     expect(mobileErrors.consoleErrors).toEqual([]);
     await mobileContext.close();
   });
+
+  test("6. 전 기능 1건씩 실동작 검증: 12종 프리셋, 5종 업무 상태+새로고침, 집중 완료 축하, 모션/발소리 음소거, 화이트보드 그리기·포스트잇·P2P 주석 보드, 룸/미니맵·고스트·2D↔3D 동기화", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await installVirtualSpaceEnvironment(page);
+    const errors = attachRuntimeErrorCollector(page);
+
+    await page.goto("/studio/space", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("virtual-space-stage-root")).toBeVisible({ timeout: 45_000 });
+    await expect(page.locator('[data-office2d-stage="ready"]')).toBeVisible({ timeout: 45_000 });
+
+    // 6-A. 웹툰 업무 상태 5종 1탭 전환 · 새로고침 유지 · 참가자 로스터 반영
+    const workBar = page.getByTestId("space-work-status-bar");
+    await expect(workBar).toBeVisible();
+    for (const statusId of [
+      "storyboard",
+      "inking",
+      "coloring-bg",
+      "review-request",
+      "short-break",
+    ] as const) {
+      const btn = page.getByTestId(`work-status-btn-${statusId}`);
+      await expect(btn).toBeVisible();
+      await btn.click();
+      await expect(btn).toHaveAttribute("aria-pressed", "true");
+    }
+    await page.getByTestId("work-status-btn-inking").click();
+    await expect(workBar).toHaveAttribute("data-active-work-status", "inking");
+
+    // 참가자 로스터 내 카드에 업무 상태 반영 확인 후 Escape로 닫기
+    await page.getByRole("button", { name: "참가자" }).click();
+    await expect(page.getByTestId("space-self-card-work-status")).toContainText("선화 집중");
+    await page.keyboard.press("Escape");
+
+    // 새로고침 후에도 업무 상태가 localStorage에서 그대로 복원되어야 한다.
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator('[data-office2d-stage="ready"]')).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByTestId("work-status-btn-inking")).toHaveAttribute("aria-pressed", "true");
+
+    // 6-B. 원클릭 25분 집중 스프린트 시작 -> 완료 체크 축하 리본 노출 및 닫기
+    await page.getByTestId("space-focus-sprint-btn").click();
+    await expect(page.getByTestId("space-focus-chip-complete-btn")).toBeVisible();
+    await page.getByTestId("space-focus-chip-complete-btn").click();
+    const celebration = page.getByTestId("space-celebration-ribbon");
+    await expect(celebration).toBeVisible();
+    await expect(celebration).toContainText("집중 스프린트 완료");
+    await celebration.getByRole("button", { name: "축하 안내 닫기" }).click();
+    await expect(celebration).toHaveCount(0);
+
+    // 6-C. 12종 오피스 직군 캐릭터 프리셋 전부 노출 + 선택 반영 + Escape 닫기
+    await page.getByRole("button", { name: "꾸미기" }).click();
+    const presetGroup = page.locator('[data-office-role-presets="true"]');
+    await expect(presetGroup).toBeVisible({ timeout: 20_000 });
+    await expect(presetGroup.locator("[data-office-preset-id]")).toHaveCount(12);
+    const mvpPreset = presetGroup.locator('[data-office-preset-id="deadline-mvp"]');
+    await mvpPreset.click();
+    await expect(mvpPreset).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("Escape");
+
+    // 6-D. 리액션(모션/감정표현) 실행 & 2D 공간음(발소리·효과음) 토글
+    await page.getByRole("button", { name: "리액션" }).click();
+    const emoteDialog = page.getByRole("dialog", { name: "리액션 보내기" });
+    await expect(emoteDialog).toBeVisible();
+    await emoteDialog.getByRole("button").first().click();
+    await expect(emoteDialog).toHaveCount(0);
+
+    const office2dSoundBtn = page.getByTestId("office2d-toggle-sound-btn");
+    await expect(office2dSoundBtn).toBeVisible();
+    await expect(office2dSoundBtn).toHaveAttribute("aria-pressed", "true");
+    await office2dSoundBtn.click();
+    await expect(office2dSoundBtn).toHaveAttribute("aria-pressed", "false");
+
+    // 6-E. 화이트보드 직접 그리기 -> 포스트잇 추가 -> 실시간 주석 보드 메모 입력 -> Escape 닫기
+    await page.getByTestId("space-quick-whiteboard-btn").click();
+    const whiteboardPanel = page.getByTestId("space-whiteboard-panel");
+    await expect(whiteboardPanel).toBeVisible();
+    const drawSvg = whiteboardPanel.locator("svg[role='img']");
+    const svgBox = await drawSvg.boundingBox();
+    expect(svgBox).not.toBeNull();
+    await page.mouse.move(svgBox!.x + 40, svgBox!.y + 40);
+    await page.mouse.down();
+    await page.mouse.move(svgBox!.x + 140, svgBox!.y + 110, { steps: 5 });
+    await page.mouse.up();
+    await expect(drawSvg.locator("polyline")).toHaveCount(1);
+
+    await page.getByTestId("solo-board-tab-stickies").click();
+    const stickiesPanel = page.getByTestId("space-sticky-notes-panel");
+    await expect(stickiesPanel).toBeVisible();
+    await stickiesPanel.locator('[data-work-template="review"]').click();
+    await expect(stickiesPanel).toContainText("[검수 피드백]");
+
+    await page.getByTestId("solo-board-tab-annotation").click();
+    const annotationDialog = page.getByRole("dialog", { name: "실시간 주석 보드" });
+    await expect(annotationDialog).toBeVisible();
+    await annotationDialog.getByRole("button", { name: "메모", exact: true }).click();
+    await annotationDialog.getByPlaceholder("공유 메모").fill("3컷 배경 명암 체크 완료");
+    await annotationDialog.getByRole("button", { name: "메모 놓기" }).click();
+    await expect(annotationDialog).toContainText("3컷 배경 명암 체크 완료");
+    await page.keyboard.press("Escape");
+    await expect(annotationDialog).toHaveCount(0);
+
+    // 6-F. 7단계 공정 바 이동 & 전체 지도 열기/닫기 & 고스트 모드(G) 끄기 버튼 실동작
+    const pipelineNav = page.getByRole("navigation", { name: "웹툰 제작 공정 바로 가기" });
+    await pipelineNav.getByRole("button").nth(1).click();
+    await page.getByRole("button", { name: "지도", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: /지도/u })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog", { name: /지도/u })).toHaveCount(0);
+
+    // 고스트 모드 토글 후 '끄기' 버튼으로 실제 해제 확인
+    await page.locator("canvas.studio-office2d__canvas").click({ position: { x: 420, y: 360 } });
+    await page.keyboard.press("g");
+    const ghostOffBtn = page.getByTestId("space-ghost-mode-off-btn");
+    await expect(ghostOffBtn).toBeVisible();
+    await ghostOffBtn.click();
+    await expect(ghostOffBtn).toHaveCount(0);
+
+    // 6-G. 2D -> 3D -> 2D 왕복 전환 시 업무 상태 & 음소거 상태 동기화 유지
+    await page.getByRole("button", { name: /3D 스튜디오 공간으로 전환/u }).click();
+    await expect(page.locator('[data-three-stage="active"]')).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByTestId("work-status-btn-inking")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("three-toggle-sound-btn")).toHaveAttribute("aria-pressed", "false");
+
+    await page.getByRole("button", { name: /2D 캠퍼스로 전환/u }).click();
+    await expect(page.locator('[data-office2d-stage="ready"]')).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByTestId("work-status-btn-inking")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("office2d-toggle-sound-btn")).toHaveAttribute("aria-pressed", "false");
+
+    // 2D 7단계 공정 바·도구 행·업무 상태 바 겹침 0 확인
+    const workBarOverlaps = await page.evaluate(() => {
+      const rectOverlap = (a?: DOMRect, b?: DOMRect) => {
+        if (!a || !b) return 0;
+        const ox = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+        const oy = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+        return Math.round(ox * oy);
+      };
+      const rail = document.querySelector(".studio-office2d-pipeline")?.getBoundingClientRect();
+      const tools = document.querySelector(".space-top-tools-row")?.getBoundingClientRect();
+      const work = document.querySelector(".space-work-status-bar")?.getBoundingClientRect();
+      return {
+        railWork: rectOverlap(rail, work),
+        toolsWork: rectOverlap(tools, work),
+      };
+    });
+    expect(workBarOverlaps.railWork).toBe(0);
+    expect(workBarOverlaps.toolsWork).toBe(0);
+
+    await assertNoHorizontalOverflow(page);
+    expect(errors.pageErrors).toEqual([]);
+    expect(errors.consoleErrors).toEqual([]);
+  });
 });

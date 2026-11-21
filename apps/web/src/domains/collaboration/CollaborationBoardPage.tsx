@@ -1,4 +1,4 @@
-import { ArrowRight, BriefcaseBusiness, CloudOff, Paintbrush, PenLine, Plus, RefreshCw, Search, ShieldCheck, UsersRound } from "lucide-react";
+import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, CloudOff, Paintbrush, PenLine, Plus, RefreshCw, Search, ShieldCheck, UsersRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -6,9 +6,17 @@ import { COLLABORATION_MODES, COLLABORATION_PAY, COLLABORATION_ROLES, COLLABORAT
 
 import { CollaborationCrewDivisionPlanner } from "./CollaborationCrewDivisionPlanner";
 import { CollaborationInstantQuoteMatcherSuite } from "./CollaborationInstantQuoteMatcherSuite";
+import { CollaborationQuickMatchStrip } from "./CollaborationQuickMatchStrip";
 import { CollaborationTopicSubteamHuddleSuite } from "./CollaborationTopicSubteamHuddleSuite";
 import { MmorpgRecruitmentPlazaPanel } from "./hiring/MmorpgRecruitmentPlazaPanel";
 import { StudioSecurityRbacPanel } from "./StudioSecurityRbacPanel";
+import {
+  COLLABORATION_ADVANCED_SUITES,
+  applyQuickMatchToSearchParams,
+  clearCollaborationQuickMatchParams,
+  type CollaborationAdvancedSuiteId,
+  type CollaborationQuickMatchScenario,
+} from "./collaboration-quick-match";
 import { CollaborationCard, CollaborationSafety, CollabLogin, CollabNotice, collabButton, collabInput, collabPrimary } from "./collaboration-ui";
 import { collaborationRoleBilingualLabel } from "../creator/public/production-labels";
 
@@ -82,12 +90,37 @@ export function CollaborationBoardPage() {
   const activeRole = params.get("role") || "all";
   const [binaryLockMode, setBinaryLockMode] = useState<"anchorpoint-perforce" | "diversion-branch" | "rbac-18layer">("anchorpoint-perforce");
   const [proofingMode, setProofingMode] = useState<"syncsketch-ziflow" | "loupe-onionskin" | "smartling-glossary">("syncsketch-ziflow");
+  const [openSuites, setOpenSuites] = useState<Readonly<Record<CollaborationAdvancedSuiteId, boolean>>>(() => ({
+    "crew-planner": false,
+    "instant-quote": false,
+    "topic-huddle": false,
+    "recruitment-plaza": true,
+    "security-rbac": true,
+  }));
   const viewLabel = (key: keyof typeof views) => bt(views[key], viewsEn[key]);
   function change(key: string, value: string) {
     const next = new URLSearchParams(params); next.delete("cursor");
     if (value === "all" && key !== "status") next.delete(key); else next.set(key, value);
     if (key === "view") next.delete("status");
     setParams(next);
+  }
+  function handleSelectQuickMatch(scenario: CollaborationQuickMatchScenario) {
+    setParams(applyQuickMatchToSearchParams(params, scenario));
+  }
+  function handleResetQuickMatch() {
+    setParams(clearCollaborationQuickMatchParams(params));
+  }
+  function handleJumpToSuite(suiteId: CollaborationAdvancedSuiteId, anchorId: string) {
+    setOpenSuites((prev) => (prev[suiteId] ? prev : { ...prev, [suiteId]: true }));
+    if (typeof document !== "undefined") {
+      const target = document.getElementById(anchorId);
+      if (typeof target?.scrollIntoView === "function") {
+        target.scrollIntoView({ behavior: "auto", block: "start" });
+      }
+    }
+  }
+  function handleToggleSuite(suiteId: CollaborationAdvancedSuiteId, open: boolean) {
+    setOpenSuites((prev) => (prev[suiteId] === open ? prev : { ...prev, [suiteId]: open }));
   }
   // 게스트에게는 공개 공고 탐색만 노출 — 내 공고/지원/저장은 로그인 전용.
   const visibleViews = userId
@@ -129,6 +162,11 @@ export function CollaborationBoardPage() {
       <p className="mt-5 flex items-center gap-2 text-xs text-white/60"><ShieldCheck size={15} aria-hidden="true" />{bt("지원 연락처 비공개 · 보수 조건 명시 · 결제 중개 없음", "Application contacts stay private · pay terms required · no payment brokering")}</p>
       </div>
     </header>
+    <CollaborationQuickMatchStrip
+      params={params}
+      onSelectScenario={handleSelectQuickMatch}
+      onResetFilters={handleResetQuickMatch}
+    />
     <div className="mt-6 grid gap-3 sm:grid-cols-3">{categories.map(({ type: category, label, enLabel, description, enDescription, icon: Icon }) => <button key={category} type="button" aria-pressed={type === category} onClick={() => change("type", type === category ? "all" : category)} className={`flex min-h-24 items-center gap-4 rounded-2xl border p-5 text-left transition-colors ${type === category ? "border-accent bg-accent/10" : "border-line bg-panel hover:border-accent/50"}`}><Icon size={25} className="shrink-0 text-accent" aria-hidden="true" /><span className="font-semibold text-fg">{bt(label, enLabel)}<span className="mt-1 block text-xs font-normal text-fg-3">{bt(description, enDescription)}</span></span></button>)}</div>
     <section id="collaboration-results" className="mt-8 scroll-mt-24" aria-label={bt("공고 검색과 필터", "Post search and filters")}>
       {visibleViews.length > 1 ? (
@@ -271,17 +309,106 @@ export function CollaborationBoardPage() {
         );
       })}
     </div>
-    <CollaborationCrewDivisionPlanner onSelectRoleFilter={(role) => change("role", role)} />
-    <CollaborationInstantQuoteMatcherSuite onApplyRoleFilter={(role) => change("role", role)} />
-    <div className="mt-8">
-      <CollaborationTopicSubteamHuddleSuite />
-    </div>
-    <div className="mt-8">
-      <MmorpgRecruitmentPlazaPanel />
-    </div>
-    <div className="mt-8">
-      <StudioSecurityRbacPanel />
-    </div>
+    <section
+      aria-labelledby="collaboration-advanced-suites-title"
+      data-testid="collaboration-advanced-suites-hub"
+      className="collab-suite-hub mt-10"
+    >
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-accent [word-break:keep-all]">
+            {bt("고급 협업·운영 도구", "Advanced collaboration & ops tools")}
+          </p>
+          <h2
+            id="collaboration-advanced-suites-title"
+            className="mt-1 text-lg font-bold text-fg [word-break:keep-all]"
+          >
+            {bt("필요한 도구만 펼쳐서 바로 이동하세요", "Expand only the tools you need")}
+          </h2>
+          <p className="mt-1 text-xs leading-6 text-fg-3 [word-break:keep-all]">
+            {bt(
+              "분업 계산기·견적·토픽 허들은 필요할 때 펼쳐 보고, 실시간 구인 광장과 권한 관리는 바로 조작할 수 있어요.",
+              "Open crew, quote, and huddle planners on demand; live recruitment and RBAC controls stay ready below.",
+            )}
+          </p>
+        </div>
+        <a
+          href="#collaboration-results"
+          className="collab-qm-jump-btn [word-break:keep-all]"
+        >
+          <ArrowUp size={14} aria-hidden="true" />
+          <span>{bt("공고 목록으로", "Back to posts")}</span>
+        </a>
+      </div>
+
+      <nav
+        aria-label={bt("협업 고급 도구 빠른 이동", "Quick jump to collaboration tools")}
+        className="mt-4 flex flex-wrap gap-2"
+      >
+        {COLLABORATION_ADVANCED_SUITES.map((suite, index) => (
+          <button
+            key={suite.id}
+            type="button"
+            data-testid={`collab-suite-jump-${suite.id}`}
+            onClick={() => handleJumpToSuite(suite.id, suite.anchorId)}
+            className="collab-qm-jump-btn [word-break:keep-all]"
+          >
+            <span className="tabular-nums text-[11px] text-fg-3">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <span>{bt(suite.labelKo, suite.labelEn)}</span>
+          </button>
+        ))}
+      </nav>
+
+      <div className="mt-4 space-y-4">
+        {COLLABORATION_ADVANCED_SUITES.map((suite, index) => {
+          const isOpen = openSuites[suite.id];
+          return (
+            <details
+              key={suite.id}
+              id={suite.anchorId}
+              data-testid={`collab-suite-disclosure-${suite.id}`}
+              className="collab-suite-disclosure group"
+              open={isOpen}
+              onToggle={(event) => handleToggleSuite(suite.id, event.currentTarget.open)}
+            >
+              <summary className="text-left [word-break:keep-all]">
+                <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
+                  <span className="tabular-nums text-xs font-bold text-accent">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="text-sm font-bold text-fg">
+                    {bt(suite.labelKo, suite.labelEn)}
+                  </span>
+                  <span className="text-xs font-normal text-fg-3">
+                    {bt(suite.summaryKo, suite.summaryEn)}
+                  </span>
+                </span>
+                <ChevronDown
+                  size={16}
+                  aria-hidden="true"
+                  className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
+                />
+              </summary>
+              <div className="collab-suite-disclosure__body">
+                {suite.id === "crew-planner" ? (
+                  <CollaborationCrewDivisionPlanner onSelectRoleFilter={(role) => change("role", role)} />
+                ) : suite.id === "instant-quote" ? (
+                  <CollaborationInstantQuoteMatcherSuite onApplyRoleFilter={(role) => change("role", role)} />
+                ) : suite.id === "topic-huddle" ? (
+                  <CollaborationTopicSubteamHuddleSuite />
+                ) : suite.id === "recruitment-plaza" ? (
+                  <MmorpgRecruitmentPlazaPanel />
+                ) : (
+                  <StudioSecurityRbacPanel />
+                )}
+              </div>
+            </details>
+          );
+        })}
+      </div>
+    </section>
     <div className="mt-10 grid gap-5 lg:grid-cols-2"><CollaborationSafety /><section className="rounded-2xl border border-line bg-panel p-5"><p className="text-xs font-semibold text-accent">{bt("협업에서 제작까지", "From collaboration to production")}</p><h2 className="mt-2 text-lg font-semibold text-fg">{bt("동료를 만나고, 내 작업으로 이어가세요", "Meet collaborators, keep building your own work")}</h2><p className="mt-3 text-sm leading-7 text-fg-2">{bt("갤러리에서 작업 스타일을 확인하고, 공고에서 범위와 조건을 합의하세요. 지원만으로 스튜디오의 비공개 작업 권한이 생기지는 않습니다.", "Check styles in the gallery, agree on scope and terms in posts. Applying doesn't grant private studio access.")}</p><div className="mt-4 flex flex-wrap gap-3"><Link href="/studio" className={collabButton}>{bt("내 작업", "My work")}</Link><Link href="/production" className={collabButton}>{bt("제작 관리", "Production")}</Link><Link href="/market" className={collabButton}>{bt("에셋 마켓", "Asset market")}</Link><Link href="/community" className={collabButton}>{bt("커뮤니티", "Community")}</Link></div></section></div>
   </Container>;
 }

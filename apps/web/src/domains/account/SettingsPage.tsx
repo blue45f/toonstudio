@@ -1,5 +1,5 @@
 import { Settings, Star, Sliders, SlidersHorizontal, ShieldCheck, Trash2, Check, Download, Upload, Clock, SearchX, UserCog, ChevronRight, RefreshCw, Languages, MonitorSmartphone, Database } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
@@ -53,6 +53,12 @@ import {
 import { patchRegionSettings, type RegionSettings, type RegionSettingsPatch } from "@/shared/lib/region-settings";
 import { getMyProfile, updateMyProfile } from "@/platform/me-client";
 
+const ChromeWasm64PerformancePanel = lazy(() =>
+  import("@/domains/creator/public/chrome-wasm64-performance-panel").then((m) =>
+    m.loadChromeWasm64PerformancePanel(),
+  ),
+);
+
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("SettingsPage", ko, en);
 
@@ -62,6 +68,7 @@ const SETTINGS_TAB_PREFIX = "settings";
 const SETTINGS_HASH_TABS: Readonly<Record<string, SettingsTab>> = {
   "#settings-display": "display",
   "#settings-voice": "display",
+  "#settings-wasm64": "display",
   "#settings-ambient": "display",
   "#settings-nextgen": "display",
   "#settings-region": "region",
@@ -431,6 +438,22 @@ export function SettingsPage() {
 
       <div id="settings-voice" className="mt-6 scroll-mt-28">
         <VoiceGuideSettingsSection />
+      </div>
+
+      <div id="settings-wasm64" className="mt-6 scroll-mt-28">
+        <Suspense
+          fallback={
+            <section
+              className="rounded-2xl border border-line bg-panel/40 p-5"
+              aria-label={bi("초고속 엔진 · 메모리64 가속 불러오는 중", "Loading Turbo Engine · Memory64 panel")}
+            >
+              <span className="skeleton block h-5 w-48 rounded" aria-hidden />
+              <span className="skeleton mt-2 block h-4 w-72 max-w-full rounded" aria-hidden />
+            </section>
+          }
+        >
+          <ChromeWasm64PerformancePanel />
+        </Suspense>
       </div>
       </RevealOnScroll>
 

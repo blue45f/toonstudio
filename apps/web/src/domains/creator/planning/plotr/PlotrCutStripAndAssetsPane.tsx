@@ -20,6 +20,7 @@ import {
   resolveContextPromptMode,
   stepBatchCutQueue,
 } from "./plotr-consistency-and-batch";
+import { auditCharacterConsistencyAcrossCuts } from "./plotr-character-sheet-model";
 import {
   applyGlobalPanelBorder,
   auditReverseShotAxis,
@@ -31,15 +32,25 @@ import {
   updateCutDialoguePreservingSource,
 } from "./plotr-script-cut-engine";
 import {
+  PLOTR_CAMERA_FRAMING_PRESETS,
+  PLOTR_LIGHTING_MOOD_PRESETS,
+  applyCutFramingPreset,
+  applyCutLightingMood,
+} from "./plotr-visual-cut-renderer";
+import {
   PLOTR_EFFECT_LINE_LABELS,
   PLOTR_SFX_PRESETS,
   type PlotrBatchQueueState,
+  type PlotrCameraFramingId,
   type PlotrCutCard,
   type PlotrDocumentState,
   type PlotrEffectLineKind,
+  type PlotrLightingMoodId,
 } from "./plotr-types";
+import { PlotrCharacterConsistencySheet } from "./PlotrCharacterConsistencySheet";
 import { PlotrConsistencyAssetStrip } from "./PlotrConsistencyAssetStrip";
 import { PlotrTensionAndStylePanel } from "./PlotrTensionAndStylePanel";
+import { PlotrVisualCutPreviewCard } from "./PlotrVisualCutPreviewCard";
 
 export interface PlotrCutStripAndAssetsPaneProps {
   readonly document: PlotrDocumentState;
@@ -92,6 +103,35 @@ export function PlotrCutStripAndAssetsPane({
     () => auditReverseShotAxis(document.cuts),
     [document.cuts],
   );
+  const reverseShotWarningCutIds = useMemo(
+    () => new Set(reverseShotWarnings.map((w) => w.cutId)),
+    [reverseShotWarnings],
+  );
+  const characterAudit = useMemo(
+    () =>
+      auditCharacterConsistencyAcrossCuts(
+        document.assets,
+        document.cuts,
+        document.codexEntries,
+      ),
+    [document.assets, document.cuts, document.codexEntries],
+  );
+
+  const handleChangeCutFraming = (cutId: string, framing: PlotrCameraFramingId) => {
+    const label = PLOTR_CAMERA_FRAMING_PRESETS[framing].labelKo;
+    onUpdateDocument(
+      (prev) => ({ ...prev, cuts: applyCutFramingPreset(prev.cuts, cutId, framing) }),
+      `카메라 구도를 '${label}'으로 바로 전환했어요.`,
+    );
+  };
+
+  const handleChangeCutLightingMood = (cutId: string, mood: PlotrLightingMoodId) => {
+    const label = PLOTR_LIGHTING_MOOD_PRESETS[mood].labelKo;
+    onUpdateDocument(
+      (prev) => ({ ...prev, cuts: applyCutLightingMood(prev.cuts, cutId, mood) }),
+      `조명 분위기를 '${label}' 무드로 바꿨어요.`,
+    );
+  };
 
   // Esc 키로 빈 컷 일괄 조립 즉시 중단
   useEffect(() => {
@@ -268,6 +308,12 @@ export function PlotrCutStripAndAssetsPane({
       <PlotrConsistencyAssetStrip
         document={document}
         primaryCut={primaryCut}
+        onUpdateDocument={onUpdateDocument}
+      />
+
+      <PlotrCharacterConsistencySheet
+        document={document}
+        audit={characterAudit}
         onUpdateDocument={onUpdateDocument}
       />
 
@@ -458,6 +504,16 @@ export function PlotrCutStripAndAssetsPane({
                     </span>
                   </div>
                 </div>
+
+                <PlotrVisualCutPreviewCard
+                  cut={cut}
+                  worldSettingNote={document.helper.worldSettingNote}
+                  docMood={document.helper.mood}
+                  characterProfiles={characterAudit.profiles}
+                  hasReverseShotWarning={reverseShotWarningCutIds.has(cut.id)}
+                  onChangeFraming={handleChangeCutFraming}
+                  onChangeLightingMood={handleChangeCutLightingMood}
+                />
 
                 <p className="text-xs leading-relaxed text-fg [word-break:keep-all]">
                   {cut.actionSummary}

@@ -102,14 +102,14 @@ export function SpaceDeadlineCountdownWidget({
                 value={draftEpisode}
                 onChange={(e) => setDraftEpisode(e.target.value)}
                 aria-label={bt("회차", "Episode")}
-                className="min-h-10 w-20 rounded-lg border border-line bg-card px-2 text-xs"
+                className="min-h-11 w-20 rounded-lg border border-line bg-card px-2 text-xs"
               />
               <input
                 type="text"
                 value={draftTitle}
                 onChange={(e) => setDraftTitle(e.target.value)}
                 placeholder={bt("마감 제목", "Deadline title")}
-                className="min-h-10 flex-1 rounded-lg border border-line bg-card px-2 text-xs"
+                className="min-h-11 flex-1 rounded-lg border border-line bg-card px-2 text-xs"
               />
               <input
                 type="number"
@@ -118,14 +118,14 @@ export function SpaceDeadlineCountdownWidget({
                 value={draftDays}
                 onChange={(e) => setDraftDays(e.target.value)}
                 aria-label={bt("남은 일수", "Days left")}
-                className="min-h-10 w-16 rounded-lg border border-line bg-card px-2 text-xs"
+                className="min-h-11 w-16 rounded-lg border border-line bg-card px-2 text-xs"
               />
             </div>
             <div className="flex justify-end gap-1.5">
-              <button type="button" onClick={() => setAdding(false)} className="min-h-10 rounded-lg border border-line px-3 text-xs">
+              <button type="button" onClick={() => setAdding(false)} className="min-h-11 rounded-lg border border-line px-3 text-xs">
                 {bt("취소", "Cancel")}
               </button>
-              <button type="submit" className="min-h-10 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent">
+              <button type="submit" className="min-h-11 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent">
                 {bt("마감 설정", "Set deadline")}
               </button>
             </div>
@@ -134,7 +134,7 @@ export function SpaceDeadlineCountdownWidget({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-line bg-card px-2.5 text-[11px] font-medium text-fg-2 hover:border-accent hover:text-fg"
+            className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card px-2.5 text-[11px] font-medium text-fg-2 hover:border-accent hover:text-fg"
           >
             <Plus size={13} aria-hidden />
             {bt("마감 일정 수정", "Edit deadline")}
