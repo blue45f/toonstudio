@@ -17,6 +17,7 @@ import { Script } from "node:vm";
 import { decodePng, encodePng, Image } from "image-js";
 import { chromium, errors, type Browser, type BrowserContext, type Page } from "playwright";
 
+import { collectStudioSoakBrowserLaunchEvidence, createStudioSoakBrowserLaunchEvidence, isStudioSoakBrowserLaunchTimeout, readStudioSoakPlaywrightVersion, STUDIO_SOAK_LINUX_WEBGPU_LAUNCH_ARGS } from "./lib/studio-soak-browser-launch";
 import { installGpuAndPerfCollector } from "./lib/studio-soak-telemetry";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -25,12 +26,8 @@ const OPERATION_TIMEOUT_MS = 8_000;
 const MAX_CONSOLE_EVENTS = 200;
 const SIZE = 64;
 const CONFIGURATIONS = [
-  { id: "existing", args: ["--disable-dev-shm-usage", "--enable-unsafe-swiftshader", "--use-gl=swiftshader", "--enable-unsafe-webgpu"] },
-  // 기존 3d-console 검증기의 Linux 소프트웨어 경로. Playwright screenshot feature도 보존한다.
-  { id: "vulkan-angle", args: ["--disable-dev-shm-usage", "--no-sandbox", "--enable-unsafe-webgpu",
-    "--enable-features=CDPScreenshotNewSurface,Vulkan", "--use-vulkan=swiftshader",
-    "--use-webgpu-adapter=swiftshader", "--use-gpu-in-tests", "--use-gl=angle",
-    "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] },
+  { id: "existing", args: ["--disable-dev-shm-usage", "--enable-automation", "--enable-unsafe-swiftshader", "--use-gl=swiftshader", "--enable-unsafe-webgpu"] },
+  { id: "vulkan-angle", args: STUDIO_SOAK_LINUX_WEBGPU_LAUNCH_ARGS },
 ] as const;
 
 interface Failure { phase: string; name: string; message: string; stack: string | null; code: string | null; raw?: unknown }
@@ -255,7 +252,7 @@ async function stage(entry: DiagnosticCase, phase: string, run: () => Promise<un
     entry.failures.push(detail);
     entry.stages.push({ phase, startedAt, endedAt: new Date().toISOString(), outcome: "failed", value, error: detail });
     // Promise.race는 GPU/CDP 연산을 취소하지 않는다. 완료가 확인되지 않은 조건은 닫고 다음 독립 조건으로 이동한다.
-    if (error instanceof DiagnosticTimeoutError || error instanceof errors.TimeoutError || browserTimedOut(error)) throw error;
+    if (error instanceof DiagnosticTimeoutError || error instanceof errors.TimeoutError || browserTimedOut(error) || isStudioSoakBrowserLaunchTimeout(error)) throw error;
     return null;
   } finally { checkpoint(); }
 }
@@ -310,12 +307,15 @@ async function runCase(entry: DiagnosticCase, origin: string, out: string, check
     browser.on("disconnected", () => {
       if (!intentionalClose) entry.failures.push(failure("browser-disconnected", "진단 도중 Chromium 연결이 끊겼습니다."));
     });
-    const browserCdp = await browser.newBrowserCDPSession();
+    const activeBrowser = browser;
     await stage(entry, "browser-metadata", async () => {
-      const args = await bounded(browserCdp.send("Browser.getBrowserCommandLine"), "browser command line");
-      entry.actualLaunchArgs = args.arguments;
-      entry.browserProtocolVersion = await bounded(browserCdp.send("Browser.getVersion"), "browser version");
-      return { actualLaunchArgs: entry.actualLaunchArgs, version: entry.browserProtocolVersion };
+      const evidence = createStudioSoakBrowserLaunchEvidence(entry.requestedLaunchArgs);
+      try { await collectStudioSoakBrowserLaunchEvidence(activeBrowser, evidence); }
+      finally {
+        entry.actualLaunchArgs = evidence.browserActualLaunchArgs;
+        entry.browserProtocolVersion = evidence.browserProtocolVersion;
+      }
+      return evidence;
     }, checkpoint);
     context = await browser.newContext({ viewport: { width: 256, height: 256 }, deviceScaleFactor: 1 });
     const page = await context.newPage();
@@ -390,7 +390,7 @@ async function main(): Promise<void> {
     sourceCommit: execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
     sourceDirty: execFileSync("git", ["-C", ROOT, "status", "--porcelain"], { encoding: "utf8" }).trim().length > 0,
     scriptSha256: sha256(readFileSync(SCRIPT_FILE)), telemetrySourceSha256: sha256(readFileSync(join(ROOT, "scripts/lib/studio-soak-telemetry.ts"))),
-    executablePath: chromium.executablePath(), environment: environment(), origin: null as string | null,
+    executablePath: chromium.executablePath(), playwrightVersion: readStudioSoakPlaywrightVersion(), environment: environment(), origin: null as string | null,
     nativeGpuStderr: "직접 수집하지 않음. DEBUG=pw:browser 실행 로그를 함께 보존해야 native GPU 프로세스 원문을 확인할 수 있습니다.",
     expectedCases: CONFIGURATIONS.length * 4, cases: [] as DiagnosticCase[], failures: [] as Failure[],
   };

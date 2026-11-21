@@ -19,6 +19,19 @@ async function openManuscriptHeader(page: Page) {
   const notice = summary.locator("[data-studio-offline-important=true]");
   await page.locator("[data-studio-offline-panel][data-studio-offline-presentation=status-center]").waitFor({ state: "attached", timeout: 60_000 });
   await expect(canvas).toBeVisible();
+  // 초기 복구 뒤 작화 도구가 선택되는 전환까지 끝내고 같은 편집 상태의 기준 좌표를 읽는다.
+  await expect(canvas).toHaveAttribute("data-studio-canvas-input-state", "ready", { timeout: 60_000 });
+  const mobilePen = page.locator('[data-studio-mobile-editing-dock="true"]').getByRole("button", { name: "펜", exact: true });
+  const pen = page.locator('[data-studio-rail-tool-id="pen"]').or(mobilePen).filter({ visible: true }).first();
+  await expect(pen).toBeEnabled({ timeout: 60_000 });
+  await expect(pen).toHaveAttribute("aria-pressed", "true", { timeout: 60_000 });
+  if ((page.viewportSize()?.width ?? 0) >= 1024) {
+    // 캔버스가 먼저 보여도 작화 초기화는 진행 중일 수 있다. 공정 버튼의 선택 상태가
+    // 바뀌며 헤더 글꼴 굵기도 달라지므로, 실제 준비 완료 뒤 오프라인 안내의 기준 폭을 잰다.
+    const drawingStage = header.locator('[data-studio-workflow-stage="draw"]');
+    await expect(drawingStage).toBeEnabled();
+    await expect(drawingStage).toHaveAttribute("aria-pressed", "true");
+  }
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   await expect(summary).toBeVisible();
   const headerBounds = await header.boundingBox();

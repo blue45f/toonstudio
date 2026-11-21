@@ -123,6 +123,7 @@ describe("기존 획에만 지연 관측을 붙이는 실제 draw callback", () 
       assertStudioSoakPointerRoute: async () => undefined,
       dispatchStudioPointerStroke, armStudioSoakPointerLatency, drainStudioSoakPointerLatency,
       studioSoakPointerLatencyIssues: () => [], markStudioSoakStroke, MEASURE_POINTER_LATENCY: enabled,
+      CPU_DIAGNOSTIC: false, cpuDiagnostic: null,
       report: { sessionId: "same-session" }, collectionFailed: vi.fn(),
       waitForStudioDocumentAdvance: async () => ({ accepted: true, layerCountAfter: 2, historyEntryCount: 2, historyUndoDepth: 2 }),
       readStudioVisibleCommitError: async () => null, SAMPLE_HEAP_PER_STROKE: false, changedPixels: () => 120,
@@ -137,5 +138,35 @@ describe("기존 획에만 지연 관측을 붙이는 실제 draw callback", () 
     if (enabled) expect(armStudioSoakPointerLatency).toHaveBeenCalledWith(page, {
       sessionId: "same-session", cycle: 7, inputMode: "pen", expectedMoves: 28,
     });
+  });
+
+  it.each(["dispatch", "latency-drain", "trace-complete"])("%s 실패에도 첫 입력 trace 종료 순서와 원래 오류를 보존한다", async (failure) => {
+    const calls: string[] = [], collectionFailed = vi.fn();
+    const dispatchError = new Error("dispatch failed"), cleanupError = new Error("trace cleanup failed");
+    const completeStroke = vi.fn(async () => { calls.push("trace-complete"); if (failure === "trace-complete") throw cleanupError; });
+    const page = { waitForTimeout: async (ms: number) => { calls.push(`wait:${ms}`); }, screenshot: async () => Buffer.from("pixels"),
+      locator: () => ({ count: async () => 0 }) };
+    const draw = harnessFunction("drawEvidenceStroke", {
+      closeBrushSurfaces: async () => true, readStudioAvailableLayerCount: async () => 1,
+      readStudioHistoryDepth: async () => ({ entryCount: 1, undoDepth: 1 }), readStudioHistoryDiagnostics: async () => ({}),
+      prepareStudioSoakPointerRoute: async () => ({ box: {}, points: [{ x: 0, y: 0 }, { x: 1, y: 1 }] }),
+      assertStudioSoakPointerRoute: async () => undefined, MEASURE_POINTER_LATENCY: true, CPU_DIAGNOSTIC: true,
+      armStudioSoakPointerLatency: async () => { calls.push("latency-arm"); },
+      cpuDiagnostic: { armStroke: async () => { calls.push("trace-arm"); }, completeStroke },
+      markStudioSoakStroke: async (_page: unknown, active: boolean) => { calls.push(`stroke:${active}`); },
+      dispatchStudioPointerStroke: async () => { calls.push("dispatch"); if (failure === "dispatch") throw dispatchError; return {}; },
+      drainStudioSoakPointerLatency: async () => { calls.push("latency-drain"); if (failure === "latency-drain") throw new Error("drain failed"); return {}; },
+      studioSoakPointerLatencyIssues: () => [], report: { sessionId: "same-session" }, collectionFailed,
+      waitForStudioDocumentAdvance: async () => ({}), readStudioVisibleCommitError: async () => null,
+      SAMPLE_HEAP_PER_STROKE: false, changedPixels: () => 1,
+    });
+    if (failure === "dispatch") await expect(draw(page, null, 1, "pen")).rejects.toBe(dispatchError);
+    else await draw(page, null, 1, "pen");
+    expect(calls).toEqual(["wait:80", "latency-arm", "trace-arm", "stroke:true", "dispatch",
+      ...(failure === "dispatch" ? [] : ["wait:500"]), "stroke:false", "latency-drain", "trace-complete"]);
+    expect(completeStroke).toHaveBeenCalledExactlyOnceWith(1);
+    if (failure === "trace-complete") expect(collectionFailed).toHaveBeenCalledWith("diagnostic-cpu", cleanupError, 1);
+    else if (failure === "latency-drain") expect(collectionFailed.mock.calls[0]?.[0]).toBe("pointer-latency");
+    else expect(collectionFailed).not.toHaveBeenCalled();
   });
 });

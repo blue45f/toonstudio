@@ -85,15 +85,72 @@ GitHub Actions의 `Studio 5h stability soak` 수동 실행은 다음 입력을 �
 | `brush_cycles` | `1` | 획마다 다음 paint 브러시 선택 |
 | `stop_on_failure` | `true` | 첫 제품·계측 실패의 원본을 보존하고 중단 |
 | `measure_pointer_latency` | `true` | 같은 원고의 입력→다음 RAF 시간 측정 |
-| `latency_baseline` | `true` | 단일 환경에서 대표 17종의 새 원고 지연 검사도 한 번 실행 |
+| `latency_baseline` | `true` | `desktop`에서 대표 17종의 새 원고 mouse 지연 검사도 한 번 실행 |
 | `sample_heap_per_stroke` | `0` | 기본 10분 GC 표본 유지. 매 획 강제 GC는 별도 진단용 |
+| `diagnostic` | `false` | CPU·GPU 원인 조사 계측을 끄고 수락 검사 실행 |
 
 수동 300분 실행에서는 같은 빌드와 입력 설정으로 3분 사전 검사와 시각 분석을 먼저
 통과해야 본 검사가 시작된다. 사전 검사와 본 검사는 서로 다른 페이지·보고서이며,
 3분을 본 검사 시간에 더하지 않는다. 정기 실행의 기존 다섯 환경·300분·bounded-churn
 설정은 유지한다. 유료 러너나 자동 운영 배포를 추가하지 않는다.
-`profile=all`과 `latency_baseline=true` 조합은 빌드 전에 거부한다. 여러 환경 중 하나의
-지연 검사만 실패하고 나머지 환경이 본 검사를 계속하는 모호한 선행 조건을 만들지 않는다.
+`latency_baseline=true`는 `profile=desktop`에서만 허용한다. 현재 대표 17종 검사기는
+별도 desktop viewport와 Playwright mouse를 사용하며 모바일 또는 WebGPU profile을
+적용하지 않는다. 지원하지 않는 profile 조합은 빌드 전에 거부하고 다른 환경의 통과로
+표시하지 않는다.
+
+### 2026-11-22 현재 구현: 원인 진단과 수락 검사 분리
+
+수동·정기 수락 검사의 기본 시간은 300분이며 CPU profiler와 별도 GPU 비교 진단은
+꺼져 있다. 수동 `diagnostic=true`는 1~3분에만 허용하고 대표 17종 수락 검사와 함께
+요청하면 빌드 전에 실패한다. 이 모드에서 수집한 CPU·native trace와 GPU 비교는 원인 분석용이며,
+제품 동작이 모두 정상이어도 `diagnostic-only` 실패를 남겨 수락 통과로 사용할 수 없다.
+수락 검사의 작업 제한은 기존 345분, 짧은 진단은 25분이다. 임시 진단 기본값이 정기
+300분 검사를 가로막지 않도록 실제 workflow 배선과 기본값을 함께 회귀로 확인한다.
+
+CPU profile은 짧은 진단 세션을 기록한다. Native trace는 첫 입력 시도 직전에 시작해
+dispatch·500ms 대기·지연 표본 회수 직후 종료한다. 준비 화면 캡처·이후 획·휴식·종료
+history 정리와 GC는 이 native 수집 범위에 포함하지 않으며, 실제 범위와 cycle을
+metadata에 남긴다. 첫 획의 page-clock mark와 같은 renderer thread의 원본 trace mark를
+직접 연결해 pointerdown task의 style·layout 경로를 확인한다. 이후 획의 원인이나
+첫 잉크 표시·물리 펜의 지연을 증명하는 자료는 아니다.
+
+원본은 64MiB로 제한하며, 손실·누락·시계 불일치·수집 오류는 진단 완료로 인정하지
+않는다. 이 상한은 원본 크기이며 JSON 파싱을 포함한 Node 전체 메모리의 상한은 아니다.
+조회 범주 목록과 요청 목록의 차이는 보존하고, 실제 RunTask·pointerdown EventDispatch·
+native UserTiming 원본을 완료 판정의 근거로 삼는다. 일반 300분 경로에서는 CPU·trace
+계측을 시작하지 않는다.
+
+### 2026-11-22 관측: Linux 소프트웨어 WebGPU 표시 경로
+
+[진단 run 123](https://github.com/blue45f/toonstudio/actions/runs/44925201668)은
+`8a5358643f49661d19809ae8521f9d4216f55cfc`의 Chromium 158.0.8127.18에서 실행했다.
+Linux SwiftShader의 기존 `--use-gl=swiftshader` 조합은 offscreen 연산은 성공했지만,
+화면 canvas에서 GC 전에 장치 손실과 `WebgpuSwapChainTexture` backing 생성 실패가
+발생했다. 같은 최소 재현의 Vulkan/ANGLE 조합은 telemetry wrapper 유무 모두에서
+빨강→강제 GC→초록 readback과 64×64 PNG의 전체 픽셀이 일치했다. 이 관측은 제품의
+장치 수명 코드나 강제 GC를 단독 원인으로 지목하지 않으며 Chromium 내부 결함까지
+확정한 것도 아니다. 당시 8조건 모두 별도의 command-line metadata 수집 오류를
+남겼으므로 진단 전체를 오류 없는 통과로 표시하지 않는다.
+
+현재 소크의 Linux WebGPU 실행은 위 재현에서 확인한 Vulkan·ANGLE·SwiftShader 설정을
+공통 helper로 사용한다. 비 WebGPU profile은 공식 ANGLE·SwiftShader OpenGL ES 경로를
+사용하고, Linux 이외에는 Linux에서만 확인한 Vulkan 조합을 적용하지 않는다.
+소크와 비교 진단은 설치된 Playwright·Chromium·CDP 버전과 요청·실제 실행 인자를 함께
+남긴다. 실제 인자가 누락되거나 뒤에서 덮어써진 경우, metadata 수집·정리에 실패한
+경우도 통과로 바꾸지 않는다.
+실제 제품 세션의 장치 손실·거절 획·시각 오류·성능·시간 기준은 그대로 적용하고,
+이 설정 변경의 수락 여부는 새 소크 결과로 판단한다. 소프트웨어 adapter 결과를
+물리 GPU·모바일 운영체제·실제 펜 장치 인증으로 간주하지 않는다.
+
+[진단 run 124](https://github.com/blue45f/toonstudio/actions/runs/44929862825)은
+`daba54f6380b1b5d534afdef7b7f3cd63a7fe092`에서 실행했다. Desktop·Kakao·Naver는
+`toplevel`이 조회 목록에 없다는 수집기 오류로 입력 전에 종료했다. Instagram·WebGPU의
+3분 세션은 native 자료 손실과 64MiB 초과가 확인되어 추적 완료로 인정하지 않았다.
+이 결과 때문에 범주 조회와 실제 원본 검증을 구분하고 native 수집 범위를 첫 시도로
+줄였다. WebGPU 독립 비교의 Vulkan/ANGLE 네 조건은 정상 동작했으나, Studio에서는
+live-ink `timeout`으로 여섯 획을 거절했다. 이 세션의 GPU 장치 손실 이벤트는 0건이며,
+receipt 지연·누락·정체성 불일치 중 어떤 하위 원인인지는 아직 확정하지 않았다.
+두 진단 실행 모두 300분 수락 검사나 물리 장치 인증의 근거가 아니다.
 
 ### 현재 화면의 브러시 선택과 Undo/Redo
 
@@ -198,3 +255,56 @@ record ID를 정확히 보관했음을 확인한 경우에만 불필요한 recor
 checkpoint ID의 재사용 방지와 불완전한 이전 기록의 보호는 유지한다. 4096개 보관
 범위를 넘어 과거 ID를 증명할 수 없는 구판 기록에는 확률 필터의 한계가 남는다.
 이를 감추기 위한 필터 초기화나 기존 문서·Undo 삭제는 수행하지 않는다.
+
+## 2026-11-22 추가 검증: 진행 시한과 실제 첫 입력 원본
+
+### GPU 진행 시한의 실제 Host 배선
+
+일반 `appendGpuLiveSourceJournalSuffix`도 매번 terminal 전용 2,000ms override를
+전달해, 첫 receipt 이후 시작한 progress 시한이 연속 입력마다 뒤로 밀렸다.
+현재 일반 append는 override 없이 기존 300ms 시한을 유지하며, `sealEndpoint=true`
+종료 요청과 후보정 terminal baseline만 기존 2초 예산을 사용한다. 실제 Host 함수를
+AST에서 추출해 실제 watchdog과 실행하는 두 회귀는 수정 전 실패하고 수정 후 통과했다.
+기존 watchdog·GPU audit와 합쳐 10/10이며, Host 줄 수는 증가하지 않았다.
+
+이 수정은 최초 receipt의 300ms 절대시한을 바꾸지 않는다. 아래 실행은 이 변경 전
+소스이므로 새 progress 수정의 브라우저 검증으로 합산하지 않는다. 이전 #124의
+first-visible timeout도 이 수정으로 해결됐다고 주장하지 않는다.
+
+### 일반 실행 #126·#128
+
+[300분 누적 후보 #126](https://github.com/blue45f/toonstudio/actions/runs/44932843133)의
+소스는 `7bc397814c8eef65181ca5f0b87f3526b2040a5a`다. CPU/native 진단을 끈 실제
+3분 사전 검사에서 다음 조기 중단을 확인했다. 두 환경 모두 첫 획 수락 1회·거절 0회·
+history append 1회·GPU/runtime 오류 0회였지만 긴 작업 기준을 통과하지 못했다.
+
+| 화면 프로필 | 입력과 겹친 긴 작업 | 시간 정합과 판정 |
+| --- | --- | --- |
+| instagram-ios | 51ms 1건 | pointerup 0.355ms 전부터 50.645ms 뒤까지 겹쳤다. 18.135초에 중단, 300분 본 검사 생략. |
+| desktop | 84ms·87ms | 각각 pointerdown 전후와 pointerup 전후에 겹쳤다. 22.068초에 중단, 300분 본 검사 생략. |
+
+관측 시각은 페이지 epoch를 보고서 시계에 맞춰 비교했다. 함수별 attribution이 없어
+JS·layout·GC 중 무엇이 원인인지는 확정하지 않는다. iOS의 51ms를 첫 접촉 지연으로
+분류하지 않으며, 조기 중단 뒤의 시각 분석 실패도 별도의 GPU 제품 결함으로 더하지 않는다.
+
+[일반 3분 후보 #128](https://github.com/blue45f/toonstudio/actions/runs/44933128643)의
+소스는 `46c884d0c1f5bbe5c77acc1d19b3c23492be30fe`다. Naver 화면 프로필은
+185.668초·획 수락 7회·거절 0회·history action 13회·입력 중 긴 작업 0회로 통과했다.
+이전 non-WebGPU 실행 인자를 쓴 별도 소스의 짧은 검사이며, 300분 증거나 물리 모바일
+장치 인증으로 해석하지 않는다. pointermove→다음 RAF p95 1.475ms·p99 2.305ms는
+실제 잉크 표시나 디스플레이 발광 시각이 아니다.
+
+### 첫 입력 native 원본 #127
+
+[진단 #127](https://github.com/blue45f/toonstudio/actions/runs/44933071786)은
+`46c884d0` 소스의 첫 입력 한 번과 종료 뒤 500ms 구간을 수집했다. Instagram 원본은
+11,917,563바이트이며 수집·stream 모두 완료, `dataLossOccurred=false`, 검증 issue 0개다.
+SHA-256은 `f0402c7117fcaa90062c9437b170253a84b3871b2a1c7b3ce4d67767198c9412`다.
+이 환경에서 이전 64MiB 손실은 해소됐지만 다른 환경의 완료를 대신하지 않는다.
+
+첫 renderer `RunTask` 17.536ms를 같은 thread의 중첩 이벤트를 제거해 분류하면
+style 0.288ms·layout 0ms·기록된 GC 0ms·JS/V8 13.949ms·기타 3.299ms다.
+pointerdown EventDispatch 13.332ms와 Konva callback 10.989ms는 이 총계 안에
+포함되므로 더하지 않는다. #124에서 보인 큰 style/layout 비용은 이 첫 task에서는
+재현되지 않았다. 진단 실행의 7회 획 수락과 원본 수집 완료는 일반 성능 수락을
+의미하지 않으며, 의도한 `diagnostic-only` 종료 상태를 그대로 유지한다.

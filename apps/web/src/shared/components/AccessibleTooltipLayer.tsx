@@ -9,7 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-import { resolveTooltipPlacement, tooltipArrowStyle, tooltipSideStyle, type TooltipPlacement } from "./accessible-tooltip-placement";
+import { resolveTooltipPlacementAvoidingPopup, tooltipArrowStyle, tooltipSideStyle, type TooltipPlacement } from "./accessible-tooltip-placement";
 
 type TooltipSource = Readonly<{
   target: HTMLElement;
@@ -212,13 +212,16 @@ function resolvePlacement(
 
   const visualViewport = globalThis.visualViewport;
   const controlledPopup = controlledPopupRect(target);
+  const quickAccess = target.ownerDocument.querySelector(QUICK_ACCESS_DESKTOP_SELECTOR);
+  const quickAccessRect = quickAccess && !quickAccess.contains(target) ? quickAccess.getBoundingClientRect() : null;
   const side = target.closest("[data-app-tooltip-preferred-side]")?.getAttribute("data-app-tooltip-preferred-side");
   const preferredSide = side === "left" || side === "right" ? side
     : !controlledPopup && target.closest('[role="toolbar"][aria-orientation="vertical"]') ? "right" : undefined;
-  return resolveTooltipPlacement({
+  return resolveTooltipPlacementAvoidingPopup({
     anchor,
     popup: bubble.getBoundingClientRect(),
     controlledPopup,
+    avoidPopup: hasUsableArea(quickAccessRect) ? quickAccessRect : null,
     preferredSide,
     viewport: {
       left: visualViewport?.offsetLeft ?? 0, top: visualViewport?.offsetTop ?? 0,
@@ -236,6 +239,7 @@ export function AccessibleTooltipLayer(): ReactElement | null {
   const showTimer = useRef<number>(0);
   const hideTimer = useRef<number>(0);
   const exitTimer = useRef<number>(0);
+  const closeTooltipRef = useRef<(immediate: boolean) => void>(() => undefined);
   const [active, setActive] = useState<TooltipSource | null>(null);
   const [closing, setClosing] = useState(false);
   const [placement, setPlacement] = useState<TooltipPlacement | null>(null);
@@ -346,6 +350,7 @@ export function AccessibleTooltipLayer(): ReactElement | null {
         finishClose();
       }, EXIT_DURATION_MS) as unknown as number;
     }
+    closeTooltipRef.current = close;
 
     function open(source: TooltipSource): void {
       clearTimers();
@@ -643,6 +648,7 @@ export function AccessibleTooltipLayer(): ReactElement | null {
           if (bubbleRef.current) {
             const next = resolvePlacement(current.target, bubbleRef.current);
             if (next) setPlacement(next);
+            else close(true);
           }
         })
       : null;
@@ -680,6 +686,7 @@ export function AccessibleTooltipLayer(): ReactElement | null {
       if (current) removeDescription(current.target, tooltipId);
       restoreNativeTitle();
       activeRef.current = null;
+      closeTooltipRef.current = () => undefined;
     };
   }, [tooltipId]);
 
@@ -694,16 +701,23 @@ export function AccessibleTooltipLayer(): ReactElement | null {
       if (!observedTarget.isConnected) return;
       const next = resolvePlacement(observedTarget, observedBubble);
       if (next) setPlacement(next);
+      else closeTooltipRef.current(true);
     }
 
     updatePlacement();
-    if (typeof ResizeObserver !== "function") return;
-    const observer = new ResizeObserver(updatePlacement);
-    observer.observe(observedTarget);
-    observer.observe(observedBubble);
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(updatePlacement) : null;
+    observer?.observe(observedTarget);
+    observer?.observe(observedBubble);
     const controlled = controlledPopupElement(observedTarget);
-    if (controlled) observer.observe(controlled);
-    return () => observer.disconnect();
+    if (controlled) observer?.observe(controlled);
+    const quickAccess = target.ownerDocument.querySelector(QUICK_ACCESS_DESKTOP_SELECTOR);
+    const moveObserver = quickAccess && !quickAccess.contains(target) && typeof MutationObserver === "function"
+      ? new MutationObserver(updatePlacement) : null;
+    if (quickAccess && !quickAccess.contains(target)) {
+      observer?.observe(quickAccess);
+      moveObserver?.observe(quickAccess, { attributes: true, attributeFilter: ["style", "hidden", "inert", "data-minimized"] });
+    }
+    return () => { observer?.disconnect(); moveObserver?.disconnect(); };
   }, [active]);
 
   if (!active || typeof document === "undefined") return null;

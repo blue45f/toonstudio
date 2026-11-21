@@ -681,6 +681,7 @@ apps/web/src/domains/creator/studio-color-range-worker-client.test.ts
 apps/web/src/domains/creator/studio-comment-editor-selection.test.ts
 apps/web/src/domains/creator/studio-companion-browser-harness-boundary.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingAppBar.test.tsx
+apps/web/src/domains/creator/studio-cuttoon-editor/StudioQuickAccessTooltip.test.tsx
 apps/web/src/domains/creator/studio-cuttoon-editor/runtime/bg3d-six-pass
 apps/web/src/domains/creator/studio-cuttoon-editor/runtime/history/studio-command-journal-identity.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal-sequence-identity.test.ts
@@ -739,6 +740,7 @@ apps/web/src/domains/creator/studio-shell/StudioAssetGovernancePanel.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioMarketplaceSellerPanel.async-ownership.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioProjectAssistantPanel.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioProjectCreatePage.test.tsx
+apps/web/src/domains/creator/studio-shell/StudioProjectLibraryPage.duplication.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioProjectLibraryPage.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioQuickStart.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioRolePersonalizationCenter.test.tsx
@@ -958,8 +960,11 @@ scripts/lib/studio-preview-navigation-settlement.test.ts
 scripts/lib/studio-quick-brush-interactions.test.ts
 scripts/lib/studio-shell-readiness.test.ts
 scripts/lib/studio-smart-shape-visible-grid.test.ts
+scripts/lib/studio-soak-browser-launch.test.ts
 scripts/lib/studio-soak-desktop-pen.test.ts
 scripts/lib/studio-soak-evidence.test.ts
+scripts/lib/studio-soak-first-contact-trace.test.ts
+scripts/lib/studio-soak-gpu-diagnostic-metadata.test.ts
 scripts/lib/studio-soak-layer-count.test.ts
 scripts/lib/studio-soak-pointer-latency.test.ts
 scripts/lib/studio-soak-pointer-route.test.ts

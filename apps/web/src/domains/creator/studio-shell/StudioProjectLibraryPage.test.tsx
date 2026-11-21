@@ -190,34 +190,6 @@ describe("StudioProjectLibraryPage", () => {
     expect(within(dialog).getByRole("link", { name: /개인 드라이브|Personal drive/u })).toBeTruthy();
   });
 
-  it("creates a usable temporary duplicate", async () => {
-    createStudioProject(window.localStorage, {
-      id: "series-alpha",
-      title: "작품 A",
-      kind: "webtoon",
-      createdAt: "2026-09-12T00:00:00.000Z",
-    });
-
-    render(
-      <MemoryRouter initialEntries={["/studio"]}>
-        <StudioProjectLibraryPage />
-      </MemoryRouter>,
-    );
-
-    fireEvent.click(await screen.findByRole("button", { name: /작품 A 복제|Duplicate 작품 A/u }));
-    await waitFor(() => {
-      // 라이브러리 첫 진입 때 예제·샘플 프로젝트가 함께 심기므로, 전체 개수가 아니라
-      // 작품 A 계열(원본 + 복사본)만 센다.
-      expect(
-        readStudioProjectLibrary(window.localStorage).projects
-          .filter((project) => project.title.startsWith("작품 A")),
-      ).toHaveLength(2);
-    });
-    await waitFor(() => {
-      expect(within(workCard("작품 A 복사본")).getByText("작품 A 복사본")).toBeTruthy();
-    });
-  });
-
   it("renders the latest autosaved page as the My work thumbnail", async () => {
     const project = createStudioProject(window.localStorage, {
       id: "series-preview",
