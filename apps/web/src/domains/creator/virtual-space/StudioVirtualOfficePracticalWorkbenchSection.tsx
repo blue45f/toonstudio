@@ -241,7 +241,7 @@ export function StudioVirtualOfficePracticalWorkbenchSection({
           </div>
           <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-panel">
             <div
-              className="h-full rounded-full bg-accent transition-all duration-200"
+              className="h-full rounded-full bg-accent transition-[width] duration-200 motion-reduce:transition-none"
               style={{ width: `${quotaPct}%` }}
             />
           </div>

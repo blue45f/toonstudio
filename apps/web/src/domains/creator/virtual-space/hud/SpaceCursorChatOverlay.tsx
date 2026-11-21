@@ -43,10 +43,18 @@ export function SpaceCursorChatOverlay({
   }, []);
 
   useEffect(() => {
+    if (!enabled && open) {
+      setOpen(false);
+      setText("");
+      onTypingChange?.(false);
+    }
+  }, [enabled, onTypingChange, open]);
+
+  useEffect(() => {
     if (!enabled) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing || event.metaKey || event.ctrlKey || event.altKey) return;
-      const target = event.target as HTMLElement | null;
+      const target = event.target instanceof Element ? event.target : null;
       const editingText = Boolean(target?.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]'));
       if (event.key === "/" && !open && !editingText) {
         event.preventDefault();
@@ -134,7 +142,7 @@ export function SpaceCursorChatOverlay({
                 setOpen(false);
                 onTypingChange?.(false);
               }}
-              className="min-h-9 rounded-lg border border-line bg-card px-2 text-[11px] font-medium text-fg-2 hover:border-accent hover:text-fg"
+              className="min-h-11 rounded-lg border border-line bg-card px-2.5 text-[11px] font-medium text-fg-2 hover:border-accent hover:text-fg"
             >
               {bt(stamp.labelKo, stamp.labelEn)}
             </button>

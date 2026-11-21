@@ -3,6 +3,10 @@
  */
 import type { StudioVirtualSpaceActivity } from "../studio-virtual-space-model";
 import { STUDIO_USER_STATUSES, userStatusBadge, type StudioUserStatus } from "../studio-virtual-space-user-status";
+import {
+  formatStudioWebtoonWorkStatusBadge,
+  type StudioWebtoonWorkStatusId,
+} from "../studio-virtual-space-work-status";
 
 const ACTIVITY_LABELS: Readonly<Record<Exclude<StudioVirtualSpaceActivity, "available">, { readonly ko: string; readonly en: string }>> = Object.freeze({
   focused: { ko: "🎯 집중 작업 중", en: "🎯 Focusing" },
@@ -14,7 +18,12 @@ export function studioUserStatusLabel(
   status: StudioUserStatus | undefined,
   activity: StudioVirtualSpaceActivity,
   language: "ko" | "en",
+  workStatusId?: StudioWebtoonWorkStatusId | null,
 ): string | null {
+  if (workStatusId && status !== "in-meeting" && status !== "presenting") {
+    const workBadge = formatStudioWebtoonWorkStatusBadge(workStatusId, language);
+    if (workBadge) return workBadge;
+  }
   if (status && status !== "available" && STUDIO_USER_STATUSES.has(status)) {
     const badge = userStatusBadge(status);
     return `${badge.emoji} ${language === "en" ? badge.en : badge.ko}`;

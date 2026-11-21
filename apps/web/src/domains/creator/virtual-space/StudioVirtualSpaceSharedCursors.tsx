@@ -169,7 +169,9 @@ function ClickRipple({
       <span
         className={cn(
           "absolute block h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2",
-          reducedMotion ? "opacity-70" : "animate-ping",
+          reducedMotion
+            ? "opacity-70"
+            : "opacity-80 transition-[opacity,transform] duration-500 motion-reduce:transition-none",
         )}
         style={{ borderColor: color }}
       />

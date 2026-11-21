@@ -45,6 +45,7 @@ import { Office2dRenderer, type Office2dPropVisual, type Office2dRendererHost } 
 import { office2dSceneFor, type Office2dScene, type Office2dSeatVisual } from "./office2d-scene";
 import { Office2dSelfPose } from "./office2d-self-pose";
 import { studioUserStatusLabel } from "./office2d-status";
+import { readStudioWebtoonWorkStatus } from "../studio-virtual-space-work-status";
 import { Office2dTeleportVeil } from "./office2d-teleport-veil";
 import { office2dAccentFor, office2dCharacterForAvatar, office2dCharacterForNpc, office2dHashIndex, type Office2dCharacterKey } from "./office2d-sprite-catalog";
 import { kickOffice2dNearbyProp, office2dDaylight, office2dPathSpeedMultiplier, Office2dStageExtensions } from "./office2d-stage-extensions";
@@ -331,7 +332,7 @@ export class Office2dRuntime {
       if (burst) this.extensions.pushComicBurst(burst, this.self.accent, this.self.x, this.self.y - 48, nowMs);
     }
     const effect = bridge.consumeEnvironmentEffect();
-    if (effect) this.particles.emit("confetti", effect.point.x, effect.point.y - 30, 24, 1.2);
+    if (effect && !this.options.getReducedMotion()) this.particles.emit("confetti", effect.point.x, effect.point.y - 30, 24, 1.2);
   }
 
   private teleport(point: StudioVirtualSpacePoint): void {
@@ -466,7 +467,7 @@ export class Office2dRuntime {
     this.self.character = this.avatarCharacter(snapshot.self.avatarIndex, this.options.selfIdentity);
     this.self.bubble = snapshot.selfChatBubble && snapshot.selfChatBubble.expiresAt > nowMs ? snapshot.selfChatBubble.text : snapshot.self.bubble ?? null;
     this.self.typing = snapshot.self.typing === true;
-    this.self.status = studioUserStatusLabel(snapshot.self.userStatus, snapshot.self.activity, this.options.getLanguage());
+    this.self.status = studioUserStatusLabel(snapshot.self.userStatus, snapshot.self.activity, this.options.getLanguage(), readStudioWebtoonWorkStatus());
 
     // 5) 엔진 이벤트·스테이지 확장
     const stageProps = this.options.getStageProps?.();

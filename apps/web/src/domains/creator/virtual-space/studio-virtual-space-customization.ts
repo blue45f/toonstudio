@@ -309,10 +309,14 @@ function safeRead(key: string): unknown {
   try { const raw = window.localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch { return null; }
 }
 
+export const STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION_EVENT =
+  "toonstudio:virtual-space:character-customization-change";
+
 function writeCharacterCustomization(value: StudioVirtualCharacterCustomization): boolean {
   if (typeof window === "undefined") return false;
   try {
     window.localStorage.setItem(CHARACTER_STORAGE_KEY, JSON.stringify(value));
+    window.dispatchEvent(new CustomEvent(STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION_EVENT, { detail: value }));
     return true;
   } catch {
     return false;

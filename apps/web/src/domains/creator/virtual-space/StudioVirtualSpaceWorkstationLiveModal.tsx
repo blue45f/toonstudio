@@ -27,6 +27,7 @@ import {
   type Illustrated2dWorkstationPlacement,
 } from "./studio-virtual-space-illustrated-2d-runtime";
 
+import { readOffice2dSoundMuted } from "./office2d/office2d-stage-extensions";
 import { canvasPoint, drawWorkstationSheet, drawWorkstationStroke } from "./studio-workstation-drawing";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { WORKSTATION_STAGES, WORKSTATION_STAMPS, type WorkstationCutId, type WorkstationStroke } from "./studio-workstation-notebook";
@@ -80,7 +81,7 @@ const SFX_PROFILES: Readonly<
 function playProceduralWorkstationSfx(
   kind: "pen" | "stamp" | "boom" | "slash" | "heartbeat" | "espresso" | "handoff",
 ): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || readOffice2dSoundMuted()) return;
   const AudioCtx =
     window.AudioContext ||
     (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -366,7 +367,7 @@ function WorkstationNotebookEditor({ station, onClose, onSelectStation, projectC
         </div>
 
         <span className="text-[11px] font-semibold text-accent">
-          ✦ 2D 월드 특수효과(VFX) & WebAudio 실시간 연동 중
+          ✦ 2D 스튜디오 효과 · 사운드 실시간 연동 중
         </span>
       </div>
 
@@ -606,7 +607,7 @@ function WorkstationNotebookEditor({ station, onClose, onSelectStation, projectC
                     웹툰 효과음 · {effectNotice}
                   </strong>
                   <p className="text-[11px] text-fg-2">
-                    클릭 시 WebAudio 실시간 효과음과 함께 2D 캐릭터 머리 위에 역동적인 코믹 SFX 스탬프·파티클이 터집니다.
+                    클릭 시 실시간 효과음과 함께 2D 캐릭터 머리 위에 역동적인 코믹 효과음 스탬프·파티클이 터집니다.
                   </p>
                   <div className="grid grid-cols-2 gap-1.5">
                     <button
@@ -661,7 +662,7 @@ function WorkstationNotebookEditor({ station, onClose, onSelectStation, projectC
           <div className="rounded-xl border border-line bg-card p-3">
             <strong className="mb-2 flex items-center gap-1.5 text-xs font-bold text-fg">
               <Users className="h-3.5 w-3.5 text-accent" />
-              v15 슬림 5.5등신 다중 표정·액션 크리에이터
+              다중 표정·액션 크리에이터 캐스트
             </strong>
             <div className="grid grid-cols-4 gap-1.5">
               {(

@@ -206,7 +206,7 @@ export function SpaceInlineProfilePopover({
                           <button
                             type="button"
                             onClick={() => onHostAction({ action: "mute-peer", targetSessionId: peer.sessionId, muted: !muted })}
-                            className="inline-flex min-h-9 items-center gap-1 rounded-md border border-line px-2 text-[11px]"
+                            className="inline-flex min-h-11 items-center gap-1 rounded-md border border-line px-2.5 text-[11px]"
                           >
                             <VolumeX size={12} aria-hidden />
                             {muted ? bt("음소거 해제", "Unmute") : bt("음소거", "Mute")}
@@ -214,7 +214,7 @@ export function SpaceInlineProfilePopover({
                           <button
                             type="button"
                             onClick={() => onHostAction({ action: "kick-peer", targetSessionId: peer.sessionId })}
-                            className="min-h-9 rounded-md border border-line px-2 text-[11px] text-bad"
+                            className="min-h-11 rounded-md border border-line px-2.5 text-[11px] text-bad"
                           >
                             {bt("내보내기", "Remove")}
                           </button>
