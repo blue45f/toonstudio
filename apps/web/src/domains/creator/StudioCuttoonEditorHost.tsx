@@ -1293,7 +1293,8 @@ import {
   type StudioGpuPendingDrawAuthority,
   pruneStudioGpuPendingAuthority,
 } from "./render/studio-webgpu-pending-authority";
-import { createStudioLiveStrokeGpuAudit, studioLiveSourceJournalFailureReason } from "./render/studio-live-stroke-gpu-audit";
+import { createStudioLiveStrokeGpuAppend } from "./render/studio-live-stroke-gpu-append";
+import { createStudioLiveStrokeGpuAudit } from "./render/studio-live-stroke-gpu-audit";
 import type {
   StudioLiveStrokeGpuFailureReason,
   StudioLiveStrokeUnavailableReason,
@@ -9491,6 +9492,10 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
         auditReceipt.strokeId,
         receipt.requestId,
       );
+      gpuLiveSourceJournalAppend.flushGpuLiveSourceJournalAfterReceipt(
+        auditReceipt.strokeId,
+        receipt.requestId,
+      );
       return;
     }
     if (gpuLiveInkPinnedRef.current) {
@@ -9999,13 +10004,13 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     requestId: string,
   ): void {
     if (gpuFinalReceiptRequestIdsRef.current.get(strokeId) !== requestId) return;
+    if (!hasExactSelectedGpuFinalReceipt(strokeId)) return;
     if (gpuFinalReceiptStrokeRef.current?.id === strokeId) {
       // An asynchronous post-contact receipt still owns the pointer-down watchdog epoch. Feed the
       // exact identity before durability work; stale receipts cannot clear this deadline.
       gpuPinReceiptWatchdog().receipt(requestId);
       applyLiveStrokeBackendPresentationEffects();
     }
-    if (!hasExactSelectedGpuFinalReceipt(strokeId)) return;
     globalThis.queueMicrotask(() => {
       const pending = pendingStrokeCommitsRef.current;
       const stroke = pending?.strokes.find((candidate) => candidate.id === strokeId);
@@ -10644,64 +10649,25 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     gpuLiveAcceptedRequestIdRef.current = outcome.requestId;
     return true;
   }
-  function appendGpuLiveSourceJournalSuffix(
-    el: DrawEl,
-    sealEndpoint = false
-  ): "advanced" | "retained" | "rejected" {
-    const journal = gpuLiveSourceJournalRef.current;
-    const handle = webGpuCanvasHandleRef.current;
-    if (!journal || !handle) {
-      failSelectedGpuLiveInk("surface-lost", el.id);
-      return "rejected";
-    }
-    const advanced = advanceStudioGpuLiveSourceJournal(journal, {
-      // Rebuild only the O(1) paint identity from the current DrawEl. A mid-contact style or epoch
-      // mutation therefore rejects before the journal reads even one source-array suffix slot.
-      identity: gpuLiveSourceJournalIdentityFor(
-        el,
-        journal.identity.epoch,
-        journal.identity.variations
-      ),
-      points: el.points,
-      pressures: el.pressures,
-      sealEndpoint,
-    });
-    if (advanced.status === "rejected") {
-      failSelectedGpuLiveInk(studioLiveSourceJournalFailureReason(advanced.reason), el.id);
-      return "rejected";
-    }
-    if (advanced.status === "retained") {
-      gpuLiveSourceJournalRef.current = advanced.state;
-      return "retained";
-    }
-
-    const firstStrokeIndex = gpuLiveSourceJournalFirstStrokeIndexRef.current;
-    // Grows the retained journal in place, so the presented prefix survives this submission.
-    if (!prepareLiveStrokeGpuSubmission(el.id, "append")) {
-      failSelectedGpuLiveInk("request-failed", el.id);
-      return "rejected";
-    }
-    const outcome = handle.appendPinnedJournalSuffixBatch({
-      patches: advanced.suffixes.map((suffix, variationIndex) => ({
-        strokeIndex: firstStrokeIndex + variationIndex,
-        previousPointCount: suffix.previousRenderedPointCount,
-        suffixPoints: suffix.points,
-        suffixPressures: suffix.pressures,
-      })),
-    });
-    if (outcome.status === "rejected") {
-      failSelectedGpuLiveInk("request-failed", el.id);
-      return "rejected";
-    }
-    gpuLiveSourceJournalRef.current = advanced.state;
-    if (!registerLiveStrokeGpuRequest(el.id, outcome.requestId, "append")) {
-      failSelectedGpuLiveInk("surface-lost", el.id);
-      return "rejected";
-    }
-    gpuLiveAcceptedRequestIdRef.current = outcome.requestId;
-    armGpuPinnedRequestWatchdog(outcome.requestId, STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS);
-    applyLiveStrokeBackendPresentationEffects();
-    return "advanced";
+  const gpuLiveSourceJournalAppend = createStudioLiveStrokeGpuAppend({
+    gpuLiveSourceJournalRef,
+    gpuLiveSourceJournalFirstStrokeIndexRef,
+    liveDraftVisualRef,
+    gpuLiveAcceptedRequestIdRef,
+    gpuLiveInkPinnedRef,
+    webGpuCanvasHandleRef,
+    liveStrokeBackendAuditActiveIdRef,
+    liveStrokeBackendAuditSessionsRef,
+    gpuLiveSourceJournalIdentityFor,
+    failSelectedGpuLiveInk,
+    prepareLiveStrokeGpuSubmission,
+    registerLiveStrokeGpuRequest,
+    armGpuPinnedRequestWatchdog,
+    applyLiveStrokeBackendPresentationEffects,
+    gpuPinReceiptWatchdog,
+  });
+  function appendGpuLiveSourceJournalSuffix(el: DrawEl, sealEndpoint = false) {
+    return gpuLiveSourceJournalAppend.appendGpuLiveSourceJournalSuffix(el, sealEndpoint);
   }
   const settleGpuLiveStroke = (source: DrawEl, finished: DrawEl): boolean => {
     if (appendGpuLiveSourceJournalSuffix(source, true) === "rejected") {

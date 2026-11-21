@@ -632,6 +632,7 @@ apps/web/src/domains/creator/render/studio-raster-source-lease.test.ts
 apps/web/src/domains/creator/render/studio-raster-thumbnail-source.test.ts
 apps/web/src/domains/creator/render/studio-thumbnail-native-blend.test.tsx
 apps/web/src/domains/creator/render/studio-webgpu-advanced-live-integration.test.ts
+apps/web/src/domains/creator/render/studio-webgpu-live-receipt-starvation.test.ts
 apps/web/src/domains/creator/review-capture
 apps/web/src/domains/creator/review-export
 apps/web/src/domains/creator/review-handoff
