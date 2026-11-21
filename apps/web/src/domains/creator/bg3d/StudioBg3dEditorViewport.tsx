@@ -18,12 +18,14 @@ import { StudioBg3dViewFrameClear } from "./StudioBg3dViewFrameClear";
 import { StudioBg3dViewportReadinessOverlay } from "./StudioBg3dViewportReadinessOverlay";
 import { acceptStudioBg3dViewportRenderer, isStudioBg3dCanvasFactoryPending } from "./studio-bg3d-canvas-renderer-admission";
 import { createStudioBg3dPointerEvents } from "./studio-bg3d-pointer-events";
+import { useStudioBg3dProSuiteHint } from "./studio-bg3d-prosuite-hint";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 const StudioBg3dTurntableController = lazyRetry(() => import("./StudioBg3dTurntableController").then((m) => ({ default: m.StudioBg3dTurntableController })), "StudioBg3dTurntableController");
 const StudioBg3dTurntableMotion = lazyRetry(() => import("./StudioBg3dTurntableMotion").then((m) => ({ default: m.StudioBg3dTurntableMotion })), "StudioBg3dTurntableMotion");
 
 export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<string, any>; simplified?: boolean }) {
+  const proSuiteHint = useStudioBg3dProSuiteHint();
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View, Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
     EyeOff, Globe, Hexagon, Home, Layers, LayoutTemplate, Loader2, LocateFixed, Lock, Magnet, Maximize2, Move, MoveDown, PencilLine, Redo2, RotateCcw, RotateCw, Ruler, Save, ScanLine,
@@ -942,15 +944,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                       <Aperture size={16} aria-hidden />
                     </button>
                   </StudioToolHintTarget>
-                  <StudioToolHintTarget
-                    hint={{
-                      id: "bg3d:viewport:prosuite",
-                      title: "웹툰 컷 제작",
-                      description: "장면 화각을 조절하고 카메라 컷을 저장한 뒤, 선택한 컷을 레이어별로 출력합니다.",
-                      preview: "camera-orbit",
-                    }}
-                    preferredSide="left"
-                  >
+                  <StudioToolHintTarget hint={proSuiteHint} preferredSide="left">
                     <button
                       type="button"
                       aria-label="웹툰 프로 툴 열기"

@@ -29,7 +29,16 @@ import {
   type BakedManuscriptCutLayer,
   type LiveInkPreviewMode,
   type Scene3DCaptureSnapshot,
+  type Stage3DMode,
 } from "./studio-bg3d-live-ink-bake-bridge";
+import type {
+  StudioBg3dWebtoonAtmospherePreset,
+  StudioBg3dWebtoonAtmospherePresetId,
+} from "./studio-bg3d-lighting-studio";
+import { StudioBg3dLiveInkStagePane } from "./StudioBg3dLiveInkStagePane";
+import { StudioBg3dStageStepperBar } from "./StudioBg3dStageStepperBar";
+import type { StudioBg3dSectionCapSummary } from "./studio-bg3d-section-cap-coordination";
+import { StudioBg3dWebtoonAtmosphereStrip } from "./StudioBg3dWebtoonAtmosphereStrip";
 import {
   DEFAULT_STUDIO_BG3D_PROFESSIONAL_WORKSPACE_LAYOUT,
   STUDIO_BG3D_INSPECTOR_WIDTH_MAX,
@@ -56,7 +65,11 @@ import {
   type StudioBg3dWallCutawayChangeEvent,
 } from "./StudioBg3dHeroCutawaySection";
 import type { HeroBg3dDeliveryResolution } from "./studio-bg3d-hero-tier-selector";
-import type { Bg3dCutawayCameraInput } from "./studio-bg3d-wall-cutaway-runtime";
+import {
+  DEFAULT_BG3D_WALL_CUTAWAY_CONFIG,
+  type Bg3dCutawayCameraInput,
+  type Bg3dWallCutawayConfig,
+} from "./studio-bg3d-wall-cutaway-runtime";
 
 const LazyStudioSplitWipeOverlay = lazy(() =>
   import("../studio-cuttoon-editor/StudioSplitWipeOverlay").then((m) => ({
@@ -93,6 +106,17 @@ interface StudioBg3dProfessionalWorkspaceProps {
   readonly heroDeviceMemoryGb?: number;
   readonly onSelectHeroAsset?: (resolution: HeroBg3dDeliveryResolution) => void;
   readonly onWallCutawayChange?: (event: StudioBg3dWallCutawayChangeEvent) => void;
+  readonly wallCutawayConfig?: Bg3dWallCutawayConfig;
+  readonly onWallCutawayConfigChange?: (config: Bg3dWallCutawayConfig) => void;
+  readonly sectionCapSummary?: StudioBg3dSectionCapSummary | null;
+  readonly activeWebtoonAtmosphereId?: StudioBg3dWebtoonAtmospherePresetId | null;
+  readonly onApplyWebtoonAtmosphere?: (preset: StudioBg3dWebtoonAtmospherePreset) => void;
+  readonly isLiveCapturing?: boolean;
+  readonly onRequestLiveCapture?: (
+    stage: Stage3DMode,
+  ) => Promise<Scene3DCaptureSnapshot | null> | Scene3DCaptureSnapshot | null;
+  readonly lastBakedLayer?: BakedManuscriptCutLayer | null;
+  readonly onRestoreReshootFromBakedLayer?: (layer: BakedManuscriptCutLayer) => void;
   readonly onBakeToManuscriptCut?: (layer: BakedManuscriptCutLayer) => void;
   readonly onInsertShelfAsset?: (entry: AssetShelfEntry) => void;
   readonly onGroundSnap?: (result: GroundSnapResult) => void;
@@ -153,6 +177,16 @@ function readCutHostAddModel(
     : null;
 }
 
+function readCutHostApplyAtmosphere(
+  host: unknown,
+): ((preset: StudioBg3dWebtoonAtmospherePreset) => void) | null {
+  if (typeof host !== "object" || host === null) return null;
+  const candidate = (host as { readonly applyWebtoonAtmospherePreset?: unknown }).applyWebtoonAtmospherePreset;
+  return typeof candidate === "function"
+    ? (candidate as (preset: StudioBg3dWebtoonAtmospherePreset) => void)
+    : null;
+}
+
 export function StudioBg3dProfessionalWorkspace({
   outliner,
   viewport,
@@ -169,6 +203,15 @@ export function StudioBg3dProfessionalWorkspace({
   heroDeviceMemoryGb,
   onSelectHeroAsset,
   onWallCutawayChange,
+  wallCutawayConfig: controlledWallCutawayConfig,
+  onWallCutawayConfigChange,
+  sectionCapSummary = null,
+  activeWebtoonAtmosphereId: controlledAtmosphereId = null,
+  onApplyWebtoonAtmosphere,
+  isLiveCapturing = false,
+  onRequestLiveCapture,
+  lastBakedLayer: externalLastBakedLayer = null,
+  onRestoreReshootFromBakedLayer,
   onBakeToManuscriptCut,
   onInsertShelfAsset,
   onGroundSnap,
@@ -190,8 +233,22 @@ export function StudioBg3dProfessionalWorkspace({
   const [liveInkMode, setLiveInkMode] = useState<LiveInkPreviewMode>(defaultLiveInkMode);
   const [splitWipeRatio, setSplitWipeRatio] = useState<number>(0.5);
   const [bakeStatusMessage, setBakeStatusMessage] = useState<string | null>(null);
+  const [localAtmosphereId, setLocalAtmosphereId] = useState<StudioBg3dWebtoonAtmospherePresetId | null>(null);
+  const [localWallCutawayConfig, setLocalWallCutawayConfig] = useState<Bg3dWallCutawayConfig>(
+    DEFAULT_BG3D_WALL_CUTAWAY_CONFIG,
+  );
+  const [localBakedLayer, setLocalBakedLayer] = useState<BakedManuscriptCutLayer | null>(null);
+  const [bakeFlashActive, setBakeFlashActive] = useState(false);
   const hydratedStorageKeyRef = useRef(canonicalStorageKey);
   const resizeGestureRef = useRef<ResizeGesture | null>(null);
+  const bakeFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeAtmosphereId = controlledAtmosphereId ?? localAtmosphereId;
+  const effectiveWallCutawayConfig = controlledWallCutawayConfig ?? localWallCutawayConfig;
+  const effectiveLastBakedLayer = externalLastBakedLayer ?? localBakedLayer;
+
+  useEffect(() => () => {
+    if (bakeFlashTimerRef.current !== null) clearTimeout(bakeFlashTimerRef.current);
+  }, []);
 
   const handleTriggerGroundSnap = useCallback(() => {
     const snap = computeGroundSnapTransform({
@@ -241,6 +298,18 @@ export function StudioBg3dProfessionalWorkspace({
     return () => window.removeEventListener("keydown", onWindowKeyDown);
   }, [handleTriggerGroundSnap]);
 
+  const triggerLiveCaptureIfNeeded = useCallback(
+    (stage: Stage3DMode) => {
+      if (!onRequestLiveCapture) return;
+      void Promise.resolve(onRequestLiveCapture(stage)).catch(() => {
+        setBakeStatusMessage(
+          bi("3D 라이브 선화 캡처에 실패했습니다. 뷰포트를 확인한 뒤 다시 시도해 주세요.", "Live ink capture failed."),
+        );
+      });
+    },
+    [onRequestLiveCapture],
+  );
+
   const handleSelectShelfStage = (stage: Bg3dShelfStageId) => {
     setActiveStage(stage);
     if (stage === "build") {
@@ -252,7 +321,46 @@ export function StudioBg3dProfessionalWorkspace({
     } else {
       setLayout(applyStudioBg3dWorkspacePreset("output"));
       setLiveInkMode("split-wipe");
+      triggerLiveCaptureIfNeeded("live-ink");
     }
+  };
+
+  const handleSelectLiveInkMode = (mode: LiveInkPreviewMode) => {
+    setLiveInkMode(mode);
+    if (mode !== "shaded-3d") {
+      setActiveStage("live-ink");
+      if (!captureSnapshot) triggerLiveCaptureIfNeeded("live-ink");
+    }
+  };
+
+  const handleApplyWebtoonAtmosphere = (preset: StudioBg3dWebtoonAtmospherePreset) => {
+    setLocalAtmosphereId(preset.id);
+    if (onApplyWebtoonAtmosphere) onApplyWebtoonAtmosphere(preset);
+    else readCutHostApplyAtmosphere(cutHost)?.(preset);
+    setBakeStatusMessage(
+      bi(
+        `“${preset.labelKo}” 분위기 적용 — 안개 ${Math.round(preset.fog.density * 100)}% · 외곽선 ${preset.inkLineWeightPx.toFixed(1)}px`,
+        `Applied "${preset.labelEn}" — fog ${Math.round(preset.fog.density * 100)}% · ink ${preset.inkLineWeightPx.toFixed(1)}px`,
+      ),
+    );
+  };
+
+  const handleWallCutawayConfigChange = (next: Bg3dWallCutawayConfig) => {
+    setLocalWallCutawayConfig(next);
+    onWallCutawayConfigChange?.(next);
+  };
+
+  const handleToggleWallCutaway = () => {
+    const next: Bg3dWallCutawayConfig = {
+      ...effectiveWallCutawayConfig,
+      enabled: !effectiveWallCutawayConfig.enabled,
+    };
+    handleWallCutawayConfigChange(next);
+    setBakeStatusMessage(
+      next.enabled
+        ? bi("가림 벽 자동 숨김을 켰습니다. 카메라 앞 벽을 자동으로 투명화합니다.", "Auto-hide occluding walls enabled.")
+        : bi("가림 벽 자동 숨김을 껐습니다. 모든 벽을 원래대로 표시합니다.", "Auto-hide occluding walls disabled."),
+    );
   };
 
   const handleSelectHeroAsset = (resolution: HeroBg3dDeliveryResolution) => {
@@ -286,13 +394,28 @@ export function StudioBg3dProfessionalWorkspace({
     );
   };
 
-  const handleBakeToManuscriptCut = () => {
-    if (!captureSnapshot) {
+  const triggerBakeFlash = () => {
+    setBakeFlashActive(true);
+    if (bakeFlashTimerRef.current !== null) clearTimeout(bakeFlashTimerRef.current);
+    bakeFlashTimerRef.current = setTimeout(() => setBakeFlashActive(false), 620);
+  };
+
+  const handleBakeToManuscriptCut = async () => {
+    let resolvedCapture = captureSnapshot;
+    if (!resolvedCapture && onRequestLiveCapture) {
+      try {
+        resolvedCapture = await Promise.resolve(onRequestLiveCapture(activeStage));
+      } catch {
+        setBakeStatusMessage(bi("3D 뷰포트 실캡처 중 오류가 발생했습니다. 다시 시도해 주세요.", "Live viewport capture failed."));
+        return;
+      }
+    }
+    if (!resolvedCapture) {
       setBakeStatusMessage(bi("3D 뷰포트 캡처 스냅샷을 먼저 준비해 주세요.", "Prepare a 3D viewport capture snapshot first."));
       return;
     }
     const result = buildBakedManuscriptCutLayer({
-      capture: captureSnapshot,
+      capture: resolvedCapture,
       targetDocumentId: targetDocumentId ?? "",
       targetCutIndex,
       previewMode: liveInkMode,
@@ -302,7 +425,9 @@ export function StudioBg3dProfessionalWorkspace({
       setBakeStatusMessage(result.messageKo);
       return;
     }
+    setLocalBakedLayer(result.layer);
     onBakeToManuscriptCut?.(result.layer);
+    triggerBakeFlash();
     setBakeStatusMessage(
       bi(
         `컷 #${result.layer.targetCutIndex + 1}에 비파괴 3D 레이어(출처 소재 ${result.layer.rightsBomAssetIds.length}건)를 반영했습니다.`,
@@ -460,85 +585,15 @@ export function StudioBg3dProfessionalWorkspace({
           </button>
         ))}
         <span className="mx-0.5 hidden h-5 w-px bg-line xl:inline-block" aria-hidden />
-        <button
-          type="button"
-          aria-pressed={layout.outlinerVisible}
-          className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft/50 aria-pressed:text-accent xl:inline-flex"
-          onClick={() => togglePanel("outliner")}
-        >
-          {bi("계층", "Hierarchy")}
-        </button>
-        <button
-          type="button"
-          aria-pressed={layout.inspectorVisible}
-          className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft/50 aria-pressed:text-accent xl:inline-flex"
-          onClick={() => togglePanel("inspector")}
-        >
-          {bi("속성", "Inspector")}
-        </button>
-        <button
-          type="button"
-          className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-accent xl:inline-flex"
-          onClick={() => setLayout((current) => swapStudioBg3dWorkspaceDockOrder(current))}
-        >
-          {bi("좌우 바꾸기", "Swap sides")}
-        </button>
-        <button
-          type="button"
-          aria-pressed={assetShelfOpen}
-          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent aria-pressed:shadow-[inset_2px_0_0_var(--color-accent)]"
-          onClick={() => setAssetShelfOpen((current) => !current)}
-        >
-          {bi("에셋 쉘프", "Asset shelf")}
-        </button>
-        <button
-          type="button"
-          aria-pressed={axis180Locked}
-          data-testid="studio-bg3d-axis180-lock-btn"
-          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
-          onClick={() => {
-            const next = !axis180Locked;
-            setAxis180Locked(next);
-            setBakeStatusMessage(
-              next
-                ? bi("180° 리버스샷 축 잠금을 켰습니다.", "180° reverse-shot axis locked.")
-                : bi("180° 리버스샷 축 잠금을 풀었습니다.", "180° reverse-shot axis unlocked."),
-            );
-          }}
-        >
-          {bi("180° 잠금", "180° lock")}
-        </button>
-        <button
-          type="button"
-          data-testid="studio-bg3d-ground-snap-btn"
-          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-fg"
-          onClick={handleTriggerGroundSnap}
-        >
-          {bi("지면 접지 (X)", "Ground snap (X)")}
-        </button>
-        <button
-          type="button"
-          aria-pressed={radialPieOpen}
-          data-testid="studio-bg3d-radial-pie-btn"
-          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
-          onClick={() => setRadialPieOpen((prev) => !prev)}
-        >
-          {bi("3D 파이 메뉴 (Q)", "3D pie menu (Q)")}
-        </button>
-        <button
-          type="button"
-          aria-pressed={proStagingOpen}
-          data-testid="studio-bg3d-pro-staging-btn"
-          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
-          onClick={() => setProStagingOpen((prev) => !prev)}
-        >
-          {bi("연출·조명 도구", "Staging & lights")}
-        </button>
-        <div
-          role="group"
-          aria-label={bi("라이브 선화 미리보기 모드", "Live ink preview mode")}
-          className="inline-flex flex-wrap items-center gap-1"
-        >
+        <button type="button" aria-pressed={layout.outlinerVisible} className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft/50 aria-pressed:text-accent xl:inline-flex" onClick={() => togglePanel("outliner")}>{bi("계층", "Hierarchy")}</button>
+        <button type="button" aria-pressed={layout.inspectorVisible} className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft/50 aria-pressed:text-accent xl:inline-flex" onClick={() => togglePanel("inspector")}>{bi("속성", "Inspector")}</button>
+        <button type="button" className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-accent xl:inline-flex" onClick={() => setLayout((current) => swapStudioBg3dWorkspaceDockOrder(current))}>{bi("좌우 바꾸기", "Swap sides")}</button>
+        <button type="button" aria-pressed={assetShelfOpen} className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent aria-pressed:shadow-[inset_2px_0_0_var(--color-accent)]" onClick={() => setAssetShelfOpen((current) => !current)}>{bi("에셋 쉘프", "Asset shelf")}</button>
+        <button type="button" aria-pressed={axis180Locked} data-testid="studio-bg3d-axis180-lock-btn" className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent" onClick={() => { const next = !axis180Locked; setAxis180Locked(next); setBakeStatusMessage(next ? bi("180° 리버스샷 축 잠금을 켰습니다.", "180° reverse-shot axis locked.") : bi("180° 리버스샷 축 잠금을 풀었습니다.", "180° reverse-shot axis unlocked.")); }}>{bi("180° 잠금", "180° lock")}</button>
+        <button type="button" data-testid="studio-bg3d-ground-snap-btn" className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-fg" onClick={handleTriggerGroundSnap}>{bi("지면 접지 (X)", "Ground snap (X)")}</button>
+        <button type="button" aria-pressed={radialPieOpen} data-testid="studio-bg3d-radial-pie-btn" className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent" onClick={() => setRadialPieOpen((prev) => !prev)}>{bi("3D 파이 메뉴 (Q)", "3D pie menu (Q)")}</button>
+        <button type="button" aria-pressed={proStagingOpen} data-testid="studio-bg3d-pro-staging-btn" className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent" onClick={() => setProStagingOpen((prev) => !prev)}>{bi("연출·조명 도구", "Staging & lights")}</button>
+        <div role="group" aria-label={bi("라이브 선화 미리보기 모드", "Live ink preview mode")} className="inline-flex flex-wrap items-center gap-1">
           {LIVE_INK_MODE_ENTRIES.map((entry) => (
             <button
               key={entry.id}
@@ -546,72 +601,65 @@ export function StudioBg3dProfessionalWorkspace({
               aria-pressed={liveInkMode === entry.id}
               data-bg3d-live-ink-btn={entry.id}
               className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent aria-pressed:shadow-[inset_2px_0_0_var(--color-accent)]"
-              onClick={() => setLiveInkMode(entry.id)}
+              onClick={() => handleSelectLiveInkMode(entry.id)}
             >
               {bi(entry.ko, entry.en)}
             </button>
           ))}
           {liveInkMode === "split-wipe" ? (
             <label className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2">
-              <span data-testid="studio-bg3d-split-wipe-readout" className="tabular-nums">
-                {`${Math.round(splitWipeRatio * 100)}%`}
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={5}
-                value={Math.round(splitWipeRatio * 100)}
-                aria-label={bi("선화 분할 비교 비율", "Live ink split-wipe ratio")}
-                onChange={(event) =>
-                  setSplitWipeRatio(clampSplitWipeRatio(Number(event.currentTarget.value) / 100))
-                }
-                className="w-20 accent-accent"
-              />
+              <span data-testid="studio-bg3d-split-wipe-readout" className="tabular-nums">{`${Math.round(splitWipeRatio * 100)}%`}</span>
+              <input type="range" min={0} max={100} step={5} value={Math.round(splitWipeRatio * 100)} aria-label={bi("선화 분할 비교 비율", "Live ink split-wipe ratio")} onChange={(event) => setSplitWipeRatio(clampSplitWipeRatio(Number(event.currentTarget.value) / 100))} className="w-20 accent-accent" />
             </label>
           ) : null}
         </div>
-        {onBakeToManuscriptCut || captureSnapshot ? (
+        {onBakeToManuscriptCut || captureSnapshot || onRequestLiveCapture ? (
           <button
             type="button"
+            disabled={isLiveCapturing}
             data-testid="studio-bg3d-bake-to-cut"
-            onClick={handleBakeToManuscriptCut}
-            className="inline-flex min-h-11 items-center rounded-lg border border-accent bg-accent-soft px-3 text-xs font-semibold text-accent transition-colors hover:bg-accent hover:text-on-accent"
+            onClick={() => void handleBakeToManuscriptCut()}
+            className="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-accent bg-accent-soft px-3.5 text-xs font-bold text-accent transition-[transform,background-color,color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:bg-accent hover:text-on-accent active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:transform-none"
           >
-            {bi("원고 컷에 굽기", "Bake to manuscript cut")}
+            {isLiveCapturing ? bi("실캡처 중…", "Capturing…") : bi("원고 컷에 굽기", "Bake to manuscript cut")}
           </button>
         ) : null}
         {bakeStatusMessage ? (
-          <span
-            role="status"
-            data-testid="studio-bg3d-bake-status"
-            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2"
-          >
-            {bakeStatusMessage}
-          </span>
+          <span role="status" data-testid="studio-bg3d-bake-status" className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2">{bakeStatusMessage}</span>
         ) : null}
         <div className="ml-auto flex items-center gap-1.5">
-          <Link
-            href="/studio/new?template=webtoon&from=bg3d-cut"
-            className="hidden min-h-11 items-center rounded-lg bg-accent px-3.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2 md:inline-flex"
-          >
-            {bi("새 웹툰 시작하기", "Start a new webtoon")}
-          </Link>
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-accent"
-            onClick={() => setLayout(DEFAULT_STUDIO_BG3D_PROFESSIONAL_WORKSPACE_LAYOUT)}
-          >
-            {bi("기본 배치", "Reset layout")}
-          </button>
+          <Link href="/studio/new?template=webtoon&from=bg3d-cut" className="hidden min-h-11 items-center rounded-lg bg-accent px-3.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2 md:inline-flex">{bi("새 웹툰 시작하기", "Start a new webtoon")}</Link>
+          <button type="button" className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-accent" onClick={() => setLayout(DEFAULT_STUDIO_BG3D_PROFESSIONAL_WORKSPACE_LAYOUT)}>{bi("기본 배치", "Reset layout")}</button>
         </div>
       </div>
+
+      <StudioBg3dStageStepperBar
+        activeStage={activeStage}
+        onSelectStage={handleSelectShelfStage}
+        wallCutawayConfig={effectiveWallCutawayConfig}
+        onToggleWallCutaway={handleToggleWallCutaway}
+        onChangeWallCutawayConfig={handleWallCutawayConfigChange}
+        heroCamera={heroCamera}
+        sectionCapSummary={sectionCapSummary}
+        lastBakedLayer={effectiveLastBakedLayer}
+        bakeFlashActive={bakeFlashActive}
+        onRestoreReshoot={onRestoreReshootFromBakedLayer}
+      />
+
+      <StudioBg3dWebtoonAtmosphereStrip
+        variant="toolbar"
+        activePresetId={activeAtmosphereId}
+        disabled={isLiveCapturing}
+        onSelectPreset={handleApplyWebtoonAtmosphere}
+      />
 
       <StudioBg3dHeroCutawaySection
         activeAssetId={activeHeroAssetId}
         camera={heroCamera}
         viewportWidthPx={heroViewportWidthPx}
         deviceMemoryGb={heroDeviceMemoryGb}
+        cutawayConfig={effectiveWallCutawayConfig}
+        onCutawayConfigChange={handleWallCutawayConfigChange}
         onSelectHeroAsset={handleSelectHeroAsset}
         onWallCutawayChange={onWallCutawayChange}
       />
@@ -649,7 +697,7 @@ export function StudioBg3dProfessionalWorkspace({
           data-bg3d-live-ink-mode={liveInkMode}
           data-bg3d-split-wipe-ratio={splitWipeRatio}
           data-bg3d-axis180-locked={axis180Locked ? "true" : "false"}
-          className="contents xl:flex xl:min-h-0 xl:min-w-0 xl:flex-1"
+          className="contents xl:relative xl:flex xl:min-h-0 xl:min-w-0 xl:flex-1"
           style={{ order: "var(--studio-bg3d-viewport-order)" }}
         >
           {liveInkMode === "split-wipe" ? (
@@ -659,28 +707,57 @@ export function StudioBg3dProfessionalWorkspace({
                 onRatioChange={(next) => setSplitWipeRatio(clampSplitWipeRatio(next))}
                 leftLabel={bi("3D 음영", "3D shaded")}
                 rightLabel={bi("라이브 선화", "Live ink")}
-                leftContent={viewport}
+                leftContent={
+                  captureSnapshot?.shadedPassRef ? (
+                    <div className="relative h-full w-full">
+                      {viewport}
+                      <img
+                        src={captureSnapshot.shadedPassRef}
+                        alt={bi("캡처된 3D 음영 프레임", "Captured 3D shaded frame")}
+                        data-testid="studio-bg3d-shaded-pass-image"
+                        className="pointer-events-none absolute inset-0 h-full w-full object-contain opacity-95 select-none"
+                        draggable={false}
+                      />
+                    </div>
+                  ) : (
+                    viewport
+                  )
+                }
                 rightContent={
-                  <div
-                    data-testid="studio-bg3d-live-ink-wipe-pane"
-                    className="flex h-full min-h-[240px] w-full flex-col items-center justify-center gap-1.5 bg-canvas p-4 text-center text-xs text-fg-2"
-                  >
-                    <span className="font-semibold text-fg">
-                      {bi("실시간 Freestyle 선화 패스", "Live Freestyle ink pass")}
-                    </span>
-                    <span className="font-mono tabular-nums text-fg-3">
-                      {captureSnapshot
-                        ? `${captureSnapshot.widthPx}×${captureSnapshot.heightPx} · 선폭 ${captureSnapshot.inkLineWeightPx}px`
-                        : bi("손그림 LT 라인아트 패스 대기 중", "Hand-drawn LT line-art pass ready")}
-                    </span>
-                  </div>
+                  <StudioBg3dLiveInkStagePane
+                    mode="split-wipe"
+                    captureSnapshot={captureSnapshot}
+                    isCapturing={isLiveCapturing}
+                    onRequestCapture={onRequestLiveCapture ? () => triggerLiveCaptureIfNeeded("live-ink") : undefined}
+                  />
                 }
                 className="h-full min-h-0 w-full flex-1"
               />
             </Suspense>
+          ) : liveInkMode === "live-ink-only" ? (
+            <div className="relative flex h-full min-h-0 w-full flex-1">
+              <div className="pointer-events-none absolute inset-0 opacity-0" aria-hidden>{viewport}</div>
+              <StudioBg3dLiveInkStagePane
+                mode="live-ink-only"
+                captureSnapshot={captureSnapshot}
+                isCapturing={isLiveCapturing}
+                onRequestCapture={onRequestLiveCapture ? () => triggerLiveCaptureIfNeeded("live-ink") : undefined}
+              />
+            </div>
           ) : (
             viewport
           )}
+          {bakeFlashActive ? (
+            <div
+              aria-hidden
+              data-testid="studio-bg3d-bake-shutter-flash"
+              className="pointer-events-none absolute inset-0 z-30 opacity-85 transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:hidden"
+              style={{
+                background:
+                  "radial-gradient(circle at center, color-mix(in oklch, var(--color-accent) 26%, transparent), color-mix(in oklch, var(--color-cool) 16%, transparent) 55%, transparent 80%)",
+              }}
+            />
+          ) : null}
         </div>
         {layout.inspectorVisible ? renderSeparator("inspector") : null}
         <div
@@ -712,7 +789,7 @@ export function StudioBg3dProfessionalWorkspace({
           onSelectStage={handleSelectShelfStage}
           placedAssetIds={placedShelfAssetIds}
           onInsertAsset={handleInsertShelfAsset}
-          onBakeToManuscriptCut={handleBakeToManuscriptCut}
+          onBakeToManuscriptCut={() => void handleBakeToManuscriptCut()}
           onClose={() => setAssetShelfOpen(false)}
         />
       ) : null}

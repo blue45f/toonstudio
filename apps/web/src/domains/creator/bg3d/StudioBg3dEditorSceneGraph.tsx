@@ -21,6 +21,8 @@ import {
 import { resolveStudioBg3dOrthographicPlanes } from "./studio-bg3d-orthographic-frustum";
 import { hasStudioBg3dEntityTransformChanged } from "./studio-bg3d-multi-transform";
 import { StudioBg3dAttachedTransformControls } from "./StudioBg3dAttachedTransformControls";
+import { StudioBg3dWallCutawayController } from "./StudioBg3dWallCutawayController";
+import { DEFAULT_BG3D_WALL_CUTAWAY_CONFIG } from "./studio-bg3d-wall-cutaway-runtime";
 
 export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
   const {
@@ -405,6 +407,14 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
       />
       <BgGroundHelper visible={!immersiveSceneActive && !lineArtPreview && !isCapturing} />
       {!immersiveSceneActive ? <BgSectionPlaneController state={sectionPlane} /> : null}
+      {!immersiveSceneActive ? (
+        <StudioBg3dWallCutawayController
+          cutawayConfig={h.wallCutawayConfig ?? DEFAULT_BG3D_WALL_CUTAWAY_CONFIG}
+          sectionPlane={sectionPlane}
+          target={sceneBaseDocument.camera.target}
+          onSummaryChange={h.setSectionCapSummary}
+        />
+      ) : null}
       <BgScaleGuide visible={!immersiveSceneActive && scaleGuideVisible && !isCapturing} />
       {!immersiveSceneActive ? (
         <StudioBg3dMeasurementViewport

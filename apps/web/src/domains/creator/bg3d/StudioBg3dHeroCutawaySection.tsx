@@ -50,6 +50,8 @@ export interface StudioBg3dHeroCutawaySectionProps {
   readonly viewportWidthPx?: number;
   readonly deviceMemoryGb?: number;
   readonly defaultPreferMobileTier?: boolean;
+  readonly cutawayConfig?: Bg3dWallCutawayConfig;
+  readonly onCutawayConfigChange?: (config: Bg3dWallCutawayConfig) => void;
   readonly onSelectHeroAsset?: (resolution: HeroBg3dDeliveryResolution) => void;
   readonly onWallCutawayChange?: (event: StudioBg3dWallCutawayChangeEvent) => void;
 }
@@ -73,6 +75,8 @@ export function StudioBg3dHeroCutawaySection({
   viewportWidthPx,
   deviceMemoryGb,
   defaultPreferMobileTier = false,
+  cutawayConfig: controlledCutawayConfig,
+  onCutawayConfigChange,
   onSelectHeroAsset,
   onWallCutawayChange,
 }: StudioBg3dHeroCutawaySectionProps) {
@@ -88,9 +92,10 @@ export function StudioBg3dHeroCutawaySection({
   );
   const [cameraPresetIndex, setCameraPresetIndex] = useState<number>(0);
   const [preferMobileTier, setPreferMobileTier] = useState<boolean>(defaultPreferMobileTier);
-  const [cutawayConfig, setCutawayConfig] = useState<Bg3dWallCutawayConfig>(
+  const [internalCutawayConfig, setInternalCutawayConfig] = useState<Bg3dWallCutawayConfig>(
     DEFAULT_BG3D_WALL_CUTAWAY_CONFIG,
   );
+  const cutawayConfig = controlledCutawayConfig ?? internalCutawayConfig;
 
   useEffect(() => {
     if (viewportWidthPx !== undefined) {
@@ -154,7 +159,8 @@ export function StudioBg3dHeroCutawaySection({
   };
 
   const handleCutawayChange = (nextConfig: Bg3dWallCutawayConfig) => {
-    setCutawayConfig(nextConfig);
+    setInternalCutawayConfig(nextConfig);
+    onCutawayConfigChange?.(nextConfig);
     const nextEvaluation = evaluateCameraWallCutaway({
       camera: effectiveCamera,
       room: roomBounds,
