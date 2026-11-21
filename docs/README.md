@@ -1,7 +1,7 @@
 # ToonStudio 문서 안내
 
 - 상태: **현재 문서 체계**
-- 최종 갱신: **2026-11-18**
+- 최종 갱신: **2026-11-21**
 
 ## 문서 권위 순서
 
@@ -106,6 +106,8 @@ UI/UX 자동 측정 하니스와 기준선(2026-10-16, 역사 자료)은 다음 
 1. [`operations/infrastructure-map.md`](operations/infrastructure-map.md) — 구성요소별 위치·비용·상태, 요청 경로, 비밀값 저장 위치(이름만), 배포·DB 접속 문자열 동기화·롤백 절차, 측정으로 확인한 제약, 열린 결정
 2. [`adr/0030-seoul-origin-hybrid-infrastructure.md`](adr/0030-seoul-origin-hybrid-infrastructure.md) — Core API·DB는 onpod 서울, 웹 엣지는 Cloudflare 유지(Accepted). 근거 측정, 대안, 컷오버 전 열린 문제
 3. [`../deploy/onpod/README.md`](../deploy/onpod/README.md) — onpod DB에 운영 스키마를 올리는 재현 도구(상시 승인 배포 단위가 아니다)
+
+2026-11-20의 Onpod 배포·읽기 전용 감사와 활동보고서 활용 범위는 [Onpod 활용 증빙 보완 기록](reports/onpod-utilization-evidence-2026-11-21.md)에서 확인한다. 특정 시점의 배포·가동 증거와 미확인인 운영 사용량·크레딧 차감·성능 개선을 구분하며, 원본 출처와 발췌 필드는 [증빙 원장](evidence/onpod-utilization-2026-11-21.json)에 연결한다.
 
 onpod.ai 호스팅 이전 평가(2026-10-22, 평가 시점의 기록이며 현재 구성은 위 문서가 정본이다)는 다음 문서를 추가로 본다.
 
