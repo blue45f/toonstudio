@@ -1,12 +1,16 @@
 import { resolveStudioWetPaperBakeProgramIdForBrush } from "../../apps/web/src/domains/creator/brush/wet-paper/studio-watercolor-settled-surface";
+import { STUDIO_WET_PAPER_BAKE_PROGRAMS } from "../../apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-programs";
 
 import type { StudioLongBrushQualityFinding, StudioLongBrushQualityFrame, StudioLongBrushQualityResult, StudioLongBrushQualityTransition } from "../studio-brush-long-matrix-quality";
 import type { Page } from "playwright";
 
-/** 먹 번짐과 백런은 정착하며 안료가 최초 붓자리를 벗어나는 프로그램이다. */
+/** 번짐·백런 및 안료 후광이 실제로 설정된 입자 침전만 정착 번짐의 원고→화면 보정을 적용한다. */
 export function studioLongBrushHasSettledDiffusion(brushId: string): boolean {
   const program = resolveStudioWetPaperBakeProgramIdForBrush(brushId);
-  return program === "moxi-sumi-dispersion" || program === "curtis-watercolor-backrun";
+  if (program === "moxi-sumi-dispersion" || program === "curtis-watercolor-backrun") return true;
+  if (program !== "curtis-granulating-wash") return false;
+  const { haloPigment, haloWater, capillaryDiffusion } = STUDIO_WET_PAPER_BAKE_PROGRAMS[program];
+  return haloPigment > 0 && haloWater > 0 && capillaryDiffusion > 0;
 }
 
 export function measureLongBrushBoundsDrift(
@@ -46,7 +50,7 @@ export function wetPaperDiffusionFindings(
   width: number | undefined,
 ): StudioLongBrushQualityFinding[] {
   if (width === undefined || !frames.live.bounds || !frames.settled.bounds) return [];
-  // 가로 장획의 먹 번짐과 백런은 정착할 때 적어도 한쪽 붓끝 바깥에 안료를 남긴다.
+  // 번짐이 설정된 가로 장획은 정착할 때 적어도 한쪽 붓끝 바깥에 안료를 남긴다.
   const extension = Math.max(frames.live.bounds.left - frames.settled.bounds.left,
     frames.settled.bounds.right - frames.live.bounds.right);
   if (extension > 1) return [];
