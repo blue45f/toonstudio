@@ -65,6 +65,8 @@ const STOP_ON_FAILURE = process.env.TOONSPECTRUM_SOAK_STOP_ON_FAILURE === "1";
 /** 진단 실행 전용: 획마다 GC 후 힙을 재서 "획 수 대비 유지량" 곡선을 얻는다. 기본 소크는 끈다. */
 const SAMPLE_HEAP_PER_STROKE = process.env.TOONSPECTRUM_SOAK_SAMPLE_HEAP_PER_STROKE === "1";
 const MEASURE_POINTER_LATENCY = process.env.TOONSPECTRUM_SOAK_MEASURE_POINTER_LATENCY === "1";
+/** 이 임시 진단 브랜치는 CPU 표본을 수집하며 acceptance 통과 증거로 사용하지 않는다. */
+const CPU_DIAGNOSTIC = process.env.TOONSTUDIO_SOAK_DIAGNOSTIC_CPU === "1";
 const BUILD_DIRECTORY = resolve(process.env.TOONSPECTRUM_SOAK_DIST_DIR?.trim() || "dist");
 const INK_MIN_CHANGED_PIXELS = 120;
 const HISTORY_CHURN_INTERVAL = 10;
@@ -509,6 +511,10 @@ const report = {
     ? createHash("sha256").update(readFileSync(join(BUILD_DIRECTORY, "index.html"))).digest("hex")
     : null,
   renderEnvironment: "chromium-swiftshader",
+  browserVersion: null as string | null,
+  browserLaunchArgs: [] as string[],
+  cpuDiagnostic: { requested: CPU_DIAGNOSTIC, captured: false, diagnosticOnly: CPU_DIAGNOSTIC,
+    samplingIntervalUs: 1_000, maximumSessionMinutes: 3, metadataFile: null as string | null },
   requestedMinutes: MINUTES,
   workload: WORKLOAD,
   brushCycles: BRUSH_CYCLES,
@@ -583,6 +589,8 @@ let browser: Browser | null = null;
 let preview: Awaited<ReturnType<typeof spawnPreview>> | null = null;
 let cdp: CDPSession | null = null;
 let page: Page | null = null;
+let cpuRecording = false;
+let cpuStartClock: { pageEpoch: number; beforeStartMs: number; afterStartMs: number } | null = null;
 let baselineHeap: HeapSample | null = null;
 let heapGrowthFailureRecorded = false;
 let heapSlopeFailureRecorded = false;
@@ -611,6 +619,35 @@ function recordRuntimeErrors(): void {
         kind: `runtime-${error.channel}`, detail: `${error.step}: ${error.text}` });
     }
   } catch (error) { collectionFailed("runtime-errors", error); }
+}
+
+async function finishCpuDiagnostic(): Promise<void> {
+  if (!CPU_DIAGNOSTIC) return;
+  try {
+    if (!cpuRecording || !cdp || !page) throw new Error("CPU profile이 시작되지 않아 원본을 기록할 수 없습니다.");
+    const beforeStopMs = await page.evaluate(() => performance.now()).catch((error: unknown) => {
+      collectionFailed("cpu-clock-before-stop", error); return null;
+    });
+    const captured = await cdp.send("Profiler.stop");
+    cpuRecording = false;
+    const afterStopMs = await page.evaluate(() => performance.now()).catch((error: unknown) => {
+      collectionFailed("cpu-clock-after-stop", error); return null;
+    });
+    const profileFile = "diagnostic-cpu.cpuprofile";
+    const metadataFile = "diagnostic-cpu-metadata.json";
+    const profileJson = JSON.stringify(captured.profile);
+    writeFileSync(join(OUT, profileFile), profileJson);
+    writeFileSync(join(OUT, metadataFile), JSON.stringify({ diagnosticOnly: true, sourceCommit: report.sourceCommit,
+      sourceDirty: report.sourceDirty, sessionId: report.sessionId, profile: PROFILE_ID, browserVersion: report.browserVersion,
+      browserLaunchArgs: report.browserLaunchArgs, samplingIntervalUs: 1_000, startClock: cpuStartClock,
+      stopClock: { beforeStopMs, afterStopMs }, rawProfileFile: profileFile,
+      rawProfileSha256: createHash("sha256").update(profileJson).digest("hex"),
+      limitation: "CPU 샘플링으로 실행 비용이 달라질 수 있다. 원인 분석 전용이며 성능·장시간 통과 증거가 아니다." }, null, 2));
+    report.cpuDiagnostic.captured = true;
+    report.cpuDiagnostic.metadataFile = metadataFile;
+  } catch (error) { collectionFailed("diagnostic-cpu", error); }
+  report.failures.push({ atMs: nowMs(startedAt), cycle: report.cycles, kind: "diagnostic-only",
+    detail: "CPU profile을 활성화한 임시 진단 실행입니다. acceptance 통과로 사용할 수 없습니다." });
 }
 
 async function recordScreenshot(phase: "periodic" | "final", scheduledAtMs: number): Promise<void> {
@@ -669,6 +706,7 @@ async function recordHeapCheckpoint(phase: "initial" | "periodic" | "final", sch
 }
 
 try {
+  if (CPU_DIAGNOSTIC && MINUTES > 3) throw new Error("CPU 진단은 최대 3분이며 장시간 acceptance 실행과 분리합니다.");
   preview = await spawnPreview();
   report.origin = preview.origin;
   report.build = await readStudioSoakBuildEvidence({ origin: preview.origin, directory: BUILD_DIRECTORY,
@@ -678,6 +716,8 @@ try {
   const args = ["--disable-dev-shm-usage", "--enable-unsafe-swiftshader", "--use-gl=swiftshader"];
   if (WEBGPU) args.push("--enable-unsafe-webgpu");
   browser = await chromium.launch({ args });
+  report.browserVersion = browser.version();
+  report.browserLaunchArgs = args;
   const context = await browser.newContext({
     locale: "ko-KR",
     viewport: profile ? { width: profile.width, height: profile.height } : { width: 1440, height: 1100 },
@@ -711,6 +751,16 @@ try {
   boundedLayerBaseline = await ensureStudioLayerNavigatorCount(page);
   if (boundedLayerBaseline === null) {
     throw new Error("Studio layer navigator count is unavailable during bounded soak preflight.");
+  }
+
+  if (CPU_DIAGNOSTIC) {
+    if (!cdp) throw new Error("CPU 진단에 필요한 CDP 세션이 없습니다.");
+    await cdp.send("Profiler.enable");
+    await cdp.send("Profiler.setSamplingInterval", { interval: 1_000 });
+    const clock = await page.evaluate(() => ({ pageEpoch: performance.timeOrigin, beforeStartMs: performance.now() }));
+    await cdp.send("Profiler.start");
+    cpuRecording = true;
+    cpuStartClock = { ...clock, afterStartMs: await page.evaluate(() => performance.now()) };
   }
 
   log(`${PROFILE_ID} · ${MINUTES} min · input=${inputMode} · webgpu=${WEBGPU ? "on" : "off"} · ${preview.origin}`);
@@ -897,6 +947,7 @@ try {
     await recordScreenshot("final", MINUTES * 60_000);
   }
   recordRuntimeErrors();
+  await finishCpuDiagnostic();
   finalized = true;
   writeReport();
   await browser?.close().catch(() => undefined);
