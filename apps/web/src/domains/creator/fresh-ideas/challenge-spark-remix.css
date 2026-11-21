@@ -1,0 +1,133 @@
+/*
+ * challenge-spark-remix.css — 창작 챌린지 주제 → 3컷 스파크 리믹서 OKLCH 스펙트럼 스타일.
+ */
+
+.challenge-spark-bar {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in oklch, var(--spark-mood-tone, var(--color-accent)) 32%, var(--color-line));
+  background:
+    radial-gradient(
+      115% 95% at 100% 0%,
+      color-mix(in oklch, var(--spark-mood-tone, var(--color-accent)) 11%, transparent),
+      transparent 62%
+    ),
+    var(--color-panel);
+  transition: border-color 180ms ease;
+}
+
+.challenge-spark-bar__ribbon {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-cool),
+    var(--spark-mood-tone, var(--color-accent)) 44%,
+    var(--color-warn) 74%,
+    var(--color-good)
+  );
+}
+
+.challenge-spark-chip {
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 180ms ease;
+}
+
+.challenge-spark-chip:hover {
+  border-color: color-mix(in oklch, var(--chip-tone, var(--color-accent)) 55%, var(--color-line));
+  background: color-mix(in oklch, var(--chip-tone, var(--color-accent)) 8%, var(--color-card));
+}
+
+.challenge-spark-chip:active {
+  transform: scale(0.97);
+}
+
+.challenge-spark-chip[aria-pressed="true"] {
+  border-color: var(--chip-tone, var(--color-accent));
+  background: color-mix(in oklch, var(--chip-tone, var(--color-accent)) 14%, var(--color-card));
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--chip-tone, var(--color-accent)) 34%, transparent);
+}
+
+.challenge-spark-shuffle {
+  border: 1px solid color-mix(in oklch, var(--spark-mood-tone, var(--color-accent)) 45%, var(--color-line));
+  background: color-mix(in oklch, var(--spark-mood-tone, var(--color-accent)) 11%, var(--color-card));
+  transition:
+    transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.challenge-spark-shuffle:hover {
+  border-color: var(--spark-mood-tone, var(--color-accent));
+  background: color-mix(in oklch, var(--spark-mood-tone, var(--color-accent)) 18%, var(--color-card));
+}
+
+.challenge-spark-shuffle:active {
+  transform: scale(0.95);
+}
+
+@keyframes challenge-spark-cut-in {
+  from {
+    opacity: 0.4;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.challenge-spark-cut {
+  position: relative;
+  border: 1px solid color-mix(in oklch, var(--cut-tone, var(--color-accent)) 28%, var(--color-line));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--cut-tone, var(--color-accent)) 7%, var(--color-card)),
+      var(--color-card) 48%
+    );
+  animation: challenge-spark-cut-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.challenge-spark-cut__guide {
+  color: color-mix(in oklch, var(--cut-tone, var(--color-accent)) 72%, var(--color-fg-2));
+  background: color-mix(in oklch, var(--cut-tone, var(--color-accent)) 7%, var(--color-raised));
+  border: 1px solid color-mix(in oklch, var(--cut-tone, var(--color-accent)) 24%, var(--color-line));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .challenge-spark-bar,
+  .challenge-spark-chip,
+  .challenge-spark-shuffle {
+    transition: none !important;
+  }
+  .challenge-spark-chip:active,
+  .challenge-spark-shuffle:active {
+    transform: none !important;
+  }
+  .challenge-spark-cut {
+    animation: none !important;
+  }
+}
+
+:root[data-design-theme="contrast"] .challenge-spark-bar__ribbon {
+  display: none;
+}
+
+:root[data-design-theme="contrast"] .challenge-spark-bar,
+:root[data-design-theme="contrast"] .challenge-spark-cut {
+  background: var(--color-card);
+}
+
+@media (forced-colors: active) {
+  .challenge-spark-bar__ribbon {
+    display: none;
+  }
+}
