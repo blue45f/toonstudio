@@ -2,21 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import type { IllustratedCreatorPersonaId } from "./studio-virtual-office-nextgen-engine-data";
 import {
   computeDynamicSpriteFrameKinematics,
   getDynamicCreatorPersonaSpec,
   renderDynamicCreatorSpriteSvg,
-  type DynamicSpriteActionId,
+  type DynamicSpriteDirection,
+  type DynamicSpriteExtendedActionId,
   type DynamicSpriteExpressionId,
   type DynamicSpriteVfxId,
+  type StudioFullSpritePersonaId,
 } from "./studio-virtual-space-dynamic-sprite-engine";
 
 export interface StudioVirtualDynamicSpriteAvatarProps {
-  readonly personaId: IllustratedCreatorPersonaId;
-  readonly actionId: DynamicSpriteActionId;
+  readonly personaId: StudioFullSpritePersonaId;
+  readonly actionId: DynamicSpriteExtendedActionId;
   readonly expressionId: DynamicSpriteExpressionId;
   readonly vfxId: DynamicSpriteVfxId;
+  readonly facing?: DynamicSpriteDirection;
   readonly headTallUnits?: number;
   readonly fps?: number;
   readonly paused?: boolean;
@@ -41,6 +43,7 @@ export function StudioVirtualDynamicSpriteAvatar({
   actionId,
   expressionId,
   vfxId,
+  facing = "down",
   headTallUnits,
   fps = 12,
   paused = false,
@@ -100,8 +103,9 @@ export function StudioVirtualDynamicSpriteAvatar({
         frameIndex,
         headTallUnits,
         showVfx,
+        facing,
       }),
-    [personaId, actionId, expressionId, vfxId, frameIndex, headTallUnits, showVfx],
+    [personaId, actionId, expressionId, vfxId, frameIndex, headTallUnits, showVfx, facing],
   );
 
   const afterimagePrevSvgMarkup = useMemo(() => {
@@ -114,6 +118,7 @@ export function StudioVirtualDynamicSpriteAvatar({
       frameIndex: (frameIndex + 7) % 8,
       headTallUnits,
       showVfx: false,
+      facing,
     });
   }, [
     kinematics.afterimageCount,
@@ -124,6 +129,7 @@ export function StudioVirtualDynamicSpriteAvatar({
     vfxId,
     frameIndex,
     headTallUnits,
+    facing,
   ]);
 
   const afterimageTrail2SvgMarkup = useMemo(() => {
@@ -136,6 +142,7 @@ export function StudioVirtualDynamicSpriteAvatar({
       frameIndex: (frameIndex + 6) % 8,
       headTallUnits,
       showVfx: false,
+      facing,
     });
   }, [
     kinematics.afterimageCount,
@@ -146,6 +153,7 @@ export function StudioVirtualDynamicSpriteAvatar({
     vfxId,
     frameIndex,
     headTallUnits,
+    facing,
   ]);
 
   return (
@@ -155,6 +163,7 @@ export function StudioVirtualDynamicSpriteAvatar({
       data-action-id={actionId}
       data-expression-id={expressionId}
       data-vfx-id={vfxId}
+      data-facing={facing}
       data-frame-index={frameIndex}
       data-head-ratio={kinematics.headToBodyRatio}
       className={`relative inline-flex flex-col items-center select-none ${className}`}
@@ -162,7 +171,7 @@ export function StudioVirtualDynamicSpriteAvatar({
       {statusBubbleKo ? (
         <div
           data-testid={`dynamic-sprite-bubble-${personaId}`}
-          className="mb-1 max-w-44 truncate rounded-full border border-accent bg-panel/95 px-2.5 py-0.5 text-[10px] font-semibold text-fg shadow-xs backdrop-blur-xs"
+          className="mb-1 max-w-44 truncate rounded-full border border-accent bg-panel/95 px-2.5 py-0.5 text-xs font-semibold text-fg shadow-xs backdrop-blur-xs"
         >
           {statusBubbleKo}
         </div>
@@ -180,7 +189,6 @@ export function StudioVirtualDynamicSpriteAvatar({
             style={{
               transform: "translate3d(-18px, 4px, 0) scale(0.92)",
               opacity: 0.18,
-              filter: `drop-shadow(0 0 8px ${persona.accentHex})`,
             }}
             dangerouslySetInnerHTML={{ __html: afterimageTrail2SvgMarkup }}
           />
@@ -192,7 +200,6 @@ export function StudioVirtualDynamicSpriteAvatar({
             style={{
               transform: "translate3d(-10px, 2px, 0) scale(0.96)",
               opacity: 0.34,
-              filter: `drop-shadow(0 0 6px ${persona.primaryHex})`,
             }}
             dangerouslySetInnerHTML={{ __html: afterimagePrevSvgMarkup }}
           />
@@ -212,7 +219,7 @@ export function StudioVirtualDynamicSpriteAvatar({
         {typeof comboCount === "number" && comboCount > 0 ? (
           <span
             data-testid={`dynamic-sprite-combo-${personaId}`}
-            className="absolute -top-1 -right-1 rounded-full border border-accent bg-accent-soft px-1.5 py-0.5 font-mono text-[9px] font-extrabold text-accent shadow-xs"
+            className="absolute -top-1 -right-1 rounded-full border border-accent bg-accent-soft px-1.5 py-0.5 font-mono text-xs font-bold text-accent shadow-xs"
           >
             ×{comboCount}
           </span>
@@ -221,11 +228,11 @@ export function StudioVirtualDynamicSpriteAvatar({
 
       {showBadge ? (
         <div className="mt-1 flex flex-col items-center text-center">
-          <span className="rounded bg-panel/95 px-1.5 py-0.5 text-[10px] font-bold text-fg">
+          <span className="rounded bg-panel/95 px-1.5 py-0.5 text-xs font-semibold text-fg">
             {persona.characterNameKo.split(" (")[0]}
           </span>
-          <span className="text-[9px] text-fg-2">
-            {(headTallUnits ?? persona.headTallUnits).toFixed(1)}등신 소두 · F{frameIndex + 1}/8
+          <span className="text-xs text-fg-2">
+            {(headTallUnits ?? persona.headTallUnits).toFixed(1)}등신 · F{frameIndex + 1}/8
           </span>
         </div>
       ) : null}
@@ -234,10 +241,11 @@ export function StudioVirtualDynamicSpriteAvatar({
 }
 
 export interface StudioVirtualDynamicSpriteSheetStripProps {
-  readonly personaId: IllustratedCreatorPersonaId;
-  readonly actionId: DynamicSpriteActionId;
+  readonly personaId: StudioFullSpritePersonaId;
+  readonly actionId: DynamicSpriteExtendedActionId;
   readonly expressionId: DynamicSpriteExpressionId;
   readonly vfxId: DynamicSpriteVfxId;
+  readonly facing?: DynamicSpriteDirection;
   readonly headTallUnits?: number;
   readonly activeFrameIndex?: number;
   readonly onSelectFrame?: (frameIndex: number) => void;
@@ -251,6 +259,7 @@ export function StudioVirtualDynamicSpriteSheetStrip({
   actionId,
   expressionId,
   vfxId,
+  facing = "down",
   headTallUnits,
   activeFrameIndex = 0,
   onSelectFrame,
@@ -267,6 +276,7 @@ export function StudioVirtualDynamicSpriteSheetStrip({
           frameIndex: idx,
           headTallUnits,
           showVfx: true,
+          facing,
         }),
         kinematics: computeDynamicSpriteFrameKinematics(
           personaId,
@@ -277,7 +287,7 @@ export function StudioVirtualDynamicSpriteSheetStrip({
           headTallUnits,
         ),
       })),
-    [personaId, actionId, expressionId, vfxId, headTallUnits],
+    [personaId, actionId, expressionId, vfxId, headTallUnits, facing],
   );
 
   return (
@@ -293,19 +303,19 @@ export function StudioVirtualDynamicSpriteSheetStrip({
             type="button"
             data-testid={`dynamic-sprite-sheet-frame-${frame.frameIndex}`}
             onClick={() => onSelectFrame?.(frame.frameIndex)}
-            className={`flex flex-col items-center rounded-lg border p-1.5 transition ${
+            className={`flex min-h-11 flex-col items-center rounded-lg border p-1.5 transition-colors ${
               isCurrent
-                ? "border-accent bg-accent-soft/50 text-accent font-bold shadow-xs"
+                ? "border-accent bg-accent-soft/50 text-accent font-semibold shadow-xs"
                 : "border-line bg-card text-fg-2 hover:border-accent"
             }`}
           >
-            <span className="font-mono text-[9px]">F{frame.frameIndex + 1}</span>
+            <span className="font-mono text-xs">F{frame.frameIndex + 1}</span>
             <div
               className="h-14 w-14"
               dangerouslySetInnerHTML={{ __html: frame.svg }}
             />
-            <span className="mt-0.5 truncate text-[8.5px] text-fg-3">
-              {frame.kinematics.isBlinkFrame ? "😉 BLINK" : `${frame.kinematics.bodyOffsetY}px`}
+            <span className="mt-0.5 truncate text-xs text-fg-3">
+              {frame.kinematics.isBlinkFrame ? "깜빡임" : `${frame.kinematics.bodyOffsetY}px`}
             </span>
           </button>
         );

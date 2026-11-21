@@ -22,7 +22,11 @@ import {
   type StudioBg3dSkpStageProgress,
 } from "./studio-bg3d-skp-contract";
 import { assertStudioBg3dSkpGlbContainer } from "./studio-bg3d-skp-glb-scale";
-import { analyzeStudioBg3dSkpMesh, type StudioBg3dSkpMeshStats } from "./studio-bg3d-skp-mesh-analysis";
+import {
+  analyzeStudioBg3dSkpMesh,
+  groundStudioBg3dSkpPrimitivesToFloorY0,
+  type StudioBg3dSkpMeshStats,
+} from "./studio-bg3d-skp-mesh-analysis";
 import { mergeStudioBg3dSkpPrimitivesByMaterial, type StudioBg3dSkpPrimitive } from "./studio-bg3d-skp-mesh-merge";
 import {
   buildStudioBg3dSkpTagList,
@@ -88,6 +92,8 @@ export interface StudioBg3dSkpConversionOptions {
   readonly maxBytes: number;
   /** 단계 경계에서만 확인하는 협력적 시간 상한. Worker 의 강제 종료와는 별개다. */
   readonly timeoutMs?: number;
+  /** true 면 변환 결과의 최하단을 `Y = 0` 바닥에 자동 접지한다(`1.0 = 1m` 유지). */
+  readonly groundToFloorY0?: boolean;
   readonly hooks?: StudioBg3dSkpConversionHooks;
 }
 
@@ -332,6 +338,12 @@ function collectGeometryWarnings(stats: StudioBg3dSkpMeshStats): StudioBg3dSkpRe
   } else if (stats.orientation.conflictingEdges > 0) {
     warnings.push(createStudioBg3dSkpWarning("flipped-faces", "warning", { count: stats.orientation.conflictingEdges }));
   }
+  if (stats.integrity.status === "checked" && stats.integrity.nonManifoldEdges > 0) {
+    warnings.push(createStudioBg3dSkpWarning("non-manifold-edges", "warning", { count: stats.integrity.nonManifoldEdges }));
+  }
+  if (stats.integrity.status === "checked" && stats.integrity.coplanarZFightingPairs > 0) {
+    warnings.push(createStudioBg3dSkpWarning("coplanar-z-fighting", "warning", { count: stats.integrity.coplanarZFightingPairs }));
+  }
   if (stats.triangleCount >= STUDIO_BG3D_SKP_HIGH_TRIANGLE_COUNT) {
     warnings.push(createStudioBg3dSkpWarning("high-polygon-count", "warning", { count: stats.triangleCount }));
   }
@@ -401,7 +413,10 @@ export async function convertStudioBg3dSkpBytes(
 
   run.stage("optimizing");
   const rawPrimitives = (isUnknownArray(scene.glbPrimitives) ? scene.glbPrimitives : []).map(readPrimitive);
-  const merged = mergeStudioBg3dSkpPrimitivesByMaterial(rawPrimitives);
+  const mergedRaw = mergeStudioBg3dSkpPrimitivesByMaterial(rawPrimitives);
+  const merged = options.groundToFloorY0
+    ? groundStudioBg3dSkpPrimitivesToFloorY0(mergedRaw).primitives
+    : mergedRaw;
   const stats = analyzeStudioBg3dSkpMesh(merged, {
     orientationTriangleBudget: STUDIO_BG3D_SKP_ORIENTATION_CHECK_MAX_TRIANGLES,
   });

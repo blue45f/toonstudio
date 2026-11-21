@@ -46,8 +46,17 @@ export function SpacePopover({ open, onClose, title, sheet, palette = false, anc
       if (toggleSelector && target instanceof Element && target.closest(toggleSelector)) return;
       closeRef.current();
     };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+      event.preventDefault();
+      closeRef.current();
+    };
     document.addEventListener("pointerdown", outside, true);
-    return () => document.removeEventListener("pointerdown", outside, true);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", outside, true);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [open, modal, anchorRef, toggleSelector, focusFirst]);
 
   useEffect(() => {

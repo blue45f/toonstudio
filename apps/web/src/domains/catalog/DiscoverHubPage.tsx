@@ -168,6 +168,13 @@ const LazyDiscoverShelves = lazyRetry(
   () => import("./DiscoverShelves").then((module) => ({ default: module.DiscoverShelves })),
   "DiscoverShelves",
 );
+const LazyDiscoverMoodTempoCurator = lazyRetry(
+  () =>
+    import("./DiscoverMoodTempoCurator").then((module) => ({
+      default: module.DiscoverMoodTempoCurator,
+    })),
+  "DiscoverMoodTempoCurator",
+);
 
 // 기억으로 작품 찾기는 접힌 안내를 처음 펼칠 때만 내려받는다 — 탐색 허브의 첫 화면 번들에 넣지 않는다.
 const LazyMemoryFinderSection = lazyRetry(
@@ -500,6 +507,9 @@ export function DiscoverHubPage() {
         <div className="flex min-w-0 flex-col gap-8">
           <Suspense fallback={<p role="status">{bt("추천 작품을 불러오는 중", "Loading story picks")}</p>}>
             <LazyDiscoverShelves snapshot={home.data} loading={home.loading} error={home.error} onRetry={home.reload} />
+          </Suspense>
+          <Suspense fallback={null}>
+            <LazyDiscoverMoodTempoCurator snapshot={home.data} loading={home.loading} />
           </Suspense>
         </div>
       </section>

@@ -396,7 +396,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                   key={h.vrmCanvasRecoveryGeneration ?? 0}
                   camera={{ fov: activeCamera.fov, position: new THREE.Vector3(...activeCamera.position), near: 0.1, far: 20 }}
                   className="h-full w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
-                  dpr={effectiveDpr}
+                  dpr={effectiveDpr} shadows="percentage"
                   frameloop={viewportBudget.visible || captureActive ? vrmFrameLoop : "never"}
                   gl={{ alpha: true, antialias: !h.vrmLowQualityMode && gpuTier !== "low", powerPreference: h.vrmLowQualityMode ? "low-power" : "high-performance" }}
                   onCreated={({ gl }) => {

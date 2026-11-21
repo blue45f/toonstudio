@@ -36,6 +36,12 @@ import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 
 import { CHARACTER_SEMANTIC_MORPH_LABELS } from "./character-shaper-capability";
 import { characterSlotMeta } from "./character-shaper-catalog";
+import {
+  applyEyeballHighlightSettingsToVrm,
+  DEFAULT_SHAPER_EYEBALL_HIGHLIGHT,
+  SHAPER_EYEBALL_HIGHLIGHT_MODE_OPTIONS,
+  type ShaperEyeballHighlightSettings,
+} from "./character-shaper-custom-quality";
 import { CharacterSlotPreview } from "./character-shaper-preview";
 import {
   CHARACTER_HAND_SIDE_OPTIONS,
@@ -52,6 +58,7 @@ import { CharacterShaperSkinSection } from "./CharacterShaperSkinSection";
 import { CharacterShaperStcSection } from "./CharacterShaperStcSection";
 import { Studio3dHeadMixerPanel } from "./Studio3dHeadMixerPanel";
 import { StudioBodyRatioMatrixPad } from "./StudioBodyRatioMatrixPad";
+import { StudioVroidShaperProPanel } from "./StudioVroidShaperProPanel";
 import {
   createDefaultHeadMixerState,
   resolveHeadMixerMorphTargets,
@@ -129,6 +136,8 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
   const [bodyMatrixState, setBodyMatrixState] = useState<StudioWebtoonBodyAndHairState>(() =>
     createDefaultBodyAndHairState(),
   );
+  const [eyeHighlight, setEyeHighlight] = useState<ShaperEyeballHighlightSettings>(DEFAULT_SHAPER_EYEBALL_HIGHLIGHT);
+  const [showAllExpressions, setShowAllExpressions] = useState(false);
   const meta = binding.catalog.slots.find((item) => item.id === slot) ?? characterSlotMeta(slot);
   const slotEntries = binding.catalog.entries.filter((entry) => entry.slot === slot);
   const selection = characterSlotSelection(binding.recipe, slot);
@@ -268,6 +277,13 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
     </Section>
   );
 
+  const commitEyeHighlight = (patch: Partial<ShaperEyeballHighlightSettings>) => {
+    const next = { ...eyeHighlight, ...patch };
+    setEyeHighlight(next);
+    applyEyeballHighlightSettingsToVrm(h.vrm, next);
+    if (typeof h.invalidateViewport === "function") h.invalidateViewport();
+  };
+
   const renderIrisColor = () => {
     const swatches = slotEntries
       .filter((entry) => entry.apply.kind === "iris" && typeof entry.apply.color === "string")
@@ -275,17 +291,46 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
       .filter((swatch, index, list) => swatch.color !== "" && list.findIndex((item) => item.color === swatch.color) === index)
       .slice(0, 8);
     return (
-      <Section title="눈동자 색" hint="텍스처를 유지한 채 홍채 메시만 물들입니다. 비우면 모델 원본 색으로 돌아갑니다.">
-        {binding.profile.irisTintable ? null : <Note tone="warn">{frozenStatus3Text("studio.frozenStatus3.shaper.irisNotFoundNote", "이 모델에서는 홍채 메시를 찾지 못해 색을 바꿀 수 없습니다.")}</Note>}
-        <CharacterColorControl
-          label="눈동자 색"
-          value={binding.recipe.colors.iris}
-          swatches={swatches}
-          allowClear
-          disabled={locked || !binding.profile.irisTintable}
-          onCommit={(color) => binding.commitColor("iris", color)}
-        />
-      </Section>
+      <>
+        <Section title="눈동자 색" hint="텍스처를 유지한 채 홍채 메시만 물들입니다. 비우면 모델 원본 색으로 돌아갑니다.">
+          {binding.profile.irisTintable ? null : <Note tone="warn">{frozenStatus3Text("studio.frozenStatus3.shaper.irisNotFoundNote", "이 모델에서는 홍채 메시를 찾지 못해 색을 바꿀 수 없습니다.")}</Note>}
+          <CharacterColorControl
+            label="눈동자 색"
+            value={binding.recipe.colors.iris}
+            swatches={swatches}
+            allowClear
+            disabled={locked || !binding.profile.irisTintable}
+            onCommit={(color) => binding.commitColor("iris", color)}
+          />
+        </Section>
+        <Section
+          title="눈동자 하이라이트 (4모드)"
+          hint="눈빛이 카메라·광원·정면 중 어디를 따라갈지 정하고 밝기와 위치를 미세 조절합니다."
+          collapsible
+          defaultOpen={false}
+        >
+          <div data-testid="shaper-eyeball-highlight-controls" className="space-y-2">
+            <CharacterChipGroup
+              label="하이라이트 추적 방식"
+              value={eyeHighlight.mode}
+              disabled={locked}
+              columns={2}
+              options={SHAPER_EYEBALL_HIGHLIGHT_MODE_OPTIONS.map((opt) => ({ id: opt.id, label: opt.labelKo, hint: opt.hintKo }))}
+              onSelect={(id) => commitEyeHighlight({ mode: id as ShaperEyeballHighlightSettings["mode"] })}
+            />
+            <CharacterRangeControl
+              label="하이라이트 밝기"
+              value={eyeHighlight.alpha}
+              min={0}
+              max={1}
+              step={0.05}
+              defaultValue={0.9}
+              disabled={locked}
+              onCommit={(alpha) => commitEyeHighlight({ alpha })}
+            />
+          </div>
+        </Section>
+      </>
     );
   };
 
@@ -434,9 +479,41 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
     const weights = (h.expressionWeights ?? {}) as Readonly<Record<string, number>>;
     const named = actions.filter((action) => typeof action.name === "string" && action.name.length > 0);
     const active = named.filter((action) => (weights[action.name as string] ?? 0) > 0);
-    const shown = active.length > 0 ? active : named.slice(0, 6);
+    const shown = showAllExpressions ? named : (active.length > 0 ? active : named.slice(0, 6));
+    const resetAllExpressions = () => {
+      for (const action of named) {
+        if ((weights[action.name as string] ?? 0) > 0) h.updateExpressionWeight(action.name as string, 0);
+      }
+    };
     return (
-      <Section title="표정 세기" hint="지금 켜진 표정의 강도를 하나씩 조절합니다.">
+      <Section title="표정 세기" hint="표정을 섞어 감정 강도를 맞추거나 한 번에 기본 표정으로 되돌립니다.">
+        {named.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-1.5" data-testid="shaper-expression-mixer-bar">
+            {named.length > shown.length || showAllExpressions ? (
+              <button
+                type="button"
+                disabled={locked}
+                aria-pressed={showAllExpressions}
+                aria-label={showAllExpressions ? "활성 표정만 보기" : "전체 표정 믹서 펼치기"}
+                onClick={() => setShowAllExpressions((prev) => !prev)}
+                className={cn("min-h-11 flex-1 rounded-xl border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 hover:bg-raised disabled:opacity-45", STUDIO_FOCUS_RING)}
+              >
+                {showAllExpressions ? "활성 표정만 보기" : `전체 표정 믹서 (${named.length}개)`}
+              </button>
+            ) : null}
+            {active.length > 0 ? (
+              <button
+                type="button"
+                disabled={locked}
+                aria-label="표정 모두 초기화"
+                onClick={resetAllExpressions}
+                className={cn("min-h-11 rounded-xl border border-line bg-panel px-2.5 text-xs font-semibold text-fg-2 hover:bg-raised disabled:opacity-45", STUDIO_FOCUS_RING)}
+              >
+                기본 표정으로
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         {shown.length === 0 ? (
           <Note>{frozenStatus3Text("studio.frozenStatus3.shaper.emptyNoExpression", "이 모델에는 조절할 수 있는 표정이 없습니다.")}</Note>
         ) : (
@@ -682,7 +759,10 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
 
       <div className="min-h-0 flex-1 pb-3">
         {modelReady ? (
-          renderSection()
+          <>
+            {renderSection()}
+            <StudioVroidShaperProPanel h={h} binding={binding} locked={locked} slot={slot} collapsible defaultOpen={false} />
+          </>
         ) : (
           <div className="px-3 py-3">
             <Note>{frozenStatus3Text("studio.frozenStatus3.shaper.emptyModelNotLoaded", "모델을 불러오면 이 슬롯의 정밀 조절이 열립니다.")}</Note>

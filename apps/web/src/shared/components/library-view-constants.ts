@@ -15,6 +15,7 @@ export const READ_TABS: { value: ReadState; label: string }[] = [
   { value: "want", label: "관심" },
   { value: "reading", label: "보는 중" },
   { value: "paused", label: "보류" },
+  { value: "hiatus", label: "휴재 대기" },
   { value: "done", label: "완독" },
   { value: "dropped", label: "하차" },
 ];

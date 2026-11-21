@@ -9,6 +9,7 @@ import {
   type QuickMenuActionId,
   type QuickMenuSlot,
 } from "../drawing/studio-quickmenu-and-quickshape";
+import { loadQuickMenuSlots } from "../drawing/studio-quickmenu-preferences";
 import { Columns2, Compass, FlipHorizontal2, Gauge, Lock, Magnet, Minus, Plus, Shapes, SlidersHorizontal, Unlock } from "lucide-react";
 import { Suspense, useCallback, useEffect, useId, useRef, useState } from "react";
 
@@ -110,6 +111,10 @@ export type StudioDrawingErgonomicsSession = Pick<
   readonly quickShapeSnapEnabled?: boolean;
   readonly onToggleQuickShapeSnap?: (next: boolean) => void;
   readonly quickMenuSlots?: readonly QuickMenuSlot[];
+  readonly onChangeQuickMenuSlots?: (next: readonly QuickMenuSlot[]) => void;
+  readonly undo?: () => void;
+  readonly redo?: () => void;
+  readonly setEyedropperActive?: (next: boolean) => void;
 };
 
 const SYMMETRY_CYCLE_ORDER: readonly StudioDrawingErgonomicsSymmetryType[] = [
@@ -192,7 +197,8 @@ export function StudioDrawingQuickErgonomicsBar({
   const activePressureCurve = PRESSURE_CURVE_PRESETS[activePressurePreset];
   const pressurePresetLabel = formatPressurePresetLabel(activePressurePreset, bt);
   const activeQuickShapeEnabled = s.quickShapeSnapEnabled ?? localQuickShapeEnabled;
-  const activeQuickMenuSlots = s.quickMenuSlots ?? DEFAULT_QUICK_MENU_SLOTS;
+  const [localQuickMenuSlots, setLocalQuickMenuSlots] = useState<readonly QuickMenuSlot[]>(() => loadQuickMenuSlots());
+  const activeQuickMenuSlots = s.quickMenuSlots ?? localQuickMenuSlots ?? DEFAULT_QUICK_MENU_SLOTS;
   const activeQuickMenuCount = activeQuickMenuSlots.length;
   const pushCue = useCallback((keycap: string, label: string, value?: string) => {
     setShortcutCue({ id: Date.now() + Math.random(), keycap, label, value });
@@ -265,17 +271,17 @@ export function StudioDrawingQuickErgonomicsBar({
   const handleQuickWheelAction = useCallback(
     (actionId: QuickMenuActionId, labelKo: string) => {
       pushCue("Q", labelKo);
-      if (actionId === "flip-canvas-h") {
+      if (actionId === "undo") { s.undo?.(); }
+      else if (actionId === "redo") { s.redo?.(); }
+      else if (actionId === "eyedropper") { s.setEyedropperActive?.(true); }
+      else if (actionId === "flip-canvas-h") {
         if (s.studioOptionsBarsHandlers?.flipCanvasHorizontal) s.studioOptionsBarsHandlers.flipCanvasHorizontal();
         else s.toggleCanvasFlipX?.();
-      } else if (actionId === "fit-canvas") {
-        resetZoomToActualPixel();
-      } else if (actionId === "toggle-alpha-lock" || actionId === "toggle-clipping-mask") {
+      } else if (actionId === "fit-canvas") { resetZoomToActualPixel(); }
+      else if (actionId === "toggle-alpha-lock" || actionId === "toggle-clipping-mask" || actionId === "merge-down" || actionId === "clear-layer") {
         const trigger = quickWheelTriggerRef.current ?? (document.activeElement instanceof HTMLElement ? document.activeElement : document.body);
         clarity?.open("layers", trigger);
-      } else if (actionId === "colordrop-fill") {
-        s.activatePrimaryCanvasTool("draw", "pen");
-      }
+      } else if (actionId === "colordrop-fill") { s.activatePrimaryCanvasTool("draw", "pen"); }
     },
     [clarity, pushCue, resetZoomToActualPixel, s],
   );
@@ -754,6 +760,7 @@ export function StudioDrawingQuickErgonomicsBar({
             anchor={quickWheelAnchor}
             slots={activeQuickMenuSlots}
             onSelectAction={(actionId, slot) => handleQuickWheelAction(actionId, slot.labelKo)}
+            onSlotsChange={(nextSlots) => { setLocalQuickMenuSlots(nextSlots); s.onChangeQuickMenuSlots?.(nextSlots); }}
             onClose={() => setQuickWheelOpen(false)}
           />
         </Suspense>

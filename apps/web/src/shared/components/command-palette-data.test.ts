@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 
-import { PALETTE_PAGES, palettePagesForLocale } from "./command-palette-data";
-import { matchesCommandSearch } from "./command-palette-search";
+import { PALETTE_PAGES, PALETTE_STUDIO_TOOLS, palettePagesForLocale } from "./command-palette-data";
+import { matchesCommandSearch, rankPaletteStudioTools } from "./command-palette-search";
 import { SITE_NAVIGATION_ITEMS } from "./site-navigation";
 
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
@@ -53,5 +53,75 @@ describe("메뉴와 명령 팔레트의 목적지 일치", () => {
   ])("%s 검색으로 %s 작업에 도달한다", (query, href) => {
     const results = PALETTE_PAGES.filter((page) => matchesCommandSearch(page.title, query, page.keywords, page.subtitle));
     expect(results.map((page) => page.href)).toContain(href);
+  });
+});
+
+describe("4대 경쟁 앱 용어 → ToonStudio 기능 최상단 매칭 (AC-008)", () => {
+  it.each([
+    // CLIP STUDIO PAINT (CSP)
+    ["퍼펫 워프", "tool-puppet-warp", "csp"],
+    ["Puppet Warp", "tool-puppet-warp", "csp"],
+    ["LT 변환", "tool-lt-convert", "csp"],
+    ["LT Conversion", "tool-lt-convert", "csp"],
+    ["벡터 지우개", "tool-vector-eraser", "csp"],
+    ["Vector Eraser", "tool-vector-eraser", "csp"],
+    ["톤", "tool-screentone", "csp"],
+    ["Screentone", "tool-screentone", "csp"],
+    ["말풍선", "tool-text", "csp"],
+    ["Balloon", "tool-text", "csp"],
+    ["3D 데생인형", "tool-3d-mannequin", "csp"],
+    ["3D Drawing Figure", "tool-3d-mannequin", "csp"],
+    ["오토액션", "tool-auto-action", "csp"],
+    ["Auto Action", "tool-auto-action", "csp"],
+    ["타임랩스", "tool-timelapse", "csp"],
+    ["Timelapse", "tool-timelapse", "csp"],
+    ["클리핑", "tool-clipping", "csp"],
+    ["Clip at Layer Below", "tool-clipping", "csp"],
+    ["참조 레이어", "tool-reference-layer", "csp"],
+    ["Reference Layer", "tool-reference-layer", "csp"],
+    // Photoshop
+    ["액화", "tool-liquify", "photoshop"],
+    ["유동화", "tool-liquify", "photoshop"],
+    ["Liquify", "tool-liquify", "photoshop"],
+    ["렌즈 블러", "tool-lens-blur", "photoshop"],
+    ["Lens Blur", "tool-lens-blur", "photoshop"],
+    ["조정 레이어", "tool-adjustment-layer", "photoshop"],
+    ["Adjustment Layer", "tool-adjustment-layer", "photoshop"],
+    ["PSD 내보내기", "tool-export-psd", "photoshop"],
+    ["Export PSD", "tool-export-psd", "photoshop"],
+    ["스마트 필터", "tool-smart-filter", "photoshop"],
+    ["Smart Filter", "tool-smart-filter", "photoshop"],
+    ["캔버스 뒤집기", "tool-flip-canvas", "photoshop"],
+    ["Flip Canvas Horizontal", "tool-flip-canvas", "photoshop"],
+    // SketchUp
+    ["3D 배경", "tool-bg3d", "sketchup"],
+    ["3D Background", "tool-bg3d", "sketchup"],
+    ["단면 컷어웨이", "tool-section-cutaway", "sketchup"],
+    ["Section Plane", "tool-section-cutaway", "sketchup"],
+    ["씬 카메라", "tool-scene-camera", "sketchup"],
+    ["Scene Camera", "tool-scene-camera", "sketchup"],
+    ["SKP 가져오기", "tool-import-skp", "sketchup"],
+    ["Import SKP", "tool-import-skp", "sketchup"],
+    ["그림자 시간", "tool-shadow-time", "sketchup"],
+    ["Shadow Settings", "tool-shadow-time", "sketchup"],
+    // Procreate
+    ["퀵메뉴", "tool-quick-menu", "procreate"],
+    ["QuickMenu", "tool-quick-menu", "procreate"],
+    ["퀵셰이프", "tool-quick-shape", "procreate"],
+    ["QuickShape", "tool-quick-shape", "procreate"],
+    ["컬러드롭", "tool-fill", "procreate"],
+    ["ColorDrop", "tool-fill", "procreate"],
+    ["알파 잠금", "tool-alpha-lock", "procreate"],
+    ["Alpha Lock", "tool-alpha-lock", "procreate"],
+    ["드로잉 어시스트", "tool-drawing-assist", "procreate"],
+    ["Drawing Assist", "tool-drawing-assist", "procreate"],
+    ["스트림라인", "tool-streamline", "procreate"],
+    ["StreamLine", "tool-streamline", "procreate"],
+    ["손떨림 보정", "tool-streamline", "procreate"],
+  ])("'%s' 검색 시 %s(%s)가 1순위로 매칭된다", (query, expectedToolId, expectedVendor) => {
+    const ranked = rankPaletteStudioTools(PALETTE_STUDIO_TOOLS, query);
+    expect(ranked.length).toBeGreaterThan(0);
+    expect(ranked[0]?.item.id).toBe(expectedToolId);
+    expect(ranked[0]?.matchedAlias?.vendor).toBe(expectedVendor);
   });
 });

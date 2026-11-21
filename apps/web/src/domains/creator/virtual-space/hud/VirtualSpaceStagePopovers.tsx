@@ -1,4 +1,4 @@
-import { PenTool, StickyNote, X } from "lucide-react";
+import { PenTool, Presentation, StickyNote, X } from "lucide-react";
 import { Suspense, useEffect } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -35,7 +35,14 @@ import { SpacePopover } from "./SpacePopover";
 import { SpaceProximityConsent } from "./SpaceProximityVideo";
 import { SpaceShortcutsHelp } from "./SpaceShortcutsHelp";
 import { SPACE_PROXIMITY_MEDIA_RADIUS } from "./space-proximity-media";
-import { StudioVirtualSpaceInviteSheet, StudioVirtualSpaceStickyNotes, StudioVirtualSpaceWhiteboard } from "./space-lazy-panels";
+import {
+  StudioVirtualSpaceInviteSheet,
+  StudioVirtualSpaceLiveAnnotationPanel,
+  StudioVirtualSpaceStickyNotes,
+  StudioVirtualSpaceWhiteboard,
+} from "./space-lazy-panels";
+
+export type SoloBoardTab = "whiteboard" | "stickies" | "annotation";
 
 export interface VirtualSpaceStagePopoversProps {
   readonly projectId: string;
@@ -73,8 +80,9 @@ export interface VirtualSpaceStagePopoversProps {
   readonly inviteLink: string;
   readonly inviteRecord: StudioEntryCodeRecord;
   readonly spaceUrlBase: string;
-  readonly soloBoardOpen: "whiteboard" | "stickies" | null;
-  readonly setSoloBoardOpen: (next: "whiteboard" | "stickies" | null) => void;
+  readonly soloBoardOpen: SoloBoardTab | null;
+  readonly setSoloBoardOpen: (next: SoloBoardTab | null) => void;
+  readonly moveDestination?: StudioVirtualSpacePoint | null;
   readonly yjsSpace: ReturnType<typeof useVirtualSpaceYjsDoc>;
   readonly selfListId: string;
   readonly localName: string;
@@ -116,7 +124,7 @@ export function VirtualSpaceStagePopovers(props: VirtualSpaceStagePopoversProps)
     chatTypingNames, sendSpaceChat, sendSpaceChatTyping, onChatInputChange, engineBridge, overlays,
     minimapPeople, highlightRoomIds, queuePathTo, quickTravelTo, selectPlace, activateAction,
     returnToStartPosition, setSelectedPeerId, setPanel, socialAndMedia, socialDisabledReason,
-    inviteLink, inviteRecord, spaceUrlBase, soloBoardOpen, setSoloBoardOpen, yjsSpace, selfListId,
+    inviteLink, inviteRecord, spaceUrlBase, soloBoardOpen, setSoloBoardOpen, moveDestination, yjsSpace, selfListId,
     localName, permissions, appOpenEffect, closeAppEffect, tileMedia, setTileMedia,
     pendingInteraction, interactionPhase, interactionActionId, spatialContext, handleSpatialAction,
     executeSpatialAction, closePendingInteraction, dialogueNpc, operations, experiencePreference,
@@ -128,14 +136,16 @@ export function VirtualSpaceStagePopovers(props: VirtualSpaceStagePopoversProps)
   useEffect(() => {
     if (!soloBoardOpen) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
+      if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest(".studio-sticky-note-editor, textarea")) return;
       event.preventDefault();
       event.stopPropagation();
       setSoloBoardOpen(null);
       engineBridge.focusWorld();
     };
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => document.removeEventListener("keydown", onKeyDown, true);
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, [engineBridge, setSoloBoardOpen, soloBoardOpen]);
 
   return (
@@ -168,7 +178,7 @@ export function VirtualSpaceStagePopovers(props: VirtualSpaceStagePopoversProps)
             people={minimapPeople}
             currentRoomId={locationZoneRoomId}
             variant="full"
-            destination={overlays.moveDestination}
+            destination={moveDestination ?? overlays.moveDestination}
             highlightRoomIds={highlightRoomIds}
             onMoveTo={(pt) => { overlays.setMapOpen(false); queuePathTo(pt); }}
             onJumpTo={(pt) => { overlays.setMapOpen(false); quickTravelTo(pt); }}
@@ -229,33 +239,55 @@ export function VirtualSpaceStagePopovers(props: VirtualSpaceStagePopoversProps)
           <section
             role="dialog"
             aria-modal="true"
-            aria-label={soloBoardOpen === "whiteboard" ? bt("공유 화이트보드", "Whiteboard") : bt("포스트잇 칸반", "Sticky notes")}
+            aria-label={
+              soloBoardOpen === "whiteboard"
+                ? bt("공유 화이트보드", "Whiteboard")
+                : soloBoardOpen === "annotation"
+                  ? bt("실시간 주석 보드", "Live annotation board")
+                  : bt("포스트잇 칸반", "Sticky notes")
+            }
             data-space-interactive="true"
             className="flex h-[min(78dvh,680px)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-line bg-panel p-4 shadow-2xl"
           >
             <header className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-sm font-semibold text-fg">
-                  {soloBoardOpen === "whiteboard" ? bt("공유 화이트보드", "Whiteboard") : bt("포스트잇 칸반", "Sticky notes")}
+                  {soloBoardOpen === "whiteboard"
+                    ? bt("공유 화이트보드", "Whiteboard")
+                    : soloBoardOpen === "annotation"
+                      ? bt("실시간 주석 보드", "Live annotation board")
+                      : bt("포스트잇 칸반", "Sticky notes")}
                 </h2>
-                <div role="tablist" aria-label={bt("보드 전환", "Switch board")} className="flex items-center gap-1">
+                <div role="tablist" aria-label={bt("보드 전환", "Switch board")} className="flex flex-wrap items-center gap-1">
                   <button
                     type="button"
                     role="tab"
+                    data-testid="solo-board-tab-whiteboard"
                     aria-selected={soloBoardOpen === "whiteboard"}
                     onClick={() => setSoloBoardOpen("whiteboard")}
-                    className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${soloBoardOpen === "whiteboard" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:text-fg"}`}
+                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${soloBoardOpen === "whiteboard" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:text-fg"}`}
                   >
                     <PenTool size={13} aria-hidden />{bt("화이트보드", "Whiteboard")}
                   </button>
                   <button
                     type="button"
                     role="tab"
+                    data-testid="solo-board-tab-stickies"
                     aria-selected={soloBoardOpen === "stickies"}
                     onClick={() => setSoloBoardOpen("stickies")}
-                    className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${soloBoardOpen === "stickies" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:text-fg"}`}
+                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${soloBoardOpen === "stickies" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:text-fg"}`}
                   >
                     <StickyNote size={13} aria-hidden />{bt("포스트잇", "Stickies")}
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    data-testid="solo-board-tab-annotation"
+                    aria-selected={soloBoardOpen === "annotation"}
+                    onClick={() => setSoloBoardOpen("annotation")}
+                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${soloBoardOpen === "annotation" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:text-fg"}`}
+                  >
+                    <Presentation size={13} aria-hidden />{bt("실시간 주석", "Live annotation")}
                   </button>
                 </div>
               </div>
@@ -272,6 +304,16 @@ export function VirtualSpaceStagePopovers(props: VirtualSpaceStagePopoversProps)
               <Suspense fallback={<p role="status">{bt("보드를 불러오는 중…", "Loading board…")}</p>}>
                 {soloBoardOpen === "whiteboard" ? (
                   <StudioVirtualSpaceWhiteboard
+                    snapshot={yjsSpace.boardSnapshot}
+                    selfSessionId={selfListId}
+                    authorNameOf={() => localName}
+                    onStroke={yjsSpace.addStroke}
+                    onNote={yjsSpace.addBoardNote}
+                    onRemove={yjsSpace.removeBoardEntity}
+                    onClearOwn={yjsSpace.clearOwnBoardEntities}
+                  />
+                ) : soloBoardOpen === "annotation" ? (
+                  <StudioVirtualSpaceLiveAnnotationPanel
                     snapshot={yjsSpace.boardSnapshot}
                     selfSessionId={selfListId}
                     authorNameOf={() => localName}
@@ -335,14 +377,25 @@ export function VirtualSpaceStagePopovers(props: VirtualSpaceStagePopoversProps)
       </SpacePopover>
 
       {overlays.theaterOpen && socialAndMedia.theaterFeed.stream ? (
-        <div role="dialog" aria-label={bt("라이브 시어터 화면", "Live theater screen")} data-testid="space-theater-modal" className="fixed inset-6 z-50 flex flex-col rounded-2xl border border-line bg-panel p-4 shadow-2xl">
-          <header className="mb-2 flex items-center justify-between">
-            <strong className="text-sm font-semibold">{socialAndMedia.theaterFeed.label ?? bt("라이브 공유 화면", "Live shared screen")}</strong>
-            <button type="button" onClick={() => overlays.setTheaterOpen(false)} aria-label={bt("닫기", "Close")} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-line bg-card">
-              <X size={16} aria-hidden />
-            </button>
-          </header>
-          <video autoPlay playsInline muted className="min-h-0 flex-1 rounded-xl bg-black object-contain" ref={(el) => { if (el) el.srcObject = socialAndMedia.theaterFeed.stream; }} />
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/60 p-6 backdrop-blur-xs"
+          data-space-interactive="true"
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) {
+              overlays.setTheaterOpen(false);
+              engineBridge.focusWorld();
+            }
+          }}
+        >
+          <div role="dialog" aria-modal="true" aria-label={bt("라이브 시어터 화면", "Live theater screen")} data-testid="space-theater-modal" className="flex h-full w-full flex-col rounded-2xl border border-line bg-panel p-4 shadow-2xl">
+            <header className="mb-2 flex items-center justify-between">
+              <strong className="text-sm font-semibold">{socialAndMedia.theaterFeed.label ?? bt("라이브 공유 화면", "Live shared screen")}</strong>
+              <button type="button" onClick={() => { overlays.setTheaterOpen(false); engineBridge.focusWorld(); }} aria-label={bt("닫기", "Close")} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-line bg-card">
+                <X size={16} aria-hidden />
+              </button>
+            </header>
+            <video autoPlay playsInline muted className="min-h-0 flex-1 rounded-xl bg-black object-contain" ref={(el) => { if (el) el.srcObject = socialAndMedia.theaterFeed.stream; }} />
+          </div>
         </div>
       ) : null}
 

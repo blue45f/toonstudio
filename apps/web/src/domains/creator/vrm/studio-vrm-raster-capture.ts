@@ -309,10 +309,16 @@ function* captureStudioVrmRgbaTiles(
     }
   } finally {
     // OutputPass owns a module-shared fullscreen geometry, so dispose only its per-capture
-    // material. Its public dispose() would also dispose that shared geometry.
-    outputPass.material.dispose();
-    sceneTarget.dispose();
-    outputTarget.dispose();
+    // material. Chain nested try/finally so a single dispose failure never leaks GPU render targets.
+    try {
+      outputPass.material.dispose();
+    } finally {
+      try {
+        sceneTarget.dispose();
+      } finally {
+        outputTarget.dispose();
+      }
+    }
   }
 
   return output;

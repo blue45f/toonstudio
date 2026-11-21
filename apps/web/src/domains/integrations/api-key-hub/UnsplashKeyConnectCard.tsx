@@ -1,4 +1,4 @@
-import { CheckCircle2, ExternalLink, Images, Loader2, PlugZap } from "lucide-react";
+import { CheckCircle2, ExternalLink, Images, PlugZap } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import {
@@ -200,7 +200,7 @@ export function UnsplashKeyConnectCard() {
             phase === "error" ? "text-bad" : phase === "success" ? "text-good" : "text-fg-2"
           }`}
         >
-          {phase === "testing" ? <Loader2 size={14} className="mr-1 inline animate-spin" aria-hidden /> : null}
+          {phase === "testing" ? <span aria-hidden className="mr-1.5 inline-block h-2 w-3.5 rounded-full bg-accent/70 align-middle motion-safe:animate-pulse motion-reduce:animate-none" /> : null}
           {phase === "success" ? <CheckCircle2 size={14} className="mr-1 inline" aria-hidden /> : null}
           {message}
         </p>
@@ -212,10 +212,12 @@ export function UnsplashKeyConnectCard() {
             type="button"
             onClick={() => void connect()}
             disabled={phase === "testing" || formatIssue !== null}
+            title={phase === "testing" ? "연결을 확인하는 중입니다." : formatIssue ?? undefined}
+            data-unavailable-reason={phase === "testing" ? "연결을 확인하는 중입니다." : formatIssue ?? undefined}
             className={PRIMARY}
           >
             {phase === "testing" ? (
-              <Loader2 size={16} className="animate-spin" aria-hidden />
+              <span aria-hidden className="inline-block h-2 w-4 rounded-full bg-on-accent/80 motion-safe:animate-pulse motion-reduce:animate-none" />
             ) : (
               <PlugZap size={16} aria-hidden />
             )}

@@ -125,3 +125,32 @@ export function diffPricingTransitions(
   );
   return events;
 }
+
+/**
+ * 시간순으로 저장된 카탈로그 스냅샷 배열에서 연속 diff를 계산해
+ * 최신 변동이 위로 오도록 무료/기다무/완결 전환 타임라인 이벤트를 생성한다.
+ */
+export function buildPricingTransitionsFromSnapshots(
+  snapshots: readonly CatalogTitleSnapshot[],
+): PricingTransitionEvent[] {
+  if (snapshots.length < 2) return [];
+  const chronological = [...snapshots].sort(
+    (left, right) => Date.parse(left.observedAt) - Date.parse(right.observedAt),
+  );
+  const collected: PricingTransitionEvent[] = [];
+  const seenIds = new Set<string>();
+  for (let index = 1; index < chronological.length; index += 1) {
+    const previous = chronological[index - 1]!;
+    const current = chronological[index]!;
+    for (const event of diffPricingTransitions(previous, current)) {
+      if (seenIds.has(event.id)) continue;
+      seenIds.add(event.id);
+      collected.push(event);
+    }
+  }
+  return collected.sort(
+    (left, right) =>
+      Date.parse(right.observedAt) - Date.parse(left.observedAt) ||
+      PRIORITY_ORDER[left.kind] - PRIORITY_ORDER[right.kind],
+  );
+}

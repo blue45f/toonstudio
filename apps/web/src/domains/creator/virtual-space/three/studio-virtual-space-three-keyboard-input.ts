@@ -17,6 +17,7 @@ export function bindStudioThreeKeyboardInput(
     readonly stop: () => void;
     readonly home: () => void;
     readonly interact: () => void;
+    readonly onJump?: () => void;
     readonly onCameraMode?: (mode: StudioThreeCameraMode) => void;
     readonly onToggleGhost?: () => void;
   },
@@ -31,6 +32,11 @@ export function bindStudioThreeKeyboardInput(
     if (event.code === "KeyC" || event.key === "Home") {
       event.preventDefault();
       if (!event.repeat) controls.home();
+      return;
+    }
+    if (event.code === "Space" && controls.onJump) {
+      event.preventDefault();
+      if (!event.repeat) controls.onJump();
       return;
     }
     const nextCameraMode = CAMERA_MODE_BY_CODE[event.code];

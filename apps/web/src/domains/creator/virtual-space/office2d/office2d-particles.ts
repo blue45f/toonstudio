@@ -5,6 +5,7 @@
  * 고정 상한 풀을 써서 오래 켜 둬도 메모리가 늘지 않는다.
  */
 import { office2dRandom, type Office2dCanvas2D } from "./office2d-procedural-art";
+import type { StudioExtendedFootstepSurface } from "../studio-virtual-space-footsteps";
 
 export type Office2dParticleKind =
   | "dust"
@@ -21,6 +22,14 @@ export type Office2dParticleKind =
   | "shockwave";
 
 export type Office2dComboBurstPreset = "interaction" | "sprint" | "emote" | "seat" | "awakening";
+
+const SURFACE_DUST_PALETTE: Readonly<Record<StudioExtendedFootstepSurface, readonly [string, string]>> = Object.freeze({
+  wood: ["rgba(224, 200, 166, 0.78)", "rgba(244, 232, 212, 0.62)"],
+  carpet: ["rgba(228, 222, 212, 0.68)", "rgba(244, 240, 234, 0.52)"],
+  tile: ["rgba(232, 229, 220, 0.78)", "rgba(250, 248, 242, 0.62)"],
+  stone: ["rgba(210, 218, 228, 0.78)", "rgba(236, 241, 248, 0.62)"],
+  terrace: ["rgba(218, 202, 174, 0.84)", "rgba(242, 230, 206, 0.66)"],
+});
 
 interface Particle {
   kind: Office2dParticleKind;
@@ -170,6 +179,102 @@ export class Office2dParticles {
     }
   }
 
+  /**
+   * 걷기·달리기·방향 급전환 시 발밑에서 자연스럽게 피어오르는 다중 먼지 퍼프.
+   * 이동 반대 방향으로 살짝 밀려나며 커지다가 부드럽게 사라진다.
+   */
+  emitFootstepDust(
+    x: number,
+    y: number,
+    options: {
+      readonly surface: StudioExtendedFootstepSurface;
+      readonly vx?: number;
+      readonly vy?: number;
+      readonly sprint?: boolean;
+      readonly skid?: boolean;
+    },
+  ): void {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    const palette = SURFACE_DUST_PALETTE[options.surface] ?? SURFACE_DUST_PALETTE.wood;
+    const vx = Number.isFinite(options.vx) ? (options.vx ?? 0) : 0;
+    const vy = Number.isFinite(options.vy) ? (options.vy ?? 0) : 0;
+    const speed = Math.hypot(vx, vy);
+    const backX = speed > 1 ? -vx / speed : 0;
+    const backY = speed > 1 ? -vy / speed : 0;
+    const count = options.skid ? 5 : options.sprint ? 4 : options.surface === "carpet" ? 2 : 3;
+    const baseSize = options.skid ? 3.8 : options.sprint ? 3.5 : 2.6;
+    const spread = options.skid ? 34 : options.sprint ? 26 : 16;
+
+    for (let index = 0; index < count; index += 1) {
+      const jitterAngle = (this.random() - 0.5) * Math.PI * 1.1;
+      const cos = Math.cos(jitterAngle);
+      const sin = Math.sin(jitterAngle);
+      const driftX = (backX * cos - backY * sin) * (spread * (0.45 + this.random() * 0.75)) + (this.random() - 0.5) * 14;
+      const driftY = (backX * sin + backY * cos) * (spread * 0.4) - (10 + this.random() * 14);
+      this.push({
+        kind: "dust",
+        x: x + (this.random() - 0.5) * (options.skid ? 12 : 8),
+        y: y - 1 + (this.random() - 0.5) * 4,
+        vx: driftX,
+        vy: driftY,
+        life: 0,
+        maxLife: (options.skid ? 0.56 : options.sprint ? 0.5 : 0.42) + this.random() * 0.24,
+        size: baseSize + this.random() * 2.2,
+        color: palette[index % palette.length] ?? palette[0],
+        spin: this.random() * Math.PI * 2,
+      });
+    }
+    if (options.sprint) {
+      this.emit("speedline", x + backX * 6, y - 16, 1, 0.75);
+    }
+  }
+
+  /** 점프 도약·착지 시 발밑에서 원형으로 퍼지는 먼지 구름과 접지 파동. */
+  emitLandingDust(x: number, y: number, surface: StudioExtendedFootstepSurface, takeoff = false): void {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    const palette = SURFACE_DUST_PALETTE[surface] ?? SURFACE_DUST_PALETTE.wood;
+    const puffs = takeoff ? 4 : 7;
+    for (let index = 0; index < puffs; index += 1) {
+      const angle = (index / puffs) * Math.PI * 2 + (this.random() - 0.5) * 0.4;
+      const radial = (takeoff ? 18 : 28) + this.random() * 16;
+      this.push({
+        kind: "dust",
+        x: x + Math.cos(angle) * 6,
+        y: y + Math.sin(angle) * 2.5,
+        vx: Math.cos(angle) * radial,
+        vy: Math.sin(angle) * radial * 0.35 - (takeoff ? 8 : 14) - this.random() * 6,
+        life: 0,
+        maxLife: (takeoff ? 0.4 : 0.58) + this.random() * 0.2,
+        size: (takeoff ? 2.8 : 3.6) + this.random() * 2.2,
+        color: palette[index % palette.length] ?? palette[0],
+        spin: angle,
+      });
+    }
+    if (!takeoff) {
+      this.push({
+        kind: "ring",
+        x,
+        y: y + 1,
+        vx: 0,
+        vy: 0,
+        life: 0,
+        maxLife: 0.42,
+        size: 8,
+        color: palette[0],
+        spin: 0,
+      });
+    }
+  }
+
+  /** 데스크 타이핑·작화 집중 시 책상 위로 번지는 은은한 리플·스파클. */
+  emitTypingRipple(x: number, y: number): void {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    this.emit("note", x + (this.random() - 0.5) * 14, y - 46, 1, 0.65);
+    if (this.random() > 0.55) {
+      this.emit("starburst", x + (this.random() - 0.5) * 18, y - 42, 1, 0.55);
+    }
+  }
+
   /** 상황별 다중 레이어 화려한 이펙트 프리셋을 한 번에 방출한다. */
   emitComboBurst(preset: Office2dComboBurstPreset, x: number, y: number, strength = 1): void {
     if (![x, y, strength].every(Number.isFinite)) return;
@@ -316,6 +421,24 @@ export class Office2dParticles {
           ctx.fillRect(-particle.size / 2, -particle.size / 4, particle.size, particle.size / 2);
         }
         ctx.restore();
+        continue;
+      }
+
+      if (particle.kind === "dust") {
+        // 먼지 퍼프: 피어오르며 부드럽게 커지고(scale 0.72 → 1.95) 이차 곡선으로 흩어지며 사라진다.
+        const easeOut = 1 - (1 - t) * (1 - t);
+        const radius = particle.size * (0.72 + easeOut * 1.23);
+        const alpha = Math.max(0, (1 - t) * (1 - t));
+        ctx.globalAlpha = alpha * 0.85;
+        ctx.fillStyle = particle.color;
+        ctx.beginPath();
+        ctx.ellipse(particle.x, particle.y, radius * 1.15, radius * 0.88, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = alpha * 0.45;
+        ctx.beginPath();
+        ctx.arc(particle.x - radius * 0.45, particle.y + radius * 0.12, radius * 0.65, 0, Math.PI * 2);
+        ctx.arc(particle.x + radius * 0.42, particle.y - radius * 0.08, radius * 0.55, 0, Math.PI * 2);
+        ctx.fill();
         continue;
       }
 

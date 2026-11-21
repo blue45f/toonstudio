@@ -20,6 +20,19 @@ export {
   requiresForPatch,
 } from "./appearance-presets";
 export * from "./art-style-packs";
+export {
+  KWEBTOON_ARCHETYPE_IDS,
+  KWEBTOON_ARCHETYPE_LIST,
+  KWEBTOON_ARCHETYPE_LOOKS,
+  KWEBTOON_ARCHETYPE_PRESETS,
+  buildKWebtoonArchetypeShading,
+  composeKWebtoonArchetypeRecipe,
+  detectKWebtoonArchetypeId,
+  isKWebtoonArchetypeId,
+  type KWebtoonArchetypeId,
+  type KWebtoonArchetypePreset,
+  type KWebtoonShadingStyleId,
+} from "./kwebtoon-archetype-presets";
 export * from "./look-sets";
 export * from "./shaper-quick-sculpt-presets";
 export {

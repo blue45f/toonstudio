@@ -27,6 +27,14 @@ import Link from "@/shared/navigation/router-link";
 import { CharacterChatSpeechToolbar, CharacterMessageSpeakButton } from "./CharacterChatSpeechControls";
 import { guardCharacterChatTurn } from "./character-chat-filter";
 import { buildCharacterChatQuotaView } from "./character-chat-quota";
+import {
+  DEFAULT_PERSONA_TONE,
+  DEFAULT_SPOILER_FENCE,
+  resolvePersonaToneOption,
+  resolveSpoilerFenceOption,
+  type PersonaToneId,
+  type SpoilerFenceId,
+} from "./character-chat-scene-starter";
 import { useCharacterChatHydrated, useCharacterChatStore } from "./character-chat-store";
 import { useCharacterChatSpeech, type CharacterChatSpeech } from "./use-character-chat-speech";
 import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
@@ -101,14 +109,28 @@ function MessageBubble({
   );
 }
 
+export interface ScenePromptDraft {
+  readonly id: string;
+  readonly text: string;
+  readonly autoSend?: boolean;
+}
+
 export function CharacterChatThread({
   profile,
   engine,
   ready,
+  spoilerFence,
+  personaTone,
+  scenePromptDraft,
+  onConsumeScenePromptDraft,
 }: {
   readonly profile: CharacterChatProfile;
   readonly engine: CharacterChatEngine;
   readonly ready: boolean;
+  readonly spoilerFence?: SpoilerFenceId;
+  readonly personaTone?: PersonaToneId;
+  readonly scenePromptDraft?: ScenePromptDraft | null;
+  readonly onConsumeScenePromptDraft?: () => void;
 }) {
   const t = useBilingual("characterChat");
   const actorId = useAuthActorId();
@@ -135,9 +157,10 @@ export function CharacterChatThread({
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<{ readonly text: string; readonly retryText: string } | null>(null);
-  const logRef = useRef<HTMLUListElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const handledSceneDraftIdRef = useRef<string | null>(null);
   const speech = useCharacterChatSpeech(profile);
   // 답변은 비동기로 도착하므로, 그때의 최신 낭독 상태를 읽도록 ref에 둔다.
   const speechRef = useRef(speech);
@@ -200,7 +223,14 @@ export function CharacterChatThread({
       setSending(true);
       // 자동 낭독이 켜져 있어 답변이 곧바로 읽힐 때만 엔진에 "읽기 좋은 대사" 규칙을 요청한다.
       const readAloud = speechRef.current.supported && speechRef.current.settings.autoRead;
-      const result = await engine.generateReply({ profile, history, userText: text, readAloud });
+      const result = await engine.generateReply({
+        profile,
+        history,
+        userText: text,
+        readAloud,
+        spoilerFence,
+        personaTone,
+      });
       setSending(false);
       if (result.ok) {
         const reply = appendMessage(profile.id, "character", result.text);
@@ -214,8 +244,40 @@ export function CharacterChatThread({
       }
       inputRef.current?.focus();
     },
-    [appendMessage, engine, profile, quotaView, recordBlockedTurn, sending, session?.messages, t],
+    [
+      appendMessage,
+      engine,
+      personaTone,
+      profile,
+      quotaView,
+      recordBlockedTurn,
+      sending,
+      session?.messages,
+      spoilerFence,
+      t,
+    ],
   );
+
+  // 장면 스타터 카드에서 전달된 프롬프트 초안/즉시 전송 트리거를 입력창·전송 흐름과 동기화한다.
+  useEffect(() => {
+    if (!ready || !scenePromptDraft) return;
+    if (handledSceneDraftIdRef.current === scenePromptDraft.id) return;
+    handledSceneDraftIdRef.current = scenePromptDraft.id;
+    if (scenePromptDraft.autoSend) {
+      void send(scenePromptDraft.text);
+    } else {
+      setDraft(scenePromptDraft.text);
+      inputRef.current?.focus();
+    }
+    onConsumeScenePromptDraft?.();
+  }, [onConsumeScenePromptDraft, ready, scenePromptDraft, send]);
+
+  const activeFenceOption = spoilerFence
+    ? resolveSpoilerFenceOption(spoilerFence)
+    : resolveSpoilerFenceOption(DEFAULT_SPOILER_FENCE);
+  const activeToneOption = personaTone
+    ? resolvePersonaToneOption(personaTone)
+    : resolvePersonaToneOption(DEFAULT_PERSONA_TONE);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -231,26 +293,28 @@ export function CharacterChatThread({
 
   return (
     <div ref={rootRef} className="flex min-h-[28rem] flex-1 flex-col">
-      <ul
+      <div
         ref={logRef}
         role="log"
         aria-live="polite"
         aria-label={t("대화 내용", "Conversation")}
-        className="flex max-h-[26rem] flex-1 flex-col gap-4 overflow-y-auto px-4 py-4"
+        className="flex max-h-[26rem] flex-1 flex-col overflow-y-auto px-4 py-4"
       >
-        {(session?.messages ?? []).map((message) => (
-          <MessageBubble key={message.id} message={message} profile={profile} speech={speech} />
-        ))}
-        {sending ? (
-          <li className="flex gap-2.5" aria-label={t("캐릭터가 답을 쓰는 중", "Character is typing")}>
-            <CharacterAvatar profile={profile} size="sm" />
-            <p className="rounded-2xl rounded-bl-md border border-line bg-card px-3.5 py-2.5 text-sm text-fg-3">
-              {profile.characterName}
-              {t("님이 입력 중…", " is typing…")}
-            </p>
-          </li>
-        ) : null}
-      </ul>
+        <ul className="flex flex-col gap-4">
+          {(session?.messages ?? []).map((message) => (
+            <MessageBubble key={message.id} message={message} profile={profile} speech={speech} />
+          ))}
+          {sending ? (
+            <li className="flex gap-2.5" aria-label={t("캐릭터가 답을 쓰는 중", "Character is typing")}>
+              <CharacterAvatar profile={profile} size="sm" />
+              <p className="rounded-2xl rounded-bl-md border border-line bg-card px-3.5 py-2.5 text-sm text-fg-3">
+                {profile.characterName}
+                {t("님이 입력 중…", " is typing…")}
+              </p>
+            </li>
+          ) : null}
+        </ul>
+      </div>
 
       <div className="border-t border-line bg-card px-4 py-3">
         {ready ? (
@@ -265,6 +329,21 @@ export function CharacterChatThread({
               </Link>
             ) : null}
           </div>
+        ) : null}
+        {spoilerFence || personaTone ? (
+          <p
+            data-testid="character-chat-active-director"
+            className="mb-2 flex flex-wrap items-center gap-1.5 text-[0.7rem] text-fg-2 [word-break:keep-all]"
+          >
+            <span className="font-bold text-accent">{t("적용 중 연출", "Active direction")}</span>
+            <span className="rounded-md bg-panel px-2 py-0.5 font-semibold text-fg">
+              {t(activeFenceOption.shortKo, activeFenceOption.shortEn)}
+            </span>
+            <span aria-hidden="true" className="text-fg-3">·</span>
+            <span className="rounded-md bg-panel px-2 py-0.5 font-semibold text-fg">
+              {t(activeToneOption.shortKo, activeToneOption.shortEn)}
+            </span>
+          </p>
         ) : null}
         <CharacterChatSpeechToolbar speech={speech} characterName={profile.characterName} />
         {notice ? (

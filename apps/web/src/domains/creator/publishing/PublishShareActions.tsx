@@ -2,7 +2,7 @@
 // 나머지 채널·QR은 공용 공유 창으로 잇는다. 발행 → 공유가 끊기지 않도록 발행 결과 영수증 안에 둔다.
 // 아직 공개되지 않은 작품(예약·비공개·초안)에는 열리지 않는 링크를 만들지 않고, 왜 아직 공유할 수 없는지와
 // 무엇을 하면 되는지를 알린다. 카카오톡은 앱 키가 설정된 배포에서만, 기기 공유는 브라우저가 지원할 때만 보인다.
-import { Check, Copy, Link2, LoaderCircle, Share2, Smartphone } from "lucide-react";
+import { Check, Copy, Link2, Share2, Smartphone } from "lucide-react";
 import { useId, useMemo, useRef, useState } from "react";
 
 import type { StudioPublishResultKind } from "../studio-publish-result";
@@ -133,7 +133,7 @@ export function PublishShareActions({ kind, workId, title, description, imageUrl
           <Share2 size={18} />
         </span>
         <div className="min-w-0">
-          <h3 id={headingId} className="text-base font-black text-fg">{bt("공유하기", "Share")}</h3>
+          <h3 id={headingId} className="text-base font-bold text-fg">{bt("공유하기", "Share")}</h3>
           <p className="mt-1 text-pretty break-keep text-sm leading-6 text-fg-2">
             {ready
               ? bt("링크를 복사하거나 카카오톡·기기 공유로 바로 알려 보세요.", "Copy the link, or send it through Kakao Talk or your device's share sheet.")
@@ -173,8 +173,8 @@ export function PublishShareActions({ kind, workId, title, description, imageUrl
                 className={buttonClass({ size: "md", variant: "outline", className: ACTION })}
               >
                 {busy === "kakao"
-                  ? <LoaderCircle size={16} aria-hidden className="animate-spin motion-reduce:animate-none" />
-                  : <span aria-hidden className="grid size-5 place-items-center rounded-full bg-[#fee500] text-xs font-black text-[#191919]">K</span>}
+                  ? <span aria-hidden className="inline-block h-2 w-4 rounded-full bg-accent/70 motion-safe:animate-pulse motion-reduce:animate-none" />
+                  : <span aria-hidden className="grid size-5 place-items-center rounded-full bg-[oklch(0.9_0.18_98)] text-xs font-bold text-[oklch(0.18_0.01_70)]">K</span>}
                 {bt("카카오톡", "Kakao Talk")}
               </button>
             ) : null}
@@ -186,7 +186,7 @@ export function PublishShareActions({ kind, workId, title, description, imageUrl
                 className={buttonClass({ size: "md", variant: "outline", className: ACTION })}
               >
                 {busy === "native"
-                  ? <LoaderCircle size={16} aria-hidden className="animate-spin motion-reduce:animate-none" />
+                  ? <span aria-hidden className="inline-block h-2 w-4 rounded-full bg-accent/70 motion-safe:animate-pulse motion-reduce:animate-none" />
                   : <Smartphone size={16} aria-hidden />}
                 {bt("기기 공유", "Device share")}
               </button>

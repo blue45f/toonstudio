@@ -4,6 +4,34 @@
 
 2026-11-12의 [107c 고정 번들 실제 검증·전수 관측 상태](./validation-and-release.md#2026-11-12-107c-최종-변경의-실제-검증과-전수-관측-시작), [기존 원본·제안·버전별 실제 화면 비교](./comparison/index.html), [모바일·PC 밀도 제안과 충실도 계약](./density-proposals/README.md)을 함께 확인한다. 원본 SVG 접근·새 제안 공유·제품 구현·실제 시안 충실도·사용 과업 완주는 서로 다른 상태다. 실제 검증 중 발견한 실패를 아래 원장에 유지하며 이전 버전 성공을 승계하지 않는다.
 
+## 2026-11-21 최신 통합 검증 (`98ac8b636` 최종 클로저 · 5/5 FULL GO)
+
+상태: **current** (`feat/toonstudio-100-autonomous-goal`, 최종 통합 검증 커밋 `98ac8b636` / 프로덕션 번들 `077e48dfc`, 로컬 전수 검증 완료 · 원격 push 및 운영 배포 미실행).
+
+### 1. 정적·타입·번들·아키텍처 게이트 (`2a27b6b5c` 실측)
+
+- **하네스·기초 무결성**: `harness:doctor`, `harness:check`, `harness:verify` 통과(`test:agent-harness` 7/7, `verify:pnpm-lockfile` 20 importers, `lint:quick`, `quality:secrets`, 변경 모듈 대응 Vitest 10/10 파일 58/58).
+- **6대 아키텍처 게이트 (`validate:architecture`)**: `validate:documentation` 15/15, `validate:source-layout` (`creatorRootFiles 2499/2499`), `validate:app-boundaries` `0/0`, `check:source-file-size` (`<= 800L`, `@ts-nocheck 0`), `check:studio-eager-graph` **`20,437.2 KiB (19.96 MiB) <= 19.98 MiB`** (`scene3d 2/3`, 지연 무효화 `0`).
+- **연결성·도달성·품질**: `check:unconnected-code:gate` (`669 known`, `0 new`, `1 resolved`), `verify:studio-wiring-reachability` (`53 required / 7,583 reachable`, `15 OST / 48 essentials`), `test:studio-material-brush` 37/37 파일 1,276/1,276 통과, `lint:strict` `0 errors` (`931 warnings <= 2,189` 예산).
+- **전체 타입 검사**: `typecheck:web` 풀샤드 **`28,231/28,231` 진단 0개**, `@webtoon-nest/api` typecheck 3개 tsconfig 오류 0개.
+- **프로덕션 번들 (`build:bundle` + `check:studio-bundle`)**: SW `d772796c7890` **81 critical precache URLs (`2,586,359 B <= 2,621,440 B`, `-35,081 B` 여유)**, `verify-static-csp.mjs dist/index.html` 통과, `check:studio-bundle` 회귀 0건(`27 within baseline, 1 improved, 0 regressed, 0 unbaselined`).
+
+### 2. 공식 검증 게이트 16/16 및 실브라우저·레드팀 실측
+
+| 영역 | 실행 항목 | 실측 결과 |
+| --- | --- | --- |
+| 저장·3D·접근성·E2E | `verify:studio-autosave-opfs`, `verify:studio-autosave-two-tab`, `verify:studio-3d-professional-completion` (34/34 · 293/293), `test:a11y:editor` (9/9, 데스크톱 1440×900 · 모바일 390×844 axe 0), `TOONSTUDIO_E2E_PREVIEW=1` 3종 (`auth-local-smoke` 8/8, `studio-full-journey-100` 8/8단계, `studio-virtual-space-full` 5/5) | 전원 PASS |
+| 전사 시각·UX 감사 | `audit-sitewide-visual-ux` (`vite preview :5276`, `AUDIT_STRICT=1`, scroll sweep + axe) | **102/102 PASS** (issues 0건; 대표 17라우트 × 핵심 3테마 `light/dark/contrast` × 2뷰포트 `1440/390`) |
+| `verify:push` 잔여 15종 | `audit:security` (취약점 0건), `audit:licenses`, `verify:csp`, `verify:i18n-builtins`, `verify:free-infrastructure`, `verify:cloudflare-static` (8/8 · 239/239), `verify:cloudflare-apex-redirect` (10/10), `verify:cloudflare-realtime`, `verify:toolchain-coverage`, `verify:studio-competitor-capabilities` (45 verified / 0 incomplete), `verify:studio-3d-web-authoring` (15/15 · 91/91), `verify:mobile-native-media`, `test:collab-stability` (8/8 · 34/34), `test:toonbridge` (13/13), `lint:strict` | **15/15 PASS** (위 `audit-sitewide-visual-ux` 포함 Batch B 공식 게이트 **16/16 PASS**) |
+| 4폭 라이브 레드팀 (`320×680`, `390×844`, `768×1024`, `1440×900`) | 9라우트 × 4뷰포트(36조합) 가로 오버플로, `/@vite/client` 유출, 콘솔/페이지 오류, 한글 IME 프로젝트 생성·드로잉, `/market` 스타터 10버튼 | 오버플로 0건, 오류 0건, 데스크톱 1440px 상단바 **`44px`** · 캔버스 **`91.9%`** (`1392×856`), 모바일 390px 캔버스 **`94.8%`** (`390×800`), `320×680` 브러시 HUD 및 `/studio/publish` 하단 탭 8개 비겹침 확인 |
+| 적발 결함 및 후속 마감 | `2a27b6b5c`에서 적발된 모바일 3종(`360/390/412px`) `layer-navigator` 이탈 3건 및 공개 5종 WCAG 2.1 A `label-content-name-mismatch` | `1453b4aca` → `077e48dfc` → `98ac8b636` 마감으로 `StudioLayerNavigatorItemRow.tsx` 트리오 2행 분리 + 공개 5종 `aria-label` 일치 완료. 최종 `dist/`(`SW e559f0605864`, `2,586,969 B <= 2,621,440 B`) 기준 **`verify:studio-inapp-feature-sweep` `135/135 PASS (0 skipped, 0 failed)`**, 5라우트(`/`, `/discover`, `/market`, `/studio`, `/studio/new`) **WCAG 2.1 A/AA Axe `0건`**, `1440px` `/studio/assets?view=essentials` **`clipped: false`** (`ASIDE 54 <= 900`) 실증 완료 → **독립 평가 `9.85/10` · `5/5 FULL GO` 확정** |
+
+### 3. 미실행·제한 범위 정직 표기
+
+- `audit-sitewide-visual-ux`는 대표 17라우트 × 핵심 3테마 × 2뷰포트(102건) 실측 기준이며, 300+ 전체 라우트 × 9테마 전수 카르테시안 조합은 시간 제약으로 미실행했다.
+- 실기기 태블릿 펜 호버·팜 리젝션 E2E는 로컬 데스크톱 Playwright 환경 특성상 단위/통합 테스트로 대체 검증했으며 실기기 검증은 별도다.
+- 본 기록 시점은 로컬 통합 검증 완료 단계이며, 원격 `push`, PR CI, `main` 병합, 운영 배포(Cloudflare/onpod)는 미실행 상태다.
+
 ## 2026-11-12 최신 연결 — 107c와 재사용 근거
 
 최신 번들은 `107c11ff… / 399bf5bf0013`이다. 게시 시작·브랜드 4/4, 영어 드로잉 저장 이름/원고 보존 2/2, 홍보 화살표·첫 행동 3/3을 새 실제 번들로 확인했다. Story·Showcase는 제품 소스가 같은 d400의 잔여 9/9씩과 같은 뷰포트 시안 대조를 재사용한다. 6d597의 호환본 21개/유지 원본 28개 실제 49편 완주, 4911/cf510의 저장·소재·운영·가상 공간 근거도 버전·fixture·실기기 한계와 함께 재사용하며 새 성공 수로 합산하지 않는다.

@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { useLocation } from "react-router-dom";
 
 import { IpExchangeQuickPanel } from "../components/IpExchangeQuickPanel";
+import { MarketBeginnerStarterBar } from "../components/MarketBeginnerStarterBar";
 import { MarketGrandAtelierShowcase } from "../components/MarketGrandAtelierShowcase";
 import {
   MarketHomeExploreBand,
@@ -30,6 +31,13 @@ import {
 } from "../components/market-home-section";
 import { useCommerceConfig } from "../hooks/use-commerce-config";
 import { useMarketResources } from "../hooks/use-market-resources";
+import {
+  loadSavedMarketBeginnerGoal,
+  resolveMarketBeginnerGoal,
+  saveMarketBeginnerGoal,
+  type MarketBeginnerGoal,
+  type MarketBeginnerGoalId,
+} from "../models/market-beginner-starter";
 import { isMarketPublicKeywordTag } from "../models/market-catalog-public";
 import { marketHomeJsonLd } from "../models/market-jsonld";
 
@@ -133,10 +141,32 @@ export function MarketHomePage() {
     (item) => item.kind === "3d-asset" || item.kind === "3d-preset",
   );
   const allPresetRef = useRef<HTMLButtonElement>(null);
-  const [activePresetId, setActivePresetId] = useState<MarketEcosystemPresetId>("all");
-  const [quickFilterId, setQuickFilterId] = useState<MarketQuickFilterId>("all");
+  const initialStarterGoal = resolveMarketBeginnerGoal(loadSavedMarketBeginnerGoal());
+  const [activePresetId, setActivePresetId] = useState<MarketEcosystemPresetId>(
+    () => initialStarterGoal?.presetId ?? "all",
+  );
+  const [quickFilterId, setQuickFilterId] = useState<MarketQuickFilterId>(
+    () => initialStarterGoal?.quickFilterId ?? "all",
+  );
+  const [beginnerGoalId, setBeginnerGoalId] = useState<MarketBeginnerGoalId | null>(
+    () => initialStarterGoal?.id ?? null,
+  );
   const [quickPreviewRecord, setQuickPreviewRecord] =
     useState<CreatorMarketplaceResourceRecord | null>(null);
+
+  const handleSelectBeginnerGoal = (goal: MarketBeginnerGoal) => {
+    setBeginnerGoalId(goal.id);
+    setActivePresetId(goal.presetId);
+    setQuickFilterId(goal.quickFilterId);
+    saveMarketBeginnerGoal(goal.id);
+  };
+
+  const handleClearBeginnerGoal = () => {
+    setBeginnerGoalId(null);
+    setActivePresetId("all");
+    setQuickFilterId("all");
+    saveMarketBeginnerGoal(null);
+  };
 
   const presetFilteredItems = useMemo(() => {
     const byPreset =
@@ -272,7 +302,10 @@ export function MarketHomePage() {
           <Container size="wide" className="pt-5 sm:pt-6">
             <MarketHomePresets
               activeId={activePresetId}
-              onSelect={setActivePresetId}
+              onSelect={(next) => {
+                setActivePresetId(next);
+                setBeginnerGoalId(null);
+              }}
               allButtonRef={allPresetRef}
             />
 
@@ -296,7 +329,10 @@ export function MarketHomePage() {
                     key={chip.id}
                     type="button"
                     aria-pressed={active}
-                    onClick={() => setQuickFilterId(chip.id)}
+                    onClick={() => {
+                      setQuickFilterId(chip.id);
+                      setBeginnerGoalId(null);
+                    }}
                     className={cn(
                       "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-[8px] border px-3 py-1.5 text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
                       active
@@ -310,6 +346,13 @@ export function MarketHomePage() {
                 );
               })}
             </div>
+
+            <MarketBeginnerStarterBar
+              activeGoalId={beginnerGoalId}
+              matchedCount={presetFilteredItems.length}
+              onSelectGoal={handleSelectBeginnerGoal}
+              onClearGoal={handleClearBeginnerGoal}
+            />
           </Container>
 
           <Container size="wide" className="pb-10 pt-7 sm:pb-12 sm:pt-8">
@@ -470,8 +513,7 @@ export function MarketHomePage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setActivePresetId("all");
-                          setQuickFilterId("all");
+                          handleClearBeginnerGoal();
                           allPresetRef.current?.focus({ preventScroll: true });
                         }}
                         className={buttonClass({

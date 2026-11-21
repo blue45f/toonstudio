@@ -173,6 +173,7 @@ export function buildStudioVectorEraserMenuItems({
     {
       id: "erase-to-intersection",
       commandId: "vector.erase-to-intersection",
+      searchActivation: "execute",
       label: "교차점까지 지우기",
       icon: Eraser,
       checked: state.vectorEraseToIntersection,

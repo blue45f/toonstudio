@@ -1,4 +1,4 @@
-import { LifeBuoy, PenTool, StickyNote } from "lucide-react";
+import { LifeBuoy, PenTool, Presentation, StickyNote } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore, type ComponentProps } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -51,11 +51,12 @@ import { SpaceSidePanel } from "./hud/SpaceSidePanel";
 import { SpaceToasts } from "./hud/SpaceToasts";
 import { SpaceTownBanner } from "./hud/SpaceTownBanner";
 import { SpaceWorkLauncher } from "./hud/SpaceWorkLauncher";
+import { SpaceCelebrationRibbon, SpaceWorkStatusBar } from "./hud/SpaceWorkStatusBar";
 import { SpaceZoneSplash, type SpaceZoneSplashInput } from "./hud/SpaceZoneSplash";
 import { SpaceZoneWorkbar } from "./hud/SpaceZoneWorkbar";
 import { SpaceZoomControls } from "./hud/SpaceZoomControls";
 import { VirtualSpaceSidePanelContent } from "./hud/VirtualSpaceSidePanelContent";
-import { VirtualSpaceStagePopovers } from "./hud/VirtualSpaceStagePopovers";
+import { VirtualSpaceStagePopovers, type SoloBoardTab } from "./hud/VirtualSpaceStagePopovers";
 import { emitSpaceStatusExtrasChange, spaceStatusOptionById, useSpaceStatusExtras, writeSpaceStatusUrgency, type SpaceStatusOption } from "./hud/space-dock-model";
 import { spaceHudChatHintBlocked, spaceHudShowsEventBanner } from "./hud/space-hud-priority";
 import { StudioP2pHuddleLauncher, StudioVirtualSpaceCustomizationPanel } from "./hud/space-lazy-panels";
@@ -106,6 +107,14 @@ import { studioSpatialActions, type StudioSpatialActionId } from "./studio-virtu
 import { studioTownDeskPodForActor } from "./studio-virtual-space-town-program";
 import type { StudioUserStatus } from "./studio-virtual-space-user-status";
 import type { StudioWorkDecision } from "./studio-virtual-space-work-bridge";
+import {
+  createStudioCelebrationEvent,
+  playStudioCelebrationChime,
+  useStudioWebtoonWorkStatus,
+  type StudioCelebrationEvent,
+  type StudioCelebrationKind,
+  type StudioWebtoonWorkStatusId,
+} from "./studio-virtual-space-work-status";
 import { DEFAULT_STUDIO_WORLD_MANIFEST, studioWorldPresenceState, studioWorldSpawn, type StudioWorldInteractionDefinition, type StudioWorldNpcDefinition } from "./studio-virtual-space-world-manifest";
 import { useSpaceRolePreset } from "./use-space-role-preset";
 import { useStudioPeerFollow } from "./use-studio-peer-follow";
@@ -126,7 +135,14 @@ import "./studio-virtual-space.css";
 import "./studio-workspace-live.css";
 import "./hud/space-hud.css";
 
-const CURSOR_COLORS = ["#6366f1", "#ec4899", "#06b6d4", "#f59e0b", "#10b981", "#8b5cf6"] as const;
+const CURSOR_COLORS = [
+  "oklch(0.62 0.19 266)",
+  "oklch(0.65 0.21 352)",
+  "oklch(0.7 0.14 205)",
+  "oklch(0.76 0.16 74)",
+  "oklch(0.7 0.15 162)",
+  "oklch(0.64 0.2 292)",
+] as const;
 
 export function VirtualSpaceExperience({
   projectId, preparing, signedIn, publication, homeHeader, personal = false,
@@ -193,8 +209,12 @@ export function VirtualSpaceExperience({
   const [runtimeMetrics, setRuntimeMetrics] = useState<StudioVirtualRuntimeMetrics>(EMPTY_STUDIO_VIRTUAL_RUNTIME_METRICS);
   const [selectedPeerId, setSelectedPeerId] = useState<string | null>(null);
   const localPoseRef = useRef<StudioSpacePose>("stand");
+  const [localPose, setLocalPose] = useState<StudioSpacePose>("stand");
   const [ghostMode, setGhostMode] = useState(false);
-  const [soloBoardOpen, setSoloBoardOpen] = useState<"whiteboard" | "stickies" | null>(null);
+  const [soloBoardOpen, setSoloBoardOpen] = useState<SoloBoardTab | null>(null);
+  const { statusId: workStatusId, setStatusId: setWorkStatusId } = useStudioWebtoonWorkStatus();
+  const [celebrationEvent, setCelebrationEvent] = useState<StudioCelebrationEvent | null>(null);
+  const checkpointCountRef = useRef(0);
   const [currentInteraction, setCurrentInteraction] = useState<StudioWorldInteractionDefinition | null>(null);
   const [pendingInteraction, setPendingInteraction] = useState<StudioWorldInteractionDefinition | null>(null);
   const [interactionState, dispatchInteraction] = useReducer(reduceStudioSpatialInteraction, EMPTY_STUDIO_SPATIAL_INTERACTION_STATE);
@@ -236,7 +256,10 @@ export function VirtualSpaceExperience({
     if (expectedCurrent && controllerRef.current !== expectedCurrent) return;
     controllerRef.current = next;
   }, []);
-  const writeLocalPoseRef = useCallback((next: StudioSpacePose) => { localPoseRef.current = next; }, []);
+  const writeLocalPoseRef = useCallback((next: StudioSpacePose) => {
+    localPoseRef.current = next;
+    setLocalPose((cur) => (cur === next ? cur : next));
+  }, []);
   const cancelSlotsProxyRef = useRef<() => Promise<void>>(() => Promise.resolve());
   const cancelApproachProxyRef = useRef<() => void>(() => undefined);
   const cancelFollowingProxyRef = useRef<() => void>(() => undefined);
@@ -317,6 +340,9 @@ export function VirtualSpaceExperience({
     chatOpen, setChatOpen, pendingInteraction, closePendingInteraction, dialogueNpc, closeDialogue,
     emote, zoomAvailable: userZoom.available, onDeskShortcut: handleDeskShortcut,
     onToggleQuietMode: socialAndMedia.proximityScope.toggleQuietMode,
+    soloBoardOpen: soloBoardOpen !== null, onCloseSoloBoard: () => setSoloBoardOpen(null),
+    appEffectOpen: appPresence.openEffect !== null, onCloseAppEffect: appPresence.close,
+    tileMediaOpen: tileMedia !== null, onCloseTileMedia: () => setTileMedia(null),
   });
   setPanelProxyRef.current = overlays.setPanel;
   setMapOpenProxyRef.current = overlays.setMapOpen;
@@ -410,11 +436,30 @@ export function VirtualSpaceExperience({
     }
   }, [applyWorkStatus, emote, navigate, overlays]);
 
-  const { focusSession, focusNow, activeSuggestion, atelierPulse, acceptSuggestion, dismissSuggestion, startFocusPulse, pauseFocusSession, resumeFocusSession, stopFocusSession } = useStudioVirtualSpaceFocusSuggestions({
+  const celebrationTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
+  useEffect(() => () => { if (celebrationTimerRef.current !== null) globalThis.clearTimeout(celebrationTimerRef.current); }, []);
+  const triggerCelebration = useCallback((kind: StudioCelebrationKind, count?: number) => {
+    const completedCount = count ?? (checkpointCountRef.current += 1);
+    if (count !== undefined && count > checkpointCountRef.current) checkpointCountRef.current = count;
+    setCelebrationEvent(createStudioCelebrationEvent({ kind, completedCount, workStatusId }));
+    playStudioCelebrationChime();
+    engineBridge.requestEnvironmentEffect("wish", selfRef.current);
+    if (celebrationTimerRef.current !== null) globalThis.clearTimeout(celebrationTimerRef.current);
+    celebrationTimerRef.current = globalThis.setTimeout(() => setCelebrationEvent(null), 5500);
+  }, [engineBridge, workStatusId]);
+  const handleSelectWorkStatus = useCallback((next: StudioWebtoonWorkStatusId) => {
+    setWorkStatusId(next);
+    if (next === "short-break") applyWorkStatus("break", "available");
+    else if (next === "inking" || next === "coloring-bg") applyWorkStatus("focusing", "focused");
+    else applyWorkStatus("available", "available");
+  }, [applyWorkStatus, setWorkStatusId]);
+
+  const { focusSession, focusNow, focusActive, activeSuggestion, atelierPulse, acceptSuggestion, dismissSuggestion, startFocusPulse, completeFocusSprintNow, pauseFocusSession, resumeFocusSession, stopFocusSession } = useStudioVirtualSpaceFocusSuggestions({
     worldReady: worldRuntime.worldReady, authoringMode, roomId: locationZone.roomId, privateZone: locationZone.privateZone,
     selfSeatedAtDesk: socialAndMedia.seatedActors.some((a) => a.id === fallbackIdentity), selfActivity: snapshot.self.activity, selfUserStatus: snapshot.self.userStatus ?? null,
     peers: personal ? [] : snapshot.peers.map((p) => ({ zoneId: p.state.zoneId, activity: p.state.activity, userStatus: p.state.userStatus ?? null, nearSelf: distanceBetween(p.state, snapshot.self) <= TALK_DISTANCE })),
     spotlightActive: Boolean(socialAndMedia.spotlightEventId), bt, notify, onApplyWorkStatus: applyWorkStatus, onApplyWorkDecisions: applyWorkDecisions,
+    onFocusCompleted: (count) => triggerCelebration("focus-sprint", count),
   });
 
   const { requestSaveLogin, handleBoothProjectAsset } = useStudioVirtualSpaceBoothAsset({ bt, notify });
@@ -434,7 +479,7 @@ export function VirtualSpaceExperience({
   const inviteLink = `${spaceUrlBase}#code=${inviteRecord.code}`;
 
   const sharedCursorViews = useMemo<readonly StudioSharedCursorView[]>(() => snapshot.peers.map((peer, idx) => ({
-    sessionId: peer.participant.sessionId, displayName: peer.participant.displayName, color: CURSOR_COLORS[idx % CURSOR_COLORS.length] ?? "#6366f1",
+    sessionId: peer.participant.sessionId, displayName: peer.participant.displayName, color: CURSOR_COLORS[idx % CURSOR_COLORS.length] ?? CURSOR_COLORS[0],
     x: Math.round((peer.state.x / Math.max(1, worldRuntime.worldManifest.width)) * (typeof window !== "undefined" ? window.innerWidth : 1280)),
     y: Math.round((peer.state.y / Math.max(1, worldRuntime.worldManifest.height)) * (typeof window !== "undefined" ? window.innerHeight : 800)),
     hidden: false,
@@ -455,11 +500,11 @@ export function VirtualSpaceExperience({
   const incomingRequests = socialAndMedia.socialSnapshot.requests.filter((req) => req.direction === "incoming" && req.status === "offered");
   const peopleBadge = { nearby: personal ? 0 : snapshot.nearbyPeers.length, incoming: incomingRequests.length };
   const selfDock = { identity: fallbackIdentity, name: localName, activity: snapshot.self.activity, userStatus: snapshot.self.userStatus, avatarIndex: snapshot.self.avatarIndex, appearance: snapshot.self.appearance };
-  const moreItems = spaceMoreItems({ personal, desktop, panel: overlays.panel, proximityVideoOn: socialAndMedia.proximity.enabled, pose: localPoseRef.current, zoomLevel: userZoom.available ? userZoom.level : null }, {
+  const moreItems = spaceMoreItems({ personal, desktop, panel: overlays.panel, proximityVideoOn: socialAndMedia.proximity.enabled, pose: localPose, zoomLevel: userZoom.available ? userZoom.level : null }, {
     toggleProximityVideo: socialAndMedia.mediaAvailable ? () => { if (socialAndMedia.proximity.enabled) socialAndMedia.proximity.stop(); else overlays.setMediaConsentOpen(true); } : undefined,
     openPanel: overlays.setPanel, openSeats: () => openOfficeSeatsRef.current(), openSearch: () => overlays.setSearchOpen(true),
     capturePhoto: captureVirtualPhoto, unstuck: () => engineBridge.requestUnstuck(), openHelp: () => overlays.setHelpOpen(true),
-    exit: exitSpace, togglePose: () => engineBridge.requestPose(localPoseRef.current === "stand" ? "rest" : "stand"), zoom: (a) => engineBridge.userZoom.apply(a),
+    exit: exitSpace, togglePose: () => engineBridge.requestPose(localPose === "stand" ? "rest" : "stand"), zoom: (a) => engineBridge.userZoom.apply(a),
   });
 
   const userListUsers = useStudioVirtualPeerConnectionTracker({ selfId: selfListId, selfName: localName, self: snapshot.self, peers: snapshot.peers, liveAvailability: live.availability, connectivityMode: connectivity.mode, directReady: snapshot.direct });
@@ -590,7 +635,7 @@ export function VirtualSpaceExperience({
             <>
               <SpaceLocationChip spaceName={spaceName} zone={locationZone} compact={touch} connection={personal ? null : connection} onExit={exitSpace}
                 pulse={worldRuntime.worldReady && !authoringMode ? atelierPulse : null} engineMode={authoringMode ? undefined : engineMode}
-                onToggleEngineMode={() => setEngineMode((cur) => { const next = cur === "3d" ? "2d" : "3d"; writeStudioVirtualPreferredEngineMode(next); navigate({ pathname: location.pathname, search: applyStudioVirtualStageSearch(location.search, next) }, { replace: true }); return next; })}
+                onToggleEngineMode={() => { const next = engineMode === "3d" ? "2d" : "3d"; setEngineMode(next); writeStudioVirtualPreferredEngineMode(next); navigate({ pathname: location.pathname, search: applyStudioVirtualStageSearch(location.search, next) }, { replace: true }); }}
                 onQuickAction={handleAtelierPulseAction} onOpenSearch={() => { overlays.setDockPopover(null); overlays.setSearchOpen(true); }} />
               <div className="space-top-tools-row" data-space-interactive="true">
                 <SpaceInlineProfilePopover nickname={localName} onNicknameChange={onNicknameChange} permissions={permissions} roomControl={roomControl}
@@ -605,9 +650,20 @@ export function VirtualSpaceExperience({
                     <button type="button" data-testid="space-quick-stickies-btn" onClick={() => setSoloBoardOpen((c) => (c === "stickies" ? null : "stickies"))} className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-panel/95 px-3 text-xs font-medium text-fg shadow-sm hover:border-accent">
                       <StickyNote size={14} aria-hidden />{bt("포스트잇", "Stickies")}
                     </button>
+                    <button type="button" data-testid="space-quick-annotation-btn" onClick={() => setSoloBoardOpen((c) => (c === "annotation" ? null : "annotation"))} className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-panel/95 px-3 text-xs font-medium text-fg shadow-sm hover:border-accent">
+                      <Presentation size={14} aria-hidden />{bt("실시간 주석", "Annotate")}
+                    </button>
                   </div>
+                ) : !touch ? (
+                  <button type="button" data-testid="space-quick-whiteboard-btn" onClick={() => overlays.togglePanel("board")} className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-panel/95 px-3 text-xs font-medium text-fg shadow-sm hover:border-accent">
+                    <PenTool size={14} aria-hidden />{bt("화이트보드", "Board")}
+                  </button>
                 ) : null}
               </div>
+              {worldRuntime.worldReady && !authoringMode ? (
+                <SpaceWorkStatusBar activeStatusId={workStatusId} onSelectStatus={handleSelectWorkStatus} focusActive={focusActive && focusSession.phase !== "break"}
+                  onStartFocusSprint={startFocusPulse} onCompleteCheckpoint={() => { if (focusSession.phase === "running" || focusSession.phase === "paused") completeFocusSprintNow(); else triggerCelebration("milestone-check"); }} />
+              ) : null}
               {homeHeader}
               {worldRuntime.worldReady && overlays.tourOpen ? <StudioVirtualSpaceMiniTour progress={overlays.tourProgress} touch={touch} onDone={overlays.finishMiniTour} /> : null}
               <SpaceZoneWorkbar kind={zoneWorkKind} items={zoneWorkItems} pulse={worldRuntime.worldReady && !authoringMode ? atelierPulse : null} onPanel={overlays.setPanel} onCowork={() => overlays.openCowork(null)} onShare={shareScreenNearby} onPulseAction={handleAtelierPulseAction} />
@@ -616,6 +672,7 @@ export function VirtualSpaceExperience({
           }
           topCenter={
             <>
+              <SpaceCelebrationRibbon event={celebrationEvent} onDismiss={() => setCelebrationEvent(null)} />
               {worldRuleGate.element}
               <SpaceTownBanner personal={personal} spotlightActive={Boolean(socialAndMedia.spotlightEventId)} onStopSpotlight={socialAndMedia.stopSpotlight} onViewTown={() => overlays.setPanel("town")} />
               {spaceHudShowsEventBanner({ desktop, coachOpen: worldRuntime.worldReady && overlays.tourOpen }) ? <SpaceEventBanner banner={spaceUi.banner} onDismiss={spaceUi.dismissBanner} /> : null}
@@ -642,8 +699,8 @@ export function VirtualSpaceExperience({
                   onResetStatusUrgency={() => { writeSpaceStatusUrgency("normal"); emitSpaceStatusExtrasChange(); }} onStopFollowing={cancelFollowing} onStopLeading={socialAndMedia.finishSharedActivity}
                   onStopWhisper={() => socialAndMedia.proximityScope.setWhisperPeerId(null)} onResetProximityRange={() => socialAndMedia.proximityScope.setProximityRange("standard")} onConfig={updateFollowConfig} onRecentered={() => engineBridge.focusWorld()} />
                 {worldRuntime.stuck ? <button type="button" className="space-status-chip space-status-chip--warn" data-space-interactive="true" onClick={() => engineBridge.requestUnstuck()}><LifeBuoy size={16} aria-hidden />{bt("끼었나요? 제자리로 이동", "Stuck? Move to safe spot")}</button> : null}
-                {ghostMode ? <div className="space-status-chip" data-space-interactive="true"><p role="status">{bt("고스트 모드 · 벽과 사람을 통과합니다 (G)", "Ghost mode (G)")}</p><button type="button" className="space-pill-button" onClick={() => engineBridge.setGhostMode(false)}>{bt("끄기", "Off")}</button></div> : null}
-                {worldRuntime.worldReady && !authoringMode ? <SpaceFocusChip session={focusSession} now={focusNow} onPause={pauseFocusSession} onResume={resumeFocusSession} onStop={stopFocusSession} onEmote={emote} /> : null}
+                {ghostMode ? <div className="space-status-chip" data-space-interactive="true"><p role="status">{bt("고스트 모드 · 벽과 사람을 통과합니다 (G)", "Ghost mode (G)")}</p><button type="button" data-testid="space-ghost-mode-off-btn" className="space-pill-button" onClick={() => { engineBridge.setGhostMode(false); setGhostMode(false); }}>{bt("끄기", "Off")}</button></div> : null}
+                {worldRuntime.worldReady && !authoringMode ? <SpaceFocusChip session={focusSession} now={focusNow} onPause={pauseFocusSession} onResume={resumeFocusSession} onStop={stopFocusSession} onCompleteNow={completeFocusSprintNow} onEmote={emote} /> : null}
                 {worldRuntime.worldReady && !authoringMode && activeSuggestion ? <SpaceContextSuggestion suggestion={activeSuggestion} onAccept={acceptSuggestion} onDismiss={dismissSuggestion} /> : null}
                 {worldRuntime.worldReady ? <SpaceInteractPrompt target={interactTarget} touch={touch} onActivate={() => { if (currentInteraction) engineBridge.requestInteract(); else if (promptNpc?.interaction) handleEngineNpcInteract(promptNpc.interaction, promptNpc.npc); }} /> : null}
                 {worldRuntime.worldReady ? <SpaceChatInput blocked={spaceHudChatHintBlocked({ surfaceOpen: blockingOpenRef.current || overlays.panel !== null || overlays.dockPopover !== null || overlays.mapOpen || overlays.helpOpen, chatPanelOpen: chatOpen, touch })} touch={touch} onTypingChange={onChatInputChange} onSend={sendChatMessage} onClosed={() => engineBridge.focusWorld()} /> : null}
@@ -678,7 +735,7 @@ export function VirtualSpaceExperience({
                   boothSpaces={boothSpaces} boothConfig={boothConfig} boothBookings={boothBookings} setBoothBookings={setBoothBookings} boothWaitlist={boothWaitlist} setBoothWaitlist={setBoothWaitlist}
                   galleryFrames={galleryFrames} galleryStats={galleryStats} setGalleryStats={setGalleryStats} requestSaveLogin={requestSaveLogin} handleBoothProjectAsset={handleBoothProjectAsset}
                   inviteRecord={inviteRecord} inviteLink={inviteLink} spaceUrlBase={spaceUrlBase} initialSessionId={searchParams.get("session")}
-                  setPanel={overlays.setPanel} setHelpOpen={overlays.setHelpOpen} openWorldEditor={openWorldEditor} closeWorldEditor={closeWorldEditor} notify={notify}
+                  setPanel={overlays.setPanel} setHelpOpen={overlays.setHelpOpen} openWorldEditor={openWorldEditor} closeWorldEditor={closeWorldEditor} notify={notify} onOpenSoloBoard={personal ? setSoloBoardOpen : undefined}
                 />
               </Suspense>
             </SpaceSidePanel>
@@ -693,7 +750,7 @@ export function VirtualSpaceExperience({
           highlightRoomIds={spaceRole.preset.roomIds} queuePathTo={worldRuntime.queuePathTo} quickTravelTo={worldRuntime.quickTravelTo} selectPlace={worldRuntime.selectPlace}
           activateAction={worldRuntime.activateAction} returnToStartPosition={worldRuntime.returnToStartPosition} setSelectedPeerId={setSelectedPeerId} setPanel={overlays.setPanel}
           socialAndMedia={socialAndMedia} socialDisabledReason={socialDisabledReason} inviteLink={inviteLink} inviteRecord={inviteRecord} spaceUrlBase={spaceUrlBase}
-          soloBoardOpen={soloBoardOpen} setSoloBoardOpen={setSoloBoardOpen} yjsSpace={yjsSpace} selfListId={selfListId} localName={localName} permissions={permissions}
+          soloBoardOpen={soloBoardOpen} setSoloBoardOpen={setSoloBoardOpen} moveDestination={moveDestinationState} yjsSpace={yjsSpace} selfListId={selfListId} localName={localName} permissions={permissions}
           appOpenEffect={appPresence.openEffect} closeAppEffect={appPresence.close} tileMedia={tileMedia} setTileMedia={setTileMedia}
           pendingInteraction={pendingInteraction} interactionPhase={interactionState.phase} interactionActionId={interactionState.actionId as StudioSpatialActionId | null}
           spatialContext={spatialContext} handleSpatialAction={handleSpatialAction} executeSpatialAction={executeSpatialAction} closePendingInteraction={closePendingInteraction}

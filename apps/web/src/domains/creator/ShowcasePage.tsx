@@ -2,7 +2,7 @@
 // 만들기 갤러리 본체(CreateGalleryPage)는 건드리지 않고, 갤러리 본문은 공유 컴포넌트
 // (GalleryToolbar·GalleryTabPanel)를 그대로 재사용한다.
 import { ArrowRight, ChevronDown, Send } from "lucide-react";
-import { useEffect, useRef, type CSSProperties } from "react";
+import { Suspense, useEffect, useRef, type CSSProperties } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import "./showcase/showcase-page.css";
@@ -18,8 +18,17 @@ import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import Link from "@/shared/navigation/router-link";
 import { SHOWCASE_COLLABORATION_TRACKS } from "@/shared/navigation/webtoon-platform-router-ux-model";
+
+const LazyCreatorSerializationPaceBoard = lazyRetry(
+  () =>
+    import("./fresh-ideas/CreatorSerializationPaceBoard").then((module) => ({
+      default: module.CreatorSerializationPaceBoard,
+    })),
+  "CreatorSerializationPaceBoard",
+);
 
 const SHOWCASE_TRACK_IMAGES: Readonly<Record<string, string>> = {
   "portfolio-curation": "/assets/site-experience/site-art-v1/cards/nb-showcase-premiere-640.webp",
@@ -252,6 +261,9 @@ export function ShowcasePage() {
               {bt("발행하러 가기", "Go to publishing")}
             </Link>
           </section>
+          <Suspense fallback={null}>
+            <LazyCreatorSerializationPaceBoard />
+          </Suspense>
           <SiteArtSurfaceSpotlight cardId="nb-showcase-premiere" compact />
           <CreativeJourneyLinks compact />
         </div>

@@ -29,6 +29,8 @@ import {
   subscribeIllustrated2dVfxBurst,
   subscribeIllustratedWorkstationModal,
 } from "../studio-virtual-space-illustrated-2d-runtime";
+import { setStudioSoundEngineMuted, unlockStudioSoundEngine } from "../studio-virtual-space-sound-engine";
+import { useStudioSpaceSoundMuted } from "../studio-virtual-space-work-status";
 import { StudioVirtualSpaceBootRecoveryCard } from "../StudioVirtualSpaceBootRecoveryCard";
 import { StudioVirtualSpaceWorkstationLiveModal } from "../StudioVirtualSpaceWorkstationLiveModal";
 import { office2dCharacterForAvatarSkin } from "./office2d-avatar-role";
@@ -47,9 +49,7 @@ import { Office2dRuntime, type Office2dRuntimeCallbacks, type Office2dStageProps
 import {
   playOffice2dSpatialCue,
   readOffice2dClaimedSeatId,
-  readOffice2dSoundMuted,
   writeOffice2dClaimedSeatId,
-  writeOffice2dSoundMuted,
 } from "./office2d-stage-extensions";
 import type { Office2dDrawable, Office2dRendererHost } from "./office2d-renderer";
 import {
@@ -102,7 +102,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
   const [roomId, setRoomId] = useState<string | null>(null);
   const [schematicMode, setSchematicMode] = useState(false);
   const [claimedSeatId, setClaimedSeatId] = useState<string>(() => readOffice2dClaimedSeatId());
-  const [soundMuted, setSoundMuted] = useState<boolean>(() => readOffice2dSoundMuted());
+  const [soundMuted, setSoundMuted] = useStudioSpaceSoundMuted();
   const [workstationModalOpen, setWorkstationModalOpen] = useState(false);
   const [selectedWorkstationId, setSelectedWorkstationId] = useState<string | null>(null);
   const latest = useRef(props);
@@ -130,8 +130,20 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
   }, [claimedSeatId]);
 
   useEffect(() => {
-    writeOffice2dSoundMuted(soundMuted);
+    setStudioSoundEngineMuted(soundMuted);
   }, [soundMuted]);
+
+  useEffect(() => {
+    if (!schematicMode) return undefined;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+      event.preventDefault();
+      setSchematicMode(false);
+      bridge.focusWorld();
+    };
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [bridge, schematicMode]);
 
   /**
    * 내 지정석 동작(SoWork SetMyWorkSpotModal + Gather AssignedDesk). 다른 좌석에 앉아 있으면 그 좌석을 지정석으로 바꾸고,
@@ -289,6 +301,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
       getStageProps: stageProps,
       getLanguage: documentLanguage,
       getReducedMotion: prefersReducedMotion,
+      getSoundMuted: () => soundMutedRef.current,
       getAvatarCharacter: office2dCharacterForAvatarSkin,
     });
     runtimeRef.current = runtime;
@@ -362,6 +375,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
       if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return;
       if (!WORLD_KEY_CODES.has(event.code)) return;
       if (PREVENT_DEFAULT_CODES.has(event.code)) event.preventDefault();
+      unlockStudioSoundEngine();
       heldMoveCodes.add(event.code);
       if (!event.repeat) runtime.keyDown(event.code);
     };
@@ -392,6 +406,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
       },
     });
     const handlePointerDown = (event: PointerEvent) => {
+      unlockStudioSoundEngine();
       if (event.button !== 0 || bridge.cameraPan.isLooking() || isStudioSpaceJoystickActive(bridge.getJoystick())) return;
       pointerStart = {
         id: event.pointerId,
@@ -652,8 +667,9 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
           }}
           onToggleSound={() => {
             // 켜는 순간 지금 방의 화음을 한 번 들려줘 소리가 켜졌음을 바로 알 수 있게 한다.
-            if (soundMuted) playOffice2dSpatialCue("room-enter", { muted: false, roomId });
-            setSoundMuted(!soundMuted);
+            const nextMuted = !soundMuted;
+            setSoundMuted(nextMuted);
+            if (!nextMuted) playOffice2dSpatialCue("room-enter", { muted: false, roomId });
           }}
           onOpenWorkstation={() => {
             setSelectedWorkstationId(null);

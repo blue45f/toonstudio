@@ -144,6 +144,42 @@ export const STUDIO_VIRTUAL_CHARACTER_PRESETS: readonly StudioVirtualCharacterPr
     roleSummaryEn: "Guardian wings & focus aura for final release QA",
     customization: Object.freeze({ accessoryKey: "angel-wings", auraKey: "focus", trailKey: "rainbow", nameplateKey: "obsidian" }),
   }),
+  Object.freeze({
+    id: "color-alchemist",
+    icon: "🎨",
+    labelKo: "채색·라이팅 어시스턴트",
+    labelEn: "Colorist & Lighting Assist",
+    roleSummaryKo: "역광·톤 보정·채색 집중용 베레모 & 꽃잎 이동 효과 코디",
+    roleSummaryEn: "Beret & petal trail for digital coloring & lighting passes",
+    customization: Object.freeze({ accessoryKey: "beret", auraKey: "aurora", trailKey: "petal", nameplateKey: "rose" }),
+  }),
+  Object.freeze({
+    id: "lettering-sfx-artist",
+    icon: "🎵",
+    labelKo: "식자·효과음 아티스트",
+    labelEn: "Lettering & SFX Artist",
+    roleSummaryKo: "말풍선 식자·의성어 연출용 사운드 웨이브 & 음표 트레일 코디",
+    roleSummaryEn: "Sound wave & music-note trail for lettering and SFX design",
+    customization: Object.freeze({ accessoryKey: "music-beam", auraKey: "prism", trailKey: "music-note", nameplateKey: "violet" }),
+  }),
+  Object.freeze({
+    id: "bg-architect-lead",
+    icon: "🏛️",
+    labelKo: "배경 원화 · 투시 감독",
+    labelEn: "Background Architect",
+    roleSummaryKo: "실내·야외 배경 작화 및 투시 보정용 별 핀 & 집중 오라 코디",
+    roleSummaryEn: "Star pin & focus aura for background architecture and perspective",
+    customization: Object.freeze({ accessoryKey: "star", auraKey: "focus", trailKey: "pixel", nameplateKey: "emerald" }),
+  }),
+  Object.freeze({
+    id: "junior-assistant",
+    icon: "⚡",
+    labelKo: "신입 선화·밑색 어시",
+    labelEn: "Junior Inking Assistant",
+    roleSummaryKo: "신속한 밑색·정리·마감 지원용 네온 귀 & 별빛 트레일 코디",
+    roleSummaryEn: "Neon ears & star trail for rapid inking and flatting support",
+    customization: Object.freeze({ accessoryKey: "cat-ears", auraKey: "sparkle", trailKey: "star", nameplateKey: "sky" }),
+  }),
 ]);
 
 export const DEFAULT_STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION: StudioVirtualCharacterCustomization = Object.freeze({
@@ -273,10 +309,14 @@ function safeRead(key: string): unknown {
   try { const raw = window.localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch { return null; }
 }
 
+export const STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION_EVENT =
+  "toonstudio:virtual-space:character-customization-change";
+
 function writeCharacterCustomization(value: StudioVirtualCharacterCustomization): boolean {
   if (typeof window === "undefined") return false;
   try {
     window.localStorage.setItem(CHARACTER_STORAGE_KEY, JSON.stringify(value));
+    window.dispatchEvent(new CustomEvent(STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION_EVENT, { detail: value }));
     return true;
   } catch {
     return false;

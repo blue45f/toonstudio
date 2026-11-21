@@ -1,0 +1,363 @@
+/*
+ * cuts-rhythm-fx.css — 컷츠 감정 템포 시네마 연출 & 1탭 리액션 마이크로 버스트.
+ *
+ * 원칙:
+ * - 원시 색상 코드 미사용: 전 테마 OKLCH 의미 토큰과 color-mix(in oklch, ...)만 사용한다.
+ * - GPU 합성 속성(transform, opacity, clip-path, scale) 중심으로 60fps와 CLS 0을 보장한다.
+ * - prefers-reduced-motion: reduce, contrast 테마, forced-colors에서 100% 정적 폴백한다.
+ */
+
+.cuts-player[data-rhythm-preset="flutter"] {
+  --cuts-mood-a: var(--color-accent);
+  --cuts-mood-b: var(--color-accent-2);
+}
+
+.cuts-player[data-rhythm-preset="chase"] {
+  --cuts-mood-a: var(--color-warn);
+  --cuts-mood-b: var(--color-accent);
+}
+
+.cuts-player[data-rhythm-preset="linger"] {
+  --cuts-mood-a: var(--color-cool);
+  --cuts-mood-b: var(--color-accent-2);
+}
+
+.cuts-player[data-rhythm-preset="impact"] {
+  --cuts-mood-a: var(--color-accent-2);
+  --cuts-mood-b: var(--color-good);
+}
+
+.cuts-player[data-rhythm-preset] {
+  border-color: color-mix(in oklch, var(--cuts-mood-a, var(--color-accent)) 56%, var(--color-line));
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--cuts-mood-b, var(--color-accent-2)) 26%, transparent),
+    0 20px 54px -18px color-mix(in oklch, var(--cuts-mood-a, var(--color-accent)) 36%, var(--color-canvas));
+}
+
+.cuts-player__prism-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    145deg,
+    color-mix(in oklch, var(--cuts-mood-a, var(--color-accent)) 22%, transparent) 0%,
+    transparent 34%,
+    transparent 68%,
+    color-mix(in oklch, var(--cuts-mood-b, var(--color-accent-2)) 22%, transparent) 100%
+  );
+  opacity: 0.85;
+}
+
+.cuts-player__letterbox-top,
+.cuts-player__letterbox-bottom {
+  position: absolute;
+  inset-inline: 0;
+  height: 7.5%;
+  z-index: 5;
+  pointer-events: none;
+  background: var(--color-canvas);
+  opacity: 0;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cuts-player__letterbox-top {
+  top: 0;
+  transform: translateY(-100%);
+}
+
+.cuts-player__letterbox-bottom {
+  bottom: 0;
+  transform: translateY(100%);
+}
+
+.cuts-player[data-letterbox="true"] .cuts-player__letterbox-top,
+.cuts-player[data-letterbox="true"] .cuts-player__letterbox-bottom {
+  opacity: 0.94;
+  transform: translateY(0);
+}
+
+/* 샷 세그먼트 스크러버 — 상단 44px 터치 존으로 샷 점프 + 현재 샷 OKLCH 스펙트럼 진행 */
+.cuts-player__segments {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.75rem;
+  right: 4rem;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cuts-player__segment-btn {
+  flex: 1 1 0;
+  min-height: 2.75rem;
+  min-width: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cuts-player__segment-btn:focus-visible {
+  outline: 2px solid var(--cuts-mood-a, var(--color-accent));
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+.cuts-player__segment-track {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in oklch, var(--art-on, var(--color-fg)) 26%, transparent);
+}
+
+.cuts-player__segment-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--cuts-mood-a, var(--color-accent)),
+    var(--cuts-mood-b, var(--color-accent-2))
+  );
+  transition: transform 140ms linear;
+}
+
+/* 재생/일시정지 컨트롤 */
+.cuts-player__play-toggle {
+  position: absolute;
+  top: 0.9rem;
+  right: 4.1rem;
+  z-index: 9;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid color-mix(in oklch, var(--art-on, var(--color-fg)) 24%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-canvas) 66%, transparent);
+  color: var(--art-on, var(--color-fg));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1), background-color 140ms ease, border-color 140ms ease;
+}
+
+.cuts-player__play-toggle:hover {
+  border-color: var(--cuts-mood-a, var(--color-accent));
+  background: color-mix(in oklch, var(--color-canvas) 84%, transparent);
+}
+
+.cuts-player__play-toggle:active {
+  transform: scale(0.95);
+}
+
+.cuts-player__play-toggle:focus-visible {
+  outline: 2px solid var(--cuts-mood-a, var(--color-accent));
+  outline-offset: 2px;
+}
+
+/* 자막 키네틱 등장 */
+@keyframes cuts-caption-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.cuts-shot__caption--kinetic {
+  animation: cuts-caption-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  border: 1px solid color-mix(in oklch, var(--cuts-mood-a, var(--color-accent)) 36%, transparent);
+}
+
+/* 스튜디오 연출 디렉터 패널 */
+.cuts-rhythm-director {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+  padding: 1rem;
+}
+
+.cuts-rhythm-director__ribbon {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-accent),
+    var(--color-accent-2) 38%,
+    var(--color-cool) 72%,
+    var(--color-good)
+  );
+}
+
+.cuts-rhythm-preset-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-height: 2.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  padding: 0.75rem;
+  text-align: left;
+  color: var(--color-fg);
+  cursor: pointer;
+  transition:
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.cuts-rhythm-preset-card:hover {
+  border-color: color-mix(in oklch, var(--preset-tone, var(--color-accent)) 60%, var(--color-line));
+  background: color-mix(in oklch, var(--preset-tone, var(--color-accent)) 8%, var(--color-card));
+}
+
+.cuts-rhythm-preset-card:active {
+  transform: scale(0.98);
+}
+
+.cuts-rhythm-preset-card[aria-pressed="true"] {
+  border-color: var(--preset-tone, var(--color-accent));
+  background: color-mix(in oklch, var(--preset-tone, var(--color-accent)) 14%, var(--color-card));
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--preset-tone, var(--color-accent)) 35%, transparent);
+}
+
+/* 피드 1탭 감정 리액션 버스트 바 — 모바일 320px 가로 넘침 없이 깔끔한 한 줄 스크롤 */
+.cuts-reaction-rail {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.cuts-reaction-rail::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .cuts-reaction-rail {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+}
+
+.cuts-reaction-btn {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklch, var(--rx-tone, var(--color-accent)) 36%, transparent);
+  background: color-mix(in oklch, var(--color-canvas) 76%, transparent);
+  color: var(--art-on, var(--color-fg));
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.cuts-reaction-btn:hover {
+  border-color: var(--rx-tone, var(--color-accent));
+  background: color-mix(in oklch, var(--rx-tone, var(--color-accent)) 22%, var(--color-canvas));
+}
+
+.cuts-reaction-btn:active {
+  transform: scale(0.94);
+}
+
+.cuts-reaction-btn:focus-visible {
+  outline: 2px solid var(--rx-tone, var(--color-accent));
+  outline-offset: 2px;
+}
+
+@keyframes cuts-burst-spark {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  70% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--sx, 0px)), calc(-50% + var(--sy, -22px))) scale(1.15);
+  }
+}
+
+.cuts-reaction-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.cuts-reaction-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--rx-tone, var(--color-accent));
+  animation: cuts-burst-spark 460ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cuts-player__letterbox-top,
+  .cuts-player__letterbox-bottom,
+  .cuts-player__segment-fill,
+  .cuts-player__play-toggle,
+  .cuts-rhythm-preset-card,
+  .cuts-reaction-btn {
+    transition: none !important;
+  }
+  .cuts-shot__caption--kinetic,
+  .cuts-reaction-spark {
+    animation: none !important;
+  }
+  .cuts-reaction-spark {
+    display: none;
+  }
+}
+
+:root[data-design-theme="contrast"] .cuts-player__prism-rim,
+:root[data-design-theme="contrast"] .cuts-rhythm-director__ribbon {
+  display: none;
+}
+
+@media (forced-colors: active) {
+  .cuts-player__prism-rim,
+  .cuts-rhythm-director__ribbon {
+    display: none;
+  }
+}

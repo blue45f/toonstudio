@@ -12,10 +12,11 @@
  *   mergeTemplateCards가 중복을 막아 재적용해도 카드가 늘지 않는다.
  * - 캐릭터·장소 필터는 모델의 필터 규칙으로 트랙 자체를 좁힌다.
  */
-import { useMemo, useState } from "react";
+import { Suspense, lazy, useMemo, useState } from "react";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import type { SeasonPlan } from "@toonstudio/core/production";
 import type { StudioStoryCharacter, StudioStoryLocation } from "../studio-story-bible";
+import type { DualSubwayTimelineDocument } from "./studio-dual-subway-timeline";
 import type { EpisodePlanWithSynopsis } from "./studio-episode-synopsis";
 import {
   STRUCTURE_TEMPLATES,
@@ -27,6 +28,83 @@ import {
   type PlotlineCard,
   type PlotlineTrack,
 } from "./studio-plotline-timeline";
+
+const LazyPlotrDualSubwayTimelineView = lazy(() =>
+  import("./plotr/PlotrDualSubwayTimelineView").then((m) => ({
+    default: m.PlotrDualSubwayTimelineView,
+  })),
+);
+
+const SUBWAY_TONES = [
+  "oklch(0.65 0.19 340)",
+  "oklch(0.6 0.19 250)",
+  "oklch(0.68 0.17 155)",
+  "oklch(0.74 0.16 75)",
+] as const;
+
+function buildDefaultSubwayTimeline(
+  season: SeasonPlan,
+  plans: readonly EpisodePlanWithSynopsis[],
+  tracks: readonly PlotlineTrack[],
+  locations?: readonly StudioStoryLocation[],
+): DualSubwayTimelineDocument {
+  const subwayTracks = tracks.slice(0, 6).map((track, idx) => ({
+    id: track.id,
+    label: track.label,
+    kind: track.characterId ? ("character" as const) : ("plotline" as const),
+    toneToken: SUBWAY_TONES[idx % SUBWAY_TONES.length]!,
+    canvasColorPreset: String((idx % 6) + 1) as "1" | "2" | "3" | "4" | "5" | "6",
+  }));
+  const fallbackTrackId = subwayTracks[0]?.id ?? "trk-main";
+  const events = plans.flatMap((plan, pIdx) => {
+    const points =
+      plan.turningPoints.length > 0
+        ? plan.turningPoints
+        : [plan.title || `${plan.episodeNumber}화 주요 사건`];
+    return points.slice(0, 3).map((point, ptIdx) => ({
+      id: `subev-${plan.episodeId}-${ptIdx}`,
+      title: point,
+      chronologicalOrder: (pIdx + 1) * 10 + ptIdx,
+      eraLabel: season.title || "시즌 1",
+      calendarDateLabel: `${plan.episodeNumber}화`,
+      narrativeEpisodeOrder: plan.episodeNumber,
+      narrativeSceneIndex: ptIdx + 1,
+      participantTrackIds:
+        subwayTracks.length > 1
+          ? [fallbackTrackId, subwayTracks[(pIdx + ptIdx) % subwayTracks.length]!.id]
+          : [fallbackTrackId],
+    }));
+  });
+  const mapPins = (locations ?? []).slice(0, 6).map((loc, idx) => ({
+    id: `pin-${loc.id}`,
+    mapId: season.projectId,
+    label: loc.name,
+    u: 0.24 + ((idx * 0.19) % 0.56),
+    v: 0.3 + ((idx * 0.21) % 0.45),
+    category: "landmark" as const,
+    activeFromOrder: 0,
+    activeUntilOrder: null,
+    linkedEventIds: events[idx] ? [events[idx]!.id] : [],
+  }));
+  return {
+    id: `subway-${season.projectId}`,
+    title: `${season.title || "시즌 1"} 이중 지하철 타임라인`,
+    tracks:
+      subwayTracks.length > 0
+        ? subwayTracks
+        : [
+            {
+              id: fallbackTrackId,
+              label: "메인 플롯",
+              kind: "plotline",
+              toneToken: SUBWAY_TONES[0],
+              canvasColorPreset: "5",
+            },
+          ],
+    events,
+    mapPins,
+  };
+}
 
 export interface StudioPlotlineTimelineProps {
   readonly season: SeasonPlan;
@@ -54,6 +132,14 @@ export function StudioPlotlineTimeline({
   const [characterFilterId, setCharacterFilterId] = useState<string>("");
   const [locationFilterId, setLocationFilterId] = useState<string>("");
   const [dragCardId, setDragCardId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "subway">("table");
+  const [customSubwayDoc, setCustomSubwayDoc] = useState<DualSubwayTimelineDocument | null>(null);
+
+  const subwayDoc = useMemo(
+    () =>
+      customSubwayDoc ?? buildDefaultSubwayTimeline(season, plans, tracks, locations),
+    [customSubwayDoc, season, plans, tracks, locations],
+  );
 
   const timeline = useMemo(
     () =>
@@ -120,9 +206,64 @@ export function StudioPlotlineTimeline({
   };
 
   return (
-    <section aria-label="플롯라인 타임라인">
-      <h2>플롯라인 타임라인</h2>
-      <p>줄거리 흐름을 플롯라인마다 회차 위에 펼쳐 봐요. 카드를 끌어 옮기면 회차 순서에 그대로 반영돼요.</p>
+    <section aria-label="플롯라인 타임라인" className="space-y-3 text-fg [word-break:keep-all]">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-base font-semibold text-fg">플롯라인 타임라인</h2>
+          <p className="text-xs text-fg-2">
+            줄거리 흐름을 플롯라인마다 회차 위에 펼쳐 봐요. 카드를 끌어 옮기면 회차 순서에 그대로 반영돼요.
+          </p>
+        </div>
+        <div role="group" aria-label="타임라인 보기 전환" className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            aria-pressed={viewMode === "table"}
+            onClick={() => setViewMode("table")}
+            className={`min-h-11 rounded-lg border px-3 text-xs font-semibold transition-colors motion-reduce:transition-none ${
+              viewMode === "table"
+                ? "border-accent bg-accent text-on-accent"
+                : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg"
+            }`}
+          >
+            플롯라인 표
+          </button>
+          <button
+            type="button"
+            data-testid="plotline-switch-dual-subway"
+            aria-pressed={viewMode === "subway"}
+            onClick={() => setViewMode("subway")}
+            className={`min-h-11 rounded-lg border px-3 text-xs font-semibold transition-colors motion-reduce:transition-none ${
+              viewMode === "subway"
+                ? "border-accent bg-accent text-on-accent"
+                : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg"
+            }`}
+          >
+            이중 지하철 타임라인 · 지도
+          </button>
+        </div>
+      </div>
+
+      {viewMode === "subway" ? (
+        <Suspense
+          fallback={
+            <p role="status" className="rounded-xl border border-line bg-panel p-4 text-xs text-fg-2">
+              이중 지하철 타임라인을 여는 중…
+            </p>
+          }
+        >
+          <LazyPlotrDualSubwayTimelineView
+            document={subwayDoc}
+            onChange={setCustomSubwayDoc}
+            onSelectEpisodeOrder={(episodeNumber) => {
+              const target = plans.find((p) => p.episodeNumber === episodeNumber);
+              if (target) onSelectEpisode?.(target.episodeId);
+            }}
+          />
+        </Suspense>
+      ) : null}
+
+      {viewMode === "table" ? (
+        <>
 
       <div aria-label="구조 템플릿">
         <label>
@@ -253,6 +394,8 @@ export function StudioPlotlineTimeline({
           ))}
         </ul>
       )}
+        </>
+      ) : null}
     </section>
   );
 }

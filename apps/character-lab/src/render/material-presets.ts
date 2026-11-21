@@ -57,7 +57,7 @@ export const MATERIAL_PRESETS: Readonly<Record<MaterialPresetId, MaterialPresetP
   "cloth-silk": { metallic: 0, roughness: 0.3, defaultColor: "#e6d4e8", backFaceCulling: false, sheen: { intensity: 0.8, roughness: 0.25, tintFromAlbedo: true }, clearCoat: { intensity: 0.1, roughness: 0.3 } },
   leather: { metallic: 0, roughness: 0.5, defaultColor: "#4a2e1e", backFaceCulling: true, clearCoat: { intensity: 0.4, roughness: 0.3 } },
   metal: { metallic: 1, roughness: 0.3, defaultColor: "#c8c8cc", backFaceCulling: true },
-  plastic: { metallic: 0, roughness: 0.35, defaultColor: "#c94f6b", backFaceCulling: true, clearCoat: { intensity: 0.6, roughness: 0.1 } },
+  plastic: { metallic: 0, roughness: 0.48, defaultColor: "#c94f6b", backFaceCulling: true, clearCoat: { intensity: 0.22, roughness: 0.28 } },
   "unlit-highlight": { metallic: 0, roughness: 1, defaultColor: "#ffffff", backFaceCulling: true, unlit: true, emissiveScale: 1 },
   // 레시피 v3 표면 재질(2026-10-23 CORE-1): 니트·스타킹. 거친 면에 알베도 쪽 시인(보풀 결)을 넓게 준다.
   "cloth-knit": { metallic: 0, roughness: 0.92, defaultColor: "#d9d2c6", backFaceCulling: false, sheen: { intensity: 0.5, roughness: 0.7, tintFromAlbedo: true } },
@@ -144,6 +144,22 @@ export function toonShadeTint(role: PartRole): readonly [number, number, number]
       return [0.62, 0.58, 0.72];
     default:
       return [0.68, 0.68, 0.78];
+  }
+}
+
+/** 한국 웹툰 2단 셀 음영 기본 틴트: 회색 탁한 그림자 대신 따뜻한 복숭아/장미 피부 음영·채도 보정 헤어/의상 음영 */
+export function kwebtoonShadeTint(role: PartRole): readonly [number, number, number] {
+  switch (role) {
+    case "skin":
+    case "head":
+    case "tongue":
+      return [0.92, 0.67, 0.65];
+    case "hair":
+    case "brow":
+    case "lash":
+      return [0.64, 0.58, 0.75];
+    default:
+      return [0.69, 0.66, 0.8];
   }
 }
 

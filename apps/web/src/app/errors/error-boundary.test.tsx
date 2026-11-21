@@ -97,4 +97,15 @@ describe("ErrorBoundary chunk recovery with durable reload guards", () => {
     expect(reload).not.toHaveBeenCalled();
     expect(consumeStudioProgrammaticReloadAllowance()).toBe(false);
   });
+
+  it("does not auto-reload or consume the reload guard while navigator.onLine is false", () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    renderFailedChunk();
+
+    expect(screen.getByRole("alert")).toBeDefined();
+    expect(screen.getByRole("button", { name: "새로고침" })).toBeDefined();
+    expect(reload).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(CHUNK_RELOAD_FLAG)).toBeNull();
+    expect(consumeStudioProgrammaticReloadAllowance()).toBe(false);
+  });
 });

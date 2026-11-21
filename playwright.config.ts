@@ -11,7 +11,12 @@ const SOFTWARE_GPU_ARGS = [
 ];
 
 const BG3D_WEBGPU_GIZMO_GATE = process.env.STUDIO_BG3D_WEBGPU_GIZMO === "1";
-const STUDIO_E2E_PORT = BG3D_WEBGPU_GIZMO_GATE ? 5_207 : 5_199;
+const PREVIEW_BUNDLE_GATE = process.env.TOONSTUDIO_E2E_PREVIEW === "1";
+const STUDIO_E2E_PORT = BG3D_WEBGPU_GIZMO_GATE
+  ? 5_207
+  : PREVIEW_BUNDLE_GATE
+    ? 5_211
+    : 5_199;
 // The BG3D compositor sampler crops the canvas with CDP device pixels and refuses dpr !== 1, so
 // the backing scale must be pinned rather than inherited. Xvfb already reports 1; a Retina Mac
 // reports 2 and made every local run of this gate die in its first capture.
@@ -60,6 +65,7 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${STUDIO_E2E_PORT}`,
     trace: "on-first-retry",
     headless: true,
+    ...(PREVIEW_BUNDLE_GATE ? { serviceWorkers: "block" as const, locale: "ko-KR" } : {}),
   },
   projects: [
     {
@@ -97,12 +103,16 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `pnpm exec vite --config apps/web/vite.config.ts --host 127.0.0.1 --port ${STUDIO_E2E_PORT} --strictPort`,
-    url: `http://127.0.0.1:${STUDIO_E2E_PORT}/tools/browser-harnesses/hybrid-dcc-e2e.html`,
+    command: PREVIEW_BUNDLE_GATE
+      ? `pnpm exec vite preview --config apps/web/vite.config.ts --host 127.0.0.1 --port ${STUDIO_E2E_PORT} --strictPort`
+      : `pnpm exec vite --config apps/web/vite.config.ts --host 127.0.0.1 --port ${STUDIO_E2E_PORT} --strictPort`,
+    url: PREVIEW_BUNDLE_GATE
+      ? `http://127.0.0.1:${STUDIO_E2E_PORT}/`
+      : `http://127.0.0.1:${STUDIO_E2E_PORT}/tools/browser-harnesses/hybrid-dcc-e2e.html`,
     // The dedicated red/green oracle must serve this checkout, never a long-lived local Vite
     // process whose module graph may predate the framebuffer fix. Its separate port also lets the
     // ordinary visual suite keep the convenient local reuse policy.
-    reuseExistingServer: !BG3D_WEBGPU_GIZMO_GATE && !process.env.CI,
+    reuseExistingServer: !BG3D_WEBGPU_GIZMO_GATE && !PREVIEW_BUNDLE_GATE && !process.env.CI,
     timeout: 120_000,
   },
 });

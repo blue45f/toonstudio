@@ -327,7 +327,7 @@ export class PressureOutlineController {
     const baseRgb = opts.outlineColorRgb;
     material.setVector4("outlineColor", new Vector4(baseRgb[0], baseRgb[1], baseRgb[2], part.pbr.alpha));
     if (opts.colorTintStrength > 0) {
-      const tinted = computeColoredLineartRgb(baseRgb, part.colorHex, 1);
+      const tinted = computeColoredLineartRgb(baseRgb, part.colorHex, 1, part.role);
       material.setVector4("outlineColorTint", new Vector4(tinted[0], tinted[1], tinted[2], opts.colorTintStrength));
     } else {
       material.setVector4("outlineColorTint", new Vector4(0, 0, 0, 0));

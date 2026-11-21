@@ -1,0 +1,56 @@
+@keyframes command-palette-spring {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.965);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1.006);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes command-spectrum-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes command-alias-shimmer {
+  0% {
+    opacity: 0.72;
+    transform: translateY(4px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.command-palette-spring-enter {
+  animation: command-palette-spring 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.command-palette-alias-hit {
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--color-accent) 9%, transparent),
+    color-mix(in oklch, var(--color-cool) 7%, transparent) 55%,
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .command-palette-spring-enter {
+    animation: none;
+  }
+}

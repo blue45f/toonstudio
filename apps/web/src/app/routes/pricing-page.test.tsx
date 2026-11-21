@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -135,5 +135,30 @@ describe("pricing polish integration", () => {
       expect(icon?.getAttribute("class") ?? "").toContain("group-open:rotate-180");
       expect(icon?.getAttribute("class") ?? "").toContain("motion-reduce:transition-none");
     }
+  });
+
+  it("작업 스타일 진단기 선택에 따라 아래 4개 플랜 카드 그리드의 data-matched-plan을 실시간 하이라이트한다", () => {
+    renderPricing();
+
+    expect(document.querySelector('[data-plan-id="free"]')?.getAttribute("data-matched-plan")).toBe("true");
+    expect(document.querySelectorAll('[data-matched-plan="true"]')).toHaveLength(1);
+
+    fireEvent.click(screen.getByTestId("workstyle-preset-steady-serial"));
+    expect(document.querySelector('[data-plan-id="creator"]')?.getAttribute("data-matched-plan")).toBe("true");
+    expect(document.querySelectorAll('[data-matched-plan="true"]')).toHaveLength(1);
+
+    fireEvent.click(screen.getByTestId("workstyle-preset-pro-market"));
+    expect(document.querySelector('[data-plan-id="pro"]')?.getAttribute("data-matched-plan")).toBe("true");
+    expect(document.querySelectorAll('[data-matched-plan="true"]')).toHaveLength(1);
+
+    fireEvent.click(screen.getByTestId("workstyle-preset-studio-team"));
+    expect(document.querySelector('[data-plan-id="team"]')?.getAttribute("data-matched-plan")).toBe("true");
+    expect(document.querySelectorAll('[data-matched-plan="true"]')).toHaveLength(1);
+
+    // 혼자 입문 선택 후 마켓 판매·고해상도 토글 시 Creator로 실시간 승격
+    fireEvent.click(screen.getByTestId("workstyle-preset-solo-starter"));
+    expect(document.querySelector('[data-plan-id="free"]')?.getAttribute("data-matched-plan")).toBe("true");
+    fireEvent.click(screen.getByTestId("workstyle-market-hires-toggle"));
+    expect(document.querySelector('[data-plan-id="creator"]')?.getAttribute("data-matched-plan")).toBe("true");
   });
 });

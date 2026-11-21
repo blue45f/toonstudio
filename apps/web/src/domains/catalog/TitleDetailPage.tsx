@@ -15,6 +15,7 @@ import type { StudioPublicWiki } from "@/domains/creator/public/world-wiki";
 import { TitleDetailBreadcrumb } from "./TitleDetailBreadcrumb";
 import { TitleDetailCreationBridgeCard } from "./TitleDetailCreationBridgeCard";
 import { TitleDetailHero } from "./TitleDetailHero";
+import { TitleDetailQuickDecisionRibbon } from "./fresh-ideas/TitleDetailQuickDecisionRibbon";
 import { TitleEpisodeSection } from "./TitleEpisodeSection";
 import { TitleNotFound } from "./TitleNotFound";
 import { WorldWikiSection } from "./WorldWikiSection";
@@ -35,9 +36,12 @@ import { PriceCompare } from "@/shared/components/price-compare";
 import { PriceTransitionTimeline } from "@/shared/components/price-transition-timeline";
 import { ReviewTrustCard } from "@/shared/components/review-trust-card";
 import { AvailabilityHistoryPanel } from "@/domains/engagement/public/availability-history-panel";
+import { useEngagement } from "@/domains/engagement/public/engagement-store";
 import { PersonalContentPreferenceNotice } from "@/domains/engagement/public/personal-content-preference-notice";
 import { ReadStateSelector } from "@/shared/components/read-state";
 import { ReviewCard, ReviewForm } from "@/domains/community/public/reviews";
+import { buildPricingTransitionsFromSnapshots } from "@/shared/lib/pricing-transition-timeline";
+import { evaluateReaderEcosystemTrustIndex } from "@/shared/lib/reader-trust-ecosystem";
 import { computeReviewTrustSummary } from "@/shared/lib/review-trust-engine";
 import { buildThreeCutRemixBlueprint } from "@/shared/lib/title-to-three-cut-remix-bridge";
 import { ScoreBreakdown } from "@/shared/components/score-breakdown";
@@ -174,6 +178,9 @@ export function TitleDetailPage() {
   const subscriptions = useApp((s) => s.subscriptions);
   const toggleSubscription = useApp((s) => s.toggleSubscription);
   const viewedId = data?.title?.id;
+  const availabilityRecord = useEngagement((state) =>
+    viewedId ? state.availabilityHistory[viewedId] : undefined,
+  );
   useEffect(() => {
     if (viewedId) addRecentlyViewed(viewedId);
   }, [viewedId, addRecentlyViewed]);
@@ -271,6 +278,30 @@ export function TitleDetailPage() {
       helpfulCount: review.likes,
     })),
   );
+  const readerEcosystemIndex = evaluateReaderEcosystemTrustIndex({
+    sealActive: reviewTrustSummary.verifiedCount > 0 || title.availability.some((a) => a.isOriginal === true),
+    tenStageVerified: reviewTrustSummary.anomalyFlag === "none" && reviewTrustSummary.totalCount >= 5,
+    spoilerShieldEnabled: true,
+    triggerTagsDeclared: title.tags.length > 0,
+    dyslexiaSafeTypography: true,
+    tdmRepHeaderEnforced: true,
+    piracyMatchDetected: false,
+  });
+  const urlByPlatform = new Map(title.availability.map((item) => [item.platformId, item.url] as const));
+  const pricingTransitionEvents = availabilityRecord
+    ? buildPricingTransitionsFromSnapshots(
+        availabilityRecord.events.map((event) => ({
+          observedAt: event.observedAt,
+          status: event.snapshot.status,
+          availability: event.snapshot.availability.map((entry) => ({
+            platformId: entry.platformId,
+            pricing: entry.pricing,
+            isOriginal: entry.isOriginal,
+            url: urlByPlatform.get(entry.platformId),
+          })),
+        })),
+      )
+    : [];
   const isPriceAlertEnabled = Boolean(subscriptions[title.id]);
 
   return (
@@ -289,6 +320,13 @@ export function TitleDetailPage() {
 
       <PersonalContentPreferenceNotice title={title} />
       <TitleEarlyAccessNotice titleId={title.id} />
+      <TitleDetailQuickDecisionRibbon
+        title={title}
+        episodes={episodes}
+        showAvailability={showAvailability}
+        firstEpisodeHref={firstEpisodeHref}
+        remixBlueprint={remixBlueprint}
+      />
 
       <div id="title-episodes-anchor" tabIndex={-1} className="title-primary-episodes">
         <TitleEpisodeSection title={title} episodes={episodes} />
@@ -366,7 +404,7 @@ export function TitleDetailPage() {
         ) : (
           <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr] lg:items-start">
             <div className="flex flex-col gap-4 lg:sticky lg:top-[var(--site-header-sticky-offset,5rem)]">
-              <ReviewTrustCard summary={reviewTrustSummary} />
+              <ReviewTrustCard summary={reviewTrustSummary} ecosystemIndex={readerEcosystemIndex} />
               <ReviewForm titleId={title.id} />
             </div>
             <div className="flex flex-col gap-3">
@@ -451,7 +489,7 @@ export function TitleDetailPage() {
             </summary>
           <PriceCompare availability={title.availability} />
           <PriceTransitionTimeline
-            events={[]}
+            events={pricingTransitionEvents}
             alertEnabled={isPriceAlertEnabled}
             onEnableAlert={() => toggleSubscription(title.id)}
             className="mt-3"

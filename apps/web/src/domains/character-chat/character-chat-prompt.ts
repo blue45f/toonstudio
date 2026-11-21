@@ -11,6 +11,11 @@
  * 프롬프트 지시(모델의 자기 검열)를 함께 거는 이중 장치다.
  */
 
+import {
+  buildCharacterChatDirectorContext,
+  type PersonaToneId,
+  type SpoilerFenceId,
+} from "./character-chat-scene-starter";
 import type {
   CharacterChatMessage,
   CharacterChatProfile,
@@ -34,6 +39,10 @@ export interface CharacterChatPromptOptions {
    * 기본값(꺼짐)에서는 프롬프트가 이 옵션이 생기기 전과 글자 단위로 같다.
    */
   readonly readAloud?: boolean;
+  /** 회차 스포일러 안전선 — 지정된 경우에만 연출 지시 블록을 덧붙인다. */
+  readonly spoilerFence?: SpoilerFenceId;
+  /** 캐릭터 말투 온도 — 지정된 경우에만 연출 지시 블록을 덧붙인다. */
+  readonly personaTone?: PersonaToneId;
 }
 
 /** 소리로 읽힐 답변을 위한 규칙 — 브라우저 음성은 이모지·마크다운·괄호 지문을 매끄럽게 읽지 못한다. */
@@ -70,6 +79,15 @@ export function buildCharacterChatSystemPrompt(
   if (profile.forbiddenTopics.length > 0) {
     lines.push(
       `- 다음 주제는 작가가 대화를 금지했다. 언급을 피하고 캐릭터답게 화제를 돌린다: ${profile.forbiddenTopics.join(", ")}`,
+    );
+  }
+  if (options.spoilerFence !== undefined || options.personaTone !== undefined) {
+    lines.push(
+      "",
+      buildCharacterChatDirectorContext({
+        spoilerFence: options.spoilerFence,
+        personaTone: options.personaTone,
+      }),
     );
   }
   return lines.join("\n");

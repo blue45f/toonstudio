@@ -205,7 +205,8 @@ const WARMUP_CHIP_CLASS = cn(
 
 /**
  * 연결 준비 중임을 알리는 안내.
- * 일반 페이지는 헤더 우측 고정 8px 상태 점 + 호버/클릭 툴팁으로 표시해 본문·탭 침범 0px를 유지한다.
+ * 일반 페이지는 본문 위 일반 문서 흐름(page-inline)에 컴팩트한 상태 점과 한 줄 안내를 배치해
+ * `/studio` 등 자체 상단바 우상단 인증 버튼과의 겹침·포인터 가로채기를 원천 차단한다.
  * 몰입 화면에서는 기존 한 줄 칩과 모달 상태 자리를 유지한다.
  */
 function ServiceWarmupNotice({ immersive }: { readonly immersive: boolean }) {
@@ -220,6 +221,7 @@ function ServiceWarmupNotice({ immersive }: { readonly immersive: boolean }) {
       aria-atomic="true"
       data-service-degraded-banner="warming"
       data-service-status-placement={immersive ? "floating" : "page-inline"}
+      data-service-status-dot={immersive ? undefined : "true"}
       className={immersive ? WARMUP_CHIP_CLASS : "mx-auto flex w-full max-w-[var(--site-content-max,82.5rem)] min-w-0 items-center justify-end gap-1.5 px-[var(--site-page-gutter,1rem)] pt-1.5 text-[11.5px] text-fg-2"}
     >
       <span

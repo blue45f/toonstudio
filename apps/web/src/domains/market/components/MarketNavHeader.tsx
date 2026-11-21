@@ -287,7 +287,7 @@ export function MarketNavHeader({ className }: MarketNavHeaderProps) {
 
           <Link
             href="/studio"
-            aria-label={bt("ToonStudio 드로잉 화면 열기", "Open the ToonStudio drawing screen")}
+            aria-label={bt("Studio · ToonStudio 드로잉 화면 열기", "Studio — Open the ToonStudio drawing screen")}
             className={buttonClass({
               variant: "outline",
               size: "sm",

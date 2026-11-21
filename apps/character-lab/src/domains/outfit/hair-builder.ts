@@ -13,7 +13,7 @@ import { fnv1a32 } from "../../shared/hash";
 import { degToRad, qFromAxisAngle, qRotateVec3, v3Add, v3Cross, v3Dot, v3Length, v3Normalize, v3Scale, v3Sub } from "../../shared/math";
 import { createPrng } from "../../shared/prng";
 
-import { MeshAccumulator, appendCardStrip, appendSphereShell, appendTube, singleJoint, sphericalDirection } from "./geometry";
+import { MeshAccumulator, appendContouredCardStrip, appendSphereShell, appendTube, singleJoint, sphericalDirection } from "./geometry";
 import { HAIR_STYLE_SPECS } from "./hair-styles";
 
 import type { MeshBuffers, SkinWeight4 } from "./geometry";
@@ -30,9 +30,9 @@ export const HEAD_SIZE_MORPH_SCALE = 0.1;
 /** 두피 위 카드 시작 높이(반경 배수) */
 const SCALP_LIFT = 1.012;
 const CAP_LIFT = 1.016;
-const CAP_RINGS = 6;
-const CAP_SEGMENTS = 24;
-const BUNDLE_SIDES = 6;
+const CAP_RINGS = 12;
+const CAP_SEGMENTS = 36;
+const BUNDLE_SIDES = 12;
 
 export function assumedHeadPivot(scalp: ScalpSurface): Vec3 {
   return v3Sub(scalp.center, v3Scale(v3Normalize(scalp.up), scalp.radius * HEAD_PIVOT_RATIO));
@@ -148,20 +148,24 @@ export function headSizeMorphs(positions: Float32Array, center: Vec3): MorphDelt
   ];
 }
 
-/** 두피 캡: 앞 헤어라인은 낮고(짧고) 뒤는 길게 내려오는 부분 구면 격자 */
+/** 두피 캡: 앞 헤어라인은 자연스럽게 붙고 정수리·후두부에 한국 웹툰 헤어 볼륨 리프트를 부여한 부분 구면 격자 */
 function appendScalpCap(acc: MeshAccumulator, scalp: ScalpSurface, spec: HairSpec, skin: SkinWeight4): void {
   const up = v3Normalize(scalp.up);
   const forward = v3Normalize(scalp.forward);
   const grid: number[][] = [];
   for (let r = 0; r <= CAP_RINGS; r += 1) {
     const row: number[] = [];
+    const ringT = r / CAP_RINGS;
+    // 정수리~상부 후두부 볼륨(헤어라인 가장자리 ringT=1에서는 0으로 수렴해 이마와 매끈하게 접합)
+    const domeCurve = Math.sin(Math.PI * Math.pow(1 - ringT, 0.85));
     for (let s = 0; s <= CAP_SEGMENTS; s += 1) {
       const az = (s / CAP_SEGMENTS) * Math.PI * 2;
       const back = (1 - Math.cos(az)) * 0.5;
       const elEnd = degToRad(spec.cap.frontHairline + (spec.cap.backHairline - spec.cap.frontHairline) * back);
-      const el = (elEnd * r) / CAP_RINGS;
+      const el = elEnd * ringT;
       const dir = sphericalDirection(up, forward, az, el);
-      row.push(acc.pushVertex(v3Add(scalp.center, v3Scale(dir, scalp.radius * CAP_LIFT)), dir, [s / CAP_SEGMENTS, r / CAP_RINGS], skin));
+      const volumeLift = CAP_LIFT + (0.044 + 0.022 * back) * domeCurve;
+      row.push(acc.pushVertex(v3Add(scalp.center, v3Scale(dir, scalp.radius * volumeLift)), dir, [s / CAP_SEGMENTS, ringT], skin));
     }
     grid.push(row);
   }
@@ -248,8 +252,8 @@ export function buildHair(style: HairStyleId, scalp: ScalpSurface, context: Outf
         elevationEnd: Math.PI,
         azimuthStart: 0,
         azimuthEnd: Math.PI * 2,
-        rings: 4,
-        segments: 8,
+        rings: 8,
+        segments: 16,
         skin: headSkin,
       });
     }
@@ -257,13 +261,34 @@ export function buildHair(style: HairStyleId, scalp: ScalpSurface, context: Outf
       const skins = zone.chain ? registerChain(strand, zone) : strand.points.map(() => headSkin);
       const n = strand.points.length;
       if (zone.kind === "bundle") {
-        const r0 = zone.width * scalp.radius * 0.6;
-        const radii = strand.points.map((_, k) => r0 * (1 - 0.75 * (k / Math.max(1, n - 1))));
+        const r0 = zone.width * scalp.radius * 0.64;
+        // 묶음 번들: 매듭 근처 도톰하고 끝부분은 날렵하게 모이는 한국 웹툰 포니/트윈테일 실루엣
+        const radii = strand.points.map((_, k) => {
+          const s = k / Math.max(1, n - 1);
+          const swell = 0.92 + 0.16 * Math.sin(Math.PI * Math.min(1, s * 1.4));
+          const tipTaper = 0.09 + 0.91 * Math.pow(1 - s, 0.78);
+          return r0 * swell * tipTaper;
+        });
         appendTube(strands, { points: strand.points, radii, sides: BUNDLE_SIDES, skins, capEnd: true, sideHint: forward });
       } else {
         const w0 = zone.width * scalp.radius;
-        const widths = strand.points.map((_, k) => w0 * (1 - 0.45 * (k / Math.max(1, n - 1))));
-        appendCardStrip(strands, { points: strand.points, widths, outward: strand.outward, skins });
+        // K-웹툰 레이어드 가닥: 모근→중간 볼륨감 있게 퍼지다 끝은 가늘고 날렵하게 테이퍼링
+        const widths = strand.points.map((_, k) => {
+          const s = k / Math.max(1, n - 1);
+          const belly = 0.86 + 0.22 * Math.sin(Math.PI * Math.min(1, s * 1.55));
+          const tipTaper = 0.11 + 0.89 * Math.pow(1 - s, 0.72);
+          return w0 * belly * tipTaper;
+        });
+        appendContouredCardStrip(strands, {
+          points: strand.points,
+          widths,
+          outward: strand.outward,
+          skins,
+          archRatio: 0.2,
+          // 두상 구면 법선 용접 블렌딩 → 가닥 간 이음매 없는 정수리 엔젤링 하이라이트
+          normalSphereCenter: scalp.center,
+          normalSphereBlend: 0.48,
+        });
       }
       strandIndex += 1;
     });

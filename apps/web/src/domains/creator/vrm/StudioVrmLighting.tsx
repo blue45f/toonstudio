@@ -55,7 +55,22 @@ export function VrmLighting({
         color={HEMI_SKY_COLOR}
         groundColor={tone === "night" ? "#1e2436" : "#566070"}
       />
-      <directionalLight intensity={d1I} position={dirPos as [number,number,number]} color={c1} />
+      <directionalLight
+        castShadow
+        intensity={d1I}
+        position={dirPos as [number,number,number]}
+        color={c1}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.018}
+        shadow-camera-near={0.5}
+        shadow-camera-far={14}
+        shadow-camera-left={-1.6}
+        shadow-camera-right={1.6}
+        shadow-camera-top={2.3}
+        shadow-camera-bottom={-0.5}
+      />
       <directionalLight intensity={d2I} position={[-3.2, 2.6, 2.1]} color={c2} />
       <directionalLight intensity={d3I} position={[-1.6, 3.4, -3.2]} color={base.d3[1] as string} />
 

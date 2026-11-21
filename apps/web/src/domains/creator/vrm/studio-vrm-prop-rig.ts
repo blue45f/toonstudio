@@ -476,7 +476,8 @@ function measureHandSocket(
 export function measureFaceSocket(
   nodes: Partial<Record<VrmPropMetricBone, THREE.Object3D>>,
   positions: Partial<Record<VrmPropMetricBone, Vec3>>,
-  headSize: number
+  headSize: number,
+  metaVersion?: string,
 ): VrmPropFaceSocket {
   const headNode = nodes.head;
   const headPos = positions.head;
@@ -484,26 +485,20 @@ export function measureFaceSocket(
   if (!headNode || !headPos) return FALLBACK_FACE_SOCKET;
 
   const safeHead = clamp(headSize, METRIC_RANGES.head[0], METRIC_RANGES.head[1]);
-  // VRM head 본은 구의 중심이 아니라 목 바로 위에서 시작한다. 머리 치수의 절반만큼
-  // 올라가야 실제 눈 높이에 도달하며, 전방도 얼굴 표면에 맞춰 같은 비율로 유도한다.
   const y = safeHead * 0.50;
   const z = safeHead * 0.58;
   let source: PropMetricSource = "derived";
-
-  // neck→head 방향이 있으면 고개를 든/숙인 rest 포즈에 맞춰 전방 축을 보정한다.
-  if (neckPos) {
-    const upWorld = new THREE.Vector3(...headPos).sub(new THREE.Vector3(...neckPos));
-    if (upWorld.lengthSq() > 1e-8) {
-      source = "measured";
-    }
+  if (neckPos && new THREE.Vector3(...headPos).sub(new THREE.Vector3(...neckPos)).lengthSq() > 1e-8) {
+    source = "measured";
   }
 
-  const position: Vec3 = [0, y, z];
-  // 얼굴 전방 basis: local +Z forward, +Y up (wearable 표면이 시선과 수직에 가깝게).
+  // VRM0은 로컬 -Z가 얼굴 정면이므로 180° Y 회전과 -Z 위치로 맞춰 안경/마스크가 뒤통수에 붙지 않게 한다.
+  const isVrm0 = metaVersion === "0";
+  const position: Vec3 = [0, y, isVrm0 ? -z : z];
   return {
     position,
-    rotationQuaternion: [0, 0, 0, 1],
-    rotationDeg: [0, 0, 0],
+    rotationQuaternion: isVrm0 ? [0, 1, 0, 0] : [0, 0, 0, 1],
+    rotationDeg: [0, isVrm0 ? 180 : 0, 0],
     source,
   };
 }
@@ -601,7 +596,7 @@ export function measureVrmPropRigMetrics(vrm: VRM): VrmPropRigMetrics {
     leftHand: measureHandSocket("left", boneNodes, boneWorldPositions),
     rightHand: measureHandSocket("right", boneNodes, boneWorldPositions),
   };
-  const faceSocket = surface?.faceSocket ?? measureFaceSocket(boneNodes, boneWorldPositions, head);
+  const faceSocket = surface?.faceSocket ?? measureFaceSocket(boneNodes, boneWorldPositions, head, vrm.meta?.metaVersion);
 
   return sanitizeVrmPropRigMetrics({
     avatarHeight,

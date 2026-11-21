@@ -26,6 +26,11 @@ const NON_INK_UI_SELECTOR = [
   "[data-studio-cinematic-canvas-welcome]",
   "[data-studio-collaboration-summary]",
   "[data-studio-collaboration-body]",
+  "[data-studio-floating-controls]",
+  "[data-studio-app-menubar='true']",
+  "[data-studio-drawing-clarity-header='true']",
+  "[data-studio-mobile-editing-dock='true']",
+  "[data-studio-view-tools-hud]",
 ].join(",");
 
 /** Popovers, docks and dialogs the HUD refuses to sit under. */
@@ -38,6 +43,23 @@ const OBSTACLE_SELECTOR = [
   "[data-studio-presence-dock]",
   '[role="dialog"]',
 ].join(",");
+
+const TOP_CHROME_GUARD_SELECTOR = [
+  "[data-studio-collaboration-summary='true']",
+  "[data-studio-collaboration-summary]",
+  "[data-studio-app-menubar='true']",
+  "[data-studio-drawing-clarity-header='true']",
+  "[data-studio-floating-controls]",
+].join(",");
+
+function rectsIntersect(a: StudioSurfaceRect, b: StudioSurfaceRect): boolean {
+  return (
+    a.left < b.left + b.width
+    && a.left + a.width > b.left
+    && a.top < b.top + b.height
+    && a.top + a.height > b.top
+  );
+}
 
 const OBSTACLE_REFRESH_MS = 250;
 
@@ -168,7 +190,33 @@ export const StudioBrushHud = memo(function StudioBrushHud({
         return;
       }
       refreshObstacles(hostRect.width <= 420);
-      const safeArea = studioOnCanvasSafeArea(domRectToSurfaceRect(hostRect), viewportRect());
+      const rawSafeArea = studioOnCanvasSafeArea(domRectToSurfaceRect(hostRect), viewportRect());
+      const topChromeRects: StudioSurfaceRect[] = [];
+      let safeArea = rawSafeArea;
+      if (hostRect.width <= 420) {
+        let topClearance = rawSafeArea.top;
+        for (const el of Array.from(document.querySelectorAll(TOP_CHROME_GUARD_SELECTOR))) {
+          const rect = el.getBoundingClientRect();
+          if (rect.width <= 0 || rect.height <= 0) continue;
+          const surfaceRect = domRectToSurfaceRect(rect);
+          topChromeRects.push(surfaceRect);
+          // 캔버스 상단 영역(상위 45%)의 핵심 버튼·함께 작업 배지 아래로 안전 영역을 내린다.
+          if (rect.top < rawSafeArea.top + rawSafeArea.height * 0.45) {
+            topClearance = Math.max(topClearance, Math.ceil(rect.bottom + 8));
+          }
+        }
+        const trimmedHeight = Math.max(0, rawSafeArea.top + rawSafeArea.height - topClearance);
+        safeArea = {
+          ...rawSafeArea,
+          top: topClearance,
+          height: trimmedHeight,
+        };
+      }
+      if (hostRect.width <= 420 && safeArea.height < studioBrushHudExtentPx(geometry)) {
+        placementRef.current = null;
+        hide();
+        return;
+      }
       const placement = planStudioBrushHudPlacement({
         anchor,
         safeArea,
@@ -177,13 +225,15 @@ export const StudioBrushHud = memo(function StudioBrushHud({
         obstacles,
       });
       let resolvedTop = placement.rect.top;
-      if (hostRect.width <= 420 && placement.obstructedPx2 > 0) {
-        const collabSummary = document.querySelector("[data-studio-collaboration-summary='true']");
-        const summaryRect = collabSummary?.getBoundingClientRect();
-        if (summaryRect && summaryRect.width > 0 && summaryRect.height > 0) {
-          const maxTop = safeArea.top + Math.max(0, safeArea.height - placement.rect.height);
-          const clearedTop = Math.min(maxTop, Math.ceil(summaryRect.bottom + 8));
-          if (clearedTop > resolvedTop) resolvedTop = clearedTop;
+      if (hostRect.width <= 420) {
+        const minClearedTop = safeArea.top;
+        const maxTop = safeArea.top + Math.max(0, safeArea.height - placement.rect.height);
+        resolvedTop = Math.min(maxTop, Math.max(minClearedTop, resolvedTop));
+        const candidateRect: StudioSurfaceRect = { ...placement.rect, top: resolvedTop };
+        if (topChromeRects.some((chromeRect) => rectsIntersect(candidateRect, chromeRect))) {
+          placementRef.current = null;
+          hide();
+          return;
         }
       }
       placementRef.current = resolvedTop === placement.rect.top

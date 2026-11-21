@@ -96,7 +96,12 @@ export function adaptLoadedMaterial(options: MaterialFactoryOptions, material: M
   if (material instanceof PBRMaterial) {
     const preset = MATERIAL_PRESETS[presetId];
     const albedo: readonly [number, number, number] = [material.albedoColor.r, material.albedoColor.g, material.albedoColor.b];
-    applyFeatures(options, material, preset, albedo);
+    // 제작된 PBR 텍스처가 있는 소품·액세서리는 원작 거칠기·코팅을 보존하고 플라스틱 광택을 강제 덮어쓰지 않는다.
+    const hasAuthoredTexture = material.albedoTexture !== null || material.metallicTexture !== null;
+    const effectivePreset = hasAuthoredTexture && (role === "accessory" || role === "hair-accessory")
+      ? { ...preset, clearCoat: undefined }
+      : preset;
+    applyFeatures(options, material, effectivePreset, albedo);
     if (preset.unlit) material.unlit = true;
     return { material, replaced: false };
   }

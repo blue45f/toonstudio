@@ -51,6 +51,7 @@ export function SearchEmptyQuerySuggestionsPanel({
         </p>
         {state === "loading" ? (
           <div
+            role="status"
             className="flex flex-wrap gap-1.5"
             aria-label={t("search.explorer.suggestions.loading")}
           >

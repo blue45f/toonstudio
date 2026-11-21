@@ -591,6 +591,7 @@ export interface ParticipantOverlayRealtimeExtras {
   readonly reactionId?: string | null;
   readonly chatBubbleText?: string | null;
   readonly chatTyping?: boolean;
+  readonly workStatusLabel?: string | null;
 }
 
 /** 참가자(본인·동료)의 상태·이모트·말풍선·집중모드를 3D 배지용 텍스트와 강조 색상으로 변환한다. */
@@ -629,6 +630,10 @@ export function formatParticipantOverlayBadge(
     if (catalogEmote) {
       return { sublabel: `${catalogEmote.glyph} ${isEn ? catalogEmote.labelEn : catalogEmote.labelKo}`, accent };
     }
+  }
+  const trimmedWorkStatus = extras?.workStatusLabel?.trim();
+  if (trimmedWorkStatus && state.userStatus !== "in-meeting" && state.userStatus !== "presenting") {
+    return { sublabel: trimmedWorkStatus, accent };
   }
   if (state.userStatus) {
     const badge = userStatusBadge(state.userStatus);

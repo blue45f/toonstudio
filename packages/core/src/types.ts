@@ -168,7 +168,7 @@ export interface SeedReview {
 }
 
 // 사용자(로컬) 데이터
-export type ReadState = "want" | "reading" | "paused" | "done" | "dropped";
+export type ReadState = "want" | "reading" | "paused" | "hiatus" | "done" | "dropped";
 
 export interface UserReview {
   titleId: string;

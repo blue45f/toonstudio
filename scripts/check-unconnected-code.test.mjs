@@ -201,3 +201,28 @@ test("ignores UPPER_SNAKE_CASE exported constants in .tsx modules", () => {
   const report = runGate(root);
   assert.deepEqual(findingKeys(report), []);
 });
+
+test("excludes dedicated test-fixture, test-support, test-utils, and __fixtures__ helpers", () => {
+  const root = makeFixture({
+    [ROUTE]: `export default function HomeRoute() { return null; }\n`,
+    "domains/save/sample.test-fixture.ts": `export const sampleFixture = 1;\n`,
+    "domains/save/sample-test-fixture.ts": `export const hyphenFixture = 2;\n`,
+    "domains/save/sample.test-support.ts": `export const supportHelper = 3;\n`,
+    "domains/save/sample.test-utils.tsx": `export const utilsHelper = 4;\n`,
+    "domains/save/__fixtures__/seed.ts": `export const seedData = 5;\n`,
+    "domains/save/real-unwired.ts": `export const unwired = 6;\n`,
+    "domains/save/sample.test.ts": [
+      `import { sampleFixture } from "./sample.test-fixture";`,
+      `import { hyphenFixture } from "./sample-test-fixture";`,
+      `import { supportHelper } from "./sample.test-support";`,
+      `import { utilsHelper } from "./sample.test-utils";`,
+      `import { seedData } from "./__fixtures__/seed";`,
+      `import { unwired } from "./real-unwired";`,
+      `void [sampleFixture, hyphenFixture, supportHelper, utilsHelper, seedData, unwired];`,
+    ].join("\n"),
+  });
+  const report = runGate(root);
+  assert.deepEqual(findingKeys(report), [
+    "test-only-module:apps/web/src/domains/save/real-unwired.ts",
+  ]);
+});

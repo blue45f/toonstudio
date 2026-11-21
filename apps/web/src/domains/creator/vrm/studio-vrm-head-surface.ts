@@ -1,8 +1,28 @@
 import * as THREE from "three";
 
+import { isStudioAuthoredAttachment } from "./studio-vrm-authored-attachment";
+
 import type { VrmPropFaceSocket } from "./studio-vrm-prop-rig";
 import type { PropAttachBone, Vec3 } from "./studio-vrm-props";
 import type { VRM } from "@pixiv/three-vrm";
+
+function isCustomAttachmentMesh(object: THREE.Object3D): boolean {
+  let current: THREE.Object3D | null = object;
+  while (current) {
+    if (
+      current.userData.toonSpectrumAvatarForge === true
+      || current.userData.studioVrmCustomPartOutline === true
+      || typeof current.userData.characterAuthoringDerivative === "string"
+      || current.userData.characterCanonicalPart === true
+      || current.name.startsWith("wardrobe:")
+      || current.name.startsWith("prop:")
+    ) {
+      return true;
+    }
+    current = current.parent;
+  }
+  return isStudioAuthoredAttachment(object);
+}
 
 export interface StudioVrmHeadSurface {
   head: number;
@@ -37,7 +57,7 @@ export function measureStudioVrmHeadSurface(vrm: VRM): StudioVrmHeadSurface | nu
   let vertexCount = 0;
   vrm.scene.traverse((object) => {
     const mesh = object as THREE.SkinnedMesh;
-    if (!mesh.isSkinnedMesh || !mesh.visible) return;
+    if (!mesh.isSkinnedMesh || !mesh.visible || isCustomAttachmentMesh(mesh)) return;
     const geometry = mesh.geometry;
     if (!geometry.getAttribute("position") || !geometry.getAttribute("skinIndex") || !geometry.getAttribute("skinWeight")) return;
     meshes.push(mesh);

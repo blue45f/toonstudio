@@ -976,7 +976,7 @@ export function SearchExplorer({
                     : search.moreFailed
                       ? t("search.explorer.retry")
                       : t("search.explorer.loadMore")}
-                  <span className="text-fg-3">
+                  <span className="text-on-accent/80">
                     ({compactNumber(Math.max(0, search.total - shown.length))}
                     {t("search.explorer.unit.itemSuffix")})
                   </span>

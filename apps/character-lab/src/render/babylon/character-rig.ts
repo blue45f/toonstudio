@@ -88,6 +88,8 @@ export interface RigPart {
   readonly tint?: RigPartTint;
   /** 툰 ShaderMaterial(setShading("toon")에서 지연 생성) */
   toon: ShaderMaterial | null;
+  /** 멀티 재질 GLB 파츠(소품·패키지)의 서브메시별 전용 툰 ShaderMaterial(1차 `pbr`과 다른 재질만 분리 보관) */
+  meshToons?: Map<PBRMaterial, ShaderMaterial>;
   /** 현재 표시 색(소문자 hex) */
   colorHex: string;
   visible: boolean;
@@ -499,6 +501,15 @@ export function attachExtraRigPart(rig: CharacterRig, part: RigPart): void {
   if (existingIdx >= 0) mutableParts.splice(existingIdx, 1);
   mutableParts.push(part);
   (rig.partById as Map<number, RigPart>).set(part.partId, part);
+}
+
+/** 파츠의 주 툰 재질과 서브메시별 보조 툰 재질을 모두 해제한다(공유 텍스처는 유지). */
+export function disposePartToonMaterials(part: Pick<RigPart, "toon" | "meshToons">): void {
+  part.toon?.dispose(true, false);
+  if (part.meshToons) {
+    for (const mat of part.meshToons.values()) mat.dispose(true, false);
+    part.meshToons.clear();
+  }
 }
 
 /** 런타임 부속 RigPart를 리그의 parts 및 partById에서 제거한다. */

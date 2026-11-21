@@ -19,6 +19,7 @@ import {
   COMMUNITY_SCOPE_LABEL_KEYS,
 } from "./community-cafe-labels";
 import { CommunityActivityPreview } from "./components/community-activity-preview";
+import { CommunityFanPulseStrip } from "./components/community-fan-pulse-strip";
 import { CommunityScopeDirectory } from "./components/community-scope-directory";
 import { CommunityUnderlineTabs } from "./components/community-underline-tabs";
 import { FanCafePanel } from "./components/fan-cafe-panel";
@@ -435,6 +436,7 @@ export function CommunityPage() {
             <section aria-label={t(COPY.unifiedFeedRegion)}>
               <FanCafePanel scope="all" targetLabel={t(COPY.unifiedFeedLabel)} compact hideSpaceGuide />
             </section>
+            <CommunityFanPulseStrip />
             <CommunityDisclosure title={t(COPY.guideSection)}>
               <SiteContextualSubNav pathnameOverride="/community" className="mt-3" />
               <section

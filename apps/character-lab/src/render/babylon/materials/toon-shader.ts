@@ -204,6 +204,15 @@ export function setToonUniforms(material: ShaderMaterial, values: ToonUniformVal
       Math.min(1, Math.max(0, values.hairAngelRingSecondaryWeight ?? 0.35)),
     ),
   );
+  material.setVector4(
+    "kwebtoonParams",
+    new Vector4(
+      Math.min(1, Math.max(0, values.kwebtoonFaceMakeup ?? 0)),
+      Math.min(1, Math.max(0, values.kwebtoonIrisGradient ?? 0)),
+      Math.min(1, Math.max(0, values.kwebtoonLipTint ?? 0)),
+      Math.min(1, Math.max(0, values.kwebtoonCheekBlush ?? 0)),
+    ),
+  );
 }
 
 export interface FlatUniformValues {

@@ -256,11 +256,12 @@ export function diffAvailabilitySnapshots(
   }
 
   if (before.status !== after.status) {
+    const resumedFromHiatus = before.status === "hiatus" && after.status === "ongoing";
     changes.push({
       kind: "serialization-changed",
-      label: "연재 상태 변경",
-      before: before.status,
-      after: after.status,
+      label: resumedFromHiatus ? "휴재 복귀 (연재 재개)" : "연재 상태 변경",
+      before: before.status === "hiatus" ? "휴재" : before.status === "completed" ? "완결" : "연재중",
+      after: after.status === "hiatus" ? "휴재" : after.status === "completed" ? "완결" : "연재중",
     });
   }
   if (before.totalEpisodes !== after.totalEpisodes) {
@@ -356,6 +357,29 @@ export function releaseNotificationForTitle(
     archivedAt: null,
     snoozedUntil: null,
     sourceKey: `catalog-release:${title.id}:${dateKey}`,
+  };
+}
+
+/** 휴재 상태였던 작품 또는 휴재 대기 서재 작품이 연재중으로 돌아왔을 때 생성하는 휴재 복귀 알림. */
+export function hiatusResumeNotificationForTitle(
+  title: Title,
+  observedAt = new Date().toISOString(),
+): EngagementNotification | null {
+  if (title.status !== "ongoing") return null;
+  const parsed = new Date(observedAt);
+  const dateKey = localDateKey(Number.isFinite(parsed.getTime()) ? parsed : new Date());
+  return {
+    id: `hiatus-resume:${dateKey}:${title.id}`,
+    scheduledTitleName: title.title,
+    category: "release",
+    title: `${title.title} 휴재 복귀 · 연재가 재개됐어요`,
+    body: "휴재 대기 중이던 작품의 연재 상태가 연재중으로 바뀌었습니다. 최신 회차를 제공 플랫폼에서 확인해 보세요.",
+    href: `/title/${encodeURIComponent(title.slug)}`,
+    createdAt: Number.isFinite(parsed.getTime()) ? parsed.toISOString() : new Date().toISOString(),
+    readAt: null,
+    archivedAt: null,
+    snoozedUntil: null,
+    sourceKey: `hiatus-resume:${title.id}:${dateKey}`,
   };
 }
 

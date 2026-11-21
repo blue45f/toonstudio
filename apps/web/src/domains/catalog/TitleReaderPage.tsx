@@ -12,12 +12,15 @@ import type { Title } from "@/shared/lib/types";
 
 import { resolveTitleEpisodes, resolveTotalEpisodes } from "./title-episodes";
 import { TitleNotFound } from "./TitleNotFound";
+import { TitleReaderFocusRhythmBar } from "./TitleReaderFocusRhythmBar";
 import { TitleReaderImmersiveCreationBar } from "./TitleReaderImmersiveCreationBar";
 import { TitleReaderReaBridgeCard } from "./TitleReaderReaBridgeCard";
 import { ReaderPlatformNotice } from "./ReaderPlatformNotice";
 import { resolveExternalPlatformGuide } from "./title-episode-empty-guide";
+import { loadReaderFocusCalm, saveReaderFocusCalm } from "./title-reader-rhythm";
 import { useLocalCatalogFallback } from "./local-catalog-fallback";
 import { useTitleTrustSeal } from "./use-title-trust-seal";
+import "./title-reader-atelier.css";
 
 import { useNextgenLabSettings } from "@/shared/hooks/use-nextgen-lab-settings";
 import { useScreenWakeLock } from "@/shared/hooks/use-screen-wake-lock";
@@ -69,12 +72,6 @@ function saveComfortPrefs(prefs: ReaderComfortPrefs): void {
   try { window.localStorage.setItem(COMFORT_STORAGE_KEY, JSON.stringify(prefs)); } catch { /* ignore */ }
 }
 
-const THEME_CLASSES: Record<ReaderTheme, string> = {
-  dark: "bg-reader-canvas text-white",
-  oled: "bg-black text-white",
-  sepia: "bg-[#1c1813] text-[#f5ebd6]",
-  paper: "bg-[#23252b] text-[#f1f3f5]",
-};
 const WIDTH_CLASSES: Record<ReaderWidth, string> = {
   narrow: "max-w-[580px]",
   standard: "max-w-[720px]",
@@ -109,6 +106,7 @@ function ReaderShell({
   const pendingPanelFocusRef = useRef<HTMLElement | null>(null);
   const [chromeVisible, setChromeVisible] = useState(true);
   const [comfort, setComfort] = useState<ReaderComfortPrefs>(() => loadComfortPrefs());
+  const [focusCalm, setFocusCalm] = useState<boolean>(() => loadReaderFocusCalm());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [episodeDrawerOpen, setEpisodeDrawerOpen] = useState(false);
 
@@ -123,6 +121,14 @@ function ReaderShell({
     setComfort((prev) => {
       const next = { ...prev, ...patch };
       saveComfortPrefs(next);
+      return next;
+    });
+  }, []);
+
+  const toggleFocusCalm = useCallback(() => {
+    setFocusCalm((prev) => {
+      const next = !prev;
+      saveReaderFocusCalm(next);
       return next;
     });
   }, []);
@@ -213,11 +219,7 @@ function ReaderShell({
   );
   const episodeWindowStart = Math.max(0, publishedEpisodes.indexOf(episode) - 12);
   const quickEpisodes = publishedEpisodes.slice(episodeWindowStart, episodeWindowStart + 24);
-  const chipClass = (active: boolean) =>
-    cn(
-      "min-h-12 [min-block-size:3rem]! [min-inline-size:3rem]! rounded-full border px-2.5 font-semibold transition-colors",
-      active ? "border-white bg-white text-[oklch(0.16_0.02_265)]" : "border-white/15 bg-white/5 text-white/80 hover:bg-white/15",
-    );
+  const chipClass = "reader-chip min-h-12 [min-block-size:3rem]! [min-inline-size:3rem]! rounded-full border px-3 font-semibold [word-break:keep-all]";
 
   return (
     <div
@@ -225,7 +227,8 @@ function ReaderShell({
       tabIndex={-1}
       data-reader-theme={comfort.theme}
       data-reader-width={comfort.width}
-      className={cn("reader-reference-root min-h-[100dvh] outline-none transition-colors duration-200 motion-reduce:transition-none", THEME_CLASSES[comfort.theme])}
+      data-reader-focus={focusCalm ? "calm" : "default"}
+      className="reader-reference-root min-h-[100dvh] outline-none"
     >
       {/* 상단 바 */}
       <header
@@ -233,21 +236,22 @@ function ReaderShell({
         inert={!chromeVisible}
         aria-hidden={!chromeVisible}
         className={cn(
-          "fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-[oklch(0.095_0.018_265/0.88)] backdrop-blur-md",
+          "reader-chrome-bar fixed inset-x-0 top-0 z-40 border-b",
           chromeClass,
         )}
       >
+        <span aria-hidden="true" className="reader-prism-hairline" />
         <div className={cn("mx-auto flex h-14 w-full items-center gap-2 px-3 sm:px-4", WIDTH_CLASSES[comfort.width])}>
           <Link
             href={detailPath}
             aria-label={bi("작품 상세로 나가기", "Back to title details")}
-            className="grid size-12 shrink-0 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            className="reader-icon-btn grid size-12 shrink-0 place-items-center rounded-full"
           >
             <ChevronLeft size={20} aria-hidden />
           </Link>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold leading-tight">{title.title}</p>
-            <p className="truncate text-xs leading-tight text-white/60">
+            <p className="reader-ink-subtle truncate text-xs leading-tight">
               {currentEpisodeConfirmed
                 ? formatI18nTemplate(bi("{v0}화", "Episode {v0}"), { v0: String(episode) })
                 : bi("공식 감상 안내", "Official reading guide")}
@@ -261,10 +265,8 @@ function ReaderShell({
             onClick={() => { setSettingsOpen((prev) => !prev); setEpisodeDrawerOpen(false); pokeChrome(); }}
             aria-expanded={settingsOpen}
             aria-label={bi("보기 설정", "Reader settings")}
-            className={cn(
-              "grid size-12 shrink-0 place-items-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white",
-              settingsOpen ? "border-white bg-white text-[oklch(0.16_0.02_265)]" : "border-white/15 bg-white/5 text-white/85 hover:bg-white/15",
-            )}
+            data-active={settingsOpen ? "true" : "false"}
+            className="reader-chip grid size-12 shrink-0 place-items-center rounded-full border"
           >
             <SlidersHorizontal size={16} aria-hidden />
           </button>
@@ -274,37 +276,53 @@ function ReaderShell({
         {settingsOpen && (
           <section
             aria-label={bi("뷰어 환경 설정", "Reader comfort settings")}
-            className={cn("mx-auto border-t border-white/10 px-4 py-3 text-xs", WIDTH_CLASSES[comfort.width])}
+            className={cn("reader-divider mx-auto border-t px-4 py-3 text-xs", WIDTH_CLASSES[comfort.width])}
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bi("배경 톤", "Background tone")}>
-                <span className="mr-1 font-semibold text-white/70">{bi("배경 톤", "Tone")}</span>
+                <span className="reader-ink-muted mr-1 font-semibold">{bi("배경 톤", "Tone")}</span>
                 {([
                   { id: "dark", label: bi("다크 기본", "Dark") },
                   { id: "oled", label: bi("순수 블랙", "OLED Black") },
                   { id: "sepia", label: bi("세피아", "Sepia") },
                   { id: "paper", label: bi("소프트 종이", "Soft Paper") },
                 ] as const).map((item) => (
-                  <button key={item.id} type="button" aria-pressed={comfort.theme === item.id} onClick={() => updateComfort({ theme: item.id })} className={chipClass(comfort.theme === item.id)}>
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={comfort.theme === item.id}
+                    data-active={comfort.theme === item.id ? "true" : "false"}
+                    onClick={() => updateComfort({ theme: item.id })}
+                    className={chipClass}
+                  >
                     {item.label}
                   </button>
                 ))}
               </div>
               <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bi("원고 폭", "Canvas width")}>
-                <span className="mr-1 font-semibold text-white/70">{bi("원고 폭", "Width")}</span>
+                <span className="reader-ink-muted mr-1 font-semibold">{bi("원고 폭", "Width")}</span>
                 {([
                   { id: "narrow", label: bi("좁게 580px", "Narrow") },
                   { id: "standard", label: bi("표준 720px", "Standard") },
                   { id: "wide", label: bi("넓게 900px", "Wide") },
                 ] as const).map((item) => (
-                  <button key={item.id} type="button" aria-pressed={comfort.width === item.id} onClick={() => updateComfort({ width: item.id })} className={chipClass(comfort.width === item.id)}>
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={comfort.width === item.id}
+                    data-active={comfort.width === item.id ? "true" : "false"}
+                    onClick={() => updateComfort({ width: item.id })}
+                    className={chipClass}
+                  >
                     {item.label}
                   </button>
                 ))}
               </div>
 
             </div>
-            <p className="mt-3 leading-6 text-white/70">{bi("화면을 탭하면 메뉴가 사라져요 — Esc로 나가기 · M 메뉴 토글", "Tap the screen to hide menus — Esc to exit · M toggle menu")}</p>
+            <p className="reader-ink-subtle mt-3 leading-6 [word-break:keep-all]">
+              {bi("화면을 탭하면 메뉴가 사라져요 — Esc로 나가기 · M 메뉴 토글", "Tap the screen to hide menus — Esc to exit · M toggle menu")}
+            </p>
           </section>
         )}
       </header>
@@ -329,7 +347,18 @@ function ReaderShell({
           <ReaderTrustSealBadge seal={trustSeal.seal} liveStatus={trustSeal.liveStatus} />
         </div>
 
-        {publishedEpisodes.includes(episode) && !hasNext && <p className="mb-4 text-center text-sm text-white/75">{bi("확인된 공개 회차 중 마지막 회차예요", "This is the latest confirmed published episode")}</p>}
+        {publishedEpisodes.includes(episode) && !hasNext && (
+          <p className="reader-ink-muted mb-4 text-center text-sm [word-break:keep-all]">
+            {bi("확인된 공개 회차 중 마지막 회차예요", "This is the latest confirmed published episode")}
+          </p>
+        )}
+
+        <TitleReaderFocusRhythmBar
+          slug={title.slug}
+          episode={episode}
+          focusCalm={focusCalm}
+          onToggleFocusCalm={toggleFocusCalm}
+        />
 
         <TitleReaderReaBridgeCard title={title} episode={episode} />
         <TitleReaderImmersiveCreationBar />
@@ -342,18 +371,18 @@ function ReaderShell({
         inert={!chromeVisible}
         aria-hidden={!chromeVisible}
         className={cn(
-          "fixed inset-x-0 bottom-[max(0px,var(--service-status-overlay-clearance,0px))] max-md:bottom-[max(var(--site-float-base),var(--service-status-overlay-clearance,0px))] z-40 border-t border-white/10 bg-[oklch(0.095_0.018_265/0.88)] backdrop-blur-md",
+          "reader-chrome-bar fixed inset-x-0 bottom-[max(0px,var(--service-status-overlay-clearance,0px))] max-md:bottom-[max(var(--site-float-base),var(--service-status-overlay-clearance,0px))] z-40 border-t",
           chromeClass,
         )}
       >
         {episodeDrawerOpen && (
           <section
             aria-label={bi("회차 빠른 이동 목록", "Quick episode drawer")}
-            className={cn("mx-auto border-b border-white/10 px-4 py-3", WIDTH_CLASSES[comfort.width])}
+            className={cn("reader-divider mx-auto border-b px-4 py-3", WIDTH_CLASSES[comfort.width])}
           >
-            <div className="mb-2 flex items-center justify-between text-xs text-white/70">
+            <div className="reader-ink-muted mb-2 flex items-center justify-between text-xs">
               <span className="font-semibold">{bi("회차 빠른 이동", "Quick episode jump")}</span>
-              <Link href={`${detailPath}#episodes`} className="inline-flex min-h-12 items-center font-semibold text-white/85 underline-offset-4 hover:underline">
+              <Link href={`${detailPath}#episodes`} className="reader-icon-btn inline-flex min-h-12 items-center rounded-lg px-2 font-semibold underline-offset-4 hover:underline">
                 {bi("전체 회차 상세 보기", "Full episode list")}
               </Link>
             </div>
@@ -365,12 +394,8 @@ function ReaderShell({
                     key={epNum}
                     href={`/title/${encodeURIComponent(title.slug)}/read/${epNum}`}
                     aria-current={isCurrent ? "page" : undefined}
-                    className={cn(
-                      "inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full border px-3 text-xs font-semibold transition-colors",
-                      isCurrent
-                        ? "border-white bg-white text-[oklch(0.16_0.02_265)]"
-                        : "border-white/15 bg-white/5 text-white/80 hover:bg-white/15",
-                    )}
+                    data-active={isCurrent ? "true" : "false"}
+                    className="reader-chip inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full border px-3 text-xs font-semibold"
                   >
                     {formatI18nTemplate(bi("{v0}화", "Ep.{v0}"), { v0: String(epNum) })}
                   </Link>
@@ -383,7 +408,7 @@ function ReaderShell({
           <Link
             href={`${detailPath}#episodes`}
             aria-label={bi("회차 목록", "Episode list")}
-            className="grid size-12 shrink-0 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            className="reader-icon-btn grid size-12 shrink-0 place-items-center rounded-full"
           >
             <ListOrdered size={19} aria-hidden />
           </Link>
@@ -393,17 +418,15 @@ function ReaderShell({
             onClick={() => { setEpisodeDrawerOpen((prev) => !prev); setSettingsOpen(false); pokeChrome(); }}
             aria-expanded={episodeDrawerOpen}
             aria-label={bi("회차 빠른 이동", "Quick episode jump")}
-            className={cn(
-              "inline-flex min-h-12 [min-block-size:3rem]! shrink-0 items-center rounded-full border px-2.5 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white",
-              episodeDrawerOpen ? "border-white bg-white text-[oklch(0.16_0.02_265)]" : "border-white/15 bg-white/5 text-white/80 hover:bg-white/15",
-            )}
+            data-active={episodeDrawerOpen ? "true" : "false"}
+            className="reader-chip inline-flex min-h-12 [min-block-size:3rem]! shrink-0 items-center rounded-full border px-3 text-xs font-semibold [word-break:keep-all]"
           >
             {bi("회차 선택", "Episodes")}
           </button>}
           {hasPrev ? (
             <Link
               href={`/title/${encodeURIComponent(title.slug)}/read/${previousEpisode}`}
-              className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+              className="reader-icon-btn inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium"
             >
               <ChevronLeft size={17} aria-hidden />
               <span className="reader-episode-action-label">{bi("이전 화", "Prev")}</span>
@@ -411,7 +434,7 @@ function ReaderShell({
           ) : quickEpisodes.length > 0 ? (
             <span
               aria-disabled="true"
-              className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/30"
+              className="reader-ink-disabled inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium"
             >
               <ChevronLeft size={17} aria-hidden />
               <span className="reader-episode-action-label">{bi("이전 화", "Prev")}</span>
@@ -421,7 +444,7 @@ function ReaderShell({
           {hasNext ? (
             <Link
               href={`/title/${encodeURIComponent(title.slug)}/read/${nextEpisode}`}
-              className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+              className="reader-icon-btn inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-semibold"
             >
               <span className="reader-episode-action-label">{bi("다음 화", "Next")}</span>
               <ChevronRight size={17} aria-hidden />
@@ -429,7 +452,7 @@ function ReaderShell({
           ) : quickEpisodes.length > 0 ? (
             <span
               aria-disabled="true"
-              className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/30"
+              className="reader-ink-disabled inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium"
             >
               <span className="reader-episode-action-label">{bi("다음 화", "Next")}</span>
               <ChevronRight size={17} aria-hidden />
@@ -450,13 +473,13 @@ function ReaderMessageShell({
 }) {
   useBilingualI18nRevision();
   return (
-    <div className="reader-reference-root grid min-h-[100dvh] place-items-center bg-reader-canvas px-4 py-16 text-white">
+    <div className="reader-reference-root grid min-h-[100dvh] place-items-center px-4 py-16">
       <div className="w-full max-w-md">
         {children}
         {detailPath && (
           <Link
             href={detailPath}
-            className="mt-5 inline-flex min-h-12 items-center rounded-full border border-white/25 bg-white/5 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            className="reader-outline-btn mt-5 inline-flex min-h-12 items-center rounded-full border px-5 text-sm font-semibold"
           >
             {bi("작품 상세로", "Title details")}
           </Link>
@@ -501,8 +524,8 @@ export function TitleReaderPage() {
     return (
       <ReaderMessageShell detailPath={requestedDetailPath}>
         <div className="flex w-full flex-col gap-4" role="status" aria-label={bi("불러오는 중", "Loading")}>
-          <div className="h-28 animate-pulse rounded-2xl bg-white/8 motion-reduce:animate-none" />
-          <div className="h-40 animate-pulse rounded-2xl bg-white/6 motion-reduce:animate-none" />
+          <div className="reader-skeleton-block h-28" />
+          <div className="reader-skeleton-block h-40" />
         </div>
       </ReaderMessageShell>
     );
@@ -531,8 +554,8 @@ export function TitleReaderPage() {
   if (!episodeValid || (total != null && episodeNumber > total)) {
     return (
       <ReaderMessageShell detailPath={detailPath}>
-        <h1 className="text-xl font-bold">{bi("없는 회차예요", "This episode doesn't exist")}</h1>
-        <p className="mt-2 text-sm leading-relaxed text-white/70">
+        <h1 className="text-xl font-bold [word-break:keep-all]">{bi("없는 회차예요", "This episode doesn't exist")}</h1>
+        <p className="reader-ink-muted mt-2 text-sm leading-relaxed [word-break:keep-all]">
           {total != null
             ? formatI18nTemplate(
                 bi("이 작품의 회차 정보는 {v0}화까지 연결돼 있어요.", "Episode information is connected up to episode {v0}."),
@@ -546,7 +569,7 @@ export function TitleReaderPage() {
         {latestPublishedEpisode != null && (
           <Link
             href={`/title/${encodeURIComponent(title.slug)}/read/${latestPublishedEpisode}`}
-            className="mt-5 inline-flex min-h-12 items-center rounded-full bg-white px-5 text-sm font-bold text-[oklch(0.16_0.02_265)] transition-colors hover:bg-white/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            className="reader-cta-btn mt-5 inline-flex min-h-12 items-center rounded-full px-5 text-sm font-bold"
           >
             {formatI18nTemplate(bi("마지막 화({v0}화)로", "Go to the latest (ep. {v0})"), {
               v0: String(latestPublishedEpisode),
@@ -560,12 +583,12 @@ export function TitleReaderPage() {
   if (currentEpisode?.status === "scheduled") {
     return (
       <ReaderMessageShell detailPath={detailPath}>
-        <h1 className="text-xl font-bold">
+        <h1 className="text-xl font-bold [word-break:keep-all]">
           {formatI18nTemplate(bi("{v0}화는 아직 공개 전이에요", "Episode {v0} isn't out yet"), {
             v0: String(episodeNumber),
           })}
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-white/70">
+        <p className="reader-ink-muted mt-2 text-sm leading-relaxed [word-break:keep-all]">
           {bi(
             "공개 예정인 회차예요. 공개 여부와 감상 경로는 공식 플랫폼에서 확인해 주세요.",
             "This episode is scheduled. Check its release and reading options on the official platform.",

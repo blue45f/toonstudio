@@ -57,6 +57,14 @@ export interface ToonParams {
   readonly hairAngelRingSecondaryWeight?: number;
   /** 얼굴 SDF 경계에 fwidth 기반 안티앨리어싱 smoothstep을 적용할지 (기본 false = NodeMaterial 호환 step) */
   readonly smoothFaceSdf?: boolean;
+  /** K-웹툰 얼굴 메이크업(블러셔·중앙 입술 그라데이션·애교살·콧대 하이라이트) 강도 0..1 (기본 0) */
+  readonly kwebtoonFaceMakeup?: number;
+  /** K-웹툰 홍채 그라데이션(상단 속눈썹 그림자·림벌 링·하단 루미너스 크레센트) 강도 0..1 (기본 0) */
+  readonly kwebtoonIrisGradient?: number;
+  /** K-웹툰 중앙 입술 그라데이션 채도 강도 0..1 (기본 0) */
+  readonly kwebtoonLipTint?: number;
+  /** K-웹툰 뺨 블러셔 강도 0..1 (기본 0) */
+  readonly kwebtoonCheekBlush?: number;
 }
 
 /** 셰이더 상수(소스 문자열과 같은 값 — `toon-reference.test.ts`가 소스에서 확인한다) */
@@ -196,7 +204,45 @@ function fract01(v: number): number {
 export function evaluateToon(params: ToonParams, fragment: ToonFragmentInput): readonly [number, number, number] {
   const n = v3Normalize(fragment.normalW as Vec3);
   const l = v3Normalize(params.toLight as Vec3);
-  const albedo = toonAlbedo(params, fragment);
+  const rawAlbedo = toonAlbedo(params, fragment);
+  const albedo: [number, number, number] = [rawAlbedo[0], rawAlbedo[1], rawAlbedo[2]];
+  const kwFace = clamp(params.kwebtoonFaceMakeup ?? 0, 0, 1);
+  if (kwFace > 0) {
+    const fu = Math.abs(fragment.uv[0] - 0.25);
+    const fv = fragment.uv[1];
+    const cheekDist = Math.hypot((fu - 0.056) / 0.042, (fv - 0.605) / 0.032);
+    const cheekAmt = clamp(Math.exp(-cheekDist * cheekDist * 1.65) * clamp(params.kwebtoonCheekBlush ?? 0, 0, 1) * 0.42 * kwFace, 0, 0.45);
+    const blushCol: readonly [number, number, number] = [0.98, 0.58, 0.6];
+    for (let c = 0; c < 3; c += 1) albedo[c] = mix(albedo[c]!, blushCol[c]!, cheekAmt);
+    const lipDist = Math.hypot(fu / 0.025, (fv - 0.543) / 0.015);
+    const lipAmt = clamp(Math.exp(-lipDist * lipDist * 2.1) * clamp(params.kwebtoonLipTint ?? 0, 0, 1) * 0.58 * kwFace, 0, 0.62);
+    const lipCol: readonly [number, number, number] = [0.92, 0.36, 0.43];
+    for (let c = 0; c < 3; c += 1) albedo[c] = mix(albedo[c]!, lipCol[c]!, lipAmt);
+    const aegyoDist = Math.hypot((fu - 0.031) / 0.02, (fv - 0.642) / 0.008);
+    const aegyoGlow = Math.exp(-aegyoDist * aegyoDist * 2.2) * kwFace;
+    const noseDist = Math.hypot(fu / 0.009, (fv - 0.626) / 0.022);
+    const noseSpec = Math.exp(-noseDist * noseDist * 2.4) * kwFace;
+    albedo[0] = Math.min(1, albedo[0] + 0.06 * aegyoGlow + 0.09 * noseSpec);
+    albedo[1] = Math.min(1, albedo[1] + 0.045 * aegyoGlow + 0.08 * noseSpec);
+    albedo[2] = Math.min(1, albedo[2] + 0.04 * aegyoGlow + 0.075 * noseSpec);
+  }
+  const kwIris = clamp(params.kwebtoonIrisGradient ?? 0, 0, 1);
+  if (kwIris > 0) {
+    const icx = fragment.uv[0] - 0.5;
+    const icy = fragment.uv[1] - 0.5;
+    const ir = Math.hypot(icx, icy) * 2;
+    const upperShade = smoothstep(-0.08, 0.65, icy * 2);
+    const lowerGlow = smoothstep(0.08, -0.7, icy * 2) * (1 - smoothstep(0.62, 0.96, ir));
+    const limbal = smoothstep(0.7, 0.98, ir);
+    const upperMul: readonly [number, number, number] = [0.46, 0.42, 0.62];
+    const glowAdd: readonly [number, number, number] = [0.16, 0.19, 0.24];
+    for (let c = 0; c < 3; c += 1) {
+      let styled = mix(albedo[c]!, albedo[c]! * upperMul[c]!, upperShade * 0.68);
+      styled = mix(styled, styled * 0.34, limbal * 0.72);
+      styled = Math.min(1, styled + (albedo[c]! * 0.52 + glowAdd[c]!) * lowerGlow * 0.72);
+      albedo[c] = mix(albedo[c]!, styled, kwIris);
+    }
+  }
   const shading = toonShading(params, fragment);
   const steps = Math.max(2, params.rampSteps);
   const softness = params.rampSoftness ?? 0;

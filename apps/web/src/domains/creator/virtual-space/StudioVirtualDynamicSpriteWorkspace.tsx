@@ -601,7 +601,7 @@ export function StudioVirtualDynamicSpriteWorkspace({
               <div className="text-xs font-bold text-fg">{activeUnit.taskTitleKo}</div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-panel">
                 <div
-                  className="h-full rounded-full bg-accent transition-all duration-200"
+                  className="h-full rounded-full bg-accent transition-[width] duration-200"
                   style={{ width: `${activeUnit.progressPercent}%` }}
                 />
               </div>

@@ -15,7 +15,7 @@ import {
   StickyNote,
   UserPlus,
 } from "lucide-react";
-import { Suspense, useState, type ReactNode } from "react";
+import { Suspense, useMemo, useState, type ReactNode } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
@@ -176,6 +176,7 @@ export interface VirtualSpaceSidePanelContentProps {
   readonly openWorldEditor: () => void;
   readonly closeWorldEditor: () => void;
   readonly notify: (msg: string, tone?: "info" | "success" | "warn" | "error") => void;
+  readonly onOpenSoloBoard?: (tab: "whiteboard" | "stickies" | "annotation") => void;
 }
 
 /**
@@ -201,10 +202,25 @@ export function VirtualSpaceSidePanelContent(props: VirtualSpaceSidePanelContent
     cancelGuideTour, replayMiniTour, boothSpaces, boothConfig, boothBookings, setBoothBookings,
     boothWaitlist, setBoothWaitlist, galleryFrames, galleryStats, setGalleryStats,
     requestSaveLogin, handleBoothProjectAsset, inviteRecord, inviteLink, spaceUrlBase,
-    initialSessionId, setPanel, setHelpOpen, openWorldEditor, closeWorldEditor, notify,
+    initialSessionId, setPanel, setHelpOpen, openWorldEditor, closeWorldEditor, notify, onOpenSoloBoard,
   } = props;
 
   const conversationMemberIds = socialAndMedia.activeConversation?.memberIds ?? socialAndMedia.pairConversation?.memberIds ?? [];
+  const liveRoomParticipant = live.room?.participant;
+  const liveRoomDirect = live.room?.direct;
+  const liveAnnotationP2p = useMemo(
+    () =>
+      !personal
+        ? {
+            participant: liveRoomParticipant,
+            port: liveRoomDirect,
+            scope: { worldId: activeWorldScope, boardId: "live-annotation", contentRevision: "v1" },
+            storageOwnerId: privateActorId,
+            enabled: Boolean(liveRoomParticipant && liveRoomDirect),
+          }
+        : undefined,
+    [activeWorldScope, liveRoomDirect, liveRoomParticipant, personal, privateActorId],
+  );
   const authorNameOf = (sessionId: string): string =>
     sessionId === selfListId
       ? localName
@@ -313,6 +329,12 @@ export function VirtualSpaceSidePanelContent(props: VirtualSpaceSidePanelContent
         <div className="space-empty">
           <MessageCircle size={22} aria-hidden />
           <p>{bt("대화와 통화는 팀 프로젝트 공간에서 쓸 수 있어요.", "Chat and calls are available in team project spaces.")}</p>
+          {onOpenSoloBoard ? (
+            <button type="button" className="space-pill-button" onClick={() => onOpenSoloBoard("annotation")}>
+              <Presentation size={15} aria-hidden />
+              {bt("실시간 주석 보드 열기", "Open live annotation board")}
+            </button>
+          ) : null}
           <Link href="/studio/new" className="space-pill-button">{bt("팀 작품 만들기", "Create a team work")}</Link>
         </div>
       ) : (
@@ -620,10 +642,12 @@ export function VirtualSpaceSidePanelContent(props: VirtualSpaceSidePanelContent
           <StudioVirtualSpaceLiveAnnotationPanel
             snapshot={yjsSpace.boardSnapshot}
             selfSessionId={selfListId}
+            authorNameOf={authorNameOf}
             onStroke={yjsSpace.addStroke}
             onNote={yjsSpace.addBoardNote}
             onRemove={yjsSpace.removeBoardEntity}
             onClearOwn={yjsSpace.clearOwnBoardEntities}
+            liveP2p={liveAnnotationP2p}
           />
         </StudioVirtualSpacePanelGate>
       );
@@ -681,7 +705,7 @@ export function VirtualSpaceSidePanelContent(props: VirtualSpaceSidePanelContent
             onMoveToRoom={moveToRoomOrPlace}
             onMoveToDesk={(pod) => moveToRoomOrPlace(pod.roomId, builtinPlaceWorld ? undefined : pod.point)}
             onOpenPeople={() => setPanel("people")}
-            onOpenAnnotation={() => setPanel("annotation")}
+            onOpenAnnotation={() => (personal && onOpenSoloBoard ? onOpenSoloBoard("annotation") : setPanel("annotation"))}
             onOpenSessions={() => setPanel("sessions")}
             onStartSpotlight={socialAndMedia.startSpotlight}
             onStopSpotlight={socialAndMedia.stopSpotlight}

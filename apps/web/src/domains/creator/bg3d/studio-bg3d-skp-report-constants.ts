@@ -15,6 +15,8 @@ export const STUDIO_BG3D_SKP_WARNING_CODES = [
   "unit-override-applied",
   "high-polygon-count",
   "flipped-faces",
+  "non-manifold-edges",
+  "coplanar-z-fighting",
   "orientation-check-skipped",
   "texture-missing",
   "texture-unsupported-format",

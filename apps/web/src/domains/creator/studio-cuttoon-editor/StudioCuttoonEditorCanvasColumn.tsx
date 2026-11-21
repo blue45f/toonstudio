@@ -5,6 +5,7 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import { Suspense } from "react";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { StudioBrushHud } from "../brush/StudioBrushHud";
 import { isStudioBrushCursorMode } from "../canvas/studio-canvas-cursor";
 import { StudioCanvasViewport } from "../canvas/StudioCanvasViewport";
@@ -18,6 +19,14 @@ import { StudioPixelSelectionHud } from "../StudioPixelSelectionHud";
 import { SELECTION_EXPAND_DEFAULT, expandContractSelection, setSelectionFeather, toggleSelectionInvert, type PixelSelection } from "../studio-selection-tools";
 import { cn } from "@/shared/lib/utils";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
+
+const LazyStudioEdgeQuickSlidersAndHoldEyedropper = lazyRetry(
+  () =>
+    import("../drawing/StudioEdgeQuickSlidersAndHoldEyedropper").then((mod) => ({
+      default: mod.StudioEdgeQuickSlidersAndHoldEyedropper,
+    })),
+  "StudioEdgeQuickSlidersAndHoldEyedropper",
+);
 
 export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSession) {
   const {
@@ -736,47 +745,33 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
 
         {drawingPracticeDocument && !isExporting ? (
           <StudioDrawingPracticeBar
-            document={drawingPracticeDocument}
-            sourceState={drawingPracticeSourceState}
-            compareActive={drawingPracticeCompareActive}
-            disabled={
-              activeSurfaceReviewLocked
-              || pageEditLocked
-              || collaborationDocumentLocked
-              || masterEditMode
-              || saving
-            }
-            onPreviewView={previewDrawingPracticeView}
-            onCommitView={commitDrawingPracticeView}
-            onCancelPreview={cancelDrawingPracticePreview}
-            onCompareChange={setDrawingPracticeCompareActive}
-            onOpenReferencePanel={openDrawingPracticeReferencePanel}
-            onFinish={finishDrawingPractice}
-            onRetry={retryDrawingPractice}
-            onResetPlacement={resetDrawingPracticePlacement}
-            onRemove={removeDrawingPractice}
+            document={drawingPracticeDocument} sourceState={drawingPracticeSourceState} compareActive={drawingPracticeCompareActive}
+            disabled={activeSurfaceReviewLocked || pageEditLocked || collaborationDocumentLocked || masterEditMode || saving}
+            onPreviewView={previewDrawingPracticeView} onCommitView={commitDrawingPracticeView} onCancelPreview={cancelDrawingPracticePreview}
+            onCompareChange={setDrawingPracticeCompareActive} onOpenReferencePanel={openDrawingPracticeReferencePanel}
+            onFinish={finishDrawingPractice} onRetry={retryDrawingPractice} onResetPlacement={resetDrawingPracticePlacement} onRemove={removeDrawingPractice}
           />
         ) : null}
 
         {!isExporting ? <StudioLessonMissionBarSlot /> : null}
 
         <StudioBrushHud
-          visible={
-            tool === "draw"
-            && isStudioBrushCursorMode(drawMode)
-            && !canvasOnlyMode
-            && (!canvasInteractionBlocked || s.scopedCanvasDrawingAvailable === true)
-            && !isExporting
-            && !colorWheelOpen
-          }
-          strokeWidth={strokeWidth}
-          brushOpacity={brushOpacity}
-          color={color}
-          eraserActive={drawMode === "eraser"}
-          handedness={workspaceControlSide === "left" ? "left" : "right"}
-          canvasHostRef={wrapRef}
-          stableHandlers={studioOnCanvasSurfaceHandlers}
+          visible={tool === "draw" && isStudioBrushCursorMode(drawMode) && !canvasOnlyMode && (!canvasInteractionBlocked || s.scopedCanvasDrawingAvailable === true) && !isExporting && !colorWheelOpen}
+          strokeWidth={strokeWidth} brushOpacity={brushOpacity} color={color} eraserActive={drawMode === "eraser"}
+          handedness={workspaceControlSide === "left" ? "left" : "right"} canvasHostRef={wrapRef} stableHandlers={studioOnCanvasSurfaceHandlers}
         />
+        {tool === "draw" && !canvasOnlyMode && (!canvasInteractionBlocked || s.scopedCanvasDrawingAvailable === true) && !isExporting ? (
+          <Suspense fallback={null}>
+            <LazyStudioEdgeQuickSlidersAndHoldEyedropper
+              visible strokeWidth={strokeWidth} brushOpacity={brushOpacity} currentColor={color}
+              handedness={workspaceControlSide === "left" ? "left" : "right"}
+              palmRejectionEnabled={appSettings.touch.palmRejection} canvasHostRef={wrapRef}
+              onStrokeWidthChange={studioOnCanvasSurfaceHandlers.onStrokeWidthChange}
+              onOpacityChange={studioOnCanvasSurfaceHandlers.onOpacityChange}
+              onPickColor={(hex) => s.setColor(hex)} onUndo={s.undo} onRedo={s.redo}
+            />
+          </Suspense>
+        ) : null}
         <StudioPixelSelectionHud
           visible={
             !!pixelOverlaySel

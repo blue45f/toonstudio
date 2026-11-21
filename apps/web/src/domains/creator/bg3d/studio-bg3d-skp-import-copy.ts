@@ -135,6 +135,10 @@ export function describeStudioBg3dSkpWarning(warning: StudioBg3dSkpReportWarning
         return `삼각형이 ${number}개로 많습니다. 모바일에서는 느릴 수 있으니 SketchUp에서 단순화를 권장합니다.`;
       case "flipped-faces":
         return `면 방향이 어긋난 경계가 ${number}곳 있습니다. 모델이 어둡거나 비어 보이면 SketchUp에서 면 방향을 맞춰 주세요.`;
+      case "non-manifold-edges":
+        return `한 모서리에 면이 3개 이상 겹친 비다양체 경계가 ${number}곳 있습니다. 선화 추출이 깨지면 SketchUp에서 겹친 면을 정리해 주세요.`;
+      case "coplanar-z-fighting":
+        return `같은 평면에 겹친 삼각형 쌍이 ${number}곳 있어 화면이 깜박일 수 있습니다. 필요하면 SketchUp에서 중복 면을 제거해 주세요.`;
       case "orientation-check-skipped":
         return "삼각형이 많아 면 방향 점검을 건너뛰었습니다.";
       case "texture-missing":

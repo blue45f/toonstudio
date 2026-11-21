@@ -300,6 +300,7 @@ export function StudioVirtualSpaceWhiteboard({
   const [penWidth, setPenWidth] = useState<number>(5);
   const [noteText, setNoteText] = useState("");
   const [draft, setDraft] = useState<readonly StudioP2pBoardPoint[]>([]);
+  const draftRef = useRef<readonly StudioP2pBoardPoint[]>([]);
   const drawing = useRef(false);
   const boardRef = useRef<SVGSVGElement>(null);
   const noteInputRef = useRef<HTMLInputElement>(null);
@@ -367,13 +368,18 @@ export function StudioVirtualSpaceWhiteboard({
     }
     drawing.current = true;
     event.currentTarget.setPointerCapture(event.pointerId);
-    setDraft([point]);
+    const initial = [point];
+    draftRef.current = initial;
+    setDraft(initial);
   };
   const continuePointer = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (!drawing.current || tool !== "pen") return;
     const point = boardPointFromEvent(event);
     if (!point) return;
-    setDraft((current) => current.length >= 48 ? current : [...current, point]);
+    if (draftRef.current.length >= 48) return;
+    const next = [...draftRef.current, point];
+    draftRef.current = next;
+    setDraft(next);
   };
   const finishPointer = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (!drawing.current) return;
@@ -381,10 +387,10 @@ export function StudioVirtualSpaceWhiteboard({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    setDraft((current) => {
-      if (current.length >= 2) onStroke(current, color, penWidth);
-      return [];
-    });
+    const committed = draftRef.current;
+    draftRef.current = [];
+    setDraft([]);
+    if (committed.length >= 2) onStroke(committed, color, penWidth);
   };
 
   const noteTag = (ownerSessionId: string) =>

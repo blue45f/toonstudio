@@ -102,8 +102,11 @@ export function buildStudioLayerMenuItems({
       },
     },
     {
-      id: "adjustment", commandId: "layer.adjustment", label: "보정 레이어 만들기",
+      id: "adjustment", commandId: "layer.adjustment", searchActivation: "execute", label: "보정 레이어 만들기",
       icon: SlidersHorizontal, disabled: !ui.createAdjustmentLayer || state.masterEditMode || state.collaborationDocumentLocked || state.saving,
+      unavailableReason: !ui.createAdjustmentLayer || state.masterEditMode || state.collaborationDocumentLocked || state.saving
+        ? "현재 편집 상태에서는 보정 레이어를 추가할 수 없습니다."
+        : undefined,
       onSelect: () => { ui.createAdjustmentLayer?.(); },
     },
     {
@@ -162,6 +165,7 @@ export function buildStudioLayerMenuItems({
     {
       id: "clipping-mask",
       commandId: "layer.clipping-mask",
+      searchActivation: "execute",
       label: "아래 레이어에 클리핑",
       icon: SquareStack,
       checked: state.clippingMaskActive,
@@ -177,6 +181,7 @@ export function buildStudioLayerMenuItems({
     {
       id: "mask",
       commandId: "layer.mask",
+      searchActivation: "execute",
       label: "레이어 마스크 편집…",
       icon: SquareDashed,
       disabled: !state.imageLayerSelected,
@@ -242,6 +247,7 @@ export function buildStudioTransformMenuItems({
     {
       id: "pixel-transform",
       commandId: "transform.pixel-selection",
+      searchActivation: "execute",
       label: "선택 변형",
       icon: Scaling,
       onSelect: () => {

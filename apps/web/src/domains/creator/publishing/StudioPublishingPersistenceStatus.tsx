@@ -1,4 +1,4 @@
-import { Check, ImagePlus, Loader2, TriangleAlert } from "lucide-react";
+import { Check, ImagePlus, TriangleAlert } from "lucide-react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -27,7 +27,7 @@ function toneTextClass(tone: StudioPublishingPersistenceStatusSnapshot["tone"]):
 
 function StatusLeadingGlyph({ status }: { readonly status: StudioPublishingPersistenceStatusSnapshot }) {
   if (status.kind === "saving" || status.kind === "preparing") {
-    return <Loader2 size={13} className="shrink-0 animate-spin motion-reduce:animate-none" aria-hidden />;
+    return <span className="inline-block h-2 w-3.5 shrink-0 rounded-full bg-accent/70 motion-safe:animate-pulse motion-reduce:animate-none" aria-hidden />;
   }
   if (status.kind === "saved") {
     return <Check size={13} className="shrink-0" aria-hidden />;

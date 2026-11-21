@@ -16,6 +16,8 @@ export interface StudioVirtualSpaceThreeHudProps {
   readonly cutawayHiddenCount?: number;
   readonly ghostMode?: boolean;
   readonly onToggleGhostMode?: () => void;
+  readonly soundMuted?: boolean;
+  readonly onToggleSound?: () => void;
   readonly onCapturePhotoToCut?: () => void;
   readonly onOpenCustomize?: () => void;
 }
@@ -45,6 +47,8 @@ export function StudioVirtualSpaceThreeHud({
   cutawayHiddenCount = 0,
   ghostMode = false,
   onToggleGhostMode,
+  soundMuted = false,
+  onToggleSound,
   onCapturePhotoToCut,
   onOpenCustomize,
 }: StudioVirtualSpaceThreeHudProps) {
@@ -112,6 +116,17 @@ export function StudioVirtualSpaceThreeHud({
             onClick={onToggleGhostMode}
           >
             {bt("고스트 [G]", "Ghost [G]")}
+          </button>
+        ) : null}
+
+        {onToggleSound ? (
+          <button
+            type="button"
+            data-testid="three-toggle-sound-btn"
+            aria-pressed={!soundMuted}
+            onClick={onToggleSound}
+          >
+            {soundMuted ? bt("음소거", "Muted") : bt("공간음", "Audio")}
           </button>
         ) : null}
 

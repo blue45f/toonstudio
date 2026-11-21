@@ -16,6 +16,8 @@ export type DynamicSpriteExpressionId =
   | "zen-flow"
   | "collab-heart";
 
+export type DynamicSpriteDirection = "down" | "up" | "left" | "right";
+
 export type DynamicSpriteActionId =
   | "idle-breathe"
   | "walk-stride"
@@ -27,6 +29,21 @@ export type DynamicSpriteActionId =
   | "victory-jump-cheer"
   | "highfive-team-sync"
   | "awakening-skill-burst";
+
+export type DynamicSpriteExtendedActionId =
+  | DynamicSpriteActionId
+  | "chair-sit"
+  | "wave-greet"
+  | "clap-cheer"
+  | "think-ponder";
+
+export type StudioDiversityExtraPersonaId =
+  | "bg-architect"
+  | "editorial-chief"
+  | "lighting-director"
+  | "junior-inker";
+
+export type StudioFullSpritePersonaId = IllustratedCreatorPersonaId | StudioDiversityExtraPersonaId;
 
 export type DynamicSpriteVfxId =
   | "neon-magic-circle"
@@ -97,7 +114,7 @@ export interface DynamicSpriteVfxSpec {
 }
 
 export interface DynamicCreatorPersonaSpriteSpec {
-  readonly personaId: IllustratedCreatorPersonaId;
+  readonly personaId: StudioFullSpritePersonaId;
   readonly characterNameKo: string;
   readonly roleTitleKo: string;
   readonly personalityTraitKo: string;
@@ -132,6 +149,8 @@ export interface DynamicCreatorPersonaSpriteSpec {
   readonly defaultActionId: DynamicSpriteActionId;
   readonly defaultVfxId: DynamicSpriteVfxId;
   readonly defaultZoneId: PracticalCollabZoneId;
+  /** 안경 등 개성 소품(선택). */
+  readonly eyewear?: "glasses" | "round-glasses" | "none";
 }
 
 export interface DynamicSpriteFrameKinematics {
@@ -155,7 +174,7 @@ export interface DynamicSpriteFrameKinematics {
 }
 
 export interface PracticalCollaboratorLiveUnit {
-  readonly personaId: IllustratedCreatorPersonaId;
+  readonly personaId: StudioFullSpritePersonaId;
   readonly zoneId: PracticalCollabZoneId;
   readonly xPct: number;
   readonly yPct: number;
@@ -168,7 +187,7 @@ export interface PracticalCollaboratorLiveUnit {
   readonly dccToolBadge: string;
   readonly taskStatus: PracticalTaskStatus;
   readonly progressPercent: number;
-  readonly pairedWithPersonaId: IllustratedCreatorPersonaId | null;
+  readonly pairedWithPersonaId: StudioFullSpritePersonaId | null;
   readonly statusBubbleKo: string;
 }
 
@@ -189,14 +208,14 @@ export interface PracticalCollabZoneSpec {
 export interface PracticalCanvasPinNote {
   readonly id: string;
   readonly zoneId: PracticalCollabZoneId;
-  readonly authorPersonaId: IllustratedCreatorPersonaId;
+  readonly authorPersonaId: StudioFullSpritePersonaId;
   readonly targetTaskCode: string;
   readonly noteKo: string;
   readonly resolved: boolean;
 }
 
 export interface PracticalSpriteWorkspaceState {
-  readonly selectedPersonaId: IllustratedCreatorPersonaId;
+  readonly selectedPersonaId: StudioFullSpritePersonaId;
   readonly selectedZoneId: PracticalCollabZoneId;
   readonly globalFps: 8 | 12 | 24;
   readonly animationPaused: boolean;
@@ -262,11 +281,32 @@ export const PRACTICAL_COLLAB_ZONES: readonly PracticalCollabZoneSpec[] = [
   { id: "zone-pd-storyboard-warroom", titleKo: "🎬 콘티 피칭·실시간 합평 워룸", subtitleKo: "전 파트 실시간 컷 검수 · 캔버스 핀 피드백 · 마감 스프린트 지휘", badgeEmoji: "🎬", accentHex: "#10b981", floorRect: { xPct: 52, yPct: 53, widthPct: 44, heightPct: 39 } },
 ];
 
+export const STUDIO_EXTENDED_SPRITE_ACTIONS: readonly (Omit<DynamicSpriteActionSpec, "id"> & { readonly id: DynamicSpriteExtendedActionId })[] = [
+  ...DYNAMIC_SPRITE_ACTIONS,
+  { id: "chair-sit", labelKo: "의자 착석·원고 작업", badgeEmoji: "🪑", frameCount: 8, defaultFps: 8, workContextKo: "작업 데스크에 안정감 있게 앉아 호흡하며 타이핑·작화", recommendedVfxId: "biophilic-sakura-wind" },
+  { id: "wave-greet", labelKo: "반갑게 손 흔들기", badgeEmoji: "👋", frameCount: 8, defaultFps: 12, workContextKo: "동료와 눈을 맞추며 자연스럽게 오른손을 흔들어 인사", recommendedVfxId: "collab-tether-beam" },
+  { id: "clap-cheer", labelKo: "박수·칭찬 리액션", badgeEmoji: "👏", frameCount: 8, defaultFps: 12, workContextKo: "합평 발표나 마감 완료 후 경쾌하게 박수로 응원", recommendedVfxId: "prism-stardust-burst" },
+  { id: "think-ponder", labelKo: "구도·연출 고민 중", badgeEmoji: "🤔", frameCount: 8, defaultFps: 8, workContextKo: "턱을 괴고 다음 컷 구도와 대사를 깊이 고민하는 모션", recommendedVfxId: "holo-floating-monitors" },
+];
+
+export const STUDIO_DIVERSITY_SPRITE_EXTRA_CAST: readonly DynamicCreatorPersonaSpriteSpec[] = [
+  { personaId: "bg-architect", characterNameKo: "아마라 (배경 원화 디렉터)", roleTitleKo: "건축 투시 · 자연 배경 · 실내 라이트 설계", personalityTraitKo: "따뜻한 채광과 실사급 투시로 장면의 공간감을 완성하는 배경 장인", headToBodyRatio: 0.169, headTallUnits: 5.9, hairSilhouette: "scholar-wave", outfitSilhouette: "holo-trench", primaryHex: "#0d9488", secondaryHex: "#134e4a", accentHex: "#5eead4", hairHex: "#27272a", skinHex: "#d69e72", eyeHex: "#0f766e", signatureWeaponKo: "투시 자 & 건축 스케치 패드", defaultExpressionId: "zen-flow", defaultActionId: "dcc-3d-sculpt", defaultVfxId: "biophilic-sakura-wind", defaultZoneId: "zone-3d-blender-sketchup", eyewear: "round-glasses" },
+  { personaId: "editorial-chief", characterNameKo: "정호 (베테랑 편집장)", roleTitleKo: "수석 편집장 · 서사 리듬 · 마감 품질 검수", personalityTraitKo: "20년 경력의 침착한 시선으로 회차 템포와 독자 몰입도를 다듬는 편집장", headToBodyRatio: 0.166, headTallUnits: 6.0, hairSilhouette: "executive-bob", outfitSilhouette: "tailored-director-suit", primaryHex: "#475569", secondaryHex: "#0f172a", accentHex: "#cbd5e1", hairHex: "#64748b", skinHex: "#f3cdb0", eyeHex: "#334155", signatureWeaponKo: "레드라인 검수 펜 & 회차 타임라인 보드", defaultExpressionId: "smug-grin", defaultActionId: "whiteboard-laser-pitch", defaultVfxId: "collab-tether-beam", defaultZoneId: "zone-pd-storyboard-warroom", eyewear: "glasses" },
+  { personaId: "lighting-director", characterNameKo: "누르 (라이팅·합성 감독)", roleTitleKo: "분위기 조명 · 후보정 · 색보정 아티스트", personalityTraitKo: "시간대별 자연광과 역광 대비로 컷의 감정을 살리는 색보정 전문가", headToBodyRatio: 0.172, headTallUnits: 5.8, hairSilhouette: "cyber-ponytail", outfitSilhouette: "prism-atelier-apron", primaryHex: "#6366f1", secondaryHex: "#1e1b4b", accentHex: "#a5b4fc", hairHex: "#312e81", skinHex: "#c68b59", eyeHex: "#818cf8", signatureWeaponKo: "스펙트럼 컬러 휠 & 광원 브러시", defaultExpressionId: "bright-smile", defaultActionId: "tablet-combo-draw", defaultVfxId: "prism-stardust-burst", defaultZoneId: "zone-color-sound-stage" },
+  { personaId: "junior-inker", characterNameKo: "도윤 (신입 선화·어시스턴트)", roleTitleKo: "밑선 정리 · 말풍선 배치 · 톤 보정 어시스턴트", personalityTraitKo: "빠른 손과 밝은 에너지로 마감 팀의 빈틈을 메우는 열정 신입", headToBodyRatio: 0.178, headTallUnits: 5.6, hairSilhouette: "beret-spiky", outfitSilhouette: "sonic-street-parka", primaryHex: "#2563eb", secondaryHex: "#1e3a8a", accentHex: "#93c5fd", hairHex: "#3f2e21", skinHex: "#fde2c8", eyeHex: "#1d4ed8", signatureWeaponKo: "정밀 잉크 펜 & 말풍선 가이드", defaultExpressionId: "joyful-wink", defaultActionId: "walk-stride", defaultVfxId: "manga-speedlines", defaultZoneId: "zone-line-atelier" },
+];
+
+/** 12인 다양성 전체 크리에이터 스프라이트 캐스트(기존 8인 + 확장 4인). */
+export const STUDIO_FULL_SPRITE_CAST: readonly DynamicCreatorPersonaSpriteSpec[] = [
+  ...DYNAMIC_CREATOR_SPRITE_CAST,
+  ...STUDIO_DIVERSITY_SPRITE_EXTRA_CAST,
+];
+
 export function getDynamicCreatorPersonaSpec(
-  personaId: IllustratedCreatorPersonaId,
+  personaId: StudioFullSpritePersonaId,
 ): DynamicCreatorPersonaSpriteSpec {
   return (
-    DYNAMIC_CREATOR_SPRITE_CAST.find((item) => item.personaId === personaId) ??
+    STUDIO_FULL_SPRITE_CAST.find((item) => item.personaId === personaId) ??
     DYNAMIC_CREATOR_SPRITE_CAST[0]
   );
 }

@@ -363,6 +363,18 @@ describe("연결 준비 칩의 자리", () => {
     expect(document.documentElement.style.getPropertyValue(property)).toBe("");
     bounds.mockRestore();
   });
+
+  it("일반 화면의 연결 준비 안내는 h-0 오버레이나 중첩 버튼 없이 본문 위 문서 흐름에 놓여 헤더 버튼을 가리지 않는다", () => {
+    renderBanner(false);
+    const inline = screen.getByRole("status");
+    expect(inline.getAttribute("data-service-degraded-banner")).toBe("warming");
+    expect(inline.getAttribute("data-service-status-placement")).toBe("page-inline");
+    expect(inline.getAttribute("data-service-status-dot")).toBe("true");
+    expect(inline.className).not.toContain("h-0");
+    expect(inline.className).not.toContain("z-[60]");
+    expect(inline.className).not.toContain("fixed");
+    expect(inline.querySelectorAll("button, a")).toHaveLength(0);
+  });
 });
 
 describe("모달이 내준 상태 자리(B-05)", () => {

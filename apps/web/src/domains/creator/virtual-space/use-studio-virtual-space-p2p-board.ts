@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { StudioLiveParticipant } from "../live/studio-live-collaboration-protocol";
 import type { StudioLiveDirectPort } from "../live/studio-live-direct-port";
@@ -140,14 +140,22 @@ export function useStudioVirtualSpaceP2pBoard({
   const [snapshot, setSnapshot] = useState<StudioP2pBoardSnapshot>(EMPTY);
   const [localSaveFailed, setLocalSaveFailed] = useState(false);
   const retrySave = useRef<(() => void) | null>(null);
+  const stableScope = useMemo<StudioP2pBoardScope>(
+    () => ({
+      worldId: scope.worldId,
+      boardId: scope.boardId,
+      contentRevision: scope.contentRevision,
+    }),
+    [scope.worldId, scope.boardId, scope.contentRevision],
+  );
 
   useEffect(() => {
     setSnapshot(EMPTY);
     setLocalSaveFailed(false);
     if (!enabled || !participant || !port
       || typeof globalThis.crypto?.randomUUID !== "function") return;
-    const recovered = participant.role === "viewer" ? [] : readLocal(scope, storageOwnerId);
-    const owner = new StudioP2pBoardController(participant, port, scope);
+    const recovered = participant.role === "viewer" ? [] : readLocal(stableScope, storageOwnerId);
+    const owner = new StudioP2pBoardController(participant, port, stableScope);
     controller.current = owner;
     let restoring = true;
     let lastOwnIds = "";
@@ -157,7 +165,7 @@ export function useStudioVirtualSpaceP2pBoard({
       // 변경되지 않은 내 그림을 참여자 목록 갱신 때마다 기기 저장소에 덮어쓰지 않는다.
       const ids = own.map((entity) => entity.id).join("|");
       if (!restoring && (ids !== lastOwnIds || retry)) {
-        setLocalSaveFailed(!writeLocal(scope, own, storageOwnerId));
+        setLocalSaveFailed(!writeLocal(stableScope, own, storageOwnerId));
       }
       lastOwnIds = ids;
     };
@@ -186,7 +194,7 @@ export function useStudioVirtualSpaceP2pBoard({
         retrySave.current = null;
       }
     };
-  }, [enabled, participant, port, scope, storageOwnerId]);
+  }, [enabled, participant, port, stableScope, storageOwnerId]);
 
   const addStroke = useCallback((
     points: readonly StudioP2pBoardPoint[],

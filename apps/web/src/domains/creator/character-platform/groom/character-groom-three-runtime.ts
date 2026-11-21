@@ -1,4 +1,5 @@
-import { BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, MeshStandardMaterial, Quaternion, SkinnedMesh, Uint16BufferAttribute, Vector3 } from "three";
+import { MToonMaterial } from "@pixiv/three-vrm";
+import { BackSide, BufferAttribute, BufferGeometry, Color, DoubleSide, Group, Mesh, Quaternion, SkinnedMesh, Uint16BufferAttribute, Vector3 } from "three";
 
 import { executeCharacterAuthoringTaskInBrowser } from "../runtime/character-authoring-worker-client";
 import { validateCharacterGroomDocument, type CharacterGroomDocument } from "./character-groom-document";
@@ -10,7 +11,7 @@ import { resolveCharacterGroomSurfaceBinding } from "./character-groom-surface-b
 
 import type { CharacterGroomSurfaceBinding } from "./character-groom-surface-binding";
 import type { CharacterMaterialOverrideV3 } from "../document/character-document-v3";
-import type { Object3D, Scene } from "three";
+import type { Material, Object3D, Scene } from "three";
 
 export interface CharacterGroomSurfaceContext {
   readonly scene: Scene;
@@ -37,13 +38,47 @@ export interface CharacterGroomRuntimeResult {
   readonly attachedGuideIds?: readonly string[];
 }
 
+/** 리본 단면 법선을 좌우 가장자리로 완만히 굽혀 납작한 종이띠 대신 둥근 머리카락 다발처럼 음영이 잡히게 한다. */
+function crownGroomRibbonNormals(geometry: BufferGeometry): void {
+  const position = geometry.getAttribute("position");
+  const normal = geometry.getAttribute("normal");
+  const uv = geometry.getAttribute("uv");
+  if (!position || !normal || !uv || position.count < 2) return;
+  const left = new Vector3();
+  const right = new Vector3();
+  const across = new Vector3();
+  const current = new Vector3();
+  for (let row = 0; row + 1 < position.count; row += 2) {
+    left.fromBufferAttribute(position, row);
+    right.fromBufferAttribute(position, row + 1);
+    across.subVectors(right, left);
+    if (across.lengthSq() < 1e-10) continue;
+    across.normalize();
+    for (const offset of [0, 1] as const) {
+      const index = row + offset;
+      current.fromBufferAttribute(normal, index);
+      if (current.lengthSq() < 1e-10) continue;
+      const sideSign = uv.getX(index) < 0.5 ? -1 : 1;
+      current.normalize().addScaledVector(across, sideSign * 0.42).normalize();
+      normal.setXYZ(index, current.x, current.y, current.z);
+    }
+  }
+  normal.needsUpdate = true;
+}
+
 export function disposeCharacterGroomGroup(group: Group): void {
+  const geometries = new Set<BufferGeometry>();
+  const materials = new Set<Material>();
   group.removeFromParent();
   group.traverse((node) => {
     if (!(node instanceof Mesh)) return;
-    node.geometry.dispose();
-    for (const material of Array.isArray(node.material) ? node.material : [node.material]) material.dispose();
+    geometries.add(node.geometry);
+    for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+      materials.add(material);
+    }
   });
+  for (const geometry of geometries) geometry.dispose();
+  for (const material of materials) material.dispose();
   group.clear();
 }
 
@@ -105,18 +140,43 @@ async function buildGroup(
         geometry.setAttribute("normal", new BufferAttribute(new Float32Array(payload.normals), 3));
         geometry.setAttribute("uv", new BufferAttribute(new Float32Array(payload.uvs), 2));
         geometry.setIndex(new BufferAttribute(new Uint32Array(payload.indices), 1));
+        crownGroomRibbonNormals(geometry);
         geometry.computeBoundingBox();
         geometry.computeBoundingSphere();
         const override = options.materialOverrides?.find((entry) => entry.materialId === source.materialId);
-        if (override && (override.shadowColor !== undefined || override.outlineColor !== undefined || override.outlineWidth !== undefined)) {
-          notices.add("헤어 리본은 기본색과 불투명도 override를 표시합니다. 별도 그림자색·외곽선 override는 원본에 보존되지만 이 재질에 표시하지 않습니다.");
-        }
         const requestedColor = override?.baseColor ?? color;
         const colorAlpha = /^#[0-9a-f]{8}$/iu.test(requestedColor) ? Number.parseInt(requestedColor.slice(7), 16) / 255 : 1;
         const opacity = (override?.opacity ?? 1) * colorAlpha;
-        const material = new MeshStandardMaterial({
-          color: requestedColor.slice(0, 7), opacity, transparent: opacity < 1, roughness: 0.75, metalness: 0, side: DoubleSide,
-          wireframe: source.profile.lineOnly || !source.profile.fill,
+        const baseColor = new Color(requestedColor.slice(0, 7));
+        const shadeColor = override?.shadowColor
+          ? new Color(override.shadowColor.slice(0, 7))
+          : baseColor.clone().multiply(new Color("#c8d0e8")).multiplyScalar(0.66);
+        const outlineColor = override?.outlineColor
+          ? new Color(override.outlineColor.slice(0, 7))
+          : shadeColor.clone().multiplyScalar(0.38).lerp(new Color("#14101a"), 0.52);
+        const outlineWidth = override?.outlineWidth !== undefined
+          ? Math.max(0, Math.min(0.05, override.outlineWidth))
+          : 0.0014;
+        const wireframe = source.profile.lineOnly || !source.profile.fill;
+        const material = new MToonMaterial({
+          color: baseColor,
+          shadeColorFactor: shadeColor,
+          shadingToonyFactor: 0.86,
+          shadingShiftFactor: -0.08,
+          giEqualizationFactor: 0.88,
+          parametricRimColorFactor: baseColor.clone().lerp(new Color("#fff7ee"), 0.62),
+          rimLightingMixFactor: 0.42,
+          parametricRimFresnelPowerFactor: 4.5,
+          parametricRimLiftFactor: 0.08,
+          outlineWidthMode: outlineWidth > 0 ? "worldCoordinates" : "none",
+          outlineWidthFactor: outlineWidth,
+          outlineColorFactor: outlineColor,
+          outlineLightingMixFactor: 0.55,
+          opacity,
+          transparent: opacity < 1,
+          depthWrite: opacity >= 1,
+          side: DoubleSide,
+          wireframe,
         });
         // 기존 호스트 mask 분류는 이름을, 새 component capture는 명시적 역할을 읽는다.
         material.name = `Hair Groom ${source.materialId}`;
@@ -128,6 +188,42 @@ async function buildGroup(
         if (surfaceBinding && options.surface) {
           attachSurfaceGroom(mesh, group, surfaceBinding, options.surface, () => options.onSurfaceInvalidated?.(guide.guideId, "두피 메시 또는 토폴로지가 변경되어 표시를 중지했습니다. 원본은 보존되며 표면 다시 확인으로 복원할 수 있습니다."));
           attachedGuideIds.push(guide.guideId);
+        }
+        if (!wireframe && opacity >= 0.99 && outlineWidth > 0) {
+          const outlineMaterial = new MToonMaterial({
+            color: new Color(0xffffff),
+            isOutline: true,
+            side: BackSide,
+            transparent: false,
+            depthWrite: true,
+            outlineWidthMode: "worldCoordinates",
+            outlineWidthFactor: outlineWidth,
+            outlineColorFactor: outlineColor.clone(),
+            outlineLightingMixFactor: 0.55,
+            shadeColorFactor: shadeColor.clone(),
+            shadingToonyFactor: 0.86,
+            shadingShiftFactor: -0.08,
+            giEqualizationFactor: 0.88,
+          });
+          outlineMaterial.name = `Hair Groom Outline ${source.materialId}`;
+          outlineMaterial.userData.toonstudioComponent = "hair";
+          const outlineMesh = mesh instanceof SkinnedMesh
+            ? new SkinnedMesh(geometry, outlineMaterial)
+            : new Mesh(geometry, outlineMaterial);
+          if (mesh instanceof SkinnedMesh && outlineMesh instanceof SkinnedMesh) {
+            outlineMesh.bindMode = mesh.bindMode;
+            outlineMesh.bind(mesh.skeleton, mesh.bindMatrix);
+            outlineMesh.bindMatrixInverse.copy(mesh.bindMatrixInverse);
+            outlineMesh.frustumCulled = false;
+          }
+          outlineMesh.name = `character-hair-groom-outline:${guide.guideId}`;
+          outlineMesh.userData.characterAuthoringDerivative = "groom";
+          outlineMesh.userData.studioVrmCustomPartOutline = true;
+          outlineMesh.userData.toonstudioComponent = "hair";
+          outlineMesh.raycast = () => undefined;
+          outlineMesh.castShadow = false;
+          outlineMesh.receiveShadow = false;
+          mesh.add(outlineMesh);
         }
         mesh.name = `character-hair-groom:${guide.guideId}`;
         mesh.userData.characterAuthoringDerivative = "groom";

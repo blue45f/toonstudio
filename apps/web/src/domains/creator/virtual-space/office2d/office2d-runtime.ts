@@ -36,6 +36,7 @@ import { advanceOffice2dActor, createOffice2dActor, type Office2dActor } from ".
 import { Office2dCamera, office2dBaseZoom } from "./office2d-camera";
 import { Office2dCoworkerCrowd } from "./office2d-coworkers";
 import { applyOffice2dActorEmote, office2dEmoteBurstLabel } from "./office2d-emote-motion";
+import { computeOffice2dCornerSlideVelocity, Office2dFootstepFx, resolveOffice2dFootstepSurface } from "./office2d-footstep-fx";
 import { createOffice2dNpc, stepOffice2dNpc, type Office2dNpcState } from "./office2d-npc";
 import { Office2dParticles } from "./office2d-particles";
 import { OFFICE2D_CATEGORY, Office2dPhysicsWorld } from "./office2d-physics";
@@ -44,6 +45,7 @@ import { Office2dRenderer, type Office2dPropVisual, type Office2dRendererHost } 
 import { office2dSceneFor, type Office2dScene, type Office2dSeatVisual } from "./office2d-scene";
 import { Office2dSelfPose } from "./office2d-self-pose";
 import { studioUserStatusLabel } from "./office2d-status";
+import { readStudioWebtoonWorkStatus } from "../studio-virtual-space-work-status";
 import { Office2dTeleportVeil } from "./office2d-teleport-veil";
 import { office2dAccentFor, office2dCharacterForAvatar, office2dCharacterForNpc, office2dHashIndex, type Office2dCharacterKey } from "./office2d-sprite-catalog";
 import { kickOffice2dNearbyProp, office2dDaylight, office2dPathSpeedMultiplier, Office2dStageExtensions } from "./office2d-stage-extensions";
@@ -68,6 +70,8 @@ export interface Office2dRuntimeOptions {
   readonly getStageProps?: () => Office2dStageProps;
   readonly getLanguage: () => "ko" | "en";
   readonly getReducedMotion: () => boolean;
+  /** 스테이지 상단 음소거 토글 상태(없으면 소리 허용). */
+  readonly getSoundMuted?: () => boolean;
   /** 실제 시계(ms). 테스트는 고정 값을 넣는다. */
   readonly clock?: () => number;
   /** 참가자 아바타 번호 + 신원 → 직군 시트. 없으면 번호를 시트 수로 나눈 나머지로 고른다. */
@@ -98,6 +102,7 @@ export class Office2dRuntime {
   private readonly physics: Office2dPhysicsWorld;
   readonly renderer: Office2dRenderer;
   private readonly particles = new Office2dParticles();
+  private readonly footstepFx = new Office2dFootstepFx();
   private readonly interactions: readonly StudioWorldInteractionDefinition[];
   private readonly portals: readonly StudioWorldPortalDefinition[];
   private readonly zoneTracker: StudioZoneChangeTracker;
@@ -139,38 +144,25 @@ export class Office2dRuntime {
     this.walkSpeed = presentation?.locomotion?.walkSpeed ?? 210;
     this.sprintMultiplier = presentation?.locomotion?.sprintMultiplier ?? 1.55;
     this.physics = new Office2dPhysicsWorld({ width: manifest.width, height: manifest.height });
-    this.physics.setSurfaceRegions(this.scene.floors.map((floor) => ({
-      x: floor.x,
-      y: floor.y,
-      width: floor.width,
-      height: floor.height,
-      material: floor.floor,
-    })));
+    this.physics.setSurfaceRegions(this.scene.floors.map((f) => ({ x: f.x, y: f.y, width: f.width, height: f.height, material: f.floor })));
     this.scene.staticColliders.forEach((rect, index) => {
       if (rect.width <= 0 || rect.height <= 0) return;
-      this.physics.addBody({ id: `static:${index}`, kind: "static", shape: { type: "box", halfWidth: rect.width / 2, halfHeight: rect.height / 2 },
-        x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, category: OFFICE2D_CATEGORY.world, friction: 0.05 });
+      this.physics.addBody({ id: `static:${index}`, kind: "static", shape: { type: "box", halfWidth: rect.width / 2, halfHeight: rect.height / 2 }, x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, category: OFFICE2D_CATEGORY.world, friction: 0.05 });
     });
     for (const prop of this.scene.physicsProps) {
-      this.physics.addBody({ id: `prop:${prop.id}`, kind: "dynamic", shape: prop.shape, x: prop.x, y: prop.y, mass: prop.mass, restitution: prop.restitution,
-        linearDamping: prop.damping, angularDamping: prop.rolls ? 2.4 : 4.6, friction: 0.32, fixedRotation: false, rolls: prop.rolls === true,
-        category: OFFICE2D_CATEGORY.prop, returnHome: prop.returnHome, tag: prop.sprite, maxSpeed: 640 });
+      this.physics.addBody({ id: `prop:${prop.id}`, kind: "dynamic", shape: prop.shape, x: prop.x, y: prop.y, mass: prop.mass, restitution: prop.restitution, linearDamping: prop.damping, angularDamping: prop.rolls ? 2.4 : 4.6, friction: 0.32, fixedRotation: false, rolls: prop.rolls === true, category: OFFICE2D_CATEGORY.prop, returnHome: prop.returnHome, tag: prop.sprite, maxSpeed: 640 });
     }
     const snapshot = options.getSnapshot();
     const start = this.resolveStart(snapshot);
     this.presentedSelf = start;
-    this.physics.addBody({ id: SELF_BODY, kind: "dynamic", shape: { type: "circle", radius: SELF_RADIUS }, x: start.x, y: start.y, mass: 60,
-      linearDamping: 0, restitution: 0, friction: 0.1, category: OFFICE2D_CATEGORY.actor, maxSpeed: 600 });
+    this.physics.addBody({ id: SELF_BODY, kind: "dynamic", shape: { type: "circle", radius: SELF_RADIUS }, x: start.x, y: start.y, mass: 60, linearDamping: 0, restitution: 0, friction: 0.1, category: OFFICE2D_CATEGORY.actor, maxSpeed: 600 });
     const now = this.now();
-    this.self = createOffice2dActor({ id: options.selfIdentity, kind: "self", character: this.avatarCharacter(snapshot.self.avatarIndex, options.selfIdentity),
-      accent: office2dAccentFor(options.selfIdentity), name: options.getSelfName(), x: start.x, y: start.y, facing: snapshot.self.facing, now });
+    this.self = createOffice2dActor({ id: options.selfIdentity, kind: "self", character: this.avatarCharacter(snapshot.self.avatarIndex, options.selfIdentity), accent: office2dAccentFor(options.selfIdentity), name: options.getSelfName(), x: start.x, y: start.y, facing: snapshot.self.facing, now });
     manifest.npcs.forEach((definition, index) => {
       const state = createOffice2dNpc(definition, office2dHashIndex(definition.id, 1_000_003) + index);
       const label = studioNpcLabel(definition);
-      const actor = createOffice2dActor({ id: `npc:${definition.id}`, kind: "npc", character: office2dCharacterForNpc(definition.skinKey), accent: "#a78bfa",
-        name: options.getLanguage() === "en" ? label.en : label.ko, x: definition.point.x, y: definition.point.y, facing: definition.facing, now });
-      this.physics.addBody({ id: `npc:${definition.id}`, kind: "kinematic", shape: { type: "circle", radius: 11 }, x: definition.point.x, y: definition.point.y,
-        category: OFFICE2D_CATEGORY.actor });
+      const actor = createOffice2dActor({ id: `npc:${definition.id}`, kind: "npc", character: office2dCharacterForNpc(definition.skinKey), accent: "#a78bfa", name: options.getLanguage() === "en" ? label.en : label.ko, x: definition.point.x, y: definition.point.y, facing: definition.facing, now });
+      this.physics.addBody({ id: `npc:${definition.id}`, kind: "kinematic", shape: { type: "circle", radius: 11 }, x: definition.point.x, y: definition.point.y, category: OFFICE2D_CATEGORY.actor });
       this.npcs.push({ state, actor });
     });
     this.coworkers = new Office2dCoworkerCrowd(options.ambientCoworkers === false ? null : this.scene, now, {
@@ -215,10 +207,16 @@ export class Office2dRuntime {
     this.camera.setViewport({ width, height });
   }
 
+  private currentFootstepSurface() {
+    return resolveOffice2dFootstepSurface(this.physics.surfaceMaterialAt(this.self.x, this.self.y), studioWorldRoomAt(this.options.manifest, this.self));
+  }
+
   keyDown(code: string): void {
     this.keys.add(code);
     if (STUDIO_INTERACT_KEY_CODES.has(code)) this.options.bridge.requestInteract();
-    if (code === "Space") this.kickNearbyProp();
+    if (code === "Space" && !this.kickNearbyProp()) {
+      this.footstepFx.triggerJump(this.self, this.particles, this.currentFootstepSurface(), this.options.getReducedMotion(), this.options.getSoundMuted?.() === true);
+    }
     if (code === "KeyG") {
       const enabled = this.options.bridge.toggleGhostMode();
       this.options.getCallbacks().onGhostModeChange?.(enabled);
@@ -334,7 +332,7 @@ export class Office2dRuntime {
       if (burst) this.extensions.pushComicBurst(burst, this.self.accent, this.self.x, this.self.y - 48, nowMs);
     }
     const effect = bridge.consumeEnvironmentEffect();
-    if (effect) this.particles.emit("confetti", effect.point.x, effect.point.y - 30, 24, 1.2);
+    if (effect && !this.options.getReducedMotion()) this.particles.emit("confetti", effect.point.x, effect.point.y - 30, 24, 1.2);
   }
 
   private teleport(point: StudioVirtualSpacePoint): void {
@@ -358,6 +356,7 @@ export class Office2dRuntime {
   private showEmote(actor: Office2dActor, kind: string, nowMs: number): void {
     if (!applyOffice2dActorEmote(actor, kind, nowMs)) return;
     if (!this.options.getReducedMotion()) this.particles.emitComboBurst("emote", actor.x, actor.y, 0.85);
+    if (actor.id === this.self.id) this.footstepFx.onEmote(kind, this.options.getSoundMuted?.() === true);
   }
 
   /** 한 프레임 진행(초 단위 경과). */
@@ -408,10 +407,12 @@ export class Office2dRuntime {
     }
     const body = this.physics.getBody(SELF_BODY);
     if (body) {
-      const dvx = desiredX - body.vx;
-      const dvy = desiredY - body.vy;
+      const slid = directional && !bridge.isGhostMode()
+        ? computeOffice2dCornerSlideVelocity(this.physics, body.x, body.y, SELF_RADIUS, desiredX, desiredY)
+        : { vx: desiredX, vy: desiredY };
+      const dvx = slid.vx - body.vx, dvy = slid.vy - body.vy;
       const change = length(dvx, dvy);
-      const rate = (length(desiredX, desiredY) > 1 ? ACCELERATION : DECELERATION) * dt;
+      const rate = (length(slid.vx, slid.vy) > 1 ? ACCELERATION : DECELERATION) * dt;
       const scale = change > rate ? rate / change : 1;
       this.physics.setVelocity(SELF_BODY, body.vx + dvx * scale, body.vy + dvy * scale);
       this.physics.setCollisionMask(SELF_BODY, bridge.isGhostMode() ? OFFICE2D_CATEGORY.world : OFFICE2D_CATEGORY.world | OFFICE2D_CATEGORY.prop | OFFICE2D_CATEGORY.actor);
@@ -447,11 +448,11 @@ export class Office2dRuntime {
       advanceOffice2dActor(this.self, body.x, body.y, dt, { x: shown.x - this.presentedSelf.x, y: shown.y - this.presentedSelf.y });
       this.presentedSelf = shown;
     }
-    if (this.self.footstepTriggered && !this.options.getReducedMotion()) {
-      const footX = this.self.x + this.self.footstepSide * 5;
-      if (sprint) this.particles.emitComboBurst("sprint", footX, this.self.y, 0.8);
-      else this.particles.emit("dust", footX, this.self.y, 1, 0.45);
-    }
+    const surface = this.currentFootstepSurface();
+    const muted = this.options.getSoundMuted?.() === true;
+    const reduced = this.options.getReducedMotion();
+    this.footstepFx.stepJump(this.self, dt, this.particles, surface, reduced, muted);
+    this.footstepFx.onMovementStep(this.self, this.particles, surface, sprint, reduced, muted);
     for (const { state, actor } of this.npcs) {
       const npcBody = this.physics.getBody(`npc:${state.definition.id}`);
       advanceOffice2dActor(actor, npcBody?.x ?? state.x, npcBody?.y ?? state.y, dt);
@@ -466,7 +467,7 @@ export class Office2dRuntime {
     this.self.character = this.avatarCharacter(snapshot.self.avatarIndex, this.options.selfIdentity);
     this.self.bubble = snapshot.selfChatBubble && snapshot.selfChatBubble.expiresAt > nowMs ? snapshot.selfChatBubble.text : snapshot.self.bubble ?? null;
     this.self.typing = snapshot.self.typing === true;
-    this.self.status = studioUserStatusLabel(snapshot.self.userStatus, snapshot.self.activity, this.options.getLanguage());
+    this.self.status = studioUserStatusLabel(snapshot.self.userStatus, snapshot.self.activity, this.options.getLanguage(), readStudioWebtoonWorkStatus());
 
     // 5) 엔진 이벤트·스테이지 확장
     const stageProps = this.options.getStageProps?.();
@@ -589,7 +590,10 @@ export class Office2dRuntime {
     if (prevSeatId !== (selfSeat?.id ?? null)) {
       this.self.previousSeated = selfSeat !== null;
       this.self.poseTransition = 1;
-      if (selfSeat && !this.options.getReducedMotion()) this.particles.emitComboBurst("seat", selfSeat.anchor.x, selfSeat.anchor.y, 0.7);
+      if (selfSeat) {
+        if (!this.options.getReducedMotion()) this.particles.emitComboBurst("seat", selfSeat.anchor.x, selfSeat.anchor.y, 0.7);
+        this.footstepFx.onSeatSettle(this.options.getSoundMuted?.() === true);
+      }
     }
   }
 
@@ -711,7 +715,7 @@ export class Office2dRuntime {
       this.particles.emit("steam", object.x - 22, object.y - 70, 1, 1);
     }
     if (this.self.seat && this.particles.count < 180) {
-      this.particles.emit("note", this.self.seat.anchor.x, this.self.seat.anchor.y - 52, 1, 0.75);
+      this.particles.emitTypingRipple(this.self.seat.anchor.x, this.self.seat.anchor.y);
     }
     if (this.daylight() > 0.5) {
       for (const light of this.scene.lights) {
@@ -774,24 +778,17 @@ export class Office2dRuntime {
 
   /** 테스트·디버깅용 읽기 전용 상태. */
   debugState(): {
-    readonly self: StudioVirtualSpacePoint; readonly facing: string; readonly moving: boolean; readonly seated: boolean; readonly seatId: string | null; readonly peers: number;
-    readonly props: readonly StudioVirtualSpacePoint[]; readonly coworkers: readonly { readonly id: string; readonly alpha: number }[]; readonly gesture: string | null;
+    readonly self: StudioVirtualSpacePoint; readonly facing: string; readonly moving: boolean; readonly seated: boolean; readonly seatId: string | null; readonly jumpHeight: number;
+    readonly peers: number; readonly props: readonly StudioVirtualSpacePoint[]; readonly coworkers: readonly { readonly id: string; readonly alpha: number }[]; readonly gesture: string | null;
     readonly screenToWorld: (screenX: number, screenY: number) => StudioVirtualSpacePoint;
   } {
     return {
-      self: { x: this.self.x, y: this.self.y },
-      facing: this.self.facing,
-      moving: this.self.moving,
-      seated: this.self.seat !== null,
-      seatId: this.self.seat?.id ?? null,
-      peers: this.peers.size,
+      self: { x: this.self.x, y: this.self.y }, facing: this.self.facing, moving: this.self.moving, seated: this.self.seat !== null,
+      seatId: this.self.seat?.id ?? null, jumpHeight: this.self.jumpHeight, peers: this.peers.size,
       coworkers: this.coworkers.visibleActors().map((actor) => ({ id: actor.id, alpha: actor.alpha })),
       gesture: this.self.gesture?.kind ?? null,
       screenToWorld: (screenX: number, screenY: number) => this.camera.screenToWorld({ x: screenX, y: screenY }),
-      props: this.scene.physicsProps.map((prop) => {
-        const body = this.physics.getBody(`prop:${prop.id}`);
-        return { x: body?.x ?? prop.x, y: body?.y ?? prop.y };
-      }),
+      props: this.scene.physicsProps.map((prop) => { const body = this.physics.getBody(`prop:${prop.id}`); return { x: body?.x ?? prop.x, y: body?.y ?? prop.y }; }),
     };
   }
 }

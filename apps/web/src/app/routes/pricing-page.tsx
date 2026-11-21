@@ -1,9 +1,15 @@
-import type { ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { BadgeCheck, Check, ChevronDown, Minus } from "lucide-react";
 
 import { MEMBERSHIP_ECONOMY_POLICY, MEMBERSHIP_PLAN_POLICIES } from "../../../../../packages/core/src/membership-wallet";
 
 import { CountUp, PulseCta, TiltCard } from "@/domains/marketing/PricingPolish";
+import { PricingWorkstyleMatcher } from "@/domains/marketing/PricingWorkstyleMatcher";
+import {
+  getDefaultInputForWorkstyle,
+  matchMembershipPlanByWorkstyle,
+  type PricingWorkstyleInput,
+} from "@/domains/marketing/pricing-workstyle-matcher";
 import { LAYOUT_TOKENS } from "@/shared/components/layout/layout-tokens";
 import { HeroBlock, PageShell, SectionContainer } from "@/shared/components/layout";
 import { SectionArt } from "@/shared/components/section-art";
@@ -45,6 +51,7 @@ const COPY = {
   supported: defineBilingualText("pricingPage", "supported", "지원", "Included"),
   notSupported: defineBilingualText("pricingPage", "notSupported", "미지원", "Not included"),
   recommended: defineBilingualText("pricingPage", "recommended", "추천", "Recommended"),
+  matchedFit: defineBilingualText("pricingPage", "matchedFit", "내 작업 맞춤", "Best fit"),
   compareTitle: defineBilingualText("pricingPage", "compareTitle", "전체 등급 비교", "Compare all tiers"),
   compareCaption: defineBilingualText(
     "pricingPage",
@@ -188,6 +195,13 @@ function PlanCardCta({ planId }: { planId: (typeof PLAN_ORDER)[number] }) {
 export function PricingPage() {
   useBilingualI18nRevision();
   const t = useT();
+  const [matcherInput, setMatcherInput] = useState<PricingWorkstyleInput>(() =>
+    getDefaultInputForWorkstyle("solo-starter"),
+  );
+  const workstyleMatch = useMemo(
+    () => matchMembershipPlanByWorkstyle(matcherInput),
+    [matcherInput],
+  );
 
   const title = t(COPY.title);
   const description = t(COPY.description);
@@ -224,44 +238,66 @@ export function PricingPage() {
       ) : null}
 
       <SectionContainer id="plans" spacing="compact" className="mx-auto max-w-6xl">
+        <PricingWorkstyleMatcher
+          input={matcherInput}
+          match={workstyleMatch}
+          onChangeInput={setMatcherInput}
+        />
         <div role="group" aria-label={t(COPY.eyebrow)} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {PLAN_ORDER.map((id) => {
             const plan = MEMBERSHIP_PLAN_POLICIES[id];
             const features = planFeatures(t, plan);
             const isPro = plan.id === "pro";
+            const isMatched = workstyleMatch.planId === plan.id;
             return (
-              <TiltCard
+              <div
                 key={plan.id}
-                label={plan.label}
-                glow={isPro}
-                className={isPro ? PLAN_CARD_PRO : PLAN_CARD_BASE}
+                data-plan-id={plan.id}
+                data-matched-plan={isMatched ? "true" : "false"}
+                className="pricing-plan-slot flex"
               >
-                {isPro ? (
-                  <span className="absolute -top-3 left-6 inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-bold text-on-accent">
-                    <BadgeCheck size={13} aria-hidden="true" />{t(COPY.recommended)}
-                  </span>
-                ) : null}
-                <h2 className="text-lg font-bold text-fg">{plan.label}</h2>
-                <p className="mt-1 min-h-10 text-[0.8125rem] leading-5 text-fg-2">{planDescription(t, plan.id)}</p>
-                <p className="mt-4 text-2xl font-extrabold tracking-tight text-fg">
-                  {plan.id === "free" ? t(COPY.freePrice) : t(COPY.betaFreePrice)}
-                </p>
-                <p className="mt-1 text-xs text-fg-3">{t(COPY.officialPriceLater)}</p>
-                <ul className="mt-5 flex-1 space-y-2.5 border-t border-line pt-5 text-sm">
-                  {features.map((feature) => (
-                    <li key={feature.label} className="flex items-center justify-between gap-3">
-                      <span className="text-fg-2">{feature.label}</span>
-                      <span className="inline-flex items-center gap-1.5 font-semibold text-fg">
-                        {feature.included
-                          ? <Check size={14} aria-hidden="true" className="text-accent" />
-                          : <Minus size={14} aria-hidden="true" className="text-fg-3" />}
-                        {feature.value}
+                <TiltCard
+                  label={plan.label}
+                  glow={isPro}
+                  className={cx(isPro ? PLAN_CARD_PRO : PLAN_CARD_BASE, "w-full")}
+                >
+                  {isPro ? (
+                    <span className="absolute -top-3 left-6 inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-bold text-on-accent">
+                      <BadgeCheck size={13} aria-hidden="true" />{t(COPY.recommended)}
+                    </span>
+                  ) : null}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="text-lg font-bold text-fg">{plan.label}</h2>
+                    {isMatched ? (
+                      <span
+                        data-testid={`pricing-plan-matched-badge-${plan.id}`}
+                        className="pricing-plan-matched-badge inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.7rem] font-bold [word-break:keep-all]"
+                      >
+                        {t(COPY.matchedFit)}
                       </span>
-                    </li>
-                  ))}
-                </ul>
-                <PlanCardCta planId={plan.id} />
-              </TiltCard>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 min-h-10 text-[0.8125rem] leading-5 text-fg-2 [word-break:keep-all]">{planDescription(t, plan.id)}</p>
+                  <p className="mt-4 text-2xl font-extrabold tracking-tight text-fg">
+                    {plan.id === "free" ? t(COPY.freePrice) : t(COPY.betaFreePrice)}
+                  </p>
+                  <p className="mt-1 text-xs text-fg-3">{t(COPY.officialPriceLater)}</p>
+                  <ul className="mt-5 flex-1 space-y-2.5 border-t border-line pt-5 text-sm">
+                    {features.map((feature) => (
+                      <li key={feature.label} className="flex items-center justify-between gap-3">
+                        <span className="text-fg-2">{feature.label}</span>
+                        <span className="inline-flex items-center gap-1.5 font-semibold text-fg tabular-nums">
+                          {feature.included
+                            ? <Check size={14} aria-hidden="true" className="text-accent" />
+                            : <Minus size={14} aria-hidden="true" className="text-fg-3" />}
+                          {feature.value}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <PlanCardCta planId={plan.id} />
+                </TiltCard>
+              </div>
             );
           })}
         </div>
@@ -275,7 +311,8 @@ export function PricingPage() {
         spacing="compact"
         className="mx-auto max-w-4xl"
       >
-        <div className="overflow-x-auto rounded-2xl border border-line">
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- 가로로 넘치는 비교 표를 키보드만으로 읽을 수 있어야 하므로 스크롤 영역에 포커스가 필요하다(WCAG 2.1.1). */}
+        <div tabIndex={0} role="region" aria-label={t(COPY.compareTitle)} className="overflow-x-auto rounded-2xl border border-line focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
           <table className="w-full min-w-[34rem] border-collapse bg-panel text-sm">
             <caption className="sr-only">{t(COPY.compareTitle)}</caption>
             <thead>

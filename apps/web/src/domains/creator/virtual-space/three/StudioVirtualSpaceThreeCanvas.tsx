@@ -5,6 +5,8 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { StudioVirtualSpaceBootRecoveryCard } from "../StudioVirtualSpaceBootRecoveryCard";
 import { applyStudioVirtualStageSearch, writeStudioVirtualPreferredEngineMode } from "../office2d/studio-virtual-space-stage-mode";
 import { useStudioPrefersReducedMotion } from "../studio-virtual-space-reduced-motion";
+import { setStudioSoundEngineMuted } from "../studio-virtual-space-sound-engine";
+import { useStudioSpaceSoundMuted } from "../studio-virtual-space-work-status";
 import type { ProjectedOverlayItem, StudioThreeLightingPreset } from "./studio-virtual-space-three-dioramas";
 import { readStoredStudioThreeLightingPreset, writeStoredStudioThreeLightingPreset } from "./studio-virtual-space-three-motion";
 import {
@@ -50,6 +52,11 @@ export function StudioVirtualSpaceThreeCanvas({
   const [localCameraMode, setLocalCameraMode] = useState<StudioThreeCameraMode>(controlledCameraMode ?? "quarter");
   const [localGhostMode, setLocalGhostMode] = useState<boolean>(Boolean(controlledGhostMode));
   const [cutawayHiddenCount, setCutawayHiddenCount] = useState(0);
+  const [soundMuted, setSoundMuted] = useStudioSpaceSoundMuted();
+
+  useEffect(() => {
+    setStudioSoundEngineMuted(soundMuted);
+  }, [soundMuted]);
 
   const activeCameraMode = controlledCameraMode ?? localCameraMode;
   const activeGhostMode = controlledGhostMode ?? localGhostMode;
@@ -59,7 +66,7 @@ export function StudioVirtualSpaceThreeCanvas({
   const reducedMotion = useStudioPrefersReducedMotion();
 
   const latestRef = useRef({
-    theme, snapshot, selfDisplayName, reducedMotion,
+    bridge, theme, snapshot, selfDisplayName, reducedMotion,
     cameraMode: activeCameraMode, ghostMode: activeGhostMode,
     seatedActors, lightingState, visemeByActorId, liveScreenStream,
     proximityRadiusPx, decorations, placedFixtures, bt,
@@ -71,7 +78,7 @@ export function StudioVirtualSpaceThreeCanvas({
     },
   });
   latestRef.current = {
-    theme, snapshot, selfDisplayName, reducedMotion,
+    bridge, theme, snapshot, selfDisplayName, reducedMotion,
     cameraMode: activeCameraMode, ghostMode: activeGhostMode,
     seatedActors, lightingState, visemeByActorId, liveScreenStream,
     proximityRadiusPx, decorations, placedFixtures, bt,
@@ -93,6 +100,7 @@ export function StudioVirtualSpaceThreeCanvas({
     const next = !latestRef.current.ghostMode;
     setLocalGhostMode(next);
     latestRef.current.ghostMode = next;
+    latestRef.current.bridge.setGhostMode(next);
     latestRef.current.onGhostModeChange?.(next);
   };
 
@@ -203,6 +211,8 @@ export function StudioVirtualSpaceThreeCanvas({
               cutawayHiddenCount={cutawayHiddenCount}
               ghostMode={activeGhostMode}
               onToggleGhostMode={toggleGhostMode}
+              soundMuted={soundMuted}
+              onToggleSound={() => setSoundMuted(!soundMuted)}
               onCapturePhotoToCut={() => runtimeRef.current?.capturePhoto()}
               onOpenCustomize={onOpenCustomize}
               onLightingPresetChange={(preset) => {

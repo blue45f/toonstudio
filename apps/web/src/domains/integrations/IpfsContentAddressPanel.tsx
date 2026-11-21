@@ -1,4 +1,4 @@
-import { Check, Copy, Download, Fingerprint, Loader2 } from "lucide-react";
+import { Check, Copy, Download, Fingerprint } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -213,7 +213,7 @@ export function IpfsContentAddressPanel() {
                 className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent disabled:opacity-60"
               >
                 {fetchState.kind === "loading"
-                  ? <Loader2 size={15} className="animate-spin" aria-hidden />
+                  ? <span aria-hidden className="inline-block h-2 w-4 rounded-full bg-on-accent/80 motion-safe:animate-pulse motion-reduce:animate-none" />
                   : <Download size={15} aria-hidden />}
                 {ko ? "검증하며 가져오기" : "Fetch with verification"}
               </button>

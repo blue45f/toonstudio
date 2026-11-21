@@ -35,7 +35,6 @@ import { DEFAULT_STUDIO_VIRTUAL_ART_STYLE, type StudioVirtualArtStyleKey } from 
 import { studioSpaceTheme, type StudioSpaceThemeKey } from "./studio-virtual-space-theme";
 import { StudioVirtualSpaceThemePicker } from "./StudioVirtualSpaceThemePicker";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
-import { StudioVirtualSpaceIllustratedLobbyShowcase } from "./StudioVirtualSpaceIllustratedStageHud";
 import { STUDIO_VIRTUAL_CHARACTER_PRESETS } from "./studio-virtual-space-customization";
 import type { StudioSpaceEmoteId } from "./studio-virtual-space-emote-catalog";
 import { StudioVirtualSpaceSceneSnapshotSection } from "./StudioVirtualSpaceSceneSnapshotSection";
@@ -246,17 +245,9 @@ export function StudioVirtualSpaceCustomizationPanel({
   };
   return <section className="vs2-panel studio-vspace-customization" data-space-interactive="true">
     <header>
-      <div><p>BUILD & STYLE</p><h2>{bt("캐릭터·공간 꾸미기", "Character & space customization")}</h2></div>
+      <div><p>WORKSTYLE & SPACE</p><h2>{bt("캐릭터·업무 공간 설정", "Character & workspace setup")}</h2></div>
       <Sparkles size={19} aria-hidden />
     </header>
-    {spaceTheme && onSpaceThemeChange ? <StudioVirtualSpaceThemePicker value={spaceTheme} onChange={onSpaceThemeChange} /> : null}
-    {activeTheme ? <div className="studio-vspace-customization-harmony">
-      <button type="button" className="space-link-row" data-theme-harmony-apply="true" onClick={applyThemeHarmony}>
-        <Sparkles size={16} aria-hidden />
-        {bt(`${activeTheme.labelKo} 맞춤 캐릭터·오피스 원클릭 코디`, `Apply ${activeTheme.labelEn} character & office harmony`)}
-      </button>
-    </div> : null}
-    <StudioVirtualSpaceIllustratedLobbyShowcase />
     <fieldset className="studio-vspace-customization-identity">
       <legend>{bt("내 닉네임", "My nickname")}</legend>
       <form onSubmit={(event) => {
@@ -279,7 +270,7 @@ export function StudioVirtualSpaceCustomizationPanel({
       </form>
     </fieldset>
     <fieldset data-office-role-presets="true">
-      <legend>{bt("오피스 직군 · 워크모드 원클릭 코디", "Office role & work-mode presets")}</legend>
+      <legend>{bt(`오피스 직군 · 워크모드 원클릭 코디 (${STUDIO_VIRTUAL_CHARACTER_PRESETS.length}종)`, `Office role & work-mode presets (${STUDIO_VIRTUAL_CHARACTER_PRESETS.length})`)}</legend>
       <div className="studio-vspace-customization-options">
         {STUDIO_VIRTUAL_CHARACTER_PRESETS.map((preset) => {
           const active =
@@ -305,6 +296,13 @@ export function StudioVirtualSpaceCustomizationPanel({
         })}
       </div>
     </fieldset>
+    {spaceTheme && onSpaceThemeChange ? <StudioVirtualSpaceThemePicker value={spaceTheme} onChange={onSpaceThemeChange} /> : null}
+    {activeTheme ? <div className="studio-vspace-customization-harmony">
+      <button type="button" className="space-link-row" data-theme-harmony-apply="true" onClick={applyThemeHarmony}>
+        <Sparkles size={16} aria-hidden />
+        {bt(`${activeTheme.labelKo} 맞춤 캐릭터·오피스 원클릭 코디`, `Apply ${activeTheme.labelEn} character & office harmony`)}
+      </button>
+    </div> : null}
     {onTriggerEmote ? (
       <fieldset data-office-wellness-stage="true">
         <legend>{bt("오피스 웰니스 · 스트레칭 & 댄스 모션", "Office wellness · stretch & dance")}</legend>

@@ -175,23 +175,24 @@ function StudioDrawingClarityDesktopBar({
         <StudioMainMenu groups={standardSevenGroups} presentation="quick" surface="action" ariaLabel={bt("표준 7대 메뉴", "Standard 7 menus")} />
       </nav>
       <div className="studio-drawing-workflow-switcher" role="group" data-studio-workflow-switcher="true" aria-label={bt("5단계 제작 공정", "5-stage production workflow")}>
-        <button type="button" className="studio-drawing-workflow-step" aria-pressed={clarity.panel === "pages"} onClick={(event) => {
+        <button type="button" data-studio-workflow-stage="story" data-studio-allow-press-feedback="true" className="studio-drawing-workflow-step" aria-pressed={clarity.panel === "pages"} onClick={(event) => {
           const trigger = event.currentTarget;
           runStageViewTransition(() => clarity.open("pages", trigger));
         }}>
           <span>{bt("1 콘티", "1 Story")}</span>
         </button>
-        <button type="button" className="studio-drawing-workflow-step" aria-pressed={Boolean(s.bg3dOpen)} onClick={() => runStageViewTransition(() => s.studioLeftToolRailHandlers?.toggleBg3dEditor?.())}>
+        <button type="button" data-studio-workflow-stage="bg3d" data-studio-allow-press-feedback="true" className="studio-drawing-workflow-step" aria-pressed={Boolean(s.bg3dOpen)} onClick={() => runStageViewTransition(() => s.studioLeftToolRailHandlers?.toggleBg3dEditor?.())}>
           <span>{bt("2 3D/배경", "2 3D")}</span>
         </button>
-        <button type="button" className="studio-drawing-workflow-step" disabled={drawingBlocked} aria-pressed={s.tool === "draw"} onClick={() => runStageViewTransition(() => s.activatePrimaryCanvasTool?.("draw", "pen"))}
+        <button type="button" data-studio-workflow-stage="draw" data-studio-allow-press-feedback="true" className="studio-drawing-workflow-step" disabled={drawingBlocked} aria-pressed={s.tool === "draw"} onClick={() => runStageViewTransition(() => s.activatePrimaryCanvasTool?.("draw", "pen"))}
+          data-unavailable-reason={drawingBlocked ? bt("현재 편집 권한이 잠겨 있어 작화 모드로 전환할 수 없습니다", "Drawing mode is locked") : undefined}
           title={drawingBlocked ? bt("현재 편집 권한이 잠겨 있어 작화 모드로 전환할 수 없습니다", "Drawing mode is locked") : bt("작화·채색 도구로 전환", "Switch to drawing and coloring")}>
           <span>{bt("3 작화/채색", "3 Draw")}</span>
         </button>
-        <button type="button" className="studio-drawing-workflow-step" aria-pressed={s.menu === "bubble"} onClick={() => runStageViewTransition(() => { preloadStudioBubbleToolPopoverBody(); s.setMenu("bubble"); })}>
+        <button type="button" data-studio-workflow-stage="lettering" data-studio-allow-press-feedback="true" className="studio-drawing-workflow-step" aria-pressed={s.menu === "bubble"} onClick={() => runStageViewTransition(() => { preloadStudioBubbleToolPopoverBody(); s.setMenu("bubble"); })}>
           <span>{bt("4 식자", "4 Text")}</span>
         </button>
-        <button type="button" className="studio-drawing-workflow-step" aria-pressed={Boolean(s.exportMenuOpen)} onClick={(event) => {
+        <button type="button" data-studio-workflow-stage="export" data-studio-allow-press-feedback="true" className="studio-drawing-workflow-step" aria-pressed={Boolean(s.exportMenuOpen)} onClick={(event) => {
           const trigger = event.currentTarget;
           runStageViewTransition(() => { onExportTrigger(trigger); s.setExportMenuOpen(true); });
         }}>

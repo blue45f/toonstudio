@@ -25,41 +25,49 @@ export function encodeStudioBg3dLtLayers(
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("2D PNG context unavailable.");
   const compositeCanvas = document.createElement("canvas");
   compositeCanvas.width = width;
   compositeCanvas.height = height;
-  const compositeContext = compositeCanvas.getContext("2d");
-  if (!compositeContext) throw new Error("2D composite context unavailable.");
-  const encodedLayers = layers.map((layer) => {
-    const imageData = context.createImageData(width, height);
-    imageData.data.set(layer.data);
-    context.clearRect(0, 0, width, height);
-    context.putImageData(imageData, 0, 0);
-    compositeContext.globalAlpha = layer.opacity ?? 1;
-    compositeContext.globalCompositeOperation = layer.blendMode === "normal" || !layer.blendMode ? "source-over" : layer.blendMode;
-    if (layer.visible !== false) compositeContext.drawImage(canvas, 0, 0);
-    const pngDataUrl = canvas.toDataURL("image/png").split("#", 1)[0];
-    if (!pngDataUrl.startsWith("data:image/png;base64,")) {
-      throw new Error("LT layer PNG encoding failed.");
+  try {
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("2D PNG context unavailable.");
+    const compositeContext = compositeCanvas.getContext("2d");
+    if (!compositeContext) throw new Error("2D composite context unavailable.");
+    const encodedLayers = layers.map((layer) => {
+      const imageData = context.createImageData(width, height);
+      imageData.data.set(layer.data);
+      context.clearRect(0, 0, width, height);
+      context.putImageData(imageData, 0, 0);
+      compositeContext.globalAlpha = layer.opacity ?? 1;
+      compositeContext.globalCompositeOperation = layer.blendMode === "normal" || !layer.blendMode ? "source-over" : layer.blendMode;
+      if (layer.visible !== false) compositeContext.drawImage(canvas, 0, 0);
+      const pngDataUrl = canvas.toDataURL("image/png").split("#", 1)[0];
+      if (!pngDataUrl.startsWith("data:image/png;base64,")) {
+        throw new Error("LT layer PNG encoding failed.");
+      }
+      return Object.freeze({
+        role: layer.role,
+        pngDataUrl,
+        width,
+        height,
+        ...(layer.blendMode !== undefined ? { blendMode: layer.blendMode } : {}),
+        ...(layer.opacity !== undefined ? { opacity: layer.opacity } : {}),
+        ...(layer.visible !== undefined ? { visible: layer.visible } : {}),
+      });
+    });
+    const compositePngDataUrl = compositeCanvas.toDataURL("image/png").split("#", 1)[0];
+    if (!compositePngDataUrl.startsWith("data:image/png;base64,")) {
+      throw new Error("LT composite PNG encoding failed.");
     }
     return Object.freeze({
-      role: layer.role,
-      pngDataUrl,
-      width,
-      height,
-      ...(layer.blendMode !== undefined ? { blendMode: layer.blendMode } : {}),
-      ...(layer.opacity !== undefined ? { opacity: layer.opacity } : {}),
-      ...(layer.visible !== undefined ? { visible: layer.visible } : {}),
+      layers: Object.freeze(encodedLayers),
+      compositePngDataUrl,
     });
-  });
-  const compositePngDataUrl = compositeCanvas.toDataURL("image/png").split("#", 1)[0];
-  if (!compositePngDataUrl.startsWith("data:image/png;base64,")) {
-    throw new Error("LT composite PNG encoding failed.");
+  } catch (error) {
+    canvas.width = 1;
+    canvas.height = 1;
+    compositeCanvas.width = 1;
+    compositeCanvas.height = 1;
+    throw error;
   }
-  return Object.freeze({
-    layers: Object.freeze(encodedLayers),
-    compositePngDataUrl,
-  });
 }

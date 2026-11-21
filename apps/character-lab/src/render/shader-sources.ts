@@ -46,6 +46,7 @@ export const TOON_UNIFORMS: readonly string[] = [
   "gradeParams",
   "matcapParams",
   "hairSpecParams",
+  "kwebtoonParams",
 ];
 export const TOON_SAMPLERS: readonly string[] = ["albedoSampler", "paintSampler", "sdfSampler"];
 export const FLAT_UNIFORMS: readonly string[] = ["baseColor", "toonParams", "faceParams", "alphaParams"];
@@ -224,6 +225,7 @@ uniform vec4 mangaParams;
 uniform vec4 gradeParams;
 uniform vec4 matcapParams;
 uniform vec4 hairSpecParams;
+uniform vec4 kwebtoonParams;
 uniform sampler2D albedoSampler;
 uniform sampler2D paintSampler;
 uniform sampler2D sdfSampler;
@@ -242,6 +244,32 @@ void main(void) {
   if (alphaParams.x > 0.0 && albedoTex.a < alphaParams.x) discard;
   vec3 base = mix(baseColor, baseColor * albedoTex.rgb, step(0.5, faceParams.w));
   vec3 albedo = mix(base, mix(base, paint.rgb, paint.a), step(0.5, toonParams.w)) * vColor.rgb;
+  if (kwebtoonParams.x > 0.0) {
+    float fu = abs(vUV.x - 0.25);
+    float fv = vUV.y;
+    float cheekDist = length(vec2((fu - 0.056) / 0.042, (fv - 0.605) / 0.032));
+    float cheekMask = exp(-cheekDist * cheekDist * 1.65) * kwebtoonParams.w;
+    albedo = mix(albedo, vec3(0.98, 0.58, 0.60), clamp(cheekMask * 0.42 * kwebtoonParams.x, 0.0, 0.45));
+    float lipDist = length(vec2(fu / 0.025, (fv - 0.543) / 0.015));
+    float lipMask = exp(-lipDist * lipDist * 2.1) * kwebtoonParams.z;
+    albedo = mix(albedo, vec3(0.92, 0.36, 0.43), clamp(lipMask * 0.58 * kwebtoonParams.x, 0.0, 0.62));
+    float aegyoDist = length(vec2((fu - 0.031) / 0.02, (fv - 0.642) / 0.008));
+    float aegyoGlow = exp(-aegyoDist * aegyoDist * 2.2) * kwebtoonParams.x;
+    float noseDist = length(vec2(fu / 0.009, (fv - 0.626) / 0.022));
+    float noseSpec = exp(-noseDist * noseDist * 2.4) * kwebtoonParams.x;
+    albedo = min(vec3(1.0), albedo + vec3(0.06, 0.045, 0.04) * aegyoGlow + vec3(0.09, 0.08, 0.075) * noseSpec);
+  }
+  if (kwebtoonParams.y > 0.0) {
+    vec2 ic = vUV - vec2(0.5, 0.5);
+    float ir = length(ic) * 2.0;
+    float upperShade = smoothstep(-0.08, 0.65, ic.y * 2.0);
+    float lowerGlow = smoothstep(0.08, -0.7, ic.y * 2.0) * (1.0 - smoothstep(0.62, 0.96, ir));
+    float limbal = smoothstep(0.7, 0.98, ir);
+    vec3 irisStyled = mix(albedo, albedo * vec3(0.46, 0.42, 0.62), upperShade * 0.68);
+    irisStyled = mix(irisStyled, irisStyled * 0.34, limbal * 0.72);
+    irisStyled = min(vec3(1.0), irisStyled + (albedo * 0.52 + vec3(0.16, 0.19, 0.24)) * lowerGlow * 0.72);
+    albedo = mix(albedo, irisStyled, clamp(kwebtoonParams.y, 0.0, 1.0));
+  }
   vec3 lightDir = normalize(toLight);
   float lambert = dot(n, lightDir) * 0.5 + 0.5;
   float sdfW = fwidth(sdf) + 0.002 + gradeParams.w * 0.08;
@@ -350,6 +378,7 @@ uniform mangaParams: vec4f;
 uniform gradeParams: vec4f;
 uniform matcapParams: vec4f;
 uniform hairSpecParams: vec4f;
+uniform kwebtoonParams: vec4f;
 var albedoSampler: texture_2d<f32>;
 var albedoSamplerSampler: sampler;
 var paintSampler: texture_2d<f32>;
@@ -373,7 +402,33 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     discard;
   }
   let base: vec3f = mix(uniforms.baseColor, uniforms.baseColor * albedoTex.rgb, step(0.5, uniforms.faceParams.w));
-  let albedo: vec3f = mix(base, mix(base, paint.rgb, paint.a), step(0.5, uniforms.toonParams.w)) * fragmentInputs.vColor.rgb;
+  var albedo: vec3f = mix(base, mix(base, paint.rgb, paint.a), step(0.5, uniforms.toonParams.w)) * fragmentInputs.vColor.rgb;
+  if (uniforms.kwebtoonParams.x > 0.0) {
+    let fu: f32 = abs(fragmentInputs.vUV.x - 0.25);
+    let fv: f32 = fragmentInputs.vUV.y;
+    let cheekDist: f32 = length(vec2f((fu - 0.056) / 0.042, (fv - 0.605) / 0.032));
+    let cheekMask: f32 = exp(-cheekDist * cheekDist * 1.65) * uniforms.kwebtoonParams.w;
+    albedo = mix(albedo, vec3f(0.98, 0.58, 0.60), clamp(cheekMask * 0.42 * uniforms.kwebtoonParams.x, 0.0, 0.45));
+    let lipDist: f32 = length(vec2f(fu / 0.025, (fv - 0.543) / 0.015));
+    let lipMask: f32 = exp(-lipDist * lipDist * 2.1) * uniforms.kwebtoonParams.z;
+    albedo = mix(albedo, vec3f(0.92, 0.36, 0.43), clamp(lipMask * 0.58 * uniforms.kwebtoonParams.x, 0.0, 0.62));
+    let aegyoDist: f32 = length(vec2f((fu - 0.031) / 0.02, (fv - 0.642) / 0.008));
+    let aegyoGlow: f32 = exp(-aegyoDist * aegyoDist * 2.2) * uniforms.kwebtoonParams.x;
+    let noseDist: f32 = length(vec2f(fu / 0.009, (fv - 0.626) / 0.022));
+    let noseSpec: f32 = exp(-noseDist * noseDist * 2.4) * uniforms.kwebtoonParams.x;
+    albedo = min(vec3f(1.0), albedo + vec3f(0.06, 0.045, 0.04) * aegyoGlow + vec3f(0.09, 0.08, 0.075) * noseSpec);
+  }
+  if (uniforms.kwebtoonParams.y > 0.0) {
+    let ic: vec2f = fragmentInputs.vUV - vec2f(0.5, 0.5);
+    let ir: f32 = length(ic) * 2.0;
+    let upperShade: f32 = smoothstep(-0.08, 0.65, ic.y * 2.0);
+    let lowerGlow: f32 = smoothstep(0.08, -0.7, ic.y * 2.0) * (1.0 - smoothstep(0.62, 0.96, ir));
+    let limbal: f32 = smoothstep(0.7, 0.98, ir);
+    var irisStyled: vec3f = mix(albedo, albedo * vec3f(0.46, 0.42, 0.62), upperShade * 0.68);
+    irisStyled = mix(irisStyled, irisStyled * 0.34, limbal * 0.72);
+    irisStyled = min(vec3f(1.0), irisStyled + (albedo * 0.52 + vec3f(0.16, 0.19, 0.24)) * lowerGlow * 0.72);
+    albedo = mix(albedo, irisStyled, clamp(uniforms.kwebtoonParams.y, 0.0, 1.0));
+  }
   let lightDir: vec3f = normalize(uniforms.toLight);
   let lambert: f32 = dot(n, lightDir) * 0.5 + 0.5;
   let sdfW: f32 = fwidth(sdf) + 0.002 + uniforms.gradeParams.w * 0.08;

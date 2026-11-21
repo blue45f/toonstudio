@@ -37,7 +37,9 @@ import { resolveProportions } from "../../../domains/humanoid/proportions";
 import {
   WEBTOON_SHAPER_COMPARE_POSE_OPTIONS,
   WEBTOON_UNIVERSE_SHAPER_PRESETS,
+  composeKWebtoonArchetypeRecipe,
   composeWebtoonUniverseRecipe,
+  detectKWebtoonArchetypeId,
   resolveCharacterLabVarco3dPreviewSettings,
   summarizeWebtoonShaperParityMetrics,
 } from "../../../presets";
@@ -49,7 +51,7 @@ import { ShaperQuickSculptSections } from "./shaper-quick-sculpt-sections";
 
 import type { BodyParamKey, CharacterRecipe, FaceParamKey, KitV2ArchetypePreset, ParamKey, RecipeColorKey, SlotKind } from "../../../contracts";
 import type { PaletteEntry } from "../../../domains/humanoid/palette";
-import type { WebtoonShaperComparePoseMode, WebtoonUniverseShaperId, WebtoonUniverseShaperPreset } from "../../../presets";
+import type { KWebtoonArchetypePreset, WebtoonShaperComparePoseMode, WebtoonUniverseShaperId, WebtoonUniverseShaperPreset } from "../../../presets";
 
 export type ParamGroup = "body" | "face";
 
@@ -414,6 +416,15 @@ export function ParamPanel() {
     [dispatch, recipe],
   );
 
+  const applyKWebtoonArchetype = useCallback(
+    (preset: KWebtoonArchetypePreset): void => {
+      dispatch({ type: "recipe/load", recipe: composeKWebtoonArchetypeRecipe(preset.id, recipe) });
+    },
+    [dispatch, recipe],
+  );
+
+  const activeKWebtoonArchetypeId = detectKWebtoonArchetypeId(recipe);
+
   const isProportionPresetActive = (preset: QuickProportionPreset): boolean =>
     PROPORTION_PRESET_KEYS.every((key) => Math.abs(bodyValue(key) - preset.values[key]) < 1e-6);
 
@@ -596,7 +607,12 @@ export function ParamPanel() {
         ))}
       </div>
       <ParamCustomizeSections />
-      <KitV2ArchetypeDrawer currentBody={recipe.body} onApplyArchetypePreset={applyKitV2ArchetypePreset} />
+      <KitV2ArchetypeDrawer
+        currentBody={recipe.body}
+        activeKWebtoonId={activeKWebtoonArchetypeId}
+        onApplyArchetypePreset={applyKitV2ArchetypePreset}
+        onApplyKWebtoonArchetype={applyKWebtoonArchetype}
+      />
       <p className="cl-param-hint">색은 적용 플랜으로 즉시 반영되며 소스를 다시 만들지 않습니다. 눈썹색은 속눈썹에도 쓰입니다.</p>
     </section>
   );

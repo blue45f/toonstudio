@@ -5,13 +5,14 @@ import { AdultOverlay } from "./adult-overlay";
 import { PlatformTags } from "./availability";
 import { CountUp } from "./count-up";
 import { CoverImage } from "./cover-image";
+import { ScoreBreakdown } from "./score-breakdown";
 import { GenreChip } from "./ui/chip";
 import { RatingInline } from "./ui/stars";
 
 import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
 import { statsAreEstimated } from "@/shared/lib/estimate";
 import { useT } from "@/shared/lib/i18n";
-import { type RankedTitle, explainScore, type RankAxis } from "@/shared/lib/ranking";
+import { type RankedTitle, type RankAxis } from "@/shared/lib/ranking";
 import { TYPE_LABEL, STATUS_LABEL } from "@/shared/lib/taxonomy";
 import { cn, formatCount } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
@@ -194,9 +195,10 @@ export const RankRow = memo(function RankRow({
           
           <button
             type="button"
+            data-testid="rank-row-why-btn"
             onClick={() => setExpanded(!expanded)}
             title={t("ranking.detailTitle")}
-            aria-label={`${title.title} · ${t("ranking.why")}`}
+            aria-label={`${title.title} · 왜 이 순위? (${t("ranking.why")})`}
             aria-expanded={expanded}
             aria-controls={detailId}
             className={cn(
@@ -226,59 +228,27 @@ export const RankRow = memo(function RankRow({
         </div>
       </div>
 
-      {/* Expanded Score breakdown panel — 중첩 카드 금지(DESIGN.md §4) + 스펙트럼 기여도 바 */}
-      {expanded && (() => {
-        const factors = explainScore(title, axis);
-        return (
-          <div
-            id={detailId}
-            data-testid="rank-row-score-breakdown"
-            className="border-t border-line/60 bg-canvas/45 px-3 py-3 text-xs rounded-b-xl animate-fade-in"
-          >
-            <div className="flex flex-col gap-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="flex items-center gap-1 font-medium text-accent text-xs tracking-[0.02em]">
-                  {t("ranking.breakdownTitle")}
-                </span>
-                <span className="font-mono text-[10px] text-fg-3 tnum">
-                  {t("ranking.totalScore")}: <strong className="text-fg font-semibold">{ranked.score.toFixed(2)}</strong>
-                </span>
-              </div>
-
-              {factors.length > 0 && (
-                <div
-                  className="flex h-1.5 w-full overflow-hidden rounded-full bg-raised"
-                  aria-hidden="true"
-                >
-                  {factors.map((factor, i) => (
-                    <span
-                      key={`${factor.label}-${i}`}
-                      className={cn(
-                        "h-full flex-1 border-r border-canvas/70 last:border-r-0",
-                        i % 3 === 0 ? "bg-accent" : i % 3 === 1 ? "bg-cool" : "bg-good",
-                      )}
-                      style={{ opacity: Math.max(0.45, 1 - i * 0.1) }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                {factors.map((factor, i) => (
-                  <div key={`${factor.label}-${i}`} className="rounded-lg bg-panel/65 px-2.5 py-2">
-                    <div className="text-[0.62rem] text-fg-3 leading-snug [word-break:keep-all]">{factor.label}</div>
-                    <div className="mt-0.5 font-mono text-[11px] font-bold text-fg-2 tnum">{factor.value}</div>
-                  </div>
-                ))}
-              </div>
-
-              <p className="text-[0.65rem] text-fg-3 leading-relaxed [word-break:keep-all]">
-                {t("ranking.breakdownDescription")}
-              </p>
-            </div>
+      {/* Expanded Score breakdown panel — 8축 산식 분해 ScoreBreakdown 연동(중첩 카드 금지) */}
+      {expanded ? (
+        <div
+          id={detailId}
+          data-testid="rank-row-score-breakdown"
+          className="border-t border-line/60 bg-canvas/45 px-3 py-3 text-xs rounded-b-xl animate-fade-in motion-reduce:animate-none"
+        >
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="font-medium text-accent text-xs tracking-[0.02em]">
+              {t("ranking.breakdownTitle")}
+            </span>
+            <span className="font-mono text-[11px] text-fg-3 tabular-nums">
+              {t("ranking.totalScore")}: <strong className="text-fg font-semibold">{ranked.score.toFixed(2)}</strong>
+            </span>
           </div>
-        );
-      })()}
+          <ScoreBreakdown title={title} axis={axis} allowAxisSwitch compact />
+          <p className="mt-2 text-[0.65rem] text-fg-3 leading-relaxed break-keep">
+            {t("ranking.breakdownDescription")}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 });

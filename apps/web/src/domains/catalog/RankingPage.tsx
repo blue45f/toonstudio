@@ -1,6 +1,6 @@
 import "./catalog-page-controls.css";
 import "./ranking-page-density.css";
-import { ArrowRight, Calculator, ChevronDown, Compass, GitCompare, PenLine, Trophy, type LucideIcon } from "lucide-react";
+import { ArrowRight, Calculator, ChevronDown, Compass, GitCompare, HelpCircle, PenLine, Trophy, type LucideIcon } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -13,6 +13,7 @@ import { CoverCard } from "@/shared/components/cover-card";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { RankingBoard } from "@/shared/components/ranking-board";
 import { RankingMethod } from "@/shared/components/ranking-method";
+import { ScoreBreakdown } from "@/shared/components/score-breakdown";
 import { Container } from "@/shared/components/section";
 import { SharePageButton } from "@/shared/components/share-page-button";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
@@ -81,12 +82,15 @@ const NEXT_STEPS: readonly { readonly href: string; readonly icon: LucideIcon; r
 
 function RankingTopThreeSpotlight({
   items,
+  axis,
   axisKey,
 }: {
   readonly items: readonly RankedTitle[];
+  readonly axis: RankAxis;
   readonly axisKey: string;
 }) {
   const bt = useBilingual("RankingPage");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   if (items.length === 0) return null;
   const maxScore = Math.max(...items.map((entry) => entry.score || 1), 1);
 
@@ -103,71 +107,98 @@ function RankingTopThreeSpotlight({
         const completionPct = Math.max(0, Math.min(100, Math.round(entry.title.stats.completionRate)));
         const rankText = String(entry.rank).padStart(2, "0");
         const isLead = idx === 0;
+        const isExpanded = expandedId === entry.title.id;
         return (
-          <Link
+          <article
             key={entry.title.id}
-            href={`/title/${entry.title.slug}`}
             style={{ "--ink-i": idx, "--ink-radius": "14px" } as CSSProperties}
-            className={`ranking-top3-card ink-frame group ${isLead ? "ranking-top3-card--lead" : ""}`}
+            className={`ranking-top3-card ink-frame flex flex-col ${isLead ? "ranking-top3-card--lead" : ""}`}
           >
-            <div className="ranking-top3-cover">
-              <CoverCard
-                title={entry.title}
-                size={isLead ? "md" : "sm"}
-                priority={idx === 0}
-                className="w-full"
-              />
-            </div>
-            <div className="ranking-top3-body">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className={`font-display tabular-nums leading-none ${isLead ? "text-2xl font-semibold text-accent" : "text-xl font-medium text-fg-2"}`}>
-                  {rankText}
-                </span>
-                <span className="truncate text-xs text-fg-3">
-                  {entry.title.genres.slice(0, 2).join(" · ")}
-                </span>
-              </div>
-              <h3 className="mt-1.5 line-clamp-2 text-pretty text-base font-semibold leading-snug text-fg transition-colors duration-150 group-hover:text-accent [word-break:keep-all]">
-                {entry.title.title}
-              </h3>
-              <p className="mt-0.5 truncate text-xs text-fg-2">{entry.title.author}</p>
-              {isLead && entry.title.synopsis ? (
-                <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-fg-2">
-                  {entry.title.synopsis}
-                </p>
-              ) : null}
-
-              <div className="mt-auto pt-3">
-                <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
-                  <span className="text-fg-3">{bt("종합 신호", "Signal index")}</span>
-                  <span className="font-display tabular-nums font-medium text-fg">
-                    {entry.score.toFixed(1)}
+            <div className="flex flex-1 gap-3">
+              <Link href={`/title/${entry.title.slug}`} className="ranking-top3-cover shrink-0">
+                <CoverCard
+                  title={entry.title}
+                  size={isLead ? "md" : "sm"}
+                  priority={idx === 0}
+                  className="w-full"
+                />
+              </Link>
+              <div className="ranking-top3-body min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className={`font-display tabular-nums leading-none ${isLead ? "text-2xl font-semibold text-accent" : "text-xl font-medium text-fg-2"}`}>
+                    {rankText}
+                  </span>
+                  <span className="truncate text-xs text-fg-3">
+                    {entry.title.genres.slice(0, 2).join(" · ")}
                   </span>
                 </div>
-                <div className="ranking-score-track" aria-hidden="true">
-                  <span
-                    className={`ranking-score-bar ink-bar-fill ${isLead ? "is-lead" : ""}`}
-                    style={{ "--ink-i": idx, width: `${ratio}%` } as CSSProperties}
-                  />
-                </div>
-                <div className="mt-2.5 flex items-center justify-between gap-2">
-                  <RatingInline
-                    value={entry.title.stats.ratingAvg}
-                    estimated={statsAreEstimated(entry.title)}
-                    size="xs"
-                  />
-                  <div className="flex items-center gap-2">
-                    {completionPct > 0 ? (
-                      <span className="text-[11px] tabular-nums text-fg-3">
-                        {bt("완독", "Read")} {completionPct}%
-                      </span>
-                    ) : null}
-                    <AvailabilityDots availability={entry.title.availability} max={2} />
+                <Link href={`/title/${entry.title.slug}`} className="group block">
+                  <h3 className="mt-1.5 line-clamp-2 text-pretty text-base font-semibold leading-snug text-fg transition-colors duration-150 group-hover:text-accent break-keep">
+                    {entry.title.title}
+                  </h3>
+                </Link>
+                <p className="mt-0.5 truncate text-xs text-fg-2">{entry.title.author}</p>
+                {isLead && entry.title.synopsis ? (
+                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-fg-2 break-keep">
+                    {entry.title.synopsis}
+                  </p>
+                ) : null}
+
+                <div className="mt-auto pt-3">
+                  <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
+                    <span className="text-fg-3">{bt("종합 신호", "Signal index")}</span>
+                    <span className="font-display tabular-nums font-medium text-fg">
+                      {entry.score.toFixed(1)}
+                    </span>
                   </div>
+                  <div className="ranking-score-track" aria-hidden="true">
+                    <span
+                      className={`ranking-score-bar ink-bar-fill ${isLead ? "is-lead" : ""}`}
+                      style={{ "--ink-i": idx, width: `${ratio}%` } as CSSProperties}
+                    />
+                  </div>
+                  <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+                    <RatingInline
+                      value={entry.title.stats.ratingAvg}
+                      estimated={statsAreEstimated(entry.title)}
+                      size="xs"
+                    />
+                    <div className="flex items-center gap-2">
+                      {completionPct > 0 ? (
+                        <span className="text-[11px] tabular-nums text-fg-3">
+                          {bt("완독", "Read")} {completionPct}%
+                        </span>
+                      ) : null}
+                      <AvailabilityDots availability={entry.title.availability} max={2} />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    aria-expanded={isExpanded}
+                    data-testid={`ranking-top3-why-${entry.title.id}`}
+                    onClick={() => setExpandedId(isExpanded ? null : entry.title.id)}
+                    className={`mt-2.5 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors duration-150 active:scale-[0.98] motion-reduce:transform-none motion-reduce:transition-none ${
+                      isExpanded
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-panel/70 text-fg-2 hover:border-accent/50 hover:text-fg"
+                    }`}
+                  >
+                    <HelpCircle size={13} aria-hidden="true" />
+                    {bt("왜 이 순위?", "Why this rank?")}
+                  </button>
                 </div>
               </div>
             </div>
-          </Link>
+
+            {isExpanded ? (
+              <div
+                data-testid={`ranking-top3-breakdown-${entry.title.id}`}
+                className="mt-3 border-t border-line/60 pt-3"
+              >
+                <ScoreBreakdown title={entry.title} axis={axis} allowAxisSwitch compact />
+              </div>
+            ) : null}
+          </article>
         );
       })}
     </div>
@@ -238,7 +269,7 @@ export function RankingPage() {
 
       <section id="ranking-board" aria-labelledby="ranking-board-title">
         <h2 id="ranking-board-title" className="sr-only">{tx("랭킹 보드")}</h2>
-        <RankingTopThreeSpotlight items={topItems} axisKey={`${axis}-${platform}`} />
+        <RankingTopThreeSpotlight items={topItems} axis={axis} axisKey={`${axis}-${platform}`} />
         <RankingBoard initialAxis={axis} initialPlatform={platform} />
       </section>
 
