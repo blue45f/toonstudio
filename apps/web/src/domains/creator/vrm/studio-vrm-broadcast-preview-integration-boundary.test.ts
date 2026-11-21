@@ -137,9 +137,12 @@ describe("Studio VRM broadcast preview product boundary", () => {
     expect(poser).toContain("const observer = new ResizeObserver");
     expect(poser).toContain("entry.contentRect.width");
     expect(poser).toContain("requestedDpr: window.devicePixelRatio");
+    // 2026-11-21(b5b505a79): DPR 정책 식이 `effectiveDpr`로 추출되어 Canvas와 StudioVrmCanvasSizeSync가 공유한다.
     expect(poser).toContain(
-      "dpr={broadcastPreviewActive ? broadcastCanvasDpr : h.vrmLowQualityMode ? Math.min(1, viewportBudget.dpr) : viewportBudget.dpr}",
+      "const effectiveDpr = broadcastPreviewActive ? broadcastCanvasDpr : h.vrmLowQualityMode ? Math.min(1, viewportBudget.dpr) : viewportBudget.dpr;",
     );
+    expect(poser).toContain("dpr={effectiveDpr}");
+    expect(poser).toContain("<StudioVrmCanvasSizeSync dpr={effectiveDpr} paused={captureActive} />");
     const preflightIndex = poser.indexOf("const framebufferPreflight = planStudioVrmBroadcastFramebuffer");
     const dprPublishIndex = poser.indexOf(
       "setBroadcastCanvasDpr(framebufferPreflight.receipt.dpr)",
