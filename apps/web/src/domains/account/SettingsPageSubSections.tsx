@@ -83,6 +83,7 @@ export const SETTINGS_TAB_PREFIX = "settings";
 export const SETTINGS_HASH_TABS: Readonly<Record<string, SettingsTab>> = {
   "#settings-display": "display",
   "#settings-voice": "display",
+  "#settings-wasm64": "display",
   "#settings-ambient": "display",
   "#settings-nextgen": "display",
   "#settings-region": "region",
@@ -208,6 +209,7 @@ export const SETTINGS_SEARCH_SECTIONS: readonly SettingsSearchEntry[] = [
   { key: "effects", title: ["화면 연출", "Motion feel"], hint: ["화면·음성 탭", "Display & voice tab"], keywords: "연출 몰입 집중 애니메이션 vivid calm motion 효과", anchor: "#settings-effects" },
   { key: "scale", title: ["별점 척도", "Rating scale"], hint: ["화면·음성 탭", "Display & voice tab"], keywords: "별점 평점 점수 rating scale star", anchor: "#settings-scale" },
   { key: "voice", title: ["음성 안내", "Voice guide"], hint: ["화면·음성 탭", "Display & voice tab"], keywords: "음성 나레이션 안내 읽기 소리 tts voice narration", anchor: "#settings-voice" },
+  { key: "wasm64", title: ["초고속 엔진 · 메모리64 부스트", "Turbo Engine · Memory64 Boost"], hint: ["화면·음성 탭", "Display & voice tab"], keywords: "메모리64 wasm64 webgpu 가속 성능 크롬 엔진 벤치마크 memory64 performance turbo", anchor: "#settings-wasm64" },
   { key: "ambient", title: ["앰비언트 효과", "Ambient effects"], hint: ["화면·음성 탭 · 고급 설정", "Display & voice tab · Advanced"], keywords: "앰비언트 분위기 배경 ambient mood", anchor: "#settings-ambient" },
   { key: "nextgen", title: ["실험 기능", "Experimental features"], hint: ["화면·음성 탭 · 고급 설정", "Display & voice tab · Advanced"], keywords: "실험 베타 미리보기 신기능 lab experimental beta nextgen", anchor: "#settings-nextgen" },
   { key: "region", title: ["지역 · 언어", "Region & language"], hint: ["지역·필터 탭", "Region & filters tab"], keywords: "언어 지역 날짜 시간대 통화 언어팩 language locale region", anchor: "#settings-region" },
