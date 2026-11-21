@@ -381,4 +381,25 @@ describe("3D renderer의 관측량·보수 상한·명시 정책 예약", () => 
     expect(JSON.stringify(current.activeScene.toJSON())).toBe(before);
     expect(current.framebuffer.width).toBe(320);
   });
+
+  it("VRM 1.0 MToon 등 120개 이상 ShaderMaterial의 Vector·Color·Matrix uniform이 4096 그래프 상한을 오탐하지 않는다", () => {
+    const scene = new THREE.Scene();
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const sharedTex = new THREE.DataTexture(new Uint8Array(16), 2, 2);
+    const mats: THREE.ShaderMaterial[] = [];
+    for (let i = 0; i < 120; i += 1) {
+      const uniforms: Record<string, THREE.IUniform> = { mainTex: { value: sharedTex } };
+      for (let u = 0; u < 45; u += 1) {
+        uniforms[`v${u}`] = { value: u % 3 === 0 ? new THREE.Vector4() : u % 3 === 1 ? new THREE.Color() : new THREE.Matrix4() };
+      }
+      const mat = new THREE.ShaderMaterial({ uniforms });
+      mats.push(mat);
+      scene.add(new THREE.Mesh(geometry, mat));
+    }
+    const report = assertVirtualThreeSceneCapacity(input(scene));
+    expect(report.unknowns).toEqual([]);
+    expect(report.measured.textures).toBe(1);
+    expect(report.accountedTotalBytes).toBeGreaterThan(0);
+    sharedTex.dispose(); geometry.dispose(); mats.forEach((m) => m.dispose());
+  });
 });

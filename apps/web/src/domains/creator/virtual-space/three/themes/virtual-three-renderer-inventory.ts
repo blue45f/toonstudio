@@ -254,16 +254,28 @@ export function collectVirtualThreeSceneInventory(input: VirtualThreeSceneInvent
     const depthBuffers = value.depthBuffer && (value.samples > 0 || !value.depthTexture) ? 4 * Math.max(1, value.samples) : 0;
     targetExtra += safe("render-target-attachments", page(pixels * (sampleBuffers + depthBuffers)));
   };
+  const materials = new Set<THREE.Material>();
   const uniformObjects = new Set<object>();
+  const isMathPrimitive = (value: object): boolean =>
+    value instanceof THREE.Vector2
+    || value instanceof THREE.Vector3
+    || value instanceof THREE.Vector4
+    || value instanceof THREE.Color
+    || value instanceof THREE.Matrix3
+    || value instanceof THREE.Matrix4
+    || value instanceof THREE.Quaternion
+    || value instanceof THREE.Euler;
   const uniform = (value: unknown): void => {
     if (value instanceof THREE.Texture) { texture(value); return; }
-    if (!isRecord(value) || ArrayBuffer.isView(value) || uniformObjects.has(value)) return;
+    if (!isRecord(value) || ArrayBuffer.isView(value) || isMathPrimitive(value) || uniformObjects.has(value)) return;
     if (uniformObjects.size >= 4096) { unknown("shader-uniforms", "uniform 자원 그래프의 상한을 넘었습니다."); return; }
     uniformObjects.add(value);
     if (Array.isArray(value)) for (const child of value) uniform(child);
     else for (const child of Object.values(value)) uniform(child);
   };
   const material = (value: THREE.Material) => {
+    if (materials.has(value)) return;
+    materials.add(value);
     for (const item of Object.values(value)) if (item instanceof THREE.Texture) texture(item);
     if (value instanceof THREE.ShaderMaterial) for (const item of Object.values(value.uniforms)) uniform(item.value);
   };

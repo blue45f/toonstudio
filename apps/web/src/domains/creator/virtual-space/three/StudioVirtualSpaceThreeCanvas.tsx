@@ -33,7 +33,7 @@ export function StudioVirtualSpaceThreeCanvas({
   onNearbyInteractionChange, onPortal, onZoneChange, onNearbyNpcsChange, onEngineStatusChange, onReturnTo2d,
   decorations, placedFixtures, onBuildPlacementEvent, seatedActors, onPeerSelect, onGhostModeChange,
   onStuckChange, lightingState, cameraMode: controlledCameraMode, onCameraModeChange, visemeByActorId,
-  liveScreenStream, onPhotoCaptureToCut, proximityRadiusPx, ghostMode: controlledGhostMode,
+  liveScreenStream, onPhotoCaptureToCut, onOpenCustomize, proximityRadiusPx, ghostMode: controlledGhostMode,
 }: StudioVirtualSpaceThreeStageProps) {
   const bt = useBilingual("StudioVirtualSpaceThreeCanvas");
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -119,7 +119,7 @@ export function StudioVirtualSpaceThreeCanvas({
   }, [theme, themeRequestRevision]);
 
   useEffect(() => {
-    runtimeRef.current?.reloadActorVrm("self", snapshot.self.avatarIndex);
+    runtimeRef.current?.reloadActorVrm("self", snapshot.self.avatarIndex >= 0 ? snapshot.self.avatarIndex : 0);
   }, [snapshot.self.avatarIndex]);
 
   useEffect(() => {
@@ -204,6 +204,7 @@ export function StudioVirtualSpaceThreeCanvas({
               ghostMode={activeGhostMode}
               onToggleGhostMode={toggleGhostMode}
               onCapturePhotoToCut={() => runtimeRef.current?.capturePhoto()}
+              onOpenCustomize={onOpenCustomize}
               onLightingPresetChange={(preset) => {
                 writeStoredStudioThreeLightingPreset(preset);
                 setLightingPreset(preset);

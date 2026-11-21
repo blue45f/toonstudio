@@ -271,8 +271,16 @@ export async function prepareVirtualThreeHeroSceneStage(options: {
     const model = gltf.scene;
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        child.castShadow = true;
+        // 외벽·천장이 내부 바닥을 통째로 가리는 암전 그림자를 막고 가구·기둥만 부드러운 접지 그림자를 드리운다.
+        child.castShadow = !/^BG_(?:Ceiling|Roof|Wall_)/iu.test(child.name);
         child.receiveShadow = true;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        for (const mat of mats) {
+          if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+            mat.envMapIntensity = Math.max(mat.envMapIntensity ?? 1, 1.35);
+            mat.needsUpdate = true;
+          }
+        }
       }
     });
     model.updateMatrixWorld(true);

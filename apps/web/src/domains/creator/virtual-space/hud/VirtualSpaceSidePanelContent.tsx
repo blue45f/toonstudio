@@ -467,7 +467,7 @@ export function VirtualSpaceSidePanelContent(props: VirtualSpaceSidePanelContent
             <>
               <VirtualThreeThemePanel />
               <Suspense fallback={<p role="status">{bt("3D 아바타 목록을 불러오는 중…", "Loading 3D avatars…")}</p>}>
-                <LazyVirtualThreeAvatarPicker avatarIndex={avatarIndex} onSelect={selectAvatar} />
+                <LazyVirtualThreeAvatarPicker avatarIndex={avatarIndex >= 0 ? avatarIndex : 0} onSelect={selectAvatar} />
               </Suspense>
             </>
           ) : (

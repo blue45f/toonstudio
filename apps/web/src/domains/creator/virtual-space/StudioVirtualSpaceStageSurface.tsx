@@ -32,6 +32,7 @@ type LogicalStageProps = Omit<
   | "visemeByActorId"
   | "liveScreenStream"
   | "onPhotoCaptureToCut"
+  | "onOpenCustomize"
   | "proximityRadiusPx"
   | "ghostMode"
 >;
@@ -50,6 +51,7 @@ export interface StudioVirtualSpaceThreeExtraProps {
   readonly visemeByActorId?: Readonly<Record<string, StudioThreeVisemeFrame>>;
   readonly liveScreenStream?: MediaStream | null;
   readonly onPhotoCaptureToCut?: (capture: StudioThreePhotoCapture) => void;
+  readonly onOpenCustomize?: () => void;
   readonly proximityRadiusPx?: number;
   readonly ghostMode?: boolean;
 }
@@ -98,6 +100,7 @@ function ThreeThemeStage({
     {...(three?.visemeByActorId !== undefined ? { visemeByActorId: three.visemeByActorId } : {})}
     {...(three?.liveScreenStream !== undefined ? { liveScreenStream: three.liveScreenStream } : {})}
     {...(three?.onPhotoCaptureToCut !== undefined ? { onPhotoCaptureToCut: three.onPhotoCaptureToCut } : {})}
+    {...(three?.onOpenCustomize !== undefined ? { onOpenCustomize: three.onOpenCustomize } : {})}
     {...(three?.proximityRadiusPx !== undefined ? { proximityRadiusPx: three.proximityRadiusPx } : {})}
     {...(three?.ghostMode !== undefined ? { ghostMode: three.ghostMode } : {})}
     theme={theme.theme}

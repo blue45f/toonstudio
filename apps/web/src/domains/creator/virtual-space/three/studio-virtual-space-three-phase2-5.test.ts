@@ -13,7 +13,12 @@ import {
   StudioThreeFollowCamera,
 } from "./studio-virtual-space-three-follow";
 import { bindStudioThreeKeyboardInput } from "./studio-virtual-space-three-keyboard-input";
-import { applyStudioThreeLightingState, computeStudioThreeLightingParameters } from "./studio-virtual-space-three-lighting";
+import {
+  applyHeroSceneInteriorLighting,
+  applyStudioThreeLightingState,
+  computeStudioThreeLightingParameters,
+  restoreBaselineShadowFrustum,
+} from "./studio-virtual-space-three-lighting";
 import {
   applyStudioThreeActorPose,
   applyStudioThreeVisemeFrame,
@@ -191,6 +196,28 @@ describe("실시간 시간대 조명 · 3D 가구/고정물 배치", () => {
     expect(applied.colorTemperatureK).toBe(3200);
     expect(interiorPointLight.visible).toBe(true);
     expect(interiorPointLight.intensity).toBeGreaterThan(1.5);
+
+    applyHeroSceneInteriorLighting({
+      preset: "day",
+      heroOrigin: [12, 0, 18],
+      scene,
+      renderer,
+      hemiLight,
+      dirLight,
+      fillLight,
+      interiorPointLight,
+    });
+    expect(interiorPointLight.visible).toBe(true);
+    expect(interiorPointLight.position.x).toBe(12);
+    expect(interiorPointLight.position.z).toBe(18);
+    expect(interiorPointLight.intensity).toBeGreaterThan(3);
+    expect(hemiLight.intensity).toBeGreaterThan(1.5);
+    expect(renderer.toneMappingExposure).toBeGreaterThan(1.2);
+    expect(dirLight.shadow.camera.right).toBe(14);
+
+    restoreBaselineShadowFrustum(dirLight, interiorPointLight);
+    expect(dirLight.shadow.camera.right).toBe(48);
+    expect(interiorPointLight.visible).toBe(false);
   });
 
   it("decorations와 placedFixtures를 바닥 스냅(Y=0)해 배치하고 dispose로 완전 정리한다", () => {

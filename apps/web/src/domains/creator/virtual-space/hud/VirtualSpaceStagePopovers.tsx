@@ -1,5 +1,5 @@
-import { X } from "lucide-react";
-import { Suspense } from "react";
+import { PenTool, StickyNote, X } from "lucide-react";
+import { Suspense, useEffect } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -125,6 +125,19 @@ export function VirtualSpaceStagePopovers(props: VirtualSpaceStagePopoversProps)
     baselineWorldManifestRef, worldDraftLifetimeActive, reloadTileEffects, cloneBinding,
   } = props;
 
+  useEffect(() => {
+    if (!soloBoardOpen) return undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setSoloBoardOpen(null);
+      engineBridge.focusWorld();
+    };
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+  }, [engineBridge, setSoloBoardOpen, soloBoardOpen]);
+
   return (
     <>
       {worldReady ? (
@@ -203,54 +216,87 @@ export function VirtualSpaceStagePopovers(props: VirtualSpaceStagePopoversProps)
       </SpacePopover>
 
       {soloBoardOpen ? (
-        <section
-          role="dialog"
-          aria-modal="false"
-          aria-label={soloBoardOpen === "whiteboard" ? bt("공유 화이트보드", "Whiteboard") : bt("포스트잇 칸반", "Sticky notes")}
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/55 p-4 backdrop-blur-xs"
           data-space-interactive="true"
-          className="fixed inset-x-4 bottom-24 top-20 z-40 mx-auto flex max-w-4xl flex-col overflow-hidden rounded-2xl border border-line bg-panel p-4 shadow-2xl"
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSoloBoardOpen(null);
+              engineBridge.focusWorld();
+            }
+          }}
         >
-          <header className="mb-3 flex shrink-0 items-center justify-between gap-2 border-b border-line pb-2">
-            <h2 className="text-sm font-semibold text-fg">
-              {soloBoardOpen === "whiteboard" ? bt("공유 화이트보드", "Whiteboard") : bt("포스트잇 칸반", "Sticky notes")}
-            </h2>
-            <button
-              type="button"
-              onClick={() => { setSoloBoardOpen(null); engineBridge.focusWorld(); }}
-              aria-label={bt("닫기", "Close")}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-line bg-card text-fg-2 hover:text-fg"
-            >
-              <X size={16} aria-hidden />
-            </button>
-          </header>
-          <div className="min-h-0 flex-1 overflow-auto">
-            <Suspense fallback={<p role="status">{bt("보드를 불러오는 중…", "Loading board…")}</p>}>
-              {soloBoardOpen === "whiteboard" ? (
-                <StudioVirtualSpaceWhiteboard
-                  snapshot={yjsSpace.boardSnapshot}
-                  selfSessionId={selfListId}
-                  authorNameOf={() => localName}
-                  onStroke={yjsSpace.addStroke}
-                  onNote={yjsSpace.addBoardNote}
-                  onRemove={yjsSpace.removeBoardEntity}
-                  onClearOwn={yjsSpace.clearOwnBoardEntities}
-                />
-              ) : (
-                <StudioVirtualSpaceStickyNotes
-                  notes={yjsSpace.state.stickyNotes}
-                  canEdit={permissions.canUseBoard}
-                  onCreate={yjsSpace.createSticky}
-                  onMove={yjsSpace.moveSticky}
-                  onResize={yjsSpace.resizeSticky}
-                  onEdit={yjsSpace.editSticky}
-                  onToggleDone={yjsSpace.toggleStickyDone}
-                  onRemove={yjsSpace.removeSticky}
-                  onRecolor={yjsSpace.recolorSticky}
-                />
-              )}
-            </Suspense>
-          </div>
-        </section>
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label={soloBoardOpen === "whiteboard" ? bt("공유 화이트보드", "Whiteboard") : bt("포스트잇 칸반", "Sticky notes")}
+            data-space-interactive="true"
+            className="flex h-[min(78dvh,680px)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-line bg-panel p-4 shadow-2xl"
+          >
+            <header className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-fg">
+                  {soloBoardOpen === "whiteboard" ? bt("공유 화이트보드", "Whiteboard") : bt("포스트잇 칸반", "Sticky notes")}
+                </h2>
+                <div role="tablist" aria-label={bt("보드 전환", "Switch board")} className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={soloBoardOpen === "whiteboard"}
+                    onClick={() => setSoloBoardOpen("whiteboard")}
+                    className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${soloBoardOpen === "whiteboard" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:text-fg"}`}
+                  >
+                    <PenTool size={13} aria-hidden />{bt("화이트보드", "Whiteboard")}
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={soloBoardOpen === "stickies"}
+                    onClick={() => setSoloBoardOpen("stickies")}
+                    className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${soloBoardOpen === "stickies" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:text-fg"}`}
+                  >
+                    <StickyNote size={13} aria-hidden />{bt("포스트잇", "Stickies")}
+                  </button>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setSoloBoardOpen(null); engineBridge.focusWorld(); }}
+                aria-label={bt("닫기", "Close")}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-line bg-card text-fg-2 hover:text-fg"
+              >
+                <X size={16} aria-hidden />
+              </button>
+            </header>
+            <div className="min-h-0 flex-1 overflow-auto overscroll-contain">
+              <Suspense fallback={<p role="status">{bt("보드를 불러오는 중…", "Loading board…")}</p>}>
+                {soloBoardOpen === "whiteboard" ? (
+                  <StudioVirtualSpaceWhiteboard
+                    snapshot={yjsSpace.boardSnapshot}
+                    selfSessionId={selfListId}
+                    authorNameOf={() => localName}
+                    onStroke={yjsSpace.addStroke}
+                    onNote={yjsSpace.addBoardNote}
+                    onRemove={yjsSpace.removeBoardEntity}
+                    onClearOwn={yjsSpace.clearOwnBoardEntities}
+                  />
+                ) : (
+                  <StudioVirtualSpaceStickyNotes
+                    notes={yjsSpace.state.stickyNotes}
+                    canEdit={permissions.canUseBoard}
+                    onCreate={yjsSpace.createSticky}
+                    onMove={yjsSpace.moveSticky}
+                    onResize={yjsSpace.resizeSticky}
+                    onEdit={yjsSpace.editSticky}
+                    onToggleDone={yjsSpace.toggleStickyDone}
+                    onRemove={yjsSpace.removeSticky}
+                    onRecolor={yjsSpace.recolorSticky}
+                  />
+                )}
+              </Suspense>
+            </div>
+          </section>
+        </div>
       ) : null}
 
       <SpacePopover open={overlays.mediaConsentOpen} sheet={touch} onClose={() => { overlays.setMediaConsentOpen(false); engineBridge.focusWorld(); }} title={bt("가까이 가면 영상으로 대화하기", "Proximity voice & video")} className="space-popover--consent">

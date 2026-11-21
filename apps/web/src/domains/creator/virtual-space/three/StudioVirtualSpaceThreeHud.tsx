@@ -17,6 +17,7 @@ export interface StudioVirtualSpaceThreeHudProps {
   readonly ghostMode?: boolean;
   readonly onToggleGhostMode?: () => void;
   readonly onCapturePhotoToCut?: () => void;
+  readonly onOpenCustomize?: () => void;
 }
 
 const CAMERA_MODE_OPTIONS = [
@@ -45,6 +46,7 @@ export function StudioVirtualSpaceThreeHud({
   ghostMode = false,
   onToggleGhostMode,
   onCapturePhotoToCut,
+  onOpenCustomize,
 }: StudioVirtualSpaceThreeHudProps) {
   const bt = useBilingual("StudioVirtualSpaceThreeCanvas");
   return (
@@ -110,6 +112,17 @@ export function StudioVirtualSpaceThreeHud({
             onClick={onToggleGhostMode}
           >
             {bt("고스트 [G]", "Ghost [G]")}
+          </button>
+        ) : null}
+
+        {onOpenCustomize ? (
+          <button
+            type="button"
+            className="studio-vspace-three-lighting-hud__photo"
+            data-testid="three-open-customize-btn"
+            onClick={onOpenCustomize}
+          >
+            {bt("3D 룸·아바타", "3D Rooms & Avatar")}
           </button>
         ) : null}
 

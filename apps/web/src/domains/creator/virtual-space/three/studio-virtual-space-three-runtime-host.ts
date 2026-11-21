@@ -33,7 +33,7 @@ import {
 } from "./studio-virtual-space-three-follow";
 import { projectStudioThreeOverlays } from "./studio-virtual-space-three-hud-projection";
 import { bindStudioThreeKeyboardInput } from "./studio-virtual-space-three-keyboard-input";
-import { applyStudioThreeLightingState } from "./studio-virtual-space-three-lighting";
+import { applyHeroSceneInteriorLighting, applyStudioThreeLightingState, restoreBaselineShadowFrustum } from "./studio-virtual-space-three-lighting";
 import {
   applyStudioThreeActorPose,
   applyStudioThreeVisemeFrame,
@@ -220,12 +220,15 @@ export function mountStudioThreeStageRuntime(
   });
   const postPipeline = createStudioThreeChromePostPipeline(renderer, scene, camera, width, height);
   let currentPreset = readStoredStudioThreeLightingPreset(studioThreeThemeLightingPreset(getLatest().theme, manifest));
+  let heroLightingOrigin: readonly [number, number, number] | null = null;
   const syncLighting = (preset: StudioThreeLightingPreset) => {
     currentPreset = preset;
     applyStudioLightingPresetToScene(preset, scene, renderer, hemiLight, dirLight, postPipeline, fillLight);
     hdriController.applyPreset(preset);
+    if (heroLightingOrigin) applyHeroSceneInteriorLighting({ preset, heroOrigin: heroLightingOrigin, scene, renderer, hemiLight, dirLight, fillLight, interiorPointLight });
   };
   const syncDynamicLighting = () => {
+    if (heroLightingOrigin) { applyHeroSceneInteriorLighting({ preset: currentPreset, heroOrigin: heroLightingOrigin, scene, renderer, hemiLight, dirLight, fillLight, interiorPointLight }); return; }
     const nextLighting = getLatest().lightingState;
     if (!nextLighting) return;
     const center = new THREE.Vector3(manifest.width * STUDIO_THREE_SCALE / 2, 0, manifest.height * STUDIO_THREE_SCALE / 2);
@@ -291,13 +294,19 @@ export function mountStudioThreeStageRuntime(
   destMarker.visible = false;
   scene.add(destMarker);
 
-  const reloadActorVrm = loadStudioThreeAssets(scene, actorNodes, () => disposed, initialSnap.self.avatarIndex, manifest, () => actions.incrementAssetFailure());
+  const campusPropsGroup = new THREE.Group();
+  campusPropsGroup.name = "campus-baseline-props-root";
+  scene.add(campusPropsGroup);
+  const resolvedSelfAvatar = initialSnap.self.avatarIndex >= 0 ? initialSnap.self.avatarIndex : 0;
+  const reloadActorVrm = loadStudioThreeAssets(campusPropsGroup, actorNodes, () => disposed, resolvedSelfAvatar, manifest, () => actions.incrementAssetFailure());
   let currentPoint: StudioVirtualSpacePoint = { ...spawnPoint };
   let currentFacing: StudioVirtualSpaceFacing = resumedPose?.facing ?? initialSnap.self.facing ?? "down";
   const initialYaw = facingToYawRadians(currentFacing);
   selfNode.currentYaw = initialYaw;
   selfNode.targetYaw = initialYaw;
   selfNode.group.rotation.y = initialYaw;
+  let activeIsHeroScene = getLatest().theme.kind === "hero-scene";
+  campusPropsGroup.visible = !activeIsHeroScene;
 
   const themeController = createVirtualThreeThemeController({
     scene, manifest, renderer, camera, isDisposed: () => disposed,
@@ -310,17 +319,28 @@ export function mountStudioThreeStageRuntime(
     getPendingCoreAssetCount: reloadActorVrm.getPendingCount,
     captureCommitState: () => {
       const oldPreset = currentPreset;
+      const prevHero = activeIsHeroScene;
       const restore = captureVirtualThreeThemeLightingState({ scene, renderer, lights: { ambient: hemiLight, key: dirLight, fill: fillLight } });
-      return () => { hdriController.applyPreset(oldPreset); restore(); currentPreset = oldPreset; actions.setLightingPreset(oldPreset); };
+      return () => { activeIsHeroScene = prevHero; campusPropsGroup.visible = !prevHero; hdriController.applyPreset(oldPreset); restore(); currentPreset = oldPreset; actions.setLightingPreset(oldPreset); };
     },
     onPreviewChange: (themeId, preview) => {
       if (!disposed) getLatest().callbacks.onThemePreviewChange?.(themeId, preview);
     },
     onCommitted: (committedTheme) => {
       if (disposed) return;
+      const wasHero = activeIsHeroScene;
+      activeIsHeroScene = committedTheme.kind === "hero-scene";
+      campusPropsGroup.visible = !activeIsHeroScene;
+      heroLightingOrigin = activeIsHeroScene ? (themeController.getArchitecture()?.heroRootOrigin ?? null) : null;
+      if (!activeIsHeroScene && wasHero) restoreBaselineShadowFrustum(dirLight, interiorPointLight);
+      if (activeIsHeroScene && !wasHero) {
+        currentPoint = { ...studioWorldSpawn(manifest).point };
+        selfNode.group.position.copy(worldToThree(currentPoint, 0));
+        targetCameraYaw = 0; currentCameraYaw = 0;
+      }
       const preset = readStoredStudioThreeLightingPreset(studioThreeThemeLightingPreset(committedTheme, manifest));
       syncLighting(preset);
-      applyVirtualThreeThemeLighting(committedTheme, manifest, { ambient: hemiLight, key: dirLight, fill: fillLight }, studioThreeFillLightIntensity(preset));
+      if (!activeIsHeroScene) applyVirtualThreeThemeLighting(committedTheme, manifest, { ambient: hemiLight, key: dirLight, fill: fillLight }, studioThreeFillLightIntensity(preset));
       syncDynamicLighting();
       actions.setLightingPreset(preset);
     },
@@ -625,7 +645,8 @@ export function mountStudioThreeStageRuntime(
       }
       if (peerAvatarIndices.get(peerId) !== peer.state.avatarIndex) {
         peerAvatarIndices.set(peerId, peer.state.avatarIndex);
-        reloadActorVrm(peerId, peer.state.avatarIndex);
+        const peerAvatar = peer.state.avatarIndex >= 0 ? peer.state.avatarIndex : ([...sessionId].reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 8);
+        reloadActorVrm(peerId, peerAvatar);
       }
       let motion = remoteMotion.get(peerNode);
       if (!motion) { motion = new StudioThreePeerMotion(); remoteMotion.set(peerNode, motion); }
@@ -638,7 +659,7 @@ export function mountStudioThreeStageRuntime(
       const node = actorNodes.get(npc.id);
       if (!node) continue;
       const gapPx = Math.hypot(npc.point.x - currentPoint.x, npc.point.y - currentPoint.y);
-      node.group.visible = gapPx <= 920;
+      node.group.visible = !activeIsHeroScene && gapPx <= 920;
       if (!node.group.visible) continue;
       node.targetYaw = gapPx < 240 ? Math.atan2(currentPoint.x - npc.point.x, currentPoint.y - npc.point.y) : facingToYawRadians(npc.facing ?? "down");
       node.currentYaw = shortestAngleLerp(node.currentYaw, node.targetYaw, studioCameraLerp(dt, 0.14));
@@ -741,51 +762,32 @@ export function mountStudioThreeStageRuntime(
       lastOverlaySync = now;
       actions.setOverlays(projectStudioThreeOverlays({
         width: renderer.domElement.clientWidth, height: renderer.domElement.clientHeight,
-        camera, selfNode, actorNodes, snapshot: latest.snapshot, currentPoint, manifest,
-        allInteractions, roomSigns, closestInteraction,
-        selfLabel: latest.selfDisplayName || latest.bt("나", "Me"),
-        isEn: document.documentElement.lang.startsWith("en"),
+        camera, selfNode, actorNodes, snapshot: latest.snapshot, currentPoint,
+        manifest: activeIsHeroScene ? { ...manifest, npcs: [] } : manifest,
+        allInteractions: activeIsHeroScene ? [] : allInteractions, roomSigns: activeIsHeroScene ? [] : roomSigns,
+        closestInteraction: activeIsHeroScene ? null : closestInteraction,
+        selfLabel: latest.selfDisplayName || latest.bt("나", "Me"), isEn: document.documentElement.lang.startsWith("en"),
       }));
     }
   };
-
   animFrameId = window.requestAnimationFrame(animate);
-
   return {
-    applyLighting: syncLighting,
-    applyDynamicLighting: syncDynamicLighting,
-    resetCamera: () => bridge.cameraPan.homeView(),
-    triggerOverlayTarget,
-    reloadActorVrm,
-    selectTheme: themeController.select,
-    syncDecorations,
+    applyLighting: syncLighting, applyDynamicLighting: syncDynamicLighting,
+    resetCamera: () => bridge.cameraPan.homeView(), triggerOverlayTarget, reloadActorVrm,
+    selectTheme: themeController.select, syncDecorations,
     capturePhoto() {
       const latest = getLatest();
       const capture = captureStudioThreeCanvasToCut({ renderer, scene, camera, label: latest.theme.copy.ko.name || "3D 스튜디오 포토부스 컷" });
       if (capture) latest.callbacks.onPhotoCaptureToCut?.(capture);
     },
     dispose() {
-      disposed = true;
-      contextRecovery.dispose();
-      window.cancelAnimationFrame(animFrameId);
-      unbindKeyboard();
-      window.removeEventListener("resize", handleResize);
-      pointerInput.dispose();
-      renderer.domElement.removeEventListener("contextmenu", handleContextMenu);
-      renderer.domElement.removeEventListener("wheel", handleWheel);
-      unbindSelectedObjectTarget();
-      bridge.cameraPan.attachZoomStore(null);
-      bridge.cameraPan.attachHomeResetCallback(null);
-      setActiveMountedCameraPanStore(null);
-      bridge.setFocusHandler(null);
-      destMarker.removeFromParent();
+      disposed = true; contextRecovery.dispose(); window.cancelAnimationFrame(animFrameId);
+      unbindKeyboard(); window.removeEventListener("resize", handleResize); pointerInput.dispose();
+      renderer.domElement.removeEventListener("contextmenu", handleContextMenu); renderer.domElement.removeEventListener("wheel", handleWheel);
+      unbindSelectedObjectTarget(); bridge.cameraPan.attachZoomStore(null); bridge.cameraPan.attachHomeResetCallback(null);
+      setActiveMountedCameraPanStore(null); bridge.setFocusHandler(null); destMarker.removeFromParent(); campusPropsGroup.removeFromParent();
       const failures: unknown[] = [];
-      for (const release of [
-        () => reloadActorVrm.dispose(), () => themeController.dispose(),
-        () => decorationsController.dispose(), () => liveScreenController.dispose(), () => proximityRing.dispose(),
-        () => destGeo.dispose(), () => destMat.dispose(), () => dirLight.dispose(), () => fillLight.dispose(),
-        () => interiorPointLight.dispose(), () => postPipeline.dispose(), () => hdriController.dispose(), () => renderer.dispose(),
-      ]) {
+      for (const release of [() => reloadActorVrm.dispose(), () => themeController.dispose(), () => decorationsController.dispose(), () => liveScreenController.dispose(), () => proximityRing.dispose(), () => destGeo.dispose(), () => destMat.dispose(), () => dirLight.dispose(), () => fillLight.dispose(), () => interiorPointLight.dispose(), () => postPipeline.dispose(), () => hdriController.dispose(), () => renderer.dispose()]) {
         try { release(); } catch (error) { failures.push(error); }
       }
       if (failures.length) throw new AggregateError(failures, "3D 무대 자원 해제에 실패했습니다.");

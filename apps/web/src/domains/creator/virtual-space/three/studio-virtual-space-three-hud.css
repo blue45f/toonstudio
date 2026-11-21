@@ -197,31 +197,46 @@
   bottom: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 84px);
 }
 
-/* 휴대폰·태블릿 세로: 도크는 화면 폭 전체, 오른쪽 아래는 조이스틱(약 124px)이라 왼쪽 아래에 둔다. */
+/* 휴대폰·태블릿 세로: 조이스틱·채팅 줄 위로 단일 가로 스크롤 툴바로 배치해 3D 시야를 가리지 않는다. */
 @media (max-width: 1023.98px) {
   .studio-vspace-three-stage {
-    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 56px);
+    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 128px);
   }
 
   .studio-vspace-three-lighting-hud {
-    right: auto;
+    right: calc(var(--space-gutter, 12px) + var(--space-safe-right, 0px));
     bottom: var(--studio-three-controls-offset);
     left: calc(var(--space-gutter, 12px) + var(--space-safe-left, 0px));
+    flex-wrap: nowrap;
     justify-content: flex-start;
-    max-width: calc(100% - var(--space-gutter, 12px) * 3 - 124px - var(--space-safe-left, 0px));
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    max-width: calc(100% - var(--space-gutter, 12px) * 2 - var(--space-safe-left, 0px) - var(--space-safe-right, 0px));
+  }
+
+  .studio-vspace-three-lighting-hud::-webkit-scrollbar {
+    display: none;
   }
 
   .studio-vspace-three-lighting-hud__segment {
-    padding-inline-end: 0;
-    border-inline-end: 0;
+    flex: none;
+    flex-wrap: nowrap;
+    padding-inline-end: 6px;
+    border-inline-end: 1px solid var(--border-subtle);
+  }
+
+  .studio-vspace-three-lighting-hud button,
+  .studio-vspace-three-cutaway-badge {
+    flex: none;
   }
 
   .space-hud:has(.space-interact-prompt, .space-status-chip, .space-focus-chip) .studio-vspace-three-stage {
-    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 116px);
+    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 168px);
   }
 
   .space-hud:has(.space-context-suggestion) .studio-vspace-three-stage {
-    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 136px);
+    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 188px);
   }
 
   /* 글자 크기와 줄바꿈에 맞춰 품질 안내와 시점 버튼을 서로 다른 행에 둔다. */

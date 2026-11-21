@@ -68,6 +68,7 @@ export class StudioThreePeerMotion {
 export class StudioThreeFollowCamera {
   private readonly focus: Vector3;
   private readonly target = new Vector3();
+  private lastMode: StudioThreeCameraMode = "quarter";
 
   constructor(x: number, z: number) {
     this.focus = new Vector3(x, 10.8, z);
@@ -84,8 +85,10 @@ export class StudioThreeFollowCamera {
     options?: StudioThreeFollowCameraOptions,
   ): void {
     const mode: StudioThreeCameraMode = options?.mode ?? "quarter";
+    const modeSwitched = mode !== this.lastMode;
+    this.lastMode = mode;
     const safeZoom = Math.max(0.5, Math.min(2.5, Number.isFinite(zoom) && zoom > 0 ? zoom : 1));
-    const lerpAlpha = snap ? 1 : studioCameraLerp(dt, 0.16);
+    const lerpAlpha = snap || modeSwitched ? 1 : studioCameraLerp(dt, 0.16);
     const sin = Math.sin(yaw);
     const cos = Math.cos(yaw);
 

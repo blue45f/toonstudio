@@ -82,6 +82,8 @@ export function buildStudioThreeWorldArchitecture(scene: THREE.Scene, manifest: 
       rootOrigin[2] + screenSpec.positionMeters[2],
     );
     screenGroup.rotation.y = screenSpec.rotationY;
+    // 라이브 화면 공유가 꺼져 있을 때는 빈 검정 스크린 패널이 Hero 룸 배경을 가리지 않게 숨긴다.
+    screenGroup.visible = false;
 
     const bezel = new THREE.Mesh(
       new THREE.BoxGeometry(screenSpec.widthMeters + 0.14, screenSpec.heightMeters + 0.14, 0.07),

@@ -53,6 +53,9 @@ export function createStudioThreeLiveScreenController(
     if (currentMesh && savedMaterial) {
       currentMesh.material = savedMaterial;
     }
+    if (currentMesh && currentMesh !== fallbackMesh && currentMesh.parent) {
+      currentMesh.parent.visible = false;
+    }
     currentMesh = null;
     savedMaterial = null;
     fallbackGroup.visible = false;
@@ -115,6 +118,9 @@ export function createStudioThreeLiveScreenController(
         targetMesh.material = videoMaterial;
         currentMesh = targetMesh;
         fallbackGroup.visible = targetMesh === fallbackMesh;
+        if (targetMesh !== fallbackMesh && targetMesh.parent) {
+          targetMesh.parent.visible = true;
+        }
       }
     },
     dispose() {

@@ -81,6 +81,7 @@ export interface StudioVirtualSpaceThreeStageProps {
   readonly visemeByActorId?: Readonly<Record<string, StudioThreeVisemeFrame>>;
   readonly liveScreenStream?: MediaStream | null;
   readonly onPhotoCaptureToCut?: (capture: StudioThreePhotoCapture) => void;
+  readonly onOpenCustomize?: () => void;
   readonly proximityRadiusPx?: number;
   readonly ghostMode?: boolean;
 }

@@ -487,12 +487,14 @@ export function VirtualSpaceExperience({
   const sidePanelKeepAlive = [
     ...(!personal ? [{ id: "huddle", visible: overlays.panel === "chat", node: <Suspense fallback={null}><StudioP2pHuddleLauncher placement="inline" /></Suspense> }] : []),
     { id: "ambient-audio", visible: overlays.panel === "settings", node: <StudioVirtualSpaceAmbientAudio key={projectId} scope={worldRuntime.worldManifest} ready={worldRuntime.worldReady && !authoringMode} focused={atmosphere === "focus" || activity === "focused"} away={activity === "away"} /> },
-    { id: "customization", visible: overlays.panel === "build", node: <StudioVirtualSpacePanelGate active={overlays.panel === "build"} preserveAfterOpen>
-      <StudioVirtualSpaceCustomizationPanel artStyle={artStyle} spaceTheme={spaceTheme} onSpaceThemeChange={selectSpaceTheme} key={decorationScope} world={worldRuntime.worldManifest} nickname={nickname}
-        character={characterCustomization} decorations={decorations} decorationSyncEnabled={preferences.decorationSyncEnabled} decorationSyncStatus={preferences.decorationSyncStatus} onRecoverDecorations={preferences.recoverDecorations} selfPoint={snapshot.self} sceneSnapshotBinding={sceneSnapshotBinding} fallbackHour={lighting.lightHour}
-        tileEffects={tileEffects} onTileEffectsChange={changeTileEffects} placedFixtureRequests={placedFixtureRequests} onPlacedFixtureRequests={selectPlacedFixtureRequests} directPlacement={buildPlacement.panel}
-        onNickname={onNicknameChange} onCharacter={preferences.selectCharacterCustomization} onDecorations={selectDecorations} onTriggerEmote={sendReaction} onSelectDistrict={(d) => preferences.selectEnvironmentPreference(studioDistrictEnvironment(d))} />
-    </StudioVirtualSpacePanelGate> },
+    {
+      id: "customization", visible: overlays.panel === "build", node: <StudioVirtualSpacePanelGate active={overlays.panel === "build"} preserveAfterOpen>
+        <StudioVirtualSpaceCustomizationPanel artStyle={artStyle} spaceTheme={spaceTheme} onSpaceThemeChange={selectSpaceTheme} key={decorationScope} world={worldRuntime.worldManifest} nickname={nickname}
+          character={characterCustomization} decorations={decorations} decorationSyncEnabled={preferences.decorationSyncEnabled} decorationSyncStatus={preferences.decorationSyncStatus} onRecoverDecorations={preferences.recoverDecorations} selfPoint={snapshot.self} sceneSnapshotBinding={sceneSnapshotBinding} fallbackHour={lighting.lightHour}
+          tileEffects={tileEffects} onTileEffectsChange={changeTileEffects} placedFixtureRequests={placedFixtureRequests} onPlacedFixtureRequests={selectPlacedFixtureRequests} directPlacement={buildPlacement.panel}
+          onNickname={onNicknameChange} onCharacter={preferences.selectCharacterCustomization} onDecorations={selectDecorations} onTriggerEmote={sendReaction} onSelectDistrict={(d) => preferences.selectEnvironmentPreference(studioDistrictEnvironment(d))} />
+      </StudioVirtualSpacePanelGate>
+    },
   ];
 
   const zoneSplashInput = useMemo<SpaceZoneSplashInput>(() => ({
@@ -570,7 +572,8 @@ export function VirtualSpaceExperience({
                 onGhostModeChange: setGhostMode, onStuckChange: worldRuntime.setStuck,
                 lightingState: threeLightingState, cameraMode: overlays.cameraMode, onCameraModeChange: overlays.setCameraMode,
                 visemeByActorId: socialAndMedia.visemeByActorId, liveScreenStream: socialAndMedia.theaterFeed.stream,
-                onPhotoCaptureToCut: handlePhotoCaptureToCut, proximityRadiusPx: SPACE_PROXIMITY_MEDIA_RADIUS, ghostMode,
+                onPhotoCaptureToCut: handlePhotoCaptureToCut, onOpenCustomize: () => overlays.setPanel("build"),
+                proximityRadiusPx: personal ? 0 : SPACE_PROXIMITY_MEDIA_RADIUS, ghostMode,
               }}
             />
           ) : (
@@ -585,35 +588,34 @@ export function VirtualSpaceExperience({
         <SpaceHudLayout
           topLeft={
             <>
-              <div className="flex flex-wrap items-center gap-2">
-                <SpaceLocationChip spaceName={spaceName} zone={locationZone} compact={touch} connection={personal ? null : connection} onExit={exitSpace}
-                  pulse={worldRuntime.worldReady && !authoringMode ? atelierPulse : null} engineMode={authoringMode ? undefined : engineMode}
-                  onToggleEngineMode={() => setEngineMode((cur) => { const next = cur === "3d" ? "2d" : "3d"; writeStudioVirtualPreferredEngineMode(next); navigate({ pathname: location.pathname, search: applyStudioVirtualStageSearch(location.search, next) }, { replace: true }); return next; })}
-                  onQuickAction={handleAtelierPulseAction} onOpenSearch={() => { overlays.setDockPopover(null); overlays.setSearchOpen(true); }} />
+              <SpaceLocationChip spaceName={spaceName} zone={locationZone} compact={touch} connection={personal ? null : connection} onExit={exitSpace}
+                pulse={worldRuntime.worldReady && !authoringMode ? atelierPulse : null} engineMode={authoringMode ? undefined : engineMode}
+                onToggleEngineMode={() => setEngineMode((cur) => { const next = cur === "3d" ? "2d" : "3d"; writeStudioVirtualPreferredEngineMode(next); navigate({ pathname: location.pathname, search: applyStudioVirtualStageSearch(location.search, next) }, { replace: true }); return next; })}
+                onQuickAction={handleAtelierPulseAction} onOpenSearch={() => { overlays.setDockPopover(null); overlays.setSearchOpen(true); }} />
+              <div className="space-top-tools-row" data-space-interactive="true">
                 <SpaceInlineProfilePopover nickname={localName} onNicknameChange={onNicknameChange} permissions={permissions} roomControl={roomControl}
                   onHostAction={dispatchHostAction} onOpenInvite={() => overlays.setInviteOpen(true)} onOpenAvatarCustomize={() => overlays.setPanel("build")}
                   peers={snapshot.peers.map((p) => ({ sessionId: p.participant.sessionId, displayName: p.participant.displayName }))} />
                 {!touch ? <SpaceDeadlineCountdownWidget deadlines={yjsSpace.state.deadlines} compact /> : null}
                 {personal ? (
                   <div className="flex items-center gap-1" data-space-interactive="true">
-                    <button type="button" data-testid="space-quick-whiteboard-btn" onClick={() => setSoloBoardOpen((c) => (c === "whiteboard" ? null : "whiteboard"))} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel/95 px-3 text-xs font-medium text-fg shadow-sm hover:border-accent">
+                    <button type="button" data-testid="space-quick-whiteboard-btn" onClick={() => setSoloBoardOpen((c) => (c === "whiteboard" ? null : "whiteboard"))} className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-panel/95 px-3 text-xs font-medium text-fg shadow-sm hover:border-accent">
                       <PenTool size={14} aria-hidden />{bt("화이트보드", "Board")}
                     </button>
-                    <button type="button" data-testid="space-quick-stickies-btn" onClick={() => setSoloBoardOpen((c) => (c === "stickies" ? null : "stickies"))} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel/95 px-3 text-xs font-medium text-fg shadow-sm hover:border-accent">
+                    <button type="button" data-testid="space-quick-stickies-btn" onClick={() => setSoloBoardOpen((c) => (c === "stickies" ? null : "stickies"))} className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-panel/95 px-3 text-xs font-medium text-fg shadow-sm hover:border-accent">
                       <StickyNote size={14} aria-hidden />{bt("포스트잇", "Stickies")}
                     </button>
                   </div>
                 ) : null}
               </div>
               {homeHeader}
-              {desktop && worldRuntime.worldReady && overlays.tourOpen ? <StudioVirtualSpaceMiniTour progress={overlays.tourProgress} touch={touch} onDone={overlays.finishMiniTour} /> : null}
+              {worldRuntime.worldReady && overlays.tourOpen ? <StudioVirtualSpaceMiniTour progress={overlays.tourProgress} touch={touch} onDone={overlays.finishMiniTour} /> : null}
               <SpaceZoneWorkbar kind={zoneWorkKind} items={zoneWorkItems} pulse={worldRuntime.worldReady && !authoringMode ? atelierPulse : null} onPanel={overlays.setPanel} onCowork={() => overlays.openCowork(null)} onShare={shareScreenNearby} onPulseAction={handleAtelierPulseAction} />
               <StudioVirtualSpaceSilentZoneBadge zone={socialAndMedia.silentZone.zone} mutedByZone={socialAndMedia.silentZone.mutedByZone} />
             </>
           }
           topCenter={
             <>
-              {!desktop && worldRuntime.worldReady && overlays.tourOpen ? <StudioVirtualSpaceMiniTour progress={overlays.tourProgress} touch={touch} onDone={overlays.finishMiniTour} /> : null}
               {worldRuleGate.element}
               <SpaceTownBanner personal={personal} spotlightActive={Boolean(socialAndMedia.spotlightEventId)} onStopSpotlight={socialAndMedia.stopSpotlight} onViewTown={() => overlays.setPanel("town")} />
               {spaceHudShowsEventBanner({ desktop, coachOpen: worldRuntime.worldReady && overlays.tourOpen }) ? <SpaceEventBanner banner={spaceUi.banner} onDismiss={spaceUi.dismissBanner} /> : null}

@@ -45,7 +45,7 @@ export const SpaceMobileDock = memo(function SpaceMobileDock({
   const peopleCount = peopleBadge.incoming > 0 ? peopleBadge.incoming : peopleBadge.nearby;
   const reactionsOpen = popover === "react";
   const cameraLabel = cameraMode === "first-person" ? "1인칭" : cameraMode === "third-person" ? "3인칭" : "쿼터";
-  return <nav ref={dockRef} data-testid="space-mobile-dock" className="space-mobile-dock" aria-label={bt("가상 스튜디오 도구", "Virtual studio tools")} data-space-interactive="true">
+  return <nav ref={dockRef} data-testid="space-mobile-dock" data-engine-mode={engineMode} className="space-mobile-dock" aria-label={bt("가상 스튜디오 도구", "Virtual studio tools")} data-space-interactive="true">
     {engineMode === "3d" && onCycleCameraMode ? (
       <button
         type="button"

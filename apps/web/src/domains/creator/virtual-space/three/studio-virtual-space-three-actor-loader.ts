@@ -61,6 +61,7 @@ function copyVrmBones(target: StudioThreeActorNode, source: StudioThreeActorNode
 /** 1인칭 시점 전환 시 자신 아바타의 머리·헤어 메시가 카메라를 가리지 않도록 숨기거나 복원한다. */
 export function setStudioThreeActorHeadVisible(node: StudioThreeActorNode, visible: boolean): void {
   node.firstPersonHeadHidden = !visible;
+  node.rigGroup.visible = visible;
   if (node.vrmHead) {
     node.vrmHead.scale.setScalar(visible ? 1 : 0.0001);
   }

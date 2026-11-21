@@ -8,7 +8,7 @@ export function StudioVirtualAvatarPersistenceNotice({ status, onRetry, personal
   readonly personal: boolean;
 }) {
   const bt = useBilingual("StudioVirtualAvatarPersistenceNotice");
-  return <section className="space-panel-section sticky top-0 z-10 rounded-xl border border-line bg-card p-3" aria-label={bt("캐릭터 저장 상태", "Character save status")}>
+  return <section className={`space-panel-section rounded-xl border border-line bg-card p-3${status === "failed" ? " sticky top-0 z-10" : ""}`} aria-label={bt("캐릭터 저장 상태", "Character save status")}>
     <p className="space-panel-note" role={status === "failed" ? "alert" : "status"}>
       {status === "failed" ? bt(
         "지금 모습은 바뀌었지만 저장을 마치지 못했어요. 다시 접속하면 이전 모습이 보일 수 있어요.",

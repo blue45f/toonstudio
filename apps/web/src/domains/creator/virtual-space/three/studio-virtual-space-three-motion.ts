@@ -586,20 +586,24 @@ export function applyStudioThreeActorPose(
     if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperLeg.rotation.x, 0, restBlend);
     if (node.vrmLeftLowerLeg) node.vrmLeftLowerLeg.rotation.x = THREE.MathUtils.lerp(node.vrmLeftLowerLeg.rotation.x, 0, restBlend);
     if (node.vrmRightLowerLeg) node.vrmRightLowerLeg.rotation.x = THREE.MathUtils.lerp(node.vrmRightLowerLeg.rotation.x, 0, restBlend);
+    const idleLeftZ = node.vrm ? Math.sign(baseLeftZ || 1) * 1.36 : baseLeftZ;
+    const idleRightZ = node.vrm ? Math.sign(baseRightZ || -1) * 1.36 : baseRightZ;
     if (node.vrmLeftUpperArm) {
-      node.vrmLeftUpperArm.rotation.z = baseLeftZ + Math.sin(now * 0.0022) * 0.02;
-      node.vrmLeftUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperArm.rotation.x, 0.06, restBlend);
+      node.vrmLeftUpperArm.rotation.z = idleLeftZ + Math.sin(now * 0.0022) * 0.018;
+      node.vrmLeftUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperArm.rotation.x, 0.05, restBlend);
     }
     if (node.vrmRightUpperArm) {
-      node.vrmRightUpperArm.rotation.z = baseRightZ - Math.sin(now * 0.0022) * 0.02;
-      node.vrmRightUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperArm.rotation.x, 0.06, restBlend);
+      node.vrmRightUpperArm.rotation.z = idleRightZ - Math.sin(now * 0.0022) * 0.018;
+      node.vrmRightUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperArm.rotation.x, 0.05, restBlend);
     }
     if (node.vrmLeftLowerArm) {
-      node.vrmLeftLowerArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftLowerArm.rotation.x, 0, restBlend);
+      node.vrmLeftLowerArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftLowerArm.rotation.x, node.vrm ? 0.06 : 0, restBlend);
+      node.vrmLeftLowerArm.rotation.y = THREE.MathUtils.lerp(node.vrmLeftLowerArm.rotation.y, node.vrm ? -0.16 : 0, restBlend);
       node.vrmLeftLowerArm.rotation.z = THREE.MathUtils.lerp(node.vrmLeftLowerArm.rotation.z, 0, restBlend);
     }
     if (node.vrmRightLowerArm) {
-      node.vrmRightLowerArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.x, 0, restBlend);
+      node.vrmRightLowerArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.x, node.vrm ? 0.06 : 0, restBlend);
+      node.vrmRightLowerArm.rotation.y = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.y, node.vrm ? 0.16 : 0, restBlend);
       node.vrmRightLowerArm.rotation.z = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.z, 0, restBlend);
     }
     node.rigGroup.position.y = THREE.MathUtils.lerp(node.rigGroup.position.y, 0, restBlend);

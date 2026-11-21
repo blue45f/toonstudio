@@ -220,9 +220,14 @@ export function createVirtualThreeThemeLifecycle(options: VirtualThreeThemeLifec
       commit(stage);
       stage.ready = true;
       if (current(stage)) publish(request.theme.id, { status: "ready" });
-    } catch {
-      if (stage && current(stage)) publish(request.theme.id, { status: "error" });
-      else if (!stage && request.epoch === epoch) publish(request.theme.id, { status: "error" });
+    } catch (error) {
+      if (stage && current(stage)) {
+        if (typeof console !== "undefined") console.warn("[VirtualThreeThemeController]", request.theme.id, error);
+        publish(request.theme.id, { status: "error" });
+      } else if (!stage && request.epoch === epoch) {
+        if (typeof console !== "undefined") console.warn("[VirtualThreeThemeController]", request.theme.id, error);
+        publish(request.theme.id, { status: "error" });
+      }
     } finally {
       if (stage && active !== stage) {
         try { release(stage); } catch { latchCleanupFailure(request.theme.id); }

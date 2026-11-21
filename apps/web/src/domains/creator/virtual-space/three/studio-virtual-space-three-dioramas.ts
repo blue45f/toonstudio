@@ -299,7 +299,7 @@ function dioramaBounds(model: THREE.Object3D, excluded: ReadonlySet<THREE.Object
 }
 
 export function loadStudioThreeZoneDioramas(
-  scene: THREE.Scene,
+  scene: THREE.Object3D,
   loader: GLTFLoader,
   isDisposed: () => boolean,
   onAssetError?: (url: string) => void,

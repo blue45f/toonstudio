@@ -164,3 +164,64 @@ export function applyStudioThreeLightingState(
 
   return computed;
 }
+
+/** Hero 3D BG 실내 룸 전용 스튜디오 조명: 룸 원점에 실내 바운스광·필광·타이트 그림자 절두체를 정렬한다. */
+export function applyHeroSceneInteriorLighting(input: {
+  readonly preset: "day" | "studio" | "night";
+  readonly heroOrigin: readonly [number, number, number];
+  readonly scene: THREE.Scene;
+  readonly renderer: Pick<THREE.WebGLRenderer, "toneMappingExposure">;
+  readonly hemiLight: THREE.HemisphereLight;
+  readonly dirLight: THREE.DirectionalLight;
+  readonly fillLight: THREE.DirectionalLight;
+  readonly interiorPointLight: THREE.PointLight;
+}): void {
+  const { preset, heroOrigin, scene, renderer, hemiLight, dirLight, fillLight, interiorPointLight } = input;
+  const [ox, oy, oz] = heroOrigin;
+  const isNight = preset === "night";
+  const isStudio = preset === "studio";
+
+  hemiLight.color.setHex(isNight ? 0x9eb8ec : isStudio ? 0xffffff : 0xfffdf7);
+  hemiLight.groundColor.setHex(isNight ? 0x3b3552 : isStudio ? 0xb8b2a8 : 0xcabca6);
+  hemiLight.intensity = isNight ? 1.08 : isStudio ? 1.58 : 1.66;
+
+  dirLight.color.setHex(isNight ? 0xc7d2fe : isStudio ? 0xfffdf8 : 0xfff6e5);
+  dirLight.intensity = isNight ? 1.18 : isStudio ? 1.78 : 1.96;
+  dirLight.position.set(ox + 12, oy + 20, oz + 14);
+  dirLight.target.position.set(ox, oy + 0.8, oz);
+  dirLight.target.updateMatrixWorld(true);
+  Object.assign(dirLight.shadow.camera, { near: 2, far: 54, left: -14, right: 14, top: 14, bottom: -14 });
+  dirLight.shadow.normalBias = 0.03;
+  dirLight.shadow.camera.updateProjectionMatrix();
+
+  fillLight.color.setHex(isNight ? 0xffd2a1 : isStudio ? 0xedf2ff : 0xf0f6ff);
+  fillLight.intensity = isNight ? 0.82 : isStudio ? 0.96 : 0.98;
+  fillLight.position.set(ox - 12, oy + 11, oz - 10);
+  fillLight.target.position.set(ox, oy + 0.8, oz);
+  fillLight.target.updateMatrixWorld(true);
+
+  interiorPointLight.color.setHex(isNight ? 0xffcf94 : isStudio ? 0xfff4e0 : 0xfff1d6);
+  interiorPointLight.intensity = isNight ? 3.8 : isStudio ? 3.2 : 3.5;
+  interiorPointLight.distance = 28;
+  interiorPointLight.decay = 1.1;
+  interiorPointLight.position.set(ox, oy + 3.4, oz);
+  interiorPointLight.visible = true;
+
+  const bgHex = isNight ? 0x111827 : isStudio ? 0x263142 : 0xd8e2ee;
+  scene.background = new THREE.Color(bgHex);
+  scene.fog = new THREE.FogExp2(bgHex, isNight ? 0.006 : 0.0035);
+  scene.environmentIntensity = isNight ? 0.94 : isStudio ? 1.28 : 1.24;
+  renderer.toneMappingExposure = isNight ? 1.18 : isStudio ? 1.24 : 1.26;
+}
+
+/** Hero 3D BG 룸에서 기본 캠퍼스로 복귀할 때 전역 그림자 절두체와 실내 보조광을 복원한다. */
+export function restoreBaselineShadowFrustum(
+  dirLight: THREE.DirectionalLight,
+  interiorPointLight: THREE.PointLight,
+): void {
+  Object.assign(dirLight.shadow.camera, { near: 4, far: 140, left: -48, right: 48, top: 48, bottom: -48 });
+  dirLight.shadow.normalBias = 0;
+  dirLight.shadow.camera.updateProjectionMatrix();
+  interiorPointLight.visible = false;
+  interiorPointLight.intensity = 0;
+}

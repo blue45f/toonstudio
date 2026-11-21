@@ -1,5 +1,5 @@
 import { Check, Lock, Shield, Unlock, User, UserPlus, VolumeX, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type {
@@ -43,6 +43,27 @@ export function SpaceInlineProfilePopover({
   const bt = useBilingual("SpaceInlineProfilePopover");
   const [open, setOpen] = useState(false);
   const [draftName, setDraftName] = useState(nickname);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && rootRef.current?.contains(event.target)) return;
+      setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [open]);
 
   const commitName = () => {
     const cleaned = draftName.trim();
@@ -52,7 +73,7 @@ export function SpaceInlineProfilePopover({
   const roleLabel = ROLE_LABELS[permissions.role];
 
   return (
-    <div className="relative" data-space-interactive="true">
+    <div ref={rootRef} className="relative shrink-0" data-space-interactive="true">
       <button
         type="button"
         data-testid="space-inline-profile-btn"
@@ -62,11 +83,11 @@ export function SpaceInlineProfilePopover({
           setDraftName(nickname);
           setOpen((current) => !current);
         }}
-        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-panel/95 px-3 text-xs font-semibold text-fg shadow-sm backdrop-blur-md transition hover:border-accent"
+        className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-line bg-panel/95 px-3 text-xs font-semibold text-fg shadow-sm backdrop-blur-md transition hover:border-accent"
       >
-        <User size={15} aria-hidden />
-        <span className="max-w-28 truncate">{nickname}</span>
-        <span className="rounded-full border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-fg-2">
+        <User size={15} className="shrink-0" aria-hidden />
+        <span className="max-w-28 truncate whitespace-nowrap">{nickname}</span>
+        <span className="shrink-0 whitespace-nowrap rounded-full border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-fg-2">
           {bt(roleLabel[0], roleLabel[1])}
         </span>
       </button>

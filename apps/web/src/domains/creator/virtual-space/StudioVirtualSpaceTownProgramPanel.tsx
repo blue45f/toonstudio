@@ -37,9 +37,8 @@ import {
 import type { StudioVirtualSpaceWorldManifest } from "./studio-virtual-space-world-manifest";
 import type { StudioVirtualOperationsSnapshot } from "./use-studio-virtual-space-operations";
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
-import { StudioVirtualOfficeEnterpriseSuite } from "./StudioVirtualOfficeEnterpriseSuite";
 
-const TABS = ["quests", "events", "activities", "rewards", "desks", "blueprints", "companion", "office-suite"] as const;
+const TABS = ["quests", "events", "activities", "rewards", "desks", "blueprints", "companion"] as const;
 type Tab = typeof TABS[number];
 
 /**
@@ -173,7 +172,7 @@ export function StudioVirtualSpaceTownProgramPanel({
         : bt("업무 동선, 이벤트, 소규모 대화, 미니게임, 팀 자리와 공간 블루프린트를 한곳에서 관리합니다.", "Manage work routes, events, bubbles, mini-games, desk pods and space blueprints in one place.")}</p>
     </header>
     <div className="studio-vspace-town-tabs" role="tablist" aria-label={bt("마을 기능", "Town features")}>
-      {tabs.map((item) => <button key={item} type="button" role="tab" aria-selected={tab === item} onClick={() => setTab(item)}>{bt({ quests: "퀘스트", events: "이벤트", activities: "활동", rewards: "보상", desks: "팀 자리", blueprints: "블루프린트", companion: "모바일", "office-suite": "가상오피스" }[item], { quests: "Quests", events: "Events", activities: "Activities", rewards: "Rewards", desks: "Desk pods", blueprints: "Blueprints", companion: "Companion", "office-suite": "Office suite" }[item])}</button>)}
+      {tabs.map((item) => <button key={item} type="button" role="tab" aria-selected={tab === item} onClick={() => setTab(item)}>{bt({ quests: "퀘스트", events: "이벤트", activities: "활동", rewards: "보상", desks: "팀 자리", blueprints: "블루프린트", companion: "모바일" }[item], { quests: "Quests", events: "Events", activities: "Activities", rewards: "Rewards", desks: "Desk pods", blueprints: "Blueprints", companion: "Companion" }[item])}</button>)}
     </div>
     {tab === "quests" ? <div className="studio-vspace-town-cards">
       {quests.map((quest) => {
@@ -344,7 +343,5 @@ export function StudioVirtualSpaceTownProgramPanel({
       <button type="button" onClick={() => onMoveToRoom(companion.suggestedRoomId)}>{bt("추천 장소로 안내", "Guide to suggested room")}</button>
       <button type="button" onClick={onOpenPeople}>{bt("팀 상태·채팅", "Team status & chat")}</button>
     </div> : null}
-
-    {tab === "office-suite" ? <StudioVirtualOfficeEnterpriseSuite /> : null}
   </section>;
 }

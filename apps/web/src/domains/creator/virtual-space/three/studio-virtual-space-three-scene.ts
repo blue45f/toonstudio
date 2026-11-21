@@ -670,7 +670,7 @@ export function applyNaturalVrmPosture(
  * 10개 구역 풀 3D 디오라마, `@pixiv/three-vrm` 기반 9종 VRM 아바타, 그리고 3D 협업 소품을 로드한다.
  */
 export function loadStudioThreeAssets(
-  scene: THREE.Scene,
+  scene: THREE.Object3D,
   actorNodes: Map<string, StudioThreeActorNode>,
   isDisposed: () => boolean,
   selfAvatarIndex = 0,

@@ -47,13 +47,13 @@ export function SpaceDeadlineCountdownWidget({
         data-testid="space-deadline-countdown"
         data-space-interactive="true"
         data-overdue={countdown.overdue || undefined}
-        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-panel/95 px-3 text-xs text-fg shadow-sm backdrop-blur-md"
+        className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-line bg-panel/95 px-3 text-xs text-fg shadow-sm backdrop-blur-md"
         aria-label={bt(`${primary.title} 마감 카운트다운`, `${primary.title} deadline countdown`)}
       >
-        <CalendarClock size={14} className={countdown.overdue ? "text-bad" : "text-accent"} aria-hidden />
-        <strong className="font-semibold tabular-nums">{countdown.dDayLabel}</strong>
-        <span className="font-mono text-[11px] tabular-nums text-fg-2">{countdown.clockLabel}</span>
-        <span className="max-w-36 truncate text-fg-2">{primary.title}</span>
+        <CalendarClock size={14} className={`shrink-0 ${countdown.overdue ? "text-bad" : "text-accent"}`} aria-hidden />
+        <strong className="shrink-0 whitespace-nowrap font-semibold tabular-nums">{countdown.dDayLabel}</strong>
+        <span className="shrink-0 whitespace-nowrap font-mono text-[11px] tabular-nums text-fg-2">{countdown.clockLabel}</span>
+        <span className="max-w-36 truncate whitespace-nowrap text-fg-2">{primary.title}</span>
       </div>
     );
   }

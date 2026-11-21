@@ -131,7 +131,18 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     await expect(countdown).toContainText(/D-(?:DAY|\d+)|D\+\d+/u);
     await expect(countdown).toContainText(/\d{2}:\d{2}:\d{2}/u);
 
-    // 인스페이스 프로필 팝오버에서 닉네임 즉시 변경
+    // 2D 7단계 공정 바와 좌상단 도구 행이 겹치지 않아야 한다.
+    const railToolsOverlap = await page.evaluate(() => {
+      const rail = document.querySelector(".studio-office2d-pipeline")?.getBoundingClientRect();
+      const tools = document.querySelector(".space-top-tools-row")?.getBoundingClientRect();
+      if (!rail || !tools) return 0;
+      const ox = Math.max(0, Math.min(rail.right, tools.right) - Math.max(rail.left, tools.left));
+      const oy = Math.max(0, Math.min(rail.bottom, tools.bottom) - Math.max(rail.top, tools.top));
+      return Math.round(ox * oy);
+    });
+    expect(railToolsOverlap).toBe(0);
+
+    // 인스페이스 프로필 팝오버에서 닉네임 즉시 변경 후 Escape 닫기
     const profileBtn = page.getByTestId("space-inline-profile-btn");
     await expect(profileBtn).toBeVisible();
     await profileBtn.click();
@@ -142,6 +153,8 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     await nicknameInput.fill("아틀리에작가");
     await profilePopover.getByRole("button", { name: "저장" }).click();
     await expect(profileBtn).toContainText("아틀리에작가");
+    await page.keyboard.press("Escape");
+    await expect(profilePopover).toHaveCount(0);
 
     expect(errors.pageErrors).toEqual([]);
     expect(errors.consoleErrors).toEqual([]);
@@ -190,8 +203,10 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     await expect(photoBtn).toBeVisible();
     await photoBtn.click();
 
-    // 꾸미기 패널 열어 Hero 3D BG 6씬 노출 및 아틀리에 카페 전환 검증
-    await page.getByRole("button", { name: "꾸미기" }).click();
+    // 3D HUD 원클릭 '3D 룸·아바타' 버튼으로 꾸미기 패널 열어 Hero 3D BG 6씬 노출 및 아틀리에 카페 전환·자동 컷어웨이 검증
+    const openCustomizeBtn = page.getByTestId("three-open-customize-btn");
+    await expect(openCustomizeBtn).toBeVisible();
+    await openCustomizeBtn.click();
     await expect(page.getByTestId("three-theme-group-hero")).toBeVisible({ timeout: 20_000 });
     for (const themeId of HERO_BG_THEME_IDS) {
       await expect(page.getByTestId(`three-theme-option-${themeId}`)).toBeVisible();
@@ -199,6 +214,11 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     const cafeThemeBtn = page.getByTestId("three-theme-option-hero-bg-kr-atelier-cafe-interior");
     await cafeThemeBtn.click();
     await expect(cafeThemeBtn).toHaveAttribute("aria-pressed", "true");
+    // Hero 룸 진입 후 쿼터뷰에서 자동 컷어웨이가 활성화되고 1인칭에서는 전체 벽 표시로 복원되어야 한다.
+    await expect(cutawayState).toHaveAttribute("data-cutaway-hidden-count", /^[1-9]\d*$/u, { timeout: 25_000 });
+    await firstPersonBtn.click();
+    await expect(cutawayState).toHaveAttribute("data-cutaway-hidden-count", "0", { timeout: 10_000 });
+    await quarterBtn.click();
 
     expect(errors.pageErrors).toEqual([]);
     expect(errors.consoleErrors).toEqual([]);
@@ -270,11 +290,14 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     await expect(inviteSheet.getByRole("button", { name: "코드 복사" })).toBeVisible();
     await pageA.keyboard.press("Escape");
 
-    // 화이트보드 패널 노출 및 닫기 확인
+    // 화이트보드 모달 노출, 헤더 탭으로 포스트잇 즉시 전환, Escape 닫기 확인
     await pageA.getByTestId("space-quick-whiteboard-btn").click();
     await expect(pageA.getByTestId("space-whiteboard-panel")).toBeVisible();
-    await pageA.getByRole("dialog", { name: "공유 화이트보드" }).getByRole("button", { name: "닫기" }).click();
-    await expect(pageA.getByTestId("space-whiteboard-panel")).toHaveCount(0);
+    const boardDialog = pageA.getByRole("dialog", { name: "공유 화이트보드" });
+    await boardDialog.getByRole("tab", { name: "포스트잇" }).click();
+    await expect(pageA.getByTestId("space-sticky-notes-panel")).toBeVisible();
+    await pageA.keyboard.press("Escape");
+    await expect(pageA.getByTestId("space-sticky-notes-panel")).toHaveCount(0);
 
     // 포스트잇 패널을 두 탭에 열고 BroadcastChannel 실시간 Yjs 동기화 확인
     await pageA.getByTestId("space-quick-stickies-btn").click();
@@ -365,8 +388,34 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     expect(joystickBox!.width).toBeGreaterThanOrEqual(44);
     expect(joystickBox!.height).toBeGreaterThanOrEqual(44);
 
+    // 모바일 2D에서 7단계 공정 바와 도구 행·미니 투어 카드가 겹치지 않아야 한다.
+    const mobileOverlap = await mobilePage.evaluate(() => {
+      const rectOverlap = (a?: DOMRect, b?: DOMRect) => {
+        if (!a || !b) return 0;
+        const ox = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+        const oy = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+        return Math.round(ox * oy);
+      };
+      const rail = document.querySelector(".studio-office2d-pipeline")?.getBoundingClientRect();
+      const tools = document.querySelector(".space-top-tools-row")?.getBoundingClientRect();
+      const coach = document.querySelector(".space-coach")?.getBoundingClientRect();
+      return {
+        railTools: rectOverlap(rail, tools),
+        toolsCoach: rectOverlap(tools, coach),
+      };
+    });
+    expect(mobileOverlap.railTools).toBe(0);
+    expect(mobileOverlap.toolsCoach).toBe(0);
+
     await assertNoHorizontalOverflow(mobilePage);
     await expectNoBlockingWcagViolations(mobilePage, "모바일 390×844 /studio/space");
+
+    // 5-C. 모바일 390×844 3D 무대 진입, HUD 노출, 가로 오버플로 0 확인
+    await mobilePage.goto("/studio/space?stage=3d", { waitUntil: "domcontentloaded" });
+    await expect(mobilePage.locator('[data-three-stage="active"]')).toBeVisible({ timeout: 45_000 });
+    await expect(mobilePage.getByTestId("three-open-customize-btn")).toBeVisible({ timeout: 20_000 });
+    await assertNoHorizontalOverflow(mobilePage);
+
     expect(mobileErrors.pageErrors).toEqual([]);
     expect(mobileErrors.consoleErrors).toEqual([]);
     await mobileContext.close();
