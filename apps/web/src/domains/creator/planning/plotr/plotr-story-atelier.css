@@ -34,6 +34,14 @@
   --plotr-good-wash: color-mix(in oklch, var(--color-good) 12%, var(--color-card));
   --plotr-warn-wash: color-mix(in oklch, var(--color-warn) 14%, var(--color-card));
   --plotr-cool-wash: color-mix(in oklch, var(--color-cool) 12%, var(--color-card));
+  --plotr-svg-avatar-tint: color-mix(in oklch, var(--color-accent) 8%, var(--color-panel));
+  --plotr-svg-glint: oklch(0.98 0.01 90);
+  --plotr-svg-skyline-a: oklch(0.15 0.04 270);
+  --plotr-svg-skyline-b: oklch(0.16 0.05 278);
+  --plotr-svg-overlay-bg: oklch(0.16 0.03 260 / 0.8);
+  --plotr-svg-overlay-fg: oklch(0.98 0.01 90);
+  --plotr-svg-overlay-warn: oklch(0.58 0.21 25 / 0.92);
+  --plotr-svg-sfx-ink: oklch(0.16 0.03 260);
   position: relative;
   border-radius: 1rem;
   border: 1px solid var(--color-line);
@@ -171,6 +179,89 @@
   background-size: 20px 20px;
 }
 
+.plotr-idea-hero {
+  border: 1px solid color-mix(in oklch, var(--plotr-spec-b) 42%, var(--color-line));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--plotr-spec-a) 9%, var(--color-card)),
+      color-mix(in oklch, var(--plotr-spec-b) 8%, var(--color-card)) 52%,
+      color-mix(in oklch, var(--plotr-spec-c) 9%, var(--color-card))
+    );
+  box-shadow: inset 0 1px 0 color-mix(in oklch, var(--plotr-spec-d) 28%, transparent);
+}
+
+.plotr-spectrum-cta {
+  border-color: color-mix(in oklch, var(--plotr-spec-b) 62%, var(--color-accent));
+  background: linear-gradient(
+    115deg,
+    color-mix(in oklch, var(--plotr-spec-a) 78%, var(--color-accent)),
+    color-mix(in oklch, var(--plotr-spec-b) 84%, var(--color-accent))
+  );
+  color: oklch(0.99 0.005 260);
+}
+
+.plotr-spectrum-cta:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.plotr-idea-chip {
+  border: 1px solid var(--color-line);
+  background: color-mix(in oklch, var(--color-card) 92%, var(--color-panel));
+  transition-property: border-color, background-color, transform;
+  transition-duration: 150ms;
+  transition-timing-function: var(--plotr-spring);
+}
+
+.plotr-idea-chip:hover {
+  border-color: color-mix(in oklch, var(--mood-accent, var(--color-accent)) 62%, var(--color-line));
+  background: color-mix(in oklch, var(--mood-accent, var(--color-accent)) 11%, var(--color-card));
+}
+
+.plotr-idea-chip[data-active="true"] {
+  border-color: var(--mood-accent, var(--color-accent));
+  background: color-mix(in oklch, var(--mood-accent, var(--color-accent)) 15%, var(--color-card));
+  box-shadow: inset 3px 0 0 var(--mood-accent, var(--color-accent));
+}
+
+.plotr-visual-frame {
+  border-color: color-mix(in oklch, var(--color-fg) 26%, var(--color-line));
+  background: var(--color-panel);
+  box-shadow: 0 4px 16px color-mix(in oklch, var(--color-fg) 10%, transparent);
+}
+
+.plotr-pill-active {
+  box-shadow: 0 1px 6px color-mix(in oklch, var(--color-accent) 24%, transparent);
+}
+
+.plotr-bible-card {
+  position: relative;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  overflow: hidden;
+  transition-property: border-color, background-color;
+  transition-duration: 150ms;
+  transition-timing-function: var(--plotr-spring);
+}
+
+.plotr-bible-card::before {
+  content: "";
+  display: block;
+  height: 3px;
+  margin: -0.75rem -0.75rem 0.65rem;
+  background: linear-gradient(
+    90deg,
+    var(--char-hair, var(--plotr-spec-a)),
+    var(--char-outfit, var(--plotr-spec-b))
+  );
+}
+
+.plotr-meter-fill {
+  transition-property: width, background-color;
+  transition-duration: 240ms;
+  transition-timing-function: var(--plotr-spring);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .plotr-spectrum-ribbon::after,
   .plotr-stagger-card {
@@ -180,7 +271,10 @@
   .plotr-btn-tactile,
   .plotr-template-card,
   .plotr-cut-card,
-  .plotr-asset-chip {
+  .plotr-asset-chip,
+  .plotr-idea-chip,
+  .plotr-bible-card,
+  .plotr-meter-fill {
     transition: none;
   }
 
@@ -194,7 +288,11 @@
   .plotr-template-card,
   .plotr-cut-card,
   .plotr-asset-chip,
-  .plotr-guide-strip {
+  .plotr-guide-strip,
+  .plotr-idea-hero,
+  .plotr-idea-chip,
+  .plotr-visual-frame,
+  .plotr-bible-card {
     border-width: 2px;
     border-color: var(--color-fg);
   }
@@ -205,14 +303,21 @@
   .plotr-template-card,
   .plotr-cut-card,
   .plotr-asset-chip,
-  .plotr-guide-strip {
+  .plotr-guide-strip,
+  .plotr-idea-hero,
+  .plotr-idea-chip,
+  .plotr-visual-frame,
+  .plotr-bible-card {
     border: 1px solid CanvasText;
     background: Canvas;
     color: CanvasText;
     box-shadow: none;
   }
 
-  .plotr-spectrum-ribbon::after {
+  .plotr-spectrum-ribbon::after,
+  .plotr-spectrum-cta,
+  .plotr-bible-card::before {
     background: Highlight;
+    color: HighlightText;
   }
 }

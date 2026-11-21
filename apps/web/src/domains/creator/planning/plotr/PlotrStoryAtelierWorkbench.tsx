@@ -35,12 +35,12 @@ import {
 import {
   PLOTR_GENRE_TEMPLATES,
   PLOTR_REWRITE_DIRECTIVES,
-  PLOTR_TREND_TAGS,
   extractConsistencyAssetsFromScript,
   generatePlotrScriptDraft,
   revisePlotrScriptByDirective,
 } from "./plotr-genre-templates";
 import { parseScriptToPlotrCuts } from "./plotr-script-cut-engine";
+import { generateFourCutWebtoonFromIdea } from "./plotr-visual-cut-renderer";
 import {
   PLOTR_FORMAT_META,
   type PlotrDocumentState,
@@ -49,6 +49,8 @@ import {
   type PlotrOutputFormat,
 } from "./plotr-types";
 import { PlotrCutStripAndAssetsPane } from "./PlotrCutStripAndAssetsPane";
+import { PlotrIdeaToWebtoonBar } from "./PlotrIdeaToWebtoonBar";
+import { PlotrScriptHelperDrawer } from "./PlotrScriptHelperDrawer";
 import "./plotr-story-atelier.css";
 
 const LazyScriveningsCodexView = lazy(() =>
@@ -172,6 +174,20 @@ export function PlotrStoryAtelierWorkbench({
     commitDocument(
       () => seeded,
       `‘${seeded.title}’ 샘플로 대본·${seeded.cuts.length}컷·소재·타임라인·공간 보드를 한 번에 채웠어요.`,
+    );
+    setExportedContiPreview(null);
+  };
+
+  const handleGenerateFourCutFromIdea = (idea: string) => {
+    commitDocument(
+      (prev) =>
+        generateFourCutWebtoonFromIdea({
+          idea,
+          projectId,
+          format: prev.format,
+          baseDocument: prev,
+        }),
+      "한 문장 아이디어로 4컷 비주얼 웹툰·인물 바이블·구도·말풍선을 즉시 조립했어요.",
     );
     setExportedContiPreview(null);
   };
@@ -325,6 +341,13 @@ export function PlotrStoryAtelierWorkbench({
           ) : null}
         </div>
 
+        {/* 1문장 아이디어 → 4컷 비주얼 웹툰 즉시 생성 바 */}
+        <PlotrIdeaToWebtoonBar
+          initialIdea={doc.helper.logline}
+          cutCount={doc.cuts.length}
+          onGenerateFromIdea={handleGenerateFourCutFromIdea}
+        />
+
         {/* 1클릭 장르 샘플 시작 카드 4종 */}
         <section aria-label="장르 샘플로 바로 시작하기" className="space-y-2">
           <h3 className="text-xs font-bold text-fg-2">
@@ -395,141 +418,12 @@ export function PlotrStoryAtelierWorkbench({
           </div>
 
           {showScriptHelper ? (
-            <div
-              data-testid="plotr-script-helper-drawer"
-              className="space-y-3 rounded-xl border border-line bg-panel p-3"
-            >
-              <div className="grid gap-2 sm:grid-cols-3">
-                <label className="text-xs font-semibold text-fg-2">
-                  작품 제목
-                  <input
-                    type="text"
-                    value={doc.title}
-                    onChange={(e) =>
-                      commitDocument((prev) => ({ ...prev, title: e.target.value }))
-                    }
-                    className="mt-1 min-h-11 w-full rounded-lg border border-line bg-card px-2.5 text-xs text-fg"
-                  />
-                </label>
-                <label className="text-xs font-semibold text-fg-2">
-                  분위기
-                  <input
-                    type="text"
-                    value={doc.helper.mood}
-                    onChange={(e) =>
-                      commitDocument((prev) => ({
-                        ...prev,
-                        helper: { ...prev.helper, mood: e.target.value },
-                      }))
-                    }
-                    className="mt-1 min-h-11 w-full rounded-lg border border-line bg-card px-2.5 text-xs text-fg"
-                  />
-                </label>
-                <label className="text-xs font-semibold text-fg-2">
-                  분량
-                  <select
-                    value={doc.helper.length}
-                    onChange={(e) =>
-                      commitDocument((prev) => ({
-                        ...prev,
-                        helper: {
-                          ...prev.helper,
-                          length: e.target.value as PlotrDocumentState["helper"]["length"],
-                        },
-                      }))
-                    }
-                    className="mt-1 min-h-11 w-full rounded-lg border border-line bg-card px-2.5 text-xs text-fg"
-                  >
-                    <option value="short">짧게 (4컷)</option>
-                    <option value="medium">보통 (5컷)</option>
-                    <option value="long">길게 (6컷)</option>
-                  </select>
-                </label>
-              </div>
-              <label className="block text-xs font-semibold text-fg-2">
-                한 줄 소재 (로그라인)
-                <input
-                  type="text"
-                  value={doc.helper.logline}
-                  onChange={(e) =>
-                    commitDocument((prev) => ({
-                      ...prev,
-                      helper: { ...prev.helper, logline: e.target.value },
-                    }))
-                  }
-                  placeholder="예: 파혼 직전으로 돌아온 영애가 북부 공작에게 역제안한다"
-                  className="mt-1 min-h-11 w-full rounded-lg border border-line bg-card px-2.5 text-xs text-fg"
-                />
-              </label>
-              <label className="block text-xs font-semibold text-fg-2">
-                작품 설정 (시대·세계관 — 웹소설 원고 분석 시 먼저 반영)
-                <input
-                  type="text"
-                  value={doc.helper.worldSettingNote}
-                  onChange={(e) =>
-                    commitDocument((prev) => ({
-                      ...prev,
-                      helper: { ...prev.helper, worldSettingNote: e.target.value },
-                    }))
-                  }
-                  placeholder="예: 19세기 유리온실 제국, 시간 마력이 깃든 회중시계"
-                  className="mt-1 min-h-11 w-full rounded-lg border border-line bg-card px-2.5 text-xs text-fg"
-                />
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {PLOTR_TREND_TAGS.map((tag) => {
-                  const active = doc.helper.trendTags.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() =>
-                        commitDocument((prev) => {
-                          const exists = prev.helper.trendTags.includes(tag);
-                          return {
-                            ...prev,
-                            helper: {
-                              ...prev.helper,
-                              trendTags: exists
-                                ? prev.helper.trendTags.filter((t) => t !== tag)
-                                : [...prev.helper.trendTags, tag],
-                            },
-                          };
-                        })
-                      }
-                      className={`${BTN} ${
-                        active
-                          ? "border-accent bg-accent-soft text-accent"
-                          : "border-line bg-card text-fg-2"
-                      }`}
-                    >
-                      #{tag}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  data-testid="plotr-generate-draft-btn"
-                  onClick={handleGenerateDraftFromHelper}
-                  className={`${BTN} border-accent bg-accent text-on-accent`}
-                >
-                  <Sparkles className="size-3.5" aria-hidden="true" />
-                  <span>태그로 대본 초안 쓰기</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExtractCharacters}
-                  disabled={!doc.rawScript.trim()}
-                  title={!doc.rawScript.trim() ? "먼저 대본을 적어 주세요" : undefined}
-                  className={`${BTN} border-line bg-card text-fg hover:bg-raised disabled:opacity-40`}
-                >
-                  대본에서 인물·배경 뽑기
-                </button>
-              </div>
-            </div>
+            <PlotrScriptHelperDrawer
+              document={doc}
+              onUpdateDocument={commitDocument}
+              onGenerateDraft={handleGenerateDraftFromHelper}
+              onExtractCharacters={handleExtractCharacters}
+            />
           ) : null}
 
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-fg-2">
