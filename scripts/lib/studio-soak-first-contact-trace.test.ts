@@ -14,7 +14,8 @@ import type { CDPSession } from "playwright";
 
 const directories: string[] = [];
 const source: StudioFirstContactTraceSource = { sourceCommit: "a".repeat(40), buildGitSha: "a".repeat(40), sourceDirty: false,
-  sessionId: "test-session", profile: "desktop", browserVersion: "fixture-browser", browserLaunchArgs: ["--fixture"] };
+  sessionId: "test-session", profile: "desktop", browserVersion: "fixture-browser", browserLaunchArgs: ["--fixture"],
+  playwrightVersion: "fixture-playwright", browserActualLaunchArgs: null, browserProtocolVersion: null };
 type FixtureEvent = { type: string; target: object; pointerId: number; pointerType: string; isTrusted: boolean };
 type NativeEvent = { name: string; cat: string; ph: string; ts: number; pid: number; tid: number; dur?: number; args?: unknown };
 
@@ -213,6 +214,29 @@ describe("진단 trace의 원본 실패 보존과 제한", () => {
     expect(f.page.evaluate).not.toHaveBeenCalled(); expect(result.issues.join(" ")).toContain("already tracing");
   });
 
+  it.each(["success", "rejected", "stop-timeout"] as const)("두 시작 deadline 뒤 %s가 와도 terminal metadata를 보존하고 자체 trace만 정리한다", async (outcome) => {
+    vi.useFakeTimers(); const f = fixture({ timeoutMs: 20 });
+    let settleStart: (() => void) | undefined;
+    vi.mocked(f.transport.start).mockImplementation(() => new Promise<void>((resolve, reject) => {
+      settleStart = () => outcome === "rejected" ? reject(new Error("already tracing")) : resolve();
+    }));
+    if (outcome === "stop-timeout") vi.mocked(f.transport.stop).mockImplementation(() => new Promise(() => undefined));
+    const starting = expect(f.trace.start()).rejects.toThrow("초과");
+    await vi.advanceTimersByTimeAsync(21); await starting;
+    const finishing = f.trace.finish(); await vi.advanceTimersByTimeAsync(21);
+    const result = await finishing, terminal = structuredClone(result);
+    const metadataPath = join(f.directory, f.trace.metadataFile), persisted = readFileSync(metadataPath, "utf8");
+    expect(result).toMatchObject({ completed: false, started: false, startPendingAtFinish: true });
+    expect(f.transport.stop).not.toHaveBeenCalled(); expect(f.transport.detach).not.toHaveBeenCalled();
+    settleStart!(); await vi.advanceTimersByTimeAsync(21);
+    expect(f.transport.stop).toHaveBeenCalledTimes(outcome === "rejected" ? 0 : 1);
+    expect(f.transport.close).toHaveBeenCalledTimes(outcome === "success" ? 1 : 0);
+    if (outcome === "success") expect(f.transport.close).toHaveBeenCalledWith("trace-stream");
+    expect(f.transport.detach).toHaveBeenCalledOnce();
+    expect(result).toEqual(terminal); expect(readFileSync(metadataPath, "utf8")).toBe(persisted);
+    expect(await f.trace.finish()).toBe(result); expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("응답이 멈춘 read는 시간 제한 후 부분 원본과 marker cleanup을 보존한다", async () => {
     vi.useFakeTimers(); const f = fixture({ timeoutMs: 20 });
     await f.trace.start(); await f.trace.armStroke(1, "pen"); f.stroke();
@@ -222,10 +246,44 @@ describe("진단 trace의 원본 실패 보존과 제한", () => {
     expect(result.issues.join(" ")).toContain("초과"); expect(f.transport.close).toHaveBeenCalledOnce(); expect(f.activeListeners()).toBe(0);
   });
 
-  it("필수 범주나 깨끗한 동일 source/build가 없으면 trace를 시작하지 않는다", async () => {
-    const f = fixture(); vi.mocked(f.transport.categories).mockResolvedValue(["blink.user_timing"]);
-    await expect(f.trace.start()).rejects.toThrow("필수 trace 범주"); await f.trace.finish();
+  it.each(["complete", "RunTask", "EventDispatch", "UserTiming"] as const)("조회 목록에 toplevel이 없어도 요청을 유지하며 실제 %s 증거로 완료를 판정한다", async (missing) => {
+    const f = fixture();
+    const available = STUDIO_FIRST_CONTACT_TRACE_CATEGORIES.filter((category) => category !== "toplevel");
+    vi.mocked(f.transport.categories).mockResolvedValue(available);
+    if (missing !== "complete") f.transform((events) => events.filter((event) => missing === "UserTiming"
+      ? event.cat !== "blink.user_timing" : !event.name.includes(missing)));
+    await f.trace.start(); available.push("toplevel");
+    await f.trace.armStroke(1, "pen"); f.stroke();
+    const result = await f.trace.finish();
+    expect(result).toMatchObject({ started: true, completed: missing === "complete", streamComplete: true,
+      categories: STUDIO_FIRST_CONTACT_TRACE_CATEGORIES,
+      availableCategories: STUDIO_FIRST_CONTACT_TRACE_CATEGORIES.filter((category) => category !== "toplevel"),
+      unadvertisedRequestedCategories: ["toplevel"], categoryValidation: "trace-start-and-native-evidence",
+      rawTraceSha256: expect.stringMatching(/^[a-f0-9]{64}$/u) });
+    expect(f.transport.start).toHaveBeenCalledOnce();
+    if (missing === "complete") expect(result.issues).toEqual([]);
+    else {
+      expect(result.correlation).toBeNull();
+      expect(result.issues.join(" ")).toContain(missing === "UserTiming" ? "native-marker-count" : "first-contact-task-or-pointerdown-dispatch");
+    }
+    expect(f.metadata()).toMatchObject({ availableCategories: result.availableCategories,
+      unadvertisedRequestedCategories: ["toplevel"], completed: missing === "complete" });
+  });
+
+  it.each(["rejected", "malformed"] as const)("범주 조회의 %s 결과는 시작 실패와 metadata에 남긴다", async (failure) => {
+    const f = fixture();
+    if (failure === "rejected") vi.mocked(f.transport.categories).mockRejectedValue(new Error("category discovery failed"));
+    else vi.mocked(f.transport.categories).mockResolvedValue("toplevel" as unknown as readonly string[]);
+    await expect(f.trace.start()).rejects.toThrow();
+    const result = await f.trace.finish();
+    expect(result).toMatchObject({ completed: false, availableCategories: null, unadvertisedRequestedCategories: null });
+    expect(result.issues.join(" ")).toContain(failure === "rejected" ? "category discovery failed" : "범주 목록 형식");
     expect(f.transport.start).not.toHaveBeenCalled();
+    expect(f.transport.detach).toHaveBeenCalledOnce();
+  });
+
+  it("깨끗한 동일 source/build가 없으면 trace를 시작하지 않는다", async () => {
+    const f = fixture();
     const bad = createStudioFirstContactTrace({ page: f.page, transport: f.transport, directory: f.directory,
       source: { ...source, buildGitSha: "b".repeat(40) } });
     await expect(bad.start()).rejects.toThrow("정체성"); await bad.finish();
@@ -234,6 +292,33 @@ describe("진단 trace의 원본 실패 보존과 제한", () => {
 });
 
 describe("CDP 종료 listener 순서와 CPU 진단 옵션 경계", () => {
+  it("조회 목록과 별개로 Tracing.start에 모든 요청 범주와 기존 수집 한도를 전달한다", async () => {
+    const send = vi.fn(async (method: string) => method === "Tracing.getCategories" ? { categories: ["blink.user_timing"] } : {});
+    const transport = createStudioFirstContactTraceTransport({ send } as unknown as CDPSession);
+    await expect(transport.categories()).resolves.toEqual(["blink.user_timing"]);
+    await transport.start();
+    expect(send).toHaveBeenLastCalledWith("Tracing.start", { transferMode: "ReturnAsStream", streamFormat: "json", streamCompression: "none",
+      bufferUsageReportingInterval: 1000, traceConfig: { recordMode: "recordUntilFull", traceBufferSizeInKb: 65536,
+        includedCategories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES], enableSampling: false } });
+  });
+
+  it("CPU와 native metadata에 실행한 Playwright·전체 argv·protocol 버전을 복사해 보존한다", async () => {
+    const f = fixture(), actualArgs = ["/chromium", "--headless", ...source.browserLaunchArgs];
+    const protocolVersion = { protocolVersion: "1.3", product: "Chrome/158.0.8127.18", revision: "fixture-revision",
+      userAgent: "fixture-agent", jsVersion: "fixture-v8" };
+    const expected = { playwrightVersion: "1.65.0", browserActualLaunchArgs: [...actualArgs], browserProtocolVersion: { ...protocolVersion } };
+    const send = vi.fn(async (method: string) => method === "Profiler.stop" ? { profile: { nodes: [] } } : {});
+    const suppliedSource = { ...source, playwrightVersion: expected.playwrightVersion,
+      browserActualLaunchArgs: actualArgs, browserProtocolVersion: protocolVersion };
+    const diagnostic = createStudioSoakCpuDiagnostic({ enabled: true, page: f.page, cdp: { send } as unknown as CDPSession,
+      directory: f.directory, source: suppliedSource, createTraceTransport: async () => f.transport });
+    await diagnostic.start(); await diagnostic.armStroke(1, "pen"); f.stroke();
+    actualArgs.push("--mutated-after-start"); protocolVersion.product = "mutated-after-start";
+    expect(await diagnostic.finish()).toMatchObject({ captured: true, traceCaptured: true, issues: [] });
+    expect(JSON.parse(readFileSync(join(f.directory, "diagnostic-cpu-metadata.json"), "utf8"))).toMatchObject(expected);
+    expect(f.metadata()).toMatchObject(expected);
+  });
+
   it("tracingComplete가 Tracing.end 응답보다 먼저 와도 수집하고 listener를 회수한다", async () => {
     const listeners = new Map<string, (value: unknown) => void>();
     const cdp = { on: vi.fn((name: string, listener: (value: unknown) => void) => listeners.set(name, listener)),

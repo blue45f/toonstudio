@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -11,6 +11,13 @@ import * as sqliteModule from "../studio-autosave-sqlite-store";
 import { ensureInitialStudioProjectDocument, readStudioProjectDocuments } from "../studio-project-document-store";
 import { createStudioProject, markStudioProjectOpened, readStudioProjectLibrary } from "../studio-project-library-store";
 import { StudioProjectLibraryPage } from "./StudioProjectLibraryPage";
+import { prepareStudioProjectLibraryCopyFixture } from "./studio-project-library-copy-test-fixture";
+
+function workCard(title: string): HTMLElement {
+  const card = screen.getByRole("heading", { name: title }).closest("article");
+  if (!card) throw new Error("작업 카드가 없습니다.");
+  return card;
+}
 
 beforeEach(() => { window.localStorage.clear(); });
 afterEach(() => { cleanup(); window.localStorage.clear(); vi.restoreAllMocks(); });
@@ -82,4 +89,22 @@ it("게스트 원고를 내구 저장한 뒤에만 사용할 수 있는 복사�
     expect(copied.payload.currentPageId).toBe(copied.payload.pagesList[0]?.id);
     expect(await sqlite.read(sourceKey)).toEqual(original);
   } finally { releaseCopyWrite(); }
+});
+
+it("creates a usable temporary duplicate", async () => {
+  const fixture = await prepareStudioProjectLibraryCopyFixture(window.localStorage);
+  render(
+    <SessionContext.Provider value={{ status: "unauthenticated", ready: true, data: null, update: async () => null }}>
+      <MemoryRouter initialEntries={["/studio"]}>
+        <StudioProjectLibraryPage />
+      </MemoryRouter>
+    </SessionContext.Provider>,
+  );
+  const original = await fixture.readOriginal();
+  fireEvent.click(await screen.findByRole("button", { name: /작품 A 복제|Duplicate 작품 A/u }));
+  const copy = await fixture.verifyCopy(original);
+  await waitFor(() => {
+    expect(within(workCard("작품 A 복사본")).getByText("작품 A 복사본")).toBeTruthy();
+  });
+  expect(screen.getByRole("link", { name: "복사본 열기" }).getAttribute("href")).toContain(copy.document.id);
 });
