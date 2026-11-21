@@ -545,6 +545,8 @@ apps/web/src/domains/creator/lettering/studio-translation-card-context.test.ts
 apps/web/src/domains/creator/lettering/studio-translation-character-card.test.ts
 apps/web/src/domains/creator/lettering/studio-translation-register.test.ts
 apps/web/src/domains/creator/lettering/use-studio-translation-cards.test.tsx
+apps/web/src/domains/creator/live/StudioLiveCollaborationProviderLazy.test.tsx
+apps/web/src/domains/creator/live/StudioLiveCollaborationProviderLazy.viewport.test.tsx
 apps/web/src/domains/creator/live/huddle
 apps/web/src/domains/creator/live/merge/stroke-merge-shadow-adapter.test.ts
 apps/web/src/domains/creator/live/studio-crdt-archive-bridge.test.ts
