@@ -304,4 +304,36 @@ describe("보조 협업 UI와 실제 스크롤포트 경계", () => {
     expect(hudNode().style.visibility).toBe("hidden");
     expect(hudNode().style.pointerEvents).toBe("none");
   });
+
+  it("320px 좁은 폭에서 브러시 HUD가 상단 '함께 작업' 요약 버튼이나 상단 헤더를 절대 가리지 않는다 (AC-009a)", () => {
+    vi.spyOn(performance, "now").mockReturnValue(2000);
+    vi.stubGlobal("innerWidth", 320);
+    vi.stubGlobal("innerHeight", 640);
+    const { host } = renderHud();
+    host.getBoundingClientRect = () => new DOMRect(0, 44, 320, 540);
+
+    const header = document.createElement("div");
+    header.dataset.studioDrawingClarityHeader = "true";
+    header.getBoundingClientRect = () => new DOMRect(0, 0, 320, 44);
+    document.body.append(header);
+
+    const collab = document.createElement("summary");
+    collab.dataset.studioCollaborationSummary = "true";
+    collab.textContent = "함께 작업";
+    collab.getBoundingClientRect = () => new DOMRect(12, 52, 124, 44);
+    host.append(collab);
+
+    fireEvent.pointerMove(host, { clientX: 90, clientY: 120 });
+    flushFrames();
+
+    const hud = hudNode();
+    if (hud.style.visibility === "visible") {
+      const match = hud.style.transform.match(/translate3d\(([-\d]+)px, ([-\d]+)px/u);
+      expect(match).not.toBeNull();
+      const top = Number(match![2]);
+      expect(top).toBeGreaterThanOrEqual(52 + 44 + 8);
+    } else {
+      expect(hud.style.visibility).toBe("hidden");
+    }
+  });
 });

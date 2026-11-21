@@ -15,8 +15,10 @@ import { Suspense, lazy, useCallback, useEffect, useEffectEvent, useRef, useStat
 import { createPortal } from "react-dom";
 
 import {
+  subscribeStudioCommandExecutionFromPalette,
   subscribeStudioCommandSearchFromAppShell,
 } from "@/shared/lib/studio-command-search-bridge";
+import { getStudioCommandExecutionBindings } from "./studio-command-execution-registry";
 
 import { AiAssistLauncher } from "./ai/assist/AiAssistLauncher";
 import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, studioChromeIconClass } from "./studio-chrome-ui";
@@ -171,10 +173,17 @@ export function StudioCommandSearchHost({
   useEffect(() => {
     const unsubscribeStudio = subscribeStudioCommandSearchRequests(openRequest);
     const unsubscribeAppShell = subscribeStudioCommandSearchFromAppShell(openRequest);
+    const unsubscribePaletteExec = subscribeStudioCommandExecutionFromPalette((request) => {
+      const binding = getStudioCommandExecutionBindings().get(request.commandId);
+      if (!binding || binding.disabled) return false;
+      binding.execute();
+      return true;
+    });
     const unregisterReady = registerStudioCommandSearchHost();
     return () => {
       unsubscribeStudio();
       unsubscribeAppShell();
+      unsubscribePaletteExec();
       unregisterReady();
     };
   }, []);

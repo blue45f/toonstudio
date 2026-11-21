@@ -386,6 +386,14 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(css).toContain("flex:0 0 48px");
     expect(css).toContain("border-inline-start:2px solid var(--color-accent)");
   });
+
+  it("320px~390px 모든 높이에서 모바일 상단바가 가로 오버플로 없이 44px 터치 타깃을 지킨다 (AC-007)", () => {
+    const mobileCss = readFileSync("apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingMobileWorkspace.css", "utf8");
+    expect(mobileCss).toContain("@media (max-width: 390px)");
+    expect(mobileCss).toContain("min-width: 48px;");
+    expect(mobileCss).toContain("min-width: 44px;");
+    expect(mobileCss).toContain("@media (prefers-reduced-motion: reduce)");
+  });
 });
 
 describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성", () => {

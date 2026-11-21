@@ -158,4 +158,13 @@ describe("Studio asset workspace boundaries", () => {
     expect(workspaceCss).toContain("@container studio-unified-assets (min-width: 20rem)");
     expect(workspaceCss).toContain("@container studio-unified-assets (min-width: 64rem)");
   });
+
+  it("1440px 데스크톱 상세 패널이 이중 스크롤로 적용 푸터를 창 밖으로 클립하지 않는다 (AC-009b)", () => {
+    const desktopSection = workspaceCss.slice(
+      workspaceCss.indexOf("@container studio-unified-assets (min-width: 64rem)"),
+    );
+    expect(desktopSection).not.toContain("max-block-size: min(64dvh, 43rem)");
+    expect(desktopSection).not.toContain("overflow-y: auto");
+    expect(detailSource).toContain("data-unavailable-reason");
+  });
 });

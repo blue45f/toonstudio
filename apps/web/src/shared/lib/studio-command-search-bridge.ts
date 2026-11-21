@@ -23,7 +23,19 @@ type StudioCommandSearchBridgeListener = (
   request: StudioCommandSearchBridgeRequest,
 ) => void;
 
+export interface StudioCommandExecutionBridgeRequest {
+  readonly commandId: string;
+  readonly toolId?: string;
+  readonly label?: string;
+  readonly shortcutKey?: string;
+}
+
+type StudioCommandExecutionBridgeListener = (
+  request: StudioCommandExecutionBridgeRequest,
+) => boolean;
+
 const listeners = new Set<StudioCommandSearchBridgeListener>();
+const executionListeners = new Set<StudioCommandExecutionBridgeListener>();
 
 /**
  * Ask the currently mounted Studio search host to open.
@@ -47,6 +59,29 @@ export function subscribeStudioCommandSearchFromAppShell(
   };
 }
 
+/**
+ * 전역 커맨드 팔레트에서 스튜디오 내부 명령을 즉시 실행 요청한다.
+ * 연결된 Studio 호스트가 실행을 수락하면 `true`를 반환한다.
+ */
+export function requestStudioCommandExecutionFromPalette(
+  request: StudioCommandExecutionBridgeRequest,
+): boolean {
+  let handled = false;
+  for (const listener of [...executionListeners]) {
+    if (listener(request)) handled = true;
+  }
+  return handled;
+}
+
+export function subscribeStudioCommandExecutionFromPalette(
+  listener: StudioCommandExecutionBridgeListener,
+): () => void {
+  executionListeners.add(listener);
+  return () => {
+    executionListeners.delete(listener);
+  };
+}
+
 /** Test-only observability for bridge lifecycle contracts. */
 export function studioCommandSearchBridgeListenerCount(): number {
   return listeners.size;
@@ -55,4 +90,5 @@ export function studioCommandSearchBridgeListenerCount(): number {
 /** Test-only reset for isolated jsdom suites. */
 export function resetStudioCommandSearchBridgeForTests(): void {
   listeners.clear();
+  executionListeners.clear();
 }

@@ -534,4 +534,19 @@ describe("StudioCommandSearchHost", () => {
     render(<StudioCommandSearchHost hideTrigger />);
     expect(screen.queryByTestId("studio-command-search-trigger")).toBeNull();
   });
+
+  it.each([
+    ["퍼펫 워프", /Clip Studio/u],
+    ["렌즈 블러", /Photoshop/u],
+    ["단면 컷어웨이", /SketchUp/u],
+    ["알파 잠금", /Procreate/u],
+  ])("F1 스튜디오 통합 검색에서 4대 경쟁 앱 용어 '%s'가 벤더 배지와 함께 매칭된다 (AC-008)", async (query, expectedVendor) => {
+    render(<StudioCommandSearchDialog open onClose={() => undefined} />);
+    type(query);
+    const options = await screen.findAllByRole("option");
+    expect(options.length).toBeGreaterThan(0);
+    expect(options.some((opt) => expectedVendor.test(opt.textContent ?? ""))).toBe(true);
+    const closeBtn = screen.getByRole("button", { name: "검색 닫기" });
+    expect(closeBtn.className).toContain("size-11");
+  });
 });

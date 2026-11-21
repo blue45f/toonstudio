@@ -31,6 +31,7 @@ export type TerminologyVendor =
   | "toonstudio"
   | "csp"
   | "photoshop"
+  | "sketchup"
   | "krita"
   | "procreate";
 
@@ -38,6 +39,7 @@ export const TERMINOLOGY_VENDORS: readonly TerminologyVendor[] = [
   "toonstudio",
   "csp",
   "photoshop",
+  "sketchup",
   "krita",
   "procreate",
 ];

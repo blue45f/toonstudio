@@ -1,5 +1,5 @@
 export const STUDIO_UPLOAD_CONTAINER_CLASS =
-  "py-6 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:py-8 sm:pb-8";
+  "py-6 pb-[calc(var(--site-float-base,5.75rem)+1.5rem)] sm:py-8 min-[1180px]:pb-8";
 
 export const STUDIO_UPLOAD_PAGE_LIST_CLASS =
   "mt-4 flex max-h-[min(52dvh,36rem)] flex-col gap-3 overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]";

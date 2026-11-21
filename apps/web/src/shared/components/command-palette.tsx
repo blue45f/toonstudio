@@ -22,9 +22,22 @@ import {
   PALETTE_STUDIO_TOOLS,
   TRENDING_TAGS,
 } from "./command-palette-data";
+import {
+  CommandPaletteBeginnerQuickStart,
+  CommandPaletteCommandsGroup,
+  CommandPaletteSpectrumRibbon,
+  CommandPaletteStudioToolsGroup,
+} from "./command-palette-competitor-ui";
+import "./command-palette-motion.css";
 import { CommandPalettePreview } from "./command-palette-preview";
-import { matchesCommandSearch } from "./command-palette-search";
+import {
+  matchesCommandSearch,
+  rankPaletteCommands,
+  rankPalettePages,
+  rankPaletteStudioTools,
+} from "./command-palette-search";
 import { CommandPaletteUnavailableStudioSection } from "./command-palette-unavailable-section";
+import { requestStudioCommandExecutionFromPalette } from "@/shared/lib/studio-command-search-bridge";
 import type { UnavailableStudioFeatureMatch, UnifiedSearchSection } from "./unified-search";
 import { LoadingState } from "./LoadingState";
 import { MiniPoster } from "./rank-row";
@@ -278,8 +291,8 @@ export function CommandPalette({
           tools: rankExtras(
             PALETTE_STUDIO_TOOLS,
             activeMode === "all" || activeMode === "studio",
-            (tool) => matchesCommandSearch(tool.name, queryToSearch, tool.keywords, tool.tip),
-            (tool) => [tool.name, tool.tip ?? "", ...(tool.keywords ?? [])],
+            (tool) => matchesCommandSearch(tool.name, queryToSearch, tool.keywords, tool.tip, tool.competitorAliases),
+            (tool) => [tool.name, tool.tip ?? "", ...(tool.keywords ?? []), ...(tool.competitorAliases?.map((a) => a.term) ?? [])],
           ),
           pages: rankExtras(
             pages,
@@ -362,28 +375,44 @@ export function CommandPalette({
     const tool = PALETTE_STUDIO_TOOLS.find((t) => t.id === toolId);
     if (!tool) return;
 
-    // 단축키가 없는 도구(작업실 표면)는 자기 라우트로 간다. 키 이벤트를 흉내 내면
-    // 아무 일도 일어나지 않으면서 "선택됨" 토스트만 뜬다.
-    if (tool.actionPath) {
-      go(tool.actionPath);
-      return;
-    }
-
     const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
     if (currentPath.startsWith("/studio")) {
+      if (tool.studioCommandId) {
+        const executed = requestStudioCommandExecutionFromPalette({
+          commandId: tool.studioCommandId,
+          toolId: tool.id,
+          label: tool.name,
+          shortcutKey: tool.shortcutKey,
+        });
+        if (executed) {
+          if (!imeGuard.claimExecution()) return;
+          toast(`스튜디오 기능 '${tool.name}' 실행됨`, { tone: "success" });
+          playSfx("tick");
+          onOpenChange(false);
+          return;
+        }
+      }
+      if (tool.shortcutKey && tool.shortcutKey.length === 1 && !tool.actionPath) {
+        if (!imeGuard.claimExecution()) return;
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: tool.shortcutKey.toLowerCase(), bubbles: true }));
+        toast(`스튜디오 도구 '${tool.name}' 선택됨 (${tool.shortcutKey})`, { tone: "info" });
+        playSfx("tick");
+        onOpenChange(false);
+        return;
+      }
+      if (tool.actionPath) {
+        go(tool.actionPath);
+        return;
+      }
       if (!imeGuard.claimExecution()) return;
-      // Dispatch key event to Studio canvas
-      window.dispatchEvent(
-        new KeyboardEvent("keydown", {
-          key: tool.shortcutKey.toLowerCase(),
-          bubbles: true,
-        })
-      );
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: tool.shortcutKey.toLowerCase(), bubbles: true }));
       toast(`스튜디오 도구 '${tool.name}' 선택됨 (${tool.shortcutKey})`, { tone: "info" });
       playSfx("tick");
       onOpenChange(false);
+    } else if (tool.actionPath) {
+      go(tool.actionPath);
     } else {
-      go(`/studio?tool=${tool.shortcutKey.toLowerCase()}`);
+      go(`/studio?tool=${encodeURIComponent(tool.shortcutKey.toLowerCase())}`);
     }
   };
 
@@ -425,28 +454,43 @@ export function CommandPalette({
     });
   };
 
-  // Filter commands, studio tools, and pages based on effective query and active mode
-  const filteredCommands = PALETTE_COMMANDS.filter((cmd) => {
-    if (activeMode !== "all" && activeMode !== "commands") return false;
-    return matchesCommandSearch(cmd.title, effectiveQuery, cmd.keywords, cmd.subtitle);
-  });
+  const rankedCommands = activeMode === "all" || activeMode === "commands"
+    ? rankPaletteCommands(PALETTE_COMMANDS, effectiveQuery)
+    : [];
+  const rankedStudioTools = activeMode === "all" || activeMode === "studio"
+    ? rankPaletteStudioTools(PALETTE_STUDIO_TOOLS, effectiveQuery)
+    : [];
+  const rankedPages = activeMode === "all" || activeMode === "pages"
+    ? rankPalettePages(pages, effectiveQuery)
+    : [];
 
-  const filteredStudioTools = PALETTE_STUDIO_TOOLS.filter((tool) => {
-    if (activeMode !== "all" && activeMode !== "studio") return false;
-    return matchesCommandSearch(tool.name, effectiveQuery, tool.keywords, tool.tip);
-  });
-
-  const filteredPages = pages.filter((page) => {
-    if (activeMode !== "all" && activeMode !== "pages") return false;
-    return matchesCommandSearch(page.title, effectiveQuery, page.keywords, page.subtitle);
-  });
-
-  // 표시 목록 — 정확 결과가 먼저, 퍼지 보강은 그 뒤(점수순). 보강은 디바운스된
-  // 질의 기준이라 입력 중(effectiveQuery와 어긋난 동안)에는 붙이지 않는다.
   const fuzzySettled = effectiveQuery.length > 0 && effectiveQuery === debouncedTrimmedQ.replace(/^[>@/#?]/, "").trim();
-  const visibleCommands = fuzzySettled ? [...filteredCommands, ...fuzzyExtras.commands] : filteredCommands;
-  const visibleStudioTools = fuzzySettled ? [...filteredStudioTools, ...fuzzyExtras.tools] : filteredStudioTools;
-  const visiblePages = fuzzySettled ? [...filteredPages, ...fuzzyExtras.pages] : filteredPages;
+  const visibleCommands = fuzzySettled
+    ? [...rankedCommands.map((r) => r.item), ...fuzzyExtras.commands]
+    : rankedCommands.map((r) => r.item);
+  const visibleStudioTools = fuzzySettled
+    ? [...rankedStudioTools.map((r) => r.item), ...fuzzyExtras.tools]
+    : rankedStudioTools.map((r) => r.item);
+  const visiblePages = fuzzySettled
+    ? [...rankedPages.map((r) => r.item), ...fuzzyExtras.pages]
+    : rankedPages.map((r) => r.item);
+  const toolAliasMatchById = new Map(
+    rankedStudioTools.filter((r) => r.matchedAlias).map((r) => [r.item.id, r.matchedAlias!]),
+  );
+  const topCommandScore = rankedCommands[0]?.score ?? 0;
+  const topStudioToolScore = rankedStudioTools[0]?.score ?? 0;
+  const toolsBeforeCommands = effectiveQuery.length > 0
+    && visibleStudioTools.length > 0
+    && (visibleCommands.length === 0 || topStudioToolScore > topCommandScore);
+  const firstRankedValue = toolsBeforeCommands
+    ? visibleStudioTools[0]?.id ?? ""
+    : visibleCommands[0]?.id ?? visibleStudioTools[0]?.id ?? (results[0] ? `title-${results[0].id}` : visiblePages[0]?.id ?? "");
+
+  useEffect(() => {
+    if (!open || !effectiveQuery || !firstRankedValue) return;
+    setActiveValue(firstRankedValue);
+  }, [open, effectiveQuery, activeMode, firstRankedValue]);
+
   const directTitlesSet = new Set([
     ...visibleCommands.map((item) => item.title),
     ...visibleStudioTools.map((item) => item.name),
@@ -455,7 +499,6 @@ export function CommandPalette({
     ? unavailableStudioItems.filter((item) => !directTitlesSet.has(item.label))
     : [];
 
-  // Determine currently selected item for the Live Inspector preview
   let selectedItem: PaletteSelectedItem = null;
   if (activeValue.startsWith("title-")) {
     const titleId = activeValue.replace("title-", "");
@@ -475,14 +518,17 @@ export function CommandPalette({
     selectedItem = { type: "recent-query", query };
   }
 
-  // Fallback selected item when nothing is active yet
   if (!selectedItem) {
-    if (results.length > 0) {
+    if (toolsBeforeCommands && visibleStudioTools.length > 0) {
+      selectedItem = { type: "studio-tool", tool: visibleStudioTools[0]! };
+    } else if (results.length > 0) {
       selectedItem = { type: "title", title: results[0]! };
     } else if (!effectiveQuery && recentTitles.length > 0) {
       selectedItem = { type: "title", title: recentTitles[0]! };
     } else if (visibleCommands.length > 0) {
       selectedItem = { type: "command", command: visibleCommands[0]! };
+    } else if (visibleStudioTools.length > 0) {
+      selectedItem = { type: "studio-tool", tool: visibleStudioTools[0]! };
     } else if (visiblePages.length > 0) {
       selectedItem = { type: "page", page: visiblePages[0]! };
     }
@@ -558,9 +604,9 @@ export function CommandPalette({
         onValueChange={setActiveValue}
         label={t("command.palette.label")}
         onKeyDown={handleKeyDown}
-        className="pf-popup-open relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-line-strong bg-panel shadow-2xl shadow-[oklch(0.1_0.02_70/0.65)] ring-1 ring-[oklch(0.95_0.01_85/0.08)] sm:max-h-[calc(100dvh-12dvh)]"
-        style={{ animation: "fade-up 0.22s var(--ease-out-expo)" }}
+        className="pf-popup-open command-palette-spring-enter relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-line-strong bg-panel shadow-2xl shadow-[oklch(0.1_0.02_70/0.65)] ring-1 ring-[oklch(0.95_0.01_85/0.08)] sm:max-h-[calc(100dvh-12dvh)]"
       >
+        <CommandPaletteSpectrumRibbon />
         {/* Search Header */}
         <div className="flex items-center gap-3 border-b border-line px-4">
           <button
@@ -630,7 +676,7 @@ export function CommandPalette({
                 onClick={() => handleSelectTab(tab.id)}
                 onKeyDown={(event) => handleModeTabKeyDown(event, tab.id)}
                 className={cn(
-                  "flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                  "flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 font-medium break-keep transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                   isActive
                     ? "bg-raised text-accent shadow-sm ring-1 ring-accent/30 font-semibold"
                     : "text-fg-3 hover:bg-card hover:text-fg"
@@ -676,9 +722,11 @@ export function CommandPalette({
                 </div>
               )}
 
-            {/* Empty Query: Trending Tags */}
+            {/* Empty Query: Beginner 1-Click Quick Start & Trending Tags */}
             {!effectiveQuery && mode === "all" && (
-              <div className="px-3 py-2">
+              <>
+                <CommandPaletteBeginnerQuickStart onRunTool={executeStudioTool} />
+                <div className="px-3 py-2">
                 <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-fg-3">
                   <Tag size={12} className="text-accent" />
                   <span>인기 탐색 태그</span>
@@ -689,13 +737,14 @@ export function CommandPalette({
                       key={item.tag}
                       type="button"
                       onClick={() => { playSfx("tick"); setQ(item.tag); setMode("titles"); }}
-                      className="inline-flex min-h-11 items-center rounded-md border border-line bg-card px-3 py-1.5 text-xs text-fg-2 transition-all hover:border-accent hover:text-accent"
+                      className="inline-flex min-h-11 items-center rounded-md border border-line bg-card px-3 py-1.5 text-xs text-fg-2 break-keep transition-[border-color,color,transform] duration-150 hover:border-accent hover:text-accent active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
                     >
                       {item.label}
                     </button>
                   ))}
                 </div>
               </div>
+              </>
             )}
 
             {/* Empty Query: Recent Searches */}
@@ -784,102 +833,40 @@ export function CommandPalette({
               </Command.Group>
             )}
 
-            {/* Commands Section */}
-            {visibleCommands.length > 0 && (
-              <Command.Group
-                forceMount
-                heading={
-                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
-                    시스템 및 명령어
-                  </div>
-                }
-              >
-                {visibleCommands.map((cmd) => {
-                  const Icon = cmd.icon;
-                  const state = cmd.getState?.();
-                  return (
-                    <Command.Item
-                      forceMount
-                      key={cmd.id}
-                      value={cmd.id}
-                      onSelect={() => executeCommand(cmd.id)}
-                      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
-                    >
-                      <div className="flex size-7 items-center justify-center rounded-lg border border-line bg-card text-accent">
-                        <Icon size={15} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-fg">{cmd.title}</span>
-                          {state && (
-                            <span className="rounded bg-panel px-1.5 py-0.5 text-[10px] text-fg-3">
-                              {state.label}
-                            </span>
-                          )}
-                        </div>
-                        <p className="truncate text-xs text-fg-3">{cmd.subtitle}</p>
-                      </div>
-                      {cmd.shortcut && (
-                        <div className="hidden items-center gap-1 sm:flex">
-                          {cmd.shortcut.map((k) => (
-                            <kbd
-                              key={k}
-                              className="rounded border border-line bg-card px-1.5 py-0.5 font-mono text-[10px] text-fg-3"
-                            >
-                              {k}
-                            </kbd>
-                          ))}
-                        </div>
-                      )}
-                      <CornerDownLeft size={13} className="text-fg-3 opacity-0 data-[selected=true]:opacity-100" />
-                    </Command.Item>
-                  );
-                })}
-              </Command.Group>
-            )}
-
-            <CommandPaletteUnavailableStudioSection
-              items={visibleUnavailableStudioItems}
-              query={effectiveQuery}
-              onNavigate={go}
-            />
-
-            {/* Studio Tools Section */}
-            {visibleStudioTools.length > 0 && (
-              <Command.Group
-                forceMount
-                heading={
-                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
-                    스튜디오 도구
-                  </div>
-                }
-              >
-                {visibleStudioTools.map((tool) => {
-                  const Icon = tool.icon;
-                  return (
-                    <Command.Item
-                      forceMount
-                      key={tool.id}
-                      value={tool.id}
-                      onSelect={() => executeStudioTool(tool.id)}
-                      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
-                    >
-                      <div className="flex size-7 items-center justify-center rounded-lg border border-line bg-card text-accent">
-                        <Icon size={15} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="font-medium text-fg">{tool.name}</span>
-                        <p className="truncate text-xs text-fg-3">{tool.tip}</p>
-                      </div>
-                      {tool.shortcutKey ? (
-                        <kbd className="rounded border border-line bg-card px-1.5 py-0.5 font-mono text-[10px] font-semibold text-accent">
-                          {tool.shortcutKey}
-                        </kbd>
-                      ) : null}
-                    </Command.Item>
-                  );
-                })}
-              </Command.Group>
+            {toolsBeforeCommands ? (
+              <>
+                <CommandPaletteStudioToolsGroup
+                  tools={visibleStudioTools}
+                  aliasMatchById={toolAliasMatchById}
+                  onSelectTool={executeStudioTool}
+                />
+                <CommandPaletteCommandsGroup
+                  commands={visibleCommands}
+                  onSelectCommand={executeCommand}
+                />
+                <CommandPaletteUnavailableStudioSection
+                  items={visibleUnavailableStudioItems}
+                  query={effectiveQuery}
+                  onNavigate={go}
+                />
+              </>
+            ) : (
+              <>
+                <CommandPaletteCommandsGroup
+                  commands={visibleCommands}
+                  onSelectCommand={executeCommand}
+                />
+                <CommandPaletteUnavailableStudioSection
+                  items={visibleUnavailableStudioItems}
+                  query={effectiveQuery}
+                  onNavigate={go}
+                />
+                <CommandPaletteStudioToolsGroup
+                  tools={visibleStudioTools}
+                  aliasMatchById={toolAliasMatchById}
+                  onSelectTool={executeStudioTool}
+                />
+              </>
             )}
 
             {/* Search Results (Titles) */}

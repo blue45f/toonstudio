@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 
 import type { PaletteCommand, PalettePage, PaletteStudioTool, PaletteMode } from "./command-palette-types";
+import { COMPETITOR_PALETTE_STUDIO_TOOLS, EXISTING_TOOL_COMPETITOR_ALIASES, EXISTING_TOOL_STUDIO_COMMAND_IDS } from "./command-palette-competitor-aliases";
 
 import { useApp } from "@/shared/lib/store";
 import { r5SharedStatusText } from "../r5-cat1-status-i18n";
@@ -268,7 +269,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
 ];
 
-export const PALETTE_STUDIO_TOOLS: PaletteStudioTool[] = [
+const BASE_PALETTE_STUDIO_TOOLS: PaletteStudioTool[] = [
   {
     id: "tool-pen",
     name: "G펜 / 잉크 브러시",
@@ -385,6 +386,14 @@ export const PALETTE_STUDIO_TOOLS: PaletteStudioTool[] = [
     tip: "선화, 채색, 말풍선, 배경 레이어의 순서와 블렌드 모드를 관리합니다.",
     keywords: ["레이어", "패널", "합성", "블렌드", "layer", "opacity"],
   },
+];
+
+export const PALETTE_STUDIO_TOOLS: PaletteStudioTool[] = [
+  ...BASE_PALETTE_STUDIO_TOOLS.map((tool) => ({
+    ...tool, ...(EXISTING_TOOL_COMPETITOR_ALIASES[tool.id] ? { competitorAliases: EXISTING_TOOL_COMPETITOR_ALIASES[tool.id] } : {}),
+    ...(EXISTING_TOOL_STUDIO_COMMAND_IDS[tool.id] ? { studioCommandId: EXISTING_TOOL_STUDIO_COMMAND_IDS[tool.id] } : {}),
+  })),
+  ...COMPETITOR_PALETTE_STUDIO_TOOLS,
 ];
 
 const CURATED_PALETTE_PAGES: PalettePage[] = [
