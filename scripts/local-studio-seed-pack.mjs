@@ -219,11 +219,11 @@ export function buildStudioSeedPackRecipe() {
     mkSlice("studio-slice-ep1-2", "studio-proj-neon-seoul-ep1", "studio-ep-1", "line", 26, 50, ["20_LINEART"], "studio-line", "approved", 7, 6),
     mkSlice("studio-slice-ep1-3", "studio-proj-neon-seoul-ep1", "studio-ep-1", "lettering", 51, 75, ["60_BALLOONS", "70_LETTERING_SFX"], "studio-letterer", "approved", 8, 7),
     mkSlice("studio-slice-ep2-1", "studio-proj-neon-seoul-ep2", "studio-ep-2", "line", 1, 25, ["20_LINEART"], "studio-line", "approved", 13, 12),
-    mkSlice("studio-slice-ep2-2", "studio-proj-neon-seoul-ep2", "studio-ep-2", "color", 26, 50, ["30_FLAT_COLOR", "40_SHADING", "50_FX_LIGHTING"], "studio-color", "in-review", 14, 13),
-    mkSlice("studio-slice-ep2-3", "studio-proj-neon-seoul-ep2", "studio-ep-2", "lettering", 51, 75, ["60_BALLOONS", "70_LETTERING_SFX"], "studio-letterer", "in-review", 15, 14),
-    mkSlice("studio-slice-ep3-1", "studio-proj-neon-seoul-ep3", "studio-ep-3", "bg3d", 1, 25, ["10_BG_3D_LT"], "studio-bg3d", "in-progress", 20, 19),
-    mkSlice("studio-slice-ep3-2", "studio-proj-neon-seoul-ep3", "studio-ep-3", "line", 26, 50, ["20_LINEART"], "studio-line", "in-progress", 21, 20),
-    mkSlice("studio-slice-ep3-3", "studio-proj-neon-seoul-ep3", "studio-ep-3", "color", 51, 75, ["30_FLAT_COLOR", "40_SHADING", "50_FX_LIGHTING"], "studio-color", "assigned", 22, 21),
+    mkSlice("studio-slice-ep2-2", "studio-proj-neon-seoul-ep2", "studio-ep-2", "shade", 26, 50, ["30_FLAT_COLOR", "40_SHADING", "50_FX_LIGHTING"], "studio-color", "in_qa", 14, 13),
+    mkSlice("studio-slice-ep2-3", "studio-proj-neon-seoul-ep2", "studio-ep-2", "lettering", 51, 75, ["60_BALLOONS", "70_LETTERING_SFX"], "studio-letterer", "in_qa", 15, 14),
+    mkSlice("studio-slice-ep3-1", "studio-proj-neon-seoul-ep3", "studio-ep-3", "bg3d", 1, 25, ["10_BG_3D_LT"], "studio-bg3d", "in_progress", 20, 19),
+    mkSlice("studio-slice-ep3-2", "studio-proj-neon-seoul-ep3", "studio-ep-3", "line", 26, 50, ["20_LINEART"], "studio-line", "in_progress", 21, 20),
+    mkSlice("studio-slice-ep3-3", "studio-proj-neon-seoul-ep3", "studio-ep-3", "flat", 51, 75, ["30_FLAT_COLOR", "40_SHADING", "50_FX_LIGHTING"], "studio-color", "assigned", 22, 21),
   ];
 
   const partitionCheck = validateCutSlicePartition(cutSlices, 75);
