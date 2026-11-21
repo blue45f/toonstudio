@@ -5,10 +5,8 @@ import {
   type StudioLinked3dRenderElementLike,
   type StudioLinked3dRenderLink,
 } from "../studio-linked-3d-render-document";
-import {
-  createStudioShared3dSceneSessionForStage,
-  type StudioShared3dStagePersistedState,
-} from "../studio-shared-3d-stage-collection";
+import type { StudioShared3dStagePersistedState } from "../studio-shared-3d-stage-collection";
+import { createStudioShared3dSceneSessionForStage } from "../runtime-leaves/studio-shared-3d-stage-session";
 import type { StudioShared3dStageElementSource } from "../studio-shared-3d-stage-document";
 import {
   createStudioScene3dAuthority,

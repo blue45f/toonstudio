@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { isStudioLocalDatabaseOwnershipBusyError } from "../studio-local-database-ownership";
 import { StudioScene3dCutSession } from "./studio-scene3d-cut-session";
 import { StudioScene3dShotList } from "./StudioScene3dShotList";
 import type { compareStudioScene3dCutSource } from "./studio-scene3d-shot-versions";
+
+const LazyStudio3dBgCharacterCompositorPanel = lazy(
+  () => import("../stage-3d-compositor/Studio3dBgCharacterCompositorPanel"),
+);
 
 const BUTTON =
   "min-h-11 min-w-11 rounded-md border border-line bg-card px-3 py-2 text-xs text-fg hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50";
@@ -33,6 +37,7 @@ export function StudioScene3dCutPanel({
   const [updateScene, setUpdateScene] = useState(true);
   const [characters, setCharacters] = useState<Set<string>>(new Set());
   const [json, setJson] = useState("");
+  const [compositorOpen, setCompositorOpen] = useState(false);
   const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
   const expanded = userExpanded ?? preferredExpanded ?? true;
   const backupUrl = useRef<string | null>(null);
@@ -510,6 +515,31 @@ export function StudioScene3dCutPanel({
           >
             {t("JSON 가져오기", "Import JSON")}
           </button>
+        </details>
+        <details
+          className="rounded border border-line bg-card/40"
+          data-testid="scene3d-cut-bg-char-compositor-details"
+          onToggle={(event) => {
+            if (event.target !== event.currentTarget) return;
+            setCompositorOpen(event.currentTarget.open);
+          }}
+        >
+          <summary className="min-h-11 cursor-pointer px-3 py-3 text-xs font-semibold [word-break:keep-all] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+            {t("3D 배경 + 3D 캐릭터 원클릭 합성", "One-click 3D background + character composite")}
+          </summary>
+          {compositorOpen ? (
+            <div className="border-t border-line p-2">
+              <Suspense
+                fallback={
+                  <p className="p-2 text-xs text-fg-2">
+                    {t("합성 스테이지를 불러오는 중...", "Loading composite stage...")}
+                  </p>
+                }
+              >
+                <LazyStudio3dBgCharacterCompositorPanel />
+              </Suspense>
+            </div>
+          ) : null}
         </details>
       </div>
     </details>

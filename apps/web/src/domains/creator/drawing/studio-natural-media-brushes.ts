@@ -1,31 +1,21 @@
 /**
  * studio-natural-media-brushes.ts
- *
- * p5.brush (MIT) 내추럴 미디어 브러시 통합 모듈.
- *
- * p5.brush 고유의 강점 — 실제 내추럴 미디어 질감(연필 입자·목탄 번짐·마커
- * 겹침·수채화 번짐·해칭)에만 집중한다. 기존 자체 스탬프 엔진의 클린룸 커널과
- * 중복되는 영역은 건드리지 않는다.
- *
- * 설계:
- * - `p5.brush/standalone` 을 dynamic import 로 lazy-load (p5.js 불필요).
- * - WebGL2 캔버스가 필요하므로 세션은 명시적 생성/해제.
- * - 프리셋 정의·설정 검증은 순수 함수 (테스트 가능).
- * - 실제 WebGL 렌더링은 브라우저에서만 동작하므로 테스트에서 제외.
+ * p5.brush (MIT) 내추럴 미디어 브러시 11종 프리셋·물리 프로파일·교차 해칭 플래너 및
+ * 장시간 획 성능 가드(`brush-quality-soak-guard`) 통합 모듈.
  */
 
+import {
+  createBrushStrokeSoakGuard,
+  evaluateCrayonWaxPaperTexel,
+  type BrushQualityFamilyId,
+  type BrushStrokeSoakGuard,
+  type CrayonWaxPaperTexelInput,
+  type CrayonWaxPaperTexelSample,
+} from "./brush-quality-soak-guard";
+
 export type StudioNaturalMediaBrushId =
-  | "pencil-2b"
-  | "pencil-hb"
-  | "pencil-2h"
-  | "color-pencil"
-  | "crayon"
-  | "pastel"
-  | "pen"
-  | "rotring"
-  | "charcoal"
-  | "marker"
-  | "spray";
+  | "pencil-2b" | "pencil-hb" | "pencil-2h" | "color-pencil" | "crayon"
+  | "pastel" | "pen" | "rotring" | "charcoal" | "marker" | "spray";
 
 export interface StudioNaturalMediaPreset {
   readonly id: StudioNaturalMediaBrushId;
@@ -84,8 +74,8 @@ export const STUDIO_NATURAL_MEDIA_PRESETS: ReadonlyArray<StudioNaturalMediaPrese
       brushName: "crayon",
       labelKo: "크레용",
       labelEn: "Crayon",
-      descriptionKo: "필압에 따라 굵기가 변하는 크레용 질감. 채색에.",
-      defaultWeight: 6,
+      descriptionKo: "저필압 갈필 스킵과 고필압 왁스 누적이 살아있는 거친 크레용 질감.",
+      defaultWeight: 7,
       crafts: ["coloring"],
     },
     {
@@ -285,95 +275,53 @@ export interface NaturalMediaPhysicsProfile {
 
 const NATURAL_MEDIA_PHYSICS_MAP: Readonly<Record<StudioNaturalMediaBrushId, NaturalMediaPhysicsProfile>> =
   Object.freeze({
-    "pencil-2b": {
-      id: "pencil-2b",
-      grainBite01: 0.72,
-      smudgeSusceptibility01: 0.58,
-      inkBleed01: 0.02,
-      pressureGamma: 0.78,
-      multiPassBuildUp01: 0.68,
-    },
-    "pencil-hb": {
-      id: "pencil-hb",
-      grainBite01: 0.62,
-      smudgeSusceptibility01: 0.42,
-      inkBleed01: 0.01,
-      pressureGamma: 1.0,
-      multiPassBuildUp01: 0.56,
-    },
-    "pencil-2h": {
-      id: "pencil-2h",
-      grainBite01: 0.48,
-      smudgeSusceptibility01: 0.22,
-      inkBleed01: 0.0,
-      pressureGamma: 1.38,
-      multiPassBuildUp01: 0.42,
-    },
-    "color-pencil": {
-      id: "color-pencil",
-      grainBite01: 0.78,
-      smudgeSusceptibility01: 0.32,
-      inkBleed01: 0.02,
-      pressureGamma: 0.92,
-      multiPassBuildUp01: 0.64,
-    },
-    crayon: {
-      id: "crayon",
-      grainBite01: 0.88,
-      smudgeSusceptibility01: 0.48,
-      inkBleed01: 0.0,
-      pressureGamma: 0.85,
-      multiPassBuildUp01: 0.72,
-    },
-    pastel: {
-      id: "pastel",
-      grainBite01: 0.94,
-      smudgeSusceptibility01: 0.9,
-      inkBleed01: 0.04,
-      pressureGamma: 0.72,
-      multiPassBuildUp01: 0.76,
-    },
-    pen: {
-      id: "pen",
-      grainBite01: 0.18,
-      smudgeSusceptibility01: 0.08,
-      inkBleed01: 0.16,
-      pressureGamma: 0.9,
-      multiPassBuildUp01: 0.25,
-    },
-    rotring: {
-      id: "rotring",
-      grainBite01: 0.06,
-      smudgeSusceptibility01: 0.04,
-      inkBleed01: 0.08,
-      pressureGamma: 1.45,
-      multiPassBuildUp01: 0.15,
-    },
-    charcoal: {
-      id: "charcoal",
-      grainBite01: 0.92,
-      smudgeSusceptibility01: 0.88,
-      inkBleed01: 0.05,
-      pressureGamma: 0.68,
-      multiPassBuildUp01: 0.82,
-    },
-    marker: {
-      id: "marker",
-      grainBite01: 0.24,
-      smudgeSusceptibility01: 0.35,
-      inkBleed01: 0.74,
-      pressureGamma: 0.82,
-      multiPassBuildUp01: 0.86,
-    },
-    spray: {
-      id: "spray",
-      grainBite01: 0.35,
-      smudgeSusceptibility01: 0.28,
-      inkBleed01: 0.32,
-      pressureGamma: 0.95,
-      multiPassBuildUp01: 0.78,
-    },
+    "pencil-2b": { id: "pencil-2b", grainBite01: 0.72, smudgeSusceptibility01: 0.58, inkBleed01: 0.02, pressureGamma: 0.78, multiPassBuildUp01: 0.68 },
+    "pencil-hb": { id: "pencil-hb", grainBite01: 0.62, smudgeSusceptibility01: 0.42, inkBleed01: 0.01, pressureGamma: 1.0, multiPassBuildUp01: 0.56 },
+    "pencil-2h": { id: "pencil-2h", grainBite01: 0.48, smudgeSusceptibility01: 0.22, inkBleed01: 0.0, pressureGamma: 1.38, multiPassBuildUp01: 0.42 },
+    "color-pencil": { id: "color-pencil", grainBite01: 0.78, smudgeSusceptibility01: 0.32, inkBleed01: 0.02, pressureGamma: 0.92, multiPassBuildUp01: 0.64 },
+    crayon: { id: "crayon", grainBite01: 0.94, smudgeSusceptibility01: 0.48, inkBleed01: 0.0, pressureGamma: 0.82, multiPassBuildUp01: 0.84 },
+    pastel: { id: "pastel", grainBite01: 0.94, smudgeSusceptibility01: 0.9, inkBleed01: 0.04, pressureGamma: 0.72, multiPassBuildUp01: 0.82 },
+    pen: { id: "pen", grainBite01: 0.18, smudgeSusceptibility01: 0.08, inkBleed01: 0.16, pressureGamma: 0.9, multiPassBuildUp01: 0.25 },
+    rotring: { id: "rotring", grainBite01: 0.06, smudgeSusceptibility01: 0.04, inkBleed01: 0.08, pressureGamma: 1.45, multiPassBuildUp01: 0.15 },
+    charcoal: { id: "charcoal", grainBite01: 0.92, smudgeSusceptibility01: 0.88, inkBleed01: 0.05, pressureGamma: 0.68, multiPassBuildUp01: 0.82 },
+    marker: { id: "marker", grainBite01: 0.24, smudgeSusceptibility01: 0.35, inkBleed01: 0.74, pressureGamma: 0.82, multiPassBuildUp01: 0.86 },
+    spray: { id: "spray", grainBite01: 0.35, smudgeSusceptibility01: 0.28, inkBleed01: 0.32, pressureGamma: 0.95, multiPassBuildUp01: 0.78 },
   });
+
+const NATURAL_MEDIA_FAMILY_MAP: Readonly<Record<StudioNaturalMediaBrushId, BrushQualityFamilyId>> =
+  Object.freeze({
+    "pencil-2b": "pencil",
+    "pencil-hb": "pencil",
+    "pencil-2h": "pencil",
+    "color-pencil": "pencil",
+    crayon: "crayon",
+    pastel: "pastel",
+    pen: "g-pen",
+    rotring: "g-pen",
+    charcoal: "charcoal",
+    marker: "marker",
+    spray: "spray",
+  });
+
+/** 내추럴 미디어 프리셋별 장시간 획 성능·데드스트로크 방지 가드를 생성한다. */
+export function createNaturalMediaSoakStrokeGuard(
+  id: StudioNaturalMediaBrushId,
+  baseSizePx?: number,
+): BrushStrokeSoakGuard {
+  const preset = getNaturalMediaPreset(id);
+  const familyId = NATURAL_MEDIA_FAMILY_MAP[id] ?? "pencil";
+  return createBrushStrokeSoakGuard({
+    familyId,
+    baseSizePx: baseSizePx ?? (preset ? Math.max(4, preset.defaultWeight * 2) : 12),
+  });
+}
+
+/** 크레용 내추럴 미디어 왁스-종이 요철 텍셀을 직접 샘플링한다. */
+export function sampleNaturalMediaCrayonWaxTexel(
+  input: CrayonWaxPaperTexelInput,
+): CrayonWaxPaperTexelSample {
+  return evaluateCrayonWaxPaperTexel(input);
+}
 
 /**
  * 11종 내추럴 미디어 프리셋별 물리 마찰·번짐·필압 감마·중첩 누적 프로파일을 반환한다.

@@ -1,11 +1,10 @@
 import { studioCutVrmDocumentScope, studioTeamCutVrmDocumentScope } from "./studio-shared-3d-scene-runtime";
 import { panelStatusText } from "./status-i18n/studio-panel-status-i18n-r3c06-core";
 import { Loader2 } from "lucide-react";
-import { Suspense, memo, useEffect, useMemo } from "react";
+import { Suspense, memo, useEffect, useMemo, useState } from "react";
 
-import { isStudioAiConfigured } from "./ai/studio-ai-client";
+import { isStudioAiConfigured } from "./ai/studio-ai-client-config";
 import { subscribeStudioAiComicComposerOpenRequest } from "./ai/studio-ai-comic-composer-intent";
-import { StudioBg3dRetainedOwnerRouteBridge } from "./bg3d/StudioBg3dRetainedOwnerRouteBridge";
 import {
   StudioBackground3D,
   StudioPageReviewPanel,
@@ -22,11 +21,15 @@ import {
 } from "./studio-page-lazy-ui";
 import { pageDisplayName } from "./studio-page-meta";
 import {
-  createStudioShared3dSceneSessionFromElements,
+  EMPTY_STUDIO_SHARED_3D_SCENE_SESSION,
   selectStudioShared3dVisibleSceneElements,
-} from "./studio-shared-3d-scene-bridge";
+} from "./runtime-leaves/studio-shared-3d-character-identity";
 import {
-  createStudioShared3dSceneSessionForStage,
+  loadStudioShared3dSceneSessionModules,
+  StudioBg3dRetainedOwnerRouteBridge,
+  type StudioShared3dSceneSessionModules,
+} from "./runtime-leaves/studio-shared-3d-scene-session-loader";
+import {
   findStudioShared3dStageEntryByBundleId,
   migrateStudioShared3dStageCollectionDocument,
   resolveStudioShared3dStageCollectionForBundle,
@@ -397,11 +400,25 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
     sharedStageCollection,
     sharedStageCollectionInvalid,
   ]);
+  const [shared3dSessionModules, setShared3dSessionModules] =
+    useState<StudioShared3dSceneSessionModules | null>(null);
+  const [bg3dBridgeActivated, setBg3dBridgeActivated] = useState(bg3dOpen);
+  useEffect(() => {
+    if (!bg3dOpen) return;
+    setBg3dBridgeActivated(true);
+    if (shared3dSessionModules) return;
+    let active = true;
+    void loadStudioShared3dSceneSessionModules().then((modules) => {
+      if (active) setShared3dSessionModules(modules);
+    });
+    return () => { active = false; };
+  }, [bg3dOpen, shared3dSessionModules]);
+
   const shared3dSceneSession = useMemo(() => {
-    if (!bg3dOpen) return createStudioShared3dSceneSessionFromElements([]);
+    if (!bg3dOpen || !shared3dSessionModules) return EMPTY_STUDIO_SHARED_3D_SCENE_SESSION;
     const sourceElements = masterEditMode ? [] : activePageElements;
     if (sharedStageCollectionInvalid) {
-      return createStudioShared3dSceneSessionFromElements([]);
+      return shared3dSessionModules.createStudioShared3dSceneSessionFromElements([]);
     }
     if (!targetHasPersistentSharedStage || targetSharedStageEntry?.characters.length === 0) {
       const reusableHiddenIds = studioShared3dStageReusableHiddenCharacterElementIds(
@@ -414,12 +431,12 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
       ).map(({ id }) => id));
       // Exact receipt-owned hidden sources are reusable instances. Their Stage-local placement is
       // captured independently, while the single VRM model/pose/wardrobe authority stays shared.
-      return createStudioShared3dSceneSessionFromElements(
+      return shared3dSessionModules.createStudioShared3dSceneSessionFromElements(
         sourceElements.filter((element) =>
           visibleIds.has(element.id) || reusableHiddenIds.has(element.id)),
       );
     }
-    return createStudioShared3dSceneSessionForStage(
+    return shared3dSessionModules.createStudioShared3dSceneSessionForStage(
       sharedStageCollection,
       sourceElements,
       bg3dTargetBundleId,
@@ -430,6 +447,7 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
     bg3dTargetBundleId,
     bg3dOpen,
     masterEditMode,
+    shared3dSessionModules,
     sharedStageCollection,
     sharedStageCollectionInvalid,
     targetHasPersistentSharedStage,
@@ -559,10 +577,14 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
         ) : null}
       </Suspense>
 
-      <StudioBg3dRetainedOwnerRouteBridge
-        element={bg3dElement}
-        open={bg3dOpen}
-      />
+      <Suspense fallback={null}>
+        {bg3dBridgeActivated || bg3dOpen ? (
+          <StudioBg3dRetainedOwnerRouteBridge
+            element={bg3dElement}
+            open={bg3dOpen}
+          />
+        ) : null}
+      </Suspense>
 
       <Suspense fallback={<TimelapseLoadingOverlay />}>
         {timelapseOpen ? (

@@ -28,6 +28,31 @@
       "types": "./src/wesl-compile.ts",
       "import": "./src/wesl-compile.ts",
       "default": "./src/wesl-compile.ts"
+    },
+    "./descriptor": {
+      "types": "./src/descriptor.ts",
+      "import": "./src/descriptor.ts",
+      "default": "./src/descriptor.ts"
+    },
+    "./registry": {
+      "types": "./src/registry.ts",
+      "import": "./src/registry.ts",
+      "default": "./src/registry.ts"
+    },
+    "./planner": {
+      "types": "./src/planner.ts",
+      "import": "./src/planner.ts",
+      "default": "./src/planner.ts"
+    },
+    "./planner-cost-shadow": {
+      "types": "./src/planner-cost-shadow.ts",
+      "import": "./src/planner-cost-shadow.ts",
+      "default": "./src/planner-cost-shadow.ts"
+    },
+    "./tournament": {
+      "types": "./src/tournament.ts",
+      "import": "./src/tournament.ts",
+      "default": "./src/tournament.ts"
     }
   },
   "scripts": {

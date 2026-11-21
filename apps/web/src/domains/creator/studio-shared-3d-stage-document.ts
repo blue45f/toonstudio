@@ -1,10 +1,11 @@
 import { serializeStudioBg3dSceneDocument, type StudioBg3dSceneDocument } from "./bg3d/studio-bg3d-scene-document";
 import { sha256HexPortable } from "./studio-sha256";
 import {
-  createStudioShared3dSceneSessionFromElements,
-  type StudioShared3dElementSource,
-} from "./studio-shared-3d-scene-bridge";
+  resolveExactStudioShared3dCharacterIdentity,
+  resolveStudioShared3dCharacterIdentitiesFromElements,
+} from "./runtime-leaves/studio-shared-3d-character-identity";
 
+import type { StudioShared3dElementSource } from "./studio-shared-3d-scene-bridge";
 import type { StudioVrmSceneDocument } from "./vrm/studio-vrm-scene-document";
 
 export const STUDIO_SHARED_3D_STAGE_DOCUMENT_KIND =
@@ -350,12 +351,7 @@ function exactCharacterSource(
   elements: readonly StudioShared3dStageElementSource[],
   elementId: string,
 ) {
-  const matches = elements.filter((element) => element.id === elementId);
-  if (matches.length !== 1) return null;
-  const session = createStudioShared3dSceneSessionFromElements(matches);
-  return session.characters.length === 1 && session.characters[0]?.elementId === elementId
-    ? session.characters[0]
-    : null;
+  return resolveExactStudioShared3dCharacterIdentity(elements, elementId);
 }
 
 export function resolveStudioShared3dStageBundleIdForElement(
@@ -393,7 +389,7 @@ export function createStudioShared3dStageDocument(input: {
     && (requestedIds.length > 12 || new Set(requestedIds).size !== requestedIds.length)
   ) return null;
   const selected = requestedIds === undefined
-    ? createStudioShared3dSceneSessionFromElements(input.elements).characters
+    ? resolveStudioShared3dCharacterIdentitiesFromElements(input.elements)
     : requestedIds.map((elementId) => exactCharacterSource(input.elements, elementId));
   if (selected.some((character) => !character)) return null;
   const hiddenByStageIds = input.hiddenByStageElementIds ?? [];

@@ -146,10 +146,10 @@ export const SpaceDock = memo(function SpaceDock({
   return <div ref={dockRef} className="space-dock" role="toolbar" aria-label={bt("가상 스튜디오 도구", "Virtual studio tools")} data-space-interactive="true">
     <div ref={meRef} className="space-dock__group space-dock__anchor">
       <button type="button" className="space-dock__me" aria-haspopup="dialog" aria-expanded={popover === "me"}
-        onClick={() => toggle("me")} aria-label={bt(`내 상태: ${status.labelKo} · ${self.name}`, `My status: ${status.labelEn} · ${self.name}`)}>
+        onClick={() => toggle("me")} aria-label={bt(`내 상태: ${self.name} · ${status.labelKo}`, `My status: ${self.name} · ${status.labelEn}`)}>
         <SpaceAvatar stageKind={stageKind} artStyle={artStyle} identity={self.identity} activity={self.activity} avatarIndex={self.avatarIndex} appearance={self.appearance} self size="sm" />
         <span className="space-dock__me-text" aria-hidden>
-          <strong>{self.name}</strong>
+          <strong>{self.name}</strong>{" "}
           <small><span className="space-status-dot" data-activity={self.activity} data-status={status.id}
             data-urgency={statusExtras.statusUrgency === "normal" ? undefined : statusExtras.statusUrgency}
             data-range={proximityRange === "standard" ? undefined : proximityRange} />{bt(status.labelKo, status.labelEn)}</small>

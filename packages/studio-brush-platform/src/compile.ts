@@ -1,4 +1,5 @@
-import { evaluateDynamicMapping, pathIRSchema } from "@toonstudio/studio-project-model";
+import { evaluateDynamicMapping } from "@toonstudio/studio-project-model/brush";
+import { pathIRSchema } from "@toonstudio/studio-project-model/path";
 
 import { strokeOutlinePath } from "./geometry";
 import { inkMeshInputPointFromModeledSample as meshInputPoint } from "./ink-mesh-derivation";

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { canonicalJson } from "@toonstudio/studio-project-model";
+import { canonicalJson } from "@toonstudio/studio-project-model/digest";
 import { StudioScopedWriteContextSchema } from "@toonstudio/contracts/studio-scoped-write";
 import { assertStudioApiJsonPayloadSize, STUDIO_API_MAX_JSON_BYTES } from "../studio-api-payload-safety";
 import { studioSaveIntentScopeKey, type StudioDurableSaveIntent, type StudioSaveIntentScope } from "../studio-durable-save-intent";

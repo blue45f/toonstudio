@@ -5,6 +5,17 @@
  * DOM, React, 모델 실행, Worker 수명주기, 네트워크 정책은 의도적으로 포함하지 않는다.
  */
 import { sha256HexPortable } from "../studio-sha256";
+import {
+  STUDIO_SCENE_LAYER_LIFT_BUDGETS,
+  STUDIO_SCENE_LAYER_LIFT_SOURCE_MIME_TYPES,
+  type StudioSceneLayerLiftSourceMimeType,
+} from "./studio-layer-lift-budgets";
+
+export {
+  STUDIO_SCENE_LAYER_LIFT_BUDGETS,
+  STUDIO_SCENE_LAYER_LIFT_SOURCE_MIME_TYPES,
+  type StudioSceneLayerLiftSourceMimeType,
+};
 
 export const STUDIO_SCENE_LAYER_LIFT_CONTRACT_KIND =
   "toonstudio.scene-layer-lift" as const;
@@ -15,22 +26,6 @@ export const STUDIO_SCENE_LAYER_LIFT_RESULT_KIND =
   "toonstudio.scene-layer-lift/result" as const;
 export const STUDIO_SCENE_LAYER_LIFT_LOCAL_PROVIDER_RECEIPT_KIND =
   "toonstudio.scene-layer-lift/local-provider-receipt" as const;
-
-export const STUDIO_SCENE_LAYER_LIFT_BUDGETS = Object.freeze({
-  maximumAxisPixels: 8_192,
-  maximumPixels: 16_777_216,
-  maximumInputBytes: 64 * 1_024 * 1_024,
-  maximumOutputBytes: 256 * 1_024 * 1_024,
-  maximumLayerCount: 12,
-  maximumMaskBytes: 128 * 1_024 * 1_024,
-  maximumSourceCharacters: 512,
-  maximumIdentifierCharacters: 160,
-  maximumLayerLabelCharacters: 128,
-  maximumDiagnostics: 32,
-  maximumDiagnosticMessageCharacters: 256,
-  maximumProviderVersionCharacters: 64,
-  maximumDurationMilliseconds: 24 * 60 * 60 * 1_000,
-} as const);
 
 export const STUDIO_SCENE_LAYER_LIFT_SEMANTIC_LAYER_ROLES = Object.freeze([
   "background",
@@ -46,16 +41,8 @@ export const STUDIO_SCENE_LAYER_LIFT_SEMANTIC_LAYER_ROLES = Object.freeze([
   "unclassified",
 ] as const);
 
-export const STUDIO_SCENE_LAYER_LIFT_SOURCE_MIME_TYPES = Object.freeze([
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-] as const);
-
 export type StudioSceneLayerLiftSemanticLayerRole =
   (typeof STUDIO_SCENE_LAYER_LIFT_SEMANTIC_LAYER_ROLES)[number];
-export type StudioSceneLayerLiftSourceMimeType =
-  (typeof STUDIO_SCENE_LAYER_LIFT_SOURCE_MIME_TYPES)[number];
 export type StudioSceneLayerLiftSha256 = `sha256:${string}`;
 
 /**

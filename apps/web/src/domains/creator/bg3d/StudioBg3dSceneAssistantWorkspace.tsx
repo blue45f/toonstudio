@@ -6,7 +6,7 @@ import {
   Copy, Cuboid, Focus, ImagePlus, Layers3, Loader2, Maximize2, Move3d, Rotate3d,
   Save, Scaling, ScanLine, SlidersHorizontal, SunMedium, Trash2, Upload, UserPlus,
 } from "lucide-react";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useReducer, useRef, useState } from "react";
 
 import type { ReactNode } from "react";
 
@@ -24,6 +24,8 @@ import type { StudioBg3dAssistantGoal, StudioBg3dAssistantOutputStyle, StudioBg3
 import "./studio-bg3d-scene-assistant.css";
 import "../studio-3d-ui/studio-3d-illustrated-chrome.css";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+
+const LazyStudio3dWebtoonProPanel = lazy(() => import("../studio-3d-pro/Studio3dWebtoonProPanel"));
 
 type AssistantSceneNode = { readonly id: string; readonly modelId?: string };
 type AssistantBooleanSetter = (next: boolean | ((current: boolean) => boolean)) => void;
@@ -523,6 +525,7 @@ export function StudioBg3dSceneAssistantWorkspace({
   const [sheetState, setSheetState] = useState<StudioBg3dAssistantSheetState>("half");
   const [activeCameraPreset, setActiveCameraPreset] = useState("threeQuarter");
   const [outputStyle, setOutputStyle] = useState<StudioBg3dAssistantOutputStyle>("color");
+  const [proLabOpen, setProLabOpen] = useState(false);
   const [sceneFramingRequest, requestSceneFraming] = useReducer((revision: number) => revision + 1, 0);
   const hydratedRef = useRef(false);
   const completedSceneFramingRequestRef = useRef(0);
@@ -809,6 +812,14 @@ export function StudioBg3dSceneAssistantWorkspace({
             {bt(`${preparingModel} 배치 준비 중…`, `Preparing ${preparingModel} for placement…`)}
           </p>}
           {stepContent}
+          <details className="mt-2 rounded-lg border border-line bg-card px-3 py-2" open={proLabOpen} onToggle={(e) => setProLabOpen(e.currentTarget.open)}>
+            <summary className="flex min-h-11 cursor-pointer items-center text-xs font-semibold text-fg">한국 웹툰 3D 프로 랩</summary>
+            {proLabOpen ? (
+              <Suspense fallback={<p role="status" className="py-2 text-xs">3D 프로 랩 불러오는 중…</p>}>
+                <LazyStudio3dWebtoonProPanel onApplyCelContract={(p) => { h.setLineArtPreview(true); h.updateLtToneSettings({ mode: "cel", toneBands: p.toneBandCount, inkPx: p.inkPx }); }} onPlaceHeroAsset={(a) => { void h.addCustomModelToScene(a.id); }} />
+              </Suspense>
+            ) : null}
+          </details>
         </div>
         {h.librarySaveNotice ? (
           <div className="scene-assistant__notice scene-assistant__notice--success" role="status">

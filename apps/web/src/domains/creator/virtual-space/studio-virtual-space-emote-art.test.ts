@@ -6,7 +6,9 @@ import {
   STUDIO_SPACE_EMOTE_PALETTE,
   rasterizeStudioSpaceEmote,
   studioSpaceEmoteBitmap,
+  studioSpaceEmoteDramaticVfx,
   studioSpaceEmotePixelRuns,
+  studioSpaceEmoteVfxRenderPlan,
 } from "./studio-virtual-space-emote-art";
 
 describe("studio virtual space emote pixel art", () => {
@@ -57,5 +59,19 @@ describe("studio virtual space emote pixel art", () => {
       }
       expect(studioSpaceEmotePixelRuns(id)).toBe(runs);
     }
+  });
+
+  it("모든 이모트가 20종 드라마틱 VFX와 reduced-motion 배지 플랜으로 연결된다", () => {
+    for (const id of STUDIO_SPACE_EMOTE_IDS) {
+      const vfx = studioSpaceEmoteDramaticVfx(id);
+      expect(vfx.primaryOklch.startsWith("oklch(")).toBe(true);
+      const reduced = studioSpaceEmoteVfxRenderPlan(id, true);
+      expect(reduced.effectiveBurstCount).toBe(0);
+      expect(reduced.badgeEmoji.length).toBeGreaterThan(0);
+    }
+    expect(studioSpaceEmoteDramaticVfx("calisthenics").id).toBe("mint-healing-spark");
+    expect(studioSpaceEmoteDramaticVfx("kpop-dance").id).toBe("team-harmony-wave");
+    expect(studioSpaceEmoteDramaticVfx("fireworks").id).toBe("deadline-confetti-fireworks");
+    expect(studioSpaceEmoteDramaticVfx("coffee").id).toBe("coffee-healing-steam");
   });
 });

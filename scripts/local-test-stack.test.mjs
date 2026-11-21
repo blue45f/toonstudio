@@ -6,6 +6,7 @@ import {
   apiHealthUrl,
   apiReadyUrl,
   assertDisposableSeedAllowed,
+  buildDisposableApiEnv,
   buildIsolatedLocalEnv,
   buildPostgresPathEnv,
   disposableDatabaseUrl,
@@ -15,78 +16,105 @@ import {
   isRemoteDatabaseUrl,
   isTcpPortFree,
   LOCAL_TEST_DB_CONTAINER,
+  LOCAL_TEST_DEFAULT_STORAGE_PORT,
   LOCAL_TEST_RUNTIME_PASSWORD,
   localClusterDir,
   parseLocalTestStackArgs,
   redactDatabaseUrl,
   resolvePostgresBinary,
   resolvePostgresBinaryDir,
+  storageHealthUrl,
   webHealthUrl,
 } from "./local-test-stack.mjs";
 
 describe("local-test-stack args", () => {
-  it("기본값은 DB 55432 + API 4001 + Web 5173", () => {
+  it("기본값은 DB 55432 + API 4001 + Web 5173 + Storage 59000", () => {
     assert.deepEqual(parseLocalTestStackArgs([]), {
       check: false,
       help: false,
       json: false,
       seed: false,
       seedOnly: false,
+      studioSeed: false,
       resetDb: false,
       dbBackend: "auto",
       dbPort: 55432,
       apiPort: 4001,
       webPort: 5173,
+      storagePort: LOCAL_TEST_DEFAULT_STORAGE_PORT,
     });
   });
 
-  it("--check/--reset-db/--seed/--json/포트/백엔드를 파싱한다", () => {
+  it("--check/--reset-db/--seed/--studio-seed/--json/4포트/백엔드를 파싱한다", () => {
     const parsed = parseLocalTestStackArgs([
       "--check",
       "--reset-db",
       "--seed",
+      "--studio-seed",
       "--json",
       "--db-port",
       "55449",
       "--api-port",
       "4101",
       "--web-port=5273",
+      "--storage-port=59100",
       "--db-backend=local",
     ]);
     assert.equal(parsed.check, true);
     assert.equal(parsed.resetDb, true);
     assert.equal(parsed.seed, true);
+    assert.equal(parsed.studioSeed, true);
     assert.equal(parsed.seedOnly, false);
     assert.equal(parsed.json, true);
     assert.equal(parsed.dbPort, 55449);
     assert.equal(parsed.apiPort, 4101);
     assert.equal(parsed.webPort, 5273);
+    assert.equal(parsed.storagePort, 59100);
     assert.equal(parsed.dbBackend, "local");
   });
 
-  it("--seed-only는 seed 플래그도 함께 켠다", () => {
+  it("--seed-only와 --studio-seed는 seed 플래그도 함께 켠다", () => {
     const parsed = parseLocalTestStackArgs(["--seed-only", "--db-port=55445"]);
     assert.equal(parsed.seed, true);
     assert.equal(parsed.seedOnly, true);
     assert.equal(parsed.dbPort, 55445);
+
+    const studio = parseLocalTestStackArgs(["--studio-seed", "--storage-port", "59011"]);
+    assert.equal(studio.seed, true);
+    assert.equal(studio.studioSeed, true);
+    assert.equal(studio.storagePort, 59011);
   });
 
   it("잘못된 포트·포트 충돌·잘못된 백엔드·알 수 없는 인자를 거부한다", () => {
     assert.throws(() => parseLocalTestStackArgs(["--api-port", "0"]), /포트/);
     assert.throws(() => parseLocalTestStackArgs(["--web-port=99999"]), /포트/);
     assert.throws(() => parseLocalTestStackArgs(["--db-port", "abc"]), /포트/);
+    assert.throws(() => parseLocalTestStackArgs(["--storage-port", "0"]), /포트/);
     assert.throws(() => parseLocalTestStackArgs(["--api-port=5173", "--web-port=5173"]), /포트 충돌/);
     assert.throws(() => parseLocalTestStackArgs(["--db-port=4001", "--api-port=4001"]), /포트 충돌/);
+    assert.throws(() => parseLocalTestStackArgs(["--storage-port=4001", "--api-port=4001"]), /포트 충돌/);
     assert.throws(() => parseLocalTestStackArgs(["--db-backend=invalid"]), /auto, local, docker/);
     assert.throws(() => parseLocalTestStackArgs(["--unknown-flag"]), /알 수 없는 인자/);
   });
 });
 
 describe("local-test-stack url and safety guards", () => {
-  it("헬스/준비성 URL을 조립한다", () => {
+  it("헬스/준비성/스토리지 URL과 로컬 스토리지 API 환경을 조립한다", () => {
     assert.equal(apiHealthUrl(4001), "http://127.0.0.1:4001/api/health/live");
     assert.equal(apiReadyUrl(4001), "http://127.0.0.1:4001/api/health/ready");
     assert.equal(webHealthUrl(5173), "http://127.0.0.1:5173/");
+    assert.equal(storageHealthUrl(59000), "http://127.0.0.1:59000/health");
+
+    const apiEnv = buildDisposableApiEnv({
+      environment: { PATH: "/usr/bin", R2_OBJECT_STORAGE_SECRET_ACCESS_KEY: "must-not-leak" },
+      databaseUrl: disposableRuntimeDatabaseUrl(55439),
+      apiPort: 4019,
+      webPort: 5189,
+      storageEndpoint: "http://127.0.0.1:59019",
+      postgresBinDir: null,
+    });
+    assert.equal(apiEnv.LOCAL_OBJECT_STORAGE_ENDPOINT, "http://127.0.0.1:59019");
+    assert.equal(apiEnv.R2_OBJECT_STORAGE_SECRET_ACCESS_KEY, undefined);
   });
 
   it("DB URL에서 자격증명을 마스킹한다", () => {

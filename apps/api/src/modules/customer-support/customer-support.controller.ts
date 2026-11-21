@@ -1,10 +1,38 @@
-import { Body, Controller, Get, Header, Headers, Inject, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Header, Headers, Inject, Optional, Param, Post, Query } from "@nestjs/common";
 
+import { CustomerSupportChatService } from "./customer-support-chat.service";
 import { CustomerSupportService } from "./customer-support.service";
 
 @Controller()
 export class CustomerSupportController {
-  constructor(@Inject(CustomerSupportService) private readonly service: CustomerSupportService) {}
+  private readonly chat: CustomerSupportChatService;
+
+  constructor(
+    @Inject(CustomerSupportService) private readonly service: CustomerSupportService,
+    @Optional() @Inject(CustomerSupportChatService) chatService?: CustomerSupportChatService,
+  ) {
+    this.chat = chatService ?? new CustomerSupportChatService();
+  }
+
+  @Post("customer-support/ai-chat")
+  @Header("Cache-Control", "no-store, max-age=0")
+  aiChat(
+    @Headers("x-user-id") userId: string | undefined,
+    @Headers("x-forwarded-for") forwardedFor: string | undefined,
+    @Body() body: unknown,
+  ) {
+    return this.chat.handleChatRequest(body, { userId, forwardedFor });
+  }
+
+  @Post("customer-support/ai-chat/autofill-ticket")
+  @Header("Cache-Control", "no-store, max-age=0")
+  aiChatAutofillTicket(
+    @Headers("x-user-id") userId: string | undefined,
+    @Headers("x-forwarded-for") forwardedFor: string | undefined,
+    @Body() body: unknown,
+  ) {
+    return this.chat.suggestTicketAutofill(body, { userId, forwardedFor });
+  }
 
   @Get("support/status")
   @Header("Cache-Control", "no-store, max-age=0")

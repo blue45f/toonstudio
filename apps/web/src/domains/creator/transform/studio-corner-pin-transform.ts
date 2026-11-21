@@ -56,8 +56,8 @@ export interface CornerPinTransformOptions {
 
 /** 주어진 이미지 해상도(픽셀 중심 0..W-1, 0..H-1)에 대응하는 항등 4점 사각형을 생성한다. */
 export function createIdentityCornerPinQuad(width: number, height: number): CornerPinQuad {
-  const maxX = Math.max(1, width - 1);
-  const maxY = Math.max(1, height - 1);
+  const maxX = Number.isFinite(width) ? Math.max(1, width - 1) : 1;
+  const maxY = Number.isFinite(height) ? Math.max(1, height - 1) : 1;
   return {
     topLeft: { x: 0, y: 0 },
     topRight: { x: maxX, y: 0 },
@@ -428,8 +428,10 @@ export function applyCornerPinTransform(
   options: CornerPinTransformOptions = {},
 ): StudioImageDataLike {
   const { width, height, data } = source;
-  const outW = Math.max(1, Math.trunc(options.outputWidth ?? width));
-  const outH = Math.max(1, Math.trunc(options.outputHeight ?? height));
+  const rawOutW = options.outputWidth ?? width;
+  const rawOutH = options.outputHeight ?? height;
+  const outW = Number.isFinite(rawOutW) ? Math.max(1, Math.trunc(rawOutW)) : Math.max(1, Math.trunc(width) || 1);
+  const outH = Number.isFinite(rawOutH) ? Math.max(1, Math.trunc(rawOutH)) : Math.max(1, Math.trunc(height) || 1);
   const out = new Uint8ClampedArray(outW * outH * 4);
   if (width <= 0 || height <= 0 || data.length < width * height * 4) {
     return { width: outW, height: outH, data: out };

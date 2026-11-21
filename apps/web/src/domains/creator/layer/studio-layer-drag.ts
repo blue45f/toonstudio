@@ -69,7 +69,10 @@ export function studioLayerDropSideFromPointer(
   top: number,
   height: number
 ): LayerSelectionDropSide {
-  return clientY < top + Math.max(1, height) / 2 ? "front" : "back";
+  const safeHeight = Number.isFinite(height) ? Math.max(1, height) : 1;
+  const safeTop = Number.isFinite(top) ? top : 0;
+  const safeY = Number.isFinite(clientY) ? clientY : safeTop + safeHeight / 2;
+  return safeY < safeTop + safeHeight / 2 ? "front" : "back";
 }
 
 export function resolveStudioLayerItemDropIntent(input: {
@@ -124,7 +127,8 @@ export function resolveStudioLayerGroupDropIntent(input: {
   relativeY: number;
 }): StudioLayerDropIntent | null {
   const { payload, targetKey, targetGroupId, targetId } = input;
-  const relativeY = Math.max(0, Math.min(1, input.relativeY));
+  const safeRelativeY = Number.isFinite(input.relativeY) ? input.relativeY : 0.5;
+  const relativeY = Math.max(0, Math.min(1, safeRelativeY));
   if (payload.kind === "group" && payload.groupId === targetGroupId) return null;
 
   const centerDrop = relativeY >= 0.28 && relativeY <= 0.72;

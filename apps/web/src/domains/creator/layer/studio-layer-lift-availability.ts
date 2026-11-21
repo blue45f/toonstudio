@@ -13,8 +13,8 @@ import { hasActiveImageFilters } from "../render/studio-konva-filter-fields";
 import {
   STUDIO_SCENE_LAYER_LIFT_BUDGETS,
   type StudioSceneLayerLiftSourceMimeType,
-} from "./studio-layer-lift-contract";
-import { fingerprintStudioLayerLiftSource } from "./studio-layer-lift-plan";
+} from "./studio-layer-lift-budgets";
+import { fingerprintStudioLayerLiftSource } from "./studio-layer-lift-fingerprint";
 
 import type { El, ImageEl } from "../studio-element-model";
 import type { LayerGroup } from "../studio-layers";

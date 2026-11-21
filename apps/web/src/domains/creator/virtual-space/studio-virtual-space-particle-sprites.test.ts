@@ -4,9 +4,14 @@
 import { describe, expect, it } from "vitest";
 
 import type { ProceduralSheetDeps } from "./studio-virtual-space-character-procedural";
+import { STUDIO_DRAMATIC_VFX_CATALOG } from "./studio-virtual-space-dramatic-vfx-catalog";
 import {
-  buildStudioParticleSprite,
+  STUDIO_DRAMATIC_PARTICLE_SPRITE_KINDS,
   STUDIO_PARTICLE_SPRITE_KINDS,
+  buildStudioDramaticParticleSprite,
+  buildStudioParticleSprite,
+  studioDramaticParticleSpriteForVfx,
+  studioDramaticParticleSpriteLabel,
   studioParticleSpriteLabel,
 } from "./studio-virtual-space-particle-sprites";
 
@@ -59,5 +64,23 @@ describe("buildStudioParticleSprite", () => {
 
   it("알 수 없는 종류는 오류를 낸다", () => {
     expect(() => buildStudioParticleSprite("unknown" as never, deps)).toThrow("알 수 없는 파티클 스프라이트");
+  });
+
+  it("드라마틱 연출 VFX 전용 10종 스프라이트와 20종 VFX 매핑을 모두 생성한다", () => {
+    expect(STUDIO_DRAMATIC_PARTICLE_SPRITE_KINDS).toHaveLength(10);
+    for (const kind of STUDIO_DRAMATIC_PARTICLE_SPRITE_KINDS) {
+      const label = studioDramaticParticleSpriteLabel(kind);
+      expect(label.ko.length).toBeGreaterThan(0);
+      expect(label.en.length).toBeGreaterThan(0);
+      const sprite = buildStudioDramaticParticleSprite(kind, deps);
+      expect(sprite.kind).toBe(kind);
+      expect(sprite.dataUrl.startsWith("data:image/png")).toBe(true);
+      expect(sprite.width).toBe(sprite.cell * sprite.frames);
+    }
+    for (const vfx of STUDIO_DRAMATIC_VFX_CATALOG) {
+      const mapped = studioDramaticParticleSpriteForVfx(vfx.id);
+      expect(STUDIO_DRAMATIC_PARTICLE_SPRITE_KINDS).toContain(mapped);
+    }
+    expect(() => buildStudioDramaticParticleSprite("unknown" as never, deps)).toThrow("알 수 없는 드라마틱 파티클 스프라이트");
   });
 });

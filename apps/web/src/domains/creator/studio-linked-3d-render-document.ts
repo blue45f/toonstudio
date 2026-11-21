@@ -9,7 +9,7 @@ import { isStudioLegacyPigmentArchivedElement } from "@toonstudio/contracts/stud
 import {
   STUDIO_BG3D_LT_LAYER_ROLES,
   type StudioBg3dLtLayerRole,
-} from "./bg3d/studio-bg3d-lt-layer-plan";
+} from "./runtime-leaves/studio-bg3d-lt-layer-anchor";
 import {
   applyStudioBg3dShot,
   captureStudioBg3dShot,

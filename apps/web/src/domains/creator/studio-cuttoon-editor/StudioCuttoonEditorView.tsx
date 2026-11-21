@@ -7,7 +7,7 @@
 import { StudioAppliedFilterPresentation } from "../filter/StudioAppliedFilterPresentation";
 import { StudioColorWorkspaceProvider } from "../color/StudioColorWorkspaceContext";
 import { Maximize2 } from "lucide-react";
-import { StudioLiveCollaborationProvider } from "../live/StudioLiveCollaborationProvider";
+import { StudioLiveCollaborationProviderLazy as StudioLiveCollaborationProvider } from "../live/StudioLiveCollaborationProviderLazy";
 import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, studioChromeIconClass } from "../studio-chrome-ui";
 import { lazy, Suspense, useLayoutEffect } from "react";
 import { cancelPendingStudioAllTools } from "../studio-toolbar-channel";
@@ -19,11 +19,11 @@ import { StudioToolHintPreferencesProvider } from "../StudioToolHint";
 import { StudioWorkspaceNavigator } from "../StudioWorkspaceNavigator";
 import { Container } from "@/shared/components/container";
 import { cn } from "@/shared/lib/utils";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { StudioCuttoonEditorChrome } from "./StudioCuttoonEditorChrome";
 import { StudioCuttoonEditorDialogs } from "./StudioCuttoonEditorDialogs";
 import { StudioCuttoonEditorHosts } from "./StudioCuttoonEditorHosts";
 import { StudioCuttoonEditorWorkspace } from "./StudioCuttoonEditorWorkspace";
-import { StudioDrawingAppBar } from "./StudioDrawingAppBar";
 import { StudioDrawingClarityProvider } from "./StudioDrawingClarity";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import { StudioScopedWriteTargetPicker } from "./StudioScopedWriteTargetPicker";
@@ -37,6 +37,10 @@ import "../studio-shell/studio-visual-identity-v2.css";
 const StudioCuttoonEditorContextMenu = lazy(() => import("./StudioCuttoonEditorContextMenu").then(module => ({ default: module.StudioCuttoonEditorContextMenu })));
 const StudioDraftSaveCenter = lazy(() => import("../StudioDraftSaveCenter").then((module) => ({ default: module.StudioDraftSaveCenter })));
 const StudioSaveStatusChromeMount = lazy(() => import("../StudioSaveStatusChromeMount").then((module) => ({ default: module.StudioSaveStatusChromeMount })));
+const StudioDrawingAppBar = lazyRetry(
+  () => import("./StudioDrawingAppBar").then((module) => ({ default: module.StudioDrawingAppBar })),
+  "StudioDrawingAppBar",
+);
 const StudioLegacyPigmentStrokeMigration = lazy(() => import("../brush/StudioLegacyPigmentStrokeMigration"));
 
 export type { StudioCuttoonEditorViewSession };
@@ -178,7 +182,9 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
         selected={s.selectedId ? s.elementById.get(s.selectedId) : undefined}
       >
       {drawingAppPresentation ? (
-        !canvasOnlyMode && !mobileImmersive ? <StudioDrawingAppBar session={s} /> : null
+        !canvasOnlyMode && !mobileImmersive ? (
+          <Suspense fallback={null}><StudioDrawingAppBar session={s} /></Suspense>
+        ) : null
       ) : (
         <StudioWorkspaceNavigator />
       )}

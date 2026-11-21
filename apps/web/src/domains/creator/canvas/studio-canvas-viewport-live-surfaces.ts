@@ -27,7 +27,7 @@ import {
 import {
   resolveStudioVelloHubProductCapability,
   STUDIO_VELLO_HUB_PRODUCT_CAPABILITY,
-} from "../render/studio-vello-hub";
+} from "../render/studio-vello-hub-capability";
 import type {
   StudioRenderSurfaceAuthority,
 } from "../render/StudioRenderSurface";

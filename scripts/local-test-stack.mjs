@@ -17,8 +17,17 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 
+import {
+  LOCAL_OBJECT_STORAGE_DEFAULT_PORT,
+  objectStorageBaseUrl,
+  objectStorageHealthUrl,
+  startLocalObjectStorageEmulator,
+} from "./local-object-storage-emulator.mjs";
+import { applyStudioSeedPack } from "./local-studio-seed-pack.mjs";
+
 export const LOCAL_TEST_DEFAULT_API_PORT = 4001;
 export const LOCAL_TEST_DEFAULT_WEB_PORT = 5173;
+export const LOCAL_TEST_DEFAULT_STORAGE_PORT = LOCAL_OBJECT_STORAGE_DEFAULT_PORT;
 export const LOCAL_TEST_DB_CONTAINER = "toonstudio-local-test-db";
 export const LOCAL_TEST_DB_PORT = 55432;
 export const LOCAL_TEST_DB_PASSWORD = "toonstudio-local-test";
@@ -60,8 +69,9 @@ function parseDbBackendValue(rawValue, flagLabel) {
 
 export function parseLocalTestStackArgs(argv) {
   const options = {
-    check: false, help: false, json: false, seed: false, seedOnly: false, resetDb: false,
-    dbBackend: "auto", dbPort: LOCAL_TEST_DB_PORT, apiPort: LOCAL_TEST_DEFAULT_API_PORT, webPort: LOCAL_TEST_DEFAULT_WEB_PORT,
+    check: false, help: false, json: false, seed: false, seedOnly: false, studioSeed: false, resetDb: false,
+    dbBackend: "auto", dbPort: LOCAL_TEST_DB_PORT, apiPort: LOCAL_TEST_DEFAULT_API_PORT,
+    webPort: LOCAL_TEST_DEFAULT_WEB_PORT, storagePort: LOCAL_TEST_DEFAULT_STORAGE_PORT,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -70,19 +80,23 @@ export function parseLocalTestStackArgs(argv) {
     else if (arg === "--json") options.json = true;
     else if (arg === "--seed") options.seed = true;
     else if (arg === "--seed-only") { options.seed = true; options.seedOnly = true; }
+    else if (arg === "--studio-seed") { options.seed = true; options.studioSeed = true; }
     else if (arg === "--reset-db") options.resetDb = true;
     else if (arg === "--api-port") { options.apiPort = parsePortValue(argv[index + 1], "--api-port"); index += 1; }
     else if (arg === "--web-port") { options.webPort = parsePortValue(argv[index + 1], "--web-port"); index += 1; }
     else if (arg === "--db-port") { options.dbPort = parsePortValue(argv[index + 1], "--db-port"); index += 1; }
+    else if (arg === "--storage-port") { options.storagePort = parsePortValue(argv[index + 1], "--storage-port"); index += 1; }
     else if (arg === "--db-backend") { options.dbBackend = parseDbBackendValue(argv[index + 1], "--db-backend"); index += 1; }
     else if (arg.startsWith("--api-port=")) options.apiPort = parsePortValue(arg.slice("--api-port=".length), "--api-port=");
     else if (arg.startsWith("--web-port=")) options.webPort = parsePortValue(arg.slice("--web-port=".length), "--web-port=");
     else if (arg.startsWith("--db-port=")) options.dbPort = parsePortValue(arg.slice("--db-port=".length), "--db-port=");
+    else if (arg.startsWith("--storage-port=")) options.storagePort = parsePortValue(arg.slice("--storage-port=".length), "--storage-port=");
     else if (arg.startsWith("--db-backend=")) options.dbBackend = parseDbBackendValue(arg.slice("--db-backend=".length), "--db-backend=");
     else throw new Error(`알 수 없는 인자: ${arg} (--help 참조)`);
   }
-  if (options.apiPort === options.webPort || options.apiPort === options.dbPort || options.webPort === options.dbPort) {
-    throw new Error(`포트 충돌: --db-port(${options.dbPort}), --api-port(${options.apiPort}), --web-port(${options.webPort})는 서로 달라야 합니다.`);
+  const ports = [options.dbPort, options.apiPort, options.webPort, options.storagePort];
+  if (new Set(ports).size !== ports.length) {
+    throw new Error(`포트 충돌: --db-port(${options.dbPort}), --api-port(${options.apiPort}), --web-port(${options.webPort}), --storage-port(${options.storagePort})는 서로 달라야 합니다.`);
   }
   return options;
 }
@@ -185,28 +199,19 @@ export function buildIsolatedLocalEnv(
 }
 
 export function buildDisposableApiEnv({
-  environment = process.env,
-  databaseUrl,
-  apiPort,
-  webPort,
-  runtimeRoleSeparated = true,
-  postgresBinDir = resolvePostgresBinaryDir({ env: environment }),
-  extra = {},
+  environment = process.env, databaseUrl, apiPort, webPort, storageEndpoint = null,
+  runtimeRoleSeparated = true, postgresBinDir = resolvePostgresBinaryDir({ env: environment }), extra = {},
 }) {
   return buildIsolatedLocalEnv(environment, {
-    NODE_ENV: "development",
-    API_LOCAL_ENV_FILE_ENABLED: "false",
-    NEST_API_HOST: "127.0.0.1",
-    NEST_API_PORT: String(apiPort),
-    DATABASE_URL: databaseUrl,
+    NODE_ENV: "development", API_LOCAL_ENV_FILE_ENABLED: "false", NEST_API_HOST: "127.0.0.1",
+    NEST_API_PORT: String(apiPort), DATABASE_URL: databaseUrl,
     ...(runtimeRoleSeparated ? {} : { DATABASE_RUNTIME_ROLE_MODE: "single-owner" }),
+    ...(storageEndpoint ? { LOCAL_OBJECT_STORAGE_ENDPOINT: storageEndpoint } : {}),
     WEB_APP_BASE_URL: `http://127.0.0.1:${webPort}`,
     API_CORS_ALLOWED_ORIGINS: `http://127.0.0.1:${webPort},http://localhost:${webPort}`,
-    AUTH_RATE_LIMIT_MODE: "single-instance-local",
-    AUTH_DISTRIBUTED_RATE_LIMIT_ENABLED: "false",
+    AUTH_RATE_LIMIT_MODE: "single-instance-local", AUTH_DISTRIBUTED_RATE_LIMIT_ENABLED: "false",
     STUDIO_LIVE_CLUSTER_ADAPTER: "memory",
-    AUTH_SESSION_SECRET: randomBytes(32).toString("hex"),
-    AUTH_STATE_SECRET: randomBytes(32).toString("hex"),
+    AUTH_SESSION_SECRET: randomBytes(32).toString("hex"), AUTH_STATE_SECRET: randomBytes(32).toString("hex"),
     ...extra,
   }, { postgresBinDir });
 }
@@ -214,6 +219,7 @@ export function buildDisposableApiEnv({
 export function apiHealthUrl(apiPort) { return `http://127.0.0.1:${apiPort}/api/health/live`; }
 export function apiReadyUrl(apiPort) { return `http://127.0.0.1:${apiPort}/api/health/ready`; }
 export function webHealthUrl(webPort) { return `http://127.0.0.1:${webPort}/`; }
+export function storageHealthUrl(storagePort = LOCAL_TEST_DEFAULT_STORAGE_PORT) { return objectStorageHealthUrl(storagePort); }
 export function disposableDatabaseUrl(dbPort = LOCAL_TEST_DB_PORT) {
   return `postgresql://postgres:${LOCAL_TEST_DB_PASSWORD}@127.0.0.1:${dbPort}/postgres`;
 }
@@ -339,37 +345,24 @@ async function dockerAvailable() {
   return (await runCapture("docker", ["info", "--format", "{{.ServerVersion}}"], { timeoutMs: 5_000 })).ok;
 }
 
-export async function stopLocalPostgresCluster({
-  clusterDir,
-  postgresBinDir = resolvePostgresBinaryDir(),
-  removeDir = false,
-}) {
+export async function stopLocalPostgresCluster({ clusterDir, postgresBinDir = resolvePostgresBinaryDir(), removeDir = false }) {
   if (!clusterDir || !existsSync(clusterDir)) return { stopped: true, removed: false };
   const pgCtlBin = resolvePostgresBinary("pg_ctl", { postgresBinDir });
   const env = buildIsolatedLocalEnv(process.env, { LC_ALL: "C", LANG: "C" }, { postgresBinDir });
   if (existsSync(join(clusterDir, "postmaster.pid"))) {
     const fastStop = await runCapture(pgCtlBin, ["-D", clusterDir, "stop", "-m", "fast", "-w", "-t", "30"], { env, timeoutMs: 35_000 });
-    if (!fastStop.ok) {
-      await runCapture(pgCtlBin, ["-D", clusterDir, "stop", "-m", "immediate", "-w", "-t", "15"], { env, timeoutMs: 20_000 });
-    }
+    if (!fastStop.ok) await runCapture(pgCtlBin, ["-D", clusterDir, "stop", "-m", "immediate", "-w", "-t", "15"], { env, timeoutMs: 20_000 });
   }
   if (removeDir) rmSync(clusterDir, { recursive: true, force: true });
   return { stopped: true, removed: removeDir && !existsSync(clusterDir) };
 }
 
 export async function startLocalPostgresCluster({
-  clusterDir,
-  dbPort = LOCAL_TEST_DB_PORT,
-  resetDb = false,
-  postgresBinDir = resolvePostgresBinaryDir(),
-  log = (msg) => process.stdout.write(`${msg}\n`),
-  ephemeral = false,
+  clusterDir, dbPort = LOCAL_TEST_DB_PORT, resetDb = false,
+  postgresBinDir = resolvePostgresBinaryDir(), log = (msg) => process.stdout.write(`${msg}\n`), ephemeral = false,
 }) {
   if (!postgresBinDir) {
-    throw new Error(
-      "로컬 PostgreSQL 바이너리(initdb/pg_ctl/psql)를 찾을 수 없습니다. "
-      + "macOS에서는 `brew install postgresql@17` 또는 `POSTGRES_BIN_DIR=/opt/homebrew/opt/postgresql@17/bin`을 확인하세요.",
-    );
+    throw new Error("로컬 PostgreSQL 바이너리(initdb/pg_ctl/psql)를 찾을 수 없습니다. macOS에서는 `brew install postgresql@17` 또는 `POSTGRES_BIN_DIR=/opt/homebrew/opt/postgresql@17/bin`을 확인하세요.");
   }
   const initdbBin = resolvePostgresBinary("initdb", { postgresBinDir });
   const pgCtlBin = resolvePostgresBinary("pg_ctl", { postgresBinDir });
@@ -386,37 +379,21 @@ export async function startLocalPostgresCluster({
   }
   const initialized = existsSync(versionFile);
   if (!initialized) {
-    if (existsSync(clusterDir) && !ephemeral) {
-      throw new Error(`로컬 클러스터 경로가 이미 있지만 초기화가 안 됐습니다: ${clusterDir} (--reset-db로 재생성 가능)`);
-    }
-    if (!(await isTcpPortFree(dbPort))) {
-      throw new Error(`로컬 DB 포트 ${dbPort}가 이미 사용 중입니다. --db-port로 다른 포트를 지정하세요.`);
-    }
+    if (existsSync(clusterDir) && !ephemeral) throw new Error(`로컬 클러스터 경로가 이미 있지만 초기화가 안 됐습니다: ${clusterDir} (--reset-db로 재생성 가능)`);
+    if (!(await isTcpPortFree(dbPort))) throw new Error(`로컬 DB 포트 ${dbPort}가 이미 사용 중입니다. --db-port로 다른 포트를 지정하세요.`);
     log(`[db] disposable 로컬 postgres 클러스터 초기화 중 (${clusterDir}, ${postgresBinDir})…`);
-    const created = await runCapture(
-      initdbBin,
-      ["-D", clusterDir, "-U", "postgres", "-A", "trust", "-E", "UTF8", "--locale=C", "--no-sync"],
-      { env: pgEnv, timeoutMs: 120_000 },
-    );
+    const created = await runCapture(initdbBin, ["-D", clusterDir, "-U", "postgres", "-A", "trust", "-E", "UTF8", "--locale=C", "--no-sync"], { env: pgEnv, timeoutMs: 120_000 });
     if (!created.ok) throw new Error(`로컬 postgres 초기화 실패:\n${created.stderr.slice(0, 1000)}`);
   }
 
-  const running = existsSync(pidFile)
-    && (await runCapture(pgCtlBin, ["-D", clusterDir, "status"], { env: pgEnv, timeoutMs: 10_000 })).ok;
+  const running = existsSync(pidFile) && (await runCapture(pgCtlBin, ["-D", clusterDir, "status"], { env: pgEnv, timeoutMs: 10_000 })).ok;
   if (!running) {
-    if (!(await isTcpPortFree(dbPort))) {
-      throw new Error(`로컬 DB 포트 ${dbPort}가 이미 사용 중입니다. --db-port로 다른 포트를 지정하세요.`);
-    }
+    if (!(await isTcpPortFree(dbPort))) throw new Error(`로컬 DB 포트 ${dbPort}가 이미 사용 중입니다. --db-port로 다른 포트를 지정하세요.`);
     const pgOptions = [
-      `-h 127.0.0.1 -p ${dbPort} -k ${clusterDir}`,
-      "-c listen_addresses=127.0.0.1",
+      `-h 127.0.0.1 -p ${dbPort} -k ${clusterDir}`, "-c listen_addresses=127.0.0.1",
       ...(ephemeral ? ["-c fsync=off -c synchronous_commit=off -c full_page_writes=off"] : []),
     ].join(" ");
-    const started = await runCapture(
-      pgCtlBin,
-      ["-D", clusterDir, "-o", pgOptions, "-l", logFile, "-w", "-t", "60", "start"],
-      { env: pgEnv, timeoutMs: 90_000 },
-    );
+    const started = await runCapture(pgCtlBin, ["-D", clusterDir, "-o", pgOptions, "-l", logFile, "-w", "-t", "60", "start"], { env: pgEnv, timeoutMs: 90_000 });
     if (!started.ok) {
       const logTail = existsSync(logFile) ? `\n[pg.log]\n${readFileSync(logFile, "utf8").slice(-1000)}` : "";
       throw new Error(`로컬 postgres 시작 실패 (포트 ${dbPort}):\n${started.stderr.slice(0, 1000)}${logTail}`);
@@ -426,11 +403,7 @@ export async function startLocalPostgresCluster({
   }
 
   if (!initialized) {
-    const secured = await runCapture(
-      psqlBin,
-      [`postgresql://postgres@127.0.0.1:${dbPort}/postgres`, "-c", `ALTER ROLE postgres PASSWORD '${LOCAL_TEST_DB_PASSWORD}'`],
-      { env: pgEnv, timeoutMs: 30_000 },
-    );
+    const secured = await runCapture(psqlBin, [`postgresql://postgres@127.0.0.1:${dbPort}/postgres`, "-c", `ALTER ROLE postgres PASSWORD '${LOCAL_TEST_DB_PASSWORD}'`], { env: pgEnv, timeoutMs: 30_000 });
     if (!secured.ok) throw new Error(`로컬 클러스터 비밀번호 설정 실패:\n${secured.stderr.slice(0, 500)}`);
   }
 
@@ -531,33 +504,39 @@ const SEED_REVISION_BACKFILL_SQL = [
 
 export async function seedDisposableDatabase(
   databaseUrl,
-  { managedDisposable = false, environmentDatabaseUrl = "", postgresBinDir = resolvePostgresBinaryDir(), log = (msg) => process.stdout.write(`${msg}\n`) } = {},
+  {
+    managedDisposable = false, environmentDatabaseUrl = "", includeStudioSeed = false,
+    postgresBinDir = resolvePostgresBinaryDir(), log = (msg) => process.stdout.write(`${msg}\n`),
+  } = {},
 ) {
   assertDisposableSeedAllowed({ databaseUrl, managedDisposable, environmentDatabaseUrl });
   log(`[db] 로컬 disposable DB에 샘플 시드 주입 중 (${redactDatabaseUrl(databaseUrl)})…`);
   const seeded = await runCapture("pnpm", ["db:seed"], {
     env: buildIsolatedLocalEnv(process.env, { DATABASE_URL: databaseUrl, API_LOCAL_ENV_FILE_ENABLED: "false" }, { postgresBinDir }),
-    cwd: process.cwd(),
-    timeoutMs: 180_000,
+    cwd: process.cwd(), timeoutMs: 180_000,
   });
   if (!seeded.ok) throw new Error(`로컬 disposable DB 시드 실패:\n${(seeded.stdout + seeded.stderr).slice(-1500)}`);
   // seed.ts가 삽입한 creator_work 행에 대응하는 creator_work_revision 불변식을 멱등 보정한다.
   const psqlBin = resolvePostgresBinary("psql", { postgresBinDir });
   const backfill = await runCapture(
-    psqlBin,
-    [databaseUrl, "-X", "-v", "ON_ERROR_STOP=1", "-c", SEED_REVISION_BACKFILL_SQL],
+    psqlBin, [databaseUrl, "-X", "-v", "ON_ERROR_STOP=1", "-c", SEED_REVISION_BACKFILL_SQL],
     { env: buildIsolatedLocalEnv(process.env, { PSQLRC: "/dev/null" }, { postgresBinDir }), timeoutMs: 30_000 },
   );
   if (!backfill.ok) throw new Error(`시드 creator_work_revision 보정 실패:\n${backfill.stderr.slice(0, 1000)}`);
-  return { ok: true, output: seeded.stdout.trim() };
+  let studioSeed = null;
+  if (includeStudioSeed) {
+    studioSeed = await applyStudioSeedPack(databaseUrl, { managedDisposable, environmentDatabaseUrl, postgresBinDir, log });
+  }
+  return { ok: true, output: seeded.stdout.trim(), studioSeed };
 }
 
-async function prepareDisposableDatabase({ resetDb, dbPort, dbBackend, seed, envDatabaseUrl, log }) {
+async function prepareDisposableDatabase({ resetDb, dbPort, dbBackend, seed, studioSeed = false, envDatabaseUrl, log }) {
   const ensured = await ensureDisposablePostgres({ resetDb, dbPort, dbBackend, log });
   if (ensured.fresh) await bootstrapFreshDatabase(ensured.databaseUrl, { postgresBinDir: ensured.postgresBinDir, log });
   if (seed) {
     await seedDisposableDatabase(ensured.databaseUrl, {
-      managedDisposable: true, environmentDatabaseUrl: envDatabaseUrl, postgresBinDir: ensured.postgresBinDir, log,
+      managedDisposable: true, environmentDatabaseUrl: envDatabaseUrl,
+      includeStudioSeed: studioSeed, postgresBinDir: ensured.postgresBinDir, log,
     });
   }
   return ensured;
@@ -572,53 +551,50 @@ async function canConnectWithPsql(databaseUrl, postgresBinDir) {
 
 function printHelp() {
   process.stdout.write([
-    "사용법: pnpm local:test [옵션]",
-    "",
-    "  로컬 PostgreSQL(Homebrew postgresql@17 자동 탐지 또는 Docker) + API(Nest) + Web(Vite) 스택을 기동한다.",
-    "",
+    "사용법: pnpm local:test [옵션]", "",
+    "  로컬 PostgreSQL(Homebrew postgresql@17 자동 탐지 또는 Docker) + 오브젝트 스토리지 에뮬레이터 + API(Nest) + Web(Vite) 스택을 기동한다.", "",
     "옵션:",
     "  --check                 기동 없이 스택 상태만 확인 (CI/게이트용, 미충족 시 exit 1)",
     "  --seed                  disposable 로컬 DB(127.0.0.1)에 스키마 적용 후 샘플 시드 1회 주입",
+    "  --studio-seed           기본 시드와 함께 6인 분업 스튜디오 시드 팩(3화·컷 슬라이스·아트바이블) 주입",
     "  --seed-only             disposable 로컬 DB 준비+시드만 수행하고 즉시 종료",
     "  --json                  상태 요약을 JSON으로 stdout에 출력 (진행 로그는 stderr)",
     "  --db-port N             disposable DB 포트 (기본 55432)",
     "  --api-port N            API 포트 (기본 4001)",
     "  --web-port N            Web 포트 (기본 5173)",
+    "  --storage-port N        로컬 오브젝트 스토리지 에뮬레이터 포트 (기본 59000)",
     "  --db-backend M          disposable DB 백엔드 (auto | local | docker, 기본 auto)",
     "  --reset-db              disposable DB 클러스터/컨테이너를 버리고 새로 만든다",
-    "  --help, -h              이 도움말",
-    "",
+    "  --help, -h              이 도움말", "",
     "안전 규칙:",
     "  - DATABASE_URL이 지정되면 스키마·시드를 절대 건드리지 않으며 --seed는 즉시 차단한다.",
-    "  - .env / .env.infrastructure.local 파일은 수정하거나 출력하지 않는다.",
-    "",
+    "  - .env / .env.infrastructure.local 파일은 수정하거나 출력하지 않는다.", "",
   ].join("\n"));
 }
 
-async function printCheckReport({ apiPort, webPort, dbPort, json }) {
+async function printCheckReport({ apiPort, webPort, dbPort, storagePort, json }) {
   const apiUrl = apiHealthUrl(apiPort);
   const readyUrl = apiReadyUrl(apiPort);
   const webUrl = webHealthUrl(webPort);
+  const storageUrl = storageHealthUrl(storagePort);
   const probe = async (url) => (await probeOk(url, 10_000)) || (await probeOk(url, 10_000));
-  const [apiOk, readyOk, webOk] = await Promise.all([probe(apiUrl), probe(readyUrl), probe(webUrl)]);
+  const [apiOk, readyOk, webOk, storageOk] = await Promise.all([probe(apiUrl), probe(readyUrl), probe(webUrl), probe(storageUrl)]);
   const localBinDir = resolvePostgresBinaryDir();
   const payload = {
     ok: apiOk && webOk,
-    ports: { db: dbPort, api: apiPort, web: webPort },
-    urls: { apiHealth: apiUrl, apiReady: readyUrl, web: webUrl, canvas: `http://127.0.0.1:${webPort}/studio/canvas` },
-    checks: { apiLive: apiOk, apiReady: readyOk, web: webOk },
+    ports: { db: dbPort, api: apiPort, web: webPort, storage: storagePort },
+    urls: { apiHealth: apiUrl, apiReady: readyUrl, web: webUrl, storageHealth: storageUrl, canvas: `http://127.0.0.1:${webPort}/studio/canvas` },
+    checks: { apiLive: apiOk, apiReady: readyOk, web: webOk, storage: storageOk },
     postgres: { localBinDir, available: Boolean(localBinDir) },
   };
-  if (json) {
-    process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
-    return payload.ok;
-  }
+  if (json) { process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`); return payload.ok; }
   const lines = [
     "로컬 테스트 스택 상태:",
-    `  API  ${apiUrl} → ${apiOk ? "정상" : "미기동"} (ready=${readyOk ? "정상" : "미준비"})`,
-    `  Web  ${webUrl} → ${webOk ? "정상" : "미기동"}`,
-    `  PG   ${localBinDir ?? "(미탐지)"} (port=${dbPort})`,
-    ...(apiOk && webOk ? [`  Canvas http://127.0.0.1:${webPort}/studio/canvas`] : []),
+    `  API     ${apiUrl} → ${apiOk ? "정상" : "미기동"} (ready=${readyOk ? "정상" : "미준비"})`,
+    `  Web     ${webUrl} → ${webOk ? "정상" : "미기동"}`,
+    `  Storage ${storageUrl} → ${storageOk ? "정상" : "미기동"}`,
+    `  PG      ${localBinDir ?? "(미탐지)"} (port=${dbPort})`,
+    ...(apiOk && webOk ? [`  Canvas  http://127.0.0.1:${webPort}/studio/canvas`] : []),
   ];
   process.stdout.write(`${lines.join("\n")}\n`);
   return payload.ok;
@@ -648,11 +624,13 @@ async function main(argv, environment = process.env) {
   }
 
   const children = [];
+  let storageEmulator = null;
   let stopping = false;
   const shutdown = (signal) => {
     if (stopping) return;
     stopping = true;
-    log(`\n[stack] ${signal} 수신 — 자식 프로세스 종료 중…`);
+    log(`\n[stack] ${signal} 수신 — 자식 프로세스·오브젝트 스토리지 종료 중…`);
+    if (storageEmulator) void storageEmulator.close();
     for (const child of children) void terminateChildProcess(child, { graceMs: 4000 });
     setTimeout(() => process.exit(0), 5000).unref();
   };
@@ -672,6 +650,19 @@ async function main(argv, environment = process.env) {
   const started = [];
   const reused = [];
   let dbSummary = null;
+  const storageUrl = storageHealthUrl(options.storagePort);
+  const storageEndpoint = objectStorageBaseUrl(options.storagePort);
+  if (await probeOk(storageUrl)) {
+    reused.push(`Storage :${options.storagePort}`);
+  } else {
+    if (!(await isTcpPortFree(options.storagePort))) {
+      throw new Error(`Storage 포트 ${options.storagePort}가 이미 다른 프로세스에 의해 점유되었습니다. --storage-port로 다른 포트를 지정하세요.`);
+    }
+    storageEmulator = await startLocalObjectStorageEmulator({ port: options.storagePort, cleanupOnClose: true });
+    started.push(`Storage :${options.storagePort}`);
+    log(`[storage] 로컬 오브젝트 스토리지 에뮬레이터 기동 완료 (${storageEndpoint})`);
+  }
+
   const apiUrl = apiHealthUrl(options.apiPort);
 
   if (await probeOk(apiUrl)) {
@@ -705,12 +696,8 @@ async function main(argv, environment = process.env) {
         url: redactDatabaseUrl(effectiveApiDbUrl), runtimeRoleSeparated: runtimeRoleOk, seeded: options.seed,
       };
       apiEnv = buildDisposableApiEnv({
-        environment,
-        databaseUrl: effectiveApiDbUrl,
-        apiPort: options.apiPort,
-        webPort: options.webPort,
-        runtimeRoleSeparated: runtimeRoleOk,
-        postgresBinDir: ensured.postgresBinDir,
+        environment, databaseUrl: effectiveApiDbUrl, apiPort: options.apiPort, webPort: options.webPort,
+        storageEndpoint, runtimeRoleSeparated: runtimeRoleOk, postgresBinDir: ensured.postgresBinDir,
       });
     }
     log(`[api] Nest API 기동 중 (포트 ${options.apiPort})…`);
@@ -750,8 +737,8 @@ async function main(argv, environment = process.env) {
 
   const readySummary = {
     ok: true, started, reused,
-    ports: { db: options.dbPort, api: options.apiPort, web: options.webPort },
-    urls: { apiHealth: apiUrl, apiReady: apiReadyUrl(options.apiPort), web: webUrl, canvas: `http://127.0.0.1:${options.webPort}/studio/canvas` },
+    ports: { db: options.dbPort, api: options.apiPort, web: options.webPort, storage: options.storagePort },
+    urls: { apiHealth: apiUrl, apiReady: apiReadyUrl(options.apiPort), web: webUrl, storageHealth: storageUrl, canvas: `http://127.0.0.1:${options.webPort}/studio/canvas` },
     db: dbSummary,
   };
   if (options.json) {
@@ -761,9 +748,10 @@ async function main(argv, environment = process.env) {
       "", "로컬 테스트 스택 준비 완료:",
       `  시작: ${started.length > 0 ? started.join(", ") : "(없음, 전부 재사용)"}`,
       `  재사용: ${reused.length > 0 ? reused.join(", ") : "(없음)"}`,
-      `  API   ${readySummary.urls.apiHealth}`, `  Ready ${readySummary.urls.apiReady}`,
-      `  Web   ${readySummary.urls.web}`, `  Canvas ${readySummary.urls.canvas}`,
-      "  종료: Ctrl+C (disposable DB는 유지되어 다음 실행에 재사용, 초기화: --reset-db)", "",
+      `  API     ${readySummary.urls.apiHealth}`, `  Ready   ${readySummary.urls.apiReady}`,
+      `  Storage ${storageEndpoint} (${storageUrl})`,
+      `  Web     ${readySummary.urls.web}`, `  Canvas  ${readySummary.urls.canvas}`,
+      "  종료: Ctrl+C (오브젝트 스토리지 임시 파일은 자동 삭제, disposable DB는 재사용 · 초기화: --reset-db)", "",
     ].join("\n"));
   }
   await new Promise(() => undefined);

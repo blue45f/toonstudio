@@ -86,12 +86,10 @@ type StudioAiAttempt =
 const IDEMPOTENCY_TTL_MS = 6 * 60 * 60 * 1000;
 const DURABLE_QUEUE_READINESS_TIMEOUT_MS = 2_500;
 const CAPABILITY_WORKER_READINESS_TIMEOUT_MS = 2_500;
+export const MAX_DURABLE_QUEUE_ABORT_TIMEOUT_MS = 10 * 60 * 1000;
 
 class DurableQueueCallAbortedError extends Error {
-  constructor() {
-    super("durable queue call aborted");
-    this.name = "DurableQueueCallAbortedError";
-  }
+  constructor() { super("durable queue call aborted"); this.name = "DurableQueueCallAbortedError"; }
 }
 
 interface DurableQueueAbortScope {
@@ -101,57 +99,38 @@ interface DurableQueueAbortScope {
   readonly dispose: () => void;
 }
 
-function createDurableQueueAbortScope(
-  timeoutMs: number,
-  callerSignal: AbortSignal | undefined
-): DurableQueueAbortScope {
+function createDurableQueueAbortScope(timeoutMs: number, callerSignal: AbortSignal | undefined): DurableQueueAbortScope {
   const controller = new AbortController();
   let callerAborted = callerSignal?.aborted ?? false;
   let timedOut = false;
-  const onCallerAbort = () => {
-    callerAborted = true;
-    controller.abort(callerSignal?.reason);
-  };
+  const onCallerAbort = () => { callerAborted = true; controller.abort(callerSignal?.reason); };
   callerSignal?.addEventListener("abort", onCallerAbort, { once: true });
   if (callerAborted) controller.abort(callerSignal?.reason);
 
-  const timer = setTimeout(() => {
-    timedOut = true;
-    controller.abort(new Error("durable queue executor timeout"));
-  }, timeoutMs);
+  // 외부 입력 기반 지연값에 명시적 상한 비교를 적용해 타이머 자원 고갈을 차단한다.
+  const normalizedTimeoutMs = Number.isFinite(timeoutMs) ? Math.trunc(timeoutMs) : 1;
+  const boundedTimeoutMs = normalizedTimeoutMs <= 0
+    ? 1
+    : normalizedTimeoutMs <= MAX_DURABLE_QUEUE_ABORT_TIMEOUT_MS ? normalizedTimeoutMs : MAX_DURABLE_QUEUE_ABORT_TIMEOUT_MS;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(new Error("durable queue executor timeout")); }, boundedTimeoutMs);
   timer.unref?.();
 
   return {
     signal: controller.signal,
     callerAborted: () => callerAborted,
     timedOut: () => timedOut,
-    dispose: () => {
-      clearTimeout(timer);
-      callerSignal?.removeEventListener("abort", onCallerAbort);
-    },
+    dispose: () => { clearTimeout(timer); callerSignal?.removeEventListener("abort", onCallerAbort); },
   };
 }
 
-function awaitDurableQueueCall<T>(
-  operation: Promise<T>,
-  signal: AbortSignal
-): Promise<T> {
+function awaitDurableQueueCall<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
   if (signal.aborted) return Promise.reject(new DurableQueueCallAbortedError());
-
   return new Promise<T>((resolve, reject) => {
-    const onAbort = () => {
-      reject(new DurableQueueCallAbortedError());
-    };
+    const onAbort = () => { reject(new DurableQueueCallAbortedError()); };
     signal.addEventListener("abort", onAbort, { once: true });
     operation.then(
-      (value) => {
-        signal.removeEventListener("abort", onAbort);
-        resolve(value);
-      },
-      (error: unknown) => {
-        signal.removeEventListener("abort", onAbort);
-        reject(error);
-      }
+      (value) => { signal.removeEventListener("abort", onAbort); resolve(value); },
+      (error: unknown) => { signal.removeEventListener("abort", onAbort); reject(error); },
     );
   });
 }

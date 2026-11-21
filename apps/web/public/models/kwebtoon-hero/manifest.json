@@ -1,0 +1,122 @@
+{
+  "generator": "scripts/blender/generate_kwebtoon_hero_assets.py",
+  "blenderVersion": "5.3.0",
+  "assets": [
+    {
+      "slug": "rofan-imperial-arch-chandelier",
+      "drawCalls": 4,
+      "materials": [
+        "Imperial_Marble_Cream",
+        "Imperial_Gilded_Gold",
+        "Imperial_Crystal_Prism",
+        "Imperial_Velvet_Wine"
+      ],
+      "triangles": 17792,
+      "vertices": 9274,
+      "nonManifoldEdges": 0,
+      "wireEdges": 0,
+      "looseVertices": 0,
+      "zeroAreaFaces": 0,
+      "groundedMinZ": 0.0,
+      "dimensionsMeters": [
+        3.26,
+        1.376,
+        3.855
+      ],
+      "titleKo": "로판 제국 대저택 아치·크리스탈 샹들리에",
+      "genrePreset": "rofan-pastel",
+      "glbPath": "/models/kwebtoon-hero/rofan-imperial-arch-chandelier.glb",
+      "previewPath": "/models/kwebtoon-hero/rofan-imperial-arch-chandelier.png",
+      "glbBytes": 639900,
+      "previewBytes": 353948,
+      "blenderVersion": "5.3.0"
+    },
+    {
+      "slug": "seoul-rooftop-cafe-terrace",
+      "drawCalls": 4,
+      "materials": [
+        "Cafe_Cedar_Wood",
+        "Cafe_Matte_Iron",
+        "Cafe_Terrazzo_WarmCream",
+        "Cafe_Botanical_Sage"
+      ],
+      "triangles": 16780,
+      "vertices": 8660,
+      "nonManifoldEdges": 0,
+      "wireEdges": 0,
+      "looseVertices": 0,
+      "zeroAreaFaces": 0,
+      "groundedMinZ": 0.0,
+      "dimensionsMeters": [
+        2.7,
+        1.98,
+        2.51
+      ],
+      "titleKo": "서울 감성 루프탑 카페 아치 테이블·스트링 라이트",
+      "genrePreset": "daily-warm-sun",
+      "glbPath": "/models/kwebtoon-hero/seoul-rooftop-cafe-terrace.glb",
+      "previewPath": "/models/kwebtoon-hero/seoul-rooftop-cafe-terrace.png",
+      "glbBytes": 559268,
+      "previewBytes": 347941,
+      "blenderVersion": "5.3.0"
+    },
+    {
+      "slug": "murim-jade-sword-altar",
+      "drawCalls": 4,
+      "materials": [
+        "Altar_Basalt_Stone",
+        "Murim_Celadon_JadeArcane",
+        "Altar_Antique_Bronze",
+        "Murim_Crimson_Silk"
+      ],
+      "triangles": 6552,
+      "vertices": 3390,
+      "nonManifoldEdges": 0,
+      "wireEdges": 0,
+      "looseVertices": 0,
+      "zeroAreaFaces": 0,
+      "groundedMinZ": 0.0,
+      "dimensionsMeters": [
+        1.996,
+        2.128,
+        1.933
+      ],
+      "titleKo": "무협·판타지 청옥보검·마법진 룬 제단",
+      "genrePreset": "hunter-neon",
+      "glbPath": "/models/kwebtoon-hero/murim-jade-sword-altar.glb",
+      "previewPath": "/models/kwebtoon-hero/murim-jade-sword-altar.png",
+      "glbBytes": 238300,
+      "previewBytes": 318842,
+      "blenderVersion": "5.3.0"
+    },
+    {
+      "slug": "kwebtoon-bust-mannequin-atelier",
+      "drawCalls": 4,
+      "materials": [
+        "Webtoon_Porcelain_Skin",
+        "Webtoon_SilverLavender_Hair",
+        "Atelier_Blazer_Navy",
+        "Atelier_Champagne_IvoryGold"
+      ],
+      "triangles": 20404,
+      "vertices": 10262,
+      "nonManifoldEdges": 0,
+      "wireEdges": 0,
+      "looseVertices": 0,
+      "zeroAreaFaces": 0,
+      "groundedMinZ": 0.0,
+      "dimensionsMeters": [
+        0.43,
+        0.326,
+        0.863
+      ],
+      "titleKo": "한국 웹툰 미형 캐릭터 흉상·볼륨 헤어 마네킹",
+      "genrePreset": "rofan-pastel",
+      "glbPath": "/models/kwebtoon-hero/kwebtoon-bust-mannequin-atelier.glb",
+      "previewPath": "/models/kwebtoon-hero/kwebtoon-bust-mannequin-atelier.png",
+      "glbBytes": 535464,
+      "previewBytes": 302487,
+      "blenderVersion": "5.3.0"
+    }
+  ]
+}

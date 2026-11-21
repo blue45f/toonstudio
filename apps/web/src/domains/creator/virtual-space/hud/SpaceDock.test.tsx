@@ -41,7 +41,7 @@ describe("SpaceDock", () => {
     const toolbar = screen.getByRole("toolbar", { name: "가상 스튜디오 도구" });
     const names = within(toolbar).getAllByRole("button").map((button) => button.getAttribute("aria-label") ?? button.textContent);
     expect(names).toEqual([
-      "내 상태: 대화 가능 · Alice", "마이크", "카메라", "화면 공유", "리액션", "대화", "참가자", "지도", "꾸미기", "더보기", "작업 시작", "나가기",
+      "내 상태: Alice · 대화 가능", "마이크", "카메라", "화면 공유", "리액션", "대화", "참가자", "지도", "꾸미기", "더보기", "작업 시작", "나가기",
     ]);
     for (const button of within(toolbar).getAllByRole("button")) expect(button.getAttribute("type")).toBe("button");
   });
@@ -121,23 +121,23 @@ describe("SpaceDock", () => {
     const onStatus = vi.fn();
     const onEditCharacter = vi.fn();
     render(<Harness onStatus={onStatus} onEditCharacter={onEditCharacter} />);
-    fireEvent.click(screen.getByRole("button", { name: "내 상태: 대화 가능 · Alice" }));
+    fireEvent.click(screen.getByRole("button", { name: "내 상태: Alice · 대화 가능" }));
     const status = screen.getByRole("radiogroup", { name: "내 상태" });
     expect(within(status).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["대화 가능", "집중 작업 중", "검토 중", "회의 중", "휴식 중", "자리 비움"]);
     expect(within(status).getByRole("radio", { name: "대화 가능" }).getAttribute("aria-checked")).toBe("true");
     fireEvent.click(within(status).getByRole("radio", { name: "집중 작업 중" }));
     expect(onStatus).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ id: "focused", activity: "focused", userStatus: null }));
-    fireEvent.click(screen.getByRole("button", { name: "내 상태: 대화 가능 · Alice" }));
+    fireEvent.click(screen.getByRole("button", { name: "내 상태: Alice · 대화 가능" }));
     fireEvent.click(within(screen.getByRole("radiogroup", { name: "내 상태" })).getByRole("radio", { name: "회의 중" }));
     expect(onStatus).toHaveBeenLastCalledWith(expect.objectContaining({ id: "in-meeting", activity: "available", userStatus: "in-meeting" }));
-    fireEvent.click(screen.getByRole("button", { name: "내 상태: 대화 가능 · Alice" }));
+    fireEvent.click(screen.getByRole("button", { name: "내 상태: Alice · 대화 가능" }));
     fireEvent.click(screen.getByRole("button", { name: "캐릭터·이름 바꾸기" }));
     expect(onEditCharacter).toHaveBeenCalledOnce();
   });
   it("내 상태 라디오 그룹은 화살표로 선택을 옮기며 메뉴를 닫지 않는다", () => {
     const onStatus = vi.fn();
     render(<Harness onStatus={onStatus} />);
-    fireEvent.click(screen.getByRole("button", { name: "내 상태: 대화 가능 · Alice" }));
+    fireEvent.click(screen.getByRole("button", { name: "내 상태: Alice · 대화 가능" }));
     const available = screen.getByRole("radio", { name: "대화 가능" });
     expect(available.tabIndex).toBe(0);
     expect(screen.getByRole("radio", { name: "자리 비움" }).tabIndex).toBe(-1);
@@ -149,12 +149,12 @@ describe("SpaceDock", () => {
 
   it("명시 상태가 있으면 도크의 내 상태 라벨이 그 상태를 보여 준다", () => {
     render(<Harness self={{ identity: "alice", name: "Alice", activity: "available", userStatus: "break", avatarIndex: 0 }} />);
-    expect(screen.getByRole("button", { name: "내 상태: 휴식 중 · Alice" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "내 상태: Alice · 휴식 중" })).toBeTruthy();
   });
 
   it("내 상태 메뉴에서 Teemyco 상태 모자·Tandem 실행 창작 툴·Krisp BVC 소음 제거·Whereby 플로팅 PiP를 설정한다", () => {
     render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "내 상태: 대화 가능 · Alice" }));
+    fireEvent.click(screen.getByRole("button", { name: "내 상태: Alice · 대화 가능" }));
 
     const hatGroup = screen.getByRole("radiogroup", { name: "상태 모자" });
     const focusCap = within(hatGroup).getByRole("radio", { name: /집중 캡/u });

@@ -1,0 +1,353 @@
+/* 6대 플랫폼 프리플라이트 · 멀티포맷 리플로우 · 독자 이탈/OOM/외주 검증 관제 패널 스타일.
+ * OKLCH 시맨틱 컬러 계층, >= 44×44px 터치 타겟, 모바일/태블릿/PC 반응형, reduced-motion 준수.
+ * 원시 HEX 대신 OKLCH 토큰만 사용하고, 명시적 속성 전환만 선언한다. */
+
+.ppf-panel {
+  --ppf-surface: var(--color-card, oklch(0.18 0.015 265));
+  --ppf-surface-sub: var(--color-panel, oklch(0.15 0.012 265));
+  --ppf-line: var(--color-line, oklch(0.32 0.018 265 / 0.55));
+  --ppf-fg: var(--color-fg, oklch(0.95 0.008 265));
+  --ppf-fg-2: var(--color-fg-2, oklch(0.76 0.014 265));
+  --ppf-fg-3: var(--color-fg-3, oklch(0.64 0.014 265));
+  --ppf-accent: var(--ts-spectrum-collab, oklch(0.77 0.118 280));
+  --ppf-good: oklch(0.76 0.145 154);
+  --ppf-warn: oklch(0.81 0.145 78);
+  --ppf-bad: oklch(0.72 0.175 22);
+  --ppf-info: oklch(0.79 0.125 215);
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--ppf-line);
+  background: var(--ppf-surface);
+  padding: 1rem;
+  color: var(--ppf-fg);
+}
+
+:root[data-theme="light"] .ppf-panel,
+:root[data-design-theme="light"] .ppf-panel,
+:root[data-design-theme="aurora"] .ppf-panel,
+:root[data-design-theme="blossom"] .ppf-panel,
+:root[data-design-theme="sepia"] .ppf-panel {
+  --ppf-good: oklch(0.45 0.135 154);
+  --ppf-warn: oklch(0.49 0.135 72);
+  --ppf-bad: oklch(0.48 0.185 22);
+  --ppf-info: oklch(0.45 0.115 215);
+}
+
+.ppf-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--ppf-line);
+  padding-bottom: 0.75rem;
+}
+
+.ppf-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ppf-fg);
+}
+
+.ppf-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--ppf-fg-2);
+}
+
+.ppf-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ppf-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--ppf-line);
+  background: var(--ppf-surface-sub);
+  color: var(--ppf-fg-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.ppf-tab:hover {
+  border-color: color-mix(in oklch, var(--ppf-accent) 60%, var(--ppf-line));
+  color: var(--ppf-fg);
+}
+
+.ppf-tab:focus-visible,
+.ppf-btn:focus-visible,
+.ppf-chip:focus-visible,
+.ppf-input:focus-visible {
+  outline: 2px solid var(--ppf-accent);
+  outline-offset: 2px;
+}
+
+.ppf-tab[aria-selected="true"] {
+  border-color: var(--ppf-accent);
+  background: color-mix(in oklch, var(--ppf-accent) 16%, var(--ppf-surface-sub));
+  color: var(--ppf-fg);
+}
+
+.ppf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.ppf-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ppf-chip,
+.ppf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem 0.85rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--ppf-line);
+  background: var(--ppf-surface-sub);
+  color: var(--ppf-fg);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.ppf-chip[aria-pressed="true"],
+.ppf-btn-primary {
+  border-color: var(--ppf-accent);
+  background: color-mix(in oklch, var(--ppf-accent) 20%, var(--ppf-surface-sub));
+  color: var(--ppf-fg);
+}
+
+.ppf-btn-danger {
+  border-color: color-mix(in oklch, var(--ppf-bad) 65%, var(--ppf-line));
+  background: color-mix(in oklch, var(--ppf-bad) 14%, var(--ppf-surface-sub));
+  color: var(--ppf-fg);
+}
+
+.ppf-kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+}
+
+.ppf-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .ppf-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ppf-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .ppf-panel {
+    padding: 1.25rem;
+  }
+
+  .ppf-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .ppf-card-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.ppf-kpi-card,
+.ppf-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--ppf-line);
+  background: var(--ppf-surface-sub);
+  padding: 0.85rem;
+}
+
+.ppf-kpi-label {
+  font-size: 0.75rem;
+  color: var(--ppf-fg-3);
+}
+
+.ppf-kpi-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ppf-fg);
+}
+
+.ppf-kpi-meta {
+  font-size: 0.75rem;
+  color: var(--ppf-fg-2);
+}
+
+.ppf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: fit-content;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.ppf-badge-good {
+  border-color: color-mix(in oklch, var(--ppf-good) 55%, transparent);
+  background: color-mix(in oklch, var(--ppf-good) 16%, transparent);
+  color: var(--ppf-good);
+}
+
+.ppf-badge-warn {
+  border-color: color-mix(in oklch, var(--ppf-warn) 55%, transparent);
+  background: color-mix(in oklch, var(--ppf-warn) 16%, transparent);
+  color: var(--ppf-warn);
+}
+
+.ppf-badge-bad {
+  border-color: color-mix(in oklch, var(--ppf-bad) 55%, transparent);
+  background: color-mix(in oklch, var(--ppf-bad) 16%, transparent);
+  color: var(--ppf-bad);
+}
+
+.ppf-badge-info {
+  border-color: color-mix(in oklch, var(--ppf-info) 55%, transparent);
+  background: color-mix(in oklch, var(--ppf-info) 16%, transparent);
+  color: var(--ppf-info);
+}
+
+.ppf-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.ppf-list-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--ppf-line);
+  background: var(--ppf-surface);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.ppf-heatmap-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18px, 1fr));
+  gap: 4px;
+  padding: 0.65rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--ppf-line);
+  background: var(--ppf-surface);
+}
+
+.ppf-heatmap-cell {
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid var(--ppf-line);
+}
+
+.ppf-heatmap-low {
+  background: color-mix(in oklch, var(--ppf-good) 45%, var(--ppf-surface-sub));
+}
+
+.ppf-heatmap-medium {
+  background: color-mix(in oklch, var(--ppf-warn) 55%, var(--ppf-surface-sub));
+}
+
+.ppf-heatmap-high {
+  background: color-mix(in oklch, var(--ppf-bad) 65%, var(--ppf-surface-sub));
+}
+
+.ppf-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .ppf-form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.ppf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--ppf-fg-2);
+}
+
+.ppf-input {
+  min-height: 44px;
+  border-radius: 0.65rem;
+  border: 1px solid var(--ppf-line);
+  background: var(--ppf-surface);
+  color: var(--ppf-fg);
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.ppf-code {
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--ppf-line);
+  background: var(--ppf-surface);
+  padding: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--ppf-fg-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ppf-tab,
+  .ppf-chip,
+  .ppf-btn {
+    transition: none;
+  }
+}

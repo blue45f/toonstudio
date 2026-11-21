@@ -96,7 +96,13 @@ describe("클라우드 배포 실행기 및 정본 워크플로 정책 검증", 
     assert.equal(state.activeVersionId, "f7c4540b-448e-4da4-86e2-ddc7a8642a42");
     assert.equal(state.activeReleaseSha, SAMPLE_SHA);
 
+    let inFlight = 0;
+    let peakInFlight = 0;
     const smoke = await verifyLiveStaticWebSmoke("https://www.toonstudio.cloud", async (url) => {
+      inFlight += 1;
+      peakInFlight = Math.max(peakInFlight, inFlight);
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, 10));
+      inFlight -= 1;
       if (url.endsWith("/studio")) {
         return {
           status: 200,
@@ -116,6 +122,7 @@ describe("클라우드 배포 실행기 및 정본 워크플로 정책 검증", 
       };
     });
     assert.equal(smoke.edgeOriginAuth, "enforced");
+    assert.equal(peakInFlight, 3);
   });
 
   test("validateOnpodGateInputs와 applyOnpodEnvJson, inspectOnpodAppStatus는 명시 승인과 안전한 인자 배열을 강제한다", () => {

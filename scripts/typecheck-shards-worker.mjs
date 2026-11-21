@@ -32,9 +32,15 @@ export function serializeDiagnostic(diagnostic) {
 
 export function loadFullProgram(project, cwd) {
   const reads = new Map();
+  const readSnapshots = new Map();
   const read = (path) => {
     const text = ts.sys.readFile(path);
-    if (text !== undefined) reads.set(resolve(path), digest(text));
+    if (text !== undefined) {
+      const resolvedPath = resolve(path);
+      const sha256 = digest(text);
+      reads.set(resolvedPath, sha256);
+      readSnapshots.set(resolvedPath, { text, sha256, bytes: Buffer.byteLength(text) });
+    }
     return text;
   };
   const loaded = ts.readConfigFile(project, read);
@@ -53,13 +59,19 @@ export function loadFullProgram(project, cwd) {
     configFileParsingDiagnostics: parsed.errors,
     host,
   });
-  const files = program.getSourceFiles().map((file) => ({
-    path: resolve(file.fileName),
-    bytes: Buffer.byteLength(file.text),
-    sha256: digest(file.text),
-    declaration: file.isDeclarationFile,
-    defaultLibrary: program.isSourceFileDefaultLibrary(file),
-  })).sort((left, right) => left.path.localeCompare(right.path, "en"));
+  const files = program.getSourceFiles().map((file) => {
+    const resolvedPath = resolve(file.fileName);
+    const snapshot = readSnapshots.get(resolvedPath);
+    const sameText = snapshot !== undefined && snapshot.text === file.text;
+    return {
+      path: resolvedPath,
+      bytes: sameText ? snapshot.bytes : Buffer.byteLength(file.text),
+      sha256: sameText ? snapshot.sha256 : digest(file.text),
+      declaration: file.isDeclarationFile,
+      defaultLibrary: program.isSourceFileDefaultLibrary(file),
+    };
+  }).sort((left, right) => left.path.localeCompare(right.path, "en"));
+  readSnapshots.clear();
   const options = { ...parsed.options };
   delete options.configFile;
   const inputs = [...reads].sort(([left], [right]) => left.localeCompare(right, "en"));

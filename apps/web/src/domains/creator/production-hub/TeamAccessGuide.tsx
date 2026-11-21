@@ -1,10 +1,20 @@
 import { FREE_USAGE_POLICY, type TeamWorkspaceRole } from "@toonstudio/contracts/production-workspace";
-import { Check, Crown, Link2, LogIn, ShieldCheck, UserCheck, UserPlus, Users, X, type LucideIcon } from "lucide-react";
+import { Check, ChevronDown, Crown, Layers, Link2, LogIn, ShieldCheck, UserCheck, UserPlus, Users, X, type LucideIcon } from "lucide-react";
+import { Suspense, useState } from "react";
 
 import type { BilingualLabel } from "./production-labels";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { cn } from "@/shared/lib/utils";
+
+const StudioEcosystemSdkMonetizePanel = lazyRetry(
+  () =>
+    import("../ecosystem-sdk-monetize/StudioEcosystemSdkMonetizePanel").then((module) => ({
+      default: module.StudioEcosystemSdkMonetizePanel,
+    })),
+  "StudioEcosystemSdkMonetizePanel",
+);
 
 interface RoleGuide {
   readonly role: TeamWorkspaceRole;
@@ -87,6 +97,7 @@ const INVITE_STEPS: readonly { readonly icon: LucideIcon; readonly title: Biling
  */
 export function TeamAccessGuide({ className }: { readonly className?: string }) {
   const bt = useBilingual("TeamAccessGuide");
+  const [ecosystemPanelOpen, setEcosystemPanelOpen] = useState(false);
   const limits = [
     { label: bt("내가 만들 수 있는 팀", "Teams you can own"), value: bt(`${FREE_USAGE_POLICY.ownedWorkspaces}개`, `${FREE_USAGE_POLICY.ownedWorkspaces}`) },
     { label: bt("팀당 연결 작품", "Projects per team"), value: bt(`${FREE_USAGE_POLICY.projectsPerWorkspace}개`, `${FREE_USAGE_POLICY.projectsPerWorkspace}`) },
@@ -167,6 +178,45 @@ export function TeamAccessGuide({ className }: { readonly className?: string }) 
           </p>
         </section>
       </div>
+
+      <details
+        data-testid="studio-ecosystem-sdk-monetize-disclosure"
+        className="group/ecosystem-sdk rounded-2xl border border-line bg-panel"
+        aria-label={bt(
+          "오픈 플러그인 SDK · 하이브리드 요금/₩0 크레딧 · IP 펀딩·계약 원장",
+          "Open Plugin SDK · Hybrid Billing & ₩0 Credits · IP Funding & Contract Ledger",
+        )}
+        onToggle={(event) => setEcosystemPanelOpen(event.currentTarget.open)}
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+          <span className="flex min-w-0 items-center gap-2.5">
+            <Layers className="size-4 shrink-0 text-accent" aria-hidden="true" />
+            <span className="min-w-0 [word-break:keep-all]">
+              {bt(
+                "오픈 플러그인 SDK · 하이브리드 요금/₩0 크레딧 · IP 펀딩·계약 원장",
+                "Open Plugin SDK · Hybrid Billing & ₩0 Credits · IP Funding & Contract Ledger",
+              )}
+            </span>
+          </span>
+          <ChevronDown
+            className="size-4 shrink-0 text-fg-3 transition-transform group-open/ecosystem-sdk:rotate-180 motion-reduce:transition-none"
+            aria-hidden="true"
+          />
+        </summary>
+        {ecosystemPanelOpen ? (
+          <div className="border-t border-line p-3 sm:p-4">
+            <Suspense
+              fallback={
+                <div role="status" className="rounded-xl border border-line bg-card p-4 text-xs text-fg-2">
+                  {bt("생태계 SDK · 요금 · IP 계약 원장 패널을 불러오는 중입니다.", "Loading ecosystem SDK, billing, and IP contract panel.")}
+                </div>
+              }
+            >
+              <StudioEcosystemSdkMonetizePanel />
+            </Suspense>
+          </div>
+        ) : null}
+      </details>
     </div>
   );
 }

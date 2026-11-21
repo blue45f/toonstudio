@@ -1,41 +1,17 @@
 /**
  * studio-dual-brush.ts
- *
- * Clip Studio Paint식 "이중 브러시"의 원리를 재해석한 모델 모듈.
- * UI는 복제하지 않고, "기본 팁 + 질감 팁 결합"이라는 UX 패턴만 구현한다.
- *
- * 모델:
- * - 기본 팁: 기존 `studio-natural-media-brushes.ts`의 내추럴 미디어 프리셋 id 참조
- * - 질감 팁: Canvas2D 노이즈로 절차 생성한 그레이스케일 타일 (외부 이미지 불필요)
- * - 결합: blendMode(multiply/screen/overlay) + textureStrength(0..1) + textureScale
- *
- * 설계:
- * - 질감 타일 생성은 순수 함수 (Float32Array, 0..1) → 테스트 가능
- * - Canvas/DOM 렌더링 헬퍼는 브라우저 가드(`typeof document`) 포함
- * - 시드 고정 노이즈 → 같은 id/시드는 항상 같은 타일 (재생성 불필요, 캐시 가능)
+ * Clip Studio Paint식 이중 브러시(기본 팁 + 절차적 질감 팁 결합) 및 동적 필압·틸트 변조 모델.
+ * 질감 타일 생성과 Float32 합성은 순수 함수이며 결정적 시드 기반 O(1) LRU 캐시를 제공한다.
  */
 
+import {
+  synthesizeCrayonWaxPaperStamp,
+  type CrayonWaxStampResult,
+} from "./brush-quality-soak-guard";
 import type { StudioNaturalMediaBrushId } from "./studio-natural-media-brushes";
 
-/* ------------------------------------------------------------------ */
-/* 결합 모드·질감 종류                                                  */
-/* ------------------------------------------------------------------ */
-
-/** 이중 브러시 결합 모드. Canvas2D 및 순수 Float32 버퍼 합성과 1:1 매핑. */
-export type StudioDualBrushBlendMode =
-  | "multiply"
-  | "screen"
-  | "overlay"
-  | "linear-burn"
-  | "hard-light";
-
-export type StudioDualBrushTextureId =
-  | "paper"
-  | "canvas-weave"
-  | "sand"
-  | "fibers"
-  | "grain"
-  | "mesh";
+export type StudioDualBrushBlendMode = "multiply" | "screen" | "overlay" | "linear-burn" | "hard-light";
+export type StudioDualBrushTextureId = "paper" | "canvas-weave" | "sand" | "fibers" | "grain" | "mesh";
 
 export interface StudioDualBrushTexture {
   readonly id: StudioDualBrushTextureId;
@@ -331,12 +307,12 @@ export const STUDIO_EXPRESSIVE_DUAL_BRUSH_PROFILES: ReadonlyArray<StudioExpressi
         baseBrushId: "crayon",
         textureId: "paper",
         blendMode: "hard-light",
-        textureStrength: 0.75,
-        textureScale: 0.9,
+        textureStrength: 0.86,
+        textureScale: 0.92,
       },
-      grazingToothSensitivity01: 0.85,
-      valleyFillGamma: 1.5,
-      directionalStretchMax: 1.5,
+      grazingToothSensitivity01: 0.9,
+      valleyFillGamma: 1.55,
+      directionalStretchMax: 1.85,
     },
     {
       id: "airbrush-stipple-dust",
@@ -427,11 +403,6 @@ export function evaluateDynamicDualBrushModulation(
 }
 
 
-/* ------------------------------------------------------------------ */
-/* 시드 기반 밸류 노이즈 (순수 함수)                                       */
-/* ------------------------------------------------------------------ */
-
-/** 결정적 2D 해시 → 0..1. */
 function hash2(x: number, y: number, seed: number): number {
   let h = (seed + Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263)) | 0;
   h = Math.imul(h ^ (h >>> 13), 1274126177);
@@ -439,26 +410,20 @@ function hash2(x: number, y: number, seed: number): number {
   return (h >>> 0) / 4294967295;
 }
 
-function smoothstep(t: number): number {
-  return t * t * (3 - 2 * t);
-}
-
-/** 보간된 밸류 노이즈. x, y는 실수 좌표. */
 function valueNoise(x: number, y: number, seed: number): number {
   const xi = Math.floor(x);
   const yi = Math.floor(y);
   const xf = x - xi;
   const yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf);
+  const v = yf * yf * (3 - 2 * yf);
   const a = hash2(xi, yi, seed);
   const b = hash2(xi + 1, yi, seed);
   const c = hash2(xi, yi + 1, seed);
   const d = hash2(xi + 1, yi + 1, seed);
-  const u = smoothstep(xf);
-  const v = smoothstep(yf);
   return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
 }
 
-/** 옥타브 합성 노이즈 → 0..1. */
 function fbm(x: number, y: number, seed: number, octaves: number): number {
   let value = 0;
   let amplitude = 0.5;
@@ -473,20 +438,12 @@ function fbm(x: number, y: number, seed: number, octaves: number): number {
   return value / total;
 }
 
-/* ------------------------------------------------------------------ */
-/* 절차적 질감 타일 생성 (순수 함수, 0..1 Float32Array)                      */
-/* ------------------------------------------------------------------ */
-
 export interface GenerateTextureTileOptions {
   readonly size?: number;
   readonly seed?: number;
 }
 
-/**
- * 질감 타일 한 변 size px의 그레이스케일 타일 생성.
- * 반환값은 size*size 길이, 0..1 (0=어두움, 1=밝음).
- * 같은 id/시드/크기는 항상 동일한 결과를 낸다.
- */
+/** 질감 타일 한 변 size px의 그레이스케일 타일(0..1 Float32Array) 생성. */
 export function generateTextureTile(
   id: StudioDualBrushTextureId,
   options: GenerateTextureTileOptions = {},
@@ -503,9 +460,10 @@ export function generateTextureTile(
       let v: number;
       switch (id) {
         case "paper": {
-          // 부드러운 저주파 종이결: 대비 낮게
-          const n = fbm(nx * 4, ny * 4, seed, 4);
-          v = 0.5 + (n - 0.5) * 0.36;
+          // 냉압지/황목 2-옥타브 종이 산·골 높이장: 저주파 종이 굴곡 + 고주파 종이 이빨 대비
+          const macro = fbm(nx * 5, ny * 5, seed, 3);
+          const tooth = fbm(nx * 22, ny * 22, seed + 4099, 2);
+          v = 0.5 + (macro * 0.54 + tooth * 0.46 - 0.5) * 1.18;
           break;
         }
         case "canvas-weave": {
@@ -652,8 +610,8 @@ export function applyDualBrushStrength(
 }
 
 /**
- * DOM/Canvas2D 없이 워커나 헤드리스 파이프라인에서도 즉시 실행 가능한
  * 순수 Float32Array 이중 브러시 스트로크 버퍼 합성기.
+ * `target` 버퍼를 전달하면 장시간 연속 획에서 재할당 없이 제자리 합성한다.
  */
 export function compositeDualBrushFloatBuffer(
   baseMask: Float32Array,
@@ -662,25 +620,30 @@ export function compositeDualBrushFloatBuffer(
   width: number,
   height: number,
   config: Pick<StudioDualBrushConfig, "blendMode" | "textureStrength" | "textureScale">,
+  target?: Float32Array,
 ): Float32Array {
-  const out = new Float32Array(baseMask.length);
-  const safeTileSize = Math.max(1, Math.floor(tileSize));
-  const scale = Math.max(0.25, Math.min(4, config.textureScale || 1));
-  const strength = Math.max(0, Math.min(1, config.textureStrength));
+  const out = target && target.length >= baseMask.length ? target : new Float32Array(baseMask.length);
+  const safeTileSize = Math.max(1, Math.floor(Number.isFinite(tileSize) ? tileSize : 1));
+  const rawScale = Number.isFinite(config.textureScale) ? config.textureScale : 1;
+  const scale = Math.max(0.25, Math.min(4, rawScale || 1));
+  const strength = Math.max(0, Math.min(1, Number.isFinite(config.textureStrength) ? config.textureStrength : 0));
 
   for (let y = 0; y < height; y += 1) {
     const ty = Math.floor(y / scale) % safeTileSize;
     const wrappedY = ty < 0 ? ty + safeTileSize : ty;
+    const rowTileOffset = wrappedY * safeTileSize;
+    const rowMaskOffset = y * width;
     for (let x = 0; x < width; x += 1) {
-      const idx = y * width + x;
-      const b = baseMask[idx] ?? 0;
+      const idx = rowMaskOffset + x;
+      const rawB = baseMask[idx] ?? 0;
+      const b = Number.isFinite(rawB) ? rawB : 0;
       if (b <= 0) {
         out[idx] = 0;
         continue;
       }
       const tx = Math.floor(x / scale) % safeTileSize;
       const wrappedX = tx < 0 ? tx + safeTileSize : tx;
-      const t = textureTile[wrappedY * safeTileSize + wrappedX] ?? 1;
+      const t = textureTile[rowTileOffset + wrappedX] ?? 1;
       const blended = blendDualBrushValue(b, t, config.blendMode);
       out[idx] = applyDualBrushStrength(b, blended, strength);
     }
@@ -688,9 +651,46 @@ export function compositeDualBrushFloatBuffer(
   return out;
 }
 
-/* ------------------------------------------------------------------ */
-/* Canvas 렌더링 헬퍼 (브라우저 전용)                                      */
-/* ------------------------------------------------------------------ */
+/** 크레용 다층 왁스-종이 요철 스탬프를 종이결 듀얼 브러시 타일과 결합한다. */
+export function compositeCrayonWaxDualBrushBuffer(
+  options: {
+    readonly size?: number;
+    readonly pressure01: number;
+    readonly velocity01?: number;
+    readonly tilt01?: number;
+    readonly directionRadians?: number;
+    readonly seed?: number;
+  },
+  reusableStamp?: Float32Array,
+  reusableComposite?: Float32Array,
+): Readonly<{
+  stamp: CrayonWaxStampResult;
+  composited: Float32Array;
+  modulation: DynamicDualBrushModulationResult;
+}> {
+  const stamp = synthesizeCrayonWaxPaperStamp(options, reusableStamp);
+  const modulation = evaluateDynamicDualBrushModulation({
+    profileId: "crayon-wax-skip",
+    pressure01: options.pressure01,
+    velocity01: options.velocity01 ?? 0.25,
+    tilt01: options.tilt01 ?? 0.2,
+  });
+  const tile = getCachedTextureTile("paper", { size: stamp.size, seed: options.seed ?? 0x51a7 });
+  const composited = compositeDualBrushFloatBuffer(
+    stamp.buffer,
+    tile,
+    stamp.size,
+    stamp.size,
+    stamp.size,
+    {
+      blendMode: "hard-light",
+      textureStrength: modulation.effectiveTextureStrength * 0.55,
+      textureScale: 1,
+    },
+    reusableComposite,
+  );
+  return { stamp, composited, modulation };
+}
 
 /** 그레이스케일 타일 → 회색조 캔버스. 브라우저가 아니면 null. */
 export function createTextureCanvasTile(
@@ -715,25 +715,17 @@ export function createTextureCanvasTile(
   return canvas;
 }
 
-/**
- * 스트로크 마스크 위에 질감 패턴을 결합 모드로 합성한 캔버스를 만든다.
- * - strokeCanvas: 이미 그려진 스트로크 (같은 크기)
- * - textureTile: generateTextureTile 결과
- */
+/** 스트로크 마스크 위에 질감 패턴을 결합 모드로 합성한 캔버스를 만든다. */
 export function compositeDualBrushStroke(
   strokeCanvas: HTMLCanvasElement,
   textureTile: Float32Array,
   tileSize: number,
-  config: Pick<
-    StudioDualBrushConfig,
-    "blendMode" | "textureStrength" | "textureScale"
-  >,
+  config: Pick<StudioDualBrushConfig, "blendMode" | "textureStrength" | "textureScale">,
 ): HTMLCanvasElement | null {
   if (typeof document === "undefined") return null;
   const { width, height } = strokeCanvas;
   const tileCanvas = createTextureCanvasTile(textureTile, tileSize);
   if (!tileCanvas) return null;
-
   const scaled = Math.max(1, Math.round(tileSize * config.textureScale));
   const patternCanvas = document.createElement("canvas");
   patternCanvas.width = width;
@@ -747,7 +739,6 @@ export function compositeDualBrushStroke(
   pctx.fillStyle = pattern;
   pctx.fillRect(0, 0, width * (tileSize / scaled), height * (tileSize / scaled));
   pctx.restore();
-
   const result = document.createElement("canvas");
   result.width = width;
   result.height = height;

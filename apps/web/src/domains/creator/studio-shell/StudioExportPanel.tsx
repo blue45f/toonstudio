@@ -7,9 +7,10 @@ import {
   RefreshCw,
   RotateCcw,
   ShieldAlert,
+  Sparkles,
 } from "lucide-react";
 
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 
@@ -36,6 +37,10 @@ import { StudioExportAdvancedDetails } from "./StudioExportAdvancedDetails";
 import { StudioExportPreflightFindingsList } from "./StudioExportPreflightFindingsList";
 import { StudioExportScopeSummaryCard } from "./StudioExportScopeSummaryCard";
 import { useStudioExportPanelController } from "./useStudioExportPanelController";
+
+const StudioNextGenWebPlatformHub = lazy(
+  () => import("../nextgen-web-platform/StudioNextGenWebPlatformHub"),
+);
 
 /**
  * 초보자도 올릴 곳과 파일 형식만 고르면 실제 원고 해상도·선택 순서와 플랫폼 권장 규격·용량 추정치를 구분해 대조 점검하고,
@@ -85,6 +90,7 @@ function StudioExportPanelContent({ projectId, locale, owner }: StudioExportPane
   } = useStudioExportPanelController(projectId, locale, owner);
 
   const [publishProfile, setPublishProfile] = useState<StudioPublishProfile>("generic");
+  const [nextGenHubOpen, setNextGenHubOpen] = useState(false);
   const estimatedMb = Math.max(
     0.1,
     Math.round((draft.estimatedFileSizeBytes / 1024 / 1024) * 10) / 10,
@@ -384,6 +390,47 @@ function StudioExportPanelContent({ projectId, locale, owner }: StudioExportPane
         projectFacts={projectFacts}
         onPatch={patch}
       />
+
+      <details
+        data-testid="studio-export-nextgen-hub"
+        open={nextGenHubOpen}
+        onToggle={(event) => setNextGenHubOpen(event.currentTarget.open)}
+        className="mt-4 min-w-0 rounded-2xl border border-accent/35 bg-panel/40 p-4"
+      >
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 text-sm font-extrabold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]">
+          <span className="inline-flex items-center gap-2">
+            <Sparkles size={15} className="shrink-0 text-accent" aria-hidden="true" />
+            <span>
+              {bt(
+                "30초 컷츠·차세대 웹 도구 (빠른 인코딩 · 60초 첫 1컷 가이드)",
+                "30s Cuts & Next-Gen Web Tools (Fast Export · 60s Guide)",
+              )}
+            </span>
+          </span>
+          <span className="shrink-0 rounded-full border border-accent/35 bg-accent-soft/45 px-2.5 py-0.5 text-[0.68rem] font-bold text-accent">
+            {bt("펼쳐서 사용", "Open tools")}
+          </span>
+        </summary>
+        {nextGenHubOpen ? (
+          <Suspense
+            fallback={
+              <div
+                role="status"
+                className="mt-3 rounded-xl border border-line bg-card p-4 text-xs font-semibold text-fg-2"
+              >
+                {bt("차세대 웹 도구와 30초 컷츠 익스포터를 불러오는 중입니다…", "Loading next-gen web tools & 30s Cuts exporter…")}
+              </div>
+            }
+          >
+            <StudioNextGenWebPlatformHub
+              projectId={projectId}
+              locale={locale}
+              manuscriptWidth={draft.width}
+              manuscriptHeight={draft.height}
+            />
+          </Suspense>
+        ) : null}
+      </details>
 
       <div className={cn("mt-5 min-w-0 rounded-2xl border p-4", resultTone(displayedResult))}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

@@ -1,0 +1,440 @@
+/* ToonStudio 전역 소재 검색 커맨드 팔레트 (⌘K / /) — OKLCH 시맨틱 스펙트럼 · 3단 반응형 · 44px 터치 */
+
+.ts-cmdk-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: start center;
+  padding: clamp(24px, 7vh, 72px) 16px 24px;
+  background: oklch(0.14 0.02 265 / 0.62);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  overflow-x: clip;
+  overscroll-behavior: contain;
+}
+
+.ts-cmdk-dismiss-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.ts-cmdk-dialog {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: min(80dvh, 700px);
+  border: 1px solid color-mix(in oklch, var(--ts-spectrum-market, oklch(0.75 0.12 78)) 42%, var(--color-line));
+  border-radius: var(--ts-radius-outer, 16px);
+  background: var(--color-panel);
+  color: var(--color-fg);
+  box-shadow: 0 24px 64px oklch(0.1 0.02 265 / 0.42);
+  overflow: hidden;
+  transition: opacity 150ms cubic-bezier(0.22, 1, 0.36, 1), transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ts-cmdk-ribbon {
+  height: 3px;
+  width: 100%;
+  flex: none;
+  background: var(
+    --ts-spectrum-ribbon,
+    linear-gradient(
+      90deg,
+      oklch(0.77 0.135 16) 0%,
+      oklch(0.83 0.145 78) 26%,
+      oklch(0.8 0.148 156) 52%,
+      oklch(0.81 0.132 192) 76%,
+      oklch(0.77 0.118 280) 100%
+    )
+  );
+}
+
+.ts-cmdk-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-panel);
+}
+
+.ts-cmdk-search-icon {
+  flex: none;
+  color: var(--ts-spectrum-market, var(--color-accent));
+}
+
+.ts-cmdk-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--color-fg);
+  font-size: 15px;
+  font-weight: 500;
+  outline: none;
+}
+
+.ts-cmdk-input::placeholder {
+  color: var(--color-fg-3);
+}
+
+.ts-cmdk-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--ts-radius-inner, 8px);
+  background: var(--color-card);
+  color: var(--color-fg-2);
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.ts-cmdk-close:hover {
+  border-color: var(--color-line-strong);
+  background: var(--color-raised);
+  color: var(--color-fg);
+}
+
+.ts-cmdk-close:focus-visible,
+.ts-cmdk-chip:focus-visible,
+.ts-cmdk-hub-link:focus-visible,
+.ts-cmdk-action-btn:focus-visible,
+.ts-cmdk-item:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.ts-cmdk-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-line);
+  background: color-mix(in oklch, var(--color-canvas) 65%, var(--color-panel));
+}
+
+.ts-cmdk-chip-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+
+.ts-cmdk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  flex: none;
+  border: 1px solid var(--color-line);
+  border-radius: var(--ts-radius-inner, 8px);
+  background: var(--color-card);
+  color: var(--color-fg-2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  word-break: keep-all;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.ts-cmdk-chip:hover {
+  border-color: color-mix(in oklch, var(--ts-spectrum-market, var(--color-accent)) 55%, var(--color-line));
+  background: var(--color-raised);
+  color: var(--color-fg);
+}
+
+.ts-cmdk-chip[aria-pressed="true"] {
+  border-color: var(--ts-spectrum-market, var(--color-accent));
+  background: color-mix(in oklch, var(--ts-spectrum-market, var(--color-accent)) 16%, var(--color-card));
+  color: var(--color-fg);
+}
+
+.ts-cmdk-chip[data-license-toggle="true"][aria-pressed="true"] {
+  border-color: var(--ts-spectrum-support, var(--color-accent));
+  background: color-mix(in oklch, var(--ts-spectrum-support, var(--color-accent)) 16%, var(--color-card));
+}
+
+.ts-cmdk-hub-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--color-line);
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.ts-cmdk-hub-label {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-fg-3);
+  word-break: keep-all;
+}
+
+.ts-cmdk-hub-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 0 11px;
+  flex: none;
+  border: 1px solid var(--color-line);
+  border-radius: var(--ts-radius-inner, 8px);
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  word-break: keep-all;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.ts-cmdk-hub-link:hover {
+  border-color: var(--ts-spectrum-3d, var(--color-accent));
+  background: var(--color-raised);
+}
+
+.ts-cmdk-results {
+  flex: 1;
+  min-height: 160px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ts-cmdk-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--ts-radius-mid, 12px);
+  background: var(--color-card);
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.ts-cmdk-item[data-active="true"],
+.ts-cmdk-item:hover {
+  border-color: color-mix(in oklch, var(--ts-spectrum-3d, var(--color-accent)) 60%, var(--color-line));
+  background: color-mix(in oklch, var(--ts-spectrum-3d, var(--color-accent)) 10%, var(--color-raised));
+}
+
+.ts-cmdk-item-main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ts-cmdk-item-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ts-cmdk-item-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-fg);
+  word-break: keep-all;
+}
+
+.ts-cmdk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-line);
+  font-size: 11px;
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+.ts-cmdk-badge[data-tone="safe"] {
+  border-color: color-mix(in oklch, var(--ts-spectrum-support, oklch(0.75 0.14 156)) 50%, var(--color-line));
+  background: color-mix(in oklch, var(--ts-spectrum-support, oklch(0.75 0.14 156)) 14%, var(--color-panel));
+  color: var(--color-fg);
+}
+
+.ts-cmdk-badge[data-tone="genre"] {
+  border-color: color-mix(in oklch, var(--ts-spectrum-collab, oklch(0.75 0.12 280)) 45%, var(--color-line));
+  background: color-mix(in oklch, var(--ts-spectrum-collab, oklch(0.75 0.12 280)) 12%, var(--color-panel));
+  color: var(--color-fg-2);
+}
+
+.ts-cmdk-badge[data-tone="format"] {
+  border-color: color-mix(in oklch, var(--ts-spectrum-3d, oklch(0.75 0.12 192)) 45%, var(--color-line));
+  background: color-mix(in oklch, var(--ts-spectrum-3d, oklch(0.75 0.12 192)) 12%, var(--color-panel));
+  color: var(--color-fg-2);
+}
+
+.ts-cmdk-item-sub {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-fg-2);
+  word-break: keep-all;
+}
+
+.ts-cmdk-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.ts-cmdk-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 0 11px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--ts-radius-inner, 8px);
+  background: var(--color-panel);
+  color: var(--color-fg);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  word-break: keep-all;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.ts-cmdk-action-btn[data-primary="true"] {
+  border-color: color-mix(in oklch, var(--ts-spectrum-creation, var(--color-accent)) 60%, var(--color-line));
+  background: color-mix(in oklch, var(--ts-spectrum-creation, var(--color-accent)) 16%, var(--color-panel));
+}
+
+.ts-cmdk-action-btn:hover {
+  border-color: var(--color-accent);
+  background: var(--color-raised);
+}
+
+.ts-cmdk-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--color-fg-2);
+  font-size: 13px;
+}
+
+.ts-cmdk-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--color-line);
+  background: var(--color-panel);
+  font-size: 11px;
+  color: var(--color-fg-3);
+}
+
+.ts-cmdk-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 6px;
+  background: var(--color-card);
+  color: var(--color-fg-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .ts-cmdk-backdrop {
+    padding: 36px 20px 24px;
+  }
+  .ts-cmdk-dialog {
+    max-height: 82dvh;
+  }
+}
+
+@media (min-width: 1280px) {
+  .ts-cmdk-dialog {
+    width: min(820px, 100%);
+  }
+}
+
+@media (max-width: 767px) {
+  .ts-cmdk-backdrop {
+    place-items: end center;
+    padding: 12px 0 0;
+  }
+  .ts-cmdk-dialog {
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .ts-cmdk-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ts-cmdk-item-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-cmdk-dialog,
+  .ts-cmdk-close,
+  .ts-cmdk-chip,
+  .ts-cmdk-hub-link,
+  .ts-cmdk-item,
+  .ts-cmdk-action-btn {
+    transition: none;
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .ts-cmdk-dialog,
+  .ts-cmdk-item,
+  .ts-cmdk-chip,
+  .ts-cmdk-hub-link,
+  .ts-cmdk-action-btn {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+  .ts-cmdk-item[data-active="true"] {
+    outline: 2px solid Highlight;
+  }
+}

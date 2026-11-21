@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+
+import { lazyRetry } from "@/shared/lib/lazy-retry";
+
 import { StudioReviewCaptureDialogMount } from "./StudioReviewCaptureDialogMount";
 import { useStudioReviewCapture } from "./useStudioReviewCapture";
 
-import { StudioReviewEditorHandoffMount } from "../review-handoff/StudioReviewEditorHandoffMount";
 import type { StudioReviewEditorHostNavigation } from "../review-handoff/studio-review-editor-host";
 import { studioReviewEditorRequestFromLocation } from "../review-handoff/studio-review-editor-route";
 import type { StudioReviewCaptureOrigin } from "../review-resolution/StudioReviewCaptureReturnLink";
@@ -11,6 +13,14 @@ import { useStudioStableHandlers } from "../studio-stable-handlers";
 import { studioReviewCaptureHostAdmission, studioReviewCaptureHostContext, type StudioReviewCaptureHostBindings } from "./studio-review-capture-host-context";
 import { studioReviewCaptureSourceFromSearch, studioReviewCaptureSourceReturnHref } from "./studio-review-capture-source";
 import { studioScopedWriteAuthority } from "../studio-collab/studio-scoped-write-authority";
+
+const LazyStudioReviewEditorHandoffMount = lazyRetry(
+  () =>
+    import("../review-handoff/StudioReviewEditorHandoffMount").then((mod) => ({
+      default: mod.StudioReviewEditorHandoffMount,
+    })),
+  "StudioReviewEditorHandoffMount",
+);
 
 export { studioReviewCaptureHostContext } from "./studio-review-capture-host-context";
 
@@ -80,10 +90,17 @@ export function useStudioReviewCaptureHost(bindings: StudioReviewCaptureHostBind
     // 자동 진입은 이미 pending 없는 context만 허용하며 effect 안에서 flushSync를 호출하지 않는다.
     admission.open(scopeKey);
   }, [sourceRequest, bindings, scopeKey, admission]);
+  const handoffRequest = bindings.reviewHandoff
+    ? studioReviewEditorRequestFromLocation(bindings.workId, bindings.reviewHandoff.search)
+    : null;
   return {
     open: handlers.open,
     dialog: <>
-      {bindings.reviewHandoff && <StudioReviewEditorHandoffMount bindings={bindings} navigation={bindings.reviewHandoff} />}
+      {bindings.reviewHandoff && handoffRequest && (
+        <Suspense fallback={null}>
+          <LazyStudioReviewEditorHandoffMount bindings={bindings} navigation={bindings.reviewHandoff} />
+        </Suspense>
+      )}
       <StudioReviewCaptureDialogMount
       open={capture.visible}
       snapshot={capture.snapshot}

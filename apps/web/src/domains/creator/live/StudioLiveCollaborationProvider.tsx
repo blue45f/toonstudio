@@ -19,13 +19,10 @@ import {
   type StudioLiveCollaborationContextValue,
   type StudioLiveRecoveryState,
 } from "./studio-live-collaboration-context";
-import { studioLiveDisplayName, type StudioLiveParticipant } from "./studio-live-collaboration-protocol";
+import { studioLiveDisplayName } from "./studio-live-display-name";
+import type { StudioLiveParticipant } from "./studio-live-collaboration-protocol";
 import { isStudioLocalLiveTransportSupported } from "./studio-live-local-transport-support";
-import {
-  STUDIO_HEARTBEAT_EXPECTED_INTERVAL_MS,
-  StudioLiveHeartbeatJitterGuard,
-  probeStudioStorageQuota,
-} from "./studio-live-long-session-diagnostics";
+import { STUDIO_HEARTBEAT_EXPECTED_INTERVAL_MS, StudioLiveHeartbeatJitterGuard, probeStudioStorageQuota } from "./studio-live-long-session-diagnostics";
 import {
   projectStudioLiveSyncSnapshot,
   type StudioCrdtSyncTelemetry,

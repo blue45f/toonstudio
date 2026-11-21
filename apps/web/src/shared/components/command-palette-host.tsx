@@ -26,8 +26,9 @@ export function CommandPaletteHost() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // 1. Cmd+K / Ctrl+K: use Studio's registry-backed command hub while editing.
+      // Shift+Cmd/Ctrl+K is reserved for GlobalAssetSearchPalette so the two dialogs never collide.
       // If the Studio host is not mounted yet, retain the global palette as a reliable fallback.
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
         if (isStudioPathname(window.location.pathname) && requestStudioCommandSearchFromAppShell({ scope: "all" })) {
           setOpen(false);

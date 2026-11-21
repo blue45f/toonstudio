@@ -103,25 +103,34 @@ export async function fetchActiveWorkerState(accountId, apiToken, scriptName = S
 }
 
 export async function verifyLiveStaticWebSmoke(publicBaseUrl = "https://www.toonstudio.cloud", fetchImpl = fetch) {
-  const studioRes = await fetchImpl(`${publicBaseUrl}/studio`, { redirect: "manual" });
+  const [studioRes, providersRes, capRes] = await Promise.all([
+    fetchImpl(`${publicBaseUrl}/studio`, { redirect: "manual" }),
+    fetchImpl(`${publicBaseUrl}/api/auth/providers`),
+    fetchImpl(`${publicBaseUrl}/api/health/capabilities`),
+  ]);
+
   if (studioRes.status !== 200) {
+    await Promise.allSettled([studioRes.body?.cancel?.(), providersRes.body?.cancel?.(), capRes.body?.cancel?.()]);
     throw new Error(`[cloud-deploy:cloudflare] 배포 후 /studio 응답 오류: HTTP ${studioRes.status}`);
   }
   const coop = studioRes.headers.get("cross-origin-opener-policy") || "";
   const coep = studioRes.headers.get("cross-origin-embedder-policy") || "";
   if (coop !== "same-origin" || !["credentialless", "require-corp"].includes(coep)) {
+    await Promise.allSettled([studioRes.body?.cancel?.(), providersRes.body?.cancel?.(), capRes.body?.cancel?.()]);
     throw new Error(
       `[cloud-deploy:cloudflare] /studio 교차 출처 격리 헤더 누락 (COOP=${coop || "none"}, COEP=${coep || "none"})`,
     );
   }
+  await studioRes.body?.cancel?.();
 
-  const providersRes = await fetchImpl(`${publicBaseUrl}/api/auth/providers`);
   if (providersRes.status !== 200) {
+    await Promise.allSettled([providersRes.body?.cancel?.(), capRes.body?.cancel?.()]);
     throw new Error(`[cloud-deploy:cloudflare] /api/auth/providers 응답 오류: HTTP ${providersRes.status}`);
   }
+  await providersRes.body?.cancel?.();
 
-  const capRes = await fetchImpl(`${publicBaseUrl}/api/health/capabilities`);
   if (capRes.status !== 200) {
+    await capRes.body?.cancel?.();
     throw new Error(`[cloud-deploy:cloudflare] /api/health/capabilities 응답 오류: HTTP ${capRes.status}`);
   }
   const capBody = await capRes.json();
@@ -219,7 +228,7 @@ async function runStaticWeb({ dryRun, syncWorkerSecrets, env }) {
   const coreOrigin = new URL((env.CORE_API_ORIGIN || ONPOD_CANONICAL_ORIGIN).trim()).origin;
 
   verifyPrebuiltStaticDist(ROOT, releaseSha);
-  runCommandOrThrow("pnpm", ["run", "generate:cloudflare-static-rules", "--", "--check"], { env });
+  runCommandOrThrow("node", ["scripts/cloudflare-static-rules.mjs", "--check"], { env });
   runCommandOrThrow("node", ["scripts/verify-static-csp.mjs", "dist/index.html"], { env });
   runCommandOrThrow("node", ["scripts/verify-static-service-worker.mjs"], { env });
 

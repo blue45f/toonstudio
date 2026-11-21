@@ -14,6 +14,7 @@ import json
 import math
 import struct
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -59,7 +60,7 @@ def _inspect_glb_binary_header(glb_path: Path) -> dict[str, Any]:
     }
 
 
-def build_legal_medical_props(scratch_dir: Path) -> dict[str, Any]:
+def build_wave11_drama_props(scratch_dir: Path) -> dict[str, Any]:
     HAND_PROP_ROOT.mkdir(parents=True, exist_ok=True)
     STAGE_PROP_ROOT.mkdir(parents=True, exist_ok=True)
     scratch_dir.mkdir(parents=True, exist_ok=True)
@@ -170,8 +171,6 @@ def build_legal_medical_props(scratch_dir: Path) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
-    out = build_legal_medical_props(Path("/tmp/ts_wave11_tex"))
-    Path("/Users/hjunkim/.gemini/tasks/c_d3c926f6e51aacdf/workspace/ts_wave11_assets.json").write_text(
-        json.dumps(out, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    with tempfile.TemporaryDirectory(prefix="ts_wave11_tex_") as tmp_dir:
+        prop_manifest_summary = build_wave11_drama_props(Path(tmp_dir))
+    print(json.dumps(prop_manifest_summary, ensure_ascii=False, indent=2))

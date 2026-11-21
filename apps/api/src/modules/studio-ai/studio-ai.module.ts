@@ -25,7 +25,11 @@ import { STUDIO_3D_CREDIT_WALLET } from "./studio-3d-credit-charge";
 import { STUDIO_AI_CREDIT_WALLET } from "./studio-ai-credit-charge";
 import { StudioAiController } from "./studio-ai.controller";
 import { StudioAiService } from "./studio-ai.service";
-import { StudioOpenAiCreativeAssistController } from "./studio-openai-creative-assist.controller";
+import { StudioFreeAiZeroBillRouter } from "./studio-free-ai-zero-bill-router";
+import {
+  StudioFreeAiController,
+  StudioOpenAiCreativeAssistController,
+} from "./studio-openai-creative-assist.controller";
 import { StudioOpenAiCreativeAssistService } from "./studio-openai-creative-assist.service";
 
 @Module({
@@ -37,6 +41,7 @@ import { StudioOpenAiCreativeAssistService } from "./studio-openai-creative-assi
     Studio3dGenerationController,
     StudioMediaInferenceController,
     StudioOpenAiCreativeAssistController,
+    StudioFreeAiController,
   ],
   providers: [
     CreatorInferenceGateway,
@@ -56,6 +61,7 @@ import { StudioOpenAiCreativeAssistService } from "./studio-openai-creative-assi
     StudioAiComicDirectorService,
     Studio3dGenerationService,
     StudioMediaInferenceService,
+    StudioFreeAiZeroBillRouter,
     StudioOpenAiCreativeAssistService,
     {
       provide: STUDIO_AI_COMIC_DIRECTOR_REPOSITORY,

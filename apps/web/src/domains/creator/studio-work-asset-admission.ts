@@ -1,7 +1,7 @@
 import {
   deleteUnreferencedStudioWorkAssetUpload,
   uploadStudioWorkAsset,
-} from "./studio-work-asset-client";
+} from "./runtime-leaves/studio-work-asset-client-lazy";
 
 import {
   parseStudioWorkAssetDescriptor,
