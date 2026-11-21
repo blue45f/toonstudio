@@ -35,6 +35,7 @@ const StudioPhotoWebtoonPresetPanel = lazy(() => import("./StudioPhotoWebtoonPre
 const StudioLineCleanupAndDustSection = lazy(() =>
   import("./filter/StudioLineCleanupAndDustSection").then((mod) => ({ default: mod.StudioLineCleanupAndDustSection })),
 );
+const PhotoshopProStudioWorkbench = lazy(() => import("./photoshop-pro/PhotoshopProStudioWorkbench"));
 
 interface StudioImageAdjustmentsPanelProps {
   selected: ImageEl;
@@ -1009,6 +1010,9 @@ export function StudioImageAdjustmentsPanel({
           onCommitImageSrc={(src) => onPatch({ src })}
           onExtractGradientStops={(stops) => onPatch({ gradientMap: { stops: stops.map((s) => ({ pos: s.pos, color: s.color })) } })}
         />
+      </AdjustmentSection>
+      <AdjustmentSection title="포토샵 프로 랩 열기" loadingLabel={sectionLoading}>
+        <PhotoshopProStudioWorkbench selected={selected} onPatch={onPatch} />
       </AdjustmentSection>
     </>
   );
