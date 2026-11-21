@@ -53,6 +53,11 @@ export interface StudioPredictedInkSuffixDraftInput {
   readonly twists?: readonly number[];
   readonly speeds?: readonly number[];
   readonly tangentialPressures?: readonly number[];
+  readonly altitudeAngles?: readonly number[];
+  readonly azimuthAngles?: readonly number[];
+  readonly contactWidths?: readonly number[];
+  readonly contactHeights?: readonly number[];
+  readonly sampleTimeOffsets?: readonly number[];
   /** Raw pressure fallback used only when a present pressure channel has a sparse endpoint. */
   readonly fallbackPressure: number;
 }
@@ -77,6 +82,11 @@ export interface StudioPredictedInkSuffixDraftPlan {
   readonly twists?: number[];
   readonly speeds?: number[];
   readonly tangentialPressures?: number[];
+  readonly altitudeAngles?: number[];
+  readonly azimuthAngles?: number[];
+  readonly contactWidths?: number[];
+  readonly contactHeights?: number[];
+  readonly sampleTimeOffsets?: number[];
 }
 
 export interface StudioPredictedInkTailState {
@@ -209,6 +219,16 @@ export function planStudioPredictedInkSuffixDraft(
       sourceIndices,
       0
     ),
+    altitudeAngles: boundedDraftChannel(
+      input.altitudeAngles,
+      authoritativeSampleCount,
+      sourceIndices,
+      Math.PI / 2
+    ),
+    azimuthAngles: boundedDraftChannel(input.azimuthAngles, authoritativeSampleCount, sourceIndices, 0),
+    contactWidths: boundedDraftChannel(input.contactWidths, authoritativeSampleCount, sourceIndices, 1),
+    contactHeights: boundedDraftChannel(input.contactHeights, authoritativeSampleCount, sourceIndices, 1),
+    sampleTimeOffsets: boundedDraftChannel(input.sampleTimeOffsets, authoritativeSampleCount, sourceIndices, 0),
   };
 }
 

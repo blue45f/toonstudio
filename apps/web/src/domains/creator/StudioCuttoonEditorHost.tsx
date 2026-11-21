@@ -1293,7 +1293,7 @@ import {
   type StudioGpuPendingDrawAuthority,
   pruneStudioGpuPendingAuthority,
 } from "./render/studio-webgpu-pending-authority";
-import { createStudioLiveStrokeGpuAudit } from "./render/studio-live-stroke-gpu-audit";
+import { createStudioLiveStrokeGpuAudit, studioLiveSourceJournalFailureReason } from "./render/studio-live-stroke-gpu-audit";
 import type {
   StudioLiveStrokeGpuFailureReason,
   StudioLiveStrokeUnavailableReason,
@@ -7480,7 +7480,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
           })).catch(() => undefined);
         })
         .catch((cause: unknown) => {
-          if (!canPublishSnapshot()) return;
+          if (!canPublishSnapshot() || !autosaveMonotonicGateRef.current.isLatestIssued(autosaveKey, snapshotSeq) || isStudioAutosaveSupersededFailure(cause)) return;
           if (studioAutosaveDocumentBusy(cause)) {
             busyRetry.schedule();
             return;
@@ -9374,11 +9374,12 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     providerLabel: string,
     detail: string,
     strokeId: string | null = drawingRef.current?.id ?? null,
+    reason?: StudioLiveStrokeUnavailableReason,
   ): void {
     // Cancel the live operation (ADR 0018) but park its finished CPU geometry for an explicit restore.
     const salvaged = strokeId !== null && drawingRef.current?.id === strokeId
       && salvageRejectedStroke(drawingRef.current, providerLabel, detail).action === "salvage";
-    setError(studioRejectedLiveSurfaceMessage(providerLabel, detail, salvaged));
+    setError(studioRejectedLiveSurfaceMessage(providerLabel, detail, salvaged, reason));
     if (!strokeId || drawingRef.current?.id !== strokeId) return;
     // Stop this provider before the next pointer sample. Cleanup runs after the current adapter
     // callback unwinds so it cannot re-enter a device-loss/frame-receipt transaction.
@@ -9396,6 +9397,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       "WebGPU 라이브 잉크",
       t("studio.hostStatus.gpuLiveInkUnavailable", { reason }, "선택한 엔진 상태: {reason}. 같은 획을 Canvas2D나 Konva로 이어 그리지 않습니다."),
       strokeId,
+      reason,
     );
     // Pointer-up releases drawingRef before an asynchronous final receipt or watchdog failure.
     // Remove that still-uncommitted operation explicitly instead of letting the deferred batch,
@@ -9407,9 +9409,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     strokeId: string,
   ): void {
     const recorded = reportLiveStrokeGpuAuditFailure(
-      reason === "request-failed" || reason === "frame-invalid"
-        ? "surface-lost"
-        : reason,
+      reason === "request-failed" || reason === "frame-invalid" ? "surface-lost" : reason,
       undefined,
       strokeId,
     );
@@ -10667,7 +10667,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       sealEndpoint,
     });
     if (advanced.status === "rejected") {
-      failSelectedGpuLiveInk("request-failed", el.id);
+      failSelectedGpuLiveInk(studioLiveSourceJournalFailureReason(advanced.reason), el.id);
       return "rejected";
     }
     if (advanced.status === "retained") {
@@ -26057,7 +26057,7 @@ function clearSelectionForEdit() {
             });
           })
           .catch((cause: unknown) => {
-            if (isStudioAutosaveSupersededFailure(cause)) return;
+            if (!initialWriteAllowed() || !autosaveMonotonicGateRef.current.isLatestIssued(autosaveKey, snapshotSeq) || isStudioAutosaveSupersededFailure(cause)) return;
             if (studioAutosaveDocumentBusy(cause) && autosaveDocumentLeaseRef.current?.role === "leader" && editorMountedRef.current) {
               setAutosaveRetryNonce((current) => current + 1);
             }

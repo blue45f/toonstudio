@@ -28,6 +28,13 @@ function expectInOrder(value: string, fragments: readonly string[]): void {
 }
 
 describe("Studio advanced WebGPU live-ink integration", () => {
+  it("획 예산 거절 사유를 호스트의 복구 안내까지 전달한다", () => {
+    const page = source("../StudioCuttoonEditorHost.tsx");
+    expect(page).toContain("failSelectedGpuLiveInk(studioLiveSourceJournalFailureReason(advanced.reason), el.id)");
+    expect(page).toContain("studioRejectedLiveSurfaceMessage(providerLabel, detail, salvaged, reason)");
+    expect(page).toContain("cancelRejectedSelectedGpuPendingStroke(strokeId, reason)");
+  });
+
   it("keeps the engine provider immutable and allows Canvas2D only by explicit selection", () => {
     const engine = source("./studio-webgpu-engine.ts");
     const canvas = source("../StudioWebGpuCanvas.tsx");

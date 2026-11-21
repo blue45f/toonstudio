@@ -26,6 +26,7 @@ import {
   type StudioOpfsRecoveryWriterLease,
 } from "./studio-opfs-recovery-journal";
 import { sha256HexPortable } from "./studio-sha256";
+import { StudioAutosaveOperationQueue } from "./live/studio-autosave-operation-queue";
 
 import type {
   StudioAutosaveSqlitePort,
@@ -360,7 +361,7 @@ export class StudioAutosaveOpfsSession {
   readonly #now: () => number;
   readonly #documentLease: StudioAutosaveOpfsSessionOptions["documentLease"];
   #writer: StudioOpfsRecoveryWriterLease | null = null;
-  #tail: Promise<void> = Promise.resolve();
+  readonly #queue = new StudioAutosaveOperationQueue();
   #disposed = false;
 
   constructor(options: StudioAutosaveOpfsSessionOptions) {
@@ -374,13 +375,11 @@ export class StudioAutosaveOpfsSession {
     this.#documentLease = options.documentLease;
   }
 
-  #enqueue<T>(operation: () => Promise<T>): Promise<T> {
+  #enqueue<T>(operation: () => Promise<T>, coalesceSnapshot = false): Promise<T> {
     if (this.#disposed) {
       return Promise.reject(new StudioAutosaveOpfsError("sessionDisposed"));
     }
-    const result = this.#tail.then(operation);
-    this.#tail = result.then(() => undefined, () => undefined);
-    return result;
+    return this.#queue.enqueue(operation, coalesceSnapshot);
   }
 
   async #ensureWriter(signal?: AbortSignal): Promise<StudioOpfsRecoveryWriterLease> {
@@ -495,7 +494,7 @@ export class StudioAutosaveOpfsSession {
           }
         }
       }
-    });
+    }, state === "snapshot" && signal === undefined);
   }
 
   write(
@@ -516,8 +515,7 @@ export class StudioAutosaveOpfsSession {
   }
 
   async flush(): Promise<void> {
-    await this.#tail;
-    await this.#journal.scan();
+    await this.#queue.enqueue(async () => { await this.#journal.scan(); });
   }
 
   async dispose(): Promise<void> {
@@ -526,7 +524,7 @@ export class StudioAutosaveOpfsSession {
     // pending checkpoint; leaving the flag open until its tail settles lets a stale closure append
     // behind the tail that disposal is waiting for and strand the renewed writer lease.
     this.#disposed = true;
-    await this.#tail;
+    await this.#queue.settled();
     const writer = this.#writer;
     this.#writer = null;
     if (!writer) return;

@@ -14,8 +14,8 @@ export function createStudioSoakCheckpoint({ atMs, cycle, heap, heapSamples, fai
     cycle,
     heapBytes: heap?.usedBytes ?? null,
     heapSlopeBytesPerHour: Number.isFinite(slope) ? slope : null,
-    domNodes: null,
-    eventListeners: null,
+    domNodes: heap?.nodes ?? null,
+    eventListeners: heap?.jsEventListeners ?? null,
     failures,
   };
 }

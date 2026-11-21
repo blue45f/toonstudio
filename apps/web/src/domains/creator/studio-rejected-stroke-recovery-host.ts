@@ -7,6 +7,7 @@
  */
 
 import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
+import { registerI18nEnglishSourceEntries, registerI18nLocaleEntries, translateNow } from "@/shared/lib/i18n";
 import { useLayoutEffect, useRef } from "react";
 
 import { uid } from "./studio-id";
@@ -28,6 +29,7 @@ import {
 } from "./live/studio-rejected-stroke-recovery-persistence";
 
 import type { DrawEl } from "./studio-element-model";
+import type { StudioLiveStrokeUnavailableReason } from "./live/studio-live-stroke-render-backend";
 import type {
   StudioRejectedStrokeRecoveryRepository,
   StudioRejectedStrokeRecoveryScope,
@@ -35,12 +37,27 @@ import type {
 
 export const STUDIO_GPU_LIVE_INK_PROVIDER_LABEL = "WebGPU 라이브 잉크";
 
+registerI18nLocaleEntries("ko", {
+  "studio.strokeRecovery.budgetSalvaged": "이 획이 라이브 미리보기의 처리 한도에 도달해 미리보기를 중단했습니다. 보관된 획은 상태 레일의 '획 복구'에서 복구할 수 있습니다. 펜을 뗀 뒤 짧은 획으로 나누거나 대칭 수를 줄여 다시 그려 주세요.",
+  "studio.strokeRecovery.budgetCancelled": "이 획이 라이브 미리보기의 처리 한도에 도달해 현재 획을 취소했습니다. 펜을 뗀 뒤 짧은 획으로 나누거나 대칭 수를 줄여 다시 그려 주세요.",
+});
+registerI18nEnglishSourceEntries({
+  "studio.strokeRecovery.budgetSalvaged": "This stroke reached the live preview limit, so its preview was stopped. The retained stroke is available in Stroke Recovery on the status rail. Lift the pen, then draw shorter strokes or reduce the symmetry count.",
+  "studio.strokeRecovery.budgetCancelled": "This stroke reached the live preview limit and was cancelled. Lift the pen, then draw shorter strokes or reduce the symmetry count.",
+});
+
 /** Banner copy for a provider rejection; tells the user whether the finished mark survived. */
 export function studioRejectedLiveSurfaceMessage(
   providerLabel: string,
   detail: string,
   salvaged: boolean,
+  reason?: StudioLiveStrokeUnavailableReason,
 ): string {
+  if (reason === "stroke-budget-exceeded") {
+    return salvaged
+      ? translateNow("studio.strokeRecovery.budgetSalvaged", "이 획이 라이브 미리보기의 처리 한도에 도달해 미리보기를 중단했습니다. 보관된 획은 상태 레일의 '획 복구'에서 복구할 수 있습니다. 펜을 뗀 뒤 짧은 획으로 나누거나 대칭 수를 줄여 다시 그려 주세요.")
+      : translateNow("studio.strokeRecovery.budgetCancelled", "이 획이 라이브 미리보기의 처리 한도에 도달해 현재 획을 취소했습니다. 펜을 뗀 뒤 짧은 획으로 나누거나 대칭 수를 줄여 다시 그려 주세요.");
+  }
   return salvaged
     ? `${providerLabel} 엔진을 더 이상 사용할 수 없어 현재 획의 미리보기를 중단했습니다. `
       + `완성된 획은 상태 레일의 '획 복구'로 되살릴 수 있습니다. ${detail}`
