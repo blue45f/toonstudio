@@ -1,0 +1,227 @@
+/* 요금제 3초 작업 스타일 맞춤 등급 진단기 — OKLCH 스펙트럼 + 320px 안전 레이아웃 */
+
+.pricing-matcher {
+  --matcher-tone: var(--color-good);
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in oklch, var(--matcher-tone) 42%, var(--color-line));
+  background:
+    radial-gradient(
+      ellipse 60% 80% at 96% 0%,
+      color-mix(in oklch, var(--matcher-tone) 12%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 50% 80% at 6% 100%,
+      color-mix(in oklch, var(--color-cool) 8%, transparent),
+      transparent 70%
+    ),
+    var(--color-panel);
+  padding: 1rem;
+}
+
+.pricing-matcher[data-tone="good"] {
+  --matcher-tone: var(--color-good);
+}
+
+.pricing-matcher[data-tone="cool"] {
+  --matcher-tone: var(--color-cool);
+}
+
+.pricing-matcher[data-tone="accent"] {
+  --matcher-tone: var(--color-accent);
+}
+
+.pricing-matcher[data-tone="accent-2"] {
+  --matcher-tone: var(--color-accent-2);
+}
+
+.pricing-matcher::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--color-good),
+    var(--color-cool),
+    var(--color-accent),
+    var(--color-accent-2)
+  );
+  opacity: 0.92;
+}
+
+.pricing-matcher-preset {
+  --preset-tone: var(--color-accent);
+  border: 1px solid var(--color-line);
+  background-color: var(--color-card);
+  color: var(--color-fg-2);
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 160ms ease,
+    transform 160ms var(--ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.pricing-matcher-preset[data-tone="good"] {
+  --preset-tone: var(--color-good);
+}
+
+.pricing-matcher-preset[data-tone="cool"] {
+  --preset-tone: var(--color-cool);
+}
+
+.pricing-matcher-preset[data-tone="accent"] {
+  --preset-tone: var(--color-accent);
+}
+
+.pricing-matcher-preset[data-tone="accent-2"] {
+  --preset-tone: var(--color-accent-2);
+}
+
+.pricing-matcher-preset:hover {
+  border-color: color-mix(in oklch, var(--preset-tone) 58%, var(--color-line));
+  color: var(--color-fg);
+}
+
+.pricing-matcher-preset[aria-pressed="true"] {
+  border-color: var(--preset-tone);
+  background-color: color-mix(in oklch, var(--preset-tone) 15%, var(--color-card));
+  color: var(--color-fg);
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--preset-tone) 38%, transparent);
+  transform: translateY(-1px);
+}
+
+.pricing-matcher-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: var(--preset-tone);
+  flex-shrink: 0;
+}
+
+.pricing-matcher-step-btn {
+  border: 1px solid var(--color-line);
+  background-color: var(--color-card);
+  color: var(--color-fg);
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.pricing-matcher-step-btn:hover:not(:disabled) {
+  border-color: var(--matcher-tone);
+  background-color: color-mix(in oklch, var(--matcher-tone) 12%, var(--color-card));
+}
+
+.pricing-matcher-step-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pricing-matcher-toggle {
+  border: 1px solid var(--color-line);
+  background-color: var(--color-card);
+  color: var(--color-fg-2);
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.pricing-matcher-toggle[aria-pressed="true"] {
+  border-color: var(--matcher-tone);
+  background-color: color-mix(in oklch, var(--matcher-tone) 16%, var(--color-card));
+  color: var(--color-fg);
+}
+
+.pricing-matcher-result {
+  border: 1px solid color-mix(in oklch, var(--matcher-tone) 38%, var(--color-line));
+  background-color: color-mix(in oklch, var(--color-card) 92%, var(--color-panel));
+}
+
+.pricing-matcher-plan-pill {
+  background-color: color-mix(in oklch, var(--matcher-tone) 18%, var(--color-panel));
+  border: 1px solid color-mix(in oklch, var(--matcher-tone) 48%, transparent);
+  color: var(--color-fg);
+}
+
+.pricing-matcher-metric {
+  border: 1px solid var(--color-line);
+  background-color: var(--color-panel);
+}
+
+.pricing-matcher-cta {
+  background-color: var(--color-accent);
+  color: var(--color-on-accent);
+  transition:
+    opacity 150ms ease,
+    transform 160ms var(--ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.pricing-matcher-cta:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.pricing-matcher-preset:focus-visible,
+.pricing-matcher-step-btn:focus-visible,
+.pricing-matcher-toggle:focus-visible,
+.pricing-matcher-cta:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* 아래 4개 플랜 카드 실시간 매칭 하이라이트 — OKLCH 스펙트럼 링 */
+.pricing-plan-slot {
+  border-radius: 1.1rem;
+  transition:
+    box-shadow 200ms ease,
+    transform 200ms var(--ease-out-quint, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.pricing-plan-slot[data-matched-plan="true"] {
+  box-shadow:
+    0 0 0 2px color-mix(in oklch, var(--color-accent) 72%, var(--color-cool)),
+    0 10px 28px color-mix(in oklch, var(--color-accent) 16%, transparent);
+  transform: translateY(-2px);
+}
+
+.pricing-plan-matched-badge {
+  border: 1px solid color-mix(in oklch, var(--color-cool) 50%, var(--color-accent));
+  background-color: color-mix(in oklch, var(--color-cool) 16%, var(--color-card));
+  color: var(--color-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pricing-matcher-preset,
+  .pricing-matcher-step-btn,
+  .pricing-matcher-toggle,
+  .pricing-matcher-cta,
+  .pricing-plan-slot {
+    transition: none;
+    transform: none;
+  }
+
+  .pricing-plan-slot[data-matched-plan="true"] {
+    transform: none;
+  }
+}
+
+:root[data-design-theme="contrast"] .pricing-matcher,
+:root[data-design-theme="contrast"] .pricing-matcher-result,
+:root[data-design-theme="contrast"] .pricing-plan-slot[data-matched-plan="true"] {
+  border-color: var(--color-line-strong);
+}
+
+@media (forced-colors: active) {
+  .pricing-matcher::before {
+    display: none;
+  }
+
+  .pricing-matcher-preset[aria-pressed="true"],
+  .pricing-matcher-toggle[aria-pressed="true"],
+  .pricing-matcher-cta,
+  .pricing-plan-slot[data-matched-plan="true"] {
+    border: 2px solid Highlight;
+    box-shadow: none;
+  }
+}
