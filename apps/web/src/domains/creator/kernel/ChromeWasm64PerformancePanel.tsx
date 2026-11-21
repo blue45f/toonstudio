@@ -7,6 +7,10 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
+  ChromeProHardwareAndMediaSection,
+  type ChromeProHardwareEnv,
+} from "./ChromeProHardwareAndMediaSection";
+import {
   detectChromeNextGenCapabilities,
   probeChromeNextGenCapabilitiesAsync,
   type ChromeNextGenCapabilitiesReport,
@@ -30,6 +34,8 @@ export interface ChromeWasm64PerformancePanelProps {
   readonly probeEnv?: ChromeNextGenProbeEnv;
   /** 테스트·진단 주입용 Wasm64 엔진 옵션. */
   readonly engineOptions?: Wasm64RasterEngineOptions;
+  /** 테스트·진단 주입용 프로 하드웨어(WebHID · 로컬 디스크) 환경. */
+  readonly proHardwareEnv?: ChromeProHardwareEnv;
 }
 
 function formatByteScale(bytes: bigint): string {
@@ -92,6 +98,7 @@ function backendDisplayLabel(backend: Wasm64RasterBenchmarkReport["backend"]): s
 export function ChromeWasm64PerformancePanel({
   probeEnv,
   engineOptions,
+  proHardwareEnv,
 }: ChromeWasm64PerformancePanelProps = {}) {
   useBilingualI18nRevision();
 
@@ -380,6 +387,9 @@ export function ChromeWasm64PerformancePanel({
           ))}
         </ul>
       </div>
+
+      {/* 프로 자연매체 · WebHID 리모컨 · 로컬 디스크 저장 · Display-P3 CMYK 소프트 프루프 */}
+      <ChromeProHardwareAndMediaSection env={proHardwareEnv} />
     </section>
   );
 }
