@@ -36,16 +36,16 @@ describe("투자 소개 목적별 페이지", () => {
     expect(container.querySelector('[data-ir-brief-section="downloads"]')).not.toBeNull();
     expect(container.querySelector(`a[href="${IR_DECK_PDF}"]`)?.hasAttribute("download")).toBe(true);
     expect(container.querySelector(`a[href="${IR_DECK_PPTX}"]`)?.hasAttribute("download")).toBe(true);
-    expect(screen.getByText(new RegExp(`${IR_DECK_UPDATED_AT} 참고본`))).toBeTruthy();
+    expect(screen.getByText(new RegExp(`${IR_DECK_UPDATED_AT} 검토본`))).toBeTruthy();
     expect(screen.getByRole("link", { name: "최신 웹 발표 보기" }).getAttribute("href")).toBe("/ir/present");
     expect(screen.getByRole("link", { name: "전체 발표 · 24씬" }).getAttribute("href")).toBe("/ir/present");
     expect(resolveIrBriefSection("?brief=unknown", "#ir-market-title")).toBe("market");
     expect(resolveIrBriefSection("?brief=problem", "#ir-market-title")).toBe("problem");
   });
-  it("영문 다운로드에도 이전 자료의 기준일과 최신 발표 경로를 표시한다", () => {
+  it("영문 다운로드에도 검토본의 기준일과 최신 발표 경로를 표시한다", () => {
     useI18n.setState({ lang: "en" });
     open("/ir?brief=downloads");
-    expect(screen.getByText(new RegExp(`Reference edition dated ${IR_DECK_UPDATED_AT}`))).toBeTruthy();
+    expect(screen.getByText(new RegExp(`Review edition dated ${IR_DECK_UPDATED_AT}`))).toBeTruthy();
     expect(screen.getByRole("link", { name: "View the current web presentation" }).getAttribute("href")).toBe("/ir/present");
   });
   it("발표 overlay의 키보드 이동·종료와 원래 실행 버튼 포커스를 유지한다", () => {

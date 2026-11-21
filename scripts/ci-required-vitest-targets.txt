@@ -920,6 +920,7 @@ scripts/free-database-federation.test.mjs
 scripts/free-infrastructure-policy.test.mjs
 scripts/generate-creator-bundle-theme-packs.test.mjs
 scripts/generate-latent-pigment-model.test.ts
+scripts/ir-static-deck.test.ts
 scripts/lib/character-psd-reference-compositor.test.mjs
 scripts/lib/compact-svg-structure.test.mjs
 scripts/lib/path-containment.test.ts
@@ -954,6 +955,7 @@ scripts/pigment-dependency-install-policy.test.mjs
 scripts/plan-creator-bundle-deploy-cli.test.mjs
 scripts/plan-creator-bundle-deploy.test.mjs
 scripts/prepare-cloudflare-static-assets.test.ts
+scripts/prepare-ir-present-narration.test.ts
 scripts/prepare-managed-database-bootstrap.test.mjs
 scripts/production-database-connection.test.mjs
 scripts/provision-cloudflare-free-data-plane.test.mjs

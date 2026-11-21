@@ -30,10 +30,10 @@ afterEach(() => {
   useI18n.setState({ lang: "ko" });
 });
 
-describe("제품 투어의 IR 참고본 안내", () => {
+describe("제품 투어의 IR 검토본 안내", () => {
   it.each([
-    ["ko", "참고본", "최신 웹 발표 보기"],
-    ["en", "reference", "View the current web presentation"],
+    ["ko", "검토본", "최신 웹 발표 보기"],
+    ["en", "review", "View the current web presentation"],
   ] as const)("%s에서 파일 기준일과 최신 웹 발표 경로를 함께 보여준다", (lang, label, currentPresentation) => {
     useI18n.setState({ lang });
     const { container } = render(<MemoryRouter initialEntries={["/product-tour"]}><ProductTourPage /></MemoryRouter>);

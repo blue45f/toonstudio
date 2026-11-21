@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "basis": "2026-11-21",
+  "status": "review",
+  "slides": 24,
+  "sources": [
+    {
+      "path": "apps/web/src/domains/marketing/ir-pitch-data.ts",
+      "sha256": "be5eed8e1b37f57fc249917f2c367c2629e54bbe64e0fd7c2de80d65c7fa574c"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/ir-present-scene-data.ts",
+      "sha256": "91b408a3357a7e0cb256dece3c5b4eb02aca94bce677c83f89211cf6298ad61b"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/ir-present-scenes-a.tsx",
+      "sha256": "bed685b0e935006a49f4e75b9d37361f015d5569904e0bcfef689b581245d5e4"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/ir-present-scenes-b.tsx",
+      "sha256": "31c1b03a33bd1e4f6e7dfe9a661db494c2aedb406c3ec28f3f9a1f0f6714d628"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/ir-present-pipeline-widget.tsx",
+      "sha256": "8f3a33f0f81c3baaf96a8ca30830524f247b7565db40d83f4f0a400cc480819d"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/product-tour-content.ts",
+      "sha256": "623c7ffdee5aa778374328a9773564678260f4b12025e3460ba30fed082cd995"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/product-tour-asset.generated.ts",
+      "sha256": "a52a3ac18c5b6af7a5f76099a071a57188eec5d9577c2420c945ffdafc4db980"
+    },
+    {
+      "path": "tools/media/ir-present/narration.ko.json",
+      "sha256": "41bf7eed9d0bcad6883e86156e88b49ee82343ca9ce9de317f1a328bb7fbb647"
+    },
+    {
+      "path": "apps/web/public/brand/product-tour/03-draw.png",
+      "sha256": "2b2f5d16d2a23c32532467155e0713e7de0918bba9364782674bc8a9082da64c"
+    },
+    {
+      "path": "apps/web/public/brand/product-tour/05-3d.png",
+      "sha256": "22928f9a4efd0c9f2d4439d3854d21f9962e36968f2aec329c93189e0458404e"
+    },
+    {
+      "path": "apps/web/public/brand/product-tour/07-production.png",
+      "sha256": "f0340a478c291c7f802f5ef733b007e930cf937831bda3780a851e15e4f4bdce"
+    },
+    {
+      "path": "scripts/export-ir-deck-data.mts",
+      "sha256": "1e1e166356ac10272188db1dbc3ec289eb4c9ba7732df7a0b6a31bcf963efc47"
+    },
+    {
+      "path": "scripts/generate-ir-deck.py",
+      "sha256": "2c1ae0eb399033e96db9ec724d9f263e19c60bff1a7ec2bb1405bb9b94847b85"
+    }
+  ],
+  "outputs": [
+    {
+      "file": "toonstudio-ir-deck.pptx",
+      "sha256": "0e38f73632583ab31cf7a63fcefd0b9c942201b6cc145c395f717bc720579c82",
+      "bytes": 569295
+    },
+    {
+      "file": "toonstudio-ir-deck.pdf",
+      "sha256": "0209d3d1d1ca6cfebda80882e20642649472fc5a23c2877b520ff3bacf30859d",
+      "bytes": 1115156
+    }
+  ],
+  "tour": {
+    "durationSeconds": 558,
+    "chapterCount": 10,
+    "conceptChapters": [
+      4,
+      6
+    ]
+  },
+  "notes": [
+    "편집 가능한 텍스트·도형 PPTX",
+    "웹 발표와 동일한 24개 주제·순서",
+    "기존 촬영 시점의 제품 캡처 사용",
+    "운영 배포·고객 실증·멘토 전달 완료를 의미하지 않음"
+  ]
+}

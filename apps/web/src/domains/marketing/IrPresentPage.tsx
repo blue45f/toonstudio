@@ -5,7 +5,7 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import "./ir-present-page.css";
 
 import { SCENE_META, TOTAL } from "./ir-present-scene-data";
-import { isIrNarrationCurrent } from "./ir-present-narration";
+import { getIrNarrationSource, isIrNarrationCurrent } from "./ir-present-narration";
 import { SCENE_NODES_A } from "./ir-present-scenes-a";
 import { SCENE_NODES_B } from "./ir-present-scenes-b";
 
@@ -32,7 +32,6 @@ import { SCENE_NODES_B } from "./ir-present-scenes-b";
  * 씬별 체류 시간(dwell)을 쓴다.
  */
 
-const AUDIO_DIR = "/brand/ir-present/audio";
 const SHARED_PRODUCT_TOUR_BGM_SRC = "/brand/product-tour/toonstudio-product-tour-bgm.m4a";
 const BGM_BASE_VOLUME = 0.14;
 const BGM_DUCK_VOLUME = 0.045;
@@ -51,7 +50,8 @@ const SCENE_NODES = [...SCENE_NODES_A, ...SCENE_NODES_B];
 
 export function IrPresentPage() {
   useDocumentTitle("툰스튜디오 IR · 발표 플레이어");
-  const narrationAvailable = isIrNarrationCurrent();
+  const narrationAvailable = isIrNarrationCurrent()
+    && SCENE_META.every((scene) => getIrNarrationSource(scene.audio) !== null);
 
   const [idx, setIdx] = useState(() => {
     const match = (window.location.hash || "").match(/s=(\d+)/);
@@ -136,7 +136,11 @@ export function IrPresentPage() {
       scheduleAdvance(dwellMs(i));
       return;
     }
-    const src = `${AUDIO_DIR}/${SCENE_META[i].audio}`;
+    const src = getIrNarrationSource(SCENE_META[i].audio);
+    if (!src) {
+      scheduleAdvance(dwellMs(i));
+      return;
+    }
     if (narrSrcRef.current !== src) {
       narr.src = src;
       narrSrcRef.current = src;
