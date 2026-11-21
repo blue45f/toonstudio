@@ -12,7 +12,7 @@ export const SCENE_META: SceneMeta[] = [
   { title: "예비 창업 도전자 소개", kicker: "예비 창업 도전자 — 만든 사람부터 소개할게요", audio: "n02.mp3", dwell: 27 },
   { title: "문제 — 끊기는 제작 흐름", kicker: "Problem", audio: "n03.mp3", dwell: 25 },
   { title: "솔루션 — 이어지는 파이프라인", kicker: "Pipeline", audio: "n04.mp3", dwell: 19 },
-  { title: "제품 수치", kicker: "Proof in Numbers", audio: "n05.mp3", dwell: 22 },
+  { title: "제작 도구", kicker: "Production Tools", audio: "n05.mp3", dwell: 22 },
   { title: "역할별 UX", kicker: "Roles", audio: "n06.mp3", dwell: 20 },
   { title: "시장 — 국내 웹툰 산업", kicker: "Market", audio: "n07.mp3", dwell: 22 },
   { title: "시장 — 글로벌 전망", kicker: "Global Market", audio: "n08.mp3", dwell: 23 },

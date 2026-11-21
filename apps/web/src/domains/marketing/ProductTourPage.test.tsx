@@ -321,9 +321,9 @@ describe("product tour: lengths are derived and the copy stays honest", () => {
     // 스크린 리더는 "9:18" 을 길이로 읽지 못하므로 말로 읽히는 길이를 따로 둔다.
     expect(ko.eyebrowSr).toContain("9분 18초");
     expect(en.eyebrowSr).toContain("9 minutes 18 seconds");
-    // 제목의 "9분 안에" 는 반올림한 표현이다. 영상 길이가 바뀌어 분이 달라지면 이 문구를 다시 검토하도록 잠근다.
-    expect(ko.title[1]).toContain(`${Math.floor(PRODUCT_TOUR.duration / 60)}분`);
-    expect(en.title[1]).toContain(`${Math.floor(PRODUCT_TOUR.duration / 60)} minutes`);
+    // 제목에도 정본의 초 단위 재생 시간을 표시해, 분 단위로 줄인 길이가 노출되지 않도록 한다.
+    expect(ko.title[1]).toContain(formatProductTourDuration(PRODUCT_TOUR.duration, "ko"));
+    expect(en.title[1]).toContain(formatProductTourDuration(PRODUCT_TOUR.duration, "en"));
   });
 
   it("calls the film product captures plus concept illustrations in the meta description, never real product screens", () => {
