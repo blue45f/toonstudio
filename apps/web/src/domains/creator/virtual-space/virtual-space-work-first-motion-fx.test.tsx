@@ -3,10 +3,11 @@
  * 가상 스튜디오 업무 중심 정리 · 캐릭터 동작/모션 · 절차적 발소리 Web Audio ·
  * 먼지 파티클 · 12인 캐릭터 다양성 · 경쟁사 REA 메커니즘(코너 슬라이딩·프라이빗 포커스·P2P 주석 보드) 통합 검증.
  */
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import * as THREE from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { StudioLiveDirectPort } from "../live/studio-live-direct-port";
 import { StudioVirtualSpaceEngineBridge } from "./studio-virtual-space-engine-bridge";
 import { STUDIO_VIRTUAL_CHARACTER_PRESETS } from "./studio-virtual-space-customization";
 import {
@@ -28,6 +29,7 @@ import {
 } from "./studio-virtual-space-sound-engine";
 import { studioFootstepSynthSpec, studioSfxSpec } from "./studio-virtual-space-sound-synth";
 import { StudioVirtualDynamicSpriteAvatar, StudioVirtualDynamicSpriteSheetStrip } from "./StudioVirtualDynamicSpriteAvatar";
+import { StudioVirtualSpaceAmbientAudio } from "./StudioVirtualSpaceAmbientAudio";
 import { StudioVirtualSpaceLiveAnnotationPanel } from "./StudioVirtualSpaceLiveAnnotationPanel";
 import { studioVirtualToonHqManifest } from "./office2d/hq/toon-hq-manifest";
 import { TOON_HQ_ROOMS } from "./office2d/hq/toon-hq-blueprint";
@@ -486,16 +488,116 @@ describe("12종 캐릭터 다양성 · 14종 스프라이트 모션 · 접지 �
     expect(screen.queryByText(/BLINK/)).toBeNull();
   });
 
-  it("라이브 주석 패널은 실시간 P2P 채널 부재 시 폴백 보드로, 연결 시 P2P 보드 훅으로 동작한다", () => {
-    const fallbackProps = {
-      snapshot: { entities: [], readyPeerIds: [], available: true, canEdit: true },
-      selfSessionId: "self-1",
-      onStroke: vi.fn(),
-      onNote: vi.fn(),
-      onRemove: vi.fn(),
-      onClearOwn: vi.fn(),
-    };
-    const { container } = render(<StudioVirtualSpaceLiveAnnotationPanel {...fallbackProps} />);
-    expect(container.querySelector(".studio-vspace-live-annotation")?.getAttribute("data-p2p-live")).toBeNull();
+  it("라이브 주석 패널은 동일 값의 새 scope 리렌더에도 P2P 컨트롤러를 재생성하지 않고 사용자 친화 한글을 표시한다", async () => {
+    vi.stubGlobal("crypto", { randomUUID: () => "epoch-annotation-test" });
+    try {
+      const fallbackProps = {
+        snapshot: { entities: [], readyPeerIds: [], available: true, canEdit: true },
+        selfSessionId: "self-1",
+        onStroke: vi.fn(),
+        onNote: vi.fn(),
+        onRemove: vi.fn(),
+        onClearOwn: vi.fn(),
+      };
+      const participant = { sessionId: "alice", displayName: "앨리스", role: "editor" as const };
+      const unsubscribe = vi.fn();
+      const subscribe = vi.fn(() => unsubscribe);
+      const port: StudioLiveDirectPort = {
+        getPeers: () => [],
+        subscribe,
+        send: () => true,
+      };
+
+      const { container, rerender } = render(<StudioVirtualSpaceLiveAnnotationPanel {...fallbackProps} />);
+      expect(container.querySelector(".studio-vspace-live-annotation")?.getAttribute("data-p2p-live")).toBeNull();
+      expect(screen.getByText(/버전·컷·담당자·기한/)).toBeTruthy();
+      expect(screen.queryByText(/revision/)).toBeNull();
+
+      rerender(
+        <StudioVirtualSpaceLiveAnnotationPanel
+          {...fallbackProps}
+          liveP2p={{
+            participant,
+            port,
+            scope: { worldId: "world-1", boardId: "live-annotation", contentRevision: "v1" },
+            storageOwnerId: "actor-1",
+            enabled: true,
+          }}
+        />,
+      );
+      await waitFor(() => {
+        expect(container.querySelector(".studio-vspace-live-annotation")?.getAttribute("data-p2p-live")).toBe("true");
+      });
+      expect(subscribe).toHaveBeenCalledTimes(1);
+      expect(unsubscribe).toHaveBeenCalledTimes(0);
+      expect(screen.getByText(/실시간 공유 보드 연결됨/)).toBeTruthy();
+      expect(screen.queryByText(/P2P 직통|연결 피어/)).toBeNull();
+
+      // 동일 원시값을 가진 새 scope·liveP2p 객체로 반복 리렌더해도 보드 컨트롤러가 닫히거나 재생성되지 않아야 한다
+      rerender(
+        <StudioVirtualSpaceLiveAnnotationPanel
+          {...fallbackProps}
+          liveP2p={{
+            participant,
+            port,
+            scope: { worldId: "world-1", boardId: "live-annotation", contentRevision: "v1" },
+            storageOwnerId: "actor-1",
+            enabled: true,
+          }}
+        />,
+      );
+      rerender(
+        <StudioVirtualSpaceLiveAnnotationPanel
+          {...fallbackProps}
+          liveP2p={{
+            participant,
+            port,
+            scope: { worldId: "world-1", boardId: "live-annotation", contentRevision: "v1" },
+            storageOwnerId: "actor-1",
+            enabled: true,
+          }}
+        />,
+      );
+      expect(subscribe).toHaveBeenCalledTimes(1);
+      expect(unsubscribe).toHaveBeenCalledTimes(0);
+
+      // 실제 contentRevision이 변경되었을 때만 보드 세션을 교체한다
+      rerender(
+        <StudioVirtualSpaceLiveAnnotationPanel
+          {...fallbackProps}
+          liveP2p={{
+            participant,
+            port,
+            scope: { worldId: "world-1", boardId: "live-annotation", contentRevision: "v2" },
+            storageOwnerId: "actor-1",
+            enabled: true,
+          }}
+        />,
+      );
+      await waitFor(() => {
+        expect(subscribe).toHaveBeenCalledTimes(2);
+      });
+      expect(unsubscribe).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("환경음·효과음 청음 패널은 기술 용어 없이 표시하고, 효과음 비활성 시 한글 사유 title을 제공한다", () => {
+    localStorage.clear();
+    render(<StudioVirtualSpaceAmbientAudio scope={null} ready={false} focused={false} away={false} />);
+    expect(screen.queryByText(/WebAudio 합성 청음/)).toBeNull();
+    expect(screen.getByText("효과음·발소리 미리 듣기")).toBeTruthy();
+
+    const toggleEffects = screen.getByRole("button", { name: "효과음 끄기" });
+    fireEvent.click(toggleEffects);
+
+    const woodBtn = screen.getByTestId("studio-vspace-audition-footstep-wood") as HTMLButtonElement;
+    const jumpBtn = screen.getByTestId("studio-vspace-audition-sfx-jump") as HTMLButtonElement;
+    expect(woodBtn.disabled).toBe(true);
+    expect(jumpBtn.disabled).toBe(true);
+    expect(woodBtn.getAttribute("title")).toBe("효과음을 먼저 켜면 들어볼 수 있어요");
+    expect(jumpBtn.getAttribute("title")).toBe("효과음을 먼저 켜면 들어볼 수 있어요");
+    localStorage.clear();
   });
 });

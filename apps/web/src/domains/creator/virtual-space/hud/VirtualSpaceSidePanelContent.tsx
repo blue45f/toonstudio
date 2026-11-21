@@ -15,7 +15,7 @@ import {
   StickyNote,
   UserPlus,
 } from "lucide-react";
-import { Suspense, useState, type ReactNode } from "react";
+import { Suspense, useMemo, useState, type ReactNode } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
@@ -205,6 +205,21 @@ export function VirtualSpaceSidePanelContent(props: VirtualSpaceSidePanelContent
   } = props;
 
   const conversationMemberIds = socialAndMedia.activeConversation?.memberIds ?? socialAndMedia.pairConversation?.memberIds ?? [];
+  const liveRoomParticipant = live.room?.participant;
+  const liveRoomDirect = live.room?.direct;
+  const liveAnnotationP2p = useMemo(
+    () =>
+      !personal
+        ? {
+            participant: liveRoomParticipant,
+            port: liveRoomDirect,
+            scope: { worldId: activeWorldScope, boardId: "live-annotation", contentRevision: "v1" },
+            storageOwnerId: privateActorId,
+            enabled: Boolean(liveRoomParticipant && liveRoomDirect),
+          }
+        : undefined,
+    [activeWorldScope, liveRoomDirect, liveRoomParticipant, personal, privateActorId],
+  );
   const authorNameOf = (sessionId: string): string =>
     sessionId === selfListId
       ? localName
@@ -625,17 +640,7 @@ export function VirtualSpaceSidePanelContent(props: VirtualSpaceSidePanelContent
             onNote={yjsSpace.addBoardNote}
             onRemove={yjsSpace.removeBoardEntity}
             onClearOwn={yjsSpace.clearOwnBoardEntities}
-            liveP2p={
-              !personal
-                ? {
-                    participant: live.room?.participant,
-                    port: live.room?.direct,
-                    scope: { worldId: activeWorldScope, boardId: "live-annotation", contentRevision: "v1" },
-                    storageOwnerId: privateActorId,
-                    enabled: !personal && Boolean(live.room?.participant && live.room?.direct),
-                  }
-                : undefined
-            }
+            liveP2p={liveAnnotationP2p}
           />
         </StudioVirtualSpacePanelGate>
       );

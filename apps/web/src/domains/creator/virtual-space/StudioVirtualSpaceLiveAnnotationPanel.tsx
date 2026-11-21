@@ -30,9 +30,12 @@ export interface StudioVirtualSpaceLiveAnnotationPanelProps extends StudioVirtua
 export function StudioVirtualSpaceLiveAnnotationPanel({ liveP2p, ...fallbackProps }: StudioVirtualSpaceLiveAnnotationPanelProps) {
   const bt = useBilingual("StudioVirtualSpaceLiveAnnotationPanel");
   const [mode, setMode] = useState<AnnotationMode>("pen");
+  const scopeWorldId = liveP2p?.scope.worldId ?? "local";
+  const scopeBoardId = liveP2p?.scope.boardId ?? "live-annotation";
+  const scopeContentRevision = liveP2p?.scope.contentRevision ?? "v1";
   const p2pScope = useMemo<StudioP2pBoardScope>(
-    () => liveP2p?.scope ?? { worldId: "local", boardId: "live-annotation", contentRevision: "v1" },
-    [liveP2p?.scope],
+    () => ({ worldId: scopeWorldId, boardId: scopeBoardId, contentRevision: scopeContentRevision }),
+    [scopeWorldId, scopeBoardId, scopeContentRevision],
   );
   const p2p = useStudioVirtualSpaceP2pBoard({
     participant: liveP2p?.participant,
@@ -60,12 +63,12 @@ export function StudioVirtualSpaceLiveAnnotationPanel({ liveP2p, ...fallbackProp
     <header>
       <div><Crosshair size={17} aria-hidden /><h2>{bt("공유 화면 라이브 주석", "Live shared-screen annotation")}</h2></div>
       <p>{useLiveP2p
-        ? bt("팀원 P2P 직통 채널에 연결되어 펜·메모가 실시간으로 동기화됩니다.", "Connected to teammate P2P direct channel — pen and notes sync live.")
-        : bt("현재 회의의 펜·메모는 P2P로 공유합니다. 검수 기록으로 남겨야 할 의견은 고정 검수본에서 별도로 게시하세요.", "Share pen and notes over P2P for this meeting. Publish durable feedback separately against the pinned review snapshot.")}</p>
+        ? bt("팀원 실시간 공유 보드에 연결되어 펜·메모가 바로 동기화됩니다.", "Connected to the live shared board — pen strokes and notes sync immediately.")
+        : bt("현재 회의의 펜·메모는 참여 중인 팀원과 바로 공유합니다. 검수 기록으로 남겨야 할 의견은 고정 검수본에서 별도로 게시하세요.", "Share pen strokes and notes live during this meeting. Publish durable feedback separately against the pinned review snapshot.")}</p>
       {useLiveP2p ? (
         <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-accent">
           <Radio size={13} aria-hidden />
-          {bt(`P2P 실시간 동기화 중 · 연결 피어 ${p2p.snapshot.readyPeerIds.length}명`, `Live P2P sync · ${p2p.snapshot.readyPeerIds.length} peers ready`)}
+          {bt(`실시간 공유 보드 연결됨 · 함께 보는 동료 ${p2p.snapshot.readyPeerIds.length}명`, `Live shared board connected · ${p2p.snapshot.readyPeerIds.length} teammates ready`)}
         </p>
       ) : null}
     </header>
@@ -74,6 +77,6 @@ export function StudioVirtualSpaceLiveAnnotationPanel({ liveP2p, ...fallbackProp
       <button type="button" className="min-h-11" aria-pressed={mode === "note"} onClick={() => setMode("note")}><MessageSquareText size={14} aria-hidden />{bt("메모", "Note")}</button>
     </div>
     <StudioVirtualSpaceP2pBoard {...boardProps} tool={mode} />
-    <p className="studio-vspace-annotation-durable"><Save size={14} aria-hidden />{bt("영구 의견은 검수 패널에서 revision·컷·담당자·기한과 함께 저장됩니다.", "Durable comments are saved in Review with revision, cut, assignee and due date.")}</p>
+    <p className="studio-vspace-annotation-durable"><Save size={14} aria-hidden />{bt("영구 의견은 검수 패널에서 버전·컷·담당자·기한과 함께 저장됩니다.", "Durable comments are saved in Review with version, cut, assignee and due date.")}</p>
   </section>;
 }
