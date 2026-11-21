@@ -334,3 +334,69 @@ pointerdown EventDispatch 13.332ms와 Konva callback 10.989ms는 이 총계 안�
 포함되므로 더하지 않는다. #124에서 보인 큰 style/layout 비용은 이 첫 task에서는
 재현되지 않았다. 진단 실행의 7회 획 수락과 원본 수집 완료는 일반 성능 수락을
 의미하지 않으며, 의도한 `diagnostic-only` 종료 상태를 그대로 유지한다.
+
+### 2026-11-22 관측: 같은 빌드의 native 호출 위치와 UI 갱신
+
+[진단 #130](https://github.com/blue45f/toonstudio/actions/runs/44938045596)은
+`ecd2cebdbbeedc8a5b80c125319e23bd71d5019b`의 desktop 첫 획을 기록했다. 이 소스에는
+GPU receipt 합치기와 첫 커서 좌표 재사용이 있으나, 적용한 작업공간 기기 분리와 이후
+main 통합은 없다. 70.559초 동안 세 획을 수락했지만 59~108ms 긴 작업 일곱 건과
+`diagnostic-only` 판정이 있어 일반 수락 검사의 통과로 사용할 수 없다.
+
+native 원본 6,767,257바이트는 수집·stream 완료, 유실 없음, 검증 issue 0개이며
+SHA-256은 `57d669ff0390aefb59505fad21730ccd644877b16f4c3ada4568f536615f8a4e`다.
+같은 빌드 ID `03ac7922ac7e`의 JS 다섯 파일 3,199,451바이트를 별도로 보존하고 크기·해시,
+Trace의 URL·UTF-16 위치·줄·열을 대조했다. 이는 실제 빌드 파일의 연결 증거이며 HTTP
+응답 캡처나 source map은 아니다. 범위 밖 callback은 미확정으로 남긴다.
+
+| 구간 | native 원본 관측 | 해석 범위 |
+| --- | --- | --- |
+| 첫 pointerdown | EventDispatch 51.641ms, capture marker까지 20.952ms | 뒤에 등록된 capture 측정이 앞선 제품 핸들러 시간을 포함하지 않음 |
+| 작업공간 입력 관측 | 함수 본문 0.081ms, 감싼 V8 호출 20.481ms 안에 React microtask 18.599ms | wrapper 전체를 관측 함수 본문의 실행 시간으로 해석하지 않음 |
+| pointerup | EventDispatch 105.969ms, 종료 함수 본문 10.465ms | 감싼 V8 호출 75.390ms에는 두 React microtask 등이 중첩됨 |
+| 종료 뒤 React 작업 | 29.877ms와 25.350ms | 두 번째 작업 직전 DOM 관측 callback이 있어도 그 callback만의 비용으로 단정할 수 없음 |
+| 첫 RAF 뒤 다음 move 전 | style 계산 39.478ms | 첫 RAF 시작 시각은 픽셀 표시 완료나 이후 style/layout 완료 시각이 아님 |
+
+CPU profile에는 음수 `timeDelta`가 있어 시간 분석을 `unavailable`로 유지했다. 원본 값을
+0으로 바꾸거나 native 시간과 CPU 표본 시간을 임의로 맞추지 않는다. 위 진단의 고정
+20.952ms를 다른 실행의 지연 수치에 더하지도 않는다. 대표 17종의 canvas capture와
+소크의 window capture는 등록 위치가 다르며, 어느 측정도 물리 펜 접촉 시각이 아니다.
+
+### Migration: 부동 대상의 같은 상태 재요청 방지
+
+후보 구현은 부동 도구의 DOM 노드와 강제 표시 여부를 하나의 쌍으로 관측한다. 실제
+변경만 React에 요청하고, 동일한 쌍을 다시 관측하면 상태 갱신을 요청하지 않는다.
+마지막으로 요청한 쌍을 비교하므로 React 반영 전 A→B→A가 들어와도 마지막 값을 잃지
+않으며 선택자 교체·StrictMode 재설치·정리 후 늦은 callback을 구분한다.
+
+고정 원본의 실제 상태·effect를 추출한 React 재현은 같은 16개 검사 중 렌더 횟수 여섯
+건에서 실패했고 후보는 16개 모두 통과했다. 실제 컴포넌트 배선·provider·그리기 표시
+검사를 포함한 네 파일은 29개 모두 통과했다. 이는 불필요한 컴포넌트 실행 감소의
+증거이며 위 25.350ms의 원인 확정이나 제품 지연 개선 수치는 아니다. 포인터 종료,
+원고 저장, Undo/Redo의 권한 판정을 지연시키지 않으며 최종 브라우저 수락은 별도로
+확인해야 한다.
+
+### Migration: 협업 로딩 중 캔버스 DOM과 입력 소유권 유지
+
+[일반 누적 후보 #131](https://github.com/blue45f/toonstudio/actions/runs/44940293374)의
+`6becda63049a3e7a94eedfec100a550c543a8464`에서는 Naver·Instagram·Kakao·WebGPU가
+첫 입력 전 120×120 이상의 가려지지 않은 원고 영역을 찾지 못했다. 원본 화면의 원고
+폭은 720 논리 픽셀에 대한 10%인 72 CSS 픽셀과 일치했다. 획이 전달되지 않았으므로
+이 실패를 브러시·GPU 성능 결과로 해석하지 않으며 300분 본 검사도 시작하지 않았다.
+
+실제 React의 지연 로딩과 원본 Host의 네 DOM effect를 함께 실행한 재현에서, 유휴
+협업 공급자가 실제 공급자로 바뀌며 편집 DOM을 교체했다. 이전 DOM을 붙잡은 크기
+관측은 분리된 요소의 0폭으로 배율을 0.1까지 줄였고, 새 DOM에는 scroll 정착 관측과
+wheel·touch 입력 설치가 이어지지 않았다. 단순히 0폭만 무시하면 다른 입력 연결 손실은
+남으므로 그 방식으로 검사만 통과시키지 않는다.
+
+후보는 편집 children과 바깥 context를 유지하고 지연 로드한 런타임을 별도 형제로
+소유한다. 문서·outbox·역할이 바뀌면 이전 context를 새 소유자로 재표시하지 않고 실제
+공급자의 초기화가 반영된 commit 이후 값을 전달한다. 같은 소유자의 복구·철회 래치와
+저장 콜백은 기존 런타임 인스턴스가 계속 소유한다. 동적 import 경계도 유지한다.
+
+신규 13개와 기존 실제 공급자 38개, 합계 51개 회귀를 통과했다. 원래 실패하던 DOM
+동일성, 크기 관측, pointerdown capture·scroll·wheel·pinch, 사용자 줌과 unmount 정리를
+함께 확인했다. 제어된 DOM 수명주기 재현과 좁은 타입 검사는 실제 Chromium·GPU·
+300분 검사를 대신하지 않는다. 최종 실행과 병합 상태는
+[PR 2863의 검증 기록](https://github.com/blue45f/toonstudio/pull/2863)에서 별도로 확인한다.
