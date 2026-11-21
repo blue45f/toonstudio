@@ -311,7 +311,8 @@ export function PricingPage() {
         spacing="compact"
         className="mx-auto max-w-4xl"
       >
-        <div className="overflow-x-auto rounded-2xl border border-line">
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- 가로로 넘치는 비교 표를 키보드만으로 읽을 수 있어야 하므로 스크롤 영역에 포커스가 필요하다(WCAG 2.1.1). */}
+        <div tabIndex={0} role="region" aria-label={t(COPY.compareTitle)} className="overflow-x-auto rounded-2xl border border-line focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
           <table className="w-full min-w-[34rem] border-collapse bg-panel text-sm">
             <caption className="sr-only">{t(COPY.compareTitle)}</caption>
             <thead>

@@ -157,7 +157,7 @@ export function CharacterChatThread({
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<{ readonly text: string; readonly retryText: string } | null>(null);
-  const logRef = useRef<HTMLUListElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const handledSceneDraftIdRef = useRef<string | null>(null);
@@ -293,26 +293,28 @@ export function CharacterChatThread({
 
   return (
     <div ref={rootRef} className="flex min-h-[28rem] flex-1 flex-col">
-      <ul
+      <div
         ref={logRef}
         role="log"
         aria-live="polite"
         aria-label={t("대화 내용", "Conversation")}
-        className="flex max-h-[26rem] flex-1 flex-col gap-4 overflow-y-auto px-4 py-4"
+        className="flex max-h-[26rem] flex-1 flex-col overflow-y-auto px-4 py-4"
       >
-        {(session?.messages ?? []).map((message) => (
-          <MessageBubble key={message.id} message={message} profile={profile} speech={speech} />
-        ))}
-        {sending ? (
-          <li className="flex gap-2.5" aria-label={t("캐릭터가 답을 쓰는 중", "Character is typing")}>
-            <CharacterAvatar profile={profile} size="sm" />
-            <p className="rounded-2xl rounded-bl-md border border-line bg-card px-3.5 py-2.5 text-sm text-fg-3">
-              {profile.characterName}
-              {t("님이 입력 중…", " is typing…")}
-            </p>
-          </li>
-        ) : null}
-      </ul>
+        <ul className="flex flex-col gap-4">
+          {(session?.messages ?? []).map((message) => (
+            <MessageBubble key={message.id} message={message} profile={profile} speech={speech} />
+          ))}
+          {sending ? (
+            <li className="flex gap-2.5" aria-label={t("캐릭터가 답을 쓰는 중", "Character is typing")}>
+              <CharacterAvatar profile={profile} size="sm" />
+              <p className="rounded-2xl rounded-bl-md border border-line bg-card px-3.5 py-2.5 text-sm text-fg-3">
+                {profile.characterName}
+                {t("님이 입력 중…", " is typing…")}
+              </p>
+            </li>
+          ) : null}
+        </ul>
+      </div>
 
       <div className="border-t border-line bg-card px-4 py-3">
         {ready ? (
