@@ -2,6 +2,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -96,6 +97,44 @@ describe("Cloudflare static large asset preparation", () => {
 
     await expect(prepareCloudflareStaticAssets(dist)).rejects.toThrow(
       /unsupported files above 25 MiB/u,
+    );
+  });
+
+  it("reuses content-addressed compressed sidecars on cache hit and ignores oversized cache entries", async () => {
+    const distA = temporaryDist();
+    const distB = temporaryDist();
+    const cacheDir = temporaryDist();
+    const relativePath = "assets/opencascade.wasm-cachetest.wasm";
+    const originalBytes = CLOUDFLARE_STATIC_MAX_FILE_BYTES + 1;
+    sparseFile(join(distA, relativePath), originalBytes);
+    sparseFile(join(distB, relativePath), originalBytes);
+
+    await prepareCloudflareStaticAssets(distA, { cacheDir, concurrency: 2 });
+    const cachedFiles = readdirSync(cacheDir).sort();
+    expect(cachedFiles).toHaveLength(2);
+    expect(cachedFiles.some((name) => name.endsWith(".br.q9"))).toBe(true);
+    expect(cachedFiles.some((name) => name.endsWith(".gzip.q9"))).toBe(true);
+
+    // distB는 동일 SHA-256 원본이라 캐시에서 즉시 복사되고 복원 결과가 비트 동일하다.
+    await prepareCloudflareStaticAssets(distB, { cacheDir, concurrency: 2 });
+    expect(readFileSync(join(distB, `${relativePath}.br`))).toEqual(
+      readFileSync(join(distA, `${relativePath}.br`)),
+    );
+    expect(readFileSync(join(distB, `${relativePath}.gz`))).toEqual(
+      readFileSync(join(distA, `${relativePath}.gz`)),
+    );
+
+    // 25 MiB 초과로 손상된 캐시 파일은 무시하고 안전하게 재압축한다(fail-closed).
+    const brCache = join(cacheDir, cachedFiles.find((name) => name.endsWith(".br.q9"))!);
+    truncateSync(brCache, CLOUDFLARE_STATIC_MAX_FILE_BYTES + 10);
+    const distC = temporaryDist();
+    sparseFile(join(distC, relativePath), originalBytes);
+    await prepareCloudflareStaticAssets(distC, { cacheDir, concurrency: 2 });
+    expect(statSync(join(distC, `${relativePath}.br`)).size).toBeLessThanOrEqual(
+      CLOUDFLARE_STATIC_MAX_FILE_BYTES,
+    );
+    expect(brotliDecompressSync(readFileSync(join(distC, `${relativePath}.br`))).length).toBe(
+      originalBytes,
     );
   });
 });

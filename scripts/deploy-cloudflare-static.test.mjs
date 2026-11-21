@@ -508,4 +508,103 @@ describe("Cloudflare production release gates (all child process calls mocked)",
     expect(duplicate.result.stderr).toContain("duplicate production deploy blocked");
     expect(duplicate.commands).toEqual([]);
   });
+
+  it("auto-reuses a complete verified dist/ matching clean production HEAD and skips redundant build", () => {
+    const completeDistFiles = {
+      ...standingApprovalFile,
+      "dist/index.html": "<!doctype html><title>ok</title>",
+      "dist/.assetsignore": "*.br\n",
+      "dist/sw.js": 'const buildId = "0123456789ab";',
+      "dist/.vite/manifest.json": JSON.stringify({ "index.html": { file: "assets/index.js" } }),
+      "dist/.vite/build-meta.json": JSON.stringify({ gitSha: approvedSha, buildId: "0123456789ab" }),
+      "dist/legal/THIRD_PARTY_NOTICES.generated.md": "# notices\n",
+    };
+
+    const { result, commands } = runDeploy({}, ["--production"], completeDistFiles);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("reusing prebuilt dist");
+    expect(result.stdout).toContain("reused-verified-dist");
+    expect(commands.map((command) => command.args)).toEqual([
+      ["run", "generate:cloudflare-static-rules", "--", "--check"],
+      ["exec", "node", "scripts/verify-static-csp.mjs", "dist/index.html"],
+      ["exec", "node", "scripts/verify-static-service-worker.mjs"],
+      ["run", "sync:cloudflare-r2-assets"],
+      [
+        "exec",
+        "wrangler",
+        "deploy",
+        "--config",
+        "deploy/cloudflare-static/wrangler.jsonc",
+        "--var",
+        "CORE_API_ORIGIN:https://core.example.test",
+        "--var",
+        `RELEASE_SHA:${approvedSha}`,
+      ],
+    ]);
+  });
+
+  it("rebuilds dist/ when --force-build is passed even if verified dist/ matches HEAD", () => {
+    const completeDistFiles = {
+      ...standingApprovalFile,
+      "dist/index.html": "<!doctype html><title>ok</title>",
+      "dist/.assetsignore": "*.br\n",
+      "dist/sw.js": 'const buildId = "0123456789ab";',
+      "dist/.vite/manifest.json": JSON.stringify({ "index.html": { file: "assets/index.js" } }),
+      "dist/.vite/build-meta.json": JSON.stringify({ gitSha: approvedSha, buildId: "0123456789ab" }),
+      "dist/legal/THIRD_PARTY_NOTICES.generated.md": "# notices\n",
+    };
+
+    const { result, commands } = runDeploy({}, ["--production", "--force-build"], completeDistFiles);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("full-build");
+    expect(commands.some((command) => command.args.includes("build"))).toBe(true);
+    expect(commands.some((command) => command.args.includes("prepare:cloudflare-static-assets"))).toBe(true);
+  });
+
+  it.each([
+    ["missing sw.js", { "dist/sw.js": null }, {}],
+    ["missing third-party notices", { "dist/legal/THIRD_PARTY_NOTICES.generated.md": null }, {}],
+    [
+      "stale gitSha",
+      { "dist/.vite/build-meta.json": JSON.stringify({ gitSha: "1".repeat(40), buildId: "0123456789ab" }) },
+      {},
+    ],
+    [
+      "malformed build-meta.json",
+      { "dist/.vite/build-meta.json": "{not-json" },
+      {},
+    ],
+    [
+      "non-default VITE_CATALOG_SOURCE=api without matching metadata",
+      {},
+      { VITE_CATALOG_SOURCE: "api" },
+    ],
+  ])("falls back to full rebuild (fail-closed) on %s instead of auto-reusing dist/", (_label, overrides, env) => {
+    const files = {
+      ...standingApprovalFile,
+      "dist/index.html": "<!doctype html><title>ok</title>",
+      "dist/.assetsignore": "*.br\n",
+      "dist/sw.js": 'const buildId = "0123456789ab";',
+      "dist/.vite/manifest.json": JSON.stringify({ "index.html": { file: "assets/index.js" } }),
+      "dist/.vite/build-meta.json": JSON.stringify({ gitSha: approvedSha, buildId: "0123456789ab" }),
+      "dist/legal/THIRD_PARTY_NOTICES.generated.md": "# notices\n",
+      ...overrides,
+    };
+    for (const [key, value] of Object.entries(files)) {
+      if (value === null) delete files[key];
+    }
+
+    const { result, commands } = runDeploy(env, ["--production"], files);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("full-build");
+    expect(commands.some((command) => command.args.includes("build"))).toBe(true);
+  });
+
+  it("rejects contradictory --skip-build and --force-build flags before running any command", () => {
+    const { result, commands, allCommands } = runDeploy({}, ["--production", "--skip-build", "--force-build"], standingApprovalFile);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("--skip-build and --force-build cannot be used together");
+    expect(commands).toEqual([]);
+    expect(allCommands).toEqual([]);
+  });
 });

@@ -48,11 +48,15 @@ describe("sitewide visual identity v3 contract", () => {
   });
 
   it("keeps the canvas quiet while upgrading editor chrome and the beta gate", () => {
-    expect(editorCss).toContain('[data-studio-canvas-viewport]');
-    expect(editorCss).toContain('[data-studio-rail-tool-id="pen"]');
+    expect(editorCss).toContain("[data-studio-canvas-viewport]");
+    // 2026-11-20 스타라이트 OKLCH Unslop 정비 이후 개별 도구 원시 HEX 레일 대신 단색 2px 강조 레일을 사용한다.
+    expect(editorCss).toContain(
+      '[data-studio-editor="true"] :where([data-studio-rail-tool-id], [data-studio-current-tool-id])[aria-pressed="true"]',
+    );
+    expect(editorCss).toContain("box-shadow: inset 2px 0 0 var(--color-accent) !important");
     expect(editorCss).toContain('[data-studio-beta-notice="true"]');
-    expect(editorCss).toContain("@media(prefers-reduced-motion:reduce)");
-    expect(editorCss).toContain("@media(forced-colors:active)");
+    expect(editorCss).toMatch(/@media\s*\(\s*prefers-reduced-motion:\s*reduce\s*\)/u);
+    expect(editorCss).toMatch(/@media\s*\(\s*forced-colors:\s*active\s*\)/u);
   });
 
   it("gives protected administration routes the same image-led visual language", () => {
