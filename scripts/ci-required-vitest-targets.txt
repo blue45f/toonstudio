@@ -576,6 +576,7 @@ apps/web/src/domains/creator/live/studio-pages-history-durable-runtime.test.ts
 apps/web/src/domains/creator/live/studio-pages-history-journal-long-session.test.ts
 apps/web/src/domains/creator/live/studio-pending-stroke-admission.test.ts
 apps/web/src/domains/creator/live/studio-rejected-stroke-recovery-persistence.test.ts
+apps/web/src/domains/creator/live/studio-retained-stroke-undo-durability.test.ts
 apps/web/src/domains/creator/live/studio-scoped-write-wire.test.ts
 apps/web/src/domains/creator/mesh-surface/studio-mesh-surface-plan.test.ts
 apps/web/src/domains/creator/offline
@@ -685,6 +686,7 @@ apps/web/src/domains/creator/studio-comment-editor-selection.test.ts
 apps/web/src/domains/creator/studio-companion-browser-harness-boundary.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingAppBar.test.tsx
 apps/web/src/domains/creator/studio-cuttoon-editor/StudioQuickAccessTooltip.test.tsx
+apps/web/src/domains/creator/studio-cuttoon-editor/StudioWorkspaceMenu.applied-device.test.tsx
 apps/web/src/domains/creator/studio-cuttoon-editor/runtime/bg3d-six-pass
 apps/web/src/domains/creator/studio-cuttoon-editor/runtime/history/studio-command-journal-identity.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal-sequence-identity.test.ts
