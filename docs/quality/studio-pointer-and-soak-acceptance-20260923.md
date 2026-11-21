@@ -349,6 +349,12 @@ SHA-256은 `57d669ff0390aefb59505fad21730ccd644877b16f4c3ada4568f536615f8a4e`다
 Trace의 URL·UTF-16 위치·줄·열을 대조했다. 이는 실제 빌드 파일의 연결 증거이며 HTTP
 응답 캡처나 source map은 아니다. 범위 밖 callback은 미확정으로 남긴다.
 
+후속 빌드에서 한 이름군의 runtime과 facade가 함께 생성될 수 있어 진단 수집기는
+이름군당 네 파일까지 각 이름·바이트·해시를 그대로 보존한다. 필수 세 이름군의 존재,
+개별 16MiB·합계 32MiB, symlink·동일 실파일 중복 거부와 source/build/session 검증은
+유지한다. 복수 Konva 파일 재현은 기존 수집기에서 실패했고 변경 후 관련 60개 검사를
+통과했다. 이 수집 경로는 진단 실행에만 적용하며 일반 성능 수락을 바꾸지 않는다.
+
 | 구간 | native 원본 관측 | 해석 범위 |
 | --- | --- | --- |
 | 첫 pointerdown | EventDispatch 51.641ms, capture marker까지 20.952ms | 뒤에 등록된 capture 측정이 앞선 제품 핸들러 시간을 포함하지 않음 |
@@ -379,7 +385,7 @@ CPU profile에는 음수 `timeDelta`가 있어 시간 분석을 `unavailable`로
 ### Migration: 협업 로딩 중 캔버스 DOM과 입력 소유권 유지
 
 [일반 누적 후보 #131](https://github.com/blue45f/toonstudio/actions/runs/44940293374)의
-`6becda63049a3e7a94eedfec100a550c543a8464`에서는 Naver·Instagram·Kakao·WebGPU가
+`6becda63049a3e7a94eedfec100a550c543a8464`에서는 desktop·WebGPU·Naver·Instagram·Kakao가
 첫 입력 전 120×120 이상의 가려지지 않은 원고 영역을 찾지 못했다. 원본 화면의 원고
 폭은 720 논리 픽셀에 대한 10%인 72 CSS 픽셀과 일치했다. 획이 전달되지 않았으므로
 이 실패를 브러시·GPU 성능 결과로 해석하지 않으며 300분 본 검사도 시작하지 않았다.
