@@ -172,6 +172,44 @@ describe("studio WebGPU tile compositor planning", () => {
     expect(quadRadius - nominalRadius).toBeCloseTo(1);
   });
 
+  it.each([
+    { width: 132, height: 100, renderWidth: 132, renderHeight: 100 },
+    { width: 173, height: 131, renderWidth: 132.4, renderHeight: 100.7 },
+  ])("정점 반올림과 독립된 물리 dab 좌표를 보존한다: %j", (extent) => {
+    const current = stroke({
+      points: [50.956896551724135, 43.94827586206897],
+      pressures: [0.6741379310344828],
+      size: 10,
+      pressureModel: STUDIO_INK_PRESSURE_MODEL_LINEAR_FULL_V1,
+    });
+    const layout = { ...descriptor(), ...extent, renderX: -2, renderY: -2 };
+    const resolved = resolveStudioGpuTileTasks(
+      [task(current, { descriptor: layout })], [current], planStudioGpuDabsInRect, 100_000,
+    )!;
+    expect(resolved.dabCount).toBe(1);
+    const packed = packStudioGpuTileDabs(resolved);
+    const scaleX = layout.width / layout.renderWidth;
+    const scaleY = layout.height / layout.renderHeight;
+    expect(packed[9]! / scaleX + layout.renderX).toBeCloseTo(current.points[0]!, 5);
+    expect(packed[10]! / scaleY + layout.renderY).toBeCloseTo(current.points[1]!, 5);
+    expect(packed[8]! / packed[11]! / scaleX).toBeCloseTo(resolved.tasks[0]!.plan.dabs[0]!.radius, 5);
+    expect(packed[8]! / packed[12]! / scaleY).toBeCloseTo(resolved.tasks[0]!.plan.dabs[0]!.radius, 5);
+    // 실제 회귀 픽셀 (49,47)의 오른쪽 위 샘플은 원 안에 있다.
+    // 정점을 1/16픽셀로 반올림한 사각형에서 좌표를 보간하면 이 샘플이 탈락했다.
+    const localX = ((49.875 - layout.renderX) * scaleX - packed[9]!) * packed[11]!;
+    const localY = ((47.125 - layout.renderY) * scaleY - packed[10]!) * packed[12]!;
+    expect(localX ** 2 + localY ** 2).toBeLessThan(packed[8]! ** 2);
+  });
+
+  it("0 필압 dab의 추가 좌표도 유한하게 유지한다", () => {
+    const current = stroke({ pressures: [0, 0], pressureModel: STUDIO_INK_PRESSURE_MODEL_LINEAR_FULL_V1 });
+    const resolved = resolveStudioGpuTileTasks([task(current)], [current], planStudioGpuDabsInRect, 100_000)!;
+    const packed = packStudioGpuTileDabs(resolved);
+    expect(resolved.dabCount).toBeGreaterThan(0);
+    expect([...packed].every(Number.isFinite)).toBe(true);
+    expect([...packed.slice(8, 13)]).toEqual([0, 502, 178, 0, 0]);
+  });
+
   it("resolves compact feed extensions by revision count instead of root-array length", () => {
     const initial = stroke({ points: [500, 1_200], pressures: [0.5] });
     const baseline = createStudioGpuStrokeFeedCompactBaseline([initial], "compact-tile")!;
