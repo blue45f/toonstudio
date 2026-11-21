@@ -131,22 +131,14 @@ interface ResizeGesture {
   readonly startWidth: number;
 }
 
-const PRESET_ENTRIES: ReadonlyArray<{
-  readonly id: Exclude<StudioBg3dWorkspacePresetId, "custom">;
-  readonly ko: string;
-  readonly en: string;
-}> = [
+const PRESET_ENTRIES: ReadonlyArray<{ readonly id: Exclude<StudioBg3dWorkspacePresetId, "custom">; readonly ko: string; readonly en: string }> = [
   { id: "scene", ko: "장면", en: "Scene" },
   { id: "character", ko: "캐릭터", en: "Character" },
   { id: "output", ko: "출력", en: "Output" },
   { id: "focus", ko: "집중", en: "Focus" },
 ];
 
-const LIVE_INK_MODE_ENTRIES: ReadonlyArray<{
-  readonly id: LiveInkPreviewMode;
-  readonly ko: string;
-  readonly en: string;
-}> = [
+const LIVE_INK_MODE_ENTRIES: ReadonlyArray<{ readonly id: LiveInkPreviewMode; readonly ko: string; readonly en: string }> = [
   { id: "shaded-3d", ko: "3D 음영", en: "3D shaded" },
   { id: "split-wipe", ko: "선화 분할 비교", en: "Split-wipe" },
   { id: "live-ink-only", ko: "선화 전용", en: "Live ink only" },
@@ -239,6 +231,7 @@ export function StudioBg3dProfessionalWorkspace({
   );
   const [localBakedLayer, setLocalBakedLayer] = useState<BakedManuscriptCutLayer | null>(null);
   const [bakeFlashActive, setBakeFlashActive] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const hydratedStorageKeyRef = useRef(canonicalStorageKey);
   const resizeGestureRef = useRef<ResizeGesture | null>(null);
   const bakeFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -589,10 +582,11 @@ export function StudioBg3dProfessionalWorkspace({
         <button type="button" aria-pressed={layout.inspectorVisible} className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft/50 aria-pressed:text-accent xl:inline-flex" onClick={() => togglePanel("inspector")}>{bi("속성", "Inspector")}</button>
         <button type="button" className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-accent xl:inline-flex" onClick={() => setLayout((current) => swapStudioBg3dWorkspaceDockOrder(current))}>{bi("좌우 바꾸기", "Swap sides")}</button>
         <button type="button" aria-pressed={assetShelfOpen} className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent aria-pressed:shadow-[inset_2px_0_0_var(--color-accent)]" onClick={() => setAssetShelfOpen((current) => !current)}>{bi("에셋 쉘프", "Asset shelf")}</button>
-        <button type="button" aria-pressed={axis180Locked} data-testid="studio-bg3d-axis180-lock-btn" className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent" onClick={() => { const next = !axis180Locked; setAxis180Locked(next); setBakeStatusMessage(next ? bi("180° 리버스샷 축 잠금을 켰습니다.", "180° reverse-shot axis locked.") : bi("180° 리버스샷 축 잠금을 풀었습니다.", "180° reverse-shot axis unlocked.")); }}>{bi("180° 잠금", "180° lock")}</button>
-        <button type="button" data-testid="studio-bg3d-ground-snap-btn" className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-fg" onClick={handleTriggerGroundSnap}>{bi("지면 접지 (X)", "Ground snap (X)")}</button>
-        <button type="button" aria-pressed={radialPieOpen} data-testid="studio-bg3d-radial-pie-btn" className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent" onClick={() => setRadialPieOpen((prev) => !prev)}>{bi("3D 파이 메뉴 (Q)", "3D pie menu (Q)")}</button>
-        <button type="button" aria-pressed={proStagingOpen} data-testid="studio-bg3d-pro-staging-btn" className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent" onClick={() => setProStagingOpen((prev) => !prev)}>{bi("연출·조명 도구", "Staging & lights")}</button>
+        <button type="button" aria-expanded={mobileToolsOpen} data-testid="studio-bg3d-mobile-more-tools-btn" className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 [word-break:keep-all] md:hidden" onClick={() => setMobileToolsOpen((prev) => !prev)}>{mobileToolsOpen ? bi("도구 접기", "Less tools") : bi("도구 더 보기", "More tools")}</button>
+        <button type="button" aria-pressed={axis180Locked} data-testid="studio-bg3d-axis180-lock-btn" className={`${mobileToolsOpen ? "inline-flex" : "hidden md:inline-flex"} min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent`} onClick={() => { const next = !axis180Locked; setAxis180Locked(next); setBakeStatusMessage(next ? bi("180° 리버스샷 축 잠금을 켰습니다.", "180° reverse-shot axis locked.") : bi("180° 리버스샷 축 잠금을 풀었습니다.", "180° reverse-shot axis unlocked.")); }}>{bi("180° 잠금", "180° lock")}</button>
+        <button type="button" data-testid="studio-bg3d-ground-snap-btn" className={`${mobileToolsOpen ? "inline-flex" : "hidden md:inline-flex"} min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 hover:text-fg`} onClick={handleTriggerGroundSnap}>{bi("지면 접지 (X)", "Ground snap (X)")}</button>
+        <button type="button" aria-pressed={radialPieOpen} data-testid="studio-bg3d-radial-pie-btn" className={`${mobileToolsOpen ? "inline-flex" : "hidden md:inline-flex"} min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent`} onClick={() => setRadialPieOpen((prev) => !prev)}>{bi("3D 파이 메뉴 (Q)", "3D pie menu (Q)")}</button>
+        <button type="button" aria-pressed={proStagingOpen} data-testid="studio-bg3d-pro-staging-btn" className={`${mobileToolsOpen ? "inline-flex" : "hidden md:inline-flex"} min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent`} onClick={() => setProStagingOpen((prev) => !prev)}>{bi("연출·조명 도구", "Staging & lights")}</button>
         <div role="group" aria-label={bi("라이브 선화 미리보기 모드", "Live ink preview mode")} className="inline-flex flex-wrap items-center gap-1">
           {LIVE_INK_MODE_ENTRIES.map((entry) => (
             <button

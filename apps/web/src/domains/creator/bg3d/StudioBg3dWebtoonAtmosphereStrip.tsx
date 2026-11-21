@@ -1,5 +1,6 @@
 import {
   Check,
+  ChevronDown,
   CloudRain,
   Moon,
   Snowflake,
@@ -8,6 +9,7 @@ import {
   Sunrise,
   Sunset,
 } from "lucide-react";
+import { useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -79,6 +81,7 @@ export function StudioBg3dWebtoonAtmosphereStrip({
 }: StudioBg3dWebtoonAtmosphereStripProps) {
   const { isEn } = useBilingual();
   const copy = (ko: string, en: string) => (isEn ? en : ko);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const activePreset = STUDIO_BG3D_WEBTOON_ATMOSPHERE_PRESETS.find(
     (preset) => preset.id === activePresetId,
   ) ?? null;
@@ -89,20 +92,40 @@ export function StudioBg3dWebtoonAtmosphereStrip({
         data-testid="studio-bg3d-webtoon-atmosphere-bar"
         role="group"
         aria-label={copy("원클릭 웹툰 분위기 7종", "One-click webtoon atmosphere presets")}
-        className="relative flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-line bg-panel px-2.5 py-1.5"
-        style={{
-          backgroundImage:
-            "linear-gradient(90deg, color-mix(in oklch, var(--color-warn) 10%, transparent), color-mix(in oklch, var(--color-accent) 9%, transparent) 42%, color-mix(in oklch, var(--color-cool) 11%, transparent) 74%, color-mix(in oklch, var(--color-good) 10%, transparent))",
-        }}
+        className="relative flex shrink-0 flex-col gap-1.5 border-b border-line bg-panel px-2.5 py-1.5 md:flex-row md:items-center md:overflow-x-auto"
       >
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-0.5"
+          className="pointer-events-none absolute inset-x-0 top-0 h-0.5 opacity-80"
           style={{
             backgroundImage:
               "linear-gradient(90deg, var(--color-warn), var(--color-accent), var(--color-cool), var(--color-good))",
           }}
         />
+        <button
+          type="button"
+          aria-expanded={mobileExpanded}
+          data-testid="studio-bg3d-mobile-mood-toggle"
+          onClick={() => setMobileExpanded((prev) => !prev)}
+          className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg [word-break:keep-all] md:hidden"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <Sparkles size={14} className="shrink-0 text-accent" aria-hidden />
+            <span>
+              {activePreset
+                ? copy(`분위기 바꾸기 · 현재 ${activePreset.labelKo}`, `Mood · ${activePreset.labelEn}`)
+                : copy("분위기 한 번에 바꾸기 (7종)", "Pick scene mood (7)")}
+            </span>
+          </span>
+          <ChevronDown
+            size={14}
+            aria-hidden
+            className={`shrink-0 text-fg-3 transition-transform duration-150 motion-reduce:transition-none ${mobileExpanded ? "rotate-180" : ""}`}
+          />
+        </button>
+        <div
+          className={`${mobileExpanded ? "flex flex-wrap" : "hidden md:flex"} items-center gap-1.5`}
+        >
         <span className="hidden shrink-0 items-center gap-1 rounded-full border border-line bg-card px-2.5 py-1 text-[0.6875rem] font-bold tracking-tight text-fg sm:inline-flex">
           <Sparkles size={12} className="text-accent" aria-hidden />
           {copy("분위기 7종", "7 Moods")}
@@ -163,6 +186,7 @@ export function StudioBg3dWebtoonAtmosphereStrip({
             </span>
           </div>
         ) : null}
+        </div>
       </div>
     );
   }
