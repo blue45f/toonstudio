@@ -11,6 +11,7 @@ import { WARDROBE_FIT_MAX, WARDROBE_FIT_MIN, WARDROBE_ITEMS, WARDROBE_SLOT_LABEL
 import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 
 import { CharacterColorControl, CharacterRangeControl } from "./CharacterShaperControls";
+import { computeOriginalCostumeHiddenKeysForWardrobe } from "./character-shaper-custom-quality";
 import { InspectorNote as Note, InspectorSection as Section } from "./CharacterShaperInspectorParts";
 
 import type { CharacterSlotKind } from "./character-shaper-contract";
@@ -121,7 +122,22 @@ export function CharacterShaperGarmentSection({
                     type="button"
                     aria-pressed={active}
                     disabled={locked}
-                    onClick={() => h.equipWardrobeItem?.(selectedOverlay.wardrobeSlot, active ? null : item.id)}
+                    onClick={() => {
+                      const nextItemId = active ? null : item.id;
+                      h.equipWardrobeItem?.(selectedOverlay.wardrobeSlot, nextItemId);
+                      if (h.costumeState && costumeMeshes.length > 0 && typeof h.updateCostume === "function") {
+                        const nextWardrobe = { ...wardrobeState };
+                        if (nextItemId === null) delete nextWardrobe[selectedOverlay.wardrobeSlot];
+                        else nextWardrobe[selectedOverlay.wardrobeSlot] = { itemId: nextItemId, color: item.defaultColor, fit: 1, fitMode: "auto", fabricId: "cotton" };
+                        const nextHidden = computeOriginalCostumeHiddenKeysForWardrobe({
+                          currentHidden: hiddenKeys,
+                          costumeMeshes,
+                          changedSlot: selectedOverlay.wardrobeSlot,
+                          nextWardrobe,
+                        });
+                        h.updateCostume({ hidden: [...nextHidden], recolor: { ...(h.costumeState.recolor ?? {}) } });
+                      }
+                    }}
                     className={cn(
                       "min-h-11 truncate rounded-lg border px-2 text-xs font-medium transition-colors disabled:opacity-45",
                       STUDIO_FOCUS_RING,

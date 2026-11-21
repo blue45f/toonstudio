@@ -164,6 +164,9 @@ describe("BabylonCharacterEngine 3D 에셋 40종 & 2인 듀오 상대역 표정/
 
     const duoParts = harness.engine.inspectRig()?.parts.filter((p) => p.id.startsWith("extra:duo-partner")) ?? [];
     expect(duoParts.length).toBeGreaterThanOrEqual(7);
+    // #236 회귀 방지: 3D 듀오 상대역 파츠는 전부 accessory(plastic)로 덮이지 않고 실제 역할(eyeball/iris/hair/shoes 등)로 분류된다.
+    const duoBodyRoles = new Set(duoParts.filter((p) => p.id !== "extra:duo-partner-prop").map((p) => p.role));
+    expect(duoBodyRoles.size).toBeGreaterThanOrEqual(3);
     expect(duoParts.some((p) => p.id === "extra:duo-partner-prop" && p.triangleCount === lightstickEntry.triangles)).toBe(true);
     expect(duoParts.some((p) => p.meshNames.some((n) => n.includes("_LOD1") || n.includes("_LOD2")))).toBe(false);
     expect(harness.engine.inspectRig()?.parts).toHaveLength(basePartCount + 4 + duoParts.length);

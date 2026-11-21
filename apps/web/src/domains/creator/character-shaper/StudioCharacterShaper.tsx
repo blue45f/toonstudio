@@ -25,8 +25,10 @@ import { StudioSurfaceErrorBoundary } from "../StudioSurfaceErrorBoundary";
 import { StudioVrmPoserDialog } from "../vrm/StudioVrmPoserDialog";
 import { useStudioVrmPoserController } from "../vrm/useStudioVrmPoserController";
 
+import { syncCustomAttachmentQuality } from "./character-shaper-custom-quality";
 import { applyShaperMtoonUniformsToVrm } from "./character-shaper-mtoon-uniforms";
 import { useCharacterShaperMaterialSettings } from "./character-shaper-session-settings";
+import { isCharacterShaperTypingTarget, pushCharacterShaperKeyLayer } from "./character-shaper-ui-model";
 import { CharacterShaperSessionSettingsProvider } from "./CharacterShaperSessionSettingsProvider";
 import { StudioCharacterShaperDialog } from "./StudioCharacterShaperDialog";
 import { useCharacterShaperBinding } from "./useCharacterShaperBinding";
@@ -83,10 +85,50 @@ export function StudioCharacterShaper({ recoverFromRenderFailure = true, ...prop
 }
 
 function CharacterShaperMaterialSyncBridge({ h }: { readonly h: ReturnType<typeof useStudioVrmPoserController> }) {
-  const { shaperMaterial } = useCharacterShaperMaterialSettings();
+  const { shaperMaterial, setShaperMaterial } = useCharacterShaperMaterialSettings();
   useEffect(() => {
-    applyShaperMtoonUniformsToVrm(h.vrm, shaperMaterial);
-  }, [h.vrm, shaperMaterial]);
+    const runSync = () => {
+      const hostScene = (h.captureRef?.current as { readonly scene?: import("three").Object3D } | null | undefined)?.scene ?? null;
+      applyShaperMtoonUniformsToVrm(h.vrm, shaperMaterial);
+      syncCustomAttachmentQuality([h.vrm?.scene, hostScene], shaperMaterial);
+      if (typeof h.invalidateViewport === "function") h.invalidateViewport();
+    };
+    runSync();
+    // 절차형 헤어·워드로브·소품이 비동기 마운트된 직후 프레임에도 본체 MToon 톤과 100% 일치시킨다.
+    const raf = typeof window !== "undefined" && typeof window.requestAnimationFrame === "function"
+      ? window.requestAnimationFrame(runSync)
+      : null;
+    return () => {
+      if (raf !== null && typeof window !== "undefined" && typeof window.cancelAnimationFrame === "function") {
+        window.cancelAnimationFrame(raf);
+      }
+    };
+  }, [h, h.vrm, h.avatarForgeState, h.wardrobeState, h.vrmPropItems, h.costumeState, shaperMaterial]);
+
+  // SHAPER Space 단축키(`MaterialData::ToggleShader`): 웹툰 툰 ↔ 모델링 입체 셰이더 즉시 전환
+  useEffect(() => {
+    return pushCharacterShaperKeyLayer((event) => {
+      if (
+        event.key !== " "
+        || event.code !== "Space"
+        || event.repeat
+        || event.isComposing
+        || event.ctrlKey
+        || event.metaKey
+        || event.altKey
+        || isCharacterShaperTypingTarget(event.target)
+      ) return false;
+      const target = event.target as HTMLElement | null;
+      if (target && target.closest("button, a, [role='button'], [role='switch'], [role='checkbox']")) return false;
+      event.preventDefault();
+      setShaperMaterial((prev) => ({
+        ...prev,
+        shaderMode: prev.shaderMode === "modeling" ? "toon" : "modeling",
+      }));
+      return true;
+    }, window);
+  }, [setShaperMaterial]);
+
   return null;
 }
 

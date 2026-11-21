@@ -15,6 +15,7 @@ import { OUTLINE_MESH_SUFFIX, allocatePartIds, failVisible, parseAuthoredHairMes
 import { qMultiply, qNormalize } from "../../shared/math";
 import { ROLE_COLOR_KEY, ROLE_DEFAULT_PRESET, resolvePartColorHex } from "../material-presets";
 
+import { disposePartToonMaterials } from "./character-rig";
 import { fromQuaternion, fromVector3 } from "./convert";
 import { RigBindError, rigMeshMetadata } from "./mesh-binding";
 
@@ -260,7 +261,7 @@ export async function loadPackageRig(plan: AuthoredPackagePlan, bytes: Uint8Arra
     materials: deps.materials,
     dispose() {
       // 툰 재질의 공유 텍스처는 엔진 소유 — 재질만 해제한다. 알베도 텍스처는 container.dispose()가 정리한다.
-      for (const part of parts) part.toon?.dispose(true, false);
+      for (const part of parts) disposePartToonMaterials(part);
       container.dispose();
       root.dispose(false, false);
     },
