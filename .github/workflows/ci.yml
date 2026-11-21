@@ -263,8 +263,8 @@ jobs:
     name: Core regression shard / ${{ matrix.shard }}
     if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    # 설정·회귀 약 6분 뒤 전체 typecheck 약 22분을 다시 수행하는 수동 editing 하네스의 작업 예산이다.
-    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && matrix.shard == 'studio-editing' && 40 || 25 }}
+    # 수동 editing은 준비 약 6분·실측 전체 타입 검사 42분·후속 회귀를 기존 필수 검사와 함께 끝낸다.
+    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && matrix.shard == 'studio-editing' && 65 || 25 }}
     strategy:
       fail-fast: false
       matrix:
@@ -511,7 +511,7 @@ jobs:
         run: node scripts/ci-core-regression-shards.mjs "${{ matrix.shard }}"
       - name: 수동 후보의 전체 하네스 검증
         if: github.event_name == 'workflow_dispatch' && matrix.shard == 'studio-editing'
-        # 로컬 대형 검증을 대신하는 수동 실행이다. PR·main의 기존 필수 검사는 유지한다.
+        env: { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '6291456' }
         run: |
           set -euo pipefail
           HARNESS_BASE=$(git rev-parse refs/remotes/origin/main)
