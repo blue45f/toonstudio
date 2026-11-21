@@ -17,6 +17,7 @@ import { Script } from "node:vm";
 import { decodePng, encodePng, Image } from "image-js";
 import { chromium, errors, type Browser, type BrowserContext, type Page } from "playwright";
 
+import { STUDIO_SOAK_LINUX_WEBGPU_LAUNCH_ARGS } from "./lib/studio-soak-browser-launch";
 import { installGpuAndPerfCollector } from "./lib/studio-soak-telemetry";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -24,13 +25,11 @@ const SCRIPT_FILE = fileURLToPath(import.meta.url);
 const OPERATION_TIMEOUT_MS = 8_000;
 const MAX_CONSOLE_EVENTS = 200;
 const SIZE = 64;
+// CDP의 실제 실행 인자 조회에 필요하다. 제품 acceptance가 아닌 8개 진단 조건에만 동일하게 추가한다.
+const METADATA_LAUNCH_ARGS = ["--enable-automation"] as const;
 const CONFIGURATIONS = [
   { id: "existing", args: ["--disable-dev-shm-usage", "--enable-unsafe-swiftshader", "--use-gl=swiftshader", "--enable-unsafe-webgpu"] },
-  // 기존 3d-console 검증기의 Linux 소프트웨어 경로. Playwright screenshot feature도 보존한다.
-  { id: "vulkan-angle", args: ["--disable-dev-shm-usage", "--no-sandbox", "--enable-unsafe-webgpu",
-    "--enable-features=CDPScreenshotNewSurface,Vulkan", "--use-vulkan=swiftshader",
-    "--use-webgpu-adapter=swiftshader", "--use-gpu-in-tests", "--use-gl=angle",
-    "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] },
+  { id: "vulkan-angle", args: STUDIO_SOAK_LINUX_WEBGPU_LAUNCH_ARGS },
 ] as const;
 
 interface Failure { phase: string; name: string; message: string; stack: string | null; code: string | null; raw?: unknown }
@@ -390,7 +389,7 @@ async function main(): Promise<void> {
     sourceCommit: execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
     sourceDirty: execFileSync("git", ["-C", ROOT, "status", "--porcelain"], { encoding: "utf8" }).trim().length > 0,
     scriptSha256: sha256(readFileSync(SCRIPT_FILE)), telemetrySourceSha256: sha256(readFileSync(join(ROOT, "scripts/lib/studio-soak-telemetry.ts"))),
-    executablePath: chromium.executablePath(), environment: environment(), origin: null as string | null,
+    executablePath: chromium.executablePath(), metadataLaunchArgs: METADATA_LAUNCH_ARGS, environment: environment(), origin: null as string | null,
     nativeGpuStderr: "직접 수집하지 않음. DEBUG=pw:browser 실행 로그를 함께 보존해야 native GPU 프로세스 원문을 확인할 수 있습니다.",
     expectedCases: CONFIGURATIONS.length * 4, cases: [] as DiagnosticCase[], failures: [] as Failure[],
   };
@@ -419,7 +418,7 @@ async function main(): Promise<void> {
         for (const telemetryWrapper of [false, true]) {
           const entry: DiagnosticCase = {
             id: configuration.id + "-" + surface + "-wrapper-" + (telemetryWrapper ? "on" : "off"),
-            configuration: configuration.id, surface, telemetryWrapper, requestedLaunchArgs: configuration.args,
+            configuration: configuration.id, surface, telemetryWrapper, requestedLaunchArgs: [...configuration.args, ...METADATA_LAUNCH_ARGS],
             actualLaunchArgs: null, browserVersion: null, browserProtocolVersion: null,
             startedAt: new Date().toISOString(), endedAt: null, status: "running", consoleEvents: [], consoleEventsDropped: 0,
             pageErrors: [], stages: [], failures: [], environmentBefore: environment(), environmentAfter: null,

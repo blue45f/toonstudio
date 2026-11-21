@@ -958,8 +958,11 @@ scripts/lib/studio-preview-navigation-settlement.test.ts
 scripts/lib/studio-quick-brush-interactions.test.ts
 scripts/lib/studio-shell-readiness.test.ts
 scripts/lib/studio-smart-shape-visible-grid.test.ts
+scripts/lib/studio-soak-browser-launch.test.ts
 scripts/lib/studio-soak-desktop-pen.test.ts
 scripts/lib/studio-soak-evidence.test.ts
+scripts/lib/studio-soak-first-contact-trace.test.ts
+scripts/lib/studio-soak-gpu-diagnostic-metadata.test.ts
 scripts/lib/studio-soak-layer-count.test.ts
 scripts/lib/studio-soak-pointer-latency.test.ts
 scripts/lib/studio-soak-pointer-route.test.ts

@@ -85,15 +85,53 @@ GitHub Actions의 `Studio 5h stability soak` 수동 실행은 다음 입력을 �
 | `brush_cycles` | `1` | 획마다 다음 paint 브러시 선택 |
 | `stop_on_failure` | `true` | 첫 제품·계측 실패의 원본을 보존하고 중단 |
 | `measure_pointer_latency` | `true` | 같은 원고의 입력→다음 RAF 시간 측정 |
-| `latency_baseline` | `true` | 단일 환경에서 대표 17종의 새 원고 지연 검사도 한 번 실행 |
+| `latency_baseline` | `true` | `desktop`에서 대표 17종의 새 원고 mouse 지연 검사도 한 번 실행 |
 | `sample_heap_per_stroke` | `0` | 기본 10분 GC 표본 유지. 매 획 강제 GC는 별도 진단용 |
+| `diagnostic` | `false` | CPU·GPU 원인 조사 계측을 끄고 수락 검사 실행 |
 
 수동 300분 실행에서는 같은 빌드와 입력 설정으로 3분 사전 검사와 시각 분석을 먼저
 통과해야 본 검사가 시작된다. 사전 검사와 본 검사는 서로 다른 페이지·보고서이며,
 3분을 본 검사 시간에 더하지 않는다. 정기 실행의 기존 다섯 환경·300분·bounded-churn
 설정은 유지한다. 유료 러너나 자동 운영 배포를 추가하지 않는다.
-`profile=all`과 `latency_baseline=true` 조합은 빌드 전에 거부한다. 여러 환경 중 하나의
-지연 검사만 실패하고 나머지 환경이 본 검사를 계속하는 모호한 선행 조건을 만들지 않는다.
+`latency_baseline=true`는 `profile=desktop`에서만 허용한다. 현재 대표 17종 검사기는
+별도 desktop viewport와 Playwright mouse를 사용하며 모바일 또는 WebGPU profile을
+적용하지 않는다. 지원하지 않는 profile 조합은 빌드 전에 거부하고 다른 환경의 통과로
+표시하지 않는다.
+
+### 2026-11-22 현재 구현: 원인 진단과 수락 검사 분리
+
+수동·정기 수락 검사의 기본 시간은 300분이며 CPU profiler와 별도 GPU 비교 진단은
+꺼져 있다. 수동 `diagnostic=true`는 1~3분에만 허용하고 대표 17종 수락 검사와 함께
+요청하면 빌드 전에 실패한다. 이 모드에서 수집한 CPU·Trace와 GPU 비교는 원인 분석용이며,
+제품 동작이 모두 정상이어도 `diagnostic-only` 실패를 남겨 수락 통과로 사용할 수 없다.
+수락 검사의 작업 제한은 기존 345분, 짧은 진단은 25분이다. 임시 진단 기본값이 정기
+300분 검사를 가로막지 않도록 실제 workflow 배선과 기본값을 함께 회귀로 확인한다.
+
+첫 접촉 진단은 실제 canvas의 pointerdown·첫 pointermove·pointerup·down 뒤 첫 RAF에
+세션과 cycle이 붙은 user timing marker를 남긴다. 원본 native trace의 marker 시각과
+브라우저 `PerformanceMark.startTime`을 같은 frame·thread에서 대조하고 EventDispatch,
+RunTask, style/layout, GC를 함께 보존한다. 첫 RAF는 잉크 픽셀이나 디스플레이 발광의
+증명이 아니다. 기존 CPU profile의 호출 전후 시계 범위는 별도로 유지한다. marker 누락,
+frame 변경, trace 유실·상한 초과·수집 timeout·정리 실패는 부분 원본과 함께 실패로 남긴다.
+진단 수집을 마친 뒤 생긴 페이지·GPU 오류도 마지막에 다시 수집한다.
+
+### 2026-11-22 관측: Linux 소프트웨어 WebGPU 표시 경로
+
+[진단 run 123](https://github.com/blue45f/toonstudio/actions/runs/44925201668)은
+`8a5358643f49661d19809ae8521f9d4216f55cfc`의 Chromium 158.0.8127.18에서 실행했다.
+Linux SwiftShader의 기존 `--use-gl=swiftshader` 조합은 offscreen 연산은 성공했지만,
+화면 canvas에서 GC 전에 장치 손실과 `WebgpuSwapChainTexture` backing 생성 실패가
+발생했다. 같은 최소 재현의 Vulkan/ANGLE 조합은 telemetry wrapper 유무 모두에서
+빨강→강제 GC→초록 readback과 64×64 PNG의 전체 픽셀이 일치했다. 이 관측은 제품의
+장치 수명 코드나 강제 GC를 단독 원인으로 지목하지 않으며 Chromium 내부 결함까지
+확정한 것도 아니다. 당시 8조건 모두 별도의 command-line metadata 수집 오류를
+남겼으므로 진단 전체를 오류 없는 통과로 표시하지 않는다.
+
+현재 소크의 Linux WebGPU 실행은 위 재현에서 확인한 Vulkan·ANGLE·SwiftShader 설정을
+공통 helper로 사용한다. 다른 플랫폼과 비 WebGPU profile의 실행 설정은 기존 값이다.
+실제 제품 세션의 장치 손실·거절 획·시각 오류·성능·시간 기준은 그대로 적용하고,
+이 설정 변경의 수락 여부는 새 소크 결과로 판단한다. 소프트웨어 adapter 결과를
+물리 GPU·모바일 운영체제·실제 펜 장치 인증으로 간주하지 않는다.
 
 ### 현재 화면의 브러시 선택과 Undo/Redo
 

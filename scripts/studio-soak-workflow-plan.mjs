@@ -37,12 +37,20 @@ export function createStudioSoakWorkflowPlan(env = process.env) {
     ["all", ...STUDIO_SOAK_PROFILES.map((entry) => entry.id)], "all");
   const selected = STUDIO_SOAK_PROFILES.filter((entry) => profile === "all" || entry.id === profile);
   const baseline = flag("latency_baseline", requested.SOAK_LATENCY_BASELINE, false);
-  if (baseline === "1" && selected.length !== 1) {
-    throw new Error("대표 지연 검사를 선행 조건으로 쓰려면 profile에서 단일 환경을 선택하세요.");
+  const diagnostic = flag("diagnostic", requested.SOAK_DIAGNOSTIC, false);
+  const minutes = integer("minutes", requested.SOAK_MINUTES, 300, 300);
+  if (baseline === "1" && profile !== "desktop") {
+    throw new Error("대표 지연 검사는 desktop의 Playwright mouse 환경만 지원합니다. profile=desktop으로 별도 실행하세요.");
+  }
+  if (diagnostic === "1" && Number(minutes) > 3) {
+    throw new Error("CPU·GPU 진단은 minutes를 1~3분으로 지정하세요. 장시간 수락 검사는 diagnostic을 끄세요.");
+  }
+  if (diagnostic === "1" && baseline === "1") {
+    throw new Error("대표 지연 수락 검사와 CPU·GPU 진단은 별도로 실행하세요.");
   }
   return {
     matrix: JSON.stringify({ include: selected }),
-    minutes: integer("minutes", requested.SOAK_MINUTES, 300, 300),
+    minutes,
     workload: choice("workload", requested.SOAK_WORKLOAD, ["bounded-churn", "accumulate"], "bounded-churn"),
     input: choice("input", requested.SOAK_INPUT, ["auto", "mouse", "pen", "touch"], "auto"),
     brush_cycles: integer("brush_cycles", requested.SOAK_BRUSH_CYCLES, 5, 100),
@@ -50,6 +58,7 @@ export function createStudioSoakWorkflowPlan(env = process.env) {
     stop_on_failure: flag("stop_on_failure", requested.SOAK_STOP_ON_FAILURE, manual),
     measure_pointer_latency: flag("measure_pointer_latency", requested.SOAK_MEASURE_POINTER_LATENCY, false),
     latency_profile: baseline === "1" ? selected[0].id : "none",
+    diagnostic,
   };
 }
 
