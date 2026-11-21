@@ -478,7 +478,11 @@ export function bindStudioCuttoonStagePointersDownDraw(
         endLiveResourceEdit();
         return;
       }
-      updateBrushCursor(e.target.getStage(), pointerSample);
+      const cursorStage = e.target.getStage();
+      // 재생·다른 Stage의 좌표는 기존대로 다시 읽고, 같은 Stage의 정착한 접촉 좌표만 재사용한다.
+      const cursorPoint = replayPosition === undefined
+        && (!stageRef.current || stageRef.current === cursorStage) ? pos : undefined;
+      updateBrushCursor(cursorStage, pointerSample, cursorPoint);
       // One pointer contact owns one immutable input contract. Toolbar shortcuts can re-render
       // while a pen is still down; those new preferences apply to the next stroke, never halfway
       // through the current filter/pressure/post-correction pipeline.
