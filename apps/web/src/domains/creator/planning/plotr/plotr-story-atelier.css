@@ -1,0 +1,218 @@
+/* Plotr 스토리 아틀리에 — OKLCH 의미 토큰 + 스펙트럼 리본 + 스프링 모션 (prefers-reduced-motion / contrast / forced-colors 완비) */
+
+@keyframes plotr-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes plotr-ribbon-glide {
+  0% {
+    transform: translateX(-8%);
+  }
+  50% {
+    transform: translateX(8%);
+  }
+  100% {
+    transform: translateX(-8%);
+  }
+}
+
+.plotr-atelier-root {
+  --plotr-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --plotr-spec-a: oklch(0.66 0.19 340);
+  --plotr-spec-b: oklch(0.62 0.19 255);
+  --plotr-spec-c: oklch(0.68 0.17 160);
+  --plotr-spec-d: oklch(0.74 0.16 75);
+  --plotr-accent-wash: color-mix(in oklch, var(--color-accent) 12%, var(--color-panel));
+  --plotr-accent-border: color-mix(in oklch, var(--color-accent) 44%, var(--color-line));
+  --plotr-good-wash: color-mix(in oklch, var(--color-good) 12%, var(--color-card));
+  --plotr-warn-wash: color-mix(in oklch, var(--color-warn) 14%, var(--color-card));
+  --plotr-cool-wash: color-mix(in oklch, var(--color-cool) 12%, var(--color-card));
+  position: relative;
+  border-radius: 1rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+  color: var(--color-fg);
+  overflow: hidden;
+}
+
+.plotr-spectrum-ribbon {
+  position: relative;
+  height: 3px;
+  width: 100%;
+  overflow: hidden;
+  background: color-mix(in oklch, var(--color-accent) 16%, var(--color-line));
+}
+
+.plotr-spectrum-ribbon::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline: -16%;
+  background: linear-gradient(
+    90deg,
+    var(--plotr-spec-a),
+    var(--plotr-spec-b),
+    var(--plotr-spec-c),
+    var(--plotr-spec-d),
+    var(--plotr-spec-a)
+  );
+  opacity: 0.92;
+  animation: plotr-ribbon-glide 14s ease-in-out infinite;
+}
+
+.plotr-stagger-card {
+  animation: plotr-rise-in 260ms var(--plotr-spring) both;
+  animation-delay: calc(var(--plotr-index, 0) * 32ms);
+}
+
+.plotr-btn-tactile {
+  transition-property: background-color, border-color, color, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: var(--plotr-spring);
+}
+
+.plotr-btn-tactile:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.plotr-template-card {
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  transition-property: border-color, background-color, transform;
+  transition-duration: 160ms;
+  transition-timing-function: var(--plotr-spring);
+}
+
+.plotr-template-card:hover {
+  border-color: color-mix(in oklch, var(--tpl-accent, var(--color-accent)) 60%, var(--color-line));
+  background: color-mix(in oklch, var(--tpl-accent, var(--color-accent)) 8%, var(--color-card));
+}
+
+.plotr-template-card[data-active="true"] {
+  border-color: var(--tpl-accent, var(--color-accent));
+  background: color-mix(in oklch, var(--tpl-accent, var(--color-accent)) 13%, var(--color-card));
+  box-shadow: inset 3px 0 0 var(--tpl-accent, var(--color-accent));
+}
+
+.plotr-cut-card {
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  transition-property: border-color, background-color, transform;
+  transition-duration: 150ms;
+  transition-timing-function: var(--plotr-spring);
+}
+
+.plotr-cut-card[data-selected="true"] {
+  border-color: var(--plotr-accent-border);
+  background: var(--plotr-accent-wash);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.plotr-asset-chip {
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  transition-property: border-color, background-color;
+  transition-duration: 140ms;
+}
+
+.plotr-asset-chip[data-referenced="true"] {
+  border-color: var(--plotr-accent-border);
+  background: var(--plotr-accent-wash);
+}
+
+.plotr-asset-chip[data-empty="true"] {
+  border-style: dashed;
+}
+
+.plotr-guide-strip {
+  border: 1px solid var(--plotr-accent-border);
+  background: var(--plotr-accent-wash);
+}
+
+.plotr-tension-surface {
+  border: 1px solid var(--color-line);
+  background: color-mix(in oklch, var(--color-accent) 4%, var(--color-card));
+}
+
+.plotr-diff-ins {
+  background: var(--plotr-good-wash);
+  color: var(--color-good);
+  border-radius: 0.25rem;
+  padding-inline: 0.15rem;
+}
+
+.plotr-diff-del {
+  background: color-mix(in oklch, var(--color-bad) 14%, var(--color-card));
+  color: var(--color-bad);
+  text-decoration: line-through;
+  border-radius: 0.25rem;
+  padding-inline: 0.15rem;
+}
+
+.plotr-spatial-stage {
+  position: relative;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background-color: var(--color-canvas);
+  background-image: radial-gradient(
+    circle,
+    color-mix(in oklch, var(--color-fg-3) 26%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 20px 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plotr-spectrum-ribbon::after,
+  .plotr-stagger-card {
+    animation: none;
+  }
+
+  .plotr-btn-tactile,
+  .plotr-template-card,
+  .plotr-cut-card,
+  .plotr-asset-chip {
+    transition: none;
+  }
+
+  .plotr-btn-tactile:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .plotr-atelier-root,
+  .plotr-template-card,
+  .plotr-cut-card,
+  .plotr-asset-chip,
+  .plotr-guide-strip {
+    border-width: 2px;
+    border-color: var(--color-fg);
+  }
+}
+
+@media (forced-colors: active) {
+  .plotr-atelier-root,
+  .plotr-template-card,
+  .plotr-cut-card,
+  .plotr-asset-chip,
+  .plotr-guide-strip {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+  }
+
+  .plotr-spectrum-ribbon::after {
+    background: Highlight;
+  }
+}
