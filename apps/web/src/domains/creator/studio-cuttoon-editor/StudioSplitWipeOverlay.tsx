@@ -172,8 +172,8 @@ export function StudioSplitWipeOverlay({
           className={cn(
             "relative grid size-11 place-items-center overflow-hidden rounded-full border border-accent/55 bg-[linear-gradient(145deg,color-mix(in_oklch,var(--color-panel)_90%,var(--color-accent)_10%),var(--color-card))] text-fg shadow-[var(--atelier-elevation-dock)] transition-[transform,border-color,background-color,box-shadow] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:transform-none",
             "before:pointer-events-none before:absolute before:inset-0 before:bg-[linear-gradient(135deg,color-mix(in_oklch,var(--color-fg)_18%,transparent),transparent_55%)]",
-            "group-hover:scale-105 group-hover:border-accent group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent",
-            dragging && "scale-110 border-accent bg-accent-soft text-accent ring-4 ring-accent/30 motion-safe:animate-pulse",
+            "group-hover:border-accent group-hover:bg-raised group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent",
+            dragging && "border-accent bg-accent-soft text-accent ring-4 ring-accent/30",
           )}
         >
           <GripVertical size={16} strokeWidth={1.75} className="relative z-10" />

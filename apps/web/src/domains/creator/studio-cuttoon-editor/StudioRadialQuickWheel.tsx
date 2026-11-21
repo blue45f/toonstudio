@@ -357,7 +357,7 @@ export function StudioRadialQuickWheel({
                 !bloomed && "scale-75 opacity-0",
                 bloomed && (highlighted
                   ? "scale-105 opacity-100 border-accent bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-2))] text-on-accent shadow-[0_0_0_4px_color-mix(in_oklch,var(--color-accent)_26%,transparent)]"
-                  : "scale-100 opacity-100 border-transparent bg-transparent text-fg-2 hover:scale-105 hover:text-fg"),
+                  : "scale-100 opacity-100 border-transparent bg-transparent text-fg-2 hover:border-line-strong hover:bg-raised/70 hover:text-fg"),
               )}
             >
               <Icon size={16} strokeWidth={1.7} aria-hidden="true" />
