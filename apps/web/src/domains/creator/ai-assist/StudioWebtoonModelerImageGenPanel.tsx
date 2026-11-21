@@ -1,5 +1,5 @@
 import { Camera, Check, Copy, ImagePlus, Layers, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { studioEcosystemClient } from "@/platform/studio-ecosystem-client";
 
@@ -7,8 +7,8 @@ import {
   WEBTOON_ART_STYLES,
   compileWebtoonModelerToImageGen,
   createDefaultWebtoonModelerScene,
+  getWebtoonArtStyle,
   type CompiledWebtoonImageGenRequest,
-  type WebtoonArtStyleId,
   type WebtoonCameraShot,
   type WebtoonCutAspectRatio,
   type WebtoonLightingPreset,
@@ -47,8 +47,15 @@ export function StudioWebtoonModelerImageGenPanel({
   const [historyCount, setHistoryCount] = useState(0);
   const [syncLabel, setSyncLabel] = useState<string | null>(null);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const previewGradientId = useId();
 
   const compiled = useMemo(() => compileWebtoonModelerToImageGen(scene), [scene]);
+  const artStyleMeta = useMemo(() => getWebtoonArtStyle(scene.artStyle), [scene.artStyle]);
+  const previewViewBox = useMemo(() => {
+    const vw = 360;
+    const vh = Math.max(1, Math.round((vw * compiled.height) / Math.max(1, compiled.width)));
+    return { vw, vh };
+  }, [compiled.height, compiled.width]);
 
   const handleAddCharacter = () => {
     const nextIdx = scene.characters.length + 1;
@@ -122,9 +129,10 @@ export function StudioWebtoonModelerImageGenPanel({
               <span>웹툰 화풍</span>
               <select
                 value={scene.artStyle}
-                onChange={(e) =>
-                  setScene((prev) => ({ ...prev, artStyle: e.target.value as WebtoonArtStyleId }))
-                }
+                onChange={(e) => {
+                  const matched = WEBTOON_ART_STYLES.find((style) => style.id === e.target.value);
+                  if (matched) setScene((prev) => ({ ...prev, artStyle: matched.id }));
+                }}
                 className="min-h-11 rounded-lg border border-line bg-card px-3 text-xs text-fg sm:min-h-9"
               >
                 {WEBTOON_ART_STYLES.map((style) => (
@@ -138,12 +146,10 @@ export function StudioWebtoonModelerImageGenPanel({
               <span>컷 비율</span>
               <select
                 value={scene.aspectRatio}
-                onChange={(e) =>
-                  setScene((prev) => ({
-                    ...prev,
-                    aspectRatio: e.target.value as WebtoonCutAspectRatio,
-                  }))
-                }
+                onChange={(e) => {
+                  const matched = ASPECT_OPTIONS.find((ratio) => ratio === e.target.value);
+                  if (matched) setScene((prev) => ({ ...prev, aspectRatio: matched }));
+                }}
                 className="min-h-11 rounded-lg border border-line bg-card px-3 text-xs text-fg sm:min-h-9"
               >
                 {ASPECT_OPTIONS.map((ratio) => (
@@ -160,12 +166,10 @@ export function StudioWebtoonModelerImageGenPanel({
               <span>카메라 샷</span>
               <select
                 value={scene.cameraShot}
-                onChange={(e) =>
-                  setScene((prev) => ({
-                    ...prev,
-                    cameraShot: e.target.value as WebtoonCameraShot,
-                  }))
-                }
+                onChange={(e) => {
+                  const matched = CAMERA_OPTIONS.find((opt) => opt.value === e.target.value);
+                  if (matched) setScene((prev) => ({ ...prev, cameraShot: matched.value }));
+                }}
                 className="min-h-11 rounded-lg border border-line bg-card px-3 text-xs text-fg sm:min-h-9"
               >
                 {CAMERA_OPTIONS.map((opt) => (
@@ -179,12 +183,10 @@ export function StudioWebtoonModelerImageGenPanel({
               <span>조명 프리셋</span>
               <select
                 value={scene.lighting}
-                onChange={(e) =>
-                  setScene((prev) => ({
-                    ...prev,
-                    lighting: e.target.value as WebtoonLightingPreset,
-                  }))
-                }
+                onChange={(e) => {
+                  const matched = LIGHTING_OPTIONS.find((opt) => opt.value === e.target.value);
+                  if (matched) setScene((prev) => ({ ...prev, lighting: matched.value }));
+                }}
                 className="min-h-11 rounded-lg border border-line bg-card px-3 text-xs text-fg sm:min-h-9"
               >
                 {LIGHTING_OPTIONS.map((opt) => (
@@ -248,8 +250,91 @@ export function StudioWebtoonModelerImageGenPanel({
           <div
             className="max-w-[240px] w-full overflow-hidden rounded-md border border-line md:max-w-none"
             aria-label="웹툰 모델러 컷 프리뷰"
-            dangerouslySetInnerHTML={{ __html: compiled.previewSvg }}
-          />
+          >
+            {/* 문자열 HTML 삽입 대신 React 선언적 SVG로 프리뷰를 렌더링해 DOM XSS 경로를 차단한다. */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox={`0 0 ${previewViewBox.vw} ${previewViewBox.vh}`}
+              width={previewViewBox.vw}
+              height={previewViewBox.vh}
+              className="block h-auto w-full"
+            >
+              <defs>
+                <linearGradient id={previewGradientId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={artStyleMeta.paletteHex[0]} />
+                  <stop offset="100%" stopColor={artStyleMeta.paletteHex[1]} stopOpacity="0.35" />
+                </linearGradient>
+              </defs>
+              <rect
+                x={0}
+                y={0}
+                width={previewViewBox.vw}
+                height={previewViewBox.vh}
+                fill={`url(#${previewGradientId})`}
+              />
+              <line
+                x1={0}
+                y1={Math.round(previewViewBox.vh * 0.68)}
+                x2={previewViewBox.vw}
+                y2={Math.round(previewViewBox.vh * 0.68)}
+                stroke={artStyleMeta.paletteHex[2]}
+                strokeDasharray="6 4"
+                opacity={0.35}
+              />
+              {scene.characters.map((ch) => {
+                const cx = Math.round(Math.min(0.9, Math.max(0.1, ch.x)) * previewViewBox.vw);
+                const cy = Math.round(Math.min(0.88, Math.max(0.2, ch.y)) * previewViewBox.vh);
+                const rHead = Math.round(22 * ch.scale);
+                const bodyW = Math.round(62 * ch.scale);
+                const bodyH = Math.round(110 * ch.scale);
+                return (
+                  <g key={ch.id} data-character-id={ch.id}>
+                    <rect
+                      x={cx - bodyW / 2}
+                      y={cy}
+                      width={bodyW}
+                      height={bodyH}
+                      rx={18}
+                      fill={artStyleMeta.paletteHex[1]}
+                      stroke={artStyleMeta.paletteHex[2]}
+                      strokeWidth={2.5}
+                      opacity={0.88}
+                    />
+                    <circle
+                      cx={cx}
+                      cy={cy - rHead - 4}
+                      r={rHead}
+                      fill={artStyleMeta.paletteHex[0]}
+                      stroke={artStyleMeta.paletteHex[2]}
+                      strokeWidth={2.5}
+                    />
+                    <text
+                      x={cx}
+                      y={cy + bodyH + 18}
+                      textAnchor="middle"
+                      fontSize={11}
+                      fontWeight={600}
+                      fill={artStyleMeta.paletteHex[2]}
+                    >
+                      {ch.name}
+                    </text>
+                  </g>
+                );
+              })}
+              <rect
+                x={10}
+                y={10}
+                width={previewViewBox.vw - 20}
+                height={28}
+                rx={6}
+                className="fill-card"
+                opacity={0.86}
+              />
+              <text x={20} y={28} fontSize={11} className="fill-fg">
+                {`${artStyleMeta.labelKo} · ${scene.aspectRatio} · ${scene.cameraShot}`}
+              </text>
+            </svg>
+          </div>
           <button
             type="button"
             onClick={handleGenerate}

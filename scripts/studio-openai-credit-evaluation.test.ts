@@ -2,17 +2,18 @@
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { buildCreditEvaluationPlan, CALL_INTERVAL_MS, CreditExecutionEvidenceSchema, readCreditUsage, runCreditEvaluation, sha256, type CreditEvaluationOptions, type CreditEvaluationReport } from "./studio-openai-credit-evaluation-core";
+import { buildCreditEvaluationPlan, CALL_INTERVAL_MS, CreditExecutionEvidenceSchema, fingerprintApiKey, readCreditUsage, runCreditEvaluation, type CreditEvaluationOptions, type CreditEvaluationReport } from "./studio-openai-credit-evaluation-core";
 import { CREDIT_EVALUATION_FIXTURES } from "./studio-openai-credit-evaluation-fixtures";
 
 const NOW = new Date("2026-11-18T05:00:00.000Z");
 const ENV = { OPENAI_API_KEY: "test-only-placeholder", OPENAI_ORG_ID: "org-evaluation", OPENAI_PROJECT_ID: "proj_evaluation" };
+const TEST_API_KEY_FINGERPRINT = fingerprintApiKey(ENV.OPENAI_API_KEY, ENV.OPENAI_ORG_ID, ENV.OPENAI_PROJECT_ID);
 let planHash: string;
 
 function evidence(changes: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     schemaVersion: 1, planHash, verifiedAt: NOW.toISOString(), creditExpiresAt: "2026-11-28T00:00:00.000Z",
-    organizationId: ENV.OPENAI_ORG_ID, projectId: ENV.OPENAI_PROJECT_ID, apiKeySha256: sha256(ENV.OPENAI_API_KEY),
+    organizationId: ENV.OPENAI_ORG_ID, projectId: ENV.OPENAI_PROJECT_ID, apiKeyFingerprint: TEST_API_KEY_FINGERPRINT,
     availablePromotionalCreditUsd: 1, eligibleModels: ["gpt-4o-mini", "gpt-4.1-mini"], keyOrganizationConfirmed: true,
     automaticRechargeDisabled: true, additionalPaidSpendBlocked: true,
     billingBlockMechanism: "실제 계정 증거가 아닌 단위 테스트 전용 가상 비용 차단 근거입니다.",
@@ -103,7 +104,7 @@ describe("OpenAI 실행 승인·시도·예약 경계", () => {
     { label: "잔액 부족", value: () => evidence({ availablePromotionalCreditUsd: 0.99 }) },
     { label: "만료", value: () => evidence({ creditExpiresAt: "2026-11-17T00:00:00.000Z" }) },
     { label: "오래된 확인", value: () => evidence({ verifiedAt: "2026-11-18T03:00:00.000Z" }) },
-    { label: "다른 키", value: () => evidence({ apiKeySha256: "0".repeat(64) }) },
+    { label: "다른 키", value: () => evidence({ apiKeyFingerprint: "0".repeat(64) }) },
     { label: "다른 조직", value: () => evidence({ organizationId: "org-other" }) },
     { label: "유료 지출 미차단", value: () => evidence({ additionalPaidSpendBlocked: false }) },
     { label: "모델 적격 미확인", value: () => evidence({ eligibleModels: ["gpt-4o-mini"] }) },
@@ -252,5 +253,11 @@ describe("OpenAI 실행 승인·시도·예약 경계", () => {
     expect(readCreditUsage({ prompt_tokens: "100", completion_tokens: 50, total_tokens: 150 })).toBeNull();
     expect(readCreditUsage({ prompt_tokens: 100, completion_tokens: -1, total_tokens: 99 })).toBeNull();
     expect(readCreditUsage({ prompt_tokens: 100, completion_tokens: 50, total_tokens: 150, prompt_tokens_details: { cached_tokens: 101 } })).toBeNull();
+  });
+
+  it("API 키 지문은 조직·프로젝트 컨텍스트에 바인딩된 scrypt 64자리 hex를 생성한다", () => {
+    expect(TEST_API_KEY_FINGERPRINT).toMatch(/^[a-f0-9]{64}$/u);
+    expect(fingerprintApiKey(ENV.OPENAI_API_KEY, "org-other", ENV.OPENAI_PROJECT_ID)).not.toBe(TEST_API_KEY_FINGERPRINT);
+    expect(fingerprintApiKey(ENV.OPENAI_API_KEY, ENV.OPENAI_ORG_ID, "proj_other")).not.toBe(TEST_API_KEY_FINGERPRINT);
   });
 });

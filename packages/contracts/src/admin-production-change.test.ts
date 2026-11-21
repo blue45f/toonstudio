@@ -312,3 +312,20 @@ test("회귀 해결에서 잘못된 호스트·자격증명 URL·가짜 캡처 �
     assert.throws(()=>move(saved,"verified",later),/해결 근거 링크/);
   }
 });
+
+test("회귀 해결 근거 파서는 반복 구두점 입력에서도 선형 시간으로 종료한다",()=>{
+  const record=withVerification(applied());
+  const repeatedBangUrl=`https://example.test/fix/${"!".repeat(7_500)}a`;
+  const trailingBangUrl=`https://example.test/fix/42${"!".repeat(7_500)}`;
+
+  const startedAt=performance.now();
+  for (const [summary, shouldPass] of [[repeatedBangUrl, true], [trailingBangUrl, true], [`https://${"!".repeat(7_500)}`, false]] as const) {
+    const value=structuredClone(record.data);
+    value.verification.regression="resolved";
+    value.verification.summary=summary;
+    const saved=updateRecord(record,value,actor,later);
+    const hasLinkIssue=verificationIssues(saved,later).some(issue=>issue.includes("해결 근거 링크"));
+    assert.strictEqual(hasLinkIssue,!shouldPass,summary.slice(0,32));
+  }
+  assert.isBelow(performance.now()-startedAt,500);
+});

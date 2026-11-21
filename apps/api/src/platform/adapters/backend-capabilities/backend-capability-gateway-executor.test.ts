@@ -10,7 +10,10 @@ import {
   type BackendCapabilityDurableQueuePort,
 } from "./backend-capability-durable-queue.port";
 import { BackendCapabilityGatewayEnvelopeSchema } from "./backend-capability-gateway-contract";
-import { BackendCapabilityGatewayExecutor } from "./backend-capability-gateway-executor";
+import {
+  BackendCapabilityGatewayExecutor,
+  MAX_DURABLE_QUEUE_ABORT_TIMEOUT_MS,
+} from "./backend-capability-gateway-executor";
 import { resolveBackendCapabilityPolicy } from "./backend-capability-policy";
 
 const providerConfig = (prefix: "CLOUDFLARE" | "UPSTASH_QSTASH") => ({
@@ -405,5 +408,44 @@ describe("backend capability durable queue gateway executor", () => {
     });
     const partial = new BackendCapabilityGatewayExecutor(policy, partialPort);
     await expect(partial.isDurableQueueReady()).resolves.toBe(false);
+  });
+
+  it("clamps oversized estimatedDurationMs timer delays to MAX_DURABLE_QUEUE_ABORT_TIMEOUT_MS", async () => {
+    vi.useFakeTimers();
+    const longPolicy = resolveBackendCapabilityPolicy(
+      {
+        NODE_ENV: "test",
+        BACKEND_DISTRIBUTION_ENABLED: "true",
+        ...providerConfig("CLOUDFLARE"),
+        ...providerConfig("UPSTASH_QSTASH"),
+        BACKEND_UPSTASH_QSTASH_MAX_EXECUTION_MS: "86400000",
+      },
+      { warn: vi.fn() }
+    );
+    const hangingPort = queuePort({
+      submit: vi.fn(() => new Promise(() => undefined)),
+    });
+    const executor = new BackendCapabilityGatewayExecutor(
+      longPolicy,
+      hangingPort
+    );
+    const result = executor.execute(
+      envelope("cleanup", {
+        execution: {
+          estimatedCostUnits: 1,
+          estimatedDurationMs: 86_400_000,
+          durability: "durable",
+        },
+      }),
+      "upstash-qstash"
+    );
+
+    await vi.advanceTimersByTimeAsync(MAX_DURABLE_QUEUE_ABORT_TIMEOUT_MS + 1);
+
+    await expect(result).resolves.toMatchObject({
+      outcome: "rejected",
+      retryable: true,
+      errorCode: "DURABLE_QUEUE_EXECUTION_TIMEOUT",
+    });
   });
 });
