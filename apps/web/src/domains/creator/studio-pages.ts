@@ -136,7 +136,8 @@ export function insertBlankPageAt<P extends PageLike>(
   makeId: () => string,
   canvasH: number = DEFAULT_CANVAS_H
 ): P[] {
-  const safeIdx = Math.max(0, Math.min(index, pages.length));
+  const normalized = Number.isFinite(index) ? Math.trunc(index) : pages.length;
+  const safeIdx = Math.max(0, Math.min(normalized, pages.length));
   const newPage = createBlankPage(makeId, canvasH) as P;
   const next = pages.slice();
   next.splice(safeIdx, 0, newPage);
@@ -150,6 +151,8 @@ export function reorderPages<P extends PageLike>(
   toIndex: number
 ): P[] {
   if (
+    !Number.isInteger(fromIndex) ||
+    !Number.isInteger(toIndex) ||
     fromIndex === toIndex ||
     fromIndex < 0 ||
     toIndex < 0 ||

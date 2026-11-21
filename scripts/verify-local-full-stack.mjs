@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * 운영 비용 0원 로컬 풀스택 통합 스모크 러너 (`pnpm run local:test:smoke`).
+ * 운영 비용 0원 로컬 풀스택 통합 스모크 러너 v2 (`pnpm run local:test:smoke`).
  *
- * 1) 충돌 없는 로컬 전용 포트(127.0.0.1)에 일회용 PostgreSQL 클러스터 기동
- * 2) 스키마 부트스트랩 + 로컬 샘플 시드 주입 + 실제 Postgres 테이블·행 수 조회
- * 3) 로컬 NestJS API 기동 및 /api/health/live · /api/health/ready · /api/health/capabilities 검증
- * 4) 실제 DB 연동 API(카탈로그·창작물·커뮤니티 카페·CSRF/로그인/세션/로그아웃) 검증
- * 5) 로컬 Vite Web 서버 기동 + / HTML 200 + 웹 프록시(/api/health/live · /api/health/ready · /api/creator/works) 검증
- * 6) Web → API → PostgreSQL 종료, 임시 디렉터리 삭제, 포트 해제 확인 후 JSON 실측 리포트 출력
+ * 1) 충돌 없는 로컬 전용 포트(127.0.0.1)에 오브젝트 스토리지 에뮬레이터 기동 + 바이너리 왕복(PUT→SHA-256→HEAD→LIST→GET→경로탐색 차단→DELETE) 검증
+ * 2) 일회용 로컬 PostgreSQL 클러스터 기동 + 스키마 부트스트랩
+ * 3) 기본 샘플 시드 + 6인 분업 스튜디오 시드 팩(멱등 재실행 포함) 주입 및 정합성 실측 조회
+ * 4) 로컬 NestJS API 기동 및 헬스/DB/인증(기본 계정 + studio-pd) 검증
+ * 5) 로컬 Vite Web 서버 기동 + / HTML 200 + 웹 프록시 검증
+ * 6) Web → API → 오브젝트 스토리지 → PostgreSQL 종료, 임시 디렉터리 삭제, 4포트 해제 확인 후 JSON 리포트 출력
  */
 
 import { spawn } from "node:child_process";
@@ -16,6 +16,15 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import {
+  startLocalObjectStorageEmulator,
+  verifyLocalObjectStorageRoundTrip,
+} from "./local-object-storage-emulator.mjs";
+import {
+  applyStudioSeedPack,
+  STUDIO_SEED_PD_EMAIL,
+  verifyStudioSeedPackIntegrity,
+} from "./local-studio-seed-pack.mjs";
 import {
   apiHealthUrl,
   apiReadyUrl,
@@ -41,6 +50,7 @@ import {
 export const SMOKE_DEFAULT_DB_PORT = 55439;
 export const SMOKE_DEFAULT_API_PORT = 4019;
 export const SMOKE_DEFAULT_WEB_PORT = 5189;
+export const SMOKE_DEFAULT_STORAGE_PORT = 59019;
 export const SMOKE_DEFAULT_TIMEOUT_MS = 180_000;
 export const SMOKE_CSRF_HEADER = "x-toonstudio-csrf";
 export const SMOKE_CSRF_HEADER_VALUE = "1";
@@ -80,7 +90,7 @@ function parsePositiveMs(rawValue, flagLabel) {
 export function parseVerifyLocalFullStackArgs(argv) {
   const options = {
     help: false, json: false, skipWeb: false,
-    dbPort: null, apiPort: null, webPort: null,
+    dbPort: null, apiPort: null, webPort: null, storagePort: null,
     timeoutMs: SMOKE_DEFAULT_TIMEOUT_MS,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -91,22 +101,24 @@ export function parseVerifyLocalFullStackArgs(argv) {
     else if (arg === "--db-port") { options.dbPort = parsePort(argv[index + 1], "--db-port"); index += 1; }
     else if (arg === "--api-port") { options.apiPort = parsePort(argv[index + 1], "--api-port"); index += 1; }
     else if (arg === "--web-port") { options.webPort = parsePort(argv[index + 1], "--web-port"); index += 1; }
+    else if (arg === "--storage-port") { options.storagePort = parsePort(argv[index + 1], "--storage-port"); index += 1; }
     else if (arg === "--timeout-ms") { options.timeoutMs = parsePositiveMs(argv[index + 1], "--timeout-ms"); index += 1; }
     else if (arg.startsWith("--db-port=")) options.dbPort = parsePort(arg.slice("--db-port=".length), "--db-port=");
     else if (arg.startsWith("--api-port=")) options.apiPort = parsePort(arg.slice("--api-port=".length), "--api-port=");
     else if (arg.startsWith("--web-port=")) options.webPort = parsePort(arg.slice("--web-port=".length), "--web-port=");
+    else if (arg.startsWith("--storage-port=")) options.storagePort = parsePort(arg.slice("--storage-port=".length), "--storage-port=");
     else if (arg.startsWith("--timeout-ms=")) options.timeoutMs = parsePositiveMs(arg.slice("--timeout-ms=".length), "--timeout-ms=");
     else throw new Error(`알 수 없는 인자: ${arg} (--help 참조)`);
   }
-  const explicit = [options.dbPort, options.apiPort, options.webPort].filter((port) => port !== null);
+  const explicit = [options.dbPort, options.apiPort, options.webPort, options.storagePort].filter((port) => port !== null);
   if (new Set(explicit).size !== explicit.length) {
-    throw new Error("포트 충돌: --db-port, --api-port, --web-port는 서로 달라야 합니다.");
+    throw new Error("포트 충돌: --db-port, --api-port, --web-port, --storage-port는 서로 달라야 합니다.");
   }
   return options;
 }
 
 export async function resolveSmokePorts(
-  { dbPort = null, apiPort = null, webPort = null } = {},
+  { dbPort = null, apiPort = null, webPort = null, storagePort = null } = {},
   portTools = { isTcpPortFree, findAvailablePort },
 ) {
   const reserved = new Set();
@@ -125,6 +137,7 @@ export async function resolveSmokePorts(
     dbPort: await pick(dbPort, SMOKE_DEFAULT_DB_PORT, "DB"),
     apiPort: await pick(apiPort, SMOKE_DEFAULT_API_PORT, "API"),
     webPort: await pick(webPort, SMOKE_DEFAULT_WEB_PORT, "Web"),
+    storagePort: await pick(storagePort, SMOKE_DEFAULT_STORAGE_PORT, "Storage"),
   };
 }
 
@@ -159,14 +172,16 @@ export function validateDatabaseRowSummary(summary) {
 }
 
 export function buildSmokeReport({
-  startedAt, finishedAt, ports, postgres, database, steps, checks, cleanup, error = null,
+  startedAt, finishedAt, ports, postgres, database, storage = null, studioSeed = null, steps, checks, cleanup, error = null,
 }) {
   const stepsOk = steps.every((step) => step.ok);
   const checksOk = checks.length > 0 && checks.every((check) => check.ok);
   const cleanupOk = Boolean(cleanup?.clusterRemoved)
+    && Boolean(cleanup?.storageRemoved)
     && Boolean(cleanup?.portsReleased?.db)
     && Boolean(cleanup?.portsReleased?.api)
-    && Boolean(cleanup?.portsReleased?.web);
+    && Boolean(cleanup?.portsReleased?.web)
+    && Boolean(cleanup?.portsReleased?.storage);
   return {
     ok: error === null && stepsOk && checksOk && cleanupOk,
     startedAt,
@@ -177,6 +192,8 @@ export function buildSmokeReport({
     ports,
     postgres,
     database,
+    storage,
+    studioSeed,
     steps,
     checks,
     cleanup,
@@ -300,10 +317,11 @@ async function verifyApiAndDbEndpoints({ apiBase, webOrigin, checks }) {
     const { response, body, snippet } = await fetchJsonSafe(`${apiBase}/api/creator/works`);
     const works = Array.isArray(body) ? body : [];
     const hasSeedWork = works.some((work) => work?.id === "seed-work-1");
-    if (response.status !== 200 || works.length < 3 || !hasSeedWork) {
-      throw new Error(`시드 창작물 조회 실패: status=${response.status}, count=${works.length}, body=${snippet}`);
+    const hasStudioEpisode = works.some((work) => work?.id === "studio-ep-1");
+    if (response.status !== 200 || works.length < 4 || !hasSeedWork || !hasStudioEpisode) {
+      throw new Error(`시드 창작물 조회 실패: status=${response.status}, count=${works.length}, studioEp=${String(hasStudioEpisode)}, body=${snippet}`);
     }
-    return { status: response.status, workCount: works.length, seedWorkFound: hasSeedWork };
+    return { status: response.status, workCount: works.length, seedWorkFound: hasSeedWork, studioEpisodeFound: hasStudioEpisode };
   });
 
   await runCheck(checks, "api.community.cafes", async () => {
@@ -368,6 +386,28 @@ async function verifyApiAndDbEndpoints({ apiBase, webOrigin, checks }) {
       sessionRevokedAfterLogout: true,
     };
   });
+
+  await runCheck(checks, "api.studio_seed.pd_login_roundtrip", async () => {
+    const login = await fetchJsonSafe(`${apiBase}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: webOrigin, [SMOKE_CSRF_HEADER]: SMOKE_CSRF_HEADER_VALUE },
+      body: JSON.stringify({ email: STUDIO_SEED_PD_EMAIL, password: SMOKE_SEED_TEST_CREDENTIAL }),
+    });
+    const cookie = extractSessionCookie(readSetCookieHeaders(login.response));
+    if (!login.response.ok || login.body?.ok !== true || !cookie?.httpOnly) {
+      throw new Error(`6인 스튜디오 PD 로그인 실패: status=${login.response.status}, cookieIssued=${Boolean(cookie)}`);
+    }
+    const authed = await fetchJsonSafe(`${apiBase}/api/auth/session`, { headers: { Cookie: cookie.pair } });
+    if (authed.response.status !== 200 || authed.body?.authenticated !== true || authed.body?.user?.id !== "studio-pd") {
+      throw new Error(`6인 스튜디오 PD 세션 검증 실패: status=${authed.response.status}`);
+    }
+    const logout = await fetchJsonSafe(`${apiBase}/api/auth/logout`, {
+      method: "POST",
+      headers: { Origin: webOrigin, Cookie: cookie.pair, [SMOKE_CSRF_HEADER]: SMOKE_CSRF_HEADER_VALUE },
+    });
+    if (!logout.response.ok) throw new Error(`6인 스튜디오 PD 로그아웃 실패: status=${logout.response.status}`);
+    return { loginStatus: login.response.status, authenticatedUserId: authed.body.user.id, sessionRevokedAfterLogout: true };
+  });
 }
 
 async function verifyWebAndProxy({ webOrigin, checks }) {
@@ -417,20 +457,18 @@ async function verifyWebAndProxy({ webOrigin, checks }) {
 
 function printHelp() {
   process.stdout.write([
-    "사용법: pnpm run local:test:smoke [옵션]",
-    "",
-    "  일회용 로컬 PostgreSQL + 스키마/시드 + NestJS API + Vite Web 풀스택을",
-    "  127.0.0.1에 격리 기동해 실측 검증한 뒤 프로세스와 임시 DB를 100% 정리한다.",
-    "",
+    "사용법: pnpm run local:test:smoke [옵션]", "",
+    "  일회용 로컬 오브젝트 스토리지 에뮬레이터 + PostgreSQL + 스키마/6인 분업 시드 + NestJS API + Vite Web 풀스택을",
+    "  127.0.0.1에 격리 기동해 실측 검증한 뒤 프로세스·임시 파일·4포트를 100% 정리한다.", "",
     "옵션:",
     "  --db-port N       로컬 일회용 DB 포트 고정 (미지정 시 55439부터 빈 포트 자동 선택)",
     "  --api-port N      로컬 API 포트 고정 (미지정 시 4019부터 빈 포트 자동 선택)",
     "  --web-port N      로컬 Web 포트 고정 (미지정 시 5189부터 빈 포트 자동 선택)",
+    "  --storage-port N  로컬 오브젝트 스토리지 포트 고정 (미지정 시 59019부터 빈 포트 자동 선택)",
     "  --timeout-ms N    서버 기동 대기 시간(ms, 기본 180000)",
-    "  --skip-web        Vite Web 서버 검증 생략 (DB + API만 실행)",
+    "  --skip-web        Vite Web 서버 검증 생략 (스토리지 + DB + API만 실행)",
     "  --json            진행 로그를 숨기고 JSON 리포트만 stdout에 출력",
-    "  --help, -h        이 도움말",
-    "",
+    "  --help, -h        이 도움말", "",
   ].join("\n"));
 }
 
@@ -449,28 +487,43 @@ export async function runLocalFullStackSmoke(options) {
   // macOS AF_UNIX 소켓 경로 길이 제한(104B)을 피하기 위해 짧은 임시 디렉터리 접두사를 사용한다.
   const tempRoot = mkdtempSync(join(tmpdir(), "ts-pg-"));
   const clusterDir = join(tempRoot, "pg");
+  const storageDir = join(tempRoot, "obj");
   const viteCacheDir = join(tempRoot, "vc");
 
   const steps = [];
   const checks = [];
   let apiChild = null;
   let webChild = null;
+  let storageInstance = null;
   let postgresMeta = { binDir: postgresBinDir, version: null, backend: "local-cluster" };
   let databaseMeta = null;
+  let storageMeta = null;
+  let studioSeedMeta = null;
   let runError = null;
   let cleanedUp = false;
 
   const cleanupResources = async () => {
     if (cleanedUp) return null;
     cleanedUp = true;
-    log("[cleanup] Web · API · 로컬 PostgreSQL 프로세스 및 임시 클러스터 정리 중…");
+    log("[cleanup] Web · API · 로컬 오브젝트 스토리지 · PostgreSQL 프로세스 및 임시 디렉터리 정리 중…");
     await terminateChildProcess(webChild, { graceMs: 5000 });
     await terminateChildProcess(apiChild, { graceMs: 5000 });
+    let storageClosed = { storageRemoved: !existsSync(storageDir) };
+    if (storageInstance) {
+      storageClosed = await storageInstance.close();
+      storageInstance = null;
+    }
     await stopLocalPostgresCluster({ clusterDir, postgresBinDir, removeDir: true });
     rmSync(tempRoot, { recursive: true, force: true });
     const waitFree = (port) => waitFor(`port-${port}`, () => isTcpPortFree(port), { timeoutMs: 5_000, intervalMs: 250 });
-    const [db, api, web] = await Promise.all([waitFree(ports.dbPort), waitFree(ports.apiPort), waitFree(ports.webPort)]);
-    return { clusterRemoved: !existsSync(tempRoot), portsReleased: { db, api, web } };
+    const [db, api, web, storage] = await Promise.all([
+      waitFree(ports.dbPort), waitFree(ports.apiPort), waitFree(ports.webPort), waitFree(ports.storagePort),
+    ]);
+    return {
+      clusterRemoved: !existsSync(tempRoot),
+      storageRemoved: Boolean(storageClosed.storageRemoved) && !existsSync(storageDir),
+      portsReleased: { db, api, web, storage },
+    };
   };
 
   const onSignal = (signal) => {
@@ -482,6 +535,27 @@ export async function runLocalFullStackSmoke(options) {
 
   let cleanupSummary;
   try {
+    await runStep(steps, "object_storage_startup", async () => {
+      log(`[storage] 로컬 S3/R2 오브젝트 스토리지 에뮬레이터 기동 중 (127.0.0.1:${ports.storagePort})…`);
+      storageInstance = await startLocalObjectStorageEmulator({
+        port: ports.storagePort, rootDir: storageDir, cleanupOnClose: true,
+      });
+    });
+
+    await runStep(steps, "object_storage_verification", async () => {
+      const roundTrip = await runCheck(checks, "storage.binary_roundtrip", () =>
+        verifyLocalObjectStorageRoundTrip(storageInstance.baseUrl));
+      storageMeta = {
+        endpoint: roundTrip.endpoint,
+        bucket: roundTrip.bucket,
+        key: roundTrip.key,
+        bytesVerified: roundTrip.bytesVerified,
+        sha256: roundTrip.sha256,
+        traversalBlocked: roundTrip.traversalBlocked,
+        deletedVerified: roundTrip.deletedVerified,
+      };
+    });
+
     const cluster = await runStep(steps, "postgres_cluster", async () => {
       const started = await startLocalPostgresCluster({ clusterDir, dbPort: ports.dbPort, postgresBinDir, log, ephemeral: true });
       if (isRemoteDatabaseUrl(started.databaseUrl) || isRemoteDatabaseUrl(started.runtimeDatabaseUrl)) {
@@ -495,12 +569,42 @@ export async function runLocalFullStackSmoke(options) {
 
     await runStep(steps, "local_seed", async () => {
       await seedDisposableDatabase(cluster.databaseUrl, { managedDisposable: true, environmentDatabaseUrl: "", postgresBinDir, log });
+      const firstStudioSeed = await applyStudioSeedPack(cluster.databaseUrl, { managedDisposable: true, environmentDatabaseUrl: "", postgresBinDir, log });
+      await applyStudioSeedPack(cluster.databaseUrl, { managedDisposable: true, environmentDatabaseUrl: "", postgresBinDir, log: () => {} });
+
       const summary = await inspectLocalPostgresSummary(cluster.databaseUrl, postgresBinDir);
       postgresMeta = { binDir: postgresBinDir, version: typeof summary.version === "string" ? summary.version.split(",")[0] : null, backend: "local-cluster" };
       databaseMeta = { url: redactDatabaseUrl(cluster.runtimeDatabaseUrl), publicTableCount: summary.publicTableCount, tableRows: summary.tableRows };
       const validation = validateDatabaseRowSummary(summary);
       if (!validation.ok) throw new Error(`로컬 DB 시드 정합성 검증 실패: ${validation.failures.join("; ")}`);
       checks.push({ name: "db.seeded_tables", ok: true, durationMs: 0, publicTableCount: summary.publicTableCount, tableRows: summary.tableRows });
+
+      const studioCheck = await runCheck(checks, "db.studio_seed_pack", async () => {
+        const verified = await verifyStudioSeedPackIntegrity(cluster.databaseUrl, { postgresBinDir });
+        if (!verified.ok) throw new Error(`6인 스튜디오 시드 정합성 실패: ${verified.failures.join("; ")}`);
+        return {
+          teamMemberCount: verified.teamUserIds.length,
+          episodeCount: verified.episodeIds.length,
+          revisionCount: verified.revisionCount,
+          collaboratorCount: verified.collaboratorCount,
+          cutSliceCount: verified.embeddedSliceCount,
+          artBibleTokenCount: verified.artBibleTokenCount,
+          baseSeedCoexists: verified.baseSeedCoexists,
+          idempotentVerified: true,
+        };
+      });
+      studioSeedMeta = {
+        packId: firstStudioSeed.packId,
+        teamMemberIds: firstStudioSeed.teamMemberIds,
+        episodeIds: firstStudioSeed.episodeIds,
+        cutSliceCount: studioCheck.cutSliceCount,
+        artBibleId: firstStudioSeed.artBibleId,
+        artBibleTokenCount: studioCheck.artBibleTokenCount,
+        baseSeedCoexists: studioCheck.baseSeedCoexists,
+        idempotentVerified: true,
+        appliedTables: firstStudioSeed.appliedTables,
+        skippedOptionalTables: firstStudioSeed.skippedOptionalTables,
+      };
     });
 
     await runStep(steps, "api_startup", async () => {
@@ -510,6 +614,7 @@ export async function runLocalFullStackSmoke(options) {
         databaseUrl: cluster.runtimeDatabaseUrl,
         apiPort: ports.apiPort,
         webPort: ports.webPort,
+        storageEndpoint: storageInstance.baseUrl,
         runtimeRoleSeparated: true,
         postgresBinDir,
         extra: { COVER_IMAGE_POLICY: "off" },
@@ -579,6 +684,8 @@ export async function runLocalFullStackSmoke(options) {
     ports,
     postgres: postgresMeta,
     database: databaseMeta,
+    storage: storageMeta,
+    studioSeed: studioSeedMeta,
     steps,
     checks,
     cleanup: cleanupSummary,

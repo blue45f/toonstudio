@@ -147,73 +147,75 @@ export const SpaceMinimap = memo(function SpaceMinimap({
   const stage = <div className="space-minimap__stage" data-variant={variant}
     style={{ aspectRatio: `${manifest.width} / ${manifest.height}` } as CSSProperties}>
     <button type="button" className="space-minimap__surface" onClick={moveFromClick}
-      aria-label={bt("지도에서 걸어갈 곳 선택", "Choose where to walk on the map")}>
-      <svg viewBox={`0 0 ${manifest.width} ${manifest.height}`} preserveAspectRatio="xMidYMid meet" aria-hidden focusable="false">
-        <rect className="space-minimap__ground" x={0} y={0} width={manifest.width} height={manifest.height} rx={labelSize} />
-        {illustrationUrl ? <image className="space-minimap__illustration" href={illustrationUrl}
-          x={0} y={0} width={manifest.width} height={manifest.height} preserveAspectRatio="none" /> : null}
-        {zones.map((zone) => <g key={zone.id} className="space-minimap__zone" data-active={zone.id === currentRoomId || undefined}
-          data-role-recommended={highlightRooms.has(zone.id) || undefined}
-          style={{ "--space-zone-tone": zone.tone } as CSSProperties}>
-          <title>{zone.label}</title>
-          <rect x={zone.x} y={zone.y} width={zone.width} height={zone.height} rx={labelSize * 0.35} />
-          {highlightRooms.has(zone.id) ? <circle className="space-minimap__role-marker"
-            cx={zone.x + zone.width - labelSize * 0.55} cy={zone.y + labelSize * 0.55} r={labelSize * 0.3} /> : null}
-          {(() => {
-            const placed = placedLabels.get(zone.id);
-            return placed ? <text x={zone.x + zone.width / 2} y={zone.y + zone.height / 2} fontSize={placed.fontSize} textAnchor="middle" dominantBaseline="middle">{placed.text}</text> : null;
-          })()}
-        </g>)}
-        {gates.map((gate) => <g key={gate.id} className="space-minimap__gate" transform={`translate(${gate.point.x} ${gate.point.y})`}>
-          <rect x={-labelSize * 0.45} y={-labelSize * 0.45} width={labelSize * 0.9} height={labelSize * 0.9} transform="rotate(45)" />
-        </g>)}
-        {clusteredPeople.map((cluster) => {
-          const leadName = cluster.names[0]?.trim() ?? "";
-          const badgeText = cluster.count > 1 ? `+${cluster.count}` : leadName.charAt(0);
-          return <g key={cluster.id} className="space-minimap__peer-pin" data-count={cluster.count}
-            transform={`translate(${cluster.x} ${cluster.y})`}
-            onClick={(event) => event.stopPropagation()}
-            onDoubleClick={(event) => {
-              event.stopPropagation();
-              onMoveTo(clampStudioWorldPoint(manifest, spaceMinimapPeerTarget({ x: cluster.x, y: cluster.y }, cluster.id)));
-            }}>
-            <title>{cluster.names.join(", ")}</title>
-            <circle className="space-minimap__peer" r={labelSize * (cluster.count > 1 ? 0.48 : 0.38)} />
-            {(full && badgeText) || cluster.count > 1 ? <text className="space-minimap__peer-initial" fontSize={labelSize * 0.42}
-              textAnchor="middle" dominantBaseline="central" aria-hidden>{badgeText}</text> : null}
-          </g>;
-        })}
-        {destination ? <g className="space-minimap__destination" transform={`translate(${destination.x} ${destination.y})`}>
-          <circle className="space-minimap__destination-ring" r={labelSize * 0.95} />
-          <circle className="space-minimap__destination-dot" r={labelSize * 0.42} />
-        </g> : null}
-        <circle className="space-minimap__self-ring" cx={self.x} cy={self.y} r={labelSize * 0.95} />
-        <circle className="space-minimap__self" cx={self.x} cy={self.y} r={labelSize * 0.5} />
-      </svg>
-    </button>
+      aria-label={bt("지도에서 걸어갈 곳 선택", "Choose where to walk on the map")} />
+    <svg className="space-minimap__svg" viewBox={`0 0 ${manifest.width} ${manifest.height}`} preserveAspectRatio="xMidYMid meet" aria-hidden focusable="false">
+      <rect className="space-minimap__ground" x={0} y={0} width={manifest.width} height={manifest.height} rx={labelSize} />
+      {illustrationUrl ? <image className="space-minimap__illustration" href={illustrationUrl}
+        x={0} y={0} width={manifest.width} height={manifest.height} preserveAspectRatio="none" /> : null}
+      {zones.map((zone) => <g key={zone.id} className="space-minimap__zone" data-active={zone.id === currentRoomId || undefined}
+        data-role-recommended={highlightRooms.has(zone.id) || undefined}
+        style={{ "--space-zone-tone": zone.tone } as CSSProperties}>
+        <title>{zone.label}</title>
+        <rect x={zone.x} y={zone.y} width={zone.width} height={zone.height} rx={labelSize * 0.35} />
+        {highlightRooms.has(zone.id) ? <circle className="space-minimap__role-marker"
+          cx={zone.x + zone.width - labelSize * 0.55} cy={zone.y + labelSize * 0.55} r={labelSize * 0.3} /> : null}
+        {(() => {
+          const placed = placedLabels.get(zone.id);
+          return placed ? <text x={zone.x + zone.width / 2} y={zone.y + zone.height / 2} fontSize={placed.fontSize} textAnchor="middle" dominantBaseline="middle">{placed.text}</text> : null;
+        })()}
+      </g>)}
+      {gates.map((gate) => <g key={gate.id} className="space-minimap__gate" transform={`translate(${gate.point.x} ${gate.point.y})`}>
+        <rect x={-labelSize * 0.45} y={-labelSize * 0.45} width={labelSize * 0.9} height={labelSize * 0.9} transform="rotate(45)" />
+      </g>)}
+      {clusteredPeople.map((cluster) => {
+        const leadName = cluster.names[0]?.trim() ?? "";
+        const badgeText = cluster.count > 1 ? `+${cluster.count}` : leadName.charAt(0);
+        return <g key={cluster.id} className="space-minimap__peer-pin" data-count={cluster.count}
+          transform={`translate(${cluster.x} ${cluster.y})`}
+          onClick={(event) => event.stopPropagation()}
+          onDoubleClick={(event) => {
+            event.stopPropagation();
+            onMoveTo(clampStudioWorldPoint(manifest, spaceMinimapPeerTarget({ x: cluster.x, y: cluster.y }, cluster.id)));
+          }}>
+          <title>{cluster.names.join(", ")}</title>
+          <circle className="space-minimap__peer" r={labelSize * (cluster.count > 1 ? 0.48 : 0.38)} />
+          {(full && badgeText) || cluster.count > 1 ? <text className="space-minimap__peer-initial" fontSize={labelSize * 0.42}
+            textAnchor="middle" dominantBaseline="central" aria-hidden>{badgeText}</text> : null}
+        </g>;
+      })}
+      {destination ? <g className="space-minimap__destination" transform={`translate(${destination.x} ${destination.y})`}>
+        <circle className="space-minimap__destination-ring" r={labelSize * 0.95} />
+        <circle className="space-minimap__destination-dot" r={labelSize * 0.42} />
+      </g> : null}
+      <circle className="space-minimap__self-ring" cx={self.x} cy={self.y} r={labelSize * 0.95} />
+      <circle className="space-minimap__self" cx={self.x} cy={self.y} r={labelSize * 0.5} />
+    </svg>
     {/* 구역 버튼 중심을 구역 중심에 두고 바로 가기 마커는 그 버튼의 오른쪽 위 모서리에 붙인다. 마커를 구역 모서리에 따로 두면 짧은 구역에서
         마커가 버튼 안으로 들어와 라벨 글자를 가렸다(GAME의 E). */}
-    {full ? zones.map((zone) => <div key={zone.id} className="space-minimap__zone-actions"
-      style={{
-        left: `${((zone.x + zone.width / 2) / manifest.width) * 100}%`,
-        top: `${((zone.y + zone.height / 2) / manifest.height) * 100}%`,
-      } as CSSProperties}>
-      <button type="button" className="space-minimap__zone-button"
-        data-active={zone.id === currentRoomId || undefined}
-        data-role-recommended={highlightRooms.has(zone.id) || undefined}
-        style={{ "--space-zone-tone": zone.tone } as CSSProperties}
-        title={zone.label}
-        onClick={() => onMoveTo(zone.spawn)}
-        aria-label={bt(`${spaceKoParticle(zone.label, "으로")} 걸어가기`, `Walk to ${zone.label}`)}>
-        <span aria-hidden>{zone.width <= manifest.width * 0.22 && zone.shortSign ? zone.shortSign : zone.sign}</span>
-      </button>
-      {onJumpTo ? <button type="button" className="space-minimap__zone-jump"
-        onClick={() => onJumpTo(zone.spawn)}
-        aria-label={bt(`${spaceKoParticle(zone.label, "으로")} 바로 가기`, `Quick travel to ${zone.label}`)}
-        title={bt("바로 가기", "Quick travel")}>
-        <Zap size={12} aria-hidden />
-      </button> : null}
-    </div>) : null}
+    {full ? zones.map((zone) => {
+      const displaySign = zone.width <= manifest.width * 0.22 && zone.shortSign ? zone.shortSign : zone.sign;
+      return <div key={zone.id} className="space-minimap__zone-actions"
+        style={{
+          left: `${((zone.x + zone.width / 2) / manifest.width) * 100}%`,
+          top: `${((zone.y + zone.height / 2) / manifest.height) * 100}%`,
+        } as CSSProperties}>
+        <button type="button" className="space-minimap__zone-button"
+          data-active={zone.id === currentRoomId || undefined}
+          data-role-recommended={highlightRooms.has(zone.id) || undefined}
+          style={{ "--space-zone-tone": zone.tone } as CSSProperties}
+          title={zone.label}
+          onClick={() => onMoveTo(zone.spawn)}
+          aria-label={`${displaySign} · ${bt(`${spaceKoParticle(zone.label, "으로")} 걸어가기`, `Walk to ${zone.label}`)}`}>
+          <span aria-hidden>{displaySign}</span>
+        </button>
+        {onJumpTo ? <button type="button" className="space-minimap__zone-jump"
+          onClick={() => onJumpTo(zone.spawn)}
+          aria-label={bt(`${spaceKoParticle(zone.label, "으로")} 바로 가기`, `Quick travel to ${zone.label}`)}
+          title={bt("바로 가기", "Quick travel")}>
+          <Zap size={12} aria-hidden />
+        </button> : null}
+      </div>;
+    }) : null}
   </div>;
 
   if (full) {
@@ -222,11 +224,12 @@ export const SpaceMinimap = memo(function SpaceMinimap({
       {gates.length ? <div className="space-minimap__gates" role="group" aria-label={bt("다른 장소 게이트", "Gates to other places")}>
         {gates.map((gate) => {
           const armed = armedGateId === gate.id;
+          const visibleGateText = `${gate.label}${armed ? bt(" · 한 번 더 눌러 이동", " · tap again to go") : ""}`;
           return <button key={gate.id} type="button" className="space-minimap__gate-chip" data-armed={armed || undefined}
             aria-label={onJumpToPlace
               ? (armed
-                ? bt(`${gate.labelKo} 바로 가기 확인`, `Confirm quick travel to ${gate.labelEn}`)
-                : bt(`${spaceKoParticle(gate.labelKo, "으로")} 바로 가기`, `Quick travel to ${gate.labelEn}`))
+                ? `${visibleGateText} · ${bt(`${gate.labelKo} 바로 가기 확인`, `Confirm quick travel to ${gate.labelEn}`)}`
+                : `${visibleGateText} · ${bt(`${spaceKoParticle(gate.labelKo, "으로")} 바로 가기`, `Quick travel to ${gate.labelEn}`)}`)
               : bt(`${gate.labelKo} 게이트까지 걷기`, `Walk to the ${gate.labelEn} gate`)}
             onClick={() => {
               if (!onJumpToPlace) { onMoveTo(gate.point); return; }
@@ -234,7 +237,7 @@ export const SpaceMinimap = memo(function SpaceMinimap({
               else setArmedGateId(gate.id);
             }}>
             {onJumpToPlace ? <Zap size={12} aria-hidden /> : null}
-            {gate.label}{armed ? bt(" · 한 번 더 눌러 이동", " · tap again to go") : ""}
+            {visibleGateText}
           </button>;
         })}
       </div> : null}
@@ -248,14 +251,16 @@ export const SpaceMinimap = memo(function SpaceMinimap({
       </ul>
     </div>;
   }
+  const toggleTitle = bt("지도", "Map");
+  const toggleVisible = currentZone ? `${toggleTitle} ${currentZone.label}` : toggleTitle;
   return <section className="space-minimap" data-expanded={expanded || undefined} data-illustrated={illustrationUrl ? true : undefined} data-space-interactive="true"
     aria-label={bt("미니맵", "Minimap")}>
     <header className="space-minimap__header">
       <button type="button" className="space-minimap__toggle" onClick={onToggleExpanded} aria-expanded={expanded}
-        aria-label={expanded ? bt("미니맵 접기", "Collapse minimap") : bt("미니맵 펼치기", "Expand minimap")}>
+        aria-label={`${toggleVisible} · ${expanded ? bt("미니맵 접기", "Collapse minimap") : bt("미니맵 펼치기", "Expand minimap")}`}>
         <MapIcon size={15} aria-hidden />
-        <span className="space-minimap__title" aria-hidden>{bt("지도", "Map")}</span>
-        {currentZone ? <span className="space-minimap__current" aria-hidden>{currentZone.label}</span> : null}
+        <span className="space-minimap__title" aria-hidden>{toggleTitle}</span>
+        {currentZone ? <>{" "}<span className="space-minimap__current" aria-hidden>{currentZone.label}</span></> : null}
       </button>
       {onOpenFull ? <button type="button" className="space-icon-button" onClick={onOpenFull} data-space-toggle="map"
         aria-label={bt("큰 지도 열기 (M)", "Open the large map (M)")} aria-keyshortcuts="M">

@@ -11,6 +11,13 @@
  * reduced-motion에서는 모든 스폰을 억제한다.
  */
 
+import {
+  resolveDramaticVfxRenderPlan,
+  resolveFloorMaterialFootstepVfx,
+  type StudioDramaticVfxId,
+  type StudioDramaticVfxRenderPlan,
+  type StudioFloorMaterialKind,
+} from "./studio-virtual-space-dramatic-vfx-catalog";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 
 /** 잔상이 생기는 속도 비율 (최대 속도 대비). */
@@ -217,4 +224,213 @@ export function stepStudioSkidDust(
     state: Object.freeze({ carry: accumulated - count }),
     request: { ...base, count },
   };
+}
+
+/** 대시 스피드라인·잔상 틴트 스폰 요청. */
+export interface StudioDashSpeedlineRequest {
+  readonly x: number;
+  readonly y: number;
+  readonly angleRad: number;
+  readonly lengthPx: number;
+  readonly colorHex: string;
+  readonly colorOklch: string;
+  readonly alpha: number;
+  readonly lifetimeMs: number;
+}
+
+export interface StudioDashSpeedlineState {
+  readonly nextEmitAt: number;
+  readonly sequence: number;
+}
+
+export const STUDIO_DASH_SPEEDLINE_INTERVAL_MS = 75;
+
+export function createStudioDashSpeedlineState(): StudioDashSpeedlineState {
+  return Object.freeze({ nextEmitAt: 0, sequence: 0 });
+}
+
+function facingBackAngleRad(facing: StudioVirtualSpaceFacing): number {
+  switch (facing) {
+    case "right": return Math.PI;
+    case "left": return 0;
+    case "down": return -Math.PI / 2;
+    case "up": return Math.PI / 2;
+  }
+}
+
+/**
+ * 대시 스피드라인·네온 잔상 스텝.
+ * 최고속의 80% 이상 질주할 때 방향 반대쪽으로 방사형 스피드라인을 방출하며,
+ * reduced-motion에서는 입자 대신 정적 글로우 플랜만 반환한다.
+ */
+export function stepStudioDashSpeedlines(
+  state: StudioDashSpeedlineState,
+  input: {
+    readonly position: StudioVirtualSpacePoint;
+    readonly facing: StudioVirtualSpaceFacing;
+    readonly speed: number;
+    readonly maxSpeed: number;
+    readonly now: number;
+    readonly reducedMotion: boolean;
+  },
+): {
+  readonly state: StudioDashSpeedlineState;
+  readonly requests: readonly StudioDashSpeedlineRequest[];
+  readonly renderPlan: StudioDramaticVfxRenderPlan;
+} {
+  const now = Number.isFinite(input.now) ? input.now : 0;
+  const speed = Number.isFinite(input.speed) ? Math.max(0, input.speed) : 0;
+  const maxSpeed = Number.isFinite(input.maxSpeed) ? Math.max(0, input.maxSpeed) : 0;
+  const renderPlan = resolveDramaticVfxRenderPlan("dash-speedlines", {
+    reducedMotion: input.reducedMotion,
+    intensityScale: maxSpeed > 0 ? Math.min(1.5, speed / maxSpeed) : 1,
+  });
+
+  const active = !input.reducedMotion
+    && studioAfterimageFastEnough(speed, maxSpeed)
+    && now >= state.nextEmitAt;
+
+  if (!active) {
+    const shouldReset = speed < maxSpeed * STUDIO_AFTERIMAGE_SPEED_RATIO && state.nextEmitAt > now;
+    return {
+      state: shouldReset ? Object.freeze({ nextEmitAt: now, sequence: state.sequence }) : state,
+      requests: Object.freeze([]),
+      renderPlan,
+    };
+  }
+
+  const baseAngle = facingBackAngleRad(input.facing);
+  const spec = renderPlan.spec;
+  const streaks: StudioDashSpeedlineRequest[] = [-0.28, 0, 0.28].map((spread, index) => {
+    const useAccent = (state.sequence + index) % 2 === 1;
+    return Object.freeze({
+      x: input.position.x + Math.cos(baseAngle + spread) * 8,
+      y: input.position.y - 10 + (index - 1) * 7,
+      angleRad: baseAngle + spread * 0.55,
+      lengthPx: 14 + index * 4,
+      colorHex: useAccent ? spec.secondaryHex : spec.primaryHex,
+      colorOklch: useAccent ? spec.secondaryOklch : spec.primaryOklch,
+      alpha: 0.78 - index * 0.1,
+      lifetimeMs: 220 + index * 35,
+    });
+  });
+
+  return {
+    state: Object.freeze({
+      nextEmitAt: now + STUDIO_DASH_SPEEDLINE_INTERVAL_MS,
+      sequence: state.sequence + 1,
+    }),
+    requests: Object.freeze(streaks),
+    renderPlan,
+  };
+}
+
+/** 바닥 재질별(나무·대리석·잔디·네온타일 등) 발자국·파문 VFX 스폰 요청. */
+export interface StudioFootstepRippleVfxRequest {
+  readonly x: number;
+  readonly y: number;
+  readonly material: StudioFloorMaterialKind;
+  readonly dramaticVfxId: StudioDramaticVfxId;
+  readonly rippleKind: "warm-dust" | "starlight-wave" | "petal-dew" | "neon-pulse" | "soft-lint";
+  readonly primaryOklch: string;
+  readonly primaryHex: string;
+  readonly secondaryHex: string;
+  readonly ringCount: number;
+  readonly ringRadiusPx: number;
+  readonly sparkCount: number;
+  readonly dustCount: number;
+  readonly lifetimeMs: number;
+  readonly renderPlan: StudioDramaticVfxRenderPlan;
+}
+
+export function resolveStudioFootstepRippleVfx(input: {
+  readonly position: StudioVirtualSpacePoint;
+  readonly material: StudioFloorMaterialKind;
+  readonly sprinting: boolean;
+  readonly reducedMotion: boolean;
+}): StudioFootstepRippleVfxRequest {
+  const recipe = resolveFloorMaterialFootstepVfx(input.material);
+  const renderPlan = resolveDramaticVfxRenderPlan(recipe.dramaticVfxId, {
+    reducedMotion: input.reducedMotion,
+    intensityScale: input.sprinting ? 1.35 : 1,
+  });
+  if (input.reducedMotion) {
+    return Object.freeze({
+      x: input.position.x,
+      y: input.position.y,
+      material: input.material,
+      dramaticVfxId: recipe.dramaticVfxId,
+      rippleKind: recipe.rippleKind,
+      primaryOklch: recipe.primaryOklch,
+      primaryHex: recipe.primaryHex,
+      secondaryHex: recipe.secondaryHex,
+      ringCount: 0,
+      ringRadiusPx: 0,
+      sparkCount: 0,
+      dustCount: 0,
+      lifetimeMs: 0,
+      renderPlan,
+    });
+  }
+  return Object.freeze({
+    x: input.position.x,
+    y: input.position.y,
+    material: input.material,
+    dramaticVfxId: recipe.dramaticVfxId,
+    rippleKind: recipe.rippleKind,
+    primaryOklch: recipe.primaryOklch,
+    primaryHex: recipe.primaryHex,
+    secondaryHex: recipe.secondaryHex,
+    ringCount: input.sprinting ? Math.max(2, renderPlan.effectiveRingCount) : 1,
+    ringRadiusPx: Math.round((input.sprinting ? 20 : 14) * recipe.ringRadiusScale),
+    sparkCount: input.sprinting ? recipe.sparkCount + 2 : recipe.sparkCount,
+    dustCount: input.sprinting ? recipe.dustCount + 2 : recipe.dustCount,
+    lifetimeMs: input.sprinting ? 560 : 440,
+    renderPlan,
+  });
+}
+
+/** 착지 먼지 링 + 바닥 재질 충격파 스폰 요청. */
+export interface StudioLandingRingVfxRequest {
+  readonly x: number;
+  readonly y: number;
+  readonly material: StudioFloorMaterialKind;
+  readonly ringRadiusPx: number;
+  readonly dustCount: number;
+  readonly sparkCount: number;
+  readonly primaryHex: string;
+  readonly secondaryHex: string;
+  readonly primaryOklch: string;
+  readonly lifetimeMs: number;
+  readonly reducedMotion: boolean;
+  readonly renderPlan: StudioDramaticVfxRenderPlan;
+}
+
+export function createStudioLandingRingVfx(input: {
+  readonly position: StudioVirtualSpacePoint;
+  readonly material: StudioFloorMaterialKind;
+  readonly impactSpeed: number;
+  readonly reducedMotion: boolean;
+}): StudioLandingRingVfxRequest {
+  const recipe = resolveFloorMaterialFootstepVfx(input.material);
+  const safeImpact = Number.isFinite(input.impactSpeed) ? Math.max(0, input.impactSpeed) : 0;
+  const impactScale = Math.max(0.75, Math.min(1.8, safeImpact / 220));
+  const renderPlan = resolveDramaticVfxRenderPlan(recipe.dramaticVfxId, {
+    reducedMotion: input.reducedMotion,
+    intensityScale: impactScale,
+  });
+  return Object.freeze({
+    x: input.position.x,
+    y: input.position.y,
+    material: input.material,
+    ringRadiusPx: input.reducedMotion ? 0 : Math.round(22 * recipe.ringRadiusScale * impactScale),
+    dustCount: input.reducedMotion ? 0 : Math.min(14, Math.round((recipe.dustCount + 4) * impactScale)),
+    sparkCount: input.reducedMotion ? 0 : Math.max(2, Math.round((recipe.sparkCount + 2) * impactScale)),
+    primaryHex: recipe.primaryHex,
+    secondaryHex: recipe.secondaryHex,
+    primaryOklch: recipe.primaryOklch,
+    lifetimeMs: input.reducedMotion ? 0 : 580,
+    reducedMotion: input.reducedMotion,
+    renderPlan,
+  });
 }

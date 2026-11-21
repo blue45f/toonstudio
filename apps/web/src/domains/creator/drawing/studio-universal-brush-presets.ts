@@ -177,17 +177,17 @@ export interface P5BrushPresetSpec {
 }
 
 export const P5_BRUSH_PRESET_CATALOG: readonly P5BrushPresetSpec[] = [
-  { id: "pen", labelKo: "제도 펜 (Pen)", weight: 0.3, scatter: 0.15, sharpness: 0.9, grain: 0.7, opacity255: 150, spacing: 0.1, pressureCurve: [0.15, 0.2], pressureMinMax: [1.2, 1.0], tipType: "default", markerTip: false, noiseLevel: 0 },
-  { id: "rotring", labelKo: "로트링 제도샤프 (Rotring)", weight: 0.15, scatter: 0.05, sharpness: 0.7, grain: 0.9, opacity255: 210, spacing: 0.1, pressureCurve: [0.35, 0.2], pressureMinMax: [1.3, 1.0], tipType: "default", markerTip: false, noiseLevel: 0 },
-  { id: "2B", labelKo: "2B 흑연 연필", weight: 0.3, scatter: 0.75, sharpness: 0.45, grain: 0.8, opacity255: 180, spacing: 0.1, pressureCurve: [0.1, 0.3], pressureMinMax: [1.1, 0.9], tipType: "default", markerTip: false, noiseLevel: 0 },
-  { id: "HB", labelKo: "HB 제도 연필", weight: 0.3, scatter: 0.6, sharpness: 0.3, grain: 0.7, opacity255: 170, spacing: 0.1, pressureCurve: [0.15, 0.2], pressureMinMax: [1.1, 0.9], tipType: "default", markerTip: false, noiseLevel: 0 },
-  { id: "2H", labelKo: "2H 경질 연필", weight: 0.2, scatter: 0.6, sharpness: 0.3, grain: 0.75, opacity255: 120, spacing: 0.1, pressureCurve: [0.15, 0.2], pressureMinMax: [1.1, 0.9], tipType: "default", markerTip: false, noiseLevel: 0 },
-  { id: "cpencil", labelKo: "색연필 (Colored Pencil)", weight: 0.35, scatter: 0.55, sharpness: 0.8, grain: 0.7, opacity255: 75, spacing: 0.1, pressureCurve: [0.15, 0.2], pressureMinMax: [0.95, 1.1], tipType: "default", markerTip: false, noiseLevel: 0 },
-  { id: "pastel", labelKo: "오일 파스텔 (Pastel)", weight: 0.7, scatter: 5.0, sharpness: 0.91, grain: 1.0, opacity255: 30, spacing: 0.0283, pressureCurve: [0.4, 0.05], pressureMinMax: [1.09, 0.93], tipType: "default", markerTip: true, noiseLevel: 1 },
-  { id: "crayon", labelKo: "크레용 (Crayon)", weight: 0.33, scatter: 1.9, sharpness: 0.75, grain: 2.0, opacity255: 159, spacing: 0.07, pressureCurve: [0.2, 0.2], pressureMinMax: [1.1, 0.9], tipType: "default", markerTip: true, noiseLevel: 1 },
-  { id: "charcoal", labelKo: "건식 목탄 (Charcoal)", weight: 0.35, scatter: 1.5, sharpness: 0.68, grain: 2.0, opacity255: 120, spacing: 0.03, pressureCurve: [0.15, 0.4], pressureMinMax: [1.1, 0.95], tipType: "default", markerTip: false, noiseLevel: 0 },
-  { id: "spray", labelKo: "에어 스프레이 (Spray)", weight: 0.2, scatter: 6.0, sharpness: 15.0, grain: 40.0, opacity255: 90, spacing: 0.5, pressureCurve: [0.2, 0.35], pressureMinMax: [0.7, 1.0], tipType: "spray", markerTip: false, noiseLevel: 0 },
-  { id: "marker", labelKo: "알코올 마카 (Marker)", weight: 2.0, scatter: 0.2, sharpness: 0.85, grain: 0.25, opacity255: 140, spacing: 0.03, pressureCurve: [0.35, 0.25], pressureMinMax: [1.2, 0.85], tipType: "marker", markerTip: true, noiseLevel: 0 },
+  { id: "pen", labelKo: "제도 펜 (Pen)", weight: 0.3, scatter: 0.15, sharpness: 0.9, grain: 0.7, opacity255: 220, spacing: 0.08, pressureCurve: [0.15, 0.2], pressureMinMax: [0.18, 1.15], tipType: "default", markerTip: false, noiseLevel: 0 },
+  { id: "rotring", labelKo: "로트링 제도샤프 (Rotring)", weight: 0.15, scatter: 0.05, sharpness: 0.85, grain: 0.9, opacity255: 230, spacing: 0.08, pressureCurve: [0.35, 0.2], pressureMinMax: [0.72, 1.08], tipType: "default", markerTip: false, noiseLevel: 0 },
+  { id: "2B", labelKo: "2B 흑연 연필", weight: 0.34, scatter: 0.75, sharpness: 0.45, grain: 1.2, opacity255: 192, spacing: 0.09, pressureCurve: [0.12, 0.28], pressureMinMax: [0.32, 1.22], tipType: "default", markerTip: false, noiseLevel: 1 },
+  { id: "HB", labelKo: "HB 제도 연필", weight: 0.3, scatter: 0.6, sharpness: 0.35, grain: 1.0, opacity255: 182, spacing: 0.09, pressureCurve: [0.15, 0.22], pressureMinMax: [0.36, 1.16], tipType: "default", markerTip: false, noiseLevel: 1 },
+  { id: "2H", labelKo: "2H 경질 연필", weight: 0.22, scatter: 0.55, sharpness: 0.35, grain: 0.95, opacity255: 148, spacing: 0.09, pressureCurve: [0.18, 0.2], pressureMinMax: [0.42, 1.08], tipType: "default", markerTip: false, noiseLevel: 0 },
+  { id: "cpencil", labelKo: "색연필 (Colored Pencil)", weight: 0.38, scatter: 0.6, sharpness: 0.8, grain: 1.15, opacity255: 148, spacing: 0.09, pressureCurve: [0.15, 0.22], pressureMinMax: [0.35, 1.2], tipType: "default", markerTip: false, noiseLevel: 1 },
+  { id: "pastel", labelKo: "오일 파스텔 (Pastel)", weight: 0.72, scatter: 3.4, sharpness: 0.88, grain: 2.2, opacity255: 148, spacing: 0.085, pressureCurve: [0.32, 0.14], pressureMinMax: [0.42, 1.32], tipType: "default", markerTip: true, noiseLevel: 2 },
+  { id: "crayon", labelKo: "크레용 (Crayon)", weight: 0.58, scatter: 2.35, sharpness: 0.82, grain: 3.6, opacity255: 198, spacing: 0.085, pressureCurve: [0.22, 0.18], pressureMinMax: [0.36, 1.36], tipType: "default", markerTip: true, noiseLevel: 2 },
+  { id: "charcoal", labelKo: "건식 목탄 (Charcoal)", weight: 0.45, scatter: 1.85, sharpness: 0.72, grain: 2.8, opacity255: 168, spacing: 0.075, pressureCurve: [0.18, 0.34], pressureMinMax: [0.34, 1.34], tipType: "default", markerTip: false, noiseLevel: 2 },
+  { id: "spray", labelKo: "에어 스프레이 (Spray)", weight: 0.24, scatter: 5.5, sharpness: 12.0, grain: 32.0, opacity255: 128, spacing: 0.22, pressureCurve: [0.2, 0.35], pressureMinMax: [0.45, 1.24], tipType: "spray", markerTip: false, noiseLevel: 1 },
+  { id: "marker", labelKo: "알코올 마카 (Marker)", weight: 2.0, scatter: 0.22, sharpness: 0.86, grain: 0.32, opacity255: 172, spacing: 0.07, pressureCurve: [0.3, 0.22], pressureMinMax: [0.52, 1.2], tipType: "marker", markerTip: true, noiseLevel: 0 },
 ] as const;
 
 export const P5_BRUSH_VECTOR_FIELDS: readonly P5BrushVectorFieldKind[] = [
@@ -274,14 +274,14 @@ export interface ComicRibbonStampPresetSpec {
 }
 
 export const IBIS_MEDIBANG_BRUSH_PRESETS: readonly ComicRibbonStampPresetSpec[] = [
-  { id: "dip-pen-hard", sourceApp: "ibisPaint", labelKo: "딥펜 (경질)", isRibbonChain: false, nozzleCycleCount: 1, spacingRatio: 0.04, alignToTangent: true, pressureSizeRange01: [0.12, 1.0] },
-  { id: "dip-pen-soft", sourceApp: "ibisPaint", labelKo: "딥펜 (연질)", isRibbonChain: false, nozzleCycleCount: 1, spacingRatio: 0.04, alignToTangent: true, pressureSizeRange01: [0.05, 1.15] },
-  { id: "dip-pen-bleed", sourceApp: "ibisPaint", labelKo: "번짐 딥펜", isRibbonChain: false, nozzleCycleCount: 2, spacingRatio: 0.05, alignToTangent: true, pressureSizeRange01: [0.18, 1.08] },
-  { id: "felt-tip-pen", sourceApp: "ibisPaint", labelKo: "사인펜 (Felt Tip)", isRibbonChain: false, nozzleCycleCount: 1, spacingRatio: 0.05, alignToTangent: false, pressureSizeRange01: [0.35, 1.0] },
-  { id: "digital-pen", sourceApp: "ibisPaint", labelKo: "디지털 픽셀 펜", isRibbonChain: false, nozzleCycleCount: 1, spacingRatio: 0.02, alignToTangent: false, pressureSizeRange01: [1.0, 1.0] },
+  { id: "dip-pen-hard", sourceApp: "ibisPaint", labelKo: "딥펜 (경질)", isRibbonChain: false, nozzleCycleCount: 1, spacingRatio: 0.06, alignToTangent: true, pressureSizeRange01: [0.12, 1.0] },
+  { id: "dip-pen-soft", sourceApp: "ibisPaint", labelKo: "딥펜 (연질)", isRibbonChain: false, nozzleCycleCount: 1, spacingRatio: 0.06, alignToTangent: true, pressureSizeRange01: [0.08, 1.15] },
+  { id: "dip-pen-bleed", sourceApp: "ibisPaint", labelKo: "번짐 딥펜", isRibbonChain: false, nozzleCycleCount: 2, spacingRatio: 0.06, alignToTangent: true, pressureSizeRange01: [0.18, 1.08] },
+  { id: "felt-tip-pen", sourceApp: "ibisPaint", labelKo: "사인펜 (Felt Tip)", isRibbonChain: false, nozzleCycleCount: 1, spacingRatio: 0.06, alignToTangent: false, pressureSizeRange01: [0.35, 1.0] },
+  { id: "digital-pen", sourceApp: "ibisPaint", labelKo: "디지털 픽셀 펜", isRibbonChain: false, nozzleCycleCount: 1, spacingRatio: 0.06, alignToTangent: false, pressureSizeRange01: [0.85, 1.0] },
   { id: "airbrush-trapezoid", sourceApp: "ibisPaint", labelKo: "사다리꼴 에어브러시 60%", isRibbonChain: false, nozzleCycleCount: 1, spacingRatio: 0.12, alignToTangent: false, pressureSizeRange01: [0.4, 1.2] },
   { id: "fan-brush", sourceApp: "ibisPaint", labelKo: "부채꼴 자연모 브러시", isRibbonChain: false, nozzleCycleCount: 5, spacingRatio: 0.08, alignToTangent: true, pressureSizeRange01: [0.5, 1.1] },
-  { id: "flat-bristle", sourceApp: "ibisPaint", labelKo: "평붓 다중모", isRibbonChain: false, nozzleCycleCount: 3, spacingRatio: 0.05, alignToTangent: true, pressureSizeRange01: [0.3, 1.05] },
+  { id: "flat-bristle", sourceApp: "ibisPaint", labelKo: "평붓 다중모", isRibbonChain: false, nozzleCycleCount: 3, spacingRatio: 0.065, alignToTangent: true, pressureSizeRange01: [0.3, 1.05] },
   { id: "acrylic-opaque", sourceApp: "ibisPaint", labelKo: "불투명 아크릴", isRibbonChain: false, nozzleCycleCount: 2, spacingRatio: 0.06, alignToTangent: true, pressureSizeRange01: [0.35, 1.0] },
   { id: "watercolor-real", sourceApp: "MediBang", labelKo: "플러피 수채 (Fluffy Watercolor)", isRibbonChain: false, nozzleCycleCount: 2, spacingRatio: 0.07, alignToTangent: false, pressureSizeRange01: [0.4, 1.15] },
   { id: "blur-smudge", sourceApp: "ibisPaint", labelKo: "문지르기·블러 브러시", isRibbonChain: false, nozzleCycleCount: 1, spacingRatio: 0.06, alignToTangent: true, pressureSizeRange01: [0.5, 1.0] },

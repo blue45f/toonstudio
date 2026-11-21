@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   STUDIO_NATURAL_MEDIA_PRESETS,
+  createNaturalMediaSoakStrokeGuard,
   getNaturalMediaPreset,
   getNaturalMediaPresetsByCraft,
   planNaturalMediaCrossHatch,
   resolveNaturalMediaPhysicsProfile,
+  sampleNaturalMediaCrayonWaxTexel,
   validateHatchSettings,
   validateNaturalMediaSessionConfig,
   validateNaturalMediaStrokeStyle,
@@ -185,5 +187,34 @@ describe("resolveNaturalMediaPhysicsProfile & planNaturalMediaCrossHatch (Wave 1
       expect(line.midPressure).toBeGreaterThan(line.entryPressure);
       expect(line.midPressure).toBeGreaterThan(line.exitPressure);
     }
+  });
+
+  it("createNaturalMediaSoakStrokeGuard와 크레용 왁스 텍셀 샘플러가 장시간 획과 갈필 대비를 보장한다", () => {
+    const guard = createNaturalMediaSoakStrokeGuard("crayon", 18);
+    for (let i = 0; i < 500; i += 1) {
+      guard.push({ x: i * 3, y: 40 + Math.sin(i * 0.1) * 8, pressure01: 0.4, timestampMs: i * 4 });
+    }
+    guard.finish();
+    const diag = guard.getDiagnostics();
+    expect(diag.familyId).toBe("crayon");
+    expect(diag.emittedDabs).toBeGreaterThan(200);
+    expect(diag.nanOutputCount).toBe(0);
+    expect(diag.droppedStrokeCount).toBe(0);
+
+    const low = sampleNaturalMediaCrayonWaxTexel({
+      worldX: 12,
+      worldY: 18,
+      normalizedX: 0.1,
+      normalizedY: 0.1,
+      pressure01: 0.15,
+    });
+    const high = sampleNaturalMediaCrayonWaxTexel({
+      worldX: 12,
+      worldY: 18,
+      normalizedX: 0.1,
+      normalizedY: 0.1,
+      pressure01: 0.95,
+    });
+    expect(high.alpha).toBeGreaterThan(low.alpha);
   });
 });

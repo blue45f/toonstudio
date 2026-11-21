@@ -1,14 +1,16 @@
 import {
-  createStudioShared3dSceneSession,
-  createStudioShared3dSceneSessionFromElements,
+  resolveExactStudioShared3dCharacterIdentity,
+  type StudioShared3dCharacterIdentity,
+} from "./runtime-leaves/studio-shared-3d-character-identity";
+import {
   parseStudioShared3dCharacterStageTransform,
   studioShared3dCharacterStageTransformHash,
-  type StudioShared3dCharacterStageTransform,
-  type StudioShared3dCharacterSource,
-  type StudioShared3dCharacterTransformCommitResult,
-  type StudioShared3dCharacterTransformReceipt,
-  type StudioShared3dCharacterTransformUpdateRequest,
-  type StudioShared3dSceneSession,
+} from "./studio-shared-3d-scene-runtime";
+import type {
+  StudioShared3dCharacterStageTransform,
+  StudioShared3dCharacterTransformCommitResult,
+  StudioShared3dCharacterTransformReceipt,
+  StudioShared3dCharacterTransformUpdateRequest,
 } from "./studio-shared-3d-scene-bridge";
 import {
   STUDIO_SHARED_3D_STAGE_DOCUMENT_KIND,
@@ -701,13 +703,8 @@ export function studioShared3dStageLinkedCharacterElementIds(
 function exactCharacterSource<T extends StudioShared3dStageElementSource>(
   elements: readonly T[],
   elementId: string,
-): StudioShared3dCharacterSource | null {
-  const matches = elements.filter((element) => element.id === elementId);
-  if (matches.length !== 1) return null;
-  const session = createStudioShared3dSceneSessionFromElements(matches);
-  return session.characters.length === 1 && session.characters[0]?.elementId === elementId
-    ? session.characters[0]
-    : null;
+): StudioShared3dCharacterIdentity | null {
+  return resolveExactStudioShared3dCharacterIdentity(elements, elementId);
 }
 
 function entryWithCharacterPlacements<T extends StudioShared3dStageElementSource>(input: {
@@ -777,28 +774,6 @@ function entryWithCharacterPlacements<T extends StudioShared3dStageElementSource
     characters,
     ...(input.entry.dccSource ? { dccSource: input.entry.dccSource } : {}),
   });
-}
-
-export function createStudioShared3dSceneSessionForStage(
-  value: unknown,
-  elements: readonly StudioShared3dStageElementSource[],
-  bundleId: string | null | undefined,
-): StudioShared3dSceneSession {
-  const stage = findStudioShared3dStageEntryByBundleId(value, bundleId);
-  if (!stage) return createStudioShared3dSceneSession([]);
-  return createStudioShared3dSceneSession(stage.characters.flatMap((character) => {
-    const source = exactCharacterSource(elements, character.elementId);
-    // The resolver separately exposes live-update and replacement status. Preview the unique
-    // current authority so the artist can inspect and explicitly refresh/relink it, while the
-    // Stage placement remains stable and no document mutation occurs merely by opening the tool.
-    return source ? [{
-          elementId: character.elementId,
-          label: source.label,
-          scene: source.scene,
-          ...(character.placement ? { stageTransform: character.placement } : {}),
-          stageId: stage.id,
-        }] : [];
-  }));
 }
 
 function exactRuntimeKey<T extends StudioShared3dStageElementSource>(

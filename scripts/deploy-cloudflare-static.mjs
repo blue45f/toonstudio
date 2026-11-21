@@ -23,9 +23,18 @@ import { inspectReleaseCi } from "./release-required-ci.mjs";
 const STANDING_APPROVAL_PATH = "deploy/cloudflare-static/STANDING_APPROVAL.json";
 const ENVIRONMENT_CONTRACT_PATH = "config/deployment/environment-contract.json";
 const BUILD_META_PATH = "dist/.vite/build-meta.json";
+const REQUIRED_VERIFIED_DIST_FILES = [
+  "dist/index.html",
+  "dist/.assetsignore",
+  "dist/sw.js",
+  "dist/.vite/manifest.json",
+  BUILD_META_PATH,
+  "dist/legal/THIRD_PARTY_NOTICES.generated.md",
+];
 
 const mode = process.argv.includes("--production") ? "production" : "dry-run";
 const skipBuild = process.argv.includes("--skip-build");
+const forceBuild = process.argv.includes("--force-build");
 const skipR2Sync = process.argv.includes("--skip-r2-sync");
 const useLocalOAuth = process.argv.includes("--wrangler-oauth");
 const useStandingProfile = process.argv.includes("--standing-profile");
@@ -50,6 +59,45 @@ const MAX_PUBLIC_READ_ORIGINS = 8;
 function fail(message) {
   console.error(message);
   process.exit(1);
+}
+
+if (skipBuild && forceBuild) {
+  fail("--skip-build and --force-build cannot be used together");
+}
+
+/**
+ * 깨끗한 main worktree에서 이미 현재 승인 SHA와 일치하는 dist/가 완전히 준비되어 있는지 검사한다.
+ * 누락·손상·SHA 불일치·카탈로그 소스 불일치가 하나라도 있으면 fail-closed로 재빌드한다.
+ */
+function inspectVerifiedProductionDist(cwd, expectedSha, requestedCatalogSource) {
+  if (!/^[0-9a-f]{40}$/u.test(expectedSha ?? "")) {
+    return { reusable: false, reason: "invalid-sha" };
+  }
+  for (const relativePath of REQUIRED_VERIFIED_DIST_FILES) {
+    if (!existsSync(resolve(cwd, relativePath))) {
+      return { reusable: false, reason: `missing:${relativePath}` };
+    }
+  }
+  let buildMeta;
+  try {
+    buildMeta = JSON.parse(readFileSync(resolve(cwd, BUILD_META_PATH), "utf8"));
+  } catch {
+    return { reusable: false, reason: "invalid-build-meta-json" };
+  }
+  if (buildMeta?.gitSha !== expectedSha) {
+    return { reusable: false, reason: "git-sha-mismatch" };
+  }
+  if (typeof buildMeta?.buildId !== "string" || !/^[0-9a-f]{8,}$/u.test(buildMeta.buildId)) {
+    return { reusable: false, reason: "invalid-build-id" };
+  }
+  if (typeof buildMeta?.catalogSource === "string") {
+    if (buildMeta.catalogSource !== requestedCatalogSource) {
+      return { reusable: false, reason: "catalog-source-mismatch" };
+    }
+  } else if (requestedCatalogSource !== "static") {
+    return { reusable: false, reason: "unverified-non-default-catalog-source" };
+  }
+  return { reusable: true, buildId: buildMeta.buildId };
 }
 
 function readProfileCoreOrigin(profileName) {
@@ -251,6 +299,17 @@ if (skipBuild) {
   }
 }
 
+let autoReusedDist = { reusable: false, reason: "not-evaluated" };
+if (!skipBuild && !forceBuild && mode === "production" && productionHead) {
+  autoReusedDist = inspectVerifiedProductionDist(process.cwd(), productionHead, staticCatalogSource);
+  if (autoReusedDist.reusable) {
+    console.log(
+      `verified dist/ matches clean HEAD ${productionHead} (buildId=${autoReusedDist.buildId}) — reusing prebuilt dist (pass --force-build to rebuild)`,
+    );
+  }
+}
+const effectiveSkipBuild = skipBuild || autoReusedDist.reusable;
+
 const childHome = process.env.HOME?.includes("/.gemini/")
   ? userInfo().homedir
   : process.env.HOME;
@@ -278,18 +337,21 @@ const oauthChildEnvironment = useLocalOAuth
 
 const pipelineCommands = [
   {
+    label: "static-rules-check",
     executable: "pnpm",
     args: ["run", "generate:cloudflare-static-rules", "--", "--check"],
   },
-  ...(skipBuild
+  ...(effectiveSkipBuild
     ? [
         {
+          label: "verify-static-csp",
           executable: "pnpm",
           args: ["exec", "node", "scripts/verify-static-csp.mjs", "dist/index.html"],
         },
       ]
     : [
         {
+          label: "build",
           executable: "pnpm",
           args: ["run", "build"],
           environment: {
@@ -298,16 +360,19 @@ const pipelineCommands = [
           },
         },
         {
+          label: "prepare-static-assets",
           executable: "pnpm",
           args: ["run", "prepare:cloudflare-static-assets"],
         },
       ]),
   {
     // sw.js가 빠진 dist는 /sw.js를 SPA HTML로 응답해 PWA 업데이트 안내를 멈추게 한다.
+    label: "verify-service-worker",
     executable: "pnpm",
     args: ["exec", "node", "scripts/verify-static-service-worker.mjs"],
   },
   {
+    label: mode === "production" && !skipR2Sync ? "sync-r2-production" : "sync-r2-dry-run",
     publishes: mode === "production" && !skipR2Sync,
     executable: "pnpm",
     args: [
@@ -320,6 +385,7 @@ const pipelineCommands = [
     environment: oauthChildEnvironment,
   },
   {
+    label: mode === "production" ? "wrangler-deploy" : "wrangler-dry-run",
     publishes: mode === "production",
     executable: "pnpm",
     args: [
@@ -338,13 +404,17 @@ const pipelineCommands = [
   },
 ];
 
+const pipelineStartedAt = Date.now();
+const stageTimings = [];
 for (const command of pipelineCommands) {
   if (command.publishes) requireCurrentRelease(productionHead);
+  const stageStartedAt = Date.now();
   const result = spawnSync(command.executable, command.args, {
     stdio: "inherit",
     env: command.environment ?? baseChildEnvironment,
   });
   if (result.status !== 0) process.exit(result.status ?? 1);
+  stageTimings.push(`${command.label}=${((Date.now() - stageStartedAt) / 1000).toFixed(1)}s`);
 }
 
 if (mode === "production" && productionHead) {
@@ -355,3 +425,12 @@ if (mode === "production" && productionHead) {
     coreOrigin,
   });
 }
+
+const buildStrategy = skipBuild
+  ? "skip-build"
+  : autoReusedDist.reusable
+    ? "reused-verified-dist"
+    : "full-build";
+console.log(
+  `[deploy-cloudflare-static] completed (${mode}, ${buildStrategy}, ${((Date.now() - pipelineStartedAt) / 1000).toFixed(1)}s): ${stageTimings.join(", ")}`,
+);

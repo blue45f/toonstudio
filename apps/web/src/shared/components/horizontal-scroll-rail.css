@@ -1,0 +1,273 @@
+/* 공용 가로 스크롤 레일 (비-매직마우스 휠 전환 · 드래그 팬 · 모바일 터치 관성 · OKLCH 시맨틱 토큰) */
+
+.ts-hscroll-root {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.ts-hscroll-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.ts-hscroll-header-slot {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.ts-hscroll-header-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: none;
+}
+
+.ts-hscroll-stage {
+  position: relative;
+  min-width: 0;
+}
+
+.ts-hscroll-viewport {
+  position: relative;
+  min-width: 0;
+}
+
+.ts-hscroll-viewport[data-fade-left="true"][data-fade-right="true"] {
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    oklch(0 0 0) 2.25rem,
+    oklch(0 0 0) calc(100% - 2.25rem),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    oklch(0 0 0) 2.25rem,
+    oklch(0 0 0) calc(100% - 2.25rem),
+    transparent 100%
+  );
+}
+
+.ts-hscroll-viewport[data-fade-left="true"][data-fade-right="false"] {
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    oklch(0 0 0) 2.25rem,
+    oklch(0 0 0) 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    oklch(0 0 0) 2.25rem,
+    oklch(0 0 0) 100%
+  );
+}
+
+.ts-hscroll-viewport[data-fade-left="false"][data-fade-right="true"] {
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    oklch(0 0 0) 0,
+    oklch(0 0 0) calc(100% - 2.25rem),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    oklch(0 0 0) 0,
+    oklch(0 0 0) calc(100% - 2.25rem),
+    transparent 100%
+  );
+}
+
+.ts-hscroll-track {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pinch-zoom;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--color-line-strong) 75%, transparent) transparent;
+}
+
+.ts-hscroll-track:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 0.75rem;
+}
+
+.ts-hscroll-track[data-hscroll-can-scroll="true"] {
+  cursor: grab;
+}
+
+.ts-hscroll-track[data-hscroll-dragging="true"] {
+  cursor: grabbing;
+  user-select: none;
+  scroll-snap-type: none;
+}
+
+.ts-hscroll-track::-webkit-scrollbar {
+  height: 6px;
+}
+
+.ts-hscroll-track::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ts-hscroll-track::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-line-strong) 68%, transparent);
+}
+
+.ts-hscroll-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--color-line-strong);
+  background: color-mix(in oklch, var(--color-panel) 94%, transparent);
+  color: var(--color-fg);
+  font-size: 1.25rem;
+  line-height: 1;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 20px -12px oklch(0.12 0.02 260 / 0.55);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.ts-hscroll-btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  background: color-mix(in oklch, var(--color-accent-soft) 72%, var(--color-panel));
+  color: var(--color-fg);
+}
+
+.ts-hscroll-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.ts-hscroll-btn:disabled {
+  opacity: 0.36;
+  cursor: not-allowed;
+}
+
+.ts-hscroll-btn-overlay {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  transform: translateY(-50%);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.ts-hscroll-btn-overlay[data-direction="prev"] {
+  left: 0.35rem;
+}
+
+.ts-hscroll-btn-overlay[data-direction="next"] {
+  right: 0.35rem;
+}
+
+.ts-hscroll-btn-overlay:hover:not(:disabled) {
+  transform: translateY(-50%) scale(1.03);
+}
+
+.ts-hscroll-btn-overlay[data-edge-hidden="true"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ts-hscroll-btn-header {
+  border-radius: 0.75rem;
+  border-color: var(--color-line);
+  box-shadow: none;
+}
+
+.ts-hscroll-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.9rem;
+  min-width: 0;
+}
+
+.ts-hscroll-progress {
+  position: relative;
+  flex: 1 1 8rem;
+  min-width: 6rem;
+  display: flex;
+  align-items: center;
+  min-height: 1.5rem;
+  padding-block: 0.45rem;
+  cursor: pointer;
+}
+
+.ts-hscroll-progress:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+.ts-hscroll-progress-bar {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in oklch, var(--color-line-strong) 42%, transparent);
+}
+
+.ts-hscroll-progress-thumb {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--ts-spectrum-3d, oklch(0.76 0.13 192)),
+    var(--color-accent)
+  );
+  transition: left 120ms ease, width 120ms ease;
+}
+
+.ts-hscroll-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--color-fg-3);
+  white-space: nowrap;
+}
+
+.ts-hscroll-hint svg {
+  flex: none;
+  color: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-hscroll-btn,
+  .ts-hscroll-progress-thumb {
+    transition: none;
+  }
+  .ts-hscroll-btn-overlay:hover:not(:disabled) {
+    transform: translateY(-50%);
+  }
+}

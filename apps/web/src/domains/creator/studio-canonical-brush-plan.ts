@@ -21,7 +21,7 @@ import {
   normalizeStudioBrushTipSettings,
   type NormalizedStudioBrushTipSettings,
 } from "./brush/studio-brush-tip-stamp";
-import { canonicalStudioCommandJson } from "./studio-command-journal";
+import { canonicalStudioCommandJson } from "./runtime-leaves/studio-canonical-command-json";
 
 export const STUDIO_CANONICAL_BRUSH_PLAN_VERSION = 1 as const;
 export const STUDIO_CANONICAL_BRUSH_RECIPE_LEGACY_VERSION = 1 as const;

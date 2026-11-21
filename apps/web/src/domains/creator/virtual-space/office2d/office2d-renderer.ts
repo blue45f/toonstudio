@@ -24,7 +24,7 @@ import {
 import { OFFICE2D_ACTOR_HEIGHT, OFFICE2D_FOOT_RATIO, office2dActorFoot, office2dActorRestTransform } from "./office2d-actor-geometry";
 import { paintOffice2dAvatarAccessory } from "./office2d-avatar-appearance";
 import { office2dAtlasDrawFrame, office2dAtlasImageMatches } from "./office2d-atlas-frames";
-import { resolveOffice2dEmoteTransform } from "./office2d-emote-motion";
+import { Office2dActorSmoothingCache, resolveOffice2dEmoteTransform } from "./office2d-emote-motion";
 import { resolveOffice2dStandingExpression } from "./office2d-standing-expression";
 import type { Office2dCamera } from "./office2d-camera";
 import { office2dSignAlpha, type Office2dLabelBox } from "./office2d-label-layout";
@@ -156,6 +156,7 @@ export class Office2dRenderer {
   private chunkTheme: StudioSpaceThemeKey | null | undefined = undefined;
   private readonly interactionObjects: ReadonlyMap<string, Office2dSceneObject>;
   private readonly roomStep: ReadonlyMap<string, number | null>;
+  private readonly actorSmoothing = new Office2dActorSmoothingCache();
 
   constructor(private readonly scene: Office2dScene, private readonly host: Office2dRendererHost) {
     this.interactionObjects = new Map(scene.objects.filter((object) => object.interactionId).map((object) => [object.interactionId ?? object.id, object] as const));
@@ -179,6 +180,7 @@ export class Office2dRenderer {
     ctx.setTransform(scale, 0, 0, scale, (viewport.width / 2 - camera.x * camera.zoom) * pixelRatio, (viewport.height / 2 - camera.y * camera.zoom) * pixelRatio);
     ctx.imageSmoothingEnabled = true;
     const visible = camera.visibleRect(96);
+    this.actorSmoothing.beginFrame(frame.time, frame.now, frame.reducedMotion);
     // 이름표 자리를 먼저 정해(측정만) 겹치는 벽 명판을 흐리게 그릴 수 있게 한다.
     const overlay = planOffice2dOverlay(ctx, frame);
     this.drawFloor(ctx, visible, scale, frame.language, frame.spaceTheme);
@@ -187,6 +189,7 @@ export class Office2dRenderer {
     this.drawPortals(ctx, frame);
     this.drawShadows(ctx, frame, visible);
     this.drawSorted(ctx, frame, visible, overlay.boxes);
+    this.actorSmoothing.endFrame();
     frame.extensions?.drawPlacedFixturesAndDecor(
       ctx,
       frame.placedFixtures,
@@ -384,6 +387,7 @@ export class Office2dRenderer {
     for (const prop of frame.props) if (inside(prop, visible)) paintOffice2dShadow(ctx, prop.x, prop.y + prop.radius * 0.55, prop.radius * 1.05, prop.radius * 0.36, 0.26);
     for (const actor of frame.actors) {
       if (!inside(actor, visible) || actor.seat) continue;
+      const smooth = this.actorSmoothing.resolveActor(actor, actor.id === frame.selfId);
       const bob = office2dActorBob(actor, frame.time, frame.reducedMotion);
       const actorAlpha = office2dActorOpacity(actor, frame.now);
       const isGhost = actor.id === frame.selfId && frame.ghost;
@@ -392,8 +396,8 @@ export class Office2dRenderer {
         reducedMotion: frame.reducedMotion, distance: actor.stride, stride: OFFICE2D_GAIT_DISTANCE,
       });
       if (!contact.visible) continue;
-      paintOffice2dShadow(ctx, actor.x, actor.y + 1.5, 17 * bob.shadowScale * contact.penumbraScaleX, 6.2 * bob.shadowScale, contact.penumbraAlpha * actorAlpha);
-      paintOffice2dShadow(ctx, actor.x, actor.y + 0.8, contact.coreWidth * 0.52 * bob.shadowScale, contact.coreHeight * 0.55 * bob.shadowScale, contact.coreAlpha * actorAlpha);
+      paintOffice2dShadow(ctx, smooth.x, smooth.y + 1.5, 17 * bob.shadowScale * contact.penumbraScaleX, 6.2 * bob.shadowScale, contact.penumbraAlpha * actorAlpha);
+      paintOffice2dShadow(ctx, smooth.x, smooth.y + 0.8, contact.coreWidth * 0.52 * bob.shadowScale, contact.coreHeight * 0.55 * bob.shadowScale, contact.coreAlpha * actorAlpha);
     }
   }
 
@@ -518,11 +522,13 @@ export class Office2dRenderer {
     const opacity = office2dActorOpacity(actor, frame.now) * (actor.id === frame.selfId && frame.ghost ? 0.5 : 1);
     if (opacity <= 0.01) return;
     const avatarProfile = actor.id === frame.selfId ? this.host.selfAvatarProfile?.() : null;
+    const smooth = this.actorSmoothing.resolveActor(actor, actor.id === frame.selfId);
     const seated = actor.seat !== null;
     const rest = office2dActorRestTransform(actor);
     const lying = rest.tiltRad !== 0;
     const emoteTransform = resolveOffice2dEmoteTransform(actor, frame.now, frame.reducedMotion);
-    const effectiveFacing = !actor.moving && !seated && emoteTransform.facingOverride ? emoteTransform.facingOverride : actor.facing;
+    const baseFacing = seated ? actor.facing : smooth.facing;
+    const effectiveFacing = !actor.moving && !seated && emoteTransform.facingOverride ? emoteTransform.facingOverride : baseFacing;
     const poseActor = effectiveFacing !== actor.facing || lying
       ? { ...actor, facing: effectiveFacing, gaitBlend: lying ? 0 : actor.gaitBlend, gesture: !lying && effectiveFacing === "down" ? actor.gesture : null }
       : actor;
@@ -536,14 +542,13 @@ export class Office2dRenderer {
     const walkImage = generatedWalkImage ?? (workImage ? null : this.host.image(office2dLegacyCharacterUrl(actor.character)));
     // 작업 자세 시트가 없으면(로딩 실패) 보행 시트의 같은 방향 정지 프레임으로 대신한다.
     const bob = office2dActorBob(actor, frame.time, frame.reducedMotion || lying);
-    const foot = office2dActorFoot(actor);
-    const rawFootX = foot.x + emoteTransform.offsetX + rest.offsetX;
-    const rawFootY = (seated ? foot.y : actor.y + 3) + rest.offsetY;
-    // 정지·착석 상태에서 서브픽셀 흐림을 줄여 스프라이트 윤곽선을 또렷하게 유지한다.
-    const footX = actor.moving ? rawFootX : Math.round(rawFootX * 2) / 2;
-    const footY = actor.moving ? rawFootY : Math.round(rawFootY * 2) / 2;
-    const height = ACTOR_HEIGHT * bob.scaleY;
-    const width = ACTOR_HEIGHT * (OFFICE2D_CHARACTER_CELL.width / OFFICE2D_CHARACTER_CELL.height) * (seated ? 1 : bob.scaleX);
+    const foot = seated ? office2dActorFoot(actor) : { x: smooth.x, y: smooth.y };
+    const footX = foot.x + emoteTransform.offsetX + rest.offsetX;
+    const footY = (seated ? foot.y : smooth.y + 3) + rest.offsetY;
+    const emoteScaleX = seated ? 1 : (emoteTransform.scaleX ?? 1);
+    const emoteScaleY = seated ? 1 : (emoteTransform.scaleY ?? 1);
+    const height = ACTOR_HEIGHT * bob.scaleY * emoteScaleY;
+    const width = ACTOR_HEIGHT * (OFFICE2D_CHARACTER_CELL.width / OFFICE2D_CHARACTER_CELL.height) * (seated ? 1 : bob.scaleX * emoteScaleX);
     ctx.globalAlpha = opacity;
     paintOffice2dActorSpatialAura(ctx, actor, frame, frame.actors);
     if (actor.id === frame.selfId && !seated) {
@@ -551,7 +556,7 @@ export class Office2dRenderer {
       ctx.lineWidth = 2;
       ctx.globalAlpha = opacity * (frame.reducedMotion ? 0.7 : 0.55 + Math.sin(frame.time * 3) * 0.2);
       ctx.beginPath();
-      ctx.ellipse(actor.x, actor.y + 1, 17 * bob.shadowScale, 6.5 * bob.shadowScale, 0, 0, Math.PI * 2);
+      ctx.ellipse(smooth.x, smooth.y + 1, 17 * bob.shadowScale, 6.5 * bob.shadowScale, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = opacity;
     }
@@ -562,11 +567,13 @@ export class Office2dRenderer {
       ctx.ellipse(footX, footY - 2, 18, 7, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
-    const anchorY = footY + bob.offsetY + emoteTransform.offsetY;
+    const rawTilt = (!seated && !workImage ? bob.tiltRad : 0) + emoteTransform.tiltRad + rest.tiltRad;
+    const smoothedPose = this.actorSmoothing.smoothPose(actor.id, rawTilt, bob.offsetY + emoteTransform.offsetY, lying || seated);
+    const anchorY = footY + smoothedPose.bobOffsetY;
     const reaction = lying ? null : resolveOffice2dStandingExpression(poseActor, pose, frame, (url) => this.host.image(url));
     const image = reaction?.image ?? workImage ?? walkImage;
     const drawHeight = seated && !workImage ? height * 0.9 : height;
-    const tilt = (!seated && !workImage ? bob.tiltRad : 0) + emoteTransform.tiltRad + rest.tiltRad;
+    const tilt = smoothedPose.tiltRad;
 
     // 전력 질주 잔상(Afterimage Ghost Trail) 렌더링
     if (!frame.reducedMotion && !seated && actor.afterimages && actor.afterimages.length > 0) {

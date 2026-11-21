@@ -33,7 +33,7 @@ import {
   rotateMat2d,
   scaleMat2d,
   translateMat2d,
-} from "@toonstudio/studio-project-model";
+} from "@toonstudio/studio-project-model/path-transform";
 
 import { studioDrawObjectTransformScale } from "./brush/studio-draw-object-transform";
 import { studioLiveTransformRouteSurvivesScale } from "./studio-live-transform-render-route";

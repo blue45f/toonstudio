@@ -1,0 +1,488 @@
+/* 전문가 드로잉 8선 · 실시간 컷-대-컷 화풍 일체화 워크벤치
+ * OKLCH 스펙트럼 계층 · >= 44x44px 터치 타겟 · 명시적 전이 · reduced-motion 준수 */
+
+.pas-shell {
+  --pas-accent: var(--color-accent, oklch(0.61 0.17 268));
+  --pas-cool: var(--color-cool, oklch(0.66 0.14 232));
+  --pas-good: var(--color-good, oklch(0.65 0.16 154));
+  --pas-warn: var(--color-warn, oklch(0.75 0.15 76));
+  --pas-bad: var(--color-bad, oklch(0.62 0.2 26));
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 1.25rem;
+  background-color: var(--color-panel);
+  color: var(--color-fg);
+}
+
+.pas-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--pas-cool) 0%,
+    var(--pas-accent) 52%,
+    var(--pas-good) 100%
+  );
+  pointer-events: none;
+}
+
+.pas-shell :is(h2, h3, h4, p, button, label, span, strong) {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.pas-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.pas-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .pas-body {
+    gap: 1.25rem;
+    padding: 1.25rem;
+  }
+}
+
+.pas-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 1rem;
+}
+
+@media (min-width: 900px) {
+  .pas-header {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.pas-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--pas-cool);
+  margin: 0;
+}
+
+.pas-title {
+  margin: 0.25rem 0 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--color-fg);
+}
+
+.pas-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--color-fg-2);
+  max-width: 48rem;
+}
+
+.pas-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pas-tab,
+.pas-tool-btn,
+.pas-btn,
+.pas-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-card);
+  color: var(--color-fg);
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.pas-tab:hover,
+.pas-tool-btn:hover,
+.pas-btn:hover,
+.pas-chip-btn:hover {
+  border-color: color-mix(in oklch, var(--pas-accent) 55%, var(--color-line));
+  background-color: var(--color-raised);
+}
+
+.pas-tab:focus-visible,
+.pas-tool-btn:focus-visible,
+.pas-btn:focus-visible,
+.pas-chip-btn:focus-visible,
+.pas-input:focus-visible,
+.pas-range:focus-visible,
+.pas-select:focus-visible {
+  outline: 2px solid var(--pas-accent);
+  outline-offset: 2px;
+}
+
+.pas-tab[aria-selected="true"],
+.pas-tool-btn[aria-pressed="true"],
+.pas-chip-btn[aria-pressed="true"] {
+  border-color: color-mix(in oklch, var(--pas-accent) 70%, var(--color-line));
+  background-color: color-mix(in oklch, var(--pas-accent) 16%, var(--color-card));
+  color: var(--color-fg);
+}
+
+.pas-btn[data-variant="primary"] {
+  border-color: color-mix(in oklch, var(--pas-good) 65%, var(--color-line));
+  background-color: color-mix(in oklch, var(--pas-good) 18%, var(--color-card));
+  color: var(--color-fg);
+}
+
+.pas-btn[data-variant="primary"]:hover {
+  background-color: color-mix(in oklch, var(--pas-good) 26%, var(--color-card));
+}
+
+.pas-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.pas-tool-btn {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  text-align: left;
+  padding: 0.625rem 0.75rem;
+  min-height: 3.75rem;
+}
+
+.pas-tool-btn-head {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem;
+}
+
+.pas-tool-index {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--pas-cool);
+}
+
+.pas-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklch, var(--pas-accent) 42%, var(--color-line));
+  background-color: color-mix(in oklch, var(--pas-accent) 12%, var(--color-panel));
+  padding: 0.15rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.pas-badge[data-tone="good"] {
+  border-color: color-mix(in oklch, var(--pas-good) 52%, var(--color-line));
+  background-color: color-mix(in oklch, var(--pas-good) 15%, var(--color-panel));
+}
+
+.pas-badge[data-tone="warn"] {
+  border-color: color-mix(in oklch, var(--pas-warn) 56%, var(--color-line));
+  background-color: color-mix(in oklch, var(--pas-warn) 16%, var(--color-panel));
+}
+
+.pas-badge[data-tone="bad"] {
+  border-color: color-mix(in oklch, var(--pas-bad) 56%, var(--color-line));
+  background-color: color-mix(in oklch, var(--pas-bad) 16%, var(--color-panel));
+}
+
+.pas-workbench-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 960px) {
+  .pas-workbench-split {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  }
+}
+
+.pas-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  background-color: var(--color-card);
+  padding: 1rem;
+  min-width: 0;
+}
+
+.pas-card-title {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--color-fg);
+}
+
+.pas-card-desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-fg-2);
+}
+
+.pas-control-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pas-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-fg-2);
+  min-width: 0;
+}
+
+.pas-input,
+.pas-select {
+  min-height: 2.75rem;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-panel);
+  color: var(--color-fg);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.pas-range {
+  min-height: 2.75rem;
+  width: 100%;
+  accent-color: var(--pas-accent);
+  cursor: pointer;
+}
+
+.pas-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.pas-metric-box {
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  background-color: var(--color-panel);
+  padding: 0.625rem 0.75rem;
+}
+
+.pas-metric-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-fg-3);
+}
+
+.pas-metric-value {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--color-fg);
+}
+
+.pas-stage-box {
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background-color: var(--color-panel);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.pas-pixel-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 2px;
+  max-width: 18rem;
+}
+
+.pas-pixel-cell {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background-color: color-mix(in oklch, var(--color-fg-3) 14%, var(--color-panel));
+}
+
+.pas-pixel-cell[data-kind="line"] {
+  background-color: color-mix(in oklch, var(--color-fg) 85%, var(--color-panel));
+}
+
+.pas-pixel-cell[data-kind="base"] {
+  background-color: color-mix(in oklch, var(--pas-cool) 72%, var(--color-panel));
+}
+
+.pas-pixel-cell[data-kind="expanded"] {
+  background-color: color-mix(in oklch, var(--pas-good) 80%, var(--color-panel));
+}
+
+.pas-swatch-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.625rem;
+}
+
+.pas-swatch-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  background-color: var(--color-card);
+  padding: 0.5rem;
+}
+
+.pas-swatch-chip {
+  height: 2.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-line);
+}
+
+.pas-histogram {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  align-items: end;
+  gap: 3px;
+  height: 5.5rem;
+  padding: 0.375rem;
+  border-radius: 0.625rem;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-line);
+}
+
+.pas-histogram-bar {
+  border-radius: 3px 3px 0 0;
+  background-color: var(--pas-cool);
+  min-height: 4px;
+}
+
+.pas-svg-preview {
+  width: 100%;
+  height: 11rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-card);
+}
+
+.pas-code-output {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-panel);
+  color: var(--color-fg);
+  word-break: break-all;
+}
+
+.pas-cut-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .pas-cut-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pas-cut-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background-color: var(--color-card);
+  padding: 0.875rem;
+}
+
+.pas-cut-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pas-mini-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.375rem;
+}
+
+.pas-mini-swatch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--color-fg-3);
+}
+
+.pas-mini-swatch-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 1.75rem;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+}
+
+.pas-lut-svg {
+  width: 100%;
+  height: 3.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-panel);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pas-tab,
+  .pas-tool-btn,
+  .pas-btn,
+  .pas-chip-btn {
+    transition: none;
+  }
+}

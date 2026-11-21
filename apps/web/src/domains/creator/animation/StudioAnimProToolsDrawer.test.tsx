@@ -194,4 +194,40 @@ describe("StudioAnimProToolsDrawer — 실제 타임라인 반영·WebP 조립·
     expect(movieUpdatedDoc.tracks["track-main"].length).toBeGreaterThan(0);
     expect(movieUpdatedDoc.tracks["track-main"][0].frame.src).toContain("data:image/png;base64,video_");
   });
+
+  it("허용되지 않은 파일 형식이나 비정상 리소스 스킴은 DOM 동영상 디코더에 전달하지 않고 차단한다", async () => {
+    const createUrlSpy = vi.spyOn(URL, "createObjectURL");
+    const revokeUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+    const doc = createEmptyAnimationTimelineDoc(4, 10);
+
+    render(
+      <StudioAnimProToolsDrawer
+        doc={doc}
+        activeTrackId="track-main"
+        onDocChange={vi.fn()}
+      />,
+    );
+
+    const fileInput = screen.getByLabelText("동영상 파일 선택");
+    const movieBtn = screen.getByRole("button", { name: "동영상 셀 불러오기 실행" });
+
+    const spoofedSvg = new File(["<svg onload='alert(1)'/>"], "evil.svg", { type: "image/svg+xml" });
+    fireEvent.change(fileInput, { target: { files: [spoofedSvg] } });
+    fireEvent.click(movieBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("status").textContent).toContain("지원하지 않는 동영상 파일 형식입니다.");
+    });
+    expect(createUrlSpy).not.toHaveBeenCalled();
+
+    createUrlSpy.mockReturnValueOnce("javascript:alert(1)");
+    const validVideo = new File(["mp4-bytes"], "safe.mp4", { type: "video/mp4" });
+    fireEvent.change(fileInput, { target: { files: [validVideo] } });
+    fireEvent.click(movieBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("status").textContent).toContain("유효하지 않은 동영상 리소스 주소입니다.");
+    });
+    expect(revokeUrlSpy).toHaveBeenCalledWith("javascript:alert(1)");
+  });
 });

@@ -8,10 +8,11 @@
  * 볼륨: 마스터 키(ts_fx_volume)는 core playSfx 버스가 이미 적용하고,
  * 카테고리 볼륨(ts_fx_interaction JSON의 volume, 기본 0.25)은 playSfx의
  * 호출별 볼륨으로 곱해진다. 카테고리 볼륨이 0이면 재생하지 않는다.
+ *
+ * 오디오 엔진(@toonstudio/core/fx)은 첫 활성 인터랙션 재생 시점에 지연 로드해
+ * Studio 첫 청크에 83 KiB 오디오 합성이 동기로 묶이지 않게 한다.
  */
-
-import { getAudioState, playSfx } from "@toonstudio/core/fx";
-
+import { createStudioIntentLazyLoader } from "./studio-intent-lazy-loader";
 import {
   parseInteractionSfxSettings,
   STUDIO_INTERACTION_SFX_CATEGORY_KEY,
@@ -22,6 +23,15 @@ import {
   shouldPlayInteractionSfx,
   type StudioInteractionSfxEvent,
 } from "./studio-interaction-sfx";
+
+type CoreFxModule = typeof import("@toonstudio/core/fx");
+let cachedCoreFx: CoreFxModule | null = null;
+const coreFxLoader = createStudioIntentLazyLoader<CoreFxModule>(() =>
+  import("@toonstudio/core/fx").then((mod) => {
+    cachedCoreFx = mod;
+    return mod;
+  }),
+);
 
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -52,6 +62,31 @@ export interface StudioInteractionSfxPlayer {
   readonly play: (event: StudioInteractionSfxEvent) => boolean;
 }
 
+function playWithCoreFx(
+  fx: CoreFxModule,
+  event: StudioInteractionSfxEvent,
+  category: StudioInteractionSfxCategorySettings,
+  lastPlayed: Map<StudioInteractionSfxEvent, number | null>,
+): boolean {
+  const audio = fx.getAudioState();
+  const name = resolveInteractionSfx(event, {
+    sfxEnabled: audio.sfxEnabled,
+    muted: audio.muted,
+    reducedMotion: prefersReducedMotion(),
+    click: category.click,
+    draw: category.draw,
+    drag: category.drag,
+  });
+  if (!name) return false;
+  const now = Date.now();
+  if (!shouldPlayInteractionSfx(event, lastPlayed.get(event) ?? null, now)) {
+    return false;
+  }
+  lastPlayed.set(event, now);
+  fx.playSfx(name, category.volume);
+  return true;
+}
+
 /** 이벤트별 스로틀을 유지하는 재생기를 만든다. */
 export function createInteractionSfxPlayer(): StudioInteractionSfxPlayer {
   const lastPlayed = new Map<StudioInteractionSfxEvent, number | null>();
@@ -59,22 +94,13 @@ export function createInteractionSfxPlayer(): StudioInteractionSfxPlayer {
     play(event: StudioInteractionSfxEvent): boolean {
       const category = readInteractionSfxCategorySettings();
       if (!category.enabled || category.volume <= 0) return false;
-      const audio = getAudioState();
-      const name = resolveInteractionSfx(event, {
-        sfxEnabled: audio.sfxEnabled,
-        muted: audio.muted,
-        reducedMotion: prefersReducedMotion(),
-        click: category.click,
-        draw: category.draw,
-        drag: category.drag,
-      });
-      if (!name) return false;
-      const now = Date.now();
-      if (!shouldPlayInteractionSfx(event, lastPlayed.get(event) ?? null, now)) {
-        return false;
+      if (cachedCoreFx) {
+        return playWithCoreFx(cachedCoreFx, event, category, lastPlayed);
       }
-      lastPlayed.set(event, now);
-      playSfx(name, category.volume);
+      void coreFxLoader.load().then(
+        (fx) => { playWithCoreFx(fx, event, category, lastPlayed); },
+        () => undefined,
+      );
       return true;
     },
   };

@@ -19,8 +19,9 @@ import { STUDIO_BRUSH_MATERIAL_GROUP_LABELS } from "./studio-brush-material-grou
 import { studioBrushProductProfileSearchTerms } from "./studio-brush-product-profile";
 import { isStudioV6BrushCatalogId } from "./studio-brush-v6-id";
 
-export const STUDIO_BRUSH_SIZE_RANGE = { min: 1, max: 80 } as const;
-export const STUDIO_BRUSH_OPACITY_RANGE = { min: 0.05, max: 1 } as const;
+import { STUDIO_BRUSH_OPACITY_RANGE, STUDIO_BRUSH_SIZE_RANGE } from "./studio-brush-size-range";
+
+export { STUDIO_BRUSH_OPACITY_RANGE, STUDIO_BRUSH_SIZE_RANGE };
 
 /** Size nudge steps (coarse when large). */
 export function studioBrushSizeStep(current: number, direction: 1 | -1): number {

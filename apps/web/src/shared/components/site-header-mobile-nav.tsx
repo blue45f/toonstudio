@@ -2,7 +2,7 @@ import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
-import { ArrowRight, LayoutGrid, X } from "lucide-react";
+import { ArrowRight, Headphones, LayoutGrid, X } from "lucide-react";
 import { useEffect, useRef, type CSSProperties, type RefObject } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -21,6 +21,10 @@ import { SiteMenuUtilities } from "./SiteMenuUtilities";
 import { useSiteMenuAudioHandoff } from "./use-site-menu-audio-handoff";
 import { siteMobilePurposeHref, type SiteMobilePurposeHref } from "./site-mobile-purpose";
 import { ToonStudioWordmark } from "./toonstudio-brand";
+import {
+  accentToneBadgeClasses,
+  resolvePageRoleJourney,
+} from "./workspace/page-role-journey-map";
 
 import Link from "@/shared/navigation/router-link";
 import { cx } from "@/shared/lib/cx";
@@ -135,6 +139,8 @@ export function MobileHeaderNavigation({
   const navigationContext = siteNavigationContextForPath(pathname);
   /** 지도는 하나다. 현재 경로가 속한 여정 구간만 강조 표시한다. */
   const currentGroupId = siteNavigationGroupForPath(pathname)?.id ?? null;
+  const currentRole = resolvePageRoleJourney(pathname);
+  const isKo = locale === "ko";
   const mobileTabs = [...mobileSiteTabsForPath(pathname), SITE_NAVIGATION_ITEMS.allMenu];
   const resolvedPurposeHref = currentPurposeHref === undefined ? siteMobilePurposeHref(pathname) : currentPurposeHref;
   const activeTabIndex = mobileTabs.findIndex((item) => item.id === "all-menu"
@@ -144,16 +150,9 @@ export function MobileHeaderNavigation({
    * even if the CSS media query hiding it were lost. Tabs keep the canonical
    * destinations from the navigation model (no legacy /new or /more aliases). */
   const showBottomTabs = isMobileViewport && !hideBottomTabs;
-  const menuDescription =
-    navigationContext === "studio"
-      ? bi(
-          "기획부터 검수·내보내기까지, 필요한 단계로 바로 이동하세요",
-          "Jump straight to planning, production, review or export"
-        )
-      : bi(
-          "영감을 찾고, 그리고, 함께 나누는 작업실",
-          "Discover inspiration, draw and share your work"
-        );
+  const menuDescription = isKo
+    ? currentRole.roleHeadlineKo
+    : currentRole.roleHeadlineEn;
 
   useEffect(() => {
     const committed = previousLocationKey.current !== locationKey;
@@ -253,6 +252,8 @@ export function MobileHeaderNavigation({
             tabIndex={-1}
             data-site-product={navigationContext}
             data-site-menu-panel="true"
+            data-journey-stage={currentRole.stageNumber}
+            data-accent-tone={currentRole.accentTone}
             className="absolute inset-x-0 top-0 z-[110] max-h-[100dvh] overflow-y-auto overscroll-contain border-b border-line-strong bg-canvas/95 shadow-2xl backdrop-blur-2xl motion-safe:animate-fade-up"
           >
             <div className="sticky top-0 z-10 border-b border-line/60 bg-canvas/92 backdrop-blur-2xl">
@@ -260,9 +261,20 @@ export function MobileHeaderNavigation({
                 <div className="flex min-w-0 items-center gap-3">
                   <ToonStudioMark className="size-10 rounded-[0.85rem]" />
                   <div className="min-w-0">
-                    <span className="block truncate font-display text-sm font-semibold text-fg">
-                      <ToonStudioWordmark />
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="block truncate font-display text-sm font-semibold text-fg">
+                        <ToonStudioWordmark />
+                      </span>
+                      <span
+                        data-accent-tone={currentRole.accentTone}
+                        className={cx(
+                          "rounded-full border px-2 py-0.5 text-[10px] font-semibold tabular-nums [word-break:keep-all]",
+                          accentToneBadgeClasses(currentRole.accentTone),
+                        )}
+                      >
+                        {isKo ? currentRole.stageBadgeKo : currentRole.stageBadgeEn}
+                      </span>
+                    </div>
                     <span className="mt-0.5 block truncate text-xs text-fg-3 [word-break:keep-all]">
                       {menuDescription}
                     </span>
@@ -282,7 +294,7 @@ export function MobileHeaderNavigation({
 
             <nav aria-label={bi("전체 서비스 메뉴", "All service navigation")} className="site-menu-navigation">
               <SiteMenuDestinations locale={locale} currentGroupId={currentGroupId}
-                isActive={isActive} menuId={menuId} />
+                currentPathname={pathname} isActive={isActive} menuId={menuId} />
 
               <Link href="/sitemap/all" aria-current={isActive("/sitemap/all", true) ? "page" : undefined} className="site-menu-directory">
                 <LayoutGrid size={18} aria-hidden="true" />
@@ -292,16 +304,37 @@ export function MobileHeaderNavigation({
 
               <SiteMenuUtilities onOpenMusic={openMusic} settingsActive={isActive("/settings")} />
               <div className="mt-4 grid gap-2 border-t border-line pt-4">
+                <Link
+                  href="/studio/support"
+                  aria-current={isActive("/studio/support") ? "page" : undefined}
+                  data-journey-stage={5}
+                  data-accent-tone="support"
+                  className={cx(
+                    "group flex min-h-12 items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-semibold outline-none transition-[border-color,background-color,color] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
+                    isActive("/studio/support")
+                      ? "border-success bg-success-soft text-fg"
+                      : "border-success/35 bg-success-soft/60 text-fg hover:border-success hover:bg-success-soft",
+                  )}
+                >
+                  <Headphones size={17} aria-hidden="true" className="shrink-0 text-success" />
+                  <span className="min-w-0 break-words [word-break:keep-all]">
+                    {bi("AI 고객센터 · 1:1 채팅상담", "AI Support · 1:1 Live Chat")}
+                  </span>
+                  <span aria-hidden="true" className="ml-auto text-xs text-success">↗</span>
+                </Link>
                 {SITE_UTILITY_NAVIGATION.filter((item) => item.id !== "settings").map((item) => {
                   const active = isActive(item.href, item.exact);
                   const Icon = item.icon;
                   const label = siteNavigationText(item.label, locale);
+                  const itemRole = resolvePageRoleJourney(item.href);
                   return (
                     <Link
                       key={item.id}
                       href={item.href}
                       aria-label={label}
                       aria-current={active ? "page" : undefined}
+                      data-journey-stage={itemRole.stageNumber}
+                      data-accent-tone={itemRole.accentTone}
                       className={cx(
                         "group flex min-h-12 items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-semibold outline-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                         active
@@ -340,6 +373,7 @@ export function MobileHeaderNavigation({
         <nav
           aria-label={t("nav.quickAccess")}
           data-site-product={navigationContext}
+          data-journey-stage={currentRole.stageNumber}
           className="site-bottom-tabs fixed inset-x-0 bottom-0 z-50 border-t border-line bg-panel min-[1180px]:hidden"
         >
           <div
@@ -357,12 +391,15 @@ export function MobileHeaderNavigation({
               const active = index === activeTabIndex;
               const Icon = item.icon;
               const label = siteNavigationText(item.label, locale);
+              const tabRole = resolvePageRoleJourney(item.href);
               return (
                 <Link
                   key={item.id}
                   href={item.href}
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
+                  data-journey-stage={tabRole.stageNumber}
+                  data-accent-tone={tabRole.accentTone}
                   className={cx(
                     "site-bottom-tabs__link relative flex min-h-[3.75rem] min-w-0 flex-col items-center justify-center gap-1 overflow-hidden px-0.5 py-2 text-xs font-medium break-keep outline-none transition-[color,transform] duration-150 active:scale-[0.96] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:active:scale-100",
                     active ? "text-fg" : "text-fg-3 hover:text-fg-2"

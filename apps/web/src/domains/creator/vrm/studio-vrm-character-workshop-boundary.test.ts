@@ -11,8 +11,11 @@ const reference = readFileSync(
   "utf8",
 );
 const renderer = readFileSync(new URL("./StudioVrmAvatarForge.tsx", import.meta.url), "utf8");
-// 헤어 메시·재질·외곽선 조립은 뷰포트와 카드 썸네일이 함께 쓰도록 이 모듈로 옮겼다.
+// 헤어 메시 조립은 뷰포트와 카드 썸네일이 함께 쓰도록 이 모듈로 옮겼고,
+// 2026-11-21(6c6c6f838) 통합 MToon 셰이딩·용접 법선 역면 외곽선은 전용 커스텀 파츠 모듈로 분리했다.
 const hairRenderer = readFileSync(new URL("./studio-vrm-avatar-forge-hair-object.ts", import.meta.url), "utf8");
+const customPartMaterial = readFileSync(new URL("./studio-vrm-custom-part-material.ts", import.meta.url), "utf8");
+const customPartGeometry = readFileSync(new URL("./studio-vrm-custom-part-geometry.ts", import.meta.url), "utf8");
 const dialog = readFileSync(new URL("./StudioVrmPoserDialog.tsx", import.meta.url), "utf8");
 
 describe("Shaper-inspired character workshop product boundary", () => {
@@ -41,13 +44,19 @@ describe("Shaper-inspired character workshop product boundary", () => {
 
   it("adds a merged authored toon silhouette without mutating source hair geometry", () => {
     expect(renderer).toContain("addAvatarForgeHairParts(");
-    expect(hairRenderer).toContain("new THREE.MeshToonMaterial");
-    expect(hairRenderer).toContain("new THREE.MeshBasicMaterial");
-    expect(hairRenderer).toContain("THREE.BackSide");
-    expect(hairRenderer).toContain("createExpandedOutlineGeometry");
-    expect(hairRenderer).toContain("normal.getX(index) * thickness");
+    expect(hairRenderer).toContain("createStudioVrmHairMToonMaterials(");
+    expect(hairRenderer).toContain("createStudioVrmSmoothOutlineGeometry(merged)");
     expect(hairRenderer).toContain("ToonStudioAvatarForgeHair_AuthoredMerged");
+    expect(hairRenderer).toContain("ToonStudioAvatarForgeHairOutline_AuthoredMerged");
     expect(hairRenderer).toContain("mergeStudioVrmAuthoredHairGeometry(");
+    expect(customPartMaterial).toContain("export function createStudioVrmHairMToonMaterials(");
+    expect(customPartMaterial).toContain("new MToonMaterial({");
+    expect(customPartMaterial).toContain("isOutline: true");
+    expect(customPartMaterial).toContain("side: THREE.BackSide");
+    expect(customPartMaterial).toContain("depthWrite: true");
+    expect(customPartGeometry).toContain("export function createStudioVrmSmoothOutlineGeometry(");
+    expect(customPartGeometry).toContain("const outline = source.clone();");
+    expect(customPartGeometry).toContain("smoothStudioVrmCoincidentNormals(outline, { creaseAngleDeg: 180 })");
     expect(dialog).toContain("max-w-[1480px]");
     expect(dialog).toContain("_460px");
   });

@@ -2,7 +2,7 @@ import {
   refitSettledCenterline,
   type CenterlineFitEngine,
   type SettledCenterlineRefitResult,
-} from "@toonstudio/studio-brush-platform";
+} from "@toonstudio/studio-brush-platform/compile";
 
 import {
   requireStudioDrawingPointerTransport,
@@ -25,7 +25,6 @@ import {
   type StudioPathBooleanOp,
   type StudioPathBooleanShapeSpec,
 } from "./studio-path-boolean";
-import { combineStudioShapesSync } from "./studio-pathfinder-boolean-adapter";
 import { studioVectorAsyncCommandStaleReason } from "./studio-vector-async-command-guard";
 
 import type { StudioEditorMutationTicket } from "./studio-editor-scope";
@@ -673,6 +672,7 @@ export function createStudioPageVectorOps(
     } as const;
     setPathBooleanBusy(true);
     try {
+      const { combineStudioShapesSync } = await import("./studio-pathfinder-boolean-adapter");
       const result = combineStudioShapesSync(
         baseSpec,
         topSpec,

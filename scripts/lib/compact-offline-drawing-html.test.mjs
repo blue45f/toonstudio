@@ -32,6 +32,8 @@ describe("긴급 복구 HTML 압축의 CSP 경계", () => {
   it.each([
     ["외부 모듈", html().replace('type="module"', 'type="module" src="/runtime.js"')],
     ["복수 모듈", html().replace("</body>", '<script type="module">void 0;</script></body>')],
+    ["변형 종료 태그", html().replace("</script>", "</script\t\n bar>")],
+    ["변형 종료 태그 기반 복수 모듈", html().replace("</body>", "<script>alert(1)</script\t\n bar></body>")],
     ["CSP 누락", html().replace(/<meta[^>]+>/u, "")],
     ["복수 CSP", html().replace("</head>", '<meta http-equiv="Content-Security-Policy" content="default-src none"></head>')],
   ])("%s 구조에서는 압축을 거부한다", async (_name, source) => {

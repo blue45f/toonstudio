@@ -9,7 +9,10 @@ import {
   STUDIO_AVATAR_OUTFIT_COLOR_OPTIONS,
   STUDIO_AVATAR_OUTFIT_STYLE_OPTIONS,
   STUDIO_AVATAR_SKIN_OPTIONS,
+  STUDIO_WEBTOON_AVATAR_ARCHETYPE_PRESETS,
+  resolveStudioWebtoonAvatarPreset,
 } from "./studio-virtual-space-avatar-options";
+import { parseStudioVirtualAvatarProfile } from "./studio-virtual-space-avatar-store";
 
 describe("아바타 꾸미기 옵션 카탈로그", () => {
   it("요구 수량을 만족한다 (피부 12·헤어색 14·헤어스타일 18·의상 18·액세서리 16)", () => {
@@ -81,5 +84,21 @@ describe("아바타 꾸미기 옵션 카탈로그", () => {
 
   it("액세서리에 '없음' 옵션이 있다", () => {
     expect(STUDIO_AVATAR_ACCESSORY_OPTIONS.some((option) => option.key === "none")).toBe(true);
+  });
+
+  it("한국 웹툰 대표 18종 아키타입 프리셋이 기존 저장 스키마와 100% 호환된다", () => {
+    expect(STUDIO_WEBTOON_AVATAR_ARCHETYPE_PRESETS.length).toBeGreaterThanOrEqual(16);
+    const ids = new Set(STUDIO_WEBTOON_AVATAR_ARCHETYPE_PRESETS.map((preset) => preset.id));
+    expect(ids.size).toBe(STUDIO_WEBTOON_AVATAR_ARCHETYPE_PRESETS.length);
+
+    for (const preset of STUDIO_WEBTOON_AVATAR_ARCHETYPE_PRESETS) {
+      const parsed = parseStudioVirtualAvatarProfile(preset.profile);
+      expect(parsed, preset.id).not.toBeNull();
+      expect(resolveStudioWebtoonAvatarPreset(preset.id)).toBe(preset);
+      expect(resolveStudioWebtoonAvatarPreset(preset.personaId)?.personaId).toBe(preset.personaId);
+    }
+    expect(resolveStudioWebtoonAvatarPreset("rofan-duchess")?.genreKo).toBe("로판");
+    expect(resolveStudioWebtoonAvatarPreset("companion-corgi-director")?.companionLabelKo).toContain("웰시코기");
+    expect(resolveStudioWebtoonAvatarPreset("unknown-id")).toBeNull();
   });
 });

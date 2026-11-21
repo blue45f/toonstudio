@@ -39,6 +39,14 @@ const CharacterShaperStandaloneEditor = lazyRetry(
   "CharacterShaperStandaloneEditor",
 );
 
+const LazyStudioCharacterShaperUnifiedPanel = lazyRetry(
+  () =>
+    import("./character-shaper-unified/StudioCharacterShaperUnifiedPanel").then((module) => ({
+      default: module.StudioCharacterShaperUnifiedPanel,
+    })),
+  "StudioCharacterShaperUnifiedPanel",
+);
+
 export function CharacterShaperLandingPage() {
   const bt = useBilingual("CharacterShaperLandingPage");
   const localize = useBilingualLocalizer("CharacterShaperLandingPage");
@@ -48,6 +56,7 @@ export function CharacterShaperLandingPage() {
   const guideExplicit =
     searchParams.get("guide") === "1" || location.hash === "#how-to" || (typeof window !== "undefined" && window.location.hash === "#how-to");
   const [dismissedAutoStage, setDismissedAutoStage] = useState(false);
+  const [unifiedWorkbenchOpen, setUnifiedWorkbenchOpen] = useState(false);
 
   const webglStatus = useMemo(() => {
     if (editor.editorOpen || editor.webglBlocked || guideExplicit || dismissedAutoStage) return null;
@@ -111,6 +120,39 @@ export function CharacterShaperLandingPage() {
       <CharacterShaperLandingGuide />
       <CharacterShaperLandingFaq />
       <CharacterShaperLandingClosing editor={editor} />
+
+      <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6">
+        <details
+          data-testid="studio-character-shaper-unified-disclosure"
+          className="rounded-2xl border border-line bg-panel p-4"
+          onToggle={(event) => setUnifiedWorkbenchOpen(event.currentTarget.open)}
+        >
+          <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm font-semibold text-fg">
+            <span className="min-w-0 [word-break:keep-all]">
+              {bt(
+                "툰스튜디오 통합 3D 캐릭터 셰이퍼 · 페이지 구조 통합 지도",
+                "ToonStudio Unified 3D Character Shaper · Site Page Consolidation Map",
+              )}
+            </span>
+          </summary>
+          {unifiedWorkbenchOpen ? (
+            <div className="mt-4 border-t border-line pt-4">
+              <Suspense
+                fallback={
+                  <div className="rounded-xl border border-line bg-card p-4 text-xs text-fg-2">
+                    {bt(
+                      "통합 3D 캐릭터 셰이퍼와 페이지 구조 지도를 불러오는 중입니다.",
+                      "Loading the unified 3D character shaper and page consolidation map.",
+                    )}
+                  </div>
+                }
+              >
+                <LazyStudioCharacterShaperUnifiedPanel />
+              </Suspense>
+            </div>
+          ) : null}
+        </details>
+      </section>
 
       {showEditor ? (
         <Suspense fallback={<CharacterShaperEditorLoading />}>

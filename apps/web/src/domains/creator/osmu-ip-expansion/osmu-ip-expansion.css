@@ -1,0 +1,404 @@
+/* OSMU IP 확장 관제실 (웹소설 양방향 각색 · 웹드라마/OTT 피칭 바이블 · 애니메이션 24fps X-Sheet)
+ * OKLCH 스펙트럼 계층 · >= 44x44px 터치 타겟 · 명시적 속성 전이 전용 */
+
+.osmu-shell {
+  --osmu-accent: var(--color-accent, oklch(0.61 0.17 264));
+  --osmu-novel: var(--color-warn, oklch(0.72 0.15 72));
+  --osmu-drama: var(--color-cool, oklch(0.64 0.16 238));
+  --osmu-anime: var(--color-good, oklch(0.66 0.16 156));
+  --osmu-bad: var(--color-bad, oklch(0.62 0.21 26));
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 1.25rem;
+  background-color: var(--color-panel);
+  color: var(--color-fg);
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .osmu-shell {
+    padding: 1.25rem;
+  }
+}
+
+.osmu-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--osmu-novel) 0%,
+    var(--osmu-drama) 50%,
+    var(--osmu-anime) 100%
+  );
+  pointer-events: none;
+}
+
+.osmu-shell :is(h1, h2, h3, h4, button, label, th, summary) {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.osmu-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.osmu-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .osmu-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.osmu-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .osmu-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .osmu-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.osmu-kpi-card {
+  min-width: 0;
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background-color: var(--color-card);
+  padding: 0.75rem 0.875rem;
+}
+
+.osmu-tablist {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 640px) {
+  .osmu-tablist {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.osmu-tab,
+.osmu-btn,
+.osmu-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-card);
+  color: var(--color-fg);
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.osmu-tab:hover,
+.osmu-btn:hover,
+.osmu-chip:hover {
+  border-color: color-mix(in oklch, var(--osmu-accent) 58%, var(--color-line));
+  background-color: color-mix(in oklch, var(--osmu-accent) 10%, var(--color-card));
+}
+
+.osmu-tab:active,
+.osmu-btn:active,
+.osmu-chip:active {
+  transform: scale(0.985);
+}
+
+.osmu-tab:focus-visible,
+.osmu-btn:focus-visible,
+.osmu-chip:focus-visible,
+.osmu-textarea:focus-visible {
+  outline: 2px solid var(--osmu-accent);
+  outline-offset: 2px;
+}
+
+.osmu-tab[aria-selected="true"],
+.osmu-chip[aria-pressed="true"],
+.osmu-btn[aria-pressed="true"] {
+  border-color: var(--osmu-accent);
+  background-color: color-mix(in oklch, var(--osmu-accent) 15%, var(--color-panel));
+  box-shadow: inset 0 -2px 0 var(--osmu-accent);
+}
+
+.osmu-tab[data-domain="novel"][aria-selected="true"] {
+  border-color: var(--osmu-novel);
+  background-color: color-mix(in oklch, var(--osmu-novel) 15%, var(--color-panel));
+  box-shadow: inset 0 -2px 0 var(--osmu-novel);
+}
+
+.osmu-tab[data-domain="drama"][aria-selected="true"] {
+  border-color: var(--osmu-drama);
+  background-color: color-mix(in oklch, var(--osmu-drama) 15%, var(--color-panel));
+  box-shadow: inset 0 -2px 0 var(--osmu-drama);
+}
+
+.osmu-tab[data-domain="anime"][aria-selected="true"] {
+  border-color: var(--osmu-anime);
+  background-color: color-mix(in oklch, var(--osmu-anime) 15%, var(--color-panel));
+  box-shadow: inset 0 -2px 0 var(--osmu-anime);
+}
+
+.osmu-card {
+  min-width: 0;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  background-color: var(--color-card);
+  padding: 1rem;
+}
+
+.osmu-split-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.875rem;
+}
+
+@media (min-width: 1024px) {
+  .osmu-split-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.osmu-card-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .osmu-card-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .osmu-card-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.osmu-pill {
+  --pill-tone: var(--osmu-drama);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklch, var(--pill-tone) 52%, var(--color-line));
+  background-color: color-mix(in oklch, var(--pill-tone) 14%, var(--color-panel));
+  color: var(--color-fg);
+  padding: 0.2rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.osmu-pill[data-tone="good"] {
+  --pill-tone: var(--osmu-anime);
+}
+
+.osmu-pill[data-tone="warn"] {
+  --pill-tone: var(--osmu-novel);
+}
+
+.osmu-pill[data-tone="bad"] {
+  --pill-tone: var(--osmu-bad);
+}
+
+.osmu-pill[data-tone="accent"] {
+  --pill-tone: var(--osmu-accent);
+}
+
+.osmu-banner {
+  --banner-tone: var(--osmu-drama);
+  border-radius: 0.875rem;
+  border: 1px solid color-mix(in oklch, var(--banner-tone) 52%, var(--color-line));
+  background-color: color-mix(in oklch, var(--banner-tone) 12%, var(--color-panel));
+  padding: 0.75rem 1rem;
+  color: var(--color-fg);
+}
+
+.osmu-banner[data-tone="good"] {
+  --banner-tone: var(--osmu-anime);
+}
+
+.osmu-banner[data-tone="warn"] {
+  --banner-tone: var(--osmu-novel);
+}
+
+.osmu-banner[data-tone="bad"] {
+  --banner-tone: var(--osmu-bad);
+}
+
+.osmu-meter-track {
+  height: 0.5rem;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: color-mix(in oklch, var(--color-line) 68%, var(--color-canvas));
+}
+
+.osmu-meter-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--osmu-drama), var(--osmu-anime));
+  transition: width 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.osmu-prose-box,
+.osmu-code-box {
+  max-height: 20rem;
+  overflow-y: auto;
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background-color: var(--color-canvas);
+  padding: 0.875rem 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: keep-all;
+}
+
+.osmu-code-box {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  word-break: break-all;
+}
+
+.osmu-textarea {
+  min-height: 12rem;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background-color: var(--color-canvas);
+  color: var(--color-fg);
+  padding: 0.75rem 0.875rem;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.osmu-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background-color: var(--color-canvas);
+}
+
+.osmu-table {
+  width: 100%;
+  min-width: 38rem;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.osmu-table th,
+.osmu-table td {
+  border-bottom: 1px solid var(--color-line);
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.osmu-table tr[data-keyframe="true"] {
+  background-color: color-mix(in oklch, var(--osmu-anime) 10%, var(--color-canvas));
+}
+
+.osmu-viseme-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.osmu-viseme-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.625rem;
+  background-color: var(--color-canvas);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.osmu-viseme-chip[data-viseme="A"] {
+  border-color: color-mix(in oklch, var(--osmu-bad) 60%, var(--color-line));
+}
+
+.osmu-viseme-chip[data-viseme="O"],
+.osmu-viseme-chip[data-viseme="E"] {
+  border-color: color-mix(in oklch, var(--osmu-novel) 60%, var(--color-line));
+}
+
+.osmu-viseme-chip[data-viseme="I"],
+.osmu-viseme-chip[data-viseme="U"] {
+  border-color: color-mix(in oklch, var(--osmu-drama) 60%, var(--color-line));
+}
+
+:root[data-design-theme="contrast"] .osmu-shell,
+:root[data-design-theme="contrast"] .osmu-card,
+:root[data-design-theme="contrast"] .osmu-kpi-card,
+:root[data-design-theme="contrast"] .osmu-table-wrap {
+  border-color: var(--color-line-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .osmu-tab,
+  .osmu-btn,
+  .osmu-chip,
+  .osmu-meter-fill {
+    transition: none;
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .osmu-shell::before {
+    display: none;
+  }
+
+  .osmu-tab[aria-selected="true"],
+  .osmu-chip[aria-pressed="true"],
+  .osmu-btn[aria-pressed="true"] {
+    border: 2px solid Highlight;
+    box-shadow: none;
+  }
+}

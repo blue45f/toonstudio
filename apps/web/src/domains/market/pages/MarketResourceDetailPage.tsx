@@ -1,4 +1,5 @@
 import { ArrowLeft, SearchX } from "lucide-react";
+import { lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 
 import { MarketNavHeader } from "../components/MarketNavHeader";
@@ -21,6 +22,10 @@ import {
   useMetaDescription,
   usePageSocialMeta,
 } from "@/shared/seo/use-document-title";
+
+const Market3dTurntablePreviewCard = lazy(
+  () => import("../components/Market3dTurntablePreviewCard"),
+);
 
 export function MarketResourceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -54,6 +59,13 @@ export function MarketResourceDetailPage() {
     record ? { publisher: record.publisher.id, limit: 5, sort: "newest" } : null,
   );
   const publisherItems = publisherMore.items.filter((item) => item.id !== record?.id).slice(0, 4);
+  const supports3dTurntable = Boolean(
+    record &&
+      (record.kind === "3d-asset" ||
+        record.kind === "3d-preset" ||
+        record.compatibility?.engines?.includes("three") ||
+        record.compatibility?.engines?.includes("webgpu")),
+  );
 
   return (
     <Container size="wide" className="py-7 sm:py-10">
@@ -151,6 +163,20 @@ export function MarketResourceDetailPage() {
               t("사용권을 확인한 뒤 내 리소스에 추가하고 Studio에서 설치·시험합니다.", "Check the license, add it to your resources, then install and test it in Studio."),
             ]}
           />
+          {supports3dTurntable ? (
+            <Suspense
+              fallback={
+                <div
+                  role="status"
+                  className="rounded-2xl border border-line bg-card p-5 text-xs font-semibold text-fg-2"
+                >
+                  {t("3D 턴테이블 프리뷰를 불러오는 중입니다…", "Loading 3D turntable preview…")}
+                </div>
+              }
+            >
+              <Market3dTurntablePreviewCard record={record} />
+            </Suspense>
+          ) : null}
           <MarketProductionFitWorkbench record={record} />
           <MarketResourceDetailArticle
             record={record}

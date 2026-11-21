@@ -1,17 +1,15 @@
+import { providerDescriptorSchema } from "@toonstudio/studio-engine-registry/descriptor";
+import { HybridExecutionPlanner, type SurfacePlan } from "@toonstudio/studio-engine-registry/planner";
 import {
-  declareTrustedBootstrapProvider,
-  EngineCapabilityRegistry,
   estimateProviderCost,
-  HybridExecutionPlanner,
   planWithCostShadow,
-  providerDescriptorSchema,
-  quantizePow2Bucket,
   type CostShadowFingerprint,
   type CostShadowPlanRequest,
   type IslandCostShadowReceipt,
   type SurfaceCostShadowReceipt,
-  type SurfacePlan,
-} from "@toonstudio/studio-engine-registry";
+} from "@toonstudio/studio-engine-registry/planner-cost-shadow";
+import { declareTrustedBootstrapProvider, EngineCapabilityRegistry } from "@toonstudio/studio-engine-registry/registry";
+import { quantizePow2Bucket } from "@toonstudio/studio-engine-registry/tournament";
 
 import {
   getStudioTournamentRuntime,

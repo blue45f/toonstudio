@@ -1,4 +1,4 @@
-import { canonicalJson } from "@toonstudio/studio-project-model";
+import { canonicalJson } from "@toonstudio/studio-project-model/digest";
 import type { StudioScopedSharedDocumentInput } from "../studio-shared-document-client";
 
 function record(value: unknown): Record<string, unknown> {

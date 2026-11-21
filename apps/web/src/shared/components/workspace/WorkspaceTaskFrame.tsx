@@ -1,9 +1,10 @@
 import { ArrowLeft, ChevronRight, Search } from "lucide-react";
-import { useRef, type ReactNode } from "react";
+import { Suspense, useRef, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import Link from "@/shared/navigation/router-link";
 import { OpenSearchButton } from "@/shared/components/open-search-button";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { WorkspaceAccountAction, WorkspaceBrand, WorkspaceSidebar } from "./WorkspaceChrome";
 import { workspaceNavigationContext, workspaceNavigationHref } from "./workspace-navigation-model";
 import type { WorkspaceTaskRoute } from "./workspace-task-route";
@@ -12,6 +13,13 @@ import "./workspace.css";
 import "./workspace-redesign.css";
 import "./workspace-task-frame.css";
 import "@/shared/components/workspace/workspace-visual-v3.css";
+
+const PageRoleAndJourneyNavigator = lazyRetry(
+  () => import("./PageRoleAndJourneyNavigator").then((module) => ({
+    default: module.PageRoleAndJourneyNavigator,
+  })),
+  "PageRoleAndJourneyNavigator",
+);
 
 /** Stable child ancestry keeps AppRouter and editor lifetime independent of chrome changes. */
 export function WorkspaceTaskFrame({ route, owner = "local", children, campusMode, campusControls, campusScene }: {
@@ -100,6 +108,11 @@ export function WorkspaceTaskFrame({ route, owner = "local", children, campusMod
       aria-label={focused ? bt("작업 내용", "Task content") : undefined}
     >
       {!focused && campusControls ? <div className="campus-toolbar" key="campus-controls">{campusControls}</div> : null}
+      {route && !focused ? (
+        <Suspense fallback={null} key="role-journey">
+          <PageRoleAndJourneyNavigator pathname={pathname} context={context} />
+        </Suspense>
+      ) : null}
       {route && !campusMode && !focused ? <details className="workspace-task-guide" key="purpose">
         <summary>{bt("작업 안내와 홈으로 돌아가기", "Task guide and return home")}<ChevronRight size={16} aria-hidden="true" /></summary>
         <div className="workspace-task-purpose">

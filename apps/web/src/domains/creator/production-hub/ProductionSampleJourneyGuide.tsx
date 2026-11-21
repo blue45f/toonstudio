@@ -1,4 +1,5 @@
 import { ArrowRight, ChevronDown } from "lucide-react";
+import { Suspense, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { PRODUCTION_SAMPLE_STEPS, type ProductionSampleLocation } from "./production-sample-journey";
@@ -6,7 +7,13 @@ import { ProductionSampleBadge } from "./production-ui";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { cn } from "@/shared/lib/utils";
+
+const LazyStudioGlobalBizOsPanel = lazyRetry(
+  () => import("../global-biz-os/StudioGlobalBizOsPanel"),
+  "StudioGlobalBizOsPanel",
+);
 
 /**
  * 샘플 프로젝트 체험 안내. 어느 화면에 있든 같은 자리에서
@@ -15,6 +22,7 @@ import { cn } from "@/shared/lib/utils";
  */
 export function ProductionSampleJourneyGuide({ location }: { readonly location: ProductionSampleLocation }) {
   const bt = useBilingual("ProductionSampleJourneyGuide");
+  const [isBizOsOpen, setIsBizOsOpen] = useState(false);
   const index = PRODUCTION_SAMPLE_STEPS.findIndex((step) => step.location === location);
   const next = PRODUCTION_SAMPLE_STEPS[index + 1] ?? (index === -1 ? PRODUCTION_SAMPLE_STEPS[0] : undefined);
   return (
@@ -102,6 +110,39 @@ export function ProductionSampleJourneyGuide({ location }: { readonly location: 
             );
           })}
         </ol>
+      </details>
+      <details
+        data-testid="studio-global-biz-os-disclosure"
+        className="group/biz mt-2 border-t border-line/70 pt-2"
+        onToggle={(event) => {
+          setIsBizOsOpen(event.currentTarget.open);
+        }}
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-1 text-xs font-bold text-fg-2 outline-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+          <span>
+            {bt(
+              "스튜디오 손익(BEP) · 글로벌 세무 정산 · 팬덤 IP 수익 쉐어 · 소설→스토리보드 디렉터",
+              "Studio BEP · Global Tax Settlement · Fandom IP Share · Novel-to-Storyboard Director",
+            )}
+          </span>
+          <ChevronDown
+            className="size-4 shrink-0 transition-transform group-open/biz:rotate-180 motion-reduce:transition-none"
+            aria-hidden="true"
+          />
+        </summary>
+        {isBizOsOpen ? (
+          <div className="mt-2">
+            <Suspense
+              fallback={
+                <p className="rounded-xl border border-line bg-panel px-3 py-3 text-xs text-fg-2">
+                  {bt("스튜디오 제작경영 · 스토리보드 도구를 불러오는 중입니다…", "Loading Studio Biz OS & Storyboard Director…")}
+                </p>
+              }
+            >
+              <LazyStudioGlobalBizOsPanel />
+            </Suspense>
+          </div>
+        ) : null}
       </details>
     </section>
   );

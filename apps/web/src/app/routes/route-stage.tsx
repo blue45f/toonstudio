@@ -1,6 +1,7 @@
 import { AlertTriangle, Home, RefreshCw, Rows3 } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type AnimationEvent, type ReactNode } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState, type AnimationEvent, type ReactNode } from "react";
 
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { cn } from "@/shared/lib/utils";
 import { resolveSiteRouteMetadata } from "@/shared/lib/site-route-metadata";
 import { inspectRouteContent, routeStageTimeoutMs, type RouteContentSource, type RouteContentState } from "./route-stage-content";
@@ -8,7 +9,7 @@ import { resolveRouteStageDesign } from "./route-stage-design";
 
 import { allowStudioProgrammaticReload } from "@/shared/lib/programmatic-reload";
 import { resolveStudioRoute } from "@/domains/creator/studio-router/studio-route-manifest";
-import { PageIntroMotif } from "@/shared/ambient/PageIntroMotif";
+import { resolvePageIntroMotif } from "@/shared/ambient/page-intro-motif";
 import {
   isStudioRoutePathname,
   studioRouteStageKey,
@@ -19,6 +20,11 @@ import {
   translateCurrentStaticSourceText,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
+
+const PageIntroMotif = lazyRetry(
+  () => import("@/shared/ambient/PageIntroMotif").then((mod) => ({ default: mod.PageIntroMotif })),
+  "PageIntroMotif",
+);
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("route-stage", ko, en);
@@ -177,7 +183,11 @@ export function RouteStage({ pathname, search, accessibleTitle, children }: Rout
         </section>
       ) : null}
       {children}
-      <PageIntroMotif pathname={pathname} />
+      {resolvePageIntroMotif(pathname) ? (
+        <Suspense fallback={null}>
+          <PageIntroMotif pathname={pathname} />
+        </Suspense>
+      ) : null}
     </div>
   );
 }
