@@ -1,7 +1,7 @@
 import "./studio-division-os.css";
 
-import { Building2, ClipboardCheck, Inbox, Wallet } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Building2, ClipboardCheck, Inbox, ShieldAlert, Wallet } from "lucide-react";
+import { Suspense, useMemo, useState } from "react";
 
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
@@ -79,8 +79,17 @@ import {
 } from "./StudioDivisionOsOpsViews";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 
-export type DivisionOsRoleTab = "pd" | "ad" | "worker" | "outsource";
+const StudioHiatusShieldPanel = lazyRetry(
+  () =>
+    import("../../hiatus-shield-os/StudioHiatusShieldPanel").then((module) => ({
+      default: module.StudioHiatusShieldPanel,
+    })),
+  "StudioHiatusShieldPanel",
+);
+
+export type DivisionOsRoleTab = "pd" | "ad" | "worker" | "outsource" | "hiatus-shield";
 
 export interface StudioDivisionOsHubProps {
   readonly aggregate: ProductionProjectAggregate;
@@ -485,6 +494,7 @@ export function StudioDivisionOsHub({ aggregate }: StudioDivisionOsHubProps) {
     { id: "ad", labelKo: "AD 검수실", labelEn: "AD QA Room", icon: ClipboardCheck },
     { id: "worker", labelKo: "작업자 인박스", labelEn: "Worker Inbox", icon: Inbox },
     { id: "outsource", labelKo: "외주·정산 데스크", labelEn: "Outsource & Royalty", icon: Wallet },
+    { id: "hiatus-shield", labelKo: "휴재·지각 방지 SOS", labelEn: "Hiatus Shield SOS", icon: ShieldAlert },
   ];
 
   return (
@@ -533,11 +543,11 @@ export function StudioDivisionOsHub({ aggregate }: StudioDivisionOsHubProps) {
           {bt(currentPreset.summaryKo, currentPreset.summaryEn)}
         </p>
 
-        {/* 4대 역할 스위처 */}
+        {/* 5대 역할 스위처 */}
         <div
           role="tablist"
-          aria-label={bt("분업 OS 4대 역할 작업대", "Division OS 4 role workbenches")}
-          className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+          aria-label={bt("분업 OS 5대 역할 작업대", "Division OS 5 role workbenches")}
+          className="grid grid-cols-2 gap-2 sm:grid-cols-5"
         >
           {roleTabs.map((tab) => {
             const Icon = tab.icon;
@@ -659,6 +669,21 @@ export function StudioDivisionOsHub({ aggregate }: StudioDivisionOsHubProps) {
             onIssueOutsourceLink={handleIssueOutsourceLink}
             onRunForensicWatermark={handleRunForensicWatermark}
           />
+        ) : null}
+
+        {activeTab === "hiatus-shield" ? (
+          <Suspense
+            fallback={
+              <div role="status" className="divos-card text-xs text-fg-2">
+                {bt("휴재·지각 방지 SOS 관제실을 불러오는 중입니다…", "Loading Hiatus Shield SOS Control Room…")}
+              </div>
+            }
+          >
+            <StudioHiatusShieldPanel
+              projectTitle={aggregate.title}
+              episodeId={primaryEpisodeId}
+            />
+          </Suspense>
         ) : null}
       </div>
     </section>
