@@ -91,6 +91,7 @@ export function buildStudioAutomationMenuItems({
     {
       id: "auto-actions",
       commandId: "edit.auto-actions",
+      searchActivation: "execute",
       label: "자동 액션 · 매크로…",
       icon: WandSparkles,
       onSelect: () => {

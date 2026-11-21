@@ -8,6 +8,7 @@ import {
 
 import { MiniPoster } from "./rank-row";
 import { RatingInline } from "./ui/stars";
+import { CompetitorAliasChip } from "./command-palette-competitor-ui";
 
 import type { PaletteSelectedItem } from "./command-palette-types";
 
@@ -182,7 +183,7 @@ export function CommandPalettePreview({
           <button
             type="button"
             onClick={onExecute}
-            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-[background-color,transform,box-shadow] duration-150 hover:bg-accent-2 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             <span>상세 보기</span>
             <CornerDownLeft size={13} />
@@ -254,7 +255,7 @@ export function CommandPalettePreview({
         <button
           type="button"
           onClick={onExecute}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-[background-color,transform,box-shadow] duration-150 hover:bg-accent-2 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
         >
           <span>명령 실행</span>
           <CornerDownLeft size={13} />
@@ -289,18 +290,31 @@ export function CommandPalettePreview({
             </div>
           </div>
 
-          <div className="rounded-xl border border-line bg-card/60 p-3.5 text-xs leading-relaxed text-fg-2">
+          <div className="rounded-xl border border-line bg-card/60 p-3.5 text-xs leading-relaxed text-fg-2 break-keep">
             <p className="font-medium text-fg">도구 설명</p>
             <p className="mt-1 text-fg-3">{tool.tip}</p>
           </div>
 
-          <div className="rounded-lg border border-line/80 bg-panel/60 p-3 text-[11px] text-fg-3">
+          {tool.competitorAliases && tool.competitorAliases.length > 0 ? (
+            <div className="space-y-1.5 rounded-lg border border-line/80 bg-panel/60 p-3 text-[11px] text-fg-3">
+              <div className="font-medium text-fg-2">다른 앱에서는 이렇게 부릅니다</div>
+              <div className="flex flex-wrap gap-1.5">
+                {tool.competitorAliases.slice(0, 4).map((alias, idx) => (
+                  <CompetitorAliasChip key={`${alias.vendor}-${alias.term}`} alias={alias} staggerIndex={idx} />
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="rounded-lg border border-line/80 bg-panel/60 p-3 text-[11px] text-fg-3 break-keep">
             <div className="flex items-center gap-1.5 font-medium text-fg-2">
               <Sliders size={13} className="text-accent" />
               <span>작업 팁</span>
             </div>
             <p className="mt-1">
-              스튜디오 캔버스에서 키보드 <kbd className="font-mono text-fg">{tool.shortcutKey}</kbd>를 눌러 즉시 전환할 수 있습니다.
+              {tool.shortcutKey
+                ? <>스튜디오 캔버스에서 키보드 <kbd className="font-mono text-fg">{tool.shortcutKey}</kbd>로 바로 전환하거나 Enter로 즉시 실행할 수 있습니다.</>
+                : "Enter를 누르면 대응 스튜디오 기능으로 즉시 이동하거나 바로 실행합니다."}
             </p>
           </div>
         </div>
@@ -308,7 +322,7 @@ export function CommandPalettePreview({
         <button
           type="button"
           onClick={onExecute}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-[background-color,transform,box-shadow] duration-150 hover:bg-accent-2 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
         >
           <span>도구 선택 / 스튜디오 열기</span>
           <CornerDownLeft size={13} />
@@ -360,7 +374,7 @@ export function CommandPalettePreview({
         <button
           type="button"
           onClick={onExecute}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-[background-color,transform,box-shadow] duration-150 hover:bg-accent-2 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
         >
           <span>페이지로 이동</span>
           <CornerDownLeft size={13} />
@@ -387,7 +401,7 @@ export function CommandPalettePreview({
         <button
           type="button"
           onClick={onExecute}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-[background-color,transform,box-shadow] duration-150 hover:bg-accent-2 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
         >
           <span>검색 실행</span>
           <CornerDownLeft size={13} />

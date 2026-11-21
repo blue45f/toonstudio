@@ -377,16 +377,29 @@ function applyVrmEmoteExpression(node: StudioThreeActorNode, emoteId: string | n
   }
 }
 
-function updateWalkPhase(node: StudioThreeActorNode): number {
+function updateWalkPhase(node: StudioThreeActorNode, dt: number): { readonly phase: number; readonly blend: number } {
   const { x, z } = node.group.position;
   const gait = node.gait ??= { x, z, phase: 0 };
   const distance = Math.hypot(x - gait.x, z - gait.z) / STUDIO_THREE_SCALE;
-  gait.phase = node.moving && distance <= STUDIO_PEER_TELEPORT_DISTANCE
-    ? (gait.phase + distance * 2 * Math.PI / STUDIO_GAIT_DISTANCE_PER_CYCLE) % (2 * Math.PI)
-    : 0;
+  const prevBlend = typeof node.group.userData.gaitBlend === "number" ? node.group.userData.gaitBlend : 0;
+  let nextBlend: number;
+  if (node.moving && distance <= STUDIO_PEER_TELEPORT_DISTANCE) {
+    gait.phase = (gait.phase + distance * 2 * Math.PI / STUDIO_GAIT_DISTANCE_PER_CYCLE) % (2 * Math.PI);
+    nextBlend = Math.min(1, prevBlend + (1 - prevBlend) * Math.min(1, dt * 14));
+  } else {
+    // 정지 시 위상을 0으로 강제 초기화해 다리가 뚝 끊기는 스냅을 방지하고 가장 가까운 접지 위상으로 부드럽게 감쇠한다.
+    const nearestRest = Math.round(gait.phase / Math.PI) * Math.PI;
+    gait.phase += (nearestRest - gait.phase) * Math.min(1, dt * 12);
+    nextBlend = prevBlend * Math.exp(-dt * 12);
+    if (nextBlend < 0.02) {
+      nextBlend = 0;
+      gait.phase = 0;
+    }
+  }
+  node.group.userData.gaitBlend = nextBlend;
   gait.x = x;
   gait.z = z;
-  return gait.phase;
+  return { phase: gait.phase, blend: nextBlend };
 }
 
 function applySeatedLegsAndHips(node: StudioThreeActorNode): void {
@@ -425,10 +438,11 @@ export function applyStudioThreeActorPose(
   const emoteActive = !node.moving && Boolean(node.emoteId) && (node.emoteUntil ?? 0) > now;
   applyVrmEmoteExpression(node, emoteActive ? (node.emoteId ?? null) : null);
 
-  const walkPhase = updateWalkPhase(node);
+  const { phase: walkPhase, blend: walkBlend } = updateWalkPhase(node, dt);
+  const jumpHeight = typeof node.group.userData.jumpHeight === "number" ? Math.max(0, node.group.userData.jumpHeight) : 0;
   const restBlend = studioCameraLerp(dt, 0.2);
-  if (node.moving) {
-    const swing = Math.sin(walkPhase) * 0.42;
+  if (node.moving || (!node.seated && !emoteActive && walkBlend > 0.05)) {
+    const swing = Math.sin(walkPhase) * 0.42 * (node.moving ? 1 : walkBlend);
     const elbowLeft = Math.max(0.05, -swing * 0.55);
     const elbowRight = Math.max(0.05, swing * 0.55);
     const kneeLeft = Math.max(0, -swing * 0.72);
@@ -460,7 +474,7 @@ export function applyStudioThreeActorPose(
       node.vrmRightLowerArm.rotation.x = elbowRight;
       node.vrmRightLowerArm.rotation.z = 0;
     }
-    node.rigGroup.position.y = Math.sin(walkPhase) ** 2 * 0.012;
+    node.rigGroup.position.y = Math.sin(walkPhase) ** 2 * 0.012 * (node.moving ? 1 : walkBlend) + jumpHeight;
     node.rigGroup.rotation.set(0, 0, 0);
   } else if (emoteActive && node.emoteId) {
     const emoteId = node.emoteId;
@@ -557,44 +571,47 @@ export function applyStudioThreeActorPose(
       applySeatedLegsAndHips(node);
     }
   } else if (node.seated) {
+    node.group.userData.gaitBlend = 0;
     applySeatedLegsAndHips(node);
     applyBreathingPose(node, now);
-    node.leftArm.rotation.x = THREE.MathUtils.lerp(node.leftArm.rotation.x, -0.25, restBlend);
-    node.rightArm.rotation.x = THREE.MathUtils.lerp(node.rightArm.rotation.x, -0.25, restBlend);
-    node.leftArm.rotation.z = THREE.MathUtils.lerp(node.leftArm.rotation.z, 0, restBlend);
-    node.rightArm.rotation.z = THREE.MathUtils.lerp(node.rightArm.rotation.z, 0, restBlend);
+    // 데스크 착석 중 은은한 작화·타이핑 팔 움직임으로 생동감을 더한다.
+    const deskWork = Math.sin(now * 0.008) * 0.07;
+    node.leftArm.rotation.x = THREE.MathUtils.lerp(node.leftArm.rotation.x, -0.34 + deskWork * 0.4, restBlend);
+    node.rightArm.rotation.x = THREE.MathUtils.lerp(node.rightArm.rotation.x, -0.36 - deskWork, restBlend);
+    node.leftArm.rotation.z = THREE.MathUtils.lerp(node.leftArm.rotation.z, 0.06, restBlend);
+    node.rightArm.rotation.z = THREE.MathUtils.lerp(node.rightArm.rotation.z, -0.06, restBlend);
     if (node.vrmLeftUpperArm) {
       node.vrmLeftUpperArm.rotation.z = baseLeftZ;
-      node.vrmLeftUpperArm.rotation.x = -0.2;
+      node.vrmLeftUpperArm.rotation.x = -0.28 + deskWork * 0.35;
     }
     if (node.vrmRightUpperArm) {
       node.vrmRightUpperArm.rotation.z = baseRightZ;
-      node.vrmRightUpperArm.rotation.x = -0.2;
+      node.vrmRightUpperArm.rotation.x = -0.3 - deskWork * 0.7;
     }
     node.rigGroup.position.y = -0.22;
     node.rigGroup.rotation.set(0, 0, 0);
   } else {
     applyBreathingPose(node, now);
-    node.leftLeg.rotation.x = THREE.MathUtils.lerp(node.leftLeg.rotation.x, 0, restBlend);
-    node.rightLeg.rotation.x = THREE.MathUtils.lerp(node.rightLeg.rotation.x, 0, restBlend);
-    node.leftArm.rotation.x = THREE.MathUtils.lerp(node.leftArm.rotation.x, 0, restBlend);
-    node.rightArm.rotation.x = THREE.MathUtils.lerp(node.rightArm.rotation.x, 0, restBlend);
+    node.leftLeg.rotation.x = THREE.MathUtils.lerp(node.leftLeg.rotation.x, jumpHeight > 0.05 ? -0.25 : 0, restBlend);
+    node.rightLeg.rotation.x = THREE.MathUtils.lerp(node.rightLeg.rotation.x, jumpHeight > 0.05 ? 0.22 : 0, restBlend);
+    node.leftArm.rotation.x = THREE.MathUtils.lerp(node.leftArm.rotation.x, jumpHeight > 0.05 ? -0.45 : 0, restBlend);
+    node.rightArm.rotation.x = THREE.MathUtils.lerp(node.rightArm.rotation.x, jumpHeight > 0.05 ? -0.45 : 0, restBlend);
     node.leftArm.rotation.z = THREE.MathUtils.lerp(node.leftArm.rotation.z, 0, restBlend);
     node.rightArm.rotation.z = THREE.MathUtils.lerp(node.rightArm.rotation.z, 0, restBlend);
     if (node.vrmHips) node.vrmHips.position.y = THREE.MathUtils.lerp(node.vrmHips.position.y, node.vrmHipsBaseY ?? 0, restBlend);
-    if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperLeg.rotation.x, 0, restBlend);
-    if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperLeg.rotation.x, 0, restBlend);
-    if (node.vrmLeftLowerLeg) node.vrmLeftLowerLeg.rotation.x = THREE.MathUtils.lerp(node.vrmLeftLowerLeg.rotation.x, 0, restBlend);
-    if (node.vrmRightLowerLeg) node.vrmRightLowerLeg.rotation.x = THREE.MathUtils.lerp(node.vrmRightLowerLeg.rotation.x, 0, restBlend);
+    if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperLeg.rotation.x, jumpHeight > 0.05 ? -0.25 : 0, restBlend);
+    if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperLeg.rotation.x, jumpHeight > 0.05 ? 0.2 : 0, restBlend);
+    if (node.vrmLeftLowerLeg) node.vrmLeftLowerLeg.rotation.x = THREE.MathUtils.lerp(node.vrmLeftLowerLeg.rotation.x, jumpHeight > 0.05 ? 0.35 : 0, restBlend);
+    if (node.vrmRightLowerLeg) node.vrmRightLowerLeg.rotation.x = THREE.MathUtils.lerp(node.vrmRightLowerLeg.rotation.x, jumpHeight > 0.05 ? 0.25 : 0, restBlend);
     const idleLeftZ = node.vrm ? Math.sign(baseLeftZ || 1) * 1.36 : baseLeftZ;
     const idleRightZ = node.vrm ? Math.sign(baseRightZ || -1) * 1.36 : baseRightZ;
     if (node.vrmLeftUpperArm) {
       node.vrmLeftUpperArm.rotation.z = idleLeftZ + Math.sin(now * 0.0022) * 0.018;
-      node.vrmLeftUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperArm.rotation.x, 0.05, restBlend);
+      node.vrmLeftUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperArm.rotation.x, jumpHeight > 0.05 ? -0.35 : 0.05, restBlend);
     }
     if (node.vrmRightUpperArm) {
       node.vrmRightUpperArm.rotation.z = idleRightZ - Math.sin(now * 0.0022) * 0.018;
-      node.vrmRightUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperArm.rotation.x, 0.05, restBlend);
+      node.vrmRightUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperArm.rotation.x, jumpHeight > 0.05 ? -0.35 : 0.05, restBlend);
     }
     if (node.vrmLeftLowerArm) {
       node.vrmLeftLowerArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftLowerArm.rotation.x, node.vrm ? 0.06 : 0, restBlend);
@@ -606,7 +623,7 @@ export function applyStudioThreeActorPose(
       node.vrmRightLowerArm.rotation.y = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.y, node.vrm ? 0.16 : 0, restBlend);
       node.vrmRightLowerArm.rotation.z = THREE.MathUtils.lerp(node.vrmRightLowerArm.rotation.z, 0, restBlend);
     }
-    node.rigGroup.position.y = THREE.MathUtils.lerp(node.rigGroup.position.y, 0, restBlend);
+    node.rigGroup.position.y = jumpHeight > 0.01 ? jumpHeight : THREE.MathUtils.lerp(node.rigGroup.position.y, 0, restBlend);
     node.rigGroup.rotation.set(0, 0, 0);
   }
 

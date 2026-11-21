@@ -27,7 +27,7 @@ import { normalizeToonLighting } from "../toon-reference";
 import { BABYLON_SIDE_EFFECTS_LOADED } from "./babylon-side-effects";
 import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
-import { collectEngineRenderTelemetry, evaluateAndApplyEyeballHighlight, projectRigJointHandles, readViewportCameraInfo, resolveEnhancedToonParams } from "./character-engine-toon";
+import { collectEngineRenderTelemetry, evaluateAndApplyEyeballHighlight, projectRigJointHandles, readViewportCameraInfo, resolveEnhancedToonParams, resolveMeshToonMaterial, syncPartSubmeshToonUniforms } from "./character-engine-toon";
 import { CharacterOutlineController } from "./character-outline-controller";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
 import { fromQuaternion } from "./convert";
@@ -592,7 +592,7 @@ export class BabylonCharacterEngine
       if (nodeToon) this.beta.updateNodeToon(part, this.toonValues(part, rig), this.toonTextures(part));
       const hull = outline === "hull" && hullOutlineAllowed(rig.kind, part.role);
       part.meshes.forEach((mesh, meshIndex) => {
-        mesh.material = toon ? (nodeToon ?? this.ensureToonMaterial(part, rig)) : (openPbr ?? part.meshPbrs?.[meshIndex] ?? part.pbr);
+        mesh.material = toon ? (nodeToon ?? this.ensureToonMaterial(part, rig, meshIndex)) : (openPbr ?? part.meshPbrs?.[meshIndex] ?? part.pbr);
         mesh.renderOutline = hull && !pressure;
         if (hull) {
           mesh.outlineWidth = TOON_OUTLINE_WIDTH * hullOutlineWidthScale(rig.kind, part.role);
@@ -610,24 +610,24 @@ export class BabylonCharacterEngine
     }
   }
 
-  private ensureToonMaterial(part: RigPart, rig: CharacterRig): ShaderMaterial {
+  private ensureToonMaterial(part: RigPart, rig: CharacterRig, meshIndex = 0): ShaderMaterial {
+    const values = this.toonValues(part, rig);
+    const textures = this.toonTextures(part);
+    const vertexColor = this.usesVertexColor(part, rig);
     if (!part.toon) {
-      part.toon = createPassMaterial({ scene: this.character.scene, language: shaderLanguageFor(this.engine) }, "toon", `toon:${part.id}`, {
-        vertexColor: this.usesVertexColor(part, rig),
-        faceShadowUv: part.faceShadowUv === true,
-        hairFlowUv: part.hairFlowUv === true,
-      });
+      part.toon = createPassMaterial({ scene: this.character.scene, language: shaderLanguageFor(this.engine) }, "toon", `toon:${part.id}`, { vertexColor, faceShadowUv: part.faceShadowUv === true, hairFlowUv: part.hairFlowUv === true });
       part.toon.backFaceCulling = part.pbr.backFaceCulling;
     }
-    setToonUniforms(part.toon, this.toonValues(part, rig));
+    setToonUniforms(part.toon, values);
     setAlphaCutoff(part.toon, this.alphaCutoffOf(part));
-    setToonTextures(part.toon, this.toonTextures(part));
-    return part.toon;
+    setToonTextures(part.toon, textures);
+    return resolveMeshToonMaterial({ part, meshIndex, primaryToon: part.toon, baseValues: values, baseTextures: textures, whiteTexture: this.whiteTexture, scene: this.character.scene, engine: this.engine, vertexColor });
   }
 
   private pushToon(part: RigPart, rig: CharacterRig | null): void {
     const values = this.toonValues(part, rig);
     if (part.toon) setToonUniforms(part.toon, values);
+    syncPartSubmeshToonUniforms(part, values);
     this.beta.updateNodeToon(part, values, this.toonTextures(part));
   }
 

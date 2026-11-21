@@ -6,8 +6,8 @@
  * 상단에 `StudioShadingLightBallOverlay` 구면 광원 볼 기즈모를 통합하며, 캔버스 위 플로팅
  * 광원 볼 띄우기도 지원한다.
  */
-import { Eye, Layers, Loader2, Sparkles, WandSparkles } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Compass, Eye, Layers, Sparkles, WandSparkles } from "lucide-react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -36,11 +36,18 @@ import {
   type ShadingLightBallState,
 } from "./StudioShadingLightBallOverlay";
 
+import type { ComputedShadingParams } from "../ai/studio-ai-shading-assist";
 import type { El } from "../studio-element-model";
 import type { StudioImageDataLike } from "../studio-filters";
 import type { ReactElement } from "react";
 
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { cn } from "@/shared/lib/utils";
+
+const LazyQuickShadingAssistPanel = lazyRetry(
+  () => import("./StudioShadingAssistPanel").then((mod) => ({ default: mod.StudioShadingAssistPanel })),
+  "StudioShadingAssistPanel",
+);
 
 /* eslint-disable react-refresh/only-export-components -- pure shading layer output resolver and mood presets co-exported with panel */
 
@@ -139,6 +146,46 @@ export interface ResolvedShadingLayerOutput {
  * `buildStudioShadingAssistDraft` 결과에서 비파괴 레이어 커밋에 가장 충실한 버퍼·블렌드 모드를 결정한다.
  * 림라이트나 선형 번이 켜져 있으면 곱하기 단독으로는 밝은 림이 사라지므로 합성 프리뷰 버퍼를 클리핑 레이어로 커밋한다.
  */
+function parseHexRgb(
+  hex: string,
+  fallback: readonly [number, number, number],
+): readonly [number, number, number] {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return fallback;
+  const n = Number.parseInt(m[1]!, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function computedShadingParamsToOptionPatch(
+  params: ComputedShadingParams,
+  fallbackOptions: ShadingAssistOptions,
+): Partial<ShadingAssistOptions> {
+  const azimuthDeg = normalizeAzimuthDeg(90 - (params.lightAngleRad * 180) / Math.PI);
+  const strength = Math.round(Math.min(1, Math.max(0, params.shadow2Opacity)) * 100);
+  const offsetMag = Math.hypot(params.shadowOffsetPx.dx, params.shadowOffsetPx.dy);
+  const coverage = Math.round(Math.min(100, Math.max(20, (offsetMag / 18) * 70 + 15)));
+  const softness = params.promptInstruction.includes("crisp sharp") ? 18 : 48;
+  const shadowColor = parseHexRgb(params.shadow1ColorHex, fallbackOptions.shadowColor);
+  const rimLightColor = params.rimLightColorHex
+    ? parseHexRgb(
+        params.rimLightColorHex,
+        fallbackOptions.rimLightColor ?? SHADING_MOOD_PRESETS[0]!.rimLightColor,
+      )
+    : fallbackOptions.rimLightColor;
+  const rimLightStrength = params.rimLightColorHex
+    ? Math.max(fallbackOptions.rimLightStrength ?? 0, 35)
+    : 0;
+  return {
+    azimuthDeg,
+    strength,
+    coverage,
+    softness,
+    shadowColor,
+    rimLightColor,
+    rimLightStrength,
+  };
+}
+
 export function resolveShadingLayerOutput(
   draft: Extract<ShadingAssistDraft, { readonly status: "created" }>,
   baseLayerName?: string,
@@ -199,6 +246,7 @@ export function StudioShadingAssistWiredPanel({
   const [elevationDeg, setElevationDeg] = useState<number>(45);
   const [linkElevationCoverage, setLinkElevationCoverage] = useState<boolean>(true);
   const [moodId, setMoodId] = useState<string>(SHADING_MOOD_PRESETS[0]!.id);
+  const [quickCompassOpen, setQuickCompassOpen] = useState<boolean>(false);
   const [canvasBallOpen, setCanvasBallOpen] = useState<boolean>(false);
   const [canvasBallAnchor, setCanvasBallAnchor] = useState<{ readonly x: number; readonly y: number }>({
     x: 0.5,
@@ -312,7 +360,10 @@ export function StudioShadingAssistWiredPanel({
     setOptions((prev) => normalizeShadingAssistOptions({ ...prev, ...patch }));
   };
 
-  const runShadingCommit = async (mode: "new-layer" | "composite-selected"): Promise<void> => {
+  const runShadingCommit = async (
+    mode: "new-layer" | "composite-selected",
+    overrideOptions: ShadingAssistOptions = options,
+  ): Promise<void> => {
     if (!effectiveSrc) {
       setStatusMessage("선택한 레이어에서 이미지를 읽을 수 없어 음영을 생성하지 못했어요.");
       return;
@@ -321,7 +372,7 @@ export function StudioShadingAssistWiredPanel({
     setStatusMessage(null);
     try {
       const source = await decodeSource(effectiveSrc);
-      const draft = buildStudioShadingAssistDraft(source, options);
+      const draft = buildStudioShadingAssistDraft(source, overrideOptions);
       if (draft.status === "refused") {
         setStatusMessage(draft.detail);
         return;
@@ -388,28 +439,70 @@ export function StudioShadingAssistWiredPanel({
         className,
       )}
     >
-      {/* 상단: 광원 볼 캔버스 띄우기 토글 */}
-      <div className="flex items-center justify-between gap-2">
+      {/* 상단: 간편 9방향 광원 프리셋 + 캔버스 광원 볼 토글 */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[0.72rem] leading-relaxed text-fg-3">
           3D 구면 볼륨과 림라이트로 음영 레이어를 바로 생성합니다.
         </p>
-        <button
-          type="button"
-          disabled={busy}
-          aria-pressed={canvasBallOpen}
-          onClick={() => setCanvasBallOpen((prev) => !prev)}
-          className={cn(
-            CHIP_BUTTON_CLASS,
-            "shrink-0 px-2.5",
-            canvasBallOpen
-              ? "border-accent bg-accent-soft text-fg"
-              : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
-          )}
-        >
-          <Eye size={14} aria-hidden />
-          <span>{canvasBallOpen ? "광원 볼 숨기기" : "캔버스 광원 볼"}</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            disabled={busy}
+            aria-pressed={quickCompassOpen}
+            data-studio-shading-quick-compass-toggle="true"
+            onClick={() => setQuickCompassOpen((prev) => !prev)}
+            className={cn(
+              CHIP_BUTTON_CLASS,
+              "shrink-0 px-2.5",
+              quickCompassOpen
+                ? "border-accent bg-accent-soft text-fg"
+                : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
+            )}
+          >
+            <Compass size={14} aria-hidden />
+            <span>간편 9방향</span>
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            aria-pressed={canvasBallOpen}
+            onClick={() => setCanvasBallOpen((prev) => !prev)}
+            className={cn(
+              CHIP_BUTTON_CLASS,
+              "shrink-0 px-2.5",
+              canvasBallOpen
+                ? "border-accent bg-accent-soft text-fg"
+                : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
+            )}
+          >
+            <Eye size={14} aria-hidden />
+            <span>{canvasBallOpen ? "광원 볼 숨기기" : "캔버스 광원 볼"}</span>
+          </button>
+        </div>
       </div>
+
+      {quickCompassOpen ? (
+        <Suspense
+          fallback={
+            <div aria-busy="true" className="h-24 rounded-xl bg-raised/60 motion-safe:animate-pulse" />
+          }
+        >
+          <LazyQuickShadingAssistPanel
+            onApplyShading={(params) => {
+              patchOptions(computedShadingParamsToOptionPatch(params, options));
+              setStatusMessage("간편 9방향 광원 설정을 반영했습니다.");
+            }}
+            onGenerateShadingLayer={(params) => {
+              const nextOptions = normalizeShadingAssistOptions({
+                ...options,
+                ...computedShadingParamsToOptionPatch(params, options),
+              });
+              setOptions(nextOptions);
+              void runShadingCommit("new-layer", nextOptions);
+            }}
+          />
+        </Suspense>
+      ) : null}
 
       {/* 내장 구면 광원 볼 기즈모 */}
       <StudioShadingLightBallOverlay
@@ -637,12 +730,8 @@ export function StudioShadingAssistWiredPanel({
             "w-full border-accent bg-accent text-on-accent hover:bg-accent-2",
           )}
         >
-          {busy ? (
-            <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />
-          ) : (
-            <Layers size={14} aria-hidden />
-          )}
-          <span>{onCreateShadingLayer ? "음영 레이어 만들기" : "음영 적용하기"}</span>
+          <Layers size={14} aria-hidden />
+          <span>{busy ? "음영 계산 중..." : onCreateShadingLayer ? "음영 레이어 만들기" : "음영 적용하기"}</span>
         </button>
 
         {onCreateShadingLayer && !destructiveEditDisabledReason ? (

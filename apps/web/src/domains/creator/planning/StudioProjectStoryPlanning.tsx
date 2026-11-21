@@ -74,7 +74,7 @@ const LazyLoreTimeline = lazy(() => import("./StudioLoreTimeline").then((m) => (
 const LazyLoreGraph = lazy(() => import("./StudioLoreGraph").then((m) => ({ default: m.StudioLoreGraph })));
 const LazyForeshadowLedgerPanel = lazy(() => import("./StudioForeshadowLedgerPanel").then((m) => ({ default: m.StudioForeshadowLedgerPanel })));
 const LazyFactConcordancePanel = lazy(() => import("./StudioFactConcordancePanel").then((m) => ({ default: m.StudioFactConcordancePanel })));
-const LazyStudioFreshIdeasWorkbenchCard = lazy(() => import("../fresh-ideas/StudioFreshIdeasV2WorkbenchCard").then((m) => ({ default: m.StudioFreshIdeasV2WorkbenchCard })));
+const LazyStudioFreshIdeasWorkbenchCard = lazy(() => import("../public/fresh-ideas-workbench").then((m) => ({ default: m.StudioFreshIdeasV2WorkbenchCard })));
 const LazyStudioStoryLivingSpecWorkbench = lazy(() => import("./StudioStoryLivingSpecWorkbench").then((m) => ({ default: m.StudioStoryLivingSpecWorkbench })));
 
 export interface StudioProjectStoryPlanningProps {

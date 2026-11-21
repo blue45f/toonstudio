@@ -345,7 +345,9 @@ export function MobileHeaderNavigation({
           <div
             className={cx(
               "site-bottom-tabs__grid relative mx-auto grid max-w-md px-1 pb-[env(safe-area-inset-bottom)] md:max-w-2xl md:px-4",
-              mobileTabs.length === 5 ? "grid-cols-5" : "grid-cols-4"
+              mobileTabs.length === 5
+                ? "grid-cols-[repeat(5,minmax(0,1fr))]"
+                : "grid-cols-[repeat(4,minmax(0,1fr))]"
             )}
             style={{ "--tab-count": mobileTabs.length, "--tab-index": Math.max(0, activeTabIndex) } as CSSProperties}
           >
@@ -362,14 +364,14 @@ export function MobileHeaderNavigation({
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
                   className={cx(
-                    "site-bottom-tabs__link relative flex min-h-[3.75rem] flex-col items-center justify-center gap-1 py-2 text-xs font-medium outline-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent motion-reduce:transition-none",
+                    "site-bottom-tabs__link relative flex min-h-[3.75rem] min-w-0 flex-col items-center justify-center gap-1 overflow-hidden px-0.5 py-2 text-xs font-medium break-keep outline-none transition-[color,transform] duration-150 active:scale-[0.96] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:active:scale-100",
                     active ? "text-fg" : "text-fg-3 hover:text-fg-2"
                   )}
                 >
-                  <span className="relative grid size-8 place-items-center">
+                  <span className="relative grid size-8 shrink-0 place-items-center">
                     <Icon size={22} strokeWidth={1.75} className={cx("relative transition-colors duration-150 motion-reduce:transition-none", active && "text-accent")} />
                   </span>
-                  <span className="min-w-0 max-w-full truncate">{label}</span>
+                  <span className="min-w-0 max-w-full truncate text-[11px] leading-tight">{label}</span>
                 </Link>
               );
             })}

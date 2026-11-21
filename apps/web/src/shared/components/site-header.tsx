@@ -210,7 +210,7 @@ export function SiteHeader({
             <button
               type="button"
               onClick={openSearch}
-              aria-label={t("nav.searchOpen")}
+              aria-label={`${bi("검색", t("nav.search"))} ⌘K · ${t("nav.searchOpen")}`}
               className="site-header__search group flex size-11 shrink-0 items-center justify-center rounded-[var(--site-control-radius)] border border-line bg-card/85 text-fg-3 outline-none transition-[border-color,background-color,color,transform] duration-150 hover:border-line-strong hover:bg-card hover:text-fg enabled:active:scale-[0.98] focus-visible:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transform-none motion-reduce:transition-none sm:justify-between sm:px-3"
             >
               <span className="flex min-w-0 items-center gap-2">

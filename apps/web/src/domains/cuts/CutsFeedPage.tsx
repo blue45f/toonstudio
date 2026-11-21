@@ -22,6 +22,7 @@ import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id"
 
 import { CutsFandomCoCreationBar } from "./CutsFandomCoCreationBar";
 import { CutsPlayer } from "./CutsPlayer";
+import { CutsReactionBurstRail } from "./CutsReactionBurstRail";
 import { CutsRemixBadge } from "./CutsRemixBadge";
 import { countFanRemixes, isClipRemixAllowed, resolveRemixAllowed, selectFanRemixes } from "./cuts-remix";
 import { isRewardEligibleClip } from "./cuts-rewards";
@@ -138,6 +139,7 @@ function CutsFeedItem({
           <div className="cuts-item__stats" aria-label={t("조회수", "Views")}>
             <span><Eye size={14} aria-hidden="true" /> {formatCutsCount(clip.views)}</span>
           </div>
+          <CutsReactionBurstRail clipId={clip.id} />
         </div>
         <div className="cuts-item__actions">
           <button

@@ -54,7 +54,7 @@ export function WorkspaceTaskFrame({ route, owner = "local", children, campusMod
           className="workspace-focused-location"
           aria-label={bt("현재 위치", "Current location")}
         >
-          <Link href="/studio" aria-label={bt("프로젝트로 돌아가기", "Back to projects")}>
+          <Link href="/studio" aria-label={bt("프로젝트 목록으로 돌아가기", "Projects — Back to projects")}>
             <ArrowLeft size={17} aria-hidden="true" />
             <span>{bt("프로젝트", "Projects")}</span>
           </Link>

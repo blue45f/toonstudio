@@ -7,7 +7,6 @@
 import * as THREE from "three";
 
 import {
-  createStudioVrmAuthoredHairGradientTexture,
   mergeStudioVrmAuthoredHairGeometry,
   studioVrmAuthoredCapHairlineHeight,
   type StudioVrmAuthoredHairInstance,
@@ -18,6 +17,12 @@ import {
   type AvatarForgeHairPart,
   type AvatarForgeState,
 } from "./studio-vrm-avatar-forge";
+import {
+  STUDIO_VRM_CUSTOM_PART_OUTLINE_KEY,
+  createStudioVrmHairMToonMaterials,
+  createStudioVrmSmoothOutlineGeometry,
+  type StudioVrmBodyMtoonProfile,
+} from "./studio-vrm-custom-part-material";
 import type { StudioVrmHeadFit } from "./studio-vrm-head-fit";
 
 /** 헤어 단위 공간에서 두상(캡) 중심과 반경. 파츠 계획(studio-vrm-avatar-forge.ts)이 이 공간으로 쓰여 있다. */
@@ -297,73 +302,47 @@ export function avatarForgeHairInstance(part: AvatarForgeHairPart, fit: StudioVr
   return Object.freeze(layout.spine ? { part, matrix, spine: layout.spine } : { part, matrix });
 }
 
-function createExpandedOutlineGeometry(source: THREE.BufferGeometry): THREE.BufferGeometry {
-  const outline = source.clone();
-  const position = outline.getAttribute("position");
-  const normal = outline.getAttribute("normal");
-  if (!position || !normal) return outline;
-  outline.computeBoundingSphere();
-  const thickness = Math.max(0.00045, (outline.boundingSphere?.radius ?? 0.08) * 0.0085);
-  const values = new Float32Array(position.count * 3);
-  for (let index = 0; index < position.count; index += 1) {
-    values[index * 3] = position.getX(index) + normal.getX(index) * thickness;
-    values[index * 3 + 1] = position.getY(index) + normal.getY(index) * thickness;
-    values[index * 3 + 2] = position.getZ(index) + normal.getZ(index) * thickness;
-  }
-  outline.setAttribute("position", new THREE.Float32BufferAttribute(values, 3));
-  outline.computeBoundingBox();
-  outline.computeBoundingSphere();
-  return outline;
-}
-
-function createHairMaterial(state: AvatarForgeState, gradientMap: THREE.DataTexture) {
-  const material = new THREE.MeshToonMaterial({
-    color: 0xffffff,
-    vertexColors: true,
-    gradientMap,
-    side: THREE.DoubleSide,
-  });
-  material.emissive.set(state.hair.baseColor);
-  material.emissiveIntensity = clamp(0.012 + state.hair.shine * 0.045, 0.012, 0.057);
-  return material;
-}
-
-function createHairOutlineMaterial(state: AvatarForgeState) {
-  const outline = new THREE.Color(state.hair.shadowColor ?? state.hair.baseColor)
-    .lerp(new THREE.Color("#090708"), 0.62);
-  return new THREE.MeshBasicMaterial({
-    color: outline,
-    side: THREE.BackSide,
-    transparent: true,
-    opacity: 0.9,
-    depthWrite: false,
-    toneMapped: false,
-  });
-}
-
 /**
  * 계획된 헤어 파츠를 두상 맞춤으로 옮겨 그룹에 붙인다. 파츠가 없으면(헤어 없음) 아무것도 붙이지 않는다.
+ * 본체 VRM과 동일한 MToon 셰이딩·엔젤링 하이라이트·용접 법선 역면 외곽선을 적용해 이질감과 알파 정렬 깨짐을 막는다.
  * 그룹 userData 의 소유 텍스처는 호출자가 폐기 때 함께 정리한다.
  */
-export function addAvatarForgeHairParts(group: THREE.Group, state: AvatarForgeState, fit: StudioVrmHeadFit): void {
+export function addAvatarForgeHairParts(
+  group: THREE.Group,
+  state: AvatarForgeState,
+  fit: StudioVrmHeadFit,
+  profile?: StudioVrmBodyMtoonProfile,
+): void {
   const parts = buildAvatarForgeHairParts(state);
   const merged = mergeStudioVrmAuthoredHairGeometry(
     parts.map((part) => avatarForgeHairInstance(part, fit)),
   );
   if (!merged) return;
 
-  const gradientMap = createStudioVrmAuthoredHairGradientTexture();
-  const mesh = new THREE.Mesh(merged, createHairMaterial(state, gradientMap));
-  const outline = new THREE.Mesh(createExpandedOutlineGeometry(merged), createHairOutlineMaterial(state));
+  const { main, outline: outlineMaterial, ownedTextures } = createStudioVrmHairMToonMaterials(
+    state.hair,
+    profile,
+  );
+  const mesh = new THREE.Mesh(merged, main);
   mesh.name = "ToonStudioAvatarForgeHair_AuthoredMerged";
   mesh.castShadow = true;
   mesh.receiveShadow = true;
-  mesh.renderOrder = 6;
   mesh.userData.partCount = parts.length;
+  mesh.userData.toonstudioComponent = "hair";
+
+  const outline = new THREE.Mesh(createStudioVrmSmoothOutlineGeometry(merged), outlineMaterial);
   outline.name = "ToonStudioAvatarForgeHairOutline_AuthoredMerged";
-  outline.renderOrder = 5;
   outline.userData.partCount = parts.length;
-  group.userData[AVATAR_FORGE_OWNED_TEXTURES] = [gradientMap];
+  outline.userData[STUDIO_VRM_CUSTOM_PART_OUTLINE_KEY] = true;
+  outline.userData.toonstudioComponent = "hair";
+  outline.raycast = () => undefined;
+  outline.castShadow = false;
+  outline.receiveShadow = false;
+
+  const existing = Array.isArray(group.userData[AVATAR_FORGE_OWNED_TEXTURES])
+    ? (group.userData[AVATAR_FORGE_OWNED_TEXTURES] as THREE.Texture[])
+    : [];
+  group.userData[AVATAR_FORGE_OWNED_TEXTURES] = [...existing, ...ownedTextures];
   group.add(outline, mesh);
 }
 

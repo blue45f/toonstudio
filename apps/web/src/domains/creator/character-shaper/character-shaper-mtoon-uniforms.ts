@@ -15,6 +15,8 @@ import {
 
 import type * as THREE from "three";
 
+export type ShaperShaderDisplayMode = "toon" | "modeling";
+
 export interface ShaperMtoonMaterialSettings {
   readonly shadePos: number;
   readonly shadeWidth: number;
@@ -22,6 +24,16 @@ export interface ShaperMtoonMaterialSettings {
   readonly rLightWidth: number;
   readonly outlinePressure: boolean;
   readonly disableHairInline: boolean;
+  /** SHAPER MaterialData::ToggleShader (`Space` 단축키): 웹툰 툰 vs 모델링 입체 셰이더 */
+  readonly shaderMode?: ShaperShaderDisplayMode;
+  /** SHAPER `_ShadeColor` 음영 틴트 (비우면 원본 유지) */
+  readonly shadeColorHex?: string | null;
+  /** SHAPER `_RLightColor` 림 반사광 틴트 (비우면 원본 유지) */
+  readonly rimColorHex?: string | null;
+  /** 외곽선 두께 배율 (0.4..2.2, 기본 1.0) */
+  readonly outlineScale?: number;
+  /** 외곽선 잉크 색 (비우면 원본 유지) */
+  readonly outlineColorHex?: string | null;
 }
 
 export const DEFAULT_SHAPER_MTOON_SETTINGS: ShaperMtoonMaterialSettings = Object.freeze({
@@ -31,7 +43,20 @@ export const DEFAULT_SHAPER_MTOON_SETTINGS: ShaperMtoonMaterialSettings = Object
   rLightWidth: 0.25,
   outlinePressure: true,
   disableHairInline: true,
+  shaderMode: "toon",
+  shadeColorHex: null,
+  rimColorHex: null,
+  outlineScale: 1.0,
+  outlineColorHex: null,
 });
+
+interface ColorLike {
+  r: number;
+  g: number;
+  b: number;
+  set?: (value: string | number) => unknown;
+  getHexString?: () => string;
+}
 
 interface MtoonMutableMaterial {
   readonly name?: string;
@@ -44,6 +69,9 @@ interface MtoonMutableMaterial {
   rimLightingMixFactor?: number;
   outlineWidthFactor?: number;
   outlineLightingMixFactor?: number;
+  shadeColorFactor?: ColorLike;
+  parametricRimColorFactor?: ColorLike;
+  outlineColorFactor?: ColorLike;
   userData?: Record<string, unknown>;
   needsUpdate?: boolean;
 }
@@ -56,15 +84,34 @@ interface MtoonBaseline {
   readonly rimLightingMixFactor?: number;
   readonly outlineWidthFactor?: number;
   readonly outlineLightingMixFactor?: number;
+  readonly shadeColorHex?: string;
+  readonly rimColorHex?: string;
+  readonly outlineColorHex?: string;
 }
 
 const materialBaselines = new WeakMap<object, MtoonBaseline>();
 const HAIR_MESH_OR_MATERIAL_PATTERN = /(?:hair|bang|ponytail|twintail|braid|ahoge|scalp|strand|머리|헤어)/iu;
 const HEAD_OR_FACE_PATTERN = /(?:face|head|eye|iris|brow|lash|mouth|lip|얼굴|눈)/iu;
+const HEX_COLOR_PATTERN = /^#?[0-9a-f]{6}$/iu;
 
 function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, value));
+}
+
+function readColorHex(color: ColorLike | undefined): string | undefined {
+  if (!color || typeof color.getHexString !== "function") return undefined;
+  return `#${color.getHexString()}`;
+}
+
+function writeColorHex(color: ColorLike | undefined, hex: string | null | undefined, fallbackHex: string | undefined): void {
+  if (!color || typeof color.set !== "function") return;
+  if (typeof hex === "string" && HEX_COLOR_PATTERN.test(hex.trim())) {
+    const clean = hex.trim().startsWith("#") ? hex.trim() : `#${hex.trim()}`;
+    color.set(clean);
+  } else if (fallbackHex) {
+    color.set(fallbackHex);
+  }
 }
 
 function captureBaseline(material: MtoonMutableMaterial): MtoonBaseline {
@@ -84,6 +131,9 @@ function captureBaseline(material: MtoonMutableMaterial): MtoonBaseline {
     outlineWidthFactor: typeof material.outlineWidthFactor === "number" ? material.outlineWidthFactor : undefined,
     outlineLightingMixFactor:
       typeof material.outlineLightingMixFactor === "number" ? material.outlineLightingMixFactor : undefined,
+    shadeColorHex: readColorHex(material.shadeColorFactor),
+    rimColorHex: readColorHex(material.parametricRimColorFactor),
+    outlineColorHex: readColorHex(material.outlineColorFactor),
   });
   materialBaselines.set(material, baseline);
   return baseline;
@@ -107,13 +157,21 @@ interface VrmLikeWithScene {
   } | null;
 }
 
+export type ShaperMtoonApplyInput = ShaperMaterialDataInput & {
+  readonly shaderMode?: ShaperShaderDisplayMode;
+  readonly shadeColorHex?: string | null;
+  readonly rimColorHex?: string | null;
+  readonly outlineScale?: number;
+  readonly outlineColorHex?: string | null;
+};
+
 /**
- * SHAPER 3차 MatCap 램프·반사광·비등방 필압 외곽선·헤어 내선 억제를
+ * SHAPER 3차 MatCap 램프·반사광·비등방 필압 외곽선·헤어 내선 억제·Toon/Modeling 셰이더 토글을
  * 현재 VRM 씬의 모든 MToon 재질(WebGL + WebGPU)에 즉시 반영한다.
  */
 export function applyShaperMtoonUniformsToVrm(
   vrm: VrmLikeWithScene | null | undefined,
-  input: ShaperMaterialDataInput,
+  input: ShaperMtoonApplyInput,
 ): ShaperMtoonApplyResult {
   const uniforms = computeShaperMaterialDataUniforms(input);
   const scene = vrm?.scene;
@@ -124,9 +182,11 @@ export function applyShaperMtoonUniformsToVrm(
 
   const visited = new Set<MtoonMutableMaterial>();
   let hairSuppressedMaterials = 0;
+  const isModeling = input.shaderMode === "modeling";
   const fresnelPower = Number((1 + (1 - uniforms.rLightWidth) * 6).toFixed(2));
   const rimMix = Number(clamp(0.15 + uniforms.rLightWidth * 0.75, 0, 1).toFixed(2));
-  const outlineScale = uniforms.outlineAspectRatio > 1 ? 1.35 : 1.0;
+  const userOutlineScale = clamp(input.outlineScale ?? 1.0, 0.4, 2.2);
+  const outlineScale = isModeling ? 0 : (uniforms.outlineAspectRatio > 1 ? 1.35 : 1.0) * userOutlineScale;
 
   traverse.call(scene, (node) => {
     const mesh = node as Partial<THREE.Mesh>;
@@ -142,11 +202,15 @@ export function applyShaperMtoonUniformsToVrm(
       const baseline = captureBaseline(mat);
       const hair = isHairTarget(meshName, typeof mat.name === "string" ? mat.name : "");
 
-      mat.shadingToonyFactor = uniforms.mtoonShadingToonyFactor;
-      mat.shadingShiftFactor = uniforms.mtoonShadingShiftFactor;
-      mat.parametricRimLiftFactor = uniforms.mtoonParametricRimLift;
+      mat.shadingToonyFactor = isModeling ? 0.25 : uniforms.mtoonShadingToonyFactor;
+      mat.shadingShiftFactor = isModeling ? -0.1 : uniforms.mtoonShadingShiftFactor;
+      mat.parametricRimLiftFactor = isModeling ? 0.08 : uniforms.mtoonParametricRimLift;
       mat.parametricRimFresnelPowerFactor = fresnelPower;
-      mat.rimLightingMixFactor = rimMix;
+      mat.rimLightingMixFactor = isModeling ? 0.15 : rimMix;
+
+      writeColorHex(mat.shadeColorFactor, isModeling ? null : input.shadeColorHex, baseline.shadeColorHex);
+      writeColorHex(mat.parametricRimColorFactor, isModeling ? null : input.rimColorHex, baseline.rimColorHex);
+      writeColorHex(mat.outlineColorFactor, isModeling ? null : input.outlineColorHex, baseline.outlineColorHex);
 
       if (typeof baseline.outlineWidthFactor === "number") {
         // 헤어 내선 억제(hID*1) 활성 시 머리카락 내부 겹침 주선 간섭을 줄이기 위해 0.35x로 감쇠
@@ -163,6 +227,7 @@ export function applyShaperMtoonUniformsToVrm(
 
       const userData = (mat.userData ??= {});
       userData.shaperMaterialUniforms = uniforms;
+      userData.shaperShaderMode = isModeling ? "modeling" : "toon";
       userData.shaperHairInlineSuppressed = hair && uniforms.hairShaderVariant === "simpleDisableInlineMatCapShader";
       mat.needsUpdate = true;
     }
@@ -204,8 +269,12 @@ export function resetShaperMtoonUniformsOnVrm(vrm: VrmLikeWithScene | null | und
       if (baseline.outlineLightingMixFactor !== undefined) {
         mat.outlineLightingMixFactor = baseline.outlineLightingMixFactor;
       }
+      writeColorHex(mat.shadeColorFactor, baseline.shadeColorHex, baseline.shadeColorHex);
+      writeColorHex(mat.parametricRimColorFactor, baseline.rimColorHex, baseline.rimColorHex);
+      writeColorHex(mat.outlineColorFactor, baseline.outlineColorHex, baseline.outlineColorHex);
       if (mat.userData) {
         delete mat.userData.shaperMaterialUniforms;
+        delete mat.userData.shaperShaderMode;
         delete mat.userData.shaperHairInlineSuppressed;
       }
       mat.needsUpdate = true;
@@ -218,6 +287,7 @@ export interface ShaperHairSpringBoneSettings {
   readonly stiffness: number;
   readonly gravityPower: number;
   readonly dragForce: number;
+  readonly minHitRadius?: number;
 }
 
 interface SpringBoneJointLike {
@@ -226,6 +296,7 @@ interface SpringBoneJointLike {
     stiffness?: number;
     gravityPower?: number;
     dragForce?: number;
+    hitRadius?: number;
   } | null;
 }
 
@@ -236,7 +307,8 @@ interface VrmLikeWithSpringBones {
 }
 
 /**
- * VRM SpringBone 헤어 조인트의 탄성·중력·드래그를 실시간으로 반영한다.
+ * VRM SpringBone 헤어 조인트의 탄성·중력·드래그를 실시간 반영하고,
+ * 두상 관통 방지를 위해 `hitRadius === 0`인 헤어 조인트에 최소 충돌 반경(0.015m)을 보장한다.
  */
 export function applyHairSpringBoneToVrm(
   vrm: VrmLikeWithSpringBones | null | undefined,
@@ -245,13 +317,17 @@ export function applyHairSpringBoneToVrm(
   const joints = vrm?.springBoneManager?.joints;
   if (!joints) return 0;
   let updated = 0;
+  const minHitRadius = clamp(next.minHitRadius ?? 0.015, 0.005, 0.12);
   for (const joint of joints) {
     const boneName = String(joint?.bone?.name ?? "");
     const isHairJoint = /hair|bang|tail|braid|strand|ahoge/iu.test(boneName) || boneName === "";
     if (!isHairJoint || !joint?.settings) continue;
-    joint.settings.stiffness = next.stiffness;
-    joint.settings.gravityPower = next.gravityPower;
-    joint.settings.dragForce = next.dragForce;
+    joint.settings.stiffness = clamp(next.stiffness, 0.05, 4.0);
+    joint.settings.gravityPower = clamp(next.gravityPower, 0, 1.5);
+    joint.settings.dragForce = clamp(next.dragForce, 0.05, 1.0);
+    if (typeof joint.settings.hitRadius !== "number" || joint.settings.hitRadius < minHitRadius) {
+      joint.settings.hitRadius = minHitRadius;
+    }
     updated += 1;
   }
   return updated;

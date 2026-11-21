@@ -22,6 +22,7 @@ import {
 
 import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 import { CHARACTER_HAIR_PALETTES } from "./character-shaper-catalog";
+import { resolveHairCommitPatch } from "./character-shaper-custom-quality";
 import { applyHairSpringBoneToVrm } from "./character-shaper-mtoon-uniforms";
 import { characterSlotSelection } from "./character-shaper-ui-model";
 import { CharacterChipGroup, CharacterColorControl, CharacterRangeControl } from "./CharacterShaperControls";
@@ -403,23 +404,25 @@ export function CharacterShaperHairInspector({
               aria-label="3분할 뒷머리 파츠"
               disabled={locked}
               defaultValue={BACK_HAIR_PART_OPTIONS[0]?.id}
-              onChange={(event) =>
-                binding.commitHairParams(
+              onChange={(event) => {
+                const nextStyle = event.currentTarget.value.includes("ponytail")
+                  ? "ponytail"
+                  : event.currentTarget.value.includes("twintail")
+                    ? "twintail"
+                    : event.currentTarget.value.includes("bob")
+                      ? "bob"
+                      : event.currentTarget.value.includes("long")
+                        ? "long"
+                        : hair.style;
+                const patch = resolveHairCommitPatch(
                   {
-                    style: event.currentTarget.value.includes("ponytail")
-                      ? "ponytail"
-                      : event.currentTarget.value.includes("twintail")
-                        ? "twintail"
-                        : event.currentTarget.value.includes("bob")
-                          ? "bob"
-                          : event.currentTarget.value.includes("long")
-                            ? "long"
-                            : hair.style,
+                    style: nextStyle,
                     ...(lockMainColor ? { baseColor, tipColor } : {}),
                   },
-                  "헤어: 3분할 뒷머리",
-                )
-              }
+                  { style: usingOriginalHair ? "none" : hair.style, replaceOriginal: Boolean(replaceOriginal) },
+                );
+                binding.commitHairParams(patch, "헤어: 3분할 뒷머리");
+              }}
               className="min-h-11 rounded-lg border border-line bg-panel px-2 text-xs text-fg"
             >
               {BACK_HAIR_PART_OPTIONS.map((opt) => (

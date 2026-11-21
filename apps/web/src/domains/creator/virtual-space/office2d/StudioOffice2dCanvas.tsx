@@ -29,6 +29,7 @@ import {
   subscribeIllustrated2dVfxBurst,
   subscribeIllustratedWorkstationModal,
 } from "../studio-virtual-space-illustrated-2d-runtime";
+import { setStudioSoundEngineMuted, unlockStudioSoundEngine } from "../studio-virtual-space-sound-engine";
 import { StudioVirtualSpaceBootRecoveryCard } from "../StudioVirtualSpaceBootRecoveryCard";
 import { StudioVirtualSpaceWorkstationLiveModal } from "../StudioVirtualSpaceWorkstationLiveModal";
 import { office2dCharacterForAvatarSkin } from "./office2d-avatar-role";
@@ -131,6 +132,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
 
   useEffect(() => {
     writeOffice2dSoundMuted(soundMuted);
+    setStudioSoundEngineMuted(soundMuted);
   }, [soundMuted]);
 
   /**
@@ -289,6 +291,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
       getStageProps: stageProps,
       getLanguage: documentLanguage,
       getReducedMotion: prefersReducedMotion,
+      getSoundMuted: () => soundMutedRef.current,
       getAvatarCharacter: office2dCharacterForAvatarSkin,
     });
     runtimeRef.current = runtime;
@@ -362,6 +365,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
       if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return;
       if (!WORLD_KEY_CODES.has(event.code)) return;
       if (PREVENT_DEFAULT_CODES.has(event.code)) event.preventDefault();
+      unlockStudioSoundEngine();
       heldMoveCodes.add(event.code);
       if (!event.repeat) runtime.keyDown(event.code);
     };
@@ -392,6 +396,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
       },
     });
     const handlePointerDown = (event: PointerEvent) => {
+      unlockStudioSoundEngine();
       if (event.button !== 0 || bridge.cameraPan.isLooking() || isStudioSpaceJoystickActive(bridge.getJoystick())) return;
       pointerStart = {
         id: event.pointerId,

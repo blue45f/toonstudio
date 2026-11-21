@@ -153,7 +153,7 @@ export function LibraryView({
     return ratedSort === "low" ? a[1] - b[1] : b[1] - a[1];
   });
 
-  const counts: Record<ReadState, number> = { want: 0, reading: 0, paused: 0, done: 0, dropped: 0 };
+  const counts: Record<ReadState, number> = { want: 0, reading: 0, paused: 0, hiatus: 0, done: 0, dropped: 0 };
   readIds.forEach(([, st]) => (counts[st] = (counts[st] ?? 0) + 1));
   const shelfTitles = readIds
     .filter(([, st]) => st === readTab)

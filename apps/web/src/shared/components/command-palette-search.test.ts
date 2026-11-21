@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   extractChosung,
+  findMatchedCompetitorAlias,
   isChosungOnly,
   matchesCommandSearch,
+  normalizeCommandQuery,
+  scoreCommandSearch,
 } from "./command-palette-search";
 
 describe("command-palette-search", () => {
@@ -66,6 +69,22 @@ describe("command-palette-search", () => {
       expect(
         matchesCommandSearch("새 웹툰 캔버스", "만화", ["만화", "웹툰", "canvas"])
       ).toBe(true);
+    });
+
+    it("띄어쓰기·하이픈 변형과 4대 경쟁 앱 용어 별칭을 정확히 매칭하고 최상단 점수를 부여한다", () => {
+      expect(normalizeCommandQuery("3D 데생 인형")).toBe("3d데생인형");
+      expect(normalizeCommandQuery("Time-lapse")).toBe("timelapse");
+
+      const aliases = [
+        { vendor: "csp" as const, term: "퍼펫 워프" },
+        { vendor: "csp" as const, term: "Puppet Warp" },
+      ];
+      expect(findMatchedCompetitorAlias("퍼펫워프", aliases)?.vendor).toBe("csp");
+      expect(findMatchedCompetitorAlias("puppet warp", aliases)?.term).toBe("Puppet Warp");
+
+      const exactScore = scoreCommandSearch("퍼펫 워프 (관절 포즈 변형)", "퍼펫 워프", [], "", aliases);
+      const looseScore = scoreCommandSearch("포즈 프리셋", "퍼펫 워프", ["포즈"], "퍼펫 워프 참고");
+      expect(exactScore).toBeGreaterThan(looseScore);
     });
   });
 });

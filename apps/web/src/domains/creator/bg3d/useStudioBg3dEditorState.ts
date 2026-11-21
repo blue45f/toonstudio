@@ -11,6 +11,8 @@ import type { StudioBg3dHistoryCommandTimeline } from "./studio-bg3d-history-com
 import type { StudioBg3dKtx2Renderer } from "./studio-bg3d-ktx2-renderer-runtime";
 import { rememberStudioBg3dCameraBeforeViewportRemount } from "./studio-bg3d-camera-history-transition";
 import { readStudioBg3dSceneMeasurements } from "./studio-bg3d-scene-measurements";
+import { DEFAULT_BG3D_WALL_CUTAWAY_CONFIG, type Bg3dWallCutawayConfig } from "./studio-bg3d-wall-cutaway-runtime";
+import type { StudioBg3dSectionCapSummary } from "./studio-bg3d-section-cap-coordination";
 
 export function useStudioBg3dEditorState(props: Record<string, any>) {
   const hostRef = R.useRef<Record<string, any> | null>(null);
@@ -38,6 +40,8 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
   const [primitiveGeometryPool] = useState(() => new StudioBg3dPrimitiveGeometryPool());
   const [adaptiveDprScale, setAdaptiveDprScale] = useState(1);
   const [engineFrameTimeMs, setEngineFrameTimeMs] = useState<number | null>(null);
+  const [wallCutawayConfig, setWallCutawayConfig] = useState<Bg3dWallCutawayConfig>(DEFAULT_BG3D_WALL_CUTAWAY_CONFIG);
+  const [sectionCapSummary, setSectionCapSummary] = useState<StudioBg3dSectionCapSummary | null>(null);
   const {
     primitives,
     setPrimitives,
@@ -778,7 +782,7 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
     onClose,
     onInsert,
     onUseAsAiMethodReference,
-    documentCanvasSize, sixPassLtUnavailableReason,
+    documentCanvasSize, sixPassLtUnavailableReason, wallCutawayConfig, setWallCutawayConfig, sectionCapSummary, setSectionCapSummary,
   });
   return h;
 }

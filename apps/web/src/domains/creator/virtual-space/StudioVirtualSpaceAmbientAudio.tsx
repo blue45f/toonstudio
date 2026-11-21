@@ -8,20 +8,22 @@ import {
   studioProximityCurveSamples, studioProximityDisplaySnapshot, subscribeStudioProximityDisplay, type StudioProximityDisplaySnapshot,
 } from "./studio-virtual-space-acoustics";
 import { StudioVirtualSpaceSoundEngine, registerStudioSoundEngine } from "./studio-virtual-space-sound-engine";
-import type { StudioFootstepSurface } from "./studio-virtual-space-footsteps";
+import type { StudioExtendedFootstepSurface } from "./studio-virtual-space-footsteps";
 import { studioFootstepSynthSpec, studioSfxSpec, type StudioSfxKind } from "./studio-virtual-space-sound-synth";
 import {
   readStudioVirtualSoundPreference, writeStudioVirtualSoundPreference, type StudioVirtualSoundPreference,
 } from "./studio-virtual-space-sound-preference";
 
 const FOOTSTEP_AUDITION_ITEMS: readonly {
-  readonly surface: StudioFootstepSurface;
+  readonly surface: StudioExtendedFootstepSurface;
   readonly labelKo: string;
   readonly labelEn: string;
 }[] = [
   { surface: "carpet", labelKo: "카펫 발소리 청음", labelEn: "Carpet footstep" },
   { surface: "wood", labelKo: "원목 마루 발소리 청음", labelEn: "Wood floor footstep" },
   { surface: "tile", labelKo: "타일 발소리 청음", labelEn: "Tile footstep" },
+  { surface: "stone", labelKo: "석재 홀 발소리 청음", labelEn: "Stone hall footstep" },
+  { surface: "terrace", labelKo: "야외 테라스 발소리 청음", labelEn: "Terrace footstep" },
 ];
 
 const SFX_AUDITION_ITEMS: readonly {
@@ -30,6 +32,8 @@ const SFX_AUDITION_ITEMS: readonly {
   readonly labelEn: string;
 }[] = [
   { kind: "activate", labelKo: "오브젝트 작동음 청음", labelEn: "Object activate" },
+  { kind: "jump", labelKo: "점프 도약음 청음", labelEn: "Jump takeoff" },
+  { kind: "land", labelKo: "착지음 청음", labelEn: "Jump landing" },
   { kind: "peer-join", labelKo: "동료 입장음 청음", labelEn: "Peer join" },
   { kind: "focus-start", labelKo: "집중 차임 청음", labelEn: "Focus start chime" },
   { kind: "wellness-chime", labelKo: "싱잉볼 차임 청음", labelEn: "Wellness singing bowl" },
@@ -97,7 +101,7 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
     soundEngine.current?.setPreference(next);
     if (next.effectsEnabled) soundEngine.current?.unlock();
   };
-  const auditionFootstep = (surface: StudioFootstepSurface, labelKo: string, labelEn: string) => {
+  const auditionFootstep = (surface: StudioExtendedFootstepSurface, labelKo: string, labelEn: string) => {
     soundEngine.current?.unlock();
     soundEngine.current?.playFootstep({ surface, foot: "left", volume: 0.9 });
     const spec = studioFootstepSynthSpec(surface, "left");
@@ -114,7 +118,7 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
     const last = spec.steps[spec.steps.length - 1];
     const freqDesc = first && last
       ? `${first.fromHz}Hz → ${last.toHz}Hz ${first.wave}`
-      : "WebAudio synth";
+      : bt("실시간 합성음", "Live synthesized tone");
     setLastAuditionReadout(`${bt(labelKo, labelEn)} · ${freqDesc}`);
   };
   const selectedTrack = STUDIO_AMBIENT_TRACKS.find((track) => track.id === audio.trackId);
@@ -138,7 +142,7 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
       <input type="range" min="0" max="100" step="5" value={Math.round(audio.volume * 100)} onChange={(event) => controller.current?.setVolume(Number(event.target.value) / 100)} />
       <output>{Math.round(audio.volume * 100)}%</output>
     </label>
-    <button className="min-h-11 rounded-lg border border-line px-3 text-sm" type="button" aria-pressed={audio.enabled} disabled={!audio.enabled && Boolean(pauseReason)} onClick={() => controller.current?.setEnabled(!audio.enabled)}>
+    <button className="min-h-11 rounded-lg border border-line px-3 text-sm" type="button" aria-pressed={audio.enabled} disabled={!audio.enabled && Boolean(pauseReason)} title={!audio.enabled && Boolean(pauseReason) ? bt("공간에 입장해 활동 중일 때 환경음을 켤 수 있어요", "Available once you enter the space and stay active") : undefined} onClick={() => controller.current?.setEnabled(!audio.enabled)}>
       {audio.enabled ? bt("환경음 끄기", "Turn ambient sound off") : bt("환경음 켜기", "Turn ambient sound on")}
     </button>
     <p role="status" className="text-xs">{status}</p>
@@ -159,7 +163,7 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
         <output>{Math.round(sound.effectsVolume * 100)}%</output>
       </label>
       <div className="mt-2 rounded-lg border border-line bg-card p-2.5" data-testid="studio-vspace-sfx-audition-pad">
-        <p className="text-xs font-semibold text-fg">{bt("효과음·발소리 즉시 들어보기 (WebAudio 합성 청음)", "Audition WebAudio footsteps & SFX")}</p>
+        <p className="text-xs font-semibold text-fg">{bt("효과음·발소리 미리 듣기", "Preview footsteps & sound effects")}</p>
         <div className="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label={bt("발소리 표면 청음", "Footstep surface audition")}>
           {FOOTSTEP_AUDITION_ITEMS.map((item) => (
             <button
@@ -167,6 +171,7 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
               type="button"
               data-testid={`studio-vspace-audition-footstep-${item.surface}`}
               disabled={!sound.effectsEnabled}
+              title={!sound.effectsEnabled ? bt("효과음을 먼저 켜면 들어볼 수 있어요", "Turn on sound effects first to preview") : undefined}
               onClick={() => auditionFootstep(item.surface, item.labelKo, item.labelEn)}
               className="min-h-11 rounded-md border border-line bg-panel px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent hover:text-fg disabled:opacity-50"
             >
@@ -181,6 +186,7 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
               type="button"
               data-testid={`studio-vspace-audition-sfx-${item.kind}`}
               disabled={!sound.effectsEnabled}
+              title={!sound.effectsEnabled ? bt("효과음을 먼저 켜면 들어볼 수 있어요", "Turn on sound effects first to preview") : undefined}
               onClick={() => auditionSfx(item.kind, item.labelKo, item.labelEn)}
               className="min-h-11 rounded-md border border-line bg-panel px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent hover:text-fg disabled:opacity-50"
             >
@@ -189,7 +195,7 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
           ))}
         </div>
         {lastAuditionReadout ? (
-          <p className="mt-1.5 text-[11px] font-medium text-accent" data-testid="studio-vspace-sfx-audition-status">
+          <p className="mt-1.5 text-xs font-medium text-accent" data-testid="studio-vspace-sfx-audition-status">
             {lastAuditionReadout}
           </p>
         ) : null}

@@ -43,6 +43,7 @@ import { preloadStudioAiEpisodeProductionModal } from "./studio-ai-episode-produ
 import { requestStudioAiSuperSuiteOpen } from "./studio-ai-super-suite-intent";
 import { preloadStudioAiSuperSuiteModal } from "./studio-ai-super-suite-loader";
 import { StudioAiEpisodeProductionGateway } from "./StudioAiEpisodeProductionGateway";
+import { StudioAiGenerationQueueGateway } from "./StudioAiGenerationQueueGateway";
 import { StudioAiSuperSuiteGateway } from "./StudioAiSuperSuiteGateway";
 
 import type { StudioMenu } from "../studio-editor-tool-model";
@@ -581,6 +582,40 @@ export function StudioAiToolPopoverBody({
                       onSaveToLibrary={saveSuggestedPaletteToLibrary}
                     />
                   ) : null}
+                  <StudioAiGenerationQueueGateway
+                    documentId={activePage.id}
+                    selectionId={selected?.id ?? null}
+                    onAnnounce={announceDrawingShortcut}
+                    onInsertDraftLayer={({ job, artifact, mode }) => {
+                      if (artifact?.kind === "image" && artifact.dataUrl) {
+                        addRenderedImage(
+                          artifact.dataUrl,
+                          artifact.width ?? 512,
+                          artifact.height ?? 512,
+                        );
+                        return {
+                          mode,
+                          targetDocumentId: activePage.id,
+                          ...(mode === "selection" && job.request.selectionId
+                            ? { targetSelectionId: job.request.selectionId }
+                            : {}),
+                          createdObjectIds: [`ai-layer-${job.id}`],
+                        };
+                      }
+                      if (artifact?.kind === "text" && artifact.textDraft) {
+                        insertAiCompositionNote(artifact.textDraft);
+                        return {
+                          mode,
+                          targetDocumentId: activePage.id,
+                          ...(mode === "selection" && job.request.selectionId
+                            ? { targetSelectionId: job.request.selectionId }
+                            : {}),
+                          createdObjectIds: [`ai-note-${job.id}`],
+                        };
+                      }
+                      return null;
+                    }}
+                  />
                   <StudioAdvancedAiTools
                     userId={session?.user.id}
                     onInsertGenerated3d={(blob, revisionId) => {

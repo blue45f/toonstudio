@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactElement } from "react";
+import { Suspense, lazy, useMemo, useState, type ReactElement } from "react";
 
 import {
   CSP_COMPANION_NAVIGATOR_COMMANDS,
@@ -19,6 +19,12 @@ import {
   type CspVec4Stroke,
 } from "../../../../../../packages/studio-format-gateway/src/csp-tgcxs-certmdul-mobile-companion";
 import { CspPwEditSliderJoint } from "./StudioCspPwuiBentoToonSection";
+
+const LazyStudioCspReaCompleteWorkbenchSection = lazy(() =>
+  import("./StudioCspReaCompleteWorkbenchSection").then((mod) => ({
+    default: mod.StudioCspReaCompleteWorkbenchSection,
+  })),
+);
 
 const SAMPLE_INTERSECTING_STROKES: readonly CspVec4Stroke[] = [
   {
@@ -341,6 +347,22 @@ export function StudioCspTgcxsCertMdulCompanionSection(): ReactElement {
             {aiDisturbanceSummary.meanAbsoluteDelta} · PSNR {aiDisturbanceSummary.psnrDb} dB
           </div>
         </div>
+      </div>
+
+      {/* Full-width lazy workbench section: brushes, 46 filters, comic & animation tools */}
+      <div className="md:col-span-3">
+        <Suspense
+          fallback={
+            <div
+              role="status"
+              className="rounded-xl border border-line bg-panel px-3 py-2.5 text-xs text-fg-2"
+            >
+              브러시·필터·만화 제작 도구를 불러오는 중...
+            </div>
+          }
+        >
+          <LazyStudioCspReaCompleteWorkbenchSection />
+        </Suspense>
       </div>
     </div>
   );

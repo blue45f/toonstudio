@@ -16,12 +16,20 @@ function norm(s: string): string {
 }
 
 export type MediaKind = "drama" | "movie" | "anime" | "ott";
+export type AdaptationEndingDiffStatus = "same" | "diverged" | "ongoing" | "unknown";
+
+export interface AdaptationEndingDiff {
+  readonly status: AdaptationEndingDiffStatus;
+  readonly summaryKo: string;
+}
+
 export interface MediaAdaptation {
   kind: MediaKind;
   name: string;
   year: number;
   videoId?: string; // 공식 예고편 유튜브 ID(썸네일·미리보기용)
   url?: string; // 공식 시청/정보 페이지(Netflix·디즈니+·TVING·위키 등)
+  endingDiff?: AdaptationEndingDiff;
 }
 
 export type OstKind = "op" | "ed" | "ost" | "theme";
@@ -106,10 +114,10 @@ const DATA: UniverseEntry[] = [
       { song: "Like a Star", artist: "도영 (DOYOUNG, NCT)", year: 2021, kind: "ost", context: "드라마", videoId: "atJmeuWm4mo" },
     ],
   },
-  { titles: ["스위트홈"], adaptations: [{ kind: "ott", name: "스위트홈", year: 2020, videoId: "B5IQqZDSRjk", url: "https://www.netflix.com/title/81061734" }] },
-  { titles: ["지옥"], adaptations: [{ kind: "ott", name: "지옥", year: 2021, videoId: "ga3pXJEngms", url: "https://www.netflix.com/title/81256675" }] },
-  { titles: ["지금 우리 학교는"], adaptations: [{ kind: "ott", name: "지금 우리 학교는", year: 2022, videoId: "IN5TD4VRcSM", url: "https://www.netflix.com/title/81237994" }] },
-  { titles: ["재벌집 막내아들"], adaptations: [{ kind: "drama", name: "재벌집 막내아들", year: 2022, videoId: "KPSFUOQiTEQ", url: "https://ko.wikipedia.org/wiki/재벌집_막내아들" }] },
+  { titles: ["스위트홈"], adaptations: [{ kind: "ott", name: "스위트홈", year: 2020, videoId: "B5IQqZDSRjk", url: "https://www.netflix.com/title/81061734", endingDiff: { status: "diverged", summaryKo: "시즌 확장 과정에서 원작 웹툰과 다른 오리지널 결말로 전개" } }] },
+  { titles: ["지옥"], adaptations: [{ kind: "ott", name: "지옥", year: 2021, videoId: "ga3pXJEngms", url: "https://www.netflix.com/title/81256675", endingDiff: { status: "same", summaryKo: "시즌 1 기준 원작 핵심 결말 구조를 충실히 반영" } }] },
+  { titles: ["지금 우리 학교는"], adaptations: [{ kind: "ott", name: "지금 우리 학교는", year: 2022, videoId: "IN5TD4VRcSM", url: "https://www.netflix.com/title/81237994", endingDiff: { status: "diverged", summaryKo: "일부 주요 인물 결말과 후속 시즌 암시가 원작과 다름" } }] },
+  { titles: ["재벌집 막내아들"], adaptations: [{ kind: "drama", name: "재벌집 막내아들", year: 2022, videoId: "KPSFUOQiTEQ", url: "https://ko.wikipedia.org/wiki/재벌집_막내아들", endingDiff: { status: "diverged", summaryKo: "원작 웹소설과 달리 드라마 독자 결말로 각색" } }] },
   { titles: ["알고있지만", "알고있지만,"], adaptations: [{ kind: "drama", name: "알고있지만,", year: 2021, videoId: "xJCTxUuu3js", url: "https://www.netflix.com/kr/title/81435649" }] },
   { titles: ["안나라수마나라"], adaptations: [{ kind: "ott", name: "안나라수마나라", year: 2022, videoId: "hAY2RS-8C90", url: "https://www.netflix.com/kr/title/81016276" }] },
   { titles: ["금수저"], adaptations: [{ kind: "drama", name: "금수저", year: 2022, videoId: "PXv4KLRTBJQ", url: "https://program.imbc.com/TheGoldenSpoon" }] },

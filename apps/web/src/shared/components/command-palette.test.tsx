@@ -6,6 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CommandPalette } from "./command-palette";
 import { CommandPaletteHost } from "./command-palette-host";
+import {
+  resetStudioCommandSearchBridgeForTests,
+  subscribeStudioCommandExecutionFromPalette,
+} from "@/shared/lib/studio-command-search-bridge";
 
 import { useUi } from "@/shared/lib/ui-store";
 
@@ -159,6 +163,164 @@ describe("CommandPalette", () => {
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+
+  it.each([
+    ["퍼펫 워프", "퍼펫 워프 (관절 포즈 변형)", "csp", "/studio/canvas"],
+    ["Liquify", "액화 / 유동화 브러시", "photoshop", "/studio/canvas"],
+    ["단면 컷어웨이", "3D 단면 컷어웨이 (벽면 절단)", "sketchup", "/studio/bg3d"],
+    ["QuickShape", "퀵셰이프 (스마트 도형 보정)", "procreate", "/studio/canvas"],
+  ])("경쟁 앱 용어 '%s' 검색 시 대응 기능이 최상단에 매칭되고 Enter로 정본 라우트에 진입한다", async (query, expectedName, expectedVendor, expectedHref) => {
+    const onOpenChange = vi.fn();
+    window.history.replaceState({}, "", "/");
+    render(<CommandPalette open={true} onOpenChange={onOpenChange} />);
+
+    const input = screen.getByRole("combobox");
+    await act(async () => {
+      fireEvent.input(input, { target: { value: query } });
+      fireEvent.change(input, { target: { value: query } });
+    });
+
+    await waitFor(() => {
+      expect(screen.getAllByText(expectedName).length).toBeGreaterThan(0);
+    });
+    expect(document.querySelector(`[data-competitor-vendor="${expectedVendor}"]`)).not.toBeNull();
+
+    await act(async () => {
+      fireEvent.keyDown(input, { key: "Enter" });
+    });
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith(expectedHref);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+  });
+
+  it("스튜디오 편집 화면(/studio/work/demo)에서 경쟁 앱 용어 검색 후 Enter 시 라이브 명령 브리지로 즉시 실행되고 화면을 이탈하지 않는다", async () => {
+    const onOpenChange = vi.fn();
+    const executedCommands: string[] = [];
+    resetStudioCommandSearchBridgeForTests();
+    const unsubscribe = subscribeStudioCommandExecutionFromPalette({
+      inspect: (req) => ({ status: "executable", label: req.label }),
+      execute: (req) => {
+        executedCommands.push(req.commandId);
+        return true;
+      },
+    });
+    window.history.replaceState({}, "", "/studio/work/demo");
+    try {
+      render(<CommandPalette open={true} onOpenChange={onOpenChange} />);
+      const input = screen.getByRole("combobox");
+      await act(async () => {
+        fireEvent.input(input, { target: { value: "컬러드롭" } });
+        fireEvent.change(input, { target: { value: "컬러드롭" } });
+      });
+
+      await waitFor(() => {
+        expect(screen.getAllByText("페인트 버킷 (채우기)").length).toBeGreaterThan(0);
+      });
+
+      await act(async () => {
+        fireEvent.keyDown(input, { key: "Enter" });
+      });
+
+      await waitFor(() => {
+        expect(executedCommands).toEqual(["tool.fill"]);
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+      expect(mockPush).not.toHaveBeenCalled();
+    } finally {
+      unsubscribe();
+      resetStudioCommandSearchBridgeForTests();
+      window.history.replaceState({}, "", "/");
+    }
+  });
+
+  it("편집 캔버스(/studio/work/demo)에서 비활성(disabled) 명령은 이유만 안내하고 실행·이탈하지 않는다", async () => {
+    const onOpenChange = vi.fn();
+    const executeSpy = vi.fn(() => true);
+    resetStudioCommandSearchBridgeForTests();
+    const unsubscribe = subscribeStudioCommandExecutionFromPalette({
+      inspect: () => ({ status: "disabled", reason: "이미지 레이어를 먼저 선택하세요." }),
+      execute: executeSpy,
+    });
+    window.history.replaceState({}, "", "/studio/work/demo");
+    try {
+      render(<CommandPalette open={true} onOpenChange={onOpenChange} />);
+      const input = screen.getByRole("combobox");
+      await act(async () => {
+        fireEvent.input(input, { target: { value: "렌즈 블러" } });
+        fireEvent.change(input, { target: { value: "렌즈 블러" } });
+      });
+
+      await waitFor(() => {
+        expect(screen.getAllByText("렌즈 블러 (피사계 심도 흐림)").length).toBeGreaterThan(0);
+      });
+
+      await act(async () => {
+        fireEvent.keyDown(input, { key: "Enter" });
+      });
+
+      expect(executeSpy).not.toHaveBeenCalled();
+      expect(mockPush).not.toHaveBeenCalled();
+      expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    } finally {
+      unsubscribe();
+      resetStudioCommandSearchBridgeForTests();
+      window.history.replaceState({}, "", "/");
+    }
+  });
+
+  it("한글 IME 조합 중 Enter는 라이브 명령을 실행하지 않고, 중복 Enter는 단일 실행만 허용한다", async () => {
+    const onOpenChange = vi.fn();
+    const executeSpy = vi.fn(() => true);
+    resetStudioCommandSearchBridgeForTests();
+    const unsubscribe = subscribeStudioCommandExecutionFromPalette({
+      inspect: (req) => ({ status: "executable", label: req.label }),
+      execute: executeSpy,
+    });
+    window.history.replaceState({}, "", "/studio/work/demo");
+    try {
+      render(<CommandPalette open={true} onOpenChange={onOpenChange} />);
+      const input = screen.getByRole("combobox");
+      await act(async () => {
+        fireEvent.input(input, { target: { value: "클리핑" } });
+        fireEvent.change(input, { target: { value: "클리핑" } });
+      });
+
+      await waitFor(() => {
+        expect(screen.getAllByText("아래 레이어에 클리핑").length).toBeGreaterThan(0);
+      });
+
+      // 1) IME 조합 시작 후 Enter는 실행을 차단해야 한다.
+      await act(async () => {
+        fireEvent.compositionStart(input);
+        fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+      });
+      expect(executeSpy).not.toHaveBeenCalled();
+
+      // 2) compositionend 직후 동일 틱 Enter 역시 조합 확정용이므로 차단되어야 한다.
+      await act(async () => {
+        fireEvent.compositionEnd(input);
+        fireEvent.keyDown(input, { key: "Enter" });
+      });
+      expect(executeSpy).not.toHaveBeenCalled();
+
+      // 다음 틱 이후 정상 Enter를 연속 2회 눌러도 claimExecution 가드로 단 1회만 실행된다.
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        fireEvent.keyDown(input, { key: "Enter" });
+        fireEvent.keyDown(input, { key: "Enter" });
+      });
+
+      expect(executeSpy).toHaveBeenCalledTimes(1);
+      expect(executeSpy).toHaveBeenCalledWith(expect.objectContaining({ commandId: "layer.clipping-mask" }));
+      expect(mockPush).not.toHaveBeenCalled();
+    } finally {
+      unsubscribe();
+      resetStudioCommandSearchBridgeForTests();
+      window.history.replaceState({}, "", "/");
+    }
+  });
 });
 
 describe("CommandPaletteHost", () => {
@@ -181,6 +343,17 @@ describe("CommandPaletteHost", () => {
     expect(useUi.getState().commandPaletteOpen).toBe(true);
 
     fireEvent.keyDown(window, { key: "k", metaKey: true });
+    expect(useUi.getState().commandPaletteOpen).toBe(false);
+  });
+
+  it("F1 단축키 입력 시 전역 커맨드 팔레트가 토글된다", () => {
+    window.history.replaceState({}, "", "/");
+    render(<CommandPaletteHost />);
+
+    expect(useUi.getState().commandPaletteOpen).toBe(false);
+    fireEvent.keyDown(window, { key: "F1" });
+    expect(useUi.getState().commandPaletteOpen).toBe(true);
+    fireEvent.keyDown(window, { key: "F1" });
     expect(useUi.getState().commandPaletteOpen).toBe(false);
   });
 

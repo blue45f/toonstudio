@@ -49,6 +49,12 @@ export function studioVrmPropAssetRequestUrl(url: string): string {
 
 function preparePropClone(object: THREE.Object3D, propId: string): void {
   object.name = `prop:${propId}`;
+  object.traverse((node) => {
+    const mesh = node as THREE.Mesh;
+    if (mesh.isMesh === true && mesh.geometry && !mesh.geometry.getAttribute("normal")) {
+      mesh.geometry.computeVertexNormals();
+    }
+  });
   applyStudioBg3dRuntimeAssetQuality(object, {
     castShadow: true,
     receiveShadow: true,

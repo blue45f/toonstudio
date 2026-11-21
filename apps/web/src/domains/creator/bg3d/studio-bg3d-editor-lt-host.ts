@@ -19,6 +19,13 @@ import {
   patchStudio3dSceneBackground,
 } from "./studio-bg3d-grade-plates";
 import { captureStudio3dPlatesFromAdapter } from "./studio-bg3d-grade-plates-production";
+import {
+  applyStudioBg3dWebtoonAtmospherePresetToDocument,
+  getStudioBg3dWebtoonAtmospherePreset,
+  resolveStudioBg3dWebtoonAtmospherePreset,
+  type StudioBg3dWebtoonAtmospherePreset,
+  type StudioBg3dWebtoonAtmospherePresetId,
+} from "./studio-bg3d-lighting-studio";
 
 export function attachStudioBg3dEditorLtHost(h: Record<string, any>) {
   const {
@@ -711,4 +718,31 @@ export function attachStudioBg3dEditorLtHost(h: Record<string, any>) {
     setError(null);
   }
   h.applySunRigConfig = applySunRigConfig;
+  const activeWebtoonAtmospherePreset = resolveStudioBg3dWebtoonAtmospherePreset(sceneBaseDocument);
+  h.activeWebtoonAtmosphereId = activeWebtoonAtmospherePreset?.id ?? null;
+  function applyWebtoonAtmospherePreset(
+    presetOrId: StudioBg3dWebtoonAtmospherePreset | StudioBg3dWebtoonAtmospherePresetId,
+  ) {
+    if (isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)) return;
+    const preset = typeof presetOrId === "string"
+      ? getStudioBg3dWebtoonAtmospherePreset(presetOrId)
+      : presetOrId;
+    if (!preset) return;
+    const applied = applyStudioBg3dWebtoonAtmospherePresetToDocument(sceneBaseDocument, preset);
+    if (!applied) {
+      setError("웹툰 분위기 프리셋을 장면 원본에 안전하게 적용하지 못했습니다.");
+      return;
+    }
+    setSunRigConfig({
+      ...sunRigConfig,
+      timeOfDayHours: preset.weather.sunTimeHours,
+      azimuthDeg: preset.weather.sunAzimuthDeg,
+      elevationDeg: preset.weather.sunElevationDeg,
+    });
+    commitImmediateHistoryTransition(primitives, customModels, applied);
+    setSceneBaseDocument(applied);
+    scheduleStudio3dPlateCapture(applied);
+    setError(null);
+  }
+  h.applyWebtoonAtmospherePreset = applyWebtoonAtmospherePreset;
 }

@@ -3,6 +3,13 @@ import type { LucideIcon } from "lucide-react";
 
 export type PaletteMode = "all" | "titles" | "commands" | "studio" | "pages" | "shortcuts";
 
+export type PaletteCompetitorVendor = "csp" | "photoshop" | "sketchup" | "procreate";
+
+export interface PaletteCompetitorAlias {
+  readonly vendor: PaletteCompetitorVendor;
+  readonly term: string;
+}
+
 export interface CommandContext {
   router: { push: (href: string) => void };
   closePalette: () => void;
@@ -19,6 +26,8 @@ export interface PaletteCommand {
   icon: LucideIcon;
   shortcut?: string[];
   keywords: string[];
+  competitorAliases?: readonly PaletteCompetitorAlias[];
+  studioCommandId?: string;
   description?: string;
   badge?: string;
   action: (ctx: CommandContext) => void | Promise<void>;
@@ -33,6 +42,8 @@ export interface PaletteStudioTool {
   icon: LucideIcon;
   tip: string;
   keywords: string[];
+  competitorAliases?: readonly PaletteCompetitorAlias[];
+  studioCommandId?: string;
   actionPath?: string;
 }
 

@@ -5,7 +5,7 @@ const pending = new Map<string, Promise<void>>();
 
 /** 같은 작품의 읽기·검사·저장을 한 순서로 처리한다. 구 형식은 SQLite에 없는 최초 읽기에서만 가져온다. */
 export async function withPlanningDocument<T>(
-  namespace: "studio-director-drafts" | "studio-project-moodboards", key: string,
+  namespace: "studio-director-drafts" | "studio-project-moodboards" | "studio-plotr-workbenches", key: string,
   update: (store: StudioAsyncKeyValueStore, raw: string | null) => Promise<T>,
 ) {
   const run = async () => {

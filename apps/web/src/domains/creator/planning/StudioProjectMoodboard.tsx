@@ -1,5 +1,6 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import "./StudioProjectMoodboard.css";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import { loadDeviceMoodboard, writeDeviceMoodboard, MoodboardChanged, type DeviceBoard } from "./studio-moodboard-device-store";
@@ -11,6 +12,45 @@ import {
   type Moodboard,
   type MoodboardAssetCatalogEntry,
 } from "./studio-moodboard";
+import {
+  createSpatialStoryBoardDocument,
+  type SpatialStoryBoardDocument,
+} from "./studio-spatial-story-board-canvas";
+
+const LazyPlotrSpatialBoardView = lazy(() =>
+  import("./plotr/PlotrSpatialBoardView").then((m) => ({
+    default: m.PlotrSpatialBoardView,
+  })),
+);
+
+function seedSpatialFromMoodboard(board: Moodboard): SpatialStoryBoardDocument {
+  const base = createSpatialStoryBoardDocument(board.title || "작품 공간 스토리보드");
+  const cards = Object.values(board.cards);
+  const nodes = cards.map((card, idx) => ({
+    id: `mb-${card.id}`,
+    boardId: base.rootBoardId,
+    kind:
+      card.kind === "image" || card.kind === "sketch"
+        ? ("reference-image" as const)
+        : ("sticky" as const),
+    titleKo: (card.text || card.kind).slice(0, 28) || `카드 ${idx + 1}`,
+    bodyKo: card.text || "무드보드에서 가져온 카드",
+    x: 36 + (idx % 3) * 252,
+    y: 44 + Math.floor(idx / 3) * 140,
+    width: 220,
+    height: 110,
+    tags: [card.kind],
+  }));
+  const arrows = (board.connections ?? []).map((conn, idx) => ({
+    id: `mbarr-${idx}`,
+    boardId: base.rootBoardId,
+    fromNodeId: `mb-${conn.from}`,
+    toNodeId: `mb-${conn.to}`,
+    labelKo: "연결",
+    curveOffsetPx: -14,
+  }));
+  return { ...base, nodes, arrows };
+}
 
 export interface StudioProjectMoodboardProps {
   readonly projectId: string;
@@ -26,10 +66,18 @@ export function StudioProjectMoodboard(props: StudioProjectMoodboardProps) {
 const HISTORY_LIMIT = 30;
 
 function ProjectBoardSession({ projectId, imageCatalog }: StudioProjectMoodboardProps) {
+  const t = useBilingual("StudioProjectMoodboard");
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [history, setHistory] = useState<{ past: Moodboard[]; future: Moodboard[] }>({ past: [], future: [] });
   const [saveError, setSaveError] = useState<"unavailable" | "changed" | null>(null);
   const [saving, setSaving] = useState(false);
+  const [boardSurfaceMode, setBoardSurfaceMode] = useState<"columns" | "spatial">("columns");
+  const [customSpatialDoc, setCustomSpatialDoc] = useState<SpatialStoryBoardDocument | null>(null);
+  const readyBoard = state.kind === "ready" ? state.board : null;
+  const seededSpatialDoc = useMemo(
+    () => (readyBoard ? seedSpatialFromMoodboard(readyBoard) : null),
+    [readyBoard],
+  );
   const lastSaved = useRef("");
   const epoch = useRef(0);
   const pending = useRef(0);
@@ -119,12 +167,21 @@ function ProjectBoardSession({ projectId, imageCatalog }: StudioProjectMoodboard
   }
 
   const board = state.board;
+  const spatialDoc = customSpatialDoc ?? seededSpatialDoc ?? seedSpatialFromMoodboard(board);
   const previous = history.past.at(-1);
   const following = history.future.at(-1);
   const tools = <>
     <div className="studio-project-moodboard-actions" role="group" aria-label="보드 변경 기록">
       <button type="button" disabled={!previous} onClick={() => previous && change(previous, history.past.slice(0, -1), [...history.future, board])}>실행 취소</button>
       <button type="button" disabled={!following} onClick={() => following && change(following, [...history.past, board], history.future.slice(0, -1))}>다시 실행</button>
+      <button
+        type="button"
+        data-testid="moodboard-toggle-spatial-view"
+        aria-pressed={boardSurfaceMode === "spatial"}
+        onClick={() => setBoardSurfaceMode((mode) => (mode === "columns" ? "spatial" : "columns"))}
+      >
+        {boardSurfaceMode === "spatial" ? "열 보드로 보기" : "자유 공간 보드로 보기"}
+      </button>
       {!saveError && <span role="status">{saving ? r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.localSaving", "저장 중…") : r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.localSaved", "이 기기에 저장됨")}</span>}
     </div>
     {saveError && <div role="alert">
@@ -137,7 +194,22 @@ function ProjectBoardSession({ projectId, imageCatalog }: StudioProjectMoodboard
     }/>}
   </>;
   return <div className="studio-project-moodboard">
-    <StudioMoodboardPanel tools={tools} board={board} imageCatalog={imageCatalog} scriptProjectId={saveError ? undefined : projectId} profileProjectId={saveError ? undefined : projectId}
-      onBoardChange={next => change(next, [...history.past, board], [])} />
+    {boardSurfaceMode === "spatial" ? (
+      <div className="space-y-3">
+        {tools}
+        <Suspense
+          fallback={
+            <p role="status" className="p-3">
+              {t("자유 공간 보드를 여는 중…", "Opening the free-form spatial board…")}
+            </p>
+          }
+        >
+          <LazyPlotrSpatialBoardView document={spatialDoc} onChange={setCustomSpatialDoc} />
+        </Suspense>
+      </div>
+    ) : (
+      <StudioMoodboardPanel tools={tools} board={board} imageCatalog={imageCatalog} scriptProjectId={saveError ? undefined : projectId} profileProjectId={saveError ? undefined : projectId}
+        onBoardChange={next => change(next, [...history.past, board], [])} />
+    )}
   </div>;
 }

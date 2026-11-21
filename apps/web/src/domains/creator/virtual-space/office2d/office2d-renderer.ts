@@ -72,6 +72,7 @@ import {
   paintOffice2dActorSpatialAura,
   paintOffice2dFloorDetails,
   paintOffice2dObjectLiveOverlay,
+  paintOffice2dPrivateRoomFocus,
   paintOffice2dWallDecorLive,
 } from "./office2d-world-details";
 
@@ -197,6 +198,8 @@ export class Office2dRenderer {
     this.drawGuides(ctx, frame);
     if (!frame.reducedMotion) frame.particles.draw(ctx);
     this.drawLighting(ctx, frame, visible);
+    const selfActor = frame.actors.find((actor) => actor.id === frame.selfId) ?? null;
+    paintOffice2dPrivateRoomFocus(ctx, this.scene, selfActor, visible, frame.reducedMotion);
     if (frame.schematicMode ?? frame.extensions?.schematicMode) {
       paintOffice2dSchematicOverlay(
         ctx,
@@ -534,8 +537,11 @@ export class Office2dRenderer {
     // 작업 자세 시트가 없으면(로딩 실패) 보행 시트의 같은 방향 정지 프레임으로 대신한다.
     const bob = office2dActorBob(actor, frame.time, frame.reducedMotion || lying);
     const foot = office2dActorFoot(actor);
-    const footX = foot.x + emoteTransform.offsetX + rest.offsetX;
-    const footY = (seated ? foot.y : actor.y + 3) + rest.offsetY;
+    const rawFootX = foot.x + emoteTransform.offsetX + rest.offsetX;
+    const rawFootY = (seated ? foot.y : actor.y + 3) + rest.offsetY;
+    // 정지·착석 상태에서 서브픽셀 흐림을 줄여 스프라이트 윤곽선을 또렷하게 유지한다.
+    const footX = actor.moving ? rawFootX : Math.round(rawFootX * 2) / 2;
+    const footY = actor.moving ? rawFootY : Math.round(rawFootY * 2) / 2;
     const height = ACTOR_HEIGHT * bob.scaleY;
     const width = ACTOR_HEIGHT * (OFFICE2D_CHARACTER_CELL.width / OFFICE2D_CHARACTER_CELL.height) * (seated ? 1 : bob.scaleX);
     ctx.globalAlpha = opacity;
@@ -545,7 +551,7 @@ export class Office2dRenderer {
       ctx.lineWidth = 2;
       ctx.globalAlpha = opacity * (frame.reducedMotion ? 0.7 : 0.55 + Math.sin(frame.time * 3) * 0.2);
       ctx.beginPath();
-      ctx.ellipse(actor.x, actor.y + 1, 17, 6.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(actor.x, actor.y + 1, 17 * bob.shadowScale, 6.5 * bob.shadowScale, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = opacity;
     }

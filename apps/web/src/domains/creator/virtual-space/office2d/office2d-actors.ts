@@ -60,6 +60,10 @@ export interface Office2dActor {
   footstepTriggered: boolean;
   /** 착지한 발 좌우 부호(-1 왼발 · +1 오른발). */
   footstepSide: -1 | 1;
+  /** 고속 이동 중 반대 방향으로 급전환해 마찰 먼지가 나는지 여부. */
+  skidTriggered: boolean;
+  /** 점프 도약 높이(px, 0이면 접지 상태). */
+  jumpHeight: number;
   /** 전력 질주 잔상 샘플링 타이머(초). */
   afterimageTimer: number;
   /** 전력 질주 시 남는 반투명 스피드 잔상 버퍼(최대 3개). */
@@ -126,6 +130,8 @@ export function createOffice2dActor(input: {
     previousSeated: false,
     footstepTriggered: false,
     footstepSide: 1,
+    skidTriggered: false,
+    jumpHeight: 0,
     afterimageTimer: 0,
     afterimages: [],
     pose: "stand",
@@ -199,6 +205,7 @@ export function advanceOffice2dActor(actor: Office2dActor, nextX: number, nextY:
   }
 
   actor.footstepTriggered = false;
+  actor.skidTriggered = false;
   if (actor.moving) {
     const candidate = office2dFacingFromVector(dx, dy, actor.facing);
     if (candidate !== actor.facing) {
@@ -213,6 +220,9 @@ export function advanceOffice2dActor(actor: Office2dActor, nextX: number, nextY:
         actor.facingHold = 0.065;
         actor.turnTransition = 1;
         actor.squash = clamp(actor.squash - 0.025, -0.09, 0.09);
+        if (opposite && prevSpeed >= 120 && !actor.seat) {
+          actor.skidTriggered = true;
+        }
       }
     }
     const prevStride = actor.stride;
@@ -303,7 +313,7 @@ export interface Office2dActorMotionPose {
 /** 숨쉬기·보행 리듬·방향 전환 피벗 쿠션·착석 안착 스쿼시·상체 기울기. reduced motion이면 정적 기본값을 돌려준다. */
 export function office2dActorBob(
   actor: Pick<Office2dActor, "moving" | "stride" | "seat">
-    & Partial<Pick<Office2dActor, "id" | "gaitBlend" | "leanAngle" | "squash" | "turnTransition" | "poseTransition" | "speed">>,
+    & Partial<Pick<Office2dActor, "id" | "gaitBlend" | "leanAngle" | "squash" | "turnTransition" | "poseTransition" | "speed" | "jumpHeight">>,
   time: number,
   reducedMotion: boolean,
 ): Office2dActorMotionPose {
@@ -311,6 +321,9 @@ export function office2dActorBob(
   const blend = actor.gaitBlend ?? (actor.moving ? 1 : 0);
   const squash = actor.squash ?? 0;
   const lean = actor.leanAngle ?? 0;
+  const jumpHeight = Math.max(0, actor.jumpHeight ?? 0);
+  const jumpShadowFactor = clamp(1 - jumpHeight / 76, 0.56, 1);
+  const jumpStretch = jumpHeight > 1 ? Math.min(0.06, jumpHeight / 420) : 0;
   const turnWave = Math.sin(clamp(actor.turnTransition ?? 0, 0, 1) * Math.PI);
   const poseWave = Math.sin(clamp(actor.poseTransition ?? 0, 0, 1) * Math.PI);
   const turnCompressX = 1 - turnWave * 0.075;
@@ -318,24 +331,24 @@ export function office2dActorBob(
 
   if ((actor.moving || blend >= 0.08) && !actor.seat) {
     const phase = (actor.stride / OFFICE2D_GAIT_DISTANCE) * Math.PI * 2;
-    // 한 발이 지면에 남는 걸음과 회전은 발을 피벗으로 체간 높이만 바꾼다. 질주 때만 전신이 뜬다.
+    // 한 발이 지면에 남는 걸음과 회전은 발을 피벗으로 체간 높이만 바꾼다. 질주·점프 때만 전신이 뜬다.
     const cadence = Math.abs(Math.sin(phase));
     const lift = cadence * 1.6 * blend + turnWave * 1.1;
     const sprinting = (actor.speed ?? 0) >= SPRINT_AFTERIMAGE_SPEED;
-    const offsetY = sprinting ? -lift : 0;
-    const stretch = Math.cos(phase * 2) * 0.014 * blend + squash + poseSquashY + turnWave * 0.018;
-    const scaleY = clamp(1 + stretch + (sprinting ? 0 : lift / OFFICE2D_ACTOR_HEIGHT), 0.9, 1.1);
-    const scaleX = clamp((1 / Math.sqrt(scaleY)) * turnCompressX, 0.88, 1.08);
+    const offsetY = (sprinting ? -lift : 0) - jumpHeight;
+    const stretch = Math.cos(phase * 2) * 0.014 * blend + squash + poseSquashY + turnWave * 0.018 + jumpStretch;
+    const scaleY = clamp(1 + stretch + (sprinting || jumpHeight > 0.5 ? 0 : lift / OFFICE2D_ACTOR_HEIGHT), 0.88, 1.12);
+    const scaleX = clamp((1 / Math.sqrt(scaleY)) * turnCompressX, 0.88, 1.09);
     const swayTilt = Math.sin(phase) * 0.018 * blend;
-    const shadowScale = 1 - cadence * 0.12 * blend;
+    const shadowScale = (1 - cadence * 0.12 * blend) * jumpShadowFactor;
     return { offsetY, scaleX, scaleY, tiltRad: lean + swayTilt, shadowScale };
   }
   // 상주 동료들이 같은 박자로 숨 쉬지 않도록 신원별 고정 위상을 쓴다. 보행은 실제 이동 거리 위상을 유지한다.
   const breathPhase = actor.id ? office2dHashIndex(actor.id, 997) / 997 * Math.PI * 2 : 0;
-  const breath = Math.sin(time * 2.2 + breathPhase) * 0.01 + squash + poseSquashY;
-  const scaleY = clamp(1 + breath, 0.91, 1.08);
-  const scaleX = clamp((1 / Math.sqrt(scaleY)) * turnCompressX, 0.9, 1.07);
-  return { offsetY: poseWave * 1.2, scaleX, scaleY, tiltRad: lean, shadowScale: 1 };
+  const breath = Math.sin(time * 2.2 + breathPhase) * 0.01 + squash + poseSquashY + jumpStretch;
+  const scaleY = clamp(1 + breath, 0.88, 1.1);
+  const scaleX = clamp((1 / Math.sqrt(scaleY)) * turnCompressX, 0.88, 1.09);
+  return { offsetY: poseWave * 1.2 - jumpHeight, scaleX, scaleY, tiltRad: lean, shadowScale: jumpShadowFactor };
 }
 
 /**

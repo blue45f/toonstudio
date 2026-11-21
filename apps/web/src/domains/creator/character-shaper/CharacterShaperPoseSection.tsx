@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
+import { computeShaperBodyMetrics } from "./character-shaper-custom-quality";
 import {
   applyDuoPosePackToPrimaryHost,
   CHARACTER_SHAPER_DUO_POSE_PACKS,
@@ -58,6 +59,28 @@ export function CharacterShaperPoseSection({
   const degrees = Math.round((bodyRotation * 180) / Math.PI);
   const activePack = getDuoPosePackById(duoState.activePackId);
   const resolvedActors = resolveDuoSceneActors(duoState);
+  const bodyMetrics = computeShaperBodyMetrics(
+    (h.avatarForgeState as { readonly proportions?: Parameters<typeof computeShaperBodyMetrics>[0] } | null | undefined)?.proportions,
+  );
+
+  const applyBindPose = (mode: "t-pose" | "a-pose") => {
+    basePoseBonesRef.current = null;
+    setMotionScrubPct(100);
+    if (typeof h.setCustomBones !== "function") {
+      h.handleResetActivePose();
+      return;
+    }
+    if (mode === "t-pose") {
+      h.setCustomBones({});
+    } else {
+      // A-포즈(양 팔 36° 자연 하강) — 의상 피팅·실루엣 검수용 표준 바인드 포즈
+      h.setCustomBones({
+        leftUpperArm: { rotation: [0, 0, -0.63] },
+        rightUpperArm: { rotation: [0, 0, 0.63] },
+      });
+    }
+    if (typeof h.invalidateViewport === "function") h.invalidateViewport();
+  };
 
   const handleMotionScrub = (nextPct: number) => {
     const clamped = Math.min(100, Math.max(0, Math.round(nextPct)));
@@ -121,7 +144,30 @@ export function CharacterShaperPoseSection({
           <button type="button" className={ROW_BUTTON} disabled={locked} onClick={() => h.handleMirrorPose("legs")}>
             다리만 반전
           </button>
+          <button
+            type="button"
+            data-testid="shaper-pose-bind-a"
+            aria-label="A-포즈 바인드 자세로 맞추기"
+            className={ROW_BUTTON}
+            disabled={locked}
+            onClick={() => applyBindPose("a-pose")}
+          >
+            A-포즈 맞추기
+          </button>
+          <button
+            type="button"
+            data-testid="shaper-pose-bind-t"
+            aria-label="T-포즈 바인드 자세로 맞추기"
+            className={ROW_BUTTON}
+            disabled={locked}
+            onClick={() => applyBindPose("t-pose")}
+          >
+            T-포즈 맞추기
+          </button>
         </div>
+        <p data-testid="shaper-pose-body-height" className="rounded-lg bg-raised/70 px-2.5 py-1.5 text-[0.68rem] font-semibold tabular-nums text-fg-2">
+          현재 체격 기준: {bodyMetrics.summaryKo}
+        </p>
 
         <label className="flex items-center gap-2 rounded-xl border border-line/80 bg-card/70 p-2.5 text-[0.72rem] font-bold text-fg-2">
           <span className="w-16 shrink-0">몸 방향</span>

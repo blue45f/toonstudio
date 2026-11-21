@@ -606,6 +606,10 @@ export function VirtualSpaceExperience({
                       <StickyNote size={14} aria-hidden />{bt("포스트잇", "Stickies")}
                     </button>
                   </div>
+                ) : !touch ? (
+                  <button type="button" data-testid="space-quick-whiteboard-btn" onClick={() => overlays.togglePanel("board")} className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-panel/95 px-3 text-xs font-medium text-fg shadow-sm hover:border-accent">
+                    <PenTool size={14} aria-hidden />{bt("화이트보드", "Board")}
+                  </button>
                 ) : null}
               </div>
               {homeHeader}

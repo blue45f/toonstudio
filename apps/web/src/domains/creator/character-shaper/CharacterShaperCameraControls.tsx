@@ -1,11 +1,16 @@
 
-import { Grid3X3 } from "lucide-react";
-import { useState } from "react";
+import { Grid3X3, SlidersHorizontal, Sun } from "lucide-react";
+import { useId, useState } from "react";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { STUDIO_VRM_INSPECTION_VIEWS } from "../vrm/studio-vrm-inspection-framing";
 import { CAMERA_PRESETS } from "../vrm/studio-vrm-poser-catalogs";
 
+import {
+  applyCameraFocalLengthToCamera,
+  applyFrontLightLockToScene,
+  SHAPER_CAMERA_FOCAL_PRESETS,
+} from "./character-shaper-custom-quality";
 import {
   DEFAULT_CHARACTER_SHAPER_GAZE_OFFSET,
   useCharacterShaperSessionSettings,
@@ -41,8 +46,12 @@ function isCharacterShaperGazeMode(value: string): value is CharacterShaperGazeM
   return value === "cam" || value === "fix" || value === "light" || value === "world";
 }
 
-/** 단일 44px 컴팩트 카메라 필 바 — 프리셋·부위 확대·조작 방식·4모드 안구 시선과 3×3 시선 그리드를 한 줄에 배치한다. */
+/** 단일 44px 컴팩트 카메라 필 바 — 모바일에서는 프리셋·정면광·세부 카메라 1줄로 3D 뷰포트를 지키고, 보조 4종은 1탭으로 펼친다. */
 export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShaperViewportHudProps, "h" | "compact">) {
+  const extrasId = useId();
+  const [focalMm, setFocalMm] = useState(50);
+  const [frontLightLocked, setFrontLightLocked] = useState(false);
+  const [compactExtrasOpen, setCompactExtrasOpen] = useState(false);
   const activeCameraId = typeof h.activeCameraId === "string" ? h.activeCameraId : "front";
   const cameraLocked = Boolean(h.viewportCameraInteractionLocked || h.isCapturing || h.isSharingPose || h.isThumbnailCapturing);
   const disabled = cameraLocked || h.status !== "ready";
@@ -54,17 +63,33 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
     "disabled:cursor-not-allowed disabled:opacity-40",
     STUDIO_FOCUS_RING,
   );
-  const pillBar = (
+  const handleFocalChange = (nextMm: number) => {
+    setFocalMm(nextMm);
+    const runtime = h.captureRef?.current as { readonly camera?: Parameters<typeof applyCameraFocalLengthToCamera>[0] } | null | undefined;
+    applyCameraFocalLengthToCamera(runtime?.camera, nextMm);
+    if (typeof h.invalidateViewport === "function") h.invalidateViewport();
+  };
+  const handleToggleFrontLight = () => {
+    const next = !frontLightLocked;
+    setFrontLightLocked(next);
+    const runtime = h.captureRef?.current as {
+      readonly scene?: Parameters<typeof applyFrontLightLockToScene>[0];
+      readonly camera?: { readonly position?: { readonly x: number; readonly y: number; readonly z: number } };
+    } | null | undefined;
+    applyFrontLightLockToScene(runtime?.scene, runtime?.camera?.position, next);
+    if (typeof h.invalidateViewport === "function") h.invalidateViewport();
+  };
+  const primaryRow = (
     <div
       data-character-shaper-camera-pill-bar="true"
       className={cn(
-        "pointer-events-auto flex min-h-11 flex-wrap items-center gap-1.5",
+        "pointer-events-auto flex min-h-11 items-center gap-1.5",
         compact
-          ? "w-full min-w-0"
-          : "absolute left-2 top-2 z-20 max-w-[calc(100%-4rem)] rounded-2xl border border-line/70 bg-panel/90 px-2 py-1 shadow-sm backdrop-blur",
+          ? "w-full min-w-0 flex-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap"
+          : "absolute left-2 top-2 z-20 max-w-[calc(100%-4rem)] flex-wrap rounded-2xl border border-line/70 bg-panel/90 px-2 py-1 shadow-sm backdrop-blur",
       )}
     >
-      <div role="group" aria-label="카메라 프리셋" className="flex flex-wrap items-center gap-1">
+      <div role="group" aria-label="카메라 프리셋" className="flex shrink-0 flex-nowrap items-center gap-1 md:flex-wrap">
         {presets.map((preset) => (
           <button
             key={preset.id}
@@ -84,8 +109,99 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
           </button>
         ))}
       </div>
-      <span aria-hidden className="hidden h-5 w-px shrink-0 bg-line/70 xl:block" />
-      <div data-character-camera-selects="true" className="flex flex-wrap items-center gap-1">
+      <button
+        type="button"
+        data-testid="shaper-front-light-toggle"
+        aria-pressed={frontLightLocked}
+        aria-label="정면 조명 고정"
+        title="조명을 정면에 고정해 얼굴 그림자를 깔끔하게 정리합니다."
+        disabled={disabled}
+        onClick={handleToggleFrontLight}
+        className={cn(
+          "inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold",
+          "transition-[border-color,background-color,color] duration-150 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
+          STUDIO_FOCUS_RING,
+          frontLightLocked
+            ? "border-accent bg-accent-soft text-accent"
+            : "border-line/70 bg-card text-fg-2 hover:bg-raised hover:text-fg",
+        )}
+      >
+        <Sun size={13} aria-hidden />
+        <span>정면광</span>
+      </button>
+      {compact ? (
+        <button
+          type="button"
+          data-testid="shaper-camera-extras-toggle"
+          aria-expanded={compactExtrasOpen}
+          aria-controls={extrasId}
+          aria-label={compactExtrasOpen ? "세부 카메라 설정 접기" : "세부 카메라 설정 펼치기"}
+          onClick={() => setCompactExtrasOpen((open) => !open)}
+          className={cn(
+            "inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold md:hidden",
+            "transition-[border-color,background-color,color] duration-150 motion-reduce:transition-none",
+            STUDIO_FOCUS_RING,
+            compactExtrasOpen
+              ? "border-accent bg-accent-soft text-accent"
+              : "border-line/70 bg-card text-fg-2 hover:bg-raised hover:text-fg",
+          )}
+        >
+          <SlidersHorizontal size={13} aria-hidden />
+          <span>세부 카메라</span>
+        </button>
+      ) : null}
+      {!compact ? <span aria-hidden className="hidden h-5 w-px shrink-0 bg-line/70 xl:block" /> : null}
+      {!compact ? (
+        <div data-character-camera-selects="true" className="flex flex-wrap items-center gap-1">
+          <select
+            aria-label="부위·방향 확대 검사"
+            title="측면·후면과 착장 접점을 확대합니다. 드래그로 자유롭게 회전할 수 있습니다."
+            disabled={disabled}
+            value={STUDIO_VRM_INSPECTION_VIEWS.some((view) => view.id === activeCameraId) ? activeCameraId : ""}
+            onChange={(event) => {
+              if (event.target.value) h.setActiveCameraId(event.target.value);
+            }}
+            className={cn(selectClass, "max-w-[9.5rem]")}
+          >
+            <option value="" disabled>부위·방향 확대 검사</option>
+            {STUDIO_VRM_INSPECTION_VIEWS.map((view) => <option key={view.id} value={view.id}>{view.label}</option>)}
+          </select>
+          <select
+            aria-label="카메라 렌즈 초점거리"
+            data-testid="shaper-camera-focal-select"
+            title="초점거리를 바꿉니다(24mm 광각 ~ 135mm 망원)."
+            disabled={disabled}
+            value={String(focalMm)}
+            onChange={(event) => handleFocalChange(Number(event.currentTarget.value))}
+            className={cn(selectClass, "max-w-[7.5rem]")}
+          >
+            {SHAPER_CAMERA_FOCAL_PRESETS.map((lens) => (
+              <option key={lens.focalMm} value={String(lens.focalMm)}>
+                {lens.labelKo}
+              </option>
+            ))}
+          </select>
+          <CharacterShaperCameraStyleSelect disabled={disabled} compactPill />
+          <CharacterShaperGazeSelect h={h} compactPill />
+        </div>
+      ) : null}
+    </div>
+  );
+  if (!compact) return primaryRow;
+  return (
+    <div
+      data-character-shaper-camera-bar="true"
+      className="relative z-20 flex min-h-11 min-w-0 shrink-0 flex-col justify-center border-b border-line bg-panel px-2 py-0.5 md:flex-row md:flex-wrap md:items-center md:gap-1.5"
+    >
+      {primaryRow}
+      <div
+        id={extrasId}
+        data-character-camera-selects="true"
+        data-compact-extras-open={compactExtrasOpen ? "true" : "false"}
+        className={cn(
+          compactExtrasOpen ? "grid grid-cols-2 gap-1.5 pt-1.5 md:flex md:flex-wrap md:items-center md:gap-1 md:pt-0" : "hidden md:flex md:flex-wrap md:items-center md:gap-1",
+        )}
+      >
         <select
           aria-label="부위·방향 확대 검사"
           title="측면·후면과 착장 접점을 확대합니다. 드래그로 자유롭게 회전할 수 있습니다."
@@ -94,24 +210,31 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
           onChange={(event) => {
             if (event.target.value) h.setActiveCameraId(event.target.value);
           }}
-          className={cn(selectClass, "max-w-[9.5rem]")}
+          className={cn(selectClass, "max-w-full md:max-w-[9.5rem]")}
         >
           <option value="" disabled>부위·방향 확대 검사</option>
           {STUDIO_VRM_INSPECTION_VIEWS.map((view) => <option key={view.id} value={view.id}>{view.label}</option>)}
+        </select>
+        <select
+          aria-label="카메라 렌즈 초점거리"
+          data-testid="shaper-camera-focal-select"
+          title="초점거리를 바꿉니다(24mm 광각 ~ 135mm 망원)."
+          disabled={disabled}
+          value={String(focalMm)}
+          onChange={(event) => handleFocalChange(Number(event.currentTarget.value))}
+          className={cn(selectClass, "max-w-full md:max-w-[7.5rem]")}
+        >
+          {SHAPER_CAMERA_FOCAL_PRESETS.map((lens) => (
+            <option key={lens.focalMm} value={String(lens.focalMm)}>
+              {lens.labelKo}
+            </option>
+          ))}
         </select>
         <CharacterShaperCameraStyleSelect disabled={disabled} compactPill />
         <CharacterShaperGazeSelect h={h} compactPill />
       </div>
     </div>
   );
-  return compact ? (
-    <div
-      data-character-shaper-camera-bar="true"
-      className="relative z-20 flex min-h-11 min-w-0 shrink-0 items-center border-b border-line bg-panel px-2 py-0.5"
-    >
-      {pillBar}
-    </div>
-  ) : pillBar;
 }
 
 const SESSION_SELECT = cn(

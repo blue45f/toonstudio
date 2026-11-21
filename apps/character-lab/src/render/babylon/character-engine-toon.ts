@@ -2,6 +2,7 @@
  * BabylonCharacterEngine용 툰 셰이더 파라미터·안구 하이라이트·실측 렌더 텔레메트리 계산 헬퍼.
  * 엔진 본체(`character-engine.ts`) 크기를 억제하고 순수 계산과 Babylon 상태 수집을 분리한다.
  */
+import { Material } from "@babylonjs/core/Materials/material.js";
 import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 import { Viewport } from "@babylonjs/core/Maths/math.viewport.js";
 
@@ -10,8 +11,12 @@ import { computeEyeballHighlightTransform } from "../toon-reference";
 
 import { isKitPart, rigBoneWorld } from "./character-rig";
 import { fromVector3, toQuaternion, toVector3 } from "./convert";
+import { srgb } from "./engine-io";
+import { createPassMaterial, setAlphaCutoff, setToonTextures, setToonUniforms, shaderLanguageFor } from "./materials/toon-shader";
 
 import type { CharacterRig, RigPart } from "./character-rig";
+import type { NodeToonTextures } from "./materials/node-toon-material";
+import type { ToonUniformValues } from "./materials/toon-shader";
 import type { PressureOutlineTelemetry } from "./pressure-outline";
 import type { JointDragHandle, ShadingProfile, Vec3 } from "../../contracts";
 import type { EyeballHighlightConfig, EyeballHighlightState } from "../render-telemetry";
@@ -20,6 +25,10 @@ import type { ToonParams } from "../toon-reference";
 import type { ViewportCameraInfo } from "../viewport-camera";
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera.js";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine.js";
+import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";
+import type { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial.js";
+import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture.js";
+import type { Scene } from "@babylonjs/core/scene.js";
 
 const RAD_TO_DEG = 180 / Math.PI;
 const DEG_TO_RAD = Math.PI / 180;
@@ -183,4 +192,61 @@ export function projectRigJointHandles(rig: CharacterRig, camera: ArcRotateCamer
     handles.push({ bone, screen: [projected.x, projected.y], world });
   }
   return handles;
+}
+
+function submeshToonValues(baseValues: ToonUniformValues, meshPbr: PBRMaterial): ToonUniformValues {
+  const hasTex = meshPbr.albedoTexture !== null;
+  const hex = hasTex
+    ? "#ffffff"
+    : meshPbr.albedoColor
+      ? meshPbr.albedoColor.toHexString().slice(0, 7).toLowerCase()
+      : "#cccccc";
+  return { ...baseValues, baseColor: srgb(hex), hasAlbedo: hasTex };
+}
+
+/**
+ * 멀티 재질 GLB 파츠(소품·패키지)의 서브메시별 툰 재질을 보장한다.
+ * 1차 `part.pbr`과 같은 서브메시는 `primaryToon`을 공유하고, 서로 다른 PBR 재질을 가진 서브메시만
+ * `part.meshToons`에 별도 ShaderMaterial을 만들어 텍스처·알베도 색 덮어쓰기(품질 급락)를 막는다.
+ */
+export function resolveMeshToonMaterial(input: {
+  readonly part: RigPart;
+  readonly meshIndex: number;
+  readonly primaryToon: ShaderMaterial;
+  readonly baseValues: ToonUniformValues;
+  readonly baseTextures: NodeToonTextures;
+  readonly whiteTexture: BaseTexture;
+  readonly scene: Scene;
+  readonly engine: AbstractEngine;
+  readonly vertexColor: boolean;
+}): ShaderMaterial {
+  const { part, meshIndex, primaryToon, baseValues, baseTextures, whiteTexture, scene, engine, vertexColor } = input;
+  const meshPbr = part.meshPbrs?.[meshIndex];
+  if (!meshPbr || meshPbr === part.pbr) return primaryToon;
+  const map = (part.meshToons ??= new Map<PBRMaterial, ShaderMaterial>());
+  let toonMat = map.get(meshPbr);
+  if (!toonMat) {
+    toonMat = createPassMaterial({ scene, language: shaderLanguageFor(engine) }, "toon", `toon:${part.id}:${meshPbr.name || meshIndex}`, {
+      vertexColor,
+      faceShadowUv: part.faceShadowUv === true,
+      hairFlowUv: part.hairFlowUv === true,
+    });
+    toonMat.backFaceCulling = meshPbr.backFaceCulling;
+    map.set(meshPbr, toonMat);
+  }
+  const values = submeshToonValues(baseValues, meshPbr);
+  setToonUniforms(toonMat, values);
+  const cutoff = meshPbr.albedoTexture !== null && meshPbr.transparencyMode === Material.MATERIAL_ALPHATEST ? meshPbr.alphaCutOff : 0;
+  setAlphaCutoff(toonMat, cutoff);
+  setToonTextures(toonMat, { ...baseTextures, albedo: meshPbr.albedoTexture ?? whiteTexture });
+  return toonMat;
+}
+
+/** 파츠에 연결된 모든 서브메시 보조 툰 재질의 유니폼을 동기화한다. */
+export function syncPartSubmeshToonUniforms(part: RigPart, baseValues: ToonUniformValues): void {
+  if (!part.meshToons || part.meshToons.size === 0) return;
+  for (const [meshPbr, toonMat] of part.meshToons) {
+    toonMat.backFaceCulling = meshPbr.backFaceCulling;
+    setToonUniforms(toonMat, submeshToonValues(baseValues, meshPbr));
+  }
 }

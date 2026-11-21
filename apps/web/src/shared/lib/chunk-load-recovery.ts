@@ -33,6 +33,14 @@ function clearReloadGuard(key: string): boolean {
   }
 }
 
+export function isOfflineChunkReloadBlocked(): boolean {
+  try {
+    return typeof globalThis.navigator !== "undefined" && globalThis.navigator.onLine === false;
+  } catch {
+    return false;
+  }
+}
+
 export function hasAttemptedChunkReload(): boolean {
   try {
     return globalThis.sessionStorage.getItem(CHUNK_RELOAD_FLAG) === "1";
@@ -79,8 +87,11 @@ export async function loadChunkWithReloadRecovery<T>(
     clearRecoveredChunkGuard(guardKey);
     return module;
   } catch (error) {
+    // 오프라인 상태에서는 reload해도 브라우저 연결 끊김 화면으로 이탈하므로
+    // 재시도 가드를 소모하지 않고 원래 오류를 그대로 전파한다.
     if (
-      hasReloadGuard(guardKey)
+      isOfflineChunkReloadBlocked()
+      || hasReloadGuard(guardKey)
       || hasAttemptedChunkReload()
       || !armReloadGuard(guardKey)
     ) {

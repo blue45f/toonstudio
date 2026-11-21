@@ -155,7 +155,7 @@ interface StudioBg3dViewPanelContext {
   readonly sunLightState: import("./studio-bg3d-sun-rig").StudioBg3dSunLightState;
   readonly STUDIO_BG3D_SUN_TIME_PRESETS: readonly import("./studio-bg3d-sun-rig").StudioBg3dSunTimePreset[];
   readonly sunRigConfig: StudioBg3dSunRigConfig;
-  readonly applySunRigConfig: (patch: Partial<StudioBg3dSunRigConfig>) => void;
+  readonly applySunRigConfig: (patch: Partial<StudioBg3dSunRigConfig>) => void; readonly activeWebtoonAtmosphereId?: import("./studio-bg3d-lighting-studio").StudioBg3dWebtoonAtmospherePresetId | null; readonly applyWebtoonAtmospherePreset?: (preset: import("./studio-bg3d-lighting-studio").StudioBg3dWebtoonAtmospherePreset | import("./studio-bg3d-lighting-studio").StudioBg3dWebtoonAtmospherePresetId) => void;
   readonly formatBg3dSunTime: (hours: number) => string;
   readonly Globe: typeof import("lucide-react").Globe;
   readonly BG_SKY_PRESETS: readonly import("../studio-background-3d-sky").BgSkyPreset[];
@@ -1270,16 +1270,13 @@ export function StudioBg3dViewPanel({
                 <StudioBg3dLightingStudio
                   lighting={sceneBaseDocument.lighting}
                   exposure={sceneBaseDocument.render.exposure}
-                  disabled={
-                    isCapturing || isBatchRenderingShots || isRestoringScene ||
-                    physicsInteractionLocked
-                  }
+                  disabled={isCapturing || isBatchRenderingShots || isRestoringScene || physicsInteractionLocked}
                   onUpdateLighting={updateLightingSettings}
                   onUpdateExposure={updateRenderExposure}
                   onCommitLightingHistory={finishLtDocumentGesture}
-                  onApplyHdriSunTime={(sunTimeHours) =>
-                    applySunRigConfig({ timeOfDayHours: sunTimeHours })
-                  }
+                  activeWebtoonAtmosphereId={context.activeWebtoonAtmosphereId ?? null}
+                  onApplyWebtoonAtmosphere={context.applyWebtoonAtmospherePreset}
+                  onApplyHdriSunTime={(sunTimeHours) => applySunRigConfig({ timeOfDayHours: sunTimeHours })}
                 />
 
                 <div className="mt-5 border-t border-line pt-4">

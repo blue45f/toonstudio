@@ -67,6 +67,34 @@
   height: auto;
   min-height: 44px;
   padding-block: 0;
+  transition: background-color 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms cubic-bezier(0.22, 1, 0.36, 1), color 180ms cubic-bezier(0.22, 1, 0.36, 1), transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-actions] :is(button, summary):active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* 320px~390px 모든 높이에서 44px 상단바가 가로 스크롤 0px로 수용되도록 최소 폭을 맞춘다. */
+@media (max-width: 390px) {
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header {
+    gap: 2px;
+    padding-inline: 4px;
+  }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title {
+    min-width: 48px;
+  }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header :is(.studio-drawing-clarity-save, .studio-drawing-clarity-mobile-export, .studio-drawing-compact-edit-toggle) {
+    min-width: 44px;
+    padding-inline: 5px;
+    gap: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-actions] :is(button, summary, [data-studio-mobile-filter-select]) {
+    transition: none;
+    transform: none;
+  }
 }
 
 /* 네이티브 선택의 터치 영역을 보이는 필터 칸과 맞춰 홈 인디케이터를 침범하지 않도록 한다. */

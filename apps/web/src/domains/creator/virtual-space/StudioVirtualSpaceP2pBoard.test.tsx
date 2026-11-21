@@ -113,4 +113,71 @@ describe("StudioVirtualSpaceP2pBoard", () => {
     expect((screen.getByRole("button", { name: "메모 놓기" }) as HTMLButtonElement).disabled).toBe(true);
     expect(onNote).not.toHaveBeenCalled();
   });
+
+  it("renders teammate author names via authorNameOf and gates local-save retry alert by localSaveFailed", () => {
+    const snapshotWithPeerItems: StudioP2pBoardSnapshot = {
+      entities: [
+        {
+          id: "stroke-bob",
+          kind: "stroke",
+          ownerSessionId: "bob",
+          ownerEpoch: "epoch-bob",
+          revision: 1,
+          color: "#ffd166",
+          width: 5,
+          points: [{ x: 0.1, y: 0.1 }, { x: 0.4, y: 0.4 }],
+        },
+        {
+          id: "note-bob",
+          kind: "note",
+          ownerSessionId: "bob",
+          ownerEpoch: "epoch-bob",
+          revision: 1,
+          color: "#ffd166",
+          x: 0.2,
+          y: 0.2,
+          text: "컷 구도 확인 부탁해요",
+        },
+      ],
+      readyPeerIds: ["bob"],
+      available: true,
+      canEdit: true,
+    };
+    const onRetryLocalSave = vi.fn();
+    const authorNameOf = (sessionId: string) => (sessionId === "bob" ? "밥 어시스턴트" : sessionId);
+
+    const { rerender } = render(
+      <StudioVirtualSpaceP2pBoard
+        snapshot={snapshotWithPeerItems}
+        selfSessionId="alice"
+        authorNameOf={authorNameOf}
+        onStroke={vi.fn(() => null)}
+        onNote={vi.fn(() => null)}
+        onRemove={vi.fn(() => true)}
+        onClearOwn={vi.fn()}
+        localSaveFailed={false}
+        onRetryLocalSave={onRetryLocalSave}
+      />,
+    );
+
+    expect(screen.getAllByText("밥 어시스턴트").length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    rerender(
+      <StudioVirtualSpaceP2pBoard
+        snapshot={snapshotWithPeerItems}
+        selfSessionId="alice"
+        authorNameOf={authorNameOf}
+        onStroke={vi.fn(() => null)}
+        onNote={vi.fn(() => null)}
+        onRemove={vi.fn(() => true)}
+        onClearOwn={vi.fn()}
+        localSaveFailed={true}
+        onRetryLocalSave={onRetryLocalSave}
+      />,
+    );
+    expect(screen.getByRole("alert")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "이 기기에 다시 저장" }));
+    expect(onRetryLocalSave).toHaveBeenCalledTimes(1);
+  });
 });

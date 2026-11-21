@@ -19,7 +19,21 @@ import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id"
 
 import { CutsPlayer } from "./CutsPlayer";
 import { CutsRemixBadge } from "./CutsRemixBadge";
+import { CutsRhythmDirectorPanel } from "./CutsRhythmDirectorPanel";
 import { buildCutsClip, formatClipDuration } from "./cuts-clip-builder";
+import {
+  applyPresetToRhythmConfig,
+  applyRhythmToClip,
+  DEFAULT_CUTS_RHYTHM_CONFIG,
+  getCutsRhythmPreset,
+  loadCutsRhythmConfig,
+  nudgeShotDurationOffset,
+  parseCutsRhythmPresetParam,
+  saveCutsRhythmConfig,
+  type CutsPlaybackRate,
+  type CutsRhythmConfig,
+  type CutsRhythmPresetId,
+} from "./cuts-rhythm-director";
 import {
   buildRemixClip,
   guardRemixPublish,
@@ -211,9 +225,27 @@ function RewardFundLink() {
   );
 }
 
-function ClipPreview({ clip }: Readonly<{ clip: CutsClip }>) {
+function ClipPreview({
+  clip,
+  rhythmConfig,
+  onSelectPreset,
+  onChangeRate,
+  onToggleLetterbox,
+  onNudgeShot,
+  onResetRhythm,
+}: Readonly<{
+  clip: CutsClip;
+  rhythmConfig: CutsRhythmConfig;
+  onSelectPreset: (presetId: CutsRhythmPresetId) => void;
+  onChangeRate: (rate: CutsPlaybackRate) => void;
+  onToggleLetterbox: () => void;
+  onNudgeShot: (shotId: string, deltaMs: number) => void;
+  onResetRhythm: () => void;
+}>) {
   const t = useBilingual("cuts");
   const [muted, setMuted] = useState(true);
+  const [activeShotIndex, setActiveShotIndex] = useState(0);
+  const [jumpRequest, setJumpRequest] = useState<{ readonly shotIndex: number; readonly nonce: number } | null>(null);
   return (
     <div className="cuts-studio__preview">
       <CutsPlayer
@@ -221,29 +253,29 @@ function ClipPreview({ clip }: Readonly<{ clip: CutsClip }>) {
         active
         muted={muted}
         onToggleMute={() => setMuted((value) => !value)}
+        rhythmPreset={rhythmConfig.presetId}
+        playbackRate={rhythmConfig.playbackRate}
+        letterbox={rhythmConfig.letterbox}
+        jumpRequest={jumpRequest}
+        onShotChange={setActiveShotIndex}
       />
       <div>
         {clip.remix ? <CutsRemixBadge clip={clip} /> : null}
-        <h3>{t("샷 구성", "Shot list")}</h3>
-        <ul className="cuts-shot-list">
-          {clip.shots.map((shot, index) => (
-            <li key={shot.id}>
-              <img src={shot.imageUrl} alt={shot.alt} />
-              <div>
-                <div>
-                  {t("샷 {{n}}", "Shot {{n}}").replace("{{n}}", String(index + 1))}
-                  {" · "}
-                  {formatClipDuration(shot.durationMs)}
-                  {" · "}
-                  {shot.kenBurns.direction}
-                </div>
-                <div className="cuts-shot-list__meta">{shot.caption}</div>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <details className="cuts-ssml">
-          <summary>{t("내레이션 SSML 보기 (클라우드 TTS 내보내기용)", "View narration SSML (for cloud TTS export)")}</summary>
+        <CutsRhythmDirectorPanel
+          clip={clip}
+          config={rhythmConfig}
+          activeShotIndex={activeShotIndex}
+          onSelectPreset={onSelectPreset}
+          onChangeRate={onChangeRate}
+          onToggleLetterbox={onToggleLetterbox}
+          onNudgeShot={onNudgeShot}
+          onJumpShot={(index) =>
+            setJumpRequest((prev) => ({ shotIndex: index, nonce: (prev?.nonce ?? 0) + 1 }))
+          }
+          onReset={onResetRhythm}
+        />
+        <details className="cuts-ssml mt-4">
+          <summary>{t("내레이션 대본 코드 보기 (음성 내보내기용)", "View narration script (for cloud voice export)")}</summary>
           <pre>{clip.narrationSsml}</pre>
         </details>
       </div>
@@ -305,6 +337,21 @@ export function CutsStudioPage() {
   const [targetFps, setTargetFps] = useState<StudioTargetFps>("60fps-webgpu");
   const [cameraCurve, setCameraCurve] = useState<"spring-impact" | "smooth-pan-25d" | "shonen-shake-burst" | "emotional-slowzoom">("spring-impact");
   const [duckingProfile, setDuckingProfile] = useState<"dialogue-minus12db" | "sfx-punch-minus6db" | "cinema-lufs14">("dialogue-minus12db");
+  const fromTitleParam = searchParams.get("fromTitle")?.trim() || null;
+  const fromEpisodeParam = searchParams.get("ep")?.trim() || null;
+  const initialMoodPreset = parseCutsRhythmPresetParam(searchParams.get("mood"));
+  const [rhythmConfig, setRhythmConfig] = useState<CutsRhythmConfig>(() => {
+    const base = loadCutsRhythmConfig();
+    return initialMoodPreset ? applyPresetToRhythmConfig(base, initialMoodPreset) : base;
+  });
+
+  const updateRhythmConfig = (updater: (prev: CutsRhythmConfig) => CutsRhythmConfig) => {
+    setRhythmConfig((prev) => {
+      const next = updater(prev);
+      saveCutsRhythmConfig(next);
+      return next;
+    });
+  };
 
   // 선택한 회차가 리믹스 진입 대상과 같을 때만 리믹스 초안으로 만든다.
   const isRemixDraft =
@@ -318,11 +365,11 @@ export function CutsStudioPage() {
 
   const draft = useMemo(() => {
     if (!selected) return null;
-    if (isRemixDraft && originalClipId) {
-      return buildRemixClip(selected, actorId ?? "guest", originalClipId);
-    }
-    return buildCutsClip(selected, actorId ?? "guest");
-  }, [selected, isRemixDraft, originalClipId, actorId]);
+    const baseClip = isRemixDraft && originalClipId
+      ? buildRemixClip(selected, actorId ?? "guest", originalClipId)
+      : buildCutsClip(selected, actorId ?? "guest");
+    return baseClip ? applyRhythmToClip(baseClip, rhythmConfig) : null;
+  }, [selected, isRemixDraft, originalClipId, actorId, rhythmConfig]);
 
   const publishedClip = clips.find((clip) => clip.id === publishedId) ?? null;
   const publishedRemix = publishedClip?.remix;
@@ -395,6 +442,20 @@ export function CutsStudioPage() {
         </p>
       ) : null}
 
+      {fromTitleParam && !remixParamInvalid ? (
+        <p className="cuts-studio__notice" role="note" data-testid="cuts-reader-handoff-notice">
+          {initialMoodPreset
+            ? t(
+                `뷰어에서 가져온 ${fromEpisodeParam ? `${fromEpisodeParam}화 ` : ""}${getCutsRhythmPreset(initialMoodPreset).labelKo} 리듬이 미리 적용됐어요. 아래에서 회차를 골라 바로 미리보세요.`,
+                `The ${getCutsRhythmPreset(initialMoodPreset).labelEn} rhythm from the reader is preloaded. Pick an episode below to preview it right away.`,
+              )
+            : t(
+                `뷰어에서 ${fromEpisodeParam ? `${fromEpisodeParam}화 ` : ""}컷츠 만들기로 이어졌어요. 아래에서 회차를 골라 변환해 보세요.`,
+                `Opened from the reader${fromEpisodeParam ? ` (Ep.${fromEpisodeParam})` : ""}. Pick an episode below to convert.`,
+              )}
+        </p>
+      ) : null}
+
       {step === "select" ? (
         <>
           {isRemixDraft ? (
@@ -436,7 +497,15 @@ export function CutsStudioPage() {
 
       {step === "preview" && draft ? (
         <>
-          <ClipPreview clip={draft} />
+          <ClipPreview
+            clip={draft}
+            rhythmConfig={rhythmConfig}
+            onSelectPreset={(presetId) => updateRhythmConfig((prev) => applyPresetToRhythmConfig(prev, presetId))}
+            onChangeRate={(rate) => updateRhythmConfig((prev) => ({ ...prev, playbackRate: rate }))}
+            onToggleLetterbox={() => updateRhythmConfig((prev) => ({ ...prev, letterbox: !prev.letterbox }))}
+            onNudgeShot={(shotId, deltaMs) => updateRhythmConfig((prev) => nudgeShotDurationOffset(prev, shotId, deltaMs))}
+            onResetRhythm={() => updateRhythmConfig(() => DEFAULT_CUTS_RHYTHM_CONFIG)}
+          />
           {!actorId ? (
             <p className="cuts-studio__notice" role="note">
               {t(

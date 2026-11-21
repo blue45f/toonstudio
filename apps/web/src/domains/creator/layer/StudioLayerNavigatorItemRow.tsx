@@ -1,10 +1,18 @@
 import {
-  Check, CircleDot, CornerDownRight, Droplets, Eye, EyeOff, Film, Ghost,
-  Grid2X2, GripVertical, Layers3, Lock, LockOpen, MoreHorizontal, ScanLine, Sparkles,
+  Check, CircleDot, CornerDownRight, Droplets, Eye, EyeOff,
+  Grid2X2, GripVertical, Lock, LockOpen, MoreHorizontal, ScanLine,
 } from "lucide-react";
-import { memo, useState } from "react";
+import { memo, useRef, useState } from "react";
 
 import { StudioInlineScrubber } from "../StudioInlineScrubber";
+import {
+  evaluateLayerRowTrioToggle,
+  finishLayerRowTouchEnd,
+  startLayerRowTouchGesture,
+  stepLayerRowTouchMove,
+  type LayerRowTouchGestureSession,
+  type LayerRowTouchPoint,
+} from "./studio-layer-row-trio-gestures";
 
 import {
   BLUE_LINE_ROUGH_LAYER_COLOR_PRESET,
@@ -16,9 +24,15 @@ import {
 } from "./studio-layer-expression-color";
 import { STUDIO_LAYER_COLOR_LABELS, STUDIO_LAYER_ROLE_LABELS } from "./studio-layer-navigator";
 import {
+  STUDIO_LAYER_COLOR_DOT_CLASS as COLOR_DOT_CLASS,
   STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
   STUDIO_LAYER_NAVIGATOR_FOCUS_RING,
   STUDIO_LAYER_NAVIGATOR_KIND_ICONS,
+  STUDIO_LAYER_STATUS_CLASSES as STATUS_CLASSES,
+  STUDIO_LAYER_STATUS_ICONS as STATUS_ICONS,
+  STUDIO_LAYER_TRIO_BUTTON_ACTIVE_CLASSES as TRIO_BUTTON_ACTIVE_CLASSES,
+  STUDIO_LAYER_TRIO_BUTTON_BASE_CLASS as TRIO_BUTTON_BASE_CLASS,
+  STUDIO_LAYER_TRIO_BUTTON_INACTIVE_CLASS as TRIO_BUTTON_INACTIVE_CLASS,
 } from "./studio-layer-navigator-row-ui";
 import {
   buildStudioLayerPaletteStatuses,
@@ -31,52 +45,16 @@ import {
 import type { LayerSelectionDropSide } from "../studio-layers";
 import type { StudioLiveLayerOwnership } from "../live/studio-live-layer-ownership";
 import type { StudioLayerExpressionColorSettings } from "./studio-layer-expression-color";
-import type { StudioLayerColor, StudioLayerKind, StudioLayerNavigatorItem } from "./studio-layer-navigator";
-import type { StudioLayerPaletteStatusKind } from "./studio-layer-palette-visual";
-import type { LucideIcon } from "lucide-react";
+import type { StudioLayerKind, StudioLayerNavigatorItem } from "./studio-layer-navigator";
 import type {
   DragEvent as ReactDragEvent,
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
   ReactNode,
+  TouchEvent as ReactTouchEvent,
 } from "react";
 
 import { cn } from "@/shared/lib/utils";
-
-const COLOR_DOT_CLASS: Record<StudioLayerColor, string> = {
-  red: "bg-bad",
-  orange: "bg-accent",
-  yellow: "bg-warning",
-  green: "bg-good",
-  blue: "bg-cool",
-  violet: "bg-[oklch(0.68_0.18_312)]",
-};
-
-const STATUS_ICONS: Record<StudioLayerPaletteStatusKind, LucideIcon> = {
-  "local-hidden": Ghost,
-  hidden: EyeOff,
-  locked: Lock,
-  reference: ScanLine,
-  mask: Layers3,
-  "mask-disabled": Layers3,
-  clipping: CornerDownRight,
-  "alpha-locked": Grid2X2,
-  ai: Sparkles,
-  animated: Film,
-};
-
-const STATUS_CLASSES: Record<StudioLayerPaletteStatusKind, string> = {
-  "local-hidden": "border-line-strong bg-raised text-fg-2",
-  hidden: "border-line-strong bg-raised text-fg-3",
-  locked: "border-accent/30 bg-accent-soft/35 text-accent",
-  reference: "border-cool/30 bg-cool/10 text-cool",
-  mask: "border-good/30 bg-good/10 text-good",
-  "mask-disabled": "border-line bg-card text-fg-3/60",
-  clipping: "border-[oklch(0.68_0.16_312/0.3)] bg-[oklch(0.68_0.16_312/0.1)] text-[oklch(0.76_0.13_312)]",
-  "alpha-locked": "border-accent/30 bg-accent-soft/35 text-accent",
-  ai: "border-warning/30 bg-warning/10 text-warning",
-  animated: "border-cool/30 bg-cool/10 text-cool",
-};
 
 export interface LayerNavigatorRowHandlers {
   onRowFocus: (key: string) => void;
@@ -99,6 +77,13 @@ export interface LayerNavigatorRowHandlers {
   ) => void;
   /** CSP 레이어 속성(`layerpropuselayercolor`) 주색·파란선 표시 빠른 토글. */
   onToggleItemLayerColorTint?: (itemId: string, enabled: boolean) => void;
+  /** T9 레이어 트리오(클리핑 마스크 · 알파 잠금 · 참조 레이어) 빠른 토글. */
+  onToggleItemClipBelow?: (itemId: string, clipBelow: boolean) => void;
+  onToggleItemAlphaLock?: (itemId: string, alphaLocked: boolean) => void;
+  onToggleItemReference?: (itemId: string, fillReference: boolean) => void;
+  /** T9 우측 스와이프 다중 선택 토글 / 핀치 병합. */
+  onToggleItemMultiSelect?: (itemId: string) => void;
+  onPinchMergeItem?: (itemId: string) => void;
   onItemDragStart?: (event: ReactDragEvent<HTMLElement>, itemId: string, key: string) => void;
   onItemDragEnd?: () => void;
   onItemDragOver?: (event: ReactDragEvent<HTMLElement>, itemId: string, key: string) => void;
@@ -151,6 +136,8 @@ export interface StudioLayerNavigatorItemRowProps {
   dragEnabled?: boolean;
   dropSide?: LayerSelectionDropSide | null;
   dragHelpId?: string;
+  /** 최하단(zIndex === 0)이 아닐 때 true. false면 클리핑 마스크·핀치 병합 불가. */
+  canClipBelow?: boolean;
 }
 
 /**
@@ -186,7 +173,9 @@ export const StudioLayerNavigatorItemRow = memo(
     dragEnabled = false,
     dropSide = null,
     dragHelpId,
+    canClipBelow = item.zIndex > 0,
   }: StudioLayerNavigatorItemRowProps) {
+    const touchGestureRef = useRef<LayerRowTouchGestureSession | null>(null);
     const Icon = STUDIO_LAYER_NAVIGATOR_KIND_ICONS[kind];
     const peerBlocked = liveOwnership?.blocksLocalEdit === true;
     const [localLayerColorEnabled, setLocalLayerColorEnabled] = useState<boolean | null>(null);
@@ -274,7 +263,88 @@ export const StudioLayerNavigatorItemRow = memo(
     // gesture at once. The draft is kept because a rejected preview (locked page, save in flight)
     // never comes back as `item.opacity`, and the row must still track the pointer.
     const [opacityDraft, setOpacityDraft] = useState<number | null>(null);
+    const [gestureFeedback, setGestureFeedback] = useState<string | null>(null);
+    const flashGesture = (msg: string) => { setGestureFeedback(msg); globalThis.setTimeout(() => setGestureFeedback((cur) => (cur === msg ? null : cur)), 1300); };
     const opacityPercent = opacityDraft ?? committedOpacityPercent;
+    const toTouchPoints = (list: ReactTouchEvent<HTMLElement>["touches"]): LayerRowTouchPoint[] =>
+      Array.from({ length: list.length }, (_, idx) => {
+        const pt = typeof list.item === "function" ? list.item(idx) : (list as unknown as readonly Touch[])[idx];
+        return pt ? { identifier: pt.identifier, clientX: pt.clientX, clientY: pt.clientY } : null;
+      }).filter((pt): pt is LayerRowTouchPoint => pt !== null);
+    const trioDisabled = readOnly || effectivelyLocked || peerBlocked;
+    const handleTrioToggle = (flag: "clippingMask" | "alphaLock" | "reference") => {
+      const nextValue = evaluateLayerRowTrioToggle({
+        id: item.id, label: item.label, locked: trioDisabled, selected, opacity: committedOpacityPercent / 100,
+        clipBelow: item.clipBelow, alphaLocked: item.alphaLocked, fillReference: item.fillReference, canClipBelow, flag,
+      });
+      if (nextValue === null) return;
+      if (flag === "clippingMask") stableHandlers.onToggleItemClipBelow?.(item.id, nextValue);
+      else if (flag === "alphaLock") stableHandlers.onToggleItemAlphaLock?.(item.id, nextValue);
+      else stableHandlers.onToggleItemReference?.(item.id, nextValue);
+    };
+    const handleRowTouchStart = (event: ReactTouchEvent<HTMLElement>) => {
+      if (readOnly || peerBlocked) return;
+      touchGestureRef.current = startLayerRowTouchGesture(toTouchPoints(event.touches), committedOpacityPercent / 100);
+    };
+    const handleRowTouchMove = (event: ReactTouchEvent<HTMLElement>) => {
+      const session = touchGestureRef.current;
+      if (!session || readOnly || peerBlocked) return;
+      const result = stepLayerRowTouchMove(session, toTouchPoints(event.touches), {
+        id: item.id, label: item.label, locked: effectivelyLocked, selected, canMergeDown: canClipBelow,
+      });
+      if (result.kind === "merged") { stableHandlers.onPinchMergeItem?.(item.id); flashGesture("아래 레이어와 합침"); }
+      else if (result.kind === "opacity-changed") {
+        const pct = Math.round(result.opacity * 100);
+        setOpacityDraft(pct);
+        stableHandlers.onPreviewItemOpacity(item.id, result.opacity);
+        flashGesture(`불투명도 ${pct}%`);
+      }
+    };
+    const handleRowTouchEnd = (event: ReactTouchEvent<HTMLElement>) => {
+      const session = touchGestureRef.current;
+      if (!session) return;
+      if (event.touches.length > 0) return;
+      touchGestureRef.current = null;
+      const changed = toTouchPoints(event.changedTouches)[0];
+      const result = finishLayerRowTouchEnd(session, changed, { id: item.id, label: item.label, locked: effectivelyLocked, selected });
+      if (result.kind === "opacity-changed") { setOpacityDraft(null); stableHandlers.onSetItemOpacity(item.id, result.opacity); }
+      else if (result.kind === "toggled-lock" && !lockedByGroup) { stableHandlers.onToggleItemLocked(item.id, result.locked); flashGesture(result.locked ? "레이어 잠금" : "잠금 해제"); }
+      else if (result.kind === "toggled-select") { stableHandlers.onToggleItemMultiSelect?.(item.id); flashGesture("다중 선택 전환"); }
+    };
+
+    const hasTrioHandlers = Boolean(
+      stableHandlers.onToggleItemClipBelow ||
+      stableHandlers.onToggleItemAlphaLock ||
+      stableHandlers.onToggleItemReference
+    );
+    const showTrioControls = hasTrioHandlers && (current || selected);
+    const showColorTintToggle =
+      current || selected || normalizedExpression?.layerColorTint.enabled === true || !hasTrioHandlers;
+    const showAuxBar = showTrioControls || showColorTintToggle || gestureFeedback !== null;
+    const trioEntries = showTrioControls
+      ? ([
+          stableHandlers.onToggleItemClipBelow && {
+            flag: "clippingMask" as const, active: item.clipBelow === true, disabled: trioDisabled || !canClipBelow,
+            label: "클리핑", icon: CornerDownRight, iconActiveClass: "text-[oklch(0.76_0.13_312)]",
+            ariaLabel: `${item.label} 아래 레이어 모양 안에서만 그리기${item.clipBelow ? " 해제" : ""} (클리핑 마스크)`,
+            title: canClipBelow
+              ? "아래 레이어 모양 안에서만 그리기 (클리핑 마스크)"
+              : "맨 아래 레이어에는 아래 레이어 기준 클리핑을 적용할 수 없습니다",
+          },
+          stableHandlers.onToggleItemAlphaLock && {
+            flag: "alphaLock" as const, active: item.alphaLocked === true, disabled: trioDisabled,
+            label: "알파 잠금", icon: Grid2X2, iconActiveClass: "text-accent",
+            ariaLabel: `${item.label} 선 밖으로 안 번지게 잠그기${item.alphaLocked ? " 해제" : ""} (알파 잠금)`,
+            title: "선 밖으로 안 번지게 잠그기 (알파 잠금 · 투명 픽셀 보호)",
+          },
+          stableHandlers.onToggleItemReference && {
+            flag: "reference" as const, active: item.fillReference === true, disabled: trioDisabled,
+            label: "참조", icon: ScanLine, iconActiveClass: "text-cool",
+            ariaLabel: `${item.label} 채우기 기준 선화로 쓰기${item.fillReference ? " 해제" : ""} (참조 레이어)`,
+            title: "채우기 기준 선화로 쓰기 (참조 레이어 · 문서 내 1개)",
+          },
+        ] as const).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+      : [];
 
     return (
       <li role="none">
@@ -291,14 +361,16 @@ export const StudioLayerNavigatorItemRow = memo(
           onFocus={() => stableHandlers.onRowFocus(rowKey)}
           onKeyDown={(event) => stableHandlers.onRowKeyDown(event, rowKey)}
           onClick={(event) => stableHandlers.onRowClick(event, item.id)}
-          onDoubleClick={(event) =>
-            stableHandlers.onRowDoubleClick(event, item.id, item.label)
-          }
+          onDoubleClick={(event) => stableHandlers.onRowDoubleClick(event, item.id, item.label)}
           onDragOver={(event) => stableHandlers.onItemDragOver?.(event, item.id, rowKey)}
           onDragLeave={(event) => stableHandlers.onItemDragLeave?.(event, rowKey)}
           onDrop={(event) => stableHandlers.onItemDrop?.(event)}
+          onTouchStart={handleRowTouchStart}
+          onTouchMove={handleRowTouchMove}
+          onTouchEnd={handleRowTouchEnd}
+          onTouchCancel={() => { touchGestureRef.current = null; setOpacityDraft(null); }}
           className={cn(
-            "group/layer relative flex min-h-9 items-center gap-1 rounded-lg border px-1 py-0.5 text-left transition-[border-color,background-color,box-shadow] duration-150 [contain-intrinsic-size:44px] [content-visibility:auto] motion-reduce:transition-none max-lg:min-h-11 pointer-coarse:min-h-11",
+            "group/layer relative flex min-h-9 min-w-0 flex-col gap-1 rounded-lg border px-1 py-0.5 text-left transition-[border-color,background-color,box-shadow] duration-150 [contain-intrinsic-size:44px] [content-visibility:auto] motion-reduce:transition-none max-lg:min-h-11 max-lg:py-1 pointer-coarse:min-h-11 pointer-coarse:py-1",
             current
               ? "border-accent/75 bg-accent-soft/65 shadow-[inset_0_0_0_1px_oklch(0.72_0.185_42/0.18),0_1px_5px_oklch(0.1_0.01_60/0.18)]"
               : selected
@@ -310,17 +382,11 @@ export const StudioLayerNavigatorItemRow = memo(
           data-studio-layer-selected={selected ? "true" : "false"}
           data-studio-layer-selection-state={selectionState}
           data-studio-layer-local-hidden={locallyHidden ? "true" : "false"}
-          data-studio-live-ownership={
-            showLiveOwnershipBadge ? liveOwnership!.kind : "free"
-          }
+          data-studio-live-ownership={showLiveOwnershipBadge ? liveOwnership!.kind : "free"}
           data-studio-live-ownership-blocked={peerBlocked ? "true" : "false"}
           data-studio-layer-drop-side={dropSide ?? undefined}
-          data-studio-layer-expression-mode={
-            normalizedExpression?.expressionMode ?? undefined
-          }
-          data-studio-layer-color-tint={
-            normalizedExpression?.layerColorTint.enabled ? "true" : undefined
-          }
+          data-studio-layer-expression-mode={normalizedExpression?.expressionMode ?? undefined}
+          data-studio-layer-color-tint={normalizedExpression?.layerColorTint.enabled ? "true" : undefined}
         >
           {dropSide ? (
             <span
@@ -332,354 +398,376 @@ export const StudioLayerNavigatorItemRow = memo(
               )}
             />
           ) : null}
-          <span
-            aria-hidden
-            data-studio-layer-selection-marker={selectionState}
-            className={cn(
-              "grid size-5 shrink-0 place-items-center rounded-md border transition-colors duration-150 motion-reduce:transition-none",
-              current
-                ? "border-accent bg-accent text-on-accent shadow-sm"
-                : selected
-                  ? "border-accent/80 bg-accent-soft text-accent"
-                  : mobileMultiSelect || multipleSelection
-                    ? "border-line-strong bg-card text-transparent"
-                    : "border-transparent bg-transparent text-transparent group-hover/layer:border-line"
-            )}
-          >
-            {current ? <CircleDot size={13} strokeWidth={2.25} /> : selected ? <Check size={13} strokeWidth={2.5} /> : null}
-          </span>
-          <button
-            type="button"
-            tabIndex={-1}
-            draggable={dragEnabled}
-            disabled={!dragEnabled}
-            data-layer-row-control
-            data-studio-layer-drag-handle="item"
-            onClick={(event) => event.stopPropagation()}
-            onDragStart={(event) =>
-              stableHandlers.onItemDragStart?.(event, item.id, rowKey)
-            }
-            onDragEnd={() => stableHandlers.onItemDragEnd?.()}
-            aria-label={`${item.label} 레이어 끌어 순서 변경`}
-            aria-describedby={dragHelpId}
-            title={dragEnabled ? "끌어서 순서를 바꾸거나 그룹으로 이동" : undefined}
-            className={cn(
-              "hidden size-6 shrink-0 cursor-grab place-items-center rounded text-fg-3 hover:bg-raised hover:text-fg active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-25 [@media(pointer:fine)]:grid",
-              STUDIO_LAYER_NAVIGATOR_FOCUS_RING
-            )}
-          >
-            <GripVertical size={13} aria-hidden />
-          </button>
-          {item.color ? (
-            <span
-              aria-label={`색 라벨 ${STUDIO_LAYER_COLOR_LABELS[item.color]}`}
-              className={cn(
-                "h-5 w-1.5 shrink-0 rounded-full shadow-sm",
-                COLOR_DOT_CLASS[item.color]
-              )}
-            />
-          ) : null}
-          <span
-            className={cn(
-              "grid size-7 shrink-0 place-items-center rounded-lg border border-line/50 bg-[linear-gradient(160deg,oklch(0.24_0.01_66),oklch(0.19_0.009_68))] text-fg-3 shadow-[inset_0_1px_0_oklch(0.97_0.01_85/0.05)]",
-              visuallyHidden && !selected && "text-fg-3",
-              selected && "border-accent/35 text-accent"
-            )}
-            aria-hidden
-          >
-            <Icon size={13} strokeWidth={1.75} />
-          </span>
-          <span
-            className={cn(
-              "flex min-w-0 flex-1 items-center gap-1.5 px-0.5"
-            )}
-          >
-            <span className="min-w-0 flex-1">
-              {renameInput ?? (
-                <span
-                  className={cn(
-                    "block truncate text-[0.72rem] font-semibold",
-                    selected ? "text-fg" : "text-fg-2",
-                    item.hidden && "line-through decoration-fg-3/80"
-                  )}
-                >
-                  {item.label}
-                </span>
-              )}
-              <span className={cn(
-                "flex min-w-0 items-center gap-1 text-[0.68rem] lg:text-[0.58rem]",
-                selected ? "text-fg-2" : "text-fg-3"
-              )}>
-                <span
-                  data-studio-layer-kind-badge={semanticKind}
-                  className={cn(
-                    "inline-flex h-4 shrink-0 items-center rounded border px-1 text-[0.58rem] font-bold leading-none",
-                    STUDIO_LAYER_SEMANTIC_KIND_CLASSES[semanticKind]
-                  )}
-                >
-                  {STUDIO_LAYER_SEMANTIC_KIND_LABELS[semanticKind]}
-                </span>
-                {groupName ? (
-                  <span className="truncate">{groupName}</span>
-                ) : null}
-                {item.role ? (
-                  <span className="shrink-0 rounded bg-raised px-1 py-0.5">{STUDIO_LAYER_ROLE_LABELS[item.role]}</span>
-                ) : null}
-                {normalizedExpression && normalizedExpression.expressionMode !== "color" ? (
-                  <span
-                    data-studio-layer-expression-badge={normalizedExpression.expressionMode}
-                    className="shrink-0 rounded border border-line-strong bg-card px-1 py-0.5 font-semibold tabular-nums [word-break:keep-all]"
-                  >
-                    {STUDIO_LAYER_EXPRESSION_MODE_BADGES[normalizedExpression.expressionMode]}
-                  </span>
-                ) : null}
-                {normalizedExpression?.layerColorTint.enabled ? (
-                  <span
-                    data-studio-layer-color-tint-badge="true"
-                    data-studio-layer-expression-preview-rgb={previewSwatchRgb ?? undefined}
-                    className="inline-flex shrink-0 items-center gap-1 rounded border border-cool/35 bg-cool/10 px-1 py-0.5 text-cool [word-break:keep-all]"
-                  >
-                    <span
-                      aria-hidden
-                      className="size-2 rounded-full border border-white/25"
-                      style={{ backgroundColor: previewSwatchRgb ?? normalizedExpression.layerColorTint.mainColor }}
-                    />
-                    컬러
-                  </span>
-                ) : null}
-                {normalizedExpression?.watercolorEdge.enabled &&
-                normalizedExpression.watercolorEdge.opacity > 0 &&
-                normalizedExpression.watercolorEdge.darkness > 0 ? (
-                  <span
-                    data-studio-layer-watercolor-edge-badge="true"
-                    className="inline-flex shrink-0 items-center gap-0.5 rounded border border-accent/35 bg-accent-soft/35 px-1 py-0.5 text-accent [word-break:keep-all]"
-                  >
-                    <Droplets size={9} aria-hidden />
-                    수채
-                  </span>
-                ) : null}
-              </span>
-            </span>
-          </span>
-          <button
-            type="button"
-            tabIndex={-1}
-            data-studio-layer-color-tint-toggle="true"
-            disabled={readOnly || effectivelyLocked || peerBlocked}
-            aria-pressed={normalizedExpression?.layerColorTint.enabled === true}
-            aria-label={
-              normalizedExpression?.layerColorTint.enabled
-                ? `${item.label} 레이어 컬러 끄기`
-                : `${item.label} 레이어 컬러 켜기`
-            }
-            onClick={(event) => {
-              event.stopPropagation();
-              const nextEnabled = !(normalizedExpression?.layerColorTint.enabled === true);
-              setLocalLayerColorEnabled(nextEnabled);
-              stableHandlers.onToggleItemLayerColorTint?.(item.id, nextEnabled);
-            }}
-            onDoubleClick={(event) => event.stopPropagation()}
-            className={cn(
-              "grid size-7 shrink-0 place-items-center rounded border text-[0.58rem] font-bold transition-[background-color,border-color,color,transform] duration-150 motion-reduce:transition-none disabled:opacity-35",
-              normalizedExpression?.layerColorTint.enabled
-                ? "border-cool/50 bg-cool/15 text-cool"
-                : "border-transparent text-fg-3 hover:bg-raised hover:text-fg",
-              STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
-              STUDIO_LAYER_NAVIGATOR_FOCUS_RING
-            )}
+          <div
+            data-studio-layer-row-primary="true"
+            className="flex min-h-8 min-w-0 items-center gap-1 max-lg:min-h-11 pointer-coarse:min-h-11"
           >
             <span
               aria-hidden
-              className="size-2.5 rounded-full border border-current"
-              style={
-                previewSwatchRgb
-                  ? { backgroundColor: previewSwatchRgb }
-                  : undefined
-              }
-            />
-          </button>
-          {showLiveOwnershipBadge ? (
-            <span
-              data-studio-live-ownership-badge={liveOwnership!.kind}
-              title={liveStatusLabel ?? undefined}
-              aria-label={liveStatusLabel ?? "협업 편집 상태"}
+              data-studio-layer-selection-marker={selectionState}
               className={cn(
-                "grid size-5 shrink-0 place-items-center rounded-full border text-[0.58rem] font-bold leading-none text-white shadow-sm",
-                peerBlocked
-                  ? "border-white/25 ring-1 ring-bad/40"
-                  : "border-white/20 ring-1 ring-good/35"
+                "grid size-5 shrink-0 place-items-center rounded-md border transition-colors duration-150 motion-reduce:transition-none",
+                current
+                  ? "border-accent bg-accent text-on-accent shadow-sm"
+                  : selected
+                    ? "border-accent/80 bg-accent-soft text-accent"
+                    : mobileMultiSelect || multipleSelection
+                      ? "border-line-strong bg-card text-transparent"
+                      : "border-transparent bg-transparent text-transparent group-hover/layer:border-line"
               )}
-              style={{
-                backgroundColor: liveOwnership!.ownerColor ?? "oklch(0.45 0.04 260)",
-              }}
             >
-              <span aria-hidden>{liveOwnerInitial}</span>
+              {current ? <CircleDot size={13} strokeWidth={2.25} /> : selected ? <Check size={13} strokeWidth={2.5} /> : null}
             </span>
-          ) : null}
-          {visibleStatuses.visible.length > 0 ? (
-            <span
-              data-studio-layer-status-strip="true"
-              aria-label={statusSummary}
-              title={statusSummary}
-              className="flex max-w-[4.25rem] shrink-0 items-center gap-0.5 overflow-hidden"
+            <button
+              type="button"
+              tabIndex={-1}
+              draggable={dragEnabled}
+              disabled={!dragEnabled}
+              data-layer-row-control
+              data-studio-layer-drag-handle="item"
+              onClick={(event) => event.stopPropagation()}
+              onDragStart={(event) => stableHandlers.onItemDragStart?.(event, item.id, rowKey)}
+              onDragEnd={() => stableHandlers.onItemDragEnd?.()}
+              aria-label={`${item.label} 레이어 끌어 순서 변경`}
+              aria-describedby={dragHelpId}
+              title={dragEnabled ? "끌어서 순서를 바꾸거나 그룹으로 이동" : undefined}
+              className={cn(
+                "hidden size-6 shrink-0 cursor-grab place-items-center rounded text-fg-3 hover:bg-raised hover:text-fg active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-25 [@media(pointer:fine)]:grid",
+                STUDIO_LAYER_NAVIGATOR_FOCUS_RING
+              )}
             >
-              {visibleStatuses.visible.map((status) => {
-                const StatusIcon = STATUS_ICONS[status.kind];
-                return (
+              <GripVertical size={13} aria-hidden />
+            </button>
+            {item.color ? (
+              <span
+                aria-label={`색 라벨 ${STUDIO_LAYER_COLOR_LABELS[item.color]}`}
+                className={cn("h-5 w-1.5 shrink-0 rounded-full shadow-sm", COLOR_DOT_CLASS[item.color])}
+              />
+            ) : null}
+            <span
+              className={cn(
+                "grid size-7 shrink-0 place-items-center rounded-lg border border-line/50 bg-[linear-gradient(160deg,oklch(0.24_0.01_66),oklch(0.19_0.009_68))] text-fg-3 shadow-[inset_0_1px_0_oklch(0.97_0.01_85/0.05)] max-sm:size-6",
+                visuallyHidden && !selected && "text-fg-3",
+                selected && "border-accent/35 text-accent"
+              )}
+              aria-hidden
+            >
+              <Icon size={13} strokeWidth={1.75} />
+            </span>
+            <span className="flex min-w-0 flex-1 items-center gap-1 px-0.5">
+              <span className="min-w-0 flex-1">
+                {renameInput ?? (
                   <span
-                    key={status.kind}
-                    data-studio-layer-status={status.kind}
-                    aria-hidden
                     className={cn(
-                      "grid size-4 shrink-0 place-items-center rounded border",
-                      STATUS_CLASSES[status.kind]
+                      "block truncate text-[0.72rem] font-semibold",
+                      selected ? "text-fg" : "text-fg-2",
+                      item.hidden && "line-through decoration-fg-3/80"
                     )}
                   >
-                    <StatusIcon size={10} strokeWidth={2} />
+                    {item.label}
                   </span>
-                );
-              })}
-              {visibleStatuses.hiddenCount > 0 ? (
+                )}
+                <span className={cn(
+                  "flex min-w-0 items-center gap-1 overflow-hidden text-[0.68rem] lg:text-[0.58rem]",
+                  selected ? "text-fg-2" : "text-fg-3"
+                )}>
+                  <span
+                    data-studio-layer-kind-badge={semanticKind}
+                    className={cn(
+                      "inline-flex h-4 shrink-0 items-center rounded border px-1 text-[0.58rem] font-bold leading-none",
+                      STUDIO_LAYER_SEMANTIC_KIND_CLASSES[semanticKind]
+                    )}
+                  >
+                    {STUDIO_LAYER_SEMANTIC_KIND_LABELS[semanticKind]}
+                  </span>
+                  {groupName ? <span className="truncate">{groupName}</span> : null}
+                  {item.role ? (
+                    <span className="shrink-0 rounded bg-raised px-1 py-0.5">{STUDIO_LAYER_ROLE_LABELS[item.role]}</span>
+                  ) : null}
+                  {normalizedExpression && normalizedExpression.expressionMode !== "color" ? (
+                    <span
+                      data-studio-layer-expression-badge={normalizedExpression.expressionMode}
+                      className="shrink-0 rounded border border-line-strong bg-card px-1 py-0.5 font-semibold tabular-nums [word-break:keep-all]"
+                    >
+                      {STUDIO_LAYER_EXPRESSION_MODE_BADGES[normalizedExpression.expressionMode]}
+                    </span>
+                  ) : null}
+                  {normalizedExpression?.layerColorTint.enabled ? (
+                    <span
+                      data-studio-layer-color-tint-badge="true"
+                      data-studio-layer-expression-preview-rgb={previewSwatchRgb ?? undefined}
+                      className="inline-flex shrink-0 items-center gap-1 rounded border border-cool/35 bg-cool/10 px-1 py-0.5 text-cool [word-break:keep-all]"
+                    >
+                      <span
+                        aria-hidden
+                        className="size-2 rounded-full border border-white/25"
+                        style={{ backgroundColor: previewSwatchRgb ?? normalizedExpression.layerColorTint.mainColor }}
+                      />
+                      컬러
+                    </span>
+                  ) : null}
+                  {normalizedExpression?.watercolorEdge.enabled &&
+                  normalizedExpression.watercolorEdge.opacity > 0 &&
+                  normalizedExpression.watercolorEdge.darkness > 0 ? (
+                    <span
+                      data-studio-layer-watercolor-edge-badge="true"
+                      className="inline-flex shrink-0 items-center gap-0.5 rounded border border-accent/35 bg-accent-soft/35 px-1 py-0.5 text-accent [word-break:keep-all]"
+                    >
+                      <Droplets size={9} aria-hidden />
+                      수채
+                    </span>
+                  ) : null}
+                  {visibleStatuses.visible.length > 0 ? (
+                    <span
+                      data-studio-layer-status-strip="true"
+                      aria-label={statusSummary}
+                      title={statusSummary}
+                      className="inline-flex max-w-[4.25rem] shrink-0 items-center gap-0.5 overflow-hidden"
+                    >
+                      {visibleStatuses.visible.map((status) => {
+                        const StatusIcon = STATUS_ICONS[status.kind];
+                        return (
+                          <span
+                            key={status.kind}
+                            data-studio-layer-status={status.kind}
+                            aria-hidden
+                            className={cn("grid size-4 shrink-0 place-items-center rounded border", STATUS_CLASSES[status.kind])}
+                          >
+                            <StatusIcon size={10} strokeWidth={2} />
+                          </span>
+                        );
+                      })}
+                      {visibleStatuses.hiddenCount > 0 ? (
+                        <span
+                          aria-hidden
+                          data-studio-layer-status-overflow={visibleStatuses.hiddenCount}
+                          className="inline-flex h-4 shrink-0 items-center rounded border border-line bg-card px-1 text-[0.52rem] font-bold tabular-nums text-fg-3"
+                        >
+                          +{visibleStatuses.hiddenCount}
+                        </span>
+                      ) : null}
+                    </span>
+                  ) : null}
+                </span>
+              </span>
+            </span>
+            {showLiveOwnershipBadge ? (
+              <span
+                data-studio-live-ownership-badge={liveOwnership!.kind}
+                title={liveStatusLabel ?? undefined}
+                aria-label={liveStatusLabel ?? "협업 편집 상태"}
+                className={cn(
+                  "grid size-5 shrink-0 place-items-center rounded-full border text-[0.58rem] font-bold leading-none text-white shadow-sm",
+                  peerBlocked ? "border-white/25 ring-1 ring-bad/40" : "border-white/20 ring-1 ring-good/35"
+                )}
+                style={{ backgroundColor: liveOwnership!.ownerColor ?? "oklch(0.45 0.04 260)" }}
+              >
+                <span aria-hidden>{liveOwnerInitial}</span>
+              </span>
+            ) : null}
+            {/* 표시·잠금·불투명도·메뉴 4개 기본 행 버튼은 좁은 모바일(320~412px)에서도 절대 넘치지 않도록 1행에 고정한다. */}
+            <span className="flex shrink-0 items-center gap-0.5">
+              <button
+                type="button"
+                tabIndex={-1}
+                data-layer-row-control
+                data-studio-layer-row-action="visibility"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  stableHandlers.onToggleItemHidden(item.id, !item.hidden);
+                }}
+                disabled={readOnly || hiddenByGroup}
+                className={cn(
+                  "grid size-8 shrink-0 place-items-center rounded text-fg-3 transition-colors hover:bg-raised hover:text-fg disabled:opacity-35",
+                  STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
+                  STUDIO_LAYER_NAVIGATOR_FOCUS_RING
+                )}
+                aria-label={
+                  hiddenByGroup
+                    ? `${item.label}, 그룹에서 숨김`
+                    : item.hidden
+                      ? `${item.label} 표시`
+                      : `${item.label} 숨김`
+                }
+                title={hiddenByGroup ? "상위 그룹이 숨겨져 있어 그룹을 먼저 표시해야 해요" : undefined}
+              >
+                {effectivelyHidden ? <EyeOff size={13} /> : <Eye size={13} />}
+              </button>
+              <button
+                type="button"
+                tabIndex={-1}
+                data-layer-row-control
+                data-studio-layer-row-action="lock"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  stableHandlers.onToggleItemLocked(item.id, !item.locked);
+                }}
+                disabled={readOnly || lockedByGroup || peerBlocked}
+                aria-pressed={effectivelyLocked || peerBlocked}
+                className={cn(
+                  "grid size-7 shrink-0 place-items-center rounded transition-colors hover:bg-raised hover:text-fg disabled:opacity-35",
+                  effectivelyLocked || peerBlocked ? "text-accent" : "text-fg-3",
+                  STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
+                  STUDIO_LAYER_NAVIGATOR_FOCUS_RING
+                )}
+                aria-label={
+                  peerBlocked
+                    ? `${item.label}, ${liveStatusLabel ?? "다른 참가자가 편집 중"}`
+                    : lockedByGroup
+                      ? `${item.label}, 그룹에서 잠김`
+                      : item.locked
+                        ? `${item.label} 잠금 해제`
+                        : `${item.label} 잠금`
+                }
+                title={
+                  peerBlocked
+                    ? (liveStatusLabel ?? "다른 참가자가 편집 중이에요")
+                    : lockedByGroup
+                      ? "상위 그룹이 잠겨 있어 그룹 잠금을 먼저 해제해야 해요"
+                      : undefined
+                }
+              >
+                {effectivelyLocked || peerBlocked ? <Lock size={13} /> : <LockOpen size={13} />}
+              </button>
+              <StudioInlineScrubber
+                surface="layer-opacity"
+                rowAction="opacity"
+                tabIndex={-1}
+                label={`${item.label} 불투명도`}
+                value={opacityPercent}
+                min={0}
+                max={100}
+                step={1}
+                valueText={`${opacityPercent}%`}
+                disabled={readOnly || effectivelyLocked || peerBlocked}
+                onChange={(next) => {
+                  setOpacityDraft(next);
+                  if (next === (opacityDraft ?? committedOpacityPercent)) return;
+                  stableHandlers.onPreviewItemOpacity(item.id, next / 100);
+                }}
+                onCommit={(next) => {
+                  // Clearing the draft in the same batch as the mutation means a rejected commit
+                  // (read-only page, save in flight) snaps back to the truth instead of lying.
+                  const scrubbed = opacityDraft !== null;
+                  setOpacityDraft(null);
+                  // Settling commit closes the undo coalesce chain even when value matches preview.
+                  if (!scrubbed && next === committedOpacityPercent) return;
+                  stableHandlers.onSetItemOpacity(item.id, next / 100);
+                }}
+                className={cn(
+                  "grid h-7 w-9 shrink-0 place-items-center rounded text-[0.58rem] font-bold tabular-nums text-fg-3 transition-colors hover:bg-raised hover:text-fg",
+                  STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
+                  STUDIO_LAYER_NAVIGATOR_FOCUS_RING
+                )}
+              >
+                <span aria-hidden>{opacityPercent}</span>
+              </StudioInlineScrubber>
+              <button
+                type="button"
+                tabIndex={-1}
+                data-layer-row-control
+                data-studio-layer-row-action="menu"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  stableHandlers.onOpenItemActionMenu(event, item.id);
+                }}
+                aria-haspopup="dialog"
+                aria-expanded={actionOpen}
+                aria-controls={actionPopoverId}
+                className={cn(
+                  "grid size-8 shrink-0 place-items-center rounded text-fg-3 transition-colors hover:bg-raised hover:text-fg",
+                  STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
+                  STUDIO_LAYER_NAVIGATOR_FOCUS_RING
+                )}
+                aria-label={`${item.label} 레이어 작업`}
+              >
+                <MoreHorizontal size={15} />
+              </button>
+            </span>
+          </div>
+          {showAuxBar ? (
+            <div
+              data-studio-layer-trio-bar="true"
+              className="flex min-w-0 flex-wrap items-center gap-1 border-t border-line/40 pt-1"
+            >
+              {trioEntries.length > 0 ? (
                 <span
-                  aria-hidden
-                  data-studio-layer-status-overflow={visibleStatuses.hiddenCount}
-                  className="inline-flex h-4 shrink-0 items-center rounded border border-line bg-card px-1 text-[0.52rem] font-bold tabular-nums text-fg-3"
+                  className="flex min-w-0 flex-wrap items-center gap-1"
+                  role="group"
+                  aria-label={`${item.label} 레이어 트리오`}
+                  data-studio-layer-trio-controls="true"
                 >
-                  +{visibleStatuses.hiddenCount}
+                  {trioEntries.map((entry) => {
+                    const TrioIcon = entry.icon;
+                    return (
+                      <button
+                        key={entry.flag}
+                        type="button"
+                        tabIndex={-1}
+                        data-layer-row-control
+                        data-studio-layer-trio-action={entry.flag}
+                        disabled={entry.disabled}
+                        aria-pressed={entry.active}
+                        aria-label={entry.ariaLabel}
+                        title={entry.title}
+                        onClick={(event) => { event.stopPropagation(); handleTrioToggle(entry.flag); }}
+                        onDoubleClick={(event) => event.stopPropagation()}
+                        className={cn(
+                          TRIO_BUTTON_BASE_CLASS,
+                          entry.active ? TRIO_BUTTON_ACTIVE_CLASSES[entry.flag] : TRIO_BUTTON_INACTIVE_CLASS,
+                          STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
+                          STUDIO_LAYER_NAVIGATOR_FOCUS_RING
+                        )}
+                      >
+                        <TrioIcon size={12} aria-hidden className={entry.active ? entry.iconActiveClass : undefined} />
+                        <span>{entry.label}</span>
+                      </button>
+                    );
+                  })}
                 </span>
               ) : null}
-            </span>
+              {showColorTintToggle ? (
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  data-studio-layer-color-tint-toggle="true"
+                  disabled={readOnly || effectivelyLocked || peerBlocked}
+                  aria-pressed={normalizedExpression?.layerColorTint.enabled === true}
+                  aria-label={normalizedExpression?.layerColorTint.enabled ? `${item.label} 레이어 컬러 끄기` : `${item.label} 레이어 컬러 켜기`}
+                  title="밑그림 파란선처럼 레이어 색으로 보기"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    const nextEnabled = !(normalizedExpression?.layerColorTint.enabled === true);
+                    setLocalLayerColorEnabled(nextEnabled);
+                    stableHandlers.onToggleItemLayerColorTint?.(item.id, nextEnabled);
+                  }}
+                  onDoubleClick={(event) => event.stopPropagation()}
+                  className={cn(
+                    TRIO_BUTTON_BASE_CLASS,
+                    normalizedExpression?.layerColorTint.enabled ? TRIO_BUTTON_ACTIVE_CLASSES.colorTint : TRIO_BUTTON_INACTIVE_CLASS,
+                    STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
+                    STUDIO_LAYER_NAVIGATOR_FOCUS_RING
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className="size-2.5 shrink-0 rounded-full border border-current"
+                    style={previewSwatchRgb ? { backgroundColor: previewSwatchRgb } : undefined}
+                  />
+                  <span>컬러</span>
+                </button>
+              ) : null}
+              {gestureFeedback ? (
+                <span
+                  role="status"
+                  data-studio-layer-gesture-feedback="true"
+                  className="shrink-0 rounded-full border border-accent/45 bg-accent-soft px-2 py-0.5 text-[0.62rem] font-semibold text-accent transition-[transform,opacity] duration-150 motion-reduce:transition-none"
+                >
+                  {gestureFeedback}
+                </span>
+              ) : null}
+            </div>
           ) : null}
-          <button
-            type="button"
-            tabIndex={-1}
-            data-layer-row-control
-            data-studio-layer-row-action="visibility"
-            onClick={(event) => {
-              event.stopPropagation();
-              stableHandlers.onToggleItemHidden(item.id, !item.hidden);
-            }}
-            disabled={readOnly || hiddenByGroup}
-            className={cn(
-              "grid size-8 shrink-0 place-items-center rounded text-fg-3 transition-colors hover:bg-raised hover:text-fg disabled:opacity-35",
-              STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
-              STUDIO_LAYER_NAVIGATOR_FOCUS_RING
-            )}
-            aria-label={
-              hiddenByGroup
-                ? `${item.label}, 그룹에서 숨김`
-                : item.hidden
-                  ? `${item.label} 표시`
-                  : `${item.label} 숨김`
-            }
-            title={
-              hiddenByGroup
-                ? "상위 그룹이 숨겨져 있어 그룹을 먼저 표시해야 해요"
-                : undefined
-            }
-          >
-            {effectivelyHidden ? <EyeOff size={13} /> : <Eye size={13} />}
-          </button>
-          {/*
-            표시·잠금·불투명도를 행 안에 둔다. 이전에는 잠금·불투명도가 `…` 팝오버 안에만
-            있어서 행에서 클릭한 뒤 팝오버까지 다시 이동해야 했다 (V5 §15 레이어 행 동작 120px).
-          */}
-          <button
-            type="button"
-            tabIndex={-1}
-            data-layer-row-control
-            data-studio-layer-row-action="lock"
-            onClick={(event) => {
-              event.stopPropagation();
-              stableHandlers.onToggleItemLocked(item.id, !item.locked);
-            }}
-            disabled={readOnly || lockedByGroup || peerBlocked}
-            aria-pressed={effectivelyLocked || peerBlocked}
-            className={cn(
-              "grid size-7 shrink-0 place-items-center rounded transition-colors hover:bg-raised hover:text-fg disabled:opacity-35",
-              effectivelyLocked || peerBlocked ? "text-accent" : "text-fg-3",
-              STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
-              STUDIO_LAYER_NAVIGATOR_FOCUS_RING
-            )}
-            aria-label={
-              peerBlocked
-                ? `${item.label}, ${liveStatusLabel ?? "다른 참가자가 편집 중"}`
-                : lockedByGroup
-                  ? `${item.label}, 그룹에서 잠김`
-                  : item.locked
-                    ? `${item.label} 잠금 해제`
-                    : `${item.label} 잠금`
-            }
-            title={
-              peerBlocked
-                ? (liveStatusLabel ?? "다른 참가자가 편집 중이에요")
-                : lockedByGroup
-                  ? "상위 그룹이 잠겨 있어 그룹 잠금을 먼저 해제해야 해요"
-                  : undefined
-            }
-          >
-            {effectivelyLocked || peerBlocked ? (
-              <Lock size={13} />
-            ) : (
-              <LockOpen size={13} />
-            )}
-          </button>
-          <StudioInlineScrubber
-            surface="layer-opacity"
-            rowAction="opacity"
-            tabIndex={-1}
-            label={`${item.label} 불투명도`}
-            value={opacityPercent}
-            min={0}
-            max={100}
-            step={1}
-            valueText={`${opacityPercent}%`}
-            disabled={readOnly || effectivelyLocked || peerBlocked}
-            onChange={(next) => {
-              setOpacityDraft(next);
-              if (next === (opacityDraft ?? committedOpacityPercent)) return;
-              stableHandlers.onPreviewItemOpacity(item.id, next / 100);
-            }}
-            onCommit={(next) => {
-              // Clearing the draft in the same batch as the mutation means a rejected commit
-              // (read-only page, save in flight) snaps back to the truth instead of lying.
-              const scrubbed = opacityDraft !== null;
-              setOpacityDraft(null);
-              // After a live scrub the document already holds `next`, so the value test would
-              // skip this call — but the settling commit is also what closes the coalesce chain.
-              // Skipping it would fold the *next* gesture into this gesture's undo entry.
-              if (!scrubbed && next === committedOpacityPercent) return;
-              stableHandlers.onSetItemOpacity(item.id, next / 100);
-            }}
-            className={cn(
-              "grid h-7 w-9 shrink-0 place-items-center rounded text-[0.58rem] font-bold tabular-nums text-fg-3 transition-colors hover:bg-raised hover:text-fg",
-              STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
-              STUDIO_LAYER_NAVIGATOR_FOCUS_RING
-            )}
-          >
-            <span aria-hidden>{opacityPercent}</span>
-          </StudioInlineScrubber>
-          <button
-            type="button"
-            tabIndex={-1}
-            data-layer-row-control
-            data-studio-layer-row-action="menu"
-            onClick={(event) => {
-              event.stopPropagation();
-              stableHandlers.onOpenItemActionMenu(event, item.id);
-            }}
-            aria-haspopup="dialog"
-            aria-expanded={actionOpen}
-            aria-controls={actionPopoverId}
-            className={cn(
-              "grid size-8 shrink-0 place-items-center rounded text-fg-3 transition-colors hover:bg-raised hover:text-fg",
-              STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
-              STUDIO_LAYER_NAVIGATOR_FOCUS_RING
-            )}
-            aria-label={`${item.label} 레이어 작업`}
-          >
-            <MoreHorizontal size={15} />
-          </button>
         </div>
       </li>
     );

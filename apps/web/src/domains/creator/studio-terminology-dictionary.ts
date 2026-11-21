@@ -30,6 +30,7 @@ export const STUDIO_TERMINOLOGY_VENDOR_LABELS: Readonly<
 > = Object.freeze({
   csp: "CLIP STUDIO PAINT",
   photoshop: "Photoshop",
+  sketchup: "SketchUp",
   krita: "Krita",
   procreate: "Procreate",
   toonstudio: "이전 우리 이름",

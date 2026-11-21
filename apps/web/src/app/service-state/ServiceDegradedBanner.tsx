@@ -205,13 +205,13 @@ const WARMUP_CHIP_CLASS = cn(
 
 /**
  * 연결 준비 중임을 알리는 안내.
- * 일반 페이지는 헤더 우측 고정 8px 상태 점 + 호버/클릭 툴팁으로 표시해 본문·탭 침범 0px를 유지한다.
+ * 일반 페이지는 본문 위 일반 문서 흐름(page-inline)에 컴팩트한 상태 점과 한 줄 안내를 배치해
+ * `/studio` 등 자체 상단바 우상단 인증 버튼과의 겹침·포인터 가로채기를 원천 차단한다.
  * 몰입 화면에서는 기존 한 줄 칩과 모달 상태 자리를 유지한다.
  */
 function ServiceWarmupNotice({ immersive }: { readonly immersive: boolean }) {
   const bt = useBilingual(COPY_SCOPE);
   const chipRef = useRef<HTMLDivElement>(null);
-  const [tooltipOpen, setTooltipOpen] = useState(false);
   useOverlayClearance(chipRef, immersive);
   const titleText = bt("온라인 기능을 연결하는 중이에요.", "Connecting online features.");
   const descText = bt("탐색과 로컬 작업은 지금 바로 할 수 있어요.", "You can browse and work locally right now.");
@@ -226,32 +226,17 @@ function ServiceWarmupNotice({ immersive }: { readonly immersive: boolean }) {
         data-service-degraded-banner="warming"
         data-service-status-placement="page-inline"
         data-service-status-dot="true"
-        className="pointer-events-none relative z-[60] mx-auto flex h-0 w-full max-w-[var(--site-content-max,82.5rem)] items-start justify-end px-[var(--site-page-gutter,1rem)]"
+        title={`${titleText} ${descText}`}
+        className="mx-auto flex w-full max-w-[var(--site-content-max,82.5rem)] min-w-0 items-center justify-end gap-1.5 px-[var(--site-page-gutter,1rem)] py-1 text-[11.5px] leading-snug text-fg-3"
       >
-        <div className="group pointer-events-auto relative mt-1">
-          <button
-            type="button"
-            aria-label={`${titleText} ${descText}`}
-            aria-expanded={tooltipOpen}
-            title={titleText}
-            onClick={() => setTooltipOpen((open) => !open)}
-            className="grid size-7 place-items-center rounded-full border border-line bg-panel/90 text-fg-2 shadow-[var(--atelier-elevation-dock)] transition-colors duration-150 hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
-          >
-            <span
-              aria-hidden="true"
-              className="size-2 rounded-full bg-accent motion-safe:[animation:pulse-soft_2.8s_ease-in-out_infinite]"
-            />
-          </button>
-          <div
-            className={cn(
-              "pointer-events-none absolute right-0 top-8 z-[70] w-max max-w-72 rounded-xl border border-line-strong bg-panel/95 px-3 py-2 text-xs text-fg shadow-[var(--atelier-elevation-floating)] transition-opacity duration-150 motion-reduce:transition-none",
-              tooltipOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
-            )}
-          >
-            <strong className="block font-semibold text-fg">{titleText}</strong>
-            <span className="mt-0.5 block text-fg-2">{descText}</span>
-          </div>
-        </div>
+        <span
+          aria-hidden="true"
+          className="size-2 shrink-0 rounded-full bg-accent motion-safe:[animation:pulse-soft_2.8s_ease-in-out_infinite]"
+        />
+        <span className="min-w-0 truncate break-keep">
+          <strong className="font-normal text-fg-3">{titleText}</strong>{" "}
+          <span className="sr-only">{descText}</span>
+        </span>
       </div>
     );
   }

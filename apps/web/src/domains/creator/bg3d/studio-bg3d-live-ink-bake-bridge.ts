@@ -1,13 +1,39 @@
 /**
- * 3D 스테이지 원클릭 '원고 컷에 바로 굽기' & 실시간 Split-Wipe Live Ink 브리지 (AC-017 / F08).
+ * 3D 스테이지 원클릭 '원고 컷에 바로 굽기' & 실시간 Split-Wipe Live Ink 브리지 (AC-004 / F08).
  *
  * 단순 라우트 이동 링크나 가짜 로컬 토글이 아니라,
- * 실제 3D 렌더 캡처 결과·카메라 메타데이터·Rights BOM 출처 ID를
- * 비파괴 2D 원고 컷 레이어 페이로드로 조립하고 검증한다.
+ * 실제 WebGL/Three.js 멀티패스 캡처 결과(선화·음영·깊이·AO)·3D 카메라·조명/분위기 프리셋·
+ * Rights BOM 출처 ID를 비파괴 2D 원고 컷 레이어 페이로드로 조립·영속화하고,
+ * 2D 에디터 삽입 및 3D 재촬영 복원(Re-shoot Restore) 계약을 제공한다.
  */
+
+import type { StudioBg3dWebtoonAtmospherePresetId } from "./studio-bg3d-lighting-studio";
 
 export type Stage3DMode = "build" | "pose" | "shot" | "live-ink";
 export type LiveInkPreviewMode = "shaded-3d" | "split-wipe" | "live-ink-only";
+
+export interface Scene3DCaptureCameraSnapshot {
+  readonly position: readonly [number, number, number];
+  readonly target: readonly [number, number, number];
+  readonly fovDegrees: number;
+}
+
+export interface Scene3DCaptureLightingSummary {
+  readonly ambientColor: string;
+  readonly ambientIntensity: number;
+  readonly keyColor: string;
+  readonly keyIntensity: number;
+  readonly exposure: number;
+  readonly fogActive: boolean;
+  readonly fogDensity: number;
+}
+
+export interface Scene3DCaptureInkAudit {
+  readonly strategy: string;
+  readonly expectedOnPageInkPx: number;
+  readonly measuredMedianInkSpanPx: number;
+  readonly passesInkWeightInvariant: boolean;
+}
 
 export interface Scene3DCaptureSnapshot {
   readonly sceneId: string;
@@ -17,9 +43,17 @@ export interface Scene3DCaptureSnapshot {
   readonly heightPx: number;
   readonly inkPassRef: string;
   readonly shadedPassRef: string;
+  readonly depthPassRef?: string | null;
+  readonly aoPassRef?: string | null;
+  readonly normalPassRef?: string | null;
   readonly inkLineWeightPx: number;
   readonly assetIds: readonly string[];
   readonly capturedAt: string;
+  readonly camera?: Scene3DCaptureCameraSnapshot;
+  readonly atmospherePresetId?: StudioBg3dWebtoonAtmospherePresetId | null;
+  readonly lightingSummary?: Scene3DCaptureLightingSummary;
+  readonly inkAudit?: Scene3DCaptureInkAudit;
+  readonly sceneDocumentJson?: string | null;
 }
 
 export interface BakedManuscriptCutLayer {
@@ -34,13 +68,38 @@ export interface BakedManuscriptCutLayer {
   readonly inkLineWeightPx: number;
   readonly inkPassRef: string;
   readonly shadedPassRef: string;
+  readonly depthPassRef?: string | null;
+  readonly aoPassRef?: string | null;
+  readonly normalPassRef?: string | null;
   readonly rightsBomAssetIds: readonly string[];
   readonly createdAt: string;
+  readonly camera?: Scene3DCaptureCameraSnapshot;
+  readonly atmospherePresetId?: StudioBg3dWebtoonAtmospherePresetId | null;
+  readonly lightingSummary?: Scene3DCaptureLightingSummary;
+  readonly inkAudit?: Scene3DCaptureInkAudit;
+  readonly sceneDocumentJson?: string | null;
+}
+
+export interface ReshootRestorePayload {
+  readonly layerId: string;
+  readonly sourceSceneId: string;
+  readonly sourceCameraId: string;
+  readonly camera: Scene3DCaptureCameraSnapshot | null;
+  readonly atmospherePresetId: StudioBg3dWebtoonAtmospherePresetId | null;
+  readonly inkLineWeightPx: number;
+  readonly rightsBomAssetIds: readonly string[];
+  readonly sceneDocumentJson: string | null;
 }
 
 export type BakeToCutResult =
   | { readonly ok: true; readonly layer: BakedManuscriptCutLayer }
   | { readonly ok: false; readonly code: "INVALID_DIMENSIONS" | "MISSING_CAPTURE" | "INVALID_TARGET"; readonly messageKo: string };
+
+export const STUDIO_BG3D_BAKED_CUT_STORAGE_KEY_PREFIX = "toonstudio:bg3d:baked-manuscript-cuts:v1:";
+export const STUDIO_BG3D_BAKED_CUT_HANDOFF_EVENT = "toonstudio:bg3d:baked-manuscript-cut";
+
+const MAX_PERSISTED_LAYERS_PER_DOCUMENT = 24;
+const inMemoryBakedCutRegistry = new Map<string, readonly BakedManuscriptCutLayer[]>();
 
 export function clampSplitWipeRatio(ratio: number): number {
   if (!Number.isFinite(ratio)) return 0.5;
@@ -54,9 +113,21 @@ export function clampInkLineWeight(weightPx: number): number {
   return Number(Math.max(0.25, Math.min(8, weightPx)).toFixed(2));
 }
 
+function freezeCameraSnapshot(
+  camera: Scene3DCaptureCameraSnapshot | undefined,
+): Scene3DCaptureCameraSnapshot | undefined {
+  if (!camera) return undefined;
+  return Object.freeze({
+    position: Object.freeze([camera.position[0], camera.position[1], camera.position[2]] as const),
+    target: Object.freeze([camera.target[0], camera.target[1], camera.target[2]] as const),
+    fovDegrees: Number.isFinite(camera.fovDegrees) ? camera.fovDegrees : 50,
+  });
+}
+
 /**
  * 3D 컷 캡처 스냅샷을 비파괴 2D 원고 컷 레이어 페이로드로 변환한다.
- * Rights BOM 추적을 위해 장면에 포함된 모든 3D 에셋 ID를 중복 제거해 보존한다.
+ * Rights BOM 추적을 위해 장면에 포함된 모든 3D 에셋 ID를 중복 제거해 보존하고,
+ * 3D 재촬영 복원을 위한 카메라·조명·분위기 프리셋 메타데이터를 함께 봉인한다.
  */
 export function buildBakedManuscriptCutLayer(input: {
   readonly capture: Scene3DCaptureSnapshot;
@@ -89,6 +160,7 @@ export function buildBakedManuscriptCutLayer(input: {
   }
 
   const uniqueAssets = Array.from(new Set(capture.assetIds.filter((id) => id.trim().length > 0)));
+  const frozenCamera = freezeCameraSnapshot(capture.camera);
 
   return {
     ok: true,
@@ -104,8 +176,161 @@ export function buildBakedManuscriptCutLayer(input: {
       inkLineWeightPx: clampInkLineWeight(capture.inkLineWeightPx),
       inkPassRef: capture.inkPassRef,
       shadedPassRef: capture.shadedPassRef,
+      ...(capture.depthPassRef !== undefined ? { depthPassRef: capture.depthPassRef } : {}),
+      ...(capture.aoPassRef !== undefined ? { aoPassRef: capture.aoPassRef } : {}),
+      ...(capture.normalPassRef !== undefined ? { normalPassRef: capture.normalPassRef } : {}),
       rightsBomAssetIds: Object.freeze(uniqueAssets),
       createdAt: capture.capturedAt,
+      ...(frozenCamera ? { camera: frozenCamera } : {}),
+      ...(capture.atmospherePresetId !== undefined ? { atmospherePresetId: capture.atmospherePresetId } : {}),
+      ...(capture.lightingSummary ? { lightingSummary: Object.freeze({ ...capture.lightingSummary }) } : {}),
+      ...(capture.inkAudit ? { inkAudit: Object.freeze({ ...capture.inkAudit }) } : {}),
+      ...(capture.sceneDocumentJson !== undefined ? { sceneDocumentJson: capture.sceneDocumentJson } : {}),
     }),
   };
+}
+
+function defaultStorage(): Storage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function storageKeyForDocument(targetDocumentId: string): string {
+  return `${STUDIO_BG3D_BAKED_CUT_STORAGE_KEY_PREFIX}${encodeURIComponent(targetDocumentId.trim())}`;
+}
+
+function parsePersistedLayers(raw: string | null): readonly BakedManuscriptCutLayer[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is BakedManuscriptCutLayer =>
+        typeof item === "object"
+        && item !== null
+        && typeof (item as BakedManuscriptCutLayer).layerId === "string"
+        && typeof (item as BakedManuscriptCutLayer).targetDocumentId === "string"
+        && typeof (item as BakedManuscriptCutLayer).targetCutIndex === "number"
+        && (item as BakedManuscriptCutLayer).nonDestructive === true,
+    );
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 구워진 비파괴 3D 원고 컷 레이어를 문서 단위 영속 브리지에 기록하고
+ * 2D 에디터 수신 이벤트를 발행한다.
+ */
+export function saveBakedManuscriptCutLayer(
+  layer: BakedManuscriptCutLayer,
+  storage: Storage | null = defaultStorage(),
+): { readonly persistedToStorage: boolean; readonly totalLayers: number } {
+  const docId = layer.targetDocumentId.trim();
+  const existing = listBakedManuscriptCutLayers(docId, storage);
+  const next = [
+    layer,
+    ...existing.filter(
+      (entry) => !(entry.layerId === layer.layerId && entry.targetCutIndex === layer.targetCutIndex),
+    ),
+  ].slice(0, MAX_PERSISTED_LAYERS_PER_DOCUMENT);
+  inMemoryBakedCutRegistry.set(docId, Object.freeze(next));
+
+  let persistedToStorage = false;
+  if (storage) {
+    const key = storageKeyForDocument(docId);
+    try {
+      storage.setItem(key, JSON.stringify(next));
+      persistedToStorage = true;
+    } catch {
+      // 대용량 DataURL로 용량 한도를 넘으면 최신 항목만 유지해 메타데이터+패스 영속성을 보전한다.
+      try {
+        storage.setItem(key, JSON.stringify(next.slice(0, 4)));
+        persistedToStorage = true;
+      } catch {
+        persistedToStorage = false;
+      }
+    }
+  }
+
+  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+    try {
+      window.dispatchEvent(
+        new CustomEvent<BakedManuscriptCutLayer>(STUDIO_BG3D_BAKED_CUT_HANDOFF_EVENT, {
+          detail: layer,
+        }),
+      );
+    } catch {
+      // CustomEvent를 지원하지 않는 환경에서도 영속 저장은 성공으로 유지한다.
+    }
+  }
+
+  return { persistedToStorage, totalLayers: next.length };
+}
+
+export function listBakedManuscriptCutLayers(
+  targetDocumentId: string,
+  storage: Storage | null = defaultStorage(),
+): readonly BakedManuscriptCutLayer[] {
+  const docId = targetDocumentId.trim();
+  if (!docId) return [];
+  const inMemory = inMemoryBakedCutRegistry.get(docId);
+  if (inMemory && inMemory.length > 0) return inMemory;
+  if (!storage) return [];
+  try {
+    const parsed = parsePersistedLayers(storage.getItem(storageKeyForDocument(docId)));
+    if (parsed.length > 0) {
+      inMemoryBakedCutRegistry.set(docId, Object.freeze(parsed));
+    }
+    return parsed;
+  } catch {
+    return [];
+  }
+}
+
+export function getBakedManuscriptCutLayerForCut(
+  targetDocumentId: string,
+  targetCutIndex: number,
+  storage: Storage | null = defaultStorage(),
+): BakedManuscriptCutLayer | null {
+  const layers = listBakedManuscriptCutLayers(targetDocumentId, storage);
+  return layers.find((layer) => layer.targetCutIndex === targetCutIndex) ?? null;
+}
+
+export function clearBakedManuscriptCutLayers(
+  targetDocumentId: string,
+  storage: Storage | null = defaultStorage(),
+): void {
+  const docId = targetDocumentId.trim();
+  if (!docId) return;
+  inMemoryBakedCutRegistry.delete(docId);
+  if (storage) {
+    try {
+      storage.removeItem(storageKeyForDocument(docId));
+    } catch {
+      // 스토리지 접근 실패는 무시한다.
+    }
+  }
+}
+
+/**
+ * 2D 원고 컷에 구워진 비파괴 3D 레이어로부터 3D 재촬영 복원 페이로드를 추출한다.
+ */
+export function buildReshootRestorePayload(
+  layer: BakedManuscriptCutLayer,
+): ReshootRestorePayload {
+  return Object.freeze({
+    layerId: layer.layerId,
+    sourceSceneId: layer.sourceSceneId,
+    sourceCameraId: layer.sourceCameraId,
+    camera: layer.camera ?? null,
+    atmospherePresetId: layer.atmospherePresetId ?? null,
+    inkLineWeightPx: layer.inkLineWeightPx,
+    rightsBomAssetIds: layer.rightsBomAssetIds,
+    sceneDocumentJson: layer.sceneDocumentJson ?? null,
+  });
 }

@@ -23,7 +23,10 @@ import {
 import {
   STUDIO_BG3D_LIGHTING_STUDIO_PRESETS,
   resolveStudioBg3dLightingStudioPreset,
+  type StudioBg3dWebtoonAtmospherePreset,
+  type StudioBg3dWebtoonAtmospherePresetId,
 } from "./studio-bg3d-lighting-studio";
+import { StudioBg3dWebtoonAtmosphereStrip } from "./StudioBg3dWebtoonAtmosphereStrip";
 import {
   STUDIO_BG3D_ENVIRONMENT_INTENSITY_MAX,
   STUDIO_BG3D_ENVIRONMENT_INTENSITY_MIN,
@@ -69,6 +72,10 @@ export interface StudioBg3dLightingStudioProps {
   readonly onLinkHdriWeatherPreset?: (weatherPresetId: string, sunTimeHours: number) => void;
   /** 현재 연결된 대기 날씨 프리셋 ID — 연동 뱃지 표시에 사용합니다. */
   readonly linkedWeatherPresetId?: string;
+  /** 현재 활성화된 7종 웹툰 분위기 프리셋 ID. */
+  readonly activeWebtoonAtmosphereId?: StudioBg3dWebtoonAtmospherePresetId | null;
+  /** 7종 웹툰 분위기(조명·안개·외곽선·날씨) 원클릭 적용 핸들러. */
+  readonly onApplyWebtoonAtmosphere?: (preset: StudioBg3dWebtoonAtmospherePreset) => void;
 }
 
 function clamp(value: number, minimum: number, maximum: number, fallback: number): number {
@@ -341,6 +348,8 @@ export function StudioBg3dLightingStudio({
   onApplyHdriSunTime,
   onLinkHdriWeatherPreset,
   linkedWeatherPresetId,
+  activeWebtoonAtmosphereId = null,
+  onApplyWebtoonAtmosphere,
 }: StudioBg3dLightingStudioProps) {
   const id = useId().replaceAll(":", "");
   const panelId = `${id}-bg3d-lighting-studio`;
@@ -386,6 +395,18 @@ export function StudioBg3dLightingStudio({
     onCommitLightingHistory?.();
   };
 
+  const applyWebtoonAtmosphere = (preset: StudioBg3dWebtoonAtmospherePreset) => {
+    if (onApplyWebtoonAtmosphere) {
+      onApplyWebtoonAtmosphere(preset);
+      return;
+    }
+    onUpdateLighting(preset.lighting);
+    onUpdateExposure(preset.exposure);
+    onApplyHdriSunTime?.(preset.weather.sunTimeHours);
+    onLinkHdriWeatherPreset?.(preset.weather.presetId, preset.weather.sunTimeHours);
+    onCommitLightingHistory?.();
+  };
+
   return (
     <details
       data-testid="bg3d-lighting-studio"
@@ -421,6 +442,12 @@ export function StudioBg3dLightingStudio({
       </summary>
 
       <div id={panelId} className="border-t border-line/70 px-3 pb-3 pt-3">
+        <StudioBg3dWebtoonAtmosphereStrip
+          variant="panel"
+          activePresetId={activeWebtoonAtmosphereId}
+          disabled={disabled}
+          onSelectPreset={applyWebtoonAtmosphere}
+        />
         <p className="mb-2.5 rounded-lg border border-accent/30 bg-accent/5 px-2.5 py-2 text-[0.625rem] leading-relaxed text-fg-2">
           {copy(
             "이 패널은 장면의 시간대와 분위기를 결정합니다. 먼저 아래 HDRI 프리셋으로 큰 그림을 잡은 뒤, 필요하면 기존 조명 프리셋·슬라이더로 다듬으세요.",

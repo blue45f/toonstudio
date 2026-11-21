@@ -9,7 +9,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 
@@ -19,9 +19,9 @@ import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
 import {
-  computeSafeSliceYs,
-  runCommercialPreflightGate,
-} from "../export/studio-commercial-preflight-gate";
+  STUDIO_UNIFIED_PUBLISH_PROFILES,
+  evaluateCommercialExportPreflight,
+} from "../export/studio-unified-preflight-contract";
 import {
   buildWebtoonPsdExportManifest,
   negotiateTimelapseWebmMimeType,
@@ -30,6 +30,7 @@ import {
   STUDIO_EXPORT_TARGET_PROFILES,
   STUDIO_EXPORT_TARGETS,
 } from "../studio-export-preflight";
+import type { StudioPublishProfile } from "../studio-publish-preflight";
 import { EXPORT_TARGET_VISUALS, resultTone } from "./studio-export-panel-helpers";
 import { StudioExportAdvancedDetails } from "./StudioExportAdvancedDetails";
 import { StudioExportPreflightFindingsList } from "./StudioExportPreflightFindingsList";
@@ -83,21 +84,18 @@ function StudioExportPanelContent({ projectId, locale, owner }: StudioExportPane
     runPreflight,
   } = useStudioExportPanelController(projectId, locale, owner);
 
+  const [publishProfile, setPublishProfile] = useState<StudioPublishProfile>("generic");
   const estimatedMb = Math.max(
     0.1,
     Math.round((draft.estimatedFileSizeBytes / 1024 / 1024) * 10) / 10,
   );
-  const safeSlicePlan = profile.maxSegmentHeight
-    ? computeSafeSliceYs(draft.height, profile.maxSegmentHeight, [])
-    : null;
-  const plannedSliceCount = safeSlicePlan ? safeSlicePlan.sliceYs.length + 1 : 1;
-  const commercialGateReport = useMemo(
+  const unifiedPreflight = useMemo(
     () =>
-      runCommercialPreflightGate({
+      evaluateCommercialExportPreflight({
+        exportTarget: target,
+        publishProfile,
         documentWidthPx: draft.width,
         documentHeightPx: draft.height,
-        targetSliceHeightPx: profile.maxSegmentHeight ?? draft.height,
-        exportMode: profile.requireRightsClearance ? "commercial" : "personal-preview",
         bubbles:
           effectiveDraft.minimumTextPx && effectiveDraft.minimumTextPx > 0
             ? [
@@ -125,11 +123,13 @@ function StudioExportPanelContent({ projectId, locale, owner }: StudioExportPane
       draft.height,
       draft.width,
       effectiveDraft.minimumTextPx,
-      profile.maxSegmentHeight,
-      profile.requireRightsClearance,
       projectFacts.blockedAssets,
+      publishProfile,
+      target,
     ],
   );
+  const plannedSliceCount = unifiedPreflight.smartSlice.sliceCount;
+  const commercialGateReport = unifiedPreflight.gateReport;
   const psdAndTimelapseSpec = useMemo(() => {
     const psd = buildWebtoonPsdExportManifest({
       widthPx: draft.width,
@@ -251,7 +251,7 @@ function StudioExportPanelContent({ projectId, locale, owner }: StudioExportPane
               aria-pressed={active}
               onClick={() => selectTarget(candidate)}
               className={cn(
-                "group min-h-11 min-w-0 overflow-hidden rounded-xl border text-left text-xs font-bold transition-all",
+                "group min-h-11 min-w-0 overflow-hidden rounded-xl border text-left text-xs font-bold transition-[transform,border-color,background-color] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98]",
                 "focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transform-none motion-reduce:transition-none",
                 active
                   ? "border-accent bg-accent-soft/50 shadow-sm"
@@ -285,7 +285,39 @@ function StudioExportPanelContent({ projectId, locale, owner }: StudioExportPane
         })}
       </div>
 
-      <div className="mt-5 grid gap-3 rounded-2xl border border-line bg-panel/45 p-4 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] md:items-end">
+      <div
+        role="group"
+        aria-label={bt("연재 게시 프로필", "Publishing profile")}
+        data-testid="studio-export-publish-profiles"
+        className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-panel/45 px-3 py-2 text-xs"
+      >
+        <span className="font-bold text-fg-2">{bt("게시 프로필 연계", "Publish profile")}</span>
+        {STUDIO_UNIFIED_PUBLISH_PROFILES.map((entry) => {
+          const active = publishProfile === entry.id;
+          return (
+            <button
+              key={entry.id}
+              type="button"
+              aria-pressed={active}
+              data-testid={`studio-export-profile-${entry.id}`}
+              onClick={() => setPublishProfile(entry.id)}
+              className={cn(
+                "inline-flex min-h-11 items-center rounded-lg border px-3 text-xs font-semibold transition-colors duration-150 active:scale-[0.97] motion-reduce:transform-none motion-reduce:transition-none",
+                active
+                  ? "border-accent bg-accent-soft text-accent"
+                  : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
+              )}
+            >
+              {bt(entry.labelKo, entry.labelEn)}
+            </button>
+          );
+        })}
+        <span className="ml-auto text-[0.7rem] text-fg-3 break-keep">
+          {unifiedPreflight.mobileLegibility.summaryKo}
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 rounded-2xl border border-line bg-panel/45 p-4 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] md:items-end">
         <label className="min-w-0 text-xs font-bold text-fg-2">
           {bt("파일 형식", "File format")}
           <select

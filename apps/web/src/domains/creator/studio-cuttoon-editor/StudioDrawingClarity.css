@@ -1,6 +1,6 @@
 /* 원고·실제 저장 권위는 그대로 두고 단일 44px 상단바·48px 9그룹 레일·82%+ 캔버스 시야의 차분한 아틀리에 크롬을 구성한다. */
 [data-studio-editor="true"] button:active:not([data-studio-allow-press-feedback="true"]){transform:none!important}
-.studio-drawing-clarity-header{position:relative;z-index:50;display:flex;align-items:center;gap:8px;height:44px;min-height:44px;max-height:44px;flex-shrink:0;padding:0 12px;border-bottom:1px solid var(--color-line);background:var(--color-panel);box-shadow:none;color:var(--color-fg)}
+.studio-drawing-clarity-header{position:relative;z-index:50;display:flex;align-items:center;gap:8px;height:44px;min-height:44px;max-height:44px;flex-shrink:0;padding:0 12px;border-top:2px solid color-mix(in oklch,var(--color-accent) 70%,var(--color-cool));border-bottom:1px solid var(--color-line);background:var(--color-panel);box-shadow:none;color:var(--color-fg)}
 /* 44px 단일 상단바 안에서 원고명과 저장 상태 요약을 고정 예약해 캔버스 원점이 밀리지 않게 한다. */
 .studio-drawing-clarity-title{position:relative;flex:1;min-width:96px;height:44px;min-height:44px;max-height:44px;overflow:hidden}
 .studio-drawing-clarity-title h1{position:absolute;inset:2px 0 auto;z-index:1;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;line-height:18px;word-break:keep-all}
@@ -268,9 +268,15 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 @media(min-width:1180px){.studio-drawing-classic-menubar{display:inline-flex}}
 .studio-drawing-workflow-switcher{display:none;align-items:center;gap:2px;padding:0 4px;border-inline:1px solid var(--color-line)}
 @media(min-width:1420px){.studio-drawing-workflow-switcher{display:inline-flex}}
-.studio-drawing-workflow-step{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 7px;border:0;border-radius:8px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;word-break:keep-all;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1),color 150ms cubic-bezier(.16,1,.3,1)}
-.studio-drawing-workflow-step:hover:not(:disabled){background:var(--color-raised);color:var(--color-fg)}
-.studio-drawing-workflow-step[aria-pressed=true]{background:var(--color-accent-soft);color:var(--color-accent);font-weight:600}
+.studio-drawing-workflow-step{--stage-ink:var(--color-accent);display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 8px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;word-break:keep-all;cursor:pointer;transition:background-color 180ms cubic-bezier(.22,1,.36,1),border-color 180ms cubic-bezier(.22,1,.36,1),color 180ms cubic-bezier(.22,1,.36,1),box-shadow 180ms cubic-bezier(.22,1,.36,1),transform 140ms cubic-bezier(.22,1,.36,1)}
+.studio-drawing-workflow-step[data-studio-workflow-stage=story]{--stage-ink:var(--color-accent-2)}
+.studio-drawing-workflow-step[data-studio-workflow-stage=bg3d]{--stage-ink:var(--color-cool)}
+.studio-drawing-workflow-step[data-studio-workflow-stage=draw]{--stage-ink:var(--color-accent)}
+.studio-drawing-workflow-step[data-studio-workflow-stage=lettering]{--stage-ink:var(--color-good)}
+.studio-drawing-workflow-step[data-studio-workflow-stage=export]{--stage-ink:var(--color-warn)}
+.studio-drawing-workflow-step:hover:not(:disabled){background:color-mix(in oklch,var(--stage-ink) 12%,var(--color-raised));color:var(--color-fg)}
+.studio-drawing-workflow-step:active:not(:disabled){transform:scale(.96)}
+.studio-drawing-workflow-step[aria-pressed=true]{border-color:color-mix(in oklch,var(--stage-ink) 52%,var(--color-line));background:color-mix(in oklch,var(--stage-ink) 16%,var(--color-panel));color:var(--stage-ink);font-weight:700;box-shadow:0 0 0 1px color-mix(in oklch,var(--stage-ink) 28%,transparent)}
 .studio-drawing-workflow-step:disabled{opacity:.45;cursor:not-allowed}
 @media (min-width: 1180px) and (max-width: 1365px) {
   .studio-drawing-clarity-header:not(.studio-drawing-clarity-mobile-header){gap:4px}

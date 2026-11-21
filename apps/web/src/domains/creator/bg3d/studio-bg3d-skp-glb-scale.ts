@@ -110,7 +110,11 @@ export function assertStudioBg3dSkpGlbContainer(glb: Uint8Array): void {
   if (!isRecord(asset) || asset.version !== "2.0") throw invalidGlb("GLB asset.version 이 2.0 이 아닙니다.");
 }
 
-function wrapSceneRoots(root: Record<string, unknown>, factor: number): void {
+function wrapSceneRoots(
+  root: Record<string, unknown>,
+  factor: number,
+  translationY = 0,
+): void {
   const scenes = root.scenes;
   const nodes = root.nodes;
   if (!isUnknownArray(scenes) || !isUnknownArray(nodes) || scenes.length === 0) {
@@ -126,11 +130,15 @@ function wrapSceneRoots(root: Record<string, unknown>, factor: number): void {
   );
   if (!referencesValidNodes) throw invalidGlb("장면 루트가 존재하지 않는 노드를 가리킵니다.");
   const wrapperIndex = nodes.length;
-  nodes.push({
+  const wrapper: Record<string, unknown> = {
     name: STUDIO_BG3D_SKP_UNIT_SCALE_NODE_NAME,
     scale: [factor, factor, factor],
     children: [...scene.nodes],
-  });
+  };
+  if (Math.abs(translationY) > 1e-6) {
+    wrapper.translation = [0, translationY, 0];
+  }
+  nodes.push(wrapper);
   scene.nodes = [wrapperIndex];
 }
 
@@ -146,6 +154,28 @@ export function scaleStudioBg3dGlbUniformly(glb: Uint8Array, factor: number): Ui
   const chunks = readChunks(glb);
   const root = readJsonRoot(chunks);
   wrapSceneRoots(root, factor);
+  return writeGlb([{ type: GLB_JSON_CHUNK, data: encodeJsonChunk(root) }, ...chunks.slice(1)]);
+}
+
+/**
+ * GLB 에 `1.0 = 1m` 미터 정규화 배율과 `Y = 0` 바닥 접지 이동을 단일 루트 래퍼 노드로 함께 적용한다.
+ */
+export function normalizeStudioBg3dSkpGlbMetricAndFloor(
+  glb: Uint8Array,
+  options: { readonly scaleFactor: number; readonly floorMinYMeters: number },
+): Uint8Array {
+  const { scaleFactor, floorMinYMeters } = options;
+  if (!Number.isFinite(scaleFactor) || scaleFactor <= 0) {
+    throw new TypeError("studio-bg3d-skp-glb-scale:invalid-factor");
+  }
+  if (!Number.isFinite(floorMinYMeters)) {
+    throw new TypeError("studio-bg3d-skp-glb-scale:invalid-floor-y");
+  }
+  const translationY = -floorMinYMeters * scaleFactor;
+  if (scaleFactor === 1 && Math.abs(translationY) <= 1e-6) return glb;
+  const chunks = readChunks(glb);
+  const root = readJsonRoot(chunks);
+  wrapSceneRoots(root, scaleFactor, translationY);
   return writeGlb([{ type: GLB_JSON_CHUNK, data: encodeJsonChunk(root) }, ...chunks.slice(1)]);
 }
 

@@ -12,6 +12,10 @@ import { STUDIO_FEATURE_TUTORIALS } from "./studio-feature-tutorials";
 import { studioInspectorActions } from "./studio-inspector-layout";
 import { STUDIO_SEARCH_CORPUS } from "./studio-search-corpus";
 import {
+  EXTRA_COMPETITOR_SEARCH_ENTRIES,
+  mergeCompetitorAliases,
+} from "./planning/studio-competitor-search-aliases";
+import {
   normalizeStudioSearchText,
   tokenizeStudioSearchQuery,
 } from "./studio-search-text";
@@ -222,7 +226,7 @@ export function buildStudioSearchIndex(
       kind: "command",
       label: koLabel(command.labels),
       location: STUDIO_COMMAND_CATEGORY_LOCATION[command.category] ?? "스튜디오",
-      aliases: command.aliases,
+      aliases: mergeCompetitorAliases(command.id, command.aliases),
       keywords: [command.id, command.category],
       helpNodeId: command.helpNodeId,
       target: { type: "command", commandId: command.id },
@@ -247,12 +251,17 @@ export function buildStudioSearchIndex(
       labelEn: item.labelEn,
       description: item.description,
       location: item.location,
-      aliases: item.aliases,
+      aliases: mergeCompetitorAliases(item.id, item.aliases),
       keywords: item.keywords ?? [],
       helpNodeId: item.helpNodeId,
       target: item.target,
       requiresSelection: item.requiresSelection === true,
     });
+  }
+
+  const existingIds = new Set(entries.map((entry) => entry.id));
+  for (const extra of EXTRA_COMPETITOR_SEARCH_ENTRIES) {
+    if (!existingIds.has(extra.id)) entries.push(extra);
   }
 
   /* 3 — inspector routes (the navigator's own corpus), minus absorbed rows. */
@@ -420,13 +429,15 @@ function scoreEntry(
   let score = (total / tokens.length) * 100;
 
   const labelKey = normalizeStudioSearchText(entry.label);
+  const exactAlias = entry.aliases.find(
+    (alias) => normalizeStudioSearchText(alias.term) === wholeQuery,
+  );
   if (labelKey === wholeQuery) score += 40;
-  else if (
-    entry.aliases.some(
-      (alias) => normalizeStudioSearchText(alias.term) === wholeQuery,
-    )
-  ) {
+  else if (exactAlias) {
     score += 25;
+  }
+  if (!matchedAlias && exactAlias) {
+    matchedAlias = exactAlias;
   }
 
   score += KIND_BONUS[entry.kind];

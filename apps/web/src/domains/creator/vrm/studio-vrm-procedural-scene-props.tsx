@@ -1,8 +1,9 @@
 /* eslint-disable react-refresh/only-export-components -- 카탈로그·본 오프셋과 그 카탈로그 전용 R3F 렌더러가 하나의 정적 소유 경계다. */
 import { createPortal } from "@react-three/fiber";
-import { useEffect, useState, type FC } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FC } from "react";
 import * as THREE from "three";
 
+import { harmonizeStudioVrmPropObject } from "./studio-vrm-custom-part-harmonizer";
 import { d, type Vec3 } from "./studio-vrm-poser-utils";
 
 import type { ScenePropAttachmentConfig as PropAttachmentConfig } from "./studio-vrm-scene-props";
@@ -1015,62 +1016,46 @@ export const DEFAULT_BONE_OFFSETS: Record<string, Partial<Record<VRMHumanBoneNam
 };
 
 export function SceneProp3D({
-  propId,
-  vrm,
-  config,
-  defaultPosition,
-  defaultScale,
+  propId, vrm, config, defaultPosition, defaultScale,
 }: {
-  propId: string;
-  vrm: VRM | null;
-  config: PropAttachmentConfig | undefined;
-  defaultPosition: Vec3;
-  defaultScale: number;
+  propId: string; vrm: VRM | null; config: PropAttachmentConfig | undefined;
+  defaultPosition: Vec3; defaultScale: number;
 }) {
   const Comp = PROP_COMPONENTS[propId];
   const attachmentBone = config?.bone ?? "none";
   const [boneNode, setBoneNode] = useState<THREE.Object3D | null>(null);
+  const groupRef = useRef<THREE.Group | null>(null);
 
   useEffect(() => {
-    if (vrm && attachmentBone !== "none") {
-      const node = vrm.humanoid?.getNormalizedBoneNode(attachmentBone);
-      setBoneNode(node || null);
-    } else {
-      setBoneNode(null);
-    }
+    setBoneNode(vrm && attachmentBone !== "none" ? (vrm.humanoid?.getNormalizedBoneNode(attachmentBone) || null) : null);
   }, [vrm, attachmentBone]);
 
+  useLayoutEffect(() => {
+    const group = groupRef.current;
+    if (!group) return;
+    return harmonizeStudioVrmPropObject(group, vrm, { propId });
+  }, [boneNode, propId, vrm]);
+
   if (!Comp) return null;
-
+  const rx = THREE.MathUtils.degToRad(config?.rotX ?? 0);
+  const ry = THREE.MathUtils.degToRad(config?.rotY ?? 0);
+  const rz = THREE.MathUtils.degToRad(config?.rotZ ?? 0);
+  const scl = (config?.scale ?? 1.0) * defaultScale;
   if (boneNode) {
-    const px = config?.offsetX ?? 0;
-    const py = config?.offsetY ?? 0;
-    const pz = config?.offsetZ ?? 0;
-    const rx = THREE.MathUtils.degToRad(config?.rotX ?? 0);
-    const ry = THREE.MathUtils.degToRad(config?.rotY ?? 0);
-    const rz = THREE.MathUtils.degToRad(config?.rotZ ?? 0);
-    const scl = (config?.scale ?? 1.0) * defaultScale;
-
     return createPortal(
-      <group position={[px, py, pz]} rotation={[rx, ry, rz]}>
+      <group ref={groupRef} position={[config?.offsetX ?? 0, config?.offsetY ?? 0, config?.offsetZ ?? 0]} rotation={[rx, ry, rz]}>
         <Comp scale={scl} />
       </group>,
-      boneNode
+      boneNode,
     );
   }
-
-  const worldX = defaultPosition[0] + (config?.offsetX ?? 0);
-  const worldY = defaultPosition[1] + (config?.offsetY ?? 0);
-  const worldZ = defaultPosition[2] + (config?.offsetZ ?? 0);
-  const worldRotation: [number, number, number] = [
-    THREE.MathUtils.degToRad(config?.rotX ?? 0),
-    THREE.MathUtils.degToRad(config?.rotY ?? 0),
-    THREE.MathUtils.degToRad(config?.rotZ ?? 0),
-  ];
-  const worldScale = (config?.scale ?? 1) * defaultScale;
   return (
-    <group position={[worldX, worldY, worldZ]} rotation={worldRotation}>
-      <Comp scale={worldScale} />
+    <group
+      ref={groupRef}
+      position={[defaultPosition[0] + (config?.offsetX ?? 0), defaultPosition[1] + (config?.offsetY ?? 0), defaultPosition[2] + (config?.offsetZ ?? 0)]}
+      rotation={[rx, ry, rz]}
+    >
+      <Comp scale={scl} />
     </group>
   );
 }

@@ -1,8 +1,29 @@
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
-import { AlertTriangle, CheckCircle2, Download, ShieldCheck, X, XCircle } from "lucide-react";
-import { useRef } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Download,
+  FileCheck2,
+  Scissors,
+  ShieldAlert,
+  ShieldCheck,
+  Smartphone,
+  X,
+  XCircle,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import {
+  STUDIO_EXPORT_TARGET_PROFILES,
+  STUDIO_EXPORT_TARGETS,
+  STUDIO_UNIFIED_PUBLISH_PROFILES,
+  defaultExportTargetForPublishProfile,
+  evaluateCommercialExportPreflight,
+  type PreflightAssetLicense,
+  type PreflightBubbleBox,
+  type StudioExportTargetId,
+} from "./export/studio-unified-preflight-contract";
 import type { StudioFloatingSurfaceLayout } from "./studio-floating-surface";
 import { STUDIO_DESKTOP_FLOATING_QUERY, StudioDesktopFloatingSurface } from "./StudioDesktopFloatingSurface";
 import type {
@@ -23,8 +44,8 @@ const PREFLIGHT_DEFAULT_LAYOUT: StudioFloatingSurfaceLayout = {
   version: 2,
   xRatio: 1,
   yRatio: 0.04,
-  width: 680,
-  height: 760,
+  width: 720,
+  height: 780,
   dock: "right",
   positionLocked: false,
   sizeLocked: false,
@@ -50,6 +71,13 @@ export interface StudioPublishPreflightPanelProps {
   complianceResult: StudioPublishComplianceResult;
   result: StudioPublishPreflightResult;
   onDownloadReport: () => void;
+  /** 통합 프리플라이트 센터(AC-012): 8개 출고 타깃 및 실검사 입력(생략 시 현재 프로필 기준 기본값 사용) */
+  exportTarget?: StudioExportTargetId;
+  onExportTargetChange?: (target: StudioExportTargetId) => void;
+  documentWidthPx?: number;
+  documentHeightPx?: number;
+  bubbles?: readonly PreflightBubbleBox[];
+  assets?: readonly PreflightAssetLicense[];
 }
 
 const CONTENT_FLAG_LABELS: Record<keyof StudioPublishContentFlags, string> = {
@@ -80,20 +108,42 @@ export function StudioPublishPreflightPanel({
   complianceResult,
   result,
   onDownloadReport,
+  exportTarget: controlledExportTarget,
+  onExportTargetChange,
+  documentWidthPx = 800,
+  documentHeightPx = 12_800,
+  bubbles = [],
+  assets = [],
 }: StudioPublishPreflightPanelProps) {
   const isDesktop = useMediaQuery(STUDIO_DESKTOP_FLOATING_QUERY);
   const dialogRef = useRef<HTMLDivElement>(null);
   const portalRootRef = useRef<HTMLElement | null>(
     typeof document === "undefined" ? null : document.body,
   );
+  const [uncontrolledTarget, setUncontrolledTarget] = useState<StudioExportTargetId>(() =>
+    controlledExportTarget ?? defaultExportTargetForPublishProfile(profile),
+  );
+  const activeExportTarget = controlledExportTarget ?? uncontrolledTarget;
+
+  useEffect(() => {
+    if (controlledExportTarget) {
+      setUncontrolledTarget(controlledExportTarget);
+    }
+  }, [controlledExportTarget]);
+
+  const handleSelectExportTarget = (nextTarget: StudioExportTargetId) => {
+    if (!controlledExportTarget) {
+      setUncontrolledTarget(nextTarget);
+    }
+    onExportTargetChange?.(nextTarget);
+  };
+
   useStudioModalSheet({
     activeKey: open && !isDesktop ? "publish-preflight" : null,
     dialogRef,
     onDismiss: onClose,
     resolveReturnFocus: () => {
       const ownerDocument = portalRootRef.current?.ownerDocument;
-      // Project Center removes its action popover after opening this portal. Its
-      // persistent launcher is the return target on mobile, where the menubar is hidden.
       return ownerDocument?.activeElement?.closest("#studio-project-actions-menu")
         ? ownerDocument.querySelector<HTMLElement>('[aria-controls="studio-project-actions-menu"]')
         : null;
@@ -101,15 +151,71 @@ export function StudioPublishPreflightPanel({
     rootRef: portalRootRef,
   });
 
+  const commercialReport = useMemo(
+    () =>
+      evaluateCommercialExportPreflight({
+        exportTarget: activeExportTarget,
+        publishProfile: profile,
+        documentWidthPx,
+        documentHeightPx,
+        bubbles,
+        assets,
+        thirdPartyAttributionNotes: compliance.thirdParty.used === true
+          ? compliance.thirdParty.attributionNotes
+          : undefined,
+      }),
+    [
+      activeExportTarget,
+      assets,
+      bubbles,
+      compliance.thirdParty.attributionNotes,
+      compliance.thirdParty.used,
+      documentHeightPx,
+      documentWidthPx,
+      profile,
+    ],
+  );
+
   if (!open || typeof document === "undefined") return null;
 
-  const ready = result.canPublish && complianceResult.readyForDestinationReview;
-  const errorCount = result.errors.length + complianceResult.errors.length;
-  const warningCount = result.warnings.length + complianceResult.warnings.length;
+  const ready =
+    result.canPublish &&
+    complianceResult.readyForDestinationReview &&
+    commercialReport.passed;
+  const errorCount =
+    result.errors.length +
+    complianceResult.errors.length +
+    commercialReport.blockerCount;
+  const warningCount =
+    result.warnings.length +
+    complianceResult.warnings.length +
+    commercialReport.warningCount;
+
   const issues = [
     ...result.issues.map((issue) => ({ ...issue, source: "구조" as const })),
     ...complianceResult.issues.map((issue) => ({ ...issue, source: "자가 점검" as const })),
+    ...commercialReport.issues.map((issue) => ({
+      code: issue.id,
+      severity: issue.severity === "blocker" ? ("error" as const) : ("warning" as const),
+      message: issue.messageKo,
+      path: issue.targetId,
+      source:
+        issue.category === "rights-bom"
+          ? ("소재 권리" as const)
+          : issue.category === "mobile-legibility"
+            ? ("모바일 가독성" as const)
+            : ("스마트 컷" as const),
+    })),
   ];
+
+  const allChecksExplicitlyVerified =
+    issues.length === 0 && commercialReport.mobileLegibility.status === "pass";
+
+  const readinessPercent = ready
+    ? commercialReport.mobileLegibility.status === "pass"
+      ? 100
+      : 86
+    : Math.max(18, Math.round(70 / (1 + errorCount)));
 
   const modal = (
     <div
@@ -124,39 +230,103 @@ export function StudioPublishPreflightPanel({
     >
       <div className={isDesktop
         ? "flex h-full min-h-0 w-full flex-col overflow-hidden"
-        : "mx-auto flex h-full w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl"}>
+        : "relative mx-auto flex h-full w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl"}>
+        {/* 상단 스펙트럼 진행 게이지 */}
+        <div className="h-1 w-full shrink-0 bg-raised/70" aria-hidden="true">
+          <div
+            data-testid="publish-preflight-spectrum-gauge"
+            className={`h-full transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+              ready
+                ? "bg-[linear-gradient(90deg,var(--color-accent),var(--color-cool),var(--color-good))]"
+                : "bg-[linear-gradient(90deg,var(--color-warn),var(--color-bad))]"
+            }`}
+            style={{ width: `${readinessPercent}%` }}
+          />
+        </div>
+
         <header className={isDesktop ? "hidden" : "flex shrink-0 items-start gap-3 border-b border-line px-4 py-3"}>
-          <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-            <ShieldCheck size={18} aria-hidden />
+          <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+            <ShieldCheck size={19} aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="text-base font-bold tracking-tight text-fg">Publish Pack 사전검사</h2>
-            <p className="mt-0.5 text-xs leading-relaxed text-fg-3">
-              목적지 정책·이미지 구조·AI 사용 고지를 게시 전에 확인합니다. 외부 플랫폼으로 자동 전송하지는 않아요.
+            <h2 className="text-base font-bold tracking-tight text-fg break-keep">
+              원스톱 출고 · 게시 사전검사
+            </h2>
+            <p className="mt-0.5 text-xs leading-relaxed text-fg-3 break-keep">
+              8개 출고 타깃과 3개 게시 프로필을 한 화면에서 전환하고, 모바일 가독성·스마트 컷·소재 권리(Rights BOM)를 함께 검사합니다.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Publish Pack 사전검사 닫기"
-            className="grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-3 hover:bg-raised hover:text-fg"
+            className="grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-3 transition-colors duration-150 hover:bg-raised hover:text-fg active:scale-[0.97] motion-reduce:transform-none motion-reduce:transition-none"
           >
-            <X size={15} aria-hidden />
+            <X size={16} aria-hidden />
           </button>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          {/* 8개 출고 타깃 원클릭 전환기 */}
+          <section aria-label="출고 타깃 8종 선택" className="mb-4 border-b border-line/70 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-fg">
+                <FileCheck2 size={14} className="text-accent" aria-hidden="true" />
+                어디에 올릴까요? (8개 출고 타깃)
+              </span>
+              <span className="rounded-full border border-line bg-card px-2.5 py-0.5 text-[0.68rem] font-semibold tabular-nums text-fg-2">
+                {commercialReport.targetProfile.labelKo} · 기준 {commercialReport.targetProfile.policyVersion}
+              </span>
+            </div>
+            <div
+              role="group"
+              aria-label="출고 타깃 선택"
+              data-testid="publish-preflight-target-group"
+              className="mt-2.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4"
+            >
+              {STUDIO_EXPORT_TARGETS.map((targetId) => {
+                const meta = STUDIO_EXPORT_TARGET_PROFILES[targetId];
+                const active = activeExportTarget === targetId;
+                return (
+                  <button
+                    key={targetId}
+                    type="button"
+                    aria-pressed={active}
+                    data-testid={`publish-preflight-target-${targetId}`}
+                    onClick={() => handleSelectExportTarget(targetId)}
+                    className={`min-h-11 rounded-xl border px-2.5 py-1.5 text-left text-xs font-bold transition-[transform,border-color,background-color] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transform-none motion-reduce:transition-none ${
+                      active
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg"
+                    }`}
+                  >
+                    <span className="block truncate">{meta.labelKo}</span>
+                    <span className="mt-0.5 block truncate text-[0.65rem] font-normal text-fg-3">
+                      {meta.requireRightsClearance ? "상업 권리 검사" : "개인 백업 전용"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
           <div className={isDesktop ? "grid gap-3 @lg:grid-cols-2" : "grid gap-3 sm:grid-cols-2"}>
             <label className="text-xs font-semibold text-fg-2">
               게시 목적지
               <select
                 value={profile}
-                onChange={(event) => onProfileChange(event.target.value as StudioPublishProfile)}
-                className="mt-1.5 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+                onChange={(event) => {
+                  const nextProfile = event.target.value as StudioPublishProfile;
+                  onProfileChange(nextProfile);
+                  if (!controlledExportTarget) {
+                    setUncontrolledTarget(defaultExportTargetForPublishProfile(nextProfile));
+                  }
+                }}
+                className="mt-1.5 min-h-11 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-fg outline-none focus:border-accent"
               >
-                {Object.entries(PROFILE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
+                {STUDIO_UNIFIED_PUBLISH_PROFILES.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.labelKo}
                   </option>
                 ))}
               </select>
@@ -166,7 +336,7 @@ export function StudioPublishPreflightPanel({
               <select
                 value={aiUsage}
                 onChange={(event) => onAiUsageChange(event.target.value as StudioPublishAiUsage)}
-                className="mt-1.5 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+                className="mt-1.5 min-h-11 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-fg outline-none focus:border-accent"
               >
                 <option value="none">사용하지 않음</option>
                 <option value="assisted">보조 사용 · 번역/아이디어/수정</option>
@@ -187,13 +357,136 @@ export function StudioPublishPreflightPanel({
             />
           </label>
 
+          {/* 3대 실검사 결과 (375px 말풍선 가독성 · 스마트 컷 분할 · Rights BOM 상업 라이선스) */}
+          <section
+            aria-label="상용 출고 3대 실검사"
+            data-testid="publish-preflight-commercial-checks"
+            className="mt-4 rounded-xl border border-line bg-card/55 p-3.5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/60 pb-2.5">
+              <h3 className="text-sm font-bold text-fg">
+                실시간 출고 품질 · 권리 실검사
+              </h3>
+              <span className="text-[0.68rem] font-semibold tabular-nums text-fg-3">
+                {documentWidthPx} × {documentHeightPx}px ·{" "}
+                {commercialReport.exportMode === "commercial" ? "상업 연재 모드" : "개인 백업 모드"}
+              </span>
+            </div>
+
+            <ul className="mt-2.5 divide-y divide-line/60 text-xs">
+              <li
+                data-testid="publish-preflight-check-legibility"
+                className="flex items-start gap-2.5 py-2.5 first:pt-0"
+              >
+                <Smartphone
+                  size={15}
+                  aria-hidden="true"
+                  className={`mt-0.5 shrink-0 ${
+                    commercialReport.mobileLegibility.status === "pass"
+                      ? "text-good"
+                      : commercialReport.mobileLegibility.status === "warning"
+                        ? "text-warn"
+                        : "text-cool"
+                  }`}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <span className="font-bold text-fg">375px 모바일 말풍선 가독성</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold ${
+                        commercialReport.mobileLegibility.status === "pass"
+                          ? "bg-good/15 text-good"
+                          : commercialReport.mobileLegibility.status === "warning"
+                            ? "bg-warn/15 text-warn"
+                            : "bg-cool/15 text-cool"
+                      }`}
+                    >
+                      {commercialReport.mobileLegibility.status === "pass"
+                        ? "가독성 충족"
+                        : commercialReport.mobileLegibility.status === "warning"
+                          ? `작은 대사 ${commercialReport.mobileLegibility.warningCount}곳`
+                          : "직접 확인 필요"}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 leading-relaxed text-fg-2 break-keep">
+                    {commercialReport.mobileLegibility.summaryKo}
+                  </p>
+                </div>
+              </li>
+
+              <li
+                data-testid="publish-preflight-check-smart-slice"
+                className="flex items-start gap-2.5 py-2.5"
+              >
+                <Scissors
+                  size={15}
+                  aria-hidden="true"
+                  className={`mt-0.5 shrink-0 ${
+                    commercialReport.smartSlice.status === "adjusted" ? "text-accent" : "text-good"
+                  }`}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <span className="font-bold text-fg">스마트 컷 분할 (대사 절단 보호)</span>
+                    <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.65rem] font-bold tabular-nums text-accent">
+                      {commercialReport.smartSlice.sliceCount}조각 계획
+                    </span>
+                  </div>
+                  <p className="mt-0.5 leading-relaxed text-fg-2 break-keep">
+                    {commercialReport.smartSlice.summaryKo}
+                  </p>
+                </div>
+              </li>
+
+              <li
+                data-testid="publish-preflight-check-rights-bom"
+                className="flex items-start gap-2.5 py-2.5 last:pb-0"
+              >
+                {commercialReport.rightsBom.status === "blocked" ? (
+                  <ShieldAlert size={15} aria-hidden="true" className="mt-0.5 shrink-0 text-bad" />
+                ) : (
+                  <ShieldCheck
+                    size={15}
+                    aria-hidden="true"
+                    className={`mt-0.5 shrink-0 ${
+                      commercialReport.rightsBom.status === "pass" ? "text-good" : "text-cool"
+                    }`}
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <span className="font-bold text-fg">Rights BOM 상업 라이선스 (NC·GPL 차단)</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[0.65rem] font-bold ${
+                        commercialReport.rightsBom.status === "blocked"
+                          ? "bg-bad/15 text-bad"
+                          : commercialReport.rightsBom.status === "pass"
+                            ? "bg-good/15 text-good"
+                            : "bg-cool/15 text-cool"
+                      }`}
+                    >
+                      {commercialReport.rightsBom.status === "blocked"
+                        ? `상업 출고 차단 ${commercialReport.rightsBom.blockerCount}건`
+                        : commercialReport.rightsBom.status === "pass"
+                          ? "상업 이용 가능"
+                          : "개인 백업 전용"}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 leading-relaxed text-fg-2 break-keep">
+                    {commercialReport.rightsBom.summaryKo}
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </section>
+
           <section className="mt-4 rounded-xl border border-line bg-card/40 p-3" aria-labelledby="publish-compliance-title">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <h3 id="publish-compliance-title" className="text-sm font-bold text-fg">
                   권리·등급 자체 점검
                 </h3>
-                <p className="mt-0.5 text-xs leading-relaxed text-fg-3">
+                <p className="mt-0.5 text-xs leading-relaxed text-fg-3 break-keep">
                   작품 내용과 사용 소재를 직접 확인한 결과를 Publish Pack에 함께 보관합니다.
                 </p>
               </div>
@@ -218,7 +511,7 @@ export function StudioPublishPreflightPanel({
                           : null,
                     })
                   }
-                  className="mt-1.5 w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+                  className="mt-1.5 min-h-11 w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-fg outline-none focus:border-accent"
                 >
                   <option value="">선택해 주세요</option>
                   <option value="all">전체 이용가 예상</option>
@@ -241,7 +534,7 @@ export function StudioPublishPreflightPanel({
                       },
                     });
                   }}
-                  className="mt-1.5 w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+                  className="mt-1.5 min-h-11 w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-fg outline-none focus:border-accent"
                 >
                   <option value="">선택해 주세요</option>
                   <option value="no">사용하지 않음</option>
@@ -267,7 +560,7 @@ export function StudioPublishPreflightPanel({
                           },
                         })
                       }
-                      className="mt-1 w-full rounded-lg border border-line bg-panel px-2.5 py-2 text-xs text-fg outline-none focus:border-accent"
+                      className="mt-1 min-h-11 w-full rounded-lg border border-line bg-panel px-2.5 py-2 text-xs text-fg outline-none focus:border-accent"
                     >
                       <option value="">미확인</option>
                       <option value="no">없음</option>
@@ -370,8 +663,9 @@ export function StudioPublishPreflightPanel({
           </section>
 
           <div
+            data-testid="publish-preflight-summary-banner"
             className={`mt-4 flex items-start gap-3 rounded-xl border p-3 ${
-              ready ? "border-good/35 bg-good/10" : "border-bad/35 bg-bad/10"
+              ready ? "border-good/40 bg-good/12" : "border-bad/40 bg-bad/12"
             }`}
             role="status"
           >
@@ -381,18 +675,31 @@ export function StudioPublishPreflightPanel({
               <XCircle size={18} className="mt-0.5 shrink-0 text-bad" aria-hidden />
             )}
             <div>
-              <p className="text-sm font-bold text-fg">
-                {ready ? "게시 전 필수 점검을 통과했어요" : `차단 항목 ${errorCount}개를 확인하세요`}
+              <p className="text-sm font-bold text-fg break-keep">
+                {ready
+                  ? commercialReport.mobileLegibility.status === "pass"
+                    ? "출고·게시 필수 실검사를 모두 통과했어요"
+                    : commercialReport.mobileLegibility.status === "warning"
+                      ? "출고 차단은 없지만 375px 모바일 대사 경고를 확인하세요"
+                      : "필수 차단 항목은 없지만 375px 모바일 대사 확인이 남아 있어요"
+                  : `출고 차단 항목 ${errorCount}개를 해결해야 합니다`}
               </p>
-              <p className="mt-0.5 text-xs text-fg-3">
-                오류 {errorCount}개 · 경고 {warningCount}개 · 목적지 {PROFILE_LABELS[profile]}
+              <p className="mt-0.5 text-xs tabular-nums text-fg-3">
+                오류 {errorCount}개 · 경고 {warningCount}개 · 타깃 {commercialReport.targetProfile.labelKo} · 프로필 {PROFILE_LABELS[profile]}
               </p>
             </div>
           </div>
 
-          {issues.length === 0 ? (
-            <p className="mt-4 rounded-xl border border-line bg-card/50 px-3 py-4 text-center text-xs text-fg-3">
-              {r3c07StatusText("studio.panelStatus.r3c07.publishPreflight.noIssues", "발견된 문제가 없습니다. 실제 업로드 직전에는 목적지의 최신 공지와 규격도 다시 확인하세요.")}
+          {allChecksExplicitlyVerified ? (
+            <p className="mt-4 rounded-xl border border-line bg-card/50 px-3 py-4 text-center text-xs text-fg-3 break-keep">
+              {r3c07StatusText(
+                "studio.panelStatus.r3c07.publishPreflight.noIssues",
+                "발견된 문제가 없습니다. 실제 업로드 직전에는 목적지의 최신 공지와 규격도 다시 확인하세요.",
+              )}
+            </p>
+          ) : issues.length === 0 ? (
+            <p className="mt-4 rounded-xl border border-cool/35 bg-cool/10 px-3 py-3 text-xs leading-relaxed text-fg-2 break-keep">
+              구조·권리 차단 오류는 없으나, 대사 텍스트 박스가 연결되지 않아 375px 모바일 말풍선 크기는 미리보기에서 한 번 더 확인하세요.
             </p>
           ) : (
             <ol className="mt-4 space-y-2" aria-label="게시 사전검사 결과">
@@ -410,7 +717,7 @@ export function StudioPublishPreflightPanel({
                   ) : (
                     <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
                   )}
-                  <span className="min-w-0 flex-1">
+                  <span className="min-w-0 flex-1 break-keep">
                     <span className="mr-1 rounded border border-current/20 px-1 py-0.5 text-[0.6rem] font-bold opacity-75">
                       {item.source}
                     </span>
@@ -424,20 +731,20 @@ export function StudioPublishPreflightPanel({
         </div>
 
         <footer className="flex shrink-0 flex-wrap items-center gap-2 border-t border-line px-4 py-3">
-          <p className="mr-auto text-[0.68rem] leading-relaxed text-fg-3">
+          <p className="mr-auto text-[0.68rem] leading-relaxed text-fg-3 break-keep">
             플랫폼 한도는 바뀔 수 있어 보고서에 고정 수치로 단정하지 않습니다.
           </p>
           <button
             type="button"
             onClick={onDownloadReport}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 hover:bg-raised"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:bg-raised active:scale-[0.97] motion-reduce:transform-none motion-reduce:transition-none"
           >
             <Download size={13} aria-hidden /> 검사 보고서 JSON
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex min-h-9 items-center rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent hover:bg-accent-hover"
+            className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover active:scale-[0.97] motion-reduce:transform-none motion-reduce:transition-none"
           >
             확인
           </button>

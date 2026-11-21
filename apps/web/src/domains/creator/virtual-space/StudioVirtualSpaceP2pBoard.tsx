@@ -23,6 +23,8 @@ import {
 export interface StudioVirtualSpaceP2pBoardProps {
   readonly snapshot: StudioP2pBoardSnapshot;
   readonly selfSessionId: string | undefined;
+  /** 세션 id → 표시 이름. 다른 팀원 스트로크·메모의 작성자 표시에 사용한다. */
+  readonly authorNameOf?: (sessionId: string) => string;
   /** 주면 그 도구만 쓸 수 있다(라이브 주석 패널의 모드). 없으면 펜·메모 모두 가능. */
   readonly tool?: "pen" | "note";
   readonly onStroke: (
@@ -38,6 +40,8 @@ export interface StudioVirtualSpaceP2pBoardProps {
   ) => string | null;
   readonly onRemove: (id: string) => boolean;
   readonly onClearOwn: () => void;
+  /** 로컬 저장 실패 여부. 지정하면 true일 때만 재저장 안내를 표시한다. */
+  readonly localSaveFailed?: boolean;
   readonly onRetryLocalSave?: () => void;
 }
 
@@ -70,16 +74,19 @@ function appendBoardPoint(points: readonly StudioP2pBoardPoint[], point: StudioP
 export function StudioVirtualSpaceP2pBoard({
   snapshot,
   selfSessionId,
+  authorNameOf,
   tool,
   onStroke,
   onNote,
   onRemove,
   onClearOwn,
+  localSaveFailed,
   onRetryLocalSave,
 }: StudioVirtualSpaceP2pBoardProps) {
   const bt = useBilingual("StudioVirtualSpaceP2pBoard");
   const penEnabled = tool !== "note";
   const noteEnabled = tool !== "pen";
+  const showLocalSaveRetry = Boolean(onRetryLocalSave) && (localSaveFailed ?? true);
   const [color, setColor] = useState<StudioP2pBoardColor>(STUDIO_P2P_BOARD_COLORS[0]);
   const [note, setNote] = useState("");
   const [draft, setDraft] = useState<readonly StudioP2pBoardPoint[]>([]);
@@ -228,7 +235,9 @@ export function StudioVirtualSpaceP2pBoard({
           strokeLinecap="round"
           strokeLinejoin="round"
           vectorEffect="non-scaling-stroke"
-        />)}
+        >
+          {authorNameOf ? <title>{authorNameOf(stroke.ownerSessionId)}</title> : null}
+        </polyline>)}
         {draft.length ? <polyline
           points={boardPath(draft)}
           fill="none"
@@ -244,6 +253,9 @@ export function StudioVirtualSpaceP2pBoard({
         className="studio-p2p-board-note"
         style={{ left: `${item.x * 100}%`, top: `${item.y * 100}%`, backgroundColor: item.color }}
       >
+        {authorNameOf && item.ownerSessionId !== selfSessionId ? (
+          <span className="studio-p2p-board-note-author">{authorNameOf(item.ownerSessionId)}</span>
+        ) : null}
         <p>{item.text}</p>
         {item.ownerSessionId === selfSessionId ? <button
           type="button"
@@ -256,7 +268,7 @@ export function StudioVirtualSpaceP2pBoard({
         {bt("같은 프로젝트의 P2P 연결을 확인 중입니다.", "Waiting for a P2P connection to this project.")}
       </div> : null}
     </div>
-    {onRetryLocalSave ? <div className="studio-p2p-board-tools">
+    {showLocalSaveRetry ? <div className="studio-p2p-board-tools">
       <p role="alert">{bt("이 기기에 저장하지 못했습니다. 보드를 닫기 전에 다시 저장하세요.", "Couldn't save on this device. Save again before closing the board.")}</p>
       <button type="button" onClick={onRetryLocalSave}>{bt("이 기기에 다시 저장", "Save on this device again")}</button>
     </div> : <p className="studio-p2p-board-foot">{snapshot.canEdit

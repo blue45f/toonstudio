@@ -45,6 +45,19 @@ export function StudioUnifiedAssetWorkspaceDetail({
 }) {
   const acknowledgementRef = useRef<HTMLInputElement>(null);
   const requiresReview = item.discoverability === "caution";
+  const selectionUnavailableReason = !selectionPlacementAvailable
+    ? bi(
+        "선택 영역에 넣으려면 캔버스에서 요소를 먼저 선택하세요.",
+        "Select a canvas element to place an asset in its bounds.",
+      )
+    : undefined;
+  const applyUnavailableReason = pendingId !== null
+    ? bi("다른 소재를 적용하는 중입니다.", "Another asset action is in progress.")
+    : reviewLocked
+      ? bi("검토 잠금을 해제한 뒤 추가할 수 있습니다.", "Unlock review before adding assets.")
+      : requiresReview && !acknowledged
+        ? bi("위 권리·출처 확인에 체크한 뒤 적용할 수 있습니다.", "Check the rights and source acknowledgement above before applying.")
+        : undefined;
   const facts = [
     ...new Set([...preview.facts, ...assetWorkspaceDetailsForItem(item)]),
   ];
@@ -123,17 +136,23 @@ export function StudioUnifiedAssetWorkspaceDetail({
               {bi("삽입 위치", "Placement")}
             </legend>
             <div className="studio-unified-assets__options grid grid-cols-3">
-              {(["auto", "page", "selection"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  disabled={mode === "selection" && !selectionPlacementAvailable}
-                  onClick={() => onPlacementChange(mode)}
-                  aria-pressed={placementMode === mode}
-                >
-                  {assetWorkspacePlacementLabel(mode)}
-                </button>
-              ))}
+              {(["auto", "page", "selection"] as const).map((mode) => {
+                const isSelectionDisabled = mode === "selection" && !selectionPlacementAvailable;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    disabled={isSelectionDisabled}
+                    title={isSelectionDisabled ? selectionUnavailableReason : undefined}
+                    data-unavailable-reason={isSelectionDisabled ? selectionUnavailableReason : undefined}
+                    onClick={() => onPlacementChange(mode)}
+                    aria-pressed={placementMode === mode}
+                    className="break-keep"
+                  >
+                    {assetWorkspacePlacementLabel(mode)}
+                  </button>
+                );
+              })}
             </div>
             {!selectionPlacementAvailable ? (
               <p className="mt-1 text-xs text-fg-3">
@@ -195,13 +214,11 @@ export function StudioUnifiedAssetWorkspaceDetail({
           <button
             type="button"
             aria-busy={pendingId === item.id}
-            disabled={
-              pendingId !== null ||
-              reviewLocked ||
-              (requiresReview && !acknowledged)
-            }
+            disabled={applyUnavailableReason !== undefined}
+            title={applyUnavailableReason}
+            data-unavailable-reason={applyUnavailableReason}
             onClick={onUse}
-            className="studio-unified-assets__detail-insert"
+            className="studio-unified-assets__detail-insert break-keep"
           >
             {item.useMode === "open" ? (
               <Box size={16} aria-hidden="true" />
@@ -211,8 +228,13 @@ export function StudioUnifiedAssetWorkspaceDetail({
             {pendingId === item.id ? bi("처리 중…", "Processing…") : item.useLabel}
           </button>
         </div>
+        {applyUnavailableReason && !reviewLocked && requiresReview && !acknowledged ? (
+          <p className="mt-2 text-xs text-fg-3 break-keep">
+            {applyUnavailableReason}
+          </p>
+        ) : null}
         {reviewLocked ? (
-          <p className="mt-2 text-xs text-warn">
+          <p className="mt-2 text-xs text-warn break-keep">
             {bi(
               "검토 잠금을 해제한 뒤 추가할 수 있습니다.",
               "Unlock review before adding assets."

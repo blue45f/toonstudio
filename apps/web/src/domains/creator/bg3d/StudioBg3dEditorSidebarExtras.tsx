@@ -602,7 +602,7 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                   sunLightState,
                   STUDIO_BG3D_SUN_TIME_PRESETS,
                   sunRigConfig,
-                  applySunRigConfig,
+                  applySunRigConfig, activeWebtoonAtmosphereId: h.activeWebtoonAtmosphereId, applyWebtoonAtmospherePreset: h.applyWebtoonAtmospherePreset,
                   formatBg3dSunTime,
                   Globe,
                   BG_SKY_PRESETS,

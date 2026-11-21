@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import { avatarForgeHairTipMix } from "./studio-vrm-avatar-forge-hair-color";
+import { smoothStudioVrmCoincidentNormals } from "./studio-vrm-custom-part-material";
 
 import type { AvatarForgeHairPart } from "./studio-vrm-avatar-forge";
 
@@ -239,6 +240,8 @@ export function createStudioVrmAuthoredHairClumpGeometry(
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
+  // 앞/뒤 층이 만나는 좌우·끝단 경계 정점 법선을 완전 용접해 얇은 리본 가장자리 각짐과 외곽선 찢어짐을 제거한다.
+  smoothStudioVrmCoincidentNormals(geometry, { creaseAngleDeg: 180 });
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
   return geometry;
@@ -291,6 +294,7 @@ function shapeCapToScalp(geometry: THREE.BufferGeometry): void {
   }
   position.needsUpdate = true;
   geometry.computeVertexNormals();
+  smoothStudioVrmCoincidentNormals(geometry, { creaseAngleDeg: 180 });
 }
 
 /** 캡이 덮는 극각(정수리 0 기준): 이마 가운데·옆(귀 위)·뒤(목덜미). */
@@ -374,12 +378,14 @@ function shapeBackShellToDrape(geometry: THREE.BufferGeometry, part: AvatarForge
   }
   position.needsUpdate = true;
   geometry.computeVertexNormals();
+  smoothStudioVrmCoincidentNormals(geometry, { creaseAngleDeg: 180 });
 }
 
 function createShellGeometry(part: AvatarForgeHairPart): THREE.BufferGeometry {
   const geometry = part.role === "cap" ? createCapGeometry() : new THREE.SphereGeometry(1, 28, 20);
   if (part.role === "cap") shapeCapToScalp(geometry);
   else if (part.role === "back") shapeBackShellToDrape(geometry, part);
+  else smoothStudioVrmCoincidentNormals(geometry, { creaseAngleDeg: 180 });
   setShellColors(geometry, part);
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
@@ -434,6 +440,7 @@ export function bendStudioVrmAuthoredHairAlongSpine(
   }
   position.needsUpdate = true;
   geometry.computeVertexNormals();
+  smoothStudioVrmCoincidentNormals(geometry, { creaseAngleDeg: 180 });
 }
 
 /**
@@ -485,6 +492,7 @@ export function createStudioVrmAuthoredHairGradientTexture(): THREE.DataTexture 
     244, 244, 244, 255,
   ]);
   const texture = new THREE.DataTexture(data, 4, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
+  texture.colorSpace = THREE.SRGBColorSpace;
   texture.minFilter = THREE.NearestFilter;
   texture.magFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;

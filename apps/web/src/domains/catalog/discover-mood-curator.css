@@ -1,0 +1,110 @@
+/*
+ * discover-mood-curator.css — 디스커버 1초 무드×시간 큐레이터 & 스포트라이트 OKLCH 프리즘 연출.
+ */
+
+.discover-mood-shell {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+}
+
+.discover-mood-ribbon {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--mood-active-tone, var(--color-accent)),
+    var(--color-accent-2) 45%,
+    var(--color-cool) 78%,
+    var(--color-good)
+  );
+  transition: opacity 200ms ease;
+}
+
+.discover-mood-chip {
+  position: relative;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 180ms ease;
+}
+
+.discover-mood-chip:hover {
+  border-color: color-mix(in oklch, var(--chip-tone, var(--color-accent)) 60%, var(--color-line));
+  background: color-mix(in oklch, var(--chip-tone, var(--color-accent)) 8%, var(--color-card));
+}
+
+.discover-mood-chip:active {
+  transform: scale(0.98);
+}
+
+.discover-mood-chip[aria-pressed="true"] {
+  border-color: var(--chip-tone, var(--color-accent));
+  background: color-mix(in oklch, var(--chip-tone, var(--color-accent)) 14%, var(--color-card));
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--chip-tone, var(--color-accent)) 32%, transparent);
+}
+
+.discover-mood-pick-card {
+  position: relative;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .discover-mood-pick-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklch, var(--mood-active-tone, var(--color-accent)) 62%, var(--color-line));
+    box-shadow: 0 12px 28px -16px color-mix(in oklch, var(--mood-active-tone, var(--color-accent)) 34%, var(--color-canvas));
+  }
+}
+
+/* DiscoverSpotlight 프리즘 상단 림 + 활성 전환 피드백 */
+.discover-spotlight {
+  position: relative;
+}
+
+.discover-spotlight__prism-rim {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 3;
+  height: 3px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    var(--color-accent),
+    var(--color-accent-2) 50%,
+    var(--color-cool)
+  );
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discover-mood-ribbon,
+  .discover-mood-chip,
+  .discover-mood-pick-card {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+:root[data-design-theme="contrast"] .discover-mood-ribbon,
+:root[data-design-theme="contrast"] .discover-spotlight__prism-rim {
+  display: none;
+}
+
+@media (forced-colors: active) {
+  .discover-mood-ribbon,
+  .discover-spotlight__prism-rim {
+    display: none;
+  }
+}

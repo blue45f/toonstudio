@@ -202,6 +202,48 @@ export function appendCardStrip(acc: MeshAccumulator, options: CardStripOptions)
   }
 }
 
+export interface ContouredCardStripOptions extends CardStripOptions {
+  /** 중앙 능선의 바깥쪽 아치 융기 비율(폭 대비, 기본 0.16) */
+  readonly archRatio?: number;
+}
+
+/**
+ * 3열 아치 단면의 입체 리본 스트립(헤어 가닥·세일러 리본용):
+ * 평면 직사각형 대신 중앙 능선이 부드럽게 솟고 양옆 법선이 둥글게 기울어져
+ * 셀 음영·이방성 엔젤링 하이라이트가 각지지 않고 자연스럽게 이어진다.
+ */
+export function appendContouredCardStrip(acc: MeshAccumulator, options: ContouredCardStripOptions): void {
+  const { points, widths, outward, skins } = options;
+  const n = points.length;
+  if (n < 2) return;
+  const tangents = curveTangents(points);
+  const [u0, u1] = options.uRange ?? [0, 1];
+  const uMid = (u0 + u1) * 0.5;
+  const archRatio = options.archRatio ?? 0.16;
+  const left: number[] = [];
+  const mid: number[] = [];
+  const right: number[] = [];
+  for (let i = 0; i < n; i += 1) {
+    const t = tangents[i];
+    let normal = v3Sub(outward[i], v3Scale(t, v3Dot(outward[i], t)));
+    normal = v3Length(normal) > 1e-9 ? v3Normalize(normal) : v3AnyPerpendicular(t);
+    const side = v3Normalize(v3Cross(normal, t));
+    const w = widths[i];
+    const half = w * 0.5;
+    const arch = w * archRatio;
+    const v = n > 1 ? i / (n - 1) : 0;
+    const nLeft = v3Normalize(v3Add(v3Scale(normal, 0.88), v3Scale(side, -0.47)));
+    const nRight = v3Normalize(v3Add(v3Scale(normal, 0.88), v3Scale(side, 0.47)));
+    left.push(acc.pushVertex(v3Add(points[i], v3Scale(side, -half)), nLeft, [u0, v], skins[i]));
+    mid.push(acc.pushVertex(v3Add(points[i], v3Scale(normal, arch)), normal, [uMid, v], skins[i]));
+    right.push(acc.pushVertex(v3Add(points[i], v3Scale(side, half)), nRight, [u1, v], skins[i]));
+  }
+  for (let i = 0; i + 1 < n; i += 1) {
+    acc.pushQuad(left[i], mid[i], mid[i + 1], left[i + 1]);
+    acc.pushQuad(mid[i], right[i], right[i + 1], mid[i + 1]);
+  }
+}
+
 export interface TubeOptions {
   readonly points: readonly Vec3[];
   /** 링별 반경(m) */
@@ -326,6 +368,59 @@ export function appendBox(acc: MeshAccumulator, center: Vec3, halfExtents: Vec3,
     const c = acc.pushVertex(v3Add(base, v3Add(du, dv)), face.n, [1, 1], skin);
     const d = acc.pushVertex(v3Add(base, v3Add(v3Scale(du, -1), dv)), face.n, [0, 1], skin);
     acc.pushQuad(a, b, c, d);
+  }
+}
+
+/**
+ * 둥근 앞코·베벨 측면을 가진 입체 신발 밑창(각진 상자 대신 자연스러운 발 윤곽).
+ */
+export function appendContouredSole(acc: MeshAccumulator, center: Vec3, halfExtents: Vec3, skin: SkinWeight4, segments = 24): void {
+  const [hx, hy, hz] = halfExtents;
+  const levels: ReadonlyArray<{ readonly y: number; readonly scale: number; readonly ny: number }> = [
+    { y: center[1] - hy, scale: 0.92, ny: -0.45 },
+    { y: center[1] - hy * 0.45, scale: 1.0, ny: -0.1 },
+    { y: center[1] + hy * 0.45, scale: 1.0, ny: 0.1 },
+    { y: center[1] + hy, scale: 0.94, ny: 0.45 },
+  ];
+  const contour = (angle: number, scale: number): readonly [number, number, number, number] => {
+    const ca = Math.cos(angle);
+    const sa = Math.sin(angle);
+    // 초타원(superellipse n=2.4) + 뒤꿈치 쪽 살짝 좁힘으로 실제 구두/스니커즈 밑창 윤곽 근사
+    const px = Math.sign(ca) * Math.pow(Math.abs(ca), 0.82);
+    const pz = Math.sign(sa) * Math.pow(Math.abs(sa), 0.86);
+    const heelTaper = pz < 0 ? 1 + pz * 0.14 : 1;
+    const x = px * hx * scale * heelTaper;
+    const z = pz * hz * scale;
+    const nx = ca * heelTaper;
+    const nz = sa;
+    return [x, z, nx, nz];
+  };
+  const rings: number[][] = [];
+  for (let l = 0; l < levels.length; l += 1) {
+    const level = levels[l];
+    const ring: number[] = [];
+    for (let s = 0; s < segments; s += 1) {
+      const angle = (s / segments) * Math.PI * 2;
+      const [x, z, nx, nz] = contour(angle, level.scale);
+      const normal = v3Normalize([nx, level.ny, nz]);
+      ring.push(acc.pushVertex([center[0] + x, level.y, center[2] + z], normal, [s / segments, l / (levels.length - 1)], skin));
+    }
+    rings.push(ring);
+  }
+  for (let l = 0; l + 1 < rings.length; l += 1) {
+    for (let s = 0; s < segments; s += 1) {
+      const s1 = (s + 1) % segments;
+      acc.pushQuad(rings[l][s], rings[l][s1], rings[l + 1][s1], rings[l + 1][s]);
+    }
+  }
+  const bottomCenter = acc.pushVertex([center[0], center[1] - hy, center[2]], [0, -1, 0], [0.5, 0], skin);
+  const topCenter = acc.pushVertex([center[0], center[1] + hy, center[2]], [0, 1, 0], [0.5, 1], skin);
+  const bottomRing = rings[0];
+  const topRing = rings[rings.length - 1];
+  for (let s = 0; s < segments; s += 1) {
+    const s1 = (s + 1) % segments;
+    acc.pushTriangle(bottomCenter, bottomRing[s1], bottomRing[s]);
+    acc.pushTriangle(topCenter, topRing[s], topRing[s1]);
   }
 }
 

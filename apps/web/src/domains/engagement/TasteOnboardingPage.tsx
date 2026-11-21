@@ -23,6 +23,14 @@ import { cn } from "@/shared/lib/utils";
 
 const AVOID_TAGS = ["폭력", "피폐", "고어", "공포", "괴롭힘", "자해", "성적폭력", "집착"] as const;
 
+const TASTE_CODE_OPTIONS = [
+  { id: "regression", label: "회귀·환생", keywords: ["회귀", "환생", "빙의"] },
+  { id: "catharsis", label: "빠른 사이다", keywords: ["사이다", "먼치킨", "복수"] },
+  { id: "healing", label: "힐링·다정", keywords: ["힐링", "일상", "치유"] },
+  { id: "academy", label: "아카데미·성장", keywords: ["아카데미", "학원", "성장"] },
+  { id: "mystery", label: "치밀한 두뇌전", keywords: ["추리", "미스터리", "두뇌"] },
+] as const;
+
 const INTENSITY: readonly {
   value: ContentIntensity;
   label: string;
@@ -67,6 +75,7 @@ export function TasteOnboardingPage() {
   const [popular, setPopular] = useState<Title[]>([]);
   const [step, setStep] = useState(1);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([...(existing?.genres ?? [])]);
+  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [selectedTitles, setSelectedTitles] = useState<string[]>([...(existing?.selectedTitleIds ?? [])]);
   const [selectedFormat, setSelectedFormat] = useState<TasteFormat>(existing?.format ?? "all");
   const [selectedStatus, setSelectedStatus] = useState<TasteStatus>(existing?.status ?? "all");
@@ -112,10 +121,37 @@ export function TasteOnboardingPage() {
   }, [loadTick]);
 
   const recommendedTitles = useMemo(() => {
-    const matched = popular.filter((title) => title.genres.some((genre) => selectedGenres.includes(genre)));
-    const rest = popular.filter((title) => !matched.includes(title));
+    const codeKeywords = TASTE_CODE_OPTIONS.filter((opt) => selectedCodes.includes(opt.id))
+      .flatMap((opt) => opt.keywords);
+    const eligible = popular.filter((title) => {
+      if (selectedFormat !== "all" && title.type !== selectedFormat) return false;
+      if (selectedStatus !== "all" && title.status !== selectedStatus) return false;
+      if (contentIntensity === "gentle" && (title.ageRating === "19" || title.ageRating === "15")) {
+        return false;
+      }
+      if (contentIntensity === "balanced" && title.ageRating === "19") {
+        return false;
+      }
+      if (avoidTags.length > 0) {
+        const tagSet = new Set(title.tags.map((tag) => tag.toLowerCase()));
+        if (avoidTags.some((avoid) => tagSet.has(avoid.toLowerCase()))) return false;
+      }
+      return true;
+    });
+    const pool = eligible.length > 0 ? eligible : popular;
+    const score = (title: Title): number => {
+      let pts = 0;
+      if (title.genres.some((genre) => selectedGenres.includes(genre))) pts += 10;
+      if (codeKeywords.length > 0) {
+        const hay = `${title.title} ${title.synopsis} ${title.tags.join(" ")}`.toLowerCase();
+        if (codeKeywords.some((kw) => hay.includes(kw.toLowerCase()))) pts += 5;
+      }
+      return pts;
+    };
+    const matched = pool.filter((title) => score(title) > 0).sort((a, b) => score(b) - score(a));
+    const rest = pool.filter((title) => score(title) === 0);
     return { matched: matched.length, titles: [...matched, ...rest].slice(0, 3) };
-  }, [popular, selectedGenres]);
+  }, [avoidTags, contentIntensity, popular, selectedCodes, selectedFormat, selectedGenres, selectedStatus]);
 
   const touch = () => {
     formTouchedRef.current = true;
@@ -240,7 +276,37 @@ export function TasteOnboardingPage() {
               })}
             </div>
 
-            <h3 className="mt-6 text-sm font-black text-fg">재미있게 본 작품이 있으면 골라 주세요 <span className="font-semibold text-fg-3">(선택)</span></h3>
+            <h3 className="mt-6 text-sm font-bold text-fg">
+              선호 전개·코드가 있다면 골라 주세요 <span className="font-semibold text-fg-3">(5문항 중 2번 · 선택)</span>
+            </h3>
+            <div role="group" aria-label="선호 전개 코드" className="mt-2.5 flex flex-wrap gap-2">
+              {TASTE_CODE_OPTIONS.map((code) => {
+                const selected = selectedCodes.includes(code.id);
+                return (
+                  <button
+                    key={code.id}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => {
+                      touch();
+                      setSelectedCodes((current) =>
+                        selected ? current.filter((id) => id !== code.id) : [...current, code.id],
+                      );
+                    }}
+                    className={cn(
+                      "min-h-11 rounded-full border px-3.5 text-xs font-bold transition-colors duration-150 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transform-none motion-reduce:transition-none",
+                      selected
+                        ? "border-cool/50 bg-cool/15 text-cool"
+                        : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg",
+                    )}
+                  >
+                    #{code.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <h3 className="mt-6 text-sm font-bold text-fg">재미있게 본 작품이 있으면 골라 주세요 <span className="font-semibold text-fg-3">(선택)</span></h3>
             {popular.length > 0 ? (
               <div className="mt-3 grid max-h-[300px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
                 {popular.slice(0, 12).map((title) => {
@@ -433,7 +499,7 @@ export function TasteOnboardingPage() {
               </div>
             </div>
 
-            <h3 className="mt-6 text-sm font-black text-fg">
+            <h3 className="mt-6 text-sm font-bold text-fg">
               {recommendedTitles.matched > 0 ? "고른 장르로 골라 본 추천 작품" : "지금 인기 있는 작품"}
             </h3>
             {recommendedTitles.titles.length > 0 ? (
