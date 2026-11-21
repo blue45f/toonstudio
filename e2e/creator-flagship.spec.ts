@@ -368,30 +368,41 @@ for (const width of [320, 390, 912, 1024, 1280]) {
     await expect(startNew).toHaveAttribute("href", STUDIO_START_GATEWAY_HREF);
     await expect(importWork).toBeVisible();
     await expect(importWork).toHaveAttribute("href", "/studio/import");
-    const management = library.locator("details.studio-library-view-management");
+    // 보관함 보기와 저장·배포 링크는 이제 같은 접이식 패널에 있다.
+    const disclosure = page.locator("summary").filter({ hasText: /^보관함·저장·제작 관리$/u });
+    const management = library.getByRole("group").and(library.locator("details")).filter({ has: disclosure });
     const managementSummary = management.locator(":scope > summary");
-    await expect(management).not.toHaveAttribute("open");
-    await expect(managementSummary).toHaveText("작품 관리·가져오기");
+    const views = management.getByRole("navigation", { name: "내 작업 보기", exact: true, includeHidden: true });
+    const storage = management.getByRole("navigation", { name: "저장과 배포", exact: true, includeHidden: true });
+    await expect(managementSummary).toBeVisible();
+    await expect(management).toHaveJSProperty("open", false);
+    await expect(views).toBeHidden();
+    await expect(storage).toBeHidden();
     await managementSummary.scrollIntoViewIfNeeded();
-    await managementSummary.focus(); await managementSummary.press("Enter");
-    await expect(management).toHaveAttribute("open");
-    const views = management.getByRole("navigation", { name: "내 작업 보기", exact: true });
+    await managementSummary.focus();
+    await managementSummary.press("Enter");
+    await expect(management).toHaveJSProperty("open", true);
+    await expect(managementSummary).toBeFocused();
+    await expect(views).toBeVisible();
+    await expect(storage).toBeVisible();
     const viewLinks = views.getByRole("link");
+    const storageLinks = storage.getByRole("link");
     await expect(viewLinks).toHaveCount(4);
     expect(await viewLinks.evaluateAll((links) => links.map((link) => link.getAttribute("href"))))
       .toEqual(["/studio", "/studio?view=archived", "/studio?view=trash", "/studio/import"]);
     await expect(views.locator('a[aria-current="page"]')).toHaveAttribute("href", "/studio");
-    for (const link of await viewLinks.all()) {
+    await expect(storageLinks).toHaveCount(5);
+    expect(await storageLinks.evaluateAll((links) => links.map((link) => link.getAttribute("href"))))
+      .toEqual(["/studio/recovery", "/studio/import", "/studio?view=storage", "/studio?view=exports", "/studio?view=publications"]);
+    for (const link of [...await viewLinks.all(), ...await storageLinks.all()]) {
       await link.scrollIntoViewIfNeeded(); await expect(link).toBeVisible();
       await link.click({ trial: true });
     }
-    await managementSummary.focus(); await managementSummary.press("Enter");
-    await expect(management).not.toHaveAttribute("open");
+    await managementSummary.press("Enter");
+    await expect(management).toHaveJSProperty("open", false);
+    await expect(views).toBeHidden();
+    await expect(storage).toBeHidden();
     await expect(managementSummary).toBeFocused();
-    const storageGuide = library.locator("details").filter({ has: page.locator("summary", { hasText: "저장·내보내기·제작 관리" }) });
-    await expect(storageGuide).not.toHaveAttribute("open", "");
-    await storageGuide.locator("summary").click();
-    await expect(library.getByRole("navigation", { name: "저장과 배포", exact: true })).toBeVisible();
     await expect(library.getByLabel("프로젝트 검색", { exact: true })).toBeVisible();
     await expect(page.getByText("클라우드와 동기화됨", { exact: true })).toHaveCount(0);
     await expect(page.getByText("보관·복구·저장은 각 작품의 실제 상태를 기준으로 확인합니다.", { exact: true })).toBeVisible();
@@ -414,6 +425,13 @@ for (const width of [320, 390, 912, 1024, 1280]) {
     }).toBe("");
 
     await capturePageEvidence(page, testInfo, `studio-task-first-${width}`);
+    if (width === 390) {
+      await managementSummary.click();
+      await views.locator('a[href="/studio?view=archived"]').click();
+      await expect(page).toHaveURL(/\/studio\?view=archived$/u);
+      const archiveViews = page.getByRole("navigation", { name: "내 작업 보기", exact: true });
+      await expect(archiveViews.locator('a[aria-current="page"]')).toHaveAttribute("href", "/studio?view=archived");
+    }
     expect(pageErrors).toEqual([]);
   });
 }
