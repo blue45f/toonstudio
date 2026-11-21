@@ -38,7 +38,7 @@ import {
   parseStudioPointerInputMode,
   resolveStudioPointerInputMode,
 } from "./lib/studio-pointer-input-driver.mjs";
-import { resolveStudioSoakBrowserLaunchArgs } from "./lib/studio-soak-browser-launch";
+import { collectStudioSoakBrowserLaunchEvidence, createStudioSoakBrowserLaunchEvidence, resolveStudioSoakBrowserLaunchArgs } from "./lib/studio-soak-browser-launch";
 import { closeStudioSoakBrushSurfaces, selectStudioSoakDesktopBrush } from "./lib/studio-soak-brush-selection";
 import { createStudioSoakCpuDiagnostic } from "./lib/studio-soak-cpu-diagnostic";
 import { ensureStudioSoakDesktopPen } from "./lib/studio-soak-desktop-pen";
@@ -518,8 +518,7 @@ const report = {
     ? createHash("sha256").update(readFileSync(join(BUILD_DIRECTORY, "index.html"))).digest("hex")
     : null,
   renderEnvironment: "chromium-swiftshader",
-  browserVersion: null as string | null,
-  browserLaunchArgs: [] as string[],
+  ...createStudioSoakBrowserLaunchEvidence(resolveStudioSoakBrowserLaunchArgs(WEBGPU)),
   cpuDiagnostic: { requested: CPU_DIAGNOSTIC, captured: false, diagnosticOnly: CPU_DIAGNOSTIC,
     samplingIntervalUs: 1_000, maximumSessionMinutes: 3, metadataFile: null as string | null,
     traceCaptured: false, traceMetadataFile: null as string | null },
@@ -703,10 +702,8 @@ try {
     spawnedPreview: preview.child !== null, sourceCommit: report.sourceCommit });
   report.previewIndexSha256 = report.build.indexSha256;
   if (!report.build.verified) throw new Error(report.build.error ?? "빌드 증거를 확인할 수 없습니다.");
-  const args = resolveStudioSoakBrowserLaunchArgs(WEBGPU);
-  browser = await chromium.launch({ args });
-  report.browserVersion = browser.version();
-  report.browserLaunchArgs = args;
+  browser = await chromium.launch({ args: report.browserLaunchArgs });
+  await collectStudioSoakBrowserLaunchEvidence(browser, report);
   const context = await browser.newContext({
     locale: "ko-KR",
     viewport: profile ? { width: profile.width, height: profile.height } : { width: 1440, height: 1100 },
@@ -747,7 +744,8 @@ try {
     const diagnosticPage = page;
     cpuDiagnostic = createStudioSoakCpuDiagnostic({ enabled: true, page, cdp, directory: OUT,
       source: { sourceCommit: report.sourceCommit, sourceDirty: report.sourceDirty, buildGitSha: report.build.gitSha,
-        sessionId: report.sessionId, profile: report.profile, browserVersion: report.browserVersion, browserLaunchArgs: report.browserLaunchArgs },
+        sessionId: report.sessionId, profile: report.profile, browserVersion: report.browserVersion, browserLaunchArgs: report.browserLaunchArgs,
+        playwrightVersion: report.playwrightVersion, browserActualLaunchArgs: report.browserActualLaunchArgs, browserProtocolVersion: report.browserProtocolVersion },
       createTraceTransport: async () => createStudioFirstContactTraceTransport(await diagnosticPage.context().newCDPSession(diagnosticPage)) });
     await cpuDiagnostic.start();
   }

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { summarizeStudioFirstContactTrace } from "./studio-soak-first-contact-trace-evidence";
 import { armStudioFirstContactTrace, finishStudioFirstContactTraceProbe, studioFirstContactTraceProbeSource } from "./studio-soak-first-contact-trace-probe";
 
+import type { createStudioSoakBrowserLaunchEvidence } from "./studio-soak-browser-launch";
 import type { StudioFirstContactTracePage } from "./studio-soak-first-contact-trace-probe";
 import type { CDPSession } from "playwright";
 
@@ -35,12 +36,21 @@ export interface StudioFirstContactTraceSource {
   readonly profile: string;
   readonly browserVersion: string | null;
   readonly browserLaunchArgs: readonly string[];
+  readonly playwrightVersion: string;
+  readonly browserActualLaunchArgs: readonly string[] | null;
+  readonly browserProtocolVersion: ReturnType<typeof createStudioSoakBrowserLaunchEvidence>["browserProtocolVersion"];
 }
 
 export function studioFirstContactTraceSource(source: StudioFirstContactTraceSource): StudioFirstContactTraceSource {
   return { sourceCommit: source.sourceCommit, sourceDirty: source.sourceDirty, buildGitSha: source.buildGitSha,
     sessionId: source.sessionId, profile: source.profile, browserVersion: source.browserVersion,
-    browserLaunchArgs: [...source.browserLaunchArgs] };
+    browserLaunchArgs: [...source.browserLaunchArgs], playwrightVersion: source.playwrightVersion,
+    browserActualLaunchArgs: source.browserActualLaunchArgs === null ? null : [...source.browserActualLaunchArgs],
+    browserProtocolVersion: source.browserProtocolVersion === null ? null : {
+      protocolVersion: source.browserProtocolVersion.protocolVersion, product: source.browserProtocolVersion.product,
+      revision: source.browserProtocolVersion.revision, userAgent: source.browserProtocolVersion.userAgent,
+      jsVersion: source.browserProtocolVersion.jsVersion,
+    } };
 }
 
 export function createStudioFirstContactTraceTransport(cdp: CDPSession): StudioFirstContactTraceTransport {
@@ -100,16 +110,31 @@ export function createStudioFirstContactTrace(input: {
     advertisedCategories: null as readonly string[] | null, missingRequestedCategories: null as readonly string[] | null,
     categoryEvidenceAuthority: "captured native RunTask/EventDispatch/UserTiming evidence; the advertised catalog can change as code paths are reached",
     mainFrameId: null as string | null, endFrameId: null as string | null,
-    started: false, completed: false, dataLossOccurred: null as boolean | null,
+    started: false, completed: false, startPendingAtFinish: false, dataLossOccurred: null as boolean | null,
     rawTraceFile: null as string | null, rawTraceBytes: 0, rawTraceSha256: null as string | null, streamComplete: false,
     probe: null as unknown, correlation: null as ReturnType<typeof summarizeStudioFirstContactTrace> | null, issues: [] as string[],
-    limitation: "native trace와 CPU 표본 수집은 실행 비용을 바꾸며 진단 실행에만 사용한다. 50ms 성능 기준과 정상 acceptance는 그대로 둔다." };
-  let traceStarted = false, probeAttempted = false, finished = false;
+    limitation: "native trace와 CPU 표본 수집은 실행 비용을 바꾸며 진단 실행에만 사용한다. 50ms 성능 기준과 정상 acceptance는 그대로 둔다. 응답 기한 뒤의 자원 최종 정리는 호출자의 browser.close()가 맡는다." };
+  let traceStarted = false, startSettled = false, probeAttempted = false, finished = false, terminal = false;
   let startPromise: Promise<unknown> | null = null;
   let finishing: Promise<typeof metadata> | null = null;
-  const issue = (phase: string, error: unknown) => metadata.issues.push(`${phase}: ${String(error instanceof Error ? error.message : error).slice(0, 800)}`);
+  let stopping: Promise<TraceCompletion> | null = null, detaching: Promise<unknown> | null = null;
+  const stopOnce = () => stopping ??= Promise.resolve().then(() => transport.stop());
+  const detachOnce = () => detaching ??= Promise.resolve().then(() => transport.detach());
+  const issue = (phase: string, error: unknown) => {
+    if (!terminal) metadata.issues.push(`${phase}: ${String(error instanceof Error ? error.message : error).slice(0, 800)}`);
+  };
   const save = () => writeFileSync(join(directory, METADATA_FILE), `${JSON.stringify(metadata, null, 2)}\n`);
   const identity = () => ({ sessionId: source.sessionId, frameId: metadata.mainFrameId! });
+
+  /** terminal 자료는 바꾸지 않는다. 이 수집기의 늦은 시작 성공만 중단하며 무응답의 최종 정리는 browser.close()에 맡긴다. */
+  async function cleanupLateStart(owned: boolean): Promise<void> {
+    if (owned) {
+      const [stopped] = await Promise.allSettled([within(stopOnce(), timeoutMs)]);
+      const stream = stopped.status === "fulfilled" ? stopped.value.stream : undefined;
+      if (stream) await Promise.allSettled([within(Promise.resolve().then(() => transport.close(stream)), timeoutMs)]);
+    }
+    await Promise.allSettled([within(detachOnce(), timeoutMs)]);
+  }
 
   async function read(stream: string): Promise<Buffer> {
     const chunks: Buffer[] = [], hash = createHash("sha256");
@@ -152,7 +177,16 @@ export function createStudioFirstContactTrace(input: {
         metadata.advertisedCategories = [...categories];
         metadata.missingRequestedCategories = STUDIO_FIRST_CONTACT_TRACE_CATEGORIES.filter((category) => !categories.includes(category));
         // Chromium GetCategories의 목록은 도달한 코드 경로에 따라 바뀐다. 실제 native 증거의 누락은 finish에서 거절한다.
-        startPromise = transport.start().then((value) => { traceStarted = true; metadata.started = true; return value; });
+        startPromise = transport.start().then((value) => {
+          startSettled = true; traceStarted = true;
+          if (terminal) void cleanupLateStart(true);
+          else metadata.started = true;
+          return value;
+        }, (error: unknown) => {
+          startSettled = true;
+          if (terminal) void cleanupLateStart(false);
+          throw error;
+        });
         await within(startPromise, timeoutMs);
         probeAttempted = true;
         await within(page.evaluate(studioFirstContactTraceProbeSource(identity())), timeoutMs);
@@ -180,7 +214,7 @@ export function createStudioFirstContactTrace(input: {
           } catch (error) { issue("frame-identity", error); }
           if (startPromise && !traceStarted) try { await within(startPromise, timeoutMs); } catch (error) { issue("start-settlement", error); }
           if (traceStarted) try {
-            const completed = await within(transport.stop(), timeoutMs);
+            const completed = await within(stopOnce(), timeoutMs);
             metadata.dataLossOccurred = completed.dataLossOccurred;
             if (completed.dataLossOccurred !== false) issue("trace-data-loss", "trace 자료 유실 여부가 false로 확인되지 않았습니다.");
             stream = completed.stream;
@@ -193,9 +227,13 @@ export function createStudioFirstContactTrace(input: {
           } catch (error) { issue("trace-correlation", error); }
         } finally {
           if (stream) try { await within(transport.close(stream), timeoutMs); } catch (error) { issue("stream-close", error); }
-          try { await within(transport.detach(), timeoutMs); } catch (error) { issue("session-detach", error); }
+          if (startPromise && !startSettled) {
+            metadata.startPendingAtFinish = true;
+            issue("start-cleanup-pending", "시작 응답이 대기 중입니다. 늦은 자체 시작만 제한 시간 안에 정리하며 browser.close()가 최종 정리를 맡습니다.");
+          } else try { await within(detachOnce(), timeoutMs); } catch (error) { issue("session-detach", error); }
           metadata.completed = metadata.started && metadata.streamComplete && metadata.dataLossOccurred === false
             && metadata.correlation !== null && metadata.issues.length === 0;
+          terminal = true;
           save();
         }
         return metadata;

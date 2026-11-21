@@ -134,10 +134,40 @@ Linux SwiftShader의 기존 `--use-gl=swiftshader` 조합은 offscreen 연산은
 남겼으므로 진단 전체를 오류 없는 통과로 표시하지 않는다.
 
 현재 소크의 Linux WebGPU 실행은 위 재현에서 확인한 Vulkan·ANGLE·SwiftShader 설정을
-공통 helper로 사용한다. 다른 플랫폼과 비 WebGPU profile의 실행 설정은 기존 값이다.
+공통 helper로 사용한다. 비 WebGPU profile도 [Chromium의 현재 OpenGL ES 실행 경로](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/gpu/swiftshader.md)에
+맞춰 ANGLE·SwiftShader를 사용한다. Vulkan 조합은 실측한 Linux WebGPU에만 적용한다.
+설치된 Playwright·Chromium·CDP 버전과 요청·실제 실행 인자를 함께 남기며, 같은 스위치가
+뒤에서 다른 값으로 덮어써진 경우도 실패한다. 실행 정보 수집·정리 실패를 정상 실행으로
+표시하지 않는다. 이 정보 수집은 입력 전에 끝내고 일반 수락 경로에는 CPU·Trace를 켜지 않는다.
 실제 제품 세션의 장치 손실·거절 획·시각 오류·성능·시간 기준은 그대로 적용하고,
 이 설정 변경의 수락 여부는 새 소크 결과로 판단한다. 소프트웨어 adapter 결과를
 물리 GPU·모바일 운영체제·실제 펜 장치 인증으로 간주하지 않는다.
+
+[진단 run 124](https://github.com/blue45f/toonstudio/actions/runs/44929862825)의
+`daba54f6380b1b5d534afdef7b7f3cd63a7fe092` 실행에서 desktop·Kakao·Naver는
+조회 범주의 `toplevel` 누락을 잘못 거절해 실제 입력 전에 종료했다. Instagram·WebGPU는
+3분 native Trace의 자료 손실과 64MiB 초과가 확인되어 추적 완료로 인정하지 않았다.
+WebGPU 독립 비교의 Vulkan 네 조건은 픽셀 readback과 메타데이터를 확보했지만,
+Studio의 실제 여섯 획은 `timeout`으로 거절됐다. 장치 손실 0건만으로 제품 성공을
+판정하지 않으며, 위 두 진단 실행은 300분 수락의 근거가 아니다.
+
+### 대표 17종 지연 보고서의 측정 경계
+
+[run 125](https://github.com/blue45f/toonstudio/actions/runs/44930183797)는 같은 `daba54f`의
+새 desktop context에서 브러시별 mouse 첫 접촉 한 번을 검사했다. 6종 통과·11종 실패이며,
+11종 모두 한 프레임을 뺀 첫 픽셀 관측 시간의 8ms 기준을 넘었다. oil은 연속 이동 구간의
+55ms long task와 move→RAF p99·release→RAF 기준도 넘었다. 기준 검사 실패 때문에
+뒤의 소크는 실행하지 않았다. 실행하지 않은 시간을 연속 사용 증거로 더하지 않는다.
+
+`firstPixelMs`는 실제 pointerdown capture 시각부터 canvas backing store의 픽셀 변화를
+처음 관측한 RAF 시작 시각까지다. Playwright 명령 전송 대기는 제외하지만, 실제 compositor·
+CSS 가림·디스플레이 발광이나 첫 dab 함수의 실행 시간을 직접 측정하지 않는다.
+이 실행의 17종은 모두 첫 RAF 표본에서 이미 픽셀이 바뀌어 있었으므로 실제 생성 시각은
+그보다 빠를 수 있다. `pointerAppendDurationsMs`는 window capture→microtask이며 제품
+append 함수 자체의 실행 시간이 아니다. `settleMs` 수락 값은 release→첫 RAF로,
+다른 획에서 수행한 픽셀 안정화 검사와 구분한다. 실제 72개 move의 전달률은 약 28~41Hz였으며
+코드의 2ms 대기를 500Hz 실측으로 해석하지 않는다. 이러한 경계를 이유로 8ms·50ms
+수락 기준을 완화하거나 기존 실패를 통과로 바꾸지 않는다.
 
 ### 현재 화면의 브러시 선택과 Undo/Redo
 
