@@ -6,6 +6,7 @@ import { useSearchParams } from "react-router-dom";
 
 import {
   decodePublicCollectionSnapshot,
+  publicCollectionSlug,
   type PublicCollectionSnapshot,
 } from "./public-list-share";
 
@@ -62,9 +63,13 @@ export function PublicCollectionPage() {
         : null,
     [snapshot, token],
   );
+  const liveSharePath = useMemo(() => {
+    if (!snapshot || !token) return "/lists/shared";
+    return `/lists/${encodeURIComponent(publicCollectionSlug(snapshot.name))}?snapshot=${encodeURIComponent(token)}`;
+  }, [snapshot, token]);
   useDocumentTitle(shareDescriptor?.ogTitle ?? snapshot?.name ?? "공개 컬렉션");
   usePageSocialMeta({
-    canonicalPath: shareDescriptor?.sharePath ?? "/collections/shared",
+    canonicalPath: liveSharePath,
     title: shareDescriptor?.ogTitle ?? "공개 컬렉션",
     description: shareDescriptor?.ogDescription ?? "툰스튜디오 공개 컬렉션",
     type: "website",
@@ -128,6 +133,12 @@ export function PublicCollectionPage() {
               <p className="mt-2 max-w-2xl text-sm leading-6 text-fg-2">{snapshot.description}</p>
               <p className="mt-3 text-xs text-fg-3">
                 {snapshot.titleIds.length}편 · 공유 시점의 작품 구성이 링크에 고정된 스냅샷입니다. 원본 컬렉션의 이후 변경은 자동 반영되지 않습니다.
+              </p>
+              <p
+                data-testid="public-collection-share-url"
+                className="mt-1.5 truncate font-mono text-[0.7rem] text-fg-3"
+              >
+                {liveSharePath}
               </p>
             </div>
           </div>

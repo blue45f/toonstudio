@@ -1,12 +1,14 @@
 import { Coins, Crown, Eye } from "lucide-react";
 
-import { Card3D } from "./ui/card-3d";
-
 import type { Availability } from "@/shared/lib/types";
 
 import { comparePlatformCosts, formatWon, type PlatformCost } from "@/shared/lib/pricing";
 import { cn } from "@/shared/lib/utils";
 import { useAppConfig } from "@/platform/environment/use-app-config";
+
+function formatHonestEstimateWon(won: number): string {
+  return won <= 0 ? "무료" : `≈${formatWon(won)}`;
+}
 
 
 // 플랫폼간 가격 비교 — 같은 작품의 보기/소장 비용을 플랫폼별로 비교(추정·예시).
@@ -71,14 +73,14 @@ export function PriceCompare({ availability }: { availability: Availability[] })
                 </td>
                 <td className="whitespace-nowrap px-2 py-2 text-fg-2">{r.modelLabel}</td>
                 <td className="whitespace-nowrap px-2 py-2 text-right">
-                  <span className={cn("numeral", r.cheapestRead ? "font-semibold text-good" : "text-fg-2")}>
-                    {r.monthlyWon > 0 ? "구독" : formatWon(r.readPerEpWon)}
+                  <span className={cn("numeral tabular-nums", r.cheapestRead ? "font-semibold text-good" : "text-fg-2")}>
+                    {r.monthlyWon > 0 ? "구독" : formatHonestEstimateWon(r.readPerEpWon)}
                   </span>
                   {r.cheapestRead && multi && <span className="ml-1 text-[0.6rem] text-good">최저</span>}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 text-right">
-                  <span className={cn("numeral", r.cheapestOwn ? "font-semibold text-good" : "text-fg-2")}>
-                    {r.ownPerEpWon > 0 ? formatWon(r.ownPerEpWon) : "—"}
+                  <span className={cn("numeral tabular-nums", r.cheapestOwn ? "font-semibold text-good" : "text-fg-2")}>
+                    {r.ownPerEpWon > 0 ? formatHonestEstimateWon(r.ownPerEpWon) : "—"}
                   </span>
                   {r.cheapestOwn && multi && <span className="ml-1 text-[0.6rem] text-good">최저</span>}
                 </td>
@@ -96,34 +98,30 @@ export function PriceCompare({ availability }: { availability: Availability[] })
   );
 }
 
-// 모바일 카드 한 장 — 플랫폼 이름은 한 줄(줄바꿈 금지), 보기·소장은 명시 라벨이 붙은 칩.
+// 모바일 행 — 중첩 카드 없이 헤어라인으로 플랫폼별 추정 보기·소장 단가를 정리한다.
 function PriceCard({ row: r, multi }: { row: PlatformCost; multi: boolean }) {
-  const readLabel = r.monthlyWon > 0 ? "구독" : formatWon(r.readPerEpWon);
-  const ownLabel = r.ownPerEpWon > 0 ? formatWon(r.ownPerEpWon) : "—";
+  const readLabel = r.monthlyWon > 0 ? "구독" : formatHonestEstimateWon(r.readPerEpWon);
+  const ownLabel = r.ownPerEpWon > 0 ? formatHonestEstimateWon(r.ownPerEpWon) : "—";
   return (
-    <li>
-      <Card3D maxTilt={6} scale={1.02} className="rounded-xl">
-        <div className="rounded-xl border border-line bg-card/60 p-3 shadow-sm">
-          <a
-            href={`/api/go/${r.platformId}?to=${encodeURIComponent(r.url ?? "")}`}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center justify-between gap-2 text-fg hover:text-accent"
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: r.color }} />
-              <span className="truncate text-sm font-semibold">{r.name}</span>
-            </span>
-            <span className="shrink-0 rounded-full border border-line bg-raised px-2 py-0.5 text-[0.68rem] font-medium text-fg-2">
-              {r.modelLabel}
-            </span>
-          </a>
-          <div className="mt-2.5 grid grid-cols-2 gap-2">
-            <PriceCell icon={<Eye size={11} />} label="보기" value={readLabel} cheapest={!!r.cheapestRead && multi} />
-            <PriceCell icon={<Crown size={11} />} label="소장" value={ownLabel} cheapest={!!r.cheapestOwn && multi} />
-          </div>
-        </div>
-      </Card3D>
+    <li className="border-b border-line/60 pb-2.5 last:border-b-0 last:pb-0">
+      <a
+        href={`/api/go/${r.platformId}?to=${encodeURIComponent(r.url ?? "")}`}
+        target="_blank"
+        rel="noreferrer"
+        className="flex min-h-11 items-center justify-between gap-2 text-fg hover:text-accent"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: r.color }} />
+          <span className="truncate text-sm font-semibold">{r.name}</span>
+        </span>
+        <span className="shrink-0 rounded-full border border-line bg-raised px-2 py-0.5 text-[0.68rem] font-medium text-fg-2">
+          {r.modelLabel}
+        </span>
+      </a>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <PriceCell icon={<Eye size={11} />} label="보기" value={readLabel} cheapest={!!r.cheapestRead && multi} />
+        <PriceCell icon={<Crown size={11} />} label="소장" value={ownLabel} cheapest={!!r.cheapestOwn && multi} />
+      </div>
     </li>
   );
 }
