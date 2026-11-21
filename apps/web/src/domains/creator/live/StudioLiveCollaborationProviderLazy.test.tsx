@@ -28,7 +28,7 @@ describe("StudioLiveCollaborationProviderLazy", () => {
     const { getByTestId } = render(
       <StudioLiveCollaborationProviderLazy
         workId="work-lazy-stability"
-        participant={{ userId: "u-1", displayName: "작가", role: "owner" }}
+        participant={{ displayName: "작가", role: "owner" }}
         currentPageId="page-1"
         currentTool="pen"
         onRoomChange={onRoomChange}
