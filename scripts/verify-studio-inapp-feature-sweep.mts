@@ -479,7 +479,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       await settle(page);
       if (!await sheet.isVisible()) throw new Error("Escape closed the inspector with its layer menu");
       const comps = sheet.getByTestId("studio-layer-comps-panel");
-      const compsDetails = sheet.locator("details").filter({ has: comps }).first();
+      const compsDetails = sheet.locator('details[data-studio-inspector-collapsible="layer-comps"]').first();
       const ensureCompsExpanded = async (): Promise<void> => {
         if (await compsDetails.count() > 0 && await compsDetails.getAttribute("open") === null) {
           await clickInView(compsDetails.locator("summary").first());
