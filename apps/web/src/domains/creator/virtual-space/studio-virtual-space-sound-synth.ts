@@ -6,7 +6,7 @@
  * 상호작용 SFX는 이벤트당 하나의 절제된 톤 패턴만 쓴다.
  * 실제 재생(노드 그래프·게인·스로틀)은 studio-virtual-space-sound-engine.ts가 담당한다.
  */
-import type { StudioFootstepFoot, StudioFootstepSurface } from "./studio-virtual-space-footsteps";
+import type { StudioExtendedFootstepSurface, StudioFootstepFoot } from "./studio-virtual-space-footsteps";
 
 /** 상호작용 효과음 종류. 이벤트 하나에 소리 하나가 원칙이다. */
 export type StudioSfxKind =
@@ -18,7 +18,10 @@ export type StudioSfxKind =
   | "focus-break"
   | "wellness-chime"
   | "dance-beat"
-  | "seat-settle";
+  | "seat-settle"
+  | "jump"
+  | "land"
+  | "skid";
 
 export interface StudioSfxToneStep {
   readonly wave: "sine" | "triangle";
@@ -110,6 +113,29 @@ const SFX_SPECS: Record<StudioSfxKind, StudioSfxSpec> = {
       { wave: "triangle", fromHz: 320, toHz: 210, startOffsetMs: 0, durationMs: 85, peak: 0.3 },
     ],
   },
+  // 점프 도약음: 경쾌하게 솟구치는 짧은 상승 글라이드.
+  jump: {
+    throttleMs: 180,
+    steps: [
+      { wave: "sine", fromHz: 260, toHz: 540, startOffsetMs: 0, durationMs: 85, peak: 0.34 },
+      { wave: "triangle", fromHz: 420, toHz: 680, startOffsetMs: 12, durationMs: 55, peak: 0.14 },
+    ],
+  },
+  // 점프 착지음: 부드러운 바닥 쿠션과 미세한 접지 탭.
+  land: {
+    throttleMs: 140,
+    steps: [
+      { wave: "triangle", fromHz: 180, toHz: 82, startOffsetMs: 0, durationMs: 75, peak: 0.38 },
+      { wave: "sine", fromHz: 390, toHz: 210, startOffsetMs: 4, durationMs: 42, peak: 0.16 },
+    ],
+  },
+  // 방향 급전환 스키드: 신발 밑창의 짧은 마찰음.
+  skid: {
+    throttleMs: 220,
+    steps: [
+      { wave: "triangle", fromHz: 460, toHz: 240, startOffsetMs: 0, durationMs: 60, peak: 0.22 },
+    ],
+  },
 };
 
 export function studioSfxSpec(kind: StudioSfxKind): StudioSfxSpec {
@@ -168,7 +194,7 @@ interface StudioFootstepSynthBase {
   readonly tone: { wave: "sine" | "triangle"; baseFrequency: number; peak: number; durationMs: number } | null;
 }
 
-const FOOTSTEP_SPECS: Record<StudioFootstepSurface, StudioFootstepSynthBase> = {
+const FOOTSTEP_SPECS: Record<StudioExtendedFootstepSurface, StudioFootstepSynthBase> = {
   // 카펫: 낮은 저역만 남긴 뭉툭한 소리. 톤은 없다.
   carpet: { durationMs: 55, filterType: "lowpass", baseFrequency: 480, filterQ: 0.7, noisePeak: 0.55, tone: null },
   // 나무: 중간 대역 노이즈에 낮은 노크를 겹친다.
@@ -181,9 +207,19 @@ const FOOTSTEP_SPECS: Record<StudioFootstepSurface, StudioFootstepSynthBase> = {
     durationMs: 45, filterType: "bandpass", baseFrequency: 2500, filterQ: 1.6, noisePeak: 0.75,
     tone: { wave: "sine", baseFrequency: 1900, peak: 0.14, durationMs: 25 },
   },
+  // 석재 홀: 단단한 중·고역 미네랄 공명.
+  stone: {
+    durationMs: 52, filterType: "bandpass", baseFrequency: 1680, filterQ: 1.45, noisePeak: 0.72,
+    tone: { wave: "sine", baseFrequency: 980, peak: 0.19, durationMs: 34 },
+  },
+  // 야외 테라스: 산뜻한 모래/우드덱 그릿감과 가벼운 저중역 탭.
+  terrace: {
+    durationMs: 68, filterType: "bandpass", baseFrequency: 1320, filterQ: 0.95, noisePeak: 0.78,
+    tone: { wave: "triangle", baseFrequency: 290, peak: 0.22, durationMs: 44 },
+  },
 };
 
-export function studioFootstepSynthSpec(surface: StudioFootstepSurface, foot: StudioFootstepFoot): StudioFootstepSynthSpec {
+export function studioFootstepSynthSpec(surface: StudioExtendedFootstepSurface, foot: StudioFootstepFoot): StudioFootstepSynthSpec {
   const base = FOOTSTEP_SPECS[surface];
   const factor = FOOT_FREQUENCY_FACTOR[foot];
   return Object.freeze({

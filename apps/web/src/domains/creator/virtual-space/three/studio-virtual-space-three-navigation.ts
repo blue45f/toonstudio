@@ -36,7 +36,31 @@ export class StudioThreeWorldNavigation {
       return this.canMove(horizontal, vertical) ? vertical : horizontal;
     }
     const vertical = { x: from.x, y: target.y };
-    return this.canMove(from, vertical) ? vertical : from;
+    if (this.canMove(from, vertical)) return vertical;
+    // 코너 슬라이딩 보정(Gather/WorkAdventure): 문틀·책상 모서리에 살짝 걸렸을 때 열린 방향으로 부드럽게 미끄러진다.
+    const stepLen = Math.hypot(delta.x, delta.y);
+    if (stepLen > 0.01) {
+      const nx = delta.x / stepLen;
+      const ny = delta.y / stepLen;
+      const px = -ny;
+      const py = nx;
+      const look = Math.max(10, stepLen * 1.6);
+      for (const offset of [10, 18]) {
+        const probePos = clampStudioWorldPoint(this.manifest, { x: from.x + nx * look + px * offset, y: from.y + ny * look + py * offset });
+        const probeNeg = clampStudioWorldPoint(this.manifest, { x: from.x + nx * look - px * offset, y: from.y + ny * look - py * offset });
+        const posFree = studioWorldCanOccupy(this.manifest, probePos);
+        const negFree = studioWorldCanOccupy(this.manifest, probeNeg);
+        if (posFree !== negFree) {
+          const sign = posFree ? 1 : -1;
+          const slide = clampStudioWorldPoint(this.manifest, {
+            x: from.x + px * sign * stepLen * 0.72,
+            y: from.y + py * sign * stepLen * 0.72,
+          });
+          if (this.canMove(from, slide)) return slide;
+        }
+      }
+    }
+    return from;
   }
 
   toward(from: StudioVirtualSpacePoint, target: StudioVirtualSpacePoint, distance: number) {

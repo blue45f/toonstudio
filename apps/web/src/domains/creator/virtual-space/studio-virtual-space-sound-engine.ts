@@ -51,6 +51,7 @@ export class StudioVirtualSpaceSoundEngine {
   private master: GainNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
   private enabled = true;
+  private stageMuted = false;
   private volume = 0.7;
   private lastFootstepAt = Number.NEGATIVE_INFINITY;
   private readonly lastSfxAt = new Map<StudioSfxKind, number>();
@@ -69,6 +70,12 @@ export class StudioVirtualSpaceSoundEngine {
   setPreference(preference: Pick<StudioVirtualSoundPreference, "effectsEnabled" | "effectsVolume">): void {
     this.enabled = preference.effectsEnabled;
     this.volume = clamp01(preference.effectsVolume);
+    this.applyGain();
+  }
+
+  /** 2D/3D 스테이지 상단 음소거 토글 상태를 동기화한다. */
+  setStageMuted(muted: boolean): void {
+    this.stageMuted = muted;
     this.applyGain();
   }
 
@@ -171,7 +178,7 @@ export class StudioVirtualSpaceSoundEngine {
 
   /** 회의 우선순위는 사용자 음량·켜짐 설정과 별개이며 이미 재생 중인 소리에도 적용한다. */
   private outputVolume(): number {
-    return this.enabled ? this.volume * (this.ducked ? 0.15 : 1) : 0;
+    return this.enabled && !this.stageMuted ? this.volume * (this.ducked ? 0.15 : 1) : 0;
   }
 
   private applyGain(): void {
@@ -200,7 +207,7 @@ export class StudioVirtualSpaceSoundEngine {
    * 나중에 한꺼번에 터지는 일을 막기 위해서다.
    */
   private playableContext(): AudioContext | null {
-    if (this.disposed || !this.enabled || this.volume <= 0) return null;
+    if (this.disposed || !this.enabled || this.stageMuted || this.volume <= 0) return null;
     if (this.dependencies.prefersReducedMotion?.()) return null;
     const context = this.ensureContext();
     if (!context || context.state !== "running") {
@@ -224,10 +231,23 @@ export class StudioVirtualSpaceSoundEngine {
 // ===== 모듈 버스: 이벤트 발생 지점(캔버스·프레즌스·fx)은 등록된 엔진에만 닿는다 =====
 
 let activeEngine: StudioVirtualSpaceSoundEngine | null = null;
+let stageMutedOverlay = false;
 
 /** 설정 패널이 엔진 소유권을 등록한다. null이면 등록 해제다. */
 export function registerStudioSoundEngine(engine: StudioVirtualSpaceSoundEngine | null): void {
   activeEngine = engine;
+  if (engine) engine.setStageMuted(stageMutedOverlay);
+}
+
+/** 2D/3D 스테이지의 음소거 버튼을 효과음 엔진과 동기화한다. */
+export function setStudioSoundEngineMuted(muted: boolean): void {
+  stageMutedOverlay = muted;
+  activeEngine?.setStageMuted(muted);
+}
+
+/** 사용자 제스처 직후 AudioContext를 안전하게 활성화한다. */
+export function unlockStudioSoundEngine(): void {
+  activeEngine?.unlock();
 }
 
 /** 등록된 엔진이 없으면(패널 미마운트·테스트) 조용히 아무것도 하지 않는다. */
