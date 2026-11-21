@@ -243,7 +243,7 @@ export const STUDIO_BRUSH_DYNAMICS_VARIANTS_MEDIA: Readonly<Record<string, Studi
       },
       opacity: {
         base: 0.46,
-        mappings: [{ source: "pressure", from: 0.42, to: 1 }],
+        mappings: [{ source: "pressure", from: 0.55, to: 1 }],
         jitter: { mode: "multiply", amount: 0.14 },
       },
       flow: {
