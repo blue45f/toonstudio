@@ -40,6 +40,25 @@ test("required regression manifest remains sorted, unique and partitioned exactl
   assert.ok(SHARD_NAMES.every((name) => required[name].length > 0));
 });
 
+test("장시간 명령 기록의 중복 판정과 기록 탐색·복구 회귀를 필수 foundation에서 실행한다", () => {
+  const execution = executionTargetsByShard();
+  const files = Object.fromEntries(SHARD_NAMES.map((name) => [name, resolveRequiredTargets(expandGlobTargets(execution[name]))]));
+  for (const target of [
+    "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/history/studio-command-journal-identity.test.ts",
+    "apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal-sequence-identity.test.ts",
+    "apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal.test.ts",
+    "apps/web/src/domains/creator/studio-pages-history-command-journal-client.test.ts",
+    "apps/web/src/domains/creator/live/studio-pages-history-command-journal.test.ts",
+    "apps/web/src/domains/creator/live/studio-pages-history-durable-runtime.test.ts",
+    "apps/web/src/domains/creator/live/studio-pages-history-journal-long-session.test.ts",
+  ]) {
+    assert.ok(REQUIRED_VITEST_TARGETS.includes(target), `필수 명령 기록 회귀 누락: ${target}`);
+    assert.equal(shardForTarget(target), "studio-foundation", target);
+    assert.deepEqual(SHARD_NAMES.filter((owner) => files[owner].includes(target)), ["studio-foundation"], `실제 수집 누락·중복: ${target}`);
+    assert.ok(!SERIAL_TEST_FILES.includes(target), `일반 shard에서 빠지는 성능 시험: ${target}`);
+  }
+});
+
 test("semantic sharding keeps expensive domains isolated", () => {
   const fixtures = new Map([
     ["apps/api/src/runtime/runtime-boundary.test.ts", "product"],

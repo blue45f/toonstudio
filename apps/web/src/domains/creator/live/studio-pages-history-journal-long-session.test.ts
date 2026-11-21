@@ -31,6 +31,89 @@ function cycle(bridge: StudioPagesHistoryCommandJournal): void {
 }
 
 describe("동일 원고의 장시간 command journal", () => {
+  it.each([4, 5])("Undo/Redo만 반복해도 %i개 기록 경계에서 현재 snapshot으로 재설정한다", (compactAt) => {
+    const bridge = createStudioPagesHistoryCommandJournal({ compactAt });
+    bridge.recordTransition({
+      mutationKind: "elements.commit", previousPages: blank, nextPages: ink,
+      previousHistoryIndex: 0, nextHistoryIndex: 1,
+    });
+    for (let step = 1; step < compactAt; step += 1) {
+      const target = step % 2 === 1 ? { pages: blank, historyIndex: 0 } : { pages: ink, historyIndex: 1 };
+      const result = step % 2 === 1 ? bridge.recordUndo(target) : bridge.recordRedo(target);
+      expect(result).toBe("recorded");
+      expect(bridge.matchesTarget(target)).toBe(true);
+      expect(bridge.replayPlan().recordCount).toBe(step + 1);
+    }
+    const target = compactAt % 2 === 1 ? { pages: blank, historyIndex: 0 } : { pages: ink, historyIndex: 1 };
+    const result = compactAt % 2 === 1 ? bridge.recordUndo(target) : bridge.recordRedo(target);
+    expect(result).toBe("rebased");
+    expect(bridge.matchesTarget(target)).toBe(true);
+    expect(bridge.replayPlan()).toMatchObject({
+      recordCount: 0, nextSequence: 1,
+      checkpoint: { id: "checkpoint:1", upToSequence: 0, state: summarizeStudioHistorySnapshot(target.pages, target.historyIndex) },
+    });
+    const restored = restoreStudioPagesHistoryCommandJournal(bridge.serialize());
+    expect(restored.matchesTarget(target)).toBe(true);
+  });
+
+  it("새 획 없는 1,400회 Undo/Redo에서 기본 상한을 넘지 않고 재열기 뒤 새 편집을 기록한다", () => {
+    let bridge = createStudioPagesHistoryCommandJournal();
+    bridge.recordTransition({
+      mutationKind: "elements.commit", previousPages: blank, nextPages: ink,
+      previousHistoryIndex: 0, nextHistoryIndex: 1,
+    });
+    let rebased = 0;
+    for (let index = 1; index <= 700; index += 1) {
+      const undo = bridge.recordUndo({ pages: blank, historyIndex: 0 });
+      if (undo === "rebased" || index % 100 === 0) {
+        expect(bridge.matchesTarget({ pages: blank, historyIndex: 0 })).toBe(true);
+      }
+      const redo = bridge.recordRedo({ pages: ink, historyIndex: 1 });
+      if (redo === "rebased" || index % 100 === 0) {
+        expect(bridge.matchesTarget({ pages: ink, historyIndex: 1 })).toBe(true);
+      }
+      if (index <= 200) expect([undo, redo]).toEqual(["recorded", "recorded"]);
+      if (undo === "rebased") rebased += 1;
+      if (redo === "rebased") rebased += 1;
+      if (undo === "rebased" || redo === "rebased" || index % 50 === 0) {
+        expect(bridge.replayPlan().recordCount).toBeLessThanOrEqual(448);
+      }
+      if (index === 300) {
+        const serialized = bridge.serialize();
+        bridge = restoreStudioPagesHistoryCommandJournal(serialized);
+        expect(bridge.serialize()).toBe(serialized);
+        expect(bridge.matchesTarget({ pages: ink, historyIndex: 1 })).toBe(true);
+      }
+    }
+    expect(rebased).toBeGreaterThan(0);
+    bridge.recordUndo({ pages: blank, historyIndex: 0 });
+    bridge = restoreStudioPagesHistoryCommandJournal(bridge.serialize());
+    expect(bridge.matchesTarget({ pages: blank, historyIndex: 0 })).toBe(true);
+    cycle(bridge);
+    expect(bridge.replayPlan().nextSequence).toBe(5);
+    expect(bridge.matchesTarget({ pages: blank, historyIndex: 0 })).toBe(true);
+  }, 30_000);
+
+  it("대기한 coalesced 편집이 경계를 채워도 Undo 결과 snapshot을 보존한다", () => {
+    const bridge = createStudioPagesHistoryCommandJournal({ compactAt: 4 });
+    bridge.recordTransition({
+      mutationKind: "elements.commit", previousPages: blank, nextPages: ink,
+      previousHistoryIndex: 0, nextHistoryIndex: 1,
+    });
+    bridge.recordUndo({ pages: blank, historyIndex: 0 });
+    bridge.recordRedo({ pages: ink, historyIndex: 1 });
+    const moved = [{ id: "page-1", canvasH: 2000, elements: [{ id: "stroke-1", type: "draw", points: [10, 11, 12, 13] }] }];
+    bridge.recordTransition({
+      mutationKind: "elements.transform", previousPages: ink, nextPages: moved,
+      previousHistoryIndex: 1, nextHistoryIndex: 2, coalesceKey: "move:stroke-1",
+    });
+    expect(bridge.recordUndo({ pages: ink, historyIndex: 1 })).toBe("rebased");
+    expect(bridge.matchesTarget({ pages: ink, historyIndex: 1 })).toBe(true);
+    expect(bridge.replayPlan().recordCount).toBe(0);
+    const restored = restoreStudioPagesHistoryCommandJournal(bridge.serialize());
+    expect(restored.matchesTarget({ pages: ink, historyIndex: 1 })).toBe(true);
+  });
+
   it("기존737번째 cycle의 고유 undo:2948을 중복으로 거절하지 않는다", () => {
     const bridge = createStudioPagesHistoryCommandJournal();
     for (let index = 0; index < 737; index += 1) cycle(bridge);

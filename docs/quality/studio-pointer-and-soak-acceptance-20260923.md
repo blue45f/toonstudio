@@ -180,6 +180,14 @@ checkpoint의 checksum 대상이며, append·compaction·직렬화 복구에 같
 포화 필터, 실제 중복 거부 및 저장 metadata 한도를 확인한다. 이는 기록 수·직렬화
 크기와 동작의 검증이며, 실제 브라우저의 5시간 heap 측정 결과를 대신하지 않는다.
 
+새 획 없이 Undo/Redo만 반복하는 경우도 같은 448개 압축 경계를 적용한다. 기존에는
+새 transition에서만 압축해 256번째 Redo가 512개 record 한도에 걸렸다. 현재는 경계에
+도달한 탐색에서 호출자가 선택한 authoritative snapshot을 journal의 새 horizon으로
+기록한다. 사용자 snapshot history와 원고는 보존하며, 경계 전의 탐색은 계속 기록한다.
+1,400회 탐색, Undo와 Redo 각각의 경계, pending coalesced 편집 flush, 재열기 후
+새 편집 재개를 회귀로 확인한다. 신규 명령 ID와 이 탐색 경계의 회귀는 기존 bridge·client·
+durable runtime 검증과 함께 필수 `studio-foundation` shard에서 실행한다.
+
 ### Legacy exception: 기존 임의 ID 기록
 
 정책 metadata가 없는 기존 journal은 기존 계약으로 그대로 복구한다. 구판 integration의

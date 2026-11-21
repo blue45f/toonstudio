@@ -423,7 +423,8 @@ export class StudioPagesHistoryCommandJournal {
     const groupId = this.journalValue.peekUndoGroup(
       STUDIO_HISTORY_JOURNAL_ACTOR_ID
     );
-    if (!groupId) {
+    // 탐색만 반복해도 기록 상한에 닿기 전에 authoritative snapshot으로 horizon을 옮긴다.
+    if (!groupId || this.journalValue.length >= this.compactAt) {
       this.rebase(target);
       return "rebased";
     }
@@ -445,7 +446,7 @@ export class StudioPagesHistoryCommandJournal {
     const groupId = this.journalValue.peekRedoGroup(
       STUDIO_HISTORY_JOURNAL_ACTOR_ID
     );
-    if (!groupId) {
+    if (!groupId || this.journalValue.length >= this.compactAt) {
       this.rebase(target);
       return "rebased";
     }

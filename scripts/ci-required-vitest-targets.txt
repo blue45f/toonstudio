@@ -569,6 +569,9 @@ apps/web/src/domains/creator/live/studio-live-p2p-reader-requirements.test.ts
 apps/web/src/domains/creator/live/studio-live-purpose-routed-transport.test.ts
 apps/web/src/domains/creator/live/studio-live-socket-transport.test.ts
 apps/web/src/domains/creator/live/studio-live-transform-*.test.ts
+apps/web/src/domains/creator/live/studio-pages-history-command-journal.test.ts
+apps/web/src/domains/creator/live/studio-pages-history-durable-runtime.test.ts
+apps/web/src/domains/creator/live/studio-pages-history-journal-long-session.test.ts
 apps/web/src/domains/creator/live/studio-pending-stroke-admission.test.ts
 apps/web/src/domains/creator/live/studio-rejected-stroke-recovery-persistence.test.ts
 apps/web/src/domains/creator/live/studio-scoped-write-wire.test.ts
@@ -679,6 +682,9 @@ apps/web/src/domains/creator/studio-comment-editor-selection.test.ts
 apps/web/src/domains/creator/studio-companion-browser-harness-boundary.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingAppBar.test.tsx
 apps/web/src/domains/creator/studio-cuttoon-editor/runtime/bg3d-six-pass
+apps/web/src/domains/creator/studio-cuttoon-editor/runtime/history/studio-command-journal-identity.test.ts
+apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal-sequence-identity.test.ts
+apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-cuttoon-stage-pointers-admission.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-pending-stroke-pointer-lifecycle.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-touch-gesture-policy.test.ts
@@ -702,6 +708,7 @@ apps/web/src/domains/creator/studio-multi-selection-color.test.ts
 apps/web/src/domains/creator/studio-page-autosave-runtime.test.ts
 apps/web/src/domains/creator/studio-page-lazy-ui-recovery.test.ts
 apps/web/src/domains/creator/studio-page-orchestration-intent-lock.test.ts
+apps/web/src/domains/creator/studio-pages-history-command-journal-client.test.ts
 apps/web/src/domains/creator/studio-palette-brand-clip-sqlite-authority-contract.test.ts
 apps/web/src/domains/creator/studio-production/StudioProductionHubPage.scope.test.tsx
 apps/web/src/domains/creator/studio-production/creator-role-production-bridge.test.ts
