@@ -36,6 +36,7 @@ import {
   type ShadingLightBallState,
 } from "./StudioShadingLightBallOverlay";
 
+import type { ComputedShadingParams } from "../ai/studio-ai-shading-assist";
 import type { El } from "../studio-element-model";
 import type { StudioImageDataLike } from "../studio-filters";
 import type { ReactElement } from "react";
@@ -145,6 +146,46 @@ export interface ResolvedShadingLayerOutput {
  * `buildStudioShadingAssistDraft` 결과에서 비파괴 레이어 커밋에 가장 충실한 버퍼·블렌드 모드를 결정한다.
  * 림라이트나 선형 번이 켜져 있으면 곱하기 단독으로는 밝은 림이 사라지므로 합성 프리뷰 버퍼를 클리핑 레이어로 커밋한다.
  */
+function parseHexRgb(
+  hex: string,
+  fallback: readonly [number, number, number],
+): readonly [number, number, number] {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return fallback;
+  const n = Number.parseInt(m[1]!, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function computedShadingParamsToOptionPatch(
+  params: ComputedShadingParams,
+  fallbackOptions: ShadingAssistOptions,
+): Partial<ShadingAssistOptions> {
+  const azimuthDeg = normalizeAzimuthDeg(90 - (params.lightAngleRad * 180) / Math.PI);
+  const strength = Math.round(Math.min(1, Math.max(0, params.shadow2Opacity)) * 100);
+  const offsetMag = Math.hypot(params.shadowOffsetPx.dx, params.shadowOffsetPx.dy);
+  const coverage = Math.round(Math.min(100, Math.max(20, (offsetMag / 18) * 70 + 15)));
+  const softness = params.promptInstruction.includes("crisp sharp") ? 18 : 48;
+  const shadowColor = parseHexRgb(params.shadow1ColorHex, fallbackOptions.shadowColor);
+  const rimLightColor = params.rimLightColorHex
+    ? parseHexRgb(
+        params.rimLightColorHex,
+        fallbackOptions.rimLightColor ?? SHADING_MOOD_PRESETS[0]!.rimLightColor,
+      )
+    : fallbackOptions.rimLightColor;
+  const rimLightStrength = params.rimLightColorHex
+    ? Math.max(fallbackOptions.rimLightStrength ?? 0, 35)
+    : 0;
+  return {
+    azimuthDeg,
+    strength,
+    coverage,
+    softness,
+    shadowColor,
+    rimLightColor,
+    rimLightStrength,
+  };
+}
+
 export function resolveShadingLayerOutput(
   draft: Extract<ShadingAssistDraft, { readonly status: "created" }>,
   baseLayerName?: string,
@@ -319,7 +360,10 @@ export function StudioShadingAssistWiredPanel({
     setOptions((prev) => normalizeShadingAssistOptions({ ...prev, ...patch }));
   };
 
-  const runShadingCommit = async (mode: "new-layer" | "composite-selected"): Promise<void> => {
+  const runShadingCommit = async (
+    mode: "new-layer" | "composite-selected",
+    overrideOptions: ShadingAssistOptions = options,
+  ): Promise<void> => {
     if (!effectiveSrc) {
       setStatusMessage("선택한 레이어에서 이미지를 읽을 수 없어 음영을 생성하지 못했어요.");
       return;
@@ -328,7 +372,7 @@ export function StudioShadingAssistWiredPanel({
     setStatusMessage(null);
     try {
       const source = await decodeSource(effectiveSrc);
-      const draft = buildStudioShadingAssistDraft(source, options);
+      const draft = buildStudioShadingAssistDraft(source, overrideOptions);
       if (draft.status === "refused") {
         setStatusMessage(draft.detail);
         return;
@@ -445,22 +489,16 @@ export function StudioShadingAssistWiredPanel({
         >
           <LazyQuickShadingAssistPanel
             onApplyShading={(params) => {
-              patchOptions({
-                azimuthDeg: normalizeAzimuthDeg(params.directionAngleDeg),
-                strength: Math.round(params.opacity * 100),
-                coverage: Math.round(params.shadowCoverage * 100),
-                softness: Math.round(params.edgeSoftness * 100),
-              });
+              patchOptions(computedShadingParamsToOptionPatch(params, options));
               setStatusMessage("간편 9방향 광원 설정을 반영했습니다.");
             }}
             onGenerateShadingLayer={(params) => {
-              patchOptions({
-                azimuthDeg: normalizeAzimuthDeg(params.directionAngleDeg),
-                strength: Math.round(params.opacity * 100),
-                coverage: Math.round(params.shadowCoverage * 100),
-                softness: Math.round(params.edgeSoftness * 100),
+              const nextOptions = normalizeShadingAssistOptions({
+                ...options,
+                ...computedShadingParamsToOptionPatch(params, options),
               });
-              void runShadingCommit("new-layer");
+              setOptions(nextOptions);
+              void runShadingCommit("new-layer", nextOptions);
             }}
           />
         </Suspense>

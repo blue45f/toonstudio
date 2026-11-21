@@ -509,7 +509,7 @@ describe("게시 정보 준비의 단계·복귀 계약", () => {
     expect(actions?.className).toContain("--site-float-base");
     expect(actions?.className).toContain("min-[1180px]:bottom-0");
     expect(actions?.className).not.toContain("3.75rem");
-    const filesStep = stepButton(3);
+    const filesStep = stepButton(3) as HTMLButtonElement;
     expect(filesStep.disabled).toBe(true);
     expect(filesStep.getAttribute("data-unavailable-reason")).toBeTruthy();
   });

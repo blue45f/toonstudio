@@ -719,7 +719,7 @@ export function createStudioLayerOperations(
       }
       case "set-item-flag": {
         if (action.flag === "fillReference" && action.value) {
-          const prevRefs = elements.filter((el) => el.id !== action.id && el.fillReference).map((el) => el.id);
+          const prevRefs = elements.filter((el) => el.id !== action.id && "fillReference" in el && Boolean(el.fillReference)).map((el) => el.id);
           if (prevRefs.length > 0) patchLayerItems(prevRefs, () => ({ fillReference: false } as Partial<El>));
         }
         patchLayerItems([action.id], () => ({ [action.flag]: action.value } as Partial<El>));
