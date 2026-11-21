@@ -102,7 +102,7 @@ describe("PSD custom draw node capture", () => {
       useImageData: true, skipCompositeImageData: true,
     });
     expect(psd.children).toHaveLength(4);
-    expect(psd.children?.map((child) => child.imageData?.data[0])).toEqual([63, 62, 61, 60]);
+    expect(psd.children?.map((child) => child.imageData?.data[0])).toEqual([60, 61, 62, 63]);
     expect(psd.children?.map((child) => [child.left, child.top, child.right, child.bottom]))
       .toEqual(Array.from({ length: 4 }, () => [0, 0, 1, 1]));
     expect(result.lossManifest?.decisions).not.toContainEqual(
@@ -188,11 +188,11 @@ describe("PSD custom draw node capture", () => {
       useImageData: true, skipCompositeImageData: true,
     });
     expect(result.layerCount).toBe(3);
-    expect(psd.children?.[0]).toMatchObject({
+    expect(psd.children?.[2]).toMatchObject({
       left: 2, top: 3, right: 51, bottom: 71, clipping: true, blendMode: "multiply", opacity: 1,
     });
     expect(psd.children?.[1]).toMatchObject({ left: 6, top: 10, right: 34, bottom: 44 });
-    expect(psd.children?.[0]?.imageData?.data.slice(0, 4)).toEqual(new Uint8ClampedArray([110, 50, 80, 1]));
+    expect(psd.children?.[2]?.imageData?.data.slice(0, 4)).toEqual(new Uint8ClampedArray([110, 50, 80, 1]));
     expect(psd.children?.[1]?.imageData?.data.slice(0, 4)).toEqual(new Uint8ClampedArray([100, 50, 80, 1]));
     expect(psd.children?.[1]?.imageData?.data.slice(-4)).toEqual(new Uint8ClampedArray([100, 50, 80, 102]));
   });
@@ -274,17 +274,18 @@ describe("PSD custom draw node capture", () => {
       useImageData: true, skipCompositeImageData: true,
     });
     expect(psd.children).toHaveLength(21);
-    const draws = psd.children!.slice(0, 20);
+    expect(psd.children?.[0]?.name).toBe("배경");
+    const draws = psd.children!.slice(1);
     expect(draws.map((draw) => [draw.left, draw.top, draw.right, draw.bottom])).toEqual(
       Array.from({ length: 20 }, (_value, index) => {
-        const n = 19 - index;
+        const n = index;
         return [11 + n, 2051 + n, 13 + n, 2053 + n];
       }),
     );
     expect(draws.map((draw) => Array.from(draw.imageData!.data))).toEqual(
       Array.from({ length: 20 }, (_value, index) => [
-        79 - index, 50, 80, 1, 0, 0, 0, 0,
-        0, 0, 0, 0, 79 - index, 50, 80, 102,
+        60 + index, 50, 80, 1, 0, 0, 0, 0,
+        0, 0, 0, 0, 60 + index, 50, 80, 102,
       ]),
     );
     expect(draws.reduce((total, draw) => total + draw.imageData!.data.byteLength, 0)).toBe(320);
@@ -307,12 +308,37 @@ describe("PSD custom draw node capture", () => {
     expect(result.skipped).toContainEqual(expect.stringContaining("보이는 픽셀이 없어 투명 레이어"));
     const psd = readPsd(await result.blob.arrayBuffer(), { useImageData: true, skipCompositeImageData: true });
     expect(psd.children).toHaveLength(2);
-    expect(psd.children?.[0]?.clipping).toBe(true);
-    expect(psd.children?.[1]?.imageData?.data).toEqual(new Uint8ClampedArray(4));
+    expect(psd.children?.[1]?.clipping).toBe(true);
+    expect(psd.children?.[0]?.imageData?.data).toEqual(new Uint8ClampedArray(4));
     expect(result.lossManifest?.decisions).not.toContainEqual(
       expect.objectContaining({ feature: "layers", disposition: "dropped" }),
     );
     expect(source.canvas.width).toBe(0);
+  });
+
+  it("keeps native PSD bottom-to-top sibling and nested folder order with an optional bottom background", async () => {
+    const paths = [{ id: "outer", name: "바깥" }, { id: "inner", name: "안쪽" }];
+    const leaf = (id: string, color: number): PsdExportEl => ({
+      ...addDraw(id, color).element, name: id, groupId: "inner", psdGroupId: "inner", psdFolderPath: paths,
+    });
+    const back = { ...addDraw("back", 25).element, name: "back" };
+    const groupBack = leaf("group-back", 80);
+    const groupFront = { ...leaf("group-front", 140), clipBelow: true };
+    const front = { ...addDraw("front", 230).element, name: "front" };
+    const result = await exportPagePsd(stage, [back, groupBack, groupFront, front], 32, 48, 1, {
+      includeBackground: true, background: { color: "#ffffff" },
+    });
+    const psd = readPsd(await result.blob.arrayBuffer(), { useImageData: true, skipCompositeImageData: true });
+    const siblings = psd.children!;
+    expect(siblings.map(({ name }) => name)).toEqual(["배경", "back", "바깥", "front"]);
+    const inner = siblings[2]?.children?.[0];
+    expect(inner?.name).toBe("안쪽");
+    expect(inner?.children?.map(({ name }) => name)).toEqual(["group-back", "group-front"]);
+    expect(inner?.children?.map(({ clipping }) => clipping)).toEqual([false, true]);
+    const frontPixel = siblings[3]?.imageData?.data;
+    expect(Array.from(frontPixel ?? [])).toEqual([230, 50, 80, 255]);
+    expect(siblings[1]?.imageData?.data[0]).toBe(25);
+    expect(inner?.children?.map(({ imageData }) => imageData?.data[0])).toEqual([80, 140]);
   });
 
   it("releases a captured surface and rejects the export when pixel readback fails", async () => {

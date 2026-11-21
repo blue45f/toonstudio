@@ -125,19 +125,19 @@ describe("flattenPsdLayers", () => {
     expect(flattenPsdLayers(samplePsd([]))).toEqual([]);
   });
 
-  it("평면(그룹 없음) 레이어를 ag-psd 순서(맨 위가 먼저)에서 Studio 순서(맨 뒤가 먼저)로 뒤집는다", () => {
+  it("평면 PSD 레코드의 뒤→앞 순서를 Studio에서도 유지한다", () => {
     const psd = samplePsd([leaf({ name: "A" }), leaf({ name: "B" }), leaf({ name: "C" })]);
-    expect(flattenPsdLayers(psd).map((f) => f.name)).toEqual(["C", "B", "A"]);
+    expect(flattenPsdLayers(psd).map((f) => f.name)).toEqual(["A", "B", "C"]);
   });
 
   it("중첩 그룹을 제자리에서 펼쳐 전체 문서의 앞뒤 순서를 보존한다", () => {
-    // ag-psd 순서: A(맨 위), G(X,Y 포함), B(맨 아래) → 정방향 평탄화: [A,X,Y,B] → 뒤집으면 [B,Y,X,A].
+    // PSD 레코드: A(맨 뒤), G(X,Y 포함), B(맨 앞) → 각 형제 순서를 보존해 [A,X,Y,B].
     const psd = samplePsd([
       leaf({ name: "A" }),
       group([leaf({ name: "X" }), leaf({ name: "Y" })], { name: "G" }),
       leaf({ name: "B" }),
     ]);
-    expect(flattenPsdLayers(psd).map((f) => f.name)).toEqual(["B", "Y", "X", "A"]);
+    expect(flattenPsdLayers(psd).map((f) => f.name)).toEqual(["A", "X", "Y", "B"]);
   });
 
   it("그룹 불투명도를 자식에 곱연산으로 누적한다", () => {
@@ -376,7 +376,7 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
     ]);
     const result = await importPsdFile(new File([], "t.psd"), 720, depsFor(psd));
     expect(result.adjustmentLayers?.map((layer) => layer.kind)).toEqual([
-      "color-lookup", "selective-color", "photo-filter", "black-white",
+      "black-white", "photo-filter", "selective-color", "color-lookup",
     ]);
     // Studio z-order(뒤→앞) 기준 stackIndex가 flatten 순서를 그대로 반영한다.
     expect(result.adjustmentLayers?.map((layer) => layer.stackIndex)).toEqual([0, 1, 2, 3]);
@@ -413,8 +413,8 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
       leaf({ name: "미래조정", adjustment: { type: "mystery" } as never }),
     ]);
     const result = await importPsdFile(new File([], "t.psd"), 720, depsFor(psd));
-    // Studio z-order(뒤→앞): 미래조정(0, 제외) · 룩업(1) · 레벨(2) · 배경(3)
-    expect(result.elements.map((element) => element.stackIndex)).toEqual([3]);
+    // PSD 레코드와 Studio z-order(뒤→앞): 배경(0) · 레벨(1) · 룩업(2) · 미래조정(3, 제외)
+    expect(result.elements.map((element) => element.stackIndex)).toEqual([0]);
     expect(result.adjustmentLayers?.map((layer) => layer.stackIndex)).toEqual([1, 2]);
     expect(result.adjustmentReport).toMatchObject({
       total: 3,
@@ -423,8 +423,8 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
       counts: { exact: 1, approximated: 0, "preserved-only": 1, dropped: 1 },
     });
     expect(result.adjustmentReport?.rows.map((row) => [row.name, row.fidelity])).toEqual([
-      ["룩업1", "preserved-only"],
       ["레벨1", "exact"],
+      ["룩업1", "preserved-only"],
       ["미래조정", "dropped"],
     ]);
     const message = psdImportResultMessage(result);
@@ -836,7 +836,7 @@ describe("PSD original-quality cancellation and progress", () => {
     expect(resize).not.toHaveBeenCalled();
     expect(result.scale).toBe(0.18);
     expect(result.elements.map((element) => element.src)).toEqual([
-      "data:image/png;base64,LANDSCAPE", "data:image/png;base64,PORTRAIT",
+      "data:image/png;base64,PORTRAIT", "data:image/png;base64,LANDSCAPE",
     ]);
     expect(result.lossManifest?.decisions.some((decision) =>
       decision.feature === "resolution" && decision.disposition === "rasterized",

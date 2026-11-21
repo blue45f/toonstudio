@@ -103,9 +103,8 @@ function flattenInto(
 }
 
 /**
- * psd.children(중첩 그룹 트리, ag-psd 관례상 [0]=포토샵 패널 맨 위)을 재귀적으로 평탄화해
- * **Studio 순서(뒤→앞, 배열 앞쪽이 배경)로 이미 뒤집힌** 리프 레이어 목록을 반환한다(studio-psd-
- * export.ts 가 반대 방향으로 하는 `[...layers].reverse()`와 정확히 대칭). adjustment 레이어
+ * CSP에서 저장·다시 열어 확인한 PSD 레코드와 현재 ag-psd의 children은 Studio처럼 뒤→앞이다.
+ * 중첩 그룹은 제자리에서 펼치고 각 형제의 순서를 유지한다. adjustment 레이어
  * (layer.adjustment 존재)는 래스터 내용이 없으므로 skipReason:"adjustment" 로 표시하고 canvas 를
  * 읽지 않는 대신, 변환 결과(adjustmentConversion)를 함께 실어 복원 재료로 쓴다. 이름 없는 레이어는 최종 Studio 순서 기준 순번으로 "레이어 N" 폴백을 받는다
  * (studio-psd-export.ts 의 elementLabel 과 동일한 fallback 관례).
@@ -113,7 +112,6 @@ function flattenInto(
 export function flattenPsdLayers(psd: Psd): FlattenedPsdLayer[] {
   const raw: RawFlattenedLeaf[] = [];
   flattenInto(psd.children ?? [], 1, false, raw);
-  raw.reverse(); // ag-psd(패널 맨 위가 먼저) → Studio(맨 뒤가 먼저) 순서 반전.
   return raw.map((entry, index) => {
     const trimmed = entry.layer.name?.trim();
     return { ...entry, name: trimmed ? trimmed : `레이어 ${index + 1}` };

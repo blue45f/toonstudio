@@ -1556,11 +1556,11 @@ export async function exportPagePsd(
     skipped.push("캡처 가능한 레이어가 없어 빈 캔버스로 저장했어요.");
   }
 
-  // Studio: 뒤→앞(elements[0]=BACK) → ag-psd: 위→아래(children[0]=TOP) — 반드시 뒤집는다.
-  const children = groupPsdExportLayers([...layers].reverse(), [...capturedElements].reverse(), opts.groups);
+  // CSP 저장·재열기에서 검증한 뒤→앞 순서를 유지하고 페이지 배경만 폴더 밖 맨 뒤에 둔다.
+  const children = groupPsdExportLayers(layers, capturedElements, opts.groups);
 
   if (includeBg && opts.background) {
-    children.push(makeBackgroundLayer(psdWidth, psdHeight, opts.background));
+    children.unshift(makeBackgroundLayer(psdWidth, psdHeight, opts.background));
   }
 
   const published = publishedPsdResolutionInfo();
