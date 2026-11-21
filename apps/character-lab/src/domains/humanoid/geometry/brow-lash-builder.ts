@@ -11,8 +11,18 @@ import { loftTriTube, mergeTriMeshes, mirrorTriMeshX, type TriMesh } from "./tri
 
 import type { EyesStyleId } from "../../../contracts";
 
-export const BROW_SEGMENTS = 9;
-export const LASH_SEGMENTS = 11;
+export const BROW_SEGMENTS = 14;
+export const LASH_SEGMENTS = 18;
+
+/** 눈 스타일별 한국 웹툰 상단 아이라인·속눈썹 윙(눈꼬리) 곡선 프로파일 */
+const LASH_WING_PROFILE: Readonly<Record<EyesStyleId, { readonly archLift: number; readonly wingLift: number; readonly wingExtend: number; readonly thickness: number }>> = {
+  almond: { archLift: 0.08, wingLift: 0.06, wingExtend: 0.14, thickness: 1.15 },
+  round: { archLift: 0.16, wingLift: 0.03, wingExtend: 0.1, thickness: 1.25 },
+  droopy: { archLift: 0.06, wingLift: -0.1, wingExtend: 0.14, thickness: 1.12 },
+  upturned: { archLift: 0.09, wingLift: 0.16, wingExtend: 0.2, thickness: 1.22 },
+  narrow: { archLift: 0.02, wingLift: 0.07, wingExtend: 0.18, thickness: 1.05 },
+  wide: { archLift: 0.18, wingLift: 0.08, wingExtend: 0.15, thickness: 1.32 },
+};
 
 /** 표면 위 점: 방향 dir의 머리 표면을 lift배 밖으로 */
 function surfaceAt(frame: HeadFrame, localDir: Vec3, lift: number): Vec3 {
@@ -30,16 +40,18 @@ function browSide(frame: HeadFrame): TriMesh {
   const rings: Vec3[][] = [];
   for (let i = 0; i <= BROW_SEGMENTS; i += 1) {
     const u = i / BROW_SEGMENTS;
-    // 안쪽(x 0.12) → 바깥(x 0.62), 완만한 아치(중간이 가장 높음)
-    const x = 0.12 + 0.5 * u;
-    const arch = 0.09 * Math.sin(Math.PI * u) - 0.06 * u;
+    // 한국 웹툰 세련된 일자-세미아치 눈썹: 안쪽(x 0.11) → 2/3 지점 완만한 산 → 가늘게 빠지는 눈썹꼬리(x 0.62)
+    const x = 0.11 + 0.51 * u;
+    const peak = Math.sin(Math.PI * Math.pow(u, 0.85));
+    const arch = 0.075 * peak - 0.055 * u * u;
     const y = b[1] + arch;
-    const z = b[2] - 0.25 * u * u;
-    const c = surfaceAt(frame, [x, y, z], 1.015);
+    const z = b[2] - 0.24 * u * u;
+    const c = surfaceAt(frame, [x, y, z], 1.014);
     const normal = v3Normalize(v3Sub(c, frame.center));
-    const taper = 0.55 + 0.45 * Math.sin(Math.PI * Math.min(1, u * 1.2));
-    const halfWidth = 0.045 * frame.scale * taper;
-    const thickness = 0.012 * frame.scale;
+    // 앞머리는 부드럽고 중간이 가장 선명, 꼬리로 갈수록 날렵하게 테이퍼링
+    const tailTaper = u > 0.65 ? Math.max(0.18, 1 - ((u - 0.65) / 0.35) * 0.82) : 0.72 + 0.28 * Math.sin((Math.PI * u) / 0.65);
+    const halfWidth = 0.04 * frame.scale * tailTaper;
+    const thickness = 0.011 * frame.scale * (0.65 + 0.35 * tailTaper);
     const up: Vec3 = v3Normalize(v3Cross(v3Cross(normal, [0, 1, 0]), normal));
     rings.push(slabRing(c, v3Scale(up, halfWidth), v3Scale(normal, thickness)));
   }
@@ -55,7 +67,7 @@ export function buildBrows(frame: HeadFrame): TriMesh {
   return mergeTriMeshes([left, mirrorTriMeshX(left)]);
 }
 
-/** 속눈썹: 윗눈꺼풀 가장자리를 따라 바깥·앞으로 뻗는 리본 */
+/** 속눈썹: 한국 웹툰 상단 아이라인·속눈썹 아치(안쪽 얇게 → 중앙 도톰한 아치 → 눈꼬리 윙) */
 export function buildLash(frame: HeadFrame, side: EyeSide, style: EyesStyleId): TriMesh {
   const left = buildLeftLash(frame, style);
   return side === "left" ? left : mirrorTriMeshX(left);
@@ -63,21 +75,36 @@ export function buildLash(frame: HeadFrame, side: EyeSide, style: EyesStyleId): 
 
 function buildLeftLash(frame: HeadFrame, style: EyesStyleId): TriMesh {
   const spec = EYE_STYLE_SPECS[style];
+  const wing = LASH_WING_PROFILE[style];
   const center = eyeCenter(frame, "left");
-  const r = eyeballRadius(frame) * 1.08;
+  const r = eyeballRadius(frame) * 1.075;
   const rings: Vec3[][] = [];
   for (let i = 0; i <= LASH_SEGMENTS; i += 1) {
     const u = i / LASH_SEGMENTS;
-    // 각: 안쪽 끝 → 위 → 바깥 끝 (위쪽 호, 왼눈 기준)
-    const theta = Math.PI / 2 + spec.lashArc * (u - 0.5);
-    const radial: Vec3 = [Math.cos(theta), Math.sin(theta), 0.35];
+    // 각: 왼눈 기준 u=0(바깥 눈꼬리, x+) ←→ u=1(안쪽 눈머리, x-) — theta = PI/2 + arc*(u - 0.5)
+    // cos(theta)는 u=0일 때 양수(바깥쪽), u=1일 때 음수(안쪽)
+    const outerWeight = Math.max(0, 1 - u / 0.35);
+    const wingCurve = outerWeight * outerWeight;
+    const archCurve = Math.sin(Math.PI * u);
+    const theta = Math.PI / 2 + spec.lashArc * (u - 0.5) - wing.wingExtend * wingCurve;
+    const radial: Vec3 = [
+      Math.cos(theta) * (1 + 0.08 * wingCurve),
+      Math.sin(theta) + wing.archLift * archCurve + wing.wingLift * wingCurve,
+      0.38 + 0.06 * archCurve,
+    ];
     const rn = v3Normalize(radial);
-    const c = v3Add(center, v3Scale(rn, r));
-    const taper = 0.4 + 0.6 * Math.sin(Math.PI * u);
+    const c = v3Add(center, v3Scale(rn, r * (1 + 0.035 * wingCurve)));
+    // 중앙~바깥쪽(u 0.15~0.55)에 선명한 상단 속눈썹 볼륨, 양 끝은 날렵하게 수렴
+    const archBold = Math.pow(Math.sin(Math.PI * Math.pow(u, 0.88)), 0.72);
+    const taper = 0.28 + 0.72 * archBold + 0.14 * wingCurve * (1 - outerWeight * 0.65);
     const length = spec.lashLength * frame.scale * taper;
-    const outward: Vec3 = v3Normalize([rn[0] * (1 - spec.lashCurl), rn[1] * (1 - spec.lashCurl * 0.5), 0.3 + spec.lashCurl]);
+    const outward: Vec3 = v3Normalize([
+      rn[0] * (1 - spec.lashCurl * 0.85) + 0.16 * wingCurve,
+      rn[1] * (1 - spec.lashCurl * 0.45) + wing.wingLift * 0.5 * wingCurve,
+      0.36 + spec.lashCurl,
+    ]);
     const tangent = v3Normalize(v3Cross(rn, [0, 0, 1]));
-    const halfWidth = 0.004 * frame.scale * (0.5 + taper);
+    const halfWidth = 0.0046 * wing.thickness * frame.scale * (0.45 + 0.75 * taper);
     const ring = slabRing(v3Add(c, v3Scale(outward, length / 2)), v3Scale(tangent, halfWidth), v3Scale(outward, length / 2));
     rings.push(ring);
   }

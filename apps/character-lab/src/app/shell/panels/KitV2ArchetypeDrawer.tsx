@@ -11,6 +11,7 @@ import {
   KIT_V2_HAND_POSE_LABELS_KO,
   archetypePresetToBodyParams,
 } from "../../../contracts";
+import { KWEBTOON_ARCHETYPE_LIST } from "../../../presets";
 
 import type {
   BodyParamKey,
@@ -19,11 +20,14 @@ import type {
   ParamValues,
   WebtoonKitV2CatalogSummary,
 } from "../../../contracts";
+import type { KWebtoonArchetypeId, KWebtoonArchetypePreset } from "../../../presets";
 
 export interface KitV2ArchetypeDrawerProps {
   readonly onApplyArchetypePreset: (preset: KitV2ArchetypePreset) => void;
+  readonly onApplyKWebtoonArchetype?: (preset: KWebtoonArchetypePreset) => void;
   readonly currentBody?: ParamValues<BodyParamKey>;
   readonly activeArchetypeId?: KitV2ArchetypeId | null;
+  readonly activeKWebtoonId?: KWebtoonArchetypeId | null;
   readonly catalogSummary?: WebtoonKitV2CatalogSummary;
 }
 
@@ -43,8 +47,10 @@ function matchesBodyPreset(preset: KitV2ArchetypePreset, body?: ParamValues<Body
 
 export function KitV2ArchetypeDrawer({
   onApplyArchetypePreset,
+  onApplyKWebtoonArchetype,
   currentBody,
   activeArchetypeId = null,
+  activeKWebtoonId = null,
   catalogSummary = DEFAULT_KIT_V2_CATALOG_SUMMARY,
 }: KitV2ArchetypeDrawerProps) {
   const activePreset =
@@ -153,6 +159,70 @@ export function KitV2ArchetypeDrawer({
               </button>
             );
           })}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "6px",
+            paddingTop: "8px",
+            borderTop: "1px solid var(--lab-line)",
+          }}
+        >
+          <p className="cl-param-hint text-fg-2" style={{ margin: 0, color: "var(--lab-muted)", wordBreak: "keep-all" }}>
+            한국 웹툰 완성형 아키타입 10종 — 얼굴 조형·레이어드 헤어·장르 의상·2단 셀·유색 선화를 1클릭으로 적용합니다.
+          </p>
+          <div
+            role="group"
+            aria-label="한국 웹툰 완성형 아키타입 10종"
+            data-testid="kwebtoon-archetype-cards"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))",
+              gap: "6px",
+            }}
+          >
+            {KWEBTOON_ARCHETYPE_LIST.map((preset) => {
+              const pressed = activeKWebtoonId === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className="cl-button min-h-11 bg-card border-line text-fg"
+                  aria-pressed={pressed}
+                  data-testid={`kwebtoon-archetype-${preset.id}`}
+                  onClick={() => onApplyKWebtoonArchetype?.(preset)}
+                  style={{
+                    minHeight: "44px",
+                    width: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    justifyContent: "center",
+                    gap: "2px",
+                    padding: "8px 10px",
+                    textAlign: "left",
+                    wordBreak: "keep-all",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  <span style={{ fontWeight: 600, fontSize: "0.8rem" }}>
+                    {preset.shortLabelKo} {preset.proportion.headsTall.toFixed(1)}등신
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "0.75rem",
+                      opacity: 0.85,
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {preset.genreKo} · {preset.tagsKo[0]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div

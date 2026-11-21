@@ -87,11 +87,13 @@ export function computeScreenSpaceOutlineScale(
 /**
  * 재질 알베도 hex(`#rrggbb`)를 어둡게 눌러 채도 있는 잉크 선화(Colored Lineart) RGB(0..1)로 혼합한다.
  * `tintStrength === 0`이면 기본 외곽선 색을 그대로 반환한다.
+ * `role`이 피부/머리일 때는 탁한 회갈색 대신 따뜻한 로즈-테라코타 K-웹툰 피부 선화로 보정한다.
  */
 export function computeColoredLineartRgb(
   baseOutlineRgb: readonly [number, number, number],
   albedoHex: string,
   tintStrength: number,
+  role?: PartRole,
 ): readonly [number, number, number] {
   const strength = Number.isFinite(tintStrength) ? Math.min(1, Math.max(0, tintStrength)) : 0;
   if (strength <= 0) return baseOutlineRgb;
@@ -102,9 +104,21 @@ export function computeColoredLineartRgb(
   const ag = ((raw >> 8) & 0xff) / 255;
   const ab = (raw & 0xff) / 255;
   const darken = (channel: number): number => Math.min(0.42, Math.max(0.03, channel * 0.32 * (0.62 + 0.38 * channel)));
-  const inkR = darken(ar);
-  const inkG = darken(ag);
-  const inkB = darken(ab);
+  let inkR = darken(ar);
+  let inkG = darken(ag);
+  let inkB = darken(ab);
+  if (role === "skin" || role === "head") {
+    // 한국 웹툰 피부 유색 선화: 따뜻한 로즈-코랄 갈색 잉크(R > G >= B, 검정/회색화 방지)
+    inkR = Math.min(0.48, Math.max(0.24, inkR * 1.28 + 0.06));
+    inkG = Math.min(0.32, Math.max(0.11, inkG * 0.92 + 0.02));
+    inkB = Math.min(0.3, Math.max(0.1, inkB * 0.86 + 0.02));
+  } else if (role === "hair" || role === "brow" || role === "lash") {
+    // 헤어 유색 선화: 원래 색조의 채도를 살리되 은은한 쿨 보라/인디고 깊이 부여
+    const avg = (inkR + inkG + inkB) / 3;
+    inkR = Math.min(0.42, Math.max(0.04, avg + (inkR - avg) * 1.25));
+    inkG = Math.min(0.42, Math.max(0.04, avg + (inkG - avg) * 1.15));
+    inkB = Math.min(0.46, Math.max(0.06, avg + (inkB - avg) * 1.28 + 0.025));
+  }
   return [
     baseOutlineRgb[0] + (inkR - baseOutlineRgb[0]) * strength,
     baseOutlineRgb[1] + (inkG - baseOutlineRgb[1]) * strength,
