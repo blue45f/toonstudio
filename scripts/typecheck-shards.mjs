@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir, totalmem } from "node:os";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const REPOSITORY_ROOT = fileURLToPath(new URL("../", import.meta.url));
 const WORKER_PATH = fileURLToPath(new URL("./typecheck-shards-worker.mjs", import.meta.url));
+const GIB = 1024 ** 3;
+export const DEFAULT_HEAP_MB = 8192;
+export const DEFAULT_MAX_SOURCE_BYTES = 4 * 1024 * 1024;
 
 export function diagnosticKey(diagnostic) {
   return JSON.stringify(diagnostic);
@@ -15,6 +18,50 @@ export function diagnosticKey(diagnostic) {
 export function mergeDiagnostics(groups) {
   const records = new Map(groups.flat().map((record) => [diagnosticKey(record), record]));
   return [...records.values()].sort((left, right) => diagnosticKey(left).localeCompare(diagnosticKey(right), "en"));
+}
+
+/**
+ * 호스트 물리 메모리와 CI 여부에 맞춰 안전한 기본 heap·샤드 크기를 산출한다.
+ * CI(7~16GiB) 러너는 기존 안전 상한(8192MB)을 유지하고, 32GiB+ 로컬 머신은 불필요한 OOM 분할을 줄인다.
+ */
+export function resolveAdaptiveTypecheckLimits({
+  totalMemoryBytes = totalmem(),
+  isCi = Boolean(process.env.CI || process.env.GITHUB_ACTIONS),
+} = {}) {
+  const totalGiB = Number.isFinite(totalMemoryBytes) && totalMemoryBytes > 0
+    ? totalMemoryBytes / GIB
+    : 0;
+  const totalMemoryGiB = Number(totalGiB.toFixed(1));
+  if (isCi || totalGiB < 22) {
+    return {
+      heapMb: DEFAULT_HEAP_MB,
+      maxBytes: DEFAULT_MAX_SOURCE_BYTES,
+      tier: isCi ? "ci-safe" : "standard",
+      totalMemoryGiB,
+    };
+  }
+  if (totalGiB < 30) {
+    return {
+      heapMb: 12288,
+      maxBytes: 16 * 1024 * 1024,
+      tier: "local-24g",
+      totalMemoryGiB,
+    };
+  }
+  if (totalGiB < 48) {
+    return {
+      heapMb: 16384,
+      maxBytes: 32 * 1024 * 1024,
+      tier: "local-32g",
+      totalMemoryGiB,
+    };
+  }
+  return {
+    heapMb: 24576,
+    maxBytes: 64 * 1024 * 1024,
+    tier: "local-48g+",
+    totalMemoryGiB,
+  };
 }
 
 /** 모든 Program SourceFile을 한 번씩 배정한다. skipLibCheck도 컴파일러가 직접 적용한다. */
@@ -54,27 +101,136 @@ function numericOption(value, name, minimum) {
   return number;
 }
 
-export function parseArguments(args) {
+export function parseArguments(args, runtime = {}) {
+  const env = runtime.env ?? process.env;
+  const isCi = runtime.isCi ?? Boolean(env.CI || env.GITHUB_ACTIONS);
+  const totalMemoryBytes = runtime.totalMemoryBytes ?? totalmem();
+  let explicitHeapMb;
+  let explicitMaxBytes;
   const options = {
     project: resolve(REPOSITORY_ROOT, "tsconfig.json"),
     report: resolve(REPOSITORY_ROOT, "node_modules/.cache/typecheck-shards/report.json"),
-    heapMb: 8192,
-    maxBytes: 4 * 1024 * 1024,
+    heapMb: DEFAULT_HEAP_MB,
+    maxBytes: DEFAULT_MAX_SOURCE_BYTES,
     list: false,
+    autoTune: env.TOONSTUDIO_TYPECHECK_AUTO_TUNE === "1",
+    noCache: env.TOONSTUDIO_TYPECHECK_NO_CACHE === "1",
+    tuningTier: "explicit",
   };
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--list" || arg === "--dry-run") options.list = true;
+    else if (arg === "--auto-tune") options.autoTune = true;
+    else if (arg === "--no-cache" || arg === "--fresh") options.noCache = true;
     else if (["--project", "--report", "--heap-mb", "--max-source-bytes"].includes(arg)) {
       const value = args[++index];
       if (!value || value.startsWith("--")) throw new Error(`${arg} 값을 지정하세요.`);
       if (arg === "--project") options.project = resolve(REPOSITORY_ROOT, value);
       else if (arg === "--report") options.report = resolve(REPOSITORY_ROOT, value);
-      else if (arg === "--heap-mb") options.heapMb = numericOption(value, arg, 1024);
-      else options.maxBytes = numericOption(value, arg, 1);
+      else if (arg === "--heap-mb") explicitHeapMb = numericOption(value, arg, 1024);
+      else explicitMaxBytes = numericOption(value, arg, 1);
     } else throw new Error(`알 수 없는 인자: ${arg}`);
   }
+
+  const adaptive = resolveAdaptiveTypecheckLimits({ totalMemoryBytes, isCi });
+  if (options.autoTune) {
+    options.heapMb = isCi
+      ? (explicitHeapMb !== undefined ? Math.min(explicitHeapMb, DEFAULT_HEAP_MB) : adaptive.heapMb)
+      : (explicitHeapMb !== undefined ? Math.max(explicitHeapMb, adaptive.heapMb) : adaptive.heapMb);
+    options.maxBytes = isCi
+      ? (explicitMaxBytes ?? adaptive.maxBytes)
+      : (explicitMaxBytes !== undefined ? Math.max(explicitMaxBytes, adaptive.maxBytes) : adaptive.maxBytes);
+    options.tuningTier = adaptive.tier;
+  } else {
+    options.heapMb = explicitHeapMb ?? adaptive.heapMb;
+    options.maxBytes = explicitMaxBytes ?? adaptive.maxBytes;
+    options.tuningTier = explicitHeapMb === undefined ? adaptive.tier : "explicit";
+  }
   return options;
+}
+
+/**
+ * 동일 입력 fingerprint의 기존 체크포인트를 검증해 완전 재사용 또는 미완료 샤드 이어달리기를 판정한다.
+ * 입력·프로젝트·TS 버전 중 하나라도 달라지면 fail-closed로 캐시를 폐기한다.
+ */
+export function extractReusableCheckpoint(existingReport, { project, identity, fingerprint }) {
+  if (!existingReport || typeof existingReport !== "object") return { mode: "none" };
+  if (
+    existingReport.schemaVersion !== 1
+    || existingReport.project !== project
+    || existingReport.typescriptVersion !== identity.version
+    || existingReport.fingerprint !== fingerprint
+    || !Array.isArray(existingReport.diagnostics)
+  ) {
+    return { mode: "none" };
+  }
+
+  const expectedCount = identity.files.length;
+  if (
+    existingReport.complete === true
+    && !existingReport.failure
+    && existingReport.phases?.finalSnapshot?.fingerprint === fingerprint
+    && existingReport.phases?.preflight?.fingerprint === fingerprint
+    && existingReport.phases?.semantic?.checkedFiles === expectedCount
+    && existingReport.phases?.semantic?.expectedFiles === expectedCount
+  ) {
+    return { mode: "complete", report: existingReport };
+  }
+
+  const preflight = existingReport.phases?.preflight;
+  if (
+    !preflight
+    || preflight.fingerprint !== fingerprint
+    || preflight.semanticAllowed !== true
+    || !Array.isArray(preflight.diagnostics)
+  ) {
+    return { mode: "none" };
+  }
+
+  const expectedSet = new Set(identity.files.map((file) => file.path));
+  const checkedSet = new Set();
+  const checkedGroups = [];
+  const reusedWorkers = [];
+  const shardDiagnostics = [];
+  for (const worker of Array.isArray(existingReport.workers) ? existingReport.workers : []) {
+    if (
+      !worker
+      || worker.failed
+      || worker.retry
+      || worker.fingerprint !== fingerprint
+      || !Array.isArray(worker.files)
+      || worker.checked !== worker.files.length
+      || !Array.isArray(worker.diagnostics)
+    ) {
+      continue;
+    }
+    const valid = worker.files.length > 0
+      && worker.files.every((filePath) => expectedSet.has(filePath) && !checkedSet.has(filePath));
+    if (!valid) continue;
+    for (const filePath of worker.files) checkedSet.add(filePath);
+    checkedGroups.push(worker.files);
+    shardDiagnostics.push(worker.diagnostics);
+    reusedWorkers.push({ ...worker, reused: true });
+  }
+
+  if (reusedWorkers.length === 0) return { mode: "none" };
+  return {
+    mode: "partial",
+    preflight,
+    reusedWorkers,
+    checkedGroups,
+    checkedSet,
+    shardDiagnostics,
+  };
+}
+
+function readExistingCheckpoint(reportPath) {
+  if (!reportPath || !existsSync(reportPath)) return null;
+  try {
+    return JSON.parse(readFileSync(reportPath, "utf8"));
+  } catch {
+    return null;
+  }
 }
 
 function withoutHeapOption(value = "") {
@@ -116,11 +272,43 @@ export function verifyInShards(options, runWorker, onProgress = () => {}, onChec
   const inventory = runWorker({ phase: "inventory" });
   if (inventory.failed) throw new Error(`전체 프로그램 목록 생성 실패: ${describeWorkerFailure(inventory)}`);
   const { identity, fingerprint } = inventory;
+  const reuse = options.noCache
+    ? { mode: "none" }
+    : extractReusableCheckpoint(options.resumeCheckpoint, { project: options.project, identity, fingerprint });
+
+  if (reuse.mode === "complete") {
+    const reusedReport = {
+      ...reuse.report,
+      limits: {
+        workerConcurrency: 1,
+        heapMb: options.heapMb,
+        maxSourceBytes: options.maxBytes,
+        tuningTier: options.tuningTier ?? "explicit",
+      },
+      cacheReuse: {
+        mode: "complete",
+        reusedFiles: identity.files.length,
+        skippedShards: Array.isArray(reuse.report.workers) ? reuse.report.workers.length : 0,
+      },
+    };
+    onProgress(
+      `동일 fingerprint(${fingerprint.slice(0, 12)}) 완료 체크포인트 재사용: `
+        + `${identity.files.length}/${identity.files.length}개, 진단 ${reusedReport.diagnostics.length}개`,
+    );
+    onCheckpoint(reusedReport);
+    return reusedReport;
+  }
+
   const report = {
     schemaVersion: 1,
     project: options.project,
     typescriptVersion: identity.version,
-    limits: { workerConcurrency: 1, heapMb: options.heapMb, maxSourceBytes: options.maxBytes },
+    limits: {
+      workerConcurrency: 1,
+      heapMb: options.heapMb,
+      maxSourceBytes: options.maxBytes,
+      tuningTier: options.tuningTier ?? "explicit",
+    },
     fingerprint,
     identity,
     phases: {},
@@ -128,16 +316,47 @@ export function verifyInShards(options, runWorker, onProgress = () => {}, onChec
     diagnostics: [],
     complete: false,
   };
-  const preflight = runWorker({ phase: "preflight", fingerprint });
-  if (preflight.failed) throw new Error(`전역·구문 검사 실패: ${describeWorkerFailure(preflight)}`);
-  if (preflight.fingerprint !== fingerprint) throw new Error("Preflight 입력 fingerprint가 일치하지 않습니다.");
-  report.phases.preflight = preflight;
-  report.diagnostics = preflight.diagnostics;
-  onCheckpoint(report);
-  if (!preflight.semanticAllowed) return report;
-  const pending = partitionFiles(identity, options.maxBytes);
+
+  let preflight;
   const checked = [];
-  const diagnostics = [preflight.diagnostics];
+  const diagnostics = [];
+  let pending;
+
+  if (reuse.mode === "partial") {
+    preflight = reuse.preflight;
+    report.phases.preflight = preflight;
+    checked.push(...reuse.checkedGroups);
+    diagnostics.push(preflight.diagnostics, ...reuse.shardDiagnostics);
+    report.workers.push(...reuse.reusedWorkers);
+    report.diagnostics = mergeDiagnostics(diagnostics);
+    report.phases.semantic = { checkedFiles: checked.flat().length, expectedFiles: identity.files.length };
+    report.cacheReuse = {
+      mode: "partial",
+      reusedFiles: reuse.checkedSet.size,
+      reusedShards: reuse.reusedWorkers.length,
+    };
+    onCheckpoint(report);
+    onProgress(
+      `동일 fingerprint(${fingerprint.slice(0, 12)}) 부분 체크포인트 이어달리기: `
+        + `${reuse.checkedSet.size}/${identity.files.length}개(${reuse.reusedWorkers.length}개 샤드) 재사용`,
+    );
+    const remainingIdentity = {
+      ...identity,
+      files: identity.files.filter((file) => !reuse.checkedSet.has(file.path)),
+    };
+    pending = partitionFiles(remainingIdentity, options.maxBytes);
+  } else {
+    preflight = runWorker({ phase: "preflight", fingerprint });
+    if (preflight.failed) throw new Error(`전역·구문 검사 실패: ${describeWorkerFailure(preflight)}`);
+    if (preflight.fingerprint !== fingerprint) throw new Error("Preflight 입력 fingerprint가 일치하지 않습니다.");
+    report.phases.preflight = preflight;
+    report.diagnostics = preflight.diagnostics;
+    onCheckpoint(report);
+    if (!preflight.semanticAllowed) return report;
+    diagnostics.push(preflight.diagnostics);
+    pending = partitionFiles(identity, options.maxBytes);
+  }
+
   while (pending.length > 0) {
     const files = pending.shift();
     onProgress(`의미 검사: ${checked.flat().length}/${identity.files.length}개 완료, 다음 ${files.length}개`);
@@ -160,7 +379,14 @@ export function verifyInShards(options, runWorker, onProgress = () => {}, onChec
     assertCompleteCoverage(files, [result.checked]);
     checked.push(result.checked);
     diagnostics.push(result.diagnostics);
-    report.workers.push({ files, checked: result.checked.length, elapsedMs: result.elapsedMs, peakRssBytes: result.peakRssBytes });
+    report.workers.push({
+      files,
+      checked: result.checked.length,
+      fingerprint,
+      diagnostics: result.diagnostics,
+      elapsedMs: result.elapsedMs,
+      peakRssBytes: result.peakRssBytes,
+    });
     report.phases.semantic = { checkedFiles: checked.flat().length, expectedFiles: identity.files.length };
     report.diagnostics = mergeDiagnostics(diagnostics);
     onCheckpoint(report);
@@ -192,10 +418,15 @@ export function main(args = process.argv.slice(2)) {
       });
       return 0;
     }
+    const existingCheckpoint = options.noCache ? null : readExistingCheckpoint(options.report);
     mkdirSync(dirname(options.report), { recursive: true });
     writeFileSync(options.report, `${JSON.stringify({ schemaVersion: 1, project: options.project, complete: false, status: "running" })}\n`);
-    const report = verifyInShards(options, runWorker, (message) => process.stdout.write(`${message}\n`),
-      (checkpoint) => writeFileSync(options.report, `${JSON.stringify(checkpoint, null, 2)}\n`));
+    const report = verifyInShards(
+      { ...options, resumeCheckpoint: existingCheckpoint },
+      runWorker,
+      (message) => process.stdout.write(`${message}\n`),
+      (checkpoint) => writeFileSync(options.report, `${JSON.stringify(checkpoint, null, 2)}\n`),
+    );
     mkdirSync(dirname(options.report), { recursive: true });
     writeFileSync(options.report, `${JSON.stringify(report, null, 2)}\n`);
     for (const diagnostic of report.diagnostics) {

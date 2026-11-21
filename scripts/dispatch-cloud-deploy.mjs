@@ -51,6 +51,7 @@ export function parseCloudDispatchArgs(argv) {
     syncWorkerSecrets: false,
     confirmOnpod: false,
     watch: false,
+    watchIntervalSec: 15,
     sha: "",
   };
 
@@ -69,7 +70,12 @@ export function parseCloudDispatchArgs(argv) {
     else if (arg === "--sync-worker-secrets") out.syncWorkerSecrets = true;
     else if (arg === "--confirm-onpod") out.confirmOnpod = true;
     else if (arg === "--watch") out.watch = true;
-    else if (arg === "--sha" && argv[i + 1]) {
+    else if (arg === "--watch-interval" && argv[i + 1]) {
+      out.watchIntervalSec = Number(argv[i + 1].trim());
+      i += 1;
+    } else if (arg.startsWith("--watch-interval=")) {
+      out.watchIntervalSec = Number(arg.slice("--watch-interval=".length).trim());
+    } else if (arg === "--sha" && argv[i + 1]) {
       out.sha = argv[i + 1].trim();
       i += 1;
     } else if (arg.startsWith("--sha=")) {
@@ -77,6 +83,10 @@ export function parseCloudDispatchArgs(argv) {
     } else {
       throw new Error("[deploy:cloud] 지원하지 않는 옵션입니다. `--help`로 사용법을 확인하세요(원문 미출력).");
     }
+  }
+
+  if (!Number.isSafeInteger(out.watchIntervalSec) || out.watchIntervalSec < 5 || out.watchIntervalSec > 60) {
+    throw new Error("[deploy:cloud] `--watch-interval`은 5~60초 사이의 정수여야 합니다.");
   }
 
   if (out.sha && !/^[0-9a-f]{40}$/u.test(out.sha)) {
@@ -179,6 +189,7 @@ function printHelp(log = console.log) {
       "  --confirm-onpod         상시 승인 범위 밖인 onpod 변경 승인 명시",
       "  --sha <40자리-sha>      대상 origin/main SHA 명시 (생략 시 현재 origin/main 끝 SHA 자동 고정)",
       "  --watch                 워크플로 디스패치 직후 완료될 때까지 실행 상태 추적",
+      "  --watch-interval <초>   --watch 폴링 간격(5~60초, 기본 15초)",
     ].join("\n"),
   );
 }
@@ -236,7 +247,10 @@ async function printCloudStatus({ rootDir = ROOT, execEnv = buildExecEnv(), targ
 }
 
 /** 응답에서 받은 실행 ID만 추적한다. 응답 유실 시 배포 요청을 다시 보내지 않는다. */
-export function dispatchCloudWorkflow(fields, { watch, rootDir = ROOT, execEnv = buildExecEnv(), exec = execFileSync, log = console.log }) {
+export function dispatchCloudWorkflow(
+  fields,
+  { watch, watchIntervalSec = 15, rootDir = ROOT, execEnv = buildExecEnv(), exec = execFileSync, log = console.log },
+) {
   const options = { cwd: rootDir, env: execEnv };
   const workflowUrl = `https://github.com/${GITHUB_REPO_SLUG}/actions/workflows/${CLOUD_DEPLOY_WORKFLOW_FILE}`;
   let response;
@@ -257,7 +271,11 @@ export function dispatchCloudWorkflow(fields, { watch, rootDir = ROOT, execEnv =
   log(`GitHub Actions 배포 요청 접수 · ${fields.ref} · ${runUrl}`);
   if (watch) {
     try {
-      exec("gh", ["run", "watch", String(id), "--repo", GITHUB_REPO_SLUG, "--exit-status", "--interval", "15"], { ...options, stdio: "inherit" });
+      exec(
+        "gh",
+        ["run", "watch", String(id), "--repo", GITHUB_REPO_SLUG, "--exit-status", "--interval", String(watchIntervalSec)],
+        { ...options, stdio: "inherit" },
+      );
     } catch {
       throw new Error(`[deploy:cloud] 배포 작업의 성공을 확인하지 못했습니다. 현재 상태와 실패 단계를 확인하세요. ${runUrl}`);
     }
@@ -294,7 +312,7 @@ async function main() {
   }
 
   const fields = buildWorkflowDispatchFields(options, targetSha);
-  dispatchCloudWorkflow(fields, { watch: options.watch, execEnv });
+  dispatchCloudWorkflow(fields, { watch: options.watch, watchIntervalSec: options.watchIntervalSec, execEnv });
 }
 
 if (process.argv[1] && realpathSync(process.argv[1]) === MODULE_PATH) {
