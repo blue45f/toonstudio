@@ -45,6 +45,26 @@ export type PlotrArtStylePresetId =
 
 export type PlotrCameraSide = "left" | "center" | "right";
 
+export type PlotrCameraFramingId = "closeup" | "bust" | "full" | "high-angle";
+
+export type PlotrLightingMoodId = "sunny" | "sunset" | "rain" | "neon-night";
+
+export type PlotrExpressionLockId = "calm" | "tense" | "angry" | "smile";
+
+export interface PlotrCharacterPalette {
+  readonly hairOklch: string;
+  readonly eyeOklch: string;
+  readonly outfitOklch: string;
+  readonly presetLabelKo: string;
+}
+
+export interface PlotrCharacterBibleSpec {
+  readonly palette: PlotrCharacterPalette;
+  readonly expressionLock: PlotrExpressionLockId;
+  readonly signatureProp: string;
+  readonly silhouetteRule: string;
+}
+
 export interface PlotrConsistencyAsset {
   readonly id: string;
   readonly category: PlotrAssetCategory;
@@ -55,6 +75,8 @@ export interface PlotrConsistencyAsset {
   readonly swatchOklch: string;
   readonly costumeOrMaterial: string;
   readonly sourceProjectLabel?: string;
+  /** 인물 카테고리 전용 일관성 바이블 설정(옵션 — 기존 스키마 v1 문서와 100% 호환). */
+  readonly characterBible?: PlotrCharacterBibleSpec;
 }
 
 export interface PlotrCutDialogue {
@@ -84,6 +106,10 @@ export interface PlotrCutCard {
   readonly panelBorderWidthPx: number;
   readonly renderReady: boolean;
   readonly compositionBrief: string;
+  /** 비주얼 프리뷰 구도 프리셋(옵션 — 없으면 cameraShot에서 결정론 추론). */
+  readonly framingPreset?: PlotrCameraFramingId;
+  /** 비주얼 프리뷰 조명 무드(옵션 — 없으면 장면/세계관 문맥에서 결정론 추론). */
+  readonly lightingMood?: PlotrLightingMoodId;
   readonly durationSec?: number;
   readonly foreshadowTag?: string;
 }
