@@ -30,8 +30,12 @@ export function createStudioSoakCpuDiagnostic(input: {
   const source = studioFirstContactTraceSource(input.source);
   let trace: ReturnType<typeof createStudioFirstContactTrace> | null = null;
   let recording = false;
+  let traceAttemptedCycle: number | null = null;
+  let traceFinishing: Promise<void> | null = null;
   let finishing: Promise<ReturnType<typeof result>> | null = null;
   const metadata = { diagnosticOnly: true, ...source, samplingIntervalUs: 1000,
+    nativeTraceCaptureScope: { kind: "first-input-attempt", maxCycles: 1, attemptedCycle: null as number | null,
+      stopBoundary: "after the first dispatch attempt, 500ms settle and pointer-latency drain; final cleanup on error" },
     startClock: null as unknown, stopClock: { beforeStopMs: null as number | null, afterStopMs: null as number | null },
     rawProfileFile: null as string | null, rawProfileSha256: null as string | null, issues: [] as string[],
     limitation: "CPU 표본과 native trace는 실행 비용을 바꾸는 원인 진단이며 성능·장시간 통과 증거가 아니다." };
@@ -47,12 +51,20 @@ export function createStudioSoakCpuDiagnostic(input: {
       return value;
     } catch (error) { issue(label, error); return null; }
   };
+  const save = () => writeFileSync(join(directory, "diagnostic-cpu-metadata.json"), `${JSON.stringify(metadata, null, 2)}\n`);
+  const finishTrace = (): Promise<void> => {
+    if (traceFinishing) return traceFinishing;
+    traceFinishing = (async () => {
+      if (trace) try { traceMetadata = await trace.finish(); } catch (error) { issue("native-trace-finish", error); }
+      else issue("native-trace-missing", "첫 입력 시도의 trace가 준비되지 않았습니다.");
+      save();
+    })();
+    return traceFinishing;
+  };
   return {
     async start() {
       if (!input.enabled) return;
       try {
-        trace = createStudioFirstContactTrace({ page, transport: await withinCpuDiagnostic(input.createTraceTransport()), directory, source });
-        await trace.start();
         await withinCpuDiagnostic(cdp.send("Profiler.enable"));
         await withinCpuDiagnostic(cdp.send("Profiler.setSamplingInterval", { interval: 1000 }));
         const before = await withinCpuDiagnostic(page.evaluate("({ pageEpoch: performance.timeOrigin, beforeStartMs: performance.now() })"));
@@ -63,12 +75,21 @@ export function createStudioSoakCpuDiagnostic(input: {
           || typeof before.beforeStartMs !== "number" || !Number.isFinite(before.beforeStartMs)
           || afterStartMs === null || before.beforeStartMs > afterStartMs) throw new Error("CPU 시작 시계 범위가 유효하지 않습니다.");
         metadata.startClock = { pageEpoch: before.pageEpoch, beforeStartMs: before.beforeStartMs, afterStartMs };
-      } catch (error) { issue("cpu-or-trace-start", error); throw error; }
+      } catch (error) { issue("cpu-start", error); throw error; }
     },
     async armStroke(cycle: number, inputMode: string) {
-      if (!input.enabled) return;
-      if (!trace) throw new Error("첫 접촉 trace 수집기가 없습니다.");
-      await trace.armStroke(cycle, inputMode);
+      if (!input.enabled || traceAttemptedCycle !== null) return;
+      if (finishing) throw new Error("종료한 CPU 진단에 첫 접촉 trace를 추가할 수 없습니다.");
+      traceAttemptedCycle = cycle; metadata.nativeTraceCaptureScope.attemptedCycle = cycle;
+      try {
+        trace = createStudioFirstContactTrace({ page, transport: await withinCpuDiagnostic(input.createTraceTransport()), directory, source,
+          captureScope: { kind: "first-input-attempt", maxCycles: 1, cycle, stopBoundary: metadata.nativeTraceCaptureScope.stopBoundary } });
+        await trace.start(); await trace.armStroke(cycle, inputMode);
+      } catch (error) { issue("native-trace-arm", error); save(); throw error; }
+    },
+    async completeStroke(cycle: number) {
+      if (!input.enabled || traceAttemptedCycle !== cycle) return;
+      await finishTrace();
     },
     finish() {
       if (!input.enabled) return Promise.resolve(null);
@@ -85,9 +106,7 @@ export function createStudioSoakCpuDiagnostic(input: {
           metadata.rawProfileSha256 = createHash("sha256").update(profile).digest("hex");
         } catch (error) { issue("cpu-profile", error); }
         finally {
-          if (trace) try { traceMetadata = await trace.finish(); } catch (error) { issue("native-trace-finish", error); }
-          else issue("native-trace-missing", "첫 접촉 trace가 준비되지 않았습니다.");
-          writeFileSync(join(directory, "diagnostic-cpu-metadata.json"), `${JSON.stringify(metadata, null, 2)}\n`);
+          await finishTrace(); save();
         }
         return result();
       })();

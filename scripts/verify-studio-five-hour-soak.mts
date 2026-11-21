@@ -442,6 +442,8 @@ async function drawEvidenceStroke(
           const issues = studioSoakPointerLatencyIssues(pointerLatency);
           if (issues.length) collectionFailed("pointer-latency", issues.join(", "), cycle);
         } catch (error) { collectionFailed("pointer-latency", error, cycle); }
+        if (CPU_DIAGNOSTIC) try { await cpuDiagnostic?.completeStroke(cycle); }
+        catch (error) { collectionFailed("diagnostic-cpu", error, cycle); }
       }
     }
   })();

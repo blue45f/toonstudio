@@ -95,6 +95,7 @@ export function createStudioFirstContactTrace(input: {
   transport: StudioFirstContactTraceTransport;
   directory: string;
   source: StudioFirstContactTraceSource;
+  captureScope?: { kind: "first-input-attempt"; maxCycles: 1; cycle: number; stopBoundary: string };
   limits?: { maxTraceBytes?: number; timeoutMs?: number };
 }) {
   const { page, transport, directory } = input;
@@ -104,6 +105,7 @@ export function createStudioFirstContactTrace(input: {
   if (!Number.isSafeInteger(maxTraceBytes) || maxTraceBytes < 1 || maxTraceBytes > MAX_TRACE_BYTES
     || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > DEADLINE_MS) throw new Error("trace 수집 한도를 확인해 주세요.");
   const metadata = { schemaVersion: 1, diagnosticOnly: true, acceptanceProven: false, ...source,
+    captureScope: input.captureScope ?? { kind: "armed-strokes", maxCycles: 64 },
     categories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES], availableCategories: null as string[] | null,
     unadvertisedRequestedCategories: null as string[] | null, categoryValidation: "trace-start-and-native-evidence",
     mainFrameId: null as string | null, endFrameId: null as string | null,
@@ -196,6 +198,7 @@ export function createStudioFirstContactTrace(input: {
     async armStroke(cycle: number, inputMode: string) {
       try {
         if (!traceStarted || finished) throw new Error("첫 접촉 trace가 활성 상태가 아닙니다.");
+        if (input.captureScope && input.captureScope.cycle !== cycle) throw new Error("첫 입력 시도 trace의 획 범위를 벗어났습니다.");
         await within(armStudioFirstContactTrace(page, identity(), cycle, inputMode), timeoutMs);
       } catch (error) { issue("arm-stroke", error); save(); throw error; }
     },

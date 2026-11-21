@@ -107,12 +107,18 @@ GitHub Actions의 `Studio 5h stability soak` 수동 실행은 다음 입력을 �
 수락 검사의 작업 제한은 기존 345분, 짧은 진단은 25분이다. 임시 진단 기본값이 정기
 300분 검사를 가로막지 않도록 실제 workflow 배선과 기본값을 함께 회귀로 확인한다.
 
-Native trace는 진단 세션의 모든 획·휴식과 종료 history 정리·GC·화면 캡처까지 포함한다.
-획의 page-clock mark와 같은 renderer thread의 원본 trace mark를 직접 연결하고,
-해당 pointerdown task의 style·layout 경로를 확인한다. 이는 첫 잉크 표시나 물리 펜의
-지연 측정이 아니다. 원본은 64MiB로 제한하며, 손실·누락·시계 불일치·수집 오류는
-진단 완료로 인정하지 않는다. 이 상한은 원본 크기이며 JSON 파싱을 포함한 Node 전체
-메모리의 상한은 아니다. 일반 300분 경로에서는 CPU·trace 계측을 시작하지 않는다.
+CPU profile은 짧은 진단 세션을 기록한다. Native trace는 첫 입력 시도 직전에 시작해
+dispatch·500ms 대기·지연 표본 회수 직후 종료한다. 준비 화면 캡처·이후 획·휴식·종료
+history 정리와 GC는 이 native 수집 범위에 포함하지 않으며, 실제 범위와 cycle을
+metadata에 남긴다. 첫 획의 page-clock mark와 같은 renderer thread의 원본 trace mark를
+직접 연결해 pointerdown task의 style·layout 경로를 확인한다. 이후 획의 원인이나
+첫 잉크 표시·물리 펜의 지연을 증명하는 자료는 아니다.
+
+원본은 64MiB로 제한하며, 손실·누락·시계 불일치·수집 오류는 진단 완료로 인정하지
+않는다. 이 상한은 원본 크기이며 JSON 파싱을 포함한 Node 전체 메모리의 상한은 아니다.
+조회 범주 목록과 요청 목록의 차이는 보존하고, 실제 RunTask·pointerdown EventDispatch·
+native UserTiming 원본을 완료 판정의 근거로 삼는다. 일반 300분 경로에서는 CPU·trace
+계측을 시작하지 않는다.
 
 ### 2026-11-22 관측: Linux 소프트웨어 WebGPU 표시 경로
 
@@ -127,10 +133,24 @@ Linux SwiftShader의 기존 `--use-gl=swiftshader` 조합은 offscreen 연산은
 남겼으므로 진단 전체를 오류 없는 통과로 표시하지 않는다.
 
 현재 소크의 Linux WebGPU 실행은 위 재현에서 확인한 Vulkan·ANGLE·SwiftShader 설정을
-공통 helper로 사용한다. 비 WebGPU profile은 공식 ANGLE·SwiftShader OpenGL ES 경로를 사용하고, Linux 이외에는\nLinux에서만 확인한 Vulkan 조합을 적용하지 않는다. 소크와 비교 진단은 설치된 Playwright·\nChromium·CDP 버전과 요청·실제 실행 인자를 함께 남긴다. 실제 인자가 누락되거나 뒤에서\n덮어써진 경우, metadata 수집·정리에 실패한 경우도 통과로 바꾸지 않는다.
+공통 helper로 사용한다. 비 WebGPU profile은 공식 ANGLE·SwiftShader OpenGL ES 경로를
+사용하고, Linux 이외에는 Linux에서만 확인한 Vulkan 조합을 적용하지 않는다.
+소크와 비교 진단은 설치된 Playwright·Chromium·CDP 버전과 요청·실제 실행 인자를 함께
+남긴다. 실제 인자가 누락되거나 뒤에서 덮어써진 경우, metadata 수집·정리에 실패한
+경우도 통과로 바꾸지 않는다.
 실제 제품 세션의 장치 손실·거절 획·시각 오류·성능·시간 기준은 그대로 적용하고,
 이 설정 변경의 수락 여부는 새 소크 결과로 판단한다. 소프트웨어 adapter 결과를
 물리 GPU·모바일 운영체제·실제 펜 장치 인증으로 간주하지 않는다.
+
+[진단 run 124](https://github.com/blue45f/toonstudio/actions/runs/44929862825)은
+`daba54f6380b1b5d534afdef7b7f3cd63a7fe092`에서 실행했다. Desktop·Kakao·Naver는
+`toplevel`이 조회 목록에 없다는 수집기 오류로 입력 전에 종료했다. Instagram·WebGPU의
+3분 세션은 native 자료 손실과 64MiB 초과가 확인되어 추적 완료로 인정하지 않았다.
+이 결과 때문에 범주 조회와 실제 원본 검증을 구분하고 native 수집 범위를 첫 시도로
+줄였다. WebGPU 독립 비교의 Vulkan/ANGLE 네 조건은 정상 동작했으나, Studio에서는
+live-ink `timeout`으로 여섯 획을 거절했다. 이 세션의 GPU 장치 손실 이벤트는 0건이며,
+receipt 지연·누락·정체성 불일치 중 어떤 하위 원인인지는 아직 확정하지 않았다.
+두 진단 실행 모두 300분 수락 검사나 물리 장치 인증의 근거가 아니다.
 
 ### 현재 화면의 브러시 선택과 Undo/Redo
 
