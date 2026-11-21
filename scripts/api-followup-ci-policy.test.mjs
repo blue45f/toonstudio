@@ -133,7 +133,7 @@ function assertManualHarnessStep(step) {
   const parsedSteps = parse(step);
   assert.ok(Array.isArray(parsedSteps));
   assert.equal(parsedSteps.length, 1);
-  assert.deepEqual(parsedSteps[0].env, { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "6291456" });
+  assert.deepEqual(parsedSteps[0].env, { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "3145728" });
   assert.deepEqual(workflowRun(step).split("\n"), [
     "set -euo pipefail",
     "HARNESS_BASE=$(git rev-parse refs/remotes/origin/main)",
@@ -154,8 +154,9 @@ test("수동 하네스 환경 계약은 추가 변수와 예산 값 변경을 �
     { ...environment, EXTRA_TYPECHECK_FLAG: "1" },
     { ...environment, TOONSTUDIO_CHECKOUT_TOKEN: "fixture-token-for-test-only" },
     { ...environment, OTHER_TOKEN: "${{ secrets.FIXTURE_TOKEN }}" },
+    { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "6291456" },
     { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "12582912" },
-    { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: 6291456 },
+    { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: 3145728 },
     {},
   ]) {
     const mutated = step.replace(/^ {8}env: .+$/mu, `        env: ${JSON.stringify(changed)}`);

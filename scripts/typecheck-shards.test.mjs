@@ -388,9 +388,11 @@ test("CLI 연속 실행은 동일 fingerprint 완료 리포트를 재사용하�
 test("호스팅 CI의 초기 바이트 예산은 명시된 경우에만 기본 CLI 값을 덮어쓴다", () => {
   const args = ["--heap-mb", "8192", "--max-source-bytes", "12582912"];
   const local = parseArguments(args, {});
-  const hosted = parseArguments(args, { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "6291456" });
   assert.equal(local.maxBytes, 12582912);
-  assert.deepEqual(hosted, { ...local, maxBytes: 6291456 });
+  for (const maxBytes of [3145728, 6291456]) {
+    const hosted = parseArguments(args, { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: String(maxBytes) });
+    assert.deepEqual(hosted, { ...local, maxBytes });
+  }
   assert.equal(parseArguments([], {}).maxBytes, 4 * 1024 * 1024);
   for (const value of ["", "0", "-1", "2.5", "NaN", "Infinity", "9007199254740992"]) {
     assert.throws(() => parseArguments(args, { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: value }),
