@@ -13,6 +13,7 @@
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { deflateRawSync, deflateSync } from "node:zlib";
 
 import { describe, expect, it } from "vitest";
 
@@ -26,13 +27,20 @@ import {
   KRITA_REFERENCE_MAX_DIAMETER_PX,
   MYPAINT_LOG_RADIUS_SCALE,
   STUDIO_BRUSH_PACK_ACCEPT,
+  STUDIO_BRUSH_PACK_MAX_STROKE_WIDTH,
   StudioBrushProgramImportError,
   importStudioBrushJsonText,
+  importStudioCspToolBytes,
   importStudioKppBytes,
   importStudioMybBytes,
+  importStudioProcreateBrushsetBytes,
   studioBrushPackFormatOf,
   studioBrushSnapshotFromProgram,
 } from "./studio-brush-pack-import";
+import {
+  buildAuthoredSutFixture,
+  readAuthoredSutWithNodeSqlite,
+} from "../../../../../../tests/corpus/formats/csp-sut-fixtures";
 
 import type { StudioBrushSnapshot } from "./studio-brush-library";
 
@@ -107,14 +115,17 @@ describe("brush pack format sniffing", () => {
     expect(studioBrushPackFormatOf("ink.sut")).toBe("sut");
     expect(studioBrushPackFormatOf("group.sutg")).toBe("sutg");
     expect(studioBrushPackFormatOf("paint.bundle")).toBe("bundle");
+    expect(studioBrushPackFormatOf("watercolor.brushset")).toBe("brushset");
     expect(studioBrushPackFormatOf("saved.json")).toBe("json");
     expect(studioBrushPackFormatOf("nameless", "application/x-photoshop")).toBe("abr");
     expect(studioBrushPackFormatOf("nameless", "application/x-krita-resourcebundle"))
       .toBe("bundle");
+    expect(studioBrushPackFormatOf("nameless", "application/x-procreate-brushset"))
+      .toBe("brushset");
   });
 
-  it("advertises .myb and .kpp on the accept list, so the picker can offer them", () => {
-    for (const extension of [".json", ".abr", ".myb", ".kpp", ".sut", ".sutg", ".bundle"]) {
+  it("advertises .myb, .kpp, and .brushset on the accept list, so the picker can offer them", () => {
+    for (const extension of [".json", ".abr", ".myb", ".kpp", ".sut", ".sutg", ".bundle", ".brushset"]) {
       expect(STUDIO_BRUSH_PACK_ACCEPT).toContain(extension);
     }
   });
@@ -284,31 +295,214 @@ describe("BrushProgramIR → snapshot mapping surfaces what it cannot carry", ()
     expect(snapshot.stabilizer).toBe(5);
   });
 
-  it("reports smudge, image tips and unsupported inputs instead of faking them", () => {
-    const { unmapped, warnings } = studioBrushSnapshotFromProgram({
+  it("preserves smudge/wet mixing, tilt dynamics, angle jitter, and flags only truly missing image assets or random inputs", () => {
+    const { snapshot, unmapped, warnings } = studioBrushSnapshotFromProgram({
       ...baseProgram,
       mixing: { kind: "smudge", strength: 0.4 },
       tip: { kind: "image", hardness: 1, spacingPct: 10, angleJitterDeg: 15 },
       sizeDynamics: [
         ...baseProgram.sizeDynamics,
         { input: "tiltAltitude", curve: [0, 1], min: 0, max: 1 },
+        { input: "random", curve: [0, 1], min: 0, max: 1 },
       ],
     });
-    expect(unmapped).toContain("mixing.smudge");
+    expect(snapshot.brushId).toBe("web-smudge-trail");
+    expect(snapshot.brushDynamics.angle.jitter).toEqual({ mode: "add", amount: 15 });
+    expect(snapshot.brushDynamics.width.mappings.some((m) => m.source === "tilt-magnitude")).toBe(true);
+    expect(unmapped).not.toContain("mixing.smudge");
+    expect(unmapped).not.toContain("tip.angleJitterDeg");
+    expect(unmapped).not.toContain("sizeDynamics(tiltAltitude)");
     expect(unmapped).toContain("tip.image");
-    expect(unmapped).toContain("tip.angleJitterDeg");
-    expect(unmapped).toContain("sizeDynamics(tiltAltitude)");
-    expect(warnings.length).toBeGreaterThan(0);
+    expect(unmapped).toContain("sizeDynamics(random)");
+    expect(warnings.some((w) => w.code === "warn.imageTipFallback")).toBe(true);
   });
 
-  it("flags a non-linear pressure LUT as an approximation", () => {
-    const { warnings } = studioBrushSnapshotFromProgram({
+  it("preserves non-linear pressure LUTs via fitted cubic Bezier curveLUT without linear flattening", () => {
+    const { snapshot, warnings } = studioBrushSnapshotFromProgram({
       ...baseProgram,
       sizeDynamics: [
+        { input: "constant", curve: [0.36, 0.36], min: 0, max: 1 },
         { input: "pressure", curve: [0, 0.02, 0.05, 0.1, 0.2, 0.45, 0.75, 1], min: 0, max: 1 },
       ],
     });
-    expect(warnings.some((warning) => warning.code === "warn.sizeCurveApproximated")).toBe(true);
+    expect(STUDIO_BRUSH_PACK_MAX_STROKE_WIDTH).toBe(500);
+    expect(snapshot.strokeWidth).toBe(360);
+    expect(warnings.some((warning) => warning.code === "warn.sizeCurveApproximated")).toBe(false);
+    const pressureMap = snapshot.brushDynamics.width.mappings.find((m) => m.source === "pressure")!;
+    expect(pressureMap.curveMode).toBe("bezier");
+    expect(pressureMap.curveControlPoints).toHaveLength(4);
+    expect(pressureMap.curveLUT).toBeInstanceOf(Float32Array);
+    // Mid-pressure response stays concave (< 0.35), not linearly flattened to 0.50.
+    expect(pressureMap.curveLUT![128]).toBeLessThan(0.35);
+  });
+
+  it("routes media families (watercolor, oil, pencil, charcoal, airbrush, ink) to appropriate brush lanes", () => {
+    const routeOf = (
+      name: string,
+      overrides: Partial<Parameters<typeof studioBrushSnapshotFromProgram>[0]> = {},
+    ) => studioBrushSnapshotFromProgram({ ...baseProgram, name, ...overrides }).snapshot;
+
+    expect(routeOf("투명 수채 워시", { mixing: { kind: "wet", strength: 0.7 } })).toMatchObject({
+      brushId: "watercolor",
+      enginePrograms: { watercolor: { wetEdgeBloomProgramId: "edge-bloom" } },
+    });
+    expect(routeOf("유화 평붓 Oil")).toMatchObject({
+      brushId: "oil",
+      enginePrograms: { oil: { bristlePhysics: true, impastoRelief: true } },
+    });
+    expect(routeOf("2B 흑연 연필 Pencil").brushId).toBe("erodible-pencil");
+    expect(routeOf("거친 목탄 Charcoal").brushId).toBe("charcoal");
+    expect(routeOf("소프트 에어브러시", { tip: { kind: "round", hardness: 0.15, spacingPct: 10, angleJitterDeg: 0 } }).brushId).toBe("airbrush");
+    expect(routeOf("G펜 잉크").brushId).toBe("ink-particle");
+  });
+});
+
+describe("CSP .sut lossless import & Procreate .brushset end-to-end drawability", () => {
+  it("imports authored CSP .sut with auto-linked Material PNG tip, 180px wash width, and drawable pixels", async () => {
+    const sutBytes = buildAuthoredSutFixture({ group: true });
+    const result = await importStudioCspToolBytes(
+      sutBytes,
+      "authored.sutg",
+      "sutg",
+      readAuthoredSutWithNodeSqlite,
+    );
+    expect(result.brushes).toHaveLength(2);
+    const ink = result.brushes[0]!;
+    const wash = result.brushes[1]!;
+    expect(ink.snapshot.brushDynamics.tip.alphaMapBase64).toBeTruthy();
+    expect(ink.snapshot.brushDynamics.width.mappings[0]?.curveMode).toBe("bezier");
+    expect(wash.snapshot.strokeWidth).toBe(180);
+    expect(wash.snapshot.brushId).toBe("watercolor");
+    expect(drawCoverage(ink.snapshot).coveredPixels).toBeGreaterThan(200);
+    expect(drawCoverage(wash.snapshot).coveredPixels).toBeGreaterThan(200);
+  });
+
+  it("imports a Procreate .brushset ZIP with Shape.png, Wet Mix, Dual Brush, and Taper and draws", async () => {
+    const crcTable = (() => {
+      const t = new Uint32Array(256);
+      for (let i = 0; i < 256; i += 1) {
+        let c = i;
+        for (let b = 0; b < 8; b += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+        t[i] = c >>> 0;
+      }
+      return t;
+    })();
+    const crc32 = (buf: Uint8Array) => {
+      let c = 0xffff_ffff;
+      for (const b of buf) c = (c >>> 8) ^ (crcTable[(c ^ b) & 0xff] ?? 0);
+      return (c ^ 0xffff_ffff) >>> 0;
+    };
+    const pngChunk = (type: string, data: Uint8Array) => {
+      const out = new Uint8Array(12 + data.byteLength);
+      const dv = new DataView(out.buffer);
+      dv.setUint32(0, data.byteLength, false);
+      for (let i = 0; i < 4; i += 1) out[4 + i] = type.charCodeAt(i);
+      out.set(data, 8);
+      dv.setUint32(8 + data.byteLength, crc32(out.subarray(4, 8 + data.byteLength)), false);
+      return out;
+    };
+    // 16×16 white circle Shape.png
+    const ihdr = new Uint8Array(13);
+    new DataView(ihdr.buffer).setUint32(0, 16, false);
+    new DataView(ihdr.buffer).setUint32(4, 16, false);
+    ihdr[8] = 8;
+    ihdr[9] = 0;
+    const raw = new Uint8Array(16 * 17);
+    for (let y = 0; y < 16; y += 1) {
+      for (let x = 0; x < 16; x += 1) {
+        raw[y * 17 + 1 + x] = Math.hypot(x - 7.5, y - 7.5) <= 6.5 ? 255 : 0;
+      }
+    }
+    const shapePng = Uint8Array.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+      ...pngChunk("IHDR", ihdr),
+      ...pngChunk("IDAT", new Uint8Array(deflateSync(raw))),
+      ...pngChunk("IEND", new Uint8Array()),
+    ]);
+    const manifest = new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict><key>name</key><string>Procreate Set</string><key>brushes</key><array><string>WET1</string></array></dict></plist>`);
+    const archiveXml = new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict>
+  <key>name</key><string>Procreate Watercolor</string>
+  <key>maxSize</key><real>0.9</real>
+  <key>maxOpacity</key><real>0.85</real>
+  <key>plotSpacing</key><real>0.14</real>
+  <key>plotJitter</key><real>0.15</real>
+  <key>paintDilution</key><real>0.65</real>
+  <key>paintPull</key><real>0.55</real>
+  <key>pressureTaperStartLength</key><real>0.15</real>
+  <key>pressureTaperEndLength</key><real>0.25</real>
+  <key>taperSize</key><real>0.8</real>
+  <key>pressureSizeCurve</key><array><string>{0, 0.1}</string><string>{0.5, 0.25}</string><string>{1, 1}</string></array>
+</dict></plist>`);
+
+    const zipEntries = [
+      { path: "brushset.plist", data: manifest },
+      { path: "WET1/Brush.archive", data: archiveXml },
+      { path: "WET1/Shape.png", data: shapePng },
+    ];
+    const locals: Uint8Array[] = [];
+    const centrals: Uint8Array[] = [];
+    let offset = 0;
+    for (const entry of zipEntries) {
+      const nameBytes = new TextEncoder().encode(entry.path);
+      const crc = crc32(entry.data);
+      const payload = new Uint8Array(deflateRawSync(entry.data));
+      const local = new Uint8Array(30 + nameBytes.byteLength + payload.byteLength);
+      const lv = new DataView(local.buffer);
+      lv.setUint32(0, 0x04034b50, true);
+      lv.setUint16(4, 20, true);
+      lv.setUint16(6, 0x0800, true);
+      lv.setUint16(8, 8, true);
+      lv.setUint32(14, crc, true);
+      lv.setUint32(18, payload.byteLength, true);
+      lv.setUint32(22, entry.data.byteLength, true);
+      lv.setUint16(26, nameBytes.byteLength, true);
+      local.set(nameBytes, 30);
+      local.set(payload, 30 + nameBytes.byteLength);
+      locals.push(local);
+
+      const central = new Uint8Array(46 + nameBytes.byteLength);
+      const cv = new DataView(central.buffer);
+      cv.setUint32(0, 0x02014b50, true);
+      cv.setUint16(4, 20, true);
+      cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0x0800, true);
+      cv.setUint16(10, 8, true);
+      cv.setUint32(16, crc, true);
+      cv.setUint32(20, payload.byteLength, true);
+      cv.setUint32(24, entry.data.byteLength, true);
+      cv.setUint16(28, nameBytes.byteLength, true);
+      cv.setUint32(42, offset, true);
+      central.set(nameBytes, 46);
+      centrals.push(central);
+      offset += local.byteLength;
+    }
+    const cdSize = centrals.reduce((s, p) => s + p.byteLength, 0);
+    const eocd = new Uint8Array(22);
+    const ev = new DataView(eocd.buffer);
+    ev.setUint32(0, 0x06054b50, true);
+    ev.setUint16(8, zipEntries.length, true);
+    ev.setUint16(10, zipEntries.length, true);
+    ev.setUint32(12, cdSize, true);
+    ev.setUint32(16, offset, true);
+    const zipBytes = Uint8Array.from([
+      ...locals.flatMap((p) => [...p]),
+      ...centrals.flatMap((p) => [...p]),
+      ...eocd,
+    ]);
+
+    const imported = await importStudioProcreateBrushsetBytes(zipBytes, "watercolor.brushset");
+    expect(imported.format).toBe("brushset");
+    expect(imported.brushes).toHaveLength(1);
+    const snap = imported.brushes[0]!.snapshot;
+    expect(snap.brushId).toBe("watercolor");
+    expect(snap.strokeWidth).toBe(180);
+    expect(snap.enginePrograms?.watercolor?.wetEdgeBloomProgramId).toBe("edge-bloom");
+    expect(snap.brushDynamics.tip.alphaMapBase64).toBeTruthy();
+    expect(snap.brushDynamics.taper).toMatchObject({ enabled: true, startLength: 0.15, endLength: 0.25 });
+    expect(snap.brushDynamics.scatterRatio).toBeCloseTo(0.3, 4);
+    expect(drawCoverage(snap).coveredPixels).toBeGreaterThan(200);
   });
 });
 

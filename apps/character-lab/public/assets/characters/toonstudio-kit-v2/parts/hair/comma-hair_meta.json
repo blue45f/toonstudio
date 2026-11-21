@@ -1,0 +1,384 @@
+{
+  "schema": "toonstudio.character-kit.hair-v2/1",
+  "styleId": "comma-hair",
+  "labelKo": "쉼표머리 가르마 (남)",
+  "genre": "오피스·로맨스 남주",
+  "fittedBase": "male-webtoon",
+  "file": {
+    "path": "comma-hair.glb",
+    "bytes": 1421996,
+    "sha256": "b295ddecc95359db5fc58dfd57e3488f366b23208fb506626eb243acd22ddfbd"
+  },
+  "drawCalls": 8,
+  "materials": [
+    "ts_hair_comma-hair",
+    "ts_hair_tip_comma-hair",
+    "ts_hair_accent_comma-hair"
+  ],
+  "lods": [
+    {
+      "node": "TS_AuthoredHair_comma-hair_LOD0",
+      "lod": 0,
+      "triangles": 10496,
+      "vertices": 5312,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_comma-hair_LOD1",
+      "lod": 1,
+      "triangles": 5152,
+      "vertices": 2640,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_comma-hair_LOD2",
+      "lod": 2,
+      "triangles": 1736,
+      "vertices": 918,
+      "primitives": 2,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    }
+  ],
+  "morphs": [
+    "param:height:+",
+    "param:height:-",
+    "param:legLength:+",
+    "param:legLength:-",
+    "param:neckLength:+",
+    "param:neckLength:-",
+    "param:headSize:+",
+    "param:headSize:-",
+    "shape:bang-length:+",
+    "shape:bang-length:-",
+    "shape:volume:+",
+    "shape:volume:-",
+    "shape:sway:+",
+    "shape:sway:-"
+  ],
+  "shapes": [
+    "bang-length",
+    "volume",
+    "sway"
+  ],
+  "uv0Monotonic": true,
+  "uv1Purpose": "hair-flow",
+  "texture": {
+    "bytes": 21555,
+    "size": 512,
+    "meanLuminance": 0.9231,
+    "minLuminance": 0.8,
+    "columns": 4
+  },
+  "springBone": {
+    "schema": "toonstudio.hair-springbone/1",
+    "vrmSpec": "VRMC_springBone-1.0",
+    "styleId": "comma-hair",
+    "fittedBase": "male-webtoon",
+    "chainCount": 2,
+    "colliders": [
+      {
+        "id": "head_sphere",
+        "bone": "mixamorig:Head",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.08596,
+          -0.00343
+        ],
+        "radius": 0.08959
+      },
+      {
+        "id": "neck_capsule",
+        "bone": "mixamorig:Neck",
+        "shape": "capsule",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tailGltf": [
+          0.0,
+          0.09531,
+          -0.002
+        ],
+        "radius": 0.05985
+      },
+      {
+        "id": "upper_chest_sphere",
+        "bone": "mixamorig:Spine2",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.00099
+        ],
+        "radius": 0.15824
+      }
+    ],
+    "chains": [
+      {
+        "id": "bang_comma",
+        "region": "bang",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 4,
+        "lengthM": 0.2068,
+        "hitRadius": 0.016,
+        "stiffness": 0.84,
+        "dragForce": 0.45,
+        "gravityPower": 0.24,
+        "joints": [
+          {
+            "name": "TS_Spring_comma-hair_bang_comma_0",
+            "positionGltf": [
+              -0.01182,
+              1.82612,
+              0.02183
+            ],
+            "localOffsetFromHead": [
+              -0.01182,
+              0.18302,
+              0.02983
+            ],
+            "hitRadius": 0.016,
+            "stiffness": 0.924,
+            "dragForce": 0.45,
+            "gravityPower": 0.24,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_comma-hair_bang_comma_1",
+            "positionGltf": [
+              0.02255,
+              1.82728,
+              0.07979
+            ],
+            "localOffsetFromHead": [
+              0.02255,
+              0.18418,
+              0.08779
+            ],
+            "hitRadius": 0.01504,
+            "stiffness": 0.854,
+            "dragForce": 0.45,
+            "gravityPower": 0.24,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_comma-hair_bang_comma_2",
+            "positionGltf": [
+              0.05706,
+              1.76892,
+              0.09762
+            ],
+            "localOffsetFromHead": [
+              0.05706,
+              0.12582,
+              0.10562
+            ],
+            "hitRadius": 0.01408,
+            "stiffness": 0.784,
+            "dragForce": 0.45,
+            "gravityPower": 0.24,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_comma-hair_bang_comma_3",
+            "positionGltf": [
+              -0.00269,
+              1.73404,
+              0.10103
+            ],
+            "localOffsetFromHead": [
+              -0.00269,
+              0.09094,
+              0.10903
+            ],
+            "hitRadius": 0.01312,
+            "stiffness": 0.714,
+            "dragForce": 0.45,
+            "gravityPower": 0.24,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "bang_sweep",
+        "region": "bang",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 4,
+        "lengthM": 0.133,
+        "hitRadius": 0.015,
+        "stiffness": 0.88,
+        "dragForce": 0.48,
+        "gravityPower": 0.22,
+        "joints": [
+          {
+            "name": "TS_Spring_comma-hair_bang_sweep_0",
+            "positionGltf": [
+              -0.01688,
+              1.82572,
+              0.01907
+            ],
+            "localOffsetFromHead": [
+              -0.01688,
+              0.18262,
+              0.02707
+            ],
+            "hitRadius": 0.015,
+            "stiffness": 0.968,
+            "dragForce": 0.48,
+            "gravityPower": 0.22,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_comma-hair_bang_sweep_1",
+            "positionGltf": [
+              -0.03984,
+              1.82538,
+              0.0566
+            ],
+            "localOffsetFromHead": [
+              -0.03984,
+              0.18228,
+              0.0646
+            ],
+            "hitRadius": 0.0141,
+            "stiffness": 0.8947,
+            "dragForce": 0.48,
+            "gravityPower": 0.22,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_comma-hair_bang_sweep_2",
+            "positionGltf": [
+              -0.06457,
+              1.78981,
+              0.06716
+            ],
+            "localOffsetFromHead": [
+              -0.06457,
+              0.14671,
+              0.07516
+            ],
+            "hitRadius": 0.0132,
+            "stiffness": 0.8213,
+            "dragForce": 0.48,
+            "gravityPower": 0.22,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_comma-hair_bang_sweep_3",
+            "positionGltf": [
+              -0.07578,
+              1.75033,
+              0.05029
+            ],
+            "localOffsetFromHead": [
+              -0.07578,
+              0.10723,
+              0.05829
+            ],
+            "hitRadius": 0.0123,
+            "stiffness": 0.748,
+            "dragForce": 0.48,
+            "gravityPower": 0.22,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "qa": {
+    "bytes": 1421996,
+    "minClearanceMm": 0.793,
+    "verticesInside": 0,
+    "gltfValidateErrors": 0,
+    "gltfValidateWarnings": 0,
+    "bmesh": {
+      "TS_AuthoredHair_comma-hair_LOD0": {
+        "verts": 5430,
+        "faces": 10496,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_comma-hair_LOD1": {
+        "verts": 2733,
+        "faces": 5152,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_comma-hair_LOD2": {
+        "verts": 918,
+        "faces": 1736,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      }
+    },
+    "springChainCount": 2
+  },
+  "passed": true,
+  "errors": [],
+  "seconds": 1.88
+}

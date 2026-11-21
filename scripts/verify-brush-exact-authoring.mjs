@@ -42,8 +42,12 @@ try {
     assert.equal(first.savedWidth, 33);
     assert.equal(first.savedOpacity, 0.42);
     assert.equal(first.liveCommitted.maximumChannelError, 0);
+    const exportButton = page.getByRole("button", { name: "내보내기", exact: true });
+    if (!(await exportButton.isVisible())) {
+      await page.getByText("파일·질감 도구", { exact: true }).click();
+    }
     const downloaded = page.waitForEvent("download");
-    await page.getByRole("button", { name: "내보내기", exact: true }).click();
+    await exportButton.click();
     const download = await downloaded;
     assert.ok(download.suggestedFilename().endsWith(".brush.json"));
     const target = resolve(output, `${pigment}.brush.json`);

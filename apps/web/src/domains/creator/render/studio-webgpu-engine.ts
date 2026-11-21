@@ -13,6 +13,10 @@ import {
   STUDIO_GPU_MAX_DABS,
 } from "./studio-webgpu-dab-planner";
 import {
+  STUDIO_GPU_DUAL_ENVELOPE_AA_BRUSH_SHADER,
+  STUDIO_WEBGPU_SPECTRAL_38BAND_BLEND_WGSL,
+} from "./studio-webgpu-km-wgsl";
+import {
   copyStudioGpuReadbackRows,
   planStudioGpuReadbackLayout,
   STUDIO_GPU_MAX_READBACK_PIXELS,
@@ -208,62 +212,14 @@ const DEFAULT_MAX_TEXTURE_DIMENSION = 8_192;
  * translucent dabs otherwise quantize at every blend into 8-bit storage, which produces visible
  * banding and density drift long before the final presentation/export conversion.
  */
+export { STUDIO_WEBGPU_SPECTRAL_38BAND_BLEND_WGSL };
+
 const STUDIO_GPU_TILE_TEXTURE_FORMAT = "rgba16float" as const;
 const PRESENTATION_VERTEX_FLOATS = 4;
 const PRESENTATION_VERTEX_BYTES = PRESENTATION_VERTEX_FLOATS * Float32Array.BYTES_PER_ELEMENT;
 let studioGpuEngineInstanceSequence = 0;
 
-const STUDIO_GPU_BRUSH_SHADER = /* wgsl */ `
-  struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-    @location(0) local: vec2<f32>,
-    @location(1) color: vec4<f32>,
-    @location(2) @interpolate(flat) nominal_radius_ratio: f32,
-  }
-
-  @vertex
-  fn vs_main(
-    @builtin(vertex_index) vertex_index: u32,
-    @location(0) center: vec2<f32>,
-    @location(1) quad_radius: vec2<f32>,
-    @location(2) color: vec4<f32>,
-    @location(3) nominal_radius_ratio: f32,
-  ) -> VertexOutput {
-    let corners = array<vec2<f32>, 6>(
-      vec2<f32>(-1.0, -1.0),
-      vec2<f32>( 1.0, -1.0),
-      vec2<f32>(-1.0,  1.0),
-      vec2<f32>(-1.0,  1.0),
-      vec2<f32>( 1.0, -1.0),
-      vec2<f32>( 1.0,  1.0),
-    );
-    let corner = corners[vertex_index];
-    var output: VertexOutput;
-    output.position = vec4<f32>(center + corner * quad_radius, 0.0, 1.0);
-    output.local = corner;
-    output.color = color;
-    output.nominal_radius_ratio = nominal_radius_ratio;
-    return output;
-  }
-
-  @fragment
-  fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    // The quad is rasterized one physical texel larger than the analytic dab radius (see
-    // writePackedTileDab), so the coverage transition below has real geometry to feather into on
-    // every side instead of only toward the instanced quad's unclipped corners. local==1.0 is now
-    // the expanded quad edge; nominal_radius_ratio locates the true circle boundary inside it.
-    let distance_from_center = length(input.local);
-    // Keep the edge close to one physical pixel instead of feathering 10% of large brush tips.
-    let edge_width = max(fwidth(distance_from_center), 0.0005);
-    let half_edge_width = edge_width * 0.5;
-    let coverage = 1.0 - smoothstep(
-      input.nominal_radius_ratio - half_edge_width,
-      input.nominal_radius_ratio + half_edge_width,
-      distance_from_center
-    );
-    return input.color * coverage;
-  }
-`;
+const STUDIO_GPU_BRUSH_SHADER = STUDIO_GPU_DUAL_ENVELOPE_AA_BRUSH_SHADER;
 
 const STUDIO_GPU_TILE_PRESENTATION_SHADER = /* wgsl */ `
   struct VertexOutput {

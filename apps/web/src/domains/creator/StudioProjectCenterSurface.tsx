@@ -36,7 +36,7 @@ export function StudioProjectCenterSurface({
   children,
 }: StudioProjectCenterSurfaceProps) {
   // 이 표면은 열려 있는 동안에만 마운트된다. 메뉴바의 "프로젝트 센터" 단추를 키보드로 눌렀다면 포커스를 받는다.
-  useStudioWindowKeyboardFocus("#studio-project-actions-menu", true);
+  useStudioWindowKeyboardFocus("#studio-project-actions-menu", true, onClose);
   const content = (
     <div
       onClickCapture={(event) => handleProjectAction(event, onClose)}

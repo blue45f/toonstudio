@@ -93,12 +93,37 @@ describe.each([
   });
 });
 
-describe("useStudioWindowKeyboardFocus — 선택자", () => {
+describe("useStudioWindowKeyboardFocus — 선택자 및 Esc 닫기", () => {
   it("올바르지 않은 선택자는 오류 없이 무시한다", () => {
     function Broken() {
       useStudioWindowKeyboardFocus("[data-x=", true);
       return <button type="button">단추</button>;
     }
     expect(() => render(<Broken />)).not.toThrow();
+  });
+
+  it("단축키 경계(메뉴바)에서 연 떠 있는 창도 onEscape 로 Esc 닫기가 동작한다", () => {
+    function MenuOpenedFixture() {
+      const [openState, setOpenState] = useState(false);
+      useStudioWindowKeyboardFocus(WINDOW_SELECTOR, openState, () => setOpenState(false));
+      return (
+        <div id="studio-app-shell" data-studio-editor="true">
+          <div id="studio-menubar" data-studio-shortcut-boundary="true">
+            <button type="button" onClick={() => setOpenState(true)}>소재 창 열기</button>
+          </div>
+          {openState ? (
+            <div role="dialog" aria-label="소재" data-studio-tool-popover="demo" tabIndex={-1}>
+              <button type="button">창 안 단추</button>
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+    render(<MenuOpenedFixture />);
+    markInput("pointer");
+    const opener = open();
+    expect(screen.getByRole("dialog", { name: "소재" })).toBeTruthy();
+    fireEvent.keyDown(opener, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "소재" })).toBeNull();
   });
 });

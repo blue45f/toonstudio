@@ -164,7 +164,7 @@ function statusTone(status: PlanningDocumentStatus): string {
 function MiniPill({ children, className }: { readonly children: ReactNode; readonly className?: string }) {
   return (
     <span className={cn(
-      "inline-flex min-h-6 items-center rounded-full border border-line bg-raised px-2 py-0.5 text-[0.6875rem] font-semibold text-fg-2",
+      "inline-flex min-h-6 items-center rounded-full border border-line bg-raised px-2 py-0.5 text-xs font-semibold text-fg-2",
       className,
     )}>
       {children}
@@ -266,7 +266,7 @@ function CutArtwork({
       aria-label={`${cut.cutId} 선택`}
       onClick={onSelect}
       className={cn(
-        "group relative w-full overflow-hidden rounded-xl border text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-accent",
+        "group relative w-full overflow-hidden rounded-xl border text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent",
         "bg-gradient-to-br from-raised via-panel to-accent-soft",
         heightClass,
         selected
@@ -279,11 +279,11 @@ function CutArtwork({
       <div className="absolute bottom-[18%] right-[9%] h-[38%] w-[42%] rounded-t-full border border-line-strong/40 bg-raised/80" />
       <div className="absolute inset-x-3 bottom-3 rounded-lg border border-line/70 bg-card/88 p-2 backdrop-blur-sm">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[0.6875rem] font-black text-accent">{cut.cutId}</span>
-          <span className="text-[0.625rem] text-fg-3">난도 {cut.complexity}</span>
+          <span className="text-xs font-semibold text-accent">{cut.cutId}</span>
+          <span className="text-xs text-fg-3">난도 {cut.complexity}</span>
         </div>
         <p className="mt-1 line-clamp-2 text-xs font-semibold leading-4 text-fg">{cut.framing}</p>
-        <p className="mt-1 line-clamp-1 text-[0.625rem] text-fg-3">{cut.camera}</p>
+        <p className="mt-1 line-clamp-1 text-xs text-fg-3">{cut.camera}</p>
       </div>
       {cut.dialogueRefs.length > 0 ? (
         <div className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-full border border-line bg-card text-fg-2 shadow-sm">
@@ -578,9 +578,9 @@ export function ProductionVisualPlanningWorkspace({
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <Sparkles className="size-4 text-accent" aria-hidden="true" />
-          <p className="text-[0.6875rem] font-black uppercase tracking-[0.14em] text-accent">Visual Planning Workspace</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">Visual Planning Workspace</p>
         </div>
-        <h2 className="mt-1 truncate text-base font-black text-fg">
+        <h2 className="mt-1 truncate text-base font-semibold text-fg">
           {selectedEpisode ? `${selectedEpisode.episodeNumber}화 · ${selectedEpisode.title}` : "회차를 선택하세요"}
         </h2>
       </div>
@@ -647,11 +647,11 @@ export function ProductionVisualPlanningWorkspace({
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[0.6875rem] font-black uppercase tracking-[0.12em] text-accent">EP {plan.episodeNumber}</span>
-                      <span className={cn("rounded-full border px-1.5 py-0.5 text-[0.625rem] font-bold", statusTone(plan.status))}>{STATUS_LABELS[plan.status]}</span>
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-accent">EP {plan.episodeNumber}</span>
+                      <span className={cn("rounded-full border px-1.5 py-0.5 text-xs font-bold", statusTone(plan.status))}>{STATUS_LABELS[plan.status]}</span>
                     </div>
                     <p className="mt-2 line-clamp-2 text-sm font-bold leading-5 text-fg">{plan.title}</p>
-                    <p className="mt-2 text-[0.6875rem] text-fg-3">장면 {scenes.length} · 설계 컷 {cuts.length}/{plan.targetCutCount}</p>
+                    <p className="mt-2 text-xs text-fg-3">장면 {scenes.length} · 설계 컷 {cuts.length}/{plan.targetCutCount}</p>
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-raised">
                       <div
                         className="h-full rounded-full bg-accent"
@@ -684,7 +684,7 @@ export function ProductionVisualPlanningWorkspace({
                       label="회차 제목"
                       value={selectedEpisode.title}
                       disabled={!canEdit}
-                      className="text-lg font-black"
+                      className="text-lg font-semibold"
                       onCommit={(title) => saveEpisode({ title }, "회차 제목의 새 기획 revision을 저장했습니다.")}
                     />
                     <InlineText
@@ -707,13 +707,13 @@ export function ProductionVisualPlanningWorkspace({
                     회차 의도와 엔딩 직접 편집
                   </summary>
                   <div className="mt-3 grid gap-3 lg:grid-cols-3">
-                    <div className="text-[0.6875rem] font-bold text-fg-3"><p>오프닝 훅</p>
+                    <div className="text-xs font-bold text-fg-3"><p>오프닝 훅</p>
                       <InlineText label="오프닝 훅" value={selectedEpisode.openingHook} allowEmpty disabled={!canEdit} multiline onCommit={(openingHook) => saveEpisode({ openingHook }, "오프닝 훅을 저장했습니다.")} />
                     </div>
-                    <div className="text-[0.6875rem] font-bold text-fg-3"><p>핵심 갈등</p>
+                    <div className="text-xs font-bold text-fg-3"><p>핵심 갈등</p>
                       <InlineText label="핵심 갈등" value={selectedEpisode.coreConflict} allowEmpty disabled={!canEdit} multiline onCommit={(coreConflict) => saveEpisode({ coreConflict }, "핵심 갈등을 저장했습니다.")} />
                     </div>
-                    <div className="text-[0.6875rem] font-bold text-fg-3"><p>클리프행어</p>
+                    <div className="text-xs font-bold text-fg-3"><p>클리프행어</p>
                       <InlineText label="클리프행어" value={selectedEpisode.cliffhanger} allowEmpty disabled={!canEdit} multiline onCommit={(cliffhanger) => saveEpisode({ cliffhanger }, "클리프행어를 저장했습니다.")} />
                     </div>
                   </div>
@@ -742,7 +742,7 @@ export function ProductionVisualPlanningWorkspace({
                                 className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent"
                                 onClick={() => setSelectedSceneId(scene.sceneId)}
                               >
-                                <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em] text-accent">Scene {scene.order}</p>
+                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-accent">Scene {scene.order}</p>
                                 <p className="mt-1 line-clamp-2 text-sm font-bold leading-5 text-fg">{scene.purpose}</p>
                               </button>
                               <MiniPill>{scene.revision}차</MiniPill>
@@ -803,13 +803,13 @@ export function ProductionVisualPlanningWorkspace({
                 {view === "scroll" ? (
                   episodeCuts.length > 0 ? (
                     <div className="mx-auto max-w-md rounded-[2rem] border border-line bg-card p-3 shadow-lg" aria-label="세로 스크롤 독자 미리보기">
-                      <div className="mb-3 flex items-center justify-between rounded-xl bg-raised px-3 py-2 text-[0.6875rem] text-fg-2">
+                      <div className="mb-3 flex items-center justify-between rounded-xl bg-raised px-3 py-2 text-xs text-fg-2">
                         <span>모바일 독자뷰</span><span>{episodeCuts.length} 설계 컷 · {selectedEpisode.targetScrollHeightPx.toLocaleString("ko-KR")}px 목표</span>
                       </div>
                       <div className="space-y-5 bg-canvas p-2">
                         {episodeScenes.map((scene) => (
                           <section key={scene.sceneId} aria-label={`장면 ${scene.order}`}>
-                            <div className="mb-2 flex items-center gap-2 text-[0.6875rem] font-bold text-fg-3"><ScanLine className="size-3.5" aria-hidden="true" />Scene {scene.order} · {scene.emotionalBeat}</div>
+                            <div className="mb-2 flex items-center gap-2 text-xs font-bold text-fg-3"><ScanLine className="size-3.5" aria-hidden="true" />Scene {scene.order} · {scene.emotionalBeat}</div>
                             <div className="space-y-3">
                               {episodeCuts.filter((cut) => cut.sceneId === scene.sceneId).map((cut) => (
                                 <CutArtwork key={cut.cutId} cut={cut} selected={selectedCutId === cut.cutId} onSelect={() => selectCut(cut)} />
@@ -837,7 +837,7 @@ export function ProductionVisualPlanningWorkspace({
                               className="flex w-full items-center gap-3 border-b border-line p-3 text-left outline-none hover:bg-raised focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
                               onClick={() => setSelectedSceneId(scene.sceneId)}
                             >
-                              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft font-black text-accent">{scene.order}</div>
+                              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft font-semibold text-accent">{scene.order}</div>
                               <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-fg">{scene.purpose}</p><p className="mt-1 text-xs text-fg-3">{scene.timeLabel} · {scene.emotionalBeat}</p></div>
                               <MiniPill>{sceneCuts.length}컷</MiniPill>
                             </button>
@@ -853,7 +853,7 @@ export function ProductionVisualPlanningWorkspace({
                                     selectedCutId === cut.cutId ? "bg-accent-soft" : "bg-panel hover:bg-raised",
                                   )}
                                 >
-                                  <span className="font-black text-accent">{cut.cutId}</span>
+                                  <span className="font-semibold text-accent">{cut.cutId}</span>
                                   <span className="font-semibold text-fg">{cut.framing}</span>
                                   <span className="text-fg-2">{cut.camera}</span>
                                   <span className="text-fg-3">{cut.estimatedHours}h · C{cut.complexity}</span>
@@ -884,7 +884,7 @@ export function ProductionVisualPlanningWorkspace({
                   <MiniPill>{selectedCut.cutId}</MiniPill>
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-black text-fg">컷 인스펙터</h3>
+                  <h3 className="text-sm font-semibold text-fg">컷 인스펙터</h3>
                   <div className="flex items-center gap-1" role="group" aria-label="컷 순서 이동">
                     <button
                       type="button"
@@ -893,7 +893,7 @@ export function ProductionVisualPlanningWorkspace({
                       disabled={!canEdit || selectedCutIndex <= 0}
                       onClick={() => void moveCut(-1)}
                     ><ChevronLeft className="size-4" aria-hidden="true" /></button>
-                    <span className="min-w-10 text-center text-[0.6875rem] text-fg-3">{selectedCutIndex + 1}/{selectedSceneCuts.length}</span>
+                    <span className="min-w-10 text-center text-xs text-fg-3">{selectedCutIndex + 1}/{selectedSceneCuts.length}</span>
                     <button
                       type="button"
                       className={buttonClass({ variant: "quiet", size: "icon" })}
@@ -904,18 +904,18 @@ export function ProductionVisualPlanningWorkspace({
                   </div>
                 </div>
                 {isCanonicalStatus(selectedCut.status) ? (
-                  <p className="mt-1 text-[0.6875rem] leading-5 text-fg-3">잠긴 정본은 직접 덮어쓰지 않고 다음 차수의 새 초안으로 나뉩니다.</p>
+                  <p className="mt-1 text-xs leading-5 text-fg-3">잠긴 정본은 직접 덮어쓰지 않고 다음 차수의 새 초안으로 나뉩니다.</p>
                 ) : null}
               </div>
 
               <div className="space-y-3 rounded-2xl border border-line bg-card p-3">
-                <div className="block text-[0.6875rem] font-bold text-fg-3"><p>프레이밍</p>
+                <div className="block text-xs font-bold text-fg-3"><p>프레이밍</p>
                   <InlineText label="컷 프레이밍" value={selectedCut.framing} disabled={!canEdit} onCommit={(framing) => saveCut({ framing }, "컷 프레이밍을 저장했습니다.")} />
                 </div>
-                <div className="block text-[0.6875rem] font-bold text-fg-3"><p>카메라·연출</p>
+                <div className="block text-xs font-bold text-fg-3"><p>카메라·연출</p>
                   <InlineText label="컷 카메라와 연출" value={selectedCut.camera} disabled={!canEdit} multiline onCommit={(camera) => saveCut({ camera }, "컷 카메라 연출을 저장했습니다.")} />
                 </div>
-                <div className="block text-[0.6875rem] font-bold text-fg-3"><p>레이어 요구사항</p>
+                <div className="block text-xs font-bold text-fg-3"><p>레이어 요구사항</p>
                   <InlineText
                     label="레이어 요구사항"
                     value={selectedCut.layerRequirements.join(", ")}
@@ -925,7 +925,7 @@ export function ProductionVisualPlanningWorkspace({
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <label className="text-[0.6875rem] font-bold text-fg-3">예상 공수
+                  <label className="text-xs font-bold text-fg-3">예상 공수
                     <input
                       type="number"
                       min="0"
@@ -943,7 +943,7 @@ export function ProductionVisualPlanningWorkspace({
                       }}
                     />
                   </label>
-                  <label className="text-[0.6875rem] font-bold text-fg-3">복잡도
+                  <label className="text-xs font-bold text-fg-3">복잡도
                     <select
                       aria-label="컷 복잡도"
                       value={selectedCut.complexity}
@@ -960,41 +960,41 @@ export function ProductionVisualPlanningWorkspace({
               {selectedScene ? (
                 <div className="rounded-2xl border border-line bg-card p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2"><FilePenLine className="size-4 text-accent" aria-hidden="true" /><h4 className="text-xs font-black text-fg">장면 맥락</h4></div>
+                    <div className="flex items-center gap-2"><FilePenLine className="size-4 text-accent" aria-hidden="true" /><h4 className="text-xs font-semibold text-fg">장면 맥락</h4></div>
                     <div className="flex items-center gap-1" role="group" aria-label="장면 순서 이동">
                       <button type="button" className={buttonClass({ variant: "quiet", size: "icon" })} aria-label="이전 장면으로 이동" disabled={!canEdit || selectedSceneIndex <= 0} onClick={() => void moveScene(-1)}><ChevronLeft className="size-4" aria-hidden="true" /></button>
-                      <span className="min-w-10 text-center text-[0.6875rem] text-fg-3">{selectedSceneIndex + 1}/{episodeScenes.length}</span>
+                      <span className="min-w-10 text-center text-xs text-fg-3">{selectedSceneIndex + 1}/{episodeScenes.length}</span>
                       <button type="button" className={buttonClass({ variant: "quiet", size: "icon" })} aria-label="다음 장면으로 이동" disabled={!canEdit || selectedSceneIndex < 0 || selectedSceneIndex >= episodeScenes.length - 1} onClick={() => void moveScene(1)}><ChevronRight className="size-4" aria-hidden="true" /></button>
                     </div>
                   </div>
-                  <div className="mt-3 block text-[0.6875rem] font-bold text-fg-3"><p>장면 목적</p>
+                  <div className="mt-3 block text-xs font-bold text-fg-3"><p>장면 목적</p>
                     <InlineText label="장면 목적" value={selectedScene.purpose} disabled={!canEdit} multiline onCommit={(purpose) => saveScene({ purpose }, "장면 목적을 저장했습니다.")} />
                   </div>
-                  <div className="mt-2 block text-[0.6875rem] font-bold text-fg-3"><p>감정 비트</p>
+                  <div className="mt-2 block text-xs font-bold text-fg-3"><p>감정 비트</p>
                     <InlineText label="장면 감정 비트" value={selectedScene.emotionalBeat} disabled={!canEdit} onCommit={(emotionalBeat) => saveScene({ emotionalBeat }, "장면 감정 비트를 저장했습니다.")} />
                   </div>
-                  <div className="mt-2 block text-[0.6875rem] font-bold text-fg-3"><p>시간</p>
+                  <div className="mt-2 block text-xs font-bold text-fg-3"><p>시간</p>
                     <InlineText label="장면 시간" value={selectedScene.timeLabel} disabled={!canEdit} allowEmpty onCommit={(timeLabel) => saveScene({ timeLabel }, "장면 시간을 저장했습니다.")} />
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {selectedScene.continuityRefs.map((ref) => <MiniPill key={ref}>{ref}</MiniPill>)}
-                    {selectedScene.continuityRefs.length === 0 ? <span className="text-[0.6875rem] text-fg-3">연속성 참조 없음</span> : null}
+                    {selectedScene.continuityRefs.length === 0 ? <span className="text-xs text-fg-3">연속성 참조 없음</span> : null}
                   </div>
                 </div>
               ) : null}
 
               <div className="rounded-2xl border border-line bg-card p-3">
-                <div className="flex items-center gap-2"><Boxes className="size-4 text-accent" aria-hidden="true" /><h4 className="text-xs font-black text-fg">에셋·제작 연결</h4></div>
+                <div className="flex items-center gap-2"><Boxes className="size-4 text-accent" aria-hidden="true" /><h4 className="text-xs font-semibold text-fg">에셋·제작 연결</h4></div>
                 <div className="mt-3 space-y-2">
                   {linkedAssets.map((asset) => (
                     <div key={asset.id} className="rounded-xl bg-panel p-2.5">
                       <div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-fg">{asset.title}</span><MiniPill>{asset.status}</MiniPill></div>
-                      <p className="mt-1 text-[0.6875rem] leading-5 text-fg-3">{asset.specification}</p>
+                      <p className="mt-1 text-xs leading-5 text-fg-3">{asset.specification}</p>
                     </div>
                   ))}
                   {linkedAssets.length === 0 ? <p className="text-xs text-fg-3">{t("productionHub.visualPlanning.emptyLinkedAssets", "이 컷에 직접 연결된 에셋 요구사항이 없습니다.")}</p> : null}
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-center text-[0.6875rem]">
+                <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
                   <div className="rounded-xl bg-panel p-2"><Layers3 className="mx-auto size-4 text-fg-3" aria-hidden="true" /><p className="mt-1 font-bold text-fg">{selectedCut.layerRequirements.length}</p><p className="text-fg-3">레이어</p></div>
                   <div className="rounded-xl bg-panel p-2"><Users className="mx-auto size-4 text-fg-3" aria-hidden="true" /><p className="mt-1 font-bold text-fg">{relatedTasks.length}</p><p className="text-fg-3">연결 작업</p></div>
                 </div>
@@ -1002,7 +1002,7 @@ export function ProductionVisualPlanningWorkspace({
 
               {relatedRisks.length > 0 ? (
                 <div className="rounded-2xl border border-warn/30 bg-warn/10 p-3">
-                  <div className="flex items-center gap-2"><AlertTriangle className="size-4 text-warn" aria-hidden="true" /><h4 className="text-xs font-black text-fg">회차 위험</h4></div>
+                  <div className="flex items-center gap-2"><AlertTriangle className="size-4 text-warn" aria-hidden="true" /><h4 className="text-xs font-semibold text-fg">회차 위험</h4></div>
                   <div className="mt-2 space-y-2">{relatedRisks.map((risk) => <div key={risk.id} className="text-xs"><p className="font-semibold text-fg">{risk.title}</p><p className="mt-1 text-fg-2">P{risk.probability} × I{risk.impact} · {risk.status}</p></div>)}</div>
                 </div>
               ) : null}
@@ -1010,7 +1010,7 @@ export function ProductionVisualPlanningWorkspace({
           ) : selectedScene ? (
             <div className="space-y-3">
               <MiniPill className={statusTone(selectedScene.status)}>{STATUS_LABELS[selectedScene.status]} · {selectedScene.revision}차</MiniPill>
-              <h3 className="text-sm font-black text-fg">장면 인스펙터</h3>
+              <h3 className="text-sm font-semibold text-fg">장면 인스펙터</h3>
               <InlineText label="장면 목적" value={selectedScene.purpose} disabled={!canEdit} multiline onCommit={(purpose) => saveScene({ purpose }, "장면 목적을 저장했습니다.")} />
               <InlineText label="장면 감정 비트" value={selectedScene.emotionalBeat} disabled={!canEdit} onCommit={(emotionalBeat) => saveScene({ emotionalBeat }, "장면 감정 비트를 저장했습니다.")} />
               <button type="button" className={buttonClass({ size: "sm" })} disabled={!canEdit} onClick={() => void createCut()}><Plus className="size-4" aria-hidden="true" />첫 컷 추가</button>

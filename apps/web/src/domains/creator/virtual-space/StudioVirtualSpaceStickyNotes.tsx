@@ -421,7 +421,7 @@ export function StudioVirtualSpaceStickyNotes({
     (boardNote) => !notes.some((note) => note.id === `imported-${boardNote.id}`),
   );
 
-  return <section className="studio-sticky-notes" data-space-interactive="true"
+  return <section data-testid="space-sticky-notes-panel" className="studio-sticky-notes" data-space-interactive="true"
     aria-label={bt("포스트잇 보드", "Sticky notes board")}>
     <header className="studio-sticky-notes-head">
       <div>

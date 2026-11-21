@@ -9,11 +9,11 @@
 }
 
 :root[data-design-theme="starlight"] :is([data-character-shaper], [data-studio-bg3d-workspace], [data-studio-mannequin-dialog], .studio-character-guide, .studio-character-conversion, .studio-character-onboarding) {
-  --illustrated-3d-panel: #0b1020;
-  --illustrated-3d-card: #11182b;
-  --illustrated-3d-edge: #414269;
-  --illustrated-3d-accent: #b9a3ff;
-  --illustrated-3d-cyan: #7adeeb;
+  --illustrated-3d-panel: var(--color-panel);
+  --illustrated-3d-card: var(--color-card);
+  --illustrated-3d-edge: color-mix(in oklab, var(--color-accent) 22%, var(--color-line));
+  --illustrated-3d-accent: var(--color-accent);
+  --illustrated-3d-cyan: var(--color-accent-2, var(--color-accent));
 }
 
 :is([data-character-shaper-surface], [data-studio-bg3d-workspace] > div:first-child, [data-studio-mannequin-surface]) {
@@ -61,15 +61,15 @@
 [data-studio-bg3d-workspace] [role="tab"][aria-selected="true"] {
   color: var(--illustrated-3d-accent);
   background: color-mix(in oklab, var(--illustrated-3d-accent) 15%, var(--illustrated-3d-panel));
-  box-shadow: inset 3px 0 0 var(--illustrated-3d-cyan);
+  box-shadow: inset 2px 0 0 var(--illustrated-3d-accent);
 }
 
-/* 장면 도우미의 다음 단계 버튼도 캐릭터 셰이퍼의 주 동작(라벤더)과 같은 색을 쓴다. */
+/* 장면 도우미의 다음 단계 버튼도 캐릭터 셰이퍼의 주 동작(단색 강조)과 같은 의미 토큰을 쓴다. */
 [data-studio-bg3d-workspace] .scene-assistant__primary {
   border-color: var(--color-accent);
-  background: linear-gradient(115deg, var(--color-accent), var(--color-accent-2, var(--color-accent)));
+  background: var(--color-accent);
   color: var(--color-on-accent);
-  box-shadow: 0 3px 15px color-mix(in oklab, var(--color-accent) 18%, transparent);
+  box-shadow: none;
 }
 
 /* 기존 패널 스크롤·시트 높이·포인터와 z-index 계약은 그대로 둔다. */
@@ -125,8 +125,8 @@
 [data-studio-bg3d-workspace] .scene-assistant__hero > div > small {
   display: block;
   margin-top: 0.5rem;
-  color: #e6e6f4;
-  font-size: 0.625rem;
+  color: var(--art-on, var(--color-fg));
+  font-size: 0.75rem;
   line-height: 1.5;
 }
 
@@ -165,13 +165,13 @@
 
 .studio-3d-illustration figcaption > span {
   color: var(--illustrated-3d-cyan, var(--color-accent));
-  font-size: 0.625rem;
-  font-weight: 750;
-  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .studio-3d-illustration figcaption > strong { color: var(--color-fg); font-size: 0.9375rem; }
-.studio-3d-illustration figcaption > small { color: var(--color-fg-2); font-size: 0.6875rem; }
+.studio-3d-illustration figcaption > small { color: var(--color-fg-2); font-size: 0.75rem; }
 .studio-3d-illustration[data-compact] .studio-3d-illustration__portraits { aspect-ratio: 21 / 8; }
 /* 휴대폰 폭에서는 삽화를 낮게 잘라 제목·시작 버튼이 첫 화면에 남게 한다. */
 @media (max-width: 639px) {
@@ -192,7 +192,7 @@
   border: 1px solid var(--illustrated-3d-edge, var(--color-line));
   border-radius: 1.25rem;
   background: var(--illustrated-3d-panel, var(--color-panel));
-  box-shadow: 0 24px 48px -24px rgb(0 0 0 / 0.35);
+  box-shadow: 0 24px 48px -24px color-mix(in oklab, var(--color-canvas) 65%, transparent);
 }
 .studio-character-guide__stage .studio-3d-illustration { border: 0; border-radius: 0; }
 .studio-character-guide__stage-bar {

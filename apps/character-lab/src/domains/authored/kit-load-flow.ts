@@ -8,16 +8,29 @@
  * 키트 v2(2026-10-23 A-1): `schema`가 `toonstudio.character-kit/2`이면 v2 파서로 읽고 결과에 `version: 2`와 v1 형식 보기(`legacyView`,
  * `kit-v1-projection.ts`)를 함께 싣는다. 그 밖의 schema(v1·모르는 값)는 이전과 같이 v1 파서가 읽어 같은 사유로 거부한다.
  */
-import { KIT_ASSET_ROOT, KIT_MANIFEST_FILENAME, KIT_V2_SCHEMA_ID, failVisible, isLabFailure, kitManifestFilename, parseKitManifest, parseKitManifestV2 } from "../../contracts";
+import {
+  KIT_ASSET_ROOT,
+  KIT_MANIFEST_FILENAME,
+  KIT_V2_SCHEMA_ID,
+  KIT_V2_WEBTOON_ID,
+  failVisible,
+  isLabFailure,
+  kitManifestFilename,
+  parseKitManifest,
+  parseKitManifestV2,
+  parseWebtoonKitV2Manifest,
+} from "../../contracts";
 
 import { kitCapabilityDifferences } from "./kit-capability";
 import { buildKitPlanDetailed } from "./kit-plan";
 import { kitManifestV1View } from "./kit-v1-projection";
+import { adaptWebtoonKitV2ToKitManifestV2, isWebtoonKitV2Json } from "./kit-v2-webtoon-adapter";
 import { joinPackageUrl } from "./package-plan";
 
 import type { AnyKitManifest, KitPlanOptions, KitPlanSlots, KitPlanSource } from "./kit-plan";
+import type { NormalizedKitManifestV2 } from "./kit-v2-webtoon-adapter";
 import type { PackageFetchPort } from "./package-load-flow";
-import type { KitManifest, KitManifestV2, KitPlan, LabFailure } from "../../contracts";
+import type { KitManifest, KitPlan, LabFailure } from "../../contracts";
 
 /** 제작 패키지 로더와 같은 fetch 포트(`fetchJson`·`fetchBytes`)를 쓴다. 테스트는 가짜 포트를 넣는다. */
 export type KitFetchPort = PackageFetchPort;
@@ -49,7 +62,7 @@ export type KitManifestLoadResult =
   | (KitManifestLoadedCommon & { readonly version: 1; readonly manifest: KitManifest })
   | (KitManifestLoadedCommon & {
       readonly version: 2;
-      readonly manifest: KitManifestV2;
+      readonly manifest: NormalizedKitManifestV2;
       /** v1 형식만 아는 소비자(키트 등록소 `ensure`·`peek`)용 보기 — 층·형태·앵커·UV1·채널은 없다 */
       readonly legacyView: KitManifest;
     })
@@ -67,12 +80,16 @@ function describeStatus(status: number | null): string {
   return status === null ? "네트워크" : String(status);
 }
 
-type ParsedKit = { readonly ok: true; readonly version: 1; readonly manifest: KitManifest } | { readonly ok: true; readonly version: 2; readonly manifest: KitManifestV2 } | { readonly ok: false; readonly failure: LabFailure };
+type ParsedKit = { readonly ok: true; readonly version: 1; readonly manifest: KitManifest } | { readonly ok: true; readonly version: 2; readonly manifest: NormalizedKitManifestV2 } | { readonly ok: false; readonly failure: LabFailure };
 
-/** v2 schema만 v2 파서로 읽는다. 나머지(v1·모르는 schema)는 v1 파서가 이전과 같은 사유로 판정한다. */
+/** v2 schema만 v2 파서로 읽는다. 온디스크 5아키타입 `toonstudio-kit-v2`는 어댑터로 정규화한다. 나머지(v1·모르는 schema)는 v1 파서가 이전과 같은 사유로 판정한다. */
 function parseKitJson(json: unknown, now: number | undefined): ParsedKit {
   const schema = typeof json === "object" && json !== null ? (json as { readonly schema?: unknown }).schema : undefined;
   if (schema === KIT_V2_SCHEMA_ID) {
+    if (isWebtoonKitV2Json(json)) {
+      const webtoon = parseWebtoonKitV2Manifest(json, now);
+      return webtoon.ok ? { ok: true, version: 2, manifest: adaptWebtoonKitV2ToKitManifestV2(webtoon.manifest) } : webtoon;
+    }
     const v2 = parseKitManifestV2(json, now);
     return v2.ok ? { ok: true, version: 2, manifest: v2.manifest } : v2;
   }
@@ -83,7 +100,7 @@ function parseKitJson(json: unknown, now: number | undefined): ParsedKit {
 /** `kit.json`을 끝까지 읽고 검증한다. 성공하면 검증된 manifest(두 베이스 능력 선언까지 규칙과 일치)를 돌려준다. */
 export async function loadKitManifestFlow(port: KitFetchPort, request: KitManifestRequest, deps: KitLoadDeps): Promise<KitManifestLoadResult> {
   const now = deps.now;
-  const rootUrl = deps.rootUrl ?? KIT_ASSET_ROOT;
+  const rootUrl = deps.rootUrl ?? (request.kitId === KIT_V2_WEBTOON_ID ? `/assets/characters/${KIT_V2_WEBTOON_ID}` : KIT_ASSET_ROOT);
   const manifestUrl = joinPackageUrl(rootUrl, kitManifestFilename(request.kitId, request.kitVersion));
   const fail = (code: string, reasonKo: string, detail?: unknown): KitManifestLoadResult => ({ ok: false, failure: failVisible(code, reasonKo, detail, now) });
 

@@ -606,7 +606,7 @@ export function StudioBrushLibraryPanel({
   /** Engine-neutral external presets commit to SQLite or the explicitly labelled session. */
   async function importBrushProgramFile(
     file: File,
-    format: "myb" | "kpp" | "sut" | "sutg" | "bundle",
+    format: "myb" | "kpp" | "sut" | "sutg" | "bundle" | "brushset",
   ) {
     setImporting(true);
     setRepositoryBusy(true);
@@ -666,7 +666,7 @@ export function StudioBrushLibraryPanel({
       || format === "kpp"
       || format === "sut"
       || format === "sutg"
-      || format === "bundle"
+      || format === "bundle" || format === "brushset"
     ) {
       await importBrushProgramFile(file, format);
       return;

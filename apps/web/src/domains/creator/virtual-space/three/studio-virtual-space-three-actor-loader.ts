@@ -18,26 +18,62 @@ interface StudioThreeActorLoaderOptions {
   readonly applyPosture: (node: StudioThreeActorNode, scene: THREE.Object3D, vrm?: VRM) => void;
 }
 
+const HEAD_MESH_NAME_PATTERN = /(head|face|hair|eye|brow|lash|mouth|tooth|teeth|tongue|ear|glasses|hat|crown)/iu;
+
 function clearVrmBones(node: StudioThreeActorNode): void {
+  node.vrmHips = undefined;
+  node.vrmSpine = undefined;
+  node.vrmChest = undefined;
+  node.vrmNeck = undefined;
+  node.vrmHead = undefined;
   node.vrmLeftUpperArm = undefined;
   node.vrmRightUpperArm = undefined;
   node.vrmLeftLowerArm = undefined;
   node.vrmRightLowerArm = undefined;
   node.vrmLeftUpperLeg = undefined;
   node.vrmRightUpperLeg = undefined;
+  node.vrmLeftLowerLeg = undefined;
+  node.vrmRightLowerLeg = undefined;
+  node.vrmHipsBaseY = undefined;
   node.armDownZLeft = undefined;
   node.armDownZRight = undefined;
 }
 
 function copyVrmBones(target: StudioThreeActorNode, source: StudioThreeActorNode): void {
+  target.vrmHips = source.vrmHips;
+  target.vrmSpine = source.vrmSpine;
+  target.vrmChest = source.vrmChest;
+  target.vrmNeck = source.vrmNeck;
+  target.vrmHead = source.vrmHead;
   target.vrmLeftUpperArm = source.vrmLeftUpperArm;
   target.vrmRightUpperArm = source.vrmRightUpperArm;
   target.vrmLeftLowerArm = source.vrmLeftLowerArm;
   target.vrmRightLowerArm = source.vrmRightLowerArm;
   target.vrmLeftUpperLeg = source.vrmLeftUpperLeg;
   target.vrmRightUpperLeg = source.vrmRightUpperLeg;
+  target.vrmLeftLowerLeg = source.vrmLeftLowerLeg;
+  target.vrmRightLowerLeg = source.vrmRightLowerLeg;
+  target.vrmHipsBaseY = source.vrmHipsBaseY;
   target.armDownZLeft = source.armDownZLeft;
   target.armDownZRight = source.armDownZRight;
+}
+
+/** 1인칭 시점 전환 시 자신 아바타의 머리·헤어 메시가 카메라를 가리지 않도록 숨기거나 복원한다. */
+export function setStudioThreeActorHeadVisible(node: StudioThreeActorNode, visible: boolean): void {
+  node.firstPersonHeadHidden = !visible;
+  node.rigGroup.visible = visible;
+  if (node.vrmHead) {
+    node.vrmHead.scale.setScalar(visible ? 1 : 0.0001);
+  }
+  node.rigGroup.traverse((child) => {
+    if (child.userData.isHeadPart === true) {
+      child.visible = visible;
+      return;
+    }
+    if (child instanceof THREE.Mesh && child.name && HEAD_MESH_NAME_PATTERN.test(child.name)) {
+      child.visible = visible;
+    }
+  });
 }
 
 /** actor GLTF는 캐시 clone이 아닌 독립 로드다. 이 controller가 본문과 fallback을 단독 소유한다. */
@@ -89,8 +125,8 @@ export function createStudioThreeActorLoader(
       vrmScene.rotation.y = isVrm1 ? 0 : Math.PI;
       vrmScene.traverse((child) => {
         if (!(child instanceof THREE.Mesh)) return;
-        child.castShadow = false;
-        child.receiveShadow = false;
+        child.castShadow = true;
+        child.receiveShadow = true;
         child.frustumCulled = false;
         for (const material of Array.isArray(child.material) ? child.material : [child.material]) {
           if ((material instanceof THREE.MeshBasicMaterial || material instanceof THREE.MeshStandardMaterial)
@@ -131,6 +167,9 @@ export function createStudioThreeActorLoader(
       copyVrmBones(node, preparedNode);
       node.vrm = preparedNode.vrm;
       node.vrmLoaded = true;
+      if (node.firstPersonHeadHidden) {
+        setStudioThreeActorHeadVisible(node, false);
+      }
       // ring·shadow는 actor 전체 수명까지 유지하고 교체한 body만 해제한다.
       disposeStudioThreeOwnedModel(previousRig);
       previousRig.clear();

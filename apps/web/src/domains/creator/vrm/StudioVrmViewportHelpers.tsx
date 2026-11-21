@@ -309,3 +309,69 @@ export function CaptureBridge({
 
   return null;
 }
+
+// ── StudioVrmCanvasSizeSync ─────────────────────────────────────
+
+/**
+ * R3F 컨테이너 크기가 바뀔 때(예: 하단 스트립 마운트·상태바 변경·뷰포트 리사이즈)
+ * WebGL 백킹 버퍼(canvas.width/height)와 CSS 크기를 호스트 박스에 즉시 1:1 동기화한다.
+ */
+export function StudioVrmCanvasSizeSync({
+  dpr,
+  paused = false,
+}: {
+  readonly dpr: number;
+  readonly paused?: boolean;
+}) {
+  const gl = useThree((state) => state.gl);
+  const camera = useThree((state) => state.camera);
+  const setSize = useThree((state) => state.setSize);
+  const invalidate = useThree((state) => state.invalidate);
+
+  useLayoutEffect(() => {
+    if (paused) return undefined;
+    const canvas = gl?.domElement;
+    const host = canvas?.parentElement;
+    if (!canvas || !host) return undefined;
+    const safeDpr = Number.isFinite(dpr) && dpr > 0 ? dpr : 1;
+
+    const sync = () => {
+      const rect = host.getBoundingClientRect();
+      const width = Math.max(0, rect.width);
+      const height = Math.max(0, rect.height);
+      if (width <= 0 || height <= 0) return;
+      const expectedWidth = Math.floor(width * safeDpr);
+      const expectedHeight = Math.floor(height * safeDpr);
+      const canvasRect = canvas.getBoundingClientRect();
+      const styleMismatch =
+        Math.abs(canvasRect.width - width) > 0.5
+        || Math.abs(canvasRect.height - height) > 0.5;
+      const bitmapMismatch =
+        Math.abs(canvas.width - expectedWidth) > 1
+        || Math.abs(canvas.height - expectedHeight) > 1;
+      const dprMismatch = Math.abs(gl.getPixelRatio() - safeDpr) > 0.001;
+      if (!styleMismatch && !bitmapMismatch && !dprMismatch) return;
+      gl.setPixelRatio(safeDpr);
+      gl.setSize(width, height, true);
+      if (camera instanceof THREE.PerspectiveCamera) {
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      }
+      setSize(width, height, rect.top, rect.left);
+      invalidate();
+    };
+
+    sync();
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(sync) : null;
+    observer?.observe(host);
+    window.addEventListener("resize", sync);
+    const frame = typeof requestAnimationFrame === "function" ? requestAnimationFrame(sync) : null;
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      window.removeEventListener("resize", sync);
+      observer?.disconnect();
+    };
+  }, [camera, dpr, gl, invalidate, paused, setSize]);
+
+  return null;
+}

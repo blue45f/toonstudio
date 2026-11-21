@@ -93,10 +93,9 @@ describe("개연성 허브 스타일 시트", () => {
     expect(undeclared).toEqual([]);
   });
 
-  it("고정 색 값은 토큰의 대체값과 강조 표시 배경 한 곳에만 쓴다", () => {
-    const withoutTokenFallbacks = HUB_CSS.replace(/var\(--storyworld-[\w-]+,\s*#[0-9a-fA-F]{3,8}\)/gu, "var(token)");
-    const rawColors = [...withoutTokenFallbacks.matchAll(/#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)/gu)].map((match) => match[0]);
-    expect(rawColors).toEqual(["rgb(255 210 122 / 28%)"]);
+  it("고정 hex·rgb 색 값을 쓰지 않고 시맨틱 토큰과 color-mix만 사용한다", () => {
+    const rawColors = [...HUB_CSS.matchAll(/#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)/gu)].map((match) => match[0]);
+    expect(rawColors).toEqual([]);
   });
 
   it("3단 → 2단 → 1단 배치 경계와 접근성 미디어 조건이 모두 있다", () => {

@@ -568,4 +568,50 @@ describe("StudioBrushStudio", () => {
     expect(html).toContain('aria-label="사용자 PNG 펜촉 제거"');
     expect(html).toContain("다른 PNG로 교체");
   });
+
+  it("비입자 코어·자연매체 브러시(pen/oil/watercolor/gpen)에서도 차단 없이 통합 편집(필압·테이퍼·임파스토·38밴드 KM·레일로딩·듀얼 팁)을 제공한다", async () => {
+    const onSettingsChange = vi.fn();
+    const onEngineProgramsChange = vi.fn();
+    render(
+      <StudioBrushStudio
+        {...props({
+          brushId: "pen",
+          settings: normalizeStudioBrushDynamicsSettings(),
+          currentSnapshot: {
+            ...DEFAULT_STUDIO_BRUSH_SNAPSHOT,
+            brushId: "pen",
+            brushDynamics: normalizeStudioBrushDynamicsSettings(),
+          },
+          onSettingsChange,
+          onEngineProgramsChange,
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /현재 브러시 편집/ }));
+    expect(screen.queryByText("입자 브러시를 먼저 선택하세요")).toBeNull();
+
+    // 동적 반응 탭: 차단 없이 필압·유량 + 자연매체 통합 물성(임파스토·38밴드 KM·레일로딩) 즉시 노출
+    fireEvent.click(await screen.findByRole("tab", { name: /동적 반응/ }));
+    expect(screen.queryByText("입자 브러시를 먼저 선택하세요")).toBeNull();
+    expect(screen.getByLabelText("유량")).toBeTruthy();
+    expect(screen.getByLabelText("임파스토 깊이")).toBeTruthy();
+    expect(screen.getByLabelText("38밴드 KM 습식 혼색 강도")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("임파스토 깊이"), { target: { value: "0.7" } });
+    expect(onEngineProgramsChange).toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText("38밴드 KM 습식 혼색 강도"), { target: { value: "0.55" } });
+    expect(onSettingsChange).toHaveBeenCalled();
+
+    // 도장 탭: 차단 없이 테이퍼 + CSP 고급 섹션 노출
+    fireEvent.click(screen.getByRole("tab", { name: /도장/ }));
+    expect(screen.getByLabelText("도장 간격")).toBeTruthy();
+    expect(screen.getByLabelText("모서리를 뾰족하게")).toBeTruthy();
+
+    // 펜촉 탭: 차단 없이 기본 펜촉 + 듀얼 브러시 노출
+    fireEvent.click(screen.getByRole("tab", { name: /펜촉/ }));
+    expect(screen.getByText("듀얼 브러시 사용")).toBeTruthy();
+    expect(screen.getAllByTestId("studio-brush-live-test-canvas").length).toBeGreaterThanOrEqual(1);
+  });
 });

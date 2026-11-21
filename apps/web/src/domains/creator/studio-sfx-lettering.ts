@@ -18,13 +18,37 @@ export interface StudioSfxLetteringSource {
   readonly strokeColor: string;
 }
 
+/** 상하좌우 4방향 + 대각 4방향 = 완전 8방향 외곽선 오프셋(단위 px 배수). */
+export const SFX_OUTLINE_DIRECTION_OFFSETS: readonly (readonly [number, number])[] = Object.freeze([
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+  [-1, -1],
+  [1, -1],
+  [-1, 1],
+  [1, 1],
+]);
+
 /**
- * 글리프 색 + 1px 외곽선. `text-stroke` 는 사파리/파이어폭스 지원이 갈려서
- * 모달이 이미 쓰고 있는 `textShadow` 4방향 근사를 그대로 유지한다.
+ * 글리프 색 + 완전 8방향(상하좌우 + 대각) 외곽선.
+ * `text-stroke` 는 브라우저별 렌더링 편차가 커서, 밝은 배경에서도 상좌측 테두리가 끊어지지
+ * 않도록 상하좌우·대각 8방향 `textShadow` 외곽선으로 감싼다.
  */
-export function studioSfxLetteringStyle(item: StudioSfxLetteringSource): CSSProperties {
+export function studioSfxLetteringStyle(
+  item: StudioSfxLetteringSource,
+  strokeWidthPx = 1,
+): CSSProperties {
+  const width =
+    typeof strokeWidthPx === "number" && Number.isFinite(strokeWidthPx) && strokeWidthPx > 0
+      ? Math.round(strokeWidthPx * 100) / 100
+      : 1;
+  const stroke = item.strokeColor;
+  const textShadow = SFX_OUTLINE_DIRECTION_OFFSETS.map(
+    ([dx, dy]) => `${dx * width}px ${dy * width}px 0 ${stroke}`,
+  ).join(", ");
   return {
     color: item.recommendedColor,
-    textShadow: `0 0 1px ${item.strokeColor}, 1px 1px 0 ${item.strokeColor}`,
+    textShadow,
   };
 }

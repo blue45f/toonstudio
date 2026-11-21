@@ -1,4 +1,4 @@
-import { MessageCircle, Sparkles } from "lucide-react";
+import { MessageCircle, SlidersHorizontal } from "lucide-react";
 import {
   useEffect,
   useMemo,
@@ -12,6 +12,8 @@ import { StudioAiEmotionBubbleMatcher } from "../ai/studio-ai-emotion-bubble-mat
 
 import { StudioBubbleLibraryPanel } from "./StudioBubbleLibraryPanel";
 import { StudioBubblePresetEditorPanel } from "./StudioBubblePresetEditorPanel";
+import { StudioBubbleVariantGlyph } from "./StudioBubbleVariantGlyph";
+import { StudioParametricEmotionBubblePanel } from "./StudioParametricEmotionBubblePanel";
 import { StudioSmartBubbleCharacterPanel } from "./StudioSmartBubbleCharacterPanel";
 import {
   BUBBLE_LIBRARY_PREFERENCES_STORAGE_KEY,
@@ -29,7 +31,7 @@ import {
 } from "./studio-bubble-library";
 
 import type { StudioToolBeltContentProps } from "../StudioToolBeltContent";
-import type { BubbleVariant } from "../studio-assets";
+import { BUBBLE_VARIANTS, type BubbleVariant } from "../studio-assets";
 
 import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -171,26 +173,32 @@ export function StudioBubbleToolPopoverBody({
     searchInput.focus();
   };
 
+  const livePreviewSample = useMemo(() => {
+    const firstLine = dialogueScript
+      .split(/\r?\n/u)
+      .map((line) => line.replace(/^[^:：]{1,12}[:：]\s*/u, "").trim())
+      .find((line) => line.length > 0);
+    return (firstLine ?? "잠깐만!").slice(0, 12);
+  }, [dialogueScript]);
+
+  const livePreviewVariants = useMemo(() => BUBBLE_VARIANTS.slice(0, 12), []);
+
   return (
     <div
       data-studio-shortcut-boundary="true"
       data-studio-bubble-library="true"
       onKeyDown={handleBoundaryKeyDown}
     >
-      <div className="relative overflow-hidden border-b border-line/50 bg-gradient-to-br from-accent-soft/35 via-card/60 to-panel px-3 pb-3 pt-3">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-4 -top-6 size-20 rounded-full bg-accent/10 blur-2xl"
-        />
-        <div className="relative flex items-start gap-2.5">
-          <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-accent/25 bg-accent-soft text-accent shadow-[inset_0_1px_0_oklch(0.95_0.02_85_/_0.12)]">
+      <div className="border-b border-line bg-panel px-3 py-3 shadow-[var(--atelier-specular-top)]">
+        <div className="flex items-start gap-2.5">
+          <span className="grid size-10 shrink-0 place-items-center rounded-[var(--atelier-radius-inner,10px)] border border-accent/25 bg-accent-soft text-accent shadow-[var(--atelier-active-bevel)]">
             <MessageCircle size={18} aria-hidden strokeWidth={1.75} />
           </span>
           <div className="min-w-0 pt-0.5">
-            <p className="text-[0.9rem] font-semibold tracking-tight text-fg">
+            <p className="text-sm font-semibold tracking-tight text-fg">
               {localizeText(t, "말풍선 골라 넣기", "studio.bubble.title")}
             </p>
-            <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
+            <p className="mt-0.5 text-xs leading-relaxed text-fg-3">
               {localizeText(
                 t,
                 "장면에 맞는 목소리를 고르면 돼요. 대충 골라도 나중에 바꿀 수 있어요.",
@@ -203,7 +211,7 @@ export function StudioBubbleToolPopoverBody({
                 setMenu(null);
                 openFeatureTutorial("bubble");
               }}
-              className="mt-1 inline-flex min-h-11 items-center text-[0.65rem] font-medium text-accent/90 underline-offset-2 transition-colors hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="mt-1 inline-flex min-h-11 items-center text-xs font-medium text-accent underline-offset-2 transition-colors hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {localizeText(t, "말풍선 튜토리얼 보기", "studio.bubble.tutorial")}
             </button>
@@ -211,13 +219,13 @@ export function StudioBubbleToolPopoverBody({
         </div>
       </div>
 
-      <div className="space-y-2 border-b border-line/50 bg-canvas/25 px-2.5 py-2.5">
+      <div className="space-y-2 border-b border-line bg-canvas/35 px-2.5 py-2.5">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-[0.72rem] font-semibold text-fg-2">
+            <p className="text-xs font-semibold text-fg-2">
               {localizeText(t, "대사를 바로 입력", "studio.bubble.subtitle")}
             </p>
-            <p className="mt-0.5 text-[0.64rem] leading-snug text-fg-3">
+            <p className="mt-0.5 text-xs leading-snug text-fg-3">
               <span>
                 {localizeText(
                   t,
@@ -255,8 +263,8 @@ export function StudioBubbleToolPopoverBody({
               </span>
             </p>
           </div>
-          <kbd className="shrink-0 rounded-md border border-line/60 bg-card px-1.5 py-1 text-[0.58rem] font-medium text-fg-3">
-            ⌘/⌗ Enter
+          <kbd className="shrink-0 rounded-md border border-line bg-card px-1.5 py-1 font-mono text-xs font-medium text-fg-3">
+            ⌘/Ctrl+Enter
           </kbd>
         </div>
         <textarea
@@ -278,7 +286,7 @@ export function StudioBubbleToolPopoverBody({
           spellCheck
           rows={3}
           aria-label={localizeText(t, "대사 스크립트", "studio.bubble.inputAria")}
-          className="w-full resize-y rounded-xl border border-line/60 bg-card/80 px-2.5 py-2 text-[0.7rem] leading-relaxed text-fg outline-none transition-colors placeholder:text-fg-3/80 focus:border-accent/45 focus:bg-card"
+          className="w-full resize-y rounded-xl border border-line bg-card px-2.5 py-2 text-xs leading-relaxed text-fg outline-none transition-colors placeholder:text-fg-3/80 focus:border-accent focus:bg-card"
         />
 
         {recommendation ? (
@@ -286,18 +294,18 @@ export function StudioBubbleToolPopoverBody({
             data-studio-bubble-recommendation={recommendation.variant.id}
             className="flex items-center gap-2 rounded-xl border border-accent/25 bg-accent-soft/35 p-2"
           >
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-card/75 text-accent ring-1 ring-accent/20">
-              <Sparkles size={16} aria-hidden />
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-card text-accent ring-1 ring-accent/20">
+              <SlidersHorizontal size={16} aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[0.68rem] font-semibold text-fg">
+              <p className="text-xs font-semibold text-fg">
                 {localizeText(
                   t,
                   "대사 분위기 추천",
                   "studio.bubble.recommendation.title",
                 )}
               </p>
-              <p className="truncate text-[0.6rem] text-fg-3">
+              <p className="truncate text-xs text-fg-3 tabular-nums">
                 {recommendation.variant.label} · {recommendation.confidenceScore}% ·{" "}
                 {localizeText(
                   t,
@@ -316,7 +324,7 @@ export function StudioBubbleToolPopoverBody({
             <button
               type="button"
               onClick={() => insertBubble(recommendation.variant.id)}
-              className="min-h-11 shrink-0 rounded-xl border border-accent/25 bg-card/85 px-3 text-[0.66rem] font-semibold text-accent transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="min-h-11 shrink-0 rounded-xl border border-accent/25 bg-card px-3 text-xs font-semibold text-accent transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {localizeText(
                 t,
@@ -332,10 +340,10 @@ export function StudioBubbleToolPopoverBody({
           onClick={insertDialogueScript}
           disabled={!dialogueScript.trim()}
           className={cn(
-            "min-h-11 w-full rounded-xl px-2 text-xs font-semibold transition-[opacity,transform,background] duration-150",
+            "min-h-11 w-full rounded-xl px-2 text-xs font-semibold transition-colors duration-150",
             dialogueScript.trim()
-              ? "bg-accent text-on-accent shadow-sm hover:opacity-95 active:scale-[0.99]"
-              : "cursor-not-allowed bg-card text-fg-3 ring-1 ring-line/50",
+              ? "bg-accent text-on-accent shadow-[var(--atelier-active-bevel)] hover:opacity-95"
+              : "cursor-not-allowed bg-card text-fg-3 ring-1 ring-line",
           )}
         >
           {localizeText(t, "말풍선으로 한 번에 넣기", "studio.bubble.insertAll")}
@@ -357,7 +365,7 @@ export function StudioBubbleToolPopoverBody({
               setMenu(null);
               setDialogueBatchOpen(true);
             }}
-            className="min-h-11 rounded-xl border border-line/60 bg-card/70 px-2 text-[0.7rem] font-medium text-fg-2 transition-colors hover:bg-raised"
+            className="min-h-11 rounded-xl border border-line bg-card px-2 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
           >
             {localizeText(t, "배치 대사 편집", "studio.bubble.batchEdit")}
           </button>
@@ -368,45 +376,72 @@ export function StudioBubbleToolPopoverBody({
               setDialogueBatchOpen(false);
               setDialogueTranslateOpen("translate");
             }}
-            className="min-h-11 rounded-xl border border-line/60 bg-card/70 px-2 text-[0.7rem] font-medium text-fg-2 transition-colors hover:bg-raised"
+            className="min-h-11 rounded-xl border border-line bg-card px-2 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
           >
             {localizeText(t, "번역 (자동 무료 AI)", "studio.bubble.translate")}
           </button>
         </div>
       </div>
 
+      <section
+        aria-label={localizeText(t, "실시간 12종 말풍선 SVG 미리보기", "studio.bubble.livePreview")}
+        data-studio-bubble-live-preview-strip="true"
+        className="border-b border-line bg-panel/70 px-2.5 py-2.5"
+      >
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-fg-2">
+            {localizeText(t, "실시간 12종 미리보기", "studio.bubble.livePreviewHeading")}
+          </span>
+          <span className="truncate text-xs text-fg-3">“{livePreviewSample}”</span>
+        </div>
+        <div role="group" aria-label="12종 말풍선 즉시 삽입" className="grid grid-cols-3 gap-1.5">
+          {livePreviewVariants.map((variant) => (
+            <button
+              key={variant.id}
+              type="button"
+              data-studio-bubble-live-preview={variant.id}
+              onClick={() => insertBubble(variant.id)}
+              title={`${variant.label} — "${livePreviewSample}" 즉시 넣기`}
+              className="group flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-[var(--atelier-radius-inner,10px)] border border-line bg-card px-1.5 py-1.5 text-fg shadow-[var(--atelier-specular-top)] transition-colors hover:border-accent hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              <span className="relative flex h-9 w-14 items-center justify-center">
+                <StudioBubbleVariantGlyph
+                  variant={variant.id}
+                  className="h-9 w-14 text-fg-2 transition-colors group-hover:text-accent"
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-1 top-1/2 -translate-y-1/2 truncate text-center text-xs font-semibold text-fg"
+                >
+                  {livePreviewSample.slice(0, 4)}
+                </span>
+              </span>
+              <span className="max-w-full truncate text-xs font-medium text-fg-2 group-hover:text-fg">
+                {variant.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <p
         id="studio-bubble-placement-help"
-        className="mx-2.5 mt-2.5 rounded-xl border border-accent/20 bg-accent-soft/35 px-2.5 py-2 text-[0.62rem] leading-relaxed text-fg-2"
+        className="mx-2.5 mt-2.5 rounded-xl border border-accent/20 bg-accent-soft/35 px-2.5 py-2 text-xs leading-relaxed text-fg-2"
       >
         <strong className="font-semibold text-fg">
           {localizeText(t, "클릭·탭", "studio.bubble.placementHelp.title")}
         </strong>
-        {localizeText(
-          t,
-          "는 선택 컷 또는 현재 화면에 스마트 배치하고,",
-          "studio.bubble.placementHelp.when",
-        )}
+        {localizeText(t, "는 선택 컷 또는 현재 화면에 스마트 배치하고,", "studio.bubble.placementHelp.when")}
         <strong className="font-semibold text-fg">
           {localizeText(t, "끌어 놓기", "studio.bubble.placementHelp.drag")}
         </strong>
-        {localizeText(
-          t,
-          "는 포인터 위치에 배치합니다. ",
-          "studio.bubble.placementHelp.dragHint",
-        )}
-        {localizeText(
-          t,
-          "드래그는 ",
-          "studio.bubble.placementHelp.dragEscapeLead",
-        )}
+        {localizeText(t, "는 포인터 위치에 배치합니다. ", "studio.bubble.placementHelp.dragHint")}
+        {localizeText(t, "드래그는 ", "studio.bubble.placementHelp.dragEscapeLead")}
         <kbd className="font-semibold">Esc</kbd>
-        {localizeText(
-          t,
-          "로 취소할 수 있어요.",
-          "studio.bubble.placementHelp.cancelHint",
-        )}
+        {localizeText(t, "로 취소할 수 있어요.", "studio.bubble.placementHelp.cancelHint")}
       </p>
+
+      <StudioParametricEmotionBubblePanel onInsertBubble={insertBubble} />
 
       <StudioSmartBubbleCharacterPanel onInsertBubble={insertBubble} />
 
@@ -416,9 +451,7 @@ export function StudioBubbleToolPopoverBody({
         preferences={preferences}
         onInsertBubble={insertBubble}
         onMarkBubbleUsed={markBubbleUsed}
-        onToggleFavorite={(id) =>
-          commitPreferences((current) => toggleBubbleFavorite(current, id))
-        }
+        onToggleFavorite={(id) => commitPreferences((current) => toggleBubbleFavorite(current, id))}
       />
     </div>
   );

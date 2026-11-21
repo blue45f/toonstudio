@@ -66,7 +66,7 @@ export function StudioProjectLibraryFastStartStrip({
     <nav
       aria-label={bi("작업 시작 방식", "Ways to start creating")}
       data-studio-fast-start-strip="true"
-      className={cn("grid grid-cols-1 gap-2.5 sm:grid-cols-2", className)}
+      className={cn("grid h-full auto-rows-fr grid-cols-1 gap-2.5 sm:grid-cols-2", className)}
     >
       {FAST_START_ITEMS.map((item) => {
         return (
@@ -75,13 +75,13 @@ export function StudioProjectLibraryFastStartStrip({
             href={item.href}
             data-studio-fast-start-item={item.id}
             className={cn(
-              "group flex min-h-11 items-center gap-3 rounded-xl border p-3.5 text-left transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
+              "group flex h-full min-h-11 items-center gap-3 rounded-[var(--atelier-radius-inner,10px)] border p-3.5 text-left transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none sm:min-h-[6.5rem]",
               item.primary
-                ? "border-accent/45 bg-accent-soft hover:border-accent"
-                : "border-line bg-card hover:border-line-strong hover:bg-raised",
+                ? "border-accent/55 bg-accent-soft shadow-[var(--atelier-active-bevel),inset_2px_0_0_var(--color-accent)] hover:border-accent"
+                : "border-line bg-card shadow-[var(--atelier-specular-top)] hover:border-line-strong hover:bg-raised",
             )}
           >
-            <StudioToolArtwork tool={item.tool} className="studio-library-start-tool" />
+            <StudioToolArtwork tool={item.tool} variant="art" className="studio-library-start-tool" />
             <span className="min-w-0 flex-1">
               <span className="block break-keep text-sm font-semibold text-fg">
                 {bi(item.labelKo, item.labelEn)}
@@ -90,7 +90,7 @@ export function StudioProjectLibraryFastStartStrip({
                 {bi(item.hintKo, item.hintEn)}
               </span>
             </span>
-            <ArrowUpRight size={15} aria-hidden="true" className="shrink-0 text-fg-3" />
+            <ArrowUpRight size={15} aria-hidden="true" className="shrink-0 text-fg-3 transition-colors group-hover:text-accent motion-reduce:transition-none" />
           </Link>
         );
       })}

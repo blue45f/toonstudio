@@ -29,6 +29,9 @@ export interface VerticalScrollCutPacingPlan {
   readonly scrollDwellTimeSec: number;
   readonly speechBubbleSafeZoneScore: number;
   readonly safeZones: readonly SpeechBubbleSafeZoneBox[];
+  /** 무기 2D 투영 바운딩박스와 말풍선 안전영역 3구간 간 실측 합산 IoU (0.0 = 무간섭) */
+  readonly measuredWeaponSafeZoneIoU: number;
+  readonly collisionFreeOrbitApplied: boolean;
   readonly summaryKo: string;
 }
 
@@ -38,6 +41,80 @@ export interface VerticalScrollCutPacingInput {
   readonly cameraTiltDeg: number;
   readonly silhouetteSeparationRatio: number;
   readonly activeWeaponCount: number;
+  /** 3D 월드 공간 무기 인스턴스 좌표(선택) — 제공 시 2D 안전영역 투영 IoU를 실측한다. */
+  readonly weaponPositions3d?: readonly (readonly [number, number, number])[];
+  /** 말풍선 안전영역 회피 궤도 보정 활성화 여부 (기본 true) */
+  readonly avoidSafeZoneOrbit?: boolean;
+}
+
+interface Box2dPct {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+}
+
+function computeBox2dIoU(a: Box2dPct, b: Box2dPct): number {
+  const x1 = Math.max(a.x, b.x);
+  const y1 = Math.max(a.y, b.y);
+  const x2 = Math.min(a.x + a.w, b.x + b.w);
+  const y2 = Math.min(a.y + a.h, b.y + b.h);
+  const interW = Math.max(0, x2 - x1);
+  const interH = Math.max(0, y2 - y1);
+  const interArea = interW * interH;
+  if (interArea <= 0) return 0;
+  const unionArea = a.w * a.h + b.w * b.h - interArea;
+  return unionArea > 0 ? interArea / unionArea : 0;
+}
+
+function projectWeaponTo2dBoxPct(
+  pos3d: readonly [number, number, number],
+  avoidSafeZoneOrbit: boolean,
+  safeZones: readonly Box2dPct[],
+): Box2dPct {
+  // 표준 3D 씬 좌표([-3.5..3.5] X, [0..3.6] Y)를 세로 웹툰 컷 2D 뷰포트(0..100%)로 원근 투영
+  const depthScale = 1 / Math.max(0.7, 1 + Math.max(-0.4, -pos3d[2] * 0.08));
+  let uCenter = 50 + pos3d[0] * 11 * depthScale;
+  let vCenter = 66 - pos3d[1] * 15 * depthScale;
+  const boxW = 6.2;
+  const boxH = 7.4;
+
+  // 안전영역 회피 궤도 솔버: 말풍선 박스(상단 리드/하단 트레일/좌측 SFX)와 겹치면 중앙 액션 코리도어로 밀어낸다.
+  if (avoidSafeZoneOrbit) {
+    for (let pass = 0; pass < 4; pass += 1) {
+      const candidate: Box2dPct = {
+        x: uCenter - boxW * 0.5,
+        y: vCenter - boxH * 0.5,
+        w: boxW,
+        h: boxH,
+      };
+      let overlapped = false;
+      for (const zone of safeZones) {
+        if (computeBox2dIoU(candidate, zone) > 0) {
+          overlapped = true;
+          const zoneCenterX = zone.x + zone.w * 0.5;
+          const zoneCenterY = zone.y + zone.h * 0.5;
+          if (zoneCenterY < 35) {
+            vCenter = Math.max(vCenter, zone.y + zone.h + boxH * 0.5 + 1.5);
+          } else if (zoneCenterY > 65) {
+            vCenter = Math.min(vCenter, zone.y - boxH * 0.5 - 1.5);
+          } else if (zoneCenterX < 45) {
+            uCenter = Math.max(uCenter, zone.x + zone.w + boxW * 0.5 + 1.5);
+          } else {
+            uCenter = Math.min(uCenter, zone.x - boxW * 0.5 - 1.5);
+          }
+        }
+      }
+      if (!overlapped) break;
+    }
+  }
+
+  return {
+    x: Math.max(2, Math.min(98 - boxW, uCenter - boxW * 0.5)),
+    y: Math.max(2, Math.min(98 - boxH, vCenter - boxH * 0.5)),
+    w: boxW,
+    h: boxH,
+  };
 }
 
 export function evaluateVerticalScrollCutPacing(
@@ -50,6 +127,7 @@ export function evaluateVerticalScrollCutPacing(
     silhouetteSeparationRatio,
     activeWeaponCount,
   } = input;
+  const avoidSafeZoneOrbit = input.avoidSafeZoneOrbit ?? true;
 
   const baseHeightByArchetype: Record<WebtoonCutArchetypeId, number> = {
     "dialogue-medium": 960,
@@ -77,18 +155,7 @@ export function evaluateVerticalScrollCutPacing(
   const { top: topGutterPx, bottom: bottomGutterPx } =
     gutterByArchetype[archetypeId];
 
-  const weaponDensityPenalty = Math.min(
-    8,
-    Math.max(0, (activeWeaponCount - 8) * 0.8),
-  );
-  const tiltBonus = Math.abs(cameraTiltDeg) >= 12 ? 3.5 : 1.5;
-  const rawSafeZoneScore =
-    78 + silhouetteSeparationRatio * 20 + tiltBonus - weaponDensityPenalty;
-  const speechBubbleSafeZoneScore = Number(
-    Math.min(100, Math.max(65, rawSafeZoneScore)).toFixed(1),
-  );
-
-  const safeZones: readonly SpeechBubbleSafeZoneBox[] = Object.freeze([
+  const zoneTemplates: readonly (Omit<SpeechBubbleSafeZoneBox, "occlusionRiskPct">)[] = [
     {
       zoneId: "top-lead",
       labelKo: "상단 도입 대사 안전영역 (리드 말풍선)",
@@ -96,9 +163,6 @@ export function evaluateVerticalScrollCutPacing(
       yPct: 4,
       widthPct: 38,
       heightPct: 18,
-      occlusionRiskPct: Number(
-        Math.max(1.2, 10 - silhouetteSeparationRatio * 8).toFixed(1),
-      ),
     },
     {
       zoneId: "bottom-trail",
@@ -107,9 +171,6 @@ export function evaluateVerticalScrollCutPacing(
       yPct: 76,
       widthPct: 40,
       heightPct: 19,
-      occlusionRiskPct: Number(
-        Math.max(1.5, 11 - silhouetteSeparationRatio * 8.5).toFixed(1),
-      ),
     },
     {
       zoneId: "side-sfx",
@@ -118,11 +179,62 @@ export function evaluateVerticalScrollCutPacing(
       yPct: 58,
       widthPct: 32,
       heightPct: 14,
-      occlusionRiskPct: Number(
-        Math.max(0.8, 8 - silhouetteSeparationRatio * 6).toFixed(1),
-      ),
     },
-  ]);
+  ];
+  const zoneRects: readonly Box2dPct[] = zoneTemplates.map((z) => ({
+    x: z.xPct,
+    y: z.yPct,
+    w: z.widthPct,
+    h: z.heightPct,
+  }));
+
+  const weaponCoords: readonly (readonly [number, number, number])[] =
+    input.weaponPositions3d && input.weaponPositions3d.length > 0
+      ? input.weaponPositions3d
+      : Array.from({ length: Math.max(0, activeWeaponCount) }, (_, i) => {
+          const count = Math.max(1, activeWeaponCount);
+          const angle = (i / count) * Math.PI * 2;
+          return [
+            Math.cos(angle) * 1.9,
+            1.65 + Math.sin(angle * 2) * 0.25,
+            -0.35 + Math.sin(angle) * 0.9,
+          ] as const;
+        });
+
+  const projectedWeaponBoxes = weaponCoords.map((pos) =>
+    projectWeaponTo2dBoxPct(pos, avoidSafeZoneOrbit, zoneRects),
+  );
+
+  const perZoneIoU = zoneRects.map((zoneRect) =>
+    projectedWeaponBoxes.reduce(
+      (sum, weaponBox) => sum + computeBox2dIoU(weaponBox, zoneRect),
+      0,
+    ),
+  );
+  const measuredWeaponSafeZoneIoU = Number(
+    Math.min(1, perZoneIoU.reduce((acc, v) => acc + v, 0)).toFixed(4),
+  );
+
+  const clampedSilhouette = Math.min(1, Math.max(0, silhouetteSeparationRatio));
+  const framingClarityBonus = Math.abs(cameraTiltDeg) >= 12 ? 8.0 : 6.5;
+  const rawSafeZoneScore =
+    clampedSilhouette * 60 +
+    (1 - measuredWeaponSafeZoneIoU) * 32 +
+    framingClarityBonus;
+  const speechBubbleSafeZoneScore = Number(
+    Math.min(100, Math.max(65, rawSafeZoneScore)).toFixed(1),
+  );
+
+  const safeZones: readonly SpeechBubbleSafeZoneBox[] = Object.freeze(
+    zoneTemplates.map((zone, idx) => {
+      const zoneIoU = perZoneIoU[idx] ?? 0;
+      const baseRisk = (1 - clampedSilhouette) * 6.5 + zoneIoU * 45;
+      return {
+        ...zone,
+        occlusionRiskPct: Number(Math.max(0.2, Math.min(60, baseRisk)).toFixed(1)),
+      };
+    }),
+  );
 
   const scrollDwellTimeSec = Number(
     (
@@ -141,7 +253,9 @@ export function evaluateVerticalScrollCutPacing(
     scrollDwellTimeSec,
     speechBubbleSafeZoneScore,
     safeZones,
-    summaryKo: `세로 스크롤 800×${recommendedCutHeightPx}px (여백 ↑${topGutterPx}/↓${bottomGutterPx}px · 체류 ${scrollDwellTimeSec}초) · 말풍선 안전영역 B_SZ ${speechBubbleSafeZoneScore}점`,
+    measuredWeaponSafeZoneIoU,
+    collisionFreeOrbitApplied: avoidSafeZoneOrbit,
+    summaryKo: `세로 스크롤 800×${recommendedCutHeightPx}px (여백 ↑${topGutterPx}/↓${bottomGutterPx}px · 체류 ${scrollDwellTimeSec}초) · 말풍선 안전영역 B_SZ ${speechBubbleSafeZoneScore}점 (무기 IoU ${(measuredWeaponSafeZoneIoU * 100).toFixed(1)}%)`,
   });
 }
 

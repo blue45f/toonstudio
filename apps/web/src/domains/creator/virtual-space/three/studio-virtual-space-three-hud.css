@@ -1,9 +1,36 @@
 /*
- * 3D 공간 조명·시점 칩.
- * 예전에는 오른쪽 아래 고정 좌표(오른쪽 76px, 아래 16px)에 두어, 1280px 폭에서는 도크 아래로 110px가량 숨고
- * 휴대폰에서는 하단 도크와 완전히 겹쳐 누를 수 없었다. HUD의 도크 여백(--immersive-dock-clearance)을 따라
- * 데스크톱에서는 줌 컨트롤 바로 위(패널이 열리면 패널 왼쪽), 모바일에서는 '말 걸기' 위 왼쪽에 둔다.
+ * 3D 공간 조명·카메라 시점·컷어웨이·포토부스 HUD (Starlight OKLCH 토큰 정본).
+ * HUD의 도크 여백(--immersive-dock-clearance)을 따라 데스크톱에서는 줌 컨트롤 위(패널이 열리면 패널 왼쪽),
+ * 모바일에서는 조이스틱을 피해 왼쪽 아래에 배치한다.
  */
+.studio-vspace-three-stage {
+  --surface-hud: color-mix(in oklch, var(--color-panel, oklch(0.175 0.028 267.4)) 90%, transparent);
+  --surface-elevated: var(--color-card, oklch(0.206 0.032 264.6));
+  --surface-raised: var(--color-raised, oklch(0.253 0.038 264.4));
+  --ink-primary: var(--color-fg, oklch(0.968 0.015 273.9));
+  --ink-secondary: var(--color-fg-2, oklch(0.849 0.024 262.1));
+  --ink-on-accent: var(--color-on-accent, oklch(0.194 0.04 282));
+  --accent-primary: var(--color-accent, oklch(0.75 0.142 293.7));
+  --accent-secondary: var(--color-cool, oklch(0.838 0.112 223.1));
+  --border-subtle: var(--color-line, oklch(0.354 0.046 265.8));
+  --border-strong: var(--color-line-strong, oklch(0.567 0.052 262.3));
+}
+
+.studio-vspace-three-asset-status {
+  position: absolute;
+  left: calc(var(--space-gutter, 12px) + var(--space-safe-left, 0px));
+  top: 48px;
+  z-index: 3;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-hud);
+  color: var(--ink-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .studio-vspace-three-lighting-hud {
   position: absolute;
   z-index: 3;
@@ -13,41 +40,153 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
+  gap: 6px;
   max-width: calc(100% - var(--space-gutter, 12px) * 2 - var(--space-safe-left, 0px) - var(--space-safe-right, 0px));
-  padding: 5px 8px;
-  border: 1px solid rgb(148 163 184 / 0.32);
-  border-radius: 22px;
-  background: rgb(15 23 42 / 0.84);
+  padding: 6px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--surface-hud);
   backdrop-filter: blur(10px);
 }
 
+.studio-vspace-three-lighting-hud__segment {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding-inline-end: 6px;
+  border-inline-end: 1px solid var(--border-subtle);
+}
+
 .studio-vspace-three-lighting-hud button {
-  min-height: 28px;
-  padding: 3px 9px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 11px;
   border: 1px solid transparent;
-  border-radius: 999px;
-  color: #e2e8f0;
+  border-radius: 10px;
+  color: var(--ink-primary);
   background: transparent;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  word-break: keep-all;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.studio-vspace-three-lighting-hud button:hover {
+  background: var(--surface-raised);
+  border-color: var(--border-subtle);
 }
 
 .studio-vspace-three-lighting-hud button[aria-pressed="true"] {
-  color: #0f172a;
-  background: #38bdf8;
+  color: var(--ink-on-accent);
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
 }
 
 .studio-vspace-three-lighting-hud button:focus-visible {
-  outline: 2px solid #bae6fd;
+  outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
 }
 
+.studio-vspace-three-lighting-hud__photo {
+  border-color: var(--border-strong);
+  color: var(--ink-primary);
+  background: var(--surface-elevated);
+}
+
 .studio-vspace-three-lighting-hud__reset {
-  border-color: rgb(148 163 184 / 0.35) !important;
-  color: #bae6fd !important;
-  background: rgb(30 41 59 / 0.72) !important;
+  border-color: var(--border-subtle);
+  color: var(--ink-secondary);
+  background: var(--surface-elevated);
+}
+
+.studio-vspace-three-cutaway-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--surface-elevated);
+  color: var(--ink-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.studio-vspace-three-overlays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.studio-vspace-three-overlay-badge {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--surface-hud);
+  color: var(--ink-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  pointer-events: none;
+  cursor: default;
+  backdrop-filter: blur(8px);
+}
+
+.studio-vspace-three-overlay-badge--zone {
+  border-radius: 10px;
+  border-color: var(--accent-secondary);
+}
+
+.studio-vspace-three-overlay-badge--self,
+.studio-vspace-three-overlay-badge--active {
+  background: var(--surface-raised);
+  border-color: var(--accent-primary);
+}
+
+.studio-vspace-three-overlay-badge--interactive {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.studio-vspace-three-overlay-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-secondary);
+  flex-shrink: 0;
+}
+
+.studio-vspace-three-overlay-dot--self {
+  background: var(--accent-primary);
+}
+
+.studio-vspace-three-overlay-dot--npc {
+  background: var(--accent-primary);
+}
+
+.studio-vspace-three-overlay-dot--workstation {
+  border-radius: 2px;
+  background: var(--accent-secondary);
+}
+
+.studio-vspace-three-overlay-sublabel {
+  color: var(--ink-secondary);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .space-hud[data-panel-open][data-hud-layout="desktop"] .studio-vspace-three-lighting-hud {
@@ -58,26 +197,46 @@
   bottom: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 84px);
 }
 
-/* 휴대폰·태블릿 세로: 도크는 화면 폭 전체, 오른쪽 아래는 조이스틱(약 124px)이라 '말 걸기' 위 왼쪽에 두고 조이스틱을 피해 줄을 바꾼다. */
+/* 휴대폰·태블릿 세로: 조이스틱·채팅 줄 위로 단일 가로 스크롤 툴바로 배치해 3D 시야를 가리지 않는다. */
 @media (max-width: 1023.98px) {
   .studio-vspace-three-stage {
-    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 56px);
+    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 128px);
   }
 
   .studio-vspace-three-lighting-hud {
-    right: auto;
+    right: calc(var(--space-gutter, 12px) + var(--space-safe-right, 0px));
     bottom: var(--studio-three-controls-offset);
     left: calc(var(--space-gutter, 12px) + var(--space-safe-left, 0px));
+    flex-wrap: nowrap;
     justify-content: flex-start;
-    max-width: calc(100% - var(--space-gutter, 12px) * 3 - 124px - var(--space-safe-left, 0px));
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    max-width: calc(100% - var(--space-gutter, 12px) * 2 - var(--space-safe-left, 0px) - var(--space-safe-right, 0px));
+  }
+
+  .studio-vspace-three-lighting-hud::-webkit-scrollbar {
+    display: none;
+  }
+
+  .studio-vspace-three-lighting-hud__segment {
+    flex: none;
+    flex-wrap: nowrap;
+    padding-inline-end: 6px;
+    border-inline-end: 1px solid var(--border-subtle);
+  }
+
+  .studio-vspace-three-lighting-hud button,
+  .studio-vspace-three-cutaway-badge {
+    flex: none;
   }
 
   .space-hud:has(.space-interact-prompt, .space-status-chip, .space-focus-chip) .studio-vspace-three-stage {
-    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 116px);
+    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 168px);
   }
 
   .space-hud:has(.space-context-suggestion) .studio-vspace-three-stage {
-    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 136px);
+    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 188px);
   }
 
   /* 글자 크기와 줄바꿈에 맞춰 품질 안내와 시점 버튼을 서로 다른 행에 둔다. */
@@ -85,6 +244,7 @@
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto 8px auto var(--studio-three-controls-offset);
   }
+
   .studio-vspace-three-stage > .studio-vspace-three-quality-notice {
     position: relative;
     grid-row: 2;
@@ -92,6 +252,7 @@
     justify-self: center;
     margin-inline: var(--space-gutter, 12px);
   }
+
   .studio-vspace-three-stage:has(> .studio-vspace-three-quality-notice) > .studio-vspace-three-lighting-hud {
     position: relative;
     grid-row: 4;
@@ -99,21 +260,13 @@
     justify-self: start;
     margin-inline-start: calc(var(--space-gutter, 12px) + var(--space-safe-left, 0px));
   }
-
-  .studio-vspace-three-lighting-hud button {
-    min-height: 44px;
-    padding: 4px 11px;
-    font-size: 12px;
-    font-weight: 600;
-    word-break: keep-all;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-  }
 }
 
 @media (forced-colors: active) {
   .studio-vspace-three-lighting-hud,
-  .studio-vspace-three-lighting-hud button {
+  .studio-vspace-three-lighting-hud button,
+  .studio-vspace-three-cutaway-badge,
+  .studio-vspace-three-overlay-badge {
     border-color: CanvasText;
     color: CanvasText;
     background: Canvas;

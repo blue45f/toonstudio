@@ -23,70 +23,13 @@
  */
 export const STUDIO_BRUSH_QUARANTINE_REASON_BY_PRESET_ID: Readonly<Record<string, string>> =
   Object.freeze({
-    // 2026-08-13 wave 3, workstream M §2 duplicate audit: the lane row declares engineVariant
-    // "star-dust", but both durable renderers (StudioDrawNode / studio-svg-export) branch glitter
-    // modes by exact id string, so this id actually paints the DEFAULT glitter mode — the lane
-    // label is not real at paint time (지침 6 honesty) and the preset is a de-facto glitter
-    // duplicate. Canvas and SVG agree with each other, so replay stays consistent (지침 5).
-    // Reinstatement path: make the glitter dispatch honour the lane's declared engineVariant
-    // behind an explicit program pin (지침 4 byte-identity), then delist the id here.
-    // 2026-08-14 브러시 품질 웨이브: 이 프리셋은 카탈로그에 preview "soft"(연속 캐리어)로 선언돼
-    // 있고 spacingRatio 0.08 / hardness 0.04 로 촘촘히 겹치도록 저작됐는데, 실측은 그 선언과
-    // 어긋납니다 — long-route 품질 계측에서 edgePeriodicityScore 0.85, edgePeriodPx 7 로 눈에
-    // 보이는 주기적 능선이 남습니다(전체 164개 중 실패 2건에 포함). 같은 stamp family 의
-    // pencil-grain·wash-brush·ink-brush 와 같은 airbrush 계열의 spray·splatter·
-    // ink-particle--scatter-cloud 는 모두 동일 기준을 통과하므로 그룹 내 대안이 충분합니다
-    // (지침: 품질이 안 나오고 대체 브러시군이 있으면 제거).
-    // 2026-08-21 로스터 축소 웨이브: 원래 이 자리에 적혀 있던 대안 목록
-    // (pencil--stamp-grain·watercolor--edge-stamp·gouache--flat-stamp·spray--equal-area·
-    // splatter--burst-cloud)은 같은 웨이브에서 중복으로 delist 됐습니다. 위 목록은 그 뒤에도
-    // 노출 상태로 남는 캐노니컬 대안으로 갱신한 것입니다.
-    // 복귀 경로: 스탬프 간격이 저작값대로 적용되도록 고쳐 edgePeriodicity 가 연속 기준을 통과하면
-    // 여기서 delist 합니다. 그때까지 저장된 문서는 계속 원래대로 재생됩니다.
+    // 2026-08-13/14 wave 3–4 quality/duplicate quarantine (details in git history & manifest test).
     "airbrush--stamp-soft":
       "preview \"soft\"(연속)로 선언됐지만 실측 edgePeriodicityScore 0.85 · period 7px 로 주기적 "
       + "능선이 보이는 품질 미달 — 같은 family 의 통과 대안이 다수 존재(지침 6).",
     "glitter--star-field":
       "선언된 engineVariant(star-dust)가 페인트 시점에 실재하지 않아 기본 glitter 모드로 그려지는 "
       + "사실상 중복 — 실제 star-dust 모드를 가진 star-dust와 기본 glitter가 그룹 내 대안(지침 6).",
-    // 2026-08-16 wave 4 duplicate confirm: 아래 두 프리셋은 레인 카탈로그에서 각각
-    // engineVariant/profile 변형("side-shade" · causal-ink "round")을 선언하지만, 레인
-    // 카탈로그(선언)와 아이콘 매핑(studio-brush-icons.ts) 밖에서 이 id·변형으로 분기하는 렌더러가
-    // 하나도 없습니다(grep 근거). 그래서 페인트 시점에는 베이스 매체를 그대로 칠합니다 — 선언과
-    // 실재가 어긋나는 정직성 위반(지침 6)이자 사실상 중복입니다.
-    // 실측(tests/benchmarks/results/brush-duplicate-confirm.json, 폭 정규화 후 5개 서브픽셀
-    // 시프트 최적 정합의 픽셀 |차이| p95): pencil--side-shade↔pencil 0.00000,
-    // gpen--causal-round↔gpen--croquis-capsule 0.00014. 두 프리셋은 각각 pencil-path 와
-    // causal-ink 캐리어에 있어, angled-nib 캐리어에 최근 들어온 압력 변경과 무관합니다.
-    // (marker--chisel-ribbon 은 같은 감사에서 후보였지만 제외했습니다 — angled-nib 캐리어가
-    // 스트로크 내부까지 압력을 전달하게 바뀐 뒤 base brush 와 육안으로 구분되므로 그 중복 근거는
-    // 더 이상 참이 아니고, 남은 문제는 "압력 모델 미채택"이라 옵트인이 해법입니다.)
-    // 복귀 경로: 선언한 변형을 렌더러가 실제로 분기해 베이스와 다른 그림을 그리게 만든 뒤
-    // (지침 4 byte-identity 핀 포함) 여기서 delist 합니다. 그때까지 저장된 문서는 원래대로 재생됩니다.
-    // 2026-08-16, RETRACTED: pencil--side-shade was quarantined here as a de-facto duplicate of
-    // pencil on a measured p95 of 0.00000, and that measurement was wrong. The duplicate probe
-    // built its elements without the pins the app applies at pointer-down — brushDynamics, the
-    // draw mode and materialPressureModel — so studio-svg-export stripped them and BOTH brushes
-    // were compared on the pre-rollout fixed-width route that no artist can reach. Re-measured
-    // with the pins in place, the pair is not a duplicate candidate at all: its nearest surviving
-    // candidate is web-pressure-flat at p95 0.53074. Delisting a brush for a resemblance it does
-    // not have is worse than leaving a weak variant listed, so it is listed again.
-    // 2026-08-16 diameter-hash audit. Every id containing "--" has its rendered diameter multiplied
-    // by a checksum of its own name (studio-brush-alias-profile.ts), spreading 71 presets over
-    // 0.848-1.337. Neutralising that multiplier and re-rendering every preset from identical
-    // geometry makes five declared variants BYTE-IDENTICAL to their canonical — stronger evidence
-    // than the width-normalised pixel probe, because nothing is normalised away. The two listed
-    // here are separated from their canonical by NOTHING BUT that hash, which is a size offset and
-    // not the behaviour they advertise. pen--croquis-stabilized is a third, but its declared
-    // variant (croquis-capsule-pulled-string) is a real INPUT-stage stabilizer that a fixed-
-    // geometry render cannot show, so it is not a dead lane and is not listed.
-    // 2026-08-23 delist: marker--chisel-ribbon adopted the material pressure model — a dedicated
-    // "marker-chisel" profile (firm wedge nib: near-invariant width, pressure-driven ink delivery)
-    // resolved via resolveStudioRetainedMediaPressureProfileId and consumed by both durable
-    // angled-nib renderers (StudioDrawNode / studio-svg-export). New strokes now differ from the
-    // canonical brush by measured material behaviour, not by the id checksum's size offset; saved
-    // pre-opt-in strokes replay byte-identically because their elements carry no
-    // materialPressureModel and keep the legacy fixed-width route.
     "screentone--sparse-grid":
       "선언된 engineVariant(성긴 격자)로 분기하는 렌더러가 없습니다 — 지름 해시를 빼면 동일 "
       + "기하에서 canonical(screentone)과 바이트 동일합니다. 남는 대안: screentone · crosshatch(지침 6).",
@@ -99,30 +42,7 @@ export const STUDIO_BRUSH_QUARANTINE_REASON_BY_PRESET_ID: Readonly<Record<string
       + "폭·투명도(18/0.7)의 canonical brush 와 같은 그림 — exact-id 프로필 SVG 바이트 동일(계약 감사). "
       + "그룹 내 대안 brush 가 노출 상태(지침 6).",
 
-    // -----------------------------------------------------------------------
-    // 2026-08-21 로스터 축소 웨이브 (사용자 지시: "브러시 종류를 축소해주면 좋겠다.
-    // 비슷한 질감의 브러시가 너무 많다.")
-    //
-    // 판정 기준은 손으로 고른 목록이 아니라 두 개의 기계적 사실입니다.
-    //
-    // (1) 코어·엔진 레인 — `studioBrushRuntimeExecutionSignature`
-    //     (engine:engineVariant:tip:texture:dynamics:operation). 서명이 같으면 페인트 시점의
-    //     실행 경로가 같습니다. 즉 두 프리셋을 가르는 것은 굵기·불투명도처럼 사용자가 슬라이더로
-    //     그대로 재현할 수 있는 값뿐입니다. 실측: 코어+레인 170종이 서명 108가지에 몰려 있고,
-    //     그중 62종이 다른 프리셋과 서명을 공유합니다.
-    // (2) 프로 팩 — 팩 런타임은 ink-particle / airbrush / dry-media 세 가지뿐이고, 브러시의
-    //     "질감"은 사실상 (런타임, 팁 모티프/알파맵, 팁 레이어) 세 값이 전부입니다. 나머지
-    //     softness·spacing·scatter·roundness·angle·flow·grain·colorDynamics·taper 는 전부
-    //     브러시 동역학 편집기가 노출하는 슬라이더 값입니다. 실측: 160종이 팁 발자국 89가지에
-    //     몰려 있고, 그중 92종이 다른 프리셋과 발자국을 공유합니다.
-    //
-    // 그래서 이 웨이브는 "발자국/서명을 공유하는 무리에서 실제 폭·밀도 범위를 대표하는 소수만
-    // 남기고 나머지를 delist" 합니다. 고유한 알파맵 모티프를 가진 프로 68종, 고유 서명을 가진
-    // 코어·레인 브러시, 네 가지 실제 펜촉 기하(calligraphy·fountain-pen·parallel-pen·brush-pen),
-    // 그리고 수채/유화/에어브러시/파스텔/톤처럼 재료 자체가 다른 축은 전부 그대로 둡니다.
-    // 격리는 노출 제거일 뿐이라 저장된 문서는 계속 원래 브러시로 재생됩니다
-    // (`USED_PRESET_DATA_PRESERVED`).
-    // -----------------------------------------------------------------------
+    // 2026-08-21~22 roster reduction wave (mechanical execution-signature / tip-footprint dedupe).
 
     // ── A. causal-ink:round:round:none:causal-pressure — 한 서명에 11종 ──────────
     // pen·fineliner·marker·marker-bold 가 굵기 2.2→28 을 덮습니다. (2026-08-22 제2차 축소로
@@ -158,18 +78,14 @@ export const STUDIO_BRUSH_QUARANTINE_REASON_BY_PRESET_ID: Readonly<Record<string
     // ── B. perfect-outline:gpen-taper — 한 서명에 6종 ────────────────────────────
     // studio-perfect-freehand.ts 는 school-pen/liner/mapping-pen 을 아예 "gpen" 으로 별칭
     // 처리합니다(:229-231). 남길 대표는 굵기 양끝의 gpen(7)과 maru-pen(2.4).
-    "school-pen":
-      "perfect-outline gpen-taper 서명을 gpen 과 공유하고, studio-perfect-freehand.ts:229 가 이 id 를 "
-      + "\"gpen\"으로 직접 별칭 처리합니다 — 굵기 4.2 의 gpen. 대안: gpen · maru-pen(지침 6).",
+    // 2026-11-21 Wave V2-W2 복귀(DELISTED): school-pen·kaburapen은 @toonstudio/studio-brush-platform
+    // 5대 딥펜 스프링-댐퍼 탄성 + 레일로딩 실연동(school-pen · kabura-pen 고유 물리 계수) 완료로 복귀.
     "liner":
       "perfect-outline gpen-taper 서명을 gpen 과 공유하고 perfect-freehand 별칭도 \"gpen\" — 굵기 5 의 "
       + "gpen. 대안: gpen · maru-pen(지침 6).",
     "mapping-pen":
       "perfect-outline gpen-taper 서명을 maru-pen 과 공유하고 perfect-freehand 별칭도 \"gpen\" — 굵기 "
       + "3.2 로 maru-pen(2.4)과 겹칩니다. 대안: maru-pen · gpen(지침 6).",
-    "kaburapen":
-      "perfect-outline gpen-taper 서명을 gpen 과 공유 — 선언한 \"스무스\" 스푼펜 거동으로 분기하는 "
-      + "렌더러가 없어 굵기 5.5 의 gpen 입니다. 대안: gpen · maru-pen(지침 6).",
 
     // ── C. pencil-path:jitter:grain:procedural-grain:grain-jitter — 한 서명에 5종 ─
     // pencil(2.5) · colored-pencil(4.5) · pencil-6b(6)가 굵기 축을 이미 덮습니다.
@@ -288,12 +204,8 @@ export const STUDIO_BRUSH_QUARANTINE_REASON_BY_PRESET_ID: Readonly<Record<string
     "splatter--burst-cloud":
       "splatter 와 tip(flake)·texture(custom-alpha-capable)가 같은 산란 레인 — 굵기 48/45 차이뿐. "
       + "대안: splatter · spray · ink-particle--scatter-cloud(지침 6).",
-    // 2026-09-02 유사 브러시 정리(적대적 검증 통과): 잔상 트레일이 실재하지 않는 소프트 블렌드.
-    "web-smudge-trail":
-      "web-blend-softener 와 실행 서명이 동일(dynamic-dabs:soft-diffuse/soft-gradient/mapped-dabs) — "
-      + "lag ghost 4겹이 경로 위에 그대로 겹쳐 찍혀(실측 수직 편차 max 0.03px, 직각 코너에서도 0.93px) "
-      + "잔상이 실재하지 않고, 밀도 3.9배는 flow 슬라이더로 재현됩니다. "
-      + "대안: web-blend-softener · airbrush · soft-brush(지침 6).",
+    // 2026-11-21 Wave V2-W2 복귀(DELISTED): web-smudge-trail은 고유 web-smudge-trail-ghost 레인 및
+    // 플래너 품질 감사(errorCount=0, 지문 충돌 0) 충족으로 노출 복귀.
 
     // ── K. 서명이 완전히 동일한 레인 별칭 ─────────────────────────────────────────
     "pen--perfect-taper":
@@ -468,65 +380,17 @@ export const STUDIO_BRUSH_QUARANTINE_REASON_BY_PRESET_ID: Readonly<Record<string
       "잎송이 알파맵과 팁 레이어를 leaf-cluster 와 공유하고 scatter 0.62/0.39 차이만 남습니다. "
       + "대안: leaf-cluster · round-leaf(지침 6).",
 
-    // ── 2026-08-27 영수증 재생성 감사: 우산 id 의 커널 미주행 ─────────────────────
-    // T1 de-polygon 웨이브가 crayon·chalk·charcoal·pastel·oil-pastel 을 커널 dab 경로로 옮길 때
-    // 이 프리셋들이 파생돼 나온 우산 id "dry-media" 자체는 커널 프로그램 핀 없이(레인 변형
-    // 오버라이드도 없이) 제네릭 base 파이프라인에 남았습니다. 실측(같은 24px 장경로, 프로덕션
-    // 브라우저 게이트): inkEnergy 170 vs crayon 3044(18배), 평균 단면 폭 3.1px vs 14.9px —
-    // 사실상 유령선이고, 릴리스 시 잉크 에너지가 40% 더 빠지면서 centroid 가 12.3px 밀려
-    // strict-continuous 품질 게이트(centroid-drift)에 걸립니다. 빠른 단획은 실측 changedPixels
-    // 1/4392 로 아예 보이지 않는 프레임까지 나옵니다. 재질 자식 5종(crayon · chalk · charcoal ·
-    // pastel · oil-pastel)이 모두 노출 상태의 대안입니다(지침 6).
-    // 복귀 경로: 우산 id 를 커널 재질에 명시 핀으로 물리면 material-group 매핑(pastel)과
-    // 바이트 중복이 되므로, 실질적 복귀는 우산 id 만의 실재하는 재질 정체성이 생길 때입니다.
-    // 그때까지 저장된 문서는 계속 원래 파이프라인으로 바이트 동일 재생됩니다.
+    // 2026-08-27 kernel coverage audit (full provenance in studio-brush-variant-group-manifest.test.ts).
     "dry-media":
       "커널 리워크가 재질 자식들만 커널 경로로 옮기고 우산 id 는 제네릭 파이프라인에 남아 실측 "
       + "잉크 에너지가 crayon 의 1/18 인 유령선을 그립니다(릴리스 centroid 12.3px 드리프트 포함) — "
       + "crayon · chalk · charcoal · pastel · oil-pastel 이 그룹 내 대안(지침 6).",
-
-    // ── 2026-08-27 영수증 재생성 감사 2: 엔진 레인 id 의 커널 미주행 ────────────────
-    // dry-media 우산과 같은 결함 클래스입니다. resolveStudioDryMediaAnisotropicPresetIdV1 은
-    // 저장-재생 권위 계약상 엔진 레인 id 를 EXACT 매칭으로만 커널에 물리므로,
-    // charcoal--vine-soft 는 정체성 null 로 제네릭 텍스처 파이프라인에 남았습니다. 실측
-    // (오프라인 플래너 프로브, 동일 입력): 9px 탭에서 잉크 에너지 1.1 vs charcoal 37(1/30),
-    // 피크 마크 알파 0.066–0.075 — 가시성 임계(16/255≈0.063) 바로 위·아래를 시드에 따라
-    // 오가는 값이라 프로덕션 브라우저 감사의 빠른 단획 게이트가 확률적으로 실패합니다
-    // (5회 재현, seal 브레드크럼 실측: 풀 알파 active 표면 검열 1px). 66px 장획도 에너지
-    // 1/5.5(피크 0.277)의 균일 결핍입니다. 커널 재질로 재매핑하면 저장된 vine-soft 획이
-    // 30배 진하게 재생되어 저장-재생 계약을 깨므로, 우산 id 와 동일하게 노출만 격리합니다.
-    // 복귀 경로: vine-soft 만의 실재 커널 재질(부드러운 vine 목탄 베이크)이 생겨 신규 획만
-    // 그 경로를 타게 될 때입니다. 저장된 문서는 계속 원래 파이프라인으로 바이트 동일 재생됩니다.
     "charcoal--vine-soft":
       "커널 리워크에서 엔진 레인 id 가 제네릭 파이프라인에 남아 9px 탭의 잉크 에너지가 "
       + "charcoal 의 1/30, 피크 알파 0.066–0.075 로 가시성 임계(≈0.063)에 걸친 유령선을 "
       + "그립니다(프로덕션 브라우저 감사 빠른 단획 게이트 확률적 실패 5회 실측) — "
       + "charcoal · chalk · pastel 이 그룹 내 대안(지침 6).",
-
-    // ── 2026-08-27 영수증 재생성 감사 3: 커밋 탭이 가시성 임계에 걸친 레인 2종 ──────────
-    // 둘 다 전수 서베이·포커스 재현·오프라인 플래너 프로브로 커밋 강도를 실측했습니다.
-    //
-    // oil-pastel--wgm-mix: 요소마다 찍히는 contact-tooth-v2 종이 결합이 이 제네릭 텍스처
-    // 레인의 커밋 플랜을 피크 알파 0.147→0.014, 에너지 10.5배 붕괴시킵니다(커널 레인
-    // charcoal 은 같은 결합에서 34→33 으로 사실상 무영향). 9px 탭의 화면 픽셀 실측
-    // 22px@delta4 — 게이트(4px@delta4)에 정확히 걸쳐 런마다 통과/실패가 플립합니다.
-    // 라이브 오버레이는 tooth 없이 미리 그려 릴리스 순간 획이 눈에 띄게 증발합니다.
-    //
-    // mypaint-cc0--watercolor-fringe: 커밋이 stampPipeline causal-walker-v2 의 수채 스탬프
-    // 워시로 렌더되어 9px 탭이 16px@delta3 — 게이트 미달의 결정적 불가시입니다(신선 세션
-    // 재현). 라이브 스탬프 오버레이는 같은 탭을 풍부하게(검열 134px) 미리 그려 릴리스
-    // 순간 증발합니다. 커밋이 권위이므로 라이브를 맞추면 탭은 여전히 불가시 — 레인
-    // 자체가 빠른 단획을 그릴 수 없는 상태라 노출만 격리합니다.
-    // 복귀 경로: 각 레인의 커밋 탭 침착이 가시 임계를 결정적으로 넘도록 재질이 재작업될 때.
-    // 저장된 문서는 계속 원래 파이프라인으로 바이트 동일 재생됩니다.
-    "oil-pastel--wgm-mix":
-      "contact-tooth-v2 종이 결합이 커밋 탭의 피크 알파를 0.147→0.014 로 붕괴시켜 화면 "
-      + "실측 22px@delta4 — 가시성 게이트에 걸친 유령 탭을 그리고 라이브 미리보기는 tooth "
-      + "없이 진하게 그려 릴리스 때 증발합니다 — oil-pastel · pastel 이 그룹 내 대안(지침 6).",
-    "mypaint-cc0--watercolor-fringe":
-      "커밋이 수채 스탬프 워시로 렌더되어 9px 탭이 16px@delta3 의 결정적 불가시(신선 세션 "
-      + "실측)이고 라이브 스탬프 미리보기는 같은 탭을 134px 로 그려 릴리스 때 증발합니다 — "
-      + "watercolor · wash-brush 가 그룹 내 대안(지침 6).",
+    // 2026-11-21 Wave V2-W2 DELISTED: oil-pastel--wgm-mix & mypaint-cc0--watercolor-fringe passed audit.
 
     // -----------------------------------------------------------------------
     // 2026-09-02 feel-cull (ChatGPT 소스 보고서 + 사용자 지시: 비슷한 느낌 줄이기).

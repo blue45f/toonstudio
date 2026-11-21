@@ -142,7 +142,7 @@ function Card({ title, id, children }: { title: string; id?: string; children: R
  *  아바타 원 + 이름·메타 두 줄의 실루엣을 그대로 채운다.
  *  로딩 안내는 role="status" 문구가 맡으므로 이 블록은 장식으로 숨긴다. */
 function WorkspaceListSkeletonCard() {
-  return <div aria-hidden="true" data-testid="workspace-list-skeleton-card" className="flex animate-pulse items-center gap-3 rounded-xl border border-line p-4 motion-reduce:animate-none">
+  return <div aria-hidden="true" data-testid="workspace-list-skeleton-card" className="flex items-center gap-3 rounded-xl border border-line p-4 motion-reduce:animate-none">
     <div className="size-10 shrink-0 rounded-full bg-raised" />
     <div className="min-w-0 flex-1">
       <div className="h-5 w-1/2 rounded bg-raised" />
@@ -152,7 +152,7 @@ function WorkspaceListSkeletonCard() {
 }
 /** 상세 로딩 스켈레톤. 이름·연결 프로젝트·구성원 카드가 앉을 자리와 크기를 그대로 채운다. */
 function WorkspaceDetailSkeleton() {
-  return <div aria-hidden="true" data-testid="workspace-detail-skeleton" className="animate-pulse space-y-5 motion-reduce:animate-none">
+  return <div aria-hidden="true" data-testid="workspace-detail-skeleton" className="space-y-5 motion-reduce:animate-none">
     <section className="creator-workflow-panel rounded-2xl border border-line bg-card p-5">
       <div className="h-7 w-1/3 rounded bg-raised" />
       <div className="mt-3 h-5 w-1/4 rounded bg-raised" />
@@ -192,7 +192,7 @@ function SignedOutTeamIntro() {
   const bt = useBilingual("TeamWorkspacePage");
   return <>
     <section aria-labelledby="team-signed-out-title" className="rounded-3xl border border-accent/30 bg-gradient-to-br from-accent-soft via-card to-card p-5 sm:p-6">
-      <h2 id="team-signed-out-title" className="text-lg font-black text-fg">{bt("로그인하면 팀을 만들고 사람을 초대할 수 있어요", "Sign in to create a team and invite people")}</h2>
+      <h2 id="team-signed-out-title" className="text-lg font-semibold text-fg">{bt("로그인하면 팀을 만들고 사람을 초대할 수 있어요", "Sign in to create a team and invite people")}</h2>
       <p className="mt-1 max-w-2xl text-sm leading-6 text-fg-2">{bt("초대를 받았다면 초대받은 이메일로 로그인한 뒤 초대 코드로 참여하세요. 로그인 없이도 샘플 프로젝트에서 역할과 권한 화면을 둘러볼 수 있습니다.", "Got an invite? Sign in with the invited email and join with the code. Without signing in, you can explore roles in the sample project.")}</p>
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" className={buttonClass({ className: "min-h-11" })} onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "team-workspace", mode: "login" })}>{bt("로그인하고 팀 만들기", "Sign in to create a team")}</button>
@@ -328,7 +328,7 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
     <div className="mx-auto max-w-6xl space-y-5"><TeamAreaNavigation />
     <TeamSceneArt />
     <header className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-line bg-panel p-5 sm:p-6">
-      <div><p className="eyebrow text-accent">TEAM · PEOPLE & ACCESS</p><h1 className="mt-2 text-2xl font-black">{bt("사람·권한 관리", "People & access")}</h1><p className="mt-2 text-sm text-fg-2">{operationPolicy?.notice ?? bt("팀 소속과 프로젝트 접근 권한을 한 흐름에서 관리합니다.", "Manage team membership and project access in one flow.")}</p></div>
+      <div><p className="eyebrow text-accent">TEAM · PEOPLE & ACCESS</p><h1 className="mt-2 text-2xl font-semibold">{bt("사람·권한 관리", "People & access")}</h1><p className="mt-2 text-sm text-fg-2">{operationPolicy?.notice ?? bt("팀 소속과 프로젝트 접근 권한을 한 흐름에서 관리합니다.", "Manage team membership and project access in one flow.")}</p></div>
       <nav aria-label={bt("팀 관리", "Team management")} className="flex flex-wrap gap-3"><Link to="/team">{bt("협업 홈", "Collaboration home")}</Link><Link to="/team/people">{bt("전체 팀", "All teams")}</Link><Link to="/team/organization">{bt("조직 홈", "Organization home")}</Link><Link to="/team/people/join">{bt("초대 수락", "Accept invite")}</Link></nav>
     </header>
     <section
@@ -485,7 +485,7 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
       <p className="mt-2 text-xs text-fg-2">{bt("허용:", "Allowed:")} {invitePreset.allowedActions.join(" · ")}</p>
       <p className="mt-1 text-xs text-fg-3">{bt("차단·별도 승인:", "Blocked / needs approval:")} {invitePreset.blockedActions.join(" · ")}</p>
       <p className="mt-1 text-xs text-fg-2">{bt(`공정 범위: ${PRESET_PROCESS_SCOPE[invitePreset.id].ko}`, `Process scope: ${PRESET_PROCESS_SCOPE[invitePreset.id].en}`)} {bt("· 서버 강제 없음(프리셋 미리보기)", "· not server-enforced (preset preview)")}</p>
-      <p className="mt-1 text-[0.6875rem] text-fg-3">{bt("프리셋의 프로젝트 역할·공정 범위는 미리보기이며 이 화면에서 서버가 강제하지 않습니다. 이 초대는 워크스페이스 역할만 적용하며 작품별 권한을 자동으로 넓히지 않습니다.", "Preset project roles and process scopes are previews and aren't enforced by the server on this screen. This invite only applies the workspace role — it doesn't widen per-project permissions.")}</p>
+      <p className="mt-1 text-xs text-fg-3">{bt("프리셋의 프로젝트 역할·공정 범위는 미리보기이며 이 화면에서 서버가 강제하지 않습니다. 이 초대는 워크스페이스 역할만 적용하며 작품별 권한을 자동으로 넓히지 않습니다.", "Preset project roles and process scopes are previews and aren't enforced by the server on this screen. This invite only applies the workspace role — it doesn't widen per-project permissions.")}</p>
     </div><form className="flex flex-wrap items-end gap-3" onSubmit={(event) => { event.preventDefault(); void run(async () => {
         await command({ type: "invite", email, role: inviteTier.serverRole });
         if (inviteProjectWorkId) {

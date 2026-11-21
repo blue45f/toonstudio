@@ -124,18 +124,85 @@ export function StudioProjectLibraryManagementContent({
     );
   };
 
+  const homeBento = view === "active" && !query.trim() ? (
+    <div
+      data-studio-home-bento="true"
+      className="grid items-stretch gap-4 lg:grid-cols-2"
+    >
+      <div data-studio-bento-resume="true" className="flex min-w-0 flex-col">
+        {recentProps ? (
+          <StudioProjectLibraryResumeCard
+            key={recentProps.project.id}
+            project={recentProps.project}
+            profile={recentProps.profile}
+            authUserId={authUserId}
+            locale={locale}
+            resumeHref={recentProps.continueHref}
+            resumeSummary={recentProps.resumeSummary}
+            overviewHref={recentProps.overviewHref}
+            onResume={recentProps.onTouch}
+            checked={recentProps.checked}
+            selection={selectionVisible ? <StudioProjectSelectionCheckbox checked={recentProps.checked}
+              label={formatI18nTemplate(String(bi("{value0} 선택", "Select {value0}")), { value0: recentProps.project.title })}
+              onChange={recentProps.onToggle} /> : null}
+            management={<StudioProjectLibraryCardActions {...recentProps} />}
+          />
+        ) : (
+          <div className="flex h-full flex-col justify-between gap-3 rounded-xl border border-line bg-panel p-4">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-accent">
+                {bi("최근 이어하기", "Resume workspace")}
+              </p>
+              <h2 className="text-base font-semibold tracking-[-0.02em] text-fg [word-break:keep-all]">
+                {bi("작업 중인 개인 원고가 아직 없습니다", "No personal manuscript yet")}
+              </h2>
+              <p className="text-xs leading-5 text-fg-2 [word-break:keep-all]">
+                {bi("오른쪽 빠른 시작으로 첫 원고를 만들거나, 아래 예제를 열어 작업실을 체험해 보세요.", "Start your first manuscript on the right or try an example below.")}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/studio/import"
+                className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 rounded-lg" })}
+              >
+                {bi("원고 파일 가져오기", "Import manuscript")}
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+      <section
+        aria-label={bi("빠른 작업 시작", "Quick start")}
+        data-studio-bento-fast-start="true"
+        className="flex min-w-0 flex-col gap-3 rounded-[var(--atelier-radius-outer,14px)] border border-line-strong bg-panel p-4 shadow-[var(--atelier-elevation-dock)]"
+      >
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold text-fg">
+            {bi("바로 시작", "Quick start")}
+          </h2>
+          <span className="text-xs text-fg-3">
+            {bi("세로 웹툰 · 4컷 · 3D · 가져오기", "Webtoon · 4-panel · 3D · Import")}
+          </span>
+        </div>
+        <StudioProjectLibraryFastStartStrip className="flex-1" />
+      </section>
+    </div>
+  ) : null;
+
   return (
     <>
       {visibleProjects.length === 0 ? (
         view === "active" && !query ? (
-          null
+          <div className="studio-library-workspace" data-studio-project-sections="true" data-has-recent-work={false}>
+            {homeBento}
+          </div>
         ) : (
           <section
             data-studio-empty-state={query ? "search" : view}
             className="mt-5 rounded-3xl border border-dashed border-line bg-card/60 px-5 py-12 text-center sm:py-14"
           >
             <FolderOpen size={24} className="mx-auto text-fg-3" aria-hidden="true" />
-            <h2 className="mt-3 text-xl font-black text-fg">
+            <h2 className="mt-3 text-xl font-semibold text-fg">
               {query
                 ? bi("검색 결과가 없습니다", "No matching projects")
                 : bi("표시할 작업이 없습니다", "No work to show")}
@@ -191,15 +258,7 @@ export function StudioProjectLibraryManagementContent({
         )
       ) : view === "active" ? (
         <div className="studio-library-workspace" data-studio-project-sections="true" data-has-recent-work={Boolean(recentProps)}>
-          {recentProps ? <StudioProjectLibraryResumeCard key={recentProps.project.id}
-            project={recentProps.project} profile={recentProps.profile} authUserId={authUserId}
-            locale={locale} resumeHref={recentProps.continueHref} resumeSummary={recentProps.resumeSummary}
-            overviewHref={recentProps.overviewHref} onResume={recentProps.onTouch} checked={recentProps.checked}
-            selection={selectionVisible ? <StudioProjectSelectionCheckbox checked={recentProps.checked}
-              label={formatI18nTemplate(String(bi("{value0} 선택", "Select {value0}")), { value0: recentProps.project.title })}
-              onChange={recentProps.onToggle} /> : null}
-            management={<StudioProjectLibraryCardActions {...recentProps} />}
-          /> : null}
+          {homeBento}
           <section className="studio-library-other-work" aria-labelledby="studio-library-work-list-title">
             <div className="studio-library-work-list-heading">
               <h2 id="studio-library-work-list-title">{recentProps ? bi("다른 작업", "Other work") : bi("작업 목록", "Work list")}</h2>
@@ -248,44 +307,30 @@ export function StudioProjectLibraryManagementContent({
       )}
 
       <div className="studio-library-secondary-tools">
-        {view === "active" ? (
-          <details className="studio-library-view-management group rounded-[10px] border border-line bg-panel">
-            <summary className="studio-library-disclosure-summary">
-              <span>{bi("작품 관리·가져오기", "Manage and import work")}</span>
-              <ChevronDown size={15} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" />
-            </summary>
-            <nav className="studio-library-management-links border-t border-line" aria-label={bi("내 작업 보기", "My work views")}>
-              {(["active", "archived", "trash"] as const).map((candidate) => (
-                <Link
-                  key={candidate}
-                  href={studioProjectLibraryManagementViewHref(candidate)}
-                  aria-current={candidate === view ? "page" : undefined}
-                >
-                  {bi(STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[candidate].ko, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[candidate].en)}
-                  <span className="tabular-nums">{viewCounts[candidate]}</span>
-                </Link>
-              ))}
-              <Link href="/studio/import">{bi("파일에서 작업 열기", "Open work from file")}</Link>
-            </nav>
-          </details>
-        ) : null}
-        {view === "active" && !query.trim() ? (
-          <details className="studio-library-alternative-starts group rounded-[10px] border border-line bg-panel" data-studio-other-starts="true">
-            <summary className="studio-library-disclosure-summary">
-              <span>{bi("다른 작업 시작", "Start something else")}</span>
-              <ChevronDown size={15} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" />
-            </summary>
-            <div className="border-t border-line p-3">
-              <StudioProjectLibraryFastStartStrip />
-            </div>
-          </details>
-        ) : null}
-        <details className="studio-library-auxiliary-management group rounded-[10px] border border-line bg-panel">
+        <details
+          className="studio-library-auxiliary-management group rounded-[10px] border border-line bg-panel"
+          data-studio-library-secondary-drawer="true"
+        >
           <summary className="studio-library-disclosure-summary">
-            <span>{bi("저장·내보내기·제작 관리", "Save, export and production")}</span>
+            <span>{bi("보관함·저장·제작 관리", "Archive, storage & production")}</span>
             <ChevronDown size={15} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" />
           </summary>
           <div className="border-t border-line p-3.5">
+            {view === "active" ? (
+              <nav className="studio-library-management-links mb-3 border-b border-line pb-3" aria-label={bi("내 작업 보기", "My work views")}>
+                {(["active", "archived", "trash"] as const).map((candidate) => (
+                  <Link
+                    key={candidate}
+                    href={studioProjectLibraryManagementViewHref(candidate)}
+                    aria-current={candidate === view ? "page" : undefined}
+                  >
+                    {bi(STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[candidate].ko, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[candidate].en)}
+                    <span className="tabular-nums">{viewCounts[candidate]}</span>
+                  </Link>
+                ))}
+                <Link href="/studio/import">{bi("파일에서 작업 열기", "Open work from file")}</Link>
+              </nav>
+            ) : null}
             <p className="mb-2 text-xs leading-5 text-fg-2 sm:hidden">
               {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
             </p>

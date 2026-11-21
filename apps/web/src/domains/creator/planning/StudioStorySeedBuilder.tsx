@@ -186,8 +186,8 @@ export function StudioStorySeedBuilder({
                 onClick={() => setGenre(candidate)}
                 className={
                   genre === candidate
-                    ? "min-h-8 rounded-full bg-accent px-3 text-xs font-bold text-white"
-                    : "min-h-8 rounded-full border border-line px-3 text-xs text-fg-2 hover:bg-raised"
+                    ? "min-h-11 rounded-lg bg-accent px-3.5 text-xs font-semibold text-on-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    : "min-h-11 rounded-lg border border-line bg-card px-3.5 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 }
               >
                 {candidate}
@@ -215,13 +215,14 @@ export function StudioStorySeedBuilder({
                 }
               }}
               placeholder="예: 저주받은 검, 왕위, 배신"
-              className="min-h-10 flex-1 rounded-xl border border-line bg-panel px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent"
+              className="min-h-11 flex-1 rounded-lg border border-line bg-card px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent"
             />
             <button
               type="button"
               onClick={() => addKeyword(keywordInput)}
               disabled={keywordCapped}
-              className="min-h-10 rounded-xl border border-line px-3 text-sm text-fg-2 disabled:opacity-40"
+              title={keywordCapped ? `키워드는 최대 ${KEYWORD_LIMIT}개까지 넣을 수 있습니다` : undefined}
+              className="min-h-11 rounded-lg border border-line bg-card px-3.5 text-sm font-medium text-fg-2 hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
             >
               추가
             </button>
@@ -236,7 +237,7 @@ export function StudioStorySeedBuilder({
                   <button
                     type="button"
                     onClick={() => setKeywords((prev) => prev.filter((item) => item !== keyword))}
-                    className="min-h-7 rounded-full bg-raised px-2.5 text-xs text-fg-2"
+                    className="min-h-9 rounded-lg border border-line bg-raised px-2.5 text-xs text-fg-2 hover:text-fg"
                     aria-label={`키워드 ${keyword} 빼기`}
                   >
                     {keyword} ×
@@ -253,7 +254,7 @@ export function StudioStorySeedBuilder({
             <select
               value={tone}
               onChange={(event) => setTone(event.target.value)}
-              className="min-h-10 w-full rounded-xl border border-line bg-panel px-2 text-sm text-fg"
+              className="min-h-11 w-full rounded-lg border border-line bg-card px-2.5 text-sm text-fg"
             >
               <option value="">고르지 않음</option>
               {TONE_PRESETS.map((preset) => (
@@ -269,7 +270,7 @@ export function StudioStorySeedBuilder({
               value={protagonist}
               onChange={(event) => setProtagonist(event.target.value)}
               placeholder="비우면 장르 기본값이나 캐릭터 설정을 써요"
-              className="min-h-10 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent"
+              className="min-h-11 w-full rounded-lg border border-line bg-card px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent"
             />
           </label>
           <label className="block">
@@ -278,7 +279,7 @@ export function StudioStorySeedBuilder({
               value={stage}
               onChange={(event) => setStage(event.target.value)}
               placeholder="비우면 장르 기본값이나 장소 설정을 써요"
-              className="min-h-10 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent"
+              className="min-h-11 w-full rounded-lg border border-line bg-card px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent"
             />
           </label>
         </div>
@@ -307,7 +308,7 @@ export function StudioStorySeedBuilder({
                       />
                       <span>
                         <span className="font-semibold">{ref.name}</span>
-                        <span className="ml-2 rounded-full bg-raised px-2 py-0.5 text-[0.625rem] font-bold text-fg-2">
+                        <span className="ml-2 rounded-lg bg-raised px-2 py-0.5 text-xs font-semibold text-fg-2">
                           {ref.sourceLabel ?? SETTING_KIND_LABELS[ref.kind]}
                         </span>
                         {ref.detail && (
@@ -326,16 +327,18 @@ export function StudioStorySeedBuilder({
           <button
             type="button"
             disabled={genre.trim() === "" || phase === "loading"}
+            title={genre.trim() === "" ? "장르를 먼저 골라 주세요" : undefined}
             onClick={() => void runGenerate(provider)}
-            className="min-h-11 rounded-full bg-accent px-4 text-sm font-bold text-white disabled:opacity-40"
+            className="min-h-11 rounded-lg bg-accent px-4 text-sm font-semibold text-on-accent disabled:cursor-not-allowed disabled:opacity-40"
           >
             {phase === "loading" ? "초안 만드는 중…" : "씨앗 초안 만들기"}
           </button>
           <button
             type="button"
             disabled={genre.trim() === "" || phase === "loading"}
+            title={genre.trim() === "" ? "장르를 먼저 골라 주세요" : undefined}
             onClick={() => void runGenerate(textAiStorySeedProvider)}
-            className="min-h-11 rounded-full border border-accent/40 bg-accent/10 px-4 text-sm font-bold text-accent hover:bg-accent/15 disabled:opacity-40"
+            className="min-h-11 rounded-lg border border-accent/40 bg-accent-soft px-4 text-sm font-semibold text-accent hover:border-accent disabled:cursor-not-allowed disabled:opacity-40"
           >
             AI 씨앗 확장 만들기
           </button>
@@ -369,14 +372,14 @@ export function StudioStorySeedBuilder({
                   setPhase("ready");
                 }
               }}
-              className="min-h-9 rounded-full border border-line px-3 text-xs font-semibold text-fg"
+              className="min-h-11 rounded-lg border border-line bg-card px-3.5 text-xs font-semibold text-fg hover:bg-raised"
             >
               기본 제안으로 만들기
             </button>
             <button
               type="button"
               onClick={() => void runGenerate(lastProviderRef.current)}
-              className="min-h-9 rounded-full px-3 text-xs text-fg-3"
+              className="min-h-11 rounded-lg border border-line px-3.5 text-xs text-fg-2 hover:bg-raised hover:text-fg"
             >
               {r3c04StatusText("studio.r3c04Status.planning.storySeed.retry", "다시 시도")}
             </button>
@@ -462,19 +465,19 @@ export function StudioStorySeedBuilder({
             </dl>
           </details>
           {confirmOverwrite ? (
-            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-accent/40 bg-accent/5 px-3 py-2">
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-accent/40 bg-accent-soft/60 px-3 py-2.5">
               <p className="text-sm text-fg">이 회차에는 이미 줄거리가 있어요. 씨앗 초안으로 덮을까요?</p>
               <button
                 type="button"
                 onClick={handleApply}
-                className="min-h-9 rounded-full bg-accent px-3 text-xs font-bold text-white"
+                className="min-h-11 rounded-lg bg-accent px-3.5 text-xs font-semibold text-on-accent"
               >
                 덮어쓰기
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmOverwrite(false)}
-                className="min-h-9 rounded-full px-3 text-xs text-fg-3"
+                className="min-h-11 rounded-lg border border-line bg-panel px-3.5 text-xs text-fg-2 hover:bg-raised"
               >
                 취소
               </button>
@@ -483,7 +486,7 @@ export function StudioStorySeedBuilder({
             <button
               type="button"
               onClick={handleApply}
-              className="min-h-11 justify-self-start rounded-full bg-accent px-4 text-sm font-bold text-white"
+              className="min-h-11 justify-self-start rounded-lg bg-accent px-4 text-sm font-semibold text-on-accent"
             >
               이 초안을 회차 기획에 넣기
             </button>

@@ -83,6 +83,9 @@ export interface StudioVrmSurfacePaintToolSnapshot {
   }> | null;
 }
 
+export type StudioVrmSurfacePressureMode = "fake" | "real" | "none";
+export type StudioVrmSurfaceLineColorMode = "baseLineColor" | "baseHairColor" | "baseSkinColor" | "unique";
+
 export interface StudioVrmSurfacePaintBrushSettings {
   readonly color: string;
   /** Screen-space diameter. The projection provider supplies CSS-pixel to texel density. */
@@ -91,6 +94,9 @@ export interface StudioVrmSurfacePaintBrushSettings {
   readonly flow: number;
   readonly hardness: number;
   readonly minSize: number;
+  readonly pressureMode?: StudioVrmSurfacePressureMode;
+  readonly lineColorMode?: StudioVrmSurfaceLineColorMode;
+  readonly resolvedLineColor?: string;
 }
 
 export interface StudioVrmSurfacePaintPointerSample {
@@ -223,70 +229,71 @@ function normalizePointerType(value: string): RawInputSampleIR["pointerType"] {
 }
 
 function validPointerSample(sample: StudioVrmSurfacePaintPointerSample): boolean {
-  return Number.isSafeInteger(sample.pointerId)
-    && sample.pointerId >= 0
-    && Number.isFinite(sample.clientX)
-    && Number.isFinite(sample.clientY)
-    && Number.isFinite(sample.timeStamp)
-    && finiteInRange(sample.pressure, 0, 1)
-    && finiteInRange(sample.tiltX, -90, 90)
-    && finiteInRange(sample.tiltY, -90, 90)
-    && (
-      sample.worldUnitsPerCssPixel === null
-      || (Number.isFinite(sample.worldUnitsPerCssPixel) && sample.worldUnitsPerCssPixel > 0)
-    );
+  return Number.isSafeInteger(sample.pointerId) && sample.pointerId >= 0
+    && Number.isFinite(sample.clientX) && Number.isFinite(sample.clientY) && Number.isFinite(sample.timeStamp)
+    && finiteInRange(sample.pressure, 0, 1) && finiteInRange(sample.tiltX, -90, 90) && finiteInRange(sample.tiltY, -90, 90)
+    && (sample.worldUnitsPerCssPixel === null || (Number.isFinite(sample.worldUnitsPerCssPixel) && sample.worldUnitsPerCssPixel > 0));
 }
 
 function validSettings(settings: StudioVrmSurfacePaintBrushSettings): boolean {
-  return HEX_COLOR.test(settings.color)
-    && Number.isFinite(settings.sizeCssPixels)
-    && settings.sizeCssPixels > 0
-    && finiteInRange(settings.opacity, 0, 1)
-    && finiteInRange(settings.flow, 0, 1)
-    && finiteInRange(settings.hardness, 0, 1)
-    && finiteInRange(settings.minSize, 0, 1);
+  return HEX_COLOR.test(settings.color) && Number.isFinite(settings.sizeCssPixels) && settings.sizeCssPixels > 0
+    && finiteInRange(settings.opacity, 0, 1) && finiteInRange(settings.flow, 0, 1)
+    && finiteInRange(settings.hardness, 0, 1) && finiteInRange(settings.minSize, 0, 1);
 }
 
 function parseColor(color: string): StrokeIR["color"] {
   const match = HEX_COLOR.exec(color);
   if (!match) throw new Error(`invalid surface brush color ${color}`);
-  return {
-    r: Number.parseInt(match[1]!, 16) / 255,
-    g: Number.parseInt(match[2]!, 16) / 255,
-    b: Number.parseInt(match[3]!, 16) / 255,
-    a: 1,
-  };
+  return { r: Number.parseInt(match[1]!, 16) / 255, g: Number.parseInt(match[2]!, 16) / 255, b: Number.parseInt(match[3]!, 16) / 255, a: 1 };
 }
 
 function deterministicSeed(samples: readonly StudioVrmSurfacePaintPointerSample[]): number {
   let hash = 0x811c9dc5;
   for (const sample of samples) {
-    const values = [
-      sample.pointerId,
-      Math.round(sample.clientX * 64),
-      Math.round(sample.clientY * 64),
-      Math.round(sample.timeStamp * 8),
-      Math.round(sample.pressure * 1_000_000),
-      Math.round(sample.tiltX * 1_000),
-      Math.round(sample.tiltY * 1_000),
-    ];
-    for (const value of values) {
-      hash ^= value | 0;
-      hash = Math.imul(hash, 0x01000193);
-    }
+    const values = [sample.pointerId, Math.round(sample.clientX * 64), Math.round(sample.clientY * 64), Math.round(sample.timeStamp * 8), Math.round(sample.pressure * 1_000_000), Math.round(sample.tiltX * 1_000), Math.round(sample.tiltY * 1_000)];
+    for (const value of values) { hash ^= value | 0; hash = Math.imul(hash, 0x01000193); }
   }
   return hash >>> 0;
 }
 
+export function resolveStudioVrmSurfaceStrokePressure(
+  rawPressure: number,
+  normalizedIndex: number,
+  mode?: StudioVrmSurfacePressureMode,
+): number {
+  const clampedRaw = Number.isFinite(rawPressure) ? Math.min(1, Math.max(0, rawPressure)) : 0.5;
+  if (!mode) return clampedRaw;
+  if (mode === "none") return 1;
+  if (mode === "fake") {
+    const t = Math.min(0.96, Math.max(0.04, Number.isFinite(normalizedIndex) ? normalizedIndex : 0.5));
+    return Math.max(0.12, Number(Math.sin(Math.PI * t).toFixed(4)));
+  }
+  return Math.min(1, Math.max(0.05, Number((clampedRaw * 2).toFixed(4))));
+}
+
+export function resolveStudioVrmSurfaceLineColor(
+  mode: StudioVrmSurfaceLineColorMode | undefined,
+  settingsColor: string,
+  palette: { readonly baseLineColor?: string; readonly baseHairColor?: string; readonly baseSkinColor?: string } = {},
+): string {
+  const pick = (candidate: string | undefined) => (candidate && HEX_COLOR.test(candidate) ? candidate.toLowerCase() : settingsColor);
+  if (mode === "baseLineColor") return pick(palette.baseLineColor ?? "#1c1917");
+  if (mode === "baseHairColor") return pick(palette.baseHairColor);
+  if (mode === "baseSkinColor") return pick(palette.baseSkinColor);
+  return settingsColor;
+}
+
 function toRawSamples(
   samples: readonly StudioVrmSurfacePaintPointerSample[],
+  pressureMode?: StudioVrmSurfacePressureMode,
 ): RawInputSampleIR[] {
   const startedAt = Math.max(0, samples[0]?.timeStamp ?? 0);
-  return samples.map((sample) => ({
+  const denom = Math.max(1, samples.length - 1);
+  return samples.map((sample, index) => ({
     x: sample.clientX,
     y: sample.clientY,
     tMs: Math.max(0, sample.timeStamp - startedAt),
-    pressure: sample.pressure,
+    pressure: resolveStudioVrmSurfaceStrokePressure(sample.pressure, index / denom, pressureMode),
     tiltXDeg: sample.tiltX,
     tiltYDeg: sample.tiltY,
     twistDeg: 0,
@@ -330,37 +337,19 @@ export function createStudioVrmSurfaceBrushProgram(
   if (!validSettings(settings)) {
     throw new Error("surface brush settings must be finite and use a six-digit HEX color");
   }
+  const effectiveMinSize = settings.pressureMode === "none" ? 1 : settings.minSize;
   const brushProgram: BrushProgramIR = {
     id: STUDIO_VRM_SURFACE_PAINT_TOOL_ID,
     name: "Studio VRM V12 surface round",
     stabilizer: { kind: "none", strength: 0, predictionMs: 0 },
-    sizeDynamics: [{
-      input: "pressure",
-      curve: [0, 1],
-      min: settings.minSize,
-      max: 1,
-    }],
-    flowDynamics: [{
-      input: "constant",
-      curve: [0, 1],
-      min: settings.flow,
-      max: settings.flow,
-    }],
+    sizeDynamics: [{ input: "pressure", curve: [0, 1], min: effectiveMinSize, max: 1 }],
+    flowDynamics: [{ input: "constant", curve: [0, 1], min: settings.flow, max: settings.flow }],
     geometry: {
       kind: "perfect-freehand",
       // Pressure is mapped exactly once by sizeDynamics above.
-      thinning: 0,
-      smoothing: 0.5,
-      streamline: 0.5,
-      capStart: true,
-      capEnd: true,
+      thinning: 0, smoothing: 0.5, streamline: 0.5, capStart: true, capEnd: true,
     },
-    tip: {
-      kind: "round",
-      hardness: settings.hardness,
-      spacingPct: 24,
-      angleJitterDeg: 0,
-    },
+    tip: { kind: "round", hardness: settings.hardness, spacingPct: 24, angleJitterDeg: 0 },
     mixing: { kind: "none", strength: 0 },
     output: { target: "raster-tiles", bake: "editable-proxy" },
     providerPreference: ["three-vrm-texture-paint"],
@@ -372,9 +361,13 @@ function buildStroke(
   transaction: ActiveSurfacePaintTransaction,
 ): Readonly<{ brushProgram: BrushProgramIR; stroke: StrokeIR }> {
   const brushProgram = createStudioVrmSurfaceBrushProgram(transaction.settings);
-  const color = parseColor(transaction.settings.color);
+  const effectiveHex =
+    transaction.settings.resolvedLineColor && HEX_COLOR.test(transaction.settings.resolvedLineColor)
+      ? transaction.settings.resolvedLineColor
+      : transaction.settings.color;
+  const color = parseColor(effectiveHex);
   const samples = modelRawInput(
-    toRawSamples(transaction.samples),
+    toRawSamples(transaction.samples, transaction.settings.pressureMode),
     IDENTITY_POINTER_CALIBRATION,
     { velocitySmoothing: 0.5 },
   );

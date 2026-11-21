@@ -18,10 +18,31 @@
       "types": "./src/libmypaint.ts",
       "import": "./src/libmypaint.ts",
       "default": "./src/libmypaint.ts"
+    },
+    "./natural-media": {
+      "types": "./src/natural-media/dip-pen-railroading-and-impasto.ts",
+      "import": "./src/natural-media/dip-pen-railroading-and-impasto.ts",
+      "default": "./src/natural-media/dip-pen-railroading-and-impasto.ts"
+    },
+    "./spectral-km": {
+      "types": "./src/pigment/spectral-38band-km.ts",
+      "import": "./src/pigment/spectral-38band-km.ts",
+      "default": "./src/pigment/spectral-38band-km.ts"
+    },
+    "./spectral-km-wgsl": {
+      "types": "./src/pigment/spectral-38band-km-wgsl.ts",
+      "import": "./src/pigment/spectral-38band-km-wgsl.ts",
+      "default": "./src/pigment/spectral-38band-km-wgsl.ts"
+    },
+    "./linked-ink": {
+      "types": "./src/linked-ink/linked-ink-barycentric-evaluator.ts",
+      "import": "./src/linked-ink/linked-ink-barycentric-evaluator.ts",
+      "default": "./src/linked-ink/linked-ink-barycentric-evaluator.ts"
     }
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run src"
   },
   "dependencies": {
     "@toonstudio/studio-project-model": "workspace:*",

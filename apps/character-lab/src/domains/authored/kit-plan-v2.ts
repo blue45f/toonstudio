@@ -38,12 +38,12 @@ import { joinPackageUrl } from "./package-plan";
 
 import type { KitPlanOptions, KitPlanResult, KitPlanSlots, KitPlanSource } from "./kit-plan-common";
 import type { KitPlanBase, KitPlanFile, KitPlanFileKind, KitPlanSkip, KitPlanV2 } from "./kit-plan-v2-types";
+import type { NormalizedKitManifestV2 } from "./kit-v2-webtoon-adapter";
 import type {
   AccessoryAnchor,
   AccessoryInstanceId,
   ChannelKey,
   KitHideableRegionId,
-  KitManifestV2,
   KitMaterial,
   KitPartPlan,
   KitPartSlot,
@@ -77,7 +77,7 @@ interface FileSpec {
 }
 
 interface PlanContext {
-  readonly manifest: KitManifestV2;
+  readonly manifest: NormalizedKitManifestV2;
   readonly rootUrl: string;
 }
 
@@ -180,13 +180,27 @@ function admit(budget: Budget, label: string, triangles: number): string | null 
 
 type Picked<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly reasonKo: string };
 
+function findPartByPresetOrGarment(manifest: NormalizedKitManifestV2, slot: KitPartSlot, presetId: string): KitV2Part | undefined {
+  const direct = manifest.parts.find((candidate) => candidate.id === presetId);
+  if (direct) return direct;
+  const garmentMap = manifest.webtoonV2?.garmentByRawId;
+  if (garmentMap && presetId in garmentMap) return garmentMap[presetId];
+  const slug = presetId.includes("/") ? presetId.slice(presetId.indexOf("/") + 1) : presetId;
+  if (garmentMap && `garments/${slug}` in garmentMap) {
+    const candidate = garmentMap[`garments/${slug}`];
+    if (candidate && candidate.slot === slot) return candidate;
+  }
+  return undefined;
+}
+
 function pickLayerVariant(context: PlanContext, baseId: KitPlanSource["baseId"], layer: WardrobeLayer, presetId: string, layerPresets: readonly PresetId[]): Picked<{ part: KitV2Part; variant: KitV2PartVariant }> {
   const slot = WARDROBE_LAYER_SLOT[layer];
   const layerLabel = WARDROBE_LAYER_LABELS_KO[layer];
-  if (!isLayerPreset(layer, presetId)) return { ok: false, reasonKo: `${layerLabel} 층에는 ${SLOT_LABELS_KO[slot]} 프리셋만 입힐 수 있습니다: ${presetId}` };
-  const part = context.manifest.parts.find((candidate) => candidate.id === presetId);
+  const isGarmentId = presetId.startsWith("garments/") && context.manifest.webtoonV2 !== undefined;
+  if (!isGarmentId && !isLayerPreset(layer, presetId)) return { ok: false, reasonKo: `${layerLabel} 층에는 ${SLOT_LABELS_KO[slot]} 프리셋만 입힐 수 있습니다: ${presetId}` };
+  const part = findPartByPresetOrGarment(context.manifest, slot, presetId);
   if (part === undefined) return { ok: false, reasonKo: `키트에 ${presetId} 파츠가 없습니다.` };
-  const variant = part.layerVariants?.[baseId]?.[layer];
+  const variant = part.layerVariants?.[baseId]?.[layer] ?? (isGarmentId ? part.variants[baseId] : undefined);
   if (variant !== undefined) return { ok: true, value: { part, variant } };
   const baseLabel = KIT_BASE_LABELS_KO[baseId];
   const others = layerPresets.map((id) => id.slice(id.indexOf("/") + 1));
@@ -196,8 +210,9 @@ function pickLayerVariant(context: PlanContext, baseId: KitPlanSource["baseId"],
 }
 
 function pickAccessoryVariant(context: PlanContext, baseId: KitPlanSource["baseId"], presetId: string): Picked<{ part: KitV2Part; variant: KitV2PartVariant }> {
-  if (!isPresetId(presetId) || presetSlot(presetId) !== "accessory") return { ok: false, reasonKo: `추가 소품에는 액세서리 프리셋만 쓸 수 있습니다: ${presetId}` };
-  const part = context.manifest.parts.find((candidate) => candidate.id === presetId);
+  const isGarmentId = presetId.startsWith("garments/") && context.manifest.webtoonV2 !== undefined;
+  if (!isGarmentId && (!isPresetId(presetId) || presetSlot(presetId) !== "accessory")) return { ok: false, reasonKo: `추가 소품에는 액세서리 프리셋만 쓸 수 있습니다: ${presetId}` };
+  const part = findPartByPresetOrGarment(context.manifest, "accessory", presetId);
   if (part === undefined) return { ok: false, reasonKo: `키트에 ${presetId} 파츠가 없습니다.` };
   const variant = part.variants[baseId];
   const baseLabel = KIT_BASE_LABELS_KO[baseId];
@@ -212,21 +227,29 @@ function pickAccessoryVariant(context: PlanContext, baseId: KitPlanSource["baseI
 }
 
 /** v2 계획 상세 버전: 성공이면 `KitPlanV2`, 실패면 LabFailure(한글 사유) */
-export function buildKitPlanV2Detailed(manifest: KitManifestV2, source: KitPlanSource, slots: KitPlanSlots, options: KitPlanOptions = {}): KitPlanResult {
+export function buildKitPlanV2Detailed(manifest: NormalizedKitManifestV2, source: KitPlanSource, slots: KitPlanSlots, options: KitPlanOptions = {}): KitPlanResult {
   const now = options.now;
   const fail = (code: string, reasonKo: string): KitPlanResult => ({ ok: false, failure: failVisible(code, reasonKo, undefined, now) });
   const check = checkKitPlanPreconditions(manifest, source, now);
   if (!check.ok) return { ok: false, failure: check.failure };
-  const base = manifest.bases[source.baseId];
+  const resolvedArchetypeId = source.archetypeId ?? manifest.webtoonV2?.baseAliases[source.baseId];
+  const base = (resolvedArchetypeId ? manifest.webtoonV2?.archetypeBases[resolvedArchetypeId] : undefined) ?? manifest.bases[source.baseId];
   // 사전 점검이 베이스 존재를 이미 확인했다(여기서는 타입을 좁힐 뿐이다).
   if (base === undefined) return fail("kit-base-missing", `키트에 ${source.baseId} 베이스가 없습니다.`);
   const context: PlanContext = { manifest, rootUrl: options.rootUrl ?? KIT_ASSET_ROOT };
 
-  // 1) 슬롯 파츠: v1과 같은 선택·실패
+  // 1) 슬롯 파츠: v1과 같은 선택·실패 + 웹툰 v2 `garments/*`·공유 변형 지원
   const chosen: Array<{ readonly presetId: PresetId; readonly part: KitV2Part; readonly variant: KitV2PartVariant }> = [];
   for (const slot of KIT_PART_SLOTS) {
     const presetId = slots[slot];
     if (presetId === null || presetId === undefined) continue;
+    const webtoonPart = manifest.webtoonV2 ? findPartByPresetOrGarment(manifest, slot, presetId) : undefined;
+    if (webtoonPart) {
+      const variant = webtoonPart.variants[source.baseId];
+      if (variant === undefined) return fail("kit-part-missing", `프리셋 ${presetId}의 ${source.baseId} 변형을 만들지 못했습니다.`);
+      chosen.push({ presetId: webtoonPart.id as PresetId, part: webtoonPart, variant });
+      continue;
+    }
     const selected = selectKitPart(manifest.parts, source.baseId, slot, presetId);
     if (!selected.ok) return fail("kit-part-missing", `${selected.reasonKo} (슬롯 ${slot}, 베이스 ${source.baseId})`);
     const variant = selected.part.variants[source.baseId];
@@ -237,7 +260,8 @@ export function buildKitPlanV2Detailed(manifest: KitManifestV2, source: KitPlanS
   const hair = chosen.find(({ part }) => part.slot === "hair");
   const hairLod = selectHairLod(hair?.variant.meshes.map((mesh) => mesh.node) ?? [], preferredLod).chosen;
 
-  const files: KitPlanFile[] = [buildFile(context, baseSpec(source.baseId, base)), ...chosen.map(({ presetId, part, variant }) => buildFile(context, slotSpec(presetId, part, variant, hairLod)))];
+  const baseLabelId = resolvedArchetypeId && manifest.webtoonV2 ? resolvedArchetypeId : source.baseId;
+  const files: KitPlanFile[] = [buildFile(context, baseSpec(baseLabelId, base)), ...chosen.map(({ presetId, part, variant }) => buildFile(context, slotSpec(presetId, part, variant, hairLod)))];
   const budget: Budget = { limit: KIT_V2_BUDGET.triangles.activeWorst, total: 0 };
   for (const file of files) budget.total += file.activeTriangles;
   if (budget.total > budget.limit) {
@@ -262,7 +286,7 @@ export function buildKitPlanV2Detailed(manifest: KitManifestV2, source: KitPlanS
       id: `${layer}:${presetId}`,
       kind: "layer",
       slot: WARDROBE_LAYER_SLOT[layer],
-      presetId,
+      presetId: isPresetId(presetId) ? presetId : (picked.value.part.id as PresetId),
       scope: layer,
       layer,
       instanceId: null,
@@ -350,6 +374,8 @@ export function buildKitPlanV2Detailed(manifest: KitManifestV2, source: KitPlanS
       patternChannels,
       skipped,
       triangles: { active: budget.total, budget: budget.limit },
+      ...(manifest.webtoonV2 ? { physicsMode: manifest.webtoonV2.physicsMode } : {}),
+      ...(resolvedArchetypeId && manifest.webtoonV2 ? { archetypeId: resolvedArchetypeId } : {}),
     },
   };
   return { ok: true, plan };

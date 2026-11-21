@@ -83,16 +83,16 @@ const AUTO_SCROLL_SPEED_PRESETS = [
 const SAFE_INSET_PX = READER_PREVIEW_SAFE_AREA_INSET_PX;
 
 function warningTone(severity: ReaderPreviewWarningSeverity): string {
-  if (severity === "critical") return "bg-danger";
-  if (severity === "warning") return "bg-amber-400";
+  if (severity === "critical") return "bg-bad";
+  if (severity === "warning") return "bg-warn";
   return "bg-accent";
 }
 
 function warningIcon(severity: ReaderPreviewWarningSeverity): ReactElement {
   if (severity === "critical")
-    return <CircleAlert size={13} aria-hidden className="shrink-0 text-danger" />;
+    return <CircleAlert size={13} aria-hidden className="shrink-0 text-bad" />;
   if (severity === "warning")
-    return <AlertTriangle size={13} aria-hidden className="shrink-0 text-amber-500" />;
+    return <AlertTriangle size={13} aria-hidden className="shrink-0 text-warn" />;
   return <Info size={13} aria-hidden className="shrink-0 text-accent" />;
 }
 
@@ -134,13 +134,13 @@ function ReadingChecklist({
         <h3 className="text-sm font-bold text-fg">{t("reader.preview.checklistTitle")}</h3>
         <span
           className={cn(
-            "rounded-full px-2 py-0.5 text-xs font-bold",
-            warnings.length > 0 ? "bg-amber-400/15 text-amber-500" : "bg-accent-soft text-accent",
+            "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+            warnings.length > 0 ? "bg-warn/15 text-warn" : "bg-accent-soft text-accent",
           )}
         >
           {warnings.length}건
         </span>
-        <span className="ml-auto text-xs text-fg-3">
+        <span className="ml-auto text-xs tabular-nums text-fg-3">
           {formatReaderPreviewText(t("reader.preview.totalScreens"), {
             count: analysis.totalScreens,
           })}
@@ -250,7 +250,7 @@ function ReaderFramePage({
     >
       <section
         aria-label={`${pageIndex + 1}/${pageCount}페이지 — ${pageLabel}`}
-        className="relative w-full overflow-hidden rounded-lg bg-white shadow-sm"
+        className="relative w-full overflow-hidden rounded-lg bg-[oklch(0.99_0_0)] shadow-sm"
         style={{ aspectRatio: `${CANVAS_W} / ${canvasH}` }}
       >
         <StudioPageThumbnail page={page} className="h-full w-full rounded-none border-0" />
@@ -268,7 +268,7 @@ function ReaderFramePage({
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute left-1 top-1 z-20 rounded bg-accent/85 px-1 py-px text-[9px] font-bold leading-3 text-white"
+          className="pointer-events-none absolute left-1 top-1 z-20 rounded bg-accent/90 px-1.5 py-0.5 text-xs font-semibold leading-tight text-on-accent"
         >
           {t("reader.preview.safeAreaLabel")}
         </span>
@@ -290,21 +290,21 @@ function ReaderFramePage({
               }
               className={cn(
                 "pointer-events-none absolute inset-x-0 z-10 border-y",
-                hasWarning ? "border-amber-400/80 bg-amber-400/10" : "border-white/25",
+                hasWarning ? "border-warn/80 bg-warn/10" : "border-line/50",
               )}
               style={{ top: cut.y * scale, height: Math.max(2, cut.height * scale) }}
             >
               <span
                 className={cn(
-                  "absolute right-1 top-0.5 rounded px-1 py-px text-[9px] font-bold leading-3",
-                  hasWarning ? "bg-amber-400/90 text-black" : "bg-black/55 text-white",
+                  "absolute right-1 top-0.5 rounded px-1.5 py-0.5 text-xs font-semibold tabular-nums leading-tight",
+                  hasWarning ? "bg-warn text-canvas" : "border border-line bg-panel/90 text-fg",
                 )}
               >
                 {cut.index + 1} · {formatScreens(t, cut.screens)}
               </span>
               {hasWarning && (
-                <span className="absolute left-1 top-0.5 grid size-4 place-items-center rounded-full bg-amber-400 text-black">
-                  <AlertTriangle size={10} aria-hidden />
+                <span className="absolute left-1 top-0.5 grid size-5 place-items-center rounded-full bg-warn text-canvas">
+                  <AlertTriangle size={11} aria-hidden />
                 </span>
               )}
             </div>
@@ -327,13 +327,13 @@ function ReaderFramePage({
               className={cn(
                 "pointer-events-none absolute inset-x-0 z-10",
                 overlapped
-                  ? "bg-danger/25"
+                  ? "bg-bad/25"
                   : "border-y border-dotted border-accent/60 bg-accent/5",
               )}
               style={{ top, height }}
             >
               {(cut.gapAfterReaderPx ?? 0) >= 14 && (
-                <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[9px] font-semibold leading-3 text-accent">
+                <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-xs font-semibold tabular-nums leading-tight text-accent">
                   {formatReaderPreviewText(t("reader.preview.gapLabel"), {
                     gap: Math.round(cut.gapAfterPx),
                   })}
@@ -354,10 +354,10 @@ function ReaderFramePage({
               aria-label={warning.message}
               title={`${warning.message} — ${warning.detail}`}
               className={cn(
-                "absolute right-2 z-20 grid size-5 -translate-y-1/2 place-items-center rounded-full border shadow",
+                "absolute right-2 z-20 grid size-6 -translate-y-1/2 place-items-center rounded-full border",
                 warning.severity === "info"
                   ? "border-accent/60 bg-panel text-accent"
-                  : "border-amber-500/70 bg-amber-400 text-black",
+                  : "border-warn/70 bg-panel text-warn",
               )}
               style={{ top: (element.y as number) * scale }}
             >
@@ -369,7 +369,7 @@ function ReaderFramePage({
 
       <span
         aria-hidden
-        className="pointer-events-none absolute left-1.5 top-1.5 z-20 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-white"
+        className="pointer-events-none absolute left-1.5 top-1.5 z-20 rounded border border-line bg-panel/90 px-1.5 py-0.5 text-xs font-semibold leading-4 text-fg"
       >
         {pageLabel}
       </span>
@@ -479,7 +479,7 @@ export function ReaderPreviewPanel({
       role="dialog"
       aria-modal="true"
       aria-label={t("reader.preview.title")}
-      className="fixed inset-0 z-[80] bg-[oklch(0.08_0.01_70/0.82)] text-fg backdrop-blur-sm md:p-4"
+      className="fixed inset-0 z-[80] bg-canvas/85 text-fg md:p-4"
     >
       {/* 스크림 클릭으로 닫기 — 마우스 전용 부가 편의. 키보드 닫기는 Esc와 닫기 버튼이 담당. */}
       <button
@@ -493,12 +493,12 @@ export function ReaderPreviewPanel({
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line px-4 py-3">
           <BookOpenText size={16} className="text-accent" aria-hidden />
           <h2 className="text-sm font-bold text-fg">{t("reader.preview.title")}</h2>
-          <span className="text-xs text-fg-3">
+          <span className="text-xs tabular-nums text-fg-3">
             {formatReaderPreviewText(t("reader.preview.totalPages"), { count: pages.length })}
           </span>
           {analysis.warningCount > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-2 py-0.5 text-[0.7rem] font-bold text-amber-500">
-              <AlertTriangle size={11} aria-hidden />
+            <span className="inline-flex items-center gap-1 rounded-full bg-warn/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-warn">
+              <AlertTriangle size={12} aria-hidden />
               {analysis.warningCount}건
             </span>
           )}
@@ -506,7 +506,7 @@ export function ReaderPreviewPanel({
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <span
               aria-live="polite"
-              className="hidden text-[0.7rem] tabular-nums text-fg-3 sm:inline"
+              className="hidden text-xs tabular-nums text-fg-3 sm:inline"
             >
               {formatReaderPreviewText(t("reader.preview.scrollPosition"), {
                 position: (Math.floor(screenPosition * 10) / 10).toFixed(1),
@@ -515,9 +515,9 @@ export function ReaderPreviewPanel({
             <div
               role="group"
               aria-label={t("reader.preview.deviceLabel")}
-              className="flex min-h-8 items-center gap-1 rounded-lg border border-line bg-card pl-2"
+              className="flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card pl-2"
             >
-              <Smartphone size={12} aria-hidden className="shrink-0 text-fg-3" />
+              <Smartphone size={13} aria-hidden className="shrink-0 text-fg-3" />
               <select
                 aria-label={t("reader.preview.deviceLabel")}
                 value={devicePresetId}
@@ -526,7 +526,7 @@ export function ReaderPreviewPanel({
                   // 기기가 바뀌면 스크롤 기준 높이가 달라진다 — 재생 중이면 멈춰 위치 혼란을 막는다.
                   setAutoScrolling(false);
                 }}
-                className="min-h-8 border-0 bg-transparent px-1 text-[0.7rem] font-medium text-fg-2 outline-none"
+                className="min-h-11 border-0 bg-transparent px-1.5 text-xs font-medium text-fg-2 outline-none"
               >
                 {READER_PREVIEW_DEVICE_PRESETS.map((preset) => (
                   <option key={preset.id} value={preset.id}>
@@ -538,13 +538,13 @@ export function ReaderPreviewPanel({
             <div
               role="group"
               aria-label={t("reader.preview.autoScroll")}
-              className="flex min-h-8 items-center overflow-hidden rounded-lg border border-line bg-card"
+              className="flex min-h-11 items-center overflow-hidden rounded-lg border border-line bg-card"
             >
               <select
                 aria-label={t("reader.preview.speedLabel")}
                 value={autoScrollSpeed}
                 onChange={(event) => setAutoScrollSpeed(Number(event.target.value))}
-                className="min-h-8 border-0 bg-transparent px-2 text-[0.7rem] font-medium text-fg-2 outline-none"
+                className="min-h-11 border-0 bg-transparent px-2 text-xs font-medium text-fg-2 outline-none"
               >
                 {AUTO_SCROLL_SPEED_PRESETS.map((preset) => (
                   <option key={preset.id} value={preset.pxPerSecond}>
@@ -568,21 +568,21 @@ export function ReaderPreviewPanel({
                   setAutoScrolling((playing) => !playing);
                 }}
                 className={cn(
-                  "grid size-8 place-items-center border-l border-line text-fg-3 transition-colors hover:bg-raised hover:text-fg",
+                  "grid size-11 place-items-center border-l border-line text-fg-3 transition-colors hover:bg-raised hover:text-fg",
                   autoScrolling && "bg-accent-soft text-accent",
                 )}
                 title={t("reader.preview.autoScroll")}
               >
-                {autoScrolling ? <Pause size={13} aria-hidden /> : <Play size={13} aria-hidden />}
+                {autoScrolling ? <Pause size={14} aria-hidden /> : <Play size={14} aria-hidden />}
               </button>
             </div>
             <button
               type="button"
               onClick={() => jumpToPage(currentPageId)}
-              className="flex items-center gap-1 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs font-medium text-fg-2 transition-colors hover:bg-raised"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:bg-raised"
               title={t("reader.preview.gotoCurrentPage")}
             >
-              <LocateFixed size={12} aria-hidden />
+              <LocateFixed size={13} aria-hidden />
               <span className="hidden sm:inline">{t("reader.preview.gotoCurrentPage")}</span>
             </button>
             <button
@@ -590,7 +590,7 @@ export function ReaderPreviewPanel({
               aria-label={t("reader.preview.close")}
               title={`${t("reader.preview.close")} (Esc)`}
               onClick={onClose}
-              className="grid size-8 place-items-center rounded-lg border border-line bg-card text-fg-3 transition-colors hover:bg-accent-soft hover:text-accent"
+              className="grid size-11 place-items-center rounded-lg border border-line bg-card text-fg-3 transition-colors hover:bg-accent-soft hover:text-accent"
             >
               <X size={15} aria-hidden />
             </button>
@@ -608,12 +608,12 @@ export function ReaderPreviewPanel({
             />
             <div className="mx-auto w-full shrink-0 md:mx-0" style={{ width: device.widthPx, maxWidth: "100%" }}>
               {/* 디바이스 프레임 — 선택한 실기기 규격 폭×높이, 스크롤은 프레임 안에서만 */}
-              <div className="overflow-hidden rounded-2xl border border-line bg-black/40 shadow-xl">
-                <div className="flex items-center justify-center gap-1.5 border-b border-line bg-panel px-3 py-1.5">
+              <div className="overflow-hidden rounded-2xl border border-line bg-canvas shadow-xl">
+                <div className="flex items-center justify-center gap-1.5 border-b border-line bg-panel px-3 py-2">
                   <span aria-hidden className="size-1.5 rounded-full bg-line" />
                   <span aria-hidden className="size-1.5 rounded-full bg-line" />
                   <span aria-hidden className="size-1.5 rounded-full bg-line" />
-                  <span className="ml-1 text-[0.62rem] font-semibold tabular-nums text-fg-3">
+                  <span className="ml-1 text-xs font-semibold tabular-nums text-fg-3">
                     {t(`reader.preview.device.${device.id}`)} · {device.widthPx}px × {device.viewportHeightPx}px
                   </span>
                 </div>

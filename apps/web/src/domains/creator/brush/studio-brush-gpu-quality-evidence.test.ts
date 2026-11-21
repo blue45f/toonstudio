@@ -7,7 +7,6 @@ import {
   STUDIO_BRUSH_GPU_QUALITY_EVIDENCE,
   STUDIO_BRUSH_GPU_QUALITY_EVIDENCE_MAX_AGE_MS,
   STUDIO_BRUSH_GPU_QUALITY_EVIDENCE_MINIMUM_RUN_COUNT,
-  studioBrushGpuQualityEvidenceAllows,
   studioBrushGpuQualityEvidenceRecordAllows,
   type StudioBrushGpuQualityEvidenceRecord,
 } from "./studio-brush-gpu-quality-evidence";
@@ -68,8 +67,23 @@ describe("Studio brush GPU quality evidence", () => {
     }), "gpen", NOW)).toBe(false);
   });
 
-  it("keeps the checked-in generated record fail-closed until a benchmark authors it", () => {
-    expect(STUDIO_BRUSH_GPU_QUALITY_EVIDENCE.approvedBrushIds).toEqual([]);
-    expect(studioBrushGpuQualityEvidenceAllows("gpen")).toBe(false);
+  it("approves measured hardware-verified representative brushes and fail-closes unapproved or rejected lanes", () => {
+    const CHECK_NOW = Date.parse("2026-11-21T03:00:00.000Z");
+    expect(STUDIO_BRUSH_GPU_QUALITY_EVIDENCE.measurementRunCount).toBeGreaterThanOrEqual(
+      STUDIO_BRUSH_GPU_QUALITY_EVIDENCE_MINIMUM_RUN_COUNT,
+    );
+    expect(STUDIO_BRUSH_GPU_QUALITY_EVIDENCE.hardwareClass).toBe("hardware");
+    expect(STUDIO_BRUSH_GPU_QUALITY_EVIDENCE.approvedBrushIds).toContain("gpen");
+    expect(STUDIO_BRUSH_GPU_QUALITY_EVIDENCE.approvedBrushIds).toContain("oil");
+    expect(STUDIO_BRUSH_GPU_QUALITY_EVIDENCE.approvedBrushIds).toContain("watercolor");
+    expect(
+      studioBrushGpuQualityEvidenceRecordAllows(STUDIO_BRUSH_GPU_QUALITY_EVIDENCE, "gpen", CHECK_NOW),
+    ).toBe(true);
+    expect(
+      studioBrushGpuQualityEvidenceRecordAllows(STUDIO_BRUSH_GPU_QUALITY_EVIDENCE, "eraser", CHECK_NOW),
+    ).toBe(false);
+    expect(
+      studioBrushGpuQualityEvidenceRecordAllows(STUDIO_BRUSH_GPU_QUALITY_EVIDENCE, "unverified-brush", CHECK_NOW),
+    ).toBe(false);
   });
 });

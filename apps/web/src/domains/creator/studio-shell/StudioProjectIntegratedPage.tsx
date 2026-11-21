@@ -84,10 +84,12 @@ function SubmissionPackageFallback() {
   const bt = useBilingual("studioProjectIntegrated.submissionFallback");
   return (
     <div
-      className="min-h-20 animate-pulse rounded-2xl border border-line bg-card/80 motion-reduce:animate-none"
+      className="flex min-h-20 items-center rounded-xl border border-line bg-card/70 px-4 py-5 text-xs text-fg-3"
       role="status"
       aria-label={bt("투고 패키지 화면을 불러오는 중", "Loading the submission package panel")}
-    />
+    >
+      {bt("투고 패키지 화면을 준비하고 있습니다.", "Preparing the submission package panel.")}
+    </div>
   );
 }
 
@@ -95,10 +97,12 @@ function ProjectGraphPanelFallback({ locale: _locale }: { readonly locale: "ko" 
   const bt = useBilingual("studioProjectIntegrated.graphFallback");
   return (
     <div
-      className="min-h-20 animate-pulse rounded-2xl border border-line bg-card/80"
+      className="flex min-h-20 items-center rounded-xl border border-line bg-card/70 px-4 py-5 text-xs text-fg-3"
       role="status"
       aria-label={bt("작품 버전 정보를 불러오는 중", "Loading project version data")}
-    />
+    >
+      {bt("작품 버전 정보를 불러오고 있습니다.", "Loading project version data.")}
+    </div>
   );
 }
 

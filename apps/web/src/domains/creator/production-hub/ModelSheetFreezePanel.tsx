@@ -62,7 +62,7 @@ function CharacterRow({
   return (
     <li className="rounded-2xl border border-line bg-card p-3.5">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-black text-fg">{character.characterName}</p>
+        <p className="text-sm font-semibold text-fg">{character.characterName}</p>
         {frozen ? (
           <span className="rounded-full border border-line bg-accent-soft px-2 py-0.5 text-[0.7rem] font-bold text-fg">
             {bt(`동결됨 · 기준본 ${sheet.frozenRevision}판`, `Frozen · revision ${sheet.frozenRevision}`)}
@@ -162,10 +162,10 @@ export function ModelSheetFreezePanel(props: ModelSheetFreezePanelProps) {
   if (loading) {
     return (
       <section aria-label={bt("모델 시트", "Model sheets")} className="rounded-2xl border border-line bg-card p-4">
-        <div className="h-4 w-28 animate-pulse rounded bg-panel" />
+        <div className="h-4 w-28 rounded bg-panel" />
         <div className="mt-3 space-y-2">
-          <div className="h-16 animate-pulse rounded-xl bg-panel" />
-          <div className="h-16 animate-pulse rounded-xl bg-panel" />
+          <div className="h-16 rounded-xl bg-panel" />
+          <div className="h-16 rounded-xl bg-panel" />
         </div>
         <p className="mt-3 text-xs text-fg-3">{bt("모델 시트를 불러오고 있어요.", "Loading model sheets.")}</p>
       </section>
@@ -189,7 +189,7 @@ export function ModelSheetFreezePanel(props: ModelSheetFreezePanelProps) {
   if (characters.length === 0) {
     return (
       <section aria-label={bt("모델 시트", "Model sheets")} className="rounded-2xl border border-line bg-card p-4">
-        <p className="text-sm font-black text-fg">{bt("모델 시트", "Model sheets")}</p>
+        <p className="text-sm font-semibold text-fg">{bt("모델 시트", "Model sheets")}</p>
         <p className="mt-1.5 text-sm leading-6 text-fg-2">
           {bt(
             "아직 캐릭터가 없어요. 캐릭터를 등록하면 합의한 표정·포즈 기준본을 여기에 동결해, 모든 회차의 일관성 기준으로 쓸 수 있어요.",
@@ -206,7 +206,7 @@ export function ModelSheetFreezePanel(props: ModelSheetFreezePanelProps) {
   return (
     <section aria-label={bt("모델 시트", "Model sheets")} className="rounded-2xl border border-line bg-card p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-black text-fg">{bt("모델 시트", "Model sheets")}</p>
+        <p className="text-sm font-semibold text-fg">{bt("모델 시트", "Model sheets")}</p>
         <span className="text-xs text-fg-3">
           {bt(`동결 ${frozenCount}/${characters.length}명`, `${frozenCount}/${characters.length} frozen`)}
         </span>

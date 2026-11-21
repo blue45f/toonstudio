@@ -1,5 +1,5 @@
-import { Check, CloudRain, Sun, Sparkles } from "lucide-react";
-import { useEffect, useState, useId, useMemo } from "react";
+import { Check, CloudRain, Compass, Sun, Wind } from "lucide-react";
+import { useEffect, useState, useId, useMemo, type PointerEvent } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
@@ -17,17 +17,30 @@ export interface StudioBg3dAtmospherePanelProps {
   readonly currentPresetId?: WeatherPresetId;
   readonly onPresetChange?: (preset: Studio3DAtmospherePreset) => void;
   readonly onSunAngleChange?: (azimuthDeg: number, elevationDeg: number) => void;
+  readonly liveSceneBound?: boolean;
   readonly disabled?: boolean;
 }
 
+const COMPASS_SIZE = 104;
+const COMPASS_CENTER = COMPASS_SIZE / 2;
+const COMPASS_RADIUS = 38;
+
+const QUICK_SUN_DIRECTIONS = [
+  { id: "morning", labelKo: "아침 동", labelEn: "East", azimuth: 90, elevation: 24 },
+  { id: "noon", labelKo: "정오 남", labelEn: "South", azimuth: 180, elevation: 62 },
+  { id: "sunset", labelKo: "노을 서", labelEn: "West", azimuth: 270, elevation: 14 },
+  { id: "backlight", labelKo: "역광 북", labelEn: "North", azimuth: 0, elevation: 18 },
+] as const;
+
 /**
- * 하늘·기상과 태양 값의 계획 미리보기다. 현재 장면 적용·저장 명령은 연결하지 않는다.
- * `currentPresetId`가 바뀌면 미리보기 선택 상태도 따라간다.
+ * 하늘·기상과 태양 방위·고도 컴퍼스 제어 패널.
+ * `liveSceneBound`가 켜지면 현재 3D 장면에 즉시 연결되고, 기본값은 계획 미리보기로 동작한다.
  */
 export function StudioBg3dAtmospherePanel({
   currentPresetId = "golden-hour",
   onPresetChange,
   onSunAngleChange,
+  liveSceneBound = false,
   disabled = false,
 }: StudioBg3dAtmospherePanelProps) {
   const bt = useBilingual("StudioBg3dAtmospherePanel");
@@ -84,6 +97,27 @@ export function StudioBg3dAtmospherePanel({
     onSunAngleChange?.(newAzimuth, elevation);
   };
 
+  const handleCompassPointer = (event: PointerEvent<SVGSVGElement>) => {
+    if (disabled) return;
+    if (event.type === "pointermove" && event.buttons === 0) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const dx = event.clientX - (rect.left + rect.width / 2);
+    const dy = event.clientY - (rect.top + rect.height / 2);
+    const rawDeg = (Math.atan2(dx, -dy) * 180) / Math.PI;
+    const nextAzimuth = Math.round(((rawDeg + 360) % 360) / 5) * 5 % 360;
+    const radialNorm = Math.min(1, Math.hypot(dx, dy) / (rect.width / 2));
+    const nextElevation = Math.max(-10, Math.min(90, Math.round(90 - radialNorm * 95)));
+    setAzimuth(nextAzimuth);
+    setElevation(nextElevation);
+    onSunAngleChange?.(nextAzimuth, nextElevation);
+  };
+
+  const sunRad = ((azimuth - 90) * Math.PI) / 180;
+  const sunDistance = COMPASS_RADIUS * Math.max(0.15, Math.min(1, (90 - Math.max(0, elevation)) / 90));
+  const sunX = COMPASS_CENTER + Math.cos(sunRad) * sunDistance;
+  const sunY = COMPASS_CENTER + Math.sin(sunRad) * sunDistance;
+
   const elevationId = `${idPrefix}-elevation`;
   const azimuthId = `${idPrefix}-azimuth`;
   const titleId = `${idPrefix}-title`;
@@ -95,11 +129,19 @@ export function StudioBg3dAtmospherePanel({
       aria-labelledby={titleId}
     >
       <div>
-        <span id={titleId} className="mb-1 block text-[0.75rem] font-bold text-fg">
+        <span id={titleId} className="mb-1 block text-xs font-semibold text-fg">
           {bt("하늘·기상 설정 미리보기 (12종)", "Sky and weather preview (12 presets)")}
         </span>
-        <p className="mb-2 text-[0.65rem] leading-relaxed text-fg-3">
-          {bt("색상·안개·태양 값을 살펴보는 미리보기입니다. 현재 3D 장면에는 적용하거나 저장하지 않습니다.", "Preview color, fog and sun settings. These controls do not apply or save changes to the current 3D scene.")}
+        <p className="mb-2 text-xs leading-relaxed text-fg-3">
+          {liveSceneBound
+            ? bt(
+                "선택한 시간대 스와치와 태양 방위가 현재 3D 장면 조명·안개에 즉시 반영됩니다.",
+                "Selected sky swatches and sun angles apply live to the active 3D scene lighting and fog.",
+              )
+            : bt(
+                "색상·안개·태양 값을 살펴보는 미리보기입니다. 현재 3D 장면에는 적용하거나 저장하지 않습니다.",
+                "Preview color, fog and sun settings. These controls do not apply or save changes to the current 3D scene.",
+              )}
         </p>
         <div
           className="grid grid-cols-2 gap-1.5 sm:grid-cols-3"
@@ -116,21 +158,21 @@ export function StudioBg3dAtmospherePanel({
                 onClick={() => handleSelectPreset(p.id)}
                 title={`${p.name} — ${p.description}`}
                 aria-pressed={selected}
-                className={`flex min-w-0 flex-col items-stretch gap-1.5 rounded-lg border p-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45 ${
+                className={`flex min-h-11 min-w-0 flex-col items-stretch gap-1.5 rounded-[var(--atelier-radius-inner,10px)] border p-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45 ${
                   selected
-                    ? "border-accent bg-accent/15 text-accent shadow-sm"
-                    : "border-line bg-card text-fg hover:border-line-strong hover:bg-raised"
+                    ? "border-accent bg-accent-soft text-fg shadow-[var(--atelier-active-bevel)]"
+                    : "border-line bg-card text-fg shadow-[var(--atelier-specular-top)] hover:border-line-strong hover:bg-raised"
                 }`}
               >
                 <span
-                  className="h-7 w-full rounded-md border border-line/60"
+                  className="h-8 w-full rounded-md border border-line/60"
                   style={{
-                    background: `linear-gradient(180deg, ${p.lighting.ambientSkyColorHex} 0%, ${p.fog.colorHex} 100%)`,
+                    background: `linear-gradient(180deg, ${p.lighting.ambientSkyColorHex} 0%, ${p.lighting.sunColorHex} 48%, ${p.fog.colorHex} 100%)`,
                   }}
                   aria-hidden
                 />
                 <span className="flex min-w-0 items-center justify-between gap-1.5">
-                  <span className="flex min-w-0 items-center gap-1.5 text-[0.7rem] font-bold">
+                  <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold">
                     {p.precipitation.kind !== "none" ? (
                       <CloudRain className="h-3.5 w-3.5 shrink-0 text-accent" />
                     ) : (
@@ -139,10 +181,10 @@ export function StudioBg3dAtmospherePanel({
                     <span className="truncate">{p.name}</span>
                   </span>
                   {selected ? (
-                    <Check className="h-3 w-3 shrink-0" aria-hidden />
+                    <Check className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
                   ) : null}
                 </span>
-                <span className="line-clamp-1 text-[0.65rem] text-fg-3">
+                <span className="line-clamp-1 text-xs text-fg-3">
                   {p.description}
                 </span>
               </button>
@@ -152,44 +194,44 @@ export function StudioBg3dAtmospherePanel({
       </div>
 
       {/* Active Atmosphere Detail Overview */}
-      <div className="flex flex-col gap-2 rounded-xl border border-line bg-card/60 p-2.5">
+      <div className="flex flex-col gap-2 rounded-[var(--atelier-radius-inner,10px)] border border-line bg-card p-2.5 shadow-[var(--atelier-specular-top)]">
         <div className="flex items-center justify-between">
-          <span className="text-[0.7rem] font-semibold text-fg-2">조명 & 강수 상태</span>
-          <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[0.65rem] font-bold text-accent">
+          <span className="text-xs font-semibold text-fg-2">조명 & 강수 상태</span>
+          <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent">
             {activePreset.name}
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-[0.68rem]">
+        <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="flex items-center gap-2">
             <span className="text-fg-3">태양광 색상:</span>
             <span
-              className="inline-block h-3.5 w-3.5 rounded-full border border-line"
+              className="inline-block h-3.5 w-3.5 shrink-0 rounded-full border border-line"
               style={{ backgroundColor: activePreset.lighting.sunColorHex }}
             />
-            <span className="font-mono">{activePreset.lighting.sunColorHex}</span>
+            <span className="font-mono tabular-nums">{activePreset.lighting.sunColorHex}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-fg-3">안개 색상:</span>
             <span
-              className="inline-block h-3.5 w-3.5 rounded-full border border-line"
+              className="inline-block h-3.5 w-3.5 shrink-0 rounded-full border border-line"
               style={{ backgroundColor: activePreset.fog.colorHex }}
             />
-            <span className="font-mono">{activePreset.fog.colorHex}</span>
+            <span className="font-mono tabular-nums">{activePreset.fog.colorHex}</span>
           </div>
         </div>
 
         {activePreset.precipitation.kind !== "none" && (
-          <div className="flex items-center gap-1.5 rounded-lg bg-raised/80 px-2 py-1 text-[0.65rem] text-fg-2">
-            <Sparkles className="h-3 w-3 text-accent" />
-            <span>
+          <div className="flex items-center gap-1.5 rounded-lg bg-raised px-2 py-1.5 text-xs text-fg-2">
+            <Wind className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
+            <span className="tabular-nums">
               강수 파티클: {activePreset.precipitation.kind} ({activePreset.precipitation.particleCount}개, 낙하 속도 {activePreset.precipitation.dropSpeed}m/s)
             </span>
           </div>
         )}
 
         <div
-          className="flex flex-wrap items-center justify-between gap-2 border-t border-line/50 pt-1.5 text-[0.64rem] text-fg-3"
+          className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-1.5 text-xs text-fg-3 tabular-nums"
           data-testid="bg3d-atmosphere-height-fog-readout"
         >
           <span>높이 기반 안개 감쇠율: {(heightFogFactor * 100).toFixed(1)}%</span>
@@ -200,19 +242,70 @@ export function StudioBg3dAtmospherePanel({
         </div>
       </div>
 
-      {/* Sun/Moon Position Dial Sliders */}
-      <div className="flex flex-col gap-2 rounded-xl border border-line bg-card/60 p-2.5">
-        <div className="flex items-center gap-1.5 text-[0.7rem] font-semibold text-fg-2">
-          <Sun className="h-3.5 w-3.5 text-accent" aria-hidden />
-          <span>{bt("태양 고도·방위각 미리보기", "Sun elevation and azimuth preview")}</span>
+      {/* Sun/Moon Compass Dial & Sliders */}
+      <div className="flex flex-col gap-2.5 rounded-[var(--atelier-radius-inner,10px)] border border-line bg-card p-2.5 shadow-[var(--atelier-specular-top)]">
+        <div className="flex items-center justify-between gap-1.5 text-xs font-semibold text-fg-2">
+          <span className="inline-flex items-center gap-1.5">
+            <Compass className="h-3.5 w-3.5 text-accent" aria-hidden />
+            <span>{bt("태양 고도·방위각 미리보기", "Sun elevation and azimuth preview")}</span>
+          </span>
+          <span className="font-mono text-xs text-fg-3 tabular-nums">
+            {azimuth}° / {elevation}°
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <svg
+            width={COMPASS_SIZE}
+            height={COMPASS_SIZE}
+            viewBox={`0 0 ${COMPASS_SIZE} ${COMPASS_SIZE}`}
+            role="img"
+            aria-label={bt(
+              `태양 방위 컴퍼스: 방위각 ${azimuth}도, 고도 ${elevation}도`,
+              `Sun azimuth compass: azimuth ${azimuth} degrees, elevation ${elevation} degrees`,
+            )}
+            data-testid="bg3d-atmosphere-sun-compass"
+            onPointerDown={handleCompassPointer}
+            onPointerMove={handleCompassPointer}
+            className={cnCompass(disabled)}
+          >
+            <circle cx={COMPASS_CENTER} cy={COMPASS_CENTER} r={COMPASS_RADIUS} className="fill-panel stroke-line-strong" strokeWidth={1.2} />
+            <circle cx={COMPASS_CENTER} cy={COMPASS_CENTER} r={COMPASS_RADIUS * 0.55} className="fill-none stroke-line" strokeDasharray="3 3" strokeWidth={1} />
+            <line x1={COMPASS_CENTER} y1={COMPASS_CENTER - COMPASS_RADIUS} x2={COMPASS_CENTER} y2={COMPASS_CENTER + COMPASS_RADIUS} className="stroke-line" strokeWidth={0.8} />
+            <line x1={COMPASS_CENTER - COMPASS_RADIUS} y1={COMPASS_CENTER} x2={COMPASS_CENTER + COMPASS_RADIUS} y2={COMPASS_CENTER} className="stroke-line" strokeWidth={0.8} />
+            <line x1={COMPASS_CENTER} y1={COMPASS_CENTER} x2={sunX} y2={sunY} className="stroke-accent" strokeWidth={1.6} />
+            <circle cx={sunX} cy={sunY} r={5.5} className="fill-accent stroke-panel" strokeWidth={1.5} />
+            <text x={COMPASS_CENTER} y={11} textAnchor="middle" className="fill-fg-3 text-xs font-semibold">N</text>
+            <text x={COMPASS_SIZE - 8} y={COMPASS_CENTER + 4} textAnchor="middle" className="fill-fg-3 text-xs font-semibold">E</text>
+            <text x={COMPASS_CENTER} y={COMPASS_SIZE - 3} textAnchor="middle" className="fill-fg-3 text-xs font-semibold">S</text>
+            <text x={8} y={COMPASS_CENTER + 4} textAnchor="middle" className="fill-fg-3 text-xs font-semibold">W</text>
+          </svg>
+
+          <div className="grid flex-1 grid-cols-2 gap-1.5">
+            {QUICK_SUN_DIRECTIONS.map((dir) => (
+              <button
+                key={dir.id}
+                type="button"
+                disabled={disabled}
+                onClick={() => {
+                  setAzimuth(dir.azimuth);
+                  setElevation(dir.elevation);
+                  onSunAngleChange?.(dir.azimuth, dir.elevation);
+                }}
+                className="min-h-11 rounded-lg border border-line bg-panel px-2 text-xs font-medium text-fg-2 transition-colors hover:border-accent hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {bt(dir.labelKo, dir.labelEn)}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <label htmlFor={elevationId} className="text-[0.68rem] text-fg-3">
+            <label htmlFor={elevationId} className="text-xs text-fg-3">
               태양 고도 (Elevation)
             </label>
-            <span className="font-mono text-[0.68rem]">{elevation}°</span>
+            <span className="font-mono text-xs tabular-nums">{elevation}°</span>
           </div>
           <input
             id={elevationId}
@@ -229,10 +322,10 @@ export function StudioBg3dAtmospherePanel({
 
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <label htmlFor={azimuthId} className="text-[0.68rem] text-fg-3">
+            <label htmlFor={azimuthId} className="text-xs text-fg-3">
               태양 방위각 (Azimuth)
             </label>
-            <span className="font-mono text-[0.68rem]">{azimuth}°</span>
+            <span className="font-mono text-xs tabular-nums">{azimuth}°</span>
           </div>
           <input
             id={azimuthId}
@@ -249,4 +342,10 @@ export function StudioBg3dAtmospherePanel({
       </div>
     </div>
   );
+}
+
+function cnCompass(disabled: boolean): string {
+  return disabled
+    ? "shrink-0 cursor-not-allowed opacity-45"
+    : "shrink-0 cursor-crosshair touch-none select-none";
 }

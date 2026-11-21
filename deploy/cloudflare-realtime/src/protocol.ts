@@ -1,3 +1,14 @@
+import {
+  REALTIME_TICKET_SCOPES,
+  isRealtimeSpaceRole,
+  isRealtimeTicketScope,
+  isRealtimeWireChannel,
+  validateSpaceChannelPayload,
+  validateSpaceRoomControlPayload,
+  type RealtimeWireChannel,
+  type RealtimeWirePayload,
+} from "./space-protocol";
+
 export const REALTIME_PROTOCOL_VERSION = "toonstudio.realtime.v1" as const;
 
 /**
@@ -249,6 +260,7 @@ export interface RealtimeChannelSequenceStates {
   readonly presence: RealtimeChannelSequenceState;
   readonly comments: RealtimeChannelSequenceState;
   readonly "screen-signaling": RealtimeChannelSequenceState;
+  readonly "yjs-space"?: RealtimeChannelSequenceState;
 }
 
 export interface ServerAckMessage {
@@ -487,6 +499,9 @@ function validatePresencePayload(value: unknown): value is PresencePayload {
       (REALTIME_EMOTE_IDS as readonly string[]).includes(value.emote)
     );
   }
+  if (value.kind === "space.room-control") {
+    return validateSpaceRoomControlPayload(value);
+  }
   if (value.kind === "presence.cursor") {
     return (
       hasExactKeys(value, [
@@ -557,14 +572,8 @@ function validatePresencePayload(value: unknown): value is PresencePayload {
     value.profile.displayName.length <= 80 &&
     isBoundedText(value.profile.displayName, 320) &&
     !containsControlCharacter(value.profile.displayName) &&
-    (value.profile.role === "owner" ||
-      value.profile.role === "admin" ||
-      value.profile.role === "editor" ||
-      value.profile.role === "commenter" ||
-      value.profile.role === "viewer") &&
-    (value.profile.state === "active" ||
-      value.profile.state === "idle" ||
-      value.profile.state === "away") &&
+    isRealtimeSpaceRole(value.profile.role) &&
+    (value.profile.state === "active" || value.profile.state === "idle" || value.profile.state === "away") &&
     isValidPresenceAvatar(value.profile.avatar)
   );
 }
@@ -731,40 +740,25 @@ function validateScreenSignalingPayload(
 }
 
 export function validatePayloadForChannel(
-  channel: RealtimeChannel,
+  channel: RealtimeWireChannel,
   value: unknown,
 ): value is RealtimePayload {
-  if (channel === "presence") {
-    return validatePresencePayload(value);
-  }
-  if (channel === "comments") {
-    return validateCommentPayload(value);
-  }
+  if (channel === "presence") return validatePresencePayload(value);
+  if (channel === "comments") return validateCommentPayload(value);
+  if (channel === "yjs-space") return validateSpaceChannelPayload(value);
   return validateScreenSignalingPayload(value);
 }
 
 function canonicalizeProtocolValue(value: unknown): string {
-  if (value === null || typeof value !== "object") {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value
-      .map((item) => canonicalizeProtocolValue(item))
-      .join(",")}]`;
-  }
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map((item) => canonicalizeProtocolValue(item)).join(",")}]`;
   const record = value as Record<string, unknown>;
-  return `{${Object.keys(record)
-    .sort()
-    .map(
-      (key) =>
-        `${JSON.stringify(key)}:${canonicalizeProtocolValue(record[key])}`,
-    )
-    .join(",")}}`;
+  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonicalizeProtocolValue(record[key])}`).join(",")}}`;
 }
 
 export function areRealtimePayloadsEquivalent(
-  left: RealtimePayload,
-  right: RealtimePayload,
+  left: RealtimeWirePayload,
+  right: RealtimeWirePayload,
 ): boolean {
   return canonicalizeProtocolValue(left) === canonicalizeProtocolValue(right);
 }
@@ -775,16 +769,8 @@ export function isServerEventMessage(
   return (
     isRecord(value) &&
     hasExactKeys(value, [
-      "version",
-      "type",
-      "sequence",
-      "idempotencyKey",
-      "actorId",
-      "clientId",
-      "connectionId",
-      "channel",
-      "serverAtMs",
-      "payload",
+      "version", "type", "sequence", "idempotencyKey", "actorId",
+      "clientId", "connectionId", "channel", "serverAtMs", "payload",
     ]) &&
     value.version === REALTIME_PROTOCOL_VERSION &&
     value.type === "event" &&
@@ -794,7 +780,7 @@ export function isServerEventMessage(
     isRealtimeId(value.actorId) &&
     isRealtimeId(value.clientId) &&
     isRealtimeId(value.connectionId) &&
-    isRealtimeChannel(value.channel) &&
+    isRealtimeWireChannel(value.channel) &&
     isSafeInteger(value.serverAtMs) &&
     validatePayloadForChannel(value.channel, value.payload)
   );
@@ -805,10 +791,7 @@ function isChannelSequenceState(
 ): value is RealtimeChannelSequenceState {
   return (
     isRecord(value) &&
-    hasExactKeys(value, [
-      "currentSequence",
-      "replayFloorSequence",
-    ]) &&
+    hasExactKeys(value, ["currentSequence", "replayFloorSequence"]) &&
     isSafeInteger(value.currentSequence) &&
     isSafeInteger(value.replayFloorSequence, 1) &&
     value.replayFloorSequence <= value.currentSequence + 1
@@ -820,14 +803,11 @@ function isChannelSequenceStates(
 ): value is RealtimeChannelSequenceStates {
   return (
     isRecord(value) &&
-    hasExactKeys(value, [
-      "presence",
-      "comments",
-      "screen-signaling",
-    ]) &&
+    hasExactKeys(value, ["presence", "comments", "screen-signaling"], ["yjs-space"]) &&
     isChannelSequenceState(value.presence) &&
     isChannelSequenceState(value.comments) &&
-    isChannelSequenceState(value["screen-signaling"])
+    isChannelSequenceState(value["screen-signaling"]) &&
+    (value["yjs-space"] === undefined || isChannelSequenceState(value["yjs-space"]))
   );
 }
 
@@ -837,16 +817,8 @@ function isServerWelcomeMessage(
   return (
     isRecord(value) &&
     hasExactKeys(value, [
-      "version",
-      "type",
-      "workId",
-      "roomId",
-      "connectionId",
-      "actorId",
-      "clientId",
-      "scopes",
-      "channelStates",
-      "sessionExpiresAtMs",
+      "version", "type", "workId", "roomId", "connectionId",
+      "actorId", "clientId", "scopes", "channelStates", "sessionExpiresAtMs",
     ]) &&
     value.version === REALTIME_PROTOCOL_VERSION &&
     value.type === "welcome" &&
@@ -857,8 +829,8 @@ function isServerWelcomeMessage(
     isRealtimeId(value.clientId) &&
     Array.isArray(value.scopes) &&
     value.scopes.length >= 1 &&
-    value.scopes.length <= REALTIME_CHANNELS.length &&
-    value.scopes.every(isRealtimeChannel) &&
+    value.scopes.length <= REALTIME_TICKET_SCOPES.length &&
+    value.scopes.every(isRealtimeTicketScope) &&
     new Set(value.scopes).size === value.scopes.length &&
     isChannelSequenceStates(value.channelStates) &&
     isSafeInteger(value.sessionExpiresAtMs, 1)
@@ -868,17 +840,10 @@ function isServerWelcomeMessage(
 function isServerAckMessage(value: unknown): value is ServerAckMessage {
   return (
     isRecord(value) &&
-    hasExactKeys(value, [
-      "version",
-      "type",
-      "channel",
-      "idempotencyKey",
-      "sequence",
-      "duplicate",
-    ]) &&
+    hasExactKeys(value, ["version", "type", "channel", "idempotencyKey", "sequence", "duplicate"]) &&
     value.version === REALTIME_PROTOCOL_VERSION &&
     value.type === "ack" &&
-    isRealtimeChannel(value.channel) &&
+    isRealtimeWireChannel(value.channel) &&
     typeof value.idempotencyKey === "string" &&
     IDEMPOTENCY_KEY_PATTERN.test(value.idempotencyKey) &&
     isSafeInteger(value.sequence, 1) &&
@@ -892,18 +857,12 @@ function isServerReplayMessage(
   if (
     !isRecord(value) ||
     !hasExactKeys(value, [
-      "version",
-      "type",
-      "channel",
-      "fromSequence",
-      "toSequence",
-      "currentSequence",
-      "complete",
-      "events",
+      "version", "type", "channel", "fromSequence", "toSequence",
+      "currentSequence", "complete", "events",
     ]) ||
     value.version !== REALTIME_PROTOCOL_VERSION ||
     value.type !== "replay" ||
-    !isRealtimeChannel(value.channel) ||
+    !isRealtimeWireChannel(value.channel) ||
     !isSafeInteger(value.fromSequence, 1) ||
     !isSafeInteger(value.toSequence) ||
     !isSafeInteger(value.currentSequence) ||
@@ -912,9 +871,7 @@ function isServerReplayMessage(
     !Array.isArray(value.events) ||
     value.events.length > REALTIME_MAX_REPLAY_EVENTS_PER_FRAME ||
     !value.events.every(
-      (event) =>
-        isServerEventMessage(event) &&
-        event.channel === value.channel,
+      (event) => isServerEventMessage(event) && event.channel === value.channel,
     )
   ) {
     return false;
@@ -1029,7 +986,7 @@ function isServerErrorMessage(value: unknown): value is ServerErrorMessage {
     typeof value.code === "string" &&
     codes.includes(value.code as RealtimeProtocolErrorCode) &&
     typeof value.retryable === "boolean" &&
-    (value.channel === undefined || isRealtimeChannel(value.channel)) &&
+    (value.channel === undefined || isRealtimeWireChannel(value.channel)) &&
     (value.idempotencyKey === undefined ||
       (typeof value.idempotencyKey === "string" &&
         IDEMPOTENCY_KEY_PATTERN.test(value.idempotencyKey))) &&
@@ -1106,7 +1063,7 @@ export function parseRealtimeClientMessage(
         "channel",
         "afterSequence",
       ]) ||
-      !isRealtimeChannel(parsed.channel) ||
+      !isRealtimeWireChannel(parsed.channel) ||
       !isSafeInteger(parsed.afterSequence)
     ) {
       return { ok: false, code: "invalid-envelope" };
@@ -1131,7 +1088,7 @@ export function parseRealtimeClientMessage(
     !IDEMPOTENCY_KEY_PATTERN.test(parsed.idempotencyKey) ||
     !isSafeInteger(parsed.clientSequence, 1) ||
     !isSafeInteger(parsed.sentAtMs) ||
-    !isRealtimeChannel(parsed.channel)
+    !isRealtimeWireChannel(parsed.channel)
   ) {
     return { ok: false, code: "invalid-envelope" };
   }

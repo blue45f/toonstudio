@@ -384,6 +384,12 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
         {/* 참(Charm) 바 — 자주 쓰는 소재를 한 번에 붙이는 도킹 가능한 소형 패널. 꺼져 있으면 아무것도 그리지 않는다.
             슬롯째 지연 로드한다(`StudioCharmBarSlotLazy`): 정적으로 가져오면 Studio 첫 청크 그래프가 커져 번들 래칫을 깬다. */}
         <StudioCharmBarSlotLazy session={s} />
+        {/* 좌측 기본 그리기 레일 — 시각 순서(order:-1)와 DOM·Tab 순서를 일치시켜 WCAG 2.4.3 포커스 순서를 보존한다. */}
+        {compact ? (
+          <Suspense fallback={<div aria-hidden="true" data-studio-clarity-rail-loading="true" className="studio-drawing-clarity-rail hidden md:flex" />}>
+            <LazyStudioDrawingClarityRail session={s} pinnedHostRef={setPinnedToolHost} />
+          </Suspense>
+        ) : null}
         {/* 중앙: 캔버스 + 우측 인스펙터 — 데스크톱에서는 한 행으로 남은 높이를 공유한다.
             패널을 왼쪽에 도킹하면 행 방향을 뒤집어 [패널|스플리터|캔버스]가 된다. */}
         <div
@@ -432,11 +438,6 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
             </div>
           </div>
         </div>
-        {compact ? (
-          <Suspense fallback={<div aria-hidden="true" data-studio-clarity-rail-loading="true" className="studio-drawing-clarity-rail hidden md:flex" />}>
-            <LazyStudioDrawingClarityRail session={s} pinnedHostRef={setPinnedToolHost} />
-          </Suspense>
-        ) : null}
         <StudioCuttoonEditorPanels {...s} />
         <StudioCuttoonEditorSessionDialogs {...s} />
         <StudioWorkspaceArrangementToolbar disabled={compact || isMobile || canvasOnlyMode || mobileImmersive || presentationPanelsHidden} />

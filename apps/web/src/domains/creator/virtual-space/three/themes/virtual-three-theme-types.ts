@@ -1,6 +1,7 @@
 /** 엔진 객체와 독립된 3D 테마 계약이다. */
 export type VirtualThreeAssetRecipeThemeId = 'parkbotanical' | 'fantasyguild' | 'sflab' | 'gothicarchive' | 'vehiclegarage' | 'cafefood' | 'forestretreat' | 'gardenstudy';
-export type VirtualThreeThemeId = 'creator-campus' | VirtualThreeAssetRecipeThemeId;
+export type VirtualThreeHeroSceneThemeId = `hero-bg-${string}`;
+export type VirtualThreeThemeId = 'creator-campus' | VirtualThreeAssetRecipeThemeId | VirtualThreeHeroSceneThemeId;
 export type VirtualThreeThemePreviewState =
   | { readonly status: 'idle' }
   | { readonly status: 'loading'; readonly loaded: number; readonly total: number }
@@ -23,7 +24,19 @@ export interface VirtualThreeThemeModelRefGenerated {
   /** 기존 metadata 항목 ID이며 새 권리 승인이나 검증 완료 증명은 아니다. */
   readonly provenanceId: string;
 }
-export type VirtualThreeThemeModelRef = VirtualThreeThemeModelRefBundle | VirtualThreeThemeModelRefGenerated;
+export interface VirtualThreeThemeModelRefHeroScene {
+  readonly source: 'hero-scene';
+  readonly heroSlug: string;
+  readonly assetId: string;
+  readonly tier: 'desktop' | 'mobile';
+  readonly url: string;
+  readonly expectedSha256: `sha256:${string}`;
+  readonly byteLength: number;
+}
+export type VirtualThreeThemeModelRef =
+  | VirtualThreeThemeModelRefBundle
+  | VirtualThreeThemeModelRefGenerated
+  | VirtualThreeThemeModelRefHeroScene;
 export interface VirtualThreeSurfacePBR {
   readonly baseColor: `#${string}`;
   readonly roughness: number;
@@ -75,4 +88,24 @@ export interface VirtualThreeAssetRecipeTheme extends VirtualThreeThemeBase {
   /** 역할·개수만 선언한다. 좌표·충돌체·스폰·경로는 후속 배치 시스템 소유다. */
   readonly layoutRoles: readonly VirtualThreeLayoutRole[];
 }
-export type VirtualThreeTheme = VirtualThreePreservedBaselineTheme | VirtualThreeAssetRecipeTheme;
+export type VirtualThreeCutawayWallSide = 'north' | 'south' | 'west' | 'east' | 'ceiling';
+export interface VirtualThreeHeroSceneTheme extends VirtualThreeThemeBase {
+  readonly id: VirtualThreeHeroSceneThemeId;
+  readonly kind: 'hero-scene';
+  readonly heroSlug: string;
+  readonly genreKo: string;
+  readonly genreEn: string;
+  readonly thumbnailUrl: string;
+  readonly boundsMeters: readonly [number, number, number];
+  readonly cutawayEnabledWalls: readonly VirtualThreeCutawayWallSide[];
+  readonly lighting: VirtualThreeThemeLighting;
+  readonly desktopAssetId: string;
+  readonly mobileAssetId: string;
+  readonly desktopUrl: string;
+  readonly mobileUrl: string;
+  readonly desktopByteLength: number;
+  readonly mobileByteLength: number;
+  readonly desktopSha256: `sha256:${string}`;
+  readonly mobileSha256: `sha256:${string}`;
+}
+export type VirtualThreeTheme = VirtualThreePreservedBaselineTheme | VirtualThreeAssetRecipeTheme | VirtualThreeHeroSceneTheme;

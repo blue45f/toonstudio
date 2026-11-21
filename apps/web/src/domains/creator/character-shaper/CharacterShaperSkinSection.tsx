@@ -5,14 +5,25 @@
  * 부르는 화면이 없어 요약 막대에 "피부 색 없음" 만 떴다. 얼굴형·체형 인스펙터 맨 위에서 고른다.
  * 얼굴 피부와 몸 피부는 같은 색으로 함께 물든다(`vrm/studio-vrm-custom-color-target.ts`). 비우면 모델 원본 피부.
  */
-import { useState } from "react";
+import { RotateCcw } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import { computeShaperMaterialDataUniforms } from "./character-shaper-gen3d-bridge";
+import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
+
+import {
+  applyShaperMtoonUniformsToVrm,
+  DEFAULT_SHAPER_MTOON_SETTINGS,
+  resetShaperMtoonUniformsOnVrm,
+} from "./character-shaper-mtoon-uniforms";
+import { useCharacterShaperMaterialSettings } from "./character-shaper-session-settings";
 import { CharacterColorControl } from "./CharacterShaperControls";
 import { InspectorSection } from "./CharacterShaperInspectorParts";
 
 import type { CharacterColorSwatch } from "./CharacterShaperControls";
 import type { CharacterShaperInspectorProps } from "./character-shaper-ui-contract";
+import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
+
+import { cn } from "@/shared/lib/utils";
 
 /** 밝은 톤부터 깊은 톤까지 9가지 + 판타지 3가지. */
 const CHARACTER_SKIN_TONE_SWATCHES: readonly CharacterColorSwatch[] = Object.freeze([
@@ -31,23 +42,43 @@ const CHARACTER_SKIN_TONE_SWATCHES: readonly CharacterColorSwatch[] = Object.fre
 ]);
 
 export function CharacterShaperSkinSection({
+  h,
   binding,
   locked,
-}: Pick<CharacterShaperInspectorProps, "binding"> & { readonly locked: boolean }) {
-  const [shadePos, setShadePos] = useState(0.5);
-  const [shadeWidth, setShadeWidth] = useState(0.12);
-  const [rLightWidth, setRLightWidth] = useState(0.25);
-  const [outlinePressure, setOutlinePressure] = useState(true);
-  const [disableHairInline, setDisableHairInline] = useState(true);
+}: Pick<CharacterShaperInspectorProps, "binding"> & {
+  readonly h?: StudioVrmPoserHost;
+  readonly locked: boolean;
+}) {
+  const { shaperMaterial, setShaperMaterial } = useCharacterShaperMaterialSettings();
+  const [appliedCount, setAppliedCount] = useState(0);
+  const { shadePos, shadeWidth, rLightPos, rLightWidth, outlinePressure, disableHairInline } = shaperMaterial;
 
-  const uniforms = computeShaperMaterialDataUniforms({
+  const applied = applyShaperMtoonUniformsToVrm(null, {
     shadePos,
     shadeWidth,
-    rLightPos: 0.82,
+    rLightPos,
     rLightWidth,
     outlinePressure,
     disableHairInline,
   });
+  const uniforms = applied.uniforms;
+
+  useEffect(() => {
+    const result = applyShaperMtoonUniformsToVrm(h?.vrm, {
+      shadePos,
+      shadeWidth,
+      rLightPos,
+      rLightWidth,
+      outlinePressure,
+      disableHairInline,
+    });
+    setAppliedCount(result.updatedMaterials);
+    if (typeof h?.invalidateViewport === "function") h.invalidateViewport();
+  }, [h, h?.vrm, shadePos, shadeWidth, rLightPos, rLightWidth, outlinePressure, disableHairInline]);
+
+  const patchMaterial = (patch: Partial<typeof shaperMaterial>) => {
+    setShaperMaterial((prev) => ({ ...prev, ...patch }));
+  };
 
   return (
     <>
@@ -68,7 +99,7 @@ export function CharacterShaperSkinSection({
 
       <InspectorSection
         title="SHAPER 3차 MatCap 음영 · 비등방 외곽선"
-        hint="MaterialData::ApplyShadeLine (125·(1-w)³) 실시간 MatCap 램프와 필압 주선(1.5×0.3), 헤어 내부 주선 억제(hID*1)를 조절합니다."
+        hint="MaterialData::ApplyShadeLine (125·(1-w)³) 실시간 MatCap 램프와 필압 주선(1.5×0.3), 헤어 내부 주선 억제(hID*1)를 VRM MToon 재질에 즉시 반영합니다."
       >
         <div
           data-testid="shaper-inspector-material-section"
@@ -84,7 +115,7 @@ export function CharacterShaperSkinSection({
               step={0.02}
               value={shadePos}
               disabled={locked}
-              onChange={(event) => setShadePos(Number(event.currentTarget.value))}
+              onChange={(event) => patchMaterial({ shadePos: Number(event.currentTarget.value) })}
               className="w-28 accent-accent"
             />
             <span className="w-9 text-right font-mono text-[0.66rem] text-fg-3">
@@ -101,7 +132,7 @@ export function CharacterShaperSkinSection({
               step={0.02}
               value={shadeWidth}
               disabled={locked}
-              onChange={(event) => setShadeWidth(Number(event.currentTarget.value))}
+              onChange={(event) => patchMaterial({ shadeWidth: Number(event.currentTarget.value) })}
               className="w-28 accent-accent"
             />
             <span className="w-9 text-right font-mono text-[0.66rem] text-fg-3">
@@ -118,40 +149,61 @@ export function CharacterShaperSkinSection({
               step={0.02}
               value={rLightWidth}
               disabled={locked}
-              onChange={(event) => setRLightWidth(Number(event.currentTarget.value))}
+              onChange={(event) => patchMaterial({ rLightWidth: Number(event.currentTarget.value) })}
               className="w-28 accent-accent"
             />
             <span className="w-9 text-right font-mono text-[0.66rem] text-fg-3">
               {rLightWidth.toFixed(2)}
             </span>
           </label>
-          <div className="flex flex-wrap gap-3 pt-1">
-            <label className="inline-flex cursor-pointer items-center gap-1.5 text-fg-2">
-              <input
-                type="checkbox"
-                checked={outlinePressure}
-                disabled={locked}
-                onChange={(event) => setOutlinePressure(event.currentTarget.checked)}
-                className="size-3.5 rounded border-line accent-accent"
-              />
-              <span>비등방 필압 외곽선 (1.5×0.3)</span>
-            </label>
-            <label className="inline-flex cursor-pointer items-center gap-1.5 text-fg-2">
-              <input
-                type="checkbox"
-                checked={disableHairInline}
-                disabled={locked}
-                onChange={(event) => setDisableHairInline(event.currentTarget.checked)}
-                className="size-3.5 rounded border-line accent-accent"
-              />
-              <span>헤어 내부 주선 억제 (hID*1)</span>
-            </label>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div className="flex flex-wrap gap-3">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 text-fg-2">
+                <input
+                  type="checkbox"
+                  aria-label="비등방 필압 외곽선 (1.5×0.3)"
+                  checked={outlinePressure}
+                  disabled={locked}
+                  onChange={(event) => patchMaterial({ outlinePressure: event.currentTarget.checked })}
+                  className="size-3.5 rounded border-line accent-accent"
+                />
+                <span>비등방 필압 외곽선 (1.5×0.3)</span>
+              </label>
+              <label className="inline-flex cursor-pointer items-center gap-1.5 text-fg-2">
+                <input
+                  type="checkbox"
+                  aria-label="헤어 내부 주선 억제 (hID*1)"
+                  checked={disableHairInline}
+                  disabled={locked}
+                  onChange={(event) => patchMaterial({ disableHairInline: event.currentTarget.checked })}
+                  className="size-3.5 rounded border-line accent-accent"
+                />
+                <span>헤어 내부 주선 억제 (hID*1)</span>
+              </label>
+            </div>
+            <button
+              type="button"
+              disabled={locked}
+              aria-label="MatCap 재질 초기화"
+              onClick={() => {
+                setShaperMaterial(DEFAULT_SHAPER_MTOON_SETTINGS);
+                resetShaperMtoonUniformsOnVrm(h?.vrm);
+              }}
+              className={cn(
+                "inline-flex min-h-8 items-center gap-1 rounded-lg border border-line bg-panel px-2 text-[0.66rem] font-medium text-fg-2 hover:bg-raised disabled:opacity-45",
+                STUDIO_FOCUS_RING,
+              )}
+            >
+              <RotateCcw size={12} aria-hidden />
+              초기화
+            </button>
           </div>
           <p
             data-testid="shaper-inspector-material-readout"
             className="rounded-lg bg-raised/80 px-2 py-1 font-mono text-[0.64rem] text-fg-3"
           >
             {uniforms.summaryLabel} · MToon Toony {uniforms.mtoonShadingToonyFactor.toFixed(2)}
+            {appliedCount > 0 ? ` · 실시간 MToon ${appliedCount}재질 적용` : ""}
           </p>
         </div>
       </InspectorSection>

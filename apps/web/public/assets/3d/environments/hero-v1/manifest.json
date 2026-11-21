@@ -1,0 +1,295 @@
+{
+  "schema": "toonstudio.bg3d.hero-v1-manifest/1",
+  "generatedAt": "2026-11-21",
+  "count": 12,
+  "assets": [
+    {
+      "path": "kr_atelier_cafe_interior-mobile.glb",
+      "bytes": 3191328,
+      "sha256": "6c4a01791d276a3610f9cdfabd6c9ab71729cab918d81a270d7c7ba98bdafd77",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Cutaway_Front",
+        "BG_Furnishings",
+        "BG_Shell_Fixed",
+        "BG_Root_kr_atelier_cafe_interior_mobile"
+      ],
+      "materials": [
+        "02_Glass_Accent_512",
+        "01_Opaque_Master_1024"
+      ]
+    },
+    {
+      "path": "kr_atelier_cafe_interior.glb",
+      "bytes": 5316812,
+      "sha256": "751beefe2082bb2a09bcf856b4fab0a2882a44248c0059bc6448fe5c82464fc8",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Floor",
+        "BG_Furniture_Hero",
+        "BG_Props_Clutter",
+        "BG_Wall_East",
+        "BG_Wall_North",
+        "BG_Wall_South",
+        "BG_Wall_West",
+        "BG_Root_kr_atelier_cafe_interior"
+      ],
+      "materials": [
+        "04_Glass_Emissive",
+        "01_Arch_Trim_Atlas",
+        "02_Wood_Fabric_Atlas",
+        "03_Metal_Hardware_Atlas"
+      ]
+    },
+    {
+      "path": "kr_highschool_classroom_corridor-mobile.glb",
+      "bytes": 2441564,
+      "sha256": "d2c2e919a92385caf42dc9a3378d4a7c2a0d67a7a980cdcf0877c6486ec99b75",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Cutaway_Front",
+        "BG_Furnishings",
+        "BG_Shell_Fixed",
+        "BG_Root_kr_highschool_classroom_corridor_mobile"
+      ],
+      "materials": [
+        "02_Glass_Accent_512",
+        "01_Opaque_Master_1024"
+      ]
+    },
+    {
+      "path": "kr_highschool_classroom_corridor.glb",
+      "bytes": 4584172,
+      "sha256": "2ebe4885f5215636575a1513e588481fac003669a2b31e018b04b72641021dd3",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Floor",
+        "BG_Furniture_Hero",
+        "BG_Props_Clutter",
+        "BG_Wall_East",
+        "BG_Wall_North",
+        "BG_Wall_South",
+        "BG_Wall_West",
+        "BG_Root_kr_highschool_classroom_corridor"
+      ],
+      "materials": [
+        "04_Glass_Emissive",
+        "01_Arch_Trim_Atlas",
+        "02_Wood_Fabric_Atlas",
+        "03_Metal_Hardware_Atlas"
+      ]
+    },
+    {
+      "path": "kr_modern_apartment_living-mobile.glb",
+      "bytes": 2730404,
+      "sha256": "fdf1136b4b6770000351910a9f2fa847a46e62ff973ac14f30fd565d5e7fd106",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Cutaway_Front",
+        "BG_Furnishings",
+        "BG_Shell_Fixed",
+        "BG_Root_kr_modern_apartment_living_mobile"
+      ],
+      "materials": [
+        "02_Glass_Accent_512",
+        "01_Opaque_Master_1024"
+      ]
+    },
+    {
+      "path": "kr_modern_apartment_living.glb",
+      "bytes": 4825616,
+      "sha256": "ffce62b057ac90365057b6fdcb0641f38ee83cda7662866ec1100b1ba152c803",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Floor",
+        "BG_Furniture_Hero",
+        "BG_Props_Clutter",
+        "BG_Wall_East",
+        "BG_Wall_North",
+        "BG_Wall_South",
+        "BG_Wall_West",
+        "BG_Root_kr_modern_apartment_living"
+      ],
+      "materials": [
+        "04_Glass_Emissive",
+        "01_Arch_Trim_Atlas",
+        "02_Wood_Fabric_Atlas",
+        "03_Metal_Hardware_Atlas"
+      ]
+    },
+    {
+      "path": "kr_school_rooftop_hero-mobile.glb",
+      "bytes": 2039000,
+      "sha256": "68782ce12723453b682b5df14d5f5de0d958728cced8f95ddeb705a4fafafee0",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Cutaway_Front",
+        "BG_Furnishings",
+        "BG_Shell_Fixed",
+        "BG_Root_kr_school_rooftop_hero_mobile"
+      ],
+      "materials": [
+        "02_Glass_Accent_512",
+        "01_Opaque_Master_1024"
+      ]
+    },
+    {
+      "path": "kr_school_rooftop_hero.glb",
+      "bytes": 4254932,
+      "sha256": "4f0b25ae22ce60df4b67c8971a41c8ce852793c799278269f54e57eb93678658",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Floor",
+        "BG_Furniture_Hero",
+        "BG_Props_Clutter",
+        "BG_Wall_East",
+        "BG_Wall_North",
+        "BG_Wall_South",
+        "BG_Wall_West",
+        "BG_Root_kr_school_rooftop_hero"
+      ],
+      "materials": [
+        "04_Glass_Emissive",
+        "01_Arch_Trim_Atlas",
+        "02_Wood_Fabric_Atlas",
+        "03_Metal_Hardware_Atlas"
+      ]
+    },
+    {
+      "path": "kr_seoul_alley_street_hero-mobile.glb",
+      "bytes": 2453152,
+      "sha256": "425c44235f1ffa48cc9b252413576ff5c994ddd5ebce2e78ab0fafd016c739a2",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Cutaway_Front",
+        "BG_Furnishings",
+        "BG_Shell_Fixed",
+        "BG_Root_kr_seoul_alley_street_hero_mobile"
+      ],
+      "materials": [
+        "02_Glass_Accent_512",
+        "01_Opaque_Master_1024"
+      ]
+    },
+    {
+      "path": "kr_seoul_alley_street_hero.glb",
+      "bytes": 4559724,
+      "sha256": "c70b0ca0804cb49a8ff9717a58852864a04e876b03aff418332fa56019766f3f",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Floor",
+        "BG_Furniture_Hero",
+        "BG_Props_Clutter",
+        "BG_Wall_East",
+        "BG_Wall_North",
+        "BG_Wall_South",
+        "BG_Wall_West",
+        "BG_Root_kr_seoul_alley_street_hero"
+      ],
+      "materials": [
+        "04_Glass_Emissive",
+        "01_Arch_Trim_Atlas",
+        "02_Wood_Fabric_Atlas",
+        "03_Metal_Hardware_Atlas"
+      ]
+    },
+    {
+      "path": "rofan_imperial_palace_hall_balcony-mobile.glb",
+      "bytes": 3827276,
+      "sha256": "48ba57299f64066f18dc5e6577f0cad0e32e4c8012c731f9ad0a20c1321ac581",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Cutaway_Front",
+        "BG_Furnishings",
+        "BG_Shell_Fixed",
+        "BG_Root_rofan_imperial_palace_hall_balcony_mobile"
+      ],
+      "materials": [
+        "02_Glass_Accent_512",
+        "01_Opaque_Master_1024"
+      ]
+    },
+    {
+      "path": "rofan_imperial_palace_hall_balcony.glb",
+      "bytes": 6179592,
+      "sha256": "94a33abbfbf7b5efe87fa8deec16754b73dc0e750f46e139f84edd230c63f324",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "nodes": [
+        "BG_Ceiling",
+        "BG_Floor",
+        "BG_Furniture_Hero",
+        "BG_Props_Clutter",
+        "BG_Wall_East",
+        "BG_Wall_North",
+        "BG_Wall_South",
+        "BG_Wall_West",
+        "BG_Root_rofan_imperial_palace_hall_balcony"
+      ],
+      "materials": [
+        "04_Glass_Emissive",
+        "01_Arch_Trim_Atlas",
+        "02_Wood_Fabric_Atlas",
+        "03_Metal_Hardware_Atlas"
+      ]
+    }
+  ]
+}

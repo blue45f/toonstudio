@@ -11,8 +11,8 @@
  * wardrobe, costume, props, expression, pose and hands write to the poser host directly, which
  * already owns their undo.
  */
-import { Check, Eye, EyeOff, RotateCcw, Trash2, X } from "lucide-react";
-import { useId } from "react";
+import { Trash2, X } from "lucide-react";
+import { useId, useState } from "react";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import {
@@ -21,7 +21,6 @@ import {
   DEFAULT_AVATAR_FORGE_STATE,
   applyAvatarForgeBodyPreset,
 } from "../vrm/studio-vrm-avatar-forge";
-import { COSTUME_PALETTES, COSTUME_SLOT_LABELS } from "../vrm/studio-vrm-costume";
 import {
   STUDIO_VRM_FINGER_LABELS,
   STUDIO_VRM_FINGER_NAMES,
@@ -33,10 +32,9 @@ import {
   createStudioVrmProportions,
 } from "../vrm/studio-vrm-proportion-core";
 import { propDefById } from "../vrm/studio-vrm-props";
-import { WARDROBE_FIT_MAX, WARDROBE_FIT_MIN, WARDROBE_SLOT_LABELS } from "../vrm/studio-vrm-wardrobe";
+import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 
 import { CHARACTER_SEMANTIC_MORPH_LABELS } from "./character-shaper-capability";
-import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 import { characterSlotMeta } from "./character-shaper-catalog";
 import { CharacterSlotPreview } from "./character-shaper-preview";
 import {
@@ -46,9 +44,27 @@ import {
 } from "./character-shaper-ui-model";
 import { CharacterShaperBlenderPackage } from "./CharacterShaperBlenderPackage";
 import { CharacterChipGroup, CharacterColorControl, CharacterRangeControl } from "./CharacterShaperControls";
+import { CharacterShaperGarmentSection } from "./CharacterShaperGarmentSection";
 import { CharacterShaperHairInspector } from "./CharacterShaperHairInspector";
 import { InspectorNote as Note, InspectorSection as Section } from "./CharacterShaperInspectorParts";
+import { CharacterShaperPoseSection } from "./CharacterShaperPoseSection";
 import { CharacterShaperSkinSection } from "./CharacterShaperSkinSection";
+import { CharacterShaperStcSection } from "./CharacterShaperStcSection";
+import { Studio3dHeadMixerPanel } from "./Studio3dHeadMixerPanel";
+import { StudioBodyRatioMatrixPad } from "./StudioBodyRatioMatrixPad";
+import {
+  createDefaultHeadMixerState,
+  resolveHeadMixerMorphTargets,
+  toAvatarForgeSemanticFaceMorphs,
+  type Studio3dHeadMixerState,
+} from "./studio-3d-head-mixer";
+import {
+  createDefaultBodyAndHairState,
+  HAIR_COLOR_TOKEN_PRESETS,
+  resolveBodyMatrixTo21Sliders,
+  toStudioVrmProportions,
+  type StudioWebtoonBodyAndHairState,
+} from "./studio-webtoon-21-body-and-3part-hair";
 
 import type { CharacterSlotEntry, CharacterSlotKind } from "./character-shaper-contract";
 import type { CharacterShaperInspectorProps } from "./character-shaper-ui-contract";
@@ -57,12 +73,9 @@ import type {
   AvatarForgeSemanticFaceMorphId,
   AvatarForgeState,
 } from "../vrm/studio-vrm-avatar-forge";
-import type { CostumeSlot } from "../vrm/studio-vrm-costume";
-import type { StudioVrmCostumeMeshEntry } from "../vrm/studio-vrm-costume-runtime";
 import type { ExpressionAction } from "../vrm/studio-vrm-poser-catalogs";
 import type { StudioVrmProportionKey, StudioVrmProportions } from "../vrm/studio-vrm-proportion-core";
 import type { PropInstance } from "../vrm/studio-vrm-props";
-import type { WardrobeEquip, WardrobeSlot } from "../vrm/studio-vrm-wardrobe";
 import type { ReactNode } from "react";
 
 import { cn } from "@/shared/lib/utils";
@@ -81,9 +94,6 @@ const MORPH_IDS_BY_SLOT: Partial<Record<CharacterSlotKind, readonly AvatarForgeS
   irises: ["irisSize"],
 };
 
-const WARDROBE_SLOTS_BY_SLOT: Partial<Record<CharacterSlotKind, readonly WardrobeSlot[]>> = { top: ["top", "outer"], bottom: ["bottom"], shoes: ["shoes"] };
-const COSTUME_SLOTS_BY_SLOT: Partial<Record<CharacterSlotKind, readonly CostumeSlot[]>> = { top: ["tops", "outer", "onepiece"], bottom: ["bottoms"], shoes: ["shoes"] };
-
 const MORPH_HINTS: Readonly<Record<AvatarForgeSemanticFaceMorphId, string>> = {
   eyeSize: "왼쪽은 작게, 오른쪽은 크게",
   eyeSpacing: "왼쪽은 모으고, 오른쪽은 벌립니다",
@@ -96,13 +106,16 @@ const MORPH_HINTS: Readonly<Record<AvatarForgeSemanticFaceMorphId, string>> = {
   earSize: "귀 크기",
 };
 
-const SWATCH_TONE = "grid size-11 min-h-11 min-w-11 place-items-center rounded-lg border border-line transition-colors duration-150 hover:border-line-strong motion-reduce:transition-none";
-
-const ROW_BUTTON = cn(
-  "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-3 text-[0.7rem] font-semibold text-fg-2 [word-break:keep-all]",
-  "transition-colors duration-150 hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
-  STUDIO_FOCUS_RING,
-);
+const THREE_PART_COLOR_HEX: Readonly<Record<string, string>> = Object.freeze({
+  "ink-black": "#1c1917",
+  "espresso-brown": "#4a3328",
+  "ash-blond": "#d6c5a3",
+  "rose-pink": "#e69bb8",
+  "silver-blue": "#a9bcd8",
+  "crimson-red": "#b4323c",
+  "emerald-mint": "#4ca88e",
+  "violet-plum": "#7a5ca8",
+});
 
 /* -------------------------------------------------------------------------- */
 /* Inspector                                                                   */
@@ -110,6 +123,12 @@ const ROW_BUTTON = cn(
 
 export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onClose }: CharacterShaperInspectorProps) {
   const headingId = useId();
+  const [headMixerState, setHeadMixerState] = useState<Studio3dHeadMixerState>(() =>
+    createDefaultHeadMixerState("modern-drama"),
+  );
+  const [bodyMatrixState, setBodyMatrixState] = useState<StudioWebtoonBodyAndHairState>(() =>
+    createDefaultBodyAndHairState(),
+  );
   const meta = binding.catalog.slots.find((item) => item.id === slot) ?? characterSlotMeta(slot);
   const slotEntries = binding.catalog.entries.filter((entry) => entry.slot === slot);
   const selection = characterSlotSelection(binding.recipe, slot);
@@ -136,13 +155,54 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
     h.handleAvatarForgeChange(next);
   };
 
+  const handleHeadMixerChange = (next: Studio3dHeadMixerState) => {
+    setHeadMixerState(next);
+    const resolved = resolveHeadMixerMorphTargets(next);
+    const c = resolved.centerParts;
+    binding.commitFaceParams(
+      {
+        headWidth: Number((1 + c.headWidth * 0.14).toFixed(3)),
+        headHeight: Number((1 + c.headHeight * 0.12).toFixed(3)),
+        headDepth: Number((1 + c.headDepth * 0.12).toFixed(3)),
+        cheekVolume: Number(Math.min(1, Math.max(0, 0.35 + c.cheekFullness * 0.45)).toFixed(3)),
+        chinLength: Number((1 + c.chinLength * 0.12).toFixed(3)),
+      },
+      "3D 두상 믹서: 비율",
+    );
+    const semantic = toAvatarForgeSemanticFaceMorphs(resolved);
+    if (Object.keys(semantic).length > 0) {
+      binding.commitSemanticMorphs(semantic, "3D 두상 믹서: 이목구비");
+    }
+  };
+
+  const handleBodyMatrixChange = (next: StudioWebtoonBodyAndHairState) => {
+    setBodyMatrixState(next);
+    const base = forgeState ?? null;
+    if (base) {
+      const resolved21 = resolveBodyMatrixTo21Sliders(next.matrix, next.sliderOffsets);
+      const nextProportions = toStudioVrmProportions(resolved21);
+      commitForge({
+        ...base,
+        presetId: undefined,
+        proportions: nextProportions,
+      });
+    }
+    if (next.hair.mainColorId !== bodyMatrixState.hair.mainColorId) {
+      const preset = HAIR_COLOR_TOKEN_PRESETS.find((item) => item.id === next.hair.mainColorId);
+      const hex = THREE_PART_COLOR_HEX[next.hair.mainColorId];
+      if (hex) {
+        binding.commitHairParams({ baseColor: hex }, `3분할 헤어: ${preset?.labelKo ?? next.hair.mainColorId}`);
+      }
+    }
+  };
+
   /* ---------------------------------------------------------------------- */
   /* Per-slot sections                                                       */
   /* ---------------------------------------------------------------------- */
 
   const renderFaceShape = () => (
     <>
-      <CharacterShaperSkinSection binding={binding} locked={locked} />
+      <CharacterShaperSkinSection h={h} binding={binding} locked={locked} />
       <Section title="얼굴 비율" hint="두상·볼·턱을 직접 조절합니다. 카드 프리셋 위에 그대로 얹힙니다.">
         {FACE_KEYS.map((key) => {
           const limit = AVATAR_FORGE_FACE_LIMITS[key];
@@ -162,6 +222,15 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
           );
         })}
       </Section>
+      <Section
+        title="3D 두상 모델 믹서 (9스타일 · 34부위 · 루미스 가이드)"
+        hint="9종 웹툰 기본 두상을 비율 혼합하고 좌우 비대칭·루미스 3D 가이드를 실시간 적용합니다."
+        collapsible
+        defaultOpen={false}
+      >
+        <Studio3dHeadMixerPanel state={headMixerState} disabled={locked} onChange={handleHeadMixerChange} />
+      </Section>
+      <CharacterShaperStcSection binding={binding} locked={locked} />
     </>
   );
 
@@ -275,7 +344,15 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
             );
           })}
         </Section>
-        <CharacterShaperSkinSection binding={binding} locked={locked} />
+        <Section
+          title="2D 체형 매트릭스 · 21슬라이더 · 3분할 헤어"
+          hint="마름↔근육 / 슬림↔볼륨 2D 패드와 21부위 비율을 관절 리그에 즉시 반영합니다."
+          collapsible
+          defaultOpen={false}
+        >
+          <StudioBodyRatioMatrixPad state={bodyMatrixState} disabled={disabled} onChange={handleBodyMatrixChange} />
+        </Section>
+        <CharacterShaperSkinSection h={h} binding={binding} locked={locked} />
         <Section title="정밀 제작" hint="Blender 파이프라인으로 만든 캐릭터 패키지를 이 셰이퍼로 가져옵니다.">
           <CharacterShaperBlenderPackage h={h} disabled={locked} />
         </Section>
@@ -283,116 +360,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
     );
   };
 
-  const renderGarment = () => {
-    const wardrobeSlots = WARDROBE_SLOTS_BY_SLOT[slot] ?? [];
-    const costumeSlots = COSTUME_SLOTS_BY_SLOT[slot] ?? [];
-    const wardrobeState = (h.wardrobeState ?? {}) as Partial<Record<WardrobeSlot, WardrobeEquip>>;
-    const costumeMeshes: readonly StudioVrmCostumeMeshEntry[] = Array.isArray(h.costumeMeshes) ? h.costumeMeshes : [];
-    const hiddenKeys: readonly string[] = Array.isArray(h.costumeState?.hidden) ? h.costumeState.hidden : [];
-    const equipped = wardrobeSlots
-      .map((wardrobeSlot) => ({ wardrobeSlot, equip: wardrobeState[wardrobeSlot] ?? null }))
-      .filter((row): row is { wardrobeSlot: WardrobeSlot; equip: WardrobeEquip } => row.equip !== null);
-    const meshes = costumeMeshes.filter((entry) => costumeSlots.includes(entry.slot));
-    const presentCostumeSlots = costumeSlots.filter((costumeSlot) =>
-      meshes.some((entry) => entry.slot === costumeSlot),
-    );
-    return (
-      <>
-        <Section title="입힌 옷" hint="셰이퍼가 입힌 옷의 색과 품을 조절합니다.">
-          {equipped.length === 0 ? (
-            <Note>{frozenStatus3Text("studio.frozenStatus3.shaper.emptyNoCostume", "아직 이 슬롯에 입힌 옷이 없습니다. 왼쪽 카드에서 하나 골라 보세요.")}</Note>
-          ) : (
-            equipped.map(({ wardrobeSlot, equip }) => (
-              <div key={wardrobeSlot} className="space-y-2">
-                <p className="text-[0.66rem] font-bold text-fg-3">{WARDROBE_SLOT_LABELS[wardrobeSlot]}</p>
-                <CharacterColorControl
-                  label={`${WARDROBE_SLOT_LABELS[wardrobeSlot]} 색`}
-                  value={equip.color ?? null}
-                  disabled={locked}
-                  onCommit={(color) => {
-                    if (color === null) return;
-                    h.updateWardrobeEquip(wardrobeSlot, { color });
-                  }}
-                />
-                {typeof equip.fit === "number" ? (
-                  <CharacterRangeControl
-                    label={`${WARDROBE_SLOT_LABELS[wardrobeSlot]} 품`}
-                    hint="몸에 붙게(작게) 또는 헐렁하게(크게)"
-                    value={equip.fit}
-                    min={WARDROBE_FIT_MIN}
-                    max={WARDROBE_FIT_MAX}
-                    step={0.01}
-                    unit="×"
-                    defaultValue={1}
-                    disabled={locked}
-                    onCommit={(fit) => h.updateWardrobeEquip(wardrobeSlot, { fit })}
-                  />
-                ) : null}
-              </div>
-            ))
-          )}
-        </Section>
-        <Section title="모델 원본 의상" hint="모델이 원래 입고 있던 메시를 켜고 끄거나 색을 덮습니다.">
-          {meshes.length === 0 ? (
-            <Note>{frozenStatus3Text("studio.frozenStatus3.shaper.emptyNoOriginalCostume", "이 모델에는 이 부위로 분류된 원본 의상 메시가 없습니다.")}</Note>
-          ) : (
-            <>
-              {presentCostumeSlots.map((costumeSlot) => (
-                <div key={costumeSlot} role="group" aria-label={`${COSTUME_SLOT_LABELS[costumeSlot]} 색 덮기`} className="flex flex-wrap items-center gap-1">
-                  <span className="mr-1 text-[0.66rem] font-bold text-fg-3">{COSTUME_SLOT_LABELS[costumeSlot]}</span>
-                  {COSTUME_PALETTES.slice(0, 6).map((palette) => (
-                    <button
-                      key={palette.id}
-                      type="button"
-                      disabled={locked}
-                      aria-label={`${COSTUME_SLOT_LABELS[costumeSlot]} ${palette.label}으로 덮기`}
-                      title={`${palette.label} ${palette.color.toUpperCase()}`}
-                      onClick={() => h.recolorCostumeSlot(costumeSlot, palette.color)}
-                      className={cn(SWATCH_TONE, STUDIO_FOCUS_RING, "disabled:cursor-not-allowed disabled:opacity-45")}
-                    >
-                      <span
-                        aria-hidden
-                        className="size-7 rounded-md border border-line/60"
-                        style={{ backgroundColor: palette.color }}
-                      />
-                    </button>
-                  ))}
-                </div>
-              ))}
-              <ul className="space-y-1">
-                {meshes.map((entry) => {
-                  const hidden = hiddenKeys.includes(entry.key);
-                  return (
-                    <li key={entry.key}>
-                      <button
-                        type="button"
-                        aria-pressed={!hidden}
-                        disabled={locked}
-                        title={hidden ? `${entry.label} 다시 표시` : `${entry.label} 숨기기`}
-                        onClick={() => h.toggleCostumeMesh(entry.key)}
-                        className={cn(
-                          "flex w-full min-h-11 items-center gap-2 rounded-xl border px-2.5 text-left text-[0.7rem] font-semibold",
-                          "transition-colors disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
-                          STUDIO_FOCUS_RING,
-                          hidden
-                            ? "border-line bg-card text-fg-3"
-                            : "border-accent/45 bg-accent-soft/60 text-accent",
-                        )}
-                      >
-                        {hidden ? <EyeOff size={14} aria-hidden /> : <Eye size={14} aria-hidden />}
-                        <span className="min-w-0 flex-1 truncate">{entry.label}</span>
-                        <span className="shrink-0 text-[0.62rem] font-bold">{hidden ? "숨김" : "표시"}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </>
-          )}
-        </Section>
-      </>
-    );
-  };
+  const renderGarment = () => <CharacterShaperGarmentSection h={h} slot={slot} locked={locked} />;
 
   const renderAccessory = () => {
     const items: readonly PropInstance[] = Array.isArray(h.vrmPropItems) ? h.vrmPropItems : [];
@@ -496,65 +464,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
     );
   };
 
-  const renderPose = () => {
-    const bodyRotation = typeof h.bodyRotation === "number" ? h.bodyRotation : 0;
-    const degrees = Math.round((bodyRotation * 180) / Math.PI);
-    return (
-      <Section title="포즈 다듬기" hint="좌우 반전, 초기화, 몸 방향, 그리고 현재 포즈 저장.">
-        <div className="grid grid-cols-2 gap-1.5">
-          <button
-            type="button"
-            className={ROW_BUTTON}
-            disabled={locked}
-            onClick={() => {
-              if (binding.mirrorGradePose) binding.mirrorGradePose();
-              else h.handleMirrorPose("all");
-            }}
-          >
-            좌우 반전
-          </button>
-          <button type="button" className={ROW_BUTTON} disabled={locked} onClick={() => h.handleResetActivePose()}>
-            <RotateCcw size={13} aria-hidden />
-            포즈 초기화
-          </button>
-          <button
-            type="button"
-            className={ROW_BUTTON}
-            disabled={locked}
-            onClick={() => {
-              if (binding.mirrorGradePoseArms) binding.mirrorGradePoseArms();
-              else h.handleMirrorPose("arms");
-            }}
-          >
-            팔만 반전
-          </button>
-          <button type="button" className={ROW_BUTTON} disabled={locked} onClick={() => h.handleMirrorPose("legs")}>
-            다리만 반전
-          </button>
-        </div>
-        <label className="flex items-center gap-2 rounded-xl border border-line/80 bg-card/70 p-2.5 text-[0.72rem] font-bold text-fg-2">
-          <span className="w-16 shrink-0">몸 방향</span>
-          <input
-            type="range"
-            min="-180"
-            max="180"
-            step="1"
-            value={degrees}
-            disabled={locked}
-            aria-label="몸 방향"
-            aria-valuetext={`${degrees}도`}
-            className="h-11 min-w-0 flex-1 accent-accent disabled:cursor-not-allowed disabled:opacity-45"
-            onChange={h.handleBodyRotationChange}
-          />
-          <span className="w-10 shrink-0 text-right tabular-nums text-fg-3">{degrees}°</span>
-        </label>
-        <button type="button" className={cn(ROW_BUTTON, "w-full")} disabled={locked} onClick={() => h.handleSavePose()}>
-          <Check size={13} aria-hidden />
-          현재 포즈 저장
-        </button>
-      </Section>
-    );
-  };
+  const renderPose = () => <CharacterShaperPoseSection h={h} binding={binding} locked={locked} />;
 
   const renderHandPose = () => {
     const fingerEdits = (h.fingerEdits ?? {}) as Record<string, readonly number[] | undefined>;

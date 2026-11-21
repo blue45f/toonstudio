@@ -82,7 +82,7 @@ export function kitManifestV1View(manifest: KitManifestV2): KitManifest {
     materials: toV1Materials(manifest.materials),
     jointOffsets: manifest.jointOffsets,
     bases,
-    parts: manifest.parts.map(toV1Part),
+    parts: manifest.parts.filter((part) => isPresetId(part.id)).map(toV1Part),
     defaults: manifest.defaults,
     slotCapabilities: manifest.slotCapabilities,
     physics: manifest.physics,

@@ -32,9 +32,11 @@ export interface StudioVrmDisplayBudget {
   readonly coarse: boolean;
   /**
    * GPU 품질 등급. 생략하면 standard.
-   * low(소프트웨어 렌더링·극저사양)는 픽셀 예산과 DPR 상한을 낮춰 프레임 시간을 지킨다.
+   * MSAA 등 렌더러 비용 제어에 쓰며, Retina DPR 2 선명도는 데스크톱·일반 모바일(하드웨어/SwiftShader 포함)에서 유지한다.
    */
   readonly tier?: StudioVrmQualityTier;
+  /** 확정 저사양 모바일 기기 여부(메모리 <=1GB 또는 2코어 이하+4GB 이하). true일 때만 모바일 DPR 상한을 낮춘다. */
+  readonly lowEndMobile?: boolean;
 }
 
 /** 표시용 GPU 예산이다. PNG·PSD의 명시적인 출력 해상도는 변경하지 않는다. */
@@ -42,9 +44,9 @@ export function resolveStudioVrmDisplayDpr(input: StudioVrmDisplayBudget): numbe
   const { width, height, devicePixelRatio, coarse } = input;
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return 1;
   const deviceDpr = Number.isFinite(devicePixelRatio) && devicePixelRatio > 0 ? devicePixelRatio : 1;
-  const low = input.tier === "low";
-  const pixelBudget = low ? (coarse ? 700_000 : 900_000) : coarse ? 1_500_000 : 4_000_000;
-  const dprCap = low ? (coarse ? 1 : 1.25) : coarse ? 1.5 : 2;
+  const protectLowEndMobile = Boolean(coarse && input.lowEndMobile);
+  const pixelBudget = protectLowEndMobile ? 700_000 : coarse ? 1_500_000 : 4_000_000;
+  const dprCap = protectLowEndMobile ? 1 : 2;
   // 곱셈 오버플로와 제곱의 언더플로 없이 실제 픽셀 예산을 지킨다.
   const budgetDpr = Math.sqrt(pixelBudget) / Math.sqrt(width) / Math.sqrt(height);
   return Math.min(deviceDpr, dprCap, budgetDpr);

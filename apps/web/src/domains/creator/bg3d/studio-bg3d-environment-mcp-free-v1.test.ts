@@ -8,6 +8,7 @@ import mcpManifest from "../../../../public/assets/3d/environments/mcp-free-v1/m
 import { SAMPLE_BG3D_MODEL_ENTRIES } from "./bg3d-model-library";
 import {
   STUDIO_BG3D_ENVIRONMENT_ASSETS,
+  STUDIO_BG3D_ENVIRONMENT_ASSETS_HERO_V1,
   STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
   STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
   STUDIO_BG3D_CURRENT_PARK_AND_STREET_ENVIRONMENTS,
@@ -68,15 +69,16 @@ describe("Studio Tripo MCP free-wallet environment pack v1", () => {
     });
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1).toHaveLength(10);
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toEqual([
+      ...STUDIO_BG3D_ENVIRONMENT_ASSETS_HERO_V1,
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
       ...STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
       ...STUDIO_BG3D_CURRENT_PARK_AND_STREET_ENVIRONMENTS,
       ...STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
     ]);
-    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toHaveLength(35);
-    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id)).size).toBe(35);
-    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ sha256 }) => sha256)).size).toBe(35);
+    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toHaveLength(41);
+    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id)).size).toBe(41);
+    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ sha256 }) => sha256)).size).toBe(41);
     expect(SAMPLE_BG3D_MODEL_ENTRIES.map(({ id }) => id)).toEqual(
       STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id),
     );
@@ -88,8 +90,8 @@ describe("Studio Tripo MCP free-wallet environment pack v1", () => {
     const current = getStudioBg3dEnvironmentAsset("ts-bg3d-hangang_riverside_pavilion-v2");
     if (!original || !oldCc0 || !current) throw new Error("한강 쉼터의 세 판이 필요합니다.");
 
-    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS[30]).toBe(current);
-    expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS[30]).toBe(current);
+    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS[36]).toBe(current);
+    expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS[36]).toBe(current);
     expect(original.provenance.providerTaskId).toBe("dc0f0bda-cda2-47be-b636-ee7aea460ebb");
     expect(original.provenance.license).toBe("Tripo Terms of Service - Free User Output");
     expect(oldCc0.provenance.license).toBe("CC0-1.0");

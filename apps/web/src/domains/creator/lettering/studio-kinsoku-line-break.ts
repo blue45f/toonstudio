@@ -149,6 +149,126 @@ export function retreatToLegalBreak(
   return desiredIndex;
 }
 
+/**
+ * 공백 없는 긴 어절·문자열을 `maxWidth` 안에 맞게 자소 단위로 분할하면서,
+ * 매 분할 지점에서 `retreatToLegalBreak`(최대 4자 追い出し)를 호출해 행두·행말 금칙 위반을
+ * 사전에 방지한다. 결합 문자·ZWJ 이모지도 자소 군집으로 보존한다.
+ */
+export function breakWordWithKinsoku(
+  word: string,
+  maxWidth: number,
+  measureWidth: (text: string) => number,
+): string[] {
+  const graphemes = segmentGraphemes(word);
+  if (graphemes.length === 0) return [""];
+  const safeMaxWidth = Math.max(1, maxWidth);
+  const out: string[] = [];
+  let start = 0;
+
+  while (start < graphemes.length) {
+    let end = start + 1;
+    let candidate = graphemes[start]!;
+    while (end < graphemes.length) {
+      const nextCandidate = candidate + graphemes[end]!;
+      if (measureWidth(nextCandidate) > safeMaxWidth) break;
+      candidate = nextCandidate;
+      end += 1;
+    }
+
+    if (end < graphemes.length) {
+      const legalEnd = retreatToLegalBreak(graphemes, end, start + 1);
+      out.push(graphemes.slice(start, legalEnd).join(""));
+      start = legalEnd;
+    } else {
+      out.push(graphemes.slice(start, end).join(""));
+      start = end;
+    }
+  }
+
+  return out;
+}
+
+export interface KinsokuLineBoundaryAdjustment {
+  readonly line: string;
+  readonly carry: string;
+  readonly retreated: boolean;
+}
+
+/**
+ * 현재 줄(`currentLine`)과 다음 줄 첫 어절(`nextWord`) 사이의 줄바꿈이 금칙에 걸리면
+ * `retreatToLegalBreak`(최대 `KINSOKU_MAX_RETREAT` 자소)로 앞쪽 합법 지점까지 물려
+ * 행두·행말 금칙 위반을 사전에 방지한다.
+ *
+ * 한국어 `keep-all` 가독성을 위해 직전 어절 전체가 예산(`<= 4` 자소) 안에 들고 어절 앞
+ * 경계가 합법이면 어절을 쪼개지 않고 통째로 다음 줄로 보낸다.
+ */
+export function adjustLineBreakForKinsoku(
+  currentLine: string,
+  nextWord: string,
+): KinsokuLineBoundaryAdjustment {
+  if (!currentLine || !nextWord) {
+    return { line: currentLine, carry: nextWord, retreated: false };
+  }
+  const currentGraphemes = segmentGraphemes(currentLine);
+  const nextGraphemes = segmentGraphemes(nextWord);
+  if (currentGraphemes.length === 0 || nextGraphemes.length === 0) {
+    return { line: currentLine, carry: nextWord, retreated: false };
+  }
+
+  const before = currentGraphemes[currentGraphemes.length - 1];
+  const after = nextGraphemes[0];
+  if (isKinsokuBreakAllowed(before, after)) {
+    return { line: currentLine, carry: nextWord, retreated: false };
+  }
+
+  // 1) 직전 공백 뒤 어절 전체를 통째로 다음 줄로 보낼 수 있으면 어절 무결성을 우선 보존한다.
+  let lastSpaceIndex = -1;
+  for (let i = currentGraphemes.length - 1; i >= 0; i -= 1) {
+    if (currentGraphemes[i] === " ") {
+      lastSpaceIndex = i;
+      break;
+    }
+  }
+  if (lastSpaceIndex > 0) {
+    const trailingWordLen = currentGraphemes.length - (lastSpaceIndex + 1);
+    if (trailingWordLen > 0 && trailingWordLen <= KINSOKU_MAX_RETREAT) {
+      const head = currentGraphemes.slice(0, lastSpaceIndex).join("").trimEnd();
+      const headGraphemes = segmentGraphemes(head);
+      const carriedWord = currentGraphemes.slice(lastSpaceIndex + 1).join("");
+      const carriedFirst = segmentGraphemes(carriedWord)[0];
+      if (
+        headGraphemes.length > 0
+        && isKinsokuBreakAllowed(headGraphemes[headGraphemes.length - 1], carriedFirst)
+      ) {
+        return {
+          line: head,
+          carry: `${carriedWord} ${nextWord}`,
+          retreated: true,
+        };
+      }
+    }
+  }
+
+  // 2) 단일 어절이거나 마지막 어절이 예산을 넘으면 자소 단위로 최대 4자까지 물린다.
+  const combined = [...currentGraphemes, ...nextGraphemes];
+  const legalIndex = retreatToLegalBreak(combined, currentGraphemes.length, 1);
+  if (legalIndex >= currentGraphemes.length || legalIndex <= 0) {
+    return { line: currentLine, carry: nextWord, retreated: false };
+  }
+
+  const rawHead = currentGraphemes.slice(0, legalIndex).join("");
+  const trimmedHead = rawHead.trimEnd();
+  if (trimmedHead.length === 0) {
+    return { line: currentLine, carry: nextWord, retreated: false };
+  }
+  const pushedTail = currentGraphemes.slice(legalIndex).join("");
+  return {
+    line: trimmedHead,
+    carry: `${pushedTail} ${nextWord}`,
+    retreated: true,
+  };
+}
+
 // ── §4. 랙 균형 ───────────────────────────────────────────────────────────────
 
 /** 랙 균형 이진 탐색의 폭 해상도(px). 1px보다 잘게 나눠도 조판이 달라지지 않는다. */

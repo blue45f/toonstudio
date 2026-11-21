@@ -66,6 +66,7 @@ function toneMap<T>(value: (tone: StudioThreeRoomTone, index: number) => T): Ton
 const color = (value: `#${string}`) => Number.parseInt(value.slice(1), 16);
 
 export function studioThreeSurfaceRecipe(theme: VirtualThreeTheme, roomId?: string): StudioThreeSurfaceRecipe {
+  if (theme.kind === "hero-scene") return BASELINE;
   if (theme.kind === "preserved-baseline") {
     if (roomId?.startsWith("hq-")) return HQ_SURFACE;
     const office = studioThreePreservedOfficeSurface(roomId);

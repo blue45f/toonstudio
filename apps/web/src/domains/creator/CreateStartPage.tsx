@@ -198,7 +198,7 @@ export function CreateStartPage() {
               className="ink-frame ink-arrow flex min-h-11 flex-col justify-between rounded-[14px] border border-line bg-panel p-4 text-left transition-colors hover:border-line-strong hover:bg-raised"
             >
               <div>
-                <span className="inline-block font-mono text-[11px] font-medium tabular-nums text-fg-3">
+                <span className="inline-block font-mono text-xs font-medium tabular-nums text-fg-3">
                   {bt(mode.step, enMode?.step ?? mode.step)}
                 </span>
                 <p className="mt-1.5 text-sm font-semibold text-fg [word-break:keep-all]">{bt(mode.label, enMode?.label ?? mode.label)}</p>
@@ -261,7 +261,7 @@ export function CreateStartPage() {
           : activeSection === "topics" ? bt("이야기 주제 고르기", "Choose a story topic")
           : activeSection === "presets" ? bt("장르 프리셋 고르기", "Choose a genre preset")
           : activeSection === "continue" ? bt("이어서 작업", "Continue your work")
-          : bt("어떻게 시작할까요?", "How would you like to start?")}</h1>
+          : bt("새 웹툰·원고 시작", "Start a new webtoon or manuscript")}</h1>
         <span className="create-start-heading-ink" data-ink-enter="line" aria-hidden="true" />
         <p>{activeSection === "all"
           ? bt("지금 하고 싶은 것부터 선택하세요", "Choose what you would like to do now")
@@ -276,21 +276,6 @@ export function CreateStartPage() {
               className="create-start-choice ink-frame"
               data-ink-enter="panel"
               style={{ "--ink-i": 0, "--ink-radius": "16px" } as CSSProperties}
-              onPointerMove={(event) => {
-                if (event.pointerType !== "mouse") return;
-                const stage = event.currentTarget.querySelector<HTMLElement>("[data-tilt-stage]");
-                if (!stage) return;
-                const rect = event.currentTarget.getBoundingClientRect();
-                const nx = (event.clientX - rect.left) / Math.max(1, rect.width) - 0.5;
-                const ny = (event.clientY - rect.top) / Math.max(1, rect.height) - 0.5;
-                stage.style.setProperty("--tilt-rx", `${(-ny * 5).toFixed(2)}deg`);
-                stage.style.setProperty("--tilt-ry", `${(nx * 5).toFixed(2)}deg`);
-              }}
-              onPointerLeave={(event) => {
-                const stage = event.currentTarget.querySelector<HTMLElement>("[data-tilt-stage]");
-                stage?.style.setProperty("--tilt-rx", "0deg");
-                stage?.style.setProperty("--tilt-ry", "0deg");
-              }}
             >
               <div className="create-start-choice-copy">
                 <div className="create-start-choice-text">
@@ -308,7 +293,7 @@ export function CreateStartPage() {
                   <ArrowRight size={16} strokeWidth={1.7} aria-hidden />
                 </Link>
               </div>
-              <div data-tilt-stage="true" className="create-start-choice-media ink-cover ink-sheen ink-stage-tilt" aria-hidden="true">
+              <div className="create-start-choice-media ink-cover" aria-hidden="true">
                 <img
                   className="create-start-choice-art"
                   data-ink-enter="zoom"

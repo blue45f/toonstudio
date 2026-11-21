@@ -25,7 +25,12 @@
  */
 import type { AdjustmentLayer } from "ag-psd";
 
+import {
+  buildGradientMapLut,
+  type StudioGradientStop,
+} from "../drawing/studio-gradient-map";
 import type { StudioAdjustmentKind } from "../filter/studio-adjustment-effect-graph";
+import type { StudioAdjustmentLayerSpec } from "../layer/studio-adjustment-layer";
 
 /** StudioAdjustmentNode.parameters / 가져오기 변환 결과와 같은 값 유니온. */
 export type StudioPsdAdjustmentParameters = Readonly<
@@ -225,13 +230,19 @@ function convertGradientMap(
   parameters: StudioPsdAdjustmentParameters,
 ): Extract<AdjustmentLayer, { type: "gradient map" }> {
   const stopsValue = parameters.stops;
-  const colorStops: { color: { r: number; g: number; b: number }; location: number; midpoint: number }[] = [];
+  const rawStops: { color: { r: number; g: number; b: number }; location: number; midpoint: number }[] = [];
   if (typeof stopsValue === "string" && stopsValue.length > 0) {
     for (const entry of stopsValue.split(",")) {
       const stop = parseGradientStop(entry);
-      if (stop) colorStops.push(stop);
+      if (stop) rawStops.push(stop);
     }
   }
+  const useOklabResample =
+    parameters.interpolationSpace === "oklab" && rawStops.length >= 2;
+  const colorStops = useOklabResample
+    ? resampleGradientStopsInOklab(rawStops, 17)
+    : rawStops;
+
   const adjustment: Extract<AdjustmentLayer, { type: "gradient map" }> = {
     type: "gradient map",
     // 가져오기 변환은 노이즈 여부를 파라미터가 아니라 근사 메모로만 남기므로
@@ -244,6 +255,32 @@ function convertGradientMap(
   const dither = boolParam(parameters, "dither");
   if (dither !== undefined) adjustment.dither = dither;
   return adjustment;
+}
+
+/**
+ * OKLab 지각 균일 보간 그라데이션 맵을 Photoshop 네이티브 PSD 스톱(0..4096)으로
+ * 고밀도 재샘플링해 보색 구간의 회색 탁 현상을 방지한다.
+ */
+function resampleGradientStopsInOklab(
+  stops: readonly { color: { r: number; g: number; b: number }; location: number; midpoint: number }[],
+  sampleCount: number,
+): { color: { r: number; g: number; b: number }; location: number; midpoint: number }[] {
+  const scale = stops.some((stop) => stop.location > 1) ? 4096 : 1;
+  const studioStops: StudioGradientStop[] = stops.map((stop) => ({
+    position: Math.min(1, Math.max(0, stop.location / scale)),
+    color: [stop.color.r, stop.color.g, stop.color.b] as const,
+  }));
+  const count = Math.max(2, Math.min(32, Math.round(sampleCount)));
+  const lut = buildGradientMapLut(studioStops, count, { interpolationSpace: "oklab" });
+  const resampled: { color: { r: number; g: number; b: number }; location: number; midpoint: number }[] = [];
+  for (let i = 0; i < count; i += 1) {
+    resampled.push({
+      color: { r: lut[i * 3]!, g: lut[i * 3 + 1]!, b: lut[i * 3 + 2]! },
+      location: Math.round((i / (count - 1)) * 4096),
+      midpoint: 50,
+    });
+  }
+  return resampled;
 }
 
 function convertBrightnessContrast(
@@ -438,4 +475,177 @@ export function convertStudioAdjustmentToPsd(
           `알 수 없는 Studio 조정 종류(${kind})는 PSD 조정 레이어로 기록할 수 없습니다.`,
       };
   }
+}
+
+// ---------------------------------------------------------------------------
+// 비파괴 스택형 조정 레이어 PSD Descriptor 직렬화기 (Top 25 #12)
+// ---------------------------------------------------------------------------
+
+/** Photoshop 조정 레이어 4바이트 리소스/디스크립터 키 매핑. */
+export const PSD_ADJUSTMENT_DESCRIPTOR_TAGS: Readonly<
+  Partial<Record<StudioAdjustmentKind, string>>
+> = Object.freeze({
+  levels: "levl",
+  curves: "curv",
+  hsl: "hue2",
+  "color-balance": "blnc",
+  "channel-mixer": "mixr",
+  "gradient-map": "grdm",
+  "brightness-contrast": "brit",
+  exposure: "expA",
+  vibrance: "vibA",
+  invert: "nvrt",
+  posterize: "post",
+  threshold: "thrs",
+  "black-white": "blwh",
+  "photo-filter": "phfl",
+  "selective-color": "selc",
+  "color-lookup": "clrL",
+});
+
+export type StudioPsdAdjustmentDescriptorFidelity = "exact" | "oklab-resampled";
+
+export interface StudioPsdAdjustmentDescriptorExported {
+  readonly status: "exported";
+  readonly layerId: string;
+  readonly name: string;
+  readonly kind: StudioAdjustmentKind;
+  readonly descriptorTag: string;
+  readonly adjustment: AdjustmentLayer;
+  readonly clipping: boolean;
+  /** Photoshop 0..255 정수 불투명도 바이트. */
+  readonly opacityByte: number;
+  readonly blendMode: string;
+  readonly hidden: boolean;
+  readonly fidelity: StudioPsdAdjustmentDescriptorFidelity;
+  readonly notes: readonly string[];
+}
+
+export interface StudioPsdAdjustmentDescriptorUnsupported {
+  readonly status: "unsupported";
+  readonly layerId: string;
+  readonly name: string;
+  readonly kind: StudioAdjustmentKind;
+  readonly reason: string;
+}
+
+export type StudioPsdAdjustmentDescriptorResult =
+  | StudioPsdAdjustmentDescriptorExported
+  | StudioPsdAdjustmentDescriptorUnsupported;
+
+export interface StudioPsdAdjustmentStackExportBundle {
+  /** PSD 패널 순서(위→아래)로 정렬된 비파괴 조정 디스크립터 목록. */
+  readonly descriptors: readonly StudioPsdAdjustmentDescriptorExported[];
+  readonly skipped: readonly StudioPsdAdjustmentDescriptorUnsupported[];
+  readonly stats: {
+    readonly total: number;
+    readonly exportedCount: number;
+    readonly oklabResampledCount: number;
+    readonly skippedCount: number;
+  };
+}
+
+function byteHex2(value: number): string {
+  return Math.min(255, Math.max(0, Math.round(value)))
+    .toString(16)
+    .padStart(2, "0");
+}
+
+/** Studio RGB 그라데이션 스톱 목록을 PSD 파라미터 문자열(`location:#rrggbb:50`)로 인코딩한다. */
+export function encodeGradientStopsForPsdParameter(
+  stops: readonly StudioGradientStop[],
+): string {
+  const prefix = String.fromCharCode(35);
+  return [...stops]
+    .sort((a, b) => a.position - b.position)
+    .map((stop) => {
+      const location = Math.round(Math.min(1, Math.max(0, stop.position)) * 4096);
+      const color = `${prefix}${byteHex2(stop.color[0])}${byteHex2(stop.color[1])}${byteHex2(stop.color[2])}`;
+      return `${location}:${color}:50`;
+    })
+    .join(",");
+}
+
+/**
+ * 1급 스택형 `StudioAdjustmentLayerSpec` 1건을 래스터화 없는 PSD 네이티브 디스크립터로 직렬화한다.
+ */
+export function serializeAdjustmentLayerPsdDescriptor(
+  spec: StudioAdjustmentLayerSpec,
+): StudioPsdAdjustmentDescriptorResult {
+  const converted = convertStudioAdjustmentToPsd(spec.adjustment, spec.parameters);
+  if (converted.status !== "converted") {
+    return {
+      status: "unsupported",
+      layerId: spec.id,
+      name: spec.name,
+      kind: spec.adjustment,
+      reason: converted.reason,
+    };
+  }
+
+  const descriptorTag = PSD_ADJUSTMENT_DESCRIPTOR_TAGS[spec.adjustment] ?? "adjL";
+  const isOklabResampled =
+    spec.adjustment === "gradient-map" &&
+    spec.parameters.interpolationSpace === "oklab" &&
+    converted.adjustment.type === "gradient map" &&
+    (converted.adjustment.colorStops?.length ?? 0) >= 2;
+
+  const notes: string[] = [];
+  if (isOklabResampled) {
+    notes.push(
+      "OKLab 지각 균일 보간 그라데이션 맵을 17스톱 고밀도 PSD 스톱으로 재샘플링해 색감 왜곡을 최소화했습니다.",
+    );
+  }
+
+  const clampedOpacity = Number.isFinite(spec.opacity)
+    ? Math.min(1, Math.max(0, spec.opacity))
+    : 1;
+
+  return {
+    status: "exported",
+    layerId: spec.id,
+    name: spec.name,
+    kind: spec.adjustment,
+    descriptorTag,
+    adjustment: converted.adjustment,
+    clipping: spec.clipToBelow,
+    opacityByte: Math.round(clampedOpacity * 255),
+    blendMode: spec.blendMode || "source-over",
+    hidden: !spec.enabled,
+    fidelity: isOklabResampled ? "oklab-resampled" : "exact",
+    notes,
+  };
+}
+
+/**
+ * Studio 스택 순서(아래→위)의 조정 레이어 목록을 PSD 패널 순서(위→아래)의 비파괴 디스크립터 번들로 직렬화한다.
+ */
+export function serializeAdjustmentStackToPsdDescriptors(
+  specsBottomToTop: readonly StudioAdjustmentLayerSpec[],
+): StudioPsdAdjustmentStackExportBundle {
+  const descriptors: StudioPsdAdjustmentDescriptorExported[] = [];
+  const skipped: StudioPsdAdjustmentDescriptorUnsupported[] = [];
+  let oklabResampledCount = 0;
+
+  for (let i = specsBottomToTop.length - 1; i >= 0; i -= 1) {
+    const spec = specsBottomToTop[i]!;
+    const result = serializeAdjustmentLayerPsdDescriptor(spec);
+    if (result.status === "exported") {
+      descriptors.push(result);
+      if (result.fidelity === "oklab-resampled") oklabResampledCount += 1;
+    } else {
+      skipped.push(result);
+    }
+  }
+
+  return {
+    descriptors,
+    skipped,
+    stats: {
+      total: specsBottomToTop.length,
+      exportedCount: descriptors.length,
+      oklabResampledCount,
+      skippedCount: skipped.length,
+    },
+  };
 }

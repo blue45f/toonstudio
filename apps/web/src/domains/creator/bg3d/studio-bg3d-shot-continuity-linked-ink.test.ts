@@ -4,6 +4,7 @@ import {
   evaluateLinkedInkBridgeReliability,
   evaluateShotOverrideContinuity,
   evaluateVerifyAiPreflightGates,
+  measureLinkedInkBvhBridgeInput,
   recommendBlenderCutArchetypePreset,
 } from "./studio-bg3d-shot-continuity-linked-ink";
 
@@ -91,5 +92,24 @@ describe("studio-bg3d-shot-continuity-linked-ink", () => {
     expect(report.metrics).toHaveLength(10);
     expect(report.totalGateScore).toBeGreaterThanOrEqual(90);
     expect(report.summaryBadgeKo).toContain("Preflight Hard Gate PASS");
+  });
+
+  it("normalizes PRS across 3 axes and measures BVH barycentric Linked Ink telemetry cleanly", () => {
+    const cleanPrs = recommendBlenderCutArchetypePreset("action-impact", 3.2, 0.0012);
+    expect(cleanPrs.presetRecommendationScore).toBeGreaterThanOrEqual(99.5);
+
+    const degradedPrs = recommendBlenderCutArchetypePreset("action-impact", 1.2, 0.14, {
+      activeFocalLengthMm: 120,
+      activeCameraTiltDeg: -20,
+      activeLightingRigId: "other-rig",
+    });
+    expect(degradedPrs.presetRecommendationScore).toBeLessThan(80);
+
+    const bvhInput = measureLinkedInkBvhBridgeInput();
+    const bvhBri = evaluateLinkedInkBridgeReliability(bvhInput);
+    expect(bvhInput.meanReprojectionErrorPx).toBeLessThanOrEqual(0.1);
+    expect(bvhInput.hiddenLineOcclusionLeakRatio).toBeLessThanOrEqual(0.0002);
+    expect(bvhInput.syncLatencyMs).toBeLessThanOrEqual(8);
+    expect(bvhBri.bridgeReliabilityIndex).toBeGreaterThanOrEqual(99.2);
   });
 });

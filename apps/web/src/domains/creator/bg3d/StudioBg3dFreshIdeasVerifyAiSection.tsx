@@ -82,6 +82,17 @@ const GENRE_LOCK_OPTIONS: readonly {
   { id: "action-impact-lock", labelKo: "액션 2.8px 락인" },
 ]);
 
+export interface StudioBg3dCrossLabsLiveTelemetry {
+  readonly lightingContrastRatio: number;
+  readonly freestyleAverageThicknessPx: number;
+  readonly characterOverallScore100?: number;
+  readonly characterTurnaroundScore100?: number;
+  readonly characterFaceSdfScore100?: number;
+  readonly characterOutlineWidthMm?: number;
+  readonly brushOverallScore100?: number;
+  readonly brushTaperSharpness100?: number;
+}
+
 export interface StudioBg3dFreshIdeasVerifyAiSectionProps {
   readonly disabled?: boolean;
   readonly verifyAiReport: BlenderSceneVerifyAiReport;
@@ -98,6 +109,7 @@ export interface StudioBg3dFreshIdeasVerifyAiSectionProps {
   readonly liveSyncBridge: BlenderLiveSceneSyncBridge;
   readonly genreLockReport: GenreLockGuardrailEvaluation;
   readonly sceneIsolationReport: BlenderSceneIsolationGuardReport;
+  readonly crossLabsLiveTelemetry?: StudioBg3dCrossLabsLiveTelemetry;
   readonly bg3dAdoptionRatioPct: number;
   readonly avgRevisionsPerEpisode: number;
   readonly lookDevGateConfirmed: boolean;
@@ -137,6 +149,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
   liveSyncBridge,
   genreLockReport,
   sceneIsolationReport,
+  crossLabsLiveTelemetry,
   bg3dAdoptionRatioPct,
   avgRevisionsPerEpisode,
   lookDevGateConfirmed,
@@ -159,20 +172,26 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
   onVerifyAiGate,
   onStatusChange,
 }: StudioBg3dFreshIdeasVerifyAiSectionProps) {
+  const v06Score = preflightReport.metrics.find((m) => m.id === "V06_FACIAL_SHADOW")?.score ?? 99.5;
   const crossLabsReport = evaluateCrossLabsUnifiedProductionBridge({
     bg3dOverallScore100: verifyAiReport.evaluation.overallScore,
     bg3dPreflightScore100: preflightReport.totalGateScore,
-    bg3dContrastRatio: 2.45,
+    bg3dContrastRatio: crossLabsLiveTelemetry?.lightingContrastRatio ?? 3.2,
     bg3dSafeZoneScore100: scrollPacingPlan.speechBubbleSafeZoneScore,
-    characterOverallScore100: 96.9,
-    characterTurnaroundScore100: 96.4,
-    characterFaceSdfScore100: 99.5,
-    characterOutlineWidthMm: 3.5,
-    brushOverallScore100: 97.3,
-    brushTaperSharpness100: 97.4,
+    characterOverallScore100:
+      crossLabsLiveTelemetry?.characterOverallScore100 ?? verifyAiReport.evaluation.dimensionScores.characterIdentity,
+    characterTurnaroundScore100:
+      crossLabsLiveTelemetry?.characterTurnaroundScore100 ?? verifyAiReport.evaluation.dimensionScores.characterIdentity,
+    characterFaceSdfScore100: crossLabsLiveTelemetry?.characterFaceSdfScore100 ?? v06Score,
+    characterOutlineWidthMm: crossLabsLiveTelemetry?.characterOutlineWidthMm ?? 4.0,
+    brushOverallScore100:
+      crossLabsLiveTelemetry?.brushOverallScore100 ?? verifyAiReport.evaluation.dimensionScores.editability,
+    brushTaperSharpness100:
+      crossLabsLiveTelemetry?.brushTaperSharpness100 ?? verifyAiReport.evaluation.dimensionScores.editability,
     brushLinkedInkStability100: preflightReport.linkedInkBridge.bridgeReliabilityIndex,
-    brushAverageStrokePx: 4.48,
+    brushAverageStrokePx: crossLabsLiveTelemetry?.freestyleAverageThicknessPx ?? 4.48,
     rightsBomScore100: rightsBomAudit.commercialPublishAllowed ? 100 : 0,
+    autoCalibrateStrokeRatio: true,
   });
 
   const lookDevSteps: readonly {

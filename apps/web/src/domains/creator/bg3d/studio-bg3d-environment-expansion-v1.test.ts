@@ -10,6 +10,7 @@ import {
   STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
   STUDIO_BG3D_ENVIRONMENT_ASSETS,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1,
+  STUDIO_BG3D_ENVIRONMENT_ASSETS_HERO_V1,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
   STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
   STUDIO_BG3D_CURRENT_PARK_AND_STREET_ENVIRONMENTS,
@@ -31,15 +32,16 @@ describe("Studio original environment expansion v1", () => {
   it("adds six distinct places without replacing refined or historical scene identities", () => {
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1).toHaveLength(6);
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toEqual([
+      ...STUDIO_BG3D_ENVIRONMENT_ASSETS_HERO_V1,
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
       ...STUDIO_BG3D_CURRENT_EXPANSION_ENVIRONMENTS,
       ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
       ...STUDIO_BG3D_CURRENT_PARK_AND_STREET_ENVIRONMENTS,
       ...STUDIO_BG3D_BOTANICAL_SEASIDE_SETS,
     ]);
-    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toHaveLength(35);
-    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id)).size).toBe(35);
-    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ sha256 }) => sha256)).size).toBe(35);
+    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS).toHaveLength(41);
+    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id)).size).toBe(41);
+    expect(new Set(STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ sha256 }) => sha256)).size).toBe(41);
     expect(SAMPLE_BG3D_MODEL_ENTRIES.map(({ id }) => id)).toEqual(
       STUDIO_BG3D_ENVIRONMENT_ASSETS.map(({ id }) => id),
     );

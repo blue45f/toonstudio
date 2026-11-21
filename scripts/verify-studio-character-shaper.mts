@@ -493,6 +493,30 @@ async function main(): Promise<void> {
     await selectCategory(page, "pose", "pose");
     await page.screenshot({ path: join(OUT_DIR, "character-desktop-pose.png") });
 
+    // SHAPER 3차 MatCap 음영 슬라이더가 실제 Three.js MToon 뷰포트 픽셀을 바꾸는지 검증
+    await selectCategory(page, "face", "face-shape");
+    const precisionButton = page.locator(DIALOG).getByRole("button", { name: "정밀 조절" }).first();
+    if (await precisionButton.isVisible().catch(() => false)
+      && (await precisionButton.getAttribute("aria-expanded")) === "false") {
+      await precisionButton.click();
+    }
+    const matcapSlider = page.locator(`${DIALOG} [data-testid="shaper-inspector-material-section"] input[aria-label="MatCap 음영 경계"]`);
+    if (await matcapSlider.isVisible().catch(() => false)) {
+      const beforeMatcap = await viewportStats(page);
+      await matcapSlider.fill("0.88");
+      await matcapSlider.dispatchEvent("change");
+      await page.waitForTimeout(800);
+      const afterMatcap = await viewportStats(page);
+      const matcapDelta = peakTileDelta(beforeMatcap, afterMatcap);
+      evidence.matcapSliderPeakTileDelta = matcapDelta;
+      invariant(matcapDelta > 0.25, `MatCap 음영 경계 슬라이더가 뷰포트 픽셀을 변경하지 못했습니다 (delta ${matcapDelta.toFixed(3)})`);
+      const resetMatcap = page.locator(`${DIALOG} button[aria-label="MatCap 재질 초기화"]`);
+      if (await resetMatcap.isVisible().catch(() => false)) {
+        await resetMatcap.click();
+        await page.waitForTimeout(400);
+      }
+    }
+
     const nameGaps = await accessibleNameGaps(page);
     evidence.accessibleNameGaps = nameGaps;
     invariant(nameGaps.length === 0, `character controls have no accessible name: ${nameGaps.join(", ")}`);
@@ -673,6 +697,7 @@ async function main(): Promise<void> {
     `PSD editable layers do not recompose to the PNG: ${JSON.stringify(stackComposition)}`);
     invariant(layerNames.length >= 8, `PSD has too few layers: ${layerNames.join(", ")}`);
     invariant(rasterLayers.length >= 5 && rasterLayers.every((layer) => layer.visiblePixels > 0), "PSD contains missing or empty raster layers");
+    evidence.psdSurfacePaintPresent = layerNames.some((name) => /드로잉|surface-paint/iu.test(name));
     invariant(psdWorkerUrls.length === 1, "PSD export did not execute exactly one dedicated assembly Worker");
     invariant(await pngButton.isEnabled(), "export did not release the editor capture lock");
 

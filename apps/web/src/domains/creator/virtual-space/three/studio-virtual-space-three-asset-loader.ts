@@ -68,7 +68,7 @@ export function disposeStudioThreeOwnedModel(root: THREE.Object3D): void {
 
 /** 전송 최적화된 실제 GLB·PBR 텍스처·스키닝과 내장 모션을 보존하며 장면에 배치한다. */
 export function loadStudioThreeModelProps(
-  scene: THREE.Scene,
+  scene: THREE.Object3D,
   loader: GLTFLoader,
   props: readonly StudioThreeModelProp[],
   isDisposed: () => boolean,

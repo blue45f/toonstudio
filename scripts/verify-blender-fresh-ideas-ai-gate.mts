@@ -16,15 +16,16 @@ import {
   type BlenderSceneVerifyAiSynthesisInput,
 } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-fresh-ideas-verify-ai";
 import {
-  buildVerifyAiAutoRemediationPlan,
+  applyVerifyAiAutoRemediation,
   evaluateMultiPassToonPsdExportPlan,
   evaluateRightsBomCommercialReadiness,
 } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-multipass-rights-remediation";
 import {
   buildBlenderLiveSceneSyncBridge,
+  evaluateBlenderSceneIsolationGuard,
   evaluateVerticalScrollCutPacing,
 } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-scroll-pacing-live-sync";
-import { evaluateVerifyAiPreflightGates } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-shot-continuity-linked-ink";
+import { evaluateGenreLockGuardrail } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-shot-continuity-linked-ink";
 import { expandLensToChannelDraft } from "../apps/web/src/domains/creator/fresh-ideas/fresh-ideas-channels-localization";
 import { FRESH_IDEAS_100_CAPABILITIES } from "../apps/web/src/domains/creator/fresh-ideas/fresh-ideas-contracts";
 import {
@@ -69,61 +70,87 @@ const monsterPreset = BLENDER_FANTASY_MONSTER_PRESETS[0]!;
 const crowdPreset = BLENDER_FANTASY_CROWD_PRESETS[2]!;
 
 const lightingEval = evaluateBlenderFantasyLightingRig(lightingPreset);
-
-const input: BlenderSceneVerifyAiSynthesisInput = {
-  lightingPreset,
-  lightingEval,
-  shaderPreset,
-  shaderEval: evaluateBlenderNprShaderTree(shaderPreset, {
-    normal: [0.65, 0.35, 0.67],
-    lightDir: [0.3, 0.6, 0.74],
-    viewDir: [0, 0.1, 0.99],
-    edgeCurvature: 0.75,
-    cavityOcclusion: 0.2,
-  }),
-  freestylePreset,
-  freestyleEval: evaluateFreestyleViewMapStrokes(
-    freestylePreset,
-    DEFAULT_FREESTYLE_SAMPLE_EDGES,
-  ),
-  weaponPreset,
-  weaponEval: solveBlenderWeaponConstraintRig({
-    preset: weaponPreset,
-    socketSlot: "floating-halo-orbit",
-    childOfInfluence: 0.25,
-    awakeningFactor: 0.85,
-    orbitPhase: 0.15,
-  }),
-  monsterPreset,
-  monsterEval: solveBlenderItascMultiLimbMonsterIk(
-    monsterPreset,
-    "roar-intimidation",
-    0,
-  ),
-  crowdPreset,
-  crowdEval: simulateBlenderGeometryNodesBoidCrowd(crowdPreset, 180, 1.0),
-};
-
-const result = evaluateBlenderSceneWithVerifyAi(input);
-const preflight = evaluateVerifyAiPreflightGates({
-  archetypeId: "action-impact",
-  artisticOverride: false,
-  contrastRatio: lightingEval.contrastRatio,
+const shaderEval = evaluateBlenderNprShaderTree(shaderPreset, {
+  normal: [0.65, 0.35, 0.67],
+  lightDir: [0.3, 0.6, 0.74],
+  viewDir: [0, 0.1, 0.99],
+  edgeCurvature: 0.75,
+  cavityOcclusion: 0.2,
 });
+const freestyleEval = evaluateFreestyleViewMapStrokes(
+  freestylePreset,
+  DEFAULT_FREESTYLE_SAMPLE_EDGES,
+);
+const weaponEval = solveBlenderWeaponConstraintRig({
+  preset: weaponPreset,
+  socketSlot: "floating-halo-orbit",
+  childOfInfluence: 0.25,
+  awakeningFactor: 0.85,
+  orbitPhase: 0.15,
+});
+const monsterEval = solveBlenderItascMultiLimbMonsterIk(
+  monsterPreset,
+  "roar-intimidation",
+  0,
+);
+const crowdEval = simulateBlenderGeometryNodesBoidCrowd(crowdPreset, 180, 1.0);
+
+const remediationExec = applyVerifyAiAutoRemediation(
+  {
+    archetypeId: "action-impact",
+    artisticOverride: false,
+    contrastRatio: lightingEval.contrastRatio,
+  },
+  8500,
+);
+const preflight = remediationExec.preflightAfter;
+const autoRemediation = remediationExec.plan;
+
 const multiPassPlan = evaluateMultiPassToonPsdExportPlan({
   qualityTier: "final",
   webgpuComputeAvailable: true,
 });
 const rightsBomAudit = evaluateRightsBomCommercialReadiness();
-const autoRemediation = buildVerifyAiAutoRemediationPlan(preflight, 5600);
+const sceneIsolationReport = evaluateBlenderSceneIsolationGuard();
+const genreLockReport = evaluateGenreLockGuardrail({
+  lockMode: "action-impact-lock",
+  activeLineThicknessPx: freestylePreset.baseThicknessPx,
+  activeKelvin: lightingPreset.lights[0]?.temperatureKelvin ?? 8500,
+  activeDispersion: shaderEval.dispersionRgbShift[2],
+});
 const scrollPacing = evaluateVerticalScrollCutPacing({
   archetypeId: "action-impact",
   lensId: "contrarian-take",
   cameraTiltDeg: preflight.archetypeRecommendation.recommendedCameraTiltDeg,
   silhouetteSeparationRatio:
     preflight.archetypeRecommendation.silhouetteSeparationRatio,
-  activeWeaponCount: input.weaponEval.blades.length,
+  activeWeaponCount: weaponEval.blades.length,
+  weaponPositions3d: weaponEval.blades.map((b) => b.position),
+  avoidSafeZoneOrbit: true,
 });
+
+const input: BlenderSceneVerifyAiSynthesisInput = {
+  lightingPreset,
+  lightingEval,
+  shaderPreset,
+  shaderEval,
+  freestylePreset,
+  freestyleEval,
+  weaponPreset,
+  weaponEval,
+  monsterPreset,
+  monsterEval,
+  crowdPreset,
+  crowdEval,
+  preflightReport: preflight,
+  multiPassPlan,
+  rightsBomAudit,
+  scrollPacingPlan: scrollPacing,
+  sceneIsolationReport,
+  genreLockReport,
+};
+
+const result = evaluateBlenderSceneWithVerifyAi(input);
 const liveSyncBridge = buildBlenderLiveSceneSyncBridge({
   lightingPresetId: lightingPreset.id,
   shaderPresetId: shaderPreset.id,

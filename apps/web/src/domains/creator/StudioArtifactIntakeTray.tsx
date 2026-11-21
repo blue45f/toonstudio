@@ -99,17 +99,17 @@ export function StudioArtifactIntakeTray(
   const targetPage = pages.find((page) => page.id === targetPageId) ?? pages[0];
 
   return (
-    <section aria-label="가져오기 트레이" className="flex flex-col gap-3 p-3 text-white">
-      <header className="flex items-center gap-2">
-        <Inbox size={16} aria-hidden />
-        <h3 className="text-sm font-semibold">가져오기</h3>
-        <span className="text-xs text-white/60">
+    <section aria-label="가져오기 트레이" className="flex flex-col gap-3 p-3 text-fg">
+      <header className="flex flex-wrap items-center gap-2">
+        <Inbox size={16} className="text-accent" aria-hidden />
+        <h3 className="text-sm font-semibold text-fg">가져오기</h3>
+        <span className="text-xs tabular-nums text-fg-3">
           전체 {counts.total} · 미사용 {counts.unused}
         </span>
         {props.onDiscardArtifacts && pruneCandidates.length > 0 ? (
           <button
             type="button"
-            className="ml-auto rounded-md border border-white/15 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+            className="ml-auto inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             onClick={() => props.onDiscardArtifacts?.(pruneCandidates)}
           >
             오래된 미사용 {pruneCandidates.length}개 정리
@@ -117,16 +117,16 @@ export function StudioArtifactIntakeTray(
         ) : null}
       </header>
 
-      <p className="text-xs leading-relaxed text-white/60">
+      <p className="text-xs leading-relaxed text-fg-2">
         기획·3D·생성 모드에서 만든 산출물이 여기에 쌓여요. 골라서 컷에 배치하세요.
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-1 text-xs text-white/70">
+        <label className="flex items-center gap-1.5 text-xs font-medium text-fg-2">
           대상 컷
           <select
             aria-label="대상 컷"
-            className="rounded-md border border-white/15 bg-black/40 px-2 py-1 text-xs text-white"
+            className="min-h-11 rounded-lg border border-line bg-card px-2.5 text-xs text-fg outline-none focus:border-accent"
             value={targetPage?.id ?? ""}
             onChange={(event) => setTargetPageId(event.target.value)}
           >
@@ -141,31 +141,32 @@ export function StudioArtifactIntakeTray(
           type="search"
           aria-label="산출물 검색"
           placeholder="제목·내용 검색"
-          className="min-w-0 flex-1 rounded-md border border-white/15 bg-black/40 px-2 py-1 text-xs text-white placeholder:text-white/40"
+          className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-card px-3 text-xs text-fg outline-none placeholder:text-fg-3 focus:border-accent"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-        <label className="flex items-center gap-1 text-xs text-white/70">
+        <label className="flex min-h-11 items-center gap-1.5 text-xs font-medium text-fg-2">
           <input
             type="checkbox"
             checked={unusedOnly}
             onChange={(event) => setUnusedOnly(event.target.checked)}
+            className="size-4 accent-accent"
           />
           미사용만
         </label>
       </div>
 
-      <div className="flex flex-wrap gap-1" role="group" aria-label="출처 필터">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="출처 필터">
         {SOURCE_FILTERS.map((source) => (
           <button
             key={source}
             type="button"
             aria-pressed={sourceFilter === source}
             className={cn(
-              "rounded-full border px-2 py-0.5 text-xs",
+              "inline-flex min-h-11 items-center rounded-lg border px-3 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
               sourceFilter === source
-                ? "border-white/60 bg-white/15 text-white"
-                : "border-white/15 text-white/60 hover:bg-white/10",
+                ? "border-accent/45 bg-accent-soft text-fg shadow-[inset_2px_0_0_var(--color-accent)]"
+                : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
             )}
             onClick={() => setSourceFilter(source)}
           >
@@ -175,11 +176,11 @@ export function StudioArtifactIntakeTray(
       </div>
 
       {tray.items.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-white/15 px-3 py-6 text-center text-xs text-white/50">
+        <p className="rounded-lg border border-dashed border-line bg-card/40 px-3 py-6 text-center text-xs text-fg-3">
           {r4CreatorStatusText("r4cat1.creator.artifactTray.empty", "아직 들어온 산출물이 없어요. 기획에서 초안을 쓰거나, 3D 캡처·이미지 생성을 하면 여기에 자동으로 쌓입니다.")}
         </p>
       ) : visibleItems.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-white/15 px-3 py-6 text-center text-xs text-white/50">
+        <p className="rounded-lg border border-dashed border-line bg-card/40 px-3 py-6 text-center text-xs text-fg-3">
           {r3c07StatusText("studio.panelStatus.r3c07.artifactIntake.filterEmpty", "조건에 맞는 산출물이 없어요. 필터를 바꾸거나 검색어를 지워 보세요.")}
         </p>
       ) : (
@@ -213,9 +214,14 @@ function ArtifactIntakeTrayCard(props: {
   const SourceIcon = SOURCE_ICONS[item.source];
   const placedOnTarget = targetPage ? isArtifactPlacedOn(item, targetPage.id) : false;
   const placement = targetPage ? buildArtifactCutPlacement(item, targetPage.id) : null;
+  const placeUnavailableReason = !placement
+    ? "배치할 대상 컷이 없습니다."
+    : placedOnTarget
+      ? "이미 선택한 컷에 배치된 산출물입니다."
+      : undefined;
 
   return (
-    <li className="flex gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-2">
+    <li className="flex gap-3 rounded-lg border border-line bg-card p-2.5">
       {item.kind === "image" && item.previewSrc ? (
         <img
           src={item.previewSrc}
@@ -223,7 +229,7 @@ function ArtifactIntakeTrayCard(props: {
           className="h-14 w-14 shrink-0 rounded-md object-cover"
         />
       ) : (
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-white/5 text-white/50">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md border border-line bg-panel text-fg-3">
           {item.kind === "image" ? (
             <ImageIcon size={20} aria-hidden />
           ) : (
@@ -232,37 +238,37 @@ function ArtifactIntakeTrayCard(props: {
         </span>
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex items-center gap-1.5">
-          <SourceIcon size={13} aria-hidden />
-          <span className="text-[11px] text-white/60">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <SourceIcon size={13} className="text-fg-3" aria-hidden />
+          <span className="text-xs text-fg-2">
             {ARTIFACT_INTAKE_SOURCE_LABELS[item.source]}
           </span>
-          <span className="text-[11px] text-white/40">{item.createdAt.slice(0, 10)}</span>
+          <span className="text-xs tabular-nums text-fg-3">{item.createdAt.slice(0, 10)}</span>
           {isArtifactUnused(item) ? (
-            <span className="rounded-full bg-amber-400/15 px-1.5 py-px text-[11px] text-amber-200">
+            <span className="rounded-md border border-warn/35 bg-warn/12 px-1.5 py-0.5 text-xs font-medium text-warn">
               미사용
             </span>
           ) : null}
         </div>
-        <p className="truncate text-sm font-medium" title={item.title}>
+        <p className="truncate text-sm font-medium text-fg" title={item.title}>
           {item.title}
         </p>
         {item.kind === "text" && item.text ? (
-          <p className="line-clamp-2 text-xs text-white/60">{item.text}</p>
+          <p className="line-clamp-2 text-xs text-fg-2">{item.text}</p>
         ) : null}
         {item.placedPageIds.length > 0 ? (
           <div className="flex flex-wrap items-center gap-1">
             {item.placedPageIds.map((pageId) => (
               <span
                 key={pageId}
-                className="rounded-full bg-emerald-400/15 px-1.5 py-px text-[11px] text-emerald-200"
+                className="inline-flex items-center gap-1 rounded-md border border-good/35 bg-good/12 px-2 py-0.5 text-xs font-medium text-good"
               >
                 {props.pageLabelById.get(pageId) ?? pageId}에 배치됨
                 {props.onRemovePlacement ? (
                   <button
                     type="button"
                     aria-label={`${item.title}의 ${props.pageLabelById.get(pageId) ?? pageId} 배치 취소`}
-                    className="ml-1 text-emerald-100/70 hover:text-emerald-50"
+                    className="inline-flex min-h-7 min-w-7 items-center justify-center rounded text-good/80 hover:bg-good/15 hover:text-good"
                     onClick={() => props.onRemovePlacement?.(item.id, pageId)}
                   >
                     ×
@@ -272,11 +278,13 @@ function ArtifactIntakeTrayCard(props: {
             ))}
           </div>
         ) : null}
-        <div className="mt-auto flex gap-1.5 pt-1">
+        <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
           <button
             type="button"
             disabled={!placement || placedOnTarget}
-            className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-black disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/50"
+            title={placeUnavailableReason}
+            data-unavailable-reason={placeUnavailableReason}
+            className="inline-flex min-h-11 items-center rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-raised disabled:text-fg-3"
             onClick={() => {
               if (placement) props.onPlaceArtifact(placement);
             }}
@@ -291,7 +299,7 @@ function ArtifactIntakeTrayCard(props: {
             <button
               type="button"
               aria-label={`${item.title} 버리기`}
-              className="flex items-center gap-1 rounded-md border border-white/15 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
+              className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-panel px-3 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
               onClick={() => props.onDiscardArtifacts?.([item.id])}
             >
               <Trash2 size={12} aria-hidden />

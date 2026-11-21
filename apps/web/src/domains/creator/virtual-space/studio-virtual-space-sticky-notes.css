@@ -103,9 +103,9 @@
 }
 
 .studio-sticky-notes-add {
-  border: 0;
-  background: linear-gradient(135deg, #f59e0b, #ef4444);
-  color: #fff;
+  border: 1px solid color-mix(in srgb, var(--color-accent, #7c3aed) 75%, transparent);
+  background: var(--color-accent, #7c3aed);
+  color: var(--color-on-accent, #fff);
   box-shadow: var(--sn-shadow);
 }
 
@@ -360,12 +360,13 @@
   gap: 0.4rem;
   margin-top: 0.25rem;
   padding: 0.55rem 1.1rem;
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--color-accent, #7c3aed) 75%, transparent);
   border-radius: 0.75rem;
-  background: linear-gradient(135deg, #f59e0b, #ef4444);
-  color: #fff;
+  background: var(--color-accent, #7c3aed);
+  color: var(--color-on-accent, #fff);
   font-size: 0.86rem;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
   box-shadow: var(--sn-shadow);
   transition: transform 0.18s ease, filter 0.18s ease;

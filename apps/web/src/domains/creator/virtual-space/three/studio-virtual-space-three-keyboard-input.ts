@@ -2,11 +2,24 @@ import { bindStudioSpaceTextEntryMovementStop, isStudioSpaceTextEntryTarget } fr
 import { STUDIO_INTERACT_KEY_CODES } from "../studio-virtual-space-interact-prompt";
 import { studioWorldMayTakeFocus, WORLD_KEY_CODES } from "../studio-virtual-space-phaser-canvas-model";
 import { isStudioThreeCameraOrbitKey } from "./studio-virtual-space-three-motion";
+import type { StudioThreeCameraMode } from "./studio-virtual-space-three-stage-props";
+
+const CAMERA_MODE_BY_CODE: Readonly<Record<string, StudioThreeCameraMode>> = Object.freeze({
+  Digit1: "quarter",
+  Digit2: "third-person",
+  Digit3: "first-person",
+});
 
 export function bindStudioThreeKeyboardInput(
   stage: HTMLElement,
   keys: Set<string>,
-  controls: { stop: () => void; home: () => void; interact: () => void },
+  controls: {
+    readonly stop: () => void;
+    readonly home: () => void;
+    readonly interact: () => void;
+    readonly onCameraMode?: (mode: StudioThreeCameraMode) => void;
+    readonly onToggleGhost?: () => void;
+  },
 ): () => void {
   const down = (event: KeyboardEvent) => {
     if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -18,6 +31,17 @@ export function bindStudioThreeKeyboardInput(
     if (event.code === "KeyC" || event.key === "Home") {
       event.preventDefault();
       if (!event.repeat) controls.home();
+      return;
+    }
+    const nextCameraMode = CAMERA_MODE_BY_CODE[event.code];
+    if (nextCameraMode && controls.onCameraMode) {
+      event.preventDefault();
+      if (!event.repeat) controls.onCameraMode(nextCameraMode);
+      return;
+    }
+    if (event.code === "KeyG" && controls.onToggleGhost) {
+      event.preventDefault();
+      if (!event.repeat) controls.onToggleGhost();
       return;
     }
     if (!WORLD_KEY_CODES.has(event.code) && !isStudioThreeCameraOrbitKey(event.code)) return;

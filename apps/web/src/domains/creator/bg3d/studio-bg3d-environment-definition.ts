@@ -31,6 +31,7 @@ export interface StudioBg3dEnvironmentProvenance {
     | "scripts/blender/refine_studio_environment_expansion_v2.py"
     | "scripts/blender/generate_environment_pack_v7.py"
     | "scripts/generate_self_authored_environment_pack_v1.py"
+    | "tools/blender/webtoon_hero_bg"
     | "official-tripo-mcp";
   readonly blenderVersion: "5.2" | "5.3";
   readonly license: "CC0-1.0" | "Tripo Terms of Service - Free User Output";

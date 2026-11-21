@@ -175,12 +175,30 @@ describe('선언형 테마와 모델 참조 초안', () => {
     expect(Object.hasOwn(baseline, 'surfacePBR')).toBe(false);
   });
 
-  it('여덟 테마의 모든 역할은 정확한 registry 모델을 참조한다', () => {
+  it('여덟 recipe 테마와 열두 Hero 3D BG 룸 테마(v1 6 + v2 6)가 정확한 메타데이터·레지스트리를 가진다', () => {
     expect(VIRTUAL_THREE_THEMES.map(theme => theme.id)).toEqual([
-      'creator-campus', 'parkbotanical', 'fantasyguild', 'sflab', 'gothicarchive', 'vehiclegarage', 'cafefood',
+      'creator-campus',
+      'hero-bg-kr-modern-apartment-living',
+      'hero-bg-kr-atelier-cafe-interior',
+      'hero-bg-kr-highschool-classroom-corridor',
+      'hero-bg-kr-school-rooftop-hero',
+      'hero-bg-kr-seoul-alley-street-hero',
+      'hero-bg-rofan-imperial-palace-hall-balcony',
+      'hero-bg-kr-modern-office-suite',
+      'hero-bg-kr-seoul-subway-train-platform',
+      'hero-bg-kr-hospital-ward-corridor',
+      'hero-bg-rofan-noble-study-parlor',
+      'hero-bg-kr-rooftop-studio-oneroom',
+      'hero-bg-kr-convenience-store-night',
+      'parkbotanical', 'fantasyguild', 'sflab', 'gothicarchive', 'vehiclegarage', 'cafefood',
       'forestretreat', 'gardenstudy',
     ]);
+    expect(VIRTUAL_THREE_THEMES.filter(theme => theme.kind === 'hero-scene')).toHaveLength(12);
     expect(VIRTUAL_THREE_THEMES.filter(theme => theme.kind === 'asset-recipe')).toHaveLength(8);
+    const storage = new MemoryStorage();
+    const heroSaved = writeVirtualThreeThemeChoice(storage, 'space/hero', 'hero-bg-kr-atelier-cafe-interior');
+    expect(heroSaved.accepted && heroSaved.persisted).toBe(true);
+    expect(readVirtualThreeThemeChoice(storage, 'space/hero').selection?.themeId).toBe('hero-bg-kr-atelier-cafe-interior');
     for (const theme of VIRTUAL_THREE_THEMES) {
       if (theme.kind !== 'asset-recipe') continue;
       expect(theme.modelAssetIds).toEqual([...new Set(theme.layoutRoles.map(role => role.modelAssetId))]);
@@ -201,7 +219,13 @@ describe('선언형 테마와 모델 참조 초안', () => {
   });
 
   it('실제 metadata 참조 형식을 보존하고 신규 batch 후보를 ready registry에 넣지 않는다', () => {
-    const ids = VIRTUAL_THREE_THEME_MODEL_REFS.map(model => model.source === 'bundle' ? model.assetId : model.id);
+    const ids = VIRTUAL_THREE_THEME_MODEL_REFS.map(model =>
+      model.source === 'bundle'
+        ? model.assetId
+        : model.source === 'generated'
+          ? model.id
+          : model.heroSlug,
+    );
     expect(new Set(ids).size).toBe(ids.length);
     expect(VIRTUAL_THREE_THEME_MODEL_REFS.filter(model => model.source === 'generated')).toHaveLength(6);
     for (const model of VIRTUAL_THREE_THEME_MODEL_REFS) {
@@ -209,7 +233,7 @@ describe('선언형 테마와 모델 참조 초안', () => {
       if (model.source === 'bundle') {
         expect(model.expectedSha256).toMatch(/^sha256:[a-f0-9]{64}$/);
         expect(model.catalogId).toMatch(/^cbv1-\d{3}-/);
-      } else {
+      } else if (model.source === 'generated') {
         expect(model.sha256).toMatch(/^[a-f0-9]{64}$/);
         expect(model.provenanceId).toBe(model.id);
         expect(model.url.startsWith('/models/')).toBe(true);

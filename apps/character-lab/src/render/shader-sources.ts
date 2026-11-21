@@ -32,13 +32,49 @@ export const CHARACTER_SHADER_UNIFORM_BUFFERS: readonly string[] = ["Scene", "Me
 /** morph normal·uv 변형을 켜는 define */
 export const CHARACTER_SHADER_DEFINES: readonly string[] = ["#define NORMAL", "#define UV1"];
 
-export const TOON_UNIFORMS: readonly string[] = ["baseColor", "shadeTint", "lightColor", "ambientColor", "toLight", "rimColor", "toonParams", "faceParams", "alphaParams", "mangaParams", "gradeParams"];
+export const TOON_UNIFORMS: readonly string[] = [
+  "baseColor",
+  "shadeTint",
+  "lightColor",
+  "ambientColor",
+  "toLight",
+  "rimColor",
+  "toonParams",
+  "faceParams",
+  "alphaParams",
+  "mangaParams",
+  "gradeParams",
+  "matcapParams",
+  "hairSpecParams",
+];
 export const TOON_SAMPLERS: readonly string[] = ["albedoSampler", "paintSampler", "sdfSampler"];
 export const FLAT_UNIFORMS: readonly string[] = ["baseColor", "toonParams", "faceParams", "alphaParams"];
 export const FLAT_SAMPLERS: readonly string[] = ["albedoSampler", "paintSampler"];
 export const ID_UNIFORMS: readonly string[] = ["idColor"];
 /** depthRange: x=near, y=far(카메라 뷰 깊이, m), z·w 예비 */
 export const DEPTH_UNIFORMS: readonly string[] = ["depthRange"];
+
+/**
+ * SHAPER MaterialData::ApplyShadeLine(0x06000236) 3차(Cubic) MatCap 램프 GLSL/WGSL 보조 함수 스니펫:
+ * width = (5.0 - 5.0 * w)^3, offset = -(width - 1.0) * 0.5 + pos * width
+ */
+export const CUBIC_MATCAP_RAMP_SNIPPET_GLSL = `float computeCubicMatCapRamp(float shading, float pos, float widthSlider) {
+  float w = clamp(widthSlider, 0.0, 1.0);
+  float p = clamp(pos, 0.0, 1.0);
+  float base = 5.0 - 5.0 * w;
+  float scaleU = base * base * base;
+  float offsetU = -(scaleU - 1.0) * 0.5 + p * scaleU;
+  return smoothstep(0.0, 1.0, shading * scaleU + offsetU);
+}`;
+
+export const CUBIC_MATCAP_RAMP_SNIPPET_WGSL = `fn computeCubicMatCapRamp(shading: f32, pos: f32, widthSlider: f32) -> f32 {
+  let w: f32 = clamp(widthSlider, 0.0, 1.0);
+  let p: f32 = clamp(pos, 0.0, 1.0);
+  let base: f32 = 5.0 - 5.0 * w;
+  let scaleU: f32 = base * base * base;
+  let offsetU: f32 = -(scaleU - 1.0) * 0.5 + p * scaleU;
+  return smoothstep(0.0, 1.0, shading * scaleU + offsetU);
+}`;
 
 export const CHARACTER_VERTEX_GLSL = `precision highp float;
 attribute vec3 position;
@@ -47,6 +83,11 @@ attribute vec2 uv;
 #ifdef TS_FACE_SHADOW_UV
 attribute vec2 uv2;
 varying vec2 vFaceUV;
+#else
+#ifdef TS_HAIR_FLOW_UV
+attribute vec2 uv2;
+varying vec2 vHairFlowUV;
+#endif
 #endif
 #ifdef TS_VERTEX_COLOR
 attribute vec4 color;
@@ -76,6 +117,10 @@ void main(void) {
   vUV = uvUpdated;
 #ifdef TS_FACE_SHADOW_UV
   vFaceUV = uv2;
+#else
+#ifdef TS_HAIR_FLOW_UV
+  vHairFlowUV = uv2;
+#endif
 #endif
   vViewZ = -(view * worldPos).z;
 #ifdef TS_VERTEX_COLOR
@@ -95,6 +140,11 @@ attribute uv: vec2f;
 #ifdef TS_FACE_SHADOW_UV
 attribute uv2: vec2f;
 varying vFaceUV: vec2f;
+#else
+#ifdef TS_HAIR_FLOW_UV
+attribute uv2: vec2f;
+varying vHairFlowUV: vec2f;
+#endif
 #endif
 #ifdef TS_VERTEX_COLOR
 attribute color: vec4f;
@@ -123,6 +173,10 @@ fn main(input: VertexInputs) -> FragmentInputs {
   vertexOutputs.vUV = uvUpdated;
 #ifdef TS_FACE_SHADOW_UV
   vertexOutputs.vFaceUV = vertexInputs.uv2;
+#else
+#ifdef TS_HAIR_FLOW_UV
+  vertexOutputs.vHairFlowUV = vertexInputs.uv2;
+#endif
 #endif
   vertexOutputs.vViewZ = -(scene.view * worldPos).z;
 #ifdef TS_VERTEX_COLOR
@@ -138,6 +192,8 @@ fn main(input: VertexInputs) -> FragmentInputs {
  * toonParams: x=rampSteps(2..4), y=rim(0/1), z=faceSdf(0/1), w=hasPaint(0/1)
  * faceParams: x=threshold(0.5·(1−fdotl)), y=flipU(0/1), z=sdfOffset, w=hasAlbedo(0/1)
  * alphaParams: x=alphaCutoff(알베도 텍스처 알파가 이 값보다 작은 텍셀을 버린다. 0 = 끔) — glTF `alphaMode: MASK`(키트의 눈썹·속눈썹 컷아웃)를 따른다. BLEND는 지원하지 않는다.
+ * matcapParams: x=cubicMatCapWeight(0..1), y=cubicMatCapPos(0..1), z=cubicMatCapWidth(0..1), w=directionalBacklightRimGate(0..1)
+ * hairSpecParams: x=hairAngelRingIntensity(0..1), y=primaryBandCenter(0..1), z=bandWidth, w=secondaryWeight(0..1)
  * vColor: 메시 `COLOR_0`(키트: 회색 AO, R=G=B). 알베도(밑색 × 알베도 텍스처, 페인트 합성)에 곱한다. 정점 색이 없는 메시는 1이다(PBR의 `surfaceAlbedo *= vColor.rgb`와 같은 자리).
  * 텍스처 샘플은 균일 제어 흐름을 위해 분기 밖에서 한 번만 읽는다(WGSL 규칙).
  */
@@ -151,6 +207,10 @@ uniform vec3 cameraPosition;
 uniform vec3 baseColor;
 #ifdef TS_FACE_SHADOW_UV
 varying vec2 vFaceUV;
+#else
+#ifdef TS_HAIR_FLOW_UV
+varying vec2 vHairFlowUV;
+#endif
 #endif
 uniform vec3 shadeTint;
 uniform vec3 lightColor;
@@ -162,9 +222,12 @@ uniform vec4 faceParams;
 uniform vec4 alphaParams;
 uniform vec4 mangaParams;
 uniform vec4 gradeParams;
+uniform vec4 matcapParams;
+uniform vec4 hairSpecParams;
 uniform sampler2D albedoSampler;
 uniform sampler2D paintSampler;
 uniform sampler2D sdfSampler;
+${CUBIC_MATCAP_RAMP_SNIPPET_GLSL}
 void main(void) {
   vec3 n = normalize(vNormalW);
   vec4 albedoTex = texture2D(albedoSampler, vUV);
@@ -179,8 +242,10 @@ void main(void) {
   if (alphaParams.x > 0.0 && albedoTex.a < alphaParams.x) discard;
   vec3 base = mix(baseColor, baseColor * albedoTex.rgb, step(0.5, faceParams.w));
   vec3 albedo = mix(base, mix(base, paint.rgb, paint.a), step(0.5, toonParams.w)) * vColor.rgb;
-  float lambert = dot(n, normalize(toLight)) * 0.5 + 0.5;
-  float faceLit = step(faceParams.x, sdf + faceParams.z);
+  vec3 lightDir = normalize(toLight);
+  float lambert = dot(n, lightDir) * 0.5 + 0.5;
+  float sdfW = fwidth(sdf) + 0.002 + gradeParams.w * 0.08;
+  float faceLit = smoothstep(faceParams.x - sdfW, faceParams.x + sdfW, sdf + faceParams.z);
   float faceShading = mix(0.25, 0.85, faceLit);
   float shading = mix(lambert, faceShading, step(0.5, toonParams.z));
   float steps = max(2.0, toonParams.x);
@@ -193,13 +258,41 @@ void main(void) {
       acc += smoothstep(thr - w, thr + w, shading);
     }
   }
-  float band = acc / (steps - 1.0);
+  float steppedBand = acc / (steps - 1.0);
+  float cubicBand = computeCubicMatCapRamp(shading, matcapParams.y, matcapParams.z);
+  float band = mix(steppedBand, cubicBand, clamp(matcapParams.x, 0.0, 1.0));
   vec3 shadeColor = albedo * shadeTint;
   vec3 color = mix(shadeColor, albedo, band) * lightColor + albedo * ambientColor;
   vec3 v = normalize(cameraPosition - vPositionW);
   float fresnel = pow(1.0 - max(dot(n, v), 0.0), 3.0);
-  float rim = smoothstep(0.55, 0.65, fresnel) * step(0.5, toonParams.y);
+  float backlightAlign = clamp(dot(v, -lightDir) * 0.5 + 0.5, 0.0, 1.0);
+  float rimLightSide = smoothstep(-0.25, 0.35, dot(n, lightDir));
+  float directionalGate = clamp(mix(rimLightSide, max(rimLightSide, backlightAlign), 0.55), 0.15, 1.0);
+  float rimGate = mix(1.0, directionalGate, clamp(matcapParams.w, 0.0, 1.0));
+  float rim = smoothstep(0.55, 0.65, fresnel) * rimGate * step(0.5, toonParams.y);
   color += rimColor * rim;
+  if (hairSpecParams.x > 0.0) {
+#ifdef TS_HAIR_FLOW_UV
+    vec2 hairUV = vHairFlowUV;
+#else
+    vec2 hairUV = vUV;
+#endif
+    vec3 tangent = normalize(cross(n, vec3(1.0, 0.0, 0.0)) + vec3(0.0, 0.0001, 0.0));
+    vec3 halfVec = normalize(lightDir + v);
+    float tDotH = dot(tangent, halfVec);
+    float sinTH = sqrt(max(0.0, 1.0 - tDotH * tDotH));
+    float primaryCenter = hairSpecParams.y;
+    float bandW = max(0.02, hairSpecParams.z);
+    float strandJitter = sin(hairUV.x * 37.6991) * 0.025;
+    float flowCoord = clamp(hairUV.y + strandJitter, 0.0, 1.0);
+    float primaryMask = 1.0 - smoothstep(bandW * 0.45, bandW, abs(flowCoord - primaryCenter));
+    float secondaryMask = 1.0 - smoothstep(bandW * 0.7, bandW * 1.45, abs(flowCoord - (primaryCenter - bandW * 1.35)));
+    float kkPrimary = pow(sinTH, 24.0) * primaryMask;
+    float kkSecondary = pow(sinTH, 10.0) * secondaryMask * hairSpecParams.w;
+    float litGate = smoothstep(0.2, 0.65, lambert);
+    vec3 specTint = mix(albedo * 1.35 + vec3(0.18), lightColor, 0.45);
+    color += specTint * (kkPrimary + kkSecondary) * hairSpecParams.x * litGate;
+  }
   if (mangaParams.x > 0.5 && mangaParams.y > 0.0) {
     float cs = cos(mangaParams.w);
     float sn = sin(mangaParams.w);
@@ -240,6 +333,10 @@ uniform cameraPosition: vec3f;
 uniform baseColor: vec3f;
 #ifdef TS_FACE_SHADOW_UV
 varying vFaceUV: vec2f;
+#else
+#ifdef TS_HAIR_FLOW_UV
+varying vHairFlowUV: vec2f;
+#endif
 #endif
 uniform shadeTint: vec3f;
 uniform lightColor: vec3f;
@@ -251,12 +348,15 @@ uniform faceParams: vec4f;
 uniform alphaParams: vec4f;
 uniform mangaParams: vec4f;
 uniform gradeParams: vec4f;
+uniform matcapParams: vec4f;
+uniform hairSpecParams: vec4f;
 var albedoSampler: texture_2d<f32>;
 var albedoSamplerSampler: sampler;
 var paintSampler: texture_2d<f32>;
 var paintSamplerSampler: sampler;
 var sdfSampler: texture_2d<f32>;
 var sdfSamplerSampler: sampler;
+${CUBIC_MATCAP_RAMP_SNIPPET_WGSL}
 @fragment
 fn main(input: FragmentInputs) -> FragmentOutputs {
   let n: vec3f = normalize(fragmentInputs.vNormalW);
@@ -274,8 +374,10 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
   }
   let base: vec3f = mix(uniforms.baseColor, uniforms.baseColor * albedoTex.rgb, step(0.5, uniforms.faceParams.w));
   let albedo: vec3f = mix(base, mix(base, paint.rgb, paint.a), step(0.5, uniforms.toonParams.w)) * fragmentInputs.vColor.rgb;
-  let lambert: f32 = dot(n, normalize(uniforms.toLight)) * 0.5 + 0.5;
-  let faceLit: f32 = step(uniforms.faceParams.x, sdf + uniforms.faceParams.z);
+  let lightDir: vec3f = normalize(uniforms.toLight);
+  let lambert: f32 = dot(n, lightDir) * 0.5 + 0.5;
+  let sdfW: f32 = fwidth(sdf) + 0.002 + uniforms.gradeParams.w * 0.08;
+  let faceLit: f32 = smoothstep(uniforms.faceParams.x - sdfW, uniforms.faceParams.x + sdfW, sdf + uniforms.faceParams.z);
   let faceShading: f32 = mix(0.25, 0.85, faceLit);
   let shading: f32 = mix(lambert, faceShading, step(0.5, uniforms.toonParams.z));
   let steps: f32 = max(2.0, uniforms.toonParams.x);
@@ -288,13 +390,41 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
       acc = acc + smoothstep(thr - w, thr + w, shading);
     }
   }
-  let band: f32 = acc / (steps - 1.0);
+  let steppedBand: f32 = acc / (steps - 1.0);
+  let cubicBand: f32 = computeCubicMatCapRamp(shading, uniforms.matcapParams.y, uniforms.matcapParams.z);
+  let band: f32 = mix(steppedBand, cubicBand, clamp(uniforms.matcapParams.x, 0.0, 1.0));
   let shadeColor: vec3f = albedo * uniforms.shadeTint;
   var color: vec3f = mix(shadeColor, albedo, band) * uniforms.lightColor + albedo * uniforms.ambientColor;
   let v: vec3f = normalize(uniforms.cameraPosition - fragmentInputs.vPositionW);
   let fresnel: f32 = pow(1.0 - max(dot(n, v), 0.0), 3.0);
-  let rim: f32 = smoothstep(0.55, 0.65, fresnel) * step(0.5, uniforms.toonParams.y);
+  let backlightAlign: f32 = clamp(dot(v, -lightDir) * 0.5 + 0.5, 0.0, 1.0);
+  let rimLightSide: f32 = smoothstep(-0.25, 0.35, dot(n, lightDir));
+  let directionalGate: f32 = clamp(mix(rimLightSide, max(rimLightSide, backlightAlign), 0.55), 0.15, 1.0);
+  let rimGate: f32 = mix(1.0, directionalGate, clamp(uniforms.matcapParams.w, 0.0, 1.0));
+  let rim: f32 = smoothstep(0.55, 0.65, fresnel) * rimGate * step(0.5, uniforms.toonParams.y);
   color = color + uniforms.rimColor * rim;
+  if (uniforms.hairSpecParams.x > 0.0) {
+#ifdef TS_HAIR_FLOW_UV
+    let hairUV: vec2f = fragmentInputs.vHairFlowUV;
+#else
+    let hairUV: vec2f = fragmentInputs.vUV;
+#endif
+    let tangent: vec3f = normalize(cross(n, vec3f(1.0, 0.0, 0.0)) + vec3f(0.0, 0.0001, 0.0));
+    let halfVec: vec3f = normalize(lightDir + v);
+    let tDotH: f32 = dot(tangent, halfVec);
+    let sinTH: f32 = sqrt(max(0.0, 1.0 - tDotH * tDotH));
+    let primaryCenter: f32 = uniforms.hairSpecParams.y;
+    let bandW: f32 = max(0.02, uniforms.hairSpecParams.z);
+    let strandJitter: f32 = sin(hairUV.x * 37.6991) * 0.025;
+    let flowCoord: f32 = clamp(hairUV.y + strandJitter, 0.0, 1.0);
+    let primaryMask: f32 = 1.0 - smoothstep(bandW * 0.45, bandW, abs(flowCoord - primaryCenter));
+    let secondaryMask: f32 = 1.0 - smoothstep(bandW * 0.7, bandW * 1.45, abs(flowCoord - (primaryCenter - bandW * 1.35)));
+    let kkPrimary: f32 = pow(sinTH, 24.0) * primaryMask;
+    let kkSecondary: f32 = pow(sinTH, 10.0) * secondaryMask * uniforms.hairSpecParams.w;
+    let litGate: f32 = smoothstep(0.2, 0.65, lambert);
+    let specTint: vec3f = mix(albedo * 1.35 + vec3f(0.18), uniforms.lightColor, 0.45);
+    color = color + specTint * (kkPrimary + kkSecondary) * uniforms.hairSpecParams.x * litGate;
+  }
   if (uniforms.mangaParams.x > 0.5 && uniforms.mangaParams.y > 0.0) {
     let cs: f32 = cos(uniforms.mangaParams.w);
     let sn: f32 = sin(uniforms.mangaParams.w);
@@ -510,28 +640,6 @@ export function listShaderIncludes(source: string): string[] {
 
 /** 두 언어가 같은 include 집합·순서를 쓰는지(의미 동치의 1차 조건) */
 export const CHARACTER_VERTEX_INCLUDES: readonly string[] = listShaderIncludes(CHARACTER_VERTEX_GLSL);
-
-/**
- * SHAPER MaterialData::ApplyShadeLine(0x06000236) 3차(Cubic) MatCap 램프 GLSL/WGSL 보조 함수 스니펫:
- * width = (5.0 - 5.0 * w)^3, offset = -(width - 1.0) * 0.5 + pos * width
- */
-export const CUBIC_MATCAP_RAMP_SNIPPET_GLSL = `float computeCubicMatCapRamp(float shading, float pos, float widthSlider) {
-  float w = clamp(widthSlider, 0.0, 1.0);
-  float p = clamp(pos, 0.0, 1.0);
-  float base = 5.0 - 5.0 * w;
-  float scaleU = base * base * base;
-  float offsetU = -(scaleU - 1.0) * 0.5 + p * scaleU;
-  return smoothstep(0.0, 1.0, shading * scaleU + offsetU);
-}`;
-
-export const CUBIC_MATCAP_RAMP_SNIPPET_WGSL = `fn computeCubicMatCapRamp(shading: f32, pos: f32, widthSlider: f32) -> f32 {
-  let w: f32 = clamp(widthSlider, 0.0, 1.0);
-  let p: f32 = clamp(pos, 0.0, 1.0);
-  let base: f32 = 5.0 - 5.0 * w;
-  let scaleU: f32 = base * base * base;
-  let offsetU: f32 = -(scaleU - 1.0) * 0.5 + p * scaleU;
-  return smoothstep(0.0, 1.0, shading * scaleU + offsetU);
-}`;
 
 /**
  * SHAPER MaterialData::SetValuesFromUI(0x06000235) 비등방성 펜선 외곽선(_Outline_W=1.5, _Outline_H=0.3) GLSL/WGSL 보조 스니펫.

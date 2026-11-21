@@ -16,9 +16,10 @@ describe("캐릭터·3D 외곽 시안 적용 경계", () => {
     ]) expect(read(path)).toMatch(/import "\.\.?\/studio-3d-ui\/studio-3d-illustrated-chrome\.css"/);
   });
 
-  it("근검정 팔레트를 starlight로 한정하고 테마 의미 토큰과 시스템 색상을 남긴다", () => {
-    const nearBlackRule = css.slice(css.indexOf(':root[data-design-theme="starlight"]'), css.indexOf(':is([data-character-shaper-surface]'));
-    expect(nearBlackRule).toContain("--illustrated-3d-panel: #0b1020");
+  it("starlight를 포함해 모든 테마가 원시 hex 대신 의미 토큰과 시스템 색상을 사용한다", () => {
+    const starlightRule = css.slice(css.indexOf(':root[data-design-theme="starlight"]'), css.indexOf(':is([data-character-shaper-surface]'));
+    expect(starlightRule).toContain("--illustrated-3d-panel: var(--color-panel)");
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/u);
     expect(css).toContain("--illustrated-3d-panel: var(--color-panel)");
     expect(css).toContain(':root[data-design-theme="contrast"]');
     expect(css).toContain("@media (forced-colors: active)");

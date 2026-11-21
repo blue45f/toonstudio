@@ -14,6 +14,9 @@ export const StudioVirtualSpaceTeamHub = createStudioVirtualSpacePanel(() => imp
 export const StudioVirtualSpaceTodayBoard = createStudioVirtualSpacePanel(() => import("../StudioVirtualSpaceTodayBoard").then((module) => ({ default: module.StudioVirtualSpaceTodayBoard })));
 export const StudioVirtualSpaceRtcPanel = createStudioVirtualSpacePanel(() => import("../StudioVirtualSpaceRtcPanel").then((module) => ({ default: module.StudioVirtualSpaceRtcPanel })));
 export const StudioVirtualSpaceP2pBoard = createStudioVirtualSpacePanel(() => import("../StudioVirtualSpaceP2pBoard").then((module) => ({ default: module.StudioVirtualSpaceP2pBoard })));
+export const StudioVirtualSpaceWhiteboard = createStudioVirtualSpacePanel(() => import("../StudioVirtualSpaceWhiteboard").then((module) => ({ default: module.StudioVirtualSpaceWhiteboard })));
+export const StudioVirtualSpaceStickyNotes = createStudioVirtualSpacePanel(() => import("../StudioVirtualSpaceStickyNotes").then((module) => ({ default: module.StudioVirtualSpaceStickyNotes })));
+export const StudioVirtualSpaceInviteSheet = createStudioVirtualSpacePanel(() => import("../StudioVirtualSpaceInviteSheet").then((module) => ({ default: module.StudioVirtualSpaceInviteSheet })));
 export const StudioVirtualSpaceLiveAnnotationPanel = createStudioVirtualSpacePanel(() => import("../StudioVirtualSpaceLiveAnnotationPanel").then((module) => ({ default: module.StudioVirtualSpaceLiveAnnotationPanel })));
 export const StudioVirtualSpaceTownProgramPanel = createStudioVirtualSpacePanel(() => import("../StudioVirtualSpaceTownProgramPanel").then((module) => ({ default: module.StudioVirtualSpaceTownProgramPanel })));
 export const StudioVirtualSpaceRoomCatalog = createStudioVirtualSpacePanel(() => import("../StudioVirtualSpaceRoomCatalog").then((module) => ({ default: module.StudioVirtualSpaceRoomCatalog })));

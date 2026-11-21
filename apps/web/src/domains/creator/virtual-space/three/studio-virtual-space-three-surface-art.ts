@@ -17,7 +17,7 @@ export function studioThreeRoomTone(room: Pick<StudioWorldRoomDefinition, "id" |
 }
 
 export function studioThreeThemeLightingPreset(theme: VirtualThreeTheme, manifest?: StudioVirtualSpaceWorldManifest): StudioThreeLightingPreset {
-  if (theme.kind === "asset-recipe") {
+  if (theme.kind === "asset-recipe" || theme.kind === "hero-scene") {
     if (theme.lighting.ambientIlluminanceLux < 70) return "night";
     return theme.lighting.key.temperatureKelvin >= 6000 ? "studio" : "day";
   }

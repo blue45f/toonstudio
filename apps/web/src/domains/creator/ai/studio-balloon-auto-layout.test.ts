@@ -99,4 +99,107 @@ describe("Studio Responsive Balloon Auto-Layout & Tail Generator", () => {
     expect(diags.some((d) => d.code === "OBSTACLE_COLLISION")).toBe(true);
     expect(diags.some((d) => d.code === "DANGLING_TAIL")).toBe(true);
   });
+
+  it("preserves panel-boundary (gutter) obstacles and guarantees non-decreasing readingOrder by bounds.y across all pairs", () => {
+    const panelBounds = { x: 0, y: 0, width: 720, height: 1000 };
+    const obstacles: ObstacleRect[] = [
+      { id: "top_gutter", kind: "panel-boundary", bounds: { x: 0, y: 0, width: 720, height: 40 } },
+      { id: "mid_gutter", kind: "panel-boundary", bounds: { x: 0, y: 460, width: 720, height: 60 } },
+      { id: "hero_face", kind: "character-face", bounds: { x: 200, y: 180, width: 140, height: 140 } },
+    ];
+
+    const rule = {
+      sizeMode: "hug-content" as const,
+      minWidthPx: 120,
+      maxWidthPx: 300,
+      paddingPx: 12,
+      avoidCollisions: true,
+    };
+
+    const balloons: BalloonRecord[] = [
+      {
+        id: "b_1",
+        dialogueId: "d_1",
+        text: "첫 대사",
+        fontSize: 18,
+        shape: "oval",
+        readingOrder: 1,
+        bounds: { x: 180, y: 20, width: 160, height: 80 }, // top_gutter 침범
+        tails: [],
+        layoutRule: rule,
+      },
+      {
+        id: "b_2",
+        dialogueId: "d_2",
+        text: "둘째 대사",
+        fontSize: 18,
+        shape: "oval",
+        readingOrder: 2,
+        bounds: { x: 210, y: 200, width: 160, height: 80 }, // hero_face 충돌
+        tails: [],
+        layoutRule: rule,
+      },
+      {
+        id: "b_3",
+        dialogueId: "d_3",
+        text: "셋째 대사",
+        fontSize: 18,
+        shape: "oval",
+        readingOrder: 3,
+        bounds: { x: 220, y: 450, width: 160, height: 80 }, // mid_gutter 침범
+        tails: [],
+        layoutRule: rule,
+      },
+    ];
+
+    const solved = solveBalloonCollisions(balloons, obstacles, panelBounds);
+    expect(solved).toHaveLength(3);
+
+    // 1. 패널 경계 및 거터(panel-boundary) 침범 0건
+    for (const b of solved) {
+      expect(b.bounds.x).toBeGreaterThanOrEqual(panelBounds.x);
+      expect(b.bounds.y).toBeGreaterThanOrEqual(panelBounds.y);
+      expect(b.bounds.x + b.bounds.width).toBeLessThanOrEqual(panelBounds.x + panelBounds.width);
+      expect(b.bounds.y + b.bounds.height).toBeLessThanOrEqual(panelBounds.y + panelBounds.height);
+    }
+
+    // 2. 모든 쌍(비인접 쌍 포함)에서 bounds.y 기준 readingOrder 단조 비감소 보장
+    for (let i = 0; i < solved.length; i += 1) {
+      for (let j = i + 1; j < solved.length; j += 1) {
+        expect(solved[i]!.bounds.y).toBeLessThanOrEqual(solved[j]!.bounds.y);
+        expect(solved[i]!.readingOrder).toBeLessThanOrEqual(solved[j]!.readingOrder);
+      }
+    }
+
+    // 3. 해소 후 검증기 통과 (거터 충돌 0건, 읽기 순서 역전 0건)
+    const diags = validateBalloonLayout(solved, obstacles);
+    expect(diags.filter((d) => d.code === "READING_ORDER_INVERSION")).toHaveLength(0);
+    expect(diags.filter((d) => d.code === "OBSTACLE_COLLISION")).toHaveLength(0);
+  });
+
+  it("detects non-adjacent READING_ORDER_INVERSION pairs and marks panel-boundary collisions as errors", () => {
+    const rule = {
+      sizeMode: "fixed" as const,
+      minWidthPx: 100,
+      maxWidthPx: 100,
+      paddingPx: 8,
+      avoidCollisions: false,
+    };
+    const gutter: ObstacleRect = {
+      id: "gutter_1",
+      kind: "panel-boundary",
+      bounds: { x: 0, y: 180, width: 720, height: 40 },
+    };
+
+    const balloons: BalloonRecord[] = [
+      { id: "b1", dialogueId: "d1", text: "1", fontSize: 16, shape: "oval", readingOrder: 1, bounds: { x: 20, y: 190, width: 100, height: 60 }, tails: [], layoutRule: rule },
+      { id: "b2", dialogueId: "d2", text: "2", fontSize: 16, shape: "oval", readingOrder: 2, bounds: { x: 160, y: 260, width: 100, height: 60 }, tails: [], layoutRule: rule },
+      // 비인접 쌍 (b1, b3) 및 (b2, b3): order=3 이 y=160 으로 b1(y=190)보다 위쪽에 역전 배치
+      { id: "b3", dialogueId: "d3", text: "3", fontSize: 16, shape: "oval", readingOrder: 3, bounds: { x: 300, y: 160, width: 100, height: 60 }, tails: [], layoutRule: rule },
+    ];
+
+    const diags = validateBalloonLayout(balloons, [gutter]);
+    expect(diags.some((d) => d.code === "READING_ORDER_INVERSION" && d.balloonId === "b3")).toBe(true);
+    expect(diags.some((d) => d.code === "OBSTACLE_COLLISION" && d.severity === "error" && d.balloonId === "b1")).toBe(true);
+  });
 });

@@ -13,7 +13,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
  *  같은 테두리·여백·격자를 채운다. 로딩 안내는 페이지의 role="status" 문구가 맡는다. */
 export function TeamPeopleOverviewSkeleton() {
   return (
-    <div aria-hidden="true" data-testid="team-people-overview-skeleton" className="animate-pulse rounded-3xl border border-line bg-panel p-5 motion-reduce:animate-none sm:p-6">
+    <div aria-hidden="true" data-testid="team-people-overview-skeleton" className="rounded-3xl border border-line bg-panel p-5 motion-reduce:animate-none sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="h-6 w-32 rounded bg-raised" />
@@ -59,19 +59,19 @@ export function TeamPeopleOverviewStrip({ items }: { items: readonly TeamWorkspa
       <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-line bg-card p-3">
           <dt className="text-xs font-semibold text-fg-3">{bt("참여 팀", "Teams")}</dt>
-          <dd className="mt-1 text-lg font-black">{bt(`${items.length}곳`, `${items.length}`)}</dd>
+          <dd className="mt-1 text-lg font-semibold">{bt(`${items.length}곳`, `${items.length}`)}</dd>
         </div>
         <div className="rounded-xl border border-line bg-card p-3">
           <dt className="text-xs font-semibold text-fg-3">{bt("전체 구성원", "Members")}</dt>
-          <dd className="mt-1 text-lg font-black">{bt(`${memberTotal}명`, `${memberTotal}`)}</dd>
+          <dd className="mt-1 text-lg font-semibold">{bt(`${memberTotal}명`, `${memberTotal}`)}</dd>
         </div>
         <div className="rounded-xl border border-line bg-card p-3">
           <dt className="text-xs font-semibold text-fg-3">{bt("대기 중 초대", "Pending invites")}</dt>
-          <dd className="mt-1 text-lg font-black">{bt(`${pendingTotal}건`, `${pendingTotal}`)}</dd>
+          <dd className="mt-1 text-lg font-semibold">{bt(`${pendingTotal}건`, `${pendingTotal}`)}</dd>
         </div>
         <div className="rounded-xl border border-line bg-card p-3">
           <dt className="text-xs font-semibold text-fg-3">{bt("연결된 작품", "Linked projects")}</dt>
-          <dd className="mt-1 text-lg font-black">{bt(`${projectTotal}개`, `${projectTotal}`)}</dd>
+          <dd className="mt-1 text-lg font-semibold">{bt(`${projectTotal}개`, `${projectTotal}`)}</dd>
         </div>
       </dl>
     </section>

@@ -56,18 +56,53 @@ export interface CharacterLabVerifyAiReport {
   readonly remediationKo: string;
 }
 
+export interface CharacterLabTurnaroundReadbackMetrics {
+  readonly front0Silhouette100?: number;
+  readonly threeQuarter35Silhouette100?: number;
+  readonly side90Silhouette100?: number;
+  readonly back180Silhouette100?: number;
+  readonly faceSdfClean100?: number;
+}
+
+/**
+ * 실제 GPU/셰이더 패스 활성 여부를 전달하는 실측 텔레메트리.
+ * 이 값이 주어질 때만 실제 패스 기반으로 최대 100.0/100까지 가산되며, 생략 시 기존 정적 프로파일 기준 점수를 유지한다.
+ */
+export interface CharacterLabRenderTelemetry {
+  readonly headContourPassActive?: boolean;
+  readonly faceSdfAntiAliased?: boolean;
+  readonly kitFaceShadowUvPresent?: boolean;
+  readonly cubicMatCapActive?: boolean;
+  readonly directionalBacklightRimActive?: boolean;
+  readonly hairAngelRingActive?: boolean;
+  readonly screenSpaceOutlineCompensation?: boolean;
+  readonly coloredLineartActive?: boolean;
+  readonly vertexTaperMaskActive?: boolean;
+  readonly hairInlineStencilActive?: boolean;
+  readonly turnaroundReadbackMetrics?: CharacterLabTurnaroundReadbackMetrics;
+}
+
 export interface CharacterLabVerifyAiInput {
   readonly shading: ShadingProfile;
   readonly lookId: LabShaperGen3dLookId;
   readonly headUnits?: number;
   readonly delight?: boolean;
   readonly disableHairInline?: boolean;
+  readonly renderTelemetry?: CharacterLabRenderTelemetry;
+}
+
+function clampScore100(value: number): number {
+  return Number(Math.min(100, Math.max(0, value)).toFixed(1));
+}
+
+function readbackOrComputed(measured: number | undefined, computed: number): number {
+  return typeof measured === "number" && Number.isFinite(measured) ? clampScore100(measured) : clampScore100(computed);
 }
 
 export function evaluateCharacterLabVerifyAiGate(
   input: CharacterLabVerifyAiInput,
 ): CharacterLabVerifyAiReport {
-  const { shading, lookId } = input;
+  const { shading, lookId, renderTelemetry } = input;
   const headUnits =
     typeof input.headUnits === "number" && Number.isFinite(input.headUnits)
       ? Math.min(8.5, Math.max(5.0, input.headUnits))
@@ -80,32 +115,99 @@ export function evaluateCharacterLabVerifyAiGate(
   const hasAnisotropicPressure =
     shading.toon.outline === "hull" && shading.toon.outlinePressure === true;
 
-  const turnaroundAngles: readonly CharacterTurnaroundAngleMetric[] = Object.freeze([
-    {
-      yawDeg: 0,
-      labelKo: "정면 (0° 기준 시트)",
-      silhouetteScore100: hasOutline ? 96.5 : 84.0,
-      faceSdfSymmetry100: shading.toon.faceSdfShadow ? 98.2 : 89.5,
-    },
-    {
-      yawDeg: 35,
-      labelKo: "반측면 (35° 웹툰 주력 앵글)",
-      silhouetteScore100: hasOutline ? 95.8 : 82.5,
-      faceSdfSymmetry100: shading.toon.faceSdfShadow ? 97.4 : 86.0,
-    },
-    {
-      yawDeg: 90,
-      labelKo: "측면 (90° 코·턱선 실루엣)",
-      silhouetteScore100: shading.toon.rim ? 96.0 : 88.0,
-      faceSdfSymmetry100: delight ? 95.6 : 84.5,
-    },
-    {
-      yawDeg: 180,
-      labelKo: "후면 (180° 헤어·망토 볼륨)",
-      silhouetteScore100: disableHairInline ? 97.2 : 89.0,
-      faceSdfSymmetry100: 96.0,
-    },
-  ]);
+  const readback = renderTelemetry?.turnaroundReadbackMetrics;
+  const turnaroundAngles: readonly CharacterTurnaroundAngleMetric[] = Object.freeze(
+    renderTelemetry
+      ? [
+          {
+            yawDeg: 0,
+            labelKo: "정면 (0° 기준 시트)",
+            silhouetteScore100: readbackOrComputed(
+              readback?.front0Silhouette100,
+              (hasOutline ? 96.5 : 84.0) +
+                (renderTelemetry.headContourPassActive ? 2.5 : 0) +
+                (renderTelemetry.screenSpaceOutlineCompensation ? 1.0 : 0),
+            ),
+            faceSdfSymmetry100: clampScore100(
+              (shading.toon.faceSdfShadow ? 98.2 : 89.5) +
+                (shading.toon.faceSdfShadow && renderTelemetry.faceSdfAntiAliased ? 1.0 : 0) +
+                (shading.toon.faceSdfShadow && renderTelemetry.kitFaceShadowUvPresent ? 0.8 : 0),
+            ),
+          },
+          {
+            yawDeg: 35,
+            labelKo: "반측면 (35° 웹툰 주력 앵글)",
+            silhouetteScore100: readbackOrComputed(
+              readback?.threeQuarter35Silhouette100,
+              (hasOutline ? 95.8 : 82.5) +
+                (renderTelemetry.headContourPassActive ? 2.2 : 0) +
+                (isToon && renderTelemetry.cubicMatCapActive ? 1.2 : 0) +
+                (renderTelemetry.screenSpaceOutlineCompensation ? 0.8 : 0),
+            ),
+            faceSdfSymmetry100: clampScore100(
+              (shading.toon.faceSdfShadow ? 97.4 : 86.0) +
+                (shading.toon.faceSdfShadow && renderTelemetry.faceSdfAntiAliased ? 1.6 : 0) +
+                (shading.toon.faceSdfShadow && renderTelemetry.kitFaceShadowUvPresent ? 1.0 : 0),
+            ),
+          },
+          {
+            yawDeg: 90,
+            labelKo: "측면 (90° 코·턱선 실루엣)",
+            silhouetteScore100: readbackOrComputed(
+              readback?.side90Silhouette100,
+              (shading.toon.rim ? 96.0 : 88.0) +
+                (shading.toon.rim && renderTelemetry.directionalBacklightRimActive ? 2.5 : 0) +
+                (renderTelemetry.headContourPassActive ? 1.5 : 0),
+            ),
+            faceSdfSymmetry100: clampScore100(
+              (delight ? 95.6 : 84.5) +
+                (shading.toon.faceSdfShadow && renderTelemetry.faceSdfAntiAliased ? 2.4 : 0) +
+                (shading.toon.rim && renderTelemetry.directionalBacklightRimActive ? 2.0 : 0),
+            ),
+          },
+          {
+            yawDeg: 180,
+            labelKo: "후면 (180° 헤어·망토 볼륨)",
+            silhouetteScore100: readbackOrComputed(
+              readback?.back180Silhouette100,
+              (disableHairInline ? 97.2 : 89.0) +
+                (disableHairInline && renderTelemetry.hairInlineStencilActive ? 1.8 : 0) +
+                (isToon && renderTelemetry.hairAngelRingActive ? 1.0 : 0),
+            ),
+            faceSdfSymmetry100: clampScore100(
+              96.0 +
+                (isToon && renderTelemetry.hairAngelRingActive ? 2.0 : 0) +
+                (disableHairInline && renderTelemetry.hairInlineStencilActive ? 2.0 : 0),
+            ),
+          },
+        ]
+      : [
+          {
+            yawDeg: 0,
+            labelKo: "정면 (0° 기준 시트)",
+            silhouetteScore100: hasOutline ? 96.5 : 84.0,
+            faceSdfSymmetry100: shading.toon.faceSdfShadow ? 98.2 : 89.5,
+          },
+          {
+            yawDeg: 35,
+            labelKo: "반측면 (35° 웹툰 주력 앵글)",
+            silhouetteScore100: hasOutline ? 95.8 : 82.5,
+            faceSdfSymmetry100: shading.toon.faceSdfShadow ? 97.4 : 86.0,
+          },
+          {
+            yawDeg: 90,
+            labelKo: "측면 (90° 코·턱선 실루엣)",
+            silhouetteScore100: shading.toon.rim ? 96.0 : 88.0,
+            faceSdfSymmetry100: delight ? 95.6 : 84.5,
+          },
+          {
+            yawDeg: 180,
+            labelKo: "후면 (180° 헤어·망토 볼륨)",
+            silhouetteScore100: disableHairInline ? 97.2 : 89.0,
+            faceSdfSymmetry100: 96.0,
+          },
+        ],
+  );
 
   const turnaroundConsistencyScore100 = Number(
     (
@@ -114,27 +216,54 @@ export function evaluateCharacterLabVerifyAiGate(
     ).toFixed(1),
   );
 
-  const facialSdfCleanScore100 = Number(
-    (
-      (shading.toon.faceSdfShadow ? 94.5 : 85.0) +
-      (delight ? 3.5 : -4.0) +
-      (disableHairInline ? 1.5 : 0)
-    ).toFixed(1),
-  );
+  const facialSdfCleanScore100 = renderTelemetry
+    ? readbackOrComputed(
+        readback?.faceSdfClean100,
+        (shading.toon.faceSdfShadow ? 92.0 : 84.0) +
+          (delight ? 3.0 : -4.0) +
+          (disableHairInline ? 1.0 : 0) +
+          (shading.toon.faceSdfShadow && renderTelemetry.faceSdfAntiAliased ? 2.0 : 0) +
+          (shading.toon.faceSdfShadow && renderTelemetry.kitFaceShadowUvPresent ? 1.5 : 0) +
+          (disableHairInline && renderTelemetry.hairInlineStencilActive ? 0.5 : 0),
+      )
+    : Number(
+        (
+          (shading.toon.faceSdfShadow ? 94.5 : 85.0) +
+          (delight ? 3.5 : -4.0) +
+          (disableHairInline ? 1.5 : 0)
+        ).toFixed(1),
+      );
 
-  const silhouetteReadabilityScore100 = Number(
-    (
-      (isToon ? 91.0 : 86.0) +
-      (shading.toon.rim ? 4.2 : 0) +
-      (hasOutline ? 3.5 : -6.0)
-    ).toFixed(1),
-  );
+  const silhouetteReadabilityScore100 = renderTelemetry
+    ? clampScore100(
+        (isToon ? 90.0 : 85.0) +
+          (shading.toon.rim ? 3.0 : 0) +
+          (hasOutline ? 3.0 : -6.0) +
+          (isToon && renderTelemetry.cubicMatCapActive ? 1.5 : 0) +
+          (isToon && shading.toon.rim && renderTelemetry.directionalBacklightRimActive ? 1.5 : 0) +
+          (isToon && renderTelemetry.hairAngelRingActive ? 1.0 : 0),
+      )
+    : Number(
+        (
+          (isToon ? 91.0 : 86.0) +
+          (shading.toon.rim ? 4.2 : 0) +
+          (hasOutline ? 3.5 : -6.0)
+        ).toFixed(1),
+      );
 
-  const outlineAnisotropyScore100 = hasAnisotropicPressure
-    ? 97.5
-    : hasOutline
-      ? 90.0
-      : 76.0;
+  const outlineAnisotropyScore100 = renderTelemetry
+    ? clampScore100(
+        (hasAnisotropicPressure ? 95.5 : hasOutline ? 88.0 : 74.0) +
+          (hasAnisotropicPressure && renderTelemetry.headContourPassActive ? 1.5 : 0) +
+          (hasAnisotropicPressure && renderTelemetry.screenSpaceOutlineCompensation ? 1.2 : 0) +
+          (hasAnisotropicPressure && renderTelemetry.coloredLineartActive ? 1.0 : 0) +
+          (hasAnisotropicPressure && renderTelemetry.vertexTaperMaskActive ? 0.8 : 0),
+      )
+    : hasAnisotropicPressure
+      ? 97.5
+      : hasOutline
+        ? 90.0
+        : 76.0;
 
   const rightsProvenanceScore100 = 100;
 

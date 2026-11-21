@@ -157,12 +157,12 @@ export function ProductionCommandPalette({
       >
         <Search className="size-4" aria-hidden="true" />
         빠른 이동
-        <kbd className="ml-1 rounded border border-line bg-raised px-1.5 py-0.5 text-[0.625rem] text-fg-3">⌘K</kbd>
+        <kbd className="ml-1 rounded border border-line bg-raised px-1.5 py-0.5 text-xs text-fg-3">⌘K</kbd>
       </button>
 
       {open ? (
         <div
-          className="fixed inset-0 z-[100] flex items-start justify-center bg-black/45 px-3 pt-[10vh] backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-start justify-center bg-canvas/75 px-3 pt-[10vh]"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setOpen(false);
@@ -217,7 +217,7 @@ export function ProductionCommandPalette({
                 const showGroup = index === 0 || filtered[index - 1]?.group !== item.group;
                 return (
                   <div key={item.id}>
-                    {showGroup ? <p className="px-3 pb-1 pt-3 text-[0.625rem] font-black uppercase tracking-[0.14em] text-fg-3">{item.group}</p> : null}
+                    {showGroup ? <p className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-[0.14em] text-fg-3">{item.group}</p> : null}
                     <button
                       id={`production-command-${item.id}`}
                       type="button"
@@ -231,7 +231,7 @@ export function ProductionCommandPalette({
                       )}
                     >
                       <div className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", active ? "bg-accent text-on-accent" : "bg-raised text-fg-2")}><Icon className="size-4" aria-hidden="true" /></div>
-                      <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{item.label}</p><p className={cn("mt-0.5 truncate text-[0.6875rem]", active ? "text-accent/80" : "text-fg-3")}>{item.description}</p></div>
+                      <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{item.label}</p><p className={cn("mt-0.5 truncate text-xs", active ? "text-accent/80" : "text-fg-3")}>{item.description}</p></div>
                     </button>
                   </div>
                 );
@@ -247,7 +247,7 @@ export function ProductionCommandPalette({
                 void navigate(href);
               }}
             />
-            <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-panel px-4 py-2 text-[0.625rem] text-fg-3"><span>↑↓ 이동 · Enter 열기 · Esc 닫기</span><span>{aggregate.title}</span></footer>
+            <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-panel px-4 py-2 text-xs text-fg-3"><span>↑↓ 이동 · Enter 열기 · Esc 닫기</span><span>{aggregate.title}</span></footer>
           </section>
         </div>
       ) : null}

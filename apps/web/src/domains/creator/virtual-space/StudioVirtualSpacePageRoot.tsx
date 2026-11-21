@@ -115,7 +115,9 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
   const [entryArtStyle, setEntryArtStyle] = useState<StudioVirtualArtStyleKey>(() => readStudioVirtualArtStyle());
   const [entryNickname, setEntryNickname] = useState(initialEntryPreference.nickname);
   const lobbyRequested = new URLSearchParams(location.search).get("lobby") === "1";
-  const [entryRequested, setEntryOpen] = useState(() => !initialEntryPreference.confirmed || lobbyRequested);
+  // 비차단 게스트 즉시 진입: 첫 방문자는 로비 모달 없이 바로 스튜디오에 입장하며
+  // 인스페이스 프로필 팝오버에서 닉네임·아바타를 변경한다(?lobby=1 또는 초대 검증 대기 시에만 로비 표시).
+  const [entryRequested, setEntryOpen] = useState(() => lobbyRequested);
   const session = useSession();
   const guestInvite = useMemo(() => parseStudioGuestInviteFragment(location.hash), [location.hash]);
   // #code=XXXXXX 코드 초대도 같은 게스트 세션 흐름으로 태우되, 초대 토큰과
@@ -233,11 +235,16 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
     ?? bt("게스트 크리에이터", "Guest creator");
   const participant = useMemo(() => {
     if (personal || !session.ready || !transportFactory) return null;
+    const role = session.data
+      ? ("editor" as const)
+      : (isGuest && Boolean(admittedGuest || returningGuest))
+        ? ("commenter" as const)
+        : ("viewer" as const);
     return {
       displayName: publicNickname,
-      role: session.data ? "editor" as const : "viewer" as const,
+      role,
     };
-  }, [personal, publicNickname, session.data, session.ready, transportFactory]);
+  }, [admittedGuest, isGuest, personal, publicNickname, returningGuest, session.data, session.ready, transportFactory]);
 
   useDocumentTitle(`${personal ? bt("나의 스튜디오", "My studio") : bt("협업 스튜디오", "Collaboration Studio")} · ToonStudio`);
 
@@ -346,7 +353,7 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
       authoringMode: new URLSearchParams(location.search).get("worldEdit") === "1" && !isGuest, search: location.search });
     return <StudioVirtualSpaceEntryLobby
       stageKind={stageKind} identity={`space:${decodedProjectId}`}
-      avatarIndex={guestMode ? 0 : entryAvatarIndex}
+      avatarIndex={entryAvatarIndex}
       artStyle={entryArtStyle}
       nickname={entryNickname}
       returning={initialEntryPreference.confirmed && !guestMode}
@@ -379,27 +386,27 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
     />;
   }
 
-  // 무대 엔진은 클래식 2D(Phaser) 단일이다. 3D 무대(구 Godot·Unity 임베드)는
-  // 2026-10-21 저장소 소유자 결정으로 제거됐다 — 엔진 선택 파라미터와 임베드
-  // 셸, 배치 편집·배경 업로드 표면이 함께 사라지고, 기존 `?engine=` 링크는
-  // 무시된 채 항상 클래식 무대로 진입한다.
+  // 무대 렌더러는 기본 2D 오피스 캔버스(StudioOffice2dCanvas)와 지연 로드 3D 무대
+  // (Three.js + Hero BG 6~12씬 + Hero VRM 1.0 8종)를 지원하며, 레거시 Phaser 무대는
+  // 월드 저작(`worldEdit=1`) 및 `?stage=legacy` 호환 경로로 격리되어 있다.
+  // 팀·게스트 공간은 Yjs 공간 CRDT 문서를 활성화하고, 개인 솔로 공간은 로컬 영속을 사용한다.
   return (
     <StudioLiveCollaborationProvider
         workId={decodedProjectId}
         participant={participant}
         currentPageId="virtual-space"
         currentTool="spatial-presence"
-        outboxScope={null}
+        outboxScope={personal ? null : userId}
         transportFactory={transportFactory}
         serverRequired
-        ephemeralOnly
+        ephemeralOnly={personal}
         showHuddleLauncher={false}
       >
         {VirtualSpaceExperience ? <VirtualSpaceExperience
           key={JSON.stringify([decodedProjectId, userId, publication.snapshot.active?.scope ?? "bundled"])}
           publication={publication}
           projectId={decodedProjectId}
-          initialAvatarIndexOverride={isGuest ? 0 : entryAvatarIndex}
+          initialAvatarIndexOverride={entryAvatarIndex}
           initialArtStyleOverride={entryArtStyle}
           nickname={publicNickname}
           onNicknameChange={(value) => {

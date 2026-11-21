@@ -33,14 +33,83 @@ export const KIT_OUTLINE_EXEMPT_ROLES: ReadonlySet<PartRole> = new Set<PartRole>
 /** 키트 몸(피부) hull 폭 배율(기본 폭 대비). 의상이 몸에 가까운 곳에서 hull이 천을 뚫고 비치지 않도록 얇게 그린다. */
 export const KIT_SKIN_OUTLINE_WIDTH_SCALE = 0.5;
 
+/** 키트 머리 Stencil-Safe 외곽선 폭 배율(기본 폭 대비). 눈·눈썹을 침범하지 않도록 얇고 단정하게 유지한다. */
+export const KIT_HEAD_CONTOUR_WIDTH_SCALE = 0.65;
+
+/** 화면 거리 기반 외곽선 두께 보정의 기준 카메라 거리(m)와 클램프 구간 */
+export const DEFAULT_OUTLINE_REFERENCE_DISTANCE = 2.6;
+export const OUTLINE_DISTANCE_SCALE_MIN = 0.45;
+export const OUTLINE_DISTANCE_SCALE_MAX = 2.25;
+
 /** 이 리그 종류의 이 역할 메시에 hull 외곽선을 켜도 되는지. 키트의 머리·눈·입 안 계열·속옷 역할만 false다. */
 export function hullOutlineAllowed(kind: OutlineRigKind, role: PartRole): boolean {
   return kind !== "kit" || !KIT_OUTLINE_EXEMPT_ROLES.has(role);
 }
 
+/** 키트 머리 전용 Stencil-Safe 윤곽선 패스를 허용할 역할인지 */
+export function kitHeadContourAllowed(kind: OutlineRigKind, role: PartRole): boolean {
+  return kind === "kit" && role === "head";
+}
+
+/** 필압 윤곽선(Stencil-Safe 머리 윤곽 포함)을 생성할 수 있는 역할인지 */
+export function contourOutlineAllowed(kind: OutlineRigKind, role: PartRole, kitHeadContour: boolean): boolean {
+  return hullOutlineAllowed(kind, role) || (kitHeadContour && kitHeadContourAllowed(kind, role));
+}
+
 /** hull 폭 배율(기본 `TOON_OUTLINE_WIDTH` × 이 값). 키트 몸만 얇고 나머지는 1이다. */
 export function hullOutlineWidthScale(kind: OutlineRigKind, role: PartRole): number {
   return kind === "kit" && role === "skin" ? KIT_SKIN_OUTLINE_WIDTH_SCALE : 1;
+}
+
+/** 필압 윤곽선 폭 배율(키트 머리는 0.65배, 키트 몸은 0.5배, 나머지는 1배). */
+export function contourOutlineWidthScale(kind: OutlineRigKind, role: PartRole): number {
+  if (kind === "kit" && role === "head") return KIT_HEAD_CONTOUR_WIDTH_SCALE;
+  return hullOutlineWidthScale(kind, role);
+}
+
+/**
+ * 카메라 거리에 따른 화면 공간 외곽선 두께 보정 배율.
+ * `strength === 0`이면 기존 월드 단위 두께(배율 1.0)를 유지한다.
+ */
+export function computeScreenSpaceOutlineScale(
+  viewDistanceM: number,
+  referenceDistanceM = DEFAULT_OUTLINE_REFERENCE_DISTANCE,
+  strength = 1,
+): number {
+  const s = Number.isFinite(strength) ? Math.min(1, Math.max(0, strength)) : 0;
+  if (s <= 0 || !Number.isFinite(viewDistanceM) || viewDistanceM <= 0 || !Number.isFinite(referenceDistanceM) || referenceDistanceM <= 0) {
+    return 1;
+  }
+  const ratio = Math.min(OUTLINE_DISTANCE_SCALE_MAX, Math.max(OUTLINE_DISTANCE_SCALE_MIN, viewDistanceM / referenceDistanceM));
+  return 1 + (ratio - 1) * s;
+}
+
+/**
+ * 재질 알베도 hex(`#rrggbb`)를 어둡게 눌러 채도 있는 잉크 선화(Colored Lineart) RGB(0..1)로 혼합한다.
+ * `tintStrength === 0`이면 기본 외곽선 색을 그대로 반환한다.
+ */
+export function computeColoredLineartRgb(
+  baseOutlineRgb: readonly [number, number, number],
+  albedoHex: string,
+  tintStrength: number,
+): readonly [number, number, number] {
+  const strength = Number.isFinite(tintStrength) ? Math.min(1, Math.max(0, tintStrength)) : 0;
+  if (strength <= 0) return baseOutlineRgb;
+  const match = /^#?([0-9a-f]{6})$/iu.exec(albedoHex.trim());
+  if (!match) return baseOutlineRgb;
+  const raw = Number.parseInt(match[1] as string, 16);
+  const ar = ((raw >> 16) & 0xff) / 255;
+  const ag = ((raw >> 8) & 0xff) / 255;
+  const ab = (raw & 0xff) / 255;
+  const darken = (channel: number): number => Math.min(0.42, Math.max(0.03, channel * 0.32 * (0.62 + 0.38 * channel)));
+  const inkR = darken(ar);
+  const inkG = darken(ag);
+  const inkB = darken(ab);
+  return [
+    baseOutlineRgb[0] + (inkR - baseOutlineRgb[0]) * strength,
+    baseOutlineRgb[1] + (inkG - baseOutlineRgb[1]) * strength,
+    baseOutlineRgb[2] + (inkB - baseOutlineRgb[2]) * strength,
+  ];
 }
 
 export interface OutlinePressureAspect {

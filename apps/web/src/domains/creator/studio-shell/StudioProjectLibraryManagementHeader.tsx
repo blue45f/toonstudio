@@ -76,6 +76,8 @@ export function StudioProjectLibraryManagementHeader({
       <button
         type="button"
         disabled={visibleProjects.length === 0}
+        title={visibleProjects.length === 0 ? bi("선택할 작품이 없습니다.", "No work available to select.") : undefined}
+        data-unavailable-reason={visibleProjects.length === 0 ? bi("선택할 작품이 없습니다.", "No work available to select.") : undefined}
         onClick={toggleVisibleSelection}
         className={buttonClass({ variant: "outline", size: "sm", className: "min-h-[44px] rounded-lg tabular-nums" })}
       >
@@ -130,7 +132,7 @@ export function StudioProjectLibraryManagementHeader({
                 )}
               >
                 {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[candidate]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[candidate]).en)}
-                <span className="ml-1.5 rounded bg-black/15 px-1.5 py-0.5 text-[0.68rem] tabular-nums">
+                <span className="ml-1.5 rounded bg-canvas/25 px-1.5 py-0.5 text-xs tabular-nums">
                   {viewCounts[candidate]}
                 </span>
               </Link>
@@ -145,12 +147,12 @@ export function StudioProjectLibraryManagementHeader({
           <span>{notice.message}</span>
           <span className="flex items-center gap-3">
             {notice.action ? (
-              <button type="button" onClick={notice.action} className="inline-flex min-h-12 items-center text-xs font-black text-accent underline underline-offset-4">
+              <button type="button" onClick={notice.action} className="inline-flex min-h-12 items-center text-xs font-semibold text-accent underline underline-offset-4">
                 {notice.actionLabel}
               </button>
             ) : null}
             {notice.actionHref && notice.actionLabel ? (
-              <Link href={notice.actionHref} className="inline-flex min-h-12 items-center text-xs font-black text-accent underline underline-offset-4">
+              <Link href={notice.actionHref} className="inline-flex min-h-12 items-center text-xs font-semibold text-accent underline underline-offset-4">
                 {notice.actionLabel}
               </Link>
             ) : null}
@@ -171,7 +173,7 @@ export function StudioProjectLibraryManagementHeader({
                 library.reload();
                 profiles.reload();
               }}
-              className="inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-lg border border-danger/40 px-3 text-xs font-black text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-lg border border-danger/40 px-3 text-xs font-semibold text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <RotateCcw size={14} aria-hidden="true" />
               {bi("다시 시도", "Try again")}
@@ -240,13 +242,13 @@ export function StudioProjectLibraryManagementHeader({
       </section>
 
       {selectedProjects.length > 0 ? (
-        <section className="sticky top-3 z-30 mt-3 rounded-2xl border border-accent/35 bg-card/95 p-3 shadow-lg backdrop-blur" aria-label={bi("선택 작업", "Selection actions")}>
+        <section className="sticky top-3 z-30 mt-3 rounded-xl border border-accent/35 bg-card p-3" aria-label={bi("선택 작업", "Selection actions")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-black text-fg">
+              <p className="text-sm font-semibold tabular-nums text-fg">
                 {formatI18nTemplate(String(bi("{value0}개 선택", "{value0} selected")), { value0: selectedProjects.length })}
               </p>
-              <p className="mt-0.5 text-[0.68rem] text-fg-3">
+              <p className="mt-0.5 text-xs text-fg-3">
                 {bi("검색 결과 전체 선택과 개별 선택을 함께 사용할 수 있습니다.", "Combine select-all results with individual selection.")}
               </p>
             </div>

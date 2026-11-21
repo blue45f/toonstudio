@@ -108,6 +108,7 @@ import {
   isStudioLiquifyPointerOwner,
 } from "../studio-liquify-pointer";
 import { studioLiquifyDragMinDistance } from "../studio-liquify-stroke-sampling";
+import type { StudioLowLatencyPredictor as StudioLowLatencyPredictorInstance } from "../studio-lowlatency-predictor";
 import { resolveStudioLivePublishedCursorTool } from "../live/studio-live-canvas-overlay-model";
 import {
   createStudioLivingInkCanonicalTransaction,
@@ -384,6 +385,26 @@ export function bindStudioCuttoonStagePointersPublish(
     return true;
   };
 
+  // 120Hz 오버슈트 바운드 2차 외삽기(16ms 호라이즌) — 지연 로드로 진입 그래프 +0B 유지.
+  let lowLatencyPredictor: StudioLowLatencyPredictorInstance | null = null;
+  let lowLatencyPredictorLoadStarted = false;
+  const ensureLowLatencyPredictor = (): StudioLowLatencyPredictorInstance | null => {
+    if (lowLatencyPredictor) return lowLatencyPredictor;
+    if (!lowLatencyPredictorLoadStarted) {
+      lowLatencyPredictorLoadStarted = true;
+      void import("../studio-lowlatency-predictor")
+        .then((mod) => {
+          lowLatencyPredictor = new mod.StudioLowLatencyPredictor({
+            maxHorizonMs: 16,
+            maxLeadStepMultiple: 1.5,
+            accelerationTrust: 0.5,
+          });
+        })
+        .catch(() => {});
+    }
+    return null;
+  };
+
   // Native listeners stay mounted for one contact, while these ports always point at this render's
   // drawing settings, document, draft surfaces and finish coordinator.
   requireStudioDrawingPointerTransport(drawingPointerTransportRef).updatePorts({
@@ -413,6 +434,14 @@ export function bindStudioCuttoonStagePointersPublish(
       if (!pointerMapperCache) return;
       // Reuse the mapper acquired while consuming the batch.
       const contactPoint = pointerMapperCache.mapperFor(stage).pointFor(pointerEvent);
+      if (contactPoint) {
+        ensureLowLatencyPredictor()?.push({
+          x: contactPoint.x,
+          y: contactPoint.y,
+          timeStamp: pointerEvent.timeStamp,
+          pressure: pointerEvent.pressure,
+        });
+      }
       // Authoritative ink wins the native pointer task. The cursor keeps only the latest position
       // and paints once on the next frame, so a high-Hz pen cannot make a cosmetic layer delay ink.
       updateBrushCursor(stage, pointerEvent, contactPoint, true);
@@ -478,13 +507,19 @@ export function bindStudioCuttoonStagePointersPublish(
             fallbackPressure: studioInkFallbackPressure(drawing.pressureModel),
           }
         ).pressure;
+        // 16ms 호라이즌 바운드 예측 꼬리: 리플레이스 전용 프리뷰 표면에만 반영(영속 스트로크 무변경).
+        const predictedLead = STUDIO_POINTER_PREDICTION_ENABLED
+          ? ensureLowLatencyPredictor()?.predict(16) ?? null
+          : null;
+        const previewX = predictedLead ? predictedLead.x : contactPoint.x;
+        const previewY = predictedLead ? predictedLead.y : contactPoint.y;
         const rawTransition = replaceStudioRawPenInkPreview(rawState, {
           pointerId: pointerEvent.pointerId,
           generation: rawState.generation,
           eligibility: currentRawPenInkPreviewEligibility(pointerEvent, drawing),
           point: {
-            x: contactPoint.x,
-            y: contactPoint.y,
+            x: previewX,
+            y: previewY,
             pressure: studioLiveBrushPressure(drawing, previewPressure),
           },
         });
@@ -504,10 +539,12 @@ export function bindStudioCuttoonStagePointersPublish(
       );
     },
     onDiscard: () => {
+      lowLatencyPredictor?.reset();
       if (!drawingRef.current && !requireStudioDrawingPointerTransport(drawingPointerTransportRef).getSession()) return;
       discardDrawingPointerSession();
     },
     onFinish: (pointerEvent, request) => {
+      lowLatencyPredictor?.reset();
       // Snapshot + stop happen inside finishDrawingPointer; clearing QuickShape here would wipe
       // the hold/lock state used by release promotion.
       if (!request.cancelled && colorWheelTimerRef.current) {

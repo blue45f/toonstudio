@@ -1,4 +1,5 @@
 import { VIRTUAL_THREE_THEME_MODEL_IDS as M } from './virtual-three-theme-models';
+import { VIRTUAL_THREE_HERO_SCENE_THEMES } from './virtual-three-hero-bg-presets';
 import { VIRTUAL_THREE_NATURE_THEMES } from './virtual-three-nature-themes';
 import type { VirtualThreeTheme, VirtualThreeAssetRecipeTheme, VirtualThreeAssetRecipeThemeId, VirtualThreePreservedBaselineTheme, VirtualThreeLayoutRole, VirtualThreeLayoutRoleKind } from './virtual-three-theme-types';
 
@@ -33,9 +34,10 @@ function theme(id: VirtualThreeAssetRecipeThemeId, ko: { name: string; descripti
     modelAssetIds: [...new Set(roles.map(item => item.modelAssetId))], layoutRoles: roles };
 }
 
-/** PBR·조명 수치는 설계 제안이다. 실제 배치·광량·가독성·충돌 검수 완료를 뜻하지 않는다. */
+/** PBR·조명 수치는 설계 제안이다. Hero 3D BG 6씬(향후 v2 확장 포함)은 카탈로그에서 동적 주입된다. */
 export const VIRTUAL_THREE_THEMES: readonly VirtualThreeTheme[] = [
   DEFAULT_VIRTUAL_THREE_THEME,
+  ...VIRTUAL_THREE_HERO_SCENE_THEMES,
   theme('parkbotanical',
     { name: '식물 정원 스튜디오', description: '각진 나무와 꽃, 벤치 사이의 이젤에서 그림을 그립니다. 부드러운 초록빛과 목재 질감이 감도는 정원 작업실입니다.' },
     { name: 'Botanical Park Studio', description: 'Draw at an easel among cube trees, flowers and garden benches. Soft greens and warm wood textures set the mood for a garden workspace.' },

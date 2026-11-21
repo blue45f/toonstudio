@@ -26,7 +26,7 @@ export function StudioDrawingClarityBarFallback({ title }: { readonly title: str
   const resolvedTitle = title.trim() || bt("제목 없는 원고", "Untitled draft");
   return (
     <>
-      <header
+      <div
         id="studio-menubar"
         role="region"
         aria-label={bt("드로잉 도구와 저장", "Drawing tools and save")}
@@ -39,7 +39,7 @@ export function StudioDrawingClarityBarFallback({ title }: { readonly title: str
           <h1 title={title}>{resolvedTitle}</h1>
           <div id="studio-document-chrome-slot" data-studio-document-chrome-slot="true" />
         </div>
-      </header>
+      </div>
       <div aria-hidden="true" className="studio-drawing-clarity-context-row" />
     </>
   );

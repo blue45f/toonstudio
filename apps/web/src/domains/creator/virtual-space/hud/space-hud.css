@@ -114,6 +114,29 @@ body:has(.space-hud) [data-site-ost="mounted"] { display: none !important; }
   align-items: flex-start;
   max-width: var(--space-top-left-width);
 }
+.space-top-tools-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: calc(100vw - var(--space-minimap-width) - var(--space-gutter) * 3 - var(--space-safe-left) - var(--space-safe-right));
+}
+.space-hud[data-panel-open][data-hud-layout="desktop"] .space-top-tools-row {
+  max-width: calc(100vw - var(--space-panel-width) - var(--space-minimap-width) - var(--space-gutter) * 4 - var(--space-safe-left) - var(--space-safe-right));
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.space-top-tools-row::-webkit-scrollbar { display: none; }
+@media (max-width: 1023.98px) {
+  .space-top-tools-row {
+    width: 100%;
+    max-width: calc(100vw - var(--space-gutter) * 2 - var(--space-safe-left) - var(--space-safe-right));
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+}
 .space-hud__slot--top-center {
   top: calc(var(--space-gutter) + var(--space-safe-top));
   left: calc(var(--space-top-left-width) + var(--space-gutter) * 2 + var(--space-safe-left));
@@ -952,7 +975,7 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   animation: space-rise .18s ease-out both;
 }
 .space-popover--more,
-.space-popover--work { right: 0; left: auto; transform: none; }
+.space-popover--work { right: 0; left: auto; transform: none; z-index: 50; max-height: min(74dvh, calc(100dvh - 148px)); overscroll-behavior: contain; }
 .space-popover--work { width: min(460px, calc(100vw - 32px)); max-width: none; }
 .space-popover--map {
   position: absolute;
@@ -1505,6 +1528,9 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   border-radius: 20px 20px 0 0;
   background: var(--space-surface-solid);
   box-shadow: var(--space-shadow);
+}
+.space-mobile-dock[data-engine-mode="3d"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.25fr) repeat(2, minmax(0, 1fr));
 }
 .space-mobile-dock { position: relative; }
 /* 모바일 리액션 토글: 도크 바로 위에 펼치는 가로 한 줄. 화면을 막지 않는다. */

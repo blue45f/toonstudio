@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
-/** 떠 있는 창을 여는 단추가 있는 영역: 문서 메뉴바, 도구 옵션 줄, 그리기 도구 줄. */
-const WINDOW_OPENER_REGIONS = "#studio-menubar, #studio-tool-belt, #studio-tool-rail";
+/** 떠 있는 창을 여는 단추가 있는 영역: 문서 메뉴바, 도구 옵션 줄, 그리기 도구 줄(기본 레일 포함). */
+const WINDOW_OPENER_REGIONS = "#studio-menubar, #studio-tool-belt, #studio-tool-rail, .studio-drawing-clarity-rail";
 
 function studioRoot(): HTMLElement | null {
   return document.getElementById("studio-app-shell")
@@ -31,8 +31,15 @@ function locate(selector: string): HTMLElement | null {
  * - 닫히면서 포커스가 문서 본문으로 떨어졌을 때만 여는 단추로 돌려준다. 이미 다른 곳으로 옮겼다면 그 선택을 존중한다.
  * - 개발 모드(StrictMode)가 효과를 두 번 돌려도 처음 읽은 여는 단추를 ref 에 남겨 쓴다.
  */
-export function useStudioWindowKeyboardFocus(windowSelector: string, open: boolean): void {
+export function useStudioWindowKeyboardFocus(
+  windowSelector: string,
+  open: boolean,
+  onEscape?: () => void,
+): void {
   const openerRef = useRef<Element | null | undefined>(undefined);
+  const onEscapeRef = useRef(onEscape);
+  onEscapeRef.current = onEscape;
+
   useEffect(() => {
     if (!open) {
       openerRef.current = undefined;
@@ -49,7 +56,21 @@ export function useStudioWindowKeyboardFocus(windowSelector: string, open: boole
         surface.focus({ preventScroll: true });
       }
     }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!onEscapeRef.current || event.key !== "Escape" || event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
+      const hasBlockingOverlay = Array.from(
+        document.querySelectorAll<HTMLElement>('[aria-modal="true"], [data-studio-main-menu-panel="true"]'),
+      ).some((node) => !node.hidden && !node.inert && node.getClientRects().length > 0);
+      if (hasBlockingOverlay) return;
+      event.preventDefault();
+      event.stopPropagation();
+      onEscapeRef.current();
+    };
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
+      document.removeEventListener("keydown", handleKeyDown);
       const opener = openerRef.current;
       const active = document.activeElement;
       if (opener instanceof HTMLElement && opener.isConnected && (active === null || active === document.body)) {

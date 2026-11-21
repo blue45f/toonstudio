@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Compass, Layers, MapPin, Sparkles, UserCheck, Wand2, X } from "lucide-react";
+import { Compass, Layers, MapPin, UserCheck, Wand2, X } from "lucide-react";
 
 import { StudioVirtualDynamicSpriteAvatar } from "./StudioVirtualDynamicSpriteAvatar";
 import { StudioVirtualDynamicSpriteWorkspace } from "./StudioVirtualDynamicSpriteWorkspace";
@@ -235,8 +235,8 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
             스마트 AI 2.5D 스튜디오 아틀리에 (12대 테마 · 8인 캐스트 · 4방향 보행 · 4룸 모듈)
           </strong>
         </div>
-        <span className="rounded-full border border-accent bg-accent-soft px-2 py-0.5 text-[10px] font-semibold text-accent">
-          ✦ 스마트 AI 보조 연동
+        <span className="rounded-full border border-accent bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent">
+          2.5D 아틀리에 연동
         </span>
       </div>
 
@@ -250,7 +250,7 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
               alt={activeTheme.titleKo}
               className="h-full w-full object-cover"
             />
-            <span className="absolute bottom-1.5 left-1.5 rounded bg-panel/90 px-2 py-0.5 text-[10px] font-bold text-fg backdrop-blur-sm">
+            <span className="absolute bottom-1.5 left-1.5 rounded bg-panel/90 px-2 py-0.5 text-xs font-bold text-fg backdrop-blur-sm">
               {activeTheme.titleKo}
             </span>
           </div>
@@ -261,7 +261,7 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
 
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
           <div className="flex flex-col items-center justify-between rounded-xl border border-line bg-panel p-2 text-center">
-            <span className="text-[10px] font-semibold text-fg-2">8인 소두 다중프레임</span>
+            <span className="text-xs font-semibold text-fg-2">8인 소두 다중프레임</span>
             <div className="flex items-center gap-1">
               <img
                 data-testid="lobby-illustrated-cast-img"
@@ -278,13 +278,13 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
                 testId="lobby-dynamic-sprite-avatar"
               />
             </div>
-            <strong className="line-clamp-1 text-[10px] text-fg">
+            <strong className="line-clamp-1 text-xs text-fg">
               {activePersona.nameKo}
             </strong>
           </div>
 
           <div className="flex flex-col items-center justify-between rounded-xl border border-line bg-panel p-2 text-center">
-            <span className="text-[10px] font-semibold text-fg-2">4방향 보행(v14)</span>
+            <span className="text-[11px] font-semibold text-fg-2">4방향 보행</span>
             <img
               data-testid="lobby-illustrated-walk-img"
               src={activeWalk.spriteUrl}
@@ -313,14 +313,14 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
           </div>
 
           <div className="flex flex-col items-center justify-between rounded-xl border border-line bg-panel p-2 text-center">
-            <span className="text-[10px] font-semibold text-fg-2">특화 룸(v14)</span>
+            <span className="text-[11px] font-semibold text-fg-2">특화 룸</span>
             <img
               data-testid="lobby-illustrated-room-img"
               src={activeRoom.imageUrl}
               alt={activeRoom.nameKo}
               className="h-16 w-full rounded border border-line bg-card object-cover"
             />
-            <strong className="line-clamp-1 text-[10px] text-fg">
+            <strong className="line-clamp-1 text-xs text-fg">
               {activeRoom.nameKo}
             </strong>
           </div>
@@ -329,7 +329,7 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
 
       {/* 12 Studio Themes Selector Pills */}
       <div>
-        <div className="mb-1 flex items-center justify-between text-[10px] text-fg-2">
+        <div className="mb-1 flex items-center justify-between text-xs text-fg-2">
           <span className="font-semibold text-fg">12대 스튜디오 테마 선택 (입장 시 연동)</span>
           <span>선택 테마: {activeTheme.titleKo}</span>
         </div>
@@ -340,7 +340,7 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
               type="button"
               data-testid={`lobby-theme-${theme.id}-btn`}
               onClick={() => updateSelection({ themeId: theme.id })}
-              className={`rounded-lg border px-2 py-1 text-[10px] font-medium transition ${
+              className={`rounded-lg border px-2 py-1 text-xs font-medium transition ${
                 selection.themeId === theme.id
                   ? "border-accent bg-accent-soft font-bold text-accent"
                   : "border-line bg-panel text-fg-2 hover:text-fg"
@@ -355,7 +355,7 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
       {/* 8 Creator Cast + 4 Room Modules Selector Pills */}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
-          <span className="mb-1 block text-[10px] font-semibold text-fg">
+          <span className="mb-1 block text-xs font-semibold text-fg">
             8인 개성파 웹툰 크리에이터 & 마스코트
           </span>
           <div className="flex flex-wrap gap-1">
@@ -365,7 +365,7 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
                 type="button"
                 data-testid={`lobby-persona-${persona.id}-btn`}
                 onClick={() => updateSelection({ personaId: persona.id })}
-                className={`rounded-lg border px-2 py-0.5 text-[10px] transition ${
+                className={`rounded-lg border px-2 py-0.5 text-xs transition ${
                   selection.personaId === persona.id
                     ? "border-accent bg-accent-soft font-bold text-accent"
                     : "border-line bg-panel text-fg-2"
@@ -377,8 +377,8 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
           </div>
         </div>
         <div>
-          <span className="mb-1 block text-[10px] font-semibold text-fg">
-            4종 웹툰 특화 스튜디오 룸 모듈 (v14) · 이모트 ({activeEmote.labelKo})
+          <span className="mb-1 block text-[11px] font-semibold text-fg">
+            4종 웹툰 특화 스튜디오 룸 모듈 · 이모트 ({activeEmote.labelKo})
           </span>
           <div className="flex flex-wrap gap-1">
             {ILLUSTRATED_V14_ROOM_MODULES.map((room) => (
@@ -387,7 +387,7 @@ export function StudioVirtualSpaceIllustratedLobbyShowcase() {
                 type="button"
                 data-testid={`lobby-room-${room.id}-btn`}
                 onClick={() => updateSelection({ roomModuleId: room.id })}
-                className={`rounded-lg border px-2 py-0.5 text-[10px] transition ${
+                className={`rounded-lg border px-2 py-0.5 text-xs transition ${
                   selection.roomModuleId === room.id
                     ? "border-accent bg-accent-soft font-bold text-accent"
                     : "border-line bg-panel text-fg-2"
@@ -507,7 +507,7 @@ export function StudioVirtualSpaceIllustratedStageHud() {
     if (!station) return;
     setActiveWorkstationId(station.id);
     requestStudioActiveBridgeTeleport(station.spawnPoint);
-    triggerIllustrated2dVfxBurst(`${station.titleKo} 이동! ✨`, station.accentColor);
+    triggerIllustrated2dVfxBurst(`${station.titleKo} 이동`, station.accentColor);
   };
 
   const triggerSleekActionVfx = (actionId: IllustratedV15ActionId, label: string, color: number) => {
@@ -540,12 +540,11 @@ export function StudioVirtualSpaceIllustratedStageHud() {
               className="h-8 w-8 shrink-0 rounded-lg border border-line bg-card object-contain p-0.5"
             />
             <div className="flex min-w-0 flex-col">
-              <span className="flex items-center gap-1 truncate text-[11px] font-bold text-fg">
-                <Sparkles className="h-3 w-3 shrink-0 text-accent" />
+              <span className="flex items-center gap-1 truncate text-xs font-bold text-fg">
                 <span className="truncate">{activeTheme.titleKo}</span>
               </span>
-              <span className="truncate text-[10px] text-fg-2">
-                {activePersona.nameKo.split(" (")[0]} · 소두 다중프레임(v15) · 보행 {selection.walkDirection.toUpperCase()}
+              <span className="truncate text-[11px] text-fg-2">
+                {activePersona.nameKo.split(" (")[0]} · 보행 {selection.walkDirection.toUpperCase()}
               </span>
             </div>
           </div>
@@ -555,18 +554,18 @@ export function StudioVirtualSpaceIllustratedStageHud() {
               type="button"
               data-testid="main-stage-open-workstation-modal-btn"
               onClick={() => setWorkstationModalOpen((prev) => !prev)}
-              className="flex shrink-0 items-center gap-1 rounded-xl border border-accent bg-accent px-2.5 py-1.5 text-[11px] font-bold text-on-accent shadow-sm transition hover:opacity-95"
+              className="flex min-h-11 shrink-0 items-center gap-1 rounded-xl border border-accent bg-accent px-2.5 text-xs font-semibold text-on-accent shadow-sm transition hover:opacity-95"
             >
-              ⚡ 실무 협업창
+              실무 협업창
             </button>
             <button
               type="button"
               data-testid="main-stage-open-illustrated-workbench-btn"
               onClick={() => setWorkbenchOpen((prev) => !prev)}
-              className="flex shrink-0 items-center gap-1 rounded-xl border border-accent bg-accent-soft px-2 py-1.5 text-[11px] font-bold text-accent shadow-sm transition hover:opacity-95"
+              className="flex min-h-11 shrink-0 items-center gap-1 rounded-xl border border-accent bg-accent-soft px-2.5 text-xs font-semibold text-accent shadow-sm transition hover:opacity-95"
             >
               <Layers className="h-3.5 w-3.5" />
-              {workbenchOpen ? "워크벤치 닫기" : "✦ 스마트 AI 2.5D 스튜디오 & 실무 워크벤치 열기"}
+              {workbenchOpen ? "워크벤치 닫기" : "스튜디오 워크벤치"}
             </button>
           </div>
         </div>
@@ -576,7 +575,7 @@ export function StudioVirtualSpaceIllustratedStageHud() {
             type="button"
             data-testid="main-stage-cycle-theme-btn"
             onClick={cycleTheme}
-            className="shrink-0 rounded-lg border border-line bg-card px-2 py-0.5 text-[10px] font-medium text-fg hover:border-accent"
+            className="shrink-0 rounded-lg border border-line bg-card px-2 py-0.5 text-xs font-medium text-fg hover:border-accent"
           >
             테마 전환 (12종)
           </button>
@@ -584,7 +583,7 @@ export function StudioVirtualSpaceIllustratedStageHud() {
             type="button"
             data-testid="main-stage-cycle-persona-btn"
             onClick={cyclePersona}
-            className="shrink-0 rounded-lg border border-line bg-card px-2 py-0.5 text-[10px] font-medium text-fg hover:border-accent"
+            className="shrink-0 rounded-lg border border-line bg-card px-2 py-0.5 text-xs font-medium text-fg hover:border-accent"
           >
             <UserCheck className="mr-1 inline h-3 w-3 text-accent" />
             캐릭터 전환 (8인)
@@ -593,7 +592,7 @@ export function StudioVirtualSpaceIllustratedStageHud() {
             type="button"
             data-testid="main-stage-cycle-walk-btn"
             onClick={cycleWalkDirection}
-            className="shrink-0 rounded-lg border border-line bg-card px-2 py-0.5 text-[10px] font-medium text-fg hover:border-accent"
+            className="shrink-0 rounded-lg border border-line bg-card px-2 py-0.5 text-xs font-medium text-fg hover:border-accent"
           >
             <Compass className="mr-1 inline h-3 w-3 text-accent" />
             4방향 보행
@@ -602,33 +601,33 @@ export function StudioVirtualSpaceIllustratedStageHud() {
             type="button"
             data-testid="main-stage-cycle-emote-btn"
             onClick={cycleEmote}
-            className="shrink-0 rounded-lg border border-line bg-card px-2 py-0.5 text-[10px] font-medium text-fg hover:border-accent"
+            className="shrink-0 rounded-lg border border-line bg-card px-2 py-0.5 text-xs font-medium text-fg hover:border-accent"
           >
             이모트 ({activeEmote.labelKo})
           </button>
         </div>
 
-        {/* v15 슬림 5.5등신 다중 표정·액션 & 2D 특수효과(VFX) 즉시 발동 바 */}
+        {/* 다중 표정·액션 & 2D 특수효과(VFX) 즉시 발동 바 */}
         <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap border-t border-line/70 pt-1 [scrollbar-width:none]">
-          <span className="mr-1 shrink-0 text-[10px] font-bold text-accent">✦ 표정·VFX:</span>
+          <span className="mr-1 shrink-0 text-[11px] font-semibold text-accent">표정·VFX:</span>
           {(
             [
-              ["stride-draw", "😄 스케치보행", 0x38bdf8],
-              ["action-slash", "😉 펜슬래시⚡", 0xfbbf24],
-              ["focus-overdrive", "🔥 초집중각성", 0xa855f7],
-              ["cheer-coffee", "☕ 라떼치어스", 0x34d399],
-              ["pd-approve", "✅ PD승인도장", 0x60a5fa],
-              ["colorist-magic", "🌈 컬러마법", 0xf472b6],
+              ["stride-draw", "스케치보행", 0x38bdf8],
+              ["action-slash", "펜슬래시", 0xfbbf24],
+              ["focus-overdrive", "초집중각성", 0xa855f7],
+              ["cheer-coffee", "라떼치어스", 0x34d399],
+              ["pd-approve", "PD승인도장", 0x60a5fa],
+              ["colorist-magic", "컬러마법", 0xf472b6],
             ] as const
           ).map(([actId, label, color]) => (
             <button
               key={actId}
               type="button"
               data-testid={`main-stage-v15-action-${actId}-btn`}
-              onClick={() => triggerSleekActionVfx(actId, `${label} 발동!`, color)}
-              className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold transition ${
+              onClick={() => triggerSleekActionVfx(actId, label, color)}
+              className={`min-h-9 shrink-0 rounded-md border px-2 text-xs font-medium transition ${
                 activeV15Action === actId
-                  ? "border-accent bg-accent-soft font-bold text-accent"
+                  ? "border-accent bg-accent-soft font-semibold text-accent"
                   : "border-line bg-card text-fg-2 hover:border-accent hover:text-fg"
               }`}
             >
@@ -639,7 +638,7 @@ export function StudioVirtualSpaceIllustratedStageHud() {
 
         {/* 2D 월드 내 2.5D 웹툰 워크스테이션 즉시 이동 & 협업 오픈 바 */}
         <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap border-t border-line/70 pt-1 [scrollbar-width:none]">
-          <span className="mr-1 flex shrink-0 items-center gap-1 text-[10px] font-bold text-accent">
+          <span className="mr-1 flex shrink-0 items-center gap-1 text-xs font-bold text-accent">
             <MapPin className="h-3 w-3" />
             2D 워크스테이션:
           </span>
@@ -649,7 +648,7 @@ export function StudioVirtualSpaceIllustratedStageHud() {
               type="button"
               data-testid={`main-stage-teleport-${station.id}-btn`}
               onClick={() => teleportToWorkstation(station.id)}
-              className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition ${
+              className={`shrink-0 rounded-md border px-1.5 py-0.5 text-xs font-medium transition ${
                 activeWorkstationId === station.id
                   ? "border-accent bg-accent-soft font-bold text-accent"
                   : "border-line bg-card text-fg-2 hover:border-accent hover:text-fg"
@@ -686,14 +685,14 @@ export function StudioVirtualSpaceIllustratedStageHud() {
                 스마트 AI 2.5D 차세대 웹툰 가상 스튜디오 & 실무 마감 워크벤치
               </h2>
               <p className="text-xs text-fg-2">
-                12대 장르 스튜디오 테마 · 8인 개성파 캐릭터/마스코트 · 4방향 보행(v14) · 4종 특화 룸(v14) · 60fps 물리엔진 · WebAudio HRTF 사운드 · 일일 원고 마감 워크벤치
+                12대 장르 스튜디오 테마 · 8인 캐릭터 · 4방향 보행 · 4종 특화 룸 · WebAudio HRTF 공간 오디오 · 마감 워크벤치
               </p>
             </div>
             <button
               type="button"
               data-testid="main-stage-close-illustrated-workbench-btn"
               onClick={() => setWorkbenchOpen(false)}
-              className="flex items-center gap-1 rounded-lg border border-line bg-card px-3 py-1.5 text-xs font-bold text-fg hover:border-accent"
+              className="flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg hover:border-accent"
             >
               <X className="h-4 w-4" />
               3D/2D 무대로 돌아가기

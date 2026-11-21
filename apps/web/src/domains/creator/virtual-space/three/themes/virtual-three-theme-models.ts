@@ -44,5 +44,5 @@ export const VIRTUAL_THREE_THEME_MODEL_REFS: readonly VirtualThreeThemeModelRef[
   ...VIRTUAL_THREE_NATURE_MODEL_REFS,
 ];
 export function findVirtualThreeThemeModelRef(id: string): VirtualThreeThemeModelRef | undefined {
-  return VIRTUAL_THREE_THEME_MODEL_REFS.find(model => (model.source === 'bundle' ? model.assetId : model.id) === id);
+  return VIRTUAL_THREE_THEME_MODEL_REFS.find(model => (model.source === 'generated' ? model.id : model.assetId) === id);
 }

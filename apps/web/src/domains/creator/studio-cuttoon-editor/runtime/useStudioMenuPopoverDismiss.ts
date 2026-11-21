@@ -14,7 +14,9 @@ export function useStudioMenuPopoverDismiss({
 }: StudioMenuPopoverDismissOptions): void {
   useEffect(() => {
     if (!open) return;
-    const ownerDocument = triggerRef.current?.ownerDocument ?? fallbackLauncher?.()?.ownerDocument;
+    const ownerDocument = triggerRef.current?.ownerDocument
+      ?? fallbackLauncher?.()?.ownerDocument
+      ?? (typeof document !== "undefined" ? document : undefined);
     if (!ownerDocument) return;
 
     const onPointerDown = (event: PointerEvent) => {

@@ -103,6 +103,8 @@ export interface Studio3DLineArtExtractorOptions {
   readonly normalAngleThresholdDeg?: number;
   /** Depth 엣지 차이 임계값 (0-1). 기본값 0.05. */
   readonly depthThreshold?: number;
+  /** 크롭-줌 출력 배율(>0). 미지정 또는 1이면 원본 픽셀 공간 두께를 그대로 사용한다. */
+  readonly cropZoomScale?: number;
 }
 
 export interface VectorPathPoint {
@@ -128,6 +130,8 @@ export interface Studio3DLineArtExtractorResult {
   readonly linePixelCount: number;
   /** 단일 채널 엣지 마스크 (0 또는 255). */
   readonly edgeMask: Uint8Array;
+  /** 스케일 정규화가 반영된 실제 선 두께(px). */
+  readonly effectiveLineThickness?: number;
   /** 벡터화된 스트로크 목록 (선택적 생성). */
   readonly vectorStrokes?: readonly VectorStrokePath[];
   /** SVG 문자열 표현 (선택적). */
@@ -150,9 +154,14 @@ export interface ScreentoneOptions {
   readonly transparentBackground?: boolean;
 }
 
-/**
- * 3D 렌더 RGBA 버퍼에서 툰 윤곽선(LineArt) 레이어를 추출한다.
- */
+/** 크롭-줌 배율에 맞춰 선 두께를 정규화한다(미지정·1배율은 기존 동작 유지). */
+export function resolveScaleNormalizedLineThickness(lineThickness: number, cropZoomScale?: number): number {
+  const base = Math.max(1, Math.min(8, Number.isFinite(lineThickness) ? lineThickness : 1));
+  if (typeof cropZoomScale !== "number" || !Number.isFinite(cropZoomScale) || cropZoomScale <= 0 || cropZoomScale === 1) return base;
+  return Math.max(1, Math.min(8, Math.round(base / cropZoomScale)));
+}
+
+/** 3D 렌더 RGBA 버퍼에서 툰 윤곽선(LineArt) 레이어를 추출한다. */
 export function extractStudio3DLineArt(
   pixelData: Uint8ClampedArray | Uint8Array,
   width: number,
@@ -161,7 +170,7 @@ export function extractStudio3DLineArt(
 ): Studio3DLineArtExtractorResult {
   const algorithm = options.algorithm ?? "sobel";
   const threshold = Math.max(1, Math.min(255, options.threshold ?? 48));
-  const lineThickness = Math.max(1, Math.min(8, options.lineThickness ?? 1));
+  const lineThickness = resolveScaleNormalizedLineThickness(options.lineThickness ?? 1, options.cropZoomScale);
   const lineColor = options.lineColor ?? [0, 0, 0, 255];
   const transparentBackground = options.transparentBackground ?? true;
 
@@ -236,6 +245,7 @@ export function extractStudio3DLineArt(
     height,
     linePixelCount,
     edgeMask: thickEdges,
+    effectiveLineThickness: lineThickness,
   };
 }
 

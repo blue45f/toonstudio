@@ -127,4 +127,24 @@ describe("Studio menubar popover dismissal", () => {
     pointerDown(menu.outside);
     expect(latestDismiss).toHaveBeenCalledOnce();
   });
+
+  it("still dismisses on Escape and outside press when the legacy trigger ref is unmounted (Clarity shell)", () => {
+    const panel = document.createElement("div");
+    panel.setAttribute("data-studio-project-actions-menu", "true");
+    const control = document.createElement("button");
+    panel.append(control);
+    const outside = document.createElement("button");
+    document.body.append(panel, outside);
+    const onDismiss = vi.fn();
+    const triggerRef = { current: null };
+    const hook = renderHook(() => useStudioMenuPopoverDismiss({
+      open: true, triggerRef, panelSelector: "[data-studio-project-actions-menu]", onDismiss,
+    }));
+    control.focus();
+    expect(escape(control).defaultPrevented).toBe(true);
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    pointerDown(outside);
+    expect(onDismiss).toHaveBeenCalledTimes(2);
+    hook.unmount();
+  });
 });

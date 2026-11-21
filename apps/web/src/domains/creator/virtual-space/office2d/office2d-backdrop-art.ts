@@ -1,4 +1,4 @@
-import { studioSpaceThemeArtworkUrl, studioSpaceThemeArtworkUrls } from "../studio-virtual-space-theme-artwork";
+import { studioSpaceThemeArtworkUrls } from "../studio-virtual-space-theme-artwork";
 /**
  * ToonOffice 2D 고품질 이미지 배경(룸 아트 뮤럴·테마 카펫), 실시간 공간 이펙트,
  * 가구 가림 반투명화(Occlusion Fade), 만화적 의성어(VFX Burst), 평면도(Schematic) 오버뷰 렌더러.
@@ -211,8 +211,8 @@ function findStation(id: string): Illustrated2dWorkstationPlacement {
 }
 
 /**
- * 바닥 청크에 방별 고품질 아트 카펫(타피스트리)을 은은하게 합성한다.
- * 가구와 캐릭터 가독성을 해치지 않도록 라운드 프레임과 비네팅 알파(0.24)로 블렌딩한다.
+ * 바닥 청크에 방별 건축 존 매트(톤 인레이와 얇은 경계선)를 차분하게 합성한다.
+ * 원근감 있는 일러스트를 평면 바닥에 흐리게 겹치면 가구·아바타 가독성을 해치므로 절제된 컬러 매트만 표현한다.
  */
 export function paintOffice2dRoomFloorBackdrops(
   ctx: Office2dCanvas2D,
@@ -220,12 +220,10 @@ export function paintOffice2dRoomFloorBackdrops(
   originX: number,
   originY: number,
   chunkSize: number,
-  getImage: (url: string) => Office2dDrawable | null,
-  spaceTheme?: StudioSpaceThemeKey | null,
+  _getImage: (url: string) => Office2dDrawable | null,
+  _spaceTheme?: StudioSpaceThemeKey | null,
 ): void {
   if (scene.kind !== "toon-hq") return;
-  const themeUrl = spaceTheme ? studioSpaceThemeArtworkUrl(spaceTheme) : null;
-  const themeImg = themeUrl ? getImage(themeUrl) : null;
   for (const room of TOON_HQ_ROOMS) {
     const spec = OFFICE2D_ROOM_ART_SPECS[room.id];
     if (!spec) continue;
@@ -236,25 +234,14 @@ export function paintOffice2dRoomFloorBackdrops(
     if (insetX >= originX + chunkSize || insetX + insetW <= originX || insetY >= originY + chunkSize || insetY + insetH <= originY) {
       continue;
     }
-    const img = themeImg ?? getImage(spec.backdropUrl);
     ctx.save();
     office2dRoundRect(ctx, insetX, insetY, insetW, insetH, 16);
-    ctx.clip();
-    if (img) {
-      ctx.globalAlpha = 0.24;
-      ctx.drawImage(img, insetX, insetY, insetW, insetH);
-    } else {
-      ctx.fillStyle = spec.accent;
-      ctx.globalAlpha = 0.08;
-      ctx.fillRect(insetX, insetY, insetW, insetH);
-    }
-    ctx.restore();
-
-    ctx.save();
+    ctx.fillStyle = spec.accent;
+    ctx.globalAlpha = 0.045;
+    ctx.fill();
     ctx.strokeStyle = spec.accent;
-    ctx.globalAlpha = 0.28;
-    ctx.lineWidth = 1.5;
-    office2dRoundRect(ctx, insetX, insetY, insetW, insetH, 16);
+    ctx.globalAlpha = 0.18;
+    ctx.lineWidth = 1.25;
     ctx.stroke();
     ctx.restore();
   }

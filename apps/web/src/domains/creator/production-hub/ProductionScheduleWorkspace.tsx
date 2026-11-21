@@ -499,8 +499,8 @@ export function ProductionScheduleWorkspace({
       <header className="border-b border-line bg-panel p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-accent"><CalendarClock className="size-4" aria-hidden="true" /><p className="text-[0.6875rem] font-black uppercase tracking-[0.14em]">Production Schedule</p></div>
-            <h2 className="mt-1 text-lg font-black text-fg">일정·용량 작업실</h2>
+            <div className="flex items-center gap-2 text-accent"><CalendarClock className="size-4" aria-hidden="true" /><p className="text-xs font-semibold uppercase tracking-[0.14em]">Production Schedule</p></div>
+            <h2 className="mt-1 text-lg font-semibold text-fg">일정·용량 작업실</h2>
             <p className="mt-1 text-xs leading-5 text-fg-2">마감, 선행 작업, 담당자와 예상 공수를 타임라인·캘린더·목록·워크로드에서 조율합니다.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -515,14 +515,14 @@ export function ProductionScheduleWorkspace({
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-3 xl:grid-cols-8">
-          <div className="rounded-xl border border-line bg-card p-3"><p className="text-[0.6875rem] font-bold text-fg-3">표시 작업</p><p className="mt-1 text-xl font-black text-fg">{tasks.length}</p></div>
-          <div className={cn("rounded-xl border p-3", overdueCount > 0 ? "border-bad/30 bg-bad/10" : "border-line bg-card")}><p className="text-[0.6875rem] font-bold text-fg-3">{t("productionHub.status.scheduleOverdue", "기한 초과")}</p><p className="mt-1 text-xl font-black text-fg">{overdueCount}</p></div>
-          <div className={cn("rounded-xl border p-3", predictedCount > 0 ? "border-warn/40 bg-warn/15" : "border-line bg-card")}><p className="text-[0.6875rem] font-bold text-fg-3">예측 위험</p><p className="mt-1 text-xl font-black text-fg">{predictedCount}</p></div>
-          <div className={cn("rounded-xl border p-3", forecastCount > 0 ? "border-warn/30 bg-warn/10" : "border-line bg-card")}><p className="text-[0.6875rem] font-bold text-fg-3">{t("productionHub.status.scheduleForecastOverrun", "예상 초과")}</p><p className="mt-1 text-xl font-black text-fg">{forecastCount}</p></div>
-          <div className={cn("rounded-xl border p-3", attentionCount > 0 ? "border-warn/30 bg-warn/10" : "border-line bg-card")}><p className="text-[0.6875rem] font-bold text-fg-3">주의 필요</p><p className="mt-1 text-xl font-black text-fg">{attentionCount}</p></div>
-          <div className="rounded-xl border border-line bg-card p-3"><p className="text-[0.6875rem] font-bold text-fg-3">예상 공수</p><p className="mt-1 text-xl font-black text-fg">{scheduledHours}h</p></div>
-          <div className="rounded-xl border border-line bg-card p-3"><p className="text-[0.6875rem] font-bold text-fg-3">활성 담당</p><p className="mt-1 text-xl font-black text-fg">{workload.length}</p></div>
-          <div className="rounded-xl border border-line bg-card p-3"><p className="text-[0.6875rem] font-bold text-fg-3">의존 연결</p><p className="mt-1 text-xl font-black text-fg">{tasks.reduce((sum, task) => sum + task.dependencyTaskIds.length, 0)}</p></div>
+          <div className="rounded-xl border border-line bg-card p-3"><p className="text-xs font-bold text-fg-3">표시 작업</p><p className="mt-1 text-xl font-semibold text-fg">{tasks.length}</p></div>
+          <div className={cn("rounded-xl border p-3", overdueCount > 0 ? "border-bad/30 bg-bad/10" : "border-line bg-card")}><p className="text-xs font-bold text-fg-3">{t("productionHub.status.scheduleOverdue", "기한 초과")}</p><p className="mt-1 text-xl font-semibold text-fg">{overdueCount}</p></div>
+          <div className={cn("rounded-xl border p-3", predictedCount > 0 ? "border-warn/40 bg-warn/15" : "border-line bg-card")}><p className="text-xs font-bold text-fg-3">예측 위험</p><p className="mt-1 text-xl font-semibold text-fg">{predictedCount}</p></div>
+          <div className={cn("rounded-xl border p-3", forecastCount > 0 ? "border-warn/30 bg-warn/10" : "border-line bg-card")}><p className="text-xs font-bold text-fg-3">{t("productionHub.status.scheduleForecastOverrun", "예상 초과")}</p><p className="mt-1 text-xl font-semibold text-fg">{forecastCount}</p></div>
+          <div className={cn("rounded-xl border p-3", attentionCount > 0 ? "border-warn/30 bg-warn/10" : "border-line bg-card")}><p className="text-xs font-bold text-fg-3">주의 필요</p><p className="mt-1 text-xl font-semibold text-fg">{attentionCount}</p></div>
+          <div className="rounded-xl border border-line bg-card p-3"><p className="text-xs font-bold text-fg-3">예상 공수</p><p className="mt-1 text-xl font-semibold text-fg">{scheduledHours}h</p></div>
+          <div className="rounded-xl border border-line bg-card p-3"><p className="text-xs font-bold text-fg-3">활성 담당</p><p className="mt-1 text-xl font-semibold text-fg">{workload.length}</p></div>
+          <div className="rounded-xl border border-line bg-card p-3"><p className="text-xs font-bold text-fg-3">의존 연결</p><p className="mt-1 text-xl font-semibold text-fg">{tasks.reduce((sum, task) => sum + task.dependencyTaskIds.length, 0)}</p></div>
         </div>
 
         <div className="production-schedule-filter-toolbar mt-3 flex flex-wrap items-center gap-2">
@@ -541,15 +541,15 @@ export function ProductionScheduleWorkspace({
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line/70 pt-3 text-xs text-fg-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-fg">표시 구간: {dateOnly(days[0]!)} – {dateOnly(days.at(-1)!)}</span>
-            <label className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-line bg-card px-2 text-[0.6875rem] text-fg-2">
+            <label className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-line bg-card px-2 text-xs text-fg-2">
               <span>시작일</span>
               <input type="date" aria-label="구간 시작일 선택" value={dateOnly(windowStart)} onChange={(event) => { const parsed = parseDate(event.target.value); if (parsed) setWindowStart(startOfDay(parsed)); }} className="min-w-0 bg-transparent font-semibold text-fg outline-none" />
             </label>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <button type="button" className={buttonClass({ variant: "quiet", size: "icon" })} aria-label="이전 2주" onClick={() => setWindowStart((value) => addDays(value, -14))}><ChevronLeft className="size-4" /></button>
-            <button type="button" onClick={() => setWindowStart(startOfDay(addDays(now, -2)))} className="min-h-8 rounded-lg border border-line bg-card px-2.5 text-[0.6875rem] font-semibold text-fg hover:bg-raised">오늘 기준</button>
-            <button type="button" onClick={() => setWindowStart(startOfDay(initialStart))} className="min-h-8 rounded-lg border border-line bg-card px-2.5 text-[0.6875rem] font-semibold text-fg hover:bg-raised">첫 마감 기준</button>
+            <button type="button" onClick={() => setWindowStart(startOfDay(addDays(now, -2)))} className="min-h-8 rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg hover:bg-raised">오늘 기준</button>
+            <button type="button" onClick={() => setWindowStart(startOfDay(initialStart))} className="min-h-8 rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg hover:bg-raised">첫 마감 기준</button>
             <button type="button" className={buttonClass({ variant: "quiet", size: "icon" })} aria-label="다음 2주" onClick={() => setWindowStart((value) => addDays(value, 14))}><ChevronRight className="size-4" /></button>
           </div>
         </div>
@@ -561,11 +561,11 @@ export function ProductionScheduleWorkspace({
             <div className="production-schedule-timeline-grid grid border-b border-line bg-card">
               <div className="production-schedule-sticky-col flex items-center justify-between border-r border-line bg-card px-3 py-2">
                 <span className="text-xs font-bold text-fg">작업 · 담당 · 마감 제어</span>
-                <span className="text-[0.6875rem] font-semibold text-fg-3">{tasks.length}건</span>
+                <span className="text-xs font-semibold text-fg-3">{tasks.length}건</span>
               </div>
               {days.map((day) => {
                 const today = dateOnly(day) === dateOnly(now);
-                return <div key={day.toISOString()} className={cn("border-r border-line px-1 py-2 text-center text-[0.6875rem] font-semibold", today ? "bg-accent-soft text-accent" : "text-fg-3")}>{DATE_LABEL.format(day)}</div>;
+                return <div key={day.toISOString()} className={cn("border-r border-line px-1 py-2 text-center text-xs font-semibold", today ? "bg-accent-soft text-accent" : "text-fg-3")}>{DATE_LABEL.format(day)}</div>;
               })}
             </div>
 
@@ -586,31 +586,31 @@ export function ProductionScheduleWorkspace({
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", statusClass(task.status))}>{taskStatusLabel(task.status, bt)}</span>
-                          <span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", riskClass(risk))}>{scheduleRiskLabel(risk, bt)}</span>
-                          <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-[0.625rem] font-semibold text-fg-2">{formatDueRelativeBadge(task, now)}</span>
+                          <span className={cn("rounded-full border px-2 py-0.5 text-xs font-bold", statusClass(task.status))}>{taskStatusLabel(task.status, bt)}</span>
+                          <span className={cn("rounded-full border px-2 py-0.5 text-xs font-bold", riskClass(risk))}>{scheduleRiskLabel(risk, bt)}</span>
+                          <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-xs font-semibold text-fg-2">{formatDueRelativeBadge(task, now)}</span>
                         </div>
                         <h3 title={task.title} className="production-schedule-task-title mt-2 text-sm font-bold text-fg">{task.title}</h3>
-                        <p className="mt-1 text-[0.6875rem] text-fg-3">{processLabel(task.processKey, bt)} · {scopeLabel(task, bt)} · {assignees.length > 0 ? assignees.join(", ") : "담당 미지정"}</p>
-                        <p className="mt-1 text-[0.6875rem] text-fg-3">기준 {taskForecast?.baselineDueAt ? dateOnly(new Date(taskForecast.baselineDueAt)) : "미정"} · 예상 {taskForecast ? dateOnly(new Date(taskForecast.forecastDueAt)) : "미정"}{typeof taskForecast?.slackHours === "number" ? ` · 여유 ${taskForecast.slackHours}h` : ""}</p>
+                        <p className="mt-1 text-xs text-fg-3">{processLabel(task.processKey, bt)} · {scopeLabel(task, bt)} · {assignees.length > 0 ? assignees.join(", ") : "담당 미지정"}</p>
+                        <p className="mt-1 text-xs text-fg-3">기준 {taskForecast?.baselineDueAt ? dateOnly(new Date(taskForecast.baselineDueAt)) : "미정"} · 예상 {taskForecast ? dateOnly(new Date(taskForecast.forecastDueAt)) : "미정"}{typeof taskForecast?.slackHours === "number" ? ` · 여유 ${taskForecast.slackHours}h` : ""}</p>
                       </div>
-                      <span className="shrink-0 text-xs font-black text-fg">{taskHours(task)}h</span>
+                      <span className="shrink-0 text-xs font-semibold text-fg">{taskHours(task)}h</span>
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <select aria-label={`${task.title} 상태`} value={task.status} disabled={!canEdit} className="min-h-8 max-w-full rounded-lg border border-line bg-panel px-2 text-[0.6875rem] font-semibold text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { status: event.target.value as ProductionTaskStatus }, `${task.title} 상태를 변경했습니다.`)}>{STATUS_OPTIONS.map((status) => <option key={status} value={status}>{taskStatusLabel(status, bt)}</option>)}</select>
-                      <input type="date" aria-label={`${task.title} 마감일`} value={due ? dateOnly(due) : ""} disabled={!canEdit} className="min-h-8 max-w-full rounded-lg border border-line bg-panel px-2 text-[0.6875rem] text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { dueAt: dueIsoFromDateInput(event.target.value) }, `${task.title} 마감일을 변경했습니다.`)} />
-                      {task.dependencyTaskIds.length > 0 ? <span className="inline-flex items-center gap-1 text-[0.6875rem] text-fg-3"><GitBranch className="size-3" aria-hidden="true" />선행 {task.dependencyTaskIds.length}</span> : null}
+                      <select aria-label={`${task.title} 상태`} value={task.status} disabled={!canEdit} className="min-h-8 max-w-full rounded-lg border border-line bg-panel px-2 text-xs font-semibold text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { status: event.target.value as ProductionTaskStatus }, `${task.title} 상태를 변경했습니다.`)}>{STATUS_OPTIONS.map((status) => <option key={status} value={status}>{taskStatusLabel(status, bt)}</option>)}</select>
+                      <input type="date" aria-label={`${task.title} 마감일`} value={due ? dateOnly(due) : ""} disabled={!canEdit} className="min-h-8 max-w-full rounded-lg border border-line bg-panel px-2 text-xs text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { dueAt: dueIsoFromDateInput(event.target.value) }, `${task.title} 마감일을 변경했습니다.`)} />
+                      {task.dependencyTaskIds.length > 0 ? <span className="inline-flex items-center gap-1 text-xs text-fg-3"><GitBranch className="size-3" aria-hidden="true" />선행 {task.dependencyTaskIds.length}</span> : null}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5">
                       <div className="flex flex-wrap items-center gap-1">
-                        <button type="button" disabled={!canEdit} aria-label={`${task.title} 마감 1일 앞당기기`} onClick={() => shiftTaskDueByDays(task, -1)} className="rounded-md border border-line bg-panel px-2 py-0.5 text-[0.6875rem] font-semibold text-fg-2 hover:bg-raised disabled:opacity-50">-1일</button>
-                        <button type="button" disabled={!canEdit} aria-label={`${task.title} 마감 1일 늦추기`} onClick={() => shiftTaskDueByDays(task, 1)} className="rounded-md border border-line bg-panel px-2 py-0.5 text-[0.6875rem] font-semibold text-fg-2 hover:bg-raised disabled:opacity-50">+1일</button>
-                        <button type="button" disabled={!canEdit} aria-label={`${task.title} 마감 1주 늦추기`} onClick={() => shiftTaskDueByDays(task, 7)} className="rounded-md border border-line bg-panel px-2 py-0.5 text-[0.6875rem] font-semibold text-fg-2 hover:bg-raised disabled:opacity-50">+1주</button>
-                        {isOutOfWindow ? <button type="button" onClick={() => jumpToTaskWindow(task)} className="rounded-md border border-warn/40 bg-warn/10 px-2 py-0.5 text-[0.6875rem] font-semibold text-warn hover:bg-warn/20">마감 구간으로 이동</button> : null}
+                        <button type="button" disabled={!canEdit} aria-label={`${task.title} 마감 1일 앞당기기`} onClick={() => shiftTaskDueByDays(task, -1)} className="rounded-md border border-line bg-panel px-2 py-0.5 text-xs font-semibold text-fg-2 hover:bg-raised disabled:opacity-50">-1일</button>
+                        <button type="button" disabled={!canEdit} aria-label={`${task.title} 마감 1일 늦추기`} onClick={() => shiftTaskDueByDays(task, 1)} className="rounded-md border border-line bg-panel px-2 py-0.5 text-xs font-semibold text-fg-2 hover:bg-raised disabled:opacity-50">+1일</button>
+                        <button type="button" disabled={!canEdit} aria-label={`${task.title} 마감 1주 늦추기`} onClick={() => shiftTaskDueByDays(task, 7)} className="rounded-md border border-line bg-panel px-2 py-0.5 text-xs font-semibold text-fg-2 hover:bg-raised disabled:opacity-50">+1주</button>
+                        {isOutOfWindow ? <button type="button" onClick={() => jumpToTaskWindow(task)} className="rounded-md border border-warn/40 bg-warn/10 px-2 py-0.5 text-xs font-semibold text-warn hover:bg-warn/20">마감 구간으로 이동</button> : null}
                       </div>
-                      <button type="button" data-schedule-edit-trigger={task.id} aria-expanded={isEditing} aria-label={`${task.title} 상세 편집`} onClick={() => (isEditing ? closeInlineEditor(task.id) : openInlineEditor(task))} className="rounded-md border border-line bg-card px-2 py-0.5 text-[0.6875rem] font-semibold text-fg hover:bg-raised">{isEditing ? "편집 닫기" : "상세 편집"}</button>
+                      <button type="button" data-schedule-edit-trigger={task.id} aria-expanded={isEditing} aria-label={`${task.title} 상세 편집`} onClick={() => (isEditing ? closeInlineEditor(task.id) : openInlineEditor(task))} className="rounded-md border border-line bg-card px-2 py-0.5 text-xs font-semibold text-fg hover:bg-raised">{isEditing ? "편집 닫기" : "상세 편집"}</button>
                     </div>
-                    {taskSignals[0] ? <p className="mt-2 line-clamp-2 text-[0.6875rem] leading-4 text-warn">{taskSignals[0].summary}</p> : null}
+                    {taskSignals[0] ? <p className="mt-2 line-clamp-2 text-xs leading-4 text-warn">{taskSignals[0].summary}</p> : null}
                     <ScheduleInlineTaskEditor task={task} shared={sharedViewProps} />
                   </div>
                   {days.map((day, index) => {
@@ -663,9 +663,9 @@ export function ProductionScheduleWorkspace({
             const ratio = Math.min(140, Math.round((hours / target) * 100));
             return (
               <article key={assignment.id} className="min-w-0 rounded-2xl border border-line bg-panel p-4">
-                <header className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-sm font-black text-fg">{name}</p><p className="mt-1 text-xs text-fg-3">{assignment.publicCreditRole ?? assignment.roleType}</p></div><span className={cn("shrink-0 rounded-full border px-2 py-1 text-xs font-bold", ratio > 100 ? "border-bad/30 bg-bad/10 text-bad" : ratio > 80 ? "border-warn/30 bg-warn/10 text-warn" : "border-good/30 bg-good/10 text-good")}>{hours}h / {target}h</span></header>
+                <header className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-sm font-semibold text-fg">{name}</p><p className="mt-1 text-xs text-fg-3">{assignment.publicCreditRole ?? assignment.roleType}</p></div><span className={cn("shrink-0 rounded-full border px-2 py-1 text-xs font-bold", ratio > 100 ? "border-bad/30 bg-bad/10 text-bad" : ratio > 80 ? "border-warn/30 bg-warn/10 text-warn" : "border-good/30 bg-good/10 text-good")}>{hours}h / {target}h</span></header>
                 <div className="mt-4 h-2 overflow-hidden rounded-full bg-raised"><div className={cn("h-full rounded-full", ratio > 100 ? "bg-bad" : ratio > 80 ? "bg-warn" : "bg-good")} style={{ width: `${Math.min(100, ratio)}%` }} /></div>
-                <div className="mt-3 flex items-center justify-between text-[0.6875rem] text-fg-3"><span>{assignedTasks.length}개 작업</span><span>{attention}개 주의</span></div>
+                <div className="mt-3 flex items-center justify-between text-xs text-fg-3"><span>{assignedTasks.length}개 작업</span><span>{attention}개 주의</span></div>
                 <div className="mt-4 space-y-2">
                   {assignedTasks.map((task) => {
                     const signals = riskSignalsByTask.get(task.id) ?? [];
@@ -676,15 +676,15 @@ export function ProductionScheduleWorkspace({
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <p title={task.title} className="production-schedule-task-title text-xs font-semibold text-fg">{task.title}</p>
-                            <p className="mt-1 text-[0.6875rem] text-fg-3">{processLabel(task.processKey, bt)} · {taskHours(task)}h</p>
+                            <p className="mt-1 text-xs text-fg-3">{processLabel(task.processKey, bt)} · {taskHours(task)}h</p>
                           </div>
                           {risk === "normal"
                             ? <CheckCircle2 className="size-4 shrink-0 text-good" aria-label="일정 정상" />
                             : <AlertTriangle className={cn("size-4 shrink-0", risk === "overdue" ? "text-bad" : "text-warn")} aria-label={scheduleRiskLabel(risk, bt)} />}
                         </div>
-                        {signals[0] ? <p className="mt-2 text-[0.6875rem] leading-4 text-warn">{signals[0].summary}</p> : null}
-                        {taskForecast ? <p className="mt-2 text-[0.6875rem] text-fg-3">예상 {dateOnly(new Date(taskForecast.forecastDueAt))}{typeof taskForecast.slackHours === "number" ? ` · 여유 ${taskForecast.slackHours}h` : ""}</p> : null}
-                        <div className="mt-2 flex items-center justify-between text-[0.6875rem]"><span className="text-fg-3">{task.dueAt ? dateOnly(new Date(task.dueAt)) : "마감 미정"}</span><span className={cn("rounded-full border px-1.5 py-0.5 font-bold", statusClass(task.status))}>{taskStatusLabel(task.status, bt)}</span></div>
+                        {signals[0] ? <p className="mt-2 text-xs leading-4 text-warn">{signals[0].summary}</p> : null}
+                        {taskForecast ? <p className="mt-2 text-xs text-fg-3">예상 {dateOnly(new Date(taskForecast.forecastDueAt))}{typeof taskForecast.slackHours === "number" ? ` · 여유 ${taskForecast.slackHours}h` : ""}</p> : null}
+                        <div className="mt-2 flex items-center justify-between text-xs"><span className="text-fg-3">{task.dueAt ? dateOnly(new Date(task.dueAt)) : "마감 미정"}</span><span className={cn("rounded-full border px-1.5 py-0.5 font-bold", statusClass(task.status))}>{taskStatusLabel(task.status, bt)}</span></div>
                       </div>
                     );
                   })}

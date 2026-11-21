@@ -46,6 +46,11 @@ export interface StudioEpisodeStoryPageProps {
   readonly storyboardHrefForEpisode?: (episodeId: string) => string | null;
 }
 
+const INPUT_CLASS =
+  "mt-1.5 min-h-11 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+const TEXTAREA_CLASS =
+  "mt-1.5 w-full resize-y rounded-lg border border-line bg-card px-3 py-2.5 text-sm leading-relaxed text-fg outline-none placeholder:text-fg-3 focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
 export function StudioEpisodeStoryPage({
   season,
   plans,
@@ -68,48 +73,88 @@ export function StudioEpisodeStoryPage({
   const selected = plans.find((plan) => plan.episodeId === selectedId) ?? null;
 
   return (
-    <section aria-label="이야기 짜기">
-      <header>
-        <h1>이야기 짜기</h1>
-        <p>회차마다 줄거리를 짧게 적어 두면, 콘티를 짤 때 길을 잃지 않아요.</p>
+    <section aria-label="이야기 짜기" className="space-y-4 text-fg">
+      <header className="rounded-xl border border-line bg-panel p-4 sm:p-5">
+        <h1 className="text-lg font-semibold tracking-tight text-fg">이야기 짜기</h1>
+        <p className="mt-1 text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
+          회차마다 줄거리를 짧게 적어 두면, 콘티를 짤 때 길을 잃지 않아요.
+        </p>
       </header>
 
-      {/* 시즌 아크 — 데이터는 SeasonPlan.goal/plotArc 를 그대로 보여준다 */}
-      <section aria-label="시즌 흐름">
-        <h2>{arc.title} — 시즌 흐름</h2>
-        <p>{arc.goal || "이번 시즌에 이루고 싶은 것을 한 줄로 적어 보세요."}</p>
-        {arc.plotArc.length > 0 && (
-          <ol>
-            {arc.plotArc.map((step, index) => (
-              <li key={index}>{step}</li>
-            ))}
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(16rem,21rem)_minmax(0,1fr)]">
+        {/* 시즌 아크 — 데이터는 SeasonPlan.goal/plotArc 를 그대로 보여준다 */}
+        <section
+          aria-label="시즌 흐름"
+          className="space-y-3 rounded-xl border border-line bg-panel p-4"
+        >
+          <div className="space-y-1 border-b border-line pb-3">
+            <h2 className="text-sm font-semibold text-fg">{arc.title} — 시즌 흐름</h2>
+            <p className="text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
+              {arc.goal || "이번 시즌에 이루고 싶은 것을 한 줄로 적어 보세요."}
+            </p>
+          </div>
+          {arc.plotArc.length > 0 && (
+            <ol className="flex flex-wrap gap-1.5">
+              {arc.plotArc.map((step, index) => (
+                <li
+                  key={index}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1 text-xs text-fg-2"
+                >
+                  <span className="font-semibold tabular-nums text-accent">{index + 1}</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+          <ol aria-label="회차 목록" className="space-y-2">
+            {arc.episodes.map((card) => {
+              const isSelected = card.episodeId === selectedId;
+              return (
+                <li
+                  key={card.episodeId}
+                  className={`rounded-xl border p-3 transition-colors ${
+                    isSelected
+                      ? "border-accent/55 bg-accent-soft shadow-[inset_2px_0_0_var(--color-accent)]"
+                      : "border-line bg-card hover:border-line-strong hover:bg-raised"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    aria-current={isSelected ? "true" : undefined}
+                    onClick={() => selectEpisode(card.episodeId)}
+                    className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg text-left text-sm font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    <span className="min-w-0 truncate tabular-nums">
+                      {card.episodeNumber}화 {card.title}
+                      {card.needsSynopsis ? " · 줄거리 쓰기" : ""}
+                    </span>
+                  </button>
+                  <p className="mt-1 text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
+                    {card.goalLine}
+                  </p>
+                  {card.emotionLine && (
+                    <p className="mt-1.5 text-xs text-fg-3">마음의 변화: {card.emotionLine}</p>
+                  )}
+                  {card.cliffhangerLine && (
+                    <p className="mt-1 text-xs text-fg-3">마무리: {card.cliffhangerLine}</p>
+                  )}
+                </li>
+              );
+            })}
           </ol>
-        )}
-        <ol aria-label="회차 목록">
-          {arc.episodes.map((card) => (
-            <li key={card.episodeId}>
-              <button type="button" onClick={() => selectEpisode(card.episodeId)}>
-                {card.episodeNumber}화 {card.title}
-                {card.needsSynopsis ? " · 줄거리 쓰기" : ""}
-              </button>
-              <p>{card.goalLine}</p>
-              {card.emotionLine && <p>마음의 변화: {card.emotionLine}</p>}
-              {card.cliffhangerLine && <p>마무리: {card.cliffhangerLine}</p>}
-            </li>
-          ))}
-        </ol>
-      </section>
+        </section>
 
-      {selected && (
-        <EpisodeSynopsisEditor
-          key={selected.episodeId}
-          plan={selected}
-          beats={beatsByEpisodeId?.[selected.episodeId]}
-          genre={genre}
-          onSavePlan={onSavePlan}
-          storyboardHref={storyboardHrefForEpisode?.(selected.episodeId) ?? null}
-        />
-      )}
+        {selected && (
+          <EpisodeSynopsisEditor
+            key={selected.episodeId}
+            plan={selected}
+            beats={beatsByEpisodeId?.[selected.episodeId]}
+            genre={genre}
+            onSavePlan={onSavePlan}
+            storyboardHref={storyboardHrefForEpisode?.(selected.episodeId) ?? null}
+          />
+        )}
+      </div>
     </section>
   );
 }
@@ -184,123 +229,224 @@ function EpisodeSynopsisEditor({
   return (
     <form
       aria-label={`${plan.episodeNumber}화 줄거리`}
+      className="space-y-4 rounded-xl border border-line bg-panel p-4 sm:p-5"
       onSubmit={(event) => {
         event.preventDefault();
         onSavePlan(draft);
       }}
     >
-      <h2>{plan.episodeNumber}화 줄거리</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
+        <h2 className="text-base font-semibold tabular-nums text-fg">{plan.episodeNumber}화 줄거리</h2>
+        {beats && beats.length > 0 && (
+          <button
+            type="button"
+            onClick={fillFromBeats}
+            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3.5 text-xs font-semibold text-fg transition-colors hover:border-line-strong hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            콘티 비트에서 초안 가져오기
+          </button>
+        )}
+      </div>
+
       {plan.readerReactionMemo ? (
-        <section aria-label="독자 반응 기획 메모">
-          <h3>이전 회차 독자 반응 메모</h3>
-          <p style={{ whiteSpace: "pre-line" }}>{plan.readerReactionMemo}</p>
+        <section
+          aria-label="독자 반응 기획 메모"
+          className="rounded-xl border border-line bg-card p-3.5 shadow-[inset_2px_0_0_var(--color-accent)]"
+        >
+          <h3 className="text-xs font-semibold text-accent">이전 회차 독자 반응 메모</h3>
+          <p className="mt-1.5 whitespace-pre-line text-xs leading-relaxed text-fg-2">
+            {plan.readerReactionMemo}
+          </p>
         </section>
       ) : null}
-      {beats && beats.length > 0 && (
-        <button type="button" onClick={fillFromBeats}>
-          콘티 비트에서 초안 가져오기
-        </button>
-      )}
-      <label>
+
+      <label className="block text-xs font-semibold text-fg-2">
         이번 화의 목표
         <input
           value={goal}
           onChange={(event) => setGoal(event.target.value)}
           placeholder="예: 주인공이 처음으로 거짓말을 들킨다"
+          className={INPUT_CLASS}
         />
       </label>
-      <label>
+
+      <label className="block text-xs font-semibold text-fg-2">
         줄거리
         <textarea
           value={synopsis}
           onChange={(event) => setSynopsis(event.target.value)}
           rows={5}
           placeholder="처음 → 중간 → 끝, 세 문장이면 충분해요"
+          className={TEXTAREA_CLASS}
         />
       </label>
-      <fieldset>
-        <legend>마음의 변화</legend>
-        <label>
-          시작할 때
-          <input value={emotionFrom} onChange={(event) => setEmotionFrom(event.target.value)} placeholder="예: 들뜬" />
-        </label>
-        <label>
-          끝날 때
-          <input value={emotionTo} onChange={(event) => setEmotionTo(event.target.value)} placeholder="예: 불안한" />
-        </label>
+
+      <fieldset className="rounded-xl border border-line bg-card/50 p-3.5">
+        <legend className="px-1 text-xs font-semibold text-fg-2">마음의 변화</legend>
+        <div className="mt-1 grid gap-3 sm:grid-cols-2">
+          <label className="block text-xs font-medium text-fg-2">
+            시작할 때
+            <input
+              value={emotionFrom}
+              onChange={(event) => setEmotionFrom(event.target.value)}
+              placeholder="예: 들뜬"
+              className={INPUT_CLASS}
+            />
+          </label>
+          <label className="block text-xs font-medium text-fg-2">
+            끝날 때
+            <input
+              value={emotionTo}
+              onChange={(event) => setEmotionTo(event.target.value)}
+              placeholder="예: 불안한"
+              className={INPUT_CLASS}
+            />
+          </label>
+        </div>
       </fieldset>
-      <label>
+
+      <label className="block text-xs font-semibold text-fg-2">
         핵심 사건 (한 줄에 하나씩)
-        <textarea value={keyEvents} onChange={(event) => setKeyEvents(event.target.value)} rows={4} />
+        <textarea
+          value={keyEvents}
+          onChange={(event) => setKeyEvents(event.target.value)}
+          rows={4}
+          className={TEXTAREA_CLASS}
+        />
       </label>
-      <section aria-label="다음 전개 제안">
-        <h3>다음 전개 제안</h3>
-        <p>제안은 선택지예요. 마음에 드는 것만 핵심 사건에 넣고, 나머지는 무시해도 저장할 수 있어요.</p>
+
+      <section
+        aria-label="다음 전개 제안"
+        className="space-y-3 rounded-xl border border-line bg-card/55 p-3.5"
+      >
+        <div>
+          <h3 className="text-sm font-semibold text-fg">다음 전개 제안</h3>
+          <p className="mt-0.5 text-xs leading-relaxed text-fg-3">
+            제안은 선택지예요. 마음에 드는 것만 핵심 사건에 넣고, 나머지는 무시해도 저장할 수 있어요.
+          </p>
+        </div>
         {suggestions.length > 0 ? (
-          <ul>
+          <ul className="grid gap-2.5 sm:grid-cols-2">
             {suggestions.map((suggestion) => (
-              <li key={suggestion.id}>
-                <p>
-                  <strong>{suggestion.stageLabel} · {suggestion.title}</strong>
-                </p>
-                <p>{suggestion.text}</p>
-                <p>{suggestion.rationale}</p>
-                <button type="button" onClick={() => applySuggestion(suggestion)}>
-                  이 전개로 넣기
-                </button>
-                <button type="button" onClick={() => dismissSuggestion(suggestion)}>
-                  무시
-                </button>
+              <li
+                key={suggestion.id}
+                className="flex flex-col justify-between gap-2.5 rounded-xl border border-line bg-card p-3"
+              >
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-accent">
+                    <strong>{suggestion.stageLabel} · {suggestion.title}</strong>
+                  </p>
+                  <p className="text-xs leading-relaxed text-fg">{suggestion.text}</p>
+                  <p className="text-xs leading-relaxed text-fg-3">{suggestion.rationale}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => applySuggestion(suggestion)}
+                    className="min-h-11 rounded-lg border border-accent/40 bg-accent-soft px-3 text-xs font-semibold text-accent transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    이 전개로 넣기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => dismissSuggestion(suggestion)}
+                    className="min-h-11 rounded-lg border border-line bg-panel px-3 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    무시
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
         ) : (
-          <>
-            <p>지금 단계의 제안을 모두 봤어요.</p>
-            <button type="button" onClick={() => setDismissedIds([])}>
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-line bg-panel px-3 py-2.5">
+            <p className="text-xs text-fg-2">지금 단계의 제안을 모두 봤어요.</p>
+            <button
+              type="button"
+              onClick={() => setDismissedIds([])}
+              className="min-h-11 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg transition-colors hover:bg-raised"
+            >
               제안 다시 보기
             </button>
-          </>
+          </div>
         )}
         {pendingSeed && (
-          <div aria-live="polite">
-            <p>다음 회차 씨앗: {pendingSeed}</p>
+          <div
+            aria-live="polite"
+            className="space-y-2 rounded-lg border border-accent/35 bg-accent-soft/60 p-3 text-xs"
+          >
+            <p className="font-semibold text-fg">다음 회차 씨앗: {pendingSeed}</p>
             {!cliffhanger.trim() && (
-              <button type="button" onClick={() => setCliffhanger(pendingSeed)}>
+              <button
+                type="button"
+                onClick={() => setCliffhanger(pendingSeed)}
+                className="min-h-11 rounded-lg bg-accent px-3.5 text-xs font-semibold text-on-accent"
+              >
                 마무리 훅에 씨앗 넣기
               </button>
             )}
-            <p>다음 회차를 열면 이 마무리 훅이 오프닝 초안으로 이어받아져요.</p>
+            <p className="text-fg-2">다음 회차를 열면 이 마무리 훅이 오프닝 초안으로 이어받아져요.</p>
           </div>
         )}
       </section>
-      <label>
+
+      <label className="block text-xs font-semibold text-fg-2">
         마무리 훅
         <input
           value={cliffhanger}
           onChange={(event) => setCliffhanger(event.target.value)}
           placeholder="다음 화가 궁금해지는 한 장면"
+          className={INPUT_CLASS}
         />
       </label>
+
       {hints.length > 0 && (
-        <ul aria-label="쓰기 힌트">
+        <ul
+          aria-label="쓰기 힌트"
+          className="space-y-1 rounded-xl border border-line bg-card p-3 text-xs leading-relaxed text-fg-2"
+        >
           {hints.map((hint) => (
-            <li key={hint}>{hint}</li>
+            <li key={hint}>· {hint}</li>
           ))}
         </ul>
       )}
-      <p aria-live="polite">{card.needsSynopsis ? r3c04StatusText("studio.r3c04Status.planning.storyPage.synopsisEmpty", "아직 줄거리 칸이 비어 있어요.") : r3c04StatusText("studio.r3c04Status.planning.storyPage.synopsisFilled", "줄거리 칸이 채워졌어요.")}</p>
-      <button type="submit">저장</button>
-      <p>{bt("현재 기획을 저장하고 선택한 기존 원고를 엽니다. 원고 내용은 자동으로 바꾸지 않습니다.", "Save this episode plan and open the selected manuscript. Its artwork is not changed automatically.")}</p>
-      {storyboardHref ? (
-        <Link href={storyboardHref} onClick={(event) => {
-          if (onSavePlan(draft) === false) event.preventDefault();
-        }}>
-          {bt("이 회차 콘티 시작하기", "Open this episode storyboard")}
-        </Link>
-      ) : (
-        <span role="status">{bt("콘티를 이어갈 기존 원고를 선택해 주세요.", "Select the existing manuscript for this storyboard.")}</span>
-      )}
+
+      <div className="space-y-3 border-t border-line pt-4">
+        <p aria-live="polite" className="text-xs font-medium text-fg-2">
+          {card.needsSynopsis
+            ? r3c04StatusText("studio.r3c04Status.planning.storyPage.synopsisEmpty", "아직 줄거리 칸이 비어 있어요.")
+            : r3c04StatusText("studio.r3c04Status.planning.storyPage.synopsisFilled", "줄거리 칸이 채워졌어요.")}
+        </p>
+        <p className="text-xs leading-relaxed text-fg-3">
+          {bt("현재 기획을 저장하고 선택한 기존 원고를 엽니다. 원고 내용은 자동으로 바꾸지 않습니다.", "Save this episode plan and open the selected manuscript. Its artwork is not changed automatically.")}
+        </p>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="submit"
+            className="inline-flex min-h-11 items-center rounded-lg bg-accent px-5 text-sm font-semibold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            저장
+          </button>
+          {storyboardHref ? (
+            <Link
+              href={storyboardHref}
+              onClick={(event) => {
+                if (onSavePlan(draft) === false) event.preventDefault();
+              }}
+              className="inline-flex min-h-11 items-center rounded-lg border border-accent/45 bg-accent-soft px-4 text-sm font-semibold text-accent transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {bt("이 회차 콘티 시작하기", "Open this episode storyboard")}
+            </Link>
+          ) : (
+            <span
+              role="status"
+              className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3.5 text-xs text-fg-3"
+            >
+              {bt("콘티를 이어갈 기존 원고를 선택해 주세요.", "Select the existing manuscript for this storyboard.")}
+            </span>
+          )}
+        </div>
+      </div>
     </form>
   );
 }

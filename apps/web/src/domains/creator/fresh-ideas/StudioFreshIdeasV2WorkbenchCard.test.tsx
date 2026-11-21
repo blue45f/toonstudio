@@ -87,4 +87,80 @@ describe("StudioFreshIdeasV2WorkbenchCard (@unslop 9-pass UI v2.2)", () => {
     });
     expect(onStatusChange).toHaveBeenCalled();
   });
+
+  it("shows [측정 필요] without fabricating mock scores when crossLabsEnvelope is omitted, and uses real telemetry when injected", async () => {
+    const onExportStorySeed = vi.fn();
+    const { rerender } = render(
+      <StudioFreshIdeasV2WorkbenchCard
+        sourceTitle="침수 도서관 1화 기획"
+        sourceSummaryKo="서연이 침수 도서관 문턱에서 편지를 줍고 등불지기 길드의 규칙과 충돌한다."
+        onExportStorySeed={onExportStorySeed}
+      />,
+    );
+
+    // Without crossLabsEnvelope: toggling cross-labs shows [측정 필요] and no fake scores
+    fireEvent.click(screen.getByTestId("fresh-ideas-toggle-cross-labs"));
+    expect(screen.getByTestId("fresh-ideas-cross-labs-status-badge").textContent).toContain(
+      "[측정 필요]",
+    );
+    expect(screen.getByTestId("fresh-ideas-cross-labs-measurement-needed").textContent).toContain(
+      "임의 점수를 생성하지 않았습니다",
+    );
+    expect(screen.getByTestId("fresh-ideas-mode-a-panel").textContent).not.toContain("94.2");
+    expect(screen.getByTestId("fresh-ideas-mode-a-panel").textContent).not.toContain("97.3");
+    expect(screen.getByTestId("fresh-ideas-mode-a-panel").textContent).not.toContain("96.9");
+    expect(screen.getByTestId("fresh-ideas-v2-capability-badge").textContent).toContain(
+      "Unslop 100점",
+    );
+
+    // With real crossLabsEnvelope injected: synthesizes from measured telemetry
+    rerender(
+      <StudioFreshIdeasV2WorkbenchCard
+        sourceTitle="침수 도서관 1화 기획"
+        sourceSummaryKo="서연이 침수 도서관 문턱에서 편지를 줍고 등불지기 길드의 규칙과 충돌한다."
+        crossLabsEnvelope={{
+          schemaVersion: 2,
+          episodeTitleKo: "침수 도서관 실측 통합",
+          bg3d: {
+            overallScore100: 88.0,
+            weeklyHoursSaved: 12.0,
+            contrastRatio: 2.1,
+            lineThicknessPx: 1.2,
+          },
+          brushLab: {
+            overallScore100: 91.0,
+            taperSharpness100: 90.0,
+            averageStrokePx: 3.8,
+            presetNameKo: "정밀 잉크펜",
+          },
+          characterLab: {
+            overallScore100: 89.0,
+            turnaroundScore100: 88.5,
+            faceSdfScore100: 92.0,
+            outlineWidthMm: 2.8,
+          },
+        }}
+        onExportStorySeed={onExportStorySeed}
+      />,
+    );
+
+    expect(screen.queryByTestId("fresh-ideas-cross-labs-measurement-needed")).toBeNull();
+    expect(screen.getByTestId("fresh-ideas-mode-a-panel").textContent).toContain("89.3점");
+
+    // Mode C: export story cut seed button invokes callback and updates notice
+    fireEvent.click(screen.getByTestId("fresh-ideas-mode-mode-c-ecosystem"));
+    const exportBtn = screen.getByTestId("fresh-ideas-export-story-seed-btn");
+    expect(exportBtn.className).toContain("min-h-11");
+    fireEvent.click(exportBtn);
+
+    await waitFor(() => {
+      expect(onExportStorySeed).toHaveBeenCalledTimes(1);
+    });
+    const exported = onExportStorySeed.mock.calls[0]?.[0];
+    expect(exported.cutSeed.cuts.length).toBeGreaterThanOrEqual(4);
+    expect(exported.livingSpecSeed.goalKo.length).toBeGreaterThan(5);
+    expect(screen.getByTestId("fresh-ideas-export-notice").textContent).toContain(
+      "스토리 컷 시드",
+    );
+  });
 });

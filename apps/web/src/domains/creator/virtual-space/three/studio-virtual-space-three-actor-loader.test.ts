@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { describe, expect, it, vi } from "vitest";
 
-import { createStudioThreeActorLoader } from "./studio-virtual-space-three-actor-loader";
+import { createStudioThreeActorLoader, setStudioThreeActorHeadVisible } from "./studio-virtual-space-three-actor-loader";
 import { disposeStudioThreeOwnedModel, loadStudioThreeModelProps } from "./studio-virtual-space-three-asset-loader";
 import { createStylized3DCharacterNode, type StudioThreeActorNode } from "./studio-virtual-space-three-scene";
 
@@ -224,8 +224,8 @@ describe("실제 Three actor와 지연 GLB 응답 수명", () => {
     expect(helper.visible).toBe(false);
     expect(helper.scale.toArray()).toEqual([0, 0, 0]);
     expect(first.gltf.scene.rotation.y).toBe(Math.PI);
-    expect(first.mesh.castShadow).toBe(false);
-    expect(first.mesh.receiveShadow).toBe(false);
+    expect(first.mesh.castShadow).toBe(true);
+    expect(first.mesh.receiveShadow).toBe(true);
     expect(first.mesh.frustumCulled).toBe(false);
     expect(first.material.envMapIntensity).toBe(1);
     expect(first.material.color.getHex()).toBe(0x91404e);
@@ -381,6 +381,36 @@ describe("실제 Three actor와 지연 GLB 응답 수명", () => {
     expect(actor.vrm).toBe(mockVrm);
     controller.dispose();
     expect(actor.vrm).toBeUndefined();
+  });
+
+  it("1인칭 시점 헬퍼로 머리 본·헤드 메시를 숨기고 VRM 교체 후에도 숨김 상태를 유지한다", async () => {
+    const world = actorWorld(["self"]);
+    const actor = world.actor("self");
+    setStudioThreeActorHeadVisible(actor, false);
+    expect(actor.firstPersonHeadHidden).toBe(true);
+    const stylizedHeadParts = actor.rigGroup.children.filter((child) => child.userData.isHeadPart === true);
+    expect(stylizedHeadParts.length).toBeGreaterThan(0);
+    expect(stylizedHeadParts.every((child) => child.visible === false)).toBe(true);
+
+    const deferred = deferredLoader();
+    const headBone = new THREE.Object3D();
+    const controller = createStudioThreeActorLoader(deferred.loader, world.actors, () => false, {
+      ...options,
+      applyPosture: (node) => {
+        node.vrmHead = headBone;
+      },
+    });
+    const model = await loadedModel("hero-vrm", true);
+    model.mesh.name = "Hero_Hair_Mesh";
+    controller.load("self", 0);
+    deferred.request(0).complete(model.gltf);
+    expect(headBone.scale.x).toBeCloseTo(0.0001);
+    expect(model.mesh.visible).toBe(false);
+
+    setStudioThreeActorHeadVisible(actor, true);
+    expect(headBone.scale.x).toBe(1);
+    expect(model.mesh.visible).toBe(true);
+    controller.dispose();
   });
 });
 

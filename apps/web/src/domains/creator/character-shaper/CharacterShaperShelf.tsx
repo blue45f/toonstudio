@@ -1,5 +1,5 @@
 /** Preset discovery shares the existing catalog/commit authority; favorites are UI preferences. */
-import { Search, SlidersHorizontal, Sparkles, Star, X } from "lucide-react";
+import { Bookmark, Layers, Search, SlidersHorizontal, Star, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { STUDIO_FOCUS_RING, StudioEmptyState, studioSegmentChipClass } from "../studio-panel-ui";
@@ -7,7 +7,6 @@ import "../studio-r3c04-status-i18n";
 
 import { CHARACTER_GENRE_TAG_LABELS } from "./character-shaper-catalog";
 import { countCharacterAvailability, discoverCharacterEntries } from "./character-shaper-discovery";
-import { CharacterSlotPreview } from "./character-shaper-preview";
 import {
   buildShaperGen3dSlotGenerationPlan,
   diagnoseGen3dCreditWalletStatus,
@@ -16,6 +15,8 @@ import {
   type ShaperGen3dGeneratedGlbId,
   type ShaperGen3dVisualStyleId,
 } from "./character-shaper-gen3d-bridge";
+import { CharacterSlotPreview } from "./character-shaper-preview";
+import { useCharacterShaperMaterialSettings } from "./character-shaper-session-settings";
 import {
   CHARACTER_HAND_SIDE_OPTIONS,
   CHARACTER_SHELF_COLUMNS,
@@ -69,6 +70,7 @@ function CharacterShaperShelfContent({
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [showExperimentalGarments, setShowExperimentalGarments] = useState(false);
   const [visualStyleId, setVisualStyleId] = useState<ShaperGen3dVisualStyleId>("shaper-cel");
+  const { setShaperMaterial } = useCharacterShaperMaterialSettings();
   const [showTripoPlan, setShowTripoPlan] = useState(false);
   const [selectedGlbId, setSelectedGlbId] = useState<ShaperGen3dGeneratedGlbId | null>(null);
   const [draft, setDraft] = useState(query);
@@ -287,7 +289,16 @@ function CharacterShaperShelfContent({
                 type="button"
                 data-testid={`shaper-tripo-style-${profile.id}`}
                 aria-pressed={visualStyleId === profile.id}
-                onClick={() => setVisualStyleId(profile.id)}
+                onClick={() => {
+                  setVisualStyleId(profile.id);
+                  setShaperMaterial((prev) => ({
+                    ...prev,
+                    shadeWidth: Number(Math.max(0.02, Math.min(1, (1 - profile.shadeToonyFactor) / 0.85)).toFixed(2)),
+                    shadePos: Number(Math.max(0, Math.min(1, 0.5 - profile.shadeShiftFactor / 0.6)).toFixed(2)),
+                    rLightWidth: Number(Math.max(0.05, Math.min(1, profile.rimLightingMix)).toFixed(2)),
+                    outlinePressure: profile.outlineWidthWorld >= 0.002,
+                  }));
+                }}
                 className={cn(
                   "rounded-lg border px-2 py-1 text-left text-[0.64rem] font-semibold transition-colors",
                   STUDIO_FOCUS_RING,
@@ -323,13 +334,13 @@ function CharacterShaperShelfContent({
                   data-testid="shaper-tripo-generated-glb-list"
                   className="mt-1.5 space-y-1 rounded-lg border border-line/70 bg-panel p-1.5"
                 >
-                  <div className="flex items-center justify-between gap-1 text-[0.6rem]">
+                  <div className="flex items-center justify-between gap-1 text-xs">
                     <span className="font-semibold text-fg-2">
                       Tripo Studio H3.1 &amp; MCP 생성 3D 에셋 (실제 GLB {SHAPER_GEN3D_GENERATED_GLB_CATALOG.length}종)
                     </span>
                     <span
                       data-testid="shaper-tripo-wallet-notice"
-                      className="truncate rounded bg-accent-soft px-1.5 py-0.5 text-[0.56rem] font-semibold text-accent"
+                      className="truncate rounded bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent"
                       title={walletReport.reasonKo}
                     >
                       {walletReport.badgeKo}
@@ -346,7 +357,7 @@ function CharacterShaperShelfContent({
                           aria-pressed={active}
                           onClick={() => setSelectedGlbId(asset.id)}
                           className={cn(
-                            "rounded-md border px-1.5 py-1 text-left text-[0.58rem] transition-colors",
+                            "rounded-md border px-1.5 py-1 text-left text-xs transition-colors",
                             STUDIO_FOCUS_RING,
                             active
                               ? "border-accent bg-accent-soft font-semibold text-accent"
@@ -354,7 +365,7 @@ function CharacterShaperShelfContent({
                           )}
                         >
                           <span className="block truncate">{asset.labelKo}</span>
-                          <span className="block truncate text-[0.54rem] text-fg-3">
+                          <span className="block truncate text-xs text-fg-3">
                             {asset.triangles.toLocaleString("en-US")} tris · {asset.materials} mats
                           </span>
                         </button>
@@ -363,7 +374,7 @@ function CharacterShaperShelfContent({
                   </div>
                   <div
                     data-testid="shaper-tripo-active-glb-summary"
-                    className="flex items-center justify-between gap-1.5 text-[0.58rem] text-fg-3"
+                    className="flex items-center justify-between gap-1.5 text-xs text-fg-3"
                   >
                     <span className="truncate">
                       {activeGlb.labelKo} · {(activeGlb.byteLength / 1024).toFixed(1)}KB · watertight
@@ -384,7 +395,7 @@ function CharacterShaperShelfContent({
                 {showTripoPlan ? (
                   <div
                     data-testid="shaper-tripo-plan-preview"
-                    className="mt-1.5 space-y-1 rounded-lg border border-line/70 bg-panel p-1.5 text-[0.6rem] text-fg-3"
+                    className="mt-1.5 space-y-1 rounded-lg border border-line/70 bg-panel p-1.5 text-xs text-fg-3"
                   >
                     <p className="font-semibold text-fg-2">
                       {plan.scenario} · {plan.modelVersion} · Texture {plan.textureModelVersion}
@@ -393,7 +404,7 @@ function CharacterShaperShelfContent({
                     <p data-testid="shaper-tripo-wallet-reason" className="leading-relaxed text-fg-3">
                       {walletReport.reasonKo}
                     </p>
-                    <code className="block truncate rounded bg-card px-1.5 py-0.5 font-mono text-[0.58rem] text-fg-2">
+                    <code className="block truncate rounded bg-card px-1.5 py-0.5 font-mono text-xs text-fg-2">
                       {plan.cliCommand}
                     </code>
                   </div>
@@ -403,7 +414,7 @@ function CharacterShaperShelfContent({
           })()}
           <p
             data-testid="shaper-shelf-modifier-hint"
-            className="mt-1.5 text-[0.6rem] text-fg-3"
+            className="mt-1.5 text-xs text-fg-3"
           >
             SHAPER 단축 조작 · Ctrl+클릭: 현재 색상 유지 · Alt+클릭: 포즈 좌우 반전
           </p>
@@ -455,7 +466,7 @@ function CharacterShaperShelfContent({
         ) : null}
         {showDiscoveryTools && !filtering && featured.length > 0 ? (
           <section aria-label="추천" className="border-b border-line/70 px-3 py-2.5">
-            <p className="mb-1.5 inline-flex items-center gap-1 text-[0.66rem] font-semibold tracking-wide text-fg-3"><Sparkles size={12} aria-hidden className="text-accent" />추천</p>
+            <p className="mb-1.5 inline-flex items-center gap-1 text-[0.68rem] font-semibold tracking-wide text-fg-3"><Bookmark size={12} aria-hidden className="text-accent" />추천</p>
             <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {featured.map((entry) => {
                 const status = presentAvailability(entry);
@@ -467,33 +478,48 @@ function CharacterShaperShelfContent({
             </div>
           </section>
         ) : null}
-        {slotEntries.length === 0 ? <div className="p-3"><StudioEmptyState icon={<Sparkles size={18} aria-hidden />} title={t("studio.r3c04Status.shaper.shelf.slotEmpty", "이 슬롯에는 아직 프리셋이 없습니다")} description="카탈로그가 준비되면 여기에 카드가 나타납니다." /></div>
+        {slotEntries.length === 0 ? <div className="p-3"><StudioEmptyState icon={<Layers size={18} aria-hidden />} title={t("studio.r3c04Status.shaper.shelf.slotEmpty", "이 슬롯에는 아직 프리셋이 없습니다")} description="카탈로그가 준비되면 여기에 카드가 나타납니다." /></div>
           : visible.length === 0 ? <div className="p-3"><StudioEmptyState icon={<Search size={18} aria-hidden />} title={emptyTitle}
             description={collection === "favorites" ? "모두에서 카드 아래 별을 눌러 추가하거나 다른 필터를 해제해 보세요." : "다른 검색어를 입력하거나 필터를 해제해 보세요."}
             action={<button type="button" onClick={clearFilters} className={cn("inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-[0.75rem] font-semibold text-fg-2 hover:bg-raised hover:text-fg", STUDIO_FOCUS_RING)}>검색·필터 지우기</button>} /></div>
           : <div ref={gridRef} role="group" aria-label={`${slotLabel} 프리셋`} data-character-shaper-grid="true" data-character-shaper-grid-columns={columns} className={cn("grid items-start gap-2 p-3", columns === 3 ? "grid-cols-3" : "grid-cols-2")}>
-            {visible.map((entry, index) => (
-              <div key={entry.id} className="min-w-0">
-                {entry.apply.kind === "wardrobe" ? <p className="mb-1 text-[0.62rem] font-semibold text-warn">실험 의상 · 원고 적용 전 형태 확인</p> : null}
-                <CharacterSlotCard entry={entry} availability={presentAvailability(entry)} selected={isCharacterEntrySelected(binding.recipe, entry)}
-                  previewed={binding.previewEntryId === entry.id} compact={compact}
-                  tabIndex={index === rovingIndex ? 0 : -1} onCommit={commitEntry} onHover={onHoverEntry}
-                  onFocus={(id) => { setFocusedId(id); onHoverEntry(id); }}
-                  onPreviewStart={startAudition} onPreviewEnd={endAudition}
-                  onKeyNavigate={(direction) => navigateFrom(index, direction)} />
-                <button type="button" data-character-favorite="true" tabIndex={index === rovingIndex ? 0 : -1} aria-pressed={favoriteSet.has(entry.id)}
-                  aria-label={`${entry.label} 즐겨찾기 ${favoriteSet.has(entry.id) ? "해제" : "추가"}`}
-                  onFocus={() => setFocusedId(entry.id)}
-                  onClick={() => {
-                    const enabled = !favoriteSet.has(entry.id);
-                    if (!enabled && collection === "favorites") { focusAfterRemoval.current = index; onHoverEntry(null); }
-                    favorites.setFavorite(entry.id, enabled);
-                  }}
-                  className={cn("mt-1 flex min-h-11 w-full items-center justify-center gap-1 rounded-lg border border-line bg-card text-[0.68rem] hover:bg-raised", STUDIO_FOCUS_RING, favoriteSet.has(entry.id) ? "text-accent" : "text-fg-3")}>
-                  <Star size={13} aria-hidden fill={favoriteSet.has(entry.id) ? "currentColor" : "none"} />즐겨찾기
-                </button>
-              </div>
-            ))}
+            {visible.map((entry, index) => {
+              const isFavorite = favoriteSet.has(entry.id);
+              return (
+                <div key={entry.id} className="group/card relative min-w-0">
+                  {entry.apply.kind === "wardrobe" ? <p className="mb-1 text-[0.68rem] font-semibold text-warn">실험 의상 · 원고 적용 전 형태 확인</p> : null}
+                  <CharacterSlotCard entry={entry} availability={presentAvailability(entry)} selected={isCharacterEntrySelected(binding.recipe, entry)}
+                    previewed={binding.previewEntryId === entry.id} compact={compact}
+                    tabIndex={index === rovingIndex ? 0 : -1} onCommit={commitEntry} onHover={onHoverEntry}
+                    onFocus={(id) => { setFocusedId(id); onHoverEntry(id); }}
+                    onPreviewStart={startAudition} onPreviewEnd={endAudition}
+                    onKeyNavigate={(direction) => navigateFrom(index, direction)} />
+                  <button
+                    type="button"
+                    data-character-favorite="true"
+                    tabIndex={index === rovingIndex ? 0 : -1}
+                    aria-pressed={isFavorite}
+                    aria-label={`${entry.label} 즐겨찾기 ${isFavorite ? "해제" : "추가"}`}
+                    onFocus={() => setFocusedId(entry.id)}
+                    onClick={() => {
+                      const enabled = !isFavorite;
+                      if (!enabled && collection === "favorites") { focusAfterRemoval.current = index; onHoverEntry(null); }
+                      favorites.setFavorite(entry.id, enabled);
+                    }}
+                    className={cn(
+                      "absolute right-1.5 top-1.5 z-10 grid size-9 min-h-9 min-w-9 place-items-center rounded-full border border-line/80 bg-panel/90 shadow-sm backdrop-blur",
+                      "transition-opacity duration-150 hover:bg-raised motion-reduce:transition-none",
+                      STUDIO_FOCUS_RING,
+                      isFavorite
+                        ? "border-accent/60 text-accent opacity-100"
+                        : "text-fg-3 opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-visible:opacity-100",
+                    )}
+                  >
+                    <Star size={14} aria-hidden fill={isFavorite ? "currentColor" : "none"} />
+                  </button>
+                </div>
+              );
+            })}
           </div>}
         <p className={cn("px-3 pb-3 leading-relaxed text-fg-3", compact ? "text-xs" : "text-[0.62rem]")}>
           {t("studio.character.shelf.interactionHint", "카드의 모양 도해는 실제 모델 이미지와 다릅니다. 터치는 탭하면 적용되고 스크롤로는 바뀌지 않습니다. 마우스를 올리거나 키보드로 선택하면 3D 화면에서 미리 보고, 클릭 전에는 저장·Undo 기록이 바뀌지 않습니다. 즐겨찾기는 이 브라우저에만 저장됩니다.")}

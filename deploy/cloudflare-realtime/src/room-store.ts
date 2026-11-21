@@ -2,17 +2,13 @@ import {
   P2P_MESH_SESSION_ID,
   REALTIME_CHANNELS,
   isServerEventMessage,
-  serializeRealtimeServerMessage,
   utf8ByteLength,
   validatePayloadForChannel,
   type PresenceCursorPayload,
   type PresenceSnapshotEntry,
   type PresenceUpdatePayload,
-  type RealtimeChannel,
   type RealtimeChannelSequenceStates,
-  type RealtimePayload,
   type ScreenSignalingPayload,
-  type ServerEventMessage,
 } from "./protocol";
 import {
   computeReplayPrefixCutoff,
@@ -20,12 +16,23 @@ import {
   type RealtimeChannelRateLimit,
   type RealtimeRateBudgetState,
 } from "./room-core";
+import {
+  ensureSpaceChannelRow,
+  hasSpaceChannelRow,
+  serializeRealtimeWireServerMessage,
+} from "./room-space-control";
 
 import type { PublishReceiptFingerprints } from "./receipt-fingerprint";
 import type {
   SqlStorageLike,
   TransactionalSqlStorageLike,
 } from "./runtime-types";
+import type {
+  RealtimeWireChannel,
+  RealtimeWirePayload,
+  ServerWireEventMessage,
+  SpacePresenceUpdatePayload,
+} from "./space-protocol";
 
 interface RoomStateRow extends Record<string, unknown> {
   readonly work_id: string | null;
@@ -144,11 +151,11 @@ export interface AppendRoomEventInput {
   readonly actorId: string;
   readonly clientId: string;
   readonly connectionId: string;
-  readonly channel: RealtimeChannel;
+  readonly channel: RealtimeWireChannel;
   readonly serverAtMs: number;
   readonly eventExpiresAtMs: number;
   readonly receiptExpiresAtMs: number;
-  readonly payload: RealtimePayload;
+  readonly payload: RealtimeWirePayload;
   readonly targetActorId?: string;
   readonly targetClientId?: string;
 }
@@ -172,7 +179,7 @@ export interface RoomSequenceState {
 }
 
 export interface StoredRoomEvent {
-  readonly event: ServerEventMessage;
+  readonly event: ServerWireEventMessage;
   readonly targetActorId: string | null;
   readonly targetClientId: string | null;
 }
@@ -587,13 +594,13 @@ function parseEventRow(row: EventRow): StoredRoomEvent {
     throw new Error("Realtime event log envelope is invalid");
   }
   return {
-    event: parsed,
+    event: parsed as unknown as ServerWireEventMessage,
     targetActorId: row.target_actor_id,
     targetClientId: row.target_client_id,
   };
 }
 
-function parsePresencePayload<T extends RealtimePayload>(
+function parsePresencePayload<T extends RealtimeWirePayload>(
   source: string | null,
   kind: T["kind"],
 ): T | null {
@@ -741,18 +748,16 @@ export class RealtimeRoomStore {
     );
   }
 
-  getSequenceState(channel: RealtimeChannel): RoomSequenceState {
+  getSequenceState(channel: RealtimeWireChannel): RoomSequenceState {
+    if (channel === "yjs-space") ensureSpaceChannelRow(this.sql);
     const row = firstRow(
-      this.sql
-        .exec<ChannelStateRow>(
-          "SELECT channel, current_sequence, replay_floor_sequence FROM channel_state WHERE channel = ?",
-          channel,
-        )
-        .toArray(),
+      this.sql.exec<ChannelStateRow>(
+        "SELECT channel, current_sequence, replay_floor_sequence FROM channel_state WHERE channel = ?",
+        channel,
+      ).toArray(),
     );
     if (
-      row === null ||
-      row.channel !== channel ||
+      row === null || row.channel !== channel ||
       !Number.isSafeInteger(row.current_sequence) ||
       !Number.isSafeInteger(row.replay_floor_sequence)
     ) {
@@ -764,11 +769,12 @@ export class RealtimeRoomStore {
     };
   }
 
-  getAllSequenceStates(): RealtimeChannelSequenceStates {
+  getAllSequenceStates(includeSpaceChannel = false): RealtimeChannelSequenceStates {
     return {
       presence: this.getSequenceState("presence"),
       comments: this.getSequenceState("comments"),
       "screen-signaling": this.getSequenceState("screen-signaling"),
+      ...(includeSpaceChannel ? { "yjs-space": this.getSequenceState("yjs-space") } : {}),
     };
   }
 
@@ -1066,42 +1072,31 @@ export class RealtimeRoomStore {
     connectionId: string,
     actorId: string,
     clientId: string,
-    payload: PresenceUpdatePayload | PresenceCursorPayload,
+    payload:
+      | PresenceUpdatePayload
+      | SpacePresenceUpdatePayload
+      | PresenceCursorPayload,
     nowMs: number,
   ): void {
     if (payload.kind === "presence.update") {
       this.sql.exec(
-        `INSERT INTO presence_state
-          (connection_id, actor_id, client_id, update_json, cursor_json, updated_at_ms)
+        `INSERT INTO presence_state (connection_id, actor_id, client_id, update_json, cursor_json, updated_at_ms)
          VALUES (?, ?, ?, ?, NULL, ?)
          ON CONFLICT(connection_id) DO UPDATE SET
-           actor_id = excluded.actor_id,
-           client_id = excluded.client_id,
-           update_json = excluded.update_json,
-           updated_at_ms = excluded.updated_at_ms`,
-        connectionId,
-        actorId,
-        clientId,
-        JSON.stringify(payload),
-        nowMs,
+           actor_id = excluded.actor_id, client_id = excluded.client_id,
+           update_json = excluded.update_json, updated_at_ms = excluded.updated_at_ms`,
+        connectionId, actorId, clientId, JSON.stringify(payload), nowMs,
       );
       return;
     }
     const { points: _points, ...snapshotCursor } = payload;
     this.sql.exec(
-      `INSERT INTO presence_state
-        (connection_id, actor_id, client_id, update_json, cursor_json, updated_at_ms)
+      `INSERT INTO presence_state (connection_id, actor_id, client_id, update_json, cursor_json, updated_at_ms)
        VALUES (?, ?, ?, NULL, ?, ?)
        ON CONFLICT(connection_id) DO UPDATE SET
-         actor_id = excluded.actor_id,
-         client_id = excluded.client_id,
-         cursor_json = excluded.cursor_json,
-         updated_at_ms = excluded.updated_at_ms`,
-      connectionId,
-      actorId,
-      clientId,
-      JSON.stringify(snapshotCursor),
-      nowMs,
+         actor_id = excluded.actor_id, client_id = excluded.client_id,
+         cursor_json = excluded.cursor_json, updated_at_ms = excluded.updated_at_ms`,
+      connectionId, actorId, clientId, JSON.stringify(snapshotCursor), nowMs,
     );
   }
 
@@ -1159,7 +1154,7 @@ export class RealtimeRoomStore {
 
   consumeRateBudget(
     actorId: string,
-    channel: RealtimeChannel,
+    channel: RealtimeWireChannel,
     nowMs: number,
     frameBytes: number,
     windowMs: number,
@@ -1459,7 +1454,7 @@ export class RealtimeRoomStore {
     if (!Number.isSafeInteger(nextSequence)) {
       throw new Error("Realtime channel sequence is exhausted");
     }
-    const event: ServerEventMessage = {
+    const event: ServerWireEventMessage = {
       version: "toonstudio.realtime.v1",
       type: "event",
       sequence: nextSequence,
@@ -1471,16 +1466,13 @@ export class RealtimeRoomStore {
       serverAtMs: input.serverAtMs,
       payload: input.payload,
     };
-    const envelopeJson = serializeRealtimeServerMessage(event);
+    const envelopeJson = serializeRealtimeWireServerMessage(event);
     const targetActorId = input.targetActorId ?? null;
     const targetClientId = input.targetClientId ?? null;
     return {
       nextSequence,
       envelopeJson,
-      receiptBytes: receiptStorageBytes(
-        input,
-        envelopeJson,
-      ),
+      receiptBytes: receiptStorageBytes(input, envelopeJson),
       stored: { event, targetActorId, targetClientId },
     };
   }
@@ -1507,7 +1499,7 @@ export class RealtimeRoomStore {
   }
 
   private advanceChannelSequence(
-    channel: RealtimeChannel,
+    channel: RealtimeWireChannel,
     nextSequence: number,
   ): void {
     this.sql.exec(
@@ -1518,7 +1510,7 @@ export class RealtimeRoomStore {
   }
 
   readEventsAfter(
-    channel: RealtimeChannel,
+    channel: RealtimeWireChannel,
     afterSequence: number,
     limit: number,
   ): StoredRoomEvent[] {
@@ -1950,7 +1942,10 @@ export class RealtimeRoomStore {
   }
 
   prune(nowMs: number, maximumReplayEvents: number): void {
-    for (const channel of REALTIME_CHANNELS) {
+    const channels: readonly RealtimeWireChannel[] = hasSpaceChannelRow(this.sql)
+      ? [...REALTIME_CHANNELS, "yjs-space"]
+      : REALTIME_CHANNELS;
+    for (const channel of channels) {
       const state = this.getSequenceState(channel);
       const expired = firstRow(
         this.sql

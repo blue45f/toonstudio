@@ -272,7 +272,7 @@ export function ProductionRiskEditorDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/55 p-0 sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-[120] flex items-end justify-center bg-canvas/75 p-0 sm:items-center sm:p-6">
       <button
         type="button"
         aria-label="위험 편집 창 닫기"
@@ -292,7 +292,7 @@ export function ProductionRiskEditorDialog({
           <div>
             <div className="flex items-center gap-2">
               <ShieldAlert className="size-5 text-accent" aria-hidden="true" />
-              <h2 id="production-risk-editor-title" className="text-lg font-black text-fg">
+              <h2 id="production-risk-editor-title" className="text-lg font-semibold text-fg">
                 {risk ? "위험 항목 편집" : "위험 직접 등록"}
               </h2>
             </div>
@@ -409,9 +409,9 @@ export function ProductionRiskEditorDialog({
           </div>
 
           <div className="grid gap-3 rounded-2xl border border-accent/30 bg-accent-soft p-4 sm:grid-cols-3">
-            <div><p className="text-[0.6875rem] font-bold text-fg-3">노출도</p><p className="mt-1 text-lg font-black text-fg">{exposureScore}</p></div>
-            <div><p className="text-[0.6875rem] font-bold text-fg-3">운영 우선순위</p><p className="mt-1 text-lg font-black text-fg">{priorityScore}</p></div>
-            <div><p className="text-[0.6875rem] font-bold text-fg-3">위험도</p><p className="mt-1 text-lg font-black text-fg">{severity}</p></div>
+            <div><p className="text-xs font-bold text-fg-3">노출도</p><p className="mt-1 text-lg font-semibold text-fg">{exposureScore}</p></div>
+            <div><p className="text-xs font-bold text-fg-3">운영 우선순위</p><p className="mt-1 text-lg font-semibold text-fg">{priorityScore}</p></div>
+            <div><p className="text-xs font-bold text-fg-3">위험도</p><p className="mt-1 text-lg font-semibold text-fg">{severity}</p></div>
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <label className="block lg:col-span-2">
@@ -431,7 +431,7 @@ export function ProductionRiskEditorDialog({
                   <option key={task.id} value={task.id}>{task.title} · {task.status}</option>
                 ))}
               </select>
-              <span className="mt-1 block text-[0.6875rem] text-fg-3">여러 작업은 Command 또는 Ctrl 키를 누른 채 선택합니다.</span>
+              <span className="mt-1 block text-xs text-fg-3">여러 작업은 Command 또는 Ctrl 키를 누른 채 선택합니다.</span>
             </label>
             <label className="block">
               <FieldLabel>대응 기한</FieldLabel>

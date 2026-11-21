@@ -75,7 +75,8 @@ export function StudioVirtualSpaceJoystick({
 
   return <div
     ref={padRef}
-    className="studio-vspace-joystick relative size-28 touch-none select-none rounded-full border border-white/20 bg-panel/80 shadow-2xl backdrop-blur-xl"
+    data-testid="space-joystick-pad"
+    className="studio-vspace-joystick relative size-28 touch-none select-none rounded-full border border-line bg-panel/90 shadow-lg backdrop-blur-md"
     role="application"
     aria-label={bt("캐릭터 이동 조이스틱", "Character movement joystick")}
     data-studio-virtual-joystick="true"
@@ -122,9 +123,9 @@ export function StudioVirtualSpaceJoystick({
     >
       <span className="size-2 rounded-full bg-current opacity-80" />
     </span>
-    <span className="pointer-events-none absolute left-1/2 top-1 -translate-x-1/2 text-[0.55rem] font-black text-fg-3" aria-hidden>W</span>
-    <span className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 text-[0.55rem] font-black text-fg-3" aria-hidden>S</span>
-    <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[0.55rem] font-black text-fg-3" aria-hidden>A</span>
-    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[0.55rem] font-black text-fg-3" aria-hidden>D</span>
+    <span className="pointer-events-none absolute left-1/2 top-1 -translate-x-1/2 text-[11px] font-semibold text-fg-3" aria-hidden>W</span>
+    <span className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 text-[11px] font-semibold text-fg-3" aria-hidden>S</span>
+    <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-fg-3" aria-hidden>A</span>
+    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-fg-3" aria-hidden>D</span>
   </div>;
 }

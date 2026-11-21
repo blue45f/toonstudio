@@ -38,7 +38,7 @@ describe('Nature 전수 인제스션과 3D 관찰 테마의 연결', () => {
     const existingIds = ['parkbotanical', 'fantasyguild', 'sflab', 'gothicarchive', 'vehiclegarage', 'cafefood'];
     expect(VIRTUAL_THREE_THEMES.filter(theme => existingIds.includes(theme.id)).map(theme => theme.id)).toEqual(existingIds);
     expect(VIRTUAL_THREE_NATURE_THEMES.map(theme => theme.id)).toEqual(['forestretreat', 'gardenstudy']);
-    expect(new Set(VIRTUAL_THREE_THEME_MODEL_REFS.map(ref => ref.source === 'bundle' ? ref.assetId : ref.id)).size).toBe(VIRTUAL_THREE_THEME_MODEL_REFS.length);
+    expect(new Set(VIRTUAL_THREE_THEME_MODEL_REFS.map(ref => ref.source === 'generated' ? ref.id : ref.assetId)).size).toBe(VIRTUAL_THREE_THEME_MODEL_REFS.length);
     expect(VIRTUAL_THREE_THEME_MODEL_REFS.filter(ref => ref.source === 'generated')).toHaveLength(6);
     for (const theme of VIRTUAL_THREE_NATURE_THEMES) {
       expect(findVirtualThreeTheme(theme.id)).toBe(theme);

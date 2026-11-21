@@ -1,17 +1,18 @@
 import {
   Activity,
+  Bookmark,
   CheckCircle2,
   ChevronRight,
   CircleDot,
   Gauge,
   ImagePlus,
-  LoaderCircle,
-  RotateCcw,
   Layers,
+  LoaderCircle,
+  Plus,
+  RotateCcw,
   RotateCw,
   Save,
   SlidersHorizontal,
-  Sparkles,
   Stamp,
   Trash2,
   Undo2,
@@ -23,6 +24,7 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -32,13 +34,10 @@ import {
 import { createPortal } from "react-dom";
 
 import { MarketplaceBrushStudioBridge } from "../MarketplaceBrushStudioBridge";
-import { BRUSH_PRESETS } from "../studio-brush";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
-import {
-  STUDIO_FOCUS_RING,
-  StudioContextPill,
-  StudioSectionHeader,
-} from "../studio-panel-ui";
+import { BRUSH_PRESETS, resolveStudioBrushRenderFamily } from "../studio-brush";
+import { STUDIO_FOCUS_RING, StudioSectionHeader } from "../studio-panel-ui";
+import { STUDIO_SPECTRAL_WGM_COLOR_MIX_PROGRAM_ID } from "../studio-spectral-wgm-mix-v1";
 
 import {
   createStudioBuiltInBrushDefaultRestoreProfile,
@@ -50,8 +49,6 @@ import {
 } from "./studio-brush-default-restore";
 import {
   STUDIO_BRUSH_DYNAMICS_PRESETS,
-  normalizeStudioBrushDynamicsSettings,
-  planStudioDynamicBrush,
   resolveStudioBrushDynamicsSelectionPresetId,
   studioBrushDynamicsPresetSettings,
   studioBrushDynamicsSettingsForBrushId,
@@ -70,36 +67,29 @@ import {
   updateStudioBrushDynamicsTaper,
   updateStudioBrushDynamicsTip,
 } from "./studio-brush-dynamics-editor";
-import {
-  resolveNormalizedStudioBrushDabColor,
-  resolveNormalizedStudioBrushGrainAlphaMultiplier,
-  studioBrushGrainIsActive,
-} from "./studio-brush-material-dynamics";
+import { studioOilProgramSetForBrush, type StudioBrushEngineProgramSet } from "./studio-brush-engine-program-set";
+import { STUDIO_BRUSH_LABELS, studioBrushEditorHref } from "./studio-brush-product-model";
 import { materializeStudioBrushCatalogSelection } from "./studio-brush-selection";
-import {
-  STUDIO_BRUSH_DUAL_BRUSH_BLEND_MODES,
-  STUDIO_BRUSH_DUAL_BRUSH_SIZE_RATIO_LIMITS,
-  composeStudioBrushDualTipAlphaMap,
-  normalizeStudioBrushDualBrushSettings,
-  planNormalizedStudioBrushTipComposition,
-  studioBrushDualTipUsesSolidEllipse,
-  type StudioBrushDualBrushBlendMode,
-  type StudioBrushDualBrushSettings,
-} from "./studio-brush-tip-composition";
 import {
   importStudioBrushTipPng,
   studioBrushTipImportErrorMessage,
   type ImportedStudioBrushTip,
 } from "./studio-brush-tip-import";
 import {
-  buildStudioBrushTipAlphaMap,
-  planStudioBrushTipStampWorldSamples,
+  DEFAULT_STUDIO_BRUSH_UNIFIED_MEDIA_PHYSICS,
+  TIP_SHAPE_LABELS,
+  type StudioBrushUnifiedMediaPhysics,
+} from "./studio-brush-studio-constants";
+import {
   STUDIO_BRUSH_TIP_SHAPE_IDS,
-  studioBrushTipUsesSolidEllipse,
   type NormalizedStudioBrushTipSettings,
   type StudioBrushTipSettings,
-  type StudioBrushTipShapeId,
 } from "./studio-brush-tip-stamp";
+import { StudioBrushAdvancedCspSection } from "./StudioBrushAdvancedCspSection";
+import {
+  StudioBrushDualTipSection,
+  TipShapeGlyph,
+} from "./StudioBrushDualTipSection";
 import {
   StudioBrushColorDynamicsControls,
   StudioBrushDynamicsInputMatrix,
@@ -116,15 +106,14 @@ import {
 import { StudioBrushEngineProgramControls } from "./StudioBrushEngineProgramControls";
 import { StudioBrushGoalStart } from "./StudioBrushGoalStart";
 import { StudioBrushInputControls } from "./StudioBrushInputControls";
+import {
+  StudioBrushLiveTestPad,
+  type StudioBrushLiveTestPadProps,
+} from "./StudioBrushLiveTestPad";
 import { RangeRow, ToggleRow } from "./StudioBrushSettingRows";
-import { STUDIO_BRUSH_LABELS, studioBrushEditorHref } from "./studio-brush-product-model";
+import { StudioBrushUnifiedMediaControls } from "./StudioBrushUnifiedMediaControls";
 
-import type { StudioBrushEngineProgramSet } from "./studio-brush-engine-program-set";
-import type {
-  StudioBrushSnapshot,
-  StudioSavedBrush,
-} from "./studio-brush-library";
-
+import type { StudioBrushSnapshot, StudioSavedBrush } from "./studio-brush-library";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -168,9 +157,9 @@ const CATEGORY_ITEMS: readonly {
   id: BrushStudioCategory;
   label: string;
   description: string;
-  Icon: typeof Sparkles;
+  Icon: typeof Bookmark;
 }[] = [
-  { id: "presets", label: "빠른 설정", description: "용도별 시작점", Icon: Sparkles },
+  { id: "presets", label: "빠른 설정", description: "용도별 시작점", Icon: Bookmark },
   { id: "tip", label: "펜촉", description: "형상·각도·원형도", Icon: CircleDot },
   { id: "response", label: "동적 반응", description: "필압·속도·도포량", Icon: Activity },
   { id: "stamp", label: "도장", description: "간격·산포·노이즈", Icon: Stamp },
@@ -188,7 +177,7 @@ export interface StudioBrushStudioProps {
   onSettingsChange: (settings: NormalizedStudioBrushDynamicsSettings) => void;
   onSelectDynamicsPreset: (
     id: StudioBrushDynamicsPresetId,
-    settings: NormalizedStudioBrushDynamicsSettings
+    settings: NormalizedStudioBrushDynamicsSettings,
   ) => void;
   useVelocityPressure: boolean;
   onUseVelocityPressureChange: (value: boolean) => void;
@@ -214,123 +203,16 @@ export interface StudioBrushStudioProps {
   density?: "compact" | "touch";
 }
 
-export function StudioBrushDynamicsPreview({
-  settings,
-  strokeWidth,
-  color,
-}: Pick<StudioBrushStudioProps, "settings" | "strokeWidth" | "color">) {
-  const plan = planStudioDynamicBrush({
-    points: [16, 62, 52, 35, 91, 77, 133, 27, 177, 64, 224, 42, 272, 67],
-    pressures: [0.12, 0.3, 0.9, 0.55, 1, 0.42, 0.2],
-    speeds: [0.15, 0.22, 0.4, 0.8, 1.2, 0.55, 0.2],
-    tiltXs: [0, 8, 25, 42, 55, 24, 0],
-    tiltYs: [0, 3, 14, 28, 18, 6, 0],
-    twists: [0, 30, 75, 130, 210, 300, 355],
-    baseWidth: Math.max(3, Math.min(28, strokeWidth)),
-    baseOpacity: settings.opacity.base,
-    settings,
-    maxDabs: 256,
-  });
-  return (
-    <div className="rounded-xl border border-line bg-card/55 p-2.5 shadow-[inset_0_1px_0_oklch(0.95_0.01_85/0.04)]">
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="text-[0.7rem] font-semibold text-fg-2">실제 엔진 미리보기</span>
-        <StudioContextPill tone="neutral">필압 · 속도 · 기울기 · 회전</StudioContextPill>
-      </div>
-      <svg
-        viewBox="0 0 288 96"
-        className="h-24 w-full rounded-lg border border-line/60 bg-canvas"
-        aria-hidden="true"
-      >
-        {(() => {
-          const normalized = plan.settings;
-          const grainActive = studioBrushGrainIsActive(normalized.grain);
-          const tips = [normalized.tip, ...normalized.tipLayers.map((layer) => layer.tip)];
-          // The primary tip is dual-brush aware: an active secondary texture forces the
-          // alpha-map stamp path and swaps in the composed (once-per-settings) map.
-          const ellipseTips = tips.map((tip, tipIndex) => (
-            !grainActive && (tipIndex === 0
-              ? studioBrushDualTipUsesSolidEllipse(tip, normalized.dualBrush)
-              : studioBrushTipUsesSolidEllipse(tip))
-          ));
-          const alphaMaps = tips.map((tip, tipIndex) => (
-            ellipseTips[tipIndex]
-              ? null
-              : tipIndex === 0
-                ? composeStudioBrushDualTipAlphaMap(tip, normalized.dualBrush)
-                : buildStudioBrushTipAlphaMap(tip)
-          ));
-          const strokeOriginX = plan.dabs[0]?.sourceX ?? plan.dabs[0]?.x ?? 0;
-          const strokeOriginY = plan.dabs[0]?.sourceY ?? plan.dabs[0]?.y ?? 0;
-          const grainAt = (x: number, y: number) => (
-            resolveNormalizedStudioBrushGrainAlphaMultiplier({
-              x,
-              y,
-              strokeOriginX,
-              strokeOriginY,
-              strokeSeed: normalized.seed,
-            }, normalized.grain)
-          );
-          return plan.dabs.flatMap((dab) => {
-            const dabColor = resolveNormalizedStudioBrushDabColor(
-              color,
-              dab.index,
-              normalized.seed,
-              normalized.colorDynamics
-            );
-            return planNormalizedStudioBrushTipComposition(
-              dab,
-              normalized.tip,
-              normalized.tipLayers
-            ).flatMap((composedTip) => {
-              const composedDab = composedTip.dab;
-              const tipIndex = composedTip.role === "primary" ? 0 : composedTip.layerIndex + 1;
-              const baseOpacity = Math.min(1, Math.max(0.02, composedDab.opacity * composedDab.flow));
-              const alphaMap = alphaMaps[tipIndex] ?? null;
-              if (ellipseTips[tipIndex] || !alphaMap) {
-                const radius = Math.max(0.25, composedDab.size / 2);
-                return [(
-                  <ellipse
-                    key={`${dab.index}-${tipIndex}`}
-                    cx={composedDab.x}
-                    cy={composedDab.y}
-                    rx={radius}
-                    ry={radius * composedDab.roundness}
-                    fill={dabColor}
-                    opacity={Math.min(1, baseOpacity * grainAt(composedDab.x, composedDab.y))}
-                    transform={`rotate(${composedDab.angle} ${composedDab.x} ${composedDab.y})`}
-                  />
-                )];
-              }
-              return planStudioBrushTipStampWorldSamples(
-                composedDab,
-                composedTip.tip,
-                { alphaMap, grid: 5 }
-              ).map((sample, sampleIndex) => (
-                <circle
-                  key={`${dab.index}-${tipIndex}-${sampleIndex}`}
-                  cx={sample.x}
-                  cy={sample.y}
-                  r={sample.radius}
-                  fill={dabColor}
-                  opacity={Math.min(
-                    1,
-                    Math.max(0.001, baseOpacity * sample.alpha * grainAt(sample.x, sample.y))
-                  )}
-                />
-              ));
-            });
-          });
-        })()}
-      </svg>
-      <p className="mt-1.5 text-[0.62rem] leading-relaxed text-fg-3">
-        필압·테이퍼·색상·고정 그레인·멀티 팁·듀얼 브러시가 실제 엔진 도장 경로에 반영됩니다.
-        {plan.capped ? " 미리보기 도장 수는 256개로 제한했습니다." : ""}
-      </p>
-    </div>
-  );
+export function StudioBrushDynamicsPreview(props: StudioBrushLiveTestPadProps) {
+  return <StudioBrushLiveTestPad {...props} />;
 }
 
+/**
+ * 비입자(코어·자연매체) 58종 브러시용 비차단 엔진 전환 안내.
+ * 기존 "입자 브러시를 먼저 선택하세요" 차단 화면을 해제하고 전 241종 브러시 통합 편집을
+ * 즉시 열되, 원할 때 빠른 설정에서 잉크 입자·에어브러시·드라이 미디어 엔진으로 한 번에
+ * 전환할 수 있는 44px CTA를 하단에 유지한다.
+ */
 function DynamicsRequiredNotice({
   children,
   onRequestCompatibleBrush,
@@ -340,106 +222,28 @@ function DynamicsRequiredNotice({
 }) {
   return (
     <div
-      className="rounded-xl border border-accent/35 bg-accent-soft/30 p-4 text-xs leading-relaxed text-fg-2 shadow-[inset_0_0_0_1px_oklch(0.72_0.185_42/0.08)]"
+      data-studio-brush-unified-engine-hint="true"
+      className="rounded-xl border border-line-strong/60 bg-card/65 p-3.5 text-xs leading-relaxed text-fg-2"
       role="status"
       aria-live="polite"
     >
-      <p className="font-semibold text-fg">입자 브러시를 먼저 선택하세요</p>
+      <p className="font-semibold text-fg">코어·자연매체 브러시 통합 편집 모드</p>
       <p className="mt-1 text-fg-3 text-pretty">
-        빠른 설정에서 잉크 입자, 에어브러시, 드라이 미디어 중 하나를 고르면 이 설정이 실제 획에 적용됩니다.
+        현재 브러시에서도 필압·테이퍼·듀얼 팁·물성 설정을 바로 조정할 수 있습니다. 입자 도장 프리셋으로 전환하려면 아래 버튼을 누르세요.
       </p>
       <button
         type="button"
         onClick={onRequestCompatibleBrush}
         className={cn(
-          "mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-accent/45 bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2",
+          "mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-accent/45 bg-accent-soft px-3 text-xs font-semibold text-accent transition-colors hover:bg-accent hover:text-on-accent",
           STUDIO_FOCUS_RING,
         )}
         aria-label="호환 브러시 선택하기"
       >
-        호환 브러시 선택하기
+        입자 도장 프리셋으로 전환
       </button>
       {children}
     </div>
-  );
-}
-
-const TIP_SHAPE_LABELS: Record<StudioBrushTipShapeId, string> = {
-  round: "원형",
-  soft: "소프트",
-  hard: "하드",
-  flake: "플레이크",
-  grain: "그레인",
-  bristle: "강모",
-  sponge: "스펀지",
-  sumi: "수묵",
-  halftone: "망점",
-  star: "스타",
-  spatter: "스패터",
-  rake: "레이크",
-  grass: "잔디",
-};
-
-function TipShapeGlyph({ shape, active }: { shape: StudioBrushTipShapeId; active: boolean }) {
-  const stroke = active ? "currentColor" : "oklch(0.57 0.012 76)";
-  const fill = active ? "oklch(0.72 0.185 42 / 0.35)" : "oklch(0.245 0.011 64)";
-  return (
-    <svg viewBox="0 0 28 18" className="h-4 w-7 text-accent" aria-hidden>
-      {shape === "round" || shape === "soft" ? (
-        <ellipse cx="14" cy="9" rx={shape === "soft" ? 10 : 7} ry={shape === "soft" ? 7 : 7} fill={fill} stroke={stroke} strokeWidth="1" />
-      ) : null}
-      {shape === "hard" ? (
-        <ellipse cx="14" cy="9" rx="8" ry="8" fill={fill} stroke={stroke} strokeWidth="1.4" />
-      ) : null}
-      {shape === "flake" ? (
-        <path d="M14 2 L22 9 L14 16 L6 9 Z" fill={fill} stroke={stroke} strokeWidth="1" />
-      ) : null}
-      {shape === "grain" ? (
-        <>
-          <circle cx="9" cy="7" r="2.2" fill={fill} stroke={stroke} strokeWidth="0.8" />
-          <circle cx="15" cy="11" r="2.6" fill={fill} stroke={stroke} strokeWidth="0.8" />
-          <circle cx="20" cy="6.5" r="1.8" fill={fill} stroke={stroke} strokeWidth="0.8" />
-        </>
-      ) : null}
-      {shape === "bristle" ? (
-        <g fill="none" stroke={stroke} strokeLinecap="round">
-          <path d="M6 5.5 C10 7 10 12 14 13.5" strokeWidth="1.5" />
-          <path d="M10 4 C13 7 14 10 17 14" strokeWidth="1.1" />
-          <path d="M14 3.5 C16 7 18 10 21.5 12.5" strokeWidth="1.4" />
-        </g>
-      ) : null}
-      {shape === "sponge" ? (
-        <>
-          <circle cx="9" cy="6" r="3" fill={fill} stroke={stroke} strokeWidth="0.7" />
-          <circle cx="15" cy="10" r="4" fill={fill} stroke={stroke} strokeWidth="0.7" />
-          <circle cx="21" cy="6.5" r="2.6" fill={fill} stroke={stroke} strokeWidth="0.7" />
-          <circle cx="21" cy="13" r="2" fill={fill} stroke={stroke} strokeWidth="0.7" />
-        </>
-      ) : null}
-      {shape === "sumi" ? (
-        <path
-          d="M5.5 10.5 C7 5 11 2.8 15.5 4 C21 5.3 23.5 10.4 20.2 14 C17.5 16.4 9.4 15.3 5.5 10.5 Z"
-          fill={fill}
-          stroke={stroke}
-          strokeWidth="0.9"
-        />
-      ) : null}
-      {shape === "halftone" ? (
-        <g fill={stroke}>
-          {[8, 14, 20].flatMap((x) => [5, 10, 15].map((y) => (
-            <circle key={`${x}-${y}`} cx={x} cy={y} r={y === 10 ? 1.45 : 1.1} />
-          )))}
-        </g>
-      ) : null}
-      {shape === "star" ? (
-        <path
-          d="M14 2.5 L16.2 7.4 L21.5 7.8 L17.4 11.2 L18.6 16.3 L14 13.7 L9.4 16.3 L10.6 11.2 L6.5 7.8 L11.8 7.4 Z"
-          fill={fill}
-          stroke={stroke}
-          strokeWidth="0.9"
-        />
-      ) : null}
-    </svg>
   );
 }
 
@@ -465,7 +269,7 @@ export function StudioBrushTipImportControls({
   const descriptionId = useId();
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [imported, setImported] = useState<ImportedStudioBrushTip & { name: string } | null>(null);
+  const [imported, setImported] = useState<(ImportedStudioBrushTip & { name: string }) | null>(null);
   const customActive = Boolean(tip.alphaMapBase64);
   const activeImported = imported?.alphaMapBase64 === tip.alphaMapBase64 ? imported : null;
   const tipRevision = `${tip.shape}:${tip.softness}:${tip.alphaMapSize}:${tip.alphaMapBase64 ?? ""}`;
@@ -478,9 +282,6 @@ export function StudioBrushTipImportControls({
   useLayoutEffect(() => {
     if (tipRevisionRef.current === tipRevision) return;
     tipRevisionRef.current = tipRevision;
-    // Undo, preset restore, or another tip control wins before paint over an older async PNG
-    // decode. A passive effect left a commit-to-effect microtask window where stale import data
-    // could replace the newer tip.
     if (!importing) return;
     requestIdRef.current++;
     setImporting(false);
@@ -530,8 +331,8 @@ export function StudioBrushTipImportControls({
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-fg">내 PNG 펜촉</p>
-          <p id={descriptionId} className="mt-0.5 text-[0.65rem] leading-relaxed text-fg-3 text-pretty">
-            4MB·4,096px 이하 PNG를 최대 64×64 알파로 안전하게 축소합니다. 투명 배경과 흑백 마스크를 모두 자동 인식합니다.
+          <p id={descriptionId} className="mt-0.5 text-xs leading-relaxed text-fg-3 text-pretty">
+            4MB·4,096px 이하 PNG를 최대 64×64 알파로 축소합니다. 투명 배경과 흑백 마스크를 모두 자동 인식합니다.
           </p>
         </div>
       </div>
@@ -550,10 +351,10 @@ export function StudioBrushTipImportControls({
         <div className="mt-2.5 flex min-h-[52px] items-center gap-2 rounded-lg border border-good/30 bg-good/10 px-2.5 py-1.5">
           <CheckCircle2 size={16} className="shrink-0 text-good" aria-hidden />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[0.7rem] font-semibold text-fg">
+            <p className="truncate text-xs font-semibold text-fg">
               {activeImported?.name ?? "문서에 포함된 사용자 PNG"}
             </p>
-            <p className="truncate text-[0.62rem] text-fg-3">
+            <p className="truncate text-xs text-fg-3">
               {tip.alphaMapSize}×{tip.alphaMapSize} 알파
               {activeImported ? ` · ${importedTipSourceLabel(activeImported.source)}` : " · 획과 함께 저장됨"}
             </p>
@@ -570,7 +371,7 @@ export function StudioBrushTipImportControls({
             }}
             className={cn(
               "grid size-11 shrink-0 place-items-center rounded-lg text-fg-3 transition-colors hover:bg-raised hover:text-fg",
-              STUDIO_FOCUS_RING
+              STUDIO_FOCUS_RING,
             )}
             aria-label="사용자 PNG 펜촉 제거"
             title="사용자 PNG 제거"
@@ -581,7 +382,7 @@ export function StudioBrushTipImportControls({
       ) : null}
 
       {error ? (
-        <div role="alert" className="mt-2.5 flex min-h-[44px] items-center gap-2 rounded-lg border border-bad/35 bg-bad/10 pl-2.5 text-[0.65rem] leading-relaxed text-bad">
+        <div role="alert" className="mt-2.5 flex min-h-[44px] items-center gap-2 rounded-lg border border-bad/35 bg-bad/10 pl-2.5 text-xs leading-relaxed text-bad">
           <span className="min-w-0 flex-1 py-2">{error}</span>
           <button
             type="button"
@@ -601,7 +402,7 @@ export function StudioBrushTipImportControls({
         onClick={() => inputRef.current?.click()}
         className={cn(
           "mt-2.5 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-line-strong bg-raised px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:bg-card disabled:cursor-wait disabled:opacity-65",
-          STUDIO_FOCUS_RING
+          STUDIO_FOCUS_RING,
         )}
       >
         {importing ? (
@@ -615,129 +416,48 @@ export function StudioBrushTipImportControls({
   );
 }
 
-const DUAL_BRUSH_BLEND_MODE_LABELS: Record<StudioBrushDualBrushBlendMode, string> = {
-  multiply: "곱하기",
-  screen: "스크린",
-};
-
-const DUAL_BRUSH_BLEND_MODE_HINTS: Record<StudioBrushDualBrushBlendMode, string> = {
-  multiply: "2차 팁의 어두운 부분이 1차 팁을 깎아 질감을 만듭니다",
-  screen: "2차 팁의 밝은 부분이 1차 팁 커버리지를 밝게 넓힙니다",
-};
-
 export interface StudioBrushDualBrushControlsProps {
   settings: NormalizedStudioBrushDynamicsSettings;
   onSettingsChange: (settings: NormalizedStudioBrushDynamicsSettings) => void;
 }
 
-/**
- * 듀얼 브러시 — 2차 팁 텍스처가 1차 팁 알파를 합성(도장 텍스처 구성) 시점에 변조합니다.
- * 간격·산포·지터는 1차 브러시 설정을 그대로 따르므로 도장(dab) 단가는 변하지 않습니다.
- */
 export function StudioBrushDualBrushControls({
   settings,
   onSettingsChange,
 }: StudioBrushDualBrushControlsProps) {
-  // Identity dual settings are omitted from normalized snapshots; editing starts from identity.
-  const dualBrush = settings.dualBrush ?? normalizeStudioBrushDualBrushSettings();
-  const update = (patch: Partial<StudioBrushDualBrushSettings>) => {
-    onSettingsChange(normalizeStudioBrushDynamicsSettings({
-      ...settings,
-      dualBrush: { ...dualBrush, ...patch },
-    }));
-  };
   return (
-    <div className="space-y-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[0.68rem] font-semibold text-fg-2">듀얼 브러시</span>
-        <span className="text-[0.62rem] text-fg-3">간격·산포는 1차 브러시를 따릅니다</span>
-      </div>
-      <ToggleRow
-        label="듀얼 브러시 사용"
-        description="2차 팁 텍스처가 1차 팁을 도장 텍스처 합성 시점에 변조합니다"
-        checked={dualBrush.enabled}
-        onChange={(enabled) => update({ enabled })}
-      />
-      {dualBrush.enabled ? (
-        <>
-          <div>
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <span className="text-[0.68rem] font-semibold text-fg-2">2차 팁</span>
-              <span className="text-[0.62rem] text-fg-3">선택하면 2차 사용자 PNG가 해제됩니다</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
-              {STUDIO_BRUSH_TIP_SHAPE_IDS.map((shapeId) => {
-                const active = dualBrush.tip.shape === shapeId && !dualBrush.tip.alphaMapBase64;
-                return (
-                  <button
-                    key={shapeId}
-                    type="button"
-                    aria-pressed={active}
-                    aria-label={`2차 팁 ${TIP_SHAPE_LABELS[shapeId]}`}
-                    onClick={() => update({
-                      tip: { ...dualBrush.tip, shape: shapeId, alphaMapBase64: null },
-                    })}
-                    className={cn(
-                      "flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-[0.68rem] font-semibold transition-colors duration-150",
-                      STUDIO_FOCUS_RING,
-                      active
-                        ? "border-accent bg-accent-soft/55 text-fg ring-1 ring-accent/20"
-                        : "border-line bg-card/55 text-fg-2 hover:border-accent/45 hover:bg-raised"
-                    )}
-                  >
-                    <TipShapeGlyph shape={shapeId} active={active} />
-                    {TIP_SHAPE_LABELS[shapeId]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div role="radiogroup" aria-label="듀얼 브러시 합성 모드" className="grid grid-cols-2 gap-1.5">
-            {STUDIO_BRUSH_DUAL_BRUSH_BLEND_MODES.map((blendMode) => {
-              const active = dualBrush.blendMode === blendMode;
-              return (
-                <button
-                  key={blendMode}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  onClick={() => update({ blendMode })}
-                  className={cn(
-                    "min-h-[44px] rounded-xl border px-3 py-2 text-left transition-colors duration-150",
-                    STUDIO_FOCUS_RING,
-                    active
-                      ? "border-accent bg-accent-soft/55 text-fg ring-1 ring-accent/20"
-                      : "border-line bg-card/55 text-fg-2 hover:border-accent/45 hover:bg-raised"
-                  )}
-                >
-                  <span className="block text-xs font-semibold">
-                    {DUAL_BRUSH_BLEND_MODE_LABELS[blendMode]}
-                  </span>
-                  <span className="mt-0.5 block text-[0.62rem] leading-relaxed text-fg-3">
-                    {DUAL_BRUSH_BLEND_MODE_HINTS[blendMode]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <RangeRow
-            label="2차 팁 크기 비율"
-            value={dualBrush.sizeRatio}
-            min={STUDIO_BRUSH_DUAL_BRUSH_SIZE_RATIO_LIMITS.min}
-            max={STUDIO_BRUSH_DUAL_BRUSH_SIZE_RATIO_LIMITS.max}
-            step={0.05}
-            display={`${Math.round(dualBrush.sizeRatio * 100)}%`}
-            hint="1차 팁 지름 대비 2차 팁 지름"
-            onChange={(sizeRatio) => update({ sizeRatio })}
-          />
-          <StudioBrushTipImportControls
-            tip={dualBrush.tip}
-            onTipChange={(patch) => update({ tip: { ...dualBrush.tip, ...patch } })}
-          />
-        </>
-      ) : null}
-    </div>
+    <StudioBrushDualTipSection
+      settings={settings}
+      onSettingsChange={onSettingsChange}
+      renderTipImport={(tip, onTipChange) => (
+        <StudioBrushTipImportControls tip={tip} onTipChange={onTipChange} />
+      )}
+    />
   );
+}
+
+function initialMediaPhysics(
+  brushId: string,
+  settings: NormalizedStudioBrushDynamicsSettings,
+  enginePrograms: StudioBrushEngineProgramSet | null | undefined,
+): StudioBrushUnifiedMediaPhysics {
+  const family = resolveStudioBrushRenderFamily(brushId);
+  const oil = enginePrograms?.oil ?? studioOilProgramSetForBrush(brushId);
+  const impastoDepth = oil.impastoRelief || family === "oil" ? 0.55 : 0;
+  const wetMixStrength =
+    settings.colorDynamics.pigmentMixProgramId === STUDIO_SPECTRAL_WGM_COLOR_MIX_PROGRAM_ID
+      ? Math.max(0.45, settings.colorDynamics.foregroundBackgroundMix)
+      : family === "watercolor"
+        ? 0.4
+        : 0;
+  const isDipPen = family === "gpen" || brushId === "gpen" || brushId === "maru-pen" || brushId === "kaburapen";
+  return {
+    ...DEFAULT_STUDIO_BRUSH_UNIFIED_MEDIA_PHYSICS,
+    impastoDepth,
+    wetMixStrength,
+    railroadEnabled: isDipPen,
+    nibPersonality: brushId === "maru-pen" ? "maru-pen" : brushId === "kaburapen" ? "kabura-pen" : "g-pen",
+  };
 }
 
 export function StudioBrushStudio({
@@ -773,6 +493,15 @@ export function StudioBrushStudio({
   const [tipImporting, setTipImporting] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [restoreSession, setRestoreSession] = useState<BrushDefaultRestoreSession | null>(null);
+  const mediaPhysicsKey = `${brushId}:${currentSnapshot.sourcePresetId ?? ""}`;
+  const [mediaPhysicsOverrides, setMediaPhysicsOverrides] = useState<
+    Record<string, StudioBrushUnifiedMediaPhysics>
+  >({});
+  const defaultMediaPhysics = useMemo(
+    () => initialMediaPhysics(brushId, settings, currentSnapshot.enginePrograms),
+    [brushId, currentSnapshot.enginePrograms, settings],
+  );
+  const mediaPhysics = mediaPhysicsOverrides[mediaPhysicsKey] ?? defaultMediaPhysics;
   const launcherRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -814,9 +543,19 @@ export function StudioBrushStudio({
     savedBrushBaseline?.id,
   ]);
 
+  function handleMediaPhysicsChange(patch: Partial<StudioBrushUnifiedMediaPhysics>) {
+    setMediaPhysicsOverrides((prev) => ({
+      ...prev,
+      [mediaPhysicsKey]: {
+        ...(prev[mediaPhysicsKey] ?? defaultMediaPhysics),
+        ...patch,
+      },
+    }));
+  }
+
   function handleCategoryKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
     const tabs = Array.from(
-      event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>("[role='tab']") ?? []
+      event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>("[role='tab']") ?? [],
     );
     const currentIndex = tabs.indexOf(event.currentTarget);
     if (currentIndex < 0) return;
@@ -855,8 +594,8 @@ export function StudioBrushStudio({
       if (event.key !== "Tab" || !dialogRef.current) return;
       const focusable = Array.from(
         dialogRef.current.querySelectorAll<HTMLElement>(
-          "button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])"
-        )
+          "button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])",
+        ),
       ).filter((element) => !element.hasAttribute("hidden"));
       if (focusable.length === 0) return;
       const first = focusable[0]!;
@@ -904,9 +643,12 @@ export function StudioBrushStudio({
       const profile = await resolveDefaultRestoreProfile();
       if (restoreRequestRef.current !== requestId) return;
       if (!profile) {
-        setRestoreSession({ status: "unavailable", message: currentSnapshot.sourcePresetId
-          ? frozenStatus5Text("studio.frozenStatus5.brushStudio.restoreGuidance", "가져온 브러시는 저장된 브러시 라이브러리에서 다시 적용해 원본 설정으로 돌아갈 수 있습니다.")
-          : frozenStatus5Text("studio.frozenStatus5.brushStudio.restoreProfileNotFound", "이 브러시의 검증된 기본 프로필을 찾지 못했습니다.") });
+        setRestoreSession({
+          status: "unavailable",
+          message: currentSnapshot.sourcePresetId
+            ? frozenStatus5Text("studio.frozenStatus5.brushStudio.restoreGuidance", "가져온 브러시는 저장된 브러시 라이브러리에서 다시 적용해 원본 설정으로 돌아갈 수 있습니다.")
+            : frozenStatus5Text("studio.frozenStatus5.brushStudio.restoreProfileNotFound", "이 브러시의 검증된 기본 프로필을 찾지 못했습니다."),
+        });
         return;
       }
       const transaction = planStudioBrushDefaultRestore(currentSnapshot, profile);
@@ -953,7 +695,7 @@ export function StudioBrushStudio({
     ? `${matchedPreset ? STUDIO_BRUSH_DYNAMICS_PRESETS.find((preset) => preset.id === matchedPreset)?.name : "사용자 지정"} · ${mappingCount}개 연결`
     : brushId === "calligraphy"
       ? `촉 ${Math.round(tipAngle)}° · 원형도 ${Math.round(tipRoundness * 100)}%`
-      : "필압·속도 입력과 입자 브러시";
+      : "필압·물성·듀얼 팁 통합 편집";
 
   const pressureWidth = findStudioBrushDynamicsMapping(settings, "width", "pressure");
   const pressureOpacity = findStudioBrushDynamicsMapping(settings, "opacity", "pressure");
@@ -961,11 +703,34 @@ export function StudioBrushStudio({
   const twistAngle = findStudioBrushDynamicsMapping(settings, "angle", "twist");
   const tiltRoundness = findStudioBrushDynamicsMapping(settings, "roundness", "tilt-magnitude");
 
+  const liveTestPadProps: StudioBrushLiveTestPadProps = {
+    settings,
+    strokeWidth,
+    color,
+    pressureCurve,
+    useVelocityPressure,
+    velocitySensitivity,
+    mediaPhysics,
+  };
+
+  const unifiedMediaSection = (
+    <StudioBrushUnifiedMediaControls
+      brushId={brushId}
+      settings={settings}
+      onSettingsChange={onSettingsChange}
+      enginePrograms={currentSnapshot.enginePrograms ?? null}
+      onEngineProgramsChange={onEngineProgramsChange}
+      mediaPhysics={mediaPhysics}
+      onMediaPhysicsChange={handleMediaPhysicsChange}
+      defaultOpen={!dynamicsActive}
+    />
+  );
+
   const content = category === "presets" ? (
     <div className="space-y-3">
       <StudioSectionHeader
         title="빠른 설정"
-        description="실제 필압·속도·기울기·회전 입력을 조합한 상용 수준 시작점입니다."
+        description="필압·속도·기울기·회전 입력을 조합한 시작 프리셋입니다."
       />
       <div className="grid gap-2 md:grid-cols-3">
         {STUDIO_BRUSH_DYNAMICS_PRESETS.map((preset) => {
@@ -981,192 +746,241 @@ export function StudioBrushStudio({
                 STUDIO_FOCUS_RING,
                 active
                   ? "border-accent bg-accent-soft/55 text-fg ring-1 ring-accent/20"
-                  : "border-line bg-card/55 text-fg-2 hover:border-accent/45 hover:bg-raised"
+                  : "border-line bg-card/55 text-fg-2 hover:border-accent/45 hover:bg-raised",
               )}
             >
               <span className="flex items-center justify-between gap-2 text-xs font-bold">
                 {preset.name}
                 {active ? (
-                  <span className="rounded-full bg-accent px-2 py-0.5 text-[0.6rem] font-semibold text-on-accent">
+                  <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-on-accent">
                     사용 중
                   </span>
                 ) : null}
               </span>
-              <span className="mt-1.5 block text-[0.65rem] font-normal leading-relaxed text-fg-3 text-pretty">
+              <span className="mt-1.5 block text-xs font-normal leading-relaxed text-fg-3 text-pretty">
                 {preset.description}
               </span>
             </button>
           );
         })}
       </div>
-      <div className="rounded-xl border border-line bg-card/45 px-3 py-2.5 text-[0.68rem] leading-relaxed text-fg-3 text-pretty">
-        프리셋을 조정하면 자동으로 사용자 지정 상태가 됩니다. 원본 프리셋은 언제든 다시 선택할 수 있습니다.
+      <div className="rounded-xl border border-line bg-card/45 px-3 py-2.5 text-xs leading-relaxed text-fg-3 text-pretty">
+        설정을 조정하면 자동으로 사용자 지정 상태가 됩니다. 원본 프리셋은 언제든 다시 고를 수 있습니다.
       </div>
+      {unifiedMediaSection}
     </div>
   ) : category === "response" ? (
-    dynamicsActive ? (
-      <div className="space-y-2.5">
-        <StudioSectionHeader
-          title="압력 반응과 도포량"
-          description="전체 입력 보정 뒤에 각 출력 속성의 반응 범위를 적용합니다."
-        />
-        <RangeRow
-          label="가벼운 필압의 굵기"
-          value={pressureWidth?.from ?? 0.3}
-          min={0.05}
-          max={1}
-          step={0.05}
-          display={`${Math.round((pressureWidth?.from ?? 0.3) * 100)}%`}
-          onChange={(from) => onSettingsChange(updateStudioBrushDynamicsMapping(
-            settings,
-            "width",
-            "pressure",
-            { from },
-            { source: "pressure", from: 0.3, to: 1.7 }
-          ))}
-        />
-        <RangeRow
-          label="강한 필압의 굵기"
-          value={pressureWidth?.to ?? 1.7}
-          min={0.5}
-          max={2.4}
-          step={0.05}
-          display={`${Math.round((pressureWidth?.to ?? 1.7) * 100)}%`}
-          onChange={(to) => onSettingsChange(updateStudioBrushDynamicsMapping(
-            settings,
-            "width",
-            "pressure",
-            { to },
-            { source: "pressure", from: 0.3, to: 1.7 }
-          ))}
-        />
-        <RangeRow
-          label="가벼운 필압의 불투명도"
-          value={pressureOpacity?.from ?? 0.5}
-          min={0}
-          max={1}
-          step={0.05}
-          display={`${Math.round((pressureOpacity?.from ?? 0.5) * 100)}%`}
-          onChange={(from) => onSettingsChange(updateStudioBrushDynamicsMapping(
-            settings,
-            "opacity",
-            "pressure",
-            { from },
-            { source: "pressure", from: 0.5, to: 1 }
-          ))}
-        />
-        <RangeRow
-          label="유량"
-          value={settings.flow.base}
-          min={0.04}
-          max={1}
-          step={0.02}
-          display={`${Math.round(settings.flow.base * 100)}%`}
-          hint="한 도장마다 쌓이는 색의 양이며, 획 투명도와 함께 최종 농도를 결정합니다."
-          onChange={(base) => onSettingsChange(updateStudioBrushDynamicsPropertyBase(settings, "flow", base))}
-        />
-        <StudioBrushDynamicsInputMatrix
-          settings={settings}
-          onSettingsChange={onSettingsChange}
-        />
-      </div>
-    ) : <DynamicsRequiredNotice onRequestCompatibleBrush={onRequestCompatibleBrush} />
+    <div className="space-y-2.5">
+      <StudioSectionHeader
+        title="압력 반응과 도포량"
+        description="전 241종 브러시에서 필압·불투명도·유량·물성을 일관되게 조정합니다."
+      />
+      <RangeRow
+        label="가벼운 필압의 굵기"
+        value={pressureWidth?.from ?? 0.3}
+        min={0.05}
+        max={1}
+        step={0.05}
+        display={`${Math.round((pressureWidth?.from ?? 0.3) * 100)}%`}
+        onChange={(from) =>
+          onSettingsChange(
+            updateStudioBrushDynamicsMapping(
+              settings,
+              "width",
+              "pressure",
+              { from },
+              { source: "pressure", from: 0.3, to: 1.7 },
+            ),
+          )
+        }
+      />
+      <RangeRow
+        label="강한 필압의 굵기"
+        value={pressureWidth?.to ?? 1.7}
+        min={0.5}
+        max={2.4}
+        step={0.05}
+        display={`${Math.round((pressureWidth?.to ?? 1.7) * 100)}%`}
+        onChange={(to) =>
+          onSettingsChange(
+            updateStudioBrushDynamicsMapping(
+              settings,
+              "width",
+              "pressure",
+              { to },
+              { source: "pressure", from: 0.3, to: 1.7 },
+            ),
+          )
+        }
+      />
+      <RangeRow
+        label="가벼운 필압의 불투명도"
+        value={pressureOpacity?.from ?? 0.5}
+        min={0}
+        max={1}
+        step={0.05}
+        display={`${Math.round((pressureOpacity?.from ?? 0.5) * 100)}%`}
+        onChange={(from) =>
+          onSettingsChange(
+            updateStudioBrushDynamicsMapping(
+              settings,
+              "opacity",
+              "pressure",
+              { from },
+              { source: "pressure", from: 0.5, to: 1 },
+            ),
+          )
+        }
+      />
+      <RangeRow
+        label="유량"
+        value={settings.flow.base}
+        min={0.04}
+        max={1}
+        step={0.02}
+        display={`${Math.round(settings.flow.base * 100)}%`}
+        hint="한 도장마다 쌓이는 색의 양이며, 획 투명도와 함께 최종 농도를 결정합니다."
+        onChange={(base) => onSettingsChange(updateStudioBrushDynamicsPropertyBase(settings, "flow", base))}
+      />
+      {unifiedMediaSection}
+      <StudioBrushDynamicsInputMatrix settings={settings} onSettingsChange={onSettingsChange} />
+      {!dynamicsActive ? <DynamicsRequiredNotice onRequestCompatibleBrush={onRequestCompatibleBrush} /> : null}
+    </div>
   ) : category === "stamp" ? (
-    dynamicsActive ? (
-      <div className="space-y-2.5">
-        <StudioSectionHeader
-          title="도장 간격과 산포"
-          description="줌이 아니라 실제 촉 지름에 비례해 일관된 질감을 유지합니다."
-        />
-        <RangeRow
-          label="도장 간격"
-          value={settings.spacingRatio ?? 0.34}
-          min={0.02}
-          max={1}
-          step={0.01}
-          display={`${Math.round((settings.spacingRatio ?? 0.34) * 100)}%`}
-          hint="촉 지름 대비 이동 거리"
-          onChange={(ratio) => onSettingsChange(updateStudioBrushDynamicsRatio(settings, "spacing", ratio))}
-        />
-        <RangeRow
-          label="산포 반경"
-          value={settings.scatterRatio ?? 0}
-          min={0}
-          max={1.2}
-          step={0.01}
-          display={`${Math.round((settings.scatterRatio ?? 0) * 100)}%`}
-          hint="진행 경로 주변으로 퍼지는 결정론적 입자 반경"
-          onChange={(ratio) => onSettingsChange(updateStudioBrushDynamicsRatio(settings, "scatter", ratio))}
-        />
-        <RangeRow
-          label="촉 크기 무작위"
-          value={settings.width.jitter?.mode === "multiply" ? settings.width.jitter.amount : 0}
-          min={0}
-          max={0.75}
-          step={0.01}
-          display={`${Math.round((settings.width.jitter?.mode === "multiply" ? settings.width.jitter.amount : 0) * 100)}%`}
-          hint="같은 획은 다시 열어도 똑같이 재현됩니다."
-          onChange={(amount) => onSettingsChange(updateStudioBrushDynamicsJitter(settings, "width", amount))}
-        />
-        <ToggleRow
-          label="시작·끝 테이퍼"
-          description="획의 양 끝을 펜촉처럼 가늘게 만듭니다"
-          checked={settings.taper.enabled}
-          onChange={(enabled) => onSettingsChange(updateStudioBrushDynamicsTaper(settings, { enabled }))}
-        />
-        <RangeRow
-          label="시작 테이퍼 길이"
-          value={settings.taper.startLength}
-          min={0}
-          max={0.45}
-          step={0.01}
-          display={`${Math.round(settings.taper.startLength * 100)}%`}
-          hint="획 전체 길이 대비 시작 구간"
-          onChange={(startLength) => onSettingsChange(updateStudioBrushDynamicsTaper(settings, { startLength }))}
-        />
-        <RangeRow
-          label="끝 테이퍼 길이"
-          value={settings.taper.endLength}
-          min={0}
-          max={0.45}
-          step={0.01}
-          display={`${Math.round(settings.taper.endLength * 100)}%`}
-          hint="획 전체 길이 대비 끝 구간"
-          onChange={(endLength) => onSettingsChange(updateStudioBrushDynamicsTaper(settings, { endLength }))}
-        />
-        <RangeRow
-          label="끝 최소 굵기"
-          value={settings.taper.minSizeRatio}
-          min={0.05}
-          max={1}
-          step={0.01}
-          display={`${Math.round(settings.taper.minSizeRatio * 100)}%`}
-          onChange={(minSizeRatio) => onSettingsChange(updateStudioBrushDynamicsTaper(settings, { minSizeRatio }))}
-        />
-        <StudioBrushTaperAdvancedControls
-          settings={settings}
-          onSettingsChange={onSettingsChange}
-        />
-      </div>
-    ) : <DynamicsRequiredNotice onRequestCompatibleBrush={onRequestCompatibleBrush} />
+    <div className="space-y-2.5">
+      <StudioSectionHeader
+        title="도장 간격과 테이퍼"
+        description="줌이 아니라 실제 촉 지름에 비례해 일정한 간격과 끝단 감쇠를 유지합니다."
+      />
+      <RangeRow
+        label="도장 간격"
+        value={settings.spacingRatio ?? 0.34}
+        min={0.02}
+        max={1}
+        step={0.01}
+        display={`${Math.round((settings.spacingRatio ?? 0.34) * 100)}%`}
+        hint="촉 지름 대비 이동 거리"
+        onChange={(ratio) => onSettingsChange(updateStudioBrushDynamicsRatio(settings, "spacing", ratio))}
+      />
+      <RangeRow
+        label="산포 반경"
+        value={settings.scatterRatio ?? 0}
+        min={0}
+        max={1.2}
+        step={0.01}
+        display={`${Math.round((settings.scatterRatio ?? 0) * 100)}%`}
+        hint="진행 경로 주변으로 퍼지는 결정론적 입자 반경"
+        onChange={(ratio) => onSettingsChange(updateStudioBrushDynamicsRatio(settings, "scatter", ratio))}
+      />
+      <RangeRow
+        label="촉 크기 무작위"
+        value={settings.width.jitter?.mode === "multiply" ? settings.width.jitter.amount : 0}
+        min={0}
+        max={0.75}
+        step={0.01}
+        display={`${Math.round((settings.width.jitter?.mode === "multiply" ? settings.width.jitter.amount : 0) * 100)}%`}
+        hint="같은 획은 다시 열어도 똑같이 재현됩니다."
+        onChange={(amount) => onSettingsChange(updateStudioBrushDynamicsJitter(settings, "width", amount))}
+      />
+      <ToggleRow
+        label="시작·끝 테이퍼"
+        description="획의 양 끝을 펜촉처럼 가늘게 만듭니다"
+        checked={settings.taper.enabled}
+        onChange={(enabled) => onSettingsChange(updateStudioBrushDynamicsTaper(settings, { enabled }))}
+      />
+      <RangeRow
+        label="시작 테이퍼 길이"
+        value={settings.taper.startLength}
+        min={0}
+        max={0.45}
+        step={0.01}
+        display={`${Math.round(settings.taper.startLength * 100)}%`}
+        hint="획 전체 길이 대비 시작 구간"
+        onChange={(startLength) => onSettingsChange(updateStudioBrushDynamicsTaper(settings, { startLength }))}
+      />
+      <RangeRow
+        label="끝 테이퍼 길이"
+        value={settings.taper.endLength}
+        min={0}
+        max={0.45}
+        step={0.01}
+        display={`${Math.round(settings.taper.endLength * 100)}%`}
+        hint="획 전체 길이 대비 끝 구간"
+        onChange={(endLength) => onSettingsChange(updateStudioBrushDynamicsTaper(settings, { endLength }))}
+      />
+      <RangeRow
+        label="끝 최소 굵기"
+        value={settings.taper.minSizeRatio}
+        min={0.05}
+        max={1}
+        step={0.01}
+        display={`${Math.round(settings.taper.minSizeRatio * 100)}%`}
+        onChange={(minSizeRatio) => onSettingsChange(updateStudioBrushDynamicsTaper(settings, { minSizeRatio }))}
+      />
+      <StudioBrushTaperAdvancedControls settings={settings} onSettingsChange={onSettingsChange} />
+      <StudioBrushAdvancedCspSection
+        value={settings.cspBrushExtensions}
+        onChange={(cspBrushExtensions) => {
+          const next = { ...settings };
+          if (cspBrushExtensions === undefined) {
+            delete next.cspBrushExtensions;
+          } else {
+            next.cspBrushExtensions = cspBrushExtensions;
+          }
+          onSettingsChange(next);
+        }}
+      />
+      {!dynamicsActive ? <DynamicsRequiredNotice onRequestCompatibleBrush={onRequestCompatibleBrush} /> : null}
+    </div>
   ) : category === "tip" ? (
-    dynamicsActive ? (
-      <div className="space-y-2.5">
-        <StudioSectionHeader
-          title="펜촉 텍스처"
-          description="내 PNG 또는 정교한 기본 촉을 간격·산포 도장 경로에 찍습니다. 원형도가 낮을수록 각도 변화가 선명합니다."
-        />
-        <StudioBrushTipImportControls
-          tip={settings.tip}
-          onTipChange={(patch) => onSettingsChange(updateStudioBrushDynamicsTip(settings, patch))}
-          onImportingChange={setTipImporting}
-        />
-        <div>
-          <div className="mb-1.5 flex items-center justify-between gap-2">
-            <span className="text-[0.68rem] font-semibold text-fg-2">기본 펜촉</span>
-            <span className="text-[0.62rem] text-fg-3">선택하면 사용자 PNG가 해제됩니다</span>
+    <div className="space-y-2.5">
+      {brushId === "calligraphy" ? (
+        <div className="space-y-2.5 rounded-xl border border-line bg-card/45 p-3">
+          <div>
+            <h3 className="text-sm font-bold text-fg">캘리그래피 펜촉</h3>
+            <p className="mt-0.5 text-xs leading-relaxed text-fg-3">캘리그래피 획의 전용 촉 기울기와 각도입니다.</p>
           </div>
-          <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
+          <ToggleRow
+            label="스타일러스 기울기"
+            description="지원 스타일러스의 기울기와 회전을 획에 저장"
+            checked={tiltEnabled}
+            onChange={onTiltEnabledChange}
+          />
+          <RangeRow
+            label="캘리그래피 기본 촉 각도"
+            value={tipAngle}
+            min={-180}
+            max={180}
+            step={5}
+            display={`${Math.round(tipAngle)}°`}
+            onChange={onTipAngleChange}
+          />
+          <RangeRow
+            label="캘리그래피 촉 원형도"
+            value={tipRoundness}
+            min={0.08}
+            max={1}
+            step={0.02}
+            display={`${Math.round(tipRoundness * 100)}%`}
+            onChange={onTipRoundnessChange}
+          />
+        </div>
+      ) : null}
+      <StudioSectionHeader
+        title="펜촉 텍스처"
+        description="내 PNG 또는 기본 촉을 간격·산포 경로에 적용합니다. 원형도가 낮을수록 각도 변화가 선명합니다."
+      />
+      <StudioBrushTipImportControls
+        tip={settings.tip}
+        onTipChange={(patch) => onSettingsChange(updateStudioBrushDynamicsTip(settings, patch))}
+        onImportingChange={setTipImporting}
+      />
+      <div>
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-fg-2">기본 펜촉</span>
+          <span className="text-xs text-fg-3">선택하면 사용자 PNG가 해제됩니다</span>
+        </div>
+        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
           {STUDIO_BRUSH_TIP_SHAPE_IDS.map((shapeId) => {
             const active = settings.tip.shape === shapeId && !settings.tip.alphaMapBase64;
             return (
@@ -1175,17 +989,21 @@ export function StudioBrushStudio({
                 type="button"
                 disabled={tipImporting}
                 aria-pressed={active}
-                onClick={() => onSettingsChange(updateStudioBrushDynamicsTip(settings, {
-                  shape: shapeId,
-                  alphaMapBase64: null,
-                }))}
+                onClick={() =>
+                  onSettingsChange(
+                    updateStudioBrushDynamicsTip(settings, {
+                      shape: shapeId,
+                      alphaMapBase64: null,
+                    }),
+                  )
+                }
                 className={cn(
-                  "flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-[0.68rem] font-semibold transition-colors duration-150",
+                  "flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-xs font-semibold transition-colors duration-150",
                   STUDIO_FOCUS_RING,
                   active
                     ? "border-accent bg-accent-soft/55 text-fg ring-1 ring-accent/20"
                     : "border-line bg-card/55 text-fg-2 hover:border-accent/45 hover:bg-raised",
-                  "disabled:cursor-wait disabled:opacity-45"
+                  "disabled:cursor-wait disabled:opacity-45",
                 )}
               >
                 <TipShapeGlyph shape={shapeId} active={active} />
@@ -1193,122 +1011,101 @@ export function StudioBrushStudio({
               </button>
             );
           })}
-          </div>
         </div>
-        <RangeRow
-          label="팁 가장자리"
-          value={settings.tip.softness}
-          min={0}
-          max={1}
-          step={0.02}
-          display={`${Math.round(settings.tip.softness * 100)}%`}
-          hint="PNG 알파 가장자리 부드러움"
-          onChange={(softness) => onSettingsChange(updateStudioBrushDynamicsTip(settings, { softness }))}
-        />
-        <RangeRow
-          label="기본 촉 각도"
-          value={settings.angle.base}
-          min={-180}
-          max={180}
-          step={5}
-          display={`${Math.round(settings.angle.base)}°`}
-          onChange={(base) => onSettingsChange(updateStudioBrushDynamicsPropertyBase(settings, "angle", base))}
-        />
-        <RangeRow
-          label="촉 원형도"
-          value={settings.roundness.base}
-          min={0.08}
-          max={1}
-          step={0.02}
-          display={`${Math.round(settings.roundness.base * 100)}%`}
-          onChange={(base) => onSettingsChange(updateStudioBrushDynamicsPropertyBase(settings, "roundness", base))}
-        />
-        <ToggleRow
-          label="획 방향 추종"
-          description="이동 방향에 맞춰 타원형 촉을 회전"
-          checked={directionAngle !== null}
-          onChange={(checked) => onSettingsChange(checked
-            ? updateStudioBrushDynamicsMapping(
-                settings,
-                "angle",
-                "direction",
-                {},
-                { source: "direction", mode: "add", from: 0, to: 360 }
-              )
-            : removeStudioBrushDynamicsMapping(settings, "angle", "direction"))}
-        />
-        <ToggleRow
-          label="스타일러스 회전"
-          description="지원 펜의 barrel roll·twist를 촉 각도에 반영"
-          checked={twistAngle !== null}
-          onChange={(checked) => onSettingsChange(checked
-            ? updateStudioBrushDynamicsMapping(
-                settings,
-                "angle",
-                "twist",
-                {},
-                { source: "twist", mode: "add", from: 0, to: 360 }
-              )
-            : removeStudioBrushDynamicsMapping(settings, "angle", "twist"))}
-        />
-        <ToggleRow
-          label="기울기 원형도"
-          description="펜을 눕힐수록 촉이 납작해지는 반응"
-          checked={tiltRoundness !== null}
-          onChange={(checked) => onSettingsChange(checked
-            ? updateStudioBrushDynamicsMapping(
-                settings,
-                "roundness",
-                "tilt-magnitude",
-                {},
-                { source: "tilt-magnitude", from: 1, to: 0.35 }
-              )
-            : removeStudioBrushDynamicsMapping(settings, "roundness", "tilt-magnitude"))}
-        />
-        <StudioBrushGrainControls
-          settings={settings}
-          onSettingsChange={onSettingsChange}
-        />
-        <StudioBrushDualBrushControls settings={settings} onSettingsChange={onSettingsChange} />
-        <StudioBrushColorDynamicsControls settings={settings} onSettingsChange={onSettingsChange} />
       </div>
-    ) : brushId === "calligraphy" ? (
-      <div className="space-y-2.5">
-        <div>
-          <h3 className="text-sm font-bold text-fg">캘리그래피 펜촉</h3>
-          <p className="mt-0.5 text-xs leading-relaxed text-fg-3">기존 캘리그래피 획의 전용 촉 설정입니다.</p>
-        </div>
-        <ToggleRow
-          label="스타일러스 기울기"
-          description="Apple Pencil·Wacom의 tilt와 twist를 획에 저장"
-          checked={tiltEnabled}
-          onChange={onTiltEnabledChange}
-        />
-        <RangeRow
-          label="기본 촉 각도"
-          value={tipAngle}
-          min={-180}
-          max={180}
-          step={5}
-          display={`${Math.round(tipAngle)}°`}
-          onChange={onTipAngleChange}
-        />
-        <RangeRow
-          label="촉 원형도"
-          value={tipRoundness}
-          min={0.08}
-          max={1}
-          step={0.02}
-          display={`${Math.round(tipRoundness * 100)}%`}
-          onChange={onTipRoundnessChange}
-        />
-      </div>
-    ) : <DynamicsRequiredNotice onRequestCompatibleBrush={onRequestCompatibleBrush} />
+      <RangeRow
+        label="팁 가장자리"
+        value={settings.tip.softness}
+        min={0}
+        max={1}
+        step={0.02}
+        display={`${Math.round(settings.tip.softness * 100)}%`}
+        hint="PNG 알파 가장자리 부드러움"
+        onChange={(softness) => onSettingsChange(updateStudioBrushDynamicsTip(settings, { softness }))}
+      />
+      <RangeRow
+        label="기본 촉 각도"
+        value={settings.angle.base}
+        min={-180}
+        max={180}
+        step={5}
+        display={`${Math.round(settings.angle.base)}°`}
+        onChange={(base) => onSettingsChange(updateStudioBrushDynamicsPropertyBase(settings, "angle", base))}
+      />
+      <RangeRow
+        label="촉 원형도"
+        value={settings.roundness.base}
+        min={0.08}
+        max={1}
+        step={0.02}
+        display={`${Math.round(settings.roundness.base * 100)}%`}
+        onChange={(base) => onSettingsChange(updateStudioBrushDynamicsPropertyBase(settings, "roundness", base))}
+      />
+      <ToggleRow
+        label="획 방향 추종"
+        description="이동 방향에 맞춰 타원형 촉을 회전"
+        checked={directionAngle !== null}
+        onChange={(checked) =>
+          onSettingsChange(
+            checked
+              ? updateStudioBrushDynamicsMapping(
+                  settings,
+                  "angle",
+                  "direction",
+                  {},
+                  { source: "direction", mode: "add", from: 0, to: 360 },
+                )
+              : removeStudioBrushDynamicsMapping(settings, "angle", "direction"),
+          )
+        }
+      />
+      <ToggleRow
+        label="스타일러스 회전"
+        description="지원 펜의 배럴 회전을 촉 각도에 반영"
+        checked={twistAngle !== null}
+        onChange={(checked) =>
+          onSettingsChange(
+            checked
+              ? updateStudioBrushDynamicsMapping(
+                  settings,
+                  "angle",
+                  "twist",
+                  {},
+                  { source: "twist", mode: "add", from: 0, to: 360 },
+                )
+              : removeStudioBrushDynamicsMapping(settings, "angle", "twist"),
+          )
+        }
+      />
+      <ToggleRow
+        label="기울기 원형도"
+        description="펜을 눕힐수록 촉이 납작해지는 반응"
+        checked={tiltRoundness !== null}
+        onChange={(checked) =>
+          onSettingsChange(
+            checked
+              ? updateStudioBrushDynamicsMapping(
+                  settings,
+                  "roundness",
+                  "tilt-magnitude",
+                  {},
+                  { source: "tilt-magnitude", from: 1, to: 0.35 },
+                )
+              : removeStudioBrushDynamicsMapping(settings, "roundness", "tilt-magnitude"),
+          )
+        }
+      />
+      <StudioBrushGrainControls settings={settings} onSettingsChange={onSettingsChange} />
+      <StudioBrushDualBrushControls settings={settings} onSettingsChange={onSettingsChange} />
+      <StudioBrushColorDynamicsControls settings={settings} onSettingsChange={onSettingsChange} />
+      {unifiedMediaSection}
+      {!dynamicsActive ? <DynamicsRequiredNotice onRequestCompatibleBrush={onRequestCompatibleBrush} /> : null}
+    </div>
   ) : category === "engines" ? (
     <div className="space-y-3">
       <ol
         aria-label="커스텀 브러시 만들기 단계"
-        className="flex items-center gap-1.5 rounded-xl border border-line bg-card/45 px-3 py-2.5 text-[0.66rem] font-semibold"
+        className="flex items-center gap-1.5 rounded-xl border border-line bg-card/45 px-3 py-2.5 text-xs font-semibold"
       >
         {[
           { step: "1", label: "설정 조정" },
@@ -1319,8 +1116,8 @@ export function StudioBrushStudio({
             <span
               aria-hidden
               className={cn(
-                "grid size-5 shrink-0 place-items-center rounded-full text-[0.62rem] font-bold",
-                index === 2 ? "bg-accent text-on-accent" : "bg-raised text-fg-2 ring-1 ring-line"
+                "grid size-5 shrink-0 place-items-center rounded-full text-xs font-bold",
+                index === 2 ? "bg-accent text-on-accent" : "bg-raised text-fg-2 ring-1 ring-line",
               )}
             >
               {step}
@@ -1352,11 +1149,9 @@ export function StudioBrushStudio({
         programSet={currentSnapshot.enginePrograms ?? null}
         onChange={onEngineProgramsChange}
       />
+      {unifiedMediaSection}
       <StudioBrushTraitImportControls settings={settings} onSettingsChange={onSettingsChange} />
-      <StudioBrushSaveAsCustomControls
-        snapshot={currentSnapshot}
-        baseBrushName={brushLabel}
-      />
+      <StudioBrushSaveAsCustomControls snapshot={currentSnapshot} baseBrushName={brushLabel} />
     </div>
   ) : (
     <div>
@@ -1375,7 +1170,7 @@ export function StudioBrushStudio({
         pressureMinSize={pressureMinSize}
         onPressureMinSizeChange={onPressureMinSizeChange ?? (() => undefined)}
       />
-      <div className="mt-3 grid grid-cols-2 gap-2 text-[0.66rem] text-fg-3 sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-fg-3 sm:grid-cols-4">
         {["필압", "속도", "기울기", "회전"].map((sensor) => (
           <span
             key={sensor}
@@ -1385,7 +1180,7 @@ export function StudioBrushStudio({
           </span>
         ))}
       </div>
-      <p className="mt-2 text-[0.62rem] leading-relaxed text-fg-3 text-pretty">
+      <p className="mt-2 text-xs leading-relaxed text-fg-3 text-pretty">
         센서 지원은 브라우저와 펜 모델에 따라 다릅니다. 지원되지 않는 입력도 다른 기기에서 쓸 브러시 설정으로 저장할 수 있습니다.
       </p>
     </div>
@@ -1402,7 +1197,7 @@ export function StudioBrushStudio({
             <p className="text-xs font-semibold text-fg">
               {restoreSession.transaction.profile.sourceName} 기본값으로 복원할까요?
             </p>
-            <p className="mt-0.5 text-[0.65rem] leading-relaxed text-fg-3">
+            <p className="mt-0.5 text-xs leading-relaxed text-fg-3">
               {restoreSession.transaction.summary} · 현재 색상과 브러시 선택은 유지됩니다.
             </p>
           </div>
@@ -1481,7 +1276,7 @@ export function StudioBrushStudio({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-fg-2">선택 브러시 전체 설정</p>
-            <p className="mt-0.5 text-[0.65rem] leading-relaxed text-fg-3">
+            <p className="mt-0.5 text-xs leading-relaxed text-fg-3">
               굵기·불투명도·필압·보정·촉을 함께 복원하며 현재 색상은 유지합니다.
             </p>
           </div>
@@ -1514,7 +1309,8 @@ export function StudioBrushStudio({
       aria-describedby={descriptionId}
       data-studio-brush-studio-dialog="true"
       data-no-fx
-      className="fixed inset-0 isolate z-[180] flex items-end justify-center overflow-hidden overscroll-none bg-[oklch(0.08_0.01_70/0.78)] p-0 pb-[env(safe-area-inset-bottom)] text-fg sm:items-center sm:p-4"
+      style={{ backgroundColor: "var(--color-overlay)" }}
+      className="fixed inset-0 isolate z-[180] flex items-end justify-center overflow-hidden overscroll-none p-0 pb-[env(safe-area-inset-bottom)] text-fg sm:items-center sm:p-4"
     >
       <button
         type="button"
@@ -1533,8 +1329,8 @@ export function StudioBrushStudio({
           </span>
           <div className="min-w-0 flex-1">
             <h2 id={titleId} className="truncate text-sm font-bold text-fg">{STUDIO_BRUSH_LABELS.editCurrent}</h2>
-            <p id={descriptionId} className="truncate text-[0.65rem] text-fg-3">
-              {brushLabel} · {dynamicsActive ? `${mappingCount}개 입력 연결` : "전역 입력과 입자 브러시 설정"}
+            <p id={descriptionId} className="truncate text-xs text-fg-3">
+              {brushLabel} · {dynamicsActive ? `${mappingCount}개 입력 연결` : "전 241 브러시 통합 편집"}
             </p>
           </div>
           <a
@@ -1542,11 +1338,11 @@ export function StudioBrushStudio({
             aria-label={STUDIO_BRUSH_LABELS.create}
             title="브러시 스튜디오 전체 편집에서 새 브러시 만들기"
             className={cn(
-              "grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-2 hover:border-accent/55 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
+              "grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-2 transition-colors hover:border-accent/55 hover:bg-raised",
               STUDIO_FOCUS_RING,
             )}
           >
-            <Sparkles size={17} aria-hidden />
+            <Plus size={17} aria-hidden />
           </a>
           <button
             type="button"
@@ -1554,7 +1350,8 @@ export function StudioBrushStudio({
             aria-label="커스텀 브러시로 저장 (엔진 조합 탭의 저장 카드로 이동)"
             title="엔진 조합 탭의 저장 카드로 이동해 커스텀 브러시로 저장"
             className={cn(
-              "grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
+              "grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-2 transition-colors hover:bg-raised",
+              STUDIO_FOCUS_RING,
               category === "engines" && "border-accent/55 text-accent",
             )}
           >
@@ -1565,7 +1362,10 @@ export function StudioBrushStudio({
             type="button"
             onClick={closeStudio}
             aria-label="현재 브러시 편집 닫기"
-            className="grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            className={cn(
+              "grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-2 transition-colors hover:bg-raised",
+              STUDIO_FOCUS_RING,
+            )}
           >
             <X size={17} aria-hidden />
           </button>
@@ -1586,10 +1386,10 @@ export function StudioBrushStudio({
         />
 
         <div className="shrink-0 border-b border-line p-2 sm:hidden">
-          <StudioBrushDynamicsPreview settings={settings} strokeWidth={strokeWidth} color={color} />
+          <StudioBrushDynamicsPreview {...liveTestPadProps} />
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col sm:grid sm:grid-cols-[10rem_minmax(0,1fr)_14rem]">
+        <div className="flex min-h-0 flex-1 flex-col sm:grid sm:grid-cols-[10.5rem_minmax(0,1fr)_16.5rem]">
           <div
             role="tablist"
             aria-label="현재 브러시 편집 설정 분류"
@@ -1609,14 +1409,15 @@ export function StudioBrushStudio({
                   onClick={() => setCategory(id)}
                   onKeyDown={handleCategoryKeyDown}
                   className={cn(
-                    "flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl px-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:w-full",
-                    active ? "bg-accent-soft text-fg" : "text-fg-2 hover:bg-raised"
+                    "flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl px-3 text-left transition-colors sm:w-full",
+                    STUDIO_FOCUS_RING,
+                    active ? "bg-accent-soft text-fg" : "text-fg-2 hover:bg-raised",
                   )}
                 >
                   <Icon size={15} className={active ? "text-accent" : "text-fg-3"} aria-hidden />
                   <span>
                     <span className="block whitespace-nowrap text-xs font-semibold">{label}</span>
-                    <span className="hidden text-[0.62rem] text-fg-3 sm:block">{description}</span>
+                    <span className="hidden text-xs text-fg-3 sm:block">{description}</span>
                   </span>
                 </button>
               );
@@ -1634,12 +1435,12 @@ export function StudioBrushStudio({
 
           <aside className="hidden border-l border-line p-3 sm:block">
             <div className="sticky top-3 space-y-3">
-              <StudioBrushDynamicsPreview settings={settings} strokeWidth={strokeWidth} color={color} />
+              <StudioBrushDynamicsPreview {...liveTestPadProps} />
               <div className="rounded-xl border border-line bg-card/45 p-3">
                 <div className="flex items-center gap-2 text-xs font-semibold text-fg-2">
                   <RotateCw size={14} className="text-accent" aria-hidden /> 재현 가능한 획
                 </div>
-                <p className="mt-1 text-[0.64rem] leading-relaxed text-fg-3">
+                <p className="mt-1 text-xs leading-relaxed text-fg-3">
                   산포와 무작위 질감은 획 ID로 고정되어 다시 열기, SVG 내보내기, 협업 재생에서도 같은 모양을 유지합니다.
                 </p>
               </div>
@@ -1664,7 +1465,7 @@ export function StudioBrushStudio({
         className={cn(
           "flex w-full items-center gap-3 rounded-xl border border-line bg-card/55 text-left transition-colors duration-150 hover:border-accent/45 hover:bg-raised",
           STUDIO_FOCUS_RING,
-          touch ? "min-h-14 px-3 py-2" : "min-h-[44px] px-2.5 py-1.5"
+          touch ? "min-h-14 px-3 py-2" : "min-h-[44px] px-2.5 py-1.5",
         )}
       >
         <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent ring-1 ring-accent/15">
@@ -1672,7 +1473,7 @@ export function StudioBrushStudio({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-xs font-semibold text-fg-2">{STUDIO_BRUSH_LABELS.editCurrent}</span>
-          <span className="block truncate text-[0.65rem] text-fg-3">{launcherSummary}</span>
+          <span className="block truncate text-xs text-fg-3">{launcherSummary}</span>
         </span>
         <ChevronRight size={16} className="shrink-0 text-fg-3" aria-hidden />
       </button>

@@ -118,7 +118,7 @@
 .studio-whiteboard-tool:focus-visible,
 .studio-whiteboard-color:focus-visible,
 .studio-whiteboard-width:focus-visible,
-.studio-whiteboard-pen-settings > summary:focus-visible {
+.studio-whiteboard-pen-settings>summary:focus-visible {
   outline: 2px solid var(--wb-ink);
   outline-offset: 2px;
 }
@@ -173,22 +173,22 @@
   border-color: var(--wb-ink);
 }
 
-/* 핵심 액션(펜)은 항상 그라데이션으로 강조한다. */
+/* 핵심 액션(펜)은 스튜디오 강조 토큰으로 명확히 구분한다. */
 .studio-whiteboard-tool.is-primary {
   border-color: transparent;
-  background: linear-gradient(135deg, var(--wb-accent), #ec4899);
-  color: #fff;
-  box-shadow: 0 4px 14px rgb(124 58 237 / 0.35);
+  background: var(--color-accent, var(--wb-accent));
+  color: var(--color-on-accent, #fff);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.16);
 }
 
 .studio-whiteboard-tool.is-primary:hover {
-  color: #fff;
-  background: linear-gradient(135deg, var(--wb-accent), #ec4899);
+  color: var(--color-on-accent, #fff);
+  background: var(--color-accent, var(--wb-accent));
   filter: brightness(1.06);
 }
 
 .studio-whiteboard-tool.is-primary.is-active {
-  box-shadow: 0 0 0 2px var(--wb-surface), 0 0 0 4px var(--wb-accent), 0 4px 14px rgb(124 58 237 / 0.35);
+  box-shadow: 0 0 0 2px var(--wb-surface), 0 0 0 4px var(--color-accent, var(--wb-accent));
 }
 
 /* 펜 세부 설정 <details> */
@@ -198,7 +198,7 @@
   background: transparent;
 }
 
-.studio-whiteboard-pen-settings > summary {
+.studio-whiteboard-pen-settings>summary {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -212,11 +212,11 @@
   transition: color 0.18s ease, background 0.18s ease;
 }
 
-.studio-whiteboard-pen-settings > summary::-webkit-details-marker {
+.studio-whiteboard-pen-settings>summary::-webkit-details-marker {
   display: none;
 }
 
-.studio-whiteboard-pen-settings > summary:hover {
+.studio-whiteboard-pen-settings>summary:hover {
   color: var(--wb-ink);
   background: var(--wb-line);
 }
@@ -239,8 +239,15 @@
 }
 
 @keyframes wb-settings-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .studio-whiteboard-color {
@@ -481,7 +488,7 @@
 }
 
 .wb-art-spark {
-  stroke: #ec4899;
+  stroke: var(--color-accent, var(--wb-accent));
 }
 
 .studio-whiteboard-empty strong {
@@ -500,15 +507,19 @@
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
   margin-top: 0.25rem;
-  padding: 0.55rem 1.1rem;
+  padding: 0.6rem 1.25rem;
   border: 0;
   border-radius: 0.75rem;
-  background: linear-gradient(135deg, var(--wb-accent), #ec4899);
-  color: #fff;
+  background: var(--color-accent, var(--wb-accent));
+  color: var(--color-on-accent, #fff);
   font-size: 0.86rem;
   font-weight: 700;
+  white-space: nowrap;
+  word-break: keep-all;
   cursor: pointer;
   box-shadow: var(--wb-shadow);
   transition: transform 0.18s ease, filter 0.18s ease;
@@ -525,8 +536,15 @@
 }
 
 @keyframes wb-empty-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* 미니맵 */
@@ -563,7 +581,7 @@
   text-align: left;
 }
 
-.studio-whiteboard-offline > svg {
+.studio-whiteboard-offline>svg {
   flex-shrink: 0;
   color: var(--wb-accent);
 }
@@ -659,6 +677,7 @@
 
 /* reduced motion */
 @media (prefers-reduced-motion: reduce) {
+
   .studio-whiteboard-icon-btn,
   .studio-whiteboard-tool,
   .studio-whiteboard-color,
@@ -666,7 +685,7 @@
   .studio-whiteboard-note,
   .studio-whiteboard-note-remove,
   .studio-whiteboard-empty-cta,
-  .studio-whiteboard-pen-settings > summary,
+  .studio-whiteboard-pen-settings>summary,
   .studio-whiteboard-pen-settings-chevron {
     transition: none;
   }

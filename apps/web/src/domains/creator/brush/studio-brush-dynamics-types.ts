@@ -628,6 +628,32 @@ export interface StudioDynamicBrushPlanInput {
   /** Overrides settings.seed for this stroke. */
   seed?: number;
   maxDabs?: number;
+  /** Live active foreground/secondary RGB or hex for CSP stroke/sub-color mixing (replaces hardcoded fallback). */
+  foregroundRgb?: readonly [number, number, number] | null;
+  secondaryRgb?: readonly [number, number, number] | null;
+  foregroundHex?: string | null;
+  secondaryHex?: string | null;
+  /** Optional curve resampler opt-in: `"centripetal-v2"` invokes `studio-stroke-curve-resampler-v2`. */
+  curveResampler?: "linear" | "centripetal-v2";
+  /** Optional physical dip-pen nib profile (`g-pen` | `maru-pen` | `kabura-pen` | `school-pen` | `fude-brush-pen`). */
+  naturalMediaNibProfile?: "g-pen" | "maru-pen" | "kabura-pen" | "school-pen" | "fude-brush-pen" | null;
+  /** Optional 8-mode dynamic dual-tip modulation applied per dab. */
+  dynamicDualTip?: {
+    readonly enabled: boolean;
+    readonly mode: "multiply" | "screen" | "intersect" | "darken" | "lighten" | "add" | "subtract" | "difference" | "linear-height-subtract";
+    readonly depth01?: number;
+    readonly secondarySpacingRatio?: number;
+    readonly secondaryScatter01?: number;
+    readonly secondaryAngleJitterDeg?: number;
+  } | null;
+  /** Optional Wave 37 centrifugal bristle turn-splay stiffness (0.1..1). */
+  centrifugalBristleStiffness01?: number | null;
+  /** Optional Wave 38 barrel twist 3D chisel nib projection. */
+  barrelTwistChisel?: {
+    readonly enabled?: boolean;
+    readonly nibThicknessRatio01?: number;
+    readonly defaultAltitudeDeg?: number;
+  } | null;
 }
 
 /**
@@ -689,6 +715,16 @@ export interface StudioDynamicBrushDab {
   rgbTint?: readonly [number, number, number];
   /** Optional active CSP pattern brush motif identifier. */
   patternMotifId?: string;
+  /** Optional dip-pen twin-rail split gap (px) and active flag. */
+  tineSplitSpanPx?: number;
+  railroadingActive?: boolean;
+  inkReservoirLevel01?: number;
+  /** Optional 8-mode dynamic dual-tip alpha modulation multiplier. */
+  dualTipAlphaScale?: number;
+  /** Optional Wave 37 centrifugal bristle splay multiplier. */
+  centrifugalSplayRatio?: number;
+  /** Optional Wave 38 3D chisel projected width (px). */
+  chiselProjectedWidthPx?: number;
 }
 
 export interface StudioDynamicBrushPlan {

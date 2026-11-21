@@ -1,0 +1,320 @@
+{
+  "schema": "toonstudio.character-kit.hair-v2-index/1",
+  "count": 12,
+  "allPassed": true,
+  "styles": [
+    "soft-bob",
+    "romance-long",
+    "hime-cut",
+    "action-pony",
+    "twin-tail",
+    "short-layered",
+    "wolf-layered",
+    "dandy-two-block",
+    "comma-hair",
+    "slicked-back-duke",
+    "braided-crown",
+    "murim-topknot"
+  ],
+  "previewSheet": "loop-stack/v2-previews/char/hair-12-sheet-v3.png",
+  "previewBackSheet": "loop-stack/v2-previews/char/hair-12-sheet-v3-back.png",
+  "texture": {
+    "bytes": 21555,
+    "size": 512,
+    "meanLuminance": 0.9231,
+    "minLuminance": 0.8,
+    "columns": 4
+  },
+  "totalSeconds": 36.59,
+  "items": {
+    "soft-bob": {
+      "labelKo": "시스루뱅 소프트 보브",
+      "genre": "학원·로맨스",
+      "fittedBase": "female-romance",
+      "file": {
+        "path": "soft-bob.glb",
+        "bytes": 1417684,
+        "sha256": "43b55251f6a242b46af7808d63a4cbc719f8d2a983403799d52f43db244d45cc"
+      },
+      "triangles": [
+        10332,
+        5126,
+        1672
+      ],
+      "drawCalls": 8,
+      "materials": [
+        "ts_hair_soft-bob",
+        "ts_hair_tip_soft-bob",
+        "ts_hair_accent_soft-bob"
+      ],
+      "springChainCount": 2,
+      "passed": true,
+      "errors": []
+    },
+    "romance-long": {
+      "labelKo": "웨이브 롱 헤어",
+      "genre": "로맨스·로판",
+      "fittedBase": "female-romance",
+      "file": {
+        "path": "romance-long.glb",
+        "bytes": 1491340,
+        "sha256": "e5c6c4bd619a65dc9dcd6fc20e1448bb74e5fae2388ddeaa4e989c097551daf6"
+      },
+      "triangles": [
+        11984,
+        5612,
+        1768
+      ],
+      "drawCalls": 8,
+      "materials": [
+        "ts_hair_romance-long",
+        "ts_hair_tip_romance-long",
+        "ts_hair_accent_romance-long"
+      ],
+      "springChainCount": 6,
+      "passed": true,
+      "errors": []
+    },
+    "hime-cut": {
+      "labelKo": "히메컷 스트레이트",
+      "genre": "학원·미스터리",
+      "fittedBase": "female-romance",
+      "file": {
+        "path": "hime-cut.glb",
+        "bytes": 1443144,
+        "sha256": "dce178b6e3c61417d4b87ab49ad22512e0bfa9b76472836a885a5410b6a33b74"
+      },
+      "triangles": [
+        11520,
+        5208,
+        1648
+      ],
+      "drawCalls": 8,
+      "materials": [
+        "ts_hair_hime-cut",
+        "ts_hair_tip_hime-cut",
+        "ts_hair_accent_hime-cut"
+      ],
+      "springChainCount": 5,
+      "passed": true,
+      "errors": []
+    },
+    "action-pony": {
+      "labelKo": "하이 포니테일",
+      "genre": "액션·스포츠",
+      "fittedBase": "female-romance",
+      "file": {
+        "path": "action-pony.glb",
+        "bytes": 1407132,
+        "sha256": "c4fb00ec645297ac23cc8947032488d88537413f89419467cbe59d55c72e743d"
+      },
+      "triangles": [
+        10316,
+        4994,
+        1952
+      ],
+      "drawCalls": 8,
+      "materials": [
+        "ts_hair_action-pony",
+        "ts_hair_tip_action-pony",
+        "ts_hair_accent_action-pony"
+      ],
+      "springChainCount": 5,
+      "passed": true,
+      "errors": []
+    },
+    "twin-tail": {
+      "labelKo": "로우/하이 트윈테일",
+      "genre": "학원·아이돌",
+      "fittedBase": "female-romance",
+      "file": {
+        "path": "twin-tail.glb",
+        "bytes": 1448192,
+        "sha256": "28dafcd27dd29046163c9046b5da28f6a0283b2de432137546527d468351e024"
+      },
+      "triangles": [
+        10312,
+        5848,
+        2040
+      ],
+      "drawCalls": 8,
+      "materials": [
+        "ts_hair_twin-tail",
+        "ts_hair_tip_twin-tail",
+        "ts_hair_accent_twin-tail"
+      ],
+      "springChainCount": 4,
+      "passed": true,
+      "errors": []
+    },
+    "short-layered": {
+      "labelKo": "내추럴 숏 레이어드",
+      "genre": "일상·현대",
+      "fittedBase": "female-romance",
+      "file": {
+        "path": "short-layered.glb",
+        "bytes": 1551072,
+        "sha256": "ddc97717d6eb21ac139ef93b986500d2c43a655f4861ad0ff6f44b9642d9cb36"
+      },
+      "triangles": [
+        11432,
+        5534,
+        1864
+      ],
+      "drawCalls": 8,
+      "materials": [
+        "ts_hair_short-layered",
+        "ts_hair_tip_short-layered",
+        "ts_hair_accent_short-layered"
+      ],
+      "springChainCount": 1,
+      "passed": true,
+      "errors": []
+    },
+    "wolf-layered": {
+      "labelKo": "울프 레이어드 컷",
+      "genre": "액션·학원",
+      "fittedBase": "female-romance",
+      "file": {
+        "path": "wolf-layered.glb",
+        "bytes": 1451192,
+        "sha256": "04f5d1ef7f3fd096a7fc572c1dec33254cc1a41c7a11d641d6784743f722cfa7"
+      },
+      "triangles": [
+        10444,
+        5216,
+        1648
+      ],
+      "drawCalls": 8,
+      "materials": [
+        "ts_hair_wolf-layered",
+        "ts_hair_tip_wolf-layered",
+        "ts_hair_accent_wolf-layered"
+      ],
+      "springChainCount": 4,
+      "passed": true,
+      "errors": []
+    },
+    "dandy-two-block": {
+      "labelKo": "투블럭 댄디컷 (남)",
+      "genre": "현대·학원 남주",
+      "fittedBase": "male-webtoon",
+      "file": {
+        "path": "dandy-two-block.glb",
+        "bytes": 1337688,
+        "sha256": "9ade944d1c8038e6dc5fbc0b626c1b19b4bd4d37120ac5967875ca84a6488c15"
+      },
+      "triangles": [
+        9752,
+        4794,
+        1784
+      ],
+      "drawCalls": 8,
+      "materials": [
+        "ts_hair_dandy-two-block",
+        "ts_hair_tip_dandy-two-block",
+        "ts_hair_accent_dandy-two-block"
+      ],
+      "springChainCount": 2,
+      "passed": true,
+      "errors": []
+    },
+    "comma-hair": {
+      "labelKo": "쉼표머리 가르마 (남)",
+      "genre": "오피스·로맨스 남주",
+      "fittedBase": "male-webtoon",
+      "file": {
+        "path": "comma-hair.glb",
+        "bytes": 1421996,
+        "sha256": "b295ddecc95359db5fc58dfd57e3488f366b23208fb506626eb243acd22ddfbd"
+      },
+      "triangles": [
+        10496,
+        5152,
+        1736
+      ],
+      "drawCalls": 8,
+      "materials": [
+        "ts_hair_comma-hair",
+        "ts_hair_tip_comma-hair",
+        "ts_hair_accent_comma-hair"
+      ],
+      "springChainCount": 2,
+      "passed": true,
+      "errors": []
+    },
+    "slicked-back-duke": {
+      "labelKo": "반깐·올백 노블컷 (남)",
+      "genre": "로판 북부대공·느와르",
+      "fittedBase": "male-webtoon",
+      "file": {
+        "path": "slicked-back-duke.glb",
+        "bytes": 1302712,
+        "sha256": "60354e907dda8b478d6d61400ec0ad60b8180042688c62b4e9a7025131098742"
+      },
+      "triangles": [
+        9876,
+        4620,
+        1736
+      ],
+      "drawCalls": 8,
+      "materials": [
+        "ts_hair_slicked-back-duke",
+        "ts_hair_tip_slicked-back-duke",
+        "ts_hair_accent_slicked-back-duke"
+      ],
+      "springChainCount": 1,
+      "passed": true,
+      "errors": []
+    },
+    "braided-crown": {
+      "labelKo": "로판 브레이드 업스타일",
+      "genre": "로판 황녀·귀족",
+      "fittedBase": "female-romance",
+      "file": {
+        "path": "braided-crown.glb",
+        "bytes": 1321608,
+        "sha256": "6ec8178147b057f4b090fbde2e390f1b32f058927b4d7588f0887793caca51c4"
+      },
+      "triangles": [
+        9408,
+        4918,
+        2176
+      ],
+      "drawCalls": 8,
+      "materials": [
+        "ts_hair_braided-crown",
+        "ts_hair_tip_braided-crown",
+        "ts_hair_accent_braided-crown"
+      ],
+      "springChainCount": 2,
+      "passed": true,
+      "errors": []
+    },
+    "murim-topknot": {
+      "labelKo": "무협 반묶음 장발",
+      "genre": "무협·동양 판타지",
+      "fittedBase": "male-webtoon",
+      "file": {
+        "path": "murim-topknot.glb",
+        "bytes": 1362124,
+        "sha256": "7c9afd8c61b801c86aa33a6dadc4d56d3368b7b891d090c3961164bf21dd1406"
+      },
+      "triangles": [
+        10404,
+        5136,
+        2152
+      ],
+      "drawCalls": 8,
+      "materials": [
+        "ts_hair_murim-topknot",
+        "ts_hair_tip_murim-topknot",
+        "ts_hair_accent_murim-topknot"
+      ],
+      "springChainCount": 5,
+      "passed": true,
+      "errors": []
+    }
+  },
+  "craftVersion": "v3"
+}

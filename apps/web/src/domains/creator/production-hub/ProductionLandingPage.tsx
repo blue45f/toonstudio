@@ -278,7 +278,7 @@ function PortfolioSection({
       </header>
       {loading ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" aria-label={bt("프로젝트 목록 불러오는 중", "Loading projects")} role="status">
-          {[0, 1, 2].map((index) => <div key={index} className="h-44 animate-pulse rounded-2xl bg-raised motion-reduce:animate-none" />)}
+          {[0, 1, 2].map((index) => <div key={index} className="h-44 rounded-2xl bg-raised motion-reduce:animate-none" />)}
         </div>
       ) : error ? (
         <div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-bad/35 bg-bad/10 p-4">
@@ -316,12 +316,12 @@ function PortfolioSection({
                   >
                     <div className="flex items-center justify-between gap-2">
                       <ProductionPill tone={bucket.tone}>{bt(bucket.label.ko, bucket.label.en)}</ProductionPill>
-                      <span className="text-[0.625rem] tabular-nums text-fg-3">{formatProductionDay(item.dueAt, bt("미정", "No date"))}</span>
+                      <span className="text-xs tabular-nums text-fg-3">{formatProductionDay(item.dueAt, bt("미정", "No date"))}</span>
                     </div>
                     <p className="mt-2 line-clamp-2 text-xs font-semibold leading-5 text-fg">{item.taskTitle}</p>
-                    <p className="mt-1 truncate text-[0.6875rem] tabular-nums text-fg-3">{item.projectTitle} · {(() => { const processLabel = PRODUCTION_PROCESS_LABELS[canonicalProductionProcessKey(item.processKey)]; return processLabel ? bt(processLabel.ko, processLabel.en) : item.processKey; })()} · {item.estimateHours === null ? bt("예상 시간 미입력", "No estimate") : `${item.estimateHours}h`}</p>
+                    <p className="mt-1 truncate text-xs tabular-nums text-fg-3">{item.projectTitle} · {(() => { const processLabel = PRODUCTION_PROCESS_LABELS[canonicalProductionProcessKey(item.processKey)]; return processLabel ? bt(processLabel.ko, processLabel.en) : item.processKey; })()} · {item.estimateHours === null ? bt("예상 시간 미입력", "No estimate") : `${item.estimateHours}h`}</p>
                     {item.bucket === "review" && item.episodeId ? (
-                      <p className="mt-2 inline-flex items-center gap-1 text-[0.6875rem] font-semibold text-accent">
+                      <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent">
                         <Columns2 className="size-3.5" aria-hidden="true" />
                         {bt("비교 검수로 바로 열기", "Open in compare review")}
                       </p>
@@ -339,7 +339,7 @@ function PortfolioSection({
               onOpenItem={onOpenCollabItem}
               onMarkAllRead={onMarkAllCollabRead}
             />
-            <p className="mt-3 text-[0.6875rem] leading-5 text-fg-3">{bt("읽음 표시는 이 기기에 저장됩니다.", "Read marks are stored on this device.")}</p>
+            <p className="mt-3 text-xs leading-5 text-fg-3">{bt("읽음 표시는 이 기기에 저장됩니다.", "Read marks are stored on this device.")}</p>
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {projects.map((project) => {
@@ -354,7 +354,7 @@ function PortfolioSection({
                     <p className="min-w-0 truncate text-base font-semibold text-fg">{project.title}</p>
                     <ProductionPill tone={healthTone} className="tabular-nums">{bt(`건강 점수 ${project.healthScore}`, `Health score ${project.healthScore}`)}</ProductionPill>
                   </div>
-                  <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[0.6875rem] tabular-nums">
+                  <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs tabular-nums">
                     <div className="rounded-lg border border-line bg-card p-2"><p className="text-fg-3">{bt("진행 회차", "Active")}</p><p className="mt-1 font-semibold text-fg">{project.activeEpisodeCount}</p></div>
                     <div className="rounded-lg border border-line bg-card p-2"><p className="text-fg-3">{bt("막힘·지연", "Blocked")}</p><p className={cn("mt-1 font-semibold", project.blockedTaskCount + project.overdueTaskCount > 0 ? "text-bad" : "text-fg")}>{project.blockedTaskCount + project.overdueTaskCount}</p></div>
                     <div className="rounded-lg border border-line bg-card p-2"><p className="text-fg-3">{bt("비축", "Buffer")}</p><p className="mt-1 font-semibold text-fg">{project.readyBufferCount}</p></div>

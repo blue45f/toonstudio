@@ -24,7 +24,7 @@ import {
 } from "./studio-bg3d-wind-drape-continuity";
 
 const MOTION_PRESS =
-  "transition-[background-color,border-color,color,opacity,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
+  "transition-colors duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none";
 
 const LOCALES: readonly SfxLocalizationLocaleId[] = ["KO", "EN", "JA"];
 
@@ -109,7 +109,7 @@ export function StudioBg3dWeatherMotionColorScriptCard({
           data-testid="bg3d-blender-v24-dualfocal-badge"
           className="inline-flex items-center gap-2 rounded-md border border-line bg-raised px-2 py-1 font-mono text-xs font-medium tabular-nums text-fg"
         >
-          <span className="size-2 rounded-full bg-[#4cc38a]" aria-hidden />
+          <span className="size-2 rounded-full bg-good" aria-hidden />
           {evaluation.backgroundFocalMm}mm 배경 × {evaluation.characterFocalMm}mm 인물 · 왜곡{" "}
           {evaluation.dualFocalFacialDistortionPct}%
         </span>
@@ -123,7 +123,7 @@ export function StudioBg3dWeatherMotionColorScriptCard({
             loading="lazy"
             width={48}
             height={48}
-            className="size-12 shrink-0 rounded-md bg-[#141415] object-cover [mask-image:radial-gradient(closest-side,#000_84%,transparent)]"
+            className="size-12 shrink-0 rounded-md border border-line bg-canvas object-cover"
           />
           <div className="min-w-0 flex-1">
             <span className="inline-flex items-center gap-2 font-medium text-fg">
@@ -150,7 +150,7 @@ export function StudioBg3dWeatherMotionColorScriptCard({
                 disabled={disabled}
                 data-testid={`bg3d-blender-v24-weather-${w.id}`}
                 onClick={() => onSelectWeatherId(w.id)}
-                className={`min-h-9 rounded-lg border px-3 py-1 text-xs font-medium tabular-nums ${
+                className={`min-h-11 rounded-lg border px-3 py-1 text-xs font-medium tabular-nums ${
                   active
                     ? "border-accent bg-raised text-fg"
                     : "border-line bg-panel text-fg-2 hover:bg-raised"
@@ -179,7 +179,7 @@ export function StudioBg3dWeatherMotionColorScriptCard({
                   disabled={disabled}
                   data-testid={`bg3d-blender-v24-act-${act.id}`}
                   onClick={() => onSelectAct(act)}
-                  className={`inline-flex min-h-8 items-center gap-1.5 rounded-md border px-2 py-1 font-mono text-xs font-medium tabular-nums ${
+                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-md border px-2 py-1 font-mono text-xs font-medium tabular-nums ${
                     active
                       ? "border-accent bg-raised text-fg"
                       : "border-line bg-card text-fg-2 hover:bg-raised"
@@ -240,7 +240,7 @@ export function StudioBg3dWeatherMotionColorScriptCard({
                   disabled={disabled}
                   data-testid={`bg3d-blender-v24-locale-${loc}`}
                   onClick={() => onSelectLocaleId(loc)}
-                  className={`min-h-8 rounded-md border px-2 py-1 font-mono text-xs font-medium tabular-nums ${
+                  className={`min-h-11 rounded-md border px-2 py-1 font-mono text-xs font-medium tabular-nums ${
                     active
                       ? "border-accent bg-raised text-fg"
                       : "border-line bg-card text-fg-2 hover:bg-raised"
@@ -268,7 +268,7 @@ export function StudioBg3dWeatherMotionColorScriptCard({
             disabled={disabled}
             data-testid="bg3d-blender-v24-motion-toggle"
             onClick={() => setShowMotionJson((prev) => !prev)}
-            className={`min-h-8 shrink-0 rounded-md border border-line bg-card px-3 py-1 font-mono text-xs font-medium tabular-nums text-fg hover:bg-raised ${MOTION_PRESS}`}
+            className={`min-h-11 shrink-0 rounded-md border border-line bg-card px-3 py-1 font-mono text-xs font-medium tabular-nums text-fg hover:bg-raised ${MOTION_PRESS}`}
           >
             {showMotionJson ? ".toonmotion.json 닫기" : ".toonmotion.json 시차 확인"}
           </button>
@@ -278,7 +278,7 @@ export function StudioBg3dWeatherMotionColorScriptCard({
       {showMotionJson ? (
         <pre
           data-testid="bg3d-blender-v24-motion-json"
-          className="max-h-40 overflow-y-auto rounded-lg border border-line bg-[#141415] p-3 font-mono text-xs tabular-nums text-fg-2"
+          className="max-h-40 overflow-y-auto rounded-lg border border-line bg-canvas p-3 font-mono text-xs tabular-nums text-fg-2"
         >
           {evaluation.motionManifestJsonString}
         </pre>

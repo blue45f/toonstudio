@@ -1,0 +1,428 @@
+{
+  "schema": "toonstudio.character-kit.hair-v2/1",
+  "styleId": "soft-bob",
+  "labelKo": "시스루뱅 소프트 보브",
+  "genre": "학원·로맨스",
+  "fittedBase": "female-romance",
+  "file": {
+    "path": "soft-bob.glb",
+    "bytes": 1417684,
+    "sha256": "43b55251f6a242b46af7808d63a4cbc719f8d2a983403799d52f43db244d45cc"
+  },
+  "drawCalls": 8,
+  "materials": [
+    "ts_hair_soft-bob",
+    "ts_hair_tip_soft-bob",
+    "ts_hair_accent_soft-bob"
+  ],
+  "lods": [
+    {
+      "node": "TS_AuthoredHair_soft-bob_LOD0",
+      "lod": 0,
+      "triangles": 10332,
+      "vertices": 5256,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_soft-bob_LOD1",
+      "lod": 1,
+      "triangles": 5126,
+      "vertices": 2653,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_soft-bob_LOD2",
+      "lod": 2,
+      "triangles": 1672,
+      "vertices": 894,
+      "primitives": 2,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    }
+  ],
+  "morphs": [
+    "param:height:+",
+    "param:height:-",
+    "param:legLength:+",
+    "param:legLength:-",
+    "param:neckLength:+",
+    "param:neckLength:-",
+    "param:headSize:+",
+    "param:headSize:-",
+    "shape:bang-length:+",
+    "shape:bang-length:-",
+    "shape:volume:+",
+    "shape:volume:-",
+    "shape:sway:+",
+    "shape:sway:-"
+  ],
+  "shapes": [
+    "bang-length",
+    "volume",
+    "sway"
+  ],
+  "uv0Monotonic": true,
+  "uv1Purpose": "hair-flow",
+  "texture": {
+    "bytes": 21555,
+    "size": 512,
+    "meanLuminance": 0.9231,
+    "minLuminance": 0.8,
+    "columns": 4
+  },
+  "springBone": {
+    "schema": "toonstudio.hair-springbone/1",
+    "vrmSpec": "VRMC_springBone-1.0",
+    "styleId": "soft-bob",
+    "fittedBase": "female-romance",
+    "chainCount": 2,
+    "colliders": [
+      {
+        "id": "head_sphere",
+        "bone": "mixamorig:Head",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.09115,
+          -0.00342
+        ],
+        "radius": 0.08366
+      },
+      {
+        "id": "neck_capsule",
+        "bone": "mixamorig:Neck",
+        "shape": "capsule",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tailGltf": [
+          0.0,
+          0.08793,
+          -0.002
+        ],
+        "radius": 0.04725
+      },
+      {
+        "id": "upper_chest_sphere",
+        "bone": "mixamorig:Spine2",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.0031
+        ],
+        "radius": 0.12696
+      }
+    ],
+    "chains": [
+      {
+        "id": "side_L",
+        "region": "side",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 4,
+        "lengthM": 0.2162,
+        "hitRadius": 0.018,
+        "stiffness": 0.8,
+        "dragForce": 0.45,
+        "gravityPower": 0.28,
+        "joints": [
+          {
+            "name": "TS_Spring_soft-bob_side_L_0",
+            "positionGltf": [
+              0.02676,
+              1.65419,
+              -0.00753
+            ],
+            "localOffsetFromHead": [
+              0.02676,
+              0.18098,
+              0.00047
+            ],
+            "hitRadius": 0.018,
+            "stiffness": 0.88,
+            "dragForce": 0.45,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_soft-bob_side_L_1",
+            "positionGltf": [
+              0.07153,
+              1.62344,
+              0.0016
+            ],
+            "localOffsetFromHead": [
+              0.07153,
+              0.15023,
+              0.0096
+            ],
+            "hitRadius": 0.01719,
+            "stiffness": 0.83,
+            "dragForce": 0.45,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_soft-bob_side_L_2",
+            "positionGltf": [
+              0.09421,
+              1.57151,
+              0.00616
+            ],
+            "localOffsetFromHead": [
+              0.09421,
+              0.0983,
+              0.01416
+            ],
+            "hitRadius": 0.01638,
+            "stiffness": 0.78,
+            "dragForce": 0.45,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_soft-bob_side_L_3",
+            "positionGltf": [
+              0.10077,
+              1.51465,
+              0.00809
+            ],
+            "localOffsetFromHead": [
+              0.10077,
+              0.04144,
+              0.01609
+            ],
+            "hitRadius": 0.01557,
+            "stiffness": 0.73,
+            "dragForce": 0.45,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_soft-bob_side_L_4",
+            "positionGltf": [
+              0.08001,
+              1.47258,
+              0.00441
+            ],
+            "localOffsetFromHead": [
+              0.08001,
+              -0.00062,
+              0.01241
+            ],
+            "hitRadius": 0.01476,
+            "stiffness": 0.68,
+            "dragForce": 0.45,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "side_R",
+        "region": "side",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 4,
+        "lengthM": 0.2171,
+        "hitRadius": 0.018,
+        "stiffness": 0.8,
+        "dragForce": 0.45,
+        "gravityPower": 0.28,
+        "joints": [
+          {
+            "name": "TS_Spring_soft-bob_side_R_0",
+            "positionGltf": [
+              -0.02677,
+              1.65419,
+              -0.00757
+            ],
+            "localOffsetFromHead": [
+              -0.02677,
+              0.18098,
+              0.00043
+            ],
+            "hitRadius": 0.018,
+            "stiffness": 0.88,
+            "dragForce": 0.45,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_soft-bob_side_R_1",
+            "positionGltf": [
+              -0.07175,
+              1.62328,
+              0.00114
+            ],
+            "localOffsetFromHead": [
+              -0.07175,
+              0.15007,
+              0.00914
+            ],
+            "hitRadius": 0.01719,
+            "stiffness": 0.83,
+            "dragForce": 0.45,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_soft-bob_side_R_2",
+            "positionGltf": [
+              -0.09445,
+              1.57109,
+              0.00546
+            ],
+            "localOffsetFromHead": [
+              -0.09445,
+              0.09788,
+              0.01346
+            ],
+            "hitRadius": 0.01638,
+            "stiffness": 0.78,
+            "dragForce": 0.45,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_soft-bob_side_R_3",
+            "positionGltf": [
+              -0.10087,
+              1.51397,
+              0.00711
+            ],
+            "localOffsetFromHead": [
+              -0.10087,
+              0.04076,
+              0.01511
+            ],
+            "hitRadius": 0.01557,
+            "stiffness": 0.73,
+            "dragForce": 0.45,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_soft-bob_side_R_4",
+            "positionGltf": [
+              -0.08014,
+              1.47164,
+              0.00351
+            ],
+            "localOffsetFromHead": [
+              -0.08014,
+              -0.00157,
+              0.01151
+            ],
+            "hitRadius": 0.01476,
+            "stiffness": 0.68,
+            "dragForce": 0.45,
+            "gravityPower": 0.28,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "qa": {
+    "bytes": 1417684,
+    "minClearanceMm": 0.8,
+    "verticesInside": 0,
+    "gltfValidateErrors": 0,
+    "gltfValidateWarnings": 0,
+    "bmesh": {
+      "TS_AuthoredHair_soft-bob_LOD0": {
+        "verts": 5418,
+        "faces": 10332,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_soft-bob_LOD1": {
+        "verts": 2780,
+        "faces": 5126,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_soft-bob_LOD2": {
+        "verts": 894,
+        "faces": 1672,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      }
+    },
+    "springChainCount": 2
+  },
+  "passed": true,
+  "errors": [],
+  "seconds": 1.95
+}

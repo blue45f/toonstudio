@@ -376,7 +376,7 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     expect(screen.getByTestId("virtual-office-wave4-panel")).toBeTruthy();
   });
 
-  it("StudioVirtualSpaceCollaborationHub 및 StudioVirtualSpaceTownProgramPanel 내부 탭으로 통합 연결된다", () => {
+  it("StudioVirtualSpaceCollaborationHub에서는 통합 연결되고 TownProgramPanel에서는 가짜 가상오피스 탭을 노출하지 않는다", () => {
     render(<StudioVirtualSpaceCollaborationHub />);
     fireEvent.click(screen.getByRole("tab", { name: "가상 사무실 운영" }));
     expect(screen.getByTestId("studio-virtual-office-enterprise-suite")).toBeTruthy();
@@ -400,7 +400,8 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
         onStopSpotlight={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByRole("tab", { name: "가상오피스" }));
-    expect(screen.getByTestId("studio-virtual-office-enterprise-suite")).toBeTruthy();
+    expect(screen.queryByRole("tab", { name: "가상오피스" })).toBeNull();
+    expect(screen.queryByTestId("studio-virtual-office-enterprise-suite")).toBeNull();
+    expect(screen.getAllByRole("tab").length).toBeGreaterThanOrEqual(3);
   });
 });

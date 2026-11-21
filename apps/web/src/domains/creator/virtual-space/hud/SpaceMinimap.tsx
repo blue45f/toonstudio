@@ -202,9 +202,10 @@ export const SpaceMinimap = memo(function SpaceMinimap({
         data-active={zone.id === currentRoomId || undefined}
         data-role-recommended={highlightRooms.has(zone.id) || undefined}
         style={{ "--space-zone-tone": zone.tone } as CSSProperties}
+        title={zone.label}
         onClick={() => onMoveTo(zone.spawn)}
         aria-label={bt(`${spaceKoParticle(zone.label, "으로")} 걸어가기`, `Walk to ${zone.label}`)}>
-        <span aria-hidden>{zone.sign}</span>
+        <span aria-hidden>{zone.width <= manifest.width * 0.22 && zone.shortSign ? zone.shortSign : zone.sign}</span>
       </button>
       {onJumpTo ? <button type="button" className="space-minimap__zone-jump"
         onClick={() => onJumpTo(zone.spawn)}

@@ -1,0 +1,428 @@
+{
+  "schema": "toonstudio.character-kit.hair-v2/1",
+  "styleId": "braided-crown",
+  "labelKo": "로판 브레이드 업스타일",
+  "genre": "로판 황녀·귀족",
+  "fittedBase": "female-romance",
+  "file": {
+    "path": "braided-crown.glb",
+    "bytes": 1321608,
+    "sha256": "6ec8178147b057f4b090fbde2e390f1b32f058927b4d7588f0887793caca51c4"
+  },
+  "drawCalls": 8,
+  "materials": [
+    "ts_hair_braided-crown",
+    "ts_hair_tip_braided-crown",
+    "ts_hair_accent_braided-crown"
+  ],
+  "lods": [
+    {
+      "node": "TS_AuthoredHair_braided-crown_LOD0",
+      "lod": 0,
+      "triangles": 9408,
+      "vertices": 4778,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_braided-crown_LOD1",
+      "lod": 1,
+      "triangles": 4918,
+      "vertices": 2533,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_braided-crown_LOD2",
+      "lod": 2,
+      "triangles": 2176,
+      "vertices": 1144,
+      "primitives": 2,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    }
+  ],
+  "morphs": [
+    "param:height:+",
+    "param:height:-",
+    "param:legLength:+",
+    "param:legLength:-",
+    "param:neckLength:+",
+    "param:neckLength:-",
+    "param:headSize:+",
+    "param:headSize:-",
+    "shape:bang-length:+",
+    "shape:bang-length:-",
+    "shape:volume:+",
+    "shape:volume:-",
+    "shape:sway:+",
+    "shape:sway:-"
+  ],
+  "shapes": [
+    "bang-length",
+    "volume",
+    "sway"
+  ],
+  "uv0Monotonic": true,
+  "uv1Purpose": "hair-flow",
+  "texture": {
+    "bytes": 21555,
+    "size": 512,
+    "meanLuminance": 0.9231,
+    "minLuminance": 0.8,
+    "columns": 4
+  },
+  "springBone": {
+    "schema": "toonstudio.hair-springbone/1",
+    "vrmSpec": "VRMC_springBone-1.0",
+    "styleId": "braided-crown",
+    "fittedBase": "female-romance",
+    "chainCount": 2,
+    "colliders": [
+      {
+        "id": "head_sphere",
+        "bone": "mixamorig:Head",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.09115,
+          -0.00342
+        ],
+        "radius": 0.08366
+      },
+      {
+        "id": "neck_capsule",
+        "bone": "mixamorig:Neck",
+        "shape": "capsule",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tailGltf": [
+          0.0,
+          0.08793,
+          -0.002
+        ],
+        "radius": 0.04725
+      },
+      {
+        "id": "upper_chest_sphere",
+        "bone": "mixamorig:Spine2",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.0031
+        ],
+        "radius": 0.12696
+      }
+    ],
+    "chains": [
+      {
+        "id": "curl_L",
+        "region": "curl",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 2,
+        "lengthM": 0.3323,
+        "hitRadius": 0.018,
+        "stiffness": 0.58,
+        "dragForce": 0.36,
+        "gravityPower": 0.34,
+        "joints": [
+          {
+            "name": "TS_Spring_braided-crown_curl_L_0",
+            "positionGltf": [
+              0.07707,
+              1.58997,
+              0.03141
+            ],
+            "localOffsetFromHead": [
+              0.07707,
+              0.11676,
+              0.03941
+            ],
+            "hitRadius": 0.018,
+            "stiffness": 0.638,
+            "dragForce": 0.36,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_braided-crown_curl_L_1",
+            "positionGltf": [
+              0.09238,
+              1.50249,
+              0.03616
+            ],
+            "localOffsetFromHead": [
+              0.09238,
+              0.02928,
+              0.04416
+            ],
+            "hitRadius": 0.01719,
+            "stiffness": 0.6018,
+            "dragForce": 0.36,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_braided-crown_curl_L_2",
+            "positionGltf": [
+              0.09189,
+              1.42383,
+              0.05665
+            ],
+            "localOffsetFromHead": [
+              0.09189,
+              -0.04938,
+              0.06465
+            ],
+            "hitRadius": 0.01638,
+            "stiffness": 0.5655,
+            "dragForce": 0.36,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_braided-crown_curl_L_3",
+            "positionGltf": [
+              0.0947,
+              1.36089,
+              0.1093
+            ],
+            "localOffsetFromHead": [
+              0.0947,
+              -0.11232,
+              0.1173
+            ],
+            "hitRadius": 0.01557,
+            "stiffness": 0.5292,
+            "dragForce": 0.36,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_braided-crown_curl_L_4",
+            "positionGltf": [
+              0.10253,
+              1.28141,
+              0.11235
+            ],
+            "localOffsetFromHead": [
+              0.10253,
+              -0.1918,
+              0.12035
+            ],
+            "hitRadius": 0.01476,
+            "stiffness": 0.493,
+            "dragForce": 0.36,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "curl_R",
+        "region": "curl",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 2,
+        "lengthM": 0.3274,
+        "hitRadius": 0.018,
+        "stiffness": 0.58,
+        "dragForce": 0.36,
+        "gravityPower": 0.34,
+        "joints": [
+          {
+            "name": "TS_Spring_braided-crown_curl_R_0",
+            "positionGltf": [
+              -0.08063,
+              1.58997,
+              0.03141
+            ],
+            "localOffsetFromHead": [
+              -0.08063,
+              0.11676,
+              0.03941
+            ],
+            "hitRadius": 0.018,
+            "stiffness": 0.638,
+            "dragForce": 0.36,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_braided-crown_curl_R_1",
+            "positionGltf": [
+              -0.08737,
+              1.50095,
+              0.03543
+            ],
+            "localOffsetFromHead": [
+              -0.08737,
+              0.02774,
+              0.04343
+            ],
+            "hitRadius": 0.01719,
+            "stiffness": 0.6018,
+            "dragForce": 0.36,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_braided-crown_curl_R_2",
+            "positionGltf": [
+              -0.096,
+              1.42884,
+              0.07293
+            ],
+            "localOffsetFromHead": [
+              -0.096,
+              -0.04437,
+              0.08093
+            ],
+            "hitRadius": 0.01638,
+            "stiffness": 0.5655,
+            "dragForce": 0.36,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_braided-crown_curl_R_3",
+            "positionGltf": [
+              -0.10514,
+              1.35411,
+              0.0927
+            ],
+            "localOffsetFromHead": [
+              -0.10514,
+              -0.1191,
+              0.1007
+            ],
+            "hitRadius": 0.01557,
+            "stiffness": 0.5292,
+            "dragForce": 0.36,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_braided-crown_curl_R_4",
+            "positionGltf": [
+              -0.08495,
+              1.28141,
+              0.11407
+            ],
+            "localOffsetFromHead": [
+              -0.08495,
+              -0.1918,
+              0.12207
+            ],
+            "hitRadius": 0.01476,
+            "stiffness": 0.493,
+            "dragForce": 0.36,
+            "gravityPower": 0.34,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "qa": {
+    "bytes": 1321608,
+    "minClearanceMm": 0.799,
+    "verticesInside": 0,
+    "gltfValidateErrors": 0,
+    "gltfValidateWarnings": 0,
+    "bmesh": {
+      "TS_AuthoredHair_braided-crown_LOD0": {
+        "verts": 4838,
+        "faces": 9408,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_braided-crown_LOD1": {
+        "verts": 2583,
+        "faces": 4918,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_braided-crown_LOD2": {
+        "verts": 1144,
+        "faces": 2176,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      }
+    },
+    "springChainCount": 2
+  },
+  "passed": true,
+  "errors": [],
+  "seconds": 2.03
+}

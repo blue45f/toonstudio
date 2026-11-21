@@ -18,7 +18,20 @@
  */
 import { memo, useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
-import { BODY_PARAM_KEYS, BODY_PARAM_LABELS_KO, FACE_PARAM_KEYS, FACE_PARAM_LABELS_KO, PARAM_MAX, PARAM_MIN, clampParam, DEFAULT_RECIPE_COLORS  } from "../../../contracts";
+import {
+  BODY_PARAM_KEYS,
+  BODY_PARAM_LABELS_KO,
+  DEFAULT_RECIPE_COLORS,
+  FACE_PARAM_KEYS,
+  FACE_PARAM_LABELS_KO,
+  KIT_V2_WEBTOON_ID,
+  PARAM_MAX,
+  PARAM_MIN,
+  applyKitToonDefaults,
+  archetypePresetToBodyParams,
+  clampParam,
+  normalizeParamValues,
+} from "../../../contracts";
 import { HAIR_COLORS, IRIS_COLORS, SKIN_TONES, findPaletteEntry } from "../../../domains/humanoid/palette";
 import { resolveProportions } from "../../../domains/humanoid/proportions";
 import {
@@ -30,10 +43,11 @@ import {
 } from "../../../presets";
 import { useCatalog, useDispatch, useKitPlans, useLabState } from "../lab-store-context";
 
+import { KitV2ArchetypeDrawer } from "./KitV2ArchetypeDrawer";
 import { ParamCustomizeSections } from "./param-customize-sections";
 import { ShaperQuickSculptSections } from "./shaper-quick-sculpt-sections";
 
-import type { BodyParamKey, CharacterRecipe, FaceParamKey, ParamKey, RecipeColorKey, SlotKind } from "../../../contracts";
+import type { BodyParamKey, CharacterRecipe, FaceParamKey, KitV2ArchetypePreset, ParamKey, RecipeColorKey, SlotKind } from "../../../contracts";
 import type { PaletteEntry } from "../../../domains/humanoid/palette";
 import type { WebtoonShaperComparePoseMode, WebtoonUniverseShaperId, WebtoonUniverseShaperPreset } from "../../../presets";
 
@@ -372,6 +386,34 @@ export function ParamPanel() {
     }
   };
 
+  const applyKitV2ArchetypePreset = useCallback(
+    (preset: KitV2ArchetypePreset): void => {
+      const bodyParams = archetypePresetToBodyParams(preset);
+      const nextBody = normalizeParamValues({ ...recipe.body, ...bodyParams });
+      const nextSource = {
+        kind: "kit" as const,
+        kitId: KIT_V2_WEBTOON_ID,
+        baseId: preset.baseId,
+        kitVersion: 2,
+        archetypeId: preset.id,
+      };
+      const nextShading = recipe.source.kind === "kit" ? recipe.shading : applyKitToonDefaults(recipe.shading);
+      const nextHairColor = { ...recipe.hairColor };
+      delete nextHairColor.packageBaseTint;
+      dispatch({
+        type: "recipe/load",
+        recipe: {
+          ...recipe,
+          source: nextSource,
+          body: nextBody,
+          shading: nextShading,
+          hairColor: nextHairColor,
+        },
+      });
+    },
+    [dispatch, recipe],
+  );
+
   const isProportionPresetActive = (preset: QuickProportionPreset): boolean =>
     PROPORTION_PRESET_KEYS.every((key) => Math.abs(bodyValue(key) - preset.values[key]) < 1e-6);
 
@@ -554,6 +596,7 @@ export function ParamPanel() {
         ))}
       </div>
       <ParamCustomizeSections />
+      <KitV2ArchetypeDrawer currentBody={recipe.body} onApplyArchetypePreset={applyKitV2ArchetypePreset} />
       <p className="cl-param-hint">색은 적용 플랜으로 즉시 반영되며 소스를 다시 만들지 않습니다. 눈썹색은 속눈썹에도 쓰입니다.</p>
     </section>
   );

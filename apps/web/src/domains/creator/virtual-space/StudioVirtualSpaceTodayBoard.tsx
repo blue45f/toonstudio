@@ -1,8 +1,10 @@
-import { CalendarClock, CheckCircle2, ClipboardList, RefreshCw, Route, TriangleAlert } from "lucide-react";
+import { CalendarClock, CheckCircle2, ClipboardList, Pin, RefreshCw, Route, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import type { SpaceBulletinItem, SpaceDeadlineWidget } from "./crdt/studio-virtual-space-yjs-doc";
+import { SpaceDeadlineCountdownWidget } from "./hud/SpaceDeadlineCountdownWidget";
 import { spaceKoParticle } from "./hud/space-korean";
 import type { StudioVirtualOperationsSnapshot } from "./use-studio-virtual-space-operations";
 import {
@@ -24,15 +26,32 @@ function when(value: string | null | undefined, locale: string): string {
   return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(date) : "—";
 }
 
-export function StudioVirtualSpaceTodayBoard({ snapshot, workId, onRefresh, onGuide }: {
+export function StudioVirtualSpaceTodayBoard({
+  snapshot,
+  workId,
+  onRefresh,
+  onGuide,
+  deadlines = [],
+  bulletins = [],
+  canEditBoard = false,
+  onUpsertDeadline,
+  onAddBulletin,
+}: {
   readonly snapshot: StudioVirtualOperationsSnapshot;
   readonly workId: string;
   readonly onRefresh: () => void;
   readonly onGuide?: (destination: StudioVirtualProductionDestination) => void;
+  readonly deadlines?: readonly SpaceDeadlineWidget[];
+  readonly bulletins?: readonly SpaceBulletinItem[];
+  readonly canEditBoard?: boolean;
+  readonly onUpsertDeadline?: (input: { readonly episodeLabel: string; readonly title: string; readonly targetIso: string }) => void;
+  readonly onAddBulletin?: (title: string, body: string) => void;
 }) {
   const bt = useBilingual("StudioVirtualSpaceTodayBoard");
   const locale = bt("ko-KR", "en-US");
   const [taskFilter, setTaskFilter] = useState<TodayTaskFilter>("all");
+  const [bulletinTitle, setBulletinTitle] = useState("");
+  const [bulletinBody, setBulletinBody] = useState("");
   const aggregate = snapshot.project?.aggregate;
   const totalTasks = aggregate?.tasks.length ?? 0;
   const openTasks = (aggregate?.tasks ?? []).filter((task) => !CLOSED.has(task.status));
@@ -51,7 +70,68 @@ export function StudioVirtualSpaceTodayBoard({ snapshot, workId, onRefresh, onGu
     <header><div><p><CalendarClock size={15} aria-hidden /> TODAY BOARD</p><h2>{aggregate?.title ?? bt("오늘의 제작 동선", "Today's production flow")}</h2></div>
       <button type="button" onClick={onRefresh} aria-label={bt("새로고침", "Refresh")}><RefreshCw size={16} aria-hidden /></button></header>
     {snapshot.phase === "loading" ? <p role="status">{bt("일정과 작업을 불러오는 중…", "Loading schedule and work…")}</p> : null}
-    {snapshot.phase === "unavailable" ? <div className="studio-vspace-empty-state"><TriangleAlert size={18} aria-hidden /><p>{bt("이 작품에 연결된 프로덕션 프로젝트가 아직 없어요. 공간 이동과 제작 도구는 계속 사용할 수 있어요.", "This work is not linked to a production project yet. Spatial navigation and creation tools remain available.")}</p></div> : null}
+    <SpaceDeadlineCountdownWidget
+      deadlines={deadlines}
+      fallbackTargetIso={topTask?.dueAt ?? null}
+      fallbackTitle={aggregate?.title ?? null}
+      canEdit={canEditBoard}
+      onUpsertDeadline={onUpsertDeadline}
+    />
+    <section className="space-y-2 rounded-xl border border-line bg-panel p-3 text-xs" aria-label={bt("팀 공지 게시판", "Team bulletin board")}>
+      <div className="flex items-center justify-between gap-2">
+        <strong className="inline-flex items-center gap-1.5 text-xs font-semibold text-fg">
+          <Pin size={13} aria-hidden />
+          {bt("팀 공지 게시판", "Team bulletin")}
+        </strong>
+        <span className="text-[11px] text-fg-2">{bulletins.length}</span>
+      </div>
+      {bulletins.length > 0 ? (
+        <ul className="space-y-1.5">
+          {bulletins.slice(0, 4).map((item) => (
+            <li key={item.id} className="rounded-lg border border-line bg-card p-2">
+              <strong className="block text-xs text-fg">{item.title}</strong>
+              {item.body ? <p className="mt-0.5 text-[11px] text-fg-2">{item.body}</p> : null}
+              <small className="text-[11px] text-fg-3">{item.authorName}</small>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[11px] text-fg-2">{bt("고정된 팀 공지가 없어요. 마감 공지나 검수 요청을 남겨 보세요.", "No team notices yet. Post a deadline reminder or review note.")}</p>
+      )}
+      {canEditBoard && onAddBulletin ? (
+        <form
+          className="flex flex-col gap-1.5 pt-1"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!bulletinTitle.trim()) return;
+            onAddBulletin(bulletinTitle, bulletinBody);
+            setBulletinTitle("");
+            setBulletinBody("");
+          }}
+        >
+          <input
+            type="text"
+            value={bulletinTitle}
+            onChange={(e) => setBulletinTitle(e.target.value)}
+            placeholder={bt("공지 제목 입력…", "Notice title…")}
+            className="min-h-10 rounded-lg border border-line bg-card px-2.5 text-xs text-fg"
+          />
+          <div className="flex gap-1.5">
+            <input
+              type="text"
+              value={bulletinBody}
+              onChange={(e) => setBulletinBody(e.target.value)}
+              placeholder={bt("세부 내용(선택)", "Details (optional)")}
+              className="min-h-10 flex-1 rounded-lg border border-line bg-card px-2.5 text-xs text-fg"
+            />
+            <button type="submit" className="min-h-10 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent">
+              {bt("게시", "Post")}
+            </button>
+          </div>
+        </form>
+      ) : null}
+    </section>
+    {snapshot.phase === "unavailable" ? <div className="studio-vspace-empty-state"><TriangleAlert size={18} aria-hidden /><p>{bt("프로덕션 일정은 아직 연결되지 않았지만, 위 마감 카운트다운과 팀 게시판은 지금 바로 사용할 수 있어요.", "Production schedule is not linked yet, while the deadline countdown and team bulletin above are live right away.")}</p></div> : null}
     {aggregate ? <>
       <div className="studio-vspace-today-metrics" data-completion-rate={completionRatePercent} data-blocked-count={blockedTasks.length}>
         <span><ClipboardList size={15} aria-hidden /><b>{openTasks.length}</b>{bt("진행 작업", "open tasks")}</span>
@@ -86,7 +166,7 @@ export function StudioVirtualSpaceTodayBoard({ snapshot, workId, onRefresh, onGu
             aria-label={bt("최우선 공정 바로 안내", "Guide to top-priority task")}
           >
             <Route size={13} aria-hidden />
-            {bt("⚡ 최우선 공정 안내", "⚡ Top task route")}
+            {bt("최우선 공정 안내", "Top task route")}
           </button>
         ) : null}
       </div>

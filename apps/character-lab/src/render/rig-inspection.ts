@@ -28,6 +28,10 @@ export interface RigPartInspection {
   readonly activeMorphTargetsByMesh: readonly number[];
   /** 알베도 텍스처가 있는지(키트 `tint`가 없으면 있을 때 레시피 색 틴트를 적용하지 않는다) */
   readonly hasAlbedoTexture: boolean;
+  /** 키트 머리에 얼굴 SDF 정면 좌표(`toonstudioFaceShadowUv` + `uv2`)가 있는지 */
+  readonly faceShadowUv?: boolean;
+  /** 헤어 파츠에 흐름용 UV1(`hair-flow` + `uv2`)이 있는지 */
+  readonly hairFlowUv?: boolean;
   /** 키트 파츠의 색 틴트 모드(절차·제작 패키지는 없음) */
   readonly tintMode?: "recolor" | "fixed";
   /** 메시별 SubMesh 수. 키트 몸 가림도 보이는 삼각형을 이은 인덱스 버퍼 하나라 스킨 몸은 늘 1이다(구간 수는 `BodyMaskReport.visibleRuns`). */

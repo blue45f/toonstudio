@@ -57,7 +57,15 @@ import {
   updateIdeaBankRecordStatus,
   type StoredIdeaBankRecord,
 } from "./fresh-ideas-workspace-export-bridge";
-import { synthesizeCrossLabsUnifiedRemix } from "./fresh-ideas-cross-labs-adapter";
+import {
+  parseCrossLabFreshIdeasEnvelope,
+  synthesizeCrossLabsUnifiedRemix,
+  type CrossLabFreshIdeasEnvelopeV2,
+} from "./fresh-ideas-cross-labs-adapter";
+import {
+  buildFreshIdeasStorySeedPayload,
+  type FreshIdeasStorySeedPayload,
+} from "./fresh-ideas-story-seed-bridge";
 import { FreshIdeasModeBChannelPanel } from "./StudioFreshIdeasV2ModeBPanel";
 import {
   FreshIdeasModeCEcosystemPanel,
@@ -81,6 +89,8 @@ export interface StudioFreshIdeasV2WorkbenchCardProps {
   readonly sourceSummaryKo: string;
   readonly sourceMetricsSummaryKo?: string;
   readonly disabled?: boolean;
+  readonly crossLabsEnvelope?: CrossLabFreshIdeasEnvelopeV2;
+  readonly onExportStorySeed?: (payload: FreshIdeasStorySeedPayload) => void;
   readonly onStatusChange?: (summaryKo: string) => void;
 }
 
@@ -89,6 +99,8 @@ export function StudioFreshIdeasV2WorkbenchCard({
   sourceSummaryKo,
   sourceMetricsSummaryKo,
   disabled = false,
+  crossLabsEnvelope,
+  onExportStorySeed,
   onStatusChange,
 }: StudioFreshIdeasV2WorkbenchCardProps) {
   const [userConfig, setUserConfig] = useState(() => loadFreshIdeasUserConfig());
@@ -176,30 +188,12 @@ export function StudioFreshIdeasV2WorkbenchCard({
     const bundle = ingestFreshIdeasSources(sources);
     const deconstruction = deconstructFreshIdeasThesis(bundle);
     const blindSpotAxes = scanFiveBlindSpotAxes(bundle, deconstruction);
+    const validatedCrossLabsEnvelope = crossLabsEnvelope
+      ? parseCrossLabFreshIdeasEnvelope(crossLabsEnvelope)
+      : null;
 
-    if (crossLabsUnified) {
-      const unified = synthesizeCrossLabsUnifiedRemix({
-        schemaVersion: 2,
-        episodeTitleKo: effectiveTitle,
-        bg3d: {
-          overallScore100: 94.2,
-          weeklyHoursSaved: 24.5,
-          contrastRatio: 2.45,
-          lineThicknessPx: 1.35,
-        },
-        brushLab: {
-          overallScore100: 97.3,
-          taperSharpness100: 97.4,
-          averageStrokePx: 4.48,
-          presetNameKo: "칼선 G펜",
-        },
-        characterLab: {
-          overallScore100: 96.9,
-          turnaroundScore100: 96.4,
-          faceSdfScore100: 99.5,
-          outlineWidthMm: 3.5,
-        },
-      });
+    if (crossLabsUnified && validatedCrossLabsEnvelope) {
+      const unified = synthesizeCrossLabsUnifiedRemix(validatedCrossLabsEnvelope);
       const activeLens = unified.lenses[selectedLensIndex] ?? unified.lenses[0]!;
       return {
         effectiveTitle,
@@ -218,6 +212,7 @@ export function StudioFreshIdeasV2WorkbenchCard({
         modeC: unified.modeC,
         audit: unified.audit,
         crossLabsBadgeKo: unified.summaryBadgeKo,
+        crossLabsTelemetryState: "live" as const,
       };
     }
 
@@ -280,7 +275,8 @@ export function StudioFreshIdeasV2WorkbenchCard({
       modeBDraft,
       modeC,
       audit,
-      crossLabsBadgeKo: "",
+      crossLabsBadgeKo: crossLabsUnified ? "3대 랩스 통합 리믹스 · [측정 필요]" : "",
+      crossLabsTelemetryState: crossLabsUnified ? ("missing" as const) : ("off" as const),
     };
   }, [
     sourceTitle,
@@ -294,6 +290,7 @@ export function StudioFreshIdeasV2WorkbenchCard({
     swapCoreWithExtended,
     selectedExtendedLensId,
     crossLabsUnified,
+    crossLabsEnvelope,
     selectedLensIndex,
     selectedChannelId,
     selectedRegister,
@@ -362,24 +359,57 @@ export function StudioFreshIdeasV2WorkbenchCard({
 
   const handleCopyDocsMarkdown = async () => {
     const md = buildStructuredGoogleDocMarkdown(pipeline.modeC);
+    let copied = false;
     try {
-      await navigator.clipboard?.writeText(md);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(md);
+        copied = true;
+      }
     } catch {
-      // 헤드리스 테스트 환경 클립보드 예외 무시
+      copied = false;
     }
-    const msg = `Google Docs 마크다운+4시드 부록 준비 (${md.length}자)`;
+    const msg = `Google Docs 마크다운+4시드 부록 준비 (${md.length}자${copied ? " · 클립보드 복사됨" : ""})`;
     setExportNoticeKo(msg);
     onStatusChange?.(msg);
   };
 
   const handleExportSheetsCsv = async () => {
     const csv = serializeIdeaBankCsv(pipeline.modeC.ideaBankRows);
+    let copied = false;
     try {
-      await navigator.clipboard?.writeText(csv);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(csv);
+        copied = true;
+      }
     } catch {
-      // 헤드리스 테스트 환경 클립보드 예외 무시
+      copied = false;
     }
-    const msg = `Google Sheets 7열 CSV 직렬화 완료 (${pipeline.modeC.ideaBankRows.length}행)`;
+    const msg = `Google Sheets 7열 CSV 직렬화 완료 (${pipeline.modeC.ideaBankRows.length}행${copied ? " · 클립보드 복사됨" : ""})`;
+    setExportNoticeKo(msg);
+    onStatusChange?.(msg);
+  };
+
+  const handleExportStorySeed = async () => {
+    const payload = buildFreshIdeasStorySeedPayload({
+      sourceTitle: pipeline.effectiveTitle,
+      lens: pipeline.activeLens,
+      modeC: pipeline.modeC,
+      lenses: pipeline.activeLenses,
+      targetPersonaKo: pipeline.targetPersonaKo,
+      register: selectedRegister,
+      preservedUrls: pipeline.bundle.preservedUrls,
+    });
+    let copied = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(payload.clipboardTextKo);
+        copied = true;
+      }
+    } catch {
+      copied = false;
+    }
+    onExportStorySeed?.(payload);
+    const msg = `${payload.summaryKo}${copied ? " · 클립보드 복사됨" : ""}`;
     setExportNoticeKo(msg);
     onStatusChange?.(msg);
   };
@@ -473,11 +503,19 @@ export function StudioFreshIdeasV2WorkbenchCard({
           >
             <Layers size={14} strokeWidth={1.5} className="shrink-0" aria-hidden />
             <span>3대 랩스 통합 리믹스</span>
+            {pipeline.crossLabsTelemetryState === "missing" && (
+              <span
+                data-testid="fresh-ideas-cross-labs-status-badge"
+                className="rounded border border-warn/40 bg-warn/10 px-1.5 py-0.5 font-mono text-[11px] text-warn"
+              >
+                [측정 필요]
+              </span>
+            )}
           </button>
 
           <select
             aria-label="확장 렌즈 팩 선택 (06~14)"
-            disabled={disabled || crossLabsUnified}
+            disabled={disabled || pipeline.crossLabsTelemetryState === "live"}
             data-testid="fresh-ideas-extended-lens-select"
             value={pipeline.swapLabel}
             onChange={(e) => setSelectedExtendedLensId(e.target.value as ExtendedLensId)}
@@ -492,7 +530,7 @@ export function StudioFreshIdeasV2WorkbenchCard({
 
           <button
             type="button"
-            disabled={disabled || crossLabsUnified}
+            disabled={disabled || pipeline.crossLabsTelemetryState === "live"}
             data-testid="fresh-ideas-toggle-extended-lens"
             onClick={() => {
               setSwapCoreWithExtended(false);
@@ -510,7 +548,7 @@ export function StudioFreshIdeasV2WorkbenchCard({
 
           <button
             type="button"
-            disabled={disabled || crossLabsUnified}
+            disabled={disabled || pipeline.crossLabsTelemetryState === "live"}
             data-testid="fresh-ideas-swap-extended-btn"
             onClick={() => {
               setIncludeExtendedLens(false);
@@ -578,7 +616,20 @@ export function StudioFreshIdeasV2WorkbenchCard({
             </span>
           </div>
 
-          {pipeline.activeLens.id === "contrarian-take" && !crossLabsUnified && (
+          {pipeline.crossLabsTelemetryState === "missing" && (
+            <div
+              data-testid="fresh-ideas-cross-labs-measurement-needed"
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-fg-2 [word-break:keep-all]"
+            >
+              <span className="font-mono font-medium text-warn">[측정 필요]</span>
+              <span className="min-w-0 flex-1">
+                배경 3D·브러시·캐릭터 작업실 실측 수치가 아직 연결되지 않아 임의 점수를 생성하지 않았습니다. 현재 원문 기준 5대 렌즈를 그대로 유지하며, 각 작업실 측정을 연결하면 통합 합성이 활성화됩니다.
+              </span>
+            </div>
+          )}
+
+          {pipeline.activeLens.id === "contrarian-take" &&
+            pipeline.crossLabsTelemetryState !== "live" && (
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="font-mono text-[11px] text-fg-3">반론 강도:</span>
               {CONTRARIAN_MODE_OPTIONS.map((opt) => (
@@ -692,6 +743,7 @@ export function StudioFreshIdeasV2WorkbenchCard({
           onSaveToIdeaBank={handleSaveToIdeaBank}
           onCopyDocsMarkdown={() => void handleCopyDocsMarkdown()}
           onExportSheetsCsv={() => void handleExportSheetsCsv()}
+          onExportStorySeed={() => void handleExportStorySeed()}
           onChangeRecordStatus={handleChangeBankStatus}
         />
       )}

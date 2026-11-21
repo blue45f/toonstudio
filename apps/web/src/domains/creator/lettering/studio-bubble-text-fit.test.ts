@@ -11,6 +11,7 @@ import {
   createCanvasBubbleTextMeasurer,
   fitBubbleBoxHeightToText,
   fitBubbleFontSize,
+  fitBubbleTextWithWidthPriority,
   measureBubbleTextBlock,
   resolveBubbleFontFamily,
   resolveBubbleFontSize,
@@ -340,5 +341,79 @@ describe("fitBubbleBoxHeightToText (높이 자동 확장)", () => {
     expect(bubbleTextFitsInBox({ ...input, boxHeight: height }, base.fontSize, fullWidth)).toBe(true);
     // 한 칸 낮추면 더 이상 안 들어간다 — 최소 높이를 찾았다는 뜻.
     expect(bubbleTextFitsInBox({ ...input, boxHeight: height - 1 }, base.fontSize, fullWidth)).toBe(false);
+  });
+});
+
+describe("한국어 금칙 사전 방지(retreatToLegalBreak) + 폭 확장 우선 맞춤", () => {
+  it("wrapBubbleTextLines는 행두 금칙(…, ?!)이 줄 첫머리로 떨어지기 전에 최대 4자 追い出し로 방지한다", () => {
+    const measurer = fakeMeasurer(1); // 1자=20px
+    // 폭 100px = 5자. 금칙이 없으면 ["가나다라마", "…"]가 되지만 追い出し로 ["가나다라", "마…"]가 된다.
+    expect(wrapBubbleTextLines("가나다라마…", 100, 20, "Pretendard", "bold", measurer)).toEqual([
+      "가나다라",
+      "마…",
+    ]);
+    // 어절 경계에서 다음 토큰이 행두 금칙("?!")이면 직전 짧은 어절("없잖아", 3자<=4)을 통째로 이월한다.
+    const lines = wrapBubbleTextLines("정말 그럴 리가 없잖아 ?!", 220, 20, "Pretendard", "bold", measurer);
+    expect(lines[1]?.startsWith("?")).toBe(false);
+    expect(lines[1]).toContain("없잖아 ?!");
+  });
+
+  it("wrapBubbleTextLines는 행말 금칙(₩, 여는 괄호)이 줄 끝에 홀로 남지 않도록 다음 줄로 이월한다", () => {
+    const measurer = fakeMeasurer(1);
+    const lines = wrapBubbleTextLines("금액₩5000", 60, 20, "Pretendard", "bold", measurer);
+    expect(lines[0]?.endsWith("₩")).toBe(false);
+    expect(lines.join("")).toBe("금액₩5000");
+  });
+
+  it("금칙 문자가 연속 4자를 초과해도 무한 루프·빈 줄 없이 안전하게 분할한다", () => {
+    const measurer = fakeMeasurer(1);
+    const lines = wrapBubbleTextLines("……………!?", 100, 20, "Pretendard", "bold", measurer);
+    expect(lines.every((line) => line.length > 0)).toBe(true);
+    expect(lines.join("")).toBe("……………!?");
+  });
+
+  it("어절 강제 분할(hardBreakWord) 발생 시 maxBoxWidth 범위에서 폰트 축소보다 말풍선 폭 확장을 우선 적용한다", () => {
+    const measurer = fakeMeasurer(1); // 24px 기준 한글 1자=24px
+    // "초특급필살기!" = 7자 = 168px. boxWidth=140(안쪽 112px)에서는 어절 강제 분할이 발생한다.
+    const widened = fitBubbleFontSize(
+      {
+        text: "초특급필살기!",
+        boxWidth: 140,
+        maxBoxWidth: 260,
+        boxHeight: 110,
+        maxFontSize: 24,
+        fontFamily: "Pretendard, sans-serif",
+        lineHeight: 1.35,
+        kinsoku: true,
+      },
+      measurer,
+    );
+
+    expect(widened.fontSize).toBe(24); // 폰트를 줄이지 않는다
+    expect(widened.overflow).toBe(false);
+    expect(widened.hardWordBreakDetected).toBe(false);
+    expect(widened.resolvedBoxWidth).toBeGreaterThan(140);
+    expect(widened.resolvedBoxWidth).toBeLessThanOrEqual(260);
+    expect(widened.lines).toEqual(["초특급필살기!"]);
+  });
+
+  it("fitBubbleTextWithWidthPriority는 폭 확장만으로 해결 안 될 때만 최대 폭에서 폰트를 축소한다", () => {
+    const measurer = fakeMeasurer(1);
+    const result = fitBubbleTextWithWidthPriority(
+      {
+        text: "가나다라마바사아자차카타파하 ".repeat(5),
+        boxWidth: 160,
+        maxBoxWidth: 240,
+        boxHeight: 120,
+        maxFontSize: 24,
+        fontFamily: "Pretendard, sans-serif",
+        lineHeight: 1.35,
+      },
+      measurer,
+    );
+
+    expect(result.resolvedBoxWidth).toBe(240);
+    expect(result.fontSize).toBeLessThan(24);
+    expect(result.overflow).toBe(false);
   });
 });

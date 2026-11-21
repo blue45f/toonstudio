@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   classifyStudioVrmRenderer,
+  isStudioVrmLowEndHardware,
   probeStudioVrmGpuCapability,
   resolveStudioVrmQualityTier,
 } from "./studio-vrm-gpu-capability";
@@ -52,6 +53,12 @@ describe("품질 등급 판정", () => {
   it("하드웨어 + 일반 사양이면 standard다", () => {
     expect(resolveStudioVrmQualityTier({ capability: "hardware", hardwareConcurrency: 8, deviceMemoryGb: 8 })).toBe("standard");
     expect(resolveStudioVrmQualityTier({ capability: "hardware" })).toBe("standard");
+  });
+  it("저사양 하드웨어 판정은 확정 메모리·코어 신호만 사용한다", () => {
+    expect(isStudioVrmLowEndHardware({ deviceMemoryGb: 1 })).toBe(true);
+    expect(isStudioVrmLowEndHardware({ hardwareConcurrency: 2, deviceMemoryGb: 4 })).toBe(true);
+    expect(isStudioVrmLowEndHardware({ hardwareConcurrency: 8, deviceMemoryGb: 8 })).toBe(false);
+    expect(isStudioVrmLowEndHardware({})).toBe(false);
   });
 });
 

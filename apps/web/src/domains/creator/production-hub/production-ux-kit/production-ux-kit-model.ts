@@ -124,10 +124,10 @@ const PRESENCE_PALETTE = [
   "bg-good/15 text-good",
   "bg-warn/15 text-warn",
   "bg-bad/15 text-bad",
-  "bg-[#7c6cf0]/15 text-[#7c6cf0]",
-  "bg-[#0ea5a5]/15 text-[#0ea5a5]",
-  "bg-[#e07b39]/15 text-[#e07b39]",
-  "bg-[#3b82f6]/15 text-[#3b82f6]",
+  "bg-cool/15 text-cool",
+  "bg-accent/20 text-accent",
+  "bg-raised text-fg",
+  "bg-panel text-fg-2",
 ] as const;
 
 export function presenceAvatarTone(id: string): string {

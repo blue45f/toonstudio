@@ -1,8 +1,12 @@
 import { SITE_URL } from "@toonstudio/core/business";
-import { Suspense } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 import { CharacterShaperEditorLoading } from "./character-shaper/CharacterShaperEditorLoading";
-import { CHARACTER_SHAPER_LANDING_PATH } from "./character-shaper/character-shaper-entry";
+import {
+  CHARACTER_SHAPER_LANDING_PATH,
+  probeCharacterShaperWebGl,
+} from "./character-shaper/character-shaper-entry";
 import { CharacterShaperLandingClosing } from "./character-shaper/landing/CharacterShaperLandingClosing";
 import { CharacterShaperLandingFaq } from "./character-shaper/landing/CharacterShaperLandingFaq";
 import { CharacterShaperLandingGuide } from "./character-shaper/landing/CharacterShaperLandingGuide";
@@ -22,17 +26,12 @@ import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav
 import { useBilingual, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
-// 캐릭터 셰이퍼 공개 랜딩 + 사용 가이드(/studio/assets/characters/new). 편집기는 이 페이지에서
-// `?editor=open`으로 바로 열린다(예전 /studio/character 별칭은 이 랜딩으로 이동하므로 다시 링크하면
-// 제자리로 돌아온다). 이 페이지는 무엇을 할 수 있고 무엇이 모델에 따라 달라지는지를 짧고
-// 정직하게 안내한다. 수치·후기·검증되지 않은 약속은 쓰지 않는다(PRODUCT.md "주장보다 증거").
-//
-// 구성(휴대폰 기준 5화면 이하): 첫 화면(제목·시작 버튼) → 세 단계 요약 → 탭 가이드(기능·사용법·학습·단축키)
-// → 접이식 FAQ·지원 범위 → 마무리 행동. 문구는 landing/character-shaper-landing-copy.ts에 모았다.
+// 캐릭터 셰이퍼 워크벤치 진입(/studio/assets/characters/new, /shaper 별칭).
+// 기본 진입 시 마케팅 랜딩 게이트를 두지 않고 WebGL 지원 환경이면 인터랙티브 3D 편집기를 즉시 마운트한다.
+// 사용 가이드·FAQ·단축키 안내가 필요할 때는 편집기를 닫거나 `?guide=1` / `#how-to`로 진입해 확인한다.
 
 const SHAPER_PATH = CHARACTER_SHAPER_LANDING_PATH;
 
-// 3D 런타임은 무겁다. 안내 페이지를 먼저 보여 주고 편집기를 열 때만 내려받는다.
 const CharacterShaperStandaloneEditor = lazyRetry(
   () => import("./character-shaper/CharacterShaperStandaloneEditor").then((module) => ({
     default: module.CharacterShaperStandaloneEditor,
@@ -44,6 +43,25 @@ export function CharacterShaperLandingPage() {
   const bt = useBilingual("CharacterShaperLandingPage");
   const localize = useBilingualLocalizer("CharacterShaperLandingPage");
   const editor = useCharacterShaperEditorEntry();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const guideExplicit =
+    searchParams.get("guide") === "1" || location.hash === "#how-to" || (typeof window !== "undefined" && window.location.hash === "#how-to");
+  const [dismissedAutoStage, setDismissedAutoStage] = useState(false);
+
+  const webglStatus = useMemo(() => {
+    if (editor.editorOpen || editor.webglBlocked || guideExplicit || dismissedAutoStage) return null;
+    return probeCharacterShaperWebGl();
+  }, [dismissedAutoStage, editor.editorOpen, editor.webglBlocked, guideExplicit]);
+
+  const autoStageOpen =
+    !guideExplicit && !dismissedAutoStage && !editor.webglBlocked && webglStatus === "supported";
+  const showEditor = editor.editorOpen || autoStageOpen;
+
+  const handleCloseEditor = () => {
+    setDismissedAutoStage(true);
+    editor.close();
+  };
 
   const shaperTitle = bt("캐릭터 셰이퍼", "Character Shaper");
   const shaperDescription = bt(
@@ -82,15 +100,21 @@ export function CharacterShaperLandingPage() {
       <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6">
         <SiteContextualSubNav pathnameOverride="/studio/assets/characters/new" className="mb-4" />
       </div>
-      <CharacterShaperLandingHero editor={editor} />
+      <CharacterShaperLandingHero
+        editor={
+          webglStatus === "unsupported" && !editor.webglBlocked
+            ? { ...editor, webglBlocked: true, close: handleCloseEditor }
+            : editor
+        }
+      />
       <CharacterShaperLandingSteps />
       <CharacterShaperLandingGuide />
       <CharacterShaperLandingFaq />
       <CharacterShaperLandingClosing editor={editor} />
 
-      {editor.editorOpen ? (
+      {showEditor ? (
         <Suspense fallback={<CharacterShaperEditorLoading />}>
-          <CharacterShaperStandaloneEditor onClose={editor.close} />
+          <CharacterShaperStandaloneEditor onClose={handleCloseEditor} />
         </Suspense>
       ) : null}
     </div>

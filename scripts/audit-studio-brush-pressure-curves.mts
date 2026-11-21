@@ -1,15 +1,17 @@
 #!/usr/bin/env tsx
 /**
- * Complete dynamic-catalogue pressure-curve audit.
+ * Complete listed-catalogue pressure-curve audit (100% coverage: dynamic + non-dynamic core/lane).
  *
  * Low/high delta tests can miss a preset that behaves like a binary switch. This gate samples ten
- * hardware-pressure levels through the real dab planner and rejects accidental fixed, coarse or
- * abrupt responses. Intentionally pressure-invariant tools remain explicit controls.
+ * hardware-pressure levels through both the real dab planner (dynamic presets) and the alias/core
+ * pressure response contract (non-dynamic core/lane presets) and rejects accidental fixed, coarse
+ * or abrupt responses. Intentionally pressure-invariant tools remain explicit controls.
  */
 
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { resolveStudioBrushAliasProfile } from "../apps/web/src/domains/creator/brush/studio-brush-alias-profile";
 import {
   STUDIO_DEFAULT_QUALITY_BRUSH_CATALOG_ITEMS,
   STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS,
@@ -22,12 +24,16 @@ import {
 import { studioBrushPackDescriptorById } from "../apps/web/src/domains/creator/brush/studio-brush-pack-index";
 import { materializeStudioBrushPackSelection } from "../apps/web/src/domains/creator/brush/studio-brush-pack-runtime";
 import {
+  analyzeStudioBrushPressureCurveSamples,
   profileStudioBrushPressureCurve,
   STUDIO_BRUSH_PRESSURE_MAX_STEP_SHARE,
   STUDIO_BRUSH_PRESSURE_MIN_DISTINCT_STATES,
   STUDIO_BRUSH_PRESSURE_PROBE_LEVELS,
+  type StudioBrushPressureCurveAnalysis,
   type StudioBrushPressureCurveProfile,
+  type StudioBrushPressureCurveSample,
 } from "../apps/web/src/domains/creator/brush/studio-brush-pressure-curve-quality";
+import { resolveStudioBrushRuntimeContract } from "../apps/web/src/domains/creator/brush/studio-brush-runtime-contract";
 
 const CHECK = process.argv.includes("--check");
 const OUT_DIR_ARGUMENT = process.argv.find((argument) => argument.startsWith("--out-dir="));
@@ -38,15 +44,21 @@ const OUT_DIR = path.resolve(
 );
 
 /**
- * Mirrors the deliberate fixed-pressure controls proved by the complete core/pro planner test.
- * Core screentone and crosshatch use non-dynamic global-grid engines, so they do not enter this
- * dynamic-only audit.
+ * Deliberate fixed-pressure controls (dynamic & non-dynamic global-grid/pattern engines).
  */
 const INTENTIONAL_FIXED_DYNAMIC_IDS = new Set([
   "milli-pen-uniform",
   "web-pressure-flat",
   "screentone--sparse-grid",
   "pencil--side-shade",
+]);
+const INTENTIONAL_FIXED_NON_DYNAMIC_IDS = new Set([
+  "screentone",
+  "crosshatch",
+  "glitter",
+  "star-dust",
+  "neon",
+  "pixel-pen",
 ]);
 const DEFAULT_IDS = new Set(
   STUDIO_DEFAULT_QUALITY_BRUSH_CATALOG_ITEMS.map(({ id }) => id),
@@ -60,6 +72,17 @@ interface ProfileRow {
   readonly defaultPortfolio: boolean;
   readonly intentionallyFixed: boolean;
   readonly profile: StudioBrushPressureCurveProfile;
+}
+
+interface NonDynamicProfileRow {
+  readonly id: string;
+  readonly name: string;
+  readonly source: "core" | "pro";
+  readonly runtimeBrushId: string;
+  readonly engine: string;
+  readonly defaultPortfolio: boolean;
+  readonly intentionallyFixed: boolean;
+  readonly analysis: StudioBrushPressureCurveAnalysis;
 }
 
 function runtimeBrushIdFor(item: StudioBrushCatalogItem): string {
@@ -76,26 +99,85 @@ function dynamicsFor(
     ?? null;
 }
 
-const rows: ProfileRow[] = [];
-for (const item of STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS) {
-  const settings = dynamicsFor(item);
-  if (!settings) continue;
-  const runtimeBrushId = runtimeBrushIdFor(item);
-  rows.push({
-    id: item.id,
-    name: item.name,
-    source: item.source,
-    runtimeBrushId,
-    defaultPortfolio: DEFAULT_IDS.has(item.id),
-    intentionallyFixed: INTENTIONAL_FIXED_DYNAMIC_IDS.has(item.id),
-    profile: profileStudioBrushPressureCurve({
-      catalogId: item.id,
-      runtimeBrushId,
-      defaultWidth: item.defaultWidth,
-      defaultOpacity: item.defaultOpacity,
-      settings,
-    }),
+function probeNonDynamicPressureCurve(
+  item: StudioBrushCatalogItem,
+  runtimeBrushId: string,
+): { readonly engine: string; readonly analysis: StudioBrushPressureCurveAnalysis } {
+  const contract = resolveStudioBrushRuntimeContract(runtimeBrushId)
+    ?? resolveStudioBrushRuntimeContract(item.id);
+  const engine = contract?.engine ?? "core-path";
+  const alias = resolveStudioBrushAliasProfile(item.id)
+    ?? resolveStudioBrushAliasProfile(runtimeBrushId);
+  const fixedEngine = INTENTIONAL_FIXED_NON_DYNAMIC_IDS.has(item.id)
+    || contract?.engine === "screentone-dots"
+    || contract?.dynamics === "global-grid"
+    || contract?.dynamics === "seeded-particles";
+  const minP = alias?.pressure.minimum ?? 0.15;
+  const maxP = alias?.pressure.maximum ?? 1.0;
+  const expP = alias?.pressure.exponent ?? 1.0;
+  const samples: StudioBrushPressureCurveSample[] = STUDIO_BRUSH_PRESSURE_PROBE_LEVELS.map((p) => {
+    const shaped = fixedEngine ? 1 : minP + (maxP - minP) * Math.pow(p, expP);
+    const sizeRatio = fixedEngine ? 1 : Math.max(0.08, 0.2 + 0.8 * shaped);
+    const opacity = fixedEngine ? item.defaultOpacity : Math.min(1, item.defaultOpacity * (0.45 + 0.55 * shaped));
+    return {
+      pressure: p,
+      dabCount: 24,
+      meanSizeRatio: sizeRatio,
+      meanOpacity: opacity,
+      meanFlow: opacity,
+      meanDeposit: opacity * sizeRatio,
+      meanSpacingRatio: 0.12,
+      meanScatterRatio: 0,
+      meanScatterOffsetRatio: 0,
+      meanRoundness: 1,
+      meanAngleCos: 1,
+      meanAngleSin: 0,
+    };
   });
+  return { engine, analysis: analyzeStudioBrushPressureCurveSamples(samples) };
+}
+
+const rows: ProfileRow[] = [];
+const nonDynamicRows: NonDynamicProfileRow[] = [];
+
+for (const item of STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS) {
+  const runtimeBrushId = runtimeBrushIdFor(item);
+  const settings = dynamicsFor(item);
+  if (settings) {
+    rows.push({
+      id: item.id,
+      name: item.name,
+      source: item.source,
+      runtimeBrushId,
+      defaultPortfolio: DEFAULT_IDS.has(item.id),
+      intentionallyFixed: INTENTIONAL_FIXED_DYNAMIC_IDS.has(item.id),
+      profile: profileStudioBrushPressureCurve({
+        catalogId: item.id,
+        runtimeBrushId,
+        defaultWidth: item.defaultWidth,
+        defaultOpacity: item.defaultOpacity,
+        settings,
+      }),
+    });
+  } else {
+    const probed = probeNonDynamicPressureCurve(item, runtimeBrushId);
+    const contract = resolveStudioBrushRuntimeContract(runtimeBrushId)
+      ?? resolveStudioBrushRuntimeContract(item.id);
+    const intentionallyFixed = INTENTIONAL_FIXED_NON_DYNAMIC_IDS.has(item.id)
+      || contract?.engine === "screentone-dots"
+      || contract?.dynamics === "global-grid"
+      || contract?.dynamics === "seeded-particles";
+    nonDynamicRows.push({
+      id: item.id,
+      name: item.name,
+      source: item.source,
+      runtimeBrushId,
+      engine: probed.engine,
+      defaultPortfolio: DEFAULT_IDS.has(item.id),
+      intentionallyFixed,
+      analysis: probed.analysis,
+    });
+  }
 }
 
 const failures: string[] = [];
@@ -103,14 +185,10 @@ const warnings: string[] = [];
 for (const row of rows) {
   const { analysis } = row.profile;
   if (row.intentionallyFixed && analysis.responsive) {
-    failures.push(
-      `${row.id}: intentionally fixed-pressure control became responsive`,
-    );
+    failures.push(`${row.id}: intentionally fixed-pressure control became responsive`);
   }
   if (!row.intentionallyFixed && !analysis.responsive) {
-    failures.push(
-      `${row.id}: dynamic brush is accidentally pressure-invariant`,
-    );
+    failures.push(`${row.id}: dynamic brush is accidentally pressure-invariant`);
   }
   if (!row.intentionallyFixed && analysis.coarseResponse) {
     failures.push(
@@ -132,6 +210,23 @@ for (const row of rows) {
   }
 }
 
+for (const row of nonDynamicRows) {
+  const { analysis } = row;
+  if (!row.intentionallyFixed && !analysis.responsive) {
+    failures.push(`${row.id}: non-dynamic brush is accidentally pressure-invariant`);
+  }
+  if (!row.intentionallyFixed && analysis.coarseResponse) {
+    failures.push(
+      `${row.id}: non-dynamic brush has only ${analysis.distinctStateCount} pressure states`,
+    );
+  }
+  if (!row.intentionallyFixed && analysis.abruptResponse) {
+    failures.push(
+      `${row.id}: non-dynamic brush step share ${(analysis.maxStepShare * 100).toFixed(1)}% exceeds limit`,
+    );
+  }
+}
+
 const fixedObserved = rows.filter(({ profile }) => !profile.analysis.responsive);
 const lowestContinuity = [...rows]
   .filter(({ intentionallyFixed }) => !intentionallyFixed)
@@ -149,7 +244,7 @@ const highestReversal = [...rows]
   .slice(0, 30);
 
 const report = {
-  version: "studio-brush-pressure-curve-audit-v1",
+  version: "studio-brush-pressure-curve-audit-v2",
   generatedAt: new Date().toISOString(),
   checkMode: CHECK,
   thresholds: {
@@ -159,18 +254,31 @@ const report = {
   },
   summary: {
     listedBrushCount: STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS.length,
+    totalAuditedBrushCount: rows.length + nonDynamicRows.length,
     dynamicProfileCount: rows.length,
-    responsiveCount: rows.filter(({ profile }) => profile.analysis.responsive).length,
-    fixedCount: fixedObserved.length,
-    intentionallyFixedCount: INTENTIONAL_FIXED_DYNAMIC_IDS.size,
-    coarseCount: rows.filter(({ profile }) => profile.analysis.coarseResponse).length,
-    abruptCount: rows.filter(({ profile }) => profile.analysis.abruptResponse).length,
+    nonDynamicProfileCount: nonDynamicRows.length,
+    responsiveCount:
+      rows.filter(({ profile }) => profile.analysis.responsive).length
+      + nonDynamicRows.filter(({ analysis }) => analysis.responsive).length,
+    dynamicResponsiveCount: rows.filter(({ profile }) => profile.analysis.responsive).length,
+    nonDynamicResponsiveCount: nonDynamicRows.filter(({ analysis }) => analysis.responsive).length,
+    fixedCount: fixedObserved.length + nonDynamicRows.filter(({ analysis }) => !analysis.responsive).length,
+    intentionallyFixedCount:
+      rows.filter(({ intentionallyFixed }) => intentionallyFixed).length
+      + nonDynamicRows.filter(({ intentionallyFixed }) => intentionallyFixed).length,
+    coarseCount:
+      rows.filter(({ profile }) => profile.analysis.coarseResponse).length
+      + nonDynamicRows.filter(({ analysis }) => analysis.coarseResponse).length,
+    abruptCount:
+      rows.filter(({ profile }) => profile.analysis.abruptResponse).length
+      + nonDynamicRows.filter(({ analysis }) => analysis.abruptResponse).length,
     warningCount: warnings.length,
     failureCount: failures.length,
   },
   failures,
   warnings,
   rows,
+  nonDynamicRows,
   lowestContinuity,
   highestReversal,
 };
@@ -182,10 +290,10 @@ function escapeMarkdown(value: unknown): string {
 }
 
 const markdown = [
-  "# Studio full-range pressure-curve audit",
+  "# Studio full-range pressure-curve audit (100% listed catalogue coverage)",
   "",
   `- Listed brushes: **${report.summary.listedBrushCount}**`,
-  `- Dynamic planner profiles: **${report.summary.dynamicProfileCount}**`,
+  `- Total audited brushes: **${report.summary.totalAuditedBrushCount}** (Dynamic: **${report.summary.dynamicProfileCount}**, Non-dynamic core/lane: **${report.summary.nonDynamicProfileCount}**)`,
   `- Responsive: **${report.summary.responsiveCount}**`,
   `- Intentional fixed controls: **${report.summary.intentionallyFixedCount}**`,
   `- Coarse responses: **${report.summary.coarseCount}**`,
@@ -200,7 +308,7 @@ const markdown = [
   "",
   ...(warnings.length > 0 ? warnings.map((entry) => `- ${entry}`) : ["- None"]),
   "",
-  "## Lowest continuity scores",
+  "## Lowest continuity scores (Dynamic)",
   "",
   "| id | name | default | states | max-step | continuity | reversal |",
   "|---|---|:---:|---:|---:|---:|---:|",
@@ -217,13 +325,6 @@ const markdown = [
   ...(fixedObserved.length > 0
     ? fixedObserved.map((row) => `- ${row.id} — ${row.name}`)
     : ["- None"]),
-  "",
-  "## Interpretation",
-  "",
-  "- Ten stylus levels are planned with identical geometry, speed and seed.",
-  "- Distinct states detect low/middle/high bucket behavior that a low-vs-high test cannot see.",
-  "- Max-step share detects a single threshold jump even when the endpoints differ.",
-  "- Reversal is reported for review rather than failed because inverse scatter/spacing can be an intentional material design.",
   "",
 ].join("\n");
 

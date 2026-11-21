@@ -630,7 +630,7 @@ export function CompareReviewViewer({
         <summary className="cursor-pointer text-xs font-bold text-fg-2">{bt("고급 설정", "Advanced settings")}</summary>
         <div className="mt-2 flex flex-wrap items-start gap-4 pb-1">
           <fieldset className="min-w-64">
-            <legend className="text-[0.6875rem] font-bold text-fg-3">
+            <legend className="text-xs font-bold text-fg-3">
               {bt("정렬 오프셋", "Alignment offset")} — {focusedItem ? focusedItem.label : bt("페인 없음", "No pane")}
             </legend>
             {focusedItem ? (
@@ -666,7 +666,7 @@ export function CompareReviewViewer({
               <span>{blinkMs}ms</span>
             </label>
           ) : null}
-          <p className="max-w-md text-[0.6875rem] leading-5 text-fg-3">
+          <p className="max-w-md text-xs leading-5 text-fg-3">
             {bt(
               "여백 차이로 기준점이 어긋난 이미지는 오프셋을 한 번 맞춰 두면, 잠금을 켠 채 확대·이동해도 그 기준으로 함께 움직입니다.",
               "If margins shift the anchor point, set the offset once — with lock on, zoom and pan keep that alignment.",
@@ -707,7 +707,7 @@ export function CompareReviewViewer({
           data-testid="crv-pin-composer"
           onSubmit={(event) => { event.preventDefault(); submitDraftPin(); }}
         >
-          <p className="text-xs font-black text-fg">
+          <p className="text-xs font-semibold text-fg">
             {bt("핀 내용", "Pin note")} — {session.pool.find((item) => item.id === draftPin.poolItemId)?.label ?? ""}
           </p>
           <label className="sr-only" htmlFor="crv-pin-body">{bt("핀 내용", "Pin note")}</label>
@@ -755,14 +755,14 @@ export function CompareReviewViewer({
       {/* ── 핀 목록 + 스레드 ── */}
       <div className="rounded-xl border border-line bg-panel p-3" data-testid="crv-pin-list">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-xs font-black text-fg">{bt("비교 핀", "Compare pins")}</h3>
-          <span className="text-[0.6875rem] text-fg-3">
+          <h3 className="text-xs font-semibold text-fg">{bt("비교 핀", "Compare pins")}</h3>
+          <span className="text-xs text-fg-3">
             {focusedItem
               ? bt(`${focusedItem.label} 기준 · 미해결 ${openPinCount} · 긴급 ${urgentPinCount}`, `${focusedItem.label} · ${openPinCount} open · ${urgentPinCount} urgent`)
               : bt(`미해결 ${openPinCount} · 긴급 ${urgentPinCount}`, `${openPinCount} open · ${urgentPinCount} urgent`)}
           </span>
           {pinMode ? (
-            <span className="ml-auto text-[0.6875rem] font-bold text-accent">{bt("이미지를 누르면 핀이 꽂힙니다", "Click an image to drop a pin")}</span>
+            <span className="ml-auto text-xs font-bold text-accent">{bt("이미지를 누르면 핀이 꽂힙니다", "Click an image to drop a pin")}</span>
           ) : null}
         </div>
         {focusedPins.length ? (
@@ -778,7 +778,7 @@ export function CompareReviewViewer({
                     selectedPinId === pin.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2",
                   )}
                 >
-                  <span className={cn("grid size-5 place-items-center rounded-full text-[0.625rem] text-white", pin.status === "urgent" ? "bg-bad" : pin.status === "resolved" ? "bg-good" : "bg-accent")}>
+                  <span className={cn("grid size-5 place-items-center rounded-full text-xs text-on-accent", pin.status === "urgent" ? "bg-bad" : pin.status === "resolved" ? "bg-good" : "bg-accent")}>
                     {pin.number}
                   </span>
                   <span className="max-w-44 truncate">{pin.body}</span>
@@ -799,7 +799,7 @@ export function CompareReviewViewer({
             <div className="flex flex-wrap items-start gap-2">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold leading-6 text-fg">{selectedPin.body}</p>
-                <p className="mt-0.5 text-[0.6875rem] text-fg-3">
+                <p className="mt-0.5 text-xs text-fg-3">
                   {selectedPin.authorName} · {selectedPin.createdAt.slice(0, 10)}
                   {selectedPin.pairedLabel ? bt(` · ${selectedPin.pairedLabel}와 비교 중`, ` · compared with ${selectedPin.pairedLabel}`) : ""}
                   {selectedPin.assigneeName ? bt(` · 담당 ${selectedPin.assigneeName}`, ` · Assignee ${selectedPin.assigneeName}`) : ""}
@@ -864,7 +864,7 @@ export function CompareReviewViewer({
         ) : null}
       </div>
 
-      <p className="text-[0.6875rem] text-fg-3" data-testid="crv-hint">
+      <p className="text-xs text-fg-3" data-testid="crv-hint">
         {session.mode === "slider"
           ? bt("가운데 핸들을 드래그하세요 · ←/→ 키로 미세 조정", "Drag the center handle · ←/→ for fine control")
           : session.mode === "overlay"
@@ -1031,7 +1031,7 @@ function ComparePaneStage({
       onFocus={onFocusPane}
     >
       <div className="flex items-center gap-2 border-b border-line px-3 py-2">
-        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent text-[0.6875rem] font-black text-on-accent" aria-hidden="true">
+        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold text-on-accent" aria-hidden="true">
           {badge}
         </span>
         <label className="sr-only" htmlFor={`crv-pane-select-${badge}`}>{bt("이 페인에 표시할 소스", "Source for this pane")}</label>
@@ -1050,13 +1050,13 @@ function ComparePaneStage({
           ))}
         </select>
         {badgeCopy ? (
-          <span className="shrink-0 rounded bg-panel px-1.5 py-0.5 text-[0.625rem] font-bold text-fg-3">{bt(badgeCopy.ko, badgeCopy.en)}</span>
+          <span className="shrink-0 rounded bg-panel px-1.5 py-0.5 text-xs font-bold text-fg-3">{bt(badgeCopy.ko, badgeCopy.en)}</span>
         ) : null}
       </div>
 
       <div
         ref={(el) => { attachSizeEl(el); registerStage(el); }}
-        className={cn("crv-stage relative w-full overflow-hidden bg-[#101418]", interactive ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing")}
+        className={cn("crv-stage relative w-full overflow-hidden bg-canvas", interactive ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing")}
         style={{ height: "min(58vh, 540px)" }}
         onWheel={(event) => {
           const rect = event.currentTarget.getBoundingClientRect();
@@ -1089,14 +1089,14 @@ function ComparePaneStage({
             <div className="grid h-full place-items-center p-4 text-center">
               <div>
                 <ProcessComparePaneEmptyArt />
-                <p className="mt-2 text-xs text-white/70">{bt("위에서 소스를 선택하세요", "Choose a source above")}</p>
+                <p className="mt-2 text-xs text-fg-2">{bt("위에서 소스를 선택하세요", "Choose a source above")}</p>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 px-3 py-2 text-[0.6875rem] text-fg-3">
+      <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-fg-3">
         <span className="min-w-0 truncate font-bold text-fg-2">{item ? item.label : bt("미선택", "Unselected")}</span>
         {item ? <time dateTime={item.addedAt}>{item.addedAt.slice(0, 10)}</time> : null}
       </div>
@@ -1212,7 +1212,7 @@ function LayeredCompareStage({
         ) : null}
       </div>
       {item ? (
-        <span className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-[0.625rem] font-bold text-white">
+        <span className="absolute left-2 top-2 rounded border border-line bg-panel/90 px-1.5 py-0.5 text-xs font-semibold text-fg">
           {item.label}
         </span>
       ) : null}
@@ -1224,7 +1224,7 @@ function LayeredCompareStage({
     <div
       role="presentation"
       ref={(el) => { attachSizeEl(el); if (mode === "slider") slider.attachStage(el); }}
-      className={cn("crv-stage relative w-full overflow-hidden rounded-2xl bg-[#101418]", interactive ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing")}
+      className={cn("crv-stage relative w-full overflow-hidden rounded-2xl bg-canvas", interactive ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing")}
       style={{ height: "min(58vh, 540px)" }}
       data-testid={`crv-stage-${mode}`}
       onWheel={(event) => {

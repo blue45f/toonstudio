@@ -1,7 +1,7 @@
 import type {
-  RealtimeChannel,
-  RealtimePayload,
-} from "./protocol";
+  RealtimeWireChannel,
+  RealtimeWirePayload,
+} from "./space-protocol";
 
 const IDEMPOTENCY_FINGERPRINT_CONTEXT =
   "toonstudio/realtime-receipt/idempotency/v1\n";
@@ -12,8 +12,8 @@ export interface PublishReceiptFingerprintInput {
   readonly idempotencyKey: string;
   readonly actorId: string;
   readonly clientId: string;
-  readonly channel: RealtimeChannel;
-  readonly payload: RealtimePayload;
+  readonly channel: RealtimeWireChannel;
+  readonly payload: RealtimeWirePayload;
 }
 
 export interface PublishReceiptFingerprints {

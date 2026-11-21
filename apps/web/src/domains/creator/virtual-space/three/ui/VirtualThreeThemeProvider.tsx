@@ -27,7 +27,7 @@ function ScopedThemeOwner({ spaceScopeId, children, acquireStorage }: VirtualThr
     if (!next || (!force && id === requestedThemeId && preview.status !== "error")) return;
     setRequestedOverride(id);
     setRequestRevision(current => current + 1);
-    setPreview({ status: "loading", loaded: 0, total: next.kind === "asset-recipe" ? next.modelAssetIds.length : 0 });
+    setPreview({ status: "loading", loaded: 0, total: next.kind === "asset-recipe" ? next.modelAssetIds.length : next.kind === "hero-scene" ? 1 : 0 });
     dismissNotice();
   }, [dismissNotice, preview.status, requestedThemeId]);
   const requestTheme = useCallback((id: VirtualThreeThemeId) => beginRequest(id), [beginRequest]);

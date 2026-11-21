@@ -29,10 +29,10 @@ export function DraftSaveStatusCard({ icon, label, section, footer }: {
       <div className="flex items-start gap-2.5">
         <span className="mt-0.5 shrink-0" aria-hidden>{icon}</span>
         <div className="min-w-0 flex-1">
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.08em] opacity-75">{label}</p>
-          <p className="mt-0.5 text-sm font-bold leading-snug">{section.title}</p>
+          <p className="text-xs font-semibold opacity-75">{label}</p>
+          <p className="mt-0.5 text-sm font-semibold leading-snug">{section.title}</p>
           <p className="mt-1 text-xs font-medium leading-relaxed opacity-90">{section.detail}</p>
-          <p className="mt-2 text-[0.68rem] font-semibold opacity-80">{footer}</p>
+          <p className="mt-2 text-xs font-semibold opacity-80">{footer}</p>
         </div>
       </div>
     </section>
@@ -51,22 +51,22 @@ export function StudioDraftSaveRecordMetrics({ checkpointCount, serverRevision, 
   const bt = useBilingual("StudioDraftSaveCenter");
   return <dl data-studio-save-record-metrics="true" className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
     <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-      <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">{bt("기기 체크포인트", "Device checkpoints")}</dt>
-      <dd className="mt-1 text-sm font-black">{checkpointCount}{bt("개", "")}</dd>
+      <dt className="text-xs font-medium text-fg-3">{bt("기기 체크포인트", "Device checkpoints")}</dt>
+      <dd className="mt-1 text-sm font-semibold tabular-nums">{checkpointCount}{bt("개", "")}</dd>
     </div>
     <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-      <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">{bt("서버 저장 번호", "Server save revision")}</dt>
-      <dd className="mt-1 text-sm font-black">{serverRevision ?? "—"}</dd>
+      <dt className="text-xs font-medium text-fg-3">{bt("서버 저장 번호", "Server save number")}</dt>
+      <dd className="mt-1 text-sm font-semibold tabular-nums">{serverRevision ?? "—"}</dd>
     </div>
     <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-      <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">{bt("서버 버전", "Server versions")}</dt>
-      <dd className="mt-1 flex items-center justify-center gap-1 text-sm font-black">
+      <dt className="text-xs font-medium text-fg-3">{bt("서버 버전", "Server versions")}</dt>
+      <dd className="mt-1 flex items-center justify-center gap-1 text-sm font-semibold tabular-nums">
         {serverRevisionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-label={loadingLabel} /> : `${serverRevisionCount}${bt("개", "")}`}
       </dd>
     </div>
     <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-      <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">{bt("마지막 서버 확인", "Last server confirmation")}</dt>
-      <dd className="mt-1 text-xs font-black">{lastServerSaveAt === null ? "—" : formatStudioDraftSaveTime(lastServerSaveAt)}</dd>
+      <dt className="text-xs font-medium text-fg-3">{bt("마지막 서버 확인", "Last server confirmation")}</dt>
+      <dd className="mt-1 text-xs font-semibold tabular-nums">{lastServerSaveAt === null ? "—" : formatStudioDraftSaveTime(lastServerSaveAt)}</dd>
     </div>
   </dl>;
 }

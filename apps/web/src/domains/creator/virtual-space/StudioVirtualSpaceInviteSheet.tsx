@@ -54,7 +54,7 @@ export function StudioVirtualSpaceInviteSheet({ inviteLink, codeRecord, spaceUrl
   };
 
   return (
-    <section aria-label={bt("스페이스 초대", "Invite to space")}>
+    <section data-testid="space-invite-sheet" aria-label={bt("스페이스 초대", "Invite to space")} className="space-y-3 rounded-xl border border-line bg-panel p-4 text-xs text-fg">
       <h2>{bt("스페이스 초대", "Invite to space")}</h2>
       <div role="tablist" aria-label={bt("초대 방식", "Invite method")}>
         <button type="button" role="tab" aria-selected={tab === "link"} onClick={() => setTab("link")}>{bt("링크", "Link")}</button>

@@ -1,12 +1,18 @@
 import * as THREE from "three";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 
-import type { StudioVirtualSpaceWorldManifest } from "../../studio-virtual-space-world-manifest";
+import type { HeroBg3dDeliveryContext } from "../../../bg3d/studio-bg3d-hero-tier-selector";
+import { studioWorldSpawn, type StudioVirtualSpaceWorldManifest } from "../../studio-virtual-space-world-manifest";
 import { createStudioThreeGlbLoader, disposeStudioThreeOwnedModel } from "../studio-virtual-space-three-asset-loader";
-import { loadVirtualThreeThemeModelSource, type VirtualThreeVerifiedThemeModelSource } from "./virtual-three-theme-model-source";
+import { worldToThree } from "../studio-virtual-space-three-coords";
+import {
+  loadVirtualThreeHeroSceneSource,
+  loadVirtualThreeThemeModelSource,
+  type VirtualThreeVerifiedThemeModelSource,
+} from "./virtual-three-theme-model-source";
 import { VIRTUAL_THREE_THEME_MODEL_IDS } from "./virtual-three-theme-models";
 import { createVirtualThreeThemePlacementPlanner, virtualThreeThemeModelDisplaySize } from "./virtual-three-theme-placement";
-import type { VirtualThreeAssetRecipeTheme } from "./virtual-three-theme-types";
+import type { VirtualThreeAssetRecipeTheme, VirtualThreeHeroSceneTheme } from "./virtual-three-theme-types";
 
 export interface VirtualThreeStagedSourceInput {
   readonly id: string;
@@ -199,6 +205,134 @@ export async function prepareVirtualThreeThemeModels(options: {
     } };
   } catch (error) {
     try { cleanup(); } catch (cleanupError) { throw new AggregateError([error, cleanupError], "3D 테마 준비와 해제에 실패했습니다.", { cause: cleanupError }); }
+    throw error;
+  }
+}
+
+/**
+ * Hero 3D BG 6씬(Desktop 8노드 / Mobile 4노드)을 `createStudioThreeGlbLoader()`(MeshoptDecoder 내장)로
+ * 파싱해 바닥 정렬(Y=0)·스폰 앵커 정렬 상태로 스테이징한다.
+ */
+export async function prepareVirtualThreeHeroSceneStage(options: {
+  readonly scene: THREE.Scene;
+  readonly manifest: StudioVirtualSpaceWorldManifest;
+  readonly theme: VirtualThreeHeroSceneTheme;
+  readonly signal: AbortSignal;
+  readonly onProgress: (loaded: number, total: number) => void;
+  readonly onBeforeDecode?: (sources: readonly VirtualThreeStagedSourceInput[]) => void;
+  readonly onAssetError?: (url: string, kind: "model") => void;
+  readonly deliveryContext?: Partial<HeroBg3dDeliveryContext>;
+}): Promise<VirtualThreeThemeModelStage> {
+  const { scene, manifest, theme, signal } = options;
+  assertActive(signal);
+  const loader = createStudioThreeGlbLoader();
+  let rootGroup: THREE.Group | null = null;
+  let disposed = false;
+
+  const cleanup = () => {
+    if (disposed) return;
+    disposed = true;
+    if (rootGroup) {
+      rootGroup.removeFromParent();
+      disposeStudioThreeOwnedModel(rootGroup);
+      rootGroup.clear();
+      rootGroup = null;
+    }
+  };
+
+  try {
+    const verified = await loadVirtualThreeHeroSceneSource(theme, {
+      signal,
+      deliveryContext: options.deliveryContext,
+    });
+    assertActive(signal);
+
+    const stagedInput: VirtualThreeStagedSourceInput = {
+      id: verified.ref.assetId,
+      blobBytes: verified.byteLength,
+      bufferCopyBytes: verified.byteLength,
+      decodedGeometryBytes: verified.estimatedDecodedGeometryBytes,
+      decodedImageBytes: verified.estimatedDecodedImageBytes,
+      pendingDecode: true,
+    };
+    options.onBeforeDecode?.([stagedInput]);
+
+    const bytes = await verified.blob.arrayBuffer();
+    assertActive(signal);
+
+    let gltf: Awaited<ReturnType<typeof loader.parseAsync>>;
+    try {
+      gltf = await loader.parseAsync(bytes, "");
+    } catch (error) {
+      options.onAssetError?.(verified.url, "model");
+      throw error;
+    }
+
+    const model = gltf.scene;
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        // 외벽·천장이 내부 바닥을 통째로 가리는 암전 그림자를 막고 가구·기둥만 부드러운 접지 그림자를 드리운다.
+        child.castShadow = !/^BG_(?:Ceiling|Roof|Wall_)/iu.test(child.name);
+        child.receiveShadow = true;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        for (const mat of mats) {
+          if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+            mat.envMapIntensity = Math.max(mat.envMapIntensity ?? 1, 1.35);
+            mat.needsUpdate = true;
+          }
+        }
+      }
+    });
+    model.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(model);
+    if (!box.isEmpty()) {
+      const center = box.getCenter(new THREE.Vector3());
+      model.position.set(-center.x, -box.min.y, -center.z);
+    }
+
+    const spawnAnchor = worldToThree(studioWorldSpawn(manifest).point, 0);
+    const wrapper = new THREE.Group();
+    wrapper.name = `hero-bg-scene-${theme.heroSlug}`;
+    wrapper.userData.heroSceneSlug = theme.heroSlug;
+    wrapper.userData.heroThemeId = theme.id;
+    wrapper.userData.heroDeliveryTier = verified.tier;
+    wrapper.position.set(
+      spawnAnchor.x - verified.preset.spawnMeters[0],
+      0,
+      spawnAnchor.z - verified.preset.spawnMeters[2],
+    );
+    wrapper.add(model);
+    rootGroup = wrapper;
+    scene.add(wrapper);
+
+    assertActive(signal);
+    verified.assertCurrent();
+    options.onProgress(1, 1);
+
+    const sourceInputs: readonly VirtualThreeStagedSourceInput[] = [
+      {
+        id: verified.ref.assetId,
+        blobBytes: verified.byteLength,
+        bufferCopyBytes: bytes.byteLength,
+        decodedGeometryBytes: verified.estimatedDecodedGeometryBytes,
+        decodedImageBytes: verified.estimatedDecodedImageBytes,
+      },
+    ];
+    const assertCurrent = () => {
+      assertActive(signal);
+      if (disposed) throw new Error("이미 해제된 Hero 3D 배경 무대입니다.");
+      verified.assertCurrent();
+    };
+    return {
+      sourceInputs,
+      assertCurrent,
+      update: () => {},
+      dispose: cleanup,
+    };
+  } catch (error) {
+    try { cleanup(); } catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], "Hero 3D 배경 무대 준비와 해제에 실패했습니다.", { cause: cleanupError });
+    }
     throw error;
   }
 }

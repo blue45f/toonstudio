@@ -84,7 +84,7 @@ export const DEFAULT_STUDIO_BG3D_RAW_DOCUMENT = {
     mobile: {
       targetFps: 30,
       dprMin: 0.9,
-      dprMax: 1.5,
+      dprMax: 2,
       maxRenderPixels: 4_194_304,
       shadows: true,
       shadowMapSize: 2048,

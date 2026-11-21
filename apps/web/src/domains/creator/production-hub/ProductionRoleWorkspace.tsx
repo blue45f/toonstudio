@@ -153,7 +153,7 @@ function toneClass(tone: Tone): string {
 }
 function Pill({ children, tone = "neutral" }: { readonly children: ReactNode; readonly tone?: Tone }) {
   return (
-    <span className={cn("inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-semibold", toneClass(tone))}>
+    <span className={cn("inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-xs font-semibold", toneClass(tone))}>
       {children}
     </span>
   );
@@ -203,10 +203,10 @@ function MetricTile({
   return (
     <div className={cn("rounded-2xl border p-3.5", toneClass(tone))}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em]">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.12em]">{label}</p>
         <Icon className="size-4" aria-hidden="true" />
       </div>
-      <p className="mt-2 text-2xl font-black tracking-tight text-fg">{value}</p>
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-fg">{value}</p>
       <p className="mt-1 text-xs leading-5 text-fg-2">{detail}</p>
     </div>
   );
@@ -219,7 +219,7 @@ function AssignmentAvatars({
   readonly aggregate: ProductionProjectAggregate;
   readonly assignmentIds: readonly string[];
 }) {
-  if (assignmentIds.length === 0) return <span className="text-[0.6875rem] text-bad">미배정</span>;
+  if (assignmentIds.length === 0) return <span className="text-xs text-bad">미배정</span>;
   return (
     <div className="flex items-center">
       {assignmentIds.slice(0, 3).map((assignmentId, index) => {
@@ -229,7 +229,7 @@ function AssignmentAvatars({
             key={assignmentId}
             title={label}
             className={cn(
-              "flex size-7 items-center justify-center rounded-full border-2 border-panel bg-raised text-[0.625rem] font-black text-fg",
+              "flex size-7 items-center justify-center rounded-full border-2 border-panel bg-raised text-xs font-semibold text-fg",
               index > 0 && "-ml-2",
             )}
           >
@@ -237,7 +237,7 @@ function AssignmentAvatars({
           </span>
         );
       })}
-      {assignmentIds.length > 3 ? <span className="ml-1 text-[0.625rem] text-fg-3">+{assignmentIds.length - 3}</span> : null}
+      {assignmentIds.length > 3 ? <span className="ml-1 text-xs text-fg-3">+{assignmentIds.length - 3}</span> : null}
     </div>
   );
 }
@@ -263,7 +263,7 @@ function TaskCard({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "w-full rounded-xl border p-3 text-left transition-all",
+        "w-full rounded-xl border p-3 text-left transition-colors",
         selected
           ? "border-accent/55 bg-accent-soft shadow-sm"
           : "border-line bg-panel hover:border-accent/35 hover:bg-raised",
@@ -275,7 +275,7 @@ function TaskCard({
             <Icon className="size-3.5" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <p className="truncate text-[0.6875rem] font-bold text-accent">
+            <p className="truncate text-xs font-bold text-accent">
               {department?.shortLabel ?? task.processKey} · {scopeLabel(task)}
             </p>
             <h3 className="mt-1 line-clamp-2 text-sm font-bold leading-5 text-fg">{task.title}</h3>
@@ -286,7 +286,7 @@ function TaskCard({
       <div className="mt-3 flex items-center justify-between gap-3">
         <AssignmentAvatars aggregate={aggregate} assignmentIds={task.assignmentIds} />
         <span className={cn(
-          "text-[0.6875rem] font-semibold",
+          "text-xs font-semibold",
           gate.overdue ? "text-bad" : gate.dueSoon ? "text-warn" : "text-fg-3",
         )}>
           {formatDay(task.dueAt)}
@@ -296,7 +296,7 @@ function TaskCard({
         {gate.blockers.length > 0 ? <Pill tone="danger">차단 {gate.blockers.length}</Pill> : null}
         {gate.warnings.length > 0 ? <Pill tone="warning">주의 {gate.warnings.length}</Pill> : null}
         {task.dependencyTaskIds.length > 0 ? (
-          <span className="inline-flex items-center gap-1 text-[0.6875rem] text-fg-3">
+          <span className="inline-flex items-center gap-1 text-xs text-fg-3">
             <GitBranch className="size-3" aria-hidden="true" /> 선행 {task.dependencyTaskIds.length}
           </span>
         ) : null}
@@ -322,9 +322,9 @@ export function ProductionCrewCoverage({
         <div>
           <div className="flex items-center gap-2 text-accent">
             <Users className="size-4" aria-hidden="true" />
-            <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em]">Crew map</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em]">Crew map</p>
           </div>
-          <h2 className="mt-2 text-lg font-black text-fg">담당 역할별 팀 커버리지</h2>
+          <h2 className="mt-2 text-lg font-semibold text-fg">담당 역할별 팀 커버리지</h2>
           <p className="mt-1 max-w-3xl text-xs leading-6 text-fg-2">
             담당 역할 배정은 실제 기여·권리·보상과 분리하면서, 작업 범위별 책임자와 검수 공백을 빠르게 확인합니다.
           </p>
@@ -368,20 +368,20 @@ export function ProductionCrewCoverage({
                   {coverageLabel(workcell.coverage)}
                 </Pill>
               </div>
-              <h3 className="mt-3 text-sm font-black text-fg">{workcell.department.label}</h3>
-              <p className="mt-1 line-clamp-2 text-[0.6875rem] leading-5 text-fg-3">{workcell.department.description}</p>
+              <h3 className="mt-3 text-sm font-semibold text-fg">{workcell.department.label}</h3>
+              <p className="mt-1 line-clamp-2 text-xs leading-5 text-fg-3">{workcell.department.description}</p>
               <div className="mt-3 space-y-2">
                 {assignments.slice(0, 3).map((assignment) => {
                   const person = assignmentLabel(aggregate, assignment.id);
                   const scheduled = Date.parse(assignment.startsAt) > Date.parse(at);
                   return (
                     <div key={assignment.id} className="flex items-center gap-2 rounded-lg bg-raised px-2.5 py-2">
-                      <span className="flex size-7 items-center justify-center rounded-full bg-panel text-[0.625rem] font-black text-accent">
+                      <span className="flex size-7 items-center justify-center rounded-full bg-panel text-xs font-semibold text-accent">
                         {initials(person)}
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-semibold text-fg">{person}</p>
-                        <p className="truncate text-[0.625rem] text-fg-3">
+                        <p className="truncate text-xs text-fg-3">
                           {PRODUCTION_ROLE_LABELS[assignment.roleType]}{assignment.lead ? " · 리드" : ""}
                         </p>
                       </div>
@@ -395,9 +395,9 @@ export function ProductionCrewCoverage({
                   </p>
                 ) : null}
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-center text-[0.6875rem]">
-                <div className="rounded-lg bg-raised p-2"><p className="text-fg-3">열린 작업</p><p className="mt-1 font-black text-fg">{workcell.openTaskCount}</p></div>
-                <div className="rounded-lg bg-raised p-2"><p className="text-fg-3">예상 공수</p><p className="mt-1 font-black text-fg">{workcell.likelyHours}h</p></div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
+                <div className="rounded-lg bg-raised p-2"><p className="text-fg-3">열린 작업</p><p className="mt-1 font-semibold text-fg">{workcell.openTaskCount}</p></div>
+                <div className="rounded-lg bg-raised p-2"><p className="text-fg-3">예상 공수</p><p className="mt-1 font-semibold text-fg">{workcell.likelyHours}h</p></div>
               </div>
             </article>
           );
@@ -496,7 +496,7 @@ function PipelineView({
       <section className="rounded-2xl border border-line bg-card p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-sm font-black text-fg">웹툰 표준 공정</h2>
+            <h2 className="text-sm font-semibold text-fg">웹툰 표준 공정</h2>
             <p className="mt-1 text-xs leading-6 text-fg-2">
               선화와 배경은 콘티 뒤에 병렬로 진행하고, 채색부터 다시 하나의 통합 정본으로 합류합니다.
             </p>
@@ -530,14 +530,14 @@ function PipelineView({
                     <span className="flex size-8 items-center justify-center rounded-xl bg-raised text-accent">
                       <Icon className="size-4" aria-hidden="true" />
                     </span>
-                    <span className="text-[0.625rem] font-black text-fg-3">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="text-xs font-semibold text-fg-3">{String(index + 1).padStart(2, "0")}</span>
                   </div>
-                  <p className="mt-3 text-xs font-black text-fg">{stage.label}</p>
-                  <p className="mt-1 text-[0.625rem] text-fg-3">{stageTasks.length}작업 · 차단 {blocked}</p>
+                  <p className="mt-3 text-xs font-semibold text-fg">{stage.label}</p>
+                  <p className="mt-1 text-xs text-fg-3">{stageTasks.length}작업 · 차단 {blocked}</p>
                   <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-line">
                     <div className="h-full rounded-full bg-accent" style={{ width: `${progress}%` }} />
                   </div>
-                  <p className="mt-2 line-clamp-2 text-[0.625rem] leading-4 text-fg-3">
+                  <p className="mt-2 line-clamp-2 text-xs leading-4 text-fg-3">
                     {stage.dependsOnDepartmentKeys.length > 0
                       ? `입력: ${stage.dependsOnDepartmentKeys.map((key) => productionDepartment(key).shortLabel).join(" + ")}`
                       : "프로젝트·회차 기획 정본"}
@@ -551,7 +551,7 @@ function PipelineView({
       <section className="rounded-2xl border border-line bg-card p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-black text-fg">공정별 작업 목록</h2>
+            <h2 className="text-sm font-semibold text-fg">공정별 작업 목록</h2>
             <p className="mt-1 text-xs text-fg-2">카드를 선택하면 오른쪽 상세에서 담당·검수·상태를 변경합니다.</p>
           </div>
           <Pill>{tasks.length}작업</Pill>
@@ -587,7 +587,7 @@ function EmptyInspector() {
   return (
     <aside className="rounded-2xl border border-dashed border-line bg-card p-6 text-center">
       <Layers3 className="mx-auto size-8 text-fg-3" aria-hidden="true" />
-      <p className="mt-3 text-sm font-black text-fg">작업을 선택해 주세요</p>
+      <p className="mt-3 text-sm font-semibold text-fg">작업을 선택해 주세요</p>
       <p className="mt-1 text-xs leading-5 text-fg-3">
         담당자, 입력 정본, 선행 작업, 검수자와 다음 단계 조건을 확인할 수 있습니다.
       </p>
@@ -714,9 +714,9 @@ export function ProductionRoleWorkspace({
             <div className="max-w-3xl">
               <div className="flex items-center gap-2 text-accent">
                 <Workflow className="size-4" aria-hidden="true" />
-                <p className="text-[0.6875rem] font-black uppercase tracking-[0.14em]">Role-based production</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em]">Role-based production</p>
               </div>
-              <h1 className="mt-3 text-2xl font-black tracking-tight text-fg sm:text-3xl">
+              <h1 className="mt-3 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
                 직군별 제작 셀과 인수인계를 한 화면에서
               </h1>
               <p className="mt-2 text-sm leading-7 text-fg-2">
@@ -843,7 +843,7 @@ export function ProductionRoleWorkspace({
           <section className="min-w-0 rounded-2xl border border-line bg-card p-3">
             <header className="flex flex-wrap items-center justify-between gap-3 px-1 pb-3">
               <div>
-                <h2 className="text-sm font-black text-fg">
+                <h2 className="text-sm font-semibold text-fg">
                   {departmentFilter === "all"
                     ? "전체 직군 작업"
                     : departmentFilter === "lens"
@@ -866,8 +866,8 @@ export function ProductionRoleWorkspace({
                     <section key={column.id} className="rounded-2xl border border-line bg-panel p-2.5">
                       <header className="mb-2.5 flex items-start justify-between gap-2 px-1">
                         <div>
-                          <h3 className="text-xs font-black text-fg">{column.label}</h3>
-                          <p className="mt-0.5 text-[0.625rem] text-fg-3">{column.description}</p>
+                          <h3 className="text-xs font-semibold text-fg">{column.label}</h3>
+                          <p className="mt-0.5 text-xs text-fg-3">{column.description}</p>
                         </div>
                         <Pill>{tasks.length}</Pill>
                       </header>
@@ -882,7 +882,7 @@ export function ProductionRoleWorkspace({
                           />
                         ))}
                         {tasks.length === 0 ? (
-                          <div className="rounded-xl border border-dashed border-line p-5 text-center text-[0.6875rem] text-fg-3">
+                          <div className="rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-3">
                             작업 없음
                           </div>
                         ) : null}

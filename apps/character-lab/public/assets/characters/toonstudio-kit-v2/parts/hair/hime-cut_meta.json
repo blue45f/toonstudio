@@ -1,0 +1,834 @@
+{
+  "schema": "toonstudio.character-kit.hair-v2/1",
+  "styleId": "hime-cut",
+  "labelKo": "히메컷 스트레이트",
+  "genre": "학원·미스터리",
+  "fittedBase": "female-romance",
+  "file": {
+    "path": "hime-cut.glb",
+    "bytes": 1443144,
+    "sha256": "dce178b6e3c61417d4b87ab49ad22512e0bfa9b76472836a885a5410b6a33b74"
+  },
+  "drawCalls": 8,
+  "materials": [
+    "ts_hair_hime-cut",
+    "ts_hair_tip_hime-cut",
+    "ts_hair_accent_hime-cut"
+  ],
+  "lods": [
+    {
+      "node": "TS_AuthoredHair_hime-cut_LOD0",
+      "lod": 0,
+      "triangles": 11520,
+      "vertices": 5816,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_hime-cut_LOD1",
+      "lod": 1,
+      "triangles": 5208,
+      "vertices": 2660,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_hime-cut_LOD2",
+      "lod": 2,
+      "triangles": 1648,
+      "vertices": 864,
+      "primitives": 2,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    }
+  ],
+  "morphs": [
+    "param:height:+",
+    "param:height:-",
+    "param:legLength:+",
+    "param:legLength:-",
+    "param:neckLength:+",
+    "param:neckLength:-",
+    "param:headSize:+",
+    "param:headSize:-",
+    "shape:bang-length:+",
+    "shape:bang-length:-",
+    "shape:volume:+",
+    "shape:volume:-",
+    "shape:sway:+",
+    "shape:sway:-"
+  ],
+  "shapes": [
+    "bang-length",
+    "volume",
+    "sway"
+  ],
+  "uv0Monotonic": true,
+  "uv1Purpose": "hair-flow",
+  "texture": {
+    "bytes": 21555,
+    "size": 512,
+    "meanLuminance": 0.9231,
+    "minLuminance": 0.8,
+    "columns": 4
+  },
+  "springBone": {
+    "schema": "toonstudio.hair-springbone/1",
+    "vrmSpec": "VRMC_springBone-1.0",
+    "styleId": "hime-cut",
+    "fittedBase": "female-romance",
+    "chainCount": 5,
+    "colliders": [
+      {
+        "id": "head_sphere",
+        "bone": "mixamorig:Head",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.09115,
+          -0.00342
+        ],
+        "radius": 0.08366
+      },
+      {
+        "id": "neck_capsule",
+        "bone": "mixamorig:Neck",
+        "shape": "capsule",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tailGltf": [
+          0.0,
+          0.08793,
+          -0.002
+        ],
+        "radius": 0.04725
+      },
+      {
+        "id": "upper_chest_sphere",
+        "bone": "mixamorig:Spine2",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.0031
+        ],
+        "radius": 0.12696
+      }
+    ],
+    "chains": [
+      {
+        "id": "back_L",
+        "region": "back",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 6,
+        "lengthM": 0.5526,
+        "hitRadius": 0.022,
+        "stiffness": 0.6,
+        "dragForce": 0.4,
+        "gravityPower": 0.4,
+        "joints": [
+          {
+            "name": "TS_Spring_hime-cut_back_L_0",
+            "positionGltf": [
+              0.01212,
+              1.65508,
+              -0.02144
+            ],
+            "localOffsetFromHead": [
+              0.01212,
+              0.18188,
+              -0.01344
+            ],
+            "hitRadius": 0.022,
+            "stiffness": 0.66,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_L_1",
+            "positionGltf": [
+              0.068,
+              1.58034,
+              -0.06831
+            ],
+            "localOffsetFromHead": [
+              0.068,
+              0.10713,
+              -0.06031
+            ],
+            "hitRadius": 0.02121,
+            "stiffness": 0.63,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_L_2",
+            "positionGltf": [
+              0.07423,
+              1.46982,
+              -0.08138
+            ],
+            "localOffsetFromHead": [
+              0.07423,
+              -0.00339,
+              -0.07338
+            ],
+            "hitRadius": 0.02042,
+            "stiffness": 0.6,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_L_3",
+            "positionGltf": [
+              0.07415,
+              1.36983,
+              -0.12703
+            ],
+            "localOffsetFromHead": [
+              0.07415,
+              -0.10338,
+              -0.11903
+            ],
+            "hitRadius": 0.01962,
+            "stiffness": 0.57,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_L_4",
+            "positionGltf": [
+              0.07192,
+              1.25929,
+              -0.15008
+            ],
+            "localOffsetFromHead": [
+              0.07192,
+              -0.21391,
+              -0.14208
+            ],
+            "hitRadius": 0.01883,
+            "stiffness": 0.54,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_L_5",
+            "positionGltf": [
+              0.0708,
+              1.14546,
+              -0.15089
+            ],
+            "localOffsetFromHead": [
+              0.0708,
+              -0.32775,
+              -0.14289
+            ],
+            "hitRadius": 0.01804,
+            "stiffness": 0.51,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "back_C",
+        "region": "back",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 2,
+        "lengthM": 0.5508,
+        "hitRadius": 0.022,
+        "stiffness": 0.6,
+        "dragForce": 0.4,
+        "gravityPower": 0.4,
+        "joints": [
+          {
+            "name": "TS_Spring_hime-cut_back_C_0",
+            "positionGltf": [
+              0.0,
+              1.65675,
+              -0.02941
+            ],
+            "localOffsetFromHead": [
+              0.0,
+              0.18354,
+              -0.02141
+            ],
+            "hitRadius": 0.022,
+            "stiffness": 0.66,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_C_1",
+            "positionGltf": [
+              0.0,
+              1.58854,
+              -0.11245
+            ],
+            "localOffsetFromHead": [
+              0.0,
+              0.11534,
+              -0.10445
+            ],
+            "hitRadius": 0.02121,
+            "stiffness": 0.63,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_C_2",
+            "positionGltf": [
+              0.0,
+              1.47826,
+              -0.124
+            ],
+            "localOffsetFromHead": [
+              0.0,
+              0.00505,
+              -0.116
+            ],
+            "hitRadius": 0.02042,
+            "stiffness": 0.6,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_C_3",
+            "positionGltf": [
+              0.0,
+              1.36745,
+              -0.12668
+            ],
+            "localOffsetFromHead": [
+              0.0,
+              -0.10576,
+              -0.11868
+            ],
+            "hitRadius": 0.01962,
+            "stiffness": 0.57,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_C_4",
+            "positionGltf": [
+              0.0,
+              1.25976,
+              -0.15064
+            ],
+            "localOffsetFromHead": [
+              0.0,
+              -0.21345,
+              -0.14264
+            ],
+            "hitRadius": 0.01883,
+            "stiffness": 0.54,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_C_5",
+            "positionGltf": [
+              0.0,
+              1.14846,
+              -0.15138
+            ],
+            "localOffsetFromHead": [
+              0.0,
+              -0.32475,
+              -0.14338
+            ],
+            "hitRadius": 0.01804,
+            "stiffness": 0.51,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "back_R",
+        "region": "back",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 6,
+        "lengthM": 0.5526,
+        "hitRadius": 0.022,
+        "stiffness": 0.6,
+        "dragForce": 0.4,
+        "gravityPower": 0.4,
+        "joints": [
+          {
+            "name": "TS_Spring_hime-cut_back_R_0",
+            "positionGltf": [
+              -0.01208,
+              1.65508,
+              -0.02148
+            ],
+            "localOffsetFromHead": [
+              -0.01208,
+              0.18188,
+              -0.01348
+            ],
+            "hitRadius": 0.022,
+            "stiffness": 0.66,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_R_1",
+            "positionGltf": [
+              -0.06821,
+              1.58015,
+              -0.06803
+            ],
+            "localOffsetFromHead": [
+              -0.06821,
+              0.10694,
+              -0.06003
+            ],
+            "hitRadius": 0.02121,
+            "stiffness": 0.63,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_R_2",
+            "positionGltf": [
+              -0.07446,
+              1.46994,
+              -0.08103
+            ],
+            "localOffsetFromHead": [
+              -0.07446,
+              -0.00327,
+              -0.07303
+            ],
+            "hitRadius": 0.02042,
+            "stiffness": 0.6,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_R_3",
+            "positionGltf": [
+              -0.07408,
+              1.36993,
+              -0.12676
+            ],
+            "localOffsetFromHead": [
+              -0.07408,
+              -0.10328,
+              -0.11876
+            ],
+            "hitRadius": 0.01962,
+            "stiffness": 0.57,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_R_4",
+            "positionGltf": [
+              -0.07181,
+              1.25936,
+              -0.14992
+            ],
+            "localOffsetFromHead": [
+              -0.07181,
+              -0.21385,
+              -0.14192
+            ],
+            "hitRadius": 0.01883,
+            "stiffness": 0.54,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_back_R_5",
+            "positionGltf": [
+              -0.0707,
+              1.14546,
+              -0.15074
+            ],
+            "localOffsetFromHead": [
+              -0.0707,
+              -0.32775,
+              -0.14274
+            ],
+            "hitRadius": 0.01804,
+            "stiffness": 0.51,
+            "dragForce": 0.4,
+            "gravityPower": 0.4,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "side_L",
+        "region": "side",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 2,
+        "lengthM": 0.2449,
+        "hitRadius": 0.018,
+        "stiffness": 0.82,
+        "dragForce": 0.46,
+        "gravityPower": 0.3,
+        "joints": [
+          {
+            "name": "TS_Spring_hime-cut_side_L_0",
+            "positionGltf": [
+              0.02043,
+              1.65647,
+              -0.00142
+            ],
+            "localOffsetFromHead": [
+              0.02043,
+              0.18326,
+              0.00658
+            ],
+            "hitRadius": 0.018,
+            "stiffness": 0.902,
+            "dragForce": 0.46,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_side_L_1",
+            "positionGltf": [
+              0.07774,
+              1.60729,
+              0.02675
+            ],
+            "localOffsetFromHead": [
+              0.07774,
+              0.13408,
+              0.03475
+            ],
+            "hitRadius": 0.01692,
+            "stiffness": 0.8337,
+            "dragForce": 0.46,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_side_L_2",
+            "positionGltf": [
+              0.08975,
+              1.52704,
+              0.03548
+            ],
+            "localOffsetFromHead": [
+              0.08975,
+              0.05384,
+              0.04348
+            ],
+            "hitRadius": 0.01584,
+            "stiffness": 0.7653,
+            "dragForce": 0.46,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_side_L_3",
+            "positionGltf": [
+              0.08696,
+              1.44446,
+              0.03906
+            ],
+            "localOffsetFromHead": [
+              0.08696,
+              -0.02875,
+              0.04706
+            ],
+            "hitRadius": 0.01476,
+            "stiffness": 0.697,
+            "dragForce": 0.46,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "side_R",
+        "region": "side",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 2,
+        "lengthM": 0.2449,
+        "hitRadius": 0.018,
+        "stiffness": 0.82,
+        "dragForce": 0.46,
+        "gravityPower": 0.3,
+        "joints": [
+          {
+            "name": "TS_Spring_hime-cut_side_R_0",
+            "positionGltf": [
+              -0.02043,
+              1.65647,
+              -0.00142
+            ],
+            "localOffsetFromHead": [
+              -0.02043,
+              0.18326,
+              0.00658
+            ],
+            "hitRadius": 0.018,
+            "stiffness": 0.902,
+            "dragForce": 0.46,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_side_R_1",
+            "positionGltf": [
+              -0.07774,
+              1.60729,
+              0.02675
+            ],
+            "localOffsetFromHead": [
+              -0.07774,
+              0.13408,
+              0.03475
+            ],
+            "hitRadius": 0.01692,
+            "stiffness": 0.8337,
+            "dragForce": 0.46,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_side_R_2",
+            "positionGltf": [
+              -0.08975,
+              1.52704,
+              0.03548
+            ],
+            "localOffsetFromHead": [
+              -0.08975,
+              0.05384,
+              0.04348
+            ],
+            "hitRadius": 0.01584,
+            "stiffness": 0.7653,
+            "dragForce": 0.46,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_hime-cut_side_R_3",
+            "positionGltf": [
+              -0.08696,
+              1.44446,
+              0.03906
+            ],
+            "localOffsetFromHead": [
+              -0.08696,
+              -0.02875,
+              0.04706
+            ],
+            "hitRadius": 0.01476,
+            "stiffness": 0.697,
+            "dragForce": 0.46,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "qa": {
+    "bytes": 1443144,
+    "minClearanceMm": 1.064,
+    "verticesInside": 0,
+    "gltfValidateErrors": 0,
+    "gltfValidateWarnings": 0,
+    "bmesh": {
+      "TS_AuthoredHair_hime-cut_LOD0": {
+        "verts": 5960,
+        "faces": 11520,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_hime-cut_LOD1": {
+        "verts": 2768,
+        "faces": 5208,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_hime-cut_LOD2": {
+        "verts": 864,
+        "faces": 1648,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      }
+    },
+    "springChainCount": 5
+  },
+  "passed": true,
+  "errors": [],
+  "seconds": 1.84
+}

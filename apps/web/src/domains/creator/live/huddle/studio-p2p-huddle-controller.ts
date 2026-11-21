@@ -57,6 +57,10 @@ export interface HuddleDependencies {
   createStream?: (tracks: MediaStreamTrack[]) => MediaStream;
   /** Optional RTC-only cohort gate. Virtual Space uses this to keep a huddle proximity-scoped. */
   peerFilter?: (participant: StudioLiveParticipant) => boolean;
+  /** Allow invited guest-voice sessions even if wire role falls back to viewer. */
+  allowViewerVoice?: boolean;
+  /** Screen share quality & audio capture preferences (defaults to 30fps with optional audio). */
+  screenShareOptions?: { readonly frameRate?: number; readonly audio?: boolean };
   /** Private-room authority is checked again after every device prompt, before any track attaches. */
   authorityValid?: () => boolean;
   captureRevision?: () => number;
@@ -118,7 +122,8 @@ export class StudioP2pHuddleController {
     this.listeners.add(listener); return () => { this.listeners.delete(listener); };
   }
   start(): void {
-    if (this.closed || this.unsubscribe || this.self.role === "viewer" || this.deps.authorityValid?.() === false) return;
+    const viewerBlocked = this.self.role === "viewer" && !this.deps.allowViewerVoice;
+    if (this.closed || this.unsubscribe || viewerBlocked || this.deps.authorityValid?.() === false) return;
     this.unsubscribe = this.port.subscribe((sender, raw) => this.receive(sender, raw));
     this.sync();
     this.timer = setInterval(() => this.sync(), 3_000);
@@ -129,7 +134,7 @@ export class StudioP2pHuddleController {
     if (this.deps.authorityValid?.() === false) return [];
     return this.port.getPeers().filter((peer) =>
       peer.sessionId !== this.self.sessionId
-      && peer.role !== "viewer"
+      && (peer.role !== "viewer" || Boolean(this.deps.allowViewerVoice))
       && !this.blocked.has(peer.sessionId)
       && (!this.conversation || this.conversation.memberIds.includes(peer.sessionId))
       && (this.deps.peerFilter?.(peer) ?? true)
@@ -578,8 +583,24 @@ export class StudioP2pHuddleController {
     try {
       const constraints = { video: { width: { ideal: 640, max: 1280 }, height: { ideal: 360, max: 720 },
         frameRate: { ideal: 15, max: 24 }, facingMode: { ideal: facingMode } }, audio: false };
+      const screenFps = Math.max(15, Math.min(60, Math.round(this.deps.screenShareOptions?.frameRate ?? 30)));
+      const wantScreenAudio = this.deps.screenShareOptions?.audio ?? true;
+      const acquireScreen = async (): Promise<MediaStream> => {
+        if (this.deps.getDisplayMedia) return this.deps.getDisplayMedia();
+        try {
+          return await navigator.mediaDevices.getDisplayMedia({
+            video: { frameRate: { ideal: screenFps, max: screenFps } },
+            audio: wantScreenAudio,
+          });
+        } catch {
+          return navigator.mediaDevices.getDisplayMedia({
+            video: { frameRate: { ideal: screenFps, max: screenFps } },
+            audio: false,
+          });
+        }
+      };
       const stream = mode === "screen"
-        ? await (this.deps.getDisplayMedia?.() ?? navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { max: 15 } }, audio: false }))
+        ? await acquireScreen()
         : await (this.deps.getUserMedia?.(constraints) ?? navigator.mediaDevices.getUserMedia(constraints));
       this.acceptCapture("video", stream, generation, mode === "screen", mode === "camera" ? facingMode : undefined, authorityRevision);
     } catch { if (!this.closed && generation === this.mediaGeneration.video) this.fail("영상을 켜지 못했거나 공유를 취소했습니다. 브라우저 권한을 확인해 주세요."); }

@@ -6,6 +6,12 @@
  * `@generate-fresh-ideas` Mode A(5-Lens 요약) 및 Mode B(채널별 완성형 초안)를 생성한다.
  */
 
+import {
+  evaluateCentripetalCatmullCurvatureAdaptiveStamps,
+  evaluateSubpixelDualEnvelopeLineartAA,
+} from "../../engine/brush-engine/competitor-wave37-kernels";
+import { evaluateBrushLabLinkedInkBarycentricSuite } from "../../engine/brush-engine/linked-ink-barycentric";
+
 export type WebtoonBrushGenreId =
   | "action-gpen-slash"
   | "romance-watercolor-glow"
@@ -75,7 +81,7 @@ export const WEBTOON_BRUSH_GENRE_RECOMMENDATIONS: readonly WebtoonBrushGenreReco
       enableWetBeta: false,
       enableKmBeta: false,
       rationaleKo:
-        "급격한 속도 변화에서도 코너 보존과 날카로운 끝선 테이퍼(T_SHARP 97.4점)를 유지합니다.",
+        "급격한 속도 변화에서도 코너 보존과 4×4 서브픽셀 듀얼 엔벨로프 칼끝 테이퍼를 유지합니다.",
     },
     {
       genreId: "romance-watercolor-glow",
@@ -127,6 +133,65 @@ export interface EvaluateWebtoonBrushVerifyAiInput {
   readonly chromaPreservationGain01: number;
   readonly mudEliminationGain01: number;
   readonly eightHourFrameDriftPct: number;
+  /** 선택적 실측 테이퍼·AA 텔레메트리 (생략 시 실제 Wave 37 듀얼-엔벨로프 AA + 구심 Catmull-Rom 커널 실행) */
+  readonly taperTelemetry?: {
+    readonly edgeStaircaseVarianceReduction01: number;
+    readonly tipSubpixelSharpness01: number;
+    readonly centripetalAdaptiveScallopRatio01: number;
+    readonly cornerKinkReductionRatio01: number;
+  };
+  /** 선택적 실측 2D↔3D Linked Ink 바리센트릭 재투영 텔레메트리 (생략 시 실제 3D 투영/Z-bias 스위트 실행) */
+  readonly linkedInkTelemetry?: {
+    readonly bridgeReliabilityIndex: number;
+  };
+}
+
+function clamp01(v: number): number {
+  if (!Number.isFinite(v)) return 0;
+  return v <= 0 ? 0 : v >= 1 ? 1 : v;
+}
+
+function measureTaperSharpnessFromKernels(
+  genreId: WebtoonBrushGenreId,
+  override?: EvaluateWebtoonBrushVerifyAiInput["taperTelemetry"],
+): number {
+  if (override) {
+    const aa = clamp01(override.edgeStaircaseVarianceReduction01 / 0.65);
+    const tip = clamp01(override.tipSubpixelSharpness01 / 0.9);
+    const scallop = clamp01((0.025 - override.centripetalAdaptiveScallopRatio01) / 0.015);
+    const kink = clamp01(override.cornerKinkReductionRatio01 / 0.75);
+    return Number((100 * (0.35 * aa + 0.3 * tip + 0.2 * scallop + 0.15 * kink)).toFixed(1));
+  }
+
+  const exitVelocity =
+    genreId === "action-gpen-slash"
+      ? 1680
+      : genreId === "noir-heavy-halftone"
+        ? 1560
+        : 1520;
+  const subpixelAa = evaluateSubpixelDualEnvelopeLineartAA({
+    canvasSizePx: 48,
+    strokeWidthPx: 7,
+    exitVelocityPxPerSec: exitVelocity,
+    aaBandPx: 1.25,
+  });
+  const centripetal = evaluateCentripetalCatmullCurvatureAdaptiveStamps({
+    controlPoints: [
+      { x: 8, y: 40, pressure01: 0.35 },
+      { x: 34, y: 10, pressure01: 0.72 },
+      { x: 52, y: 46, pressure01: 0.88 },
+      { x: 84, y: 14, pressure01: 0.42 },
+    ],
+    baseDiameterPx: 14,
+    baseSpacingRatio: 0.12,
+    curvatureTighteningGain: 2.6,
+  });
+
+  const aa = clamp01(subpixelAa.edgeStaircaseVarianceReduction01 / 0.65);
+  const tip = clamp01(subpixelAa.tipSubpixelSharpness01 / 0.9);
+  const scallop = clamp01((0.025 - centripetal.centripetalAdaptiveScallopRatio01) / 0.015);
+  const kink = clamp01(centripetal.cornerKinkReductionRatio01 / 0.75);
+  return Number((100 * (0.35 * aa + 0.3 * tip + 0.2 * scallop + 0.15 * kink)).toFixed(1));
 }
 
 export function evaluateWebtoonBrushVerifyAiGate(
@@ -138,6 +203,8 @@ export function evaluateWebtoonBrushVerifyAiGate(
     chromaPreservationGain01,
     mudEliminationGain01,
     eightHourFrameDriftPct,
+    taperTelemetry,
+    linkedInkTelemetry,
   } = input;
 
   const genreRecommendation = getWebtoonBrushGenreRecommendation(genreId);
@@ -149,12 +216,22 @@ export function evaluateWebtoonBrushVerifyAiGate(
     ? Math.max(0, eightHourFrameDriftPct)
     : 100;
 
-  const taperSharpnessScore100 =
-    genreId === "action-gpen-slash" ? 97.4 : genreId === "noir-heavy-halftone" ? 95.8 : 94.6;
+  const taperSharpnessScore100 = measureTaperSharpnessFromKernels(genreId, taperTelemetry);
   const pressureVelocityLinearity100 = Number(
     Math.min(100, Math.max(0, safeComposite + 1.2)).toFixed(1),
   );
-  const linkedInk3dProjectionStability100 = 96.2;
+  const linkedInk3dProjectionStability100 = Number(
+    Math.min(
+      100,
+      Math.max(
+        0,
+        linkedInkTelemetry && Number.isFinite(linkedInkTelemetry.bridgeReliabilityIndex)
+          ? linkedInkTelemetry.bridgeReliabilityIndex
+          : evaluateBrushLabLinkedInkBarycentricSuite({ cameraYawDeg: 22, syncLatencyMs: 1.2 })
+              .bridgeReliabilityIndex,
+      ),
+    ).toFixed(1),
+  );
   const wetPigmentChromaRetention100 = Number(
     Math.min(
       100,

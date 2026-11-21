@@ -144,6 +144,43 @@ async function openFirstUseful3dSurface(page) {
   return null;
 }
 
+async function auditCharacterWebglCanvas(page, target, baseUrl) {
+  let characterUrl;
+  try {
+    const parsed = new URL(baseUrl);
+    parsed.pathname = "/studio/character";
+    parsed.search = "";
+    parsed.hash = "";
+    characterUrl = parsed.toString();
+  } catch {
+    return null;
+  }
+  try {
+    await page.goto(characterUrl, { waitUntil: "domcontentloaded", timeout: 90_000 });
+    await page.locator('[data-character-shaper="true"] [data-character-shaper-viewport] canvas')
+      .first()
+      .waitFor({ state: "visible", timeout: 30_000 })
+      .catch(() => undefined);
+    await page.waitForTimeout(1_500);
+    const inspected = await inspectPage(page, target);
+    const classifiedCanvases = (inspected.canvases ?? []).map(classifyStudio3dCanvas);
+    return {
+      url: characterUrl,
+      canvases: classifiedCanvases,
+      relevantCanvases: classifiedCanvases.filter((canvas) => canvas.relevant).length,
+      blurryCanvases: classifiedCanvases.filter((canvas) => canvas.relevant && canvas.potentiallyBlurry).length,
+    };
+  } catch (error) {
+    return {
+      url: characterUrl,
+      canvases: [],
+      relevantCanvases: 0,
+      blurryCanvases: 0,
+      error: String(error),
+    };
+  }
+}
+
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const targetReports = [];
@@ -197,6 +234,7 @@ try {
     let rootAudit = null;
     let openedSurface = null;
     let surfaceAudit = null;
+    let characterCanvasAudit = null;
     if (!navigationError) {
       rootAudit = await inspectPage(page, target);
       openedSurface = await openFirstUseful3dSurface(page);
@@ -207,6 +245,13 @@ try {
         }).catch(() => undefined);
         surfaceAudit = await inspectPage(page, target);
       }
+      characterCanvasAudit = await auditCharacterWebglCanvas(page, target, url);
+      if (characterCanvasAudit?.relevantCanvases > 0) {
+        await page.screenshot({
+          path: path.join(outputDir, `${target.name}-character-webgl.png`),
+          fullPage: false,
+        }).catch(() => undefined);
+      }
     }
 
     const audit = surfaceAudit ?? rootAudit ?? {
@@ -215,16 +260,28 @@ try {
       webgl: { available: false },
       threeDEntrypoints: [],
     };
+    const mergedCanvases = [
+      ...(audit.canvases ?? []).map(classifyStudio3dCanvas),
+      ...(characterCanvasAudit?.canvases ?? []),
+    ];
     targetReports.push({
       ...target,
       navigationError,
       openedSurface,
+      characterCanvasAudit: characterCanvasAudit
+        ? {
+            url: characterCanvasAudit.url,
+            relevantCanvases: characterCanvasAudit.relevantCanvases,
+            blurryCanvases: characterCanvasAudit.blurryCanvases,
+            error: characterCanvasAudit.error ?? null,
+          }
+        : null,
       title: audit.title,
       location: audit.location,
       bodyTextLength: audit.bodyTextLength,
       webgl: audit.webgl,
       threeDEntrypoints: rootAudit?.threeDEntrypoints ?? [],
-      canvases: (audit.canvases ?? []).map(classifyStudio3dCanvas),
+      canvases: mergedCanvases,
       images: (audit.images ?? []).map(classifyStudio3dImage),
       consoleErrors,
       pageErrors,

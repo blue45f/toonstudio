@@ -1,10 +1,11 @@
-import { Ellipsis, Map as MapIcon, SmilePlus, UsersRound } from "lucide-react";
+import { Camera, Ellipsis, Map as MapIcon, SmilePlus, UsersRound } from "lucide-react";
 import { memo, type ReactNode, type RefObject } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { StudioVirtualSpaceMenuSheet } from "../StudioVirtualSpaceActionSheet";
 import type { StudioSpaceEmoteId } from "../studio-virtual-space-emote-catalog";
+import type { StudioThreeCameraMode } from "../three/studio-virtual-space-three-stage-props";
 import { SpaceEmotePicker } from "./SpaceEmotePicker";
 import type { SpaceDockMenuItem, SpaceDockPopover } from "./space-dock-model";
 
@@ -22,6 +23,7 @@ const MENU_GROUPS = {
  */
 export const SpaceMobileDock = memo(function SpaceMobileDock({
   popover, peopleBadge, peopleOpen, mapOpen, moreItems, workLauncher, dockRef,
+  engineMode, cameraMode, onCycleCameraMode,
   onPopover, onEmote, onTogglePeople, onToggleMap,
 }: {
   readonly popover: SpaceDockPopover | null;
@@ -31,6 +33,9 @@ export const SpaceMobileDock = memo(function SpaceMobileDock({
   readonly moreItems: readonly SpaceDockMenuItem[];
   readonly workLauncher: ReactNode;
   readonly dockRef?: RefObject<HTMLElement | null>;
+  readonly engineMode?: "2d" | "3d";
+  readonly cameraMode?: StudioThreeCameraMode;
+  readonly onCycleCameraMode?: () => void;
   readonly onPopover: (next: SpaceDockPopover | null) => void;
   readonly onEmote: (id: StudioSpaceEmoteId) => void;
   readonly onTogglePeople: () => void;
@@ -39,7 +44,20 @@ export const SpaceMobileDock = memo(function SpaceMobileDock({
   const bt = useBilingual("SpaceMobileDock");
   const peopleCount = peopleBadge.incoming > 0 ? peopleBadge.incoming : peopleBadge.nearby;
   const reactionsOpen = popover === "react";
-  return <nav ref={dockRef} className="space-mobile-dock" aria-label={bt("가상 스튜디오 도구", "Virtual studio tools")} data-space-interactive="true">
+  const cameraLabel = cameraMode === "first-person" ? "1인칭" : cameraMode === "third-person" ? "3인칭" : "쿼터";
+  return <nav ref={dockRef} data-testid="space-mobile-dock" data-engine-mode={engineMode} className="space-mobile-dock" aria-label={bt("가상 스튜디오 도구", "Virtual studio tools")} data-space-interactive="true">
+    {engineMode === "3d" && onCycleCameraMode ? (
+      <button
+        type="button"
+        data-testid="space-mobile-camera-cycle-btn"
+        className="space-mobile-dock__slot"
+        aria-label={bt(`3D 시점 전환 (현재 ${cameraLabel})`, `Switch 3D camera (${cameraMode ?? "quarter"})`)}
+        onClick={onCycleCameraMode}
+      >
+        <Camera size={20} aria-hidden />
+        <span>{bt(cameraLabel, cameraMode === "first-person" ? "1st" : cameraMode === "third-person" ? "3rd" : "Iso")}</span>
+      </button>
+    ) : null}
     {reactionsOpen ? <div className="space-mobile-reactions" data-space-interactive="true">
       <SpaceEmotePicker variant="strip" onEmote={onEmote} />
     </div> : null}

@@ -391,6 +391,7 @@ export function StudioVirtualSpaceWhiteboard({
     ownerSessionId === selfSessionId ? null : authorNameOf(ownerSessionId);
 
   return <section
+    data-testid="space-whiteboard-panel"
     className={cn("studio-whiteboard", docked && "is-docked")}
     data-space-interactive="true"
     aria-label={bt("협업 화이트보드", "Collaboration whiteboard")}
@@ -548,7 +549,7 @@ export function StudioVirtualSpaceWhiteboard({
         onStartDrawing={() => setTool("pen")}
       /> : null}
 
-      <aside className="studio-whiteboard-minimap" aria-label={bt("보드 미니맵", "Board minimap")}>
+      {strokes.length > 0 || notes.length > 0 ? <aside className="studio-whiteboard-minimap" aria-label={bt("보드 미니맵", "Board minimap")}>
         <svg viewBox="0 0 1000 600" aria-hidden="true" focusable="false">
           {strokes.map((stroke) => <polyline
             key={`m:${stroke.ownerSessionId}:${stroke.id}`}
@@ -569,7 +570,7 @@ export function StudioVirtualSpaceWhiteboard({
             opacity={0.9}
           />)}
         </svg>
-      </aside>
+      </aside> : null}
 
       {!snapshot.available ? <WhiteboardOfflinePanel /> : null}
     </div>

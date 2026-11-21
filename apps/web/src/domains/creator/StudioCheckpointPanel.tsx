@@ -61,7 +61,7 @@ function checkpointSnapshotMeta(checkpoint: StudioCheckpoint): {
   readonly autoPreRestore: boolean;
   readonly pageCount: number | null;
 } {
-  const autoPreRestore = /^서버 r\d+ 복원 전(?:\s|$)/u.test(checkpoint.name.trim());
+  const autoPreRestore = /^서버 (?:r|저장 #|버전 #?)\d+ 복원 전(?:\s|$)/u.test(checkpoint.name.trim());
   const payload = checkpoint.payload;
   if (!payload || typeof payload !== "object" || !("pagesList" in payload)) {
     return { autoPreRestore, pageCount: null };
@@ -81,7 +81,7 @@ function modeGuideCopy(tab: "local" | "server" | "collab"): string {
     return "이 기기 저장은 현재 브라우저 전용 스냅샷입니다. ‘이 시점 복원’을 누르면 바로 덮어쓰지 않고 확인 창이 먼저 열립니다(페이지는 ⌘Z 가능 · 제목·마스터 등 문서 정보는 체크포인트 값으로 교체).";
   }
   if (tab === "server") {
-    return "계정 기록은 서버 저장마다 자동 누적됩니다. ‘변경 검토’는 현재 원고를 바꾸지 않는 읽기 전용 비교이며, 복원 확정 시 현재 편집본을 이 기기에 자동 백업한 뒤 새 revision으로 기록합니다.";
+    return "계정 기록은 서버 저장마다 자동 누적됩니다. ‘변경 검토’는 현재 원고를 바꾸지 않는 읽기 전용 비교이며, 복원 확정 시 현재 편집본을 이 기기에 자동 백업한 뒤 새 저장 버전으로 기록합니다.";
   }
   return "협업 워크벤치는 이 기기 보관본과 서버 버전을 현재 원고 변경 없이 나란히 대조합니다.";
 }
@@ -327,7 +327,7 @@ export function StudioCheckpointPanel({
       ]);
       if (!requestIsCurrent()) return;
       if (targetDetail.revision !== targetRevision || baseDetail.revision !== baseRevision) {
-        throw new Error(panelStatusText("studio.panelStatus.checkpoint.revisionMismatch", "요청한 revision과 서버가 반환한 revision이 달라 비교를 중단했습니다."));
+        throw new Error(panelStatusText("studio.panelStatus.checkpoint.revisionMismatch", "요청한 버전과 서버가 반환한 버전이 달라 비교를 중단했습니다."));
       }
       const comparison = await runStudioRevisionComparison(
         {
@@ -377,7 +377,7 @@ export function StudioCheckpointPanel({
       }
       if (serverCurrentRevision !== serverComparison.baseRevision) {
         setConfirmingServerRestore(false);
-        setComparisonError("서버 revision이 비교 후 변경됐어요. 목록을 새로고침하고 다시 검토해 주세요.");
+        setComparisonError("서버 저장 버전이 비교 후 변경됐어요. 목록을 새로고침하고 다시 검토해 주세요.");
         return;
       }
       setServerRestoreBusy(true);
@@ -403,12 +403,12 @@ export function StudioCheckpointPanel({
     comparisonProject ? projectPageLabels(comparisonProject) : {}
   );
 
-  // 협업 워크벤치 비교 쌍: 서버 revision과 로컬 체크포인트를 버전 카드로 묶는다.
+  // 협업 워크벤치 비교 쌍: 서버 저장 버전과 로컬 체크포인트를 버전 카드로 묶는다.
   const collabVersions: readonly CompareVersion[] = [
     ...serverRevisions.map((revision) => ({
       id: `server-r${revision.revision}`,
-      label: `서버 r${revision.revision}`,
-      note: revision.restoredFromRevision !== null ? `r${revision.restoredFromRevision}에서 복원된 기록` : "서버 저장 기록",
+      label: `서버 저장 #${revision.revision}`,
+      note: revision.restoredFromRevision !== null ? `저장 #${revision.restoredFromRevision}에서 복원된 기록` : "서버 저장 기록",
     })),
     ...checkpoints.map((checkpoint) => ({
       id: `local-${checkpoint.id}`,
@@ -510,7 +510,7 @@ export function StudioCheckpointPanel({
           </button>
         </div>
 
-        <div data-testid="checkpoint-status-strip" className="shrink-0 border-b border-line bg-card/35 px-4 py-2.5 text-[0.7rem] leading-relaxed">
+        <div data-testid="checkpoint-status-strip" className="shrink-0 border-b border-line bg-card/35 px-4 py-2.5 text-xs leading-relaxed">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-0.5 font-semibold text-fg-2">
               <HardDrive size={12} aria-hidden /> 이 기기 보관 {checkpoints.length}/{STUDIO_CHECKPOINT_LIMIT}개
@@ -521,8 +521,8 @@ export function StudioCheckpointPanel({
               </span>
             ) : null}
             {serverAvailable ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-good/30 bg-good-soft/35 px-2.5 py-0.5 font-semibold text-good">
-                <Cloud size={12} aria-hidden /> 현재 서버 기준 r{serverCurrentRevision}
+              <span className="inline-flex items-center gap-1 rounded-full border border-good/30 bg-good-soft/35 px-2.5 py-0.5 font-semibold tabular-nums text-good">
+                <Cloud size={12} aria-hidden /> 현재 서버 기준 #{serverCurrentRevision}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-0.5 font-semibold text-fg-3">
@@ -547,7 +547,7 @@ export function StudioCheckpointPanel({
           <div
             id={`${tabListId}-server-panel`}
             role="tabpanel"
-            aria-label={`서버 revision ${selectedServerRevision.revision} 변경 검토`}
+            aria-label={`서버 저장 #${selectedServerRevision.revision} 변경 검토`}
             className="flex min-h-0 flex-1 flex-col"
           >
             <StudioRevisionCompareView
@@ -641,15 +641,15 @@ export function StudioCheckpointPanel({
                     <div className="min-w-0 flex-1">
                       <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-fg">
                         <span className="truncate">{checkpoint.name}</span>
-                        {index === 0 ? <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.62rem] font-semibold text-accent">최신 저장</span> : null}
-                        {meta.autoPreRestore ? <span className="rounded-full bg-good-soft px-2 py-0.5 text-[0.62rem] font-semibold text-good">복원 전 자동 보관</span> : null}
+                        {index === 0 ? <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent">최신 저장</span> : null}
+                        {meta.autoPreRestore ? <span className="rounded-full bg-good-soft px-2 py-0.5 text-xs font-semibold text-good">복원 전 자동 보관</span> : null}
                         {meta.pageCount !== null ? (
-                          <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-[0.62rem] font-medium text-fg-3">
+                          <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-xs font-medium tabular-nums text-fg-3">
                             페이지 {meta.pageCount.toLocaleString("ko-KR")}개
                           </span>
                         ) : null}
                       </p>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[0.68rem] text-fg-3">
+                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-fg-3">
                         <time dateTime={checkpoint.createdAt}>{checkpointDate(checkpoint.createdAt)}</time>
                         <span aria-hidden>·</span>
                         <span>복원 시 확인 창 열림 · 삭제는 영구 제거</span>
@@ -680,8 +680,8 @@ export function StudioCheckpointPanel({
             <div>
               <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-card/45 px-3 py-2.5">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-fg">현재 서버 revision {serverCurrentRevision}</p>
-                  <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
+                  <p className="text-xs font-semibold tabular-nums text-fg">현재 서버 저장 #{serverCurrentRevision}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-fg-3">
                     저장마다 자동 생성하며 최신 20개를 보존합니다. 다른 창이 먼저 저장하면 덮어쓰지 않고 충돌을 알려요.
                   </p>
                 </div>
@@ -703,7 +703,7 @@ export function StudioCheckpointPanel({
                   <div>
                     <Cloud size={24} className="mx-auto text-fg-3" aria-hidden />
                     <p className="mt-2 text-sm font-semibold text-fg-2">{panelStatusText("studio.panelStatus.checkpoint.serverEmpty", "아직 서버에 저장된 버전이 없어요")}</p>
-                    <p className="mt-1 text-xs text-fg-3">로그인한 작품을 저장하면 자동 revision이 생성됩니다.</p>
+                    <p className="mt-1 text-xs text-fg-3">로그인한 작품을 저장하면 서버 버전이 자동으로 기록됩니다.</p>
                   </div>
                 </div>
               ) : (
@@ -714,17 +714,17 @@ export function StudioCheckpointPanel({
                     return (
                       <li key={revision.revision} className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-card/55 px-3 py-2.5">
                         <div className="min-w-0 flex-1">
-                          <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-fg">
-                            revision {revision.revision}
-                            {current ? <span className="rounded-full bg-good-soft px-2 py-0.5 text-[0.62rem] text-good">현재</span> : null}
-                            {stepNote ? <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-[0.62rem] font-medium text-fg-3">{stepNote}</span> : null}
+                          <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold tabular-nums text-fg">
+                            서버 저장 #{revision.revision}
+                            {current ? <span className="rounded-full bg-good-soft px-2 py-0.5 text-xs text-good">현재</span> : null}
+                            {stepNote ? <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-xs font-medium text-fg-3">{stepNote}</span> : null}
                             {revision.restoredFromRevision ? (
-                              <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.62rem] text-accent">
-                                r{revision.restoredFromRevision}에서 복원
+                              <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent">
+                                저장 #{revision.restoredFromRevision}에서 복원
                               </span>
                             ) : null}
                           </p>
-                          <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[0.68rem] text-fg-3">
+                          <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-fg-3">
                             <time dateTime={revision.createdAt}>{checkpointDate(revision.createdAt)}</time>
                             <span aria-hidden>·</span>
                             <span>{current ? "현재 열려 있는 서버 기준" : "읽기 전용 비교 후 복원 결정"}</span>
@@ -747,10 +747,10 @@ export function StudioCheckpointPanel({
           )}
         </div>
 
-        <p className="shrink-0 border-t border-line px-4 py-2 text-[0.68rem] leading-relaxed text-fg-3">
+        <p className="shrink-0 border-t border-line px-4 py-2 text-xs leading-relaxed text-fg-3">
           {visibleTab === "local"
-            ? `이 기기에 저장은 기기 변경에 유지되지 않으므로 JSON 또는 프로젝트 archive도 함께 보관하세요. 최신 ${STUDIO_CHECKPOINT_LIMIT}개까지 저장합니다.`
-            : "서버 복원은 기존 revision을 덮어쓰지 않고 새 revision으로 기록됩니다. 작품 소유자에게만 목록과 내용이 열립니다."}
+            ? `이 기기에 저장은 기기 변경에 유지되지 않으므로 JSON 또는 프로젝트 백업 파일도 함께 보관하세요. 최신 ${STUDIO_CHECKPOINT_LIMIT}개까지 저장합니다.`
+            : "서버 복원은 기존 기록을 덮어쓰지 않고 새 저장 버전으로 기록됩니다. 작품 소유자에게만 목록과 내용이 열립니다."}
         </p>
         </div>
         )}

@@ -38,6 +38,7 @@ export type StudioBrushProgramImportFormat =
   | "sut"
   | "sutg"
   | "bundle"
+  | "brushset"
   | "json";
 
 export class StudioBrushProgramImportError extends Error {

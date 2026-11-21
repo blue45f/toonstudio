@@ -38,9 +38,12 @@ const StudioLineCleanupAndDustSection = lazy(() =>
 
 interface StudioImageAdjustmentsPanelProps {
   selected: ImageEl;
+  readableImageSrc?: string | null;
+  destructiveEditDisabledReason?: string | null;
   filterClipboard: Partial<ImageFilterFields> | null;
   onSetFilterClipboard: (value: Partial<ImageFilterFields> | null) => void;
   onPatch: (patch: Partial<El>) => void;
+  onCreateShadingLayer?: (payload: { readonly dataUrl: string; readonly name: string; readonly blendMode: "source-over" | "multiply"; readonly clipBelow: boolean }) => boolean | void;
   effectFavoriteState: StudioEffectFavoriteState;
   onToggleEffectFavorite: (effectId: StudioEffectId) => void;
   onRememberEffectRecent: (effectId: StudioEffectId) => void;
@@ -569,14 +572,9 @@ const StudioColorMatchSection = lazy(async () => {
   return { default: StudioColorMatchSection };
 });
 
-const StudioShadingAssistSection = lazy(async () => {
-  const panelMod = await import("./shading/StudioShadingAssistPanel");
-  const Panel = panelMod.StudioShadingAssistPanel;
-  function StudioShadingAssistSection() {
-    return <Panel />;
-  }
-  return { default: StudioShadingAssistSection };
-});
+const StudioShadingAssistWiredPanel = lazy(() =>
+  import("./shading/StudioShadingAssistWiredPanel").then((mod) => ({ default: mod.StudioShadingAssistWiredPanel })),
+);
 
 function hasAdjustmentValue(value: unknown) {
   if (value == null) return false;
@@ -635,13 +633,9 @@ function AdjustmentSection({
 }
 
 export function StudioImageAdjustmentsPanel({
-  selected,
-  filterClipboard,
-  onSetFilterClipboard,
-  onPatch,
-  effectFavoriteState,
-  onToggleEffectFavorite,
-  onRememberEffectRecent,
+  selected, readableImageSrc, destructiveEditDisabledReason,
+  filterClipboard, onSetFilterClipboard, onPatch, onCreateShadingLayer,
+  effectFavoriteState, onToggleEffectFavorite, onRememberEffectRecent,
 }: StudioImageAdjustmentsPanelProps) {
   // 채널(r/g/b) 곡선·레벨 필드(curveCh/levelsCh) — ImageEl 타입 선언에는 아직 없어
   // ImageFilterFields로 읽는다(런타임은 같은 요소 객체라 patchEl 스프레드로 그대로 왕복된다).
@@ -1006,7 +1000,7 @@ export function StudioImageAdjustmentsPanel({
       </AdjustmentSection>
 
       <AdjustmentSection title={sectionTitle.shadingAssist} loadingLabel={sectionLoading}>
-        <StudioShadingAssistSection />
+        <StudioShadingAssistWiredPanel selected={selected} readableImageSrc={readableImageSrc} onPatch={onPatch} onCreateShadingLayer={onCreateShadingLayer} destructiveEditDisabledReason={destructiveEditDisabledReason} />
       </AdjustmentSection>
 
       <AdjustmentSection title="선화 정리 · 먼지 제거 · 분위기 색감" loadingLabel={sectionLoading}>

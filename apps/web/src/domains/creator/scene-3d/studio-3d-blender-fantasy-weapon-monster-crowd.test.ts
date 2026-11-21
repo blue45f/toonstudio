@@ -48,6 +48,9 @@ describe("studio-3d-blender-fantasy-weapon-monster-crowd", () => {
 
       expect(idleSolve.solvedLimbs).toHaveLength(monster.limbs.length);
       expect(idleSolve.jacobianConverged).toBe(true);
+      expect(idleSolve.averageResidualMeters).toBeLessThanOrEqual(0.005);
+      expect(wingBreathSolve.jacobianConverged).toBe(true);
+      expect(wingBreathSolve.averageResidualMeters).toBeLessThanOrEqual(0.005);
       expect(wingBreathSolve.coreAuraIntensity).toBeGreaterThan(
         idleSolve.coreAuraIntensity,
       );

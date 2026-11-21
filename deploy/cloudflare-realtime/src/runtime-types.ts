@@ -86,6 +86,8 @@ export interface RealtimeWorkerEnv {
   readonly REALTIME_COMMENTS_MAX_BYTES_PER_WINDOW?: string;
   readonly REALTIME_SCREEN_MAX_EVENTS_PER_WINDOW?: string;
   readonly REALTIME_SCREEN_MAX_BYTES_PER_WINDOW?: string;
+  readonly REALTIME_YJS_SPACE_MAX_EVENTS_PER_WINDOW?: string;
+  readonly REALTIME_YJS_SPACE_MAX_BYTES_PER_WINDOW?: string;
 }
 
 declare class WebSocketPair {

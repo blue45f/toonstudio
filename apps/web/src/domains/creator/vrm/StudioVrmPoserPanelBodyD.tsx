@@ -7,9 +7,9 @@ import {
   AlertTriangle,
   ChevronDown,
   Loader2,
+  Lock,
   Sparkles,
   WandSparkles,
-  X,
   Webcam,
 } from "lucide-react";
 import { StudioDeviceStorageMessage } from "../storage-feedback/StudioDeviceStorageMessage";
@@ -206,7 +206,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                     </p>
 
                     {webcamActive && (
-                      <div className="relative mx-auto mb-3 aspect-video max-h-[28dvh] w-full max-w-[min(100%,16rem)] overflow-hidden rounded-lg border border-line bg-black sm:max-h-none sm:max-w-none">
+                      <div className="relative mx-auto mb-3 aspect-video max-h-[28dvh] w-full max-w-[min(100%,16rem)] overflow-hidden rounded-lg border border-line bg-canvas sm:max-h-none sm:max-w-none">
                         <video
                           ref={videoRef}
                           autoPlay
@@ -217,7 +217,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                             trackingOptions.mirrorMode ? "scale-x-[-1]" : ""
                           )}
                         />
-                        <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[0.66rem] font-bold text-white">
+                        <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded bg-panel/85 px-1.5 py-0.5 text-xs font-semibold text-fg backdrop-blur-sm">
                           <span
                             className={cx(
                               "size-1.5 rounded-full",
@@ -228,7 +228,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                         </div>
                         {faceLostLong && (
                           <div
-                            className="absolute inset-x-2 bottom-2 rounded bg-black/70 px-2 py-1 text-center text-[0.66rem] font-semibold text-warn"
+                            className="absolute inset-x-2 bottom-2 rounded bg-panel/90 px-2 py-1 text-center text-xs font-semibold text-warn backdrop-blur-sm"
                             role="status"
                           >
                             {frozenStatus4Text("studio.frozenStatus4.vrmD.faceNotVisible", "얼굴이 보이지 않아요 — 카메라 정면에 위치해 주세요")}
@@ -236,11 +236,11 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                         )}
                         {calibrating && (
                           <div
-                            className="absolute inset-0 grid place-items-center bg-black/45 px-3 text-center"
+                            className="absolute inset-0 grid place-items-center bg-canvas/75 px-3 text-center backdrop-blur-sm"
                             role="status"
                             aria-live="polite"
                           >
-                            <p className="text-[0.72rem] font-bold leading-relaxed text-white">
+                            <p className="text-xs font-semibold leading-relaxed text-fg">
                               {calibrationCountdown > 0
                                 ? frozenStatus4Text("studio.frozenStatus4.vrmD.calibHoldStill", { count: calibrationCountdown }, "정면을 보고 무표정을 유지하세요… {count}")
                                 : frozenStatus4Text("studio.frozenStatus4.vrmD.calibMeasuring", { percent: Math.round(calibrationProgress * 100) }, "측정 중… {percent}%")}
@@ -262,10 +262,10 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                       <>
                         {!window.isSecureContext && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && (
                           <div className="flex items-start gap-2 rounded-lg border border-warn/25 bg-warn/10 p-3 text-xs text-warn dark:text-warn mb-3 leading-relaxed">
-                            <AlertTriangle className="shrink-0 mt-0.5" size={14} />
+                            <AlertTriangle className="shrink-0 mt-0.5" size={16} strokeWidth={1.5} aria-hidden />
                             <div>
-                              <p className="font-semibold mb-1 text-[0.72rem]">{frozenStatus4Text("studio.frozenStatus4.vrmD.insecureEnvTitle", "⚠️ 비보안 환경 접속 (카메라 비활성화)")}</p>
-                              <p className="text-[0.65rem] opacity-90 text-left">
+                              <p className="font-semibold mb-1 text-xs">{frozenStatus4Text("studio.frozenStatus4.vrmD.insecureEnvTitle", "⚠️ 비보안 환경 접속 (카메라 비활성화)").replace(/^(?:\u26a0\ufe0f?|\s)+/u, "")}</p>
+                              <p className="text-xs opacity-90 text-left">
                                 현재 비보안(HTTP) 주소로 접속 중입니다. 브라우저 정책상 웹캠은 HTTPS 또는 localhost 에서만 동작합니다.
                                 <br />
                                 {window.location.protocol === "https:" ? "" : (
@@ -277,9 +277,9 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                         )}
                         {window.isSecureContext && browserPermissionState === "denied" && (
                           <div className="flex items-start gap-2 rounded-lg border border-bad/25 bg-bad/10 p-3 text-xs text-bad mb-3 leading-relaxed">
-                            <AlertTriangle className="shrink-0 mt-0.5" size={14} />
+                            <AlertTriangle className="shrink-0 mt-0.5" size={16} strokeWidth={1.5} aria-hidden />
                             <div className="flex-1">
-                              <p className="font-semibold mb-1 text-[0.72rem]">{frozenStatus4Text("studio.frozenStatus4.vrmD.cameraDeniedTitle", "⚠️ 카메라 권한 차단됨 (팝업이 뜨지 않음)")}</p>
+                              <p className="font-semibold mb-1 text-xs">{frozenStatus4Text("studio.frozenStatus4.vrmD.cameraDeniedTitle", "⚠️ 카메라 권한 차단됨 (팝업이 뜨지 않음)").replace(/^(?:\u26a0\ufe0f?|\s)+/u, "")}</p>
                               <p className="text-[0.65rem] opacity-90 text-left mb-1.5">
                                 브라우저 UI에서는 허용한 것처럼 보이지만, 여전히 즉시 차단됩니다. (두 단계 권한 모두 확인 필요)
                               </p>
@@ -304,7 +304,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                     {webcamError && (
                       <div className="flex flex-col gap-2 rounded-lg border border-bad/25 bg-bad/10 p-3 text-xs text-bad mb-3 leading-relaxed">
                         <div className="flex items-start gap-2">
-                          <AlertTriangle className="shrink-0 mt-0.5" size={14} />
+                          <AlertTriangle className="shrink-0 mt-0.5" size={16} strokeWidth={1.5} aria-hidden />
                           <div>
                             <p className="font-semibold mb-1 text-[0.72rem]">
                               {webcamErrorStage === "engine" ? frozenStatus4Text("studio.frozenStatus4.vrmD.errorEngineTitle", "동작 인식 엔진 오류") : frozenStatus4Text("studio.frozenStatus4.vrmD.errorCameraTitle", "카메라 권한 및 연결 오류")}
@@ -350,11 +350,9 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                     )}
 
                     {showConsent && !webcamActive && (
-                      <div className="rounded-lg border border-accent/25 bg-accent-soft/30 p-3 mb-3 text-[0.68rem] leading-relaxed text-fg-2 mt-3">
-                        <p className="font-bold mb-1.5 flex items-center gap-1 text-accent">
-                          🔒 개인정보 보호 및 카메라 활성화 안내
-                        </p>
-                        <div className="mb-2.5 text-fg-3 leading-relaxed text-[0.65rem] space-y-1">
+                      <div className="rounded-lg border border-accent/25 bg-accent-soft/30 p-3 mb-3 text-xs leading-relaxed text-fg-2 mt-3">
+                        <p className="font-bold mb-1.5 flex items-center gap-1.5 text-accent"><Lock size={14} strokeWidth={1.5} className="shrink-0" aria-hidden />개인정보 보호 및 카메라 활성화 안내</p>
+                        <div className="mb-2.5 text-fg-3 leading-relaxed text-xs space-y-1">
                           <p>웹캠 실시간 페이스 트래킹을 이용하려면 카메라 권한 허용이 필요합니다.</p>
                           <p className="text-fg font-semibold mt-1">촬영되는 모든 영상은 외부 서버로 전송되지 않으며,</p>
                           <p>사용자 기기 내부에서 실시간 AI 모델에 의해 로컬로만 분석 처리되어 프라이버시가 안전하게 보호됩니다.</p>
@@ -362,7 +360,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            className="rounded bg-accent px-3 py-1.5 text-white font-semibold hover:bg-accent/90 cursor-pointer text-xs"
+                            className="rounded bg-accent px-3 py-1.5 text-on-accent font-semibold hover:bg-accent/90 cursor-pointer text-xs"
                             onClick={() => {
                               rememberStudioVrmWebcamSessionConsent();
                               setWebcamConsentGranted(true);

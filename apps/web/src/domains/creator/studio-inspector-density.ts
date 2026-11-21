@@ -716,3 +716,65 @@ export function inspectorSectionLabel(id: string): string | null {
   }
   return null;
 }
+
+export type StudioInspectorDomPriority = "essential" | "contextual" | "advanced" | "chrome";
+
+export interface StudioInspectorEssentialBudgetSummary {
+  readonly panel: StudioInspectorPanelId;
+  readonly essentialCount: number;
+  readonly advancedCount: number;
+  readonly withinBudget: boolean;
+  readonly budget: typeof STUDIO_INSPECTOR_DEFAULT_BUDGET;
+}
+
+/** `data-inspector-priority="essential"` 대상 기본 그룹 id 목록. */
+export function inspectorEssentialGroupIds(
+  panel: StudioInspectorPanelId,
+): readonly string[] {
+  return inspectorGroupsByTier(panel, "default").map((group) => group.id);
+}
+
+/** 패널별 기본(5~9) 및 고급 컨트롤 예산 충족 여부를 계산한다. */
+export function inspectorEssentialBudgetSummary(
+  panel: StudioInspectorPanelId,
+): StudioInspectorEssentialBudgetSummary {
+  const essentialCount = inspectorDefaultLeafCount(panel);
+  const advancedCount = inspectorTotalLeafCount(panel) - essentialCount;
+  return {
+    panel,
+    essentialCount,
+    advancedCount,
+    withinBudget:
+      essentialCount >= STUDIO_INSPECTOR_DEFAULT_BUDGET.min
+      && essentialCount <= STUDIO_INSPECTOR_DEFAULT_BUDGET.max,
+    budget: STUDIO_INSPECTOR_DEFAULT_BUDGET,
+  };
+}
+
+/** 닫힌 `<details>` 요약 행에 표시할 고정폭 활성 카운트 배지 문자열을 생성한다. */
+export function formatInspectorCollapsedActiveBadge(
+  activeCount: number,
+  options: { readonly unitLabel?: string; readonly emptyLabel?: string } = {},
+): string {
+  const safe = Number.isFinite(activeCount) ? Math.max(0, Math.floor(activeCount)) : 0;
+  const unitLabel = options.unitLabel ?? "활성";
+  const emptyLabel = options.emptyLabel ?? "꺼짐";
+  return safe > 0 ? `${unitLabel} ${safe}` : emptyLabel;
+}
+
+/** 이미지 레이어 보조 효과(경계·망점·효과 스택) 중 현재 켜진 항목 수를 집계한다. */
+export function countActiveImageLayerEffects(input: {
+  readonly borderEnabled?: boolean;
+  readonly halftoneEnabled?: boolean;
+  readonly effectsStack?: readonly { readonly enabled?: boolean }[] | null;
+}): number {
+  let count = 0;
+  if (input.borderEnabled) count += 1;
+  if (input.halftoneEnabled) count += 1;
+  if (Array.isArray(input.effectsStack)) {
+    for (const effect of input.effectsStack) {
+      if (effect && effect.enabled !== false) count += 1;
+    }
+  }
+  return count;
+}

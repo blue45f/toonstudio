@@ -7,18 +7,21 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { QUALITY_PRESET_LABELS_KO, TONE_MAPPINGS, applyQualityPreset } from "../../../contracts";
 import { BETA_FEATURE_HINTS_KO, BETA_FEATURE_IDS, EXTENDED_FEATURE_LABELS_KO, hasBetaFeatures, readBetaFeatures } from "../../../render/beta-features";
 import { resolveOutlinePressureAspect } from "../../../render/outline-policy";
+import { hasEyeballHighlight, readKitHeadFaceShadowUv, readRenderTelemetry } from "../../../render/render-telemetry";
 import { readSceneFeatures } from "../../../render/scene-features";
 import { applyLabShaperGen3dLookToShading, buildLabShaperGen3dPipelineSpec, LAB_SHAPER_GEN3D_LOOK_PRESETS, type LabShaperGen3dLookId } from "../../../render/shaper-gen3d-bridge";
-import { evaluateCharacterLabVerifyAiGate, type CharacterLabFreshLensId } from "../../../render/style/character-verify-ai-fresh-ideas";
+import { evaluateCharacterLabVerifyAiGate, type CharacterLabFreshLensId, type CharacterLabRenderTelemetry } from "../../../render/style/character-verify-ai-fresh-ideas";
 import { describeAdapter } from "../engine-status-text";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
+import { RenderEyeballHighlightControls } from "./render-eyeball-highlight-controls";
 import { RenderFeatureStatus } from "./render-feature-status";
 import { RenderMaterialLightingControls } from "./render-material-lighting-controls";
 import { hudRows } from "./viewport-interactions";
 
 import type { HudSample, QualityPresetId, ShadingProfile, ToneMapping } from "../../../contracts";
 import type { BetaFeatureId, BetaFeatureReport, BetaFeatureState } from "../../../render/beta-features";
+import type { EyeballHighlightConfig, EyeballHighlightState } from "../../../render/render-telemetry";
 import type { SceneFeatureReport } from "../../../render/scene-features";
 import type { ChangeEvent } from "react";
 
@@ -87,6 +90,11 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
   const [tripoDelight, setTripoDelight] = useState(true);
   const [disableHairInline, setDisableHairInline] = useState(true);
   const [selectedLensId, setSelectedLensId] = useState<CharacterLabFreshLensId>("contrarian-take");
+  const [renderTelemetry, setRenderTelemetry] = useState<CharacterLabRenderTelemetry | null>(null);
+  const telemetryKeyRef = useRef("");
+  const [kitHeadHasFaceShadowUv, setKitHeadHasFaceShadowUv] = useState(false);
+  const [eyeballHighlight, setEyeballHighlight] = useState<EyeballHighlightState | null>(null);
+  const eyeballKeyRef = useRef("");
   useEffect(() => {
     setIblDraft(shading.ibl.intensity);
   }, [shading.ibl.intensity]);
@@ -98,8 +106,9 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         lookId: tripoLookId,
         delight: tripoDelight,
         disableHairInline,
+        ...(renderTelemetry ? { renderTelemetry } : {}),
       }),
-    [shading, tripoLookId, tripoDelight, disableHairInline],
+    [shading, tripoLookId, tripoDelight, disableHairInline, renderTelemetry],
   );
 
   const activeLensRemix = useMemo(
@@ -114,9 +123,14 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
       setFeatures(null);
       setHud(null);
       setBeta(null);
+      setRenderTelemetry(null);
+      setKitHeadHasFaceShadowUv(false);
+      setEyeballHighlight(null);
       featuresKeyRef.current = "";
       hudKeyRef.current = "";
       betaKeyRef.current = "";
+      telemetryKeyRef.current = "";
+      eyeballKeyRef.current = "";
       return;
     }
     try {
@@ -132,6 +146,20 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         betaKeyRef.current = betaKey;
         setBeta(betaReport);
       }
+      const nextTelemetry = readRenderTelemetry(engine);
+      const nextTelemetryKey = nextTelemetry ? JSON.stringify(nextTelemetry) : "";
+      if (nextTelemetryKey !== telemetryKeyRef.current) {
+        telemetryKeyRef.current = nextTelemetryKey;
+        setRenderTelemetry(nextTelemetry);
+      }
+      const hasKitSdfUv = nextTelemetry?.kitFaceShadowUvPresent === true || readKitHeadFaceShadowUv(engine);
+      setKitHeadHasFaceShadowUv((prev) => (prev === hasKitSdfUv ? prev : hasKitSdfUv));
+      const nextEyeball = hasEyeballHighlight(engine) ? engine.eyeballHighlight() : null;
+      const nextEyeballKey = nextEyeball ? JSON.stringify(nextEyeball) : "";
+      if (nextEyeballKey !== eyeballKeyRef.current) {
+        eyeballKeyRef.current = nextEyeballKey;
+        setEyeballHighlight(nextEyeball);
+      }
       const nextHud = engine.readHud();
       const nextHudKey = JSON.stringify(nextHud);
       if (nextHudKey !== hudKeyRef.current) {
@@ -143,6 +171,16 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
       setPollError(error instanceof Error ? error.message : "엔진 상태를 읽지 못했습니다.");
     }
   }, [engine]);
+
+  const updateEyeballHighlight = useCallback(
+    (patch: Partial<EyeballHighlightConfig>): void => {
+      if (!engine || !hasEyeballHighlight(engine)) return;
+      const next = engine.setEyeballHighlight(patch);
+      eyeballKeyRef.current = JSON.stringify(next);
+      setEyeballHighlight(next);
+    },
+    [engine],
+  );
 
   useEffect(() => {
     poll();
@@ -387,9 +425,15 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
           />
         </div>
         {isKit ? (
-          <p id={`${ids}-sdf-note`} className="cl-render-reason" data-role="kit-sdf-note">
-            키트는 얼굴 SDF 그림자를 쓰지 않음 — 이 설정은 레시피에 남지만 키트 소스에서는 적용되지 않습니다(절차 소스에서만 쓰입니다).
-          </p>
+          kitHeadHasFaceShadowUv ? (
+            <p id={`${ids}-sdf-note`} className="cl-render-status" data-role="kit-sdf-note" data-tone="ok">
+              키트 머리에 얼굴 SDF 정면 좌표(toonstudioFaceShadowUv)가 실측되어 얼굴 SDF 그림자가 활성 상태로 적용됩니다.
+            </p>
+          ) : (
+            <p id={`${ids}-sdf-note`} className="cl-render-reason" data-role="kit-sdf-note">
+              키트는 얼굴 SDF 그림자를 쓰지 않음 — 이 설정은 레시피에 남지만 키트 소스에서는 적용되지 않습니다(절차 소스에서만 쓰입니다).
+            </p>
+          )
         ) : null}
         <div className="cl-render-row">
           <label htmlFor={`${ids}-outline`}>외곽선</label>
@@ -425,9 +469,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         <p id={`${ids}-outline-pressure-note`} className="cl-render-hint" data-testid="shaper-toon-readout">
           외곽선 비등방 ({outlineAspect.widthScale.toFixed(1)}×{outlineAspect.heightScale.toFixed(1)}) · 외곽 셸(hull)에서 적용하고 레시피에 저장합니다.
         </p>
-        <p className="cl-render-reason" data-testid="eyeball-highlight-unavailable">
-          안구 하이라이트 기준 변경은 현재 렌더러가 지원하지 않습니다. 시선·안구 회전은 표정 패널에서 조절합니다.
-        </p>
+        <RenderEyeballHighlightControls idPrefix={ids} state={eyeballHighlight} onUpdate={updateEyeballHighlight} />
       </fieldset>
 
       <fieldset className="cl-render-group" data-testid="render-manga-manuscript-group" disabled={!isToon}>

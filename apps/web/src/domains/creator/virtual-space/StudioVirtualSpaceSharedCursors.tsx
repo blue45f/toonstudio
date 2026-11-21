@@ -200,10 +200,10 @@ export function StudioVirtualSpaceSharedCursors({
   const srSummary = buildScreenReaderSummary(bt, visible);
 
   return (
-    <>
+    <div data-testid="space-shared-cursors-layer" className="pointer-events-none absolute inset-0 z-30 overflow-hidden">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-30 overflow-hidden"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
         data-testid="shared-cursors-overlay"
       >
         {visible.map((cursor) => (
@@ -227,6 +227,6 @@ export function StudioVirtualSpaceSharedCursors({
         )}
       </div>
       <p className="sr-only">{srSummary}</p>
-    </>
+    </div>
   );
 }

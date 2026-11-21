@@ -258,11 +258,11 @@ const REGION_SELECTORS: ReadonlyArray<readonly [string, string]> = [
   ["skip-links", 'nav[aria-label="작업 영역 바로가기"]'],
   ["work-modes", '[role="tablist"][aria-label="작업 모드"]'],
   ["menubar", "#studio-menubar"],
-  ["tool-rail", '[data-studio-workspace-region="tool-rail"]'],
+  ["tool-rail", '[data-studio-workspace-region="tool-rail"], nav.studio-drawing-clarity-rail'],
   ["brush-panel", "#studio-brush-workbench, [data-studio-brush-workbench]"],
   ["canvas", "#studio-canvas-workspace"],
   ["inspector", "#studio-inspector"],
-  ["floating", '[data-studio-floating-surface="true"]'],
+  ["floating", '[data-studio-floating-surface="true"], .studio-drawing-clarity-context-row'],
   ["status", '[role="status"], [data-service-degraded-banner]'],
 ];
 

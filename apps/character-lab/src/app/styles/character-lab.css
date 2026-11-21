@@ -8,10 +8,14 @@
   --lab-muted: oklch(0.81 0.025 266);
   --lab-line: oklch(0.38 0.042 264);
   --lab-accent: oklch(0.64 0.19 282);
+  --lab-on-accent: oklch(0.98 0.008 275);
   --lab-ok: oklch(0.75 0.15 162);
   --lab-warn: oklch(0.81 0.14 80);
+  --lab-on-warn: oklch(0.18 0.035 80);
   --lab-error: oklch(0.70 0.19 18);
+  --lab-on-error: oklch(0.18 0.04 18);
   --lab-busy: oklch(0.76 0.12 248);
+  --lab-on-busy: oklch(0.16 0.03 248);
   --lab-radius: 10px;
   font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   color: var(--lab-fg);
@@ -112,10 +116,9 @@ dd {
 /* ---------- 공통 */
 .cl-eyebrow {
   margin: 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--lab-accent);
 }
 
@@ -165,7 +168,7 @@ dd {
 .cl-button[aria-pressed="true"] {
   background: var(--lab-accent);
   border-color: var(--lab-accent);
-  color: #fff;
+  color: var(--lab-on-accent);
 }
 
 .cl-button:disabled {
@@ -204,7 +207,7 @@ dd {
 .cl-export-file:focus-within {
   outline: 2px solid var(--lab-accent);
   outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(124, 104, 236, 0.32);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--lab-accent) 32%, transparent);
 }
 
 /* ---------- TopBar */
@@ -505,10 +508,9 @@ dd {
 
 .cl-slot-group-title {
   margin: 0 0 6px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--lab-muted);
 }
 
@@ -568,16 +570,16 @@ dd {
   top: 6px;
   right: 6px;
   padding: 1px 6px;
-  border-radius: 999px;
-  font-size: 0.62rem;
-  font-weight: 700;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
   background: var(--lab-warn);
-  color: #1a1200;
+  color: var(--lab-on-warn);
 }
 
 .cl-slot-cell-badge[data-status="unavailable"] {
   background: var(--lab-error);
-  color: #2a0008;
+  color: var(--lab-on-error);
 }
 
 /* ---------- 인스펙터 탭 */
@@ -615,7 +617,7 @@ dd {
 .cl-inspector-tab[aria-selected="true"] {
   background: var(--lab-accent);
   border-color: var(--lab-accent);
-  color: #fff;
+  color: var(--lab-on-accent);
 }
 
 .cl-inspector-tab[data-missing="true"]::after {
@@ -845,7 +847,7 @@ dd {
 .cl-physics-actions button[aria-pressed="true"] {
   background: var(--lab-accent);
   border-color: var(--lab-accent);
-  color: #fff;
+  color: var(--lab-on-accent);
   font-weight: 600;
 }
 
@@ -1107,10 +1109,9 @@ dd {
 .cl-slot-tab-group-label {
   width: 100%;
   margin: 2px 0 0;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--lab-muted);
 }
 
@@ -1137,7 +1138,7 @@ dd {
 .cl-slot-tab[aria-pressed="true"] {
   background: var(--lab-accent);
   border-color: var(--lab-accent);
-  color: #fff;
+  color: var(--lab-on-accent);
 }
 
 .cl-slot-grid-wrap {
@@ -1206,7 +1207,7 @@ dd {
   border-radius: 8px;
   background: var(--lab-canvas);
   color: var(--lab-muted);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   text-align: center;
 }
 
@@ -1246,27 +1247,27 @@ dd {
   top: 8px;
   right: 8px;
   padding: 1px 6px;
-  border-radius: 999px;
-  font-size: 0.6rem;
-  font-weight: 700;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
   background: var(--lab-warn);
-  color: #1a1200;
+  color: var(--lab-on-warn);
 }
 
 .cl-slot-badge--unavailable {
   background: var(--lab-error);
-  color: #2a0008;
+  color: var(--lab-on-error);
 }
 
 .cl-slot-badge--partial,
 .cl-slot-badge--conflict {
   background: var(--lab-warn);
-  color: #1a1200;
+  color: var(--lab-on-warn);
 }
 
 .cl-slot-badge--unsupported {
   background: var(--lab-busy);
-  color: #06152b;
+  color: var(--lab-on-busy);
 }
 
 .cl-slot-tab .cl-slot-badge {
@@ -1360,7 +1361,7 @@ dd {
 
 .cl-expression-card-meta,
 .cl-pose-card-meta {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--lab-muted);
 }
 
@@ -1901,11 +1902,11 @@ dd {
   display: inline-block;
   padding: 1px 8px;
   border: 1px solid var(--lab-line);
-  border-radius: 999px;
+  border-radius: 6px;
   color: var(--lab-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 1.6;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
   white-space: nowrap;
 }
 
@@ -2006,9 +2007,9 @@ dd {
 .cl-vision-swatch-label {
   width: 100%;
   padding: 1px 4px;
-  background: rgba(0, 0, 0, 0.62);
-  color: #fff;
-  font-size: 0.66rem;
+  background: color-mix(in oklab, var(--lab-canvas) 80%, transparent);
+  color: var(--lab-on-accent);
+  font-size: 0.75rem;
   white-space: nowrap;
 }
 
@@ -2378,8 +2379,8 @@ dd {
 .cl-package-panel .cl-package-kit-base[aria-pressed="true"] {
   border-color: var(--lab-accent);
   background: var(--lab-accent);
-  color: #fff;
-  font-weight: 700;
+  color: var(--lab-on-accent);
+  font-weight: 600;
 }
 
 /* 선택된 베이스는 이미 쓰는 중이라 비활성이지만 흐리게 하지 않는다(현재 값을 읽을 수 있어야 한다) */
@@ -2581,7 +2582,7 @@ dd {
 .cl-viewport-button[aria-pressed="true"] {
   background: var(--lab-accent);
   border-color: var(--lab-accent);
-  color: #fff;
+  color: var(--lab-on-accent);
 }
 
 .cl-viewport-button:disabled,
@@ -2658,8 +2659,8 @@ dd {
 }
 
 .cl-viewport-handle {
-  fill: rgba(124, 104, 236, 0.6);
-  stroke: #fff;
+  fill: color-mix(in oklab, var(--lab-accent) 60%, transparent);
+  stroke: var(--lab-on-accent);
   stroke-width: 1.5;
 }
 
@@ -2766,7 +2767,7 @@ dd {
 .cl-render-panel button[aria-pressed="true"] {
   background: var(--lab-accent);
   border-color: var(--lab-accent);
-  color: #fff;
+  color: var(--lab-on-accent);
 }
 
 .cl-render-panel button:disabled,
@@ -2868,8 +2869,8 @@ dd {
 /* ---------- 접근성: 고대비·강제 색상 모드(패널 공통) */
 @media (prefers-contrast: more) {
   :root {
-    --lab-line: #8a97b8;
-    --lab-muted: #d7deef;
+    --lab-line: oklch(0.68 0.055 264);
+    --lab-muted: oklch(0.90 0.024 266);
   }
 
   .cl-button,

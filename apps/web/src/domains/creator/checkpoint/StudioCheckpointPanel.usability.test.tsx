@@ -192,7 +192,7 @@ describe("StudioCheckpointPanel · 저장 기록 이해 및 안전한 복구 선
     const props = serverEnabledProps();
     const { rerender } = render(<StudioCheckpointPanel {...props} />);
 
-    expect(screen.getByTestId("checkpoint-status-strip").textContent).toContain("현재 서버 기준 r4");
+    expect(screen.getByTestId("checkpoint-status-strip").textContent).toContain("현재 서버 기준 #4");
 
     const localTab = screen.getByRole("tab", { name: /이 기기에 저장/u });
     const serverTab = screen.getByRole("tab", { name: /계정의 저장 기록/u });
@@ -220,7 +220,7 @@ describe("StudioCheckpointPanel · 저장 기록 이해 및 안전한 복구 선
     expect(currentItem.textContent).toContain("현재 열려 있는 서버 기준");
     expect(within(currentItem).getByRole("button", { name: "현재 버전" }).hasAttribute("disabled")).toBe(true);
     expect(prevItem.textContent).toContain("현재 기준 대비 1단계 이전");
-    expect(prevItem.textContent).toContain("r1에서 복원");
+    expect(prevItem.textContent).toContain("저장 #1에서 복원");
     expect(prevItem.textContent).toContain("읽기 전용 비교 후 복원 결정");
     expect(olderItem.textContent).toContain("현재 기준 대비 2단계 이전");
 

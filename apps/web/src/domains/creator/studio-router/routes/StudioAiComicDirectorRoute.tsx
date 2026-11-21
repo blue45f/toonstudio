@@ -97,7 +97,7 @@ const BIBLE_KINDS: readonly {
   { id: "character", label: "캐릭터", description: "얼굴·체형·실루엣·식별 특징" },
   { id: "costume", label: "의상", description: "버전·색·재질·손상 상태" },
   { id: "location", label: "장소", description: "랜드마크·평면·카메라 앵커" },
-  { id: "prop", label: "소품", description: "소유자·방향·상태 timeline" },
+  { id: "prop", label: "소품", description: "소유자·방향·상태 변화" },
   { id: "style", label: "화풍", description: "선·팔레트·명암·질감" },
   { id: "lighting", label: "광원", description: "시간대·방향·색온도·대비" },
 ];
@@ -342,7 +342,7 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
         return;
       }
       patchSession({ visualBible: result.data });
-      setMessage(`작품 바이블 revision ${result.data.revision}을 저장했습니다.`);
+      setMessage(`작품 바이블 버전 #${result.data.revision}을 저장했습니다.`);
     } else {
       setSyncState(result.code === "not_authenticated" ? "local" : "error");
       setMessage(result.message);
@@ -411,14 +411,14 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
             <img className="creator-workflow-director-avatar" src="/brand/illustrated-20260928/luna.webp" alt="" aria-hidden="true" width={44} height={44} decoding="async" />
           </span>
           <div className="min-w-0">
-            <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-accent">
-              Production Workspace
+            <p className="text-xs font-semibold text-accent">
+              연출 작업실
             </p>
-            <h1 className="truncate text-xl font-black tracking-tight">
+            <h1 className="truncate text-xl font-bold tracking-tight">
               AI 코믹 디렉터
             </h1>
-            <p className="text-xs text-fg-3">
-              세션 {session.id} · revision {session.revision}
+            <p className="text-xs tabular-nums text-fg-3" title={session.id}>
+              세션 {session.id.slice(0, 8)} · 버전 #{session.revision}
             </p>
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -441,7 +441,7 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
             <span
               role="status"
               className={cn(
-                "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-[0.65rem] font-semibold",
+                "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold",
                 syncState === "saved"
                   ? "border-good/35 bg-good/10 text-good"
                   : syncState === "conflict" || storageFailed
@@ -461,7 +461,7 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
                 : syncState === "loading"
                   ? "동기화 중"
                   : syncState === "conflict"
-                    ? "revision 충돌"
+                    ? "버전 충돌"
                     : storageFailed
                       ? creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.deviceUnsaved", "기기에 저장 안 됨")
                       : saving ? creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.deviceSaving", "기기에 저장 중…") : "로컬 자동 저장"}
@@ -477,7 +477,7 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
                 )}
               >
                 <RefreshCw size={13} aria-hidden />
-                최신 revision 불러오기
+                최신 버전 불러오기
               </button>
             ) : (
               <button
@@ -567,7 +567,7 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
                         : "border-transparent text-fg-3 hover:bg-card hover:text-fg",
                     )}
                   >
-                    <span className={cn("font-mono text-base font-black", session.stage === id ? "text-accent" : "text-fg-3")}>{number}</span>
+                    <span className={cn("font-mono text-base font-bold tabular-nums", session.stage === id ? "text-accent" : "text-fg-3")}>{number}</span>
                     <strong className="text-xs">{label}</strong>
                   </button>
                 </li>
@@ -583,7 +583,7 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
                     <BookOpenCheck size={16} className="text-accent" aria-hidden />
                     <div>
                       <h2 className="text-sm font-bold">이야기와 제작 기준</h2>
-                      <p className="text-[0.66rem] text-fg-3">
+                      <p className="text-xs text-fg-3">
                         원문은 보존되고 Studio 편집기로 그대로 전달됩니다.
                       </p>
                     </div>
@@ -622,8 +622,8 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
                     <ShieldCheck size={16} className="text-accent" aria-hidden />
                     <div>
                       <h2 className="text-sm font-bold">작품 바이블</h2>
-                      <p className="text-[0.66rem] text-fg-3">
-                        revision {session.visualBible.revision} · {session.visualBible.entries.length}개 기준
+                      <p className="text-xs tabular-nums text-fg-3">
+                        버전 #{session.visualBible.revision} · {session.visualBible.entries.length}개 기준
                       </p>
                     </div>
                   </div>
@@ -632,11 +632,11 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
                       <article key={entry.id} className="rounded-xl border border-line bg-card p-2.5">
                         <div className="flex items-center gap-2">
                           <strong className="text-xs">{entry.name}</strong>
-                          <span className="ml-auto rounded-full border border-line px-2 py-0.5 text-[0.58rem] text-fg-3">
+                          <span className="ml-auto rounded-full border border-line px-2 py-0.5 text-xs text-fg-3">
                             {BIBLE_KINDS.find((kind) => kind.id === entry.kind)?.label}
                           </span>
                         </div>
-                        <p className="mt-1 text-[0.62rem] text-fg-3">
+                        <p className="mt-1 text-xs text-fg-3">
                           {entry.canSendToExternalProvider
                             ? "외부 생성 요청 허용"
                             : "외부 전송 확인 필요"}
@@ -644,7 +644,7 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
                       </article>
                     ))}
                   </div>
-                  <label className="mt-3 block text-[0.66rem] font-semibold text-fg-2">
+                  <label className="mt-3 block text-xs font-semibold text-fg-2">
                     기준 종류
                     <select
                       value={newBibleKind}
@@ -656,7 +656,7 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
                       ))}
                     </select>
                   </label>
-                  <label className="mt-2 block text-[0.66rem] font-semibold text-fg-2">
+                  <label className="mt-2 block text-xs font-semibold text-fg-2">
                     기준 이름
                     <input
                       type="text"
@@ -679,7 +679,7 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
                     onClick={() => void saveBibleRevision()}
                     className="mt-2 min-h-11 w-full rounded-lg bg-accent text-xs font-bold text-on-accent"
                   >
-                    새 작품 바이블 revision 저장
+                    새 작품 바이블 버전 저장
                   </button>
                 </aside>
               </div>
@@ -705,13 +705,13 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
               <div className="grid gap-4 xl:grid-cols-2">
                 <section className="rounded-2xl border border-line bg-panel p-4">
                   <div className="flex items-center gap-2"><Sparkles size={16} className="text-accent" aria-hidden /><h2 className="text-sm font-bold">제작 작업</h2></div>
-                  <p className="mt-1 text-xs text-fg-3">생성·부분 수리·품질 분석·레이어 분리 작업은 operation ID와 lease를 가진 durable job으로 기록됩니다.</p>
+                  <p className="mt-1 text-xs text-fg-3">생성·부분 수리·품질 분석·레이어 분리 작업은 작업 번호와 안전 잠금으로 복구 가능하게 기록됩니다.</p>
                   <div className="mt-3 space-y-2">
                     {session.jobs.length ? session.jobs.map((job) => (
                       <article key={job.id} className="rounded-xl border border-line bg-card p-3">
-                        <div className="flex items-center gap-2"><strong className="text-xs">{job.kind}</strong><span className="ml-auto rounded-full border border-line px-2 py-0.5 text-[0.58rem]">{job.status}</span></div>
-                        <p className="mt-1 text-[0.62rem] text-fg-3">{job.progressDone}/{job.progressTotal} · {job.operationId}</p>
-                        {job.error ? <p className="mt-1 text-[0.62rem] text-bad">{resolvePersistedAiErrorText(job.error)}</p> : null}
+                        <div className="flex items-center gap-2"><strong className="text-xs">{job.kind}</strong><span className="ml-auto rounded-full border border-line px-2 py-0.5 text-xs">{job.status}</span></div>
+                        <p className="mt-1 text-xs tabular-nums text-fg-3" title={job.operationId}>{job.progressDone}/{job.progressTotal} · 작업 #{job.operationId.slice(0, 8)}</p>
+                        {job.error ? <p className="mt-1 text-xs text-bad">{resolvePersistedAiErrorText(job.error)}</p> : null}
                       </article>
                     )) : <p className="rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-3">{creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.jobsEmpty", "아직 작업 기록이 없습니다.")}</p>}
                   </div>
@@ -726,12 +726,12 @@ function DirectorWorkspace({ resolution, draft }: StudioAiComicDirectorRouteProp
 
             {session.stage === "finish" ? (
               <section className="rounded-2xl border border-line bg-panel p-4">
-                <div className="flex items-center gap-2"><ShieldCheck size={16} className="text-accent" aria-hidden /><h2 className="text-sm font-bold">검수 revision과 Studio 인계</h2></div>
+                <div className="flex items-center gap-2"><ShieldCheck size={16} className="text-accent" aria-hidden /><h2 className="text-sm font-bold">검수 버전과 Studio 인계</h2></div>
                 <dl className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
-                  <div className="rounded-xl border border-line bg-card p-3"><dt className="text-fg-3">세션 revision</dt><dd className="mt-1 font-bold">{session.revision}</dd></div>
-                  <div className="rounded-xl border border-line bg-card p-3"><dt className="text-fg-3">후보 digest</dt><dd className="mt-1 break-all font-mono font-bold">{candidateDigest}</dd></div>
-                  <div className="rounded-xl border border-line bg-card p-3"><dt className="text-fg-3">현재 승인</dt><dd className={cn("mt-1 font-bold", activeApproval ? "text-good" : "text-warn")}>{activeApproval ? "현재 revision 승인됨" : "검수 다시 필요"}</dd></div>
-                  <div className="rounded-xl border border-line bg-card p-3"><dt className="text-fg-3">적용 정책</dt><dd className="mt-1 font-bold">비파괴 추가 · 한 번의 Undo</dd></div>
+                  <div className="rounded-xl border border-line bg-card p-3"><dt className="text-fg-3">검수 버전</dt><dd className="mt-1 font-bold tabular-nums">#{session.revision}</dd></div>
+                  <div className="rounded-xl border border-line bg-card p-3"><dt className="text-fg-3">후보 확인 코드</dt><dd className="mt-1 break-all font-mono font-bold">{candidateDigest}</dd></div>
+                  <div className="rounded-xl border border-line bg-card p-3"><dt className="text-fg-3">현재 승인</dt><dd className={cn("mt-1 font-bold", activeApproval ? "text-good" : "text-warn")}>{activeApproval ? "현재 버전 승인됨" : "검수 다시 필요"}</dd></div>
+                  <div className="rounded-xl border border-line bg-card p-3"><dt className="text-fg-3">적용 정책</dt><dd className="mt-1 font-bold">원본 보존 추가 · 한 번에 되돌리기</dd></div>
                 </dl>
                 <button type="button" onClick={continueInEditor} className="mt-4 min-h-11 rounded-lg bg-accent px-4 text-xs font-bold text-on-accent">Studio 마감·추가 열기</button>
               </section>

@@ -3,6 +3,7 @@ import { KitOutlineDepthController } from "./kit-outline-depth";
 import { PressureOutlineController } from "./pressure-outline";
 
 import type { CharacterRig } from "./character-rig";
+import type { PressureOutlineSyncOptions, PressureOutlineTelemetry } from "./pressure-outline";
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture.js";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 import type { Scene } from "@babylonjs/core/scene.js";
@@ -16,9 +17,13 @@ export class CharacterOutlineController {
     this.nativeDepth = new KitOutlineDepthController(scene);
   }
 
-  sync(rig: CharacterRig, pressure: boolean, width: number, nativeHull: boolean): void {
-    this.pressure.sync(rig, pressure, width);
+  sync(rig: CharacterRig, pressure: boolean, width: number, nativeHull: boolean, options?: PressureOutlineSyncOptions): void {
+    this.pressure.sync(rig, pressure, width, options);
     this.nativeDepth.sync(rig, nativeHull);
+  }
+
+  telemetryFor(rig: CharacterRig): PressureOutlineTelemetry {
+    return this.pressure.telemetryFor(rig);
   }
 
   release(rig: CharacterRig): void {

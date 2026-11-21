@@ -1,0 +1,878 @@
+{
+  "schema": "toonstudio.character-kit.hair-v2/1",
+  "styleId": "murim-topknot",
+  "labelKo": "무협 반묶음 장발",
+  "genre": "무협·동양 판타지",
+  "fittedBase": "male-webtoon",
+  "file": {
+    "path": "murim-topknot.glb",
+    "bytes": 1362124,
+    "sha256": "7c9afd8c61b801c86aa33a6dadc4d56d3368b7b891d090c3961164bf21dd1406"
+  },
+  "drawCalls": 8,
+  "materials": [
+    "ts_hair_murim-topknot",
+    "ts_hair_tip_murim-topknot",
+    "ts_hair_accent_murim-topknot"
+  ],
+  "lods": [
+    {
+      "node": "TS_AuthoredHair_murim-topknot_LOD0",
+      "lod": 0,
+      "triangles": 10404,
+      "vertices": 5274,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_murim-topknot_LOD1",
+      "lod": 1,
+      "triangles": 5136,
+      "vertices": 2640,
+      "primitives": 3,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    },
+    {
+      "node": "TS_AuthoredHair_murim-topknot_LOD2",
+      "lod": 2,
+      "triangles": 2152,
+      "vertices": 1134,
+      "primitives": 2,
+      "uv0MonotonicOk": true,
+      "uvBounds": [
+        0.018,
+        0.982
+      ]
+    }
+  ],
+  "morphs": [
+    "param:height:+",
+    "param:height:-",
+    "param:legLength:+",
+    "param:legLength:-",
+    "param:neckLength:+",
+    "param:neckLength:-",
+    "param:headSize:+",
+    "param:headSize:-",
+    "shape:bang-length:+",
+    "shape:bang-length:-",
+    "shape:volume:+",
+    "shape:volume:-",
+    "shape:sway:+",
+    "shape:sway:-"
+  ],
+  "shapes": [
+    "bang-length",
+    "volume",
+    "sway"
+  ],
+  "uv0Monotonic": true,
+  "uv1Purpose": "hair-flow",
+  "texture": {
+    "bytes": 21555,
+    "size": 512,
+    "meanLuminance": 0.9231,
+    "minLuminance": 0.8,
+    "columns": 4
+  },
+  "springBone": {
+    "schema": "toonstudio.hair-springbone/1",
+    "vrmSpec": "VRMC_springBone-1.0",
+    "styleId": "murim-topknot",
+    "fittedBase": "male-webtoon",
+    "chainCount": 5,
+    "colliders": [
+      {
+        "id": "head_sphere",
+        "bone": "mixamorig:Head",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.08596,
+          -0.00343
+        ],
+        "radius": 0.08959
+      },
+      {
+        "id": "neck_capsule",
+        "bone": "mixamorig:Neck",
+        "shape": "capsule",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tailGltf": [
+          0.0,
+          0.09531,
+          -0.002
+        ],
+        "radius": 0.05985
+      },
+      {
+        "id": "upper_chest_sphere",
+        "bone": "mixamorig:Spine2",
+        "shape": "sphere",
+        "offsetGltf": [
+          0.0,
+          0.0,
+          0.00099
+        ],
+        "radius": 0.15824
+      }
+    ],
+    "chains": [
+      {
+        "id": "back_L",
+        "region": "back",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 6,
+        "lengthM": 0.465,
+        "hitRadius": 0.022,
+        "stiffness": 0.5,
+        "dragForce": 0.34,
+        "gravityPower": 0.36,
+        "joints": [
+          {
+            "name": "TS_Spring_murim-topknot_back_L_0",
+            "positionGltf": [
+              0.05896,
+              1.7729,
+              -0.0635
+            ],
+            "localOffsetFromHead": [
+              0.05896,
+              0.1298,
+              -0.0555
+            ],
+            "hitRadius": 0.022,
+            "stiffness": 0.55,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_L_1",
+            "positionGltf": [
+              0.08353,
+              1.68496,
+              -0.08053
+            ],
+            "localOffsetFromHead": [
+              0.08353,
+              0.04186,
+              -0.07253
+            ],
+            "hitRadius": 0.02121,
+            "stiffness": 0.525,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_L_2",
+            "positionGltf": [
+              0.08503,
+              1.59664,
+              -0.10574
+            ],
+            "localOffsetFromHead": [
+              0.08503,
+              -0.04646,
+              -0.09774
+            ],
+            "hitRadius": 0.02042,
+            "stiffness": 0.5,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_L_3",
+            "positionGltf": [
+              0.07803,
+              1.5125,
+              -0.14335
+            ],
+            "localOffsetFromHead": [
+              0.07803,
+              -0.1306,
+              -0.13535
+            ],
+            "hitRadius": 0.01962,
+            "stiffness": 0.475,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_L_4",
+            "positionGltf": [
+              0.0851,
+              1.42169,
+              -0.16108
+            ],
+            "localOffsetFromHead": [
+              0.0851,
+              -0.22141,
+              -0.15308
+            ],
+            "hitRadius": 0.01883,
+            "stiffness": 0.45,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_L_5",
+            "positionGltf": [
+              0.09484,
+              1.32725,
+              -0.1579
+            ],
+            "localOffsetFromHead": [
+              0.09484,
+              -0.31585,
+              -0.1499
+            ],
+            "hitRadius": 0.01804,
+            "stiffness": 0.425,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "back_C",
+        "region": "back",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 2,
+        "lengthM": 0.4575,
+        "hitRadius": 0.022,
+        "stiffness": 0.5,
+        "dragForce": 0.34,
+        "gravityPower": 0.36,
+        "joints": [
+          {
+            "name": "TS_Spring_murim-topknot_back_C_0",
+            "positionGltf": [
+              0.0,
+              1.77528,
+              -0.10219
+            ],
+            "localOffsetFromHead": [
+              0.0,
+              0.13218,
+              -0.09419
+            ],
+            "hitRadius": 0.022,
+            "stiffness": 0.55,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_C_1",
+            "positionGltf": [
+              -0.0,
+              1.68844,
+              -0.13294
+            ],
+            "localOffsetFromHead": [
+              -0.0,
+              0.04534,
+              -0.12494
+            ],
+            "hitRadius": 0.02121,
+            "stiffness": 0.525,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_C_2",
+            "positionGltf": [
+              -0.00067,
+              1.59642,
+              -0.13388
+            ],
+            "localOffsetFromHead": [
+              -0.00067,
+              -0.04668,
+              -0.12588
+            ],
+            "hitRadius": 0.02042,
+            "stiffness": 0.5,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_C_3",
+            "positionGltf": [
+              -0.00614,
+              1.50624,
+              -0.14255
+            ],
+            "localOffsetFromHead": [
+              -0.00614,
+              -0.13686,
+              -0.13455
+            ],
+            "hitRadius": 0.01962,
+            "stiffness": 0.475,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_C_4",
+            "positionGltf": [
+              0.00118,
+              1.41852,
+              -0.16023
+            ],
+            "localOffsetFromHead": [
+              0.00118,
+              -0.22458,
+              -0.15223
+            ],
+            "hitRadius": 0.01883,
+            "stiffness": 0.45,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_C_5",
+            "positionGltf": [
+              0.00749,
+              1.32599,
+              -0.15739
+            ],
+            "localOffsetFromHead": [
+              0.00749,
+              -0.31711,
+              -0.14939
+            ],
+            "hitRadius": 0.01804,
+            "stiffness": 0.425,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "back_R",
+        "region": "back",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 6,
+        "lengthM": 0.4629,
+        "hitRadius": 0.022,
+        "stiffness": 0.5,
+        "dragForce": 0.34,
+        "gravityPower": 0.36,
+        "joints": [
+          {
+            "name": "TS_Spring_murim-topknot_back_R_0",
+            "positionGltf": [
+              -0.05886,
+              1.7729,
+              -0.06362
+            ],
+            "localOffsetFromHead": [
+              -0.05886,
+              0.1298,
+              -0.05562
+            ],
+            "hitRadius": 0.022,
+            "stiffness": 0.55,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_R_1",
+            "positionGltf": [
+              -0.08266,
+              1.68513,
+              -0.0815
+            ],
+            "localOffsetFromHead": [
+              -0.08266,
+              0.04203,
+              -0.0735
+            ],
+            "hitRadius": 0.02121,
+            "stiffness": 0.525,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_R_2",
+            "positionGltf": [
+              -0.08379,
+              1.59774,
+              -0.10776
+            ],
+            "localOffsetFromHead": [
+              -0.08379,
+              -0.04536,
+              -0.09976
+            ],
+            "hitRadius": 0.02042,
+            "stiffness": 0.5,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_R_3",
+            "positionGltf": [
+              -0.07753,
+              1.51269,
+              -0.14218
+            ],
+            "localOffsetFromHead": [
+              -0.07753,
+              -0.13041,
+              -0.13418
+            ],
+            "hitRadius": 0.01962,
+            "stiffness": 0.475,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_R_4",
+            "positionGltf": [
+              -0.0892,
+              1.42135,
+              -0.15272
+            ],
+            "localOffsetFromHead": [
+              -0.0892,
+              -0.22176,
+              -0.14472
+            ],
+            "hitRadius": 0.01883,
+            "stiffness": 0.45,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_back_R_5",
+            "positionGltf": [
+              -0.09618,
+              1.32736,
+              -0.15471
+            ],
+            "localOffsetFromHead": [
+              -0.09618,
+              -0.31574,
+              -0.14671
+            ],
+            "hitRadius": 0.01804,
+            "stiffness": 0.425,
+            "dragForce": 0.34,
+            "gravityPower": 0.36,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "side_L",
+        "region": "side",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 2,
+        "lengthM": 0.248,
+        "hitRadius": 0.016,
+        "stiffness": 0.72,
+        "dragForce": 0.4,
+        "gravityPower": 0.3,
+        "joints": [
+          {
+            "name": "TS_Spring_murim-topknot_side_L_0",
+            "positionGltf": [
+              0.04263,
+              1.81112,
+              0.00758
+            ],
+            "localOffsetFromHead": [
+              0.04263,
+              0.16802,
+              0.01558
+            ],
+            "hitRadius": 0.016,
+            "stiffness": 0.792,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_side_L_1",
+            "positionGltf": [
+              0.08355,
+              1.76394,
+              0.02782
+            ],
+            "localOffsetFromHead": [
+              0.08355,
+              0.12083,
+              0.03582
+            ],
+            "hitRadius": 0.01528,
+            "stiffness": 0.747,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_side_L_2",
+            "positionGltf": [
+              0.09357,
+              1.6983,
+              0.03527
+            ],
+            "localOffsetFromHead": [
+              0.09357,
+              0.0552,
+              0.04327
+            ],
+            "hitRadius": 0.01456,
+            "stiffness": 0.702,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_side_L_3",
+            "positionGltf": [
+              0.09929,
+              1.63199,
+              0.04363
+            ],
+            "localOffsetFromHead": [
+              0.09929,
+              -0.01111,
+              0.05163
+            ],
+            "hitRadius": 0.01384,
+            "stiffness": 0.657,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_side_L_4",
+            "positionGltf": [
+              0.11361,
+              1.5869,
+              0.05425
+            ],
+            "localOffsetFromHead": [
+              0.11361,
+              -0.0562,
+              0.06225
+            ],
+            "hitRadius": 0.01312,
+            "stiffness": 0.612,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "side_R",
+        "region": "side",
+        "anchorBone": "mixamorig:Head",
+        "colliderIds": [
+          "head_sphere",
+          "neck_capsule",
+          "upper_chest_sphere"
+        ],
+        "strandCount": 2,
+        "lengthM": 0.248,
+        "hitRadius": 0.016,
+        "stiffness": 0.72,
+        "dragForce": 0.4,
+        "gravityPower": 0.3,
+        "joints": [
+          {
+            "name": "TS_Spring_murim-topknot_side_R_0",
+            "positionGltf": [
+              -0.04263,
+              1.81112,
+              0.00758
+            ],
+            "localOffsetFromHead": [
+              -0.04263,
+              0.16802,
+              0.01558
+            ],
+            "hitRadius": 0.016,
+            "stiffness": 0.792,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_side_R_1",
+            "positionGltf": [
+              -0.08355,
+              1.76394,
+              0.02782
+            ],
+            "localOffsetFromHead": [
+              -0.08355,
+              0.12083,
+              0.03582
+            ],
+            "hitRadius": 0.01528,
+            "stiffness": 0.747,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_side_R_2",
+            "positionGltf": [
+              -0.09357,
+              1.6983,
+              0.03527
+            ],
+            "localOffsetFromHead": [
+              -0.09357,
+              0.0552,
+              0.04327
+            ],
+            "hitRadius": 0.01456,
+            "stiffness": 0.702,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_side_R_3",
+            "positionGltf": [
+              -0.09929,
+              1.63199,
+              0.04363
+            ],
+            "localOffsetFromHead": [
+              -0.09929,
+              -0.01111,
+              0.05163
+            ],
+            "hitRadius": 0.01384,
+            "stiffness": 0.657,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "TS_Spring_murim-topknot_side_R_4",
+            "positionGltf": [
+              -0.11361,
+              1.5869,
+              0.05425
+            ],
+            "localOffsetFromHead": [
+              -0.11361,
+              -0.0562,
+              0.06225
+            ],
+            "hitRadius": 0.01312,
+            "stiffness": 0.612,
+            "dragForce": 0.4,
+            "gravityPower": 0.3,
+            "gravityDir": [
+              0.0,
+              -1.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "qa": {
+    "bytes": 1362124,
+    "minClearanceMm": 1.04,
+    "verticesInside": 0,
+    "gltfValidateErrors": 0,
+    "gltfValidateWarnings": 0,
+    "bmesh": {
+      "TS_AuthoredHair_murim-topknot_LOD0": {
+        "verts": 5382,
+        "faces": 10404,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_murim-topknot_LOD1": {
+        "verts": 2724,
+        "faces": 5136,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      },
+      "TS_AuthoredHair_murim-topknot_LOD2": {
+        "verts": 1134,
+        "faces": 2152,
+        "trueNonManifold": 0,
+        "looseVerts": 0,
+        "wireEdges": 0,
+        "zeroAreaFaces": 0
+      }
+    },
+    "springChainCount": 5
+  },
+  "passed": true,
+  "errors": [],
+  "seconds": 2.09
+}

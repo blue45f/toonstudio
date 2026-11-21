@@ -417,6 +417,11 @@ export const DESKTOP_FLOATING_LAYOUT_DIALOG = {
   closeLabel: "보기 · 플로팅 UI 닫기",
 } as const;
 
+export const CLARITY_FLOATING_LAYOUT_DIALOG = {
+  name: "화면과 작업 환경",
+  closeLabel: "화면과 작업 환경 닫기",
+} as const;
+
 /**
  * Open via main menu → assert popover chrome appears.
  *
@@ -1091,7 +1096,7 @@ export async function assertCurrentCanvasPlatformResize(
     await openMainMenuGroup(page, windowMenuTitle);
     await clickAndWaitForRenderer(page, page.locator(`[role="menu"][aria-label="${windowMenuTitle}"]`).locator('[data-studio-menu-item-id="density-full"]'));
 
-    await openCanvasSettings();
+    if (!(await heightIndicator.isVisible().catch(() => false))) await openCanvasSettings();
 
     const drawingUrl = page.url();
     const naverResult = await applyPreset("apply-webtoon-naver", 8_348);
@@ -1122,7 +1127,7 @@ export async function assertCurrentCanvasPlatformResize(
     await captureMenuEvidence(page, evidenceDir, "canvas-kakao");
 
     await page.keyboard.press(process.platform === "darwin" ? "Meta+z" : "Control+z");
-    if (!(await heightIndicator.isVisible())) await openCanvasSettings();
+    if (!(await heightIndicator.isVisible().catch(() => false))) await openCanvasSettings();
     if (!(await waitForHeight(8_348))) {
       failures.push("플랫폼 규격 변경을 한 번의 실행취소로 복원하지 못함");
     }
@@ -1222,19 +1227,22 @@ async function assertFloatingLayoutManager(page: Page): Promise<string[]> {
     // The empty-canvas welcome intentionally hides this launcher until dismissed. It can
     // mount after the initial overlay sweep on slower CI runners, so resolve it here too.
     await dismissCinematicCanvasWelcome(page);
-    const drawing = await page.locator('[data-studio-editor="true"]').getAttribute("data-studio-drawing-clarity") === "true";
+    await closeFloatingUi(page);
+    const editor = await visibleStudioControl(page.locator('[data-studio-editor="true"]'), "Studio 편집기");
+    const drawing = await editor.getAttribute("data-studio-drawing-clarity") === "true";
     const surfaceId = drawing ? "collaboration" : "workspace-arrangement";
     const surfaceName = drawing ? "채팅 · 통화" : "배치 편집 도구";
-    const dialogName = drawing ? "화면과 작업 환경" : DESKTOP_FLOATING_LAYOUT_DIALOG.name;
+    const targetDefaultDock = drawing ? "right" : "bottom";
+    const dialogSpec = drawing ? CLARITY_FLOATING_LAYOUT_DIALOG : DESKTOP_FLOATING_LAYOUT_DIALOG;
     const workbench = page.locator(drawing ? '[data-studio-quick-ergonomics="true"]' : '[data-studio-workbench-options="true"]');
     const floatingTool = page.locator(`[data-studio-shell-floating-target="${surfaceId}"]`);
     const saveStatus = page.locator(drawing ? 'button[data-studio-drawing-save-summary="true"]' : '[data-studio-draft-save-center]');
     const launcher = page.locator(drawing ? '[data-studio-clarity-more-trigger="true"]' : '[data-studio-shell-view-options="true"] > button');
     await workbench.waitFor({ state: "visible", timeout: 5000 });
     await floatingTool.waitFor({ state: "visible", timeout: 5000 });
-    if (drawing) await runStudioClarityAction(page, "view");
+    if (drawing) await runStudioClarityAction(page, "view", 8_000);
     else await launcher.click();
-    const dialog = page.getByRole("dialog", { name: dialogName, exact: true });
+    const dialog = page.getByRole("dialog", { name: dialogSpec.name, exact: true });
     await dialog.waitFor({ state: "visible", timeout: 5000 });
     await dialog.getByRole("switch", { name: `${surfaceName} 숨기기`, exact: true }).click();
     await floatingTool.waitFor({ state: "hidden", timeout: 3000 });
@@ -1262,7 +1270,7 @@ async function assertFloatingLayoutManager(page: Page): Promise<string[]> {
     const dock = handle.getByRole("combobox", { name: `${surfaceName} 도킹 위치`, exact: true });
     await dock.selectOption("top");
     if (await dock.inputValue() !== "top") failures.push("플로팅 도구 직접 도킹 선택 미적용");
-    await dock.selectOption("bottom");
+    await dock.selectOption(targetDefaultDock);
     await dialog.getByRole("button", { name: "배치 완료", exact: true }).click();
 
     const autoHide = dialog.getByRole("switch", { name: /펜으로 그리는 동안 자동 숨김/ });
@@ -1280,7 +1288,7 @@ async function assertFloatingLayoutManager(page: Page): Promise<string[]> {
     await dialog.getByRole("button", { name: "모두 표시", exact: true }).click();
     await floatingTool.waitFor({ state: "visible", timeout: 3000 });
     if (await autoHide.getAttribute("aria-checked") !== "true") failures.push("드로잉 자동 숨김 활성 상태 미유지");
-    await dialog.getByRole("button", { name: `${dialogName} 닫기`, exact: true }).click();
+    await dialog.getByRole("button", { name: dialogSpec.closeLabel, exact: true }).click();
     await dialog.waitFor({ state: "hidden", timeout: 3000 });
 
     if (drawing) {

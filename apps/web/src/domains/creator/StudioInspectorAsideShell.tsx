@@ -24,6 +24,8 @@ import type { StudioInspectorFocusTarget } from "./studio-inspector-focus";
 import type { StudioInspectorTabA11y } from "./studio-inspector-tab-a11y";
 import { executeStudioInspectorRouteTransition } from "./studio-inspector-tool-transition";
 import { isEffectivelyHidden } from "./studio-layers";
+import { isIdentityHalftone } from "./studio-halftone";
+import { countActiveImageLayerEffects, formatInspectorCollapsedActiveBadge } from "./studio-inspector-density";
 import { studioMobileSheetSizeStyle } from "./studio-mobile-sheet-snap";
 import { resolveStudioTemplateGutterCapability } from "./studio-template-gutter-layout";
 import {
@@ -76,116 +78,37 @@ export function StudioInspectorAsideShell({
   // 도킹 방향에 따라 캔버스와 맞닿는 쪽 테두리만 남긴다(왼쪽 도킹이면 오른쪽 테두리).
   const inspectorDockSide = useStudioInspectorDockSide();
   const {
-    activeImageRasterPolicy,
-    activateCanvasTool,
-    applyBgPreset,
-    applyMagicResizePreset,
-    applyPageGrade,
-    applyPaperTintBackground,
-    bg,
-    bgGrad,
-    canvasControlsDisabled,
-    canvasFlipH,
-    canvasH,
-    canvasRotation,
-    changeInspectorLayout,
-    commit,
-    currentPageId,
-    currentTemplate,
-    description,
-    disarmAllPixelTools,
-    drawMode,
-    effScale,
-    elements,
-    ensureWebtoonGuidesLoaded,
-    gridSize,
-    groups,
-    handleLayerNavigatorAction,
-    inspectorContentMode,
-    inspectorDrawing,
-    inspectorInteractionPolicy,
-    inspectorLayout,
-    inspectorTransientState,
-    isMobile,
-    layerNavigatorItems,
-    localHiddenElementIds,
-    magicResizeStrategy,
-    marqueeIds,
-    masterEditMode,
-    mobileInspectorSnap,
-    mobileSheet,
-    onMinimapClick,
-    onMinimapKeyDown,
-    openFeatureTutorial,
-    pageGrade,
-    pageGradeActive,
-    pageGradePanelOpen,
-    panelGutter,
-    referenceBoardItemCount,
-    referencePanelOpen,
-    onOpenReferenceCanvas,
-    onOpenReferenceWindow,
-    paperGrainKind,
-    paperGrainVisible,
-    patchEl,
-    patchPageGrade,
-    propsSheetRef,
-    regenerateTemplate,
-    resetPageGrade,
-    rightPanelDisabledReasons,
-    rightResize,
-    safeMobileKeyboardInset,
-    saving,
-    scrollViewportStore,
-    selectLayersFromNavigator,
-    selected,
-    selectedSupportsImageInspectorTabs,
-    selectedId,
-    setBg,
-    setBgGrad,
-    setCanvasH,
-    setColor,
-    setDescription,
-    setGridSize,
-    setMagicResizeStrategy,
-    setMenu,
-    setMobileInspectorSnap,
-    setMobileSheet,
-    setPageGradePanelOpen,
-    setPanelGutter,
-    setPaperGrainKind,
-    setPaperGrainVisible,
-    setRightPanelOpen,
-    setSharedDocumentNotice,
-    setShowAlignmentGuides,
-    setShowGrid,
-    setShowWebtoonGuides,
-    setSnapEnabled,
-    setTagsText,
-    setTitle,
-    setUnselectedImageToolsVisible,
-    unselectedImageToolsVisible,
-    setUserGuides,
-    setWebtoonTheme,
-    showAlignmentGuides,
-    showGrid,
-    showWebtoonGuides,
-    snapEnabled,
-    soloLayerId,
-    tagsText,
-    title,
-    titleInputRef,
-    pendingSaveIntent,
-    onContinuePendingSave,
-    onClearWorkMetadataError,
-    toggleLayerSolo,
-    toggleLocalHidden,
-    userGuides,
-    visibleRightPanelOpen,
-    webtoonGuides,
-    webtoonTheme,
-    withCanvasControlsGuard,
+    activeImageRasterPolicy, activateCanvasTool, applyBgPreset, applyMagicResizePreset, applyPageGrade,
+    applyPaperTintBackground, bg, bgGrad, canvasControlsDisabled, canvasFlipH, canvasH, canvasRotation,
+    changeInspectorLayout, commit, currentPageId, currentTemplate, description, disarmAllPixelTools, drawMode,
+    effScale, elements, ensureWebtoonGuidesLoaded, gridSize, groups, handleLayerNavigatorAction,
+    inspectorContentMode, inspectorDrawing, inspectorInteractionPolicy, inspectorLayout, inspectorTransientState,
+    isMobile, layerNavigatorItems, localHiddenElementIds, magicResizeStrategy, marqueeIds, masterEditMode,
+    mobileInspectorSnap, mobileSheet, onMinimapClick, onMinimapKeyDown, openFeatureTutorial, pageGrade,
+    pageGradeActive, pageGradePanelOpen, panelGutter, referenceBoardItemCount, referencePanelOpen,
+    onOpenReferenceCanvas, onOpenReferenceWindow, paperGrainKind, paperGrainVisible, patchEl, patchPageGrade,
+    propsSheetRef, regenerateTemplate, resetPageGrade, rightPanelDisabledReasons, rightResize,
+    safeMobileKeyboardInset, saving, scrollViewportStore, selectLayersFromNavigator, selected,
+    selectedSupportsImageInspectorTabs, selectedId, setBg, setBgGrad, setCanvasH, setColor, setDescription,
+    setGridSize, setMagicResizeStrategy, setMenu, setMobileInspectorSnap, setMobileSheet, setPageGradePanelOpen,
+    setPanelGutter, setPaperGrainKind, setPaperGrainVisible, setRightPanelOpen, setSharedDocumentNotice,
+    setShowAlignmentGuides, setShowGrid, setShowWebtoonGuides, setSnapEnabled, setTagsText, setTitle,
+    setUnselectedImageToolsVisible, unselectedImageToolsVisible, setUserGuides, setWebtoonTheme,
+    showAlignmentGuides, showGrid, showWebtoonGuides, snapEnabled, soloLayerId, tagsText, title, titleInputRef,
+    pendingSaveIntent, onContinuePendingSave, onClearWorkMetadataError, toggleLayerSolo, toggleLocalHidden,
+    userGuides, visibleRightPanelOpen, webtoonGuides, webtoonTheme, withCanvasControlsGuard,
   } = model;
+  const selectedEffectsStack = selected?.type === "image"
+    ? (selected as { readonly layerEffectsStack?: StudioLayerEffectsStack }).layerEffectsStack
+    : undefined;
+  const activeLayerEffectCount = selected?.type === "image"
+    ? countActiveImageLayerEffects({
+      borderEnabled: Boolean(selected.borderEffect?.enabled),
+      halftoneEnabled: Boolean(selected.halftone && !isIdentityHalftone(selected.halftone)),
+      effectsStack: selectedEffectsStack?.effects,
+    })
+    : 0;
+  const layerCompCount = model.layerComps?.length ?? 0;
   const templateGutterCapability = resolveStudioTemplateGutterCapability(currentTemplate);
   /**
    * 넓은 패널(≥ 420px)에서는 대상 속성 아래에 레이어 목록을 함께 둔다(UX 감사 2026-09-02
@@ -226,6 +149,7 @@ export function StudioInspectorAsideShell({
           aria-modal={isMobile && mobileSheet === "props" ? true : undefined}
           data-studio-sheet-id="props"
           data-studio-inspector-primary={inspectorLayout.primary}
+          data-studio-inspector-essential-budget="5-9"
           data-studio-panel-detached={desktopDetached ? "true" : undefined}
           data-studio-mobile-sheet={isMobile && mobileSheet === "props" ? "true" : undefined}
           data-studio-sheet-snap={isMobile ? mobileInspectorSnap : undefined}
@@ -260,6 +184,10 @@ export function StudioInspectorAsideShell({
                 : { width: rightResize.width, minWidth: STUDIO_WORKSPACE_RIGHT_PANEL_WIDTH.minimum, maxWidth: "100%" }
           }
         >
+          <div
+            data-studio-inspector-sticky-header="true"
+            className="sticky top-0 z-10 -mx-2.5 -mt-2.5 flex shrink-0 flex-col gap-1.5 border-b border-line bg-panel px-2.5 pb-1.5 pt-2.5 lg:-mx-2 lg:-mt-2 lg:px-2 lg:pt-2"
+          >
           <StudioCommandSearchHost
             hideTrigger={isMobile}
             pendingRequest={model.commandSearchRequest}
@@ -280,25 +208,29 @@ export function StudioInspectorAsideShell({
                 <div className="mr-1 hidden shrink-0 items-center gap-1 lg:flex">
                   <button
                     type="button"
+                    data-inspector-priority="chrome"
+                    data-inspector-control-id="shell.detach"
                     onClick={() => setInspectorDetached(!detached)}
                     aria-label={detached
                       ? "작업 패널을 오른쪽 패널에 붙이기"
                       : "작업 패널을 창으로 분리"}
                     aria-pressed={desktopDetached}
-                    className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded px-2 text-[0.65rem] text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-lg px-2 text-xs font-medium text-fg-2 [word-break:keep-all] transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     title={detached ? "오른쪽 패널에 붙이기" : "자유 배치 창으로 분리"}
                   >
-                    {detached ? <PanelRight size={12} aria-hidden /> : <Move size={12} aria-hidden />}
+                    {detached ? <PanelRight size={14} aria-hidden /> : <Move size={14} aria-hidden />}
                     {detached ? "붙이기" : "분리"}
                   </button>
                   <button
                     type="button"
+                    data-inspector-priority="chrome"
+                    data-inspector-control-id="shell.collapse"
                     onClick={() => setRightPanelOpen(false)}
                     aria-label="작업 패널 접기"
-                    className="inline-flex min-h-11 min-w-11 items-center gap-0.5 rounded px-1.5 text-[0.65rem] text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    className="inline-flex min-h-11 min-w-11 items-center gap-0.5 rounded-lg px-2 text-xs font-medium text-fg-2 [word-break:keep-all] transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     title="작업 패널 접기"
                   >
-                    접기 <ChevronRight size={12} aria-hidden />
+                    접기 <ChevronRight size={14} aria-hidden />
                   </button>
                 </div>
               )
@@ -423,6 +355,7 @@ export function StudioInspectorAsideShell({
               );
             }}
           />
+          </div>
           <StudioInspectorDisabledReasons reasons={rightPanelDisabledReasons} />
           {inspectorLayout.primary === "properties" ? <StudioEditTargetSummary model={model} /> : null}
           <StudioPinnedColorPanelSlot />
@@ -587,60 +520,94 @@ export function StudioInspectorAsideShell({
                     />
                   </Suspense>
                 </div>
-                {/* 비파괴 경계 효과 — 선택 이미지 레이어의 비파괴 테두리. 문서 커밋은
-                    다른 레이어 속성(불투명도 등)과 같은 patchEl 시임 하나만 쓴다(2026-08-20). */}
+                {/* 비파괴 경계·톤·효과 스택 — 접힌 <details> 요약에 활성 카운트 배지 노출 */}
                 {selected?.type === "image" ? (
-                  <StudioLayerBorderEffectPanel
-                    value={selected.borderEffect}
-                    disabled={inspectorInteractionPolicy.global.disabled}
-                    onChange={(next) => patchEl(selected.id, { borderEffect: next } as Partial<El>)}
-                  />
+                  <details
+                    data-studio-inspector-collapsible="layer-effects"
+                    open={activeLayerEffectCount > 0 || undefined}
+                    className="rounded-lg border border-line bg-card/50"
+                  >
+                    <summary
+                      data-inspector-priority="chrome"
+                      data-inspector-control-id="layers.effects-disclosure"
+                      className="sticky top-0 z-[5] flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg bg-panel px-2.5 py-2 text-xs font-semibold text-fg-2 [word-break:keep-all] hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                    >
+                      <span>레이어 효과 · 톤</span>
+                      <span
+                        data-studio-collapsed-badge="layer-effects"
+                        className="rounded-[6px] border border-line bg-raised px-1.5 py-0.5 font-mono text-xs tabular-nums text-fg-2"
+                      >
+                        {formatInspectorCollapsedActiveBadge(activeLayerEffectCount)}
+                      </span>
+                    </summary>
+                    <div className="flex flex-col gap-2 p-2 pt-1">
+                      <StudioLayerBorderEffectPanel
+                        value={selected.borderEffect}
+                        disabled={inspectorInteractionPolicy.global.disabled}
+                        onChange={(next) => patchEl(selected.id, { borderEffect: next } as Partial<El>)}
+                      />
+                      <StudioLayerTonePanel
+                        value={selected.halftone}
+                        disabled={inspectorInteractionPolicy.global.disabled}
+                        onChange={(next) => patchEl(selected.id, { halftone: next } as Partial<El>)}
+                      />
+                      {!inspectorInteractionPolicy.global.disabled ? (
+                        <Suspense fallback={null}>
+                          <StudioLayerEffectsStackPanel
+                            stack={selectedEffectsStack ?? EMPTY_LAYER_EFFECTS_STACK}
+                            onChange={(nextStack) =>
+                              patchEl(selected.id, { layerEffectsStack: nextStack } as Partial<El>)
+                            }
+                          />
+                        </Suspense>
+                      ) : null}
+                    </div>
+                  </details>
                 ) : null}
-                {/* 톤·스크린톤 효과 — 선택 이미지 레이어의 망점화. */}
-                {selected?.type === "image" ? (
-                  <StudioLayerTonePanel
-                    value={selected.halftone}
-                    disabled={inspectorInteractionPolicy.global.disabled}
-                    onChange={(next) => patchEl(selected.id, { halftone: next } as Partial<El>)}
-                  />
-                ) : null}
-                {/* 비파괴 레이어 효과 스택 (발광·그림자·부조·경계) */}
-                {selected?.type === "image" && !inspectorInteractionPolicy.global.disabled ? (
-                  <Suspense fallback={null}>
-                    <StudioLayerEffectsStackPanel
-                      stack={
-                        (selected as { readonly layerEffectsStack?: StudioLayerEffectsStack })
-                          .layerEffectsStack ?? EMPTY_LAYER_EFFECTS_STACK
-                      }
-                      onChange={(nextStack) =>
-                        patchEl(selected.id, { layerEffectsStack: nextStack } as Partial<El>)
-                      }
+                {/* 레이어 콤프 · 템플릿 */}
+                <details
+                  data-studio-inspector-collapsible="layer-comps"
+                  open={layerCompCount > 0 || undefined}
+                  className="rounded-lg border border-line bg-card/50"
+                >
+                  <summary
+                    data-inspector-priority="chrome"
+                    data-inspector-control-id="layers.comps-disclosure"
+                    className="sticky top-0 z-[5] flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg bg-panel px-2.5 py-2 text-xs font-semibold text-fg-2 [word-break:keep-all] hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                  >
+                    <span>레이어 콤프 · 템플릿</span>
+                    <span
+                      data-studio-collapsed-badge="layer-comps"
+                      className="rounded-[6px] border border-line bg-raised px-1.5 py-0.5 font-mono text-xs tabular-nums text-fg-2"
+                    >
+                      {formatInspectorCollapsedActiveBadge(layerCompCount, { unitLabel: "저장", emptyLabel: "0개" })}
+                    </span>
+                  </summary>
+                  <div className="p-2 pt-1">
+                    <StudioLayerCompsPanel
+                      key={currentPageId}
+                      comps={model.layerComps ?? []}
+                      groups={groups}
+                      disabled={masterEditMode || inspectorInteractionPolicy.global.disabled}
+                      onCompsChange={model.onChangeLayerComps}
+                      onCaptureComp={model.onCaptureLayerComp}
+                      layers={elements.map((element) => ({
+                        id: element.id,
+                        visible: !element.hidden,
+                        opacity: element.opacity ?? 1,
+                        blendMode: element.blendMode ?? "source-over",
+                        groupId: element.groupId,
+                      }))}
+                      onApplyComp={model.onApplyLayerComp}
+                      onApplyLayerTemplate={(inst, tpl) => {
+                        setSharedDocumentNotice(null);
+                        const nextEls = buildPageElementsFromInstantiatedTemplate(inst, { width: CANVAS_W, height: canvasH });
+                        commit([...elements, ...nextEls], { groups: [...groups, ...inst.groups] });
+                        model.announceDrawingShortcut(`${tpl.name} (${inst.layers.length})`);
+                      }}
                     />
-                  </Suspense>
-                ) : null}
-                {/* 레이어 콤프 */}
-                <StudioLayerCompsPanel
-                  key={currentPageId}
-                  comps={model.layerComps ?? []}
-                  groups={groups}
-                  disabled={masterEditMode || inspectorInteractionPolicy.global.disabled}
-                  onCompsChange={model.onChangeLayerComps}
-                  onCaptureComp={model.onCaptureLayerComp}
-                  layers={elements.map((element) => ({
-                    id: element.id,
-                    visible: !element.hidden,
-                    opacity: element.opacity ?? 1,
-                    blendMode: element.blendMode ?? "source-over",
-                    groupId: element.groupId,
-                  }))}
-                  onApplyComp={model.onApplyLayerComp}
-                  onApplyLayerTemplate={(inst, tpl) => {
-                    setSharedDocumentNotice(null);
-                    const nextEls = buildPageElementsFromInstantiatedTemplate(inst, { width: CANVAS_W, height: canvasH });
-                    commit([...elements, ...nextEls], { groups: [...groups, ...inst.groups] });
-                    model.announceDrawingShortcut(`${tpl.name} (${inst.layers.length})`);
-                  }}
-                />
+                  </div>
+                </details>
               </>
             ) : null}
           </div>
@@ -656,7 +623,7 @@ export function StudioInspectorAsideShell({
             }
             className="rounded-xl border border-line bg-panel/40 p-3"
           >
-            <p className="mb-2 text-xs font-semibold text-fg-3">미니맵 / 네비게이터</p>
+            <p className="sticky top-0 z-[5] mb-2 border-b border-line/60 bg-panel py-1 text-xs font-semibold text-fg-2">미니맵 / 네비게이터</p>
             <div className="flex justify-center bg-canvas/30 rounded-xl p-2 border border-line/50">
               <div
                 role="button"

@@ -113,6 +113,12 @@ type StoryworldTab =
 type SaveState = "idle" | "saved" | "error";
 
 
+type StoryworldCoreGroupId =
+  | "plausibility"
+  | "plot-timeline"
+  | "characters-relations"
+  | "world-foreshadow";
+
 const TAB_ITEMS: readonly {
   readonly id: StoryworldTab;
   readonly label: string;
@@ -130,6 +136,49 @@ const TAB_ITEMS: readonly {
   { id: "capabilities", label: "창의 기능 지도", icon: Compass },
   { id: "json", label: "설정 파일", icon: FileJson },
 ];
+
+const CORE_GROUPS: readonly {
+  readonly id: StoryworldCoreGroupId;
+  readonly label: string;
+  readonly icon: typeof Network;
+  readonly defaultTab: StoryworldTab;
+  readonly tabs: readonly StoryworldTab[];
+}[] = [
+  {
+    id: "plausibility",
+    label: "개연성 점검",
+    icon: ListChecks,
+    defaultTab: "plausibility",
+    tabs: ["plausibility"],
+  },
+  {
+    id: "plot-timeline",
+    label: "플롯·타임라인",
+    icon: Network,
+    defaultTab: "overview",
+    tabs: ["overview", "issues", "multiverse"],
+  },
+  {
+    id: "characters-relations",
+    label: "캐릭터·관계",
+    icon: Users,
+    defaultTab: "settings",
+    tabs: ["settings", "knowledge"],
+  },
+  {
+    id: "world-foreshadow",
+    label: "세계관·복선",
+    icon: Globe2,
+    defaultTab: "contracts",
+    tabs: ["contracts", "universe"],
+  },
+];
+
+const ADVANCED_TABS: readonly StoryworldTab[] = ["json", "ip-expansion", "capabilities"];
+
+function tabItemById(id: StoryworldTab) {
+  return TAB_ITEMS.find((item) => item.id === id) ?? TAB_ITEMS[0]!;
+}
 
 const STORYWORLD_DEMO_SEED_FLAG = "toonSpectrumDemoSeed";
 
@@ -211,9 +260,6 @@ function StoryworldReaContinuityBar({
             )}
           </p>
         </div>
-        <span className="rounded-lg bg-panel px-2.5 py-1 font-mono text-[11px] text-fg-2 sm:text-xs">
-          World Anvil · Campfire · Plottr · Scrivener
-        </span>
       </div>
       <div
         role="group"
@@ -337,7 +383,10 @@ function StudioStoryworldLabEditor({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [statusText, setStatusText] = useState(frozenStatus2Text("studio.frozenStatus2.world.initialStatus", "세계관 점검 준비됨"));
   const [importWizardOpen, setImportWizardOpen] = useState(false);
+  const [advancedDrawerOpen, setAdvancedDrawerOpen] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
+  const activeCoreGroup = CORE_GROUPS.find((group) => group.tabs.includes(activeTab)) ?? null;
+  const isAdvancedTab = ADVANCED_TABS.includes(activeTab);
   const result = useMemo(() => analyzeStoryworldProject(project), [project]);
   const continuityIssues = useMemo(() => analyzeStoryworldContinuity(project), [project]);
   const backHref = editorHref(workId, remixSourceWorkId);
@@ -452,7 +501,7 @@ function StudioStoryworldLabEditor({
           </Link>
           <div className="storyworld-brand-mark" aria-hidden><Network size={20} /></div>
           <div>
-            <span>TOONSTUDIO STUDIO</span>
+            <span>TOONSTUDIO</span>
             <strong>스토리월드 인과관계 랩</strong>
           </div>
         </div>
@@ -476,17 +525,59 @@ function StudioStoryworldLabEditor({
             <small>{project.id === STORYWORLD_DEMO_PROJECT.id ? "예시 데이터 · " : "이 기기에서 작업 중 · "}{project.scenes.length}개 장면 · {project.characters.length}명 · {project.facts.length}개 사실</small>
           </div>
           <nav aria-label="스토리월드 랩 섹션">
-            {TAB_ITEMS.map((tab) => {
-              const Icon = tab.icon;
+            {CORE_GROUPS.map((group) => {
+              const Icon = group.icon;
+              const isCurrent = group.tabs.includes(activeTab);
+              const showIssueBadge = group.id === "plot-timeline" && result.issues.length > 0;
               return (
-                <button aria-current={activeTab === tab.id ? "page" : undefined} className="min-h-11" key={tab.id} onClick={() => setActiveTab(tab.id)} type="button">
+                <button
+                  aria-current={isCurrent ? "page" : undefined}
+                  className="min-h-11"
+                  key={group.id}
+                  onClick={() => {
+                    if (!isCurrent) setActiveTab(group.defaultTab);
+                  }}
+                  type="button"
+                >
                   <Icon aria-hidden size={17} />
-                  <span>{tab.label}</span>
-                  {tab.id === "issues" && result.issues.length > 0 ? <em>{result.issues.length}</em> : null}
+                  <span>{group.label}</span>
+                  {showIssueBadge ? <em>{result.issues.length}</em> : null}
                 </button>
               );
             })}
           </nav>
+          <details
+            className="storyworld-advanced-drawer"
+            data-storyworld-advanced-drawer="true"
+            open={advancedDrawerOpen || isAdvancedTab}
+            onToggle={(event) => {
+              if (event.target === event.currentTarget) {
+                setAdvancedDrawerOpen(event.currentTarget.open);
+              }
+            }}
+          >
+            <summary className="storyworld-advanced-drawer__summary min-h-11">
+              <span>고급 · JSON 설정</span>
+            </summary>
+            <div className="storyworld-advanced-drawer__list" role="group" aria-label="고급 및 설정 파일">
+              {ADVANCED_TABS.map((tabId) => {
+                const tab = tabItemById(tabId);
+                const Icon = tab.icon;
+                return (
+                  <button
+                    aria-current={activeTab === tab.id ? "page" : undefined}
+                    className="storyworld-advanced-drawer__item min-h-11"
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    type="button"
+                  >
+                    <Icon aria-hidden size={16} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </details>
           <div className="storyworld-sidebar__footer">
             <button className="min-h-11" onClick={reset} type="button"><RefreshCcw aria-hidden size={15} /> 데모 초기화</button>
             <p><TimerReset aria-hidden size={14} /> 분석은 네트워크 없이 이 탭에서 실행됩니다.</p>
@@ -526,6 +617,33 @@ function StudioStoryworldLabEditor({
               <span>확인할 점 <strong>{result.issues.length}개</strong></span>
             </div>
           </div>
+
+          {activeCoreGroup && activeCoreGroup.tabs.length > 1 ? (
+            <div
+              className="storyworld-subtabs"
+              role="tablist"
+              aria-label={`${activeCoreGroup.label} 세부 보기`}
+            >
+              {activeCoreGroup.tabs.map((tabId) => {
+                const tab = tabItemById(tabId);
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className="storyworld-subtab min-h-11"
+                  >
+                    <Icon aria-hidden size={15} />
+                    <span>{tab.label}</span>
+                    {tab.id === "issues" && result.issues.length > 0 ? <em>{result.issues.length}</em> : null}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
 
           {reaBar}
 

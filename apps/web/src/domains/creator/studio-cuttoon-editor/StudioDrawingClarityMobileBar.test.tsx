@@ -135,10 +135,13 @@ describe("웹 모바일 기본 상단", () => {
     expect(screen.queryByRole("button", { name: "원고 내보내기" })).toBeNull();
     expect(screen.queryByText("이 기기에 저장됨")).toBeNull();
   });
-  it("상단 저장이 기존 초안 명령을 한 번 실행한다", () => {
+  it("상단 저장이 기존 초안 명령을 한 번 실행하고 출고 버튼과 기본 접힘 편집 행을 제공한다", () => {
     const value = session(); show(value);
     fireEvent.click(screen.getByRole("button", { name: "초안 저장" }));
     expect(value.studioMenubarContentHandlers.handleSave).toHaveBeenCalledExactlyOnceWith("draft");
+    expect(document.getElementById("studio-mobile-edit-options")?.getAttribute("data-compact-expanded")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "출고" }));
+    expect(value.setExportMenuOpen).toHaveBeenCalledWith(true);
   });
   it("편집 옵션에서 기존 전체 화면 모드를 양방향 전환하고 현재 상태를 알린다", () => {
     const value = session(), changed = vi.fn();

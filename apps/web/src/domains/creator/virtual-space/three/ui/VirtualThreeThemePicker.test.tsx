@@ -22,19 +22,30 @@ function props(): VirtualThreeThemePickerProps {
 const group = () => screen.getByRole("group", { name: "3D 공간 테마" });
 
 describe("3D 전용 테마 선택기", () => {
-  it("기존 baseline과 여덟 테마의 이름·설명·pressed 상태를 키보드 단추로 제공한다", () => {
+  it("Hero 3D BG 12씬 그룹을 최우선 표시하고 모든 테마에 data-testid·pressed·설명을 키보드 단추로 제공한다", () => {
     const input = props();
     render(<VirtualThreeThemePicker {...input} />);
     const cards = within(group()).getAllByRole("button").filter(button => button.hasAttribute("data-three-theme"));
-    expect(cards).toHaveLength(9);
+    expect(cards).toHaveLength(VIRTUAL_THREE_THEMES.length);
+    const heroGroup = screen.getByTestId("three-theme-group-hero");
+    const heroCards = within(heroGroup).getAllByRole("button");
+    expect(heroCards).toHaveLength(12);
+    expect(cards[0]?.getAttribute("data-three-theme-kind")).toBe("hero-scene");
+    expect(screen.getByTestId("three-theme-option-hero-bg-kr-atelier-cafe-interior")).toBeTruthy();
+    expect(screen.getByTestId("three-theme-option-hero-bg-kr-modern-office-suite")).toBeTruthy();
+    expect(screen.getByTestId("three-theme-option-hero-bg-kr-seoul-subway-train-platform")).toBeTruthy();
+    expect(screen.getByTestId("three-theme-option-hero-bg-kr-convenience-store-night")).toBeTruthy();
     for (const theme of VIRTUAL_THREE_THEMES) {
-      const card = within(group()).getByRole("button", { name: theme.copy.ko.name });
+      const card = screen.getByTestId(`three-theme-option-${theme.id}`);
+      expect(card.getAttribute("aria-label")).toBe(theme.copy.ko.name);
       expect(card.getAttribute("aria-pressed")).toBe(String(theme.id === "creator-campus"));
       const descriptionId = card.getAttribute("aria-describedby");
       expect(descriptionId ? document.getElementById(descriptionId)?.textContent : null).toBe(theme.copy.ko.description);
     }
+    fireEvent.click(screen.getByTestId("three-theme-option-hero-bg-kr-atelier-cafe-interior"));
+    expect(input.onPreview).toHaveBeenCalledWith("hero-bg-kr-atelier-cafe-interior");
     fireEvent.click(screen.getByRole("button", { name: "SF 제작 실험실" }));
-    expect(input.onPreview).toHaveBeenCalledExactlyOnceWith("sflab");
+    expect(input.onPreview).toHaveBeenLastCalledWith("sflab");
     expect(input.onApply).not.toHaveBeenCalled();
   });
 

@@ -55,10 +55,10 @@ export function PinTaskInboxSection({
   if (loading) {
     return (
       <section aria-label={bt("미해결 검수 핀", "Open review pins")} className="rounded-2xl border border-line bg-card p-4">
-        <div className="h-4 w-36 animate-pulse rounded bg-panel" />
+        <div className="h-4 w-36 rounded bg-panel" />
         <div className="mt-3 space-y-2">
-          <div className="h-14 animate-pulse rounded-xl bg-panel" />
-          <div className="h-14 animate-pulse rounded-xl bg-panel" />
+          <div className="h-14 rounded-xl bg-panel" />
+          <div className="h-14 rounded-xl bg-panel" />
         </div>
         <p className="mt-3 text-xs text-fg-3">{bt("미해결 핀을 불러오고 있어요.", "Loading open pins.")}</p>
       </section>
@@ -85,7 +85,7 @@ export function PinTaskInboxSection({
   return (
     <section aria-label={bt("미해결 검수 핀", "Open review pins")} className="rounded-2xl border border-line bg-card p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-black text-fg">{bt("미해결 검수 핀", "Open review pins")}</p>
+        <p className="text-sm font-semibold text-fg">{bt("미해결 검수 핀", "Open review pins")}</p>
         {summary.urgentOpenCount > 0 ? (
           <span className="text-xs font-bold text-fg-2">
             {bt(

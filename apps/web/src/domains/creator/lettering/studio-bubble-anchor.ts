@@ -23,7 +23,11 @@
  *
  * DOM/Konva 의존성 없음.
  */
-import type { BubbleTailDirection } from "./studio-bubble-path";
+import type {
+  BubbleTailDirection,
+  BubbleTailSide,
+  BubbleTailSpec,
+} from "./studio-bubble-path";
 
 /** "자기 자신"(부착시키는 말풍선)의 기하 — BubbleEl 의 필드명과 1:1로 맞춰 StudioPage 가
  *  BubbleEl 을 그대로 넘길 수 있게 한다(변환 어댑터 불필요). */
@@ -34,7 +38,7 @@ export interface AnchorBubbleShape {
   height: number;
   /** 도(°), 기본 0. */
   rotation?: number;
-  /** 화자 방향 미러 — BubbleEl.tail 과 동일 의미, 기본 "left". */
+  /** 화자 방향 힌트 — BubbleEl.tail 과 동일 의미. 기본 계산에서는 묵시적 좌우 반전하지 않는다. */
   tail?: "left" | "right" | "none";
 }
 
@@ -52,16 +56,31 @@ export interface BubbleAnchorSpec {
   tailAnchorPoint?: { x: number; y: number };
 }
 
+export interface BubbleAnchorTailOptions {
+  /**
+   * Blambot 꼬리 길이 비율. 기본값은 0.55(직선거리의 55%, [8, 150]px 클램프)로 화자 얼굴·입을
+   * 찌르지 않도록 적정 길이를 유지한다. 손잡이 드래그 1:1 거리 호환이 필요할 때만 `1`을 명시한다.
+   */
+  readonly lengthRatio?: number;
+  /**
+   * 레거시 Konva `tail: "right"`의 상/하 `1 - ratio` 미러링 호환 플래그.
+   * 기본값은 `false` — 묵시적 미러링 함정을 제거하고 실제 targetPoint 방향을 유지한다.
+   */
+  readonly mirrorRightTail?: boolean;
+}
+
 export interface BubbleAnchorTailResult {
   tailDirection: BubbleTailDirection;
-  tailXRatio: number; // 반올림 2자리, [0.15, 0.85] 클램프 — 손잡이 드래그와 동일
-  tailHeight: number; // 정수 반올림, [8, 150] 클램프 — 손잡이 드래그와 동일
+  tailXRatio: number; // 반올림 2자리, [0.15, 0.85] 클램프
+  tailHeight: number; // 정수 반올림, Blambot 55% 기본 적용 후 [8, 150] 클램프
 }
 
 /** 손잡이 드래그(StudioPage.tsx ~9329,9334,9339,9344)와 동일한 클램프 범위. */
 export const BUBBLE_ANCHOR_RATIO_RANGE = { min: 0.15, max: 0.85 } as const;
-/** 손잡이 드래그(~9330,9335,9340,9345)와 동일한 클램프 범위. */
+/** 꼬리 길이 클램프 범위(px). */
 export const BUBBLE_ANCHOR_LENGTH_RANGE = { min: 8, max: 150 } as const;
+/** Blambot 50~60% 규칙의 기본 꼬리 길이 비율(55%). */
+export const BUBBLE_ANCHOR_BLAMBOT_LENGTH_RATIO = 0.55 as const;
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, n));
@@ -74,16 +93,29 @@ const isFinite2 = (a: number, b: number) => Number.isFinite(a) && Number.isFinit
  * 계산한다. 말풍선 bounds 가 비정상(width/height<=0, 비유한)이거나 targetPoint 가 비유한이면
  * null(호출부는 이번 커밋에서 건드리지 말고 다음 기회에 재시도 — resolvePerspectiveRay 와
  * 동일한 "아직 계산 불가" 관례).
+ *
+ * - 기본 길이는 Blambot 50~60% 규칙(`Math.round(rawDistance * 0.55)`, `[8, 150]` 클램프)을 적용한다.
+ * - `tail: "right"`를 넘겨도 상/하단 `tailXRatio`를 묵시적으로 `1 - ratio` 반전하지 않는다
+ *   (레거시 Konva 손잡이 미러링 호환이 필요할 때만 `options.mirrorRightTail: true`를 명시한다).
  */
 export function computeBubbleAnchorTail(
   bubble: AnchorBubbleShape,
-  targetPoint: { x: number; y: number }
+  targetPoint: { x: number; y: number },
+  options?: BubbleAnchorTailOptions,
 ): BubbleAnchorTailResult | null {
   const { x, y, width: w, height: h } = bubble;
   const rotationDeg = bubble.rotation ?? 0;
   if (!isFinite2(x, y) || !isFinite2(w, h) || !Number.isFinite(rotationDeg)) return null;
   if (!isFinite2(targetPoint.x, targetPoint.y)) return null;
   if (w <= 0 || h <= 0) return null;
+
+  const lengthRatio =
+    typeof options?.lengthRatio === "number" &&
+    Number.isFinite(options.lengthRatio) &&
+    options.lengthRatio > 0
+      ? options.lengthRatio
+      : BUBBLE_ANCHOR_BLAMBOT_LENGTH_RATIO;
+  const mirrorRightTail = options?.mirrorRightTail === true;
 
   // 1) 캔버스 좌표 → 말풍선 로컬(비회전) 좌표. Konva Group 이 (0,0) 기준으로 회전하므로
   //    x/y 를 먼저 빼고 -rotation 만큼 역회전한다(손잡이가 Konva 내부적으로 겪는 변환과 동일).
@@ -105,34 +137,65 @@ export function computeBubbleAnchorTail(
   // 동률 우선순위도 원본과 동일하게 bottom > top > left > right 순으로 검사한다(~9326-9345).
   let direction: BubbleTailDirection;
   let ratio: number;
-  let length: number;
+  let rawDistance: number;
   if (minDist === dBot) {
     direction = "bottom";
     ratio = clamp(localX / w, BUBBLE_ANCHOR_RATIO_RANGE.min, BUBBLE_ANCHOR_RATIO_RANGE.max);
-    length = clamp(localY - h, BUBBLE_ANCHOR_LENGTH_RANGE.min, BUBBLE_ANCHOR_LENGTH_RANGE.max);
+    rawDistance = localY - h;
   } else if (minDist === dTop) {
     direction = "top";
     ratio = clamp(localX / w, BUBBLE_ANCHOR_RATIO_RANGE.min, BUBBLE_ANCHOR_RATIO_RANGE.max);
-    length = clamp(-localY, BUBBLE_ANCHOR_LENGTH_RANGE.min, BUBBLE_ANCHOR_LENGTH_RANGE.max);
+    rawDistance = -localY;
   } else if (minDist === dLeft) {
     direction = "left";
     ratio = clamp(localY / h, BUBBLE_ANCHOR_RATIO_RANGE.min, BUBBLE_ANCHOR_RATIO_RANGE.max);
-    length = clamp(-localX, BUBBLE_ANCHOR_LENGTH_RANGE.min, BUBBLE_ANCHOR_LENGTH_RANGE.max);
+    rawDistance = -localX;
   } else {
     direction = "right";
     ratio = clamp(localY / h, BUBBLE_ANCHOR_RATIO_RANGE.min, BUBBLE_ANCHOR_RATIO_RANGE.max);
-    length = clamp(localX - w, BUBBLE_ANCHOR_LENGTH_RANGE.min, BUBBLE_ANCHOR_LENGTH_RANGE.max);
+    rawDistance = localX - w;
   }
 
-  // 3) 화자 방향 미러(el.tail) — 손잡이(~9348-9350)와 동일 규약, bottom/top 에만 영향.
-  if ((bubble.tail ?? "left") === "right" && (direction === "bottom" || direction === "top")) {
+  // 3) 레거시 미러링은 명시 opt-in(`mirrorRightTail: true`)일 때만 적용한다.
+  if (mirrorRightTail && (bubble.tail ?? "left") === "right" && (direction === "bottom" || direction === "top")) {
     ratio = 1 - ratio;
   }
+
+  const scaledLength = clamp(
+    Math.round(rawDistance * lengthRatio),
+    BUBBLE_ANCHOR_LENGTH_RANGE.min,
+    BUBBLE_ANCHOR_LENGTH_RANGE.max,
+  );
 
   return {
     tailDirection: direction,
     tailXRatio: Math.round(ratio * 100) / 100,
-    tailHeight: Math.round(length),
+    tailHeight: scaledLength,
+  };
+}
+
+/**
+ * `computeBubbleAnchorTail` 결과를 `studio-bubble-path.ts`의 `BubbleTailSpec`으로 명시 변환한다.
+ */
+export function anchorTailResultToBubbleTailSpec(
+  result: BubbleAnchorTailResult,
+  options?: {
+    readonly base?: number;
+    readonly side?: BubbleTailSide;
+    readonly bend?: number;
+  },
+): BubbleTailSpec {
+  const base =
+    typeof options?.base === "number" && Number.isFinite(options.base) && options.base > 0
+      ? options.base
+      : 18;
+  return {
+    direction: result.tailDirection,
+    ratio: result.tailXRatio,
+    length: result.tailHeight,
+    base,
+    side: options?.side ?? "center",
+    ...(options?.bend !== undefined ? { bend: clamp(options.bend, -1, 1) } : {}),
   };
 }
 
@@ -164,9 +227,10 @@ export function resolveAnchorTargetPoint(
  *  "말풍선 bounds 일시적 비정상"을 구분해야 하므로 두 함수를 따로 호출한다). */
 export function computeAnchoredBubbleTailPatch(
   bubble: AnchorBubbleShape & BubbleAnchorSpec,
-  getTargetBounds: (id: string) => AnchorTargetBounds | null
+  getTargetBounds: (id: string) => AnchorTargetBounds | null,
+  options?: BubbleAnchorTailOptions,
 ): BubbleAnchorTailResult | null {
   const point = resolveAnchorTargetPoint(bubble, getTargetBounds);
   if (!point) return null;
-  return computeBubbleAnchorTail(bubble, point);
+  return computeBubbleAnchorTail(bubble, point, options);
 }

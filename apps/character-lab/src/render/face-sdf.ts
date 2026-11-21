@@ -74,13 +74,16 @@ export interface FaceSdfUniforms {
   readonly fdotl: number;
   /** 광원이 머리 right 쪽이면 1(u 뒤집기), 아니면 0 */
   readonly flipU: 0 | 1;
-  /** 비교 임계 = 0.5·(1 − fdotl) */
+  /** 비교 임계 = 0.5·(1 − fdotl)에 광원 고도각(pitch) 감쇠를 적용한 값 */
   readonly threshold: number;
+  /** 광원 고도각(pitch) 감쇠 계수 [0..1] (수평광 y=0에서 1.0, 상하 직광으로 갈수록 0에 근접) */
+  readonly pitchAttenuation: number;
 }
 
 /**
  * 머리 forward/right(월드)와 "광원을 향하는" 방향 벡터로 셰이더 유니폼을 만든다.
- * y 성분은 버리고 xz 평면에서 비교한다(SDF 베이크 규약).
+ * 수평(xz) 방위로 좌우 반전과 기본 임계값을 정하고, y 성분(고도각 pitch)에 따라 임계값을 부드럽게 감쇠한다.
+ * y = 0인 수평광에서는 기존 xz 결과와 완전히 동일하다.
  */
 export function faceSdfUniforms(headForward: Vec3, headRight: Vec3, toLight: Vec3): FaceSdfUniforms {
   const f = v3Normalize([headForward[0], 0, headForward[2]]);
@@ -88,11 +91,16 @@ export function faceSdfUniforms(headForward: Vec3, headRight: Vec3, toLight: Vec
   const l = v3Normalize([toLight[0], 0, toLight[2]]);
   const fdotl = clamp(v3Dot(f, l), -1, 1);
   const lr = v3Dot(r, l);
-  return { fdotl, flipU: lr > 0 ? 1 : 0, threshold: 0.5 * (1 - fdotl) };
+  const horizLen = Math.hypot(toLight[0], toLight[2]);
+  const fullLen = Math.hypot(toLight[0], toLight[1], toLight[2]);
+  const pitchAttenuation = fullLen > 1e-6 ? clamp(horizLen / fullLen, 0, 1) : 1;
+  const baseThreshold = 0.5 * (1 - fdotl);
+  const threshold = clamp(baseThreshold * (0.65 + 0.35 * pitchAttenuation), 0, 1);
+  return { fdotl, flipU: lr > 0 ? 1 : 0, threshold, pitchAttenuation };
 }
 
 /** CPU 참조: 해당 텍셀이 그늘이면 1 */
-export function faceShadowAt(map: FaceSdfMap, u: number, v: number, uniforms: FaceSdfUniforms, offset = 0): number {
+export function faceShadowAt(map: FaceSdfMap, u: number, v: number, uniforms: Pick<FaceSdfUniforms, "flipU" | "threshold">, offset = 0): number {
   const uu = uniforms.flipU === 1 ? 1 - u : u;
   return sampleFaceSdf(map, uu, v) + offset <= uniforms.threshold ? 1 : 0;
 }

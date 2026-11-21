@@ -85,7 +85,9 @@ describe("작업 홈의 첫 행동과 상태 안내", () => {
     expect(within(recent).queryByRole("list", { name: "5단계 제작 공정 흐름" })).toBeNull();
     expect(within(recent).getByRole("link", { name: "이어서 작업" }).getAttribute("href")).toContain(`/studio/p/${project.id}/`);
     expect(within(recent).getByRole("link", { name: "작품 단계" }).getAttribute("href")).toBe(`/studio/p/${project.id}/overview`);
-    expect(container.querySelector<HTMLDetailsElement>('[data-studio-other-starts="true"]')?.open).toBe(false);
+    expect(container.querySelector('[data-studio-home-bento="true"]')).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "작업 시작 방식" }).closest("details")).toBeNull();
+    expect(container.querySelectorAll("details[data-studio-library-secondary-drawer='true']")).toHaveLength(1);
     expect(within(recent).getByRole("link", { name: "이어서 작업" }).getAttribute("data-studio-library-primary-action")).toBe("resume");
   });
 

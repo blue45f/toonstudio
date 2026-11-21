@@ -1,6 +1,10 @@
 export * from "./myb";
 export * from "./abr";
+export * from "./abr-v6";
 export * from "./abr-preview";
+export * from "./bplist";
+export * from "./png-alpha-decode";
+export * from "./procreate-brushset";
 export * from "./ase-csh";
 export * from "./aseprite-sprite";
 export * from "./gimp-brush";
@@ -32,5 +36,6 @@ export * from "./openraster";
 export * from "./xcf";
 export * from "./xcf-layer-modes";
 export * from "./artcraft-suite-formats";
+export * from "./clip-vector-layer";
 
 export * from "./compatibility-report";

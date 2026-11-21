@@ -110,7 +110,7 @@ export function StudioVirtualSpaceEntryLobby({
   const three = !onboarding && stageKind === "three";
   const resumeAvailable = Boolean(resumePlace && onResume) && !onboarding && !guestMode;
   const sourceCharacter = guestMode ? STUDIO_CHARACTER_SKINS[0] : STUDIO_CHARACTER_SKINS[avatarIndex];
-  const characterSelected = guestMode || (Number.isInteger(avatarIndex) && Boolean(sourceCharacter));
+  const characterSelected = guestMode || (Number.isInteger(avatarIndex) && (three ? avatarIndex >= 0 : Boolean(sourceCharacter)));
   const normalizedNickname = normalizeStudioVirtualSpaceNickname(nickname);
   const selectedCharacter = characterSelected && sourceCharacter ? studioCharacterSkinForArtStyle(sourceCharacter, artStyle) : null;
   const nicknameInvalid = nickname.length > 0 && !normalizedNickname;

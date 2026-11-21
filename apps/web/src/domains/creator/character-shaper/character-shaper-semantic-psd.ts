@@ -153,9 +153,11 @@ const PROTECTED_MASK: Readonly<Record<ProtectedCategory, CharacterSemanticMaskId
 });
 
 const WARDROBE_ROOT_MASK: Readonly<Record<string, CharacterSemanticMaskId>> = Object.freeze({
+  inner: "mask-top",
   outer: "mask-top",
   top: "mask-top",
   bottom: "mask-bottom",
+  legwear: "mask-bottom",
   shoes: "mask-shoes",
 });
 
@@ -169,7 +171,7 @@ const COSTUME_SLOT_MASK: Readonly<Record<string, CharacterSemanticMaskId>> = Obj
   accessory: "mask-accessory",
 });
 
-const WARDROBE_ROOT_NAME = /^wardrobe:(outer|top|bottom|shoes)\b/u;
+const WARDROBE_ROOT_NAME = /^wardrobe:(inner|outer|top|bottom|legwear|shoes)\b/u;
 const PROP_ROOT_NAME = /^prop:/u;
 /** Guard against a cyclic or pathologically deep graph while walking parents. */
 const ANCESTRY_DEPTH = 32;

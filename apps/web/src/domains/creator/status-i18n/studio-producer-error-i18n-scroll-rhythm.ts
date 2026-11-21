@@ -1,7 +1,7 @@
 /**
  * 생산자 구조화 에러 해석 모듈 — scrollRhythm 구간: studio-scroll-rhythm
- * insight 11코드 × 3필드(title·detail·suggestion) 33키 + ending 라벨 5키
- * (A4 D4, R15, 설계 r10-d4-trace-3.md §2.20).
+ * insight 12코드 × 3필드(title·detail·suggestion) 36키 + ending 라벨 5키
+ * (A4 D4, R15 + OVERSIZED_PANEL, 설계 r10-d4-trace-3.md §2.20).
  *
  * 코어 모듈(studio-producer-error-i18n.ts)의 형제 모듈이다. 계약은 코어와
  * 동일하다: 생산자는 {code, params}만 방출하고(insight의 title/detail/
@@ -53,6 +53,9 @@ registerI18nLocaleEntries("ko", {
   "studio.producerError.scrollRhythm.insight.LONG_EMPTY_RUN.title": "긴 무음 구간",
   "studio.producerError.scrollRhythm.insight.LONG_EMPTY_RUN.detail": "가장 긴 여백이 약 {gapScreens}화면입니다.",
   "studio.producerError.scrollRhythm.insight.LONG_EMPTY_RUN.suggestion": "의도된 서스펜스인지 확인하고, 아니라면 다음 비트를 조금 당기세요.",
+  "studio.producerError.scrollRhythm.insight.OVERSIZED_PANEL.title": "세로로 과도하게 긴 컷",
+  "studio.producerError.scrollRhythm.insight.OVERSIZED_PANEL.detail": "단일 컷이 스마트폰 화면 약 {panelScreens}개 높이로 이어집니다({count}개).",
+  "studio.producerError.scrollRhythm.insight.OVERSIZED_PANEL.suggestion": "한눈에 들어오도록 컷을 나누거나 핵심 구도만 남기고 높이를 줄여 보세요.",
   "studio.producerError.scrollRhythm.insight.FLAT_BEAT_INTERVALS.title": "컷 간격이 단조로움",
   "studio.producerError.scrollRhythm.insight.FLAT_BEAT_INTERVALS.detail": "주요 비트의 세로 간격이 거의 동일해 리듬 변화가 작습니다.",
   "studio.producerError.scrollRhythm.insight.FLAT_BEAT_INTERVALS.suggestion": "강조 컷 전후 간격을 대비시켜 속도감과 긴장도를 조절하세요.",
@@ -94,6 +97,9 @@ registerI18nLocaleEntries("en", {
   "studio.producerError.scrollRhythm.insight.LONG_EMPTY_RUN.title": "Long silent stretch",
   "studio.producerError.scrollRhythm.insight.LONG_EMPTY_RUN.detail": "The longest gap is about {gapScreens} screens.",
   "studio.producerError.scrollRhythm.insight.LONG_EMPTY_RUN.suggestion": "Check whether this suspense is intentional; if not, pull the next beat a little earlier.",
+  "studio.producerError.scrollRhythm.insight.OVERSIZED_PANEL.title": "Oversized tall panel",
+  "studio.producerError.scrollRhythm.insight.OVERSIZED_PANEL.detail": "A single panel spans about {panelScreens} smartphone screens ({count} found).",
+  "studio.producerError.scrollRhythm.insight.OVERSIZED_PANEL.suggestion": "Split the panel or trim its height so readers can take it in at a glance.",
   "studio.producerError.scrollRhythm.insight.FLAT_BEAT_INTERVALS.title": "Monotone cut intervals",
   "studio.producerError.scrollRhythm.insight.FLAT_BEAT_INTERVALS.detail": "The vertical intervals between major beats are nearly identical, so rhythm variation is small.",
   "studio.producerError.scrollRhythm.insight.FLAT_BEAT_INTERVALS.suggestion": "Contrast the gaps around emphasis cuts to adjust the sense of speed and tension.",
@@ -124,6 +130,7 @@ const INSIGHT_KO: Readonly<Record<StudioScrollRhythmInsightCode, { title: string
   SFX_DENSE: { title: "효과음이 몰린 페이지", detail: "한 화면당 효과음이 약 {sfx}개 배치됐습니다.", suggestion: "효과음을 줄이거나 인접 컷으로 나눠 배치하면 체감 속도가 완만해집니다." },
   NO_BREATHING_ROOM: { title: "호흡 여백 부족", detail: "비어 있는 세로 구간이 전체의 {ratio}%입니다.", suggestion: "감정 전환이나 장면 전환 앞뒤에 짧은 무음 여백을 확보하세요." },
   LONG_EMPTY_RUN: { title: "긴 무음 구간", detail: "가장 긴 여백이 약 {gapScreens}화면입니다.", suggestion: "의도된 서스펜스인지 확인하고, 아니라면 다음 비트를 조금 당기세요." },
+  OVERSIZED_PANEL: { title: "세로로 과도하게 긴 컷", detail: "단일 컷이 스마트폰 화면 약 {panelScreens}개 높이로 이어집니다({count}개).", suggestion: "한눈에 들어오도록 컷을 나누거나 핵심 구도만 남기고 높이를 줄여 보세요." },
   FLAT_BEAT_INTERVALS: { title: "컷 간격이 단조로움", detail: "주요 비트의 세로 간격이 거의 동일해 리듬 변화가 작습니다.", suggestion: "강조 컷 전후 간격을 대비시켜 속도감과 긴장도를 조절하세요." },
   TIGHT_ENDING: { title: "엔딩 비트가 화면 끝에 붙음", detail: "마지막 요소 뒤의 여백이 0.12화면보다 짧습니다.", suggestion: "다음 화 유도나 감정 잔상을 원한다면 짧은 여백을 추가하세요." },
   EMPTY_ENDING: { title: "엔딩 이후 여백이 김", detail: "마지막 비트 뒤에 약 {screens}화면이 비어 있습니다.", suggestion: "의도된 클리프행어가 아니라면 캔버스 높이를 줄이거나 마지막 비트를 내리세요." },

@@ -267,11 +267,11 @@ export function StudioBg3dLtPanel({
                     <ScanLine size={15} className="text-accent" aria-hidden />
                     렌더/LT 변환
                   </h3>
-                  <span className="rounded-full border border-line bg-card px-2 py-1 text-[0.64rem] font-semibold text-fg-3">
+                  <span className="rounded-md border border-line bg-card px-2 py-1 text-xs font-semibold text-fg-3">
                     장면 설정 v1
                   </span>
                 </div>
-                <p className="mt-1.5 text-[0.68rem] leading-relaxed text-fg-3">
+                <p className="mt-1.5 text-xs leading-relaxed text-fg-3">
                   3D 배경의 컬러·선화·톤 출력 의도를 저장합니다. 프리셋 적용 뒤 필요한 값만 조정하세요.
                 </p>
 
@@ -315,7 +315,7 @@ export function StudioBg3dLtPanel({
                     ) : null}
                   </select>
                 </label>
-                <p className="mt-2 min-h-8 text-[0.68rem] leading-relaxed text-fg-3">
+                <p className="mt-2 min-h-8 text-xs leading-relaxed text-fg-3">
                   {appliedLtPreset?.description ?? "프리셋을 기준으로 값을 직접 조정한 사용자 설정입니다."}
                 </p>
                 <p aria-live="polite" aria-atomic="true" className="sr-only">
@@ -323,21 +323,21 @@ export function StudioBg3dLtPanel({
                 </p>
 
                 <details className="group mt-3 rounded-xl border border-line bg-card/45">
-                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                     <span className="flex items-center gap-1.5">
                       <Save size={14} className="text-accent" aria-hidden />
                       내 프리셋
                     </span>
-                    <span className="flex items-center gap-1 text-[0.64rem] font-normal text-fg-3">
+                    <span className="flex items-center gap-1 text-xs font-normal tabular-nums text-fg-3">
                       {ltUserPresetPayload.presets.length}/{STUDIO_BG3D_LT_PRESET_MAX_COUNT}
-                      {ltUserPresetLibraryStatus === "idle" ? t("studio.bg3dPanelStatus.ltPanel.sqliteLoadingSuffix", " · SQLite 불러오는 중") : ""}
-                      {ltUserPresetLibraryStatus === "saving" ? t("studio.bg3dPanelStatus.ltPanel.sqliteSavingSuffix", " · SQLite 저장 중") : ""}
+                      {ltUserPresetLibraryStatus === "idle" ? t("studio.bg3dPanelStatus.ltPanel.sqliteLoadingSuffix", " · 불러오는 중") : ""}
+                      {ltUserPresetLibraryStatus === "saving" ? t("studio.bg3dPanelStatus.ltPanel.sqliteSavingSuffix", " · 저장 중") : ""}
                       {ltUserPresetLibraryStatus === "memory-only" ? " · 현재 탭 메모리 임시" : ""}
                       <ChevronDown className="transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" size={13} aria-hidden />
                     </span>
                   </summary>
                   <div className="border-t border-line/70 px-3 py-3">
-                    <p className="text-[0.68rem] leading-relaxed text-fg-3">
+                    <p className="text-xs leading-relaxed text-fg-3">
                       {managedLtUserPreset
                         ? `“${managedLtUserPreset.name}”을 관리 중입니다. 현재 LT 값을 덮어쓰거나 이름만 바꿀 수 있어요.`
                         : "현재 선화·톤 값을 새 사용자 프리셋으로 저장합니다."}
@@ -374,7 +374,7 @@ export function StudioBg3dLtPanel({
                         }}
                       />
                     </label>
-                    <div className="mt-1 flex justify-end gap-3 text-[0.62rem] tabular-nums text-fg-3">
+                    <div className="mt-1 flex justify-end gap-3 text-xs tabular-nums text-fg-3">
                       <span>이름 {Array.from(ltUserPresetName).length}/{STUDIO_BG3D_LT_PRESET_MAX_NAME_LENGTH}</span>
                       <span>설명 {Array.from(ltUserPresetDescription).length}/{STUDIO_BG3D_LT_PRESET_MAX_DESCRIPTION_LENGTH}</span>
                     </div>
@@ -405,7 +405,7 @@ export function StudioBg3dLtPanel({
                             className={cx(
                               CONTROL_BUTTON,
                               ltDeleteConfirmId === managedLtUserPreset.id
-                                ? "border-bad/60 bg-[oklch(0.66_0.20_25/0.12)] text-bad"
+                                ? "border-bad/60 bg-bad/15 text-bad"
                                 : "border-line bg-panel text-fg-3 hover:bg-raised hover:text-bad"
                             )}
                             disabled={ltUserPresetLibraryStatus === "idle"}
@@ -438,9 +438,9 @@ export function StudioBg3dLtPanel({
                     aria-live="polite"
                     aria-atomic="true"
                     className={cx(
-                      "mt-2 rounded-lg border px-3 py-2 text-[0.68rem] leading-relaxed",
-                      ltUserPresetNotice.tone === "success" && "border-good/35 bg-[oklch(0.80_0.15_150/0.08)] text-good",
-                      ltUserPresetNotice.tone === "error" && "border-bad/35 bg-[oklch(0.66_0.20_25/0.08)] text-bad",
+                      "mt-2 rounded-lg border px-3 py-2 text-xs leading-relaxed",
+                      ltUserPresetNotice.tone === "success" && "border-good/35 bg-good/15 text-good",
+                      ltUserPresetNotice.tone === "error" && "border-bad/35 bg-bad/10 text-bad",
                       ltUserPresetNotice.tone === "info" && "border-line bg-card/55 text-fg-2"
                     )}
                   >
@@ -450,10 +450,10 @@ export function StudioBg3dLtPanel({
 
                 <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-line bg-card/55 px-3 py-2">
                   <div className="min-w-0">
-                    <label htmlFor="bg3d-lt-export-height" className="block text-xs font-bold text-fg">
+                    <label htmlFor="bg3d-lt-export-height" className="block text-xs font-semibold text-fg">
                       출력 해상도
                     </label>
-                    <p className="mt-0.5 text-[0.64rem] leading-relaxed text-fg-3" aria-live="polite">
+                    <p className="mt-0.5 text-xs leading-relaxed tabular-nums text-fg-3" aria-live="polite">
                       {ltCaptureSizePreview
                         ? `${formatNumber(ltCaptureSizePreview.width)}×${formatNumber(ltCaptureSizePreview.height)} px${ltCaptureSizePreview.wasReduced ? " · 기기 안전 한도 적용" : ""}`
                         : t("studio.bg3dPanelStatus.ltPanel.safeOutputSizeUnavailable", "현재 기기에서 안전한 출력 크기를 계산할 수 없습니다.")}
@@ -479,10 +479,10 @@ export function StudioBg3dLtPanel({
 
                 <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-line bg-card/55 px-3 py-2">
                   <div className="min-w-0">
-                    <label htmlFor="bg3d-lt-export-aspect" className="block text-xs font-bold text-fg">
+                    <label htmlFor="bg3d-lt-export-aspect" className="block text-xs font-semibold text-fg">
                       출력 비율
                     </label>
-                    <p className="mt-0.5 text-[0.64rem] leading-relaxed text-fg-3" aria-live="polite">
+                    <p className="mt-0.5 text-xs leading-relaxed text-fg-3" aria-live="polite">
                       {ltExportAspectRatio === null
                         ? "자동 — 3D 창 크기에 따라 삽입 구도가 달라집니다. 비율을 고정하세요."
                         : "고정 — 뷰포트의 점선 안쪽만 삽입됩니다."}
@@ -518,12 +518,12 @@ export function StudioBg3dLtPanel({
                   aria-label={`LT 출력 의도: ${ltLineSettings.enabled ? `${ltLineSettings.widthPx}픽셀 선화` : "선화 없음"}, ${LT_TONE_MODE_LABELS[ltToneSettings.mode]}, ${LT_TONE_TYPE_LABELS[ltToneSettings.type]}`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-fg">출력 의도 미리보기</span>
+                    <span className="text-xs font-semibold text-fg">출력 의도 미리보기</span>
                     <button
                       type="button"
                       aria-pressed={lineArtPreview}
                       className={cx(
-                        "min-h-11 rounded-lg border px-2.5 text-[0.68rem] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9",
+                        "min-h-11 rounded-lg border px-2.5 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9",
                         lineArtPreview
                           ? "border-accent/60 bg-accent-soft text-accent"
                           : "border-line bg-panel text-fg-3 hover:bg-raised hover:text-fg"
@@ -556,16 +556,16 @@ export function StudioBg3dLtPanel({
                           ) : null}
                         </>
                       ) : (
-                        <span className="absolute inset-0 grid place-items-center text-[0.64rem] text-fg-3">선화 꺼짐</span>
+                        <span className="absolute inset-0 grid place-items-center text-xs text-fg-3">선화 꺼짐</span>
                       )}
                     </div>
                     <div className="relative h-12 overflow-hidden rounded-lg border border-line/80" style={ltTonePreviewStyle(ltToneSettings)}>
                       {ltToneSettings.mode === "none" ? (
-                        <span className="absolute inset-0 grid place-items-center text-[0.64rem] text-fg-3">선화만</span>
+                        <span className="absolute inset-0 grid place-items-center text-xs text-fg-3">선화만</span>
                       ) : null}
                     </div>
                   </div>
-                  <dl className="mt-2 grid grid-cols-2 gap-x-3 text-[0.64rem] leading-relaxed text-fg-3">
+                  <dl className="mt-2 grid grid-cols-2 gap-x-3 text-xs leading-relaxed tabular-nums text-fg-3">
                     <div>
                       <dt className="sr-only">선화 설정</dt>
                       <dd>
@@ -582,7 +582,7 @@ export function StudioBg3dLtPanel({
                   </dl>
                 </div>
 
-                <p className="mt-2 text-[0.66rem] leading-relaxed text-fg-3">
+                <p className="mt-2 text-xs leading-relaxed text-fg-3">
                   결과는 컬러/톤·재질선·주선을 편집 가능한 별도 래스터 PNG 레이어로 묶어 추가합니다. 실제
                   벡터 경로 추출은 아직 지원하지 않으므로 벡터로 표시하거나 내보내지 않습니다.
                 </p>
@@ -620,7 +620,7 @@ export function StudioBg3dLtPanel({
                   />
                   <div className="flex min-h-11 items-center justify-between gap-3 border-b border-line/70 py-2 text-xs">
                     <span className="font-semibold text-fg-2">레이어 의도</span>
-                    <span className="text-right text-[0.68rem] text-fg-3">
+                    <span className="text-right text-xs text-fg-3">
                       {ltLineSettings.layerType === "vector" ? "벡터 요청 · 래스터 변환" : "래스터 PNG"}
                     </span>
                   </div>
@@ -629,7 +629,7 @@ export function StudioBg3dLtPanel({
                     !ltLineSettings.enabled && "opacity-45"
                   )}>
                     <span className="font-semibold text-fg-2">선 색상</span>
-                    <span className="ml-auto font-mono text-[0.68rem] uppercase text-fg-3">{ltLineSettings.color}</span>
+                    <span className="ml-auto font-mono text-xs text-fg-3">{ltLineSettings.color}</span>
                     <input
                       id="bg3d-lt-line-color"
                       type="color"
@@ -694,7 +694,7 @@ export function StudioBg3dLtPanel({
                   </label>
 
                   {ltToneSettings.mode === "none" ? (
-                    <p className="py-4 text-center text-[0.68rem] leading-relaxed text-fg-3">
+                    <p className="py-4 text-center text-xs leading-relaxed text-fg-3">
                       베이스가 꺼져 선만 출력됩니다. 위에서 원본 렌더·셀 명암·스크린톤을 선택하면 채움
                       레이어 설정이 열립니다.
                     </p>
@@ -751,7 +751,7 @@ export function StudioBg3dLtPanel({
                       <details className="group border-b border-line/70">
                         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2 text-xs font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                           스크린 정밀 설정
-                          <span className="flex items-center gap-1 text-[0.64rem] font-normal text-fg-3">
+                          <span className="flex items-center gap-1 text-xs font-normal text-fg-3">
                             선수 · 각도
                             <ChevronDown className="transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" size={13} aria-hidden />
                           </span>

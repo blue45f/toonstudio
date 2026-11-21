@@ -128,11 +128,6 @@ export function CharacterShaperLandingHero({ editor }: { readonly editor: Charac
         </div>
         <div className="studio-character-guide__stage min-w-0">
           <div className="studio-character-guide__stage-bar" aria-hidden="true">
-            <span className="studio-character-guide__stage-dots">
-              <span />
-              <span />
-              <span />
-            </span>
             <span className="studio-character-guide__stage-label [word-break:keep-all]">
               {bt("캐릭터 작업실 미리보기", "Character workshop preview")}
             </span>

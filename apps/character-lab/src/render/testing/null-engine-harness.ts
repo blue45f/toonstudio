@@ -51,13 +51,28 @@ export { pinMorphInfluencerCount } from "../babylon/morph-shader-pin";
 export { attachViewportControls, panCameraByPixels, zoomCameraByWheel } from "../babylon/viewport-controls";
 export { createCharacterScene } from "../babylon/scene-builder";
 export { applyRigPlan, restoreRig, rigBoneSnapshots, rigBoneWorld, snapshotRig } from "../babylon/character-rig";
+export type { RigBone } from "../babylon/character-rig";
 export { applyRigEyeGaze, readRigEyeGaze } from "../babylon/eye-gaze";
 export { createJointOffsetRig } from "../babylon/joint-offset-rig";
 export { KitOutlineDepthController } from "../babylon/kit-outline-depth";
 export { applyBodyMask, kitBodyOutlineRanges } from "../babylon/kit-region-mask";
 export type { KitBodyOutlineRanges } from "../babylon/kit-region-mask";
 export { PressureOutlineController } from "../babylon/pressure-outline";
-export { PressureGarmentStencilController, PRESSURE_GARMENT_STENCIL_BIT, restorePendingPressureGarmentStencil } from "../babylon/pressure-garment-stencil";
+export {
+  PressureGarmentStencilController,
+  PRESSURE_FACIAL_STENCIL_BIT,
+  PRESSURE_GARMENT_STENCIL_BIT,
+  PRESSURE_HAIR_INLINE_STENCIL_BIT,
+  restorePendingPressureGarmentStencil,
+} from "../babylon/pressure-garment-stencil";
+export {
+  allowedExtensionsForPlan,
+  expandKitPlanParts,
+  inspectV2MeshUv1,
+  parentRigidMeshToAnchor,
+  resolveKitRigPartIdentity,
+  resolveV2ChannelKey,
+} from "../babylon/kit-loader-v2";
 export { isPressureOcclusionRenderPass, registerPressureOcclusionRenderPass } from "../babylon/pressure-occlusion-pass";
 export { createIblShadows, IBL_VOXEL_MIN_INTERVAL_MS } from "../babylon/lighting/ibl-shadows";
 export { createNodeToon, NODE_TOON_INPUTS, nodeLanguageFor } from "../babylon/materials/node-toon-material";

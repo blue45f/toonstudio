@@ -104,7 +104,7 @@ function RoomState({ children, kind }: { readonly children: ReactNode; readonly 
       data-route-blocked={kind === "blocked" ? "production-episode" : undefined}
       className="min-h-dvh bg-canvas p-6 text-fg"
     >
-      <div className={cn("mx-auto max-w-3xl rounded-2xl border p-6", kind === "error" ? "border-bad/30 bg-bad/10" : "border-line bg-card", kind === "pending" && "animate-pulse motion-reduce:animate-none")}>
+      <div className={cn("mx-auto max-w-3xl rounded-2xl border p-6", kind === "error" ? "border-bad/30 bg-bad/10" : "border-line bg-card", kind === "pending" && "opacity-80")}>
         {children}
       </div>
     </div>
@@ -331,8 +331,8 @@ export function ProductionEpisodeRoomPage() {
                 <ArrowLeft className="size-3.5" aria-hidden="true" />
                 {bt("회차 목록", "Episodes")}
               </Link>
-              <p className="text-[0.6875rem] font-black uppercase tracking-[0.14em] text-accent">{bt("회차 룸", "Episode room")}</p>
-              <h1 className="mt-0.5 truncate text-2xl font-black tracking-tight text-fg">{episodeTitle}</h1>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">{bt("회차 룸", "Episode room")}</p>
+              <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight text-fg">{episodeTitle}</h1>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <ProductionPill tone={episodeStateTone(episode.state)}>{episodeStateLabel(episode.state, bt)}</ProductionPill>
@@ -476,7 +476,7 @@ export function ProductionEpisodeRoomPage() {
                         <ProductionPill tone={thread.status === "decision-recorded" ? "success" : "warning"}>{clarificationStatusLabel(thread.status, bt)}</ProductionPill>
                       </div>
                       <p className="mt-2 text-xs font-semibold leading-5 text-fg">{thread.question}</p>
-                      <p className="mt-1 flex items-center gap-1.5 text-[0.6875rem] text-fg-3">
+                      <p className="mt-1 flex items-center gap-1.5 text-xs text-fg-3">
                         <ProductionAvatar name={asker} size="sm" />
                         {asker} → {owner}
                       </p>
@@ -508,7 +508,7 @@ export function ProductionEpisodeRoomPage() {
             {plan ? (
               <div className="space-y-2">
                 <div className="rounded-xl border border-accent/30 bg-accent-soft p-3">
-                  <p className="text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-accent">{bt("한 줄 요약", "Logline")}</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-accent">{bt("한 줄 요약", "Logline")}</p>
                   <p className="mt-1.5 text-sm font-semibold leading-6 text-fg">{plan.logline}</p>
                 </div>
                 <dl className="space-y-2 text-xs">
@@ -575,7 +575,7 @@ export function ProductionEpisodeRoomPage() {
                         <ProductionPill>{latitudeLabel(instruction.latitude, bt)}</ProductionPill>
                       </div>
                       <p className="mt-2 text-xs leading-5 text-fg">{instruction.text}</p>
-                      <p className="mt-1 text-[0.6875rem] text-fg-3">{instruction.rationale}</p>
+                      <p className="mt-1 text-xs text-fg-3">{instruction.rationale}</p>
                     </li>
                   ))}
                 </ul>

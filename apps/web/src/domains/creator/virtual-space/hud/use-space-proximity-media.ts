@@ -31,6 +31,8 @@ export interface SpaceProximityMediaInput {
   readonly available: boolean;
   /** 지금 연결할 팀원(가까운 순). spaceProximityMediaScope 결과. */
   readonly scopeIds: readonly string[];
+  /** 초대 링크로 검증된 게스트(guest-voice)에게 음성·근접 허들을 허용할지 여부. */
+  readonly allowGuestVoice?: boolean;
 }
 
 /**
@@ -38,7 +40,7 @@ export interface SpaceProximityMediaInput {
  * 근처 팀원과 자동으로 연결하고 멀어지면 자동으로 끊는다.
  * Huddle 컨트롤러(무료 STUN·P2P)를 전용 채널로 감싸 대화방과 신호가 섞이지 않게 한다.
  */
-export function useSpaceProximityMedia({ participant, port, available, scopeIds }: SpaceProximityMediaInput) {
+export function useSpaceProximityMedia({ participant, port, available, scopeIds, allowGuestVoice = false }: SpaceProximityMediaInput) {
   const [enabled, setEnabled] = useState(false);
   const [snapshot, setSnapshot] = useState<HuddleSnapshot | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,7 +49,7 @@ export function useSpaceProximityMedia({ participant, port, available, scopeIds 
   const appliedScope = useRef<readonly string[]>([]);
   /** 사용자가 켜 둔 장치. 장소를 옮겨 연결을 다시 만들 때 같은 장치를 다시 켠다(권한은 이미 허락한 상태). */
   const wanted = useRef<{ camera: boolean; mic: boolean }>({ camera: false, mic: false });
-  const viewer = participant?.role === "viewer";
+  const viewer = participant?.role === "viewer" && !allowGuestVoice;
   const ready = enabled && available && Boolean(participant && port) && !viewer;
 
   useEffect(() => {
@@ -55,6 +57,8 @@ export function useSpaceProximityMedia({ participant, port, available, scopeIds 
     const controller = new StudioP2pHuddleController(participant, createSpaceChannelPort(port), {
       // 근접 범위 밖 팀원은 상태 신호조차 주고받지 않는다.
       peerFilter: (peer) => scopeRef.current.has(peer.sessionId),
+      allowViewerVoice: allowGuestVoice,
+      screenShareOptions: { frameRate: 30, audio: true },
     });
     controllerRef.current = controller;
     const unsubscribe = controller.subscribe(() => setSnapshot(controller.snapshot()));
@@ -76,7 +80,7 @@ export function useSpaceProximityMedia({ participant, port, available, scopeIds 
       if (controllerRef.current === controller) controllerRef.current = null;
       setSnapshot(null);
     };
-  }, [participant, port, ready]);
+  }, [allowGuestVoice, participant, port, ready]);
 
   useEffect(() => {
     scopeRef.current = new Set(scopeIds);

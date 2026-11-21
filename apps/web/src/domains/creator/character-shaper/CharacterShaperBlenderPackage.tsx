@@ -86,7 +86,7 @@ export function CharacterShaperBlenderPackage({ h, disabled = false }: Character
       </details>
       <label className="block space-y-1 text-[0.7rem] text-fg-3">
         <span>불러올 모델 우선순위</span>
-        <select value={prefer} disabled={disabled || busy} onChange={(event) => {
+        <select aria-label="불러올 모델 우선순위" value={prefer} disabled={disabled || busy} onChange={(event) => {
           setPrefer(event.currentTarget.value === "glb" ? "glb" : "vrm");
           taskRef.current?.abort(); setState({ kind: "idle" });
         }} className={cn("min-h-11 w-full rounded-lg border border-line bg-card px-2 text-fg", STUDIO_FOCUS_RING)}>

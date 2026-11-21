@@ -84,15 +84,15 @@ export function CharacterSlotCard({
       data-character-slot-card-previewed={previewed ? "true" : undefined}
       data-character-slot-card-runtime-thumbnail={runtimeThumbnail ? "true" : undefined}
       className={cn(
-        "group relative flex min-h-11 w-full min-w-0 flex-col overflow-hidden rounded-2xl border text-left",
-        "transition-[transform,border-color,box-shadow,background-color] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+        "group relative flex min-h-11 w-full min-w-0 flex-col overflow-hidden rounded-2xl border text-left shadow-[inset_0_1px_0_var(--atelier-specular-top,transparent)]",
+        "transition-[border-color,box-shadow,background-color] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
         STUDIO_FOCUS_RING,
         previewed
           ? "border-accent bg-accent-soft/55 shadow-[0_0_0_2px_var(--color-accent)]"
           : selected
             ? "border-accent bg-accent-soft/40 shadow-[0_0_0_1px_var(--color-accent)]"
             : "border-line bg-card hover:border-line-strong hover:bg-raised/70",
-        unavailable ? "cursor-not-allowed" : "hover:-translate-y-0.5 motion-reduce:hover:translate-y-0",
+        unavailable && "cursor-not-allowed",
       )}
       {...interaction}
       onKeyDown={handleKeyDown}
@@ -118,19 +118,19 @@ export function CharacterSlotCard({
           title={runtimeThumbnail ? "현재 선택한 전체 캐릭터 조합의 실제 이미지입니다."
             : hairRender ? "실제 헤어 생성기로 지금 모델 두상에 씌워 그린 이미지입니다(지금 헤어 색 기준)."
               : "모양을 설명하는 도해입니다. 실제 적용 결과는 3D 화면에서 확인하세요."}
-          className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-full border border-line/70 bg-panel/85 px-1.5 py-0.5 text-[0.58rem] font-semibold text-fg-2 backdrop-blur">
+          className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-full border border-line/70 bg-panel/85 px-1.5 py-0.5 text-[0.68rem] font-semibold text-fg-2 opacity-85 backdrop-blur transition-opacity group-hover:opacity-100">
           {runtimeThumbnail || hairRender ? <Image size={9} aria-hidden /> : <PencilRuler size={9} aria-hidden />}
           <span data-character-slot-card-kind-label="true">{kindLabel}</span>
         </span>
         {previewed ? (
-          <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full border border-accent/60 bg-panel/90 px-1.5 py-0.5 text-[0.6rem] font-bold text-accent backdrop-blur">
+          <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full border border-accent/60 bg-panel/90 px-1.5 py-0.5 text-[0.68rem] font-bold text-accent backdrop-blur">
             <Eye size={10} aria-hidden />
             3D 미리보기
           </span>
         ) : showBadge ? (
           <span
             className={cn(
-              "absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[0.6rem] font-semibold backdrop-blur",
+              "absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[0.68rem] font-semibold backdrop-blur",
               BADGE_TONE_CLASS[badge.tone],
             )}
           >
@@ -139,19 +139,19 @@ export function CharacterSlotCard({
           </span>
         ) : null}
         {previewed ? (
-          <span className="absolute bottom-1.5 right-1.5 rounded-full border border-accent/50 bg-panel/90 px-2 py-0.5 text-[0.58rem] font-bold text-accent backdrop-blur">
+          <span className="absolute bottom-1.5 right-1.5 rounded-full border border-accent/50 bg-panel/90 px-2 py-0.5 text-[0.68rem] font-bold text-accent backdrop-blur">
             클릭해 확정
           </span>
         ) : null}
         {selected ? (
-          <span aria-hidden className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-accent text-on-accent shadow-sm">
+          <span aria-hidden className="absolute bottom-1.5 right-1.5 grid size-6 place-items-center rounded-full bg-accent text-on-accent shadow-sm">
             <Check size={14} />
           </span>
         ) : null}
       </span>
-      <span className={cn("flex min-w-0 flex-col gap-0.5 px-2.5 py-2", unavailable && "opacity-70")}>
+      <span className={cn("flex min-w-0 flex-col gap-0.5 px-2.5 py-1.5", unavailable && "opacity-70")}>
         <span className="break-words text-[0.8rem] font-semibold leading-tight text-fg">{entry.label}</span>
-        <span data-character-slot-card-hint="true" className="line-clamp-1 text-[0.68rem] leading-snug text-fg-3">{entry.hint}</span>
+        <span data-character-slot-card-hint="true" className="line-clamp-1 text-[0.7rem] leading-snug text-fg-3">{entry.hint}</span>
         {badge.detail ? (
           <span
             id={detailId}

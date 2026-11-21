@@ -372,6 +372,20 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(css).toContain(".studio-drawing-clarity-pane{position:absolute;top:0;bottom:0;z-index:35;");
     expect(css).toContain("[data-studio-drawing-clarity=true][data-studio-drawing-clarity-panel=pages] [data-studio-page-sequence-strip=true]{position:absolute!important;");
   });
+
+  it("T-UX-02 Unslop 계약: 단일 44px 헤더·48px 라벤더 레일을 유지하고 배경 아우라·블러·원시 색·호버 이동 슬롭이 없다", () => {
+    const css = readFileSync("apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css", "utf8");
+    expect(css).not.toContain("scene-studio-canvas-aura.webp");
+    expect(css).not.toContain("backdrop-filter");
+    expect(css).not.toContain("radial-gradient");
+    expect(css).not.toContain("linear-gradient");
+    expect(css).not.toContain("translateY(");
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/u);
+    expect(css).not.toMatch(/\brgba?\s*\(/u);
+    expect(css).toContain('[data-studio-editor="true"] button:active:not([data-studio-allow-press-feedback="true"]){transform:none!important}');
+    expect(css).toContain("flex:0 0 48px");
+    expect(css).toContain("border-inline-start:2px solid var(--color-accent)");
+  });
 });
 
 describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성", () => {
@@ -390,7 +404,7 @@ describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성
       </header>
     </>);
   }
-  it.each([false, true])("안내의 추가·제거와 무관하게 제목 자리의 최소 높이를 예약한다 (mobile=%s)", mobile => {
+  it.each([false, true])("안내의 추가·제거와 무관하게 제목 자리의 44px 높이를 예약한다 (mobile=%s)", mobile => {
     showStatus("saved", null, true, mobile);
     const title = screen.getByTestId("저장 자리");
     const host = screen.getByTestId("상태 버튼").querySelector("[data-studio-connection-notice-summary]");
@@ -398,9 +412,9 @@ describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성
     // JSDOM은 실제 줄바꿈 높이를 재지 않는다. CSS 하한과 표시 계약만 검사한다.
     const expectReservedSpace = () => {
       const style = getComputedStyle(title);
-      expect(style.minHeight).toBe("64px");
-      expect(style.height).toBe("64px");
-      expect(style.maxHeight).toBe("64px");
+      expect(style.minHeight).toBe("44px");
+      expect(style.height).toBe("44px");
+      expect(style.maxHeight).toBe("44px");
       expect(style.overflow).toBe("hidden");
     };
     expectReservedSpace();
@@ -417,10 +431,10 @@ describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성
       expectReservedSpace();
     }
   });
-  it("정상 저장도 결과와 저장 대상을 직접 읽을 수 있는 48px 진입점으로 유지한다", () => {
+  it("정상 저장도 결과와 저장 대상을 직접 읽을 수 있는 44px 진입점으로 유지한다", () => {
     showStatus("saved", null);
-    expect(getComputedStyle(screen.getByTestId("상태 버튼")).minHeight).toBe("48px");
-    expect(getComputedStyle(screen.getByTestId("상태 버튼")).minWidth).toBe("48px");
+    expect(getComputedStyle(screen.getByTestId("상태 버튼")).minHeight).toBe("44px");
+    expect(getComputedStyle(screen.getByTestId("상태 버튼")).minWidth).toBe("44px");
     expect(getComputedStyle(screen.getByTestId("상태 문구")).clipPath).not.toBe("inset(50%)");
     expect(screen.getByRole("button", { name: "이 기기에 저장됨 · 14:30" })).toBeTruthy();
   });
@@ -429,7 +443,7 @@ describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성
       const view = showStatus("saved", notice, true, mobile), alert = screen.getByRole("alert");
       expect(alert.textContent).toBe(notice);
       expect(getComputedStyle(alert.parentElement!).clipPath).not.toBe("inset(50%)");
-      expect(getComputedStyle(screen.getByTestId("상태 버튼")).minHeight).toBe("48px");
+      expect(getComputedStyle(screen.getByTestId("상태 버튼")).minHeight).toBe("44px");
       expect(screen.getByTestId("저장 자리").querySelector("h1")?.textContent).toBe("나의 원고");
       expect(screen.getByRole("button").textContent).toContain(notice); view.unmount();
     }
@@ -489,5 +503,47 @@ describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성
     fireEvent.keyDown(document, { key: "Escape" });
     expect(pane?.hasAttribute("hidden")).toBe(true);
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "저장" }));
+  });
+
+  it("패널 헤딩이 비동기로 마운트되기 전에 사용자가 다른 영역(건너뛰기 링크 등)으로 포커스를 옮기면 포커스를 빼앗지 않는다", async () => {
+    function DeferredPaneProbe({ mountHeading }: { readonly mountHeading: boolean }) {
+      const clarity = useStudioDrawingClarity();
+      if (!clarity) throw new Error("화면 선택 context가 필요합니다.");
+      return (
+        <>
+          <button type="button" data-testid="skip-target">문서 메뉴로 이동</button>
+          <button
+            type="button"
+            data-testid="layer-opener"
+            onClick={(event) => clarity.open("layers", event.currentTarget)}
+          >
+            레이어
+          </button>
+          <section id="studio-drawing-clarity-panel-layers" hidden={clarity.panel !== "layers"}>
+            {mountHeading ? <h2 tabIndex={-1} data-clarity-pane-heading>레이어·속성</h2> : null}
+          </section>
+        </>
+      );
+    }
+    const base = session();
+    const view = render(
+      <StudioDrawingClarityProvider session={base}>
+        <DeferredPaneProbe mountHeading={false} />
+      </StudioDrawingClarityProvider>,
+    );
+    const opener = screen.getByTestId("layer-opener");
+    opener.focus();
+    fireEvent.click(opener);
+    const skipTarget = screen.getByTestId("skip-target");
+    skipTarget.focus();
+    expect(document.activeElement).toBe(skipTarget);
+
+    view.rerender(
+      <StudioDrawingClarityProvider session={base}>
+        <DeferredPaneProbe mountHeading />
+      </StudioDrawingClarityProvider>,
+    );
+    await Promise.resolve();
+    expect(document.activeElement).toBe(skipTarget);
   });
 });

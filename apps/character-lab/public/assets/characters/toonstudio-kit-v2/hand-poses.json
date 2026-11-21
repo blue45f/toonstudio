@@ -1,0 +1,6651 @@
+{
+  "schema": "toonstudio.character-kit.hand-poses/2",
+  "version": 2,
+  "generatedAt": "2026-11-20",
+  "generator": {
+    "tool": "tools/blender/character_kit/build_hand_poses_v2.py",
+    "blender": "5.3.0",
+    "vrmAddon": "bl_ext.user_default.vrm (4.5.0)"
+  },
+  "coordinateSystem": {
+    "up": "+Y",
+    "forward": "+Z",
+    "left": "+X",
+    "handedness": "right",
+    "rest": "T-pose",
+    "quaternionOrder": "xyzw"
+  },
+  "fingerBoneCount": 30,
+  "boneMap": {
+    "leftThumbMetacarpal": "mixamorig:LeftHandThumb1",
+    "leftThumbProximal": "mixamorig:LeftHandThumb2",
+    "leftThumbDistal": "mixamorig:LeftHandThumb3",
+    "leftIndexProximal": "mixamorig:LeftHandIndex1",
+    "leftIndexIntermediate": "mixamorig:LeftHandIndex2",
+    "leftIndexDistal": "mixamorig:LeftHandIndex3",
+    "leftMiddleProximal": "mixamorig:LeftHandMiddle1",
+    "leftMiddleIntermediate": "mixamorig:LeftHandMiddle2",
+    "leftMiddleDistal": "mixamorig:LeftHandMiddle3",
+    "leftRingProximal": "mixamorig:LeftHandRing1",
+    "leftRingIntermediate": "mixamorig:LeftHandRing2",
+    "leftRingDistal": "mixamorig:LeftHandRing3",
+    "leftLittleProximal": "mixamorig:LeftHandPinky1",
+    "leftLittleIntermediate": "mixamorig:LeftHandPinky2",
+    "leftLittleDistal": "mixamorig:LeftHandPinky3",
+    "rightThumbMetacarpal": "mixamorig:RightHandThumb1",
+    "rightThumbProximal": "mixamorig:RightHandThumb2",
+    "rightThumbDistal": "mixamorig:RightHandThumb3",
+    "rightIndexProximal": "mixamorig:RightHandIndex1",
+    "rightIndexIntermediate": "mixamorig:RightHandIndex2",
+    "rightIndexDistal": "mixamorig:RightHandIndex3",
+    "rightMiddleProximal": "mixamorig:RightHandMiddle1",
+    "rightMiddleIntermediate": "mixamorig:RightHandMiddle2",
+    "rightMiddleDistal": "mixamorig:RightHandMiddle3",
+    "rightRingProximal": "mixamorig:RightHandRing1",
+    "rightRingIntermediate": "mixamorig:RightHandRing2",
+    "rightRingDistal": "mixamorig:RightHandRing3",
+    "rightLittleProximal": "mixamorig:RightHandPinky1",
+    "rightLittleIntermediate": "mixamorig:RightHandPinky2",
+    "rightLittleDistal": "mixamorig:RightHandPinky3"
+  },
+  "count": 16,
+  "poseIds": [
+    "relax",
+    "fist",
+    "open-palm",
+    "point",
+    "peace-v",
+    "hold-pen",
+    "hold-phone",
+    "hold-cup",
+    "hold-sword",
+    "hold-gun",
+    "pray",
+    "chin-rest",
+    "finger-heart",
+    "grab-collar",
+    "beckon",
+    "thumbs-up"
+  ],
+  "contactSheet": "hand-poses/hand-poses-contact-sheet.png",
+  "poses": [
+    {
+      "id": "relax",
+      "presetId": "hand-pose/relax",
+      "labelKo": "자연 이완",
+      "category": "basic",
+      "genres": [
+        "romance",
+        "academy",
+        "daily",
+        "rofan",
+        "action"
+      ],
+      "v1Alias": "relaxed",
+      "propAnchor": null,
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            10.0,
+            15.0,
+            10.0
+          ],
+          "spread": 10.0,
+          "oppose": 4.0
+        },
+        "index": {
+          "curl": [
+            18.0,
+            22.0,
+            12.0
+          ],
+          "spread": 2.0
+        },
+        "middle": {
+          "curl": [
+            22.0,
+            26.0,
+            14.0
+          ],
+          "spread": 0.0
+        },
+        "ring": {
+          "curl": [
+            26.0,
+            30.0,
+            16.0
+          ],
+          "spread": -3.0
+        },
+        "little": {
+          "curl": [
+            30.0,
+            32.0,
+            18.0
+          ],
+          "spread": -6.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          0.021354,
+          -0.084441,
+          -0.069755,
+          0.993754
+        ],
+        "leftThumbProximal": [
+          0.092296,
+          0.0,
+          -0.092296,
+          0.991445
+        ],
+        "leftThumbDistal": [
+          0.061628,
+          0.0,
+          -0.061628,
+          0.996195
+        ],
+        "leftIndexProximal": [
+          -0.00273,
+          -0.017238,
+          -0.156411,
+          0.987538
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.190809,
+          0.981627
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.104528,
+          0.994522
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.190809,
+          0.981627
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.224951,
+          0.97437
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.121869,
+          0.992546
+        ],
+        "leftRingProximal": [
+          0.005889,
+          0.025506,
+          -0.224874,
+          0.974036
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.258819,
+          0.965926
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.139173,
+          0.990268
+        ],
+        "leftLittleProximal": [
+          0.013546,
+          0.050553,
+          -0.258464,
+          0.964602
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.275637,
+          0.961262
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.156434,
+          0.987688
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          0.021354,
+          0.084441,
+          0.069755,
+          0.993754
+        ],
+        "rightThumbProximal": [
+          0.092296,
+          0.0,
+          0.092296,
+          0.991445
+        ],
+        "rightThumbDistal": [
+          0.061628,
+          0.0,
+          0.061628,
+          0.996195
+        ],
+        "rightIndexProximal": [
+          -0.00273,
+          0.017238,
+          0.156411,
+          0.987538
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.190809,
+          0.981627
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.104528,
+          0.994522
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.190809,
+          0.981627
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.224951,
+          0.97437
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.121869,
+          0.992546
+        ],
+        "rightRingProximal": [
+          0.005889,
+          -0.025506,
+          0.224874,
+          0.974036
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.258819,
+          0.965926
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.139173,
+          0.990268
+        ],
+        "rightLittleProximal": [
+          0.013546,
+          -0.050553,
+          0.258464,
+          0.964602
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.275637,
+          0.961262
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.156434,
+          0.987688
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          0.021354,
+          -0.084441,
+          -0.069755,
+          0.993754
+        ],
+        "leftThumbProximal": [
+          0.092296,
+          0.0,
+          -0.092296,
+          0.991445
+        ],
+        "leftThumbDistal": [
+          0.061628,
+          0.0,
+          -0.061628,
+          0.996195
+        ],
+        "leftIndexProximal": [
+          -0.00273,
+          -0.017238,
+          -0.156411,
+          0.987538
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.190809,
+          0.981627
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.104528,
+          0.994522
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.190809,
+          0.981627
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.224951,
+          0.97437
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.121869,
+          0.992546
+        ],
+        "leftRingProximal": [
+          0.005889,
+          0.025506,
+          -0.224874,
+          0.974036
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.258819,
+          0.965926
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.139173,
+          0.990268
+        ],
+        "leftLittleProximal": [
+          0.013546,
+          0.050553,
+          -0.258464,
+          0.964602
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.275637,
+          0.961262
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.156434,
+          0.987688
+        ],
+        "rightThumbMetacarpal": [
+          0.021354,
+          0.084441,
+          0.069755,
+          0.993754
+        ],
+        "rightThumbProximal": [
+          0.092296,
+          0.0,
+          0.092296,
+          0.991445
+        ],
+        "rightThumbDistal": [
+          0.061628,
+          0.0,
+          0.061628,
+          0.996195
+        ],
+        "rightIndexProximal": [
+          -0.00273,
+          0.017238,
+          0.156411,
+          0.987538
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.190809,
+          0.981627
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.104528,
+          0.994522
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.190809,
+          0.981627
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.224951,
+          0.97437
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.121869,
+          0.992546
+        ],
+        "rightRingProximal": [
+          0.005889,
+          -0.025506,
+          0.224874,
+          0.974036
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.258819,
+          0.965926
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.139173,
+          0.990268
+        ],
+        "rightLittleProximal": [
+          0.013546,
+          -0.050553,
+          0.258464,
+          0.964602
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.275637,
+          0.961262
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.156434,
+          0.987688
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/relax.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 42,
+        "bytes": 37160,
+        "sha256": "82dee6e8fda44813c8b374a0825d7f4b21f028b055eab1b8d87227990f76f993"
+      }
+    },
+    {
+      "id": "fist",
+      "presetId": "hand-pose/fist",
+      "labelKo": "쥔 주먹",
+      "category": "action",
+      "genres": [
+        "action",
+        "murim",
+        "academy",
+        "comedy"
+      ],
+      "v1Alias": "fist",
+      "propAnchor": null,
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            40.0,
+            46.0,
+            36.0
+          ],
+          "spread": -10.0,
+          "oppose": 18.0
+        },
+        "index": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        },
+        "middle": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        },
+        "ring": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        },
+        "little": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          0.112336,
+          0.115283,
+          -0.204328,
+          0.965578
+        ],
+        "leftThumbProximal": [
+          0.276289,
+          0.0,
+          -0.276289,
+          0.920505
+        ],
+        "leftThumbDistal": [
+          0.218508,
+          0.0,
+          -0.218508,
+          0.951057
+        ],
+        "leftIndexProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftRingProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftLittleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          0.112336,
+          -0.115283,
+          0.204328,
+          0.965578
+        ],
+        "rightThumbProximal": [
+          0.276289,
+          0.0,
+          0.276289,
+          0.920505
+        ],
+        "rightThumbDistal": [
+          0.218508,
+          0.0,
+          0.218508,
+          0.951057
+        ],
+        "rightIndexProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightRingProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightLittleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          0.112336,
+          0.115283,
+          -0.204328,
+          0.965578
+        ],
+        "leftThumbProximal": [
+          0.276289,
+          0.0,
+          -0.276289,
+          0.920505
+        ],
+        "leftThumbDistal": [
+          0.218508,
+          0.0,
+          -0.218508,
+          0.951057
+        ],
+        "leftIndexProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftRingProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftLittleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "rightThumbMetacarpal": [
+          0.112336,
+          -0.115283,
+          0.204328,
+          0.965578
+        ],
+        "rightThumbProximal": [
+          0.276289,
+          0.0,
+          0.276289,
+          0.920505
+        ],
+        "rightThumbDistal": [
+          0.218508,
+          0.0,
+          0.218508,
+          0.951057
+        ],
+        "rightIndexProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightRingProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightLittleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/fist.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 42,
+        "bytes": 37044,
+        "sha256": "bf5305f974c015e7d640d6def881a5d4ac09d24e7a729de0e9263e2af378cb90"
+      }
+    },
+    {
+      "id": "open-palm",
+      "presetId": "hand-pose/open-palm",
+      "labelKo": "손바닥 펼침",
+      "category": "basic",
+      "genres": [
+        "romance",
+        "academy",
+        "action",
+        "comedy"
+      ],
+      "v1Alias": "open",
+      "propAnchor": null,
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "spread": 35.0,
+          "oppose": 0.0
+        },
+        "index": {
+          "curl": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "spread": 12.0
+        },
+        "middle": {
+          "curl": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "spread": 3.0
+        },
+        "ring": {
+          "curl": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "spread": -8.0
+        },
+        "little": {
+          "curl": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "spread": -18.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          0.0,
+          -0.300706,
+          0.0,
+          0.953717
+        ],
+        "leftIndexProximal": [
+          0.0,
+          -0.104528,
+          0.0,
+          0.994522
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          -0.026177,
+          0.0,
+          0.999657
+        ],
+        "leftRingProximal": [
+          0.0,
+          0.069756,
+          0.0,
+          0.997564
+        ],
+        "leftLittleProximal": [
+          0.0,
+          0.156434,
+          0.0,
+          0.987688
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          0.0,
+          0.300706,
+          0.0,
+          0.953717
+        ],
+        "rightIndexProximal": [
+          0.0,
+          0.104528,
+          0.0,
+          0.994522
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.026177,
+          0.0,
+          0.999657
+        ],
+        "rightRingProximal": [
+          0.0,
+          -0.069756,
+          0.0,
+          0.997564
+        ],
+        "rightLittleProximal": [
+          0.0,
+          -0.156434,
+          0.0,
+          0.987688
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          0.0,
+          -0.300706,
+          0.0,
+          0.953717
+        ],
+        "leftIndexProximal": [
+          0.0,
+          -0.104528,
+          0.0,
+          0.994522
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          -0.026177,
+          0.0,
+          0.999657
+        ],
+        "leftRingProximal": [
+          0.0,
+          0.069756,
+          0.0,
+          0.997564
+        ],
+        "leftLittleProximal": [
+          0.0,
+          0.156434,
+          0.0,
+          0.987688
+        ],
+        "rightThumbMetacarpal": [
+          0.0,
+          0.300706,
+          0.0,
+          0.953717
+        ],
+        "rightIndexProximal": [
+          0.0,
+          0.104528,
+          0.0,
+          0.994522
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.026177,
+          0.0,
+          0.999657
+        ],
+        "rightRingProximal": [
+          0.0,
+          -0.069756,
+          0.0,
+          0.997564
+        ],
+        "rightLittleProximal": [
+          0.0,
+          -0.156434,
+          0.0,
+          0.987688
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/open-palm.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 22,
+        "bytes": 25976,
+        "sha256": "056bbd10eb344b02bcb9b692ebc7f9b350fd9bf2af85ec52d580f0a3bce7f538"
+      }
+    },
+    {
+      "id": "point",
+      "presetId": "hand-pose/point",
+      "labelKo": "검지 가리키기",
+      "category": "gesture",
+      "genres": [
+        "academy",
+        "mystery",
+        "action",
+        "comedy"
+      ],
+      "v1Alias": "point",
+      "propAnchor": null,
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            30.0,
+            35.0,
+            25.0
+          ],
+          "spread": 5.0,
+          "oppose": 12.0
+        },
+        "index": {
+          "curl": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "spread": 4.0
+        },
+        "middle": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        },
+        "ring": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        },
+        "little": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          0.073027,
+          -0.021956,
+          -0.19418,
+          0.977997
+        ],
+        "leftThumbProximal": [
+          0.212631,
+          0.0,
+          -0.212631,
+          0.953717
+        ],
+        "leftThumbDistal": [
+          0.153046,
+          0.0,
+          -0.153046,
+          0.976296
+        ],
+        "leftIndexProximal": [
+          0.0,
+          -0.034899,
+          0.0,
+          0.999391
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftRingProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftLittleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          0.073027,
+          0.021956,
+          0.19418,
+          0.977997
+        ],
+        "rightThumbProximal": [
+          0.212631,
+          0.0,
+          0.212631,
+          0.953717
+        ],
+        "rightThumbDistal": [
+          0.153046,
+          0.0,
+          0.153046,
+          0.976296
+        ],
+        "rightIndexProximal": [
+          0.0,
+          0.034899,
+          0.0,
+          0.999391
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightRingProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightLittleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          0.073027,
+          -0.021956,
+          -0.19418,
+          0.977997
+        ],
+        "leftThumbProximal": [
+          0.212631,
+          0.0,
+          -0.212631,
+          0.953717
+        ],
+        "leftThumbDistal": [
+          0.153046,
+          0.0,
+          -0.153046,
+          0.976296
+        ],
+        "leftIndexProximal": [
+          0.0,
+          -0.034899,
+          0.0,
+          0.999391
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftRingProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftLittleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "rightThumbMetacarpal": [
+          0.073027,
+          0.021956,
+          0.19418,
+          0.977997
+        ],
+        "rightThumbProximal": [
+          0.212631,
+          0.0,
+          0.212631,
+          0.953717
+        ],
+        "rightThumbDistal": [
+          0.153046,
+          0.0,
+          0.153046,
+          0.976296
+        ],
+        "rightIndexProximal": [
+          0.0,
+          0.034899,
+          0.0,
+          0.999391
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightRingProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightLittleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/point.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 38,
+        "bytes": 34832,
+        "sha256": "2b9d583c52bfb9908d183bd8a5c8133b49a9beb4a31ad7fa1de2a85a3a079643"
+      }
+    },
+    {
+      "id": "peace-v",
+      "presetId": "hand-pose/peace-v",
+      "labelKo": "V 사인",
+      "category": "gesture",
+      "genres": [
+        "academy",
+        "romance",
+        "comedy",
+        "daily"
+      ],
+      "v1Alias": "peace",
+      "propAnchor": null,
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            35.0,
+            40.0,
+            30.0
+          ],
+          "spread": 0.0,
+          "oppose": 14.0
+        },
+        "index": {
+          "curl": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "spread": 14.0
+        },
+        "middle": {
+          "curl": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "spread": -11.0
+        },
+        "ring": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        },
+        "little": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          0.094817,
+          0.025913,
+          -0.211046,
+          0.972521
+        ],
+        "leftThumbProximal": [
+          0.241845,
+          0.0,
+          -0.241845,
+          0.939693
+        ],
+        "leftThumbDistal": [
+          0.183013,
+          0.0,
+          -0.183013,
+          0.965926
+        ],
+        "leftIndexProximal": [
+          0.0,
+          -0.121869,
+          0.0,
+          0.992546
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.095846,
+          0.0,
+          0.995396
+        ],
+        "leftRingProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftLittleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          0.094817,
+          -0.025913,
+          0.211046,
+          0.972521
+        ],
+        "rightThumbProximal": [
+          0.241845,
+          0.0,
+          0.241845,
+          0.939693
+        ],
+        "rightThumbDistal": [
+          0.183013,
+          0.0,
+          0.183013,
+          0.965926
+        ],
+        "rightIndexProximal": [
+          0.0,
+          0.121869,
+          0.0,
+          0.992546
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          -0.095846,
+          0.0,
+          0.995396
+        ],
+        "rightRingProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightLittleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          0.094817,
+          0.025913,
+          -0.211046,
+          0.972521
+        ],
+        "leftThumbProximal": [
+          0.241845,
+          0.0,
+          -0.241845,
+          0.939693
+        ],
+        "leftThumbDistal": [
+          0.183013,
+          0.0,
+          -0.183013,
+          0.965926
+        ],
+        "leftIndexProximal": [
+          0.0,
+          -0.121869,
+          0.0,
+          0.992546
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.095846,
+          0.0,
+          0.995396
+        ],
+        "leftRingProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftLittleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "rightThumbMetacarpal": [
+          0.094817,
+          -0.025913,
+          0.211046,
+          0.972521
+        ],
+        "rightThumbProximal": [
+          0.241845,
+          0.0,
+          0.241845,
+          0.939693
+        ],
+        "rightThumbDistal": [
+          0.183013,
+          0.0,
+          0.183013,
+          0.965926
+        ],
+        "rightIndexProximal": [
+          0.0,
+          0.121869,
+          0.0,
+          0.992546
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          -0.095846,
+          0.0,
+          0.995396
+        ],
+        "rightRingProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightLittleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/peace-v.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 34,
+        "bytes": 32632,
+        "sha256": "9c842f04a75f12d26f9034515a2f83743d70a19563e7bda65fc59f8a32ad4b47"
+      }
+    },
+    {
+      "id": "hold-pen",
+      "presetId": "hand-pose/hold-pen",
+      "labelKo": "펜/붓 쥐기",
+      "category": "prop-grip",
+      "genres": [
+        "academy",
+        "office",
+        "romance",
+        "daily"
+      ],
+      "v1Alias": null,
+      "propAnchor": "hand-r",
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            26.0,
+            34.0,
+            22.0
+          ],
+          "spread": 16.0,
+          "oppose": 22.0
+        },
+        "index": {
+          "curl": [
+            42.0,
+            52.0,
+            28.0
+          ],
+          "spread": 6.0
+        },
+        "middle": {
+          "curl": [
+            52.0,
+            58.0,
+            30.0
+          ],
+          "spread": 2.0
+        },
+        "ring": {
+          "curl": [
+            68.0,
+            72.0,
+            42.0
+          ],
+          "spread": -4.0
+        },
+        "little": {
+          "curl": [
+            76.0,
+            78.0,
+            48.0
+          ],
+          "spread": -8.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          -0.051218,
+          -0.098835,
+          -0.202228,
+          0.972991
+        ],
+        "leftThumbProximal": [
+          0.206738,
+          0.0,
+          -0.206738,
+          0.956305
+        ],
+        "leftThumbDistal": [
+          0.134922,
+          0.0,
+          -0.134922,
+          0.981627
+        ],
+        "leftIndexProximal": [
+          -0.018756,
+          -0.04886,
+          -0.357877,
+          0.932301
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.438371,
+          0.898794
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.241922,
+          0.970296
+        ],
+        "leftMiddleProximal": [
+          -0.007651,
+          -0.015686,
+          -0.438304,
+          0.898657
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.48481,
+          0.87462
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.258819,
+          0.965926
+        ],
+        "leftRingProximal": [
+          0.019516,
+          0.028933,
+          -0.558852,
+          0.828533
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.587785,
+          0.809017
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.358368,
+          0.93358
+        ],
+        "leftLittleProximal": [
+          0.042946,
+          0.054969,
+          -0.614162,
+          0.786091
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.62932,
+          0.777146
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.406737,
+          0.913545
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          -0.051218,
+          0.098835,
+          0.202228,
+          0.972991
+        ],
+        "rightThumbProximal": [
+          0.206738,
+          0.0,
+          0.206738,
+          0.956305
+        ],
+        "rightThumbDistal": [
+          0.134922,
+          0.0,
+          0.134922,
+          0.981627
+        ],
+        "rightIndexProximal": [
+          -0.018756,
+          0.04886,
+          0.357877,
+          0.932301
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.438371,
+          0.898794
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.241922,
+          0.970296
+        ],
+        "rightMiddleProximal": [
+          -0.007651,
+          0.015686,
+          0.438304,
+          0.898657
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.48481,
+          0.87462
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.258819,
+          0.965926
+        ],
+        "rightRingProximal": [
+          0.019516,
+          -0.028933,
+          0.558852,
+          0.828533
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.587785,
+          0.809017
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.358368,
+          0.93358
+        ],
+        "rightLittleProximal": [
+          0.042946,
+          -0.054969,
+          0.614162,
+          0.786091
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.62932,
+          0.777146
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.406737,
+          0.913545
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          -0.051218,
+          -0.098835,
+          -0.202228,
+          0.972991
+        ],
+        "leftThumbProximal": [
+          0.206738,
+          0.0,
+          -0.206738,
+          0.956305
+        ],
+        "leftThumbDistal": [
+          0.134922,
+          0.0,
+          -0.134922,
+          0.981627
+        ],
+        "leftIndexProximal": [
+          -0.018756,
+          -0.04886,
+          -0.357877,
+          0.932301
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.438371,
+          0.898794
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.241922,
+          0.970296
+        ],
+        "leftMiddleProximal": [
+          -0.007651,
+          -0.015686,
+          -0.438304,
+          0.898657
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.48481,
+          0.87462
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.258819,
+          0.965926
+        ],
+        "leftRingProximal": [
+          0.019516,
+          0.028933,
+          -0.558852,
+          0.828533
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.587785,
+          0.809017
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.358368,
+          0.93358
+        ],
+        "leftLittleProximal": [
+          0.042946,
+          0.054969,
+          -0.614162,
+          0.786091
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.62932,
+          0.777146
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.406737,
+          0.913545
+        ],
+        "rightThumbMetacarpal": [
+          -0.051218,
+          0.098835,
+          0.202228,
+          0.972991
+        ],
+        "rightThumbProximal": [
+          0.206738,
+          0.0,
+          0.206738,
+          0.956305
+        ],
+        "rightThumbDistal": [
+          0.134922,
+          0.0,
+          0.134922,
+          0.981627
+        ],
+        "rightIndexProximal": [
+          -0.018756,
+          0.04886,
+          0.357877,
+          0.932301
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.438371,
+          0.898794
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.241922,
+          0.970296
+        ],
+        "rightMiddleProximal": [
+          -0.007651,
+          0.015686,
+          0.438304,
+          0.898657
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.48481,
+          0.87462
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.258819,
+          0.965926
+        ],
+        "rightRingProximal": [
+          0.019516,
+          -0.028933,
+          0.558852,
+          0.828533
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.587785,
+          0.809017
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.358368,
+          0.93358
+        ],
+        "rightLittleProximal": [
+          0.042946,
+          -0.054969,
+          0.614162,
+          0.786091
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.62932,
+          0.777146
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.406737,
+          0.913545
+        ]
+      },
+      "wristHint": {
+        "leftHand": [
+          0.003651,
+          -0.052208,
+          0.069661,
+          0.996197
+        ],
+        "rightHand": [
+          0.003651,
+          0.052208,
+          -0.069661,
+          0.996197
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/hold-pen.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 42,
+        "bytes": 37164,
+        "sha256": "3247042d66caca0c98014ac93c47f8c85fec328d71d163ccc650f1e565c8cefe"
+      }
+    },
+    {
+      "id": "hold-phone",
+      "presetId": "hand-pose/hold-phone",
+      "labelKo": "스마트폰 파지",
+      "category": "prop-grip",
+      "genres": [
+        "romance",
+        "academy",
+        "office",
+        "daily"
+      ],
+      "v1Alias": null,
+      "propAnchor": "hand-r",
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            16.0,
+            22.0,
+            18.0
+          ],
+          "spread": 22.0,
+          "oppose": 14.0
+        },
+        "index": {
+          "curl": [
+            34.0,
+            48.0,
+            32.0
+          ],
+          "spread": 6.0
+        },
+        "middle": {
+          "curl": [
+            36.0,
+            52.0,
+            34.0
+          ],
+          "spread": 0.0
+        },
+        "ring": {
+          "curl": [
+            40.0,
+            56.0,
+            36.0
+          ],
+          "spread": -3.0
+        },
+        "little": {
+          "curl": [
+            58.0,
+            62.0,
+            36.0
+          ],
+          "spread": -8.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          -0.041222,
+          -0.173482,
+          -0.137547,
+          0.974313
+        ],
+        "leftThumbProximal": [
+          0.134922,
+          0.0,
+          -0.134922,
+          0.981627
+        ],
+        "leftThumbDistal": [
+          0.110616,
+          0.0,
+          -0.110616,
+          0.987688
+        ],
+        "leftIndexProximal": [
+          -0.015302,
+          -0.050049,
+          -0.291971,
+          0.954994
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.406737,
+          0.913545
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.275637,
+          0.961262
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.309017,
+          0.951057
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.438371,
+          0.898794
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.292372,
+          0.956305
+        ],
+        "leftRingProximal": [
+          0.008953,
+          0.024598,
+          -0.341903,
+          0.939371
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.469472,
+          0.882948
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.309017,
+          0.951057
+        ],
+        "leftLittleProximal": [
+          0.033819,
+          0.06101,
+          -0.483629,
+          0.872489
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.515038,
+          0.857167
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.309017,
+          0.951057
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          -0.041222,
+          0.173482,
+          0.137547,
+          0.974313
+        ],
+        "rightThumbProximal": [
+          0.134922,
+          0.0,
+          0.134922,
+          0.981627
+        ],
+        "rightThumbDistal": [
+          0.110616,
+          0.0,
+          0.110616,
+          0.987688
+        ],
+        "rightIndexProximal": [
+          -0.015302,
+          0.050049,
+          0.291971,
+          0.954994
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.406737,
+          0.913545
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.275637,
+          0.961262
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.309017,
+          0.951057
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.438371,
+          0.898794
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.292372,
+          0.956305
+        ],
+        "rightRingProximal": [
+          0.008953,
+          -0.024598,
+          0.341903,
+          0.939371
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.469472,
+          0.882948
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.309017,
+          0.951057
+        ],
+        "rightLittleProximal": [
+          0.033819,
+          -0.06101,
+          0.483629,
+          0.872489
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.515038,
+          0.857167
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.309017,
+          0.951057
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          -0.041222,
+          -0.173482,
+          -0.137547,
+          0.974313
+        ],
+        "leftThumbProximal": [
+          0.134922,
+          0.0,
+          -0.134922,
+          0.981627
+        ],
+        "leftThumbDistal": [
+          0.110616,
+          0.0,
+          -0.110616,
+          0.987688
+        ],
+        "leftIndexProximal": [
+          -0.015302,
+          -0.050049,
+          -0.291971,
+          0.954994
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.406737,
+          0.913545
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.275637,
+          0.961262
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.309017,
+          0.951057
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.438371,
+          0.898794
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.292372,
+          0.956305
+        ],
+        "leftRingProximal": [
+          0.008953,
+          0.024598,
+          -0.341903,
+          0.939371
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.469472,
+          0.882948
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.309017,
+          0.951057
+        ],
+        "leftLittleProximal": [
+          0.033819,
+          0.06101,
+          -0.483629,
+          0.872489
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.515038,
+          0.857167
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.309017,
+          0.951057
+        ],
+        "rightThumbMetacarpal": [
+          -0.041222,
+          0.173482,
+          0.137547,
+          0.974313
+        ],
+        "rightThumbProximal": [
+          0.134922,
+          0.0,
+          0.134922,
+          0.981627
+        ],
+        "rightThumbDistal": [
+          0.110616,
+          0.0,
+          0.110616,
+          0.987688
+        ],
+        "rightIndexProximal": [
+          -0.015302,
+          0.050049,
+          0.291971,
+          0.954994
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.406737,
+          0.913545
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.275637,
+          0.961262
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.309017,
+          0.951057
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.438371,
+          0.898794
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.292372,
+          0.956305
+        ],
+        "rightRingProximal": [
+          0.008953,
+          -0.024598,
+          0.341903,
+          0.939371
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.469472,
+          0.882948
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.309017,
+          0.951057
+        ],
+        "rightLittleProximal": [
+          0.033819,
+          -0.06101,
+          0.483629,
+          0.872489
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.515038,
+          0.857167
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.309017,
+          0.951057
+        ]
+      },
+      "wristHint": {
+        "leftHand": [
+          0.0,
+          0.0,
+          -0.087156,
+          0.996195
+        ],
+        "rightHand": [
+          0.0,
+          0.0,
+          0.087156,
+          0.996195
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/hold-phone.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 42,
+        "bytes": 37132,
+        "sha256": "bdb10a517cebb98a0c7f9746412b0129de0fa2d3370b28ba215a00e821b138a5"
+      }
+    },
+    {
+      "id": "hold-cup",
+      "presetId": "hand-pose/hold-cup",
+      "labelKo": "찻잔/머그 쥐기",
+      "category": "prop-grip",
+      "genres": [
+        "romance",
+        "rofan",
+        "office",
+        "daily"
+      ],
+      "v1Alias": null,
+      "propAnchor": "hand-r",
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            20.0,
+            26.0,
+            20.0
+          ],
+          "spread": 26.0,
+          "oppose": 12.0
+        },
+        "index": {
+          "curl": [
+            44.0,
+            54.0,
+            34.0
+          ],
+          "spread": 5.0
+        },
+        "middle": {
+          "curl": [
+            48.0,
+            58.0,
+            36.0
+          ],
+          "spread": 0.0
+        },
+        "ring": {
+          "curl": [
+            52.0,
+            60.0,
+            38.0
+          ],
+          "spread": -4.0
+        },
+        "little": {
+          "curl": [
+            56.0,
+            62.0,
+            40.0
+          ],
+          "spread": -8.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          -0.008787,
+          -0.204927,
+          -0.169612,
+          0.963929
+        ],
+        "leftThumbProximal": [
+          0.159064,
+          0.0,
+          -0.159064,
+          0.97437
+        ],
+        "leftThumbDistal": [
+          0.122788,
+          0.0,
+          -0.122788,
+          0.984808
+        ],
+        "leftIndexProximal": [
+          -0.01634,
+          -0.040443,
+          -0.37425,
+          0.926301
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.45399,
+          0.891007
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.292372,
+          0.956305
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.406737,
+          0.913545
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.48481,
+          0.87462
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.309017,
+          0.951057
+        ],
+        "leftRingProximal": [
+          0.015299,
+          0.031367,
+          -0.438104,
+          0.898247
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.325568,
+          0.945519
+        ],
+        "leftLittleProximal": [
+          0.032749,
+          0.061591,
+          -0.468328,
+          0.880797
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.515038,
+          0.857167
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.34202,
+          0.939693
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          -0.008787,
+          0.204927,
+          0.169612,
+          0.963929
+        ],
+        "rightThumbProximal": [
+          0.159064,
+          0.0,
+          0.159064,
+          0.97437
+        ],
+        "rightThumbDistal": [
+          0.122788,
+          0.0,
+          0.122788,
+          0.984808
+        ],
+        "rightIndexProximal": [
+          -0.01634,
+          0.040443,
+          0.37425,
+          0.926301
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.45399,
+          0.891007
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.292372,
+          0.956305
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.406737,
+          0.913545
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.48481,
+          0.87462
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.309017,
+          0.951057
+        ],
+        "rightRingProximal": [
+          0.015299,
+          -0.031367,
+          0.438104,
+          0.898247
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.325568,
+          0.945519
+        ],
+        "rightLittleProximal": [
+          0.032749,
+          -0.061591,
+          0.468328,
+          0.880797
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.515038,
+          0.857167
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.34202,
+          0.939693
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          -0.008787,
+          -0.204927,
+          -0.169612,
+          0.963929
+        ],
+        "leftThumbProximal": [
+          0.159064,
+          0.0,
+          -0.159064,
+          0.97437
+        ],
+        "leftThumbDistal": [
+          0.122788,
+          0.0,
+          -0.122788,
+          0.984808
+        ],
+        "leftIndexProximal": [
+          -0.01634,
+          -0.040443,
+          -0.37425,
+          0.926301
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.45399,
+          0.891007
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.292372,
+          0.956305
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.406737,
+          0.913545
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.48481,
+          0.87462
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.309017,
+          0.951057
+        ],
+        "leftRingProximal": [
+          0.015299,
+          0.031367,
+          -0.438104,
+          0.898247
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.325568,
+          0.945519
+        ],
+        "leftLittleProximal": [
+          0.032749,
+          0.061591,
+          -0.468328,
+          0.880797
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.515038,
+          0.857167
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.34202,
+          0.939693
+        ],
+        "rightThumbMetacarpal": [
+          -0.008787,
+          0.204927,
+          0.169612,
+          0.963929
+        ],
+        "rightThumbProximal": [
+          0.159064,
+          0.0,
+          0.159064,
+          0.97437
+        ],
+        "rightThumbDistal": [
+          0.122788,
+          0.0,
+          0.122788,
+          0.984808
+        ],
+        "rightIndexProximal": [
+          -0.01634,
+          0.040443,
+          0.37425,
+          0.926301
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.45399,
+          0.891007
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.292372,
+          0.956305
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.406737,
+          0.913545
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.48481,
+          0.87462
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.309017,
+          0.951057
+        ],
+        "rightRingProximal": [
+          0.015299,
+          -0.031367,
+          0.438104,
+          0.898247
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.325568,
+          0.945519
+        ],
+        "rightLittleProximal": [
+          0.032749,
+          -0.061591,
+          0.468328,
+          0.880797
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.515038,
+          0.857167
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.34202,
+          0.939693
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/hold-cup.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 42,
+        "bytes": 37080,
+        "sha256": "b216cffadaccbf77d3e5074e949add94ab0ca4f376691bf7eb9cadfe06e070b2"
+      }
+    },
+    {
+      "id": "hold-sword",
+      "presetId": "hand-pose/hold-sword",
+      "labelKo": "검/무기 파지",
+      "category": "prop-grip",
+      "genres": [
+        "action",
+        "murim",
+        "rofan",
+        "fantasy"
+      ],
+      "v1Alias": null,
+      "propAnchor": "hand-r",
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            36.0,
+            44.0,
+            34.0
+          ],
+          "spread": -6.0,
+          "oppose": 20.0
+        },
+        "index": {
+          "curl": [
+            68.0,
+            78.0,
+            50.0
+          ],
+          "spread": 4.0
+        },
+        "middle": {
+          "curl": [
+            74.0,
+            82.0,
+            54.0
+          ],
+          "spread": 0.0
+        },
+        "ring": {
+          "curl": [
+            78.0,
+            86.0,
+            56.0
+          ],
+          "spread": -3.0
+        },
+        "little": {
+          "curl": [
+            82.0,
+            88.0,
+            58.0
+          ],
+          "spread": -6.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          0.061233,
+          0.084924,
+          -0.194988,
+          0.975202
+        ],
+        "leftThumbProximal": [
+          0.264887,
+          0.0,
+          -0.264887,
+          0.927184
+        ],
+        "leftThumbDistal": [
+          0.206738,
+          0.0,
+          -0.206738,
+          0.956305
+        ],
+        "leftIndexProximal": [
+          -0.019516,
+          -0.028933,
+          -0.558852,
+          0.828533
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.62932,
+          0.777146
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.422618,
+          0.906308
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.601815,
+          0.798636
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.656059,
+          0.75471
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.45399,
+          0.891007
+        ],
+        "leftRingProximal": [
+          0.016474,
+          0.020343,
+          -0.629105,
+          0.77688
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.681998,
+          0.731354
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.469472,
+          0.882948
+        ],
+        "leftLittleProximal": [
+          0.034335,
+          0.039498,
+          -0.65516,
+          0.753675
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.694658,
+          0.71934
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.48481,
+          0.87462
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          0.061233,
+          -0.084924,
+          0.194988,
+          0.975202
+        ],
+        "rightThumbProximal": [
+          0.264887,
+          0.0,
+          0.264887,
+          0.927184
+        ],
+        "rightThumbDistal": [
+          0.206738,
+          0.0,
+          0.206738,
+          0.956305
+        ],
+        "rightIndexProximal": [
+          -0.019516,
+          0.028933,
+          0.558852,
+          0.828533
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.62932,
+          0.777146
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.422618,
+          0.906308
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.601815,
+          0.798636
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.656059,
+          0.75471
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.45399,
+          0.891007
+        ],
+        "rightRingProximal": [
+          0.016474,
+          -0.020343,
+          0.629105,
+          0.77688
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.681998,
+          0.731354
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.469472,
+          0.882948
+        ],
+        "rightLittleProximal": [
+          0.034335,
+          -0.039498,
+          0.65516,
+          0.753675
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.694658,
+          0.71934
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.48481,
+          0.87462
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          0.061233,
+          0.084924,
+          -0.194988,
+          0.975202
+        ],
+        "leftThumbProximal": [
+          0.264887,
+          0.0,
+          -0.264887,
+          0.927184
+        ],
+        "leftThumbDistal": [
+          0.206738,
+          0.0,
+          -0.206738,
+          0.956305
+        ],
+        "leftIndexProximal": [
+          -0.019516,
+          -0.028933,
+          -0.558852,
+          0.828533
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.62932,
+          0.777146
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.422618,
+          0.906308
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.601815,
+          0.798636
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.656059,
+          0.75471
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.45399,
+          0.891007
+        ],
+        "leftRingProximal": [
+          0.016474,
+          0.020343,
+          -0.629105,
+          0.77688
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.681998,
+          0.731354
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.469472,
+          0.882948
+        ],
+        "leftLittleProximal": [
+          0.034335,
+          0.039498,
+          -0.65516,
+          0.753675
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.694658,
+          0.71934
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.48481,
+          0.87462
+        ],
+        "rightThumbMetacarpal": [
+          0.061233,
+          -0.084924,
+          0.194988,
+          0.975202
+        ],
+        "rightThumbProximal": [
+          0.264887,
+          0.0,
+          0.264887,
+          0.927184
+        ],
+        "rightThumbDistal": [
+          0.206738,
+          0.0,
+          0.206738,
+          0.956305
+        ],
+        "rightIndexProximal": [
+          -0.019516,
+          0.028933,
+          0.558852,
+          0.828533
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.62932,
+          0.777146
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.422618,
+          0.906308
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.601815,
+          0.798636
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.656059,
+          0.75471
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.45399,
+          0.891007
+        ],
+        "rightRingProximal": [
+          0.016474,
+          -0.020343,
+          0.629105,
+          0.77688
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.681998,
+          0.731354
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.469472,
+          0.882948
+        ],
+        "rightLittleProximal": [
+          0.034335,
+          -0.039498,
+          0.65516,
+          0.753675
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.694658,
+          0.71934
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.48481,
+          0.87462
+        ]
+      },
+      "wristHint": {
+        "leftHand": [
+          0.0,
+          0.104528,
+          0.0,
+          0.994522
+        ],
+        "rightHand": [
+          0.0,
+          -0.104528,
+          0.0,
+          0.994522
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/hold-sword.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 42,
+        "bytes": 37160,
+        "sha256": "1713538e2925486860c9c1a9bf822619805e26dd34853014b31a47e08d7928cd"
+      }
+    },
+    {
+      "id": "hold-gun",
+      "presetId": "hand-pose/hold-gun",
+      "labelKo": "권총 그립",
+      "category": "prop-grip",
+      "genres": [
+        "action",
+        "noir",
+        "thriller"
+      ],
+      "v1Alias": null,
+      "propAnchor": "hand-r",
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            14.0,
+            18.0,
+            12.0
+          ],
+          "spread": 26.0,
+          "oppose": 8.0
+        },
+        "index": {
+          "curl": [
+            28.0,
+            48.0,
+            34.0
+          ],
+          "spread": 6.0
+        },
+        "middle": {
+          "curl": [
+            78.0,
+            86.0,
+            56.0
+          ],
+          "spread": 0.0
+        },
+        "ring": {
+          "curl": [
+            82.0,
+            88.0,
+            58.0
+          ],
+          "spread": -2.0
+        },
+        "little": {
+          "curl": [
+            84.0,
+            90.0,
+            60.0
+          ],
+          "spread": -5.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          -0.003038,
+          -0.215521,
+          -0.118674,
+          0.969256
+        ],
+        "leftThumbProximal": [
+          0.110616,
+          0.0,
+          -0.110616,
+          0.987688
+        ],
+        "leftThumbDistal": [
+          0.073913,
+          0.0,
+          -0.073913,
+          0.994522
+        ],
+        "leftIndexProximal": [
+          -0.012661,
+          -0.050781,
+          -0.24159,
+          0.968966
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.406737,
+          0.913545
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.292372,
+          0.956305
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.62932,
+          0.777146
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.681998,
+          0.731354
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.469472,
+          0.882948
+        ],
+        "leftRingProximal": [
+          0.01145,
+          0.013171,
+          -0.655959,
+          0.754595
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.694658,
+          0.71934
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.48481,
+          0.87462
+        ],
+        "leftLittleProximal": [
+          0.029187,
+          0.032416,
+          -0.668494,
+          0.742438
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          -0.003038,
+          0.215521,
+          0.118674,
+          0.969256
+        ],
+        "rightThumbProximal": [
+          0.110616,
+          0.0,
+          0.110616,
+          0.987688
+        ],
+        "rightThumbDistal": [
+          0.073913,
+          0.0,
+          0.073913,
+          0.994522
+        ],
+        "rightIndexProximal": [
+          -0.012661,
+          0.050781,
+          0.24159,
+          0.968966
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.406737,
+          0.913545
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.292372,
+          0.956305
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.62932,
+          0.777146
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.681998,
+          0.731354
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.469472,
+          0.882948
+        ],
+        "rightRingProximal": [
+          0.01145,
+          -0.013171,
+          0.655959,
+          0.754595
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.694658,
+          0.71934
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.48481,
+          0.87462
+        ],
+        "rightLittleProximal": [
+          0.029187,
+          -0.032416,
+          0.668494,
+          0.742438
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          -0.003038,
+          -0.215521,
+          -0.118674,
+          0.969256
+        ],
+        "leftThumbProximal": [
+          0.110616,
+          0.0,
+          -0.110616,
+          0.987688
+        ],
+        "leftThumbDistal": [
+          0.073913,
+          0.0,
+          -0.073913,
+          0.994522
+        ],
+        "leftIndexProximal": [
+          -0.012661,
+          -0.050781,
+          -0.24159,
+          0.968966
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.406737,
+          0.913545
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.292372,
+          0.956305
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.62932,
+          0.777146
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.681998,
+          0.731354
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.469472,
+          0.882948
+        ],
+        "leftRingProximal": [
+          0.01145,
+          0.013171,
+          -0.655959,
+          0.754595
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.694658,
+          0.71934
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.48481,
+          0.87462
+        ],
+        "leftLittleProximal": [
+          0.029187,
+          0.032416,
+          -0.668494,
+          0.742438
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "rightThumbMetacarpal": [
+          -0.003038,
+          0.215521,
+          0.118674,
+          0.969256
+        ],
+        "rightThumbProximal": [
+          0.110616,
+          0.0,
+          0.110616,
+          0.987688
+        ],
+        "rightThumbDistal": [
+          0.073913,
+          0.0,
+          0.073913,
+          0.994522
+        ],
+        "rightIndexProximal": [
+          -0.012661,
+          0.050781,
+          0.24159,
+          0.968966
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.406737,
+          0.913545
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.292372,
+          0.956305
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.62932,
+          0.777146
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.681998,
+          0.731354
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.469472,
+          0.882948
+        ],
+        "rightRingProximal": [
+          0.01145,
+          -0.013171,
+          0.655959,
+          0.754595
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.694658,
+          0.71934
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.48481,
+          0.87462
+        ],
+        "rightLittleProximal": [
+          0.029187,
+          -0.032416,
+          0.668494,
+          0.742438
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ]
+      },
+      "wristHint": {
+        "leftHand": [
+          0.0,
+          0.087156,
+          0.0,
+          0.996195
+        ],
+        "rightHand": [
+          0.0,
+          -0.087156,
+          0.0,
+          0.996195
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/hold-gun.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 42,
+        "bytes": 37104,
+        "sha256": "20339142bc057c0ab7c383ae512c7f4befd16364e7cd66aefe129dbf6f3d9716"
+      }
+    },
+    {
+      "id": "pray",
+      "presetId": "hand-pose/pray",
+      "labelKo": "기도/모은 손",
+      "category": "emotion",
+      "genres": [
+        "rofan",
+        "romance",
+        "fantasy",
+        "drama"
+      ],
+      "v1Alias": null,
+      "propAnchor": null,
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            12.0,
+            10.0,
+            8.0
+          ],
+          "spread": 6.0,
+          "oppose": 4.0
+        },
+        "index": {
+          "curl": [
+            6.0,
+            6.0,
+            4.0
+          ],
+          "spread": 2.0
+        },
+        "middle": {
+          "curl": [
+            7.0,
+            7.0,
+            4.0
+          ],
+          "spread": 0.0
+        },
+        "ring": {
+          "curl": [
+            8.0,
+            8.0,
+            5.0
+          ],
+          "spread": -1.5
+        },
+        "little": {
+          "curl": [
+            10.0,
+            10.0,
+            6.0
+          ],
+          "spread": -3.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          0.03524,
+          -0.049307,
+          -0.079449,
+          0.994995
+        ],
+        "leftThumbProximal": [
+          0.061628,
+          0.0,
+          -0.061628,
+          0.996195
+        ],
+        "leftThumbDistal": [
+          0.049325,
+          0.0,
+          -0.049325,
+          0.997564
+        ],
+        "leftIndexProximal": [
+          -0.000913,
+          -0.017428,
+          -0.052328,
+          0.998477
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.052336,
+          0.99863
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.034899,
+          0.999391
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.061049,
+          0.998135
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.061049,
+          0.998135
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.034899,
+          0.999391
+        ],
+        "leftRingProximal": [
+          0.000913,
+          0.013058,
+          -0.06975,
+          0.997479
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.069756,
+          0.997564
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.043619,
+          0.999048
+        ],
+        "leftLittleProximal": [
+          0.002281,
+          0.026077,
+          -0.087126,
+          0.995853
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.087156,
+          0.996195
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.052336,
+          0.99863
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          0.03524,
+          0.049307,
+          0.079449,
+          0.994995
+        ],
+        "rightThumbProximal": [
+          0.061628,
+          0.0,
+          0.061628,
+          0.996195
+        ],
+        "rightThumbDistal": [
+          0.049325,
+          0.0,
+          0.049325,
+          0.997564
+        ],
+        "rightIndexProximal": [
+          -0.000913,
+          0.017428,
+          0.052328,
+          0.998477
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.052336,
+          0.99863
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.034899,
+          0.999391
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.061049,
+          0.998135
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.061049,
+          0.998135
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.034899,
+          0.999391
+        ],
+        "rightRingProximal": [
+          0.000913,
+          -0.013058,
+          0.06975,
+          0.997479
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.069756,
+          0.997564
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.043619,
+          0.999048
+        ],
+        "rightLittleProximal": [
+          0.002281,
+          -0.026077,
+          0.087126,
+          0.995853
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.087156,
+          0.996195
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.052336,
+          0.99863
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          0.03524,
+          -0.049307,
+          -0.079449,
+          0.994995
+        ],
+        "leftThumbProximal": [
+          0.061628,
+          0.0,
+          -0.061628,
+          0.996195
+        ],
+        "leftThumbDistal": [
+          0.049325,
+          0.0,
+          -0.049325,
+          0.997564
+        ],
+        "leftIndexProximal": [
+          -0.000913,
+          -0.017428,
+          -0.052328,
+          0.998477
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.052336,
+          0.99863
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.034899,
+          0.999391
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.061049,
+          0.998135
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.061049,
+          0.998135
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.034899,
+          0.999391
+        ],
+        "leftRingProximal": [
+          0.000913,
+          0.013058,
+          -0.06975,
+          0.997479
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.069756,
+          0.997564
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.043619,
+          0.999048
+        ],
+        "leftLittleProximal": [
+          0.002281,
+          0.026077,
+          -0.087126,
+          0.995853
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.087156,
+          0.996195
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.052336,
+          0.99863
+        ],
+        "rightThumbMetacarpal": [
+          0.03524,
+          0.049307,
+          0.079449,
+          0.994995
+        ],
+        "rightThumbProximal": [
+          0.061628,
+          0.0,
+          0.061628,
+          0.996195
+        ],
+        "rightThumbDistal": [
+          0.049325,
+          0.0,
+          0.049325,
+          0.997564
+        ],
+        "rightIndexProximal": [
+          -0.000913,
+          0.017428,
+          0.052328,
+          0.998477
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.052336,
+          0.99863
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.034899,
+          0.999391
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.061049,
+          0.998135
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.061049,
+          0.998135
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.034899,
+          0.999391
+        ],
+        "rightRingProximal": [
+          0.000913,
+          -0.013058,
+          0.06975,
+          0.997479
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.069756,
+          0.997564
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.043619,
+          0.999048
+        ],
+        "rightLittleProximal": [
+          0.002281,
+          -0.026077,
+          0.087126,
+          0.995853
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.087156,
+          0.996195
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.052336,
+          0.99863
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/pray.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 42,
+        "bytes": 37256,
+        "sha256": "3518d1516edf94584c975d761fba8f3336465e2e297eef32f6fb7e6eb8cc62b4"
+      }
+    },
+    {
+      "id": "chin-rest",
+      "presetId": "hand-pose/chin-rest",
+      "labelKo": "턱 괴기",
+      "category": "emotion",
+      "genres": [
+        "romance",
+        "rofan",
+        "academy",
+        "office"
+      ],
+      "v1Alias": null,
+      "propAnchor": null,
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            12.0,
+            14.0,
+            10.0
+          ],
+          "spread": 28.0,
+          "oppose": 6.0
+        },
+        "index": {
+          "curl": [
+            14.0,
+            16.0,
+            10.0
+          ],
+          "spread": 6.0
+        },
+        "middle": {
+          "curl": [
+            18.0,
+            22.0,
+            12.0
+          ],
+          "spread": 0.0
+        },
+        "ring": {
+          "curl": [
+            46.0,
+            52.0,
+            30.0
+          ],
+          "spread": -4.0
+        },
+        "little": {
+          "curl": [
+            56.0,
+            60.0,
+            34.0
+          ],
+          "spread": -8.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          0.003259,
+          -0.235578,
+          -0.102067,
+          0.966475
+        ],
+        "leftThumbProximal": [
+          0.086175,
+          0.0,
+          -0.086175,
+          0.992546
+        ],
+        "leftThumbDistal": [
+          0.061628,
+          0.0,
+          -0.061628,
+          0.996195
+        ],
+        "leftIndexProximal": [
+          -0.006378,
+          -0.051946,
+          -0.121702,
+          0.991186
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.139173,
+          0.990268
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.087156,
+          0.996195
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.156434,
+          0.987688
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.190809,
+          0.981627
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.104528,
+          0.994522
+        ],
+        "leftRingProximal": [
+          0.013636,
+          0.032125,
+          -0.390493,
+          0.919944
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.438371,
+          0.898794
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.258819,
+          0.965926
+        ],
+        "leftLittleProximal": [
+          0.032749,
+          0.061591,
+          -0.468328,
+          0.880797
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.292372,
+          0.956305
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          0.003259,
+          0.235578,
+          0.102067,
+          0.966475
+        ],
+        "rightThumbProximal": [
+          0.086175,
+          0.0,
+          0.086175,
+          0.992546
+        ],
+        "rightThumbDistal": [
+          0.061628,
+          0.0,
+          0.061628,
+          0.996195
+        ],
+        "rightIndexProximal": [
+          -0.006378,
+          0.051946,
+          0.121702,
+          0.991186
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.139173,
+          0.990268
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.087156,
+          0.996195
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.156434,
+          0.987688
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.190809,
+          0.981627
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.104528,
+          0.994522
+        ],
+        "rightRingProximal": [
+          0.013636,
+          -0.032125,
+          0.390493,
+          0.919944
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.438371,
+          0.898794
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.258819,
+          0.965926
+        ],
+        "rightLittleProximal": [
+          0.032749,
+          -0.061591,
+          0.468328,
+          0.880797
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.292372,
+          0.956305
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          0.003259,
+          -0.235578,
+          -0.102067,
+          0.966475
+        ],
+        "leftThumbProximal": [
+          0.086175,
+          0.0,
+          -0.086175,
+          0.992546
+        ],
+        "leftThumbDistal": [
+          0.061628,
+          0.0,
+          -0.061628,
+          0.996195
+        ],
+        "leftIndexProximal": [
+          -0.006378,
+          -0.051946,
+          -0.121702,
+          0.991186
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.139173,
+          0.990268
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.087156,
+          0.996195
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.156434,
+          0.987688
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.190809,
+          0.981627
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.104528,
+          0.994522
+        ],
+        "leftRingProximal": [
+          0.013636,
+          0.032125,
+          -0.390493,
+          0.919944
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.438371,
+          0.898794
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.258819,
+          0.965926
+        ],
+        "leftLittleProximal": [
+          0.032749,
+          0.061591,
+          -0.468328,
+          0.880797
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.292372,
+          0.956305
+        ],
+        "rightThumbMetacarpal": [
+          0.003259,
+          0.235578,
+          0.102067,
+          0.966475
+        ],
+        "rightThumbProximal": [
+          0.086175,
+          0.0,
+          0.086175,
+          0.992546
+        ],
+        "rightThumbDistal": [
+          0.061628,
+          0.0,
+          0.061628,
+          0.996195
+        ],
+        "rightIndexProximal": [
+          -0.006378,
+          0.051946,
+          0.121702,
+          0.991186
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.139173,
+          0.990268
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.087156,
+          0.996195
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.156434,
+          0.987688
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.190809,
+          0.981627
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.104528,
+          0.994522
+        ],
+        "rightRingProximal": [
+          0.013636,
+          -0.032125,
+          0.390493,
+          0.919944
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.438371,
+          0.898794
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.258819,
+          0.965926
+        ],
+        "rightLittleProximal": [
+          0.032749,
+          -0.061591,
+          0.468328,
+          0.880797
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.292372,
+          0.956305
+        ]
+      },
+      "wristHint": {
+        "leftHand": [
+          0.0,
+          0.0,
+          0.121869,
+          0.992546
+        ],
+        "rightHand": [
+          0.0,
+          0.0,
+          -0.121869,
+          0.992546
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/chin-rest.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 42,
+        "bytes": 37172,
+        "sha256": "ec437afa2cb1cb1304abe8b0d20d0cb0545c0c368e3a046c77a32bbbc329ada1"
+      }
+    },
+    {
+      "id": "finger-heart",
+      "presetId": "hand-pose/finger-heart",
+      "labelKo": "손하트",
+      "category": "gesture",
+      "genres": [
+        "romance",
+        "academy",
+        "comedy",
+        "daily"
+      ],
+      "v1Alias": null,
+      "propAnchor": null,
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            26.0,
+            22.0,
+            16.0
+          ],
+          "spread": 18.0,
+          "oppose": 24.0
+        },
+        "index": {
+          "curl": [
+            46.0,
+            56.0,
+            32.0
+          ],
+          "spread": 16.0
+        },
+        "middle": {
+          "curl": [
+            80.0,
+            86.0,
+            58.0
+          ],
+          "spread": -2.0
+        },
+        "ring": {
+          "curl": [
+            84.0,
+            88.0,
+            60.0
+          ],
+          "spread": -4.0
+        },
+        "little": {
+          "curl": [
+            86.0,
+            90.0,
+            62.0
+          ],
+          "spread": -6.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          -0.070755,
+          -0.111257,
+          -0.209703,
+          0.968834
+        ],
+        "leftThumbProximal": [
+          0.134922,
+          0.0,
+          -0.134922,
+          0.981627
+        ],
+        "leftThumbDistal": [
+          0.09841,
+          0.0,
+          -0.09841,
+          0.990268
+        ],
+        "leftIndexProximal": [
+          -0.054379,
+          -0.12811,
+          -0.386929,
+          0.911547
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.469472,
+          0.882948
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.275637,
+          0.961262
+        ],
+        "leftMiddleProximal": [
+          0.011218,
+          0.013369,
+          -0.64269,
+          0.765928
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.681998,
+          0.731354
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.48481,
+          0.87462
+        ],
+        "leftRingProximal": [
+          0.023352,
+          0.025935,
+          -0.668723,
+          0.742692
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.694658,
+          0.71934
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftLittleProximal": [
+          0.035693,
+          0.038276,
+          -0.681064,
+          0.730351
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.515038,
+          0.857167
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          -0.070755,
+          0.111257,
+          0.209703,
+          0.968834
+        ],
+        "rightThumbProximal": [
+          0.134922,
+          0.0,
+          0.134922,
+          0.981627
+        ],
+        "rightThumbDistal": [
+          0.09841,
+          0.0,
+          0.09841,
+          0.990268
+        ],
+        "rightIndexProximal": [
+          -0.054379,
+          0.12811,
+          0.386929,
+          0.911547
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.469472,
+          0.882948
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.275637,
+          0.961262
+        ],
+        "rightMiddleProximal": [
+          0.011218,
+          -0.013369,
+          0.64269,
+          0.765928
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.681998,
+          0.731354
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.48481,
+          0.87462
+        ],
+        "rightRingProximal": [
+          0.023352,
+          -0.025935,
+          0.668723,
+          0.742692
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.694658,
+          0.71934
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightLittleProximal": [
+          0.035693,
+          -0.038276,
+          0.681064,
+          0.730351
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.515038,
+          0.857167
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          -0.070755,
+          -0.111257,
+          -0.209703,
+          0.968834
+        ],
+        "leftThumbProximal": [
+          0.134922,
+          0.0,
+          -0.134922,
+          0.981627
+        ],
+        "leftThumbDistal": [
+          0.09841,
+          0.0,
+          -0.09841,
+          0.990268
+        ],
+        "leftIndexProximal": [
+          -0.054379,
+          -0.12811,
+          -0.386929,
+          0.911547
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.469472,
+          0.882948
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.275637,
+          0.961262
+        ],
+        "leftMiddleProximal": [
+          0.011218,
+          0.013369,
+          -0.64269,
+          0.765928
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.681998,
+          0.731354
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.48481,
+          0.87462
+        ],
+        "leftRingProximal": [
+          0.023352,
+          0.025935,
+          -0.668723,
+          0.742692
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.694658,
+          0.71934
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftLittleProximal": [
+          0.035693,
+          0.038276,
+          -0.681064,
+          0.730351
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.515038,
+          0.857167
+        ],
+        "rightThumbMetacarpal": [
+          -0.070755,
+          0.111257,
+          0.209703,
+          0.968834
+        ],
+        "rightThumbProximal": [
+          0.134922,
+          0.0,
+          0.134922,
+          0.981627
+        ],
+        "rightThumbDistal": [
+          0.09841,
+          0.0,
+          0.09841,
+          0.990268
+        ],
+        "rightIndexProximal": [
+          -0.054379,
+          0.12811,
+          0.386929,
+          0.911547
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.469472,
+          0.882948
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.275637,
+          0.961262
+        ],
+        "rightMiddleProximal": [
+          0.011218,
+          -0.013369,
+          0.64269,
+          0.765928
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.681998,
+          0.731354
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.48481,
+          0.87462
+        ],
+        "rightRingProximal": [
+          0.023352,
+          -0.025935,
+          0.668723,
+          0.742692
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.694658,
+          0.71934
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightLittleProximal": [
+          0.035693,
+          -0.038276,
+          0.681064,
+          0.730351
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.515038,
+          0.857167
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/finger-heart.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 42,
+        "bytes": 37120,
+        "sha256": "cd04fcae1e319c11e84e745214aa11abf05c1255f08e830d50fe63af69037d98"
+      }
+    },
+    {
+      "id": "grab-collar",
+      "presetId": "hand-pose/grab-collar",
+      "labelKo": "멱살/천 잡기",
+      "category": "action",
+      "genres": [
+        "action",
+        "rofan",
+        "drama",
+        "noir"
+      ],
+      "v1Alias": null,
+      "propAnchor": null,
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            34.0,
+            48.0,
+            40.0
+          ],
+          "spread": 10.0,
+          "oppose": 20.0
+        },
+        "index": {
+          "curl": [
+            54.0,
+            78.0,
+            58.0
+          ],
+          "spread": 8.0
+        },
+        "middle": {
+          "curl": [
+            58.0,
+            82.0,
+            62.0
+          ],
+          "spread": 2.0
+        },
+        "ring": {
+          "curl": [
+            64.0,
+            84.0,
+            64.0
+          ],
+          "spread": -4.0
+        },
+        "little": {
+          "curl": [
+            70.0,
+            86.0,
+            66.0
+          ],
+          "spread": -10.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          0.019649,
+          -0.043189,
+          -0.23504,
+          0.970827
+        ],
+        "leftThumbProximal": [
+          0.287606,
+          0.0,
+          -0.287606,
+          0.913545
+        ],
+        "leftThumbDistal": [
+          0.241845,
+          0.0,
+          -0.241845,
+          0.939693
+        ],
+        "leftIndexProximal": [
+          -0.031669,
+          -0.062153,
+          -0.452885,
+          0.888836
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.62932,
+          0.777146
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.48481,
+          0.87462
+        ],
+        "leftMiddleProximal": [
+          -0.008461,
+          -0.015264,
+          -0.484736,
+          0.874486
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.656059,
+          0.75471
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.515038,
+          0.857167
+        ],
+        "leftRingProximal": [
+          0.018494,
+          0.029596,
+          -0.529596,
+          0.847531
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.669131,
+          0.743145
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.529919,
+          0.848048
+        ],
+        "leftLittleProximal": [
+          0.04999,
+          0.071394,
+          -0.571394,
+          0.816035
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.681998,
+          0.731354
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.544639,
+          0.838671
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          0.019649,
+          0.043189,
+          0.23504,
+          0.970827
+        ],
+        "rightThumbProximal": [
+          0.287606,
+          0.0,
+          0.287606,
+          0.913545
+        ],
+        "rightThumbDistal": [
+          0.241845,
+          0.0,
+          0.241845,
+          0.939693
+        ],
+        "rightIndexProximal": [
+          -0.031669,
+          0.062153,
+          0.452885,
+          0.888836
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.62932,
+          0.777146
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.48481,
+          0.87462
+        ],
+        "rightMiddleProximal": [
+          -0.008461,
+          0.015264,
+          0.484736,
+          0.874486
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.656059,
+          0.75471
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.515038,
+          0.857167
+        ],
+        "rightRingProximal": [
+          0.018494,
+          -0.029596,
+          0.529596,
+          0.847531
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.669131,
+          0.743145
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.529919,
+          0.848048
+        ],
+        "rightLittleProximal": [
+          0.04999,
+          -0.071394,
+          0.571394,
+          0.816035
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.681998,
+          0.731354
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.544639,
+          0.838671
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          0.019649,
+          -0.043189,
+          -0.23504,
+          0.970827
+        ],
+        "leftThumbProximal": [
+          0.287606,
+          0.0,
+          -0.287606,
+          0.913545
+        ],
+        "leftThumbDistal": [
+          0.241845,
+          0.0,
+          -0.241845,
+          0.939693
+        ],
+        "leftIndexProximal": [
+          -0.031669,
+          -0.062153,
+          -0.452885,
+          0.888836
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.62932,
+          0.777146
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.48481,
+          0.87462
+        ],
+        "leftMiddleProximal": [
+          -0.008461,
+          -0.015264,
+          -0.484736,
+          0.874486
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.656059,
+          0.75471
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.515038,
+          0.857167
+        ],
+        "leftRingProximal": [
+          0.018494,
+          0.029596,
+          -0.529596,
+          0.847531
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.669131,
+          0.743145
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.529919,
+          0.848048
+        ],
+        "leftLittleProximal": [
+          0.04999,
+          0.071394,
+          -0.571394,
+          0.816035
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.681998,
+          0.731354
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.544639,
+          0.838671
+        ],
+        "rightThumbMetacarpal": [
+          0.019649,
+          0.043189,
+          0.23504,
+          0.970827
+        ],
+        "rightThumbProximal": [
+          0.287606,
+          0.0,
+          0.287606,
+          0.913545
+        ],
+        "rightThumbDistal": [
+          0.241845,
+          0.0,
+          0.241845,
+          0.939693
+        ],
+        "rightIndexProximal": [
+          -0.031669,
+          0.062153,
+          0.452885,
+          0.888836
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.62932,
+          0.777146
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.48481,
+          0.87462
+        ],
+        "rightMiddleProximal": [
+          -0.008461,
+          0.015264,
+          0.484736,
+          0.874486
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.656059,
+          0.75471
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.515038,
+          0.857167
+        ],
+        "rightRingProximal": [
+          0.018494,
+          -0.029596,
+          0.529596,
+          0.847531
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.669131,
+          0.743145
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.529919,
+          0.848048
+        ],
+        "rightLittleProximal": [
+          0.04999,
+          -0.071394,
+          0.571394,
+          0.816035
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.681998,
+          0.731354
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.544639,
+          0.838671
+        ]
+      },
+      "wristHint": {
+        "leftHand": [
+          0.0,
+          0.0,
+          -0.121869,
+          0.992546
+        ],
+        "rightHand": [
+          0.0,
+          0.0,
+          0.121869,
+          0.992546
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/grab-collar.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 42,
+        "bytes": 37088,
+        "sha256": "fd01ef04c6abceb7b875ab1f08d55cef0e2121a82ab4406a35717456e5f4023f"
+      }
+    },
+    {
+      "id": "beckon",
+      "presetId": "hand-pose/beckon",
+      "labelKo": "손짓/부르기",
+      "category": "gesture",
+      "genres": [
+        "rofan",
+        "romance",
+        "action",
+        "noir"
+      ],
+      "v1Alias": null,
+      "propAnchor": null,
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            16.0,
+            18.0,
+            12.0
+          ],
+          "spread": 20.0,
+          "oppose": 8.0
+        },
+        "index": {
+          "curl": [
+            36.0,
+            62.0,
+            48.0
+          ],
+          "spread": 6.0
+        },
+        "middle": {
+          "curl": [
+            42.0,
+            66.0,
+            50.0
+          ],
+          "spread": -2.0
+        },
+        "ring": {
+          "curl": [
+            68.0,
+            76.0,
+            52.0
+          ],
+          "spread": -5.0
+        },
+        "little": {
+          "curl": [
+            76.0,
+            82.0,
+            56.0
+          ],
+          "spread": -9.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          0.011604,
+          -0.163587,
+          -0.125721,
+          0.978416
+        ],
+        "leftThumbProximal": [
+          0.110616,
+          0.0,
+          -0.110616,
+          0.987688
+        ],
+        "leftThumbDistal": [
+          0.073913,
+          0.0,
+          -0.073913,
+          0.994522
+        ],
+        "leftIndexProximal": [
+          -0.016173,
+          -0.049774,
+          -0.308593,
+          0.949753
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.515038,
+          0.857167
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.406737,
+          0.913545
+        ],
+        "leftMiddleProximal": [
+          0.006254,
+          0.016293,
+          -0.358313,
+          0.933438
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.544639,
+          0.838671
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.422618,
+          0.906308
+        ],
+        "leftRingProximal": [
+          0.024392,
+          0.036162,
+          -0.558661,
+          0.828249
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.615661,
+          0.788011
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.438371,
+          0.898794
+        ],
+        "leftLittleProximal": [
+          0.048304,
+          0.061827,
+          -0.613764,
+          0.785582
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.656059,
+          0.75471
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.469472,
+          0.882948
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          0.011604,
+          0.163587,
+          0.125721,
+          0.978416
+        ],
+        "rightThumbProximal": [
+          0.110616,
+          0.0,
+          0.110616,
+          0.987688
+        ],
+        "rightThumbDistal": [
+          0.073913,
+          0.0,
+          0.073913,
+          0.994522
+        ],
+        "rightIndexProximal": [
+          -0.016173,
+          0.049774,
+          0.308593,
+          0.949753
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.515038,
+          0.857167
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.406737,
+          0.913545
+        ],
+        "rightMiddleProximal": [
+          0.006254,
+          -0.016293,
+          0.358313,
+          0.933438
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.544639,
+          0.838671
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.422618,
+          0.906308
+        ],
+        "rightRingProximal": [
+          0.024392,
+          -0.036162,
+          0.558661,
+          0.828249
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.615661,
+          0.788011
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.438371,
+          0.898794
+        ],
+        "rightLittleProximal": [
+          0.048304,
+          -0.061827,
+          0.613764,
+          0.785582
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.656059,
+          0.75471
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.469472,
+          0.882948
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          0.011604,
+          -0.163587,
+          -0.125721,
+          0.978416
+        ],
+        "leftThumbProximal": [
+          0.110616,
+          0.0,
+          -0.110616,
+          0.987688
+        ],
+        "leftThumbDistal": [
+          0.073913,
+          0.0,
+          -0.073913,
+          0.994522
+        ],
+        "leftIndexProximal": [
+          -0.016173,
+          -0.049774,
+          -0.308593,
+          0.949753
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.515038,
+          0.857167
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.406737,
+          0.913545
+        ],
+        "leftMiddleProximal": [
+          0.006254,
+          0.016293,
+          -0.358313,
+          0.933438
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.544639,
+          0.838671
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.422618,
+          0.906308
+        ],
+        "leftRingProximal": [
+          0.024392,
+          0.036162,
+          -0.558661,
+          0.828249
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.615661,
+          0.788011
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.438371,
+          0.898794
+        ],
+        "leftLittleProximal": [
+          0.048304,
+          0.061827,
+          -0.613764,
+          0.785582
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.656059,
+          0.75471
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.469472,
+          0.882948
+        ],
+        "rightThumbMetacarpal": [
+          0.011604,
+          0.163587,
+          0.125721,
+          0.978416
+        ],
+        "rightThumbProximal": [
+          0.110616,
+          0.0,
+          0.110616,
+          0.987688
+        ],
+        "rightThumbDistal": [
+          0.073913,
+          0.0,
+          0.073913,
+          0.994522
+        ],
+        "rightIndexProximal": [
+          -0.016173,
+          0.049774,
+          0.308593,
+          0.949753
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.515038,
+          0.857167
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.406737,
+          0.913545
+        ],
+        "rightMiddleProximal": [
+          0.006254,
+          -0.016293,
+          0.358313,
+          0.933438
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.544639,
+          0.838671
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.422618,
+          0.906308
+        ],
+        "rightRingProximal": [
+          0.024392,
+          -0.036162,
+          0.558661,
+          0.828249
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.615661,
+          0.788011
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.438371,
+          0.898794
+        ],
+        "rightLittleProximal": [
+          0.048304,
+          -0.061827,
+          0.613764,
+          0.785582
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.656059,
+          0.75471
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.469472,
+          0.882948
+        ]
+      },
+      "wristHint": {
+        "leftHand": [
+          0.0,
+          0.0,
+          -0.156434,
+          0.987688
+        ],
+        "rightHand": [
+          0.0,
+          0.0,
+          0.156434,
+          0.987688
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/beckon.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 42,
+        "bytes": 37152,
+        "sha256": "feea943e63a59dd228de72d633576f7b51c70001852817c8fffb95ce46d3fdd8"
+      }
+    },
+    {
+      "id": "thumbs-up",
+      "presetId": "hand-pose/thumbs-up",
+      "labelKo": "엄지척",
+      "category": "gesture",
+      "genres": [
+        "comedy",
+        "academy",
+        "daily",
+        "action"
+      ],
+      "v1Alias": "thumbs-up",
+      "propAnchor": null,
+      "mirrorable": true,
+      "anglesDeg": {
+        "thumb": {
+          "curl": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "spread": 45.0,
+          "oppose": 0.0
+        },
+        "index": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        },
+        "middle": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        },
+        "ring": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        },
+        "little": {
+          "curl": [
+            85.0,
+            90.0,
+            60.0
+          ],
+          "spread": 0.0
+        }
+      },
+      "left": {
+        "leftThumbMetacarpal": [
+          0.0,
+          -0.382683,
+          0.0,
+          0.92388
+        ],
+        "leftIndexProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftRingProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftLittleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ]
+      },
+      "right": {
+        "rightThumbMetacarpal": [
+          0.0,
+          0.382683,
+          0.0,
+          0.92388
+        ],
+        "rightIndexProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightRingProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightLittleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ]
+      },
+      "both": {
+        "leftThumbMetacarpal": [
+          0.0,
+          -0.382683,
+          0.0,
+          0.92388
+        ],
+        "leftIndexProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftIndexIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftIndexDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftMiddleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftMiddleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftMiddleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftRingProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftRingIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftRingDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "leftLittleProximal": [
+          0.0,
+          0.0,
+          -0.67559,
+          0.737277
+        ],
+        "leftLittleIntermediate": [
+          -0.0,
+          -0.0,
+          -0.707107,
+          0.707107
+        ],
+        "leftLittleDistal": [
+          -0.0,
+          -0.0,
+          -0.5,
+          0.866025
+        ],
+        "rightThumbMetacarpal": [
+          0.0,
+          0.382683,
+          0.0,
+          0.92388
+        ],
+        "rightIndexProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightIndexIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightIndexDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightMiddleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightMiddleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightMiddleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightRingProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightRingIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightRingDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ],
+        "rightLittleProximal": [
+          0.0,
+          0.0,
+          0.67559,
+          0.737277
+        ],
+        "rightLittleIntermediate": [
+          0.0,
+          0.0,
+          0.707107,
+          0.707107
+        ],
+        "rightLittleDistal": [
+          0.0,
+          0.0,
+          0.5,
+          0.866025
+        ]
+      },
+      "vrma": {
+        "path": "hand-poses/vrma/thumbs-up.vrma",
+        "specVersion": "1.0",
+        "humanoidBones": 55,
+        "channels": 38,
+        "bytes": 34836,
+        "sha256": "d93483d93af6f251caa69c1e16c6204716fe6570d3002e7c3b545451e6881795"
+      }
+    }
+  ]
+}

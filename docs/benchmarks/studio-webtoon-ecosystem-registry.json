@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-10-26",
+  "updatedAt": "2026-11-21",
   "purpose": "Focused registry for domestic and international webtoon creation, drawing-assist, 3D production, localization, publishing, and creator-support products. Sources are first-party product pages and REA browser/AST evidence captures; implementation work must reproduce capabilities and workflows without copying proprietary assets, code, models, or trade dress.",
   "products": [
     {
@@ -411,6 +411,118 @@
         "three-d-render"
       ],
       "implementationNotes": "Internalized in apps/web/src/domains/creator/manga-toolkit/higgsfield-mangaka-engine.ts and StudioHiggsfieldMangakaPanel.tsx with full 4-style config, 8 portal slice profiles, 6-character sheet lock, deterministic FNV-1a gap staging, safe slice intervals, WT-* QA validator, and SketchUp 3D background scene bridge."
+    },
+    {
+      "id": "plotr",
+      "name": "Plotr Studio",
+      "region": "KR-global",
+      "stage": "startup",
+      "category": "ai-webtoon-canvas-studio",
+      "officialUrl": "https://plotr.studio/",
+      "watchUrl": "https://plotr.studio/guide/canvas-basics/",
+      "priority": "P0",
+      "evidenceAsOf": "2026-11-21",
+      "reaEvidenceId": "ev_fcefe1dc67df92e05f7c4e2aa295258c892677bc5644c2e1aece2e9c69063d0a",
+      "focus": [
+        "selection-reactive-ai-canvas",
+        "three-layer-underpainting-marking",
+        "consistency-asset-strip",
+        "script-to-cuts",
+        "layered-psd-export",
+        "auto-coloring",
+        "local-autosave-recovery"
+      ],
+      "laneHints": [
+        "structured-ai",
+        "layers-masks",
+        "asset-variants",
+        "comic-pages-panels",
+        "import-export",
+        "storage-recovery"
+      ],
+      "implementationNotes": "Keep selection-reactive AI canvas controls contextual, isolate 3-layer underpainting (base color, shadow, mask) beneath locked Multiply lineart, and bind reusable character, location, and prop consistency strips with durable local autosave recovery."
+    },
+    {
+      "id": "manyfast",
+      "name": "Manyfast",
+      "region": "KR-global",
+      "stage": "startup",
+      "category": "ai-story-and-conti-planning",
+      "officialUrl": "https://manyfast.io/",
+      "watchUrl": "https://manyfast.io/features/editor",
+      "priority": "P0",
+      "evidenceAsOf": "2026-11-21",
+      "focus": [
+        "three-view-live-story-conti-sync",
+        "ai-proposal-diff-gate",
+        "six-perspective-incremental-review",
+        "cut-drift-detection",
+        "cut-approval-share",
+        "local-revision-recovery"
+      ],
+      "laneHints": [
+        "storyboard-camera-audio",
+        "structured-ai",
+        "collaboration-crdt",
+        "quality-delivery",
+        "storage-recovery"
+      ],
+      "implementationNotes": "Synchronize story manuscript, scenario table, and cut cards bidirectionally with explicit AI proposal diff gates, six-perspective incremental review, cut drift badges, local revision recovery, and shareable cut sign-off links."
+    },
+    {
+      "id": "tooning-plus",
+      "name": "Tooning Plus",
+      "region": "KR",
+      "stage": "venture-startup",
+      "category": "ai-webtoon-and-three-d-studio",
+      "officialUrl": "https://plus.tooning.io/",
+      "watchUrl": "https://plus.tooning.io/stories/explore",
+      "priority": "P0",
+      "evidenceAsOf": "2026-11-21",
+      "reaEvidenceId": "ev_9a6b12b28c953e344a0063e7db3e45c01b3c2a14f4b372152de89b9c2a1703ae",
+      "focus": [
+        "inline-character-background-quick-edit",
+        "one-click-resource-cut-generation",
+        "three-d-camera-and-pose-presets",
+        "collaborative-panel-editor",
+        "speech-bubbles",
+        "asset-library-search"
+      ],
+      "laneHints": [
+        "comic-pages-panels",
+        "structured-ai",
+        "three-d-rig-pose",
+        "materials-library",
+        "collaboration-crdt",
+        "text-lettering"
+      ],
+      "implementationNotes": "Connect story scenes, 3D pose and camera staging, inline character and background quick editing, and one-click resource/cut generation to a shared non-destructive webtoon document."
+    },
+    {
+      "id": "abler",
+      "name": "ABLER",
+      "region": "KR-global",
+      "stage": "venture-startup",
+      "category": "three-d-webtoon-background-renderer",
+      "officialUrl": "https://ablur.io/",
+      "watchUrl": "https://ablur.io/",
+      "priority": "P0",
+      "evidenceAsOf": "2026-11-21",
+      "focus": [
+        "sketchup-direct-import",
+        "three-d-background-line-extraction",
+        "time-of-day-lighting-presets",
+        "auto-wall-culling-section-plane",
+        "multi-pass-psd-export",
+        "multi-shot-batch-render"
+      ],
+      "laneHints": [
+        "three-d-import",
+        "three-d-render",
+        "import-export",
+        "storyboard-camera-audio"
+      ],
+      "implementationNotes": "Support SketchUp (.skp) and canonical GLB ingest, deterministic line/shadow/material-ID multi-pass PSD export, time-of-day lighting presets, automatic wall culling and section planes, and multi-shot batch rendering (rebranded externally as ABLUR by Carpenstreet/ACON3D)."
     }
   ]
 }

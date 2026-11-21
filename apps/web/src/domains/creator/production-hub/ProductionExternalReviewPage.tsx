@@ -112,7 +112,7 @@ function EvidenceImage({ reference, index }: { reference: string; index: number 
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
-      <span className="grid aspect-video w-full place-items-center p-3 text-center text-[0.6875rem] leading-4 text-fg-3">
+      <span className="grid aspect-video w-full place-items-center p-3 text-center text-xs leading-4 text-fg-3">
         {t("extreview.evidence.failed", { n: index + 1 })}
       </span>
     );
@@ -123,7 +123,7 @@ function EvidenceImage({ reference, index }: { reference: string; index: number 
       alt={t("extreview.evidence.alt", { n: index + 1 })}
       loading="lazy"
       onError={() => setFailed(true)}
-      className="aspect-video w-full object-cover motion-safe:transition-transform motion-safe:group-hover:scale-[1.02]"
+      className="aspect-video w-full object-cover transition-opacity group-hover:opacity-95"
     />
   );
 }
@@ -366,10 +366,10 @@ export function ProductionExternalReviewPage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-accent/35 bg-accent-soft px-2.5 py-1 text-[0.6875rem] font-black text-accent">{t("extreview.badge.brand")}</span>
-                {view.review.watermark ? <span className="rounded-full border border-line bg-raised px-2.5 py-1 text-[0.6875rem] font-bold text-fg-2">{t("extreview.badge.watermark")}</span> : null}
+                <span className="rounded-full border border-accent/35 bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">{t("extreview.badge.brand")}</span>
+                {view.review.watermark ? <span className="rounded-full border border-line bg-raised px-2.5 py-1 text-xs font-bold text-fg-2">{t("extreview.badge.watermark")}</span> : null}
               </div>
-              <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">{view.review.label}</h1>
+              <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{view.review.label}</h1>
               <p className="mt-2 text-sm text-fg-2">{view.projectTitle}</p>
             </div>
             <div className="rounded-xl border border-line bg-panel px-4 py-3 text-xs text-fg-2">
@@ -391,7 +391,7 @@ export function ProductionExternalReviewPage() {
 
       <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
         <section aria-label={t("extreview.entry.title")} className="rounded-3xl border border-accent/30 bg-card p-5">
-          <h2 className="text-sm font-black">{t("extreview.entry.title")}</h2>
+          <h2 className="text-sm font-semibold">{t("extreview.entry.title")}</h2>
           <p className="mt-1.5 text-xs leading-6 text-fg-2">{t("extreview.entry.noSignup")}</p>
           <ol className="mt-3 grid gap-2 text-xs font-semibold text-fg-2 sm:grid-cols-3">
             <li className="rounded-xl border border-line bg-panel px-3 py-2.5">1. {t("extreview.entry.step1")}</li>
@@ -414,15 +414,15 @@ export function ProductionExternalReviewPage() {
           {view.submissions.map((submission, index) => (
             <article key={submission.id} className="relative overflow-hidden rounded-3xl border border-line bg-card p-5 sm:p-6">
               {view.review.watermark ? (
-                <div className="pointer-events-none absolute -right-10 top-8 rotate-12 text-5xl font-black text-fg-3" aria-hidden="true">REVIEW</div>
+                <div className="pointer-events-none absolute -right-10 top-8 rotate-12 text-5xl font-semibold text-fg-3" aria-hidden="true">REVIEW</div>
               ) : null}
               <div className="relative">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className="flex size-10 items-center justify-center rounded-xl bg-accent-soft text-accent"><FileCheck2 className="size-5" aria-hidden="true" /></span>
-                    <div><p className="text-[0.6875rem] font-black uppercase tracking-[0.12em] text-fg-3">{t("extreview.submission.n", { n: index + 1 })}</p><h2 className="mt-1 text-base font-black">{submission.deliverable?.type ?? t("extreview.submission.noDeliverable")}</h2></div>
+                    <div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-fg-3">{t("extreview.submission.n", { n: index + 1 })}</p><h2 className="mt-1 text-base font-semibold">{submission.deliverable?.type ?? t("extreview.submission.noDeliverable")}</h2></div>
                   </div>
-                  <span className={`rounded-full border px-2.5 py-1 text-[0.6875rem] font-bold ${submissionStatusTone(submission.status)}`}>{submissionStatusLabel(t, submission.status)}</span>
+                  <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${submissionStatusTone(submission.status)}`}>{submissionStatusLabel(t, submission.status)}</span>
                 </div>
                 <dl className="mt-4 grid gap-3 text-xs sm:grid-cols-3">
                   <div className="rounded-xl border border-line bg-panel p-3"><dt className="text-fg-3">Revision</dt><dd className="mt-1 font-bold">{submission.revisionRef.lineage} r{submission.revisionRef.revision}</dd></div>
@@ -430,27 +430,27 @@ export function ProductionExternalReviewPage() {
                   <div className="rounded-xl border border-line bg-panel p-3"><dt className="text-fg-3">{t("extreview.submission.submittedAt")}</dt><dd className="mt-1 font-bold">{formatDate(submission.submittedAt)}</dd></div>
                 </dl>
                 {submission.deliverable?.completionCriteria.length ? (
-                  <div className="mt-4 rounded-xl border border-line bg-panel p-4"><p className="text-xs font-black">{t("extreview.submission.criteria")}</p><ul className="mt-2 space-y-1.5 text-xs leading-5 text-fg-2">{submission.deliverable.completionCriteria.map((criterion, criterionIndex) => <li key={`${criterion}-${criterionIndex}`} className="flex gap-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-good" aria-hidden="true" /><span>{criterion}</span></li>)}</ul></div>
+                  <div className="mt-4 rounded-xl border border-line bg-panel p-4"><p className="text-xs font-semibold">{t("extreview.submission.criteria")}</p><ul className="mt-2 space-y-1.5 text-xs leading-5 text-fg-2">{submission.deliverable.completionCriteria.map((criterion, criterionIndex) => <li key={`${criterion}-${criterionIndex}`} className="flex gap-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-good" aria-hidden="true" /><span>{criterion}</span></li>)}</ul></div>
                 ) : null}
                 {submission.evidenceRefs.length ? (
-                  <div className="mt-4"><p className="text-xs font-black">{t("extreview.submission.evidence")}</p>
+                  <div className="mt-4"><p className="text-xs font-semibold">{t("extreview.submission.evidence")}</p>
                     {submission.evidenceRefs.some(isImageUrl) ? <div className="mt-2">
                       {/* 미리보기와 원본을 분리한다 — 격자 안은 검수용 미리보기, 원본은 명시 동작으로만 연다. */}
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-[0.625rem] font-black text-fg-2">{t("extreview.evidence.previewLabel")}</span>
-                        <span className="text-[0.625rem] text-fg-3">{t("extreview.evidence.previewNote")}</span>
+                        <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-xs font-semibold text-fg-2">{t("extreview.evidence.previewLabel")}</span>
+                        <span className="text-xs text-fg-3">{t("extreview.evidence.previewNote")}</span>
                       </div>
                       <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {submission.evidenceRefs.filter(isImageUrl).map((reference, imageIndex) => (
                         <a key={`${reference}-${imageIndex}`} href={reference} target="_blank" rel="noopener noreferrer"
                           className="group overflow-hidden rounded-xl border border-line bg-panel" aria-label={t("extreview.evidence.openOriginal", { n: imageIndex + 1 })}>
                           <EvidenceImage reference={reference} index={imageIndex} />
-                          <span className="flex items-center justify-center gap-1 px-2 py-1.5 text-[0.625rem] font-bold text-accent">{t("extreview.evidence.originalLabel")} <ExternalLink className="size-3" aria-hidden="true" /></span>
+                          <span className="flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-bold text-accent">{t("extreview.evidence.originalLabel")} <ExternalLink className="size-3" aria-hidden="true" /></span>
                         </a>
                       ))}
                       </div>
                     </div> : null}
-                    {submission.evidenceRefs.some((reference) => !isImageUrl(reference)) ? <div className="mt-2 flex flex-wrap gap-2">{submission.evidenceRefs.filter((reference) => !isImageUrl(reference)).map((reference, refIndex) => isWebUrl(reference) ? <a key={`${reference}-${refIndex}`} href={reference} target="_blank" rel="noopener noreferrer" className={buttonClass({ variant: "outline", size: "sm" })}>{t("extreview.evidence.open")} <ExternalLink className="size-3.5" aria-hidden="true" /></a> : <span key={`${reference}-${refIndex}`} className="rounded-lg border border-line bg-panel px-3 py-2 font-mono text-[0.6875rem] text-fg-2">{reference}</span>)}</div> : null}
+                    {submission.evidenceRefs.some((reference) => !isImageUrl(reference)) ? <div className="mt-2 flex flex-wrap gap-2">{submission.evidenceRefs.filter((reference) => !isImageUrl(reference)).map((reference, refIndex) => isWebUrl(reference) ? <a key={`${reference}-${refIndex}`} href={reference} target="_blank" rel="noopener noreferrer" className={buttonClass({ variant: "outline", size: "sm" })}>{t("extreview.evidence.open")} <ExternalLink className="size-3.5" aria-hidden="true" /></a> : <span key={`${reference}-${refIndex}`} className="rounded-lg border border-line bg-panel px-3 py-2 font-mono text-xs text-fg-2">{reference}</span>)}</div> : null}
                   </div>
                 ) : null}
                 {submission.protectedEvidenceCount > 0 ? (
@@ -459,7 +459,7 @@ export function ProductionExternalReviewPage() {
                     <p>{t("extreview.protected", { n: submission.protectedEvidenceCount })}</p>
                   </div>
                 ) : null}
-                <p className="mt-4 text-[0.625rem] text-fg-3">{t("extreview.submission.digest")} <span className="break-all font-mono" title={submission.revisionRef.digest}>{submission.revisionRef.digest.slice(0, 24)}…</span></p>
+                <p className="mt-4 text-xs text-fg-3">{t("extreview.submission.digest")} <span className="break-all font-mono" title={submission.revisionRef.digest}>{submission.revisionRef.digest.slice(0, 24)}…</span></p>
               </div>
             </article>
           ))}
@@ -473,7 +473,7 @@ export function ProductionExternalReviewPage() {
           </section>
 
           <section className="rounded-3xl border border-line bg-card p-5 sm:p-6">
-            <h2 className="text-base font-black">{t("extreview.responses.title")}</h2>
+            <h2 className="text-base font-semibold">{t("extreview.responses.title")}</h2>
             {view.review.responses.length > 0 ? (
               <div className="mt-3">
                 <label className="flex min-h-10 items-center gap-2 rounded-lg border border-line bg-panel px-3 text-fg-3">
@@ -493,22 +493,22 @@ export function ProductionExternalReviewPage() {
                         key={tag}
                         type="button"
                         onClick={() => setResponseQuery(`#${tag}`)}
-                        className={cn("rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold", responseQuery === `#${tag}` ? "border-accent/40 bg-accent-soft text-accent" : "border-line bg-panel text-fg-2")}
+                        className={cn("rounded-full border px-2 py-0.5 text-xs font-bold", responseQuery === `#${tag}` ? "border-accent/40 bg-accent-soft text-accent" : "border-line bg-panel text-fg-2")}
                       >
                         #{tag}
                       </button>
                     ))}
                   </div>
                 ) : null}
-                <p className="mt-2 text-[0.625rem] text-fg-3">{t("extreview.search.count", { n: visibleResponses.length })}</p>
+                <p className="mt-2 text-xs text-fg-3">{t("extreview.search.count", { n: visibleResponses.length })}</p>
               </div>
             ) : null}
             <div className="mt-3 space-y-2">
               {visibleResponses.map((response) => (
                 <article key={response.id} className="rounded-xl border border-line bg-panel p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-black">{response.reviewerName}</p><span className={cn("rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold", decisionTone(response.decision))}>{decisionLabel(t, response.decision)}</span></div>
+                  <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-semibold">{response.reviewerName}</p><span className={cn("rounded-full border px-2 py-0.5 text-xs font-bold", decisionTone(response.decision))}>{decisionLabel(t, response.decision)}</span></div>
                   {response.note ? <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-fg-2">{response.note}</p> : null}
-                  <p className="mt-2 text-[0.625rem] text-fg-3">{formatDate(response.createdAt)}</p>
+                  <p className="mt-2 text-xs text-fg-3">{formatDate(response.createdAt)}</p>
                 </article>
               ))}
               {view.review.responses.length === 0 ? <p className="rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-3">{t("extreview.responses.empty")}</p> : null}
@@ -520,14 +520,14 @@ export function ProductionExternalReviewPage() {
         <aside className="lg:sticky lg:top-4 lg:self-start">
           {allowedDecisions.length === 0 ? (
             <div className="rounded-3xl border border-line bg-card p-5">
-              <div className="flex items-center gap-2"><ShieldCheck className="size-5 text-accent" aria-hidden="true" /><h2 className="text-base font-black">{t("extreview.readonly.title")}</h2></div>
+              <div className="flex items-center gap-2"><ShieldCheck className="size-5 text-accent" aria-hidden="true" /><h2 className="text-base font-semibold">{t("extreview.readonly.title")}</h2></div>
               <p className="mt-3 text-xs leading-6 text-fg-2">{t("extreview.readonly.desc")}</p>
             </div>
           ) : (
           <form onSubmit={(event) => void submit(event)} className="rounded-3xl border border-accent/30 bg-card p-5">
             {/* 제출 중에는 입력 전체를 잠근다 — 성공 처리의 입력 초기화가 제출 중 새로 쓴 의견을 지우지 않게. */}
             <fieldset disabled={submitting || expired} className="contents">
-            <div className="flex items-center gap-2"><MessageSquareText className="size-5 text-accent" aria-hidden="true" /><h2 className="text-base font-black">{t("extreview.form.title")}</h2></div>
+            <div className="flex items-center gap-2"><MessageSquareText className="size-5 text-accent" aria-hidden="true" /><h2 className="text-base font-semibold">{t("extreview.form.title")}</h2></div>
             {expired ? <div role="alert" className="mt-3 rounded-lg border border-bad/35 bg-bad/10 p-3 text-xs text-fg">{t("extreview.form.expired")}</div> : null}
             <label className="mt-4 block text-xs font-semibold text-fg-2">{t("extreview.form.name")}<input className="mt-1.5 min-h-10 w-full rounded-lg border border-line bg-panel px-3 text-sm text-fg" value={reviewerName} onChange={(event) => setReviewerName(event.target.value)} autoComplete="name" /></label>
             <fieldset className="mt-4"><legend className="text-xs font-semibold text-fg-2">{t("extreview.form.decision")}</legend><div className="mt-2 grid gap-2">{allowedDecisions.map((value) => <label key={value} className={cn("flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border px-3 text-xs font-bold", decision === value ? decisionTone(value) : "border-line bg-panel text-fg-2")}><input type="radio" name="decision" value={value} checked={decision === value} onChange={() => setDecision(value)} />{decisionLabel(t, value)}</label>)}</div></fieldset>
@@ -535,7 +535,7 @@ export function ProductionExternalReviewPage() {
             {success ? <div role="status" className="mt-3 rounded-lg border border-good/35 bg-good/10 p-3 text-xs text-fg">{success}</div> : null}
             {error ? <div role="alert" className="mt-3 rounded-lg border border-bad/35 bg-bad/10 p-3 text-xs text-fg">{error}</div> : null}
             <button type="submit" className={cn(buttonClass(), "mt-4 w-full")} disabled={submitting}>{submitting ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <FileCheck2 className="size-4" aria-hidden="true" />}{submitting ? t("extreview.form.submitting") : t("extreview.form.record", { decision: decisionLabel(t, decision) })}</button>
-            <p className="mt-3 text-[0.6875rem] leading-5 text-fg-3">{t("extreview.form.auditNote")}</p>
+            <p className="mt-3 text-xs leading-5 text-fg-3">{t("extreview.form.auditNote")}</p>
             </fieldset>
           </form>
           )}

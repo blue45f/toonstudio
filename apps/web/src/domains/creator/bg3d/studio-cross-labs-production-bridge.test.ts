@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   BLENDER_WAVE2_CROSS_LABS_OBJECTS,
+  calibrateCrossLabsStrokeWidthRatio,
   evaluateCrossLabsUnifiedProductionBridge,
 } from "./studio-cross-labs-production-bridge";
 
@@ -35,5 +36,28 @@ describe("studio-cross-labs-production-bridge (Wave 2)", () => {
     ).toBeGreaterThanOrEqual(95);
     expect(report.remixes).toHaveLength(5);
     expect(report.summaryBadgeKo).toContain("Cross-Labs Verify AI PASS");
+
+    const calibration = calibrateCrossLabsStrokeWidthRatio(4.0, 4.48, 1.25);
+    expect(calibration.calibratedBrushStrokePx).toBe(5.0);
+    expect(calibration.effectiveRatio).toBe(1.25);
+
+    const calibratedReport = evaluateCrossLabsUnifiedProductionBridge({
+      bg3dOverallScore100: 99.8,
+      bg3dPreflightScore100: 99.8,
+      bg3dContrastRatio: 3.9,
+      bg3dSafeZoneScore100: 100,
+      characterOverallScore100: 100,
+      characterTurnaroundScore100: 100,
+      characterFaceSdfScore100: 100,
+      characterOutlineWidthMm: 4.0,
+      brushOverallScore100: 100,
+      brushTaperSharpness100: 100,
+      brushLinkedInkStability100: 99.6,
+      brushAverageStrokePx: 4.48,
+      rightsBomScore100: 100,
+      autoCalibrateStrokeRatio: true,
+    });
+    expect(calibratedReport.coherence.characterToBrushLineWeightMatch100).toBe(100);
+    expect(calibratedReport.coherence.crossLabsCoherenceIndex100).toBeGreaterThanOrEqual(99.8);
   });
 });

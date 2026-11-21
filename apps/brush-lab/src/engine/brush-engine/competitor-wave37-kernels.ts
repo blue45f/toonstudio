@@ -371,7 +371,8 @@ function computeDiagonalEdgeStepVariance(image: LabImage): number {
 }
 
 /**
- * 2. 서브픽셀 1px Smoothstep SDF 안티앨리어싱 + 칼끝 출필 테이퍼 검증 커널 (CSP 리얼 G펜·마루펜 패리티).
+ * 2. 서브픽셀 4×4 계층적 슈퍼샘플링 + 듀얼 엔벨로프 Smoothstep SDF 안티앨리어싱 + 칼끝 출필 테이퍼 검증 커널.
+ *    (서브픽셀 0.06px 칼끝 마이크로 커버리지 적분으로 계단 현상 분산과 끝선 무뎌짐을 동시에 해소한다.)
  */
 export function evaluateSubpixelDualEnvelopeLineartAA(params: {
   readonly canvasSizePx?: number;
@@ -384,9 +385,10 @@ export function evaluateSubpixelDualEnvelopeLineartAA(params: {
   const aaData = new Uint8ClampedArray(size * size * 4).fill(255);
 
   const baseRadius = Math.max(1.2, params.strokeWidthPx * 0.5);
-  const speedNorm = clamp01(params.exitVelocityPxPerSec / 1800);
-  const terminalRadiusPx = Math.fround(Math.max(0.18, baseRadius * (1 - 0.88 * speedNorm)));
-  const aaHalfBand = Math.max(0.45, (params.aaBandPx ?? 1.1) * 0.5);
+  // 고속 만화 G펜 출필 튕김(flick) 물리 감쇠: 저속 정지 시 뭉툭, 고속(>=1200px/s) 출필 시 0.06~0.16px 칼끝 수렴
+  const flickFactor = 1 - Math.exp(-Math.max(0, params.exitVelocityPxPerSec) / 420);
+  const terminalRadiusPx = Math.fround(Math.max(0.06, baseRadius * (1 - 0.985 * flickFactor)));
+  const aaHalfBand = Math.max(0.55, (params.aaBandPx ?? 1.25) * 0.55);
 
   const x0 = size * 0.14;
   const y0 = size * 0.78;
@@ -395,22 +397,37 @@ export function evaluateSubpixelDualEnvelopeLineartAA(params: {
   const dx = x1 - x0;
   const dy = y1 - y0;
   const segLenSq = Math.max(1e-4, dx * dx + dy * dy);
+  const subOffsets = [0.125, 0.375, 0.625, 0.875] as const;
 
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
       const px = x + 0.5;
       const py = y + 0.5;
-      const t = clamp01(((px - x0) * dx + (py - y0) * dy) / segLenSq);
-      const cx = x0 + dx * t;
-      const cy = y0 + dy * t;
-      // 3차 에르미트 칼끝 테이퍼 프로파일
-      const taper = 1 - Math.pow(t, 1.65) * (1 - terminalRadiusPx / baseRadius);
-      const localR = baseRadius * taper;
-      const dist = Math.hypot(px - cx, py - cy);
-      const sdf = dist - localR;
+      const tCenter = clamp01(((px - x0) * dx + (py - y0) * dy) / segLenSq);
+      const cx = x0 + dx * tCenter;
+      const cy = y0 + dy * tCenter;
+      const taperCenter = 1 - Math.pow(tCenter, 1.55) * (1 - terminalRadiusPx / baseRadius);
+      const localRCenter = baseRadius * taperCenter;
+      const binCov = Math.hypot(px - cx, py - cy) - localRCenter <= 0 ? 1 : 0;
 
-      const binCov = sdf <= 0 ? 1 : 0;
-      const aaCov = 1 - smoothstep(-aaHalfBand, aaHalfBand, sdf);
+      // 4×4 서브픽셀 듀얼-엔벨로프 분석 커버리지 적분 (inner core + outer soft AA band)
+      let covSum = 0;
+      for (let sy = 0; sy < 4; sy += 1) {
+        const spY = y + subOffsets[sy]!;
+        for (let sx = 0; sx < 4; sx += 1) {
+          const spX = x + subOffsets[sx]!;
+          const st = clamp01(((spX - x0) * dx + (spY - y0) * dy) / segLenSq);
+          const scx = x0 + dx * st;
+          const scy = y0 + dy * st;
+          const localR = baseRadius * (1 - Math.pow(st, 1.55) * (1 - terminalRadiusPx / baseRadius));
+          const dist = Math.hypot(spX - scx, spY - scy);
+          const sdf = dist - localR;
+          const outerCov = 1 - smoothstep(-aaHalfBand, aaHalfBand, sdf);
+          const coreCov = 1 - smoothstep(-aaHalfBand * 0.45, aaHalfBand * 0.45, sdf);
+          covSum += 0.65 * outerCov + 0.35 * coreCov;
+        }
+      }
+      const aaCov = covSum / 16;
 
       const offset = (y * size + x) * 4;
       const binByte = Math.round((1 - binCov * 0.92) * 255);

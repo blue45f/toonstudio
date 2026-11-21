@@ -8,12 +8,29 @@ import {
   safeScalar,
 } from "./csp-sut-pressure-graph";
 import {
+  extractValidatedPngs,
+  formatCspIssue,
+  inspectCspToolFile,
+  resolveCspLimits,
+  validateCspSqliteHeader,
+  validateCspSqliteSnapshot,
+  type CspSqliteHeaderInspection,
+  type CspSqliteSnapshot,
+  type CspSqliteTableSnapshot,
+  type CspSqliteValue,
+  type CspToolFileKind,
+  type CspToolFileLimits,
+} from "./csp-sut-sqlite-inspect";
+import {
   buildNodeVariantLookup,
   cellByField,
+  extractCspProgramFeatures,
+  extractCspRowKeyCandidates,
   normalizeUnitOrPercentScalar,
   numericCell,
   semanticField,
   stringCell,
+  type CspProgramFeatureExtensions,
 } from "./csp-sut-variant-schema";
 import {
   bytesToBase64,
@@ -24,47 +41,26 @@ import {
 
 import type { BrushProgramIR, DynamicMappingIR } from "@toonstudio/studio-project-model";
 
-
 export { CspToolFileError, type CspToolFileErrorCode } from "./csp-sut-error";
 export { parseCspPressureGraph, type CspPressureGraph } from "./csp-sut-pressure-graph";
-
-const SQLITE_SIGNATURE = new TextEncoder().encode("SQLite format 3\0");
-const PNG_SIGNATURE = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-
-export const CSP_TOOL_FILE_LIMITS = Object.freeze({
-  maxBytes: 128_000_000,
-  maxTables: 128,
-  maxColumnsPerTable: 256,
-  maxRows: 4_096,
-  maxBlobBytes: 32_000_000,
-  maxTextCharacters: 1_000_000,
-  maxEmbeddedPngPixels: 64_000_000,
-});
-
-export type CspToolFileKind = "sut" | "sutg";
-export type CspSqliteValue = string | number | bigint | Uint8Array | null;
-
-export interface CspToolFileLimits {
-  maxBytes: number;
-  maxTables: number;
-  maxColumnsPerTable: number;
-  maxRows: number;
-  maxBlobBytes: number;
-  maxTextCharacters: number;
-  maxEmbeddedPngPixels: number;
-}
-
-export interface CspSqliteTableSnapshot {
-  name: string;
-  columns: string[];
-  /** Reader must return deterministic primary-key/rowid order. */
-  rows: Array<Readonly<Record<string, CspSqliteValue>>>;
-}
-
-export interface CspSqliteSnapshot {
-  tables: CspSqliteTableSnapshot[];
-  sqliteVersion?: string;
-}
+export {
+  CSP_TOOL_FILE_LIMITS,
+  inspectCspToolFile,
+  type CspSqliteHeaderInspection,
+  type CspSqliteSnapshot,
+  type CspSqliteTableSnapshot,
+  type CspSqliteValue,
+  type CspToolFileKind,
+  type CspToolFileLimits,
+} from "./csp-sut-sqlite-inspect";
+export type {
+  CspDualBrushFeature,
+  CspProgramFeatureExtensions,
+  CspTaperFeature,
+  CspTextureFeature,
+  CspWaterColorFeature,
+  CspWaterEdgeFeature,
+} from "./csp-sut-variant-schema";
 
 export interface CspSqliteReadContext {
   kind: CspToolFileKind;
@@ -86,18 +82,6 @@ export interface CspToolFileImportOptions {
   sqliteReader?: CspSutSqliteReader;
   signal?: AbortSignal;
   limits?: Partial<CspToolFileLimits>;
-}
-
-export interface CspSqliteHeaderInspection {
-  container: "sqlite3" | "opaque";
-  pageSize: number | null;
-  readVersion: number | null;
-  writeVersion: number | null;
-  schemaFormat: number | null;
-  textEncoding: "utf-8" | "utf-16le" | "utf-16be" | "unknown" | null;
-  pageCount: number | null;
-  userVersion: number | null;
-  applicationId: number | null;
 }
 
 export interface CspEmbeddedAsset {
@@ -125,6 +109,7 @@ export interface CspToolFileImportResult {
   sqliteVersion: string | null;
   tables: Array<{ name: string; columns: string[]; rowCount: number }>;
   programs: BrushProgramIR[];
+  programFeatures?: Readonly<Record<string, CspProgramFeatureExtensions>>;
   assets: CspEmbeddedAsset[];
   rights: CspToolRights;
   warnings: FormatIssue[];
@@ -132,336 +117,34 @@ export interface CspToolFileImportResult {
   sourcePayload: { format: "csp-sut" | "csp-sutg"; base64: string };
 }
 
-type ResolvedLimits = CspToolFileLimits;
-
-function formatIssue(
-  scope: FormatIssue["scope"],
-  code: string,
-  message: string,
-  path?: string,
-): FormatIssue {
-  return path === undefined ? { scope, code, message } : { scope, code, message, path };
-}
-
-function resolveLimits(requested: CspToolFileImportOptions["limits"]): ResolvedLimits {
-  const resolved: ResolvedLimits = { ...CSP_TOOL_FILE_LIMITS };
-  if (requested === undefined) return resolved;
-  for (const key of Object.keys(CSP_TOOL_FILE_LIMITS) as Array<keyof ResolvedLimits>) {
-    const value = requested[key];
-    const maximum = CSP_TOOL_FILE_LIMITS[key];
-    if (value === undefined) continue;
-    if (!Number.isSafeInteger(value) || value < 0 || value > maximum) {
-      throw new CspToolFileError(
-        `${key} must be an integer between 0 and ${maximum}`,
-        "invalid-options",
-      );
-    }
-    resolved[key] = value;
-  }
-  return resolved;
-}
-
-function equalAt(bytes: Uint8Array, needle: Uint8Array, offset: number): boolean {
-  if (offset < 0 || offset + needle.byteLength > bytes.byteLength) return false;
-  for (let index = 0; index < needle.byteLength; index += 1) {
-    if (bytes[offset + index] !== needle[index]) return false;
-  }
-  return true;
-}
-
-function readUint32Big(view: DataView, offset: number): number {
-  return view.getUint32(offset, false);
-}
-
-export function inspectCspToolFile(bytes: Uint8Array): CspSqliteHeaderInspection {
-  if (bytes.byteLength < SQLITE_SIGNATURE.byteLength || !equalAt(bytes, SQLITE_SIGNATURE, 0)) {
-    return {
-      container: "opaque",
-      pageSize: null,
-      readVersion: null,
-      writeVersion: null,
-      schemaFormat: null,
-      textEncoding: null,
-      pageCount: null,
-      userVersion: null,
-      applicationId: null,
-    };
-  }
-  if (bytes.byteLength < 100) {
-    return {
-      container: "sqlite3",
-      pageSize: null,
-      readVersion: null,
-      writeVersion: null,
-      schemaFormat: null,
-      textEncoding: null,
-      pageCount: null,
-      userVersion: null,
-      applicationId: null,
-    };
-  }
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const storedPageSize = view.getUint16(16, false);
-  const encoding = readUint32Big(view, 56);
-  return {
-    container: "sqlite3",
-    pageSize: storedPageSize === 1 ? 65_536 : storedPageSize,
-    writeVersion: bytes[18] ?? null,
-    readVersion: bytes[19] ?? null,
-    pageCount: readUint32Big(view, 28),
-    schemaFormat: readUint32Big(view, 44),
-    textEncoding:
-      encoding === 1
-        ? "utf-8"
-        : encoding === 2
-          ? "utf-16le"
-          : encoding === 3
-            ? "utf-16be"
-            : "unknown",
-    userVersion: readUint32Big(view, 60),
-    applicationId: readUint32Big(view, 68),
-  };
-}
-
-function validateSqliteHeader(
-  bytes: Uint8Array,
-  inspection: CspSqliteHeaderInspection,
-  warnings: FormatIssue[],
-  unsupported: FormatIssue[],
-): boolean {
-  if (inspection.container !== "sqlite3") {
-    unsupported.push(
-      formatIssue(
-        "container",
-        "sut-container-unverified",
-        "CELSYS does not publish the SUT/SUTG container contract and this file is not a recognized SQLite 3 container; original bytes are preserved",
-      ),
-    );
-    return false;
-  }
-  if (bytes.byteLength < 100 || inspection.pageSize === null) {
-    unsupported.push(
-      formatIssue("container", "sqlite-header-truncated", "SQLite header is shorter than 100 bytes"),
-    );
-    return false;
-  }
-  const pageSize = inspection.pageSize;
-  if (
-    pageSize < 512 ||
-    pageSize > 65_536 ||
-    (pageSize & (pageSize - 1)) !== 0 ||
-    bytes.byteLength % pageSize !== 0
-  ) {
-    unsupported.push(
-      formatIssue(
-        "container",
-        "sqlite-page-layout-invalid",
-        `page size ${pageSize} does not describe the ${bytes.byteLength}-byte file`,
-      ),
-    );
-    return false;
-  }
-  if (![1, 2].includes(inspection.readVersion ?? 0) || ![1, 2].includes(inspection.writeVersion ?? 0)) {
-    unsupported.push(
-      formatIssue("container", "sqlite-version-invalid", "SQLite read/write version is not 1 or 2"),
-    );
-    return false;
-  }
-  if (inspection.schemaFormat === null || inspection.schemaFormat < 1 || inspection.schemaFormat > 4) {
-    unsupported.push(
-      formatIssue(
-        "container",
-        "sqlite-schema-format-unsupported",
-        `SQLite schema format ${String(inspection.schemaFormat)} is outside 1..4`,
-      ),
-    );
-    return false;
-  }
-  if (inspection.textEncoding === "unknown") {
-    unsupported.push(
-      formatIssue("container", "sqlite-text-encoding-unsupported", "SQLite text encoding is unknown"),
-    );
-    return false;
-  }
-  if (inspection.readVersion === 2 || inspection.writeVersion === 2) {
-    warnings.push(
-      formatIssue(
-        "container",
-        "sqlite-wal-header",
-        "database header indicates WAL mode; only the self-contained main database bytes are inspected",
-      ),
-    );
-  }
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  if (bytes[20] !== 0 || bytes[21] !== 64 || bytes[22] !== 32 || bytes[23] !== 32) {
-    unsupported.push(
-      formatIssue(
-        "container",
-        "sqlite-payload-fractions-invalid",
-        "SQLite reserved-byte/payload-fraction header fields are non-standard",
-      ),
-    );
-    return false;
-  }
-  const headerPageCount = readUint32Big(view, 28);
-  if (headerPageCount > 0 && headerPageCount * pageSize > bytes.byteLength) {
-    unsupported.push(
-      formatIssue("container", "sqlite-page-count-invalid", "SQLite page count exceeds the file"),
-    );
-    return false;
-  }
-  return true;
-}
-
-const PNG_CRC_TABLE = (() => {
-  const table = new Uint32Array(256);
-  for (let index = 0; index < 256; index += 1) {
-    let value = index;
-    for (let bit = 0; bit < 8; bit += 1) {
-      value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
-    }
-    table[index] = value >>> 0;
-  }
-  return table;
-})();
-
-function pngCrc32(bytes: Uint8Array): number {
-  let value = 0xffff_ffff;
-  for (const byte of bytes) {
-    value = (PNG_CRC_TABLE[(value ^ byte) & 0xff] ?? 0) ^ (value >>> 8);
-  }
-  return (value ^ 0xffff_ffff) >>> 0;
-}
-
-function extractValidatedPngs(
-  bytes: Uint8Array,
-  maxPixels: number,
-): Array<{ bytes: Uint8Array; width: number; height: number }> {
-  const found: Array<{ bytes: Uint8Array; width: number; height: number }> = [];
-  for (let start = 0; start + PNG_SIGNATURE.byteLength <= bytes.byteLength; start += 1) {
-    if (!equalAt(bytes, PNG_SIGNATURE, start)) continue;
-    let offset = start + PNG_SIGNATURE.byteLength;
-    let width = 0;
-    let height = 0;
-    let sawIhdr = false;
-    let valid = false;
-    while (offset + 12 <= bytes.byteLength) {
-      const view = new DataView(bytes.buffer, bytes.byteOffset + offset, bytes.byteLength - offset);
-      const length = view.getUint32(0, false);
-      const end = offset + 12 + length;
-      if (length > bytes.byteLength || end > bytes.byteLength) break;
-      const typeBytes = bytes.subarray(offset + 4, offset + 8);
-      const type = String.fromCharCode(...typeBytes);
-      const storedCrc = new DataView(
-        bytes.buffer,
-        bytes.byteOffset + offset + 8 + length,
-        4,
-      ).getUint32(0, false);
-      if (storedCrc !== pngCrc32(bytes.subarray(offset + 4, offset + 8 + length))) break;
-      if (type === "IHDR") {
-        if (sawIhdr || length !== 13) break;
-        sawIhdr = true;
-        const ihdr = new DataView(bytes.buffer, bytes.byteOffset + offset + 8, 13);
-        width = ihdr.getUint32(0, false);
-        height = ihdr.getUint32(4, false);
-        if (
-          width < 1 ||
-          height < 1 ||
-          width > maxPixels ||
-          height > maxPixels ||
-          width * height > maxPixels
-        ) {
-          break;
-        }
-      }
-      offset = end;
-      if (type === "IEND" && length === 0 && sawIhdr) {
-        valid = true;
-        break;
-      }
-    }
-    if (valid) {
-      found.push({ bytes: bytes.slice(start, offset), width, height });
-      start = offset - 1;
-    }
-  }
-  return found;
-}
-
-function validateSnapshot(snapshot: CspSqliteSnapshot, limits: ResolvedLimits): void {
-  if (!Array.isArray(snapshot.tables) || snapshot.tables.length > limits.maxTables) {
-    throw new CspToolFileError(
-      "SQLite reader returned too many tables or a malformed table list",
-      "snapshot-invalid-structure",
-    );
-  }
-  let totalRows = 0;
-  const tableNames = new Set<string>();
-  for (const table of snapshot.tables) {
-    if (
-      typeof table.name !== "string" ||
-      table.name.length === 0 ||
-      tableNames.has(table.name) ||
-      !Array.isArray(table.columns) ||
-      table.columns.length > limits.maxColumnsPerTable ||
-      !Array.isArray(table.rows)
-    ) {
-      throw new CspToolFileError(
-        "SQLite reader returned a malformed table snapshot",
-        "snapshot-invalid-structure",
-      );
-    }
-    tableNames.add(table.name);
-    const columns = new Set(table.columns);
-    if (columns.size !== table.columns.length || table.columns.some((column) => typeof column !== "string")) {
-      throw new CspToolFileError(
-        `SQLite table ${table.name} has invalid columns`,
-        "snapshot-invalid-structure",
-      );
-    }
-    totalRows += table.rows.length;
-    if (totalRows > limits.maxRows) {
-      throw new CspToolFileError("SQLite reader returned too many rows", "snapshot-limit-exceeded");
-    }
-    for (const row of table.rows) {
-      for (const [column, value] of Object.entries(row)) {
-        if (!columns.has(column)) {
-          throw new CspToolFileError(
-            `SQLite row uses undeclared column ${column}`,
-            "snapshot-invalid-structure",
-          );
-        }
-        if (typeof value === "string" && value.length > limits.maxTextCharacters) {
-          throw new CspToolFileError(
-            `SQLite text cell ${table.name}.${column} exceeds its safety limit`,
-            "snapshot-limit-exceeded",
-          );
-        }
-        if (value instanceof Uint8Array && value.byteLength > limits.maxBlobBytes) {
-          throw new CspToolFileError(
-            `SQLite blob cell ${table.name}.${column} exceeds its safety limit`,
-            "snapshot-limit-exceeded",
-          );
-        }
-        if (
-          value !== null &&
-          typeof value !== "string" &&
-          typeof value !== "number" &&
-          typeof value !== "bigint" &&
-          !(value instanceof Uint8Array)
-        ) {
-          throw new CspToolFileError(
-            `SQLite cell ${table.name}.${column} has an invalid value type`,
-            "snapshot-invalid-structure",
-          );
-        }
-      }
-    }
-  }
+interface ExtractedAssetEntry {
+  readonly asset: CspEmbeddedAsset;
+  readonly rowKeys: readonly string[];
 }
 
 function addRight(target: string[], value: string | null): void {
   if (value !== null && !target.includes(value)) target.push(value);
+}
+
+function matchEmbeddedAssetForRow(
+  row: Readonly<Record<string, CspSqliteValue>>,
+  programIndex: number,
+  totalBrushRows: number,
+  assetEntries: readonly ExtractedAssetEntry[],
+): CspEmbeddedAsset | null {
+  if (assetEntries.length === 0) return null;
+  const rowKeys = extractCspRowKeyCandidates(row);
+  for (const key of rowKeys) {
+    const matched = assetEntries.find((entry) => entry.rowKeys.includes(key));
+    if (matched) return matched.asset;
+  }
+  if (totalBrushRows === 1 && assetEntries.length === 1) {
+    return assetEntries[0]!.asset;
+  }
+  if (programIndex < assetEntries.length && assetEntries.length <= totalBrushRows) {
+    return assetEntries[programIndex]!.asset;
+  }
+  return null;
 }
 
 function programForRow(
@@ -472,8 +155,9 @@ function programForRow(
   rowIndex: number,
   unsupported: FormatIssue[],
   warnings: FormatIssue[],
-  nodeLookup?: ReturnType<typeof buildNodeVariantLookup>,
-): BrushProgramIR | null {
+  nodeLookup: ReturnType<typeof buildNodeVariantLookup> | undefined,
+  linkedAsset: CspEmbeddedAsset | null,
+): { program: BrushProgramIR; features: CspProgramFeatureExtensions } | null {
   const variantId = numericCell(row, "variantId");
   if (
     variantId !== null &&
@@ -514,7 +198,7 @@ function programForRow(
     !["direct-draw", "direct draw", "brush"].includes(outputProcess.toLowerCase())
   ) {
     unsupported.push(
-      formatIssue(
+      formatCspIssue(
         "semantic",
         "sut-output-process-unsupported",
         `output process ${outputProcess} is not a verified direct-draw brush`,
@@ -525,7 +209,7 @@ function programForRow(
   }
   if (outputProcess === null) {
     warnings.push(
-      formatIssue(
+      formatCspIssue(
         "semantic",
         "sut-output-process-missing",
         "output process is absent; row is imported only because verified brush fields are present",
@@ -540,7 +224,7 @@ function programForRow(
     if (brushSize > 0 && brushSize <= 10_000) {
       if (brushSize > 1_000) {
         warnings.push(
-          formatIssue(
+          formatCspIssue(
             "semantic",
             "sut-brush-size-clamped",
             `brush size ${brushSize}px exceeds the 1000px IR normalization reference`,
@@ -551,7 +235,7 @@ function programForRow(
       sizeDynamics.push(constantMapping(Math.min(1, brushSize / 1_000)));
     } else {
       unsupported.push(
-        formatIssue("semantic", "sut-brush-size-invalid", `brush size ${brushSize} is invalid`, path),
+        formatCspIssue("semantic", "sut-brush-size-invalid", `brush size ${brushSize} is invalid`, path),
       );
     }
   }
@@ -562,21 +246,14 @@ function programForRow(
   ): void => {
     if (cell === null) return;
     if (!(cell.value instanceof Uint8Array)) {
-      unsupported.push(
-        formatIssue("semantic", code, `${cell.column} is not a BLOB`, path),
-      );
+      unsupported.push(formatCspIssue("semantic", code, `${cell.column} is not a BLOB`, path));
       return;
     }
     try {
       target.push(pressureMapping(parseCspPressureGraph(cell.value).curve));
     } catch (cause) {
       unsupported.push(
-        formatIssue(
-          "semantic",
-          code,
-          cause instanceof Error ? cause.message : String(cause),
-          path,
-        ),
+        formatCspIssue("semantic", code, cause instanceof Error ? cause.message : String(cause), path),
       );
     }
   };
@@ -586,7 +263,7 @@ function programForRow(
   if (validOpacity !== null) flowDynamics.push(constantMapping(validOpacity));
   else if (opacity !== null) {
     unsupported.push(
-      formatIssue(
+      formatCspIssue(
         "semantic",
         "sut-opacity-scale-unverified",
         `opacity ${opacity} is outside the verified normalized [0,1] or integer [0,100] scale`,
@@ -600,35 +277,63 @@ function programForRow(
   const rawName = stringCell(row, "name") ?? linkedNode?.name ?? null;
   const name = rawName ?? `${kind.toUpperCase()} ${table.name} ${rowIndex + 1}`;
   if (rawName === null) {
-    warnings.push(
-      formatIssue("semantic", "sut-name-missing", `fallback name ${name} assigned`, path),
-    );
+    warnings.push(formatCspIssue("semantic", "sut-name-missing", `fallback name ${name} assigned`, path));
   }
   const validHardness = normalizeUnitOrPercentScalar(hardness);
   const validSpacing = safeScalar(spacing, 1, 1_000);
   if (hardness !== null && validHardness === null) {
-    unsupported.push(
-      formatIssue("semantic", "sut-hardness-scale-unverified", `hardness ${hardness} rejected`, path),
-    );
+    unsupported.push(formatCspIssue("semantic", "sut-hardness-scale-unverified", `hardness ${hardness} rejected`, path));
   }
   if (spacing !== null && validSpacing === null) {
-    unsupported.push(
-      formatIssue("semantic", "sut-spacing-scale-unverified", `spacing ${spacing} rejected`, path),
-    );
+    unsupported.push(formatCspIssue("semantic", "sut-spacing-scale-unverified", `spacing ${spacing} rejected`, path));
   }
   const validStabilization = normalizeUnitOrPercentScalar(stabilization);
   if (stabilization !== null && validStabilization === null) {
     unsupported.push(
-      formatIssue(
-        "semantic",
-        "sut-stabilization-scale-unverified",
-        `stabilization ${stabilization} rejected`,
-        path,
-      ),
+      formatCspIssue("semantic", "sut-stabilization-scale-unverified", `stabilization ${stabilization} rejected`, path),
     );
   }
-  const validAngleJitter = safeScalar(angleJitter, 0, 360) ?? 0;
-  return brushProgramIRSchema.parse({
+  const validAngleJitter = Math.min(180, safeScalar(angleJitter, 0, 360) ?? 0);
+
+  const extracted = extractCspProgramFeatures(row);
+  const features: CspProgramFeatureExtensions = {
+    ...extracted,
+    ...(linkedAsset ? { linkedAssetId: linkedAsset.id } : {}),
+  };
+
+  const mixingKind: "none" | "smudge" | "wet" = features.waterColor?.enabled
+    ? (features.waterColor.mixingMode === 1 ? "smudge" : "wet")
+    : features.waterEdge?.enabled
+      ? "wet"
+      : "none";
+  const mixingStrength = mixingKind === "none"
+    ? 0
+    : Math.min(
+        1,
+        Math.max(
+          0.1,
+          features.waterColor?.mixColor ??
+            features.waterColor?.lmsLinearity ??
+            features.waterColor?.colorExtension ??
+            features.waterEdge?.strength ??
+            0.55,
+        ),
+      );
+
+  const tipKind: "round" | "stamp" | "image" = linkedAsset
+    ? "image"
+    : features.dualBrush?.enabled || features.texture?.enabled
+      ? "stamp"
+      : "round";
+
+  const providerPreference = ["hokusai-natural-media"];
+  if (features.waterColor?.enabled) providerPreference.push("csp:watercolor");
+  if (features.waterEdge?.enabled) providerPreference.push("csp:water-edge");
+  if (features.dualBrush?.enabled) providerPreference.push("csp:dual-brush");
+  if (features.texture?.enabled) providerPreference.push("csp:texture");
+  if (features.taper) providerPreference.push("csp:taper");
+
+  const program = brushProgramIRSchema.parse({
     id,
     name,
     stabilizer: {
@@ -638,26 +343,37 @@ function programForRow(
     },
     sizeDynamics,
     flowDynamics,
+    geometry: {
+      kind: "perfect-freehand",
+      thinning: features.taper ? 0.72 : 0.5,
+      smoothing: validStabilization ?? 0.5,
+      streamline: validStabilization ?? 0.5,
+      capStart: !(features.taper?.useIn ?? false),
+      capEnd: !(features.taper?.useOut ?? false),
+    },
     tip: {
-      kind: "round",
+      kind: tipKind,
       hardness: validHardness ?? 1,
       spacingPct: validSpacing ?? 10,
       angleJitterDeg: validAngleJitter,
+      ...(linkedAsset ? { imageAssetId: linkedAsset.id } : {}),
     },
+    mixing: { kind: mixingKind, strength: mixingStrength },
     output: { target: "raster-tiles", bake: "flatten" },
-    providerPreference: ["hokusai-natural-media"],
+    providerPreference,
     sourcePayload: {
       format: kind === "sut" ? "csp-sut" : "csp-sutg",
       base64: bytesToBase64(bytes),
     },
   });
+  return { program, features };
 }
 
 export async function importCspToolFile(
   source: Uint8Array | ArrayBuffer,
   options: CspToolFileImportOptions,
 ): Promise<CspToolFileImportResult> {
-  const limits = resolveLimits(options.limits);
+  const limits = resolveCspLimits(options.limits);
   if (options.signal?.aborted) throw new CspToolFileError("import aborted", "aborted");
   const bytes = source instanceof Uint8Array ? source.slice() : new Uint8Array(source.slice(0));
   if (bytes.byteLength > limits.maxBytes) {
@@ -666,22 +382,22 @@ export async function importCspToolFile(
   const warnings: FormatIssue[] = [];
   const unsupported: FormatIssue[] = [];
   const inspection = inspectCspToolFile(bytes);
-  const validSqlite = validateSqliteHeader(bytes, inspection, warnings, unsupported);
+  const validSqlite = validateCspSqliteHeader(bytes, inspection, warnings, unsupported);
   const resultBase = {
-    format: options.kind === "sut" ? "clip-studio-tool" as const : "clip-studio-tool-group" as const,
+    format: options.kind === "sut" ? ("clip-studio-tool" as const) : ("clip-studio-tool-group" as const),
     inspection,
     rights: { authors: [], licenses: [], websites: [], emails: [] } satisfies CspToolRights,
     warnings,
     unsupported,
     sourcePayload: {
-      format: options.kind === "sut" ? "csp-sut" as const : "csp-sutg" as const,
+      format: options.kind === "sut" ? ("csp-sut" as const) : ("csp-sutg" as const),
       base64: bytesToBase64(bytes),
     },
   };
   if (!validSqlite || options.sqliteReader === undefined) {
     if (validSqlite) {
       unsupported.push(
-        formatIssue(
+        formatCspIssue(
           "semantic",
           "sut-sqlite-reader-unavailable",
           "SQLite container is verified, but no sandboxed SQLite reader was provided; original bytes are preserved without claiming semantic import",
@@ -709,15 +425,11 @@ export async function importCspToolFile(
       maxTextCharacters: limits.maxTextCharacters,
       signal: options.signal,
     });
-    validateSnapshot(snapshot, limits);
+    validateCspSqliteSnapshot(snapshot, limits);
   } catch (cause) {
     if (options.signal?.aborted) throw new CspToolFileError("import aborted", "aborted");
     unsupported.push(
-      formatIssue(
-        "semantic",
-        "sut-sqlite-read-failed",
-        cause instanceof Error ? cause.message : String(cause),
-      ),
+      formatCspIssue("semantic", "sut-sqlite-read-failed", cause instanceof Error ? cause.message : String(cause)),
     );
     return {
       ...resultBase,
@@ -729,14 +441,15 @@ export async function importCspToolFile(
     };
   }
 
-  const programs: BrushProgramIR[] = [];
-  const assets: CspEmbeddedAsset[] = [];
   const nodeLookup = buildNodeVariantLookup(snapshot.tables);
+  const assetEntries: ExtractedAssetEntry[] = [];
+  const candidateRows: Array<{ table: CspSqliteTableSnapshot; row: Readonly<Record<string, CspSqliteValue>>; rowIndex: number }> = [];
+
   for (const table of snapshot.tables) {
     for (const column of table.columns) {
       if (semanticField(column) === null) {
         unsupported.push(
-          formatIssue(
+          formatCspIssue(
             "semantic",
             "sut-column-unmapped",
             `SQLite column ${column} is preserved in the original SUT/SUTG payload`,
@@ -754,49 +467,97 @@ export async function importCspToolFile(
       addRight(resultBase.rights.emails, stringCell(row, "email"));
       const fileData = cellByField(row, "fileData");
       if (fileData?.value instanceof Uint8Array) {
+        const rowKeys = extractCspRowKeyCandidates(row);
         for (const png of extractValidatedPngs(fileData.value, limits.maxEmbeddedPngPixels)) {
-          assets.push({
-            id: stableTextId("csp-embedded-png", png.bytes),
-            mimeType: "image/png",
-            sourceTable: table.name,
-            sourceColumn: fileData.column,
-            sourceRow: rowIndex,
-            width: png.width,
-            height: png.height,
-            base64: bytesToBase64(png.bytes),
+          assetEntries.push({
+            asset: {
+              id: stableTextId("csp-embedded-png", png.bytes),
+              mimeType: "image/png",
+              sourceTable: table.name,
+              sourceColumn: fileData.column,
+              sourceRow: rowIndex,
+              width: png.width,
+              height: png.height,
+              base64: bytesToBase64(png.bytes),
+            },
+            rowKeys,
           });
         }
       }
-      const program = programForRow(
-        bytes,
-        options.kind,
-        table,
-        row,
-        rowIndex,
-        unsupported,
-        warnings,
-        nodeLookup,
-      );
-      if (program !== null) programs.push(program);
+      candidateRows.push({ table, row, rowIndex });
     }
   }
+
+  const activeBrushCandidates = candidateRows.filter(({ row }) => {
+    const variantId = numericCell(row, "variantId");
+    if (
+      variantId !== null &&
+      nodeLookup.byActiveVariantId.size > 0 &&
+      !nodeLookup.byActiveVariantId.has(variantId)
+    ) {
+      return false;
+    }
+    return (
+      cellByField(row, "pressureGraph") !== null ||
+      cellByField(row, "opacityPressureGraph") !== null ||
+      numericCell(row, "brushSize") !== null ||
+      numericCell(row, "hardness") !== null ||
+      numericCell(row, "spacing") !== null ||
+      numericCell(row, "opacity") !== null
+    );
+  });
+
+  const programs: BrushProgramIR[] = [];
+  const programFeatures: Record<string, CspProgramFeatureExtensions> = {};
+  const linkedAssetIds = new Set<string>();
+  for (let idx = 0; idx < activeBrushCandidates.length; idx += 1) {
+    const candidate = activeBrushCandidates[idx]!;
+    const linkedAsset = matchEmbeddedAssetForRow(
+      candidate.row,
+      idx,
+      activeBrushCandidates.length,
+      assetEntries,
+    );
+    const built = programForRow(
+      bytes,
+      options.kind,
+      candidate.table,
+      candidate.row,
+      candidate.rowIndex,
+      unsupported,
+      warnings,
+      nodeLookup,
+      linkedAsset,
+    );
+    if (built !== null) {
+      programs.push(built.program);
+      if (Object.keys(built.features).length > 0) {
+        programFeatures[built.program.id] = built.features;
+      }
+      if (linkedAsset) linkedAssetIds.add(linkedAsset.id);
+    }
+  }
+
+  const assets = assetEntries.map((entry) => entry.asset);
   assets.sort((left, right) => left.id.localeCompare(right.id, "en"));
   resultBase.rights.authors.sort();
   resultBase.rights.licenses.sort();
   resultBase.rights.websites.sort();
   resultBase.rights.emails.sort();
-  if (assets.length > 0) {
+
+  const unlinkedAssets = assets.filter((asset) => !linkedAssetIds.has(asset.id));
+  if (unlinkedAssets.length > 0) {
     unsupported.push(
-      formatIssue(
+      formatCspIssue(
         "semantic",
         "sut-material-link-unverified",
-        `${assets.length} validated PNG material(s) were extracted but not attached to a brush because CELSYS does not publish the relation schema`,
+        `${unlinkedAssets.length} validated PNG material(s) were extracted but could not be matched to a brush row`,
       ),
     );
   }
   if (programs.length === 0) {
     unsupported.push(
-      formatIssue(
+      formatCspIssue(
         "semantic",
         "sut-brush-schema-unrecognized",
         "no row contained the verified clean-room brush field subset; original tables remain represented by their inventory and source payload",
@@ -813,6 +574,7 @@ export async function importCspToolFile(
       rowCount: table.rows.length,
     })),
     programs,
+    ...(Object.keys(programFeatures).length > 0 ? { programFeatures } : {}),
     assets,
   };
 }

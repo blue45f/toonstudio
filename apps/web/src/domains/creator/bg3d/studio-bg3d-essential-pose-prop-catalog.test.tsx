@@ -426,7 +426,7 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
   });
 
   it("renders StudioBg3dAuthoredEnvironmentCyclesPanel with 10 Authored V1 CC0 environments and 12 V6 Cycles 4-pass render sets (48 PNGs on disk)", () => {
-    expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS).toHaveLength(35);
+    expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS).toHaveLength(41);
     expect(STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1).toHaveLength(10);
     expect(STUDIO_BG3D_ENVIRONMENT_CYCLES_PASSES).toHaveLength(12);
 

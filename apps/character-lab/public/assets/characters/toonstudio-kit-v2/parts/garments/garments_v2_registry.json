@@ -1,0 +1,1712 @@
+{
+  "schema": "toonstudio.character-kit.garments-v2-registry/1",
+  "craftVersion": "v3",
+  "uv1CmPerUnit": 50.0,
+  "count": 34,
+  "genres": [
+    "action-techwear",
+    "korean-academy",
+    "modern-casual",
+    "murim-fantasy",
+    "office-suit",
+    "rofan-imperial"
+  ],
+  "parts": {
+    "top/school-shirt-tie": {
+      "genre": "korean-academy",
+      "slot": "top",
+      "layer": null,
+      "node": "TS_Top_school-shirt-tie",
+      "targetBase": "female-romance",
+      "file": {
+        "path": "school-shirt-tie.glb",
+        "bytes": 933816,
+        "sha256": "6f507976b4f24f56f1c9b5ecf9478a44824648e29ec6457ce2e931490794bab3"
+      },
+      "materials": [
+        {
+          "name": "ts_top_school-shirt-tie",
+          "role": "top",
+          "channel": "top",
+          "defaultHex": "#F5F4F0",
+          "metallic": 0.0,
+          "roughness": 0.78
+        },
+        {
+          "name": "ts_top_trim_school-shirt-tie",
+          "role": "top",
+          "channel": "top-trim",
+          "defaultHex": "#D9DFEB",
+          "metallic": 0.0,
+          "roughness": 0.76
+        },
+        {
+          "name": "ts_top_accent_school-shirt-tie",
+          "role": "top",
+          "channel": "top-accent",
+          "defaultHex": "#8B1E32",
+          "metallic": 0.0,
+          "roughness": 0.48
+        }
+      ],
+      "hides": [
+        "torso",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "hem-length",
+        "collar-open"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 6576,
+      "vertices": 5663
+    },
+    "outer/school-blazer": {
+      "genre": "korean-academy",
+      "slot": "top",
+      "layer": "outer",
+      "node": "TS_Outer_school-blazer",
+      "targetBase": "female-romance",
+      "file": {
+        "path": "school-blazer.glb",
+        "bytes": 1269600,
+        "sha256": "723ebcc35555c9f07710640b358adf345a4e5400c3d7810032ee604d10cc1525"
+      },
+      "materials": [
+        {
+          "name": "ts_outer_school-blazer",
+          "role": "outer",
+          "channel": "outer",
+          "defaultHex": "#1E2A44",
+          "metallic": 0.0,
+          "roughness": 0.82
+        },
+        {
+          "name": "ts_outer_trim_school-blazer",
+          "role": "outer",
+          "channel": "outer-trim",
+          "defaultHex": "#EFE9DC",
+          "metallic": 0.0,
+          "roughness": 0.76
+        },
+        {
+          "name": "ts_outer_accent_school-blazer",
+          "role": "outer",
+          "channel": "outer-accent",
+          "defaultHex": "#D9B252",
+          "metallic": 1.0,
+          "roughness": 0.28
+        }
+      ],
+      "hides": [
+        "torso",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "blazer-open",
+        "hem-length"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 8740,
+      "vertices": 7491
+    },
+    "bottom/pleated-skirt": {
+      "genre": "korean-academy",
+      "slot": "bottom",
+      "layer": null,
+      "node": "TS_Bottom_pleated-skirt",
+      "targetBase": "female-romance",
+      "file": {
+        "path": "pleated-skirt.glb",
+        "bytes": 818476,
+        "sha256": "0b1ea3b8ab06242d77aacbcd3295cac08179c1eaaadaec1af37b9cabc6147ac8"
+      },
+      "materials": [
+        {
+          "name": "ts_bottom_pleated-skirt",
+          "role": "bottom",
+          "channel": "bottom",
+          "defaultHex": "#3E4A68",
+          "metallic": 0.0,
+          "roughness": 0.8
+        },
+        {
+          "name": "ts_bottom_trim_pleated-skirt",
+          "role": "bottom",
+          "channel": "bottom-trim",
+          "defaultHex": "#232C42",
+          "metallic": 0.0,
+          "roughness": 0.82
+        }
+      ],
+      "hides": [
+        "pelvis"
+      ],
+      "shapes": [
+        "skirt-length",
+        "pleat-flare"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 5584,
+      "vertices": 4803
+    },
+    "bottom/school-slacks": {
+      "genre": "korean-academy",
+      "slot": "bottom",
+      "layer": null,
+      "node": "TS_Bottom_school-slacks",
+      "targetBase": "female-romance",
+      "file": {
+        "path": "school-slacks.glb",
+        "bytes": 975276,
+        "sha256": "a21b668884d7da4964b0458cc0fcbb43394e81ac36c0eeeccffafa07f76c35ff"
+      },
+      "materials": [
+        {
+          "name": "ts_bottom_school-slacks",
+          "role": "bottom",
+          "channel": "bottom",
+          "defaultHex": "#3A4254",
+          "metallic": 0.0,
+          "roughness": 0.84
+        },
+        {
+          "name": "ts_bottom_trim_school-slacks",
+          "role": "bottom",
+          "channel": "bottom-trim",
+          "defaultHex": "#222630",
+          "metallic": 0.0,
+          "roughness": 0.5
+        }
+      ],
+      "hides": [
+        "pelvis",
+        "thigh.L",
+        "thigh.R",
+        "calf.L",
+        "calf.R"
+      ],
+      "shapes": [
+        "hem-length",
+        "leg-width"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 7544,
+      "vertices": 6173
+    },
+    "legwear/knee-socks": {
+      "genre": "korean-academy",
+      "slot": "bottom",
+      "layer": "legwear",
+      "node": "TS_Legwear_knee-socks",
+      "targetBase": "female-romance",
+      "file": {
+        "path": "knee-socks.glb",
+        "bytes": 255836,
+        "sha256": "42597d2a0ce75a7c51bf5c64db94ec5b75693ec54ee945df50ae87fc81ccaa29"
+      },
+      "materials": [
+        {
+          "name": "ts_legwear_knee-socks",
+          "role": "legwear",
+          "channel": "legwear",
+          "defaultHex": "#202430",
+          "metallic": 0.0,
+          "roughness": 0.88
+        }
+      ],
+      "hides": [
+        "calf.L",
+        "calf.R"
+      ],
+      "shapes": [
+        "sock-height"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 2240,
+      "vertices": 1692
+    },
+    "shoes/loafers": {
+      "genre": "korean-academy",
+      "slot": "shoes",
+      "layer": null,
+      "node": "TS_Shoes_loafers",
+      "targetBase": "female-romance",
+      "file": {
+        "path": "loafers.glb",
+        "bytes": 380408,
+        "sha256": "c454b8195b7967f1d10542c2c1710cea16233a441af9f97a87ae57f39620c887"
+      },
+      "materials": [
+        {
+          "name": "ts_shoes_loafers",
+          "role": "shoes",
+          "channel": "shoes",
+          "defaultHex": "#3B241D",
+          "metallic": 0.0,
+          "roughness": 0.42
+        },
+        {
+          "name": "ts_shoes_sole_loafers",
+          "role": "shoes",
+          "channel": "shoes-sole",
+          "defaultHex": "#1E1918",
+          "metallic": 0.0,
+          "roughness": 0.62
+        },
+        {
+          "name": "ts_shoes_lace_loafers",
+          "role": "shoes",
+          "channel": "shoes-lace",
+          "defaultHex": "#CFA854",
+          "metallic": 1.0,
+          "roughness": 0.28
+        }
+      ],
+      "hides": [
+        "foot.L",
+        "foot.R"
+      ],
+      "shapes": [
+        "heel-height"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 3024,
+      "vertices": 2944
+    },
+    "top/ribbed-tee": {
+      "genre": "modern-casual",
+      "slot": "top",
+      "layer": null,
+      "node": "TS_Top_ribbed-tee",
+      "targetBase": "youth-academy",
+      "file": {
+        "path": "ribbed-tee.glb",
+        "bytes": 672476,
+        "sha256": "d7436b2ae92ec8ab4cfccf3b634b0275cffeb9dfd299ed77de7f993a39417e05"
+      },
+      "materials": [
+        {
+          "name": "ts_top_ribbed-tee",
+          "role": "top",
+          "channel": "top",
+          "defaultHex": "#F0EDE6",
+          "metallic": 0.0,
+          "roughness": 0.84
+        },
+        {
+          "name": "ts_top_trim_ribbed-tee",
+          "role": "top",
+          "channel": "top-trim",
+          "defaultHex": "#D4D0C8",
+          "metallic": 0.0,
+          "roughness": 0.86
+        },
+        {
+          "name": "ts_top_accent_ribbed-tee",
+          "role": "top",
+          "channel": "top-accent",
+          "defaultHex": "#2C5949",
+          "metallic": 0.0,
+          "roughness": 0.78
+        }
+      ],
+      "hides": [
+        "torso",
+        "upperArm.L",
+        "upperArm.R"
+      ],
+      "shapes": [
+        "hem-length",
+        "sleeve-roll"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 4332,
+      "vertices": 3589
+    },
+    "top/oversized-hoodie": {
+      "genre": "modern-casual",
+      "slot": "top",
+      "layer": null,
+      "node": "TS_Top_oversized-hoodie",
+      "targetBase": "youth-academy",
+      "file": {
+        "path": "oversized-hoodie.glb",
+        "bytes": 1014892,
+        "sha256": "54564484ab00591a2b7a3b0126111d43c15a0b4d3b559c716f486d332d84ff64"
+      },
+      "materials": [
+        {
+          "name": "ts_top_oversized-hoodie",
+          "role": "top",
+          "channel": "top",
+          "defaultHex": "#5C7468",
+          "metallic": 0.0,
+          "roughness": 0.88
+        },
+        {
+          "name": "ts_top_trim_oversized-hoodie",
+          "role": "top",
+          "channel": "top-trim",
+          "defaultHex": "#E8E3D8",
+          "metallic": 0.0,
+          "roughness": 0.86
+        },
+        {
+          "name": "ts_top_accent_oversized-hoodie",
+          "role": "top",
+          "channel": "top-accent",
+          "defaultHex": "#C79646",
+          "metallic": 1.0,
+          "roughness": 0.3
+        }
+      ],
+      "hides": [
+        "torso",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "hem-length",
+        "sleeve-roll"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 7264,
+      "vertices": 6023
+    },
+    "top/knit-cardigan": {
+      "genre": "modern-casual",
+      "slot": "top",
+      "layer": "outer",
+      "node": "TS_Outer_knit-cardigan",
+      "targetBase": "youth-academy",
+      "file": {
+        "path": "knit-cardigan.glb",
+        "bytes": 958084,
+        "sha256": "f8c8ad4c058393dfb080fa8d9dece7f5e9fc646b0f5878f1e39d0c73f7070c52"
+      },
+      "materials": [
+        {
+          "name": "ts_outer_knit-cardigan",
+          "role": "outer",
+          "channel": "outer",
+          "defaultHex": "#C8B8A2",
+          "metallic": 0.0,
+          "roughness": 0.9
+        },
+        {
+          "name": "ts_outer_trim_knit-cardigan",
+          "role": "outer",
+          "channel": "outer-trim",
+          "defaultHex": "#9E8B74",
+          "metallic": 0.0,
+          "roughness": 0.9
+        },
+        {
+          "name": "ts_outer_accent_knit-cardigan",
+          "role": "outer",
+          "channel": "outer-accent",
+          "defaultHex": "#4A3122",
+          "metallic": 0.0,
+          "roughness": 0.45
+        }
+      ],
+      "hides": [
+        "torso",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "hem-length",
+        "sleeve-roll"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 6724,
+      "vertices": 5596
+    },
+    "bottom/wide-denim": {
+      "genre": "modern-casual",
+      "slot": "bottom",
+      "layer": null,
+      "node": "TS_Bottom_wide-denim",
+      "targetBase": "youth-academy",
+      "file": {
+        "path": "wide-denim.glb",
+        "bytes": 1005332,
+        "sha256": "45e4963996e8903631530fc9f89b3ecc159d208e77696bd7a32c1c1e8c69480e"
+      },
+      "materials": [
+        {
+          "name": "ts_bottom_wide-denim",
+          "role": "bottom",
+          "channel": "bottom",
+          "defaultHex": "#3E5879",
+          "metallic": 0.0,
+          "roughness": 0.86
+        },
+        {
+          "name": "ts_bottom_trim_wide-denim",
+          "role": "bottom",
+          "channel": "bottom-trim",
+          "defaultHex": "#C89D66",
+          "metallic": 0.0,
+          "roughness": 0.78
+        }
+      ],
+      "hides": [
+        "pelvis",
+        "thigh.L",
+        "thigh.R",
+        "calf.L",
+        "calf.R"
+      ],
+      "shapes": [
+        "hem-length",
+        "leg-width"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 7632,
+      "vertices": 6408
+    },
+    "bottom/cargo-shorts": {
+      "genre": "modern-casual",
+      "slot": "bottom",
+      "layer": null,
+      "node": "TS_Bottom_cargo-shorts",
+      "targetBase": "youth-academy",
+      "file": {
+        "path": "cargo-shorts.glb",
+        "bytes": 737728,
+        "sha256": "ea449ed45dd09a7ee70bb958a36f850350ee1fc4bbb1e171dd278ca26d343da3"
+      },
+      "materials": [
+        {
+          "name": "ts_bottom_cargo-shorts",
+          "role": "bottom",
+          "channel": "bottom",
+          "defaultHex": "#6C6A58",
+          "metallic": 0.0,
+          "roughness": 0.86
+        },
+        {
+          "name": "ts_bottom_trim_cargo-shorts",
+          "role": "bottom",
+          "channel": "bottom-trim",
+          "defaultHex": "#3B3A32",
+          "metallic": 0.0,
+          "roughness": 0.82
+        }
+      ],
+      "hides": [
+        "pelvis",
+        "thigh.L",
+        "thigh.R"
+      ],
+      "shapes": [
+        "hem-length",
+        "leg-width"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 4840,
+      "vertices": 4224
+    },
+    "shoes/sneakers": {
+      "genre": "modern-casual",
+      "slot": "shoes",
+      "layer": null,
+      "node": "TS_Shoes_sneakers",
+      "targetBase": "youth-academy",
+      "file": {
+        "path": "sneakers.glb",
+        "bytes": 542020,
+        "sha256": "9a5a525a825870d76bcea458d94250cce59c1871a0e71332eb8b3bc5dc1df6f9"
+      },
+      "materials": [
+        {
+          "name": "ts_shoes_sneakers",
+          "role": "shoes",
+          "channel": "shoes",
+          "defaultHex": "#394B43",
+          "metallic": 0.0,
+          "roughness": 0.78
+        },
+        {
+          "name": "ts_shoes_sole_sneakers",
+          "role": "shoes",
+          "channel": "shoes-sole",
+          "defaultHex": "#F0ECE4",
+          "metallic": 0.0,
+          "roughness": 0.68
+        },
+        {
+          "name": "ts_shoes_lace_sneakers",
+          "role": "shoes",
+          "channel": "shoes-lace",
+          "defaultHex": "#FAF8F3",
+          "metallic": 0.0,
+          "roughness": 0.84
+        }
+      ],
+      "hides": [
+        "foot.L",
+        "foot.R"
+      ],
+      "shapes": [
+        "sole-height"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 3648,
+      "vertices": 3673
+    },
+    "top/dress-shirt": {
+      "genre": "office-suit",
+      "slot": "top",
+      "layer": null,
+      "node": "TS_Top_dress-shirt",
+      "targetBase": "male-webtoon",
+      "file": {
+        "path": "dress-shirt.glb",
+        "bytes": 904308,
+        "sha256": "3cb47fd996a38a615270a8eea6efe2ab146b6d28c682ab55c8dfc15dd0f1928a"
+      },
+      "materials": [
+        {
+          "name": "ts_top_dress-shirt",
+          "role": "top",
+          "channel": "top",
+          "defaultHex": "#F4F6FA",
+          "metallic": 0.0,
+          "roughness": 0.76
+        },
+        {
+          "name": "ts_top_trim_dress-shirt",
+          "role": "top",
+          "channel": "top-trim",
+          "defaultHex": "#D4DCE8",
+          "metallic": 1.0,
+          "roughness": 0.28
+        },
+        {
+          "name": "ts_top_accent_dress-shirt",
+          "role": "top",
+          "channel": "top-accent",
+          "defaultHex": "#2A3E63",
+          "metallic": 0.0,
+          "roughness": 0.45
+        }
+      ],
+      "hides": [
+        "torso",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "collar-open",
+        "sleeve-roll"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 5892,
+      "vertices": 5060
+    },
+    "outer/tailored-suit": {
+      "genre": "office-suit",
+      "slot": "top",
+      "layer": "outer",
+      "node": "TS_Outer_tailored-suit",
+      "targetBase": "male-webtoon",
+      "file": {
+        "path": "tailored-suit.glb",
+        "bytes": 952500,
+        "sha256": "055288a0a3871b5a155c06815208ae42e6307ae2e72a35c31c84a11326131106"
+      },
+      "materials": [
+        {
+          "name": "ts_outer_tailored-suit",
+          "role": "outer",
+          "channel": "outer",
+          "defaultHex": "#262B36",
+          "metallic": 0.0,
+          "roughness": 0.82
+        },
+        {
+          "name": "ts_outer_trim_tailored-suit",
+          "role": "outer",
+          "channel": "outer-trim",
+          "defaultHex": "#F3F1EC",
+          "metallic": 0.0,
+          "roughness": 0.48
+        },
+        {
+          "name": "ts_outer_accent_tailored-suit",
+          "role": "outer",
+          "channel": "outer-accent",
+          "defaultHex": "#181B22",
+          "metallic": 0.0,
+          "roughness": 0.42
+        }
+      ],
+      "hides": [
+        "torso",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "blazer-open",
+        "shoulder-pad"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 6432,
+      "vertices": 5119
+    },
+    "outer/trench-coat": {
+      "genre": "office-suit",
+      "slot": "top",
+      "layer": "outer",
+      "node": "TS_Outer_trench-coat",
+      "targetBase": "male-webtoon",
+      "file": {
+        "path": "trench-coat.glb",
+        "bytes": 1156896,
+        "sha256": "2e7edd4ddc4462549b8cb5b27e1853273958bdd0894af8e222137f424fda035e"
+      },
+      "materials": [
+        {
+          "name": "ts_outer_trench-coat",
+          "role": "outer",
+          "channel": "outer",
+          "defaultHex": "#B89E7A",
+          "metallic": 0.0,
+          "roughness": 0.82
+        },
+        {
+          "name": "ts_outer_trim_trench-coat",
+          "role": "outer",
+          "channel": "outer-trim",
+          "defaultHex": "#947B5A",
+          "metallic": 0.0,
+          "roughness": 0.82
+        },
+        {
+          "name": "ts_outer_accent_trench-coat",
+          "role": "outer",
+          "channel": "outer-accent",
+          "defaultHex": "#4D3624",
+          "metallic": 0.0,
+          "roughness": 0.42
+        }
+      ],
+      "hides": [
+        "torso",
+        "pelvis",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "coat-flare",
+        "hem-length"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 8340,
+      "vertices": 7147
+    },
+    "bottom/tailored-slacks": {
+      "genre": "office-suit",
+      "slot": "bottom",
+      "layer": null,
+      "node": "TS_Bottom_tailored-slacks",
+      "targetBase": "male-webtoon",
+      "file": {
+        "path": "tailored-slacks.glb",
+        "bytes": 826624,
+        "sha256": "ef682682d9f7d2eb22f77809da798ca52b4852a7f6c61592cef6c203a0b132fc"
+      },
+      "materials": [
+        {
+          "name": "ts_bottom_tailored-slacks",
+          "role": "bottom",
+          "channel": "bottom",
+          "defaultHex": "#262B36",
+          "metallic": 0.0,
+          "roughness": 0.82
+        },
+        {
+          "name": "ts_bottom_trim_tailored-slacks",
+          "role": "bottom",
+          "channel": "bottom-trim",
+          "defaultHex": "#2D221C",
+          "metallic": 0.0,
+          "roughness": 0.44
+        }
+      ],
+      "hides": [
+        "pelvis",
+        "thigh.L",
+        "thigh.R",
+        "calf.L",
+        "calf.R"
+      ],
+      "shapes": [
+        "hem-length",
+        "leg-width"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 6968,
+      "vertices": 4993
+    },
+    "bottom/pencil-skirt": {
+      "genre": "office-suit",
+      "slot": "bottom",
+      "layer": null,
+      "node": "TS_Bottom_pencil-skirt",
+      "targetBase": "female-romance",
+      "file": {
+        "path": "pencil-skirt.glb",
+        "bytes": 424116,
+        "sha256": "b6cfa68fe33d46877b55ece7b0422bf33832699f6ee88c5fea735030a1cccc9d"
+      },
+      "materials": [
+        {
+          "name": "ts_bottom_pencil-skirt",
+          "role": "bottom",
+          "channel": "bottom",
+          "defaultHex": "#2E3440",
+          "metallic": 0.0,
+          "roughness": 0.82
+        },
+        {
+          "name": "ts_bottom_trim_pencil-skirt",
+          "role": "bottom",
+          "channel": "bottom-trim",
+          "defaultHex": "#C9A55A",
+          "metallic": 1.0,
+          "roughness": 0.3
+        }
+      ],
+      "hides": [
+        "pelvis",
+        "thigh.L",
+        "thigh.R"
+      ],
+      "shapes": [
+        "skirt-length",
+        "hip-ease"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 2844,
+      "vertices": 2109
+    },
+    "shoes/derby-heels": {
+      "genre": "office-suit",
+      "slot": "shoes",
+      "layer": null,
+      "node": "TS_Shoes_derby-heels",
+      "targetBase": "male-webtoon",
+      "file": {
+        "path": "derby-heels.glb",
+        "bytes": 432704,
+        "sha256": "8562af8ef4b52556aebee1374e87938a716ebb27660c5a4f1c5637337819c6e5"
+      },
+      "materials": [
+        {
+          "name": "ts_shoes_derby-heels",
+          "role": "shoes",
+          "channel": "shoes",
+          "defaultHex": "#1E1B1A",
+          "metallic": 0.0,
+          "roughness": 0.38
+        },
+        {
+          "name": "ts_shoes_sole_derby-heels",
+          "role": "shoes",
+          "channel": "shoes-sole",
+          "defaultHex": "#2E241E",
+          "metallic": 0.0,
+          "roughness": 0.56
+        },
+        {
+          "name": "ts_shoes_lace_derby-heels",
+          "role": "shoes",
+          "channel": "shoes-lace",
+          "defaultHex": "#151312",
+          "metallic": 0.0,
+          "roughness": 0.78
+        }
+      ],
+      "hides": [
+        "foot.L",
+        "foot.R"
+      ],
+      "shapes": [
+        "heel-height"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 3136,
+      "vertices": 3065
+    },
+    "top/rofan-corset-bodice": {
+      "genre": "rofan-imperial",
+      "slot": "top",
+      "layer": null,
+      "node": "TS_Top_rofan-corset-bodice",
+      "targetBase": "female-romance",
+      "file": {
+        "path": "rofan-corset-bodice.glb",
+        "bytes": 966832,
+        "sha256": "115dbec033cdc3a042b39c3fa35989c98cec42b1654256405ce7a0eb5787715a"
+      },
+      "materials": [
+        {
+          "name": "ts_top_rofan-corset-bodice",
+          "role": "top",
+          "channel": "top",
+          "defaultHex": "#7A203A",
+          "metallic": 0.0,
+          "roughness": 0.48
+        },
+        {
+          "name": "ts_top_trim_rofan-corset-bodice",
+          "role": "top",
+          "channel": "top-trim",
+          "defaultHex": "#F6EFE2",
+          "metallic": 0.0,
+          "roughness": 0.62
+        },
+        {
+          "name": "ts_top_accent_rofan-corset-bodice",
+          "role": "top",
+          "channel": "top-accent",
+          "defaultHex": "#E0B956",
+          "metallic": 1.0,
+          "roughness": 0.24
+        }
+      ],
+      "hides": [
+        "torso",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "puff-volume",
+        "waist-cinch"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 7052,
+      "vertices": 5760
+    },
+    "bottom/rofan-layered-skirt": {
+      "genre": "rofan-imperial",
+      "slot": "bottom",
+      "layer": null,
+      "node": "TS_Bottom_rofan-layered-skirt",
+      "targetBase": "female-romance",
+      "file": {
+        "path": "rofan-layered-skirt.glb",
+        "bytes": 857108,
+        "sha256": "c57a1f1cafcbdc238970e19dc51cc1ad67fe12cad66977b0a8ae3a9faf6c97b2"
+      },
+      "materials": [
+        {
+          "name": "ts_bottom_rofan-layered-skirt",
+          "role": "bottom",
+          "channel": "bottom",
+          "defaultHex": "#882442",
+          "metallic": 0.0,
+          "roughness": 0.5
+        },
+        {
+          "name": "ts_bottom_trim_rofan-layered-skirt",
+          "role": "bottom",
+          "channel": "bottom-trim",
+          "defaultHex": "#F5EDE0",
+          "metallic": 0.0,
+          "roughness": 0.64
+        }
+      ],
+      "hides": [
+        "pelvis",
+        "thigh.L",
+        "thigh.R",
+        "calf.L",
+        "calf.R"
+      ],
+      "shapes": [
+        "skirt-volume",
+        "skirt-length"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 7524,
+      "vertices": 5990
+    },
+    "outer/imperial-uniform-coat": {
+      "genre": "rofan-imperial",
+      "slot": "top",
+      "layer": "outer",
+      "node": "TS_Outer_imperial-uniform-coat",
+      "targetBase": "male-webtoon",
+      "file": {
+        "path": "imperial-uniform-coat.glb",
+        "bytes": 1384188,
+        "sha256": "5c926de785691cadcda547f361e5e3b1b794ee4605690d6f60090ebd278aa591"
+      },
+      "materials": [
+        {
+          "name": "ts_outer_imperial-uniform-coat",
+          "role": "outer",
+          "channel": "outer",
+          "defaultHex": "#1B2133",
+          "metallic": 0.0,
+          "roughness": 0.78
+        },
+        {
+          "name": "ts_outer_trim_imperial-uniform-coat",
+          "role": "outer",
+          "channel": "outer-trim",
+          "defaultHex": "#781B2C",
+          "metallic": 0.0,
+          "roughness": 0.54
+        },
+        {
+          "name": "ts_outer_accent_imperial-uniform-coat",
+          "role": "outer",
+          "channel": "outer-accent",
+          "defaultHex": "#E2BC56",
+          "metallic": 1.0,
+          "roughness": 0.25
+        }
+      ],
+      "hides": [
+        "torso",
+        "pelvis",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "coat-flare",
+        "collar-up"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 9392,
+      "vertices": 8787
+    },
+    "outer/noble-cape": {
+      "genre": "rofan-imperial",
+      "slot": "top",
+      "layer": "outer",
+      "node": "TS_Outer_noble-cape",
+      "targetBase": "female-romance",
+      "file": {
+        "path": "noble-cape.glb",
+        "bytes": 607328,
+        "sha256": "13d3bf5f999af06c0599595b236ba81dde38d9c8837198a643b6f1bb2e94e5be"
+      },
+      "materials": [
+        {
+          "name": "ts_outer_noble-cape",
+          "role": "outer",
+          "channel": "outer",
+          "defaultHex": "#4D172B",
+          "metallic": 0.0,
+          "roughness": 0.56
+        },
+        {
+          "name": "ts_outer_trim_noble-cape",
+          "role": "outer",
+          "channel": "outer-trim",
+          "defaultHex": "#F2EAD8",
+          "metallic": 0.0,
+          "roughness": 0.84
+        },
+        {
+          "name": "ts_outer_accent_noble-cape",
+          "role": "outer",
+          "channel": "outer-accent",
+          "defaultHex": "#E2BC56",
+          "metallic": 1.0,
+          "roughness": 0.25
+        }
+      ],
+      "hides": [],
+      "shapes": [
+        "cape-billow",
+        "hem-length"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 3704,
+      "vertices": 3149
+    },
+    "shoes/lace-up-boots": {
+      "genre": "rofan-imperial",
+      "slot": "shoes",
+      "layer": null,
+      "node": "TS_Shoes_lace-up-boots",
+      "targetBase": "female-romance",
+      "file": {
+        "path": "lace-up-boots.glb",
+        "bytes": 520316,
+        "sha256": "a43f4cfc8dc65210ed45e2e36c0773491a7c4ec5d23dc88fb4c4385ed722cb3a"
+      },
+      "materials": [
+        {
+          "name": "ts_shoes_lace-up-boots",
+          "role": "shoes",
+          "channel": "shoes",
+          "defaultHex": "#47252B",
+          "metallic": 0.0,
+          "roughness": 0.44
+        },
+        {
+          "name": "ts_shoes_sole_lace-up-boots",
+          "role": "shoes",
+          "channel": "shoes-sole",
+          "defaultHex": "#211618",
+          "metallic": 0.0,
+          "roughness": 0.58
+        },
+        {
+          "name": "ts_shoes_lace_lace-up-boots",
+          "role": "shoes",
+          "channel": "shoes-lace",
+          "defaultHex": "#DFB962",
+          "metallic": 1.0,
+          "roughness": 0.3
+        }
+      ],
+      "hides": [
+        "foot.L",
+        "foot.R"
+      ],
+      "shapes": [
+        "heel-height"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 4408,
+      "vertices": 4243
+    },
+    "accessory/rofan-tiara": {
+      "genre": "rofan-imperial",
+      "slot": "accessory",
+      "layer": null,
+      "node": "TS_Accessory_rofan-tiara",
+      "targetBase": "female-romance",
+      "file": {
+        "path": "rofan-tiara.glb",
+        "bytes": 318120,
+        "sha256": "09dbf1b0b968e1823d8ebb7c6e797b157440bc4f395b7325bda57600eef9a7ab"
+      },
+      "materials": [
+        {
+          "name": "ts_accessory_rofan-tiara",
+          "role": "accessory",
+          "channel": "accessory",
+          "defaultHex": "#E5BF5B",
+          "metallic": 1.0,
+          "roughness": 0.24
+        },
+        {
+          "name": "ts_accessory_accent_rofan-tiara",
+          "role": "accessory",
+          "channel": "accessory-accent",
+          "defaultHex": "#C72A52",
+          "metallic": 0.0,
+          "roughness": 0.16
+        }
+      ],
+      "hides": [],
+      "shapes": [
+        "crown-height"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 1596,
+      "vertices": 1617
+    },
+    "top/tactical-compression": {
+      "genre": "action-techwear",
+      "slot": "top",
+      "layer": null,
+      "node": "TS_Top_tactical-compression",
+      "targetBase": "male-action",
+      "file": {
+        "path": "tactical-compression.glb",
+        "bytes": 805716,
+        "sha256": "0eaa162354272883f884efe8d958baf781efbd0d2c6f5559789b1065f25f926e"
+      },
+      "materials": [
+        {
+          "name": "ts_top_tactical-compression",
+          "role": "top",
+          "channel": "top",
+          "defaultHex": "#262B33",
+          "metallic": 0.0,
+          "roughness": 0.72
+        },
+        {
+          "name": "ts_top_trim_tactical-compression",
+          "role": "top",
+          "channel": "top-trim",
+          "defaultHex": "#1A1E24",
+          "metallic": 0.0,
+          "roughness": 0.64
+        },
+        {
+          "name": "ts_top_accent_tactical-compression",
+          "role": "top",
+          "channel": "top-accent",
+          "defaultHex": "#35C5D6",
+          "metallic": 0.0,
+          "roughness": 0.28
+        }
+      ],
+      "hides": [
+        "torso",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "collar-up",
+        "sleeve-roll"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 5652,
+      "vertices": 4558
+    },
+    "outer/techwear-jacket": {
+      "genre": "action-techwear",
+      "slot": "top",
+      "layer": "outer",
+      "node": "TS_Outer_techwear-jacket",
+      "targetBase": "male-action",
+      "file": {
+        "path": "techwear-jacket.glb",
+        "bytes": 996220,
+        "sha256": "7651dcb36266a393b765229cbc8851c35b02e4c70fc300b2f7538a66ec6f8dd4"
+      },
+      "materials": [
+        {
+          "name": "ts_outer_techwear-jacket",
+          "role": "outer",
+          "channel": "outer",
+          "defaultHex": "#2E353E",
+          "metallic": 0.0,
+          "roughness": 0.76
+        },
+        {
+          "name": "ts_outer_trim_techwear-jacket",
+          "role": "outer",
+          "channel": "outer-trim",
+          "defaultHex": "#1B1F26",
+          "metallic": 0.0,
+          "roughness": 0.7
+        },
+        {
+          "name": "ts_outer_accent_techwear-jacket",
+          "role": "outer",
+          "channel": "outer-accent",
+          "defaultHex": "#3AC8D8",
+          "metallic": 1.0,
+          "roughness": 0.26
+        }
+      ],
+      "hides": [
+        "torso",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "collar-up",
+        "hem-length"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 7436,
+      "vertices": 5963
+    },
+    "bottom/tactical-cargo": {
+      "genre": "action-techwear",
+      "slot": "bottom",
+      "layer": null,
+      "node": "TS_Bottom_tactical-cargo",
+      "targetBase": "male-action",
+      "file": {
+        "path": "tactical-cargo.glb",
+        "bytes": 999036,
+        "sha256": "27299fb0bd122bbd90a0dc1ae915f2bd2666af37c64707262a89de4086e7c39d"
+      },
+      "materials": [
+        {
+          "name": "ts_bottom_tactical-cargo",
+          "role": "bottom",
+          "channel": "bottom",
+          "defaultHex": "#2D3338",
+          "metallic": 0.0,
+          "roughness": 0.82
+        },
+        {
+          "name": "ts_bottom_trim_tactical-cargo",
+          "role": "bottom",
+          "channel": "bottom-trim",
+          "defaultHex": "#181B20",
+          "metallic": 0.0,
+          "roughness": 0.46
+        }
+      ],
+      "hides": [
+        "pelvis",
+        "thigh.L",
+        "thigh.R",
+        "calf.L",
+        "calf.R"
+      ],
+      "shapes": [
+        "leg-width",
+        "hem-length"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 7896,
+      "vertices": 6375
+    },
+    "shoes/combat-boots": {
+      "genre": "action-techwear",
+      "slot": "shoes",
+      "layer": null,
+      "node": "TS_Shoes_combat-boots",
+      "targetBase": "male-action",
+      "file": {
+        "path": "combat-boots.glb",
+        "bytes": 565280,
+        "sha256": "1f0462c412ba4216144c4726fe7c9d87bf5a4ed5c18c4f6e86eacab14b4e4cca"
+      },
+      "materials": [
+        {
+          "name": "ts_shoes_combat-boots",
+          "role": "shoes",
+          "channel": "shoes",
+          "defaultHex": "#22252A",
+          "metallic": 0.0,
+          "roughness": 0.48
+        },
+        {
+          "name": "ts_shoes_sole_combat-boots",
+          "role": "shoes",
+          "channel": "shoes-sole",
+          "defaultHex": "#14161A",
+          "metallic": 0.0,
+          "roughness": 0.68
+        },
+        {
+          "name": "ts_shoes_lace_combat-boots",
+          "role": "shoes",
+          "channel": "shoes-lace",
+          "defaultHex": "#5A6572",
+          "metallic": 1.0,
+          "roughness": 0.34
+        }
+      ],
+      "hides": [
+        "foot.L",
+        "foot.R"
+      ],
+      "shapes": [
+        "sole-height"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 4864,
+      "vertices": 4818
+    },
+    "accessory/chest-harness": {
+      "genre": "action-techwear",
+      "slot": "accessory",
+      "layer": null,
+      "node": "TS_Accessory_chest-harness",
+      "targetBase": "male-action",
+      "file": {
+        "path": "chest-harness.glb",
+        "bytes": 284540,
+        "sha256": "e1f336532c534c0c0a0a4e41cecaf538569cd03f0d66dddfa56db222829f0d6f"
+      },
+      "materials": [
+        {
+          "name": "ts_accessory_chest-harness",
+          "role": "accessory",
+          "channel": "accessory",
+          "defaultHex": "#1C2026",
+          "metallic": 0.0,
+          "roughness": 0.72
+        },
+        {
+          "name": "ts_accessory_accent_chest-harness",
+          "role": "accessory",
+          "channel": "accessory-accent",
+          "defaultHex": "#35C5D6",
+          "metallic": 1.0,
+          "roughness": 0.28
+        }
+      ],
+      "hides": [],
+      "shapes": [
+        "rig-tightness"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 856,
+      "vertices": 1018
+    },
+    "top/murim-dobok-inner": {
+      "genre": "murim-fantasy",
+      "slot": "top",
+      "layer": null,
+      "node": "TS_Top_murim-dobok-inner",
+      "targetBase": "male-webtoon",
+      "file": {
+        "path": "murim-dobok-inner.glb",
+        "bytes": 742612,
+        "sha256": "47c82adf5a841c0bf56f26b5f3297518b0bf72adf71be01d8d6329657e752ba0"
+      },
+      "materials": [
+        {
+          "name": "ts_top_murim-dobok-inner",
+          "role": "top",
+          "channel": "top",
+          "defaultHex": "#D9D6CE",
+          "metallic": 0.0,
+          "roughness": 0.84
+        },
+        {
+          "name": "ts_top_trim_murim-dobok-inner",
+          "role": "top",
+          "channel": "top-trim",
+          "defaultHex": "#FAF8F3",
+          "metallic": 0.0,
+          "roughness": 0.68
+        },
+        {
+          "name": "ts_top_accent_murim-dobok-inner",
+          "role": "top",
+          "channel": "top-accent",
+          "defaultHex": "#2B564A",
+          "metallic": 0.0,
+          "roughness": 0.56
+        }
+      ],
+      "hides": [
+        "torso",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "collar-open",
+        "sleeve-roll"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 5228,
+      "vertices": 4141
+    },
+    "outer/murim-dopo-robe": {
+      "genre": "murim-fantasy",
+      "slot": "top",
+      "layer": "outer",
+      "node": "TS_Outer_murim-dopo-robe",
+      "targetBase": "male-webtoon",
+      "file": {
+        "path": "murim-dopo-robe.glb",
+        "bytes": 1017136,
+        "sha256": "6b85a98fbf34530f29a3f76b61323eb83cda47b4f0fa43b4c6e3ab6907221fff"
+      },
+      "materials": [
+        {
+          "name": "ts_outer_murim-dopo-robe",
+          "role": "outer",
+          "channel": "outer",
+          "defaultHex": "#1E3738",
+          "metallic": 0.0,
+          "roughness": 0.62
+        },
+        {
+          "name": "ts_outer_trim_murim-dopo-robe",
+          "role": "outer",
+          "channel": "outer-trim",
+          "defaultHex": "#E8DEC8",
+          "metallic": 0.0,
+          "roughness": 0.54
+        },
+        {
+          "name": "ts_outer_accent_murim-dopo-robe",
+          "role": "outer",
+          "channel": "outer-accent",
+          "defaultHex": "#D8B35B",
+          "metallic": 1.0,
+          "roughness": 0.26
+        }
+      ],
+      "hides": [
+        "torso",
+        "pelvis",
+        "upperArm.L",
+        "upperArm.R",
+        "forearm.L",
+        "forearm.R"
+      ],
+      "shapes": [
+        "robe-flow",
+        "hem-length"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 7608,
+      "vertices": 6372
+    },
+    "bottom/murim-wide-pants": {
+      "genre": "murim-fantasy",
+      "slot": "bottom",
+      "layer": null,
+      "node": "TS_Bottom_murim-wide-pants",
+      "targetBase": "male-webtoon",
+      "file": {
+        "path": "murim-wide-pants.glb",
+        "bytes": 944628,
+        "sha256": "b76fb80e375052ffb98a4abeababa42af4fdb031baea5ae27c60915c2d89d6d6"
+      },
+      "materials": [
+        {
+          "name": "ts_bottom_murim-wide-pants",
+          "role": "bottom",
+          "channel": "bottom",
+          "defaultHex": "#242B30",
+          "metallic": 0.0,
+          "roughness": 0.84
+        },
+        {
+          "name": "ts_bottom_trim_murim-wide-pants",
+          "role": "bottom",
+          "channel": "bottom-trim",
+          "defaultHex": "#C9BFA9",
+          "metallic": 0.0,
+          "roughness": 0.82
+        }
+      ],
+      "hides": [
+        "pelvis",
+        "thigh.L",
+        "thigh.R",
+        "calf.L",
+        "calf.R"
+      ],
+      "shapes": [
+        "leg-width",
+        "hem-length"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 8256,
+      "vertices": 6549
+    },
+    "accessory/waist-sash": {
+      "genre": "murim-fantasy",
+      "slot": "accessory",
+      "layer": null,
+      "node": "TS_Accessory_waist-sash",
+      "targetBase": "male-webtoon",
+      "file": {
+        "path": "waist-sash.glb",
+        "bytes": 247404,
+        "sha256": "00725da8431a214d01bf7c574c0eb093c4451b501088db7201ec1778f1c0604e"
+      },
+      "materials": [
+        {
+          "name": "ts_accessory_waist-sash",
+          "role": "accessory",
+          "channel": "accessory",
+          "defaultHex": "#7D232A",
+          "metallic": 0.0,
+          "roughness": 0.52
+        },
+        {
+          "name": "ts_accessory_accent_waist-sash",
+          "role": "accessory",
+          "channel": "accessory-accent",
+          "defaultHex": "#4AA384",
+          "metallic": 0.0,
+          "roughness": 0.26
+        }
+      ],
+      "hides": [],
+      "shapes": [
+        "sash-flow"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 1632,
+      "vertices": 1281
+    },
+    "shoes/murim-boots": {
+      "genre": "murim-fantasy",
+      "slot": "shoes",
+      "layer": null,
+      "node": "TS_Shoes_murim-boots",
+      "targetBase": "male-webtoon",
+      "file": {
+        "path": "murim-boots.glb",
+        "bytes": 488848,
+        "sha256": "877a27947bcfa3b3e14a594acf0b37dc2b913e1c0e1a7dd49b9b479515a2f12f"
+      },
+      "materials": [
+        {
+          "name": "ts_shoes_murim-boots",
+          "role": "shoes",
+          "channel": "shoes",
+          "defaultHex": "#1E2226",
+          "metallic": 0.0,
+          "roughness": 0.78
+        },
+        {
+          "name": "ts_shoes_sole_murim-boots",
+          "role": "shoes",
+          "channel": "shoes-sole",
+          "defaultHex": "#EAE4D8",
+          "metallic": 0.0,
+          "roughness": 0.82
+        },
+        {
+          "name": "ts_shoes_lace_murim-boots",
+          "role": "shoes",
+          "channel": "shoes-lace",
+          "defaultHex": "#D5B159",
+          "metallic": 0.0,
+          "roughness": 0.48
+        }
+      ],
+      "hides": [
+        "foot.L",
+        "foot.R"
+      ],
+      "shapes": [
+        "sole-height"
+      ],
+      "uv1": {
+        "purpose": "pattern",
+        "cmPerUnit": 50.0
+      },
+      "triangles": 3904,
+      "vertices": 3529
+    }
+  }
+}
