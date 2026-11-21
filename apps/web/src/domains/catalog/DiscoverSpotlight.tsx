@@ -199,14 +199,15 @@ export function DiscoverSpotlight({ snapshot, loading }: DiscoverSpotlightProps)
               >
                 {stageCandidates.map((candidate, idx) => {
                   const current = idx === safeIndex;
+                  const slotNumber = String(idx + 1).padStart(2, "0");
                   return (
                     <button
                       key={candidate.id}
                       type="button"
                       aria-pressed={current}
                       aria-label={bt(
-                        `추천 ${idx + 1}번: ${candidate.title}`,
-                        `Featured ${idx + 1}: ${candidate.title}`,
+                        `${slotNumber} 추천: ${candidate.title}`,
+                        `${slotNumber} Featured: ${candidate.title}`,
                       )}
                       onClick={() => setSelectedIndex(idx)}
                       onKeyDown={(event) => {
@@ -219,7 +220,7 @@ export function DiscoverSpotlight({ snapshot, loading }: DiscoverSpotlightProps)
                       }}
                       className="discover-spotlight-switch-btn font-display tabular-nums"
                     >
-                      {String(idx + 1).padStart(2, "0")}
+                      {slotNumber}
                     </button>
                   );
                 })}
