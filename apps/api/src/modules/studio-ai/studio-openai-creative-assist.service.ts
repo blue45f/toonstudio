@@ -52,11 +52,7 @@ export class StudioOpenAiCreativeAssistService {
   private readonly rateLimiter = new StudioOpenAiRateLimiter();
   private readonly zeroBillRouter: StudioFreeAiZeroBillRouter;
 
-  constructor(
-    @Optional()
-    @Inject(StudioFreeAiZeroBillRouter)
-    zeroBillRouter?: StudioFreeAiZeroBillRouter,
-  ) {
+  constructor(zeroBillRouter?: StudioFreeAiZeroBillRouter) {
     this.zeroBillRouter = zeroBillRouter ?? new StudioFreeAiZeroBillRouter();
   }
 
@@ -551,3 +547,8 @@ export class StudioOpenAiCreativeAssistService {
     });
   }
 }
+
+// 루트 tsconfig(표준 데코레이터)와 API tsconfig(experimentalDecorators) 양쪽에서
+// 파라미터 데코레이터 문법(TS1206) 없이 동일한 NestJS 선택적 DI 메타데이터를 등록한다.
+Inject(StudioFreeAiZeroBillRouter)(StudioOpenAiCreativeAssistService, undefined, 0);
+Optional()(StudioOpenAiCreativeAssistService, undefined, 0);

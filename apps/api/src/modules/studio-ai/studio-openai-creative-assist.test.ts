@@ -4,6 +4,7 @@ import { HttpException, UnauthorizedException } from "@nestjs/common";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioOpenAiRateLimiter } from "./openai-assist/studio-openai-guardrails";
+import { StudioFreeAiZeroBillRouter } from "./studio-free-ai-zero-bill-router";
 import {
   StudioFreeAiController,
   StudioOpenAiCreativeAssistController,
@@ -627,5 +628,26 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
       expect(guestResult.result.data.zeroCostSafe).toBe(true);
       expect(guestResult.result.data.steps.length).toBeGreaterThanOrEqual(2);
     }
+  });
+
+  it("registers optional NestJS DI metadata for StudioFreeAiZeroBillRouter without parameter decorator syntax", () => {
+    const declared = Reflect.getMetadata(
+      "self:paramtypes",
+      StudioOpenAiCreativeAssistService,
+    ) as Array<{ index: number; param: unknown }>;
+    const optional = Reflect.getMetadata(
+      "optional:paramtypes",
+      StudioOpenAiCreativeAssistService,
+    ) as number[];
+
+    expect(declared).toEqual([{ index: 0, param: StudioFreeAiZeroBillRouter }]);
+    expect(optional).toEqual([0]);
+
+    const injectedRouter = new StudioFreeAiZeroBillRouter();
+    const quotaSpy = vi.spyOn(injectedRouter, "getFreeQuotaStatus");
+    const service = new StudioOpenAiCreativeAssistService(injectedRouter);
+    service.freeQuotaStatus({}, 1_700_000_000_000);
+    expect(quotaSpy).toHaveBeenCalledTimes(1);
+    expect(quotaSpy).toHaveBeenCalledWith({}, 1_700_000_000_000);
   });
 });
