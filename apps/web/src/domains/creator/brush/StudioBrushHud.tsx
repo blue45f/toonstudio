@@ -212,7 +212,7 @@ export const StudioBrushHud = memo(function StudioBrushHud({
           height: trimmedHeight,
         };
       }
-      if (hostRect.width <= 420 && safeArea.height < geometry.height) {
+      if (hostRect.width <= 420 && safeArea.height < studioBrushHudExtentPx(geometry)) {
         placementRef.current = null;
         hide();
         return;

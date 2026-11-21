@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StudioEpisodeStoryPage } from "../StudioEpisodeStoryPage";
+import type { EpisodePlanWithSynopsis } from "../studio-episode-synopsis";
 import { StudioPlotlineTimeline } from "../StudioPlotlineTimeline";
 import { StudioProjectMoodboard } from "../StudioProjectMoodboard";
 import { createInitialStudioProjectPlanning } from "../studio-planning-store";
@@ -41,7 +42,7 @@ afterEach(() => {
 describe("PlotrStoryAtelierWorkbench — 실마운트 · 초보자 플로우 · #227 3대 엔진 통합", () => {
   it("StudioEpisodeStoryPage에서 지연 마운트되어 1클릭 로판 샘플→컷 조립→말풍선→회차 반영까지 동작한다", async () => {
     const planning = createInitialStudioProjectPlanning("proj-plotr-ep");
-    const onSavePlan = vi.fn(() => true);
+    const onSavePlan = vi.fn<(plan: EpisodePlanWithSynopsis) => boolean>(() => true);
 
     render(
       <MemoryRouter>
@@ -81,7 +82,9 @@ describe("PlotrStoryAtelierWorkbench — 실마운트 · 초보자 플로우 · 
     expect(within(atelier).getByTestId("plotr-text-conti-preview").textContent).toContain("유리시계 공작가의 계약");
     fireEvent.click(within(atelier).getByTestId("plotr-apply-episode-plan-btn"));
     expect(onSavePlan).toHaveBeenCalledTimes(1);
-    expect(onSavePlan.mock.calls[0]?.[0]?.turningPoints.length).toBeGreaterThanOrEqual(4);
+    const savedPlan = onSavePlan.mock.calls[0]?.[0];
+    expect(savedPlan).toBeDefined();
+    expect(savedPlan?.turningPoints.length).toBeGreaterThanOrEqual(4);
   });
 
   it("재마운트 시 작업본이 복원되고, 전문가 모드에서 연속 대본·스냅샷 Diff·폐기 설정 경고가 실시간 동작한다", async () => {

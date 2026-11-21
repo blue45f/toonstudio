@@ -20,10 +20,10 @@ describe("StudioFilterDialog Split-Wipe & CSP Quick Filters (AC-003)", () => {
     render(
       <div ref={rootRef}>
         <StudioFilterDialog
+          activeKey="filter:gaussian-blur"
           kind="gaussian-blur"
           image={{}}
           rootRef={rootRef}
-          targetName="캐릭터 레이어"
           targetKind="image"
           imageSrc="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
           onPreview={vi.fn()}

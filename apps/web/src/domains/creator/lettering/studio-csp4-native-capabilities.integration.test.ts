@@ -113,9 +113,9 @@ describe("AC-003 CSP 4.0+ Native Browser Capabilities & (A-1) Connected Engines"
         { id: "l-bg", name: "배경 밑색", role: "bg3d", opacity: 1, visible: true, blendMode: "normal", clippingMask: false },
         { id: "l-color", name: "캐릭터 채색", role: "color", opacity: 0.9, visible: true, blendMode: "normal", clippingMask: false },
         { id: "l-shade", name: "음영 클리핑", role: "color", opacity: 0.65, visible: true, blendMode: "multiply", clippingMask: true },
-        { id: "l-line", name: "주인공 선화", role: "lineart", opacity: 1, visible: true, blendMode: "normal", clippingMask: false },
+        { id: "l-line", name: "주인공 선화", role: "line", opacity: 1, visible: true, blendMode: "normal", clippingMask: false },
         { id: "l-sfx", name: "효과음 쿠웅", role: "sfx", opacity: 1, visible: true, blendMode: "normal", clippingMask: false },
-        { id: "l-dlg", name: "대사 식자", role: "dialogue", opacity: 1, visible: true, blendMode: "normal", clippingMask: false },
+        { id: "l-dlg", name: "대사 식자", role: "text", opacity: 1, visible: true, blendMode: "normal", clippingMask: false },
       ],
     });
     expect(plan.groups.map((g) => g.groupId)).toContain("line-art");

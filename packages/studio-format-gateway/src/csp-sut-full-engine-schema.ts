@@ -276,7 +276,7 @@ function readBool(
   for (const k of keys) {
     const val = map.get(k);
     if (typeof val === "number" && Number.isFinite(val)) return val !== 0;
-    if (typeof val === "bigint") return val !== 0n;
+    if (typeof val === "bigint") return val !== BigInt(0);
   }
   return fallback;
 }

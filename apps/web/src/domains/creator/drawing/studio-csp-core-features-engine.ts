@@ -120,10 +120,10 @@ export function executeCspAutoActionStep(
   item: CspLafActionItem,
 ): CspAutoActionDocumentState {
   if (!item.enabled) return doc;
-  const layers = doc.layers.map((l) => ({ ...l, rgba: new Uint8ClampedArray(l.rgba) }));
+  const layers: CspAutoActionLayerState[] = doc.layers.map((l) => ({ ...l, rgba: new Uint8ClampedArray(l.rgba) }));
   let activeIdx = clamp(doc.activeLayerIndex, 0, Math.max(0, layers.length - 1));
-  let selection = new Uint8Array(doc.selectionMask);
-  let clipboard = doc.clipboardRgba ? new Uint8ClampedArray(doc.clipboardRgba) : null;
+  let selection: Uint8Array = new Uint8Array(doc.selectionMask);
+  let clipboard: Uint8ClampedArray | null = doc.clipboardRgba ? new Uint8ClampedArray(doc.clipboardRgba) : null;
   const active = layers[activeIdx];
   const log = [...doc.executedLog, item.actionItemKind];
 

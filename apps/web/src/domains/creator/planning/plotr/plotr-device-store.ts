@@ -29,7 +29,7 @@ export function plotrStorageKey(projectId: string): string {
 
 export function createEmptyPlotrDocument(projectId: string): PlotrDocumentState {
   const normalized = projectId.trim() || "default";
-  return Object.freeze({
+  return Object.freeze<PlotrDocumentState>({
     schemaVersion: 1,
     projectId: normalized,
     title: "새 이야기 콘티",

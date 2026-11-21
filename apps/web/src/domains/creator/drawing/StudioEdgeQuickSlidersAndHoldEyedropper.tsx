@@ -15,7 +15,7 @@ import {
   TouchHoldEyedropperController,
   type StylusHoverCursorProjection,
 } from "./studio-hover-eyedropper-and-assist";
-import { StudioTouchGestureGuard } from "./studio-touch-gesture-guard";
+import { StudioTouchGestureGuard, type TouchPointerType } from "./studio-touch-gesture-guard";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -49,6 +49,10 @@ interface SamplingOverlayState {
   readonly x: number;
   readonly y: number;
   readonly sampledColor: string;
+}
+
+function normalizeTouchPointerType(raw: string): TouchPointerType {
+  return raw === "pen" || raw === "touch" ? raw : "mouse";
 }
 
 function rgbToHex(r: number, g: number, b: number): string {
@@ -117,9 +121,9 @@ export function StudioEdgeQuickSlidersAndHoldEyedropper({
   sampleColorAtClientPoint,
 }: StudioEdgeQuickSlidersAndHoldEyedropperProps) {
   const dragRef = useRef<ActiveEdgeDrag | null>(null);
-  const holdTimerRef = useRef<number | null>(null);
-  const scrubTimerRef = useRef<number | null>(null);
-  const hudClearTimerRef = useRef<number | null>(null);
+  const holdTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
+  const scrubTimerRef = useRef<ReturnType<typeof globalThis.setInterval> | null>(null);
+  const hudClearTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
   const eyedropperRef = useRef(new TouchHoldEyedropperController({ holdDelayMs, maxJitterPx: 10 }));
   const gestureGuardRef = useRef(new StudioTouchGestureGuard());
 
@@ -187,8 +191,7 @@ export function StudioEdgeQuickSlidersAndHoldEyedropper({
       if (target?.closest("[data-studio-edge-quick-sliders], button, input, [role='dialog']")) {
         return;
       }
-      const pointerType =
-        event.pointerType === "pen" || event.pointerType === "touch" ? event.pointerType : "mouse";
+      const pointerType = normalizeTouchPointerType(event.pointerType);
       const nowMs = readMonotonicNowMs();
       const sample = {
         pointerId: event.pointerId,
@@ -288,8 +291,7 @@ export function StudioEdgeQuickSlidersAndHoldEyedropper({
     };
 
     const onPointerUp = (event: PointerEvent) => {
-      const pointerType =
-        event.pointerType === "pen" || event.pointerType === "touch" ? event.pointerType : "mouse";
+      const pointerType = normalizeTouchPointerType(event.pointerType);
       const nowMs = readMonotonicNowMs();
       const action = guard.onPointerUp({
         pointerId: event.pointerId,

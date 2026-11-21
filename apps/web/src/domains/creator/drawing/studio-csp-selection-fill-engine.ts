@@ -19,7 +19,7 @@ export function expandCspSelectionMask(
   height: number,
   radiusPx: number,
   cornerType: "round" | "square" = "round",
-): Uint8Array {
+): Uint8Array<ArrayBuffer> {
   const r = clamp(Math.round(radiusPx), 1, 32);
   const out = new Uint8Array(mask.length);
   for (let y = 0; y < height; y += 1) {
@@ -48,7 +48,7 @@ export function shrinkCspSelectionMask(
   height: number,
   radiusPx: number,
   cornerType: "round" | "square" = "round",
-): Uint8Array {
+): Uint8Array<ArrayBuffer> {
   const r = clamp(Math.round(radiusPx), 1, 32);
   const out = new Uint8Array(mask.length);
   for (let y = 0; y < height; y += 1) {
