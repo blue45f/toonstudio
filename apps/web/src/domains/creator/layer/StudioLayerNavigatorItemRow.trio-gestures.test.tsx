@@ -41,7 +41,7 @@ function makeHandlers(overrides: Partial<LayerNavigatorRowHandlers> = {}): Layer
 function renderItemRow(
   handlers: LayerNavigatorRowHandlers,
   item: StudioLayerNavigatorItem = BASE_ITEM,
-  extra: { canClipBelow?: boolean; effectivelyLocked?: boolean } = {},
+  extra: { canClipBelow?: boolean; effectivelyLocked?: boolean; current?: boolean; selected?: boolean } = {},
 ) {
   return render(
     <ul role="tree">
@@ -55,8 +55,8 @@ function renderItemRow(
         locallyHidden={false}
         effectivelyLocked={extra.effectivelyLocked ?? false}
         statusLabel=""
-        selected={false}
-        current
+        selected={extra.selected ?? false}
+        current={extra.current ?? true}
         selectionCount={1}
         tabStop
         renameInput={null}
@@ -178,5 +178,49 @@ describe("StudioLayerNavigatorItemRow T9 Layer Trio & Touch Gestures", () => {
       ],
     });
     expect(handlers.onPinchMergeItem).toHaveBeenCalledWith("ink-layer");
+  });
+
+  it("separates layer trio controls into a 2nd-row bar so primary mobile actions never overflow", () => {
+    const handlers = makeHandlers();
+    renderItemRow(handlers, BASE_ITEM, { current: true, selected: false });
+
+    const row = screen.getByRole("treeitem");
+    const primaryRow = row.querySelector<HTMLElement>('[data-studio-layer-row-primary="true"]');
+    const trioBar = row.querySelector<HTMLElement>('[data-studio-layer-trio-bar="true"]');
+    expect(primaryRow).not.toBeNull();
+    expect(trioBar).not.toBeNull();
+
+    // Primary row exclusively owns the 4 core actions and never inlines trio controls.
+    expect(
+      [...primaryRow!.querySelectorAll("[data-studio-layer-row-action]")].map((el) =>
+        el.getAttribute("data-studio-layer-row-action"),
+      ),
+    ).toEqual(["visibility", "lock", "opacity", "menu"]);
+    expect(primaryRow!.querySelector('[data-studio-layer-trio-controls="true"]')).toBeNull();
+
+    // 2nd-row bar hosts trio controls with flex-wrap, 44px coarse targets, and clear Korean labels.
+    expect(trioBar!.className).toContain("flex-wrap");
+    const trioButtons = [...trioBar!.querySelectorAll<HTMLButtonElement>("[data-studio-layer-trio-action]")];
+    expect(trioButtons.map((btn) => btn.getAttribute("data-studio-layer-trio-action"))).toEqual([
+      "clippingMask",
+      "alphaLock",
+      "reference",
+    ]);
+    expect(trioButtons.map((btn) => btn.textContent?.trim())).toEqual(["클리핑", "알파 잠금", "참조"]);
+    for (const btn of trioButtons) {
+      expect(btn.tabIndex).toBe(-1);
+      expect(btn.className).toContain("max-lg:min-h-11");
+      expect(btn.className).toContain("pointer-coarse:min-h-11");
+    }
+  });
+
+  it("collapses the 2nd-row trio bar on unselected rows to keep mobile lists uncluttered", () => {
+    const handlers = makeHandlers();
+    renderItemRow(handlers, BASE_ITEM, { current: false, selected: false });
+
+    const row = screen.getByRole("treeitem");
+    expect(row.querySelector('[data-studio-layer-trio-bar="true"]')).toBeNull();
+    expect(row.querySelector('[data-studio-layer-trio-controls="true"]')).toBeNull();
+    expect(row.querySelectorAll("[data-layer-row-control]")).toHaveLength(5);
   });
 });

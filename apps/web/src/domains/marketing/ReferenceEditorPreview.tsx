@@ -28,7 +28,7 @@ export function ReferenceEditorPreview() {
       <div className="rd-editor-heading">
         <Brush size={18} aria-hidden="true" /><strong>{bi("캔버스", "Canvas")}</strong>
         <span>{bi("회색의 도시 · 예시", "City in grey · Sample")}</span>
-        <Link href="/studio/canvas" aria-label={bi("드로잉 작업 시작하기", "Start a drawing")}>{bi("작업 시작", "Start drawing")}<ArrowRight size={14} aria-hidden="true" /></Link>
+        <Link href="/studio/canvas" aria-label={bi("작업 시작 · 드로잉 캔버스 열기", "Start drawing on canvas")}>{bi("작업 시작", "Start drawing")}<ArrowRight size={14} aria-hidden="true" /></Link>
       </div>
       <div className="rd-editor-menubar" aria-hidden="true"><ToonStudioWordmark /><span>↶ · ↷ · ⌕</span><span>{bi("예시 컷 미리보기", "Sample panel preview")}</span><span>100%</span></div>
       <div className="rd-editor-body">
