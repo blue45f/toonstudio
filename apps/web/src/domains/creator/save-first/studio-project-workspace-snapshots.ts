@@ -43,6 +43,7 @@ export interface CollectStudioProjectWorkspaceSnapshotsInput {
   readonly documents: readonly StudioProjectDocumentEntry[];
   readonly authUserId?: string | null;
   readonly allowGuestFallback?: boolean;
+  readonly requireReadableSource?: boolean;
   readonly lastOpenedDocumentId?: string | null;
   readonly currentSnapshots?: Readonly<Record<string, StudioAutosavePayload>>;
 }
@@ -105,6 +106,7 @@ function sqliteCandidate(
 function browserCandidate(
   storage: Storage,
   key: string,
+  strict: boolean,
 ): StudioProjectWorkspaceSnapshotCandidate | null {
   try {
     const recovered = readStudioAutosave(storage, key);
@@ -117,7 +119,8 @@ function browserCandidate(
           payload: recovered.payload,
         })
       : null;
-  } catch {
+  } catch (cause) {
+    if (strict) throw cause;
     return null;
   }
 }
@@ -140,18 +143,22 @@ async function optionalSqliteStore(): Promise<StudioAutosaveSqlitePort | null> {
  */
 export async function createStudioProjectWorkspaceSnapshotReader(
   storage: Storage,
+  strict = false,
 ): Promise<StudioProjectWorkspaceSnapshotReader> {
   const sqlite = await optionalSqliteStore();
   const sessions = new Set<Awaited<ReturnType<typeof createStudioAutosaveOpfsSession>>>();
   return Object.freeze({
     read: async (key: string) => {
       const candidates: (StudioProjectWorkspaceSnapshotCandidate | null)[] = [
-        browserCandidate(storage, key),
+        browserCandidate(storage, key, strict),
       ];
+      let durableRead = false;
       if (sqlite) {
         try {
           candidates.push(sqliteCandidate(key, await sqlite.read(key)));
-        } catch {
+          durableRead = true;
+        } catch (cause) {
+          if (strict) throw cause;
           candidates.push(null);
         }
       }
@@ -161,8 +168,10 @@ export async function createStudioProjectWorkspaceSnapshotReader(
         if (session) {
           sessions.add(session);
           candidates.push(opfsCandidate(key, await session.readLatest()));
+          durableRead = true;
         }
-      } catch {
+      } catch (cause) {
+        if (strict) throw cause;
         candidates.push(null);
       } finally {
         if (session) {
@@ -170,6 +179,7 @@ export async function createStudioProjectWorkspaceSnapshotReader(
           await session.dispose().catch(() => undefined);
         }
       }
+      if (strict && !durableRead) throw new Error("원고의 기기 저장소를 읽을 수 없습니다.");
       return newestCandidate(candidates);
     },
     dispose: async () => {
@@ -203,7 +213,7 @@ export async function collectStudioProjectWorkspaceSnapshots(
   input: CollectStudioProjectWorkspaceSnapshotsInput,
   reader?: StudioProjectWorkspaceSnapshotReader,
 ): Promise<readonly StudioProjectWorkspaceSnapshot[]> {
-  const ownedReader = reader ?? await createStudioProjectWorkspaceSnapshotReader(input.storage);
+  const ownedReader = reader ?? await createStudioProjectWorkspaceSnapshotReader(input.storage, input.requireReadableSource);
   const ownsReader = reader === undefined;
   const snapshots: StudioProjectWorkspaceSnapshot[] = [];
   try {

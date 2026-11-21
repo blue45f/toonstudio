@@ -30,6 +30,7 @@ export function StudioProjectLibraryCardActions(props: CardProps) {
         <Link href={storageHref}>{bt("저장 상태 확인", "Check save status")}</Link>
         <button
           type="button"
+          disabled={busy}
           onClick={onDuplicate}
           aria-label={formatI18nTemplate(bt("{value0} 복제", "Duplicate {value0}"), { value0: project.title })}
         >
