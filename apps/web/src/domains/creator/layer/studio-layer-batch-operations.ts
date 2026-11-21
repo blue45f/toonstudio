@@ -149,6 +149,11 @@ export type StudioTonalCorrection =
 /**
  * Applies a tonal correction adjustment simultaneously to multiple selected layers.
  */
+function clampFinite(value: number, min: number, max: number, fallback: number): number {
+  const safe = Number.isFinite(value) ? value : fallback;
+  return Math.max(min, Math.min(max, safe));
+}
+
 export function applyTonalCorrectionToMultipleLayers<T extends StudioLayerModelItem>(
   layers: readonly T[],
   targetLayerIds: readonly string[],
@@ -169,25 +174,28 @@ export function applyTonalCorrectionToMultipleLayers<T extends StudioLayerModelI
     switch (correction.kind) {
       case "brightnessContrast":
         patch = {
-          brightness: Math.max(-100, Math.min(100, correction.brightness)),
-          contrast: Math.max(-100, Math.min(100, correction.contrast)),
+          brightness: clampFinite(correction.brightness, -100, 100, 0),
+          contrast: clampFinite(correction.contrast, -100, 100, 0),
         };
         break;
       case "hueSaturation":
         patch = {
-          hue: Math.max(-180, Math.min(180, correction.hue)),
-          saturation: Math.max(-100, Math.min(100, correction.saturation)),
+          hue: clampFinite(correction.hue, -180, 180, 0),
+          saturation: clampFinite(correction.saturation, -100, 100, 0),
         };
         break;
-      case "levels":
+      case "levels": {
+        const blackPoint = clampFinite(correction.blackPoint, 0, 255, 0);
+        const whitePoint = Math.max(blackPoint, clampFinite(correction.whitePoint, 0, 255, 255));
         patch = {
           levels: {
-            blackPoint: Math.max(0, Math.min(255, correction.blackPoint)),
-            whitePoint: Math.max(0, Math.min(255, correction.whitePoint)),
-            gamma: Math.max(0.1, Math.min(10.0, correction.gamma)),
+            blackPoint,
+            whitePoint,
+            gamma: clampFinite(correction.gamma, 0.1, 10.0, 1.0),
           },
         };
         break;
+      }
     }
 
     return Object.freeze({ ...layer, ...patch }) as T;

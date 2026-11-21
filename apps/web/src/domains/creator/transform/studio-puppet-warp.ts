@@ -85,15 +85,19 @@ export function createPuppetPin(
   },
 ): PuppetPin {
   const pinId = id || `pin-${Math.random().toString(36).slice(2, 8)}`;
+  const safeX = Number.isFinite(x) ? x : 0;
+  const safeY = Number.isFinite(y) ? y : 0;
+  const safeDepth = Number.isFinite(options?.depth) ? options!.depth! : 0;
+  const safeRot = Number.isFinite(options?.rotationDeg) ? options!.rotationDeg! : 0;
   return Object.freeze({
     id: pinId,
     kind,
-    x,
-    y,
-    restX: x,
-    restY: y,
-    depth: options?.depth ?? 0,
-    rotationDeg: options?.rotationDeg ?? 0,
+    x: safeX,
+    y: safeY,
+    restX: safeX,
+    restY: safeY,
+    depth: safeDepth,
+    rotationDeg: safeRot,
     scale: clampRange(options?.scale ?? 1, 0.1, 5),
     rigidity: clampRange(options?.rigidity ?? 2.5, 1, 6),
   });
@@ -108,10 +112,10 @@ export function buildPuppetLatticeMesh(
   gridCols = 10,
   gridRows = 10,
 ): PuppetMesh {
-  const w = Math.max(16, width);
-  const h = Math.max(16, height);
-  const cols = Math.max(2, Math.min(32, gridCols));
-  const rows = Math.max(2, Math.min(32, gridRows));
+  const w = Number.isFinite(width) ? Math.max(16, width) : 16;
+  const h = Number.isFinite(height) ? Math.max(16, height) : 16;
+  const cols = Number.isFinite(gridCols) ? Math.max(2, Math.min(32, Math.round(gridCols))) : 10;
+  const rows = Number.isFinite(gridRows) ? Math.max(2, Math.min(32, Math.round(gridRows))) : 10;
 
   const vertices: PuppetMeshVertex[] = [];
   for (let r = 0; r <= rows; r++) {
@@ -156,14 +160,23 @@ export function computeDeformedPosition(
   pins: readonly PuppetPin[],
   influenceRadius = 120,
 ): readonly [number, number] {
+  if (!Number.isFinite(restX) || !Number.isFinite(restY)) return [0, 0];
   if (pins.length === 0) return [restX, restY];
 
-  const safeRadius = Math.max(1, influenceRadius);
+  const safeRadius = Number.isFinite(influenceRadius) ? Math.max(1, influenceRadius) : 120;
   let totalWeight = 0;
   let dxSum = 0;
   let dySum = 0;
 
   for (const pin of pins) {
+    if (
+      !Number.isFinite(pin.restX) ||
+      !Number.isFinite(pin.restY) ||
+      !Number.isFinite(pin.x) ||
+      !Number.isFinite(pin.y)
+    ) {
+      continue;
+    }
     const distToRest = Math.hypot(restX - pin.restX, restY - pin.restY);
     const epsilon = 1.0;
     const normDist = distToRest / safeRadius;
@@ -237,6 +250,9 @@ export function movePuppetPin(
   newX: number,
   newY: number,
 ): readonly PuppetPin[] {
+  if (!Number.isFinite(newX) || !Number.isFinite(newY)) {
+    return pins;
+  }
   return Object.freeze(
     pins.map((pin) => {
       if (pin.id !== pinId) return pin;

@@ -201,6 +201,9 @@ export function reorderLayerEffect(
   toIndex: number,
 ): StudioLayerEffectsStack {
   if (
+    !Number.isInteger(fromIndex) ||
+    !Number.isInteger(toIndex) ||
+    fromIndex === toIndex ||
     fromIndex < 0 ||
     fromIndex >= stack.effects.length ||
     toIndex < 0 ||
@@ -210,6 +213,7 @@ export function reorderLayerEffect(
   }
   const next = [...stack.effects];
   const [removed] = next.splice(fromIndex, 1);
+  if (!removed) return stack;
   next.splice(toIndex, 0, removed);
   return Object.freeze({ effects: Object.freeze(next) });
 }
@@ -234,7 +238,9 @@ export function computeEffectsBBoxPadding(stack: StudioLayerEffectsStack): {
 
     switch (effect.kind) {
       case "glow": {
-        const spread = effect.blur * 1.5;
+        if (effect.type === "inner") break;
+        const safeBlur = Number.isFinite(effect.blur) ? Math.max(0, effect.blur) : 0;
+        const spread = safeBlur * 1.5;
         padLeft = Math.max(padLeft, spread);
         padTop = Math.max(padTop, spread);
         padRight = Math.max(padRight, spread);
@@ -242,18 +248,19 @@ export function computeEffectsBBoxPadding(stack: StudioLayerEffectsStack): {
         break;
       }
       case "drop-shadow": {
-        const spread = effect.blur * 1.5;
-        const ox = effect.offsetX;
-        const oy = effect.offsetY;
-        if (ox < 0) padLeft = Math.max(padLeft, -ox + spread);
-        else padRight = Math.max(padRight, ox + spread);
-        if (oy < 0) padTop = Math.max(padTop, -oy + spread);
-        else padBottom = Math.max(padBottom, oy + spread);
+        const safeBlur = Number.isFinite(effect.blur) ? Math.max(0, effect.blur) : 0;
+        const spread = safeBlur * 1.5;
+        const ox = Number.isFinite(effect.offsetX) ? effect.offsetX : 0;
+        const oy = Number.isFinite(effect.offsetY) ? effect.offsetY : 0;
+        padLeft = Math.max(padLeft, Math.max(0, -ox + spread));
+        padRight = Math.max(padRight, Math.max(0, ox + spread));
+        padTop = Math.max(padTop, Math.max(0, -oy + spread));
+        padBottom = Math.max(padBottom, Math.max(0, oy + spread));
         break;
       }
       case "border": {
-        const t = effect.thickness;
-        if (effect.type !== "inner") {
+        const t = Number.isFinite(effect.thickness) ? Math.max(0, effect.thickness) : 0;
+        if (effect.type !== "inner" && t > 0) {
           padLeft = Math.max(padLeft, t + 2);
           padTop = Math.max(padTop, t + 2);
           padRight = Math.max(padRight, t + 2);
@@ -296,7 +303,8 @@ export function parseColorToRgba(colorStr: string): { r: number; g: number; b: n
     r = parseInt(hex.slice(0, 2), 16) || 0;
     g = parseInt(hex.slice(2, 4), 16) || 0;
     b = parseInt(hex.slice(4, 6), 16) || 0;
-    a = parseInt(hex.slice(6, 8), 16) || 255;
+    const parsedAlpha = parseInt(hex.slice(6, 8), 16);
+    a = Number.isNaN(parsedAlpha) ? 255 : parsedAlpha;
   }
   return { r, g, b, a };
 }

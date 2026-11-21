@@ -258,11 +258,22 @@ export function planStudioZoomToSelection(
 ): StudioZoomToSelectionPlan | null {
   const viewportWidth = finitePositive(input.viewportWidth);
   const viewportHeight = finitePositive(input.viewportHeight);
+  if (
+    viewportWidth <= 0
+    || viewportHeight <= 0
+    || !Number.isFinite(input.bounds.x)
+    || !Number.isFinite(input.bounds.y)
+  ) {
+    return null;
+  }
   const boundsW = Math.max(1, finitePositive(input.bounds.w, 1));
   const boundsH = Math.max(1, finitePositive(input.bounds.h, 1));
-  if (viewportWidth <= 0 || viewportHeight <= 0) return null;
 
-  const padding = clamp(input.paddingRatio ?? 0.14, 0, 0.4);
+  const rawPadding =
+    typeof input.paddingRatio === "number" && Number.isFinite(input.paddingRatio)
+      ? input.paddingRatio
+      : 0.14;
+  const padding = clamp(rawPadding, 0, 0.4);
   const usableW = viewportWidth * (1 - padding);
   const usableH = viewportHeight * (1 - padding);
   // A quarter-turned view transposes the stage box (planStudioViewStageLayout), so a w×h
@@ -273,9 +284,11 @@ export function planStudioZoomToSelection(
   const rawScale = Math.min(usableW / fitW, usableH / fitH);
   const maxScale = finitePositive(input.maxScale ?? STUDIO_VIEW_ZOOM_MAX, STUDIO_VIEW_ZOOM_MAX);
   const minScale = finitePositive(input.minScale ?? STUDIO_VIEW_ZOOM_MIN, STUDIO_VIEW_ZOOM_MIN);
-  const scale = clamp(rawScale, minScale, maxScale);
-  const centerX = input.bounds.x + input.bounds.w / 2;
-  const centerY = input.bounds.y + input.bounds.h / 2;
+  const loScale = Math.min(minScale, maxScale);
+  const hiScale = Math.max(minScale, maxScale);
+  const scale = clamp(rawScale, loScale, hiScale);
+  const centerX = input.bounds.x + boundsW / 2;
+  const centerY = input.bounds.y + boundsH / 2;
   const scroll = planStudioViewScrollToDocumentPoint({
     documentWidth: input.documentWidth,
     documentHeight: input.documentHeight,

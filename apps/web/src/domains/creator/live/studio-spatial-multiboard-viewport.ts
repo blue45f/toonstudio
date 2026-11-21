@@ -146,8 +146,11 @@ export function fitCameraToBoards(
   viewportHeightPx: number,
   paddingPx = 48,
 ): MultiboardCameraState {
+  const safeViewportW = Number.isFinite(viewportWidthPx) && viewportWidthPx > 0 ? viewportWidthPx : 1280;
+  const safeViewportH = Number.isFinite(viewportHeightPx) && viewportHeightPx > 0 ? viewportHeightPx : 720;
+  const safePadding = Number.isFinite(paddingPx) ? Math.max(0, paddingPx) : 48;
   const active = boards.filter((b) => !b.hidden);
-  if (active.length === 0) return { centerX: 0, centerY: 0, zoom: 1, viewportWidthPx, viewportHeightPx };
+  if (active.length === 0) return { centerX: 0, centerY: 0, zoom: 1, viewportWidthPx: safeViewportW, viewportHeightPx: safeViewportH };
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -158,8 +161,8 @@ export function fitCameraToBoards(
     if (b.x + b.width > maxX) maxX = b.x + b.width;
     if (b.y + b.height > maxY) maxY = b.y + b.height;
   }
-  const zoom = clamp(Math.min(Math.max(16, viewportWidthPx - paddingPx * 2) / Math.max(1, maxX - minX), Math.max(16, viewportHeightPx - paddingPx * 2) / Math.max(1, maxY - minY)), 0.02, 8);
-  return { centerX: (minX + maxX) * 0.5, centerY: (minY + maxY) * 0.5, zoom, viewportWidthPx, viewportHeightPx };
+  const zoom = clamp(Math.min(Math.max(16, safeViewportW - safePadding * 2) / Math.max(1, maxX - minX), Math.max(16, safeViewportH - safePadding * 2) / Math.max(1, maxY - minY)), 0.02, 8);
+  return { centerX: (minX + maxX) * 0.5, centerY: (minY + maxY) * 0.5, zoom, viewportWidthPx: safeViewportW, viewportHeightPx: safeViewportH };
 }
 
 /** 줌 배율과 뷰포트 프러스텀을 기반으로 60컷 멀티보드의 LOD 프록시 타일을 자동 할당한다. */
@@ -168,14 +171,18 @@ export function evaluateMultiboardViewportLod(
   camera: MultiboardCameraState,
   options: MultiboardLodOptions = {},
 ): MultiboardLodEvaluation {
-  const safeZoom = Math.max(0.01, camera.zoom);
+  const safeZoom = Number.isFinite(camera.zoom) ? clamp(camera.zoom, 0.01, 64) : 1;
+  const safeCenterX = Number.isFinite(camera.centerX) ? camera.centerX : 0;
+  const safeCenterY = Number.isFinite(camera.centerY) ? camera.centerY : 0;
+  const safeViewportW = Number.isFinite(camera.viewportWidthPx) && camera.viewportWidthPx > 0 ? camera.viewportWidthPx : 1;
+  const safeViewportH = Number.isFinite(camera.viewportHeightPx) && camera.viewportHeightPx > 0 ? camera.viewportHeightPx : 1;
   const overscanWorld = (options.overscanPx ?? 120) / safeZoom;
-  const halfW = camera.viewportWidthPx / (2 * safeZoom) + overscanWorld;
-  const halfH = camera.viewportHeightPx / (2 * safeZoom) + overscanWorld;
-  const viewMinX = camera.centerX - halfW;
-  const viewMaxX = camera.centerX + halfW;
-  const viewMinY = camera.centerY - halfH;
-  const viewMaxY = camera.centerY + halfH;
+  const halfW = safeViewportW / (2 * safeZoom) + overscanWorld;
+  const halfH = safeViewportH / (2 * safeZoom) + overscanWorld;
+  const viewMinX = safeCenterX - halfW;
+  const viewMaxX = safeCenterX + halfW;
+  const viewMinY = safeCenterY - halfH;
+  const viewMaxY = safeCenterY + halfH;
   const proxy512Min = options.proxy512MinScreenPx ?? 220;
   const liveFullMin = options.liveFullMinScreenPx ?? 560;
   const maxLive = clamp(options.maxSimultaneousLiveBoards ?? 4, 1, 16);
@@ -185,9 +192,9 @@ export function evaluateMultiboardViewportLod(
       return { board, tier: "culled" as BoardLodTier, screenWidthPx: 0, screenHeightPx: 0, distanceToCenterPx: Infinity };
     }
     const intersects = board.x + board.width >= viewMinX && board.x <= viewMaxX && board.y + board.height >= viewMinY && board.y <= viewMaxY;
-    const screenWidthPx = board.width * camera.zoom;
-    const screenHeightPx = board.height * camera.zoom;
-    const distanceToCenterPx = Math.hypot(board.x + board.width * 0.5 - camera.centerX, board.y + board.height * 0.5 - camera.centerY) * camera.zoom;
+    const screenWidthPx = board.width * safeZoom;
+    const screenHeightPx = board.height * safeZoom;
+    const distanceToCenterPx = Math.hypot(board.x + board.width * 0.5 - safeCenterX, board.y + board.height * 0.5 - safeCenterY) * safeZoom;
     const maxSpan = Math.max(screenWidthPx, screenHeightPx);
     const tier: BoardLodTier = !intersects ? "culled" : maxSpan >= liveFullMin ? "live-full" : maxSpan >= proxy512Min ? "proxy-512" : "proxy-256";
     return { board, tier, screenWidthPx, screenHeightPx, distanceToCenterPx };
@@ -364,9 +371,14 @@ export function projectSpatialMinimap(
     .filter((b) => !b.hidden)
     .map((b) => ({ boardId: b.id, role: b.role, x: toMiniX(b.x), y: toMiniY(b.y), width: Math.max(2, b.width * scale), height: Math.max(2, b.height * scale) }));
 
-  const halfViewW = camera.viewportWidthPx / (2 * Math.max(0.01, camera.zoom));
-  const halfViewH = camera.viewportHeightPx / (2 * Math.max(0.01, camera.zoom));
-  const viewportRect = { x: toMiniX(camera.centerX - halfViewW), y: toMiniY(camera.centerY - halfViewH), width: halfViewW * 2 * scale, height: halfViewH * 2 * scale };
+  const safeZoom = Number.isFinite(camera.zoom) ? clamp(camera.zoom, 0.01, 64) : 1;
+  const safeCenterX = Number.isFinite(camera.centerX) ? camera.centerX : 0;
+  const safeCenterY = Number.isFinite(camera.centerY) ? camera.centerY : 0;
+  const safeViewportW = Number.isFinite(camera.viewportWidthPx) && camera.viewportWidthPx > 0 ? camera.viewportWidthPx : 1;
+  const safeViewportH = Number.isFinite(camera.viewportHeightPx) && camera.viewportHeightPx > 0 ? camera.viewportHeightPx : 1;
+  const halfViewW = safeViewportW / (2 * safeZoom);
+  const halfViewH = safeViewportH / (2 * safeZoom);
+  const viewportRect = { x: toMiniX(safeCenterX - halfViewW), y: toMiniY(safeCenterY - halfViewH), width: halfViewW * 2 * scale, height: halfViewH * 2 * scale };
 
   const clusters: { x: number; y: number; members: SpatialPeerPresence[] }[] = [];
   for (const peer of peers) {
