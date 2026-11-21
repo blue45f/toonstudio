@@ -683,6 +683,7 @@ apps/web/src/domains/creator/studio-comment-editor-selection.test.ts
 apps/web/src/domains/creator/studio-companion-browser-harness-boundary.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingAppBar.test.tsx
 apps/web/src/domains/creator/studio-cuttoon-editor/StudioQuickAccessTooltip.test.tsx
+apps/web/src/domains/creator/studio-cuttoon-editor/StudioWorkspaceMenu.applied-device.test.tsx
 apps/web/src/domains/creator/studio-cuttoon-editor/runtime/bg3d-six-pass
 apps/web/src/domains/creator/studio-cuttoon-editor/runtime/history/studio-command-journal-identity.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal-sequence-identity.test.ts

@@ -32,6 +32,13 @@ function workflowRun(step) {
   return body.split("\n").filter(Boolean).map((line) => line.slice(10)).join("\n");
 }
 
+function assertManualHarnessEnvironment(step) {
+  const sourceBudget = /^ {8}env: \{ TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '6291456' \}$/mu;
+  assert.match(step, sourceBudget, "수동 하네스 env는 정해진 source budget 하나만 허용합니다.");
+  // 정확히 한 블록만 제외하므로 추가 변수·두 번째 env·인증 및 fetch 명령은 계속 거절한다.
+  assert.doesNotMatch(step.replace(sourceBudget, ""), /env:|TOONSTUDIO_CHECKOUT_TOKEN|GIT_CONFIG_|GIT_TERMINAL_PROMPT|credential|git fetch|restore-documentation-checkout|\bunset\b/u);
+}
+
 test("runtime follow-up tests and the long-running API artifact remain mandatory", () => {
   assert.match(
     workflow,
@@ -129,7 +136,7 @@ test "$#" = 1 && test "$1" = scripts/restore-documentation-checkout.mjs
 test("수동 전체 하네스 단계는 이미 확보한 main만 쓰고 토큰·문서 복원을 다시 받지 않는다", () => {
   const step = workflowStep("수동 후보의 전체 하네스 검증");
   assert.match(step, /^ {8}if: github\.event_name == 'workflow_dispatch' && matrix\.shard == 'studio-editing'$/mu);
-  assert.doesNotMatch(step, /env:|TOONSTUDIO_CHECKOUT_TOKEN|GIT_CONFIG_|GIT_TERMINAL_PROMPT|credential|git fetch|restore-documentation-checkout|\bunset\b/u);
+  assertManualHarnessEnvironment(step);
   assert.deepEqual(workflowRun(step).split("\n"), [
     "set -euo pipefail",
     "HARNESS_BASE=$(git rev-parse refs/remotes/origin/main)",
@@ -137,6 +144,27 @@ test("수동 전체 하네스 단계는 이미 확보한 main만 쓰고 토큰·
     'printf \'하네스 비교 기준: %s\\n\' "$HARNESS_BASE"',
     'pnpm harness:verify --base="$HARNESS_BASE"',
   ]);
+});
+
+test("수동 하네스 source budget 허용은 추가 env와 기존 인증·이력 변경 금지를 풀지 않는다", () => {
+  const step = workflowStep("수동 후보의 전체 하네스 검증");
+  const envLine = step.match(/^ {8}env: .+$/mu)?.[0];
+  assert.ok(envLine, "실제 수동 하네스 env가 필요합니다.");
+  for (const replacement of [
+    "", envLine.replace("6291456", "6291457"),
+    envLine.replace(" }", ", EXTRA_VALUE: 'fixture' }"),
+    `${envLine}\n${envLine}`,
+  ]) {
+    assert.throws(() => assertManualHarnessEnvironment(step.replace(envLine, replacement)), assert.AssertionError);
+  }
+  for (const command of [
+    "TOONSTUDIO_CHECKOUT_TOKEN=fixture", "GIT_CONFIG_COUNT=1", "GIT_TERMINAL_PROMPT=0",
+    "git credential fill", "git fetch origin main", "node scripts/restore-documentation-checkout.mjs",
+    "unset FIXTURE_VALUE",
+  ]) {
+    const modified = step.replace("        run: |\n", `        run: |\n          ${command}\n`);
+    assert.throws(() => assertManualHarnessEnvironment(modified), assert.AssertionError, command);
+  }
 });
 
 test("문서 복원의 실제 credential helper는 GitHub HTTPS get만 허용하고 사용자 설정과 저장을 건드리지 않는다", () => {

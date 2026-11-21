@@ -334,3 +334,67 @@ pointerdown EventDispatch 13.332ms와 Konva callback 10.989ms는 이 총계 안�
 포함되므로 더하지 않는다. #124에서 보인 큰 style/layout 비용은 이 첫 task에서는
 재현되지 않았다. 진단 실행의 7회 획 수락과 원본 수집 완료는 일반 성능 수락을
 의미하지 않으며, 의도한 `diagnostic-only` 종료 상태를 그대로 유지한다.
+
+## 2026-11-22 후속 구현: 연속 입력과 적용 배치의 일관성
+
+### GPU 표시 요청의 진행
+
+결정적 회귀 재현에서는 16ms 간격의 새 입력이 아직 끝나지 않은 GPU 요청을 계속
+교체해, 40ms fence가 정상 완료돼도 현재 요청의 정확한 receipt로 인정되지 못했다.
+현재는 활성 WebGPU
+획의 같은 identity에서 일반 요청 하나가 진행 중이면 새 원본 점을 기존
+`liveDraftVisualRef`에 보존하고 journal cursor와 요청을 유지한다. 정확한 receipt를
+수락한 뒤 활성 획·epoch·drawing 상태·watchdog를 다시 대조해 미제출 suffix를 보낸다.
+별도의 원본 점 배열이나 무제한 제출 큐를 추가하지 않는다.
+
+획 종료는 이 보류 경로를 우회해 마지막 원본 점을 포함한다. 새 기하가 없어도 진행
+중인 exact 요청이 terminal 역할로 바뀌면 기존 2,000ms 예산을 적용한다. 일반 진행의
+300ms, 첫 표시의 300ms 절대시한, 후보정 뒤 최종 exact receipt 요구는 그대로다.
+오래된 receipt·취소·resize·다음 획·스타일 변경·동기 receipt를 실제 journal,
+audit, watchdog 및 Host 배선과 함께 회귀 검증한다. 이 구현의 단위 검증은 앞선
+소스에서 발생한 브라우저 timeout의 원인 확정이나 새 소스의 성능 수락을 대신하지 않는다.
+
+### 첫 입력의 중복 처리와 작업공간 저장
+
+첫 접촉에서 확정된 좌표는 같은 Stage의 일반 입력에 한해 커서에도 재사용한다.
+다른 Stage, replay, zoom·backdrop으로 좌표가 다시 정해지는 경로는 기존 측정을
+유지한다. 실제 pointerdown binder 회귀에서 중복 좌표 읽기 제거와 이 예외를 확인한다.
+
+최근 입력 기기의 관측은 ref에만 기록하며, 실제로 적용한 작업공간 기기는 배치를
+적용할 때 변경한다. 펜을 쓰다가 마우스로 메뉴를 열어도 보이는 도크의 폭을 다른
+기기 override에 덮어쓰지 않는다. 메뉴의 `지금 도크로`도 실제 적용 기기의 배치를
+읽고, 메뉴가 선택한 저장 대상 기기는 유지한다. 명시적인 `null`은 저자 배치이며,
+기존 호출자가 새 값을 제공하지 않은 `undefined`와 구분한다.
+
+### 다음 진단의 실행 파일 출처
+
+진단 실행에서만 검증된 dist의 선택된 Studio·React JavaScript를 작은 별도
+산출물로 수집한다. 소스 SHA, 깨끗한 상태, buildId, metadata·index 해시와 복사한
+파일 해시를 대조하고 누락·중복·symlink를 거부한다. 파일당 16MiB·합계 32MiB
+상한을 지키며 일반 소크에는 추가 수집을 하지 않는다. 이는 minified stack을 해당
+빌드 코드와 대조하기 위한 자료이며, HTTP 응답이나 실제 실행 함수의 증명은 아니다.
+
+### 이전 실행의 최종 결과와 남은 수락
+
+앞서 일부만 기록한 #126은 다섯 환경 모두 사전 검사에서 실패했다. Naver의 52ms,
+Kakao의 50ms 입력 중 긴 작업도 기준을 넘었다. WebGPU는 1회 시도·0회 수락·
+1회 거절이며 selected-engine `timeout`, GPU event·runtime error 0회였다.
+**300분 본 검사는 모든 환경에서 시작하지 못했다.** 이 보고서는 timeout의
+first-visible·progress·terminal 세부 phase를 보존하지 않아 정확한 시한은 미확정이다.
+
+#127은 다섯 환경 모두 첫 입력 native trace와 stream 수집 완료·data loss 0·검증
+issue 0을 확인했다. 같은 `46c884d0`의 #128 일반 실행은 모바일 화면 프로필 세 개에서
+각각 7/7획·입력 중 긴 작업 0회로 3분 검사를 통과했으나, desktop은 61ms 긴 작업
+두 건, WebGPU는 profiler를 끈 상태에서도 0/1획·selected-engine `timeout`으로
+실패했다. 따라서 그 소스의 GPU 실패를 profiler 영향만으로 설명할 수 없다.
+
+[일반 3분 후보 #129](https://github.com/blue45f/toonstudio/actions/runs/44934296704)는
+`959c1b69fb06959c7804f78e97b2128110f40e7e` 소스로 다섯 환경 모두 실패했다.
+실제 ANGLE 실행 인자 수집은 완료됐지만 WebGPU는 0/1획·generic timeout이며,
+다른 네 환경도 입력 중 긴 작업 기준을 넘었다. 이 실행 또한 후속 제품 수정 이전이다.
+실행 인자가 다른 단일 runner 결과만으로 해당 옵션의 인과 효과를 단정하지 않는다.
+
+현재 후속 코드의 필수 전체 CI와 브라우저 소크는 별도 SHA의 실행에서 다시 확인해야
+한다. 새 helper까지 포함한 로컬 부분 타입 검사도 4GiB Node heap 한도에서 OOM으로
+종료되어 전체 타입 통과 근거로 쓰지 않는다. 대표 17종의 기존 엄격 판정 6종 통과·
+11종 실패와 실제 300분 수락 미완료 상태를 유지하며, 기준값을 완화하지 않는다.

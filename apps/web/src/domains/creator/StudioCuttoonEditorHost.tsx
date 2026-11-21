@@ -28225,6 +28225,7 @@ function clearSelectionForEdit() {
       currentPublishPackageCreditsText={currentPublishPackageCreditsText}
       currentStudioFilterPageRasterContext={currentStudioFilterPageRasterContext}
       currentStudioWorkspaceDeviceKind={currentStudioWorkspaceDeviceKind}
+      appliedWorkspaceDeviceKind={workspaceDeviceKind}
       currentTemplate={currentTemplate}
       currentWorkspaceOwnerScope={currentWorkspaceOwnerScope}
       description={description}
