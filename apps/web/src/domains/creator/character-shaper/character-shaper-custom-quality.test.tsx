@@ -343,6 +343,15 @@ describe("#236 커스텀 3D 품질 일관성 & #234 SHAPER REA 완전 내재화 
       </CharacterShaperSessionSettingsProvider>,
     );
     assertAllControlsNamed();
+    const extrasToggle = screen.getByTestId("shaper-camera-extras-toggle");
+    const extrasPanel = document.querySelector<HTMLElement>('[data-character-camera-selects="true"]')!;
+    expect(extrasToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(extrasPanel.getAttribute("data-compact-extras-open")).toBe("false");
+    expect(extrasPanel.classList.contains("hidden")).toBe(true);
+    fireEvent.click(extrasToggle);
+    expect(extrasToggle.getAttribute("aria-expanded")).toBe("true");
+    expect(extrasPanel.getAttribute("data-compact-extras-open")).toBe("true");
+    expect(extrasPanel.classList.contains("hidden")).toBe(false);
     fireEvent.change(screen.getByTestId("shaper-camera-focal-select"), { target: { value: "85" } });
     expect(camera.fov).toBeCloseTo(16.1, 1);
     fireEvent.click(screen.getByTestId("shaper-front-light-toggle"));
